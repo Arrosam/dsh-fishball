@@ -108,7 +108,7 @@ export const V3_SUITES = Object.freeze({
   // Reads the instance's whole placement and launch overlay, and core's patch it places.
   'dsh-instance.placement': suite('placement of the set, launch overlay, hosted-child guards (I-PLACE)', v3('dsh-instance/placement'),
     [all(PACKAGE.dshInstance), all(PACKAGE.fishballCore), all(PACKAGE.fishballShared)]),
-  'fishball-core.package': suite('core package, slim child move, settings-section point (R-CORE)', v3('fishball-core/package'),
+  'fishball-core.package': suite('core package, slim child move (R-CORE; the settings-section point withdrawn, 1.34)', v3('fishball-core/package'),
     [all(PACKAGE.fishballCore), sub(PACKAGE.dshInstance, 'src', 'slim'), sub(PACKAGE.dshInstance, 'src', 'child-settings')]),
   'fishball-core.bridge': suite('bridge façade, list_changed refresh, X8 attention (F-FACADE)', v3('fishball-core/bridge'),
     [sub(PACKAGE.fishballCore, 'src', 'bridge'), sub(PACKAGE.fishballCore, 'src', 'events'), ...CORE_LINK, ...CONNECTOR_CONTRACTS]),
@@ -118,6 +118,9 @@ export const V3_SUITES = Object.freeze({
     [...CORE_LINK, sub(PACKAGE.fishballCore, 'scripts'), top(PACKAGE.fishballCore), ...CONNECTOR_CONTRACTS, ...CONNECTOR_CORE, CONNECTOR_MANIFEST, sub(PACKAGE.dshConnector, 'host-services')]),
   'fishball-core.identity': suite('identity, pairing decisions, token-revoked (F-PAIR)', v3('fishball-core/identity'),
     [sub(PACKAGE.fishballCore, 'src', 'identity'), ...CORE_LINK, sub(PACKAGE.dshConnector, 'src', 'pairs'), ...CONNECTOR_CORE, ...CONNECTOR_CONTRACTS]),
+  // The chunk loads only through core's client.js and reads core's contracts (constants.js).
+  'fishball-core.settings': suite("core's own settings page, token field, Connect, Fishball-page entries (F-SETTINGS)", v3('fishball-core/settings'),
+    ['packages/core/client.settings.js', 'packages/core/client.js', sub(PACKAGE.fishballCore, 'src', 'settings'), sub(PACKAGE.fishballCore, 'contracts')]),
   // fishball-ui has no folder yet (F-UI moves it out of core): its guards are core's src/guards, ui/ and patch.
   'fishball-ui.guards': suite('guard rows, override report, self-reorder (F-GUARDS)', v3('fishball-ui/guards'),
     [sub(PACKAGE.fishballCore, 'src', 'guards'), sub(PACKAGE.fishballCore, 'ui'), sub(PACKAGE.fishballCore, 'contracts'), top(PACKAGE.fishballCore),

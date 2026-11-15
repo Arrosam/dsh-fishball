@@ -16,9 +16,11 @@
  * is loaded) and integration (a real host DSH with this checkout's instance, its real child, and a
  * scripted settings page fed by the child's own served bundles; page.mjs). No browser.
  *
- * "Behaves as before" is the V2 panel's public behaviour (docs/planning/v2-set.md): the panel, its
- * header entry, the Read Only line and the DSH Settings / Plugins links (generic), and no
- * model-sync control (R-HOST-07). Rows that need a later task are
+ * "Behaves as before" was the V2 panel's public behaviour (docs/planning/v2-set.md). Requirements
+ * 1.34 item 4 removed that panel, its Read Only line, its links and the settings-section point
+ * (R-HOST-11 withdrawn): the rows that asserted them are registered as skipped with that reason
+ * (../settings/withdrawn.mjs), and the rows whose requirement still holds point at core's own
+ * settings page (F-SETTINGS, test/v3/fishball-core/settings). Rows that need a later task are
  * `todo` and name it.
  */
 import assert from 'node:assert/strict'
@@ -32,7 +34,8 @@ import {
 } from './constants.mjs'
 import { hostedChildFor } from './hosted.mjs'
 import { childRequest, openSettingsPage } from './page.mjs'
-import { corePatchFile, corePatchRows, describeRef, has, hostingTokens, insertedRows, isModuleOf, ownFiles, panelFiles, tokensOf, unitOf } from './static.mjs'
+import { withdrawnCase } from '../settings/withdrawn.mjs'
+import { corePatchFile, corePatchRows, describeRef, has, insertedRows, isModuleOf, ownFiles, tokensOf, unitOf } from './static.mjs'
 
 const JS = /\.(?:c|m)?js$/
 const HOME_LABEL = 'v3-r-core'
@@ -49,9 +52,6 @@ async function shippedFileWith(name, source) {
   const { dir } = packageNamed(name)
   return ownFiles(await unitOf(name)).filter((f) => JS.test(f) && fs.readFileSync(path.join(dir, f), 'utf8').trimEnd() === source)
 }
-
-/** Every model-sync marker (R-HOST-07: data-fishball-model-*) in a rendered tree. */
-const syncMarkers = (tree) => JSON.stringify(tree).match(new RegExp('"' + MARK.modelPrefix + '[\\w-]*"', 'g')) ?? []
 
 /** Every shipped own JS file of every present V3 package that holds the exact string `value`. */
 async function filesHolding(value) {
@@ -158,21 +158,17 @@ export function registerCoreCases(sdk) {
   })
 
   // ================================================================ HOST-EP-03 row 3: the extension point knows nothing about hosting
-  caseTest(sdk, 'HOST-EP-03', 3, "core's generic settings panel exists (found by its page marker)", async () => {
-    needCore()
-    assert.ok((await panelFiles()).length > 0, 'no shipped core file renders ' + MARK.panel)
-  })
-  caseTest(sdk, 'HOST-EP-03', 3, 'the generic panel and its extension point name nothing hosting-specific (no hosted flag, no instance names or types)', async () => {
-    needCore()
-    const files = await panelFiles()
-    assert.ok(files.length > 0, 'no shipped core file renders ' + MARK.panel)
-    assert.deepEqual(files.filter((f) => f.error).map((f) => f.file + ': ' + f.error), [], 'unparsed panel files')
-    assert.deepEqual(files.flatMap((f) => hostingTokens(f).map((hit) => f.file + ': ' + hit)), [])
-  })
+  // The generic slim panel and its settings-section point are removed (1.34 item 4, R-HOST-11
+  // withdrawn); core's own settings page is F-SETTINGS' (test/v3/fishball-core/settings), and it
+  // names the instance's child-side namespace on purpose (the hosted target line, its requirement 6).
+  withdrawnCase(sdk, 'HOST-EP-03', 3, "core's generic settings panel exists (found by its page marker)")
+  withdrawnCase(sdk, 'HOST-EP-03', 3, 'the generic panel and its extension point name nothing hosting-specific (no hosted flag, no instance names or types)')
 
-  // ================================================================ HOST-EP-03 row 4: sections only through the extension point
-  caseTest(sdk, 'HOST-EP-03', 4, 'the instance ships no settings panel of its own (no file renders the generic panel marker)', async () => {
-    const holders = await filesHolding(MARK.panel)
+  // ================================================================ HOST-EP-03 row 4: core's settings stay in core
+  // Re-pointed from the slim panel's marker to core's own settings page marker (1.34 item 4: Fishball's
+  // settings are on fishball-core's own page, so the instance ships none of it).
+  caseTest(sdk, 'HOST-EP-03', 4, "the instance ships no settings page of core's (no file renders core's settings page marker)", async () => {
+    const holders = await filesHolding(MARK.corePage)
     assert.deepEqual(holders.filter((h) => h.name === V3.instance.name).map((h) => h.file), [])
   })
   caseTest(sdk, 'HOST-EP-03', 4, 'the instance registers nothing in the panel header slot itself', async () => {
@@ -180,38 +176,31 @@ export function registerCoreCases(sdk) {
     assert.deepEqual(holders.filter((h) => h.name === V3.instance.name).map((h) => h.file), [])
   })
   // ================================================================ HOST-UC-08 (V2-mechanism part), integration
-  caseTest(sdk, 'HOST-UC-08', 'main 2', 'hosted child: the panel shows the generic settings (Read Only line, DSH Settings and Plugins links, header entry)', async (t) => {
-    const { child } = await readyChild(sdk)
-    const page = await openSettingsPage(t, { sdk, child })
-    assert.ok(page.panel, 'no settings panel; plugins ' + describePlugins(page))
-    assert.equal(page.byAttr(MARK.readOnly).length, 1, 'one Read Only line')
-    assert.deepEqual(page.byAttr(MARK.open).map((n) => n.props[MARK.open]).sort(), [...MARK.openTargets].sort())
-    const headers = []
-    for (const entry of page.header) headers.push(JSON.stringify(await page.renderAlone(entry)))
-    assert.ok(headers.some((h) => h.includes(MARK.entry)), 'no header entry opens the panel')
-    assert.deepEqual(page.failed(), [], 'failed plugins')
-  })
-  // The hosted-only sections (status line, Restart) left with fishball-hosted-settings (REMOVE-WD,
-  // design §1.0); a hosted child's panel is core's generic panel alone.
-  caseTest(sdk, 'HOST-UC-08', 'main 2', "hosted child: the panel is core's code (served files)", async (t) => {
+  // The slim panel with its Read Only line, Settings / Plugins links and header entry is removed
+  // (1.34 item 4); core's own page and the two Fishball-page entries are F-SETTINGS' rows.
+  withdrawnCase(sdk, 'HOST-UC-08', 'main 2', 'hosted child: the panel shows the generic settings (Read Only line, DSH Settings and Plugins links, header entry)')
+  // Re-pointed from the slim panel's marker to core's own settings page marker: a hosted child's
+  // settings page is still core's code (1.34 item 4; the same page in both modes, Q-B2).
+  caseTest(sdk, 'HOST-UC-08', 'main 2', "hosted child: core's settings page is core's code (served files)", async (t) => {
     needCore()
     const { child } = await readyChild(sdk)
     const page = await openSettingsPage(t, { sdk, child })
     await page.settled()
-    const panelScripts = page.scripts.filter((s) => s.source.includes(MARK.panel + "'") || s.source.includes(MARK.panel + '"'))
-    assert.ok(panelScripts.length > 0, 'no served script renders the panel')
-    for (const s of panelScripts) assert.ok((await shippedFileWith(V3.core.name, s.source)).length > 0, s.url + ' (' + s.id + ') is not a file of fishball-core')
+    const pageScripts = page.scripts.filter((s) => s.source.includes(MARK.corePage + "'") || s.source.includes(MARK.corePage + '"'))
+    assert.ok(pageScripts.length > 0, "no served script renders core's settings page")
+    for (const s of pageScripts) assert.ok((await shippedFileWith(V3.core.name, s.source)).length > 0, s.url + ' (' + s.id + ') is not a file of fishball-core')
   })
-  caseTest(sdk, 'HOST-UC-08', 'A4', 'hosted child: the panel has no model-sync trigger, makes no sync request, and the child has no sync route (R-HOST-07)', async (t) => {
+  // Re-pointed (R-HOST-07 still holds; the slim panel and its links are removed, 1.34 item 4): no
+  // script the child serves carries a model-sync marker, the page makes no sync request, and the
+  // child has no sync route.
+  caseTest(sdk, 'HOST-UC-08', 'A4', 'hosted child: no served script carries a model-sync trigger, the page makes no sync request, and the child has no sync route (R-HOST-07)', async (t) => {
     const { child } = await readyChild(sdk)
     const page = await openSettingsPage(t, { sdk, child })
-    assert.ok(page.panel, 'no settings panel; plugins ' + describePlugins(page))
     await page.settled()
-    assert.deepEqual(syncMarkers(page.tree()), [], 'model-sync markers in the panel')
-    for (const target of MARK.openTargets) for (const node of page.byAttr(MARK.open, target)) await page.press(node)
-    assert.deepEqual(syncMarkers(page.tree()), [], 'model-sync markers after using the links')
-    assert.deepEqual(page.requests.filter((r) => ROUTE.sync.includes(r.pathname)), [], 'the panel requested a sync route')
+    assert.deepEqual(page.scripts.filter((s) => s.source.includes(MARK.modelPrefix)).map((s) => s.url), [], 'model-sync markers in served scripts')
+    assert.deepEqual(page.requests.filter((r) => ROUTE.sync.includes(r.pathname)), [], 'the page requested a sync route')
     for (const route of ROUTE.sync) assert.equal((await childRequest(child, 'POST', route, '{}')).status, HTTP.notFound, 'the child answers ' + route)
+    assert.deepEqual(page.failed(), [], 'failed plugins; plugins ' + describePlugins(page))
   })
 
   // HOST-EP-03 row 5 and the HOST-UC-08 postcondition "H shows no UI from the instance" are R-EMBED's: test/v3/contract/embed/cases.mjs.

@@ -635,9 +635,9 @@ window.__ModuleLoader__.load({
         // A portal into the navigation's seat keeps the trigger usable outside the rc.1 drawer's
         // inert subtree and Windows collapsed footer (the overlay layer is outside both); the
         // native settings modal/state and all settings contributions stay owned.
-        // `view=settings` is not handled here: it opens Fishball's slim settings panel, which
-        // fishball-settings (SET) owns. That panel's "DSH Settings" link presses this button, so the
-        // launcher must stay on the page.
+        // `view=settings` is not handled here: it opens core's own settings page (client.settings.js,
+        // F-SETTINGS), whose "DSH settings" header entry presses this button, so the launcher must
+        // stay on the page.
         function SettingsLauncher({ openSettings, settingsOpen }) {
           const text = useText(locale)
           const seat = useCell(launcherSeat)

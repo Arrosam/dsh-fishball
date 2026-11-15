@@ -3,21 +3,16 @@
  * I-PLACE): PLAT-DT-01, HOST-ST-01 rows 1–3, HOST-UC-06 (overlay postcondition), HOST-UC-08 main 1
  * and A3, HOST-EP-03 rows 6–7, PLAT-DT-04 rule 1 in a real hosted child (the fishball-hosted-settings
  * rows HOST-UC-08 A1/A2 and HOST-DT-03 left with that bundle: REMOVE-WD, design §1.0), the V2 guard cases LITE-UC-03, LITE-EP-13 and SET-EP-12 restored in a hosted child
- * (V3 rule: design §5a.2 and §6.2), the K3 `unmount` rule of the settings-section point, the child
- * isolation rows (Fishball 2026-11-15) and PLAT-EP-07 row 5 (stays failing, REL-PACK).
- * Requirements R-BND-01…05, R-FB-02/09/10/12, R-HOST-02/04, R-ARCH-08, K3 settings
- * sections (packages/core/contracts/settings-sections.d.ts, README §Settings sections).
+ * (V3 rule: design §5a.2 and §6.2), the child isolation rows (Fishball 2026-11-15) and PLAT-EP-07 row 5 (stays failing, REL-PACK).
+ * Requirements R-BND-01…05, R-FB-02/09/10/12, R-HOST-02/04, R-ARCH-08. The K3 `unmount` rows of the
+ * settings-section point are withdrawn with it (requirements 1.34 item 4, R-HOST-11 withdrawn; F-SETTINGS).
  *
  * Techniques, Use Cases first:
  * - Use Case: HOST-UC-06 (lifecycle postcondition), HOST-UC-08 main 1, A3;
  * - Decision Table: PLAT-DT-01 rules 1–9, PLAT-DT-04 rule 1;
- * - State Transition: HOST-ST-01 rows 1–3, and the `unmount` life of one section
- *   (registered → mounted → unmounted at panel close / withdrawal / plugin disposal; a throwing
- *   mount never reaches unmounted);
+ * - State Transition: HOST-ST-01 rows 1–3;
  * - EP: HOST-EP-03 rows 6–7 (what a launch overlay may carry; which bundles a child holds), the
- *   guard classes of the restored V2 cases;
- * - BVA: "at most once per mount" (0 calls before close, exactly 1 after, still 1 after a second
- *   close or a dispose after close).
+ *   guard classes of the restored V2 cases.
  *
  * Levels: unit (manifests, the relayed pure `launchOverlay` export, core's patch composed with the
  * SDK's own dsh-app-boot; no child is launched) and integration (a real host DSH per SDK with this
@@ -34,13 +29,14 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 import { TEST_HOMES } from '../../../support/constants.mjs'
 import { bootHost, newHome, until } from '../../../support/host.mjs'
 import { ROUTE, runtimeOf } from '../../fishball-core/package/constants.mjs'
-import { admitChild, bootGraph, openSettingsPage } from '../../fishball-core/package/page.mjs'
+import { admitChild, bootGraph } from '../../fishball-core/package/page.mjs'
+import { withdrawnCase } from '../../fishball-core/settings/withdrawn.mjs'
 import { corePatchFile } from '../../fishball-core/package/static.mjs'
 import { caseName, caseTest } from '../../contract/package-boundaries/cases.mjs'
 import { V3 } from '../../contract/package-boundaries/constants.mjs'
 import { readManifest } from '../../contract/package-boundaries/packages.mjs'
 import {
-  BUDGET, CHILD, CORE_COPY, DSH_ROW, GUARDS, INTEGRATION, LATER, OVERLAY, PANEL, POLICY, PROBE, RELAYED, REPORT, SET,
+  BUDGET, CHILD, CORE_COPY, DSH_ROW, GUARDS, INTEGRATION, LATER, OVERLAY, PANEL, POLICY, RELAYED, REPORT, SET,
 } from './constants.mjs'
 import {
   blockedBy, childHome, composeChild, childProfile, launchOverlayExport, launchOverlays, placedCopy, placementFile, placementMode, placementRecord, profileBundles,
@@ -199,50 +195,6 @@ function scratch(t, prefix) {
     fs.rmSync(dir, { recursive: true, force: true })
   })
   return dir
-}
-
-// ---------------------------------------------------------------------------------------------
-// The `unmount` rule: a section's life in the panel (K3 settings sections; brief F5).
-// ---------------------------------------------------------------------------------------------
-
-/** A probe section recording every mount and unmount call, by the host element it got. */
-function probeSection(id, log, { throws = false } = {}) {
-  return {
-    id,
-    title: () => PROBE.title,
-    order: PROBE.order,
-    mount(host) {
-      log.push({ id, call: 'mount', host })
-      if (throws) throw new Error('fbtest probe mount throws')
-      const element = host.ownerDocument.createElement('div')
-      element.setAttribute(PROBE.marker, id)
-      host.appendChild(element)
-    },
-    unmount(host) { log.push({ id, call: 'unmount', host }) },
-  }
-}
-const calls = (log, id, call) => log.filter((e) => e.id === id && e.call === call)
-/** "At most once per mount": every mount host got at most one unmount, and no unmount without a mount before it. */
-function assertAtMostOncePerMount(log, id) {
-  const mounts = calls(log, id, 'mount')
-  for (const m of mounts) assert.ok(log.filter((e) => e.id === id && e.call === 'unmount' && e.host === m.host).length <= 1, 'unmount ran twice for one mount')
-  for (const u of calls(log, id, 'unmount')) assert.ok(mounts.some((m) => m.host === u.host && log.indexOf(m) < log.indexOf(u)), 'unmount without its mount')
-}
-
-/**
- * A plugin that registers the probe sections through the frozen point; `dispose` withdraws one by
- * its K3 disposer, and the plugin's own disposal withdraws the rest (K3: "plugin disposal included").
- */
-function probePlugin(sections) {
-  const disposers = new Map()
-  return {
-    disposers,
-    plugin: {
-      name: PROBE.id,
-      inject: [PANEL.service],
-      apply(ctx) { for (const s of sections) disposers.set(s.id, ctx[PANEL.service][PANEL.register](s)) },
-    },
-  }
 }
 
 export function registerIPlaceCases(sdk) {
@@ -586,76 +538,14 @@ export function registerIPlaceCases(sdk) {
   caseTest(sdk, 'LITE-UC-03', 'hosted', 'the private Skills exception and a live child agent refused child creation and write', null, LATER.e2e)
 
   // ============================================================== State Transition + BVA: the K3 `unmount` rule
-  // States: registered → mounted (panel open) → unmounted (panel close | withdrawal | plugin disposal).
-  // A throwing mount never reaches `unmounted`. BVA: 0 unmounts while open, exactly 1 after close, still 1 after a second close.
-  integrationCase(sdk, 'K3 settings sections', 'unmount close', 'panel open → mount once; panel close → unmount exactly once, with the same host', async (t) => {
-    const { host } = await ready()
-    const log = []
-    const { plugin } = probePlugin([probeSection(PROBE.id, log)])
-    const page = await openSettingsPage(t, { sdk, child: await admitChild(host), plugins: [plugin] })
-    assert.equal((await page.waitFor(PROBE.marker)).length, 1, 'the probe is not drawn')
-    assert.equal(calls(log, PROBE.id, 'mount').length, 1)
-    assert.equal(calls(log, PROBE.id, 'unmount').length, 0, 'unmount before the panel closed')
-    await page.close()
-    assert.equal(calls(log, PROBE.id, 'unmount').length, 1)
-    assert.equal(calls(log, PROBE.id, 'unmount')[0].host, calls(log, PROBE.id, 'mount')[0].host)
-    await page.close()
-    assertAtMostOncePerMount(log, PROBE.id)
-    assert.equal(calls(log, PROBE.id, 'unmount').length, 1, 'a second close called unmount again')
-  })
-  integrationCase(sdk, 'K3 settings sections', 'unmount withdraw', 'withdrawal (the disposer) while mounted → unmount once; the section leaves no trace; disposing again changes nothing', async (t) => {
-    const { host } = await ready()
-    const log = []
-    const { plugin, disposers } = probePlugin([probeSection(PROBE.id, log)])
-    const page = await openSettingsPage(t, { sdk, child: await admitChild(host), plugins: [plugin] })
-    await page.waitFor(PROBE.marker)
-    disposers.get(PROBE.id)()
-    await page.settled()
-    assert.equal(calls(log, PROBE.id, 'unmount').length, 1)
-    assert.equal(page.byAttr(PROBE.marker).length, 0, 'the withdrawn section left a trace')
-    disposers.get(PROBE.id)()
-    await page.close()
-    assert.equal(calls(log, PROBE.id, 'unmount').length, 1, 'idempotent dispose or a later close unmounted again')
-  })
-  integrationCase(sdk, 'K3 settings sections', 'unmount dispose', 'the registering plugin disposed while mounted → unmount once (plugin disposal is a withdrawal)', async (t) => {
-    const { host } = await ready()
-    const log = []
-    const { plugin } = probePlugin([probeSection(PROBE.id, log)])
-    const page = await openSettingsPage(t, { sdk, child: await admitChild(host), plugins: [plugin] })
-    await page.waitFor(PROBE.marker)
-    await page.disposePlugin(PROBE.id)
-    assert.equal(calls(log, PROBE.id, 'unmount').length, 1)
-    await page.close()
-    assertAtMostOncePerMount(log, PROBE.id)
-  })
-  integrationCase(sdk, 'K3 settings sections', 'unmount throws', 'a mount that threw is never unmounted (close, withdrawal or disposal); its "could not be loaded" line stays its own', async (t) => {
-    const { host } = await ready()
-    const log = []
-    const { plugin, disposers } = probePlugin([probeSection(PROBE.throwing, log, { throws: true }), probeSection(PROBE.id, log)])
-    const page = await openSettingsPage(t, { sdk, child: await admitChild(host), plugins: [plugin] })
-    await page.waitFor(PROBE.marker)
-    assert.equal(calls(log, PROBE.throwing, 'mount').length, 1, 'precondition: the throwing mount ran')
-    assert.equal(calls(log, PROBE.id, 'mount').length, 1, 'a throwing section stopped another section')
-    disposers.get(PROBE.throwing)()
-    await page.close()
-    await page.disposePlugin(PROBE.id)
-    assert.equal(calls(log, PROBE.throwing, 'unmount').length, 0, 'unmount ran for a mount that threw')
-    assertAtMostOncePerMount(log, PROBE.id)
-  })
-  integrationCase(sdk, 'K3 settings sections', 'unmount reopen', 'close then reopen → a second mount; its own unmount at the next close (once per mount, not once per section)', async (t) => {
-    const { host } = await ready()
-    const log = []
-    const { plugin } = probePlugin([probeSection(PROBE.id, log)])
-    const page = await openSettingsPage(t, { sdk, child: await admitChild(host), plugins: [plugin] })
-    await page.waitFor(PROBE.marker)
-    await page.close()
-    await page.reopen()
-    await page.waitFor(PROBE.marker)
-    await page.close()
-    assert.equal(calls(log, PROBE.id, 'mount').length, 2)
-    assert.equal(calls(log, PROBE.id, 'unmount').length, 2)
-    assertAtMostOncePerMount(log, PROBE.id)
-  })
+  // Withdrawn with the settings-section point (requirements 1.34 item 4, R-HOST-11 withdrawn; F-SETTINGS).
+  for (const [row, title] of [
+    ['unmount close', 'panel open → mount once; panel close → unmount exactly once, with the same host'],
+    ['unmount withdraw', 'withdrawal (the disposer) while mounted → unmount once; the section leaves no trace; disposing again changes nothing'],
+    ['unmount dispose', 'the registering plugin disposed while mounted → unmount once (plugin disposal is a withdrawal)'],
+    ['unmount throws', 'a mount that threw is never unmounted (close, withdrawal or disposal); its "could not be loaded" line stays its own'],
+    ['unmount reopen', 'close then reopen → a second mount; its own unmount at the next close (once per mount, not once per section)'],
+  ]) withdrawnCase(sdk, 'K3 settings sections', row, title + ' [integration]')
 
   // ============================================================== PLAT-EP-07 row 5 (REL-PACK): stays failing, allow-listed there.
   caseTest(sdk, 'PLAT-EP-07', 5, 'every importer\'s tarball carries a real fishball-shared copy (P-1 mechanism B)', null, LATER.relPack)

@@ -1,7 +1,6 @@
 /**
  * Static observations for the R-CORE cases, on top of the R-SHARED layer (../shared/packages.mjs):
- * what each package ships, the names and strings a file holds, and the files that make up the
- * generic settings panel. Black box: manifests, packed listings and source tokens only; no product
+ * what each package ships and the names and strings a file holds. Black box: manifests, packed listings and source tokens only; no product
  * module is loaded.
  */
 import fs from 'node:fs'
@@ -10,7 +9,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 import { Worker } from 'node:worker_threads'
 import { V3, WORKER } from '../../contract/package-boundaries/constants.mjs'
 import { observe, readManifest } from '../../contract/package-boundaries/packages.mjs'
-import { CORE, HOSTING_WORDS, MARK, TOKENS_WORKER, runtimeOf } from './constants.mjs'
+import { CORE, TOKENS_WORKER, runtimeOf } from './constants.mjs'
 
 export const has = (pkg) => readManifest(pkg.dir) !== null
 export const unitOf = async (name) => (await observe()).units.get(name)
@@ -32,24 +31,6 @@ export async function tokensOf(dir, files) {
   const absolute = files.map((f) => path.join(dir, f))
   const results = await readTokens(absolute)
   return new Map(files.map((f, i) => [f, results[absolute[i]]]))
-}
-
-/** Every token of `entry` that names hosting (HOSTING_WORDS), as "kind value". */
-export function hostingTokens(entry) {
-  const hit = (value) => HOSTING_WORDS.some((word) => word.test(value))
-  return [...entry.names.filter(hit).map((n) => 'name ' + n), ...entry.strings.filter(hit).map((s) => 'string ' + JSON.stringify(s))]
-}
-
-/**
- * The files of core's generic settings panel: every shipped core JS file that names the panel's
- * own page marker or registers into the panel slot under the V2 panel's marker. The panel is
- * found by its public marker (MARK.panel), wherever core puts it.
- */
-export async function panelFiles() {
-  const unit = await unitOf(V3.core.name)
-  const js = ownFiles(unit).filter((f) => /\.(?:c|m)?js$/.test(f))
-  const tokens = await tokensOf(fs.realpathSync(V3.core.dir), js)
-  return [...tokens].filter(([, t]) => t.strings.includes(MARK.panel)).map(([f, t]) => ({ file: f, ...t }))
 }
 
 export const corePatchFile = () => path.join(V3.core.dir, CORE.patchFile)
