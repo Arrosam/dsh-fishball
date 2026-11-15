@@ -4,8 +4,8 @@
  * one control fishball-ui draws. It draws nothing itself and mounts nothing (F-WIRE, F-UI).
  *
  * Lines, in order: the link line, then `guards-overridden` (R-FB-09), `plugin-set-incomplete`
- * (R-BND-05) and `contributed-tools` (R-EXT-14). The snapshot always carries the count, 0
- * included; the strip draws the line only when at least one tool is offered (F-STATUS's choice). No line is ever about fishball-ui (Q-G1), Watchdog (1.37) or fishball-hosted-settings
+ * (R-BND-05) and `contributed-tools` (R-EXT-14: "core's status shows how many contributed tools
+ * are offered", so 0 is shown too; absent only without the bridge, when the count is unknown). No line is ever about fishball-ui (Q-G1), Watchdog (1.37) or fishball-hosted-settings
  * (removed, 1.34). The control is `connect` or `cancel` with its label, or null; there is no token
  * field (R-FB-03).
  */
@@ -45,7 +45,7 @@ export function stripView(snapshot, lang = STATUS_DEFAULT_LANG) {
   if (snapshot.set?.status === STATUS_MODEL.set.incomplete) {
     lines.push(entry(STRIP_KIND.set, text.set(snapshot.set.missing.map((m) => text.member(m.name, text.reason[m.reason] ?? m.reason)).join(text.separator))))
   }
-  if (snapshot.contributedTools > 0) lines.push(entry(STRIP_KIND.tools, text.tools(snapshot.contributedTools)))
+  if (Number.isInteger(snapshot.contributedTools)) lines.push(entry(STRIP_KIND.tools, text.tools(snapshot.contributedTools)))
   const control = snapshot.control === null ? null : Object.freeze({ action: snapshot.control, label: text.control[snapshot.control] })
   return Object.freeze({ lines: Object.freeze(lines), control })
 }
