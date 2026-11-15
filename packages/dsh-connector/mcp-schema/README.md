@@ -274,6 +274,9 @@ changes this object in the same change.
   outside a save, the entries involved refuse service. It replaces `ref-duplicate` and
   `value-duplicate`. `ENTRY_STATUS` is `ok` only (`token-too-short`, `token-unconfigured`
   withdrawn), and `REVOCATION_KIND` is `disabled` or `deleted` (`value-changed` withdrawn).
+  `TokenEntry` drops `ref` and `generated` and gains `hosted: boolean` (made by `createHosted`);
+  it never carries the value or its digest. A settings item is `{label, enabled, key}`
+  (`TokenSettingsItem`).
 - **Browser client ids (`AUTHORIZE_EXTENSION`, `DERIVED_AGENT_ID`, K1d):** the approval page asks
   for no id. The agent passes its id as the authorization-request parameter `agent_id`; a client
   that passes none gets `cid-` + the first 16 lowercase base32 characters of SHA-256(client id URL)

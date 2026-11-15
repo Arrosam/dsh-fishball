@@ -305,8 +305,9 @@ export interface Mailbox {
    * must still tell the pair, because the pair may already have acked the event, sends a fresh
    * `retirement` on `false` (C-ROUTE: an ack can land between its own acked check and this call).
    * @throws TypeError **synchronously**, before the call is queued, when `principalKey` is not a
-   *   non-empty string or `eventId` / `reason` would not make a valid `retirement` draft; nothing is
-   *   committed or changed (K1d, decided item 45: a caller bug, as K3 #17).
+   *   non-empty string, `eventId` is not a string, or `reason` is not a RETIREMENT_REASON; nothing
+   *   is committed or changed (K1d, decided item 45: a caller bug, as K3 #17). Any string `eventId`,
+   *   the empty one included, is data: one that names no pending event resolves `{retired: false}`.
    */
   retire(principalKey: PrincipalKey, eventId: string, reason: 'withdrawn' | 'revoked' | 'released' | 'reissued' | 'contributor-withdrawn'): Promise<RetireOutcome>
   /**
