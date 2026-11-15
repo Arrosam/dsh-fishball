@@ -60,7 +60,7 @@ export const PANEL = Object.freeze({
   notFound: 404,
 })
 
-/** Primitives: Button is a host <button>, every other export a generic element; all props kept. Shared with test/v3/core/page.mjs. */
+/** Primitives: Button is a host <button>, every other export a generic element; all props kept. Shared with test/v3/fishball-core/package/page.mjs. */
 export function fakePrimitives(React) {
   const cache = new Map()
   const make = (name) => function Primitive({ children, ...rest }) {

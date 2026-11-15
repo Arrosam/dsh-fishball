@@ -109,3 +109,22 @@ nothing** (no token, id of another pair, stack, path). Every refusal row checks 
 | S1, S2, … | sessions in M |
 | AT | an access token; `AT-pair` pair-only, `AT-full` full |
 | clock | an injected fake clock; times are seconds after the reference instant |
+
+## Where the suites live, and running only what a change needs
+
+The V3 suites are laid out by package and module, `test/v3/<package>/<module>/` (2026-11-16, the
+user: split by the real plugin layout, so a change runs only its own tests). `test/v3/contract/`
+holds the cross-package rows: the K1–K3 freezes, package boundaries and R-EMBED. The V2 release
+files keep their paths, because the V2 selection names them; they are grouped by package instead.
+
+[test/suites.mjs](<../../../test/suites.mjs>) is the one map from source paths to suites.
+
+| Command | Runs |
+| --- | --- |
+| `test/run-affected.sh <base-ref>` | the suites the working tree's changes against `<base-ref>` need |
+| `test/run-affected.sh --suite=dsh-connector.tokens` | one suite; a prefix such as `dsh-connector` runs a whole package |
+| `test/run-affected.sh --all`, `npm run test:v3`, `npm run test:v2` | everything |
+| `npm run test:map` | the map's self-check: every selected test file is owned by exactly one suite |
+
+`--sdk=0.2.1-rc.5|0.2.2-rc.1` runs one SDK's V3 files; `--list` prints the selection. A changed
+path that no suite claims runs everything. Test support or a runner change also runs everything.

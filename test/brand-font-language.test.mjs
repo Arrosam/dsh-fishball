@@ -26,7 +26,7 @@
  * "Deepseek Harness" sticker, no word logo and no count pill on the brand mark. Every row above
  * asserts one of those rules, so the whole table is skipped with that reason. The replacing
  * oracle (no `sidebar.brand.*` slot, in the shipped code and in every UIM-EP-01 partition) is
- * test/v3/u-shell UIM-UC-04 "post"; the fish's attention dots are U-ATTN's (W4).
+ * test/v3/dsh-connector-ui/shell UIM-UC-04 "post"; the fish's attention dots are U-ATTN's (W4).
  */
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
@@ -37,7 +37,7 @@ import { EMBED_UI } from './support/constants.mjs'
 import { parseCss } from './support/messenger-style.mjs'
 
 /** Why every row is skipped in V3 (see the header). */
-const REBASELINE = 'R-UI-11: no brand override in V3, so no brand sticker, word logo or brand-mark count pill exists; replaced by test/v3/u-shell UIM-UC-04 post'
+const REBASELINE = 'R-UI-11: no brand override in V3, so no brand sticker, word logo or brand-mark count pill exists; replaced by test/v3/dsh-connector-ui/shell UIM-UC-04 post'
 /** Every row stays listed, skipped with the reason, so the re-baseline is visible in each run. */
 const it = (name, fn) => nodeIt(name, { skip: REBASELINE }, fn)
 const STACK = 'Helvetica,Arial,sans-serif'

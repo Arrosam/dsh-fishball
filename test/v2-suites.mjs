@@ -89,78 +89,78 @@ export const V2_SUITES = Object.freeze({
     file('packages/dsh-connector/test/instance-ext/mcp-feasibility.test.mjs', DISPOSITION.v3, 'MCP-S1/S2/S3 feasibility'),
     file('test/native-production-preflight.test.mjs', DISPOSITION.ownRunner, 'fails closed outside test/native-production-runner.mjs'),
     // V3 R-SHARED (PLAT-EP-07 static rows, HOST-EP-03 rows 1–2); run with test/run-v3.mjs.
-    file('test/v3/shared/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 fishball-shared package boundaries (R-SHARED)'),
-    file('test/v3/shared/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 fishball-shared package boundaries (R-SHARED)'),
+    file('test/v3/contract/package-boundaries/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 fishball-shared package boundaries (R-SHARED)'),
+    file('test/v3/contract/package-boundaries/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 fishball-shared package boundaries (R-SHARED)'),
     // V3 K2 (freeze of dsh-connector/tools, K-flagged EXT cases); run with test/run-v3.mjs.
-    file('test/v3/k2/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 contribution contract freeze (K2)'),
-    file('test/v3/k2/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 contribution contract freeze (K2)'),
+    file('test/v3/contract/k2-tools/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 contribution contract freeze (K2)'),
+    file('test/v3/contract/k2-tools/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 contribution contract freeze (K2)'),
     // V3 R-CORE (HOST-UC-08 V2-mechanism part, HOST-EP-03 rows 1–4); run with test/run-v3.mjs.
-    file('test/v3/core/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 fishball-core package and settings-section extension point (R-CORE)'),
-    file('test/v3/core/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 fishball-core package and settings-section extension point (R-CORE)'),
+    file('test/v3/fishball-core/package/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 fishball-core package and settings-section extension point (R-CORE)'),
+    file('test/v3/fishball-core/package/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 fishball-core package and settings-section extension point (R-CORE)'),
     // V3 K1 (freeze of dsh-connector/mcp-schema, K-flagged AUTH/NAME/EVT/PLAT/WATCH cases); run with test/run-v3.mjs.
-    file('test/v3/k1/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 MCP schema freeze (K1)'),
-    file('test/v3/k1/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 MCP schema freeze (K1)'),
+    file('test/v3/contract/k1-mcp-schema/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 MCP schema freeze (K1)'),
+    file('test/v3/contract/k1-mcp-schema/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 MCP schema freeze (K1)'),
     // V3 K3 (host-only service contracts, core's settings-section point; HAND/HOST/UIM K flags); run with test/run-v3.mjs.
-    file('test/v3/k3/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 host-only service and core contract freeze (K3)'),
-    file('test/v3/k3/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 host-only service and core contract freeze (K3)'),
+    file('test/v3/contract/k3-host-services/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 host-only service and core contract freeze (K3)'),
+    file('test/v3/contract/k3-host-services/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 host-only service and core contract freeze (K3)'),
     // V3 R-EMBED (PLAT-EP-03 rows 1, 3, 5, HOST-EP-03 row 5); run with test/run-v3.mjs.
-    file('test/v3/embed/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 dsh-connector-ui package (R-EMBED)'),
-    file('test/v3/embed/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 dsh-connector-ui package (R-EMBED)'),
+    file('test/v3/contract/embed/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 dsh-connector-ui package (R-EMBED)'),
+    file('test/v3/contract/embed/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 dsh-connector-ui package (R-EMBED)'),
     // V3 F-LINK (REM-UC-02 Fishball side, REM-EP-01, REM-DT-01); run with test/run-v3.mjs.
-    file('test/v3/f-link/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 fishball-core MCP link (F-LINK)'),
-    file('test/v3/f-link/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 fishball-core MCP link (F-LINK)'),
+    file('test/v3/fishball-core/link/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 fishball-core MCP link (F-LINK)'),
+    file('test/v3/fishball-core/link/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 fishball-core MCP link (F-LINK)'),
     // V3 F-INTERCEPT (EVT-UC-02/03, EVT-EP-03/05, EVT-DT-02/03/04, EVT-ST-02); run with test/run-v3.mjs.
-    file('test/v3/f-intercept/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 fishball-core interception, acceptance ledger and wake (F-INTERCEPT)'),
-    file('test/v3/f-intercept/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 fishball-core interception, acceptance ledger and wake (F-INTERCEPT)'),
+    file('test/v3/fishball-core/events/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 fishball-core interception, acceptance ledger and wake (F-INTERCEPT)'),
+    file('test/v3/fishball-core/events/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 fishball-core interception, acceptance ledger and wake (F-INTERCEPT)'),
     // V3 F-GUARDS (PLAT-UC-04 composition, PLAT-DT-04, UIM-DT-01 rows 9/10b/14, HOST-DT-03 rule 6, HOST-UC-08 A3/E2); run with test/run-v3.mjs.
-    file('test/v3/f-guards/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 fishball-core guard rows, override report and self-reorder (F-GUARDS)'),
-    file('test/v3/f-guards/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 fishball-core guard rows, override report and self-reorder (F-GUARDS)'),
+    file('test/v3/fishball-ui/guards/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 fishball-core guard rows, override report and self-reorder (F-GUARDS)'),
+    file('test/v3/fishball-ui/guards/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 fishball-core guard rows, override report and self-reorder (F-GUARDS)'),
     // V3 C-EXT (EXT-UC-01…03, EXT-EP-01…04, EXT-BVA-01…04, EXT-DT-01/02, EXT-ST-01, K2's C-EXT rows); run with test/run-v3.mjs.
-    file('test/v3/c-ext/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 connector contribution service (C-EXT)'),
-    file('test/v3/c-ext/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 connector contribution service (C-EXT)'),
+    file('test/v3/dsh-connector/contrib/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 connector contribution service (C-EXT)'),
+    file('test/v3/dsh-connector/contrib/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 connector contribution service (C-EXT)'),
     // V3 C-PAIR (AUTH-UC-02/04, AUTH-EP-03/06, AUTH-DT-02, AUTH-BVA-05, AUTH-ST-01 rows 2–4/11/13/14, NAME-UC-01/03, NAME-EP-01…04, NAME-BVA-01/03, NAME-DT-01/02, NAME-ST-01 rows 1–7); run with test/run-v3.mjs.
-    file('test/v3/c-pair/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 connector pair store, pair / set_name and names (C-PAIR)'),
-    file('test/v3/c-pair/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 connector pair store, pair / set_name and names (C-PAIR)'),
+    file('test/v3/dsh-connector/pairs/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 connector pair store, pair / set_name and names (C-PAIR)'),
+    file('test/v3/dsh-connector/pairs/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 connector pair store, pair / set_name and names (C-PAIR)'),
     // V3 C-HTTP (PLAT-UC-01, PLAT-EP-01, PLAT-BVA-02, REM-UC-03, REM-EP-02/03, EVT-EP-04 rows 3–4, AUTH-EP-02 rows 1, 2, 11–14, K1b-UC-01/DT-05/BVA-02/ST-02); run with test/run-v3.mjs.
-    file('test/v3/c-http/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 connector MCP route, request gate and limits (C-HTTP)'),
-    file('test/v3/c-http/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 connector MCP route, request gate and limits (C-HTTP)'),
+    file('test/v3/dsh-connector/mcp-http/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 connector MCP route, request gate and limits (C-HTTP)'),
+    file('test/v3/dsh-connector/mcp-http/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 connector MCP route, request gate and limits (C-HTTP)'),
     // V3 C-TOOLS (PLAT-UC-02, PLAT-EP-02 rows 1–6/4a, PLAT-ST-01, WATCH-UC-03, WATCH-UC-01 E1, WATCH-ST-01 rows 7–8); run with test/run-v3.mjs.
-    file('test/v3/c-tools/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 connector core MCP tools and result envelope (C-TOOLS)'),
-    file('test/v3/c-tools/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 connector core MCP tools and result envelope (C-TOOLS)'),
+    file('test/v3/dsh-connector/mcp-tools/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 connector core MCP tools and result envelope (C-TOOLS)'),
+    file('test/v3/dsh-connector/mcp-tools/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 connector core MCP tools and result envelope (C-TOOLS)'),
     // V3 C-MAILBOX (EVT-UC-01, EVT-EP-02, EVT-EP-04 rows 1/2/5/6, EVT-BVA-01/02, EVT-ST-01); run with test/run-v3.mjs.
-    file('test/v3/c-mailbox/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 connector per-pair mailbox, poll/ack and hints (C-MAILBOX)'),
-    file('test/v3/c-mailbox/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 connector per-pair mailbox, poll/ack and hints (C-MAILBOX)'),
-    file('test/v3/schema-value/index.test.mjs', DISPOSITION.v3, 'V3 connector schema-value validateValue wrapper (C-MAILBOX, shared with C-EXT)'),
+    file('test/v3/dsh-connector/mailbox/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 connector per-pair mailbox, poll/ack and hints (C-MAILBOX)'),
+    file('test/v3/dsh-connector/mailbox/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 connector per-pair mailbox, poll/ack and hints (C-MAILBOX)'),
+    file('test/v3/dsh-connector/schema-value/index.test.mjs', DISPOSITION.v3, 'V3 connector schema-value validateValue wrapper (C-MAILBOX, shared with C-EXT)'),
     // V3 C-TOKENS (AUTH-UC-01, AUTH-EP-04, AUTH-BVA-03, AUTH-DT-05, AUTH-ST-01 rows 1, 5–10, 12); run with test/run-v3.mjs.
-    file('test/v3/c-tokens/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 connector token entries, generation, minimum length, revocation signal and cleanup (C-TOKENS)'),
-    file('test/v3/c-tokens/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 connector token entries, generation, minimum length, revocation signal and cleanup (C-TOKENS)'),
+    file('test/v3/dsh-connector/tokens/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 connector token entries, generation, minimum length, revocation signal and cleanup (C-TOKENS)'),
+    file('test/v3/dsh-connector/tokens/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 connector token entries, generation, minimum length, revocation signal and cleanup (C-TOKENS)'),
     // V3 C-OAUTH (AUTH-UC-03/06/07/08, AUTH-EP-01/02/05/07/09, AUTH-BVA-01/02/06, AUTH-DT-01, AUTH-ST-02, store/limiter rows of AUTH-ST-04/05, K1b-UC-02/DT-06, C-PAIR's token-endpoint rows); run with test/run-v3.mjs.
-    file('test/v3/c-oauth/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 connector authorization server: token store, failure limiter, bearer verifier, token endpoint (C-OAUTH)'),
-    file('test/v3/c-oauth/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 connector authorization server: token store, failure limiter, bearer verifier, token endpoint (C-OAUTH)'),
+    file('test/v3/dsh-connector/oauth/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 connector authorization server: token store, failure limiter, bearer verifier, token endpoint (C-OAUTH)'),
+    file('test/v3/dsh-connector/oauth/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 connector authorization server: token store, failure limiter, bearer verifier, token endpoint (C-OAUTH)'),
     // V3 C-OAUTH-WEB (AUTH-UC-10, AUTH-DT-07/08/09, AUTH-ST-04/05, AUTH-BVA-07/08, AUTH-EP-08/10, K1b-DT-07); run with test/run-v3.mjs.
-    file('test/v3/c-oauth-web/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 connector browser authorization: approval listener, CIMD, code and refresh grants (C-OAUTH-WEB)'),
-    file('test/v3/c-oauth-web/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 connector browser authorization: approval listener, CIMD, code and refresh grants (C-OAUTH-WEB)'),
+    file('test/v3/dsh-connector/oauth-web/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 connector browser authorization: approval listener, CIMD, code and refresh grants (C-OAUTH-WEB)'),
+    file('test/v3/dsh-connector/oauth-web/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 connector browser authorization: approval listener, CIMD, code and refresh grants (C-OAUTH-WEB)'),
     // V3 C-ROUTE (EVT-EP-01, EVT-EP-04 end to end, EVT-DT-01, WATCH-UC-01/02, WATCH-EP-01, WATCH-ST-01 rows 1–6, HAND-EP-01, HAND-DT-01/02, HAND-ST-01, HAND-UC-02 service part, PLAT-UC-03); run with test/run-v3.mjs.
-    file('test/v3/c-route/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 connector managed state, routing, watch = manage and hand-over service (C-ROUTE)'),
-    file('test/v3/c-route/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 connector managed state, routing, watch = manage and hand-over service (C-ROUTE)'),
+    file('test/v3/dsh-connector/routing/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 connector managed state, routing, watch = manage and hand-over service (C-ROUTE)'),
+    file('test/v3/dsh-connector/routing/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 connector managed state, routing, watch = manage and hand-over service (C-ROUTE)'),
     // V3 F-FACADE (EXT-DT-03 E6/E8 Fishball side, EXT-UC-02 A3, EXT-UC-04 A1 core side); run with test/run-v3.mjs.
-    file('test/v3/f-facade/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 fishball-core bridge façade, list_changed refresh, contributed count and X8 attention (F-FACADE)'),
-    file('test/v3/f-facade/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 fishball-core bridge façade, list_changed refresh, contributed count and X8 attention (F-FACADE)'),
+    file('test/v3/fishball-core/bridge/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 fishball-core bridge façade, list_changed refresh, contributed count and X8 attention (F-FACADE)'),
+    file('test/v3/fishball-core/bridge/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 fishball-core bridge façade, list_changed refresh, contributed count and X8 attention (F-FACADE)'),
     // V3 FEAT-PEERS (PLAT-EP-04 rows 1, 2, 4, PLAT-UC-06 main and A1, PLAT-BVA-01, EXT-UC-04 A1; the board export was dropped by the user, 2026-11-15); run with test/run-v3.mjs.
-    file('test/v3/feat-peers/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 board and fold-notify without core, board retention and fold-notify attention fallback (FEAT-PEERS)'),
-    file('test/v3/feat-peers/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 board and fold-notify without core, board retention and fold-notify attention fallback (FEAT-PEERS)'),
+    file('test/v3/fishball-board/peers/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 board and fold-notify without core, board retention and fold-notify attention fallback (FEAT-PEERS)'),
+    file('test/v3/fishball-board/peers/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 board and fold-notify without core, board retention and fold-notify attention fallback (FEAT-PEERS)'),
     // V3 F-PAIR (AUTH-UC-05 decisions, AUTH-DT-06, AUTH-ST-03 non-warning-UI rows, NAME-UC-02 core part, NAME-DT-03 core reaction, token-revoked: AUTH-ST-03 row 10, HOST-UC-04 main); run with test/run-v3.mjs.
-    file('test/v3/f-pair/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 fishball-core identity, pairing decisions and token-revoked (F-PAIR)'),
-    file('test/v3/f-pair/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 fishball-core identity, pairing decisions and token-revoked (F-PAIR)'),
+    file('test/v3/fishball-core/identity/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 fishball-core identity, pairing decisions and token-revoked (F-PAIR)'),
+    file('test/v3/fishball-core/identity/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 fishball-core identity, pairing decisions and token-revoked (F-PAIR)'),
     // V3 U-SHELL (UIM-UC-01 integration part, UIM-UC-04 U-SHELL's parts, UIM-EP-01/02, UIM-DT-01 rows 3, 7, 7b, R-EMBED's U-SHELL row); run with test/run-v3.mjs.
-    file('test/v3/u-shell/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 embed-UI host half and client shell (U-SHELL)'),
-    file('test/v3/u-shell/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 embed-UI host half and client shell (U-SHELL)'),
+    file('test/v3/dsh-connector-ui/shell/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 embed-UI host half and client shell (U-SHELL)'),
+    file('test/v3/dsh-connector-ui/shell/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 embed-UI host half and client shell (U-SHELL)'),
     // V3 I-PLACE (PLAT-DT-01, HOST-ST-01 rows 1–3, HOST-UC-06 post, HOST-UC-08 main 1/A1–A3, HOST-EP-03 rows 6–7, HOST-DT-03, PLAT-DT-04 rule 1 hosted, LITE-UC-03/LITE-EP-13/SET-EP-12 hosted, K3 unmount); run with test/run-v3.mjs.
-    file('test/v3/i-place/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 instance placement of the set and fishball-hosted-settings, launch overlay and hosted-child guards (I-PLACE)'),
-    file('test/v3/i-place/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 instance placement of the set and fishball-hosted-settings, launch overlay and hosted-child guards (I-PLACE)'),
+    file('test/v3/dsh-instance/placement/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 instance placement of the set and fishball-hosted-settings, launch overlay and hosted-child guards (I-PLACE)'),
+    file('test/v3/dsh-instance/placement/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 instance placement of the set and fishball-hosted-settings, launch overlay and hosted-child guards (I-PLACE)'),
     // V3 WD-ROUTE (WD-UC-02, WD-UC-04, WD-EP-01 rows 1–11, WD-EP-03, WD-DT-02, WD-ST-01, preset-watchdog / WD-EP-04 row 5); run with test/run-v3.mjs.
-    file('test/v3/wd-route/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 Watchdog as an interceptor, failure = off and its agent preset (WD-ROUTE)'),
-    file('test/v3/wd-route/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 Watchdog as an interceptor, failure = off and its agent preset (WD-ROUTE)'),
+    file('test/v3/fishball-watchdog/route/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 Watchdog as an interceptor, failure = off and its agent preset (WD-ROUTE)'),
+    file('test/v3/fishball-watchdog/route/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 Watchdog as an interceptor, failure = off and its agent preset (WD-ROUTE)'),
   ]),
   excludedCases: Object.freeze([
     // Fishball decision 2: XS-DT-10 states the V2 behaviour (no Watchdog bundle → gate off).
