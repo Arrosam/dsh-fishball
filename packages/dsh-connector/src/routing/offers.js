@@ -102,10 +102,12 @@ export function createOfferLedger({ mailbox, produce, onRetireFailed }) {
      * Retires every live offer of `sessionId` held by `principalKey` (K1c-2). Every offer is tried,
      * and each failure goes to `onRetireFailed`: it never rejects, because managed state's `leave`
      * must not (the management change stands either way).
+     * @param options.freshRetirements - see `retireOne`; absent (release, Take back) means `true`
      * @returns the offers it retired, `{offerId, sessionId, type}` each, failed ones included: they
-     *   are no longer live either way, so C-REVOKE still hands each to the user (R-ROUTE-06).
+     *   are no longer live either way, so C-REVOKE still hands each to the user (R-ROUTE-06). A
+     *   failed retire leaves its event as it was: on a disable it is pollable again on re-enable.
      */
-    async retireSession(sessionId, principalKey, reason, freshRetirements) {
+    async retireSession(sessionId, principalKey, reason, { freshRetirements } = {}) {
       const offers = [...live].filter(([, record]) => record.sessionId === sessionId && record.principalKey === principalKey && OFFER_TYPES.includes(record.type))
       for (const [offerId, record] of offers) {
         try { await retireOne(offerId, record, reason, freshRetirements) } catch (error) { onRetireFailed(error) }

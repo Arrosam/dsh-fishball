@@ -10,8 +10,8 @@
  *   miss an offer committed while it runs.
  * - Visible on resolve: the in-memory map changes right after the write, inside the same step.
  * - One way in (`assign`: `session_start`, Hand over) and one way out (`end`: `session_release`,
- *   Take back, revocation). Leaving always runs `leave(sessionId, manager, reason)`, which retires
- *   the session's live offers (K1c-2), inside the same step.
+ *   Take back, revocation). Leaving always runs `leave(sessionId, manager, reason, leaveOptions)`,
+ *   which retires the session's live offers (K1c-2), inside the same step.
  * - A follow-up (`then`: Hand over's `handover`, Take back's `takeback`) runs once the change is
  *   stored. The change is the authority: a follow-up that fails is logged and the change stands,
  *   as V2's managed notes did ("a refused note is logged, the change itself stands"). Its draft is
@@ -37,9 +37,10 @@ const assertPrincipal = (principalKey) => { if (!isNonEmptyString(principalKey))
  * @param {object} deps
  * @param deps.table - the routing domain's `managed` table (store.js)
  * @param deps.logger - `{warn}`; a throwing change listener and a failed follow-up are logged there
- * @param {(sessionId: string, manager: string, reason: string, freshRetirements?: boolean) => Promise<unknown>} deps.leave -
+ * @param {(sessionId: string, manager: string, reason: string, leaveOptions?: object) => Promise<unknown>} deps.leave -
  *   after a session stopped being managed (its live offers are retired with `reason`); it must not
- *   reject. What it resolves to is handed back by `endAllOf` (the offers revocation retired).
+ *   reject. `leaveOptions` is `endAllOf`'s, passed through unread (it is the offer ledger's to
+ *   judge); what `leave` resolves to is handed back as `left`.
  * @returns `{state, assign, end, endAllOf, withState, drain}`: `state` is the K1c `ManagedState`;
  *   the rest is for the hand-over service, revocation and the offer path, never handed to C-TOOLS.
  */
@@ -83,7 +84,7 @@ export function createManagedState({ table, logger, leave }) {
    * One end, inside a serial step (see `end`).
    * @returns `{ok: true, manager, left}`, where `left` is what `leave` resolved to, or a refusal
    */
-  async function endNow(sessionId, { by, reason, then, freshRetirements }) {
+  async function endNow(sessionId, { by, reason, then, leaveOptions }) {
     const manager = managers.get(sessionId)
     if (manager === undefined) return NOT_MANAGED
     if (by !== undefined && by !== manager) return OTHER_MANAGER
@@ -96,7 +97,7 @@ export function createManagedState({ table, logger, leave }) {
     try {
       await followUp(then, manager)
     } finally {
-      left = await leave(sessionId, manager, reason, freshRetirements)
+      left = await leave(sessionId, manager, reason, leaveOptions)
     }
     return Object.freeze({ ok: true, manager, left })
   }
@@ -108,7 +109,8 @@ export function createManagedState({ table, logger, leave }) {
    * @param options.reason - RETIREMENT_REASON for its live offers.
    * @param options.then - `(manager) => Promise`, the follow-up, run once the change is stored and
    *   before the offers are retired (Take back's `takeback`).
-   * @returns `{ok: true, manager}` or a K1c refusal; a refusal changes nothing.
+   * @returns `{ok: true, manager, left}` (`left`: what `leave` resolved to) or a K1c refusal; a
+   *   refusal changes nothing.
    */
   function end(sessionId, options) {
     assertSession(sessionId)
@@ -119,16 +121,18 @@ export function createManagedState({ table, logger, leave }) {
   /**
    * Ends every session `principalKey` manages (its entry was revoked; R-ROUTE-06), in one step:
    * the list is read inside the chain, so a `manage` that was queued before it is ended too.
-   * @param freshRetirements - handed to `leave` (routing's offer ledger: off for a delete)
+   * @param leaveOptions - handed to `leave` unread (routing: `{freshRetirements}`, off for a delete)
    * @returns once every `leave` has run, `[{sessionId, left}]` in the order they were ended
+   * @throws (rejects) the managed table's storage error: the sessions before it are ended and their
+   *   offers retired, the rest stay managed (as a failed `end`)
    */
-  function endAllOf(principalKey, reason, freshRetirements) {
+  function endAllOf(principalKey, reason, leaveOptions) {
     assertPrincipal(principalKey)
     return serial(async () => {
       const sessions = [...managers].filter(([, manager]) => manager === principalKey).map(([sessionId]) => sessionId)
       const ended = []
       for (const sessionId of sessions) {
-        const { left } = await endNow(sessionId, { by: principalKey, reason, freshRetirements })
+        const { left } = await endNow(sessionId, { by: principalKey, reason, leaveOptions })
         ended.push(Object.freeze({ sessionId, left }))
       }
       return Object.freeze(ended)
@@ -154,7 +158,7 @@ export function createManagedState({ table, logger, leave }) {
     /**
      * Runs `step` on the managed chain: no change can land between its read of the manager and its end.
      * A step must never await another managed-chain call (`assign`, `end`, `endAllOf`, or routing's
-     * `settle`, `withdraw`, `askDropped`): it would wait on itself.
+     * `settle`, `withdraw`, `askDropped`, `endPrincipal`): it would wait on itself.
      */
     withState: (step) => serial(step),
     /** Resolves once every change queued so far has settled (`close`). */

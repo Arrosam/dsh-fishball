@@ -47,7 +47,7 @@ export { ROUTE_FALLBACK } from './constants.js'
 
 const UNAVAILABLE = Object.freeze({ ok: false, code: REFUSAL.unavailable })
 const OK = Object.freeze({ ok: true })
-/** `endPrincipal`'s answer for an entry with no known principal: nothing was managed or live. */
+/** `endPrincipal`'s answer for an entry with no current or last-seen pair: nothing was managed or live. */
 const NOBODY_ENDED = Object.freeze({ principalKey: undefined, sessions: Object.freeze([]), offers: Object.freeze([]) })
 
 /**
@@ -134,7 +134,10 @@ export async function openRouting(ctx, storageDomain, { mailbox, pairs, tokens, 
   /**
    * The pair each entry was last seen bound to, so a revocation still finds the manager after the
    * pair itself has been removed in the same sync (a delete frees the pair, R-ID-13). An entry is
-   * forgotten once its revocation is handled (`endPrincipal`) and the registry no longer lists it.
+   * forgotten once `endPrincipal` has ended its sessions and the registry no longer lists it. A
+   * `pairs.onChange` between that and the pair's removal (C-REVOKE removes it after the drop)
+   * remembers it again; it then stays as one stale record, tolerated because a deleted entry's key
+   * is never listed again, so nothing reads it.
    */
   const lastPair = new Map()
   const remember = () => { for (const pair of pairs.list()) lastPair.set(pair.entryKey, pair.principalKey) }
@@ -303,21 +306,32 @@ export async function openRouting(ctx, storageDomain, { mailbox, pairs, tokens, 
      * @returns once every retirement has run (a failed one is logged and still listed):
      *   `{principalKey, sessions, offers}`, the sessions it ended and their retired offers
      *   (`{offerId, sessionId, type}`), so C-REVOKE writes one note per session and hands each offer
-     *   to the user; `{principalKey: undefined, sessions: [], offers: []}` for an entry never paired
+     *   to the user;
+     *   `{principalKey: undefined, sessions: [], offers: []}` when it knows no current or last-seen pair
      * @throws TypeError (synchronously) for a bad entry key or options (a caller bug)
+     * @throws (rejects) the managed table's storage error (`endAllOf`): the sessions before it are
+     *   ended, the rest stay managed, and the entry's last pair is kept, so a repeat call finds them.
+     *   C-REVOKE must then not drop the mailbox (the drop follows the retirements only).
      */
     endPrincipal(entryKey, options) {
       if (!isNonEmptyString(entryKey)) throw new TypeError(MISUSE.entryKey)
       if (typeof options?.freshRetirements !== 'boolean') throw new TypeError(MISUSE.freshRetirements)
+      // The entry's state changed (K3 onChange: entry state), and a revocation from a credential-store
+      // sync (TokenRegistry.refresh) never passes `settings.onChange`, so this is its only signal.
       changed()
       const principalKey = pairs.pairOf(entryKey)?.principalKey ?? lastPair.get(entryKey)
-      if (tokens.get(entryKey) === undefined) lastPair.delete(entryKey)
+      // Forgotten only once handled, so a call that rejects can be repeated (see lastPair).
+      const forget = () => { if (tokens.get(entryKey) === undefined) lastPair.delete(entryKey) }
       if (principalKey === undefined) return Promise.resolve(NOBODY_ENDED)
-      return managed.endAllOf(principalKey, RETIREMENT_REASON.revoked, options.freshRetirements).then((ended) => Object.freeze({
-        principalKey,
-        sessions: Object.freeze(ended.map(({ sessionId }) => sessionId)),
-        offers: Object.freeze(ended.flatMap(({ left }) => left)),
-      }))
+      const leaveOptions = Object.freeze({ freshRetirements: options.freshRetirements })
+      return managed.endAllOf(principalKey, RETIREMENT_REASON.revoked, leaveOptions).then((ended) => {
+        forget()
+        return Object.freeze({
+          principalKey,
+          sessions: Object.freeze(ended.map(({ sessionId }) => sessionId)),
+          offers: Object.freeze(ended.flatMap(({ left }) => left)),
+        })
+      })
     },
 
     async close() {
