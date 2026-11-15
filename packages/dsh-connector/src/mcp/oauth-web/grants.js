@@ -131,8 +131,8 @@ class AuthorizationCodeGrant extends BrowserGrant {
 
 /**
  * `refresh_token` (R-OA-16, AUTH-ST-05, AUTH-BVA-08). No chain ends by age (R-OA-23, requirements
- * 1.32 R14): only reuse, a replayed code or a disable or delete of the entry ends one. Rotation: each grant spends the presented
- * token and returns a new pair. A spent token presented again strictly within
+ * 1.32 R14): only reuse, a replayed code or a disable or delete of the entry ends one. Rotation:
+ * each grant spends the presented token and returns a new pair. A spent token presented again strictly within
  * LIFETIME.refreshGraceMs of its spending, by the same `client_id` for the same `resource`, gets the
  * identical successor response (Q-S7B-1 B); any other repeat is reuse and revokes the chain. The
  * memory is held for the window only, so a restart forgets it (row 8a: reuse). Concurrent
@@ -161,7 +161,7 @@ class RefreshTokenGrant extends BrowserGrant {
     // AUTH-ST-05 rows 3c, 4, 5: a wrong client or resource rotates nothing.
     if (form[TOKEN_FIELD.clientId] !== record.clientId) return INVALID_GRANT
     if (form[TOKEN_FIELD.resource] !== record.audience) return INVALID_TARGET
-    // R-OA-16 (3), AUTH-ST-05 rows 6, 8b: nothing replays a disable, delete or value change made
+    // R-OA-16 (3), AUTH-ST-05 rows 6, 8b: nothing replays a disable or delete made
     // while the connector was down and C-OAUTH runs no startup sweep (Fishball 2026-11-14), so the
     // entry's current generation (TokenRegistry.get) is compared with the record's on every refresh.
     const binding = this.stands(record)

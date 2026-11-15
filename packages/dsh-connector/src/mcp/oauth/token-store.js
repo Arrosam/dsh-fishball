@@ -68,10 +68,9 @@ const chainKeyOf = (chainId) => digestOf(chainId)
 const isExpiredAt = (lifetimeMs) => (record, now) => now >= record.issuedAt + lifetimeMs
 
 /**
- * The store over the two tables of the `dsh_connector_oauth` domain.
+ * The store over the two tables of the `dsh_connector_oauth` domain. It logs nothing: each failure
+ * rejects to its caller.
  * @param tables - `{refresh, chains}`, DSH storage-domain KvTables (`get`, `entries`, `put`, `delete`)
- * The store logs nothing: each failure rejects to its caller (the pruning that once logged went with
- * the chain cap, R-OA-23).
  * @returns the K1 `OAuthTokenStore`, plus `forgetEntry(entryKey)` (an entry was deleted: drop
  *   every record of it, so nothing of a key that may never come back is kept).
  */

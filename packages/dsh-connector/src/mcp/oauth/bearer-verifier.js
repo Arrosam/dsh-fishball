@@ -24,7 +24,7 @@ const INVALID = Object.freeze({ error: OAUTH_ERROR.invalidToken })
 
 /**
  * Whether the entry still stands behind a token issued under `generation`: present, enabled,
- * usable, and not disabled, deleted or given a new value since (R-OA-06). The generation check
+ * usable, and not disabled or deleted since (R-OA-06). The generation check
  * also covers a revocation that happened while the connector was down.
  */
 const entryStands = (entry, generation) => entry !== undefined && entry.enabled && entry.status === ENTRY_STATUS.ok && entry.generation === generation

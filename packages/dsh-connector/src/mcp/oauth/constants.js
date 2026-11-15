@@ -98,8 +98,8 @@ export const SWEEP = Object.freeze({ floor: 64, growthFactor: 2 })
 /**
  * The durable half of the token store (R-OA-16 (5), Q-S7B-3 A): refresh-token digests and the
  * chains they belong to. Version 1 holds no chain start (K1d-5 withdrew `chainStartedAt` with the
- * chain cap; no V3 store has shipped, so nothing migrates, decided item 44). One DSH storage domain of the connector, apart from the pair registry and
- * the mailbox, so it has its own write chain. Per-record layout, because every refresh writes one
+ * chain cap; no V3 store has shipped, so nothing migrates, decided item 44). One DSH storage domain
+ * of the connector, apart from the pair registry and the mailbox, so it has its own write chain. Per-record layout, because every refresh writes one
  * record. Keys must be path-safe (`[A-Za-z0-9_-]+`): a refresh record's key is the digest of the
  * key it was put under, a chain's key is the digest of its chain id (chain ids are C-OAUTH-WEB's and need not be
  * path-safe). Authoritative data, so a record that fails its schema fails the open: losing a
