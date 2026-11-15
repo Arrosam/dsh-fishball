@@ -12,6 +12,7 @@ import { GUARDS, UI_SEAM } from '../../contracts/constants.js'
 import { CONNECT_ROUTE } from './constants.js'
 
 export { CONNECT_ROUTE, SETTINGS } from './constants.js'
+export { effectiveTarget, hasInstanceTarget } from './target.js'
 
 const json = (status, body) => new Response(JSON.stringify(body), { status, headers: CONNECT_ROUTE.headers })
 const pick = (source, keys) => Object.fromEntries(keys.map((key) => [key, source[key]]))

@@ -1,6 +1,7 @@
 /**
- * The Connect route (requirement 5) with a fake DSH `ctx`: the one seam between these cases and
- * `packages/core/src/settings/index.js`'s `registerSettingsRoutes(ctx)`. The fake records the
+ * The Node seams between these cases and `packages/core/src/settings/index.js`: the pure target
+ * rule (`effectiveTarget`, `hasInstanceTarget`), and the Connect route (requirement 5),
+ * `registerSettingsRoutes(ctx)`, with a fake DSH `ctx`. The fake records the
  * registration (`ctx.connection.fetch.register`) and answers `ctx.get(name)` from a map the test may
  * change between requests, so "looked up per request, never cached" is observable.
  */
@@ -22,6 +23,16 @@ export function instanceWith({ apiVersion = ROUTE.apiVersion, status, begin } = 
     },
   }
   return { service, calls }
+}
+
+/** The pure target-precedence rule `{effectiveTarget, hasInstanceTarget}` of the same module. */
+export async function targetRule() {
+  const mod = await import(pathToFileURL(SUBJECT.route).href)
+  const rule = { effective: mod[SUBJECT.targetExports.effective], hasInstance: mod[SUBJECT.targetExports.hasInstance] }
+  for (const [key, name] of Object.entries(SUBJECT.targetExports)) {
+    if (typeof rule[key] !== 'function') throw new Error(`${SUBJECT.route} exports no ${name}`)
+  }
+  return rule
 }
 
 /** Register the route once with a fake ctx. Resolves to {routes, services, gets, request(method, body?)}. */

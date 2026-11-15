@@ -5,9 +5,9 @@
  * levels and the technique index are in README.md beside this file; every value comes from
  * constants.mjs (requirements and frozen contracts only).
  *
- * Techniques, Use Cases first: Use Case (SET3-UC-01…10, each test naming its flow step), then EP
- * (SET3-EP-01…07), BVA (SET3-BVA-01…03), Decision Table (SET3-DT-01…05, one test per rule) and State
- * Transition (SET3-ST-01…04, one test per transition). Until F-SETTINGS lands these fail; that is
+ * Techniques, Use Cases first: Use Case (SET3-UC-01…11, each test naming its flow step), then EP
+ * (SET3-EP-01…08), BVA (SET3-BVA-01…04), Decision Table (SET3-DT-01…06, one test per rule) and State
+ * Transition (SET3-ST-01…05, one test per transition). Until F-SETTINGS lands these fail; that is
  * expected (the cases come first).
  */
 import assert from 'node:assert/strict'
@@ -18,7 +18,7 @@ import {
 } from './constants.mjs'
 import { createWorld, loadChunkAlone, loadPage, settle } from './page.mjs'
 import { STAND_IN } from './primitives.mjs'
-import { instanceWith, routeWorld } from './route.mjs'
+import { instanceWith, routeWorld, targetRule } from './route.mjs'
 
 const show = (v) => JSON.stringify(v)
 const LATER = Object.freeze({ e2e: 'E2E-UI (W6 browser flows on a real DSH: the Plugins page, the native Settings dialog)' })
@@ -622,6 +622,179 @@ export function registerSettingsCases(sdk) {
     assert.ok(await until(async () => { await settle(); return page.byAttr(MARK.instanceTarget).length === 1 }), 'no line once served')
     page.world.unserve(INSTANCE_TARGET.row)
     assert.ok(await until(async () => { await settle(); return page.byAttr(MARK.instanceTarget).length === 0 }), 'the line stayed')
+  })
+
+  // ============================================================== SET3-UC-11: target precedence (Fishball's decision, 2026-11-16)
+  // The instance's value wins when it is a string with a non-white-space character; otherwise the
+  // user's target.url applies. Either value is returned unchanged (no trimming, no URL check).
+  const NO_VALUE = Symbol('absent')
+  const argument = (instance, user) => ({ ...(instance === NO_VALUE ? {} : { instance }), ...(user === NO_VALUE ? {} : { user }) })
+  const INSTANCE_VALUES = Object.freeze([
+    ['absent', NO_VALUE, false],
+    ['empty', '', false],
+    ['spaces', '   ', false],
+    ['number', 443, false],
+    ['null', null, false],
+    ['object', { url: FIXTURE.instanceUrl }, false],
+    ['URL', FIXTURE.instanceUrl, true],
+    ['padded URL', '  ' + FIXTURE.instanceUrl + '  ', true],
+  ])
+  const USER_VALUES = Object.freeze([['absent', NO_VALUE], ['blank', '   '], ['URL', FIXTURE.storedUrl]])
+  const valueOf = (v) => (v === NO_VALUE ? undefined : v)
+
+  caseTest(sdk, 'SET3-UC-11', 'main 1', 'the instance supplies a URL → effectiveTarget returns it, not the user\'s, and hasInstanceTarget is true', async () => {
+    const rule = await targetRule()
+    assert.equal(rule.effective({ instance: FIXTURE.instanceUrl, user: FIXTURE.storedUrl }), FIXTURE.instanceUrl)
+    assert.equal(rule.hasInstance(FIXTURE.instanceUrl), true)
+  })
+  caseTest(sdk, 'SET3-UC-11', 'A1', 'no instance value (standalone) → the user\'s target.url, unchanged; hasInstanceTarget false', async () => {
+    const rule = await targetRule()
+    assert.equal(rule.effective({ user: FIXTURE.storedUrl }), FIXTURE.storedUrl)
+    assert.equal(rule.hasInstance(undefined), false)
+  })
+  caseTest(sdk, 'SET3-UC-11', 'post', 'the rule is pure: the argument is left as it was, and the same call answers the same', async () => {
+    const rule = await targetRule()
+    for (const [instance, user] of [[FIXTURE.instanceUrl, FIXTURE.storedUrl], [{ url: FIXTURE.instanceUrl }, FIXTURE.storedUrl], ['   ', '  ' + FIXTURE.storedUrl]]) {
+      const arg = { instance, user }
+      const copy = structuredClone(arg)
+      const first = rule.effective(arg)
+      assert.deepEqual(arg, copy, 'the argument changed: ' + show(copy))
+      assert.equal(rule.effective(arg), first, show(copy))
+      rule.hasInstance(instance)
+      assert.deepEqual(arg, copy, 'hasInstanceTarget changed its argument: ' + show(copy))
+    }
+  })
+
+  // ---- SET3-DT-06: effectiveTarget / hasInstanceTarget (instance value × user target.url), one test per rule
+  let dtRule = 0
+  for (const [instanceRow, instance, wins] of INSTANCE_VALUES) {
+    for (const [userRow, user] of USER_VALUES) {
+      dtRule += 1
+      const expected = wins ? valueOf(instance) : valueOf(user)
+      caseTest(sdk, 'SET3-DT-06', dtRule, `instance ${instanceRow} × user ${userRow} → effectiveTarget ${show(expected) ?? 'undefined'} (${wins ? 'instance' : 'user'}), hasInstanceTarget ${wins}`, async () => {
+        const rule = await targetRule()
+        assert.equal(rule.effective(argument(instance, user)), expected)
+        assert.equal(rule.hasInstance(valueOf(instance)), wins)
+      })
+    }
+  }
+  // ---- SET3-BVA-04: the white-space boundary of the instance value (the user's URL is there to lose to)
+  for (const [row, instance, wins] of [
+    ['1 one space', ' ', false],
+    ['2 tab and newline', '\t\n ', false],
+    ['3 one character', 'x', true],
+    ['4 one padded character', ' x ', true],
+  ]) {
+    caseTest(sdk, 'SET3-BVA-04', row, `instance ${show(instance)} → ${wins ? 'the instance value, unchanged' : "the user's"}`, async () => {
+      const rule = await targetRule()
+      assert.equal(rule.effective({ instance, user: FIXTURE.storedUrl }), wins ? instance : FIXTURE.storedUrl)
+      assert.equal(rule.hasInstance(instance), wins)
+    })
+  }
+
+  // ---- the page: the instance line and the target.url hint (UC-11 main 2, EP-08, ST-05)
+  // The field's own text, without the instance line should it sit inside the wrapper: the hint alone
+  // must differ, not merely the presence of the line.
+  const fieldText = (node) => (typeof node === 'string' ? node : node.props?.[MARK.instanceTarget] !== undefined ? '' : (node.children ?? []).map(fieldText).join(''))
+  const urlHint = (page) => { const { wrapper } = page.field(FIELDS.url.name); return wrapper ? fieldText(wrapper) : undefined }
+  const lineText = (page) => { const [line] = page.byAttr(MARK.instanceTarget); return line ? textOfNode(line) : undefined }
+  const served = (value) => ({ [INSTANCE_TARGET.field]: value })
+  /**
+   * The target.url wrapper text of a standalone page in `lang` with the same stored `core` (the
+   * ordinary hint). Same stored value on both sides, so only the hint can make the texts differ.
+   */
+  const ordinaryHint = async (t, lang, core = STORED) => urlHint(await pageOf(t, sdk, { lang, core }))
+  /** Hosted: one line showing `url` with words of its own; the field still editable; its hint not the ordinary one. */
+  const assertHosted = (page, url, ordinary, label) => {
+    assert.equal(page.byAttr(MARK.instanceTarget).length, 1, 'no instance line: ' + label)
+    const text = lineText(page)
+    assert.ok(text.includes(url), `the line does not show ${url}: ${show(text)} (${label})`)
+    assert.notEqual(text.split(url).join('').trim(), '', 'the line shows only the URL, not that it is in use: ' + label)
+    const { input } = page.field(FIELDS.url.name)
+    assert.ok(input, 'no target.url input: ' + label)
+    assert.ok(!input.props.disabled && !input.props.readOnly, 'target.url is not editable: ' + label)
+    assert.notEqual(urlHint(page), ordinary, 'the target.url hint is the ordinary one while the instance supplies a target: ' + label)
+  }
+  const assertStandalone = (page, ordinary, label) => {
+    assert.equal(page.byAttr(MARK.instanceTarget).length, 0, 'an instance line: ' + label)
+    assert.equal(urlHint(page), ordinary, 'the target.url hint is not the ordinary one: ' + label)
+  }
+
+  caseTest(sdk, 'SET3-UC-11', 'main 2', 'hosted (en, zh): the line shows the instance URL and says it is in use; target.url stays editable with a "not used" hint', async (t) => {
+    const texts = {}
+    for (const lang of DSH.locales) {
+      const ordinary = await ordinaryHint(t, lang)
+      assert.ok((ordinary ?? '').trim() !== '', 'no target.url field text in ' + lang)
+      const page = await pageOf(t, sdk, { lang, instanceTarget: served(FIXTURE.instanceUrl) })
+      assertHosted(page, FIXTURE.instanceUrl, ordinary, lang)
+      texts[lang] = { line: lineText(page), hint: urlHint(page) }
+    }
+    assert.notEqual(texts.zh.line, texts.en.line, 'the line reads the same in en and zh')
+    assert.notEqual(texts.zh.hint, texts.en.hint, 'the hint reads the same in en and zh')
+  })
+  caseTest(sdk, 'SET3-UC-11', 'main 2', 'hosted: the user\'s target.url can still be edited and saved (it is kept, only not used)', async (t) => {
+    const page = await pageOf(t, sdk, { instanceTarget: served(FIXTURE.instanceUrl) })
+    await page.edit(FIELDS.url.name, FIXTURE.targetUrl)
+    await page.save()
+    assert.deepEqual(page.world.mutations.map((m) => [m.ns, m.ops]), [[CORE.namespace, [set(FIELDS.url, FIXTURE.targetUrl)]]])
+    assert.equal(page.world.namespaces.get(INSTANCE_TARGET.row).value[INSTANCE_TARGET.field], FIXTURE.instanceUrl, 'the instance value was written')
+  })
+  caseTest(sdk, 'SET3-UC-11', 'main 2', 'hosted: the "not used" hint does not depend on the user\'s value (stored or never stored)', async (t) => {
+    for (const core of [STORED, {}]) {
+      const ordinary = await ordinaryHint(t, 'en', core)
+      const page = await pageOf(t, sdk, { core, instanceTarget: served(FIXTURE.instanceUrl) })
+      assertHosted(page, FIXTURE.instanceUrl, ordinary, 'user ' + show(core.target ?? null))
+    }
+  })
+  // ---- SET3-EP-08: every instance partition of DT-06, on the page (en and zh)
+  for (const [row, instance, wins] of INSTANCE_VALUES) {
+    caseTest(sdk, 'SET3-EP-08', row, `instance ${row} → ${wins ? 'the line (in use) and the "not used" hint' : 'no line, the ordinary hint'} (en, zh)`, async (t) => {
+      for (const lang of DSH.locales) {
+        const ordinary = await ordinaryHint(t, lang)
+        // "absent" is the instance namespace not served at all.
+        const page = await pageOf(t, sdk, { lang, instanceTarget: instance === NO_VALUE ? null : served(instance) })
+        if (wins) assertHosted(page, FIXTURE.instanceUrl, ordinary, lang)
+        else assertStandalone(page, ordinary, lang)
+      }
+    })
+  }
+  caseTest(sdk, 'SET3-EP-08', 'field missing', 'the instance namespace served without targetUrl → no line, the ordinary hint', async (t) => {
+    const ordinary = await ordinaryHint(t, 'en')
+    assertStandalone(await pageOf(t, sdk, { instanceTarget: {} }), ordinary, 'served {}')
+  })
+  // ---- SET3-ST-05: the line and the hint follow the instance live (not served → served → withdrawn → served; value changes)
+  const waitFor = (page, check) => until(async () => { await settle(); try { check(); return true } catch { return false } }).then((ok) => { if (!ok) check() })
+  for (const lang of DSH.locales) {
+    caseTest(sdk, 'SET3-ST-05', '1-3 ' + lang, `(${lang}) not served → served: line and "not used" hint; → withdrawn: both back to standalone; → served again: hosted again`, async (t) => {
+      const page = await pageOf(t, sdk, { lang })
+      const ordinary = urlHint(page)
+      assertStandalone(page, ordinary, 'start')
+      page.world.serve(INSTANCE_TARGET.row, served(FIXTURE.instanceUrl))
+      await waitFor(page, () => assertHosted(page, FIXTURE.instanceUrl, ordinary, 'served'))
+      const hostedHint = urlHint(page)
+      page.world.unserve(INSTANCE_TARGET.row)
+      await waitFor(page, () => assertStandalone(page, ordinary, 'withdrawn'))
+      page.world.serve(INSTANCE_TARGET.row, served(FIXTURE.instanceUrl))
+      await waitFor(page, () => assertHosted(page, FIXTURE.instanceUrl, ordinary, 'served again'))
+      assert.equal(urlHint(page), hostedHint, 'served again shows another hint than the first time')
+    })
+  }
+  caseTest(sdk, 'SET3-ST-05', '4', 'served URL A → the value changes to URL B: the line shows B, not A; the hint stays "not used"', async (t) => {
+    const ordinary = await ordinaryHint(t, 'en')
+    const page = await pageOf(t, sdk, { instanceTarget: served(FIXTURE.instanceUrl) })
+    page.world.serve(INSTANCE_TARGET.row, served(FIXTURE.otherInstanceUrl))
+    await waitFor(page, () => {
+      assertHosted(page, FIXTURE.otherInstanceUrl, ordinary, 'changed')
+      assert.equal(lineText(page).includes(FIXTURE.instanceUrl), false, 'the line still shows the old URL')
+    })
+  })
+  caseTest(sdk, 'SET3-ST-05', '5', 'served URL → the value becomes blank (still served): the line goes and the hint is the ordinary one; → a URL again: hosted', async (t) => {
+    const ordinary = await ordinaryHint(t, 'en')
+    const page = await pageOf(t, sdk, { instanceTarget: served(FIXTURE.instanceUrl) })
+    page.world.serve(INSTANCE_TARGET.row, served('   '))
+    await waitFor(page, () => assertStandalone(page, ordinary, 'blank'))
+    page.world.serve(INSTANCE_TARGET.row, served(FIXTURE.instanceUrl))
+    await waitFor(page, () => assertHosted(page, FIXTURE.instanceUrl, ordinary, 'URL again'))
   })
 
   // ============================================================== SET3-UC-07: the two Fishball-page entries (req 7)
