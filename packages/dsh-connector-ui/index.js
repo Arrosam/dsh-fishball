@@ -28,5 +28,5 @@ export function apply(ctx) {
   const logger = ctx.logger(ROW.logger)
   registerRoutes(ctx, logger)
   reportMissing(ctx, logger)
-  contributeTools(ctx)
+  contributeTools(ctx, logger)
 }

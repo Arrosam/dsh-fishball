@@ -161,7 +161,8 @@ window.__ModuleLoader__.load({
     const CHILD_UI = Object.freeze({
       readyState: 'ready',
       hostnameRefused: 'hostname-refused',
-      /** What the host half reports usable (src/host/services.js availability); all false when unreadable. */
+      /** The host half's refusal without a usable locator (src/host/constants.js REFUSAL.unavailable). */
+      instanceMissing: 'instance-missing',
     })
     /**
      * PROPOSED wording (W3 brief P-3): new copy with no text in the spec, except `hostnameRefused`,
@@ -197,7 +198,7 @@ window.__ModuleLoader__.load({
         'refusal.not-managed': 'This session is not managed.',
         'refusal.invalid-request': 'That request was not accepted.',
         refusalFailed: 'That did not work.',
-        noticeDismiss: 'Dismiss', noticeCount: '{count} notices',
+        noticeLabel: 'Notice ({count} since you last looked): {message}. Click to dismiss.',
       }),
       zh: Object.freeze({
         noInstance: '此处没有正在运行的 Fishball 子实例。请打开你的 Fishball 实例自己的页面。',
@@ -212,7 +213,7 @@ window.__ModuleLoader__.load({
         'refusal.not-managed': '此会话没有被管理。',
         'refusal.invalid-request': '请求未被接受。',
         refusalFailed: '操作未成功。',
-        noticeDismiss: '关闭提示', noticeCount: '{count} 条提示',
+        noticeLabel: '提示（自上次查看以来 {count} 条）：{message}。点击关闭。',
       }),
     })
     /**
@@ -220,6 +221,12 @@ window.__ModuleLoader__.load({
      * principal name holds.
      */
     const NAME_MARK = '\u0000'
+    /**
+     * The snapshot streams' reopen rule (eventStore): EventSource's `readyState` CLOSED, and the
+     * wait before a new stream. 2 s: soon enough to follow a connector reload, slow enough not to
+     * hammer a DSH whose connector is gone for good.
+     */
+    const STREAM = Object.freeze({ closed: 2, reopenMs: 2000 })
     /** Brand icon choices (src/constants.js BRAND_STYLE). */
     const BRAND_STYLE = Object.freeze({ fishball: 'fishball', deepseek: 'deepseek' })
     const JSON_HEADERS = Object.freeze({ 'content-type': 'application/json' })
@@ -326,27 +333,19 @@ window.__ModuleLoader__.load({
      */
     const BRAND_LATIN_FONT = 'Helvetica,Arial,sans-serif'
     /**
-     * Unread replies on the mark: a count pill on its top-right corner and a short tail wag,
-     * repeated every WAG cycle while anything is unread (the pill pops with the wag and rests
-     * between). The pill takes the one accent and a ring in the sidebar's label colour
-     * so it separates from the mark on light and dark themes.
-     * The pill shows the count up to `max`, then "${max}+", so it stays narrow in the sidebar.
-     * The wag pivots near the tail's root; it is a keyframe list, so a change of look edits data.
-     * The pill overhangs the mark by 7px above and 9px to the right.
+     * The important animation (§13.6) and the count pill's look: a short tail wag, repeated every
+     * cycle while the fish's light is important, pivoting near the tail's root (a keyframe list, so
+     * a change of look edits data); and the pill the notify prompt counts in, in the one accent.
      */
     const UNREAD_BADGE = Object.freeze({
-      max: 99,
-      /** Keyframe names of the tail wag and the pill's pop (declared once in the style sheet below). */
-      wagAnimation: 'fb-wag', popAnimation: 'fb-pop',
+      /** The keyframe name of the tail wag (declared once in the style sheet below). */
+      wagAnimation: 'fb-wag',
       fill: FISH_MARK.eyeColor, textColor: '#fff',
-      ring: '0 0 0 2px var(--dsw-alias-label-primary-inverted)',
       minWidth: '16px', height: '16px', paddingX: '4px', radius: '8px',
-      fontFamily: BRAND_LATIN_FONT, fontSize: '10px', fontWeight: 800, top: '-7px', right: '-9px',
+      fontFamily: BRAND_LATIN_FONT, fontSize: '10px', fontWeight: 800,
       cycleSeconds: 2.2, wagOrigin: '70% 40%',
       /** Keyframe percentages of one cycle: rest, then wag back and forth, then rest. */
       wag: Object.freeze([[0, 0], [55, 0], [62, -14], [70, 12], [78, -9], [86, 5], [100, 0]]),
-      /** The pill's pop, over the same stretch of the cycle as the wag. */
-      pop: Object.freeze([[0, 1], [58, 1], [66, 1.35], [74, 0.95], [82, 1.1], [100, 1]]),
     })
     /**
      * DSH's own orca (the brand icon of DSH's build) and its swim, which the stock new-session
@@ -375,7 +374,7 @@ window.__ModuleLoader__.load({
     /** Only animate for people who have not asked for less motion (DSH's hero checks the same query). */
     const MOTION_QUERY = '(prefers-reduced-motion: no-preference)'
     const STYLE_ID = 'fishball-style'
-    const CLS = Object.freeze({ field: 'fb-field', note: 'fb-note', section: 'fb-section', row: 'fb-row', code: 'fb-code', mark: 'fb-mark', markBox: 'fb-mark-box', swim: 'fb-swim', badge: 'fb-badge', wag: 'fb-wag', muted: 'fb-muted', managedRow: 'fb-managed-row', managedRowDot: 'fb-managed-row-dot', flip: 'fb-flip', embed: 'fb-embed', embedBar: 'fb-embed-bar', embedName: 'fb-embed-name', embedState: 'fb-embed-state', embedActions: 'fb-embed-actions', embedFrame: 'fb-embed-frame', embedError: 'fb-embed-error', embedGlyph: 'fb-embed-glyph', link: 'fb-link', light: 'fb-light', principal: 'fb-principal', notice: 'fb-notice', noticeText: 'fb-notice-text', noticeCount: 'fb-notice-count' })
+    const CLS = Object.freeze({ field: 'fb-field', note: 'fb-note', section: 'fb-section', row: 'fb-row', code: 'fb-code', mark: 'fb-mark', markBox: 'fb-mark-box', swim: 'fb-swim', wag: 'fb-wag', muted: 'fb-muted', managedRow: 'fb-managed-row', managedRowDot: 'fb-managed-row-dot', flip: 'fb-flip', embed: 'fb-embed', embedBar: 'fb-embed-bar', embedName: 'fb-embed-name', embedState: 'fb-embed-state', embedActions: 'fb-embed-actions', embedFrame: 'fb-embed-frame', embedError: 'fb-embed-error', embedGlyph: 'fb-embed-glyph', link: 'fb-link', light: 'fb-light', principal: 'fb-principal', notice: 'fb-notice', noticeText: 'fb-notice-text', noticeCount: 'fb-notice-count' })
     /**
      * The fish's prompt bubble (R-FN-01: "a bubble beside the sidebar fish"): it sits `gapPx` to
      * the right of the fish's mark, level with its top, and keeps to `maxWidthPx` wide and
@@ -383,7 +382,13 @@ window.__ModuleLoader__.load({
      * sidebar is closed) it rests in the window's bottom-left corner, `edgePx` in, where the
      * sidebar's foot is.
      */
-    const NOTICE_BUBBLE = Object.freeze({ gapPx: 8, edgePx: 16, maxWidthPx: 280, maxHeightPx: 160, layer: 1000 })
+    const NOTICE_BUBBLE = Object.freeze({
+      gapPx: 8, edgePx: 16, maxWidthPx: 280, maxHeightPx: 160, layer: 1000,
+      /** Its inside: DSH's menu-row padding and caption size, the text-to-count gap. */
+      padding: '8px 12px', fontSize: '13px', lineHeight: 1.5, innerGapPx: 8,
+    })
+    /** The gap between a principal's light and its label (R-UI-10). */
+    const PRINCIPAL_GAP_PX = 6
 
     const en = {
       ...PROPOSED_WORDING.en,
@@ -398,6 +403,7 @@ window.__ModuleLoader__.load({
       'frameState.disabled': 'disabled', 'frameState.waiting': 'waiting', 'frameState.starting': 'starting', 'frameState.ready': 'running',
       'frameState.stopping': 'stopping', 'frameState.stopped': 'stopped', 'frameState.failed': 'failed',
       'frameState.connection-interrupted': 'connection interrupted', frameInterrupted: 'The connection to {name} was interrupted.',
+      frameConnectorSettings: 'Connector settings',
       frameNoInstance: 'No Fishball instance is attached', frameOpenPlugins: 'Open Plugins',
       frameNoChat: '{name} is attached and has no chat page',
       frameRetrying: 'Retrying…', frameRetryFailed: 'Retry did not work.',
@@ -437,6 +443,7 @@ window.__ModuleLoader__.load({
       'frameState.disabled': '已禁用', 'frameState.waiting': '等待中', 'frameState.starting': '启动中', 'frameState.ready': '运行中',
       'frameState.stopping': '停止中', 'frameState.stopped': '已停止', 'frameState.failed': '失败',
       'frameState.connection-interrupted': '连接中断', frameInterrupted: '与 {name} 的连接中断。',
+      frameConnectorSettings: 'Connector 设置',
       frameNoInstance: '没有已连接的 Fishball 实例', frameOpenPlugins: '打开插件',
       frameNoChat: '{name} 已连接，但没有聊天页面',
       frameRetrying: '正在重试…', frameRetryFailed: '重试未成功。',
@@ -470,17 +477,15 @@ window.__ModuleLoader__.load({
       `.${CLS.section}{display:flex;flex-direction:column;gap:12px;margin:0 0 24px;color:var(--dsw-alias-label-primary);font:var(--dsw-font-xs-13)}`,
       `.${CLS.mark}{color:var(--dsw-alias-label-primary)}`,
       `.${CLS.markBox}{position:relative;display:inline-flex}`,
-      `.${CLS.badge}{position:absolute;top:${UNREAD_BADGE.top};right:${UNREAD_BADGE.right};box-sizing:border-box;min-width:${UNREAD_BADGE.minWidth};height:${UNREAD_BADGE.height};padding:0 ${UNREAD_BADGE.paddingX};border-radius:${UNREAD_BADGE.radius};background:${UNREAD_BADGE.fill};color:${UNREAD_BADGE.textColor};box-shadow:${UNREAD_BADGE.ring};font:${UNREAD_BADGE.fontWeight} ${UNREAD_BADGE.fontSize}/${UNREAD_BADGE.height} ${UNREAD_BADGE.fontFamily};text-align:center;white-space:nowrap;pointer-events:none;animation:${UNREAD_BADGE.popAnimation} ${UNREAD_BADGE.cycleSeconds}s ease-in-out infinite}`,
       `.${CLS.wag}{transform-origin:${UNREAD_BADGE.wagOrigin};animation:${UNREAD_BADGE.wagAnimation} ${UNREAD_BADGE.cycleSeconds}s ease-in-out infinite}`,
       `@keyframes ${UNREAD_BADGE.wagAnimation}{${UNREAD_BADGE.wag.map(([at, degrees]) => `${at}%{transform:rotate(${degrees}deg)}`).join('')}}`,
-      `@keyframes ${UNREAD_BADGE.popAnimation}{${UNREAD_BADGE.pop.map(([at, scale]) => `${at}%{transform:scale(${scale})}`).join('')}}`,
       `.${CLS.swim}{transform-origin:${ORCA_SWIM.origin};overflow:visible;animation:fb-swim ${UNREAD_BADGE.cycleSeconds}s ease-in-out infinite}`,
       `@keyframes fb-swim{${[...ORCA_SWIM.sway.map(([at, transform]) => [at * SWIM_SHARE, transform]), [100, 'none']].map(([at, transform]) => `${at}%{transform:${transform}}`).join('')}}`,
       // The running fish's flip (design ⑥): a half-turn to the mirror, a short hold, then back.
       `.${CLS.flip}{transform-origin:${ROW_MARK.flipOrigin};animation:${ROW_MARK.flipAnimation} ${ROW_MARK.flipSeconds}s ease-in-out infinite}`,
       `@keyframes ${ROW_MARK.flipAnimation}{${ROW_MARK.flip.map(([at, degrees]) => `${at}%{transform:rotateY(${degrees}deg)}`).join('')}}`,
-      // Motion is the only thing that stops: the pill, its count and the dots stay.
-      `@media (prefers-reduced-motion:reduce){.${CLS.badge},.${CLS.wag},.${CLS.swim},.${CLS.flip}{animation:none}}`,
+      // Motion is the only thing that stops: the light's dot and the prompt stay.
+      `@media (prefers-reduced-motion:reduce){.${CLS.wag},.${CLS.swim},.${CLS.flip}{animation:none}}`,
       `.${CLS.row}{display:flex;gap:12px;align-items:baseline}`,
       `.${CLS.code}{font-family:var(--ds-font-family-code);overflow-wrap:anywhere}`,
       `.${CLS.muted}{color:var(--dsw-alias-label-tertiary)}`,
@@ -510,11 +515,11 @@ window.__ModuleLoader__.load({
       // element's text alternative carries the same, so colour is not the only signal.
       `.${CLS.light}{display:inline-block;flex:none;width:${ROW_MARK.dot.sizePx}px;height:${ROW_MARK.dot.sizePx}px;border-radius:50%;background:var(--dsw-alias-state-error-primary)}`,
       `.${CLS.light}[data-fishball-online="true"]{background:var(--dsw-alias-state-success-primary)}`,
-      `.${CLS.principal}{display:inline-flex;align-items:center;gap:6px;overflow-wrap:anywhere}`,
+      `.${CLS.principal}{display:inline-flex;align-items:center;gap:${PRINCIPAL_GAP_PX}px;overflow-wrap:anywhere}`,
       // The Retry link (decided #77) reads as a link: DSH's accent label colour, underlined, no button chrome.
       `.${CLS.link}{padding:0;border:0;background:none;color:var(--dsw-alias-label-link,var(--fb-accent));font:inherit;text-decoration:underline;cursor:pointer}`,
       // The notify prompt (R-FN-01): DSH's menu material and radius, beside the fish (NOTICE_BUBBLE).
-      `.${CLS.notice}{position:fixed;z-index:${NOTICE_BUBBLE.layer};display:flex;align-items:flex-start;gap:8px;box-sizing:border-box;max-width:${NOTICE_BUBBLE.maxWidthPx}px;max-height:${NOTICE_BUBBLE.maxHeightPx}px;overflow:auto;padding:8px 12px;border:.5px solid var(--dsw-alias-border-l3);border-radius:var(--dsw-radius-md);background:var(--dsw-menu-surface-fill,var(--dsw-alias-bg-layer-3));color:var(--dsw-alias-label-primary);font:inherit;font-size:13px;line-height:1.5;text-align:start;cursor:pointer}`,
+      `.${CLS.notice}{position:fixed;z-index:${NOTICE_BUBBLE.layer};display:flex;align-items:flex-start;gap:${NOTICE_BUBBLE.innerGapPx}px;box-sizing:border-box;max-width:${NOTICE_BUBBLE.maxWidthPx}px;max-height:${NOTICE_BUBBLE.maxHeightPx}px;overflow:auto;padding:${NOTICE_BUBBLE.padding};border:.5px solid var(--dsw-alias-border-l3);border-radius:var(--dsw-radius-md);background:var(--dsw-menu-surface-fill,var(--dsw-alias-bg-layer-3));color:var(--dsw-alias-label-primary);font:inherit;font-size:${NOTICE_BUBBLE.fontSize};line-height:${NOTICE_BUBBLE.lineHeight};text-align:start;cursor:pointer}`,
       `.${CLS.notice}[data-fishball-notice-important="true"]{box-shadow:0 0 0 1px color-mix(in srgb, var(--fb-accent) 55%, transparent)}`,
       `.${CLS.noticeText}{white-space:pre-wrap;overflow-wrap:anywhere}`,
       `.${CLS.noticeCount}{flex:none;min-width:${UNREAD_BADGE.minWidth};height:${UNREAD_BADGE.height};padding:0 ${UNREAD_BADGE.paddingX};border-radius:${UNREAD_BADGE.radius};background:${UNREAD_BADGE.fill};color:${UNREAD_BADGE.textColor};font:${UNREAD_BADGE.fontWeight} ${UNREAD_BADGE.fontSize}/${UNREAD_BADGE.height} ${UNREAD_BADGE.fontFamily};text-align:center}`,
@@ -529,20 +534,35 @@ window.__ModuleLoader__.load({
 
     /**
      * One shared EventSource of server-sent snapshots at `path`, open while any component follows
-     * it; it reconnects by itself. The latest snapshot is the only state, and it is the server's.
+     * it. The latest snapshot is the only state, and it is the server's.
+     *
+     * EventSource retries a dropped connection by itself, but gives up for good when an answer is
+     * not a 200 event stream, as while the connector row reloads and its routes are briefly gone.
+     * Then the store shows `initial` (nothing it showed is still known to be true) and opens a new
+     * stream after STREAM.reopenMs while anyone still follows it, so the UI comes back live
+     * without a page reload (R-UI-05, R-UI-10).
      */
     function eventStore(path, initial) {
       let snapshot = initial
       const listeners = new Set()
       let source
+      let reopen
+      const notify = () => { for (const listener of listeners) listener() }
       const open = () => {
-        if (source) return
+        if (source || reopen) return
         source = new EventSource(apiUrl(path))
         source.onmessage = (event) => {
           let next
           try { next = JSON.parse(event.data) } catch { return }
           snapshot = next
-          for (const listener of listeners) listener()
+          notify()
+        }
+        source.onerror = () => {
+          if (source?.readyState !== STREAM.closed) return
+          source = undefined
+          snapshot = initial
+          notify()
+          reopen = setTimeout(() => { reopen = undefined; if (listeners.size > 0) open() }, STREAM.reopenMs)
         }
       }
       return {
@@ -551,7 +571,11 @@ window.__ModuleLoader__.load({
           open()
           return () => {
             listeners.delete(listener)
-            if (listeners.size === 0 && source) { source.close(); source = undefined }
+            if (listeners.size > 0) return
+            source?.close()
+            source = undefined
+            clearTimeout(reopen)
+            reopen = undefined
           }
         },
         get: () => snapshot,
@@ -579,8 +603,14 @@ window.__ModuleLoader__.load({
       if (!uiStores.has(path)) uiStores.set(path, eventStore(path, EMPTY_UI))
       return uiStores.get(path)
     }
-    /** The backend's snapshot, followed live (R-UI-05, R-UI-10: no reload). */
-    const useUi = (path) => { const store = uiSnapshots(path); return React.useSyncExternalStore(store.subscribe, store.get) }
+    /**
+     * The hook a part draws the backend's snapshot with, followed live (R-UI-05, R-UI-10: no
+     * reload). @param ui - the host half's `ui` routes (availability).
+     */
+    const snapshotHook = (ui) => function useSnapshot() {
+      const store = uiSnapshots(ui.events)
+      return React.useSyncExternalStore(store.subscribe, store.get)
+    }
 
     /** POST one command to the Host. @returns { ok, code, path, answer } (the Host's refusal code, an invalid setting's path, and the whole answer). */
     async function send(path, body) {
@@ -734,20 +764,24 @@ window.__ModuleLoader__.load({
 
     /**
      * One GET of a route of this page: the JSON answer when `valid(answer)` holds, else undefined
-     * (unreachable, not JSON, or not the route's shape), so the caller keeps what it showed.
+     * (unreachable, not JSON, or not the route's shape), so the caller keeps what it showed. A
+     * refusal's body is read too, so a `valid` that accepts it can follow it (the window's
+     * `instance-missing`).
      */
     async function readJson(path, valid, signal) {
       try {
         const response = await fetch(apiUrl(path), { ...FRAME_UI.read, signal })
-        if (!response.ok) return undefined
         const value = await response.json()
         return value !== null && typeof value === 'object' && valid(value) ? value : undefined
       } catch { return undefined }
     }
     /** The connector's own instance route (V2): an answer that names `attached`. */
     const isInstanceView = (value) => typeof value.attached === 'boolean'
-    /** The host half's routes: `{ok: true, ...}`. */
-    const isHostAnswer = (value) => value.ok === true
+    /**
+     * The child status route's answers the window follows: its status, or the refusal that the
+     * locator went away after the page loaded (the window then shows the hint, Q-G3).
+     */
+    const isChildAnswer = (value) => value.ok === true || value.code === CHILD_UI.instanceMissing
 
     /** Whether two answers show the same thing, so a steady poll re-renders nothing. */
     const sameInstance = (a, b) => JSON.stringify(a) === JSON.stringify(b)
@@ -881,19 +915,18 @@ window.__ModuleLoader__.load({
     /**
      * A Retry in the header, as V2's frame has it: in flight, then a refusal with its code (the
      * route's, else FRAME_UI.retryFailed), shown beside the button until the next try.
-     * @param path - the Retry route. @param onDone - gets the route's answer when it was accepted.
+     * @param path - the Retry route.
      */
-    function useRetry(path, onDone) {
+    function useRetry(path) {
       const [retrying, setRetrying] = React.useState(false)
       const [retryCode, setRetryCode] = React.useState(null)
       const retry = async () => {
         setRetrying(true)
         setRetryCode(null)
         // The routes take no body; send() is the one POST helper (it reads the refusal's code).
-        const { ok, code, answer } = await send(path, {})
+        const { ok, code } = await send(path, {})
         setRetrying(false)
         if (!ok) setRetryCode(code ?? FRAME_UI.retryFailed)
-        else onDone?.(answer)
       }
       return { retrying, retryCode, retry }
     }
@@ -950,7 +983,10 @@ window.__ModuleLoader__.load({
     function retryLink(ctx, t) {
       const open = (event) => {
         event.preventDefault()
-        ctx.get(FRAME_UI.navigation)?.openBundle(FRAME_UI.instancePackage)
+        const navigation = ctx.get(FRAME_UI.navigation)
+        // Without DSH's plugin navigation, the Plugins panel, where the instance's row opens its page.
+        if (navigation) navigation.openBundle(FRAME_UI.instancePackage)
+        else ctx.get(SERVICE.layout)?.selectPanel(EMBED_UI.pluginsPanelId)
       }
       return h('p', { key: 'retry' }, h('a', { href: '#', className: CLS.link, 'data-fishball-retry-link': true, onClick: open }, t('retryLink')))
     }
@@ -965,7 +1001,7 @@ window.__ModuleLoader__.load({
     function makeChildView(ctx, t, route) {
       const frameLang = frameLangStore(ctx.locale)
       return function FishballChildView() {
-        const [status] = usePoll(route.status, isHostAnswer, undefined)
+        const [status] = usePoll(route.status, isChildAnswer, undefined)
         const { page, lang } = useViewPage(frameLang)
         const [generation, setGeneration] = React.useState(0)
         const state = status?.status?.state ?? FRAME_UI.loading
@@ -975,6 +1011,7 @@ window.__ModuleLoader__.load({
         // A hostname refusal stays until the page is opened under another name; any other refusal
         // can be asked again with Refresh, as a framed page can be reloaded.
         const hostnameRefused = admission?.refused === CHILD_UI.hostnameRefused
+        if (status?.code === CHILD_UI.instanceMissing) return hintChrome(t)
         const body = status === undefined
           ? loadingState(t)
           : !ready
@@ -1003,12 +1040,14 @@ window.__ModuleLoader__.load({
     function makeHintView(t) {
       return function FishballHintView() {
         useWindowOpened()
-        return h(FrameChrome, {
-          t, page: FRAME_UI.page.chat,
-          body: emptyState(warningGlyph(), h('p', { 'data-fishball-no-instance': true }, t('noInstance'))),
-        })
+        return hintChrome(t)
       }
     }
+    /** The hint inside the window's chrome: no frame, no state, no Retry. */
+    const hintChrome = (t) => h(FrameChrome, {
+      t, page: FRAME_UI.page.chat,
+      body: emptyState(warningGlyph(), h('p', { 'data-fishball-no-instance': true }, t('noInstance'))),
+    })
 
     /**
      * The Fishball view (§7) inside the connector's frame (design §0.5 "The frame", D27): DSH's
@@ -1185,7 +1224,7 @@ window.__ModuleLoader__.load({
      */
     exports.kit = Object.freeze({
       NS, SLOT, CLS, ROW_MARK, NOTICE_BUBBLE, SEAT, seats,
-      useUi, send, valueStore, FishballIcon, attentionDot, principalLabel, principalText, withName, principalWithLight,
+      snapshotHook, send, valueStore, FishballIcon, attentionDot, principalLabel, principalText, withName, principalWithLight,
     })
     /**
      * The shell as a client plugin for what is usable now (readAvailability). The connector's

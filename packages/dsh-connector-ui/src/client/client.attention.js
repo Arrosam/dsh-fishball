@@ -31,6 +31,8 @@ globalThis.__ModuleLoader__?.load({
     const NOTICE = Object.freeze({ id: 'fishball-notice', markSelector: '[data-fishball-fish-light]' })
     /** The values of the fish's data attributes, so a test or a stylesheet reads its state. */
     const FISH = Object.freeze({ on: 'on', off: 'off' })
+    /** Cordis effect labels. */
+    const LABEL = Object.freeze({ light: 'fishball: fish light', opened: 'fishball: clear on window open', notice: 'fishball: notify prompt' })
 
     /**
      * The part as a client plugin.
@@ -38,9 +40,9 @@ globalThis.__ModuleLoader__?.load({
      * @param available - the host half's availability; `ui` holds the backend's page-relative routes.
      */
     function attentionPart(kit, available) {
-      const { NS, SLOT, CLS, ROW_MARK, NOTICE_BUBBLE, SEAT, seats, useUi, send, FishballIcon, attentionDot } = kit
+      const { NS, SLOT, CLS, ROW_MARK, NOTICE_BUBBLE, SEAT, seats, snapshotHook, send, FishballIcon, attentionDot } = kit
       const routes = available.ui
-      const useSnapshot = () => useUi(routes.events)
+      const useSnapshot = snapshotHook(routes)
 
       /** The sidebar fish with the backend's light: the dot while on, the animation while important. */
       function Mark({ size }) {
@@ -66,21 +68,23 @@ globalThis.__ModuleLoader__?.load({
 
       /**
        * The notify prompt (R-FN-01). The message is a text child, so React shows markup as text;
-       * the count is the backend's, since the user last clicked or opened the window.
+       * the count is the backend's, since the user last clicked or opened the window. The status
+       * region stays mounted with or without a notice, so a screen reader announces a notice that
+       * appears in it; the button's name is one dictionary template with the count and the message.
        */
       function makeNotice(t) {
         return function FishballNotice() {
           const { notice } = useSnapshot()
-          if (notice === null) return null
-          return h('button', {
-            type: 'button', className: CLS.notice, style: bubblePlace(), 'aria-live': 'polite',
-            'aria-label': t('noticeDismiss') + ': ' + notice.message,
-            'data-fishball-notice': true,
-            ...(notice.important ? { 'data-fishball-notice-important': true } : {}),
-            onClick: () => void send(routes.dismiss, {}),
-          },
-            h('span', { className: CLS.noticeText }, notice.message),
-            h('span', { className: CLS.noticeCount, 'data-fishball-notice-count': notice.count, 'aria-label': t('noticeCount', { count: notice.count }) }, String(notice.count)))
+          return h('div', { role: 'status', 'data-fishball-notice-region': true },
+            notice === null ? null : h('button', {
+              type: 'button', className: CLS.notice, style: bubblePlace(),
+              'aria-label': t('noticeLabel', { count: notice.count, message: notice.message }),
+              'data-fishball-notice': true,
+              ...(notice.important ? { 'data-fishball-notice-important': true } : {}),
+              onClick: () => void send(routes.dismiss, {}),
+            },
+              h('span', { className: CLS.noticeText }, notice.message),
+              h('span', { className: CLS.noticeCount, 'data-fishball-notice-count': notice.count, 'aria-hidden': true }, String(notice.count))))
         }
       }
 
@@ -92,9 +96,9 @@ globalThis.__ModuleLoader__?.load({
         inject: PART.inject,
         apply(ctx) {
           const t = ctx.locale.bind(NS)
-          ctx.effect(() => seats.register(SEAT.mark, Mark), 'fishball: fish light')
-          ctx.effect(() => seats.register(SEAT.pageOpened, windowOpened), 'fishball: clear on window open')
-          ctx.effect(() => ctx.slots.inject(SLOT.overlay, () => ctx.slots.register({ name: SLOT.overlay, id: NOTICE.id, locale: NS }, makeNotice(t))), 'fishball: notify prompt')
+          ctx.effect(() => seats.register(SEAT.mark, Mark), LABEL.light)
+          ctx.effect(() => seats.register(SEAT.pageOpened, windowOpened), LABEL.opened)
+          ctx.effect(() => ctx.slots.inject(SLOT.overlay, () => ctx.slots.register({ name: SLOT.overlay, id: NOTICE.id, locale: NS }, makeNotice(t))), LABEL.notice)
         },
       }
     }
