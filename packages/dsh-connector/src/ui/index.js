@@ -23,12 +23,14 @@
  *   `dshConnectorTools.register`; it is called once per tool. A throw part-way disposes the
  *   registrations made and rethrows. The dispose is idempotent and resets the latch and the notice,
  *   because what embed-UI showed does not outlive its contribution (§13.6: reset on unload).
- * - `provide(ctx)`: the service and the routes, for the context's life; once per backend.
+ * - `provide(ctx)`: follows the hand-over service and serves the routes and the service, for the
+ *   context's life; once per backend. Its end closes the backend.
  * - `close()`: ends the streams, stops following the hand-over service and ends every
- *   contribution. Idempotent.
+ *   contribution; a later `contribute` throws. Idempotent.
  */
-import { LABEL, MISUSE, UI_ROUTE, UI_SERVICE } from './constants.js'
-import { createStreams, registerUiRoutes, uiRoutes } from './routes.js'
+import { diagnosticOf } from '../errors.js'
+import { LOG, MISUSE, UI_ROUTE, UI_SERVICE } from './constants.js'
+import { createStreams, registerUiRoute, uiRoutes } from './routes.js'
 import { createUiState } from './state.js'
 import { uiTools } from './tools.js'
 
@@ -52,22 +54,18 @@ function disposeAll(disposers) {
  * @param deps.logger - `{warn}`
  */
 export function createUiBackend({ handover, logger }) {
-  let streams
+  const streams = createStreams(() => state.snapshot(), logger)
   const state = createUiState({ handover, changed: () => streams.publish() })
-  streams = createStreams(() => state.snapshot())
   const contributions = new Set()
+  let unfollow
   let provided = false
   let closed = false
-
-  state.startFollowing()
-  const unfollow = handover.onChange(() => {
-    state.followDesignated()
-    streams.publish()
-  })
 
   /** One contribution: every tool registered through `register`, ended together. */
   function contribute(register) {
     if (typeof register !== 'function') throw new TypeError(MISUSE.register)
+    // A backend that is closed serves no tools: its state and streams are gone.
+    if (closed) throw new Error(MISUSE.closed)
     const disposers = []
     for (const definition of uiTools(state)) {
       try { disposers.push(register(definition)) } catch (error) {
@@ -95,7 +93,8 @@ export function createUiBackend({ handover, logger }) {
     closed = true
     unfollow?.()
     for (const end of [...contributions]) {
-      try { end() } catch { /* each contribution's own registrations are gone either way */ }
+      // Its registrations are disposed either way; the failure is only reported.
+      try { end() } catch (error) { logger.warn(LOG.format, LOG.endFailed, diagnosticOf(error)) }
     }
     streams.close()
   }
@@ -104,14 +103,34 @@ export function createUiBackend({ handover, logger }) {
     service,
     snapshot: () => state.snapshot(),
     close,
+    /**
+     * Follows the hand-over service, registers the routes and provides the service, all for the
+     * context's life: one effect, whose end (the row's unload, or the returned disposer) is
+     * `close()` plus the routes and the service leaving. So a backend never outlives its row.
+     */
     provide(ctx) {
       if (provided) throw new Error(MISUSE.provideTwice)
       provided = true
-      registerUiRoutes(ctx, uiRoutes({ handover, state, streams, logger }))
-      ctx.effect(() => () => streams.close(), LABEL.streams)
       return ctx.effect(() => {
-        const dispose = ctx.provide(UI_SERVICE.name, service)
-        return () => { dispose?.() }
+        state.startFollowing()
+        unfollow = handover.onChange(() => {
+          state.followDesignated()
+          streams.publish()
+        })
+        const disposers = []
+        const end = () => {
+          close()
+          disposeAll(disposers)
+        }
+        try {
+          for (const route of uiRoutes({ handover, state, streams, logger })) disposers.push(registerUiRoute(ctx, route))
+          disposers.push(ctx.provide(UI_SERVICE.name, service))
+        } catch (error) {
+          // A route path another row holds, or a failed provide: nothing of this backend stays.
+          end()
+          throw error
+        }
+        return end
       }, UI_SERVICE.label)
     },
   })

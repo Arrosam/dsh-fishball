@@ -16,6 +16,8 @@
 import { LATCH } from './constants.js'
 
 const freezeAll = (rows) => Object.freeze(rows.map((row) => Object.freeze(row)))
+/** The clear latch: count 0, not important. Frozen, so every clear shares it. */
+const CLEARED = Object.freeze({ count: LATCH.clear, important: false })
 
 /**
  * @param {object} deps
@@ -23,7 +25,7 @@ const freezeAll = (rows) => Object.freeze(rows.map((row) => Object.freeze(row)))
  * @param deps.changed - called after every change of the latch or the notice
  */
 export function createUiState({ handover, changed }) {
-  let latch = { count: LATCH.clear, important: false }
+  let latch = CLEARED
   let notice = null
   /**
    * The key of the designated agent that was connected at the last hand-over change, or undefined
@@ -39,22 +41,27 @@ export function createUiState({ handover, changed }) {
    */
   const connectedDesignatedKey = () => handover.principals().find((row) => row.designated && row.enabled && row.online)?.key
 
-  /** Applies a change and publishes it only if something changed, so a no-op sends no frame. */
-  function update(nextLatch, nextNotice) {
+  /**
+   * Applies a change. It publishes only if something changed, so a no-op sends no frame, and only
+   * when `publish` is true: the hand-over listener publishes once itself (one frame per change).
+   */
+  function update(nextLatch, nextNotice, publish = true) {
     const same = nextLatch.count === latch.count && nextLatch.important === latch.important && nextNotice === notice
     latch = nextLatch
     notice = nextNotice
-    if (!same) changed()
+    if (!same && publish) changed()
   }
-  const cleared = () => ({ count: LATCH.clear, important: false })
+  /** Clears the latch and the prompt. */
+  const clearAll = () => update(CLEARED, null)
+  const attention = () => Object.freeze({ ...latch })
 
   return Object.freeze({
     /** `attention.signal` (§13.6): count = 1, important ||= important. Stateless: nothing is replayed. */
     signal(important) {
-      update({ count: LATCH.set, important: latch.important || important }, notice)
+      update(Object.freeze({ count: LATCH.set, important: latch.important || important }), notice)
     },
     /** `attention.state` (§13.6): read-only. */
-    attention: () => Object.freeze({ ...latch }),
+    attention,
     /** `notify` (R-FN-01): the new text replaces the old; the count goes on until a dismiss or an open. */
     notify(message, important) {
       update(latch, Object.freeze({ message, important, count: (notice?.count ?? 0) + 1 }))
@@ -62,18 +69,19 @@ export function createUiState({ handover, changed }) {
     /** The user clicked the prompt: it goes; the latch is the window's to clear. */
     dismiss() { update(latch, null) },
     /** The window opened: the latch is cleared once (§13.6) and the prompt goes (R-FN-01). */
-    opened() { update(cleared(), null) },
+    opened: clearAll,
     /** Embed-UI's contribution ended (its unload): nothing it showed survives it (§13.6). */
-    reset() { update(cleared(), null) },
+    reset: clearAll,
     /**
-     * Called before each hand-over change is published: the latch resets on the loss of the
-     * designated agent's connection (§13.6), read from the hand-over service. The connected
+     * Called on each hand-over change, before the caller publishes it: the latch resets on the loss
+     * of the designated agent's connection (§13.6), read from the hand-over service. The connected
      * designated agent is lost when it disconnects, is disabled or deleted, or stops being the
      * designated one (the designation moves or is unset); the notice is not the latch and stays.
+     * It does not publish: the caller sends the one frame for this change.
      */
     followDesignated() {
       const now = connectedDesignatedKey()
-      if (connectedDesignated !== undefined && now !== connectedDesignated) update(cleared(), notice)
+      if (connectedDesignated !== undefined && now !== connectedDesignated) update(CLEARED, notice, false)
       connectedDesignated = now
     },
     /** Starts the reset rule's edge from the hand-over service's state now. */
@@ -82,7 +90,7 @@ export function createUiState({ handover, changed }) {
       const marks = freezeAll(handover.managed().map(({ sessionId, principal }) => ({ sessionId, principal: Object.freeze({ key: principal.key, name: principal.name, id: principal.id }) })))
       const targets = freezeAll(handover.principals().filter((row) => row.enabled && row.paired).map(({ key, name, id, online }) => ({ key, name, id, online })))
       const light = Object.freeze({ on: latch.count === LATCH.set || notice !== null, important: latch.important || notice?.important === true })
-      return Object.freeze({ marks, targets, attention: Object.freeze({ ...latch }), notice, light })
+      return Object.freeze({ marks, targets, attention: attention(), notice, light })
     },
   })
 }

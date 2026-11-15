@@ -103,11 +103,11 @@ export const V3_SUITES = Object.freeze({
   'dsh-connector.contrib': suite('contribution service (C-EXT)', v3('dsh-connector/contrib'),
     [sub(PACKAGE.dshConnector, 'src', 'contrib'), sub(PACKAGE.dshConnector, 'src', 'mailbox'), sub(PACKAGE.dshConnector, 'src', 'schema-value'),
       all(PACKAGE.fishballShared), ...CONNECTOR_CORE, ...CONNECTOR_CONTRACTS]),
-  // The UI backend reads the hand-over service (K3) and contributes through C-EXT, whose real
-  // registry its integration rows load.
+  // The UI backend reads the hand-over service (K3) and contributes through C-EXT. Its integration
+  // rows load C-EXT's real registry and C-ROUTE's real routing world, mailbox included.
   'dsh-connector.ui': suite('UI backend: marks, Hand over targets and lights, attention latch, notify, routes and stream (C-UI-BACKEND)', v3('dsh-connector/ui'),
     [sub(PACKAGE.dshConnector, 'src', 'ui'), sub(PACKAGE.dshConnector, 'src', 'contrib'), sub(PACKAGE.dshConnector, 'src', 'handover'),
-      sub(PACKAGE.dshConnector, 'src', 'routing'), sub(PACKAGE.dshConnector, 'src', 'schema-value'), sub(PACKAGE.dshConnector, 'host-services'),
+      sub(PACKAGE.dshConnector, 'src', 'routing'), sub(PACKAGE.dshConnector, 'src', 'mailbox'), sub(PACKAGE.dshConnector, 'src', 'schema-value'), sub(PACKAGE.dshConnector, 'host-services'),
       all(PACKAGE.fishballShared), ...CONNECTOR_CORE, ...CONNECTOR_CONTRACTS]),
   'dsh-connector-ui.shell': suite('host half and client shell (U-SHELL)', v3('dsh-connector-ui/shell'),
     [all(PACKAGE.dshConnectorUi), sub(PACKAGE.dshInstance, 'src', 'child-settings'), sub(PACKAGE.dshConnector, 'tools'), sub(PACKAGE.dshConnector, 'host-services')]),
