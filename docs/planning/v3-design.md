@@ -1304,6 +1304,25 @@ listen hint / reconnect ─► inbox_poll ─► acceptance ledger (durable, Fis
   MCP. They are data operations as before (R-WD-15).
 - **Failure = off** (R-WD-07) is unchanged, now in the main DSH: the connector stops offering, and
   undecided requests go to the mailbox. "Watchdog is down" reaches the principal as a `notice`.
+- **What Watchdog is for (requirements 1.35, verbatim):** "watchdog的定位是用来接收fishball的目标和约束，定时监督避免监督的session跑偏，并替fishball批示和通过permission request。fishball可以把可批示的范围提交给watchdog。范围是一段可以通过的请求的描述。总之watchdog接受两个来自fishball的指示，一个是必需的，就是这个session的目的，一个是非必需的，就是可以批示的请求。而watchdog通过定时的监督和每次批注请求时也进行监督来避免session跑偏。通过减少走到fishball的permission approval请求次数来节约fishball的token并reinforce session的behavior"
+  - **Instructions:** `watchdog_brief({sessionId, purpose, scope?})`, where `purpose` is required
+    and `scope` is the optional approvable-request description; `watchdog_refine` replaces either.
+    These replace §7.3's free-form brief.
+  - **Each permission request:** (a) a drift check against the purpose; (b) allow if within the
+    scope; (c) reject if beyond the purpose and dangerous; (d) `escalate` if otherwise high-risk;
+    (e) else to Fishball. With no scope, (b) never applies, so Watchdog passes nothing and only
+    filters for drift and danger. Each allow answers one request; no standing grant is created
+    (DESIGN.md "no always allow").
+  - **Patrol:** unchanged timer and watermark (§7.3); it now judges drift against the purpose.
+  - **Decision table (supersedes §7.3's):**
+
+    | Request | Watchdog decision |
+    | --- | --- |
+    | within the approvable scope | allow (Q-W5: and if it is high-risk) |
+    | beyond the purpose **and** dangerous | reject, with a justification |
+    | other high risk | `escalate` to the user's card, no Fishball turn |
+    | anything else, or no scope given | to Fishball |
+    | question / plan review | never reaches Watchdog |
 - **Which principals and which model:** Q-W3, Q-W4.
 - **Core's interception service** stays generic (§6.4) for other plugins in a Fishball DSH. Watchdog
   no longer uses it, so WD-ROUTE's interception module and K3's Watchdog-specific link members
