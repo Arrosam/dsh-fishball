@@ -23,3 +23,11 @@ export function powerOf(pair, clientId) {
   if (pair === undefined) return NOT_PAIRED
   return pair.id === clientId ? FULL : ID_MISMATCH
 }
+
+/**
+ * Whether the approval page bound the pair (R-OA-22): only a page bind or reconnect records the
+ * client id URL (K1 `Pair.clientIdUrl`). Such an entry belongs to a browser client, so the token
+ * endpoint refuses it `client_credentials` (K1d; decided item 4: one token, one client type).
+ * @param pair - the entry's pair, or `undefined` when the entry is unbound
+ */
+export const isPageBound = (pair) => pair?.clientIdUrl !== undefined

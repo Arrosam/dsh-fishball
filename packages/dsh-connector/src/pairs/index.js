@@ -7,4 +7,4 @@
  * storage layout (`./constants.js` PAIRS) stays private: no other module opens the registry.
  */
 export { createPairStore, openPairStore } from './store.js'
-export { powerOf } from './power.js'
+export { isPageBound, powerOf } from './power.js'

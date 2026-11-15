@@ -5,8 +5,13 @@
  * `../../../mcp-schema`; this file holds only this module's own wire names, protocol grammars,
  * page copy and log lines.
  */
+import { AUTHORIZE_EXTENSION } from '../../../mcp-schema/index.js'
 
-/** The query parameters of `GET /authorize` [spec: RFC 6749 §4.1.1, RFC 7636 §4.3, RFC 8707 §2]. */
+/**
+ * The query parameters of `GET /authorize` [spec: RFC 6749 §4.1.1, RFC 7636 §4.3, RFC 8707 §2],
+ * plus K1's extension parameter that carries the agent's own id (R-OA-22; RFC 6749 §3.1 lets an
+ * authorization server define request parameters). Each is refused when repeated.
+ */
 export const AUTHORIZE_PARAM = Object.freeze({
   responseType: 'response_type',
   clientId: 'client_id',
@@ -15,6 +20,7 @@ export const AUTHORIZE_PARAM = Object.freeze({
   codeChallengeMethod: 'code_challenge_method',
   resource: 'resource',
   state: 'state',
+  agentId: AUTHORIZE_EXTENSION.agentIdParam,
 })
 
 /** The authorization response's query parameters [spec: RFC 6749 §4.1.2, §4.1.2.1; RFC 9207 `iss`]. */
@@ -30,12 +36,14 @@ export const TOKEN_FIELD = Object.freeze({
   refreshToken: 'refresh_token',
 })
 
-/** The approval form's fields and its two buttons' values (R-OA-11). */
+/**
+ * The approval form's fields and its two buttons' values (R-OA-11). There is no id field
+ * (requirements 1.32 R13): the agent passes its id in the authorization request (AUTHORIZE_PARAM.agentId).
+ */
 export const FORM_FIELD = Object.freeze({
   request: 'request',
   nonce: 'form',
   token: 'token',
-  id: 'id',
   name: 'name',
   action: 'action',
 })
@@ -172,9 +180,8 @@ export const PAGE_TEXT = Object.freeze({
   localhostOnly: 'Warning: this client only redirects to this computer (localhost). Any program on it could claim this name.',
   dsh: 'DSH: {dsh}, {resource}.',
   rights: 'Authorizing gives this agent full manager rights over this DSH\'s sessions, delegated approvals and questions included.',
-  oneAgent: 'One token, one agent: a token can be used for one agent only. The id must be unique and cannot be changed later; the name can.',
+  oneAgent: 'One token, one agent: a token can be used for one agent only.',
   tokenLabel: 'Token',
-  idLabel: 'Fishball id',
   nameLabel: 'Name (optional)',
   authorize: 'Authorize',
   cancel: 'Cancel',
@@ -184,8 +191,9 @@ export const PAGE_TEXT = Object.freeze({
   alreadyPaired: 'This token is already used by an agent. Create a new token in the connector\'s settings.',
   boundTo: 'Bound to {name}, last seen {lastSeen}.',
   neverSeen: 'never',
-  idInvalid: 'id-invalid: the id must be 1-64 characters of A-Z, a-z, 0-9, _ or -.',
-  idTaken: 'id-taken: another agent on this DSH already uses this id.',
+  // The id is the one the agent passed in its authorization request (R-OA-22), so the copy names it.
+  idInvalid: 'id-invalid: the id your agent sent must be 1-64 characters of A-Z, a-z, 0-9, _ or -.',
+  idTaken: 'id-taken: another agent on this DSH already uses the id your agent sent.',
   nameInvalid: 'name-invalid: the name must be 1-64 characters with no control or invisible characters.',
   nameTaken: 'name-taken: another agent on this DSH already uses this name.',
   // R-OA-15's wording.
@@ -228,8 +236,11 @@ export const MISUSE = Object.freeze({
  */
 export const LISTENER_STATUS = Object.freeze({ ok: 'ok' })
 
-/** The `OAuthTokenStore.chainsOf` state (K1 ChainsState) in which alone the page renews (R-OA-16 (7)). */
-export const CHAINS_STATE = Object.freeze({ ended: 'ended' })
+/**
+ * RFC 4648 §6 base32 as DERIVED_AGENT_ID uses it: each 5 bits of the digest's 8-bit bytes picks one
+ * character of DERIVED_AGENT_ID.alphabet (`agent-id.js`).
+ */
+export const BASE32 = Object.freeze({ bitsPerByte: 8, bitsPerChar: 5 })
 
 /** Node event names the listener (net.Server) and the CIMD request (ClientRequest) handle. */
 export const SERVER_EVENT = Object.freeze({ error: 'error', listening: 'listening' })
