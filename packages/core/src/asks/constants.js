@@ -2,14 +2,18 @@
  * Vocabulary of fishball-core's ask cards (task F-ASKCARD; K3 `contracts/ask-card.d.ts`, `ui.d.ts`
  * `asks`; R-FB-11, R-UI-12, R-CON-05, R-CON-06; PLAT-UC-07).
  *
- * K1's values (event types, the answer tool, refusal codes, `disconnected`) are read through core's
- * one K1 seam (`../link/schema.js`), and the V2 answer words (`DECISION`, `RISK`) from core's
- * vendored V2 contract, as the bridge façade reads `OPERATION`; nothing K1 owns is restated here.
+ * The connector's values (event types, the answer tool, refusal codes, `disconnected`, the answer
+ * words) are read from core's own copy of its MCP surface in `contracts/constants.js` (K3a `MCP`,
+ * `LINK`, and `APPROVAL` for the decision and risk words; F-OWN-SCHEMA, design §1.0b row 1), as the
+ * bridge façade reads them; nothing the connector owns is restated here.
  * What is left is this module's own: the card states, its storage domain, the filing tool, the
  * answer mapping the user chose, its owner-only routes and its log lines.
  */
-import { REFUSAL } from '../link/schema.js'
-import { DECISION, RISK } from '../../vendor/contract/contract.js'
+import { APPROVAL, MCP } from '../../contracts/constants.js'
+
+const REFUSAL = MCP.refusal
+const DECISION = APPROVAL.decision
+const RISK = APPROVAL.risk
 
 /** `AskCard.state` (K3 PROPOSED, kept as proposed: v3-proposed-values.md row 52). */
 export const CARD_STATE = Object.freeze({ open: 'open', answered: 'answered', closed: 'closed' })
@@ -54,7 +58,7 @@ export const ASKS = Object.freeze({
    * other refusal (`not-managed`, `forbidden`, `disconnected`, a failure) says nothing about the
    * call, so its asks are kept for the next start.
    */
-  endedCodes: Object.freeze([REFUSAL.unknownSession]),
+  endedCodes: Object.freeze([APPROVAL.refusal.unknownSession]),
 })
 
 /** The filing tool's own refusal: no `ask` event with that offer id was seen. PROPOSED spelling. */

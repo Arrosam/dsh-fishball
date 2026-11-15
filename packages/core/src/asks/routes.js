@@ -14,8 +14,10 @@
  * - POST `ASK_ROUTE.answer` `{approvalId, choice, text?}`: `service.answer`; 200 `{ok: true}`,
  *   409 for a refusal, 400 for an unreadable body or `invalid-arguments`.
  */
-import { REFUSAL } from '../link/schema.js'
+import { MCP } from '../../contracts/constants.js'
 import { ASK_HTTP, ASK_ROUTE } from './constants.js'
+
+const REFUSAL = MCP.refusal
 
 const json = (status, value) => new Response(JSON.stringify(value), { status, headers: ASK_HTTP.json })
 const statusOf = (result) => {
