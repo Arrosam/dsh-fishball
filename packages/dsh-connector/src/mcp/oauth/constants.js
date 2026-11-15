@@ -97,12 +97,14 @@ export const SWEEP = Object.freeze({ floor: 64, growthFactor: 2 })
 
 /**
  * The durable half of the token store (R-OA-16 (5), Q-S7B-3 A): refresh-token digests and the
- * chains they belong to. One DSH storage domain of the connector, apart from the pair registry and
- * the mailbox, so it has its own write chain. Per-record layout, because every refresh writes one
+ * chains they belong to. Version 1 holds no chain start (K1d-5 withdrew `chainStartedAt` with the
+ * chain cap; no V3 store has shipped, so nothing migrates, decided item 44). One DSH storage domain
+ * of the connector, apart from the pair registry and the mailbox, so it has its own write chain. Per-record layout, because every refresh writes one
  * record. Keys must be path-safe (`[A-Za-z0-9_-]+`): a refresh record's key is the digest of the
  * key it was put under, a chain's key is the digest of its chain id (chain ids are C-OAUTH-WEB's and need not be
  * path-safe). Authoritative data, so a record that fails its schema fails the open: losing a
- * revoked chain silently could let `chainsOf` answer `ended` and renew an entry that must not.
+ * revoked chain's mark silently could let a refresh record of it that a failed delete left behind
+ * work again.
  */
 export const OAUTH_STORE = Object.freeze({
   domain: 'dsh_connector_oauth',
@@ -111,17 +113,8 @@ export const OAUTH_STORE = Object.freeze({
   table: Object.freeze({ refresh: 'refresh', chains: 'chains' }),
 })
 
-/**
- * K1 `RevocationKind`'s one value this module tells apart (index.d.ts `TokenRegistry.onRevoked`).
- * K1 declares the kinds as a type only, with no runtime constant, so the word is named here.
- */
-export const REVOCATION_KIND = Object.freeze({ deleted: 'deleted' })
-
 /** The `error` of K1 `BearerVerifier.verify` when no Bearer value was presented (a 401 without `error`). */
 export const BEARER_MISSING = 'missing'
-
-/** K1 `ChainsState` (index.d.ts, a type only there): what `OAuthTokenStore.chainsOf` answers. */
-export const CHAINS_STATE = Object.freeze({ none: 'none', live: 'live', ended: 'ended', revoked: 'revoked' })
 
 /** Programming-error messages (contract misuse, never shown to a client). */
 export const MISUSE = Object.freeze({
@@ -144,7 +137,6 @@ export const LOG = Object.freeze({
   grantFailed: 'token endpoint: a grant handler failed',
   revokeFailed: 'oauth store: persisting a revocation failed',
   forgetFailed: 'oauth store: forgetting a deleted entry failed',
-  pruneFailed: 'oauth store: pruning an ended chain failed',
   verifyFailed: 'bearer verifier: reading the entry or the pair failed',
   requestFailed: 'token endpoint: reading the request failed',
 })

@@ -6,16 +6,15 @@
  * Everything is keyed by the digest of the opaque value (`./digest.js`), never the value.
  * - Access tokens and codes are in memory only (TQ-5 A, R-OA-14): a restart loses them.
  * - Refresh tokens persist as digests with their chain id and entry generation (Q-S7B-3 A), in
- *   the `refresh` table. One `chains` record per chain keeps what `chainsOf` needs after a restart:
- *   the entry, the generation, the chain's start and whether it was revoked. A chain record stays
- *   until the entry is deleted (`forgetEntry`), so an end reason is never forgotten (K1 `chainsOf`:
- *   "the end reason of a chain is kept with it until the entry is deleted").
- * - Spent refresh records stay while their chain lives, because reuse detection needs them
- *   (R-OA-16 (2): RT1 presented after RT3 must be recognised as spent, AUTH-ST-05 row 3). Once a
- *   chain is revoked its refresh records are deleted at once; once it ends, they are deleted at
- *   the next rotation of any chain of its entry (the store has no clock of its own, and a renewal
- *   is such a rotation) (Fishball 2026-11-14, #17). So the records of one chain are bounded by its
- *   refresh rate × LIFETIME.refreshChainMaxMs (365 d).
+ *   the `refresh` table. One `chains` record per live chain keeps, across a restart, the entry and
+ *   the generation; a revocation marks it revoked first and deletes it once the chain's refresh
+ *   records are gone, so a mark outlives only a delete that failed (that leftover record then
+ *   stays refused).
+ * - Bounded with no chain cap (R-OA-23; K1d-7): per chain the store keeps the live refresh record
+ *   and only the newest spent one, which is enough to detect the reuse of the token a client last
+ *   rotated away (R-OA-16 (2)). Each rotation deletes the chain's older spent records, so an older
+ *   spent token is unknown (`invalid_grant`, the chain lives), not reuse: the accepted tradeoff.
+ *   A chain therefore holds at most two refresh records, and a revoked one none.
  *
  * Revocation is visible at once, before its durable write lands: `revokedChains` and
  * `generationFloor` are read by every getter, so the next request after a revocation is refused
@@ -25,14 +24,14 @@
  * writes nothing.
  *
  * What the store does not know: entry state (C-TOKENS). A revocation that happened while the
- * connector was down is caught by the generation comparisons of the verifier, `chainsOf` and
- * C-OAUTH-WEB's refresh grant against `TokenRegistry`, not by a startup sweep (Fishball
+ * connector was down is caught by the generation comparisons of the verifier and C-OAUTH-WEB's
+ * refresh grant against `TokenRegistry`, not by a startup sweep (Fishball
  * 2026-11-14): a sweep run while the registry is still loading could revoke every chain.
  */
 import { z } from 'zod'
-import { LIFETIME } from '../../../mcp-schema/index.js'
+import { LIFETIME, REVOCATION_KIND } from '../../../mcp-schema/index.js'
 import { diagnosticOf } from '../../errors.js'
-import { CHAINS_STATE, LOG, MISUSE, NO_GENERATION_FLOOR, OAUTH_STORE, REVOCATION_KIND, SILENT_LOGGER } from './constants.js'
+import { LOG, MISUSE, NO_GENERATION_FLOOR, OAUTH_STORE, SILENT_LOGGER } from './constants.js'
 import { digestOf } from './digest.js'
 import { createSweptMap } from './swept-map.js'
 
@@ -46,7 +45,6 @@ const refreshRecord = z.object({
   clientId: key,
   audience: key,
   generation,
-  chainStartedAt: time,
   spentAt: time.optional(),
 }).strict()
 
@@ -54,7 +52,6 @@ const chainRecord = z.object({
   chainId: key,
   entryKey: key,
   generation,
-  chainStartedAt: time,
   revoked: z.boolean(),
 }).strict()
 
@@ -68,17 +65,15 @@ const refreshKeyOf = (digest) => digestOf(digest)
 const chainKeyOf = (chainId) => digestOf(chainId)
 
 const isExpiredAt = (lifetimeMs) => (record, now) => now >= record.issuedAt + lifetimeMs
-const chainEndsAt = (chain) => chain.chainStartedAt + LIFETIME.refreshChainMaxMs
 
 /**
- * The store over the two tables of the `dsh_connector_oauth` domain.
+ * The store over the two tables of the `dsh_connector_oauth` domain. It logs nothing: each failure
+ * rejects to its caller.
  * @param tables - `{refresh, chains}`, DSH storage-domain KvTables (`get`, `entries`, `put`, `delete`)
- * @param options.logger - background log (`warn`): a failed prune is logged there, never raised
- *   to the refresh that triggered it
  * @returns the K1 `OAuthTokenStore`, plus `forgetEntry(entryKey)` (an entry was deleted: drop
- *   every record of it, so `chainsOf` answers `none` for a key that may never come back).
+ *   every record of it, so nothing of a key that may never come back is kept).
  */
-export function createOAuthTokenStore(tables, { logger = SILENT_LOGGER } = {}) {
+export function createOAuthTokenStore(tables) {
   const access = createSweptMap(isExpiredAt(LIFETIME.accessTokenMs))
   const codes = createSweptMap(isExpiredAt(LIFETIME.codeMs))
   /** chainId → chain record, mirroring the `chains` table (loaded at open, kept in step). */
@@ -112,13 +107,18 @@ export function createOAuthTokenStore(tables, { logger = SILENT_LOGGER } = {}) {
     for (const [digest, code] of [...codes.map]) if (code.entryKey === entryKey) codes.map.delete(digest)
   }
 
-  /** Deletes the stored refresh records matching `match` (inside a `serial` slot). */
+  /** Deletes the stored refresh records for which `match(record, storageKey)` holds (inside a `serial` slot). */
   async function deleteRefresh(match) {
-    const keys = [...tables.refresh.entries()].filter(([, record]) => match(record)).map(([stored]) => stored)
+    const keys = [...tables.refresh.entries()].filter(([stored, record]) => match(record, stored)).map(([stored]) => stored)
     for (const stored of keys) await tables.refresh.delete(stored)
   }
 
-  /** Marks the chains durably revoked and deletes their refresh records (inside a `serial` slot). */
+  /**
+   * Marks the chains durably revoked, deletes their refresh records, then their chain records
+   * (inside a `serial` slot). The mark is written first, so a failed delete leaves a revoked chain,
+   * never a live one; after the deletes nothing of the chain is needed: `revokedChains` keeps
+   * refusing its in-memory access tokens for this life, and a restart drops those anyway.
+   */
   async function persistRevocation(chainIds) {
     for (const chainId of chainIds) {
       const chain = chains.get(chainId)
@@ -129,16 +129,29 @@ export function createOAuthTokenStore(tables, { logger = SILENT_LOGGER } = {}) {
     }
     const ids = new Set(chainIds)
     await deleteRefresh((record) => ids.has(record.chainId))
+    for (const chainId of ids) {
+      if (!chains.has(chainId)) continue
+      await tables.chains.delete(chainKeyOf(chainId))
+      chains.delete(chainId)
+    }
   }
 
   /**
-   * Deletes every refresh record of the entry's chains that ended at `now` (Fishball 2026-11-14,
-   * #17), keeping the chain records. Run after a write of the entry, so the table is swept per
-   * entry as its client refreshes, and a revoked chain's records are already gone.
+   * Revokes the chains of `entryKey` that `match(chain)` selects (R-OA-06, R-OA-22). Visible at
+   * once for the chains known now; picked again at the write slot, so a chain whose first
+   * `putRefresh` was queued earlier (a code redemption in flight) is revoked too, and the access
+   * tokens such a redemption stored meanwhile are dropped there.
    */
-  async function pruneEnded(entryKey, now) {
-    const ended = new Set([...chains.values()].filter((chain) => chain.entryKey === entryKey && now >= chainEndsAt(chain)).map((chain) => chain.chainId))
-    if (ended.size > 0) await deleteRefresh((record) => ended.has(record.chainId))
+  async function revokeChainsOf(entryKey, match) {
+    const pick = () => [...chains.values()].filter((chain) => chain.entryKey === entryKey && match(chain)).map((chain) => chain.chainId)
+    const revoke = (chainIds) => {
+      const ids = new Set(chainIds)
+      for (const chainId of ids) revokedChains.add(chainId)
+      dropAccess((token) => ids.has(token.chainId))
+      return chainIds
+    }
+    revoke(pick())
+    await serial(() => persistRevocation(revoke(pick())))
   }
 
   return Object.freeze({
@@ -171,17 +184,18 @@ export function createOAuthTokenStore(tables, { logger = SILENT_LOGGER } = {}) {
         // Decided at the write slot: a revocation queued before this write wins.
         if (isRevoked(parsed)) return
         if (!chains.has(parsed.chainId)) {
-          const chain = Object.freeze({
-            chainId: parsed.chainId, entryKey: parsed.entryKey, generation: parsed.generation, chainStartedAt: parsed.chainStartedAt, revoked: false,
-          })
+          const chain = Object.freeze({ chainId: parsed.chainId, entryKey: parsed.entryKey, generation: parsed.generation, revoked: false })
           // The chain record is written first, so no refresh record ever exists without its chain.
           await tables.chains.put(chainKeyOf(parsed.chainId), chain)
           chains.set(parsed.chainId, chain)
         }
-        await tables.refresh.put(refreshKeyOf(digest), parsed)
-        // A spent record marks a rotation (R-OA-16 (1)); `spentAt` is the newest time the store sees.
+        const stored = refreshKeyOf(digest)
+        await tables.refresh.put(stored, parsed)
+        // K1d-7: a spent record marks a rotation (R-OA-16 (1)); it is now the chain's newest spent
+        // one, so the chain's older spent records go. Deleted after the put, so a failed put
+        // deletes nothing and reuse of the last spent token stays detectable.
         if (parsed.spentAt !== undefined) {
-          await pruneEnded(parsed.entryKey, parsed.spentAt).catch((error) => logger.warn(LOG.format, LOG.pruneFailed, diagnosticOf(error)))
+          await deleteRefresh((record, key) => key !== stored && record.chainId === parsed.chainId && record.spentAt !== undefined)
         }
       })
     },
@@ -201,21 +215,19 @@ export function createOAuthTokenStore(tables, { logger = SILENT_LOGGER } = {}) {
       generationFloor.set(entryKey, Math.max(below, generationFloor.get(entryKey) ?? NO_GENERATION_FLOOR))
       dropAccess((token) => token.entryKey === entryKey && token.generation < below)
       dropCodes(entryKey)
-      await serial(() => {
-        // Picked at the slot, so a chain whose `putRefresh` was queued earlier is revoked too.
-        const revoked = [...chains.values()].filter((chain) => chain.entryKey === entryKey && chain.generation < below).map((chain) => chain.chainId)
-        for (const chainId of revoked) revokedChains.add(chainId)
-        return persistRevocation(revoked)
-      })
+      await revokeChainsOf(entryKey, (chain) => chain.generation < below)
     },
 
-    chainsOf(entryKey, current, now) {
-      const own = [...chains.values()].filter((chain) => chain.entryKey === entryKey)
-      if (own.length === 0) return CHAINS_STATE.none
-      // Revoked wins over everything (the user's decision, 2026-11-13: such an entry never renews),
-      // including a chain from an older generation whose revocation this life never saw.
-      if (own.some((chain) => revokedChains.has(chain.chainId) || chain.generation < current)) return CHAINS_STATE.revoked
-      return own.some((chain) => now < chainEndsAt(chain)) ? CHAINS_STATE.live : CHAINS_STATE.ended
+    /**
+     * K1d-6: a page reconnect ends every earlier chain of the entry, from any client id URL, and its
+     * unredeemed codes; chainless (machine) access tokens stay. Any access token of the entry that
+     * carries a chain id belongs to an earlier chain at this call (the reconnect's chain starts only
+     * when its code is redeemed), so they are dropped at once, chains still in flight included.
+     */
+    async revokeEntryChains(entryKey) {
+      dropAccess((token) => token.entryKey === entryKey && token.chainId !== undefined)
+      dropCodes(entryKey)
+      await revokeChainsOf(entryKey, () => true)
     },
 
     async forgetEntry(entryKey) {
@@ -255,10 +267,9 @@ export function followRevocations(tokenRegistry, store, { logger = SILENT_LOGGER
  * @param ctx - a Cordis context providing `ctx.storageDomain`
  * @param storageDomain - `{defineDomain, domainTable}` of `@deepseek-ai/dsh-storage-domain`, passed
  *   in by the connector row (as the pair store and the mailbox), so this module imports no host package
- * @param options.logger - see `createOAuthTokenStore`
  * @returns `{store, close}`; the caller owns `close`
  */
-export async function openOAuthTokenStore(ctx, { defineDomain, domainTable }, { logger } = {}) {
+export async function openOAuthTokenStore(ctx, { defineDomain, domainTable }) {
   const domain = await ctx.storageDomain.open(defineDomain({
     name: OAUTH_STORE.domain,
     version: OAUTH_STORE.version,
@@ -266,5 +277,5 @@ export async function openOAuthTokenStore(ctx, { defineDomain, domainTable }, { 
     tables: { [OAUTH_STORE.table.refresh]: domainTable(refreshRecord), [OAUTH_STORE.table.chains]: domainTable(chainRecord) },
   }))
   const tables = { refresh: domain.table(OAUTH_STORE.table.refresh), chains: domain.table(OAUTH_STORE.table.chains) }
-  return { store: createOAuthTokenStore(tables, { logger }), close: () => domain.close() }
+  return { store: createOAuthTokenStore(tables), close: () => domain.close() }
 }

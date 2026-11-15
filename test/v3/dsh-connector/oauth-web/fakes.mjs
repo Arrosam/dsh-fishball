@@ -7,16 +7,19 @@
  *   `admit` must never be called on the approval surface (REQUEST_GATE.admitSurfaces);
  * - TokenRegistry (C-TOKENS'): enabled, `ok` entries only match; disable, delete and value change
  *   bump the generation and fire `onRevoked`;
- * - PairStore (C-PAIR's): `bindFromPage` / `renewFromPage` per K1 (id grammar, id and name
- *   uniqueness by `nameKey`, a deleted entry frees both);
- * - OAuthTokenStore (C-OAUTH's): access tokens and codes in memory, refresh digests and revoked
- *   chains "persisted" (they survive `restart()`), `chainsOf` per K1 ChainsState;
+ * - PairStore (C-PAIR's): `bindFromPage` / `reconnectFromPage` per K1d (K1d-4, K1d-5: id grammar,
+ *   id and name uniqueness by `nameKey`, a deleted entry frees both; a reconnect keeps the
+ *   principal and records the newest client; on an unpaired entry it throws TypeError);
+ * - OAuthTokenStore (C-OAUTH's): access tokens and codes in memory, refresh digests "persisted"
+ *   (they survive `restart()`); no `chainsOf` (withdrawn with the chain cap, R-OA-23);
+ *   `revokeEntryChains` (K1d-6) and the bound of K1d-7 (per chain only the newest spent record
+ *   and the live one are kept);
  * - FailureLimiter (C-OAUTH's): per key and per address within FAILURE_LIMIT.windowMs;
  * - a CIMD fetcher: `fetch(url)` answers what the case scripted, and counts calls;
  * - a logger that keeps every line, for the leak checks.
  */
 import {
-  ENTRY_STATUS, FAILURE_LIMIT, GATE_SURFACE, HOSTS, HTTP_REFUSAL, HTTP_STATUS, ID_REFUSAL, LIFETIME, REFUSAL, REQUEST_GATE, checkName, isAgentId,
+  ENTRY_STATUS, FAILURE_LIMIT, GATE_SURFACE, HOSTS, HTTP_REFUSAL, HTTP_STATUS, ID_REFUSAL, REFUSAL, REQUEST_GATE, checkName, isAgentId,
   nameKey,
 } from '../../../../packages/dsh-connector/mcp-schema/index.js'
 
@@ -119,11 +122,13 @@ export function fakePairs() {
       }
       return { ok: true, pair: newPair(entryKey, id, stored, now, { clientIdUrl: client.clientIdUrl, redirectUri: client.redirectUri }) }
     },
-    async renewFromPage(entryKey, id, client) {
-      calls.push(['renewFromPage', entryKey, id, client])
+    /** K1d: the same id keeps the principal and records the newest client; any other id is already-paired. */
+    async reconnectFromPage(entryKey, id, client) {
+      calls.push(['reconnectFromPage', entryKey, id, client])
       const p = pairs.get(entryKey)
-      if (p === undefined || p.clientIdUrl !== client.clientIdUrl || p.id !== id) return { ok: false, code: REFUSAL.alreadyPaired }
-      return { ok: true, pair: put({ ...p, redirectUri: client.redirectUri }) }
+      if (p === undefined) throw new TypeError(`reconnectFromPage of the unpaired entry ${entryKey}`)
+      if (p.id !== id) return { ok: false, code: REFUSAL.alreadyPaired }
+      return { ok: true, pair: put({ ...p, clientIdUrl: client.clientIdUrl, redirectUri: client.redirectUri }) }
     },
     async setName(principalKey, name) {
       const p = this.byPrincipal(principalKey)
@@ -137,27 +142,22 @@ export function fakePairs() {
 }
 
 /**
- * C-OAUTH's token store. `restart()` is a connector restart: access tokens and codes go, refresh
- * digests and the chains they belong to stay (Q-S7B-3 A; ChainsState "survives a restart as the
- * refresh digests do, so the end reason of a chain is kept with it until the entry is deleted").
+ * C-OAUTH's token store (K1d `OAuthTokenStore`: no `chainsOf`). `restart()` is a connector restart:
+ * access tokens and codes go, refresh digests stay (Q-S7B-3 A).
  */
 export function fakeOAuthStore() {
   let access = new Map()
   let codes = new Map()
   const refresh = new Map()
-  /** chainId → {entryKey, startedAt, generation, revoked}: what K1 says the store keeps per chain. */
-  const chains = new Map()
   const calls = []
   const revoke = (chainId) => {
-    const chain = chains.get(chainId)
-    if (chain !== undefined) chain.revoked = true
     for (const [d, r] of refresh) if (r.chainId === chainId) refresh.delete(d)
     for (const [d, a] of access) if (a.chainId === chainId) access.delete(d)
   }
   return {
     calls,
-    /** What the connector's storage holds: refresh digests, their records, and the chains. */
-    persisted: () => ({ refresh: [...refresh.entries()], chains: [...chains.entries()] }),
+    /** What the connector's storage holds: refresh digests and their records. */
+    persisted: () => ({ refresh: [...refresh.entries()] }),
     accessTokens: () => [...access.entries()],
     restart() { access = new Map(); codes = new Map() },
     putAccess(digest, token) { calls.push(['putAccess', digest]); access.set(digest, token) },
@@ -166,21 +166,23 @@ export function fakeOAuthStore() {
     takeCode(digest) { calls.push(['takeCode', digest]); const c = codes.get(digest); codes.delete(digest); return c },
     async putRefresh(digest, record) {
       calls.push(['putRefresh', digest])
+      // K1d-7: a rotation (a spent record) deletes the chain's older spent records.
+      if (record.spentAt !== undefined) for (const [d, r] of refresh) if (d !== digest && r.chainId === record.chainId && r.spentAt !== undefined) refresh.delete(d)
       refresh.set(digest, record)
-      if (!chains.has(record.chainId)) chains.set(record.chainId, { entryKey: record.entryKey, startedAt: record.chainStartedAt, generation: record.generation, revoked: false })
     },
     getRefresh: (digest) => refresh.get(digest),
     async revokeChain(chainId) { calls.push(['revokeChain', chainId]); revoke(chainId) },
+    /** K1d-6: every chain of the entry with its access tokens, and its unredeemed codes; chainless access tokens stay. */
+    async revokeEntryChains(entryKey) {
+      calls.push(['revokeEntryChains', entryKey])
+      for (const [d, r] of refresh) if (r.entryKey === entryKey) refresh.delete(d)
+      for (const [d, a] of access) if (a.entryKey === entryKey && a.chainId !== undefined) access.delete(d)
+      for (const [d, c] of codes) if (c.entryKey === entryKey) codes.delete(d)
+    },
     async revokeEntry(entryKey, generation) {
       calls.push(['revokeEntry', entryKey, generation])
-      for (const [id, chain] of chains) if (chain.entryKey === entryKey && chain.generation < generation) revoke(id)
+      for (const [d, r] of refresh) if (r.entryKey === entryKey && r.generation < generation) refresh.delete(d)
       for (const [d, a] of access) if (a.entryKey === entryKey && a.generation < generation) access.delete(d)
-    },
-    chainsOf(entryKey, generation, now) {
-      const own = [...chains.values()].filter((c) => c.entryKey === entryKey)
-      if (own.length === 0) return 'none'
-      if (own.some((c) => c.revoked || c.generation < generation)) return 'revoked'
-      return own.some((c) => now < c.startedAt + LIFETIME.refreshChainMaxMs) ? 'live' : 'ended'
     },
   }
 }

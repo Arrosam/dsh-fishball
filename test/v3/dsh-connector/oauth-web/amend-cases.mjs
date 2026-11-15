@@ -44,7 +44,7 @@ export function registerCOAuthWebAmendCases(sdk) {
     row(sdk, ID, part, `a decision body of ${bytes} bytes (APPROVAL_LISTENER.decisionBodyBytes ${BODY_CAP}) → ${over ? '413 with no body, nothing bound' : 'processed: the code redirect'}`, async (w) => {
       w.tokens.add(5, V(5))
       const flow = await open(w)
-      const res = await flow.b.post(padded(flow.b.formBody(PAGE_TEXT.authorize, { token: V(5), id: FIXTURE.id.agentW }), bytes))
+      const res = await flow.b.post(padded(flow.b.formBody(PAGE_TEXT.authorize, { token: V(5) }), bytes))
       if (over) {
         assert.equal(res.status, HTTP_STATUS.payloadTooLarge)
         assert.equal(res.body, '')
@@ -60,11 +60,11 @@ export function registerCOAuthWebAmendCases(sdk) {
       w.tokens.add(5, V(5))
       const flows = []
       for (let i = 0; i < count; i += 1) flows.push(await open(w))
-      const res = await flows[0].b.authorize({ token: V(5), id: FIXTURE.id.agentW })
+      const res = await flows[0].b.authorize({ token: V(5) })
       if (!evicted) return assertCode(w, { res, redirect: redirectOf(res) })
       assertOnPage(res, PAGE_TEXT.expired)
       assert.equal(w.pairs.pairOf(E(5)), undefined)
-      const newest = await flows.at(-1).b.authorize({ token: V(5), id: FIXTURE.id.agentW })
+      const newest = await flows.at(-1).b.authorize({ token: V(5) })
       assertCode(w, { res: newest, redirect: redirectOf(newest) })
     })
   }

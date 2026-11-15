@@ -400,12 +400,27 @@ export interface OAuthTokenStore {
   putCode(digest: string, code: CodeRecord): void
   /** Single use (R-OA-14): returns and removes the record; a second take is `undefined`. */
   takeCode(digest: string): CodeRecord | undefined
+  /**
+   * Stores a refresh record. A record with `spentAt` marks a rotation of its chain: the store then
+   * keeps only this newest spent record of the chain (and the chain's live one), deleting older
+   * spent ones, so a chain's records stay bounded with no chain cap (K1d-7). An older spent token
+   * then reads as unknown (`getRefresh` → undefined), not as reuse.
+   */
   putRefresh(digest: string, record: RefreshRecord): Promise<void>
   getRefresh(digest: string): RefreshRecord | undefined
   /** Revokes every access and refresh token of a chain (reuse, replayed code). */
   revokeChain(chainId: string): Promise<void>
   /** Revokes every token derived from an entry below `generation` (R-OA-06). */
   revokeEntry(entryKey: EntryKey, generation: number): Promise<void>
+  /**
+   * The page reconnect's revocation (R-OA-22; K1d-6): revokes every refresh chain the entry has,
+   * with their access tokens, and drops its unredeemed codes, whatever client id URL they were
+   * issued to. Access tokens with no chain (machine exchange) are kept. Visible to `getRefresh`
+   * and `getAccess` at once; durable as `revokeChain`. An entry with no chain resolves with nothing
+   * changed. C-OAUTH-WEB calls it after `PairStore.reconnectFromPage` succeeds, before it mints the
+   * reconnect's code.
+   */
+  revokeEntryChains(entryKey: EntryKey): Promise<void>
 }
 
 /** A FailureLimiter key's parts (FAILURE_LIMIT.keyParts): `clientId` is absent for an MCP bearer. */

@@ -59,8 +59,17 @@ export const REVOCATION = Object.freeze({
 
 /** `BearerVerifier.verify`'s two refusals (K1 index.d.ts): no Bearer value, or an invalid one. */
 export const VERIFY_ERROR = Object.freeze({ missing: 'missing', invalidToken: OAUTH_ERROR.invalidToken })
-/** `OAuthTokenStore.chainsOf`'s answers (K1 `ChainsState`). */
-export const CHAINS = Object.freeze({ none: 'none', live: 'live', ended: 'ended', revoked: 'revoked' })
+/** K1d `OAuthTokenStore`'s members (index.d.ts); `chainsOf` and its `ChainsState` are withdrawn (R-OA-23). */
+export const TOKEN_STORE_MEMBERS = Object.freeze(['putAccess', 'getAccess', 'putCode', 'takeCode', 'putRefresh', 'getRefresh', 'revokeChain', 'revokeEntry'])
+export const WITHDRAWN_STORE_MEMBER = 'chainsOf'
+/** K1d `RefreshRecord` of an unspent refresh token: these members and no other (`chainStartedAt` withdrawn, K1d-5). Sorted. */
+/**
+ * K1d-7 (decided by Fishball, 2026-11-16): the store's persisted refresh table (one record file per
+ * digest under a directory of this name in the storage root) and how many records one chain keeps:
+ * the newest spent one and the live one. `rotations` is the case's N.
+ */
+export const REFRESH_BOUND = Object.freeze({ table: 'refresh', recordsPerChain: 2, rotations: 50, recordFile: /\.json$/ })
+export const REFRESH_RECORD_MEMBERS = Object.freeze(['audience', 'chainId', 'clientId', 'entryKey', 'generation'])
 /** The fields of K1's `Caller` the cases compare. */
 export const CALLER_FIELDS = Object.freeze(['entryKey', 'clientId', 'principalKey', 'scope', 'audience', 'generation'])
 /** The fields of K1's `GrantContext` and `FailureKey`. */
@@ -114,6 +123,11 @@ export const FIXTURE = Object.freeze({
   unsupportedGrant: 'password',
   /** The browser client of the fake code and refresh grants (AUTH-UC-10's fixture). */
   cimd: 'https://agent.example/cimd.json',
+  /** C-PAGE-ID: the redirect the approval page recorded with a page-bound pair (K1d `Pair.redirectUri`). */
+  cimdRedirect: 'http://127.0.0.1:7777/cb',
+  /** AUTH-BVA-11 (R-OA-23): around the withdrawn 365-day cap, and far beyond it. Case data, not a product value. */
+  withdrawnChainCapMs: 365 * DAY_MS,
+  tenYearsMs: 10 * 365 * DAY_MS,
   fakeAccess: 'fbtest-fake-access-token',
   fakeRefresh: 'fbtest-fake-refresh-token',
   fakeCode: 'fbtest-fake-code',

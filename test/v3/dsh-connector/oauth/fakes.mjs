@@ -115,15 +115,16 @@ export class FakeTokenRegistry {
 }
 
 /**
- * C-PAIR's `PairStore`, faked on its read side (K1 `Pair`): `bind` stands in for a `pair` call the
- * case made at the MCP endpoint. Every write member records the call, so a case can show the token
- * endpoint never pairs (R-ID-05, AUTH-UC-03 post).
+ * C-PAIR's `PairStore`, faked on its read side (K1d `Pair`): `bind` stands in for a `pair` call the
+ * case made at the MCP endpoint, or, with `client` ({clientIdUrl, redirectUri}), for the approval
+ * page's bind (K1d: only a page-bound pair carries them). Every write member records the call, so a
+ * case can show the token endpoint never pairs (R-ID-05, AUTH-UC-03 post).
  */
 export class FakePairStore {
   #pairs = new Map()
   writes = []
-  bind(entryKey, id, name = null, now = FIXTURE.t0) {
-    const pair = Object.freeze({ entryKey, principalKey: FIXTURE.principalKey(entryKey), id, name, pairedAt: now, lastSeenAt: null })
+  bind(entryKey, id, name = null, now = FIXTURE.t0, client = {}) {
+    const pair = Object.freeze({ entryKey, principalKey: FIXTURE.principalKey(entryKey), id, name, pairedAt: now, lastSeenAt: null, ...client })
     this.#pairs.set(entryKey, pair)
     return pair
   }
@@ -133,7 +134,7 @@ export class FakePairStore {
   #write(member) { return async (...args) => { this.writes.push([member, ...args]); return undefined } }
   pair = this.#write('pair')
   bindFromPage = this.#write('bindFromPage')
-  renewFromPage = this.#write('renewFromPage')
+  reconnectFromPage = this.#write('reconnectFromPage')
   setName = this.#write('setName')
   remove = this.#write('remove')
   seen() {}
