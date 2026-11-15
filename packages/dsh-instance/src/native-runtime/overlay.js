@@ -19,8 +19,8 @@ const WEB_RUNTIME_CONFIG = Object.freeze({ openBrowser: false, printUrl: false, 
  * lifecycle row and the native-web adapter, from the instance's snapshot) and the isolation of the
  * child's instructions and skills from the user's own. No guard row: the guards are fishball-core's
  * own patch (F-GUARDS), which applies because the instance places core last (placement.js). No
- * plugin-set or hosted-settings row: those are placed bundles, which the child's owner can switch
- * off (R-BND-02, R-HOST-11); core's own patch inserts its V2 child rows.
+ * plugin-set row: those are placed bundles, which the child's owner can switch off (R-BND-02);
+ * core's own patch inserts its V2 child rows.
  *
  * Whole-row replacement preserves standard native configuration and tool declarations.
  */

@@ -1,6 +1,5 @@
 /**
  * Keep one contribution bound to the live, compatible `fishballInstance` (extension points §1).
- * fishball-fold-notify's src/instance.js is a deliberate copy (its header says why); change both together.
  *
  * A missing service or another `apiVersion` is an "older instance": nothing is attached. The
  * service may arrive after this row (the app row publishes it after an asynchronous chat start),

@@ -42,13 +42,12 @@ function overriddenPolicy(ctx, intended) {
   }).map((spec) => code.policyPrefix + spec.key)
 }
 
-/** `agent-presets` when the roster offers any preset other than core's and fishball-watchdog's. */
+/** `agent-presets` when the roster offers any preset other than core's own. */
 async function overriddenPresets(ctx, managerPreset) {
   const presets = ctx.get(services.agentPresets)
   if (typeof presets?.list !== 'function') return []
-  const offered = [managerPreset, GUARDS.watchdogAgentPreset]
   const ids = (await presets.list()).map((preset) => preset.id)
-  return ids.every((id) => offered.includes(id)) ? [] : [code.agentPresets]
+  return ids.every((id) => id === managerPreset) ? [] : [code.agentPresets]
 }
 
 /**

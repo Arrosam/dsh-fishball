@@ -572,7 +572,6 @@ function equivalencePartitions(sdk) {
     await turnTo(w, S.s1, p)
     assert.deepEqual(await pendingOf(w, d), [])
   })
-  todoRow(sdk, 'WATCH-EP-01', '5', 'managed by a Fishball whose Watchdog supervises it → Fishball (never Watchdog)', LATER.watchdog)
   todoRow(sdk, 'WATCH-EP-01', '6', 'after Q24 succession P → P\' → P\' only', LATER.succeed)
 
   // HAND-EP-01 — Who can reach the hand-over service.

@@ -1,16 +1,16 @@
 /**
  * I-PLACE black-box cases (.runtime/reports/v3-w3-briefs.md "I-PLACE test brief"; v3-tasks.md row
- * I-PLACE): PLAT-DT-01, HOST-ST-01 rows 1–3, HOST-UC-06 (overlay postcondition), HOST-UC-08 main 1,
- * A1, A2, A3, HOST-EP-03 rows 6–7, HOST-DT-03, PLAT-DT-04 rule 1 and HOST-DT-03 rule 6 in a real
- * hosted child, the V2 guard cases LITE-UC-03, LITE-EP-13 and SET-EP-12 restored in a hosted child
+ * I-PLACE): PLAT-DT-01, HOST-ST-01 rows 1–3, HOST-UC-06 (overlay postcondition), HOST-UC-08 main 1
+ * and A3, HOST-EP-03 rows 6–7, PLAT-DT-04 rule 1 in a real hosted child (the fishball-hosted-settings
+ * rows HOST-UC-08 A1/A2 and HOST-DT-03 left with that bundle: REMOVE-WD, design §1.0), the V2 guard cases LITE-UC-03, LITE-EP-13 and SET-EP-12 restored in a hosted child
  * (V3 rule: design §5a.2 and §6.2), the K3 `unmount` rule of the settings-section point, the child
  * isolation rows (Fishball 2026-11-15) and PLAT-EP-07 row 5 (stays failing, REL-PACK).
- * Requirements R-BND-01…05, R-FB-02/09/10/12, R-HOST-02/04/11, R-ARCH-08, TQ-R4 B, K3 settings
+ * Requirements R-BND-01…05, R-FB-02/09/10/12, R-HOST-02/04, R-ARCH-08, K3 settings
  * sections (packages/core/contracts/settings-sections.d.ts, README §Settings sections).
  *
  * Techniques, Use Cases first:
- * - Use Case: HOST-UC-06 (lifecycle postcondition), HOST-UC-08 main 1, A1, A2, A3;
- * - Decision Table: PLAT-DT-01 rules 1–9, HOST-DT-03 rules 1–10, PLAT-DT-04 rule 1;
+ * - Use Case: HOST-UC-06 (lifecycle postcondition), HOST-UC-08 main 1, A3;
+ * - Decision Table: PLAT-DT-01 rules 1–9, PLAT-DT-04 rule 1;
  * - State Transition: HOST-ST-01 rows 1–3, and the `unmount` life of one section
  *   (registered → mounted → unmounted at panel close / withdrawal / plugin disposal; a throwing
  *   mount never reaches unmounted);
@@ -33,14 +33,14 @@ import { after, test } from 'node:test'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { TEST_HOMES } from '../../../support/constants.mjs'
 import { bootHost, newHome, until } from '../../../support/host.mjs'
-import { MARK, ROUTE, runtimeOf } from '../../fishball-core/package/constants.mjs'
+import { ROUTE, runtimeOf } from '../../fishball-core/package/constants.mjs'
 import { admitChild, bootGraph, openSettingsPage } from '../../fishball-core/package/page.mjs'
 import { corePatchFile } from '../../fishball-core/package/static.mjs'
 import { caseName, caseTest } from '../../contract/package-boundaries/cases.mjs'
-import { DSH_FIELD, V3 } from '../../contract/package-boundaries/constants.mjs'
+import { V3 } from '../../contract/package-boundaries/constants.mjs'
 import { readManifest } from '../../contract/package-boundaries/packages.mjs'
 import {
-  BUDGET, CHILD, CORE_COPY, DSH_ROW, GUARDS, INTEGRATION, LATER, NEVER_GUARDED, OVERLAY, PANEL, POLICY, PROBE, RELAYED, REPORT, SET,
+  BUDGET, CHILD, CORE_COPY, DSH_ROW, GUARDS, INTEGRATION, LATER, OVERLAY, PANEL, POLICY, PROBE, RELAYED, REPORT, SET,
 } from './constants.mjs'
 import {
   blockedBy, childHome, composeChild, childProfile, launchOverlayExport, launchOverlays, placedCopy, placementFile, placementMode, placementRecord, profileBundles,
@@ -335,14 +335,14 @@ export function registerIPlaceCases(sdk) {
     assert.deepEqual(ops.filter((op) => isIsolation(op?.id ?? '') && (op.disabled === true || Array.isArray(op.insert))).map((op) => op.id), [])
   })
 
-  // ---- HOST-UC-08 (R-HOST-11, R-BND-02, R-BND-04, TQ-R4 B).
-  integrationCase(sdk, 'HOST-UC-08', 'main 1', "the child's profile holds the four set members and fishball-hosted-settings, all on, core last", async () => {
+  // ---- HOST-UC-08 (R-BND-02, R-BND-04).
+  integrationCase(sdk, 'HOST-UC-08', 'main 1', "the child's profile holds the set members (board, core), all on, core last", async () => {
     const { home } = await ready()
     const bundles = profileBundles(home)
     for (const name of SET.placed) assert.ok(bundles.includes(name), name + ' is not on: ' + show(bundles))
     assert.equal(bundles.at(-1), SET.core, 'core is not last: ' + show(bundles))
   })
-  integrationCase(sdk, 'HOST-UC-08', 'main 1', "the child's plugin list (DSH's own profile reader) lists the five as installed bundles, all enabled", async () => {
+  integrationCase(sdk, 'HOST-UC-08', 'main 1', "the child's plugin list (DSH's own profile reader) lists the set members as installed bundles, all enabled", async () => {
     const { home } = await ready()
     const { readProfilePlugins } = await import(pathToFileURL(path.join(runtimeOf(sdk), SDK_SCOPE + 'dsh-app-boot', 'lib', 'index.js')).href)
     const { dependencies } = readProfilePlugins({ binName: 'fbtest', profileDir: childProfile(home), installAnchor: path.join(runtimeOf(sdk), SDK_SCOPE + 'dsh', 'package.json') })
@@ -350,30 +350,6 @@ export function registerIPlaceCases(sdk) {
       const d = dependencies.find((x) => x.name === name)
       assert.ok(d?.bundle && d.enabled, name + ': ' + show(d))
     }
-  })
-  integrationCase(sdk, 'HOST-UC-08', 'A1', 'fishball-hosted-settings switched off → after the restart the hosted sections are absent; the generic panel works, with no error, no notice, no placeholder', async (t) => {
-    await ready()
-    const status = await setup.restart(sdk, (home) => setProfileBundles(home, profileBundles(home).filter((b) => b !== SET.hostedSettings)))
-    assert.equal(status?.state, CHILD.state.ready, show(status))
-    const page = await openSettingsPage(t, { sdk, child: await admitChild(setup.host) })
-    assert.ok(page.panel, 'no generic panel')
-    assert.equal(page.byAttr(MARK.readOnly).length, 1, 'the Read Only line')
-    assert.equal(page.byAttr(MARK.status).length + page.byAttr(MARK.restart).length, 0, 'a hosted section is still shown')
-    assert.deepEqual(page.byAttr('role').map((n) => n.props.role), [], 'a notice or error placeholder')
-    assert.deepEqual(page.failed(), [])
-    assert.deepEqual(page.errors, [])
-  })
-  integrationCase(sdk, 'HOST-UC-08', 'A1', 'switched off: the host side is unaffected (the host reports the child ready, as before)', async () => {
-    await ready()
-    assert.equal((await setup.host.get(ROUTE.status)).json?.state, CHILD.state.ready)
-  })
-  caseTest(sdk, 'HOST-UC-08', 'A1', 'the UI says "restart required" when fishball-hosted-settings is switched', null, LATER.restartNotice)
-  integrationCase(sdk, 'HOST-UC-08', 'A2', 'switched back on → after the next restart the hosted sections are back', async (t) => {
-    await ready()
-    const status = await setup.restart(sdk, (home) => setProfileBundles(home, [...profileBundles(home).filter((b) => b !== SET.core), SET.hostedSettings, SET.core]))
-    assert.equal(status?.state, CHILD.state.ready, show(status))
-    const page = await openSettingsPage(t, { sdk, child: await admitChild(setup.host) })
-    assert.ok((await page.waitFor(MARK.status)).length > 0, 'the hosted sections are not back')
   })
   // HOST-UC-08 A3: the generic panel comes from core itself, so the same core package shows it in standalone.
   caseTest(sdk, 'HOST-UC-08', 'A3', 'core ships the generic panel as the flat chunk client.settings.js beside its client.js, and in its files', () => {
@@ -384,11 +360,6 @@ export function registerIPlaceCases(sdk) {
   caseTest(sdk, 'HOST-UC-08', 'A3', 'core drops ui/fishball-settings (the panel is not a separate client package)', () => {
     assert.equal(fs.existsSync(path.join(V3.core.dir, PANEL.dropped)), false)
   })
-  caseTest(sdk, 'HOST-UC-08', 'A3', "fishball-hosted-settings' manifest injects fishball-core's client (no fishball-settings package)", () => {
-    const manifest = JSON.parse(fs.readFileSync(path.join(V3.instance.dir, 'src', 'child-settings', 'package.json'), 'utf8'))
-    assert.deepEqual(manifest[DSH_FIELD]?.client?.inject, [PANEL.hostedInject])
-  })
-  caseTest(sdk, 'HOST-UC-08', 'A3', 'standalone: core reports nothing missing for fishball-hosted-settings', null, LATER.status)
 
   // ============================================================== State Transition: HOST-ST-01 rows 1–3
   integrationCase(sdk, 'HOST-ST-01', 1, 'Stopped → host app ready → Starting, then (row 2) Running: ready with the origin set', async () => {
@@ -407,8 +378,8 @@ export function registerIPlaceCases(sdk) {
   })
 
   // ============================================================== Decision Tables
-  // ---- PLAT-DT-01 (R-BND-01…04, R-FB-10) and HOST-DT-03 rules 1–5, 7, 8 (R-HOST-11): one record, the same rules.
-  integrationCase(sdk, 'PLAT-DT-01', 1, 'first placement: every member and fishball-hosted-settings placed, on, recorded, core last', async () => {
+  // ---- PLAT-DT-01 (R-BND-01…04, R-FB-10): one record.
+  integrationCase(sdk, 'PLAT-DT-01', 1, 'first placement: every member placed, on, recorded, core last', async () => {
     const { home } = await ready()
     const record = placementRecord(home)
     assert.equal(record?.format, RELAYED.record.format, show(record))
@@ -421,19 +392,12 @@ export function registerIPlaceCases(sdk) {
     assert.ok(fs.existsSync(placementFile(home)), 'no placement record')
     assert.equal(placementMode(home), RELAYED.record.mode)
   })
-  integrationCase(sdk, 'HOST-DT-03', 1, 'first placement of fishball-hosted-settings: placed, on; panel generic + hosted', async (t) => {
-    const { home, host } = await ready()
-    assert.ok(enabled(home, SET.hostedSettings))
-    const page = await openSettingsPage(t, { sdk, child: await admitChild(host) })
-    assert.equal(page.byAttr(MARK.readOnly).length, 1)
-    assert.ok((await page.waitFor(MARK.status)).length > 0)
-  })
   // Rules 2–5 as one walk over restarts of the same child (each restart is the "next start").
   for (const [rule, title, name] of [
-    [2, 'recorded, present, on → stays on', SET.features[1]],
-    [3, 'recorded, present, off → stays off (a disable survives the restart)', SET.features[1]],
-    [4, 'recorded, deleted while off → placed again, off', SET.features[1]],
-    [5, 'recorded, deleted while on → placed again, on', SET.features[2]],
+    [2, 'recorded, present, on → stays on', SET.features[0]],
+    [3, 'recorded, present, off → stays off (a disable survives the restart)', SET.features[0]],
+    [4, 'recorded, deleted while off → placed again, off', SET.features[0]],
+    [5, 'recorded, deleted while on → placed again, on', SET.features[0]],
   ]) {
     integrationCase(sdk, 'PLAT-DT-01', rule, title, async () => {
       await ready()
@@ -441,9 +405,10 @@ export function registerIPlaceCases(sdk) {
         2: () => {},
         3: (home) => setProfileBundles(home, profileBundles(home).filter((b) => b !== name)),
         4: (home) => { setProfileBundles(home, profileBundles(home).filter((b) => b !== name)); removePlaced(home, name) },
-        5: (home) => removePlaced(home, name),
+        // Rule 5's member must be on when deleted: rules 3–4 left the one feature (board) off, so
+        // it is switched back on, before core, while the child is down.
+        5: (home) => { if (!enabled(home, name)) setProfileBundles(home, [...profileBundles(home).filter((b) => b !== SET.core), name, SET.core]); removePlaced(home, name) },
       }[rule]
-      // Rule 5's member must be on when deleted: re-enable a member a previous rule left off.
       const status = await setup.restart(sdk, action)
       assert.equal(status?.state, CHILD.state.ready, show(status))
       const home = setup.home
@@ -453,29 +418,7 @@ export function registerIPlaceCases(sdk) {
       assert.equal(profileBundles(home).at(-1), SET.core, 'core last')
     })
   }
-  for (const [rule, title, mode] of [
-    [3, 'fishball-hosted-settings off → stays off; panel generic only', 'off'],
-    [4, 'fishball-hosted-settings deleted while off → re-placed off', 'deleted-off'],
-    [5, 'fishball-hosted-settings deleted while on → re-placed on', 'deleted-on'],
-    [2, 'fishball-hosted-settings on → stays on', 'on'],
-  ]) {
-    integrationCase(sdk, 'HOST-DT-03', rule, title, async () => {
-      await ready()
-      const name = SET.hostedSettings
-      const turnOn = (home) => { if (!enabled(home, name)) setProfileBundles(home, [...profileBundles(home).filter((b) => b !== SET.core), name, SET.core]) }
-      const action = {
-        off: (home) => setProfileBundles(home, profileBundles(home).filter((b) => b !== name)),
-        'deleted-off': (home) => { setProfileBundles(home, profileBundles(home).filter((b) => b !== name)); removePlaced(home, name) },
-        'deleted-on': (home) => { turnOn(home); removePlaced(home, name) },
-        on: turnOn,
-      }[mode]
-      const status = await setup.restart(sdk, action)
-      assert.equal(status?.state, CHILD.state.ready, show(status))
-      assert.equal(enabled(setup.home, name), mode === 'deleted-on' || mode === 'on', show(profileBundles(setup.home)))
-      for (const dir of RELAYED.copyDirs) assert.ok(fs.existsSync(placedCopy(setup.home, name, dir)), `not re-placed in ${dir}/`)
-    })
-  }
-  for (const [id, rule, name] of [['PLAT-DT-01', 7, SET.features[0]], ['HOST-DT-03', 8, SET.hostedSettings]]) {
+  for (const [id, rule, name] of [['PLAT-DT-01', 7, SET.features[0]]]) {
     integrationCase(sdk, id, rule, `${name} off and incompatible → the start is not blocked (only enabled bundles block)`, async () => {
       await ready()
       const status = await startIncompatible(setup, sdk, name, (home) => setProfileBundles(home, profileBundles(home).filter((b) => b !== name)))
@@ -483,7 +426,7 @@ export function registerIPlaceCases(sdk) {
       assert.equal(enabled(setup.home, name), false)
     })
   }
-  for (const [id, rule, name] of [['PLAT-DT-01', 6, SET.features[1]], ['HOST-DT-03', 7, SET.hostedSettings]]) {
+  for (const [id, rule, name] of [['PLAT-DT-01', 6, SET.features[0]]]) {
     integrationCase(sdk, id, rule, `${name} on and incompatible → the child start is blocked; the status names it (PROFILE_INCOMPATIBLE)`, async () => {
       await ready()
       const status = await startIncompatible(setup, sdk, name, (home) => {
@@ -496,32 +439,31 @@ export function registerIPlaceCases(sdk) {
   }
   caseTest(sdk, 'PLAT-DT-01', 6, 'core on and incompatible blocks the start too (R-FB-10: core follows the same rules)', null, LATER.host)
   caseTest(sdk, 'PLAT-DT-01', 8, 'a toggle while the child runs takes effect at the next restart; the UI says "restart required"', null, LATER.restartNotice)
-  caseTest(sdk, 'HOST-DT-03', 9, 'fishball-hosted-settings toggled while the child runs: effect at the next restart; "restart required"', null, LATER.restartNotice)
   caseTest(sdk, 'PLAT-DT-01', 1, 'core disabled by the owner: the instance starts the child anyway and reports fishball-off', null, LATER.host)
 
   // ---- PLAT-DT-01 rule 9 (R-BND-01 strict): the host never lists or loads the bundled copies.
-  caseTest(sdk, 'PLAT-DT-01', 9, "the instance's own manifest selects no set member, hosted settings or library as a bundle or dependency of the host", () => {
+  caseTest(sdk, 'PLAT-DT-01', 9, "the instance's own manifest selects no set member or library as a bundle or dependency of the host", () => {
     const manifest = readManifest(V3.instance.dir)
     const named = ['dependencies', 'peerDependencies', 'optionalDependencies'].flatMap((f) => Object.keys(manifest[f] ?? {}))
     assert.deepEqual(named.filter((n) => SET.placed.includes(n)), [])
   })
-  integrationCase(sdk, 'PLAT-DT-01', 9, "a running hosted setup: the host's plugin list holds no set member and no fishball-hosted-settings", async () => {
+  integrationCase(sdk, 'PLAT-DT-01', 9, "a running hosted setup: the host's plugin list holds no set member", async () => {
     const { host } = await ready()
     const names = (await host.call('allBundles')).map((b) => b.name)
     assert.deepEqual(names.filter((n) => SET.placed.includes(n)), [])
   })
-  integrationCase(sdk, 'PLAT-DT-01', 9, "a running hosted setup: the host's boot graph serves no client entry of the set or of fishball-hosted-settings", async () => {
+  integrationCase(sdk, 'PLAT-DT-01', 9, "a running hosted setup: the host's boot graph serves no client entry of the set", async () => {
     const { host } = await ready()
     const html = (await host.get(ROUTE.childRoot)).text
     for (const name of SET.placed) assert.equal(html.includes(`"id":"${name}"`), false, 'the host serves ' + name)
   })
 
-  // ---- PLAT-DT-04 rule 1 and HOST-DT-03 rule 6 in a real hosted child (replace the F-GUARDS LATER.place todos, Q-20).
+  // ---- PLAT-DT-04 rule 1 in a real hosted child (replaces the F-GUARDS LATER.place todos, Q-20).
   integrationCase(sdk, 'PLAT-DT-04', 1, 'hosted (HMR off): the instance writes the child profile with core last; guards apply from the first start', async () => {
     const { home } = await ready()
     const bundles = profileBundles(home)
     assert.equal(bundles.at(-1), SET.core, show(bundles))
-    for (const name of [...SET.features, SET.hostedSettings]) assert.ok(bundles.indexOf(name) < bundles.indexOf(SET.core), name + ' after core')
+    for (const name of SET.features) assert.ok(bundles.indexOf(name) < bundles.indexOf(SET.core), name + ' after core')
     assert.ok(launchOverlays(home)[0]?.some((op) => op?.id === OVERLAY.hmr && op.disabled === true), 'HMR not off')
   })
   integrationCase(sdk, 'PLAT-DT-04', 1, 'hosted: no dsh-instance is ever started in the child (no nested child)', async () => {
@@ -529,28 +471,17 @@ export function registerIPlaceCases(sdk) {
     assert.equal(profileBundles(home).includes(GUARDS.instanceRow), false, 'a dsh-instance bundle in the child')
     assert.equal(fs.existsSync(path.join(childHome(home), ...RELAYED.launches)), false, 'a nested child runtime in the child home')
   })
-  integrationCase(sdk, 'HOST-DT-03', 6, 'a real hosted child: fishball-hosted-settings on; core\'s guards leave it enabled; settings panel generic + hosted', async (t) => {
-    const { home, host } = await ready()
-    assert.ok(enabled(home, NEVER_GUARDED))
-    const graph = await childGraph(host)
-    assert.ok(graph.includes(NEVER_GUARDED), 'its client entry is not served: ' + show(graph))
-    const page = await openSettingsPage(t, { sdk, child: await admitChild(host) })
-    assert.equal(page.byAttr(MARK.readOnly).length, 1)
-    assert.ok((await page.waitFor(MARK.status)).length > 0)
-  })
-  // Dev 6d13f6a1: the panel is core's chunk; the child's Fishball client entries are these four.
-  integrationCase(sdk, 'HOST-UC-08', 'A3', "a real hosted child serves fishball-page, fishball-recommend-plugins, fishball-core and fishball-hosted-settings, and no fishball-settings entry", async () => {
+  // Dev 6d13f6a1: the panel is core's chunk; the child's Fishball client entries are these three.
+  integrationCase(sdk, 'HOST-UC-08', 'A3', "a real hosted child serves fishball-page, fishball-recommend-plugins and fishball-core, and no fishball-settings entry", async () => {
     const { host } = await ready()
     const graph = (await childGraph(host)).filter((id) => id.startsWith('fishball-'))
     assert.deepEqual(graph.sort(), [...PANEL.childEntries].sort())
   })
-  caseTest(sdk, 'HOST-DT-03', 6, 'a real hosted child: guards-overridden does not name fishball-hosted-settings', null, LATER.status)
-  caseTest(sdk, 'HOST-DT-03', 10, 'standalone: not present; core reports no missing member for it', null, LATER.status)
 
   // ============================================================== EP: HOST-EP-03 rows 6–7
-  caseTest(sdk, 'HOST-EP-03', 6, 'no settings row: the overlay inserts no fishball-hosted-settings and no panel row', async (t) => {
+  caseTest(sdk, 'HOST-EP-03', 6, 'no settings row: the overlay inserts no panel row', async (t) => {
     const ids = insertedOf(await overlayOps(sdk, scratch(t, 'fbtest-iplace-ep-'), [])).map((r) => r.id)
-    assert.deepEqual(ids.filter((id) => [SET.hostedSettings, PANEL.service].includes(id) || /settings/.test(id)), [])
+    assert.deepEqual(ids.filter((id) => id === PANEL.service || /settings/.test(id)), [])
   })
   caseTest(sdk, 'HOST-EP-03', 6, 'no overlay row points into core (core is a placed bundle; its rows come from its own patch)', async (t) => {
     const ops = await overlayOps(sdk, scratch(t, 'fbtest-iplace-ep-'), [])
@@ -599,7 +530,7 @@ export function registerIPlaceCases(sdk) {
       assert.ok(typeof row.name === 'string' && row.name.startsWith(RELAYED.rows.slimPrefix), `${id}: ${show(row.name)} is not a ${RELAYED.rows.slimPrefix}* subpath`)
     }
   })
-  integrationCase(sdk, 'HOST-EP-03', 7, 'the child profile and the placement record hold the four set members plus fishball-hosted-settings, and nothing else of Fishball', async () => {
+  integrationCase(sdk, 'HOST-EP-03', 7, 'the child profile and the placement record hold the set members (board, core), and nothing else of Fishball', async () => {
     const { home } = await ready()
     const fishball = (list) => list.filter((n) => n.startsWith('fishball-'))
     assert.deepEqual(fishball(placementRecord(home)[RELAYED.record.key]).sort(), [...SET.placed].sort())
@@ -620,7 +551,6 @@ export function registerIPlaceCases(sdk) {
     const top = fs.readdirSync(copy).filter((f) => f !== 'node_modules')
     assert.deepEqual(top.filter((f) => !expected.has(f)), [], 'files beyond core\'s files list')
   })
-  caseTest(sdk, 'HOST-EP-03', 7, 'a standalone profile never contains fishball-hosted-settings', null, LATER.status)
 
   // ============================================================== The V2 guard cases restored in a hosted child (V3 rule)
   // V3 rule (design e1e5577 §5a.2 and §6.2; §5a.2 as amended at 32fca3c5, S6 round 2): the guards

@@ -1,7 +1,8 @@
 /**
- * Supplementary FN-1/B1 framework verification, not real tools/agents host API evidence.
+ * Supplementary B1 framework verification, not real tools/agents host API evidence (the FN-1 rows
+ * left with fishball-fold-notify, REMOVE-WD, design §1.0).
  * Oracles: instance-ext-w0-decisions.md §4 and instance-ext-w0-skeleton-use-cases.md
- * FN1-UC-LOAD/B1-UC-LOAD only. No product implementation is inspected by this test.
+ * B1-UC-LOAD only. No product implementation is inspected by this test.
  * V3 realignment: R-FB-06 (docs/planning/v3-requirements.md line 869) replaces W0's
  * `instance-hooks-missing` with one `fishball-core-missing` warning per feature plugin, so the
  * absence warning is now checked for both rows (with no appReady service it is logged at load).
@@ -38,7 +39,6 @@ const PROBE = Object.freeze({
   point: Object.freeze({ tool: 'tool', setup: 'setup', batcher: 'batcher', claim: 'claim', attention: 'attention' }),
   service: Object.freeze({ tools: 'tools', instance: 'fishballInstance' }),
   plugins: Object.freeze([
-    Object.freeze({ id: 'FN1', entry: '../fold-notify/index.js' }),
     Object.freeze({ id: 'B1', entry: '../board/index.js' }),
   ]),
 })

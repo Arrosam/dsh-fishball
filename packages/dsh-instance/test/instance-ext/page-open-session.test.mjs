@@ -27,6 +27,8 @@ const ROUTE = Object.freeze({
   secret: 'secret-detail-must-not-leak',
 })
 const ID = 'session-manager-1'
+// Any plugin id: manager.notify takes the caller's id as given (X10).
+const NOTICE_PLUGIN = 'fbtest-plugin'
 
 // ---------------------------------------------------------------------------------------------
 // A. Route module
@@ -359,7 +361,7 @@ describe('B. ensureSession through the chat activation', () => {
   it('B-07 DT: concurrent ensure + notify(wake) share one activation', async (t) => {
     const h = await bootChild(t)
     const service = h.requireInstance()
-    const notice = service.manager.notify({ pluginId: 'fishball-watchdog', dedupeKey: 'page-open-1', text: 'a notice', wake: true })
+    const notice = service.manager.notify({ pluginId: NOTICE_PLUGIN, dedupeKey: 'page-open-1', text: 'a notice', wake: true })
     const [id, outcome] = await Promise.allSettled([service.manager.ensureSession(), notice])
     assert.equal(id.status, 'fulfilled', 'ensure resolved: ' + (id.reason?.message ?? ''))
     assert.equal(h.agents.length, 1, 'never two manager sessions (notify outcome: ' + (outcome.status === 'rejected' ? outcome.reason?.message : 'ok') + ')')
@@ -370,7 +372,7 @@ describe('B. ensureSession through the chat activation', () => {
     const h = await bootChild(t)
     const service = h.requireInstance()
     const ensure = service.manager.ensureSession()
-    const notice = service.manager.notify({ pluginId: 'fishball-watchdog', dedupeKey: 'page-open-2', text: 'a notice', wake: true })
+    const notice = service.manager.notify({ pluginId: NOTICE_PLUGIN, dedupeKey: 'page-open-2', text: 'a notice', wake: true })
     const [outcome, id] = await Promise.allSettled([notice, ensure])
     assert.equal(id.status, 'fulfilled')
     assert.equal(h.agents.length, 1, 'never two manager sessions (notify outcome: ' + (outcome.status === 'rejected' ? outcome.reason?.message : 'ok') + ')')

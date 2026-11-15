@@ -406,8 +406,6 @@ export function registerInterceptCases(sdk) {
     await assertFishballOnce(world, event)
     assert.equal(world.modelRequestsWith(event.marker).length, 1, 'model requests carrying the released event')
   })
-  row(sdk, ID.ep05, 6, 'a Watchdog escalate later settled by the user: only the non-waking settlement note reaches Fishball', null, LATER.wdDecide)
-  row(sdk, ID.ep05, 7, 'a Watchdog allow or justified reject: nothing in Fishball\'s context; logged only', null, LATER.wdDecide)
 
   // ===================================================================== EVT-DT-02 (Decision Table)
   /** R1 registered first, R2 second, both for CONTRIBUTED; returns who received the event. */

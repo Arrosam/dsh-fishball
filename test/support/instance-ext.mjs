@@ -5,10 +5,10 @@
  * overlay uses (`session-tools`, `approvals`, `app`, `inbox`, `admin`) over a fake Cordis
  * context, and attaches a fake main host transport to the child's own bridge. That makes the
  * public surfaces of the design the observation points:
- * - the `fishballInstance` service the app row provides (X1–X16);
- * - the child's tools and their real bridge requests (X16, X19);
+ * - the `fishballInstance` service the app row provides;
+ * - the child's tools and their real bridge requests;
  * - the child's HTTP surface (`/api/chat`, `/api/ui-extensions`, UI files);
- * - the inbox items the main host pushes and their ack frames (X9, X19 hand-over line).
+ * - the inbox items the main host pushes and their ack frames (X9).
  *
  * The harness derives its expectations from `docs/plugins/instance-extension-points.md`, never
  * from the child implementation. DSH host packages resolve from `FBTEST_DSH_RUNTIME`; the
@@ -601,13 +601,13 @@ export function createLegacyFakeHost({ capabilities = HOST.legacyCapabilities } 
  * `workspaceRegistry(real)` replaces the default `workspaceRegistry` service (the selected SDK's
  * real registry for this home) before the rows apply; returning undefined models it missing.
  */
-export async function bootChild(t, { activate = false, attachments = undefined, configure, home: existingHome, watchdogEnabled = true, extraBundles = [], sessionLogs = new Map(), onFollowup, ready = true, workspaceRegistry } = {}) {
+export async function bootChild(t, { activate = false, attachments = undefined, configure, home: existingHome, extraBundles = [], sessionLogs = new Map(), onFollowup, ready = true, workspaceRegistry } = {}) {
   if (!AGENT.supportedVersions.includes(sessionPackage.version)) throw new Error(AGENT.unsupportedVersion + sessionPackage.version)
   const home = tempPath(existingHome ?? await tempHome(t))
   const profileDir = tempPath(path.join(home, 'profiles', 'fishball'), { root: home })
   await mkdir(profileDir, { recursive: true })
   const profileFile = tempPath(path.join(profileDir, 'package.json'), { root: home })
-  const profileBundles = ['@deepseek-ai/dsh-base', ...(watchdogEnabled ? ['fishball-watchdog'] : []), ...extraBundles]
+  const profileBundles = ['@deepseek-ai/dsh-base', ...extraBundles]
   await writeFile(tempPath(profileFile, { root: home }), JSON.stringify({ name: 'fishball', private: true, dsh: { profile: { bundles: profileBundles } } }, null, 2) + '\n')
   const tools = createTools()
   const agents = []
@@ -615,7 +615,7 @@ export async function bootChild(t, { activate = false, attachments = undefined, 
   const sessionDisposers = new Map()
   const bundles = [
     { name: '@deepseek-ai/dsh-base', version: '0.2.2', enabled: true, installed: true, removable: false },
-    ...['fishball-fold-notify', 'fishball-board', 'fishball-watchdog'].map((name) => ({ name, version: '0.1.0-alpha.0', enabled: true, installed: true, removable: true })),
+    { name: 'fishball-board', version: '0.1.0-alpha.0', enabled: true, installed: true, removable: true },
   ]
   const pluginManager = {
     async listBundles() { return bundles.map((bundle) => ({ ...bundle })) },

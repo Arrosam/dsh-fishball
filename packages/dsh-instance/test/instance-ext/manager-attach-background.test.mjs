@@ -50,7 +50,8 @@ const C = Object.freeze({
   aliasName: 'home-link',
   repeats: Object.freeze({ one: 1, two: 2, three: 3 }),
   pluginNotice: Object.freeze({
-    pluginId: 'fishball-watchdog',
+    // Any plugin id: manager.notify takes the caller's id as given (X10).
+    pluginId: 'fbtest-plugin',
     text: 'plugin notice through manager.notify (manager-attach R5)',
     dedupeKey: Object.freeze({ wake: 'mab-r5-notice-wake', held: 'mab-r5-notice-held' }),
   }),

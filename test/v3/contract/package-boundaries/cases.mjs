@@ -221,13 +221,13 @@ export function registerSharedCases(sdk) {
   })
 
   // ---- row 7c: the other cross-package edges are unchanged ----
-  caseTest(sdk, 'PLAT-EP-07', '7c', 'the connector imports and depends on no Fishball-set package or fishball-hosted-settings', async () => {
+  caseTest(sdk, 'PLAT-EP-07', '7c', 'the connector imports and depends on no Fishball-set package', async () => {
     await assertNoEdges(V3.connector.name, SET_SIDE)
   })
-  caseTest(sdk, 'PLAT-EP-07', '7c', 'the feature plugins import and depend on no fishball-core module', async () => {
+  caseTest(sdk, 'PLAT-EP-07', '7c', 'the feature plugin imports and depends on no fishball-core module', async () => {
     for (const name of FEATURES) await assertNoEdges(name, [V3.core.name])
   })
-  caseTest(sdk, 'PLAT-EP-07', '7c', 'the feature plugins name no dsh-instance peer (they find core through the optional fishballInstance? inject)', null, LATER.featurePeers)
+  caseTest(sdk, 'PLAT-EP-07', '7c', 'the feature plugin names no dsh-instance peer (it finds core through the optional fishballInstance? inject)', null, LATER.featurePeers)
   caseTest(sdk, 'PLAT-EP-07', '7c', 'embed-UI imports no connector code (only dsh-connector/tools)', async () => {
     const unit = await unitOf(V3.embed.name)
     const code = edgesTo(unit, V3.connector.name).filter((r) => !EMBED_CONNECTOR_ALLOWED.includes(r.specifier)).map(describeRef)
@@ -248,8 +248,7 @@ export function registerSharedCases(sdk) {
   })
   // The status-line part of row 2 is R-CORE's (it re-homes that module): test/v3/fishball-core/package/cases.mjs.
 
-  // ---- rows 8, 9 and the hosted settings bundle: later tasks ----
-  caseTest(sdk, 'PLAT-EP-07', '7a', 'fishball-hosted-settings may import fishball-shared and then bundles it', null, LATER.hostedSettings)
-  caseTest(sdk, 'PLAT-EP-07', 8, 'host DSH of a running hosted setup loads no set or hosted-settings module (fishball-shared may load)', null, LATER.hostTrace)
+  // ---- rows 8 and 9: later tasks ----
+  caseTest(sdk, 'PLAT-EP-07', 8, 'host DSH of a running hosted setup loads no set module (fishball-shared may load)', null, LATER.hostTrace)
   caseTest(sdk, 'PLAT-EP-07', 9, 'standalone install of the core tarball installs and starts with no registry access', null, LATER.standalone)
 }

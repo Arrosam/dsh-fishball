@@ -400,7 +400,6 @@ opaque: `EntryKey`, `PrincipalKey`; no interface carries a token value.
 | interceptor priority range (EVT-DT-02 7) and core's interception (EVT) | K3 / F-INTERCEPT |
 | core's target status reporting (09 rows 74, 103); the codes are frozen above | F-LINK / F-STATUS |
 | `plugin-set-incomplete`, board 30 d edge (11-platform) | F-STATUS / FEAT-PEERS |
-| Watchdog rows (05-watchdog) | WD-ROUTE / WD-PATROL |
 | embed-UI rows (10-embed-ui-matrix) | U-SHELL / U-MARKS / U-RECORDS |
 | the `dsh-mcp-client` adapter | C-MCP-ADAPTER (S7c) |
 

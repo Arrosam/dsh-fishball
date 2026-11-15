@@ -130,8 +130,7 @@ export const LINK_BACKOFF = Object.freeze({
 const GUARDS_DIAGNOSTIC = 'fishball-core'
 
 /**
- * The guard values core's code reads (design §5a.2; R-FB-02, R-FB-09, R-FB-12, R-FB-13, R-HOST-11
- * (5)). Every value `guards.d.ts` names has its K3 spelling there; the service name, record
+ * The guard values core's code reads (design §5a.2; R-FB-02, R-FB-09, R-FB-12, R-FB-13). Every value `guards.d.ts` names has its K3 spelling there; the service name, record
  * location and diagnostic texts are F-GUARDS's own, kept here too so the whole guard vocabulary has
  * one owner (DECIDED D7).
  *
@@ -155,11 +154,6 @@ export const GUARDS = Object.freeze({
   }),
   /** GuardCheckTrigger: the two events core re-checks on (app ready is `appReady.onReady`). */
   triggers: Object.freeze(['settings/document-updated', 'plugin-manager/changed']),
-  /**
-   * FishballAgentPreset: a guarded DSH offers only core's preset (the patch's
-   * `agent-preset-registry.default`, read through `managerPresetKey`) and fishball-watchdog's.
-   */
-  watchdogAgentPreset: 'watchdog',
   /** The IntendedPolicy key whose value is the manager's agent preset (core's patch sets it). */
   managerPresetKey: 'defaultAgentPreset',
   /** ManagerTool: the manager's model tools, exactly (R-FB-13). */

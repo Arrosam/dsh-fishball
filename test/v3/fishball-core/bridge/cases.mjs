@@ -28,7 +28,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { caseTest } from '../../contract/package-boundaries/cases.mjs'
 import {
-  ATTENTION, CONTRIBUTED_TYPE_PREFIX, EVENT_TYPE, EXTERNAL, FIXTURE, GATE, K1, K2, LATER, MODEL_NAME, PRESENT, TOOL, TOOLS, WATCHDOG_TYPES,
+  ATTENTION, CONTRIBUTED_TYPE_PREFIX, EVENT_TYPE, EXTERNAL, FIXTURE, GATE, K1, K2, LATER, MODEL_NAME, PRESENT, TOOL, TOOLS, OTHER_TYPES,
   modelName,
 } from './constants.mjs'
 import { bridgeExport, bridgeSources } from './subject.mjs'
@@ -93,19 +93,19 @@ export function registerFacadeCases(sdk) {
     assert.ok(w.modelRequestsWith(marker).length > 0, 'the event never reached Fishball\'s model')
   })
 
-  caseTest(sdk, 'EXT-UC-02', 'A3 (Watchdog)', 'Watchdog\'s registration (permission, settlement, retirement) never sees a contributed event; Fishball does', async (t) => {
+  caseTest(sdk, 'EXT-UC-02', 'A3 (other registration)', 'a registration for other types (permission, settlement, retirement) never sees a contributed event; Fishball does', async (t) => {
     const w = await worldFor(t, sdk, { tools: listed(FIXTURE.x) }, { events: true })
-    const watchdog = await w.interceptor(FIXTURE.pluginWatchdog, WATCHDOG_TYPES)
-    const marker = 'FBTEST-A3-WATCHDOG'
+    const other = await w.interceptor(FIXTURE.pluginOther, OTHER_TYPES)
+    const marker = 'FBTEST-A3-OTHER'
     await w.deliver(contributedEvent('ci-watch', 'build.failed', marker))
-    assert.deepEqual(watchdog.seen, [], 'Watchdog\'s handler got a contributed event (R-INT-07)')
+    assert.deepEqual(other.seen, [], 'the other registration\'s handler got a contributed event (R-INT-07)')
     assert.ok(w.modelRequestsWith(marker).length > 0, 'the event never reached Fishball\'s model')
   })
 
   caseTest(sdk, 'EXT-UC-02', 'A3 (intercepted partition)', 'a plugin registered for that contributed type gets it, and Fishball\'s model never sees it (R-EXT-20)', async (t) => {
     const w = await worldFor(t, sdk, { tools: listed(FIXTURE.x) }, { events: true })
     const event = contributedEvent('ci-watch', 'build.failed', 'FBTEST-A3-INTERCEPTED')
-    const plugin = await w.interceptor(FIXTURE.pluginFold, [event.type])
+    const plugin = await w.interceptor(FIXTURE.plugin, [event.type])
     await w.deliver(event)
     assert.deepEqual(plugin.seen.map((e) => e.eventId), [event.eventId])
     assert.deepEqual(w.modelRequestsWith('FBTEST-A3-INTERCEPTED'), [], 'an intercepted contributed event reached Fishball\'s model')
@@ -121,8 +121,6 @@ export function registerFacadeCases(sdk) {
     assert.equal(Math.max(0, ...users), 1, 'the event was admitted to Fishball more than once, or never')
   })
 
-  caseTest(sdk, 'EXT-UC-02', 'A3 (fold batcher)', 'fold-notify batches the contributed event on the Fishball branch', null, 'FEAT-PEERS (fold-notify\'s X9 batcher on the Fishball branch)')
-  caseTest(sdk, 'EXT-UC-02', 'A3 (real Watchdog row)', 'the loaded Watchdog plugin never sees a contributed event', null, LATER.watchdog)
 
   // present(event) renders every event (Fishball 2026-11-15, answer 3; Q-11 decided: F-FACADE's).
   const PRESENT_ROWS = [
@@ -150,7 +148,7 @@ export function registerFacadeCases(sdk) {
 
   caseTest(sdk, 'EXT-UC-04', 'A1', `without embed-UI at the target, core's attention.signal answers ${K1.unsupported} and sends no attention call`, async (t) => {
     const w = await worldFor(t, sdk, { tools: listed(FIXTURE.x) })
-    const result = await w.bridge.attention.signal(FIXTURE.pluginFold, { important: true })
+    const result = await w.bridge.attention.signal(FIXTURE.plugin, { important: true })
     assert.equal(result?.ok, false)
     assert.equal(result?.code, K1.unsupported)
     assert.deepEqual(w.link.sent(ATTENTION.signal), [], 'an attention call reached the connector')
@@ -158,7 +156,7 @@ export function registerFacadeCases(sdk) {
 
   caseTest(sdk, 'EXT-UC-04', 'main 2 (core side)', `with embed-UI at the target, attention.signal calls ${ATTENTION.signal} with exactly {important} and returns its acceptance`, async (t) => {
     const w = await worldFor(t, sdk, { tools: listed(FIXTURE.attention), answers: { [ATTENTION.signal]: () => ATTENTION.accepted } })
-    const result = await w.bridge.attention.signal(FIXTURE.pluginFold, { important: true })
+    const result = await w.bridge.attention.signal(FIXTURE.plugin, { important: true })
     assert.deepEqual(result, ATTENTION.accepted)
     // X8: no plugin identity is added to the wire.
     assert.deepEqual(w.link.sent(ATTENTION.signal).map((c) => c.args), [{ important: true }])
@@ -182,7 +180,7 @@ export function registerFacadeCases(sdk) {
         status: r.up ? K1.connected : K1.down,
         answers: { [ATTENTION.signal]: () => ATTENTION.accepted },
       })
-      const result = await w.bridge.attention.signal(FIXTURE.pluginFold, { important: r.important })
+      const result = await w.bridge.attention.signal(FIXTURE.plugin, { important: r.important })
       if (r.expect === 'accepted') {
         assert.deepEqual(result, ATTENTION.accepted)
         assert.deepEqual(w.link.sent(ATTENTION.signal).map((c) => c.args), [{ important: r.important }])
@@ -196,11 +194,11 @@ export function registerFacadeCases(sdk) {
 
   caseTest(sdk, 'EXT-UC-04 A1 (ST)', 'absent → listed → absent', `attention.signal follows tools/list_changed: ${K1.unsupported}, then accepted, then ${K1.unsupported} again`, async (t) => {
     const w = await worldFor(t, sdk, { tools: listed(), answers: { [ATTENTION.signal]: () => ATTENTION.accepted } })
-    assert.equal((await w.bridge.attention.signal(FIXTURE.pluginFold, { important: false }))?.code, K1.unsupported)
+    assert.equal((await w.bridge.attention.signal(FIXTURE.plugin, { important: false }))?.code, K1.unsupported)
     w.link.listChanged(listed(FIXTURE.attention))
-    assert.deepEqual(await w.bridge.attention.signal(FIXTURE.pluginFold, { important: false }), ATTENTION.accepted)
+    assert.deepEqual(await w.bridge.attention.signal(FIXTURE.plugin, { important: false }), ATTENTION.accepted)
     w.link.listChanged(listed())
-    assert.equal((await w.bridge.attention.signal(FIXTURE.pluginFold, { important: false }))?.code, K1.unsupported)
+    assert.equal((await w.bridge.attention.signal(FIXTURE.plugin, { important: false }))?.code, K1.unsupported)
     assert.equal(w.link.sent(ATTENTION.signal).length, 1)
   })
 

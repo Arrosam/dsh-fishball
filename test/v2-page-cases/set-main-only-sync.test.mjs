@@ -5,19 +5,20 @@
  * docs/slim-native-design.md §10 (the main card is the only entry point; key rules). Written from
  * those requirements alone; no implementation file was read.
  *
+ * The child row, its routes and the panel's hosted sections left with fishball-hosted-settings
+ * (REMOVE-WD, design §1.0): MOS-EP-01, MOS-UC-02 and the panel cases MOS-EP-08…11 and MOS-ST-03
+ * are gone; MOS-SYS-01 still checks that a real child answers no models/* route.
+ *
  * Seams (all real product code, no stand-in policy model):
- * - src/child-settings/index.js (fishball-hosted-settings) apply(ctx) with a fake ctx that collects its Fetch routes;
  * - src/slim/settings-relay.js server and client over the in-memory link of support/set-relay.mjs;
  * - the main side's real provider-sync bridge, coordinator, child target and engine
  *   (support/body-soul-sync.mjs, official disposable credential stores, planted fake keys), and the
  *   main owner routes (src/slim/host/provider-sync-routes.js registerProviderSyncRoutes);
  * - src/slim/host/admin.js createAdminRelay for the child → main admin channel;
- * - the slim panel's classic browser scripts in node:vm (support/set-panel.mjs);
  * - a real DSH main host with the real child (support/host.mjs) for the system cases.
  *
  * | id | technique | expected |
  * |----|-----------|----------|
- * | MOS-EP-01 | EP (child route set) | the child row registers exactly GET status, POST retry, POST restart; no models/* path |
  * | MOS-EP-02 | EP (relay op vocabulary) | SETTINGS_RELAY.op is exactly {status, retry, restart}; codes unchanged |
  * | MOS-DT-01 | DT (handler table: status × retry × restart present) | a server without any one of the three is refused (throws); all three → created |
  * | MOS-DT-02 | DT (extra check/add handlers × every frame) | passed check/add handlers are never called, whatever the child sends |
@@ -30,14 +31,8 @@
  * | MOS-EP-06 | EP (unsolicited provider-sync frames) | reply-shaped, request-shaped and junk frames from the child start nothing on the main side and get no answer; an owner check afterwards works |
  * | MOS-EP-07 | EP (unsolicited admin frames) | reply-shaped and admin.restart/admin.status-shaped frames start nothing (no restart, no frame sent); an owner admin.status still answers |
  * | MOS-UC-01 | Use Case (owner check then add) | main routes: check (no body) lists only what the child lacks; add {checkId, ids} reports added / skipped (key created meanwhile) / failed per entry; OAuth never offered; key stored in credential-local, mode 0600; no key in answers, logs, temp files or relay frames |
- * | MOS-UC-02 | Use Case (child row + relay + real sync) | through the child row and relay, no child request reaches the main sync; status works |
  * | MOS-UC-03 | Use Case (main card keeps its block) | the instance client still carries the Model for Fishball block attributes and posts the two main owner routes (source presence: no main-card render seam here) |
- * | MOS-EP-08 | EP (panel, en) | no data-fishball-model-* element; exactly one note with the exact English words, no button/link inside |
- * | MOS-EP-09 | EP (panel, zh) | the same with the exact Chinese words |
- * | MOS-ST-03 | ST (panel interactions) | open, press Restart, Settings and Plugins: no request to models/check or models/add ever |
- * | MOS-EP-10 | EP (panel order) | status line, Restart, note, Read Only line, Settings/Plugins links, in that order; Retry shown while failed |
- * | MOS-EP-11 | EP (shared export) | exports.shared is exactly locale, dictionaries, mountStyles, mountStyle, useInstanceStatus, InstanceStatus; no ModelSync |
- * | MOS-SYS-01 | System (real main DSH + real child) | the child's POST models/check and models/add → 404; its status → 200; the main's POST models/check → ok with {checkId, missing, notOffered, present} |
+ * | MOS-SYS-01 | System (real main DSH + real child) | the child's POST models/check and models/add → 404; the main's POST models/check → ok with {checkId, missing, notOffered, present} |
  */
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
@@ -49,7 +44,6 @@ import { CASE as ENGINE_CASE, clone, inventory, provider } from '../support/prov
 import { FIXTURE as SDK_FIXTURE } from '../support/provider-sync-official.mjs'
 import { post, routeContext, syncHarness } from '../support/body-soul-sync.mjs'
 import { ACTIVE_SDK, parsedFrames, relayLink } from '../support/set-relay.mjs'
-import { mountPanel, PANEL } from '../support/set-panel.mjs'
 import { bootHost, newHome, until } from '../support/host.mjs'
 import { SDK_VERSIONS } from './support.mjs'
 import { EMBED_UI } from '../support/constants.mjs'
@@ -79,15 +73,11 @@ const MOS = Object.freeze({
   task: 'SET-MAIN-ONLY',
   route: Object.freeze({
     status: '/api/dsh-instance/status',
-    retry: '/api/dsh-instance/retry',
-    restart: '/api/dsh-instance/restart',
     check: '/api/dsh-instance/models/check',
     add: '/api/dsh-instance/models/add',
   }),
-  method: Object.freeze({ get: 'GET', post: 'POST' }),
-  base: 'http://dsh.internal',
+  method: Object.freeze({ post: 'POST' }),
   site: Object.freeze({ header: 'sec-fetch-site', same: 'same-origin', cross: 'cross-site' }),
-  rowModule: 'src/child-settings/index.js',
   relayModule: 'src/slim/settings-relay.js',
   relay: Object.freeze({
     version: 1,
@@ -112,23 +102,6 @@ const MOS = Object.freeze({
   // admin.status answers {state, code} only by design (no detail, path or pid).
   adminStatus: Object.freeze({ ready: Object.freeze({ state: 'ready', code: null }) }),
   modelAttributes: Object.freeze(['data-fishball-model-sync', 'data-fishball-model-check', 'data-fishball-model-entry', 'data-fishball-model-add', 'data-fishball-model-result']),
-  panel: Object.freeze({
-    root: 'data-fishball-settings',
-    state: 'data-fishball-instance-state',
-    retry: 'data-fishball-instance-retry',
-    restart: 'data-fishball-settings-restart',
-    note: 'data-fishball-settings-model-sync-note',
-    readonly: 'data-fishball-settings-readonly',
-    open: 'data-fishball-settings-open',
-    openTargets: Object.freeze(['settings', 'plugins']),
-    interactive: Object.freeze(['button', 'a', 'input', 'select', 'textarea']),
-  }),
-  note: Object.freeze({
-    en: 'New models from DSH are added in the main DSH: Plugins → Fishball instance → Model for Fishball.',
-    zh: 'DSH 中的新模型请在主 DSH 中添加：插件 → Fishball 实例 → Fishball 的模型。',
-  }),
-  sharedKeys: Object.freeze(['locale', 'dictionaries', 'mountStyles', 'mountStyle', 'useInstanceStatus', 'InstanceStatus']),
-  removedShared: 'ModelSync',
   admin: Object.freeze({ module: 'src/slim/host/admin.js', status: 'admin.status', restart: 'admin.restart' }),
   syncTargetModule: 'src/slim/child/provider-sync-target.js',
   credentialMode: 0o600,
@@ -225,39 +198,6 @@ function assertMainUntouched(h, calls, message) {
   assert.equal(h.child.calls.inventory, 0, message + ': a check reached the child')
 }
 
-/** The child row on a fake ctx; answers its registered routes and a relay connector. */
-async function childRow(t) {
-  const row = await loadInstance(MOS.rowModule)
-  const routes = new Map()
-  const listeners = new Set()
-  const disposers = []
-  const ctx = {
-    connection: {
-      requestRejection: ({ headers }) => (headers.get?.(MOS.site.header) === MOS.site.cross ? 403 : undefined),
-      fetch: { register(route) { routes.set(route.path, route); return () => routes.delete(route.path) } },
-    },
-    nativeRuntime: { onInstanceSettingsTransport(listener) { listeners.add(listener); return () => listeners.delete(listener) } },
-    effect(fn) { const dispose = fn(); if (typeof dispose === 'function') disposers.push(dispose); return dispose },
-  }
-  row.apply(ctx)
-  t.after(() => { for (const dispose of disposers.reverse()) { try { dispose() } catch { /* already gone */ } } })
-  return {
-    row, routes,
-    connect(server) { const link = relayLink(); server.attach(link.main); for (const fn of [...listeners]) fn(link.child); return link },
-    async call(method, routePath, body) {
-      const route = routes.get(routePath)
-      assert.ok(route, 'child route registered: ' + routePath)
-      const init = { method, headers: { 'content-type': 'application/json', [MOS.site.header]: MOS.site.same } }
-      if (body !== undefined) init.body = JSON.stringify(body)
-      const response = await route.fetch(new Request(MOS.base + routePath, init))
-      const text = await response.text()
-      let json
-      try { json = JSON.parse(text) } catch { json = undefined }
-      return { status: response.status, json, text }
-    },
-  }
-}
-
 const profileWith = (models) => {
   const [template] = ENGINE_CASE.profile.models
   return { ...clone(ENGINE_CASE.profile), models: models.map((id) => ({ ...clone(template), id, name: id })) }
@@ -272,17 +212,6 @@ function standardSync(t) {
 /* ------------------------------------------------------------------------------ case bodies */
 
 const IN_PROCESS = [
-  ['MOS-EP-01', 'EP', 'the child row registers only status, retry and restart', async (t) => {
-    const { routes } = await childRow(t)
-    assert.deepEqual([...routes.keys()].sort(), [MOS.route.restart, MOS.route.retry, MOS.route.status].sort(), 'exactly the three lifecycle routes')
-    for (const gone of [MOS.route.check, MOS.route.add]) assert.equal(routes.has(gone), false, gone + ' is not registered in the child')
-    assert.equal([...routes.keys()].some((p) => p.includes('/models/')), false, 'no models/* route in the child')
-    const methods = (p) => [routes.get(p).methods ?? routes.get(p).method].flat().map(String)
-    assert.deepEqual(methods(MOS.route.status), [MOS.method.get])
-    assert.deepEqual(methods(MOS.route.retry), [MOS.method.post])
-    assert.deepEqual(methods(MOS.route.restart), [MOS.method.post])
-  }],
-
   ['MOS-EP-02', 'EP', 'the relay op vocabulary is exactly status, retry and restart', async () => {
     const { SETTINGS_RELAY } = await relayModule()
     assert.deepEqual({ ...SETTINGS_RELAY.op }, { ...R.ops }, 'SETTINGS_RELAY.op is exactly {status, retry, restart}')
@@ -523,22 +452,6 @@ const IN_PROCESS = [
     for (const file of recentTempFiles(startedAt)) h.assertClean(fs.readFileSync(file, 'latin1'))
   }],
 
-  ['MOS-UC-02', 'Use Case', 'no request from the child row and relay reaches the main sync', async (t) => {
-    const h = await standardSync(t)
-    const { server, calls } = await relayToSync(t, h)
-    const child = await childRow(t)
-    const link = child.connect(server)
-    assert.equal(child.routes.has(MOS.route.check), false)
-    assert.equal(child.routes.has(MOS.route.add), false)
-    const status = await child.call(MOS.method.get, MOS.route.status)
-    assert.deepEqual(status.json, MOS.status.ready, 'status goes through the relay')
-    const restart = await child.call(MOS.method.post, MOS.route.restart)
-    assert.deepEqual(restart.json, { ok: true, result: MOS.status.starting })
-    assertMainUntouched(h, calls, 'child row')
-    for (const frame of parsedFrames(link.frames.toMain)) assert.ok(Object.values(R.ops).includes(frame.op), 'the child sent only lifecycle ops')
-    h.assertClean(link.frames.toChild)
-  }],
-
   ['MOS-UC-03', 'Use Case', 'the main card keeps its Model for Fishball block and owner routes', async () => {
     // No main-card render seam is available offline (its settings form needs the SDK's configForms
     // service); this is a source-presence check, the rendered flow stays a browser case.
@@ -547,69 +460,6 @@ const IN_PROCESS = [
     for (const route of [MOS.route.check, MOS.route.add]) assert.ok(source.includes(route.slice(1)), 'main card posts ' + route)
     const { PROVIDER_SYNC_ROUTE } = await loadInstance('src/slim/host/provider-sync-routes.js')
     assert.deepEqual({ ...PROVIDER_SYNC_ROUTE }, { check: MOS.route.check, add: MOS.route.add }, 'the main owner routes are unchanged')
-  }],
-]
-
-/** The slim panel: no sync control, the note in en/zh, the order, no sync request. */
-function interactiveInside(panel, node) {
-  return panel.all().filter((candidate) => candidate !== node && MOS.panel.interactive.includes(candidate.tag) && contains(node, candidate))
-}
-function contains(ancestor, node) {
-  const stack = [...(ancestor.children ?? [])]
-  while (stack.length) {
-    const next = stack.pop()
-    if (next === node) return true
-    if (typeof next !== 'string') stack.push(...(next.children ?? []))
-  }
-  return false
-}
-const syncRequests = (panel) => panel.fetches.filter((call) => call.pathname.includes('/models/'))
-
-async function assertNote(t, lang) {
-  const panel = await mountPanel(t, { lang })
-  assert.equal(panel.byAttr(MOS.panel.root).length, 1, 'the panel root is rendered')
-  for (const attribute of MOS.modelAttributes) assert.deepEqual(panel.byAttr(attribute), [], 'no ' + attribute + ' element')
-  const notes = panel.byAttr(MOS.panel.note)
-  assert.equal(notes.length, 1, 'exactly one model sync note')
-  assert.equal(panel.text(notes[0]).trim(), MOS.note[lang], 'the note words (' + lang + ')')
-  assert.equal(MOS.panel.interactive.includes(notes[0].tag), false, 'the note is not itself a control')
-  assert.deepEqual(interactiveInside(panel, notes[0]), [], 'the note holds no button or link')
-  assert.equal(notes[0].props.onClick, undefined, 'the note does nothing on click')
-  assert.deepEqual(syncRequests(panel), [], 'opening the panel posts no sync request')
-}
-
-const PANEL_CASES = [
-  ['MOS-EP-08', 'EP', 'the panel has no sync control and shows the English note', (t) => assertNote(t, 'en')],
-  ['MOS-EP-09', 'EP', 'the panel has no sync control and shows the Chinese note', (t) => assertNote(t, 'zh')],
-
-  ['MOS-ST-03', 'State Transition', 'no panel interaction ever requests models/check or models/add', async (t) => {
-    const panel = await mountPanel(t, { lang: 'en' })
-    for (const attribute of [MOS.panel.restart, MOS.panel.open]) for (const node of panel.byAttr(attribute)) await panel.press(node)
-    for (const node of panel.all().filter((candidate) => candidate.tag === 'button')) await panel.press(node)
-    assert.deepEqual(syncRequests(panel), [], 'no sync request after every press')
-    assert.ok(panel.fetches.some((call) => call.pathname.endsWith(MOS.route.restart)), 'Restart still posts its route')
-    for (const attribute of MOS.modelAttributes) assert.deepEqual(panel.byAttr(attribute), [], 'no ' + attribute + ' after interaction')
-  }],
-
-  ['MOS-EP-10', 'EP', 'the panel order is status, Restart, note, Read Only, links; Retry while failed', async (t) => {
-    const panel = await mountPanel(t, { lang: 'en', status: PANEL.status.failed })
-    const order = panel.all()
-    const at = (attribute, value) => order.findIndex((node) => node.props[attribute] !== undefined && node.props[attribute] !== false && (value === undefined || String(node.props[attribute]) === value))
-    const positions = [
-      at(MOS.panel.state), at(MOS.panel.restart), at(MOS.panel.note), at(MOS.panel.readonly),
-      ...MOS.panel.openTargets.map((target) => at(MOS.panel.open, target)),
-    ]
-    assert.ok(positions.every((index) => index >= 0), 'every part is rendered: ' + JSON.stringify(positions))
-    assert.deepEqual(positions, [...positions].sort((a, b) => a - b), 'status, Restart, note, Read Only, Settings, Plugins in this order')
-    assert.equal(panel.byAttr(MOS.panel.retry).length, 1, 'Retry is shown while failed')
-  }],
-
-  ['MOS-EP-11', 'EP', 'exports.shared has no ModelSync', async (t) => {
-    const panel = await mountPanel(t, { lang: 'en' })
-    const shared = panel.chunk.exports?.shared
-    assert.ok(shared, 'the chunk exports shared')
-    assert.deepEqual(Object.keys(shared).sort(), [...MOS.sharedKeys].sort(), 'exactly the documented shared members')
-    assert.equal(Object.hasOwn(shared, MOS.removedShared), false, 'no ModelSync')
   }],
 ]
 
@@ -634,8 +484,6 @@ async function systemCase() {
       headers: { cookie: childCookie, origin: childOrigin, [MOS.site.header]: MOS.site.same, 'content-type': 'application/json' },
       body,
     })
-    const childStatus = await childRequest(MOS.method.get, MOS.route.status)
-    assert.equal(childStatus.status, MOS.system.ok, 'the child status route answers')
     for (const [routePath, body] of [[MOS.route.check, undefined], [MOS.route.add, JSON.stringify({ checkId: 'fixture-check', ids: [ID.a] })]]) {
       const answer = await childRequest(MOS.method.post, routePath, body)
       assert.equal(answer.status, MOS.system.notFound, 'the child has no ' + routePath)
@@ -652,7 +500,7 @@ async function systemCase() {
 /* ------------------------------------------------------------------------------ registration */
 
 for (const sdk of SDK_VERSIONS) {
-  for (const [id, technique, title, body] of [...IN_PROCESS, ...PANEL_CASES]) {
+  for (const [id, technique, title, body] of IN_PROCESS) {
     const name = `${MOS.task} ${id} [${sdk}] ${title} (${technique})`
     if (sdk === ACTIVE_SDK) test(name, body)
     else test.todo(`${name} — run this file with FBTEST_DSH_RUNTIME of ${sdk} (this run: ${ACTIVE_SDK ?? 'unsupported runtime'})`)
