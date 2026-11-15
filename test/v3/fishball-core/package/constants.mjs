@@ -42,30 +42,14 @@ export const MOVED = Object.freeze({
 /** R-EMBED: the instance-owned home of its status line (client.status.js, HOST-EP-03 row 2). */
 export const CHILD_SETTINGS = Object.freeze({ folder: 'src/child-settings/', dir: path.join(V3.instance.dir, 'src', 'child-settings') })
 
-/**
- * HOST-EP-03 row 3: words that name hosting. The extension point names "nothing about hosting" (no
- * hosted flag, no instance types, R-HOST-11), so neither an identifier nor a string of the generic
- * panel may carry one. Matched case-insensitively, so `isHosted` and `HOSTED` count.
- */
-// `fishballInstance` is not a hosting word: it is core's own extension service (design §5a.1).
-export const HOSTING_WORDS = Object.freeze([/hosted/i, /dsh-instance/i, /instance-?settings/i, /settings-?relay/i, /fishballchild/i])
-
-/** The V2 settings panel's public page markers ("the hosted child behaves as before"). */
+/** The public page markers the R-CORE rows read (the slim panel's were withdrawn with it, 1.34 item 4). */
 export const MARK = Object.freeze({
-  /** The generic panel's root (core). */
-  panel: 'data-fishball-settings',
-  /** The header action that opens the panel. */
-  entry: 'data-fishball-settings-entry',
-  /** Generic: the one Read Only line and the links to DSH's own Settings and Plugins pages. */
-  readOnly: 'data-fishball-settings-readonly',
-  open: 'data-fishball-settings-open',
-  openTargets: Object.freeze(['settings', 'plugins']),
-  /** Hosted-only: the status line (its state) and Restart (relayed to the host). */
+  /** Core's own settings page root (F-SETTINGS, 1.34 item 4), which replaced the removed slim panel. */
+  corePage: 'data-fishball-core-settings',
+  /** Hosted-only: the status line (its state). */
   status: 'data-fishball-instance-state',
-  restart: 'data-fishball-settings-restart',
   /** R-HOST-07: any model-sync control (V2 SET-MAIN-ONLY marker family). */
   modelPrefix: 'data-fishball-model-',
-  roles: Object.freeze({ alert: 'alert', status: 'status' }),
 })
 
 /** DSH client slots the V2 panel uses (the main panel and the conversation header). */

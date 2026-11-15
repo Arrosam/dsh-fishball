@@ -9,16 +9,15 @@ R-INT-01…09, R-HOST-11, R-FB-02/09/11/12/13; spikes V3-S2 `a499141`, V3-S3 `b4
 `86800d2` and `7c2230e`. Changing a name here is a K3 amendment. Values marked PROPOSED in the
 `.d.ts` files are **product choices**: frozen as they stand (decided 3 = A), and the user may still
 change any of them. Nothing imports
-dsh-instance, and the settings-section point names nothing about hosting.
+dsh-instance.
 
-The `.d.ts` files need `@deepseek-ai/cordis` (a DSH peer) for the `Context` members, and the DOM
-library for `HTMLElement`. Services are looked up at runtime (`ctx.get`); a trailing `?` in
+The `.d.ts` files need `@deepseek-ai/cordis` (a DSH peer) for the `Context` members.
+Services are looked up at runtime (`ctx.get`); a trailing `?` in
 `inject` is not optional injection in Cordis.
 
 | Contract | Declared in | Built by |
 | --- | --- | --- |
 | `fishballInstance.events.intercept` with `ctl.accept()`, `ctl.commit(send)`, `ctl.release` | [events.d.ts](<events.d.ts>) | F-INTERCEPT |
-| `fishballSettingsSections` (the settings-section extension point) | [settings-sections.d.ts](<settings-sections.d.ts>) | R-CORE (done; frozen as created) |
 | The ask card's fields | [ask-card.d.ts](<ask-card.d.ts>) | F-ASKCARD |
 | Guard list, policy, manager tools and the `guards-overridden` report | [guards.d.ts](<guards.d.ts>) | F-GUARDS |
 | The runtime values of the above (and core's link backoff) | [constants.js](<constants.js>) | the constants migration (2026-11-14) |
@@ -89,15 +88,12 @@ state under published names and as core's own copy of the MCP surface. K3a's ear
   once.
 - An event an interceptor handles alone reaches only the background log (R-INT-09).
 
-## Settings sections
+## Settings sections (withdrawn)
 
-These are the R-CORE point unchanged, with one rule added for `unmount`:
-- `register({id, title, order, mount, unmount}) → dispose`, plus `reactSection(render)` and
-  `classes`;
-- a section is drawn by `order`, then by `id`;
-- `mount(host)` gets an element the section draws into, and the contract names no UI library;
-- `unmount(host)` is called when the panel closes and when the section is withdrawn (including the
-  plugin's disposal): **at most once per mount**, and never for a mount that threw.
+`fishballSettingsSections` and `settings-sections.d.ts` are withdrawn by F-SETTINGS (requirements
+1.34 item 4: "hosted setting去掉，fishball的setting留在fishball里的fishball core插件的设置页内";
+R-HOST-11 withdrawn). Core's settings are its own plugin settings page (`client.settings.js`), the
+same in standalone and hosted mode, and no plugin injects a section into it.
 
 ## Guards (vocabulary for F-GUARDS)
 

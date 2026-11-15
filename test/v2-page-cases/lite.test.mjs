@@ -20,6 +20,7 @@ import { pathToFileURL } from 'node:url'
 import { loadInstance } from '../support/body-soul-env.mjs'
 import { chromeBinary, keyFor, sdkRuntime, startEnvironment } from './lite-browser.mjs'
 import { SDK_VERSIONS } from './support.mjs'
+import { WITHDRAWN as SETTINGS_WITHDRAWN } from '../v3/fishball-core/settings/constants.mjs'
 
 const CONTEXT = Object.freeze({
   task: 'LITE',
@@ -1135,10 +1136,10 @@ lite('B3-ST-04', 'R4 rejected open → Retry → open succeeds → no status lin
 // ---------------------------------------------------------------------------------------------
 // Hash continuation (contract §1) — kept as its own checks under LITE-UC-02 to preserve the case
 // catalogue. Since instance-extension-points §11.8 (superseding LITE's earlier "opens native
-// Settings"), `view=settings` never opens native DSH Settings: it requests Fishball's slim
-// `fishball-settings` main panel, owned by fishball-core's chunk packages/core/client.settings.js.
-// This harness loads only fishball-page, so here only the 0 native opens is observable; the slim
-// panel opening is a todo verified in browser e2e.
+// Settings"), `view=settings` never opens native DSH Settings. The slim `fishball-settings` panel it
+// used to open is removed (requirements 1.34 item 4, R-HOST-11 withdrawn); it now opens core's own
+// Plugins-page settings, F-SETTINGS' row SET3-UC-08 (test/v3/fishball-core/settings). This harness
+// loads only fishball-page, so here only the 0 native opens is observable.
 // ---------------------------------------------------------------------------------------------
 const HASH_CASES = Object.freeze([
   { hash: '#view=settings&lang=zh', settings: 0, locale: ['zh'] },
@@ -1176,6 +1177,6 @@ for (const sdk of SDK_VERSIONS) {
         assert.equal((await page.log()).openSettings, item.settings, `${item.hash}: native Settings opens ${item.settings} time(s) after the Fishball button`)
       }
     })
-    test.todo(`${CONTEXT.task} LITE-UC-02 [${sdk}] hash continuation view=settings opens the slim fishball-settings panel — verified in browser e2e (superseded by SET §11.8)`)
+    test(`${CONTEXT.task} LITE-UC-02 [${sdk}] hash continuation view=settings opens the slim fishball-settings panel`, { skip: SETTINGS_WITHDRAWN }, () => {})
   })
 }

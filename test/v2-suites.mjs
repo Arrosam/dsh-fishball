@@ -82,8 +82,8 @@ export const V2_SUITES = Object.freeze({
     file('test/v3/contract/k2-tools/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 contribution contract freeze (K2)'),
     file('test/v3/contract/k2-tools/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 contribution contract freeze (K2)'),
     // V3 R-CORE (HOST-UC-08 V2-mechanism part, HOST-EP-03 rows 1–4); run with test/run-v3.mjs.
-    file('test/v3/fishball-core/package/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 fishball-core package and settings-section extension point (R-CORE)'),
-    file('test/v3/fishball-core/package/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 fishball-core package and settings-section extension point (R-CORE)'),
+    file('test/v3/fishball-core/package/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 fishball-core package and slim child move (R-CORE)'),
+    file('test/v3/fishball-core/package/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 fishball-core package and slim child move (R-CORE)'),
     // V3 K1 (freeze of dsh-connector/mcp-schema, K-flagged AUTH/NAME/EVT/PLAT/WATCH cases); run with test/run-v3.mjs.
     file('test/v3/contract/k1-mcp-schema/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 MCP schema freeze (K1)'),
     file('test/v3/contract/k1-mcp-schema/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 MCP schema freeze (K1)'),
@@ -139,6 +139,9 @@ export const V2_SUITES = Object.freeze({
     // V3 F-PAIR (AUTH-UC-05 decisions, AUTH-DT-06, AUTH-ST-03 non-warning-UI rows, NAME-UC-02 core part, NAME-DT-03 core reaction, token-revoked: AUTH-ST-03 row 10, HOST-UC-04 main); run with test/run-v3.mjs.
     file('test/v3/fishball-core/identity/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 fishball-core identity, pairing decisions and token-revoked (F-PAIR)'),
     file('test/v3/fishball-core/identity/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 fishball-core identity, pairing decisions and token-revoked (F-PAIR)'),
+    // V3 F-SETTINGS (SET3-UC-01…10 and their EP/BVA/DT/ST rows; requirements 1.34 item 4); run with test/run-v3.mjs.
+    file('test/v3/fishball-core/settings/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, "V3 fishball-core's own settings page, token field, Connect and Fishball-page entries (F-SETTINGS)"),
+    file('test/v3/fishball-core/settings/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, "V3 fishball-core's own settings page, token field, Connect and Fishball-page entries (F-SETTINGS)"),
     // V3 U-SHELL (UIM-UC-01 integration part, UIM-UC-04 U-SHELL's parts, UIM-EP-01/02, UIM-DT-01 rows 3, 7, 7b, R-EMBED's U-SHELL row); run with test/run-v3.mjs.
     file('test/v3/dsh-connector-ui/shell/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 embed-UI host half and client shell (U-SHELL)'),
     file('test/v3/dsh-connector-ui/shell/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 embed-UI host half and client shell (U-SHELL)'),

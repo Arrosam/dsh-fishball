@@ -82,8 +82,11 @@ const UI = Object.freeze({
   launcher: '.fishball-settings-launcher',
   protectedAttribute: 'data-fishball-session',
   modal: '[role="dialog"][aria-modal="true"]',
-  /** Root of Fishball's settings panel (docs/planning/v2-set.md "Panel"). */
-  settingsPanel: '[data-fishball-settings]',
+  /**
+   * Root of core's own settings page, which `view=settings` opens (F-SETTINGS req 8). Re-pointed from
+   * the removed slim panel's `[data-fishball-settings]` (requirements 1.34 item 4, R-HOST-11 withdrawn).
+   */
+  settingsPanel: '[data-fishball-core-settings]',
   /** The child-only RP tab on the native Plugins page (docs/plugins/instance-extension-points.md RP). */
   pluginsPageMarker: 'Fishball Recommended',
   axButtonRole: 'button',
