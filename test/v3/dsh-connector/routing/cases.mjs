@@ -62,10 +62,10 @@ const todoRow = (sdk, id, part, title, owner) => row(sdk, id, part, title, null,
 // ------------------------------------------------------------------------------------------------
 // Observation: every mailbox of the world
 
-const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
-const quiet = () => sleep(WAIT.quietMs)
+export const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+export const quiet = () => sleep(WAIT.quietMs)
 /** Waits until `cond()` (sync or async) is truthy; fails after WAIT.eventMs naming `what`. */
-async function until(cond, what) {
+export async function until(cond, what) {
   const end = Date.now() + WAIT.eventMs
   while (!(await cond())) {
     assert.ok(Date.now() < end, `${what} within ${WAIT.eventMs} ms`)
@@ -73,10 +73,10 @@ async function until(cond, what) {
   }
 }
 /** Whether `promise` settles within `ms`. */
-const settlesWithin = (promise, ms) => Promise.race([promise.then(() => true, () => true), sleep(ms).then(() => false)])
+export const settlesWithin = (promise, ms) => Promise.race([promise.then(() => true, () => true), sleep(ms).then(() => false)])
 
 /** Every pending event of `key`'s mailbox, read with C-MAILBOX's poll at its largest page. */
-async function pendingOf(w, key) {
+export async function pendingOf(w, key) {
   const events = []
   let cursor
   for (;;) {
@@ -88,7 +88,7 @@ async function pendingOf(w, key) {
   }
 }
 /** Every pending entry of every mailbox the world made: [{key, e}]. */
-async function allEntries(w) {
+export async function allEntries(w) {
   const out = []
   for (const key of w.keys) for (const e of await pendingOf(w, key)) out.push({ key, e })
   return out
@@ -97,7 +97,7 @@ async function allEntries(w) {
  * Runs `act` and returns `{value, fresh}`: `act`'s value and the entries that are new in any
  * mailbox, once `n` have appeared and WAIT.quietMs passed with no more (EVT-DT-01 rule 9).
  */
-async function expectEntries(w, act, n) {
+export async function expectEntries(w, act, n) {
   const before = new Set((await allEntries(w)).map((x) => x.e.eventId))
   const value = await act()
   const fresh = async () => (await allEntries(w)).filter((x) => !before.has(x.e.eventId))
@@ -108,15 +108,15 @@ async function expectEntries(w, act, n) {
   return { value, fresh: got }
 }
 /** Exactly one new entry across every mailbox: in `key`'s, of `type`. Returns `{value, event}`. */
-async function expectOne(w, act, key, type) {
+export async function expectOne(w, act, key, type) {
   const { value, fresh } = await expectEntries(w, act, 1)
   assert.deepEqual([fresh[0].key, fresh[0].e.type], [key, type], 'the one event went to the wrong pair or has the wrong type')
   return { value, event: fresh[0].e }
 }
-const expectNone = (w, act) => expectEntries(w, act, 0)
+export const expectNone = (w, act) => expectEntries(w, act, 0)
 
 /** The managed set as sorted plain data (ManagedState.managed() is in no particular order). */
-const managedSet = (w) => [...w.managed.managed()].map((r) => ({ sessionId: r.sessionId, principalKey: r.principalKey })).sort((a, b) => a.sessionId.localeCompare(b.sessionId))
+export const managedSet = (w) => [...w.managed.managed()].map((r) => ({ sessionId: r.sessionId, principalKey: r.principalKey })).sort((a, b) => a.sessionId.localeCompare(b.sessionId))
 /** Entry labels and credential refs, which no answer may carry (README common oracle). */
 const secretsOf = (w) => w.tokens.list().flatMap((e) => [e.label, e.ref])
 function assertNoLeak(w, value) {
@@ -139,7 +139,7 @@ async function assertRefused(w, act, code) {
 
 let counter = 0
 /** A K1 offer descriptor for `type` (shapes.js `descriptor`): its offerId is `<approvalId>.r1`. */
-function descriptor(type) {
+export function descriptor(type) {
   const n = ++counter
   const approvalId = FIXTURE.offerPrefix + n
   return {
@@ -149,8 +149,18 @@ function descriptor(type) {
 }
 const message = () => ({ text: FIXTURE.text(++counter), images: [] })
 const designate = (w, id) => w.settings.set({ agentToken: FIXTURE.entry(id) })
+/**
+ * A revocation of entry `id` (`kind`: REVOCATION.disabled or .deleted) as C-REVOKE runs it: the
+ * token change, then `routing.endPrincipal`, which C-REVOKE's own onRevoked handler calls (routing
+ * no longer subscribes to onRevoked; disable → fresh retirements, delete → none). Resolves undefined.
+ */
+async function revokeEntry(w, id, kind) {
+  if (kind === REVOCATION.deleted) w.tokens.remove(id)
+  else w.tokens.disable(id)
+  await w.routing.endPrincipal(FIXTURE.entry(id), { freshRetirements: kind !== REVOCATION.deleted })
+}
 
-async function manage(w, sessionId, key) {
+export async function manage(w, sessionId, key) {
   const result = await w.managed.manage(sessionId, key)
   assert.deepEqual(result, { ok: true }, `manage refused: ${JSON.stringify(result)}`)
 }
@@ -185,11 +195,11 @@ async function stateTo(w, sessionId, key, flags = { running: true, pendingIntera
   return event
 }
 /** A turn end and a state change of `sessionId` produce nothing, for anyone (R-WATCH-02). */
-async function unwatched(w, sessionId) {
+export async function unwatched(w, sessionId) {
   await expectNone(w, () => { w.sessions.finishTurn(sessionId); w.sessions.changeState(sessionId, { running: true }) })
 }
 /** An offer that becomes an event in `key`'s mailbox (offer and correlation id = its offerId). */
-async function offerTo(w, sessionId, type, key) {
+export async function offerTo(w, sessionId, type, key) {
   const d = descriptor(type)
   const { value, event } = await expectOne(w, () => w.routing.offer(sessionId, type, d), key, type)
   assert.equal(value?.recipient, key)
@@ -197,12 +207,12 @@ async function offerTo(w, sessionId, type, key) {
   return event
 }
 /** An offer with no principal recipient: `{recipient: null, fallback}`, nothing produced. */
-async function offerFallsBack(w, sessionId, type, fallback) {
+export async function offerFallsBack(w, sessionId, type, fallback) {
   const { value } = await expectNone(w, () => w.routing.offer(sessionId, type, descriptor(type)))
   assert.deepEqual(value, { recipient: null, fallback })
 }
 /** A `message_agent` that becomes one `message` in `key`'s mailbox. */
-async function messageTo(w, sessionId, key) {
+export async function messageTo(w, sessionId, key) {
   const m = message()
   const { value, event } = await expectOne(w, () => w.routing.messageAgent(sessionId, m), key, ET.message)
   assert.deepEqual(value, { ok: true })
@@ -217,7 +227,7 @@ async function messageHeld(w, sessionId = S.s1) {
   return m
 }
 /** An `ask_agent` that becomes one `ask` offer in `key`'s mailbox and keeps the asker waiting. */
-async function askTo(w, sessionId, key) {
+export async function askTo(w, sessionId, key) {
   const { value, event } = await expectOne(w, () => ({ promise: w.routing.askAgent(sessionId, { question: FIXTURE.question }) }), key, ET.ask)
   assert.equal(event.offer?.decisionKind, DECISION_KIND_OF[ET.ask])
   assert.equal(await settlesWithin(value.promise, WAIT.quietMs), false, 'ask_agent did not wait for its answer')
@@ -240,7 +250,7 @@ function memberNames(o) {
   return [...names].sort()
 }
 /** Counts `onChange` calls of `source` (K3 handover or K1c ManagedState). */
-function counting(source) {
+export function counting(source) {
   const seen = { n: 0 }
   seen.dispose = source.onChange(() => { seen.n += 1 })
   return seen
@@ -248,15 +258,15 @@ function counting(source) {
 
 /**
  * How a watch ends (R-WATCH-01, R-ROUTE-06): release, Take back, the entry disabled or deleted.
- * Revocation ends management in W3 (RELAYED.revocation); its `system` note is C-REVOKE's, and on
+ * Revocation ends management through routing.endPrincipal (RELAYED.revocation, revokeEntry); its `system` note is C-REVOKE's, and on
  * delete C-REVOKE drops the mailbox, so "queued events stay with P" is asserted for release and
  * Take back only (R-WATCH-04).
  */
 const ENDINGS = Object.freeze({
   release: { keepsQueued: true, end: async (w, s, p) => assert.deepEqual(await w.managed.release(s, p), { ok: true }) },
   takeBack: { keepsQueued: true, end: (w, s, p) => takeBackOk(w, s, p) },
-  disabled: { keepsQueued: false, end: (w) => w.tokens.disable(ID.p) },
-  deleted: { keepsQueued: false, end: async (w) => { w.tokens.remove(ID.p); await w.pairs.remove(FIXTURE.entry(ID.p)) } },
+  disabled: { keepsQueued: false, end: (w) => revokeEntry(w, ID.p, REVOCATION.disabled) },
+  deleted: { keepsQueued: false, end: async (w) => { await revokeEntry(w, ID.p, REVOCATION.deleted); await w.pairs.remove(FIXTURE.entry(ID.p)) } },
 })
 /** P manages S1 and has one turn-finished queued; `ending` ends the watch; nothing later is produced. */
 async function watchEnds(w, ending) {
@@ -272,7 +282,7 @@ async function watchEnds(w, ending) {
 }
 
 /** A world with P (connected) managing S1 and D designated (connected): the common start. */
-async function managedByP(w, { pConnected = true } = {}) {
+export async function managedByP(w, { pConnected = true } = {}) {
   const p = w.principal(ID.p, { connected: pConnected })
   const d = w.principal(ID.d, { connected: true, designated: true })
   w.session(S.s1)
@@ -527,7 +537,7 @@ function equivalencePartitions(sdk) {
   e2e('4', 'P\'s entry disabled → P\'s stream closes and P\'s management ends; Q\'s stream stays open and gets its own hints', async ({ w, http, p, q, keys }) => {
     // Two fakes stand for C-TOKENS' one onRevoked: the route's (closes streams) and C-ROUTE's (ends management).
     http.tokens.revoke(p.caller.entryKey, REVOCATION.disabled, FIXTURE.generation + 1)
-    w.tokens.disable(ID.p)
+    await revokeEntry(w, ID.p, REVOCATION.disabled)
     assert.ok(await settlesWithin(p.subscription.closed, WAIT.eventMs), 'P\'s listen stream stayed open')
     await until(() => w.managed.managerOf(S.s1) === undefined, 'S1 unmanaged after P\'s disable')
     assert.equal(await settlesWithin(q.subscription.closed, WAIT.quietMs), false, 'Q\'s listen stream closed')
@@ -881,7 +891,7 @@ function decisionTables(sdk) {
     w.session(S.s1)
     await handOverOk(w, S.s1, p)
   })
-  for (const [part, how, revoke] of [['6 disabled', 'disabled', (w) => w.tokens.disable(ID.p)], ['6 deleted', 'deleted', async (w) => { w.tokens.remove(ID.p); await w.pairs.remove(FIXTURE.entry(ID.p)) }]]) {
+  for (const [part, how, revoke] of [['6 disabled', 'disabled', (w) => revokeEntry(w, ID.p, REVOCATION.disabled)], ['6 deleted', 'deleted', async (w) => { await revokeEntry(w, ID.p, REVOCATION.deleted); await w.pairs.remove(FIXTURE.entry(ID.p)) }]]) {
     worldRow(sdk, 'HAND-DT-01', part, `the chosen principal ${how} at call time → ${HANDOVER.codes.noAgent}, no event; onChange refreshes the control`, async (w) => {
       const p = w.principal(ID.p, { connected: true })
       w.principal(ID.q, { connected: true })
@@ -956,14 +966,14 @@ function decisionTables(sdk) {
     disconnect: (w, k) => w.presence.disconnect(k.p),
     rename: (w, k) => w.pairs.setName(k.p, NAME.renamed),
     pair: (w) => w.pairs.bind(ID.x),
-    disable: (w) => w.tokens.disable(ID.q),
-    delete: async (w) => { w.tokens.remove(ID.q); await w.pairs.remove(FIXTURE.entry(ID.q)) },
+    disable: (w) => revokeEntry(w, ID.q, REVOCATION.disabled),
+    delete: async (w) => { await revokeEntry(w, ID.q, REVOCATION.deleted); await w.pairs.remove(FIXTURE.entry(ID.q)) },
     designate: (w) => designate(w, ID.q),
     manage: (w, k) => w.managed.manage(S.s2, k.q),
     release: (w, k) => w.managed.release(S.s1, k.p),
     handOver: (w, k) => w.handover.handOver(S.s2, k.q),
     takeBack: (w) => w.handover.takeBack(S.s1),
-    revoke: (w) => w.tokens.disable(ID.p),
+    revoke: (w) => revokeEntry(w, ID.p, REVOCATION.disabled),
   })
   /** P (connected) manages S1; Q (offline) and an unpaired X exist; S2 is unmanaged. */
   const triggerWorld = async (w) => {
@@ -1051,12 +1061,12 @@ function stateTransitions(sdk) {
   })
   worldRow(sdk, 'HAND-ST-01', '6', `Managed(P) → P's entry disabled → Unmanaged (${RELAYED.revocation})`, async (w) => {
     await managedByP(w)
-    w.tokens.disable(ID.p)
+    await revokeEntry(w, ID.p, REVOCATION.disabled)
     await until(() => w.managed.managerOf(S.s1) === undefined, 'S1 unmanaged')
   })
   worldRow(sdk, 'HAND-ST-01', '6 deleted', 'Managed(P) → P\'s entry deleted → Unmanaged', async (w) => {
     await managedByP(w)
-    w.tokens.remove(ID.p)
+    await revokeEntry(w, ID.p, REVOCATION.deleted)
     await w.pairs.remove(FIXTURE.entry(ID.p))
     await until(() => w.managed.managerOf(S.s1) === undefined, 'S1 unmanaged')
   })
@@ -1266,13 +1276,13 @@ const gatedRow = (sdk, id, part, title, fn) => row(sdk, id, part, title, async (
   try { await fn(w, t) } finally { w.mailbox.openAll() }
 })
 /** A K1 settlement payload (EVENT_PAYLOAD_SHAPES.settlement) for `approvalId`. */
-const settlementOf = (approvalId, outcome = SETTLEMENT_OUTCOME.allowed, by = SETTLED_BY.principal) => ({ approvalId, outcome, by })
+export const settlementOf = (approvalId, outcome = SETTLEMENT_OUTCOME.allowed, by = SETTLED_BY.principal) => ({ approvalId, outcome, by })
 /** The answer a waiting ask_agent gets when its ask is settled (routing/index.js JSDoc of settle). */
-const askSettled = (settlement) => ({ ok: true, settlement })
+export const askSettled = (settlement) => ({ ok: true, settlement })
 const UNKNOWN_OFFER = formatOfferId(MUTATION.unknownApproval, OFFER_ID.firstRevision)
 
 /** `settle` of a live offer: resolves true and commits exactly one `settlement` (correlationId = offerId, payload `want`) to `key`. */
-async function settledTo(w, act, key, offerId, want) {
+export async function settledTo(w, act, key, offerId, want) {
   const { value, event } = await expectOne(w, act, key, ET.settlement)
   assert.equal(value, true, 'settle of a live offer did not return true')
   assert.equal(event.correlationId, offerId)
@@ -1280,7 +1290,7 @@ async function settledTo(w, act, key, offerId, want) {
   return event
 }
 /** `settle` of an offer that is not live: resolves false and commits nothing. */
-async function settleRefused(w, offerId, settlement) {
+export async function settleRefused(w, offerId, settlement) {
   const { value } = await expectNone(w, () => w.routing.settle(offerId, settlement))
   assert.equal(value, false, 'settle of an offer that is not live did not return false')
 }
@@ -1303,7 +1313,7 @@ async function inFlight(w, type, start) {
   return { call, draft, gate }
 }
 /** Every settlement of `offerId` and every retirement of `eventId`, across every mailbox: [{key, e}]. */
-async function endsOf(w, offerId, eventId) {
+export async function endsOf(w, offerId, eventId) {
   return (await allEntries(w)).filter(({ e }) => (e.type === ET.settlement && e.correlationId === offerId) || (e.type === ET.retirement && e.payload.retiredEventId === eventId))
 }
 
@@ -1388,7 +1398,7 @@ function settleTransitions(sdk) {
   // is the call order. Rules: whichever runs first wins; exactly one of settlement / retirement of A.
   const RACERS = Object.freeze({
     release: { end: (w, p) => w.managed.release(S.s1, p), value: () => ({ ok: true }), reason: RETIREMENT_REASON.released },
-    revocation: { end: (w) => { w.tokens.disable(ID.p) }, value: () => undefined, reason: undefined },
+    revocation: { end: (w) => revokeEntry(w, ID.p, REVOCATION.disabled), value: () => undefined, reason: undefined },
     withdraw: { end: (w, p, offerId) => w.routing.withdraw(offerId), value: (endFirst) => endFirst, reason: RETIREMENT_REASON.withdrawn },
   })
   for (const [name, racer] of Object.entries(RACERS)) {
@@ -1459,7 +1469,7 @@ async function flushedAs(w, want) {
   assert.deepEqual(await messagePayloads(w, d), [...want, next.payload], 'a new message did not follow the flushed ones')
 }
 /** README's "refused at the call": a TypeError thrown synchronously by `call`, not a promise. */
-function refusedAtCall(call) {
+export function refusedAtCall(call) {
   let result
   try { result = call() } catch (e) {
     assert.ok(e instanceof TypeError, `refused with ${e?.name}, not TypeError`)
@@ -1602,10 +1612,10 @@ const RETIRE_CAUSES = Object.freeze({
   withdraw: { act: (w, p, offerId) => w.routing.withdraw(offerId), value: true, reason: RETIREMENT_REASON.withdrawn, extras: [] },
   release: { act: (w, p) => w.managed.release(S.s1, p), value: { ok: true }, reason: RETIREMENT_REASON.released, extras: [] },
   takeBack: { act: (w) => w.handover.takeBack(S.s1, FIXTURE.note), value: { ok: true }, reason: RETIREMENT_REASON.released, extras: [ET.takeback] },
-  revocation: { act: (w) => { w.tokens.disable(ID.p) }, value: undefined, reason: RETIREMENT_REASON.revoked, extras: [] },
+  revocation: { act: (w) => revokeEntry(w, ID.p, REVOCATION.disabled), value: undefined, reason: RETIREMENT_REASON.revoked, extras: [] },
 })
 /** P's offer as P's client acks it through the port (`inbox_ack`): resolves `{ok: true, acked: 1}`. */
-async function ackOffer(w, p, offer) {
+export async function ackOffer(w, p, offer) {
   assert.deepEqual(await w.mailbox.ack(p, [{ eventId: offer.eventId, payloadDigest: offer.payloadDigest }]), { ok: true, acked: 1 })
 }
 /**
