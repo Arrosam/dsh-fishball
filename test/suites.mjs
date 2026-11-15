@@ -79,8 +79,12 @@ const suite = (description, files, triggers) => Object.freeze({ description, fil
  * cross-package contract and boundary rows (test/v3/contract/*). Ids are `<package>.<module>`.
  */
 export const V3_SUITES = Object.freeze({
-  'dsh-connector.tokens': suite('token entries, generation, revocation signal (C-TOKENS)', v3('dsh-connector/tokens'),
+  'dsh-connector.tokens': suite('token registry: create and reveal once, digest records, duplicates, revocation signal (C-TOKENS-REVEAL)', v3('dsh-connector/tokens'),
     [sub(PACKAGE.dshConnector, 'src', 'tokens'), ...CONNECTOR_CORE, ...CONNECTOR_CONTRACTS]),
+  // The page's routes run over the real token registry, and its client is the connector's one browser module.
+  'dsh-connector.settings-page': suite('the connector\'s settings page: create / notice routes, client.js, reveal modal (C-TOKENS-REVEAL)', v3('dsh-connector/settings-page'),
+    [sub(PACKAGE.dshConnector, 'src', 'settings-page'), sub(PACKAGE.dshConnector, 'src', 'tokens'), PACKAGE.dshConnector + '/client.js',
+      ...CONNECTOR_CORE, ...CONNECTOR_CONTRACTS]),
   'dsh-connector.pairs': suite('pair store, pair / set_name, names (C-PAIR)', v3('dsh-connector/pairs'),
     [sub(PACKAGE.dshConnector, 'src', 'pairs'), ...CONNECTOR_CORE, ...CONNECTOR_CONTRACTS]),
   'dsh-connector.mailbox': suite('per-pair mailbox, poll/ack, hints (C-MAILBOX)', v3('dsh-connector/mailbox'),

@@ -82,11 +82,19 @@ export const OAUTH_ERRORS = Object.freeze([
 /** R-OA-03, R-TOK-01, R-ID-06: the HTTP status the frozen error mapping gives these codes. */
 export const ERROR_STATUS = Object.freeze({ invalid_client: 401, invalid_token: 401, insufficient_scope: 403 })
 
-/** Codes the AUTH and NAME cases show on the page, in settings status or in `pair` / `set_name` results. */
+/**
+ * Codes the AUTH and NAME cases show on the page, in a settings refusal or in `pair` / `set_name`
+ * results. K1d (design §5.9, requirements 1.27–1.29): `token-duplicate` replaces `ref-duplicate`
+ * and value-duplicate; `token-too-short` and `token-unconfigured` are withdrawn (ENTRY_OK below).
+ */
 export const AUTH_CODES = Object.freeze([
   'already-paired', 'id-taken', 'id-invalid', 'name-taken', 'name-invalid',
-  'token-too-short', 'token-unconfigured', 'ref-duplicate', 'approval-port-in-use',
+  'token-duplicate', 'approval-port-in-use',
 ])
+/** K1d ENTRY_STATUS: the one entry status. */
+export const ENTRY_OK = 'ok'
+/** Token codes K1d withdrew (design §5.9): none may be exported. */
+export const WITHDRAWN_TOKEN_CODES = Object.freeze(['token-too-short', 'token-unconfigured', 'ref-duplicate', 'value-duplicate', 'value-changed'])
 /** Core-tool refusal codes the requirements name (R-CON-02, R-CON-06, R-CON-09, R-ID-13, WATCH-UC-01 E1). */
 export const TOOL_CODES = Object.freeze([
   'limit-exceeded', 'expired', 'queue-full', 'already-settled', 'forbidden', 'unavailable', 'invalid-arguments',
@@ -162,9 +170,6 @@ export const IDS = Object.freeze({
 /** R-NAME-02 / NAME-BVA-01: a name is 1–64 characters after normalisation (K: code points after NFC). */
 export const NAME_MAX_CHARS = 64
 
-/** AUTH-BVA-03 (TQ-4 A): the minimum user-set token length, counted in characters (row 6, K). */
-export const TOKEN_MIN_CHARS = 32
-
 /**
  * Seconds per unit, for frozen durations: the unit is read from the end of the value's own key,
  * because the project names units in constants (AGENTS.md); a bare number has no unit to compare.
@@ -177,8 +182,6 @@ export const UNITS = Object.freeze([
   [/(?:[Hh]ours?|_(?:h|H|HOURS))$/, 3600],
   [/(?:[Dd]ays?|_(?:d|D|DAYS))$/, 86400],
 ])
-/** AUTH-BVA-03 row 6 (K: characters, not bytes): the minimum's key must not name bytes. */
-export const BYTES_UNIT = /(?:[Bb]ytes?|_BYTES)$/
 /** Tolerance when comparing a converted duration (ms → s) with its expected value. */
 export const SECONDS_EPSILON = 1e-9
 
@@ -245,7 +248,6 @@ export const MEANING = Object.freeze({
   body: has(/body/i),
   inFlight: has(/in_?flight/i),
   queued: has(/queued/i),
-  tokenMin: has(/token|secret/i, /min/i),
   nameMax: (p) => /name/i.test(p) && /max|length/i.test(p) && !/tool|event|namespace|public|local/i.test(p),
   offerId: has(/offer/i),
   connected: has(/connected|online/i),
@@ -282,7 +284,6 @@ export const RECORDED = Object.freeze([
   ['AUTH-EP-01', 6, 'the answer to a GET on the token endpoint (405 proposed)'],
   ['AUTH-EP-02', 11, 'the status for a valid header plus ?access_token= in the query (400 or 401)'],
   ['PLAT-UC-03', 'connected', 'the one "connected" definition (design §3.5, §3.6)'],
-  ['AUTH-EP-04', '7a', 'two entries with distinct refs and one user-set value both authenticate'],
   ['AUTH-ST-04', 9, 'a wrong code_verifier: is the code consumed?'],
   ['AUTH-DT-08', 10, 'an empty token field is not counted as a failure'],
   ['AUTH-DT-09', 4, 'when a freed approval port is bound again (next start, or retried)'],
@@ -330,7 +331,6 @@ export const MOVED_LIMITS = Object.freeze({
 export const LATER = Object.freeze({
   http: 'C-HTTP (MCP route, check order, limits)',
   oauth: 'C-OAUTH (token endpoint, access tokens, 401s)',
-  tokens: 'C-TOKENS (token entries, generation, length check)',
   pair: 'C-PAIR (pair store, pair / set_name, names)',
   mailbox: 'C-MAILBOX (ledger, inbox_poll / inbox_ack)',
   route: 'C-ROUTE (recipients, watching is managing)',
