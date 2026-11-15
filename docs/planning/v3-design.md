@@ -24,23 +24,22 @@ The user (2026-11-16): "embed UI只是connector的附属，负责帮connector显
  │  · mailbox, routing, hand-over, records,    │            │  · its own plugin settings page:     │
  │    attention + notices state, cards         │            │    target, token field, Connect      │
  │  · contribution service ◄── tools ──────────┼─ embed-UI  │  · Settings entry → core's page /    │
- │  · supervision service  ◄── in process ─────┼─ watchdog  │    DSH's built-in Settings           │
- │  · own settings page (tokens, limits)       │            └──────────────────────────────────────┘
+ │  · own settings page (tokens, limits)       │            │    DSH's built-in Settings           │
+ │                                             │            └──────────────────────────────────────┘
  │ fishball-embed-ui    FRONTEND (draws only)  │
  │  · fish + lights, frame, hint, Hand over,   │            Host DSH (often the main DSH)
  │    marks, attention, notices, records, cards│            ┌──────────────────────────────────────┐
  │  · declares notify/attention tools          │            │ fishball-instance                    │
- │ dsh-fishball-watchdog    (moved here)           │            │  · child launch, placement, import   │
- │  · judges permission requests, patrols      │            │  · own settings page: status, Retry, │
- │  · contributes watchdog_* tools             │            │    Reconnect, model sync, admission  │
+ │                                             │            │  · child launch, placement, import   │
+ │                                             │            │  · own settings page: status, Retry, │
+ │                                             │            │    Reconnect, model sync, admission  │
  └─────────────────────────────────────────────┘            └──────────────────────────────────────┘
 ```
 
 | Package | Installed in | Owns | Never does |
 | --- | --- | --- | --- |
-| `fishball-connector` | a main DSH | **the backend**: everything of §1.1 below, **plus** every operation and all state behind embed-UI's UI (hand-over, marks, records, the attention latch and notices, cards), served by its host-only services and owner-only routes; the supervision service Watchdog uses; its own settings page (tokens, limits, approval port) | change DSH's own UI (its own settings page is not UI, 1.28) |
+| `fishball-connector` | a main DSH | **the backend**: everything of §1.1 below, **plus** every operation and all state behind embed-UI's UI (hand-over, marks, records, the attention latch and notices, cards), served by its host-only services and owner-only routes; its own settings page (tokens, limits, approval port) | change DSH's own UI (its own settings page is not UI, 1.28) |
 | `fishball-embed-ui` | a main DSH, beside the connector | **the frontend only**: draws the fish and its lights, the Fishball page frame (with an instance), the no-instance hint, Hand over / Take back, marks, attention and notices, inline records and cards; declares the notify and attention tools through the contribution service, whose handlers are the connector's | any logic or state of its own; any settings card; any session power; anything without the connector (Q-U1) |
-| `dsh-fishball-watchdog` | a main DSH, beside the connector | supervision of managed sessions (§7.A): judging permission requests, patrols, briefs; its own settings page; its `watchdog_*` tools contributed to the connector | run in a Fishball DSH; act on sessions except through the connector's supervision service |
 | `fishball-instance` | a host DSH | the hosted child: launch, lifecycle, placement of the set, the token import, the child locator, model sync, uninstall cleanup; its own settings page (status, Retry, Reconnect, model sync, **Open Fishball**) and the admission route the frame uses | UI outside its own settings page; anything inside the child beyond placing the set |
 | `fishball-connector-adapter` | a DSH that uses another DSH's connector | §5.5b, unchanged | serve a non-Fishball server |
 | **Fishball plugin set** | a Fishball DSH | `fishball-core` (agent, link, interception service for any local plugin, its own plugin settings page with a Settings entry from Fishball's page) and `fishball-board` | act on any DSH except through the target connector's MCP |
@@ -48,8 +47,13 @@ The user (2026-11-16): "embed UI只是connector的附属，负责帮connector显
 
 **Removed:** `fishball-fold-notify` (its notify function is embed-UI's contributed tool, handled by
 the connector; R-FN-01) and `fishball-hosted-settings` (core's own settings page instead; R-HOST-11
-withdrawn). **Kept generic:** core's interception service, for any plugin a user adds to a Fishball
-DSH (R-EXT-20); after the move it has no built-in user.
+withdrawn). **Watchdog is not part of V3** (requirements 1.37: "把watchdog对fishball的影响全部摘除，当作一个独立项目开发";
+"每个项目间彼此独立，但是可以弄一个shared package"): no package, contract, hook or test of V3 serves
+it. A managed session's permission requests go to its Fishball and on to the user. The separate
+project `dsh-fishball-watchdog` is described in `.runtime/reports/watchdog-project-notes.md`; it may
+later use only Fishball's existing generic extension points (connector tool contribution, R-EXT),
+and both projects may share `fishball-shared` (R-ARCH-08). **Kept generic:** core's interception
+service, for any plugin a user adds to a Fishball DSH (R-EXT-20); it has no built-in user.
 
 ### 1.0a Earlier text (kept for reference; superseded where §1.0 differs)
 
@@ -74,7 +78,7 @@ standalone mode is the same set installed by hand.
                │  an ordinary DSH + the Fishball set ─────┘ │  + the Fishball plugin set ───────────┘
                └──────────────────────────────────────────┘ └───────────────────────────────────────┘
      Fishball plugin set (same packages in both):  fishball-core (incl. its fishball-ui component) ·
-                                                    fishball-board · fishball-fold-notify · dsh-fishball-watchdog
+                                                    fishball-board   (1.0a is history: fold-notify removed, Watchdog a separate project)
 ```
 
 ### 1.1 Packages
@@ -95,8 +99,6 @@ client module) inside `fishball-core`'s package, installed, enabled and removed 
 | --- | --- | --- |
 | `fishball-core` | **agent:** the manager session and persona; the MCP link to the target (§6.3); the `fishball-events` subscription, the interception service and the acceptance ledger (§6.4); the scoped bridge façade (X12), claims (X15) and send gate (X19); the extension service `fishballInstance` (X1–X19) for feature plugins; manager tools; the private Skills tool; the admin and settings routes it serves to its own web page. **`fishball-ui` component:** the A-lite page client module (Fishball-only page, hidden navigation, shortcut remapping or unbinding, explicit return from Settings/Plugins); the guard rows in core's bundle patch (read-only preset with the Skills exception, disabled session-creating rows); the `fishball-recommended` tab; the generic slim settings panel with its settings-section extension point (hosted-only sections are injected by the instance, R-HOST-11); the **ask card** for asks Fishball cannot decide (R-FB-11) | — |
 | `fishball-board` | board tools, `board_search`, archive | `fishball-core` |
-| `fishball-fold-notify` | notice batching, attention via embed-UI's tool | `fishball-core` |
-| `dsh-fishball-watchdog` | supervision (§7) | `fishball-core` |
 
 Inside core, the two parts stay separate modules with a narrow interface: the ui component reads
 the manager's identity and status from the agent side, and has no session powers of its own. So
@@ -284,7 +286,7 @@ V3 drafts had named lanes for Watchdog; they are dropped (requirements 1.8 item 
 - **Answer authority.** `approval_answer` or `question_answer` is accepted only for the current
   `offerId`, from a full access token of the pair that holds the offer. The first committed
   outcome wins (OQ-14). No timer ever settles an offer (R-CON-05). Inside a Fishball DSH, who
-  answers (Fishball or its Watchdog) is the Fishball DSH's own business (§7); the connector sees
+  answers is the Fishball DSH's own business; the connector sees
   one principal.
 - **Bounds.** `maxQueuedInputs` (default 200) still caps automated kinds per pair with
   `queue-full`; user hand-over notes are always accepted (contract 1.2 §9 rule). The page limit
@@ -1020,7 +1022,7 @@ component's part of it), so they work without an instance:
   deleted** — and core's own `preset-fishball` inserted with `agent-preset-registry.default:
   fishball`. The session-creating tools live inside each shipped preset's `config.plugins`, which
   no patch can reach (S6 §3.2), so switching the presets off is how they leave the model.
-  `dsh-fishball-watchdog` contributes its own `preset-watchdog` for its side sessions (§7);
+  *(requirements 1.37: no Watchdog preset; core offers only its own `fishball` preset)*;
 - the read-only permission preset (sandbox read-only, approval policy) with the private Skills
   root exception;
 - its client module: the A-lite page, shortcut remapping, the recommended tab and the slim
@@ -1230,17 +1232,9 @@ listen hint / reconnect ─► inbox_poll ─► acceptance ledger (durable, Fis
    ─► inbox_ack after the receiving side's durable acceptance (R-INT-08)
 ```
 
-- **Watchdog's registrations** (R-INT-07; Q13 decided; redefined by requirements 1.14),
-  priority 0:
-  - `types: ['permission']`, `filter: e => supervision.isActive(e.sourceSessionId)` (healthy X14
-    state and a live X15 claim);
-  - `types: ['settlement', 'retirement']`, `filter: e => watchdog.handled(e.correlationId)`
-    (offers it held or escalated to the user).
-  Everything else (every `turn-finished`, mid-work or idle; `state`; questions, plan reviews,
-  messages, asks, hand-over and take-back, notices, contributor events, unsupervised sessions)
-  matches no Watchdog registration and reaches Fishball. Watchdog's patrol is not an
-  interception; it is driven by its own timer (§7.1).
-- **Other plugins** may register too (fold-notify, the board, third-party child plugins), for
+- **No built-in interceptor** (requirements 1.37: Watchdog is a separate project). Every event
+  reaches Fishball unless a plugin the user added registers for it.
+- **Plugins** may register (the board, third-party child plugins), for
   example for `contributed:<ns>.*` types. The same rules apply. A registration with the same
   types and priority as another is accepted with one logged warning (R-INT-03).
 - **Exactly once inside the Fishball DSH:** the acceptance ledger is **core's** (S2-Q1 / Q-S3-2
@@ -1267,8 +1261,8 @@ listen hint / reconnect ─► inbox_poll ─► acceptance ledger (durable, Fis
   admission discards the event** (S2-Q3 decided A): acked, never retried; offers inside it stay
   live at the connector (R-CON-05). S2-Q1 is decided (§6.4 `ctl.accept()`). Nothing in this design claims exactly-once model
   execution.
-- When Watchdog fails (X14 `fail()`), its filter turns false at once and it disposes its
-  registration. In-flight events it has not accepted fall back to Fishball (R-WD-07, R-INT-04).
+- When an interceptor fails, its registration is disposed. In-flight events it has not accepted
+  fall back to Fishball (R-INT-04).
 - **External agents** have none of this. Their subscription receives the typed events
   unchanged (R-EVS-04).
 - The custom first-party push of decision 1a is retired (Q11, decided). A standalone Fishball
@@ -1282,139 +1276,13 @@ listen hint / reconnect ─► inbox_poll ─► acceptance ledger (durable, Fis
   never stops remote sessions.
 - In hosted mode the embed frame stays local; only the child's MCP link is remote.
 
-## 7. Watchdog
+## 7. Watchdog — withdrawn from Fishball V3 (requirements 1.37)
 
-### 7.A Watchdog in the main DSH (requirements 1.34; supersedes §7.1, §7.2 and the Fishball-DSH parts of §7.0 and §7.3)
-
-- **Where:** `dsh-fishball-watchdog` is a main-DSH plugin beside the connector (R-ARCH-09, R-WD-01).
-  It needs the connector's host-only **supervision service** (a K3 amendment, frozen by K3b):
-  `claim(sessionId, principalKey)`, `release(sessionId)`, `offer` (the connector hands it a
-  permission request of a claimed session before the principal's mailbox, with an `accept` /
-  `release` / `commit(decision)` control equal in meaning to K3's `ctl`), `read(sessionId, sinceSeq)`,
-  `list()`, `stop(sessionId)`, and `notify(principalKey, text)` (a `notice` event to that
-  principal). No MCP, no token, no principal of its own.
-- **Routing:** the connector checks, before it commits a `permission` event to a managing
-  principal's mailbox, whether a healthy Watchdog has claimed that session. If so, it offers it to
-  Watchdog first; Watchdog allows, rejects or escalates it through `commit`, and the connector
-  records the outcome as decided by the managing principal's Watchdog. If Watchdog is down, or
-  releases the request to Fishball, the event goes to the mailbox as before. The first-commit rule
-  (OQ-14) is unchanged. What Fishball sees of a decided request is Q-W1.
-- **Briefs and tools:** `watchdog_brief`, `watchdog_refine`, `watchdog_pause` and
-  `watchdog_resume` are tools Watchdog contributes to the connector (§13), called by Fishball over
-  MCP. They are data operations as before (R-WD-15).
-- **No failure design (requirements 1.36: "出故障的情况不去考虑，因为这只是一个普通的dsh插件，把watchdog从fishball里面拆出来当独立插件").**
-  There is no health state, no "failure = off" and no "watchdog is down" notice. The connector
-  offers a request only while the plugin's supervision registration exists (it is withdrawn when
-  DSH disposes the plugin, ordinary Cordis behaviour). An offer Watchdog accepted but never
-  answered waits like any offer (R-CON-05); the user can still answer the session's native card.
-- **Name:** `dsh-fishball-watchdog` (the user: "叫dsh-fishball-watchdog"), package and plugin.
-- **What Watchdog is for (requirements 1.35, verbatim):** "watchdog的定位是用来接收fishball的目标和约束，定时监督避免监督的session跑偏，并替fishball批示和通过permission request。fishball可以把可批示的范围提交给watchdog。范围是一段可以通过的请求的描述。总之watchdog接受两个来自fishball的指示，一个是必需的，就是这个session的目的，一个是非必需的，就是可以批示的请求。而watchdog通过定时的监督和每次批注请求时也进行监督来避免session跑偏。通过减少走到fishball的permission approval请求次数来节约fishball的token并reinforce session的behavior"
-  - **Instructions:** `watchdog_brief({sessionId, purpose, scope?})`, where `purpose` is required
-    and `scope` is the optional approvable-request description; `watchdog_refine` replaces either.
-    These replace §7.3's free-form brief.
-  - **Each permission request:** (a) a drift check against the purpose; (b) allow if within the
-    scope; (c) reject if beyond the purpose and dangerous; (d) `escalate` if otherwise high-risk;
-    (e) else to Fishball. With no scope, (b) never applies, so Watchdog passes nothing and only
-    filters for drift and danger. Each allow answers one request; no standing grant is created
-    (DESIGN.md "no always allow").
-  - **Patrol:** unchanged timer and watermark (§7.3); it now judges drift against the purpose.
-  - **Decision table (supersedes §7.3's):**
-
-    | Request | Watchdog decision |
-    | --- | --- |
-    | within the approvable scope | allow (Q-W5: and if it is high-risk) |
-    | beyond the purpose **and** dangerous | reject, with a justification |
-    | other high risk | `escalate` to the user's card, no Fishball turn |
-    | anything else, or no scope given | to Fishball |
-    | question / plan review | never reaches Watchdog |
-- **Which principals and which model:** Q-W3, Q-W4.
-- **Core's interception service** stays generic (§6.4) for other plugins in a Fishball DSH. Watchdog
-  no longer uses it, so WD-ROUTE's interception module and K3's Watchdog-specific link members
-  (`bridge`, `supervision.onManagedChange`, K3a) are not needed.
-
-
-### 7.0 What Watchdog is (R-WD-00; Q10 decided, revised by requirements 1.8)
-
-Watchdog is Fishball's helper, like a subagent of Fishball. At the connector it does not exist:
-everything it does goes out as Fishball's principal, through `fishball-core`'s MCP link. It has
-no token, subscription, mailbox or lane of its own.
-
-### 7.1 How events reach it (R-WD-02, R-INT-07)
-
-1. On `fishball-core`'s X14 `ready()`, Watchdog registers with core's interception service
-   (§6.4) for `permission` requests of the sessions it supervises while healthy, and for
-   `settlement` / `retirement` of offers it held or escalated. That is all it intercepts
-   (requirements 1.14). This replaces the V2 X9 `inbox.claim` and the earlier "router claim";
-   there is no new transport extension point, and X20 of earlier drafts is dropped.
-2. Core hands it the matching events without a Fishball LLM turn.
-3. Watchdog calls `await ctl.accept()` first; core's record is the durable acceptance, and core
-   acks only after it (R-INT-08). Watchdog's answers go through `ctl.commit(send)`. A decision it
-   makes alone (allow, justified reject) leaves no trace in Fishball's context; it is logged only
-   (R-INT-09).
-4. **Patrol (R-WD-14):** for each supervised session, Watchdog's own timer fires once every
-   `minCheckIntervalSeconds`. It then reads the session through core's link: `sessions_list`
-   for running and pending state, and `session_read` from its last patrol watermark, bounded
-   by its read limits. It needs no `turn-finished` or `state` events, which all go to Fishball.
-5. One Watchdog side session per watched session (U8), running Watchdog's own `watchdog` agent
-   preset (contributed by `dsh-fishball-watchdog`; R-WD-16), handles that session's permission
-   requests and patrols, on Watchdog's own model settings.
-6. An escalation **to Fishball** is `ctl.release(e, {toFishball: true})` (R-INT-05). An
-   escalation **to the user** commits `escalate` at the connector (§7.2).
-7. **No on-demand runs (Q33 decided).** Fishball has no `watchdog_check_now`. `watchdog_refine`
-   only stores a new brief or criteria for a session, which Watchdog reads at its next permission
-   judgement or patrol. It starts no turn and moves no timer (R-WD-15).
-
-### 7.2 Requests to Fishball inside the Fishball DSH (R-WD-08)
-
-Watchdog never talks to Fishball over MCP. It uses the Fishball DSH's in-session communication:
-- `manager.notify` (X10) for "watchdog is down", reports and abnormalities: one waking notice
-  turn, durably deduped;
-- an **escalation to Fishball** (only an item that is not high-risk and that Watchdog cannot
-  decide) **re-routes** the offer to the Fishball branch. It is still the same live offer at the
-  connector, with the same offer id, because the principal is the same. Watchdog adds one
-  `manager.notify` carrying its reasoning, so Fishball's turn has the context;
-- an **escalation to the user** (any other high-risk item, Q13 decided) is committed through
-  core's link as `approval_answer` with decision `escalate`. The connector shows the user's card in
-  that session, with no time limit and no Fishball turn. When the user settles it, the
-  `settlement` event is intercepted by Watchdog (its second registration), and Watchdog gives
-  Fishball a non-waking `manager.notify` (`wake: false`) with the outcome for its next turn;
-- answers Watchdog commits (allow, justified reject) go out through core's link as Fishball's
-  principal. The connector's first-commit rule (OQ-14) still settles races with the user.
-
-### 7.3 Behaviour (carried from T0 and the user's rules)
-
-- **Activation (requirements 1.14, R-WD-03):** exactly two cases: a supervised session's
-  permission request, and Watchdog's own patrol timer, once every `minCheckIntervalSeconds` per
-  session (default 1740, inclusive 60–86400). There is one timer per watched session, for patrol
-  only. Permission handling is never delayed by it. Nothing else starts a Watchdog run:
-  there is no `check_now`, and a refine only updates the brief (Q33 decided, R-WD-15). No other
-  timers exist (R-WD-05).
-- **Decision table:**
-
-  | Request | Watchdog decision |
-  | --- | --- |
-  | in scope, low risk | allow |
-  | beyond the task **and** dangerous | reject, with a justification |
-  | other high risk | `escalate` to the user's card, no Fishball turn (Q13, decided) |
-  | not high-risk, but Watchdog cannot decide | re-route to Fishball (§7.2) |
-  | question / plan review | never reaches Watchdog |
-
-- ~~**Failure = off** (R-WD-07)~~ — withdrawn by requirements 1.36; kept below for reference only:
-  - The X14 `fail()` runs synchronously: it disposes its interception registration; items it was
-    offered or accepted but had not decided go to Fishball once; an answer whose `commit` had begun
-    stays Watchdog's (committed or fenced, never both, R-INT-04); stale callbacks are fenced.
-  - It also sends one `manager.notify` "watchdog is down" per down episode.
-  - Watchdog has no stream of its own. Loss of core's link is core's status, not a Watchdog
-    failure; events simply wait at the connector until the link is back.
-  - When a hosted child cannot start (R-BND-03), the instance keeps the pending notice in its
-    lifecycle state and delivers it on the next successful start (R-HOST-08). In a standalone
-    DSH, `fishball-core` checks at app ready whether an enabled `dsh-fishball-watchdog` has
-    registered, and sends the notice if not (R-FB-07).
-- **Pause = stop the session first** (R-WD-10). Models follow DSH native session timing; Save
-  does no model lookup.
-- **If the link to the connector is down,** neither Watchdog nor Fishball can answer. Offers wait
-  at the connector (R-REM-04). After reconnect core dispatches again from the mailbox, and an
-  answer from before the outage that never committed is not replayed.
+Watchdog is a separate project, `dsh-fishball-watchdog`. Its design notes are in
+`.runtime/reports/watchdog-project-notes.md`. Nothing in this design serves it: no supervision
+service, no interception registration, no preset, no notice, no contract member. Without it,
+every permission request of a managed session reaches that session's Fishball (§3.5), which
+answers or escalates it to the user's card (R-CON-05, R-FB-11).
 
 ## 8. Placement of the plugin set
 
@@ -1422,7 +1290,7 @@ Watchdog never talks to Fishball over MCP. It uses the Fishball DSH's in-session
 
 The design is the bundled-placement note (`f71717e`), options **P3 + 3a**, now applied to the
 whole set:
-- Sources live under `packages/instance/bundled/{core,board,fold-notify,watchdog,hosted-settings}/` and are
+- Sources live under `packages/instance/bundled/{core,board}/` (requirements 1.34, 1.37) and are
   listed in the instance's `files`. In the host DSH they are inert data: not in its resolution,
   not bundles there.
 - At every child start, inside `initializeProfile` and before `loadProfileDirectory`, each one is
@@ -1455,7 +1323,6 @@ moves itself last at its first start; the guard holds at once with HMR, or after
 (R-FB-12). So:
 - `fishball-core` reports which expected members are missing or skipped in its status
   (`plugin-set-incomplete`, naming them);
-- a skipped or failed Watchdog produces one "watchdog is down" notice per start (R-FB-07);
 - there is no placement record: the user's native switches are the truth, as in hosted mode.
 
 ### 8.3 How each feature fits V3
@@ -1464,7 +1331,7 @@ moves itself last at its first start; the guard holds at once with HMR, or after
 | --- | --- | --- |
 | board | X1, X2 (tools `board_*` + `board_search`, dynamic context) | none to its domain. Archive forever, 30-day visibility. Export offer: the instance's uninstall in hosted mode; in standalone mode, a `board_export` manager tool and a note in the README, because DSH's native remove offers no hook |
 | fold-notify | X2, X9 batcher, X8 attention | X8 now calls embed-UI's contributed `embed-ui.attention.signal` over the MCP link. If it is absent, the call gets `unsupported-operation` (D3 rule). The batcher sits on the Fishball branch, after interception (§6.4) |
-| watchdog | X1, X2, X9 (now the interception service), X10, X11, X12, X13, X14, X15, X16, X19 | an interceptor in core for supervised `permission` only (§6.4, §7); patrol by its own timer; no `check_now`, and refine is a data update (R-WD-15) |
+| watchdog | — | *withdrawn from V3 (requirements 1.37): a separate project* |
 
 ## 9. Packaging and compatibility
 
@@ -1476,7 +1343,7 @@ moves itself last at its first start; the guard holds at once with HMR, or after
 | `fishball-instance` | Depend on `fishball-shared` (bundled); never on `fishball-core` (R-BND-01 strict). Drop the `fishball-connector` peer, the main-side `client.js`, `child-web/` and the `LITE` guard overlays. Add `bundled/hosted-settings/` (the `fishball-hosted-settings` bundle, R-HOST-11; instance-owned source, a plain bundle with one row and a `dsh.client` entry, registering into core's settings-section extension point). Keep the host row, the native runtime (lifecycle, launch configuration, placement), `uninstall.js` and hosted model sync. Add `bundled/` (the four set members) to `files`. |
 | `fishball-core` (new, from `packages/instance/src/slim/child/**`, `src/persona.js`, the private Skills tool, `native-child.js`'s app pieces, and, as its `ui/` component, `packages/instance/child-web/**` and the `LITE` overlay rows) | Bundle row(s) for the Fishball DSH; its `cordis.patch.yml` also carries the guard rows; `dsh.client` (platform web) for the `fishball-ui` page, recommended tab and slim settings. Runtime dependency on `fishball-shared` (bundled), `@modelcontextprotocol/client` 2.x and `fishball-connector/mcp-schema`, vendored as a copy so a standalone install needs nothing from the connector package at runtime. |
 | `fishball-shared` (new, `packages/shared`; TQ-R3 and TQ-R5 decided, R-ARCH-08) | A **library**, not a plugin: no `dsh` field, no row, no client. Holds only modules **more than one** V3 package uses; first contents: the child `admin` constants, the provider-sync wire codec, the file helpers core and the instance share. Imports nothing from any other V3 package. **Any** V3 package may depend on it (connector, embed-UI, core, instance, feature plugins, `fishball-hosted-settings`); each that does lists it in `dependencies` **and** `bundleDependencies`, so its release tarball carries it and nothing is fetched from a registry. Loading it never loads a module of the Fishball set (R-BND-01). |
-| `fishball-board`, `fishball-fold-notify`, `dsh-fishball-watchdog` | Change the peer from `fishball-instance` to nothing: they find `fishball-core` through the optional `fishballInstance?` inject. |
+| `fishball-board` (requirements 1.34, 1.37: the only feature plugin) | Change the peer from `fishball-instance` to nothing: they find `fishball-core` through the optional `fishballInstance?` inject. |
 | `fishball-embed-ui` (new; S4-Q3 decided B) | Host row + `dsh.client` (platform web) with the inject lists of today's two main-DSH clients combined. Optional peers `fishball-instance` and `fishball-connector` (the latter for `./tools` types only; embed-UI never imports connector code). Owns the moved locale strings. |
 
 Release numbers stay release bookkeeping. The V3 connector, instance, embed-UI, plugin set and
@@ -1538,7 +1405,7 @@ Order matters, because embed-UI is new and the connector loses its UI:
 4. **Install embed-UI.** The fish, marks and page return.
 
 There are no compatibility adapters and no dual control period (1c = B). A V2 child profile that
-already contains a manually installed board, fold-notify or Watchdog: placement replaces the
+already contains a manually installed board: placement replaces the
 `node_modules` copy with the bundled one and keeps the on/off state the user had. A test pins
 this case.
 
@@ -1602,7 +1469,6 @@ Process stays: requirements → independent case authoring → implementation wi
   - offers are fenced by `offerId` and the pair, and the first commit wins;
   - acks and notifications never grant authority;
   - revocation takes effect at the next request;
-  - Watchdog failure releases authority synchronously, with nothing settled by time.
 - **Verification hook (R-SEC-02):** the acceptance suite plants recognisable token values and
   greps every log, lifecycle file, child home and temp directory after a full run. Any hit is a
   failure.
@@ -1846,8 +1712,7 @@ The README is the authority; this table only names them.
   mailbox (an event of type `retirement` replaces each); acked ones stay with their client.
 - **In a Fishball DSH:** contributor events go through core's interception service like every
   event (R-INT-02): to a plugin registered for their `contributed:…` type, else to the Fishball
-  agent through the X9 pipeline (fold-notify may batch them), possibly waking its LLM. Watchdog
-  never registers for them. No allowlist filters them (Q17, decided).
+  agent, possibly waking its LLM. No allowlist filters them (Q17, decided).
 - **Not an authority path:** an event carries data only. Fishball decides what to do; the event
   cannot answer, approve or hand over anything.
 
