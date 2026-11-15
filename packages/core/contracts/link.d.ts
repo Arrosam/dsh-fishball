@@ -1,0 +1,52 @@
+/**
+ * Core's link to its target connector, as other parts of the Fishball side and the DSH side see it
+ * (gate K3a; requirements 1.39–1.41; design §1.0b rows 1 and 4, §5.4, §6.3, §6.3a). Types only;
+ * the runtime values are `constants.js`'s `LINK`, `HOSTED_IMPORT`, `CONNECT` and `MCP`.
+ *
+ * The two sides share no code (requirements 1.39): the hosted import is DSH state written under
+ * published names, and the link reads the connector only over MCP, with core's own copy of the
+ * surface constants (`MCP`), checked against the connector by a contract test (decided D1).
+ */
+
+/** `LINK.state` (REM-DT-01). */
+export type LinkState = 'connected' | 'target-unreachable' | 'token-refused' | 'target-unset'
+
+/** `LINK.code`; `null` when there is nothing to report. */
+export type LinkCode =
+  | 'TARGET_UNREACHABLE' | 'TOKEN_REFUSED' | 'TARGET_INCOMPATIBLE' | 'token-revoked' | 'target-insecure' | 'target-invalid'
+
+/** The link's status: the same words as the instance locator's `TargetStatus` (design §4.1), each side its own copy. */
+export interface LinkStatus {
+  readonly state: LinkState
+  readonly code: LinkCode | null
+}
+
+/**
+ * The hosted import (design §5.4; requirements 1.41 Q-G6 = A). Written by the instance's child-side
+ * row (DSH side) in the child; read by core. Nobody calls the other side.
+ *
+ * Instance (writer), at the child's first start only (no credential present, see below):
+ * 1. writes the target URL to the child setting `<targetSetting.row>.<targetSetting.field>`;
+ * 2. writes the token value with `ctx.credentials.set(credentialRef, value)`; it stores it nowhere
+ *    else, in the host or the child.
+ *
+ * Core (reader), per connection attempt:
+ * 1. a saved copy for the target origin wins (`savedRecord`, R9); otherwise
+ * 2. `ctx.credentials.resolve(credentialRef)` is the client secret, sent with `client_credentials`
+ *    and `identity.id` as the client id;
+ * 3. once the target accepted it in a token request, core writes `savedRecord` (the value, keyed by
+ *    target origin, inside its payload) and then `ctx.credentials.unset(credentialRef)`;
+ * 4. a refused value is not saved and stays where it is (R9); the instance's Reconnect overwrites it.
+ *
+ * "The child holds a credential" (the instance's one question, answered by DSH alone):
+ * `(await credentials.describe(credentialRef)).configured || (await credentials.describeRecord(savedRecord.key)).configured`.
+ * Core changes nothing about `credentialRef` except reading it and unsetting it after step 3, and
+ * never writes a reference the user owns (R-FB-03).
+ */
+export interface HostedImportNames {
+  /** DSH's reference grammar `^[A-Za-z_][A-Za-z0-9_]*$` (both SDKs). */
+  readonly credentialRef: 'DSH_AGENT_TOKEN'
+  readonly targetSetting: { readonly row: 'dsh-instance-child'; readonly field: 'targetUrl' }
+  /** A DSH credential record key `<scope>/<id>`, `kind: grant`; its payload is core's own format. */
+  readonly savedRecord: { readonly key: 'fishball-core/hosted-agent'; readonly kind: 'grant' }
+}

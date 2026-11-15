@@ -8,10 +8,12 @@
  * template formatters (`(…) => \`…\``, interpolating names only). No import, no other call, no
  * behaviour; whatever is derived from these values lives in the module that derives it.
  *
- * The values of core's link that cross to the connector (target states and codes, the
- * `disconnected` answer) are K1's (`dsh-connector/mcp-schema` `TARGET_STATE`, `TARGET_CODE`,
- * `LINK_REFUSAL`; DECIDED D7), not this file's. DECIDED Dn: the row of mcp-schema/README.md "User
- * decisions", the one record of the decisions of K1, K2 and K3.
+ * Since requirements 1.39–1.41 (gate K3a) this file also holds core's own copy of the connector's
+ * MCP surface (`MCP`), its link words (`LINK`), the hosted import's published names
+ * (`HOSTED_IMPORT`), Connect (`CONNECT`) and the fishball-ui seam (`UI_SEAM`): the two sides
+ * share no package, so core keeps its own values and a contract test checks them against the
+ * connector. DECIDED Dn: the row of mcp-schema/README.md "User decisions", the one record of the
+ * decisions of K1, K2 and K3.
  */
 
 // ------------------------------------------------------------------------- interception (events.d.ts)
@@ -122,6 +124,259 @@ export const LINK_BACKOFF = Object.freeze({
   initialMs: 1000,
   factor: 2,
   maxMs: 60 * 1000,
+})
+
+/**
+ * The words of core's link status (`link.d.ts` `LinkStatus`; REM-DT-01; R-FB-03, R-FB-04,
+ * R-HOST-10). Core's own since requirements 1.39: the two sides share no package, so the
+ * connector's K1 `TARGET_STATE` / `TARGET_CODE` / `LINK_REFUSAL` are the DSH side's copy and these
+ * are the Fishball side's (requirements 1.40: "duplicated, one copy per side"). They never travel
+ * over MCP, so no drift test compares them.
+ * - `code.insecure` / `code.invalid`: core's refusals of a target URL before any request
+ *   (DECIDED D5), reported with state `target-unset`;
+ * - `disconnected`: the answer of a call made while the link is down; it never reached the target;
+ * - `hosts`: the target URL rule's loopback names and schemes (R-REM-05: plain `http:` only to a
+ *   loopback name), a fact of the MCP and OAuth specifications rather than of the connector.
+ */
+export const LINK = Object.freeze({
+  state: Object.freeze({
+    connected: 'connected',
+    unreachable: 'target-unreachable',
+    refused: 'token-refused',
+    unset: 'target-unset',
+  }),
+  code: Object.freeze({
+    unreachable: 'TARGET_UNREACHABLE',
+    refused: 'TOKEN_REFUSED',
+    incompatible: 'TARGET_INCOMPATIBLE',
+    revoked: 'token-revoked',
+    insecure: 'target-insecure',
+    invalid: 'target-invalid',
+  }),
+  disconnected: 'disconnected',
+  hosts: Object.freeze({
+    loopbackNames: Object.freeze(['localhost', '127.0.0.1', '[::1]']),
+    loopbackScheme: 'http:',
+    remoteScheme: 'https:',
+  }),
+  /** HTTP statuses the link classifies by (RFC 9110): a refused credential, or a V2 connector's 404. */
+  httpStatus: Object.freeze({ unauthorized: 401, forbidden: 403, notFound: 404 }),
+})
+
+// ------------------------------------------------------------------------- the connector's MCP surface (core's own copy)
+
+// Built once here so each path below is written once (the connector derives its well-known URLs
+// the same way: RFC 9728 §3.1 / RFC 8414 §3.1 insert the well-known segment before the path).
+const MCP_PATH = '/api/agent/mcp'
+const ISSUER_PATH = '/api/agent/oauth'
+
+/**
+ * The values of `dsh-connector`'s public MCP surface that core uses, as core's **own copy**
+ * (design §1.0b row 1, decided item 65 / D1; requirements 1.39, 1.40: no package crosses the two
+ * sides, so core may not import or generate from the connector). They replace the generated
+ * `vendor/mcp-schema` copy: F-OWN-SCHEMA repoints `src/link/schema.js` here and deletes `vendor/`.
+ * The names are those of design §1.0c (requirements 1.41 Q-G8 = B).
+ *
+ * Drift is caught by the contract test `test/v3/k3a/`, which compares every value here with what
+ * the connector publishes (its `tools/list` definitions and its OAuth metadata documents). A value
+ * changes here only after the connector's own K1 changed it; the test then names the difference.
+ *
+ * - `protocolVersion`: the one MCP revision the connector serves, pinned by core's link (Q12);
+ * - `paths`: the MCP endpoint, the OAuth issuer and token endpoint, the two well-known prefixes and
+ *   the approval page's `/authorize`; with `scope.full` they are also the connector check of
+ *   Connect (Q-S7C-5 A): the protected-resource `resource` path is `paths.mcp`, its first
+ *   authorization server is the same origin plus `paths.issuer`, and its scopes include `full`;
+ * - `events`: the one event resource core listens on (R-EVS-01);
+ * - `tools`: every core tool name `tools/list` lists (core tells core tools from contributed ones
+ *   by this list, design §13.3);
+ * - `eventTypes`, `contributedTypePrefix`: the event `type` vocabulary (R-EVS-02, K2);
+ * - `refusal`: the refusal codes core reacts to (pairing, names, the bridge façade's own answers,
+ *   and the ask card's first-commit-wins answers);
+ * - `oauth`: the grants, client authentications and errors of core's two credential paths
+ *   (`client_credentials` for the hosted import, authorization code + PKCE for Connect), and the
+ *   authorization parameter that carries core's `identity.id` (`agent_id`, R-OA-22, design §1.0c);
+ * - `id`, `name`: R-ID-02 and R-NAME-02/08, as strings (core compiles the patterns, flags `u`), so
+ *   this file stays data only;
+ * - `namespace`: K2's contributed-name rules core needs to read a contributed event type and to
+ *   name a contributed tool for the model (`externalName`, DECIDED #W3-2).
+ */
+export const MCP = Object.freeze({
+  protocolVersion: '2026-07-28',
+  clientCredentialsExtension: 'io.modelcontextprotocol/oauth-client-credentials',
+  paths: Object.freeze({
+    mcp: MCP_PATH,
+    issuer: ISSUER_PATH,
+    token: ISSUER_PATH + '/token',
+    protectedResourcePrefix: '/.well-known/oauth-protected-resource',
+    authorizationServerPrefix: '/.well-known/oauth-authorization-server',
+    authorize: '/authorize',
+  }),
+  events: Object.freeze({ name: 'agent-events', uri: 'dsh-agent://events', mimeType: 'application/json' }),
+  scope: Object.freeze({ full: 'agent', pair: 'agent:pair' }),
+  tools: Object.freeze({
+    sessionsList: 'sessions_list',
+    sessionStart: 'session_start',
+    sessionMessage: 'session_message',
+    sessionRedirect: 'session_redirect',
+    sessionStop: 'session_stop',
+    sessionRead: 'session_read',
+    sessionRelease: 'session_release',
+    approvalsList: 'approvals_list',
+    approvalAnswer: 'approval_answer',
+    questionAnswer: 'question_answer',
+    questionAsk: 'question_ask',
+    questionAnswerOwn: 'question_answer_own',
+    promptsList: 'prompts_list',
+    promptAnswer: 'prompt_answer',
+    grantsList: 'grants_list',
+    grantRevoke: 'grant_revoke',
+    attachmentPut: 'attachment_put',
+    attachmentRead: 'attachment_read',
+    inboxPoll: 'inbox_poll',
+    inboxAck: 'inbox_ack',
+    pair: 'pair',
+    setName: 'set_name',
+  }),
+  eventTypes: Object.freeze({
+    permission: 'permission',
+    question: 'question',
+    planReview: 'plan-review',
+    settlement: 'settlement',
+    retirement: 'retirement',
+    turnFinished: 'turn-finished',
+    state: 'state',
+    message: 'message',
+    ask: 'ask',
+    handover: 'handover',
+    takeback: 'takeback',
+    notice: 'notice',
+  }),
+  contributedTypePrefix: 'contributed:',
+  refusal: Object.freeze({
+    alreadyPaired: 'already-paired',
+    idTaken: 'id-taken',
+    idInvalid: 'id-invalid',
+    nameInvalid: 'name-invalid',
+    nameTaken: 'name-taken',
+    forbidden: 'forbidden',
+    unsupportedOperation: 'unsupported-operation',
+    operationFailed: 'operation-failed',
+    imagesUnsupported: 'images-unsupported',
+    invalidArguments: 'invalid-arguments',
+    alreadySettled: 'already-settled',
+    expired: 'expired',
+  }),
+  oauth: Object.freeze({
+    grant: Object.freeze({ clientCredentials: 'client_credentials', authorizationCode: 'authorization_code', refreshToken: 'refresh_token' }),
+    clientAuth: Object.freeze({ basic: 'client_secret_basic', none: 'none' }),
+    responseType: 'code',
+    pkceMethod: 'S256',
+    error: Object.freeze({ invalidClient: 'invalid_client', invalidGrant: 'invalid_grant', accessDenied: 'access_denied' }),
+    agentIdParameter: 'agent_id',
+  }),
+  id: Object.freeze({ pattern: '^[A-Za-z0-9_-]{1,64}$' }),
+  name: Object.freeze({
+    minChars: 1,
+    maxChars: 64,
+    whitespaceRun: '\\p{White_Space}+',
+    control: '[\\p{Cc}\\p{Cf}]',
+    patternFlags: 'u',
+    space: ' ',
+    normalForm: 'NFC',
+    namelessPrefix: 'ID: ',
+  }),
+  namespace: Object.freeze({
+    separator: '.',
+    outside: '[^a-z0-9-]',
+    identifying: '[a-z0-9]',
+    reserved: Object.freeze(['fishball', 'dsh-connector']),
+    localName: '^(?!.*\\.$)[a-z0-9][a-z0-9_.-]{0,47}$',
+    publicMaxChars: 128,
+    aliases: Object.freeze({ 'dsh-connector-ui': 'embed-ui' }),
+    externalName: Object.freeze({ replaced: '.', replacement: '__' }),
+  }),
+})
+
+// ------------------------------------------------------------------------- the hosted import (link.d.ts)
+
+/**
+ * How a hosted child's token and target reach core (requirements 1.39, 1.41 Q-G6 = A; design
+ * §1.0b row 4, §5.4, §6.3). No code crosses the sides: the instance's child-side row (DSH side)
+ * writes DSH state under these published names, and core reads it through DSH's own services.
+ * The instance keeps its own copy of these names (I-HOST), so it imports nothing from core.
+ * - `credentialRef`: the child credential reference the instance writes the imported token to
+ *   (`ctx.credentials.set`). The user named it `dsh-agent-token`; DSH's reference grammar on both
+ *   SDKs is `^[A-Za-z_][A-Za-z0-9_]*$` (`credentialRef`), which refuses a `-`, so the name is
+ *   spelled in that grammar (the user's choice, 2026-11-16). Core resolves it as its client secret,
+ *   and unsets it once it saved its own copy (design §5.4);
+ * - `targetSetting`: the child setting with the target URL. DSH addresses a setting by its profile
+ *   row id, and core's guard disables the row `dsh-instance` (no nested hosted Fishball), so the
+ *   instance's child-side row has its own id (the user's choice, 2026-11-16);
+ * - `savedRecord`: the credential record core saves the accepted hosted token into (R9). Its key is
+ *   published so the instance can tell "the child holds a credential" without calling core: either
+ *   `describe(credentialRef).configured` or `describeRecord(savedRecord.key).configured` (the
+ *   user's choice, 2026-11-16, because the reference is gone once core saved its copy).
+ */
+// Core's credential-record scope (DSH's `<scope>/<id>` key: the owning plugin's name), shared by
+// the hosted record and Connect's grants so the scope is written once.
+const CORE_RECORD_SCOPE = 'fishball-core'
+export const HOSTED_IMPORT = Object.freeze({
+  credentialRef: 'DSH_AGENT_TOKEN',
+  targetSetting: Object.freeze({ row: 'dsh-instance-child', field: 'targetUrl' }),
+  savedRecord: Object.freeze({ key: CORE_RECORD_SCOPE + '/hosted-agent', kind: 'grant' }),
+})
+
+// ------------------------------------------------------------------------- Connect (link.d.ts)
+
+/**
+ * Connect: core as a browser OAuth client of the connector's approval page (design §6.3a;
+ * R-FB-03, R-OA-19; requirements 1.31–1.33; decided items 11, 12, 67). The states are the S7c
+ * token manager's (`v3-s7c.md` §4 K1), kept by core's own copy of it (`fishball-shared/oauth-client`,
+ * design §6.3a "one copy per side").
+ * - `setting`: core's required CIMD document URL (R12 = B: user-hosted, no default);
+ * - `configuration`: the `needs-configuration` codes, one per failing rule (decided item 12:
+ *   `https:` and a non-root path, as the adapter's), plus a target that fails the connector check
+ *   (Q-S7C-5 A) and an unusable web callback (R-OA-14: no plain-HTTP non-loopback redirect);
+ *   PROPOSED spellings;
+ * - `callback`: the loopback redirect path, any port (decided item 11), and the fixed path of core's
+ *   owner-only web callback route for a browser on another machine (Q-A3 B; PROPOSED path);
+ * - `grantRecordScope`: the scope segment of the credential records Connect saves its grants under,
+ *   one per target origin (R9); the id segment is core's own (F-LINK-SAVE).
+ */
+export const CONNECT = Object.freeze({
+  state: Object.freeze({
+    needsConfiguration: 'needs-configuration',
+    needsAuthorization: 'needs-authorization',
+    authorizing: 'authorizing',
+    authorized: 'authorized',
+    failed: 'failed',
+  }),
+  setting: 'connect.clientMetadataUrl',
+  configuration: Object.freeze({
+    metadataUrlMissing: 'metadata-url-missing',
+    metadataUrlNotHttps: 'metadata-url-not-https',
+    metadataUrlRootPath: 'metadata-url-root-path',
+    notAConnector: 'not-a-connector',
+    webCallbackInsecure: 'web-callback-insecure',
+  }),
+  callback: Object.freeze({ loopbackPath: '/callback', webPath: '/api/fishball/connect/callback' }),
+  grantRecordScope: CORE_RECORD_SCOPE,
+})
+
+// ------------------------------------------------------------------------- the fishball-ui seam (ui.d.ts)
+
+/**
+ * The fishball-core / fishball-ui split (requirements 1.38 Q-N2, 1.41 Q-G1/Q-G2; R-FB-14).
+ * - `member`: the `fishballInstance` member fishball-ui reads (`ui.d.ts`);
+ * - `coreMissing`: the one line fishball-ui logs, and then changes nothing, when no compatible core
+ *   is present (Q-G2 = A; the same word as R-FB-06's).
+ * Core shows no hint of a missing fishball-ui (Q-G1), so there is no value for it.
+ * fishball-ui loads without core, so it cannot import this file at runtime once the packages split:
+ * F-UI moves this object unchanged into `fishball-shared` (a move, not an amendment).
+ */
+export const UI_SEAM = Object.freeze({
+  member: 'ui',
+  coreMissing: 'fishball-core-missing',
 })
 
 // ------------------------------------------------------------------------- guards (guards.d.ts)
