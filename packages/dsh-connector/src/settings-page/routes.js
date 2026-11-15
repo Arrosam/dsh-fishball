@@ -11,14 +11,18 @@ const json = (status, value) => new Response(JSON.stringify(value), { status, he
 const refused = (status, code) => json(status, { ok: false, code })
 const isRecord = (value) => value !== null && typeof value === 'object' && !Array.isArray(value)
 
-/** The create body's label, or undefined when the body is unreadable, over the bound, not JSON or has no usable label. */
-async function labelOf(request) {
+/**
+ * The create body, a JSON object, or undefined when it is unreadable, over the bound or not one.
+ * Its `label` is passed on as it came: the registry owns the label rule and rejects a bad one with
+ * a TypeError, which the route answers as a bad body.
+ */
+async function bodyOf(request) {
   let text
   try { text = await request.text() } catch { return undefined }
   if (Buffer.byteLength(text) > SETTINGS_PAGE.maxBodyBytes) return undefined
   let body
   try { body = JSON.parse(text) } catch { return undefined }
-  return isRecord(body) && typeof body.label === 'string' && body.label.trim() !== '' ? body.label : undefined
+  return isRecord(body) ? body : undefined
 }
 
 /**
@@ -27,11 +31,13 @@ async function labelOf(request) {
  */
 export function routes({ tokens, logger }) {
   async function create(request) {
-    const label = await labelOf(request)
-    if (label === undefined) return refused(HTTP.badRequest, API_CODE.badBody)
+    const body = await bodyOf(request)
+    if (body === undefined) return refused(HTTP.badRequest, API_CODE.badBody)
     let created
-    // The registry logged the failure with the label; the answer carries the code only.
-    try { created = await tokens.create(label) } catch { return refused(HTTP.serverError, CREATE_ERROR.operationFailed) }
+    // A failed write was logged by the registry with the label; the answer carries the code only.
+    try { created = await tokens.create(body.label) } catch (error) {
+      return error instanceof TypeError ? refused(HTTP.badRequest, API_CODE.badBody) : refused(HTTP.serverError, CREATE_ERROR.operationFailed)
+    }
     logger.info(LOG.created, created.label)
     return json(HTTP.ok, { ok: true, entryKey: created.entryKey, label: created.label, value: created.value })
   }

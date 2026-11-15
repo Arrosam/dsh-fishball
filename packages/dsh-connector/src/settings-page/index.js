@@ -9,10 +9,10 @@
  */
 import { diagnosticOf } from '../errors.js'
 import { REQUEST_BODY_BUFFERED } from '../constants.js'
-import { LOG } from './constants.js'
+import { LOG, SETTINGS_PAGE } from './constants.js'
 import { routes } from './routes.js'
 
-export { SETTINGS_PAGE } from './constants.js'
+export { SETTINGS_PAGE }
 export { routes }
 
 /**
@@ -28,6 +28,6 @@ export function registerSettingsPage(ctx, { tokens, logger }) {
         logger.warn(LOG.routeUnavailable, route.path, diagnosticOf(error))
         return () => {}
       }
-    }, LOG.effect + route.path)
+    }, SETTINGS_PAGE.effectLabel + route.path)
   }
 }

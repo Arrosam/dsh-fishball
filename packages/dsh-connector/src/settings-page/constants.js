@@ -18,14 +18,18 @@ export const SETTINGS_PAGE = Object.freeze({
     create: '/api/dsh-connector/tokens/create',
     notice: '/api/dsh-connector/tokens/notice',
   }),
-  /** The largest create body read: a label is short, and nothing else is accepted. */
+  /**
+   * The largest create body read (design §5.9 "JSON body bound"; the value is this route's own
+   * choice, not the token endpoint's form bound, which bounds another body): a label is short and
+   * nothing else is read, so 4 KiB leaves room for any label without reading large bodies.
+   */
   maxBodyBytes: 4096,
+  /** The row effect's label, followed by the route path. */
+  effectLabel: 'dsh-connector settings page: ',
 })
 
 /** Log lines: the label and codes only, never a value (design §5.9 step 4). */
 export const LOG = Object.freeze({
   created: 'token entry "%s" created',
   routeUnavailable: 'settings page route %s not registered (%s)',
-  /** The row effect's label, followed by the route path. */
-  effect: 'dsh-connector settings page: ',
 })

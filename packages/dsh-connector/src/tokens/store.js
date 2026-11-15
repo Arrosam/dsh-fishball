@@ -16,8 +16,10 @@ const isGeneration = (value) => Number.isSafeInteger(value) && value >= 0
 
 /**
  * One entry record `{entryKey, label, enabled, generation, digest, hosted, removed}`. The domain
- * calls `parse` on load only, so a malformed record fails the open loudly (DSH's `invalid-record`)
- * instead of being trusted. `domainTable` reads nothing but `parse`, so this is a plain validator,
+ * calls `parse` on load only, so a record of the wrong shape fails the open loudly (DSH's
+ * `invalid-record`) instead of being trusted. A per-record document that is not JSON or carries
+ * another version reads as absent (dsh-storage-json): its item then has no record, which fails
+ * closed too (it never authenticates, design §5.9). `domainTable` reads nothing but `parse`, so this is a plain validator,
  * as core's ledger is, rather than `z.object`: `zod` is a host peer that only a DSH profile
  * provides, and this module must also load where only DSH's own `@deepseek-ai/*` packages resolve
  * (the repository's per-SDK runs import it with nothing else installed).
