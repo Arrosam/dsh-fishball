@@ -12,6 +12,8 @@
  *   principal and records the newest client; on an unpaired entry it throws TypeError);
  * - OAuthTokenStore (C-OAUTH's): access tokens and codes in memory, refresh digests "persisted"
  *   (they survive `restart()`); no `chainsOf` (withdrawn with the chain cap, R-OA-23);
+ *   `revokeEntryChains` (K1d-6) and the bound of K1d-7 (per chain only the newest spent record
+ *   and the live one are kept);
  * - FailureLimiter (C-OAUTH's): per key and per address within FAILURE_LIMIT.windowMs;
  * - a CIMD fetcher: `fetch(url)` answers what the case scripted, and counts calls;
  * - a logger that keeps every line, for the leak checks.
@@ -164,10 +166,19 @@ export function fakeOAuthStore() {
     takeCode(digest) { calls.push(['takeCode', digest]); const c = codes.get(digest); codes.delete(digest); return c },
     async putRefresh(digest, record) {
       calls.push(['putRefresh', digest])
+      // K1d-7: a rotation (a spent record) deletes the chain's older spent records.
+      if (record.spentAt !== undefined) for (const [d, r] of refresh) if (d !== digest && r.chainId === record.chainId && r.spentAt !== undefined) refresh.delete(d)
       refresh.set(digest, record)
     },
     getRefresh: (digest) => refresh.get(digest),
     async revokeChain(chainId) { calls.push(['revokeChain', chainId]); revoke(chainId) },
+    /** K1d-6: every chain of the entry with its access tokens, and its unredeemed codes; chainless access tokens stay. */
+    async revokeEntryChains(entryKey) {
+      calls.push(['revokeEntryChains', entryKey])
+      for (const [d, r] of refresh) if (r.entryKey === entryKey) refresh.delete(d)
+      for (const [d, a] of access) if (a.entryKey === entryKey && a.chainId !== undefined) access.delete(d)
+      for (const [d, c] of codes) if (c.entryKey === entryKey) codes.delete(d)
+    },
     async revokeEntry(entryKey, generation) {
       calls.push(['revokeEntry', entryKey, generation])
       for (const [d, r] of refresh) if (r.entryKey === entryKey && r.generation < generation) refresh.delete(d)

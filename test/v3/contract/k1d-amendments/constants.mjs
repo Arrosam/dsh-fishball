@@ -137,6 +137,15 @@ export const PAGE = Object.freeze({
   removedType: 'ChainsState',
   /** §1.0c: the authorization-request extension parameter. */
   agentIdParam: 'agent_id',
+  /** K1d-6 (Fishball 2026-11-16): a reconnect revokes the entry's older chains through this member. */
+  revokeEntryChains: 'revokeEntryChains',
+  revokeEntryChainsParams: Object.freeze(['entryKey']),
+  entryKeyType: 'EntryKey',
+  promiseVoid: /^Promise\s*<\s*void\s*>$/,
+  revokeEntryChainsDoc: Object.freeze([
+    ['every refresh chain of the entry, with their access tokens', [/chain/i, /access/i]],
+    ['its unredeemed codes are dropped', [/code/i]],
+  ]),
 })
 
 /** Design §5.5a: `cid-` + the first 16 lowercase base32 characters of SHA-256(client id URL). */
@@ -272,6 +281,8 @@ export const README_RECORDS = Object.freeze([
   ['DECIDED #18 reversed', [/^\|\s*18\s*\|/, /revers/i]],
   ['chainsOf and renewFromPage withdrawn; reconnectFromPage', [/chainsOf/, /renewFromPage/, /reconnectFromPage/]],
   ['the page binds with agent_id or the cid- derived id', [/agent_id/, /cid-/]],
+  ['K1d-6: a reconnect revokes the entry\'s older chains (revokeEntryChains)', [/K1d-6/, /revokeEntryChains/]],
+  ['K1d-7: per chain only the newest spent refresh record is kept, beside the live one', [/K1d-7/, /spent/i]],
   ['Mailbox.transfer', [/transfer/, /TypeError/]],
   ['Mailbox.retire misuse is a synchronous TypeError (decided item 45)', [/retire/, /synchronous/i, /TypeError/]],
   ['SettingsWriter and SessionNotes ports', [/SettingsWriter/, /SessionNotes/]],

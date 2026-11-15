@@ -266,6 +266,16 @@ function pageCases(sdk) {
   const derivedDoc = () => [...commentBlocks(schemaCode().get(path.join(path.relative(process.cwd(), FILES.schemaDir), 'constants.js')) ?? ''), ...markdownBlocks(readme(FILES.schemaDir))]
     .filter((b) => b.includes('DERIVED_AGENT_ID')).join('\n')
   docRows(sdk, ID.page, 13, 'DERIVED_AGENT_ID', DERIVED_ID.inputDoc, derivedDoc)
+  const revokeEntryChains = () => method(interfaceMembers(k1().m, PAGE.tokenStore), PAGE.revokeEntryChains)
+  caseTest(sdk, ID.page, 14, `${PAGE.tokenStore}.${PAGE.revokeEntryChains}(${PAGE.revokeEntryChainsParams.join(', ')}: ${PAGE.entryKeyType}) is declared and resolves void (K1d-6)`, () => {
+    const found = assertSignature(revokeEntryChains(), PAGE.revokeEntryChainsParams)
+    assert.equal(found.params[0].type.trim(), PAGE.entryKeyType)
+    assert.match(found.returns.trim(), PAGE.promiseVoid)
+  })
+  PAGE.revokeEntryChainsDoc.forEach(([what, patterns], i) => caseTest(sdk, ID.page, `15.${i + 1}`, `${PAGE.revokeEntryChains} documents: ${what}`, () => {
+    const { doc } = revokeEntryChains()
+    for (const re of patterns) assert.match(doc ?? '', re, `${PAGE.revokeEntryChains}'s declaration does not say ${what}`)
+  }))
   // B1–B4 (the page id's behaviour, C-PAGE-ID) run in the module suites, not here:
   // B1 agent_id binds at once, B2 the derived cid- id: dsh-connector/oauth-web/page-id-cases.mjs
   // (AUTH-UC-10, AUTH-UC-15, AUTH-EP-15, AUTH-BVA-10); B3 reconnect / already-paired: the same file

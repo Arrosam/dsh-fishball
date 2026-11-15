@@ -11,9 +11,10 @@
  * AUTH-DT-08 rules) and State Transition (AUTH-ST-08). Level: integration over the oauth-web world
  * (fakes of every seam, a scripted browser on a loopback listener; subject.mjs).
  *
- * One reading relayed by the dev session (2026-11-16) is tested as such, and named where used:
- * after a reconnect from another client id URL the entry records the newest one, so a chain of the
- * earlier client id URL is refused `invalid_grant` on refresh (one token, one client, R-OA-12).
+ * K1d-6 (decided by Fishball, 2026-11-16) is AUTH-ST-09 here: a successful reconnect revokes every
+ * refresh chain the entry had before it (any client id URL), with their access tokens, and drops
+ * its unredeemed codes, before the new code is minted (OAuthTokenStore.revokeEntryChains). A first
+ * bind and an already-paired revoke nothing; chainless access tokens are not touched.
  */
 import assert from 'node:assert/strict'
 import {
@@ -32,7 +33,7 @@ const E = FIXTURE.entry
 const V = FIXTURE.value
 const CASE = Object.freeze({
   uc10: 'AUTH-UC-10', uc15: 'AUTH-UC-15', uc16: 'AUTH-UC-16', uc17: 'AUTH-UC-17', ep15: 'AUTH-EP-15', bva10: 'AUTH-BVA-10',
-  dt08: 'AUTH-DT-08', st08: 'AUTH-ST-08',
+  dt08: 'AUTH-DT-08', st08: 'AUTH-ST-08', st09: 'AUTH-ST-09',
 })
 /** `fill.id: NO_ID` passes no `agent_id` (approve drops an undefined override): a generic client. */
 const NO_ID = Object.freeze({ id: undefined })
@@ -132,6 +133,7 @@ function useCases(sdk) {
     const bound = await approve(w, { name: NAME.watcher })
     assertCode(w, bound)
     const first = assertGrantOk(await redeem(w, bound))
+    const firstChain = w.store.getRefresh(digest(first.refresh_token)).chainId
     const before = identity(w.pairs.pairOf(E(5)))
     // A year past the bind: no age condition on a reconnect (R-OA-23, 1.32 R14).
     w.clock.advance(FIXTURE.withdrawnChainCapMs)
@@ -139,7 +141,7 @@ function useCases(sdk) {
     assertCode(w, flow)
     const second = assertGrantOk(await redeem(w, flow))
     assert.deepEqual(identity(w.pairs.pairOf(E(5))), before)
-    assert.notEqual(w.store.getRefresh(digest(second.refresh_token)).chainId, w.store.getRefresh(digest(first.refresh_token)).chainId, 'a new chain')
+    assert.notEqual(w.store.getRefresh(digest(second.refresh_token)).chainId, firstChain, 'a new chain')
     assert.equal(w.pairs.list().length, 1, 'no second principal')
   })
   uc(CASE.uc16, 'A1 (redirect)', 'the same client with another listed redirect URI → reconnect; the newest redirect URI recorded', async (w) => {
@@ -161,7 +163,7 @@ function useCases(sdk) {
     assert.deepEqual(identity(w.pairs.pairOf(E(5))), before)
     assertGrantOk(await redeem(w, flow, otherClientForm))
   })
-  uc(CASE.uc16, 'A1 (old client\'s chain, relayed reading)', 'after a reconnect from another client id URL, a chain of the earlier client id URL is invalid_grant on refresh; the new one rotates', async (w) => {
+  uc(CASE.uc16, 'A1 (old client\'s chain)', 'after a reconnect from another client id URL, a chain of the earlier client id URL is invalid_grant on refresh (K1d-6); the new one rotates', async (w) => {
     scriptOther(w)
     const c = await chain(w)
     const flow = await approve(w, {}, OTHER_CLIENT)
@@ -400,10 +402,96 @@ function stateTransitions(sdk) {
   })
 }
 
+// ---------------------------------------------------------------------------------------------
+// State Transitions: AUTH-ST-09, the entry's older chains on reconnect (K1d-6)
+// ---------------------------------------------------------------------------------------------
+
+/** The fake store's calls named `name` (oauth-web/fakes.mjs records each with its first argument). */
+const storeCalls = (w, name) => w.store.calls.map(([n, arg], i) => ({ n, arg, i })).filter((c) => c.n === name)
+/** A chainless access token of E5, as a machine client_credentials token is (K1 IssuedAccessToken without chainId). */
+function chainlessAccess(w) {
+  const record = Object.freeze({ entryKey: E(5), clientId: ID.agentW, audience: w.urls.resource, generation: w.tokens.get(E(5)).generation, issuedAt: w.clock.now() })
+  w.store.putAccess(FIXTURE.chainlessDigest, record)
+  return record
+}
+
+function olderChains(sdk) {
+  const st09 = (n, title, fn) => row(sdk, CASE.st09, n, title, fn)
+  st09('1', 'Bound with chain C1 → reconnect → C1\'s refresh token invalid_grant and its access tokens gone; the new code redeems and its chain refreshes', async (w) => {
+    const c = await chain(w)
+    const rotated = assertGrantOk(await refresh(w, c.rt))
+    const flow = await approve(w)
+    assertCode(w, flow)
+    for (const body of [c.first, rotated]) assert.equal(w.store.getAccess(digest(body.access_token)), undefined, 'an older chain access token survived')
+    assertGrantError(await refresh(w, rotated.refresh_token), OAUTH_ERROR.invalidGrant)
+    const fresh = assertGrantOk(await redeem(w, flow))
+    w.clock.advance(FIXTURE.graceProbeMs.after)
+    assertGrantOk(await refresh(w, fresh.refresh_token))
+  })
+  st09('2', 'two chains of the entry, from two client id URLs → a reconnect revokes both', async (w) => {
+    scriptOther(w)
+    const a = await chain(w)
+    const b = assertGrantOk(await redeem(w, await approve(w, {}, OTHER_CLIENT), otherClientForm))
+    // That second approve was itself a reconnect (it revoked a); a third revokes b too.
+    assertCode(w, await approve(w))
+    assertGrantError(await refresh(w, a.rt), OAUTH_ERROR.invalidGrant)
+    assertGrantError(await refresh(w, b.refresh_token, otherClientForm), OAUTH_ERROR.invalidGrant)
+  })
+  st09('3', 'a code minted before the reconnect and never redeemed → invalid_grant after it; the reconnect\'s own code redeems', async (w) => {
+    withE5(w)
+    const early = await approve(w)
+    assertCode(w, early)
+    const flow = await approve(w)
+    assertCode(w, flow)
+    assertGrantError(await redeem(w, early), OAUTH_ERROR.invalidGrant)
+    assertGrantOk(await redeem(w, flow))
+  })
+  st09('4', 'the revocation comes before the reconnect\'s new code is minted (revokeEntryChains on E5, then putCode)', async (w) => {
+    await chain(w)
+    const codesBefore = storeCalls(w, 'putCode').length
+    assertCode(w, await approve(w))
+    const [revoked] = storeCalls(w, 'revokeEntryChains')
+    assert.equal(revoked?.arg, E(5), 'revokeEntryChains was not called for E5')
+    const minted = storeCalls(w, 'putCode')[codesBefore]
+    assert.ok(minted && revoked.i < minted.i, 'the new code was minted before the older chains were revoked')
+  })
+  st09('5', 'a first bind revokes nothing: no revokeEntryChains, and another entry\'s chain still refreshes', async (w) => {
+    const c = await chain(w)
+    w.tokens.add(6, V(6))
+    assertCode(w, await approve(w, { id: ID.other, token: V(6) }))
+    assert.deepEqual(storeCalls(w, 'revokeEntryChains'), [])
+    assertGrantOk(await refresh(w, c.rt))
+  })
+  st09('6', 'already-paired (another id) revokes nothing: the chain still refreshes', async (w) => {
+    const c = await chain(w)
+    await refusedOnPage(w, { id: ID.other }, undefined, PAGE_TEXT.createNew)
+    assert.deepEqual(storeCalls(w, 'revokeEntryChains'), [])
+    assertGrantOk(await refresh(w, c.rt))
+  })
+  st09('7', 'a pair-bound entry with a chainless (client_credentials) access token → reconnect on the page → that access token is kept', async (w) => {
+    withE5(w)
+    await w.pairs.pair(E(5), ID.agentW, undefined, at())
+    const record = chainlessAccess(w)
+    assertCode(w, await approve(w))
+    assert.deepEqual({ ...w.store.getAccess(FIXTURE.chainlessDigest) }, record)
+  })
+  st09('8', 'A → B → A: reconnects from client id URLs A, B, A → A\'s chain from before the last reconnect and B\'s stay dead; the newest chain lives', async (w) => {
+    scriptOther(w)
+    const a1 = await chain(w)
+    const b1 = assertGrantOk(await redeem(w, await approve(w, {}, OTHER_CLIENT), otherClientForm))
+    const flow = await approve(w)
+    const a2 = assertGrantOk(await redeem(w, flow))
+    assertGrantError(await refresh(w, a1.rt), OAUTH_ERROR.invalidGrant)
+    assertGrantError(await refresh(w, b1.refresh_token, otherClientForm), OAUTH_ERROR.invalidGrant)
+    assertGrantOk(await refresh(w, a2.refresh_token))
+  })
+}
+
 /** Every C-PAGE-ID case of the page on one SDK: Use Cases first, then EP / BVA, DT and ST. */
 export function registerPageIdCases(sdk) {
   useCases(sdk)
   partitionsAndBoundaries(sdk)
   decisionTable(sdk)
   stateTransitions(sdk)
+  olderChains(sdk)
 }
