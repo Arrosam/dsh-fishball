@@ -173,6 +173,8 @@ export const PLACEMENT = Object.freeze({
    * fishball-core last, so its guard patch reaches every row the others insert (R-FB-12).
    * `directory` names a set member's folder: `bundled/<directory>` in a packed instance (REL-PACK
    * output, never committed; Q-22), else the sibling workspace folder `../<directory>` of a checkout.
+   * A packed member carries its own `bundleDependencies` in `bundled/<directory>/node_modules/<name>`,
+   * as extracting its tarball leaves them (placement.js bundledLibraries reads them from there).
    * The set is core and board only (design `9a531192` §1.0, §7; requirements 1.37).
    */
   bundles: Object.freeze([
@@ -180,14 +182,19 @@ export const PLACEMENT = Object.freeze({
     Object.freeze({ name: 'fishball-core', directory: 'core' }),
   ]),
   /**
-   * Libraries placed beside the bundles, never listed as bundles: fishball-shared, core's and the
-   * instance's bundled dependency (R-ARCH-08), and the connector's `./contract` export, which core
-   * and the lifecycle rows import by name until F-STATUS (M1). Each source is
-   * resolved through the instance's own dependency graph, by the name the copied modules import.
+   * Libraries placed beside the bundles, never listed as bundles (R-ARCH-08, one per side,
+   * requirements 1.40): dsh-connector-shared, the instance's bundled dependency that its placed
+   * lifecycle code imports, and the connector's `./contract` export, which core and the lifecycle
+   * rows import by name until F-STATUS (M1); both are resolved through the instance's own
+   * dependency graph. A placed bundle's own libraries (its `bundleDependencies`, as core's
+   * fishball-shared) are resolved from the bundle's folder instead (placement.js bundledLibraries).
    * The contract is placed as that export alone, with a manifest naming only it, so the child sees
    * what a third-party client sees and nothing else of the connector.
    */
-  shared: 'fishball-shared',
+  shared: 'dsh-connector-shared',
+  bundledField: 'bundleDependencies',
+  // Node's code for a package that a resolver cannot find (createRequire().resolve).
+  unresolved: 'MODULE_NOT_FOUND',
   contract: Object.freeze({ name: 'dsh-connector', export: './contract' }),
   packed: 'bundled',
   parent: '..',
@@ -201,7 +208,7 @@ export const PLACEMENT = Object.freeze({
   recordFormat: 1,
   temporaryInfix: '.placing-',
   retiredInfix: '.previous-',
-  // A `files` entry may hold `*` within its last path segment only (as fishball-shared's `*.js`).
+  // A `files` entry may hold `*` within its last path segment only (as the libraries' `*.js`).
   wildcard: '*',
   wildcardPattern: '[^/]*',
   regexSpecial: /[.+?^${}()|[\]\\]/g,

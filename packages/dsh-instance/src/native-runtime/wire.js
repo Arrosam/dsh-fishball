@@ -7,8 +7,8 @@ import { RUNTIME, NativeRuntimeError, fail } from './constants.js'
  * Payload channels that ride the authenticated lifecycle wire beside its own operations. Each
  * carries one JSON string per frame: the session bridge owns `control` exclusively
  * (src/slim/host/bridge.js, fishball-core src/slim/child/bridge.js), the T11 admin protocol owns `admin`
- * (`ADMIN.channel` in fishball-shared/admin-protocol), T16's provider-sync target owns
- * `provider-sync` (`PROVIDER_SYNC_TARGET.channel` in fishball-shared/provider-sync-codec), and
+ * (`ADMIN.channel` in dsh-connector-shared/admin-protocol), T16's provider-sync target owns
+ * `provider-sync` (`PROVIDER_SYNC_TARGET.channel` in dsh-connector-shared/provider-sync-codec), and
  * SET's settings relay owns `instance-settings` (src/slim/settings-relay.js).
  * Any other channel still closes the connection, so this list is the wire's protocol, not an
  * open tunnel.

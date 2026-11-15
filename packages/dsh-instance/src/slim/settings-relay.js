@@ -23,7 +23,7 @@
  */
 import { randomUUID } from 'node:crypto'
 import { RUNTIME_LIMITS } from '../native-runtime/constants.js'
-import { ADMIN_LIMITS } from 'fishball-shared/admin-protocol'
+import { ADMIN_LIMITS } from 'dsh-connector-shared/admin-protocol'
 
 export const SETTINGS_RELAY = Object.freeze({
   channel: 'instance-settings',

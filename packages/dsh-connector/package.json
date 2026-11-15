@@ -38,13 +38,12 @@
   "dependencies": {
     "@modelcontextprotocol/node": "2.1.0",
     "@modelcontextprotocol/server": "2.2.0",
-    "fishball-shared": "0.1.0-alpha.0",
+    "dsh-connector-shared": "0.1.0-alpha.0",
     "hono": "^4.11.4"
   },
-  "//TODO": "SPLIT-SHARED (v3-remaining-plan §6): fishball-shared below becomes dsh-connector-shared (design §1.0c, §1.0b row 5). RENAME-DSH left it, as the split is that task's.",
-  "//bundleDependencies": "fishball-shared (R-ARCH-08) is bundled as in core and the instance, so the tarball carries it and an install fetches nothing from a registry. The connector uses its ./redact, the secret-shape scrub a contributed tool's refusal message passes (design §13.5; C-EXT, decided by Fishball 2026-11-14).",
+  "//bundleDependencies": "dsh-connector-shared (R-ARCH-08, the DSH side's library) is bundled as in the instance, so the tarball carries it and an install fetches nothing from a registry. The connector uses its ./redact, the secret-shape scrub a contributed tool's refusal message passes (design §13.5; C-EXT, decided by Fishball 2026-11-14).",
   "bundleDependencies": [
-    "fishball-shared"
+    "dsh-connector-shared"
   ],
   "//peerDependencies": "Host packages are resolved from the running DSH installation (verified in spike S8). '*' because engines.dsh is the real compatibility gate.",
   "peerDependencies": {

@@ -8,7 +8,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { APPROVER_HOLDS, APPROVER_THROWS, ASK_REASON, ASK_TOOL, BOOT_LOG, CONNECTOR, EXAMPLE, FAKE, FAKE_LLM_MODULE, FIXTURE_BUNDLE, INSTANCE, INSTALL_EVENTS, SHARED, MANAGER_BUNDLES, ONLY_BUNDLES, OUTCOME, PACKAGE_NAME, PRESET, PROFILE, REPO, REVIEW_BUNDLES, ROW_ID, RUNTIME, SENTINEL_PRESET, SOURCE_BUNDLES, SOURCE_ROW, SPOOF_MODULE, SPOOF_ROWS } from './constants.mjs'
+import { APPROVER_HOLDS, APPROVER_THROWS, ASK_REASON, ASK_TOOL, BOOT_LOG, CONNECTOR, EXAMPLE, FAKE, FAKE_LLM_MODULE, FIXTURE_BUNDLE, INSTANCE, INSTALL_EVENTS, LIBRARIES, MANAGER_BUNDLES, ONLY_BUNDLES, OUTCOME, PACKAGE_NAME, PRESET, PROFILE, REPO, REVIEW_BUNDLES, ROW_ID, RUNTIME, SENTINEL_PRESET, SOURCE_BUNDLES, SOURCE_ROW, SPOOF_MODULE, SPOOF_ROWS } from './constants.mjs'
 import { linkContractForSourceRun } from './contract-link.mjs'
 import { fixtureTool, plainConfig, registerFixtures, store } from './fixture-tools.mjs'
 import { textOf, until } from './util.mjs'
@@ -88,13 +88,14 @@ function pluginPackages() {
   return [{ name: pkg.name, dir: target }]
 }
 /**
- * V3 R-SHARED (R-ARCH-08): `fishball-shared` of the same checkout as pluginPackages(), when that
- * checkout has one (a checkout from before R-SHARED has none). It is a library, not a bundle.
+ * V3 R-SHARED (R-ARCH-08; one library per side since SPLIT-SHARED): `dsh-connector-shared` and
+ * `fishball-shared` of the same checkout as pluginPackages(), each when that checkout has its folder
+ * (a checkout from before R-SHARED or SPLIT-SHARED lacks one). They are libraries, not bundles.
  */
 function libraryPackages() {
   const target = process.env.FBTEST_PLUGIN_DIR
-  const dir = target ? path.join(target, 'packages', 'shared') : SHARED.dir
-  return fs.existsSync(dir) ? [{ name: SHARED.name, dir }] : []
+  return LIBRARIES.map((library) => ({ name: library.name, dir: target ? path.join(target, 'packages', library.folder) : library.dir }))
+    .filter((library) => fs.existsSync(library.dir))
 }
 /**
  * Plugin statuses: every boot re-points the links, so the same home can boot the old and the new
@@ -103,7 +104,7 @@ function libraryPackages() {
  */
 linkContractForSourceRun()
 for (const p of pluginPackages()) relinkPlugin(profileDir, p.name, p.dir)
-// V3 R-SHARED: the library beside the plugins, as a plain dependency (relinkPlugin never selects a bundle).
+// V3 R-SHARED: the libraries beside the plugins, as a plain dependency (relinkPlugin never selects a bundle).
 for (const p of libraryPackages()) relinkPlugin(profileDir, p.name, p.dir)
 for (const b of JSON.parse(process.env.FBTEST_LINK ?? '[]')) {
   const deps = JSON.parse(fs.readFileSync(path.join(profileDir, 'package.json'), 'utf8')).dependencies ?? {}

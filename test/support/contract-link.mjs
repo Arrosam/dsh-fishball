@@ -9,16 +9,17 @@
  */
 import fs from 'node:fs'
 import path from 'node:path'
-import { CONNECTOR, REPO, SHARED } from './constants.mjs'
+import { CONNECTOR, LIBRARIES, REPO } from './constants.mjs'
 
 /**
- * Also links `fishball-shared` (V3 R-SHARED, R-ARCH-08) when this checkout has `packages/shared`:
- * instance modules import it by name and Node resolves it from their real path, so it needs the
- * same root link as the contract. A checkout from before R-SHARED has no such folder and gets none.
+ * Also links each library (V3 R-SHARED, R-ARCH-08; `dsh-connector-shared` and `fishball-shared` since
+ * SPLIT-SHARED) when this checkout has its folder: instance, connector and core modules import them by
+ * name and Node resolves them from their real path, so each needs the same root link as the contract.
+ * A checkout from before a library has no such folder and gets no link for it.
  */
 export function linkContractForSourceRun() {
   linkAtRoot(CONNECTOR)
-  if (fs.existsSync(SHARED.dir)) linkAtRoot(SHARED)
+  for (const library of LIBRARIES) if (fs.existsSync(library.dir)) linkAtRoot(library)
 }
 
 function linkAtRoot(pkg) {

@@ -1,7 +1,11 @@
 /**
- * Secret masking for diagnostics (fishball-shared, R-ARCH-08). Moved unchanged from
- * dsh-instance's src/native-runtime/stderr-log.js: the instance's child stderr log and the
- * provider-sync host adapter (./provider-sync-host.js, loaded by both ends) mask the same shapes.
+ * Fishball side's interim copy (requirements 1.40, design §1.0b row 5): dsh-connector-shared owns
+ * the DSH side's identical module. This copy serves only core's child half until I-HOST moves that
+ * half into dsh-instance, then it is deleted (package.json //TODO). Keep the two in step until then.
+ *
+ * Secret masking for diagnostics (fishball-shared, R-ARCH-08), moved unchanged from
+ * dsh-instance's src/native-runtime/stderr-log.js. Used only by ./provider-sync-host.js, core's
+ * child end, so it is not exported.
  */
 
 /**
