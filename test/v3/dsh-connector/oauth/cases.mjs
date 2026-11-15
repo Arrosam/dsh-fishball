@@ -21,7 +21,7 @@
 import assert from 'node:assert/strict'
 import { caseTest } from '../../contract/package-boundaries/cases.mjs'
 import {
-  BEARER_CHALLENGE, CALLER_FIELDS, CHAINS, CLIENT_AUTH, ENTRY_STATUS, ERROR_BODY_FIELDS, FAILURE_LIMIT, FIXTURE, GATE_SURFACE, GRANT, GRANT_CONTEXT,
+  BEARER_CHALLENGE, CALLER_FIELDS, CHAINS, CLIENT_AUTH, ERROR_BODY_FIELDS, FAILURE_LIMIT, FIXTURE, GATE_SURFACE, GRANT, GRANT_CONTEXT,
   GRANT_DISPATCH, HOSTS, HTTP_METHOD, HTTP_STATUS, HTTP_WIRE, ID_CLASSES, ID_LENGTHS, ID_MAX, LATER, LIFETIME, OAUTH_ERROR, OAUTH_ERROR_STATUS,
   OAUTH_METADATA, PATHS, RATE_LIMITS, REQUEST_GATE, SCOPE, TIME_UNIT, TOKEN_RESPONSE_HEADERS, VERIFY_ERROR, authorizationServerMetadata, oauthErrorBody,
   oauthUrls, protectedResourceMetadata, tokenResponse,
@@ -233,12 +233,7 @@ function useCases(sdk) {
     assert.deepEqual(verify(w, token), INVALID)
     assertError(await tokenRequest(w, { clientId: ID.a, secret: e.value }), OAUTH_ERROR.invalidClient)
   })
-  uc06('A3', 'E1\'s value changed: tokens of the old value are invalid_token; the old value is invalid_client and the new one authenticates', async (w, e, token) => {
-    const value = w.tokens.changeValue(e.entryKey)
-    assert.deepEqual(verify(w, token), INVALID)
-    assertError(await tokenRequest(w, { clientId: ID.a, secret: e.value }), OAUTH_ERROR.invalidClient)
-    await issue(w, { ...e, value }, ID.a, SCOPE.full)
-  })
+  // AUTH-UC-06 A3 (a value change) is withdrawn by design §5.9: a value never changes (requirements 1.27).
   todo(sdk, CASE.uc06, 'E1', 'a request already past the token check when the revocation lands completes; the next is refused', LATER.http)
 
   // AUTH-UC-04 E1 (C-PAIR's row): E1 bound to 123.
@@ -475,7 +470,7 @@ function equivalencePartitions(sdk) {
     const token = await issue(w, e, ID.agentA, SCOPE.full)
     assert.deepEqual(verify(w, token, at(LIFETIME.accessTokenMs)), INVALID)
   })
-  for (const [kind, revoke] of [['disabled', (w, e) => w.tokens.disable(e.entryKey)], ['deleted', (w, e) => w.tokens.remove(e.entryKey)], ['value-changed', (w, e) => w.tokens.changeValue(e.entryKey)]]) {
+  for (const [kind, revoke] of [['disabled', (w, e) => w.tokens.disable(e.entryKey)], ['deleted', (w, e) => w.tokens.remove(e.entryKey)]]) {
     ep02(`5 (${kind})`, `an access token of a ${kind} entry → invalid_token on the next request`, async (w, e) => {
       const token = await issue(w, e, ID.agentA, SCOPE.full)
       revoke(w, e)
@@ -696,12 +691,12 @@ function decisionTables(sdk) {
     ['2', 'disabled token, valid id, bound to X with id X → invalid_client 401', (w) => { const e = boundEntry(w, ID.agentA); w.tokens.disable(e.entryKey); return { clientId: ID.agentA, secret: e.value } }],
     ['3', 'revoked (deleted) token → invalid_client 401', (w) => { const e = boundEntry(w, ID.agentA); w.tokens.remove(e.entryKey); return { clientId: ID.agentA, secret: e.value } }],
     ['4', 'valid token, invalid id (fb.1) → invalid_client', (w) => ({ clientId: ID.dotted, secret: w.tokens.add().value })],
-    ['8', 'valid but too short (token-too-short), valid id → invalid_client', (w) => ({ clientId: ID.agentA, secret: w.tokens.add({ status: ENTRY_STATUS.tokenTooShort, value: FIXTURE.shortValue() }).value })],
+    // Rule 8 (a value too short, token-too-short) is withdrawn by design §5.9: every value is generated.
   ]
   for (const [rule, title, credentials] of refusedRules) {
     dt01(rule, title, async (w) => assertError(await tokenRequest(w, { auth: CLIENT_AUTH.post, ...credentials(w) }), OAUTH_ERROR.invalidClient))
   }
-  dt01('1–4, 8 (identical)', 'the responses of rules 1–4 and 8 are identical (EP-05)', async (w) => {
+  dt01('1–4 (identical)', 'the responses of rules 1–4 are identical (EP-05)', async (w) => {
     const shapes = []
     for (const [, , credentials] of refusedRules) shapes.push(JSON.stringify(shape(await tokenRequest(w, { auth: CLIENT_AUTH.post, ...credentials(w) }))))
     assert.equal(new Set(shapes).size, 1, shapes.join('\n'))
@@ -782,7 +777,7 @@ function stateTransitions(sdk) {
     const e = boundEntry(w, ID.x)
     for (const token of [await issue(w, e, ID.x, SCOPE.full), await issue(w, e, ID.y, SCOPE.pair)]) assert.deepEqual(verify(w, token, at(LIFETIME.accessTokenMs)), INVALID)
   })
-  for (const [kind, revoke] of [['disabled', (w, e) => w.tokens.disable(e.entryKey)], ['deleted', (w, e) => w.tokens.remove(e.entryKey)], ['value changed', (w, e) => w.tokens.changeValue(e.entryKey)]]) {
+  for (const [kind, revoke] of [['disabled', (w, e) => w.tokens.disable(e.entryKey)], ['deleted', (w, e) => w.tokens.remove(e.entryKey)]]) {
     st02(`4 (${kind})`, `any live token → the entry ${kind} → Invalid (invalid_token)`, async (w) => {
       const e = boundEntry(w, ID.x)
       const tokens = [await issue(w, e, ID.x, SCOPE.full), await issue(w, e, ID.y, SCOPE.pair)]
@@ -799,13 +794,7 @@ function stateTransitions(sdk) {
     const fresh = await issue(w, e, ID.x, SCOPE.full)
     assert.equal(verify(w, fresh).generation, w.tokens.get(e.entryKey).generation)
   })
-  st02('5 (value restored)', 'Invalid by a value change → the old value restored → still Invalid (AUTH-DT-04 rule 12: never revived)', async (w) => {
-    const e = boundEntry(w, ID.x)
-    const old = await issue(w, e, ID.x, SCOPE.full)
-    w.tokens.changeValue(e.entryKey)
-    w.tokens.changeValue(e.entryKey, e.value)
-    assert.deepEqual(verify(w, old), INVALID)
-  })
+  // AUTH-ST-02 '5 (value restored)' (AUTH-DT-04 rule 12) is withdrawn by design §5.9: a value never changes.
   st02('6', 'Expired (machine exchange) → refresh_token grant → still Expired: the endpoint sends the refresh grant\'s invalid_grant and issues nothing', async (w) => {
     const e = boundEntry(w, ID.x)
     const token = await issue(w, e, ID.x, SCOPE.full)
@@ -979,7 +968,7 @@ function stateTransitions(sdk) {
     await liveChain(s, 2, at(FIXTURE.day))
     assert.equal(s.store.chainsOf(E, G, at(MAX)), CHAINS.live)
   })
-  st05('12d (store)', 'Ended, then the entry disabled and re-enabled or its value changed (a newer generation) → revoked, never ended', async (s) => {
+  st05('12d (store)', 'Ended, then the entry disabled and re-enabled (a newer generation) → revoked, never ended', async (s) => {
     await liveChain(s)
     assert.equal(s.store.chainsOf(E, G, at(MAX)), CHAINS.ended)
     assert.equal(s.store.chainsOf(E, G + 1, at(MAX)), CHAINS.revoked)

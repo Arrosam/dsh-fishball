@@ -159,9 +159,10 @@ export const TOKENS = Object.freeze({
   members: Object.freeze(['apiVersion', 'createHosted', 'retire']),
   createHosted: Object.freeze({ params: 1 }),
   retire: Object.freeze({ params: 2 }),
-  /** createHosted resolves to {ref, entryKey, label} and never the value (R-HOST-05). */
-  createdFields: Object.freeze(['ref', 'entryKey', 'label']),
-  valueField: /^(?:value|token|secret|credential|password|bearer)$/i,
+  /** K1d (design §5.4, §5.9; R1): createHosted resolves {entryKey, label, value}, the value once, to the instance. */
+  createdFields: Object.freeze(['entryKey', 'label', 'value']),
+  /** K1d: no credential reference is left on the connector's side. */
+  withdrawnField: /^(?:ref|tokenRef|credentialRef)$/i,
 })
 
 /** Design §4.1 and §6.1 (HOST, UIM): `dshInstanceChild`. */
