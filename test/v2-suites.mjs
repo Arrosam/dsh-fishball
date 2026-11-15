@@ -111,6 +111,9 @@ export const V2_SUITES = Object.freeze({
     // V3 F-GUARDS (PLAT-UC-04 composition, PLAT-DT-04, UIM-DT-01 rows 9/10b/14, HOST-DT-03 rule 6, HOST-UC-08 A3/E2); run with test/run-v3.mjs.
     file('test/v3/fishball-ui/guards/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 fishball-core guard rows, override report and self-reorder (F-GUARDS)'),
     file('test/v3/fishball-ui/guards/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 fishball-core guard rows, override report and self-reorder (F-GUARDS)'),
+    // V3 C-UI-BACKEND (UIB-UC-01…07, UIB-EP-01…07, UIB-BVA-01…04, UIB-DT-01…04, UIB-ST-01…04; R-UI-05/10, R-ROUTE-05, R-FN-01, R-EXT-13); run with test/run-v3.mjs.
+    file('test/v3/dsh-connector/ui/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 connector UI backend: marks, Hand over targets and lights, attention latch, notify, routes and stream (C-UI-BACKEND)'),
+    file('test/v3/dsh-connector/ui/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 connector UI backend: marks, Hand over targets and lights, attention latch, notify, routes and stream (C-UI-BACKEND)'),
     // V3 C-EXT (EXT-UC-01…03, EXT-EP-01…04, EXT-BVA-01…04, EXT-DT-01/02, EXT-ST-01, K2's C-EXT rows); run with test/run-v3.mjs.
     file('test/v3/dsh-connector/contrib/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 connector contribution service (C-EXT)'),
     file('test/v3/dsh-connector/contrib/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 connector contribution service (C-EXT)'),
