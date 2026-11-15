@@ -25,7 +25,7 @@ export const PACKAGE = Object.freeze({
   dshConnectorUi: 'packages/dsh-connector-ui',
   dshInstance: 'packages/dsh-instance',
   dshConnectorShared: 'packages/dsh-connector-shared',
-  // dsh-connector-adapter has no folder yet (C-MCP-ADAPTER).
+  dshConnectorAdapter: 'packages/dsh-connector-adapter',
   fishballCore: 'packages/core',
   fishballShared: 'packages/shared',
   fishballBoard: 'packages/board',
@@ -104,6 +104,11 @@ export const V3_SUITES = Object.freeze({
   'dsh-connector.contrib': suite('contribution service (C-EXT)', v3('dsh-connector/contrib'),
     [sub(PACKAGE.dshConnector, 'src', 'contrib'), sub(PACKAGE.dshConnector, 'src', 'mailbox'), sub(PACKAGE.dshConnector, 'src', 'schema-value'),
       all(PACKAGE.dshConnectorShared), ...CONNECTOR_CORE, ...CONNECTOR_CONTRACTS]),
+  // The adapter imports only its own package and dsh-connector-shared/oauth-client (C-MCP-ADAPTER).
+  'dsh-connector-adapter.adapter': suite('connector adapter: check, sign-in tool, proxy, child row, refresh (C-MCP-ADAPTER)', v3('dsh-connector-adapter/adapter'),
+    [all(PACKAGE.dshConnectorAdapter), PACKAGE.dshConnectorShared + '/oauth-client.js', PACKAGE.dshConnectorShared + '/package.json']),
+  'dsh-connector-shared.oauth-client': suite('the DSH side\'s OAuth browser client and token manager (C-MCP-ADAPTER)', v3('dsh-connector-shared/oauth-client'),
+    [PACKAGE.dshConnectorShared + '/oauth-client.js', PACKAGE.dshConnectorShared + '/package.json']),
   'dsh-connector-ui.shell': suite('host half and client shell (U-SHELL)', v3('dsh-connector-ui/shell'),
     [all(PACKAGE.dshConnectorUi), sub(PACKAGE.dshInstance, 'src', 'child-settings'), sub(PACKAGE.dshConnector, 'tools'), sub(PACKAGE.dshConnector, 'host-services')]),
   // Reads the instance's whole placement and launch overlay, and core's patch it places.
