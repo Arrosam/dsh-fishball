@@ -15,8 +15,8 @@
  * precondition (§6.3a "with a target set"). Rule 6a keeps the link's word beside Connect: a refused
  * grant "shows Connect again" (R-FB-04), and the user still sees why.
  */
-import { CONNECT } from '../../contracts/constants.js'
-import { TARGET_STATE, checkTarget } from '../link/index.js'
+import { CONNECT, LINK } from '../../contracts/constants.js'
+import { checkTarget } from '../link/index.js'
 import { STATUS_MODEL } from './constants.js'
 
 const line = (kind, code) => Object.freeze({ kind, code: code ?? null })
@@ -33,10 +33,10 @@ const CONNECTABLE = Object.freeze([CONNECT.state.needsAuthorization, CONNECT.sta
  * @returns {{line: {kind: string, code: string | null}, control: string | null}}
  */
 export function stripLine(link, target, connect) {
-  if (link.state === TARGET_STATE.connected || !checkTarget(target).ok) return result(linkLine(link))
+  if (link.state === LINK.state.connected || !checkTarget(target).ok) return result(linkLine(link))
   if (connect === null || connect.state === CONNECT.state.authorized) return result(linkLine(link))
   if (connect.state === CONNECT.state.authorizing) return result(line(connect.state), STATUS_MODEL.control.cancel)
   if (!CONNECTABLE.includes(connect.state)) return result(line(connect.state, connect.code))
-  const shown = link.state === TARGET_STATE.unset ? line(connect.state, connect.code) : linkLine(link)
+  const shown = link.state === LINK.state.unset ? line(connect.state, connect.code) : linkLine(link)
   return result(shown, STATUS_MODEL.control.connect)
 }

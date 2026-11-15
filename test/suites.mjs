@@ -49,10 +49,10 @@ const CONNECTOR_CONTRACTS = Object.freeze([
  * reached only from index.js (CONNECTOR_BOOT); the package's manifest is in that set too.
  */
 const CONNECTOR_CORE = Object.freeze(['constants', 'digest', 'errors', 'text'].map((name) => `${PACKAGE.dshConnector}/src/${name}.js`))
-/** The connector's manifest: k1 reads its dependencies, core's vendor script its export map. */
+/** The connector's manifest: k1 reads its dependencies. */
 const CONNECTOR_MANIFEST = PACKAGE.dshConnector + '/package.json'
-/** core's link and the vendored K1 copy every link-side module imports (core/src/link → vendor, contracts). */
-const CORE_LINK = Object.freeze([sub(PACKAGE.fishballCore, 'src', 'link'), sub(PACKAGE.fishballCore, 'vendor'), sub(PACKAGE.fishballCore, 'contracts')])
+/** core's link and its own K3a contracts every link-side module imports (core/src/link → contracts; F-OWN-SCHEMA). */
+const CORE_LINK = Object.freeze([sub(PACKAGE.fishballCore, 'src', 'link'), sub(PACKAGE.fishballCore, 'contracts')])
 
 /**
  * What a booted connector row loads: the import closure of its entry (index.js → src/*.js,
@@ -79,6 +79,13 @@ const suite = (description, files, triggers) => Object.freeze({ description, fil
  * cross-package contract and boundary rows (test/v3/contract/*). Ids are `<package>.<module>`.
  */
 export const V3_SUITES = Object.freeze({
+  'contract.own-schema': suite('core-owned MCP surface and real connector drift (F-OWN-SCHEMA)', v3('contract/own-schema'),
+    [sub(PACKAGE.fishballCore, 'contracts'), PACKAGE.fishballCore + '/src/*', PACKAGE.fishballCore + '/src/!(slim)/**', top(PACKAGE.fishballCore), sub(PACKAGE.fishballCore, 'ui'),
+      // The absence rows must rerun if a generated copy or its generator comes back.
+      sub(PACKAGE.fishballCore, 'vendor'), sub(PACKAGE.fishballCore, 'scripts'), all(PACKAGE.fishballBoard), all(PACKAGE.fishballShared), ...CONNECTOR_CONTRACTS,
+      // What the real-connector rows boot (as dsh-connector.mcp-tools).
+      sub(PACKAGE.dshConnector, 'src', 'mcp'), sub(PACKAGE.dshConnector, 'src', 'pairs'), sub(PACKAGE.dshConnector, 'src', 'mailbox'),
+      sub(PACKAGE.dshConnector, 'src', 'schema-value'), ...CONNECTOR_CORE, sub(PACKAGE.dshConnector, 'host-services')]),
   'dsh-connector.tokens': suite('token registry: create and reveal once, digest records, duplicates, revocation signal (C-TOKENS-REVEAL)', v3('dsh-connector/tokens'),
     [sub(PACKAGE.dshConnector, 'src', 'tokens'), ...CONNECTOR_CORE, ...CONNECTOR_CONTRACTS]),
   // The page's routes run over the real token registry, and its client is the connector's one browser module.
@@ -133,11 +140,13 @@ export const V3_SUITES = Object.freeze({
   'fishball-core.events': suite('interception, acceptance ledger, wake (F-INTERCEPT)', v3('fishball-core/events'),
     [sub(PACKAGE.fishballCore, 'src', 'events'), ...CORE_LINK, ...CONNECTOR_CONTRACTS]),
   'fishball-core.link': suite('MCP link (F-LINK)', v3('fishball-core/link'),
-    [...CORE_LINK, sub(PACKAGE.fishballCore, 'scripts'), top(PACKAGE.fishballCore), ...CONNECTOR_CONTRACTS, ...CONNECTOR_CORE, CONNECTOR_MANIFEST, sub(PACKAGE.dshConnector, 'host-services')]),
+    [...CORE_LINK, top(PACKAGE.fishballCore), ...CONNECTOR_CONTRACTS, ...CONNECTOR_CORE, CONNECTOR_MANIFEST, sub(PACKAGE.dshConnector, 'host-services')]),
   'fishball-core.asks': suite('ask cards: ask_user, the asks service and routes (F-ASKCARD)', v3('fishball-core/asks'),
     [sub(PACKAGE.fishballCore, 'src', 'asks'), PACKAGE.fishballCore + '/client.asks.js', ...CORE_LINK]),
   'fishball-core.identity': suite('identity, pairing decisions, token-revoked (F-PAIR)', v3('fishball-core/identity'),
-    [sub(PACKAGE.fishballCore, 'src', 'identity'), ...CORE_LINK, sub(PACKAGE.dshConnector, 'src', 'pairs'), ...CONNECTOR_CORE, ...CONNECTOR_CONTRACTS]),
+    [sub(PACKAGE.fishballCore, 'src', 'identity'), ...CORE_LINK, sub(PACKAGE.dshConnector, 'src', 'pairs'), ...CONNECTOR_CORE, ...CONNECTOR_CONTRACTS,
+      // Its name rows read the own-schema suite's constants.
+      'test/v3/contract/own-schema/constants.mjs']),
   // The strip view is core's ui/status until F-UI moves it; the line reads the link's target rule.
   'fishball-core.status': suite('status, strip view, set completeness, guards notice (F-STATUS)', v3('fishball-core/status'),
     [sub(PACKAGE.fishballCore, 'src', 'status'), sub(PACKAGE.fishballCore, 'ui', 'status'), ...CORE_LINK]),
@@ -152,13 +161,13 @@ export const V3_SUITES = Object.freeze({
     [all(PACKAGE.fishballBoard), sub(PACKAGE.dshConnector, 'mcp-schema')]),
   // The contract suites read every file of the packages they bound, so any change there reruns them.
   'contract.k1-mcp-schema': suite('K1 MCP schema freeze', v3('contract/k1-mcp-schema'),
-    [...CONNECTOR_CONTRACTS, sub(PACKAGE.fishballCore, 'vendor'), ...CONNECTOR_CORE, CONNECTOR_MANIFEST, sub(PACKAGE.dshConnector, 'host-services')]),
+    [...CONNECTOR_CONTRACTS, ...CONNECTOR_CORE, CONNECTOR_MANIFEST, sub(PACKAGE.dshConnector, 'host-services')]),
   // K1d amends K1 and K3's tokens.d.ts; its retire rows drive the real mailbox module (c-mailbox's world).
   'contract.k1d-amendments': suite('K1d amendments: token reveal, page id, Mailbox.transfer, SettingsWriter, SessionNotes', v3('contract/k1d-amendments'),
-    [...CONNECTOR_CONTRACTS, sub(PACKAGE.dshConnector, 'host-services'), sub(PACKAGE.fishballCore, 'vendor'), sub(PACKAGE.fishballCore, 'scripts'),
+    [...CONNECTOR_CONTRACTS, sub(PACKAGE.dshConnector, 'host-services'),
       sub(PACKAGE.dshConnector, 'src', 'mailbox'), sub(PACKAGE.dshConnector, 'src', 'schema-value'), ...CONNECTOR_CORE]),
   'contract.k2-tools': suite('K2 contribution contract freeze', v3('contract/k2-tools'),
-    [sub(PACKAGE.dshConnector, 'tools'), sub(PACKAGE.fishballCore, 'vendor')]),
+    [sub(PACKAGE.dshConnector, 'tools'), sub(PACKAGE.fishballCore, 'contracts')]),
   'contract.k3-host-services': suite('K3 host-only service and core contract freeze', v3('contract/k3-host-services'),
     [sub(PACKAGE.dshConnector, 'host-services'), sub(PACKAGE.fishballCore, 'contracts')]),
   // K3a reads core's contracts and patch against the connector's published schema and tools, and

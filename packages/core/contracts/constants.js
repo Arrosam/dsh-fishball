@@ -173,11 +173,13 @@ const ISSUER_PATH = '/api/agent/oauth'
 /**
  * The values of `dsh-connector`'s public MCP surface that core uses, as core's **own copy**
  * (design §1.0b row 1, decided item 65 / D1; requirements 1.39, 1.40: no package crosses the two
- * sides, so core may not import or generate from the connector). They replace the generated
- * `vendor/mcp-schema` copy: F-OWN-SCHEMA repoints `src/link/schema.js` here and deletes `vendor/`.
+ * sides, so core may not import or generate from the connector). They replaced the generated
+ * `vendor/mcp-schema` copy (F-OWN-SCHEMA): core's link, identity, bridge and events read them here,
+ * and `src/link/schema.js` holds the pure rules derived from them (id, name, event type, issuer).
  * The names are those of design §1.0c (requirements 1.41 Q-G8 = B).
  *
- * Drift is caught by the contract test `test/v3/k3a/`, which compares every value here with what
+ * Drift is caught by the contract tests `test/v3/contract/k3a-core-seams/` and
+ * `test/v3/contract/own-schema/`, which compare every value here with what
  * the connector publishes (its `tools/list` definitions and its OAuth metadata documents). A value
  * changes here only after the connector's own K1 changed it; the test then names the difference.
  *

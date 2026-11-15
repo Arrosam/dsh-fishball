@@ -3,7 +3,8 @@
  * `generateId` reads randomness. The settings rows that hold the two values are F-WIRE's.
  */
 import { randomBytes } from 'node:crypto'
-import { ID_REFUSAL, isAgentId, normaliseName } from '../link/schema.js'
+import { MCP } from '../../contracts/constants.js'
+import { isAgentId, normaliseName } from '../link/schema.js'
 import { IDENTITY } from './constants.js'
 
 // 32 letters: a byte masked to 0–31 picks each one with equal probability (see IDENTITY).
@@ -27,7 +28,7 @@ export function generateId(random = randomBytes) {
  */
 export function acceptId(next, previous) {
   if (isAgentId(next)) return Object.freeze({ ok: true, id: next })
-  return Object.freeze({ ok: false, code: ID_REFUSAL.idInvalid, id: previous })
+  return Object.freeze({ ok: false, code: MCP.refusal.idInvalid, id: previous })
 }
 
 /**

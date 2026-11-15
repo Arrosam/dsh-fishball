@@ -1,3 +1,5 @@
+import { OWN } from '../../contract/own-schema/constants.mjs'
+import { normaliseName } from '../../../../packages/dsh-connector/mcp-schema/index.js'
 /**
  * F-PAIR black-box cases (v3-tasks.md row F-PAIR; .runtime/reports/v3-w3-briefs.md "F-PAIR test
  * brief"): AUTH-UC-05 (decisions; the page parts are E2E-CORE's), AUTH-DT-06, AUTH-ST-03 (the rows
@@ -256,6 +258,31 @@ export function registerFPairCases(sdk) {
     w.settings.save(IDENTITY.nameKey, value)
     assert.ok(await untilTrue(() => setNameCalls(w).slice(before).some((c) => c.result !== undefined)), `no set_name after setting identity.name = ${JSON.stringify(value)}`)
     return setNameCalls(w).slice(before)
+  }
+
+  // F-OWN-SCHEMA: exercise normalization through pairing, not its private sameName helper.
+  for (const name of OWN.names) {
+    caseTest(sdk, 'OWN-NAME', JSON.stringify(name), 'EP normalized-equivalent setting sends no set_name after reconnect', async (t) => {
+      const normalized = normaliseName(name)
+      const w = await namedWorld(t)
+      // Normalisation does not validate: controls survive it and whitespace may become empty.
+      // Empty raw setting is separately the documented request to become nameless.
+      if (name === '' || normalized === '' || /[\p{Cc}\p{Cf}]/u.test(normalized)) {
+        await rename(w, name)
+        if (name === '') assert.equal(w.name(), null)
+        else {
+          assert.ok(await untilTrue(() => w.view().nameIssue?.code === 'name-invalid'), 'name-invalid was not reported')
+          assert.equal(w.view().nameIssue?.code, 'name-invalid')
+        }
+        return
+      }
+      await rename(w, normalized)
+      const before = setNameCalls(w).length
+      w.settings.edit(IDENTITY.nameKey, name)
+      await w.pairing.link.reconnect()
+      assert.equal(setNameCalls(w).length, before, 'normalization-equivalent name was sent again')
+      assert.equal(w.name(), normalized)
+    })
   }
 
   caseTest(sdk, 'NAME-UC-02', 'main 1–2', `identity.name = "${NAME.renamed}": core calls set_name with it and the connector holds it`, async (t) => {

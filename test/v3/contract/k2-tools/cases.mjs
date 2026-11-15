@@ -1,3 +1,4 @@
+import { assertNoGeneratedSchema } from '../own-schema/absence.mjs'
 /**
  * K2 black-box cases: the freeze of `dsh-connector/tools` (v3-tasks.md row K2). K2 "resolves
  * the K flags in EXT", so the cases are the K-flagged EXT cases of 07-contributors.md (`fb1cbd2`):
@@ -19,7 +20,6 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
 import test from 'node:test'
-import { pathToFileURL } from 'node:url'
 import { REPO } from '../../../support/constants.mjs'
 import {
   API, CALL_CODE, DESCRIPTION_MAX_BYTES, EMIT_CODE, EURO, EVENT_LIMITS, EXTERNAL_NAME_AMEND, FIXTURE, GRAMMAR, LATER, LIMIT_KEYS,
@@ -285,7 +285,7 @@ export function registerK2Cases(sdk) {
 
 /**
  * K2-AMEND-1 (DECIDED #W3-2, Equivalence Partitioning: the frozen value, its relation to the
- * separator, the contract texts, core's vendored copy, and public names with 0, 1 and n dots).
+ * separator, the contract texts, the absence of core's vendored copy (F-OWN-SCHEMA), and public names with 0, 1 and n dots).
  */
 export function registerExternalNameCases(sdk) {
   const A = EXTERNAL_NAME_AMEND
@@ -306,12 +306,8 @@ export function registerExternalNameCases(sdk) {
     assert.ok(readme.includes(A.readmeExports), 'the README has no exported-names section')
     assert.ok(readme.slice(readme.indexOf(A.readmeExports)).includes(A.name), `the README's exported names do not list ${A.name}`)
   })
-  rule(4, `core's vendored tools constants export the same frozen ${A.name}`, async (mod) => {
-    const vendored = (await import(pathToFileURL(path.join(REPO, A.vendored)).href))[A.name]
-    assert.equal(typeof vendored, 'object', `core's vendored tools constants export no ${A.name}`)
-    assert.ok(Object.isFrozen(vendored), `the vendored ${A.name} is not frozen`)
-    assert.deepEqual({ ...vendored }, { ...mod[A.name] })
-  })
+  // F-OWN-SCHEMA (design §1.0b row 1): core no longer vendors K2.
+  rule(4, 'core carries no generated schema', assertNoGeneratedSchema)
   rule(5, 'a public name with 0, 1 or n dots in its local name maps to a model tool name ([A-Za-z0-9_-]) with each `.` replaced', (mod) => {
     for (const local of A.locals) {
       const publicName = mod.publicNameOf(SHORT_NAMESPACE, local)
