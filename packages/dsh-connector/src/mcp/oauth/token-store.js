@@ -6,16 +6,15 @@
  * Everything is keyed by the digest of the opaque value (`./digest.js`), never the value.
  * - Access tokens and codes are in memory only (TQ-5 A, R-OA-14): a restart loses them.
  * - Refresh tokens persist as digests with their chain id and entry generation (Q-S7B-3 A), in
- *   the `refresh` table. One `chains` record per chain keeps, across a restart, the entry, the
- *   generation and whether it was revoked, so a revoked chain stays revoked. A chain record stays
- *   until the entry is deleted (`forgetEntry`).
- * - No chain ends by age (R-OA-23, requirements 1.32 R14: K1d withdrew the maximum chain lifetime
- *   and `chainsOf`). Spent refresh records stay while their chain lives, because reuse detection
- *   needs them (R-OA-16 (2): RT1 presented after RT3 must be recognised as spent, AUTH-ST-05 row 3);
- *   once a chain is revoked its refresh records are deleted at once. So the records of one chain
- *   grow with its rotations (about one per access-token lifetime while the client works) until the
- *   chain is revoked or its entry is disabled or deleted. Bounding them would need a rule the
- *   design does not give (dropping old spent records turns their reuse into a plain unknown token).
+ *   the `refresh` table. One `chains` record per live chain keeps, across a restart, the entry and
+ *   the generation; a revocation marks it revoked first and deletes it once the chain's refresh
+ *   records are gone, so a mark outlives only a delete that failed (that leftover record then
+ *   stays refused).
+ * - Bounded with no chain cap (R-OA-23; K1d-7): per chain the store keeps the live refresh record
+ *   and only the newest spent one, which is enough to detect the reuse of the token a client last
+ *   rotated away (R-OA-16 (2)). Each rotation deletes the chain's older spent records, so an older
+ *   spent token is unknown (`invalid_grant`, the chain lives), not reuse: the accepted tradeoff.
+ *   A chain therefore holds at most two refresh records, and a revoked one none.
  *
  * Revocation is visible at once, before its durable write lands: `revokedChains` and
  * `generationFloor` are read by every getter, so the next request after a revocation is refused
@@ -108,13 +107,18 @@ export function createOAuthTokenStore(tables) {
     for (const [digest, code] of [...codes.map]) if (code.entryKey === entryKey) codes.map.delete(digest)
   }
 
-  /** Deletes the stored refresh records matching `match` (inside a `serial` slot). */
+  /** Deletes the stored refresh records for which `match(record, storageKey)` holds (inside a `serial` slot). */
   async function deleteRefresh(match) {
-    const keys = [...tables.refresh.entries()].filter(([, record]) => match(record)).map(([stored]) => stored)
+    const keys = [...tables.refresh.entries()].filter(([stored, record]) => match(record, stored)).map(([stored]) => stored)
     for (const stored of keys) await tables.refresh.delete(stored)
   }
 
-  /** Marks the chains durably revoked and deletes their refresh records (inside a `serial` slot). */
+  /**
+   * Marks the chains durably revoked, deletes their refresh records, then their chain records
+   * (inside a `serial` slot). The mark is written first, so a failed delete leaves a revoked chain,
+   * never a live one; after the deletes nothing of the chain is needed: `revokedChains` keeps
+   * refusing its in-memory access tokens for this life, and a restart drops those anyway.
+   */
   async function persistRevocation(chainIds) {
     for (const chainId of chainIds) {
       const chain = chains.get(chainId)
@@ -125,6 +129,29 @@ export function createOAuthTokenStore(tables) {
     }
     const ids = new Set(chainIds)
     await deleteRefresh((record) => ids.has(record.chainId))
+    for (const chainId of ids) {
+      if (!chains.has(chainId)) continue
+      await tables.chains.delete(chainKeyOf(chainId))
+      chains.delete(chainId)
+    }
+  }
+
+  /**
+   * Revokes the chains of `entryKey` that `match(chain)` selects (R-OA-06, R-OA-22). Visible at
+   * once for the chains known now; picked again at the write slot, so a chain whose first
+   * `putRefresh` was queued earlier (a code redemption in flight) is revoked too, and the access
+   * tokens such a redemption stored meanwhile are dropped there.
+   */
+  async function revokeChainsOf(entryKey, match) {
+    const pick = () => [...chains.values()].filter((chain) => chain.entryKey === entryKey && match(chain)).map((chain) => chain.chainId)
+    const revoke = (chainIds) => {
+      const ids = new Set(chainIds)
+      for (const chainId of ids) revokedChains.add(chainId)
+      dropAccess((token) => ids.has(token.chainId))
+      return chainIds
+    }
+    revoke(pick())
+    await serial(() => persistRevocation(revoke(pick())))
   }
 
   return Object.freeze({
@@ -162,7 +189,14 @@ export function createOAuthTokenStore(tables) {
           await tables.chains.put(chainKeyOf(parsed.chainId), chain)
           chains.set(parsed.chainId, chain)
         }
-        await tables.refresh.put(refreshKeyOf(digest), parsed)
+        const stored = refreshKeyOf(digest)
+        await tables.refresh.put(stored, parsed)
+        // K1d-7: a spent record marks a rotation (R-OA-16 (1)); it is now the chain's newest spent
+        // one, so the chain's older spent records go. Deleted after the put, so a failed put
+        // deletes nothing and reuse of the last spent token stays detectable.
+        if (parsed.spentAt !== undefined) {
+          await deleteRefresh((record, key) => key !== stored && record.chainId === parsed.chainId && record.spentAt !== undefined)
+        }
       })
     },
 
@@ -181,12 +215,19 @@ export function createOAuthTokenStore(tables) {
       generationFloor.set(entryKey, Math.max(below, generationFloor.get(entryKey) ?? NO_GENERATION_FLOOR))
       dropAccess((token) => token.entryKey === entryKey && token.generation < below)
       dropCodes(entryKey)
-      await serial(() => {
-        // Picked at the slot, so a chain whose `putRefresh` was queued earlier is revoked too.
-        const revoked = [...chains.values()].filter((chain) => chain.entryKey === entryKey && chain.generation < below).map((chain) => chain.chainId)
-        for (const chainId of revoked) revokedChains.add(chainId)
-        return persistRevocation(revoked)
-      })
+      await revokeChainsOf(entryKey, (chain) => chain.generation < below)
+    },
+
+    /**
+     * K1d-6: a page reconnect ends every earlier chain of the entry, from any client id URL, and its
+     * unredeemed codes; chainless (machine) access tokens stay. Any access token of the entry that
+     * carries a chain id belongs to an earlier chain at this call (the reconnect's chain starts only
+     * when its code is redeemed), so they are dropped at once, chains still in flight included.
+     */
+    async revokeEntryChains(entryKey) {
+      dropAccess((token) => token.entryKey === entryKey && token.chainId !== undefined)
+      dropCodes(entryKey)
+      await revokeChainsOf(entryKey, () => true)
     },
 
     async forgetEntry(entryKey) {

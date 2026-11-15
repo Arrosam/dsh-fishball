@@ -192,14 +192,17 @@ export function createApprovalHandler(deps) {
    * A valid token whose entry is bound: a reconnect when the pair holds the request's id (R-OA-22,
    * Q-A2 A: the same principal, its name, sessions and queued events kept, so a typed name is not
    * applied; the newest client id URL and redirect URI recorded), else `already-paired` with the
-   * bound pair's name and last-seen time. `reconnectFromPage` decides the id inside its write. An
+   * bound pair's name and last-seen time. A reconnect first revokes every earlier chain of the entry,
+   * from any client, with its access tokens and unredeemed codes (K1d-6), so only the chain of the
+   * code minted here lives; a failed revocation mints no code (500). `reconnectFromPage` decides the id inside its write. An
    * entry deleted between the token match and that write (or the `already-paired` read) leaves no
    * pair, and the request fails as any storage failure does (500): the delete revoked the token anyway.
    */
   async function reconnect(res, request, entry, at) {
     const reconnected = await pairs.reconnectFromPage(entry.entryKey, request.agentId, clientOf(request))
-    if (reconnected.ok) return issueCode(res, request, entry.entryKey, at)
-    return showForm(res, request, alreadyPairedHtml(pairs.pairOf(entry.entryKey)))
+    if (!reconnected.ok) return showForm(res, request, alreadyPairedHtml(pairs.pairOf(entry.entryKey)))
+    await store.revokeEntryChains(entry.entryKey)
+    return issueCode(res, request, entry.entryKey, at)
   }
 
   /**
