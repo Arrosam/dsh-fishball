@@ -198,16 +198,16 @@ window.__ModuleLoader__.load({
     }
 
     /**
-     * The page over the row's config form. The form is `ctx.configForms.get(PAGE.id)`, the same
-     * host-owned form the Plugins page hands its entry as `form` (`{state, mutate}`); it is read
-     * here so the page re-renders on every accepted change, including the item `create` adds.
+     * The page over DSH's host-owned `form` (`{state, mutate}`, plugin-manager slot-contract
+     * ConfigPageForm) that the Plugins page hands its row entry (design §5.9): the page owner
+     * refreshes `state`, so an accepted change, including the item `create` adds, re-renders it.
+     * No form means DSH does not serve the row's settings to this client.
      */
-    function makePage(form, t) {
-      const subscribe = form.subscribe.bind(form)
-      const getSnapshot = () => form.getSnapshot()
+    function makePage(t) {
       return function DshConnectorSettings(props) {
-        const snapshot = React.useSyncExternalStore(subscribe, getSnapshot)
-        const saved = listOf(snapshot.value)
+        const form = props.form
+        const snapshot = form?.state
+        const saved = listOf(snapshot?.value)
         const [draft, setDraft] = React.useState(null)
         const [busy, setBusy] = React.useState(false)
         const [problem, setProblem] = React.useState(null)
@@ -219,9 +219,9 @@ window.__ModuleLoader__.load({
           const answer = await call(ROUTE.notice, ROUTE.get)
           setNotice(answer.ok ? answer.notice ?? null : null)
         }, [])
-        React.useEffect(() => { void refreshNotice() }, [refreshNotice, snapshot.revision])
+        React.useEffect(() => { void refreshNotice() }, [refreshNotice, snapshot?.revision])
         if (props.view !== PAGE.pageView) return t('summary')
-        if (snapshot.status === PAGE.unavailable) return h('p', { style: STYLE.hint }, t('unavailable'))
+        if (snapshot === undefined || snapshot.status === PAGE.unavailable) return h('p', { style: STYLE.hint }, t('unavailable'))
         const list = draft ?? saved
         const dirty = draft !== null && !sameList(draft, saved)
         const disabled = !snapshot.writable || busy
@@ -278,7 +278,7 @@ window.__ModuleLoader__.load({
           name: PAGE.slot,
           key: `${PAGE.id}#${PAGE.id}`,
           locale: PAGE.locale,
-        }, makePage(ctx.configForms.get(PAGE.id), t)))), PAGE.effect)
+        }, makePage(t)))), PAGE.effect)
     }
 
     return { name: PAGE.id, inject: ['slots', 'locale', 'configForms'], apply }
