@@ -29,7 +29,7 @@ export const FILE = Object.freeze({
 
 /** R-ARCH-10 / 1.39 and design §1.0c: the DSH-side packages (names and their package folders). */
 export const DSH_SIDE = Object.freeze({
-  names: Object.freeze([V3.connector.name, V3.embed.name, V3.instance.name, 'dsh-connector-adapter', 'dsh-connector-shared']),
+  names: Object.freeze([V3.connector.name, V3.embed.name, V3.instance.name, V3.adapter.name, V3.dshShared.name]),
   folders: Object.freeze(['dsh-connector', 'dsh-connector-ui', 'dsh-instance', 'dsh-connector-adapter', 'dsh-connector-shared'].map((f) => path.join(PACKAGES_DIR, f))),
   /** Self-check of the specifier matcher (EP over the name rule): [specifier, is a DSH-side reference?]. */
   samples: Object.freeze([
