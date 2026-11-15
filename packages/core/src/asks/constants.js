@@ -64,11 +64,11 @@ export const ASK_TEXT = Object.freeze({
 
 /**
  * The tool in the raw form `ctx.tools.register` takes (JSON Schema, as the bridge façade registers
- * its tools), so it needs no `defineTool` and no dsh-tools import here. Its `parameters` are checked
- * by `execute` itself, because a raw definition gets no argument validation from DSH. The output
- * schema is empty (any JSON: a card or a refusal), as the façade's TOOL_OUTPUT.
+ * its tools), so it needs no `defineTool` and no dsh-tools import here. A raw definition gets no
+ * argument validation from DSH, so `execute` checks `offer_id` itself; any other argument is
+ * ignored. The output schema is empty (any JSON: a card or a refusal), as the façade's TOOL_OUTPUT.
  */
-export const ASK_OUTPUT = Object.freeze({
+export const ASK_TOOL_DEFINITION = Object.freeze({
   parameters: Object.freeze({
     type: 'object',
     properties: Object.freeze({ [ASKS.offerArgument]: Object.freeze({ type: 'string', description: ASK_TEXT.offerArgument }) }),

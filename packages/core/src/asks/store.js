@@ -6,6 +6,15 @@
  * never polled again: Fishball's model may file the card later, after a restart included. Only a
  * filed record is a card (`list()`); an unfiled one is the ask Fishball is still deciding itself.
  *
+ * Known window (an F-WIRE obligation): the store follows the link's polls beside the interception
+ * service, which acks an event once its own ledger holds it, not once this table does. A crash
+ * between the two writes loses the record, and filing that ask later answers `unknown-offer`. Until
+ * F-WIRE orders this store's write before the ack, that window stays open.
+ *
+ * Known growth: an unfiled ask that never gets a settlement or retirement (its call died with a
+ * connector restart, which retires nothing) stays recorded. It is one small record per such ask,
+ * and no requirement gives a rule to drop it without a timer (R-CON-05).
+ *
  * Transitions (no timer anywhere, R-CON-05: only an event or an answer moves a record):
  * - `ask` event, approvalId unknown → open, unfiled; a replay (known approvalId) changes nothing;
  * - filing → filed (open only);

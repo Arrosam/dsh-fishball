@@ -6,8 +6,11 @@
  * Until F-UI moves the card's drawing to fishball-ui, these are the seam the page reads.
  *
  * - GET `ASK_ROUTE.events`: an SSE stream; each frame is `{managerSessionId, cards}`, the first at
- *   once and then one per change of the card list. The manager id tells the page which
- *   conversation is Fishball's, so the card shows there only.
+ *   once and then one per change of the card list or of the manager session's id. The manager id
+ *   tells the page which conversation is Fishball's, so the card shows there only; a frame on its
+ *   change is what shows cards already stored when the page connected before the manager existed.
+ *   The stream is the connector's state stream (dsh-connector src/http.js `events`), copied because
+ *   the two sides share no package (requirements 1.39).
  * - POST `ASK_ROUTE.answer` `{approvalId, choice, text?}`: `service.answer`; 200 `{ok: true}`,
  *   409 for a refusal, 400 for an unreadable body or `invalid-arguments`.
  */
@@ -25,23 +28,29 @@ const statusOf = (result) => {
  * @param {object} options
  * @param {object} options.service the K3 `asks` service (index.js `createAsks().service`)
  * @param {() => string | undefined} options.managerSessionId the manager session's id once it exists
- * @returns {() => void} withdraws the routes and closes every open stream
+ * @param {(fn: () => void) => () => void} [options.onManagerChange] calls `fn` after the manager
+ *   session's id changes and returns its disposer (F-WIRE binds it to the chat row's manager); without
+ *   it a frame follows card changes only
+ * @returns {() => Promise<void>} withdraws the routes (DSH's disposers are async) and closes every
+ *   open stream
  */
-export function registerAskRoutes(ctx, { service, managerSessionId }) {
+export function registerAskRoutes(ctx, { service, managerSessionId, onManagerChange }) {
   const streams = new Set()
   const snapshot = () => JSON.stringify({ managerSessionId: managerSessionId() ?? null, cards: service.list() })
 
-  function events(request) {
+  async function events(request) {
     const encoder = new TextEncoder()
     let close = () => {}
     const body = new ReadableStream({
       start(controller) {
         // A stream the browser already closed throws on enqueue; close it so it never breaks a listener.
         const push = () => { try { controller.enqueue(encoder.encode(ASK_HTTP.frame(snapshot()))) } catch { close() } }
-        const off = service.onChange(push)
+        const offCards = service.onChange(push)
+        const offManager = onManagerChange?.(push)
         close = () => {
           if (!streams.delete(close)) return
-          off()
+          offCards()
+          offManager?.()
           request.signal?.removeEventListener('abort', close)
           try { controller.close() } catch { /* already closed by the reader */ }
         }
@@ -63,13 +72,20 @@ export function registerAskRoutes(ctx, { service, managerSessionId }) {
     return json(statusOf(result), result)
   }
 
-  const disposers = [
-    { path: ASK_ROUTE.events, methods: [ASK_ROUTE.get], fetch: events },
-    { path: ASK_ROUTE.answer, methods: [ASK_ROUTE.post], fetch: answer },
-  ].map((route) => ctx.connection.fetch.register({ ...route, requestBody: ASK_ROUTE.requestBody }))
-
-  return () => {
+  const disposers = []
+  const dispose = async () => {
     for (const close of [...streams]) close()
-    for (const dispose of disposers.splice(0)) dispose?.()
+    await Promise.all(disposers.splice(0).map((withdraw) => withdraw?.()))
   }
+  try {
+    for (const route of [
+      { path: ASK_ROUTE.events, methods: [ASK_ROUTE.get], fetch: events },
+      { path: ASK_ROUTE.answer, methods: [ASK_ROUTE.post], fetch: answer },
+    ]) disposers.push(ctx.connection.fetch.register({ ...route, requestBody: ASK_ROUTE.requestBody }))
+  } catch (error) {
+    // A path another row claimed: withdraw what was registered, so no half-registered pair remains.
+    void dispose().catch(() => {})
+    throw error
+  }
+  return dispose
 }
