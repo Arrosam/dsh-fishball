@@ -19,7 +19,7 @@
  * decisions, 2026-11-14). Rule 4 is decided from what the SDK threw, never from an earlier 401
  * alone: a 401 challenge precedes every first token request, so it says nothing about the outcome.
  */
-import { HTTP_STATUS, TARGET_CODE, TARGET_STATE } from './schema.js'
+import { LINK } from '../../contracts/constants.js'
 import { REFUSED_OAUTH_ERRORS } from './constants.js'
 
 /** The link's fetch guard refused a URL outside the target origin; it never left the process. */
@@ -28,19 +28,19 @@ export class OffTargetRequest extends Error {}
 const status = (state, code) => Object.freeze({ state, code })
 
 export const STATUS = Object.freeze({
-  unset: status(TARGET_STATE.unset, null),
-  connected: status(TARGET_STATE.connected, null),
-  unreachable: status(TARGET_STATE.unreachable, TARGET_CODE.unreachable),
-  refused: status(TARGET_STATE.refused, TARGET_CODE.refused),
+  unset: status(LINK.state.unset, null),
+  connected: status(LINK.state.connected, null),
+  unreachable: status(LINK.state.unreachable, LINK.code.unreachable),
+  refused: status(LINK.state.refused, LINK.code.refused),
   // Rule 4a: decided by the pairing gate (F-PAIR), which alone knows the paired records.
-  revoked: status(TARGET_STATE.refused, TARGET_CODE.revoked),
-  incompatible: status(TARGET_STATE.unreachable, TARGET_CODE.incompatible),
+  revoked: status(LINK.state.refused, LINK.code.revoked),
+  incompatible: status(LINK.state.unreachable, LINK.code.incompatible),
 })
 
 /** `target-unset` with core's own refusal code for the target URL (rule 1a). */
-export const refusedTarget = (code) => status(TARGET_STATE.unset, code)
+export const refusedTarget = (code) => status(LINK.state.unset, code)
 
-const REFUSED_HTTP = Object.freeze([HTTP_STATUS.unauthorized, HTTP_STATUS.forbidden])
+const REFUSED_HTTP = Object.freeze([LINK.httpStatus.unauthorized, LINK.httpStatus.forbidden])
 
 /** The error and every `cause` below it (the SDK wraps transport and auth errors); a cycle ends the walk. */
 function* causes(error) {
@@ -60,7 +60,7 @@ const is = (Kind, error) => typeof Kind?.isInstance === 'function' && Kind.isIns
  * @param {number | undefined} mcpStatus the last HTTP status the MCP URL answered in this attempt
  */
 export function failureStatus(sdk, error, mcpStatus) {
-  if (mcpStatus === HTTP_STATUS.notFound) return STATUS.incompatible
+  if (mcpStatus === LINK.httpStatus.notFound) return STATUS.incompatible
   const chain = [...causes(error)]
   const any = (test) => chain.some(test)
   if (any((e) => e instanceof OffTargetRequest || is(sdk.AuthorizationServerMismatchError, e) || is(sdk.IssuerMismatchError, e))) return STATUS.incompatible

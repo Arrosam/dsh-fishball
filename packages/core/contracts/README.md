@@ -24,15 +24,16 @@ Services are looked up at runtime (`ctx.get`); a trailing `?` in
 | K3a: the link status and the hosted import's published names | [link.d.ts](<link.d.ts>) | F-LINK-SAVE (core), I-HOST (instance, its own copy of the names) |
 | K3a: Connect and the Fishball-side OAuth client | [connect.d.ts](<connect.d.ts>) | `fishball-shared/oauth-client`, F-LINK-SAVE |
 | K3a: the fishball-ui seam `fishballInstance.ui` | [ui.d.ts](<ui.d.ts>) | F-UI, F-WIRE |
-| K3a: core's own copy of the connector's MCP surface (`MCP`), replacing `vendor/` | [constants.js](<constants.js>) | F-OWN-SCHEMA |
+| K3a: core's own copy of the connector's MCP surface (`MCP`), which replaced `vendor/` | [constants.js](<constants.js>) | F-OWN-SCHEMA (done) |
 
 ## Values (`constants.js`)
 
 `DECIDED Dn` / `#n` is a row of [the decisions table](<../../connector/mcp-schema/README.md#user-decisions>).
 The target states and codes and the `disconnected` answer were K1's (DECIDED D7); since K3a
 (requirements 1.39) core holds its own copy in `LINK`, and the connector keeps `TARGET_STATE`,
-`TARGET_CODE` and `LINK_REFUSAL` for the DSH side. Until F-OWN-SCHEMA, core's code still reads
-them through `src/link/schema.js`.
+`TARGET_CODE` and `LINK_REFUSAL` for the DSH side. Since F-OWN-SCHEMA, core's code reads only these copies:
+`vendor/` and its generator are gone, and `src/link/schema.js` derives the id, name, event-type and
+issuer rules from `MCP`.
 
 | Constant | Value | Status |
 | --- | --- | --- |
@@ -63,9 +64,9 @@ state under published names and as core's own copy of the MCP surface. K3a's ear
   `connect.clientMetadataUrl` (required, no default), the `needs-configuration` codes (PROPOSED),
   the loopback `/callback` and the web callback path (PROPOSED). Core passes `identity.id` as
   `agent_id`.
-- **MCP surface** (`MCP`, `LINK`): core's own values; `test/v3/k3a/` compares `MCP` with the
+- **MCP surface** (`MCP`, `LINK`): core's own values; `test/v3/contract/k3a-core-seams/` and `test/v3/contract/own-schema/` compare `MCP` with the
   connector's published `tools/list` and OAuth metadata, so a K1 change shows as a failing row.
-  F-OWN-SCHEMA repoints `src/link/schema.js` and deletes `vendor/`.
+  F-OWN-SCHEMA repointed core's code to these values and deleted `vendor/` and its generator.
 - **fishball-ui** (`UI_SEAM`, `ui.d.ts`): fishball-ui reads `fishballInstance.ui` with `ctx.get`;
   without core it logs `fishball-core-missing` and changes nothing; core reports nothing when
   fishball-ui is absent.

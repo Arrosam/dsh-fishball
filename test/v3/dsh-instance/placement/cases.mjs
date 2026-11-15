@@ -495,7 +495,7 @@ export function registerIPlaceCases(sdk) {
       assert.equal(profileBundles(home).includes(name), false, name + ' is a profile bundle')
     }
   })
-  integrationCase(sdk, 'HOST-EP-03', 7, "the child's copy of core carries contracts/constants.js and vendor/, and exactly core's files plus package.json", async () => {
+  integrationCase(sdk, 'HOST-EP-03', 7, "the child's copy of core carries contracts/constants.js without a generated schema (F-OWN-SCHEMA), and exactly core's files plus package.json", async () => {
     const { home } = await ready()
     const copy = placedCopy(home, SET.core, RELAYED.copyDirs[0])
     for (const rel of CORE_COPY.mustCarry) assert.ok(fs.existsSync(path.join(copy, rel)), 'the copy lacks ' + rel)

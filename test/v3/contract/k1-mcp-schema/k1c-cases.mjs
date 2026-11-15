@@ -1,3 +1,4 @@
+import { assertNoGeneratedSchema } from '../own-schema/absence.mjs'
 /**
  * K1c black-box rows: the managed-state seam frozen in `dsh-connector/mcp-schema` (spec and
  * oracles: k1c-constants.mjs). Written from Fishball's K1c spec, the README and index.d.ts only; no
@@ -5,24 +6,22 @@
  *
  * Each row is named "K1c-<technique>-<n> row <r> [SDK x] …" with one technique: EP, BVA or DT.
  * Level: unit over the loaded module's data, its declaration file and README read as text (as the
- * K1 and K1b rows), and over core's vendored copy loaded from packages/core/vendor/. ManagedState
+ * K1 and K1b rows). Core's vendored copy is gone (F-OWN-SCHEMA, design §1.0b row 1). ManagedState
  * has no implementation in K1c (C-ROUTE builds it), so no row drives its behaviour.
  *
- * Vendor byte equality: F-LINK's row "done 7" (test/v3/fishball-core/link/cases.mjs) runs the generator and
- * checks that every vendored file equals its connector source and the committed copy; it is not
- * repeated here. These rows check what K1c adds to the copy.
+ * Vendor byte equality was F-LINK's row "done 7"; F-OWN-SCHEMA removed the copy and its generator,
+ * and test/v3/contract/own-schema/ checks their absence.
  */
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
-import { pathToFileURL } from 'node:url'
 import { blankComments, model, splitTop } from '../k3-host-services/declarations.mjs'
 import { REPO } from '../../../support/constants.mjs'
 import { caseTest, declarationText } from './cases.mjs'
 import { SCHEMA_MODULE } from './constants.mjs'
 import {
   CODE_TYPE, DECLARED_EXPORT, DTS_PARTS, K1C_TYPES, K2_SHARED, MANAGED_RECORD, MANAGED_REFUSAL_NAME, MANAGED_REFUSAL_VALUES, MANAGED_STATE,
-  NOTICE_SHAPE, README, REFUSAL_KEY_OF, RESULT_FIELDS, RESULTS, VENDORED_ENTRY,
+  NOTICE_SHAPE, README, REFUSAL_KEY_OF, RESULT_FIELDS, RESULTS,
 } from './k1c-constants.mjs'
 import { toolsModule } from './schema-module.mjs'
 
@@ -73,7 +72,7 @@ function section(text, heading) {
 /** The table rows (lines starting with `|`) of a section whose first cell is `id`. */
 const rowsWithId = (body, id) => body.split('\n').filter((l) => l.trim().startsWith('|') && l.split('|')[1]?.trim() === id)
 
-const vendored = () => import(pathToFileURL(VENDORED_ENTRY).href)
+// F-OWN-SCHEMA: no vendored-module loader (design §1.0b row 1).
 
 export function registerK1cCases(sdk) {
   // ======================================================================================
@@ -240,16 +239,8 @@ export function registerK1cCases(sdk) {
   })
 
   // ======================================================================================
-  // Spec 5: core's vendored copy (byte equality: F-LINK "done 7")
+  // Spec 5: core's vendored copy (withdrawn with the copy)
   // ======================================================================================
-  caseTest(sdk, 'K1c-EP-10', 1, `core's vendored mcp-schema exports the same frozen ${MANAGED_REFUSAL_NAME}`, async () => {
-    const refusal = exported(await vendored(), MANAGED_REFUSAL_NAME)
-    assert.ok(Object.isFrozen(refusal), 'not frozen')
-    assert.deepEqual({ ...refusal }, MANAGED_REFUSAL_VALUES)
-  })
-  caseTest(sdk, 'K1c-EP-10', 2, `core's vendored mcp-schema has the same empty frozen ${NOTICE_SHAPE.name}.codes`, async () => {
-    const codes = exported(await vendored(), NOTICE_SHAPE.name).codes
-    assert.ok(isObject(codes) && Object.isFrozen(codes), 'codes is not a frozen object')
-    assert.equal(Reflect.ownKeys(codes).length, 0)
-  })
+  // F-OWN-SCHEMA (design §1.0b row 1) withdraws both vendored-export rows.
+  caseTest(sdk, 'K1c-EP-10', 1, 'core carries no generated schema', assertNoGeneratedSchema)
 }

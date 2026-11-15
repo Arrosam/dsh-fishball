@@ -2,7 +2,7 @@
  * `fishballInstance.events`: core's interception service (task K3; design §6.4; requirements
  * R-INT-01…09, 1.21; S2-Q1 and Q-S3-2 decided B; spikes V3-S2 `a499141`, V3-S3 `b4dca86`).
  * Types; the runtime values named here (default priority, `fenced`) are `constants.js`'s
- * `INTERCEPT` beside this file, and `disconnected` is K1's `LINK_REFUSAL`. F-INTERCEPT builds the
+ * `INTERCEPT` beside this file, and `disconnected` is its `LINK.disconnected` (core's own copy, K3a). F-INTERCEPT builds the
  * service in `packages/core/src/events/`.
  *
  * Core holds its pair's one `agent-events` subscription. Every polled event is recorded in

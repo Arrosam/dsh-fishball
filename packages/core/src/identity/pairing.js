@@ -39,7 +39,8 @@
  * (NAME-UC-02 A2), while a refused name is not sent at every reconnect. A refusal keeps the
  * connector's name and is reported as `nameIssue`, also after a restart.
  */
-import { REFUSAL, SCOPE, TOOL, principalLabel } from '../link/schema.js'
+import { MCP } from '../../contracts/constants.js'
+import { principalLabel } from '../link/schema.js'
 import { STATUS, createLink, emitIsolated, subscribe } from '../link/index.js'
 import {
   CHOICE, CHOICES_OF, CHOICE_REFUSAL, HELD_STATES, HOLD_STATUS, MISUSE, NAME_SOURCE, NO_CHOICES, PAIRING_STATE, SCOPE_LIST,
@@ -49,7 +50,7 @@ import { requestedName, sameName } from './identity.js'
 /** A `pair` answer the decision table has no row for: the attempt fails and is retried. */
 export class PairingFailed extends Error {}
 
-const NAME_REFUSALS = Object.freeze([REFUSAL.nameTaken, REFUSAL.nameInvalid])
+const NAME_REFUSALS = Object.freeze([MCP.refusal.nameTaken, MCP.refusal.nameInvalid])
 
 /** The values a record and most holds apply to: (target origin, token reference, fishball id). */
 const pairKeyOf = (attempt) => JSON.stringify([attempt.origin, attempt.ref, attempt.clientId])
@@ -58,8 +59,8 @@ const pairKeyOf = (attempt) => JSON.stringify([attempt.origin, attempt.ref, atte
 /** The `pair` arguments: the requested name, or none for a cleared name (R-NAME-06). */
 const pairArgs = (name) => (name === null ? {} : { name })
 
-/** Whether a granted scope list holds K1's full scope (RFC 6749 §3.3; R-OA-04). */
-const isFull = (scope) => typeof scope === 'string' && scope.split(SCOPE_LIST.separator).includes(SCOPE.full)
+/** Whether a granted scope list holds the full scope `MCP.scope.full` (RFC 6749 §3.3; R-OA-04). */
+const isFull = (scope) => typeof scope === 'string' && scope.split(SCOPE_LIST.separator).includes(MCP.scope.full)
 
 const refusedName = (code) => (NAME_REFUSALS.includes(code) ? code : null)
 
@@ -155,7 +156,7 @@ export function createPairing({ records, name, now = Date.now, createLink: makeL
 
   async function pair(attempt, call) {
     const wanted = requestedName(name())
-    const result = await call(TOOL.pair, pairArgs(wanted))
+    const result = await call(MCP.tools.pair, pairArgs(wanted))
     if (result?.ok === true) {
       const held = result.name ?? null
       const refused = result.nameAssigned === false ? refusedName(result.nameRefused) : null
@@ -164,14 +165,14 @@ export function createPairing({ records, name, now = Date.now, createLink: makeL
       return work(attempt, record)
     }
     if (!isLatest(attempt)) return HOLD_STATUS
-    if (result?.code === REFUSAL.alreadyPaired) {
+    if (result?.code === MCP.refusal.alreadyPaired) {
       const bound = result.bound ?? {}
       warned = Object.freeze({ attempt, bound })
       const state = bound.idMatches === true ? PAIRING_STATE.warnMatch : PAIRING_STATE.warnMismatch
       enter(state, attempt, Object.freeze({ ...bound, advice: result.advice, inUse: principalLabel(bound.name ?? null, bound.boundId) }))
       return HOLD_STATUS
     }
-    if (result?.code === REFUSAL.idTaken) {
+    if (result?.code === MCP.refusal.idTaken) {
       enter(PAIRING_STATE.needId, attempt)
       return HOLD_STATUS
     }
@@ -235,7 +236,7 @@ export function createPairing({ records, name, now = Date.now, createLink: makeL
     if (sameName(wanted, record.name) || (!force && record.asked?.name === wanted)) return
     let result
     try {
-      result = await link.callTool(TOOL.setName, { name: wanted })
+      result = await link.callTool(MCP.tools.setName, { name: wanted })
     } catch {
       // Unknown whether it arrived: the record is unchanged, so the next connect asks again.
       if (force) nameChangePending = true

@@ -5,7 +5,7 @@
  *
  * The contract's values (default priority, `fenced`, the ledger, its states and reasons, the
  * presenter retry, the given-up notice, the message id) are K3's, in `contracts/constants.js`; the
- * `disconnected` answer is K1's `LINK_REFUSAL`. What stays here is this module's own vocabulary
+ * `disconnected` answer is core's own `LINK.disconnected` there too (K3a). What stays here is this module's own vocabulary
  * (state groups, dispatch outcomes, the background log, misuse texts) and the DSH host values it
  * reads (session event types, the Cordis fiber state).
  */

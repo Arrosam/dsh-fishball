@@ -5,12 +5,12 @@
  * - `failureStatus`, `STATUS`, `refusedTarget`: the target status table (REM-DT-01);
  * - `backoffDelayMs(n)`: the bounded reconnect delay;
  * - `subscribe`, `emitIsolated`: the listener sets the link and modules built on it (F-PAIR) share;
- * - the link's values: its own (`./constants.js`), K1's target words and K3's backoff, re-exported.
+ * - the link's values: its own (`./constants.js`), and K3's target words (`LINK`, core's own copy
+ *   since K3a) and backoff, re-exported.
  */
 export { McpLink, createLink, backoffDelayMs } from './link.js'
 export { checkTarget } from './target.js'
 export { subscribe, emitIsolated } from './listeners.js'
 export { STATUS, failureStatus, refusedTarget } from './status.js'
-export { TARGET_STATE, TARGET_CODE, LINK_REFUSAL } from './schema.js'
-export { LINK_BACKOFF } from '../../contracts/constants.js'
+export { LINK, LINK_BACKOFF } from '../../contracts/constants.js'
 export { LINK_MCP, REFUSED_OAUTH_ERRORS } from './constants.js'

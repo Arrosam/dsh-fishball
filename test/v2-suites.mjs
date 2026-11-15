@@ -69,6 +69,8 @@ export const V2_SUITES = Object.freeze({
     'test/verification/w0-host-session.test.mjs',
   ]),
   excludedFiles: Object.freeze([
+    file('test/v3/contract/own-schema/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'F-OWN-SCHEMA core-owned MCP surface'),
+    file('test/v3/contract/own-schema/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'F-OWN-SCHEMA core-owned MCP surface'),
     file('packages/board/test/instance-ext/b1.test.mjs', DISPOSITION.v3, 'board skeleton (B1)'),
     file('packages/board/test/instance-ext/b11-search.test.mjs', DISPOSITION.v3, 'board_search (B11)'),
     file('docs/verification/v2-board-search-accept/supplemental.test.mjs', DISPOSITION.v3, 'board_search acceptance supplement'),

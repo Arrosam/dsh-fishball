@@ -3,22 +3,32 @@
  * §13.3, §13.4, §13.6; requirements R-EXT-05/13/14/20, R-FN-01; extension points X8, X9, X12,
  * X19).
  *
- * Contract values are read from their owners, never restated: the core tool names, refusal codes
- * and `disconnected` answer from K1 (through `../link/schema.js`, core's one K1 seam), the
- * namespace separator and embed-UI's alias from K2 (core's vendored `./tools` copy). What is left
- * here is the façade's own: which link-internal tools the model is not offered, the model-facing
- * name rule, the attention tool's local name, the texts it adds and its log lines.
+ * Contract values are read from their owners, never restated: the core tool names, refusal codes,
+ * namespace separator, embed-UI's alias and contributed-name mapping from core's own copy of the
+ * connector's MCP surface (K3a `MCP`, design §1.0b row 1), the `disconnected` answer from `LINK`.
+ * What is left here is the façade's own: which link-internal tools the model is not offered, the
+ * X19 send operations, the model-facing name rule, the attention tool's local name, the texts it
+ * adds and its log lines.
  *
  * Texts are model-facing or background-log English, like session-tools.js `TEXT`; the façade adds
  * no UI wording, so it proposes no zh text. PROPOSED marks wording the user reviews at the W3 merge.
  */
-import { LINK_REFUSAL, REFUSAL, TOOL } from '../link/schema.js'
-// K2's frozen data, from the copy core already vendors with K1 (scripts/vendor-mcp-schema.mjs);
-// `./tools` is not re-exported by K1's index, so it is read here directly.
-import { EXTERNAL_NAME, NAME_GRAMMAR, NAMESPACE } from '../../vendor/tools/constants.js'
-// The X19 gate is keyed on the V2 send operations (instance-extension-points §2.5, as the slim
-// child's gate in slim/child/bridge.js receives them), read from core's vendored V2 contract.
-import { OPERATION } from '../../vendor/contract/contract.js'
+import { LINK, MCP } from '../../contracts/constants.js'
+
+const TOOL = MCP.tools
+const NAMESPACE = MCP.namespace
+const REFUSAL = MCP.refusal
+
+/**
+ * The operation names the X19 send gate is asked with (instance-extension-points §2.5, where the
+ * list is `SUPERVISION.sendOperations`). They are the gate's own vocabulary, not the connector's
+ * MCP surface, so they are not in `MCP`. They are spelled as the V2 contract's `OPERATION`, which
+ * the slim child's gate (slim/child/bridge.js) receives, but this façade may not import that
+ * contract (R-ARCH-10). After REMOVE-V2 this is the one definition. If a second Fishball-side
+ * party (a gate implementation) needs them, they move to `contracts/constants.js` by a K3
+ * amendment.
+ */
+const X19_OPERATION = Object.freeze({ sessionMessage: 'session.message', sessionRedirect: 'session.redirect' })
 
 /** K2's embed-UI alias namespace, keyed on its package name (design §13.3). */
 const EMBED_UI_NAMESPACE = NAMESPACE.aliases['dsh-connector-ui']
@@ -35,10 +45,10 @@ export const FACADE = Object.freeze({
    */
   withheld: Object.freeze([TOOL.inboxPoll, TOOL.inboxAck, TOOL.pair, TOOL.setName]),
   /**
-   * The manager→session sends the X19 send gate judges (instance-extension-points §2.5): each K1
-   * tool with the `SUPERVISION.sendOperations` name the gate is asked with.
+   * The manager→session sends the X19 send gate judges (instance-extension-points §2.5): each
+   * connector tool with the operation name the gate is asked with (`X19_OPERATION`).
    */
-  sendOperations: Object.freeze({ [TOOL.sessionMessage]: OPERATION.sessionMessage, [TOOL.sessionRedirect]: OPERATION.sessionRedirect }),
+  sendOperations: Object.freeze({ [TOOL.sessionMessage]: X19_OPERATION.sessionMessage, [TOOL.sessionRedirect]: X19_OPERATION.sessionRedirect }),
   /** The tools that bring image bytes into Fishball's context, behind the image gate. */
   imageTools: Object.freeze([TOOL.attachmentRead]),
   /** The argument of a send tool naming its target session (K1 `session_message` input). */
@@ -54,14 +64,14 @@ export const FACADE = Object.freeze({
  * own MCP client holds model tool names to the DeepSeek function-name contract, `[A-Za-z0-9_-]`
  * and at most 64 characters (`dsh-mcp-client/lib/index.js:57-100`, both SDKs), and the providers
  * send the name unchanged. A core tool name already fits and is kept; a contributed name
- * `<namespace>.<name>` has each `dot` replaced by `separator`, K2's frozen `EXTERNAL_NAME` mapping
- * (K2 amendment at the W3 merge), read from it, never restated. A name that still breaks the
+ * `<namespace>.<name>` has each `dot` replaced by `separator`, K2's frozen external-name mapping
+ * (K2 amendment at the W3 merge), read from core's copy `MCP.namespace.externalName`. A name that still breaks the
  * contract, or starts with DSH's MCP prefix (design §6.3: no `mcp__…` tool reaches the model), or
  * equals a name offered before it, is not offered and is logged once.
  */
 export const MODEL_NAME = Object.freeze({
-  dot: EXTERNAL_NAME.replaced,
-  separator: EXTERNAL_NAME.replacement,
+  dot: NAMESPACE.externalName.replaced,
+  separator: NAMESPACE.externalName.replacement,
   maxChars: 64,
   allowed: Object.freeze(/^[A-Za-z0-9_-]+$/),
   refusedPrefix: 'mcp__',
@@ -78,9 +88,9 @@ export const TOOL_OUTPUT = Object.freeze({
   absent: null,
 })
 
-/** Codes the façade answers itself, all K1's. */
+/** Codes the façade answers itself, all the connector's (core's copies in `LINK` and `MCP.refusal`). */
 export const CODE = Object.freeze({
-  disconnected: LINK_REFUSAL.disconnected,
+  disconnected: LINK.disconnected,
   forbidden: REFUSAL.forbidden,
   unsupported: REFUSAL.unsupportedOperation,
   failed: REFUSAL.operationFailed,
@@ -127,7 +137,7 @@ export const LOG = Object.freeze({
    * Connector-supplied names are JSON-quoted and cut to MCP's longest tool name before they are
    * logged, so a hostile list cannot add log lines or flood the log.
    */
-  nameChars: NAME_GRAMMAR.publicMaxChars,
+  nameChars: NAMESPACE.publicMaxChars,
   /** Reasons of `notOffered`. */
   reason: Object.freeze({
     invalid: 'invalid',

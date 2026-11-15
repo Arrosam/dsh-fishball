@@ -37,8 +37,7 @@
  * dispatching events (F-INTERCEPT), the bridge façade (F-FACADE), the status display (F-STATUS),
  * wiring (F-WIRE).
  */
-import { LINK_BACKOFF } from '../../contracts/constants.js'
-import { LINK_REFUSAL, TOOL } from './schema.js'
+import { LINK, LINK_BACKOFF, MCP } from '../../contracts/constants.js'
 import { LINK_MCP } from './constants.js'
 import { checkTarget } from './target.js'
 import { OffTargetRequest, STATUS, failureStatus } from './status.js'
@@ -176,7 +175,7 @@ export class McpLink {
    */
   async callTool(name, args = {}, { signal } = {}) {
     const client = this.#connected
-    if (client === undefined) return { ok: false, code: LINK_REFUSAL.disconnected }
+    if (client === undefined) return { ok: false, code: LINK.disconnected }
     return callStructured(client, name, args, signal)
   }
 
@@ -336,7 +335,7 @@ export class McpLink {
     if (client === undefined || !this.#current(generation)) return
     let result
     try {
-      result = await callStructured(client, TOOL.inboxPoll, {})
+      result = await callStructured(client, MCP.tools.inboxPoll, {})
     } catch {
       // A failed poll loses nothing: pending events stay at the connector until acked, and the
       // next (re)connect or hint polls again.
