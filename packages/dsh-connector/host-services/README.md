@@ -47,7 +47,7 @@ DECIDED (#n) are ones the user kept at the value review (relayed by Fishball; #n
 | `admit` hostname | exactly `127.0.0.1`, `localhost`, `[::1]`; the caller passes the URL-parsed (lower-case) hostname; anything else rejects `hostname-refused` (code DECIDED #15) | S4-Q1 A, RFC 3986 §3.2.2 |
 | `admit` while the child is not ready | rejects `not-ready` (code DECIDED #16) | design §4.1 |
 | `admit` views | `chat`, `settings` (V2's descriptor views) | instance `host.js` `PLUGIN.ui` |
-| `retry()` | restarts a `failed` child; on `token-revoked` creates a new hosted entry only when `entryState` is `deleted`; otherwise changes nothing | decided 1 = A; R-HOST-10, HOST-ST-01 row 9 |
+| `retry()` | restarts a `failed` child; on `token-revoked` it creates **no** token (K1d: R6 = B, R11) and shows the notice that lists Reconnect, core's token field and Connect; otherwise changes nothing. `child.d.ts`' `retry()` text still says a `deleted` entry is replaced: its owner (K3b / I-HOST) updates it | R-HOST-10 (1.29 R6, 1.31, 1.33 Q-B1), HOST-ST-01 row 9 |
 | `entryState(entryKey)` | read-only `enabled`, `disabled` (switched off only; a value never changes, K1d), `deleted` (also an unknown key) | decided 1 = A; design §5.3 |
 | `providerSync` | V2's `status` / `check` / `add`, unchanged | R-HOST-07 |
 
