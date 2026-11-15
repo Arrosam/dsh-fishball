@@ -126,23 +126,13 @@ export const PANEL = Object.freeze({
   chunk: 'client.settings.js',
   /** The V2 panel folder I-PLACE drops (HOST-UC-08 A3; brief note 3). */
   dropped: path.join('ui', 'fishball-settings'),
-  /** The K3 settings-section service (settings-sections.d.ts SettingsSectionsServiceName). */
+  /** The withdrawn settings-section service (R-HOST-11 withdrawn, 1.34 item 4): absence checks only. */
   service: 'fishballSettingsSections',
   /**
    * The child page's Fishball client entries once the panel is core's chunk (dev 6d13f6a1, relayed
    * 2026-11-15); fishball-hosted-settings left the set (REMOVE-WD, design §1.0).
    */
   childEntries: Object.freeze(['fishball-page', 'fishball-recommend-plugins', V3.core.name]),
-  register: 'register',
-})
-
-/** The unmount probe (test fixture values, not product values). */
-export const PROBE = Object.freeze({
-  id: 'fbtest-i-place-unmount',
-  title: 'I-PLACE unmount probe',
-  order: 1001,
-  throwing: 'fbtest-i-place-throws',
-  marker: 'data-fbtest-i-place-section',
 })
 
 /** Integration rows need a real host DSH and its child (K3/R-CORE pattern); skipped by name otherwise. */

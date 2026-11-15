@@ -208,14 +208,6 @@ export const INTERCEPT = Object.freeze({
   promise: /^Promise\s*</,
 })
 
-/** R-HOST-11, R-CORE (3): a section has an id, a title, an order, mount and unmount. */
-export const SECTION = Object.freeze({
-  register: 'register',
-  fields: Object.freeze(['id', 'title', 'order', 'mount', 'unmount']),
-  /** The integration probe: its own marker attribute and text (test fixture values, not product values). */
-  probe: Object.freeze({ id: 'fbtest-k3-section', title: 'K3 probe', order: 1000, marker: 'data-fbtest-k3-section', text: 'K3 probe section' }),
-})
-
 /** R-FB-11 / PLAT-UC-07 (K: card fields, K3): the asking session, the question, choices or a free answer. */
 export const ASK_CARD = Object.freeze({
   session: /session/i,
@@ -226,17 +218,6 @@ export const ASK_CARD = Object.freeze({
 
 /** Parser budgets (a referenced type is followed at most this deep). */
 export const RESOLVE_DEPTH = 8
-
-/** Integration rows need a real hosted child; they run only when this variable is set. */
-export const INTEGRATION = Object.freeze({
-  env: 'FBTEST_V3_INTEGRATION',
-  on: '1',
-  note: 'integration (real hosted child): run with FBTEST_V3_INTEGRATION=1',
-  homeLabel: 'v3-k3',
-  /** Harness waits only; not a product oracle. */
-  waitMs: 150000,
-  pollMs: 200,
-})
 
 /** Owners of the rows K3 cannot check (v3-tasks.md W2–W6 at `b1295de`). */
 export const LATER = Object.freeze({

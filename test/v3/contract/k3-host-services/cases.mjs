@@ -1,6 +1,6 @@
 /**
- * K3 black-box cases: the freeze of the host-only service contracts and core's settings-section
- * extension point (v3-tasks.md row K3, spec `test/v3-cases` at `b1295de`, "types only"). K3
+ * K3 black-box cases: the freeze of the host-only service contracts and core's contracts (the
+ * settings-section extension point's rows are withdrawn: requirements 1.34 item 4, R-HOST-11) (v3-tasks.md row K3, spec `test/v3-cases` at `b1295de`, "types only"). K3
  * "resolves the K flags in HAND, HOST, UIM, EVT-UC-03"; the cases are those K flags, EVT-UC-03, the
  * interception controller of R-INT-01 (S2-Q1 / Q-S3-2 decided B), the extension point of R-HOST-11
  * (HOST-EP-03 row 3, HOST-UC-08) and PLAT-UC-07's card fields (R-FB-11: "exact card fields: K3").
@@ -11,10 +11,9 @@
  * names its flow).
  *
  * Levels: unit (static reading of the frozen `.d.ts` files, declarations.mjs; no product module is
- * loaded) and integration (a real hosted child whose settings page registers a probe section through
- * the frozen extension point; core/page.mjs). Integration rows are written here and run only with
- * FBTEST_V3_INTEGRATION=1 (the K3 brief: "marked to run at integration"). Behaviour behind the types
- * belongs to later tasks and is `todo`, naming the owner.
+ * loaded). Its one integration row (a probe section in the slim panel) is withdrawn with the
+ * extension point (requirements 1.34 item 4). Behaviour behind the types belongs to later tasks and
+ * is `todo`, naming the owner.
  *
  * Expected values come from the requirements (R-CON-11, R-ROUTE-05, R-HOST-05/06/10/11, R-UI-01/02,
  * R-INT-01…05, R-FB-10/11) and, where a requirement defers to it, from design §3.6, §4.1, §5.4, §6.1,
@@ -22,15 +21,12 @@
  * members by the names the requirement gives them.
  */
 import assert from 'node:assert/strict'
-import test from 'node:test'
-import { HOSTING_WORDS, MARK } from '../../fishball-core/package/constants.mjs'
-import { hostedChildFor } from '../../fishball-core/package/hosted.mjs'
-import { openSettingsPage } from '../../fishball-core/package/page.mjs'
-import { caseName, caseTest } from '../package-boundaries/cases.mjs'
+import { withdrawnCase } from '../../fishball-core/settings/withdrawn.mjs'
+import { caseTest } from '../package-boundaries/cases.mjs'
 import { SET_SIDE, V3 } from '../package-boundaries/constants.mjs'
 import {
-  API_VERSION, ASK_CARD, CHILD, DATA_ONLY, DATA_ONLY_FORMATTER, DATA_ONLY_SAMPLES, FOLDER, HANDOVER, INTEGRATION, INTERCEPT,
-  LATER, SECTION, SERVICE, TOKENS,
+  API_VERSION, ASK_CARD, CHILD, DATA_ONLY, DATA_ONLY_FORMATTER, DATA_ONLY_SAMPLES, FOLDER, HANDOVER, INTERCEPT,
+  LATER, SERVICE, TOKENS,
 } from './constants.mjs'
 import {
   assertIncludes, assertParams, behaviourScripts, contracts, coreScriptFindings, elementType, member, needDeclarations,
@@ -83,51 +79,7 @@ function controller() {
   return { c, ctl: c.m.members(signature.params[1].type), signature }
 }
 
-/** The settings-section extension point: a service with `register(section)`, the section having the R-CORE fields. */
-function extensionPoint() {
-  const c = core()
-  needDeclarations(c)
-  const found = serviceByShape(c, (members) => {
-    const register = members.get(SECTION.register)
-    return !!register?.method && register.params.length > 0 && SECTION.fields.every((f) => c.m.members(register.params[0].type).has(f))
-  })
-  assert.ok(found, `no service in ${FOLDER.coreContracts} with ${SECTION.register}(section) taking {${SECTION.fields.join(', ')}}`)
-  const register = found.members.get(SECTION.register)
-  return { c, ...found, register, section: c.m.members(register.params[0].type) }
-}
-
-/** Integration rows: written now, run only at integration (a real hosted child). */
-function integrationTest(sdk, id, row, title, fn) {
-  const name = caseName(sdk, id, row, title) + ' [integration]'
-  if (process.env[INTEGRATION.env] === INTEGRATION.on) test(name, fn)
-  else test(name, { skip: INTEGRATION.note }, fn)
-}
-
-/**
- * A probe section (test fixture). Assumed contract (a K3 case question): `mount` receives the host
- * element the panel gives the section, as the R-CORE page harness observes it; `unmount` empties it.
- * `title` is a function: the frozen K3 contract (`SectionTitle = () => string`, read at each render
- * so it follows the locale) as R-CORE (3) created it; a string title is a malformed section.
- */
-function probeSection(mounted) {
-  return {
-    id: SECTION.probe.id,
-    title: () => SECTION.probe.title,
-    order: SECTION.probe.order,
-    mount(hostElement) {
-      mounted.push(hostElement)
-      const element = hostElement.ownerDocument.createElement('div')
-      element.setAttribute(SECTION.probe.marker, SECTION.probe.id)
-      element.textContent = SECTION.probe.text
-      hostElement.appendChild(element)
-    },
-    unmount(hostElement) { hostElement.replaceChildren() },
-  }
-}
-
 export function registerK3Cases(sdk) {
-  const readyChild = hostedChildFor(INTEGRATION.homeLabel)
-
   // ================================================================ the freeze itself: two folders, types only
   for (const [label, get] of [['host-services', host], ['core contracts', core]]) {
     caseTest(sdk, 'K3', 'types', `${label}: the folder holds .d.ts declarations that parse`, () => {
@@ -395,31 +347,11 @@ export function registerK3Cases(sdk) {
   caseTest(sdk, 'EVT-DT-02', 7, 'R1 with priority −1 and no other match receives the event', null, LATER.intercept)
 
   // ================================================================ HOST-UC-08 / HOST-EP-03 row 3: the settings-section extension point (R-HOST-11)
-  caseTest(sdk, 'HOST-EP-03', 3, 'core contracts declare the extension point: register(section) with id, title, order, mount, unmount', () => {
-    const { section } = extensionPoint()
-    for (const f of ['mount', 'unmount']) assert.ok(section.get(f).method, f + ' is not a function')
-    for (const f of ['id', 'title', 'order']) assert.equal(section.get(f).method, false, f + ' is a function')
-    assert.equal(section.get('order').type.trim(), 'number', 'order is typed ' + section.get('order').type)
-  })
-  caseTest(sdk, 'HOST-EP-03', 3, 'the extension point names nothing hosting-specific (member names and types)', () => {
-    const { service, members, section } = extensionPoint()
-    const words = [service, ...[...members.values(), ...section.values()].flatMap((m) => [m.name, m.type, m.returns, ...m.params.map((p) => p.name + ' ' + p.type)])]
-    assert.deepEqual(words.filter((w) => HOSTING_WORDS.some((re) => re.test(w))), [])
-  })
-  integrationTest(sdk, 'HOST-UC-08', 'main 2', 'hosted child: a section registered through the frozen point is mounted in the settings panel, beside the hosted sections', async (t) => {
-    const { service } = extensionPoint()
-    const { child: admitted } = await readyChild(sdk)
-    const mounted = []
-    const probe = { name: SECTION.probe.id, inject: [service], apply(ctx) { ctx[service][SECTION.register](probeSection(mounted)) } }
-    const page = await openSettingsPage(t, { sdk, child: admitted, plugins: [probe] })
-    assert.ok(page.panel, 'no settings panel; plugins ' + JSON.stringify(page.plugins))
-    assert.equal((await page.waitFor(SECTION.probe.marker)).length, 1, 'the probe section is not in the panel; mount calls ' + mounted.length)
-    assert.ok((await page.waitFor(MARK.status)).length > 0, 'the hosted sections are gone')
-    assert.deepEqual(page.failed(), [], 'failed plugins')
-    assert.deepEqual(page.errors, [], 'page console errors')
-  })
-  // The K3 unmount rule (panel close, withdrawal, plugin disposal; never after a throwing mount) is I-PLACE's: test/v3/dsh-instance/placement/cases.mjs.
-  // HOST-UC-08 A1 (a section whose bundle is off is absent) is I-PLACE's too (Q-20).
+  // Withdrawn with the point itself (requirements 1.34 item 4, R-HOST-11 withdrawn; F-SETTINGS
+  // deleted contracts/settings-sections.d.ts): core's settings are its own Plugins-page settings.
+  withdrawnCase(sdk, 'HOST-EP-03', 3, 'core contracts declare the extension point: register(section) with id, title, order, mount, unmount')
+  withdrawnCase(sdk, 'HOST-EP-03', 3, 'the extension point names nothing hosting-specific (member names and types)')
+  withdrawnCase(sdk, 'HOST-UC-08', 'main 2', 'hosted child: a section registered through the frozen point is mounted in the settings panel, beside the hosted sections [integration]')
 
   // ================================================================ PLAT-UC-07: the ask card's fields (R-FB-11, "exact card fields: K3")
   caseTest(sdk, 'PLAT-UC-07', 'main 2', 'core contracts declare the ask card: the asking session, the question, choices or a free answer', () => {

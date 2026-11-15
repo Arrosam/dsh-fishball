@@ -6,8 +6,8 @@
  * starts, the child's own boot graph (`__DSH_BOOT__`) and every Fishball client bundle and
  * package-local chunk the child serves, each fetched from the child's origin with the child's own
  * admission cookie; the child's routes the scripts call; and the SDK's own Cordis `Context`, which
- * applies the client plugins with their declared `inject` lists, so plugin-to-plugin services (such
- * as core's settings-section extension point) resolve as they do in the child's page.
+ * applies the client plugins with their declared `inject` lists, so plugin-to-plugin services
+ * resolve as they do in the child's page.
  *
  * What is scripted: the DOM (support/browser-sandbox.mjs), React (the hook shim of
  * support/rp-recommend.mjs) and the three DSH page services the V2 panel injects (`slots`, `layout`,
@@ -15,23 +15,18 @@
  * dsh-client-locale (register/bind/subscribe). Other DSH services are absent, so a plugin that needs
  * one stays pending: only plugins whose injects this page meets apply, and that is recorded.
  *
- * The extension point's contract (a section's mount and unmount, R-CORE (3)) is frozen only later
- * (K3), so a section's output is observed wherever it lands: in the panel's React tree, in a host
- * element the panel hands to `mount` (a scripted element, support/body-soul-dom.mjs), or in a React
- * root a section creates there (`react-dom/client`). All three are read as one tree.
- *
- * Observation points: the rendered `main` slot entry of the settings panel (data attributes, text,
- * roles), the header entry, every request the page makes, page console errors and plugin failures.
- * Actions (I-PLACE's K3 `unmount` rows): close and reopen the panel, dispose one client plugin.
+ * Observation points: the slot entries the plugins register, every script the page ran, every
+ * request it made, page console errors and plugin failures. The slim settings panel this page used to
+ * render, its settings sections and their mount / unmount actions are removed (requirements 1.34
+ * item 4, R-HOST-11 withdrawn); core's own settings page is test/v3/fishball-core/settings's.
  */
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { createBrowserSandbox } from '../../../support/browser-sandbox.mjs'
 import { applyPlugins, moduleTable } from '../../contract/package-boundaries/client-graph.mjs'
-import { FakeElement } from '../../../support/body-soul-dom.mjs'
-import { createReactShim, findAll, textOf } from '../../../support/rp-recommend.mjs'
+import { createReactShim } from '../../../support/rp-recommend.mjs'
 import { fakePrimitives } from '../../../support/set-panel.mjs'
-import { BOOT, BUDGET, HTTP, MARK, ROUTE, SLOT, runtimeOf } from './constants.mjs'
+import { BOOT, BUDGET, HTTP, ROUTE, runtimeOf } from './constants.mjs'
 
 /** Cordis fiber states (cordis lib/types/fiber.d.ts, both SDKs). */
 const FIBER = Object.freeze({ pending: 0, active: 2, failed: 3 })
@@ -39,13 +34,6 @@ const FIBER = Object.freeze({ pending: 0, active: 2, failed: 3 })
 /** The served bundle text without DSH's source-map trailer (dsh-client-modules appends `\n;\n//# sourceMappingURL=…`). */
 const TRAILER = /\s*;?\s*\/\/# sourceMappingURL=\S*\s*$/
 export const servedSource = (text) => text.replace(TRAILER, '').trimEnd()
-
-/** A scripted element as a node of the observed tree: tag, attributes (data-* from dataset too) and children. */
-function elementNode(element) {
-  const dataset = Object.fromEntries(Object.entries(element.dataset).map(([k, v]) => ['data-' + k.replace(/[A-Z]/g, (c) => '-' + c.toLowerCase()), v]))
-  const props = { ...element.attributes, ...dataset }
-  return { tag: element.tagName.toLowerCase(), props, children: element.childNodes.map((child) => (typeof child === 'string' ? child : elementNode(child))) }
-}
 
 const settle = async () => { for (let i = 0; i < BUDGET.settleRounds; i++) await new Promise((resolve) => setImmediate(resolve)) }
 
@@ -133,7 +121,7 @@ export function pageServices(shim, lang) {
 }
 
 /**
- * Load the child's Fishball client bundles into one scripted page and render the settings panel.
+ * Load the child's Fishball client bundles into one scripted page and apply them.
  * @param t - node:test context (cleanup).
  * @param options.sdk - the SDK whose Cordis applies the plugins.
  * @param options.child - { origin, cookie } from admitChild.
@@ -142,7 +130,7 @@ export function pageServices(shim, lang) {
  *   "no section registered" partition leaves out the instance's hosted-section bundle).
  * @param options.plugins - extra client plugins (`{name, inject, apply}`) applied in the same Cordis
  *   root after the child's own, as a third-party client plugin of the child would be (K3's probe section).
- * @returns { panel: rendered host tree of the main settings entry, or null; header; entries; plugins; requests; errors; byAttr; text }
+ * @returns { entriesOf(slot), plugins, failed(), requests, errors, graph, excluded, scripts, settled() }
  */
 export async function openSettingsPage(t, { sdk, child, lang = 'en', exclude = () => false, plugins: extra = [] }) {
   const requests = []
@@ -159,27 +147,9 @@ export async function openSettingsPage(t, { sdk, child, lang = 'en', exclude = (
   }
   const pageConsole = { ...console, error: (...args) => errors.push(args.map(String).join(' ')), warn: () => {}, log: () => {}, info: () => {}, debug: () => {} }
   const page = createBrowserSandbox({ lang, baseURI, fetch: pageFetch, console: pageConsole })
-  // Host elements a component holds by ref: one scripted element per rendered position, handed over
-  // during render (support/rp-recommend.mjs observe.hostRef), so a panel can mount a section into it.
-  const elements = new Map()
-  const hostRef = (key, tag, props) => {
-    if (!elements.has(key)) elements.set(key, Object.assign(new FakeElement(tag, page.document), { style: {}, remove() {} }))
-    const element = elements.get(key)
-    if (typeof props.ref === 'function') props.ref(element)
-    else if (props.ref && typeof props.ref === 'object') props.ref.current = element
-  }
-  page.document.createElement = (tag) => Object.assign(new FakeElement(tag, page.document), { style: {}, remove() {} })
-  const shim = createReactShim({ stale() {}, hostRef })
+  const shim = createReactShim({ stale() {} })
   const { React } = shim
-  // A React root a section creates in a host element renders through the same shim, keyed by that element.
-  const rootsAt = new Map()
-  const reactDomClient = {
-    createRoot(element) {
-      const key = 'section-root-' + rootsAt.size
-      rootsAt.set(element, key)
-      return { render(node) { shim.mount(key, () => node) }, unmount() { shim.unmountRoot(key) } }
-    },
-  }
+  const reactDomClient = { createRoot: () => ({ render() {}, unmount() {} }) }
   const platform = {
     [BOOT.platform.react]: React,
     [BOOT.platform.reactDom]: { createPortal: (node) => node, ...reactDomClient },
@@ -248,63 +218,13 @@ export async function openSettingsPage(t, { sdk, child, lang = 'en', exclude = (
   })
   await settleChunks()
 
-  const mainEntries = services.entries.get(SLOT.main) ?? []
-  const render = (Component) => {
-    if (!Component) return null
-    shim.mount('panel', () => React.createElement(Component, {}))
-    return shim.tree()
-  }
-  // The settings panel is the main entry that renders the panel marker (wherever core keys it).
-  let panel = null
-  for (const entry of mainEntries) {
-    const tree = render(entry.Component)
-    if (findAll(tree, (n) => n.props[MARK.panel] !== undefined).length > 0) { panel = entry; break }
-  }
-  if (panel) shim.mount('panel', () => React.createElement(panel.Component, {}))
-  else shim.unmountRoot('panel')
-  await settle()
-  // The panel's own tree plus whatever was mounted into its host elements or section roots.
-  const tree = () => (panel ? [...shim.tree(), ...[...elements.values()].map(elementNode)] : [])
-  const byAttr = (name, value) => findAll(tree(), (n) => n.props[name] !== undefined && n.props[name] !== false && (value === undefined || String(n.props[name]) === String(value)))
-  /** Render one slot entry alone (its own root) and return its host tree. */
-  const renderAlone = async (entry) => {
-    shim.mount('alone', () => React.createElement(entry.Component, {}))
-    await settle()
-    const rendered = shim.treeOf('alone')
-    shim.unmountRoot('alone')
-    return rendered
-  }
   return {
-    renderAlone,
     entriesOf: (name) => services.entries.get(name) ?? [],
-    panel, tree, byAttr, requests, errors, graph, excluded, scripts,
-    header: services.entries.get(SLOT.header) ?? [],
+    requests, errors, graph, excluded, scripts,
     plugins: plugins.map((p) => ({ id: p.id, inject: p.inject, state: p.fiber.state })),
     failed: () => plugins.filter((p) => p.fiber.state === FIBER.failed).map((p) => p.id),
-    text: () => tree().map(textOf).join(' '),
-    /** Wait for an element with `attribute` to appear (the status line polls the child). */
-    async waitFor(attribute) {
-      const deadline = Date.now() + BUDGET.readyMs
-      while (Date.now() < deadline && byAttr(attribute).length === 0) await new Promise((resolve) => setTimeout(resolve, BUDGET.pollMs))
-      return byAttr(attribute)
-    },
-    async press(node) {
-      node.props.onClick?.({ preventDefault() {}, stopPropagation() {}, currentTarget: node, target: node })
-      await settle()
-    },
     /** Let the page settle (promises, re-renders). */
     settled: settle,
-    /** Close the panel: its main slot entry leaves the page, as when the owner selects another panel. */
-    async close() { shim.unmountRoot('panel'); await settle() },
-    /** Open the panel again after close(). */
-    async reopen() { if (panel) shim.mount('panel', () => React.createElement(panel.Component, {})); await settle() },
-    /** Dispose one applied client plugin's fiber (a plugin's disposal, as DSH does at its unload). */
-    async disposePlugin(id) {
-      const found = plugins.find((p) => p.id === id)
-      if (!found) throw new Error('no applied plugin ' + id)
-      await found.fiber.dispose()
-      await settle()
-    },
   }
 }
 
