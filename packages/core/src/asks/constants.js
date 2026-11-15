@@ -49,6 +49,12 @@ export const ASKS = Object.freeze({
   defaultReason: 'The user answered on Fishball\'s card.',
   /** Connector answers that mean the ask is no longer open there: the card closes. */
   closingCodes: Object.freeze([REFUSAL.alreadySettled, REFUSAL.expired]),
+  /**
+   * `approvals_list` refusals that mean every ask of that session ended (the session is gone). Any
+   * other refusal (`not-managed`, `forbidden`, `disconnected`, a failure) says nothing about the
+   * call, so its asks are kept for the next start.
+   */
+  endedCodes: Object.freeze([REFUSAL.unknownSession]),
 })
 
 /** The filing tool's own refusal: no `ask` event with that offer id was seen. PROPOSED spelling. */
@@ -106,6 +112,8 @@ export const ASK_LOG = Object.freeze({
   malformed: 'ask event %s ignored: malformed payload',
   commitFailed: 'ask card %s: the answer could not be sent (%s)',
   writeFailed: 'ask card store write failed (%s)',
+  reconciled: 'ask card reconciliation: %d ended unfiled ask(s) deleted, %d kept',
+  reconcileFailed: 'ask card reconciliation: a session\'s asks were kept (%s)',
 })
 
 export const ASK_MISUSE = Object.freeze({

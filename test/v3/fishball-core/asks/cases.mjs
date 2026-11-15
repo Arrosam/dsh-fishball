@@ -33,6 +33,7 @@ const ID = Object.freeze({
   uc07: 'PLAT-UC-07', uc01: 'ASK-UC-01', uc02: 'ASK-UC-02', uc03: 'ASK-UC-03', uc04: 'ASK-UC-04', uc05: 'ASK-UC-05', uc06: 'ASK-UC-06',
   ep01: 'ASK-EP-01', ep02: 'ASK-EP-02', ep03: 'ASK-EP-03', ep04: 'ASK-EP-04', bva01: 'ASK-BVA-01', bva02: 'ASK-BVA-02',
   dt01: 'ASK-DT-01', dt02: 'ASK-DT-02', dt03: 'ASK-DT-03', st01: 'ASK-ST-01',
+  rc07: 'ASK-UC-07', ep05: 'ASK-EP-05', dt04: 'ASK-DT-04',
 })
 const row = (sdk, id, part, title, fn) => test(caseName(sdk, id, part, title), T, fn)
 
@@ -68,7 +69,185 @@ async function openCard(world, options) {
 const approvalIdOf = (event) => event.payload.approvalId
 const answer = (world, event, choice, text) => world.service.answer(approvalIdOf(event), text === undefined ? { choice } : { choice, text })
 
+// ------------------------------------------------------------------------------------------------
+// Startup reconciliation (Fishball's decision 2026-11-16): an unfiled ask whose call ended is deleted.
+
+/** Polls `events` (none filed), then restarts over the same table: the state a startup reconciles. */
+async function unfiledAtStartup(w, ...events) {
+  await w.poll(...events)
+  await w.restart()
+}
+/** `approvals_list` answering that `events` are live. */
+const live = (...events) => ({ ok: true, approvals: events.map((e) => e.payload) })
+/** The ask was deleted: ask_user answers expired in this process and no card appears. */
+async function assertDeleted(w, event) {
+  assert.deepEqual(await w.tool.execute({ [ASK_TOOL.arg]: offerOf(event) }), refused(CODE.expired))
+  assert.equal(w.card(approvalIdOf(event)), undefined, 'a deleted ask has a card')
+}
+/** The ask was kept: ask_user still files its card. */
+async function assertKept(w, event) {
+  const filed = await w.tool.execute({ [ASK_TOOL.arg]: offerOf(event) })
+  assert.equal(filed?.ok, true, `a kept ask could not be filed: ${json(filed)}`)
+  assertCard(w, event, K3.state.open)
+}
+const counts = (deleted, kept) => ({ deleted, kept })
+const listCall = (event) => ({ sessionId: event.sourceSessionId })
+
+/** ASK-DT-04 rules for one unfiled ask of one session: the approvals_list answer → deleted or kept. */
+const RECONCILE_RULES = Object.freeze([
+  ['ok, listed', (e) => live(e), false],
+  ['ok, not listed', (e) => live(askEvent({ sourceSessionId: e.sourceSessionId })), true],
+  ['ok, empty list', () => live(), true],
+  [CODE.unknownSession, () => refused(CODE.unknownSession), true],
+  [CODE.notManaged, () => refused(CODE.notManaged), false],
+  [CODE.forbidden, () => refused(CODE.forbidden), false],
+  [CODE.disconnected, () => refused(CODE.disconnected), false],
+  [CODE.operationFailed, () => refused(CODE.operationFailed), false],
+  ['callTool rejects', () => ({ reject: new Error(FIXTURE.injectedFault) }), false],
+])
+
+function registerReconcileCases(sdk) {
+  // ============================================================== ASK-EP-05: what reconcile looks at
+  row(sdk, ID.ep05, 'no asks', 'no ask at all → {deleted: 0, kept: 0} and no approvals_list call', async (t) => {
+    const w = await worldFor(t, sdk)
+    await w.restart()
+    assert.deepEqual(await w.reconcile(), counts(0, 0))
+    assert.deepEqual(w.link.listed(), [])
+  })
+  row(sdk, ID.ep05, 'only filed cards', 'filed cards only (open, answered, closed), the session ended → {0, 0}, no approvals_list call, every card unchanged', async (t) => {
+    const w = await worldFor(t, sdk)
+    const open = await openCard(w)
+    const answered = await openCard(w)
+    const closed = await openCard(w)
+    await answer(w, answered, ANSWER.allow)
+    await w.poll(settlementOf(approvalIdOf(closed)))
+    await w.restart()
+    const before = w.service.list()
+    w.link.approvals.set(FIXTURE.askingSession, refused(CODE.unknownSession))
+    assert.deepEqual(await w.reconcile(), counts(0, 0))
+    assert.deepEqual(w.link.listed(), [])
+    assert.deepEqual(w.service.list(), before)
+    for (const [event, state] of [[open, K3.state.open], [answered, K3.state.answered], [closed, K3.state.closed]]) assertCard(w, event, state)
+  })
+  row(sdk, ID.ep05, 'once per session', 'two unfiled asks of one session → one approvals_list call; the listed one is kept, the other deleted', async (t) => {
+    const w = await worldFor(t, sdk)
+    const kept = askEvent()
+    const ended = askEvent()
+    await unfiledAtStartup(w, kept, ended)
+    w.link.approvals.set(FIXTURE.askingSession, live(kept))
+    assert.deepEqual(await w.reconcile(), counts(1, 1))
+    assert.deepEqual(w.link.listed(), [listCall(kept)])
+    await assertDeleted(w, ended)
+    await assertKept(w, kept)
+  })
+
+  // ============================================================== ASK-DT-04: approvals_list answer × listed × filed
+  for (const [rule, answerOf, deletes] of RECONCILE_RULES) {
+    row(sdk, ID.dt04, `unfiled, ${rule}`, `an unfiled ask, approvals_list answers ${rule} → ${deletes ? 'deleted' : 'kept'}; one approvals_list call for its session`, async (t) => {
+      const w = await worldFor(t, sdk)
+      const event = askEvent()
+      await unfiledAtStartup(w, event)
+      w.link.approvals.set(event.sourceSessionId, answerOf(event))
+      assert.deepEqual(await w.reconcile(), deletes ? counts(1, 0) : counts(0, 1))
+      assert.deepEqual(w.link.listed(), [listCall(event)])
+      if (deletes) await assertDeleted(w, event)
+      else await assertKept(w, event)
+    })
+  }
+  for (const [state, settle] of [
+    [K3.state.open, async () => {}],
+    [K3.state.answered, async (w, e) => { await answer(w, e, ANSWER.allow) }],
+    [K3.state.closed, async (w, e) => { await w.poll(settlementOf(approvalIdOf(e))) }],
+  ]) {
+    for (const [rule, answerOf] of [['ok, not listed', () => live()], [CODE.unknownSession, () => refused(CODE.unknownSession)]]) {
+      row(sdk, ID.dt04, `filed ${state}, ${rule}`, `a filed ${state} card beside an unfiled ask of its session, approvals_list answers ${rule} → the unfiled one is deleted (counted), the card is untouched (not counted)`, async (t) => {
+        const w = await worldFor(t, sdk)
+        const filed = await openCard(w)
+        await settle(w, filed)
+        const unfiled = askEvent()
+        await unfiledAtStartup(w, unfiled)
+        w.link.approvals.set(FIXTURE.askingSession, answerOf())
+        assert.deepEqual(await w.reconcile(), counts(1, 0))
+        assert.deepEqual(w.link.listed(), [listCall(unfiled)])
+        assertCard(w, filed, state)
+        await assertDeleted(w, unfiled)
+      })
+    }
+  }
+
+  // ============================================================== ASK-UC-07: the startup flow
+  row(sdk, ID.rc07, 'two sessions', 'S1 ended (unknown-session), S2 live (its ask listed) → S1\'s unfiled ask deleted, S2\'s kept; one approvals_list call per session', async (t) => {
+    const w = await worldFor(t, sdk)
+    const ended = askEvent({ sourceSessionId: FIXTURE.askingSession })
+    const running = askEvent({ sourceSessionId: FIXTURE.otherSession })
+    await unfiledAtStartup(w, ended, running)
+    w.link.approvals.set(FIXTURE.askingSession, refused(CODE.unknownSession))
+    w.link.approvals.set(FIXTURE.otherSession, live(running))
+    assert.deepEqual(await w.reconcile(), counts(1, 1))
+    const sessions = (calls) => calls.map((c) => c.sessionId).sort()
+    assert.deepEqual(sessions(w.link.listed()), [FIXTURE.askingSession, FIXTURE.otherSession].sort())
+    await assertDeleted(w, ended)
+    await assertKept(w, running)
+  })
+  row(sdk, ID.rc07, 'replay', 'a replay of a deleted ask\'s event in the same process does not bring it back: ask_user still answers expired', async (t) => {
+    const w = await worldFor(t, sdk)
+    const event = askEvent()
+    await unfiledAtStartup(w, event)
+    w.link.approvals.set(event.sourceSessionId, refused(CODE.unknownSession))
+    await w.reconcile()
+    await w.poll(event)
+    await assertDeleted(w, event)
+  })
+  row(sdk, ID.rc07, 'another restart', 'after another restart a deleted ask is unknown: ask_user answers unknown-offer', async (t) => {
+    const w = await worldFor(t, sdk)
+    const event = askEvent()
+    await unfiledAtStartup(w, event)
+    w.link.approvals.set(event.sourceSessionId, refused(CODE.unknownSession))
+    assert.deepEqual(await w.reconcile(), counts(1, 0))
+    await w.restart()
+    assert.deepEqual(await w.tool.execute({ [ASK_TOOL.arg]: offerOf(event) }), refused(CODE.unknownOffer))
+    assert.deepEqual(w.service.list(), [])
+  })
+  row(sdk, ID.rc07, 'no onChange', 'deleting an unfiled ask fires no onChange and leaves list() as it was', async (t) => {
+    const w = await worldFor(t, sdk)
+    const filed = await openCard(w)
+    const event = askEvent()
+    await unfiledAtStartup(w, event)
+    const seen = []
+    w.service.onChange((cards) => seen.push(cards))
+    const before = w.service.list()
+    w.link.approvals.set(event.sourceSessionId, refused(CODE.unknownSession))
+    assert.deepEqual(await w.reconcile(), counts(1, 0))
+    await turns()
+    assert.deepEqual(seen, [], 'onChange fired for an ask that was never listed')
+    assert.deepEqual(w.service.list(), before)
+    assertCard(w, filed, K3.state.open)
+  })
+  row(sdk, ID.rc07, 'same process', 'reconcile without a restart deletes an ended unfiled ask polled in this process', async (t) => {
+    const w = await worldFor(t, sdk)
+    const event = askEvent()
+    await w.poll(event)
+    w.link.approvals.set(event.sourceSessionId, refused(CODE.unknownSession))
+    assert.deepEqual(await w.reconcile(), counts(1, 0))
+    await assertDeleted(w, event)
+  })
+  row(sdk, ID.rc07, 'no timer', 'without a reconcile call nothing is reconciled: 48 h on a fake clock sends no approvals_list and the ask can still be filed', async (t) => {
+    const w = await worldFor(t, sdk)
+    const event = askEvent()
+    await unfiledAtStartup(w, event)
+    w.link.approvals.set(event.sourceSessionId, refused(CODE.unknownSession))
+    t.mock.timers.enable({ apis: [...CLOCK.apis], now: Date.now() })
+    try {
+      t.mock.timers.tick(CLOCK.waitedMs)
+      await turns()
+    } finally { t.mock.timers.reset() }
+    assert.deepEqual(w.link.listed(), [])
+    await assertKept(w, event)
+  })
+}
+
 export function registerAskCases(sdk) {
+  registerReconcileCases(sdk)
   // ============================================================== PLAT-UC-07 / ASK-UC-01 (system)
   row(sdk, ID.uc07, 'main 1–3', 'S1\'s ask reaches Fishball; its model calls ask_user → one open card in Fishball\'s conversation; the user\'s Allow is committed once as Fishball\'s approval_answer', async (t) => {
     const w = await worldFor(t, sdk, { agent: true })

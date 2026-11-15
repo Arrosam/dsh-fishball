@@ -18,7 +18,7 @@ import path from 'node:path'
 import { importSdk } from '../../../private-skills/support/sdk.mjs'
 import { until } from '../../../support/util.mjs'
 import {
-  ANSWER, APPROVAL_KIND, ASK_TOOL, CONNECTOR_OK, DECISION_KIND, DSH, EVENT_TYPE, FIXTURE, OFFER_ID, RETIREMENT_REASON, ROUTE,
+  ANSWER, APPROVAL_KIND, ASK_TOOL, CONNECTOR_OK, DECISION_KIND, DSH, EVENT_TYPE, FIXTURE, OFFER_ID, RECONCILE, RETIREMENT_REASON, ROUTE,
   SETTLED_BY, SETTLEMENT_OUTCOME, TOOL, WAIT,
 } from './constants.mjs'
 import { asksModule, exported } from './subject.mjs'
@@ -86,6 +86,11 @@ export class FakeLink {
   constructor() {
     this.calls = []
     this.answers = []
+    /**
+     * `approvals_list` answers by session id: a structuredContent or `{reject: error}`. A session
+     * with no entry answers `{ok: true, approvals: []}` (no live request). Never taken from `answers`.
+     */
+    this.approvals = new Map()
     this.subscriptions = 0
   }
   get listeners() { return this.#listeners.size }
@@ -101,6 +106,11 @@ export class FakeLink {
   }
   async callTool(name, args) {
     this.calls.push({ name, args: structuredClone(args) })
+    if (name === TOOL.approvalsList) {
+      const listed = this.approvals.get(args?.sessionId) ?? { ok: true, approvals: [] }
+      if (listed.reject !== undefined) throw listed.reject
+      return structuredClone(listed)
+    }
     const next = this.answers.shift()
     if (next?.reject !== undefined) throw next.reject
     if (next?.hold !== undefined) { await next.hold; return { ...CONNECTOR_OK } }
@@ -108,6 +118,8 @@ export class FakeLink {
   }
   /** The `approval_answer` calls core sent. */
   sent() { return this.calls.filter((c) => c.name === TOOL.approvalAnswer) }
+  /** The session ids of the `approvals_list` calls core sent, in order. */
+  listed() { return this.calls.filter((c) => c.name === TOOL.approvalsList).map((c) => c.args) }
 }
 
 /** A few event-loop turns: lets a settled promise's tail run before a negative oracle reads. */
@@ -219,8 +231,14 @@ export async function worldFor(t, sdk, { agent = false } = {}) {
     const closeAsks = async () => { if (!asksClosed) { asksClosed = true; await asksOf.close() } }
     closers.push(closeAsks)
     world.closeAsks = closeAsks
+    // Called on the module's own object: the member may hold private state.
+    world.reconcile = () => {
+      assert.equal(typeof asksOf[RECONCILE.member], 'function', `createAsks() returned no ${RECONCILE.member}()`)
+      return asksOf[RECONCILE.member]()
+    }
     if (agent) closers.push(host.ctx.tools.register(asksOf.tool))
-    Object.assign(world, { ctx: host.ctx, agent: host.agent, requests: host.requests, freezeMessage: host.freezeMessage, link, table: opened.table, ...asksOf })
+    const { service, tool, close } = asksOf
+    Object.assign(world, { ctx: host.ctx, agent: host.agent, requests: host.requests, freezeMessage: host.freezeMessage, link, table: opened.table, service, tool, close })
   }
   await open()
 

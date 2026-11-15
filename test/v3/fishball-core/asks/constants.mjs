@@ -56,6 +56,9 @@ export const ASK_TOOL = Object.freeze({ name: 'ask_user', arg: 'offer_id' })
 /** Every code an oracle reads: K1's, plus the task's own `unknown-offer`. */
 export const CODE = Object.freeze({
   invalidArguments: REFUSAL.invalidArguments,
+  unknownSession: REFUSAL.unknownSession,
+  notManaged: REFUSAL.notManaged,
+  forbidden: REFUSAL.forbidden,
   unknownOffer: 'unknown-offer',
   expired: REFUSAL.expired,
   alreadySettled: REFUSAL.alreadySettled,
@@ -64,6 +67,9 @@ export const CODE = Object.freeze({
   argumentsIncomplete: REFUSAL.argumentsIncomplete,
   operationFailed: REFUSAL.operationFailed,
 })
+
+/** Startup reconciliation (Fishball's decision 2026-11-16): the store member F-WIRE calls once per start. */
+export const RECONCILE = Object.freeze({ member: 'reconcile' })
 
 /** `approval_answer`'s success (K1 tools.js: `{ok: true, accepted: true}`). */
 export const CONNECTOR_OK = Object.freeze({ ok: true, accepted: true })
