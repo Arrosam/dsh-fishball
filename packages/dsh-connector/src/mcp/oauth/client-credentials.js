@@ -7,10 +7,11 @@
  * not bound on the approval page, then `resource`. A refusal says nothing about ids or pairs
  * (R-TOK-00): every credential refusal is the same `invalid_client`. Counted toward FAILURE_LIMIT
  * (Fishball 2026-11-14, #7): a secret that matches no entry, a matching secret with an invalid id
- * (the credential is token + id, R-ID-01), and a matching secret of an entry the approval page bound (K1d: an entry bound on the page refuses
- * `client_credentials`, so one token never serves two client types; decided item 4; counted so that
- * its refusal is the same as any other in the limiter too, and tells nothing about the pair). Not
- * counted: no secret at all, a malformed Basic header, and `invalid_target`, none of which guesses
+ * (the credential is token + id, R-ID-01), and a matching secret of an entry the approval page
+ * bound (K1d: an entry bound on the page refuses `client_credentials`, so one token never serves two
+ * client types; decided item 4). The last is counted for the reason the invalid id is: the secret
+ * is right but the credential, as a machine client presents it, is not one this entry accepts; an
+ * uncounted answer would let a caller tell a page-bound entry from an unknown token. Not counted: no secret at all, a malformed Basic header, and `invalid_target`, none of which guesses
  * a credential.
  *
  * No refresh token (Q27, R-OA-07). The requested `scope` is ignored: the granted one follows the

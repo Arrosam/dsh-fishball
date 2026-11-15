@@ -191,9 +191,10 @@ export const PAGE_TEXT = Object.freeze({
   alreadyPaired: 'This token is already used by an agent. Create a new token in the connector\'s settings.',
   boundTo: 'Bound to {name}, last seen {lastSeen}.',
   neverSeen: 'never',
-  // The id is the one the agent passed in its authorization request (R-OA-22), so the copy names it.
-  idInvalid: 'id-invalid: the id your agent sent must be 1-64 characters of A-Z, a-z, 0-9, _ or -.',
-  idTaken: 'id-taken: another agent on this DSH already uses the id your agent sent.',
+  // The id is the agent's, never typed here (R-OA-22): the one its authorization request passed, or
+  // the id derived from its client id URL when it passed none, so the copy names neither source.
+  idInvalid: 'id-invalid: the id this agent connects with must be 1-64 characters of A-Z, a-z, 0-9, _ or -.',
+  idTaken: 'id-taken: another agent on this DSH already uses the id this agent connects with.',
   nameInvalid: 'name-invalid: the name must be 1-64 characters with no control or invisible characters.',
   nameTaken: 'name-taken: another agent on this DSH already uses this name.',
   // R-OA-15's wording.

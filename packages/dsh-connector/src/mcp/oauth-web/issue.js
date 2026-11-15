@@ -9,7 +9,9 @@ import { digestOf, mintOpaque } from './secrets.js'
 /**
  * The entry and its pair when the entry is enabled and usable (R-OA-06, R-TOK-08) and still bound
  * to the browser client `clientIdUrl` the token was issued for; undefined otherwise. A reconnect
- * from another client id URL records that one (R-OA-22), so the older client's chains end there.
+ * records the newest client id URL (R-OA-22), so another client's chains are refused while it is
+ * recorded; they are not revoked, and work again if that client reconnects. They belong to the same
+ * principal (R-ID-11: one token and id are one principal), and nothing in R-OA-22 ends them.
  * @param generation when given, the entry must still be at it (a refresh token records the one it
  *   was issued under, so a disable or delete since revokes it, R-OA-16 (3))
  */

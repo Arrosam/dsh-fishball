@@ -41,4 +41,5 @@ export function derivedAgentId(clientIdUrl) {
  * omitted", so an empty `agent_id` derives too. A passed id is not checked here: an invalid one is
  * `id-invalid` on the page at Authorize (R-OA-22), after the token, like every other bind refusal.
  */
-export const requestedAgentId = (passed, clientIdUrl) => (passed === undefined || passed === '' ? derivedAgentId(clientIdUrl) : passed)
+export const requestedAgentId = (passed, clientIdUrl) =>
+  (passed === undefined || passed === '' ? derivedAgentId(clientIdUrl) : passed)
