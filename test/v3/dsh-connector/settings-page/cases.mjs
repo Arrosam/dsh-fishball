@@ -226,6 +226,8 @@ export function registerSettingsPageCases(sdk) {
     const page = await openTokensPage(t, { sdk, world, routes: await routesOf(sdk, world) })
     const view = await page.open()
     await newToken(page, view, FIXTURE.labelA)
+    // The create answer lands after real storage writes, so the modal is waited for as in openWithModal.
+    await page.until(() => view.modal().length === 1)
     assert.equal(view.modal().length, 1)
   })
 
@@ -321,8 +323,13 @@ export function registerSettingsPageCases(sdk) {
     const { world, page, view, value } = await openWithModal(t, sdk)
     view.modal()[0].props.onClose()
     await page.until(() => view.modal().length === 0)
-    for (const item of world.doc.tokens) assert.equal(view.find(CLIENT.attr.row, item.key).length, 1, 'no row for ' + item.label)
-    assert.ok(view.text().includes(FIXTURE.labelA))
+    for (const item of world.doc.tokens) {
+      const rows = view.find(CLIENT.attr.row, item.key)
+      assert.equal(rows.length, 1, 'no row for ' + item.label)
+      // The label is shown in its row, as text or as the value of its (editable) label field.
+      assert.ok(view.shown(rows[0]).includes(item.label), 'the row does not show its label ' + item.label)
+    }
+    assert.ok(world.doc.tokens.some((i) => i.label === FIXTURE.labelA))
     assert.ok(!VALUE_ANYWHERE.test(treeText(view.tree())), 'a value is on the page')
     assert.ok(!treeText(view.tree()).includes(value))
   })
