@@ -41,6 +41,16 @@ page (through `ui.asks` or the two Fetch routes).
   browser chunk or calls the card routes; the chunk is core's own (`fishball-core`, shipped in
   core's `files`); the routes are the only registrations the module makes.
 
+### ASK-UC-07: Startup reconciliation deletes ended unfiled asks (Fishball's decision 2026-11-16)
+- **Main**: at a start, `reconcile()` asks `approvals_list({sessionId})` once per session that has
+  unfiled asks; an unfiled ask whose approvalId is not listed is deleted, a listed one is kept;
+  `unknown-session` deletes every unfiled ask of that session; any other refusal or a rejected call
+  keeps them all. Filed cards (open, answered, closed) are never touched, counted or listed for.
+- **A1** two sessions: S1 ended, S2 live → S1's ask deleted, S2's kept.
+- **E1** a deleted ask: `ask_user` → `expired` in the same process (a replay does not revive it),
+  `unknown-offer` after another restart; no card, no `onChange`.
+- **E2** no unfiled asks → `{deleted: 0, kept: 0}`, no call; no timer reconciles by itself.
+
 ## Derived cases (technique → rows)
 
 | Id | Technique | Rows |
@@ -55,6 +65,9 @@ page (through `ui.asks` or the two Fetch routes).
 | ASK-DT-02 | Decision table, connector answer | ok → answered; `already-settled` / `expired` → closed + that code; `disconnected`, `reason-required`, `arguments-incomplete` → open + that code; rejected call → `operation-failed`, open |
 | ASK-DT-03 | Decision table, late answer / filing | answered card → `already-settled`; closed card → `expired`; unknown id → `expired`; `ask_user` on answered / closed / settled-unfiled / retired-unfiled → `expired` |
 | ASK-ST-01 | State transitions | (none)→open by `ask_user`; open→open by `ask_user` again or a replay; open→answered; open→closed (settlement, retirement); open→open after a stays-open refusal, then →answered; answered→answered on a settlement or replay; closed→closed on a replay or settlement; first commit wins on two concurrent answers |
+| ASK-EP-05 | EP, what reconcile reads | no asks → {0,0}, no call; only filed cards (session ended) → {0,0}, no call, cards unchanged; two unfiled asks of one session → one call |
+| ASK-DT-04 | Decision table, reconcile | approvals_list answer (ok listed / ok not listed / ok empty / `unknown-session` / `not-managed` / `forbidden` / `disconnected` / `operation-failed` / rejected) × unfiled → deleted or kept; filed open/answered/closed × (not listed, `unknown-session`) → untouched, uncounted |
+| ASK-UC-07 | Use case, reconcile | two sessions; replay after delete; another restart → unknown-offer; no onChange; same-process reconcile; no timer (48 h) |
 | ASK-UC-05 | onChange | called with `list()` after filing, answering and closing; disposer stops it; a throwing listener affects no other |
 | ASK-UC-06 | Link follow | `createAsks` follows `onPoll` once; `close()` disposes it; an ask polled after close is unknown |
 

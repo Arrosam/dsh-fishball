@@ -11,9 +11,10 @@
  * between the two writes loses the record, and filing that ask later answers `unknown-offer`. Until
  * F-WIRE orders this store's write before the ack, that window stays open.
  *
- * Known growth: an unfiled ask that never gets a settlement or retirement (its call died with a
- * connector restart, which retires nothing) stays recorded. It is one small record per such ask,
- * and no requirement gives a rule to drop it without a timer (R-CON-05).
+ * Startup reconciliation (Fishball's decision, 2026-11-16): an unfiled ask whose call ended is
+ * deleted at the next startup reconciliation (index.js `reconcile`), so the table cannot grow by the
+ * asks whose call died with a connector restart, which retires nothing. It is an event, not a timer
+ * (R-CON-05): it runs once per start, and a filed card is never touched by it.
  *
  * Transitions (no timer anywhere, R-CON-05: only an event or an answer moves a record):
  * - `ask` event, approvalId unknown → open, unfiled; a replay (known approvalId) changes nothing;
@@ -123,6 +124,14 @@ export function createCardStore(table, onChange) {
 
   const isOpen = (record) => record.state === CARD_STATE.open
 
+  /** Closes the record when `guard` holds; an unfiled one is then deleted (see the header). */
+  async function closeWhere(approvalId, guard) {
+    const closed = await move(approvalId, guard, { state: CARD_STATE.closed })
+    if (closed === undefined || closed.filed) return
+    closedOffers.add(closed.offerId)
+    await table.delete(approvalId)
+  }
+
   return Object.freeze({
     get: (approvalId) => table.get(approvalId),
     byOffer,
@@ -151,12 +160,13 @@ export function createCardStore(table, onChange) {
      * is kept (closed, listed) and one queued after it finds the ask closed; only a record still
      * unfiled after the close is deleted (see the header).
      */
-    async close(approvalId) {
-      const closed = await move(approvalId, isOpen, { state: CARD_STATE.closed })
-      if (closed === undefined || closed.filed) return
-      closedOffers.add(closed.offerId)
-      await table.delete(approvalId)
-    },
+    close: (approvalId) => closeWhere(approvalId, isOpen),
+
+    /** Deletes an open record only while it is unfiled: a filing that won the race keeps its card open. */
+    dropUnfiled: (approvalId) => closeWhere(approvalId, (current) => isOpen(current) && !current.filed),
+
+    /** Open, unfiled records: the startup reconciliation's candidates. */
+    unfiled: () => records().filter((record) => isOpen(record) && !record.filed),
 
     /** The approvalId of the open record whose ask event is `eventId` (a retirement names the event). */
     approvalOfEvent: (eventId) => records().find((record) => record.eventId === eventId)?.approvalId,

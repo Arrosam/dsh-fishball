@@ -12,9 +12,16 @@
  *   `retirement`; a page is read whoever the event was dispatched to, so an interceptor or Fishball
  *   taking it changes nothing here), and returns `service` (the K3 `fishballInstance.ui.asks`),
  *   `tool` (the filing tool's raw DSH definition; F-WIRE registers it with `tools.register` in the
- *   manager's scope) and `close()`.
+ *   manager's scope), `reconcile()` (below) and `close()`.
  * - `openAskCards(ctx, storageDomain)`: the durable table.
  * - `registerAskRoutes(ctx, options)`: the owner-only routes the browser half reads (routes.js).
+ *
+ * Startup reconciliation (Fishball's decision, 2026-11-16): `reconcile()` deletes every unfiled ask
+ * whose call ended, so asks whose call died with a connector restart (which retires nothing) do not
+ * stay recorded forever. F-WIRE calls it once per start, at the link's first `connected` status. An
+ * ask's call is live while the connector lists it: `approval_answer` authorises an ask by the same
+ * `liveOffers` port that `approvals_list` reads (dsh-connector src/mcp/tools/offers.js), so a session's
+ * list omitting the ask, or `unknown-session`, means the call ended. Any other answer keeps the ask.
  *
  * First commit wins (R-CON-06): answers to one card run one after another, and only an open card
  * sends; so of two answers the second sees the first's outcome. The connector settles an ask once
@@ -157,6 +164,39 @@ export function createAsks({ link, table, logger }) {
     },
   })
 
+  /**
+   * The startup reconciliation (see the header). Its candidates are the unfiled asks recorded when
+   * it begins, after the pages already polled are taken; an ask that arrives meanwhile is not one.
+   * @returns {Promise<{deleted: number, kept: number}>}
+   */
+  async function reconcile() {
+    await intake
+    const bySession = Map.groupBy(store.unfiled(), (record) => record.sessionId)
+    let deleted = 0
+    for (const [sessionId, records] of bySession) {
+      const ended = await endedOf(sessionId, records)
+      for (const record of ended) await store.dropUnfiled(record.approvalId)
+      deleted += ended.length
+    }
+    const kept = [...bySession.values()].reduce((sum, records) => sum + records.length, 0) - deleted
+    logger?.info?.(ASK_LOG.reconciled, deleted, kept)
+    return { deleted, kept }
+  }
+
+  /** The records of one session whose call ended, by its `approvals_list` answer; none when unsure. */
+  async function endedOf(sessionId, records) {
+    let result
+    try { result = await link.callTool(TOOL.approvalsList, { sessionId }) } catch (error) {
+      logger?.warn(ASK_LOG.reconcileFailed, codeOf(error))
+      return []
+    }
+    if (result?.ok === true && Array.isArray(result.approvals)) {
+      const live = new Set(result.approvals.map((descriptor) => descriptor?.approvalId))
+      return records.filter((record) => !live.has(record.approvalId))
+    }
+    return ASKS.endedCodes.includes(result?.code) ? records : []
+  }
+
   /** `ask_user({offer_id})`: files the ask with that offer id as a card (idempotent while open). */
   async function fileCard(args) {
     const offerId = args?.[ASKS.offerArgument]
@@ -190,6 +230,7 @@ export function createAsks({ link, table, logger }) {
   return Object.freeze({
     service,
     tool,
+    reconcile,
     /** Stops following the link; cards and the table stay as they are (the table is the caller's). */
     close() {
       closed = true
