@@ -472,8 +472,8 @@ entry is only disabled, the call keeps waiting: no timer settles it (R-CON-05).
 
 Deleting an entry drops its digest record. No value is stored on the connector's side, hosted
 ones included, so nothing is unset (requirements 1.27, 1.28). A deleted hosted entry's value stays
-in the child's credential store, dead, until the user supplies a new token or a reinstall replaces
-it (§5.4; R6 = B).
+in the child's credential store, dead, until the user enters a new token in Fishball's settings or
+a reinstall replaces it (§5.4; R6 = B, R8).
 
 ### 5.4 The Fishball DSH's token (R-HOST-05; Q8 decided)
 
@@ -484,30 +484,31 @@ it (§5.4; R6 = B).
   returns the value **once**, in process, to the instance (the only caller; never to a UI, and no
   reveal modal). It is called only when the child holds no paired credential (first start, or
   after a reinstall), never on restart or reconnect.
-- **Where the value lives (R1, requirements 1.28: "存在fishball子实例内，第一次启动的时候由instance插件传入").**
-  The instance holds the value in memory just long enough to send it **once**, at the child's
-  first start, over the authenticated lifecycle wire (mutual HMAC proof,
-  `src/native-runtime/wire.js`) on the channel `mcp-credential`, after `auth accepted`. The
-  child-side receiver stores it with the **child's own** `ctx.credentials.set` under a fixed
-  reference that the hosted settings bundle names as core's `target.tokenRef`. From then on
-  `fishball-core` resolves it per connection, exactly as in standalone mode, and uses it as its
-  OAuth client secret (§5.5). The instance then drops it. The host keeps **no** copy: not in its
-  credential store, lifecycle state, overlay, argv or env.
-- **"First start" means the child holds no credential.** The instance asks the child's receiver
-  whether a credential is stored (a yes/no answer, never the value) before it calls `createHosted`.
-  The receiver acknowledges the store; only then does the instance record the entry key. If the
-  child cannot store it (an unwritable child credential store), the instance deletes the new entry
-  and reports `credentials-unwritable` (PROPOSED: the K3 code moves from the connector's side to
-  the child's).
-- **Host restart:** the child keeps its value in its own store, so nothing is created or sent; the
-  child reconnects with it. **Child restart or crash:** the same. **Reinstall** (child home
-  removed or reinstalled): the stored value is gone with the old home, so the new child's start is
-  a first start: a new hosted entry, its value passed in once, then succession (R-HOST-09, below).
-  **Uninstall:** the value goes with the child runtime; the hosted entry's digest stays in the
-  connector until the user deletes the entry. **User delete, then Retry** (R-HOST-10; R6 = B,
-  requirements 1.29): Retry creates **no** token. It shows a notice telling the user to create a new
-  token themselves (New token, §5.9); the child keeps its dead value until then (where the user
-  puts the new one: open question R8).
+- **One path, the instance as a helper (R8, requirements 1.30: "子实例和standalone用的是同一套插件
+  … 在填入一个额外的token时，应该还是和standalone一样在fishball内填，走正常流程。但是instance插件允许便利的为子实例导入主dsh的token完成这些步骤").**
+  Core has **one token entry point**, `supplyToken(value)`, in its link's credential module (§6.3).
+  The normal flow is the user entering a token in core's own settings, in a hosted child exactly as
+  in standalone. The instance's import is the only other caller: it does the user's steps for
+  them, and core cannot tell the two apart after the call.
+- **The import (R1, requirements 1.28: "存在fishball子实例内，第一次启动的时候由instance插件传入").**
+  At the child's first start (core reports, yes/no, that it holds no saved copy for the target), the
+  instance calls `createHosted` and sends the value **once** over the authenticated lifecycle wire
+  (mutual HMAC proof, `src/native-runtime/wire.js`) on the channel `mcp-credential`, after
+  `auth accepted`. The child-side receiver (instance code in the child) passes it to
+  `supplyToken` and drops it. Core then saves it as any supplied token (R9, below). The host keeps
+  **no** copy: not in its credential store, lifecycle state, overlay, argv or env.
+- **What the receiver reports back.** Only "accepted and saved", or a failure code: the instance
+  records the entry key only after "saved". If the target refuses the token or core cannot save
+  it, the instance deletes the new hosted entry and reports `credentials-unwritable` (PROPOSED;
+  the K3 code moves from the connector's side to the child's).
+- **Host restart, child restart or crash:** core holds a saved copy, so nothing is created or
+  sent. **Reinstall** (child home removed or reinstalled): the saved copy is gone with the old
+  home, so the new child's start is a first start: a new hosted entry, its value imported once,
+  then succession (R-HOST-09, below). **Uninstall:** the copy goes with the child runtime; the
+  hosted entry's digest stays in the connector until the user deletes the entry. **User delete,
+  then Retry** (R-HOST-10; R6 = B, R8): Retry creates **no** token and imports nothing. It shows a
+  notice: create a new token in the connector's settings (§5.9) and enter it in Fishball's settings.
+  The child keeps its dead copy until then.
 - **Reinstall succession (Q24, decided; R-HOST-09).** The instance keeps the entry key of the
   hosted entry it created (non-secret, in its lifecycle state). When a reinstalled child pairs
   with a new hosted token, the instance calls `retire(oldEntryKey, newEntryKey)`. In one storage
@@ -525,20 +526,21 @@ it (§5.4; R6 = B).
 - A user who disables a hosted entry gets `token-revoked` in the child and no automatic
   replacement (R-HOST-10).
 
-**Saved once at the first connection (R7, requirements 1.29: "在第一次连接远程dsh的时候保存一次到fishball本地，这也apply to standalone fishball").**
-- **Hosted with a remote target.** The instance's `target.tokenRef` names a reference in the host
-  DSH's credential store. The user creates a token in the remote connector's DSH (§5.2), copies it
-  from the reveal modal (§5.9) and puts it there. At the child's **first connection** to that
-  remote DSH, the instance reads it there once and passes it in on `mcp-credential`, and the child
-  saves it once into its own credential store under the same fixed reference as a hosted value.
-  From then on the child connects with its saved copy; a host or child restart sends nothing. The
-  user's host copy is the user's and is never deleted or written by Fishball.
-- **Standalone.** `fishball-core`'s own settings name `target.url` and `target.tokenRef`. At the
-  **first connection** to that target, core reads the value under `target.tokenRef` once and saves
-  it into its own local credential record (a core-owned key, not the user's reference). From then on
-  it connects with that saved copy only, and never writes or deletes the user's reference. Nothing
-  goes over a lifecycle wire, because there is none.
-- When the saved copy is replaced (a changed target, a refused token) is open question R9.
+**Saved once at the first connection (R7, requirements 1.29: "在第一次连接远程dsh的时候保存一次到fishball本地，这也apply to standalone fishball"; R9 = recommended, 1.30).**
+The same rule in every mode, because every token goes through `supplyToken`:
+- **Standalone, and hosted with a remote target.** The user creates a token in the target
+  connector's DSH (§5.2), copies it from the reveal modal (§5.9) and enters it in core's own
+  settings. The instance imports nothing for a remote target.
+- **When the copy is saved (R9).** Core holds a supplied value in memory only, until the target
+  first **accepts** it in a token request; then it saves it **once** into its own local credential
+  record, keyed by the target origin (a core-owned key; DSH stores it as a `grant` record, as
+  C-TOKENS' key record did). A refused value is not saved and the status shows `token-refused`.
+- **A changed target origin** is a new first connection: no saved copy applies to it, and nothing is
+  saved until a value is supplied and accepted.
+- **A refused saved copy** (`token-refused`, `token-revoked`) stays until a **different** value is
+  supplied and accepted, and then it is replaced. Supplying the same value changes nothing.
+- Core never writes or deletes a credential reference the user owns. The `target.tokenRef` field
+  (§6.1, R-FB-03) goes; how the user's entry reaches `supplyToken` is open question R10.
 
 ### 5.5 OAuth: client credentials, the connector as its own authorization server (R-OA)
 
@@ -864,7 +866,8 @@ make one, so one comes only from a settings document edited by hand or a store e
 | `tokens/constants.js`, `index.js` | `REVOCATION.valueChanged`, `SYNC_REASON.credentials`, `REF_PATTERN`, `findRefDuplicates`, value-duplicate logs | removed (no credential reference is left on the connector's side); a `findDuplicates` (key or digest) replaces `findRefDuplicates` |
 | Settings schema (C-WIRE, W4b) | planned items `{label, enabled, ref}` with `role('credential-ref')` | items `{label, enabled, key}`; no credential reference |
 | Connector package (R-ARCH-03 reworded, R2) | no `dsh.client` (R-EMBED, design §9.1) | one `dsh.client` entry, the settings page only (`plugins.row.config`, its own row key), and one owner-only JSON Fetch route for `create`; PLAT-EP-03 row 1 and HAND-EP-01 row 3 are reworded to allow exactly these |
-| Instance (I-HOST) | resolves the hosted value from the host's store at every child start and sends it on `mcp-credential` | sends it **once**, at the child's first start, from `createHosted`'s answer; asks the child whether a credential is stored; the child receiver stores it in the child's `ctx.credentials`; the host stores nothing (R1) |
+| Instance (I-HOST) | resolves the hosted value from the host's store at every child start and sends it on `mcp-credential` | imports it **once**, at the child's first start, from `createHosted`'s answer, through the child receiver into core's `supplyToken`; asks core whether it holds a saved copy; no token or credential reference in its settings; the host stores nothing (R1, R8) |
+| Core link (F-LINK-SAVE) | `credentials()` reads `target.tokenRef` (standalone) or the wire value (hosted) | one `supplyToken(value)` for both modes; saved copy per target origin after the first accepted token request (R9); `target.tokenRef` withdrawn |
 | K1 `ENTRY_STATUS` | `ok`, `token-too-short`, `token-unconfigured` | `ok` only. The field stays, so `mcp/oauth/bearer-verifier.js` and `mcp/oauth-web/issue.js` (`status === ok`) are unchanged |
 | K1 `SETTINGS_REFUSAL` | `ref-duplicate`, `value-duplicate` | `token-duplicate` (PROPOSED, R3); plus R5's code if R5 is answered "refuse" |
 | K1 `TOKEN_VALUE.minChars`, `isTokenLongEnough` | 32 code points | withdrawn |
@@ -873,7 +876,7 @@ make one, so one comes only from a settings document edited by hand or a store e
 | Callers: `mcp/oauth/*`, `mcp/oauth-web/*`, `pairs/`, `routing/`, `handover/` | `match`, `get`, `list`, `onRevoked` | unchanged; C-OAUTH's `followRevocations` already treats every kind alike |
 
 **Requirements and cases withdrawn or changed** (IDs kept, as for R-OA-10):
-- Requirements changed: R-FB-03 (1.29, R7), R-HOST-10 (1.29, R6), R-ARCH-03, R-ARCH-04 (1.28, R2), R-TOK-03, R-TOK-04, R-TOK-08, R-TOK-09,
+- Requirements changed: R-FB-03 (1.29 R7, 1.30 R8/R9), R-HOST-05 (1.30), R-HOST-10 (1.29 R6, 1.30 R8), R-ARCH-03, R-ARCH-04 (1.28, R2), R-TOK-03, R-TOK-04, R-TOK-08, R-TOK-09,
   R-OA-06, R-CON-10, R-HOST-05 (where the hosted value lives, R1; remote target), R-HOST-09 (no
   value to unset), R-UI-03; new R-TOK-11. Withdrawn parts: TQ-4's 32-character minimum and
   `token-too-short`; `token-unconfigured`; `ref-duplicate`; value-duplicate (C-TOKENS question 4 = A);
@@ -894,21 +897,18 @@ make one, so one comes only from a settings document edited by hand or a store e
   save of the tokens list does (duplicates refused with a notice, R3; R5's rule); **AUTH-ST-08** the
   reveal modal (open → copied / closed, never re-shown); **HOST-ST-03** the hosted value's
   lifecycle (first start → stored in the child; host restart, child restart, reinstall, uninstall,
-  delete then Retry → notice, no token, R6 = B); **REM-ST-01** the saved copy at the first connection
-  (standalone and hosted remote, R7).
+  delete then Retry → notice, no token, R6 = B); **REM-ST-01** the saved copy (supplied → accepted →
+  saved; refused → not saved; changed origin → none; refused copy → replaced by a different value;
+  R7, R9), in standalone and hosted alike.
 
-**Open product questions (R8–R9, raised 2026-11-15; recommendations in brackets).** R1–R7 are
-answered (requirements 1.28, 1.29).
-- **R8. Where the user puts a new hosted token after R6's notice.** The child takes a value only
-  from the instance, and DSH has no secret field for plugins. Put it under the instance's
-  `target.tokenRef` on the host, so that the next Retry passes it in once (R7's rule) and the child
-  replaces its dead value; or add a paste field to the hosted settings inside the child?
-  *[The instance's `target.tokenRef`: it reuses the remote-target path and adds no UI.]*
-- **R9. When the saved copy is replaced, and what "first connection" means.** Save only after the
-  target accepts the token (so a mistyped one is not kept), or at the first attempt? And after a
-  changed target URL, or a saved copy the target refuses (`token-refused`, `token-revoked`)?
-  *[Save after the first accepted token request; a changed target origin is a new first
-  connection; a refused copy is replaced once the user's reference holds a different value.]*
+**Open product question (R10, raised 2026-11-15; recommendation in brackets).** R1–R9 are
+answered (requirements 1.28–1.30).
+- **R10. How the user enters a token in core's settings.** DSH's native form has no secret field
+  (§5.2 finding), so a value typed there would be stored in plain settings. Use a masked field in a
+  section of core's own settings panel (its settings-section extension point, R-HOST-11) that posts
+  the value once to `supplyToken` and never shows it again, or keep a credential-reference field
+  that core reads once? *[A masked field in core's own settings panel: it is the one normal flow
+  in both modes and stores nothing outside core's saved copy.]*
 
 ## 5a. The Fishball plugin set in any DSH
 
@@ -988,8 +988,8 @@ rc.5 has no `presetForSession` ([impl], R-FB-13).
 1. Install the four tarballs (core is required; the three features are optional) in the DSH with DSH's native "add plugin", then restart that DSH.
 2. In the **target** DSH's connector settings, press New token (§5.2) and copy the value from
    the reveal modal (§5.9); it is never shown again.
-3. Put that value in the standalone DSH's credential store, under the reference named in
-   `fishball-core`'s settings, and enter the target URL there.
+3. Enter the target URL and that token in `fishball-core`'s settings (§5.4; how, open question
+   R10). Core saves its copy after the target first accepts it.
 4. Open the standalone DSH's web UI. It is the Fishball page.
 
 `fishball-core` reports `target-unset`, `target-unreachable` or `token-refused` until steps 2–3
@@ -1015,8 +1015,8 @@ are done.
 - Host row `inject`: lifecycle, webserver (for the origin), credentials (for the token), settings,
   storage, and the optional `fishballConnectorTokens?` (§5.4). **No** session, approval,
   question or prompt service (R-ARCH-05).
-- The settings form holds `target.url` (blank means a connector in this DSH), `target.tokenRef`,
-  and a read-only target status note. Status codes gain `TARGET_UNREACHABLE`, `TOKEN_REFUSED` and
+- The settings form holds `target.url` (blank means a connector in this DSH) and a read-only target
+  status note; no token or credential reference (R8: the token is entered inside Fishball). Status codes gain `TARGET_UNREACHABLE`, `TOKEN_REFUSED` and
   `TARGET_INCOMPATIBLE`. These are locator codes; they no longer travel in a contract.
 
 ### 6.2 Launch configuration (no guards; Q20, decided)
@@ -1047,12 +1047,10 @@ reports `fishball-off` (R-FB-10).
   - reconnect with bounded backoff;
   - poll once on every (re)connect.
 - **The credentials:**
-  - hosted mode: the token arrives once over the lifecycle wire and the child stores it in its own
-    credential store (§5.4, R1, R7);
-  - standalone mode: at the first connection `fishball-core` reads it once under `target.tokenRef`
-    and saves it into its own local credential record (§5.4, R7);
-  - either way core then resolves its saved copy per connection (`ctx.credentials.resolve`), as
-    DSH's own providers do;
+  - one entry point in both modes, `supplyToken(value)` (§5.4, R8): the user's entry in core's
+    settings, or, in a hosted child, the instance's one-time import from the lifecycle wire;
+  - core saves its copy after the first accepted token request, per target origin (R9), and then
+    resolves that saved copy per connection (`ctx.credentials.resolve`), as DSH's own providers do;
   - either way it is the OAuth client secret, with the fishball id as the client id (§5.5). It is
     sent only to the target's token endpoint, pinned by `expectedIssuer`, and only over `https:`
     for a non-loopback target. MCP requests carry only the access token. Credentials are never
@@ -1407,7 +1405,7 @@ Process stays: requirements → independent case authoring → implementation wi
 - **Credentials:**
   - The connector keeps only digests of token values; a hosted value lives only in the child's credential store (§5.1, §5.4); MCP requests carry short-lived, audience-bound
     access tokens (§5.5).
-  - Hosted: the token goes to the child once, at its first start, over the authenticated wire, and is stored in the child's own credential store. Standalone:
+  - Both modes: core saves its own copy of the token after the target first accepts it (R9). Hosted: the instance may import it once, at the child's first start, over the authenticated wire. Standalone:
     it stays in that DSH's credential store and is resolved per connection.
   - They are never in settings, logs, lifecycle files, temp files, argv, env, URLs, tool results,
     resource contents or browser responses.
