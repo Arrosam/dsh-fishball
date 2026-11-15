@@ -52,7 +52,7 @@ and "dsh的connector侧的插件间可以share一个包，fishball侧的插件�
 | 2 | 17 core files import `fishball-connector/contract` (V2 path); core peers on `fishball-connector` | REMOVE-V2 (Q-E2 A) deletes the V2 child path; the peer goes |
 | 3 | the instance bundles core and the features (`bundled/`, `RUNTIME.bundledPlugins`, core-last placement, `fishball-hosted-settings`) | the instance installs whatever its settings name, by package name or tarball spec, through DSH's own plugin installation; no ordering rule; core and ui reorder themselves (R-FB-12) |
 | 4 | the instance's child rows import core (`native-child.js`, the `mcp-credential` receiver handing the value to core, K3a `importToken` / `hasCredential`) | the child-side row (instance code) writes the value into the child's credential store under `fishball-target-token`; core reads that reference; presence is DSH's `credentials.describe`; K3a is void (Q-G6 for the contract) |
-| 5 | `fishball-shared` is used by both sides (admin protocol, provider-sync codec and engine, redaction) | split per side: the admin protocol and provider-sync go to `dsh-connector-shared` if the instance needs them, and core's halves get their own copy in `fishball-shared` only where core still needs them (Q-G7 for provider-sync's place) |
+| 5 | `fishball-shared` is used by both sides: the admin protocol and provider-sync (instance host + core's `slim/child` halves), `files` (instance + core), `redact` (connector + instance) | split per side. The admin protocol, provider-sync (codec, engine, host) and `redact` move to `dsh-connector-shared`; their child halves move from core's `slim/child` into the instance's own child-side row, because applying model settings and admin operations in a child DSH is generic DSH work. `files` is duplicated: one copy in each library. `fishball-shared` keeps the core/ui contract and Fishball's own constants |
 | 6 | the adapter is Fishball-only and checks for the `/api/fishball` paths and the `fishball` scope | the adapter is a client of **this connector**, not of Fishball; the check stays but is a check for a `fishball-connector` endpoint (a DSH-side package naming its own server), so no Fishball-side code is involved (decided D2) |
 | 7 | the `fishball` OAuth scope and `fishball:pair`, the `/api/fishball/*` paths, `fishball_id`, the `fishball-events` resource and the `*_fishball` tool names | the connector's own namespace: names of the DSH-side package `fishball-connector`, offered to every agent alike; not Fishball-only behaviour (decided D3); renaming is Q-G8 |
 | 8 | `message_fishball` / `ask_fishball` and the designated "Fishball" principal | generic: any paired agent can be the designated principal; the names stay (Q-G8) |
@@ -543,9 +543,11 @@ a reinstall replaces it (§5.4; R6 = B, R8).
   At the child's first start (core reports, yes/no, that it holds no credential for the target),
   the instance calls `createHosted` and sends the value **once** over the authenticated lifecycle
   wire (mutual HMAC proof, `src/native-runtime/wire.js`) on the channel `mcp-credential`, after
-  `auth accepted`. The child-side receiver (instance code in the child) passes it to core's
-  `importToken(value)` and drops it. `importToken` is a child-local K3a member: the receiver is its
-  only caller, and nothing in any UI reaches it. Core then saves it by R9 (below). The host keeps
+  `auth accepted`. The child-side receiver (instance code in the child) writes it into the **child
+  DSH's credential store** under the documented reference `fishball-target-token` and drops it
+  (requirements 1.39: no cross-side code call). Core reads its import from that reference and,
+  once the target accepts it, saves its own copy by R9 (below) and unsets the reference. Whether a
+  credential is present is DSH's own `credentials.describe`, not a core call. The host keeps
   **no** copy: not in its credential store, lifecycle state, overlay, argv or env.
 - **What the receiver reports back.** Only "accepted and saved", or a failure code: the instance
   records the entry key only after "saved". If the target refuses the token or core cannot save
@@ -567,7 +569,7 @@ a reinstall replaces it (§5.4; R6 = B, R8).
   **Connect** and one **write-only token field**, in both modes. A pasted token is used with
   `client_credentials` and core's `identity.id`, paired with `pair`, saved by R9, cleared from the
   field and never displayed. The instance's automatic import and Reconnect (always shown, so the
-  user can rotate a working token in one click) feed the same `importToken` path. The host DSH is
+  user can rotate a working token in one click) feed the same credential-reference path. The host DSH is
   an ordinary DSH. **Uninstall (Q-B3 B)** never touches hosted entries.
 - **Reinstall succession (Q24, decided; R-HOST-09).** The instance keeps the entry key of the
   hosted entry it created (non-secret, in its lifecycle state). When a reinstalled child pairs
@@ -952,7 +954,7 @@ make one, so one comes only from a settings document edited by hand or a store e
 | Connector package (R-ARCH-03 reworded, R2) | no `dsh.client` (R-EMBED, design §9.1) | one `dsh.client` entry, the settings page only (`plugins.row.config`, its own row key), and one owner-only JSON Fetch route for `create`; PLAT-EP-03 row 1 and HAND-EP-01 row 3 are reworded to allow exactly these |
 | Instance (I-HOST) | resolves the hosted value from the host's store at every child start and sends it on `mcp-credential` | imports it **once**, at the child's first start, from `createHosted`'s answer, through the child receiver into core's `importToken` (K3a); asks core whether it holds a credential; no token or credential reference in its settings; imports nothing for a remote target; the host stores nothing (R1, R10) |
 | Core link (F-LINK-SAVE) | `credentials()` reads `target.tokenRef` (standalone) or the wire value (hosted); `ClientCredentialsProvider` only | hosted: `importToken(value)` (K3a, the receiver's only) and `client_credentials`; standalone and remote: **Connect**, an authorization-code + PKCE `authProvider` built on `fishball-shared/oauth-client` (the S7c K2 token manager, moved from C-MCP-ADAPTER); one saved credential per target origin after first acceptance (R9); `target.tokenRef` and any token field withdrawn (R10) |
-| `fishball-shared` | no OAuth code | `./oauth-client` (CIMD client id, PKCE, `state`, `iss`, loopback callback through `ctx.authorization`, single-flight refresh), used by core and the adapter (R-ARCH-08) |
+| Shared libraries (requirements 1.40) | one `fishball-shared` for both sides | `dsh-connector-shared` (admin protocol, provider-sync, redact, files, `./oauth-client` for the adapter) and `fishball-shared` (core/ui contract, Fishball constants, the MCP-surface constants core needs, files, `./oauth-client` for Connect) |
 | Pairing (C-PAIR, C-OAUTH-WEB; R13, Q-A1, Q-A2) | the page takes `id` and binds in one step (`PairStore.bindFromPage`); a re-entered token is `already-paired` | the page takes no `id`; the id comes from the `fishball_id` request parameter, or is derived from the client id URL; Authorize binds at once with full rights; the same token with the same id reconnects the same principal (`PairStore.reconnectFromPage`); machine `pair` unchanged |
 | Chain cap (C-OAUTH, C-OAUTH-WEB; R14) | `LIFETIME.refreshChainMaxMs` 365 d, `chainsOf`, `renewFromPage`, renewal on the page | all withdrawn (K1d); a chain ends only by reuse or entry revocation |
 | K1 `ENTRY_STATUS` | `ok`, `token-too-short`, `token-unconfigured` | `ok` only. The field stays, so `mcp/oauth/bearer-verifier.js` and `mcp/oauth-web/issue.js` (`status === ok`) are unchanged |
@@ -1132,8 +1134,8 @@ reports `fishball-off` (R-FB-10).
   - reconnect with bounded backoff;
   - poll once on every (re)connect.
 - **The credentials (requirements 1.31: no token is ever set by hand):**
-  - **hosted with the same-DSH connector:** the instance's one-time import into `importToken`
-    (§5.4); core uses it as its OAuth client secret with its fishball id as the client id
+  - **hosted with the same-DSH connector:** the instance's one-time import, read from the child
+    credential reference `fishball-target-token` (§5.4); core uses it as its OAuth client secret with its fishball id as the client id
     (`ClientCredentialsProvider`, §5.5);
   - **standalone, and hosted with a remote target:** the grant from **Connect** (§6.3a); core
     holds no token value;
@@ -1162,9 +1164,11 @@ and checked by the client, `resource`, `iss` checked on success and error (RFC 9
 callback on a fresh OS port per attempt through DSH's `ctx.authorization`, the code exchange with
 no secret, and single-flight refresh under `credentials.modifyRecord`'s cross-process lock.
 
-**Reuse, not a copy.** The S7c **K2 token manager** (C-MCP-ADAPTER's step K2) is the part both
-need. It moves into `fishball-shared` as `./oauth-client` (R-ARCH-08: now more than one package
-uses it), and both the adapter and core import it. The rest of the adapter is not reused: core
+**One copy per side (requirements 1.40).** The S7c **K2 token manager** is needed by the adapter
+(DSH side) and by core's Connect (Fishball side). Most of it is the SDK's own `auth()` and
+`OAuthClientProvider`; the rest (CIMD client id, `state`, `iss`, the loopback callback through
+`ctx.authorization`, single-flight refresh) is written twice: in `dsh-connector-shared/oauth-client`
+for the adapter and in `fishball-shared/oauth-client` for core. Each is tested on its own side. The rest of the adapter is not reused: core
 needs no loopback proxy and no stock child row, because its own link (§6.3) takes an
 `authProvider` from the same `@modelcontextprotocol/client` 2.2.0 it already pins. The
 Fishball-connector check of §5.5b runs before Connect too, so core never sends an authorization
