@@ -134,10 +134,14 @@ export function registerK3aCases(sdk) {
     const { c, pub } = await both()
     assert.deepEqual(c.MCP.oauth.error, pick(pub.OAUTH_ERROR, MCP_SHAPE.oauthError))
   })
-  caseTest(sdk, 'K3a-MCP', 'oauth', `oauth.agentIdParameter is design §1.0c's ${NEUTRAL.agentIdParameter} (no connector value published yet)`, async () => {
+  caseTest(sdk, 'K3a-MCP', 'oauth', `oauth.agentIdParameter is design §1.0c's ${NEUTRAL.agentIdParameter}`, async () => {
     assert.equal((await coreConstants()).MCP.oauth.agentIdParameter, NEUTRAL.agentIdParameter)
   })
-  caseTest(sdk, 'K3a-MCP', 'oauth', 'oauth.agentIdParameter equals the connector\'s published authorization parameter', null, LATER.pageId)
+  // Was a todo naming C-PAGE-ID: K1d now publishes the parameter as AUTHORIZE_EXTENSION.agentIdParam.
+  caseTest(sdk, 'K3a-MCP', 'oauth', 'oauth.agentIdParameter equals the connector\'s published authorization parameter (AUTHORIZE_EXTENSION.agentIdParam)', async () => {
+    const { c, pub } = await both()
+    assert.equal(c.MCP.oauth.agentIdParameter, pub.AUTHORIZE_EXTENSION?.agentIdParam)
+  })
 
   caseTest(sdk, 'K3a-MCP', 'id', 'id.pattern equals ID_GRAMMAR.pattern (source, no flags) and gives its verdicts at lengths 0, 1, 64, 65', async () => {
     const { c, pub } = await both()

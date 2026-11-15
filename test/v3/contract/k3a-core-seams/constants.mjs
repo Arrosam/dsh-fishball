@@ -222,7 +222,6 @@ export const OAUTH_CLIENT = Object.freeze({
 
 /** Owners of the rows K3a cannot check (behaviour; .runtime/reports/v3-remaining-plan.md §5, §6). */
 export const LATER = Object.freeze({
-  pageId: 'C-PAGE-ID (the connector publishes the authorization parameter `agent_id`; then compare core\'s copy with it)',
   linkSave: 'F-LINK-SAVE (core reads DSH_AGENT_TOKEN and dsh-instance-child.targetUrl, saves fishball-core/hosted-agent, unsets the reference; Connect)',
   host: 'I-HOST (the instance\'s child-side row writes the imported token and the target URL)',
   ui: 'F-UI (fishball-ui: logs fishball-core-missing without core; draws only through fishballInstance.ui)',

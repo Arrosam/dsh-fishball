@@ -266,12 +266,11 @@ function pageCases(sdk) {
   const derivedDoc = () => [...commentBlocks(schemaCode().get(path.join(path.relative(process.cwd(), FILES.schemaDir), 'constants.js')) ?? ''), ...markdownBlocks(readme(FILES.schemaDir))]
     .filter((b) => b.includes('DERIVED_AGENT_ID')).join('\n')
   docRows(sdk, ID.page, 13, 'DERIVED_AGENT_ID', DERIVED_ID.inputDoc, derivedDoc)
-  todos(sdk, ID.page, LATER.pageId, [
-    ['B1', 'Authorize binds at once with the agent_id passed in the authorization request (id-invalid / id-taken on the page)'],
-    ['B2', 'a client that passes no id is bound to cid- + 16 base32 of SHA-256(client id URL)'],
-    ['B3', 'the same token with the same id reconnects the same principal (name, sessions, queued events kept); another id is already-paired'],
-    ['B4', 'no refresh chain ends by age: only reuse or a disable / delete of its entry ends it'],
-  ])
+  // B1–B4 (the page id's behaviour, C-PAGE-ID) run in the module suites, not here:
+  // B1 agent_id binds at once, B2 the derived cid- id: dsh-connector/oauth-web/page-id-cases.mjs
+  // (AUTH-UC-10, AUTH-UC-15, AUTH-EP-15, AUTH-BVA-10); B3 reconnect / already-paired: the same file
+  // (AUTH-UC-16, AUTH-UC-17, AUTH-DT-08) and dsh-connector/pairs/reconnect-cases.mjs; B4 no chain
+  // cap: dsh-connector/oauth/chain-cases.mjs (AUTH-UC-19, AUTH-BVA-11) and oauth-web AUTH-ST-05.
 }
 
 // ================================================================================================

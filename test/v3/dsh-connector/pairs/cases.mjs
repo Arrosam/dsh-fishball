@@ -60,7 +60,7 @@ const alreadyPaired = (idMatches, pair) => ({
   bound: { idMatches, boundId: pair.id, name: pair.name, pairedAt: pair.pairedAt, lastSeenAt: pair.lastSeenAt },
   advice: idMatches ? PAIR_ADVICE.idMatches : PAIR_ADVICE.idDiffers,
 })
-const refusal = (code) => ({ ok: false, code })
+export const refusal = (code) => ({ ok: false, code })
 const FULL = Object.freeze({ scope: SCOPE.full })
 const pairOnly = (reason) => ({ scope: SCOPE.pair, reason })
 const NOT_PAIRED = pairOnly(INSUFFICIENT_SCOPE_REASON.notPaired)
@@ -77,7 +77,7 @@ async function holders(w, names) {
   for (const [i, name] of names.entries()) await bind(w, `holder-${i}`, ID.holder(i), name)
 }
 /** Runs a refused call: exactly `expected` (nothing leaked) and every pair unchanged. */
-async function assertRefused(w, call, expected) {
+export async function assertRefused(w, call, expected) {
   const before = w.snapshot()
   assert.deepEqual(await call(), expected)
   assert.deepEqual(w.snapshot(), before, 'a refusal changes nothing')
