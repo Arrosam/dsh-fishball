@@ -48,7 +48,7 @@ export const CORE = { name: 'fishball-core', dir: path.join(REPO, 'packages', 'c
  * V3 R-EMBED: `dsh-connector-ui`, the only package with host-DSH UI. The V2 main clients moved into
  * its flat client chunks (DSH serves only `client.*.js` beside the `./client` entry).
  * V3 U-SHELL splits the moved connector UI, with no behaviour change, into the flat parts
- * `client.shell.js`, `client.marks.js`, `client.attention.js` and `client.records.js` (v3-w3 briefs
+ * `client.shell.js`, `client.marks.js` and `client.attention.js` (U-DRAW removed `client.records.js`: no inline records, requirements 1.41 Q-G4; v3-w3 briefs
  * F2 and Q-7; layout relayed by Fishball from dev/v3-u-shell `096da986`): the frame, the styles and
  * the page dictionaries (the card records' words included) are the shell's. The instance's Plugins card stays
  * `client.instance.js`. The status line stays the instance's `src/child-settings/client.status.js`.
@@ -61,7 +61,7 @@ export const EMBED_UI = Object.freeze({
   instanceCard: path.join(REPO, 'packages', 'dsh-connector-ui', 'src', 'client', 'client.instance.js'),
   statusLine: path.join(REPO, 'packages', 'dsh-instance', 'src', 'child-settings', 'client.status.js'),
   /** The served package-local chunks that carry the moved UI (its words and controls), U-SHELL's split. */
-  clientChunks: Object.freeze(['client.shell.js', 'client.marks.js', 'client.attention.js', 'client.records.js', 'client.instance.js']),
+  clientChunks: Object.freeze(['client.shell.js', 'client.marks.js', 'client.attention.js', 'client.instance.js']),
   /** DSH's boot page graph global (dsh-client-modules, both SDKs). */
   bootGraph: /globalThis\["__DSH_BOOT__"\]\s*=\s*(\{.*?\});?\s*<\/script>/s,
 })

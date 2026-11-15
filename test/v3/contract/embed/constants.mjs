@@ -33,7 +33,7 @@ export const EMBED = Object.freeze({
     shell: 'src/client/client.shell.js',
     marks: 'src/client/client.marks.js',
     attention: 'src/client/client.attention.js',
-    records: 'src/client/client.records.js',
+    // Q-G4 = A: client.records.js is removed (no inline records).
     instance: 'src/client/client.instance.js',
   }),
   cardChunk: 'src/client/client.instance.js',
@@ -136,7 +136,8 @@ export const INTEGRATION = Object.freeze({
 
 /** The scripted main page's fake services (inject lists of the V2 main clients). */
 export const PAGE = Object.freeze({
-  services: Object.freeze(['slots', 'locale', 'configForms', 'layout']),
+  // #77 (R-UI-03 amended): the window's Retry link opens the instance's settings page through DSH's pluginNavigation.
+  services: Object.freeze(['slots', 'locale', 'configForms', 'layout', 'pluginNavigation']),
   lang: 'en',
 })
 

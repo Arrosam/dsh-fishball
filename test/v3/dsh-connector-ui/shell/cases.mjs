@@ -17,7 +17,10 @@
  * world.mjs; a scripted main page, ../embed/page.mjs). Integration rows run at integration only
  * (FBTEST_V3_INTEGRATION=1). The real locator is I-HOST's (W4): rows that need a real child and its
  * cookie redemption are `todo` for X-MATRIX / E2E-UI; marks, the latch and the records are U-MARKS',
- * U-ATTN's and U-RECORDS'.
+ * U-ATTN's and U-RECORDS'. Amended for U-DRAW (requirements 1.34, 1.38 Q-U1, 1.41 Q-G3 / Q-G4, #77):
+ * no records, the Retry link instead of the Retry button and route, connector-missing without a
+ * local connector, and the services answer's connector / page flags; each changed row names its
+ * requirement in a comment.
  */
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
@@ -31,8 +34,8 @@ import { FOLDER } from '../../contract/k3-host-services/constants.mjs'
 import { caseTest, integrationCase as gatedCase } from '../../contract/package-boundaries/cases.mjs'
 import { JS_FILE, V3 } from '../../contract/package-boundaries/constants.mjs'
 import {
-  API_VERSION, ASK_TOOL, BUDGET, CHILD, CONTROL, DIAGNOSTIC, FAKE, HOST_CONSTANTS, HOST_TRICK, HTTP_OK, INTEGRATION, LATER, LOOPBACK, PAGE_NAME,
-  REFUSAL_TEXT, RETRY_LABEL, ROUTE, ROUTE_REFUSAL, SCENARIO, SERVICE, SLOT, SPLIT, V2_ANSWER_ROUTE,
+  API_VERSION, BUDGET, CHILD, CONNECTOR_DIAGNOSTIC, DIAGNOSTIC, FAKE, HOST_CONSTANTS, HOST_TRICK, HTTP_OK, INTEGRATION, LATER, LOOPBACK, PAGE_NAME,
+  REFUSAL_TEXT, RETRY, RETRY_LABEL, ROUTE, ROUTE_REFUSAL, SCENARIO, SERVICE, SLOT, SPLIT, V2_ANSWER_ROUTE,
 } from './constants.mjs'
 import {
   bySlot, frameTarget, homeFilesHolding, hostFor, launchToken, logLines, logMessages, openFishball, openPage, pageEntries, press, recordsOf,
@@ -52,13 +55,14 @@ async function embedTokens() {
 
 /** Lines of the host's log that carry the diagnostic. */
 const diagnostics = (setup) => logMessages(setup).filter((text) => text.includes(DIAGNOSTIC))
+/** Q-U1: lines of the host's log that carry connector-missing. */
+const connectorDiagnostics = (setup) => logMessages(setup).filter((text) => text.includes(CONNECTOR_DIAGNOSTIC))
 const admissions = (setup) => recordsOf(setup, FAKE.kind.admit)
 const registeredTools = (setup) => recordsOf(setup, FAKE.kind.register)
 
-/** Every node of a tree a user could answer through (R-UI-12). */
-const controls = (tree) => findAll(tree, (n) => CONTROL.tags.includes(n.tag) || CONTROL.roles.includes(n.props.role) || typeof n.props[CONTROL.handler] === 'function')
-/** A pressable whose text is the Retry label, outside every frame (R-UI-03). */
-const retryOf = (opened) => opened.pressables().find((n) => textOf(n).includes(RETRY_LABEL))
+/** #77: the Retry link (labelled Retry) of a not-ready window, and embed-UI's former Retry button, which must be gone. */
+const retryLinkOf = (opened) => findAll(opened.view.tree(), (n) => n.props[RETRY.link] !== undefined && textOf(n).includes(RETRY_LABEL))[0]
+const frameRetries = (opened) => findAll(opened.view.tree(), (n) => n.props[RETRY.button] !== undefined)
 
 /** UIM-EP-02 rows 1, 2, 3, 5: the frame host is the page's lower-cased loopback name, with the child's port. */
 async function assertFramedUnder(t, sdk, name) {
@@ -94,8 +98,18 @@ async function shellOf(t, sdk, scenario) {
   assert.deepEqual(page.failed(), [], 'failed client plugins (R-ARCH-02)')
   return { setup, page, regs: page.embed() }
 }
-const assertNoPage = (regs) => assert.deepEqual(regs.filter((r) => r.slot === SLOT.main && r.key === SLOT.pageKey), [], 'a Fishball page was registered')
-const assertNoMarks = (regs) => assert.deepEqual(regs.filter((r) => SLOT.marks.includes(r.slot)), [], 'marks or Hand over were registered without the hand-over service')
+// Q-G3: with a connector but no usable instance the Fishball page is the hint, never a frame.
+const HINT_TEXT = "No Fishball child instance is running here. Open your Fishball instance's own page."
+async function assertHintPage(page) {
+  const opened = await openFishball(page, { done: (text) => text.includes(HINT_TEXT) })
+  assert.equal(opened.iframe(), null, 'a frame without a usable instance')
+  assert.ok(opened.text().includes(HINT_TEXT), 'no hint; the page shows ' + JSON.stringify(opened.text()))
+}
+/** Q-U1: without a local connector embed-UI draws nothing and contributes nothing. */
+const assertNothingDrawn = (setup, regs) => {
+  assert.deepEqual(regs.map((r) => r.slot), [], 'embed-UI drew something without a local connector')
+  assert.deepEqual(registeredTools(setup), [], 'tools contributed without a local connector')
+}
 const assertOneEntry = (regs) => assert.equal(bySlot(regs, SLOT.entry).length, 1, 'embed-UI\'s sidebar entries: ' + JSON.stringify(bySlot(regs, SLOT.entry).map((r) => r.id ?? r.key)))
 const assertNoBrand = (regs) => assert.deepEqual(regs.filter((r) => SLOT.brand.includes(r.slot)), [], 'a sidebar.brand.* slot was used')
 const assertCard = (regs) => assert.ok(regs.some((r) => SLOT.card.includes(r.slot)), 'no Plugins card (' + SLOT.card.join(', ') + ')')
@@ -112,6 +126,11 @@ const assertRefusal = (answer, refusal) => {
   assert.equal(refusalCode(answer), refusal.code, 'code in ' + answer.text)
 }
 const assertDiagnostics = (setup, n) => assert.equal(diagnostics(setup).length, n, DIAGNOSTIC + ' lines: ' + JSON.stringify(diagnostics(setup)))
+/** Q-U1: exactly `n` connector-missing lines, and then no instance-missing line. */
+const assertConnectorMissing = (setup, n) => {
+  assert.equal(connectorDiagnostics(setup).length, n, CONNECTOR_DIAGNOSTIC + ' lines: ' + JSON.stringify(connectorDiagnostics(setup)))
+  assertDiagnostics(setup, 0)
+}
 
 export function registerUShellCases(sdk) {
   registerCleanup()
@@ -130,14 +149,16 @@ export function registerUShellCases(sdk) {
     assert.ok(target.href.includes(last.ticket), 'the frame does not navigate to the URL admit returned')
     assert.ok(admissions(setup).length >= asked.length)
   })
-  integrationCase(sdk, 'UIM-UC-01', 'main 3', 'the child status and Retry are drawn outside the frame', async (t) => {
+  // #77, R-UI-03 amended: the window carries the child's state outside the frame; Retry is on the instance's own settings page.
+  integrationCase(sdk, 'UIM-UC-01', 'main 3', 'the child state is drawn outside the frame; embed-UI draws no Retry button of its own (#77)', async (t) => {
     const page = await openPage(t, sdk, await hostFor(sdk, SCENARIO.all))
     const opened = await openFishball(page)
-    const retry = retryOf(opened)
-    assert.ok(retry, 'no Retry control on the Fishball page')
     const frame = opened.iframe()
     assert.ok(frame, 'no frame')
-    assert.ok(!findAll(frame.children, () => true).includes(retry), 'Retry sits inside the frame')
+    const state = findAll(opened.view.tree(), (n) => n.props[RETRY.state] === CHILD.ready)[0]
+    assert.ok(state, 'no state tag outside the frame')
+    assert.ok(!findAll(frame.children, () => true).includes(state), 'the state sits inside the frame')
+    assert.deepEqual(frameRetries(opened), [], 'a Retry button on the window')
   })
   integrationCase(sdk, 'UIM-UC-01', 'A1', 'the user changes the UI language → embed-UI asks for a new admission in that language', async (t) => {
     const setup = await hostFor(sdk, SCENARIO.all)
@@ -151,19 +172,19 @@ export function registerUShellCases(sdk) {
     assert.equal(after.at(-1).lang, CHILD.langs.zh)
   })
   caseTest(sdk, 'UIM-UC-01', 'A2', 'the frame reloads → a new ticket is used; the old one is rejected by the child', null, LATER.child)
-  integrationCase(sdk, 'UIM-UC-01', 'E1', 'the child is down → the status shows its code; Retry restarts it and the page is framed again', async (t) => {
+  // #77, R-UI-03 amended: the Retry link opens the instance's settings page (pluginNavigation.openBundle); embed-UI never retries the child itself.
+  integrationCase(sdk, 'UIM-UC-01', 'E1', 'the child is down → the status shows its code; the Retry link opens the instance settings page; embed-UI does not retry', async (t) => {
     const setup = await hostFor(sdk, SCENARIO.down)
     const page = await openPage(t, sdk, setup)
     const opened = await openFishball(page, { done: (text) => text.includes(CHILD.exited) })
     assert.ok(opened.text().includes(CHILD.exited), 'the status does not show ' + CHILD.exited + '; it shows ' + JSON.stringify(opened.text()))
     assert.equal(opened.iframe(), null, 'a frame while the child is down')
-    const retry = retryOf(opened)
-    assert.ok(retry, 'no Retry control while the child is down')
-    await press(retry)
-    await until(() => recordsOf(setup, FAKE.kind.retry).length > 0, BUDGET.readyMs, BUDGET.pollMs)
-    assert.deepEqual(recordsOf(setup, FAKE.kind.retry).map((r) => r.from), [CHILD.failed], 'Retry reached the locator once, from failed')
-    await until(() => opened.iframe() !== null, BUDGET.readyMs, BUDGET.pollMs)
-    assert.ok(opened.iframe(), 'the page was not framed again after Retry made the child ready')
+    assert.deepEqual(frameRetries(opened), [], 'a Retry button on the window')
+    const link = retryLinkOf(opened)
+    assert.ok(link, 'no Retry link while the child is down')
+    await press(link)
+    assert.deepEqual(page.navigations, [{ openBundle: RETRY.bundle }], 'the Retry link did not open the instance settings page')
+    assert.deepEqual(recordsOf(setup, FAKE.kind.retry), [], 'embed-UI retried the child itself')
   })
   caseTest(sdk, 'UIM-UC-01', 'E2', 'replaying a used admission URL is rejected by the child', null, LATER.child)
   integrationCase(sdk, 'UIM-UC-01', 'E3', 'the host DSH opened as localhost → the frame is under localhost with the child\'s port', async (t) => {
@@ -199,29 +220,21 @@ export function registerUShellCases(sdk) {
     assertOneEntry(regs)
     assertNoBrand(regs)
   })
-  integrationCase(sdk, 'UIM-UC-04', 'main 2', 'an ask_agent view embed-UI registers, if any, renders no answer control at the call and at its result (R-UI-12)', async (t) => {
-    const { page } = await shellOf(t, sdk, SCENARIO.all)
-    const views = page.entries(SLOT.toolview).filter((e) => e.options.key === ASK_TOOL && page.embed().some((r) => r.options === e.options))
-    for (const entry of views) {
-      for (const phase of ['start', 'result']) {
-        const rendered = await page.mount(entry, { phase, toolName: ASK_TOOL, callId: 'fbtest-call', block: { name: ASK_TOOL, args: {}, input: {}, output: {} }, useDisclosure: () => [false, () => {}], openFile() {}, loadImage: async () => null })
-        assert.deepEqual(controls(rendered.tree()).map((n) => n.tag + (n.props.role ? '[' + n.props.role + ']' : '')), [], 'controls in the ask_agent view at ' + phase)
-        rendered.unmount()
-      }
-    }
+  // Q-G4 = A (R-UI-12 amended, R-UI-13 withdrawn): embed-UI registers no ask_agent view and no record at all, so no answer control can exist.
+  integrationCase(sdk, 'UIM-UC-04', 'main 2', 'embed-UI registers no tool.call.toolview and no conversation.chat.node entry (no records, no answer control; Q-G4)', async (t) => {
+    const { regs } = await shellOf(t, sdk, SCENARIO.all)
+    assert.deepEqual(regs.filter((r) => SLOT.records.includes(r.slot)).map((r) => r.slot), [])
   })
   caseTest(sdk, 'UIM-UC-04', 'main 2', "embed-UI's shipped code names no ask_agent answer route (the V2 Allow once / Reject path is gone; R-UI-12)", async () => {
     const hits = [...await embedTokens()].filter(([, t]) => t.strings.some((s) => s.includes(V2_ANSWER_ROUTE))).map(([file]) => file)
     assert.deepEqual(hits, [])
   })
-  caseTest(sdk, 'UIM-UC-04', 'main 2', "S1's conversation shows a read-only record row for its ask_agent call; S1 waits", null, LATER.records)
-  caseTest(sdk, 'UIM-UC-04', 'main 3', 'Fishball answers → the same record shows the answer', null, LATER.records)
+  // Q-G4 = A: the former records rows (main 2 record row, main 3 answer, A1 records in C + U) are withdrawn; the row above covers their absence.
   integrationCase(sdk, 'UIM-UC-04', 'A1', 'C + U (no instance): the sidebar entry is still the one fish entry; the brand is unchanged', async (t) => {
     const { regs } = await shellOf(t, sdk, SCENARIO.connector)
     assertOneEntry(regs)
     assertNoBrand(regs)
   })
-  caseTest(sdk, 'UIM-UC-04', 'A1', 'C + U: records are drawn as in the main flow', null, LATER.records)
   integrationCase(sdk, 'UIM-UC-04', 'A2', 'without embed-UI: no Fishball package registers anything in the host page, so S1 shows DSH\'s generic tool-call row', async (t) => {
     const setup = await hostFor(sdk, SCENARIO.noEmbed)
     const page = await openPage(t, sdk, setup)
@@ -239,57 +252,59 @@ export function registerUShellCases(sdk) {
   }
 
   // ============================================================ UIM-EP-01: what embed-UI registers by service availability
-  integrationCase(sdk, 'UIM-EP-01', 1, 'no service → embed-UI registers nothing and logs exactly one instance-missing line', async (t) => {
+  // Q-U1 (requirements 1.38): with no service there is no local connector: one connector-missing error replaces instance-missing.
+  integrationCase(sdk, 'UIM-EP-01', 1, 'no service → embed-UI registers nothing and logs exactly one connector-missing line, no instance-missing (Q-U1)', async (t) => {
     const { setup, regs } = await shellOf(t, sdk, SCENARIO.none)
-    assert.deepEqual(regs.map((r) => r.slot), [])
-    assert.deepEqual(registeredTools(setup), [])
+    assertNothingDrawn(setup, regs)
+    assertConnectorMissing(setup, 1)
+  })
+  // Q-U1, R-UI-09 amended: an instance with no local connector → one error, nothing shown (the page, frame and card included).
+  integrationCase(sdk, 'UIM-EP-01', 2, 'dshInstanceChild only → nothing drawn, no tools; one connector-missing line (Q-U1, R-UI-09)', async (t) => {
+    const { setup, regs } = await shellOf(t, sdk, SCENARIO.child)
+    assertNothingDrawn(setup, regs)
+    assertConnectorMissing(setup, 1)
+  })
+  // Q-G3 (requirements 1.41): with the connector but no instance the Fishball page is the hint, not absent.
+  integrationCase(sdk, 'UIM-EP-01', 3, 'connector services, no dshInstanceChild → the Fishball page is the hint, no frame; one instance-missing line (Q-G3)', async (t) => {
+    const { setup, page } = await shellOf(t, sdk, SCENARIO.connector)
+    await assertHintPage(page)
     assertDiagnostics(setup, 1)
   })
-  integrationCase(sdk, 'UIM-EP-01', 2, 'dshInstanceChild only → page, frame, status, Retry and the Plugins card; no marks or Hand over; no instance-missing', async (t) => {
-    const { setup, page, regs } = await shellOf(t, sdk, SCENARIO.child)
-    assert.equal(pageEntries(page).length, 1, 'Fishball page entries')
-    assertCard(regs)
-    assertNoMarks(regs)
-    const opened = await openFishball(page)
-    assert.ok(opened.iframe(), 'no frame')
-    assert.ok(retryOf(opened), 'no Retry')
-    assert.deepEqual(registeredTools(setup), [], 'tools contributed with no connector')
-    assertDiagnostics(setup, 0)
-  })
-  integrationCase(sdk, 'UIM-EP-01', 3, 'connector services, no dshInstanceChild → no page and no frame; one instance-missing line', async (t) => {
-    const { setup, regs } = await shellOf(t, sdk, SCENARIO.connector)
-    assertNoPage(regs)
-    assertDiagnostics(setup, 1)
-  })
+  // Requirements 1.34: marks, Hand over, the fish light and the tools are covered by U-DRAW against the real UI backend.
   caseTest(sdk, 'UIM-EP-01', 3, 'connector services, no dshInstanceChild → marks and Hand over', null, LATER.marks)
-  caseTest(sdk, 'UIM-EP-01', 3, 'connector services, no dshInstanceChild → fish with dots and the attention tools contributed', null, LATER.attn)
-  integrationCase(sdk, 'UIM-EP-01', 4, 'all three services → the page with its frame, status and Retry, and the Plugins card; no instance-missing', async (t) => {
+  caseTest(sdk, 'UIM-EP-01', 3, 'connector services, no dshInstanceChild → fish light and the contributed tools', null, LATER.attn)
+  // #77: the ready window has no Retry button; Retry is on the instance's settings page.
+  integrationCase(sdk, 'UIM-EP-01', 4, 'all services → the page with its frame, and the Plugins card; no Retry button; no diagnostic', async (t) => {
     const { setup, page, regs } = await shellOf(t, sdk, SCENARIO.all)
     assert.equal(pageEntries(page).length, 1, 'Fishball page entries')
     assertCard(regs)
     const opened = await openFishball(page)
     assert.ok(opened.iframe(), 'no frame')
-    assert.ok(retryOf(opened), 'no Retry')
+    assert.deepEqual(frameRetries(opened), [], 'a Retry button on the window')
     assertDiagnostics(setup, 0)
+    assertConnectorMissing(setup, 0)
   })
-  caseTest(sdk, 'UIM-EP-01', 4, 'all three services → marks, Hand over, fish with dots and the attention tools too', null, LATER.marks)
-  integrationCase(sdk, 'UIM-EP-01', 5, 'an older locator (apiVersion 2) is treated as absent: no page, no frame, exactly one instance-missing line (K)', async (t) => {
-    const { setup, regs } = await shellOf(t, sdk, SCENARIO.older)
-    assertNoPage(regs)
+  caseTest(sdk, 'UIM-EP-01', 4, 'all services → marks, Hand over, fish light and the contributed tools too', null, LATER.marks)
+  // Q-G3: an older locator with the connector is "no instance": the hint.
+  integrationCase(sdk, 'UIM-EP-01', 5, 'an older locator (apiVersion 2) is treated as absent: the hint, no frame, exactly one instance-missing line (K, Q-G3)', async (t) => {
+    const { setup, page } = await shellOf(t, sdk, SCENARIO.older)
+    await assertHintPage(page)
     assert.deepEqual(recordsOf(setup, FAKE.kind.admit), [], 'the older locator was asked for an admission')
     assertDiagnostics(setup, 1)
   })
-  integrationCase(sdk, 'UIM-EP-01', 6, 'the instance row disabled (no dshInstanceChild) with the connector services → as #3: no page, one instance-missing line', async (t) => {
-    const { setup, regs } = await shellOf(t, sdk, SCENARIO.disabled)
-    assertNoPage(regs)
+  // Q-G3: as #3, the hint instead of no page.
+  integrationCase(sdk, 'UIM-EP-01', 6, 'the instance row disabled (no dshInstanceChild) with the connector services → as #3: the hint, one instance-missing line', async (t) => {
+    const { setup, page } = await shellOf(t, sdk, SCENARIO.disabled)
+    await assertHintPage(page)
     assertDiagnostics(setup, 1)
   })
-  caseTest(sdk, 'UIM-EP-01', 6, 'the instance disabled → marks, Hand over, fish with dots and the tools, as #3', null, LATER.marks)
-  integrationCase(sdk, 'UIM-EP-01', '1 (BVA)', 'opening the page twice in one process adds no second instance-missing line', async (t) => {
+  caseTest(sdk, 'UIM-EP-01', 6, 'the instance disabled → marks, Hand over, fish light and the tools, as #3', null, LATER.marks)
+  // Q-U1: the once-per-activation diagnostic is now connector-missing.
+  integrationCase(sdk, 'UIM-EP-01', '1 (BVA)', 'opening the page twice in one process adds no second connector-missing line', async (t) => {
     const setup = await hostFor(sdk, SCENARIO.none)
     await openPage(t, sdk, setup)
     await openPage(t, sdk, setup)
-    assertDiagnostics(setup, 1)
+    assertConnectorMissing(setup, 1)
   })
 
   // ============================================================ UIM-EP-02: main page hostname and the child frame
@@ -307,47 +322,43 @@ export function registerUShellCases(sdk) {
   caseTest(sdk, 'UIM-EP-02', 6, 'a ticket replayed under another loopback name is refused (bound to its hostname)', null, LATER.child)
 
   // ============================================================ UIM-DT-01 rows 3, 7, 7b
-  integrationCase(sdk, 'UIM-DT-01', 3, 'U alone: no page, marks, dots or tools; instance-missing once', async (t) => {
+  // Q-U1: U alone has no local connector: one connector-missing error replaces instance-missing.
+  integrationCase(sdk, 'UIM-DT-01', 3, 'U alone: no page, marks, light or tools; connector-missing once (Q-U1)', async (t) => {
     const { setup, regs } = await shellOf(t, sdk, SCENARIO.none)
-    assertNoPage(regs)
-    assertNoMarks(regs)
-    assert.deepEqual(regs.map((r) => r.slot), [], 'U alone drew something')
-    assert.deepEqual(registeredTools(setup), [], 'tools contributed')
-    assertDiagnostics(setup, 1)
+    assertNothingDrawn(setup, regs)
+    assertConnectorMissing(setup, 1)
   })
-  integrationCase(sdk, 'UIM-DT-01', 7, 'I + U, remote target (no local connector): the page with status and Retry; no marks, no tools here', async (t) => {
-    const { setup, page, regs } = await shellOf(t, sdk, SCENARIO.child)
-    assert.equal(pageEntries(page).length, 1, 'Fishball page entries')
-    assertNoMarks(regs)
-    assert.deepEqual(registeredTools(setup), [], 'tools contributed with no connector')
-    const opened = await openFishball(page)
-    assert.ok(opened.iframe(), 'the frame is the local child')
-    assert.ok(retryOf(opened), 'no Retry')
+  // Q-U1, R-UI-09 amended: an instance with no local connector → one error and nothing shown; the child's page opens from the instance's settings page.
+  integrationCase(sdk, 'UIM-DT-01', 7, 'I + U, remote target (no local connector): nothing drawn, no tools; connector-missing once (Q-U1, R-UI-09)', async (t) => {
+    const { setup, regs } = await shellOf(t, sdk, SCENARIO.child)
+    assertNothingDrawn(setup, regs)
+    assertConnectorMissing(setup, 1)
   })
-  caseTest(sdk, 'UIM-DT-01', 7, 'I + U: the sidebar fish is unlit and never lights (no dots, no latch here)', null, LATER.attn)
   caseTest(sdk, 'UIM-DT-01', 7, 'I + U: no relay over the lifecycle wire', null, LATER.relay)
-  integrationCase(sdk, 'UIM-DT-01', '7b', 'I + U, target blank: the page works and the status reports target-unreachable', async (t) => {
-    const { page, regs } = await shellOf(t, sdk, SCENARIO.blank)
-    assert.equal(pageEntries(page).length, 1, 'Fishball page entries')
-    assertNoMarks(regs)
-    const opened = await openFishball(page, { done: (text) => text.includes(CHILD.unreachable.code) || text.includes(CHILD.unreachable.state) })
-    assert.ok(opened.text().includes(CHILD.unreachable.code) || opened.text().includes(CHILD.unreachable.state), 'no target-unreachable in ' + JSON.stringify(opened.text()))
+  // Q-U1: a blank target means no local connector either, so embed-UI draws nothing; the target status is the instance's settings page's (R-UI-03 amended).
+  integrationCase(sdk, 'UIM-DT-01', '7b', 'I + U, target blank (no local connector): nothing drawn; connector-missing once (Q-U1)', async (t) => {
+    const { setup, regs } = await shellOf(t, sdk, SCENARIO.blank)
+    assertNothingDrawn(setup, regs)
+    assertConnectorMissing(setup, 1)
   })
 
   // ============================================================ R-EMBED's U-SHELL row, and the split's definition of done
-  integrationCase(sdk, 'R-EMBED', 'U-SHELL', 'the host row follows the services at runtime: with none it loads, draws nothing and logs one instance-missing; with the locator it draws the one sidebar entry, no brand override', async (t) => {
+  // Q-U1: with none it logs connector-missing; the one sidebar entry needs the connector (with the locator).
+  integrationCase(sdk, 'R-EMBED', 'U-SHELL', 'the host row follows the services at runtime: with none it loads, draws nothing and logs one connector-missing; with the connector and the locator it draws the one sidebar entry, no brand override', async (t) => {
     const none = await shellOf(t, sdk, SCENARIO.none)
     assert.deepEqual(none.regs, [])
-    assertDiagnostics(none.setup, 1)
-    const child = await shellOf(t, sdk, SCENARIO.child)
-    assertOneEntry(child.regs)
-    assertNoBrand(child.regs)
+    assertConnectorMissing(none.setup, 1)
+    const all = await shellOf(t, sdk, SCENARIO.all)
+    assertOneEntry(all.regs)
+    assertNoBrand(all.regs)
   })
-  caseTest(sdk, 'U-SHELL', 'split', 'the client is split into the flat parts client.shell.js, client.marks.js, client.attention.js, client.records.js beside client.js (no folders)', () => {
+  // Q-G4 = A: client.records.js is gone from the split.
+  caseTest(sdk, 'U-SHELL', 'split', 'the client is split into the flat parts client.shell.js, client.marks.js, client.attention.js beside client.js (no folders); client.records.js is gone (Q-G4)', () => {
     const entries = fs.readdirSync(clientDir(), { withFileTypes: true })
     assert.deepEqual(entries.filter((e) => e.isDirectory()).map((e) => e.name), [], 'folders in ' + SPLIT.clientDir.join('/'))
     const names = entries.map((e) => e.name)
     for (const file of [SPLIT.entry, ...SPLIT.parts]) assert.ok(names.includes(file), 'missing ' + file)
+    assert.ok(!names.includes(SPLIT.withdrawn), SPLIT.withdrawn + ' still exists')
   })
   caseTest(sdk, 'U-SHELL', 'split', "every file beside embed-UI's client entry is a chunk DSH serves (client.<name>.js)", () => {
     assert.deepEqual(fs.readdirSync(clientDir()).filter((f) => f !== SPLIT.entry && !SPLIT.chunk.test(f)), [])
@@ -365,11 +376,18 @@ export function registerUShellCases(sdk) {
   caseTest(sdk, 'U-SHELL', 'done', 'the Plugins card starts model sync on the Plugins page (R-HOST-07) in a browser', null, LATER.e2e)
 
   // ============================================================ the host half's constants equal the frozen contracts
-  caseTest(sdk, 'U-SHELL', 'K3/K2', "the host half's restated service names and apiVersion equal K3's Context members and K2's TOOLS_API", async () => {
+  // Requirements 1.34: embed-UI follows dshConnectorUi (C-UI-BACKEND's UI_SERVICE), no longer dshConnectorHandover. Values are compared,
+  // not member names, because the host half's own key names are not part of the contract.
+  caseTest(sdk, 'U-SHELL', 'K3/K2', "the host half's restated service names and apiVersion equal K3's dshInstanceChild, C-UI-BACKEND's dshConnectorUi and K2's TOOLS_API; it names no dshConnectorHandover", async () => {
     const { SERVICE: own } = await import(pathToFileURL(HOST_CONSTANTS.file).href)
     const { TOOLS_API } = await import(pathToFileURL(HOST_CONSTANTS.tools).href)
-    for (const service of [SERVICE.child, SERVICE.handover]) assert.ok(serviceMembers(k3(), service).get('apiVersion'), 'K3 declares ' + service)
-    assert.deepEqual({ child: own.child, handover: own.handover, tools: own.tools, apiVersion: own.apiVersion }, { child: SERVICE.child, handover: SERVICE.handover, tools: TOOLS_API.service, apiVersion: TOOLS_API.version })
+    const { UI_SERVICE } = await import(pathToFileURL(HOST_CONSTANTS.ui).href)
+    assert.ok(serviceMembers(k3(), SERVICE.child).get('apiVersion'), 'K3 declares ' + SERVICE.child)
+    assert.equal(UI_SERVICE.name, SERVICE.ui)
+    const names = Object.values(own)
+    for (const name of [SERVICE.child, SERVICE.ui, TOOLS_API.service]) assert.ok(names.includes(name), 'the host half does not name ' + name)
+    assert.ok(!names.includes(HOST_CONSTANTS.handoverService), 'the host half still names ' + HOST_CONSTANTS.handoverService)
+    assert.equal(own.apiVersion, TOOLS_API.version)
     assert.deepEqual([...vocabulary(k3(), serviceMembers(k3(), SERVICE.child).get('apiVersion').type).literals], [String(own.apiVersion)], 'K3 apiVersion')
   })
   caseTest(sdk, 'U-SHELL', 'K3', "the host half's loopback names, admit views, langs and refusal codes equal K3's LoopbackHostname, AdmitView, AdmitLang and AdmitErrorCode", async () => {
@@ -382,12 +400,15 @@ export function registerUShellCases(sdk) {
   })
 
   // ============================================================ the host routes (relayed surface; design §4.2)
-  integrationCase(sdk, 'U-SHELL', 'routes', 'GET services answers which services are usable now, per UIM-EP-01 partition (page ⇔ a v1 locator; handover and tools ⇔ the connector services)', async () => {
-    for (const [scenario, expected] of [[SCENARIO.none, [false, false, false]], [SCENARIO.child, [true, false, false]], [SCENARIO.connector, [false, true, true]], [SCENARIO.all, [true, true, true]], [SCENARIO.older, [false, false, false]], [SCENARIO.disabled, [false, true, true]]]) {
+  // U-DRAW: availability is {connector, page} (+ legacy until C-WIRE); the handover and tools flags are gone; ui is {} without the connector.
+  integrationCase(sdk, 'U-SHELL', 'routes', 'GET services answers which services are usable now, per UIM-EP-01 partition (connector ⇔ a v1 dshConnectorUi; page ⇔ a v1 locator; no handover or tools flag)', async () => {
+    for (const [scenario, expected] of [[SCENARIO.none, [false, false, false]], [SCENARIO.child, [false, true, false]], [SCENARIO.connector, [true, false, false]], [SCENARIO.all, [true, true, false]], [SCENARIO.older, [true, false, false]], [SCENARIO.disabled, [true, false, false]]]) {
       const answer = await routeCall(await hostFor(sdk, scenario), PAGE_NAME.ipv4, 'GET', ROUTE.services)
       assert.equal(answer.status, HTTP_OK, scenario.label + ': ' + answer.text)
       assert.deepEqual(ROUTE.servicesKeys.filter((k) => !(k in answer.json)), [], scenario.label + ' keys')
-      assert.deepEqual([answer.json.page, answer.json.handover, answer.json.tools], expected, scenario.label)
+      assert.deepEqual(ROUTE.removedKeys.filter((k) => k in answer.json), [], scenario.label + ' still has V2 flags')
+      assert.deepEqual([answer.json.connector, answer.json.page, answer.json.legacy], expected, scenario.label)
+      if (!answer.json.connector) assert.deepEqual(answer.json.ui, {}, scenario.label + ' ui without a connector')
     }
   })
   integrationCase(sdk, 'U-SHELL', 'routes', 'GET child/status re-serves the locator: {ok, status, target} with its state and code', async () => {
@@ -396,12 +417,13 @@ export function registerUShellCases(sdk) {
     assert.deepEqual(ROUTE.statusKeys.filter((k) => !(k in answer.json)), [])
     assert.deepEqual([answer.json.status.state, answer.json.status.code], [CHILD.failed, CHILD.exited])
   })
-  for (const scenario of [SCENARIO.none, SCENARIO.older]) {
-    integrationCase(sdk, 'U-SHELL', 'routes', `without a usable locator (${scenario.label}) every child/* route answers 503 instance-missing`, async () => {
+  // Q-U1: without a usable connector the child/* routes answer connector-missing; instance-missing is left for a connector without a usable locator.
+  for (const [scenario, refusal] of [[SCENARIO.none, ROUTE_REFUSAL.connectorMissing], [SCENARIO.child, ROUTE_REFUSAL.connectorMissing], [SCENARIO.connector, ROUTE_REFUSAL.missing], [SCENARIO.older, ROUTE_REFUSAL.missing]]) {
+    integrationCase(sdk, 'U-SHELL', 'routes', `${scenario.label}: every child/* route answers ${refusal.status} ${refusal.code}`, async () => {
       const setup = await hostFor(sdk, scenario)
       for (const key of ROUTE.child) {
         const method = key === 'status' ? 'GET' : 'POST'
-        assertRefusal(await routeCall(setup, PAGE_NAME.ipv4, method, ROUTE[key], method === 'POST' ? { view: CHILD.views[0], lang: CHILD.langs.en } : undefined), ROUTE_REFUSAL.missing)
+        assertRefusal(await routeCall(setup, PAGE_NAME.ipv4, method, ROUTE[key], method === 'POST' ? { view: CHILD.views[0], lang: CHILD.langs.en } : undefined), refusal)
       }
     })
   }
@@ -443,15 +465,13 @@ export function registerUShellCases(sdk) {
       assert.equal(admissions(setup).length, before)
     })
   }
-  integrationCase(sdk, 'UIM-UC-01', 'E1', 'POST child/admit while the child is down → 409 not-ready; POST child/retry restarts it; admit then answers a URL', async () => {
+  // #77, R-UI-03 amended: there is no child/retry route; the child stays failed until the instance's own Retry.
+  integrationCase(sdk, 'UIM-UC-01', 'E1', 'POST child/admit while the child is down → 409 not-ready; there is no child/retry route; the locator is not retried', async () => {
     const setup = await hostFor(sdk, SCENARIO.down)
-    const body = { view: CHILD.views[0], lang: CHILD.langs.en }
-    // The page row of E1 may have retried already; only a still-failed child must refuse.
-    const first = await routeCall(setup, PAGE_NAME.ipv4, 'GET', ROUTE.status)
-    if (first.json?.status?.state === CHILD.failed) assertRefusal(await routeCall(setup, PAGE_NAME.ipv4, 'POST', ROUTE.admit, body), ROUTE_REFUSAL.notReady)
-    assert.equal((await routeCall(setup, PAGE_NAME.ipv4, 'POST', ROUTE.retry, {})).status, HTTP_OK)
-    const admitted = await routeCall(setup, PAGE_NAME.ipv4, 'POST', ROUTE.admit, body)
-    assert.equal(admitted.status, HTTP_OK, admitted.text)
+    assertRefusal(await routeCall(setup, PAGE_NAME.ipv4, 'POST', ROUTE.admit, { view: CHILD.views[0], lang: CHILD.langs.en }), ROUTE_REFUSAL.notReady)
+    const retry = await routeCall(setup, PAGE_NAME.ipv4, 'POST', ROUTE.retry, {})
+    assert.notEqual(retry.status, HTTP_OK, 'child/retry answered: ' + retry.text)
+    assert.deepEqual(recordsOf(setup, FAKE.kind.retry), [], 'the locator was retried')
   })
   integrationCase(sdk, 'U-SHELL', 'routes', 'the routes are owner-only: without the owner\'s cookie, services and admit mint nothing', async () => {
     const setup = await hostFor(sdk, SCENARIO.all)
@@ -463,6 +483,7 @@ export function registerUShellCases(sdk) {
     }
     assert.equal(admissions(setup).length, before, 'a ticket was minted for a stranger')
   })
+  // Unchanged oracle; the scenario gained the connector (Q-U1) so the older locator is the only absent service.
   integrationCase(sdk, 'UIM-EP-01', 5, 'GET services with an older locator: page false, so the client registers no frame (apiVersion 2 is absent)', async () => {
     const answer = await routeCall(await hostFor(sdk, SCENARIO.older), PAGE_NAME.ipv4, 'GET', ROUTE.services)
     assert.equal(answer.json?.page, false, answer.text)

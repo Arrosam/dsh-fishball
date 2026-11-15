@@ -11,10 +11,11 @@
 import path from 'node:path'
 import { REPO } from '../../../support/constants.mjs'
 
-/** The three host-only services embed-UI follows at runtime (K3 README, design §4.2). */
+/** The host-only services embed-UI follows at runtime (K3 README, design §4.2). */
 export const SERVICE = Object.freeze({
   child: 'dshInstanceChild',
-  handover: 'dshConnectorHandover',
+  // Requirements 1.34 / Q-U1: embed-UI follows the connector's UI backend, not the hand-over service.
+  ui: 'dshConnectorUi',
   tools: 'dshConnectorTools',
 })
 /** K3: every host-only service has apiVersion 1; any other value counts as absent (UIM-EP-01 #5). */
@@ -22,6 +23,8 @@ export const API_VERSION = Object.freeze({ current: 1, older: 2 })
 
 /** R-UI-01 / design §4.2: the one diagnostic embed-UI logs without a usable locator. */
 export const DIAGNOSTIC = 'instance-missing'
+/** Q-U1 (requirements 1.38): the one error embed-UI logs without a usable local connector. */
+export const CONNECTOR_DIAGNOSTIC = 'connector-missing'
 
 /**
  * R-UI-02 / K3 `LoopbackHostname`: the frame may use exactly these names. A WHATWG URL's hostname is
@@ -60,20 +63,19 @@ export const SLOT = Object.freeze({
   /** The Fishball page: the `main` entry keyed `fishball` (frame view, status, Retry; S4 §2.2). */
   main: 'main',
   pageKey: 'fishball',
-  /** Seats of managed marks and Hand over / Take back (S4 §2.2): U-MARKS' parts, absent without the hand-over service. */
+  /** Seats of managed marks and Hand over / Take back (S4 §2.2): absent without the connector's UI backend (requirements 1.34). */
   marks: Object.freeze(['conversation.session.header.actions', 'sidebar.workspaces.session.menu.item', 'sidebar.session.row.leading', 'sidebar.session.row.trailing']),
   /** The Plugins card (R-HOST-07: the model-sync trigger lives there). */
   card: Object.freeze(['plugins.bundle.config', 'plugins.row.config']),
-  /** DSH's tool row; embed-UI's `ask_agent` view, if any, is read-only (R-UI-12, R-UI-13). */
-  toolview: 'tool.call.toolview',
+  // Q-G4 = A (R-UI-13 withdrawn): embed-UI registers neither record seat, so no ask_agent view and no answer control exist.
+  records: Object.freeze(['tool.call.toolview', 'conversation.chat.node']),
 })
-export const ASK_TOOL = 'ask_agent'
-/** R-UI-12: no answer control. These are the element kinds through which a user could answer. */
-export const CONTROL = Object.freeze({ tags: Object.freeze(['button', 'input', 'textarea', 'select', 'form']), roles: Object.freeze(['button', 'checkbox', 'radio', 'menuitem']), handler: 'onClick' })
 /** V2's answer route for a pending `ask_agent` row (rev11c PILE_API), which the main DSH loses (R-UI-12). */
 export const V2_ANSWER_ROUTE = 'api/fishball/requests/answer'
 /** R-UI-03 / design §4.2: the Retry control's label (en). */
 export const RETRY_LABEL = 'Retry'
+/** #77 (R-UI-03 amended): Retry is a link to the instance's settings page; embed-UI's own Retry button is gone. */
+export const RETRY = Object.freeze({ link: 'data-fishball-retry-link', button: 'data-fishball-frame-retry', bundle: 'dsh-instance', state: 'data-fishball-embed-state' })
 
 /** K3 `ChildState`, `LifecycleCode`, `TargetState`, `TargetCode`, `AdmitView`, `AdmitLang`, `AdmitErrorCode`. */
 export const CHILD = Object.freeze({
@@ -97,13 +99,17 @@ export const CHILD = Object.freeze({
 export const ROUTE = Object.freeze({
   services: '/api/dsh-connector-ui/services',
   status: '/api/dsh-connector-ui/child/status',
+  // #77 / R-UI-03 amended: this route is no longer registered; it is kept only to prove its absence.
   retry: '/api/dsh-connector-ui/child/retry',
   admit: '/api/dsh-connector-ui/child/admit',
   modelsCheck: '/api/dsh-connector-ui/child/models/check',
   modelsAdd: '/api/dsh-connector-ui/child/models/add',
   /** The `child/*` routes: each answers `instance-missing` without a usable locator. */
-  child: Object.freeze(['status', 'retry', 'admit', 'modelsCheck', 'modelsAdd']),
-  servicesKeys: Object.freeze(['ok', 'page', 'handover', 'tools', 'legacy', 'routes']),
+  // #77: no retry route any more.
+  child: Object.freeze(['status', 'admit', 'modelsCheck', 'modelsAdd']),
+  // U-DRAW: availability is connector / page (+ legacy until C-WIRE, dev correction 2026-11-16); no handover or tools flags.
+  servicesKeys: Object.freeze(['ok', 'connector', 'page', 'legacy', 'routes', 'ui']),
+  removedKeys: Object.freeze(['handover', 'tools']),
   statusKeys: Object.freeze(['ok', 'status', 'target']),
 })
 /** The routes' refusals (relayed): HTTP status and code. */
@@ -112,6 +118,8 @@ export const ROUTE_REFUSAL = Object.freeze({
   notReady: Object.freeze({ status: 409, code: 'not-ready' }),
   invalid: Object.freeze({ status: 400, code: 'invalid-request' }),
   missing: Object.freeze({ status: 503, code: 'instance-missing' }),
+  // Q-U1: without a usable connector every route but services answers this.
+  connectorMissing: Object.freeze({ status: 503, code: 'connector-missing' }),
 })
 export const HTTP_OK = 200
 /** Hosts that name a loopback host only after URL parsing: userinfo and a path (relayed: refused as hostname-refused). */
@@ -124,6 +132,9 @@ export const HOST_TRICK = Object.freeze({ userinfo: 'fishball-tunnel.example@loc
 export const HOST_CONSTANTS = Object.freeze({
   file: path.join(REPO, 'packages', 'dsh-connector-ui', 'src', 'host', 'constants.js'),
   tools: path.join(REPO, 'packages', 'dsh-connector', 'tools', 'constants.js'),
+  // Requirements 1.34: the connector service embed-UI follows is C-UI-BACKEND's (its exported data only).
+  ui: path.join(REPO, 'packages', 'dsh-connector', 'src', 'ui', 'constants.js'),
+  handoverService: 'dshConnectorHandover',
 })
 
 /** The fake host-only services (fake-services.mjs) and what they record. */
@@ -142,12 +153,17 @@ export const FAKE = Object.freeze({
   admitPath: '/fbtest-admit',
   syncRefused: 'fbtest-sync-off',
   eventPrefix: 'fbtest-event-',
-  kind: Object.freeze({ started: 'started', log: 'log', admit: 'admit', retry: 'retry', sync: 'sync', register: 'register', handover: 'handover' }),
+  /** The fake UI backend's routes and tools (C-UI-BACKEND's relayed UI_ROUTE and local tool names). */
+  uiRoutes: Object.freeze({ state: '/api/dsh-connector/ui/state', events: '/api/dsh-connector/ui/events', handOver: '/api/dsh-connector/ui/handover', takeBack: '/api/dsh-connector/ui/takeback', dismiss: '/api/dsh-connector/ui/notice/dismiss', opened: '/api/dsh-connector/ui/opened' }),
+  uiTools: Object.freeze(['notify', 'attention.signal', 'attention.state']),
+  // Requirements 1.34: the UI backend's contribution replaces the hand-over service's calls.
+  kind: Object.freeze({ started: 'started', log: 'log', admit: 'admit', retry: 'retry', sync: 'sync', register: 'register', contribute: 'contribute' }),
 })
 
 /** A ready local child with a connected target (UIM-DT-01 row 7 / 8). */
 const READY = Object.freeze({ apiVersion: API_VERSION.current, status: Object.freeze({ state: CHILD.ready, code: null }), targetStatus: Object.freeze({ state: CHILD.connected, code: null }) })
-const CONNECTOR = Object.freeze({ handover: Object.freeze({}), tools: Object.freeze({}) })
+// Requirements 1.34 / Q-U1: the local connector is its UI backend `dshConnectorUi` (with the tools service).
+const CONNECTOR = Object.freeze({ ui: Object.freeze({}), tools: Object.freeze({}) })
 /**
  * One host per scenario and SDK process: which fakes it provides (UIM-EP-01 columns). `disabled`
  * inserts the row switched off, as a disabled instance row provides no service (UIM-EP-01 #6).
@@ -157,11 +173,13 @@ export const SCENARIO = Object.freeze({
   child: Object.freeze({ label: 'child', services: Object.freeze({ child: READY }) }),
   connector: Object.freeze({ label: 'conn', services: CONNECTOR }),
   all: Object.freeze({ label: 'all', services: Object.freeze({ child: READY, ...CONNECTOR }) }),
-  older: Object.freeze({ label: 'older', services: Object.freeze({ child: Object.freeze({ ...READY, apiVersion: API_VERSION.older }) }) }),
+  // Q-U1: the older locator gets a connector, else the row would be connector-missing instead of instance-missing.
+  older: Object.freeze({ label: 'older', services: Object.freeze({ child: Object.freeze({ ...READY, apiVersion: API_VERSION.older }), ...CONNECTOR }) }),
   disabled: Object.freeze({ label: 'off', services: Object.freeze({ child: Object.freeze({ ...READY, disabled: true }), ...CONNECTOR }) }),
-  down: Object.freeze({ label: 'down', services: Object.freeze({ child: Object.freeze({ ...READY, status: Object.freeze({ state: CHILD.failed, code: CHILD.exited }) }) }) }),
-  /** The same failed child on its own host, which no row retries (read-only route rows). */
-  downRead: Object.freeze({ label: 'downread', services: Object.freeze({ child: Object.freeze({ ...READY, status: Object.freeze({ state: CHILD.failed, code: CHILD.exited }) }) }) }),
+  // Q-U1: a failed child is drawn only beside a local connector.
+  down: Object.freeze({ label: 'down', services: Object.freeze({ child: Object.freeze({ ...READY, status: Object.freeze({ state: CHILD.failed, code: CHILD.exited }) }), ...CONNECTOR }) }),
+  /** The same failed child on its own host (read-only route rows). */
+  downRead: Object.freeze({ label: 'downread', services: Object.freeze({ child: Object.freeze({ ...READY, status: Object.freeze({ state: CHILD.failed, code: CHILD.exited }) }), ...CONNECTOR }) }),
   /** Every service, embed-UI NOT installed (UIM-UC-04 A2: DSH's generic rows only). */
   noEmbed: Object.freeze({ label: 'noembed', embed: false, services: Object.freeze({ child: READY, ...CONNECTOR }) }),
   blank: Object.freeze({ label: 'blank', services: Object.freeze({ child: Object.freeze({ ...READY, status: Object.freeze({ state: CHILD.ready, code: CHILD.unreachable.code }), targetStatus: CHILD.unreachable }) }) }),
@@ -182,7 +200,9 @@ export const HOST = Object.freeze({
 export const SPLIT = Object.freeze({
   clientDir: Object.freeze(['src', 'client']),
   entry: 'client.js',
-  parts: Object.freeze(['client.shell.js', 'client.marks.js', 'client.attention.js', 'client.records.js']),
+  // Q-G4 = A: client.records.js is removed (no inline records).
+  parts: Object.freeze(['client.shell.js', 'client.marks.js', 'client.attention.js']),
+  withdrawn: 'client.records.js',
   /** dsh-client-modules CLIENT_CHUNK (0.2.1-rc.5 and 0.2.2-rc.1, brief F2). */
   chunk: /^client\.[A-Za-z0-9][A-Za-z0-9._-]*\.js$/,
   /** O6: the status line link keeps its name and target; its target at the task's base commit. */
@@ -209,9 +229,9 @@ export const BUDGET = Object.freeze({ readyMs: 60000, pollMs: 250, quietMs: 3000
 
 /** Owners of the rows U-SHELL cannot check (v3-tasks.md W4–W6, brief "Seam"). */
 export const LATER = Object.freeze({
-  marks: 'U-MARKS (managed marks, Hand over / Take back from the hand-over service)',
-  attn: 'U-ATTN (the fish and its attention dots, embed-UI attention tools contributed)',
-  records: 'U-RECORDS (inline read-only ask_agent and permission records)',
+  // U-DRAW now owns these rows (test/v3/dsh-connector-ui/draw, requirements 1.34).
+  marks: 'U-DRAW (managed marks, Hand over / Take back through the connector UI backend; test/v3/dsh-connector-ui/draw)',
+  attn: 'U-DRAW (the fish light and the contributed tools; test/v3/dsh-connector-ui/draw)',
   child: "X-MATRIX / E2E-UI (a real child: the page loads, cookie redemption, ticket replay; I-HOST's real locator)",
   e2e: 'E2E-UI (W6 browser flows: frame reload, the model-sync control on the Plugins page)',
   relay: 'X-MATRIX (row 7: no traffic over the lifecycle wire other than lifecycle)',
