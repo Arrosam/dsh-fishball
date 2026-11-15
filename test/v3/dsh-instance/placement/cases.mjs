@@ -536,9 +536,9 @@ export function registerIPlaceCases(sdk) {
     assert.deepEqual(fishball(placementRecord(home)[RELAYED.record.key]).sort(), [...SET.placed].sort())
     assert.deepEqual(fishball(profileBundles(home)).sort(), [...SET.placed].sort())
   })
-  integrationCase(sdk, 'HOST-EP-03', 7, 'fishball-shared and the contract-only connector sit beside core in the child, never as a profile bundle', async () => {
+  integrationCase(sdk, 'HOST-EP-03', 7, 'both libraries (dsh-connector-shared, fishball-shared) and the contract-only connector sit beside core in the child, never as a profile bundle', async () => {
     const { home } = await ready()
-    for (const name of [SET.library, SET.contractOnly]) {
+    for (const name of [...SET.libraries, SET.contractOnly]) {
       for (const dir of RELAYED.copyDirs) assert.ok(fs.existsSync(placedCopy(home, name, dir)), `${name} not in ${dir}/`)
       assert.equal(profileBundles(home).includes(name), false, name + ' is a profile bundle')
     }
@@ -658,6 +658,6 @@ export function registerIPlaceCases(sdk) {
   })
 
   // ============================================================== PLAT-EP-07 row 5 (REL-PACK): stays failing, allow-listed there.
-  caseTest(sdk, 'PLAT-EP-07', 5, 'every importer\'s tarball carries a real fishball-shared copy (P-1 mechanism B)', null, LATER.relPack)
+  caseTest(sdk, 'PLAT-EP-07', 5, 'every importer\'s tarball carries a real copy of its side\'s library (P-1 mechanism B)', null, LATER.relPack)
   caseTest(sdk, 'HOST-ST-01', 10, 'Running → uninstall → Removed, the export offered first', null, LATER.uninstall)
 }

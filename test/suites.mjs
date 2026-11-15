@@ -24,7 +24,8 @@ export const PACKAGE = Object.freeze({
   dshConnector: 'packages/dsh-connector',
   dshConnectorUi: 'packages/dsh-connector-ui',
   dshInstance: 'packages/dsh-instance',
-  // dsh-connector-adapter and dsh-connector-shared have no folder yet (C-MCP-ADAPTER, SPLIT-SHARED).
+  dshConnectorShared: 'packages/dsh-connector-shared',
+  // dsh-connector-adapter has no folder yet (C-MCP-ADAPTER).
   fishballCore: 'packages/core',
   fishballShared: 'packages/shared',
   fishballBoard: 'packages/board',
@@ -37,7 +38,7 @@ const top = (pkg) => pkg + '/*'
 
 /**
  * Package modules many suites depend on: the K1/K2/V2 contracts the connector's modules import,
- * and the shared library. Changing one reruns every suite that imports it (closure above).
+ * and the shared libraries. Changing one reruns every suite that imports it (closure above).
  */
 const CONNECTOR_CONTRACTS = Object.freeze([
   sub(PACKAGE.dshConnector, 'mcp-schema'), sub(PACKAGE.dshConnector, 'tools'), sub(PACKAGE.dshConnector, 'contract'),
@@ -102,12 +103,12 @@ export const V3_SUITES = Object.freeze({
     [sub(PACKAGE.dshConnector, 'src', 'mcp', 'oauth-web'), sub(PACKAGE.dshConnector, 'src', 'pairs'), ...CONNECTOR_CORE, ...CONNECTOR_CONTRACTS]),
   'dsh-connector.contrib': suite('contribution service (C-EXT)', v3('dsh-connector/contrib'),
     [sub(PACKAGE.dshConnector, 'src', 'contrib'), sub(PACKAGE.dshConnector, 'src', 'mailbox'), sub(PACKAGE.dshConnector, 'src', 'schema-value'),
-      all(PACKAGE.fishballShared), ...CONNECTOR_CORE, ...CONNECTOR_CONTRACTS]),
+      all(PACKAGE.dshConnectorShared), ...CONNECTOR_CORE, ...CONNECTOR_CONTRACTS]),
   'dsh-connector-ui.shell': suite('host half and client shell (U-SHELL)', v3('dsh-connector-ui/shell'),
     [all(PACKAGE.dshConnectorUi), sub(PACKAGE.dshInstance, 'src', 'child-settings'), sub(PACKAGE.dshConnector, 'tools'), sub(PACKAGE.dshConnector, 'host-services')]),
   // Reads the instance's whole placement and launch overlay, and core's patch it places.
   'dsh-instance.placement': suite('placement of the set, launch overlay, hosted-child guards (I-PLACE)', v3('dsh-instance/placement'),
-    [all(PACKAGE.dshInstance), all(PACKAGE.fishballCore), all(PACKAGE.fishballShared)]),
+    [all(PACKAGE.dshInstance), all(PACKAGE.fishballCore), all(PACKAGE.dshConnectorShared), all(PACKAGE.fishballShared)]),
   'fishball-core.package': suite('core package, slim child move, settings-section point (R-CORE)', v3('fishball-core/package'),
     [all(PACKAGE.fishballCore), sub(PACKAGE.dshInstance, 'src', 'slim'), sub(PACKAGE.dshInstance, 'src', 'child-settings')]),
   'fishball-core.bridge': suite('bridge façade, list_changed refresh, X8 attention (F-FACADE)', v3('fishball-core/bridge'),
@@ -145,6 +146,9 @@ export const V3_SUITES = Object.freeze({
       all(PACKAGE.dshConnector), all(PACKAGE.dshConnectorUi), all(PACKAGE.dshInstance)]),
   'contract.package-boundaries': suite('package boundaries, imports, packing (R-SHARED, PLAT-EP-07)', v3('contract/package-boundaries'),
     [...Object.values(PACKAGE).map(all)]),
+  // Reads every package's manifest and import graph and runs the placement over package copies.
+  'contract.split-shared': suite('one shared library per side: cross-side edges, library contents, interim copies, placement (SPLIT-SHARED)', v3('contract/split-shared'),
+    [...Object.values(PACKAGE).map(all)]),
   'contract.embed': suite('connector-ui package and the moved client (R-EMBED)', v3('contract/embed'),
     [all(PACKAGE.dshConnectorUi), all(PACKAGE.dshInstance), all(PACKAGE.dshConnector)]),
 })
@@ -153,7 +157,7 @@ export const V3_SUITES = Object.freeze({
  * V2 release suites by the package they exercise. The files stay where they are (the V2 release
  * selection, test/v2-suites.mjs, and its V2B-SUITE checks name them by path); only the grouping is
  * new. `v2.connector-host` boots a real DSH with the connector and the stub instance (H-STUB), so a
- * change to what that row loads (CONNECTOR_BOOT) or to the shared library reruns it.
+ * change to what that row loads (CONNECTOR_BOOT) or to a shared library reruns it.
  */
 const v2 = (names) => names.map((n) => (n.includes('/') ? n : `test/${n}.test.mjs`))
 export const V2_GROUPS = Object.freeze({
@@ -167,7 +171,7 @@ export const V2_GROUPS = Object.freeze({
     'rev11g-plan', 'rev11g-restart', 'rev11g-validate', 'rev11h-stop', 'session-list-activity', 'session-list-activity-boundaries',
     'start-session-model', 'start-session-model-persistence', 'start-session-model-races', 'watches-durable', 'watches-fire',
     'watches-http', 'e1-d2-invalid-main-home',
-  ]), [...CONNECTOR_BOOT, all(PACKAGE.fishballShared), sub(PACKAGE.dshConnectorUi, 'src', 'client')]),
+  ]), [...CONNECTOR_BOOT, all(PACKAGE.dshConnectorShared), all(PACKAGE.fishballShared), sub(PACKAGE.dshConnectorUi, 'src', 'client')]),
   'v2.connector-unit': suite('connector contract and modules, no host (V2 D1–D3)', v2([
     'v2-d1-contract', 'v2-d1-d3-schema', 'v2-d1-runtime', 'v2-d2-config-retention', 'v2-d3-connector-attention', 'v2-d3-signal-producer',
     'packages/dsh-connector/test/instance-ext/k1.test.mjs', 'slim-022-install',
@@ -176,7 +180,7 @@ export const V2_GROUPS = Object.freeze({
     'brand-font-language', 'v2-pg-origin-frame-policy', 'body-soul-k2-frame', 'e1-card-titles',
   ]), [all(PACKAGE.dshConnectorUi), sub(PACKAGE.dshConnector, 'contract'), top(PACKAGE.dshConnector), top(PACKAGE.dshInstance)]),
   // These boot the instance's real child (lifecycle, admission, embed): a change in the instance,
-  // the core it places, or the shared library it bundles reruns them.
+  // the core it places, or either shared library (the instance's own, core's placed copy) reruns them.
   'v2.instance': suite('the instance: launch, lifecycle, embed, provider sync, child pages', v2([
     'body-soul-i1c-status', 'body-soul-i2-launch', 'body-soul-i3-admission', 'body-soul-i6-sync', 'body-soul-i9-embed',
     'e1-p1-connector-departure', 'e1-p3-sync-https', 'instance-ext-fakehost', 'provider-sync-coordinator', 'provider-sync-official',
@@ -187,7 +191,7 @@ export const V2_GROUPS = Object.freeze({
     'packages/dsh-instance/test/instance-ext/x0-c-held-context.test.mjs', 'packages/dsh-instance/test/instance-ext/x0-c.test.mjs',
     'test/v2-page-cases/child-boot.test.mjs', 'test/v2-page-cases/child-boot-nav.test.mjs', 'test/v2-page-cases/child-boot-reopen.test.mjs',
     'test/v2-page-cases/set-main-only-sync.test.mjs',
-  ]), [all(PACKAGE.dshInstance), all(PACKAGE.fishballCore), all(PACKAGE.fishballShared), sub(PACKAGE.dshConnector, 'contract')]),
+  ]), [all(PACKAGE.dshInstance), all(PACKAGE.fishballCore), all(PACKAGE.dshConnectorShared), all(PACKAGE.fishballShared), sub(PACKAGE.dshConnector, 'contract')]),
   'v2.fishball-core': suite('core\'s slim child and pages: chat, records, i18n, persona, skills, settings, lite', v2([
     'body-soul-i6-settings-view', 'body-soul-i7-records', 'body-soul-i9-lang', 'e1-p2-model-choice', 'e1-p4-header-name',
     'persona-bold-render', 'test/instance-ext/x0-i.test.mjs', 'test/instance-ext/x0-w.test.mjs',
@@ -198,7 +202,7 @@ export const V2_GROUPS = Object.freeze({
     'test/v2-recommendation/sdk-0.2.1-rc.5.test.mjs', 'test/v2-recommendation/sdk-0.2.2-rc.1.test.mjs',
     'packages/dsh-instance/test/instance-ext/page-boot-unwind.test.mjs', 'packages/dsh-instance/test/instance-ext/page-open-listed.test.mjs',
   ]), [all(PACKAGE.fishballCore), all(PACKAGE.dshInstance), sub(PACKAGE.dshConnector, 'contract')]),
-  'v2.fishball-shared': suite('the shared library\'s provider-sync engine and host', v2(['provider-sync-engine', 'provider-sync-host']),
+  'v2.fishball-shared': suite('fishball-shared\'s interim provider-sync engine and host copy (until I-HOST)', v2(['provider-sync-engine', 'provider-sync-host']),
     [all(PACKAGE.fishballShared)]),
   // Static readers of whole packages: v2-boundary reads every manifest and the V2 selection,
   // limits-source every src/ and contract/ file of four packages and the plugin author guide.

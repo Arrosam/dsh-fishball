@@ -1,8 +1,9 @@
 import { mkdir, lstat, readdir, readFile, rename, rm } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
+import { createRequire } from 'node:module'
 import path from 'node:path'
 import { randomUUID } from 'node:crypto'
-import { inside } from 'fishball-shared/files'
+import { inside } from 'dsh-connector-shared/files'
 import { RUNTIME, PLACEMENT, fail } from './constants.js'
 import { exists, jsonPrivate, writePrivate, writeProfileBundles, sameBundles } from './files.js'
 
@@ -161,16 +162,51 @@ async function memberSource(bundle) {
   fail(PLACEMENT.code.missing, bundle.name)
 }
 
-/** The libraries the placed code imports by name (PLACEMENT.shared, PLACEMENT.contract). */
+/** One library package as its shipped files (Q-21), from its folder `root`. */
+async function libraryPackage(name, root) {
+  const manifest = await json(path.join(root, PLACEMENT.manifest))
+  return { name, root, files: await shippedFiles(root, manifest), manifest }
+}
+
+/**
+ * The folder of package `name` as a module beside `anchor` (a manifest path) resolves it. Needs the
+ * package to export `./package.json`, as both libraries and the connector do.
+ */
+const packageRoot = (anchor, name) => path.dirname(createRequire(anchor).resolve(name + '/' + PLACEMENT.manifest))
+
+/**
+ * A placed bundle's own libraries: the names in its `bundleDependencies`, each resolved from the
+ * bundle's folder, as the bundle's modules resolve it (fishball-core's fishball-shared). They come
+ * from the bundle's dependency graph, never the instance's, because the instance depends on no
+ * Fishball-side package (requirements 1.40, design §1.0b row 5); they are copied as files only.
+ * Resolution walks up past the bundle's folder, so a copy found there must be the exact version the
+ * bundle pins; a missing or different one refuses the start like a missing member.
+ */
+async function bundledLibraries(member) {
+  const anchor = path.join(member.root, PLACEMENT.manifest)
+  return Promise.all((member.manifest[PLACEMENT.bundledField] ?? []).map(async (name) => {
+    let library
+    try { library = await libraryPackage(name, packageRoot(anchor, name)) } catch (error) {
+      if (error?.code === PLACEMENT.unresolved) fail(PLACEMENT.code.missing, name)
+      throw error
+    }
+    if (library.manifest.version !== member.manifest.dependencies?.[name]) fail(PLACEMENT.code.missing, name)
+    return library
+  }))
+}
+
+/**
+ * The libraries the instance's own placed lifecycle code imports by name (PLACEMENT.shared,
+ * PLACEMENT.contract), resolved through the instance's dependency graph.
+ */
 async function librarySources() {
-  const sharedRoot = path.dirname(fileURLToPath(import.meta.resolve(PLACEMENT.shared + '/' + PLACEMENT.manifest)))
-  const sharedManifest = await json(path.join(sharedRoot, PLACEMENT.manifest))
+  const anchor = path.join(INSTANCE_ROOT, PLACEMENT.manifest)
   const contract = PLACEMENT.contract
-  const connectorRoot = path.dirname(fileURLToPath(import.meta.resolve(contract.name + '/' + PLACEMENT.manifest)))
+  const connectorRoot = packageRoot(anchor, contract.name)
   const connector = await json(path.join(connectorRoot, PLACEMENT.manifest))
   const entry = connector.exports[contract.export]
   return [
-    { name: PLACEMENT.shared, root: sharedRoot, files: await shippedFiles(sharedRoot, sharedManifest), manifest: sharedManifest },
+    await libraryPackage(PLACEMENT.shared, packageRoot(anchor, PLACEMENT.shared)),
     {
       name: contract.name,
       root: connectorRoot,
@@ -178,6 +214,17 @@ async function librarySources() {
       manifest: { name: connector.name, version: connector.version, private: true, type: connector.type, exports: { [contract.export]: entry } },
     },
   ]
+}
+
+/**
+ * One source per library name, the first found: a library two bundles both bundle (each at the
+ * version it pins) is placed once. The two sides' libraries have different names (R-ARCH-08), so
+ * no bundle's library can take the slot of the instance's own.
+ */
+function distinctLibraries(libraries) {
+  const byName = new Map()
+  for (const library of libraries) if (!byName.has(library.name)) byName.set(library.name, library)
+  return [...byName.values()]
 }
 
 /**
@@ -208,7 +255,9 @@ async function readRecord(file) {
  * @param boot - the installation's dsh-app-boot module (readProfileManifest, writeProfileBundles).
  */
 export async function placeBundles(paths, boot) {
-  const sources = [...await Promise.all(PLACEMENT.bundles.map(async (bundle) => ({ name: bundle.name, ...await memberSource(bundle) }))), ...await librarySources()]
+  const members = await Promise.all(PLACEMENT.bundles.map(async (bundle) => ({ name: bundle.name, ...await memberSource(bundle) })))
+  const libraries = [...(await Promise.all(members.map(bundledLibraries))).flat(), ...await librarySources()]
+  const sources = [...members, ...distinctLibraries(libraries)]
   for (const source of sources) {
     for (const parent of [PLACEMENT.vendor, PLACEMENT.modules]) {
       await replaceSlot(path.join(paths.profile, parent), source.name, (target) => writePackage(source.root, source.files, source.manifest, target))
