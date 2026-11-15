@@ -12,8 +12,7 @@
  *   `retirement`; a page is read whoever the event was dispatched to, so an interceptor or Fishball
  *   taking it changes nothing here), and returns `service` (the K3 `fishballInstance.ui.asks`),
  *   `tool` (the filing tool's raw DSH definition; F-WIRE registers it with `tools.register` in the
- *   manager's scope)
- *   and `close()`.
+ *   manager's scope) and `close()`.
  * - `openAskCards(ctx, storageDomain)`: the durable table.
  * - `registerAskRoutes(ctx, options)`: the owner-only routes the browser half reads (routes.js).
  *
@@ -24,7 +23,8 @@
  */
 import { LINK_REFUSAL, REFUSAL, TOOL, EVENT_TYPE } from '../link/schema.js'
 import { emitIsolated, subscribe } from '../link/listeners.js'
-import { ASKS, ASK_CODE, ASK_LOG, ASK_MISUSE, ASK_OUTPUT, ASK_TEXT, CARD_STATE } from './constants.js'
+import { codeOf } from '../events/diagnostics.js'
+import { ASKS, ASK_CODE, ASK_LOG, ASK_MISUSE, ASK_TOOL_DEFINITION, ASK_TEXT, CARD_STATE } from './constants.js'
 import { cardOf, createCardStore, recordOf } from './store.js'
 
 export { openAskCards } from './store.js'
@@ -33,9 +33,6 @@ export { ASKS, ASK_TOOL, CARD_STATE } from './constants.js'
 
 const refusal = (code) => Object.freeze({ ok: false, code })
 const OK = Object.freeze({ ok: true })
-
-/** What a failure contributes to the log: its code or name, never its message. */
-const codeOf = (error) => String(error?.code ?? error?.name ?? typeof error)
 
 /** `{choice, text?}` with a Q3 = A choice and an optional string reason; else undefined. */
 function answerOf(answer) {
@@ -50,7 +47,11 @@ function approvalAnswerOf({ choice, text }) {
   return { decision: choice, risk: ASKS.riskOf[choice], reason: reason === '' ? ASKS.defaultReason : reason }
 }
 
-/** Serial chains keyed by id: `run(key, task)` starts `task` after every earlier task of `key`. */
+/**
+ * Serial chains keyed by id: `run(key, task)` starts `task` after every earlier task of `key`. The
+ * same rule as the connector's answer queue (dsh-connector src/mcp/tools/offers.js `serial`),
+ * copied because the two sides share no package (requirements 1.39).
+ */
 function keyedSerial() {
   const tails = new Map()
   return (key, task) => {
@@ -96,10 +97,24 @@ export function createAsks({ link, table, logger }) {
   const offPoll = link.onPoll((result) => {
     if (closed || result?.ok !== true || !Array.isArray(result.events)) return
     const events = [...result.events]
+    // Each event's failure is its own: a later settlement in the same page must still close its
+    // card, because an acked page is never polled again.
     intake = intake.then(async () => {
-      for (const event of events) if (!closed) await take(event)
-    }).catch((error) => logger?.warn(ASK_LOG.writeFailed, codeOf(error)))
+      for (const event of events) {
+        if (closed) return
+        try { await take(event) } catch (error) { logger?.warn(ASK_LOG.writeFailed, codeOf(error)) }
+      }
+    })
   })
+
+  /**
+   * A card write after the connector answered. Its failure is only logged: the connector's answer
+   * stands whatever the table says, so `answer` still reports it (K3 `Promise<UiResult>` never
+   * rejects), and the ask's settlement event moves the card at the next poll.
+   */
+  async function recorded(write) {
+    try { await write() } catch (error) { logger?.warn(ASK_LOG.writeFailed, codeOf(error)) }
+  }
 
   /** The connector's answer for one card, applied to it. */
   async function commit(record, answer) {
@@ -113,9 +128,9 @@ export function createAsks({ link, table, logger }) {
       logger?.warn(ASK_LOG.commitFailed, record.approvalId, codeOf(error))
       return refusal(REFUSAL.operationFailed)
     }
-    if (result?.ok === true) { await store.answered(record.approvalId); return OK }
+    if (result?.ok === true) { await recorded(() => store.answered(record.approvalId)); return OK }
     const code = typeof result?.code === 'string' ? result.code : REFUSAL.operationFailed
-    if (ASKS.closingCodes.includes(code)) await store.close(record.approvalId)
+    if (ASKS.closingCodes.includes(code)) await recorded(() => store.close(record.approvalId))
     // `disconnected` (never sent) and the connector's own refusals leave the ask waiting there,
     // so the card stays open for another answer.
     else if (code !== LINK_REFUSAL.disconnected) logger?.warn(ASK_LOG.commitFailed, record.approvalId, code)
@@ -159,10 +174,10 @@ export function createAsks({ link, table, logger }) {
   const tool = Object.freeze({
     name: ASKS.tool,
     description: ASK_TEXT.description,
-    parameters: ASK_OUTPUT.parameters,
+    parameters: ASK_TOOL_DEFINITION.parameters,
     output: {
-      schema: ASK_OUTPUT.schema,
-      render: (_args, value) => [{ type: ASK_OUTPUT.blockType, text: JSON.stringify(value, null, ASK_OUTPUT.jsonIndent) }],
+      schema: ASK_TOOL_DEFINITION.schema,
+      render: (_args, value) => [{ type: ASK_TOOL_DEFINITION.blockType, text: JSON.stringify(value, null, ASK_TOOL_DEFINITION.jsonIndent) }],
     },
     execute: async (args) => {
       try { return await fileCard(args) } catch (error) {

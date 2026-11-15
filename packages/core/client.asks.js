@@ -19,7 +19,7 @@
  * because a chunk cannot import that module; the zh review is deferred by the user, so they are not
  * reworded here.
  */
-globalThis.__ModuleLoader__?.load({
+window.__ModuleLoader__.load({
   id: 'fishball-core',
   chunk: 'client.asks.js',
   factory(require) {
@@ -32,9 +32,11 @@ globalThis.__ModuleLoader__?.load({
       locale: 'fishball-asks',
       slot: 'conversation.input.dock',
       id: 'fishball-asks',
-      // Before DSH's own queue dock (order 20), so an open card is the first thing above the composer.
-      order: 10,
-      // Page-relative, as src/asks/constants.js ASK_ROUTE (without its leading `/`).
+      // Before DSH's own docks in this slot (todo 0, goal 10, queue 20, both SDKs), so an open card
+      // is the first thing above the composer.
+      order: -10,
+      // Restated, because a chunk cannot import src/asks/constants.js: ASK_ROUTE's paths without their
+      // leading `/` (page-relative), and CARD_STATE.
       events: 'api/fishball/asks/events',
       answer: 'api/fishball/asks/answer',
       jsonHeaders: Object.freeze({ 'content-type': 'application/json' }),
@@ -67,7 +69,7 @@ globalThis.__ModuleLoader__?.load({
 
     const css = [
       `.${ASKS_UI.css.root}{display:grid;gap:8px;margin:0 0 8px}`,
-      `.${ASKS_UI.css.card}{display:grid;gap:6px;padding:10px 12px;border:1px solid var(--dsw-alias-separator-primary);border-radius:8px;background:var(--dsw-alias-background-secondary);font:var(--dsw-font-xs-13)}`,
+      `.${ASKS_UI.css.card}{display:grid;gap:6px;padding:10px 12px;border:1px solid var(--dsw-alias-border-l1);border-radius:var(--dsw-radius-md);background:var(--dsw-alias-bg-layer-1);font:var(--dsw-font-xs-13)}`,
       `.${ASKS_UI.css.meta}{display:flex;align-items:center;flex-wrap:wrap;gap:6px;color:var(--dsw-alias-label-tertiary)}`,
       `.${ASKS_UI.css.question}{margin:0;white-space:pre-wrap;color:var(--dsw-alias-label-primary)}`,
       `.${ASKS_UI.css.row}{display:flex;align-items:center;flex-wrap:wrap;gap:8px}`,
@@ -93,7 +95,11 @@ globalThis.__ModuleLoader__?.load({
       const open = () => {
         source = new EventSource(apiUrl(ASKS_UI.events))
         source.onmessage = (message) => {
-          try { snapshot = Object.freeze(JSON.parse(message.data)) } catch { return }
+          let next
+          try { next = JSON.parse(message.data) } catch { return }
+          // A frame that is not the route's shape keeps the last good snapshot.
+          if (next === null || typeof next !== 'object' || !Array.isArray(next.cards)) return
+          snapshot = Object.freeze(next)
           for (const listener of [...listeners]) listener()
         }
       }
@@ -110,9 +116,9 @@ globalThis.__ModuleLoader__?.load({
       }
     }
 
-    function makeDock(stream, t) {
+    function makeDock(stream) {
       /** One card: the asking session, the question, and Allow / Reject with an optional reason. */
-      function AskCard({ card }) {
+      function AskCard({ card, t }) {
         const [reason, setReason] = React.useState('')
         const [sending, setSending] = React.useState(false)
         const [failed, setFailed] = React.useState(false)
@@ -144,26 +150,27 @@ globalThis.__ModuleLoader__?.load({
               key: choice, type: 'button', size: 'sm', variant: choice === card.choices[0] ? 'primary' : 'outline',
               disabled: sending, 'data-fishball-ask-choice': choice, onClick: () => send(choice),
             }, t('choice.' + choice)))) : null,
-          failed ? h('p', { className: ASKS_UI.css.error, role: 'alert' }, t('failed')) : null)
+          failed && open ? h('p', { className: ASKS_UI.css.error, role: 'alert' }, t('failed')) : null)
       }
 
-      return function FishballAsks({ sessionId }) {
+      // `t` is the slot's own locale prop (registered with `locale`), so a language switch re-renders
+      // the dock, as DSH's goal and queue docks are drawn.
+      return function FishballAsks({ sessionId, t }) {
         const { managerSessionId, cards } = React.useSyncExternalStore(stream.subscribe, stream.get)
         // Only Fishball's own conversation shows its cards (Q-U2: never another session's view).
         if (sessionId === undefined || sessionId !== managerSessionId || cards.length === 0) return null
-        return h('div', { className: ASKS_UI.css.root, 'data-fishball-asks': true }, cards.map((card) => h(AskCard, { key: card.approvalId, card })))
+        return h('div', { className: ASKS_UI.css.root, 'data-fishball-asks': true }, cards.map((card) => h(AskCard, { key: card.approvalId, card, t })))
       }
     }
 
     function apply(ctx) {
-      const t = ctx.locale.bind(ASKS_UI.locale)
       const stream = cardStream()
       ctx.effect(() => ctx.locale.register(ASKS_UI.locale, { en, zh }), 'fishball asks: dictionaries')
       ctx.effect(mountStyle, 'fishball asks: styles')
       ctx.effect(() => ctx.slots.inject(ASKS_UI.slot, () => ctx.slots.register({
         name: ASKS_UI.slot, id: ASKS_UI.id, order: ASKS_UI.order, locale: ASKS_UI.locale,
         inject: (sessionId) => ({ sessionId }),
-      }, makeDock(stream, t))), 'fishball asks: card dock')
+      }, makeDock(stream))), 'fishball asks: card dock')
     }
 
     return { asksPlugin: Object.freeze({ name: ASKS_UI.name, inject: ['slots', 'locale'], apply }) }
