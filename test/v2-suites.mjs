@@ -160,6 +160,9 @@ export const V2_SUITES = Object.freeze({
     // V3 F-STATUS (R-FB-03/04 REM-DT-01, PLAT-DT-02 board only, HOST-DT-03 rule 10, Q-G1, R-FB-09, R-EXT-14, R-FB-10); run with test/run-v3.mjs.
     file('test/v3/fishball-core/status/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 fishball-core status, strip view, set completeness and guards notice (F-STATUS)'),
     file('test/v3/fishball-core/status/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 fishball-core status, strip view, set completeness and guards notice (F-STATUS)'),
+    // V3 F-ASKCARD (PLAT-UC-07, ASK-UC/EP/BVA/DT/ST; R-FB-11, R-UI-12, R-CON-05/06/08, Q3 = A); run with test/run-v3.mjs.
+    file('test/v3/fishball-core/asks/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 fishball-core ask cards: ask_user, the asks service and routes (F-ASKCARD)'),
+    file('test/v3/fishball-core/asks/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 fishball-core ask cards: ask_user, the asks service and routes (F-ASKCARD)'),
   ]),
   excludedCases: Object.freeze([
     // Plan §3.3: the rewritten K1 cases describe V2 D1-D3; these five are the actual MCP server/push obligations.
