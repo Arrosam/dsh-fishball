@@ -70,6 +70,14 @@ export function createOfferLedger({ mailbox, produce, onRetireFailed }) {
       for (const record of live.values()) if (record.principalKey === principalKey && eventIds.has(record.eventId)) record.acked = true
     },
 
+    /**
+     * The offer ids of the live `ask`s `principalKey` holds, acked ones included. An acked ask is
+     * no longer pending in the mailbox, so `Mailbox.drop` cannot report it, yet its asker still
+     * waits: C-REVOKE answers these `unavailable` too when the pair's box is dropped (R-TOK-05).
+     */
+    asksOf: (principalKey) => Object.freeze([...live]
+      .filter(([, record]) => record.principalKey === principalKey && record.type === EVENT_TYPE.ask).map(([offerId]) => offerId)),
+
     /** `{sessionId, principalKey}` of a live offer or ask, or undefined. */
     holderOf(offerId) {
       const record = live.get(offerId)

@@ -327,7 +327,7 @@ function useCases(sdk) {
   worldRow(sdk, 'WATCH-UC-02', 'main', 'P calls session_release → events already queued for P stay; S1\'s later turns produce nothing for anyone', (w) => watchEnds(w, ENDINGS.release))
   worldRow(sdk, 'WATCH-UC-02', 'A1', 'Take back by the user → the same', (w) => watchEnds(w, ENDINGS.takeBack))
   worldRow(sdk, 'WATCH-UC-02', 'A2', `P's entry revoked → management ends (${RELAYED.revocation})`, (w) => watchEnds(w, ENDINGS.disabled))
-  todoRow(sdk, 'WATCH-UC-02', 'A2 note', 'P\'s entry revoked → plus one system note in S1', LATER.revokeNote)
+  // A2's system note runs in test/v3/dsh-connector/revocation (C-REVOKE).
 
   // HAND-UC-02 — The user takes a session back (service part; the marks are U-MARKS').
   worldRow(sdk, 'HAND-UC-02', 'main', 'Take back of S1 handed to P(E2): one takeback to P(E2), S1 unmanaged, onChange fires', async (w) => {
@@ -1070,7 +1070,7 @@ function stateTransitions(sdk) {
     await w.pairs.remove(FIXTURE.entry(ID.p))
     await until(() => w.managed.managerOf(S.s1) === undefined, 'S1 unmanaged')
   })
-  todoRow(sdk, 'HAND-ST-01', '6 note', 'one system note in the session; live offers to the user', LATER.revokeNote)
+  // Row 6's system note and the offers to the user run in test/v3/dsh-connector/revocation (C-REVOKE).
   todoRow(sdk, 'HAND-ST-01', '7', 'Managed(P) → Q24 succession P → P\' → Managed(P\'); one system note; later events to P\'', LATER.succeed)
   worldRow(sdk, 'HAND-ST-01', '8', 'Managed(P) → the designated Fishball changes → Managed(P); nothing produced', async (w) => {
     const { p } = await managedByP(w)

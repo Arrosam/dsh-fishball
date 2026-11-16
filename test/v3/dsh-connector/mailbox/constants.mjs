@@ -116,7 +116,5 @@ export const LATER = Object.freeze({
   http: 'C-HTTP (the MCP route: subscriptions/listen and its acknowledgement, resources/read, HTTP 403 insufficient_scope)',
   httpUri: 'C-HTTP (resources/read and subscribe on any URI other than dsh-agent://events answer not found)',
   tools: 'C-TOOLS (approval_answer / question_answer authority: the live offer id and the holding pair, design §3.4)',
-  revokeOffers: 'C-REVOKE (on disable, live offers are withdrawn to the user and their events retired, R-TOK-05)',
-  revokeExpiry: 'C-REVOKE (the end of the 30-day hold, MAILBOX.disabledRetentionMs, drops the held events and answers dropped asks unavailable)',
   generation: 'K1 amendment, then C-MAILBOX (K1 states no event that starts a new mailboxGeneration, so no test can make a stale cursor without inventing one; user decision 2026-11-14)',
 })
