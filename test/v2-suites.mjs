@@ -116,6 +116,12 @@ export const V2_SUITES = Object.freeze({
     // V3 C-UI-BACKEND (UIB-UC-01…07, UIB-EP-01…07, UIB-BVA-01…04, UIB-DT-01…04, UIB-ST-01…04; R-UI-05/10, R-ROUTE-05, R-FN-01, R-EXT-13); run with test/run-v3.mjs.
     file('test/v3/dsh-connector/ui/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 connector UI backend: marks, Hand over targets and lights, attention latch, notify, routes and stream (C-UI-BACKEND)'),
     file('test/v3/dsh-connector/ui/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 connector UI backend: marks, Hand over targets and lights, attention latch, notify, routes and stream (C-UI-BACKEND)'),
+    // V3 C-MCP-ADAPTER (AUTH-UC-12/13/14, AUTH-EP-12/13/14, AUTH-BVA-09, AUTH-DT-11/12, AUTH-ST-06/07, ADP-EP-01, ADP-BVA-01, ADP-REV-*; R-OA-21, design §5.5b); run with test/run-v3.mjs.
+    file('test/v3/dsh-connector-adapter/adapter/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 connector adapter: check, sign-in tool, proxy, child row, refresh (C-MCP-ADAPTER)'),
+    file('test/v3/dsh-connector-adapter/adapter/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 connector adapter: check, sign-in tool, proxy, child row, refresh (C-MCP-ADAPTER)'),
+    // V3 C-MCP-ADAPTER's library (OAC-EP-01…03, OAC-BVA-01/02, OAC-ST-01, OAC-DT-01, OAC-LEAK-01); run with test/run-v3.mjs.
+    file('test/v3/dsh-connector-shared/oauth-client/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, "V3 dsh-connector-shared OAuth browser client and token manager (C-MCP-ADAPTER)"),
+    file('test/v3/dsh-connector-shared/oauth-client/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, "V3 dsh-connector-shared OAuth browser client and token manager (C-MCP-ADAPTER)"),
     // V3 C-EXT (EXT-UC-01…03, EXT-EP-01…04, EXT-BVA-01…04, EXT-DT-01/02, EXT-ST-01, K2's C-EXT rows); run with test/run-v3.mjs.
     file('test/v3/dsh-connector/contrib/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 connector contribution service (C-EXT)'),
     file('test/v3/dsh-connector/contrib/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 connector contribution service (C-EXT)'),
