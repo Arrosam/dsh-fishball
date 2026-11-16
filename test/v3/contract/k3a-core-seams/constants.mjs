@@ -25,6 +25,12 @@ export const FILE = Object.freeze({
   connectorTools: path.join(CONNECTOR_DIR, 'tools', 'constants.js'),
   /** Core's bundle patch: a guard is a bare `{id, disabled: true}` row (the file's own rule). */
   corePatch: path.join(CORE_DIR, 'cordis.patch.yml'),
+  /**
+   * Where `UI_SEAM` lives since F-UI: fishball-shared's `ui-seam.js` ("F-UI moves this object
+   * unchanged into fishball-shared", core's own contract comment; F-UI interface item 7), because
+   * fishball-ui loads without core and cannot import core's constants.
+   */
+  uiSeam: path.join(V3.shared.dir, 'ui-seam.js'),
 })
 
 /** R-ARCH-10 / 1.39 and design §1.0c: the DSH-side packages (names and their package folders). */
@@ -47,8 +53,10 @@ export const DSH_SIDE = Object.freeze({
   ]),
 })
 
-/** The core constants objects K3a adds (the relayed surface's export names). */
-export const EXPORTS = Object.freeze(['MCP', 'LINK', 'HOSTED_IMPORT', 'CONNECT', 'UI_SEAM'])
+/** The core constants objects K3a adds (the relayed surface's export names); UI_SEAM moved to fishball-shared (F-UI). */
+export const EXPORTS = Object.freeze(['MCP', 'LINK', 'HOSTED_IMPORT', 'CONNECT'])
+/** The moved export and its new module's other exports' names are not this suite's: only UI_SEAM is. */
+export const MOVED_EXPORT = 'UI_SEAM'
 
 /** The relayed shape of `MCP` (keys only; values are checked against the connector). */
 export const MCP_SHAPE = Object.freeze({
@@ -224,8 +232,10 @@ export const OAUTH_CLIENT = Object.freeze({
 export const LATER = Object.freeze({
   linkSave: 'F-LINK-SAVE (core reads DSH_AGENT_TOKEN and dsh-instance-child.targetUrl, saves fishball-core/hosted-agent, unsets the reference; Connect)',
   host: 'I-HOST (the instance\'s child-side row writes the imported token and the target URL)',
-  ui: 'F-UI (fishball-ui: logs fishball-core-missing without core; draws only through fishballInstance.ui)',
-  status: 'F-STATUS (core reports nothing about a missing fishball-ui)',
+  /** Since F-UI the A1/A2 behaviour rows run as system rows in test/v3/fishball-ui/package (UI-UC-02, UI-UC-03). */
+  uiSuite: 'test/v3/fishball-ui/package: UI-UC-02 (fishball-core-missing once, nothing changed) and UI-UC-03 (core alone, no hint)',
+  /** The browser half reaches core only over core's routes (no fishballInstance.ui in the page). */
+  uiReads: 'F-WIRE (fishball-ui\'s Node row reads fishballInstance.ui and publishes it on its own routes)',
   wire: 'F-WIRE (core provides fishballInstance.ui: listeners fire on change; dispose stops them)',
   // F-OWN-SCHEMA is executable in contract/own-schema; no deferred owner remains.
 })

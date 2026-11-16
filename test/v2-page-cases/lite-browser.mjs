@@ -4,7 +4,7 @@
  * - A headless Chromium (FBTEST_CHROME, else the local Playwright headless shell) is driven over
  *   the DevTools protocol on loopback only. No network, profile or credential is used.
  * - Two throwaway loopback HTTP origins: the "child" origin serves the harness page, the product
- *   page client (packages/core/ui/fishball-page/client.js, executed unread) and the selected SDK's real
+ *   page client (packages/fishball-ui/fishball-page/client.js since F-UI, executed unread) and the selected SDK's real
  *   dsh-client-shortcuts browser bundle; the "main" origin only holds main-DSH storage sentinels.
  *   Distinct ports are distinct browser origins, so localStorage is really partitioned.
  * - Each case opens a fresh tab, so page state never leaks between cases.
@@ -20,7 +20,7 @@ const HERE = path.dirname(fileURLToPath(import.meta.url))
 const REPO = path.resolve(HERE, '..', '..')
 
 export const LITE_ENV = Object.freeze({
-  pageClient: path.join(REPO, 'packages', 'core', 'ui', 'fishball-page', 'client.js'),
+  pageClient: path.join(REPO, 'packages', 'fishball-ui', 'fishball-page', 'client.js'),
   harness: path.join(HERE, 'lite-harness.js'),
   shortcutsBundle: path.join('@deepseek-ai', 'dsh-client-shortcuts', 'lib', 'client.js'),
   routes: Object.freeze({ harness: '/', harnessScript: '/harness.js', page: '/page/client.js', sdkPrefix: '/sdk/', main: '/main' }),

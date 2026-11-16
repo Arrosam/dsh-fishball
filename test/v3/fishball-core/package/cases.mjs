@@ -91,7 +91,7 @@ export function registerCoreCases(sdk) {
     assert.equal(manifest.name, V3.core.name)
     assert.ok(readManifest(path.dirname(path.dirname(V3.core.dir))).workspaces?.includes(CORE.workspace), 'root workspaces lack ' + CORE.workspace)
   })
-  caseTest(sdk, 'HOST-EP-03', 1, 'core manifest has a dsh bundle and a dsh.client entry (fishball-ui ships with core, R-FB-01)', () => {
+  caseTest(sdk, 'HOST-EP-03', 1, "core manifest has a dsh bundle and a dsh.client entry (core's own settings page; fishball-ui is its own bundle since F-UI)", () => {
     const manifest = coreManifest()
     assert.ok(manifest[DSH_FIELD]?.bundle, 'no dsh.bundle')
     assert.ok(manifest[DSH_FIELD]?.client && typeof manifest[DSH_FIELD].client === 'object', 'no dsh.client entry')

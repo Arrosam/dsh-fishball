@@ -8,6 +8,12 @@ decision on target precedence (2026-11-16; SET3-UC-11, SET3-DT-06). R-HOST-11 is
 withdrawn (1.34). Written from the requirements only: these cases never read
 `packages/core/client.settings.js` or `packages/core/src/settings/**`.
 
+Since F-UI (interface items 8–9, 2026-11-16) the two Fishball-page entries and the `view=settings`
+continuation are fishball-ui's (`packages/fishball-ui/client.entries.js`, locale namespace
+`fishball-ui-entries`); core's `client.settings.js` registers only core's settings page. The page
+harness loads both clients by default (a Fishball DSH with fishball-ui) and core's alone for the
+"core only" rows; every SET3-UC-07/08 row keeps its meaning.
+
 Levels:
 - **integration** (page.mjs): core's real `client.js` and `client.settings.js` in a scripted DSH page,
   applied by the SDK's own Cordis with their inject lists, DSH's own `SettingsFormModel` /

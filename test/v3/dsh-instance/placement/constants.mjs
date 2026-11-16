@@ -48,13 +48,15 @@ export const RELAYED = Object.freeze({
    * Core's patch rows (Fishball 2026-11-15, Q-13 probe correction). DSH client-modules serves a
    * client only for a path row (resolved to its nearest manifest) or a bare package name, never
    * for `fishball-core/<sub>`. So:
-   * - `fishball-ui` is the only path row whose nearest package.json is fishball-core's own (Q-13);
-   * - `fishball-page` and `fishball-recommend-plugins` are path rows into their own ui packages;
+   * - core's guards row is the only path row whose nearest package.json is fishball-core's own (Q-13;
+   *   since F-UI it is `fishball-core-guards`, and the page and Recommended-tab rows are
+   *   fishball-ui's, which the instance does not place until I-HOST);
    * - every slim child row is a `fishball-core/slim/*` subpath.
    */
   rows: Object.freeze({
-    corePathRow: 'fishball-ui',
-    uiPackages: Object.freeze({ 'fishball-page': path.join('ui', 'fishball-page'), 'fishball-recommend-plugins': path.join('ui', 'fishball-recommend-plugins') }),
+    corePathRow: 'fishball-core-guards',
+    /** The rows that left core's patch for fishball-ui's (F-UI). */
+    movedToUi: Object.freeze(['fishball-page', 'fishball-recommend-plugins']),
     slim: Object.freeze(['session-tools', 'approvals', 'app', 'inbox', 'admin', 'provider-sync'].map((n) => 'fishball-native-' + n)),
     slimPrefix: V3.core.name + '/slim/',
   }),
@@ -134,6 +136,8 @@ export const PANEL = Object.freeze({
    */
   childEntries: Object.freeze(['fishball-page', 'fishball-recommend-plugins', V3.core.name]),
 })
+/** Core's own guard rows after F-UI (the UI-only rows are fishball-ui's patch, not placed in a hosted child yet). */
+export const CORE_GUARD_ROWS = Object.freeze(['schedule', 'open-in-app', 'terminal-controller', V3.instance.name])
 
 /** Integration rows need a real host DSH and its child (K3/R-CORE pattern); skipped by name otherwise. */
 export const INTEGRATION = Object.freeze({
@@ -149,6 +153,7 @@ export const BUDGET = Object.freeze({ readyMs: 150000, restartMs: 150000, pollMs
 /** Owners of the rows I-PLACE cannot check. */
 export const LATER = Object.freeze({
   host: 'I-HOST (W4: the dshInstanceChild locator, Retry, lifecycle codes such as fishball-off)',
+  placeUi: 'I-HOST (the instance places fishball-ui in the hosted child; until then the child has core only, so no page, Recommended tab or UI guard row)',
   restartNotice: 'U-SHELL / E2E-UI (the "restart required" line in the UI)',
   relPack: 'REL-PACK (P-1 mechanism B: a real copy of its side\'s library in each tarball; PLAT-EP-07 row 5 stays failing until then)',
   uninstall: 'I-HOST (HOST-ST-01 row 10: uninstall with the export offer, Q-23)',

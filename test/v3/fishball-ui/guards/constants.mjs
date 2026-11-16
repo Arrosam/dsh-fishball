@@ -89,8 +89,18 @@ export const REPORT = Object.freeze({
 })
 if (!REPORT.ok || !REPORT.overridden) throw new Error('K3 GuardReport statuses not readable: ' + reportRaw)
 
-/** R-FB-01 / PLAT-UC-04 main: the component that ships inside core, never a plugin entry of its own. */
-export const UI_COMPONENT = 'fishball-ui'
+/**
+ * F-UI (requirements 1.38 Q-N2, R-FB-14): fishball-ui is its own bundle now, and the guard rows that
+ * are only UI are its patch's; core keeps the rest (F-UI interface items 2 and 5). The UI rows apply
+ * exactly when core is among the bundles this DSH started with.
+ */
+export const UI_COMPONENT = V3.ui.name
+export const SPLIT = Object.freeze({
+  uiRows: Object.freeze(['ui-subagent', 'ui-schedule', 'ui-permission', 'ui-agent-preset', 'entry-customization', 'ui-open-in-app', 'ui-sidebar-terminal']),
+  coreRows: Object.freeze(['schedule', 'open-in-app', 'terminal-controller', V3.instance.name]),
+  /** fishball-ui's own package folders inside it (its page and Recommended tab, interface item 10), id → folder. */
+  uiPackages: Object.freeze({ 'fishball-page': 'fishball-page', 'fishball-recommend-plugins': 'fishball-recommend-plugins' }),
+})
 
 /**
  * DSH rows and values a test uses to act as the owner (test inputs on DSH's own rows, not product

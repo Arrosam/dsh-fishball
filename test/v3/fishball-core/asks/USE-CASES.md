@@ -2,7 +2,8 @@
 
 Written from the requirements alone (R-FB-11, R-UI-12, R-CON-05, R-CON-06, R-CON-08; K3
 `packages/core/contracts/ask-card.d.ts` and `ui.d.ts` `asks`; the user's decision Q3 = A; test design
-PLAT-UC-07). The implementation (`packages/core/src/asks/`, `packages/core/client.asks.js`) was not
+PLAT-UC-07). The implementation (`packages/core/src/asks/`, and the browser half
+`packages/fishball-ui/client.asks.js`, moved there from core by F-UI) was not
 read. Every expected outcome below comes from those requirements.
 
 Actors: S1, an agent session that calls `ask_agent` (the asker); Fishball's model (it may call
@@ -38,8 +39,8 @@ page (through `ui.asks` or the two Fetch routes).
 
 ### ASK-UC-04: The main DSH shows nothing (R-UI-12, Q-U2)
 - **Main**: no main-DSH package (dsh-connector, dsh-connector-ui, dsh-instance) loads the card's
-  browser chunk or calls the card routes; the chunk is core's own (`fishball-core`, shipped in
-  core's `files`); the routes are the only registrations the module makes.
+  browser chunk or calls the card routes; the chunk is fishball-ui's own (`fishball-ui`, shipped in
+  fishball-ui's `files`, F-UI); the routes are the only registrations the module makes.
 
 ### ASK-UC-07: Startup reconciliation deletes ended unfiled asks (Fishball's decision 2026-11-16)
 - **Main**: at a start, `reconcile()` asks `approvals_list({sessionId})` once per session that has

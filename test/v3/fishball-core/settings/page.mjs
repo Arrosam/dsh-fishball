@@ -2,7 +2,8 @@
  * The F-SETTINGS scripted page: core's real browser scripts in a fake DSH page. No browser, no DSH
  * process.
  *
- * What is real: core's `client.js` and the chunk it loads, `client.settings.js`, run unread as DSH's
+ * What is real: core's `client.js` and the chunk it loads, `client.settings.js`, and (F-UI) fishball-ui's
+ * `client.js` and the parts it loads (`client.entries.js`, `client.asks.js`), run unread as DSH's
  * module loader runs them (support/browser-sandbox.mjs, the module table of
  * ../../contract/package-boundaries/client-graph.mjs); the SDK's own Cordis `Context`, which applies
  * them with their declared `inject` lists; DSH's own `SettingsFormModel` and `settingsTextField`
@@ -35,7 +36,7 @@ import { pathToFileURL } from 'node:url'
 import { createBrowserSandbox } from '../../../support/browser-sandbox.mjs'
 import { createReactShim, findAll, textOf } from '../../../support/rp-recommend.mjs'
 import { applyPlugins, moduleTable } from '../../contract/package-boundaries/client-graph.mjs'
-import { CORDIS_ENTRY, CONNECT, CORE, DSH, FIBER, FIXTURE, HARNESS, HOSTED_IMPORT, MARK, ROUTE, STATUS_EVENT, SUBJECT, runtimeOf } from './constants.mjs'
+import { CLIENTS, CORDIS_ENTRY, CONNECT, CORE, DSH, FIBER, FIXTURE, HARNESS, HOSTED_IMPORT, MARK, ROUTE, STATUS_EVENT, SUBJECT, UI, runtimeOf } from './constants.mjs'
 import { STAND_IN, primitivesFor } from './primitives.mjs'
 
 export const settle = async (rounds = HARNESS.settleRounds) => { for (let i = 0; i < rounds; i++) await new Promise((resolve) => setImmediate(resolve)) }
@@ -112,13 +113,14 @@ function namespaceForm(world, ns) {
  * @param options.launcher - DSH's native Settings launcher is on the page (default true).
  * @param options.omit - service names this page does not provide.
  * @param options.activePanel - the layout's active panel at load (default null).
+ * @param options.clients - CLIENTS.both (core and fishball-ui, the default) or CLIENTS.coreOnly.
  */
 export function createWorld({
   sdk, lang = 'en', base = FIXTURE.base, hash = '', core = {}, coreUser, instanceTarget = null, configured = false,
-  navigation = true, launcher = true, omit = [], activePanel = null,
+  navigation = true, launcher = true, omit = [], activePanel = null, clients = CLIENTS.both,
 } = {}) {
   const world = {
-    sdk, lang, base,
+    sdk, lang, base, clients,
     namespaces: new Map(),
     forms: new Map(),
     watchers: [],
@@ -404,11 +406,13 @@ export async function loadPage(t, world) {
     '@deepseek-ai/dsh-client-ui-primitives': primitivesFor(world.sdk, world.React),
     'react/jsx-runtime': jsxRuntime(world.React),
   }
-  const coreDir = path.dirname(SUBJECT.coreClient)
+  // Each graph entry's chunks load from its own package folder (DSH's package-local chunk route).
+  const entries = [{ id: CORE.moduleId, file: SUBJECT.coreClient }, ...(world.clients === CLIENTS.both ? [{ id: UI.moduleId, file: SUBJECT.uiClient }] : [])]
   const run = (file) => page.run(fs.readFileSync(file, 'utf8'), file, pathToFileURL(file).href)
-  run(SUBJECT.coreClient)
-  const graph = [{ id: CORE.moduleId, rev: 'fbtest' }]
-  const table = moduleTable({ page, platform, graph, loadChunk: async (_owner, file) => run(path.join(coreDir, file)) })
+  for (const e of entries) run(e.file)
+  const graph = entries.map((e) => ({ id: e.id, rev: 'fbtest' }))
+  const dirOf = (owner) => path.dirname(entries.find((e) => e.id === owner).file)
+  const table = moduleTable({ page, platform, graph, loadChunk: async (owner, file) => run(path.join(dirOf(owner), file)) })
 
   const { Context } = await import(pathToFileURL(path.join(runtimeOf(world.sdk), CORDIS_ENTRY)).href)
   const root = new Context()

@@ -9,7 +9,7 @@
  *            ctx.logger(name)
  *     ports  {link, target, connect?, guards?, bridge?, notify?} (fakes.mjs)
  *   statusOf(service) → service.snapshot(), or the frozen {fishball: 'fishball-off'}
- * packages/core/ui/status/index.js
+ * packages/fishball-ui/src/status/index.js (moved unchanged from core's ui/status by F-UI)
  *   STATUS_TEXT {en, zh}; stripView(snapshot, lang = 'en') → {lines: [{kind, text}], control}
  *
  * Both are imported with the per-SDK resolve hook, so any `@deepseek-ai/*` import they make binds
@@ -57,6 +57,6 @@ export async function statusOf(sdk, service) {
 /** stripView(snapshot, lang?); `lang` undefined calls it with one argument (the default applies). */
 export async function stripView(sdk, snapshot, lang) {
   const mod = await stripModule(sdk)
-  assert.equal(typeof mod[SUBJECT.view], 'function', `ui/status/index.js exports no ${SUBJECT.view}()`)
+  assert.equal(typeof mod[SUBJECT.view], 'function', `fishball-ui src/status/index.js exports no ${SUBJECT.view}()`)
   return lang === undefined ? mod[SUBJECT.view](snapshot) : mod[SUBJECT.view](snapshot, lang)
 }

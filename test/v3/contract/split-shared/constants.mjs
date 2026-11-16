@@ -43,12 +43,14 @@ export const sdkModules = (sdk) => path.join(SDK.versionsDir, sdk, 'node_modules
 /**
  * Requirement 1: which library each existing package of a side is expected to import and bundle
  * (the packages that use the moved modules today). The connector uses `redact`, the instance the
- * admin protocol, provider-sync and files, core its child halves and the Skills store.
+ * admin protocol, provider-sync and files, core its child halves and the Skills store, and
+ * fishball-ui (a Fishball-side package since F-UI) the ui-seam.
  */
 export const EXPECTED_LIBRARY = Object.freeze({
   [V3.instance.name]: V3.dshShared.name,
   [V3.connector.name]: V3.dshShared.name,
   [V3.core.name]: V3.shared.name,
+  [V3.ui.name]: V3.shared.name,
 })
 
 /** Requirement 7: the placed copies in the child profile and the contract-only connector. */

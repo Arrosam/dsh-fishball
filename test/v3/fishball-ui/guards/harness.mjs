@@ -12,7 +12,7 @@ import { after } from 'node:test'
 import { NODE, TEST_HOMES } from '../../../support/constants.mjs'
 import { newHome, until } from '../../../support/host.mjs'
 import { runtimeOf } from '../../fishball-core/package/constants.mjs'
-import { BUDGET, ENV, WORKER_FILE } from './constants.mjs'
+import { BUDGET, ENV, REPORT, WORKER_FILE } from './constants.mjs'
 
 const URL_LINE = /dsh web: (http\S+)/
 
@@ -72,6 +72,16 @@ export async function bootWorker(home, sdk, env = {}) {
   }
   if (!(await handle.call('waitReady'))) throw new Error('DSH never signalled app ready:\n' + tail())
   return handle
+}
+
+/** A report that holds every guard (K3 GuardReport `ok`, nothing overridden). */
+export const isOk = (report) => report?.status === REPORT.ok && report.overridden.length === 0
+
+/** Wait until the worker's report satisfies `test`; returns the last report seen (shared by the F-GUARDS and F-UI cases). */
+export async function waitReport(h, test, ms = BUDGET.recomposeMs) {
+  let last
+  await until(async () => { last = await h.call('report'); return test(last) }, ms, BUDGET.pollMs)
+  return last
 }
 
 /** The FBG_* environment of one boot. */
