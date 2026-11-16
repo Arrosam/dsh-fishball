@@ -30,8 +30,8 @@ window.__ModuleLoader__.load({
     })
     /**
      * The non-secret continuation PG-ORIGIN carries across native admission in the fragment
-     * (dsh-instance's admission route, child-row.js with its constants.js TICKET.fragment, and the V2
-     * src/slim/host/embed.js CONTINUATION; keep them in step). Any other name or value is ignored, never acted on.
+     * (dsh-instance's admission route, child-row.js with its constants.js TICKET.fragment; keep them
+     * in step). Any other name or value is ignored, never acted on.
      */
     const SETTINGS_VIEW = 'settings'
     const CONTINUATION = Object.freeze({

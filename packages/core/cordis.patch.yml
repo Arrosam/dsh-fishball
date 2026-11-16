@@ -37,7 +37,7 @@
 
 # Effective read-only (V2 LITE). The approval policy stays `ask`: `never` would mean "allowed without
 # asking". The private Skills exception needs no row: the manager-scoped confined provider of
-# src/slim/child/skills.js is the only writer of Fishball's own skills.
+# src/manager/skills.js is the only writer of Fishball's own skills.
 - id: sandbox-policy
   config:
     mode: &read-only read-only
@@ -58,7 +58,7 @@
 - insert:
     # Core's own agent preset for the manager: `read` and `read_image` (tool-fs with no write or
     # edit); `working_directory` is DSH's global tool (dsh-base). No persona row: core composes the
-    # manager's persona in code on create and on every resume (src/slim/child/persona.js).
+    # manager's persona in code on create and on every resume (src/manager/persona.js).
     - id: preset-fishball
       name: '@deepseek-ai/dsh-agent-preset'
       config:
@@ -73,25 +73,15 @@
     # Fishball page and the Recommended tab are fishball-ui's rows since F-UI.
     - id: fishball-core-guards
       name: ./src/guards/row.js
-    # Core's slim child rows (V2 T03–T16, moved from the instance's launch overlay by I-PLACE, row ids
-    # kept so stored settings carry over). Each is a `fishball-core/<export>` package subpath, never a
-    # path: DSH's client modules count every path row inside core's folder as another client source
-    # of fishball-core and refuse the package (I-PLACE probe, both SDKs), and a subpath is not a
-    # client source. They are rows, not sub-plugins of one row, because the boot settlement waits for
-    # loader rows only (B5): the chain nativeRuntime → fishballBridge → fishballApprovals → the app
-    # row must be up before appReady. nativeRuntime comes from the hosted child's lifecycle row; a DSH
-    # without it leaves these rows waiting for that service (W4b's F-WIRE replaces them).
-    # No row here is `required` (decided 2026-11-15): a required row would fail every standalone
-    # DSH's boot, where these rows wait for nativeRuntime. So a broken app row no longer fails a
-    # hosted child's boot loudly (V2 LIFE-02); it shows as the lifecycle's readiness failure
-    # (APP_NOT_PUBLISHED, or STARTUP_TIMEOUT), and the start is reported failed all the same.
-    - { id: fishball-native-session-tools, name: fishball-core/slim/session-tools }
-    - { id: fishball-native-approvals, name: fishball-core/slim/approvals }
-    - { id: fishball-native-app, name: fishball-core/slim/app }
-    - { id: fishball-native-inbox, name: fishball-core/slim/inbox }
+    # Core's main row (src/main/, F-WIRE): the link, Connect, the interception service, the ask
+    # cards, status, the bridge façade and the one manager session with its persona, reminders and
+    # private Skills; it provides `fishballInstance` and `fishballStatus`. Its id is its settings
+    # namespace (core's own settings page edits it). A package subpath, never a path row: DSH's
+    # client modules count every path row inside core's folder as another client source of
+    # fishball-core and refuse the package (I-PLACE probe, both SDKs). Not `required` (decided
+    # 2026-11-15 for core's rows): a failure is this row's alone, and the DSH still boots.
+    - { id: fishball-core, name: fishball-core/main }
     # The Fishball page's manager-session route (src/session/route.js), core's own since I-HOST, so
     # fishball-ui's page finds it in a hosted child and in a standalone DSH alike. Its one inject is
-    # `connection`, so it does not wait for nativeRuntime.
+    # `connection`.
     - { id: fishball-core-session, name: fishball-core/session-route }
-    # The child admin and provider-sync rows (V2 T11, T16) moved to dsh-instance's child-side row
-    # (I-HOST; design §1.0b row 5, requirements 1.41 Q-G7).

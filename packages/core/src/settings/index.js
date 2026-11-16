@@ -1,14 +1,15 @@
 /**
- * Core's own settings page, Node half (task F-SETTINGS): the Connect route the page's Connect
- * control calls (`client.settings.js`), and the page's settings names (`SETTINGS`) for F-WIRE's
- * row schema. Composition only; F-WIRE mounts the route in core's row (`registerSettingsRoutes(ctx)`
- * from that row's `apply`).
+ * Core's own settings page, Node half (task F-SETTINGS): the Connect routes the page's Connect
+ * control and fishball-ui's status strip call (`client.settings.js`, fishball-ui `client.strip.js`),
+ * and the page's settings names (`SETTINGS`) for the row schema. Composition only; core's main row
+ * mounts them (`registerSettingsRoutes(ctx, {callbackFor})` and `registerConnectCancelRoute(ctx)`, F-WIRE).
  *
  * Everything else on the page is DSH's own: the fields are the row's settings namespace, saved
  * through DSH's settings service, and the write-only token field writes DSH's credential store
  * through `remote.credentials`. So this route is the page's only server code.
  */
 import { UI_SEAM } from 'fishball-shared/ui-seam'
+import { BEGIN_VIA } from '../link/connect.js'
 import { GUARDS } from '../../contracts/constants.js'
 import { CONNECT_ROUTE } from './constants.js'
 
@@ -26,7 +27,7 @@ const pick = (source, keys) => Object.fromEntries(keys.map((key) => [key, source
 function connectOf(ctx) {
   const service = ctx.get(GUARDS.services.instance)
   const connect = service?.apiVersion === CONNECT_ROUTE.instanceApiVersion ? service[UI_SEAM.member]?.connect : undefined
-  return typeof connect?.status === 'function' && typeof connect.begin === 'function' ? connect : undefined
+  return typeof connect?.status === 'function' && typeof connect.begin === 'function' && typeof connect.cancel === 'function' ? connect : undefined
 }
 
 /**
@@ -39,27 +40,57 @@ function beginAnswer(begin) {
 }
 const statusAnswer = (status) => pick(status, ['state', 'code'])
 
+/** One answer of a compatible `ui.connect`, or 503 (also for a throw: its message could name a credential detail). */
+function answering(ctx, act) {
+  const unavailable = () => json(CONNECT_ROUTE.unavailable, { code: CONNECT_ROUTE.unavailableCode })
+  return async (request) => {
+    try {
+      const connect = connectOf(ctx)
+      if (connect === undefined) return unavailable()
+      const answer = await act(connect, request)
+      return answer === undefined ? unavailable() : json(CONNECT_ROUTE.ok, answer)
+    } catch {
+      return unavailable()
+    }
+  }
+}
+
 /**
  * Registers `GET|POST /api/fishball/connect` (CONNECT_ROUTE) on DSH's authenticated exact-route
  * channel. Returns DSH's disposer.
  * @param {{get(name: string): any, connection: {fetch: {register(route: object): () => Promise<void>}}}} ctx core's row context
+ * @param {{callbackFor?: (request: Request) => object | undefined}} [options] the press's callback
+ *   choice from the page's own origin (link/web-callback.js, Q-A3 B). `undefined` is the loopback
+ *   callback, and then `begin()` is called with no argument, as K3a's `FishballConnect.begin()` is
  */
-export function registerSettingsRoutes(ctx) {
-  const unavailable = () => json(CONNECT_ROUTE.unavailable, { code: CONNECT_ROUTE.unavailableCode })
+export function registerSettingsRoutes(ctx, { callbackFor = () => undefined } = {}) {
+  // A press whose page needs the web callback (or can take none) goes through core's route-only
+  // begin; a loopback press is K3a's plain `begin()`.
+  const begin = (connect, request) => {
+    const via = callbackFor(request)
+    return via === undefined || typeof connect[BEGIN_VIA] !== 'function' ? connect.begin() : connect[BEGIN_VIA](via)
+  }
   return ctx.connection.fetch.register({
     path: CONNECT_ROUTE.path,
     methods: [CONNECT_ROUTE.read, CONNECT_ROUTE.begin],
     requestBody: CONNECT_ROUTE.requestBody,
-    async fetch(request) {
-      try {
-        const connect = connectOf(ctx)
-        if (connect === undefined) return unavailable()
-        const answer = request.method === CONNECT_ROUTE.begin ? beginAnswer(await connect.begin()) : statusAnswer(connect.status())
-        return answer === undefined ? unavailable() : json(CONNECT_ROUTE.ok, answer)
-      } catch {
-        // Never serialize an exception: its message could name a credential detail.
-        return unavailable()
-      }
-    },
+    fetch: answering(ctx, async (connect, request) => (request.method === CONNECT_ROUTE.begin ? beginAnswer(await begin(connect, request)) : statusAnswer(connect.status()))),
+  })
+}
+
+/**
+ * Registers `POST /api/fishball/connect/cancel` (CONNECT_ROUTE.cancelPath): `cancel()`, then the
+ * status (fishball-ui's strip Cancel, design §6.3a step 2; F-WIRE). Returns DSH's disposer.
+ * @param ctx as `registerSettingsRoutes`
+ */
+export function registerConnectCancelRoute(ctx) {
+  return ctx.connection.fetch.register({
+    path: CONNECT_ROUTE.cancelPath,
+    methods: [CONNECT_ROUTE.cancel],
+    requestBody: CONNECT_ROUTE.requestBody,
+    fetch: answering(ctx, async (connect) => {
+      connect.cancel()
+      return statusAnswer(connect.status())
+    }),
   })
 }

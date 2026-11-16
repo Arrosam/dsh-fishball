@@ -25,7 +25,8 @@ export const UI_PACKAGE = Object.freeze({
   /** DSH host packages are the only other names its manifest may carry (relayed: peers on `@deepseek-ai/*`). */
   hostScope: '@deepseek-ai/',
   /** The browser files it ships (interface item 8). */
-  clientFiles: Object.freeze(['client.js', 'client.entries.js', 'client.asks.js']),
+  // Re-baselined (F-WIRE): client.js loads four parts; the strip and the model dialog are shipped too.
+  clientFiles: Object.freeze(['client.js', 'client.entries.js', 'client.asks.js', 'client.strip.js', 'client.model.js']),
 })
 
 /**
@@ -40,7 +41,9 @@ export const FORBIDDEN = Object.freeze({
 /** Interface item 2: fishball-ui's patch rows. */
 export const ROWS = Object.freeze({
   /** The UI-only guard rows, `{id, disabled: <with-core>}`, in this order. */
-  guards: Object.freeze(['ui-subagent', 'ui-schedule', 'ui-permission', 'ui-agent-preset', 'entry-customization', 'ui-open-in-app', 'ui-sidebar-terminal']),
+  // Re-baselined (F-WIRE, 2026-11-16): eight rows; `ui-model-selection` (the composer's model picker
+  // and /model) comes last. The user: "Hide it. Only core's settings choose the model".
+  guards: Object.freeze(['ui-subagent', 'ui-schedule', 'ui-permission', 'ui-agent-preset', 'entry-customization', 'ui-open-in-app', 'ui-sidebar-terminal', 'ui-model-selection']),
   /** Inserted rows `disabled: <without-core>` (on exactly when core is started), id → module name. */
   withCore: Object.freeze({
     'fishball-ui': './index.js',
@@ -110,13 +113,19 @@ export const SEAM = Object.freeze({
   keys: Object.freeze(['fishball', 'set', 'reason', 'control', 'link', 'connect', 'guards']),
 })
 
-/** Interface item 8 (as amended): the browser entry and its two parts. */
+/** Interface item 8 (as amended by F-WIRE): the browser entry and its four parts. */
 export const CLIENT = Object.freeze({
   moduleId: V3.ui.name,
   entry: path.join(V3.ui.dir, 'client.js'),
   parts: Object.freeze({
     entries: Object.freeze({ file: 'client.entries.js', export: 'entriesPart', plugin: 'fishball-ui: entries', style: 'fishball-ui-entries-style' }),
     asks: Object.freeze({ file: 'client.asks.js', export: 'asksPart', plugin: 'fishball-ui: asks', style: 'fishball-asks-style' }),
+    // Re-baselined (F-WIRE lead, 2026-11-17): "client.js now loads FOUR parts: client.entries.js,
+    // client.asks.js, client.strip.js (the status strip, stripPart) and client.model.js (the model
+    // dialog, modelPart)". Their plugin names and style ids are not specified: `plugin: null` means
+    // UI-UC-05 checks only that the plugin has a non-empty name.
+    strip: Object.freeze({ file: 'client.strip.js', export: 'stripPart', plugin: null, style: null }),
+    model: Object.freeze({ file: 'client.model.js', export: 'modelPart', plugin: null, style: null }),
   }),
   /** The kit member a part gets (`mountStyle(id, cssText) → dispose`). */
   kitStyle: 'mountStyle',

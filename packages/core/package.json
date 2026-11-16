@@ -1,19 +1,16 @@
 {
   "name": "fishball-core",
   "version": "0.1.0-alpha.0",
-  "description": "Fishball's core plugin, the backend: the Fishball manager session and its preset, its slim app and persona, the private Skills tool, the link, Connect, status, the ask-card store, pairing, the non-UI guard rows and its own plugin settings page. Every other UI change inside Fishball is the fishball-ui plugin's.",
+  "description": "Fishball's core plugin, the backend: the Fishball manager session and its preset, persona, reminders and private Skills tools, the link, Connect, the interception service, status, the ask-card store, pairing, the non-UI guard rows and its own plugin settings page. Every other UI change inside Fishball is the fishball-ui plugin's.",
   "license": "MIT",
   "type": "module",
-  "//": "A DSH bundle of the Fishball plugin set (R-FB-01, design §1.2, §9.1). V3 R-CORE moved the slim child, persona, private Skills tool and child-web pages here unchanged; in a hosted child the instance places this package as a bundle, last (I-PLACE). cordis.patch.yml carries the non-UI guard rows, core's fishball preset and its guard row src/guards/row.js (F-GUARDS), and the slim child rows (I-PLACE); ./client is core's own settings page, with the chunk client.settings.js. Since F-UI (requirements 1.38 Q-N2, R-FB-14) the Fishball page, the Recommended tab, the UI guard rows, the strip and pairing views, the ask cards and the two settings entries are the separate fishball-ui plugin's; core runs normally without it and shows no hint of it (Q-G1). It never depends on dsh-instance (TQ-R3, R-BND-01) or on fishball-ui.",
-  "//exports": "./slim/* are the slim child modules core's own patch mounts as fishball-core/<subpath> rows, and ./session-route the Fishball page's manager-session route row (a path row inside this folder would be a second client source of the package; I-PLACE). ./contracts is K3's runtime constants (with K3a's own copy of the connector's MCP surface, MCP and LINK), for plugins that import them dynamically. There is no ./mcp-schema: F-OWN-SCHEMA removed the vendored copy of the connector's schema (design §1.0b row 1).",
+  "//": "A DSH bundle of the Fishball plugin set (R-FB-01, design §1.2, §9.1). cordis.patch.yml carries the non-UI guard rows, core's fishball preset, its guard row src/guards/row.js (F-GUARDS), its main row src/main/ (F-WIRE: link, Connect, interception, ask cards, status, the bridge façade and the one manager session) and the manager-session route; ./client is core's own settings page, with the chunk client.settings.js. Since F-UI (requirements 1.38 Q-N2, R-FB-14) the Fishball page, the Recommended tab, the UI guard rows, the strip and pairing views, the ask cards, the model dialog and the two settings entries are the separate fishball-ui plugin's; core runs normally without it and shows no hint of it (Q-G1). It never depends on dsh-instance or any DSH-side package (R-ARCH-10) or on fishball-ui.",
+  "//exports": "./main is core's main row and ./session-route the Fishball page's manager-session route row, each a package subpath (a path row inside this folder would be a second client source of the package; I-PLACE). ./contracts is K3's runtime constants (with K3a's own copy of the connector's MCP surface, MCP and LINK), for plugins that import them dynamically. There is no ./mcp-schema: F-OWN-SCHEMA removed the vendored copy of the connector's schema (design §1.0b row 1).",
   "exports": {
     "./client": "./client.js",
     "./link": "./src/link/index.js",
     "./contracts": "./contracts/constants.js",
-    "./slim/session-tools": "./src/slim/child/session-tools.js",
-    "./slim/approvals": "./src/slim/child/approvals.js",
-    "./slim/app": "./src/slim/child/app.js",
-    "./slim/inbox": "./src/slim/child/inbox.js",
+    "./main": "./src/main/index.js",
     "./session-route": "./src/session/route.js",
     "./package.json": "./package.json"
   },
@@ -39,9 +36,8 @@
   "bundleDependencies": [
     "fishball-shared"
   ],
-  "//peerDependencies": "Host packages are resolved from the running DSH installation, as for dsh-instance. dsh-atomic-write (the plugin manager's profile-manifest lock) and dsh-scope (an agent's parent scope) are read by src/guards (F-GUARDS). dsh-connector is a peer for the same reason as the instance's (user decision 2026-11-12): it is not published, so a plain dependency would send an install to a registry; only the V2 child path (src/slim/**, src/persona.js) imports it, its ./contract export; REMOVE-V2 deletes that path and this peer (design §1.0b row 2; the user's decision 2026-11-16). Every other core module reads core's own K3a constants, never this peer (design §1.0b row 1). Its range is the instance's. dsh-app-boot is read by src/guards. cosmokit and dsh-llm-pi-ai left with the child provider-sync half (I-HOST moved it to dsh-instance). '*' because engines.dsh is the real compatibility gate.",
+  "//peerDependencies": "Host packages are resolved from the running DSH installation, as for any plugin; '*' because engines.dsh is the real compatibility gate. dsh-atomic-write (the plugin manager's profile-manifest lock), dsh-scope (an agent's parent scope) and dsh-app-boot are read by src/guards (F-GUARDS); dsh-storage-domain and schemastery by the main row (its tables and its settings schema); the others by the manager session, its persona, reminders and private Skills. No DSH-side package is a peer (R-ARCH-10; the dsh-connector peer went with the V2 child path, REMOVE-V2 / F-WIRE).",
   "peerDependencies": {
-    "dsh-connector": ">=0.1.0-alpha.0 <2",
     "@deepseek-ai/dsh-agent": "*",
     "@deepseek-ai/dsh-app-boot": "*",
     "@deepseek-ai/dsh-atomic-write": "*",
@@ -51,9 +47,11 @@
     "@deepseek-ai/dsh-session": "*",
     "@deepseek-ai/dsh-skill": "*",
     "@deepseek-ai/dsh-skill-filesystem": "*",
+    "@deepseek-ai/dsh-storage-domain": "*",
     "@deepseek-ai/dsh-system-prompt": "*",
     "@deepseek-ai/dsh-tools": "*",
-    "@deepseek-ai/dsh-user-approval": "*"
+    "@deepseek-ai/dsh-user-approval": "*",
+    "@deepseek-ai/schemastery": "*"
   },
   "dsh": {
     "bundle": {

@@ -1,0 +1,29 @@
+/**
+ * The main row's settings (F-WIRE; F-SETTINGS `SETTINGS`, K3a `CONNECT.setting`, `FISHBALL_MODEL`).
+ * Every field is volatile, so a save in core's settings page (or the model dialog) reaches the
+ * running row without a restart: DSH's loader commits a volatile-only change into the running
+ * fiber's references and emits `loader/volatile-update` (cordis-plugin-loader, both SDKs), and the
+ * row reads each value live through `valueAt`. The nested shape is the one every design text uses
+ * (`target.url`, `connect.clientMetadataUrl`, `identity.id`, `identity.name`, `model`).
+ *
+ * `model`'s fields are optional in the schema: an absent `model` must parse (it means "this DSH's
+ * default model"), and schemastery applies an object's required fields to an absent value too.
+ * Whether a stored selection is complete and routable is the manager session's rule
+ * (src/manager/session.js), which reads an incomplete one as unset.
+ */
+import Schema from '@deepseek-ai/schemastery'
+
+const text = () => Schema.string().volatile()
+
+export const Config = Schema.object({
+  target: Schema.object({ url: text() }),
+  connect: Schema.object({ clientMetadataUrl: text() }),
+  identity: Schema.object({ id: text(), name: text() }),
+  model: Schema.object({ provider: Schema.string(), model: Schema.string(), reasoningEffort: Schema.string() }).volatile(),
+})
+
+/** A volatile field arrives as a live reference (`.get()`); a plain value (a direct construction) reads the same. */
+export function valueAt(config, path) {
+  const raw = path.reduce((node, key) => node?.[key], config)
+  return raw !== null && typeof raw === 'object' && typeof raw.get === 'function' ? raw.get() : raw
+}

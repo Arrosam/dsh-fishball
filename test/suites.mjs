@@ -216,6 +216,17 @@ export const V3_SUITES = Object.freeze({
   'fishball-ui.package': suite('fishball-ui package, patch rows and conditions, ui-seam, browser half, core/ui system rows (F-UI)', v3('fishball-ui/package'),
     [all(PACKAGE.fishballUi), all(PACKAGE.fishballCore), all(PACKAGE.fishballShared), 'test/v3/fishball-ui/guards/**', 'test/v3/fishball-core/package/**',
       'test/v3/fishball-core/status/constants.mjs']),
+  // F-WIRE: core's main row, boots a real standalone DSH with core, fishball-ui and board as whole
+  // bundles (the guards worker), and scans the Fishball side for DSH-side imports.
+  'fishball-core.wire': suite("core's main row: fishballInstance, fishballStatus, the manager, model, Connect routes and web callback (F-WIRE)", v3('fishball-core/wire'),
+    [all(PACKAGE.fishballCore), all(PACKAGE.fishballUi), all(PACKAGE.fishballShared), all(PACKAGE.fishballBoard), 'test/v3/fishball-ui/guards/**']),
+  // F-WIRE: core's manager in a real standalone DSH (core + shared only): reminders, the singleton,
+  // the preset and persona, the generated identity and the model rule, with the scripted model.
+  'fishball-core.manager': suite("core's manager: reminders, singleton, preset and persona, generated identity, model (F-WIRE)", v3('fishball-core/manager'),
+    [all(PACKAGE.fishballCore), all(PACKAGE.fishballShared), 'test/support/fixtures/fake-llm.mjs', 'test/support/host.mjs']),
+  // F-WIRE: fishball-ui's model dialog, strip route and live core rows, in the browser sandbox and a real DSH.
+  'fishball-ui.model-dialog': suite('fishball-ui model dialog, status strip route, live core on/off, composer picker guard (F-WIRE)', v3('fishball-ui/model-dialog'),
+    [all(PACKAGE.fishballUi), all(PACKAGE.fishballCore), all(PACKAGE.fishballShared), 'test/v3/fishball-core/wire/**', 'test/v3/fishball-core/settings/**', 'test/v3/fishball-ui/guards/**']),
   'fishball-board.peers': suite('board and fold-notify without core (FEAT-PEERS)', v3('fishball-board/peers'),
     [all(PACKAGE.fishballBoard), sub(PACKAGE.dshConnector, 'mcp-schema')]),
   // The contract suites read every file of the packages they bound, so any change there reruns them.
@@ -273,14 +284,15 @@ export const V2_GROUPS = Object.freeze({
   // the core it places, or either shared library (the instance's own, core's placed copy) reruns them.
   'v2.instance': suite('the instance: launch, lifecycle, embed, provider sync, child pages', v2([
     'body-soul-i1c-status', 'body-soul-i2-launch', 'body-soul-i6-sync',
-    'e1-p1-connector-departure', 'e1-p3-sync-https', 'instance-ext-fakehost', 'provider-sync-coordinator', 'provider-sync-official',
+    'e1-p1-connector-departure', 'e1-p3-sync-https', 'provider-sync-coordinator', 'provider-sync-official',
     'runtime-isolation-boundary', 'runtime-isolation-transport', 'v2-r2-start-detail',
-    'v2-r4-core-copy', 'v2-r4-exit-race', 'test/verification/w0-host-session.test.mjs',
+    'v2-r4-core-copy', 'v2-r4-exit-race',
     'test/v2-page-cases/child-boot.test.mjs', 'test/v2-page-cases/child-boot-nav.test.mjs',
   ]), [all(PACKAGE.dshInstance), all(PACKAGE.fishballCore), all(PACKAGE.fishballUi), all(PACKAGE.dshConnectorShared), all(PACKAGE.fishballShared), sub(PACKAGE.dshConnector, 'contract')]),
-  'v2.fishball-core': suite('core\'s slim child and pages: chat, records, i18n, persona, skills, settings, lite', v2([
-    'body-soul-i6-settings-view', 'body-soul-i7-records', 'body-soul-i9-lang', 'e1-p2-model-choice', 'e1-p4-header-name',
-    'persona-bold-render', 'test/instance-ext/x0-i.test.mjs', 'test/instance-ext/x0-w.test.mjs',
+  // F-WIRE deleted core's slim child and its suites (V2 was never deployed, the user's rule); the
+  // persona, private Skills and the page cases stay.
+  'v2.fishball-core': suite('core\'s persona, private Skills and the Fishball page cases', v2([
+    'persona-bold-render',
     'test/private-skills/sk-bva.test.mjs', 'test/private-skills/sk-dt.test.mjs', 'test/private-skills/sk-ep.test.mjs',
     'test/private-skills/sk-st.test.mjs', 'test/private-skills/sk-uc.test.mjs',
     'test/v2-page-cases/lite.test.mjs', 'test/v2-page-cases/page.test.mjs', 'test/v2-page-cases/pg-origin.test.mjs',

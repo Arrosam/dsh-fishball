@@ -23,7 +23,7 @@ const REFUSAL = MCP.refusal
  * The operation names the X19 send gate is asked with (instance-extension-points §2.5, where the
  * list is `SUPERVISION.sendOperations`). They are the gate's own vocabulary, not the connector's
  * MCP surface, so they are not in `MCP`. They are spelled as the V2 contract's `OPERATION`, which
- * the slim child's gate (slim/child/bridge.js) receives, but this façade may not import that
+ * the V2 child's gate received, but this façade may not import that
  * contract (R-ARCH-10). After REMOVE-V2 this is the one definition. If a second Fishball-side
  * party (a gate implementation) needs them, they move to `contracts/constants.js` by a K3
  * amendment.

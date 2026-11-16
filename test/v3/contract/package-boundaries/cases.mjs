@@ -223,6 +223,11 @@ function registerPackageCases(sdk) {
     for (const [from, to] of [[V3.core.name, V3.instance.name], [V3.instance.name, V3.core.name]]) await assertNoEdges(from, [to])
     for (const [name, lib] of [[V3.core.name, V3.shared.name], [V3.instance.name, V3.dshShared.name]]) assert.ok(edgesTo(await unitOf(name), lib).length > 0, name + ' imports nothing from ' + lib)
   }, has(V3.core) ? undefined : LATER.core)
+  // Re-baselined (F-WIRE): core no longer depends on or peers dsh-connector, ./contract included. The
+  // user, 2026-11-16: "V2 was never deployed, so no V2 path needs protecting" (R-ARCH-10).
+  caseTest(sdk, 'HOST-EP-03', 1, 'fishball-core imports or depends on dsh-connector: never', async () => {
+    await assertNoEdges(V3.core.name, [V3.connector.name])
+  }, has(V3.core) ? undefined : LATER.core)
   caseTest(sdk, 'HOST-EP-03', 1, 'the instance imports dsh-connector-shared and reaches nothing of fishball-shared (code or manifest)', async () => {
     assert.ok(has(V3.dshShared), 'packages/dsh-connector-shared/package.json is missing')
     assert.ok(edgesTo(await unitOf(V3.instance.name), V3.dshShared.name).length > 0, 'no instance file imports dsh-connector-shared')

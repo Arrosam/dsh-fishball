@@ -55,16 +55,16 @@ export const RELAYED = Object.freeze({
    * - core's guards row is the only path row whose nearest package.json is fishball-core's own (Q-13;
    *   since F-UI it is `fishball-core-guards`, and the page and Recommended-tab rows are
    *   fishball-ui's, which the instance does not place until I-HOST);
-   * - every slim child row is a `fishball-core/slim/*` subpath.
+   * - (F-WIRE) the slim child rows are gone; the main row is the `fishball-core/main` subpath.
    */
   rows: Object.freeze({
     corePathRow: 'fishball-core-guards',
     /** The rows that left core's patch for fishball-ui's (F-UI). */
     movedToUi: Object.freeze(['fishball-page', 'fishball-recommend-plugins']),
-    // I-HOST moved the admin and provider-sync child halves into the instance's child-side row, so
-    // core's patch keeps only these four slim rows.
+    // Re-baselined (F-WIRE, DESIGN.md §20; "V2 was never deployed", the user, 2026-11-16): the four
+    // slim rows are gone; core inserts one main row, a package subpath, beside its kept rows.
     slim: Object.freeze(['session-tools', 'approvals', 'app', 'inbox'].map((n) => 'fishball-native-' + n)),
-    slimPrefix: V3.core.name + '/slim/',
+    main: Object.freeze({ id: V3.core.name, name: V3.core.name + '/main' }),
   }),
 })
 
