@@ -78,8 +78,9 @@ export function launchOverlay(paths, record, childModule, limits, control, entri
       { id: ROW.lifecycle, name: childModule, required: true, config },
       // The child-side row (child-row.js): it injects the lifecycle row's nativeRuntime, so it
       // starts after it. `required` since I-READY: the child is ready only once this row's
-      // admission route is up (child.js childReadiness), so a row that cannot load is a failed
-      // boot at once rather than a start that waits out its whole startup bound.
+      // admission route is up (child.js childReadiness), so a row that cannot load fails the
+      // child's boot at once. A part of it that fails later is logged by the row and leaves the
+      // child `starting`, which the host reports as a failed start at its startup bound.
       { id: ROW.child, name: path.join(path.dirname(childModule), RUNTIME.snapshot.childRow), required: true, config: { [HOSTED.targetField]: child[HOSTED.targetField] } },
     ] },
   ]

@@ -42,7 +42,7 @@
   "bundleDependencies": [
     "dsh-connector-shared"
   ],
-  "//peerDependencies": "Host packages are resolved from the running DSH installation (verified in spike S8). '*' because engines.dsh is the real compatibility gate. dsh-connector is a peer only for its ./contract export, which the V2 lifecycle and admin code still imports (src/native-runtime/child.js, src/child/admin.js, src/slim/host/{admin,embed}.js), placed in the child as that export alone; REMOVE-V2 deletes those imports and this peer (design §1.0b; G5). The V3 parts look the connector's services up at runtime (dshConnectorTokens). The range is package versions (user decision 2026-11-07): from this release's 0.1.0-alpha.0 up to, not including, 2.",
+  "//peerDependencies": "Host packages are resolved from the running DSH installation (verified in spike S8). '*' because engines.dsh is the real compatibility gate. There is no dsh-connector peer (I-READY, design §1.0b; G5): the instance imports no connector module and looks the connector's services up at runtime (dshConnectorTokens).",
   "peerDependencies": {
     "@deepseek-ai/cosmokit": "*",
     "@deepseek-ai/dsh-agent": "*",
@@ -53,12 +53,10 @@
     "@deepseek-ai/dsh-session": "*",
     "@deepseek-ai/dsh-skill": "*",
     "@deepseek-ai/dsh-skill-filesystem": "*",
-    "@deepseek-ai/dsh-storage-domain": "*",
     "@deepseek-ai/dsh-system-prompt": "*",
     "@deepseek-ai/dsh-tools": "*",
     "@deepseek-ai/dsh-user-approval": "*",
-    "@deepseek-ai/schemastery": "*",
-    "zod": "*"
+    "@deepseek-ai/schemastery": "*"
   },
   "dsh": {
     "bundle": {

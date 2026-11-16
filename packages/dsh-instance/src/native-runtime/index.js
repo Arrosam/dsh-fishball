@@ -3,7 +3,7 @@ import { pathToFileURL } from 'node:url'
 import { spawn as nodeSpawn } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
 import { setTimeout as delay } from 'node:timers/promises'
-import { RUNTIME, RUNTIME_LIMITS, LIFETIME, UNINSTALL, NativeRuntimeError, fail, runtimeLimits, loopbackOrigin } from './constants.js'
+import { RUNTIME, RUNTIME_LIMITS, READY_CAPABILITIES, LIFETIME, UNINSTALL, NativeRuntimeError, fail, runtimeLimits, loopbackOrigin } from './constants.js'
 import { pathsFor, prepareLayout, existingLayout, removeRuntime, exists, jsonPrivate, writePrivate, privateDirectory, launchPath, removeLaunch, lifecycleLog, validId } from './files.js'
 import { resolveInstallation, isolatedEnvironment, childExecArgv, initializeProfile, copyChildCode, runProbe } from './installation.js'
 import { connectWire, ChannelPublisher } from './wire.js'
@@ -22,8 +22,8 @@ export function createNativeRuntime(options, dependencies = {}) { return new Nat
 
 /**
  * The host's readiness rule for one health answer (I-READY): the child says `ready`, reports every
- * required base service and the admission capability (child.js childReadiness), and names its own
- * loopback web origin. The identity checks are authenticateReady's.
+ * ready capability (READY_CAPABILITIES: the base services, admission and lifecycle; child.js
+ * childReadiness), and names its own loopback web origin. The identity checks are authenticateReady's.
  * @param status - the child's `health` payload
  * @returns {string} the child's web origin
  * @throws {NativeRuntimeError} `NOT_READY`, `MISSING_CAPABILITY`, or `UNSAFE_CHILD_ORIGIN` (both fatal at startup)
@@ -31,7 +31,7 @@ export function createNativeRuntime(options, dependencies = {}) { return new Nat
 export function readyHealth(status) {
   if (status?.state !== RUNTIME.healthState.ready) fail('NOT_READY')
   const capabilities = Array.isArray(status.capabilities) ? status.capabilities : []
-  if (![...RUNTIME.requiredServices, RUNTIME.capabilities.admission].every((name) => capabilities.includes(name))) fail('MISSING_CAPABILITY')
+  if (!READY_CAPABILITIES.every((name) => capabilities.includes(name))) fail('MISSING_CAPABILITY')
   return loopbackOrigin(status.origin)
 }
 
@@ -200,8 +200,7 @@ class NativeRuntime {
   async authenticateReady(record) {
     const status = await this.query(record, RUNTIME.operation.health)
     if (status.hostId !== this.hostId || status.instanceId !== record.instanceId || status.pid !== await this.pid(record) || status.version !== record.version || status.installAnchor !== record.installAnchor) fail('CHILD_IDENTITY_MISMATCH')
-    readyHealth(status)
-    return status
+    return { ...status, origin: readyHealth(status) }
   }
   dropAttached() {
     this.attached?.wire.close()
@@ -211,7 +210,7 @@ class NativeRuntime {
   /**
    * Attach the host's one connection to a ready child (operation `attach`): its payload channels
    * come up on that authenticated wire, and the generation's web origin is the one its health
-   * answer named (`status`, already checked by authenticateReady).
+   * answer named (`status` from authenticateReady, whose origin is already checked).
    */
   async attach(record, status) {
     if (this.attached && !this.attached.wire.closed && this.attached.metadata.instanceId === record.instanceId) return
@@ -221,7 +220,7 @@ class NativeRuntime {
       const metadata = await wire.request(RUNTIME.operation.attach)
       const providerSync = wire.providerSyncTransport()
       const credential = wire.credentialTransport()
-      this.attached = { wire, metadata, origin: readyHealth(status) }
+      this.attached = { wire, metadata, origin: status.origin }
       wire.once('closed', () => { if (this.attached?.wire === wire) this.dropAttached() })
       const channelMetadata = { instanceId: metadata.instanceId }
       this.channels.providerSync.publish(wire, providerSync, channelMetadata)

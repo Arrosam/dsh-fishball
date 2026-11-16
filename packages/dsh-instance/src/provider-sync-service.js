@@ -15,9 +15,8 @@ import { ProviderSyncCoordinator } from './provider-sync-coordinator.js'
 // end never imports the child's module (R-BND-01).
 import { createProviderSyncCodec, providerSyncIdentity, PROVIDER_SYNC_TARGET } from 'dsh-connector-shared/provider-sync-codec'
 
-// The owner route's transport rules live with the routes (src/host/provider-sync-routes.js),
-// so the child settings row can reuse their JSON headers without this host-only module (it has no
-// sync route); re-exported here for this module's existing readers.
+// The owner route's transport rules live with the routes (src/host/provider-sync-routes.js);
+// re-exported here for this module's existing readers.
 import { SYNC_PAGE } from './host/provider-sync-routes.js'
 export { SYNC_PAGE }
 const P = SYNC_PAGE
@@ -49,7 +48,7 @@ const defaultCreateHost = async (ctx, options) => {
  *
  * Wiring: src/native-runtime/wire.js carries the `provider-sync` payload channel;
  * src/native-runtime/index.js and child.js publish each end through `onProviderSyncTransport`;
- * native-host.js attaches this bridge and exposes it as `service.providerSync`;
+ * host.js attaches this bridge and exposes it as `service.providerSync`;
  * src/native-runtime/overlay.js inserts the child-side row (child-row.js), which mounts
  * src/child/provider-sync-target.js; and src/native-runtime/placement.js places dsh-connector-shared
  * (the target's engine, host adapter and codec) in the child profile's node_modules.
