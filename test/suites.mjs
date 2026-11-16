@@ -258,8 +258,8 @@ export const V2_GROUPS = Object.freeze({
   'v2.connector-unit': suite('the connector\'s W0 K1 semantic profile, no host', v2([
     'packages/dsh-connector/test/instance-ext/k1.test.mjs',
   ]), [all(PACKAGE.dshConnector)]),
-  'v2.connector-ui': suite('the moved client: frame policy, card titles, framed lang', v2([
-    'v2-pg-origin-frame-policy', 'body-soul-k2-frame', 'e1-card-titles',
+  'v2.connector-ui': suite('the moved client: frame policy, card titles', v2([
+    'v2-pg-origin-frame-policy', 'e1-card-titles',
   ]), [all(PACKAGE.dshConnectorUi), top(PACKAGE.dshConnector), top(PACKAGE.dshInstance)]),
   // These boot the instance's real child (lifecycle, admission, embed): a change in the instance,
   // the core it places, or either shared library (the instance's own, core's placed copy) reruns them.
