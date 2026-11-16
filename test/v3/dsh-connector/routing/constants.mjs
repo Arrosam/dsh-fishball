@@ -192,5 +192,4 @@ export const LATER = Object.freeze({
   wireToUser: 'C-WIRE (DSH approval binding: a retired or unmanaged offer is answered by the user in the session)',
   toolsAnswer: 'C-TOOLS (approval_answer on the ask offer answers the waiting ask_agent)',
   succeed: 'C-SUCCEED (Q24 succession moves management and pending events, R-HOST-09)',
-  revokeNote: 'C-REVOKE (the one system note in the session and the live offers to the user, R-ROUTE-06, R-TOK-05)',
 })

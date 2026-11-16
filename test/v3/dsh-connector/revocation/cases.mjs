@@ -24,14 +24,14 @@
  *   (settle / withdraw false); the asker keeps waiting with no timer (R-CON-05).
  *   A1: re-enabled → the ask is still live: answering it answers the asker.
  *   E1: the entry has no known principal → {principalKey: undefined, sessions: [], offers: []}.
- *   Post (step 2, todo): one system note per ended session; streams close; next request 401;
- *   the 30-day hold ends in a drop.
+ *   Post (step 2, handler-cases.mjs): one system note per ended session; streams close; the
+ *   30-day hold ends in a drop.
  * REV-UC-02 Delete an entry whose principal P manages sessions (same Pre).
  *   Main: 1. the entry is deleted; 2. endPrincipal(E_P, fresh: false) resolves the same listing;
  *   3. every `revoked` retirement has run before `Mailbox.drop`; no fresh retirement is committed
  *   for the acked offer; 4. drop returns the ask's offer id; askDropped answers the asker
  *   `unavailable`; 5. P's mailbox is empty; Q is untouched.
- *   Post (step 2, todo): the pair is removed; the designated role is cleared.
+ *   Post (step 2, handler-cases.mjs): the pair is removed; the designated role is cleared.
  *
  * ── Techniques ───────────────────────────────────────────────────────────────────────────────
  * EP   REV-EP-01 entryKey (misuse / unknown / never paired / paired / disabled / pair removed in
@@ -57,7 +57,7 @@ import {
   refusedAtCall, settleRefused, settledTo, settlementOf, settlesWithin, unwatched, until,
 } from '../routing/cases.mjs'
 import {
-  CASE, EVENT_TYPE, FIXTURE, LATER, LOGGED_LEVELS, MISUSE, OFFER_TYPES, OP, REFUSAL, RETIREMENT_REASON, RETIRE_OUTCOME, REVOCATION,
+  CASE, EVENT_TYPE, FIXTURE, LOGGED_LEVELS, MISUSE, OFFER_TYPES, OP, REFUSAL, RETIREMENT_REASON, RETIRE_OUTCOME, REVOCATION,
   WAIT,
 } from './constants.mjs'
 import { revocationWorld } from './subject.mjs'
@@ -66,18 +66,17 @@ const T = { timeout: WAIT.testMs }
 const { ids: ID, sessions: S } = FIXTURE
 const ET = EVENT_TYPE
 const REVOKED = RETIREMENT_REASON.revoked
-const UNAVAILABLE = Object.freeze({ ok: false, code: REFUSAL.unavailable })
+export const UNAVAILABLE = Object.freeze({ ok: false, code: REFUSAL.unavailable })
 
 // ------------------------------------------------------------------------------------------------
 // Row registration
 
-function row(sdk, id, part, title, fn, todo) {
+export function row(sdk, id, part, title, fn, todo) {
   const name = caseName(sdk, id, part, title)
   if (todo !== undefined) test.todo(`${name} — TODO ${todo}`)
   else test(name, T, fn)
 }
 const worldRow = (sdk, id, part, title, fn, opts) => row(sdk, id, part, title, async (t) => fn(await revocationWorld(t, sdk, opts)))
-const todoRow = (sdk, id, part, title, what) => row(sdk, id, part, title, null, LATER.step2(what))
 
 // ------------------------------------------------------------------------------------------------
 // Steps and oracles
@@ -94,16 +93,16 @@ const byOffer = (a, b) => a.offerId.localeCompare(b.offerId)
 /** endPrincipal's answer as plain sorted data (its lists are in no order the contract names). */
 const plain = (r) => ({ principalKey: r.principalKey, sessions: [...r.sessions].sort(), offers: [...r.offers].map((o) => ({ ...o })).sort(byOffer) })
 /** The listing an offer event should have in endPrincipal's `offers`. */
-const listed = (e) => ({ offerId: e.offer.offerId, sessionId: e.sourceSessionId, type: e.type })
+export const listed = (e) => ({ offerId: e.offer.offerId, sessionId: e.sourceSessionId, type: e.type })
 const ended = (principalKey, sessions, offers) => ({ principalKey, sessions: [...sessions].sort(), offers: offers.map(listed).sort(byOffer) })
 const NOTHING = Object.freeze({ principalKey: undefined, sessions: [], offers: [] })
 
 /** The journal entries of `op` (fakes.mjs revocationPort), optionally only those naming `eventId`. */
-const journalOf = (w, op, eventId) => w.mailbox.journal.filter((j) => j.op === op && (eventId === undefined || j.eventId === eventId || j.retiredEventId === eventId))
-const retirementsNaming = (events, eventId) => events.filter((e) => e.type === ET.retirement && e.payload.retiredEventId === eventId)
+export const journalOf = (w, op, eventId) => w.mailbox.journal.filter((j) => j.op === op && (eventId === undefined || j.eventId === eventId || j.retiredEventId === eventId))
+export const retirementsNaming = (events, eventId) => events.filter((e) => e.type === ET.retirement && e.payload.retiredEventId === eventId)
 
 /** `events` (a pair's pending list) holds exactly one `revoked` retirement naming `offer`, and not `offer` itself. */
-function assertRetiredIn(events, offer) {
+export function assertRetiredIn(events, offer) {
   assert.ok(!events.some((e) => e.eventId === offer.eventId), `the retired ${offer.type} offer is still pending`)
   assert.deepEqual(retirementsNaming(events, offer.eventId).map((e) => e.payload), [{ retiredEventId: offer.eventId, reason: REVOKED }], 'not exactly one revoked retirement naming the offer')
 }
@@ -118,14 +117,14 @@ function assertFreshRetirements(w, p, offer, n) {
   assert.deepEqual(fresh.map((j) => [j.principalKey, j.reason]), Array.from({ length: n }, () => [p, REVOKED]), `expected ${n} fresh retirement(s) of the acked offer`)
 }
 /** Every retirement (retire or fresh) the journal holds ran before the first `drop` started. */
-function assertRetiredBeforeDrop(w) {
+export function assertRetiredBeforeDrop(w) {
   const at = w.mailbox.journal.findIndex((j) => j.op === OP.drop)
   assert.ok(at >= 0, 'no drop was journaled')
   const late = w.mailbox.journal.slice(at).filter((j) => j.op === OP.retire || j.op === OP.freshRetirement)
   assert.deepEqual(late, [], 'a retirement ran after Mailbox.drop began')
 }
 /** The offer is no longer live: settle and withdraw of it both resolve false, and commit nothing. */
-async function assertNotLive(w, offer) {
+export async function assertNotLive(w, offer) {
   await settleRefused(w, offer.offer.offerId, settlementOf(offer.payload.approvalId))
   assert.equal(await w.routing.withdraw(offer.offer.offerId), false, 'withdraw of a revoked offer found it live')
 }
@@ -146,11 +145,11 @@ async function dropAndAnswer(w, key) {
   return dropped
 }
 /** The dropped pair's summary counts nothing pending (the one read K1 defines for any key, as the C-MAILBOX suite reads it). */
-async function assertDroppedEmpty(w, key) {
+export async function assertDroppedEmpty(w, key) {
   assert.equal((await w.realMailbox.summary(key)).pending, 0, 'something is pending in the dropped mailbox')
 }
 /** The asker resolves `{ok: false, code: 'unavailable'}`. */
-async function assertAnsweredUnavailable(ask) {
+export async function assertAnsweredUnavailable(ask) {
   assert.ok(await settlesWithin(ask.promise, WAIT.eventMs), 'the asker of a dropped ask is still waiting')
   assert.deepEqual(await ask.promise, UNAVAILABLE)
 }
@@ -223,11 +222,6 @@ function useCases(sdk) {
     const { value } = await expectNone(w, () => endPrincipal(w, ID.x, true))
     assert.deepEqual(plain(value), NOTHING)
   })
-  todoRow(sdk, CASE.uc01, 'handler', 'C-REVOKE\'s onRevoked handler calls endPrincipal itself: disable → hold + freshRetirements true, delete → freshRetirements false then drop + askDropped', 'the onRevoked handler')
-  todoRow(sdk, CASE.uc01, 'note', 'one system note in each ended session (SessionNotes.system), none in another principal\'s', 'SessionNotes.system')
-  todoRow(sdk, CASE.uc01, 'streams', 'the principal\'s open listen streams close (closeEntry)', 'closeEntry')
-  todoRow(sdk, CASE.uc01, '401', 'the principal\'s next MCP request gets 401 on the real MCP HTTP endpoint', 'real MCP endpoint')
-  todoRow(sdk, CASE.uc01, 'expiry', `the hold ends after MAILBOX.disabledRetentionMs → drop; each dropped ask answers ${REFUSAL.unavailable}`, 'the hold timer')
 
   worldRow(sdk, CASE.uc02, 'main', 'delete: endPrincipal(fresh: false) then drop → retirements all before the drop, no fresh retirement for the acked offer; the dropped ask answers unavailable; P\'s mailbox empty; Q untouched', async (w) => {
     const x = await ucWorld(w)
@@ -254,8 +248,6 @@ function useCases(sdk) {
     assert.deepEqual(journalOf(w, OP.drop), [])
     assert.equal(await settlesWithin(x.ask.promise, WAIT.quietMs), false, 'the asker was answered on a disable')
   })
-  todoRow(sdk, CASE.uc02, 'pair', 'C-REVOKE removes the deleted entry\'s pair (PairStore.remove), freeing its id and name', 'PairStore.remove')
-  todoRow(sdk, CASE.uc02, 'designated', 'deleting the designated entry unsets routing.agentToken (SettingsWriter.setDesignated(undefined))', 'SettingsWriter.setDesignated')
 }
 
 // ================================================================================================

@@ -508,7 +508,7 @@ export function registerMailboxCases(sdk) {
     assert.equal(retirements.length, 1)
     assert.equal(retirements[0].payload.reason, RETIREMENT_REASON.revoked)
   })
-  row(sdk, ID.st01, '6a trigger', 'disabling the principal withdraws its live offers to the user', null, LATER.revokeOffers)
+  // The 6a trigger (a disable withdraws the live offers to the user) runs in test/v3/dsh-connector/revocation (AUTH-DT-04 rule 3).
 
   for (const [part, held] of [['6b Pending', false], ['6b Held', true]]) {
     row(sdk, ID.st01, part, `${held ? 'Held' : 'Pending'} → principal deleted → Dropped; the dropped asks are returned, so their askers get unavailable`, async (t) => {
@@ -526,7 +526,7 @@ export function registerMailboxCases(sdk) {
     })
   }
 
-  row(sdk, ID.st01, '6c', 'Held → 30 days pass → Dropped (as 6b)', null, LATER.revokeExpiry)
+  // 6c (Held → 30 days → Dropped) runs in test/v3/dsh-connector/revocation (AUTH-UC-06 A4, AUTH-DT-04 rule 8, REV-BVA-02).
 
   row(sdk, ID.st01, 7, 'Held → entry re-enabled → Pending with the same identities', async (t) => {
     const w = await worldFor(t, sdk)

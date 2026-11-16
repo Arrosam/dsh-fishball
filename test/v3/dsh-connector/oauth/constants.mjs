@@ -155,6 +155,5 @@ export const LATER = Object.freeze({
   web: 'C-OAUTH-WEB (W2): the refresh_token GrantHandler answers invalid_grant for any value not issued to a browser client',
   tools: 'C-TOOLS (W3): server/discover, tools/list, a tool call and subscriptions/listen with the access token',
   wire: 'C-WIRE (W4b): the connector settings (no directAccess switch) and the wired endpoint',
-  revoke: 'C-REVOKE (W4): what a disable or delete does to streams, offers, sessions and events',
   tokens: 'C-TOKENS (W2): TokenRegistry.match is the constant-time comparator (R-TOK-06)',
 })

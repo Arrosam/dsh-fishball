@@ -222,7 +222,7 @@ function useCases(sdk) {
     for (const t of [token, pairOnly]) assert.deepEqual(verify(w, t), INVALID)
     assertError(await tokenRequest(w, { clientId: ID.a, secret: e.value }), OAUTH_ERROR.invalidClient)
   })
-  todo(sdk, CASE.uc06, 'main steps 3–6', 'streams close, answers refused, offers withdrawn, sessions unmanaged, events kept 30 days, the designated role kept', LATER.revoke)
+  // Main steps 3–6 (streams, offers, sessions, kept events, the designated role) run in test/v3/dsh-connector/revocation.
   uc06('main step 7', 'E1 switched on again: old tokens stay invalid_token; a new request with a gives a full token', async (w, e, token) => {
     w.tokens.disable(e.entryKey)
     w.tokens.enable(e.entryKey)

@@ -293,6 +293,12 @@ export async function openRouting(ctx, storageDomain, { mailbox, pairs, tokens, 
     askDropped: (offerId) => managed.withState(async () => ledger.settle(offerId, UNAVAILABLE)),
 
     /**
+     * C-REVOKE step 2: the offer ids of the live `ask`s `principalKey` holds, acked ones included
+     * (offers.js `asksOf`), so a dropped box's acked asks are answered `unavailable` too.
+     */
+    liveAsksOf: (principalKey) => ledger.asksOf(principalKey),
+
+    /**
      * C-REVOKE step 1 (R-ROUTE-06, R-TOK-05, R-WATCH-01): the revoked entry's principal stops
      * managing every session, and each of their live offers is retired `revoked`. C-REVOKE calls
      * it from its own `onRevoked` handler (routing no longer subscribes, W4 brief G1), because a
