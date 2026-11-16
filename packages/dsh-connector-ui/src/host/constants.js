@@ -87,8 +87,6 @@ export const ROUTE = Object.freeze({
   services: '/api/dsh-connector-ui/services',
   status: '/api/dsh-connector-ui/child/status',
   admit: '/api/dsh-connector-ui/child/admit',
-  modelsCheck: '/api/dsh-connector-ui/child/models/check',
-  modelsAdd: '/api/dsh-connector-ui/child/models/add',
 })
 
 /** The Fetch registration's fixed parts (connection.fetch: methods, requestBody). */

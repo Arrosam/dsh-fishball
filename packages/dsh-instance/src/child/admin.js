@@ -1,10 +1,14 @@
 /**
- * The isolated child's admin service (§9, §15 T11).
+ * The isolated child's admin service (§9, §15 T11), the child half of the instance's admin relay
+ * (src/slim/host/admin.js). I-HOST moved it here from fishball-core's `src/slim/child/` (design
+ * §1.0b row 5: applying admin operations in a child DSH is generic DSH work, so the DSH side owns
+ * both halves; requirements 1.39). The child-side row (child-row.js) mounts it. It serves the admin
+ * wire protocol (dsh-connector-shared/admin-protocol) and applies every operation with the child's
+ * own mounted DSH services.
  *
- * The main settings page reads and changes the child's model, plugins and settings through the
- * admin relay (dsh-instance src/slim/host/admin.js). This module is the child half: it serves the admin wire
- * protocol (fishball-shared/admin-protocol) and applies every operation with the child's own
- * mounted DSH services.
+ * It has no hook into the running Fishball session any more: V2's `applyModel` / `currentModel`
+ * reached core's chat row, which is Fishball-side code (requirements 1.39). A saved default model
+ * applies to the next agent the child creates (the user's answer Q6 = A).
  *
  * Rules kept here, because they are what makes the admin safe:
  * - The child is the only writer. Every operation uses the services of THIS process
@@ -23,15 +27,15 @@
  *
  * The protocol is not in the connector contract because the frozen contract's twenty operations
  * are the session bridge's and §5.2 keeps the admin on the lifecycle channel. It lives in
- * fishball-shared (admin-protocol.js), which the main-side relay imports too, so both ends
+ * dsh-connector-shared (admin-protocol.js), which the main-side relay imports too, so both ends
  * validate one definition; this module binds it to the contract and re-exports it unchanged.
  */
 import { createHash } from 'node:crypto'
 import {
   ADMIN, ADMIN_APPLICATIONS, ADMIN_ERROR, ADMIN_LIMITS, ADMIN_OPERATION, ADMIN_OPERATIONS,
   AdminFailure, createAdminProtocol, refuse, refusal, refusalOf,
-} from 'fishball-shared/admin-protocol'
-import { DIGEST, STATUS, STATUS_CODES } from 'dsh-connector/contract'
+} from 'dsh-connector-shared/admin-protocol'
+import { DIGEST, STATUS, STATUS_CODES } from '../slim/contract.js'
 
 export { ADMIN, ADMIN_ERROR, ADMIN_LIMITS, ADMIN_OPERATION, ADMIN_OPERATIONS, AdminFailure, refusal, refusalOf }
 export const { validateRequest, validateResult, createAdminCodec } = createAdminProtocol({ DIGEST, STATUS, STATUS_CODES })
@@ -51,9 +55,6 @@ const SETTINGS_CONFLICT = 'SETTINGS_CONFLICT'
 
 /** dsh-base's row id for the default model selection. The child profile is base-only (§2.3). */
 const MODEL_NAMESPACE = 'agent-default-model'
-
-/** The child chat row's service name (T07); absent until that row mounts. */
-const CHAT_SERVICE = 'fishballChat'
 
 function digestOf(text) {
   return createHash(DIGEST.algorithm).update(text).digest(HEX_ENCODING)
@@ -86,30 +87,14 @@ function portOf(name, service) {
  *   setBundleEnabled.
  * @param {object} options.llm - ctx.llm: listProviders, listModels, resolveModelInfo,
  *   resolveCallConfig.
- * @param {(selection: {provider: string, model: string, reasoningEffort?: string}) => Promise<void>}
- *   [options.applyModel] - applies an accepted selection to the child's live session so the next
- *   request uses it (§9); it resolves once the session took it and rejects when it could not.
- *   The T07 chat row owns that session and supplies this port. Without it the persisted default
- *   is the whole effect, and the next created agent uses the new model.
- * @param {() => ({provider: string, model: string, reasoningEffort?: string}|null)} [options.currentModel]
- *   - the live session's model when the T07 chat has one; `null` before activation. The page
- *   shows it beside a saved default the catalog no longer offers.
  * @returns {{handle: (operation: string, payload: object) => Promise<{ok: true, result: object}|{ok: false, error: object}>}}
  */
 export function createAdminService(options) {
-  const { settings, plugins, llm, applyModel, currentModel } = options ?? {}
-  if (applyModel !== undefined && typeof applyModel !== 'function') {
-    throw new TypeError('fishball admin: applyModel must be a function')
-  }
-  if (currentModel !== undefined && typeof currentModel !== 'function') {
-    throw new TypeError('fishball admin: currentModel must be a function')
-  }
+  const { settings, plugins, llm } = options ?? {}
   const ports = Object.freeze({
     settings: portOf('settings', settings),
     plugins: portOf('plugins', plugins),
     llm: portOf('llm', llm),
-    applyModel,
-    currentModel,
   })
   return Object.freeze({
     /**
@@ -216,16 +201,11 @@ async function catalog(llm) {
   return { providers, models }
 }
 
-/** The live session's selection, or null when the chat has not activated a session yet. */
-function currentSelection(ports) {
-  if (ports.currentModel === undefined) return null
-  try { return selectionOfValue(ports.currentModel()) ?? null } catch { return null }
-}
-
 async function modelSnapshot(ports) {
   const { entry, selection } = modelEntry(ports.settings)
   const { providers, models } = await catalog(ports.llm)
-  return { revision: entry.revision, selection, providers, models, active: currentSelection(ports) }
+  // `active` (the live session's model) is no longer known here: the session is Fishball's (1.39).
+  return { revision: entry.revision, selection, providers, models, active: null }
 }
 
 /** Refuse a pair the child's catalog does not offer, before any write can persist it. */
@@ -269,14 +249,7 @@ async function setModel(ports, payload) {
   await assertChoice(ports.llm, selection)
   await mutate(ports.settings, MODEL_NAMESPACE, modelOps(selection), payload.revision)
   const after = modelEntry(ports.settings)
-  const result = { revision: after.entry.revision, selection: after.selection }
-  if (ports.applyModel !== undefined) {
-    // Persisted first, applied second: a live-session failure must not lose the default the
-    // page just saved, so it is a result field (like session.start's titleError) and not a
-    // refusal of the whole request.
-    try { await ports.applyModel(after.selection) } catch { result.sessionError = ADMIN_ERROR.failed }
-  }
-  return result
+  return { revision: after.entry.revision, selection: after.selection }
 }
 
 /* ---------------------------------------------------------------- plugins */
@@ -533,45 +506,19 @@ export function createAdminEndpoint(options) {
   })
 }
 
-/* ---------------------------------------------------------------- the child row */
-
-/** Stable Cordis plugin name; the child overlay inserts this module as its own row (§2.3). */
-export const name = 'fishball-native-admin'
-export const inject = ['nativeRuntime', 'settings', 'pluginManager', 'llm']
-
-const ROW = Object.freeze({ logger: 'fishball-native-admin' })
+/* ---------------------------------------------------------------- the child-side row's mount */
 
 /**
- * Mount the admin service in the child. The admin transport arrives with each main-host
- * connection and is replaced after a restart, so attaching is a listener rather than a startup
- * step. A runtime that exposes no admin channel is reported once and leaves the row inert: the
- * merge that adds the channel is the one that makes this reachable.
+ * Mount the admin service on the child's lifecycle runtime (child-row.js). The admin transport
+ * arrives with each main-host connection and is replaced after a restart, so attaching is a
+ * listener rather than a startup step.
+ * @param ctx - the child-side row's context (`nativeRuntime`, `settings`, `pluginManager`, `llm`)
+ * @returns its disposer
  */
-export function apply(ctx) {
-  if (typeof ctx.nativeRuntime.onAdminTransport !== 'function') {
-    ctx.logger(ROW.logger).warn('the child runtime exposes no admin transport; the admin service is unreachable')
-    return
-  }
-  const service = createAdminService({
-    settings: ctx.settings,
-    plugins: ctx.pluginManager,
-    llm: ctx.llm,
-    // The T07 chat row publishes its live session; until it does, the persisted default is the
-    // whole effect and the next created agent uses it.
-    applyModel: (selection) => {
-      const chat = ctx.get(CHAT_SERVICE)
-      return chat?.applyModel === undefined ? Promise.resolve() : chat.applyModel(selection)
-    },
-    currentModel: () => {
-      const chat = ctx.get(CHAT_SERVICE)
-      return chat?.currentModel?.() ?? null
-    },
-  })
-  const endpoint = createAdminEndpoint({ service })
+export function mountAdmin(ctx) {
+  const endpoint = createAdminEndpoint({ service: createAdminService({ settings: ctx.settings, plugins: ctx.pluginManager, llm: ctx.llm }) })
   const unsubscribe = ctx.nativeRuntime.onAdminTransport((transport) => {
     try { endpoint.attach(transport) } catch { /* the next transport replaces it */ }
   })
-  // Cordis treats an apply() return value as the fiber's disposer. The endpoint reaches the
-  // main side through onAdminTransport; returning it instead fails activation with "Invalid effect".
   return () => { unsubscribe(); endpoint.close() }
 }

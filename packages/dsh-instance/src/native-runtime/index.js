@@ -7,12 +7,14 @@ import { RUNTIME, RUNTIME_LIMITS, LIFETIME, UNINSTALL, NativeRuntimeError, fail,
 import { pathsFor, prepareLayout, existingLayout, removeRuntime, exists, jsonPrivate, writePrivate, privateDirectory, launchPath, removeLaunch, lifecycleLog, validId } from './files.js'
 import { resolveInstallation, isolatedEnvironment, childExecArgv, initializeProfile, copyChildCode, runProbe } from './installation.js'
 import { connectWire } from './wire.js'
+import { admissionKey, mintTicket } from './ticket.js'
 import { launchOverlay } from './overlay.js'
 import { captureChildStderr } from './stderr-log.js'
 import { preflight as defaultPreflight } from '../native-preflight.js'
 
 // launchOverlay is public so a reader can compute a start's overlay operations from the same
-// arguments the start uses (paths, record, childModule, limits, control, composed entries); the
+// arguments the start uses (paths, record, childModule, limits, control, composed entries and the
+// child-side row's `{targetUrl}`, from `options.child()` at each start); the
 // file each start writes (launches/<instanceId>/launch.patch.yml) holds exactly its result.
 export { RUNTIME_LIMITS, NativeRuntimeError, launchOverlay }
 export { composedProfile, COMPOSE_RECORD } from './compose.js'
@@ -34,6 +36,8 @@ class NativeRuntime {
     this.providerSyncListeners = new Set()
     // SET's settings relay: the child panel's requests to this host, on the same wire.
     this.instanceSettingsListeners = new Set()
+    // The hosted token's channel (credential.js), on the same wire.
+    this.credentialListeners = new Set()
     this.pending = Promise.resolve()
     this.warnings = []
     this.paths = pathsFor(options.mainHome)
@@ -68,6 +72,26 @@ class NativeRuntime {
     this.instanceSettingsListeners.add(listener)
     if (this.instanceSettings && !this.instanceSettings.wire.closed) listener(this.instanceSettings.transport)
     return () => this.instanceSettingsListeners.delete(listener)
+  }
+  /** The `mcp-credential` transport of the attached wire; same authentication as every channel. */
+  onCredentialTransport(listener) {
+    this.credentialListeners.add(listener)
+    if (this.credential && !this.credential.wire.closed) listener(this.credential.transport, this.credential.metadata)
+    return () => this.credentialListeners.delete(listener)
+  }
+  /**
+   * The ready child's own web origin (`http://127.0.0.1:<port>`), from the attached generation's
+   * last native admission, or undefined. It is not a secret: the port alone admits nobody.
+   */
+  childOrigin() { return this.control && !this.control.wire.closed ? this.webOrigin : undefined }
+  /**
+   * A single-use admission ticket for the attached generation (design §4.1; ticket.js). Rejects
+   * when no child is attached. The key is derived from the lifecycle secret, as the child does.
+   */
+  async mintTicket({ audience, view, lang }) {
+    const control = this.control
+    if (!control || control.wire.closed || this.secret === undefined) fail('NOT_READY')
+    return mintTicket(admissionKey(this.secret), { generation: control.metadata.instanceId, audience, view, lang })
   }
   serial(action) {
     const next = this.pending.then(action, action)
@@ -264,6 +288,8 @@ class NativeRuntime {
     this.admin = undefined
     this.providerSync = undefined
     this.instanceSettings = undefined
+    this.credential = undefined
+    this.webOrigin = undefined
   }
   async attach(record) {
     if (this.control && !this.control.wire.closed && this.control.metadata.instanceId === record.instanceId) return
@@ -278,15 +304,24 @@ class NativeRuntime {
       // T16's provider-sync target comes up with the control transport on the same wire.
       const providerSync = wire.providerSyncTransport()
       const instanceSettings = wire.instanceSettingsTransport()
+      const credential = wire.credentialTransport()
+      // The child's web origin for the locator (origin, admit): read once per attached
+      // generation from the native admission, whose launch URL is dropped here unread. A failed
+      // read never fails the start: the locator then answers not-ready for admit.
+      let webOrigin
+      try { webOrigin = nativeAccess(await wire.request(NATIVE_WEB.operation)).origin } catch { webOrigin = undefined }
       this.control = { wire, transport, metadata }
+      this.webOrigin = webOrigin
       wire.once('closed', () => { if (this.control?.wire === wire) this.dropControl() })
       this.admin = { wire, transport: admin }
       this.providerSync = { wire, transport: providerSync, metadata: { instanceId: metadata.instanceId } }
       this.instanceSettings = { wire, transport: instanceSettings }
+      this.credential = { wire, transport: credential, metadata: { instanceId: metadata.instanceId } }
       for (const listener of this.listeners) listener(transport, metadata)
       for (const listener of this.adminListeners) listener(admin)
       for (const listener of this.providerSyncListeners) listener(providerSync, this.providerSync.metadata)
       for (const listener of this.instanceSettingsListeners) listener(instanceSettings)
+      for (const listener of this.credentialListeners) listener(credential, this.credential.metadata)
     } catch (error) { wire.close(); throw error }
   }
   /**
@@ -341,7 +376,7 @@ class NativeRuntime {
       this.warnings = profile.warnings
       const childModule = await copyChildCode(this.paths, record)
       const overlay = path.join(directory, 'launch.patch.yml')
-      await writePrivate(overlay, launchOverlay(this.paths, record, childModule, this.limits, this.options.control ?? {}, profile.entries), true)
+      await writePrivate(overlay, launchOverlay(this.paths, record, childModule, this.limits, this.options.control ?? {}, profile.entries, this.options.child?.() ?? undefined), true)
       const preload = pathToFileURL(path.join(path.dirname(childModule), 'src/native-runtime/parent-watch.js')).href
       const args = [...childExecArgv(this.host.execArgv), '--import', preload, this.installation.bin, '--profile', RUNTIME.profileName, '--patch', overlay, '--host', RUNTIME.host, '--port', '0', '--no-open']
       if (signal?.aborted) fail('START_INTERRUPTED')

@@ -1,30 +1,24 @@
 /**
- * The `dsh-instance` card in DSH's Plugins page (design §0.7, D23, D26; task I1), drawn by
- * dsh-connector-ui (V3 R-EMBED moved it here unchanged from packages/dsh-instance/client.js: every
- * host-DSH UI is embed-UI's, R-ARCH-04). It is a package-local chunk of embed-UI's client
- * (client.js plugs it in); the row it configures and the routes it calls are still the instance's.
+ * The instance's own plugin settings page (I-HOST; requirements 1.33 Q-D1 = B: "Reconnect is on the
+ * instance plugin's own settings page"; R-ARCH-05: "its only browser code is its own plugin
+ * settings page (status, Retry, Reconnect, model sync, Open in window)"; 1.41 Q-G3, Q-G7). It moved
+ * here from dsh-connector-ui's `client.instance.js`: dsh-connector-ui draws no instance card any
+ * more. A chunk of the instance's `client.js`, which loads it with the status line chunk.
  *
- * The main DSH holds only what the instance needs before its child exists: `enabled`, edited in
- * DSH's own form for the instance's row. There is no launch field: the child starts as the main
- * DSH does (D28).
- * Every other instance setting lives in the instance's private profile and its own settings page,
- * so this card has no other field. Model sync is the "Model for Fishball" block on this same card
- * (D26, §10): one Check for new models button, a list of the providers the instance lacks, and Add
- * selected for the ticked ones. It is an action rather than a field, and there is no
- * `providerSync` switch.
- *
- * The field is the row's volatile config: DSH's settings form can write volatile fields only,
- * and writes it into the profile's patch for the `dsh-instance` row (§0.7).
- *
- * Above them the card shows the instance's own status line (§18.2 I1, inst-OQ-01; §0.7
- * "Instance: status, Retry"). The instance owns that line (HOST-EP-03 row 2): it is the chunk
- * client.status.js (packages/dsh-instance/src/child-settings/client.status.js, a symlink beside this
- * file). The "Model for Fishball" block stays
- * on this main card only: the child must never start a sync (the user's decision of 2026-11-11).
+ * The main DSH holds only what the instance needs before its child exists: `enabled` and the
+ * remote `targetUrl` (blank = this DSH's connector), edited in DSH's own form for the instance's
+ * row. No token and no credential reference (R-HOST-05). Above them:
+ * - the status line (client.status.js) with Retry, and Retry's notice after a deleted hosted entry;
+ * - Reconnect: a new hosted token imported into the child once (R11; always shown, Q-B2);
+ * - Open Fishball: the child's Fishball page in a new tab, through one admission (Q7 = A);
+ * - "Model for Fishball" (D26, §10): Check, then Add selected. It copies providers and their model
+ *   lists only; the model Fishball uses is chosen in Fishball's own settings (the user,
+ *   2026-11-16: "同步只是同步model list，至于fishball用什么还要在fishball内设置").
+ * The fields are the row's volatile config: DSH's settings form can write volatile fields only.
  */
 window.__ModuleLoader__.load({
-  id: 'dsh-connector-ui',
-  chunk: 'client.instance.js',
+  id: 'dsh-instance',
+  chunk: 'client.models.js',
   factory(require) {
     const module = { exports: {} }
     const exports = module.exports
@@ -45,11 +39,28 @@ window.__ModuleLoader__.load({
     })
     /** The form's two views; `summary` is the row's one-liner, `page` the form and its Save. */
     const VIEW = Object.freeze({ summary: 'summary', page: 'page' })
-    /** The whole main-DSH surface of the instance settings (§0.7, inst-OQ-04). */
+    /** The whole main-DSH surface of the instance settings (§0.7, inst-OQ-04; R-HOST-05's target). */
     const FIELD = Object.freeze({
       enabled: 'enabled',
+      targetUrl: 'targetUrl',
     })
-    const LAUNCH_FIELDS = Object.freeze([FIELD.enabled])
+    const LAUNCH_FIELDS = Object.freeze([FIELD.enabled, FIELD.targetUrl])
+    /**
+     * The page's own actions (src/host/routes.js INSTANCE_ROUTE, page-relative): Reconnect answers
+     * `{ok}` or `{ok: false, code}`; Open answers `{ok: true, url}`, opened in a new tab with no
+     * opener and no referrer, and never kept.
+     */
+    const ACTION = Object.freeze({
+      reconnectPath: 'api/dsh-instance/reconnect',
+      openPath: 'api/dsh-instance/open',
+      request: Object.freeze({ method: 'POST', cache: 'no-store', credentials: 'same-origin', headers: Object.freeze({ 'content-type': 'application/json' }) }),
+      unreadable: 'request-failed',
+      langs: Object.freeze(['zh', 'en']),
+      fallbackLang: 'en',
+      target: '_blank',
+      features: 'noopener,noreferrer',
+      ready: 'ready',
+    })
     /**
      * The staged spelling of the boolean field. `SettingsFormModel` stages every field as text and
      * parses it on save; DSH ships field factories for text and numbers only, so `enabled` names
@@ -66,8 +77,8 @@ window.__ModuleLoader__.load({
      * - `reasons` / `errors`: the codes with their own words; any other shows its code.
      */
     const MODEL_SYNC_UI = Object.freeze({
-      checkPath: 'api/dsh-instance/models/check',
-      addPath: 'api/dsh-instance/models/add',
+      check: 'api/dsh-instance/models/check',
+      add: 'api/dsh-instance/models/add',
       request: Object.freeze({ method: 'POST', cache: 'no-store', credentials: 'same-origin', headers: Object.freeze({ 'content-type': 'application/json' }) }),
       ready: 'ready',
       phase: Object.freeze({ idle: 'idle', checking: 'checking', listed: 'listed', adding: 'adding', result: 'result' }),
@@ -87,9 +98,10 @@ window.__ModuleLoader__.load({
      * layout tokens come from the status-line module (`layout.classes`, `layout.style`), which
      * defines those rules once for both pages; the model block reuses them.
      */
-    const OWN_CLS = Object.freeze({ feature: 'fb-instance-feature', toggleRow: 'fb-instance-toggle-row', sync: 'fb-instance-sync', syncTitle: 'fb-instance-sync-title', syncList: 'fb-instance-sync-list', syncRow: 'fb-instance-sync-row', syncModels: 'fb-instance-sync-models', error: 'fb-instance-error' })
+    const OWN_CLS = Object.freeze({ actions: 'fb-instance-actions', feature: 'fb-instance-feature', toggleRow: 'fb-instance-toggle-row', sync: 'fb-instance-sync', syncTitle: 'fb-instance-sync-title', syncList: 'fb-instance-sync-list', syncRow: 'fb-instance-sync-row', syncModels: 'fb-instance-sync-models', error: 'fb-instance-error' })
     /** The card's own rules, over the status line's layout tokens. */
     const cardCss = (STYLE) => [
+      `.${OWN_CLS.actions}{display:flex;flex-wrap:wrap;gap:${STYLE.stackGap};margin-bottom:${STYLE.gap}}`,
       `.${OWN_CLS.feature}{display:grid;gap:${STYLE.stackGap}}`,
       `.${OWN_CLS.toggleRow}{display:flex;align-items:flex-start;justify-content:space-between;gap:${STYLE.gap};color:var(--dsw-alias-label-primary);font:var(--dsw-font-xs-13);line-height:${STYLE.lineHeight}}`,
       `.${OWN_CLS.sync}{display:grid;gap:${STYLE.stackGap};margin-bottom:${STYLE.gap};color:var(--dsw-alias-label-primary);font:var(--dsw-font-xs-13);line-height:${STYLE.lineHeight}}`,
@@ -105,6 +117,21 @@ window.__ModuleLoader__.load({
     const en = {
       summary: 'Fishball\'s private instance: how DSH starts it.',
       'field.enabled': 'Enabled',
+      'field.targetUrl': 'Remote target',
+      targetUrlHint: 'The MCP endpoint of another DSH\'s connector. Leave blank to use the connector in this DSH. Applies at the next start.',
+      reconnect: 'Reconnect',
+      reconnecting: 'Reconnecting…',
+      reconnected: 'A new hosted token was imported into Fishball. The old hosted entry stays in the connector until you delete it.',
+      reconnectHint: 'Creates a new hosted token in this DSH\'s connector and gives it to Fishball once.',
+      'reconnectRefused.not-ready': 'Fishball is not running.',
+      'reconnectRefused.connector-missing': 'There is no connector in this DSH.',
+      'reconnectRefused.target-remote': 'Fishball links to a remote target: use Connect in Fishball\'s settings.',
+      'reconnectRefused.operation-failed': 'The connector could not create a token.',
+      'reconnectRefused.credentials-unwritable': 'Fishball could not store the token. Delete the new hosted entry in the connector\'s settings.',
+      open: 'Open Fishball',
+      'openRefused.hostname-refused': 'Open DSH at 127.0.0.1 or localhost to open Fishball.',
+      'openRefused.not-ready': 'Fishball is not running.',
+      refused: 'Refused: {code}',
       enabledHint: 'Start Fishball\'s private instance after DSH is ready. Saving it off stops the instance at once and saving it on starts it; its private data is kept.',
       unavailable: 'This plugin is not loaded, so it cannot be configured right now.',
       readOnly: 'This deployment stores settings read-only.',
@@ -154,6 +181,21 @@ window.__ModuleLoader__.load({
     const zh = {
       summary: 'Fishball 的私有实例：DSH 如何启动它。',
       'field.enabled': '启用',
+      'field.targetUrl': '远程目标',
+      targetUrlHint: '另一个 DSH 的连接器 MCP 地址。留空则使用本 DSH 的连接器。下次启动时生效。',
+      reconnect: '重新连接',
+      reconnecting: '正在重新连接…',
+      reconnected: '已向 Fishball 导入一个新的托管 token。旧的托管条目会保留在连接器中，直到你删除它。',
+      reconnectHint: '在本 DSH 的连接器中创建一个新的托管 token，并交给 Fishball 一次。',
+      'reconnectRefused.not-ready': 'Fishball 未在运行。',
+      'reconnectRefused.connector-missing': '本 DSH 中没有连接器。',
+      'reconnectRefused.target-remote': 'Fishball 连接的是远程目标：请在 Fishball 设置中使用 Connect。',
+      'reconnectRefused.operation-failed': '连接器无法创建 token。',
+      'reconnectRefused.credentials-unwritable': 'Fishball 无法保存该 token。请在连接器设置中删除新的托管条目。',
+      open: '打开 Fishball',
+      'openRefused.hostname-refused': '请用 127.0.0.1 或 localhost 打开 DSH，再打开 Fishball。',
+      'openRefused.not-ready': 'Fishball 未在运行。',
+      refused: '已拒绝：{code}',
       enabledHint: 'DSH 就绪后启动 Fishball 的私有实例。保存为关闭会立即停止它，保存为开启会启动它；私有数据保留。',
       unavailable: '该插件当前未加载，暂时无法配置。',
       readOnly: '本部署的设置为只读。',
@@ -232,15 +274,62 @@ window.__ModuleLoader__.load({
      * @param scope - the row's configuration form (`configForms.get`).
      * @returns the page's snapshot, its form actions and its disposer.
      */
+    /** `targetUrl` as a staged text field, trimmed; blank is the connector in this DSH. */
+    const targetUrlField = Object.freeze({
+      field: FIELD.targetUrl,
+      format: (value) => (typeof value === 'string' ? value : ''),
+      parse: (text) => ({ kind: 'set', value: text.trim() }),
+    })
+
     function launchSection(scope) {
       const form = new SettingsFormModel(scope, [
         enabledField,
+        targetUrlField,
       ])
       const store = form.bind(() => ({
         ...form.shell(),
         fields: Object.fromEntries(LAUNCH_FIELDS.map((field) => [field, form.field(field)])),
       }))
       return { store, actions: form.actions(), dispose: () => form.dispose() }
+    }
+
+    /** One page action. @returns its answer, or `{ok: false, code: ACTION.unreadable}`. */
+    async function actionRequest(path, payload) {
+      try {
+        const response = await fetch(new URL(path, document.baseURI).toString(), { ...ACTION.request, body: JSON.stringify(payload ?? {}) })
+        const answer = await response.json()
+        if (typeof answer?.ok === 'boolean') return answer
+      } catch { /* unreachable or unreadable: the refusal below */ }
+      return { ok: false, code: ACTION.unreadable }
+    }
+
+    /** A refusal's words: its own when known, else the code itself. */
+    const refusalText = (t, prefix, code) => (Object.hasOwn(en, prefix + code) ? t(prefix + code) : t('refused', { code }))
+
+    /**
+     * Reconnect and Open Fishball (R11; Q-G3, Q7 = A). Reconnect is always shown (Q-B2). Open asks
+     * for one admission under this page's own hostname and opens it in a new tab.
+     */
+    function Actions({ t, state, CLS, lang }) {
+      const [view, setView] = React.useState({ busy: false })
+      const ready = state === ACTION.ready
+      const reconnect = async () => {
+        setView({ busy: true })
+        const answer = await actionRequest(ACTION.reconnectPath)
+        setView({ busy: false, message: answer.ok ? t('reconnected') : refusalText(t, 'reconnectRefused.', answer.code), error: !answer.ok })
+      }
+      const open = async () => {
+        const answer = await actionRequest(ACTION.openPath, { lang: ACTION.langs.includes(lang) ? lang : ACTION.fallbackLang })
+        if (answer.ok && typeof answer.url === 'string') { window.open(answer.url, ACTION.target, ACTION.features); return }
+        setView({ busy: false, message: refusalText(t, 'openRefused.', answer.code), error: true })
+      }
+      return h('div', { className: CLS.status },
+        h('div', { className: CLS.actions },
+          h(Button, { type: 'button', size: 'sm', variant: 'primary', disabled: !ready, 'data-dsh-instance-open': true, onClick: () => void open() }, t('open')),
+          h(Button, { type: 'button', size: 'sm', variant: 'outline', disabled: view.busy, 'aria-busy': view.busy, 'data-dsh-instance-reconnect': true, onClick: () => void reconnect() },
+            view.busy ? t('reconnecting') : t('reconnect'))),
+        h('p', { className: CLS.hint }, t('reconnectHint')),
+        view.message ? h('p', { className: view.error ? CLS.error : CLS.hint, role: view.error ? 'alert' : 'status' }, view.message) : null)
     }
 
     /** One model-sync call. @returns `{ok, result|error}`; an unreadable answer is a typed refusal. */
@@ -265,7 +354,7 @@ window.__ModuleLoader__.load({
      * @param state - the instance state from the shared status poll.
      * @param CLS - every class the card draws (its own and the status line's).
      * @param neutralTone - the status line's Tag tone for an outcome with no tone of its own.
-     * @param paths - `{check, add}`: the model-sync routes this card calls.
+     * @param paths - `{check, add}`: the model-sync routes this card calls (MODEL_SYNC_UI).
      */
     function ModelSync({ t, state, CLS, neutralTone, paths }) {
       const P = MODEL_SYNC_UI.phase
@@ -335,17 +424,18 @@ window.__ModuleLoader__.load({
     }
 
     /**
-     * The card: the status line, then the `enabled` switch and nothing else. The switch stages a
-     * boolean.
+     * The page: the status line, the actions, the model block, then the `enabled` switch and the
+     * remote target. The switch stages a boolean.
      * @param section - the staged form from {@link launchSection}.
      * @param t - this card's locale reader.
      * @param shared - the status-line module (client.status.js).
      * @param CLS - every class the card draws (its own and the status line's).
      * @param neutralTone - the status line's neutral Tag tone, for the model block.
      * @param paths - the model block's routes (see {@link ModelSync}).
+     * @param activeLang - `() => string`, the page's active language for Open.
      * @returns the row page component.
      */
-    function makeCard(section, t, shared, CLS, neutralTone, paths) {
+    function makeCard(section, t, shared, CLS, neutralTone, paths, activeLang) {
       const { InstanceStatus, useInstanceStatus } = shared
       const subscribe = section.store.subscribe.bind(section.store)
       const getSnapshot = () => section.store.getSnapshot()
@@ -355,7 +445,7 @@ window.__ModuleLoader__.load({
         const [status, setStatus] = useInstanceStatus()
         if (props.view !== VIEW.page) return t('summary')
         const disabled = !state.writable || state.saving
-        return h(React.Fragment, null, h(InstanceStatus, { t, status, setStatus }), h(ModelSync, { t, state: status?.state, CLS, neutralTone, paths }), h(SettingsForm, {
+        return h(React.Fragment, null, h(InstanceStatus, { t, status, setStatus }), h(Actions, { t, state: status?.state, CLS, lang: activeLang() }), h(ModelSync, { t, state: status?.state, CLS, neutralTone, paths }), h(SettingsForm, {
           labels: formLabels(t),
           state,
           onSave: section.actions.save,
@@ -370,38 +460,43 @@ window.__ModuleLoader__.load({
                 disabled,
                 onChange: (on) => section.actions.edit(FIELD.enabled, on ? FLAG.on : FLAG.off),
               })),
-            h('p', { className: CLS.hint }, t('enabledHint')))))
+            h('p', { className: CLS.hint }, t('enabledHint'))),
+          h('div', { key: FIELD.targetUrl, className: CLS.feature },
+            h('label', { className: CLS.toggleRow },
+              h('span', null, t('field.targetUrl')),
+              h('input', {
+                type: 'url',
+                value: state.fields[FIELD.targetUrl].text,
+                disabled,
+                'aria-label': t('field.targetUrl'),
+                'data-dsh-instance-target': true,
+                onChange: (event) => section.actions.edit(FIELD.targetUrl, event.target.value),
+              })),
+            h('p', { className: CLS.hint }, t('targetUrlHint')))))
       }
     }
 
     /**
-     * The card as a client plugin over the instance-owned status line (embed-UI's client.js loads
-     * both chunks and starts the result as a sub-plugin of its row).
+     * The page as a client plugin over the status line chunk (the instance's client.js loads both
+     * chunks and starts the result as a sub-plugin of its row).
      * @param shared - the status-line module's `shared` export (client.status.js).
      * @param layout - its `layout` export: the line's classes, rules, tokens and neutral tone.
-     * @param childRoutes - embed-UI's host-half routes (its `services` answer's `routes`) when the
-     *   instance locator `dshInstanceChild` is usable: model sync then goes through them (U-SHELL,
-     *   R-HOST-07). Absent: the instance's own V2 routes, unchanged.
      */
-    exports.instancePlugin = (shared, layout, childRoutes) => ({
+    exports.instancePlugin = (shared, layout) => ({
       name: PLUGIN.id,
       inject: ['slots', 'locale', 'configForms'],
       apply(ctx) {
         const t = ctx.locale.bind(shared.locale)
         const words = shared.dictionaries
-        ctx.effect(() => ctx.locale.register(shared.locale, { en: { ...words.en, ...en }, zh: { ...words.zh, ...zh } }), 'fishball instance: dictionaries')
-        // One sheet, as in V2: the status line's rules and the card's own, under the line's sheet id.
-        ctx.effect(() => shared.mountStyle(layout.style.id, layout.css + cardCss(layout.style)), 'fishball instance: styles')
+        ctx.effect(() => ctx.locale.register(shared.locale, { en: { ...words.en, ...en }, zh: { ...words.zh, ...zh } }), PLUGIN.id + ': dictionaries')
+        // One sheet: the status line's rules and the page's own, under the line's sheet id.
+        ctx.effect(() => shared.mountStyle(layout.style.id, layout.css + cardCss(layout.style)), PLUGIN.id + ': styles')
         const CLS = Object.freeze({ ...layout.classes, ...OWN_CLS })
-        // Registered while the Host serves this row's settings namespace, so a deployment without
-        // the instance package shows no trace of the card, and the row's Configure control appears
-        // only where a configuration exists (the Plugins page asks slot keys for it).
+        // Registered while the Host serves this row's settings namespace, so the row's Configure
+        // control appears only where a configuration exists (the Plugins page asks slot keys for it).
         ctx.effect(() => {
           const section = launchSection(ctx.configForms.get(PLUGIN.id))
-          const paths = childRoutes === undefined
-            ? { check: MODEL_SYNC_UI.checkPath, add: MODEL_SYNC_UI.addPath }
-            : { check: childRoutes.modelsCheck, add: childRoutes.modelsAdd }
-          const Card = makeCard(section, t, shared, CLS, layout.neutralTone, paths)
+          const Card = makeCard(section, t, shared, CLS, layout.neutralTone, MODEL_SYNC_UI, () => ctx.locale.getLocale().active)
           const stopServing = ctx.configForms.whileServed([PLUGIN.id], () =>
             ctx.slots.inject(PLUGIN.slot, () => ctx.slots.register({
               name: PLUGIN.slot,
@@ -409,7 +504,7 @@ window.__ModuleLoader__.load({
               locale: shared.locale,
             }, Card)))
           return () => { stopServing(); section.dispose() }
-        }, 'fishball instance: Plugins card')
+        }, PLUGIN.id + ': settings page')
       },
     })
     return module.exports

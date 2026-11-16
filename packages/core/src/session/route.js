@@ -1,4 +1,10 @@
-/** CHILD-WEB §5.4: read X0-C/X1 live; this adapter never owns manager identity. */
+/**
+ * The Fishball page's manager-session route (CHILD-WEB §5.4: read X0-C/X1 live; this route never
+ * owns manager identity). Core publishes it itself since I-HOST: it reads core's own
+ * `fishballInstance.manager`, so it is Fishball-side code, and fishball-ui's page reads it in a
+ * standalone DSH and in a hosted child alike. Until I-HOST the hosted child's instance row served
+ * it (dsh-instance `session-route.js`), so a hosted child had no Fishball page from fishball-ui.
+ */
 const SESSION_ROUTE = Object.freeze({
   path: '/api/fishball/session',
   read: 'GET',
@@ -87,3 +93,8 @@ export function registerSessionRoute(ctx) {
     },
   })
 }
+
+/** Core's row for the route (`cordis.patch.yml` `fishball-core-session`, the package subpath `fishball-core/session-route`). */
+export const name = 'fishball-core-session'
+export const inject = ['connection']
+export function apply(ctx) { registerSessionRoute(ctx) }
