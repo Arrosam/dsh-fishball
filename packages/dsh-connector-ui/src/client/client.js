@@ -91,12 +91,15 @@ window.__ModuleLoader__.load({
      * logs `connector-missing`). A part that is not started loads no chunk.
      */
     function apply(ctx) {
-      const shell = require.async(EMBED.shell)
+      // The shell's chunk is asked for only once a wanted part needs it, then shared, so a DSH
+      // without a local connector requests no chunk at all (Q-U1).
+      let shellChunk
+      const shell = () => (shellChunk ??= require.async(EMBED.shell))
       const available = readAvailability()
       const when = (needs, load) => () => available.then((flags) => (wanted(flags, needs) ? load(flags) : undefined))
-      start(ctx, EMBED.shell, when(EMBED.shellNeeds, (flags) => shell.then((module) => module.shellPlugin(flags))))
+      start(ctx, EMBED.shell, when(EMBED.shellNeeds, (flags) => shell().then((module) => module.shellPlugin(flags))))
       for (const part of EMBED.parts) {
-        start(ctx, part.chunk, when(part.needs, (flags) => Promise.all([shell, require.async(part.chunk)]).then(([{ kit }, module]) => module[part.factory](kit, flags))))
+        start(ctx, part.chunk, when(part.needs, (flags) => Promise.all([shell(), require.async(part.chunk)]).then(([{ kit }, module]) => module[part.factory](kit, flags))))
       }
     }
 
