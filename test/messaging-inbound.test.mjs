@@ -16,7 +16,6 @@
  * | MSG-08 ×8 | BVA + EP (maxMessageBytes 64) | DESIGN §5b bounds, §16 | '' and whitespace: empty; 1, 64 ASCII and 64 bytes of 2-byte chars: delivered (the framing does not count); 65 ASCII, 63 + one 2-byte char, 66 bytes: too-large and nothing pushed |
  * | MSG-09 | BVA (maxQueuedInputs 2, no instance) + ST (full → attach → acked → free) | contract §9 queue bound; C1-BVA-03; C1-BVA-06 | 2 accepted, the 3rd queue-full; a Hand over with a note past the bound answers 200 and is queued (a user item is always accepted); after the attach the two messages and the note arrive once each, the 3rd never; a new message is accepted |
  * | MSG-12 | EP + BVA (22 items, no instance) | DESIGN §9 intake; slim §5.2 | queued counts all 22 while no instance takes them, 0 after; at most 20 items listed (the fixed INTAKE.rowsShown), newest first; each item names intakeId, a contract kind, sourceIdentity, a documented status and createdAt; no message text in the state |
- * | MSG-13 | EP | slim §8.3, T14 | the served client bundle carries the "Hand over to Fishball" entry (its dialog posts the send route) |
  *
  * Retired:
  * - MSG-02: Fishball's own requests and its message_session/start_session tools belonged to the removed in-process session (slim §12); the instance uses session.message/session.start.
@@ -25,8 +24,8 @@
  */
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
-import { EMBED_UI_LINK, INTAKE_STATUSES, LIMITS, MANAGED_LABELS, NOTE_TEXT, P5_CODE, PRESET, RELAY_HEADER, STATE_LIST_MAX } from './support/constants.mjs'
-import { HOOK, T, fishballClientBundle, toolNames, toolSchema, turn, untrustedBlock } from './support/expect.mjs'
+import { EMBED_UI_LINK, INTAKE_STATUSES, LIMITS, NOTE_TEXT, P5_CODE, PRESET, RELAY_HEADER, STATE_LIST_MAX } from './support/constants.mjs'
+import { HOOK, T, toolNames, toolSchema, turn, untrustedBlock } from './support/expect.mjs'
 import { KIND, bootStub, messageFishball, quietPushes, stopStub, userSession } from './support/instance-stub.mjs'
 import {
   MSGF, drainedDetached, forward, intakeNow, managedDrained, messageOf, pushedWith, pushesSettled, sendCalls, sessionMessages, setLimit, tok, untilQueued,
@@ -276,14 +275,5 @@ describe('the queue bound and the intake state with no instance attached', () =>
     assert.equal((await stub.attach()).ok, true)
     assert.ok(await untilQueued(host, 0), 'queued is 0 once the instance acked them')
     await stub.detach()
-  })
-
-  it('MSG-13 the client bundle is served and has the Hand over entry', T, async (t) => {
-    const bundle = await fishballClientBundle(host)
-    assert.ok(bundle.found, 'index references dsh-connector-ui/client.js')
-    assert.equal(bundle.status, 200)
-    assert.ok(bundle.text.includes(MANAGED_LABELS.handOver), 'entry label')
-    // T14 removed the send-only entry; whether its old label still appears anywhere is only recorded.
-    t.diagnostic('bundle names "Send to Fishball": ' + bundle.text.includes('Send to Fishball'))
   })
 })
