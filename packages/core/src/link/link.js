@@ -66,6 +66,25 @@ class LinkHold extends LinkFailure {}
  */
 const callStructured = async (client, name, args, signal) => (await client.callTool({ name, arguments: args }, signal === undefined ? undefined : { signal })).structuredContent
 
+/**
+ * The stock `ClientCredentialsProvider`, sending a refused secret once. The SDK's `auth()` answers
+ * an `invalid_client` / `unauthorized_client` by calling `invalidateCredentials('client')` and
+ * running the token request again with the same secret: a second request that cannot succeed and
+ * counts twice against the target's failure limit (R-OA-17). Here the invalidation remembers the
+ * refusal and the retry's `prepareTokenRequest` throws that same error before any request, so the
+ * attempt fails with it and is classified `token-refused` as before (F-LINK-SAVE, Q-LS1 = A).
+ */
+const clientCredentialsOnce = (sdk, options) => new (class extends sdk.ClientCredentialsProvider {
+  #refused = false
+  invalidateCredentials(scope) {
+    if (scope === LINK_MCP.invalidatedClient) this.#refused = true
+  }
+  prepareTokenRequest(scope) {
+    if (this.#refused) throw new sdk.OAuthError(sdk.OAuthErrorCode.InvalidClient, LINK_MCP.refusedOnce)
+    return super.prepareTokenRequest(scope)
+  }
+})(options)
+
 /** Admits every attempt: the link without pairing (F-LINK's behaviour). */
 const OPEN_GATE = Object.freeze({ hold: () => null, admit: async () => null, paired: async () => false })
 
@@ -256,7 +275,7 @@ export class McpLink {
       const status = await this.#failed(error, attempt, seen)
       if (!this.#current(generation)) return
       // A held attempt was refused by the gate, not by the target; the hook never rejects.
-      if (!(error instanceof LinkHold) && (status === STATUS.refused || status === STATUS.revoked)) await credentials?.refused?.()
+      if (!(error instanceof LinkHold) && (status === STATUS.refused || status === STATUS.revoked)) await credentials?.refused?.()?.catch(() => {})
       if (!this.#current(generation)) return
       this.#setStatus(status)
       if (!(error instanceof LinkHold)) this.#retryLater(generation)
@@ -281,7 +300,7 @@ export class McpLink {
   }
 
   async #connect(sdk, target, credentials, attempt, seen, generation) {
-    const provider = credentials.authProvider ?? new sdk.ClientCredentialsProvider({
+    const provider = credentials.authProvider ?? clientCredentialsOnce(sdk, {
       clientId: credentials.clientId,
       clientSecret: credentials.secret,
       expectedIssuer: target.issuer,

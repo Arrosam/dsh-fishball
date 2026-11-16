@@ -21,9 +21,15 @@
  *
  * Status (`ConnectStatus`), first match: an attempt pending → `authorizing`; a saved credential for
  * the origin that the target has not refused since → `authorized` (a hosted child's saved token
- * included, `connect.d.ts`); an unusable `clientMetadataUrl` → `needs-configuration`; the last
- * attempt failed → `failed` (code `null`: no OAuth word, value or code is kept); otherwise
- * `needs-authorization` (so after `invalid_grant` dropped the tokens: Connect again, once).
+ * included, `connect.d.ts`); an unusable `clientMetadataUrl` → `needs-configuration` with its
+ * code; a target that fails the connector check (none usable, its path, or the last check of this
+ * very URL) →
+ * `needs-configuration` / `not-a-connector`; the last attempt for this target ended without a
+ * grant (denied or cancelled included: nothing was connected) → `failed`, code `null` (no OAuth
+ * word, value or code is kept); otherwise `needs-authorization` (so after `invalid_grant` dropped
+ * the tokens: Connect again, once). The status follows a change of the target or of
+ * `clientMetadataUrl` (both read on every `status()` and every link attempt), so a new origin is a
+ * new first connection (R9).
  *
  * Not built here: the web callback for a browser on another machine (Q-A3 B,
  * `CONNECT.callback.webPath`, `web-callback-insecure`): it needs core's owner-only web route and
@@ -42,16 +48,11 @@ const CONFIGURATION_OF = Object.freeze({
   [OAUTH_CLIENT.urlProblem.notHttps]: CONNECT.configuration.metadataUrlNotHttps,
   [OAUTH_CLIENT.urlProblem.rootPath]: CONNECT.configuration.metadataUrlRootPath,
 })
-/**
- * Attempt ends that leave `needs-authorization`, as the adapter's (the user denied, a response that
- * failed the state or issuer check, a lapsed attempt); any other end is `failed`.
- */
-const ENDS_QUIETLY = Object.freeze([OAUTH_CLIENT.attemptEnd.denied, OAUTH_CLIENT.attemptEnd.rejected, OAUTH_CLIENT.attemptEnd.expired])
 
 const status = (state, code = null) => Object.freeze({ state, code })
 const AUTHORIZED = Object.freeze({ outcome: STATE.authorized })
 const needsConfiguration = (code) => Object.freeze({ outcome: STATE.needsConfiguration, code })
-const approval = (url) => Object.freeze({ outcome: 'approval-url', url })
+const approval = (url) => Object.freeze({ outcome: LINK_SAVE.approvalUrlOutcome, url })
 
 const sameUrl = (value, expected) => URL.canParse(value) && new URL(value).href === expected
 /** The connector check's protected-resource half (step 4 of the module header). */
@@ -63,23 +64,31 @@ function isConnectorResource(url, resourceMetadata) {
 
 /**
  * @param {object} ctx core's row context (`authorization`)
- * @param {object} deps from `createLinkCredentials`: the saved `store` (with `grantKey(origin)`), the `target`, `clientId`,
- *   `clientMetadataUrl` and `sdk` / `fetch` / `timers` options, `isRefused(ref)`, `credentialIdOf(saved)`,
- *   `usableGrant(grant, url)`, and `onSaved(origin)` (after a grant was committed)
+ * @param {object} deps from `createLinkCredentials`: the saved `store` (`read`, `hasSaved`,
+ *   `grantKey`, `managerFor`), the `target`, `clientId`, `clientMetadataUrl` and `sdk` / `fetch` /
+ *   `timers` options, `isRefused(ref)`, `credentialIdOf(saved)`, and `onSaved(origin)` (after a
+ *   grant was committed)
  * @returns {{control: object, refresh: () => void, dispose: () => void}} `control` is K3a's
  *   `FishballConnect`; `refresh()` recomputes the status after a credential changed
  */
-export function createConnect(ctx, { store, target, clientId, clientMetadataUrl, sdk, fetch, timers, isRefused, credentialIdOf, usableGrant, onSaved }) {
+export function createConnect(ctx, { store, target, clientId, clientMetadataUrl, sdk, fetch, timers, isRefused, credentialIdOf, onSaved }) {
   const listeners = new Set()
   // One flow per grant record, registered on the first attempt for its origin and kept while core
   // runs: DSH refuses a second flow for one key, and a target may come back.
   const flows = new Map()
   let current = status(STATE.needsAuthorization)
   let attempt
-  let failed = false
+  // The target URL (`href`) whose last attempt ended without a grant, and the one whose
+  // protected-resource metadata failed the connector check: each holds for that URL only.
+  let failedFor
+  let notAConnectorFor
   let generation = 0
+  // The settings the current status was computed for (see `status()`).
+  let computedFor
   // Concurrent begin() calls share one decision, so two clicks never start two attempts.
   let beginning
+  // cancel() came while begin() was still deciding (discovery runs before any attempt exists).
+  let cancelled = false
 
   const usableTarget = () => {
     const checked = checkTarget(target())
@@ -91,26 +100,52 @@ export function createConnect(ctx, { store, target, clientId, clientMetadataUrl,
   async function authorized(usable) {
     if (usable === undefined) return false
     const saved = await store.read(usable.origin)
-    const has = saved.token !== undefined || usableGrant(saved.grant, usable.url.href)
-    return has && !isRefused(credentialIdOf(saved))
+    return store.hasSaved(saved, usable.url.href) && !isRefused(credentialIdOf(saved))
   }
+
+  /**
+   * Whether the target fails the connector check as far as it is known without a request: no
+   * usable target, a path other than the MCP path, or the last check of this very URL failed.
+   */
+  const notAConnector = (usable) => usable === undefined || usable.url.pathname !== MCP.paths.mcp || notAConnectorFor === usable.url.href
 
   async function compute() {
     if (attempt !== undefined) return status(STATE.authorizing)
-    if (await authorized(usableTarget())) return status(STATE.authorized)
+    const usable = usableTarget()
+    if (await authorized(usable)) return status(STATE.authorized)
     const code = configurationCode()
     if (code !== undefined) return status(STATE.needsConfiguration, code)
-    return status(failed ? STATE.failed : STATE.needsAuthorization)
+    if (notAConnector(usable)) return status(STATE.needsConfiguration, CONNECT.configuration.notAConnector)
+    return status(failedFor === usable.url.href ? STATE.failed : STATE.needsAuthorization)
+  }
+
+  /** The settings the status depends on besides the store, as one comparable value. */
+  const settingsKey = () => JSON.stringify([target(), clientMetadataUrl()])
+
+  /** Sets the status and reports a change. */
+  function show(next) {
+    if (next.state === current.state && next.code === current.code) return
+    current = next
+    emitIsolated(listeners, current)
   }
 
   /** Recomputes the status; only the latest computation may set it. A failed read keeps the last one. */
   function refresh() {
+    computedFor = settingsKey()
     const mine = ++generation
-    compute().then((next) => {
-      if (mine !== generation || (next.state === current.state && next.code === current.code)) return
-      current = next
-      emitIsolated(listeners, current)
-    }, () => {})
+    compute().then((next) => { if (mine === generation) show(next) }, () => {})
+  }
+
+  /**
+   * `begin` decided a configuration problem without the store: shown at once, so the status a
+   * caller reads right after `begin` resolved agrees with its answer (an older pending
+   * recomputation is overtaken).
+   */
+  function answer(code) {
+    computedFor = settingsKey()
+    generation += 1
+    show(status(STATE.needsConfiguration, code))
+    return needsConfiguration(code)
   }
 
   function flowFor(usable, key) {
@@ -134,6 +169,13 @@ export function createConnect(ctx, { store, target, clientId, clientMetadataUrl,
     flows.set(key, ctx.authorization.registerFlow(flow))
   }
 
+  /** A failed start or discovery: shown as `failed` for this target, and rejected to the caller. */
+  function fail(serverUrl, error) {
+    failedFor = serverUrl
+    refresh()
+    throw error
+  }
+
   /**
    * Starts the attempt; resolves with its approval URL, or `authorized` when it already committed.
    * An attempt that ends before its URL is known without a grant rejects (`connect.d.ts` has no
@@ -141,16 +183,18 @@ export function createConnect(ctx, { store, target, clientId, clientMetadataUrl,
    */
   function start(usable, discovery) {
     const key = store.grantKey(usable.origin)
-    flowFor(usable, key)
+    // No `ctx.authorization` (a profile without dsh-authorization) or a key another plugin claimed
+    // (`DUPLICATE_FLOW`): no attempt can run, so Connect reports `failed` rather than a bare TypeError.
+    try { flowFor(usable, key) } catch (error) { return fail(usable.url.href, error) }
     return new Promise((resolve, reject) => {
       // Set before begin(): DSH calls the flow's run() from begin(), and run() reads this attempt.
       const pending = { key, url: undefined, serverUrl: usable.url.href, clientMetadataUrl: clientMetadataUrl(), discovery }
       attempt = pending
-      failed = false
+      failedFor = undefined
       refresh()
-      const settle = async (ok, quiet) => {
+      const settle = async (ok) => {
         if (attempt === pending) attempt = undefined
-        failed = !ok && !quiet
+        failedFor = ok ? undefined : pending.serverUrl
         if (ok) await onSaved(usable.origin)
         refresh()
         if (pending.url !== undefined) return
@@ -169,41 +213,62 @@ export function createConnect(ctx, { store, target, clientId, clientMetadataUrl,
           prompt: () => Promise.reject(new OAuthAttemptError(OAUTH_CLIENT.attemptEnd.failed)),
         },
       }).then(
-        // `cancelled`: the user cancelled (here or on the page), which is no failure.
-        (outcome) => settle(outcome?.status === STATE.authorized, true),
-        (error) => settle(false, ENDS_QUIETLY.includes(error?.code)),
+        // `cancelled` (the user withdrew) ends without a grant too: `failed`, as any other end.
+        (outcome) => settle(outcome?.status === LINK_SAVE.authorizationAuthorized),
+        () => settle(false),
       )
     })
   }
 
   /** One `begin` decision (see the module header for the order of the checks). */
   async function beginOnce() {
-    if (attempt?.url !== undefined) return approval(attempt.url)
+    cancelled = false
     const usable = usableTarget()
+    if (attempt !== undefined) {
+      // A pending attempt for this target's grant answers its URL again; one for another origin
+      // (the target changed) is withdrawn: a new origin is a new first connection (R9).
+      if (attempt.key === (usable && store.grantKey(usable.origin)) && attempt.serverUrl === usable.url.href) {
+        if (attempt.url !== undefined) return approval(attempt.url)
+      } else ctx.authorization.cancel(attempt.key)
+    }
     if (await authorized(usable)) return AUTHORIZED
     const code = configurationCode()
-    if (code !== undefined) return needsConfiguration(code)
+    if (code !== undefined) return answer(code)
     // A blank, refused or non-connector target fails the connector check: nothing to connect to.
-    if (usable === undefined || usable.url.pathname !== MCP.paths.mcp) return needsConfiguration(CONNECT.configuration.notAConnector)
+    if (notAConnector(usable) && usable?.url.href !== notAConnectorFor) return answer(CONNECT.configuration.notAConnector)
+    // Each begin checks the target again: the user may have fixed it since.
+    notAConnectorFor = undefined
     let discovery
     try {
       discovery = await discoverServer({ sdk: await sdk(), serverUrl: usable.url.href, fetchFn: fetch, acceptResource: (prm) => isConnectorResource(usable.url, prm) })
     } catch (error) {
-      failed = true
-      refresh()
-      throw error
+      return fail(usable.url.href, error)
     }
-    if (discovery === undefined) return needsConfiguration(CONNECT.configuration.notAConnector)
+    if (discovery === undefined) {
+      notAConnectorFor = usable.url.href
+      return answer(CONNECT.configuration.notAConnector)
+    }
+    if (cancelled) return fail(usable.url.href, new OAuthAttemptError(OAUTH_CLIENT.attemptEnd.denied))
     return start(usable, discovery)
   }
 
   refresh()
   return Object.freeze({
     control: Object.freeze({
-      status: () => current,
+      /**
+       * The last computed status. A changed target or `clientMetadataUrl` (F-WIRE may not tell
+       * core) starts a recomputation, which `onChange` reports; this call answers the last one.
+       */
+      status: () => {
+        if (settingsKey() !== computedFor) refresh()
+        return current
+      },
       onChange: (fn) => subscribe(listeners, fn),
       begin: () => (beginning ??= beginOnce().finally(() => { beginning = undefined })),
-      cancel: () => { if (attempt !== undefined) ctx.authorization.cancel(attempt.key) },
+      cancel: () => {
+        if (attempt !== undefined) ctx.authorization.cancel(attempt.key)
+        else if (beginning !== undefined) cancelled = true
+      },
     }),
     refresh,
     dispose() {

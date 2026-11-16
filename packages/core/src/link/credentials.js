@@ -24,6 +24,12 @@
  * A saved credential the target refuses stays saved (R9: replaced only by a different accepted
  * one); Connect stops reporting `authorized` for it until a credential is accepted again.
  *
+ * Q-LS1 = A refines K3a `link.d.ts`'s reader order ("a saved copy for the target origin wins"):
+ * the user chose that a new, unrefused reference value is tried before the saved one (2026-11-16).
+ * A reference whose value comes from the process environment cannot be unset; it is then tried and
+ * saved at every connection, which changes nothing once saved. Emptying the reference by hand asks
+ * for no reconnect: the link goes on with the credential it holds until its next attempt.
+ *
  * Every credential carries a non-secret `ref` (`LINK_SAVE.credentialId`) that F-PAIR keys its
  * records and holds on (decided item 13): the same token is one credential whether it is still in
  * the reference or already saved, so saving it never makes pairing start over.
@@ -42,15 +48,24 @@ const HOSTED_KEY = HOSTED_IMPORT.savedRecord.key
 /** The link credential kinds (`LinkCredentials.kind`). */
 export const CREDENTIAL_KIND = Object.freeze({ token: 'token', grant: 'grant' })
 
-/** The non-secret id of a token: the SHA-256 of its value (the connector's own digest, K1). */
+/**
+ * The non-secret id of a token: a SHA-256 of its value under core's own domain prefix, so the id
+ * can never equal the connector's stored lookup digest of the same value (K1 `TOKEN_VALUE`).
+ */
 export const tokenCredentialId = (value) => LINK_SAVE.credentialId.tokenPrefix
-  + createHash(LINK_SAVE.credentialId.digest).update(value).digest(LINK_SAVE.credentialId.digestEncoding)
+  + createHash(LINK_SAVE.credentialId.digest).update(LINK_SAVE.credentialId.domain + value).digest(LINK_SAVE.credentialId.digestEncoding)
 const grantCredentialId = (grant) => LINK_SAVE.credentialId.grantPrefix + grant.grantId
 
 /** Connect's grant record key for a target origin (see `LINK_SAVE.grantRecordIdPrefix`). */
 export const grantRecordKey = (origin) => `${CONNECT.grantRecordScope}/${LINK_SAVE.grantRecordIdPrefix}${Buffer.from(origin).toString(LINK_SAVE.originEncoding)}`
 
-const hostedTokens = (record) => (record?.payload?.v === LINK_SAVE.hostedPayload.version ? record.payload.tokens ?? {} : {})
+/**
+ * The token copies of the hosted record by origin. A payload of another version reads as none; V3
+ * is installed fresh (Q-M1), so only this version is ever written, and `dropToken` leaves another
+ * version's record alone rather than deleting what it cannot read.
+ */
+const isOwnVersion = (record) => record?.payload?.v === LINK_SAVE.hostedPayload.version
+const hostedTokens = (record) => (isOwnVersion(record) ? record.payload.tokens ?? {} : {})
 const hostedRecord = (tokens) => Object.freeze({ kind: HOSTED_IMPORT.savedRecord.kind, payload: { v: LINK_SAVE.hostedPayload.version, tokens } })
 /** A grant the link can connect with for `serverUrl`: issued for it, and still holding tokens. */
 const usableGrant = (grant, serverUrl) => isGrantFor(grant, serverUrl) && grant.tokens !== undefined
@@ -73,27 +88,36 @@ function createSavedStore(credentials, { sdk, fetch, now }) {
       const [hosted, grant] = await Promise.all([credentials.readRecord(HOSTED_KEY), credentials.readRecord(grantRecordKey(origin))])
       return { token: hostedTokens(hosted)[origin], grant: grant?.payload }
     },
-    /** Saves the accepted token for `origin` (once) and removes that origin's grant: one saved credential per origin. */
-    async saveToken(origin, value) {
+    /** Whether `saved` (from `read`) holds a credential the link can use for `serverUrl`. */
+    hasSaved: (saved, serverUrl) => saved.token !== undefined || usableGrant(saved.grant, serverUrl),
+    /**
+     * Saves the accepted token for `origin` (once) and removes the grant `replaced` (the one `read`
+     * found for the attempt): one saved credential per origin. Only that grant goes: a grant another
+     * core process committed meanwhile (CLI and Web share the store) is newer and stays. DSH has no
+     * compare-and-delete, so a commit between the fresh read and the delete is the window left.
+     */
+    async saveToken(origin, value, replaced) {
       await credentials.modifyRecord(HOSTED_KEY, async (current) => {
         const tokens = hostedTokens(current)
         return tokens[origin] === value ? undefined : hostedRecord({ ...tokens, [origin]: value })
       })
-      await credentials.deleteRecord(grantRecordKey(origin))
+      const key = grantRecordKey(origin)
+      if (replaced !== undefined && (await credentials.readRecord(key))?.payload?.grantId === replaced.grantId) await credentials.deleteRecord(key)
     },
     /**
      * Removes `origin`'s token copy (a Connect grant replaced it). The last one deletes the record,
      * so `describeRecord(savedRecord.key).configured` keeps meaning "the child holds a credential".
+     * `modifyRecord` cannot delete, so the delete is a second step, taken only while a fresh read
+     * still shows an empty record of this version (another process may have saved an origin since;
+     * the window between that read and the delete is the one left).
      */
     async dropToken(origin) {
-      let empty = false
       await credentials.modifyRecord(HOSTED_KEY, async (current) => {
         const { [origin]: dropped, ...rest } = hostedTokens(current)
-        empty = Object.keys(rest).length === 0
-        return dropped === undefined || empty ? undefined : hostedRecord(rest)
+        return dropped === undefined ? undefined : hostedRecord(rest)
       })
-      // modifyRecord cannot delete: the record's last origin goes with the record itself.
-      if (empty) await credentials.deleteRecord(HOSTED_KEY)
+      const fresh = await credentials.readRecord(HOSTED_KEY)
+      if (isOwnVersion(fresh) && Object.keys(hostedTokens(fresh)).length === 0) await credentials.deleteRecord(HOSTED_KEY)
     },
   })
 }
@@ -166,7 +190,6 @@ export function createLinkCredentials(ctx, { target, clientId, clientMetadataUrl
     store, target, clientId, clientMetadataUrl, sdk: loadSdk, fetch, timers,
     isRefused: (ref) => ref === refusedSaved,
     credentialIdOf: (saved) => (saved.token !== undefined ? tokenCredentialId(saved.token) : grantCredentialId(saved.grant)),
-    usableGrant,
     onSaved: async (origin) => {
       refusedSaved = undefined
       await store.dropToken(origin).catch(warn(LINK_SAVE.text.forget))
@@ -174,22 +197,39 @@ export function createLinkCredentials(ctx, { target, clientId, clientMetadataUrl
     },
   })
 
-  const tokenCredentials = (origin, value, fromReference) => {
+  /**
+   * K3a step 3: unset the reference only while it still holds the value just saved. A newer token
+   * written meanwhile (the instance's Reconnect, a paste) stays and is tried next (Q-LS1 = A). DSH
+   * has no compare-and-unset, so a write between this read and the unset is the window left.
+   */
+  async function unsetIfSaved(value) {
+    if ((await ctx.credentials.resolve(REF))?.value === value) await ctx.credentials.unset(REF)
+  }
+
+  /**
+   * A token credential. `source` is where it came from: the reference (`fromReference`, with
+   * `saved`, what `read` found for the origin then) or the saved copy. A refusal is recorded per
+   * source: a reference value refused while a saved credential exists is not sent again until the
+   * reference changes (Q-LS1 = A); a refused reference with nothing saved is retried as before
+   * (F-LINK); a refused saved copy stays saved (R9) but no longer counts as `authorized`.
+   */
+  const tokenCredentials = (origin, value, source) => {
     const ref = tokenCredentialId(value)
     return Object.freeze({
       kind: CREDENTIAL_KIND.token, clientId: clientId(), ref, secret: value,
       async accepted() {
-        if (refusedSaved === ref) { refusedSaved = undefined; connect.refresh() }
-        if (!fromReference) return
-        // K3a step 3: save, then unset; a failed save keeps the reference, so the next connection saves again.
-        try { await store.saveToken(origin, value) } catch (error) { return warn(LINK_SAVE.text.save)(error) }
-        refusedSaved = undefined
-        await ctx.credentials.unset(REF).catch(warn(LINK_SAVE.text.unset))
+        if (refusedSaved === ref) refusedSaved = undefined
+        if (source.fromReference) {
+          // A failed save keeps the reference, so the next connection saves again.
+          try { await store.saveToken(origin, value, source.saved.grant) } catch (error) { warn(LINK_SAVE.text.save)(error); return connect.refresh() }
+          refusedSaved = undefined
+          await unsetIfSaved(value).catch(warn(LINK_SAVE.text.unset))
+        }
         connect.refresh()
       },
-      async refused(hasSaved) {
-        if (fromReference && hasSaved) refusedReference = ref
-        else refusedSaved = ref
+      async refused() {
+        if (!source.fromReference) refusedSaved = ref
+        else if (store.hasSaved(source.saved, source.serverUrl)) refusedReference = ref
         connect.refresh()
       },
     })
@@ -213,23 +253,32 @@ export function createLinkCredentials(ctx, { target, clientId, clientMetadataUrl
   /** The credentials of one attempt (see the module header for the order). */
   async function credentialsFor(usable) {
     const { origin } = usable
+    const serverUrl = usable.url.href
+    // Connect's status follows the target the link dials (R9: a new origin is a new first connection).
+    connect.refresh()
     const [reference, saved] = await Promise.all([ctx.credentials.resolve(REF), store.read(origin)])
-    const hasSaved = saved.token !== undefined || usableGrant(saved.grant, usable.url.href)
     const value = reference?.value
-    if (value && !(hasSaved && tokenCredentialId(value) === refusedReference)) {
-      const chosen = tokenCredentials(origin, value, true)
-      return Object.freeze({ ...chosen, refused: () => chosen.refused(hasSaved) })
+    if (value && !(store.hasSaved(saved, serverUrl) && tokenCredentialId(value) === refusedReference)) {
+      return tokenCredentials(origin, value, { fromReference: true, saved, serverUrl })
     }
-    if (saved.token !== undefined) return tokenCredentials(origin, saved.token, false)
-    if (usableGrant(saved.grant, usable.url.href)) return grantCredentials(origin, saved.grant)
+    if (saved.token !== undefined) return tokenCredentials(origin, saved.token, { fromReference: false })
+    if (usableGrant(saved.grant, serverUrl)) return grantCredentials(origin, saved.grant)
     return null
   }
 
-  const offReference = ctx.on(LINK_SAVE.events.referenceUpdated, (ref) => {
-    if (ref !== REF) return
+  /**
+   * A change of the reference. Core's own unset after a save fires it too, so only a value that is
+   * there now counts, and only a value other than the refused one (Q-LS1 = A: the same value written
+   * again is not a new token, so it is neither resent nor a reason to reconnect).
+   */
+  async function referenceChanged() {
+    const value = (await ctx.credentials.resolve(REF))?.value
+    if (!value || tokenCredentialId(value) === refusedReference) return
     refusedReference = undefined
-    // Core's own unset after a save fires this too: only a value that is there now is a new token.
-    ctx.credentials.describe(REF).then((info) => { if (info.configured) emitIsolated(reconnects) }, warn(LINK_SAVE.text.read))
+    emitIsolated(reconnects)
+  }
+  const offReference = ctx.on(LINK_SAVE.events.referenceUpdated, (ref) => {
+    if (ref === REF) referenceChanged().catch(warn(LINK_SAVE.text.read))
   })
   const offRecord = ctx.on(LINK_SAVE.events.recordUpdated, () => connect.refresh())
 
