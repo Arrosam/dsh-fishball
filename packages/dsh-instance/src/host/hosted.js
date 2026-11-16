@@ -78,13 +78,14 @@ export function createHostedToken({ tokens, record, credentials, instanceId, rem
   /**
    * One `createHosted` and its one import. The key is recorded once the child stored the value;
    * an unanswered import is resolved by asking the child again, so a slow but successful write is
-   * never reported as a failure.
+   * never reported as a failure. One the child still does not confirm answers K3's frozen
+   * `credentials-unwritable`: the child did not show the value stored.
    */
   async function createAndImport(client) {
     let entry
     try { entry = await connector().createHosted(instanceId()) } catch { return { ok: false, code: REFUSAL.failed } }
     let stored
-    try { stored = await client.importToken(entry.value) } catch { stored = (await present(client)) === true ? { ok: true } : { ok: false, code: REFUSAL.unknown } }
+    try { stored = await client.importToken(entry.value) } catch { stored = (await present(client)) === true ? { ok: true } : { ok: false, code: REFUSAL.unwritable } }
     // A definite refusal: the new entry stays for the user to delete (Q-B3 = B).
     if (stored.ok !== true) return { ok: false, code: stored.code ?? REFUSAL.unwritable }
     try { await record.add(entry.entryKey) } catch (error) { warn(HOSTED.recordWriteFailed, error?.code ?? REFUSAL.failed) }
