@@ -1,0 +1,13 @@
+# Third-party notices
+
+dsh-connector-adapter is MIT-licensed ([LICENSE](LICENSE)).
+
+It runs inside DeepSeek Harness and uses the host's installed packages as peer dependencies: `@deepseek-ai/*` (MIT, Copyright (c) 2026 DeepSeek). No host source is copied or bundled into this package.
+
+## Runtime dependencies
+
+The package manager installs these alongside the adapter. None of their code is copied or bundled into this repository or its tarball:
+- `@modelcontextprotocol/client` 2.2.0 and its `@modelcontextprotocol/core` 2.2.0 (Copyright (c) 2024-2025 Model Context Protocol a Series of LF Projects, LLC). Their manifests declare MIT. Their LICENSE files describe the MCP project's move from MIT to Apache-2.0 and carry both texts.
+- Their own dependencies, as the package manager resolves them.
+
+Any third-party code added later must be listed here with its licence and notice.

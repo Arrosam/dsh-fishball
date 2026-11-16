@@ -2,7 +2,7 @@
   "name": "dsh-connector-shared",
   "version": "0.1.0-alpha.0",
   "//": "A library, not a DSH plugin (R-ARCH-08, design §9.1): no `dsh` field, so no bundle, row, client or service, and it never appears on a Plugins page. It is the DSH side's library (requirements 1.40, design §1.0b row 5): it holds only modules more than one DSH-side package uses, imports no other V3 package, and ships inside their tarballs through bundleDependencies (V3 publishes nothing to a registry). The Fishball side has its own library, fishball-shared; no module is shared across the sides, so ./files exists in both.",
-  "description": "Modules more than one DSH-side package uses: the child admin service protocol, the provider-sync wire codec, engine and host adapter, and file and redaction helpers.",
+  "description": "Modules more than one DSH-side package uses: the child admin service protocol, the provider-sync wire codec, engine and host adapter, file and redaction helpers, and the OAuth browser client (./oauth-client).",
   "license": "MIT",
   "type": "module",
   "exports": {
@@ -12,6 +12,7 @@
     "./provider-sync-codec": "./provider-sync-codec.js",
     "./provider-sync-host": "./provider-sync-host.js",
     "./redact": "./redact.js",
+    "./oauth-client": "./oauth-client.js",
     "./package.json": "./package.json"
   },
   "files": [
