@@ -50,6 +50,9 @@ const CONNECTOR_CONTRACTS = Object.freeze([
  * reached only from index.js (CONNECTOR_BOOT); the package's manifest is in that set too.
  */
 const CONNECTOR_CORE = Object.freeze(['constants', 'digest', 'errors', 'text'].map((name) => `${PACKAGE.dshConnector}/src/${name}.js`))
+/** What embed-UI's draw world loads: embed-UI, the real UI backend, C-EXT, K2/K3 and their imports. */
+const CONNECTOR_UI_DRAW_TRIGGERS = Object.freeze([all(PACKAGE.dshConnectorUi), sub(PACKAGE.dshConnector, 'src', 'ui'), sub(PACKAGE.dshConnector, 'src', 'contrib'), sub(PACKAGE.dshConnector, 'tools'),
+  sub(PACKAGE.dshConnector, 'host-services'), all(PACKAGE.dshConnectorShared), ...CONNECTOR_CORE, ...CONNECTOR_CONTRACTS])
 /** The connector's manifest: k1 reads its dependencies. */
 const CONNECTOR_MANIFEST = PACKAGE.dshConnector + '/package.json'
 /** core's link and its own K3a contracts every link-side module imports (core/src/link → contracts; F-OWN-SCHEMA). */
@@ -151,8 +154,11 @@ export const V3_SUITES = Object.freeze({
   // The draw rows run embed-UI over the real UI backend (C-UI-BACKEND) and the real contribution
   // service (C-EXT), so a change in either reruns them.
   'dsh-connector-ui.draw': suite('draw-only frontend: fish, window, hint, Retry link, marks, Hand over / Take back, light, notify prompt, tool declaration (U-DRAW)', v3('dsh-connector-ui/draw'),
-    [all(PACKAGE.dshConnectorUi), sub(PACKAGE.dshConnector, 'src', 'ui'), sub(PACKAGE.dshConnector, 'src', 'contrib'), sub(PACKAGE.dshConnector, 'tools'),
-      sub(PACKAGE.dshConnector, 'host-services'), all(PACKAGE.dshConnectorShared), ...CONNECTOR_CORE, ...CONNECTOR_CONTRACTS]),
+    CONNECTOR_UI_DRAW_TRIGGERS),
+  // The wire rows boot draw's world (draw/world.mjs and the test modules it imports), so they
+  // rerun on everything draw reruns on, and on a change to those test modules.
+  'dsh-connector-ui.wire': suite('install matrix and no-V2 boundaries (U-WIRE)', v3('dsh-connector-ui/wire'),
+    [...CONNECTOR_UI_DRAW_TRIGGERS, 'test/v3/dsh-connector-ui/draw/**', 'test/v3/dsh-connector-ui/shell/constants.mjs', 'test/v3/dsh-connector/ui/**', 'test/v3/dsh-connector/routing/constants.mjs']),
   // Reads the instance's whole placement and launch overlay, core's patch it places, and the F-GUARDS
   // vocabulary (whose split constants name fishball-ui's rows).
   'dsh-instance.placement': suite('placement of the set, launch overlay, hosted-child guards (I-PLACE)', v3('dsh-instance/placement'),

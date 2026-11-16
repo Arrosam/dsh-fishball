@@ -18,9 +18,8 @@ export const ROW = Object.freeze({ name: 'dsh-connector-ui', logger: 'dsh-connec
  * row). `apiVersion` is the one version each must carry; any other value is the service absent
  * (K3 index.d.ts, README; UIM-EP-01 row 5).
  * - child: K3 `DshInstanceChild` (child.d.ts), the instance's locator;
- * - ui: the connector's UI backend (dsh-connector src/ui/constants.js `UI_SERVICE.name`; K3b has
- *   not frozen it yet, so C-UI-BACKEND's name is restated here): every state and operation embed-UI
- *   draws, the routes it draws them from, and `contribute(register)` for its tools (1.34);
+ * - ui: K3 `DshConnectorUi` (ui.d.ts), the connector's UI backend: every state and operation
+ *   embed-UI draws, the routes it draws them from, and `contribute(register)` for its tools (1.34);
  * - tools: K2 `TOOLS_API.service` (dsh-connector/tools constants.js), the contribution service
  *   embed-UI's tools are registered through (R-EXT-13).
  * The connector's hand-over service is no longer looked up: the UI backend draws on it (1.34).
@@ -30,13 +29,6 @@ export const SERVICE = Object.freeze({
   child: 'dshInstanceChild',
   ui: 'dshConnectorUi',
   tools: 'dshConnectorTools',
-  /**
-   * V2's connector service (dsh-connector/contract CONNECTOR_SERVICE), the W3 fallback: until
-   * C-WIRE (W4b) wires `ui` into the connector row and removes the V2 path, a V2 connector still
-   * counts as the local connector (Q-U1) and shows its V2 frame through it, and nothing else.
-   * Remove this name with that path.
-   */
-  legacyConnector: 'dshConnector',
   /** DSH's app-ready service (dsh profile-boot, both SDKs): `onReady(fn)` also calls a late subscriber. */
   appReady: 'appReady',
 })
@@ -69,8 +61,8 @@ export const ADMIT = Object.freeze({
  * fence before a handler runs (dsh-client-connection), so a handler checks only its body.
  * `services` answers which services are usable now, so the client registers by availability, and
  * the other routes' page-relative paths (`ROUTE_PREFIX` dropped), so the web client keeps no copy.
- * There is no Retry route: Retry is on the instance's own settings page, which the window's Retry
- * link opens (R-UI-03 amended by 1.33; decided #77).
+ * There is no Retry or model-sync route: both are on the instance's own settings page, which the
+ * window's Retry link opens (R-UI-03 amended by 1.33; decided #77; R-HOST-07 amended by 1.41).
  */
 /** A route path's root part, dropped for the page-relative form the browser resolves against DSH's page. */
 export const ROUTE_PREFIX = '/'
@@ -92,7 +84,7 @@ export const HTTP = Object.freeze({
   badGateway: 502,
   unavailable: 503,
   headers: Object.freeze({ 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' }),
-  /** The largest request body read (admit and Add are small; V2's sync routes used the same bound). */
+  /** The largest request body read (admit's `{view, lang}` is far smaller). */
   maxBodyBytes: 16384,
 })
 
