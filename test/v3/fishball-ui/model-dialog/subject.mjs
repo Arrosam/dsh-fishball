@@ -26,7 +26,13 @@ function withModal(React) {
   }
 }
 
-export async function page(t, sdk, { model, catalog = U.catalog, lang = U.lang[U.first] } = {}) {
+/**
+ * One loaded DSH page with fishball-ui's slots mounted.
+ * @param options.open - whether the Fishball page is open: the real fishball-page marks
+ *   `<html data-fishball-page>` while it is, so mounting the open page sets that mark (default true).
+ * The handle's `openPage()` / `closePage()` set / remove the mark, as opening / closing the page does.
+ */
+export async function page(t, sdk, { model, catalog = U.catalog, lang = U.lang[U.first], open = true } = {}) {
   const w = createWorld({ sdk, lang, core: model ? { model } : {} })
   withModal(w.React)
   const session = { modelCatalog: async () => ({ ok: true, value: structuredClone(catalog) }), $on: () => () => {} }
@@ -37,6 +43,10 @@ export async function page(t, sdk, { model, catalog = U.catalog, lang = U.lang[U
   w.services['remote.session'] = session
   w.provided.push('remote.session')
   const p = await loadPage(t, w)
+  const html = w.html.element
+  const openPage = async () => { html.setAttribute(U.pageMark, U.pageMarkValue); await settle() }
+  const closePage = async () => { html.removeAttribute(U.pageMark); await settle() }
+  if (open) html.setAttribute(U.pageMark, U.pageMarkValue)
   // Mount the slots declared by DSH; page-open dialogs may be portal children of any main entry.
   for (const slot of U.slots) for (const entry of w.entries(slot)) {
     const key = slot + ':' + (entry.options.key ?? entry.options.id)
@@ -44,7 +54,7 @@ export async function page(t, sdk, { model, catalog = U.catalog, lang = U.lang[U
   }
   await settle()
   const nodes = () => findAll(w.shim.tree(), () => true)
-  return { world: w, nodes, text: () => w.shim.tree().map(textOf).join(U.emptyText),
+  return { world: w, nodes, openPage, closePage, text: () => w.shim.tree().map(textOf).join(U.emptyText),
     dialogs: () => nodes().filter((n) => U.dialogs.includes(n.props.role) || n.tag === U.dialogs[U.first]),
     // The dialog's own controls: the page's header actions (now mounted too) also say "settings".
     buttons: () => findAll(nodes().filter((n) => U.dialogs.includes(n.props.role) || n.tag === U.dialogs[U.first]), () => true).filter((n) => n.tag === U.button),

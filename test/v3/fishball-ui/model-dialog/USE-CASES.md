@@ -2,11 +2,16 @@
 
 Authority: fixed F-WIRE interface; user decision to prompt on every Fishball page opening when core.model is unset, keep host default until chosen; K3a ui seam. Browser chunks execute unread through fishball-ui's client.js using the existing browser-sandbox and DSH configForms page harness. Remote session.modelCatalog follows both SDKs' public catalog shape.
 
+Page open (code review, F-WIRE): the Fishball page is open while `<html data-fishball-page>` is present (fishball-page's public root mark). The harness sets it when it mounts the open page, as the real page does; the dialog shows only while it is present, and a dismissal is forgotten when it goes away.
+
 | Row | Technique | Expected outcome |
 | --- | --- | --- |
 | MODEL-EP-01 | EP | Unset core model, two catalog models, en/zh: dialog visible and catalog listed |
 | MODEL-ST-01 | ST | Choose catalog entry → configForms mutation at fishball-core ['model'] with provider/model and optional reasoningEffort |
 | MODEL-ST-02 | ST | Dismiss → no settings write; focus does not reopen; new page opens dialog again |
+| MODEL-ST-04 | ST | Mark absent + model unset → no dialog, no mutation |
+| MODEL-ST-05 | ST | Mark absent → set → dialog with catalog models |
+| MODEL-ST-06 | ST | Dismiss → mark removed (no dialog) → mark set again → dialog again; no mutation |
 | MODEL-EP-02 | EP | Set core model → no dialog and no mutation |
 | MODEL-BVA-01 | BVA | Zero models → explanation and DSH Settings launcher button; no selection write |
 | MODEL-SYS-01 | Integration/system | Real standalone with core switches ui-model-selection off |
