@@ -46,9 +46,12 @@ export const HOSTED_TOKEN = Object.freeze({ label: 'Fishball (hosted)' })
 /**
  * Why a sync runs. Only `settings` counts as "the user saved the settings", so only a save is
  * refused and undone for a duplicate (design §5.9, R3, R5); one found at `start` cannot be undone
- * and makes the entries involved refuse service instead.
+ * and makes the entries involved refuse service instead. `own` is a write the connector made
+ * itself (C-WIRE's SettingsWriter: a refused save's write-back, an added or removed item, the
+ * designated agent): it is never refused and never counts as the user saving, so a user save that
+ * lands between a refusal and its write-back is still judged as a save (the C-TOKENS limit).
  */
-export const SYNC_REASON = Object.freeze({ start: 'start', settings: 'settings' })
+export const SYNC_REASON = Object.freeze({ start: 'start', settings: 'settings', own: 'own' })
 
 /**
  * Why `create` / `createHosted` reject. `operationFailed` is the code when the record or the

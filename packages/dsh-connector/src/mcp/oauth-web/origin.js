@@ -32,7 +32,31 @@ function originParts(origin) {
 export function issuerOriginFor(pageOrigin, approvalPort, dshPort) {
   const parts = originParts(pageOrigin)
   if (parts === undefined) return undefined
-  if (parts.port !== approvalPort) return pageOrigin
-  const portSuffix = URL_RULES.defaultPorts[parts.scheme.toLowerCase()] === dshPort ? '' : URL_RULES.portSeparator + dshPort
+  return parts.port === approvalPort ? onPort(parts, dshPort) : pageOrigin
+}
+
+/** `parts`' scheme and host on `port`, with no port when it is the scheme's default (RFC 9110 §4.2). */
+function onPort(parts, port) {
+  const portSuffix = URL_RULES.defaultPorts[parts.scheme.toLowerCase()] === port ? '' : URL_RULES.portSeparator + port
   return parts.scheme + URL_RULES.schemeSeparator + parts.host + portSuffix
+}
+
+/**
+ * The inverse of `issuerOriginFor`, for the AS metadata's `authorization_endpoint` (R-OA-11
+ * "Approval origin"; design §5.5a item 8): where the approval page answers for a client that
+ * reached DSH's listener under `origin`.
+ * - The client dialled DSH's own port (loopback, or a direct non-loopback bind): the page is the
+ *   same scheme and host name on the approval port, so a browser opens it on this computer or on
+ *   the bound address;
+ * - any other port is the user's tunnel (one public origin, path-routed to both listeners): the
+ *   page is that origin as dialled.
+ * The same documented limit as `issuerOriginFor`: a tunnel whose public port equals DSH's port is
+ * read as the first case.
+ * @param origin the checked origin of the metadata request (C-OAUTH's `originOf`)
+ * @param dshPort DSH's own listener port; `approvalPort` the approval listener's
+ * @returns the approval origin, or `origin` itself when it cannot be parsed
+ */
+export function approvalOriginFor(origin, dshPort, approvalPort) {
+  const parts = originParts(origin)
+  return parts === undefined || parts.port !== dshPort ? origin : onPort(parts, approvalPort)
 }

@@ -59,15 +59,15 @@ const CONNECTOR_MANIFEST = PACKAGE.dshConnector + '/package.json'
 const CORE_LINK = Object.freeze([sub(PACKAGE.fishballCore, 'src', 'link'), sub(PACKAGE.fishballCore, 'contracts')])
 
 /**
- * What a booted connector row loads: the import closure of its entry (index.js → src/*.js,
- * src/slim/, contract/, mcp-schema/, tools/), plus the files DSH reads to install the bundle
- * (package.json, cordis.patch.yml, locale/, assets/). The V3 modules under src/ (tokens, pairs,
- * mailbox, routing, handover, contrib, mcp, schema-value) are not imported by the entry yet, so a
- * change there does not rerun the H-STUB suites. When C-WIRE imports them from index.js, add them.
+ * What a booted connector row loads: the import closure of its entry, plus the files DSH reads to
+ * install the bundle (package.json, cordis.patch.yml, locale/, assets/). Since C-WIRE the entry
+ * (index.js → src/wire/, src/settings/) imports every V3 module under src/ beside the V2 ones
+ * (tokens, pairs, mailbox, routing, handover, contrib, mcp, revocation, hosted, ui, settings-page,
+ * schema-value), so the whole of src/ is in the closure.
  */
 const CONNECTOR_BOOT = Object.freeze([
-  PACKAGE.dshConnector + '/src/*', top(PACKAGE.dshConnector), sub(PACKAGE.dshConnector, 'src', 'slim'), ...CONNECTOR_CONTRACTS,
-  sub(PACKAGE.dshConnector, 'locale'), sub(PACKAGE.dshConnector, 'assets'),
+  sub(PACKAGE.dshConnector, 'src'), top(PACKAGE.dshConnector), ...CONNECTOR_CONTRACTS,
+  sub(PACKAGE.dshConnector, 'host-services'), sub(PACKAGE.dshConnector, 'locale'), sub(PACKAGE.dshConnector, 'assets'),
 ])
 
 /** Test support every suite may load, and the runners: a change there reruns every suite. */
@@ -143,6 +143,12 @@ export const V3_SUITES = Object.freeze({
     [sub(PACKAGE.dshConnector, 'src', 'ui'), sub(PACKAGE.dshConnector, 'src', 'contrib'), sub(PACKAGE.dshConnector, 'src', 'handover'),
       sub(PACKAGE.dshConnector, 'src', 'routing'), sub(PACKAGE.dshConnector, 'src', 'mailbox'), sub(PACKAGE.dshConnector, 'src', 'schema-value'), sub(PACKAGE.dshConnector, 'host-services'),
       all(PACKAGE.dshConnectorShared), ...CONNECTOR_CORE, ...CONNECTOR_CONTRACTS]),
+  // C-WIRE boots a real DSH profile with the whole connector bundle (and, in its R16 rows,
+  // dsh-connector-ui), so it triggers on both packages; it reuses the pairs suite's module resolver
+  // and the fishball-core package suite's SDK paths, and owns its own worker.
+  'dsh-connector.wire': suite('the wired connector row in a real DSH: settings, routes, services, tokens, MCP end to end (C-WIRE)', [...v3('dsh-connector/wire'), ...v3('dsh-connector/wire/review')],
+    [all(PACKAGE.dshConnector), all(PACKAGE.dshConnectorUi), all(PACKAGE.dshConnectorShared), all(PACKAGE.fishballShared),
+      'test/v3/dsh-connector/pairs/subject.mjs', 'test/v3/fishball-core/package/constants.mjs', 'test/v3/dsh-connector/mcp-tools/subject.mjs']),
   // The adapter imports only its own package and dsh-connector-shared/oauth-client (C-MCP-ADAPTER).
   'dsh-connector-adapter.adapter': suite('connector adapter: check, sign-in tool, proxy, child row, refresh (C-MCP-ADAPTER)', v3('dsh-connector-adapter/adapter'),
     [all(PACKAGE.dshConnectorAdapter), PACKAGE.dshConnectorShared + '/oauth-client.js', PACKAGE.dshConnectorShared + '/package.json']),

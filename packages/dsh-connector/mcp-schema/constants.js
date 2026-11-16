@@ -652,6 +652,14 @@ export const RESYNC_REASON = Object.freeze({ staleCursor: 'stale-cursor' })
 export const SETTLEMENT_OUTCOME = Object.freeze({ allowed: 'allowed', rejected: 'rejected', answered: 'answered' })
 export const SETTLED_BY = Object.freeze({ user: 'user', principal: 'principal' })
 
+/**
+ * Who wrote one message `session_read` returns (K1 amendment at W4b, C-WIRE; requirements 1.41
+ * Q-G8 = B, neutral names): V2's `fishball` role is `principal` here, since any principal may send
+ * (as SETTLED_BY). The other words are V2's ROLE unchanged: `user` (the user typed it), `assistant`
+ * (that session's agent), `agent` (another session sent it), `context` (anything else recorded).
+ */
+export const READ_ROLE = Object.freeze({ user: 'user', assistant: 'assistant', principal: 'principal', agent: 'agent', context: 'context' })
+
 /** Why a `retirement` withdrew an earlier event (R-TOK-05, R-ROUTE-06, R-HOST-09, R-EXT-19). */
 export const RETIREMENT_REASON = Object.freeze({
   // The session's call ended, was cancelled or the session ended before an answer.

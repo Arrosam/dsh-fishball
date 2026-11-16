@@ -27,9 +27,11 @@ async function bodyOf(request) {
 
 /**
  * @param {{tokens: {create: (label: string) => Promise<{entryKey: string, label: string, value: string}>, notice: () => object | undefined}, logger: object}} options
+ * @param [options.state] - `() => object`: the page's read-only state (C-WIRE); its route is
+ *   registered only when it is given
  * @returns {{path: string, methods: string[], fetch: (request: Request) => Promise<Response>}[]}
  */
-export function routes({ tokens, logger }) {
+export function routes({ tokens, state, logger }) {
   async function create(request) {
     const body = await bodyOf(request)
     if (body === undefined) return refused(HTTP.badRequest, API_CODE.badBody)
@@ -44,5 +46,6 @@ export function routes({ tokens, logger }) {
   return [
     { path: SETTINGS_PAGE.route.create, methods: [HTTP_METHOD.post], fetch: create },
     { path: SETTINGS_PAGE.route.notice, methods: [HTTP_METHOD.get], fetch: async () => json(HTTP.ok, { ok: true, notice: tokens.notice() ?? null }) },
+    ...(state === undefined ? [] : [{ path: SETTINGS_PAGE.route.state, methods: [HTTP_METHOD.get], fetch: async () => json(HTTP.ok, { ok: true, ...state() }) }]),
   ]
 }

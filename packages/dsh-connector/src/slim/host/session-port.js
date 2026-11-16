@@ -69,7 +69,7 @@ const MIN_PAGE_MESSAGES = 1
 /** The session address kind every ordinary managed/watchable Session uses. */
 const SESSION_ADDRESS = 'session'
 /** dsh-agent's status for a Session with a turn in progress; 0.2.1 exposes it on the live agent. */
-const RUNNING_AGENT = 'running'
+export const RUNNING_AGENT = 'running'
 
 const LIST_ACTIVITY = Object.freeze({
   event: 'api-session/activity',
@@ -166,10 +166,14 @@ function messageOf(event, text, assistantId) {
  * @param {object} [options]
  * @param {() => boolean} [options.enabled] - the native host's own switch; the port also requires
  *   the Fishball row's state service, so a bridge without the legacy row answers feature-off.
+ * @param {() => object} [options.state] - the registries the port reads, instead of the
+ *   `fishballSessionState` service (C-WIRE's V3 session domain): it must carry the methods the
+ *   operations it calls use (`assistantId`, `readLimits`, and `stopped` / `redirected` for stop
+ *   and redirect); a start with `onCreated` reads no `manage` (see `start`).
  * @returns {SessionService} the object bridge.js validates and calls.
  */
 export function createSessionPort(ctx, options = {}) {
-  const { enabled = () => true, now = Date.now } = options ?? {}
+  const { enabled = () => true, now = Date.now, state: injectedState } = options ?? {}
   if (!ctx || typeof ctx.get !== 'function') throw new TypeError('fishball-native-host: a Cordis context is required')
   if (typeof enabled !== 'function') throw new TypeError('fishball-native-host: enabled must be a function')
   if (typeof now !== 'function') throw new TypeError('fishball-native-host: now must be a function')
@@ -177,13 +181,13 @@ export function createSessionPort(ctx, options = {}) {
     if (ctx[service] === undefined) throw new TypeError('fishball-native-host: missing service ' + service)
   }
   const logger = typeof ctx.logger === 'function' ? ctx.logger(LOG) : undefined
-  const state = () => {
+  const state = injectedState ?? (() => {
     const found = stateOf(ctx)
     for (const method of STATE_METHODS) {
       if (typeof found[method] !== 'function') throw new TypeError('fishball-native-host: the session state service must implement ' + method)
     }
     return found
-  }
+  })
   const workspaces = () => ctx.workspaceRegistry.list()
   let activityWatermarks = deliveryActivityByContext.get(ctx)
   if (activityWatermarks === undefined) {
@@ -376,8 +380,13 @@ export function createSessionPort(ctx, options = {}) {
     return { ...delivered, ...(await notifyAfter(notify, sessionId, since)) }
   }
 
-  /** Create -> title -> model -> manage -> first delivery; the contract has no field for a failed start delivery. */
-  async function start({ target, title, model, reasoningEffort, message, attachments: hostRefs = [], notifyWhenFinished: notify }) {
+  /**
+   * Create -> title -> model -> manage -> first delivery; the contract has no field for a failed start delivery.
+   * `onCreated(sessionId)` (C-WIRE's V3 session domain): awaited instead of the V2 registry's
+   * `manage`, once the session exists and before its first message (R-ROUTE-01); `managed` is
+   * then the caller's to report, so the answer carries none.
+   */
+  async function start({ target, title, model, reasoningEffort, message, attachments: hostRefs = [], notifyWhenFinished: notify, onCreated }) {
     const registry = state()
     // Bounded first: an oversized first message creates no session.
     boundMessage(message, registry.readLimits())
@@ -389,14 +398,18 @@ export function createSessionPort(ctx, options = {}) {
     const created = await createSession(target)
     const named = nameSession(created.sessionId, title)
     if (selection !== undefined) await applySessionModel(ctx, created.sessionId, selection)
-    try {
-      await registry.manage(created.sessionId, MANAGED_BY.start)
-    } catch (error) {
-      logger?.warn('making session %s managed failed (%s)', created.sessionId, error?.code ?? ERROR.failed)
+    if (onCreated !== undefined) await onCreated(created.sessionId)
+    else {
+      try {
+        await registry.manage(created.sessionId, MANAGED_BY.start)
+      } catch (error) {
+        logger?.warn('making session %s managed failed (%s)', created.sessionId, error?.code ?? ERROR.failed)
+      }
     }
-    // manage() writes the store first; a throw after that write leaves the session managed, so
-    // the answer reports the registry's state rather than the call's outcome.
-    const managed = registry.isManaged(created.sessionId)
+    // V2: manage() writes the store first; a throw after that write leaves the session managed, so
+    // the answer reports the registry's state rather than the call's outcome. With onCreated the
+    // caller reports it (V3's ManagedState).
+    const managed = onCreated === undefined ? registry.isManaged(created.sessionId) : undefined
     // A new session: its log before the first message holds no turn end, so a read that finds
     // nothing counts every turn end (legacy watermarkOfNew). Named before this is read.
     const since = notify === true ? (await registry.watermark(created.sessionId)) ?? NO_EVENTS_SEQ : undefined
@@ -412,7 +425,7 @@ export function createSessionPort(ctx, options = {}) {
     const watched = delivered ? await notifyAfter(notify, created.sessionId, since) : {}
     return {
       sessionId: created.sessionId,
-      managed,
+      ...(managed === undefined ? {} : { managed }),
       ...(named.titleError === undefined ? {} : { titleError: named.titleError }),
       ...(created.workspaceError === undefined ? {} : { workspaceError: created.workspaceError }),
       ...watched,

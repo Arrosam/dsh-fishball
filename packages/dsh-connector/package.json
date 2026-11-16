@@ -8,9 +8,10 @@
   "type": "module",
   "main": "./index.js",
   "//exports": "./mcp-schema (tool and event schemas, limits, vocabularies) and ./tools (contribution types, apiVersion, defineTool) are V3's data-and-types modules (design §9.1), frozen by the V3-K tasks K1 and K2. ./client and ./records moved to dsh-connector-ui with the UI (R-EMBED); ./contract stays until a later V3 task removes it.",
-  "//locale": "The Plugins page card title (design §0.7): DSH reads meta.title from the exported ./locale/*.json without loading this package, and shows the package name when that file is absent. The connector has no browser client (R-ARCH-03): V3 R-EMBED moved its UI, with ./client and ./records, to dsh-connector-ui.",
+  "//locale": "The Plugins page card title (design §0.7): DSH reads meta.title from the exported ./locale/*.json without loading this package, and shows the package name when that file is absent. The connector's only browser code is its own settings page (R-ARCH-03 amended by 1.28, design §5.9): client.js, served through dsh.client and ./client; dsh-connector-ui owns every other UI.",
   "exports": {
     ".": "./index.js",
+    "./client": "./client.js",
     "./contract": "./contract/index.js",
     "./mcp-schema": "./mcp-schema/index.js",
     "./tools": "./tools/index.js",
@@ -19,6 +20,7 @@
   },
   "files": [
     "index.js",
+    "client.js",
     "src/",
     "contract/",
     "mcp-schema/",
@@ -29,10 +31,10 @@
     "LICENSE",
     "THIRD_PARTY_NOTICES.md"
   ],
-  "//engines": "node >=22.14: C-EXT resolves a contributor's package with node:module findPackageJSON (22.14 / 23.2); DSH itself needs >=24.9.0 on both SDKs (Fishball 2026-11-14; REL-PACK aligns engines across packages).",
+  "//engines": "node >=22.14: C-EXT resolves a contributor's package with node:module findPackageJSON (22.14 / 23.2); DSH itself needs >=24.9.0 on both SDKs (Fishball 2026-11-14; REL-PACK aligns engines across packages). The connector requires dsh-web-app in the profile (the user, 2026-11-17, S1 = A): its MCP endpoint and OAuth routes are served on DSH's web server, and the row injects web-app services (connection, sessionController, workspaceRegistry), so without the web app the row stays pending in DSH's own missing-dependency state.",
   "engines": {
     "node": ">=22.14",
-    "dsh": ">=0.2.1-rc.2"
+    "dsh": ">=0.2.1-rc.5"
   },
   "//dependencies": "Runtime dependencies installed with this package, never taken from DSH as peers (design §3.1, §9.1): no DSH runtime ships an MCP server (both 0.2.1-rc.5 and 0.2.2-rc.1 carry only @modelcontextprotocol/client and core 2.2.0). The server is pinned to that same 2.2.0 line; it requires core 2.2.0 exactly, whose dist is byte-identical to the hosts'. Its Node HTTP adapter is pinned exactly to 2.1.0, the newest @modelcontextprotocol/node whose peer range (^2.1.0) admits server 2.2.0; 2.1.1 requires ^2.3.0 and 2.1.2 ^2.4.0, so a caret range would break the server pin. DSH profiles install with pnpm nodeLinker hoisted and autoInstallPeers false, so these and their own dependencies (core, zod, @hono/node-server) land in the profile's node_modules, where DSH's resolver serves them ahead of the host's copies: the hoisted zod then also answers this package's zod peer, and that of every other package in the profile. hono is listed because DSH's own pnpm settings (nodeLinker hoisted, autoInstallPeers false, dsh-app-boot PROFILE_PNPM_WORKSPACE on both SDKs) warn 'missing peer hono' for @modelcontextprotocol/node 2.1.0 and @hono/node-server without it (C-HTTP's dependency check, 2026-11-14); the adapter's toNodeHandler path never imports hono, so the line exists only to satisfy that peer, in the adapter's own range.",
   "dependencies": {
@@ -61,6 +63,10 @@
   "dsh": {
     "bundle": {
       "patch": "./cordis.patch.yml"
+    },
+    "//client": "One client entry whose only registration is the connector's own settings page in the Plugins page's plugins.row.config slot (design §5.9; C-WIRE mounts C-TOKENS-REVEAL's client.js).",
+    "client": {
+      "platform": "web"
     }
   }
 }
