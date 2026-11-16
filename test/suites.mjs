@@ -193,11 +193,11 @@ export const V3_SUITES = Object.freeze({
     [sub(PACKAGE.fishballCore, 'src', 'identity'), ...CORE_LINK, sub(PACKAGE.dshConnector, 'src', 'pairs'), ...CONNECTOR_CORE, ...CONNECTOR_CONTRACTS,
       // Its name rows read the own-schema suite's constants.
       'test/v3/contract/own-schema/constants.mjs']),
-  // Core's link, its saved credentials and Connect (src/link) with F-PAIR's pairing over them; the
-  // Fishball side's OAuth client copy; the fakes reuse F-PAIR's fake pair registry and the
+  // Core's link, its saved credentials and Connect (src/link, with the Fishball side's OAuth client
+  // copy since REMOVE-V2b) with F-PAIR's pairing over them; the fakes reuse F-PAIR's fake pair registry and the
   // oauth-client suite's in-process DSH host.
   'fishball-core.link-save': suite('saved credentials once on first acceptance, Connect (F-LINK-SAVE)', v3('fishball-core/link-save'),
-    [sub(PACKAGE.fishballCore, 'src', 'identity'), ...CORE_LINK, PACKAGE.fishballShared + '/oauth-client.js', PACKAGE.fishballShared + '/package.json',
+    [sub(PACKAGE.fishballCore, 'src', 'identity'), ...CORE_LINK,
       'test/v3/fishball-core/identity/**', 'test/v3/dsh-connector-shared/oauth-client/subject.mjs', 'test/v3/dsh-connector/pairs/subject.mjs', ...CONNECTOR_CONTRACTS]),
   // The strip view is fishball-ui's src/status since F-UI (it reads fishball-shared's ui-seam); the line reads the link's target rule.
   'fishball-core.status': suite('status, strip view, set completeness, guards notice (F-STATUS)', v3('fishball-core/status'),
@@ -227,7 +227,7 @@ export const V3_SUITES = Object.freeze({
   // F-WIRE: fishball-ui's model dialog, strip route and live core rows, in the browser sandbox and a real DSH.
   'fishball-ui.model-dialog': suite('fishball-ui model dialog, status strip route, live core on/off, composer picker guard (F-WIRE)', v3('fishball-ui/model-dialog'),
     [all(PACKAGE.fishballUi), all(PACKAGE.fishballCore), all(PACKAGE.fishballShared), 'test/v3/fishball-core/wire/**', 'test/v3/fishball-core/settings/**', 'test/v3/fishball-ui/guards/**']),
-  'fishball-board.peers': suite('board and fold-notify without core (FEAT-PEERS)', v3('fishball-board/peers'),
+  'fishball-board.peers': suite('board without core (FEAT-PEERS; fold-notify was removed, REMOVE-WD)', v3('fishball-board/peers'),
     [all(PACKAGE.fishballBoard), sub(PACKAGE.dshConnector, 'mcp-schema')]),
   // The contract suites read every file of the packages they bound, so any change there reruns them.
   'contract.k1-mcp-schema': suite('K1 MCP schema freeze', v3('contract/k1-mcp-schema'),
@@ -282,13 +282,16 @@ export const V2_GROUPS = Object.freeze({
   ]), [all(PACKAGE.dshConnectorUi), top(PACKAGE.dshConnector), top(PACKAGE.dshInstance)]),
   // These boot the instance's real child (lifecycle, admission, embed): a change in the instance,
   // the core it places, or either shared library (the instance's own, core's placed copy) reruns them.
-  'v2.instance': suite('the instance: launch, lifecycle, embed, provider sync, child pages', v2([
-    'body-soul-i1c-status', 'body-soul-i2-launch', 'body-soul-i6-sync',
-    'e1-p1-connector-departure', 'e1-p3-sync-https', 'provider-sync-coordinator', 'provider-sync-official',
+  // REMOVE-V2b deleted the V2 binding rows (body-soul-i1c-status, e1-p1-connector-departure) and the
+  // V2 child-web page boots (v2-page-cases/child-boot*): their subjects are gone (V2 never deployed).
+  // v2-page-cases/ready stays: core's manager keeps the READY gate (src/manager/service.js).
+  'v2.instance': suite('the instance: launch, lifecycle, provider sync', v2([
+    'body-soul-i2-launch', 'body-soul-i6-sync',
+    'e1-p3-sync-https', 'provider-sync-coordinator', 'provider-sync-official',
     'runtime-isolation-boundary', 'runtime-isolation-transport', 'v2-r2-start-detail',
     'v2-r4-core-copy', 'v2-r4-exit-race',
-    'test/v2-page-cases/child-boot.test.mjs', 'test/v2-page-cases/child-boot-nav.test.mjs',
-  ]), [all(PACKAGE.dshInstance), all(PACKAGE.fishballCore), all(PACKAGE.fishballUi), all(PACKAGE.dshConnectorShared), all(PACKAGE.fishballShared), sub(PACKAGE.dshConnector, 'contract')]),
+  ]), [// v2-r2's support reads the I-HOST suite's status-route keys (ROUTE.statusKeys, REMOVE-V2b).
+    'test/v3/dsh-instance/host/constants.mjs', all(PACKAGE.dshInstance), all(PACKAGE.fishballCore), all(PACKAGE.fishballUi), all(PACKAGE.dshConnectorShared), all(PACKAGE.fishballShared), sub(PACKAGE.dshConnector, 'contract')]),
   // F-WIRE deleted core's slim child and its suites (V2 was never deployed, the user's rule); the
   // persona, private Skills and the page cases stay.
   'v2.fishball-core': suite('core\'s persona, private Skills and the Fishball page cases', v2([
@@ -303,10 +306,6 @@ export const V2_GROUPS = Object.freeze({
   // The engine and host adapter are dsh-connector-shared's only copy since I-HOST removed the interim ones.
   'v2.dsh-connector-shared': suite('dsh-connector-shared\'s provider-sync engine and host adapter', v2(['provider-sync-engine', 'provider-sync-host']),
     [all(PACKAGE.dshConnectorShared)]),
-  // A static reader of whole packages: limits-source reads every src/ and contract/ file of four
-  // packages and the plugin author guide.
-  'v2.boundary': suite('the source-level limit checks', v2(['limits-source']),
-    [...Object.values(PACKAGE).map(all), 'docs/plugin-author-guide.md']),
 })
 
 /** Every suite by id. */

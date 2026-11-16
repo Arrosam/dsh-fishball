@@ -19,8 +19,8 @@ import test from 'node:test'
 import { pathToFileURL } from 'node:url'
 import { REPO } from '../../../support/constants.mjs'
 import {
-  BUNDLED_FIELDS, DEP_FIELDS, DSH_FIELD, DSH_SIDE, EMBED_CONNECTOR_ALLOWED, FEATURES, JS_FILE, LATER, LIBRARIES, NPM, ROOT_WORKSPACE,
-  RUNTIME_DEP_FIELD, SDK, SET_SIDE, SHARED_READER, V3, V3_NAMES, sideOf,
+  BUNDLED_FIELDS, DEP_FIELDS, DSH_FIELD, DSH_SIDE, EMBED_CONNECTOR_ALLOWED, FEATURES, JS_FILE, LATER, LIBRARIES, MIN_LIBRARY_USERS, MOVED_INTO_CORE, NPM, ROOT_WORKSPACE,
+  RUNTIME_DEP_FIELD, SDK, SET_SIDE, SHARED_READER, SINGLE_USERS_LATER, USERS_RULE, V3, V3_NAMES, sideOf,
 } from './constants.mjs'
 import { manifestNames, npmTempRoot, observe, readManifest } from './packages.mjs'
 
@@ -107,8 +107,52 @@ function libraryUsage(units, name) {
   return usage
 }
 
+/**
+ * Row 6, R-ARCH-08 rule (5) strict: the `modules` of library `name` that fewer than MIN_LIBRARY_USERS
+ * distinct packages of the library's own side use, each as "<module>: <its side's users>". Users of
+ * the other side are left out (row 7a refuses them on its own); the library itself is never a user.
+ */
+export function underusedModules(units, name, modules) {
+  const side = sideOf(name)
+  const usage = libraryUsage(units, name)
+  return modules.map((m) => ({ m, users: [...(usage.get(m) ?? [])].filter((u) => sideOf(u) === side).sort() }))
+    .filter(({ users }) => users.length < MIN_LIBRARY_USERS)
+    .map(({ m, users }) => `${m}: ${users.length ? users.join(', ') : 'no importer'}`)
+}
+
+/**
+ * A synthetic unit table for one USERS_RULE case: the library (with its re-exporting module and, when
+ * the case lists the library as a direct importer, its own internal import of the module) and one
+ * unit per importing package, one file per listed import.
+ */
+function usersRuleUnits({ direct, via }) {
+  const { library, module, reexport } = USERS_RULE
+  const libraryRefs = [{ file: reexport, kind: 'import', specifier: './' + module, libraryModule: module }]
+  const importers = new Map()
+  const add = (name, libraryModule) => {
+    if (name === library) { libraryRefs.push({ file: 'fbtest-self-' + libraryRefs.length + '.js', kind: 'import', specifier: './' + module, libraryModule }); return }
+    const refs = importers.get(name) ?? []
+    refs.push({ file: 'fbtest-' + refs.length + '.js', kind: 'import', specifier: library, target: library, library, libraryModule })
+    importers.set(name, refs)
+  }
+  for (const name of direct) add(name, module)
+  for (const name of via) add(name, reexport)
+  return new Map([[library, { name: library, own: true, refs: libraryRefs }], ...[...importers].map(([name, refs]) => [name, { name, own: true, refs }])])
+}
+
+/** Row 6 self-check: the counting rule on synthetic importer tables (BVA 0/1/2, other side, self). */
+function registerUsersRuleCases(sdk) {
+  for (const c of USERS_RULE.cases) {
+    caseTest(sdk, 'PLAT-EP-07', '6 rule', `${c.partition}: the module ${c.pass ? 'passes' : 'fails'} the at-least-two-users check`, () => {
+      const failing = underusedModules(usersRuleUnits(c), USERS_RULE.library, [USERS_RULE.module])
+      assert.equal(failing.length === 0, c.pass, JSON.stringify(failing))
+    })
+  }
+}
+
 export function registerSharedCases(sdk) {
   for (const lib of LIBRARIES) registerLibraryCases(sdk, lib)
+  registerUsersRuleCases(sdk)
   registerPackageCases(sdk)
 }
 
@@ -180,11 +224,16 @@ function registerLibraryCases(sdk, lib) {
     assert.ok(js.length > 0, lib.name + ' ships no module')
     assert.deepEqual(js.filter((m) => !usage.has(m)), [], 'modules no V3 package imports')
   })
-  // R-ARCH-08 says each library holds modules "more than one" package of its side uses, but the
-  // SPLIT-SHARED contents (design §1.0b row 5, plan §5) put files and provider-sync in
-  // dsh-connector-shared for the instance alone (the admin protocol left with D14), and fishball-shared serves core alone until F-UI.
-  // The two-users rule is left open until Fishball reconciles the two texts.
-  caseTest(sdk, 'PLAT-EP-07', 6, `every ${lib.name} module is used by at least two V3 packages`, null, LATER.twoUsers)
+  // R-ARCH-08 rule (5) read strictly (Fishball, 2026-11-16; PLAT-EP-07 row 6): a module only one
+  // package of the library's side imports belongs in that package. REMOVE-V2b moved fishball-shared's
+  // single-user modules into core; dsh-connector-shared's wait for C-WIRE-2 (SINGLE_USERS_LATER).
+  caseTest(sdk, 'PLAT-EP-07', 6, `every ${lib.name} module is imported by at least ${MIN_LIBRARY_USERS} V3 packages of the ${sideOf(lib.name).id} side`, async () => {
+    assert.ok(has(lib), manifestMissing(lib))
+    const { units, packed } = await observe()
+    const js = packed[lib.name].filter((f) => JS_FILE.test(f))
+    assert.ok(js.length > 0, lib.name + ' ships no module')
+    assert.deepEqual(underusedModules(units, lib.name, js), [], `modules fewer than ${MIN_LIBRARY_USERS} ${sideOf(lib.name).id}-side packages import (module: importers)`)
+  }, SINGLE_USERS_LATER[lib.name])
   caseTest(sdk, 'PLAT-EP-07', 6, `no ${lib.name} module is also a live copy in a plugin package (one owner per side)`, async () => {
     assert.ok(has(lib), manifestMissing(lib))
     const { units } = await observe()
@@ -233,14 +282,24 @@ function registerPackageCases(sdk) {
     assert.ok(edgesTo(await unitOf(V3.instance.name), V3.dshShared.name).length > 0, 'no instance file imports dsh-connector-shared')
     await assertNoEdges(V3.instance.name, [V3.shared.name])
   })
-  caseTest(sdk, 'HOST-EP-03', 1, 'skills-store.js imports the moved file helpers from fishball-shared (wherever it is shipped)', async () => {
-    assert.ok(has(V3.shared), 'packages/shared/package.json is missing')
+  // Rewritten by REMOVE-V2b (R-ARCH-08 strict, Fishball 2026-11-16): this row used to require
+  // skills-store.js to take the file helpers from fishball-shared. The helpers had that one user, so
+  // they moved into core; the store now takes them from no library, and core imports neither module
+  // that left fishball-shared.
+  caseTest(sdk, 'HOST-EP-03', 1, `${SHARED_READER} imports nothing from fishball-shared (the file helpers moved into core; wherever it is shipped)`, async () => {
     const { units } = await observe()
-    // R-SHARED (3) names skills-store.js as a reader of the helpers; it is core's (Fishball side), so its library is fishball-shared.
     const readers = [...units.values()].flatMap((u) => u.files.filter((f) => path.posix.basename(f) === SHARED_READER).map((f) => ({ u, f })))
     assert.ok(readers.length > 0, 'no V3 package ships ' + SHARED_READER)
-    for (const { u, f } of readers) assert.ok(edgesTo(u, V3.shared.name).some((r) => r.file === f), `${u.name}/${f} does not import fishball-shared`)
-  })
+    const hits = readers.flatMap(({ u, f }) => edgesTo(u, V3.shared.name).filter((r) => r.file === f).map((r) => u.name + ' ' + describeRef(r)))
+    assert.deepEqual(hits, [], SHARED_READER + ' imports fishball-shared')
+  }, has(V3.core) ? undefined : LATER.core)
+  caseTest(sdk, 'HOST-EP-03', 1, `fishball-core imports none of ${MOVED_INTO_CORE.map((m) => m.specifier).join(', ')} (moved into core)`, async () => {
+    const unit = await unitOf(V3.core.name)
+    assert.ok(unit, V3.core.name + ' is not packed')
+    // By specifier and by the library file it lands on, so a deep path into the library is caught too.
+    const moved = (r) => MOVED_INTO_CORE.some((m) => r.specifier === m.specifier || r.libraryModule === m.file)
+    assert.deepEqual(edgesTo(unit, V3.shared.name).filter(moved).map(describeRef), [])
+  }, has(V3.core) ? undefined : LATER.core)
 
   // F-UI (R-FB-14, R-ARCH-10): fishball-ui is Fishball-side only. It reaches neither the instance nor
   // core (core is reached through its published routes), and neither reaches fishball-ui.

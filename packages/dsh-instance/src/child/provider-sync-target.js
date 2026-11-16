@@ -1,6 +1,6 @@
 /**
  * The isolated child's provider-sync target (§10, §15 T16). I-HOST moved it here from
- * fishball-core's `src/slim/child/` (requirements 1.41 Q-G7: model sync lives entirely in the
+ * fishball-core's former V2 child folder (requirements 1.41 Q-G7: model sync lives entirely in the
  * instance; design §1.0b row 5). It copies providers and their model lists into the child's own
  * DSH settings and nothing else: which model Fishball uses is chosen in Fishball's settings (the
  * user, 2026-11-16: "同步只是同步model list，至于fishball用什么还要在fishball内设置").

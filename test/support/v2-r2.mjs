@@ -12,6 +12,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
 import { RUNTIME, TEST_HOMES } from './constants.mjs'
+import { ROUTE } from '../v3/dsh-instance/host/constants.mjs'
 import { bootHost } from './host.mjs'
 import { until } from './util.mjs'
 
@@ -37,8 +38,12 @@ export const R2 = Object.freeze({
   detailShape: /^([A-Z][A-Z0-9_]*)(?:: (.+))?$/s,
   separator: ': ',
   redacted: '[redacted]',
-  /** The three statuses R2.4 / R2.3 name, read in one go. */
-  publicKeys: Object.freeze(['code', 'detail', 'state']),
+  /**
+   * The keys of the status and Retry answers (R2.4 / R2.3), sorted. Re-baselined by REMOVE-V2b: R2
+   * named {state, code, detail}; I-HOST's settings page routes answer {state, code, detail, notice}
+   * (the notice a Retry records). One source: the I-HOST suite's ROUTE.statusKeys.
+   */
+  publicKeys: Object.freeze([...ROUTE.statusKeys].sort()),
   runtime: Object.freeze(['fishball', 'runtime']),
   lifecycleFile: 'lifecycle.log',
   launches: 'launches',

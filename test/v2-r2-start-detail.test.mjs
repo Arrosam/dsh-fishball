@@ -8,7 +8,7 @@
  *   home paths (/Users/<name>/…, /home/…, /root) become '[redacted]'. Not failed → `detail: null`.
  * - R2.2 lifecycle.log records the failure as a line {code: 'FAILED', reason} with reason the
  *   specific code (UPPER_SNAKE only, never message text, a path or a URL).
- * - R2.3 POST /api/dsh-instance/retry answers the same {state, code, detail} shape.
+ * - R2.3 POST /api/dsh-instance/retry answers the same shape, {state, code, detail, notice} since I-HOST (R2.publicKeys).
  * - R2.4 detail is read from /api/dsh-instance/status; I-READY removed the never-deployed
  *   V2 native/status relay. The historical nativeStatus helper now reads the instance route.
  *
@@ -28,7 +28,7 @@
  * |----|-----------|-------------|----------|
  * | R2-UC-01 | Use Case (preflight refusal) | R2.1, R2.4 | invalid dependency manifest → failed / NATIVE_START_FAILED / detail 'PREFLIGHT_MANIFEST: <one line>' on both status routes |
  * | R2-UC-02 | Use Case | R2.2 | lifecycle FAILED line with reason PREFLIGHT_MANIFEST; no message, path or URL in the line |
- * | R2-UC-03 | Use Case | R2.3 | Retry while the cause persists answers {state, code, detail} with the same detail |
+ * | R2-UC-03 | Use Case | R2.3 | Retry while the cause persists answers {state, code, detail, notice} with the same detail |
  * | R2-EP-01 | EP (not failed) | R2.1 | ready → detail null on both routes and on Retry |
  * | R2-ST-01 | State Transition ready → failed → (Retry, cause removed) → ready | R2.1 | detail appears with failed and returns to null with ready |
  * | R2-EP-02 | EP (second failure class: malformed child manifest) | R2.1, R2.2 | detail '<CODE>: <line>', CODE an identifier equal to the lifecycle reason |
@@ -125,13 +125,13 @@ describe(`R2 [${SDK}] a failed start reports its specific reason`, { timeout: R2
     assertFailureLogged(home, R2.faultCode, detail.message)
     // R2-UC-03 / R2.3: Retry with the cause still there answers the same shape and detail.
     const retried = await host.post(R2.route.retry, {})
-    assert.deepEqual(Object.keys(retried.json ?? {}).sort(), [...R2.publicKeys], 'R2-UC-03: Retry answers exactly {state, code, detail}: ' + retried.text)
+    assert.deepEqual(Object.keys(retried.json ?? {}).sort(), [...R2.publicKeys], 'R2-UC-03: Retry answers exactly the status keys ' + R2.publicKeys.join(', ') + ': ' + retried.text)
     assertFailed(retried.json, 'R2-UC-03 Retry')
     assert.equal(retried.json.detail, failed.detail, 'R2-UC-03: Retry shows the new (same) detail')
     // R2-ST-01 + R2-EP-01: remove the cause, Retry → ready, detail back to null everywhere.
     restore()
     const recovered = await host.post(R2.route.retry, {})
-    assert.deepEqual(Object.keys(recovered.json ?? {}).sort(), [...R2.publicKeys], 'Retry answers {state, code, detail}')
+    assert.deepEqual(Object.keys(recovered.json ?? {}).sort(), [...R2.publicKeys], 'Retry answers the status keys ' + R2.publicKeys.join(', '))
     const ready = recovered.json.state === R2.state.ready ? recovered.json : await settledStatus(host, [R2.state.ready])
     assertReady(ready, 'R2-ST-01 after Retry')
     const after = await read(host)

@@ -10,8 +10,8 @@
  *   start's rejection arrives; the code STAYS NATIVE_CHILD_EXITED (never NATIVE_START_FAILED), and
  *   `detail` is the start failure's detail (e.g. beginning with CHILD_EXITED), not null; the warn
  *   line is still logged once for that start.
- * - R3 a start that fails while the state is neither `starting` nor failed/NATIVE_CHILD_EXITED (the
- *   row was stopped meanwhile) changes neither state, code nor detail.
+ * - R3 (a start that fails after the row was stopped meanwhile) is withdrawn with its one case,
+ *   R4-EXIT-05, whose stop was the V2 connector binding's (see that case's note).
  * - R4 detail is null whenever the state is not a failed start.
  *
  * Observation: a REAL DSH boot of the main profile (support/host.mjs) per SDK selected by
@@ -21,8 +21,7 @@
  * string followed by its single argument).
  * The race is driven from outside: the child's pid is read from its launch record as soon as the
  * record appears (state `starting`, before READY) and the child is SIGKILLed — a real exit of the
- * real child during its start. R3's "stopped meanwhile" is the connector being disabled through
- * DSH's plugin manager after CHILD_BOOT (the row then stops the child it was starting).
+ * real child during its start.
  *
  * | id | technique | requirement | expected |
  * |----|-----------|-------------|----------|
@@ -30,7 +29,6 @@
  * | R4-EXIT-02 | State Transition failed(race) → Retry → ready | R4 | ready / code null / detail null on Retry and status |
  * | R4-EXIT-03 | BVA (failed but not a failed start: exit after ready) | R4 | failed / NATIVE_CHILD_EXITED / detail null (no stale detail); no new start-failed warn |
  * | R4-EXIT-04 | State Transition failed → Retry → (retry's child killed) → failed | R2 | same as R4-EXIT-01 for the Retry start; the warn count grows by exactly one |
- * | R4-EXIT-05 | State Transition starting → stopping (connector disabled) → start fails | R3, R4 | the start did fail (lifecycle FAILED) yet state stays the stop's (connector-missing), code null, detail null; never failed |
  * | R4-EXIT-06 | EP (ordinary start failure, no exit race) | R1 | failed / NATIVE_START_FAILED; detail 'PREFLIGHT_MANIFEST: <line>' (planted invalid dependency package.json) with the code not repeated; one warn with only the code |
  * TODO (no black-box seam): R2's ordering "onExit before the start's rejection" is the precondition,
  * not forced; R4-EXIT-01/04 report (diagnostic) whether the intermediate failed/NATIVE_CHILD_EXITED
@@ -49,12 +47,12 @@ import { R2, R2_BUDGET, lifecycleLines, plantInvalidManifest, removeHome, runtim
 const SDK = selectedSdk(RUNTIME)
 const R4 = Object.freeze({
   row: 'dsh-instance',
-  state: Object.freeze({ starting: 'starting', ready: 'ready', failed: 'failed', missing: 'connector-missing' }),
+  state: Object.freeze({ starting: 'starting', ready: 'ready', failed: 'failed' }),
   code: Object.freeze({ childExited: 'NATIVE_CHILD_EXITED', startFailed: 'NATIVE_START_FAILED' }),
   /** R2's example: the start failure's own code when its child exits. */
   exitStartCode: 'CHILD_EXITED',
   warn: Object.freeze({ type: 'warn', format: 'start failed (%s)' }),
-  lifecycle: Object.freeze({ boot: 'CHILD_BOOT', ready: 'READY', failed: 'FAILED' }),
+  lifecycle: Object.freeze({ ready: 'READY', failed: 'FAILED' }),
   pidFile: 'pid.json',
   /**
    * A live launch directory is named exactly by its instance id (a lowercase UUID). Anything else
@@ -62,7 +60,6 @@ const R4 = Object.freeze({
    * inside — is not a live launch.
    */
   launchId: /^[0-9a-f-]{36}$/,
-  connector: 'dsh-connector',
   killSignal: 'SIGKILL',
   detailCodePoints: 2000,
 })
@@ -219,34 +216,8 @@ describe(`R4 [${SDK}] a child exit during its start keeps NATIVE_CHILD_EXITED an
     if (answer?.state === R4.state.failed && answer.detail !== null) assert.deepEqual(answer, final, 'R4-EXIT-04: a failed Retry answer with detail equals the status')
   })
 
-  it('R4-EXIT-05 the connector is disabled during the start (row stops) → the failing start changes neither state, code nor detail', { timeout: R2_BUDGET.caseMs }, async (t) => {
-    const home = newHome('v2-r4-stop')
-    homes.push(home)
-    const host = await bootHost(home)
-    t.after(async () => { await host.stop().catch(() => {}) })
-    // After CHILD_BOOT the start is well under way, so stopping now makes that start fail.
-    const booted = await until(() => lifecycleLines(home).some((l) => l.json.code === R4.lifecycle.boot), WAIT.launchMs, WAIT.launchPollMs)
-    assert.ok(booted, 'precondition: the child booted')
-    assert.equal((await status(host))?.state, R4.state.starting, 'precondition: still starting')
-    const since = await problemCount(host)
-    const off = host.call('setBundleEnabled', { name: R4.connector, enabled: false })
-    const seen = []
-    await until(async () => {
-      const answer = await status(host)
-      if (JSON.stringify(seen.at(-1)) !== JSON.stringify(answer)) seen.push(answer)
-      return answer?.state === R4.state.missing
-    }, WAIT.raceWindowMs, WAIT.statusPollMs)
-    assert.equal((await off).changed, true, 'the connector bundle was deselected through DSH')
-    t.diagnostic('R4-EXIT-05 status sequence: ' + JSON.stringify(seen))
-    // Let any late start rejection land before judging the state.
-    await until(() => lastFailedReason(home) !== undefined, WAIT.raceWindowMs, WAIT.statusPollMs)
-    await sleep(WAIT.statusPollMs * 10)
-    assert.ok(lastFailedReason(home), 'precondition: the interrupted start did fail (lifecycle FAILED): ' + JSON.stringify(lifecycleLines(home).map((l) => l.json)))
-    assert.equal(seen.some((s) => s?.state === R4.state.failed), false, 'R4-EXIT-05: the failing start never set failed: ' + JSON.stringify(seen))
-    const final = await status(host)
-    assert.deepEqual(final, { state: R4.state.missing, code: null, detail: null }, 'R4-EXIT-05: the stop\'s state stands, code and detail unchanged')
-    t.diagnostic('R4-EXIT-05 start-failed warns (not specified by R3): ' + JSON.stringify(await startFailedWarns(host, since)))
-  })
+  // R4-EXIT-05 (the connector disabled during a start → connector-missing) is withdrawn: the V2
+  // connector binding went (I-HOST: the instance runs with or without a connector); V2 was never deployed.
 
   it('R4-EXIT-06 an ordinary start failure (planted invalid dependency manifest) → NATIVE_START_FAILED, detail with the code once, one warn with only the code', { timeout: R2_BUDGET.caseMs }, async (t) => {
     const home = newHome('v2-r4-manifest')

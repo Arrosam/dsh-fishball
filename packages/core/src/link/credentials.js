@@ -35,7 +35,7 @@
  * the reference or already saved, so saving it never makes pairing start over.
  */
 import { createHash } from 'node:crypto'
-import { createTokenManager, accessTokenOf, isGrantFor } from 'fishball-shared/oauth-client'
+import { createTokenManager, accessTokenOf, isGrantFor } from './oauth-client.js'
 import { CONNECT, HOSTED_IMPORT } from '../../contracts/constants.js'
 import { codeOf } from '../events/diagnostics.js'
 import { LINK_MCP, LINK_SAVE } from './constants.js'

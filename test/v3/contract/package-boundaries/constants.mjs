@@ -66,8 +66,45 @@ export const ROOT_WORKSPACE = (pkg) => path.relative(REPO, pkg.dir).split(path.s
  * shipped files, by name or folder.
  */
 export const DSH_SIDE = Object.freeze({ basenames: Object.freeze(['native-web.js', 'settings-relay.js']), folder: 'slim/host/' })
-/** R-SHARED (3): a named reader of the files.js helpers (core's private Skills store; it imports them from fishball-shared); found by file name. */
+/**
+ * R-SHARED (3): a named reader of the files.js helpers (core's private Skills store), found by file
+ * name. Since REMOVE-V2b the helpers live inside core, so it takes them from no library.
+ */
 export const SHARED_READER = 'skills-store.js'
+
+/**
+ * PLAT-EP-07 row 6, R-ARCH-08 rule (5) read strictly (Fishball, 2026-11-16): every module of a
+ * library is imported by at least this many distinct V3 packages of the library's own side.
+ */
+export const MIN_LIBRARY_USERS = 2
+/**
+ * REMOVE-V2b: fishball-shared's single-user modules, moved into their one user, fishball-core
+ * (`files` for its private Skills store, `oauth-client` for its link / Connect). fishball-shared
+ * then holds only `ui-seam` (core and fishball-ui).
+ */
+export const MOVED_INTO_CORE = Object.freeze(['files', 'oauth-client'].map((module) => Object.freeze({ module, file: module + '.js', specifier: V3.shared.name + '/' + module })))
+
+/**
+ * Self-check of the row-6 counting rule over a synthetic importer table (no package is read). Each
+ * case names the packages importing `module` directly and the packages importing `reexport`, a
+ * library module that re-exports `module` (a re-export makes both used, as libraryUsage reads it).
+ * The library entry stands for the library importing its own module (an internal edge, never a user).
+ */
+export const USERS_RULE = Object.freeze({
+  library: V3.shared.name,
+  module: 'fbtest-module.js',
+  reexport: 'fbtest-reexport.js',
+  cases: Object.freeze([
+    { partition: 'BVA no importer', direct: [], via: [], pass: false },
+    { partition: 'BVA one importer', direct: [V3.core.name], via: [], pass: false },
+    { partition: 'BVA two importers of its side', direct: [V3.core.name, V3.ui.name], via: [], pass: true },
+    { partition: 'EP three importers of its side', direct: [V3.core.name, V3.ui.name, V3.board.name], via: [], pass: true },
+    { partition: 'EP one package importing it from two files counts once', direct: [V3.core.name, V3.core.name], via: [], pass: false },
+    { partition: 'EP an importer of the other side does not count', direct: [V3.core.name, V3.instance.name], via: [], pass: false },
+    { partition: 'EP the library importing its own module does not count', direct: [V3.core.name, V3.shared.name], via: [], pass: false },
+    { partition: 'EP two packages reaching it only through a re-exporting library module', direct: [], via: [V3.core.name, V3.ui.name], pass: true },
+  ].map(Object.freeze)),
+})
 
 /** JavaScript files a package ships (by its `npm pack` listing). */
 export const JS_FILE = /\.(?:c|m)?js$/
@@ -112,7 +149,8 @@ export const LATER = Object.freeze({
   featurePeers: 'FEAT-PEERS (the feature plugin drops the dsh-instance peer for the optional fishballInstance? inject)',
   pluginsPage: 'X-MATRIX (no Plugins page of a started DSH lists either library)',
   hostTrace: 'X-SEC (PLAT-EP-07 runtime part: module-load trace of a running hosted setup C + I + U)',
-  twoUsers: 'Fishball (R-ARCH-08 rule 5 "more than one package uses it" conflicts with the SPLIT-SHARED contents: files and provider-sync have one DSH-side user, the instance; most fishball-shared modules have one, core, and ui-seam is fishball-ui\'s and core\'s since F-UI)',
-  removeV2: 'REMOVE-V2 (design §1.0b row 2: core still imports dsh-connector/contract and peers on dsh-connector; that edge goes with the V2 child path)',
+  dshSingleUsers: 'C-WIRE-2 (R-ARCH-08 rule 5 strict, Fishball 2026-11-16: each dsh-connector-shared module with one DSH-side user moves into that user: files, provider-sync, provider-sync-codec, provider-sync-host → dsh-instance; oauth-client → dsh-connector-adapter)',
   standalone: 'unassigned in v3-tasks.md (standalone install of the core tarball with no registry; core is not standalone-loadable before S6/F-GUARDS)',
 })
+/** PLAT-EP-07 row 6 "at least two users": the library whose single-user modules a later task moves out, with that task. */
+export const SINGLE_USERS_LATER = Object.freeze({ [V3.dshShared.name]: LATER.dshSingleUsers })

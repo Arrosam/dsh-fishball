@@ -22,7 +22,7 @@ Services are looked up at runtime (`ctx.get`); a trailing `?` in
 | Guard list, policy, manager tools and the `guards-overridden` report | [guards.d.ts](<guards.d.ts>) | F-GUARDS |
 | The runtime values of the above (and core's link backoff) | [constants.js](<constants.js>) | the constants migration (2026-11-14) |
 | K3a: the link status and the hosted import's published names | [link.d.ts](<link.d.ts>) | F-LINK-SAVE (core), I-HOST (instance, its own copy of the names) |
-| K3a: Connect and the Fishball-side OAuth client | [connect.d.ts](<connect.d.ts>) | `fishball-shared/oauth-client`, F-LINK-SAVE |
+| K3a: Connect and the Fishball-side OAuth client | [connect.d.ts](<connect.d.ts>) | `src/link/oauth-client.js`, F-LINK-SAVE |
 | K3a: the fishball-ui seam `fishballInstance.ui` | [ui.d.ts](<ui.d.ts>) | F-UI, F-WIRE |
 | K3a: core's own copy of the connector's MCP surface (`MCP`), which replaced `vendor/` | [constants.js](<constants.js>) | F-OWN-SCHEMA (done) |
 

@@ -27,7 +27,6 @@
  * | I2-E-DT-03 | DT (Electron, var `1` in main) | ELECTRON_RUN_AS_NODE=1 |
  * | I2-E-DT-04 | DT (Electron, no var) | ELECTRON_RUN_AS_NODE=1 |
  * | I2-E-DT-05 | DT (Electron, var `0` in main) | ELECTRON_RUN_AS_NODE=1 ("whatever the main process has") |
- * | I2-C-P-01 | P | Config has exactly the field `enabled` |
  * | I2-C-EP-01 | EP (old stored values) | a config with nodeExecutable / executableSearchPath / providerSync / limits is accepted (ignored, not an error) |
  * | I2-S-01 | static | node-default.js is deleted; no `verifyNode` in packages/dsh-instance |
  */
@@ -116,10 +115,9 @@ describe('I2 environment', () => {
   }
 })
 
+// I2-C-P-01 (Config has only `enabled`) is withdrawn: the Config gained targetUrl (R-HOST-05, I-HOST),
+// checked by test/v3/dsh-instance/host HOST-EP-01; V2 was never deployed (the user, 2026-11-16).
 describe('I2 the row\'s form', () => {
-  it('I2-C-P-01 the dsh-instance Config has exactly the field enabled', () => {
-    assert.deepEqual(Object.keys(Config.dict), ['enabled'])
-  })
   it('I2-C-EP-01 old stored values are accepted and ignored', () => {
     assert.doesNotThrow(() => Config({ enabled: true, nodeExecutable: '/opt/fake/node', executableSearchPath: ['/opt/fake'], providerSync: true, limits: {} }))
   })

@@ -28,7 +28,7 @@
     "node": ">=22",
     "dsh": ">=0.2.1-rc.5"
   },
-  "//dependencies": "fishball-shared is the Fishball side's library (R-ARCH-08): core's seam with fishball-ui, its OAuth client copy (./oauth-client) and its file helpers; core shares no module with the instance (requirements 1.40); it is bundled, so the tarball carries it. @modelcontextprotocol/client is core's own MCP client for its link (F-LINK; design §5a.1, §6.3, §9.1), never the host's transitive copy: pinned exactly to 2.2.0, the line both hosts ship (0.2.1-rc.5 and 0.2.2-rc.1, dist byte-identical), as K1 pins the connector's server SDK to the same line.",
+  "//dependencies": "fishball-shared is the Fishball side's library (R-ARCH-08): core's seam with fishball-ui (./ui-seam), the one module two Fishball-side packages use; core's OAuth client copy and file helper are its own (src/link/oauth-client.js, src/manager/skills-store.js), as R-ARCH-08 strict puts a single-user module in its user (REMOVE-V2b); core shares no module with the instance (requirements 1.40); it is bundled, so the tarball carries it. @modelcontextprotocol/client is core's own MCP client for its link (F-LINK; design §5a.1, §6.3, §9.1), never the host's transitive copy: pinned exactly to 2.2.0, the line both hosts ship (0.2.1-rc.5 and 0.2.2-rc.1, dist byte-identical), as K1 pins the connector's server SDK to the same line.",
   "dependencies": {
     "@modelcontextprotocol/client": "2.2.0",
     "fishball-shared": "0.1.0-alpha.0"
