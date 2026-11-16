@@ -3,20 +3,18 @@
  * design §6.3a). PROPOSED wording, reviewed with the pairing copy (W3 question P-3). Data only:
  * frozen strings and pure template formatters that interpolate names, codes and numbers only.
  *
- * `line` keys are the strip's line kinds: the link's states (`LINK.state`), Connect's states
- * (`CONNECT.state`) and `fishball-off`, computed from those constants so a rename cannot drift.
- * `reason` keys are `STATUS_MODEL.reason`. A code is shown verbatim after the word (`code`),
+ * `line` keys are the strip's line kinds: the link's states (`SEAM_STATUS.link`, core's
+ * `LINK.state`), Connect's states (`SEAM_STATUS.connect`, core's `CONNECT.state`) and
+ * `fishball-off`, computed from those constants so a rename cannot drift. `reason` keys are
+ * `SEAM_STATUS.reason`. A code is shown verbatim after the word (`code`),
  * because the codes are the documented words a user can look up (K3 `LinkCode`,
- * `ConnectConfigurationCode`, the plugin manager's error codes). fishball-ui moves this file with
- * the strip (F-UI).
+ * `ConnectConfigurationCode`, the plugin manager's error codes). Moved with the strip from core
+ * by F-UI; the words' keys come from `fishball-shared/ui-seam`, never from core.
  */
-import { CONNECT, LINK } from '../../contracts/constants.js'
-import { STATUS_MODEL } from '../../src/status/constants.js'
+import { SEAM_STATUS } from 'fishball-shared/ui-seam'
 
-const { state: LS } = LINK
-const { state: CS } = CONNECT
-const { reason: RS } = STATUS_MODEL
-const OFF = STATUS_MODEL.fishball.off
+const { link: LS, connect: CS, reason: RS } = SEAM_STATUS
+const OFF = SEAM_STATUS.fishball.off
 
 export const STATUS_TEXT = Object.freeze({
   en: Object.freeze({
@@ -38,7 +36,7 @@ export const STATUS_TEXT = Object.freeze({
     member: (name, reason) => `${name} (${reason})`,
     tools: (count) => (count === 1 ? '1 contributed tool is offered to Fishball\'s model.' : `${count} contributed tools are offered to Fishball's model.`),
     separator: ', ',
-    control: Object.freeze({ [STATUS_MODEL.control.connect]: 'Connect', [STATUS_MODEL.control.cancel]: 'Cancel' }),
+    control: Object.freeze({ [SEAM_STATUS.control.connect]: 'Connect', [SEAM_STATUS.control.cancel]: 'Cancel' }),
   }),
   zh: Object.freeze({
     line: Object.freeze({
@@ -59,7 +57,7 @@ export const STATUS_TEXT = Object.freeze({
     member: (name, reason) => `${name}（${reason}）`,
     tools: (count) => `Fishball 的模型可使用 ${count} 个贡献工具。`,
     separator: '、',
-    control: Object.freeze({ [STATUS_MODEL.control.connect]: '连接', [STATUS_MODEL.control.cancel]: '取消' }),
+    control: Object.freeze({ [SEAM_STATUS.control.connect]: '连接', [SEAM_STATUS.control.cancel]: '取消' }),
   }),
 })
 

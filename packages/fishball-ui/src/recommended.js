@@ -18,8 +18,9 @@
  *
  * Install goes through the ordinary "Install for Fishball" dialog with the entry's spec, so the
  * list grants nothing: the dialog installs any spec you type, after your click (revision 10a).
- * In V2 the child's Fishball Recommended tab (ui/fishball-recommend-plugins) reads the same
- * list through recommendedList() and installs through DSH's own Plugins page dialog instead.
+ * In V2 the child's Fishball Recommended tab (fishball-recommend-plugins, fishball-ui's since F-UI)
+ * reads the same list through recommendedList() and installs through DSH's own Plugins page dialog
+ * instead.
  */
 
 /** Category keys, in display order (the highlighted ones first). The browser keeps the same keys. */

@@ -8,19 +8,18 @@
  * - no `fishball-ui` member: core runs normally without it and reports nothing (Q-G1);
  * - no `fishball-hosted-settings` member: removed (1.34) and never reported (HOST-DT-03 rule 10).
  */
+import { SEAM_STATUS } from 'fishball-shared/ui-seam'
 import { GUARDS } from '../../contracts/constants.js'
 
 export const STATUS_MODEL = Object.freeze({
-  /** Whether Fishball is on in this DSH; `off` is what a reader sees without core (R-FB-10). */
-  fishball: Object.freeze({ on: 'on', off: 'fishball-off' }),
-  /** Set completeness (design §8.2 `plugin-set-incomplete`). */
-  set: Object.freeze({ ok: 'ok', incomplete: 'plugin-set-incomplete' }),
-  /** Why a member is missing: its layer was skipped at load, or one of its rows failed to start. */
-  reason: Object.freeze({ skipped: 'skipped', failed: 'failed' }),
+  // The snapshot words fishball-ui's strip draws: defined once in the seam (fishball-shared), since
+  // fishball-ui cannot import core (Q-G2).
+  fishball: SEAM_STATUS.fishball,
+  set: SEAM_STATUS.set,
+  reason: SEAM_STATUS.reason,
   /** The set members core checks (requirements 1.34, 1.37, 1.41: the Fishball set is core + board). */
   members: Object.freeze(['fishball-board']),
-  /** The strip's one control (design §6.3a steps 1–2). */
-  control: Object.freeze({ connect: 'connect', cancel: 'cancel' }),
+  control: SEAM_STATUS.control,
   /** The Cordis service F-WIRE provides with `createStatus`'s object. */
   serviceName: 'fishballStatus',
   /** The DSH services and events the status reads (none injected: a missing one is "nothing to read"). */

@@ -8,13 +8,14 @@
  * The status strip line and the notice to Fishball's manager (design §5a.2) are F-STATUS's: they
  * read this service.
  */
+import { UI_GUARDS } from 'fishball-shared/ui-seam'
 import { GUARDS } from '../../contracts/constants.js'
 import { readIntendedGuards } from './intended.js'
 import { checkGuards } from './check.js'
 import { reason, reorderOnce } from './reorder.js'
 
 /**
- * @param {object} ctx - the fishball-ui row's Cordis context.
+ * @param {object} ctx - the guard row's Cordis context (row.js).
  * @returns {{report(): object|undefined, reorder(): Promise<string>, onChange(listener: Function): () => void}}
  *   `report()` is undefined until the app-ready check settles, then the latest K3 `GuardReport`.
  */
@@ -77,6 +78,9 @@ export function createGuards(ctx) {
   void reorder.then(() => check())
 
   for (const trigger of GUARDS.triggers) ctx.on(trigger, () => { void check() })
+  // fishball-ui's guard rows join the check when its service arrives or leaves (check.js
+  // guardedRows): its row may start after this one, or be switched on or off later.
+  ctx.on(GUARDS.serviceEvent, (name) => { if (name === UI_GUARDS.service) void check() })
   // A manager is checked by its tools on create and on resume (R-FB-13): `agent/created` fires
   // after setup with source `startup` or `resume`, so the tool list is final then. Every agent
   // triggers it; the check itself picks the manager sessions (check.js managerAgents).

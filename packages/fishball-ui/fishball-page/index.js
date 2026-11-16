@@ -1,4 +1,4 @@
-/** Named package boundary of the Fishball page; core's patch mounts it (I-PLACE), never another DSH's bundle. */
+/** Named package boundary of the Fishball page; fishball-ui's patch mounts it beside core (F-UI), never another DSH's bundle. */
 export const name = 'fishball-page'
 export function apply() {
   // The browser half (client.js) owns the page; this server row only names the package. No

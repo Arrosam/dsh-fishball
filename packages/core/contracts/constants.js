@@ -10,7 +10,7 @@
  *
  * Since requirements 1.39–1.41 (gate K3a) this file also holds core's own copy of the connector's
  * MCP surface (`MCP`), its link words (`LINK`), the hosted import's published names
- * (`HOSTED_IMPORT`), Connect (`CONNECT`) and the fishball-ui seam (`UI_SEAM`): the two sides
+ * (`HOSTED_IMPORT`) and Connect (`CONNECT`): the two sides
  * share no package, so core keeps its own values and a contract test checks them against the
  * connector. DECIDED Dn: the row of mcp-schema/README.md "User decisions", the one record of the
  * decisions of K1, K2 and K3.
@@ -367,19 +367,8 @@ export const CONNECT = Object.freeze({
 
 // ------------------------------------------------------------------------- the fishball-ui seam (ui.d.ts)
 
-/**
- * The fishball-core / fishball-ui split (requirements 1.38 Q-N2, 1.41 Q-G1/Q-G2; R-FB-14).
- * - `member`: the `fishballInstance` member fishball-ui reads (`ui.d.ts`);
- * - `coreMissing`: the one line fishball-ui logs, and then changes nothing, when no compatible core
- *   is present (Q-G2 = A; the same word as R-FB-06's).
- * Core shows no hint of a missing fishball-ui (Q-G1), so there is no value for it.
- * fishball-ui loads without core, so it cannot import this file at runtime once the packages split:
- * F-UI moves this object unchanged into `fishball-shared` (a move, not an amendment).
- */
-export const UI_SEAM = Object.freeze({
-  member: 'ui',
-  coreMissing: 'fishball-core-missing',
-})
+// `UI_SEAM` moved unchanged to `fishball-shared/ui-seam` (F-UI, as K3a announced): fishball-ui
+// loads without core (Q-G2), so it cannot import this file, and core reads it from there too.
 
 // ------------------------------------------------------------------------- guards (guards.d.ts)
 
@@ -458,13 +447,18 @@ export const GUARDS = Object.freeze({
   }),
   /** DSH's agent-registry event after a session's setup (create or resume), both SDKs. */
   agentCreated: 'agent/created',
+  /** Cordis's event for a service provided, replaced or withdrawn (both SDKs), with its name. */
+  serviceEvent: 'internal/service',
   /**
    * The service this row provides: `report()`, `reorder()`, `onChange(listener)`. Not in K3's types;
    * the name is F-GUARDS's, kept as it was (owner DECIDED D7).
    */
   serviceName: 'fishballGuards',
-  /** The guard module's Cordis plugin name (ui/patch/index.js `name`). */
-  pluginName: 'fishball-ui',
+  /**
+   * The guard row's id and Cordis plugin name (src/guards/row.js `name`). It was `fishball-ui`
+   * until F-UI made fishball-ui a package of its own, which now holds the UI guard rows.
+   */
+  pluginName: 'fishball-core-guards',
   /** Core's own bundle name in `dsh.profile.bundles`. */
   bundleName: 'fishball-core',
   /** Core's patch, relative to `src/guards/`. */
