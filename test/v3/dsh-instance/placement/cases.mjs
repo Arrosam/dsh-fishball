@@ -211,9 +211,10 @@ export function registerIPlaceCases(sdk) {
   // ============================================================== Use Cases
   // ---- HOST-UC-06 postcondition (R-HOST-04, Q-5; design §6.2): the launch overlay carries only launch configuration.
   // Q-5 (dev 6d13f6a1): the overlay inserts exactly the instance runtime rows (I-HOST adds dsh-instance-child); no guard, V2 child, settings or forced-on row.
-  caseTest(sdk, 'HOST-UC-06', 'post', 'the launch overlay inserts only fishball-native-web, fishball-native-child and dsh-instance-child (no guard, V2 child, settings or forced-on row)', async (t) => {
+  caseTest(sdk, 'HOST-UC-06', 'post', 'the launch overlay inserts only required fishball-native-child and dsh-instance-child (I-READY)', async (t) => {
     const ops = await overlayOps(sdk, scratch(t, 'fbtest-iplace-ovl-'), [])
     assert.deepEqual(insertedOf(ops).map((r) => r.id).sort(), [...OVERLAY.runtimeRows].sort())
+    for (const row of insertedOf(ops)) assert.equal(row.required, true, row.id)
   })
   caseTest(sdk, 'HOST-UC-06', 'post', 'the launch overlay disables nothing but hmr: no guarded row, no shipped preset, no dsh-instance', async (t) => {
     const ops = await overlayOps(sdk, scratch(t, 'fbtest-iplace-ovl-'), [])

@@ -1,12 +1,12 @@
 /**
- * The one owner-only Fetch route registration shared by the slim page route modules (§9, §10).
+ * The one owner-only Fetch route registration shared by the instance's page route modules (§9, §10).
  *
  * DSH's connection.fetch registry is exact-path and owner-only: its shared handler answers 403
  * for any peer whose principal is not the owner, and its bridge applies DSH's Host/Origin fence.
  * A module therefore supplies only its exact paths and handlers; owning authentication stays
  * with DSH. A registry that is absent, or a path another row already claimed, leaves the page
  * without that route rather than failing the native row — the page then shows its typed
- * "unavailable" refusal, the same rule the status route and the embed broker follow.
+ * "unavailable" refusal, the same rule the status route follows.
  */
 const FETCH = Object.freeze({ method: 'POST', get: 'GET', body: 'buffered' })
 

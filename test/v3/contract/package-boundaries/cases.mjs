@@ -181,8 +181,8 @@ function registerLibraryCases(sdk, lib) {
     assert.deepEqual(js.filter((m) => !usage.has(m)), [], 'modules no V3 package imports')
   })
   // R-ARCH-08 says each library holds modules "more than one" package of its side uses, but the
-  // SPLIT-SHARED contents (design §1.0b row 5, plan §5) put the admin protocol and files in
-  // dsh-connector-shared for the instance alone, and fishball-shared serves core alone until F-UI.
+  // SPLIT-SHARED contents (design §1.0b row 5, plan §5) put files and provider-sync in
+  // dsh-connector-shared for the instance alone (the admin protocol left with D14), and fishball-shared serves core alone until F-UI.
   // The two-users rule is left open until Fishball reconciles the two texts.
   caseTest(sdk, 'PLAT-EP-07', 6, `every ${lib.name} module is used by at least two V3 packages`, null, LATER.twoUsers)
   caseTest(sdk, 'PLAT-EP-07', 6, `no ${lib.name} module is also a live copy in a plugin package (one owner per side)`, async () => {
@@ -261,17 +261,7 @@ function registerPackageCases(sdk) {
   }, has(V3.embed) ? undefined : LATER.embed)
 
   // ---- HOST-EP-03 row 2: DSH-side modules stay in the instance ----
-  caseTest(sdk, 'HOST-EP-03', 2, 'native-web.js, settings-relay.js and slim/host/* are shipped by the instance and by no other V3 package', async () => {
-    const { units } = await observe()
-    const isDshSide = (f) => DSH_SIDE.basenames.includes(path.posix.basename(f)) || f.includes(DSH_SIDE.folder)
-    const instance = units.get(V3.instance.name).files.filter(isDshSide)
-    for (const base of DSH_SIDE.basenames) assert.ok(instance.some((f) => path.posix.basename(f) === base), 'the instance does not ship ' + base)
-    assert.ok(instance.some((f) => f.includes(DSH_SIDE.folder)), 'the instance does not ship ' + DSH_SIDE.folder)
-    // The connector has its own, unrelated slim/host/ folder (its MCP host side): only the Fishball-set side and the libraries are checked.
-    const elsewhere = []
-    for (const name of [...LIBRARIES.map((l) => l.name), ...SET_SIDE]) for (const f of units.get(name)?.files.filter((x) => !x.startsWith(NODE_MODULES_DIR)).filter(isDshSide) ?? []) elsewhere.push(name + '/' + f)
-    assert.deepEqual(elsewhere, [])
-  })
+  test.skip(caseName(sdk, 'HOST-EP-03', 2, 'withdrawn by I-READY: native-web, settings relay and slim/host removed; successor IREADY-EP-05/06'), () => {})
   // The status-line part of row 2 is R-CORE's (it re-homes that module): test/v3/fishball-core/package/cases.mjs.
 
   // ---- rows 8 and 9: later tasks ----
