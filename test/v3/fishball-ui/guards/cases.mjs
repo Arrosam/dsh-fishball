@@ -16,7 +16,8 @@
  * app-ready boundary: nothing before it, a report at it).
  *
  * Level: integration. Each scenario is one throwaway standalone DSH home on the SDK the file names,
- * booted once or more (worker.mjs), with this checkout's `packages/core` and generated stand-in
+ * booted once or more (worker.mjs), with this checkout's `packages/core`, `packages/fishball-ui`
+ * (F-UI: the UI-only guard rows are its patch's, applied when core is started) and generated stand-in
  * bundles. Every guard value is K3's (constants.mjs reads guards.d.ts). Flows a later task owns are
  * `todo` and name it.
  */
@@ -33,19 +34,18 @@ import { DSH as SETTINGS_DSH } from '../../fishball-core/settings/constants.mjs'
 import { withdrawnCase } from '../../fishball-core/settings/withdrawn.mjs'
 import { bootGraph, openSettingsPage } from '../../fishball-core/package/page.mjs'
 import { readManifest } from '../../contract/package-boundaries/packages.mjs'
-import { RELAYED } from '../../dsh-instance/placement/constants.mjs'
-import { bootEnv, scenario } from './harness.mjs'
-import { BUDGET, DSH_ROW, FIXTURE, GUARDS, LATER, OWNER, PROFILE, REPORT, SDK_SCOPE, UI_COMPONENT } from './constants.mjs'
+import { bootEnv, isOk, scenario, waitReport } from './harness.mjs'
+import { BUDGET, DSH_ROW, FIXTURE, GUARDS, LATER, OWNER, PROFILE, REPORT, SDK_SCOPE, SPLIT, UI_COMPONENT } from './constants.mjs'
 
 const JS = /\.(?:c|m)?js$/
 const CORE = V3.core.name
+const UI = UI_COMPONENT
 const CORE_PATCH = CORE_PACKAGE.patchFile
 const INSTANCE = FIXTURE.instance
 const ALL_GUARD_ROWS = Object.freeze([...GUARDS.rows, ...GUARDS.shippedPresets])
 /** R-FB-12 names the instance in the report until the guard holds; K3 also offers `bundle-order`. Either names it. */
 const ORDER_NAMES = Object.freeze([REPORT.row(GUARDS.instanceRow), REPORT.bundleOrder])
 const namesOrder = (report) => report?.status === REPORT.overridden && report.overridden.some((g) => ORDER_NAMES.includes(g))
-const isOk = (report) => report?.status === REPORT.ok && report.overridden.length === 0
 const show = (v) => JSON.stringify(v)
 /** Preconditions that keep a "never" case from passing vacuously before core's guards exist. */
 function needGuardsHeld(rows) {
@@ -57,18 +57,23 @@ function needReports(history) {
 }
 /** The instance's launch code, where V2 kept the LITE guard rows (v3-tasks.md F-GUARDS "Owns"). */
 const INSTANCE_LAUNCH = 'src/native-runtime/'
-/** Core's bundle patch as the SDK's own loader reads it (dsh-app-boot loadOverlayPatches, both SDKs). */
-async function corePatchRows(sdk) {
+/** A bundle patch as the SDK's own loader reads it (dsh-app-boot loadOverlayPatches, both SDKs). */
+async function patchRows(sdk, dir) {
   const { loadOverlayPatches } = await import(pathToFileURL(path.join(runtimeOf(sdk), SDK_SCOPE + 'dsh-app-boot', 'lib', 'index.js')).href)
-  return loadOverlayPatches('dsh', path.join(V3.core.dir, CORE_PATCH))
+  return loadOverlayPatches('dsh', path.join(dir, CORE_PATCH))
+}
+/**
+ * A row's effective `disabled` in a DSH started with core (F-UI: fishball-ui's UI guard rows are a
+ * `!!js` condition on `profileContext.startedBundles`), evaluated by the SDK's own loader evaluator.
+ */
+async function disabledWithCore(sdk, row) {
+  const [{ Context }, { evaluate, isJsExpr }] = await Promise.all(['cordis', 'cordis-plugin-loader'].map((n) => import(pathToFileURL(path.join(runtimeOf(sdk), SDK_SCOPE + n, 'lib', 'index.js')).href)))
+  if (!isJsExpr(row.disabled)) return row.disabled === true
+  const ctx = new Context()
+  ctx.provide('profileContext', { startedBundles: [CORE, UI] })
+  return Boolean(evaluate(ctx, row.disabled.__jsExpr))
 }
 
-/** Wait until the report satisfies `test`; returns the last report seen. */
-async function waitReport(h, test, ms = BUDGET.recomposeMs) {
-  let last
-  await until(async () => { last = await h.call('report'); return test(last) }, ms, BUDGET.pollMs)
-  return last
-}
 /** One owner action while DSH runs, then the report once it has settled to `test` (or the timeout). */
 async function ownerChange(h, action, test) {
   await action()
@@ -107,7 +112,7 @@ export function registerGuardCases(sdk) {
   // ============================================================================================
   const native = scenario('v3-fg-native', sdk, [
     async (boot, f) => {
-      const h = await boot(bootEnv({ members: [FIXTURE.probe.name, CORE, INSTANCE, FIXTURE.other] }))
+      const h = await boot(bootEnv({ members: [FIXTURE.probe.name, CORE, UI, INSTANCE, FIXTURE.other] }))
       f.home = h.home
       f.pid1 = h.pid
       f.readyAt1 = await h.call('readyAt')
@@ -125,13 +130,19 @@ export function registerGuardCases(sdk) {
       f.graph1 = await graphIds(h)
       f.manager = await h.call('newSession')
       // A1 × guard class (decision table): each owner override sets the report; each restore clears it.
-      const row = GUARDS.rows.find((r) => r !== GUARDS.instanceRow)
+      // F-UI: a guarded row is either fishball-ui's (a UI-only row, reported because fishball-ui is
+      // present) or core's own; one of each.
+      const row = SPLIT.uiRows[0]
+      const coreRow = SPLIT.coreRows.find((r) => r !== GUARDS.instanceRow)
       const preset = GUARDS.shippedPresets[0]
       f.override = {}
       f.override.row = { guard: REPORT.row(row) }
       f.override.row.set = await ownerChange(h, () => h.call('setRowEnabled', { id: row, enabled: true }), (r) => r?.overridden?.includes(f.override.row.guard))
       f.override.row.rowAfter = (await h.call('rows', { ids: [row] }))[0]
       f.override.row.cleared = await ownerChange(h, () => h.call('setRowEnabled', { id: row, enabled: false }), isOk)
+      f.override.coreRow = { guard: REPORT.row(coreRow) }
+      f.override.coreRow.set = await ownerChange(h, () => h.call('setRowEnabled', { id: coreRow, enabled: true }), (r) => r?.overridden?.includes(f.override.coreRow.guard))
+      f.override.coreRow.cleared = await ownerChange(h, () => h.call('setRowEnabled', { id: coreRow, enabled: false }), isOk)
       f.override.sandbox = { guard: REPORT.policy('sandbox') }
       f.override.sandbox.set = await ownerChange(h, () => h.call('writeProfilePatch', { text: sandboxOverride }), (r) => r?.overridden?.includes(f.override.sandbox.guard))
       f.override.sandbox.policyAfter = await h.call('policy')
@@ -199,34 +210,35 @@ export function registerGuardCases(sdk) {
     assert.equal(f.resumed.sandbox, GUARDS.policy.sandbox)
     assert.equal(f.report2?.overridden?.includes(REPORT.managerTools), false, show(f.report2))
   })
-  caseTest(sdk, 'PLAT-UC-04', 'main', 'the plugin list holds fishball-core as one bundle and no separate fishball-ui bundle', async () => {
+  // F-UI (requirements 1.38 Q-N2, R-FB-14): fishball-ui is its own bundle beside core (it replaced
+  // "no separate fishball-ui bundle", which held while the UI shipped inside core).
+  caseTest(sdk, 'PLAT-UC-04', 'main', 'the plugin list holds fishball-core and fishball-ui, each once', async () => {
     const f = await native()
     const names = f.bundleList1.map((b) => b.name)
-    assert.ok(names.includes(CORE), show(names))
-    assert.equal(names.includes(UI_COMPONENT), false, show(names))
+    for (const name of [CORE, UI]) assert.equal(names.filter((n) => n === name).length, 1, name + ': ' + show(names))
   })
-  // V3 rule (design e1e5577 §9.1 and §5a.2, R-HOST-04; Fishball decisions 2026-11-15, I-PLACE):
-  // core's patch carries the child rows, and DSH serves a client only for a path row (its nearest
-  // manifest) or a bare package name. So core's own manifest gives exactly one entry, core's, and
-  // fishball-page and fishball-recommend-plugins may come from their own ui packages under core's
-  // ui/. Any other Fishball client entry still fails.
-  caseTest(sdk, 'PLAT-UC-04', 'main', "the page's client graph holds one Fishball client entry from core's manifest, core's; only the page and recommended-tab ui packages beside it", async () => {
+  // V3 rule (design e1e5577 §9.1 and §5a.2; Fishball decisions 2026-11-15, I-PLACE; F-UI): DSH serves
+  // a client only for a path row (its nearest manifest) or a bare package name. So core's and
+  // fishball-ui's manifests give one entry each, and fishball-page and fishball-recommend-plugins
+  // come from their own packages inside fishball-ui. Any other Fishball client entry still fails.
+  caseTest(sdk, 'PLAT-UC-04', 'main', "the page's client graph holds core's and fishball-ui's entries, and only the page and recommended-tab packages of fishball-ui beside them", async () => {
     const f = await native()
     const fishball = f.graph1.filter((id) => !id.startsWith(SDK_SCOPE) && /fishball/i.test(id))
-    const uiPackages = Object.entries(RELAYED.rows.uiPackages)
-    assert.deepEqual(fishball.filter((id) => !uiPackages.some(([ui]) => ui === id)), [CORE], 'Fishball client entries other than core and its ui packages')
-    // A graph entry's id is the name of the manifest it is served from: each allowed one must be its own ui package's.
+    const uiPackages = Object.entries(SPLIT.uiPackages)
+    assert.deepEqual(fishball.filter((id) => !uiPackages.some(([ui]) => ui === id)).sort(), [CORE, UI].sort(), 'Fishball client entries other than core, fishball-ui and its packages')
+    // A graph entry's id is the name of the manifest it is served from: each allowed one must be its own package's.
     for (const [id, folder] of uiPackages.filter(([ui]) => fishball.includes(ui))) {
-      const own = readManifest(path.join(V3.core.dir, folder))
-      assert.equal(own?.name, id, `${id} is not the name of ${folder}/package.json`)
-      assert.ok(own?.dsh?.client, `${folder}/package.json declares no dsh.client`)
+      const own = readManifest(path.join(V3.ui.dir, folder))
+      assert.equal(own?.name, id, `${id} is not the name of fishball-ui/${folder}/package.json`)
+      assert.ok(own?.dsh?.client, `fishball-ui/${folder}/package.json declares no dsh.client`)
     }
   })
-  caseTest(sdk, 'PLAT-UC-04', 'main', "core's own patch (read by the SDK's patch loader) switches every guard row off", async () => {
+  caseTest(sdk, 'PLAT-UC-04', 'main', "core's and fishball-ui's patches (read by the SDK's patch loader) together switch every guard row off when core is started", async () => {
     assert.notEqual(corePatch(), null, 'packages/core/cordis.patch.yml is missing')
-    const rows = await corePatchRows(sdk)
-    const off = new Set(rows.filter((r) => r.id !== undefined && r.disabled === true).map((r) => r.id))
-    assert.deepEqual(ALL_GUARD_ROWS.filter((id) => !off.has(id)), [], 'guard rows core\'s patch does not switch off')
+    const rows = [...await patchRows(sdk, V3.core.dir), ...await patchRows(sdk, V3.ui.dir)].filter((r) => r?.id !== undefined && !Array.isArray(r.insert))
+    const off = new Set()
+    for (const r of rows) if (await disabledWithCore(sdk, r)) off.add(r.id)
+    assert.deepEqual(ALL_GUARD_ROWS.filter((id) => !off.has(id)), [], 'guard rows neither patch switches off')
   })
   caseTest(sdk, 'PLAT-UC-04', 'main', "the guards are defined once: the instance's launch code no longer holds the guard rows (the LITE rows moved out)", async () => {
     const files = ownFiles(await unitOf(V3.instance.name)).filter((f) => JS.test(f) && f.startsWith(INSTANCE_LAUNCH))
@@ -315,7 +327,8 @@ export function registerGuardCases(sdk) {
 
   // ---------------------------------------------------------------- PLAT-UC-04 A1 × guard class (decision table, EP over OverriddenGuard)
   const overrideCases = [
-    ['row', 'a guarded row switched back on through DSH\'s native Plugins switch'],
+    ['row', 'a UI-only guarded row (fishball-ui\'s) switched back on through DSH\'s native Plugins switch'],
+    ['coreRow', 'a guarded row of core\'s own switched back on through DSH\'s native Plugins switch'],
     ['sandbox', 'a wider sandbox default in the owner\'s profile patch'],
     ['approval', 'another approval policy in the owner\'s profile patch (read from ctx.approval.config.policy)'],
     ['preset', 'a DSH-shipped agent preset switched back on'],
@@ -352,25 +365,38 @@ export function registerGuardCases(sdk) {
   })
   caseTest(sdk, 'PLAT-UC-04', 'A1', 'one line on the page\'s status strip and one notice to Fishball per override', null, LATER.page + '; ' + LATER.wire)
   // Its own home: switching core off ends this DSH's Fishball.
+  // F-UI: core's own guards go with core at once; fishball-ui's UI rows follow the bundles the
+  // process STARTED with (interface item 2), so they are on again from the next start.
   const coreOff = scenario('v3-fg-core-off', sdk, [async (boot, f) => {
-    const h = await boot(bootEnv({ members: [INSTANCE, CORE] }))
+    const h = await boot(bootEnv({ members: [INSTANCE, CORE, UI] }))
     f.before = await h.call('rows', { ids: [INSTANCE] })
     await h.call('setBundleEnabled', { name: CORE, enabled: false })
-    await until(async () => (await h.call('rows', { ids: [GUARDS.rows[0]] }))[0].disabled === false, BUDGET.recomposeMs, BUDGET.pollMs)
-    f.rows = await h.call('rows', { ids: [...ALL_GUARD_ROWS] })
+    await until(async () => (await h.call('rows', { ids: [SPLIT.coreRows[0]] }))[0].disabled === false, BUDGET.recomposeMs, BUDGET.pollMs)
+    f.rows = await h.call('rows', { ids: [...SPLIT.coreRows, ...GUARDS.shippedPresets] })
     f.policy = await h.call('policy')
+  }, async (boot, f) => {
+    const h = await boot(bootEnv())
+    f.rowsNext = await h.call('rows', { ids: [...ALL_GUARD_ROWS] })
+    f.policyNext = await h.call('policy')
   }])
-  caseTest(sdk, 'PLAT-UC-04', 'A2', 'the owner disables fishball-core: Fishball and its guards are off', async () => {
+  caseTest(sdk, 'PLAT-UC-04', 'A2', "the owner disables fishball-core: core's guards are off at once (live)", async () => {
     const f = await coreOff()
     needGuardsHeld(f.before)
-    assert.deepEqual(f.rows.filter((r) => r.present && r.disabled).map((r) => r.id), [], 'guard rows still off')
+    assert.deepEqual(f.rows.filter((r) => r.present && r.disabled).map((r) => r.id), [], "core's guard rows still off")
     assert.notEqual(f.policy.sandbox, GUARDS.policy.sandbox, 'the read-only sandbox is still applied')
+  })
+  caseTest(sdk, 'PLAT-UC-04', 'A2', 'the owner disables fishball-core: from the next start every guard row is on again, the UI rows included', async () => {
+    const f = await coreOff()
+    needGuardsHeld(f.before)
+    assert.deepEqual(f.rowsNext.filter((r) => r.present && r.disabled).map((r) => r.id), [], 'guard rows still off at the next start')
+    assert.notEqual(f.policyNext.sandbox, GUARDS.policy.sandbox)
   })
 
   // ---------------------------------------------------------------- UIM-DT-01 rows 9 and 14
   caseTest(sdk, 'UIM-DT-01', 9, 'F (standalone): its own UI is the page, guards as hosted (rows off, read-only, report ok)', async () => {
     const f = await native()
     assert.ok(f.graph1.includes(CORE), 'core serves no client entry')
+    assert.ok(f.graph1.includes(UI), 'fishball-ui serves no client entry (its page is the standalone UI, F-UI)')
     assert.ok(isOk(f.settled1), show(f.settled1))
     assert.equal(f.policy1.sandbox, GUARDS.policy.sandbox)
   })
@@ -393,7 +419,7 @@ export function registerGuardCases(sdk) {
   // ============================================================================================
   const nohmr = scenario('v3-fg-nohmr', sdk, [
     async (boot, f) => {
-      const h = await boot(bootEnv({ members: [CORE, INSTANCE], hmr: false }))
+      const h = await boot(bootEnv({ members: [CORE, UI, INSTANCE], hmr: false }))
       f.pid1 = h.pid
       f.bundles1 = await h.call('bundles')
       await new Promise((resolve) => setTimeout(resolve, BUDGET.settleMs))
@@ -444,7 +470,7 @@ export function registerGuardCases(sdk) {
   // ============================================================================================
   const last = scenario('v3-fg-last', sdk, [
     async (boot, f) => {
-      const h = await boot(bootEnv({ members: [FIXTURE.other, CORE], deselected: [FIXTURE.deselected] }))
+      const h = await boot(bootEnv({ members: [FIXTURE.other, UI, CORE], deselected: [FIXTURE.deselected] }))
       f.home = h.home
       f.bundles0 = JSON.parse(fs.readFileSync(path.join(h.home, 'profiles', PROFILE, 'package.json'), 'utf8')).dsh.profile.bundles
       f.report1 = await waitReport(h, (r) => r !== null, BUDGET.readyMs)
@@ -520,7 +546,7 @@ export function registerGuardCases(sdk) {
   // ============================================================================================
   const shaped = scenario('v3-fg-shaped', sdk, [
     async (boot, f) => {
-      const h = await boot(bootEnv({ members: [INSTANCE, FIXTURE.other, CORE], hmr: false }))
+      const h = await boot(bootEnv({ members: [INSTANCE, FIXTURE.other, UI, CORE], hmr: false }))
       f.report = await waitReport(h, (r) => r !== null, BUDGET.readyMs)
       await new Promise((resolve) => setTimeout(resolve, BUDGET.settleMs))
       f.history = await h.call('history')
@@ -544,7 +570,7 @@ export function registerGuardCases(sdk) {
   // ============================================================================================
   const preset = scenario('v3-fg-preset', sdk, [
     async (boot, f) => {
-      const h = await boot(bootEnv({ members: [FIXTURE.extraPreset.name, CORE] }))
+      const h = await boot(bootEnv({ members: [FIXTURE.extraPreset.name, UI, CORE] }))
       f.report = await waitReport(h, (r) => r?.status === REPORT.overridden, BUDGET.readyMs)
       f.presets = await h.call('presets')
       f.bundles = await h.call('bundles')

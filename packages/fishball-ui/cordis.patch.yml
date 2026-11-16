@@ -1,0 +1,50 @@
+# fishball-ui's bundle patch (requirements 1.38 Q-N2, 1.41 Q-G1/Q-G2; R-FB-14; design §1.0, §5a.2).
+# This file is the ONE definition of the UI guard rows: src/guards.js reads them back at runtime and
+# core's guard check reports them through the `fishballUiGuards` service (R-FB-09).
+#
+# Every row here depends on whether fishball-core is in this DSH: `fishball-core` is among the
+# bundles this DSH process started with (`profileContext.startedBundles`, both SDKs: the layers that
+# loaded, so a deselected or skipped core counts as missing). Two anchors, one test and its
+# negation; YAML cannot share the bundle name with code, so it is spelled here as in core's
+# `GUARDS.bundleName`. Limits, accepted for this task: `startedBundles` is the boot's list, so a
+# live change of core's bundle (the plugin manager with HMR on) reaches these rows only at the next
+# start; and a core whose bundle loads but whose rows fail still counts as present.
+# - With core: the UI guard rows are switched off, and the page, the Recommended tab and the
+#   fishball-ui row run.
+# - Without core (Q-G2 = A): nothing changes in this DSH. The guard rows leave DSH's rows on, the
+#   Fishball rows stay off, and only `fishball-ui-core-missing` runs, to log `fishball-core-missing`.
+#
+# A patch reaches only rows an earlier layer inserted. The guarded rows are dsh-web-app's base rows,
+# so they are earlier than any plugin bundle, whatever the order of fishball-ui and core.
+# The owner's profile patch, home patch and launch overlays apply after this file, so the owner can
+# override any guard (Q20); core then reports `guards-overridden` and changes nothing back (R-FB-09).
+#
+# A guard row is a bare `{id, disabled}` row; src/guards.js reads exactly that shape as a guard.
+
+# UI-only session-creating rows (V2 LITE; their service rows are core's guards). ui-subagent: header
+# lineage and catalogue tree items open other sessions; ui-schedule: scheduled prompts run as new
+# sessions; ui-permission/ui-agent-preset: permission and preset pickers (the preset creator also
+# starts sessions); entry-customization: More-menu rows that start sessions; ui-open-in-app: native
+# launches off the page; ui-sidebar-terminal: a shell outside read-only. They are browser rows with
+# an empty Node half and no service another row injects (checked in 0.2.1-rc.5 and 0.2.2-rc.1).
+- { id: ui-subagent, disabled: &with-core !!js "ctx.get('profileContext')?.startedBundles?.includes('fishball-core') === true" }
+- { id: ui-schedule, disabled: *with-core }
+- { id: ui-permission, disabled: *with-core }
+- { id: ui-agent-preset, disabled: *with-core }
+- { id: entry-customization, disabled: *with-core }
+- { id: ui-open-in-app, disabled: *with-core }
+- { id: ui-sidebar-terminal, disabled: *with-core }
+
+- insert:
+    # fishball-ui's Node row: the `fishballUiGuards` service; its browser half is ./client (the
+    # ask cards, the two settings entries). The package's one path row with no manifest of its own,
+    # so DSH serves fishball-ui's client once.
+    - id: fishball-ui
+      name: ./index.js
+      disabled: &without-core !!js "ctx.get('profileContext')?.startedBundles?.includes('fishball-core') !== true"
+    # The page packages (I-PLACE). Each is its own small package (its own manifest and ./client), so
+    # its path row is a client source of that package, not a second one of fishball-ui.
+    - { id: fishball-page, name: ./fishball-page/index.js, disabled: *without-core }
+    - { id: fishball-recommend-plugins, name: ./fishball-recommend-plugins/index.js, disabled: *without-core }
+    # Without core: the one log line (src/core-missing.js). A package subpath, so it is no client source.
+    - { id: fishball-ui-core-missing, name: fishball-ui/core-missing, disabled: *with-core }

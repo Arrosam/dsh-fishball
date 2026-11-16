@@ -22,7 +22,7 @@ import path from 'node:path'
 import { after, test } from 'node:test'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { promisify } from 'node:util'
-import { BODY_SOUL, loadConnector, loadCore, loadInstance } from './support/body-soul-env.mjs'
+import { BODY_SOUL, loadConnector, loadCore, loadInstance, loadUi } from './support/body-soul-env.mjs'
 import { NODE, REPO } from './support/constants.mjs'
 import { RUNTIME_PARENT_URL } from './support/provider-sync-sdk.mjs'
 
@@ -37,8 +37,9 @@ const V2B = Object.freeze({
   // V3 SPLIT-SHARED / requirements 1.40 adds the DSH side's library workspace packages/dsh-connector-shared;
   // V3 R-CORE (1) / design §9.1 adds fishball-core's workspace packages/core;
   // V3 R-EMBED / design §9.1 (DESIGN.md §17) adds dsh-connector-ui's workspace packages/dsh-connector-ui;
-  // V3 C-MCP-ADAPTER / Q-G9 (the user named dsh-connector-adapter a V3 package) adds packages/dsh-connector-adapter.
-  workspaces: Object.freeze(['packages/dsh-connector', 'packages/core', 'packages/dsh-connector-ui', 'packages/dsh-instance', 'packages/dsh-connector-adapter', 'packages/dsh-connector-shared', 'packages/shared']),
+  // V3 C-MCP-ADAPTER / Q-G9 (the user named dsh-connector-adapter a V3 package) adds packages/dsh-connector-adapter;
+  // V3 F-UI / R-FB-14 adds fishball-ui's workspace packages/fishball-ui (after core's).
+  workspaces: Object.freeze(['packages/dsh-connector', 'packages/core', 'packages/fishball-ui', 'packages/dsh-connector-ui', 'packages/dsh-instance', 'packages/dsh-connector-adapter', 'packages/dsh-connector-shared', 'packages/shared']),
   /** Repository directories of the V3 packages (no V2 module may load from them). */
   v3Dirs: Object.freeze(['board', 'fold-notify', 'watchdog'].map((d) => path.join(REPO, 'packages', d))),
   /** A packed path segment naming a V3 area or the bundled asset directory. */
@@ -72,8 +73,10 @@ const V2B = Object.freeze({
   }),
   entries: Object.freeze({
     instance: Object.freeze(['host.js', 'native-child.js', 'native-web.js', 'src/native-runtime/overlay.js', 'src/native-runtime/constants.js']),
-    // V3 R-CORE (2) / design §9.1: the child page row and the slim app moved, unchanged, into fishball-core.
-    core: Object.freeze(['ui/fishball-page/index.js', 'src/slim/child/app.js']),
+    // V3 R-CORE (2) / design §9.1: the slim app moved, unchanged, into fishball-core; V3 F-UI moved the
+    // child page row on, unchanged, into fishball-ui.
+    core: Object.freeze(['src/slim/child/app.js']),
+    ui: Object.freeze(['fishball-page/index.js']),
     connector: Object.freeze(['index.js']),
   }),
   /** A path that does not exist: importing it only installs the helper hooks (see below). */
@@ -298,6 +301,7 @@ for (const pkg of Object.values(V2B.packages)) {
 const startupEntries = [
   ...V2B.entries.instance.map((rel) => ({ rel, dir: BODY_SOUL.instance, load: loadInstance, label: 'instance' })),
   ...V2B.entries.core.map((rel) => ({ rel, dir: BODY_SOUL.core, load: loadCore, label: 'core' })),
+  ...V2B.entries.ui.map((rel) => ({ rel, dir: BODY_SOUL.ui, load: loadUi, label: 'fishball-ui' })),
   ...V2B.entries.connector.map((rel) => ({ rel, dir: BODY_SOUL.connector, load: loadConnector, label: 'connector' })),
 ]
 for (const entry of startupEntries) {

@@ -3,7 +3,9 @@
  * R-FB-02, R-FB-09, R-FB-12, R-FB-13; spike V3-S6 `86800d2` + round 2 `7c2230e`).
  * Types; the runtime spellings are `constants.js`'s `GUARDS` beside this file (a change to one
  * changes both). F-GUARDS builds the patch rows, the self-reorder and the check, in
- * `packages/core/cordis.patch.yml`, `packages/core/ui/patch/` and `packages/core/src/guards/`.
+ * `packages/core/cordis.patch.yml` and `packages/core/src/guards/`; since F-UI the UI-only guard rows
+ * (`ui-*`, `entry-customization`) are in `packages/fishball-ui/cordis.patch.yml`, reported by core's
+ * check through `fishball-shared/ui-seam` `UI_GUARDS`.
  *
  * The row lists, presets, policy and manager tools are as decided (design §5a.2, 1.24, S6 round 2).
  * They are the same on DSH 0.2.1-rc.5 and 0.2.2-rc.1: both ship the four agent presets with these
@@ -11,7 +13,11 @@
  * `ReorderOutcome` are PROPOSED; S6's probe spelled rows by id and policy as `policy.<key>`.
  */
 
-/** Root rows core's patch disables (session-creating rows, and no nested hosted Fishball). */
+/**
+ * Root rows the Fishball guards disable (session-creating rows, and no nested hosted Fishball), all
+ * reported by core's check. Since F-UI the `ui-*` rows and `entry-customization` are fishball-ui's
+ * patch rows, the others core's; the report's `row:<id>` vocabulary is unchanged.
+ */
 export type GuardedRow =
   | 'ui-subagent' | 'ui-schedule' | 'schedule' | 'ui-permission' | 'ui-agent-preset' | 'entry-customization'
   | 'ui-open-in-app' | 'open-in-app' | 'ui-sidebar-terminal' | 'terminal-controller' | 'dsh-instance'

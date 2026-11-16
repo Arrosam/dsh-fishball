@@ -295,7 +295,11 @@ const commonUnchanged = async (page, main) => {
 // Overlay (contract "Launch overlay"; final §4 LITE: effective read-only, removed surfaces)
 // ---------------------------------------------------------------------------------------------
 const OVERLAY = Object.freeze({
-  disabledRows: Object.freeze(['ui-subagent', 'ui-schedule', 'schedule', 'ui-permission', 'ui-agent-preset', 'entry-customization', 'ui-open-in-app', 'open-in-app', 'ui-sidebar-terminal', 'terminal-controller']),
+  // V3 F-UI (R-FB-14): the UI-only guard rows moved to fishball-ui's patch; core keeps these. A hosted
+  // child has core only until I-HOST places fishball-ui, so the composed child guards these here.
+  disabledRows: Object.freeze(['schedule', 'open-in-app', 'terminal-controller']),
+  uiRows: Object.freeze(['ui-subagent', 'ui-schedule', 'ui-permission', 'ui-agent-preset', 'entry-customization', 'ui-open-in-app', 'ui-sidebar-terminal']),
+  uiRowsLater: 'I-HOST (the instance places fishball-ui, whose patch disables the UI-only guard rows, in the hosted child)',
   // V3 (design §5a.2 as amended at 32fca3c5, S6 round 2; Q-S6-2 B): the session-creating tools sit
   // inside the shipped presets' config.plugins, which no patch reaches; the shipped presets are
   // switched off, not deleted, so they leave the model as a whole.
@@ -674,6 +678,8 @@ lite('LITE-EP-13', 'Refuse ordinary child creation and general agent write escap
   const widened = await overlayComposition(sdk, { profileLayer: [OVERLAY.saved, OVERLAY.savedPermission] })
   assertOwnerOverrideWins(widened.effective)
 }, 'Runtime refusal by a live child agent (tool calls, escalation prompt, private Skills exception) needs a booted child; only the composed overlay authority is asserted.')
+
+lite('LITE-EP-13', 'the UI-only guard rows (ui-subagent … ui-sidebar-terminal) are disabled in a hosted child (fishball-ui placed)', 'EP', null, OVERLAY.uiRowsLater)
 
 const FRAME_GUARD = Object.freeze({
   leaving: Object.freeze([

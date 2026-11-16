@@ -11,12 +11,11 @@
  * Each check receives `{sdk, sdkModules}`: SDK artifacts are read from that SDK's own install path.
  */
 import assert from 'node:assert/strict'
-import { readFileSync, readdirSync, existsSync, mkdtempSync, realpathSync, rmSync, statSync } from 'node:fs'
+import { readFileSync, readdirSync, existsSync, mkdtempSync, realpathSync, rmSync } from 'node:fs'
 import { randomUUID } from 'node:crypto'
 import os from 'node:os'
 import path from 'node:path'
-import { fileURLToPath } from 'node:url'
-import { BODY_SOUL, loadCore, loadInstance, CJK } from '../support/body-soul-env.mjs'
+import { BODY_SOUL, loadUi, loadInstance, CJK } from '../support/body-soul-env.mjs'
 import { linkContractForSourceRun } from '../support/contract-link.mjs'
 import { REPO } from '../support/constants.mjs'
 import { RP, openTab, createWorld, settle, deferred, textOf, subtree, findAll, byAttr, contains, applyNodeHalf } from '../support/rp-recommend.mjs'
@@ -49,18 +48,20 @@ export const RP_CHECK = freezeData({
     clientExport: './client',
     managerInject: '@deepseek-ai/dsh-client-ui-plugin-manager',
     /**
-     * V3 design §1.2 / §9.1 (task R-CORE (2)): the tab is part of fishball-core's `fishball-ui`
-     * component (`ui/`), not the instance's `child-web/`. V3 rule (design e1e5577 §9.1 and §5a.2,
-     * R-HOST-04; Fishball decisions 2026-11-15, I-PLACE): the instance no longer snapshots core; it
-     * places core into the child profile at `<profile>/node_modules/fishball-core`, and the row is
-     * core's own patch row, a path row into its own ui package of that placed copy. Paths below are
-     * relative to packages/core and to that placed directory.
+     * V3 F-UI (R-FB-14): the tab is part of fishball-ui (its own package folder
+     * `fishball-recommend-plugins/`, data `src/recommended.js`), no longer core's `ui/`. fishball-ui
+     * ships both in its `files`. The instance does not place fishball-ui in a hosted child until
+     * I-HOST, so the placed-copy part of TC-31 is a todo until then. Paths are relative to
+     * packages/fishball-ui.
      */
-    owner: 'ui',
-    placedDir: path.join('node_modules', 'fishball-core'),
-    rowNameTail: path.join('node_modules', 'fishball-core', 'ui', 'fishball-recommend-plugins', 'index.js'),
+    owner: 'fishball-recommend-plugins',
+    ownerPackage: 'fishball-ui',
+    ownerDir: path.join(REPO, 'packages', 'fishball-ui'),
+    placedDir: path.join('node_modules', 'fishball-ui'),
+    rowNameTail: path.join('node_modules', 'fishball-ui', 'fishball-recommend-plugins', 'index.js'),
     installAnchor: path.join('@deepseek-ai', 'dsh', 'package.json'),
-    placedFiles: [path.join('ui', 'fishball-recommend-plugins', 'index.js'), path.join('ui', 'fishball-recommend-plugins', 'client.js'), path.join('ui', 'fishball-recommend-plugins', 'package.json'), path.join('src', 'recommended.js')],
+    placedFiles: [path.join('fishball-recommend-plugins', 'index.js'), path.join('fishball-recommend-plugins', 'client.js'), path.join('fishball-recommend-plugins', 'package.json'), path.join('src', 'recommended.js')],
+    todoPlace: 'I-HOST (the instance places fishball-ui in the hosted child; until then the child has no Recommended tab row)',
     /** Superseded standalone-package proposal (§11.9): must not exist as its own package. */
     standaloneDir: path.join('packages', 'recommend-plugins'),
   },
@@ -102,7 +103,7 @@ export const RP_CHECK = freezeData({
 
 const sdkFile = (ctx, parts) => path.join(ctx.sdkModules, ...parts)
 const readSdk = (ctx, parts) => readFileSync(sdkFile(ctx, parts), 'utf8')
-const loadData = () => loadCore(RP.dataModule)
+const loadData = () => loadUi(RP.dataModule)
 const allIds = () => C.categoryOrder.flatMap((alias) => C.entryIds[alias])
 const pkgOf = (row) => row.props[RP.attr.pkg]
 const catOf = (node) => node.props[RP.attr.category]
@@ -215,7 +216,7 @@ export const CHECKS = Object.freeze({
     list.highlighted.length = 0
     assert.deepEqual(recommendedList(), again, 'mutating one result does not change the next')
     // Node route answers the same list (contract 2).
-    const { routes } = applyNodeHalf(await loadCore(RP.indexModule))
+    const { routes } = applyNodeHalf(await loadUi(RP.indexModule))
     const route = routes.find((r) => r.path === RP.routePath)
     assert.ok(route, 'GET route registered'); assert.deepEqual(route.methods, ['GET'])
     const response = await route.fetch(new Request(new URL(RP.listPath, RP.baseURI), { method: 'GET' }))
@@ -516,26 +517,22 @@ export const CHECKS = Object.freeze({
     assert.ok(!existsSync(path.join(REPO, RP_CHECK.plugin.standaloneDir)), 'no standalone recommend-plugins package')
     const root = JSON.parse(readFileSync(path.join(REPO, 'package.json'), 'utf8'))
     assert.ok(!root.workspaces.some((w) => w.includes('recommend')), 'not a separate workspace')
-    const core = JSON.parse(readFileSync(path.join(BODY_SOUL.core, 'package.json'), 'utf8'))
-    assert.ok(core.files.some((f) => f.replace(/\/$/, '') === RP_CHECK.plugin.owner), 'shipped inside fishball-core (its fishball-ui component, ui/)')
+    const owner = JSON.parse(readFileSync(path.join(RP_CHECK.plugin.ownerDir, 'package.json'), 'utf8'))
+    assert.equal(owner.name, RP_CHECK.plugin.ownerPackage)
+    for (const rel of RP_CHECK.plugin.placedFiles) {
+      const posix = rel.split(path.sep).join('/')
+      assert.ok(owner.files.some((f) => posix === f || posix.startsWith(f.replace(/\/?$/, '/'))), 'fishball-ui does not ship ' + posix)
+    }
     assertNoNeedles([...sourceFiles(RP_CHECK.mainSources.connectorDir), ...sourceFiles(RP_CHECK.mainSources.embedClientDir)])
 
     // V3 I-PLACE (see RP_CHECK.plugin): a composed child (placement, profile load, overlay; no process).
     linkContractForSourceRun()
     const { composedProfile } = await loadInstance('src/native-runtime/index.js')
     const mainHome = realpathSync(scratch(t))
-    const { paths, entries, overlay } = await composedProfile({ mainHome, installAnchor: path.join(ctx.sdkModules, RP_CHECK.plugin.installAnchor) })
-    const placed = path.join(paths.profile, RP_CHECK.plugin.placedDir)
-    for (const rel of RP_CHECK.plugin.placedFiles) {
-      const copied = path.join(placed, rel)
-      assert.ok(statSync(copied).isFile(), 'the placed core carries ' + rel)
-      assert.deepEqual(readFileSync(copied), readFileSync(path.join(BODY_SOUL.core, rel)), rel + ' copied unchanged')
-    }
-    assert.deepEqual(insertedRows(overlay).filter((r) => r.id === RP_CHECK.plugin.name), [], 'the launch overlay inserts no recommendation row (core\'s patch does)')
-    const ours = entries.filter((r) => r.id === RP_CHECK.plugin.name)
-    assert.equal(ours.length, 1, 'one child row')
-    const rowFile = ours[0].name.startsWith('file:') ? fileURLToPath(ours[0].name) : ours[0].name
-    assert.ok(rowFile.endsWith(RP_CHECK.plugin.rowNameTail) && rowFile.startsWith(placed + path.sep), 'row runs the placed copy: ' + ours[0].name)
+    const { overlay } = await composedProfile({ mainHome, installAnchor: path.join(ctx.sdkModules, RP_CHECK.plugin.installAnchor) })
+    assert.deepEqual(insertedRows(overlay).filter((r) => r.id === RP_CHECK.plugin.name), [], 'the launch overlay inserts no recommendation row (fishball-ui\'s patch does)')
+    // The placed fishball-ui copy and its row in the child profile: RP_CHECK.plugin.todoPlace.
+    await t.test('the placed fishball-ui copy carries the tab unchanged and the child row runs it', { todo: RP_CHECK.plugin.todoPlace })
     await t.test('fresh main/child composition on this SDK', { todo: RP_CHECK.todoE2E })
   },
 
@@ -557,7 +554,7 @@ export const CHECKS = Object.freeze({
     for (const field of ['dependencies', 'peerDependencies', 'optionalDependencies', 'bundleDependencies', 'bundledDependencies']) {
       for (const dep of Object.keys(pkg[field] ?? {})) assert.ok(!listed.has(dep) && !RP_CHECK.v3Words.test(dep), field + ' ' + dep)
     }
-    const { accessed } = applyNodeHalf(await loadCore(RP.indexModule))
+    const { accessed } = applyNodeHalf(await loadUi(RP.indexModule))
     assert.ok(accessed.every((name) => name === 'connection' || name === 'effect'), 'Node half needs only its route at startup: ' + accessed)
     const { world } = await openTab()
     assert.equal(world.installs.length + world.inspects.length, 0, 'activation installs nothing without an explicit Install')

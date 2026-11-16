@@ -22,9 +22,17 @@ import { SDK } from '../../contract/package-boundaries/constants.mjs'
 
 export { CONNECT, HOSTED_IMPORT }
 
-/** The files under test: core's browser entry, its settings chunk, and the Node route module. */
+/**
+ * The files under test: core's browser entry, its settings chunk, and the Node route module; and,
+ * since F-UI (interface items 8–9), fishball-ui's browser entry, whose entries chunk holds the two
+ * Fishball-page entries and the `view=settings` continuation that were core's.
+ */
 export const SUBJECT = Object.freeze({
   coreClient: path.join(REPO, 'packages', 'core', 'client.js'),
+  uiClient: path.join(REPO, 'packages', 'fishball-ui', 'client.js'),
+  entriesChunkName: 'client.entries.js',
+  /** The entries' locale namespace (F-UI interface item 8). */
+  entriesLocale: 'fishball-ui-entries',
   chunk: path.join(REPO, 'packages', 'core', 'client.settings.js'),
   chunkName: 'client.settings.js',
   /** The chunk's one export (requirement 10). */
@@ -45,6 +53,15 @@ export const CORE = Object.freeze({
   namespace: 'fishball-core',
   /** The browser module id both core scripts register under (requirement 10). */
   moduleId: GUARDS.bundleName,
+})
+/** fishball-ui's browser module id (F-UI interface item 8); the entries are its part since F-UI. */
+export const UI = Object.freeze({ moduleId: 'fishball-ui' })
+/** Which clients a scripted page loads: both (a Fishball DSH with fishball-ui), or core's alone. */
+export const CLIENTS = Object.freeze({ both: 'both', coreOnly: 'core-only' })
+/** The header-action ids and orders of the two entries (F-UI interface item 8, unchanged from F-SETTINGS). */
+export const ENTRY_ACTION = Object.freeze({
+  fishball: Object.freeze({ id: 'fishball-core-settings', order: 90 }),
+  dsh: Object.freeze({ id: 'fishball-dsh-settings', order: 91 }),
 })
 
 /** The child-side namespace and field the instance writes the hosted target to (HOSTED_IMPORT). */

@@ -67,9 +67,10 @@ state under published names and as core's own copy of the MCP surface. K3a's ear
 - **MCP surface** (`MCP`, `LINK`): core's own values; `test/v3/contract/k3a-core-seams/` and `test/v3/contract/own-schema/` compare `MCP` with the
   connector's published `tools/list` and OAuth metadata, so a K1 change shows as a failing row.
   F-OWN-SCHEMA repointed core's code to these values and deleted `vendor/` and its generator.
-- **fishball-ui** (`UI_SEAM`, `ui.d.ts`): fishball-ui reads `fishballInstance.ui` with `ctx.get`;
-  without core it logs `fishball-core-missing` and changes nothing; core reports nothing when
-  fishball-ui is absent.
+- **fishball-ui** (`UI_SEAM`, in `fishball-shared/ui-seam` since F-UI; `ui.d.ts`): fishball-ui reads
+  `fishballInstance.ui` with `ctx.get` and draws through core's routes; without core (decided in
+  its patch from the started bundles) it logs `fishball-core-missing` and changes nothing; core
+  reports nothing when fishball-ui is absent.
 
 ## Interception
 

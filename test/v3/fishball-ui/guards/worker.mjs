@@ -11,8 +11,9 @@
  * - FBG_ADD: installed and appended at this boot when the profile lacks them (installed while down);
  * - FBG_HMR=off: boot with DSH's `hmr` row disabled (as a hosted child's launch overlay sets it).
  *
- * Black box: core is used only as an installed bundle; its report is found by its K3 shape
- * (report.mjs) and every other fact is read through DSH's own public services.
+ * Black box: core and fishball-ui are used only as installed bundles; core's report is found by its
+ * K3 shape (report.mjs) and every other fact is read through DSH's own public services. The one
+ * instrumentation is of DSH's logger (LOG below), so a line written while DSH boots is not missed.
  */
 import fs from 'node:fs'
 import path from 'node:path'
@@ -36,6 +37,23 @@ const { loadLayeredEnv } = await hostPkg('dsh-app-boot')
 const { createUserMessage } = await hostPkg('dsh-llm')
 const { model } = await import(pathToFileURL(FAKE_LLM_MODULE).href)
 
+/**
+ * Every log line of this process, {name, type, text}: DSH's own Cordis Logger (the runtime's one
+ * copy, the same module DSH loads) is wrapped before DSH starts, because a row may log at its apply,
+ * before any exporter a test could register exists, and 0.2.1-rc.5's built-in buffer keeps no warn
+ * line. The wrap only records; the line still goes to DSH's exporters.
+ */
+const LOG = []
+{
+  const { Logger } = await hostPkg('cordis')
+  const method = Logger.prototype._method
+  Logger.prototype._method = function (type, level) {
+    const write = method.call(this, type, level)
+    const name = this.name
+    return (...args) => { LOG.push({ name, type, text: args.map((a) => (typeof a === 'string' ? a : String(a?.message ?? a))).join(' ') }); return write(...args) }
+  }
+}
+
 const profileDir = path.join(home, 'profiles', PROFILE)
 const manifestFile = path.join(profileDir, 'package.json')
 const bundlesDir = path.join(home, FIXTURE.dir)
@@ -56,6 +74,7 @@ const standinEntry = (row) => `import { standin } from ${JSON.stringify(pathToFi
 /** The installable members a test can name. */
 const MEMBERS = {
   [V3.core.name]: () => V3.core.dir,
+  [V3.ui.name]: () => V3.ui.dir,
   [FIXTURE.instance]: () => fixtureBundle(FIXTURE.instance, [{ id: FIXTURE.instance, name: FIXTURE.instance, config: {} }], standinEntry(FIXTURE.instance)),
   [FIXTURE.other]: () => fixtureBundle(FIXTURE.other, [{ id: FIXTURE.other, name: FIXTURE.other, config: {} }], standinEntry(FIXTURE.other)),
   [FIXTURE.deselected]: () => fixtureBundle(FIXTURE.deselected, [{ id: FIXTURE.deselected, name: FIXTURE.deselected, config: {} }], standinEntry(FIXTURE.deselected)),
@@ -154,6 +173,20 @@ const ops = {
   history: () => history,
   probe: () => globalThis.__fbgProbe ?? null,
   rows: ({ ids }) => ids.map(rowState),
+  /** Ids of every loader entry that is disabled (its `!!js` condition evaluated, as DSH reads it). */
+  disabledIds: () => [...ctx.loader.entries()].filter((entry) => entry.disabled).map((entry) => entry.options?.id).filter((id) => id !== undefined),
+  /** Every log line so far, optionally of one logger name. */
+  logs: ({ name } = {}) => LOG.filter((line) => name === undefined || line.name === name),
+  /** A root service by name: whether it is provided and its plain data (functions dropped). */
+  service: ({ name }) => {
+    const value = ctx.get(name)
+    if (value === undefined || value === null) return { present: false }
+    const frozen = (v) => v === null || typeof v !== 'object' || (Object.isFrozen(v) && Object.values(v).every(frozen))
+    const keys = typeof value === 'object' ? Object.keys(value) : []
+    return { present: true, frozen: Object.fromEntries(keys.map((k) => [k, frozen(value[k])])), value: JSON.parse(JSON.stringify(value)) }
+  },
+  /** The started bundles DSH recorded for this process (profileContext.startedBundles). */
+  startedBundles: () => [...(ctx.get('profileContext')?.startedBundles ?? [])],
   bundles: () => readManifest().dsh.profile.bundles,
   manifestStat: () => { const s = fs.statSync(manifestFile); return { mtimeMs: s.mtimeMs, text: fs.readFileSync(manifestFile, 'utf8') } },
   dependencies: () => Object.keys(readManifest().dependencies ?? {}),

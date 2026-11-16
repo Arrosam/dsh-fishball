@@ -1,14 +1,16 @@
 /**
  * The fishball-core / fishball-ui split seam (gate K3a; requirements 1.38 Q-N2, 1.41 Q-G1/Q-G2;
- * R-FB-14; design §1.0). Types only; the values are `constants.js`'s `UI_SEAM`.
+ * R-FB-14; design §1.0). Types only; the values are `fishball-shared/ui-seam`'s `UI_SEAM` (F-UI
+ * moved them there from `constants.js`, because fishball-ui loads without core).
  *
  * Core is the backend and keeps every state; fishball-ui draws it and holds none of its own
  * (requirements 1.38 item 4: "core只负责做后端"). They meet only here:
- * - fishball-ui's Node row reads core's `fishballInstance.ui` (`UI_SEAM.member`) at runtime with
+ * - fishball-ui's Node half reads core's `fishballInstance.ui` (`UI_SEAM.member`) at runtime with
  *   `ctx.get`, never through `inject` (a missing core must not fail its load); its browser half
- *   reaches that row through fishball-ui's own routes, which are fishball-ui's business;
- * - no `fishballInstance` (or another `apiVersion`): fishball-ui logs `UI_SEAM.coreMissing` once and
- *   changes nothing (Q-G2 = A);
+ *   draws through core's published owner-only routes (F-UI: the Connect route, the ask-card routes);
+ * - no core: fishball-ui logs `UI_SEAM.coreMissing` once and changes nothing (Q-G2 = A). F-UI
+ *   decides "no core" in fishball-ui's patch, from the bundles the DSH started with, so that its UI
+ *   guard rows, which a running row cannot switch, follow the same rule;
  * - no fishball-ui: core runs normally and reports nothing about it (Q-G1).
  *
  * Every member reads or acts on state core already owns (F-LINK, F-PAIR, F-GUARDS, F-ASKCARD,

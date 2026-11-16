@@ -1,14 +1,13 @@
 /**
- * fishball-core's `dsh.client` entry (design §5a.1): the browser half of its `fishball-ui`
- * component. DSH serves it once for the package, because core's patch mounts exactly one row whose
- * module has no manifest of its own (`fishball-ui`, ui/patch/index.js); every other core row is a
- * package subpath (`fishball-core/...`) or its own ui package, so DSH's client modules never see
- * core mounted twice (I-PLACE probe Q-13, both SDKs).
+ * fishball-core's `dsh.client` entry (design §5a.1): the browser half of core's own plugin
+ * settings page, the one browser code core keeps (R-FB-14: what DSH requires of a plugin's settings
+ * page; every other UI change inside Fishball is fishball-ui's since F-UI). DSH serves it once for
+ * the package, because core's patch mounts exactly one path row (`fishball-core-guards`,
+ * src/guards/row.js); every other core row is a package subpath (`fishball-core/...`), so DSH's
+ * client modules never see core mounted twice (I-PLACE probe Q-13, both SDKs).
  *
- * It starts core's own settings page, the package-local chunk client.settings.js, as a sub-plugin
- * of this row (F-SETTINGS: the page on DSH's Plugins page and its two entries on the Fishball
- * page), the same in a hosted child and in a standalone DSH. The page and the Recommended tab stay
- * their own ui packages for now.
+ * It starts the settings page, the package-local chunk client.settings.js, as a sub-plugin of this
+ * row (F-SETTINGS), the same in a hosted child and in a standalone DSH.
  *
  * A chunk that fails to load loses only the settings page, logged once; a chunk that arrives after
  * this row stopped is not started (the same rule as dsh-connector-ui's parts).

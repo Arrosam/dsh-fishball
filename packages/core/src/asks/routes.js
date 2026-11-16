@@ -1,9 +1,9 @@
 /**
  * The ask cards' owner-only Fetch routes in the Fishball DSH (task F-ASKCARD; R-FB-11; Q-U2). The
- * browser half (client.asks.js) draws the cards from them in Fishball's own conversation. DSH's
- * `connection.fetch` is owner-only and applies its Host/Origin fence first, as for core's other
+ * browser half (fishball-ui's client.asks.js) draws the cards from them in Fishball's own
+ * conversation. DSH's `connection.fetch` is owner-only and applies its Host/Origin fence first, as for core's other
  * routes; F-WIRE calls this from core's row in the Fishball DSH only, never in a main DSH.
- * Until F-UI moves the card's drawing to fishball-ui, these are the seam the page reads.
+ * They are core's published routes, the seam fishball-ui's card reads (F-UI, R-FB-14).
  *
  * - GET `ASK_ROUTE.events`: an SSE stream; each frame is `{managerSessionId, cards}`, the first at
  *   once and then one per change of the card list or of the manager session's id. The manager id

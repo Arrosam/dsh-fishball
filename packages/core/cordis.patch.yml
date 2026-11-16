@@ -14,22 +14,14 @@
 #
 # A guard is a bare `{id, disabled: true}` row; intended.js reads exactly that shape as a guard.
 
-# Session-creating rows (V2 LITE). ui-subagent: header lineage and catalogue tree items open other
-# sessions; ui-schedule/schedule: scheduled prompts run as new sessions; ui-permission/
-# ui-agent-preset: permission and preset pickers (the preset creator also starts sessions);
-# entry-customization: More-menu rows that start sessions; ui-open-in-app/open-in-app: native
-# launches off the page; ui-sidebar-terminal/terminal-controller: a shell outside read-only. Each
-# service they provide is injected only by another row switched off here (checked in 0.2.1-rc.5 and
+# Session-creating service rows (V2 LITE). schedule: scheduled prompts run as new sessions;
+# open-in-app: native launches off the page; terminal-controller: a shell outside read-only. Their
+# UI rows (ui-schedule, ui-open-in-app, ui-sidebar-terminal and the other ui-* rows) are UI-only and
+# are fishball-ui's guard rows, in fishball-ui's own patch (R-FB-14, F-UI). Each service these rows
+# provide is injected only by another row switched off here or there (checked in 0.2.1-rc.5 and
 # 0.2.2-rc.1), so boot is unaffected.
-- { id: ui-subagent, disabled: true }
-- { id: ui-schedule, disabled: true }
 - { id: schedule, disabled: true }
-- { id: ui-permission, disabled: true }
-- { id: ui-agent-preset, disabled: true }
-- { id: entry-customization, disabled: true }
-- { id: ui-open-in-app, disabled: true }
 - { id: open-in-app, disabled: true }
-- { id: ui-sidebar-terminal, disabled: true }
 - { id: terminal-controller, disabled: true }
 # No nested hosted Fishball (UIM-DT-01 row 10b).
 - { id: dsh-instance, disabled: true }
@@ -76,14 +68,11 @@
           - id: tool-fs
             name: '@deepseek-ai/dsh-tool-fs'
             config: { read: true, readImage: true, write: false, edit: false }
-    # fishball-ui's Node half for the guards: the check, the `guards-overridden` report and the
-    # standalone self-reorder (src/guards/).
-    - id: fishball-ui
-      name: ./ui/patch/index.js
-    # fishball-ui's page packages (I-PLACE). Each is its own small package under ui/ (its own manifest
-    # and ./client), so its path row is a client source of that package, not a second one of core.
-    - { id: fishball-page, name: ./ui/fishball-page/index.js }
-    - { id: fishball-recommend-plugins, name: ./ui/fishball-recommend-plugins/index.js }
+    # Core's guard row: the check, the `guards-overridden` report (fishball-ui's UI guard rows
+    # included when fishball-ui is installed) and the standalone self-reorder (src/guards/). The
+    # Fishball page and the Recommended tab are fishball-ui's rows since F-UI.
+    - id: fishball-core-guards
+      name: ./src/guards/row.js
     # Core's slim child rows (V2 T03–T16, moved from the instance's launch overlay by I-PLACE, row ids
     # kept so stored settings carry over). Each is a `fishball-core/<export>` package subpath, never a
     # path: DSH's client modules count every path row inside core's folder as another client source
