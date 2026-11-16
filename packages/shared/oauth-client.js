@@ -97,7 +97,8 @@ export class OAuthAttemptError extends Error {
  */
 export function clientMetadataUrlProblem(value) {
   if (typeof value !== 'string' || value.trim().length === 0) return OAUTH_CLIENT.urlProblem.missing
-  if (!URL.canParse(value)) return OAUTH_CLIENT.urlProblem.notHttps
+  // A padded value would be sent as the client id verbatim, which is not the document's URL.
+  if (value.trim() !== value || !URL.canParse(value)) return OAUTH_CLIENT.urlProblem.notHttps
   const url = new URL(value)
   if (url.protocol !== OAUTH_CLIENT.clientIdUrl.protocol) return OAUTH_CLIENT.urlProblem.notHttps
   return url.pathname === OAUTH_CLIENT.clientIdUrl.rootPath ? OAUTH_CLIENT.urlProblem.rootPath : undefined
