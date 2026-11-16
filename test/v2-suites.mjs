@@ -59,8 +59,6 @@ export const V2_SUITES = Object.freeze({
     cases('test/body-soul-i6-settings-view.test.mjs', '^(P2-L-|P3-M-)', DISPOSITION.withdrawn, 'I-READY: admin relay deleted (user decision 2026-11-16)'),
     // Plan §3.3: the rewritten K1 cases describe V2 D1-D3; these five are the actual MCP server/push obligations.
     cases('packages/dsh-connector/test/instance-ext/k1.test.mjs', '^K1-MCP-(UC-01-A1|EP-05|EP-08|DT-02|ST-04) ', DISPOSITION.v3, 'MCP manager, push and server (MCP-S3/MCP-SERVER)'),
-    // Fishball decision 3: deliverInbox array cases stay; only these board/MCP TODOs defer.
-    cases( '^XC-UC-(01-A5|05-M) ', DISPOSITION.v3, 'board context, MCP routing'),
     // Requirements 1.41 Q-G4 = A (U-DRAW): there are no inline records in main-DSH sessions, so
     // dsh-connector-ui has no `record.*` words for the child page's records to equal. These rows
     // compared the two dictionaries; the child page's own records keep their other I7 cases.
