@@ -73,6 +73,8 @@ window.__ModuleLoader__.load({
     const PORT_RANGE = Object.freeze({ min: 0, max: 65535 })
     /** The approval listener's healthy status (mcp/oauth-web LISTENER_STATUS.ok); any other is shown as its code. */
     const LISTENER_OK = 'ok'
+    /** The approval status words' key prefix (one key per CONNECTOR_STATUS code). */
+    const APPROVAL_STATUS_KEY = 'approval.'
     /** The designated control's "unset" choice (an empty select value names no entry). */
     const NO_ENTRY = ''
     /** Scripting hooks (data attributes) for the page's parts. */
@@ -97,6 +99,14 @@ window.__ModuleLoader__.load({
     const ENTER_KEY = 'Enter'
     /** Every limit's minimum (src/config.js MIN.count): the Host's schema refuses anything below it. */
     const LIMIT_MIN = 1
+    /**
+     * The connector's limits, in src/config.js LIMITS order. A browser chunk cannot import that
+     * Node module, so the field names are written here once more: change both together. Inert
+     * legacy fields (questionMode, approvalAnswerSeconds) are not shown.
+     */
+    const LIMIT_FIELDS = Object.freeze(['maxQueuedInputs', 'maxActiveWatches', 'maxPendingApprovals', 'argumentExcerptBytes', 'maxMessageBytes',
+      'auditEntriesKept', 'requestUserMessageBytes', 'rationaleChars', 'watchesShown', 'readSessionMessages', 'readSessionBytes',
+      'forwardExcerptBytes', 'userMessagesListed', 'userMessageExcerptChars'])
     /**
      * Inline layout: the page adds no style sheet (R-ARCH-03). Colours and fonts are DSH's theme
      * tokens (dsh-client-ui-theme); DSH has no spacing tokens, so the gaps are named here, at the
@@ -160,11 +170,12 @@ window.__ModuleLoader__.load({
       idPrefix: 'ID:',
       designated: 'Designated agent',
       designatedHint: 'Messages and questions from sessions nobody manages go to this agent.',
-      designatedDefault: 'Default (the hosted Fishball\'s entry, when there is one)',
+      designatedDefault: 'None',
       approvalPort: 'Approval page port',
       approvalHint: 'Browser agents sign in on this port of DSH\'s host.',
       approvalStatus: 'Approval page: {status}',
       approvalOk: 'listening on port {port}',
+      'approval.approval-port-in-use': 'the port is in use; it is tried again every 30 seconds. Choose another port or free this one.',
       limits: 'Safety limits',
       invalid: 'Enter a whole number.',
       'field.maxQueuedInputs': 'Queued inputs not yet read',
@@ -220,11 +231,12 @@ window.__ModuleLoader__.load({
       idPrefix: 'ID:',
       designated: '指定 agent',
       designatedHint: '无人管理的会话发出的消息和问题会交给这个 agent。',
-      designatedDefault: '默认（托管 Fishball 的 token，如有）',
+      designatedDefault: '无',
       approvalPort: '授权页面端口',
       approvalHint: '浏览器 agent 在 DSH 主机的这个端口上登录。',
       approvalStatus: '授权页面：{status}',
       approvalOk: '正在监听端口 {port}',
+      'approval.approval-port-in-use': '端口被占用；每 30 秒重试一次。请换一个端口或释放此端口。',
       limits: '安全限制',
       invalid: '请输入整数。',
       'field.maxQueuedInputs': '尚未读取的排队输入',
@@ -331,6 +343,7 @@ window.__ModuleLoader__.load({
         try { accepted = await form.mutate(ops, snapshot.revision) } catch { accepted = false }
         setBusy(false)
         setFailed(!accepted)
+        return accepted
       }
       return { busy, failed, save }
     }
@@ -362,7 +375,8 @@ window.__ModuleLoader__.load({
       const invalid = text !== null && !(Number.isSafeInteger(number) && number >= min && (max === undefined || number <= max))
       const commit = () => {
         if (text === null || invalid || number === saved) { setText(null); return }
-        void save([{ op: OP_SET, path, value: number }]).then(() => setText(null))
+        // A refused save keeps the typed text, so the user sees what was not saved beside the error.
+        void save([{ op: OP_SET, path, value: number }]).then((accepted) => { if (accepted) setText(null) })
       }
       return h('label', { style: STYLE.row, [DATA.setting]: data },
         label,
@@ -377,7 +391,7 @@ window.__ModuleLoader__.load({
     /** The approval page's port (R-OA-20, Q-OA-7 A) and the listener's status from the state route. */
     function Approval({ t, form, snapshot, approval, disabled }) {
       const status = approval === undefined ? null
-        : approval.status === LISTENER_OK ? t('approvalOk', { port: approval.port }) : approval.status
+        : approval.status === LISTENER_OK ? t('approvalOk', { port: approval.port }) : t(APPROVAL_STATUS_KEY + approval.status)
       return h('div', { style: STYLE.section, [DATA.approval]: approval?.status ?? '' },
         h(NumberSetting, { t, form, snapshot, path: SETTING_PATH.approvalPort, label: t('approvalPort'), min: PORT_RANGE.min, max: PORT_RANGE.max, disabled, data: SETTING_PATH.approvalPort.join('.') }),
         h('p', { style: STYLE.hint }, t('approvalHint')),
@@ -385,15 +399,13 @@ window.__ModuleLoader__.load({
     }
 
     /**
-     * The connector's limits (src/config.js LIMITS; moved here from dsh-connector-ui, decided item
-     * 55): every top-level whole-number field of the row's settings value, in the order DSH lists
-     * them, so the page keeps no copy of the field list. The Host's schema still decides validity.
+     * The connector's limits (LIMIT_FIELDS; moved here from dsh-connector-ui, decided item 55), each
+     * with its page label; the Host's schema still decides validity.
      */
     function Limits({ t, form, snapshot, disabled }) {
-      const fields = Object.entries(snapshot.value ?? {}).filter(([, value]) => Number.isSafeInteger(value)).map(([field]) => field)
       return h('div', { style: STYLE.section, [DATA.limits]: true },
         h('h3', { style: STYLE.heading }, t('limits')),
-        fields.map((field) => h(NumberSetting, { key: field, t, form, snapshot, path: [field], label: t('field.' + field), min: LIMIT_MIN, disabled, data: field })))
+        LIMIT_FIELDS.map((field) => h(NumberSetting, { key: field, t, form, snapshot, path: [field], label: t('field.' + field), min: LIMIT_MIN, disabled, data: field })))
     }
 
     /**

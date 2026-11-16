@@ -55,8 +55,9 @@ export function createSessionDomain(ctx, { readLimits, routing }) {
         onCreated,
       })
     },
-    message: (input) => port.message(input),
-    redirect: (input) => port.redirect(input),
+    // Only the K1 fields: the V2 port's `notifyWhenFinished` (a V2 watch) has no V3 meaning.
+    message: ({ sessionId, message, attachments }) => port.message({ sessionId, message, attachments }),
+    redirect: ({ sessionId, message, attachments }) => port.redirect({ sessionId, message, attachments }),
     stop: (input) => port.stop(input),
     async read(input) {
       const read = await port.read(input)

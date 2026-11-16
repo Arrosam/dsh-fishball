@@ -7,7 +7,9 @@
  */
 import Schema from '@deepseek-ai/schemastery'
 import { APPROVAL_LISTENER } from '../../mcp-schema/constants.js'
-import { PORT_RANGE, SETTING, SETTING_TEXT } from './constants.js'
+// The approval listener's own port bounds: the setting accepts exactly what it can bind.
+import { PORT_RANGE } from '../mcp/oauth-web/constants.js'
+import { SETTING, SETTING_TEXT } from './constants.js'
 
 /** One `{label, enabled, key}` item (K1d TokenSettingsItem). */
 const tokenItem = Schema.object({

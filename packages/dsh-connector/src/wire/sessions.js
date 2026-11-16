@@ -8,6 +8,7 @@
 import { createUserMessage, boundContextSummary } from '@deepseek-ai/dsh-llm'
 import { diagnosticOf } from '../errors.js'
 import { isSessionGone, rootSessionOf } from '../session-info.js'
+import { RUNNING_AGENT } from '../slim/host/session-port.js'
 import { LOG, SESSION_EVENT, SYSTEM_NOTE } from './constants.js'
 
 /**
@@ -31,7 +32,7 @@ export function sessionExistsIn(ctx) {
 export function createSessionSource(ctx, logger) {
   const exists = sessionExistsIn(ctx)
   const agentOf = (sessionId) => ctx.agents.get(sessionId)
-  const runningOf = (sessionId) => agentOf(sessionId)?.status === SESSION_EVENT.running
+  const runningOf = (sessionId) => agentOf(sessionId)?.status === RUNNING_AGENT
   const queuedOf = (sessionId) => (agentOf(sessionId)?.inbox?.nextTurn?.length ?? 0) > 0
 
   async function pendingOf(sessionId) {
@@ -57,9 +58,12 @@ export function createSessionSource(ctx, logger) {
       })
     },
     onState(listener) {
-      return ctx.on(SESSION_EVENT.agentStatus, ({ agent, status }) => {
+      return ctx.on(SESSION_EVENT.agentStatus, ({ agent }) => {
+        // `running` is read after the pending read resolves, not from the event, so a slow read
+        // that resolves after a later status change reports the agent's status now, never a
+        // stale one (two reads may then report the same state; routing commits what it is told).
         void pendingOf(agent.id).then((pendingInteraction) => {
-          listener(rootSessionOf(ctx, agent.id), { running: status === SESSION_EVENT.running, pendingInteraction })
+          listener(rootSessionOf(ctx, agent.id), { running: runningOf(agent.id), pendingInteraction })
         })
       })
     },

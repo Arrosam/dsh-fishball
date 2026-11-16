@@ -662,11 +662,6 @@ export const SERVICE = Object.freeze({
   /** Reads a stopped session's log without making it live (src/session-info.js persistedEventsOf). */
   sessionQuery: 'sessionQuery',
   /**
-   * The V3 connector's MCP, token and metadata routes and DSH's listener facts (src/wire/, C-WIRE):
-   * a dsh-base row on both SDKs.
-   */
-  webServer: 'webServer',
-  /**
    * The bridge's start-with-a-model path reads ctx.llm (src/model-catalog.js). Before M1 the native
    * host row injected it; the session port now lives on this row (src/connector-service.js).
    * sessionController already depends on llm, so this adds no new reason for the row to restart.
@@ -687,6 +682,13 @@ export const OPTIONAL_SERVICE = Object.freeze({
   /** DSH's session titles (dsh-base's session-title row; absent only if a profile turns that row off): start_session names the new session (DESIGN §5d). */
   sessionTitle: 'sessionTitle',
 })
+
+/**
+ * DSH's web server (dsh-web-app's `webserver` row on both SDKs, not dsh-base): the V3 connector's
+ * MCP, token and metadata routes and its listener facts (src/wire/, C-WIRE). Read with `ctx.get`,
+ * never injected: a profile without the web app still loads the row, with the V2 path alone.
+ */
+export const WEB_SERVICE = Object.freeze({ webServer: 'webServer' })
 
 /** Host events this plugin listens to. */
 export const EVENT = Object.freeze({

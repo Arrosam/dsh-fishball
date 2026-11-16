@@ -5,15 +5,6 @@
  */
 
 /**
- * The DSH services the V3 modules need, read as properties of the row's context, so each must be
- * in the row's `inject` (Cordis refuses a property read of anything else). Each is a dsh-base row
- * on both SDKs (0.2.1-rc.5, 0.2.2-rc.1).
- * - webServer: the MCP, token and metadata routes, and the listener facts (host, protocol, port);
- * - credentials is not one: the V3 token store keeps digests in its own storage domain (R1).
- */
-export const WIRE_SERVICE = Object.freeze({ webServer: 'webServer' })
-
-/**
  * DSH services read with `ctx.get` only, because the row must load without them:
  * - webStartup: the `--trusted-host` authorities (dsh-web-app startup), absent without the web profile;
  * - webApp: none is read; the approval page shows DSH's advertised name from the listener origin.
@@ -28,8 +19,6 @@ export const SESSION_EVENT = Object.freeze({
   turnEnd: 'turn/end',
   /** An agent's status changed (`{agent, status}`). */
   agentStatus: 'agent/status',
-  /** dsh-agent's status for a turn in progress. */
-  running: 'running',
   /** An agent inbox boundary: the next turn (dsh-agent InboxTarget). */
   nextTurn: 'next-turn',
 })
@@ -64,9 +53,8 @@ export const LOG = Object.freeze({
   /** The row effect that closes the V3 modules. */
   label: 'dsh-connector: v3 modules',
   openFailed: 'v3 wiring: a module could not be opened; the V3 connector stays off until the next start',
-  startFailed: 'v3 wiring: a start step failed',
+  noWebServer: 'v3 wiring: DSH has no web server here; the V3 connector stays off and the V2 path runs alone',
   closeFailed: 'v3 wiring: a module did not close cleanly',
-  routeFailed: 'v3 wiring: an HTTP route could not be registered',
   sessionReadFailed: 'v3 wiring: a session state read failed',
   ackListenerFailed: 'v3 wiring: an inbox_ack listener failed; the ack stands',
 })
@@ -76,6 +64,11 @@ export const TLS_FILE = Object.freeze({ encoding: 'utf8' })
 
 /** DSH WebRoute kind of the MCP route (design §3.1: `exact` beats DSH's `/api` prefix, spike S1 F3). */
 export const ROUTE_KIND = 'exact'
+
+/** Programming errors (thrown, never shown to a user). */
+export const MISUSE = Object.freeze({
+  noTlsFiles: 'v3 wiring: DSH\'s listener is TLS but its certificate and key files are not readable here',
+})
 
 /** Row effect labels. */
 export const LABEL = Object.freeze({ services: 'dsh-connector: v3 services' })

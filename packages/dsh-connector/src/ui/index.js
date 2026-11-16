@@ -30,7 +30,12 @@
  *   contribution; a later `contribute` throws. Idempotent.
  */
 import { diagnosticOf } from '../errors.js'
-import { LOG, MISUSE, UI_BODY, UI_ROUTE, UI_SERVICE } from './constants.js'
+import { LIMITS } from '../config.js'
+import { LOG, MISUSE, UI_ROUTE, UI_SERVICE } from './constants.js'
+
+/** The `maxMessageBytes` default, from its one owner (config.js LIMITS). */
+const MESSAGE_BYTES_FIELD = 'maxMessageBytes'
+const defaultNoteBytes = () => LIMITS.find((limit) => limit.field === MESSAGE_BYTES_FIELD).defaultValue
 import { createStreams, registerUiRoute, uiRoutes } from './routes.js'
 import { createUiState } from './state.js'
 import { uiTools } from './tools.js'
@@ -53,10 +58,11 @@ function disposeAll(disposers) {
  * @param {object} deps
  * @param deps.handover - K3 `DshConnectorHandover` (the routing module's `handover`)
  * @param deps.maxNoteBytes - `() => number`, the live note bound in UTF-8 bytes; by default the
- *   whole-body bound, so a caller without the setting keeps the bound it had
+ *   connector's `maxMessageBytes` default (config.js LIMITS), so a backend built without the
+ *   setting bounds a note as the row's default does. C-WIRE always passes the live setting.
  * @param deps.logger - `{warn}`
  */
-export function createUiBackend({ handover, maxNoteBytes = () => UI_BODY.maxBytes, logger }) {
+export function createUiBackend({ handover, maxNoteBytes = defaultNoteBytes, logger }) {
   const streams = createStreams(() => state.snapshot(), logger)
   const state = createUiState({ handover, changed: () => streams.publish() })
   const contributions = new Set()

@@ -21,14 +21,14 @@ export { routes }
  * with the row. A path the registry refuses is left out and logged; it never fails the row (the
  * page then reads the route as unavailable), as dsh-connector-ui's host routes do.
  * @param ctx - the connector row's context (needs `connection.fetch` and `effect`).
+ * @returns each route's effect disposer, so an owner that composes the page (C-WIRE) can remove
+ *   the routes before the modules behind them close
  */
 export function registerSettingsPage(ctx, { tokens, state, logger }) {
-  for (const route of routes({ tokens, state, logger })) {
-    ctx.effect(() => {
-      try { return ctx.connection.fetch.register({ ...route, requestBody: REQUEST_BODY_BUFFERED }) } catch (error) {
-        logger.warn(LOG.routeUnavailable, route.path, diagnosticOf(error))
-        return () => {}
-      }
-    }, SETTINGS_PAGE.effectLabel + route.path)
-  }
+  return routes({ tokens, state, logger }).map((route) => ctx.effect(() => {
+    try { return ctx.connection.fetch.register({ ...route, requestBody: REQUEST_BODY_BUFFERED }) } catch (error) {
+      logger.warn(LOG.routeUnavailable, route.path, diagnosticOf(error))
+      return () => {}
+    }
+  }, SETTINGS_PAGE.effectLabel + route.path))
 }
