@@ -89,5 +89,9 @@
     - { id: fishball-native-approvals, name: fishball-core/slim/approvals }
     - { id: fishball-native-app, name: fishball-core/slim/app }
     - { id: fishball-native-inbox, name: fishball-core/slim/inbox }
-    - { id: fishball-native-admin, name: fishball-core/slim/admin }
-    - { id: fishball-native-provider-sync, name: fishball-core/slim/provider-sync-target }
+    # The Fishball page's manager-session route (src/session/route.js), core's own since I-HOST, so
+    # fishball-ui's page finds it in a hosted child and in a standalone DSH alike. Its one inject is
+    # `connection`, so it does not wait for nativeRuntime.
+    - { id: fishball-core-session, name: fishball-core/session-route }
+    # The child admin and provider-sync rows (V2 T11, T16) moved to dsh-instance's child-side row
+    # (I-HOST; design §1.0b row 5, requirements 1.41 Q-G7).

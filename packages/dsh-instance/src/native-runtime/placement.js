@@ -248,8 +248,9 @@ async function readRecord(file) {
  *   profile already declares as a dependency (a V2 profile's hand-installed copy, design §10),
  *   keeps the state the owner gave it, so a disable survives and a copy deleted while off returns
  *   off (R-BND-02);
- * - every other bundle keeps its place, and the placed ones follow in PLACEMENT.bundles order, so
- *   fishball-core is last (R-FB-12).
+ * - every other bundle keeps its place, and the placed ones follow in PLACEMENT.bundles order:
+ *   board, fishball-ui, then fishball-core last (R-FB-12; fishball-ui's guard rows hold in any
+ *   order, core's need it last). fishball-ui and core both bundle fishball-shared; it is placed once.
  * Copies come first and the manifest and record after, so a failed copy changes no selection.
  * @param paths - the runtime layout (files.js pathsFor).
  * @param boot - the installation's dsh-app-boot module (readProfileManifest, writeProfileBundles).
@@ -283,7 +284,7 @@ export async function placeBundles(paths, boot) {
  * @returns {Promise<string>} the lifecycle row's module path.
  */
 export async function snapshotLifecycle(destination) {
-  const { lifecycle, entries } = RUNTIME.snapshot
-  for (const file of await moduleClosure(INSTANCE_ROOT, [lifecycle, ...entries])) await copyFile(path.join(INSTANCE_ROOT, file), path.join(destination, file))
+  const { lifecycle, childRow, entries } = RUNTIME.snapshot
+  for (const file of await moduleClosure(INSTANCE_ROOT, [lifecycle, childRow, ...entries])) await copyFile(path.join(INSTANCE_ROOT, file), path.join(destination, file))
   return path.join(destination, lifecycle)
 }

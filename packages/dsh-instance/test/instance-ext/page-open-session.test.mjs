@@ -36,7 +36,7 @@ const NOTICE_PLUGIN = 'fbtest-plugin'
 
 /** A fake route context; `instance` is what ctx.get('fishballInstance') returns. */
 async function routeHarness(instance) {
-  const { registerSessionRoute } = await loadInstance('src/native-runtime/session-route.js')
+  const { registerSessionRoute } = await loadCore('src/session/route.js')
   const handlers = new Map()
   const routes = []
   const lookups = []

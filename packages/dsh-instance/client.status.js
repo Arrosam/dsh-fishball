@@ -1,28 +1,15 @@
 /**
- * The instance's status line (task I1, inst-OQ-01; V3 R-EMBED): the state tag, the safe code, its
- * reason, the failed start's detail and Retry while the instance is `failed`, polled from the
- * instance's status route. The main DSH's instance card in dsh-connector-ui draws it.
- *
- * The instance owns this file (HOST-EP-03 row 2; it reads the instance's own routes). DSH's client
- * modules load a package-local chunk only from beside the package's own `client.js` (the
- * CLIENT_CHUNK rule of dsh-client-modules, the same in 0.2.1-rc.5 and 0.2.2-rc.1), so each page
- * loads it as its own chunk `client.status.js`: dsh-connector-ui carries a relative symlink to this
- * file beside its client entry (user decision 2026-11-13; a release pack must dereference it,
- * DESIGN.md). The registration therefore names whichever package served the script: the path
- * segment before the chunk name in its URL (`…/plugins/<owner>/client.status.js`; the owner is an
- * unscoped name, one segment). Both SDKs
- * load a chunk as a classic `<script src>` (defaultLoadBundle), so the URL is there. Without a
- * script URL (a custom bundle transport, or a plain Node import) the owner is unknown and nothing
- * registers: guessing one would register under the wrong package, and the loader then names the
- * chunk that did not register. The script is one expression, so it declares nothing at top level
- * (client-modules may concatenate scripts).
- *
- * Only the status line is here. The main card's "Model for Fishball" block stays in embed-UI: the
- * child must never start a sync (the user's decision of 2026-11-11).
+ * The instance's status line (task I1, inst-OQ-01; I-HOST): the state tag, the safe code, its
+ * reason, the failed start's detail and Retry while the instance is `failed`, and the notice
+ * Retry leaves when the hosted entry was deleted (R-HOST-10; R6 = B), polled from the instance's
+ * status route. A chunk of the instance's own settings page (client.js): DSH's client modules serve
+ * a package's `client.<name>.js` siblings of its `client.js` (CLIENT_CHUNK, both SDKs). It moved
+ * here from `src/child-settings/` with I-HOST, when the page moved from dsh-connector-ui to the
+ * instance (requirements 1.33 Q-D1 = B, R-ARCH-05), so no symlink is needed any more.
  */
-((script, chunk) => script?.src && globalThis.__ModuleLoader__?.load({
-  id: new URL(script.src, document.baseURI).pathname.split('/').at(-2),
-  chunk,
+window.__ModuleLoader__.load({
+  id: 'dsh-instance',
+  chunk: 'client.status.js',
   factory(require) {
     const React = require('react')
     const { Button, Tag } = require('@deepseek-ai/dsh-client-ui-primitives')
@@ -35,7 +22,7 @@
      */
     const LOCALE = 'dsh-instance'
     /**
-     * The instance's status (host.js status(), served by src/native-web.js). The routes are relative to DSH's
+     * The instance's status (host.js status(), served by src/host/routes.js). The routes are relative to DSH's
      * page. Status has no event, so the open card re-reads it at the cadence the connector's frame
      * reads `status()` (conn-OQ-25: once a second), only while it is mounted and the tab is
      * visible, one read at a time. `unavailable` is the route's own answer for a state it cannot
@@ -82,15 +69,12 @@
       'state.stopping': 'stopping',
       'state.stopped': 'stopped',
       'state.failed': 'failed',
-      'state.connector-missing': 'connector missing',
       'state.unavailable': 'unavailable',
-      'reason.connector-missing': 'The Fishball connector (dsh-connector) is not installed or not enabled, so the instance does not start. Enable the connector; the instance then starts without a restart of DSH.',
-      'reason.NATIVE_CONNECTOR_UPGRADE_REQUIRED': 'Upgrade Fishball connector to contract 1.2 with interaction.timerfree support, then retry this instance. The older connector cannot safely delegate timer-free decisions.',
-      'reason.NATIVE_INSTANCE_BUSY': 'Another Fishball instance is already attached to the connector, so this one was stopped.',
-      'reason.NATIVE_CONTRACT_VERSION': 'The installed connector speaks a different contract version, so this instance was stopped.',
+      'reason.PROFILE_INCOMPATIBLE': 'An enabled Fishball plugin cannot load in the instance, so it did not start. The detail names it and the reason.',
       'reason.INVALID_MAIN_HOME': 'The DSH home is not a canonical real path. Start DSH with a home that is its own real path, not one through a symlink such as /tmp (on macOS, /private/tmp rather than /tmp).',
       retry: 'Retry',
       retrying: 'Retrying…',
+      'notice.hosted-entry-deleted': 'The hosted token entry was deleted in the connector, so Retry created no token. To connect again, press Reconnect below, or generate a new token in the connector\'s settings and paste it into the token field in Fishball\'s settings, or use Connect there.',
     }
     const zh = {
       status: '状态',
@@ -102,15 +86,12 @@
       'state.stopping': '停止中',
       'state.stopped': '已停止',
       'state.failed': '失败',
-      'state.connector-missing': '缺少连接器',
       'state.unavailable': '无法读取',
-      'reason.connector-missing': 'Fishball 连接器（dsh-connector）未安装或未启用，所以实例不会启动。启用连接器后，实例会自动启动，无需重启 DSH。',
-      'reason.NATIVE_CONNECTOR_UPGRADE_REQUIRED': '请将 Fishball 连接器升级至支持 interaction.timerfree 的契约 1.2，再重试此实例。旧连接器无法安全委派无计时器决策。',
-      'reason.NATIVE_INSTANCE_BUSY': '已有另一个 Fishball 实例连接到连接器，所以本实例已停止。',
-      'reason.NATIVE_CONTRACT_VERSION': '已安装的连接器使用不同的契约版本，所以本实例已停止。',
+      'reason.PROFILE_INCOMPATIBLE': '一个已启用的 Fishball 插件无法在实例中加载，所以实例没有启动。详情里写有它的名字和原因。',
       'reason.INVALID_MAIN_HOME': 'DSH home 不是规范的真实路径。请让 DSH 使用它自身的真实路径，而不是经过 /tmp 之类符号链接的路径（macOS 上应使用 /private/tmp，而不是 /tmp）。',
       retry: '重试',
       retrying: '正在重试…',
+      'notice.hosted-entry-deleted': '连接器中的托管 token 条目已被删除，所以重试没有创建 token。要重新连接，请点击下方的“重新连接”；或在连接器设置中生成新 token，粘贴到 Fishball 设置的 token 输入框；或在那里使用 Connect。',
     }
 
     /**
@@ -174,7 +155,9 @@
             : null),
         reason ? h('p', { className: CLS.hint }, reason) : null,
         // A failed start's specific cause (host.js, already sanitized and bounded by the route).
-        typeof status?.detail === 'string' && status.detail ? h('p', { className: CLS.hint, 'data-fishball-instance-detail': true }, status.detail) : null)
+        typeof status?.detail === 'string' && status.detail ? h('p', { className: CLS.hint, 'data-fishball-instance-detail': true }, status.detail) : null,
+        // The one notice (host.js): a known key gets its words, anything else shows nothing.
+        typeof status?.notice === 'string' && Object.hasOwn(en, 'notice.' + status.notice) ? h('p', { className: CLS.hint, role: 'status', 'data-fishball-instance-notice': status.notice }, t('notice.' + status.notice)) : null)
     }
 
     /** One page style sheet; DSH plugin styles are per page, and the id names the sheet. */
@@ -205,4 +188,4 @@
     const layout = Object.freeze({ classes: CLS, css, style: STYLE, neutralTone: STATUS_UI.neutralTone })
     return { shared, layout }
   },
-}))(globalThis.document?.currentScript, 'client.status.js')
+})

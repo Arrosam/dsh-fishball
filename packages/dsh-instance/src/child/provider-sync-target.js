@@ -1,33 +1,38 @@
 /**
- * The isolated child's provider-sync target (§10, §15 T16).
+ * The isolated child's provider-sync target (§10, §15 T16). I-HOST moved it here from
+ * fishball-core's `src/slim/child/` (requirements 1.41 Q-G7: model sync lives entirely in the
+ * instance; design §1.0b row 5). It copies providers and their model lists into the child's own
+ * DSH settings and nothing else: which model Fishball uses is chosen in Fishball's settings (the
+ * user, 2026-11-16: "同步只是同步model list，至于fishball用什么还要在fishball内设置").
  *
  * The source is the main DSH; the target is this child's own home. The preview and confirmation
- * rules stay in fishball-shared/provider-sync: this module only reaches that engine over the lifecycle
+ * rules stay in dsh-connector-shared/provider-sync: this module only reaches that engine over the lifecycle
  * wire and supplies the child's own services. Nothing here reads a credential value; the engine's
  * inventory actions describe presence only, and a record arrives solely in a confirmed `import`
  * frame after the main side read it for that confirmation.
  *
  * Transport: the main host starts and owns this child, so the two already trust each other. The target rides
  * the already-authenticated lifecycle wire on its own payload channel, exactly like the T11 admin
- * protocol. The frame shapes are fishball-shared/provider-sync-codec's; this module owns the
- * endpoint and the child row; the wiring is:
- *   1. dsh-instance src/native-runtime/wire.js carries PROVIDER_SYNC_TARGET.channel;
- *   2. dsh-instance src/native-runtime/child.js publishes the child end through onProviderSyncTransport;
- *   3. dsh-instance src/native-runtime/index.js publishes the main end the same way;
- *   4. fishball-core's cordis.patch.yml inserts this module as a child row (`fishball-core/slim/provider-sync-target`);
- *   5. dsh-instance src/native-runtime/placement.js places fishball-shared in the child profile's
- *      node_modules, beside the placed fishball-core.
+ * protocol. The frame shapes are dsh-connector-shared/provider-sync-codec's; this module owns the
+ * endpoint and its mount; the wiring is:
+ *   1. src/native-runtime/wire.js carries PROVIDER_SYNC_TARGET.channel;
+ *   2. src/native-runtime/child.js publishes the child end through onProviderSyncTransport;
+ *   3. src/native-runtime/index.js publishes the main end the same way;
+ *   4. the child-side row (child-row.js, inserted by the launch overlay) calls mountProviderSyncTarget;
+ *   5. src/native-runtime/placement.js places dsh-connector-shared in the child profile's
+ *      node_modules, where this module, copied in the lifecycle snapshot, resolves it.
  *
  * No value ever appears in a preview, a refusal or a result: group entries are exact-key checked
- * against metadata only, and the record validator lives in fishball-shared/provider-sync.
+ * against metadata only, and the record validator lives in dsh-connector-shared/provider-sync.
  */
 import { randomUUID } from 'node:crypto'
-import { ProviderSyncEngine, ProviderSyncError } from 'fishball-shared/provider-sync'
+import { HOSTED } from '../native-runtime/constants.js'
+import { ProviderSyncEngine, ProviderSyncError } from 'dsh-connector-shared/provider-sync'
 import {
   PROVIDER_SYNC_TARGET, ProviderSyncTargetError, createProviderSyncCodec, plain, providerSyncIdentity, safeCode,
-} from 'fishball-shared/provider-sync-codec'
+} from 'dsh-connector-shared/provider-sync-codec'
 
-// The frame codec and the identity are fishball-shared's, used by both ends; re-exported for this
+// The frame codec and the identity are dsh-connector-shared's, used by both ends; re-exported for this
 // module's existing readers.
 export { PROVIDER_SYNC_TARGET, ProviderSyncTargetError, createProviderSyncCodec, providerSyncIdentity }
 const T = PROVIDER_SYNC_TARGET
@@ -43,7 +48,7 @@ const E = T.code
  */
 export function createProviderSyncTarget({ engine } = {}) {
   if (typeof engine?.preview !== 'function' || typeof engine?.confirm !== 'function') {
-    throw new TypeError('fishball provider sync: the engine must implement preview and confirm')
+    throw new TypeError('dsh-instance provider sync: the engine must implement preview and confirm')
   }
   return Object.freeze({
     async handle(action, payload, peer, { signal } = {}) {
@@ -79,7 +84,7 @@ const refusalOf = (error) => ({
  * session-bridge protocols share that wire and a sync problem must not drop them.
  */
 export function createProviderSyncTargetEndpoint({ target } = {}) {
-  if (typeof target?.handle !== 'function') throw new TypeError('fishball provider sync: the target must implement handle')
+  if (typeof target?.handle !== 'function') throw new TypeError('dsh-instance provider sync: the target must implement handle')
   const codec = createProviderSyncCodec()
   const controllers = new Set()
   let transport
@@ -137,9 +142,9 @@ export function createProviderSyncTargetEndpoint({ target } = {}) {
   return Object.freeze({
     get attached() { return transport !== undefined },
     attach(next) {
-      if (closed) throw new Error('fishball provider sync: the endpoint is closed')
+      if (closed) throw new Error('dsh-instance provider sync: the endpoint is closed')
       for (const method of TRANSPORT_METHODS) {
-        if (typeof next?.[method] !== 'function') throw new TypeError('fishball provider sync: the transport must implement ' + method)
+        if (typeof next?.[method] !== 'function') throw new TypeError('dsh-instance provider sync: the transport must implement ' + method)
       }
       detach()
       transport = next
@@ -152,42 +157,32 @@ export function createProviderSyncTargetEndpoint({ target } = {}) {
   })
 }
 
-/* ---------------------------------------------------------------- the child row */
+/* ---------------------------------------------------------------- the child-side row's mount */
 
-/** Stable Cordis plugin name; the merge inserts this module under the same row id. */
-export const name = 'fishball-native-provider-sync'
-export const inject = Object.freeze(['nativeRuntime', 'settings', 'credentials', 'llm', 'configEditor', 'authorization', 'profileContext'])
-const ROW = Object.freeze({ logger: 'fishball-native-provider-sync' })
+const MOUNT = Object.freeze({ logger: HOSTED.childRow, identityUnavailable: 'the provider-sync target identity is unavailable' })
 
 /**
- * Mount the target in the child. The transport arrives with each authenticated main connection
- * and is replaced after a restart; a runtime without the channel (before the merge) leaves the
- * row inert rather than failing the child boot. The engine and host adapter are the shared
- * modules (fishball-shared/provider-sync, fishball-shared/provider-sync-host), so the child
+ * Mount the target on the child's lifecycle runtime (child-row.js). The transport arrives with each
+ * authenticated main connection and is replaced after a restart. The engine and host adapter are
+ * the shared modules (dsh-connector-shared/provider-sync, …/provider-sync-host), so the child
  * applies exactly the reviewed preview/confirm rules.
+ * @param ctx - the child-side row's context (`nativeRuntime`, `settings`, `credentials`, `llm`,
+ *   `configEditor`, `authorization`, `profileContext`)
+ * @returns {Promise<(() => void) | undefined>} its disposer; undefined when the identity is unavailable
  */
-export async function apply(ctx) {
-  if (typeof ctx.nativeRuntime?.onProviderSyncTransport !== 'function') {
-    ctx.logger(ROW.logger).warn('the child runtime exposes no provider-sync transport; the target is unreachable')
-    return
-  }
+export async function mountProviderSyncTarget(ctx) {
   let identity
   try { identity = await providerSyncIdentity(ctx.profileContext, randomUUID()) } catch {
-    ctx.logger(ROW.logger).warn('the provider-sync target identity is unavailable')
-    return
+    ctx.logger(MOUNT.logger).warn(MOUNT.identityUnavailable)
+    return undefined
   }
-  // Imported lazily, as before fishball-shared: the pi-ai adapter boundary loads only once the
-  // target is reachable and its identity is known.
-  const { createProviderSyncHost } = await import('fishball-shared/provider-sync-host')
+  // Imported lazily: the pi-ai adapter boundary loads only once the identity is known.
+  const { createProviderSyncHost } = await import('dsh-connector-shared/provider-sync-host')
   const host = createProviderSyncHost(ctx, { identity })
   const engine = new ProviderSyncEngine({ host })
-  const target = createProviderSyncTarget({ engine })
-  const endpoint = createProviderSyncTargetEndpoint({ target })
+  const endpoint = createProviderSyncTargetEndpoint({ target: createProviderSyncTarget({ engine }) })
   const unsubscribe = ctx.nativeRuntime.onProviderSyncTransport((transport) => {
     try { endpoint.attach(transport) } catch { /* the next transport replaces it */ }
   })
-  // Cordis treats an apply() return value as the fiber's disposer. The endpoint reaches the
-  // main side through onProviderSyncTransport, never through the return value; a returned
-  // object fails activation with "Invalid effect".
   return () => { unsubscribe(); endpoint.close(); engine.close() }
 }

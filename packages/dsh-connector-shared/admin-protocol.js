@@ -2,10 +2,8 @@
  * The child `admin` service's wire protocol (dsh-connector-shared, R-ARCH-08).
  *
  * Moved from dsh-instance's src/slim/child/admin.js with its rules unchanged: the main host's
- * relay (dsh-instance src/slim/host/admin.js) speaks it to the child. Until I-HOST moves the
- * child's applier and wire end (fishball-core src/slim/child/admin.js) into dsh-instance, they
- * serve fishball-shared's identical copy (requirements 1.40: no module is shared across the
- * sides, so one copy per side); keep the two in step until then. The vocabulary, limits and typed refusal are plain module exports; `refuse` and
+ * relay (dsh-instance src/slim/host/admin.js) speaks it to the child's applier and wire end
+ * (dsh-instance src/child/admin.js, moved there from fishball-core by I-HOST). The vocabulary, limits and typed refusal are plain module exports; `refuse` and
  * ADMIN_APPLICATIONS are exported because the child's applier refuses and accepts the same way.
  *
  * The request/result validators and the frame codec read three values of the Fishball contract:

@@ -150,7 +150,11 @@ export async function initializeProfile(paths, installation, preflight, mainWork
   const profile = boot.loadProfileDirectory('fishball', paths.profile, installation.installAnchor)
   // Every enabled bundle DSH skipped blocks the start, named with DSH's reason (R-BND-03); the
   // host's launch detail bounds and redacts that message before any page shows it.
-  if (profile.skippedBundles.length) fail(PLACEMENT.code.incompatible, PLACEMENT.incompatible(profile.skippedBundles))
+  if (profile.skippedBundles.length) {
+    // The first blocking bundle's name travels as a field (K3 `ChildStatus.plugin`, HOST-ST-01 #3);
+    // the message names them all, with DSH's reasons.
+    throw Object.assign(new NativeRuntimeError(PLACEMENT.code.incompatible, PLACEMENT.incompatible(profile.skippedBundles)), { [PLACEMENT.pluginField]: profile.skippedBundles[0].packageName })
+  }
   const resolution = await boot.createRuntimeResolution({ installAnchor: installation.installAnchor, profile, home: paths.home })
   const result = await preflight({ ...args, resolution })
   const homePatches = boot.loadOptionalPatches('fishball', path.join(paths.home, boot.PROFILE_PATCH_FILENAME)) ?? []

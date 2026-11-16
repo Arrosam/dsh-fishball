@@ -33,12 +33,14 @@ export type { DshConnectorTokens, HostedTokenEntry, HostedEntryState, RetireResu
 export type {
   DshInstanceChild, ChildState, ChildStatus, ChildStatusCode, LifecycleCode, TargetCode, TargetState, TargetStatus,
   LoopbackHostname, AdmitRequest, AdmitView, AdmitLang, AdmitErrorCode, ProviderSync, ProviderSyncStatus,
-  ProviderSyncCheckResult, ProviderSyncAddResult,
+  ProviderSyncCheckResult, ProviderSyncAddResult, ReconnectRefusalCode,
 } from './child.js'
+export type { DshConnectorUi, UiSnapshot, UiMark, UiTarget, UiAttention, UiNotice, UiRoutes } from './ui.js'
 
 import type { DshConnectorHandover } from './handover.js'
 import type { DshConnectorTokens } from './tokens.js'
 import type { DshInstanceChild } from './child.js'
+import type { DshConnectorUi } from './ui.js'
 
 /**
  * The services as DSH declares its own: members of the cordis `Context`. A consumer must load and
@@ -55,5 +57,6 @@ declare module '@deepseek-ai/cordis' {
     dshConnectorHandover: DshConnectorHandover
     dshConnectorTokens: DshConnectorTokens
     dshInstanceChild: DshInstanceChild
+    dshConnectorUi: DshConnectorUi
   }
 }

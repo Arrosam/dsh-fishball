@@ -1,6 +1,5 @@
 import http from 'node:http'
 import { NATIVE_WEB, nativeAccess, fail } from './src/native-runtime/constants.js'
-import { registerSessionRoute } from './src/native-runtime/session-route.js'
 
 export const name = 'fishball-native-web'
 export const inject = [...NATIVE_WEB.services]
@@ -20,9 +19,11 @@ function probe(url, timeout, cookie) {
   })
 }
 
-/** Native SDK adapter: private admission plus the authenticated X1 identity route. */
+/**
+ * Native SDK adapter: private admission. The manager-session route it also served is core's own
+ * since I-HOST (fishball-core `src/session/route.js`).
+ */
 export function apply(ctx, config) {
-  registerSessionRoute(ctx)
   let disposed = false
   ctx.effect(() => () => { disposed = true })
   function access() {

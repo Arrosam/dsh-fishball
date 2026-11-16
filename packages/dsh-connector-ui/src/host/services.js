@@ -30,8 +30,7 @@ export const hasConnector = (ctx) => usable(ctx, SERVICE.ui) !== undefined || ct
  * What the client may register (UIM-EP-01, design §4.2), one flag per service:
  * - connector: the connector's UI backend (the fish, its light, the notify prompt, the marks and
  *   Hand over / Take back, the window or the hint); `ui` carries its routes, page-relative;
- * - page: `dshInstanceChild` (the window onto the hosted child's page, its status, the card's
- *   model sync);
+ * - page: `dshInstanceChild` (the window onto the hosted child's page and its status);
  * - legacy: V2's connector service, which keeps the V2 frame working until W4b removes it
  *   (SERVICE.legacyConnector).
  * @param pageRelative - turns a route path into the form the browser resolves against DSH's page.

@@ -194,7 +194,7 @@ function assertNoTurn(h) {
 
 /** The documented session route over a live instance lookup (the CHILD-WEB route's input). */
 async function sessionRoute(instance) {
-  const { registerSessionRoute } = await loadInstance('src/native-runtime/session-route.js')
+  const { registerSessionRoute } = await loadCore('src/session/route.js')
   const routes = []
   registerSessionRoute({
     on: () => () => {},

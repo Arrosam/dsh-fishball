@@ -8,10 +8,14 @@
 import path from 'node:path'
 import { V3 } from '../../contract/package-boundaries/constants.mjs'
 
-/** The set a hosted child holds: board and core (design §1.0, plan §4; R-FB-01). */
+/**
+ * The set a hosted child holds (design §1.0, plan §4; R-FB-01; R-BND-01 amended by 1.39: the
+ * default set is core, fishball-ui and board). I-HOST (Q1, Q2) adds fishball-ui, appended after
+ * board and before core.
+ */
 export const SET = Object.freeze({
   core: V3.core.name,
-  features: Object.freeze([V3.board.name]),
+  features: Object.freeze([V3.board.name, V3.ui.name]),
   /** Design §8.1 "Order": the features come before core, core is last. */
   get placed() { return Object.freeze([...this.features, this.core]) },
   /**
@@ -57,7 +61,9 @@ export const RELAYED = Object.freeze({
     corePathRow: 'fishball-core-guards',
     /** The rows that left core's patch for fishball-ui's (F-UI). */
     movedToUi: Object.freeze(['fishball-page', 'fishball-recommend-plugins']),
-    slim: Object.freeze(['session-tools', 'approvals', 'app', 'inbox', 'admin', 'provider-sync'].map((n) => 'fishball-native-' + n)),
+    // I-HOST moved the admin and provider-sync child halves into the instance's child-side row, so
+    // core's patch keeps only these four slim rows.
+    slim: Object.freeze(['session-tools', 'approvals', 'app', 'inbox'].map((n) => 'fishball-native-' + n)),
     slimPrefix: V3.core.name + '/slim/',
   }),
 })
@@ -75,7 +81,9 @@ export const OVERLAY = Object.freeze({
    * recommended; dev 6d13f6a1 relayed 2026-11-15): the lifecycle endpoint and the native-web
    * admission adapter. Every other V2 row left the overlay.
    */
-  runtimeRows: Object.freeze(['fishball-native-web', 'fishball-native-child']),
+  // I-HOST: the overlay also inserts the instance's child-side row, which carries the target URL
+  // (K3a HOSTED_IMPORT targetSetting: row dsh-instance-child, field targetUrl).
+  runtimeRows: Object.freeze(['fishball-native-web', 'fishball-native-child', 'dsh-instance-child']),
   origin: Object.freeze(['webserver', 'web-runtime']),
   /**
    * The child isolation rows (Fishball 2026-11-15, isolation: Fishball must never read the user's

@@ -5,9 +5,9 @@
  * - client.shell.js: the shell (the window or the no-instance hint, the sidebar fish, the
  *   connector's Plugins card, the style sheet and dictionary) and the kit the parts share;
  * - client.marks.js: the managed-session marks and Hand over / Take back (Q-G5 = A);
- * - client.attention.js: the fish's light and the notify prompt (R-FN-01, §13.6);
- * - client.instance.js: the instance's Plugins card, given the instance-owned status line
- *   client.status.js (a symlink to packages/dsh-instance/src/child-settings/client.status.js).
+ * - client.attention.js: the fish's light and the notify prompt (R-FN-01, §13.6).
+ * The instance's card moved to the instance's own settings page with I-HOST (requirements 1.33
+ * Q-D1 = B, R-ARCH-05), so this package draws nothing of the instance but its window.
  * The parts draw the connector UI backend's snapshot and call its routes; they keep no state.
  * There are no cards (Q-U2) and no inline records (Q-G4).
  *
@@ -45,8 +45,6 @@ window.__ModuleLoader__.load({
        * connector and the locator, or with V2's connector, whose attachment V2's card served.
        */
       shellNeeds: Object.freeze([Object.freeze(['connector']), Object.freeze(['legacy'])]),
-      instanceNeeds: Object.freeze([Object.freeze(['connector', 'page']), Object.freeze(['legacy'])]),
-      instance: './client.instance.js',
       /**
        * What the host half reports usable (src/host/constants.js ROUTE.services, page-relative; this
        * classic script cannot import it): `{ok, connector, page, legacy, routes, ui}`. Read here,
@@ -56,7 +54,6 @@ window.__ModuleLoader__.load({
       servicesPath: 'api/dsh-connector-ui/services',
       read: Object.freeze({ method: 'GET', cache: 'no-store', credentials: 'same-origin' }),
       none: Object.freeze({ connector: false, page: false, legacy: false, routes: Object.freeze({}), ui: Object.freeze({}) }),
-      status: './client.status.js',
       unavailable: 'fishball embed-ui: part unavailable',
     })
 
@@ -101,11 +98,6 @@ window.__ModuleLoader__.load({
       for (const part of EMBED.parts) {
         start(ctx, part.chunk, when(part.needs, (flags) => Promise.all([shell, require.async(part.chunk)]).then(([{ kit }, module]) => module[part.factory](kit, flags))))
       }
-      // With the locator, the card's model sync goes through the host half's routes (R-HOST-07,
-      // design §4.2); with only V2's connector, through the instance's own V2 routes, as before.
-      // I-HOST moves the card to the instance's own settings page (R-HOST-07 amended by 1.41).
-      start(ctx, EMBED.instance, when(EMBED.instanceNeeds, (flags) => Promise.all([require.async(EMBED.instance), require.async(EMBED.status)])
-        .then(([instance, { shared, layout }]) => instance.instancePlugin(shared, layout, flags.page ? flags.routes : undefined))))
     }
 
     // No inject of its own: each part declares the client services it needs and starts with them.

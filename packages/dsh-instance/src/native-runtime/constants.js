@@ -16,7 +16,7 @@ export const RUNTIME = Object.freeze({
   // native-web adapter and the parent-watch preload the launch imports by path (index.js), each with
   // the relative-import closure of its module. The plugin set is placed bundles (PLACEMENT), never
   // snapshot code.
-  snapshot: Object.freeze({ lifecycle: 'native-child.js', entries: Object.freeze(['native-web.js', 'src/native-runtime/parent-watch.js']) }),
+  snapshot: Object.freeze({ lifecycle: 'native-child.js', childRow: 'child-row.js', entries: Object.freeze(['native-web.js', 'src/native-runtime/parent-watch.js']) }),
   host: '127.0.0.1',
   socketName: 'control.sock',
   socketPathBytes: 100,
@@ -175,17 +175,23 @@ export const PLACEMENT = Object.freeze({
    * output, never committed; Q-22), else the sibling workspace folder `../<directory>` of a checkout.
    * A packed member carries its own `bundleDependencies` in `bundled/<directory>/node_modules/<name>`,
    * as extracting its tarball leaves them (placement.js bundledLibraries reads them from there).
-   * The set is core and board only (design `9a531192` §1.0, §7; requirements 1.37).
+   * The set is core, fishball-ui and board (requirements 1.39 R-BND-01: "the default set is
+   * `fishball-core`, `fishball-ui` and `fishball-board`"; the user's answer Q1 = A keeps copying them
+   * from the checkout or `bundled/` until REL-PACK makes installable tarballs).
    */
   bundles: Object.freeze([
     Object.freeze({ name: 'fishball-board', directory: 'board' }),
+    // fishball-ui before core (I-HOST, the user's answer Q2 = A): its guard rows target DSH's base
+    // rows, which precede every plugin bundle, so they hold in any order, while core's own guard
+    // check reports `bundle-order` unless core is last.
+    Object.freeze({ name: 'fishball-ui', directory: 'fishball-ui' }),
     Object.freeze({ name: 'fishball-core', directory: 'core' }),
   ]),
   /**
    * Libraries placed beside the bundles, never listed as bundles (R-ARCH-08, one per side,
    * requirements 1.40): dsh-connector-shared, the instance's bundled dependency that its placed
-   * lifecycle code imports, and the connector's `./contract` export, which core and the lifecycle
-   * rows import by name until F-STATUS (M1); both are resolved through the instance's own
+   * lifecycle code and child-side row import, and the connector's `./contract` export, which core's
+   * V2 child path and the lifecycle rows import by name until REMOVE-V2; both are resolved through the instance's own
    * dependency graph. A placed bundle's own libraries (its `bundleDependencies`, as core's
    * fishball-shared) are resolved from the bundle's folder instead (placement.js bundledLibraries).
    * The contract is placed as that export alone, with a manifest naming only it, so the child sees
@@ -221,9 +227,134 @@ export const PLACEMENT = Object.freeze({
   // load in the child, loudly. No copied module has either today.
   specifiers: /^\s*(?:(?:import|export)\s[^'";]*?\sfrom\s*|import\s*)['"](\.{1,2}\/[^'"]+)['"]/gm,
   code: Object.freeze({ missing: 'PLACEMENT_SOURCE_UNAVAILABLE', unsafe: 'UNSAFE_PLACEMENT_SOURCE', unsafeDirectory: 'UNSAFE_DIRECTORY', record: 'INVALID_PLACEMENT_RECORD', incompatible: 'PROFILE_INCOMPATIBLE' }),
+  /** The NativeRuntimeError field naming the first skipped bundle of an `incompatible` refusal (K3 `ChildStatus.plugin`). */
+  pluginField: 'plugin',
   // R-BND-03: an enabled bundle that DSH skips blocks the start; the status names it and DSH's
   // reason. One line, because the host's launch detail keeps only the first line (launch-detail.js).
   incompatible: (skipped) => 'Enabled bundles cannot load: ' + skipped.map(({ packageName, reason }) => packageName + ' (' + String(reason).replace(/\s+/g, ' ').trim() + ')').join('; '),
+})
+
+/**
+ * The instance's refusal words, each defined once (I-HOST); the vocabularies below name them.
+ * - `notReady`, `hostnameRefused`: K3 `AdmitErrorCode` (child.d.ts), also Reconnect's and Open's;
+ * - `connectorMissing`, `targetRemote`, `unwritable`: Reconnect's (K3 `ReconnectRefusalCode`);
+ * - `failed`: K3's shared `operation-failed` (a service threw; nothing is echoed);
+ * - `invalid`: a request outside its closed shape.
+ */
+export const REFUSAL = Object.freeze({
+  notReady: 'not-ready',
+  hostnameRefused: 'hostname-refused',
+  connectorMissing: 'connector-missing',
+  targetRemote: 'target-remote',
+  unwritable: 'credentials-unwritable',
+  failed: 'operation-failed',
+  invalid: 'invalid-request',
+})
+
+/**
+ * The hosted token's set-up (I-HOST; design §5.4; requirements 1.28 R1, 1.39, 1.41 Q-G6; K3a
+ * `HOSTED_IMPORT` names, of which this is the instance's own copy: the two sides share no code,
+ * and `test/v3/contract/k3a-core-seams` checks both copies are equal).
+ * - `credentialRef`: the child credential reference the import writes (`DSH_AGENT_TOKEN`, the
+ *   user's `dsh-agent-token` in DSH's reference grammar);
+ * - `savedRecord`: the record core saves an accepted hosted token into; with the reference it
+ *   answers "the child holds a credential", by DSH's own `credentials` service alone;
+ * - `childRow`: the child-side row's id, which is also the settings namespace of `targetUrl`;
+ * - `channel`: the lifecycle wire's payload channel for the probe and the one import;
+ * - `op`: its two requests; `code`: the client's rejection and the record's refusal;
+ * - `credentialLockWaitMs`: the import's extra bound: the child's `credentials.set` writes under
+ *   DSH's credential document lock, so the import waits that long plus the lifecycle request
+ *   bound (host.js); the probe keeps the lifecycle request bound;
+ * - `record`: the host's non-secret list of the hosted entry keys it created, newest last, with
+ *   the instance's stable id (host/hosted-record.js);
+ * - `notice`: the instance's one notice, after Retry found the hosted entry deleted (R6 = B);
+ * - `reconnect`: its refusals (K3 `ReconnectRefusalCode`).
+ */
+export const HOSTED = Object.freeze({
+  credentialRef: 'DSH_AGENT_TOKEN',
+  savedRecord: 'fishball-core/hosted-agent',
+  childRow: 'dsh-instance-child',
+  targetField: 'targetUrl',
+  channel: 'mcp-credential',
+  op: Object.freeze({ probe: 'probe', import: 'import' }),
+  code: Object.freeze({
+    unavailable: 'CREDENTIAL_CHANNEL_UNAVAILABLE',
+    record: 'INVALID_HOSTED_RECORD',
+  }),
+  /** DSH's credential document lock wait (dsh-credentials-local DOCUMENT_LOCK_WAIT_MS, 0.2.1-rc.5 and 0.2.2-rc.1). */
+  credentialLockWaitMs: 30000,
+  record: Object.freeze({ file: 'hosted.json', format: 1 }),
+  notice: Object.freeze({ entryDeleted: 'hosted-entry-deleted' }),
+  /** Logged (code only, never a value) when the record could not keep a key the child stored. */
+  recordWriteFailed: 'hosted record not written (%s); the child holds the token',
+  /** The host's own connector endpoint the child links to (K1 `PATHS.mcp`, restated: the instance does not import the connector). */
+  mcpPath: '/api/agent/mcp',
+  tokensService: 'dshConnectorTokens',
+  apiVersion: 1,
+  entryState: Object.freeze({ enabled: 'enabled', disabled: 'disabled', deleted: 'deleted' }),
+  /**
+   * K3 `TargetStatus` answers (K1 `TARGET_STATE` / `TARGET_CODE` words, restated because the
+   * instance imports no connector module; the K3 suite checks them): see hosted.js targetStatus.
+   */
+  target: Object.freeze({
+    connected: Object.freeze({ state: 'connected', code: null }),
+    remote: Object.freeze({ state: 'target-unreachable', code: 'TARGET_UNREACHABLE' }),
+    unset: Object.freeze({ state: 'target-unset', code: null }),
+    revoked: Object.freeze({ state: 'token-refused', code: 'token-revoked' }),
+  }),
+})
+
+/**
+ * The frame's single-use admission ticket (design §4.1; spike V3-S4 `b9809b7` F1). An HMAC over
+ * `{gen, aud, view, lang, exp, nonce}` with a key both ends derive from the lifecycle secret they
+ * already hold (`control.secret`), so no key travels in a launch overlay. Valid while
+ * `now < exp`. Redeemed once by the child-side row at `path`, which mints the child's own login
+ * cookie through DSH's public `connection.authorizeIndex` and answers 303 to the page.
+ */
+export const TICKET = Object.freeze({
+  ttlMs: 30000,
+  param: 'ticket',
+  path: '/api/dsh-instance/admit',
+  keyLabel: 'dsh-instance admission v1',
+  algorithm: 'sha256',
+  nonceBytes: 16,
+  encoding: 'base64url',
+  separator: '.',
+  /** The page the redeemed ticket opens, with the view and language as a fragment (fishball-page reads `view` and `lang`). */
+  landing: '/',
+  fragment: Object.freeze({ view: 'view', lang: 'lang' }),
+})
+
+/** The child's lifecycle states (K3 `ChildState`, V2 STATUS), the host row's and the locator's one vocabulary. */
+export const CHILD_STATE = Object.freeze({ disabled: 'disabled', waiting: 'waiting', starting: 'starting', ready: 'ready', stopping: 'stopping', stopped: 'stopped', failed: 'failed' })
+/**
+ * The host row's status codes (K3 `LifecycleCode`, as I-HOST amended it: no `fishball-off`).
+ * Since I-HOST removed the V2 connector binding (user decision 2026-11-16: "现在第二版根本没有实际部署的
+ * 情况，把它当作一次发布前的设计变更，第三版其实就是第一版"), these are the instance's own words and no
+ * V2 binding code remains.
+ */
+export const LIFECYCLE_CODE = Object.freeze({
+  failed: 'NATIVE_START_FAILED', stop: 'NATIVE_STOP_FAILED', exited: 'NATIVE_CHILD_EXITED', unavailable: 'NATIVE_UNAVAILABLE',
+  timeout: 'NATIVE_TIMEOUT', disabled: 'NATIVE_DISABLED', invalidMainHome: 'INVALID_MAIN_HOME', incompatible: 'PROFILE_INCOMPATIBLE',
+})
+/** Every state and code the instance itself reports (its pages and the child's V2 settings relay). */
+export const INSTANCE_STATES = Object.freeze(Object.values(CHILD_STATE))
+export const INSTANCE_CODES = Object.freeze(Object.values(LIFECYCLE_CODE))
+/** The locator's K3 `apiVersion`. */
+export const LOCATOR = Object.freeze({ service: 'dshInstanceChild', apiVersion: 1 })
+
+/**
+ * The locator's hostnames (K3 `LoopbackHostname`). The child's web server listens on
+ * `RUNTIME.host`, so it serves `127.0.0.1` and `localhost`; `[::1]` is refused `not-ready` (the
+ * user's answer Q5 = A: no second listener is designed).
+ */
+export const LOOPBACK = Object.freeze({
+  served: Object.freeze(['127.0.0.1', 'localhost']),
+  all: Object.freeze(['127.0.0.1', 'localhost', '[::1]']),
+  views: Object.freeze(['chat', 'settings']),
+  /** The view the instance page's Open Fishball admits: the child's Fishball page (Q-G3; the user's answer Q7 = A). */
+  openView: 'chat',
+  langs: Object.freeze(['zh', 'en']),
 })
 
 /** Validate without including private admission values in exceptions. */

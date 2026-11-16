@@ -1,9 +1,8 @@
 /**
  * One-shot provider additions. Only safe inventory crosses preview; secret records arrive at confirm.
  *
- * Until I-HOST moves core's child half into dsh-instance, the child end runs fishball-shared's
- * identical copy (requirements 1.40: no module is shared across the sides, so one copy per side);
- * keep the two in step until then.
+ * Both ends use this one copy since I-HOST moved the child's target into dsh-instance (requirements
+ * 1.41 Q-G7; design §1.0b row 5).
  */
 import { createHash, randomBytes } from 'node:crypto'
 
