@@ -26,6 +26,8 @@ export const name = HOSTED.childRow
 export const Config = Schema.object({
   [HOSTED.targetField]: Schema.string().default(''),
 })
+// The provider-sync target's inject list is the one core's row had (no `sessionController`), so
+// moving it changed nothing it does; the row gates on no session service.
 export const inject = ['nativeRuntime', 'settings', 'pluginManager', 'llm', 'credentials', 'configEditor', 'authorization', 'profileContext', 'webServer', 'connection']
 
 const ADMIT = Object.freeze({

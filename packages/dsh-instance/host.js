@@ -35,17 +35,18 @@ const PLUGIN = Object.freeze({
   // 0.2.2-rc.1 alike); ctx.get() is the only unchecked read. Each one below has the same name
   // in both versions and is a dsh-base row there, so none is optional. Neither version has an
   // optional inject form anyway: every listed key gates activation.
-  dependencies: ['profileContext', 'workspaceRegistry', 'sessions', 'sessionController', 'agents', 'appReady', 'connection', 'webServer',
+  // R-ARCH-05: no service that reads or writes sessions, approvals, questions or prompts. The V2
+  // binding's `sessions`, `sessionController` and `agents` left with it (I-HOST); the model-sync
+  // source never calls the catalog read `verify`, which only the child's target runs.
+  dependencies: ['profileContext', 'workspaceRegistry', 'appReady', 'connection', 'webServer',
     // B9: the provider-sync source host is built on this row's ctx (createChildProviderSync) and
     // reads llm, settings, configEditor, credentials and authorization (dsh-connector-shared/provider-sync-host).
     // dsh-base turns settings/configEditor off only without profileContext, which is required
-    // above anyway. llm is already a dependency of sessionController and credentials of
-    // connection, so listing them adds no new reason for this row (and its child) to restart.
+    // above anyway.
     'llm', 'settings', 'configEditor', 'credentials', 'authorization',
     // The one-time settings migration keeps its done-marker in its own storage domain
     // (src/settings-migration.js); storage-domain is a dsh-base row in both versions.
     'storageDomain',
-    // The session port moved to the connector row in M1, which now injects what its model path reads.
   ],
   cleanup: 'fishball native host: stop owned child and retain private data',
   // The loader's event after a volatile-only config change (cordis-plugin-loader, both versions).
