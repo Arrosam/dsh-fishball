@@ -104,7 +104,11 @@ export interface AdmitRequest {
  */
 export type AdmitErrorCode = 'hostname-refused' | 'not-ready'
 
-/** Hosted model sync (R-HOST-07), V2's `providerSync`, started only from embed-UI's Plugins card. */
+/**
+ * Hosted model sync (R-HOST-07), V2's `providerSync`, started from the instance's own settings
+ * page, and once automatically when a new child first becomes ready (the user, 2026-11-16:
+ * "instance初次安装时同步一次").
+ */
 export interface ProviderSyncStatus {
   readonly state: 'inactive' | 'ready'
   readonly instanceId?: string
