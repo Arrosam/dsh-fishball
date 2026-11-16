@@ -5,17 +5,18 @@
  * (`client.js` loads it and starts `settingsPlugin`), because DSH's client modules serve only
  * `client.<name>.js` files beside `client.js` (CLIENT_CHUNK, both SDKs).
  *
- * Two sub-plugins, each with only the services it needs, so one missing service never takes the
- * other down:
- * - **the page**: core's configuration on DSH's Plugins page, in the `plugins.bundle.config` slot
- *   keyed by core's bundle name, so `pluginNavigation.openBundle` lands on it directly. The same
- *   page in standalone and hosted mode (Q-B2: "子实例内的界面和独立版本一样"). It holds the target
- *   URL, the write-only token field (always shown, Q-B2), `connect.clientMetadataUrl` (R12 = B),
- *   the identity, and the Connect control (design §6.3a step 1). Saving is DSH's own settings save
- *   of core's row namespace; the token goes to DSH's credential store; Connect goes through core's
- *   one route (`src/settings/`);
- * - **the entries**: Fishball's page gets two header actions, "Fishball settings" (this page) and
- *   "DSH settings" (DSH's built-in Settings), and the `view=settings` continuation opens this page.
+ * One sub-plugin, the page, with only the services it needs: core's configuration on DSH's Plugins
+ * page, in the `plugins.bundle.config` slot keyed by core's bundle name, so
+ * `pluginNavigation.openBundle` lands on it directly. The same page in standalone and hosted mode
+ * (Q-B2: "子实例内的界面和独立版本一样"). It holds the target URL, the write-only token field (always
+ * shown, Q-B2), `connect.clientMetadataUrl` (R12 = B), the identity, and the Connect control
+ * (design §6.3a step 1). Saving is DSH's own settings save of core's row namespace; the token goes
+ * to DSH's credential store; Connect goes through core's one route (`src/settings/`).
+ *
+ * The two entries on the Fishball page ("Fishball settings", which opens this page, and "DSH
+ * settings") and the `view=settings` continuation are UI changes inside Fishball, so they are
+ * fishball-ui's since F-UI (R-FB-14; fishball-ui `client.entries.js`). This page is what DSH requires
+ * of core as a plugin, and it stays core's (design §1.0: "its own settings page").
  *
  * The slim settings panel and its settings-section extension point (`fishballSettingsSections`)
  * are gone with R-HOST-11 (1.34): no section is injected from anywhere.
@@ -84,30 +85,8 @@ window.__ModuleLoader__.load({
       }),
       /** DSH's remote event for a committed credential-reference change (dsh-credentials, both SDKs). */
       credentialChanged: 'credentials/reference-updated',
-      css: Object.freeze({ id: 'fishball-core-settings-style', root: 'fb-core-settings', row: 'fb-core-settings-row', hint: 'fb-core-settings-hint', error: 'fb-core-settings-error', headerError: 'fb-core-settings-header-error' }),
+      css: Object.freeze({ id: 'fishball-core-settings-style', root: 'fb-core-settings', row: 'fb-core-settings-row', hint: 'fb-core-settings-hint', error: 'fb-core-settings-error' }),
     })
-    const ENTRIES = Object.freeze({
-      slot: 'conversation.session.header.actions',
-      // The V2 panel's header order, so the actions keep their place beside the native ones.
-      order: Object.freeze({ fishball: 90, dsh: 91 }),
-      id: Object.freeze({ fishball: 'fishball-core-settings', dsh: 'fishball-dsh-settings' }),
-      navigation: 'pluginNavigation',
-      pluginsPanel: 'plugins',
-      /**
-       * No public service opens DSH's Settings: the single `settings.launcher` owner gets the only
-       * `openSettings` callback, and fishball-page portals it as this button. Pressing it is the
-       * native open path, so the native modal and its sections stay native.
-       */
-      settingsLauncher: '.fishball-settings-launcher',
-      /**
-       * PG-ORIGIN's fragment continuation, as fishball-page reads it (`view=settings`). The page's
-       * one-time manager selection closes panels when the conversation first becomes ready
-       * (`data-fishball-session` on <html>), so the page is opened at load and once more then.
-       */
-      continuation: Object.freeze({ name: 'view', value: 'settings' }),
-      sessionReady: 'data-fishball-session',
-    })
-
     const en = {
       summary: 'Fishball\'s target, connection and identity.',
       'field.target.url': 'Target',
@@ -147,9 +126,6 @@ window.__ModuleLoader__.load({
       overridden: 'Set',
       reset: 'Reset',
       invalid: 'Not a valid value.',
-      entryFishball: 'Fishball settings',
-      entryDsh: 'DSH settings',
-      settingsUnavailable: 'DSH Settings cannot be opened from here right now; use the Settings button at the bottom left.',
     }
     const zh = {
       summary: 'Fishball 的目标、连接与身份。',
@@ -190,17 +166,12 @@ window.__ModuleLoader__.load({
       overridden: '已设置',
       reset: '重置',
       invalid: '不是有效的值。',
-      entryFishball: 'Fishball 设置',
-      entryDsh: 'DSH 设置',
-      settingsUnavailable: '现在无法从这里打开 DSH 设置；请使用左下角的“设置”按钮。',
     }
     const css = [
       `.${PAGE.css.root}{display:grid;gap:16px}`,
       `.${PAGE.css.row}{display:flex;align-items:center;flex-wrap:wrap;gap:8px}`,
       `.${PAGE.css.hint}{margin:0;color:var(--dsw-alias-label-tertiary);font-size:12px}`,
       `.${PAGE.css.error}{margin:0;color:var(--dsw-alias-state-error-primary)}`,
-      // Inside the header actions bar: one line, no block margin, so the bar keeps its height.
-      `.${PAGE.css.headerError}{align-self:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:40ch;font-size:12px;color:var(--dsw-alias-state-error-primary)}`,
     ].join('')
 
     /** The style sheet, removed by its effect's disposer; the id names it for a reader of the DOM. */
@@ -441,83 +412,11 @@ window.__ModuleLoader__.load({
       },
     })
 
-    // ---------------------------------------------------------------- the entries
-
-    /** Opens core's settings page: its bundle page on DSH's Plugins page, else the Plugins list. */
-    function openCoreSettings(ctx) {
-      const navigation = ctx.get(ENTRIES.navigation)
-      if (navigation) navigation.openBundle(SHARED.bundle)
-      else ctx.layout.selectPanel(ENTRIES.pluginsPanel)
-    }
-
-    function makeFishballEntry(ctx, t) {
-      return function FishballSettingsEntry() {
-        useLocale(ctx)
-        return h(Button, { type: 'button', size: 'sm', variant: 'ghost', 'data-fishball-settings-entry': 'fishball', onClick: () => openCoreSettings(ctx) }, t('entryFishball'))
-      }
-    }
-
-    function makeDshEntry(ctx, t) {
-      return function DshSettingsEntry() {
-        const [missing, setMissing] = React.useState(false)
-        useLocale(ctx)
-        // Looked up on press: the launcher is a portal fishball-page may mount after this entry.
-        // DSH offers no toast service, so a missing launcher is said inline, as one short line in
-        // the header bar (the full text stays readable as its title).
-        const open = () => {
-          const launcher = document.querySelector(ENTRIES.settingsLauncher)
-          setMissing(launcher === null)
-          launcher?.click()
-        }
-        return h(React.Fragment, null,
-          h(Button, { type: 'button', size: 'sm', variant: 'ghost', 'aria-haspopup': 'dialog', 'data-fishball-settings-entry': 'dsh', onClick: open }, t('entryDsh')),
-          missing ? h('span', { className: PAGE.css.headerError, role: 'alert', title: t('settingsUnavailable') }, t('settingsUnavailable')) : null)
-      }
-    }
-
-    /**
-     * `view=settings` opens core's settings page once at load, and once more when the Fishball page
-     * first marks its conversation ready (its one-time manager selection closes panels). Nothing
-     * reopens it after that, so the user's own navigation is never overridden.
-     */
-    function openFromContinuation(ctx) {
-      const wanted = new URLSearchParams(window.location.hash.slice(1)).get(ENTRIES.continuation.name) === ENTRIES.continuation.value
-      if (!wanted) return () => {}
-      const open = () => { try { openCoreSettings(ctx) } catch { /* the Plugins panel is not registered yet */ } }
-      // The second open only restores what the page's selection closed: when the user opened
-      // another panel meanwhile, that choice stands.
-      const reopen = () => { if ([null, ENTRIES.pluginsPanel].includes(ctx.layout.panelInfo.getSnapshot().activePanelId)) open() }
-      queueMicrotask(open)
-      const root = document.documentElement
-      if (root.hasAttribute(ENTRIES.sessionReady)) return () => {}
-      const observer = new MutationObserver(() => {
-        if (!root.hasAttribute(ENTRIES.sessionReady)) return
-        observer.disconnect()
-        queueMicrotask(reopen)
-      })
-      observer.observe(root, { attributes: true, attributeFilter: [ENTRIES.sessionReady] })
-      return () => observer.disconnect()
-    }
-
-    const entriesPlugin = (t) => Object.freeze({
-      name: 'fishball-core-settings-entries',
-      inject: ['slots', 'layout', 'locale'],
-      apply(ctx) {
-        const header = (key, Component) => ctx.effect(() => ctx.slots.inject(ENTRIES.slot, () => ctx.slots.register({
-          name: ENTRIES.slot, id: ENTRIES.id[key], order: ENTRIES.order[key], locale: PAGE.locale,
-        }, Component)), 'fishball core settings: ' + ENTRIES.id[key])
-        header('fishball', makeFishballEntry(ctx, t))
-        header('dsh', makeDshEntry(ctx, t))
-        ctx.effect(() => openFromContinuation(ctx), 'fishball core settings: view continuation')
-      },
-    })
-
     function apply(ctx) {
       const t = ctx.locale.bind(PAGE.locale)
       ctx.effect(() => ctx.locale.register(PAGE.locale, { en, zh }), 'fishball core settings: dictionaries')
       ctx.effect(mountStyle, 'fishball core settings: styles')
       ctx.plugin(pagePlugin(t))
-      ctx.plugin(entriesPlugin(t))
     }
 
     return { settingsPlugin: Object.freeze({ name: 'fishball-core-settings', inject: ['locale'], apply }) }

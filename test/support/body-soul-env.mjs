@@ -24,6 +24,8 @@ export const BODY_SOUL = Object.freeze({
   connector: path.join(REPO, 'packages', 'dsh-connector'),
   /** V3 R-CORE: the slim child, slim ui, persona and fishball-ui page packages moved here. */
   core: path.join(REPO, 'packages', 'core'),
+  /** V3 F-UI: the page, the Recommended tab and its data moved, unchanged, from core into fishball-ui. */
+  ui: path.join(REPO, 'packages', 'fishball-ui'),
   tempPrefix: 'fbtest-body-soul-',
   /** Runtime packages outside `@deepseek-ai/` that instance modules import. */
   runtimePackages: Object.freeze(['zod']),
@@ -47,6 +49,12 @@ export async function loadInstance(relative) {
 export async function loadCore(relative) {
   installHooks()
   return import(pathToFileURL(path.join(BODY_SOUL.core, relative)).href)
+}
+
+/** Import a module of packages/fishball-ui by its path relative to that package. */
+export async function loadUi(relative) {
+  installHooks()
+  return import(pathToFileURL(path.join(BODY_SOUL.ui, relative)).href)
 }
 
 /** Import a module of packages/dsh-connector by its path relative to that package. */

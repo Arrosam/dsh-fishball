@@ -27,6 +27,7 @@ export const PACKAGE = Object.freeze({
   dshConnectorShared: 'packages/dsh-connector-shared',
   dshConnectorAdapter: 'packages/dsh-connector-adapter',
   fishballCore: 'packages/core',
+  fishballUi: 'packages/fishball-ui',
   fishballShared: 'packages/shared',
   fishballBoard: 'packages/board',
 })
@@ -80,7 +81,7 @@ const suite = (description, files, triggers) => Object.freeze({ description, fil
  */
 export const V3_SUITES = Object.freeze({
   'contract.own-schema': suite('core-owned MCP surface and real connector drift (F-OWN-SCHEMA)', v3('contract/own-schema'),
-    [sub(PACKAGE.fishballCore, 'contracts'), PACKAGE.fishballCore + '/src/*', PACKAGE.fishballCore + '/src/!(slim)/**', top(PACKAGE.fishballCore), sub(PACKAGE.fishballCore, 'ui'),
+    [sub(PACKAGE.fishballCore, 'contracts'), PACKAGE.fishballCore + '/src/*', PACKAGE.fishballCore + '/src/!(slim)/**', top(PACKAGE.fishballCore),
       // The absence rows must rerun if a generated copy or its generator comes back.
       sub(PACKAGE.fishballCore, 'vendor'), sub(PACKAGE.fishballCore, 'scripts'), all(PACKAGE.fishballBoard), all(PACKAGE.fishballShared), ...CONNECTOR_CONTRACTS,
       // What the real-connector rows boot (as dsh-connector.mcp-tools).
@@ -140,9 +141,10 @@ export const V3_SUITES = Object.freeze({
   'dsh-connector-ui.draw': suite('draw-only frontend: fish, window, hint, Retry link, marks, Hand over / Take back, light, notify prompt, tool declaration (U-DRAW)', v3('dsh-connector-ui/draw'),
     [all(PACKAGE.dshConnectorUi), sub(PACKAGE.dshConnector, 'src', 'ui'), sub(PACKAGE.dshConnector, 'src', 'contrib'), sub(PACKAGE.dshConnector, 'tools'),
       sub(PACKAGE.dshConnector, 'host-services'), all(PACKAGE.dshConnectorShared), ...CONNECTOR_CORE, ...CONNECTOR_CONTRACTS]),
-  // Reads the instance's whole placement and launch overlay, and core's patch it places.
+  // Reads the instance's whole placement and launch overlay, core's patch it places, and the F-GUARDS
+  // vocabulary (whose split constants name fishball-ui's rows).
   'dsh-instance.placement': suite('placement of the set, launch overlay, hosted-child guards (I-PLACE)', v3('dsh-instance/placement'),
-    [all(PACKAGE.dshInstance), all(PACKAGE.fishballCore), all(PACKAGE.dshConnectorShared), all(PACKAGE.fishballShared)]),
+    [all(PACKAGE.dshInstance), all(PACKAGE.fishballCore), all(PACKAGE.dshConnectorShared), all(PACKAGE.fishballShared), 'test/v3/fishball-ui/guards/constants.mjs']),
   'fishball-core.package': suite('core package, slim child move (R-CORE; the settings-section point withdrawn, 1.34)', v3('fishball-core/package'),
     [all(PACKAGE.fishballCore), sub(PACKAGE.dshInstance, 'src', 'slim'), sub(PACKAGE.dshInstance, 'src', 'child-settings')]),
   'fishball-core.bridge': suite('bridge façade, list_changed refresh, X8 attention (F-FACADE)', v3('fishball-core/bridge'),
@@ -151,22 +153,30 @@ export const V3_SUITES = Object.freeze({
     [sub(PACKAGE.fishballCore, 'src', 'events'), ...CORE_LINK, ...CONNECTOR_CONTRACTS]),
   'fishball-core.link': suite('MCP link (F-LINK)', v3('fishball-core/link'),
     [...CORE_LINK, top(PACKAGE.fishballCore), ...CONNECTOR_CONTRACTS, ...CONNECTOR_CORE, CONNECTOR_MANIFEST, sub(PACKAGE.dshConnector, 'host-services')]),
+  // The card's browser half is fishball-ui's chunk since F-UI; its package.json ships it.
   'fishball-core.asks': suite('ask cards: ask_user, the asks service and routes (F-ASKCARD)', v3('fishball-core/asks'),
-    [sub(PACKAGE.fishballCore, 'src', 'asks'), PACKAGE.fishballCore + '/client.asks.js', ...CORE_LINK]),
+    [sub(PACKAGE.fishballCore, 'src', 'asks'), PACKAGE.fishballUi + '/client.asks.js', PACKAGE.fishballUi + '/package.json', ...CORE_LINK]),
   'fishball-core.identity': suite('identity, pairing decisions, token-revoked (F-PAIR)', v3('fishball-core/identity'),
     [sub(PACKAGE.fishballCore, 'src', 'identity'), ...CORE_LINK, sub(PACKAGE.dshConnector, 'src', 'pairs'), ...CONNECTOR_CORE, ...CONNECTOR_CONTRACTS,
       // Its name rows read the own-schema suite's constants.
       'test/v3/contract/own-schema/constants.mjs']),
-  // The strip view is core's ui/status until F-UI moves it; the line reads the link's target rule.
+  // The strip view is fishball-ui's src/status since F-UI (it reads fishball-shared's ui-seam); the line reads the link's target rule.
   'fishball-core.status': suite('status, strip view, set completeness, guards notice (F-STATUS)', v3('fishball-core/status'),
-    [sub(PACKAGE.fishballCore, 'src', 'status'), sub(PACKAGE.fishballCore, 'ui', 'status'), ...CORE_LINK]),
-  // The chunk loads only through core's client.js and reads core's contracts (constants.js).
+    [sub(PACKAGE.fishballCore, 'src', 'status'), sub(PACKAGE.fishballUi, 'src'), all(PACKAGE.fishballShared), ...CORE_LINK]),
+  // The chunk loads only through core's client.js and reads core's contracts (constants.js); the page
+  // also loads fishball-ui's client, whose entries chunk holds the two Fishball-page entries (F-UI).
   'fishball-core.settings': suite("core's own settings page, token field, Connect, Fishball-page entries (F-SETTINGS)", v3('fishball-core/settings'),
-    ['packages/core/client.settings.js', 'packages/core/client.js', sub(PACKAGE.fishballCore, 'src', 'settings'), sub(PACKAGE.fishballCore, 'contracts')]),
-  // fishball-ui has no folder yet (F-UI moves it out of core): its guards are core's src/guards, ui/ and patch.
+    ['packages/core/client.settings.js', 'packages/core/client.js', sub(PACKAGE.fishballCore, 'src', 'settings'), sub(PACKAGE.fishballCore, 'contracts'),
+      top(PACKAGE.fishballUi), sub(PACKAGE.fishballUi, 'src'), all(PACKAGE.fishballShared)]),
+  // Boots a real standalone DSH with core and fishball-ui installed as whole bundles (F-UI splits the
+  // guard rows between their two patches; the instance's launch code is read for the LITE rows).
   'fishball-ui.guards': suite('guard rows, override report, self-reorder (F-GUARDS)', v3('fishball-ui/guards'),
-    [sub(PACKAGE.fishballCore, 'src', 'guards'), sub(PACKAGE.fishballCore, 'ui'), sub(PACKAGE.fishballCore, 'contracts'), top(PACKAGE.fishballCore),
-      all(PACKAGE.dshInstance)]),
+    [all(PACKAGE.fishballCore), all(PACKAGE.fishballUi), all(PACKAGE.fishballShared), all(PACKAGE.dshInstance)]),
+  // Reads fishball-ui's whole package, core's patch, constants and client, fishball-shared's ui-seam,
+  // and boots a real standalone DSH with them (the guards worker, so its harness files too).
+  'fishball-ui.package': suite('fishball-ui package, patch rows and conditions, ui-seam, browser half, core/ui system rows (F-UI)', v3('fishball-ui/package'),
+    [all(PACKAGE.fishballUi), all(PACKAGE.fishballCore), all(PACKAGE.fishballShared), 'test/v3/fishball-ui/guards/**', 'test/v3/fishball-core/package/**',
+      'test/v3/fishball-core/status/constants.mjs']),
   'fishball-board.peers': suite('board and fold-notify without core (FEAT-PEERS)', v3('fishball-board/peers'),
     [all(PACKAGE.fishballBoard), sub(PACKAGE.dshConnector, 'mcp-schema')]),
   // The contract suites read every file of the packages they bound, so any change there reruns them.
@@ -180,10 +190,11 @@ export const V3_SUITES = Object.freeze({
     [sub(PACKAGE.dshConnector, 'tools'), sub(PACKAGE.fishballCore, 'contracts')]),
   'contract.k3-host-services': suite('K3 host-only service and core contract freeze', v3('contract/k3-host-services'),
     [sub(PACKAGE.dshConnector, 'host-services'), sub(PACKAGE.fishballCore, 'contracts')]),
-  // K3a reads core's contracts and patch against the connector's published schema and tools, and
-  // scans the DSH-side package folders for imports of core.
+  // K3a reads core's contracts and patch against the connector's published schema and tools, the
+  // fishball-ui seam's values in fishball-shared (moved there by F-UI), and scans the DSH-side
+  // package folders for imports of core.
   'contract.k3a-core-seams': suite('K3a core-side seams: own MCP-surface copy, hosted import names, Connect, fishball-ui seam', v3('contract/k3a-core-seams'),
-    [sub(PACKAGE.fishballCore, 'contracts'), top(PACKAGE.fishballCore), sub(PACKAGE.dshConnector, 'host-services'), ...CONNECTOR_CONTRACTS,
+    [sub(PACKAGE.fishballCore, 'contracts'), top(PACKAGE.fishballCore), all(PACKAGE.fishballShared), sub(PACKAGE.dshConnector, 'host-services'), ...CONNECTOR_CONTRACTS,
       all(PACKAGE.dshConnector), all(PACKAGE.dshConnectorUi), all(PACKAGE.dshInstance)]),
   'contract.package-boundaries': suite('package boundaries, imports, packing (R-SHARED, PLAT-EP-07)', v3('contract/package-boundaries'),
     [...Object.values(PACKAGE).map(all)]),
@@ -232,7 +243,7 @@ export const V2_GROUPS = Object.freeze({
     'packages/dsh-instance/test/instance-ext/x0-c-held-context.test.mjs', 'packages/dsh-instance/test/instance-ext/x0-c.test.mjs',
     'test/v2-page-cases/child-boot.test.mjs', 'test/v2-page-cases/child-boot-nav.test.mjs', 'test/v2-page-cases/child-boot-reopen.test.mjs',
     'test/v2-page-cases/set-main-only-sync.test.mjs',
-  ]), [all(PACKAGE.dshInstance), all(PACKAGE.fishballCore), all(PACKAGE.dshConnectorShared), all(PACKAGE.fishballShared), sub(PACKAGE.dshConnector, 'contract')]),
+  ]), [all(PACKAGE.dshInstance), all(PACKAGE.fishballCore), all(PACKAGE.fishballUi), all(PACKAGE.dshConnectorShared), all(PACKAGE.fishballShared), sub(PACKAGE.dshConnector, 'contract')]),
   'v2.fishball-core': suite('core\'s slim child and pages: chat, records, i18n, persona, skills, settings, lite', v2([
     'body-soul-i6-settings-view', 'body-soul-i7-records', 'body-soul-i9-lang', 'e1-p2-model-choice', 'e1-p4-header-name',
     'persona-bold-render', 'test/instance-ext/x0-i.test.mjs', 'test/instance-ext/x0-w.test.mjs',
@@ -242,7 +253,8 @@ export const V2_GROUPS = Object.freeze({
     'test/v2-page-cases/ready.test.mjs', 'test/v2-page-cases/set.test.mjs',
     'test/v2-recommendation/sdk-0.2.1-rc.5.test.mjs', 'test/v2-recommendation/sdk-0.2.2-rc.1.test.mjs',
     'packages/dsh-instance/test/instance-ext/page-boot-unwind.test.mjs', 'packages/dsh-instance/test/instance-ext/page-open-listed.test.mjs',
-  ]), [all(PACKAGE.fishballCore), all(PACKAGE.dshInstance), sub(PACKAGE.dshConnector, 'contract')]),
+    // The page and the Recommended tab are fishball-ui's since F-UI.
+  ]), [all(PACKAGE.fishballCore), all(PACKAGE.fishballUi), all(PACKAGE.dshInstance), sub(PACKAGE.dshConnector, 'contract')]),
   'v2.fishball-shared': suite('fishball-shared\'s interim provider-sync engine and host copy (until I-HOST)', v2(['provider-sync-engine', 'provider-sync-host']),
     [all(PACKAGE.fishballShared)]),
   // Static readers of whole packages: v2-boundary reads every manifest and the V2 selection,

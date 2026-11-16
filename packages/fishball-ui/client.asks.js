@@ -1,14 +1,14 @@
 /**
  * Fishball's ask cards, browser half (task F-ASKCARD; R-FB-11, R-UI-12; Q-U2; Q3 = A). A
- * package-local chunk of core's own client, beside client.js: DSH serves only flat
- * `client.<name>.js` chunks (the CLIENT_CHUNK rule, both SDKs), so it cannot live in `ui/asks/`.
- * F-WIRE (W4b) starts `asksPlugin` from client.js as a sub-plugin, as it starts the settings panel;
- * F-UI later moves it to fishball-ui with the rest of the page.
+ * package-local chunk of fishball-ui's client, beside client.js: DSH serves only flat
+ * `client.<name>.js` chunks (the CLIENT_CHUNK rule, both SDKs). fishball-ui's client.js starts
+ * `asksPart` as a sub-plugin. F-UI moved it here from core: the card store and its routes stay
+ * core's (src/asks/), the drawing is fishball-ui's (R-FB-14).
  *
- * It runs only where core runs, the Fishball DSH (hosted child or standalone), so the main DSH never
- * shows a card (Q-U2). Inside it, a card is drawn in the manager's conversation only: DSH's
- * session-scoped `conversation.input.dock` list, above the composer, for the session whose id the
- * card stream names as the manager's. Every other session draws nothing.
+ * It runs only where fishball-ui runs beside core, the Fishball DSH (hosted child or standalone),
+ * so the main DSH never shows a card (Q-U2). Inside it, a card is drawn in the manager's
+ * conversation only: DSH's session-scoped `conversation.input.dock` list, above the composer, for
+ * the session whose id the card stream names as the manager's. Every other session draws nothing.
  *
  * The state is the server half's (src/asks/): the stream route sends `{managerSessionId, cards}`
  * and the answer route commits once. A card shows the asking session, its question and Allow /
@@ -20,7 +20,7 @@
  * reworded here.
  */
 window.__ModuleLoader__.load({
-  id: 'fishball-core',
+  id: 'fishball-ui',
   chunk: 'client.asks.js',
   factory(require) {
     const React = require('react')
@@ -28,15 +28,16 @@ window.__ModuleLoader__.load({
     const h = React.createElement
 
     const ASKS_UI = Object.freeze({
-      name: 'fishball-core: asks',
+      name: 'fishball-ui: asks',
       locale: 'fishball-asks',
       slot: 'conversation.input.dock',
       id: 'fishball-asks',
       // Before DSH's own docks in this slot (todo 0, goal 10, queue 20, both SDKs), so an open card
       // is the first thing above the composer.
       order: -10,
-      // Restated, because a chunk cannot import src/asks/constants.js: ASK_ROUTE's paths without their
-      // leading `/` (page-relative), and CARD_STATE.
+      // Core's published routes and card states, restated because fishball-ui imports nothing of
+      // core (Q-G2): core's src/asks/constants.js ASK_ROUTE paths without their leading `/`
+      // (page-relative), and CARD_STATE.
       events: 'api/fishball/asks/events',
       answer: 'api/fishball/asks/answer',
       jsonHeaders: Object.freeze({ 'content-type': 'application/json' }),
@@ -76,14 +77,6 @@ window.__ModuleLoader__.load({
       `.${ASKS_UI.css.reason}{width:100%;box-sizing:border-box;resize:vertical;font:inherit}`,
       `.${ASKS_UI.css.error}{margin:0;color:var(--dsw-alias-state-error-primary)}`,
     ].join('')
-
-    function mountStyle() {
-      const style = document.createElement('style')
-      style.id = ASKS_UI.css.id
-      style.textContent = css
-      document.head.appendChild(style)
-      return () => style.remove()
-    }
 
     const apiUrl = (path) => new URL(path, document.baseURI).toString()
 
@@ -163,16 +156,20 @@ window.__ModuleLoader__.load({
       }
     }
 
-    function apply(ctx) {
-      const stream = cardStream()
-      ctx.effect(() => ctx.locale.register(ASKS_UI.locale, { en, zh }), 'fishball asks: dictionaries')
-      ctx.effect(mountStyle, 'fishball asks: styles')
-      ctx.effect(() => ctx.slots.inject(ASKS_UI.slot, () => ctx.slots.register({
-        name: ASKS_UI.slot, id: ASKS_UI.id, order: ASKS_UI.order, locale: ASKS_UI.locale,
-        inject: (sessionId) => ({ sessionId }),
-      }, makeDock(stream))), 'fishball asks: card dock')
+    /** The part as a client plugin over fishball-ui's kit (client.js `kit`). */
+    function asksPart(kit) {
+      function apply(ctx) {
+        const stream = cardStream()
+        ctx.effect(() => ctx.locale.register(ASKS_UI.locale, { en, zh }), 'fishball asks: dictionaries')
+        ctx.effect(() => kit.mountStyle(ASKS_UI.css.id, css), 'fishball asks: styles')
+        ctx.effect(() => ctx.slots.inject(ASKS_UI.slot, () => ctx.slots.register({
+          name: ASKS_UI.slot, id: ASKS_UI.id, order: ASKS_UI.order, locale: ASKS_UI.locale,
+          inject: (sessionId) => ({ sessionId }),
+        }, makeDock(stream))), 'fishball asks: card dock')
+      }
+      return Object.freeze({ name: ASKS_UI.name, inject: ['slots', 'locale'], apply })
     }
 
-    return { asksPlugin: Object.freeze({ name: ASKS_UI.name, inject: ['slots', 'locale'], apply }) }
+    return { asksPart }
   },
 })

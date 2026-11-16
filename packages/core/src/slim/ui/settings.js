@@ -4,7 +4,8 @@
  * The custom page shows it at `?view=settings` (src/slim/ui/shell.js owns the switch). It has
  * three blocks: the status with Restart, the child's default model and reasoning effort from its
  * own catalog, and the child's plugins (installed, install by spec, and each plugin's settings). The
- * recommended list moved to the child's Fishball Recommended tab (ui/fishball-recommend-plugins).
+ * recommended list moved to the child's Fishball Recommended tab (fishball-ui's
+ * fishball-recommend-plugins).
  *
  * It calls the kept admin routes `/api/fishball/native/admin/*` (dsh-instance src/slim/host/settings-routes.js)
  * and nothing else: the page is framed on the main origin, so those owner-only routes take the main

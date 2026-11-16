@@ -4,7 +4,8 @@ Source of truth: the F-STATUS brief relayed by the dev session (2026-11-16): R-F
 (REM-DT-01), design §6.3a (Connect), R-BND-05 / TQ-17 (PLAT-DT-02, rewritten for board only),
 HOST-DT-03 rule 10, Q-G1, R-FB-07 (withdrawn), R-FB-09 / design §5a.2, R-EXT-14, R-FB-10, and the
 relayed exported surface (`createStatus`, `statusOf`, `STATUS_MODEL`, `STATUS_TEXT`, `stripView`).
-The implementation under `packages/core/src/status/` and `packages/core/ui/status/` was not read.
+The implementation under `packages/core/src/status/` and `packages/fishball-ui/src/status/` (the strip
+view, moved from core's `ui/status/` by F-UI) was not read.
 
 Actors: the **owner** (reads the strip on Fishball's page), **core's status** (`createStatus`),
 its ports (core's link, Connect, the guard report, the bridge façade, the manager notice), DSH's

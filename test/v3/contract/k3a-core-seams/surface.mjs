@@ -18,6 +18,8 @@ const importFile = (file) => import(pathToFileURL(file).href)
 
 export const core = () => contracts(FOLDER.coreContracts)
 export const coreConstants = () => importFile(FILE.coreConstants)
+/** fishball-shared's ui-seam (data only), where UI_SEAM lives since F-UI. */
+export const uiSeam = () => { assert.ok(fs.existsSync(FILE.uiSeam), 'packages/shared/ui-seam.js is missing (F-UI moved UI_SEAM there)'); return importFile(FILE.uiSeam) }
 /** The connector's published MCP surface: mcp-schema plus tools/constants.js. */
 export async function connector() {
   const [schema, tools] = await Promise.all([importFile(FILE.connectorSchema), importFile(FILE.connectorTools)])

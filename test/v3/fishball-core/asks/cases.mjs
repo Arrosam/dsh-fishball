@@ -439,12 +439,14 @@ export function registerAskCases(sdk) {
   })
 
   // ============================================================== ASK-UC-04: nothing in the main DSH
-  row(sdk, ID.uc04, 'main 1', 'client.asks.js exists and ships in core\'s package.json files', () => {
-    assert.ok(fs.existsSync(SUBJECT.chunk.file), 'packages/core/client.asks.js does not exist')
-    const { files } = JSON.parse(fs.readFileSync(SUBJECT.coreManifest, SWEEP.encoding))
-    assert.ok(files.some((f) => f === SUBJECT.chunk.name || path.matchesGlob(SUBJECT.chunk.name, f)), `core's files ${json(files)} do not ship ${SUBJECT.chunk.name}`)
+  // F-UI: the card's browser half moved to fishball-ui (R-FB-14); the meaning (a chunk of the
+  // Fishball UI's own client, shipped by its package, never a row) is unchanged.
+  row(sdk, ID.uc04, 'main 1', 'client.asks.js exists and ships in fishball-ui\'s package.json files', () => {
+    assert.ok(fs.existsSync(SUBJECT.chunk.file), 'packages/fishball-ui/client.asks.js does not exist')
+    const { files } = JSON.parse(fs.readFileSync(SUBJECT.chunkManifest, SWEEP.encoding))
+    assert.ok(files.some((f) => f === SUBJECT.chunk.name || path.matchesGlob(SUBJECT.chunk.name, f)), `fishball-ui's files ${json(files)} do not ship ${SUBJECT.chunk.name}`)
   })
-  row(sdk, ID.uc04, 'main 2', 'client.asks.js is a flat chunk of core\'s own client (id fishball-core, chunk client.asks.js), not a row of its own', () => {
+  row(sdk, ID.uc04, 'main 2', 'client.asks.js is a flat chunk of fishball-ui\'s own client (id fishball-ui, chunk client.asks.js), not a row of its own', () => {
     const loads = []
     // A browser global: `window`, `self` and `globalThis` are one object holding the loader.
     const sandbox = vm.createContext({ __ModuleLoader__: { load: (spec) => loads.push(spec) } })

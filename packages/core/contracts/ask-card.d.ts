@@ -2,8 +2,8 @@
  * The ask card: an `ask` event (`ask_agent`) that Fishball cannot decide, shown to the user in
  * Fishball's own conversation (task K3 freezes its fields; R-FB-11, PLAT-UC-07; S4-Q2 decided).
  * Types only. F-ASKCARD builds it in `packages/core/src/asks/` (the store, the `ask_user` filing
- * tool, the answer commit) and `packages/core/client.asks.js` (the card, a flat client chunk: DSH
- * serves no chunk from a folder).
+ * tool, the answer commit); the card itself is drawn by fishball-ui's `client.asks.js` (F-UI; a flat
+ * client chunk: DSH serves no chunk from a folder), over core's routes.
  *
  * The card has no time limit (R-CON-05): it stays open until it is answered here or the ask is
  * settled elsewhere. The main DSH shows no card for it (R-UI-12).

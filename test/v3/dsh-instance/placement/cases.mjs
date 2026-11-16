@@ -36,7 +36,7 @@ import { caseName, caseTest } from '../../contract/package-boundaries/cases.mjs'
 import { V3 } from '../../contract/package-boundaries/constants.mjs'
 import { readManifest } from '../../contract/package-boundaries/packages.mjs'
 import {
-  BUDGET, CHILD, CORE_COPY, DSH_ROW, GUARDS, INTEGRATION, LATER, OVERLAY, PANEL, POLICY, RELAYED, REPORT, SET,
+  BUDGET, CHILD, CORE_COPY, CORE_GUARD_ROWS, DSH_ROW, GUARDS, INTEGRATION, LATER, OVERLAY, PANEL, POLICY, RELAYED, REPORT, SET,
 } from './constants.mjs'
 import {
   blockedBy, childHome, composeChild, childProfile, launchOverlayExport, launchOverlays, placedCopy, placementFile, placementMode, placementRecord, profileBundles,
@@ -166,7 +166,9 @@ function assertGuarded(effective) {
   assert.deepEqual(Object.keys(one(DSH_ROW.permission)?.config?.presets ?? {}), [...GUARDS.policy.permissionPresets], 'permission presets read-only only')
   assert.equal(one(DSH_ROW.permission)?.config?.defaultPreset, GUARDS.policy.defaultPermissionPreset)
   // Present-only rows: a guarded row the composition has is disabled; core adds none of its own.
-  for (const id of GUARDS.rows) for (const row of findRows(effective, id)) assert.equal(row.disabled, true, 'guarded row must be disabled: ' + id)
+  // F-UI: a hosted child holds core's patch only (fishball-ui is placed by I-HOST), so these are
+  // core's own guard rows; the UI-only rows are LATER.placeUi.
+  for (const id of CORE_GUARD_ROWS) for (const row of findRows(effective, id)) assert.equal(row.disabled, true, 'guarded row must be disabled: ' + id)
   // Q-S6-2 B (32fca3c5): the session-creating tools live inside the shipped presets, which are switched off, not deleted.
   const presets = shippedPresets(effective)
   assert.ok(presets.length > 0, 'the SDK ships no preset row (precondition)')
@@ -424,11 +426,8 @@ export function registerIPlaceCases(sdk) {
     assert.equal(fs.existsSync(path.join(childHome(home), ...RELAYED.launches)), false, 'a nested child runtime in the child home')
   })
   // Dev 6d13f6a1: the panel is core's chunk; the child's Fishball client entries are these three.
-  integrationCase(sdk, 'HOST-UC-08', 'A3', "a real hosted child serves fishball-page, fishball-recommend-plugins and fishball-core, and no fishball-settings entry", async () => {
-    const { host } = await ready()
-    const graph = (await childGraph(host)).filter((id) => id.startsWith('fishball-'))
-    assert.deepEqual(graph.sort(), [...PANEL.childEntries].sort())
-  })
+  // F-UI: the page and the tab are fishball-ui's, which the instance places from I-HOST on.
+  caseTest(sdk, 'HOST-UC-08', 'A3', "a real hosted child serves fishball-page, fishball-recommend-plugins, fishball-core and fishball-ui, and no fishball-settings entry [integration]", null, LATER.placeUi)
 
   // ============================================================== EP: HOST-EP-03 rows 6–7
   caseTest(sdk, 'HOST-EP-03', 6, 'no settings row: the overlay inserts no panel row', async (t) => {
@@ -457,23 +456,18 @@ export function registerIPlaceCases(sdk) {
     }
   }
   const coreDir = () => fs.realpathSync(V3.core.dir)
-  caseTest(sdk, 'HOST-EP-03', 7, "core's patch has no path row whose nearest package.json is fishball-core's, except fishball-ui", async () => {
+  caseTest(sdk, 'HOST-EP-03', 7, "core's patch has no path row whose nearest package.json is fishball-core's, except its guards row fishball-core-guards", async () => {
     const rows = await corePatchInserts()
     const intoCore = rows.filter((r) => rowFile(r.name) !== null && nearestManifestDir(rowFile(r.name)) === coreDir()).map((r) => r.id)
     assert.deepEqual(intoCore, [RELAYED.rows.corePathRow])
   })
-  caseTest(sdk, 'HOST-EP-03', 7, "fishball-page and fishball-recommend-plugins are path rows into their own ui packages (own manifest, own ./client)", async () => {
-    const rows = await corePatchInserts()
-    for (const [id, folder] of Object.entries(RELAYED.rows.uiPackages)) {
-      const row = rows.find((r) => r.id === id)
-      assert.ok(row, 'core\'s patch inserts no ' + id)
-      const file = rowFile(row.name)
-      assert.ok(file, `${id} is not a path row: ${show(row.name)}`)
-      const own = fs.realpathSync(path.join(V3.core.dir, folder))
-      assert.equal(nearestManifestDir(file), own, `${id} does not resolve to its own manifest in ${folder}`)
-      assert.ok(Object.hasOwn(readManifest(own)?.exports ?? {}, './client'), `${folder}/package.json exports no ./client`)
-    }
+  // F-UI: the page and Recommended-tab rows moved to fishball-ui's patch (their own-package rule is
+  // the F-UI suite's, test/v3/fishball-ui/package UI-UC-06 rows); core's patch holds neither.
+  caseTest(sdk, 'HOST-EP-03', 7, "core's patch inserts neither fishball-page nor fishball-recommend-plugins (they are fishball-ui's since F-UI)", async () => {
+    const ids = (await corePatchInserts()).map((r) => r.id)
+    assert.deepEqual(ids.filter((id) => RELAYED.rows.movedToUi.includes(id)), [])
   })
+  caseTest(sdk, 'HOST-EP-03', 7, "a hosted child places fishball-ui, whose page and tab rows are path rows into their own packages", null, LATER.placeUi)
   caseTest(sdk, 'HOST-EP-03', 7, 'every slim child row (fishball-native-{session-tools,approvals,app,inbox,admin,provider-sync}) is a fishball-core/slim/* subpath', async () => {
     const rows = await corePatchInserts()
     for (const id of RELAYED.rows.slim) {

@@ -1,10 +1,10 @@
 {
   "name": "fishball-core",
   "version": "0.1.0-alpha.0",
-  "description": "Fishball's core plugin: the Fishball manager, its slim app and persona, the private Skills tool, and its fishball-ui component (page, recommended tab and generic slim settings with a settings-section extension point).",
+  "description": "Fishball's core plugin, the backend: the Fishball manager session and its preset, its slim app and persona, the private Skills tool, the link, Connect, status, the ask-card store, pairing, the non-UI guard rows and its own plugin settings page. Every other UI change inside Fishball is the fishball-ui plugin's.",
   "license": "MIT",
   "type": "module",
-  "//": "A DSH bundle of the Fishball plugin set (R-FB-01, design §1.2, §9.1). V3 R-CORE moved the slim child, persona, private Skills tool and child-web pages here unchanged; in a hosted child the instance places this package as a bundle, last (I-PLACE). cordis.patch.yml carries the fishball-ui guard rows, core's fishball preset and the guard row ui/patch (F-GUARDS), and the page, Recommended tab and slim child rows (I-PLACE); ./client is fishball-ui's browser half with the settings panel chunk client.settings.js. It never depends on dsh-instance (TQ-R3, R-BND-01).",
+  "//": "A DSH bundle of the Fishball plugin set (R-FB-01, design §1.2, §9.1). V3 R-CORE moved the slim child, persona, private Skills tool and child-web pages here unchanged; in a hosted child the instance places this package as a bundle, last (I-PLACE). cordis.patch.yml carries the non-UI guard rows, core's fishball preset and its guard row src/guards/row.js (F-GUARDS), and the slim child rows (I-PLACE); ./client is core's own settings page, with the chunk client.settings.js. Since F-UI (requirements 1.38 Q-N2, R-FB-14) the Fishball page, the Recommended tab, the UI guard rows, the strip and pairing views, the ask cards and the two settings entries are the separate fishball-ui plugin's; core runs normally without it and shows no hint of it (Q-G1). It never depends on dsh-instance (TQ-R3, R-BND-01) or on fishball-ui.",
   "//exports": "./slim/* are the slim child modules core's own patch mounts as fishball-core/<subpath> rows (a path row inside this folder would be a second client source of the package; I-PLACE). ./contracts is K3's runtime constants (with K3a's own copy of the connector's MCP surface, MCP and LINK), for plugins that import them dynamically. There is no ./mcp-schema: F-OWN-SCHEMA removed the vendored copy of the connector's schema (design §1.0b row 1).",
   "exports": {
     "./client": "./client.js",
@@ -22,10 +22,8 @@
   "files": [
     "client.js",
     "client.settings.js",
-    "client.asks.js",
     "contracts/constants.js",
     "src/",
-    "ui/",
     "cordis.patch.yml",
     "LICENSE",
     "THIRD_PARTY_NOTICES.md"
@@ -34,7 +32,7 @@
     "node": ">=22",
     "dsh": ">=0.2.1-rc.5"
   },
-  "//dependencies": "fishball-shared holds the modules core shares with the instance (R-ARCH-08); it is bundled, so the tarball carries it. @modelcontextprotocol/client is core's own MCP client for its link (F-LINK; design §5a.1, §6.3, §9.1), never the host's transitive copy: pinned exactly to 2.2.0, the line both hosts ship (0.2.1-rc.5 and 0.2.2-rc.1, dist byte-identical), as K1 pins the connector's server SDK to the same line.",
+  "//dependencies": "fishball-shared is the Fishball side's library (R-ARCH-08): core's seam with fishball-ui and the interim modules core shares with the instance; it is bundled, so the tarball carries it. @modelcontextprotocol/client is core's own MCP client for its link (F-LINK; design §5a.1, §6.3, §9.1), never the host's transitive copy: pinned exactly to 2.2.0, the line both hosts ship (0.2.1-rc.5 and 0.2.2-rc.1, dist byte-identical), as K1 pins the connector's server SDK to the same line.",
   "dependencies": {
     "@modelcontextprotocol/client": "2.2.0",
     "fishball-shared": "0.1.0-alpha.0"
