@@ -143,7 +143,7 @@ export const V3_SUITES = Object.freeze({
   // C-WIRE boots a real DSH profile with the whole connector bundle (and, in its R16 rows,
   // dsh-connector-ui), so it triggers on both packages; it reuses the pairs suite's module resolver
   // and the fishball-core package suite's SDK paths, and owns its own worker.
-  'dsh-connector.wire': suite('the wired connector row in a real DSH: settings, routes, services, tokens, MCP end to end (C-WIRE)', v3('dsh-connector/wire'),
+  'dsh-connector.wire': suite('the wired connector row in a real DSH: settings, routes, services, tokens, MCP end to end (C-WIRE)', [...v3('dsh-connector/wire'), ...v3('dsh-connector/wire/review')],
     [all(PACKAGE.dshConnector), all(PACKAGE.dshConnectorUi), all(PACKAGE.dshConnectorShared), all(PACKAGE.fishballShared),
       'test/v3/dsh-connector/pairs/subject.mjs', 'test/v3/fishball-core/package/constants.mjs', 'test/v3/dsh-connector/mcp-tools/subject.mjs']),
   // The adapter imports only its own package and dsh-connector-shared/oauth-client (C-MCP-ADAPTER).
