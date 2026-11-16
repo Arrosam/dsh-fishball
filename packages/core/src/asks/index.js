@@ -28,11 +28,16 @@
  * whatever core does, so a lost race there answers `already-settled` / `expired`, and the card
  * closes. No timer (R-CON-05): a card waits until it is answered here or closed by an event.
  */
-import { LINK_REFUSAL, REFUSAL, TOOL, EVENT_TYPE } from '../link/schema.js'
+import { LINK, MCP } from '../../contracts/constants.js'
 import { emitIsolated, subscribe } from '../link/listeners.js'
 import { codeOf } from '../events/diagnostics.js'
 import { ASKS, ASK_CODE, ASK_LOG, ASK_MISUSE, ASK_TOOL_DEFINITION, ASK_TEXT, CARD_STATE } from './constants.js'
 import { cardOf, createCardStore, recordOf } from './store.js'
+
+// Core's own copy of the connector's MCP surface (K3a; F-OWN-SCHEMA), under the names this module reads.
+const REFUSAL = MCP.refusal
+const TOOL = MCP.tools
+const EVENT_TYPE = MCP.eventTypes
 
 export { openAskCards } from './store.js'
 export { registerAskRoutes } from './routes.js'
@@ -140,7 +145,7 @@ export function createAsks({ link, table, logger }) {
     if (ASKS.closingCodes.includes(code)) await recorded(() => store.close(record.approvalId))
     // `disconnected` (never sent) and the connector's own refusals leave the ask waiting there,
     // so the card stays open for another answer.
-    else if (code !== LINK_REFUSAL.disconnected) logger?.warn(ASK_LOG.commitFailed, record.approvalId, code)
+    else if (code !== LINK.disconnected) logger?.warn(ASK_LOG.commitFailed, record.approvalId, code)
     return refusal(code)
   }
 

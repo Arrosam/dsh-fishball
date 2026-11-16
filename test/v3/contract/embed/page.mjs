@@ -10,7 +10,9 @@
  * What is scripted: the DOM (support/browser-sandbox.mjs), React and the primitives (the shims the
  * R-CORE page uses), and the page services the V2 main clients inject: `slots`, `locale` and
  * `layout` from the R-CORE page, plus `configForms`, which serves every settings namespace so the
- * Plugins cards register (they register only while the Host serves their row's namespace). Network
+ * Plugins cards register (they register only while the Host serves their row's namespace), and
+ * `pluginNavigation` (dsh-client-ui-plugin-manager), which records every `openBundle` / `openList`
+ * call in `navigations` (#77: the window's Retry link opens the instance's settings page). Network
  * reads such as the connector's EventSource are absent: a contribution that waits for state
  * (the sidebar fish) is not counted, only contributions registered at apply time.
  *
@@ -89,7 +91,7 @@ function primitivesWithForms(primitives) {
  * @param options.prepare - `(page) => void`, run on the browser sandbox before any script (for example to
  *   install recording `localStorage` / `sessionStorage` globals or a `document.cookie` accessor).
  * @param options.lang - the page language at open (PAGE.lang by default); `setLang` changes it later.
- * @returns {{ graph, scripts, plugins, failed(), registrations, errors, entries(slot), mount(entry, props), setLang(lang) }}
+ * @returns {{ graph, scripts, plugins, failed(), registrations, errors, navigations, entries(slot), mount(entry, props), setLang(lang) }}
  *   registrations: every slot entry as { slot, id?, key?, owner, options, disposed } where owner is the graph entry that
  *   registered it and `disposed` turns true when that registration is withdrawn;
  *   entries(slot): the registered `{ options, Component }` of a slot; mount: render one entry in its own
@@ -123,7 +125,9 @@ export async function openMainPage(t, { sdk, host, prepare = () => {}, lang = PA
   const table = moduleTable({ page, platform, graph, loadChunk: (ownerId, file, row) => runScript(ownerId, BOOT.chunkUrl(ownerId, file, row.rev), false) })
 
   const { Context } = await import(pathToFileURL(path.join(runtimeOf(sdk), BOOT.cordisEntry)).href)
-  const services = { ...pageServices(shim, lang), configForms: configForms() }
+  const navigations = []
+  const pluginNavigation = { openBundle: (name) => { navigations.push({ openBundle: name }) }, openList: () => { navigations.push({ openList: true }) } }
+  const services = { ...pageServices(shim, lang), configForms: configForms(), pluginNavigation }
   // The user's language choice: the snapshot, its listeners and `resolveText` (DSH's own API for
   // picking a language's text) follow `setLang`. The registered dictionaries' words stay the
   // open-time language's; only the language a client reads and reacts to is observed here.
@@ -163,7 +167,7 @@ export async function openMainPage(t, { sdk, host, prepare = () => {}, lang = PA
   await settle()
   let mounted = 0
   return {
-    graph, scripts, registrations, errors,
+    graph, scripts, registrations, errors, navigations,
     entries: (slot) => services.entries.get(slot) ?? [],
     async mount(entry, props = {}) {
       const key = 'entry-' + ++mounted

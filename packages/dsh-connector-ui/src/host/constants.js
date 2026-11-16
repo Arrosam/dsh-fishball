@@ -1,6 +1,7 @@
 /**
- * dsh-connector-ui host half: its fixed values (task U-SHELL; design §4.1, §4.2; R-UI-01/02/03,
- * R-HOST-06, S4-Q1 A). Data only.
+ * dsh-connector-ui host half: its fixed values (tasks U-SHELL, U-DRAW; design §1.0, §4.1, §4.2,
+ * §13.6; R-ARCH-04, R-UI-01/02/03/09, R-HOST-06, R-FN-01, R-EXT-13; requirements 1.38 Q-U1,
+ * 1.41 Q-G3; S4-Q1 A). Data only.
  *
  * Contract values restated here: K3's `host-services/` is types only (its README: "Types only;
  * nothing here runs"), and the connector package that holds K1 and K2's runtime values is absent in
@@ -17,18 +18,23 @@ export const ROW = Object.freeze({ name: 'dsh-connector-ui', logger: 'dsh-connec
  * row). `apiVersion` is the one version each must carry; any other value is the service absent
  * (K3 index.d.ts, README; UIM-EP-01 row 5).
  * - child: K3 `DshInstanceChild` (child.d.ts), the instance's locator;
- * - handover: K3 `DshConnectorHandover` (handover.d.ts), the connector's;
- * - tools: K2 `TOOLS_API.service` (dsh-connector/tools constants.js), the connector's.
+ * - ui: the connector's UI backend (dsh-connector src/ui/constants.js `UI_SERVICE.name`; K3b has
+ *   not frozen it yet, so C-UI-BACKEND's name is restated here): every state and operation embed-UI
+ *   draws, the routes it draws them from, and `contribute(register)` for its tools (1.34);
+ * - tools: K2 `TOOLS_API.service` (dsh-connector/tools constants.js), the contribution service
+ *   embed-UI's tools are registered through (R-EXT-13).
+ * The connector's hand-over service is no longer looked up: the UI backend draws on it (1.34).
  */
 export const SERVICE = Object.freeze({
   apiVersion: 1,
   child: 'dshInstanceChild',
-  handover: 'dshConnectorHandover',
+  ui: 'dshConnectorUi',
   tools: 'dshConnectorTools',
   /**
    * V2's connector service (dsh-connector/contract CONNECTOR_SERVICE), the W3 fallback: until
-   * C-WIRE (W4b) wires the two services above into the connector row and removes the V2 path, a
-   * connector shows its marks and its V2 frame through it. Remove this name with that path.
+   * C-WIRE (W4b) wires `ui` into the connector row and removes the V2 path, a V2 connector still
+   * counts as the local connector (Q-U1) and shows its V2 frame through it, and nothing else.
+   * Remove this name with that path.
    */
   legacyConnector: 'dshConnector',
   /** DSH's app-ready service (dsh profile-boot, both SDKs): `onReady(fn)` also calls a late subscriber. */
@@ -72,13 +78,14 @@ export const ADMIT = Object.freeze({
  * fence before a handler runs (dsh-client-connection), so a handler checks only its body.
  * `services` answers which services are usable now, so the client registers by availability, and
  * the other routes' page-relative paths (`ROUTE_PREFIX` dropped), so the web client keeps no copy.
+ * There is no Retry route: Retry is on the instance's own settings page, which the window's Retry
+ * link opens (R-UI-03 amended by 1.33; decided #77).
  */
 /** A route path's root part, dropped for the page-relative form the browser resolves against DSH's page. */
 export const ROUTE_PREFIX = '/'
 export const ROUTE = Object.freeze({
   services: '/api/dsh-connector-ui/services',
   status: '/api/dsh-connector-ui/child/status',
-  retry: '/api/dsh-connector-ui/child/retry',
   admit: '/api/dsh-connector-ui/child/admit',
   modelsCheck: '/api/dsh-connector-ui/child/models/check',
   modelsAdd: '/api/dsh-connector-ui/child/models/add',
@@ -102,24 +109,34 @@ export const HTTP = Object.freeze({
 
 /**
  * The route refusals the host half answers itself (`{ok: false, code}`):
- * - unavailable: no usable `dshInstanceChild` (the client then shows no page);
+ * - connectorMissing: no local connector (Q-U1: embed-UI does not work without one), checked
+ *   before anything else;
+ * - unavailable: no usable `dshInstanceChild` (the client then shows the hint);
  * - invalid: a body that is not the route's closed shape;
  * - failed: the locator threw something that is not a K3 code (never echoed: its message may name
  *   a path or a URL).
  */
 export const REFUSAL = Object.freeze({
+  connectorMissing: 'connector-missing',
   unavailable: 'instance-missing',
   invalid: 'invalid-request',
   failed: 'operation-failed',
 })
 
-/** Log lines (the logger's printf format). `instance-missing` once per row activation (R-UI-01). */
+/**
+ * Log lines (the logger's printf format), each at most once per row activation:
+ * `connector-missing` is an error (Q-U1: "报错"), `instance-missing` a warning (R-UI-01), and only
+ * with a connector, since without one embed-UI does nothing that an instance would complete.
+ */
 export const LOG = Object.freeze({
-  instanceMissing: 'instance-missing: no dshInstanceChild with apiVersion %d; no Fishball page or frame',
+  connectorMissing: 'connector-missing: no dshConnectorUi with apiVersion %d; embed-UI needs a local connector and does nothing',
+  instanceMissing: 'instance-missing: no dshInstanceChild with apiVersion %d; the window shows the no-instance hint',
   routeUnavailable: 'route %s not registered (%s)',
+  toolsRefused: 'notify and attention tools not declared (%s)',
 })
 
 /** Cordis effect labels. */
 export const LABEL = Object.freeze({
-  ready: 'dsh-connector-ui: instance-missing check',
+  ready: 'dsh-connector-ui: connector and instance check',
+  tools: 'dsh-connector-ui: notify and attention tools',
 })

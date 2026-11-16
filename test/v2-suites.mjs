@@ -116,6 +116,12 @@ export const V2_SUITES = Object.freeze({
     // V3 C-UI-BACKEND (UIB-UC-01…07, UIB-EP-01…07, UIB-BVA-01…04, UIB-DT-01…04, UIB-ST-01…04; R-UI-05/10, R-ROUTE-05, R-FN-01, R-EXT-13); run with test/run-v3.mjs.
     file('test/v3/dsh-connector/ui/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 connector UI backend: marks, Hand over targets and lights, attention latch, notify, routes and stream (C-UI-BACKEND)'),
     file('test/v3/dsh-connector/ui/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 connector UI backend: marks, Hand over targets and lights, attention latch, notify, routes and stream (C-UI-BACKEND)'),
+    // V3 C-MCP-ADAPTER (AUTH-UC-12/13/14, AUTH-EP-12/13/14, AUTH-BVA-09, AUTH-DT-11/12, AUTH-ST-06/07, ADP-EP-01, ADP-BVA-01, ADP-REV-*; R-OA-21, design §5.5b); run with test/run-v3.mjs.
+    file('test/v3/dsh-connector-adapter/adapter/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 connector adapter: check, sign-in tool, proxy, child row, refresh (C-MCP-ADAPTER)'),
+    file('test/v3/dsh-connector-adapter/adapter/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 connector adapter: check, sign-in tool, proxy, child row, refresh (C-MCP-ADAPTER)'),
+    // V3 C-MCP-ADAPTER's library (OAC-EP-01…03, OAC-BVA-01/02, OAC-ST-01, OAC-DT-01, OAC-LEAK-01); run with test/run-v3.mjs.
+    file('test/v3/dsh-connector-shared/oauth-client/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, "V3 dsh-connector-shared OAuth browser client and token manager (C-MCP-ADAPTER)"),
+    file('test/v3/dsh-connector-shared/oauth-client/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, "V3 dsh-connector-shared OAuth browser client and token manager (C-MCP-ADAPTER)"),
     // V3 C-EXT (EXT-UC-01…03, EXT-EP-01…04, EXT-BVA-01…04, EXT-DT-01/02, EXT-ST-01, K2's C-EXT rows); run with test/run-v3.mjs.
     file('test/v3/dsh-connector/contrib/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 connector contribution service (C-EXT)'),
     file('test/v3/dsh-connector/contrib/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 connector contribution service (C-EXT)'),
@@ -165,6 +171,9 @@ export const V2_SUITES = Object.freeze({
     // V3 U-SHELL (UIM-UC-01 integration part, UIM-UC-04 U-SHELL's parts, UIM-EP-01/02, UIM-DT-01 rows 3, 7, 7b, R-EMBED's U-SHELL row); run with test/run-v3.mjs.
     file('test/v3/dsh-connector-ui/shell/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 embed-UI host half and client shell (U-SHELL)'),
     file('test/v3/dsh-connector-ui/shell/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 embed-UI host half and client shell (U-SHELL)'),
+    // V3 U-DRAW (the fish, window, hint, Retry link, marks, Hand over / Take back, light, notify prompt, tool declaration; Q-U1, Q-G3, Q-G4, Q-G5, R-FN-01, R-UI-04/05/10); run with test/run-v3.mjs.
+    file('test/v3/dsh-connector-ui/draw/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 embed-UI draw-only frontend over the connector UI backend (U-DRAW)'),
+    file('test/v3/dsh-connector-ui/draw/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 embed-UI draw-only frontend over the connector UI backend (U-DRAW)'),
     // V3 I-PLACE (PLAT-DT-01, HOST-ST-01 rows 1–3, HOST-UC-06 post, HOST-UC-08 main 1/A1–A3, HOST-EP-03 rows 6–7, HOST-DT-03, PLAT-DT-04 rule 1 hosted, LITE-UC-03/LITE-EP-13/SET-EP-12 hosted, K3 unmount); run with test/run-v3.mjs.
     file('test/v3/dsh-instance/placement/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 instance placement of the set and fishball-hosted-settings, launch overlay and hosted-child guards (I-PLACE)'),
     file('test/v3/dsh-instance/placement/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 instance placement of the set and fishball-hosted-settings, launch overlay and hosted-child guards (I-PLACE)'),
@@ -189,6 +198,18 @@ export const V2_SUITES = Object.freeze({
     // /api/dsh-instance/restart route, is removed. Restart and Retry move to dsh-instance's own
     // settings page, built and tested by I-HOST. The other R3 rows (incl. R3-UC-01 Retry) still run.
     cases('test/v2-r3-native-access.test.mjs', '^R3-UC-02 row: restart from the child settings view ', DISPOSITION.withdrawn, 'child-settings Restart route removed with fishball-hosted-settings (design §1.0, REMOVE-WD); successor I-HOST'),
+    // Requirements 1.41 Q-G4 = A (U-DRAW): there are no inline records in main-DSH sessions, so
+    // dsh-connector-ui has no `record.*` words for the child page's records to equal. These rows
+    // compared the two dictionaries; the child page's own records keep their other I7 cases.
+    cases('test/body-soul-i7-records.test.mjs', '^I7-ROW-EP-0[1-57] ', DISPOSITION.withdrawn, "main-DSH inline records removed (requirements 1.41 Q-G4 = A, U-DRAW): no connector record.* words to compare"),
+    // R-UI-10 (1.20) and Q-G4 = A (1.41), drawn by U-DRAW: the fixed "Hand over to Fishball" /
+    // "Take back from Fishball" / "Managed by Fishball" labels no longer exist (Hand over names its
+    // principal) and the records chunk is gone, so these served-bundle label rows describe removed
+    // UI. U-DRAW's suite checks the new labels; the rest of each file still runs.
+    cases('test/managed-marks.test.mjs', '^MKS-09 ', DISPOSITION.withdrawn, 'fixed Hand over labels and the records chunk removed (R-UI-10, requirements 1.41 Q-G4 = A); successor U-DRAW'),
+    cases('test/managed-ways.test.mjs', '^MGD-16 ', DISPOSITION.withdrawn, 'fixed Hand over labels and the records chunk removed (R-UI-10, requirements 1.41 Q-G4 = A); successor U-DRAW'),
+    cases('test/messaging-inbound.test.mjs', '^MSG-13 ', DISPOSITION.withdrawn, 'fixed Hand over labels and the records chunk removed (R-UI-10, requirements 1.41 Q-G4 = A); successor U-DRAW'),
+    cases('test/body-soul-i9-lang.test.mjs', "^(I9 U6 record words equal the connector's|precondition: the connector source has record\\.\\* words|I9-U6-0[1-5] )", DISPOSITION.withdrawn, "main-DSH inline records removed (requirements 1.41 Q-G4 = A, U-DRAW): no connector record.* words to compare"),
   ]),
 })
 

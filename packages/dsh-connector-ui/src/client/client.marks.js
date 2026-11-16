@@ -1,14 +1,21 @@
 /**
- * dsh-connector-ui, the marks part (V3 U-SHELL split; U-MARKS owns it from W4): Hand over / Take
- * back in a session's header and row menu, with the note dialog and the refusal notice, and the
- * managed-session fish with its dots in a sidebar row (DESIGN §8.2, §8.3, §10e item 30). Moved
- * unchanged from the V2 connector client (R-EMBED's client.connector.js); it still reads the
- * connector's V2 state stream and routes, through the shell's kit.
+ * dsh-connector-ui, the marks part (task U-DRAW; requirements 1.34, 1.41 Q-G5 = A; R-UI-05,
+ * R-UI-10, R-NAME-05, R-NAME-08, R-ROUTE-05; design §3.6, §4.2): the managed-session marks naming
+ * their managing principal, and Hand over / Take back in a session's header and row menu, with the
+ * note dialog and the refusal notice.
+ *
+ * It only draws (1.34: "connector当后端，embed UI当前端"): the marks and the Hand over targets come
+ * from the connector UI backend's snapshot stream, and Hand over / Take back are the backend's
+ * routes, which call its hand-over service. Nothing is kept here but the open dialog.
+ * - A managed session shows "Managed by <principal>" and Take back (one click, no note).
+ * - An unmanaged one shows the backend's `targets` (enabled and paired, online or not, in the
+ *   connector's order; R-UI-10): none → no control; one → "Hand over to <principal>"; more → the
+ *   "Handover to…" dropdown. Each carries its green / red light with its words.
+ * - A principal is its name, or a bold `ID:` and its id when it has none (R-NAME-08).
  *
  * A package-local chunk beside client.js (DSH serves only flat client.<name>.js chunks, the
  * CLIENT_CHUNK rule of dsh-client-modules on both SDKs; no build step). It exports one factory
- * that the shell calls with its kit, and the result runs as a sub-plugin of the shell's row, so a
- * chunk that fails to load loses only this part.
+ * that client.js calls with the shell's kit and the host half's availability.
  */
 globalThis.__ModuleLoader__?.load({
   id: 'dsh-connector-ui',
@@ -16,285 +23,261 @@ globalThis.__ModuleLoader__?.load({
   factory(require) {
     const module = { exports: {} }
     const React = require('react')
-    const { Button, MenuItemButton, Modal } = require('@deepseek-ai/dsh-client-ui-primitives')
+    const { Button, Menu, MenuItemButton, Modal } = require('@deepseek-ai/dsh-client-ui-primitives')
     const h = React.createElement
     /** The part's sub-plugin: its name and the client services it reads. */
     const PART = Object.freeze({ name: 'dsh-connector-ui: marks', inject: Object.freeze(['slots', 'locale']) })
+    /** Cordis effect labels. */
+    const LABEL = Object.freeze({
+      header: 'fishball: hand-over header action', menu: 'fishball: session menu', dialogs: 'fishball: hand-over dialogs',
+      rowMark: 'fishball: managed row mark', rowRunning: 'fishball: managed row running mark',
+    })
 
     /**
-     * The part as a client plugin over the shell's kit (client.shell.js `kit`).
-     * @param kit - the shell's shared state stream, helpers, vocabulary and seats.
-     * @returns a client plugin; the shell starts it as a sub-plugin of its row.
+     * The one hand-over entry: the session header and the session-row menu share it. Menu order:
+     * after DSH's own pin/rename/fork/archive, before the id; header order: just before Fishball's
+     * own settings action. The dialog and the refusal notice are two overlay entries, so each has
+     * its own id. `menuAlign` opens the dropdown under its button's end, as DSH's own header menus.
      */
-    function marksPart(kit) {
-      const { NS, SLOT, API, STATUS, CLS, ROW_MARK, useFishball, send, valueStore, brandIconOf, attentionDot } = kit
+    const HAND_OVER = Object.freeze({
+      id: 'fishball-hand-over', noticeId: 'fishball-hand-over-notice', menuOrder: 422, headerOrder: 4.5,
+      menuAlign: 'end', noteRows: 4,
+    })
+    /** The managed mark in a sidebar row (DESIGN §10e item 30): its cell and its two states. */
+    const MANAGED_ROW = Object.freeze({
+      id: 'fishball-managed',
+      iconPx: 14,
+      /** Values of data-fishball-row-state, so a running mark is distinguishable from an idle one. */
+      state: Object.freeze({ idle: 'idle', running: 'running' }),
+    })
+    /**
+     * The refusals with their own words (the backend's answers: K3 HandOverRefusalCode,
+     * TakeBackRefusalCode, and its own `invalid-request`). Any other answer, `operation-failed`
+     * or no answer at all, reads `refusalFailed`. `noCode` marks an answer that carried no code.
+     */
+    const REFUSAL = Object.freeze({
+      known: Object.freeze(['unknown-session', 'conflict', 'no-agent', 'not-managed', 'invalid-request']),
+      prefix: 'refusal.',
+      failed: 'refusalFailed',
+      noCode: '',
+    })
+
+    /**
+     * The part as a client plugin.
+     * @param kit - the shell's kit (client.shell.js `kit`).
+     * @param available - the host half's availability; `ui` holds the backend's page-relative routes.
+     */
+    function marksPart(kit, available) {
+      const { NS, SLOT, CLS, valueStore, snapshotHook, send, FishballIcon, principalLabel, principalText, withName, principalWithLight } = kit
+      const routes = available.ui
+      const useSnapshot = snapshotHook(routes)
+      /** The session's mark (`{sessionId, principal}`), or undefined while it is unmanaged. */
+      const markOf = (snapshot, sessionId) => snapshot.marks.find((mark) => mark.sessionId === sessionId)
+      const refusalKey = (code) => (REFUSAL.known.includes(code) ? REFUSAL.prefix + code : REFUSAL.failed)
+      /** A refusal as an alert, its code beside it for a reader that needs it. */
+      const refusalAlert = (t, code) => h('div', { role: 'alert', 'data-fishball-refusal': code ?? REFUSAL.noCode }, t(refusalKey(code)))
 
       /**
-       * The one hand-over entry (§8.3): the session header and the session-row menu share it. Menu
-       * order: after DSH's own pin/rename/fork/archive, before the id; header order: just before
-       * Fishball's own settings action. The Take back refusal keeps its own overlay id, because the
-       * dialog and that notice are registered in the same slot.
-       */
-      const HAND_OVER = Object.freeze({ id: 'fishball-hand-over', noticeId: 'fishball-hand-over-notice', menuOrder: 422, headerOrder: 4.5 })
-      /** Hand-over refusals with their own text (keep in step with src/constants.js INTAKE_ERROR). */
-      const HAND_OVER_ERRORS = new Set(['queue-full', 'too-large', 'from-fishball', 'unknown-session', 'unavailable'])
-      /** Take back refusals with their own text (src/constants.js MANAGED_ERROR). */
-      const MANAGE_ERRORS = new Set(['unknown-session', 'is-fishball', 'unavailable'])
-
-      /**
-       * The managed mark in a sidebar row. Its cell, its dot and its flip are the shell's ROW_MARK,
-       * because the shell's one style sheet and the sidebar mark use them too.
-       *
-       * Idle: a still fish in the leading seat. Running: DSH replaces that seat with its own spinner,
-       * so the same fish moves to the trailing seat and animates (0.2.2's always-mounted seat). The
-       * dots sit at the mark's top-right; needs-action is checked first, so it wins when both apply.
-       * Green/yellow come from DSH's state tokens, so light and dark themes both read.
-       */
-      const MANAGED_ROW = Object.freeze({
-        id: 'fishball-managed',
-        iconPx: 14,
-        /** Values of data-fishball-row-state, so a running mark is distinguishable from an idle one. */
-        state: Object.freeze({ idle: 'idle', running: 'running' }),
-      })
-      /**
-       * The Host state one managed row's dots read. Both are per session, never Fishball-wide:
-       * - green: an open intake row whose source identity is this session (a message_agent from
-       *   it that Fishball has not read). The prefix is src/messaging.js SOURCE_ID.session; the open
-       *   statuses are INTAKE_STATUS pending/accepted (src/constants.js).
-       * - yellow: a card or question in state.pile whose sessionId is this session.
-       * Fishball's own chat unread count stays on the sidebar row's fish.
-       */
-      const ROW_STATE = Object.freeze({
-        unreadSource: 'session/',
-        unreadStatuses: new Set(['pending', 'accepted']),
-      })
-
-      /**
-       * Whether this row's session has a card or question waiting for you: the Host's one pile,
-       * filtered by the card's own sessionId. A card from Fishball's own session has no managed row,
-       * so it lights no dot; the mark never borrows another session's card.
-       */
-      const needsAction = (state, sessionId) => (Array.isArray(state.pile) ? state.pile : []).some((card) => card?.sessionId === sessionId)
-      /**
-       * Whether Fishball has unread input from this row's session: an open intake row whose source
-       * identity is this session. The snapshot lists at most INTAKE.rowsShown items (src/constants.js), so a very old
-       * open item may be missing from the dot; the dot is a hint, not a queue count.
-       */
-      const unreadInput = (state, sessionId) => (Array.isArray(state.intake?.items) ? state.intake.items : []).some((item) => item?.sourceIdentity === ROW_STATE.unreadSource + sessionId && ROW_STATE.unreadStatuses.has(item.status))
-
-      /**
-       * The hand-over dialog's request (§8.3): one store shared by the session-row menu entry and
-       * the header action; the dialog lives in the shell overlay so it outlives the menu.
+       * The open Hand over dialog (`{sessionId, target}`), shared by the header and the row menu:
+       * the dialog lives in the shell overlay, so it outlives the menu that opened it.
        */
       const handOverRequest = (() => {
         const store = valueStore(null)
-        return { ...store, open: (sessionId, title) => store.set({ sessionId, title }), close: () => store.set(null) }
+        return { ...store, open: (sessionId, target) => store.set({ sessionId, target }), close: () => store.set(null) }
       })()
-      const useHandOverRequest = () => React.useSyncExternalStore(handOverRequest.subscribe, handOverRequest.get)
-      /** Any session but Fishball's own id (which names no main session). */
-      const isOtherSession = (state, sessionId) => Boolean(sessionId) && sessionId !== state.sessionId
-      /** Whether a session can be handed over: the body is up, and it is not Fishball's own session. */
-      const canHandOver = (state, sessionId) => state.status === STATUS.live && isOtherSession(state, sessionId)
+      /**
+       * Take back's last refusal (`code`, or null), shown by the overlay: a menu entry unmounts when
+       * the menu closes, so the entry cannot show it itself.
+       */
+      const takeBackNotice = valueStore(null)
+      /**
+       * Sessions whose Take back is in flight: a second click (another entry, a double click) sends
+       * nothing, so it cannot come back as a `not-managed` refusal of the first one's success.
+       */
+      const takingBack = new Set()
+      async function takeBack(sessionId) {
+        if (takingBack.has(sessionId)) return
+        takingBack.add(sessionId)
+        try {
+          const { ok, code } = await send(routes.takeBack, { sessionId })
+          takeBackNotice.set(ok ? null : { code })
+        } finally { takingBack.delete(sessionId) }
+      }
 
       function makeHandOverDialog(t) {
         return function FishballHandOverDialog() {
-          const request = useHandOverRequest()
+          const request = React.useSyncExternalStore(handOverRequest.subscribe, handOverRequest.get)
           if (request === null) return null
-          return h(HandOverForm, { key: request.sessionId, request, t })
+          return h(HandOverForm, { key: request.sessionId + request.target.key, request, t })
         }
       }
 
-      /** One hand-over's dialog: the note and in-flight state die with it. */
+      /** One Hand over's dialog: the optional note and the in-flight state die with it. */
       function HandOverForm({ request, t }) {
         const [note, setNote] = React.useState('')
         const [handingOver, setHandingOver] = React.useState(false)
-        const [problem, setProblem] = React.useState(null)
+        const [refusal, setRefusal] = React.useState(null)
         const close = () => { if (!handingOver) handOverRequest.close() }
         const confirm = async () => {
           setHandingOver(true)
-          // The send route forwards the note as the user's words and makes the session managed.
-          const { ok, code } = await send(API.send, { sessionId: request.sessionId, note })
+          const { ok, code } = await send(routes.handOver, { sessionId: request.sessionId, principalKey: request.target.key, note })
           setHandingOver(false)
           if (ok) handOverRequest.close()
-          else setProblem(HAND_OVER_ERRORS.has(code) ? 'handOverError.' + code : 'handOverFailed')
+          else setRefusal({ code })
         }
         return h(Modal, {
           open: true,
           onClose: close,
           closeLabel: t('close'),
-          title: request.title ? t('handOverTitle', { title: request.title }) : t('handOver'),
+          title: t('handOverTo', { name: principalText(t, request.target) }),
           footer: h(React.Fragment, null,
             h(Button, { type: 'button', variant: 'outline', disabled: handingOver, onClick: close }, t('cancel')),
-            h(Button, { type: 'button', variant: 'primary', disabled: handingOver, onClick: confirm }, handingOver ? t('handingOver') : t('handOverConfirm'))),
+            h(Button, { type: 'button', variant: 'primary', disabled: handingOver, 'data-fishball-hand-over-confirm': true, onClick: confirm }, handingOver ? t('handingOver') : t('handOverConfirm'))),
         },
-          h('p', { className: CLS.muted }, t('handOverHint')),
           h('label', { className: CLS.field },
             h('span', null, t('handOverNoteLabel')),
-            h('textarea', { className: CLS.note, value: note, rows: 4, placeholder: t('handOverNotePlaceholder'), 'data-modal-autofocus': true, disabled: handingOver, onChange: (event) => { setNote(event.target.value); setProblem(null) } })),
-          problem ? h('div', { role: 'alert' }, t(problem)) : null)
+            h('textarea', { className: CLS.note, value: note, rows: HAND_OVER.noteRows, 'data-modal-autofocus': true, disabled: handingOver, onChange: (event) => { setNote(event.target.value); setRefusal(null) } })),
+          refusal === null ? null : refusalAlert(t, refusal.code))
       }
 
-      /**
-       * A request from a menu entry or header action and its refusal, in one store outside the menu:
-       * a menu entry unmounts when the menu closes, so the refusal is shown by the overlay
-       * (makeRequestNotice), not by the entry.
-       * @param path - the Host route. @param errors - refusal codes with their own text under `errorPrefix`.
-       * @param failedKey - the text of any other failure.
-       */
-      function requestNotice(path, errors, errorPrefix, failedKey) {
-        const store = valueStore(null)
-        return {
-          get: store.get,
-          subscribe: store.subscribe,
-          async request(body) {
-            const { ok, code } = await send(path, body)
-            store.set(ok ? null : errors.has(code) ? errorPrefix + code : failedKey)
-          },
-          dismiss: () => store.set(null),
-        }
-      }
-      /** The refusal of a notice's last request, as a dialog in the shell overlay. */
-      function makeRequestNotice(t, notice, titleKey) {
-        return function FishballRequestNotice() {
-          const problem = React.useSyncExternalStore(notice.subscribe, notice.get)
-          if (problem === null) return null
+      /** Take back's refusal, as a dialog in the shell overlay. */
+      function makeTakeBackNotice(t) {
+        return function FishballTakeBackNotice() {
+          const refusal = React.useSyncExternalStore(takeBackNotice.subscribe, takeBackNotice.get)
+          if (refusal === null) return null
+          const dismiss = () => takeBackNotice.set(null)
           return h(Modal, {
-            open: true,
-            onClose: notice.dismiss,
-            closeLabel: t('close'),
-            title: t(titleKey),
-            footer: h(Button, { type: 'button', variant: 'primary', onClick: notice.dismiss }, t('close')),
-          }, h('div', { role: 'alert' }, t(problem)))
+            open: true, onClose: dismiss, closeLabel: t('close'), title: t('takeBackTitle'),
+            footer: h(Button, { type: 'button', variant: 'primary', onClick: dismiss }, t('close')),
+          }, refusalAlert(t, refusal.code))
         }
       }
 
-      /** Take back (§8.3) and its refusal. */
-      const manageNotice = requestNotice(API.managed, MANAGE_ERRORS, 'manageError.', 'manageFailed')
-      const isManagedSession = (state, sessionId) => (state.managed ?? []).some((entry) => entry.sessionId === sessionId)
-      /** Offered where the hand-over can run, once the Host lists managed sessions. */
-      const canManage = (state, sessionId) => Array.isArray(state.managed) && canHandOver(state, sessionId)
+      /** "Hand over to <principal>", with the principal's light (R-UI-10). */
+      const handOverLabel = (t, target) => principalWithLight(t, target, withName(t, 'handOverTo', principalLabel(t, target)))
+
+      /** The one-target button, or the "Handover to…" dropdown for more (R-UI-10). */
+      function HandOverControl({ t, sessionId, targets }) {
+        const [open, setOpen] = React.useState(false)
+        const choose = (target) => handOverRequest.open(sessionId, target)
+        if (targets.length === 1) {
+          const [target] = targets
+          return h(Button, { type: 'button', size: 'sm', variant: 'ghost', 'data-fishball-hand-over': true, 'data-fishball-target': target.key, onClick: () => choose(target) }, handOverLabel(t, target))
+        }
+        return h(Menu, {
+          open,
+          onClose: () => setOpen(false),
+          items: targets.map((target) => ({ id: target.key, label: principalWithLight(t, target, principalLabel(t, target)) })),
+          onSelect: (key) => {
+            setOpen(false)
+            const target = targets.find((row) => row.key === key)
+            if (target !== undefined) choose(target)
+          },
+          align: HAND_OVER.menuAlign,
+          portal: true,
+          anchor: h(Button, { type: 'button', size: 'sm', variant: 'ghost', 'aria-haspopup': 'menu', 'aria-expanded': open, 'data-fishball-hand-over-many': true, onClick: () => setOpen((value) => !value) }, t('handOverMany')),
+        })
+      }
+
       /**
-       * The one entry's text and action: Hand over opens the note dialog; Take back takes the
-       * session back at once, with no note (§8.3 keeps it a single click).
+       * The header's entry: a managed session's "Managed by <principal>" and Take back, else the
+       * Hand over control, which is absent with no target (R-UI-10: "With none it shows no control").
        */
-      const handOverChoice = (state, sessionId, title) => isManagedSession(state, sessionId)
-        ? { label: 'takeBack', run: () => void manageNotice.request({ sessionId, managed: false }) }
-        : { label: 'handOver', run: () => handOverRequest.open(sessionId, title) }
-
-      function makeHandOverMenuItem(t) {
-        return function FishballHandOverMenuItem({ sessionId, displayTitle, useMenuOpenState }) {
-          const state = useFishball()
-          const [, setMenuOpen] = useMenuOpenState()
-          if (!canManage(state, sessionId)) return null
-          const choice = handOverChoice(state, sessionId, displayTitle)
-          return h(MenuItemButton, { onSelect: () => { setMenuOpen(false); void choice.run() } }, t(choice.label))
-        }
-      }
-
-      /** Hand over / Take back, shared by the session header and the managed banner so they cannot drift. */
-      const handOverButton = (t, state, sessionId) => {
-        const choice = handOverChoice(state, sessionId, '')
-        return h(Button, { type: 'button', size: 'sm', variant: 'ghost', onClick: () => void choice.run() }, t(choice.label))
-      }
-
-      function makeHandOverHeaderAction(t) {
+      function makeHeaderAction(t) {
         return function FishballHandOverHeaderAction({ sessionId }) {
-          const state = useFishball()
-          if (!canManage(state, sessionId)) return null
-          return handOverButton(t, state, sessionId)
+          const snapshot = useSnapshot()
+          const mark = markOf(snapshot, sessionId)
+          if (mark !== undefined) {
+            return h(React.Fragment, null,
+              h('span', { className: CLS.muted, 'data-fishball-managed-by': mark.principal.key }, withName(t, 'managedBy', principalLabel(t, mark.principal))),
+              h(Button, { type: 'button', size: 'sm', variant: 'ghost', 'data-fishball-take-back': true, onClick: () => void takeBack(sessionId) }, t('takeBack')))
+          }
+          if (snapshot.targets.length === 0) return null
+          return h(HandOverControl, { t, sessionId, targets: snapshot.targets })
         }
       }
 
       /**
-       * Whether a session shows the managed-session marks (item 30): it is managed, and Take back is
-       * offered (canManage: the body is up, never Fishball's own session). The
-       * user's answers hide both the banner and the sidebar icon whenever Take back would be hidden.
+       * The row menu's entries: Take back for a managed session, else one Hand over per target. The
+       * row menu is already a menu, and DSH's legacy row-menu slot takes flat MenuItemButton rows
+       * only (no nested menu), so its rows are the dropdown's rows (R-UI-10), each "Hand over to
+       * <principal>" with its light; the header carries the "Handover to…" dropdown itself.
        */
-      const showsManagedMarks = (state, sessionId) => canManage(state, sessionId) && isManagedSession(state, sessionId)
+      function makeMenuItems(t) {
+        return function FishballHandOverMenuItems({ sessionId, useMenuOpenState }) {
+          const snapshot = useSnapshot()
+          const [, setMenuOpen] = useMenuOpenState()
+          const run = (action) => () => { setMenuOpen(false); action() }
+          if (markOf(snapshot, sessionId) !== undefined) {
+            return h(MenuItemButton, { onSelect: run(() => void takeBack(sessionId)), 'data-fishball-take-back': true }, t('takeBack'))
+          }
+          return h(React.Fragment, null, snapshot.targets.map((target) => h(MenuItemButton, {
+            key: target.key, onSelect: run(() => handOverRequest.open(sessionId, target)), 'data-fishball-hand-over': true, 'data-fishball-target': target.key,
+          }, handOverLabel(t, target))))
+        }
+      }
 
       /**
-       * One managed row's mark, shared by the idle leading seat and the running trailing seat: the
-       * Sidebar icon setting's fish, a green dot when this session has unread input for Fishball, or
-       * a yellow dot when this session has a card or question waiting. Both dots are per row; yellow
-       * wins when both apply. The fish is still while idle and moves while the row runs; the dots and
-       * the accessible label carry the state, so reduced motion loses no information.
+       * One managed row's mark: the fish and "Managed by <principal>" as its text alternative. It is
+       * still while idle and flips while the row runs; the label carries the state, so reduced
+       * motion loses no information.
        */
-      function ManagedMark({ state, sessionId, t, running }) {
-        const needsYou = needsAction(state, sessionId)
-        const hasUnread = unreadInput(state, sessionId)
-        const dot = needsYou ? ROW_MARK.dot.action : hasUnread ? ROW_MARK.dot.unread : null
-        const label = needsYou
-          ? t('managedRowNeedsYou')
-          : hasUnread
-            ? t('managedRowUnread')
-            : running ? t('managedRowRunning') : t('managedBanner')
-        const Icon = brandIconOf(state)
+      function ManagedMark({ t, mark, running }) {
+        const label = t('managedBy', { name: principalText(t, mark.principal) })
         return h('span', {
           className: CLS.managedRow, role: 'img', 'aria-label': label, title: label,
-          'data-fishball-managed-row': sessionId,
+          'data-fishball-managed-row': mark.sessionId,
           'data-fishball-row-state': running ? MANAGED_ROW.state.running : MANAGED_ROW.state.idle,
-        },
-          h(Icon, { size: MANAGED_ROW.iconPx, unread: false, moving: running, badge: true }),
-          dot === null ? null : attentionDot(dot))
+        }, h(FishballIcon, { size: MANAGED_ROW.iconPx, unread: false, moving: running, badge: true }))
       }
 
       /**
-       * The idle mark in a DSH session row's leading cell (DESIGN §10e item 30). DSH mounts this
-       * seat only while the row is idle; its own spinner takes the cell otherwise, so the running
-       * variant below uses the trailing seat. The seat gives only the row's sessionId, so the managed
-       * list comes from the state stream every Fishball entry shares.
+       * The idle mark in a DSH session row's leading cell. DSH mounts this seat only while the row
+       * is idle; its own spinner takes the cell otherwise, so the running variant below uses the
+       * trailing seat.
        */
-      function makeManagedRowMark(t) {
+      function makeRowMark(t) {
         return function FishballManagedRowMark({ sessionId }) {
-          const state = useFishball()
-          if (!showsManagedMarks(state, sessionId)) return null
-          return h(ManagedMark, { state, sessionId, t, running: false })
+          const mark = markOf(useSnapshot(), sessionId)
+          return mark === undefined ? null : h(ManagedMark, { t, mark, running: false })
         }
       }
 
       /**
-       * The running mark in a DSH session row's trailing seat (0.2.2's always-mounted seat). DSH's
-       * own spinner stays in the leading cell; only the Fishball fish moves here, and only while this
-       * row runs. An idle row renders nothing here, so it never shows two fish. rc.3 has no trailing
-       * seat: slots.inject waits for the declaration and this entry never mounts (no error).
+       * The running mark in a DSH session row's trailing seat (0.2.2's always-mounted seat). An idle
+       * row renders nothing here, so it never shows two fish. rc.5 has no trailing seat:
+       * slots.inject waits for the declaration and this entry never mounts (no error).
        */
-      function makeManagedRowRunningMark(t) {
+      function makeRowRunningMark(t) {
         return function FishballManagedRowRunningMark({ sessionId, useSessionStatus }) {
-          const state = useFishball()
-          if (!showsManagedMarks(state, sessionId)) return null
+          const mark = markOf(useSnapshot(), sessionId)
           // A child owns the hook, so an unmanaged row never subscribes to DSH's status source.
-          return h(ManagedRowRunningMark, { state, sessionId, t, useSessionStatus })
+          return mark === undefined ? null : h(RowRunningMark, { t, mark, useSessionStatus })
         }
       }
 
       /** The running half of the trailing entry: hooks are unconditional, the null return is not. */
-      function ManagedRowRunningMark({ state, sessionId, t, useSessionStatus }) {
-        // The seat is always mounted, so the row's running state comes from DSH's global status
-        // source; a selector keeps this mark from re-rendering on every other row's status change.
-        const running = useSessionStatus((statuses) => statuses.get(sessionId)?.running === true)
-        if (!running) return null
-        return h(ManagedMark, { state, sessionId, t, running: true })
+      function RowRunningMark({ t, mark, useSessionStatus }) {
+        // A selector keeps this mark from re-rendering on every other row's status change.
+        const running = useSessionStatus((statuses) => statuses.get(mark.sessionId)?.running === true)
+        return running ? h(ManagedMark, { t, mark, running: true }) : null
       }
-
 
       return {
         name: PART.name,
         inject: PART.inject,
         apply(ctx) {
           const t = ctx.locale.bind(NS)
-          // Hand over / Take back on an ordinary session's header and row menu (§8.3).
-          ctx.effect(() => ctx.slots.inject(SLOT.headerActions, () => ctx.slots.register({ name: SLOT.headerActions, id: HAND_OVER.id, order: HAND_OVER.headerOrder, locale: NS }, makeHandOverHeaderAction(t))), 'fishball: hand-over header action')
-          ctx.effect(() => ctx.slots.inject(SLOT.sessionMenu, function* () {
-            yield ctx.slots.register({ name: SLOT.sessionMenu, id: HAND_OVER.id, order: HAND_OVER.menuOrder, locale: NS }, makeHandOverMenuItem(t))
-          }), 'fishball: session menu')
+          const register = (slot, entry, Component) => ctx.slots.register({ name: slot, locale: NS, ...entry }, Component)
+          ctx.effect(() => ctx.slots.inject(SLOT.headerActions, () => register(SLOT.headerActions, { id: HAND_OVER.id, order: HAND_OVER.headerOrder }, makeHeaderAction(t))), LABEL.header)
+          ctx.effect(() => ctx.slots.inject(SLOT.sessionMenu, () => register(SLOT.sessionMenu, { id: HAND_OVER.id, order: HAND_OVER.menuOrder }, makeMenuItems(t))), LABEL.menu)
           ctx.effect(() => ctx.slots.inject(SLOT.overlay, function* () {
-            yield ctx.slots.register({ name: SLOT.overlay, id: HAND_OVER.id, locale: NS }, makeHandOverDialog(t))
-            yield ctx.slots.register({ name: SLOT.overlay, id: HAND_OVER.noticeId, locale: NS }, makeRequestNotice(t, manageNotice, 'manageTitle'))
-          }), 'fishball: dialogs')
-          // The managed-session marks (§8.2).
-          ctx.effect(() => ctx.slots.inject(SLOT.rowLeading, () => ctx.slots.register({ name: SLOT.rowLeading, id: MANAGED_ROW.id, locale: NS }, makeManagedRowMark(t))), 'fishball: managed row mark')
-          // 0.2.2 keeps a row's trailing seat mounted while it runs; rc.3 has no such seat and this waits.
-          ctx.effect(() => ctx.slots.inject(SLOT.rowTrailing, () => ctx.slots.register({ name: SLOT.rowTrailing, id: MANAGED_ROW.id, locale: NS }, makeManagedRowRunningMark(t))), 'fishball: managed row running mark')
+            yield register(SLOT.overlay, { id: HAND_OVER.id }, makeHandOverDialog(t))
+            yield register(SLOT.overlay, { id: HAND_OVER.noticeId }, makeTakeBackNotice(t))
+          }), LABEL.dialogs)
+          ctx.effect(() => ctx.slots.inject(SLOT.rowLeading, () => register(SLOT.rowLeading, { id: MANAGED_ROW.id }, makeRowMark(t))), LABEL.rowMark)
+          // 0.2.2 keeps a row's trailing seat mounted while it runs; rc.5 has no such seat and this waits.
+          ctx.effect(() => ctx.slots.inject(SLOT.rowTrailing, () => register(SLOT.rowTrailing, { id: MANAGED_ROW.id }, makeRowRunningMark(t))), LABEL.rowRunning)
         },
       }
     }
