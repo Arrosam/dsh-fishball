@@ -1,6 +1,7 @@
 /**
  * Core's identity records (R-ID-07, AUTH-UC-05; `RECORDS`), in a DSH storage-domain table of the
- * Fishball DSH, keyed by kind and (target origin, token reference):
+ * Fishball DSH, keyed by kind and (target origin, credential id); the `ref` field holds the
+ * credential's non-secret id (F-LINK-SAVE `LINK_SAVE.credentialId`, decided item 13):
  * - a paired record says "core paired, or chose to continue, with this token at this target"; its
  *   presence is what keeps core from calling `pair` again (R-ID-05);
  * - a declined record says the user chose a new token instead of this one (AUTH-UC-05 A2).

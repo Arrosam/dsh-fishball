@@ -32,13 +32,13 @@ export const IDENTITY = Object.freeze({
 
 /**
  * The pairing states of AUTH-ST-03, as `pairing.state().state` reports them.
- * - unpaired: no paired record for the current target and token reference (NoRecord); the next
+ * - unpaired: no paired record for the current target and credential (NoRecord); the next
  *   attempt calls `pair`;
  * - paired: a record exists, and the last attempt was admitted (or none has run yet);
  * - warnMatch / warnMismatch: `pair` answered `already-paired` with `idMatches` true / false; the
  *   warning is open and the link sends nothing (AUTH-UC-05 E1);
  * - needToken: the user chose a new token; held, also after a restart (a declined record),
- *   until the token reference changes (row 7);
+ *   until the credential changes (row 7);
  * - needId: `pair` answered `id-taken`; held until `identity.id` changes, the token stays (row 13);
  * - idMismatch: a record exists but the token request returned the pair-only scope (R-ID-10,
  *   row 9): a new token is needed, and `pair` is never called.
@@ -105,7 +105,7 @@ export const NAME_SOURCE = Object.freeze({ pair: 'pair', setName: 'set_name' })
 
 /**
  * Core's identity records: one DSH storage-domain table in the Fishball DSH, at most one
- * non-secret record of each kind per (target origin, token reference), never a token value
+ * non-secret record of each kind per (target origin, credential id), never a token value
  * (`records.js`):
  * - paired: core paired, or chose Continue, with this token; it holds the fishball id, the
  *   connector's name for the pair, the name core last asked for with the connector's answer, and
@@ -124,8 +124,8 @@ export const RECORDS = Object.freeze({
 export const MISUSE = Object.freeze({
   /** A `TypeError`: a stored record is malformed, so the records table does not open. */
   record: 'fishball-core identity: malformed paired record',
-  /** A `TypeError`: the link's credentials carry no token reference (`ref`, a string). */
-  ref: 'fishball-core identity: credentials need a token reference',
+  /** A `TypeError`: the link's credentials carry no credential id (`ref`, a string). */
+  ref: 'fishball-core identity: credentials need a credential id',
   /** A `PairingFailed` (retried like any failure): `pair` answered nothing the decision table knows. */
   pairResult: 'fishball-core identity: pair answered no result',
 })
