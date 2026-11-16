@@ -3,7 +3,8 @@
  * §3, §5, §13; the user's split, 2026-11-16: the V2 approval broker keeps running and is switched
  * to V3 routing in C-WIRE-2, so in this task no permission request becomes a V3 offer).
  *
- * `openV3(ctx, {config, storageDomain, limits, logger})` opens every V3 module once per row life
+ * `openV3(ctx, {config, storageDomain, limits, volatileEvent, namespace, logger})` → `{close, …}`
+ * opens every V3 module once per row life
  * and composes them through the ports their own headers name. The order matters where noted:
  * 1. storage: tokens, pairs, mailbox, routing, OAuth, hosted (one domain each);
  * 2. the token registry with the settings module's writer and write-back; then revocation and the
@@ -14,8 +15,11 @@
  * 4. HTTP: the one request gate with DSH's listener facts, the token endpoint with C-OAUTH-WEB's
  *    two grants registered, the MCP endpoint with C-TOOLS' and C-EXT's tools, the approval
  *    listener on DSH's host and the `approval.port` setting;
- * 5. the host services: dshConnectorHandover, dshConnectorTools, dshConnectorTokens, dshConnectorUi.
- * Each module's `close` runs, last opened first, when the row unloads.
+ * 5. the host services: dshConnectorHandover, dshConnectorTools, dshConnectorTokens, dshConnectorUi,
+ *    and the settings page's routes.
+ * Every module's close and every provided service's disposer is one entry of `closers`, run last
+ * opened first, when the row unloads or a later step fails: the services and routes leave before
+ * the modules behind them close, and the settings chain drains before the modules it feeds.
  *
  * `inbox_ack` goes through routing's mailbox port (routing/index.js: "C-WIRE and C-TOOLS must route
  * every `inbox_ack` through this port"): the mailbox C-TOOLS and C-HTTP get is the one whose
@@ -42,7 +46,8 @@ import { registerSettingsPage } from '../settings-page/index.js'
 import { createSettings } from '../settings/index.js'
 import { createTokenRegistry } from '../tokens/index.js'
 import { createUiBackend } from '../ui/index.js'
-import { LABEL, LOG, OPTIONAL_WIRE_SERVICE, ROUTE_KIND, TLS_FILE } from './constants.js'
+import { WEB_SERVICE } from '../constants.js'
+import { LABEL, LOG, MISUSE, OPTIONAL_WIRE_SERVICE, ROUTE_KIND, TLS_FILE } from './constants.js'
 import { createSessionDomain } from './domain.js'
 import { withAckSignal } from './mailbox.js'
 import { createSessionNotes, createSessionSource, sessionExistsIn } from './sessions.js'
@@ -56,12 +61,12 @@ const NO_CARDS = Object.freeze({ toUser: () => {} })
 
 /**
  * DSH's listener facts (K1 GateListenerFacts): its bind host, TLS and `--trusted-host`, read once,
- * because DSH rebinds by restarting (gate.js); the approval port is read live from the setting.
+ * because DSH rebinds by restarting (gate.js); `approvalPort` is the one live port function.
  */
-function listenerFacts(ctx, approvalPort) {
+function listenerFacts(webServer, ctx, approvalPort) {
   return Object.freeze({
-    host: ctx.webServer.host,
-    secure: ctx.webServer.protocol === HOSTS.remoteScheme,
+    host: webServer.host,
+    secure: webServer.protocol === HOSTS.remoteScheme,
     trustedHosts: ctx.get(OPTIONAL_WIRE_SERVICE.webStartup)?.trustedHosts ?? [],
     approvalPort,
     now: Date.now,
@@ -78,11 +83,12 @@ function listenerFacts(ctx, approvalPort) {
  * revisit if DSH ever exposes the material. Unreadable files make every bind fail, which the
  * listener reports as `approval-port-in-use` while the MCP endpoint keeps working (R-OA-20).
  */
-async function serverFactory(ctx, secure) {
+async function serverFactory(webServer, secure) {
   if (!secure) return undefined
-  const tls = ctx.webServer.tlsConfig
-  const material = await Promise.all([readFile(resolve(tls?.certFile ?? ''), TLS_FILE.encoding), readFile(resolve(tls?.keyFile ?? ''), TLS_FILE.encoding)])
-    .catch((error) => error)
+  const tls = webServer.tlsConfig
+  const material = tls?.certFile === undefined || tls?.keyFile === undefined
+    ? new Error(MISUSE.noTlsFiles)
+    : await Promise.all([readFile(resolve(tls.certFile), TLS_FILE.encoding), readFile(resolve(tls.keyFile), TLS_FILE.encoding)]).catch((error) => error)
   // The listener counts a throwing factory as a failed bind (listener.js `bind`), so the status
   // says so and the retry keeps trying; it never serves plain HTTP in place of TLS.
   return (handler) => {
@@ -90,6 +96,17 @@ async function serverFactory(ctx, secure) {
     const [cert, key] = material
     return https.createServer({ cert, key }, handler)
   }
+}
+
+/**
+ * The name the approval page shows for this DSH (R-OA-11: "this DSH's name"), read at each page:
+ * DSH has no instance name of its own, so it is the listener's origin. Before DSH's listener has
+ * bound a port (or for a bind address with a zone id) `getOrigin` throws, and the bind host stands
+ * in. The page names the canonical MCP URI beside it. Open question for the user (C-WIRE report):
+ * which name the page should show.
+ */
+const dshNameOf = (webServer) => () => {
+  try { return webServer.getOrigin() } catch { return webServer.host }
 }
 
 /**
@@ -117,6 +134,8 @@ export async function openV3(ctx, { config, storageDomain, limits, volatileEvent
   }
 
   async function compose() {
+    // Read with ctx.get: the row does not inject the web server (src/constants.js WEB_SERVICE).
+    const webServer = ctx.get(WEB_SERVICE.webServer)
     const settings = createSettings({ ctx, config, namespace, limits, volatileEvent, logger })
     const tokens = createTokenRegistry({ ctx, logger, settings: settings.writer, restoreTokens: settings.restoreTokens })
     settings.bind(tokens)
@@ -151,7 +170,12 @@ export async function openV3(ctx, { config, storageDomain, limits, volatileEvent
     closers.push(followRevocations(tokens, oauthStore, { logger }))
     const failures = createFailureLimiter()
 
-    const facts = listenerFacts(ctx, () => settings.read().approvalPort)
+    // The approval listener's port as everything else sees it: the bound port once it is bound
+    // (setting 0 asks the OS), else the setting. One function for the gate, the metadata and the
+    // page (the listener is built in step 4, after this is read).
+    let approval
+    const approvalPort = () => approval?.port() ?? settings.read().approvalPort
+    const facts = listenerFacts(webServer, ctx, approvalPort)
     const gate = createRequestGate(facts, { logger })
     const verifier = createBearerVerifier({ tokenStore: oauthStore, tokenRegistry: tokens, pairStore: pairs, logger })
 
@@ -173,6 +197,9 @@ export async function openV3(ctx, { config, storageDomain, limits, volatileEvent
     await settings.start()
     await revocation.start()
     await hosted.resume()
+    // Pushed before the follower, so on close the follower goes first and then the chain drains,
+    // before hosted, revocation and routing (pushed earlier) close: no queued sync reaches them.
+    closers.push(() => settings.drain())
     closers.push(settings.follow())
 
     // Step 4: HTTP.
@@ -189,9 +216,7 @@ export async function openV3(ctx, { config, storageDomain, limits, volatileEvent
       for (const listener of [...presenceListeners]) listener(principalKey, connected)
     }))
 
-    let approval
-    const dshPort = () => ctx.webServer.port
-    const approvalPort = () => approval?.port() ?? settings.read().approvalPort
+    const dshPort = () => webServer.port
     const tokenEndpoint = createTokenEndpoint({
       gate, failureLimiter: failures, tokenStore: oauthStore, tokenRegistry: tokens, pairStore: pairs, secure: facts.secure,
       approvalOrigin: (req, origin) => approvalOriginFor(origin, dshPort(), approvalPort()),
@@ -202,10 +227,10 @@ export async function openV3(ctx, { config, storageDomain, limits, volatileEvent
     tokenEndpoint.register(createRefreshTokenGrant(grantDeps))
     const handler = createApprovalHandler({
       gate, originOf, secure: facts.secure, cimd: createCimdFetcher(), tokens, pairs, store: oauthStore, limiter: failures,
-      dshName: ctx.webServer.getOrigin(), dshPort, approvalPort, now: Date.now, logger,
+      dshName: dshNameOf(webServer), dshPort, approvalPort, now: Date.now, logger,
     })
     approval = createApprovalListener({
-      handler, host: facts.host, port: settings.read().approvalPort, createServer: await serverFactory(ctx, facts.secure), logger,
+      handler, host: facts.host, port: settings.read().approvalPort, createServer: await serverFactory(webServer, facts.secure), logger,
     })
     closers.push(() => approval.close())
     void approval.start()
@@ -213,21 +238,21 @@ export async function openV3(ctx, { config, storageDomain, limits, volatileEvent
     closers.push(settings.onChange(() => { void approval.setPort(settings.read().approvalPort) }))
 
     for (const route of [...tokenEndpoint.routes, Object.freeze({ kind: ROUTE_KIND, path: PATHS.mcp, handler: endpoint.handler })]) {
-      closers.push(ctx.webServer.register(route))
+      closers.push(webServer.register(route))
     }
 
     // Step 5: the host services and the owner-only pages.
     const ui = createUiBackend({ handover: routing.handover, maxNoteBytes: () => limits().maxMessageBytes, logger })
     closers.push(() => ui.close())
-    routing.provide(ctx)
-    contributions.provide(ctx)
-    ui.provide(ctx)
-    ctx.effect(() => ctx.provide(HOSTED_SERVICE.name, hosted.service), LABEL.services)
-    registerSettingsPage(ctx, {
+    closers.push(routing.provide(ctx))
+    closers.push(contributions.provide(ctx))
+    closers.push(ui.provide(ctx))
+    closers.push(ctx.effect(() => ctx.provide(HOSTED_SERVICE.name, hosted.service), LABEL.services))
+    closers.push(...registerSettingsPage(ctx, {
       tokens,
       state: () => settingsState({ tokens, pairs, presence, settings, approval }),
       logger,
-    })
+    }))
 
     return Object.freeze({ close: closeAll, tokens, pairs, routing, approval })
   }

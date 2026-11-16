@@ -32,8 +32,12 @@ function originParts(origin) {
 export function issuerOriginFor(pageOrigin, approvalPort, dshPort) {
   const parts = originParts(pageOrigin)
   if (parts === undefined) return undefined
-  if (parts.port !== approvalPort) return pageOrigin
-  const portSuffix = URL_RULES.defaultPorts[parts.scheme.toLowerCase()] === dshPort ? '' : URL_RULES.portSeparator + dshPort
+  return parts.port === approvalPort ? onPort(parts, dshPort) : pageOrigin
+}
+
+/** `parts`' scheme and host on `port`, with no port when it is the scheme's default (RFC 9110 §4.2). */
+function onPort(parts, port) {
+  const portSuffix = URL_RULES.defaultPorts[parts.scheme.toLowerCase()] === port ? '' : URL_RULES.portSeparator + port
   return parts.scheme + URL_RULES.schemeSeparator + parts.host + portSuffix
 }
 
@@ -54,7 +58,5 @@ export function issuerOriginFor(pageOrigin, approvalPort, dshPort) {
  */
 export function approvalOriginFor(origin, dshPort, approvalPort) {
   const parts = originParts(origin)
-  if (parts === undefined || parts.port !== dshPort) return origin
-  const portSuffix = URL_RULES.defaultPorts[parts.scheme.toLowerCase()] === approvalPort ? '' : URL_RULES.portSeparator + approvalPort
-  return parts.scheme + URL_RULES.schemeSeparator + parts.host + portSuffix
+  return parts === undefined || parts.port !== dshPort ? origin : onPort(parts, approvalPort)
 }

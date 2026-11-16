@@ -34,7 +34,7 @@
  * Fishball in the main process took every input the user meant for the child.
  */
 import { Config, QUESTION_MODE_SETTING, readLimits } from './src/config.js'
-import { PLUGIN, ERROR, STATUS, SERVICE, API_CODE, WATCH_BY, CARD_END, PILE_SCOPE, FISHBALL, EVENT, DECISION_ACTION, DECISION_IDLE, DECISION_OK, INTAKE_SOURCE } from './src/constants.js'
+import { PLUGIN, ERROR, STATUS, SERVICE, WEB_SERVICE, API_CODE, WATCH_BY, CARD_END, PILE_SCOPE, FISHBALL, EVENT, DECISION_ACTION, DECISION_IDLE, DECISION_OK, INTAKE_SOURCE } from './src/constants.js'
 import { LifecycleStateError, diagnosticOf } from './src/errors.js'
 import { StateFeed } from './src/state-feed.js'
 import { Store } from './src/store.js'
@@ -118,20 +118,27 @@ export async function apply(ctx, config) {
 
   // The V3 connector shares no store with the V2 path, so a V3 failure is logged and leaves V2
   // running. Its close is the row's effect from the start, so a row that unloads while V3 is still
-  // opening closes it once it has opened. apply awaits the open: DSH's app ready waits for every
-  // row's apply, so the V3 services and routes (dshConnectorUi among them) exist by then, and a
-  // plugin that checks for them at app ready (dsh-connector-ui's connector-missing) finds them.
-  let openedV3
-  ctx.effect(() => {
+  // opening closes it once it has opened; the effect returns that close's promise, which Cordis
+  // awaits, so a remount opens its storage domains and routes only once these are released.
+  // apply awaits the open (alongside V2's store, so a slow V3 open never delays V2's): DSH's app
+  // ready waits for every row's apply, so the V3 services and routes (dshConnectorUi among them)
+  // exist by then, and a plugin that checks for them at app ready finds them. V3 needs DSH's web
+  // server (its MCP and OAuth routes); a DSH without the web app runs V2 alone.
+  let v3Active = true
+  let openedV3 = Promise.resolve()
+  if (ctx.get(WEB_SERVICE.webServer) === undefined) logger.warn(V3_LOG.format, V3_LOG.noWebServer, WEB_SERVICE.webServer)
+  else ctx.effect(() => {
     openedV3 = openV3(ctx, { config, storageDomain: { defineDomain, domainTable }, limits, volatileEvent: EVENT.volatileUpdate, namespace: PLUGIN.name, logger })
-      .catch((error) => { logger.warn(V3_LOG.format, V3_LOG.openFailed, diagnosticOf(error)) })
-    return () => { void openedV3.then((v3) => v3?.close()) }
+      .catch((error) => { if (v3Active) logger.warn(V3_LOG.format, V3_LOG.openFailed, diagnosticOf(error)) })
+    return () => {
+      v3Active = false
+      return openedV3.then((v3) => v3?.close())
+    }
   }, V3_LOG.label)
-  await openedV3
 
   let store
   try {
-    store = await Store.open(ctx)
+    ;[store] = await Promise.all([Store.open(ctx), openedV3])
   } catch (error) {
     logger.warn('store could not be opened (%s)', diagnosticOf(error))
     status = { status: STATUS.failed, error: { code: ERROR.storeUnreadable } }

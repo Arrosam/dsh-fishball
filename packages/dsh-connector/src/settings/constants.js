@@ -17,18 +17,18 @@ export const SETTING = Object.freeze({
   approvalPort: Object.freeze(['approval', 'port']),
 })
 
-/** A TCP port; 0 asks the OS for a free one (node:net `listen`). */
-export const PORT_RANGE = Object.freeze({ min: 0, max: 65535 })
-
 /** DSH's settings-service path edits (dsh-settings SettingsPathOp). */
 export const PATH_OP = Object.freeze({ set: 'set', unset: 'unset' })
 
 /** The connector's own DSH services read with `ctx.get` (not injected, so the row loads without them). */
 export const SETTINGS_SERVICE = Object.freeze({
   settings: 'settings',
-  /** The async resource type the connector's own saves run under (index.js `outside`). */
-  asyncResource: 'dsh-connector.settings-write',
+  /** dsh-hmr's service (index.js `outsideHmr`). */
+  hmr: 'hmr',
 })
+
+/** dsh-hmr's private transaction store field on its service (index.js `outsideHmr`; both SDKs). */
+export const HMR_TRANSACTION_FIELD = 'executing'
 
 /** Descriptions shown by DSH's native form (R-CON-10). Model-free, user-facing. */
 export const SETTING_TEXT = Object.freeze({
@@ -36,7 +36,7 @@ export const SETTING_TEXT = Object.freeze({
   tokenLabel: 'A name for the entry; it is shown, not secret.',
   tokenEnabled: 'Off: the agent using this token is refused until it is switched on again.',
   tokenKey: 'The entry\'s key, written when it was created. Do not edit it.',
-  agentToken: 'The designated agent: messages and questions from sessions nobody manages go to this entry\'s agent. Unset: the hosted Fishball\'s entry, when there is one.',
+  agentToken: 'The designated agent: messages and questions from sessions nobody manages go to this entry\'s agent. Unset: none, so they wait (messages) or are answered unavailable (questions).',
   approvalPort: 'The port of the approval page that browser agents sign in on. It binds the same host as DSH.',
 })
 
@@ -49,6 +49,5 @@ export const MISUSE = Object.freeze({
 export const LOG = Object.freeze({
   format: '%s (%s)',
   applyFailed: 'settings: the token list could not be applied',
-  restoreFailed: 'settings: the previous token list could not be written back',
   listenerFailed: 'settings: a settings listener failed',
 })

@@ -107,7 +107,8 @@ const alreadyPairedHtml = (pair) => `${fill(PAGE_TEXT.alreadyPaired)} ${
  * @param deps.cimd the CIMD fetcher (`./cimd.js`)
  * @param deps.tokens K1 `TokenRegistry`; `deps.pairs` K1 `PairStore`; `deps.store` K1 `OAuthTokenStore`
  * @param deps.limiter K1a `FailureLimiter`, the one the token endpoint shares (R-OA-17)
- * @param deps.dshName this DSH's name shown on the page (C-WIRE supplies it)
+ * @param deps.dshName this DSH's name shown on the page: a string, or `() => string` read at each
+ *   page (C-WIRE supplies one, because DSH's listener origin is known only once it has bound)
  * @param deps.dshPort `() => number`, DSH's own listener port; `deps.approvalPort` `() => number`, this listener's
  * @param deps.now `() => epoch ms`; `deps.logger` `{warn}`
  * @returns `(req, res) => Promise<void>`, a node:http request handler; it never rejects
@@ -138,7 +139,7 @@ export function createApprovalHandler(deps) {
       clientHost: new URL(request.clientId).host,
       redirectHost: new URL(request.redirectUri).hostname,
       loopbackOnly: isLoopbackOnly(redirectUrisOf(request.doc)),
-      dshName,
+      dshName: typeof dshName === 'function' ? dshName() : dshName,
       resource: request.resource,
       requestId: request.id,
       nonce: request.nonce,

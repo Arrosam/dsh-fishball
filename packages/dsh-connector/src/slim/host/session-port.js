@@ -69,7 +69,7 @@ const MIN_PAGE_MESSAGES = 1
 /** The session address kind every ordinary managed/watchable Session uses. */
 const SESSION_ADDRESS = 'session'
 /** dsh-agent's status for a Session with a turn in progress; 0.2.1 exposes it on the live agent. */
-const RUNNING_AGENT = 'running'
+export const RUNNING_AGENT = 'running'
 
 const LIST_ACTIVITY = Object.freeze({
   event: 'api-session/activity',
@@ -406,8 +406,9 @@ export function createSessionPort(ctx, options = {}) {
         logger?.warn('making session %s managed failed (%s)', created.sessionId, error?.code ?? ERROR.failed)
       }
     }
-    // manage() writes the store first; a throw after that write leaves the session managed, so
-    // the answer reports the registry's state rather than the call's outcome.
+    // V2: manage() writes the store first; a throw after that write leaves the session managed, so
+    // the answer reports the registry's state rather than the call's outcome. With onCreated the
+    // caller reports it (V3's ManagedState).
     const managed = onCreated === undefined ? registry.isManaged(created.sessionId) : undefined
     // A new session: its log before the first message holds no turn end, so a read that finds
     // nothing counts every turn end (legacy watermarkOfNew). Named before this is read.

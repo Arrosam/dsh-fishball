@@ -3,7 +3,8 @@
  * R-OA-20 Q-OA-7 A; K1d `SettingsWriter`).
  *
  * - `SETTINGS_SCHEMA` (schema.js): the V3 fields of the row's Config.
- * - `createSettings({ctx, config, tokens, logger})` → `{read, onChange, writer, restoreTokens, follow}`:
+ * - `createSettings({ctx, config, namespace, limits, volatileEvent, logger})` →
+ *   `{read, onChange, writer, restoreTokens, bind, start, follow, drain}`:
  *   - `read()`: the live `{agentToken?, maxQueuedInputs?, approvalPort, maxMessageBytes}`; the
  *     shape routing, revocation and the hosted service take as their `settings.get`;
  *   - `onChange(fn) → dispose`: fires after every applied change, **after `TokenRegistry.apply`
@@ -12,7 +13,10 @@
  *   - `writer`: the K1d SettingsWriter (`addToken`, `removeToken`, `setDesignated`), one write
  *     after another, each resolving once DSH has saved it and the registry has applied it;
  *   - `restoreTokens(previous)`: the registry's write-back of a refused save;
- *   - `follow()`: subscribes to the row's volatile updates (DSH's loader event) for the row's life.
+ *   - `bind(registry)`: the token registry this module syncs (once, before `start`);
+ *   - `start()`: the registry's start sync (SYNC_REASON.start);
+ *   - `follow()`: subscribes to the row's volatile updates (DSH's loader event) for the row's life;
+ *   - `drain()`: resolves once every queued sync has run (the owner's close).
  *
  * **One owner of the sync.** Every change of the token list, whoever made it, reaches the registry
  * through `syncNow` here, on one serial chain. Each loader event is marked, **when it fires**, as
@@ -27,12 +31,11 @@
  * previous list (the C-TOKENS limit: a second user save made before a refused save's restore
  * completed was taken for the restore). Revisit if DSH ever applies a save outside the edit.
  */
-import { AsyncResource } from 'node:async_hooks'
 import { APPROVAL_LISTENER } from '../../mcp-schema/index.js'
 import { diagnosticOf } from '../errors.js'
 import { serialChain } from '../routing/support.js'
 import { SYNC_REASON } from '../tokens/index.js'
-import { LOG, MISUSE, PATH_OP, SETTING, SETTINGS_SERVICE } from './constants.js'
+import { HMR_TRANSACTION_FIELD, LOG, MISUSE, PATH_OP, SETTING, SETTINGS_SERVICE } from './constants.js'
 
 export { SETTING } from './constants.js'
 export { SETTINGS_SCHEMA } from './schema.js'
@@ -85,8 +88,9 @@ export function createSettings({ ctx, config, namespace, limits, volatileEvent, 
     const list = tokenList()
     let answer
     if (reason === SYNC_REASON.start || !sameJson(list, applied)) {
-      applied = structuredClone(list)
+      // Recorded only once applied: a rejected apply leaves the list due for the next sync.
       answer = await tokens.apply(list, reason)
+      applied = structuredClone(list)
     }
     fire()
     return answer
@@ -99,15 +103,21 @@ export function createSettings({ ctx, config, namespace, limits, volatileEvent, 
   }
 
   /**
-   * The async context the row was applied in. DSH runs a settings save and the loader's volatile
-   * update it triggers inside one HMR transaction, held in an AsyncLocalStorage context
-   * (dsh-hmr `runExclusive`, both SDKs), and refuses a save started from inside it ("HMR
-   * transactions cannot be nested"). The connector's own saves are often started from inside that
-   * event (a refused save's write-back, a delete's `setDesignated(undefined)` from revocation), so
-   * each runs in the row's own context instead: it then queues behind the running edit, as any
-   * other save does, and never nests in it.
+   * Runs `save` outside any DSH HMR transaction. DSH runs a settings save, the loader's volatile
+   * update it triggers, a plugin remount and HMR's own reconciles inside one transaction held in an
+   * AsyncLocalStorage (dsh-hmr `runExclusive`, both SDKs), and refuses a save started inside it
+   * ("HMR transactions cannot be nested"). The connector's own saves are often started there: a
+   * refused save's write-back and a delete's `setDesignated(undefined)` from inside the volatile
+   * update, and every write of a row that was itself applied inside a transaction (a remount).
+   * Exiting the store makes the save queue behind the running transaction, as any other save does.
+   * dsh-hmr exposes no public way out, so this reads its private `executing` store (the same field
+   * on 0.2.1-rc.5 and 0.2.2-rc.1); without an hmr service, or if that field ever goes, the save
+   * runs as it is. Revisit if dsh-hmr adds a public escape.
    */
-  const outside = new AsyncResource(SETTINGS_SERVICE.asyncResource)
+  function outsideHmr(save) {
+    const store = ctx.get(SETTINGS_SERVICE.hmr)?.[HMR_TRANSACTION_FIELD]
+    return typeof store?.exit === 'function' ? store.exit(save) : save()
+  }
   /** The token lists the connector's own saves in flight write, one per save (see the module comment). */
   const ownLists = []
   /**
@@ -117,7 +127,7 @@ export function createSettings({ ctx, config, namespace, limits, volatileEvent, 
   async function ownSave(ops, list) {
     const mark = structuredClone(list)
     ownLists.push(mark)
-    try { await outside.runInAsyncScope(() => settingsService().mutate(namespace, ops)) } finally {
+    try { await outsideHmr(() => settingsService().mutate(namespace, ops)) } finally {
       const at = ownLists.indexOf(mark)
       if (at >= 0) ownLists.splice(at, 1)
     }
@@ -131,22 +141,25 @@ export function createSettings({ ctx, config, namespace, limits, volatileEvent, 
   }
 
   /**
-   * One own write: DSH saves `ops` (which updates the row's live config before it resolves, as
-   * dsh-config-editor reconciles the profile in the same edit), then the registry applies the
-   * result as the connector's own. It rejects when the save fails, with the document unchanged.
-   * The registry never refuses an own sync (SYNC_REASON.own), so K1d's "the sync refuses it" case
-   * cannot arise here: an own write adds no item without a record (C-TOKENS writes the record
-   * first) and never a second item of one key (keys are random).
+   * One own write: DSH saves the plan's ops (which updates the row's live config before it
+   * resolves, as dsh-config-editor reconciles the profile in the same edit), then the registry
+   * applies the result. It rejects when the save fails, with the document unchanged.
+   * - `planOf(list)` runs inside the step, so an index into the list is taken after every earlier
+   *   write (K1d-3: writes run in call order). It answers `{ops, list}` (the list once saved) or
+   *   undefined for a no-op.
+   * - The result is applied as the connector's own only when the config holds exactly the planned
+   *   list: a user save that landed meanwhile (it waits on the same profile lock) is applied as the
+   *   user's, so a problem it brings is refused, not taken in as the connector's.
+   * - The registry never refuses an own sync (SYNC_REASON.own), so K1d's "the sync refuses it"
+   *   case cannot arise from the plan itself: an own write adds no item without a record (C-TOKENS
+   *   writes the record first) and never a second item of one key (keys are random).
    */
-  // `planOf(list)` is read inside the step, so an index into the list is taken after every earlier
-  // write (K1d-3: writes run in call order). It answers `{ops, list}` (the list after the save) or
-  // undefined for a no-op.
   function write(planOf) {
     return chain(async () => {
       const plan = planOf(tokenList())
       if (plan === undefined) return
       await ownSave(plan.ops, plan.list)
-      await syncNow(SYNC_REASON.own)
+      await syncNow(sameJson(tokenList(), plan.list) ? SYNC_REASON.own : SYNC_REASON.settings)
     })
   }
 
@@ -171,14 +184,8 @@ export function createSettings({ ctx, config, namespace, limits, volatileEvent, 
    * this chain is awaiting), so it only saves: its loader event, marked own when it fires, is
    * applied by the step it queues behind the current one.
    */
-  async function restoreTokens(previous) {
-    try {
-      await ownSave([{ op: PATH_OP.set, path: SETTING.tokens, value: previous }], previous)
-    } catch (error) {
-      logger.warn(LOG.format, LOG.restoreFailed, diagnosticOf(error))
-      throw error
-    }
-  }
+  // A failed save rejects to the registry, which logs it (tokens/registry.js `refuse`).
+  const restoreTokens = (previous) => ownSave([{ op: PATH_OP.set, path: SETTING.tokens, value: previous }], previous)
 
   /** A volatile update of the row: a user's save in DSH's form, or the echo of an own save. */
   function onVolatileUpdate() {
