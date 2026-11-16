@@ -194,10 +194,7 @@ function hostedCases(sdk) {
     sameSet([...codes.literals], HOSTED.retireCodes, 'RetireRefusalCode')
   })
   caseTest(sdk, ID.hosted, 8, 'child.d.ts retry() says Retry creates no token after a delete (R-HOST-10)', null, LATER.childRetry)
-  todos(sdk, ID.hosted, LATER.succeed, [
-    ['B1', 'createHosted returns {entryKey, label: "Fishball (hosted)", value} once; the host stores no value; a failed write rejects operation-failed and creates nothing'],
-    ['B2', 'entryState answers deleted for an unknown or not-hosted key'],
-  ])
+  // B1 (createHosted behaviour) and B2 (entryState of an unknown or not-hosted key) run in test/v3/dsh-connector/hosted (C-SUCCEED).
 }
 
 // ================================================================================================
@@ -296,12 +293,7 @@ function transferCases(sdk) {
     assert.equal(k1().m.members(found.returns).get(MAILBOX.moved)?.type.trim(), MAILBOX.movedType)
   })
   docRows(sdk, ID.transfer, 2, 'Mailbox.transfer', MAILBOX.transferDoc, () => transfer().doc)
-  todos(sdk, ID.transfer, LATER.succeed, [
-    ['B1', 'every pending event of from moves to to, held events included, with the same eventIds, in order; {moved} counts them'],
-    ['B2', 'acked and retired events stay behind; nothing is committed (no retirement)'],
-    ['B3', 'an empty or unknown source resolves {moved: 0}; a repeat moves nothing more'],
-    ['B4', 'a non-string or empty key, or from === to, throws TypeError synchronously and nothing changes'],
-  ])
+  // B1–B4 (the Mailbox.transfer behaviour) run in test/v3/dsh-connector/hosted (C-SUCCEED).
 }
 
 // ================================================================================================

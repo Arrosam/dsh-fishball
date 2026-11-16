@@ -1,12 +1,17 @@
 /**
- * Vocabulary for the C-REVOKE step-1 cases (cases.mjs): the routing surface `endPrincipal`, the
- * routing member `askDropped`, and K1d `Mailbox.retire` misuse. Every product value comes from K1
+ * Vocabulary for the C-REVOKE cases: step 1 (cases.mjs: the routing surface `endPrincipal`, the
+ * routing member `askDropped`, and K1d `Mailbox.retire` misuse) and step 2 (handler-cases.mjs: the
+ * revocation module `createRevocation`). Every product value comes from K1
  * (`dsh-connector/mcp-schema`) through the C-ROUTE suite's constants (which take them from K1 and
- * K3 only); nothing comes from `packages/dsh-connector/src/routing/` or `src/mailbox/`. The rest is
- * fixture data and harness values.
+ * K3 only), or from the two constants the step-2 module exports (REVOCATION_TIMING,
+ * REVOCATION_NOTE, read by subject.mjs); nothing comes from `packages/dsh-connector/src/`. The
+ * rest is fixture data and harness values.
  */
+import path from 'node:path'
+import { REPO } from '../../../support/constants.mjs'
+
 export {
-  EVENT_TYPE, FIXTURE, MAILBOX, OFFER_TYPES, REFUSAL, RETIREMENT_REASON, RETIRE_OUTCOME, REVOCATION, WAIT,
+  EVENT_TYPE, FIXTURE, MAILBOX, OFFER_TYPES, REFUSAL, RETIREMENT_REASON, RETIRE_OUTCOME, REVOCATION, SETTLED_BY, SETTLEMENT_OUTCOME, WAIT,
 } from '../routing/constants.mjs'
 
 /** The routing members this suite drives beyond C-ROUTE's own list (the step-1 surface the dev relayed). */
@@ -19,7 +24,83 @@ export const CASE = Object.freeze({
   bva01: 'REV-BVA-01',
   dt01: 'REV-DT-01', dt02: 'REV-DT-02',
   st01: 'REV-ST-01', st02: 'REV-ST-02', st03: 'REV-ST-03',
+  // Step 2 (handler-cases.mjs).
+  ep06: 'REV-EP-06', ep07: 'REV-EP-07', ep08: 'REV-EP-08',
+  bva02: 'REV-BVA-02',
+  dt03: 'REV-DT-03', dt04: 'REV-DT-04',
+  st04: 'REV-ST-04', st05: 'REV-ST-05', st06: 'REV-ST-06',
+  // The design cases step 2 covers, under their own ids (docs/test-design/v3).
+  authUc03: 'AUTH-UC-03', authUc06: 'AUTH-UC-06', authDt04: 'AUTH-DT-04',
+  handSt01: 'HAND-ST-01', handUc03: 'HAND-UC-03', watchUc02: 'WATCH-UC-02', platSt01: 'PLAT-ST-01', nameEp02: 'NAME-EP-02',
 })
+
+/**
+ * The step-2 module (relayed by the dev session; subject.mjs binds it). FBTEST_C_REVOKE_ENTRY moves
+ * the entry (e.g. to the dev checkout).
+ */
+export const REVOKE_SUBJECT = Object.freeze({
+  entry: process.env.FBTEST_C_REVOKE_ENTRY ?? path.join(REPO, 'packages', 'dsh-connector', 'src', 'revocation', 'index.js'),
+  factory: 'createRevocation',
+  timing: 'REVOCATION_TIMING',
+  note: 'REVOCATION_NOTE',
+  methods: Object.freeze(['start', 'close']),
+  /** The routing member step 2 adds (the routing port is endPrincipal, askDropped and this). */
+  liveAsksOf: 'liveAsksOf',
+  /** K1 Mailbox members passed to the real mailbox unrecorded (the module's own calls are hold, release, drop, expireHolds). */
+  mailboxReads: Object.freeze(['commit', 'poll', 'ack', 'summary', 'retire', 'retireContributor', 'transfer']),
+})
+
+/** Labels of the port calls the revocation module makes, as fakes.mjs PortCalls journals them. */
+export const PORT = Object.freeze({
+  closeEntry: 'closeEntry',
+  endPrincipal: 'endPrincipal',
+  askDropped: 'askDropped',
+  liveAsksOf: 'liveAsksOf',
+  hold: 'hold',
+  release: 'release',
+  drop: 'drop',
+  expireHolds: 'expireHolds',
+  remove: 'pairs.remove',
+  setDesignated: 'setDesignated',
+  addToken: 'addToken',
+  removeToken: 'removeToken',
+  note: 'notes.system',
+  card: 'cards.toUser',
+})
+/** A journal entry is a call's start, its resolution or its rejection. */
+export const PHASE = Object.freeze({ call: 'call', done: 'done', failed: 'failed' })
+
+/** Node's setTimeout cap (G8): a longer delay fires at once, so no single delay may exceed it. */
+export const TIMER = Object.freeze({ maxDelayMs: 2 ** 31 - 1 })
+const SECOND_MS = 1000
+const HOUR_MS = 3600 * SECOND_MS
+/** REVOCATION_TIMING as the dev session relayed it (the brief: the sweep every hour, a retry after 30 s). */
+export const RELAYED_TIMING = Object.freeze({ expirySweepMs: HOUR_MS, retryMs: 30 * SECOND_MS })
+
+/** Q7: the system note is model-facing text and stays English (Latin letters, no CJK script). */
+export const NOTE_RULE = Object.freeze({ latin: /[A-Za-z]/, cjk: /[\u3040-\u30FF\u3400-\u9FFF\uAC00-\uD7AF]/ })
+
+/** Fixture data of the step-2 rows: not product values. */
+export const HANDLER_FIXTURE = Object.freeze({
+  /** The flags of the `state` event the AUTH-DT-04 world queues. */
+  state: Object.freeze({ running: true, pendingInteraction: false }),
+  /** Sessions beyond the C-ROUTE fixture's three: Q's managed session, and one handed over to P. */
+  sessions: Object.freeze({ s4: 'fbtest-s4', s5: 'fbtest-s5' }),
+  /**
+   * "After 30 days" in the rows that are not the boundary rows: this far past since +
+   * MAILBOX.disabledRetentionMs (as the C-MAILBOX suite's AMEND.justAfterMs), so they hold whichever
+   * side of the exact instant the hold ends on; REV-BVA-02 pins the instant itself.
+   */
+  pastHoldMs: 1,
+  /** A message_agent text sent while the designated entry is off. */
+  heldText: 'FBTEST-MSG-WHILE-OFF',
+})
+
+/**
+ * Harness timing of the step-2 rows: the module's port calls count as settled once none is in
+ * flight and the journal is unchanged for this many event-loop turns (drain in handler-cases.mjs).
+ */
+export const HANDLER_WAIT = Object.freeze({ stableTurns: 3 })
 
 /** The mailbox port operations the journal records (fakes.mjs revocationPort). */
 export const OP = Object.freeze({
@@ -63,7 +144,7 @@ export const MISUSE = Object.freeze({
 /** Logger levels that count as "the failure is logged" (the level is not frozen; either is accepted). */
 export const LOGGED_LEVELS = Object.freeze(['warn', 'error'])
 
-/** Owners of rows step 1 cannot check (the brief's step-2 list). */
+/** Owners of rows C-REVOKE cannot check with its own module. */
 export const LATER = Object.freeze({
-  step2: (what) => `C-REVOKE step 2 (${what})`,
+  wire401: 'C-WIRE (C-OAUTH\'s verifier behind C-HTTP\'s route in one connector: C-REVOKE never touches access tokens; the verifier half runs in test/v3/dsh-connector/oauth AUTH-UC-06 main step 2)',
 })

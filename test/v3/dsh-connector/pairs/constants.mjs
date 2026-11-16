@@ -175,10 +175,8 @@ export const LATER = Object.freeze({
   seenCallSite: 'C-HTTP (W2): which requests call PairStore.seen (a 401 never does)',
   mailbox: 'C-MAILBOX (W2): one durable mailbox per pair',
   contributor: 'C-EXT (W2): call.principal handed to contributors',
-  revoke: 'C-REVOKE (W4): a disabled entry keeps its pair and name until it is deleted',
   routeNotes: 'C-ROUTE (W3): connector notes in sessions ("managed by …")',
   marks: 'U-MARKS (W4): managed marks and the Hand over control',
   wire: 'C-WIRE (W4b): the tools over MCP end to end, and the native settings status rows',
   coreIdentity: 'F-PAIR (W3): fishball-core\'s identity.id setting',
-  succeedFailure: 'C-SUCCEED (HOST-UC-03 E2): an injected storage failure in the succession step changes nothing (the C-PAIR world has no write-failure seam)',
 })

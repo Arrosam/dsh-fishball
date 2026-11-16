@@ -59,6 +59,7 @@ export const LOG = Object.freeze({
   headWriteFailed: 'fishball mailbox: writing a box head failed; the event is committed and the head is repaired at the next load',
   expiryFailed: 'fishball mailbox: a hold-expiry drop failed for one box; it keeps its marker and the next expireHolds finishes it',
   retireContributorFailed: 'fishball mailbox: retiring a contributor\'s events failed for one box; the other boxes were retired and a repeat finishes it',
+  transferUndoFailed: 'fishball mailbox: moving an event back after a failed transfer failed; it stays pending in the destination box',
   headRepairFailed: 'fishball mailbox: repairing box heads at load failed; they are right in memory and retried before the next delete',
 })
 
@@ -70,6 +71,8 @@ export const MISUSE = Object.freeze({
   id: 'fishball mailbox: newId() must return a path-safe id (it names events and generations)',
   time: 'fishball mailbox: a time must be a whole number of milliseconds since the Unix epoch',
   contributor: 'fishball mailbox: retireContributor needs a non-empty namespace and activation tag',
+  transfer: 'fishball mailbox: transfer needs two different non-empty principal keys',
+  staged: 'fishball mailbox: a box can be the destination of one staged transfer at a time',
 })
 
 /** Path-safe record keys (dsh-storage-json per-record layout). */

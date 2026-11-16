@@ -224,7 +224,6 @@ export const LATER = Object.freeze({
   route: 'C-ROUTE (hand-over service behaviour: managed state, handOver / takeBack, principals, onChange)',
   intercept: 'F-INTERCEPT (interception service: dispatch, priority, ties, warnings, fallback, ledger)',
   host: 'I-HOST (dshInstanceChild locator: lifecycle codes, Retry, admission, hostname rules)',
-  succeed: 'C-SUCCEED (dshConnectorTokens: createHosted and retire)',
   shell: 'U-SHELL (embed-UI service detection, instance-missing, the sidebar entry)',
   marks: 'U-MARKS (Hand over control labels and order)',
   records: 'U-RECORDS (inline records)',

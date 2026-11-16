@@ -104,12 +104,23 @@ export const V3_SUITES = Object.freeze({
       sub(PACKAGE.dshConnector, 'src', 'pairs'), sub(PACKAGE.dshConnector, 'src', 'mcp', 'http'), sub(PACKAGE.dshConnector, 'src', 'mcp', 'oauth'),
       sub(PACKAGE.dshConnector, 'src', 'schema-value'), sub(PACKAGE.dshConnector, 'host-services'), ...CONNECTOR_CORE, ...CONNECTOR_CONTRACTS]),
   // C-REVOKE drives the real routing and mailbox with the routing suite's world, fakes and steps
-  // (it imports test/v3/dsh-connector/routing/*, whose cases.mjs loads the mcp-http world, hence mcp/http and mcp/oauth).
-  'dsh-connector.revocation': suite('revocation: endPrincipal, askDropped, Mailbox.retire misuse (C-REVOKE)', v3('dsh-connector/revocation'),
+  // (it imports test/v3/dsh-connector/routing/*, whose cases.mjs loads the mcp-http world, hence mcp/http and mcp/oauth);
+  // step 2's cases also import the mcp-http world and the pairs suite's module resolver directly.
+  'dsh-connector.revocation': suite('revocation: endPrincipal, askDropped, Mailbox.retire misuse, the revocation module (C-REVOKE)', v3('dsh-connector/revocation'),
     [sub(PACKAGE.dshConnector, 'src', 'routing'), sub(PACKAGE.dshConnector, 'src', 'handover'), sub(PACKAGE.dshConnector, 'src', 'mailbox'),
       sub(PACKAGE.dshConnector, 'src', 'pairs'), sub(PACKAGE.dshConnector, 'src', 'revocation'), sub(PACKAGE.dshConnector, 'src', 'mcp', 'http'),
       sub(PACKAGE.dshConnector, 'src', 'mcp', 'oauth'), sub(PACKAGE.dshConnector, 'src', 'schema-value'), sub(PACKAGE.dshConnector, 'host-services'),
-      'test/v3/dsh-connector/routing/**', ...CONNECTOR_CORE, ...CONNECTOR_CONTRACTS]),
+      'test/v3/dsh-connector/routing/**', 'test/v3/dsh-connector/mcp-http/**', 'test/v3/dsh-connector/pairs/**', ...CONNECTOR_CORE, ...CONNECTOR_CONTRACTS]),
+  // C-SUCCEED drives the real hosted, routing, mailbox, pairs and tokens modules and C-TOOLS on C-HTTP's endpoint,
+  // reusing the routing, pairs, tokens, mailbox, revocation, mcp-http and mcp-tools suites' worlds and constants.
+  'dsh-connector.hosted': suite('hosted token service and reinstall succession; K1d Mailbox.transfer (C-SUCCEED)', v3('dsh-connector/hosted'),
+    [sub(PACKAGE.dshConnector, 'src', 'hosted'), sub(PACKAGE.dshConnector, 'src', 'routing'), sub(PACKAGE.dshConnector, 'src', 'handover'),
+      sub(PACKAGE.dshConnector, 'src', 'mailbox'), sub(PACKAGE.dshConnector, 'src', 'pairs'), sub(PACKAGE.dshConnector, 'src', 'tokens'),
+      sub(PACKAGE.dshConnector, 'src', 'revocation'), sub(PACKAGE.dshConnector, 'src', 'mcp'), sub(PACKAGE.dshConnector, 'src', 'schema-value'),
+      sub(PACKAGE.dshConnector, 'host-services'),
+      'test/v3/dsh-connector/routing/**', 'test/v3/dsh-connector/pairs/**', 'test/v3/dsh-connector/tokens/**', 'test/v3/dsh-connector/mailbox/**',
+      'test/v3/dsh-connector/revocation/**', 'test/v3/dsh-connector/mcp-http/**', 'test/v3/dsh-connector/mcp-tools/**',
+      ...CONNECTOR_CORE, ...CONNECTOR_CONTRACTS]),
   'dsh-connector.mcp-http': suite('MCP route, request gate, limits (C-HTTP)', v3('dsh-connector/mcp-http'),
     [sub(PACKAGE.dshConnector, 'src', 'mcp', 'http'), sub(PACKAGE.dshConnector, 'src', 'mcp', 'oauth'), sub(PACKAGE.dshConnector, 'src', 'pairs'),
       ...CONNECTOR_CORE, ...CONNECTOR_CONTRACTS]),
