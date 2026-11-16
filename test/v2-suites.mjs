@@ -148,6 +148,9 @@ export const V2_SUITES = Object.freeze({
     // V3 C-REVOKE steps 1–2 (routing endPrincipal, askDropped, K1d Mailbox.retire misuse; the revocation module: AUTH-UC-06, AUTH-DT-04, AUTH-UC-03 E1; R-TOK-05, R-ROUTE-06, R-WATCH-01, R-CON-05); run with test/run-v3.mjs.
     file('test/v3/dsh-connector/revocation/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 connector revocation: endPrincipal, askDropped, Mailbox.retire misuse, the revocation module (C-REVOKE)'),
     file('test/v3/dsh-connector/revocation/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 connector revocation: endPrincipal, askDropped, Mailbox.retire misuse, the revocation module (C-REVOKE)'),
+    // V3 C-SUCCEED (HOST-UC-03, HOST-DT-02, HOST-ST-02, NAME-ST-01 rows 8–9, HAND-ST-01 row 7, WATCH-EP-01 row 6, WATCH-ST-01 row 6, PLAT-ST-01 row 7, K1d Mailbox.transfer); run with test/run-v3.mjs.
+    file('test/v3/dsh-connector/hosted/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 connector hosted tokens and reinstall succession (C-SUCCEED)'),
+    file('test/v3/dsh-connector/hosted/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 connector hosted tokens and reinstall succession (C-SUCCEED)'),
     // V3 F-FACADE (EXT-DT-03 E6/E8 Fishball side, EXT-UC-02 A3, EXT-UC-04 A1 core side); run with test/run-v3.mjs.
     file('test/v3/fishball-core/bridge/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 fishball-core bridge façade, list_changed refresh, contributed count and X8 attention (F-FACADE)'),
     file('test/v3/fishball-core/bridge/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 fishball-core bridge façade, list_changed refresh, contributed count and X8 attention (F-FACADE)'),

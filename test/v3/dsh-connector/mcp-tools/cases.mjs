@@ -358,7 +358,7 @@ function transitions(sdk) {
   todo(sdk, CASE.platSt01, 4, 'Settled --any answer--> Settled: already-settled / expired, nothing changes', LATER.firstCommit)
   todo(sdk, CASE.platSt01, 5, 'Live(P) --time passes (fake clock), silence--> Live(P): no timer settles it', LATER.firstCommit)
   // Row 6 (P revoked → the card goes to the user) runs in test/v3/dsh-connector/revocation.
-  todo(sdk, CASE.platSt01, 7, 'Live(P) --succession--> Live(P\'): revision + 1; the old id answers expired to any principal', LATER.succeed)
+  // Row 7 (succession → Live(P'), revision + 1, the old id expired) runs in test/v3/dsh-connector/hosted (C-SUCCEED).
   todo(sdk, CASE.platSt01, 9, 'Live(P) --session ends / offer withdrawn--> Retired; retirement to P; a later answer is refused', LATER.firstCommit)
 
   // WATCH-ST-01 rows 7 and 8 (moved from C-ROUTE, O8).

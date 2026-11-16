@@ -39,6 +39,11 @@ function assertPrincipal(principalKey) {
   if (typeof principalKey !== 'string' || principalKey.length === 0) throw new TypeError(MISUSE.principalKey)
 }
 
+/** K1d-1: a synchronous TypeError, before the call is queued, for a bad key or the same key twice. */
+function assertTransfer(from, to) {
+  if (!isNonEmptyString(from) || !isNonEmptyString(to) || from === to) throw new TypeError(MISUSE.transfer)
+}
+
 /**
  * Every stored time must be a whole number of milliseconds (K1 WIRE). The storage domain validates
  * records only when it opens, so one bad value written today would make the whole mailbox domain
@@ -77,7 +82,8 @@ const markExpired = (box) => ({ ...box, held: { ...box.held, expired: true } })
  * @param {number} [ports.maxQueuedInputs] - the connector setting (design §3.4), read once here; its
  *   default is K1's. A settings change takes effect when C-WIRE builds a new mailbox.
  * @param {{warn: Function}} [ports.logger] - the background log.
- * @returns the K1 `Mailbox` plus `expireHolds(now)` (Fishball 2026-11-14, item 7).
+ * @returns the K1 `Mailbox` plus `expireHolds(now)` (Fishball 2026-11-14, item 7) and
+ *   `stage(from, to)` (C-SUCCEED's staged transfer).
  */
 export function createMailbox({ tables, hints, now = Date.now, newId = randomUUID, maxQueuedInputs = QUEUE.maxQueuedInputs, logger }) {
   if (!Number.isSafeInteger(maxQueuedInputs) || maxQueuedInputs < MINIMUM.queuedInputs) throw new TypeError(MISUSE.maxQueuedInputs)
@@ -197,7 +203,7 @@ export function createMailbox({ tables, hints, now = Date.now, newId = randomUUI
     // The event is durable and pollable from here. A failed head write therefore fails nothing:
     // the head is right in memory and is repaired from the event at the next load (Fishball 2026-11-14, N1).
     await boxes.put(boxKey, { ...boxes.get(boxKey), head: sequence }).catch(warn(LOG.headWriteFailed))
-    if (boxes.get(boxKey).held === undefined) hint(principalKey)
+    if (visibleNow(boxKey)) hint(principalKey)
     return eventId
   }
 
@@ -328,6 +334,82 @@ export function createMailbox({ tables, hints, now = Date.now, newId = randomUUI
     return { through: entry.head, until: Math.max(...[cutoff, dropping?.until].filter((value) => value !== undefined)) }
   }
 
+  /**
+   * Whether a new event in the box is pollable now, so its streams get the hint: not while the box
+   * is held (its streams are closed, R-TOK-05) nor while a staged transfer hides it (`stage`).
+   */
+  const visibleNow = (boxKey) => boxes.get(boxKey).held === undefined && index.get(boxKey)?.barrier === undefined
+
+  /** Whether `record` is at or past the staging barrier of its box (`stage`), so not visible yet. */
+  const behindBarrier = (boxKey, record) => {
+    const barrier = index.get(boxKey)?.barrier
+    return barrier !== undefined && record.event.sequence >= barrier
+  }
+
+  /**
+   * Moves pending events of `from`'s box (all, or only those in `only`) to `to`'s, in sequence
+   * order after `to`'s own (K1d-1): same `eventId`, `type`, `at`, ids, `offer`, payload and
+   * digest; the sequence and the generation become `to`'s. Each event is rewritten in place under
+   * its own record key, so a crash halfway leaves every event in exactly one box, and a repeat
+   * moves the rest. Acked and retired events stay behind as receipts; nothing is committed, the
+   * destination's `maxQueuedInputs` refuses nothing and neither box's hold changes. `to`'s streams
+   * get one hint when something moved and its box is not held. A failed write moves nothing (K1d):
+   * the events already moved are written back to `from`'s box as they were (`moveBack`), and the
+   * call rejects. Only a crash in between can leave the move half done; each event is then in one
+   * box, and a repeat moves the rest. `to`'s head keeps the sequences handed out, so none is reused.
+   * Runs inside a serial step.
+   * @returns the moved event ids, in order
+   */
+  async function moveEvents(from, to, only) {
+    const fromKey = boxKeyOf(from)
+    const moving = recordsIn(entryOf(fromKey).pending).filter((record) => only === undefined || only.has(record.event.eventId))
+    if (moving.length === 0) return []
+    const { boxKey: toKey } = await boxOf(to)
+    const source = entryOf(fromKey)
+    const target = entryOf(toKey)
+    const moved = []
+    try {
+      for (const record of moving) {
+        const sequence = target.head + 1
+        const event = { ...record.event, mailboxGeneration: boxes.get(toKey).generation, sequence }
+        await events.put(event.eventId, { ...record, boxKey: toKey, event })
+        source.pending.delete(event.eventId)
+        target.pending.add(event.eventId)
+        target.head = sequence
+        moved.push(record)
+      }
+    } catch (error) {
+      await moveBack(moved, source, target)
+      throw error
+    } finally {
+      // As in `append`: a failed head write is repaired at load from the surviving events.
+      if (moved.length > 0) await boxes.put(toKey, { ...boxes.get(toKey), head: target.head }).catch(warn(LOG.headWriteFailed))
+    }
+    if (visibleNow(toKey)) hint(to)
+    return moved.map((record) => record.event.eventId)
+  }
+
+  /**
+   * A failed transfer's compensation: each moved record is written back as it was before the move
+   * (its own box, sequence and generation). A write-back that fails too is logged and leaves that
+   * event in `to`'s box, pending and delivered once from there; the rest still go back.
+   */
+  async function moveBack(records, source, target) {
+    for (const record of records) {
+      try {
+        await events.put(record.event.eventId, record)
+        target.pending.delete(record.event.eventId)
+        source.pending.add(record.event.eventId)
+      } catch (error) {
+        warn(LOG.transferUndoFailed)(error)
+      }
+    }
+    // `pending` is iterated in sequence order (see the index above): re-sort what came back.
+    const restored = recordsIn(source.pending).sort((a, b) => a.event.sequence - b.event.sequence).map((record) => record.event.eventId)
+    source.pending.clear()
+    for (const eventId of restored) source.pending.add(eventId)
+  }
+
   return Object.freeze({
     commit(recipient, producerDraft) {
       assertPrincipal(recipient)
@@ -361,6 +443,9 @@ export function createMailbox({ tables, hints, now = Date.now, newId = randomUUI
         let hasMore = false
         for (const record of recordsIn(entryOf(boxKey).pending)) {
           if (record.event.sequence <= position.sequence) continue
+          // A staged succession (`stage`) is not visible yet: nothing at or past its barrier is
+          // handed out, so the cursor never passes an event that may still move back.
+          if (behindBarrier(boxKey, record)) break
           if (taken.length === page.size) {
             hasMore = true
             break
@@ -387,7 +472,8 @@ export function createMailbox({ tables, hints, now = Date.now, newId = randomUUI
           if (!receiptValid(receipt)) return { ok: false, code: REFUSAL.invalidArguments }
           const record = events.get(receipt.eventId)
           // Another pair's event reads exactly as an unknown one (R-TOK-00).
-          if (record === undefined || record.boxKey !== boxKey) return { ok: false, code: REFUSAL.unknownEvent }
+          // An event behind a staging barrier was never handed out to this pair, so it reads as unknown.
+          if (record === undefined || record.boxKey !== boxKey || behindBarrier(boxKey, record)) return { ok: false, code: REFUSAL.unknownEvent }
           if (record.event.payloadDigest !== receipt.payloadDigest) return { ok: false, code: REFUSAL.digestMismatch }
           // Acked or retired: a no-op that counts 0 (EVT-ST-01 row 8; Fishball 2026-11-14 (a)).
           if (record.state === EVENT_STATE.pending) toAck.add(receipt.eventId)
@@ -485,6 +571,80 @@ export function createMailbox({ tables, hints, now = Date.now, newId = randomUUI
       return serial(async () => {
         const { boxKey } = await boxOf(principalKey)
         return { droppedAsks: await dropEvents(boxKey, { through: entryOf(boxKey).head }) }
+      })
+    },
+
+    /**
+     * Reinstall succession's event move (K1d-1, R-HOST-09 step 5; task C-SUCCEED); see `moveEvents`.
+     */
+    transfer(from, to) {
+      assertTransfer(from, to)
+      return serial(async () => Object.freeze({ moved: (await moveEvents(from, to)).length }))
+    },
+
+    /**
+     * Not K1 (as `expireHolds`; C-SUCCEED): `transfer` staged for a succession that may still fail
+     * (routing `succeedPrincipal`). In one serial step it sets a **barrier** in `to`'s box at its
+     * next sequence, then moves `from`'s pending events in as `transfer` does. Until `confirm` or
+     * `undo`, `poll` stops at the barrier and `ack` treats what lies past it as unknown, so `to`
+     * can neither see nor ack a moved event, nor anything committed to it meanwhile.
+     * - `commit(draft)`: an event committed into `to`'s box past the barrier (the succession's
+     *   re-issued offers); `undo` removes it again, so it is never seen if the succession fails.
+     * - `confirm()`: lifts the barrier (synchronous, cannot fail) and sends `to` its hint.
+     * - `undo(sourceSessions)`: removes the staged commits, moves the transferred events that are
+     *   still pending back to `from`, and moves back every other event committed to `to` past the
+     *   barrier whose `sourceSessionId` is one of `sourceSessions` (routed to `to` because of the
+     *   succession's own state); then lifts the barrier. Every `to`'s own earlier event stays.
+     * The barrier is in memory: a crash while staged leaves each event in one box and visible, and
+     * the instance's next `retire` moves the rest (K1d "a repeat moves the rest").
+     * @returns `{movedIds, commit, confirm, undo}`
+     * @throws TypeError (synchronously) as `transfer`; (rejects) TypeError when `to` is staged already
+     */
+    stage(from, to) {
+      assertTransfer(from, to)
+      return serial(async () => {
+        const { boxKey: toKey } = await boxOf(to)
+        const target = entryOf(toKey)
+        if (target.barrier !== undefined) throw new TypeError(MISUSE.staged)
+        const barrier = target.head + 1
+        target.barrier = barrier
+        let movedIds
+        try {
+          movedIds = Object.freeze(await moveEvents(from, to))
+        } catch (error) {
+          target.barrier = undefined
+          throw error
+        }
+        const added = new Set()
+        const lift = () => { target.barrier = undefined }
+        return Object.freeze({
+          movedIds,
+          commit(producerDraft) {
+            const draft = snapshotOf(producerDraft)
+            assertDraft(draft)
+            return serial(async () => {
+              const eventId = await append(to, toKey, draft)
+              added.add(eventId)
+              return eventId
+            })
+          },
+          confirm() {
+            lift()
+            if (visibleNow(toKey)) hint(to)
+          },
+          undo: (sourceSessions) => serial(async () => {
+            try {
+              // The head is written before any delete, as `prune` does: the deleted event is its evidence.
+              await persistHead(toKey)
+              for (const eventId of added) await removeEvent(toKey, eventId)
+              const routedHere = recordsIn(target.pending)
+                .filter((record) => record.event.sequence >= barrier && sourceSessions.includes(record.event.sourceSessionId))
+              await moveEvents(to, from, new Set([...movedIds, ...routedHere.map((record) => record.event.eventId)]))
+            } finally {
+              lift()
+            }
+          }),
+        })
       })
     },
 

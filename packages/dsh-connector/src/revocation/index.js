@@ -38,7 +38,7 @@
 import { REVOCATION_KIND } from '../../mcp-schema/index.js'
 import { diagnosticOf } from '../errors.js'
 import { serialChain } from '../routing/support.js'
-import { RETRY_CLOSED, createRetrier, writeNotes } from './background.js'
+import { RETRY_CLOSED, createRetrier, writeNotes } from '../background.js'
 import { LOG, REVOCATION_NOTE, REVOCATION_TIMING, STEP } from './constants.js'
 
 export { LOG as REVOCATION_LOG, REVOCATION_NOTE, REVOCATION_TIMING } from './constants.js'
@@ -74,7 +74,7 @@ export function createRevocation({ tokens, routing, mailbox, pairs, closeEntry, 
   const held = new Map()
   const sweeps = serialChain()
   const retrier = createRetrier({ timers, logger, format: LOG.format, retryMs: REVOCATION_TIMING.retryMs })
-  /** Runs one step until it resolves (`background.js`); its failures are logged with the step's name. */
+  /** Runs one step until it resolves (`../background.js`); its failures are logged with the step's name. */
   const untilDone = (name, step) => retrier.untilDone(`${LOG.stepFailed}: ${name}`, step)
   let sweepTimer
   let closed = false
@@ -92,8 +92,11 @@ export function createRevocation({ tokens, routing, mailbox, pairs, closeEntry, 
     ])
   }
 
-  /** Answers each ask among `offerIds` `unavailable` (routing `askDropped`; one that is not live is a no-op). */
-  const answerDropped = (offerIds) => Promise.all([...new Set(offerIds)].map((offerId) => routing.askDropped(offerId).catch(warn(LOG.stepFailed))))
+  /**
+   * Answers each ask among `offerIds` `unavailable` (routing `askDropped`; one that is not live is
+   * a no-op). Each is retried until it resolves: its asker would otherwise wait for ever.
+   */
+  const answerDropped = (offerIds) => Promise.all([...new Set(offerIds)].map((offerId) => untilDone(STEP.askDropped, () => routing.askDropped(offerId))))
 
   /** End the principal's management (retried until it resolves) and tell the sessions and the user. */
   async function endManagement(entryKey, kind) {
@@ -102,8 +105,9 @@ export function createRevocation({ tokens, routing, mailbox, pairs, closeEntry, 
     return ended
   }
 
-  async function disable(entryKey, principalKey) {
-    if (principalKey !== undefined) await untilDone(STEP.hold, () => mailbox.hold(principalKey, now()))
+  /** `at`: the time of the disable, read once, so a retried hold keeps the 30 days from the disable (K1 `hold`). */
+  async function disable(entryKey, principalKey, at) {
+    if (principalKey !== undefined) await untilDone(STEP.hold, () => mailbox.hold(principalKey, at))
     await endManagement(entryKey, REVOCATION_KIND.disabled)
   }
 
@@ -128,7 +132,8 @@ export function createRevocation({ tokens, routing, mailbox, pairs, closeEntry, 
       // Recorded now, not inside the job, so a re-enable that arrives before the job runs is
       // queued behind it and releases the box the job holds.
       if (principalKey !== undefined) held.set(entryKey, principalKey)
-      enqueue(entryKey, () => disable(entryKey, principalKey))
+      const at = now()
+      enqueue(entryKey, () => disable(entryKey, principalKey, at))
     } else {
       held.delete(entryKey)
       enqueue(entryKey, () => remove(entryKey))
@@ -153,7 +158,7 @@ export function createRevocation({ tokens, routing, mailbox, pairs, closeEntry, 
   const sweep = () => sweeps(async () => {
     const expired = await mailbox.expireHolds(now())
     await answerDropped(expired.flatMap((box) => box.droppedAsks))
-  }).catch(warn(LOG.expiryFailed))
+  }).catch((error) => { if (error !== RETRY_CLOSED) warn(LOG.expiryFailed)(error) })
 
   function armSweep() {
     if (closed) return
