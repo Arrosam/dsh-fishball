@@ -137,6 +137,8 @@ export const DSH = Object.freeze({
   homePatch: 'cordis.patch.yml',
   urlLine: /dsh web: (http\S+)/,
   tokenParam: 'token',
+  /** cordis FiberState: PENDING waits for a required service (DSH's missing-dependency state), ACTIVE is loaded. */
+  fiberPending: 0,
   fiberActive: 2,
   /** cordis LoggerLevel.DEBUG: every line. */
   allLevels: 3,

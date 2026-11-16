@@ -23,7 +23,7 @@ explicitly require POST-only MCP and GET → 405. Confirmed with the parent befo
 
 | ID | Partition | Expected |
 | --- | --- | --- |
-| S1 | Profile has no `dsh-web-app` | Connector row loads, exactly one warning containing the exact `V3 connector stays off` phrase, V2 `dshConnector` remains provided; no V3 host service is provided |
+| S1 | Profile has no `dsh-web-app` | User decision A (2026-11-17), superseding the first "loads and warns once" wording: the connector requires dsh-web-app. The row stays pending (DSH's missing-dependency state: present and enabled, not active) and no connector service, V2 `dshConnector` or V3, is provided |
 | K1-READ / K1-LIST | Frozen public tool descriptions | Exact user-approved sentences, without weakening “you manage” |
 | ACCESS-UNMANAGED | Existing session nobody manages | `session_read` → `forbidden`; `sessions_list` omits it; management unchanged |
 | ACCESS-OTHER | Existing session another principal manages | `session_read` → `forbidden`; caller list omits it; management unchanged |
@@ -58,6 +58,10 @@ must survive and its value must support a fresh OAuth exchange. The returned hos
 authenticate and pair after refusal. A later valid user disable must still work, proving the refusal
 did not leave own-write state stuck.
 
+Harness choice (accepted by the parent, 2026-11-17): the hold wraps DSH's own settings service
+(`ctx.settings.update/replace/mutate`) in the worker for this one call and restores it after. It
+delays only the host's acknowledgement; the connector and DSH's real write are not replaced.
+
 The prompt authorization row uses a non-empty fixture prompt id: unmanaged authority must be
 refused before prompt lookup. It does not claim to exercise a real pending approval settlement,
 which is C-WIRE-2's domain. User wording: “Agent不能回答不归自己管的会话，只能操作自己管的会话”.
@@ -89,3 +93,19 @@ execute imports or tests.
 Only new files below `test/v3/dsh-connector/wire/` and the two requested suite manifests are owned
 by this writer; the parent owns `world.mjs` and `worker.mjs`. No product code or existing assertions
 are changed. No commit is made.
+
+## Rows added after the review (added-cases.mjs)
+
+These rows are added as new tests; the rows above are unchanged, except S1, which the user's
+decision A rewrote.
+
+| ID | Technique | Expected |
+| --- | --- | --- |
+| B1 (added) | UC / ST Mounted → Disabled → Remounted | New token answers exactly `{ok, entryKey, label, value}`; no `already open` or `duplicate route` line is logged during or after the remount |
+| UIM-DT-01 (connector half) | DT: connector yes × UI yes × instance no | `dshConnectorUi` present at app ready at apiVersion 1 (sampled in the app-ready callback by ready-probe.mjs); embed-UI logs no `connector-missing` line; `GET /api/dsh-connector-ui/services` → `connector: true`; the other three V3 services are present at app ready at apiVersion 1 too |
+| HARNESS exit | ST: Started → Ready → file end; Started → Failed boot (services guard) → file end | `exit-fixture.mjs` under plain `node --test`, without `--test-force-exit`, exits 0 by itself in both cases |
+| C-WIRE-2 todos | — | `no maxPendingApprovals cap — C-WIRE-2`, `list_user_messages deleted — C-WIRE-2` |
+
+`ready-probe.mjs` is a harness fixture row (a plain DSH plugin the worker inserts), not a test file:
+it records which services exist inside the app-ready callback itself, so a later IPC round trip
+cannot hide a late start. `exit-fixture.mjs` is a fixture too; only the HARNESS rows run it.
