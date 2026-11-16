@@ -14,6 +14,9 @@ export const U = Object.freeze({
   // The dialog is a list-slot entry of DSH's `shell.overlay` ({name: 'shell.overlay', id:
   // 'fishball-ui.model-dialog'}), registered while core's namespace is served (F-WIRE lead, 2026-11-17).
   slots: ['main', 'conversation.session.header.actions', 'shell.overlay'],
+  // fishball-page's public root mark: `<html data-fishball-page>` while the Fishball page is open
+  // (fishball-ui/fishball-page; CHILD-BOOT-03). The dialog shows only while it is present.
+  pageMark: 'data-fishball-page', pageMarkValue: '',
   /** DSH's `Modal` primitive (@deepseek-ai/dsh-client-ui-primitives): its name and the props the dialog uses. */
   modal: { primitive: 'Modal', role: 'dialog', heading: 'h2', text: 'p', div: 'div' },
   timeout: 10000, first: 0, one: 1, encoding: 'utf8', emptyText: '',

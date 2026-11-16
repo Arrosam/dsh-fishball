@@ -6,6 +6,16 @@ import { boot, request } from '../../fishball-core/wire/subject.mjs'
 import { C } from '../../fishball-core/wire/constants.mjs'
 import { page, firstFrame, routeStatus } from './subject.mjs'
 import { U } from './constants.mjs'
+/** Press the dialog's dismiss control, then let a window focus pass (a reopen trigger it must ignore). */
+async function dismiss(p) {
+  await p.press(p.buttons().find((n) => U.dismiss.test(textOf(n))))
+  p.world.dispatchWindow('focus'); await new Promise((resolve) => setImmediate(resolve))
+}
+// The user, 2026-11-16: "fishball打开的时候可以看到自己选没选模型，然后会提示用户选择配置的模型"
+// (when Fishball opens, show whether a model is chosen and prompt to choose a configured one).
+// "When the Fishball page opens" is fishball-page's public root mark `<html data-fishball-page>`
+// (code review, F-WIRE): the dialog shows only while the mark is present; a dismissal lasts while
+// the page stays open and is forgotten when the mark goes away, so it shows again when it returns.
 export function registerModelDialogCases(sdk) {
   for (const lang of U.lang) {
     test(`${sdk} MODEL-EP-01 ${lang} unset model prompts with all catalog models`, async (t) => {
@@ -25,10 +35,28 @@ export function registerModelDialogCases(sdk) {
     })
     test(`${sdk} MODEL-ST-02 ${lang} dismiss stays dismissed in page; fresh page prompts`, async (t) => {
       const p = await page(t, sdk, { lang }); assert.ok(p.dialogs().length)
-      await p.press(p.buttons().find((n) => U.dismiss.test(textOf(n))))
-      p.world.dispatchWindow('focus'); await new Promise((resolve) => setImmediate(resolve))
+      await dismiss(p)
       assert.equal(p.dialogs().length, U.first); assert.deepEqual(p.world.mutations, [])
       assert.ok((await page(t, sdk, { lang })).dialogs().length)
+    })
+    test(`${sdk} MODEL-ST-04 ${lang} page not open (no data-fishball-page) with unset model: no dialog`, async (t) => {
+      const p = await page(t, sdk, { lang, open: false })
+      assert.deepEqual(p.world.errors, []); assert.deepEqual(p.world.failedFibers, [])
+      assert.equal(p.dialogs().length, U.first, 'Model dialog shown while the Fishball page is not open')
+      assert.deepEqual(p.world.mutations, [])
+    })
+    test(`${sdk} MODEL-ST-05 ${lang} closed → data-fishball-page set: dialog shows`, async (t) => {
+      const p = await page(t, sdk, { lang, open: false }); assert.equal(p.dialogs().length, U.first)
+      await p.openPage()
+      assert.ok(p.dialogs().length, 'No model dialog when the Fishball page opens')
+      for (const name of U.modelNames) assert.ok(p.text().includes(name), name)
+    })
+    test(`${sdk} MODEL-ST-06 ${lang} dismiss → page closed → page opened again: dialog shows again`, async (t) => {
+      const p = await page(t, sdk, { lang }); assert.ok(p.dialogs().length)
+      await dismiss(p); assert.equal(p.dialogs().length, U.first)
+      await p.closePage(); assert.equal(p.dialogs().length, U.first, 'Model dialog shown after the Fishball page closed')
+      await p.openPage(); assert.ok(p.dialogs().length, 'Dismissal outlived the Fishball page close')
+      assert.deepEqual(p.world.mutations, [])
     })
     test(`${sdk} MODEL-EP-02 ${lang} configured core model does not prompt`, async (t) => {
       const p = await page(t, sdk, { lang, model: C.selection })
