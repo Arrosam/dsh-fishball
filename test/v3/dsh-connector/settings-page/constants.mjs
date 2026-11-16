@@ -23,10 +23,14 @@ export const SUBJECT = Object.freeze({
   client: process.env.FBTEST_CONNECTOR_CLIENT ?? path.join(CONNECTOR, 'client.js'),
 })
 
-/** The page's two routes and their answers (relayed; design §5.9 steps 2–4). */
+/**
+ * The page's routes and their answers (relayed; design §5.9 steps 2–4). C-WIRE added `state`, the
+ * read-only pair state and approval status the page shows (R-ID-12, AUTH-UC-09, R-OA-20).
+ */
 export const ROUTE = Object.freeze({
   create: '/api/dsh-connector/tokens/create',
   notice: '/api/dsh-connector/tokens/notice',
+  state: '/api/dsh-connector/settings/state',
   /** The page calls them page-relative (resolved against `document.baseURI`). */
   createRelative: 'api/dsh-connector/tokens/create',
   noticeRelative: 'api/dsh-connector/tokens/notice',
@@ -99,6 +103,8 @@ export const FIXTURE = Object.freeze({
   multiByte: '€',
   pad: 'x',
   settleRounds: 40,
+  /** A stand-in for the wired row's `state()` (relayed shape), echoed by GET state. */
+  stateAnswer: Object.freeze({ entries: Object.freeze([]), approval: Object.freeze({ status: 'ok', port: 1, defaultPort: 47615 }), designated: null }),
   revision: 1,
 })
 
