@@ -70,50 +70,62 @@ async function bootWorker(home, sdk, env) {
     else p.reject(new Error('worker op failed: ' + msg.error?.message))
   })
   const tail = () => output.slice(-4000)
-  const line = await until(() => exited || (ready && DSH.urlLine.exec(output)), BUDGET.bootMs, BUDGET.pollMs)
-  if (!line || exited) {
-    child.kill('SIGKILL')
-    throw new Error('DSH did not start (exit ' + JSON.stringify(exited) + '):\n' + tail())
+  try {
+    const noWeb = env[ENV.noWebApp] === ENV.on
+    const line = await until(() => exited || (ready && (noWeb || DSH.urlLine.exec(output))), BUDGET.bootMs, BUDGET.pollMs)
+    if (!line || exited) {
+      child.kill('SIGKILL')
+      throw new Error('DSH did not start (exit ' + JSON.stringify(exited) + '):\n' + tail())
+    }
+    const url = noWeb ? null : new URL(line[1])
+    let cookie = ''
+    if (url) {
+      const login = await fetch(url.origin + '/?' + DSH.tokenParam + '=' + encodeURIComponent(url.searchParams.get(DSH.tokenParam)), { redirect: 'manual' })
+      await login.arrayBuffer()
+      cookie = (login.headers.getSetCookie?.() ?? []).map((c) => c.split(';')[0]).join('; ')
+    }
+    const handle = {
+      home, origin: url?.origin ?? null, port: url ? Number(url.port) : null, cookie, launchToken: url?.searchParams.get(DSH.tokenParam) ?? null,
+      get output() { return output },
+      get exited() { return exited },
+      call(op, args = {}, timeout = BUDGET.testMs) {
+        if (exited) return Promise.reject(new Error('worker exited ' + JSON.stringify(exited) + '\n' + tail()))
+        const id = ++nextId
+        return new Promise((resolve, reject) => {
+          const timer = setTimeout(() => { pending.delete(id); reject(new Error('worker op ' + op + ' timed out')) }, timeout)
+          pending.set(id, { resolve: (v) => { clearTimeout(timer); resolve(v) }, reject: (e) => { clearTimeout(timer); reject(e) } })
+          child.send({ type: 'call', id, op, args })
+        })
+      },
+      async stop() {
+        if (exited) return
+        try { await handle.call('shutdown', {}, BUDGET.stopMs) } catch { /* fall through to kill */ }
+        await until(() => exited, BUDGET.stopMs, BUDGET.pollMs)
+        if (!exited) { child.kill('SIGKILL'); await until(() => exited, BUDGET.stopMs, BUDGET.pollMs) }
+        child.stdin.destroy()
+      },
+    }
+    if (!(await handle.call('waitReady'))) throw new Error('DSH never signalled app ready:\n' + tail())
+    // Service availability is captured inside the app-ready callback, before any harness wait.
+    // The route status remains a post-ready HTTP check, not an app-ready-time route measurement.
+    handle.atReady = {
+      services: await handle.call('atReadyServices'),
+      createStatus: url ? (await fetch(url.origin + SURFACE.route.notice, { headers: { cookie, origin: url.origin, ...HTTP.sameOrigin } })).status : null,
+    }
+    // Harness guard only (not an oracle): cases start once the row's services are there.
+    if (!noWeb && env[ENV.noConnector] !== ENV.on) {
+      const names = [SURFACE.service.handover, SURFACE.service.ui]
+      const up = await until(async () => Object.values(await handle.call('services', { names })).every((s) => s.present), BUDGET.readyMs, BUDGET.pollMs)
+      if (!up) throw new Error('the connector row provided no services after app ready:\n' + tail())
+    }
+    return handle
+  } catch (error) {
+    // A rejected scenario never enters the map as a world, so its boot must release the worker here.
+    if (!exited) child.kill('SIGKILL')
+    child.stdin.destroy()
+    await until(() => exited, BUDGET.stopMs, BUDGET.pollMs)
+    throw error
   }
-  const url = new URL(line[1])
-  const login = await fetch(url.origin + '/?' + DSH.tokenParam + '=' + encodeURIComponent(url.searchParams.get(DSH.tokenParam)), { redirect: 'manual' })
-  await login.arrayBuffer()
-  const cookie = (login.headers.getSetCookie?.() ?? []).map((c) => c.split(';')[0]).join('; ')
-  const handle = {
-    home, origin: url.origin, port: Number(url.port), cookie, launchToken: url.searchParams.get(DSH.tokenParam),
-    get output() { return output },
-    get exited() { return exited },
-    call(op, args = {}, timeout = BUDGET.testMs) {
-      if (exited) return Promise.reject(new Error('worker exited ' + JSON.stringify(exited) + '\n' + tail()))
-      const id = ++nextId
-      return new Promise((resolve, reject) => {
-        const timer = setTimeout(() => { pending.delete(id); reject(new Error('worker op ' + op + ' timed out')) }, timeout)
-        pending.set(id, { resolve: (v) => { clearTimeout(timer); resolve(v) }, reject: (e) => { clearTimeout(timer); reject(e) } })
-        child.send({ type: 'call', id, op, args })
-      })
-    },
-    async stop() {
-      if (exited) return
-      try { await handle.call('shutdown', {}, BUDGET.stopMs) } catch { /* fall through to kill */ }
-      await until(() => exited, BUDGET.stopMs, BUDGET.pollMs)
-      if (!exited) { child.kill('SIGKILL'); await until(() => exited, BUDGET.stopMs, BUDGET.pollMs) }
-      child.stdin.destroy()
-    },
-  }
-  if (!(await handle.call('waitReady'))) throw new Error('DSH never signalled app ready:\n' + tail())
-  // What the row offered at the moment app ready was seen, before any harness wait: the R1/R16
-  // timing rows read this, so the guard below never hides a late start (C-WIRE 0023b149).
-  handle.atReady = {
-    services: await handle.call('services', { names: [SURFACE.service.handover, SURFACE.service.tools, SURFACE.service.tokens, SURFACE.service.ui] }),
-    createStatus: (await fetch(url.origin + SURFACE.route.notice, { headers: { cookie, origin: url.origin, ...HTTP.sameOrigin } })).status,
-  }
-  // Harness guard only (not an oracle): cases start once the row's services are there.
-  if (env[ENV.noConnector] !== ENV.on) {
-    const names = [SURFACE.service.handover, SURFACE.service.ui]
-    const up = await until(async () => Object.values(await handle.call('services', { names })).every((s) => s.present), BUDGET.readyMs, BUDGET.pollMs)
-    if (!up) throw new Error('the connector row provided no services after app ready:\n' + tail())
-  }
-  return handle
 }
 
 /** A raw HTTP exchange on loopback `port` with `Host` exactly `host` (node's fetch would rewrite it). */
@@ -136,25 +148,23 @@ export function rawRequest({ port, host, method = 'GET', path: pathname, headers
 }
 
 const scenarios = new Map()
-let cleanupRegistered = false
+// node:test binds after() to the current test context. Register at module scope: lazy registration
+// in the first scenario's test cleans only that worker, then leaks every later scenario's IPC pipe.
+after(async () => {
+  for (const pending of scenarios.values()) {
+    const w = await pending.catch(() => undefined)
+    await w?.dsh.stop().catch(() => {})
+    // Guard the recursive delete: a home this file created directly under the test-homes root.
+    if (w && path.dirname(w.home) === fs.realpathSync(HOMES.root) && path.basename(w.home).startsWith(FIXTURE.homeLabel)) fs.rmSync(w.home, { recursive: true, force: true })
+  }
+  scenarios.clear()
+})
 /**
  * One booted DSH per `(sdk, label)` in this process; `options.env` adds worker environment
  * (ENV.link, ENV.contributors), `options.rowConfig(approvalPort)` the connector row's starting config.
  * The approval port is a free one per home. Stopped and removed after the file.
  */
 export function scenario(sdk, label, options = {}) {
-  if (!cleanupRegistered) {
-    cleanupRegistered = true
-    after(async () => {
-      for (const pending of scenarios.values()) {
-        const w = await pending.catch(() => undefined)
-        await w?.dsh.stop().catch(() => {})
-        // Guard the recursive delete: a home this file created directly under the test-homes root.
-        if (w && path.dirname(w.home) === fs.realpathSync(HOMES.root) && path.basename(w.home).startsWith(FIXTURE.homeLabel)) fs.rmSync(w.home, { recursive: true, force: true })
-      }
-      scenarios.clear()
-    })
-  }
   const key = sdk + '/' + label
   if (!scenarios.has(key)) {
     scenarios.set(key, (async () => {
@@ -170,6 +180,9 @@ export function scenario(sdk, label, options = {}) {
   }
   return scenarios.get(key)
 }
+
+/** A real base profile with the connector, deliberately without dsh-web-app or an HTTP listener. */
+export const nonWebScenario = (sdk, label) => scenario(sdk, label, { env: { [ENV.noWebApp]: ENV.on } })
 
 /** The case-facing face of one booted DSH. */
 function worldOf({ sdk, home, dsh: first, approvalPort, env }) {

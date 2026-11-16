@@ -143,7 +143,7 @@ export const V3_SUITES = Object.freeze({
   // C-WIRE boots a real DSH profile with the whole connector bundle (and, in its R16 rows,
   // dsh-connector-ui), so it triggers on both packages; it reuses the pairs suite's module resolver
   // and the fishball-core package suite's SDK paths, and owns its own worker.
-  'dsh-connector.wire': suite('the wired connector row in a real DSH: settings, routes, services, tokens, MCP end to end (C-WIRE)', v3('dsh-connector/wire'),
+  'dsh-connector.wire': suite('the wired connector row in a real DSH: settings, routes, services, tokens, MCP end to end (C-WIRE)', [...v3('dsh-connector/wire'), ...v3('dsh-connector/wire/review')],
     [all(PACKAGE.dshConnector), all(PACKAGE.dshConnectorUi), all(PACKAGE.dshConnectorShared), all(PACKAGE.fishballShared),
       'test/v3/dsh-connector/pairs/subject.mjs', 'test/v3/fishball-core/package/constants.mjs', 'test/v3/dsh-connector/mcp-tools/subject.mjs']),
   // The adapter imports only its own package and dsh-connector-shared/oauth-client (C-MCP-ADAPTER).
@@ -153,6 +153,10 @@ export const V3_SUITES = Object.freeze({
     [PACKAGE.dshConnectorShared + '/oauth-client.js', PACKAGE.dshConnectorShared + '/package.json']),
   'dsh-connector-ui.shell': suite('host half and client shell (U-SHELL)', v3('dsh-connector-ui/shell'),
     [all(PACKAGE.dshConnectorUi), sub(PACKAGE.dshInstance, 'src', 'child-settings'), sub(PACKAGE.dshConnector, 'tools'), sub(PACKAGE.dshConnector, 'host-services')]),
+  // U-WIRE boots the real connector and UI bundles; its harness is C-WIRE's native DSH world.
+  'dsh-connector-ui.wire': suite('the connector UI bundle wired into a real DSH (U-WIRE)', v3('dsh-connector-ui/wire'),
+    [all(PACKAGE.dshConnector), all(PACKAGE.dshConnectorUi), all(PACKAGE.dshConnectorShared), all(PACKAGE.fishballShared),
+      'test/v3/dsh-connector/wire/**', 'test/v3/dsh-connector/ui/constants.mjs', 'test/v3/dsh-connector/pairs/subject.mjs', 'test/v3/fishball-core/package/constants.mjs']),
   // The draw rows run embed-UI over the real UI backend (C-UI-BACKEND) and the real contribution
   // service (C-EXT), so a change in either reruns them.
   'dsh-connector-ui.draw': suite('draw-only frontend: fish, window, hint, Retry link, marks, Hand over / Take back, light, notify prompt, tool declaration (U-DRAW)', v3('dsh-connector-ui/draw'),

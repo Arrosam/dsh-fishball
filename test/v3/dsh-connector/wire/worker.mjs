@@ -12,6 +12,7 @@
  * listener (from the parent) and its logger (wrapped before boot, as F-GUARDS' worker does).
  */
 import fs from 'node:fs'
+import { randomUUID } from 'node:crypto'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { FAKE, FAKE_LLM_MODULE, RUNTIME } from '../../../support/constants.mjs'
@@ -84,6 +85,11 @@ function contributorBundle(name) {
 
 if (!fs.existsSync(profileDir)) {
   initializeProfileFromDefault(DSH.profile, 'web', home)
+  if (process.env[ENV.noWebApp] === ENV.on) {
+    const pkg = readManifest()
+    pkg.dsh.profile.bundles = pkg.dsh.profile.bundles.filter((name) => name !== DSH.webBundle)
+    writeManifest(pkg)
+  }
   for (const library of PACKAGES.libraries) if (fs.existsSync(library.dir)) install(library.name, library.dir, false)
   if (process.env[ENV.noConnector] !== ENV.on) install(PACKAGES.connector.name, PACKAGES.connector.dir, true)
   for (const extra of json(ENV.link, [])) install(extra.name, extra.dir, true)
@@ -100,6 +106,7 @@ const overlay = path.join(home, 'fbwire.overlay.yml')
 fs.writeFileSync(overlay, JSON.stringify([
   { id: DSH.defaultModelRow, config: { provider: FAKE.provider, model: FAKE.model } },
   { insert: [{ id: DSH.fakeLlmRow, name: FAKE_LLM_MODULE }] },
+  { insert: [{ id: DSH.readyProbeRow, name: path.join(import.meta.dirname, 'ready-probe.mjs') }] },
 ], null, 2))
 
 const trusted = [FIXTURE.tunnelHost, `${FIXTURE.tunnelHost}:${FIXTURE.tunnelPort}`].flatMap((h) => ['--trusted-host', h])
@@ -107,6 +114,8 @@ const { ctx, shutdown } = await runProfile({ environment: loadLayeredEnv('dsh'),
 
 const appReady = { at: null }
 ctx.get('appReady')?.onReady(() => { appReady.at = Date.now() })
+const activity = []
+ctx.on(DSH.activityEvent, (sessionId, timestamp) => activity.push({ sessionId, timestamp }))
 
 const entryOf = (id) => [...ctx.loader.entries()].find((entry) => entry.options?.id === id)
 /** A stable tag per fiber object, so a remount (a new fiber) is visible to the parent. */
@@ -135,6 +144,13 @@ const ops = {
   info: () => ({ home, profileDir, pid: process.pid }),
   async waitReady() { return Boolean(await until(() => appReady.at !== null, BUDGET.readyMs, BUDGET.pollMs)) },
   logs: () => LOG,
+  atReadyServices: () => globalThis.__fbwireReady ?? null,
+  activity: () => activity,
+  /** Toggle the installed bundle through DSH, never call the product's apply/dispose directly. */
+  async bundleEnabled({ enabled }) {
+    const result = await ctx.pluginManager.setBundleEnabled(PACKAGES.connector.name, enabled)
+    return { result: plain(result), row: ops.row() }
+  },
   /** The connector row: present, active, and its fiber's tag (a new tag means the row was remounted). */
   row: ({ id = SURFACE.rowId } = {}) => {
     const entry = entryOf(id)
@@ -187,6 +203,40 @@ const ops = {
       return { threw: errorInfo(e) }
     }
   },
+  /**
+   * Hold the first native settings acknowledgement after its real durable edit, then perform the
+   * user's real save before createHosted can finish. A same-tick launch alone could edit while
+   * createHosted was still making its credential record, missing the own-write race entirely.
+   * Only the host service boundary is delayed; no connector flag, registry or outcome is replaced.
+   */
+  async raceHostedUserSave({ instanceId, tokens }) {
+    const settings = ctx.settings
+    const methods = DSH.settingsWriteMethods
+    const originals = Object.fromEntries(methods.map((method) => [method, settings[method]]))
+    const entered = Promise.withResolvers()
+    const release = Promise.withResolvers()
+    let held = false
+    let hosted
+    try {
+      for (const method of methods) settings[method] = async function (ns, ...args) {
+        const hold = ns === SURFACE.rowId && !held
+        if (hold) held = true
+        const result = await originals[method].call(this, ns, ...args)
+        if (hold) { entered.resolve(); await release.promise }
+        return result
+      }
+      hosted = ops.createHosted({ instanceId })
+      const first = await Promise.race([entered.promise.then(() => true), hosted.then(() => false)])
+      if (!first) throw new Error('createHosted completed without entering a native settings save')
+      const during = await ops.settingsUpdate({ patch: { [SURFACE.settings.tokens]: tokens } })
+      release.resolve()
+      return { held, hosted: await hosted, during }
+    } finally {
+      release.resolve()
+      for (const method of methods) settings[method] = originals[method]
+      await hosted
+    }
+  },
   /** `n` createHosted calls started in one tick (R3: calls run in call order); their entry keys in call order, and the list after all. */
   async createHostedMany({ instanceId, n }) {
     const tokens = ctx.get(SURFACE.service.tokens)
@@ -208,6 +258,15 @@ const ops = {
     const created = await ctx.sessionController.create({ cwd })
     await agentOf(created.sessionId)
     return { sessionId: created.sessionId, cwd }
+  },
+  /** The same owner prompt API used by DSH's composer, including its native activity event. */
+  async userDrive({ sessionId, text = FIXTURE.userText }) {
+    const agent = await agentOf(sessionId)
+    const before = model.requests.length
+    await ctx.sessionController.prompt({ sessionId, requestId: randomUUID(), mode: DSH.promptMode, content: [{ type: 'text', text }] }, new AbortController().signal)
+    await until(() => model.requests.length > before || agent.status === 'running', BUDGET.turnMs, BUDGET.pollMs)
+    await until(() => agent.status === 'idle', BUDGET.turnMs, BUDGET.pollMs)
+    return { status: agent.status, requests: model.requests.length - before }
   },
   /** One user turn in a session, waited until its agent is idle again; answers the model requests it made. */
   async drive({ sessionId, text = FIXTURE.userText }) {
