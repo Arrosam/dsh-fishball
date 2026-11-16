@@ -40,22 +40,22 @@ window.__ModuleLoader__.load({
       ]),
       /**
        * Nothing runs without a local connector (Q-U1: "embed UI是connector的附属插件，不能脱离connector
-       * 运作"; the host half logs `connector-missing`). The shell runs with the connector's backend;
-       * the instance card with the backend and the locator. (C-WIRE removed V2's connector as an
-       * alternative: the backend is mounted in the connector row now.)
+       * 运作"; the host half logs `connector-missing`). The shell runs with the connector's backend,
+       * or (W3 fallback, until C-WIRE) with V2's connector for its frame; the instance card with the
+       * connector and the locator, or with V2's connector, whose attachment V2's card served.
        */
-      shellNeeds: Object.freeze([Object.freeze(['connector'])]),
-      instanceNeeds: Object.freeze([Object.freeze(['connector', 'page'])]),
+      shellNeeds: Object.freeze([Object.freeze(['connector']), Object.freeze(['legacy'])]),
+      instanceNeeds: Object.freeze([Object.freeze(['connector', 'page']), Object.freeze(['legacy'])]),
       instance: './client.instance.js',
       /**
        * What the host half reports usable (src/host/constants.js ROUTE.services, page-relative; this
-       * classic script cannot import it): `{ok, connector, page, routes, ui}`. Read here,
+       * classic script cannot import it): `{ok, connector, page, legacy, routes, ui}`. Read here,
        * not in a part, so every part waits only on this one read and never on another chunk.
        * Unreadable is "nothing", so nothing registers.
        */
       servicesPath: 'api/dsh-connector-ui/services',
       read: Object.freeze({ method: 'GET', cache: 'no-store', credentials: 'same-origin' }),
-      none: Object.freeze({ connector: false, page: false, routes: Object.freeze({}), ui: Object.freeze({}) }),
+      none: Object.freeze({ connector: false, page: false, legacy: false, routes: Object.freeze({}), ui: Object.freeze({}) }),
       status: './client.status.js',
       unavailable: 'fishball embed-ui: part unavailable',
     })
@@ -101,10 +101,11 @@ window.__ModuleLoader__.load({
       for (const part of EMBED.parts) {
         start(ctx, part.chunk, when(part.needs, (flags) => Promise.all([shell, require.async(part.chunk)]).then(([{ kit }, module]) => module[part.factory](kit, flags))))
       }
-      // The card's model sync goes through the host half's routes (R-HOST-07, design §4.2). I-HOST
-      // moves the card to the instance's own settings page (R-HOST-07 amended by 1.41).
+      // With the locator, the card's model sync goes through the host half's routes (R-HOST-07,
+      // design §4.2); with only V2's connector, through the instance's own V2 routes, as before.
+      // I-HOST moves the card to the instance's own settings page (R-HOST-07 amended by 1.41).
       start(ctx, EMBED.instance, when(EMBED.instanceNeeds, (flags) => Promise.all([require.async(EMBED.instance), require.async(EMBED.status)])
-        .then(([instance, { shared, layout }]) => instance.instancePlugin(shared, layout, flags.routes))))
+        .then(([instance, { shared, layout }]) => instance.instancePlugin(shared, layout, flags.page ? flags.routes : undefined))))
     }
 
     // No inject of its own: each part declares the client services it needs and starts with them.
