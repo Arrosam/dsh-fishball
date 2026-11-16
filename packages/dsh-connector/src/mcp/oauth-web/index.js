@@ -6,6 +6,7 @@
  * (K1b). The CIMD fetcher is shared by nothing else.
  */
 export { createApprovalHandler } from './approval.js'
+export { approvalOriginFor } from './origin.js'
 export { createApprovalListener } from './listener.js'
 export { createCimdFetcher } from './cimd.js'
 export { createAuthorizationCodeGrant, createRefreshTokenGrant } from './grants.js'

@@ -17,7 +17,8 @@
  * `ctx.get` and calls `contribute` with its own `dshConnectorTools.register`; that is the C-EXT
  * mechanism, so the tools carry embed-UI's namespace and leave with it (Q-N3 = A).
  *
- * `createUiBackend({handover, logger})` → `{service, provide(ctx), snapshot(), close()}`:
+ * `createUiBackend({handover, maxNoteBytes, logger})` → `{service, provide(ctx), snapshot(), close()}`
+ * (`maxNoteBytes()`: the Hand over / Take back note bound, the connector's live `maxMessageBytes`):
  * - `service` (frozen; what embed-UI may use): `apiVersion`, `routes` (UI_ROUTE) and
  *   `contribute(register) → dispose`. `register` is the caller's bound
  *   `dshConnectorTools.register`; it is called once per tool. A throw part-way disposes the
@@ -29,7 +30,7 @@
  *   contribution; a later `contribute` throws. Idempotent.
  */
 import { diagnosticOf } from '../errors.js'
-import { LOG, MISUSE, UI_ROUTE, UI_SERVICE } from './constants.js'
+import { LOG, MISUSE, UI_BODY, UI_ROUTE, UI_SERVICE } from './constants.js'
 import { createStreams, registerUiRoute, uiRoutes } from './routes.js'
 import { createUiState } from './state.js'
 import { uiTools } from './tools.js'
@@ -51,9 +52,11 @@ function disposeAll(disposers) {
 /**
  * @param {object} deps
  * @param deps.handover - K3 `DshConnectorHandover` (the routing module's `handover`)
+ * @param deps.maxNoteBytes - `() => number`, the live note bound in UTF-8 bytes; by default the
+ *   whole-body bound, so a caller without the setting keeps the bound it had
  * @param deps.logger - `{warn}`
  */
-export function createUiBackend({ handover, logger }) {
+export function createUiBackend({ handover, maxNoteBytes = () => UI_BODY.maxBytes, logger }) {
   const streams = createStreams(() => state.snapshot(), logger)
   const state = createUiState({ handover, changed: () => streams.publish() })
   const contributions = new Set()
@@ -123,7 +126,7 @@ export function createUiBackend({ handover, logger }) {
           disposeAll(disposers)
         }
         try {
-          for (const route of uiRoutes({ handover, state, streams, logger })) disposers.push(registerUiRoute(ctx, route))
+          for (const route of uiRoutes({ handover, state, streams, maxNoteBytes, logger })) disposers.push(registerUiRoute(ctx, route))
           disposers.push(ctx.provide(UI_SERVICE.name, service))
         } catch (error) {
           // A route path another row holds, or a failed provide: nothing of this backend stays.

@@ -17,8 +17,11 @@
  * never put in a URL, the settings document, the console or storage. The list refreshes from the
  * config form, which shows the new entry without a value.
  *
- * Not mounted yet: C-WIRE adds the package's `dsh.client` field and the settings schema (W4b).
- * The strings are this file's dictionaries: DSH's client loads no JSON, and the package's
+ * C-WIRE mounts it (the package's `dsh.client`) and adds, on the same page, the read-only pair state
+ * of each entry (R-ID-12), the designated agent (`routing.agentToken`, R-ROUTE-04), the approval
+ * port with the approval listener's status (R-OA-20), and the connector's limits, which moved here
+ * from dsh-connector-ui's card (decided item 55). Every edit is a save of the row's settings
+ * through DSH's form, as the token list's. The strings are this file's dictionaries: DSH's client loads no JSON, and the package's
  * locale/*.json hold only the Plugins page's `meta` text.
  */
 window.__ModuleLoader__.load({
@@ -52,13 +55,26 @@ window.__ModuleLoader__.load({
     const ROUTE = Object.freeze({
       create: 'api/dsh-connector/tokens/create',
       notice: 'api/dsh-connector/tokens/notice',
+      state: 'api/dsh-connector/settings/state',
       post: Object.freeze({ method: 'POST', cache: 'no-store', credentials: 'same-origin', headers: Object.freeze({ 'content-type': 'application/json' }) }),
       get: Object.freeze({ method: 'GET', cache: 'no-store', credentials: 'same-origin' }),
       /** The answer that could not be read: shown as this code. */
       unreadable: 'request-failed',
     })
-    /** One settings-path write of the whole list (dsh-settings SettingsPathOpView). */
+    /** Settings-path writes (dsh-settings SettingsPathOpView). */
     const OP_SET = 'set'
+    const OP_UNSET = 'unset'
+    /**
+     * The other V3 settings, by their path in the row's config (src/settings/constants.js SETTING;
+     * a browser chunk cannot import it, so the paths are written here once more: change both together).
+     */
+    const SETTING_PATH = Object.freeze({ agentToken: Object.freeze(['routing', 'agentToken']), approvalPort: Object.freeze(['approval', 'port']) })
+    /** The `approval.port` bounds (src/settings/constants.js PORT_RANGE). */
+    const PORT_RANGE = Object.freeze({ min: 0, max: 65535 })
+    /** The approval listener's healthy status (mcp/oauth-web LISTENER_STATUS.ok); any other is shown as its code. */
+    const LISTENER_OK = 'ok'
+    /** The designated control's "unset" choice (an empty select value names no entry). */
+    const NO_ENTRY = ''
     /** Scripting hooks (data attributes) for the page's parts. */
     const DATA = Object.freeze({
       root: 'data-dsh-connector-tokens',
@@ -68,7 +84,19 @@ window.__ModuleLoader__.load({
       notice: 'data-dsh-connector-notice',
       reveal: 'data-dsh-connector-reveal',
       copy: 'data-dsh-connector-copy',
+      pair: 'data-dsh-connector-pair',
+      connected: 'data-dsh-connector-connected',
+      designated: 'data-dsh-connector-designated',
+      approval: 'data-dsh-connector-approval',
+      limits: 'data-dsh-connector-limits',
+      setting: 'data-dsh-connector-setting',
     })
+    /** Stands for a `{name}` that is a node (withName): a character no dictionary or name holds. */
+    const NAME_SLOT = '{name}'
+    /** The key that saves a number field, as its blur does. */
+    const ENTER_KEY = 'Enter'
+    /** Every limit's minimum (src/config.js MIN.count): the Host's schema refuses anything below it. */
+    const LIMIT_MIN = 1
     /**
      * Inline layout: the page adds no style sheet (R-ARCH-03). Colours and fonts are DSH's theme
      * tokens (dsh-client-ui-theme); DSH has no spacing tokens, so the gaps are named here, at the
@@ -82,6 +110,8 @@ window.__ModuleLoader__.load({
       hint: Object.freeze({ margin: 0, color: 'var(--dsw-alias-label-tertiary)' }),
       error: Object.freeze({ margin: 0, color: 'var(--dsw-alias-state-error-primary)' }),
       value: Object.freeze({ margin: 0, padding: GAP.item, fontFamily: 'var(--dsw-font-markdown-code-font-family)', overflowWrap: 'anywhere', whiteSpace: 'pre-wrap', userSelect: 'all' }),
+      section: Object.freeze({ display: 'grid', gap: GAP.item }),
+      heading: Object.freeze({ margin: 0, font: 'inherit', fontWeight: 600 }),
     })
     /** What the page is doing: one action at a time, each with its own button text. */
     const BUSY = Object.freeze({ none: null, saving: 'saving', creating: 'creating' })
@@ -121,6 +151,36 @@ window.__ModuleLoader__.load({
       copied: 'Copied',
       copyFailed: 'Copy failed; select the token and copy it by hand.',
       close: 'Close',
+      paired: 'Paired as {name}',
+      unpaired: 'Not paired',
+      connected: 'connected',
+      offline: 'not connected',
+      lastSeen: 'last seen {at}',
+      neverSeen: 'never seen',
+      idPrefix: 'ID:',
+      designated: 'Designated agent',
+      designatedHint: 'Messages and questions from sessions nobody manages go to this agent.',
+      designatedDefault: 'Default (the hosted Fishball\'s entry, when there is one)',
+      approvalPort: 'Approval page port',
+      approvalHint: 'Browser agents sign in on this port of DSH\'s host.',
+      approvalStatus: 'Approval page: {status}',
+      approvalOk: 'listening on port {port}',
+      limits: 'Safety limits',
+      invalid: 'Enter a whole number.',
+      'field.maxQueuedInputs': 'Queued inputs not yet read',
+      'field.maxActiveWatches': 'Active "tell me when finished" watches',
+      'field.maxPendingApprovals': 'Permission requests open at once (waiting for Fishball or in your pile)',
+      'field.argumentExcerptBytes': 'Bytes of a request\'s command Fishball sees',
+      'field.maxMessageBytes': 'Bytes in one message',
+      'field.auditEntriesKept': 'Entries kept in each audit list',
+      'field.requestUserMessageBytes': 'Bytes of your latest message a permission request shows Fishball',
+      'field.rationaleChars': 'Characters of Fishball\'s reason kept in the approval audit',
+      'field.watchesShown': 'Watches kept in the state snapshot and by list_watches',
+      'field.readSessionMessages': 'Messages read_session returns',
+      'field.readSessionBytes': 'Bytes read_session returns',
+      'field.forwardExcerptBytes': 'Bytes of a session\'s last answer in a forward or watch notice',
+      'field.userMessagesListed': 'Your messages list_user_messages shows a managed session',
+      'field.userMessageExcerptChars': 'Characters of each message list_user_messages shows',
     }
     const zh = {
       summary: '连接到此 DSH 的 agent 所用的 token。',
@@ -151,6 +211,36 @@ window.__ModuleLoader__.load({
       copied: '已复制',
       copyFailed: '复制失败；请选中 token 手动复制。',
       close: '关闭',
+      paired: '已配对为 {name}',
+      unpaired: '未配对',
+      connected: '已连接',
+      offline: '未连接',
+      lastSeen: '最近一次 {at}',
+      neverSeen: '从未连接',
+      idPrefix: 'ID:',
+      designated: '指定 agent',
+      designatedHint: '无人管理的会话发出的消息和问题会交给这个 agent。',
+      designatedDefault: '默认（托管 Fishball 的 token，如有）',
+      approvalPort: '授权页面端口',
+      approvalHint: '浏览器 agent 在 DSH 主机的这个端口上登录。',
+      approvalStatus: '授权页面：{status}',
+      approvalOk: '正在监听端口 {port}',
+      limits: '安全限制',
+      invalid: '请输入整数。',
+      'field.maxQueuedInputs': '尚未读取的排队输入',
+      'field.maxActiveWatches': '进行中的“完成时通知我”',
+      'field.maxPendingApprovals': '同时打开的权限请求（等待 Fishball 或在你的待处理区）',
+      'field.argumentExcerptBytes': 'Fishball 可见的请求命令字节数',
+      'field.maxMessageBytes': '单条消息字节数',
+      'field.auditEntriesKept': '每个审计列表保留的条目',
+      'field.requestUserMessageBytes': '权限请求向 Fishball 显示的你最近消息字节数',
+      'field.rationaleChars': '审批记录中保留的 Fishball 理由字符数',
+      'field.watchesShown': '状态快照与 list_watches 中保留的关注数',
+      'field.readSessionMessages': 'read_session 返回的消息数',
+      'field.readSessionBytes': 'read_session 返回的字节数',
+      'field.forwardExcerptBytes': '转发或关注通知中会话最后回答的字节数',
+      'field.userMessagesListed': 'list_user_messages 向受管会话列出的你的消息条数',
+      'field.userMessageExcerptChars': 'list_user_messages 每条消息摘录的字符数',
     }
 
     const routeUrl = (path) => new URL(path, document.baseURI).toString()
@@ -198,14 +288,112 @@ window.__ModuleLoader__.load({
         copy === null ? null : h('p', { style: copy === COPY.done ? STYLE.hint : STYLE.error, role: 'status' }, t(copy)))
     }
 
-    /** One list row: label, switch, reorder and delete, all staged until Save. */
-    function TokenRow({ t, item, index, count, disabled, edit }) {
+    /**
+     * An entry's read-only pair state (R-ID-12, AUTH-UC-09): paired or not, its name (or a bold
+     * `ID:` and its id, R-NAME-08), whether it is connected now and when it was last seen. React
+     * escapes the name, so markup in it is shown, never run.
+     */
+    function PairState({ t, row }) {
+      if (row === undefined || !row.paired) return h('span', { style: STYLE.hint, [DATA.pair]: 'unpaired' }, t('unpaired'))
+      const name = row.name ?? h(React.Fragment, null, h('strong', null, t('idPrefix')), ' ', row.id)
+      const seen = row.lastSeenAt === null ? t('neverSeen') : t('lastSeen', { at: new Date(row.lastSeenAt).toLocaleString() })
+      return h('span', { style: STYLE.hint, [DATA.pair]: 'paired', [DATA.connected]: row.connected },
+        withName(t('paired'), name), ' · ', t(row.connected ? 'connected' : 'offline'), ' · ', seen)
+    }
+    /** `text` with its `{name}` replaced by the node `name` (a name is never formatted into a string). */
+    function withName(text, name) {
+      const at = text.indexOf(NAME_SLOT)
+      return at < 0 ? text : h(React.Fragment, null, text.slice(0, at), name, text.slice(at + NAME_SLOT.length))
+    }
+
+    /** One list row: label, switch, reorder and delete, all staged until Save; its pair state read only. */
+    function TokenRow({ t, item, index, count, disabled, edit, pair }) {
       return h('li', { style: STYLE.row, [DATA.row]: item.key },
         h('input', { type: 'text', 'aria-label': t('label'), value: item.label, disabled, onChange: (event) => edit.label(index, event.target.value) }),
         h(Switch, { checked: item.enabled, label: t('enabled'), disabled, onChange: (on) => edit.enabled(index, on) }),
         h(Button, { type: 'button', size: 'sm', variant: 'ghost', disabled: disabled || index === 0, onClick: () => edit.move(index, MOVE.up) }, t('up')),
         h(Button, { type: 'button', size: 'sm', variant: 'ghost', disabled: disabled || index === count - 1, onClick: () => edit.move(index, MOVE.down) }, t('down')),
-        h(Button, { type: 'button', size: 'sm', variant: 'ghost', disabled, onClick: () => edit.remove(index) }, t('remove')))
+        h(Button, { type: 'button', size: 'sm', variant: 'ghost', disabled, onClick: () => edit.remove(index) }, t('remove')),
+        h(PairState, { t, row: pair }))
+    }
+
+    /**
+     * One single-field setting saved on its own (the designated agent, the approval port, each
+     * limit): the row's config form, fenced by the revision it was read at, as the list's Save.
+     * @returns `{busy, failed, save(ops)}`
+     */
+    function useFieldSave(form, snapshot) {
+      const [busy, setBusy] = React.useState(false)
+      const [failed, setFailed] = React.useState(false)
+      const save = async (ops) => {
+        setBusy(true)
+        let accepted = false
+        try { accepted = await form.mutate(ops, snapshot.revision) } catch { accepted = false }
+        setBusy(false)
+        setFailed(!accepted)
+      }
+      return { busy, failed, save }
+    }
+
+    /** The value at `path` in the row's settings value. */
+    const valueAt = (value, path) => path.reduce((node, key) => node?.[key], value)
+
+    /** The designated agent (R-ROUTE-04): one of the listed entries, or the default (unset). */
+    function Designated({ t, form, snapshot, items, disabled }) {
+      const { busy, failed, save } = useFieldSave(form, snapshot)
+      const current = valueAt(snapshot.value, SETTING_PATH.agentToken) ?? NO_ENTRY
+      const choose = (key) => void save([key === NO_ENTRY ? { op: OP_UNSET, path: SETTING_PATH.agentToken } : { op: OP_SET, path: SETTING_PATH.agentToken, value: key }])
+      return h('div', { style: STYLE.section, [DATA.designated]: true },
+        h('label', { style: STYLE.row }, t('designated'),
+          h('select', { value: current, disabled: disabled || busy, onChange: (event) => choose(event.target.value) },
+            h('option', { value: NO_ENTRY }, t('designatedDefault')),
+            items.map((item) => h('option', { key: item.key, value: item.key }, item.label)))),
+        h('p', { style: STYLE.hint }, t('designatedHint')),
+        failed ? h('p', { style: STYLE.error, role: 'alert' }, t('saveFailed')) : null)
+    }
+
+    /** One whole-number field saved on blur or Enter; a value outside `min`–`max` is refused here. */
+    function NumberSetting({ t, form, snapshot, path, label, min, max, disabled, data }) {
+      const { busy, failed, save } = useFieldSave(form, snapshot)
+      const saved = valueAt(snapshot.value, path)
+      const [text, setText] = React.useState(null)
+      const shown = text ?? (saved === undefined ? '' : String(saved))
+      const number = Number(shown)
+      const invalid = text !== null && !(Number.isSafeInteger(number) && number >= min && (max === undefined || number <= max))
+      const commit = () => {
+        if (text === null || invalid || number === saved) { setText(null); return }
+        void save([{ op: OP_SET, path, value: number }]).then(() => setText(null))
+      }
+      return h('label', { style: STYLE.row, [DATA.setting]: data },
+        label,
+        h('input', {
+          type: 'text', inputMode: 'numeric', value: shown, disabled: disabled || busy, 'aria-invalid': invalid,
+          onChange: (event) => setText(event.target.value), onBlur: commit, onKeyDown: (event) => { if (event.key === ENTER_KEY) commit() },
+        }),
+        invalid ? h('span', { style: STYLE.error, role: 'alert' }, t('invalid')) : null,
+        failed ? h('span', { style: STYLE.error, role: 'alert' }, t('saveFailed')) : null)
+    }
+
+    /** The approval page's port (R-OA-20, Q-OA-7 A) and the listener's status from the state route. */
+    function Approval({ t, form, snapshot, approval, disabled }) {
+      const status = approval === undefined ? null
+        : approval.status === LISTENER_OK ? t('approvalOk', { port: approval.port }) : approval.status
+      return h('div', { style: STYLE.section, [DATA.approval]: approval?.status ?? '' },
+        h(NumberSetting, { t, form, snapshot, path: SETTING_PATH.approvalPort, label: t('approvalPort'), min: PORT_RANGE.min, max: PORT_RANGE.max, disabled, data: SETTING_PATH.approvalPort.join('.') }),
+        h('p', { style: STYLE.hint }, t('approvalHint')),
+        status === null ? null : h('p', { style: approval.status === LISTENER_OK ? STYLE.hint : STYLE.error, role: 'status' }, t('approvalStatus', { status })))
+    }
+
+    /**
+     * The connector's limits (src/config.js LIMITS; moved here from dsh-connector-ui, decided item
+     * 55): every top-level whole-number field of the row's settings value, in the order DSH lists
+     * them, so the page keeps no copy of the field list. The Host's schema still decides validity.
+     */
+    function Limits({ t, form, snapshot, disabled }) {
+      const fields = Object.entries(snapshot.value ?? {}).filter(([, value]) => Number.isSafeInteger(value)).map(([field]) => field)
+      return h('div', { style: STYLE.section, [DATA.limits]: true },
+        h('h3', { style: STYLE.heading }, t('limits')),
+        fields.map((field) => h(NumberSetting, { key: field, t, form, snapshot, path: [field], label: t('field.' + field), min: LIMIT_MIN, disabled, data: field })))
     }
 
     /**
@@ -229,9 +417,12 @@ window.__ModuleLoader__.load({
         const [newLabel, setNewLabel] = React.useState('')
         // The value of the token just created: only here, only until Close (R-TOK-11).
         const [revealed, setRevealed] = React.useState(null)
+        // The read-only state (pair rows, the approval listener): refreshed with the notice.
+        const [state, setState] = React.useState(undefined)
         const refreshNotice = React.useCallback(async () => {
-          const answer = await call(ROUTE.notice, ROUTE.get)
+          const [answer, read] = await Promise.all([call(ROUTE.notice, ROUTE.get), call(ROUTE.state, ROUTE.get)])
           setNotice(answer.ok ? answer.notice ?? null : null)
+          setState(read.ok ? read : undefined)
         }, [])
         const onPage = props.view === PAGE.pageView && snapshot !== undefined && snapshot.status !== PAGE.unavailable
         React.useEffect(() => { if (onPage) void refreshNotice() }, [refreshNotice, onPage, snapshot?.revision])
@@ -281,7 +472,10 @@ window.__ModuleLoader__.load({
           list.length === 0 ? h('p', { style: STYLE.hint }, t('empty')) : h('ul', { style: STYLE.list },
             // Keyed by the entry key, so a reorder moves a row (and its focus) instead of remounting
             // it; a key two items share is a duplicate (design §5.9), whose second row is keyed apart.
-            list.map((item, index) => h(TokenRow, { key: list.findIndex((other) => other.key === item.key) === index ? item.key : item.key + DUPLICATE_ROW + index, t, item, index, count: list.length, disabled, edit }))),
+            list.map((item, index) => h(TokenRow, {
+              key: list.findIndex((other) => other.key === item.key) === index ? item.key : item.key + DUPLICATE_ROW + index,
+              t, item, index, count: list.length, disabled, edit, pair: state?.entries?.find((row) => row.key === item.key),
+            }))),
           dirty ? h('div', { style: STYLE.row },
             h(Button, { type: 'button', size: 'sm', variant: 'primary', disabled, onClick: () => void save() }, busy === BUSY.saving ? t('saving') : t('save')),
             h(Button, { type: 'button', size: 'sm', variant: 'ghost', disabled: busy !== BUSY.none, onClick: () => { setDraft(null); setProblem(null) } }, t('discard'))) : null,
@@ -289,6 +483,9 @@ window.__ModuleLoader__.load({
             h('input', { type: 'text', 'aria-label': t('newLabel'), placeholder: t('newLabel'), value: newLabel, disabled: disabled || dirty, [DATA.newLabel]: true, onChange: (event) => setNewLabel(event.target.value) }),
             h(Button, { type: 'button', size: 'sm', variant: 'outline', disabled: disabled || dirty || newLabel.trim() === '', [DATA.newToken]: true, onClick: () => void create() }, busy === BUSY.creating ? t('creating') : t('newToken'))),
           problem === null ? null : h('p', { style: STYLE.error, role: 'alert' }, problem),
+          h(Designated, { t, form, snapshot, items: saved, disabled }),
+          h(Approval, { t, form, snapshot, approval: state?.approval, disabled }),
+          h(Limits, { t, form, snapshot, disabled }),
           revealed === null ? null : h(Reveal, { t, value: revealed, onClose: () => setRevealed(null) }))
       }
     }

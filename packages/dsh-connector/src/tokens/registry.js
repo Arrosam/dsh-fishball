@@ -115,8 +115,8 @@ const freezeGroups = (groups) => Object.freeze(groups.map(labelsOf))
  * @param {(previous: {label: string, enabled: boolean, key: string}[]) => Promise<void>} [options.restoreTokens]
  *   writes the previous list back to the settings after a refused save (C-WIRE owns the document).
  *   It runs inside the registry's sync queue, so it must not wait for the `apply` that its own
- *   write's `settings/document-updated` starts: that `apply` is queued behind it. That `apply`
- *   (the restored list, the default reason) is not counted as the user saving again.
+ *   write's settings event starts: that `apply` is queued behind it. That `apply` (the restored
+ *   list, SYNC_REASON.own from C-WIRE, or the default reason) is not counted as the user saving again.
  */
 export function createTokenRegistry({ ctx, logger, settings, restoreTokens }) {
   /** entryKey → record as the registry holds it (store.js shape), removed ones included. */
@@ -249,14 +249,14 @@ export function createTokenRegistry({ ctx, logger, settings, restoreTokens }) {
 
   async function sync(tokens, reason) {
     const items = itemsOf(tokens)
-    // The first settings sync after a restore is that restore's own write when it holds the
-    // restored list: it is not the user saving, so nothing in it is refused. Any settings sync
-    // clears `restored`, so a lost write-back event costs at most one user save of that same list.
-    // Limit: a second user save queued between a refusal and its write's event takes the echo's
-    // place; telling them apart for sure needs C-WIRE to mark its write.
+    // A sync of the connector's own write (`own`: C-WIRE marks every write it makes, the restore
+    // included) is never the user saving. For a caller that does not mark its writes, the first
+    // settings sync after a restore that holds the restored list is taken as that restore's echo.
+    // Any settings or own sync clears `restored`, so a lost write-back event costs at most one user
+    // save of that same list.
     const settingsSync = reason === SYNC_REASON.settings
     const echo = settingsSync && restored !== undefined && sameJson(items, restored)
-    if (settingsSync) restored = undefined
+    if (settingsSync || reason === SYNC_REASON.own) restored = undefined
     const saved = settingsSync && !echo
 
     const { groups: found, sharedKeys } = problemsOf(items)
@@ -351,8 +351,8 @@ export function createTokenRegistry({ ctx, logger, settings, restoreTokens }) {
 
   const registry = Object.freeze({
     /**
-     * Applies the settings list: on `settings/document-updated` (the default reason), and once at
-     * start with `SYNC_REASON.start`. Resolves `{ok: true}` or `{ok: false, code, labels}`
+     * Applies the settings list: on a settings change (the default reason, or SYNC_REASON.own for
+     * the connector's own write), and once at start with `SYNC_REASON.start`. Resolves `{ok: true}` or `{ok: false, code, labels}`
      * (`token-duplicate`; labels only), never with a value. Rejects when the store cannot be opened.
      * @param {readonly {label: string, enabled: boolean, key: string}[]} tokens
      * @param {string} [reason] SYNC_REASON

@@ -662,6 +662,11 @@ export const SERVICE = Object.freeze({
   /** Reads a stopped session's log without making it live (src/session-info.js persistedEventsOf). */
   sessionQuery: 'sessionQuery',
   /**
+   * The V3 connector's MCP, token and metadata routes and DSH's listener facts (src/wire/, C-WIRE):
+   * a dsh-base row on both SDKs.
+   */
+  webServer: 'webServer',
+  /**
    * The bridge's start-with-a-model path reads ctx.llm (src/model-catalog.js). Before M1 the native
    * host row injected it; the session port now lives on this row (src/connector-service.js).
    * sessionController already depends on llm, so this adds no new reason for the row to restart.
