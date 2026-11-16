@@ -181,8 +181,8 @@ function registerLibraryCases(sdk, lib) {
     assert.deepEqual(js.filter((m) => !usage.has(m)), [], 'modules no V3 package imports')
   })
   // R-ARCH-08 says each library holds modules "more than one" package of its side uses, but the
-  // SPLIT-SHARED contents (design §1.0b row 5, plan §5) put the admin protocol and files in
-  // dsh-connector-shared for the instance alone, and fishball-shared serves core alone until F-UI.
+  // SPLIT-SHARED contents (design §1.0b row 5, plan §5) put files and provider-sync in
+  // dsh-connector-shared for the instance alone (the admin protocol left with D14), and fishball-shared serves core alone until F-UI.
   // The two-users rule is left open until Fishball reconciles the two texts.
   caseTest(sdk, 'PLAT-EP-07', 6, `every ${lib.name} module is used by at least two V3 packages`, null, LATER.twoUsers)
   caseTest(sdk, 'PLAT-EP-07', 6, `no ${lib.name} module is also a live copy in a plugin package (one owner per side)`, async () => {

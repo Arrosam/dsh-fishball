@@ -15,8 +15,17 @@ import { SDK, V3 } from '../package-boundaries/constants.mjs'
  */
 export const BASE = Object.freeze({ ref: '131ad65f', folder: 'packages/shared' })
 
-/** Requirement 3: what dsh-connector-shared holds, by module file and export subpath. */
-export const DSH_MODULES = Object.freeze(['admin-protocol', 'provider-sync', 'provider-sync-codec', 'provider-sync-host', 'redact', 'files'])
+/**
+ * Requirement 3: the moved modules dsh-connector-shared still holds, by module file and export subpath.
+ * remove-v2-followups D14 deleted `admin-protocol` from it (ADMIN_PROTOCOL below).
+ */
+export const DSH_MODULES = Object.freeze(['provider-sync', 'provider-sync-codec', 'provider-sync-host', 'redact', 'files'])
+/**
+ * Moved into dsh-connector-shared by SPLIT-SHARED, then deleted from it by remove-v2-followups D14
+ * (R-ARCH-08 strict: a library module needs a user on its side) once I-READY deleted dsh-instance's
+ * admin relay, its one user. Its rows are withdrawn; fishball-shared must still not hold it either.
+ */
+export const ADMIN_PROTOCOL = 'admin-protocol'
 /**
  * Requirements 1.40 / design §6.3a "One copy per side": modules dsh-connector-shared gained after the
  * move, with no counterpart at BASE (so no differential or drift row). `oauth-client` is the S7c K2
@@ -31,8 +40,12 @@ export const DSH_EXPORTS = Object.freeze([...DSH_MODULES, ...ADDED_MODULES])
 /**
  * Requirement 5 (interim, until I-HOST): fishball-shared keeps its own copies of these for core's
  * child halves; `redact` stays only as provider-sync-host's internal helper (no export needed).
+ * The interim copies of modules dsh-connector-shared still holds; ADMIN_PROTOCOL had one too
+ * (FORMER_INTERIM_COPIES), but D14 deleted its dsh-connector-shared side.
  */
-export const INTERIM_COPIES = Object.freeze(['admin-protocol', 'provider-sync', 'provider-sync-codec', 'provider-sync-host', 'redact'])
+export const INTERIM_COPIES = Object.freeze(['provider-sync', 'provider-sync-codec', 'provider-sync-host', 'redact'])
+/** Every module fishball-shared held an interim copy of, ADMIN_PROTOCOL included (all dropped by I-HOST). */
+export const FORMER_INTERIM_COPIES = Object.freeze([...INTERIM_COPIES, ADMIN_PROTOCOL])
 /** Requirement 4: `files` is duplicated, one copy per library. */
 export const FILES_MODULE = 'files'
 /** Requirement 5: core's child halves, the only reason for the interim copies. */
@@ -53,8 +66,8 @@ export const sdkModules = (sdk) => path.join(SDK.versionsDir, sdk, 'node_modules
 
 /**
  * Requirement 1: which library each existing package of a side is expected to import and bundle
- * (the packages that use the moved modules today). The connector uses `redact`, the instance the
- * admin protocol, provider-sync and files, the adapter `./oauth-client` (design §6.3a, its library is
+ * (the packages that use the moved modules today). The connector uses `redact`, the instance
+ * provider-sync and files (its admin protocol went with the admin relay, D14), the adapter `./oauth-client` (design §6.3a, its library is
  * its own side's), core its child halves and the Skills store, and fishball-ui (a Fishball-side
  * package since F-UI) the ui-seam.
  */
