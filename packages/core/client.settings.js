@@ -96,7 +96,7 @@ window.__ModuleLoader__.load({
        * The model control: one native select whose option values are the catalog's (provider, model,
        * effort) triples as JSON, plus the empty "DSH's default" option that clears the field.
        */
-      model: Object.freeze({ unset: '', effortless: null }),
+      model: Object.freeze({ unset: '', effortless: null, catalog: Object.freeze({ loading: 'loading', ready: 'ready', failed: 'failed' }) }),
     })
     const en = {
       summary: 'Fishball\'s target, connection and identity.',
@@ -374,6 +374,8 @@ window.__ModuleLoader__.load({
     /**
      * The model choices of DSH's catalog (`ModelCatalog`, dsh-api-session-controller, both SDKs):
      * one per model, and one per advertised reasoning effort, each `{value, label, selection}`.
+     * fishball-ui's model dialog restates this list (a chunk imports no module, and fishball-ui
+     * imports nothing of core, Q-G2); keep the two in step.
      */
     function modelChoices(catalog, t) {
       return (catalog?.groups ?? []).flatMap((group) => group.models.flatMap((model) => {
@@ -394,19 +396,19 @@ window.__ModuleLoader__.load({
      */
     function ModelControl({ ctx, form, t }) {
       const snapshot = React.useSyncExternalStore((listener) => form.subscribe(listener), () => form.getSnapshot())
-      const [catalog, setCatalog] = React.useState({ status: 'loading' })
+      const [catalog, setCatalog] = React.useState({ status: PAGE.model.catalog.loading })
       const [saveFailed, setSaveFailed] = React.useState(false)
       React.useEffect(() => {
         let live = true
         // Read on use, never injected: a DSH whose remote session face is missing shows the page
         // with the model control's failed note, not no page at all.
         Promise.resolve().then(() => ctx.remote.session.modelCatalog()).then((answer) => {
-          if (live) setCatalog(answer?.ok === true ? { status: 'ready', value: answer.value } : { status: 'failed' })
-        }, () => { if (live) setCatalog({ status: 'failed' }) })
+          if (live) setCatalog(answer?.ok === true ? { status: PAGE.model.catalog.ready, value: answer.value } : { status: PAGE.model.catalog.failed })
+        }, () => { if (live) setCatalog({ status: PAGE.model.catalog.failed }) })
         return () => { live = false }
       }, [])
       const id = React.useId()
-      const choices = catalog.status === 'ready' ? modelChoices(catalog.value, t) : []
+      const choices = catalog.status === PAGE.model.catalog.ready ? modelChoices(catalog.value, t) : []
       const current = choiceValue(snapshot.value?.[SHARED.model])
       const pick = async (value) => {
         const choice = choices.find((entry) => entry.value === value)
@@ -414,7 +416,7 @@ window.__ModuleLoader__.load({
         try { ok = await (choice === undefined ? form.unset(SHARED.model) : form.set(SHARED.model, choice.selection)) } catch { ok = false }
         setSaveFailed(!ok)
       }
-      const note = catalog.status === 'loading' ? t('modelLoading') : catalog.status === 'failed' ? t('modelFailed') : choices.length === 0 ? t('modelNone') : null
+      const note = catalog.status === PAGE.model.catalog.loading ? t('modelLoading') : catalog.status === PAGE.model.catalog.failed ? t('modelFailed') : choices.length === 0 ? t('modelNone') : null
       return h('section', { 'data-fishball-model': true, 'aria-label': t('modelTitle') },
         h('label', { htmlFor: id }, t('modelTitle')),
         h('div', { className: PAGE.css.row },

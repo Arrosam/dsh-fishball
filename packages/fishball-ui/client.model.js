@@ -35,7 +35,10 @@ window.__ModuleLoader__.load({
        */
       namespace: 'fishball-core',
       field: 'model',
+      /** ConfigFormSnapshot.status of a served namespace (dsh-client-ui-settings, both SDKs). */
       ready: 'ready',
+      /** This dialog's own catalog read states. */
+      catalog: Object.freeze({ loading: 'loading', ready: 'ready', failed: 'failed' }),
       /** The Fishball page's Settings launcher (fishball-page `PAGE.settingsButton`), DSH's own Settings open. */
       settingsLauncher: '.fishball-settings-launcher',
       effortless: null,
@@ -72,7 +75,12 @@ window.__ModuleLoader__.load({
       `.${DIALOG.css.error}{margin:0;color:var(--dsw-alias-state-error-primary)}`,
     ].join('')
 
-    /** One choice per model, and one per advertised reasoning effort (DSH `ModelCatalog`, both SDKs). */
+    /**
+     * One choice per model, and one per advertised reasoning effort (DSH `ModelCatalog`, both SDKs).
+     * Core's settings page builds the same list for its picker (core client.settings.js
+     * `modelChoices`): restated, not shared, because a browser chunk imports no module and the two
+     * are separate packages (no client library chunk exists in the set; client.js says the same).
+     */
     function choicesOf(catalog, t) {
       return (catalog?.groups ?? []).flatMap((group) => group.models.flatMap((model) => {
         const base = { provider: group.id, model: model.id }
@@ -97,20 +105,20 @@ window.__ModuleLoader__.load({
         const snapshot = React.useSyncExternalStore((listener) => form.subscribe(listener), () => form.getSnapshot())
         // Dismissed or chosen in this page's life: closed until the page opens again.
         const [closed, setClosed] = React.useState(false)
-        const [catalog, setCatalog] = React.useState({ status: 'loading' })
+        const [catalog, setCatalog] = React.useState({ status: DIALOG.catalog.loading })
         const [failed, setFailed] = React.useState(false)
         const [saving, setSaving] = React.useState(false)
         const open = !closed && isSet(snapshot) === false
         React.useEffect(() => {
-          if (!open || catalog.status !== 'loading') return undefined
+          if (!open || catalog.status !== DIALOG.catalog.loading) return undefined
           let live = true
           Promise.resolve().then(() => ctx.remote.session.modelCatalog()).then((answer) => {
-            if (live) setCatalog(answer?.ok === true ? { status: 'ready', value: answer.value } : { status: 'failed' })
-          }, () => { if (live) setCatalog({ status: 'failed' }) })
+            if (live) setCatalog(answer?.ok === true ? { status: DIALOG.catalog.ready, value: answer.value } : { status: DIALOG.catalog.failed })
+          }, () => { if (live) setCatalog({ status: DIALOG.catalog.failed }) })
           return () => { live = false }
         }, [open])
         if (!open) return null
-        const choices = catalog.status === 'ready' ? choicesOf(catalog.value, t) : []
+        const choices = catalog.status === DIALOG.catalog.ready ? choicesOf(catalog.value, t) : []
         const choose = async (selection) => {
           setSaving(true)
           let ok = false
@@ -123,14 +131,14 @@ window.__ModuleLoader__.load({
           setClosed(true)
           document.querySelector(DIALOG.settingsLauncher)?.click()
         }
-        const none = catalog.status === 'ready' && choices.length === 0
+        const none = catalog.status === DIALOG.catalog.ready && choices.length === 0
         const footer = h(React.Fragment, null,
           none ? h(Button, { variant: 'outline', onClick: openSettings, 'data-fishball-model-settings': true }, t('openSettings')) : null,
           h(Button, { variant: 'outline', onClick: () => setClosed(true), 'data-fishball-model-later': true }, t('later')))
         return h(Modal, { open: true, onClose: () => setClosed(true), title: t('title'), closeLabel: t('close'), description: t('intro'), footer },
           h('div', { 'data-fishball-model-dialog': catalog.status },
-            catalog.status === 'loading' ? h('p', { className: DIALOG.css.note }, t('loading')) : null,
-            catalog.status === 'failed' ? h('p', { className: DIALOG.css.error, role: 'alert' }, t('failed')) : null,
+            catalog.status === DIALOG.catalog.loading ? h('p', { className: DIALOG.css.note }, t('loading')) : null,
+            catalog.status === DIALOG.catalog.failed ? h('p', { className: DIALOG.css.error, role: 'alert' }, t('failed')) : null,
             none ? h('p', { className: DIALOG.css.note, 'data-fishball-model-none': true }, t('none')) : null,
             choices.length === 0 ? null : h('ul', { className: DIALOG.css.list },
               choices.map((choice) => h('li', { key: choice.key },

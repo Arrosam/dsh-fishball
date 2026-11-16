@@ -214,6 +214,10 @@ export const V3_SUITES = Object.freeze({
   // bundles (the guards worker), and scans the Fishball side for DSH-side imports.
   'fishball-core.wire': suite("core's main row: fishballInstance, fishballStatus, the manager, model, Connect routes and web callback (F-WIRE)", v3('fishball-core/wire'),
     [all(PACKAGE.fishballCore), all(PACKAGE.fishballUi), all(PACKAGE.fishballShared), all(PACKAGE.fishballBoard), 'test/v3/fishball-ui/guards/**']),
+  // F-WIRE: core's manager in a real standalone DSH (core + shared only): reminders, the singleton,
+  // the preset and persona, the generated identity and the model rule, with the scripted model.
+  'fishball-core.manager': suite("core's manager: reminders, singleton, preset and persona, generated identity, model (F-WIRE)", v3('fishball-core/manager'),
+    [all(PACKAGE.fishballCore), all(PACKAGE.fishballShared), 'test/support/fixtures/fake-llm.mjs', 'test/support/host.mjs']),
   // F-WIRE: fishball-ui's model dialog, strip route and live core rows, in the browser sandbox and a real DSH.
   'fishball-ui.model-dialog': suite('fishball-ui model dialog, status strip route, live core on/off, composer picker guard (F-WIRE)', v3('fishball-ui/model-dialog'),
     [all(PACKAGE.fishballUi), all(PACKAGE.fishballCore), all(PACKAGE.fishballShared), 'test/v3/fishball-core/wire/**', 'test/v3/fishball-core/settings/**', 'test/v3/fishball-ui/guards/**']),

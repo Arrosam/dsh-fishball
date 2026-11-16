@@ -440,7 +440,7 @@ export const GUARDS = Object.freeze({
    * only inside DSH; a module that cannot load registers no tools, so its names cannot appear.
    */
   coreTools: Object.freeze([
-    Object.freeze({ module: '../manager/reminder-tools.js', table: 'TOOL' }),
+    Object.freeze({ module: '../manager/reminders.js', table: 'TOOL' }),
     Object.freeze({ module: '../manager/skills.js', table: 'PRIVATE_SKILL_TOOL' }),
     Object.freeze({ module: '../asks/constants.js', table: 'ASK_TOOL' }),
   ]),
