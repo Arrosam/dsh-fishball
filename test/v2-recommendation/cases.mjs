@@ -29,7 +29,7 @@ export const RECOMMENDATION_TEST_DATA = freezeData({
       pet: [],
     },
     fixtures: {
-      profileKind: 'fresh or V2-only disposable main and child profiles',
+      profileKind: 'fresh disposable main and hosted-child profiles',
       absentPackage: 'dsh-idle-compact',
       secondDistinctPackage: 'smart-compaction',
       notePackage: 'meow-memory',
@@ -53,7 +53,7 @@ export const RECOMMENDATION_TEST_DATA = freezeData({
     {
       id: 'TC-03', techniques: ['Use Case', 'EP', 'Decision Table R1'], ac: ['AC1', 'AC11'],
       owners: ['BROWSER'], after: ['RP', 'INTEGRATE'], entrypoint: 'main native Plugins page',
-      data: 'V2 connector and instance present in disposable main. Open main Plugins in en, then zh.',
+      data: 'dsh-connector and dsh-instance present in disposable main. Open main Plugins in en, then zh.',
       intent: 'keep fishball-recommended absent from main DSH without changing its native tabs',
     },
     {
@@ -126,7 +126,7 @@ export const RECOMMENDATION_TEST_DATA = freezeData({
       id: 'TC-15', techniques: ['Use Case', 'EP'], ac: ['AC8'],
       owners: ['BROWSER'], after: ['RP', 'INTEGRATE'], entrypoint: 'meow-memory row; locale en',
       data: 'en; Memory category; meow-memory absent and then present through native fixture inventory.',
-      intent: 'show a nonempty English optional-external-memory note explaining no built-in V2 memory and no board link',
+      intent: 'show a nonempty English optional-external-memory note explaining no built-in memory and no board link',
     },
     {
       id: 'TC-16', techniques: ['Use Case', 'EP'], ac: ['AC8'],
@@ -226,9 +226,9 @@ export const RECOMMENDATION_TEST_DATA = freezeData({
     },
     {
       id: 'TC-32', techniques: ['Use Case', 'EP'], ac: ['AC9'],
-      owners: ['BOUNDARY', 'INTEGRATE'], after: ['RP'], entrypoint: 'fresh V2 release artifact, initial profile and loader composition',
-      data: 'Fresh/V2-only child; no manual recommendation Install. Inspect payloads, placement, enablement and startup dependencies.',
-      intent: 'keep recommendations opt-in with no standalone recommendation package, deferred board/Watchdog/fold-notify payloads or startup dependencies',
+      owners: ['BOUNDARY', 'INTEGRATE'], after: ['RP'], entrypoint: 'release artifact, initial hosted-child profile and loader composition',
+      data: 'Fresh hosted child; no manual recommendation Install. Inspect payloads, placement, enablement and startup dependencies.',
+      intent: 'keep recommendations opt-in: nothing placed, inserted or depended on because of the tab (no recommended or standalone recommendation package, no feature-plugin dependency)',
     },
     {
       id: 'TC-33', techniques: ['EP'], ac: ['AC2', 'AC8'],

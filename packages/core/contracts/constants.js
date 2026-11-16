@@ -347,7 +347,7 @@ export const HOSTED_IMPORT = Object.freeze({
 /**
  * Connect: core as a browser OAuth client of the connector's approval page (design §6.3a;
  * R-FB-03, R-OA-19; requirements 1.31–1.33; decided items 11, 12, 67). The states are the S7c
- * token manager's (`v3-s7c.md` §4 K1), kept by core's own copy of it (`fishball-shared/oauth-client`,
+ * token manager's (`v3-s7c.md` §4 K1), kept by core's own copy of it (`src/link/oauth-client.js`,
  * design §6.3a "one copy per side").
  * - `setting`: core's required CIMD document URL (R12 = B: user-hosted, no default);
  * - `configuration`: the `needs-configuration` codes, one per failing rule (decided item 12:

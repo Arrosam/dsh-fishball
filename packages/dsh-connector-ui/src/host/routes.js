@@ -99,7 +99,7 @@ export function routes(ctx) {
 /**
  * Registers every route for the row's life. An absent registry, or a path another row already
  * claimed, leaves that route out and logs it (the client then reads "unavailable"); it never
- * fails the row, as the instance's own routes do (instance src/slim/host/fetch-routes.js).
+ * fails the row, as the instance's own routes do (dsh-instance src/host/fetch-routes.js).
  */
 export function registerRoutes(ctx, logger) {
   for (const route of routes(ctx)) {

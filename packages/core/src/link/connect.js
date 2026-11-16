@@ -1,7 +1,7 @@
 /**
  * Connect: core as a browser OAuth client of the target connector's approval page (task
  * F-LINK-SAVE; requirements 1.31 R10, 1.32 R12–R14; design §6.3a; K3a `connect.d.ts`
- * `FishballConnect`, `CONNECT`). Built on `fishball-shared/oauth-client`, the Fishball side's copy
+ * `FishballConnect`, `CONNECT`). Built on `./oauth-client.js`, the Fishball side's copy
  * of the S7c token manager (requirements 1.40). Core never sees a token value here: the user pastes
  * it on the connector's page, and core gets only the grant, which the token manager commits once,
  * after the first successful code exchange (R9), in the target origin's grant record.
@@ -36,7 +36,7 @@
  * new first connection (R9).
  *
  */
-import { OAUTH_CLIENT, OAuthAttemptError, clientMetadataUrlProblem, discoverServer } from 'fishball-shared/oauth-client'
+import { OAUTH_CLIENT, OAuthAttemptError, clientMetadataUrlProblem, discoverServer } from './oauth-client.js'
 
 /** The key of Connect's route-only begin (see `control[BEGIN_VIA]`); exported for core's Connect route alone. */
 export const BEGIN_VIA = Symbol('fishball-core connect: begin with a callback choice')

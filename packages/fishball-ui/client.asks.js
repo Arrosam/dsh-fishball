@@ -15,8 +15,8 @@
  * Reject with an optional reason; an answered or closed card shows its state, with no control, and
  * the server refuses a late answer anyway.
  *
- * The words are the V2 page's approval wording (en and zh), kept as they were; the zh review is
- * deferred by the user, so they are not reworded here.
+ * The words are the approval wording of the earlier Fishball page (en and zh), kept as they were;
+ * the zh review is deferred by the user, so they are not reworded here.
  */
 window.__ModuleLoader__.load({
   id: 'fishball-ui',
