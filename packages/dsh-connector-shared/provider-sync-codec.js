@@ -3,10 +3,8 @@
  *
  * Moved unchanged from dsh-instance's src/slim/child/provider-sync-target.js: the main host's
  * source end (dsh-instance src/provider-sync-service.js) builds, bounds and checks frames and
- * describes itself with it. Until I-HOST moves the child's target end (fishball-core
- * src/slim/child/provider-sync-target.js) into dsh-instance, it uses fishball-shared's identical
- * copy (requirements 1.40: no module is shared across the sides, so one copy per side); keep the
- * two in step until then. The endpoint and the child row stay with the target; the preview/confirm engine is ./provider-sync.js.
+ * describes itself with it, and so does the child's target end (dsh-instance
+ * src/child/provider-sync-target.js, moved there from fishball-core by I-HOST). The endpoint and the child row stay with the target; the preview/confirm engine is ./provider-sync.js.
  *
  * No value ever appears in a preview, a refusal or a result: group entries are exact-key checked
  * against metadata only, and the record validator lives in ./provider-sync.js.
@@ -258,8 +256,8 @@ export function createProviderSyncCodec() {
  * side's copy.
  */
 export async function providerSyncIdentity(profile, runtimeId) {
-  if (!profile || typeof profile.dir !== 'string' || profile.dir === '') throw new TypeError('fishball provider sync: a profile directory is required')
-  if (typeof runtimeId !== 'string') throw new TypeError('fishball provider sync: a runtime id is required')
+  if (!profile || typeof profile.dir !== 'string' || profile.dir === '') throw new TypeError('dsh provider sync: a profile directory is required')
+  if (typeof runtimeId !== 'string') throw new TypeError('dsh provider sync: a runtime id is required')
   const identity = {
     runtimeId,
     profileId: createHash(T.identity.hash).update(await realpath(profile.dir)).digest(T.identity.encoding),

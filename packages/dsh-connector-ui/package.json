@@ -5,7 +5,7 @@
   "license": "MIT",
   "type": "module",
   "main": "./index.js",
-  "//": "Lowercase name (S4-Q3 decided B). The host half is index.js with src/host/ (U-SHELL, U-DRAW: runtime service lookup, connector-missing and instance-missing, the notify and attention tool declaration, and its own owner-only Fetch routes for availability, status, admission and model sync). The browser half is src/client/client.js with its package-local chunks beside it, flat client.<part>.js files because DSH serves only client.<name>.js siblings of a package's client.js: client.shell.js, client.marks.js, client.attention.js, client.instance.js (U-DRAW removed client.records.js: no inline records, requirements 1.41 Q-G4); client.status.js there is a symlink to the instance-owned status line, which a release pack must dereference (DESIGN.md).",
+  "//": "Lowercase name (S4-Q3 decided B). The host half is index.js with src/host/ (U-SHELL, U-DRAW: runtime service lookup, connector-missing and instance-missing, the notify and attention tool declaration, and its own owner-only Fetch routes for availability, status and admission). The browser half is src/client/client.js with its package-local chunks beside it, flat client.<part>.js files because DSH serves only client.<name>.js siblings of a package's client.js: client.shell.js, client.marks.js, client.attention.js (U-DRAW removed client.records.js: no inline records, requirements 1.41 Q-G4; I-HOST moved the instance card, client.instance.js and the status-line symlink client.status.js, to the instance's own settings page).",
   "exports": {
     ".": "./index.js",
     "./client": "./src/client/client.js",
@@ -22,6 +22,13 @@
     "node": ">=22",
     "dsh": ">=0.2.1-rc.5"
   },
+  "//dependencies": "dsh-connector-shared is the DSH side's library (R-ARCH-08): the request-hostname rule the admit route shares with dsh-instance. It is bundled, so the tarball carries it, as for the connector and the instance.",
+  "dependencies": {
+    "dsh-connector-shared": "0.1.0-alpha.0"
+  },
+  "bundleDependencies": [
+    "dsh-connector-shared"
+  ],
   "//peerDependencies": "Both optional (design §9.1): the UI's parts follow the instance's and the connector's services and routes when present, and embed-UI imports no code of either. The range is the instance's own for the connector: from this release's 0.1.0-alpha.0 up to, not including, 2.",
   "peerDependencies": {
     "dsh-connector": ">=0.1.0-alpha.0 <2",

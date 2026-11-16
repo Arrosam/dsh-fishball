@@ -24,7 +24,8 @@ export const EMBED = Object.freeze({
   clientDir: path.join(REPO, 'packages', 'dsh-connector-ui', 'src', 'client'),
   clientEntry: 'client.js',
   /** The relayed flat chunks; client.records.js is withdrawn (Q-G4 = A). */
-  chunks: Object.freeze(['client.shell.js', 'client.marks.js', 'client.attention.js', 'client.instance.js']),
+  // I-HOST: client.instance.js (the instance card) became the instance's own client.models.js.
+  chunks: Object.freeze(['client.shell.js', 'client.marks.js', 'client.attention.js']),
   withdrawnChunk: 'client.records.js',
   /** The module id every file registers with `__ModuleLoader__.load`. */
   moduleId: 'dsh-connector-ui',
@@ -61,13 +62,14 @@ export const ROUTE = Object.freeze({
   services: SHELL_ROUTE.services,
   status: SHELL_ROUTE.status,
   admit: SHELL_ROUTE.admit,
-  modelsCheck: SHELL_ROUTE.modelsCheck,
-  modelsAdd: SHELL_ROUTE.modelsAdd,
   retry: SHELL_ROUTE.retry,
-  /** `routes` keys of the services answer, page-relative. */
-  routeKeys: Object.freeze(['services', 'status', 'admit', 'modelsCheck', 'modelsAdd']),
+  /**
+   * `routes` keys of the services answer, page-relative. I-HOST (QD1 = B, Q-G7) moved model sync to
+   * the instance's own settings page, so embed-UI's child/models/* routes are gone.
+   */
+  routeKeys: Object.freeze(['services', 'status', 'admit']),
   /** The routes that answer connector-missing without a usable connector: every one but services. */
-  guarded: Object.freeze([['GET', 'status'], ['POST', 'admit'], ['POST', 'modelsCheck'], ['POST', 'modelsAdd']]),
+  guarded: Object.freeze([['GET', 'status'], ['POST', 'admit']]),
   /** Keys the services answer has (`legacy` stays until C-WIRE: dev correction 2026-11-16). */
   servicesKeys: Object.freeze(['ok', 'connector', 'page', 'legacy', 'routes', 'ui']),
   /** V2's availability flags the services answer no longer carries (U-DRAW brief). */

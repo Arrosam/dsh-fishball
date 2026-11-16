@@ -3,9 +3,8 @@
  * reads credential values (a profile's apiKeyEnv is only described); only the
  * coordinator's confirmed readRecord call reads one. Configuration files are not accessed here.
  *
- * Until I-HOST moves core's child half into dsh-instance, the child end runs fishball-shared's
- * identical copy (requirements 1.40: no module is shared across the sides, so one copy per side);
- * keep the two in step until then.
+ * Both ends use this one copy: the main host's source and, since I-HOST, the child's target in
+ * dsh-instance's child-side row (requirements 1.41 Q-G7; design §1.0b row 5).
  */
 import { createHash, randomUUID } from 'node:crypto'
 import { isDeepStrictEqual } from 'node:util'
@@ -29,7 +28,12 @@ export const PROVIDER_SYNC_HOST = Object.freeze({
   profileFields: Object.freeze(['displayName', 'api', 'baseURL', 'models']),
   modelFields: Object.freeze(['id', 'name', 'contextWindow', 'maxTokens', 'input']),
   recordFields: Object.freeze(['kind', 'key']),
-  defaultRoute: 'fishball-sync-default', defaultModel: 'fishball-sync-default-model',
+  // Throwaway names that only ask pi-ai's Config for its canonical defaults (defaultsOf): never
+  // stored or shown. Neutral since I-HOST (design §1.0c); V3 is a fresh install (1.38 Q-M1), so
+  // nothing stored under the earlier Fishball-named route ids needs a migration.
+  defaultRoute: 'dsh-sync-default', defaultModel: 'dsh-sync-default-model',
+  // The DSH service whose model catalog `verify` reads (dsh-web-app's session-controller row).
+  catalogService: 'sessionController',
   route: /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/,
   identifier: /^[A-Za-z0-9][A-Za-z0-9._:+-]{0,127}$/,
   errorMessage: 'Provider sync host refused the operation.',
@@ -38,7 +42,7 @@ export const PROVIDER_SYNC_HOST = Object.freeze({
    * The cause's text is logged, redacted and cut, only for the codes whose operation never holds a
    * key value (inventory describes records, never reads them); any other code logs its class only.
    */
-  diagnostic: Object.freeze({ logger: 'fishball-provider-sync', maxChars: 240, unknown: 'Error' }),
+  diagnostic: Object.freeze({ logger: 'dsh-provider-sync', maxChars: 240, unknown: 'Error' }),
   code: Object.freeze({
     invalid: 'provider-sync-invalid', inventory: 'provider-sync-inventory-failed',
     owner: 'provider-sync-unsupported-owner', schema: 'provider-sync-unsupported-schema',
@@ -468,7 +472,9 @@ export function createProviderSyncHost(ctx, { identity } = {}) {
     verify: (id) => guarded(E.verify, async () => {
       const state = await snapshot()
       findProvider(state, id)
-      const catalog = await ctx.sessionController.modelCatalog()
+      // Looked up, not injected: the child-side row that runs the target gates on no session
+      // service (it only reads the catalog), and a missing controller reads as "not advertised".
+      const catalog = await ctx.get(H.catalogService)?.modelCatalog()
       if (!Array.isArray(catalog?.groups)) refuse(E.verify)
       return { catalogAdvertised: catalog.groups.some((group) => group.id === id && Array.isArray(group.models) && group.models.length > H.minimumRevision) }
     }),

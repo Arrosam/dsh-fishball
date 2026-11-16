@@ -2,9 +2,8 @@
  * Secret masking for diagnostics (dsh-connector-shared, R-ARCH-08). Moved unchanged from
  * dsh-instance's src/native-runtime/stderr-log.js: the instance's child stderr log, the main host's
  * provider-sync host adapter (./provider-sync-host.js) and the connector's contributed-tool
- * refusals (dsh-connector src/contrib/calls.js) mask the same shapes. Until I-HOST, the child's
- * provider-sync host adapter masks with fishball-shared's identical copy (requirements 1.40: one
- * copy per side); keep the two in step until then.
+ * refusals (dsh-connector src/contrib/calls.js) mask the same shapes; since I-HOST the child's
+ * provider-sync host adapter in dsh-instance's child-side row does too.
  */
 
 /**

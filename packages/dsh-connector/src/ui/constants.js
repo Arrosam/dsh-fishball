@@ -4,8 +4,8 @@
  * Data only. Contract values that have a runtime owner (K1 `mcp-schema`, K2 `tools`, the
  * connector's shared HTTP constants) are imported where they are used, never restated here.
  *
- * Not frozen by a K task yet: K3b (the UI-backend service freeze, plan §4) has not landed, so the
- * service name, the routes and the snapshot shape below are this task's. K3b adopts or amends them.
+ * The service name, the routes and the snapshot shape are frozen in K3's `host-services/ui.d.ts`
+ * (I-HOST adopted C-UI-BACKEND's choices unchanged, 2026-11-16); a change here is a K3 amendment.
  */
 
 import { CALL_CODE } from '../../tools/index.js'

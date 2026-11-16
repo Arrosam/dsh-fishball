@@ -10,6 +10,7 @@ or a code here is a K3 amendment.
 | `dshConnectorHandover` | dsh-connector | dsh-connector-ui | [handover.d.ts](<handover.d.ts>) |
 | `dshConnectorTokens` | dsh-connector | the instance's host row | [tokens.d.ts](<tokens.d.ts>) |
 | `dshInstanceChild` | the instance's host row | dsh-connector-ui | [child.d.ts](<child.d.ts>) |
+| `dshConnectorUi` | dsh-connector | dsh-connector-ui | [ui.d.ts](<ui.d.ts>) |
 
 - Each is a Cordis service of the same process, with `apiVersion: 1`. A consumer looks it up at
   runtime (`ctx.get`); a trailing `?` in `inject` is not optional injection in Cordis. A consumer treats any other
@@ -39,18 +40,20 @@ DECIDED (#n) are ones the user kept at the value review (relayed by Fishball; #n
 | `retire` refusals | `unknown-entry`, `not-hosted`, `successor-unpaired`, `operation-failed`; all move nothing (codes DECIDED #13) | R-HOST-09, HOST-DT-02 |
 | `createHosted` answer | `{entryKey, label, value}`, the value once and to the instance only; the connector keeps its digest only (K1d) | design §5.4, §5.9; R1 |
 | `createHosted` failures | rejects with `operation-failed`; creates nothing (DECIDED #14). `credentials-unwritable` is the instance's now: the child could not store the value (K1d, PROPOSED) | design §5.2, §5.4 |
-| Child states and codes | V2's `STATUS` and `STATUS_CODES`, `INVALID_MAIN_HOME`, plus `PROFILE_INCOMPATIBLE`, `fishball-off`, `TARGET_UNREACHABLE`, `TOKEN_REFUSED`, `TARGET_INCOMPATIBLE`, `token-revoked` | design §6.1, §8.1, R-FB-10, R-HOST-10 |
+| Child states and codes | V2's `STATUS` and `STATUS_CODES`, `INVALID_MAIN_HOME`, plus `PROFILE_INCOMPATIBLE`, `TARGET_UNREACHABLE`, `TOKEN_REFUSED`, `TARGET_INCOMPATIBLE`, `token-revoked`; `fishball-off` withdrawn (I-HOST, Q4 = A: R-FB-10 amended by 1.39) | design §6.1, §8.1, R-FB-10, R-HOST-10 |
 | `TargetCode` URL refusals | `target-insecure` (plain `http:` to a host that is not a loopback name), `target-invalid` (not an `http:` / `https:` URL); core refuses the URL before any request, with state `target-unset` (DECIDED D5) | R-FB-04, REM-EP-01 rows 6–8 |
 | Runtime values of `TargetState`, `TargetCode` | K1's `TARGET_STATE`, `TARGET_CODE` (`dsh-connector/mcp-schema`): this folder stays types only (DECIDED D7) | K3 amendment 2026-11-14 |
-| `targetStatus()` states | `connected`, `target-unreachable`, `token-refused`, `target-unset` (design §4.1); a reference with no value is `target-unset` (PROPOSED) | HOST-UC-05 A1 |
+| `targetStatus()` states | `connected`, `target-unreachable`, `token-refused`, `target-unset` (design §4.1), answered from the host's own state: the last hosted entry's `entryState` and the instance's `targetUrl` (I-HOST, Q3 = A; the instance cannot read core's link since 1.39) | requirements 1.39, the user's answer Q3 |
 | Status naming the blocking bundle | `status().plugin` beside `PROFILE_INCOMPATIBLE` (PROPOSED) | R-HOST-11 (4), HOST-ST-01 #3 |
-| `admit` hostname | exactly `127.0.0.1`, `localhost`, `[::1]`; the caller passes the URL-parsed (lower-case) hostname; anything else rejects `hostname-refused` (code DECIDED #15) | S4-Q1 A, RFC 3986 §3.2.2 |
+| `admit` hostname | exactly `127.0.0.1`, `localhost`, `[::1]`; the caller passes the URL-parsed (lower-case) hostname; anything else rejects `hostname-refused` (code DECIDED #15). The child listens on `127.0.0.1` only, so `[::1]` rejects `not-ready` (I-HOST, Q5 = A) | S4-Q1 A, RFC 3986 §3.2.2 |
 | `admit` while the child is not ready | rejects `not-ready` (code DECIDED #16) | design §4.1 |
 | `admit` views | `chat`, `settings` (V2's descriptor views) | instance `host.js` `PLUGIN.ui` |
-| `retry()` | restarts a `failed` child; on `token-revoked` it creates **no** token (K1d: R6 = B, R11) and shows the notice that lists Reconnect, core's token field and Connect; otherwise changes nothing. `child.d.ts`' `retry()` text still says a `deleted` entry is replaced: its owner (K3b / I-HOST) updates it | R-HOST-10 (1.29 R6, 1.31, 1.33 Q-B1), HOST-ST-01 row 9 |
+| `retry()` | restarts a `failed` child; on `token-revoked` with a `deleted` hosted entry it creates **no** token (K1d: R6 = B, R11) and records the notice `hosted-entry-deleted`, which lists Reconnect, core's token field and Connect; otherwise changes nothing (I-HOST updated `child.d.ts`) | R-HOST-10 (1.29 R6, 1.31, 1.33 Q-B1), HOST-ST-01 row 9 |
+| `reconnect()` | one `createHosted`, imported once; refusals `not-ready`, `connector-missing`, `target-remote`, `operation-failed`, `credentials-unwritable` (PROPOSED spellings) | R11, 1.33 Q-D1 B, Q-B1 B |
 | `entryState(entryKey)` | read-only `enabled`, `disabled` (switched off only; a value never changes, K1d), `deleted` (also an unknown key) | decided 1 = A; design §5.3 |
-| `providerSync` | V2's `status` / `check` / `add`, unchanged | R-HOST-07 |
+| `providerSync` | V2's `status` / `check` / `add`, unchanged; it copies providers and model lists only, never a default or session model (the user, 2026-11-16) | R-HOST-07, 1.41 Q-G7 |
+| `dshConnectorUi` | C-UI-BACKEND's choices frozen unchanged by I-HOST: service `dshConnectorUi`, routes `/api/dsh-connector/ui/{state,events,handover,takeback,notice/dismiss,opened}`, snapshot `{marks, targets, attention, notice, light}` | requirements 1.34, plan §4 K3b |
 
 ## Not frozen here
 
-- Behaviour: C-ROUTE (hand-over), C-SUCCEED (`retire`), I-HOST (`dshInstanceChild`).
+- Behaviour: C-ROUTE (hand-over), C-SUCCEED (`retire`), I-HOST (`dshInstanceChild`), C-UI-BACKEND (`dshConnectorUi`).

@@ -40,7 +40,9 @@ import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 import { loadInstance } from './support/body-soul-env.mjs'
 
-const { contractStatus, INSTANCE_STATES, INSTANCE_CODES } = await loadInstance('src/host/binding.js')
+// I-HOST removed the V2 connector binding (src/host/binding.js); its rows are withdrawn in
+// test/v2-suites.mjs. A missing module must not crash the file before the skip patterns apply.
+const { contractStatus, INSTANCE_STATES, INSTANCE_CODES } = await loadInstance('src/host/binding.js').catch(() => ({}))
 
 /** Contract §6, verbatim. */
 const STATUS = Object.freeze(['disabled', 'waiting', 'starting', 'ready', 'stopping', 'stopped', 'failed'])

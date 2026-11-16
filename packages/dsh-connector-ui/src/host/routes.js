@@ -1,11 +1,12 @@
 /**
  * The host half's own Fetch routes (tasks U-SHELL, U-DRAW; design §4.1, §4.2; R-UI-02, R-UI-03,
- * R-HOST-06, R-HOST-07; requirements 1.38 Q-U1; UIM-EP-02). They re-serve the instance locator
+ * R-HOST-06; requirements 1.38 Q-U1; UIM-EP-02). They re-serve the instance locator
  * `dshInstanceChild` to embed-UI's web client, which can never call a host-only service itself.
  * The services are looked up per request, so a route always answers for what is provided now:
  * without a local connector every route but `services` answers REFUSAL.connectorMissing (Q-U1:
  * embed-UI does not work without one), and without a usable locator REFUSAL.unavailable. There is
- * no Retry route: Retry is on the instance's own settings page (R-UI-03 amended by 1.33).
+ * no Retry route and no model-sync route: both are on the instance's own settings page (R-UI-03
+ * amended by 1.33; R-HOST-07 amended by 1.41 Q-G7, moved there by I-HOST).
  *
  * Security (R-UI-02, R-UI-06; K3 child.d.ts `admit`):
  * - DSH's `connection.fetch` is owner-only and applies its Host/Origin fence first;
@@ -16,6 +17,7 @@
  * - a locator failure without a K3 code answers REFUSAL.failed and never echoes its message.
  */
 import { ADMIT, FETCH, HTTP, LOG, LOOPBACK, REFUSAL, ROUTE, ROUTE_PREFIX, SERVICE } from './constants.js'
+import { requestHostname } from 'dsh-connector-shared/request-host'
 import { availability, hasConnector, usable } from './services.js'
 
 const json = (status, value) => new Response(JSON.stringify(value), { status, headers: HTTP.headers })
@@ -23,14 +25,11 @@ const refused = (status, code) => json(status, { ok: false, code })
 const isRecord = (value) => value !== null && typeof value === 'object' && !Array.isArray(value)
 
 /**
- * The main page's hostname from its request's Host header, parsed as a WHATWG URL does (so
- * lower-cased, an IPv6 literal kept in brackets), if it is one of the loopback names; else undefined.
+ * The main page's hostname from its request's Host header (dsh-connector-shared's one rule), if it
+ * is one of the loopback names; else undefined.
  */
 export function loopbackHostname(request) {
-  const host = request.headers.get(LOOPBACK.hostHeader)
-  if (typeof host !== 'string' || LOOPBACK.notInAuthority.test(host)) return undefined
-  let hostname
-  try { hostname = new URL(LOOPBACK.parseScheme + host).hostname } catch { return undefined }
+  const hostname = requestHostname(request)
   return LOOPBACK.hostnames.includes(hostname) ? hostname : undefined
 }
 
@@ -75,8 +74,6 @@ function withChild(ctx, answer) {
 /** The child's status as the window shows it beside its Retry link (decided #77): no token, no origin. */
 const statusOf = (child) => ({ ok: true, status: child.status(), target: child.targetStatus() })
 
-/** Model sync's answers are V2's `{ok, result|error}` already (K3 `ProviderSync`); anything else is a refusal. */
-const syncAnswer = (outcome) => json(HTTP.ok, isRecord(outcome) && typeof outcome.ok === 'boolean' ? outcome : { ok: false, error: { code: REFUSAL.failed } })
 
 /** The routes, as `{path, methods, fetch}`. */
 export function routes(ctx) {
@@ -94,17 +91,6 @@ export function routes(ctx) {
         let admitted
         try { admitted = await child.admit({ ...body, hostname }) } catch (error) { return admitRefusal(error) }
         return typeof admitted?.url === 'string' ? json(HTTP.ok, { ok: true, url: admitted.url }) : refused(HTTP.badGateway, REFUSAL.failed)
-      }),
-    },
-    { path: ROUTE.modelsCheck, methods: [FETCH.post], fetch: withChild(ctx, async (child) => syncAnswer(await child.providerSync.check())) },
-    {
-      path: ROUTE.modelsAdd,
-      methods: [FETCH.post],
-      fetch: withChild(ctx, async (child, request) => {
-        const body = await jsonBody(request)
-        const valid = isRecord(body) && typeof body.checkId === 'string' && Array.isArray(body.ids) && body.ids.every((id) => typeof id === 'string')
-        if (!valid) return refused(HTTP.badRequest, REFUSAL.invalid)
-        return syncAnswer(await child.providerSync.add({ checkId: body.checkId, ids: [...body.ids] }))
       }),
     },
   ]

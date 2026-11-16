@@ -169,7 +169,11 @@ function hostedCases(sdk) {
     const codes = vocabulary(host(), HOSTED.errorCodeType)
     assert.equal(codes.open, false)
     sameSet([...codes.literals], HOSTED.errorCodes, 'CreateHostedErrorCode')
-    assert.equal(codeLiterals(blankComments([...host().texts.values()].join('\n'))).has(HOSTED.movedCode), false, `${HOSTED.movedCode} is still a host-services type literal`)
+    // I-HOST: the code now belongs to the instance's own service (child.d.ts ReconnectRefusalCode,
+    // "the child could not store the value"), so the check is the connector's tokens.d.ts.
+    const tokensText = [...host().texts].filter(([file]) => path.basename(file) === HOSTED.tokensFile).map(([, text]) => text)
+    assert.equal(tokensText.length, 1, 'no ' + HOSTED.tokensFile)
+    assert.equal(codeLiterals(blankComments(tokensText.join('\n'))).has(HOSTED.movedCode), false, `${HOSTED.movedCode} is still a tokens.d.ts type literal`)
   })
   caseTest(sdk, ID.hosted, 4, 'HostedEntryState stays enabled | disabled | deleted, and disabled is documented as switched off only', () => {
     sameSet([...vocabulary(host(), HOSTED.stateType).literals], HOSTED.states, 'HostedEntryState')

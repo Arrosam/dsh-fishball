@@ -1,22 +1,27 @@
 {
   "name": "dsh-instance",
   "version": "0.1.0-alpha.0",
-  "description": "The built-in Fishball instance: runs Fishball in its own private DSH profile attached to the main DSH, and binds to dsh-connector through its contract.",
+  "description": "The built-in Fishball instance: runs Fishball in its own private DSH profile attached to the main DSH. It places and launches the Fishball plugins in the child, sets up the hosted token once, and has its own plugin settings page; it imports no Fishball-side code.",
   "license": "MIT",
   "type": "module",
   "main": "./host.js",
-  "//locale": "The Plugins page card title (design §0.7): DSH reads meta.title from the exported ./locale/*.json without loading this package, and shows the package name when that file is absent. The instance has no host-DSH UI (R-ARCH-05): V3 R-EMBED moved its Plugins card, with ./client, to dsh-connector-ui; the status line it shows stays here, in src/child-settings/client.status.js.",
-  "//exports": "./status-line is the instance's status line (R-EMBED; HOST-EP-03 row 2: its one owner is src/child-settings/). It is a browser chunk, not a Node module: dsh-connector-ui's copy beside its client.js comes from this export (a symlink in the repository; the release packing task dereferences it, DESIGN.md §17).",
+  "//locale": "The Plugins page card title (design §0.7): DSH reads meta.title from the exported ./locale/*.json without loading this package, and shows the package name when that file is absent.",
+  "//exports": "./client is the instance's own settings page (I-HOST; requirements 1.33 Q-D1 = B, R-ARCH-05), with its chunks client.status.js and client.models.js beside it. ./child-row is the child-side row the launch overlay inserts from the lifecycle snapshot (a path there, so this export is for readers and tests). The status-line export moved with the page: dsh-connector-ui draws no instance card any more.",
   "exports": {
     ".": "./host.js",
+    "./client": "./client.js",
+    "./child-row": "./child-row.js",
     "./native-runtime": "./src/native-runtime/index.js",
-    "./status-line": "./src/child-settings/client.status.js",
     "./locale/*.json": "./locale/*.json",
     "./package.json": "./package.json"
   },
-  "//files": "bundled/ holds the plugin set's sources in a packed instance (design §8.1); it is REL-PACK output, never committed (Q-22): in a checkout, placement reads the sibling workspace folders (src/native-runtime/placement.js). src/child-settings/ holds only that status line.",
+  "//files": "bundled/ holds the plugin set's sources in a packed instance (design §8.1); it is REL-PACK output, never committed (Q-22): in a checkout, placement reads the sibling workspace folders (src/native-runtime/placement.js).",
   "files": [
     "host.js",
+    "client.js",
+    "client.status.js",
+    "client.models.js",
+    "child-row.js",
     "native-child.js",
     "native-web.js",
     "uninstall.js",
@@ -38,7 +43,7 @@
   "bundleDependencies": [
     "dsh-connector-shared"
   ],
-  "//peerDependencies": "Host packages are resolved from the running DSH installation (verified in spike S8). '*' because engines.dsh is the real compatibility gate. dsh-connector is the connector this instance binds to: only its ./contract export is imported (design §0.2). The range is package versions (user decision 2026-11-07): from this release's 0.1.0-alpha.0 up to, not including, 2. The contract version is checked separately when the instance attaches (CONNECTOR_CONTRACT, major 1).",
+  "//peerDependencies": "Host packages are resolved from the running DSH installation (verified in spike S8). '*' because engines.dsh is the real compatibility gate. dsh-connector is a peer only for its ./contract export, which the V2 lifecycle and admin code still imports (src/native-runtime/child.js, src/child/admin.js, src/slim/host/{admin,embed}.js), placed in the child as that export alone; REMOVE-V2 deletes those imports and this peer (design §1.0b; G5). The V3 parts look the connector's services up at runtime (dshConnectorTokens). The range is package versions (user decision 2026-11-07): from this release's 0.1.0-alpha.0 up to, not including, 2.",
   "peerDependencies": {
     "dsh-connector": ">=0.1.0-alpha.0 <2",
     "@deepseek-ai/cosmokit": "*",
@@ -60,6 +65,9 @@
   "dsh": {
     "bundle": {
       "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web"
     }
   }
 }

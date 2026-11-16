@@ -11,7 +11,7 @@ import assert from 'node:assert/strict'
 import { mkdir, realpath } from 'node:fs/promises'
 import path from 'node:path'
 import { SERVICES } from './instance-ext.mjs'
-import { loadInstance } from './body-soul-env.mjs'
+import { loadCore } from './body-soul-env.mjs'
 
 export const ATTACH = Object.freeze({
   managerFolder: Object.freeze(['fishball', 'assistant']),
@@ -83,7 +83,8 @@ export function warnCount(h) {
 
 /** The documented session route over the live instance of `h`: call('GET'|'POST'). */
 export async function routeOf(h) {
-  const { registerSessionRoute } = await loadInstance('src/native-runtime/session-route.js')
+  // I-HOST: fishball-core publishes the route itself (src/session/route.js, row fishball-core-session).
+  const { registerSessionRoute } = await loadCore('src/session/route.js')
   const routes = []
   registerSessionRoute({
     on: () => () => {},
