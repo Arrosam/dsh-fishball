@@ -36,8 +36,9 @@ const V2B = Object.freeze({
   // V3 R-SHARED / R-ARCH-08 (approved design) adds the library workspace packages/shared;
   // V3 SPLIT-SHARED / requirements 1.40 adds the DSH side's library workspace packages/dsh-connector-shared;
   // V3 R-CORE (1) / design §9.1 adds fishball-core's workspace packages/core;
-  // V3 R-EMBED / design §9.1 (DESIGN.md §17) adds dsh-connector-ui's workspace packages/dsh-connector-ui.
-  workspaces: Object.freeze(['packages/dsh-connector', 'packages/core', 'packages/dsh-connector-ui', 'packages/dsh-instance', 'packages/dsh-connector-shared', 'packages/shared']),
+  // V3 R-EMBED / design §9.1 (DESIGN.md §17) adds dsh-connector-ui's workspace packages/dsh-connector-ui;
+  // V3 C-MCP-ADAPTER / Q-G9 (the user named dsh-connector-adapter a V3 package) adds packages/dsh-connector-adapter.
+  workspaces: Object.freeze(['packages/dsh-connector', 'packages/core', 'packages/dsh-connector-ui', 'packages/dsh-instance', 'packages/dsh-connector-adapter', 'packages/dsh-connector-shared', 'packages/shared']),
   /** Repository directories of the V3 packages (no V2 module may load from them). */
   v3Dirs: Object.freeze(['board', 'fold-notify', 'watchdog'].map((d) => path.join(REPO, 'packages', d))),
   /** A packed path segment naming a V3 area or the bundled asset directory. */
