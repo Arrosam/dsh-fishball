@@ -23,8 +23,8 @@ import { NPM, SDK, SIDES, V3 } from '../package-boundaries/constants.mjs'
 import { observe, readManifest } from '../package-boundaries/packages.mjs'
 import { WITHDRAWN_BY, withdrawnRow } from '../../dsh-instance/host/withdrawn.mjs'
 import {
-  BASE, CODE_SAMPLES, CORE_CHILD_HALVES, DSH_EXPORTS, DSH_MODULES, EXPECTED_LIBRARY, FILES_MODULE, FINGERPRINT_SAMPLES, HEADER, HOST_PEERS, INSIDE_CASES,
-  INTERIM_COPIES, LATER, LONG_RUN, MANIFEST_EXPORT, PLACED, PROFILE_SAMPLES, REDACT, REDACT_SAMPLES, SDK_SCOPE, moduleFile, sdkModules, subpath,
+  ADMIN_PROTOCOL, BASE, CODE_SAMPLES, CORE_CHILD_HALVES, DSH_EXPORTS, DSH_MODULES, EXPECTED_LIBRARY, FILES_MODULE, FINGERPRINT_SAMPLES, FORMER_INTERIM_COPIES, HEADER, HOST_PEERS, INSIDE_CASES,
+  LATER, LONG_RUN, MANIFEST_EXPORT, PLACED, PROFILE_SAMPLES, REDACT, REDACT_SAMPLES, SDK_SCOPE, moduleFile, sdkModules, subpath,
 } from './constants.mjs'
 
 const show = (v) => JSON.stringify(v)
@@ -94,7 +94,7 @@ function surface(module) {
 }
 const SYNC_HOST_MODULE = 'provider-sync-host'
 /** A row I-HOST withdrew: still listed, skipped with the reason. */
-const withdrawn = (sdk, id, row, title) => withdrawnRow(sdk, id, row, title, WITHDRAWN_BY.halves)
+const withdrawn = (sdk, id, row, title, reason = WITHDRAWN_BY.halves) => withdrawnRow(sdk, id, row, title, reason)
 const outcome = (fn) => { try { return { value: fn() } } catch (error) { return { error: error?.code ?? error?.message } } }
 
 // -------------------------------------------------------------------------------- placement world
@@ -187,6 +187,11 @@ export function registerSplitCases(sdk) {
     }
     assert.ok(Object.hasOwn(exports, MANIFEST_EXPORT), MANIFEST_EXPORT + ' is not exported')
   })
+  caseTest(sdk, 'SPLIT-EP-01', '1 (D14)', `dsh-connector-shared no longer holds ${ADMIN_PROTOCOL} (no ${subpath(ADMIN_PROTOCOL)} export, no ${moduleFile(ADMIN_PROTOCOL)})`, () => {
+    needLibrary(V3.dshShared)
+    assert.equal(Object.hasOwn(readManifest(V3.dshShared.dir).exports ?? {}, subpath(ADMIN_PROTOCOL)), false, subpath(ADMIN_PROTOCOL) + ' is still exported')
+    assert.equal(fs.existsSync(libraryFile(V3.dshShared, ADMIN_PROTOCOL)), false, moduleFile(ADMIN_PROTOCOL) + ' still ships')
+  })
   caseTest(sdk, 'SPLIT-EP-01', 2, 'dsh-connector-shared peers on exactly the host packages of the library it came from', () => {
     needLibrary(V3.dshShared)
     const before = JSON.parse(execFileSync('git', ['show', `${BASE.ref}:${BASE.folder}/package.json`], { cwd: REPO, encoding: 'utf8' })).peerDependencies
@@ -219,18 +224,18 @@ export function registerSplitCases(sdk) {
   const halvesPresent = () => CORE_CHILD_HALVES.every((f) => fs.existsSync(path.join(V3.core.dir, f)))
   // I-HOST moved core's child halves into the instance (src/child/), so the table's "halves
   // present" rule is withdrawn and its "halves moved" rule now runs.
-  for (const module of INTERIM_COPIES) {
+  for (const module of FORMER_INTERIM_COPIES) {
     withdrawn(sdk, 'SPLIT-DT-02', 'halves present', `core's child halves exist → fishball-shared ships its own ${moduleFile(module)}`)
   }
   withdrawn(sdk, 'SPLIT-DT-02', 'halves present', "core's child halves import the admin protocol and provider-sync from fishball-shared only")
   caseTest(sdk, 'SPLIT-DT-02', 'halves moved', "core's child halves gone (I-HOST) → fishball-shared drops the interim copies", () => {
     assert.equal(halvesPresent(), false, 'precondition: core no longer ships ' + CORE_CHILD_HALVES.join(', '))
-    for (const module of INTERIM_COPIES) assert.equal(fs.existsSync(libraryFile(V3.shared, module)), false, 'fishball-shared still ships ' + moduleFile(module))
+    for (const module of FORMER_INTERIM_COPIES) assert.equal(fs.existsSync(libraryFile(V3.shared, module)), false, 'fishball-shared still ships ' + moduleFile(module))
   })
 
   // ---------------------------------------------------------------- SPLIT-EP-02: drift guard between the two copies
   // The interim copies are gone (I-HOST), so only `files` still has two copies to compare.
-  for (const module of INTERIM_COPIES) withdrawn(sdk, 'SPLIT-EP-02', module, `${moduleFile(module)}: the two libraries' copies hold the same code below their header comment`)
+  for (const module of FORMER_INTERIM_COPIES) withdrawn(sdk, 'SPLIT-EP-02', module, `${moduleFile(module)}: the two libraries' copies hold the same code below their header comment`)
   for (const module of [FILES_MODULE]) {
     caseTest(sdk, 'SPLIT-EP-02', module, `${moduleFile(module)}: the two libraries' copies hold the same code below their header comment`, () => {
       needLibrary(V3.dshShared)
@@ -288,20 +293,10 @@ export function registerSplitCases(sdk) {
     }
     assert.deepEqual(run(now), run(before))
   })
-  caseTest(sdk, 'SPLIT-EP-04', 'admin-protocol', 'refusal, refusalOf and the protocol validators answer as before', async (t) => {
-    const now = await load(sdk, libraryFile(V3.dshShared, 'admin-protocol'))
-    const before = await baseModule(sdk, 'admin-protocol')
-    const run = (m) => {
-      const protocol = m.createAdminProtocol({ DIGEST: { hexLength: 64, hex: '0123456789abcdef' }, STATUS: {}, STATUS_CODES: [] })
-      const codes = Object.values(m.ADMIN_ERROR).filter((v) => typeof v === 'string')
-      return [
-        codes.map((c) => m.refusal(c, { expected: 1, actual: 2 })),
-        m.refusalOf(new m.AdminFailure(codes[0])), m.refusalOf(new Error('x')),
-        Object.values(m.ADMIN_OPERATION).map((op) => [outcome(() => protocol.validateRequest(op, {})), outcome(() => protocol.validateRequest(op, null))]),
-      ]
-    }
-    assert.deepEqual(run(now), run(before))
-  })
+  // remove-v2-followups D14 deleted admin-protocol from dsh-connector-shared (its one user, the
+  // instance's admin relay, went with I-READY), so there is no new module to compare with BASE.
+  withdrawn(sdk, 'SPLIT-EP-04', ADMIN_PROTOCOL, `dsh-connector-shared/${ADMIN_PROTOCOL} has the same exports and constant values as fishball-shared/${ADMIN_PROTOCOL} at ${BASE.ref}`, WITHDRAWN_BY.adminProtocol)
+  withdrawn(sdk, 'SPLIT-EP-04', ADMIN_PROTOCOL, 'refusal, refusalOf and the protocol validators answer as before', WITHDRAWN_BY.adminProtocol)
 
   // ---------------------------------------------------------------- SPLIT-UC-04: hosted-child placement (requirement 7)
   caseTest(sdk, 'SPLIT-UC-04', 'main', 'the child profile places both libraries as dependencies, never bundles, and excludes dsh-connector', async (t) => {
