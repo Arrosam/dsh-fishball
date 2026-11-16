@@ -80,12 +80,12 @@ export function createSettings({ ctx, config, namespace, limits, volatileEvent, 
   }
 
   /**
-   * Applies the list now in the config with `reason` (skipped when it is the one already applied
-   * and the reason is not the start's), then tells the listeners. Runs inside the chain.
+   * Applies `list` (by default the one now in the config) with `reason` (skipped when it is the
+   * one already applied and the reason is not the start's), then tells the listeners. Runs inside
+   * the chain.
    * @returns the registry's answer, or undefined when nothing was applied
    */
-  async function syncNow(reason) {
-    const list = tokenList()
+  async function syncNow(reason, list = tokenList()) {
     let answer
     if (reason === SYNC_REASON.start || !sameJson(list, applied)) {
       // Recorded only once applied: a rejected apply leaves the list due for the next sync.
@@ -147,9 +147,12 @@ export function createSettings({ ctx, config, namespace, limits, volatileEvent, 
    * - `planOf(list)` runs inside the step, so an index into the list is taken after every earlier
    *   write (K1d-3: writes run in call order). It answers `{ops, list}` (the list once saved) or
    *   undefined for a no-op.
-   * - The result is applied as the connector's own only when the config holds exactly the planned
-   *   list: a user save that landed meanwhile (it waits on the same profile lock) is applied as the
-   *   user's, so a problem it brings is refused, not taken in as the connector's.
+   * - The planned list is applied as the connector's own, whatever the config holds by then: that
+   *   save happened. A user save that landed after it (it waits on the same profile lock) fired its
+   *   own loader event, queued behind this step, so it is applied next, as the user's: a problem it
+   *   brings is refused and the list written back is the one with the connector's write in it (a
+   *   createHosted entry is never lost to a racing refused save). An accepted user save that drops
+   *   the item is the user's last word (one save after the other, as DSH's lock orders them).
    * - The registry never refuses an own sync (SYNC_REASON.own), so K1d's "the sync refuses it"
    *   case cannot arise from the plan itself: an own write adds no item without a record (C-TOKENS
    *   writes the record first) and never a second item of one key (keys are random).
@@ -159,7 +162,7 @@ export function createSettings({ ctx, config, namespace, limits, volatileEvent, 
       const plan = planOf(tokenList())
       if (plan === undefined) return
       await ownSave(plan.ops, plan.list)
-      await syncNow(sameJson(tokenList(), plan.list) ? SYNC_REASON.own : SYNC_REASON.settings)
+      await syncNow(SYNC_REASON.own, plan.list)
     })
   }
 
@@ -188,9 +191,12 @@ export function createSettings({ ctx, config, namespace, limits, volatileEvent, 
   const restoreTokens = (previous) => ownSave([{ op: PATH_OP.set, path: SETTING.tokens, value: previous }], previous)
 
   /** A volatile update of the row: a user's save in DSH's form, or the echo of an own save. */
+  // The list is taken when the event fires, with its mark: a later save may change the config
+  // before this step runs, and each event must be judged (and applied) as the save it reports.
   function onVolatileUpdate() {
+    const list = structuredClone(tokenList())
     const reason = takeOwnMark() ? SYNC_REASON.own : SYNC_REASON.settings
-    chain(() => syncNow(reason)).catch((error) => logger.warn(LOG.format, LOG.applyFailed, diagnosticOf(error)))
+    chain(() => syncNow(reason, list)).catch((error) => logger.warn(LOG.format, LOG.applyFailed, diagnosticOf(error)))
   }
 
   return Object.freeze({
