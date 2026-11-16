@@ -1,4 +1,6 @@
 /**
+ * Historical fixture for withdrawn P2-L / P3-M rows only.
+ * I-READY: admin relay deleted (user decision 2026-11-16).
  * Mount the child settings view (ui/settings.js) in Node: the fake document from
  * body-soul-dom.mjs, the real dictionaries from ui/i18n.js, and a stubbed admin endpoint that
  * answers the routes the view calls.

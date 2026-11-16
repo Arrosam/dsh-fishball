@@ -46,7 +46,7 @@
  */
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
-import { loadCore, loadInstance } from './support/body-soul-env.mjs'
+import { loadCore } from './support/body-soul-env.mjs'
 import { chatHarness } from './support/body-soul-chat.mjs'
 import {
   ADMIN_ROUTE, bodyOf, buttonOf, catalogModel, controlOf, headingTexts, hintsOfField,
@@ -54,7 +54,6 @@ import {
 } from './support/body-soul-settings.mjs'
 
 const { createI18n } = await loadCore('src/slim/ui/i18n.js')
-const { createAdminService, validateResult, ADMIN_OPERATION, ADMIN_ERROR, AdminFailure } = await loadInstance('src/child/admin.js')
 const loadChat = () => loadCore('src/slim/child/chat.js')
 
 const en = createI18n('en')
@@ -430,84 +429,7 @@ describe('P3 the running-model button drafts; Save is still the user\'s', () => 
   })
 })
 
-/* ------------------------------------------------------------------ model/get active */
-
-const fakePlugins = Object.freeze({
-  async listBundles() { return [] },
-  async installBundle() { throw new Error('not used') },
-  async removeBundle() { throw new Error('not used') },
-  async setBundleEnabled() { throw new Error('not used') },
-})
-
-function adminService({ currentModel, selection = { provider: 'alpha', model: 'm1' } } = {}) {
-  const settings = {
-    writable: true,
-    describe: () => [{ ns: 'agent-default-model', revision: 2, value: selection, secrets: [] }],
-    mutate: async () => {},
-  }
-  const llm = {
-    listProviders: () => [ALPHA],
-    listModels: async (provider) => (provider === ALPHA.id ? [{ id: 'm1', name: 'M1' }] : []),
-    resolveModelInfo: async () => ({}),
-    resolveCallConfig: async (value) => value,
-  }
-  return createAdminService({ settings, llm, plugins: fakePlugins, ...(currentModel === undefined ? {} : { currentModel }) })
-}
-
-const MODEL_GET_RESULT = Object.freeze({
-  revision: 2,
-  selection: { provider: 'alpha', model: 'm1' },
-  providers: [{ id: 'alpha', name: 'Alpha' }],
-  models: [{ provider: 'alpha', id: 'm1', name: 'M1', efforts: [] }],
-})
-
-const isPayloadFailure = (error) => error instanceof AdminFailure && error.code === ADMIN_ERROR.payload
-
-describe('P3 model/get exposes the live model as active', () => {
-  it('P3-ACT-EP-01 without a currentModel port active is null', async () => {
-    const answer = await adminService().handle(ADMIN_OPERATION.modelGet, {})
-    assert.equal(answer.ok, true)
-    assert.equal(answer.result.active, null)
-    assert.doesNotThrow(() => validateResult(ADMIN_OPERATION.modelGet, answer.result))
-  })
-
-  it('P3-ACT-EP-02 a currentModel selection becomes active, effort included', async () => {
-    const currentModel = () => ({ provider: 'alpha', model: 'm1', reasoningEffort: 'high' })
-    const answer = await adminService({ currentModel }).handle(ADMIN_OPERATION.modelGet, {})
-    assert.deepEqual(answer.result.active, { provider: 'alpha', model: 'm1', reasoningEffort: 'high' })
-    assert.doesNotThrow(() => validateResult(ADMIN_OPERATION.modelGet, answer.result))
-  })
-
-  for (const [name, currentModel] of [
-    ['null', () => null],
-    ['undefined', () => undefined],
-    ['an empty provider', () => ({ provider: '', model: 'm1' })],
-    ['a throw', () => { throw new Error('no live session') }],
-  ]) {
-    it('P3-ACT-EP-03 ' + name + ' from currentModel makes active null', async () => {
-      const answer = await adminService({ currentModel }).handle(ADMIN_OPERATION.modelGet, {})
-      assert.equal(answer.result.active, null)
-    })
-  }
-
-  it('P3-ACT-P-01 the result shape accepts active null and a valid selection', () => {
-    assert.doesNotThrow(() => validateResult(ADMIN_OPERATION.modelGet, { ...MODEL_GET_RESULT, active: null }))
-    assert.doesNotThrow(() => validateResult(ADMIN_OPERATION.modelGet, {
-      ...MODEL_GET_RESULT,
-      active: { provider: 'alpha', model: 'm1', reasoningEffort: 'high' },
-    }))
-  })
-
-  it('P3-ACT-P-02 the old result shape without active still validates', () => {
-    assert.doesNotThrow(() => validateResult(ADMIN_OPERATION.modelGet, MODEL_GET_RESULT))
-  })
-
-  it('P3-ACT-P-03 a malformed active is refused as invalid-payload', () => {
-    for (const active of [{ provider: 'alpha' }, { provider: 'alpha', model: 'm1', extra: 1 }, { provider: '', model: '' }]) {
-      assert.throws(() => validateResult(ADMIN_OPERATION.modelGet, { ...MODEL_GET_RESULT, active }), isPayloadFailure)
-    }
-  })
-})
+// P3-ACT-EP-01…03 / P3-ACT-P-01…03 withdrawn: I-READY deletes the admin relay.
 
 describe('P3 fishballChat.currentModel()', () => {
   it('P3-ACT-EP-04 before activation it is null', async (t) => {

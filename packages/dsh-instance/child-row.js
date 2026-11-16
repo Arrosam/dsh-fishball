@@ -9,13 +9,16 @@
  * - the hosted token's probe and one import (`mcp-credential`, src/native-runtime/credential.js),
  *   written to the child's credential reference only;
  * - the frame's admission route (design §4.1; spike V3-S4 F1): redeems a single-use ticket and
- *   mints the child's own login cookie through DSH's public `connection.authorizeIndex`;
- * - the child halves of the admin relay and of model sync (src/child/), moved from core.
+ *   mints the child's own login cookie through DSH's public `connection.authorizeIndex`; once it is
+ *   registered the row publishes the child's web server to the lifecycle row, which is the last of
+ *   the child's readiness signals (I-READY, src/native-runtime/child.js childReadiness);
+ * - the child half of model sync (src/child/provider-sync-target.js), moved from core.
+ * The admin relay's child half is gone (I-READY; the user's answer 2026-11-16: delete it): its only
+ * caller was core's V2 settings page.
  */
 import Schema from '@deepseek-ai/schemastery'
 import { HOSTED, LOOPBACK, TICKET } from './src/native-runtime/constants.js'
 import { createCredentialReceiver } from './src/native-runtime/credential.js'
-import { mountAdmin } from './src/child/admin.js'
 import { mountProviderSyncTarget } from './src/child/provider-sync-target.js'
 
 export const name = HOSTED.childRow
@@ -27,8 +30,9 @@ export const Config = Schema.object({
   [HOSTED.targetField]: Schema.string().default(''),
 })
 // The provider-sync target's inject list is the one core's row had (no `sessionController`), so
-// moving it changed nothing it does; the row gates on no session service.
-export const inject = ['nativeRuntime', 'settings', 'pluginManager', 'llm', 'credentials', 'configEditor', 'authorization', 'profileContext', 'webServer', 'connection']
+// moving it changed nothing it does; the row gates on no session service. `pluginManager` left
+// with the admin relay's child half (I-READY).
+export const inject = ['nativeRuntime', 'settings', 'llm', 'credentials', 'configEditor', 'authorization', 'profileContext', 'webServer', 'connection']
 
 const ADMIT = Object.freeze({
   method: 'GET',
@@ -87,11 +91,22 @@ export function registerAdmission(ctx) {
   })
 }
 
-/** The row's four parts. Each is its own effect, and a part that fails is logged with its code only. */
+/**
+ * The admission route, then the readiness signal: the web is published only once the route a frame
+ * needs is registered, and withdrawn first when the row stops. `webServer.getOrigin()` throws until
+ * the server listens, so the lifecycle row reads it per health check (child.js childReadiness).
+ * @returns its disposer
+ */
+export function admitAndPublish(ctx) {
+  const unregister = registerAdmission(ctx)
+  const unpublish = ctx.nativeRuntime.publishWeb(() => ctx.webServer.getOrigin())
+  return () => { unpublish(); unregister() }
+}
+
+/** The row's three parts. Each is its own effect, and a part that fails is logged with its code only. */
 const PART = Object.freeze({
   credential: HOSTED.childRow + ': credential receiver',
   admission: ADMIT.label,
-  admin: HOSTED.childRow + ': admin',
   sync: HOSTED.childRow + ': provider sync',
   failed: '%s failed (%s)',
 })
@@ -116,7 +131,6 @@ export function apply(ctx) {
     const off = ctx.nativeRuntime.onCredentialTransport((transport) => receiver.attach(transport))
     return () => { off(); receiver.close() }
   })
-  part(PART.admission, () => registerAdmission(ctx))
-  part(PART.admin, () => mountAdmin(ctx))
+  part(PART.admission, () => admitAndPublish(ctx))
   part(PART.sync, () => mountProviderSyncTarget(ctx))
 }

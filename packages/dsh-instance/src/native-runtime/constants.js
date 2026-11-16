@@ -3,7 +3,6 @@ export const RUNTIME = Object.freeze({
   protocol: 'fishball-lifecycle/1',
   packageName: '@deepseek-ai/dsh',
   profileName: 'fishball',
-  // Native Web and the legacy slim transport coexist until EMB migrates its callers.
   profile: Object.freeze({
     bundles: Object.freeze(['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app']),
     manifest: 'package.json',
@@ -13,10 +12,10 @@ export const RUNTIME = Object.freeze({
   }),
   codeSnapshotPrefix: '.fishball-native-',
   // The snapshot holds only the instance's own lifecycle code (Q-5): the lifecycle row, the
-  // native-web adapter and the parent-watch preload the launch imports by path (index.js), each with
+  // child-side row and the parent-watch preload the launch imports by path (index.js), each with
   // the relative-import closure of its module. The plugin set is placed bundles (PLACEMENT), never
   // snapshot code.
-  snapshot: Object.freeze({ lifecycle: 'native-child.js', childRow: 'child-row.js', entries: Object.freeze(['native-web.js', 'src/native-runtime/parent-watch.js']) }),
+  snapshot: Object.freeze({ lifecycle: 'native-child.js', childRow: 'child-row.js', entries: Object.freeze(['src/native-runtime/parent-watch.js']) }),
   host: '127.0.0.1',
   socketName: 'control.sock',
   socketPathBytes: 100,
@@ -40,16 +39,32 @@ export const RUNTIME = Object.freeze({
   // once under the rotated suffix, so at most two caps of disk are used.
   stderrLog: 'child-stderr.log',
   rotatedLogSuffix: '.1',
-  // Readiness is the base core plus the app server (§2.3). The old gate waited for webServer,
-  // webApp, connection and sessionController, which only the Web UI bundle supplies.
+  /**
+   * The lifecycle wire's operations (child.js answers them, index.js asks): `health`; `attach`, the
+   * host's one connection, which publishes the provider-sync and mcp-credential transports; `stop`.
+   */
+  operation: Object.freeze({ health: 'health', attach: 'attach', stop: 'stop' }),
+  /**
+   * I-READY: readiness is generic DSH signals only (F-WIRE, 2026-11-16: core offers the instance no
+   * readiness signal, R-ARCH-10, R-FB-10 as amended by 1.39 and K3 child.d.ts: "the instance
+   * reports only generic child states"). A child is `ready` when these base services are mounted,
+   * its `appReady` has fired, and its web server listens with the child-side row's admission route
+   * registered (child-row.js publishWeb). No core service is read and no HTTP probe is made.
+   */
   requiredServices: Object.freeze(['agents', 'sessions', 'tools', 'profileContext', 'appExit', 'appReady']),
-  // The app row publishes {`origin`, `bearer`} here while it boots, before appReady, and removes
-  // it when the listener closes (T03). Absent while starting; readiness probes it once (§2.3).
-  appService: 'fishballApp',
-  capabilities: Object.freeze({ authenticatedApp: 'authenticated-app', lifecycle: 'lifecycle-v1', control: 'control-transport-v1' }),
+  /**
+   * What a ready child reports beside the services: the admission route is up (the frame can be
+   * admitted, design §4.1) and the lifecycle wire speaks this protocol.
+   */
+  capabilities: Object.freeze({ admission: 'ticket-admission-v1', lifecycle: 'lifecycle-v1' }),
+  /** The health answer's states, the child's own words (index.js reads `ready` only). */
+  healthState: Object.freeze({ ready: 'ready', starting: 'starting' }),
   // A ready child reporting any of these can never recover by polling again.
-  fatalStartupCodes: Object.freeze(['CHILD_IDENTITY_MISMATCH', 'MISSING_CAPABILITY', 'UNSAFE_APP_ORIGIN', 'INVALID_APP_ACCESS', 'INVALID_APP_BEARER']),
+  fatalStartupCodes: Object.freeze(['CHILD_IDENTITY_MISMATCH', 'MISSING_CAPABILITY', 'UNSAFE_CHILD_ORIGIN']),
 })
+
+/** What a ready child's health answer lists (child.js); the host requires every one (index.js readyHealth). */
+export const READY_CAPABILITIES = Object.freeze([...RUNTIME.requiredServices, RUNTIME.capabilities.admission, RUNTIME.capabilities.lifecycle])
 
 /**
  * How the child is launched (D28, design §0.5 "Child launch": "主DSH怎么启动，fishball就怎么
@@ -78,34 +93,6 @@ export const HOST_LAUNCH = Object.freeze({
   // (`--inspect-port 0` is two items); that value is dropped with its flag.
   debugFlagsWithValue: Object.freeze(['--inspect-port', '--debug-port', '--inspect-publish-uid']),
 })
-
-/**
- * The app row's loopback surface (§2.3, §3.2): the origin it listens on and the bearer it minted.
- * The bearer stays opaque to the lifecycle — the app decides authentication — but it becomes an
- * Authorization header value, so a value that is not header-safe is refused before the probe.
- */
-export const APP_ACCESS = Object.freeze({
-  protocol: 'http:',
-  documentPath: '/',
-  // A 256-bit token is 32 raw bytes; its hex, base64 and base64url text forms are 32 to 64 bytes.
-  // The range accepts every standard encoding without fixing one for the app row.
-  minBearerBytes: 32,
-  maxBearerBytes: 64,
-  headerUnsafe: /[^\x21-\x7e]/,
-})
-
-export function appAccess(value) {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) fail('INVALID_APP_ACCESS')
-  const { origin, bearer } = value
-  let url
-  try { url = new URL(origin) } catch { fail('INVALID_APP_ACCESS') }
-  // The browser never addresses the child port (§3.1); the main-side broker is the only client.
-  if (url.protocol !== APP_ACCESS.protocol || url.hostname !== RUNTIME.host || !url.port || url.username || url.password || url.pathname !== APP_ACCESS.documentPath || url.search || url.hash) fail('UNSAFE_APP_ORIGIN')
-  if (typeof bearer !== 'string' || APP_ACCESS.headerUnsafe.test(bearer)) fail('INVALID_APP_BEARER')
-  const bytes = Buffer.byteLength(bearer, 'utf8')
-  if (bytes < APP_ACCESS.minBearerBytes || bytes > APP_ACCESS.maxBearerBytes) fail('INVALID_APP_BEARER')
-  return Object.freeze({ origin: url.origin, bearer })
-}
 
 // rc.3 grants the entire host tree 5000 ms; native cleanup must finish sooner.
 export const LIFETIME = Object.freeze({
@@ -144,20 +131,6 @@ export const UNINSTALL = Object.freeze({
   }),
 })
 
-export const NATIVE_WEB = Object.freeze({
-  service: 'fishballNativeWeb',
-  services: Object.freeze(['webServer', 'webApp', 'connection', 'sessionController', 'clientModules']),
-  capability: 'authenticated-native-web',
-  operation: 'native-access',
-  protocol: 'http:',
-  root: '/',
-  unauthorized: 401,
-  redirect: 303,
-  redirectLocation: './',
-  success: 200,
-  adapterModule: 'native-web.js',
-})
-
 /**
  * Placement of the plugin set into the child profile (R-BND-01/02/03, R-HOST-01, design §8.1;
  * bundled-placement note `f71717e` P3 + 3a). Each placed package is copied, at every child start
@@ -188,20 +161,18 @@ export const PLACEMENT = Object.freeze({
     Object.freeze({ name: 'fishball-core', directory: 'core' }),
   ]),
   /**
-   * Libraries placed beside the bundles, never listed as bundles (R-ARCH-08, one per side,
+   * The library placed beside the bundles, never listed as a bundle (R-ARCH-08, one per side,
    * requirements 1.40): dsh-connector-shared, the instance's bundled dependency that its placed
-   * lifecycle code and child-side row import, and the connector's `./contract` export, which core's
-   * V2 child path and the lifecycle rows import by name until REMOVE-V2; both are resolved through the instance's own
-   * dependency graph. A placed bundle's own libraries (its `bundleDependencies`, as core's
-   * fishball-shared) are resolved from the bundle's folder instead (placement.js bundledLibraries).
-   * The contract is placed as that export alone, with a manifest naming only it, so the child sees
-   * what a third-party client sees and nothing else of the connector.
+   * lifecycle code and child-side row import, resolved through the instance's own dependency graph.
+   * A placed bundle's own libraries (its `bundleDependencies`, as core's fishball-shared) are
+   * resolved from the bundle's folder instead (placement.js bundledLibraries). The connector's V2
+   * `./contract` export is no longer placed (I-READY: V2 was never deployed, and no instance code
+   * imports it, R-ARCH-10).
    */
   shared: 'dsh-connector-shared',
   bundledField: 'bundleDependencies',
   // Node's code for a package that a resolver cannot find (createRequire().resolve).
   unresolved: 'MODULE_NOT_FOUND',
-  contract: Object.freeze({ name: 'dsh-connector', export: './contract' }),
   packed: 'bundled',
   parent: '..',
   vendor: 'vendor',
@@ -305,6 +276,21 @@ export const HOSTED = Object.freeze({
 })
 
 /**
+ * The one automatic model-list sync of a newly created child (the user, 2026-11-16: "instance初次安装
+ * 时同步一次"; src/host/initial-sync.js). `file` is its done-marker in the runtime folder
+ * (`<home>/fishball/runtime`), so an uninstall, which removes that folder, lets a reinstalled child
+ * sync once more. The marker is written only after a completed check and, when something was
+ * missing, a completed add; a failed attempt is logged by code and tried again at the next start.
+ * Both rules were decided by Fishball under the user's rule.
+ */
+export const INITIAL_SYNC = Object.freeze({
+  file: 'initial-model-sync.json',
+  format: 1,
+  failedLog: 'initial model sync failed (%s)',
+  itemFailedLog: 'initial model sync: some providers were not added (%s)',
+})
+
+/**
  * The frame's single-use admission ticket (design §4.1; spike V3-S4 `b9809b7` F1). An HMAC over
  * `{gen, aud, view, lang, exp, nonce}` with a key both ends derive from the lifecycle secret they
  * already hold (`control.secret`), so no key travels in a launch overlay. Valid while
@@ -337,7 +323,7 @@ export const LIFECYCLE_CODE = Object.freeze({
   failed: 'NATIVE_START_FAILED', stop: 'NATIVE_STOP_FAILED', exited: 'NATIVE_CHILD_EXITED', unavailable: 'NATIVE_UNAVAILABLE',
   timeout: 'NATIVE_TIMEOUT', disabled: 'NATIVE_DISABLED', invalidMainHome: 'INVALID_MAIN_HOME', incompatible: 'PROFILE_INCOMPATIBLE',
 })
-/** Every state and code the instance itself reports (its pages and the child's V2 settings relay). */
+/** Every state and code the instance itself reports (its settings page, src/host/routes.js publicStatus). */
 export const INSTANCE_STATES = Object.freeze(Object.values(CHILD_STATE))
 export const INSTANCE_CODES = Object.freeze(Object.values(LIFECYCLE_CODE))
 /** The locator's K3 `apiVersion`. */
@@ -357,16 +343,22 @@ export const LOOPBACK = Object.freeze({
   langs: Object.freeze(['zh', 'en']),
 })
 
-/** Validate without including private admission values in exceptions. */
-export function nativeAccess(value) {
-  try {
-    const origin = new URL(value.origin)
-    const admission = new URL(value.authenticatedUrl)
-    if (origin.protocol !== NATIVE_WEB.protocol || origin.hostname !== RUNTIME.host || !origin.port || origin.username || origin.password || origin.pathname !== NATIVE_WEB.root || origin.search || origin.hash || value.origin !== origin.origin || admission.origin !== origin.origin || admission.pathname !== NATIVE_WEB.root || admission.username || admission.password || admission.hash || !admission.search) throw new Error()
-    return { origin: origin.origin, authenticatedUrl: admission.href }
-  } catch { fail('NATIVE_ACCESS_UNAVAILABLE') }
+/** The child web origin's fixed parts (loopbackOrigin); the host is RUNTIME.host. */
+const CHILD_ORIGIN = Object.freeze({ protocol: 'http:', root: '/', queryMark: '?', fragmentMark: '#' })
+/**
+ * The child web's own origin (I-READY): `http://127.0.0.1:<port>` exactly, as the child's
+ * `webServer.getOrigin()` answers it for the launch's `--host 127.0.0.1 --port 0` (with or without
+ * its root slash). The locator rewrites only its hostname (locator.js), so anything else would
+ * send a frame somewhere the child does not listen.
+ * @returns {string} the origin, without a trailing slash
+ * @throws {NativeRuntimeError} `UNSAFE_CHILD_ORIGIN` for any other value
+ */
+export function loopbackOrigin(value) {
+  let url
+  try { url = new URL(value) } catch { fail('UNSAFE_CHILD_ORIGIN') }
+  if (typeof value !== 'string' || url.protocol !== CHILD_ORIGIN.protocol || url.hostname !== RUNTIME.host || !url.port || url.username || url.password || url.pathname !== CHILD_ORIGIN.root || url.search || url.hash || value.includes(CHILD_ORIGIN.queryMark) || value.includes(CHILD_ORIGIN.fragmentMark)) fail('UNSAFE_CHILD_ORIGIN')
+  return url.origin
 }
-
 export const RUNTIME_LIMITS = Object.freeze({
   startupTimeoutMs: 60000,
   stopTimeoutMs: 15000,

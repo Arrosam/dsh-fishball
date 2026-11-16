@@ -68,7 +68,7 @@ window.__ModuleLoader__.load({
      */
     const FLAG = Object.freeze({ on: 'true', off: 'false' })
     /**
-     * The "Model for Fishball" block (§10, D26; src/slim/host/provider-sync-routes.js). Check posts
+     * The "Model for Fishball" block (§10, D26; src/host/provider-sync-routes.js). Check posts
      * no body and answers `{checkId, missing, notOffered, present}`; Add posts `{checkId, ids}` and
      * answers `{items: [{id, outcome, reason?}]}`. Every answer is `{ok, result|error}`; the browser
      * never gets a key, a mask, an endpoint or a variable name.

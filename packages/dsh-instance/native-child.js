@@ -1,26 +1,17 @@
 import { applyNativeChild } from './src/native-runtime/child.js'
+import { RUNTIME } from './src/native-runtime/constants.js'
 
 /**
- * The attached child's lifecycle row: identity checks, control wire and bounded shutdown.
- * fishball-core's own patch inserts the slim rows beside it (the session-tools, approvals, app and
- * inbox rows, fishball-core/slim/*), placed with core as a bundle (src/native-runtime/placement.js). The app row
- * provides `fishballApp`; readiness preserves its bearer gate and also verifies the native Web
- * adapter. Native admission travels only on the private native-access operation, never health.
- * The main lifecycle host remains required until its callers have an explicit relocation owner.
+ * The attached child's lifecycle row: identity checks, the authenticated lifecycle wire, the
+ * readiness gate (I-READY: generic DSH signals only, src/native-runtime/child.js childReadiness)
+ * and bounded shutdown. The child-side row `dsh-instance-child` (child-row.js) injects the
+ * `nativeRuntime` service it provides. No Fishball-side row is mounted or read here (R-ARCH-10).
  *
- * The authenticated control transport carries envelope v2 only (§5.1). The v1 control row was
- * never mounted here and was removed (I10): its channel closed the wire on a frame it did not
- * recognise, so it and the session bridge could not share one transport. The
- * session-tools row attaches the v2 bridge client to that transport exactly as the v1 row did
- * (ctx.nativeRuntime.onControlTransport), and the lifecycle channel (health, readiness, stop,
- * the embed bearer) stays on the wire's own lifecycle operations, untouched by either.
- *
- * The slim rows used to be plugged here with ctx.plugin. They are loader rows now, because the
- * loader's boot settlement waits only for its own rows' chains: a plugin nested here could still
- * be starting when appReady fired, and the app row then missed fishballApprovals (B5).
+ * `inject` names the base services the gate requires (RUNTIME.requiredServices) besides
+ * `pluginPackages`, so the row, and with it the child-side row, starts only once they are up.
  */
 export const name = 'fishball-native-child'
-export const inject = ['profileContext', 'pluginPackages', 'agents', 'sessions', 'tools', 'appExit', 'appReady']
+export const inject = ['pluginPackages', ...RUNTIME.requiredServices]
 export async function apply(ctx, config) {
   await applyNativeChild(ctx, config)
 }

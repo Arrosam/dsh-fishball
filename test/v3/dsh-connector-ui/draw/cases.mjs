@@ -348,19 +348,19 @@ export function registerUDrawCases(sdk) {
     const { w, page } = await world(t, sdk, { host: { ui: false, tools: false } })
     assertDiagnostics(w, { errors: EXPECT.once, warns: EXPECT.none })
     const services = await servicesOf(w)
-    assert.deepEqual([services.ok, services.connector, services.legacy, services.ui], [true, false, false, {}])
+    assert.deepEqual([services.ok, services.connector, services.ui], [true, false, {}])
     for (const [method, key] of ROUTE.guarded) {
       const answer = await w.request(method, ROUTE[key], method === 'POST' ? { view: CHILD.ready.state, lang: TEXT.langs[0] } : undefined)
       assert.deepEqual([answer.status, answer.json?.ok, answer.json?.code], [REFUSAL.connectorMissing.status, false, REFUSAL.connectorMissing.code], key + ': ' + answer.text)
     }
     assertNothingRegistered(page)
   })
-  draw(sdk, 'UDRAW-UC-07', 'A1', 'only the V2 dshConnector: legacy true, no connector-missing, no marks seats, no tools', 'Q-U1, ' + DECIDED.legacy, async (t) => {
+  draw(sdk, 'UDRAW-UC-07', 'A1', 'V2 never deployed (U-WIRE): V2-only service is missing; nothing draws', 'Q-U1, ' + DECIDED.legacy, async (t) => {
     const { w, page } = await world(t, sdk, { host: { ui: false, tools: false, legacy: true } })
     const services = await servicesOf(w)
-    assert.deepEqual([services.connector, services.legacy], [false, true])
-    assertDiagnostics(w, { errors: EXPECT.none, warns: EXPECT.none })
-    assert.deepEqual(page.live().filter((r) => SLOT.connectorSeats.includes(r.slot)).map((r) => r.slot), [], 'marks or Hand over with only the V2 service')
+    assert.deepEqual([services.connector, Object.hasOwn(services, 'legacy')], [false, false])
+    assertDiagnostics(w, { errors: EXPECT.once, warns: EXPECT.none })
+    assertNothingRegistered(page)
   })
 
   draw(sdk, 'UDRAW-UC-08', 'main', 'C + U, no instance: one instance-missing warning; fish, marks seats, the prompt and the hint view; the tools contributed', 'UIM-UC-02, R-UI-01, R-UI-08 amended, QD4, Q-G3', async (t) => {
@@ -380,22 +380,22 @@ export function registerUDrawCases(sdk) {
 
   // ============================================================ EP-01: availability seen by the host half
   const HOST_ROWS = [
-    { row: 1, label: 'UI backend + tools + instance', host: {}, expect: { connector: true, page: true, legacy: false, errors: 0, warns: 0 } },
-    { row: 2, label: 'UI backend + tools, no instance', host: { child: null }, expect: { connector: true, page: false, legacy: false, errors: 0, warns: 1 } },
-    { row: 3, label: 'UI backend + tools, an instance of apiVersion 2', host: { child: { apiVersion: SERVICE.otherApiVersion } }, expect: { connector: true, page: false, legacy: false, errors: 0, warns: 1 } },
-    { row: 4, label: 'UI backend + tools, the instance row disabled', host: { child: { disabled: true } }, expect: { connector: true, page: false, legacy: false, errors: 0, warns: 1 } },
-    { row: 5, label: 'nothing', host: { ui: false, tools: false, child: null }, expect: { connector: false, page: false, legacy: false, errors: 1, warns: 0 } },
-    { row: 6, label: 'instance only', host: { ui: false, tools: false }, expect: { connector: false, page: true, legacy: false, errors: 1, warns: 0 } },
-    { row: 7, label: 'tools + instance, no UI backend', host: { ui: false }, expect: { connector: false, page: true, legacy: false, errors: 1, warns: 0 } },
-    { row: 8, label: 'a UI backend of apiVersion 2 + tools + instance', host: { uiApiVersion: SERVICE.otherApiVersion }, expect: { connector: false, page: true, legacy: false, errors: 1, warns: 0 } },
-    { row: 9, label: 'UI backend + instance, no tools', host: { tools: false }, expect: { connector: true, page: true, legacy: false, errors: 0, warns: 0 } },
-    { row: 10, label: 'V2 dshConnector + instance (legacy)', host: { ui: false, tools: false, legacy: true }, expect: { connector: false, page: true, legacy: true, errors: 0, warns: 0 } },
+    { row: 1, label: 'UI backend + tools + instance', host: {}, expect: { connector: true, page: true, errors: 0, warns: 0 } },
+    { row: 2, label: 'UI backend + tools, no instance', host: { child: null }, expect: { connector: true, page: false, errors: 0, warns: 1 } },
+    { row: 3, label: 'UI backend + tools, an instance of apiVersion 2', host: { child: { apiVersion: SERVICE.otherApiVersion } }, expect: { connector: true, page: false, errors: 0, warns: 1 } },
+    { row: 4, label: 'UI backend + tools, the instance row disabled', host: { child: { disabled: true } }, expect: { connector: true, page: false, errors: 0, warns: 1 } },
+    { row: 5, label: 'nothing', host: { ui: false, tools: false, child: null }, expect: { connector: false, page: false, errors: 1, warns: 0 } },
+    { row: 6, label: 'instance only', host: { ui: false, tools: false }, expect: { connector: false, page: true, errors: 1, warns: 0 } },
+    { row: 7, label: 'tools + instance, no UI backend', host: { ui: false }, expect: { connector: false, page: true, errors: 1, warns: 0 } },
+    { row: 8, label: 'a UI backend of apiVersion 2 + tools + instance', host: { uiApiVersion: SERVICE.otherApiVersion }, expect: { connector: false, page: true, errors: 1, warns: 0 } },
+    { row: 9, label: 'UI backend + instance, no tools', host: { tools: false }, expect: { connector: true, page: true, errors: 0, warns: 0 } },
+    { row: 10, label: 'V2 dshConnector + instance (legacy)', host: { ui: false, tools: false, legacy: true }, expect: { connector: false, page: true, errors: 1, warns: 0 } },
   ]
   for (const r of HOST_ROWS) {
-    draw(sdk, 'UDRAW-EP-01', r.row, `${r.label} → connector ${r.expect.connector}, page ${r.expect.page}, legacy ${r.expect.legacy}; ${r.expect.errors} error / ${r.expect.warns} warning`, 'UIM-EP-01, Q-U1, R-UI-01' + (r.host.legacy ? ', ' + DECIDED.legacy : ''), async (t) => {
+    draw(sdk, 'UDRAW-EP-01', r.row, `${r.label} → connector ${r.expect.connector}, page ${r.expect.page}; ${r.expect.errors} error / ${r.expect.warns} warning`, 'UIM-EP-01, Q-U1, R-UI-01' + (r.host.legacy ? ', ' + DECIDED.legacy : ''), async (t) => {
       const w = await hostWorld(t, sdk, r.host)
       const services = await servicesOf(w)
-      assert.deepEqual({ connector: services.connector, page: services.page, legacy: services.legacy }, { connector: r.expect.connector, page: r.expect.page, legacy: r.expect.legacy })
+      assert.deepEqual({ connector: services.connector, page: services.page }, { connector: r.expect.connector, page: r.expect.page })
       assertDiagnostics(w, { errors: r.expect.errors, warns: r.expect.warns })
       assert.deepEqual(Object.keys(services.routes).sort(), [...ROUTE.routeKeys].sort(), 'routes keys')
       assert.deepEqual(Object.values(services.routes).filter((p) => p.startsWith(ROUTE.absolutePrefix)), [], 'routes are not page-relative')

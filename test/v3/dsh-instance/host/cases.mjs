@@ -1015,22 +1015,7 @@ export function registerIHostCases(sdk) {
     const files = ['native-web.js', path.join('src', 'native-web.js')].map((f) => path.join(V3.instance.dir, f)).filter((f) => fs.existsSync(f))
     for (const f of files) assert.equal(/session-route|registerSessionRoute/.test(fs.readFileSync(f, 'utf8')), false, f)
   })
-  caseTest(sdk, 'MOVED', 'admin', 'the moved admin service takes no applyModel/currentModel hook into core and exports no row', async () => {
-    const admin = await instanceModule(sdk, 'admin', ['createAdminService', 'createAdminEndpoint', 'createAdminCodec', 'validateRequest', 'validateResult', 'ADMIN_OPERATION'])
-    for (const k of ['name', 'inject', 'apply']) assert.equal(admin[k], undefined, 'admin.js exports ' + k)
-    // Behaviour, not text: the hooks are handed in and must never be used.
-    const used = []
-    const selection = { provider: 'alpha', model: 'm1' }
-    const settings = { writable: true, describe: () => [{ ns: SYNC_HOST.defaultModelNs, revision: 2, value: selection, secrets: [] }], mutate: async () => ({ revision: 3 }) }
-    const llm = { listProviders: () => [{ id: 'alpha', name: 'Alpha' }], listModels: async () => [{ id: 'm1', name: 'M1' }, { id: 'm2', name: 'M2' }], resolveModelInfo: async () => ({}), resolveCallConfig: async (v) => v }
-    const plugins = { async listBundles() { return [] }, async installBundle() {}, async removeBundle() {}, async setBundleEnabled() {} }
-    const hooks = Object.fromEntries(MOVED.adminHooks.map((h) => [h, (...args) => { used.push(h); return h === 'currentModel' ? selection : Promise.resolve() }]))
-    const service = admin.createAdminService({ settings, llm, plugins, ...hooks })
-    const got = await service.handle(admin.ADMIN_OPERATION.modelGet, {})
-    assert.equal(got.result?.active ?? null, null, 'model/get reports a live model from a hook')
-    await service.handle(admin.ADMIN_OPERATION.modelSet, { revision: 2, provider: 'alpha', model: 'm2' })
-    assert.deepEqual(used, [], 'a core hook was called')
-  })
+  test.skip('MOVED admin [SDK '+sdk+'] — withdrawn by I-READY: admin relay deleted', () => {})
   caseTest(sdk, 'MOVED', 'sync-target', 'the moved provider-sync target keeps its exports (createProviderSyncTarget, createProviderSyncTargetEndpoint, PROVIDER_SYNC_TARGET, ProviderSyncTargetError, createProviderSyncCodec, providerSyncIdentity)', async () => {
     await instanceModule(sdk, 'syncTarget', ['createProviderSyncTarget', 'createProviderSyncTargetEndpoint', 'PROVIDER_SYNC_TARGET', 'ProviderSyncTargetError', 'createProviderSyncCodec', 'providerSyncIdentity'])
   })

@@ -10,8 +10,8 @@
  *   warning without a usable locator (src/host/services.js).
  * - Declares the notify and attention tools through the connector's UI backend and contribution
  *   service; their handlers and state are the connector's (R-EXT-13 amended by 1.34).
- * - Registers its own owner-only Fetch routes for availability, the child's status, admission and
- *   model sync (src/host/routes.js), which re-serve the locator to embed-UI's web client.
+ * - Registers its own owner-only Fetch routes for availability, the child's status and admission
+ *   (src/host/routes.js), which re-serve the locator to embed-UI's web client.
  * It holds no state and stores nothing (R-UI-06).
  *
  * `connection` is the only inject: the Fetch registry is read as a property, which Cordis refuses

@@ -20,7 +20,6 @@
   },
   "scripts": {
     "test": "node test/run.mjs",
-    "test:v2": "node test/run-v2.mjs",
     "test:v3": "node test/run-v3.mjs",
     "test:affected": "node test/run-affected.mjs",
     "test:all": "node test/run-affected.mjs --all",

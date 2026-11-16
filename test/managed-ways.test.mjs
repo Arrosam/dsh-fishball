@@ -26,7 +26,6 @@
  * | MGD-13 ×2 | EP (session.watch / session.read on a session that is yours) | §5e "Reading", contract §4.1 (related session), §7 WATCH_ERROR | watch: a response with watchError not-related; read: an error frame; neither makes the session managed; no tool |
  * | MGD-14  | EP (subagent of a managed session) | §5e "Subagents" | the parent's requests have the tools, the child's have none |
  * | MGD-15 ×2 | ST (Hand over / Take back while a turn is held at step 1) | §5e "tools per session" | step 1's request is as before; step 2 of the same turn has (hand over) / lacks (take back) the tools |
- * | MGD-16  | EP (client bundle) | §10e, slim §8.3 | carries "Hand over to Fishball" and "Take back from Fishball"; no "Send to Fishball" or "Tell Fishball when finished" button |
  * | MGD-17  | diagnostic | — | unspecified transitions: hand over twice, take back a session that is yours |
  * | MGD-18  | BVA (queue bound 2, no instance) | contract §9, C1-BVA-06, conn-OQ-03 | a third message_agent is refused queue-full; Hand over with a note and Take back still answer 200 and change management; after the attach the four items arrive in arrival order, each once; a release whose `system` note meets the full bound still stands |
  *
@@ -40,7 +39,7 @@ import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
 import { DELIVERY, ERROR, WATCH_ERROR, WATCH_MODE } from 'dsh-connector/contract'
 import { EMBED_UI_LINK, FISHBALL_WORD, MANAGED_BY, MANAGED_CODE, MANAGED_TOOLS, NOTE_TEXT, P5_CODE, PRESET, RELAY, UNKNOWN_TOOL_TEXT } from './support/constants.mjs'
-import { HOOK, T, fishballClientBundle, settledIdle, toolNames, turn, untrustedBlock } from './support/expect.mjs'
+import { HOOK, T, settledIdle, toolNames, turn, untrustedBlock } from './support/expect.mjs'
 import { KIND, OPERATION, STUB, handOver, messageFishball, quietPushes, stopStub, takeBack, userSession } from './support/instance-stub.mjs'
 import {
   MANAGED_STUB, bootManaged, detachStub, entryOf, expectEntry, expectNoNote, expectOneNote, expectStock, expectToInstance, folderIn, handOverWithNote, hasTool,
@@ -410,15 +409,6 @@ describe('yours or managed, and the ways in and out (H-STUB)', () => {
       assert.ok(hasAll(reqs[0]), 'step 1 was assembled before the take-back')
       assert.equal(hasAny(reqs[1]), false, 'step 2 lacks the tools')
     })
-  })
-
-  it('MGD-16 the client bundle has one Hand over and Take back, and no send or watch button', T, async () => {
-    const bundle = await fishballClientBundle(host)
-    assert.ok(bundle.found, 'index references dsh-connector-ui/client.js')
-    assert.equal(bundle.status, 200)
-    assert.ok(bundle.text.includes(MANAGED_STUB.labels.handOver), MANAGED_STUB.labels.handOver)
-    assert.ok(bundle.text.includes(MANAGED_STUB.labels.takeBack), MANAGED_STUB.labels.takeBack)
-    for (const gone of MANAGED_STUB.labels.gone) assert.equal(bundle.text.includes(gone), false, 'slim §8.3 removed ' + gone)
   })
 
   it('MGD-17 (diagnostic) unspecified transitions: hand over twice, take back a session that is yours', T, async (t) => {

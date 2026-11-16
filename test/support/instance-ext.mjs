@@ -759,7 +759,6 @@ export async function bootChild(t, { activate = false, attachments = undefined, 
     control: undefined,
     admin: undefined,
     onControlTransport(callback) { nativeRuntime.control = callback; return () => { if (nativeRuntime.control === callback) nativeRuntime.control = undefined } },
-    onAdminTransport(callback) { nativeRuntime.admin = callback; return () => { if (nativeRuntime.admin === callback) nativeRuntime.admin = undefined } },
   }
   const context = createContext({ home, tools, nativeRuntime, services, sessionContext })
   sessionContext.on(AGENT.sessionFlush, () => services.sessionPersistence.flush())
@@ -812,13 +811,7 @@ export async function bootChild(t, { activate = false, attachments = undefined, 
   await applyRow('app', 'src/slim/child/app.js')
   if (process.env.FBTEST_DEBUG_HARNESS) console.error('chat service before inbox:', Object.keys(ctx.get(SERVICES.chat) ?? {}), 'provided:', [...context.provided.keys()])
   await applyRow('inbox', 'src/slim/child/inbox.js')
-  // I-HOST: the admin child half is the instance's src/child/admin.js (no row; mountAdmin(ctx)).
-  const admin = await loadInstance('src/child/admin.js')
-  rows.admin = admin
-  if (typeof nativeRuntime.onAdminTransport === 'function') {
-    const adminDispose = await admin.mountAdmin(ctx)
-    if (typeof adminDispose === 'function') rowDisposers.push(adminDispose)
-  }
+  // I-READY removed the instance admin relay; core-only V2 fixtures retain no admin half.
   // The launcher commits once the tree has applied; the main host attaches its transport only
   // after the child's readiness probe, so the commit precedes the fake host attach below.
   if (ready) appReady.commit()
@@ -828,36 +821,6 @@ export async function bootChild(t, { activate = false, attachments = undefined, 
   const bridge = ctx.get(SERVICES.bridge)
   const deadline = Date.now() + 5000
   while (!bridge?.status?.ready && Date.now() < deadline) await new Promise((resolve) => setTimeout(resolve, 10))
-
-  // The admin row's endpoint attaches when the host's admin transport arrives.
-  let adminTransport
-  const adminReplies = []
-  const adminPending = new Map()
-  function adminRequest(operation, payload) {
-    const codec = adminCodec
-    const frame = codec.request(operation, payload)
-    const encoded = codec.encode(frame)
-    return new Promise((resolve) => {
-      adminPending.set(frame.id, resolve)
-      adminTransport.message(encoded)
-    })
-  }
-  let adminCodec
-  if (nativeRuntime.admin !== undefined) {
-    adminCodec = admin.createAdminCodec()
-    adminTransport = {
-      send: (encoded) => {
-        const frame = adminCodec.decode(encoded)
-        adminReplies.push(frame)
-        const wait = adminPending.get(frame.id)
-        if (wait !== undefined) { adminPending.delete(frame.id); wait(frame) }
-      },
-      onMessage(fn) { adminTransport.message = fn; return () => { adminTransport.message = undefined } },
-      onClose(fn) { adminTransport.closed = fn; return () => { adminTransport.closed = undefined } },
-      close() { adminTransport.closed?.() },
-    }
-    nativeRuntime.admin(adminTransport)
-  }
 
   const chat = ctx.get(SERVICES.chat)
   if (activate) {
@@ -900,15 +863,6 @@ export async function bootChild(t, { activate = false, attachments = undefined, 
       assert.ok(definition, 'the child did not register the tool ' + name)
       return definition.execute(args)
     },
-    /** One admin wire request, as the settings page sends it. */
-    async admin(operation, payload) {
-      assert.ok(adminTransport, 'the admin row did not attach an admin transport')
-      const frame = adminCodec.request(operation, payload)
-      return new Promise((resolve) => {
-        adminPending.set(frame.id, resolve)
-        adminTransport.message(adminCodec.encode(frame))
-      })
-    },
     bundles,
     pluginManager,
     profileDir,
@@ -921,7 +875,6 @@ export async function bootChild(t, { activate = false, attachments = undefined, 
       return pluginManager.setBundleEnabled(name, enabled)
     },
     nativeRuntime,
-    adminReplies,
     /** Replace the main host transport, as a child reconnect does. */
     async reconnect({ capabilities } = {}) {
       harness.host.transport.close()

@@ -351,7 +351,6 @@ function useCases(sdk) {
     await offerFallsBack(w, S.s1, ET.permission, FALLBACK.toUser)
     await messageTo(w, S.s1, d)
   })
-  todoRow(sdk, 'HAND-UC-02', 'main 3', 'the mark disappears and S1 shows the Hand over control again (R-UI-10)', 'U-MARKS (embed-UI marks and the Hand over control)')
 
   // PLAT-UC-03 — A main-DSH session calls message_agent / ask_agent.
   worldRow(sdk, 'PLAT-UC-03', 'main', 'unmanaged S1: message_agent → one message for D; ask_agent → one ask for D, and S1 waits', async (w) => {
