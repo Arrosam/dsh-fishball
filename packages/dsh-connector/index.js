@@ -116,14 +116,18 @@ export async function apply(ctx, config) {
   // instead of the instance failing to connect (contract §1, §9).
   binding = provideConnectorService(ctx, { onChange: () => publish() })
 
-  // The V3 connector opens on its own: it shares no store with the V2 path, so neither waits for
-  // or fails with the other. Its close is the row's effect from the start, so a row that unloads
-  // while V3 is still opening closes it once it has opened.
+  // The V3 connector shares no store with the V2 path, so a V3 failure is logged and leaves V2
+  // running. Its close is the row's effect from the start, so a row that unloads while V3 is still
+  // opening closes it once it has opened. apply awaits the open: DSH's app ready waits for every
+  // row's apply, so the V3 services and routes (dshConnectorUi among them) exist by then, and a
+  // plugin that checks for them at app ready (dsh-connector-ui's connector-missing) finds them.
+  let openedV3
   ctx.effect(() => {
-    const opened = openV3(ctx, { config, storageDomain: { defineDomain, domainTable }, limits, volatileEvent: EVENT.volatileUpdate, namespace: PLUGIN.name, logger })
+    openedV3 = openV3(ctx, { config, storageDomain: { defineDomain, domainTable }, limits, volatileEvent: EVENT.volatileUpdate, namespace: PLUGIN.name, logger })
       .catch((error) => { logger.warn(V3_LOG.format, V3_LOG.openFailed, diagnosticOf(error)) })
-    return () => { void opened.then((v3) => v3?.close()) }
+    return () => { void openedV3.then((v3) => v3?.close()) }
   }, V3_LOG.label)
+  await openedV3
 
   let store
   try {
