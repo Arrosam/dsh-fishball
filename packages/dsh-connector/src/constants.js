@@ -686,10 +686,10 @@ export const OPTIONAL_SERVICE = Object.freeze({
 /**
  * DSH's web server: the V3 connector's MCP, token and metadata routes and its listener facts
  * (src/wire/). Like `connection`, `sessionController` and `workspaceRegistry` above, it is a row of
- * dsh-web-app, not of dsh-base, on both SDKs, so the connector needs the web app: without it the
- * row stays pending (DSH's own missing-dependency state), V2 included (checked on 0.2.1-rc.5 and
- * 0.2.2-rc.1). It is read with `ctx.get` all the same, so the V3 open logs one clear line and stays
- * off should a profile ever provide the other rows without it.
+ * dsh-web-app, not of dsh-base, on both SDKs. The connector requires the web app (the user,
+ * 2026-11-17, S1 = A): without it the row stays pending in DSH's own missing-dependency state
+ * (checked on 0.2.1-rc.5 and 0.2.2-rc.1). It is read with `ctx.get` all the same, so the V3 open
+ * logs one clear line and stays off should a profile ever provide the other rows without it.
  */
 export const WEB_SERVICE = Object.freeze({ webServer: 'webServer' })
 

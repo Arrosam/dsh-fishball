@@ -29,7 +29,8 @@
  * revocation, the hosted-token service, the UI backend and the contribution service, and the
  * connector's own settings page (client.js). The V2 approval broker is not switched to V3 routing
  * yet (the user's split, 2026-11-16; C-WIRE-2), so the two share no state. A V3 failure to open is
- * logged and leaves the V2 path running.
+ * logged and leaves the V2 path running. The row requires dsh-web-app (the user, 2026-11-17): its
+ * injected web-app services keep it pending without the web app (src/constants.js WEB_SERVICE).
  * There is no in-process Fishball agent or session: the legacy one was removed, because a second
  * Fishball in the main process took every input the user meant for the child.
  */
