@@ -18,6 +18,15 @@ export const BASE = Object.freeze({ ref: '131ad65f', folder: 'packages/shared' }
 /** Requirement 3: what dsh-connector-shared holds, by module file and export subpath. */
 export const DSH_MODULES = Object.freeze(['admin-protocol', 'provider-sync', 'provider-sync-codec', 'provider-sync-host', 'redact', 'files'])
 /**
+ * Requirements 1.40 / design §6.3a "One copy per side": modules dsh-connector-shared gained after the
+ * move, with no counterpart at BASE (so no differential or drift row). `oauth-client` is the S7c K2
+ * token manager the adapter drives (C-MCP-ADAPTER); fishball-shared's own copy is written and tested
+ * on its own side, so the two need not be byte-equal.
+ */
+export const ADDED_MODULES = Object.freeze(['oauth-client'])
+/** Every export subpath module of dsh-connector-shared: the moved ones and the added ones. */
+export const DSH_EXPORTS = Object.freeze([...DSH_MODULES, ...ADDED_MODULES])
+/**
  * Requirement 5 (interim, until I-HOST): fishball-shared keeps its own copies of these for core's
  * child halves; `redact` stays only as provider-sync-host's internal helper (no export needed).
  */
@@ -43,11 +52,13 @@ export const sdkModules = (sdk) => path.join(SDK.versionsDir, sdk, 'node_modules
 /**
  * Requirement 1: which library each existing package of a side is expected to import and bundle
  * (the packages that use the moved modules today). The connector uses `redact`, the instance the
- * admin protocol, provider-sync and files, core its child halves and the Skills store.
+ * admin protocol, provider-sync and files, the adapter `./oauth-client` (design §6.3a, its library is
+ * its own side's), core its child halves and the Skills store.
  */
 export const EXPECTED_LIBRARY = Object.freeze({
   [V3.instance.name]: V3.dshShared.name,
   [V3.connector.name]: V3.dshShared.name,
+  [V3.adapter.name]: V3.dshShared.name,
   [V3.core.name]: V3.shared.name,
 })
 
