@@ -58,7 +58,8 @@ export interface FishballUi {
   }
 
   /** The `guards-overridden` line of the status strip (R-FB-09). */
-  readonly guards: { report(): GuardReport; onChange(fn: (report: GuardReport) => void): Dispose }
+  /** `null` while core's guard row is absent or not ready yet (F-WIRE amendment, README). */
+  readonly guards: { report(): GuardReport | null; onChange(fn: (report: GuardReport | null) => void): Dispose }
 
   /**
    * The ask cards in Fishball's conversation (R-FB-11). `answer` commits once through core's link;

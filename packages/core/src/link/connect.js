@@ -16,8 +16,12 @@
  *    and its protected-resource metadata names exactly the target URL, the same origin plus
  *    `MCP.paths.issuer` as its first authorization server, and the `MCP.scope.full` scope; else
  *    `needs-configuration` / `not-a-connector`, before any authorization request;
- * 5. one `ctx.authorization` attempt: PKCE S256, `state`, `resource`, `iss`, the loopback callback
- *    on a fresh OS port, and `agent_id` = `identity.id` (R13, R-OA-22) so the page binds core's id.
+ * 5. one `ctx.authorization` attempt: PKCE S256, `state`, `resource`, `iss`, the callback, and
+ *    `agent_id` = `identity.id` (R13, R-OA-22) so the page binds core's id. The callback is the
+ *    Connect route's choice (`control[BEGIN_VIA](via)`): by default the loopback one on a fresh OS port; for a
+ *    browser on another machine (Q-A3 B) core's web callback (`web-callback.js`), which the
+ *    Connect route picks from the page's own origin; a page whose origin cannot take it is
+ *    answered `needs-configuration` / `web-callback-insecure` before anything is sent (R-OA-14).
  *
  * Status (`ConnectStatus`), first match: an attempt pending → `authorizing`; a saved credential for
  * the origin that the target has not refused since → `authorized` (a hosted child's saved token
@@ -31,11 +35,11 @@
  * `clientMetadataUrl` (both read on every `status()` and every link attempt), so a new origin is a
  * new first connection (R9).
  *
- * Not built here: the web callback for a browser on another machine (Q-A3 B,
- * `CONNECT.callback.webPath`, `web-callback-insecure`): it needs core's owner-only web route and
- * the browser's own address, which no current caller passes; see the task report.
  */
 import { OAUTH_CLIENT, OAuthAttemptError, clientMetadataUrlProblem, discoverServer } from 'fishball-shared/oauth-client'
+
+/** The key of Connect's route-only begin (see `control[BEGIN_VIA]`); exported for core's Connect route alone. */
+export const BEGIN_VIA = Symbol('fishball-core connect: begin with a callback choice')
 import { CONNECT, MCP } from '../../contracts/constants.js'
 import { issuerOf } from './schema.js'
 import { checkTarget } from './target.js'
@@ -162,7 +166,7 @@ export function createConnect(ctx, { store, target, clientId, clientMetadataUrl,
         return manager.authorize({
           session, serverUrl: attempt.serverUrl, clientMetadataUrl: attempt.clientMetadataUrl, discovery: attempt.discovery,
           authorizationParameters: { [MCP.oauth.agentIdParameter]: clientId() },
-          message: LINK_SAVE.text.approval, timeoutMs: LINK_SAVE.attemptTimeoutMs, timers,
+          message: LINK_SAVE.text.approval, timeoutMs: LINK_SAVE.attemptTimeoutMs, timers, callback: attempt.callback,
         })
       },
     })
@@ -181,14 +185,14 @@ export function createConnect(ctx, { store, target, clientId, clientMetadataUrl,
    * An attempt that ends before its URL is known without a grant rejects (`connect.d.ts` has no
    * outcome for it): the caller learns "nothing to open", and the status says why.
    */
-  function start(usable, discovery) {
+  function start(usable, discovery, callback) {
     const key = store.grantKey(usable.origin)
     // No `ctx.authorization` (a profile without dsh-authorization) or a key another plugin claimed
     // (`DUPLICATE_FLOW`): no attempt can run, so Connect reports `failed` rather than a bare TypeError.
     try { flowFor(usable, key) } catch (error) { return fail(usable.url.href, error) }
     return new Promise((resolve, reject) => {
       // Set before begin(): DSH calls the flow's run() from begin(), and run() reads this attempt.
-      const pending = { key, url: undefined, serverUrl: usable.url.href, clientMetadataUrl: clientMetadataUrl(), discovery }
+      const pending = { key, url: undefined, serverUrl: usable.url.href, clientMetadataUrl: clientMetadataUrl(), discovery, callback }
       attempt = pending
       failedFor = undefined
       refresh()
@@ -220,8 +224,13 @@ export function createConnect(ctx, { store, target, clientId, clientMetadataUrl,
     })
   }
 
-  /** One `begin` decision (see the module header for the order of the checks). */
-  async function beginOnce() {
+  /**
+   * One `begin` decision (see the module header for the order of the checks).
+   * @param {{callback?: () => Promise<object>, refused?: string}} [via] the Connect route's callback
+   *   choice: a listener factory for `oauth-client`'s `authorize` (undefined: the loopback one), or
+   *   `refused`, the configuration code of a page that can take no callback
+   */
+  async function beginOnce(via = {}) {
     cancelled = false
     const usable = usableTarget()
     if (attempt !== undefined) {
@@ -232,7 +241,7 @@ export function createConnect(ctx, { store, target, clientId, clientMetadataUrl,
       } else ctx.authorization.cancel(attempt.key)
     }
     if (await authorized(usable)) return AUTHORIZED
-    const code = configurationCode()
+    const code = configurationCode() ?? via.refused
     if (code !== undefined) return answer(code)
     // A blank, refused or non-connector target fails the connector check: nothing to connect to.
     if (notAConnector(usable) && usable?.url.href !== notAConnectorFor) return answer(CONNECT.configuration.notAConnector)
@@ -249,8 +258,10 @@ export function createConnect(ctx, { store, target, clientId, clientMetadataUrl,
       return answer(CONNECT.configuration.notAConnector)
     }
     if (cancelled) return fail(usable.url.href, new OAuthAttemptError(OAUTH_CLIENT.attemptEnd.denied))
-    return start(usable, discovery)
+    return start(usable, discovery, via.callback)
   }
+
+  const begin = (via) => (beginning ??= beginOnce(via).finally(() => { beginning = undefined }))
 
   refresh()
   return Object.freeze({
@@ -264,7 +275,14 @@ export function createConnect(ctx, { store, target, clientId, clientMetadataUrl,
         return current
       },
       onChange: (fn) => subscribe(listeners, fn),
-      begin: () => (beginning ??= beginOnce().finally(() => { beginning = undefined })),
+      /** K3a `begin()`: the loopback callback; concurrent calls share the first's decision. */
+      begin: () => begin(),
+      /**
+       * Core's own Connect route only (`BEGIN_VIA`, a symbol nothing outside core holds): `begin`
+       * with the press's callback choice (`beginOnce`). Kept off K3a's `begin()`, so no other plugin
+       * reading `fishballInstance.ui.connect` can choose the redirect URI.
+       */
+      [BEGIN_VIA]: (via) => begin(via),
       cancel: () => {
         if (attempt !== undefined) ctx.authorization.cancel(attempt.key)
         else if (beginning !== undefined) cancelled = true

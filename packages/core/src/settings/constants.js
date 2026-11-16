@@ -29,7 +29,10 @@ export const SETTINGS = Object.freeze({
  * reads the status and starts an attempt through this one owner-only route (DSH's exact Fetch
  * routes answer only owner peers, `dsh-client-connection` `ConnectionFetchRoute`).
  * - GET: `200 ConnectStatus`, exactly `{state, code}`;
- * - POST: `200 ConnectBegin`, exactly its outcome's members (the request body is ignored);
+ * - POST: `200 ConnectBegin`, exactly its outcome's members (the request body is ignored; the
+ *   request's `Origin` and `Host` headers pick the callback, link/web-callback.js);
+ * - POST `cancelPath`: `cancel()`, then `200 ConnectStatus` (fishball-ui's strip Cancel, design
+ *   §6.3a step 2);
  * - no compatible `fishballInstance.ui.connect`, or it threw: `503 {code: unavailableCode}`, with no
  *   error detail, so nothing about a credential can leave through an exception message. The page
  *   reads any non-200 as "unavailable"; the code names the cause for a reader of the network log.
@@ -38,6 +41,9 @@ export const SETTINGS = Object.freeze({
  */
 export const CONNECT_ROUTE = Object.freeze({
   path: '/api/fishball/connect',
+  cancelPath: '/api/fishball/connect/cancel',
+  /** The cancel route's one method. */
+  cancel: 'POST',
   read: 'GET',
   begin: 'POST',
   requestBody: 'buffered',

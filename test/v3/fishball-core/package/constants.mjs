@@ -28,8 +28,17 @@ export const CORE = Object.freeze({
    */
   neverInserted: Object.freeze(['dsh-instance']),
   fileScheme: 'file:',
-  /** Core reaches the connector only for `./contract` (R-CORE; design §9.1 until F-STATUS drops it). */
-  connectorAllowed: Object.freeze(['dsh-connector/contract']),
+  /**
+   * Re-baselined (F-WIRE): core reaches the connector not at all. The user, 2026-11-16: "V2 was never
+   * deployed, so no V2 path needs protecting" (R-ARCH-10); DESIGN.md §20 deletes core's dsh-connector peer.
+   */
+  connectorAllowed: Object.freeze([]),
+  /** DESIGN.md §20: core's patch inserts one main row beside the two kept rows, and none of the V2 slim rows. */
+  mainRow: Object.freeze({ id: 'fishball-core', name: 'fishball-core/main' }),
+  keptRows: Object.freeze(['fishball-core-guards', 'fishball-core-session']),
+  retiredRows: Object.freeze(['session-tools', 'approvals', 'app', 'inbox'].map((n) => 'fishball-native-' + n)),
+  /** DESIGN.md §20: `src/slim/**` is deleted. */
+  retiredFolder: 'src/slim/',
 })
 
 /** R-CORE (2): what moves into core. The instance ships none of it after the move. */

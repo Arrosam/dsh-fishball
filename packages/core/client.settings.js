@@ -10,15 +10,19 @@
  * `pluginNavigation.openBundle` lands on it directly. The same page in standalone and hosted mode
  * (Q-B2: "子实例内的界面和独立版本一样"). It holds the target URL, the write-only token field (always
  * shown, Q-B2), `connect.clientMetadataUrl` (R12 = B), the identity, and the Connect control
- * (design §6.3a step 1). Saving is DSH's own settings save of core's row namespace; the token goes
- * to DSH's credential store; Connect goes through core's one route (`src/settings/`).
+ * (design §6.3a step 1), and Fishball's model (F-WIRE; the user: "同步只是同步model list，至于fishball用
+ * 什么还要在fishball内设置"; unset = this DSH's default model). Saving is DSH's own settings save of
+ * core's row namespace; the token goes to DSH's credential store; Connect goes through core's one
+ * route (`src/settings/`); the model is a field of the same namespace (`FISHBALL_MODEL.path`),
+ * written at once when picked, from the catalog DSH's own model picker reads
+ * (`remote.session.modelCatalog`, both SDKs).
  *
  * The two entries on the Fishball page ("Fishball settings", which opens this page, and "DSH
  * settings") and the `view=settings` continuation are UI changes inside Fishball, so they are
  * fishball-ui's since F-UI (R-FB-14; fishball-ui `client.entries.js`). This page is what DSH requires
  * of core as a plugin, and it stays core's (design §1.0: "its own settings page").
  *
- * The slim settings panel and its settings-section extension point (`fishballSettingsSections`)
+ * The V2 settings panel and its settings-section extension point (`fishballSettingsSections`)
  * are gone with R-HOST-11 (1.34): no section is injected from anywhere.
  */
 window.__ModuleLoader__.load({
@@ -45,7 +49,8 @@ window.__ModuleLoader__.load({
      *   It wins over `target.url` (Fishball's decision 2026-11-16; `src/settings/target.js`
      *   `effectiveTarget`, whose "has a value" test `instanceUrl` restates);
      * - `connectRoute`: `src/settings/constants.js` `CONNECT_ROUTE.path`, document-relative;
-     * - `connectState` / `configuration`: `CONNECT.state` / `CONNECT.configuration` (K3a, PROPOSED codes).
+     * - `connectState` / `configuration`: `CONNECT.state` / `CONNECT.configuration` (K3a, PROPOSED codes);
+     * - `model`: `FISHBALL_MODEL.path[0]`, the namespace field of Fishball's model.
      */
     const SHARED = Object.freeze({
       bundle: 'fishball-core',
@@ -58,6 +63,7 @@ window.__ModuleLoader__.load({
       connectRoute: 'api/fishball/connect',
       connectState: Object.freeze({ needsConfiguration: 'needs-configuration', needsAuthorization: 'needs-authorization', authorizing: 'authorizing', authorized: 'authorized', failed: 'failed' }),
       configuration: Object.freeze(['metadata-url-missing', 'metadata-url-not-https', 'metadata-url-root-path', 'not-a-connector', 'web-callback-insecure']),
+      model: 'model',
     })
     const PAGE = Object.freeze({
       locale: 'fishball-core-settings',
@@ -86,6 +92,11 @@ window.__ModuleLoader__.load({
       /** DSH's remote event for a committed credential-reference change (dsh-credentials, both SDKs). */
       credentialChanged: 'credentials/reference-updated',
       css: Object.freeze({ id: 'fishball-core-settings-style', root: 'fb-core-settings', row: 'fb-core-settings-row', hint: 'fb-core-settings-hint', error: 'fb-core-settings-error' }),
+      /**
+       * The model control: one native select whose option values are the catalog's (provider, model,
+       * effort) triples as JSON, plus the empty "DSH's default" option that clears the field.
+       */
+      model: Object.freeze({ unset: '', effortless: null, catalog: Object.freeze({ loading: 'loading', ready: 'ready', failed: 'failed' }) }),
     })
     const en = {
       summary: 'Fishball\'s target, connection and identity.',
@@ -118,6 +129,14 @@ window.__ModuleLoader__.load({
       'config.not-a-connector': 'The target is not a DSH connector.',
       'config.web-callback-insecure': 'Connect from this address needs https.',
       'config.unknown': 'Connect needs configuration ({code}).',
+      modelTitle: 'Fishball\'s model',
+      modelHint: 'The model Fishball\'s session uses. Until you pick one it uses this DSH\'s default model.',
+      modelDefault: 'This DSH\'s default model',
+      modelEffort: '{model} · {effort}',
+      modelLoading: 'Loading the models…',
+      modelNone: 'No model is configured in this DSH yet.',
+      modelFailed: 'The models could not be read.',
+      modelSaveFailed: 'The model was not saved.',
       unavailable: 'Fishball\'s settings are not available right now.',
       readOnly: 'This deployment stores settings read-only.',
       save: 'Save',
@@ -158,6 +177,14 @@ window.__ModuleLoader__.load({
       'config.not-a-connector': '目标不是 DSH connector。',
       'config.web-callback-insecure': '从这个地址使用 Connect 需要 https。',
       'config.unknown': 'Connect 需要先完成配置（{code}）。',
+      modelTitle: 'Fishball 的模型',
+      modelHint: 'Fishball 会话使用的模型。选择之前使用此 DSH 的默认模型。',
+      modelDefault: '此 DSH 的默认模型',
+      modelEffort: '{model} · {effort}',
+      modelLoading: '正在读取模型…',
+      modelNone: '此 DSH 还没有配置模型。',
+      modelFailed: '无法读取模型。',
+      modelSaveFailed: '模型没有保存。',
       unavailable: 'Fishball 的设置现在不可用。',
       readOnly: '此部署以只读方式保存设置。',
       save: '保存',
@@ -344,6 +371,64 @@ window.__ModuleLoader__.load({
         alert === null ? null : h('p', { className: PAGE.css.error, role: 'alert' }, alert))
     }
 
+    /**
+     * The model choices of DSH's catalog (`ModelCatalog`, dsh-api-session-controller, both SDKs):
+     * one per model, and one per advertised reasoning effort, each `{value, label, selection}`.
+     * fishball-ui's model dialog restates this list (a chunk imports no module, and fishball-ui
+     * imports nothing of core, Q-G2); keep the two in step.
+     */
+    function modelChoices(catalog, t) {
+      return (catalog?.groups ?? []).flatMap((group) => group.models.flatMap((model) => {
+        const base = { provider: group.id, model: model.id }
+        const label = group.name + ' / ' + model.name
+        const efforts = model.reasoning?.efforts ?? []
+        const of = (selection, text) => ({ value: JSON.stringify([selection.provider, selection.model, selection.reasoningEffort ?? PAGE.model.effortless]), label: text, selection })
+        return efforts.length === 0 ? [of(base, label)] : efforts.map((effort) => of({ ...base, reasoningEffort: effort.id }, t('modelEffort', { model: label, effort: effort.name })))
+      }))
+    }
+    const choiceValue = (selection) => (selection?.provider === undefined ? PAGE.model.unset
+      : JSON.stringify([selection.provider, selection.model, selection.reasoningEffort ?? PAGE.model.effortless]))
+
+    /**
+     * Fishball's model (F-WIRE): a native select over DSH's catalog, written at once to core's
+     * `model` field through DSH's own form (`configForms`), or cleared for DSH's default. It reads
+     * the namespace's live value, so the model dialog's choice (fishball-ui) shows here too.
+     */
+    function ModelControl({ ctx, form, t }) {
+      const snapshot = React.useSyncExternalStore((listener) => form.subscribe(listener), () => form.getSnapshot())
+      const [catalog, setCatalog] = React.useState({ status: PAGE.model.catalog.loading })
+      const [saveFailed, setSaveFailed] = React.useState(false)
+      React.useEffect(() => {
+        let live = true
+        // Read on use, never injected: a DSH whose remote session face is missing shows the page
+        // with the model control's failed note, not no page at all.
+        Promise.resolve().then(() => ctx.remote.session.modelCatalog()).then((answer) => {
+          if (live) setCatalog(answer?.ok === true ? { status: PAGE.model.catalog.ready, value: answer.value } : { status: PAGE.model.catalog.failed })
+        }, () => { if (live) setCatalog({ status: PAGE.model.catalog.failed }) })
+        return () => { live = false }
+      }, [])
+      const id = React.useId()
+      const choices = catalog.status === PAGE.model.catalog.ready ? modelChoices(catalog.value, t) : []
+      const current = choiceValue(snapshot.value?.[SHARED.model])
+      const pick = async (value) => {
+        const choice = choices.find((entry) => entry.value === value)
+        let ok = false
+        try { ok = await (choice === undefined ? form.unset(SHARED.model) : form.set(SHARED.model, choice.selection)) } catch { ok = false }
+        setSaveFailed(!ok)
+      }
+      const note = catalog.status === PAGE.model.catalog.loading ? t('modelLoading') : catalog.status === PAGE.model.catalog.failed ? t('modelFailed') : choices.length === 0 ? t('modelNone') : null
+      return h('section', { 'data-fishball-model': true, 'aria-label': t('modelTitle') },
+        h('label', { htmlFor: id }, t('modelTitle')),
+        h('div', { className: PAGE.css.row },
+          h('select', { id, value: current, disabled: !snapshot.writable, onChange: (event) => void pick(event.target.value), 'data-fishball-model-select': true },
+            h('option', { value: PAGE.model.unset }, t('modelDefault')),
+            // A saved choice the catalog no longer lists stays shown, so the select never pretends it is unset.
+            current !== PAGE.model.unset && !choices.some((entry) => entry.value === current) ? h('option', { value: current }, current) : null,
+            choices.map((entry) => h('option', { key: entry.value, value: entry.value }, entry.label)))),
+        h('p', { className: PAGE.css.hint }, note ?? t('modelHint')),
+        saveFailed ? h('p', { className: PAGE.css.error, role: 'alert' }, t('modelSaveFailed')) : null)
+    }
+
     /** The instance's target URL in a hosted child, or `undefined` (`target.js` `hasInstanceTarget`). */
     function instanceUrl(snapshot) {
       const url = snapshot.value?.[SHARED.instanceTarget.field]
@@ -388,6 +473,7 @@ window.__ModuleLoader__.load({
               disabled: disabled || !credential.writable, onEdit: (text) => section.actions.edit(PAGE.token, text),
             })),
           ...rest.map(fieldOf)),
+          h(ModelControl, { ctx, form: ctx.configForms.get(SHARED.settings.namespace), t }),
           h(ConnectControl, { t }))
       }
     }

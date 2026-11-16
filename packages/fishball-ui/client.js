@@ -10,7 +10,9 @@
  * its own sub-plugin of this row, with the kit below:
  * - client.entries.js: the Fishball page's "Fishball settings" and "DSH settings" entries and the
  *   `view=settings` continuation;
- * - client.asks.js: the ask cards in Fishball's own conversation, over core's routes.
+ * - client.asks.js: the ask cards in Fishball's own conversation, over core's routes;
+ * - client.strip.js: the status strip and its Connect / Cancel control (F-WIRE);
+ * - client.model.js: the dialog that asks for Fishball's model while it is unset (F-WIRE).
  *
  * A chunk that fails to load loses only its part, logged once; a chunk that arrives after this row
  * stopped is not started (the same rule as core's client.js and dsh-connector-ui's parts, whose
@@ -25,6 +27,8 @@ window.__ModuleLoader__.load({
       parts: Object.freeze([
         Object.freeze({ chunk: './client.entries.js', factory: 'entriesPart' }),
         Object.freeze({ chunk: './client.asks.js', factory: 'asksPart' }),
+        Object.freeze({ chunk: './client.strip.js', factory: 'stripPart' }),
+        Object.freeze({ chunk: './client.model.js', factory: 'modelPart' }),
       ]),
       unavailable: 'fishball-ui: part unavailable',
     })

@@ -11,8 +11,9 @@
  * - `createAsks({link, table, logger})`: follows the link's polls (every `ask`, `settlement` and
  *   `retirement`; a page is read whoever the event was dispatched to, so an interceptor or Fishball
  *   taking it changes nothing here), and returns `service` (the K3 `fishballInstance.ui.asks`),
- *   `tool` (the filing tool's raw DSH definition; F-WIRE registers it with `tools.register` in the
- *   manager's scope), `reconcile()` (below) and `close()`.
+ *   `tool` (the filing tool's raw DSH definition; core's main row registers it with `tools.register`
+ *   in the manager's scope), `reconcile()` (below) and `close()`. Its `onPoll` listener resolves once
+ *   the page's cards are stored.
  * - `openAskCards(ctx, storageDomain)`: the durable table.
  * - `registerAskRoutes(ctx, options)`: the owner-only routes the browser half reads (routes.js).
  *
@@ -105,9 +106,11 @@ export function createAsks({ link, table, logger }) {
   }
 
   // Pages are taken in order, one event at a time, so an ask and its settlement in one page (or in
-  // two) are applied in the order the connector committed them.
+  // two) are applied in the order the connector committed them. The listener returns the page's
+  // promise, so a caller that owns the poll pipeline (core's main row) can store the cards before it
+  // lets the same events be acked (F-WIRE: "store the card before the ack"); the link ignores it.
   const offPoll = link.onPoll((result) => {
-    if (closed || result?.ok !== true || !Array.isArray(result.events)) return
+    if (closed || result?.ok !== true || !Array.isArray(result.events)) return intake
     const events = [...result.events]
     // Each event's failure is its own: a later settlement in the same page must still close its
     // card, because an acked page is never polled again.
@@ -117,6 +120,7 @@ export function createAsks({ link, table, logger }) {
         try { await take(event) } catch (error) { logger?.warn(ASK_LOG.writeFailed, codeOf(error)) }
       }
     })
+    return intake
   })
 
   /**
