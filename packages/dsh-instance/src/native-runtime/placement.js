@@ -170,7 +170,7 @@ async function libraryPackage(name, root) {
 
 /**
  * The folder of package `name` as a module beside `anchor` (a manifest path) resolves it. Needs the
- * package to export `./package.json`, as both libraries and the connector do.
+ * package to export `./package.json`, as both libraries do.
  */
 const packageRoot = (anchor, name) => path.dirname(createRequire(anchor).resolve(name + '/' + PLACEMENT.manifest))
 
@@ -195,25 +195,9 @@ async function bundledLibraries(member) {
   }))
 }
 
-/**
- * The libraries the instance's own placed lifecycle code imports by name (PLACEMENT.shared,
- * PLACEMENT.contract), resolved through the instance's dependency graph.
- */
+/** The library the instance's own placed lifecycle code imports by name (PLACEMENT.shared), resolved through the instance's dependency graph. */
 async function librarySources() {
-  const anchor = path.join(INSTANCE_ROOT, PLACEMENT.manifest)
-  const contract = PLACEMENT.contract
-  const connectorRoot = packageRoot(anchor, contract.name)
-  const connector = await json(path.join(connectorRoot, PLACEMENT.manifest))
-  const entry = connector.exports[contract.export]
-  return [
-    await libraryPackage(PLACEMENT.shared, packageRoot(anchor, PLACEMENT.shared)),
-    {
-      name: contract.name,
-      root: connectorRoot,
-      files: await moduleClosure(connectorRoot, [path.normalize(entry)]),
-      manifest: { name: connector.name, version: connector.version, private: true, type: connector.type, exports: { [contract.export]: entry } },
-    },
-  ]
+  return [await libraryPackage(PLACEMENT.shared, packageRoot(path.join(INSTANCE_ROOT, PLACEMENT.manifest), PLACEMENT.shared))]
 }
 
 /**

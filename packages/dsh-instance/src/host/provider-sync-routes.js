@@ -9,7 +9,7 @@
  * Nothing here reads, logs or echoes a credential.
  *
  * The routes are registered on DSH's owner-only Fetch registry through the same helper as the
- * admin routes (src/slim/host/fetch-routes.js). On top of the registry's authentication and
+ * page routes (fetch-routes.js). On top of the registry's authentication and
  * Host/Origin fence each handler applies an explicit same-origin check: an Origin that names
  * another site, or a Sec-Fetch-Site outside the allowed pair, is refused.
  *
@@ -51,7 +51,7 @@ const isRecord = (value) => typeof value === 'object' && value !== null && !Arra
  * The admission rule: same origin, or no Origin with a same-site fetch.
  *
  * The Origin is judged against the request's Host by DSH's own fence
- * (`connection.requestRejection`, the check the embed broker also uses), never against
+ * (`connection.requestRejection`), never against
  * `request.url`: DSH's /api bridge rebuilds every Request on a fixed internal base
  * (`http://dsh.internal`, dsh-client-connection lib/index.js:46 on 0.2.1-rc.5 and 0.2.2-rc.1),
  * so the URL never carries the browser's authority. A missing connection service or any

@@ -5,23 +5,43 @@ import { RUNTIME, HOSTED, NativeRuntimeError, fail } from './constants.js'
 
 /**
  * Payload channels that ride the authenticated lifecycle wire beside its own operations. Each
- * carries one JSON string per frame: the session bridge owns `control` exclusively
- * (src/slim/host/bridge.js, fishball-core src/slim/child/bridge.js), the T11 admin protocol owns `admin`
- * (`ADMIN.channel` in dsh-connector-shared/admin-protocol), T16's provider-sync target owns
- * `provider-sync` (`PROVIDER_SYNC_TARGET.channel` in dsh-connector-shared/provider-sync-codec), and
- * SET's settings relay owns `instance-settings` (src/slim/settings-relay.js), and the hosted
+ * carries one JSON string per frame: T16's provider-sync target owns `provider-sync`
+ * (`PROVIDER_SYNC_TARGET.channel` in dsh-connector-shared/provider-sync-codec), and the hosted
  * token's probe and one import own `mcp-credential` (`HOSTED.channel`, credential.js; design §5.4).
- * Any other channel still closes the connection, so this list is the wire's protocol, not an
- * open tunnel.
+ * Any other channel closes the connection, so this list is the wire's protocol, not an open
+ * tunnel. I-READY removed V2's `control` (the session bridge), `admin` (the admin relay, the
+ * user's answer 2026-11-16: delete it) and `instance-settings` (the V2 child settings panel).
+ * No channel owns the wire's close: the lifecycle shares it, so a payload problem never drops it.
  */
 const PAYLOAD_CHANNEL = Object.freeze({
-  control: Object.freeze({ name: 'control', invalidFrame: 'INVALID_CONTROL_FRAME', ownsClose: true }),
-  admin: Object.freeze({ name: 'admin', invalidFrame: 'INVALID_ADMIN_FRAME', ownsClose: false }),
-  providerSync: Object.freeze({ name: 'provider-sync', invalidFrame: 'INVALID_PROVIDER_SYNC_FRAME', ownsClose: false }),
-  // SET's child → main settings relay (`SETTINGS_RELAY.channel` in src/slim/settings-relay.js).
-  instanceSettings: Object.freeze({ name: 'instance-settings', invalidFrame: 'INVALID_INSTANCE_SETTINGS_FRAME', ownsClose: false }),
-  credential: Object.freeze({ name: HOSTED.channel, invalidFrame: 'INVALID_CREDENTIAL_FRAME', ownsClose: false }),
+  providerSync: Object.freeze({ name: 'provider-sync', invalidFrame: 'INVALID_PROVIDER_SYNC_FRAME' }),
+  credential: Object.freeze({ name: HOSTED.channel, invalidFrame: 'INVALID_CREDENTIAL_FRAME' }),
 })
+
+/**
+ * One payload channel's current transport and its listeners, at either end of the wire (index.js
+ * on the main side, child.js in the child). A listener registered late gets the live transport at
+ * once; a closed wire's transport is never offered, because it can deliver no reply. Each channel's
+ * `on<X>Transport(listener)` is this `subscribe`.
+ */
+export class ChannelPublisher {
+  #listeners = new Set()
+  #current
+  /** @returns its disposer */
+  subscribe(listener) {
+    this.#listeners.add(listener)
+    if (this.#current && !this.#current.wire.closed) listener(this.#current.transport, this.#current.metadata)
+    return () => this.#listeners.delete(listener)
+  }
+  /** Offers the channel of `wire` (with optional `metadata`) to every listener. */
+  publish(wire, transport, metadata) {
+    this.#current = { wire, transport, metadata }
+    for (const listener of this.#listeners) listener(transport, metadata)
+  }
+  /** Forgets the current transport; with `wire`, only when it is that wire's. */
+  drop(wire) { if (wire === undefined || this.#current?.wire === wire) this.#current = undefined }
+  clear() { this.#listeners.clear(); this.#current = undefined }
+}
 
 export function proof(secret, role, identity, challenge) {
   return createHmac('sha256', secret).update(JSON.stringify([RUNTIME.protocol, role, identity.hostId, identity.instanceId, challenge])).digest('hex')
@@ -30,7 +50,7 @@ export function sameProof(actual, expected) {
   return typeof actual === 'string' && actual.length === expected.length && timingSafeEqual(Buffer.from(actual), Buffer.from(expected))
 }
 
-/** Bounded framed transport. Authentication and lifecycle never enter the control channel. */
+/** Bounded framed transport. Authentication and lifecycle never enter a payload channel. */
 export class Wire extends EventEmitter {
   constructor(socket, limits) {
     super()
@@ -107,7 +127,7 @@ export class Wire extends EventEmitter {
       try { this.send({ channel: 'lifecycle', id, operation }) } catch (error) { clearTimeout(timer); this.pending.delete(id); reject(error) }
     })
   }
-  /** One protocol's view of its channel; `close` exists only where that protocol owns the wire. */
+  /** One protocol's view of its channel; it has no `close`, because no channel owns the wire. */
   payloadTransport(channel) {
     const { spec } = channel
     const subscribe = (event, fn) => { this.on(event, fn); return () => this.off(event, fn) }
@@ -123,25 +143,11 @@ export class Wire extends EventEmitter {
       },
       onClose: (fn) => subscribe('closed', fn),
     }
-    if (spec.ownsClose) transport.close = () => this.close()
     return Object.freeze(transport)
   }
-  controlTransport() { return this.payloadTransport(this.channels.get(PAYLOAD_CHANNEL.control.name)) }
-  /**
-   * The T11 admin channel: the same authenticated wire, its own payload channel. It deliberately
-   * has no `close`: the session bridge and the lifecycle share this wire, so an admin problem
-   * must never drop delivery.
-   */
-  adminTransport() { return this.payloadTransport(this.channels.get(PAYLOAD_CHANNEL.admin.name)) }
-  /**
-   * T16's provider-sync channel: the same authenticated wire, its own payload channel, and no
-   * `close` for the same reason as the admin channel — the session bridge and lifecycle share
-   * this wire, so a sync problem must never drop delivery.
-   */
+  /** T16's provider-sync channel: the same authenticated wire, its own payload channel. */
   providerSyncTransport() { return this.payloadTransport(this.channels.get(PAYLOAD_CHANNEL.providerSync.name)) }
-  /** SET's settings relay channel; no `close` for the same reason as the admin channel. */
-  instanceSettingsTransport() { return this.payloadTransport(this.channels.get(PAYLOAD_CHANNEL.instanceSettings.name)) }
-  /** The hosted token's channel (credential.js); no `close` for the same reason as the admin channel. */
+  /** The hosted token's channel (credential.js), on the same wire. */
   credentialTransport() { return this.payloadTransport(this.channels.get(PAYLOAD_CHANNEL.credential.name)) }
   close() { this.socket.destroy() }
 }

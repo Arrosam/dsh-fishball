@@ -19,7 +19,8 @@ export const R2 = Object.freeze({
   route: Object.freeze({
     status: '/api/dsh-instance/status',
     retry: '/api/dsh-instance/retry',
-    nativeStatus: '/api/fishball/native/status',
+    // I-READY: the V2 status relay was never deployed; keep the same state/code/detail checks.
+    nativeStatus: '/api/dsh-instance/status',
     embed: '/fishball/embed/',
   }),
   state: Object.freeze({ ready: 'ready', failed: 'failed' }),

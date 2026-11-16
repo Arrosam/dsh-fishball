@@ -1,59 +1,55 @@
 import net from 'node:net'
-import http from 'node:http'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { realpath, readFile, chmod, unlink } from 'node:fs/promises'
 import { randomUUID } from 'node:crypto'
-import { registerParentShutdown } from './parent-watch.js'
-import { RUNTIME, runtimeLimits, fail, NativeRuntimeError, appAccess, NATIVE_WEB } from './constants.js'
-import { BEARER, ROUTES } from '../slim/contract.js'
+import { RUNTIME, runtimeLimits, fail, loopbackOrigin } from './constants.js'
 import { jsonPrivate, readPrivate, writePrivate, privateDirectory, launchPath, snapshotPath, pathsFor, lifecycleLog } from './files.js'
 import { inside } from 'dsh-connector-shared/files'
-import { Wire, proof, sameProof } from './wire.js'
+import { Wire, ChannelPublisher, proof, sameProof } from './wire.js'
 import { admissionKey, createTicketRedeemer } from './ticket.js'
 
-const HTTP = Object.freeze({ success: 200 })
-async function probeHttp(url, timeoutMs, bearer) {
-  return new Promise((resolve, reject) => {
-    const headers = bearer === undefined ? {} : { [BEARER.header]: BEARER.scheme + BEARER.separator + bearer }
-    const request = http.get(url, { headers, agent: false }, response => {
-      const result = { status: response.statusCode }
-      response.resume()
-      response.on('end', () => resolve(result))
-      response.on('error', () => reject(new NativeRuntimeError('APP_AUTH_NOT_READY')))
-    })
-    request.setTimeout(timeoutMs, () => request.destroy())
-    request.on('error', () => reject(new NativeRuntimeError('APP_AUTH_NOT_READY')))
-  })
-}
-
-/** The child owns the contract routes without the broker prefix, exactly as the app server does (§3.1). */
-const HEALTH_PATH = ROUTES.api.slice(ROUTES.prefix.length) + 'health'
+/** What a ready child reports beside its origin (the host checks the same list, index.js readyHealth). */
+const READY_CAPABILITIES = Object.freeze([...RUNTIME.requiredServices, RUNTIME.capabilities.admission, RUNTIME.capabilities.lifecycle])
 
 /**
- * The slim readiness gate (§2.3): the base core services are mounted, the app row published its
- * loopback service while booting, and that server accepts the bearer it minted. The previous gate
- * exchanged the DSH Web UI's own login cookie, which only exists when the Web bundle runs.
+ * The base DSH services a hosted child must have mounted (RUNTIME.requiredServices).
+ * @param ctx - `{get(name)}`, the lifecycle row's context
+ * @throws {NativeRuntimeError} `MISSING_CAPABILITY` when one is absent
  */
-async function authenticatedReadiness(ctx, limits) {
+export function requireBaseServices(ctx) {
   for (const service of RUNTIME.requiredServices) if (ctx.get(service) === undefined) fail('MISSING_CAPABILITY')
-  const app = ctx.get(RUNTIME.appService)
-  if (app === undefined) fail('APP_NOT_PUBLISHED')
-  const access = appAccess(app)
-  const health = new URL(HEALTH_PATH, access.origin).href
-  const anonymous = await probeHttp(health, limits.requestTimeoutMs)
-  if (anonymous.status !== BEARER.unauthorizedStatus) fail('APP_AUTH_NOT_READY')
-  const authenticated = await probeHttp(health, limits.requestTimeoutMs, access.bearer)
-  if (authenticated.status !== HTTP.success) fail('APP_AUTH_NOT_READY')
-  const native = ctx.get(NATIVE_WEB.service)
-  if (!native) fail('MISSING_CAPABILITY')
-  await native.ready()
-  if (native.access().origin === access.origin) fail('NATIVE_ACCESS_UNAVAILABLE')
-  return { access, capabilities: [...RUNTIME.requiredServices, RUNTIME.capabilities.authenticatedApp, NATIVE_WEB.capability, RUNTIME.capabilities.lifecycle, RUNTIME.capabilities.control] }
+}
+
+/**
+ * The V3 readiness gate (I-READY), on generic DSH signals in the child only: the base services are
+ * mounted, the child's `appReady` has fired, and the child-side row `dsh-instance-child` has
+ * registered its admission route and published the web server, which answers its origin (it does
+ * only once it listens). F-WIRE (2026-11-16): core offers no readiness signal to the instance, by
+ * design (R-ARCH-10; R-FB-10 as amended by 1.39), so nothing of core is read here and no HTTP probe
+ * is made: V2's gate needed core's own loopback app server, a bearer probe of it and a
+ * launch-token cookie probe, and V2 was never deployed. The K3 vocabulary is unchanged (child.d.ts:
+ * "The child's lifecycle state (V2 STATUS, unchanged)", `ChildState = 'disabled' | 'waiting' |
+ * 'starting' | 'ready' | 'stopping' | 'stopped' | 'failed'`); a child that never becomes ready is a
+ * failed start, `NATIVE_START_FAILED` or `NATIVE_TIMEOUT` (K3 `LifecycleCode`), as before.
+ * @param state - `{ctx: {get(name)}, appReady: boolean, web: (() => string) | undefined, stopped: boolean}`
+ * @returns `{origin, capabilities}` while ready, else null (the child answers `starting`)
+ */
+export function childReadiness({ ctx, appReady, web, stopped }) {
+  if (stopped || !appReady || web === undefined) return null
+  try {
+    requireBaseServices(ctx)
+    return { origin: loopbackOrigin(web()), capabilities: READY_CAPABILITIES }
+  } catch { return null }
 }
 
 /** Mounted only by the explicit private CLI overlay, not the legacy Fishball entrypoint. */
 export async function applyNativeChild(ctx, config) {
+  // Imported here, not at the top: the module opens the parent pipe (fd 3) as it loads, so a static
+  // import would make this file's pure readiness rule unloadable outside a hosted child. In the
+  // child the launch's `--import` preload has already loaded it, so this is the same instance; the
+  // snapshot copies it as a listed entry (RUNTIME.snapshot.entries), not as a static import.
+  const { registerParentShutdown } = await import('./parent-watch.js')
   registerParentShutdown(code => ctx.appExit(code))
   process.umask(RUNTIME.privateDirectoryMode ^ 0o777)
   const limits = runtimeLimits(config.limits)
@@ -86,66 +82,50 @@ export async function applyNativeChild(ctx, config) {
     } else if (core.has(entry.name) && core.get(entry.name) !== physical) fail('CHILD_RESOLUTION_MISMATCH')
   }
   const secret = await readPrivate(path.join(paths.root, RUNTIME.secret))
-  const listeners = new Set()
-  const adminListeners = new Set()
-  // T16's provider-sync target attaches to the same authenticated wire on its own payload channel.
-  const syncListeners = new Set()
-  // SET's settings relay: the child panel's requests to the main host, on the same wire.
-  const settingsListeners = new Set()
-  // The hosted token's probe and one import (credential.js), on the same wire.
-  const credentialListeners = new Set()
+  // T16's provider-sync target and the hosted token's probe and one import (credential.js), each
+  // on its own payload channel of the host's attached wire.
+  const channels = Object.freeze({ providerSync: new ChannelPublisher(), credential: new ChannelPublisher() })
+  // The host's one attached connection (operation `attach`).
   let current
-  let currentAdmin
-  let currentSync
-  let currentSettings
-  let currentCredential
-  let ready
+  // The readiness signals (childReadiness): appReady fired, and the web published by the child-side row.
+  let appReady = false
+  let web
+  let readyLogged = false
   let stopped = false
+  const readiness = () => childReadiness({ ctx, appReady, web, stopped })
+  /** One CHILD_READY line, at the first health or signal that finds the child ready. */
+  const noteReady = () => {
+    if (readyLogged || readiness() === null) return
+    readyLogged = true
+    void lifecycleLog(paths, 'CHILD_READY', limits.maxLogBytes).catch(() => {})
+  }
   const identity = { hostId: marker.hostId, instanceId: record.instanceId }
   // The frame's tickets: the key comes from the lifecycle secret, never from an overlay.
   const tickets = createTicketRedeemer(admissionKey(secret), identity.instanceId)
   const service = {
     ...identity,
-    onControlTransport(listener) {
-      listeners.add(listener)
-      if (current) listener(current.transport, current.metadata)
-      return () => listeners.delete(listener)
-    },
     /**
-     * The admin transport of the current authenticated connection (T11). It is published only
-     * after the same mutual HMAC proof as every lifecycle request, and it is never created by an
-     * unauthenticated peer; the admin protocol rides that connection on its own payload channel.
+     * The provider-sync transport of the current authenticated connection (T16). It exists only
+     * after the mutual HMAC proof and carries no operation of its own; the child-side row's
+     * target attaches its endpoint when this fires.
      */
-    onAdminTransport(listener) {
-      adminListeners.add(listener)
-      // A wire that already closed can never deliver a reply, so it is not offered again.
-      if (currentAdmin && !currentAdmin.wire.closed) listener(currentAdmin.transport)
-      return () => adminListeners.delete(listener)
-    },
-    /**
-     * The provider-sync transport of the current authenticated connection (T16). Like the admin
-     * channel it exists only after the mutual HMAC proof and carries no operation of its own;
-     * the child's target row attaches its endpoint when this fires.
-     */
-    onProviderSyncTransport(listener) {
-      syncListeners.add(listener)
-      if (currentSync && !currentSync.wire.closed) listener(currentSync.transport)
-      return () => syncListeners.delete(listener)
-    },
-    /** SET's settings relay transport of the current authenticated connection; same rules as above. */
-    onInstanceSettingsTransport(listener) {
-      settingsListeners.add(listener)
-      if (currentSettings && !currentSettings.wire.closed) listener(currentSettings.transport)
-      return () => settingsListeners.delete(listener)
-    },
+    onProviderSyncTransport: (listener) => channels.providerSync.subscribe(listener),
     /** The `mcp-credential` transport of the current authenticated connection; same rules as above. */
-    onCredentialTransport(listener) {
-      credentialListeners.add(listener)
-      if (currentCredential && !currentCredential.wire.closed) listener(currentCredential.transport)
-      return () => credentialListeners.delete(listener)
-    },
+    onCredentialTransport: (listener) => channels.credential.subscribe(listener),
     /** Redeems one admission ticket for this generation (design §4.1; ticket.js createTicketRedeemer). */
     redeemTicket: (ticket, audience) => tickets.redeem(ticket, audience),
+    /**
+     * The child-side row's readiness signal (I-READY): its admission route is registered and
+     * `origin()` reads the child's web server origin (`webServer.getOrigin()`, which throws until it
+     * listens). Only the latest publication counts.
+     * @param origin - `() => string`
+     * @returns its disposer, which withdraws readiness (the child answers `starting` again)
+     */
+    publishWeb(origin) {
+      web = origin
+      noteReady()
+      return () => { if (web === origin) web = undefined }
+    },
   }
   ctx.provide('nativeRuntime', service)
   const connections = new Set()
@@ -158,10 +138,7 @@ export async function applyNativeChild(ctx, config) {
     wire.once('closed', () => {
       clearTimeout(timer); connections.delete(wire)
       if (current?.wire === wire) current = undefined
-      if (currentAdmin?.wire === wire) currentAdmin = undefined
-      if (currentSync?.wire === wire) currentSync = undefined
-      if (currentSettings?.wire === wire) currentSettings = undefined
-      if (currentCredential?.wire === wire) currentCredential = undefined
+      for (const channel of Object.values(channels)) channel.drop(wire)
     })
     wire.on('auth', message => {
       if (message.channel !== 'auth' || message.step !== 'hello' || message.nonce !== nonce || message.hostId !== identity.hostId || message.instanceId !== identity.instanceId || typeof message.challenge !== 'string' || !sameProof(message.proof, proof(secret, 'main', identity, [nonce, message.challenge]))) return wire.close()
@@ -172,38 +149,27 @@ export async function applyNativeChild(ctx, config) {
     wire.on('request', async message => {
       try {
         let payload
-        if (message.operation === 'health') payload = { state: ready ? 'ready' : 'starting', ...identity, pid: process.pid, version: manifest.version, installAnchor: record.installAnchor, capabilities: ready?.capabilities ?? [], access: ready?.access ?? null }
-        else if (message.operation === 'control') {
-          if (!ready || current) fail('CONTROL_BUSY')
+        if (message.operation === RUNTIME.operation.health) {
+          const ready = readiness()
+          noteReady()
+          payload = { state: ready ? RUNTIME.healthState.ready : RUNTIME.healthState.starting, ...identity, pid: process.pid, version: manifest.version, installAnchor: record.installAnchor, capabilities: ready?.capabilities ?? [], origin: ready?.origin ?? null }
+        } else if (message.operation === RUNTIME.operation.attach) {
+          if (readiness() === null || current) fail('ATTACH_BUSY')
           const metadata = { ...identity, connectionId: randomUUID() }
-          current = { wire, transport: wire.controlTransport(), metadata }
-          // The admin channel needs no operation of its own: it comes up with the control
-          // transport on the same authenticated wire, and its frames are buffered until its row
-          // attaches. Publish it before the control reply lets the main send one (§5.2, §9).
-          currentAdmin = { wire, transport: wire.adminTransport() }
-          // T16's target comes up with the same control handshake; its frames are buffered until
-          // its child row attaches, so publishing here is enough.
-          currentSync = { wire, transport: wire.providerSyncTransport() }
-          currentSettings = { wire, transport: wire.instanceSettingsTransport() }
-          currentCredential = { wire, transport: wire.credentialTransport() }
-          // Register receivers before the main logical host emits its protocol greeting.
-          for (const listener of listeners) listener(current.transport, metadata)
-          for (const listener of adminListeners) listener(currentAdmin.transport)
-          for (const listener of syncListeners) listener(currentSync.transport)
-          for (const listener of settingsListeners) listener(currentSettings.transport)
-          for (const listener of credentialListeners) listener(currentCredential.transport)
+          current = { wire, metadata }
+          // T16's target and the hosted token's channel come up with the attach on the same
+          // authenticated wire; their frames are buffered until their child-side parts attach, so
+          // publishing here, before the reply lets the host send one, is enough.
+          channels.providerSync.publish(wire, wire.providerSyncTransport())
+          channels.credential.publish(wire, wire.credentialTransport())
           payload = metadata
-        } else if (message.operation === NATIVE_WEB.operation) {
-          if (!ready || stopped) fail('NOT_READY')
-          payload = { generation: record.instanceId, ...ctx.get(NATIVE_WEB.service).access() }
-        } else if (message.operation === 'stop') {
+        } else if (message.operation === RUNTIME.operation.stop) {
           stopped = true
-          ready = undefined
           payload = { stopping: true }
         }
         else fail('UNKNOWN_LIFECYCLE_OPERATION')
         wire.send({ channel: 'lifecycle', replyTo: message.id, payload })
-        if (message.operation === 'stop') setImmediate(() => ctx.appExit(0))
+        if (message.operation === RUNTIME.operation.stop) setImmediate(() => ctx.appExit(0))
       } catch { if (!wire.closed) wire.send({ channel: 'lifecycle', replyTo: message.id, error: true }) }
     })
     wire.send({ channel: 'auth', step: 'challenge', nonce })
@@ -221,14 +187,20 @@ export async function applyNativeChild(ctx, config) {
   await writePrivate(path.join(directory, RUNTIME.pid), { ...identity, pid: process.pid })
   await writePrivate(path.join(directory, RUNTIME.endpoint), { ...identity, endpoint })
   await lifecycleLog(paths, 'CHILD_LISTEN', limits.maxLogBytes)
+  // A base service missing once the child's app is ready can never appear later: fail at once.
   const cancelReady = ctx.appReady.onReady(() => {
-    authenticatedReadiness(ctx, limits).then(async result => { if (!stopped) { ready = result; await lifecycleLog(paths, 'CHILD_READY', limits.maxLogBytes) } }).catch(async () => { await lifecycleLog(paths, 'CHILD_FAILED', limits.maxLogBytes).catch(() => {}); ctx.appExit(1) })
+    try { requireBaseServices(ctx) } catch {
+      void lifecycleLog(paths, 'CHILD_FAILED', limits.maxLogBytes).catch(() => {}).then(() => ctx.appExit(1))
+      return
+    }
+    appReady = true
+    noteReady()
   })
-  // Cordis 4 has no 'dispose' event: a listener registered there never runs, and the control
-  // listener then keeps the event loop alive after appExit, so the parent waited out its whole
-  // stopTimeout. The row's teardown must be an effect, exactly like the app row's disposers.
+  // Cordis 4 has no 'dispose' event: a listener registered there never runs, and the lifecycle
+  // server then keeps the event loop alive after appExit, so the parent waited out its whole
+  // stopTimeout. The row's teardown must be an effect.
   ctx.effect(() => async () => {
-    stopped = true; ready = undefined; cancelReady(); listeners.clear(); adminListeners.clear(); syncListeners.clear(); settingsListeners.clear(); credentialListeners.clear()
+    stopped = true; web = undefined; cancelReady(); for (const channel of Object.values(channels)) channel.clear()
     for (const wire of connections) wire.close()
     await new Promise(resolve => server.close(resolve))
     await unlink(path.join(directory, RUNTIME.endpoint)).catch(error => { if (error.code !== 'ENOENT') throw error })
