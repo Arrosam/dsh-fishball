@@ -1,8 +1,9 @@
 /**
  * Host API on DSH's authenticated /api channel (DESIGN §10, slim §5). DSH has already applied its
  * browser authentication and same-origin fence; bodies are validated here. These are the main
- * side's own routes only (the "body" of Fishball): the isolated child's pages and settings are
- * served by the child itself (src/slim/host/embed.js, settings-routes.js).
+ * side's own V2 routes only: the hosted child's pages and settings are the instance's own
+ * (dsh-instance), and the V3 connector's routes are src/wire/'s (MCP, OAuth) and src/ui/'s and
+ * src/settings-page/'s (owner-only JSON).
  *
  * GET  state                  -> current snapshot (JSON)
  * GET  events                 -> server-sent snapshots: one at once, then one per change
