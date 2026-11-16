@@ -9,7 +9,8 @@
  * - R2.2 lifecycle.log records the failure as a line {code: 'FAILED', reason} with reason the
  *   specific code (UPPER_SNAKE only, never message text, a path or a URL).
  * - R2.3 POST /api/dsh-instance/retry answers the same {state, code, detail} shape.
- * - R2.4 /api/dsh-instance/status and /api/fishball/native/status both carry detail.
+ * - R2.4 detail is read from /api/dsh-instance/status; I-READY removed the never-deployed
+ *   V2 native/status relay. The historical nativeStatus helper now reads the instance route.
  *
  * Observation: a REAL DSH boot of the main profile (support/host.mjs) per SDK selected by
  * FBTEST_DSH_RUNTIME, its owner-only routes and <home>/fishball/runtime/lifecycle.log. Failures are

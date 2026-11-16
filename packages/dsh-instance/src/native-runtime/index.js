@@ -3,10 +3,10 @@ import { pathToFileURL } from 'node:url'
 import { spawn as nodeSpawn } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
 import { setTimeout as delay } from 'node:timers/promises'
-import { RUNTIME, RUNTIME_LIMITS, LIFETIME, UNINSTALL, NativeRuntimeError, fail, runtimeLimits, appAccess, NATIVE_WEB, nativeAccess } from './constants.js'
+import { RUNTIME, RUNTIME_LIMITS, READY_CAPABILITIES, LIFETIME, UNINSTALL, NativeRuntimeError, fail, runtimeLimits, loopbackOrigin } from './constants.js'
 import { pathsFor, prepareLayout, existingLayout, removeRuntime, exists, jsonPrivate, writePrivate, privateDirectory, launchPath, removeLaunch, lifecycleLog, validId } from './files.js'
 import { resolveInstallation, isolatedEnvironment, childExecArgv, initializeProfile, copyChildCode, runProbe } from './installation.js'
-import { connectWire } from './wire.js'
+import { connectWire, ChannelPublisher } from './wire.js'
 import { admissionKey, mintTicket } from './ticket.js'
 import { launchOverlay } from './overlay.js'
 import { captureChildStderr } from './stderr-log.js'
@@ -20,6 +20,21 @@ export { RUNTIME_LIMITS, NativeRuntimeError, launchOverlay }
 export { composedProfile, COMPOSE_RECORD } from './compose.js'
 export function createNativeRuntime(options, dependencies = {}) { return new NativeRuntime(options, dependencies) }
 
+/**
+ * The host's readiness rule for one health answer (I-READY): the child says `ready`, reports every
+ * ready capability (READY_CAPABILITIES: the base services, admission and lifecycle; child.js
+ * childReadiness), and names its own loopback web origin. The identity checks are authenticateReady's.
+ * @param status - the child's `health` payload
+ * @returns {string} the child's web origin
+ * @throws {NativeRuntimeError} `NOT_READY`, `MISSING_CAPABILITY`, or `UNSAFE_CHILD_ORIGIN` (both fatal at startup)
+ */
+export function readyHealth(status) {
+  if (status?.state !== RUNTIME.healthState.ready) fail('NOT_READY')
+  const capabilities = Array.isArray(status.capabilities) ? status.capabilities : []
+  if (!READY_CAPABILITIES.every((name) => capabilities.includes(name))) fail('MISSING_CAPABILITY')
+  return loopbackOrigin(status.origin)
+}
+
 class NativeRuntime {
   constructor(options, dependencies) {
     if (process.platform === 'win32') fail('UNSUPPORTED_PLATFORM', 'Attached native lifecycle currently requires POSIX.')
@@ -28,70 +43,34 @@ class NativeRuntime {
     // The process whose launch the child copies (D28): its execPath, execArgv, env and versions.
     this.host = dependencies.host ?? process
     this.limits = runtimeLimits(options.limits)
-    this.nativeEpoch = 0
-    this.listeners = new Set()
-    // The T11 admin channel is attached once per authenticated wire, beside the control transport.
-    this.adminListeners = new Set()
-    // T16's provider-sync channel rides the same wire on its own payload channel.
-    this.providerSyncListeners = new Set()
-    // SET's settings relay: the child panel's requests to this host, on the same wire.
-    this.instanceSettingsListeners = new Set()
-    // The hosted token's channel (credential.js), on the same wire.
-    this.credentialListeners = new Set()
+    // The attached wire's payload channels (wire.js), offered to the host row's parts.
+    this.channels = Object.freeze({ providerSync: new ChannelPublisher(), credential: new ChannelPublisher() })
     this.pending = Promise.resolve()
     this.warnings = []
     this.paths = pathsFor(options.mainHome)
   }
   get hostId() { return this.marker?.hostId }
-  onControlTransport(listener) {
-    this.listeners.add(listener)
-    if (this.control) listener(this.control.transport, this.control.metadata)
-    return () => this.listeners.delete(listener)
-  }
-  /**
-   * The admin transport of the attached wire (T11). It exists only after the same mutual HMAC
-   * proof as every lifecycle request, so admin frames inherit that authentication (§5.1).
-   */
-  onAdminTransport(listener) {
-    this.adminListeners.add(listener)
-    if (this.admin && !this.admin.wire.closed) listener(this.admin.transport)
-    return () => this.adminListeners.delete(listener)
-  }
   /**
    * The provider-sync transport of the attached wire (T16). Its frames are authenticated by the
    * same mutual HMAC proof as every lifecycle request; the instance id is offered beside the
    * transport so the host's bridge can name the child a preview belongs to.
    */
-  onProviderSyncTransport(listener) {
-    this.providerSyncListeners.add(listener)
-    if (this.providerSync && !this.providerSync.wire.closed) listener(this.providerSync.transport, this.providerSync.metadata)
-    return () => this.providerSyncListeners.delete(listener)
-  }
-  /** SET's settings relay transport of the attached wire; same authentication as every channel. */
-  onInstanceSettingsTransport(listener) {
-    this.instanceSettingsListeners.add(listener)
-    if (this.instanceSettings && !this.instanceSettings.wire.closed) listener(this.instanceSettings.transport)
-    return () => this.instanceSettingsListeners.delete(listener)
-  }
+  onProviderSyncTransport(listener) { return this.channels.providerSync.subscribe(listener) }
   /** The `mcp-credential` transport of the attached wire; same authentication as every channel. */
-  onCredentialTransport(listener) {
-    this.credentialListeners.add(listener)
-    if (this.credential && !this.credential.wire.closed) listener(this.credential.transport, this.credential.metadata)
-    return () => this.credentialListeners.delete(listener)
-  }
+  onCredentialTransport(listener) { return this.channels.credential.subscribe(listener) }
   /**
    * The ready child's own web origin (`http://127.0.0.1:<port>`), from the attached generation's
-   * last native admission, or undefined. It is not a secret: the port alone admits nobody.
+   * health answer, or undefined. It is not a secret: the port alone admits nobody.
    */
-  childOrigin() { return this.control && !this.control.wire.closed ? this.webOrigin : undefined }
+  childOrigin() { return this.attached && !this.attached.wire.closed ? this.attached.origin : undefined }
   /**
    * A single-use admission ticket for the attached generation (design §4.1; ticket.js). Rejects
    * when no child is attached. The key is derived from the lifecycle secret, as the child does.
    */
   async mintTicket({ audience, view, lang }) {
-    const control = this.control
-    if (!control || control.wire.closed || this.secret === undefined) fail('NOT_READY')
-    return mintTicket(admissionKey(this.secret), { generation: control.metadata.instanceId, audience, view, lang })
+    const attached = this.attached
+    if (!attached || attached.wire.closed || this.secret === undefined) fail('NOT_READY')
+    return mintTicket(admissionKey(this.secret), { generation: attached.metadata.instanceId, audience, view, lang })
   }
   serial(action) {
     const next = this.pending.then(action, action)
@@ -99,24 +78,16 @@ class NativeRuntime {
     return next
   }
   start() { return this.serial(this.beginStartup(signal => this.startInternal(signal))) }
-  /**
-   * A new start or restart is an explicit request for a live child again, so it ends a previous
-   * parentExit() (host.js calls shutdown() before every Retry/Restart start, and it sets the flag).
-   * Without this reset nativeEmbedAccess() refused every later generation. Cleared synchronously
-   * here, not inside the queued action: a parentExit() that arrives after this call still wins.
-   * The epoch is not reset: admissions of the stopped generation stay aborted.
-   */
+  /** One start's abort signal; a later start, stop or parentExit aborts it. */
   beginStartup(action) {
-    this.parentExited = false
     const startup = new AbortController()
     this.startup = startup
     return () => action(startup.signal)
   }
-  stop() { this.invalidateNativeAccess(); this.startup?.abort(); return this.serial(() => this.stopInternal()) }
-  invalidateNativeAccess() { this.nativeEpoch++; this.nativeAdmission?.abort(); this.nativeAdmission = undefined }
+  stop() { this.startup?.abort(); return this.serial(() => this.stopInternal()) }
   // Synchronous process-exit hook can close a private pipe but cannot await.
   // EOF lets the child request graceful appExit and enforce its own deadline.
-  parentExit() { this.parentExited = true; this.invalidateNativeAccess(); this.startup?.abort(); this.parentPipe?.destroy() }
+  parentExit() { this.startup?.abort(); this.parentPipe?.destroy() }
   forceOwned() {
     const identity = this.childIdentity
     const child = this.child
@@ -144,12 +115,11 @@ class NativeRuntime {
     return Promise.race([stopped, deadline]).finally(() => { clearTimeout(forceTimer); clearTimeout(deadlineTimer) })
   }
   restart() {
-    this.invalidateNativeAccess()
     this.startup?.abort()
     return this.serial(this.beginStartup(async signal => { await this.stopInternal(); return this.startInternal(signal) }))
   }
   detach() { return this.serial(async () => {
-    this.dropControl()
+    this.dropAttached()
     this.child?.unref()
     if (this.marker) await this.log('DETACH')
   }) }
@@ -160,52 +130,6 @@ class NativeRuntime {
     if (!record) return this.stopped()
     try { return this.publicHealth(await this.authenticateReady(record)) } catch { return { state: 'unavailable', hostId: this.hostId, instanceId: record.instanceId, warnings: [...this.warnings] } }
   }) }
-  /**
-   * The child's loopback origin and the bearer it minted, for the main-side embed broker (§3.1,
-   * §3.2). Main-process only: publicHealth never carries it, so no page can read the token.
-   */
-  embedAccess() { return this.serial(async () => {
-    await this.prepare()
-    const record = await this.active()
-    if (!record) fail('NOT_RUNNING')
-    const status = await this.authenticateReady(record)
-    return appAccess(status.access)
-  }) }
-  /**
-   * Server-private native admission; never serialize this object or include it in diagnostics.
-   * Promise<{generation: string, origin: string, authenticatedUrl: string, signal: AbortSignal}>.
-   * Resolves only when ready. NOT_RUNNING means no active child; NOT_READY means starting;
-   * NATIVE_ACCESS_UNAVAILABLE covers invalid/lost admission without leaking SDK error values.
-   * The embed broker redirects the browser to authenticatedUrl (PG-ORIGIN) only while signal is
-   * live; stop/restart/control loss aborts it, so a retired generation is never a launch target.
-   */
-  // Unreached since I-HOST stopped registering the V2 embed broker (src/slim/host/embed.js, which
-  // with native-web-access.js is REMOVE-V2's to delete); the locator admits through tickets.
-  nativeEmbedAccess() {
-    const epoch = this.nativeEpoch
-    return this.serial(async () => {
-      try {
-        if (this.parentExited || epoch !== this.nativeEpoch) fail('NATIVE_ACCESS_UNAVAILABLE')
-        if (!await exists(path.join(this.paths.root, RUNTIME.marker))) fail('NOT_RUNNING')
-        await this.prepare()
-        const record = await this.active()
-        if (!record) fail('NOT_RUNNING')
-        const status = await this.authenticateReady(record)
-        if (!status.capabilities.includes(NATIVE_WEB.capability)) fail('NATIVE_ACCESS_UNAVAILABLE')
-        await this.attach(record)
-        const control = this.control
-        const admission = await control.wire.request(NATIVE_WEB.operation)
-        if (this.parentExited || epoch !== this.nativeEpoch || control !== this.control || control.wire.closed || admission.generation !== record.instanceId) fail('NATIVE_ACCESS_UNAVAILABLE')
-        const access = nativeAccess(admission)
-        if (access.origin === status.access.origin) fail('NATIVE_ACCESS_UNAVAILABLE')
-        this.nativeAdmission ??= new AbortController()
-        return Object.freeze({ generation: record.instanceId, ...access, signal: this.nativeAdmission.signal })
-      } catch (error) {
-        if (error instanceof NativeRuntimeError && ['NOT_RUNNING', 'NOT_READY'].includes(error.code)) throw error
-        fail('NATIVE_ACCESS_UNAVAILABLE')
-      }
-    })
-  }
   /**
    * Delete this home's runtime tree, `<home>/fishball/runtime` (uninstall, design §0.10). Nothing
    * is created when the tree is absent. The tree must first be proven this home's: no symbolic
@@ -274,60 +198,33 @@ class NativeRuntime {
     return { state: status.state, hostId: status.hostId, instanceId: status.instanceId, pid: status.pid, version: status.version, capabilities: [...status.capabilities], warnings: [...this.warnings] }
   }
   async authenticateReady(record) {
-    const status = await this.query(record, 'health')
+    const status = await this.query(record, RUNTIME.operation.health)
     if (status.hostId !== this.hostId || status.instanceId !== record.instanceId || status.pid !== await this.pid(record) || status.version !== record.version || status.installAnchor !== record.installAnchor) fail('CHILD_IDENTITY_MISMATCH')
-    if (status.state !== 'ready') fail('NOT_READY')
-    if (!RUNTIME.requiredServices.every(service => status.capabilities.includes(service)) || !status.capabilities.includes(RUNTIME.capabilities.authenticatedApp) || !status.capabilities.includes(NATIVE_WEB.capability)) fail('MISSING_CAPABILITY')
-    // A ready child always reports the app surface it is reachable through; validate it here so
-    // the startup loop and the embed broker share one rule (§2.3, §3.2).
-    appAccess(status.access)
-    return status
+    return { ...status, origin: readyHealth(status) }
   }
-  dropControl() {
-    if (this.control || this.nativeAdmission) this.invalidateNativeAccess()
-    this.control?.wire.close()
-    this.control = undefined
-    this.admin = undefined
-    this.providerSync = undefined
-    this.instanceSettings = undefined
-    this.credential = undefined
-    this.webOrigin = undefined
+  dropAttached() {
+    this.attached?.wire.close()
+    this.attached = undefined
+    for (const channel of Object.values(this.channels)) channel.drop()
   }
-  async attach(record) {
-    if (this.control && !this.control.wire.closed && this.control.metadata.instanceId === record.instanceId) return
-    this.dropControl()
+  /**
+   * Attach the host's one connection to a ready child (operation `attach`): its payload channels
+   * come up on that authenticated wire, and the generation's web origin is the one its health
+   * answer named (`status` from authenticateReady, whose origin is already checked).
+   */
+  async attach(record, status) {
+    if (this.attached && !this.attached.wire.closed && this.attached.metadata.instanceId === record.instanceId) return
+    this.dropAttached()
     const wire = await this.connect(record)
     try {
-      const metadata = await wire.request('control')
-      const transport = wire.controlTransport()
-      // The admin channel is the same authenticated wire, so it comes up with the control
-      // transport and never adds an operation to health, readiness or stop.
-      const admin = wire.adminTransport()
-      // T16's provider-sync target comes up with the control transport on the same wire.
+      const metadata = await wire.request(RUNTIME.operation.attach)
       const providerSync = wire.providerSyncTransport()
-      const instanceSettings = wire.instanceSettingsTransport()
       const credential = wire.credentialTransport()
-      // The child's native web origin for the locator (origin, admit), which is not the app row's
-      // `access.origin` that readiness checks (child.js refuses them equal): read once per
-      // attached generation from the native admission, whose launch URL is dropped here unread.
-      // A refused read never fails the start (the locator then answers not-ready for admit), but a
-      // read that cost the wire (wire.js closes it on a request timeout) does: no listener is ever
-      // given a dead wire's transports.
-      let webOrigin
-      try { webOrigin = nativeAccess(await wire.request(NATIVE_WEB.operation)).origin } catch { webOrigin = undefined }
-      if (wire.closed) fail('DISCONNECTED')
-      this.control = { wire, transport, metadata }
-      this.webOrigin = webOrigin
-      wire.once('closed', () => { if (this.control?.wire === wire) this.dropControl() })
-      this.admin = { wire, transport: admin }
-      this.providerSync = { wire, transport: providerSync, metadata: { instanceId: metadata.instanceId } }
-      this.instanceSettings = { wire, transport: instanceSettings }
-      this.credential = { wire, transport: credential, metadata: { instanceId: metadata.instanceId } }
-      for (const listener of this.listeners) listener(transport, metadata)
-      for (const listener of this.adminListeners) listener(admin)
-      for (const listener of this.providerSyncListeners) listener(providerSync, this.providerSync.metadata)
-      for (const listener of this.instanceSettingsListeners) listener(instanceSettings)
-      for (const listener of this.credentialListeners) listener(credential, this.credential.metadata)
+      this.attached = { wire, metadata, origin: status.origin }
+      wire.once('closed', () => { if (this.attached?.wire === wire) this.dropAttached() })
+      const channelMetadata = { instanceId: metadata.instanceId }
+      this.channels.providerSync.publish(wire, providerSync, channelMetadata)
+      this.channels.credential.publish(wire, credential, channelMetadata)
     } catch (error) { wire.close(); throw error }
   }
   /**
@@ -358,7 +255,7 @@ class NativeRuntime {
       }
       if (record) {
         if (this.owns(record, this.childIdentity?.pid)) {
-          await this.attach(record)
+          await this.attach(record, status)
           return this.publicHealth(status)
         }
         // A previous parent owns any lifetime pipe. Authenticate, stop and confirm
@@ -415,7 +312,7 @@ class NativeRuntime {
         await delay(this.limits.pollIntervalMs)
       }
       if (!status) fail('STARTUP_TIMEOUT')
-      await this.attach(record)
+      await this.attach(record, status)
       await this.log('READY')
       if (signal?.aborted) fail('START_INTERRUPTED')
       if (child.exitCode !== null || child.signalCode !== null) fail('CHILD_EXITED')
@@ -427,12 +324,12 @@ class NativeRuntime {
     }
   }
   /**
-   * Retire a recorded instance that is not a ready slim child, before this owner starts its own.
+   * Retire a recorded instance that is not a ready child, before this owner starts its own.
    *
    * Upgrade from the old native build reaches this every time: the previous main DSH exits without
    * stopping its child, and that child is still inside its parent-loss exit window
    * (parent-watch.js, at most LIFETIME.childExitTimeoutMs) when this main reaches appReady. It
-   * answers the HMAC wire but never reports the slim capabilities, so authenticateReady refuses it.
+   * answers the HMAC wire but never reports the current capabilities, so authenticateReady refuses it.
    * Refusing outright left Fishball failed on every upgrade start, so the authenticated stop that
    * stopInternal already sends to a ready predecessor is sent here too. Its exit is then confirmed
    * by passive polling only: no PID is ever signalled. The wait covers the exit window, which is
@@ -443,7 +340,7 @@ class NativeRuntime {
     const pid = await this.pid(record)
     if (!pid) fail('OWNERSHIP_UNCERTAIN', 'An interrupted launch has no process identity; refusing automatic takeover.')
     if (await this.alive(pid) !== false) {
-      try { await this.query(record, 'stop') } catch { /* already closing its endpoint: wait below */ }
+      try { await this.query(record, RUNTIME.operation.stop) } catch { /* already closing its endpoint: wait below */ }
       try { await this.waitDead(record, Math.max(this.limits.stopTimeoutMs, LIFETIME.childExitTimeoutMs)) } catch {
         fail('CHILD_UNREACHABLE', 'An existing instance did not exit; refusing a duplicate writer.')
       }
@@ -490,9 +387,9 @@ class NativeRuntime {
     if (!await exists(path.join(this.paths.root, RUNTIME.marker))) return { state: 'stopped', warnings: [] }
     await this.prepare()
     const record = await this.active()
-    this.dropControl()
+    this.dropAttached()
     if (!record) return this.stopped()
-    try { await this.query(record, 'stop') } catch {
+    try { await this.query(record, RUNTIME.operation.stop) } catch {
       if (this.owns(record, this.childIdentity?.pid)) {
         await this.stopOwned(record)
         await this.log('STOP')

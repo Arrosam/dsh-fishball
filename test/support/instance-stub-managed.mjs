@@ -35,12 +35,6 @@ export const MANAGED_STUB = Object.freeze({
   reasonChars: 500,
   /** The asking session's turn text, so a request carries a known latest user message. */
   askTurn: 'fbtest ask turn',
-  /** The client-side words that the requirement is about (DESIGN §10e, slim §8.3). */
-  labels: Object.freeze({
-    handOver: 'Hand over to Fishball', takeBack: 'Take back from Fishball', banner: 'Managed by Fishball',
-    /** slim §8.3: the two header buttons Hand over replaced. */
-    gone: Object.freeze(['Send to Fishball', 'Tell Fishball when finished']),
-  }),
   /** A session id DSH never made. */
   unknownSession: 'session-fbtest-no-such-session',
   /** Who changed management, as the note says it (DESIGN §5e item 5): the user's clicks, or the instance's own release. */

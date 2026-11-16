@@ -46,7 +46,7 @@
     "bundle": {
       "patch": "./cordis.patch.yml"
     },
-    "//client": "The injects of the two V2 main-DSH clients it replaces, combined (design §9.1): the connector client's eight include the instance card's three.",
+    "//client": "What each inject orders before this client: renderer (slots), layout (the main area and `layout`), sidebar (the panel list), workspace (the session row and menu seats), conversation (the header actions), locale, plugin-manager (`pluginNavigation`, for the Retry link). dsh-client-ui-settings is not listed: embed-UI has no settings card and needs no `configForms` (R-UI-06).",
     "client": {
       "platform": "web",
       "inject": [
@@ -55,7 +55,6 @@
         "@deepseek-ai/dsh-client-ui-workspace",
         "@deepseek-ai/dsh-client-ui-layout",
         "@deepseek-ai/dsh-client-locale",
-        "@deepseek-ai/dsh-client-ui-settings",
         "@deepseek-ai/dsh-client-ui-plugin-manager",
         "@deepseek-ai/dsh-client-ui-conversation"
       ]

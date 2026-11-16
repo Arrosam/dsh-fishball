@@ -4,7 +4,7 @@
  * - the requirements and the user's words (labels, the hint, the refusal text, the diagnostics);
  * - the observable contract the dev session relayed for U-DRAW (2026-11-16: routes, answers, data
  *   attributes, slots, the locale namespace) and its correction of the same day (the V2
- *   `dshConnector` fallback and the `legacy` flag stay until C-WIRE);
+ *   `dshConnector` fallback and the `legacy` flag are removed (V2 never deployed, U-WIRE));
  * - K2 (`dsh-connector/tools`, read at runtime) and K3 (`host-services/*.d.ts`, restated);
  * - the C-UI-BACKEND suite's relayed surface (its SURFACE, reused, never restated);
  * - fixture data and harness timing, which are not product values.
@@ -38,7 +38,7 @@ export const SERVICE = Object.freeze({
   ui: BACKEND.serviceName,
   tools: K2.TOOLS_API.service,
   child: 'dshInstanceChild',
-  /** The V2 connector service the legacy fallback follows until C-WIRE (dev correction 2026-11-16). */
+  /** V2 never deployed (U-WIRE): this service is only a negative fixture. */
   legacy: 'dshConnector',
   connection: 'connection',
   appReady: 'appReady',
@@ -70,10 +70,10 @@ export const ROUTE = Object.freeze({
   routeKeys: Object.freeze(['services', 'status', 'admit']),
   /** The routes that answer connector-missing without a usable connector: every one but services. */
   guarded: Object.freeze([['GET', 'status'], ['POST', 'admit']]),
-  /** Keys the services answer has (`legacy` stays until C-WIRE: dev correction 2026-11-16). */
-  servicesKeys: Object.freeze(['ok', 'connector', 'page', 'legacy', 'routes', 'ui']),
+  /** Keys the services answer has (no legacy flag: V2 never deployed (U-WIRE)). */
+  servicesKeys: Object.freeze(['ok', 'connector', 'page', 'routes', 'ui']),
   /** V2's availability flags the services answer no longer carries (U-DRAW brief). */
-  removedKeys: Object.freeze(['handover', 'tools']),
+  removedKeys: Object.freeze(['legacy', 'handover', 'tools']),
   /** A page-relative path has no leading slash. */
   absolutePrefix: '/',
   /** Where a route answers a missing method or path (the fake route table, not a product value). */
@@ -278,5 +278,5 @@ export const WAIT = Object.freeze({
 
 /** The dev session's decisions this suite relies on, cited by the rows that use them. */
 export const DECIDED = Object.freeze({
-  legacy: 'dev correction 2026-11-16: the V2 dshConnector fallback (legacy) stays until C-WIRE; it counts as a local connector for Q-U1 but feeds no marks, light, prompt or tools',
+  legacy: 'dev correction 2026-11-16: V2 never deployed (U-WIRE): a V2-only dshConnector is absent for Q-U1',
 })

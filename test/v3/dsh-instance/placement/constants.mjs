@@ -83,7 +83,7 @@ export const OVERLAY = Object.freeze({
    */
   // I-HOST: the overlay also inserts the instance's child-side row, which carries the target URL
   // (K3a HOSTED_IMPORT targetSetting: row dsh-instance-child, field targetUrl).
-  runtimeRows: Object.freeze(['fishball-native-web', 'fishball-native-child', 'dsh-instance-child']),
+  runtimeRows: Object.freeze(['fishball-native-child', 'dsh-instance-child']),
   origin: Object.freeze(['webserver', 'web-runtime']),
   /**
    * The child isolation rows (Fishball 2026-11-15, isolation: Fishball must never read the user's

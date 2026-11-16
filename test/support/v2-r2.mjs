@@ -19,10 +19,9 @@ export const R2 = Object.freeze({
   route: Object.freeze({
     status: '/api/dsh-instance/status',
     retry: '/api/dsh-instance/retry',
-    nativeStatus: '/api/fishball/native/status',
+    // I-READY: the V2 status relay was never deployed; keep the same state/code/detail checks.
+    nativeStatus: '/api/dsh-instance/status',
     embed: '/fishball/embed/',
-    /** The child's own Restart route (the settings view's Restart, relayed to the main host). */
-    childRestart: '/api/dsh-instance/restart',
   }),
   state: Object.freeze({ ready: 'ready', failed: 'failed' }),
   /** Unchanged contract vocabulary (R2.1). */
@@ -67,12 +66,6 @@ export function lifecycleLines(home) {
   const file = path.join(runtimeDir(home), R2.lifecycleFile)
   if (!fs.existsSync(file)) return []
   return fs.readFileSync(file, 'utf8').split('\n').filter(Boolean).map((line) => ({ raw: line, json: JSON.parse(line) }))
-}
-
-/** Live launch record names (one per running child). */
-export function launchRecords(home) {
-  const dir = path.join(runtimeDir(home), R2.launches)
-  return fs.existsSync(dir) ? fs.readdirSync(dir).sort() : []
 }
 
 /** Poll the status route until it reports one of the settled states; returns the last answer. */

@@ -537,47 +537,6 @@ export const RUBRIC_REMOVED = ['You cannot reject']
  */
 export const REJECT_RULE = { reject: /reject/i, beyond: /beyond|outside|more than|not ask/i, danger: /dangerous|danger/i }
 
-// ---- P8 (ctx.fishball sources) ----
-/**
- * P8: with FBTEST_SOURCES=1 the profile links fbtest-source (enabled; two rows, labels src-a and
- * src-b), fbtest-source-static (enabled; static inject) and fbtest-source-only (installed, off),
- * and the overlay inserts the plain host row SOURCE_ROW. Each row captures its fishball context
- * under its label, so the worker can call the service as that row.
- */
-export const SOURCES_ENV = { FBTEST_SOURCES: '1' }
-export const SOURCE_BUNDLES = {
-  profile: { name: 'fbtest-source', dir: fixtureDir('fbtest-source'), rows: { a: { id: 'fbtest-source', label: 'src-a' }, b: { id: 'fbtest-source-b', label: 'src-b' } } },
-  static: { name: 'fbtest-source-static', dir: fixtureDir('fbtest-source-static'), rows: { a: { id: 'fbtest-source-static', label: 'src-static' } } },
-  only: { name: 'fbtest-source-only', dir: fixtureDir('fbtest-source-only'), rows: { a: { id: 'fbtest-source-only', label: 'src-only' } } },
-}
-export const SOURCE_ROW = { id: 'fbtest-source-row', module: path.join(SUPPORT, 'fixtures', 'source-row.mjs'), label: 'src-row' }
-/**
- * P8 R5: the example plugin. FBTEST_EXAMPLE=everyone links it enabled, =only links it installed
- * and off; FBTEST_EXAMPLE_NOTES (JSON) is its notes config, given by the overlay as an edit of its row.
- */
-export const EXAMPLE = { name: 'fishball-source-example', dir: path.join(REPO, 'examples', 'fishball-source-example'), row: 'fishball-source-example', source: { id: 'notes', title: 'Example notes' } }
-export const SOURCE_ERR = {
-  invalid: 'FISHBALL_INVALID', duplicate: 'FISHBALL_SOURCE_DUPLICATE', limit: 'FISHBALL_LIMIT', tooLarge: 'FISHBALL_TOO_LARGE',
-  queueFull: 'FISHBALL_QUEUE_FULL', disposed: 'FISHBALL_SOURCE_DISPOSED',
-}
-export const PUBLISH_STATUS = { accepted: 'accepted', duplicate: 'duplicate', disabled: 'disabled' }
-/** X3: '<bundle>/<entry id>/<source id>'. */
-export const SOURCE_IDENTITY = (bundle, entry, id) => bundle + '/' + entry + '/' + id
-/** X9: keys of state.sources and of one source. */
-export const SOURCES_KEYS = ['sources']
-export const SOURCE_KEYS = ['enabled', 'identity', 'plugin', 'title']
-/** X4/X5: the title bound in characters, the dedupe key bound in bytes, the source title and description bounds in bytes. */
-export const SOURCE_BOUNDS = { eventTitleChars: 120, dedupeKeyBytes: 256, sourceTitleBytes: 200, descriptionBytes: 1024, idChars: 64 }
-export const PLUGIN_INTAKE_KIND = 'plugin'
-/**
- * X5 (review update, P8 L2): the notice summary names the source's registered title, JSON-quoted;
- * DSH bounds a summary to 120 characters. The event title stays inside the untrusted block only.
- */
-export const SOURCE_SUMMARY = (sourceTitle) => 'Plugin event: ' + JSON.stringify(sourceTitle)
-export const SUMMARY_MAX_CHARS = 120
-/** X9: client strings. */
-export const SOURCE_UI = { section: 'Plugin sources', queueLabel: 'Plugin event' }
-
 export const MS = { boot: 45000, live: 20000, turn: 20000, stop: 20000, poll: 100, sseFirstFrame: 3000, sseChange: 8000 }
 
 // ---- Unread replies from Fishball ----
@@ -587,19 +546,6 @@ export const UNREAD = { keys: ['count'], table: 'unread', key: 'assistant', reco
 export const UNREAD_UI = { badgeAttr: 'data-fishball-badge', openLabel: 'Open Fishball', reducedMotion: 'prefers-reduced-motion' }
 
 // ---- P11 (Messenger look, revision 9) ----
-/** R1/R3: the built-in catalog entry, its package and the route that serves its browser file. */
-export const MESSENGER = {
-  key: 'builtin:messenger', title: 'Messenger look',
-  packageName: 'dsh-fishball-messenger', moduleId: 'dsh-fishball-messenger',
-  dir: path.join(REPO, 'packages', 'messenger'),
-  clientFile: path.join(REPO, 'packages', 'messenger', 'client.js'),
-  packageFile: path.join(REPO, 'packages', 'messenger', 'package.json'),
-  filesEntry: 'packages/messenger/',
-  packed: ['packages/messenger/package.json', 'packages/messenger/client.js'],
-  route: '/api/fishball/messenger/client.js',
-  contentType: 'text/javascript; charset=utf-8',
-  cacheControl: 'no-store',
-}
 /** R2: keys of state.look once the catalog exists. */
 export const LOOK_KEYS = ['messenger']
 /** R4: author kinds and the keys an author may carry. */
@@ -716,83 +662,6 @@ export const OWN_ASK = 'Fishball asks to turn on'
 /** The last commit before revision 10c (an install from before Fishball's own plugins). */
 export const PRE_OWN_PLUGINS = { commit: '90a6a8c' }
 
-// ---- Messenger look: wide markdown tables inside Fishball's reply bubble ----
-/**
- * Vocabulary from the requirement and from DSH 0.2.1-rc.3's own DOM and CSS (never from the implementation).
- * DSH draws a table with 4 or more columns in a wrapper with the class `md-table-wide` and stretches it to the chat
- * area's edges; fewer columns get `_tableFill_*`. The `_tableScroll_*` and `_tableFill_*` names are generated
- * (hashed) by DSH's build.
- */
-export const MESSENGER_TABLE = {
-  /** The mounted stylesheet's element id and the `mark` values the host hands the module (visual only). */
-  styleId: 'fishball-messenger-style',
-  /** Run the cases against another copy of the module (for example the file from before a fix) by naming its path here. */
-  fileEnv: 'FBTEST_MESSENGER_CLIENT',
-  mark: { eyeColor: '#1f2328', viewBox: '0 0 24 24', body: '' },
-  /** Atoms of a selector: the conversation, Fishball's header marker, and the reply row (DSH's own attributes). */
-  atoms: {
-    conversation: '[data-slot="main.conversation"]',
-    marker: '[data-fishball-messenger]',
-    stepKind: '[data-chat-flow-kind="assistant-step"]',
-    reply: '[data-chat-group-part="response"]',
-    wide: '.md-table-wide',
-  },
-  /** Wrapper classes DSH gives tables; the hashed ones may not appear in Fishball's rules (they change per DSH build). */
-  hashedClasses: ['_tableScroll_1ypvv_192', '_tableFill_1ypvv_239'],
-  /** A selector that is about a table: DSH's wrapper classes, or the table, section or cell elements. */
-  tableSelector: /md-table|_table(?:Scroll|Fill)|(?:^|[\s>+~])(?:table|thead|tbody|tr|th|td)(?![\w-])/,
-  /** DSH's strongest stock rule on the wide wrapper (`.hWmORq_body .md-table-wide`): two classes. */
-  dshWideSpecificity: [0, 2, 0],
-  /** Declaration values that keep the wrapper inside its container, as a plain (not wide) wrapper already is. */
-  contained: { width: ['auto', '100%'], maxWidth: ['100%'], marginLeft: ['0', '0px'], paddingLeft: ['0', '0px'] },
-  /** Properties that would clip or hide a wrapper for good, or defeat DSH's hover scrolling. */
-  clipping: ['overflow', 'overflow-x', 'overflow-y'],
-  hidden: { display: 'none', visibility: 'hidden' },
-  /** Contexts of the decision table: the group part of the row the table sits in. */
-  parts: { reply: 'response', reasoning: 'reasoning', other: 'toolcall' },
-  /** DSH's stock rule on the table itself (`._tableScroll_* table`: `width: max-content`): one class and one element. */
-  dshTableSpecificity: [0, 1, 1],
-  /**
-   * R2: in Fishball's bubble a wide table fits the bubble when it can (cells wrap) and a short one keeps its natural
-   * width. `width: auto` is the shrink-to-fit width that does both; anything else pins the table at its natural
-   * width (`max-content`, which is DSH's stock value), stretches it (`100%`) or fixes it (px).
-   */
-  fitting: {
-    width: ['auto', 'fit-content'],
-    /** A table in a wide wrapper has no `min-width` beyond these (a `min-width` pins or stretches it). */
-    minWidth: ['0', '0px', 'auto'],
-    /** `white-space` values that stop cells from wrapping. */
-    noWrap: ['nowrap', 'pre'],
-  },
-}
-
-// ---- Messenger look: round avatars and the footer under the reply bubble (R7, R8) ----
-/**
- * Vocabulary from the requirement and from DSH 0.2.1-rc.3's own DOM and CSS (never from the implementation).
- * DSH's theme turns every `border-radius: 50%` into a rounded square with `*, :before, :after { corner-shape:
- * var(--dsw-corner-shape) }` (`superellipse(1.5)`); `corner-shape: round` brings the circle back. The footer under a
- * reply (copy button, time) is its own chat row, `data-chat-flow-kind="turn-tail"`.
- */
-export const MESSENGER_LAYOUT = {
-  atoms: {
-    tailKind: '[data-chat-flow-kind="turn-tail"]',
-    processKind: '[data-chat-flow-kind="turn-process"]',
-    chatNode: '[data-slot="conversation.chat.node"]',
-    avatar: '.fbm-avatar',
-    incoming: '.fbm-incoming',
-    sender: '.fbm-sender',
-  },
-  corner: { prop: 'corner-shape', themeVar: '--dsw-corner-shape' },
-  /** Values that mean a circle with `border-radius: 50%`. Chrome serialises `round` as `superellipse(1)` (the same shape). */
-  round: ['round', 'superellipse(1)'],
-  /** DSH's stock rule `*, :before, :after { corner-shape }`: the strongest part is `:before`/`:after` (one pseudo-element). */
-  dshCornerSpecificity: [0, 0, 1],
-  /** The Messenger look draws avatars 28px wide; a radius of half of that (or 50%) makes them circles. */
-  avatarSize: 28,
-  /** The reply row's group part, and another part the footer rule must leave alone. */
-  parts: { reply: 'response', reasoning: 'reasoning' },
-}
-
 // ---- Revision 11 rev11a (managed sessions; DESIGN §5b, §5e, §7a.1, §9, §10e) ----
 /** Hand over / Take back: POST {sessionId, managed: boolean} (§10e "Host API"). */
 export const MANAGED_API = '/api/fishball/managed'
@@ -811,11 +680,9 @@ export const MANAGED_IDENTITY = (sessionId) => 'fishball/managed/' + sessionId
 export const RELEASE_TOOL = 'release_session'
 /** DSH's own refusal of a tool the calling session cannot see (S34: `Error: unknown tool "<name>"`, UNKNOWN_TOOL). */
 export const UNKNOWN_TOOL_TEXT = /unknown tool|UNKNOWN_TOOL/i
-/** The client's labels beside Send to Fishball (§10, item 3; §10e). */
-export const MANAGED_LABELS = { handOver: 'Hand over to Fishball', takeBack: 'Take back from Fishball' }
 /**
  * rev11a follow-up (§10e "Settings page"): the Permission requests section's managed-sessions list. The heading
- * and the by-tags are the wording the coordinator stated; Take back reuses MANAGED_LABELS.takeBack and an empty
+ * and the by-tags are the wording the coordinator stated; Take back is labelled 'Take back from Fishball' and an empty
  * list shows the page's usual empty line.
  */
 export const MANAGED_LIST_LABELS = {
