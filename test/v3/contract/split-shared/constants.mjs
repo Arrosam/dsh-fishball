@@ -148,6 +148,6 @@ export const HEADER = /^(?:\s*\/\*[\s\S]*?\*\/)*\s*/
 /** Owners of the rows SPLIT-SHARED cannot check. */
 export const LATER = Object.freeze({
   iHost: 'I-HOST (moves core\'s child halves into the instance; fishball-shared\'s interim copies are deleted then)',
-  removeV2: 'REMOVE-V2 (design §1.0b row 2: core still imports dsh-connector/contract and peers on dsh-connector until the V2 child path goes)',
+  removeV2: 'REMOVE-V2 (design §1.0b row 2: core peered on dsh-connector for the V2 contract; F-WIRE removed core\'s V2 child path and C-WIRE-2 deleted dsh-connector/contract)',
   relPack: 'REL-PACK (a packed instance tarball, with bundled/ sources, places core\'s fishball-shared from the packed core)',
 })
