@@ -24,7 +24,11 @@ export const PORT_RANGE = Object.freeze({ min: 0, max: 65535 })
 export const PATH_OP = Object.freeze({ set: 'set', unset: 'unset' })
 
 /** The connector's own DSH services read with `ctx.get` (not injected, so the row loads without them). */
-export const SETTINGS_SERVICE = Object.freeze({ settings: 'settings' })
+export const SETTINGS_SERVICE = Object.freeze({
+  settings: 'settings',
+  /** The async resource type the connector's own saves run under (index.js `outside`). */
+  asyncResource: 'dsh-connector.settings-write',
+})
 
 /** Descriptions shown by DSH's native form (R-CON-10). Model-free, user-facing. */
 export const SETTING_TEXT = Object.freeze({

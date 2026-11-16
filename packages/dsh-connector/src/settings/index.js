@@ -27,6 +27,7 @@
  * previous list (the C-TOKENS limit: a second user save made before a refused save's restore
  * completed was taken for the restore). Revisit if DSH ever applies a save outside the edit.
  */
+import { AsyncResource } from 'node:async_hooks'
 import { APPROVAL_LISTENER } from '../../mcp-schema/index.js'
 import { diagnosticOf } from '../errors.js'
 import { serialChain } from '../routing/support.js'
@@ -97,6 +98,16 @@ export function createSettings({ ctx, config, namespace, limits, volatileEvent, 
     return service
   }
 
+  /**
+   * The async context the row was applied in. DSH runs a settings save and the loader's volatile
+   * update it triggers inside one HMR transaction, held in an AsyncLocalStorage context
+   * (dsh-hmr `runExclusive`, both SDKs), and refuses a save started from inside it ("HMR
+   * transactions cannot be nested"). The connector's own saves are often started from inside that
+   * event (a refused save's write-back, a delete's `setDesignated(undefined)` from revocation), so
+   * each runs in the row's own context instead: it then queues behind the running edit, as any
+   * other save does, and never nests in it.
+   */
+  const outside = new AsyncResource(SETTINGS_SERVICE.asyncResource)
   /** The token lists the connector's own saves in flight write, one per save (see the module comment). */
   const ownLists = []
   /**
@@ -106,7 +117,7 @@ export function createSettings({ ctx, config, namespace, limits, volatileEvent, 
   async function ownSave(ops, list) {
     const mark = structuredClone(list)
     ownLists.push(mark)
-    try { await settingsService().mutate(namespace, ops) } finally {
+    try { await outside.runInAsyncScope(() => settingsService().mutate(namespace, ops)) } finally {
       const at = ownLists.indexOf(mark)
       if (at >= 0) ownLists.splice(at, 1)
     }
