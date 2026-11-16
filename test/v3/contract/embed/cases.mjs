@@ -133,10 +133,8 @@ export function registerEmbedCases(sdk) {
     const required = peers.filter((p) => p.startsWith(FISHBALL_PREFIX) && manifest[FIELD.peersMeta]?.[p]?.optional !== true)
     assert.deepEqual(required, [], 'Fishball peers not marked optional in ' + FIELD.peersMeta)
   })
-  caseTest(sdk, 'R-EMBED', '(1)', "embed-UI's dsh.client injects every client package the V2 connector and instance main clients injected (design §9.1)", async () => {
-    const inject = needEmbed()[DSH_FIELD]?.client?.inject ?? []
-    assert.deepEqual((await baseInjects()).filter((name) => !inject.includes(name)), [], 'missing injects')
-  })
+  // V2 never deployed (U-WIRE): V2 injection union is not a V3 requirement.
+  withdrawnRow(sdk, 'R-EMBED', '(1)', 'V2 client injection union', 'V2 never deployed (U-WIRE)')
 
   // ================================================================ R-EMBED (2): the moved client
   // Q-G4 = A: client.records.js is no longer one of the shipped parts.
@@ -243,7 +241,7 @@ export function registerEmbedCases(sdk) {
     assert.deepEqual(loaderErrors(host), [], 'client-loader errors')
     assert.deepEqual((await hostGraph(host)).map((e) => e.id).filter(FISHBALL_ENTRY), [V3.embed.name])
   })
-  integrationCase(sdk, 'R-EMBED', 'done', 'C + I + U: the V2 contributions and a Plugins card render from dsh-connector-ui, with no failed plugin or page error', async (t) => {
+  integrationCase(sdk, 'R-EMBED', 'done', 'C + I + U: contributions render without a Plugins card (V2 never deployed (U-WIRE))', async (t) => {
     const { host } = await hostWith(sdk, SETS.full)
     const page = await openMainPage(t, { sdk, host })
     // Attribution is by serving package: a registration belongs to the graph entry whose served
@@ -251,12 +249,12 @@ export function registerEmbedCases(sdk) {
     // inside embed-UI (a pure move); no design section ties the slots to embed-UI's own name.
     const fromEmbed = () => page.registrations.filter((r) => r.owner === V3.embed.name)
     const missingOf = () => EXPECTED_UI.filter((e) => !fromEmbed().some((r) => r.slot === e.slot && (e.id === undefined || r.id === e.id) && (e.key === undefined || r.key === e.key)))
-    await page.waitFor(() => missingOf().length === 0 && fromEmbed().some((r) => CARD_SLOTS.includes(r.slot)))
+    await page.waitFor(() => missingOf().length === 0)
     assert.deepEqual(page.failed(), [], 'failed plugins')
     assert.deepEqual(page.errors, [], 'page errors')
     const missing = missingOf()
     assert.deepEqual(missing, [], 'contributions not registered by embed-UI; it registered ' + JSON.stringify(fromEmbed()))
-    assert.ok(fromEmbed().some((r) => CARD_SLOTS.includes(r.slot)), 'embed-UI registered no Plugins card')
+    assert.equal(fromEmbed().some((r) => CARD_SLOTS.includes(r.slot)), false, 'embed-UI must have no Plugins card')
   })
   integrationCase(sdk, 'HOST-UC-08', 'post', 'C + I + U: the host shows no UI from the instance or the connector (no registration by another Fishball entry)', async (t) => {
     const { host } = await hostWith(sdk, SETS.full)
