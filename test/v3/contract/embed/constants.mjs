@@ -105,8 +105,7 @@ export const CARD_SLOTS = Object.freeze(['plugins.bundle.config', 'plugins.row.c
  * "The same UI renders from embed-UI" (definition of done): the V2 contributions the moved client
  * keeps, as S4 §2.2 lists them (slot, id or key). Conditional seats (the sidebar fish follows the
  * state; the row's trailing seat exists only on 0.2.2) and the surfaces U-SHELL drops (brand,
- * ask_agent row) are not listed. A Plugins card is required in one of CARD_SLOTS; its key is not
- * fixed by the requirements (see the R-EMBED test report).
+ * ask_agent row) are not listed. V2 never deployed (U-WIRE): embed-UI has no Plugins card.
  */
 export const EXPECTED_UI = Object.freeze([
   Object.freeze({ slot: 'main', key: 'fishball' }),
