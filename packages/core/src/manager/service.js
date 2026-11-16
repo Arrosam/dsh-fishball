@@ -32,6 +32,8 @@ const MANAGER_SERVICE = Object.freeze({
   }),
   member: Object.freeze({ setup: 'manager.registerSetup', notify: 'manager.notify', ensure: 'manager.ensureSession' }),
   boundsMessage: 'userTexts requires nonnegative integer bounds',
+  /** The DSH tools-service member an X2 scope's registrations go through (dsh-tools `register`). */
+  registerMember: 'register',
 })
 
 export class ExtensionError extends Error {
@@ -195,7 +197,7 @@ export function createManagerService(ctx) {
       // this scope: systemPrompt.context is evaluated by DSH on every assembly,
       // never snapshotted here, and disposal removes tools and dynamic context alike.
       fiber = agentCtx.plugin({ async apply(scope) {
-        try { return await registration.fn(scope, live) }
+        try { return await registration.fn(contributing(scope, live), live) }
         catch { failed = true; warn(registration.pluginId) }
       } })
       registration.fibers.add(fiber)
@@ -208,6 +210,42 @@ export function createManagerService(ctx) {
       }
     }
   }
+  /**
+   * The names of the tools X2 contributions registered in each live manager's scope, while they
+   * stay registered. R-FB-13's check (src/guards/check.js) leaves them out: X2 is the one way into
+   * the manager's scope (instance-extension-points X2), so what arrives through it is Fishball's
+   * own (core's tools, the façade's, a set member's such as the board's), never a preset or DSH
+   * composition change. The scope a callback gets is the X2 fiber's own, with only `tools.register`
+   * observed: the registration itself is the scope's (its visibility and effect owner unchanged).
+   */
+  const contributed = new WeakMap()
+  function contributing(scope, live) {
+    const names = contributed.get(live) ?? new Map()
+    contributed.set(live, names)
+    const tools = scope.tools
+    const register = (definition) => {
+      const dispose = tools.register(definition)
+      names.set(definition.name, (names.get(definition.name) ?? 0) + 1)
+      let done = false
+      return () => {
+        if (done) return dispose()
+        done = true
+        const left = names.get(definition.name) - 1
+        if (left > 0) names.set(definition.name, left)
+        else names.delete(definition.name)
+        return dispose()
+      }
+    }
+    const forward = (target, key) => {
+      if (key === MANAGER_SERVICE.registerMember) return register
+      const value = Reflect.get(target, key)
+      return typeof value === 'function' ? value.bind(target) : value
+    }
+    return scope.extend({ tools: new Proxy(tools, { get: forward }) })
+  }
+  /** The tool names X2 contributions hold in `live`'s scope now (see `contributed`). */
+  const contributedTools = (live) => [...(contributed.get(live)?.keys() ?? [])]
+
   function registerSetup(pluginId, fn) {
     const registration = { pluginId, fn, fibers: new Set(), disposed: false }
     registrations.add(registration)
@@ -393,7 +431,7 @@ export function createManagerService(ctx) {
   }
   const manager = Object.freeze({ sessionId: () => session?.sessionId(), ensureSession, registerSetup, notify, userTexts })
   return {
-    manager, start, setup, close,
+    manager, start, setup, close, contributedTools,
     async published(live) {
       if (current?.live === live) current.published = true
       await recover(live)

@@ -62,6 +62,19 @@ const MANAGER_SESSION = Object.freeze({
   modelUnroutable: 'model-unavailable',
   unknownErrorName: 'Error',
   ellipsis: '…',
+  /** Background log lines (printf format); never a setting's text, a token or a message. */
+  log: Object.freeze({
+    modelUnroutable: 'Fishball\'s model setting is not routable here; DSH\'s default is used (%s)',
+    settingUnreadable: 'Fishball\'s model setting could not be read (%s)',
+    recordUnreadable: 'the manager session record could not be read (%s)',
+    recordTooLarge: 'the manager session record is too large; it is ignored',
+    recordNotJson: 'the manager session record is not JSON; it is ignored',
+    recordNoSession: 'the manager session record names no session; it is ignored',
+    resumeFailed: 'Fishball session %s could not be resumed (%s)',
+    storedElsewhere: 'Fishball session %s is stored under another folder (moved home); it stays outside the current folder\'s workspace',
+    workspaceFailed: 'Fishball session %s could not join its workspace (%s: %s)',
+    modelFailed: 'Fishball session %s could not apply its model (%s: %s)',
+  }),
   message: Object.freeze({
     prefix: 'fishball manager session: ',
     context: 'a Cordis context with get() is required',
@@ -242,19 +255,31 @@ export function createManagerSession(ctx, options) {
     const key = JSON.stringify([selection.provider, selection.model, selection.reasoningEffort ?? null])
     if (reported.has(key)) return
     reported.add(key)
-    logger?.warn('Fishball\'s model setting is not routable here; DSH\'s default is used (%s)', MANAGER_SESSION.modelUnroutable)
+    logger?.warn(MANAGER_SESSION.log.modelUnroutable, MANAGER_SESSION.modelUnroutable)
   }
 
-  /** Core's setting when routable, else DSH's default; an unset setting is not an error. */
-  async function effectiveSelection() {
+  /**
+   * Core's setting when it is routable here, else `undefined`: DSH's own default then applies, as it
+   * does for any session that selects nothing, and follows a later change of that default. An unset
+   * or unreadable setting is not an error.
+   */
+  async function chosenSelection() {
     let chosen
     // A failing settings read must not block the session either: it reads as unset.
-    try { chosen = selectionOf(model()) } catch (error) { logger?.warn('Fishball\'s model setting could not be read (%s)', failureDetail(error).name) }
-    if (chosen !== undefined) {
-      if (await routable(chosen)) return chosen
-      reportUnroutable(chosen)
-    }
-    return defaultSelection()
+    try { chosen = selectionOf(model()) } catch (error) { logger?.warn(MANAGER_SESSION.log.settingUnreadable, failureDetail(error).name) }
+    if (chosen === undefined) return undefined
+    if (await routable(chosen)) return chosen
+    reportUnroutable(chosen)
+    return undefined
+  }
+
+  /**
+   * The selection the live manager should run on: the routable setting, or DSH's current default
+   * when the setting is unset or unroutable (a session that once ran on the setting goes back to the
+   * default when the setting is cleared). `undefined` when DSH reports no default.
+   */
+  async function effectiveSelection() {
+    return (await chosenSelection()) ?? defaultSelection()
   }
 
   function agentOptions(selection) {
@@ -279,17 +304,17 @@ export function createManagerSession(ctx, options) {
       raw = await readFile(recordPath, MANAGER_SESSION.record.encoding)
     } catch (error) {
       if (error?.code === MANAGER_SESSION.missingFile) return
-      logger?.warn('the manager session record could not be read (%s)', String(error?.code ?? error))
+      logger?.warn(MANAGER_SESSION.log.recordUnreadable, String(error?.code ?? error))
       return
     }
     if (raw.length > limits.recordChars) {
-      logger?.warn('the manager session record is too large; it is ignored')
+      logger?.warn(MANAGER_SESSION.log.recordTooLarge)
       return
     }
     let parsed
-    try { parsed = JSON.parse(raw) } catch { logger?.warn('the manager session record is not JSON; it is ignored'); return }
+    try { parsed = JSON.parse(raw) } catch { logger?.warn(MANAGER_SESSION.log.recordNotJson); return }
     if (!isRecord(parsed) || typeof parsed.sessionId !== 'string' || parsed.sessionId === '') {
-      logger?.warn('the manager session record names no session; it is ignored')
+      logger?.warn(MANAGER_SESSION.log.recordNoSession)
       return
     }
     sessionId = parsed.sessionId
@@ -305,6 +330,16 @@ export function createManagerSession(ctx, options) {
    */
   async function composePersona(agentCtx, live) {
     await ctx.get(services.agentPresets)?.mount(agentCtx, presetId)
+    await composeOwn(agentCtx, live)
+  }
+
+  /**
+   * The persona and the contributions alone: what an already composed and published agent gets (a
+   * manager session another owner, such as DSH's controller, resumed first). The preset registry's
+   * `mount` is for an unpublished agent only, so it is never called on one; that agent keeps the
+   * preset it was composed with.
+   */
+  async function composeOwn(agentCtx, live) {
     applyPersona(agentCtx.systemPrompt)
     await setup(agentCtx, live)
   }
@@ -356,7 +391,7 @@ export function createManagerSession(ctx, options) {
         // second Session.
         const held = error?.name === MANAGER_SESSION.writerHeld
         if (!held || attempt >= limits.resumeAttempts) {
-          logger?.warn('Fishball session %s could not be resumed (%s)', id, String(error?.code ?? error?.name ?? error))
+          logger?.warn(MANAGER_SESSION.log.resumeFailed, id, String(error?.code ?? error?.name ?? error))
           sessionFailed()
         }
         await new Promise((resolve) => setTimeout(resolve, limits.resumeRetryMs))
@@ -407,7 +442,7 @@ export function createManagerSession(ctx, options) {
     await ensureFolder()
     const workspace = await registry.create(cwd)
     if (await storedElsewhere(live)) {
-      logger?.warn('Fishball session %s is stored under another folder (moved home); it stays outside the current folder\'s workspace', live.id)
+      logger?.warn(MANAGER_SESSION.log.storedElsewhere, live.id)
     } else {
       await workspace.attachSession(live.id)
     }
@@ -427,7 +462,7 @@ export function createManagerSession(ctx, options) {
 
   function attachFailed(live, error) {
     const detail = failureDetail(error)
-    logger?.warn('Fishball session %s could not join its workspace (%s: %s)', live.id, detail.name, detail.message)
+    logger?.warn(MANAGER_SESSION.log.workspaceFailed, live.id, detail.name, detail.message)
   }
 
   /** The composed agent while DSH still holds it live, else undefined. */
@@ -471,7 +506,7 @@ export function createManagerSession(ctx, options) {
       if (!sameSelection(selectionOf(port.current()), selection)) port.select(selection)
     } catch (error) {
       const detail = failureDetail(error)
-      logger?.warn('Fishball session %s could not apply its model (%s: %s)', live.id, detail.name, detail.message)
+      logger?.warn(MANAGER_SESSION.log.modelFailed, live.id, detail.name, detail.message)
     }
   }
 
@@ -485,14 +520,18 @@ export function createManagerSession(ctx, options) {
     if (closed) unavailable()
     const agents = requireAgents()
     // Read once per open: routability lists providers and models, and the resume retries and the
-    // apply below must all use the same choice.
-    const selection = await effectiveSelection()
+    // apply below must all use the same choice. Create and resume get the setting alone (none when
+    // unset, so DSH applies its own default as for any session); the sync below then moves a session
+    // that still runs on an earlier setting back to the default, and selects nothing when it already
+    // runs on it (on 0.2.1 every select appends a log event).
+    const chosen = await chosenSelection()
+    const selection = chosen ?? defaultSelection()
     await resolvePreset()
     if (closed) unavailable()
     const existing = sessionId === undefined ? undefined : agents.get(sessionId)
-    const live = existing ?? await (sessionId === undefined ? createSession(agents, selection) : resumeSession(agents, sessionId, selection))
+    const live = existing ?? await (sessionId === undefined ? createSession(agents, chosen) : resumeSession(agents, sessionId, chosen))
     if (closed) unavailable()
-    if (existing && agent !== existing) await composePersona(existing.ctx, existing)
+    if (existing && agent !== existing) await composeOwn(existing.ctx, existing)
     if (closed) unavailable()
     syncModel(live, selection)
     agent = live

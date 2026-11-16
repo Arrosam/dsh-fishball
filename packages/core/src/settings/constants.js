@@ -42,6 +42,8 @@ export const SETTINGS = Object.freeze({
 export const CONNECT_ROUTE = Object.freeze({
   path: '/api/fishball/connect',
   cancelPath: '/api/fishball/connect/cancel',
+  /** The cancel route's one method. */
+  cancel: 'POST',
   read: 'GET',
   begin: 'POST',
   requestBody: 'buffered',

@@ -4,13 +4,15 @@
  * 没有设置模型而弹出要求选择模型的页面"). A package-local chunk of fishball-ui's client; client.js
  * starts `modelPart`.
  *
- * When the Fishball page opens and core's `model` setting is unset, a dialog asks the user to pick
+ * When the Fishball page opens (its root mark `data-fishball-page` is on the document) and core's
+ * `model` setting is unset, a dialog asks the user to pick
  * one of the models configured in this DSH (DSH's own catalog, `remote.session.modelCatalog`, the one
  * DSH's model picker reads; in a hosted child the instance's model sync fills it). Picking writes
  * `{provider, model, reasoningEffort?}` to core's namespace field through DSH's own form
  * (`configForms`), the same field core's settings page edits. Every mode, the same.
  * - Until a model is chosen Fishball runs on this DSH's default model; nothing waits on the dialog.
- * - Dismissed: it stays closed until the page opens again (the page's own life; nothing is stored).
+ * - Dismissed: it stays closed while the page stays open, and shows again the next time the page
+ *   opens (a reload, or the page closing and opening; nothing is stored).
  * - No configured model: the dialog says so and offers DSH's Settings (the Fishball page's Settings
  *   launcher, the one native open path, as the "DSH settings" entry presses it; DSH has no public
  *   "open the Models section" call, so the user picks Models there).
@@ -41,6 +43,11 @@ window.__ModuleLoader__.load({
       catalog: Object.freeze({ loading: 'loading', ready: 'ready', failed: 'failed' }),
       /** The Fishball page's Settings launcher (fishball-page `PAGE.settingsButton`), DSH's own Settings open. */
       settingsLauncher: '.fishball-settings-launcher',
+      /**
+       * The Fishball page's own mark on the document element while it is open (fishball-page
+       * `PAGE.root`): the dialog shows only then, "when the Fishball page opens".
+       */
+      pageRoot: 'data-fishball-page',
       effortless: null,
       css: Object.freeze({ id: 'fishball-ui-model-style', list: 'fb-model-list', choice: 'fb-model-choice', note: 'fb-model-note', error: 'fb-model-error' }),
     })
@@ -98,17 +105,28 @@ window.__ModuleLoader__.load({
       return typeof model?.provider === 'string' && model.provider !== '' && typeof model.model === 'string' && model.model !== ''
     }
 
+    /** Whether the Fishball page is open now, followed live (its root mark comes and goes with it). */
+    const pageOpen = () => document.documentElement.hasAttribute(DIALOG.pageRoot)
+    function subscribePage(listener) {
+      const observer = new MutationObserver(listener)
+      observer.observe(document.documentElement, { attributes: true, attributeFilter: [DIALOG.pageRoot] })
+      return () => observer.disconnect()
+    }
+
     function makeDialog(ctx, t) {
       const form = ctx.configForms.get(DIALOG.namespace)
       return function FishballModelDialog() {
         React.useSyncExternalStore((listener) => ctx.locale.subscribe(listener), () => ctx.locale.getSnapshot())
         const snapshot = React.useSyncExternalStore((listener) => form.subscribe(listener), () => form.getSnapshot())
-        // Dismissed or chosen in this page's life: closed until the page opens again.
+        const onPage = React.useSyncExternalStore(subscribePage, pageOpen)
+        // Dismissed or chosen while the page is open: closed until the page opens again, so a
+        // dismissal is forgotten when the page closes (its root mark goes).
         const [closed, setClosed] = React.useState(false)
+        React.useEffect(() => { if (!onPage) setClosed(false) }, [onPage])
         const [catalog, setCatalog] = React.useState({ status: DIALOG.catalog.loading })
         const [failed, setFailed] = React.useState(false)
         const [saving, setSaving] = React.useState(false)
-        const open = !closed && isSet(snapshot) === false
+        const open = onPage && !closed && isSet(snapshot) === false
         React.useEffect(() => {
           if (!open || catalog.status !== DIALOG.catalog.loading) return undefined
           let live = true

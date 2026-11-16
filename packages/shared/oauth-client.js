@@ -164,9 +164,11 @@ function requestUrl(req) {
 }
 
 /**
- * A callback listener is `{redirectUrl, received, close}`: the redirect URI sent in the
- * authorization request, a promise of the first callback's query parameters, and `close()` at the
- * end of the attempt, after which the URI is dead (S7c rules). `authorize` takes any such listener
+ * A callback listener is `{redirectUrl, received, close, expect?}`: the redirect URI sent in the
+ * authorization request, a promise of the first callback's query parameters, `close()` at the
+ * end of the attempt, after which the URI is dead (S7c rules), and an optional `expect(state)`,
+ * told the attempt's `state` before the user is sent to the approval page, for a listener that
+ * must ignore anyone else's request (the authorization response still checks `state` itself). `authorize` takes any such listener
  * (`options.callback`), so a caller with its own https web route (core's web callback for a browser
  * on another machine, Q-A3 B) supplies one; the default is this loopback one.
  *
@@ -334,6 +336,8 @@ export function createTokenManager({ sdk, credentials, key, now = Date.now, refr
           metadata, clientInformation, redirectUrl, scope: scopeFor(discovery), state, resource,
         })
         for (const [name, value] of Object.entries(authorizationParameters)) authorizationUrl.searchParams.set(name, value)
+        // A listener reachable by others (core's web callback) delivers only this state's callback.
+        listener.expect?.(state)
         session.notify({ message, url: String(authorizationUrl) })
         const params = await awaitCallback(listener, { signal: session.signal, timers, timeoutMs })
         const authorizationCode = acceptResponse(sdk, params, { state, metadata })

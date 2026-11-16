@@ -103,4 +103,6 @@ export const WEB_CALLBACK = Object.freeze({
   hostHeader: 'host',
   originHeader: 'origin',
   scheme: 'http://',
+  /** The body of a refused callback request. */
+  emptyBody: '',
 })

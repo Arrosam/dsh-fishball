@@ -42,6 +42,7 @@ import { createLinkCredentials } from '../link/index.js'
 import { createWebCallback } from '../link/web-callback.js'
 import { LOG as BRIDGE_LOG } from '../bridge/constants.js'
 import { createReminders } from '../manager/reminders.js'
+import { CONTRIBUTED_TOOLS } from '../manager/contributed.js'
 import { createManagerService } from '../manager/service.js'
 import { createManagerSession } from '../manager/session.js'
 import { attachPrivateSkills } from '../manager/skills.js'
@@ -58,36 +59,58 @@ export { Config }
 
 const storageDomain = Object.freeze({ defineDomain, domainTable })
 
-/** Opens one table and ties its closing to the row. */
-async function openOwned(ctx, open) {
-  const handle = await open(ctx, storageDomain)
-  ctx.effect(() => () => { void handle.close().catch(() => {}) })
-  return handle.table
+/**
+ * The row's storage handles, closed with the row. The closer is registered before the first open,
+ * so a failed open, or a row disposed while an open is awaited, still closes every handle that did
+ * open: dsh-storage-domain keeps an open domain's name reserved, and a leaked one would refuse the
+ * next apply of this row (`already-open`) until the process restarts.
+ */
+function ownedHandles(ctx) {
+  const handles = []
+  let closed = false
+  const close = (handle) => { void handle.close().catch(() => {}) }
+  ctx.effect(() => () => { closed = true; for (const handle of handles.splice(0)) close(handle) })
+  /** Opens one handle (`open(ctx, storageDomain)` → `{close, …}`) and owns it. */
+  return async (open) => {
+    const handle = await open(ctx, storageDomain)
+    if (closed) close(handle)
+    else handles.push(handle)
+    return handle
+  }
 }
 
-/** The instance's target in a hosted child: another row's live settings, or undefined (standalone). */
-function instanceTarget(ctx) {
-  const form = ctx.settings.describe().find((entry) => entry.ns === MAIN.instanceTarget.row)
-  return form?.value?.[MAIN.instanceTarget.field]
+/**
+ * The instance's target in a hosted child: another row's live settings, or undefined (standalone).
+ * Read from DSH's settings once and again on every settings document change, not on each read:
+ * `describe()` lists every namespace with its schema, and the link reads the target on each attempt.
+ */
+function followInstanceTarget(ctx) {
+  const read = () => ctx.settings.describe().find((entry) => entry.ns === MAIN.instanceTarget.row)?.value?.[MAIN.instanceTarget.field]
+  let value = read()
+  ctx.on(MAIN.event.settingsUpdated, () => { value = read() })
+  return () => value
 }
 
 export async function apply(ctx, config) {
   const logger = ctx.logger(MAIN.logger)
   const warn = (what) => (error) => logger.warn(MAIN.text.failed, what, codeOf(error))
   const setting = (key) => valueAt(config, MAIN.setting[key])
-  const target = () => effectiveTarget({ instance: instanceTarget(ctx), user: setting('target') })
+  const instanceTarget = followInstanceTarget(ctx)
+  const target = () => effectiveTarget({ instance: instanceTarget(), user: setting('target') })
 
   // 1. tables, and the generated id (identity.js)
-  const [records, ledger, cards, generated] = await Promise.all([
-    openOwned(ctx, openRecords), openOwned(ctx, openLedger), openOwned(ctx, openAskCards), openGeneratedId(ctx, storageDomain),
+  const own = ownedHandles(ctx)
+  const [{ table: records }, { table: ledger }, { table: cards }, generated] = await Promise.all([
+    own(openRecords), own(openLedger), own(openAskCards), own(openGeneratedId),
   ])
-  ctx.effect(() => () => { void generated.close().catch(() => {}) })
   // The user's id wins whenever it holds a value (R-ID-10); a blank setting is no value.
   const clientId = () => setting('id') || generated.id
 
   // 2. the link, its credentials and Connect
-  const webCallback = createWebCallback(ctx)
-  ctx.effect(() => () => webCallback.dispose())
+  // Without DSH's web listener there is no web callback; Connect then uses the loopback one.
+  const webServer = ctx.get(MAIN.webServer)
+  const webCallback = webServer === undefined ? undefined : createWebCallback({ webServer })
+  if (webCallback !== undefined) ctx.effect(() => () => webCallback.dispose())
   const credentials = createLinkCredentials(ctx, { target, clientId, clientMetadataUrl: () => setting('metadataUrl') })
   ctx.effect(() => () => credentials.dispose())
   const pairing = createPairing({ records: createRecords(records), name: () => setting('name'), target, credentials: credentials.credentials })
@@ -143,7 +166,7 @@ export async function apply(ctx, config) {
   ctx.effect(() => attachPrivateSkills(ctx, service.manager))
 
   // 5. routes
-  ctx.effect(() => registerSettingsRoutes(ctx, { callbackFor: (request) => webCallback.callbackFor(request) }))
+  ctx.effect(() => registerSettingsRoutes(ctx, { callbackFor: (request) => webCallback?.callbackFor(request) }))
   ctx.effect(() => registerConnectCancelRoute(ctx))
   ctx.effect(() => registerAskRoutes(ctx, {
     service: asks.service, managerSessionId: () => session.sessionId(), onManagerChange: (fn) => session.onChange(() => fn()),
@@ -152,6 +175,8 @@ export async function apply(ctx, config) {
   // The two services (K3 index.d.ts; F-STATUS).
   ctx.provide(MAIN.service, Object.freeze({
     apiVersion: MAIN.apiVersion,
+    // Core's own read for its guard row (manager/contributed.js); not part of the K3 contract.
+    [CONTRIBUTED_TOOLS]: (agent) => service.contributedTools(agent),
     manager: service.manager,
     events: events.service,
     bridge: bridge.bridge,
@@ -167,7 +192,7 @@ export async function apply(ctx, config) {
   }))
   ctx.provide(STATUS_MODEL.serviceName, status)
 
-  followSettings(ctx, { link, pairing, session, setting, clientId, instance: () => instanceTarget(ctx), warn })
+  followSettings(ctx, { link, pairing, session, setting, clientId, instance: instanceTarget, warn })
 
   // Start order (header).
   link.start()
@@ -204,13 +229,15 @@ function createAsksOnPipeline({ link, cards, events, logger, recovered }) {
   const asks = createAsks({ link: port, table: cards, logger })
   let pipeline = recovered
   const offPoll = link.onPoll((result) => {
+    // Each page is its own link of the chain and ends caught, so one failed page never stops the
+    // pages after it (a page left untaken is simply polled again, nothing was acked for it).
     pipeline = pipeline.then(async () => {
       for (const fn of [...pages]) await fn(result)
       if (result?.ok !== true || !Array.isArray(result.events)) return
       for (const event of result.events) {
         try { await events.intake(event) } catch (error) { logger.warn(MAIN.text.failed, MAIN.text.intake, codeOf(error)) }
       }
-    })
+    }).catch((error) => logger.warn(MAIN.text.failed, MAIN.text.page, codeOf(error)))
   })
   return Object.freeze({
     ...asks,
