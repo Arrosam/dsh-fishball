@@ -29,12 +29,12 @@ import assert from 'node:assert/strict'
 import { caseTest } from '../package-boundaries/cases.mjs'
 import { assertParams, member, needDeclarations, serviceMembers } from '../k3-host-services/contracts.mjs'
 import {
-  CONNECT_EXPECTED, CREDENTIALS, DSH_SIDE, EXPORTS, GRAMMAR_SAMPLES, HOSTED, HOSTED_FIELDS as F, LATER, MCP_SHAPE, NEUTRAL, OAUTH_CLIENT, SAMPLE, TYPE_TEXT,
+  CONNECT_EXPECTED, CREDENTIALS, DSH_SIDE, EXPORTS, GRAMMAR_SAMPLES, HOSTED, HOSTED_FIELDS as F, LATER, MCP_SHAPE, MOVED_EXPORT, NEUTRAL, OAUTH_CLIENT, SAMPLE, TYPE_TEXT,
   TYPES, UI,
 } from './constants.mjs'
 import {
   connector, core, coreConstants, credentials, credentialTypes, dshSideReferences, functionType, guardedRows, isDshSide, literalMember,
-  literalUnion, membersOf, pathOf, reachableNames, sdkDir, sdkMissing, unfrozen,
+  literalUnion, membersOf, pathOf, reachableNames, sdkDir, sdkMissing, uiSeam, unfrozen,
 } from './surface.mjs'
 
 const pick = (object, keys) => Object.fromEntries(keys.map((k) => [k, object[k]]))
@@ -427,11 +427,18 @@ export function registerK3aCases(sdk) {
   ]) caseTest(sdk, 'K3a-CONNECT', row, title, null, LATER.linkSave)
 
   // ================================================================ R-FB-14, Q-G1, Q-G2 = A: the fishball-ui seam
-  caseTest(sdk, 'K3a-UI', 'names', 'UI_SEAM is {member: ui, coreMissing: fishball-core-missing}', async () => {
-    assert.deepEqual((await coreConstants()).UI_SEAM, { member: UI.member, coreMissing: UI.coreMissing })
+  // F-UI moved UI_SEAM unchanged from core's constants into fishball-shared/ui-seam (core's own
+  // contract comment said so); the values and the member they name are unchanged.
+  caseTest(sdk, 'K3a-UI', 'names', 'UI_SEAM (fishball-shared/ui-seam) is {member: ui, coreMissing: fishball-core-missing}, deeply frozen', async () => {
+    const { UI_SEAM } = await uiSeam()
+    assert.deepEqual(UI_SEAM, { member: UI.member, coreMissing: UI.coreMissing })
+    assert.deepEqual(unfrozen(UI_SEAM, MOVED_EXPORT), [])
+  })
+  caseTest(sdk, 'K3a-UI', 'moved', `core's constants no longer export ${MOVED_EXPORT} (one owner of the seam's words)`, async () => {
+    assert.equal(Object.hasOwn(await coreConstants(), MOVED_EXPORT), false)
   })
   caseTest(sdk, 'K3a-UI', 'member', `fishballInstance has a non-method member named UI_SEAM.member typed ${TYPES.fishballUi}`, async () => {
-    const found = member(serviceMembers(core(), UI.instance), (await coreConstants()).UI_SEAM.member, { method: false })
+    const found = member(serviceMembers(core(), UI.instance), (await uiSeam()).UI_SEAM.member, { method: false })
     assert.equal(found.type.trim(), TYPES.fishballUi)
   })
   /** The members of whatever `fishballInstance.ui` is typed as. */
@@ -462,10 +469,11 @@ export function registerK3aCases(sdk) {
     assert.deepEqual(UI.secretSamples.filter((n) => !caught(n)), [])
     assert.deepEqual(UI.plainSamples.filter(caught), [])
   })
+  // A1 and A2 run as system rows in the F-UI suite now; "no other core import" is its UI-EP-02 row.
   for (const [row, title, owner] of [
-    ['A1', 'fishball-ui without core logs fishball-core-missing once and changes nothing', LATER.ui],
-    ['A2', 'core without fishball-ui runs normally and reports nothing about it', LATER.status],
+    ['A1', 'fishball-ui without core logs fishball-core-missing once and changes nothing', LATER.uiSuite],
+    ['A2', 'core without fishball-ui runs normally and reports nothing about it', LATER.uiSuite],
     ['main', 'each onChange listener fires on a change; its disposer stops it', LATER.wire],
-    ['main', 'fishball-ui draws only through fishballInstance.ui (no other core import)', LATER.ui],
+    ['main', 'fishball-ui reads fishballInstance.ui in its Node row only', LATER.uiReads],
   ]) caseTest(sdk, 'K3a-UI', row, title, null, owner)
 }

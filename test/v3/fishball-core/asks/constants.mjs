@@ -24,14 +24,20 @@ import { REPO } from '../../../support/constants.mjs'
 export { APPROVAL_KIND, DECISION_KIND, EVENT_TYPE, OFFER_ID, RETIREMENT_REASON, SETTLED_BY, SETTLEMENT_OUTCOME, TOOL }
 
 const CORE_DIR = path.join(REPO, 'packages', 'core')
+/** F-UI: the card's browser half is fishball-ui's (R-FB-14); the Node half stays core's. */
+const UI_DIR = path.join(REPO, 'packages', 'fishball-ui')
 /** The F-ASKCARD "Owns" files. FBTEST_F_ASKCARD_ENTRY moves the entry (another checkout). */
 export const SUBJECT = Object.freeze({
   entry: process.env.FBTEST_F_ASKCARD_ENTRY ?? path.join(CORE_DIR, 'src', 'asks', 'index.js'),
   /** The module's public surface (the seam the task names). */
   exports: Object.freeze({ open: 'openAskCards', create: 'createAsks', routes: 'registerAskRoutes', constants: 'ASKS', states: 'CARD_STATE' }),
-  /** The browser half: a flat package-local chunk of core's client. */
-  chunk: Object.freeze({ file: path.join(CORE_DIR, 'client.asks.js'), name: 'client.asks.js', owner: 'fishball-core', export: 'asksPlugin' }),
-  coreManifest: path.join(CORE_DIR, 'package.json'),
+  /**
+   * The browser half: a flat package-local chunk of fishball-ui's client (F-UI interface item 8, as
+   * amended: it exports the part factory `asksPart(kit)`, which returns the client plugin).
+   */
+  chunk: Object.freeze({ file: path.join(UI_DIR, 'client.asks.js'), name: 'client.asks.js', owner: 'fishball-ui', export: 'asksPart' }),
+  /** The manifest whose `files` ship the chunk (fishball-ui's since F-UI). */
+  chunkManifest: path.join(UI_DIR, 'package.json'),
 })
 
 /** K3 ask-card.d.ts: the card's fields and states, as the declaration spells them. */

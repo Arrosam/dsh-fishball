@@ -22,7 +22,8 @@ export { CONNECT, OAUTH_ERROR, TARGET_CODE, TARGET_STATE }
 /** The F-STATUS "Owns" entries. */
 export const SUBJECT = Object.freeze({
   core: path.join(REPO, 'packages', 'core', 'src', 'status', 'index.js'),
-  ui: path.join(REPO, 'packages', 'core', 'ui', 'status', 'index.js'),
+  /** F-UI moved the strip view, unchanged, into fishball-ui (src/status/). */
+  ui: path.join(REPO, 'packages', 'fishball-ui', 'src', 'status', 'index.js'),
   factory: 'createStatus',
   reader: 'statusOf',
   model: 'STATUS_MODEL',
@@ -145,7 +146,8 @@ export const HOST = Object.freeze({
 
 /** Bundles that are never reported (Q-G1, HOST-DT-03 rule 10, R-FB-07 withdrawn) and an ordinary other bundle. */
 export const NEVER_REPORTED = Object.freeze({
-  ui: GUARDS.pluginName,
+  /** The fishball-ui bundle (Q-G1: core shows no hint about it, present or missing; F-UI). */
+  ui: V3.ui.name,
   hostedSettings: 'fishball-hosted-settings',
   watchdog: 'fishball-watchdog',
   other: 'fbtest-other-bundle',

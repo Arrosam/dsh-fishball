@@ -237,6 +237,15 @@ function registerPackageCases(sdk) {
     for (const { u, f } of readers) assert.ok(edgesTo(u, V3.shared.name).some((r) => r.file === f), `${u.name}/${f} does not import fishball-shared`)
   })
 
+  // F-UI (R-FB-14, R-ARCH-10): fishball-ui is Fishball-side only. It reaches neither the instance nor
+  // core (core is reached through its published routes), and neither reaches fishball-ui.
+  caseTest(sdk, 'PLAT-EP-07', 2, 'fishball-ui imports or depends on dsh-instance or fishball-core: never', async () => {
+    await assertNoEdges(V3.ui.name, [V3.instance.name, V3.core.name])
+  }, has(V3.ui) ? undefined : LATER.ui)
+  caseTest(sdk, 'PLAT-EP-07', 1, 'dsh-instance and fishball-core import or depend on fishball-ui: never', async () => {
+    for (const from of [V3.instance.name, V3.core.name]) await assertNoEdges(from, [V3.ui.name])
+  }, has(V3.ui) ? undefined : LATER.ui)
+
   // ---- row 7c: the other cross-package edges are unchanged ----
   caseTest(sdk, 'PLAT-EP-07', '7c', 'the connector imports and depends on no Fishball-side package (fishball-shared included)', async () => {
     await assertNoEdges(V3.connector.name, [...SET_SIDE, V3.shared.name])

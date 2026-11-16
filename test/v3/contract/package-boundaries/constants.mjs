@@ -19,6 +19,8 @@ export const V3 = Object.freeze({
   /** The DSH side's library (requirements 1.40, design §1.0, §1.0c; SPLIT-SHARED creates its folder). */
   dshShared: pkg('dsh-connector-shared', 'dsh-connector-shared'),
   core: pkg('fishball-core', 'core'),
+  /** Fishball's UI plugin, split out of core (requirements 1.38 Q-N2, R-FB-14; task F-UI). */
+  ui: pkg('fishball-ui', 'fishball-ui'),
   instance: pkg('dsh-instance', 'dsh-instance'),
   connector: pkg('dsh-connector', 'dsh-connector'),
   // S4-Q3 decided B (questions.md at b1295de): all lowercase, as npm and DSH's plugin manager require.
@@ -32,17 +34,17 @@ export const LIBRARIES = Object.freeze([V3.dshShared, V3.shared])
 export const LIBRARY_NAMES = Object.freeze(LIBRARIES.map((p) => p.name))
 /**
  * The two sides with no dependency between them (design §1.0, requirements 1.34–1.41). Each side's
- * library is its last member. `dsh-connector-adapter` and `fishball-ui` join when their tasks create
- * them (C-MCP-ADAPTER, F-UI).
+ * library is its last member. `dsh-connector-adapter` joins when C-MCP-ADAPTER creates it;
+ * `fishball-ui` is a Fishball-side package since F-UI (R-FB-14).
  */
 export const SIDES = Object.freeze({
   dsh: Object.freeze({ id: 'DSH', packages: Object.freeze([V3.connector, V3.embed, V3.instance, V3.dshShared]), library: V3.dshShared }),
-  fishball: Object.freeze({ id: 'Fishball', packages: Object.freeze([V3.core, V3.board, V3.shared]), library: V3.shared }),
+  fishball: Object.freeze({ id: 'Fishball', packages: Object.freeze([V3.core, V3.ui, V3.board, V3.shared]), library: V3.shared }),
 })
 /** The side a package name belongs to (undefined for a name of neither side). */
 export const sideOf = (name) => Object.values(SIDES).find((side) => side.packages.some((p) => p.name === name))
-/** R-BND-01: the plugin set, board and core (design §1.0; row 7c: the connector imports none of them). */
-export const SET_SIDE = Object.freeze([V3.core.name, V3.board.name])
+/** R-BND-01: the plugin set, board, core and fishball-ui (design §1.0, F-UI; row 7c: the connector imports none of them). */
+export const SET_SIDE = Object.freeze([V3.core.name, V3.ui.name, V3.board.name])
 /** Design §9.1: the feature plugin finds core only through the optional `fishballInstance?` inject. */
 export const FEATURES = Object.freeze([V3.board.name])
 /** Design §9.1: embed-UI may take `./tools` from the connector (types and data), nothing else. */
@@ -103,11 +105,12 @@ export const WORKER = Object.freeze({
 /** Owners of the rows R-SHARED cannot check yet (v3-tasks.md). */
 export const LATER = Object.freeze({
   core: 'R-CORE (creates packages/core, W1 step 2)',
+  ui: 'F-UI (creates packages/fishball-ui)',
   embed: 'R-EMBED (creates packages/dsh-connector-ui, W1 step 3)',
   featurePeers: 'FEAT-PEERS (the feature plugin drops the dsh-instance peer for the optional fishballInstance? inject)',
   pluginsPage: 'X-MATRIX (no Plugins page of a started DSH lists either library)',
   hostTrace: 'X-SEC (PLAT-EP-07 runtime part: module-load trace of a running hosted setup C + I + U)',
-  twoUsers: 'Fishball (R-ARCH-08 rule 5 "more than one package uses it" conflicts with the SPLIT-SHARED contents: admin-protocol, files and provider-sync have one DSH-side user, the instance; fishball-shared has one, core, until F-UI)',
+  twoUsers: 'Fishball (R-ARCH-08 rule 5 "more than one package uses it" conflicts with the SPLIT-SHARED contents: admin-protocol, files and provider-sync have one DSH-side user, the instance; most fishball-shared modules have one, core, and ui-seam is fishball-ui\'s and core\'s since F-UI)',
   removeV2: 'REMOVE-V2 (design §1.0b row 2: core still imports dsh-connector/contract and peers on dsh-connector; that edge goes with the V2 child path)',
   standalone: 'unassigned in v3-tasks.md (standalone install of the core tarball with no registry; core is not standalone-loadable before S6/F-GUARDS)',
 })

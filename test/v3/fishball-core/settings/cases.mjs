@@ -13,7 +13,7 @@
 import assert from 'node:assert/strict'
 import { caseTest } from '../../contract/package-boundaries/cases.mjs'
 import {
-  CONNECT, CONTINUATION, CORE, DSH, FIELD_ORDER, FIELDS, FIXTURE, HARNESS, HOSTED_IMPORT, INSTANCE_TARGET, MARK, OPEN, OUTCOME,
+  CLIENTS, CONNECT, CONTINUATION, CORE, DSH, ENTRY_ACTION, FIELD_ORDER, FIELDS, FIXTURE, HARNESS, HOSTED_IMPORT, INSTANCE_TARGET, MARK, OPEN, OUTCOME,
   ROUTE, SUBJECT, TOKEN_FIELD, freshToken,
 } from './constants.mjs'
 import { createWorld, loadChunkAlone, loadPage, settle } from './page.mjs'
@@ -938,6 +938,35 @@ export function registerSettingsCases(sdk) {
     for (const which of Object.values(MARK.entries)) assert.ok(headers.some((h) => page.byAttr(MARK.entry, which, h.tree).length > 0), which + ' entry missing')
     assert.deepEqual(page.world.failedFibers, [])
     assert.deepEqual(page.world.errors, [])
+  })
+
+  // ============================================================== F-UI: the entries are fishball-ui's (interface items 8–9)
+  // Decision table over the clients a page loads × what appears: core alone gives its settings page
+  // and no Fishball-page entry; with fishball-ui both entries appear with their relayed ids and orders.
+  caseTest(sdk, 'SET3-UC-07', 'F-UI core only', "core's client alone: its settings page registers; no Fishball-page header entry and no view=settings open", async (t) => {
+    const page = await pageOf(t, sdk, { clients: CLIENTS.coreOnly, hash: CONTINUATION.settings }, null)
+    assert.equal(page.world.configEntries().length, 1, "core's settings page entry")
+    const headers = await page.headers()
+    for (const which of Object.values(MARK.entries)) assert.equal(headers.flatMap((h) => page.byAttr(MARK.entry, which, h.tree)).length, 0, which + ' entry from core')
+    assert.equal(page.world.settingsOpens(), 0, 'core continued view=settings')
+    assert.deepEqual(page.world.failedFibers, [])
+  })
+  caseTest(sdk, 'SET3-UC-07', 'F-UI ids', 'the two header actions are fishball-core-settings (order 90) and fishball-dsh-settings (order 91)', async (t) => {
+    const page = await pageOf(t, sdk, {}, null)
+    for (const [which, action] of Object.entries(ENTRY_ACTION)) {
+      const entry = await headerEntry(page, MARK.entries[which])
+      assert.equal(entry.id, action.id, which)
+      const options = page.world.headerEntries().find((e) => e.options.id === action.id)?.options
+      assert.equal(options?.order, action.order, which + ' order')
+    }
+  })
+  caseTest(sdk, 'SET3-UC-10', 'F-UI locale', `the entries read their words from the locale namespace ${SUBJECT.entriesLocale} (en and zh, same keys)`, async (t) => {
+    const page = await pageOf(t, sdk, {}, null)
+    const mine = page.world.localeRegistrations.filter((r) => r.ns === SUBJECT.entriesLocale)
+    assert.equal(mine.length > 0, true, 'namespaces registered: ' + show(page.world.localeRegistrations.map((r) => r.ns)))
+    for (const r of mine) assert.equal(JSON.stringify(Object.keys(r.dicts.zh ?? {}).sort()), JSON.stringify(Object.keys(r.dicts.en ?? {}).sort()))
+    const entries = page.world.headerEntries().filter((e) => Object.values(ENTRY_ACTION).some((a) => a.id === e.options.id))
+    assert.deepEqual(entries.map((e) => e.options.locale), entries.map(() => SUBJECT.entriesLocale), 'entry locale namespaces')
   })
 
   // ============================================================== SET3-ST-01: the page entry follows the Host

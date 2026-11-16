@@ -17,7 +17,7 @@ either library on its own (PLAT-EP-07 rows 3/7b, 4, 5, 6, 7a) are registered onc
 
 | # | Requirement |
 | --- | --- |
-| R1 | Two sides with no dependency between them. The DSH side is dsh-connector, dsh-connector-ui, dsh-instance and the library dsh-connector-shared (`packages/dsh-connector-shared`). The Fishball side is fishball-core, fishball-board and the library fishball-shared (`packages/shared`). |
+| R1 | Two sides with no dependency between them. The DSH side is dsh-connector, dsh-connector-ui, dsh-instance and the library dsh-connector-shared (`packages/dsh-connector-shared`). The Fishball side is fishball-core, fishball-ui (since F-UI, R-FB-14), fishball-board and the library fishball-shared (`packages/shared`). |
 | R2 | No package is shared across the sides: no import and no dependency field names a package of the other side (libraries included). Neither library imports any other V3 package. |
 | R3 | dsh-connector-shared holds `./admin-protocol`, `./provider-sync`, `./provider-sync-codec`, `./provider-sync-host`, `./redact` and `./files`. Their contracts are those of today's fishball-shared modules (moved, behaviour unchanged). |
 | R4 | `files` is duplicated, one copy per library. fishball-shared keeps `./files`. |
@@ -62,6 +62,7 @@ core and none in the instance's graph, composition is refused with a typed code.
 | SPLIT-UC-01 | main (instance, connector) | Use Case | manifests and import graph | imports dsh-connector-shared and lists it in both fields; reaches no fishball-shared |
 | SPLIT-UC-01 | A1 | Use Case / EP | every edge into dsh-connector-shared | the specifier is one of the six `dsh-connector-shared/<module>` |
 | SPLIT-UC-02 | main (core) | Use Case | the same | imports fishball-shared and lists it in both fields; reaches no dsh-connector-shared |
+| SPLIT-UC-02 | main (fishball-ui) | Use Case | the same (F-UI) | imports fishball-shared and lists it in both fields; reaches no dsh-connector-shared |
 | SPLIT-UC-02 | A1 | Use Case | Fishball-side edges | none lands on fishball-shared's `redact.js` |
 | SPLIT-EP-01 | 1 | EP (library contents) | dsh-connector-shared's `exports` | the six subpaths map to `./<module>.js` and the files exist; `./package.json` is exported |
 | SPLIT-EP-01 | 2 | EP | its `peerDependencies` | exactly cosmokit, dsh-app-boot and dsh-llm-pi-ai, equal to the base library's |

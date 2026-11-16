@@ -24,12 +24,13 @@
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import vm from 'node:vm'
-import { BODY_SOUL, loadCore } from './body-soul-env.mjs'
+import { BODY_SOUL, loadUi } from './body-soul-env.mjs'
 
+// V3 F-UI: the tab package and its data moved, unchanged, from core's ui/ into fishball-ui.
 export const RP = Object.freeze({
-  pluginDir: path.join(BODY_SOUL.core, 'ui', 'fishball-recommend-plugins'),
+  pluginDir: path.join(BODY_SOUL.ui, 'fishball-recommend-plugins'),
   clientFile: 'client.js',
-  indexModule: 'ui/fishball-recommend-plugins/index.js',
+  indexModule: 'fishball-recommend-plugins/index.js',
   dataModule: 'src/recommended.js',
   moduleId: 'fishball-recommend-plugins',
   baseURI: 'http://child.test/fishball-child/',
@@ -291,7 +292,7 @@ function fakePrimitives(React) {
 
 /** The Node half's registered fetch route (index.js through its public apply). */
 export async function loadNodeRoute() {
-  const mod = await loadCore(RP.indexModule)
+  const mod = await loadUi(RP.indexModule)
   return applyNodeHalf(mod)
 }
 export function applyNodeHalf(mod) {
