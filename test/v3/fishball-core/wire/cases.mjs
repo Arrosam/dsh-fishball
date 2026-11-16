@@ -1,0 +1,122 @@
+import assert from 'node:assert/strict'
+import { test, after } from 'node:test'
+import { C } from './constants.mjs'
+import { boot, contracts, forbiddenImports, manifest, patches, request, requestAs } from './subject.mjs'
+import { until } from '../../../support/util.mjs'
+export function registerWireCases(sdk) {
+  test(`${sdk} WIRE-EP-01 manifest exports and dependency boundary`, () => {
+    const pkg = manifest()
+    for (const key of C.exports) assert.ok(pkg.exports[key], key)
+    assert.deepEqual(Object.keys(pkg.exports).filter((k) => k.startsWith('./slim/')), [])
+    assert.deepEqual(Object.keys(pkg.peerDependencies ?? {}).filter((k) => C.forbiddenDependency.test(k)), [])
+  })
+  test(`${sdk} WIRE-EP-02 no cross-side imports anywhere in Fishball packages`, () => assert.deepEqual(forbiddenImports(), []))
+  test(`${sdk} WIRE-DT-01 patch inserts main and preserved rows, no V2 rows`, async () => {
+    const rows = (await patches(sdk)).flatMap((p) => p.insert ?? [])
+    for (const id of C.rows) assert.equal(rows.filter((r) => r.id === id).length, C.one, id)
+    assert.equal(rows.find((r) => r.id === C.core)?.name, C.main)
+    for (const id of C.absentRows) assert.equal(rows.some((r) => r.id === id), false, id)
+  })
+  test(`${sdk} WIRE-EP-03 model seam and core tool tables`, async () => {
+    const values = await contracts()
+    assert.deepEqual(values.FISHBALL_MODEL, C.modelSeam)
+    for (const table of C.coreToolTables) assert.ok(values.GUARDS.coreTools.some((entry) => entry.module === table.module && entry.table === table.table), table.table)
+  })
+  for (const members of [[C.core], [C.ui, C.core], [C.board, C.ui, C.core]]) {
+    let live; let first
+    const get = () => first ??= boot(sdk, members).then((h) => { live = h; return h })
+    after(async () => live?.stop())
+    const prefix = `${sdk} WIRE-SYS ${members.join('+')}`
+    test(`${prefix} apiVersion and complete public service shape`, async () => {
+      const f = await (await get()).call('shape')
+      assert.equal(f.apiVersion, C.apiVersion)
+      for (const key of C.members) assert.ok(f.shape[key], key)
+      for (const key of C.managerMembers) assert.equal(f.shape.manager[key], 'function', key)
+      for (const key of C.uiMembers) assert.ok(f.shape.ui[key], key)
+    })
+    test(`${prefix} no-target status is on with target-unset line`, async () => {
+      const s = await (await get()).call('snapshot')
+      assert.equal(s.fishball, 'on')
+      // F-STATUS's frozen view model: `line` is `{kind, code}` (test/v3/fishball-core/status).
+      assert.equal(s.line?.kind, 'target-unset', JSON.stringify(s))
+    })
+    test(`${prefix} manager ensure is idempotent; generated identity stays out of settings`, async () => {
+      const h = await get(); const f = await h.call('ensure')
+      assert.ok(f.id)
+      assert.equal(f.a, f.id); assert.equal(f.b, f.id)
+      assert.equal(f.ids.filter((id) => id === f.id).length, C.one)
+      assert.equal(f.ids.length, C.one)
+      // DESIGN §20: "Generated `identity.id` | Kept in core's storage domain `fishball_core_main`, not
+      // in the settings document". The user's layer stays without it; the generated id itself (Connect
+      // agent_id) is covered by test/v3/fishball-core/manager MGR-ID-EP-02 / MGR-ID-ST-01.
+      const config = await h.call('config'); assert.equal(config.user?.identity?.id, undefined, JSON.stringify(config.user))
+    })
+    test(`${prefix} manager tool scope and guards hold`, async () => {
+      const h = await get(); await h.call('ensure'); const f = await h.call('tools')
+      for (const name of C.coreTools) { assert.ok(f.local.includes(name), name); assert.equal(f.global.includes(name), false, name) }
+      assert.ok(f.local.some((n) => C.privateSkill.test(n)))
+      assert.equal(f.global.some((n) => C.privateSkill.test(n)), false)
+      const optional = members.includes(C.board) ? (n) => n.startsWith(C.boardToolPrefix) : () => false
+      assert.deepEqual(f.local.filter((n) => !C.coreTools.includes(n) && !C.privateSkill.test(n) && !optional(n)).sort(), [...C.baseTools].sort())
+      const guards = await h.call('guards'); assert.equal(guards.status, C.guardsOk, JSON.stringify(guards)); assert.deepEqual(guards.overridden, [])
+    })
+    test(`${prefix} persona has only V3 tool names`, async () => {
+      const h = await get(); await h.call('ensure'); const requests = await h.call('turn')
+      assert.ok(requests.length)
+      const system = requests.map((r) => r.system).join(C.empty)
+      for (const name of C.persona.present) assert.ok(system.includes(name), name)
+      for (const name of C.persona.absent) assert.equal(system.includes(name), false, name)
+      assert.equal(JSON.stringify(requests).includes(C.opaqueSecret), false)
+    })
+    test(`${prefix} Connect GET, POST, cancel and callback without cookie`, async () => {
+      const h = await get()
+      const state = await request(h, C.routes.connect)
+      assert.equal(state.status, C.status.ok); assert.ok(C.connectStates.includes(state.json.state)); assert.ok(Object.hasOwn(state.json, 'code')); assert.ok(state.cache?.includes(C.noStore))
+      // Loopback pages ("Loopback Origin host (127.0.0.1, localhost, [::1]) → loopback callback"; "No
+      // Origin with a loopback Host → loopback"), on the listener's port so DSH's fence admits them.
+      // Without a target the loopback press refuses with a configuration code, never the insecure one.
+      const { port } = new URL(h.origin)
+      for (const name of C.loopbackHosts) {
+        const authority = name + ':' + port
+        for (const origin of [C.scheme.http + authority, C.scheme.https + authority, undefined]) {
+          const begin = await requestAs(h, C.routes.connect, { authority, origin })
+          const why = authority + ' ' + origin + ' ' + begin.text
+          assert.equal(begin.status, C.status.ok, why); assert.equal(begin.json?.outcome, 'needs-configuration', why)
+          assert.ok(C.configurationCodes.includes(begin.json.code), why); assert.notEqual(begin.json.code, C.insecureCode, why)
+        }
+      }
+      const cancel = await request(h, C.routes.cancel, {})
+      assert.equal(cancel.status, C.status.ok); assert.ok(C.connectStates.includes(cancel.json.state))
+      assert.equal((await request(h, C.routes.callback, undefined, {}, false)).status, C.status.missing)
+    })
+    test(`${prefix} ST model unset/default → live set → unroutable/default`, async () => {
+      const h = await get(); await h.call('ensure')
+      // The live selection is the model of the manager's next request (interface: "applied to the live
+      // manager session on activation and on every `model` change"); Agent.options is create-time.
+      const waitModel = async (want) => { let last; await until(async () => (last = await h.call('requestModel')) === want, C.budget.call, C.budget.poll); return last }
+      assert.equal(await h.call('requestModel'), C.defaultModel)
+      await h.call('mutate', { path: C.modelSeam.path, value: C.selection })
+      assert.equal(await waitModel(C.selection.model), C.selection.model)
+      await h.call('mutate', { path: C.modelSeam.path, value: C.unroutable })
+      assert.equal(await waitModel(C.defaultModel), C.defaultModel)
+      await h.call('mutate', { path: C.modelSeam.path, unset: true })
+    })
+    test(`${prefix} ST target settings trigger reconnect/status change`, async () => {
+      const h = await get()
+      await h.call('mutate', { path: ['target', 'url'], value: C.target })
+      let s; await until(async () => { s = await h.call('snapshot'); return s.line?.kind !== 'target-unset' }, C.budget.call, C.budget.poll)
+      assert.notEqual(s.line?.kind, 'target-unset', JSON.stringify(s))
+      await h.call('mutate', { path: ['target', 'url'], unset: true })
+    })
+    test(`${prefix} restart resumes exactly the same manager; user settings unchanged`, async () => {
+      const h = await get(); const old = await h.call('ensure'); const config = await h.call('config')
+      await h.stop(); live = await boot(sdk, members, h.home)
+      const next = await live.call('ensure'); assert.equal(next.id, old.id); assert.equal(next.ids.length, C.one)
+      // DESIGN §20 keeps the generated id out of settings; its persistence across a restart is
+      // fishball-core/manager MGR-ID-ST-01. Here: the user's layer is unchanged by the restart.
+      assert.deepEqual((await live.call('config')).user, config.user)
+    })
+  }
+  test(`${sdk} WIRE browser callback completion and matching HTTPS redirect_uri`, { todo: C.todo }, () => {})
+  test(`${sdk} WIRE Connect non-loopback http / mismatching https → web-callback-insecure`, { todo: C.insecureTodo }, () => {})
+}

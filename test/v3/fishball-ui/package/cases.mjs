@@ -162,7 +162,8 @@ export function registerUiCases(sdk) {
   })
 
   // ================================================================ UI-DT-01 / UI-BVA-01: the patch rows
-  t('UI-BVA-01', 'guards', `fishball-ui's patch has exactly the seven UI guard row ops, in order: ${ROWS.guards.join(', ')}`, async () => {
+  // Re-baselined (F-WIRE): eight rows, ui-model-selection last; the user: "Hide it. Only core's settings choose the model".
+  t('UI-BVA-01', 'guards', `fishball-ui's patch has exactly the ${ROWS.guards.length} UI guard row ops, in order: ${ROWS.guards.join(', ')}`, async () => {
     const ops = rowOps(await uiPatch(sdk))
     assert.deepEqual(ops.map((r) => r.id), [...ROWS.guards])
     for (const op of ops) assert.deepEqual(Object.keys(op).sort(), ['disabled', 'id'], op.id + ' is not a bare {id, disabled} row')
@@ -228,7 +229,7 @@ export function registerUiCases(sdk) {
   })
 
   // ================================================================ UI-UC-08: core's patch after the split
-  t('UI-UC-08', 'main', "core's patch holds none of the seven UI guard rows nor the page / tab rows", async () => {
+  t('UI-UC-08', 'main', `core's patch holds none of the ${ROWS.guards.length} UI guard rows nor the page / tab rows`, async () => {
     const patch = await corePatch(sdk)
     const ids = [...rowOps(patch).map((r) => r.id), ...insertedOf(patch).map((r) => r.id)]
     assert.deepEqual(ids.filter((id) => ROWS.guards.includes(id) || Object.keys(ROWS.withCore).includes(id) || id === ROWS.coreMissing.id), [])
@@ -328,7 +329,9 @@ export function registerUiCases(sdk) {
     const { failed } = await applyIn(c, client.exports)
     return { ...client, started, kits, failed, styles }
   }
-  t('UI-UC-04', 'main 2', 'its plugin loads ./client.entries.js and ./client.asks.js and starts each part', async (c) => {
+  // Re-baselined (F-WIRE lead, 2026-11-17): "client.js now loads FOUR parts: client.entries.js, client.asks.js,
+  // client.strip.js (the status strip, stripPart) and client.model.js (the model dialog, modelPart)".
+  t('UI-UC-04', 'main 2', `its plugin loads ${Object.values(CLIENT.parts).map((p) => './' + p.file).join(', ')} and starts each part`, async (c) => {
     needUi()
     const r = await startClient(c, {})
     assert.deepEqual([...r.loads].sort(), Object.values(CLIENT.parts).map((p) => './' + p.file).sort())
@@ -336,15 +339,16 @@ export function registerUiCases(sdk) {
     assert.deepEqual(r.failed, [])
   })
   for (const part of Object.values(CLIENT.parts)) {
-    const other = Object.values(CLIENT.parts).find((p) => p !== part)
-    t('UI-UC-04', 'E1', `${part.file} fails to load: only its part is lost; ${other.file} still starts; nothing fails`, async (c) => {
+    // Follows main 2's re-baseline: with four parts, every other part still starts.
+    const others = Object.values(CLIENT.parts).filter((p) => p !== part).map((p) => p.file)
+    t('UI-UC-04', 'E1', `${part.file} fails to load: only its part is lost; ${others.join(', ')} still start; nothing fails`, async (c) => {
       needUi()
       const r = await startClient(c, { [part.file]: CHUNK_FAILS })
-      assert.deepEqual(r.started, [other.file])
+      assert.deepEqual([...r.started].sort(), [...others].sort())
       assert.deepEqual(r.failed, [])
     })
   }
-  t('UI-UC-04', 'E2', 'both chunks fail: no part starts and the entry plugin does not fail', async (c) => {
+  t('UI-UC-04', 'E2', 'every chunk fails: no part starts and the entry plugin does not fail', async (c) => {
     needUi()
     const r = await startClient(c, Object.fromEntries(Object.values(CLIENT.parts).map((p) => [p.file, CHUNK_FAILS])))
     assert.deepEqual(r.started, [])
@@ -368,13 +372,14 @@ export function registerUiCases(sdk) {
     assert.deepEqual(r.styles.filter((s) => s.id === FIXTURE.styleId), [])
   })
   for (const part of Object.values(CLIENT.parts)) {
-    t('UI-UC-05', part.file, `${part.file} registers {id: fishball-ui, chunk: ${part.file}} and exports ${part.export}(kit) → a plugin named "${part.plugin}" {inject, apply}`, () => {
+    t('UI-UC-05', part.file, `${part.file} registers {id: fishball-ui, chunk: ${part.file}} and exports ${part.export}(kit) → a plugin ${part.plugin === null ? 'with a name' : `named "${part.plugin}"`} {inject, apply}`, () => {
       needUi()
       const { registrations, exports, required } = loadChunk(part.file, platform())
       assert.deepEqual(registrations.map((r) => [r.id, r.chunk]), [[CLIENT.moduleId, part.file]])
       assert.equal(typeof exports?.[part.export], 'function', 'no ' + part.export)
       const plugin = exports[part.export]({ [CLIENT.kitStyle]: () => () => {} })
-      assert.equal(plugin?.name, part.plugin)
+      if (part.plugin === null) assert.ok(typeof plugin?.name === 'string' && plugin.name.length > 0, 'the plugin has no name')
+      else assert.equal(plugin?.name, part.plugin)
       assert.ok(Array.isArray(plugin?.inject), 'no inject list')
       assert.equal(typeof plugin?.apply, 'function')
       assert.deepEqual(required.filter((n) => !CLIENT.platform.includes(n)), [], 'requires outside the page set')
@@ -409,7 +414,7 @@ export function registerUiCases(sdk) {
     const f = await both()
     for (const name of [CORE, UI]) assert.ok(f.started.includes(name), show(f.started))
   })
-  t('UI-UC-01', 'main 2', 'core + fishball-ui: the seven UI guard rows are disabled', async () => {
+  t('UI-UC-01', 'main 2', `core + fishball-ui: the ${ROWS.guards.length} UI guard rows are disabled`, async () => {
     const f = await both()
     assert.deepEqual(f.rows.filter((r) => ROWS.guards.includes(r.id) && r.present && !r.disabled).map((r) => r.id), [])
   })
@@ -419,7 +424,8 @@ export function registerUiCases(sdk) {
     for (const id of Object.keys(ROWS.withCore)) assert.ok(state[id]?.present && !state[id].disabled && state[id].active, id + ': ' + show(state[id]))
     assert.ok(!state[ROWS.coreMissing.id]?.present || state[ROWS.coreMissing.id].disabled, show(state[ROWS.coreMissing.id]))
   })
-  t('UI-UC-01', 'main 3', `core + fishball-ui: ${CONDITION.service2}.rows is the seven guard ids, frozen, in patch order`, async () => {
+  // Re-baselined (F-WIRE): eight ids, ui-model-selection last ("Hide it. Only core's settings choose the model").
+  t('UI-UC-01', 'main 3', `core + fishball-ui: ${CONDITION.service2}.rows is the ${ROWS.guards.length} guard ids, frozen, in patch order`, async () => {
     const f = await both()
     assert.ok(f.service.present, 'no ' + CONDITION.service2 + ' service')
     assert.deepEqual(f.service.value.rows, [...ROWS.guards])
@@ -481,7 +487,7 @@ export function registerUiCases(sdk) {
     const f = await alone()
     assert.deepEqual(f.logs1.filter((l) => l.name === CORE_MISSING.logger && !isCoreMissingLine(l)), [])
   })
-  t('UI-UC-02', 'main 3', 'fishball-ui alone: no DSH row is disabled by it (the seven UI rows run; the disabled set equals a DSH without Fishball)', async () => {
+  t('UI-UC-02', 'main 3', `fishball-ui alone: no DSH row is disabled by it (the ${ROWS.guards.length} UI rows run; the disabled set equals a DSH without Fishball)`, async () => {
     const [f, p] = await Promise.all([alone(), plain()])
     assert.deepEqual(f.rows.filter((r) => ROWS.guards.includes(r.id) && r.present && r.disabled).map((r) => r.id), [], 'UI rows disabled')
     const extra = f.disabled.filter((id) => !p.disabled.includes(id) && !ALL_INSERTED.includes(id))
