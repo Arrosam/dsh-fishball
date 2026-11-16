@@ -20,18 +20,20 @@ export function usable(ctx, name) {
 
 /**
  * Whether a local connector is there (Q-U1: "embed UI是connector的附属插件，不能脱离connector运作"):
- * its UI backend. C-WIRE mounted the backend in the connector row, so V2's connector service no
- * longer counts (the W3 fallback is gone): the logs, the route refusals and the client's
- * `connector` flag ask the same question.
+ * its UI backend, or (until C-WIRE) V2's connector service, which serves only the V2 frame. This
+ * is wider than availability's `connector` flag, which is the UI backend alone: the logs and the
+ * route refusals ask "is there a connector at all", the client asks "what can I draw".
  */
-export const hasConnector = (ctx) => usable(ctx, SERVICE.ui) !== undefined
+export const hasConnector = (ctx) => usable(ctx, SERVICE.ui) !== undefined || ctx.get(SERVICE.legacyConnector) !== undefined
 
 /**
  * What the client may register (UIM-EP-01, design §4.2), one flag per service:
  * - connector: the connector's UI backend (the fish, its light, the notify prompt, the marks and
  *   Hand over / Take back, the window or the hint); `ui` carries its routes, page-relative;
  * - page: `dshInstanceChild` (the window onto the hosted child's page, its status, the card's
- *   model sync).
+ *   model sync);
+ * - legacy: V2's connector service, which keeps the V2 frame working until W4b removes it
+ *   (SERVICE.legacyConnector).
  * @param pageRelative - turns a route path into the form the browser resolves against DSH's page.
  */
 export function availability(ctx, pageRelative) {
@@ -40,6 +42,7 @@ export function availability(ctx, pageRelative) {
   return Object.freeze({
     connector: ui !== undefined,
     page: usable(ctx, SERVICE.child) !== undefined,
+    legacy: ctx.get(SERVICE.legacyConnector) !== undefined,
     ui: Object.freeze(uiRoutes),
   })
 }
