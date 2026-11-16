@@ -284,7 +284,7 @@ export async function placeBundles(paths, boot) {
  * @returns {Promise<string>} the lifecycle row's module path.
  */
 export async function snapshotLifecycle(destination) {
-  const { lifecycle, entries } = RUNTIME.snapshot
-  for (const file of await moduleClosure(INSTANCE_ROOT, [lifecycle, ...entries])) await copyFile(path.join(INSTANCE_ROOT, file), path.join(destination, file))
+  const { lifecycle, childRow, entries } = RUNTIME.snapshot
+  for (const file of await moduleClosure(INSTANCE_ROOT, [lifecycle, childRow, ...entries])) await copyFile(path.join(INSTANCE_ROOT, file), path.join(destination, file))
   return path.join(destination, lifecycle)
 }

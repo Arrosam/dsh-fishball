@@ -52,10 +52,9 @@ const { createAdminCodec, validateRequest } = createAdminProtocol({ DIGEST, STAT
 const TRANSPORT_METHODS = Object.freeze(['send', 'onMessage', 'onClose'])
 /**
  * The states and codes `admin.status` and `admin.restart` may answer: the instance's own
- * vocabulary, the contract's STATUS/STATUS_CODES plus `connector-missing` and the refused-attach
- * codes (src/native-runtime/constants.js). Both operations are local, so this answer never crosses the wire and
- * the child's contract-only result check does not apply to it; checking it against STATUS alone
- * made a `connector-missing` instance answer `operation-failed`.
+ * vocabulary (INSTANCE_STATES, INSTANCE_CODES in src/native-runtime/constants.js; K3 `ChildState`
+ * and `LifecycleCode`). Both operations are local, so this answer never crosses the wire and the
+ * child's contract-only result check does not apply to it.
  */
 const STATUS_STATES = new Set(INSTANCE_STATES)
 const STATUS_CODE_SET = new Set(INSTANCE_CODES)

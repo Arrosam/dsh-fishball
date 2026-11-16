@@ -4,7 +4,7 @@
  * without a child: the host row passes its lifecycle, the runtime's origin and ticket mint, the
  * hosted-token rules (hosted.js) and model sync.
  */
-import { CHILD_STATE, LOCATOR, LOOPBACK, TICKET, NativeRuntimeError } from '../native-runtime/constants.js'
+import { CHILD_STATE, LOCATOR, LOOPBACK, REFUSAL, TICKET, NativeRuntimeError } from '../native-runtime/constants.js'
 const reject = (code) => Promise.reject(new NativeRuntimeError(code))
 
 /**
@@ -33,11 +33,13 @@ export function createChildLocator({ lifecycle, origin, ticket, hosted, provider
     onChange: (fn) => lifecycle.onChange(fn),
     origin: originUnder,
     async admit({ view, lang, hostname } = {}) {
-      if (!LOOPBACK.all.includes(hostname)) return reject(LOOPBACK.code.hostnameRefused)
+      if (!LOOPBACK.all.includes(hostname)) return reject(REFUSAL.hostnameRefused)
+      // An untyped caller's view or language outside K3's is its own bug, not the child being down.
+      if (!LOOPBACK.views.includes(view) || !LOOPBACK.langs.includes(lang)) return reject(REFUSAL.invalid)
       const base = originUnder(hostname)
-      if (base === null || !LOOPBACK.views.includes(view) || !LOOPBACK.langs.includes(lang)) return reject(LOOPBACK.code.notReady)
+      if (base === null) return reject(REFUSAL.notReady)
       let minted
-      try { minted = await ticket({ audience: new URL(base).host, view, lang }) } catch { return reject(LOOPBACK.code.notReady) }
+      try { minted = await ticket({ audience: new URL(base).host, view, lang }) } catch { return reject(REFUSAL.notReady) }
       const url = new URL(TICKET.path, base)
       url.searchParams.set(TICKET.param, minted)
       return { url: url.href }
@@ -48,7 +50,7 @@ export function createChildLocator({ lifecycle, origin, ticket, hosted, provider
       hosted.retryNotice()
     },
     async reconnect() {
-      if (!ready()) return { ok: false, code: LOOPBACK.code.notReady }
+      if (!ready()) return { ok: false, code: REFUSAL.notReady }
       return hosted.reconnect()
     },
     targetStatus: () => hosted.targetStatus(),

@@ -48,15 +48,6 @@ export const SERVICE = Object.freeze({
  */
 export const LOOPBACK = Object.freeze({
   hostnames: Object.freeze(['127.0.0.1', 'localhost', '[::1]']),
-  /** The request header that names the main page's authority, and the scheme its URL parses with. */
-  hostHeader: 'host',
-  parseScheme: 'http://',
-  /**
-   * Characters a bare `host[:port]` never holds; a Host with any of them (userinfo, a path, a
-   * query or a fragment) is refused before parsing, because the URL parser would read a name out
-   * of it (`evil@localhost` → `localhost`).
-   */
-  notInAuthority: /[@/?#\\]/,
 })
 
 /**

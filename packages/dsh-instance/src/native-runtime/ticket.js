@@ -32,8 +32,9 @@ export function mintTicket(key, { generation, audience, view, lang }, now = Date
 }
 
 /**
- * @returns {{view: string, lang: string, nonce: string} | null} null for a bad signature, another
- *   generation or audience, a damaged body, or an expired ticket (valid while `now < exp`).
+ * @returns {{view: string, lang: string, nonce: string, exp: number} | null} null for a bad
+ *   signature, another generation or audience, a damaged body, or an expired ticket (valid while
+ *   `now < exp`).
  */
 export function verifyTicket(key, ticket, { generation, audience }, now = Date.now()) {
   if (typeof ticket !== 'string') return null
@@ -45,7 +46,7 @@ export function verifyTicket(key, ticket, { generation, audience }, now = Date.n
   let claims
   try { claims = JSON.parse(Buffer.from(body, TICKET.encoding).toString()) } catch { return null }
   if (claims?.gen !== generation || claims.aud !== audience || !(claims.exp > now) || typeof claims.nonce !== 'string') return null
-  return { view: claims.view, lang: claims.lang, nonce: claims.nonce }
+  return { view: claims.view, lang: claims.lang, nonce: claims.nonce, exp: claims.exp }
 }
 
 /**
@@ -54,12 +55,16 @@ export function verifyTicket(key, ticket, { generation, audience }, now = Date.n
  * @returns {{redeem(ticket: string, audience: string): {view: string, lang: string} | null}}
  */
 export function createTicketRedeemer(key, generation, now = () => Date.now()) {
-  const spent = new Set()
+  // nonce → exp. A spent nonce is forgotten once its ticket has expired, because an expired
+  // ticket is refused anyway; so the set holds at most the tickets of one TICKET.ttlMs window.
+  const spent = new Map()
   return Object.freeze({
     redeem(ticket, audience) {
-      const claims = verifyTicket(key, ticket, { generation, audience }, now())
+      const at = now()
+      for (const [nonce, exp] of spent) if (!(exp > at)) spent.delete(nonce)
+      const claims = verifyTicket(key, ticket, { generation, audience }, at)
       if (claims === null || spent.has(claims.nonce)) return null
-      spent.add(claims.nonce)
+      spent.set(claims.nonce, claims.exp)
       return { view: claims.view, lang: claims.lang }
     },
   })

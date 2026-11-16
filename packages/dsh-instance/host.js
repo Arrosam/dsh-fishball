@@ -11,12 +11,12 @@
 import path from 'node:path'
 import Schema from '@deepseek-ai/schemastery'
 import { createNativeRuntime, RUNTIME_LIMITS } from './src/native-runtime/index.js'
-import { LIFETIME, HOSTED, LOCATOR, LOOPBACK, CHILD_STATE, LIFECYCLE_CODE, PLACEMENT } from './src/native-runtime/constants.js'
+import { LIFETIME, HOSTED, LOCATOR, LOOPBACK, CHILD_STATE, LIFECYCLE_CODE, PLACEMENT, REFUSAL, RUNTIME } from './src/native-runtime/constants.js'
 import { pathsFor } from './src/native-runtime/files.js'
 import { createCredentialClient } from './src/native-runtime/credential.js'
 import { publicStatus } from './src/native-web.js'
 import { openHostedRecord } from './src/host/hosted-record.js'
-import { childTargetUrl, createHostedToken } from './src/host/hosted.js'
+import { childTargetUrl, createHostedToken, usableTokens } from './src/host/hosted.js'
 import { createChildLocator } from './src/host/locator.js'
 import { registerInstanceRoutes } from './src/host/routes.js'
 import { createSettingsRelayServer } from './src/slim/settings-relay.js'
@@ -98,8 +98,8 @@ export const Config = Schema.object({
   [HOSTED.targetField]: Schema.string().default('').volatile().description('The MCP endpoint of a remote DSH connector for Fishball to link to. Leave blank to use the connector in this DSH. Applies at the next start of the instance.'),
 })
 const unavailable = code => Object.assign(new Error(code), { code })
-/** The hosted record, in the runtime folder under the main home (files.js pathsFor). */
-const HOSTED_RECORD = (home) => path.join(pathsFor(home).root, HOSTED.record.file)
+/** The hosted record, beside the runtime folder under the main home (hosted-record.js says why). */
+const HOSTED_RECORD = (home) => path.join(path.dirname(pathsFor(home).root), HOSTED.record.file)
 /**
  * The card's detail for a failed start: the specific code, then the failure's own first message
  * line when it has one beyond the code. Only the message text is handed on (never the error
@@ -161,8 +161,18 @@ export async function apply(ctx, config) {
   const changed = () => { for (const listener of [...changeListeners]) { try { listener() } catch { /* one listener never stops the others */ } } }
   /** The connector's hosted-token service, looked up per call (K3: never through inject). */
   const connectorTokens = () => ctx.get(HOSTED.tokensService)
-  /** This DSH's own web origin, for the child's link to its connector; undefined before it listens. */
-  const hostOrigin = () => { try { return ctx.webServer.getOrigin() } catch { return undefined } }
+  /**
+   * This DSH's own web origin as the child on this machine reaches it: the loopback host with the
+   * port it listens on, whatever address it is bound to (0.0.0.0, a LAN address), because core
+   * refuses plain `http:` to any other name (D5). undefined before it listens.
+   */
+  const hostOrigin = () => {
+    try {
+      const origin = new URL(ctx.webServer.getOrigin())
+      origin.hostname = RUNTIME.host
+      return origin.origin
+    } catch { return undefined }
+  }
   /**
    * The hosted-token rules once the record is read (src/host/hosted.js). `hostedNow` is set when
    * that resolves; before it, Reconnect answers not-ready and the target status reads target-unset.
@@ -173,14 +183,15 @@ export async function apply(ctx, config) {
       tokens: connectorTokens,
       record,
       credentials: () => credentialClient,
-      instanceId: () => owner?.hostId,
+      instanceId: () => record.instanceId,
       remoteTarget,
       changed: () => changed(),
+      warn: (format, value) => logger?.warn(format, value),
     })
     return hostedNow
   }, (error) => { logger?.warn(PLUGIN.hostedRecordFailed, error?.code ?? PLUGIN.code.failed); return undefined })
   const hostedProxy = Object.freeze({
-    reconnect: async () => (await hostedReady)?.reconnect() ?? { ok: false, code: HOSTED.reconnect.notReady },
+    reconnect: async () => (await hostedReady)?.reconnect() ?? { ok: false, code: REFUSAL.notReady },
     targetStatus: () => hostedNow?.targetStatus() ?? HOSTED.target.unset,
     retryNotice: () => hostedNow?.retryNotice() ?? false,
   })
@@ -212,7 +223,8 @@ export async function apply(ctx, config) {
    */
   const settingsRelay = createSettingsRelayServer({
     status: () => publicStatus(status()),
-    retry: async () => publicStatus(await retry()),
+    // The locator's Retry, so the child's own Retry also records the hosted-entry notice.
+    retry: async () => { await locator.retry(); return publicStatus(status()) },
     restart: async () => publicStatus(await follow(restart)),
   })
   const key = ctx.profileContext.home
@@ -232,7 +244,7 @@ export async function apply(ctx, config) {
       limits: LIFECYCLE_LIMITS,
       // The child-side row's target at each start (R-HOST-05): this DSH's connector endpoint, or
       // the remote target the instance names. A URL, never a token.
-      child: () => ({ [HOSTED.targetField]: childTargetUrl({ instanceTargetUrl: remoteTarget(), hostOrigin: hostOrigin(), connectorUsable: connectorTokens()?.apiVersion === HOSTED.apiVersion }) }),
+      child: () => ({ [HOSTED.targetField]: childTargetUrl({ instanceTargetUrl: remoteTarget(), hostOrigin: hostOrigin(), connectorUsable: usableTokens(connectorTokens()) !== undefined }) }),
       onExit() { if (state === PLUGIN.state.ready || state === PLUGIN.state.starting) set(PLUGIN.state.failed, PLUGIN.code.exited) },
     })
     // No V2 connector binding (I-HOST, user decision 2026-11-16: "现在第二版根本没有实际部署的情况，
@@ -257,10 +269,12 @@ export async function apply(ctx, config) {
     })
     // The hosted token's channel comes up with each authenticated wire; the first-start rule runs
     // once per wire (a restart is a new wire, and then the child holds its credential already).
+    // A connector that arrives after the child started is used at the next start or on Reconnect:
+    // the child's `targetUrl` was written at launch (R-HOST-05: "applies at the next start").
     unsubscribeCredential = owner.onCredentialTransport((transport) => {
       if (closed) return
       credentialClient?.close()
-      credentialClient = createCredentialClient(transport, { timeoutMs: LIFECYCLE_LIMITS.requestTimeoutMs })
+      credentialClient = createCredentialClient(transport, { timeoutMs: LIFECYCLE_LIMITS.requestTimeoutMs, importTimeoutMs: LIFECYCLE_LIMITS.requestTimeoutMs + HOSTED.credentialLockWaitMs })
       changed()
       void hostedReady.then((hosted) => hosted?.firstStart()).catch(() => {})
     })
@@ -412,7 +426,7 @@ export async function apply(ctx, config) {
     retry: async () => { await locator.retry(); return status() },
     reconnect: () => locator.reconnect(),
     open: async ({ hostname, lang }) => {
-      try { return { ok: true, url: (await locator.admit({ view: LOOPBACK.openView, lang, hostname })).url } } catch (error) { return { ok: false, code: error?.code ?? HOSTED.reconnect.failed } }
+      try { return { ok: true, url: (await locator.admit({ view: LOOPBACK.openView, lang, hostname })).url } } catch (error) { return { ok: false, code: error?.code ?? REFUSAL.failed } }
     },
   })
   // The V2 embed broker (src/slim/host/embed.js) is not registered: it served the V2 connector's

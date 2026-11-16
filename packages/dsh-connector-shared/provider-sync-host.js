@@ -32,6 +32,8 @@ export const PROVIDER_SYNC_HOST = Object.freeze({
   // stored or shown. Neutral since I-HOST (design §1.0c); V3 is a fresh install (1.38 Q-M1), so
   // nothing stored under the earlier Fishball-named route ids needs a migration.
   defaultRoute: 'dsh-sync-default', defaultModel: 'dsh-sync-default-model',
+  // The DSH service whose model catalog `verify` reads (dsh-web-app's session-controller row).
+  catalogService: 'sessionController',
   route: /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/,
   identifier: /^[A-Za-z0-9][A-Za-z0-9._:+-]{0,127}$/,
   errorMessage: 'Provider sync host refused the operation.',
@@ -470,7 +472,9 @@ export function createProviderSyncHost(ctx, { identity } = {}) {
     verify: (id) => guarded(E.verify, async () => {
       const state = await snapshot()
       findProvider(state, id)
-      const catalog = await ctx.sessionController.modelCatalog()
+      // Looked up, not injected: the child-side row that runs the target gates on no session
+      // service (it only reads the catalog), and a missing controller reads as "not advertised".
+      const catalog = await ctx.get(H.catalogService)?.modelCatalog()
       if (!Array.isArray(catalog?.groups)) refuse(E.verify)
       return { catalogAdvertised: catalog.groups.some((group) => group.id === id && Array.isArray(group.models) && group.models.length > H.minimumRevision) }
     }),

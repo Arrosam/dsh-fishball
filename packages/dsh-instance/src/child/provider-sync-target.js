@@ -26,6 +26,7 @@
  * against metadata only, and the record validator lives in dsh-connector-shared/provider-sync.
  */
 import { randomUUID } from 'node:crypto'
+import { HOSTED } from '../native-runtime/constants.js'
 import { ProviderSyncEngine, ProviderSyncError } from 'dsh-connector-shared/provider-sync'
 import {
   PROVIDER_SYNC_TARGET, ProviderSyncTargetError, createProviderSyncCodec, plain, providerSyncIdentity, safeCode,
@@ -47,7 +48,7 @@ const E = T.code
  */
 export function createProviderSyncTarget({ engine } = {}) {
   if (typeof engine?.preview !== 'function' || typeof engine?.confirm !== 'function') {
-    throw new TypeError('fishball provider sync: the engine must implement preview and confirm')
+    throw new TypeError('dsh-instance provider sync: the engine must implement preview and confirm')
   }
   return Object.freeze({
     async handle(action, payload, peer, { signal } = {}) {
@@ -83,7 +84,7 @@ const refusalOf = (error) => ({
  * session-bridge protocols share that wire and a sync problem must not drop them.
  */
 export function createProviderSyncTargetEndpoint({ target } = {}) {
-  if (typeof target?.handle !== 'function') throw new TypeError('fishball provider sync: the target must implement handle')
+  if (typeof target?.handle !== 'function') throw new TypeError('dsh-instance provider sync: the target must implement handle')
   const codec = createProviderSyncCodec()
   const controllers = new Set()
   let transport
@@ -141,9 +142,9 @@ export function createProviderSyncTargetEndpoint({ target } = {}) {
   return Object.freeze({
     get attached() { return transport !== undefined },
     attach(next) {
-      if (closed) throw new Error('fishball provider sync: the endpoint is closed')
+      if (closed) throw new Error('dsh-instance provider sync: the endpoint is closed')
       for (const method of TRANSPORT_METHODS) {
-        if (typeof next?.[method] !== 'function') throw new TypeError('fishball provider sync: the transport must implement ' + method)
+        if (typeof next?.[method] !== 'function') throw new TypeError('dsh-instance provider sync: the transport must implement ' + method)
       }
       detach()
       transport = next
@@ -158,7 +159,7 @@ export function createProviderSyncTargetEndpoint({ target } = {}) {
 
 /* ---------------------------------------------------------------- the child-side row's mount */
 
-const MOUNT = Object.freeze({ logger: 'dsh-instance-child', identityUnavailable: 'the provider-sync target identity is unavailable' })
+const MOUNT = Object.freeze({ logger: HOSTED.childRow, identityUnavailable: 'the provider-sync target identity is unavailable' })
 
 /**
  * Mount the target on the child's lifecycle runtime (child-row.js). The transport arrives with each

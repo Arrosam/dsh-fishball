@@ -43,7 +43,7 @@ const ADMIT = Object.freeze({
   headers: Object.freeze({ 'cache-control': 'no-store', 'referrer-policy': 'no-referrer' }),
   textType: Object.freeze({ 'content-type': 'text/plain; charset=utf-8' }),
   rootPath: '/',
-  label: 'dsh-instance-child: admission route',
+  label: HOSTED.childRow + ': admission route',
 })
 
 /** The authorities a ticket may be redeemed under: a served loopback name with the child's own port. */
@@ -87,12 +87,36 @@ export function registerAdmission(ctx) {
   })
 }
 
-export async function apply(ctx) {
-  const receiver = createCredentialReceiver({ credentials: ctx.credentials })
-  const offCredential = ctx.nativeRuntime.onCredentialTransport((transport) => receiver.attach(transport))
-  ctx.effect(() => () => { offCredential(); receiver.close() }, HOSTED.childRow + ': credential receiver')
-  ctx.effect(() => registerAdmission(ctx), ADMIT.label)
-  ctx.effect(() => mountAdmin(ctx), HOSTED.childRow + ': admin')
-  const unmountSync = await mountProviderSyncTarget(ctx)
-  if (unmountSync !== undefined) ctx.effect(() => unmountSync, HOSTED.childRow + ': provider sync')
+/** The row's four parts. Each is its own effect, and a part that fails is logged with its code only. */
+const PART = Object.freeze({
+  credential: HOSTED.childRow + ': credential receiver',
+  admission: ADMIT.label,
+  admin: HOSTED.childRow + ': admin',
+  sync: HOSTED.childRow + ': provider sync',
+  failed: '%s failed (%s)',
+})
+
+export function apply(ctx) {
+  const logger = ctx.logger(HOSTED.childRow)
+  /**
+   * Mounts one part without letting it take the others down: the token import and the admission
+   * must stay up when, say, model sync cannot load its adapter (they were separate rows before).
+   */
+  const part = (label, mount) => ctx.effect(() => {
+    let dispose
+    let ended = false
+    const fail = (error) => logger.warn(PART.failed, label, error?.code ?? error?.name ?? typeof error)
+    try {
+      Promise.resolve(mount()).then((done) => { if (ended) done?.(); else dispose = done }, fail)
+    } catch (error) { fail(error) }
+    return () => { ended = true; dispose?.() }
+  }, label)
+  part(PART.credential, () => {
+    const receiver = createCredentialReceiver({ credentials: ctx.credentials })
+    const off = ctx.nativeRuntime.onCredentialTransport((transport) => receiver.attach(transport))
+    return () => { off(); receiver.close() }
+  })
+  part(PART.admission, () => registerAdmission(ctx))
+  part(PART.admin, () => mountAdmin(ctx))
+  part(PART.sync, () => mountProviderSyncTarget(ctx))
 }

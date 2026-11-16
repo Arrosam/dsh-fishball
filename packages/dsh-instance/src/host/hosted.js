@@ -9,17 +9,25 @@
  * - Reconnect (the instance's settings page): the same, on demand, whatever the old entry's state;
  *   replacing moves nothing and deletes nothing (Q-B1 = B, Q-B3 = B);
  * - Retry after the user deleted the entry: no token, only the notice (R6 = B).
- * The value is held only for the import and never stored, logged or returned (R1).
+ * Every probe, create and import runs in one serial chain, so a first start, a Reconnect and a
+ * quick restart never create two entries for one need (R1: exactly once). The value is held only
+ * for the import and never stored, logged or returned.
  */
-import { HOSTED } from '../native-runtime/constants.js'
+import { HOSTED, REFUSAL } from '../native-runtime/constants.js'
 
-const { reconnect: REFUSE, entryState: ENTRY, target: STATUS } = HOSTED
+const { entryState: ENTRY, target: STATUS } = HOSTED
 const blank = (value) => typeof value !== 'string' || value.trim() === ''
+
+/** The connector's hosted-token service if it is usable (K3 `DshConnectorTokens`, apiVersion 1), else undefined. */
+export function usableTokens(service) {
+  return service?.apiVersion === HOSTED.apiVersion && typeof service.createHosted === 'function' && typeof service.entryState === 'function' ? service : undefined
+}
 
 /**
  * The target URL the child links to, written as the child-side row's setting: the instance's own
  * remote target when it names one, else this host's connector endpoint when a connector is here,
- * else nothing.
+ * else nothing. `hostOrigin` must be a loopback origin (host.js): the child runs on this machine,
+ * and core refuses plain `http:` to any other name (D5).
  */
 export function childTargetUrl({ instanceTargetUrl, hostOrigin, connectorUsable }) {
   if (!blank(instanceTargetUrl)) return instanceTargetUrl
@@ -34,59 +42,75 @@ export function childTargetUrl({ instanceTargetUrl, hostOrigin, connectorUsable 
  * @param deps.instanceId - `() => string`, the instance's own non-secret id for `createHosted`
  * @param deps.remoteTarget - `() => string`, the instance's `targetUrl` ('' = this DSH)
  * @param deps.changed - called after the target status or the notice changed
+ * @param [deps.warn] - `(format, code) => void`, the row's logger (a code only, never a value)
  */
-export function createHostedToken({ tokens, record, credentials, instanceId, remoteTarget, changed }) {
+export function createHostedToken({ tokens, record, credentials, instanceId, remoteTarget, changed, warn = () => {} }) {
   let notice = null
-  const connector = () => {
-    const service = tokens()
-    return service?.apiVersion === HOSTED.apiVersion && typeof service.createHosted === 'function' && typeof service.entryState === 'function' ? service : undefined
+  let chain = Promise.resolve()
+  /** Runs `step` after every earlier one; a failure there never breaks the chain. */
+  const serial = (step) => {
+    const run = chain.then(step)
+    chain = run.catch(() => {})
+    return run
   }
-  const lastEntry = () => record.entries().at(-1)
+  const connector = () => usableTokens(tokens())
   const entryState = () => {
-    const key = lastEntry()
+    const key = record.entries().at(-1)
     const service = connector()
-    return key === undefined || service === undefined ? undefined : service.entryState(key)
+    if (key === undefined || service === undefined) return undefined
+    // A connector failure reads as "no entry known", never as a throw into a status route.
+    try { return service.entryState(key) } catch { return undefined }
   }
 
-  /** One `createHosted` and its one import; the key is recorded after the child stored the value. */
-  async function createAndImport(service, client) {
+  /** What blocks an import now, or undefined. */
+  function refusal(client) {
+    if (!blank(remoteTarget())) return REFUSAL.targetRemote
+    if (connector() === undefined) return REFUSAL.connectorMissing
+    if (client === undefined) return REFUSAL.notReady
+    return undefined
+  }
+
+  /** Whether the child holds a credential now; undefined when it cannot say (credential.js). */
+  async function present(client) {
+    try { return await client.probe() } catch { return undefined }
+  }
+
+  /**
+   * One `createHosted` and its one import. The key is recorded once the child stored the value;
+   * an unanswered import is resolved by asking the child again, so a slow but successful write is
+   * never reported as a failure.
+   */
+  async function createAndImport(client) {
     let entry
-    try { entry = await service.createHosted(instanceId()) } catch { return { ok: false, code: REFUSE.failed } }
+    try { entry = await connector().createHosted(instanceId()) } catch { return { ok: false, code: REFUSAL.failed } }
     let stored
-    try { stored = await client.importToken(entry.value) } catch { stored = { ok: false } }
-    // The new entry stays when the child could not store it: the user deletes it (Q-B3 = B).
-    if (stored.ok !== true) return { ok: false, code: REFUSE.unwritable }
-    await record.add(entry.entryKey)
+    try { stored = await client.importToken(entry.value) } catch { stored = (await present(client)) === true ? { ok: true } : { ok: false, code: REFUSAL.unknown } }
+    // A definite refusal: the new entry stays for the user to delete (Q-B3 = B).
+    if (stored.ok !== true) return { ok: false, code: stored.code ?? REFUSAL.unwritable }
+    try { await record.add(entry.entryKey) } catch (error) { warn(HOSTED.recordWriteFailed, error?.code ?? REFUSAL.failed) }
     notice = null
     changed()
     return { ok: true }
   }
 
-  /** What blocks an import now, or undefined. */
-  function refusal(client) {
-    if (!blank(remoteTarget())) return REFUSE.targetRemote
-    if (connector() === undefined) return REFUSE.connectorMissing
-    if (client === undefined) return REFUSE.notReady
-    return undefined
-  }
-
   return Object.freeze({
     /** After each start's authenticated wire: imports only when the child holds no credential. */
-    async firstStart() {
+    firstStart: () => serial(async () => {
       const client = credentials()
       if (refusal(client) !== undefined) return
-      // An unanswered probe is not "absent" (credential.js): nothing is created then.
-      let present
-      try { present = await client.probe() } catch { return }
-      if (!present) await createAndImport(connector(), client)
-      changed()
-    },
-    /** Reconnect (R11): always one new entry, imported once. */
-    async reconnect() {
+      // Probed inside the chain, so an import that ran just before is seen: nothing twice. An
+      // unanswered probe is not "absent": nothing is created then.
+      if ((await present(client)) !== false) return
+      // A newer wire replaced this one meanwhile: its own first start decides.
+      if (credentials() !== client) return
+      await createAndImport(client)
+    }),
+    /** Reconnect (R11): one new entry, imported once. */
+    reconnect: () => serial(async () => {
       const client = credentials()
       const code = refusal(client)
-      return code === undefined ? createAndImport(connector(), client) : { ok: false, code }
-    },
+      return code === undefined ? createAndImport(client) : { ok: false, code }
+    }),
     /** The K3 target status from the host's own state (the user's answer Q3 = A). */
     targetStatus() {
       if (!blank(remoteTarget())) return STATUS.remote
@@ -101,6 +125,11 @@ export function createHostedToken({ tokens, record, credentials, instanceId, rem
       changed()
       return true
     },
+    /**
+     * The notice. It is cleared by the instance's own next import (Reconnect); a token the user
+     * pastes in core's field inside the child is not visible to the host (1.39), so the notice
+     * stays until then or until the host row restarts.
+     */
     notice: () => notice,
   })
 }

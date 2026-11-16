@@ -10,7 +10,7 @@
  * wire.js), so nobody else can write to it. No value is ever logged, and a refusal carries a code only.
  */
 import { randomUUID } from 'node:crypto'
-import { HOSTED, NativeRuntimeError } from './constants.js'
+import { HOSTED, REFUSAL, NativeRuntimeError } from './constants.js'
 
 const { op: OP, code: CODE } = HOSTED
 const isRecord = (value) => value !== null && typeof value === 'object' && !Array.isArray(value)
@@ -20,12 +20,14 @@ const unavailable = () => new NativeRuntimeError(CODE.unavailable)
 /**
  * The host's end, over the current wire's transport.
  * @param transport - `{send(text), onMessage(fn) → dispose, onClose(fn) → dispose}`
- * @param {{timeoutMs: number}} options - one bound for each request
+ * @param {{timeoutMs: number, importTimeoutMs?: number}} options - the probe's bound, and the
+ *   import's (default `timeoutMs`; the host gives it the credential lock wait too, constants.js)
  * @returns {{probe(): Promise<boolean>, importToken(value: string): Promise<{ok: true}|{ok: false, code: string}>, close(): void}}
  *   A request with no answer in time, on a closed transport or after `close()` rejects with the
- *   code `CREDENTIAL_CHANNEL_UNAVAILABLE`: an unanswered probe is not "absent".
+ *   code `CREDENTIAL_CHANNEL_UNAVAILABLE`: an unanswered probe is not "absent", and an unanswered
+ *   import is not "not stored". Only the receiver's own `{ok: false, code}` means not stored.
  */
-export function createCredentialClient(transport, { timeoutMs }) {
+export function createCredentialClient(transport, { timeoutMs, importTimeoutMs = timeoutMs }) {
   const pending = new Map()
   let closed = false
   const settle = (id, settleWith) => {
@@ -43,11 +45,11 @@ export function createCredentialClient(transport, { timeoutMs }) {
     }),
     transport.onClose(() => { closed = true; failAll() }),
   ]
-  function request(frame) {
+  function request(frame, bound) {
     if (closed) return Promise.reject(unavailable())
     const id = randomUUID()
     return new Promise((resolve, reject) => {
-      const timer = setTimeout(() => settle(id, (entry) => entry.reject(unavailable())), timeoutMs)
+      const timer = setTimeout(() => settle(id, (entry) => entry.reject(unavailable())), bound)
       timer.unref?.()
       pending.set(id, { resolve, reject, timer })
       try { transport.send(JSON.stringify({ id, ...frame })) } catch { settle(id, (entry) => entry.reject(unavailable())) }
@@ -55,13 +57,13 @@ export function createCredentialClient(transport, { timeoutMs }) {
   }
   return Object.freeze({
     async probe() {
-      const reply = await request({ op: OP.probe })
+      const reply = await request({ op: OP.probe }, timeoutMs)
       if (reply.ok !== true || typeof reply.present !== 'boolean') throw unavailable()
       return reply.present
     },
     async importToken(value) {
-      const reply = await request({ op: OP.import, value })
-      return reply.ok === true ? { ok: true } : { ok: false, code: typeof reply.code === 'string' ? reply.code : CODE.unwritable }
+      const reply = await request({ op: OP.import, value }, importTimeoutMs)
+      return reply.ok === true ? { ok: true } : { ok: false, code: typeof reply.code === 'string' ? reply.code : REFUSAL.unwritable }
     },
     close() {
       closed = true
@@ -85,15 +87,15 @@ export function createCredentialReceiver({ credentials }) {
       const [reference, record] = await Promise.all([credentials.describe(HOSTED.credentialRef), credentials.describeRecord(HOSTED.savedRecord)])
       return { ok: true, present: reference?.configured === true || record?.configured === true }
     }
-    if (request.op !== OP.import || typeof request.value !== 'string' || request.value === '') return { ok: false, code: CODE.invalid }
-    try { await credentials.set(HOSTED.credentialRef, request.value) } catch { return { ok: false, code: CODE.unwritable } }
+    if (request.op !== OP.import || typeof request.value !== 'string' || request.value === '') return { ok: false, code: REFUSAL.invalid }
+    try { await credentials.set(HOSTED.credentialRef, request.value) } catch { return { ok: false, code: REFUSAL.unwritable } }
     return { ok: true }
   }
   function receive(transport, text) {
     const request = parse(text)
     if (closed || !isRecord(request) || typeof request.id !== 'string') return
     answer(request)
-      .catch(() => ({ ok: false, code: request.op === OP.import ? CODE.unwritable : CODE.invalid }))
+      .catch(() => ({ ok: false, code: request.op === OP.import ? REFUSAL.unwritable : REFUSAL.invalid }))
       .then((outcome) => { try { transport.send(JSON.stringify({ id: request.id, ...outcome })) } catch { /* the wire is gone */ } })
   }
   return Object.freeze({

@@ -179,6 +179,8 @@ class NativeRuntime {
    * The embed broker redirects the browser to authenticatedUrl (PG-ORIGIN) only while signal is
    * live; stop/restart/control loss aborts it, so a retired generation is never a launch target.
    */
+  // Unreached since I-HOST stopped registering the V2 embed broker (src/slim/host/embed.js, which
+  // with native-web-access.js is REMOVE-V2's to delete); the locator admits through tickets.
   nativeEmbedAccess() {
     const epoch = this.nativeEpoch
     return this.serial(async () => {
@@ -305,11 +307,15 @@ class NativeRuntime {
       const providerSync = wire.providerSyncTransport()
       const instanceSettings = wire.instanceSettingsTransport()
       const credential = wire.credentialTransport()
-      // The child's web origin for the locator (origin, admit): read once per attached
-      // generation from the native admission, whose launch URL is dropped here unread. A failed
-      // read never fails the start: the locator then answers not-ready for admit.
+      // The child's native web origin for the locator (origin, admit), which is not the app row's
+      // `access.origin` that readiness checks (child.js refuses them equal): read once per
+      // attached generation from the native admission, whose launch URL is dropped here unread.
+      // A refused read never fails the start (the locator then answers not-ready for admit), but a
+      // read that cost the wire (wire.js closes it on a request timeout) does: no listener is ever
+      // given a dead wire's transports.
       let webOrigin
       try { webOrigin = nativeAccess(await wire.request(NATIVE_WEB.operation)).origin } catch { webOrigin = undefined }
+      if (wire.closed) fail('DISCONNECTED')
       this.control = { wire, transport, metadata }
       this.webOrigin = webOrigin
       wire.once('closed', () => { if (this.control?.wire === wire) this.dropControl() })

@@ -72,7 +72,7 @@ const PORT_METHODS = Object.freeze({
 function portOf(name, service) {
   for (const method of PORT_METHODS[name]) {
     if (typeof service?.[method] !== 'function') {
-      throw new TypeError('fishball admin: the ' + name + ' port must implement ' + method)
+      throw new TypeError('dsh-instance admin: the ' + name + ' port must implement ' + method)
     }
   }
   return service
@@ -434,7 +434,7 @@ const TRANSPORT_METHODS = Object.freeze(['send', 'onMessage', 'onClose'])
  */
 export function createAdminEndpoint(options) {
   const { service } = options ?? {}
-  if (typeof service?.handle !== 'function') throw new TypeError('fishball admin: the service must implement handle')
+  if (typeof service?.handle !== 'function') throw new TypeError('dsh-instance admin: the service must implement handle')
   const codec = createAdminCodec()
   let transport
   let disposers = []
@@ -488,9 +488,9 @@ export function createAdminEndpoint(options) {
     get attached() { return transport !== undefined },
 
     attach(next) {
-      if (closed) throw new Error('fishball admin: the endpoint is closed')
+      if (closed) throw new Error('dsh-instance admin: the endpoint is closed')
       for (const method of TRANSPORT_METHODS) {
-        if (typeof next?.[method] !== 'function') throw new TypeError('fishball admin: the transport must implement ' + method)
+        if (typeof next?.[method] !== 'function') throw new TypeError('dsh-instance admin: the transport must implement ' + method)
       }
       detach()
       transport = next

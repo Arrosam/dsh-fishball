@@ -17,6 +17,7 @@
  * - a locator failure without a K3 code answers REFUSAL.failed and never echoes its message.
  */
 import { ADMIT, FETCH, HTTP, LOG, LOOPBACK, REFUSAL, ROUTE, ROUTE_PREFIX, SERVICE } from './constants.js'
+import { requestHostname } from 'dsh-connector-shared/request-host'
 import { availability, hasConnector, usable } from './services.js'
 
 const json = (status, value) => new Response(JSON.stringify(value), { status, headers: HTTP.headers })
@@ -24,14 +25,11 @@ const refused = (status, code) => json(status, { ok: false, code })
 const isRecord = (value) => value !== null && typeof value === 'object' && !Array.isArray(value)
 
 /**
- * The main page's hostname from its request's Host header, parsed as a WHATWG URL does (so
- * lower-cased, an IPv6 literal kept in brackets), if it is one of the loopback names; else undefined.
+ * The main page's hostname from its request's Host header (dsh-connector-shared's one rule), if it
+ * is one of the loopback names; else undefined.
  */
 export function loopbackHostname(request) {
-  const host = request.headers.get(LOOPBACK.hostHeader)
-  if (typeof host !== 'string' || LOOPBACK.notInAuthority.test(host)) return undefined
-  let hostname
-  try { hostname = new URL(LOOPBACK.parseScheme + host).hostname } catch { return undefined }
+  const hostname = requestHostname(request)
   return LOOPBACK.hostnames.includes(hostname) ? hostname : undefined
 }
 

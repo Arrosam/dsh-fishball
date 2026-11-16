@@ -79,8 +79,6 @@ window.__ModuleLoader__.load({
     const MODEL_SYNC_UI = Object.freeze({
       check: 'api/dsh-instance/models/check',
       add: 'api/dsh-instance/models/add',
-      request: Object.freeze({ method: 'POST', cache: 'no-store', credentials: 'same-origin', headers: Object.freeze({ 'content-type': 'application/json' }) }),
-      ready: 'ready',
       phase: Object.freeze({ idle: 'idle', checking: 'checking', listed: 'listed', adding: 'adding', result: 'result' }),
       outcome: Object.freeze({ added: 'added', skipped: 'skipped', failed: 'failed' }),
       outcomeTone: Object.freeze({ added: 'info', skipped: 'neutral', failed: 'danger' }),
@@ -294,14 +292,22 @@ window.__ModuleLoader__.load({
     }
 
     /** One page action. @returns its answer, or `{ok: false, code: ACTION.unreadable}`. */
-    async function actionRequest(path, payload) {
+    /**
+     * One POST of the page (ACTION.request) and its JSON answer when `accept` takes it; anything
+     * else (unreachable, unreadable, a shape `accept` refuses) is `unreadable()`, the caller's own
+     * refusal shape.
+     */
+    async function postRequest(path, payload, accept, unreadable) {
       try {
         const response = await fetch(new URL(path, document.baseURI).toString(), { ...ACTION.request, body: JSON.stringify(payload ?? {}) })
         const answer = await response.json()
-        if (typeof answer?.ok === 'boolean') return answer
+        if (accept(answer)) return answer
       } catch { /* unreachable or unreadable: the refusal below */ }
-      return { ok: false, code: ACTION.unreadable }
+      return unreadable()
     }
+
+    /** One page action: `{ok, …}` as the route answers it, or `{ok: false, code: ACTION.unreadable}`. */
+    const actionRequest = (path, payload) => postRequest(path, payload, (answer) => typeof answer?.ok === 'boolean', () => ({ ok: false, code: ACTION.unreadable }))
 
     /** A refusal's words: its own when known, else the code itself. */
     const refusalText = (t, prefix, code) => (Object.hasOwn(en, prefix + code) ? t(prefix + code) : t('refused', { code }))
@@ -333,15 +339,8 @@ window.__ModuleLoader__.load({
     }
 
     /** One model-sync call. @returns `{ok, result|error}`; an unreadable answer is a typed refusal. */
-    async function syncRequest(path, payload) {
-      try {
-        const response = await fetch(new URL(path, document.baseURI).toString(), { ...MODEL_SYNC_UI.request, body: JSON.stringify(payload ?? {}) })
-        const answer = await response.json()
-        if (answer?.ok === true && answer.result !== null && typeof answer.result === 'object') return answer
-        if (answer?.ok === false && typeof answer.error?.code === 'string') return answer
-      } catch { /* unreachable or unreadable: the typed refusal below */ }
-      return { ok: false, error: { code: MODEL_SYNC_UI.unreadable } }
-    }
+    const syncAnswer = (answer) => (answer?.ok === true && answer.result !== null && typeof answer.result === 'object') || (answer?.ok === false && typeof answer.error?.code === 'string')
+    const syncRequest = (path, payload) => postRequest(path, payload, syncAnswer, () => ({ ok: false, error: { code: MODEL_SYNC_UI.unreadable } }))
 
     /**
      * The "Model for Fishball" block (§10, D26): Check fetches once and lists only the providers the
@@ -359,7 +358,7 @@ window.__ModuleLoader__.load({
     function ModelSync({ t, state, CLS, neutralTone, paths }) {
       const P = MODEL_SYNC_UI.phase
       const [view, setView] = React.useState({ phase: P.idle })
-      const ready = state === MODEL_SYNC_UI.ready
+      const ready = state === ACTION.ready
       const reason = (code) => (MODEL_SYNC_UI.reasons.includes(code) ? t('syncReason.' + code) : code)
       const check = async () => {
         setView({ phase: P.checking })

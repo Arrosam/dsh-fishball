@@ -16,7 +16,7 @@ export const RUNTIME = Object.freeze({
   // native-web adapter and the parent-watch preload the launch imports by path (index.js), each with
   // the relative-import closure of its module. The plugin set is placed bundles (PLACEMENT), never
   // snapshot code.
-  snapshot: Object.freeze({ lifecycle: 'native-child.js', entries: Object.freeze(['native-web.js', 'child-row.js', 'src/native-runtime/parent-watch.js']) }),
+  snapshot: Object.freeze({ lifecycle: 'native-child.js', childRow: 'child-row.js', entries: Object.freeze(['native-web.js', 'src/native-runtime/parent-watch.js']) }),
   host: '127.0.0.1',
   socketName: 'control.sock',
   socketPathBytes: 100,
@@ -235,6 +235,26 @@ export const PLACEMENT = Object.freeze({
 })
 
 /**
+ * The instance's refusal words, each defined once (I-HOST); the vocabularies below name them.
+ * - `notReady`, `hostnameRefused`: K3 `AdmitErrorCode` (child.d.ts), also Reconnect's and Open's;
+ * - `connectorMissing`, `targetRemote`, `unwritable`: Reconnect's (K3 `ReconnectRefusalCode`);
+ * - `failed`: K3's shared `operation-failed` (a service threw; nothing is echoed);
+ * - `invalid`: a request outside its closed shape;
+ * - `unknown`: the import's answer did not come (timeout, wire closed): whether the child stored
+ *   the value is not known, so the host re-probes instead of guessing (credential.js).
+ */
+export const REFUSAL = Object.freeze({
+  notReady: 'not-ready',
+  hostnameRefused: 'hostname-refused',
+  connectorMissing: 'connector-missing',
+  targetRemote: 'target-remote',
+  unwritable: 'credentials-unwritable',
+  failed: 'operation-failed',
+  invalid: 'invalid-request',
+  unknown: 'import-unknown',
+})
+
+/**
  * The hosted token's set-up (I-HOST; design §5.4; requirements 1.28 R1, 1.39, 1.41 Q-G6; K3a
  * `HOSTED_IMPORT` names, of which this is the instance's own copy: the two sides share no code,
  * and `test/v3/contract/k3a-core-seams` checks both copies are equal).
@@ -244,8 +264,12 @@ export const PLACEMENT = Object.freeze({
  *   answers "the child holds a credential", by DSH's own `credentials` service alone;
  * - `childRow`: the child-side row's id, which is also the settings namespace of `targetUrl`;
  * - `channel`: the lifecycle wire's payload channel for the probe and the one import;
- * - `op`: its two requests; `code`: its refusals and the client's rejection;
- * - `record`: the host's non-secret list of the hosted entry keys it created, newest last;
+ * - `op`: its two requests; `code`: the client's rejection and the record's refusal;
+ * - `credentialLockWaitMs`: the import's extra bound: the child's `credentials.set` writes under
+ *   DSH's credential document lock, so the import waits that long plus the lifecycle request
+ *   bound (host.js); the probe keeps the lifecycle request bound;
+ * - `record`: the host's non-secret list of the hosted entry keys it created, newest last, with
+ *   the instance's stable id (host/hosted-record.js);
  * - `notice`: the instance's one notice, after Retry found the hosted entry deleted (R6 = B);
  * - `reconnect`: its refusals (K3 `ReconnectRefusalCode`).
  */
@@ -257,20 +281,15 @@ export const HOSTED = Object.freeze({
   channel: 'mcp-credential',
   op: Object.freeze({ probe: 'probe', import: 'import' }),
   code: Object.freeze({
-    unwritable: 'credentials-unwritable',
-    invalid: 'invalid-request',
     unavailable: 'CREDENTIAL_CHANNEL_UNAVAILABLE',
     record: 'INVALID_HOSTED_RECORD',
   }),
+  /** DSH's credential document lock wait (dsh-credentials-local DOCUMENT_LOCK_WAIT_MS, 0.2.1-rc.5 and 0.2.2-rc.1). */
+  credentialLockWaitMs: 30000,
   record: Object.freeze({ file: 'hosted.json', format: 1 }),
   notice: Object.freeze({ entryDeleted: 'hosted-entry-deleted' }),
-  reconnect: Object.freeze({
-    notReady: 'not-ready',
-    connectorMissing: 'connector-missing',
-    targetRemote: 'target-remote',
-    failed: 'operation-failed',
-    unwritable: 'credentials-unwritable',
-  }),
+  /** Logged (code only, never a value) when the record could not keep a key the child stored. */
+  recordWriteFailed: 'hosted record not written (%s); the child holds the token',
   /** The host's own connector endpoint the child links to (K1 `PATHS.mcp`, restated: the instance does not import the connector). */
   mcpPath: '/api/agent/mcp',
   tokensService: 'dshConnectorTokens',
@@ -321,7 +340,7 @@ export const LIFECYCLE_CODE = Object.freeze({
   failed: 'NATIVE_START_FAILED', stop: 'NATIVE_STOP_FAILED', exited: 'NATIVE_CHILD_EXITED', unavailable: 'NATIVE_UNAVAILABLE',
   timeout: 'NATIVE_TIMEOUT', disabled: 'NATIVE_DISABLED', invalidMainHome: 'INVALID_MAIN_HOME', incompatible: 'PROFILE_INCOMPATIBLE',
 })
-/** Every state and code the instance itself reports (its pages, its settings relay, the V2 embed broker). */
+/** Every state and code the instance itself reports (its pages and the child's V2 settings relay). */
 export const INSTANCE_STATES = Object.freeze(Object.values(CHILD_STATE))
 export const INSTANCE_CODES = Object.freeze(Object.values(LIFECYCLE_CODE))
 /** The locator's K3 `apiVersion`. */
@@ -339,7 +358,6 @@ export const LOOPBACK = Object.freeze({
   /** The view the instance page's Open Fishball admits: the child's Fishball page (Q-G3; the user's answer Q7 = A). */
   openView: 'chat',
   langs: Object.freeze(['zh', 'en']),
-  code: Object.freeze({ hostnameRefused: 'hostname-refused', notReady: 'not-ready' }),
 })
 
 /** Validate without including private admission values in exceptions. */
