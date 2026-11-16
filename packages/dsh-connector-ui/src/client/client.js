@@ -40,20 +40,20 @@ window.__ModuleLoader__.load({
       ]),
       /**
        * Nothing runs without a local connector (Q-U1: "embed UI是connector的附属插件，不能脱离connector
-       * 运作"; the host half logs `connector-missing`). The shell runs with the connector's backend,
-       * or (W3 fallback, until C-WIRE) with V2's connector for its frame; the instance card with the
-       * connector and the locator, or with V2's connector, whose attachment V2's card served.
+       * 运作"; the host half logs `connector-missing`). The shell runs only with the connector's UI
+       * backend, which the connector row provides; it is the only alternative (V2 was never
+       * deployed, so no V2 connector counts as one).
        */
-      shellNeeds: Object.freeze([Object.freeze(['connector']), Object.freeze(['legacy'])]),
+      shellNeeds: Object.freeze([Object.freeze(['connector'])]),
       /**
        * What the host half reports usable (src/host/constants.js ROUTE.services, page-relative; this
-       * classic script cannot import it): `{ok, connector, page, legacy, routes, ui}`. Read here,
+       * classic script cannot import it): `{ok, connector, page, routes, ui}`. Read here,
        * not in a part, so every part waits only on this one read and never on another chunk.
        * Unreadable is "nothing", so nothing registers.
        */
       servicesPath: 'api/dsh-connector-ui/services',
       read: Object.freeze({ method: 'GET', cache: 'no-store', credentials: 'same-origin' }),
-      none: Object.freeze({ connector: false, page: false, legacy: false, routes: Object.freeze({}), ui: Object.freeze({}) }),
+      none: Object.freeze({ connector: false, page: false, routes: Object.freeze({}), ui: Object.freeze({}) }),
       unavailable: 'fishball embed-ui: part unavailable',
     })
 
