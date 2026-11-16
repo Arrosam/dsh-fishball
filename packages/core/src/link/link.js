@@ -6,10 +6,13 @@
  * One attempt, in order:
  * 1. the target URL rule (`checkTarget`), before anything else, so a refused URL causes no request
  *    and no token read;
- * 2. the credentials: `{clientId, secret}` (hosted: in memory from the lifecycle wire; standalone:
- *    `ctx.credentials.resolve`, design §6.3), with nothing to connect with reported `target-unset`;
- * 3. the stock `ClientCredentialsProvider` with `expectedIssuer` pinned to the target origin's K1
- *    issuer, so the secret goes only to that origin's token endpoint (spike S7 T4);
+ * 2. the credentials for the target (`credentials.js`, F-LINK-SAVE): a token, or a Connect grant;
+ *    nothing to connect with is reported `target-unset`;
+ * 3. a token goes through the stock `ClientCredentialsProvider` with `expectedIssuer` pinned to the
+ *    target origin's K1 issuer, so the secret goes only to that origin's token endpoint (spike S7
+ *    T4); a grant brings its own `authProvider` (access token only, refreshed by core's token
+ *    manager); once the token endpoint accepted a token, `credentials.accepted()` saves it (R9);
+ *    a refused credential is told so (`credentials.refused()`) before the status is reported;
  * 4. `server/discover` at the pinned revision (modern only, Q12), `tools/list`, then a
  *    `subscriptions/listen` stream on `dsh-agent://events` and tool-list changes;
  * 5. one `inbox_poll` on every (re)connect and on every events hint (hints may drop; polls
@@ -69,9 +72,11 @@ const OPEN_GATE = Object.freeze({ hold: () => null, admit: async () => null, pai
 /**
  * @typedef {object} LinkOptions
  * @property {() => unknown} target the configured target URL (R-FB-03)
- * @property {() => Promise<{clientId: string, secret: string, ref?: string} | null | undefined>} credentials
- *   the fishball id, the token value and, for the gate, the token's non-secret reference; `null`,
- *   `undefined` or an empty secret is "no token"
+ * @property {(target: {url: URL, origin: string}) => Promise<LinkCredentials | null | undefined>} credentials
+ *   what one attempt connects with for the usable target (credentials.js `LinkCredentials`): the
+ *   fishball id, the credential's non-secret `ref` (for the gate), and either a token (`secret`) or
+ *   a grant's `authProvider` and `scope()`; optional `accepted()` / `refused()` hooks. `null`,
+ *   `undefined`, or neither a secret nor an `authProvider` is "no credential"
  * @property {PairingGate} [gate] the pairing gate; defaults to one that admits every attempt
  * @property {object} [sdk] the `@modelcontextprotocol/client` module; defaults to core's packaged
  *   copy (§9.1). A caller may pass another 2.2.x copy (both hosts' copies are byte-identical).
@@ -81,8 +86,9 @@ const OPEN_GATE = Object.freeze({ hold: () => null, admit: async () => null, pai
  */
 
 /**
- * @typedef {{origin: string, clientId: string, ref: string | undefined}} LinkAttempt what one
- *   attempt connects with: the target origin, the fishball id and the token reference; never the secret
+ * @typedef {{origin: string, clientId: string, ref: string | undefined, kind: string | undefined}} LinkAttempt
+ *   what one attempt connects with: the target origin, the fishball id, the credential's non-secret
+ *   id and its kind (`CREDENTIAL_KIND`); never the secret
  * @typedef {object} PairingGate
  * @property {(attempt: LinkAttempt) => {state: string, code: string | null} | null | Promise<{state: string, code: string | null} | null>} hold
  *   before any request: a status holds the attempt (no request at all), `null` lets it connect
@@ -224,13 +230,14 @@ export class McpLink {
     if (!this.#current(generation)) return
     const seen = { mcpStatus: undefined }
     let attempt
+    let credentials
     try {
       const target = checkTarget(this.#options.target())
       if (!target.ok) return this.#setStatus(target.status)
-      const credentials = await this.#options.credentials()
+      credentials = await this.#options.credentials(target)
       if (!this.#current(generation)) return
-      if (!credentials?.secret) return this.#setStatus(STATUS.unset)
-      attempt = Object.freeze({ origin: target.origin, clientId: credentials.clientId, ref: credentials.ref })
+      if (!credentials?.secret && credentials?.authProvider === undefined) return this.#setStatus(STATUS.unset)
+      attempt = Object.freeze({ origin: target.origin, clientId: credentials.clientId, ref: credentials.ref, kind: credentials.kind })
       const held = await this.#options.gate.hold(attempt)
       if (!this.#current(generation)) return
       if (held) return this.#setStatus(held)
@@ -247,6 +254,9 @@ export class McpLink {
       await this.#teardown()
       if (!this.#current(generation)) return
       const status = await this.#failed(error, attempt, seen)
+      if (!this.#current(generation)) return
+      // A held attempt was refused by the gate, not by the target; the hook never rejects.
+      if (!(error instanceof LinkHold) && (status === STATUS.refused || status === STATUS.revoked)) await credentials?.refused?.()
       if (!this.#current(generation)) return
       this.#setStatus(status)
       if (!(error instanceof LinkHold)) this.#retryLater(generation)
@@ -271,11 +281,12 @@ export class McpLink {
   }
 
   async #connect(sdk, target, credentials, attempt, seen, generation) {
-    const provider = new sdk.ClientCredentialsProvider({
+    const provider = credentials.authProvider ?? new sdk.ClientCredentialsProvider({
       clientId: credentials.clientId,
       clientSecret: credentials.secret,
       expectedIssuer: target.issuer,
     })
+    const grantedScope = () => (credentials.authProvider === undefined ? provider.tokens()?.scope : credentials.scope?.())
     const transport = new sdk.StreamableHTTPClientTransport(target.url, {
       authProvider: provider,
       fetch: this.#guardedFetch(target, seen),
@@ -289,13 +300,16 @@ export class McpLink {
     client.setNotificationHandler(LINK_MCP.toolsListChanged, () => { this.#listTools(client, generation).catch(() => {}) })
     this.#client = client
     await client.connect(transport)
+    // The token endpoint issued an access token for this token: the target accepted it (K3a step 3, R9).
+    if (credentials.authProvider === undefined && provider.tokens() !== undefined) await credentials.accepted?.()
+    if (!this.#current(generation)) return client
     await this.#listTools(client, generation)
     // An attempt overtaken by stop() or reconnect() asks the gate nothing: `admit` may send `pair`.
     if (!this.#current(generation)) return client
     // The gate sees the attempt between the tool list and the listen stream: nothing that needs a
     // full access token has been sent yet, and a held attempt sends nothing more (AUTH-UC-05 E1).
     const held = await this.#options.gate.admit(attempt, {
-      scope: provider.tokens()?.scope,
+      scope: grantedScope(),
       call: (name, args = {}) => callStructured(client, name, args),
     })
     if (held) throw new LinkHold(held)

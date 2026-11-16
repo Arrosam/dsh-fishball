@@ -8,18 +8,27 @@
  * | Rule | Record | Granted scope | Action |
  * | --- | --- | --- | --- |
  * | 1, 2, 3, 7, 10 | absent | any | `pair({name})`: ok → write the record, work; `already-paired` → warning (match or mismatch); `id-taken` → need a new id |
+ * | 1a | absent, a Connect grant | any | `pair({name})`: `already-paired` with `idMatches: true` → write the record, work (below) |
  * | 4 | present | holds `agent` | work, no `pair` (R-ID-05) |
  * | 5 | present | `agent:pair` (anything without `agent`) | hold: a new token is needed (R-ID-10), no `pair` |
  * | 6 | present | (refused) | the link reports `token-refused` / `token-revoked`, and retries (no hold) |
  * | 8 | warning open | — | the link is held before its first request: nothing reaches the target |
- * | 9 | — | — | `client_credentials` only (the link's provider), state from `scope` and `pair` only (R-OA-18) |
+ * | 9 | — | — | state from `scope` and `pair` only (R-OA-18), for a token and a Connect grant alike |
+ *
+ * Rule 1a (F-LINK-SAVE; R13, R-OA-22, design §6.3a): Connect passes core's id as `agent_id`, and the
+ * approval page binds the entry to it before the code is issued, so core's `pair` right after
+ * Connect finds its own binding. That is not another Fishball's, so no warning: core writes the
+ * record with the page's name. A name the page set stands; an empty one gets core's name with
+ * `set_name` after the connect (design §6.3a "when the page left it empty").
  *
  * A held state keys on what it was decided for, and a later attempt with other values decides
  * again (a new id or token is the user's answer, Fishball's decision 2026-11-15, question 6): a
- * warning, `need-id` and `id-mismatch` on (target origin, token reference, fishball id).
- * `need-token` is a declined record of (target origin, token reference), so a new id alone never
+ * warning, `need-id` and `id-mismatch` on (target origin, credential id, fishball id).
+ * `need-token` is a declined record of (target origin, credential id), so a new id alone never
  * brings the old token back, nor does a restart (AUTH-UC-05 A2 "core stops using the old token";
- * question 5). The caller (F-WIRE) calls `link.reconnect()` after a settings change, as for the
+ * question 5). The credential id is F-LINK-SAVE's non-secret id of the token or grant (decided
+ * item 13: token references are gone); a token keeps its id once saved, so saving never re-pairs.
+ * The caller (F-WIRE) calls `link.reconnect()` after a settings change, as for the
  * link itself.
  *
  * Decisions run one at a time, in attempt order, and only the latest attempt changes the view: an
@@ -41,7 +50,7 @@
  */
 import { MCP } from '../../contracts/constants.js'
 import { principalLabel } from '../link/schema.js'
-import { STATUS, createLink, emitIsolated, subscribe } from '../link/index.js'
+import { CREDENTIAL_KIND, STATUS, createLink, emitIsolated, subscribe } from '../link/index.js'
 import {
   CHOICE, CHOICES_OF, CHOICE_REFUSAL, HELD_STATES, HOLD_STATUS, MISUSE, NAME_SOURCE, NO_CHOICES, PAIRING_STATE, SCOPE_LIST,
 } from './constants.js'
@@ -52,7 +61,7 @@ export class PairingFailed extends Error {}
 
 const NAME_REFUSALS = Object.freeze([MCP.refusal.nameTaken, MCP.refusal.nameInvalid])
 
-/** The values a record and most holds apply to: (target origin, token reference, fishball id). */
+/** The values a record and most holds apply to: (target origin, credential id, fishball id). */
 const pairKeyOf = (attempt) => JSON.stringify([attempt.origin, attempt.ref, attempt.clientId])
 
 
@@ -68,15 +77,18 @@ const refusal = (code) => Object.freeze({ ok: false, code })
 const OK = Object.freeze({ ok: true })
 
 /**
- * The link's credentials, with the token reference required: records and holds key on it, so a
- * missing one would put every token of a target under one key. A missing reference is F-WIRE's
- * programming error; the link reports it as a failed attempt.
+ * The link's credentials, with the credential id required: records and holds key on it, so a
+ * missing one would put every credential of a target under one key. A missing id is a programming
+ * error of the caller; the link reports it as a failed attempt.
  */
-const withRef = (credentials) => async () => {
-  const value = await credentials()
-  if (value?.secret && typeof value.ref !== 'string') throw new TypeError(MISUSE.ref)
+const withRef = (credentials) => async (target) => {
+  const value = await credentials(target)
+  if ((value?.secret || value?.authProvider !== undefined) && typeof value.ref !== 'string') throw new TypeError(MISUSE.ref)
   return value
 }
+
+/** Rule 1a: `already-paired` answered for a Connect grant whose page bound core's own id. */
+const ownPageBinding = (attempt, result) => attempt.kind === CREDENTIAL_KIND.grant && result?.bound?.idMatches === true
 
 /**
  * @typedef {object} PairingView what the Fishball page shows (`pairing.state()`)
@@ -161,6 +173,14 @@ export function createPairing({ records, name, now = Date.now, createLink: makeL
       const held = result.name ?? null
       const refused = result.nameAssigned === false ? refusedName(result.nameRefused) : null
       const record = answered(newRecord(attempt, held), wanted, NAME_SOURCE.pair, held, refused)
+      await writePaired(attempt, record)
+      return work(attempt, record)
+    }
+    if (result?.code === MCP.refusal.alreadyPaired && ownPageBinding(attempt, result)) {
+      const held = result.bound.name ?? null
+      const base = newRecord(attempt, held)
+      // A name the page set is the user's: recorded as asked-for, so the name sync leaves it.
+      const record = held === null ? base : answered(base, wanted, NAME_SOURCE.pair, held, null)
       await writePaired(attempt, record)
       return work(attempt, record)
     }
@@ -276,7 +296,7 @@ export function createPairing({ records, name, now = Date.now, createLink: makeL
      * One of the warning's choices (R-ID-07; AUTH-ST-03 rows 3–5).
      * - `continue` with `{confirmed: true}` (the box "No other Fishball or agent uses this id with
      *   this token" ticked): writes the record, sends no `pair`, and reconnects the link;
-     * - `new-token-and-id` / `new-token`: core stops using this token until its reference changes.
+     * - `new-token-and-id` / `new-token`: core stops using this credential until another one comes.
      * @returns {Promise<{ok: true} | {ok: false, code: string}>} never rejects; a refusal changes
      *   nothing (`not-offered`, `not-confirmed`, or `not-saved` when its record write failed)
      */
