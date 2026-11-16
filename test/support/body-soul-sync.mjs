@@ -1,7 +1,7 @@
 /**
  * The model-sync harness for body-soul I6 (design §10): the main-side bridge
  * (createChildProviderSync) talks over an in-memory wire to the child's real provider-sync
- * endpoint (src/slim/child/provider-sync-target.js), whose engine runs over the existing engine
+ * endpoint (dsh-instance src/child/provider-sync-target.js since I-HOST; it was core's src/slim/child/), whose engine runs over the existing engine
  * fixture's fake child host (test/support/provider-sync-engine.mjs: in-memory settings and a real
  * official credential store in a throwaway home). The source side is a fake main host whose
  * inventory the test plants and whose key records live in a second official store.
@@ -14,7 +14,7 @@
 import assert from 'node:assert/strict'
 import { CASE, clone, engineFixture, inventory, provider } from './provider-sync-engine.mjs'
 import { officialCredentials } from './provider-sync-official.mjs'
-import { loadCore, loadInstance } from './body-soul-env.mjs'
+import { loadInstance } from './body-soul-env.mjs'
 
 export const SYNC_IDS = Object.freeze({ ...CASE.ids, plantedEnv: 'planted-env-provider' })
 export const SYNC_PLANTED = Object.freeze({
@@ -62,7 +62,7 @@ function defaultTarget() {
 
 export async function syncHarness(t, { source = defaultSource(), target = defaultTarget(), now = Date.now() } = {}) {
   const { createChildProviderSync } = await loadInstance('src/provider-sync-service.js')
-  const { createProviderSyncTarget, createProviderSyncTargetEndpoint } = await loadCore('src/slim/child/provider-sync-target.js')
+  const { createProviderSyncTarget, createProviderSyncTargetEndpoint } = await loadInstance('src/child/provider-sync-target.js')
   // The child end stands for the production child host, which has describeRecord.
   const child = await engineFixture(t, source, target, { describeRecord: true })
   // The engine fixture's clock starts in 2023 with a 1 s plan life; put it far enough ahead that

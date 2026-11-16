@@ -102,11 +102,9 @@ export const ROUTE = Object.freeze({
   // #77 / R-UI-03 amended: this route is no longer registered; it is kept only to prove its absence.
   retry: '/api/dsh-connector-ui/child/retry',
   admit: '/api/dsh-connector-ui/child/admit',
-  modelsCheck: '/api/dsh-connector-ui/child/models/check',
-  modelsAdd: '/api/dsh-connector-ui/child/models/add',
   /** The `child/*` routes: each answers `instance-missing` without a usable locator. */
-  // #77: no retry route any more.
-  child: Object.freeze(['status', 'admit', 'modelsCheck', 'modelsAdd']),
+  // #77: no retry route any more. I-HOST (QD1 = B): no child/models/* either (model sync is the instance's page).
+  child: Object.freeze(['status', 'admit']),
   // U-DRAW: availability is connector / page (+ legacy until C-WIRE, dev correction 2026-11-16); no handover or tools flags.
   servicesKeys: Object.freeze(['ok', 'connector', 'page', 'legacy', 'routes', 'ui']),
   removedKeys: Object.freeze(['handover', 'tools']),

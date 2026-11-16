@@ -37,17 +37,21 @@ export const servedSource = (text) => text.replace(TRAILER, '').trimEnd()
 
 const settle = async () => { for (let i = 0; i < BUDGET.settleRounds; i++) await new Promise((resolve) => setImmediate(resolve)) }
 
-/** The child origin and its cookie, through the host's embed admission (the way the frame reaches it). */
+/**
+ * The child origin and its cookie, through one admission. I-HOST (Q7) replaced the V2 embed broker
+ * (`/fishball/embed/`) with the instance's own Open Fishball route: POST `{lang}` answers `{ok, url}`,
+ * and that one-time URL, opened by the browser, answers 303 with the child's own cookie.
+ */
 export async function admitChild(host) {
-  const admission = await fetch(host.origin + ROUTE.embed, { headers: { cookie: host.cookie, ...HTTP.sameOrigin }, redirect: 'manual' })
+  const open = await fetch(host.origin + ROUTE.open, { method: 'POST', headers: { cookie: host.cookie, origin: host.origin, ...HTTP.sameOrigin, 'content-type': 'application/json' }, body: JSON.stringify({ lang: ROUTE.openLang }) })
+  const answer = await open.json().catch(() => undefined)
+  if (!answer?.ok || typeof answer.url !== 'string') throw new Error('the host did not admit to the child (status ' + open.status + ', ' + JSON.stringify(answer) + ')')
+  const admission = await fetch(answer.url, { redirect: 'manual' })
   await admission.arrayBuffer()
-  const location = admission.headers.get('location')
-  if (admission.status !== HTTP.seeOther || !location) throw new Error('the host did not admit to the child (status ' + admission.status + ')')
-  const login = await fetch(location, { redirect: 'manual' })
-  await login.arrayBuffer()
-  const cookie = (login.headers.getSetCookie?.() ?? []).map((c) => c.split(';')[0]).join('; ')
+  if (admission.status !== HTTP.seeOther) throw new Error('the child refused the admission (status ' + admission.status + ')')
+  const cookie = (admission.headers.getSetCookie?.() ?? []).map((c) => c.split(';')[0]).join('; ')
   if (!cookie) throw new Error('the child admission set no cookie')
-  return { origin: new URL(location).origin, cookie }
+  return { origin: new URL(answer.url).origin, cookie }
 }
 
 /** One GET or POST at the child's own origin, with its cookie, as same-origin page code would send it. */

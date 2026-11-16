@@ -103,12 +103,15 @@ const MOS = Object.freeze({
   adminStatus: Object.freeze({ ready: Object.freeze({ state: 'ready', code: null }) }),
   modelAttributes: Object.freeze(['data-fishball-model-sync', 'data-fishball-model-check', 'data-fishball-model-entry', 'data-fishball-model-add', 'data-fishball-model-result']),
   admin: Object.freeze({ module: 'src/slim/host/admin.js', status: 'admin.status', restart: 'admin.restart' }),
-  syncTargetModule: 'src/slim/child/provider-sync-target.js',
+  // I-HOST moved the child half from core's src/slim/child/ into the instance's src/child/.
+  syncTargetModule: 'src/child/provider-sync-target.js',
   credentialMode: 0o600,
   tempScanMaxBytes: 1024 * 1024,
   logMethods: Object.freeze(['log', 'info', 'warn', 'error', 'debug']),
   system: Object.freeze({
-    embed: '/fishball/embed/',
+    // I-HOST (Q7): the instance's Open Fishball route replaced the V2 embed broker (/fishball/embed/).
+    open: '/api/dsh-instance/open',
+    openLang: 'en',
     readyTimeoutMs: 120000,
     pollMs: 500,
     caseMs: 240000,
@@ -351,7 +354,7 @@ const IN_PROCESS = [
 
   ['MOS-EP-06', 'EP', 'unsolicited provider-sync frames from the child start nothing', async (t) => {
     const h = await standardSync(t)
-    const { PROVIDER_SYNC_TARGET } = await loadCore(MOS.syncTargetModule)
+    const { PROVIDER_SYNC_TARGET } = await loadInstance(MOS.syncTargetModule)
     const toChild = []
     const wire = h.wire()
     wire.child.onMessage((text) => toChild.push(text))
@@ -471,10 +474,11 @@ async function systemCase() {
     let status
     await until(async () => { status = (await host.get(MOS.route.status)).json; return status?.state === MOS.status.ready.state }, MOS.system.readyTimeoutMs, MOS.system.pollMs)
     assert.equal(status?.state, MOS.status.ready.state, 'precondition: the child is ready; saw ' + JSON.stringify(status))
-    // The child's own origin, through the main embed's admission redirect (the way the frame reaches it).
-    const admission = await fetch(host.origin + MOS.system.embed, { headers: { cookie: host.cookie, [MOS.site.header]: MOS.site.same }, redirect: 'manual' })
-    const location = admission.headers.get('location')
-    assert.ok(location, 'the embed admits to the child origin')
+    // The child's own origin, through one admission: the instance's Open Fishball answers a one-time
+    // URL, and the child redeems it with its own cookie.
+    const open = await fetch(host.origin + MOS.system.open, { method: MOS.method.post, headers: { cookie: host.cookie, origin: host.origin, [MOS.site.header]: MOS.site.same, 'content-type': 'application/json' }, body: JSON.stringify({ lang: MOS.system.openLang }) })
+    const location = (await open.json().catch(() => undefined))?.url
+    assert.ok(location, 'the instance admits to the child origin')
     const login = await fetch(location, { redirect: 'manual' })
     const childCookie = (login.headers.getSetCookie?.() ?? []).map((c) => c.split(';')[0]).join('; ')
     assert.ok(childCookie, 'the child admission sets its cookie')

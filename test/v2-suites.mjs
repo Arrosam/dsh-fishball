@@ -180,6 +180,9 @@ export const V2_SUITES = Object.freeze({
     // V3 I-PLACE (PLAT-DT-01, HOST-ST-01 rows 1–3, HOST-UC-06 post, HOST-UC-08 main 1/A1–A3, HOST-EP-03 rows 6–7, HOST-DT-03, PLAT-DT-04 rule 1 hosted, LITE-UC-03/LITE-EP-13/SET-EP-12 hosted, K3 unmount); run with test/run-v3.mjs.
     file('test/v3/dsh-instance/placement/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 instance placement of the set and fishball-hosted-settings, launch overlay and hosted-child guards (I-PLACE)'),
     file('test/v3/dsh-instance/placement/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 instance placement of the set and fishball-hosted-settings, launch overlay and hosted-child guards (I-PLACE)'),
+    // V3 I-HOST (HOST-UC-01/02/04/05/06, HOST-EP-01/02, HOST-ST-03, HOST-DT-01, HOST-ST-01 rows 4–10, UIM-EP-02 locator rows, admission, placement with fishball-ui); run with test/run-v3.mjs.
+    file('test/v3/dsh-instance/host/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, "V3 instance host: hosted token, locator, admission, child-side row and settings page (I-HOST)"),
+    file('test/v3/dsh-instance/host/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, "V3 instance host: hosted token, locator, admission, child-side row and settings page (I-HOST)"),
     // V3 F-STATUS (R-FB-03/04 REM-DT-01, PLAT-DT-02 board only, HOST-DT-03 rule 10, Q-G1, R-FB-09, R-EXT-14, R-FB-10); run with test/run-v3.mjs.
     file('test/v3/fishball-core/status/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 fishball-core status, strip view, set completeness and guards notice (F-STATUS)'),
     file('test/v3/fishball-core/status/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 fishball-core status, strip view, set completeness and guards notice (F-STATUS)'),
@@ -212,6 +215,20 @@ export const V2_SUITES = Object.freeze({
     cases('test/managed-marks.test.mjs', '^MKS-09 ', DISPOSITION.withdrawn, 'fixed Hand over labels and the records chunk removed (R-UI-10, requirements 1.41 Q-G4 = A); successor U-DRAW'),
     cases('test/managed-ways.test.mjs', '^MGD-16 ', DISPOSITION.withdrawn, 'fixed Hand over labels and the records chunk removed (R-UI-10, requirements 1.41 Q-G4 = A); successor U-DRAW'),
     cases('test/messaging-inbound.test.mjs', '^MSG-13 ', DISPOSITION.withdrawn, 'fixed Hand over labels and the records chunk removed (R-UI-10, requirements 1.41 Q-G4 = A); successor U-DRAW'),
+    // The user (2026-11-16, relayed by the I-HOST dev session): "现在第二版根本没有实际部署的情况，把它当作一次发布前的设计变更，
+    // 第三版其实就是第一版". V2 was never deployed, so V2-only rows that I-HOST's approved changes break are
+    // withdrawn here (V3 assertions are untouched). I-HOST removed the V2 connector binding
+    // (src/host/binding.js: connector-missing, attachInstance, the instance-only codes) and the V2 embed
+    // broker (/fishball/embed/, replaced by the instance's own Open Fishball, Q7); the instance's Config
+    // gained targetUrl (R-HOST-05); its status route answers {state, code, detail, notice}; the moved
+    // admin service has no currentModel hook into core (Q-G7, R-ARCH-10).
+    cases('test/body-soul-i1c-status.test.mjs', '^I1c-', DISPOSITION.withdrawn, 'the V2 connector binding (contractStatus, INSTANCE_STATES/CODES) removed by I-HOST; V2 never deployed (user, 2026-11-16)'),
+    cases('test/body-soul-i2-launch.test.mjs', '^I2-C-P-01 ', DISPOSITION.withdrawn, 'Config gained targetUrl (R-HOST-05, I-HOST); successor test/v3/dsh-instance/host HOST-EP-01 R-HOST-05; V2 never deployed (user, 2026-11-16)'),
+    cases('test/body-soul-i6-settings-view.test.mjs', '^P3-ACT-EP-02 ', DISPOSITION.withdrawn, 'the admin service has no currentModel hook into core (I-HOST, Q-G7, R-ARCH-10); successor test/v3/dsh-instance/host MOVED admin; V2 never deployed (user, 2026-11-16)'),
+    cases('test/e1-p1-connector-departure.test.mjs', '^P1-ST-0[12] ', DISPOSITION.withdrawn, 'connector-missing removed with the V2 binding (I-HOST: the instance starts with or without a connector); V2 never deployed (user, 2026-11-16)'),
+    cases('test/v2-r2-start-detail.test.mjs', '^R2-UC-01/02/03 ', DISPOSITION.withdrawn, 'the status/Retry answer is {state, code, detail, notice} (I-HOST settings page routes); V2 never deployed (user, 2026-11-16)'),
+    cases('test/v2-r3-native-access.test.mjs', '^R3-UC-01 row: ', DISPOSITION.withdrawn, 'the V2 embed broker /fishball/embed/ removed (I-HOST Q7: Open Fishball through one admission); V2 never deployed (user, 2026-11-16)'),
+    cases('test/v2-r4-exit-race.test.mjs', '^R4-EXIT-05 ', DISPOSITION.withdrawn, 'connector-missing (the connector disabled during a start) removed with the V2 binding (I-HOST); V2 never deployed (user, 2026-11-16)'),
     cases('test/body-soul-i9-lang.test.mjs', "^(I9 U6 record words equal the connector's|precondition: the connector source has record\\.\\* words|I9-U6-0[1-5] )", DISPOSITION.withdrawn, "main-DSH inline records removed (requirements 1.41 Q-G4 = A, U-DRAW): no connector record.* words to compare"),
   ]),
 })

@@ -33,10 +33,8 @@ export const EMBED = Object.freeze({
     shell: 'src/client/client.shell.js',
     marks: 'src/client/client.marks.js',
     attention: 'src/client/client.attention.js',
-    // Q-G4 = A: client.records.js is removed (no inline records).
-    instance: 'src/client/client.instance.js',
+    // Q-G4 = A: client.records.js is removed (no inline records). I-HOST: client.instance.js left too (the instance's own page).
   }),
-  cardChunk: 'src/client/client.instance.js',
 })
 
 /** R-EMBED (3): the client entries the connector and the instance lose in the same change. */

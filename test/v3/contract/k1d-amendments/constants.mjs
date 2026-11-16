@@ -101,6 +101,8 @@ export const HOSTED = Object.freeze({
   errorCodeType: 'CreateHostedErrorCode',
   errorCodes: Object.freeze(['operation-failed']),
   movedCode: 'credentials-unwritable',
+  /** The connector's own declaration file the moved code must have left (the instance's child.d.ts may name it, I-HOST). */
+  tokensFile: 'tokens.d.ts',
   stateType: 'HostedEntryState',
   states: Object.freeze(['enabled', 'disabled', 'deleted']),
   /** §5.9: "`disabled` means switched off only". */

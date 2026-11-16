@@ -23,7 +23,9 @@ export const DSH_MODULES = Object.freeze(['admin-protocol', 'provider-sync', 'pr
  * token manager the adapter drives (C-MCP-ADAPTER); fishball-shared's own copy is written and tested
  * on its own side, so the two need not be byte-equal.
  */
-export const ADDED_MODULES = Object.freeze(['oauth-client'])
+// I-HOST added `request-host` (requestHostname(request)): the instance's settings routes and
+// dsh-connector-ui's admit route both read the request's own Host (more than one DSH-side user, R-ARCH-08).
+export const ADDED_MODULES = Object.freeze(['oauth-client', 'request-host'])
 /** Every export subpath module of dsh-connector-shared: the moved ones and the added ones. */
 export const DSH_EXPORTS = Object.freeze([...DSH_MODULES, ...ADDED_MODULES])
 /**

@@ -24,6 +24,7 @@
  * `todo` and name it.
  */
 import assert from 'node:assert/strict'
+import { WITHDRAWN_BY, withdrawnRow } from '../../dsh-instance/host/withdrawn.mjs'
 import fs from 'node:fs'
 import path from 'node:path'
 import { caseTest, dshInspect } from '../../contract/package-boundaries/cases.mjs'
@@ -152,11 +153,12 @@ export function registerCoreCases(sdk) {
   })
 
   // ================================================================ HOST-EP-03 row 2: the status line stays in the instance
-  caseTest(sdk, 'HOST-EP-03', 2, 'the status-line module is shipped only by dsh-instance, under src/child-settings/', async () => {
+  caseTest(sdk, 'HOST-EP-03', 2, 'the status-line module is shipped only by dsh-instance, as its settings page chunk client.status.js', async () => {
     const holders = await filesHolding(MARK.status)
     assert.ok(holders.length > 0, 'no V3 package ships the status line (' + MARK.status + ')')
     assert.deepEqual(holders.filter((h) => h.name !== V3.instance.name).map((h) => h.name + '/' + h.file), [], 'shipped outside the instance')
-    assert.ok(holders.some((h) => h.file.startsWith(CHILD_SETTINGS.folder)), 'no status-line file under ' + CHILD_SETTINGS.folder + ': ' + holders.map((h) => h.file).join(', '))
+    // I-HOST (QD1 = B): the status line is the instance's settings page chunk at its root.
+    assert.ok(holders.some((h) => h.file === CHILD_SETTINGS.statusFile), 'no ' + CHILD_SETTINGS.statusFile + ': ' + holders.map((h) => h.file).join(', '))
   })
 
   // ================================================================ HOST-EP-03 row 3: the extension point knows nothing about hosting
@@ -208,6 +210,6 @@ export function registerCoreCases(sdk) {
   // HOST-EP-03 row 5 and the HOST-UC-08 postcondition "H shows no UI from the instance" are R-EMBED's: test/v3/contract/embed/cases.mjs.
   // ================================================================ later tasks
   caseTest(sdk, 'HOST-UC-08', 'A3', 'standalone: the same core package shows the generic settings only and reports nothing missing', null, LATER.standalone)
-  caseTest(sdk, 'HOST-UC-08', 'E1', 'fishball-core disabled: the sections do nothing and the child still starts (fishball-off)', null, LATER.host)
+  withdrawnRow(sdk, 'HOST-UC-08', 'E1', 'fishball-core disabled: the sections do nothing and the child still starts (fishball-off)', WITHDRAWN_BY.offCode)
   caseTest(sdk, 'HOST-UC-08', 'e2e', 'the panel and the Plugins page in a browser', null, LATER.e2e)
 }

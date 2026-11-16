@@ -46,7 +46,7 @@
  */
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
-import { loadCore } from './support/body-soul-env.mjs'
+import { loadCore, loadInstance } from './support/body-soul-env.mjs'
 import { chatHarness } from './support/body-soul-chat.mjs'
 import {
   ADMIN_ROUTE, bodyOf, buttonOf, catalogModel, controlOf, headingTexts, hintsOfField,
@@ -54,7 +54,7 @@ import {
 } from './support/body-soul-settings.mjs'
 
 const { createI18n } = await loadCore('src/slim/ui/i18n.js')
-const { createAdminService, validateResult, ADMIN_OPERATION, ADMIN_ERROR, AdminFailure } = await loadCore('src/slim/child/admin.js')
+const { createAdminService, validateResult, ADMIN_OPERATION, ADMIN_ERROR, AdminFailure } = await loadInstance('src/child/admin.js')
 const loadChat = () => loadCore('src/slim/child/chat.js')
 
 const en = createI18n('en')

@@ -32,6 +32,7 @@ import { ownFiles, tokensOf, unitOf } from '../../fishball-core/package/static.m
 import { assertParams, contracts, member, serviceMembers, vocabulary } from '../../contract/k3-host-services/contracts.mjs'
 import { FOLDER } from '../../contract/k3-host-services/constants.mjs'
 import { caseTest, integrationCase as gatedCase } from '../../contract/package-boundaries/cases.mjs'
+import { WITHDRAWN_BY, withdrawnRow } from '../../dsh-instance/host/withdrawn.mjs'
 import { JS_FILE, V3 } from '../../contract/package-boundaries/constants.mjs'
 import {
   API_VERSION, BUDGET, CHILD, CONNECTOR_DIAGNOSTIC, DIAGNOSTIC, FAKE, HOST_CONSTANTS, HOST_TRICK, HTTP_OK, INTEGRATION, LATER, LOOPBACK, PAGE_NAME,
@@ -367,12 +368,7 @@ export function registerUShellCases(sdk) {
     const files = ownFiles(await unitOf(V3.embed.name))
     for (const file of SPLIT.parts) assert.ok(files.includes([...SPLIT.clientDir, file].join('/')), 'not shipped: ' + file)
   })
-  caseTest(sdk, 'U-SHELL', 'O6', 'the status-line symlink keeps its name and target and still resolves to the instance\'s file', () => {
-    const link = path.join(clientDir(), SPLIT.statusLink)
-    assert.ok(fs.lstatSync(link, { throwIfNoEntry: false })?.isSymbolicLink(), SPLIT.statusLink + ' is not a symlink')
-    assert.equal(fs.readlinkSync(link), SPLIT.statusTarget)
-    assert.equal(fs.realpathSync(link), fs.realpathSync(path.join(V3.instance.dir, 'src', 'child-settings', SPLIT.statusLink)))
-  })
+  withdrawnRow(sdk, 'U-SHELL', 'O6', 'the status-line symlink keeps its name and target and still resolves to the instance\'s file', WITHDRAWN_BY.page)
   caseTest(sdk, 'U-SHELL', 'done', 'the Plugins card starts model sync on the Plugins page (R-HOST-07) in a browser', null, LATER.e2e)
 
   // ============================================================ the host half's constants equal the frozen contracts
