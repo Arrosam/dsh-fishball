@@ -22,7 +22,6 @@ export const INSTANCE_ROUTE = Object.freeze({
   retry: '/api/dsh-instance/retry',
   reconnect: '/api/dsh-instance/reconnect',
   open: '/api/dsh-instance/open',
-  view: 'chat',
   hostHeader: 'host',
   parseScheme: 'http://',
   /** Characters a bare `host[:port]` never holds (as dsh-connector-ui's admit route). */

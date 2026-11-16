@@ -11,7 +11,7 @@
 import path from 'node:path'
 import Schema from '@deepseek-ai/schemastery'
 import { createNativeRuntime, RUNTIME_LIMITS } from './src/native-runtime/index.js'
-import { LIFETIME, HOSTED, LOCATOR, CHILD_STATE, LIFECYCLE_CODE, PLACEMENT } from './src/native-runtime/constants.js'
+import { LIFETIME, HOSTED, LOCATOR, LOOPBACK, CHILD_STATE, LIFECYCLE_CODE, PLACEMENT } from './src/native-runtime/constants.js'
 import { pathsFor } from './src/native-runtime/files.js'
 import { createCredentialClient } from './src/native-runtime/credential.js'
 import { publicStatus } from './src/native-web.js'
@@ -97,8 +97,6 @@ export const Config = Schema.object({
   [HOSTED.targetField]: Schema.string().default('').volatile().description('The MCP endpoint of a remote DSH connector for Fishball to link to. Leave blank to use the connector in this DSH. Applies at the next start of the instance.'),
 })
 const unavailable = code => Object.assign(new Error(code), { code })
-/** The page `Open Fishball` opens (K3 `AdmitView`): the child's Fishball page (Q-G3; the user's answer Q7 = A). */
-const OPEN_VIEW = 'chat'
 /** The hosted record, in the runtime folder under the main home (files.js pathsFor). */
 const HOSTED_RECORD = (home) => path.join(pathsFor(home).root, HOSTED.record.file)
 /**
@@ -413,7 +411,7 @@ export async function apply(ctx, config) {
     retry: async () => { await locator.retry(); return status() },
     reconnect: () => locator.reconnect(),
     open: async ({ hostname, lang }) => {
-      try { return { ok: true, url: (await locator.admit({ view: OPEN_VIEW, lang, hostname })).url } } catch (error) { return { ok: false, code: error?.code ?? HOSTED.reconnect.failed } }
+      try { return { ok: true, url: (await locator.admit({ view: LOOPBACK.openView, lang, hostname })).url } } catch (error) { return { ok: false, code: error?.code ?? HOSTED.reconnect.failed } }
     },
   })
   // The V2 embed broker (src/slim/host/embed.js) is not registered: it served the V2 connector's
