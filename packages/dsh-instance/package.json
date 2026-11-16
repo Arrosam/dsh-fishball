@@ -23,7 +23,6 @@
     "client.models.js",
     "child-row.js",
     "native-child.js",
-    "native-web.js",
     "uninstall.js",
     "src/",
     "bundled/",
@@ -36,7 +35,7 @@
     "node": ">=22",
     "dsh": ">=0.2.1-rc.2"
   },
-  "//dependencies": "dsh-connector-shared is the DSH side's library (R-ARCH-08, requirements 1.40, design §1.0b row 5): the admin protocol, provider-sync and files the instance uses, and redact, which the connector uses too. It is bundled, so the tarball carries it and an install fetches nothing from a registry; the version moves with this package's. The instance depends on no Fishball-side package: core's fishball-shared reaches the child as files placed from core's own folder (src/native-runtime/placement.js).",
+  "//dependencies": "dsh-connector-shared is the DSH side's library (R-ARCH-08, requirements 1.40, design §1.0b row 5): provider-sync, files and request-host, which the instance uses, and redact, which the connector uses too. It is bundled, so the tarball carries it and an install fetches nothing from a registry; the version moves with this package's. The instance depends on no Fishball-side package: core's fishball-shared reaches the child as files placed from core's own folder (src/native-runtime/placement.js).",
   "dependencies": {
     "dsh-connector-shared": "0.1.0-alpha.0"
   },
@@ -45,7 +44,6 @@
   ],
   "//peerDependencies": "Host packages are resolved from the running DSH installation (verified in spike S8). '*' because engines.dsh is the real compatibility gate. dsh-connector is a peer only for its ./contract export, which the V2 lifecycle and admin code still imports (src/native-runtime/child.js, src/child/admin.js, src/slim/host/{admin,embed}.js), placed in the child as that export alone; REMOVE-V2 deletes those imports and this peer (design §1.0b; G5). The V3 parts look the connector's services up at runtime (dshConnectorTokens). The range is package versions (user decision 2026-11-07): from this release's 0.1.0-alpha.0 up to, not including, 2.",
   "peerDependencies": {
-    "dsh-connector": ">=0.1.0-alpha.0 <2",
     "@deepseek-ai/cosmokit": "*",
     "@deepseek-ai/dsh-agent": "*",
     "@deepseek-ai/dsh-app-boot": "*",

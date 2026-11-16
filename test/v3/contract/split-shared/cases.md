@@ -23,7 +23,7 @@ either library on its own (PLAT-EP-07 rows 3/7b, 4, 5, 6, 7a) are registered onc
 | R4 | `files` is duplicated, one copy per library. fishball-shared keeps `./files`. |
 | R5 | Interim rule: until I-HOST, fishball-shared keeps the admin protocol and provider-sync (codec, engine, host, with redact as the host's internal helper) for core's child halves. Core imports only `fishball-shared/*`. The instance, the connector and the adapter import only `dsh-connector-shared/*`. No Fishball-side package imports fishball-shared's `./redact`. |
 | R6 | Both are libraries, not plugins (no `dsh` field), and both are root workspaces. Every importer lists its library in `dependencies` and `bundleDependencies`. dsh-connector-shared peers on cosmokit, dsh-app-boot and dsh-llm-pi-ai. |
-| R7 | Hosted-child placement puts both libraries in `vendor/` and `node_modules/`, beside the bundles and the contract-only connector, never as profile bundles. dsh-connector-shared comes from the instance's dependencies. fishball-shared comes from core's own package location, never from the instance's graph. The instance imports no Fishball-side module. |
+| R7 | Hosted-child placement puts both libraries in `vendor/` and `node_modules/`, beside the bundles, never as profile bundles. I-READY removes dsh-connector: it is neither placed nor a profile dependency. dsh-connector-shared comes from the instance's dependencies. fishball-shared comes from core's own package location, never from the instance's graph. The instance imports no Fishball-side module. |
 | R8 | Drift guard (interim): each pair of copies, the five interim modules and `files`, holds the same code below its leading header comment. |
 
 ## Use Cases
@@ -47,8 +47,9 @@ row 4). A2: a library itself is refused by DSH's bundle inspection as not-a-bund
 
 **SPLIT-UC-04: the hosted-child placement composes a child profile.** Actor: dsh-instance's
 placement, at every child start (here through the public `composedProfile`, which writes files only and
-starts no process). Main flow: both libraries and the contract-only connector are placed in `vendor/`
-and `node_modules/`, as dependencies, never as bundles. A1: core's fishball-shared is the one beside
+starts no process). Main flow: both libraries are placed in `vendor/`
+and `node_modules/`, as dependencies, never as bundles. Since I-READY, dsh-connector is absent
+from both placement locations and from profile dependencies and bundles. A1: core's fishball-shared is the one beside
 core, even when the instance's own graph resolves another copy (a decoy with a marker file). ST: a
 second start on the same home places them again (placed → placed). E1: with no fishball-shared beside
 core and none in the instance's graph, composition is refused with a typed code.
@@ -79,7 +80,7 @@ core and none in the instance's graph, composition is refused with a typed code.
 | SPLIT-EP-04 | provider-sync | EP | `syncFingerprint` samples; `unsafeProfileReason` over safe, http, userinfo, headers, duplicate model, zero tokens, null, array | the same as base |
 | SPLIT-EP-04 | provider-sync-codec | EP / BVA | `safeCode` (valid, uppercase, long codes, empty, space, non-string); codec request/encode/decode/acceptRequest, bad JSON, unknown action | the same as base |
 | SPLIT-EP-04 | admin-protocol | EP | `refusal` per code, `refusalOf` typed and untyped, `validateRequest` per operation with `{}` and `null` | the same as base |
-| SPLIT-UC-04 | main | Use Case (integration, no process) | `composedProfile` on a scratch tree | both libraries and dsh-connector in `vendor/` and `node_modules/`, as dependencies, not bundles |
+| SPLIT-UC-04 | main | Use Case (integration, no process) | `composedProfile` on a scratch tree | both libraries in `vendor/` and `node_modules/`, as dependencies, not bundles; dsh-connector absent from placement, dependencies and bundles |
 | SPLIT-UC-04 | main | Use Case | the placed dsh-connector-shared | exactly its shipped files (`files` plus package.json) |
 | SPLIT-UC-04 | A1 | Use Case | core's copy has a marker; the instance's graph has a decoy | the placed fishball-shared carries core's marker, not the decoy's |
 | SPLIT-UC-04 | ST | State transition | two compositions on one home | still placed, still not bundles |

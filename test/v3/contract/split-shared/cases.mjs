@@ -304,15 +304,19 @@ export function registerSplitCases(sdk) {
   })
 
   // ---------------------------------------------------------------- SPLIT-UC-04: hosted-child placement (requirement 7)
-  caseTest(sdk, 'SPLIT-UC-04', 'main', 'the child profile holds both libraries and the contract-only connector in vendor/ and node_modules/, none of them a profile bundle', async (t) => {
+  caseTest(sdk, 'SPLIT-UC-04', 'main', 'the child profile places both libraries as dependencies, never bundles, and excludes dsh-connector', async (t) => {
     const { tree, home } = placementTree(t)
     const { paths } = await compose(sdk, tree, home)
     const manifest = JSON.parse(fs.readFileSync(path.join(paths.profile, PLACED.manifest), 'utf8'))
-    for (const name of [...PLACED.libraries, PLACED.contractOnly]) {
+    for (const name of PLACED.libraries) {
       for (const dir of PLACED.dirs) assert.ok(fs.existsSync(path.join(paths.profile, dir, name, PLACED.manifest)), `${name} not in ${dir}/`)
       assert.equal((manifest.dsh?.profile?.bundles ?? []).includes(name), false, name + ' is a profile bundle')
       assert.ok(Object.hasOwn(manifest.dependencies ?? {}, name), name + ' is not a profile dependency')
     }
+    // I-READY removes the old contract-only connector, even when the source graph offers it.
+    for (const dir of PLACED.dirs) assert.equal(fs.existsSync(path.join(paths.profile, dir, V3.connector.name)), false, V3.connector.name + ' was placed in ' + dir)
+    assert.equal(Object.hasOwn(manifest.dependencies ?? {}, V3.connector.name), false)
+    assert.equal((manifest.dsh?.profile?.bundles ?? []).includes(V3.connector.name), false)
   })
   caseTest(sdk, 'SPLIT-UC-04', 'main', "the placed dsh-connector-shared is exactly the library's shipped files", async (t) => {
     const { tree, home } = placementTree(t)

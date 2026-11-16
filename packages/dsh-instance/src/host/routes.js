@@ -8,17 +8,14 @@
  * - POST reconnect → `{ok: true}` or `{ok: false, code}` (K3 `reconnect`);
  * - POST open `{lang}` → `{ok: true, url}`: one admission into the child's Fishball page (view
  *   `chat`) under the page's own loopback hostname (Q-G3; the user's answer Q7 = A: a new tab).
- * The model-sync routes stay src/slim/host/provider-sync-routes.js (same paths as before).
+ * The model-sync routes are provider-sync-routes.js beside this file (same paths as before).
  */
 import { requestHostname } from 'dsh-connector-shared/request-host'
-import { LOOPBACK, REFUSAL } from '../native-runtime/constants.js'
-import { publicStatus, safeStatus } from '../native-web.js'
-import { registerGetRoute, registerPostRoutes } from '../slim/host/fetch-routes.js'
+import { INSTANCE_CODES, INSTANCE_STATES, LOOPBACK, REFUSAL } from '../native-runtime/constants.js'
+import { statusLaunchDetail } from './launch-detail.js'
+import { registerGetRoute, registerPostRoutes } from './fetch-routes.js'
 
 export const INSTANCE_ROUTE = Object.freeze({
-  // V2's original status route, kept with its shape ({enabled, state, code, detail}) for its
-  // readers (the V2 slim suites) until REMOVE-V2.
-  legacyStatus: '/api/fishball/native/status',
   status: '/api/dsh-instance/status',
   retry: '/api/dsh-instance/retry',
   reconnect: '/api/dsh-instance/reconnect',
@@ -28,8 +25,25 @@ export const INSTANCE_ROUTE = Object.freeze({
   badRequest: 400,
   headers: Object.freeze({ 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store', 'referrer-policy': 'no-referrer' }),
   label: 'dsh-instance: settings page routes',
+  // A state outside the instance's vocabulary, as the page reads it (§11).
+  unavailable: 'unavailable',
 })
 const R = INSTANCE_ROUTE
+const STATES = new Set(INSTANCE_STATES)
+const CODES = new Set(INSTANCE_CODES)
+
+/**
+ * The instance's public `{state, code, detail}` (§11; moved here from src/native-web.js, whose V2
+ * readers are gone): known states and codes only, and a failed start's cause after main's public
+ * sanitizer runs again, so no answer carries the child's origin or more than its bounded first line.
+ */
+export function publicStatus(value) {
+  return {
+    state: STATES.has(value?.state) ? value.state : R.unavailable,
+    code: CODES.has(value?.code) ? value.code : null,
+    detail: statusLaunchDetail(value),
+  }
+}
 
 const json = (value, status = R.ok) => new Response(JSON.stringify(value), { status, headers: R.headers })
 
@@ -51,7 +65,6 @@ async function openBody(request) {
  */
 export function registerInstanceRoutes(ctx, service) {
   const current = () => ({ ...publicStatus(service.status()), notice: service.notice() })
-  registerGetRoute(ctx, { path: R.legacyStatus, fetch: () => json(safeStatus(service.status())) })
   registerGetRoute(ctx, { path: R.status, fetch: () => json(current()) })
   registerPostRoutes(ctx, [
     { path: R.retry, fetch: async () => { try { await service.retry() } catch { /* the status says what happened */ } return json(current()) } },
