@@ -86,3 +86,21 @@ export const LINK_SAVE = Object.freeze({
  * `token-refused`.
  */
 export const REFUSED_OAUTH_ERRORS = Object.freeze([MCP.oauth.error.invalidClient, MCP.oauth.error.invalidGrant, 'unauthorized_client'])
+
+/**
+ * Connect's web callback route (web-callback.js; Q-A3 = B). Its path is K3a's
+ * `CONNECT.callback.webPath`; these are the route's own values:
+ * - `routeKind` / `method`: one exact DSH web-server route (dsh-host-webserver `WebRouteKind`), GET
+ *   only, as the authorization response redirect is (RFC 6749 §4.1.2);
+ * - `base`: the base URL a request target is parsed against (only its query is read);
+ * - `hostHeader` / `originHeader`: the Fetch request headers the Connect route decides from;
+ * - `scheme`: prefixed to a bare `Host` header so it parses as a URL (only its hostname is read).
+ */
+export const WEB_CALLBACK = Object.freeze({
+  routeKind: 'exact',
+  method: 'GET',
+  base: 'http://web-callback.invalid',
+  hostHeader: 'host',
+  originHeader: 'origin',
+  scheme: 'http://',
+})

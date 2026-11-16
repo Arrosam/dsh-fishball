@@ -1,14 +1,15 @@
 /**
- * The chat agent's persona (T07): Fishball's own text from src/persona.js, registered in the
- * agent's scope by the chat setup.
+ * The manager agent's persona: Fishball's own text from src/persona.js, registered in the
+ * manager's agent scope by its setup. Lives in core's manager folder since V3 F-WIRE (the user's
+ * decision 2026-11-16), unchanged.
  *
  * @deepseek-ai/dsh-persona is scope-only and collides when mounted globally
- * (dsh-persona/lib/index.js:7-11), and the slim child has no composition row for it. Registering
- * the deployment section from the agent context shadows the deployment persona for this one
- * agent; the same setup runs on create and resume, so a resumed session receives the current text.
+ * (dsh-persona/lib/index.js:7-11), so core has no composition row for it. Registering the
+ * deployment section from the agent context shadows the deployment persona for this one agent;
+ * the same setup runs on create and resume, so a resumed session receives the current text.
  */
 import { PERSONA_PREFIX_SECTION, PERSONA_SUFFIX_SECTION } from '@deepseek-ai/dsh-system-prompt'
-import { PERSONA_ROW } from '../../persona.js'
+import { PERSONA_ROW } from '../persona.js'
 
 /** The registry's placement names; dsh-persona uses the same two for its row. */
 const SECTION_ORDER = Object.freeze({

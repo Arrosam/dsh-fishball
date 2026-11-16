@@ -1,53 +1,36 @@
 /**
- * Reminders in the slim child (§15 T10).
+ * Fishball's reminders: the manager's own durable tasks and its four schedule tools.
  *
- * The child owns reminders end to end; it does not mount DSH's `schedule` service:
+ * Lives in core's manager folder since V3 F-WIRE (the user's decision 2026-11-16: keep reminders,
+ * move them into V3 core unchanged, minus the earlier page routes). It does not mount DSH's
+ * `schedule` service:
  * - 0.2.1-rc.3/rc.5 hard-inject `sessionController`, which only the Web bundle provides, so the
- *   row stays pending in a base-only child and `/api/reminders` answers 503;
+ *   service cannot be relied on in every composition core runs in;
  * - the service and tool contracts differ between rc.3/rc.5 (`list`/`update`/`delete`) and
- *   0.2.2-rc.1 (`list`/`view`/`edit`), and the slim design forbids the Web bundle in the child
- *   (§2.1, §2.3). A stub service would have to shadow a Web-owned DSH service and branch on the
- *   installed version in both the HTTP adapter and the tools.
- * Instead this module keeps its own durable tasks under the child's own home and delivers them
- * through the one activation owner the chat module already publishes (T07's resolveAgent):
+ *   0.2.2-rc.1 (`list`/`view`/`edit`). A stub service would have to shadow a Web-owned DSH
+ *   service and branch on the installed version in the tools.
+ * Instead this module keeps its own durable tasks under the profile home and delivers them through
+ * the caller's activation owner (`resolveAgent`):
  * - `reminder-schedule.js` owns the timing rules and the store schema (after / at / every /
  *   daily / weekly / cron), so the delivered task's shape and the schedule tool's semantics stay
  *   the same on every supported DSH version;
- * - every task is written to `<child home>/fishball/reminders.json` before it is acknowledged, so
- *   a child restart loses nothing. On startup a missed one-shot fires once and a missed recurring
+ * - every task is written to `<profile home>/fishball/reminders.json` before it is acknowledged,
+ *   so a restart loses nothing. On startup a missed one-shot fires once and a missed recurring
  *   task fires once for its latest occurrence, then keeps its cadence;
  * - the agent gets `schedule_create`, `schedule_list`, `schedule_update` and `schedule_delete`
  *   with the schedule tool's names and parameters, so the persona and the model's habits carry
- *   over from the main DSH;
- * - `schedule/changed` does not exist here: every durable write (create, update, cancel and a
- *   delivery) notifies this module's subscribers, and the app relays that as its `reminders` SSE
- *   event so the view re-reads a short list.
- *
- * API contract (the app's HTTP hook only reads the body and writes the answer):
- *   GET  /api/reminders[?active=true|false&limit=1..500&offset>=0]
- *        -> 200 { items, shown, total, limit, offset }; items are reminder view models.
- *   POST /api/reminders { action: "update", id, patch: { title?, prompt?, active?,
- *        at?, everySeconds?, daily?: { time, timeZone }, weekly?: { time, timeZone, weekdays },
- *        cron?: { expression, timeZone } } }
- *        -> 200 reminder view model, or { id, updated: false, code: "schedule_not_found" |
- *        "schedule_ended" }.
- *   POST /api/reminders { action: "cancel", id }
- *        -> 200 { id, deleted: true }, or { id, code: "schedule_not_found" }.
- *   400 { code, message } for an invalid request or a typed rule refusal (invalid_rule, ...).
- *   405 for any other method; 503 while the reminder store is unavailable; 500 for an unexpected
- *   failure. A miss is data, not an exception. HEAD is accepted with GET and the caller drops the
- *   body. The body is bounded by the embed's 1 MiB JSON limit, which the HTTP hook owns (§3.6).
+ *   over from the main DSH. They are registered only into the scope the caller passes to
+ *   `registerTools` (the manager's own agent scope), never globally.
  */
 import path from 'node:path'
 import { randomUUID } from 'node:crypto'
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
 import { createUserMessage } from '@deepseek-ai/dsh-llm'
 import { defineTool } from '@deepseek-ai/dsh-tools'
-import { ROUTES } from 'dsh-connector/contract'
+import { TOOL } from './reminder-tools.js'
 import {
   advance,
   decodeRecord,
-  isRecurring,
   KIND,
   MIN_EVERY_SECONDS,
   normalizePrompt,
@@ -57,53 +40,22 @@ import {
   ScheduleRuleError,
   TIMING_FIELDS,
   TITLE_MAX_CHARS,
-  timingOfRecord,
 } from './reminder-schedule.js'
 
-/** The child serves the contract's /api/* tails; the broker adds /fishball/embed in front (§3.1). */
-const API_PATH = ROUTES.api.slice(ROUTES.prefix.length) + 'reminders'
-
-/**
- * The reminder API contract the app's hooks and src/slim/ui/reminders.js both follow. The view
- * addresses the same resource as the document-relative "api/reminders", which resolves to this
- * path at the child's "/" and behind the broker's "/fishball/embed/" (§3.1).
- */
-export const REMINDERS = Object.freeze({
-  path: API_PATH,
-  event: 'reminders',
-  methods: Object.freeze(['GET', 'HEAD', 'POST']),
-  action: Object.freeze({ update: 'update', cancel: 'cancel' }),
-  // The app writes this as the SSE event data; the view re-reads rather than tracking a diff.
-  change: Object.freeze({ changed: true }),
-})
-
 const LOGGER = 'fishball-native-reminders'
-const METHOD = Object.freeze({ get: 'GET', head: 'HEAD', post: 'POST' })
-const HTTP = Object.freeze({ ok: 200, badRequest: 400, methodNotAllowed: 405, unavailable: 503, failed: 500 })
-
-/** API-level failures; the model-facing tools use the DSH schedule codes below. */
-const ERROR = Object.freeze({
-  unavailable: 'schedule-unavailable',
-  invalid: 'invalid-input',
-  method: 'method-not-allowed',
-  failed: 'schedule-failed',
-})
-/** Only codes this module raises carry their own status; a typed rule refusal is a 400. */
-const ERROR_STATUS = Object.freeze({ [ERROR.invalid]: HTTP.badRequest, [ERROR.unavailable]: HTTP.unavailable })
+/** The one boundary failure the tools return as data: the durable store could not be read. */
+const ERROR = Object.freeze({ unavailable: 'schedule-unavailable' })
 
 /** Stable result codes this module returns as data, mirroring the schedule service's own. */
 const CODE = Object.freeze({
   notFound: 'schedule_not_found',
-  ended: 'schedule_ended',
   subagent: 'subagent_session',
   internal: 'internal_error',
 })
 
 const MESSAGE = Object.freeze({
+  // Model-facing (a tool result), so the wording is kept as it was.
   unavailable: 'The child reminder store is unavailable.',
-  invalid: 'The reminder request is invalid.',
-  method: 'The reminder API accepts GET and POST.',
-  failed: 'The reminder operation failed.',
   toolFailed: 'The schedule operation failed.',
   subagent: 'A delegated subagent cannot use scheduled tasks.',
   toolSelector: 'the tool selector is malformed.',
@@ -113,38 +65,13 @@ const MESSAGE = Object.freeze({
   updateNeeds: 'schedule_update needs a new title, prompt, or one of at, every_seconds, daily, weekly, or cron.',
 })
 
-const QUERY = Object.freeze({ active: 'active', limit: 'limit', offset: 'offset' })
-const FLAG = Object.freeze({ on: 'true', off: 'false' })
-// A canonical non-negative integer only: Number("1e2") or " 1" must not become a page bound.
-const INTEGER_TEXT = /^(?:0|[1-9]\d*)$/
-const BODY = Object.freeze({ action: 'action', id: 'id', patch: 'patch' })
-const CANCEL_KEYS = Object.freeze([BODY.action, BODY.id])
-const UPDATE_KEYS = Object.freeze([BODY.action, BODY.id, BODY.patch])
-
-/** The API patch's optional fields; one timing selector at most, in the record's own spelling. */
-const PATCH = Object.freeze({
-  title: 'title',
-  prompt: 'prompt',
-  active: 'active',
-  at: 'at',
-  everySeconds: 'everySeconds',
-  daily: 'daily',
-  weekly: 'weekly',
-  cron: 'cron',
-})
-const PATCH_FIELDS = Object.freeze(Object.values(PATCH))
-const API_TIMING = Object.freeze([PATCH.at, PATCH.everySeconds, PATCH.daily, PATCH.weekly, PATCH.cron])
-
-/** Task state the slim UI distinguishes (§15 T10, src/slim/ui/reminders.js). */
+/** Stored task states; `schedule_list` reports them as each reminder's `status`. */
 const TASK_STATUS = Object.freeze({ active: 'active', paused: 'paused', ended: 'ended' })
 
 /** The two delivery states the schedule tool reports; a stale target reads `overdue`. */
 const TOOL_STATE = Object.freeze({ scheduled: 'scheduled', overdue: 'overdue' })
 
-/** Page bounds the T10 contract publishes; the schedule service's own defaults. */
-const LIST = Object.freeze({ defaultLimit: 100, maxLimit: 500 })
-
-/** One durable store beside the chat record: same private directory, own file (§2.4). */
+/** One durable store in Fishball's private directory under the profile home, its own file. */
 const STORE = Object.freeze({
   directory: 'fishball',
   file: 'reminders.json',
@@ -169,18 +96,15 @@ const DELIVERY = Object.freeze({
   promptField: 'reminder_prompt_json',
 })
 
-/** Fields the slim view keeps; target ids and Host bookkeeping never leave the child. */
+/** Fields a reminder view keeps; target ids and Host bookkeeping never leave this module. */
 const VIEW_FIELDS = Object.freeze(['id', 'title', 'prompt', 'kind', 'scheduledAt'])
 /** A receipt keeps only what a list row can show, not the message id or target Session. */
 const RECEIPT_FIELDS = Object.freeze(['scheduledAt', 'deliveredAt'])
 
 /** The four tool names and parameters the DSH schedule tool publishes. */
-export const TOOL = Object.freeze({
-  create: 'schedule_create',
-  list: 'schedule_list',
-  update: 'schedule_update',
-  delete: 'schedule_delete',
-})
+// The model tools' names live in reminder-tools.js (a module with no host import), so the persona
+// and the guard check can read them without loading DSH's packages.
+export { TOOL } from './reminder-tools.js'
 const TOOL_SELECTOR = Object.freeze({
   after: 'after_seconds',
   at: 'at',
@@ -272,17 +196,16 @@ const SELECTOR_PARAMETERS = Object.freeze({
   }),
 })
 
-/** A typed boundary refusal; the HTTP hook returns `code` and `message` unchanged. */
-class ReminderApiError extends Error {
+/** A typed boundary refusal; a tool returns `code` and `message` unchanged. */
+class ReminderStoreError extends Error {
   constructor(code, message) {
     super(message)
-    this.name = 'ReminderApiError'
+    this.name = 'ReminderStoreError'
     this.code = code
   }
 }
 
-function invalid() { throw new ReminderApiError(ERROR.invalid, MESSAGE.invalid) }
-function unavailable() { throw new ReminderApiError(ERROR.unavailable, MESSAGE.unavailable) }
+function unavailable() { throw new ReminderStoreError(ERROR.unavailable, MESSAGE.unavailable) }
 
 const isRecord = (value) => typeof value === 'object' && value !== null && !Array.isArray(value)
 const codeOf = (error) => String(error?.code ?? error?.name ?? error)
@@ -291,7 +214,7 @@ function copyDefined(source, target, field) {
   if (source[field] !== undefined) target[field] = source[field]
 }
 
-/** One stored task as the slim view model; unknown future fields never leak out. */
+/** One stored task as a reminder view model; unknown future fields never leak out. */
 function viewOf(task) {
   const reminder = { status: task.status }
   for (const field of VIEW_FIELDS) copyDefined(task.record, reminder, field)
@@ -322,106 +245,12 @@ function compareTasks(left, right) {
   return Date.parse(left.record.scheduledAt) - Date.parse(right.record.scheduledAt) || left.record.id.localeCompare(right.record.id)
 }
 
-function idOf(value) {
-  // Stored ids are trimmed; an untrimmed id can only miss, so refuse it at the boundary.
-  if (typeof value !== 'string' || value === '' || value.trim() !== value) invalid()
-  return value
-}
-
-function textOf(value) {
-  if (typeof value !== 'string' || value.trim() === '') invalid()
-  return value
-}
-
-function booleanOf(value) {
-  if (typeof value !== 'boolean') invalid()
-  return value
-}
-
-function integerOf(raw) {
-  if (raw === null || raw === undefined || raw === '') return undefined
-  if (typeof raw !== 'string' || !INTEGER_TEXT.test(raw)) invalid()
-  const value = Number(raw)
-  if (!Number.isSafeInteger(value)) invalid()
-  return value
-}
-
-function activeOf(raw) {
-  if (raw === null || raw === undefined || raw === '') return undefined
-  if (raw === FLAG.on) return true
-  if (raw === FLAG.off) return false
-  invalid()
-}
-
-function exactKeys(keys, allowed) {
-  if (keys.length !== allowed.length || keys.some((key) => !allowed.includes(key))) invalid()
-}
-
 /** An object with exactly the named keys, or undefined when its shape differs. */
 function exactRecord(value, fields) {
   if (!isRecord(value)) return undefined
   const keys = Object.keys(value)
   if (keys.length !== fields.length || keys.some((key) => !fields.includes(key))) return undefined
   return value
-}
-
-function listRequest(query) {
-  if (query === undefined) return {}
-  if (typeof query.get !== 'function') throw new TypeError('fishball-native-reminders: the reminder query must be URLSearchParams')
-  const request = {}
-  const active = activeOf(query.get(QUERY.active))
-  if (active !== undefined) request.active = active
-  const limit = integerOf(query.get(QUERY.limit))
-  if (limit !== undefined) request.limit = limit
-  const offset = integerOf(query.get(QUERY.offset))
-  if (offset !== undefined) request.offset = offset
-  return request
-}
-
-/** One absolute selector in the API's own spelling: an RFC 3339 string or a local calendar. */
-function apiAt(value) {
-  if (typeof value === 'string') return value
-  const at = exactRecord(value, ['date', 'time', 'timeZone'])
-  if (at === undefined) invalid()
-  return at
-}
-
-/** Translate the API's timing fields into the normalized selector `recordFor` validates. */
-function apiTiming(patch) {
-  const present = API_TIMING.filter((field) => patch[field] !== undefined)
-  if (present.length > 1) invalid()
-  if (present.length === 0) return undefined
-  const field = present[0]
-  if (field === PATCH.at) return { kind: KIND.at, at: apiAt(patch[PATCH.at]) }
-  if (field === PATCH.everySeconds) return { kind: KIND.every, everySeconds: patch[PATCH.everySeconds] }
-  if (field === PATCH.daily) {
-    const daily = exactRecord(patch[PATCH.daily], ['time', 'timeZone'])
-    if (daily === undefined) invalid()
-    return { kind: KIND.daily, time: daily.time, timeZone: daily.timeZone }
-  }
-  if (field === PATCH.weekly) {
-    const weekly = exactRecord(patch[PATCH.weekly], ['time', 'timeZone', 'weekdays'])
-    if (weekly === undefined) invalid()
-    return { kind: KIND.weekly, time: weekly.time, timeZone: weekly.timeZone, weekdays: weekly.weekdays }
-  }
-  const cron = exactRecord(patch[PATCH.cron], ['expression', 'timeZone'])
-  if (cron === undefined) invalid()
-  return { kind: KIND.cron, expression: cron.expression, timeZone: cron.timeZone }
-}
-
-/** One update patch: content, state, or exactly one timing selector. */
-function patchOf(value) {
-  if (!isRecord(value)) invalid()
-  const keys = Object.keys(value)
-  if (keys.length === 0 || keys.some((key) => !PATCH_FIELDS.includes(key))) invalid()
-  const patch = {}
-  if (keys.includes(PATCH.title)) patch.title = textOf(value[PATCH.title])
-  if (keys.includes(PATCH.prompt)) patch.prompt = textOf(value[PATCH.prompt])
-  if (keys.includes(PATCH.active)) patch.active = booleanOf(value[PATCH.active])
-  const timing = apiTiming(value)
-  if (timing !== undefined) patch.timing = timing
-  if (patch.title === undefined && patch.prompt === undefined && patch.active === undefined && timing === undefined) invalid()
-  return patch
 }
 
 /** Decode one stored task; any damaged part drops only that task. */
@@ -458,19 +287,21 @@ function renderFraming(record, occurrenceAt) {
 }
 
 /**
- * Create the reminder surface over a child's Cordis context.
+ * Create the reminder store and its delivery over a row's Cordis context.
  *
- * @param {object} ctx - the fishball-native-app row's context. `get` and `on` serve every request;
- *   a context with `inject` also registers the four agent tools once the tools service is up.
- *   `profileContext.home` names the child's private store, and `effect` (when present) stops the
- *   timer with the row.
+ * @param {object} ctx - the owning row's context; it must have `get` and `on`.
+ *   `profileContext.home` names the private store, `sessions` acknowledges a delivery, and
+ *   `effect` (when present) stops the timer with the row.
  * @param {object} [options]
  * @param {(sessionId: string, next: () => Promise<object|undefined>) => Promise<object|undefined>}
- *   [options.resolveAgent] - the chat module's activation owner (T07). Delivery resumes the
- *   reminder's target Session through it; a target it does not own is asked to `next()` and a
- *   `undefined` answer means no live Agent, so the reminder cannot be delivered.
- * @returns {{ handle: (request: object) => Promise<{status: number, body: object}>, subscribe: (listener: () => void) => () => void }}
- *   `handle` serves the HTTP hook; `subscribe` registers an SSE relay and returns its remover.
+ *   [options.resolveAgent] - the caller's activation owner. Delivery resumes the reminder's target
+ *   Session through it; a target it does not own is asked to `next()` and an `undefined` answer
+ *   means no live Agent, so the reminder cannot be delivered. `schedule_create` uses the same
+ *   answer to refuse a Session it does not own.
+ * @returns {{ registerTools: (tools: {register(definition: object): () => void}) => () => void, close: () => void }}
+ *   `registerTools` registers the four schedule tools into the given DSH `tools` service (an agent
+ *   scope's) and returns one disposer that removes all four; `close` stops delivery and the timer
+ *   (idempotent; the row's effect calls it too).
  */
 export function createReminders(ctx, options = {}) {
   if (!ctx || typeof ctx.get !== 'function' || typeof ctx.on !== 'function') {
@@ -482,12 +313,11 @@ export function createReminders(ctx, options = {}) {
   }
   const profile = ctx.get('profileContext')
   if (typeof profile?.home !== 'string' || !path.isAbsolute(profile.home)) {
-    throw new TypeError('fishball-native-reminders: the child profile home is required')
+    throw new TypeError('fishball-native-reminders: the profile home is required')
   }
   const logger = typeof ctx.logger === 'function' ? ctx.logger(LOGGER) : undefined
   const directory = path.join(profile.home, STORE.directory)
   const file = path.join(directory, STORE.file)
-  const listeners = new Set()
   let tasks = []
   let storeError
   let closed = false
@@ -499,7 +329,7 @@ export function createReminders(ctx, options = {}) {
 
   const ready = load()
 
-  /** One durable write at a time, so a delivery and an API edit never overwrite each other. */
+  /** One durable write at a time, so a delivery and a tool edit never overwrite each other. */
   function mutate(work) {
     const run = chain.then(work)
     chain = run.then(() => undefined, () => undefined)
@@ -554,31 +384,11 @@ export function createReminders(ctx, options = {}) {
   async function commit(next) {
     await persist(next)
     tasks = next
-    emitChanged()
-  }
-
-  function emitChanged() {
-    for (const listener of [...listeners]) {
-      try { listener() } catch { /* a closed or broken SSE stream */ }
-    }
   }
 
   async function requireStore() {
     await ready
     if (storeError !== undefined) unavailable()
-  }
-
-  async function page(query) {
-    await requireStore()
-    const request = listRequest(query)
-    const limit = request.limit ?? LIST.defaultLimit
-    const offset = request.offset ?? 0
-    if (limit < 1 || limit > LIST.maxLimit) invalid()
-    const matching = tasks
-      .filter((task) => request.active === undefined || (task.status === TASK_STATUS.active) === request.active)
-      .sort(compareTasks)
-    const items = matching.slice(offset, offset + limit)
-    return { items: items.map(viewOf), shown: items.length, total: matching.length, limit, offset }
   }
 
   async function createTask({ sessionId, title, prompt, timing, now }) {
@@ -592,39 +402,23 @@ export function createReminders(ctx, options = {}) {
   }
 
   /**
-   * Apply one update to the task's content, state or timing. A timing change re-arms the task
-   * from the update time; resuming a recurring task re-arms it the same way, while a paused
-   * one-shot can only resume if its stored target is still ahead.
+   * Apply one update to the task's content or timing, for the calling Session's tasks only. A
+   * timing change re-arms the task from the update time and makes it active again.
    */
   async function updateTask(id, patch, now, sessionId) {
     return mutate(async () => {
-      // The agent tools act for one Session; the child's own API sees every task in the child.
-      const index = tasks.findIndex((task) => task.record.id === id && (sessionId === undefined || task.sessionId === sessionId))
+      const index = tasks.findIndex((task) => task.record.id === id && task.sessionId === sessionId)
       if (index === -1) return { result: { id, updated: false, code: CODE.notFound } }
       const current = tasks[index]
       const title = patch.title ?? current.record.title
       const prompt = patch.prompt ?? current.record.prompt
       let record = current.record
       let status = current.status
-      let rearmed = false
       if (patch.timing !== undefined) {
         record = recordFor({ id, title, prompt, timing: patch.timing, now })
-        rearmed = true
-        status = patch.active === false ? TASK_STATUS.paused : TASK_STATUS.active
+        status = TASK_STATUS.active
       } else if (patch.title !== undefined || patch.prompt !== undefined) {
         record = Object.freeze({ ...record, title: normalizeTitle(title), prompt: normalizePrompt(prompt) })
-      }
-      if (patch.active !== undefined) {
-        if (patch.active === true) {
-          if (status === TASK_STATUS.ended) return { result: { id, updated: false, code: CODE.ended } }
-          if (status === TASK_STATUS.paused && !rearmed) {
-            if (isRecurring(record.kind)) record = recordFor({ id, title, prompt, timing: timingOfRecord(record), now })
-            else if (Date.parse(record.scheduledAt) <= now) return { result: { id, updated: false, code: CODE.ended } }
-            status = TASK_STATUS.active
-          }
-        } else if (status === TASK_STATUS.active) {
-          status = TASK_STATUS.paused
-        }
       }
       if (record === current.record && status === current.status) return { task: current }
       const updated = Object.freeze({ ...current, record, status, updatedAt: new Date(now).toISOString() })
@@ -637,58 +431,11 @@ export function createReminders(ctx, options = {}) {
 
   async function cancelTask(id, sessionId) {
     return mutate(async () => {
-      const next = tasks.filter((task) => task.record.id !== id || (sessionId !== undefined && task.sessionId !== sessionId))
+      const next = tasks.filter((task) => task.record.id !== id || task.sessionId !== sessionId)
       if (next.length === tasks.length) return { result: { id, code: CODE.notFound } }
       await commit(next)
       return { result: { id, deleted: true } }
     })
-  }
-
-  async function mutateRequest(body) {
-    if (!isRecord(body)) invalid()
-    const keys = Object.keys(body)
-    const id = idOf(body[BODY.id])
-    if (body[BODY.action] === REMINDERS.action.cancel) {
-      exactKeys(keys, CANCEL_KEYS)
-      await requireStore()
-      return (await cancelTask(id)).result
-    }
-    if (body[BODY.action] === REMINDERS.action.update) {
-      exactKeys(keys, UPDATE_KEYS)
-      const patch = patchOf(body[BODY.patch])
-      await requireStore()
-      const outcome = await updateTask(id, patch, Date.now())
-      requestDrive()
-      return 'task' in outcome ? viewOf(outcome.task) : outcome.result
-    }
-    return invalid()
-  }
-
-  function failureOf(error) {
-    if (error instanceof ReminderApiError) {
-      return { status: ERROR_STATUS[error.code] ?? HTTP.failed, body: { code: error.code, message: error.message } }
-    }
-    if (error instanceof ScheduleRuleError) {
-      return { status: HTTP.badRequest, body: { code: error.code, message: error.message } }
-    }
-    return { status: HTTP.failed, body: { code: ERROR.failed, message: MESSAGE.failed } }
-  }
-
-  async function handle(request) {
-    const { method, query, body } = request ?? {}
-    try {
-      if (method === METHOD.get || method === METHOD.head) return { status: HTTP.ok, body: await page(query) }
-      if (method === METHOD.post) return { status: HTTP.ok, body: await mutateRequest(body) }
-      return { status: HTTP.methodNotAllowed, body: { code: ERROR.method, message: MESSAGE.method } }
-    } catch (error) {
-      return failureOf(error)
-    }
-  }
-
-  function subscribe(listener) {
-    if (typeof listener !== 'function') throw new TypeError('fishball-native-reminders: a reminder change listener must be a function')
-    listeners.add(listener)
-    return () => { listeners.delete(listener) }
   }
 
   // ── delivery ─────────────────────────────────────────────────────────────────────────────────
@@ -799,14 +546,13 @@ export function createReminders(ctx, options = {}) {
     if (closed) return
     closed = true
     clearTimer()
-    listeners.clear()
   }
 
   // ── agent tools ─────────────────────────────────────────────────────────────────────────────
 
   function toolFailure(error) {
     if (error instanceof ScheduleRuleError) return { code: error.code, message: error.message }
-    if (error instanceof ReminderApiError) return { code: error.code, message: error.message }
+    if (error instanceof ReminderStoreError) return { code: error.code, message: error.message }
     return { code: CODE.internal, message: MESSAGE.toolFailed }
   }
 
@@ -943,19 +689,20 @@ export function createReminders(ctx, options = {}) {
     ]
   }
 
+  /**
+   * Register the four tools into one scope's tools service. Not global: the caller passes the
+   * manager's own agent scope, so no other agent gets them. Tool state (the store, the timer)
+   * stays here, so registering in a later manager generation sees the same tasks.
+   */
   function registerTools(tools) {
-    for (const definition of toolDefinitions()) tools.register(defineTool(definition))
+    if (typeof tools?.register !== 'function') throw new TypeError('fishball-native-reminders: a tools service with register() is required')
+    const removers = toolDefinitions().map((definition) => tools.register(defineTool(definition)))
+    return () => { for (const remove of removers) remove() }
   }
 
-  // A context without a tools service (and without inject) still serves the list and the API.
-  if (typeof ctx.inject === 'function') {
-    ctx.inject(['tools'], (scope) => {
-      if (typeof scope.tools?.register === 'function') registerTools(scope.tools)
-    })
-  }
   if (typeof ctx.effect === 'function') ctx.effect(() => () => close())
 
   void ready.then(() => requestDrive())
 
-  return Object.freeze({ handle, subscribe })
+  return Object.freeze({ registerTools, close })
 }

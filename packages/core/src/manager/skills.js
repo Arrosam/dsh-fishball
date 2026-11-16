@@ -1,5 +1,6 @@
 /**
  * Fishball's private Skills tool (SK; S1–S8; SK-SEAM decisions 1–4; final scope §4 SK row).
+ * Lives in core's manager folder since V3 F-WIRE (the user's decision 2026-11-16), unchanged.
  *
  * The skills are Fishball's own lessons about the user's preferences and ways of working. Fishball
  * writes them on its own or when asked, with no approval, and only Fishball uses them.

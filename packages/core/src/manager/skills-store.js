@@ -1,8 +1,9 @@
 /**
  * Fishball's private Skills: the trusted storage service and the confined reader (SK, final scope
- * §4; SK-SEAM decisions 1 and 4; docs/planning/v2-sk-seam.md §5.2).
+ * §4; SK-SEAM decisions 1 and 4; docs/planning/v2-sk-seam.md §5.2). Lives in core's manager
+ * folder since V3 F-WIRE (the user's decision 2026-11-16), unchanged.
  *
- * The library is `<child DSH home>/skills/<name>/SKILL.md`. Every operation takes a skill NAME,
+ * The library is `<DSH home>/skills/<name>/SKILL.md`. Every operation takes a skill NAME,
  * never a path: the name passes DSH's own grammar before any path is built, so absolute paths,
  * traversal, separators and sibling prefixes never reach the filesystem.
  *
