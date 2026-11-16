@@ -274,14 +274,15 @@ export const V2_GROUPS = Object.freeze({
   // the core it places, or either shared library (the instance's own, core's placed copy) reruns them.
   'v2.instance': suite('the instance: launch, lifecycle, embed, provider sync, child pages', v2([
     'body-soul-i1c-status', 'body-soul-i2-launch', 'body-soul-i6-sync',
-    'e1-p1-connector-departure', 'e1-p3-sync-https', 'instance-ext-fakehost', 'provider-sync-coordinator', 'provider-sync-official',
+    'e1-p1-connector-departure', 'e1-p3-sync-https', 'provider-sync-coordinator', 'provider-sync-official',
     'runtime-isolation-boundary', 'runtime-isolation-transport', 'v2-r2-start-detail',
-    'v2-r4-core-copy', 'v2-r4-exit-race', 'test/verification/w0-host-session.test.mjs',
+    'v2-r4-core-copy', 'v2-r4-exit-race',
     'test/v2-page-cases/child-boot.test.mjs', 'test/v2-page-cases/child-boot-nav.test.mjs',
   ]), [all(PACKAGE.dshInstance), all(PACKAGE.fishballCore), all(PACKAGE.fishballUi), all(PACKAGE.dshConnectorShared), all(PACKAGE.fishballShared), sub(PACKAGE.dshConnector, 'contract')]),
-  'v2.fishball-core': suite('core\'s slim child and pages: chat, records, i18n, persona, skills, settings, lite', v2([
-    'body-soul-i6-settings-view', 'body-soul-i7-records', 'body-soul-i9-lang', 'e1-p2-model-choice', 'e1-p4-header-name',
-    'persona-bold-render', 'test/instance-ext/x0-i.test.mjs', 'test/instance-ext/x0-w.test.mjs',
+  // F-WIRE deleted core's slim child and its suites (V2 was never deployed, the user's rule); the
+  // persona, private Skills and the page cases stay.
+  'v2.fishball-core': suite('core\'s persona, private Skills and the Fishball page cases', v2([
+    'persona-bold-render',
     'test/private-skills/sk-bva.test.mjs', 'test/private-skills/sk-dt.test.mjs', 'test/private-skills/sk-ep.test.mjs',
     'test/private-skills/sk-st.test.mjs', 'test/private-skills/sk-uc.test.mjs',
     'test/v2-page-cases/lite.test.mjs', 'test/v2-page-cases/page.test.mjs', 'test/v2-page-cases/pg-origin.test.mjs',
