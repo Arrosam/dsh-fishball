@@ -12,9 +12,6 @@ export const OP = Object.freeze({
   createSession: 'createSession', userDrive: 'userDrive', session: 'session', waitIdle: 'waitIdle', activity: 'activity',
 })
 
-/** User amendment S1's exact diagnostic phrase; logger severity is DSH's existing test convention. */
-export const DIAGNOSTIC = Object.freeze({ staysOff: 'V3 connector stays off', warning: 'warn', error: 'error' })
-
 /** The two exact K1 sentences are independent public-contract oracles, not implementation text. */
 export const DESCRIPTION = Object.freeze({
   [K1.TOOL.sessionRead]: 'Read the latest messages of a session you manage, within the given bounds.',
@@ -23,7 +20,6 @@ export const DESCRIPTION = Object.freeze({
 
 /** Named requirement facts not exported by K1; no numeric product limit is restated here. */
 export const EXPECT = Object.freeze({
-  oneWarning: 1,
   portZero: SURFACE.settings.portMin,
   activityEvent: LIST_ACTIVITY.event,
   textBlock: 'text',

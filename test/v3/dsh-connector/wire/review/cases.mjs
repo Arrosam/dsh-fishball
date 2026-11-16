@@ -6,7 +6,7 @@
 import assert from 'node:assert/strict'
 import test, { describe } from 'node:test'
 import { freePort, nonWebScenario, scenario } from '../world.mjs'
-import { BUDGET, DATA, DECISION, DELIVERY, DESCRIPTION, DIAGNOSTIC, EXPECT, FIXTURE, K1, OP, RISK, SCHEMA_TEXT, SURFACE, V3_SERVICES } from './constants.mjs'
+import { BUDGET, DATA, DECISION, DELIVERY, DESCRIPTION, EXPECT, FIXTURE, K1, OP, RISK, SCHEMA_TEXT, SURFACE, V3_SERVICES } from './constants.mjs'
 import {
   activityAfter, assertDuplicateRefused, assertMetadata, connect, createToken, duplicateOf, eventually,
   fresh, handOver, listedIds, managedOf, managedSession, noticeOf, okCall, ownerJson, paired, read,
@@ -89,20 +89,18 @@ export function registerReviewCases(sdk) {
 
   // DESIGN §3.2: "Each tool wraps today's connector domain function ... and keeps contract 1.2's
   // semantics, vocabularies and limits". K1 W4b-2: "only sessions the caller manages; an unmanaged
-  // session and another principal's are forbidden to read". User S1: "profile without dsh-web-app
-  // loads, logs exactly one 'V3 connector stays off' warning, V2 dshConnector service remains provided".
+  // session and another principal's are forbidden to read". User S1, decision A (2026-11-17,
+  // superseding the earlier "loads and warns once" wording): "the connector requires dsh-web-app
+  // (its MCP endpoint is served on DSH's web server, and V2 is being removed): a profile without it
+  // leaves the dsh-connector row pending, DSH's own missing-dependency state, present and enabled
+  // but not active, and no connector service, V2 or V3, is provided".
   describe(`C-WIRE review Equivalence Partitioning [SDK ${sdk}]`, SERIAL, () => {
-    test('S1 EP: no dsh-web-app profile loads, warns exactly once and keeps the V2 service', T, async () => {
+    test('S1 EP: a profile without dsh-web-app leaves the connector row pending and provides no connector service, V2 or V3', T, async () => {
       const w = await nonWebScenario(sdk, DATA.scenario.noWeb)
-      assert.equal((await w.call(OP.row)).active, true, 'missing web app must not break the connector row')
+      const row = await w.call(OP.row)
+      assert.deepEqual([row.present, row.disabled, row.active, row.pending], [true, false, false, true], 'the row is not in DSH\'s pending (missing-dependency) state: ' + JSON.stringify(row))
       const services = await w.call(OP.services, { names: [SURFACE.service.v2, ...V3_SERVICES] })
-      assert.equal(services[SURFACE.service.v2].present, true)
-      for (const name of V3_SERVICES) assert.equal(services[name].present, false, `V3 stays off without web app: ${name}`)
-      const logs = await w.call(OP.logs)
-      const diagnostics = logs.filter((entry) => entry.text.includes(DIAGNOSTIC.staysOff))
-      assert.equal(diagnostics.length, EXPECT.oneWarning, 'exactly one V3-stays-off diagnostic must be logged')
-      assert.equal(diagnostics.at(0).type, DIAGNOSTIC.warning)
-      assert.deepEqual(logs.filter((entry) => entry.type === DIAGNOSTIC.error && /connector/i.test(entry.name ?? '')), [], 'absence of a web profile is not a load error')
+      for (const name of [SURFACE.service.v2, ...V3_SERVICES]) assert.equal(services[name].present, false, `a connector service is provided without dsh-web-app: ${name}`)
     })
 
     for (const [tool, description] of Object.entries(DESCRIPTION)) {

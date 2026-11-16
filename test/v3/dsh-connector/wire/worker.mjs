@@ -151,10 +151,10 @@ const ops = {
     const result = await ctx.pluginManager.setBundleEnabled(PACKAGES.connector.name, enabled)
     return { result: plain(result), row: ops.row() }
   },
-  /** The connector row: present, active, and its fiber's tag (a new tag means the row was remounted). */
+  /** The connector row: present, active or pending (cordis: waiting for a required service), and its fiber's tag (a new tag means the row was remounted). */
   row: ({ id = SURFACE.rowId } = {}) => {
     const entry = entryOf(id)
-    return entry === undefined ? { present: false } : { present: true, disabled: Boolean(entry.disabled), active: entry.fiber?.state === DSH.fiberActive, fiber: tagOf(entry.fiber) }
+    return entry === undefined ? { present: false } : { present: true, disabled: Boolean(entry.disabled), active: entry.fiber?.state === DSH.fiberActive, pending: entry.fiber?.state === DSH.fiberPending, fiber: tagOf(entry.fiber) }
   },
   /** Each named root service: whether DSH provides it, its apiVersion and its member names. */
   services: ({ names }) => Object.fromEntries(names.map((name) => {
