@@ -21,4 +21,6 @@ export const OWN = Object.freeze({
   unknown: /unknown type/i,
   missingRuntime: /Cannot find (?:package|module)|ERR_MODULE_NOT_FOUND|runtime package.*(?:missing|resolve)|not installed/i,
   method: 'GET', ok: 200,
+  /** Where the published `approval_answer` input schema carries the approval words (its `answer` object). */
+  approvalSchema: Object.freeze({ answer: 'answer', decision: 'decision', risk: 'risk' }),
 })

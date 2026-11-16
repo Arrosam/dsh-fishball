@@ -22,7 +22,7 @@ import { assertNoEdges, caseTest, describeRef, edgesTo, has, importersOf, manife
 import { NPM, SDK, SIDES, V3 } from '../package-boundaries/constants.mjs'
 import { observe, readManifest } from '../package-boundaries/packages.mjs'
 import {
-  BASE, CODE_SAMPLES, CORE_CHILD_HALVES, DSH_MODULES, EXPECTED_LIBRARY, FILES_MODULE, FINGERPRINT_SAMPLES, HEADER, HOST_PEERS, INSIDE_CASES,
+  BASE, CODE_SAMPLES, CORE_CHILD_HALVES, DSH_EXPORTS, DSH_MODULES, EXPECTED_LIBRARY, FILES_MODULE, FINGERPRINT_SAMPLES, HEADER, HOST_PEERS, INSIDE_CASES,
   INTERIM_COPIES, LATER, LONG_RUN, MANIFEST_EXPORT, PLACED, PROFILE_SAMPLES, REDACT, REDACT_SAMPLES, SDK_SCOPE, moduleFile, sdkModules, subpath,
 } from './constants.mjs'
 
@@ -154,10 +154,10 @@ export function registerSplitCases(sdk) {
       assert.deepEqual([...unit.refs.filter((r) => other.includes(r.target)).map(describeRef), ...manifestEdges(manifest, other).map((e) => e.field + ': ' + e.name)], [])
     })
   }
-  caseTest(sdk, 'SPLIT-UC-01', 'A1', 'every DSH-side importer of a moved module takes it from dsh-connector-shared/<module>', async () => {
+  caseTest(sdk, 'SPLIT-UC-01', 'A1', 'every DSH-side importer of a library module takes it from dsh-connector-shared/<module> (an exported subpath)', async () => {
     const wrong = []
     for (const p of SIDES.dsh.packages.filter((x) => x !== V3.dshShared && has(x))) {
-      for (const r of (await unitOf(p.name)).refs) if (r.target === V3.dshShared.name && !DSH_MODULES.map((m) => V3.dshShared.name + '/' + m).includes(r.specifier)) wrong.push(p.name + ' ' + describeRef(r))
+      for (const r of (await unitOf(p.name)).refs) if (r.target === V3.dshShared.name && !DSH_EXPORTS.map((m) => V3.dshShared.name + '/' + m).includes(r.specifier)) wrong.push(p.name + ' ' + describeRef(r))
     }
     assert.deepEqual(wrong, [])
   })
@@ -170,10 +170,10 @@ export function registerSplitCases(sdk) {
   })
 
   // ---------------------------------------------------------------- SPLIT-EP-01: what dsh-connector-shared holds
-  caseTest(sdk, 'SPLIT-EP-01', 1, `dsh-connector-shared exports ${DSH_MODULES.map(subpath).join(', ')}, each a shipped file`, () => {
+  caseTest(sdk, 'SPLIT-EP-01', 1, `dsh-connector-shared exports ${DSH_EXPORTS.map(subpath).join(', ')}, each a shipped file`, () => {
     needLibrary(V3.dshShared)
     const exports = readManifest(V3.dshShared.dir).exports ?? {}
-    for (const module of DSH_MODULES) {
+    for (const module of DSH_EXPORTS) {
       assert.equal(exports[subpath(module)], subpath(moduleFile(module)), subpath(module) + ': ' + show(exports[subpath(module)]))
       assert.ok(fs.existsSync(libraryFile(V3.dshShared, module)), moduleFile(module) + ' is missing')
     }

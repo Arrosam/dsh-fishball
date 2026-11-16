@@ -19,6 +19,7 @@ Sources: design 9a531192 §1.0/§1.0b rows 1–2/§1.0c, R-ARCH-10; K3a core-own
 | OWN-TOOLS | Decision table, EP | all published tools plus unknown and contributed tool: core classification iff TOOL_NAMES; inbox_poll/inbox_ack/pair/set_name withheld; session_message/session_redirect retain X19 dotted names |
 | OWN-EVENT | EP, BVA | all fixed event types; valid contributed type; reserved namespace; uppercase; missing dot; public name lengths 128/129; trailing local dot; non-string: header names type iff isEventType |
 | OWN-HTTP | EP | real tools/list core names set and event resource name/URI/mimeType equal MCP; unresolved installed SDK runtime alone permits explicit skip |
+| OWN-APPROVAL | EP | real tools/list `approval_answer` `answer.decision` and `answer.risk` enums equal core's `APPROVAL.decision` / `APPROVAL.risk` as sets; `APPROVAL.refusal.unknownSession` equals K1 `REFUSAL.unknownSession` (Fishball's decision 2026-11-16, F-ASKCARD × F-OWN-SCHEMA) |
 | OWN-META | Decision table | separate row per resource, authorization_servers, scopes_supported, issuer, token_endpoint, authorization_endpoint, grant_types_supported, token_endpoint_auth_methods_supported, response_types_supported, code_challenge_methods_supported |
 
 State transitions are already covered by the existing link/identity/events drivers' suites; this task changes ownership, not lifecycle rules. Existing static K3a comparisons remain unchanged, not duplicated here. No child DSH or browser is launched.

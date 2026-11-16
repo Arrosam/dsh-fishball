@@ -4,7 +4,7 @@ import path from 'node:path'
 import { caseTest } from '../package-boundaries/cases.mjs'
 import { REPO } from '../../../support/constants.mjs'
 import * as oracle from '../../../../packages/dsh-connector/mcp-schema/index.js'
-import { MCP, LINK } from '../../../../packages/core/contracts/constants.js'
+import { APPROVAL, MCP, LINK } from '../../../../packages/core/contracts/constants.js'
 import { linkModule } from '../../fishball-core/link/link-driver.mjs'
 import { identityModule } from '../../fishball-core/identity/subject.mjs'
 import { bridgeExport, makeBridge } from '../../fishball-core/bridge/subject.mjs'
@@ -99,6 +99,18 @@ export function registerOwnSchemaCases(sdk) {
     const event = resources.resources.find((x) => x.uri === MCP.events.uri)
     assert.ok(event)
     for (const key of Object.keys(MCP.events)) assert.equal(event[key], MCP.events[key])
+  })
+  caseTest(sdk, 'OWN-APPROVAL', 'decision and risk', "core's APPROVAL decision and risk words equal the real connector's approval_answer schema; unknownSession equals K1 REFUSAL", async (t) => {
+    const w = await runtime(t, () => toolsWorld(t, sdk))
+    if (!w) return
+    const { token } = await w.full(OWN.fixture.id)
+    const client = await w.connect(token)
+    const tool = (await client.listTools()).tools.find((x) => x.name === MCP.tools.approvalAnswer)
+    assert.ok(tool, `${MCP.tools.approvalAnswer} is not listed`)
+    const answer = tool.inputSchema.properties[OWN.approvalSchema.answer].properties
+    assert.deepEqual(sorted(Object.values(APPROVAL.decision)), sorted(answer[OWN.approvalSchema.decision].enum))
+    assert.deepEqual(sorted(Object.values(APPROVAL.risk)), sorted(answer[OWN.approvalSchema.risk].enum))
+    assert.equal(APPROVAL.refusal.unknownSession, oracle.REFUSAL.unknownSession)
   })
   const rows = [
     ['resource', false, (d, w) => assert.equal(d.resource, w.origin() + MCP.paths.mcp)],

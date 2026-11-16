@@ -1,9 +1,11 @@
 /**
- * The host half's own Fetch routes (task U-SHELL; design §4.1, §4.2; R-UI-02, R-UI-03, R-HOST-06,
- * R-HOST-07; UIM-EP-02). They re-serve the instance locator `dshInstanceChild` to embed-UI's web
- * client, which can never call a host-only service itself. The locator is looked up per request,
- * so a route always answers for the service provided now; without a usable one it answers
- * REFUSAL.unavailable.
+ * The host half's own Fetch routes (tasks U-SHELL, U-DRAW; design §4.1, §4.2; R-UI-02, R-UI-03,
+ * R-HOST-06, R-HOST-07; requirements 1.38 Q-U1; UIM-EP-02). They re-serve the instance locator
+ * `dshInstanceChild` to embed-UI's web client, which can never call a host-only service itself.
+ * The services are looked up per request, so a route always answers for what is provided now:
+ * without a local connector every route but `services` answers REFUSAL.connectorMissing (Q-U1:
+ * embed-UI does not work without one), and without a usable locator REFUSAL.unavailable. There is
+ * no Retry route: Retry is on the instance's own settings page (R-UI-03 amended by 1.33).
  *
  * Security (R-UI-02, R-UI-06; K3 child.d.ts `admit`):
  * - DSH's `connection.fetch` is owner-only and applies its Host/Origin fence first;
@@ -14,7 +16,7 @@
  * - a locator failure without a K3 code answers REFUSAL.failed and never echoes its message.
  */
 import { ADMIT, FETCH, HTTP, LOG, LOOPBACK, REFUSAL, ROUTE, ROUTE_PREFIX, SERVICE } from './constants.js'
-import { availability, usable } from './services.js'
+import { availability, hasConnector, usable } from './services.js'
 
 const json = (status, value) => new Response(JSON.stringify(value), { status, headers: HTTP.headers })
 const refused = (status, code) => json(status, { ok: false, code })
@@ -51,22 +53,26 @@ const admitRefusal = (error) => (Object.values(ADMIT.code).includes(error?.code)
   ? refused(HTTP.conflict, error.code)
   : refused(HTTP.badGateway, REFUSAL.failed))
 
-/** Every route but `services`, by its ROUTE key, as a path relative to DSH's page. */
-const pageRoutes = Object.freeze(Object.fromEntries(Object.entries(ROUTE).map(([key, path]) => [key, path.slice(ROUTE_PREFIX.length)])))
+/** A route path as the browser resolves it against DSH's page (ROUTE_PREFIX dropped). */
+const pageRelative = (path) => path.slice(ROUTE_PREFIX.length)
+/** Every route, by its ROUTE key, page-relative. */
+const pageRoutes = Object.freeze(Object.fromEntries(Object.entries(ROUTE).map(([key, path]) => [key, pageRelative(path)])))
 
 /**
- * Runs `answer(child)` with the usable locator, or answers REFUSAL.unavailable. A throw is
- * REFUSAL.failed with no detail (it may name a path or a URL).
+ * Runs `answer(child)` with the usable locator, or answers REFUSAL.connectorMissing without a
+ * local connector and REFUSAL.unavailable without a locator. A throw is REFUSAL.failed with no
+ * detail (it may name a path or a URL).
  */
 function withChild(ctx, answer) {
   return async (request) => {
+    if (!hasConnector(ctx)) return refused(HTTP.unavailable, REFUSAL.connectorMissing)
     const child = usable(ctx, SERVICE.child)
     if (child === undefined) return refused(HTTP.unavailable, REFUSAL.unavailable)
     try { return await answer(child, request) } catch { return refused(HTTP.badGateway, REFUSAL.failed) }
   }
 }
 
-/** The child's status as the client shows it outside the frame (R-UI-03): no token, no origin. */
+/** The child's status as the window shows it beside its Retry link (decided #77): no token, no origin. */
 const statusOf = (child) => ({ ok: true, status: child.status(), target: child.targetStatus() })
 
 /** Model sync's answers are V2's `{ok, result|error}` already (K3 `ProviderSync`); anything else is a refusal. */
@@ -75,9 +81,8 @@ const syncAnswer = (outcome) => json(HTTP.ok, isRecord(outcome) && typeof outcom
 /** The routes, as `{path, methods, fetch}`. */
 export function routes(ctx) {
   return [
-    { path: ROUTE.services, methods: [FETCH.get], fetch: () => json(HTTP.ok, { ok: true, ...availability(ctx), routes: pageRoutes }) },
+    { path: ROUTE.services, methods: [FETCH.get], fetch: () => json(HTTP.ok, { ok: true, ...availability(ctx, pageRelative), routes: pageRoutes }) },
     { path: ROUTE.status, methods: [FETCH.get], fetch: withChild(ctx, (child) => json(HTTP.ok, statusOf(child))) },
-    { path: ROUTE.retry, methods: [FETCH.post], fetch: withChild(ctx, async (child) => { await child.retry(); return json(HTTP.ok, statusOf(child)) }) },
     {
       path: ROUTE.admit,
       methods: [FETCH.post],

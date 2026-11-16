@@ -26,6 +26,8 @@ export const V3 = Object.freeze({
   // S4-Q3 decided B (questions.md at b1295de): all lowercase, as npm and DSH's plugin manager require.
   embed: pkg('dsh-connector-ui', 'dsh-connector-ui'),
   board: pkg('fishball-board', 'board'),
+  /** The optional DSH-side MCP-client adapter (R-OA-21 renamed by 1.41; design §1.0, §5.5b; C-MCP-ADAPTER creates it). */
+  adapter: pkg('dsh-connector-adapter', 'dsh-connector-adapter'),
 })
 /** Every V3 package name (rows 3/7b: neither library imports any of them). */
 export const V3_NAMES = Object.freeze(Object.values(V3).map((p) => p.name))
@@ -34,11 +36,11 @@ export const LIBRARIES = Object.freeze([V3.dshShared, V3.shared])
 export const LIBRARY_NAMES = Object.freeze(LIBRARIES.map((p) => p.name))
 /**
  * The two sides with no dependency between them (design §1.0, requirements 1.34–1.41). Each side's
- * library is its last member. `dsh-connector-adapter` joins when C-MCP-ADAPTER creates it;
- * `fishball-ui` is a Fishball-side package since F-UI (R-FB-14).
+ * library is its last member. `dsh-connector-adapter` joined with C-MCP-ADAPTER; `fishball-ui` is a
+ * Fishball-side package since F-UI (R-FB-14).
  */
 export const SIDES = Object.freeze({
-  dsh: Object.freeze({ id: 'DSH', packages: Object.freeze([V3.connector, V3.embed, V3.instance, V3.dshShared]), library: V3.dshShared }),
+  dsh: Object.freeze({ id: 'DSH', packages: Object.freeze([V3.connector, V3.embed, V3.instance, V3.adapter, V3.dshShared]), library: V3.dshShared }),
   fishball: Object.freeze({ id: 'Fishball', packages: Object.freeze([V3.core, V3.ui, V3.board, V3.shared]), library: V3.shared }),
 })
 /** The side a package name belongs to (undefined for a name of neither side). */
