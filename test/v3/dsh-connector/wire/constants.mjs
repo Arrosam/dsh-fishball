@@ -129,6 +129,11 @@ export const DSH = Object.freeze({
   profile: 'fbwire',
   defaultModelRow: 'agent-default-model',
   fakeLlmRow: 'fbwire-llm',
+  readyProbeRow: 'fbwire-ready-probe',
+  webBundle: '@deepseek-ai/dsh-web-app',
+  activityEvent: 'api-session/activity',
+  settingsWriteMethods: Object.freeze(['update', 'replace', 'mutate']),
+  promptMode: 'steer',
   homePatch: 'cordis.patch.yml',
   urlLine: /dsh web: (http\S+)/,
   tokenParam: 'token',
@@ -147,6 +152,8 @@ export const ENV = Object.freeze({
   contributors: 'FBWIRE_CONTRIBUTORS',
   /** `on`: the connector is not installed (R16: embed-UI with no local connector). */
   noConnector: 'FBWIRE_NO_CONNECTOR',
+  /** The base profile without dsh-web-app: no HTTP listener is expected. */
+  noWebApp: 'FBWIRE_NO_WEB_APP',
   on: '1',
 })
 

@@ -144,6 +144,12 @@ export const V2_SUITES = Object.freeze({
     // V3 C-WIRE (C-WIRE-R1…R21, AUTH-UC-09 integration part, PLAT-EP-03 row 1 reworded, EVT-EP-04 end to end, REMOVE-V2 gap rows); run with test/run-v3.mjs.
     file('test/v3/dsh-connector/wire/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 wired connector row in a real DSH: settings, routes, services, tokens, MCP end to end (C-WIRE)'),
     file('test/v3/dsh-connector/wire/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 wired connector row in a real DSH: settings, routes, services, tokens, MCP end to end (C-WIRE)'),
+    // V3 C-WIRE review regressions (B1/B2/S1/S5/S12, K1 manage-only reads/list, activity, prompt authority).
+    file('test/v3/dsh-connector/wire/review/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 C-WIRE independent review regressions'),
+    file('test/v3/dsh-connector/wire/review/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 C-WIRE independent review regressions'),
+    // V3 U-WIRE: real connector UI bundle lifecycle and service selection.
+    file('test/v3/dsh-connector-ui/wire/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 connector UI bundle wiring (U-WIRE)'),
+    file('test/v3/dsh-connector-ui/wire/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 connector UI bundle wiring (U-WIRE)'),
     // V3 C-TOKENS-REVEAL settings page (AUTH-UC-01 main 2/4–6/E1/E2 at the route, AUTH-UC-15, AUTH-ST-08, PLAT-EP-03 row 1, HAND-EP-01 row 3); run with test/run-v3.mjs.
     file('test/v3/dsh-connector/settings-page/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 connector settings page: create / notice routes, client.js, reveal modal (C-TOKENS-REVEAL)'),
     file('test/v3/dsh-connector/settings-page/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 connector settings page: create / notice routes, client.js, reveal modal (C-TOKENS-REVEAL)'),
