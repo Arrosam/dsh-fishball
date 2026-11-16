@@ -27,7 +27,8 @@ export type LifecycleCode =
   | 'NATIVE_TIMEOUT' | 'NATIVE_DISABLED' | 'INVALID_MAIN_HOME' | 'PROFILE_INCOMPATIBLE'
 
 /**
- * Target codes (design §6.1), reported in `status().code` while the child itself is ready:
+ * Target codes (design §6.1), reported in `targetStatus().code` only (I-HOST: since 1.39 the
+ * instance cannot read core's link, so `status().code` holds lifecycle codes only):
  * - `TARGET_UNREACHABLE`: no connector answered at the target;
  * - `TOKEN_REFUSED`: the target refused the token;
  * - `TARGET_INCOMPATIBLE`: the target is not a V3 connector (404 on the MCP route, design §9.1);
@@ -44,8 +45,8 @@ export type TargetCode = 'TARGET_UNREACHABLE' | 'TOKEN_REFUSED' | 'TARGET_INCOMP
 export type ChildStatusCode = LifecycleCode | TargetCode
 
 /**
- * `code` is `null` when there is nothing to report. A lifecycle code wins over a target code:
- * a target code appears only while `state` is `ready` (PROPOSED).
+ * `code` is a lifecycle code, or `null` when there is nothing to report (I-HOST: target codes are
+ * `targetStatus()`'s).
  * `plugin` names the bundle a `PROFILE_INCOMPATIBLE` start was blocked by (R-BND-03,
  * HOST-ST-01 #3: the status names it); absent otherwise. The field name is PROPOSED.
  */
@@ -157,7 +158,12 @@ export interface DshInstanceChild {
 
   status(): ChildStatus
 
-  /** Calls `fn` (no argument) after a change of `status()`, of an `origin(...)` or of `targetStatus()`. */
+  /**
+   * Calls `fn` (no argument) after a change of `status()` or of an `origin(...)`, and after the
+   * instance itself changed what `targetStatus()` reads (a new hosted entry recorded, the Retry
+   * notice). `targetStatus()` also follows the connector's entry state, which has no event (K3
+   * `DshConnectorTokens`): a reader re-reads it per use, not only on `onChange` (I-HOST).
+   */
   onChange(fn: () => void): Dispose
 
   /**
@@ -171,7 +177,8 @@ export interface DshInstanceChild {
    * short-lived ticket is bound to the current child generation, the view and `hostname`, and is
    * redeemed once by the child into its own login cookie (S4). Resolves to `{url}` and nothing
    * else. The URL is never logged; a later reload asks for a new one. Rejects with
-   * `HostServiceError<AdmitErrorCode>`.
+   * `HostServiceError<AdmitErrorCode>`, or with the code `invalid-request` for a view or language
+   * outside the types above (an untyped caller's bug, not the child being down).
    */
   admit(request: AdmitRequest): Promise<{ readonly url: string }>
 

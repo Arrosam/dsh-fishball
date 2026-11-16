@@ -12,8 +12,7 @@ const ROW = Object.freeze({
   nativeWeb: 'fishball-native-web',
   child: HOSTED.childRow,
 })
-/** The child-side row's module in the lifecycle snapshot (RUNTIME.snapshot.entries). */
-const CHILD_ROW_MODULE = 'child-row.js'
+
 const WEB_CONFIG = Object.freeze({ host: RUNTIME.host, port: 0, tls: undefined })
 const WEB_RUNTIME_CONFIG = Object.freeze({ openBrowser: false, printUrl: false, publicUrl: undefined })
 /**
@@ -85,7 +84,7 @@ export function launchOverlay(paths, record, childModule, limits, control, entri
       // The child-side row (child-row.js): it injects the lifecycle row's nativeRuntime, so it
       // starts after it. Not `required`: a failure there loses the import and the admission, which
       // the host reports through their own answers, and never blocks the child's start.
-      { id: ROW.child, name: path.join(path.dirname(childModule), CHILD_ROW_MODULE), config: { [HOSTED.targetField]: child[HOSTED.targetField] } },
+      { id: ROW.child, name: path.join(path.dirname(childModule), RUNTIME.snapshot.childRow), config: { [HOSTED.targetField]: child[HOSTED.targetField] } },
     ] },
   ]
 }

@@ -43,7 +43,7 @@
   "bundleDependencies": [
     "dsh-connector-shared"
   ],
-  "//peerDependencies": "Host packages are resolved from the running DSH installation (verified in spike S8). '*' because engines.dsh is the real compatibility gate. dsh-connector is the connector this instance binds to: only its ./contract export is imported, by the V2 binding and the child's V2 lifecycle code that REMOVE-V2 deletes (design §1.0b; G5); the V3 parts look its services up at runtime (dshConnectorTokens). The range is package versions (user decision 2026-11-07): from this release's 0.1.0-alpha.0 up to, not including, 2. The contract version is checked separately when the instance attaches (CONNECTOR_CONTRACT, major 1).",
+  "//peerDependencies": "Host packages are resolved from the running DSH installation (verified in spike S8). '*' because engines.dsh is the real compatibility gate. dsh-connector is a peer only for its ./contract export, which the V2 lifecycle and admin code still imports (src/native-runtime/child.js, src/child/admin.js, src/slim/host/{admin,embed}.js), placed in the child as that export alone; REMOVE-V2 deletes those imports and this peer (design §1.0b; G5). The V3 parts look the connector's services up at runtime (dshConnectorTokens). The range is package versions (user decision 2026-11-07): from this release's 0.1.0-alpha.0 up to, not including, 2.",
   "peerDependencies": {
     "dsh-connector": ">=0.1.0-alpha.0 <2",
     "@deepseek-ai/cosmokit": "*",

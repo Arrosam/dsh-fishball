@@ -256,8 +256,8 @@ export function createProviderSyncCodec() {
  * side's copy.
  */
 export async function providerSyncIdentity(profile, runtimeId) {
-  if (!profile || typeof profile.dir !== 'string' || profile.dir === '') throw new TypeError('fishball provider sync: a profile directory is required')
-  if (typeof runtimeId !== 'string') throw new TypeError('fishball provider sync: a runtime id is required')
+  if (!profile || typeof profile.dir !== 'string' || profile.dir === '') throw new TypeError('dsh provider sync: a profile directory is required')
+  if (typeof runtimeId !== 'string') throw new TypeError('dsh provider sync: a runtime id is required')
   const identity = {
     runtimeId,
     profileId: createHash(T.identity.hash).update(await realpath(profile.dir)).digest(T.identity.encoding),
