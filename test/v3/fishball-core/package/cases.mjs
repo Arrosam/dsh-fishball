@@ -40,8 +40,6 @@ import { corePatchFile, corePatchRows, describeRef, has, insertedRows, isModuleO
 
 const JS = /\.(?:c|m)?js$/
 const HOME_LABEL = 'v3-r-core'
-/** The V2 slim child at the R-SHARED commit this task starts from (the module list R-CORE moves). */
-const BASE = Object.freeze({ commit: '5c8dbdb', slimChild: 'packages/instance/src/slim/child/' })
 
 const needCore = () => assert.ok(has(V3.core), 'packages/core/package.json is missing (R-CORE (1))')
 const coreManifest = () => { needCore(); return readManifest(V3.core.dir) }
@@ -65,14 +63,6 @@ async function filesHolding(value) {
     for (const [file, t] of tokens) if (t.strings.includes(value)) found.push({ name: unit.name, file })
   }
   return found
-}
-
-/** The V2 slim child's module names, from Git at the task's base commit (the input R-CORE moves). */
-async function slimChildModules() {
-  const { execFile } = await import('node:child_process')
-  const { promisify } = await import('node:util')
-  const { stdout } = await promisify(execFile)('git', ['ls-tree', '--name-only', BASE.commit, BASE.slimChild], { cwd: V3.instance.dir })
-  return stdout.split('\n').filter((f) => JS.test(f)).map((f) => path.posix.basename(f))
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -116,16 +106,19 @@ export function registerCoreCases(sdk) {
     assert.deepEqual(inserted.filter((row) => isModuleOf(row?.name, V3.instance)).map((row) => `${row.id}: ${row.name}`), [], 'core inserts modules of dsh-instance')
   })
   // SPLIT-SHARED (requirements 1.40): core's library is its own side's fishball-shared, never dsh-connector-shared.
-  caseTest(sdk, 'HOST-EP-03', 1, 'core depends on fishball-shared (dependencies and bundleDependencies) and on the connector; never on the instance or dsh-connector-shared', () => {
+  // Re-baselined (F-WIRE): "V2 was never deployed, so no V2 path needs protecting" (the user,
+  // 2026-11-16; R-ARCH-10): core no longer depends on or peers dsh-connector.
+  caseTest(sdk, 'HOST-EP-03', 1, 'core depends on fishball-shared (dependencies and bundleDependencies); never on the connector, the instance or dsh-connector-shared', () => {
     const manifest = coreManifest()
     assert.ok(Object.hasOwn(manifest[RUNTIME_DEP_FIELD] ?? {}, V3.shared.name), 'fishball-shared not in ' + RUNTIME_DEP_FIELD)
     assert.ok(BUNDLED_FIELDS.some((f) => (manifest[f] ?? []).includes(V3.shared.name)), 'fishball-shared not in ' + BUNDLED_FIELDS.join('/'))
     const named = manifestNames(manifest, DEP_FIELDS).map((e) => e.name)
-    assert.ok(named.includes(V3.connector.name), 'dsh-connector is named in no dependency field')
+    assert.equal(named.includes(V3.connector.name), false, 'core still names dsh-connector')
     assert.equal(named.includes(V3.instance.name), false, 'core names dsh-instance')
     assert.equal(manifestNames(manifest, [...DEP_FIELDS, ...BUNDLED_FIELDS]).some((e) => e.name === V3.dshShared.name), false, 'core names dsh-connector-shared')
   })
-  caseTest(sdk, 'HOST-EP-03', 1, 'core reaches the connector only through dsh-connector/contract', async () => {
+  // Re-baselined (F-WIRE, same decision): no module of core imports dsh-connector, ./contract included.
+  caseTest(sdk, 'HOST-EP-03', 1, 'core imports nothing of dsh-connector (no ./contract either)', async () => {
     needCore()
     const unit = await unitOf(V3.core.name)
     assert.deepEqual(unit.parseErrors, [], 'unparsed shipped files')
@@ -138,11 +131,21 @@ export function registerCoreCases(sdk) {
     const shipped = ownFiles(await unitOf(V3.instance.name))
     assert.deepEqual(shipped.filter((f) => MOVED.prefixes.some((p) => f.startsWith(p)) || MOVED.files.includes(f)), [])
   })
-  caseTest(sdk, 'HOST-EP-03', 1, 'core ships every module of the V2 slim child (by name) and the persona', async () => {
+  // Re-baselined (F-WIRE): DESIGN.md §20 deletes `src/slim/**` and the V2 child rows ("V2 was never
+  // deployed", the user, 2026-11-16), so the V2 slim child is no longer shipped by core; core ships no
+  // file under src/slim/ and its patch inserts the main row beside the kept rows, and no slim row.
+  caseTest(sdk, 'HOST-EP-03', 1, 'core ships no file under src/slim/ (DESIGN §20 deletes it)', async () => {
     needCore()
-    const names = new Set(ownFiles(await unitOf(V3.core.name)).map((f) => path.posix.basename(f)))
-    const expected = [...await slimChildModules(), ...MOVED.files.map((f) => path.posix.basename(f))]
-    assert.deepEqual(expected.filter((n) => !names.has(n)), [], 'core does not ship these moved modules')
+    assert.deepEqual(ownFiles(await unitOf(V3.core.name)).filter((f) => f.startsWith(CORE.retiredFolder)), [])
+  })
+  caseTest(sdk, 'HOST-EP-03', 1, `core's patch inserts ${CORE.mainRow.id} (${CORE.mainRow.name}) once beside ${CORE.keptRows.join(', ')}, and none of ${CORE.retiredRows.join(', ')}`, async () => {
+    needCore()
+    const inserted = insertedRows(await corePatchRows(sdk))
+    const main = inserted.filter((row) => row?.id === CORE.mainRow.id)
+    assert.equal(main.length, 1, 'main rows: ' + JSON.stringify(main))
+    assert.equal(main[0].name, CORE.mainRow.name)
+    for (const id of CORE.keptRows) assert.equal(inserted.filter((row) => row?.id === id).length, 1, id)
+    assert.deepEqual(inserted.filter((row) => CORE.retiredRows.includes(row?.id)).map((row) => row.id), [])
   })
   caseTest(sdk, 'HOST-EP-03', 1, 'no file exists in two packages: no shipped JS file of core is also shipped by the instance', async () => {
     needCore()

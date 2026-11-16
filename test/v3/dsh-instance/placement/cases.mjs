@@ -470,13 +470,12 @@ export function registerIPlaceCases(sdk) {
     assert.deepEqual(ids.filter((id) => RELAYED.rows.movedToUi.includes(id)), [])
   })
   caseTest(sdk, 'HOST-EP-03', 7, "a hosted child places fishball-ui, whose page and tab rows are path rows into their own packages", null, LATER.placeUi)
-  caseTest(sdk, 'HOST-EP-03', 7, 'every slim child row (fishball-native-{session-tools,approvals,app,inbox}; admin and provider-sync moved to the instance by I-HOST) is a fishball-core/slim/* subpath', async () => {
+  // Re-baselined (F-WIRE, DESIGN.md §20): "V2 was never deployed, so no V2 path needs protecting" (the
+  // user, 2026-11-16). Core's patch inserts no slim row; its main row is the fishball-core/main subpath.
+  caseTest(sdk, 'HOST-EP-03', 7, `core's patch inserts no slim child row (${RELAYED.rows.slim.join(', ')}) and its main row ${RELAYED.rows.main.id} is the ${RELAYED.rows.main.name} subpath`, async () => {
     const rows = await corePatchInserts()
-    for (const id of RELAYED.rows.slim) {
-      const row = rows.find((r) => r.id === id)
-      assert.ok(row, 'core\'s patch inserts no ' + id)
-      assert.ok(typeof row.name === 'string' && row.name.startsWith(RELAYED.rows.slimPrefix), `${id}: ${show(row.name)} is not a ${RELAYED.rows.slimPrefix}* subpath`)
-    }
+    assert.deepEqual(rows.filter((r) => RELAYED.rows.slim.includes(r.id)).map((r) => r.id), [])
+    assert.deepEqual(rows.filter((r) => r.id === RELAYED.rows.main.id).map((r) => r.name), [RELAYED.rows.main.name])
   })
   integrationCase(sdk, 'HOST-EP-03', 7, 'the child profile and the placement record hold the set members (board, fishball-ui, core), and nothing else of Fishball', async () => {
     const { home } = await ready()
