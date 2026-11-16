@@ -30,9 +30,6 @@ export const KIND = Object.freeze({
   cron: 'cron',
 })
 
-/** Kinds that repeat; the other two deliver once and end. */
-const RECURRING = Object.freeze([KIND.every, KIND.daily, KIND.weekly, KIND.cron])
-
 /** Stable typed codes; the tools return them unchanged. */
 export const RULE_ERROR = Object.freeze({
   prompt: 'invalid_prompt',
@@ -364,22 +361,6 @@ function timingOf(value) {
     }
     default:
       return fail(RULE_ERROR.selector, MESSAGE.selector)
-  }
-}
-
-/** Whether a stored record's kind repeats. */
-export const isRecurring = (kind) => RECURRING.includes(kind)
-
-/** The normalized selector of one stored record; it re-arms a paused recurring task. */
-export function timingOfRecord(record) {
-  switch (record.kind) {
-    case KIND.after: return Object.freeze({ kind: KIND.after, afterSeconds: record.afterSeconds })
-    case KIND.at: return Object.freeze({ kind: KIND.at, at: record.scheduledAt })
-    case KIND.every: return Object.freeze({ kind: KIND.every, everySeconds: record.everySeconds })
-    case KIND.daily: return Object.freeze({ kind: KIND.daily, time: record.time, timeZone: record.timeZone })
-    case KIND.weekly: return Object.freeze({ kind: KIND.weekly, time: record.time, timeZone: record.timeZone, weekdays: record.weekdays })
-    case KIND.cron: return Object.freeze({ kind: KIND.cron, expression: record.expression, timeZone: record.timeZone })
-    default: return fail(RULE_ERROR.rule, MESSAGE.selector)
   }
 }
 

@@ -8,6 +8,7 @@ import { scopeParentOf } from '@deepseek-ai/dsh-scope'
 import { UI_GUARDS } from 'fishball-shared/ui-seam'
 import { GUARDS } from '../../contracts/constants.js'
 import { bundlesOf, coreLast } from './reorder.js'
+import { CONTRIBUTED_TOOLS } from '../manager/contributed.js'
 
 const { code, services } = GUARDS
 
@@ -103,20 +104,19 @@ function managerAgents(ctx, managerPreset) {
 }
 
 /**
- * Whether `name`, as `agent` sees it, is core's own tool (user decision 2026-11-14: core's tools
- * are not the preset's). Only names in core's tool tables qualify, and only where core put them:
- * the root definition (session tools and reminders register globally), or a definition in the
- * agent's own layer that its parent scope does not see (the private Skills tools register from the
- * manager's setup). A preset-scoped tool with one of those names, e.g. DSH's own `schedule_create`
- * from `dsh-tool-schedule`, shadows core's and is not excluded, so it is reported.
- * Known limits, accepted because no shipped DSH composition hits them (both SDKs): a core-table
- * name in the agent's own layer is exempt whoever registered it (only the private Skills names are
- * registered there today), and a root-level DSH tool with a core-table name would equal core's
- * root definition slot and be exempt.
+ * Whether `name`, as `agent` sees it, is Fishball's own tool rather than the preset's (user decision
+ * 2026-11-14: core's tools are not the preset's). Two sources qualify, and only in the agent's own
+ * layer (a definition its parent scope does not see), because core registers nothing globally:
+ * - a name in core's tool tables (`GUARDS.coreTools`), however it got there (the private Skills,
+ *   reminders and `ask_user`);
+ * - a name an X2 contribution holds in this manager's scope now (`fishballInstance[CONTRIBUTED_TOOLS]`,
+ *   core's own read, F-WIRE): the bridge façade's connector tools and a set member's
+ *   such as the board's. X2 is the one way into the manager's scope, so they are Fishball's.
+ * A preset-scoped tool with one of those names, e.g. DSH's own `schedule_create` from
+ * `dsh-tool-schedule`, is the parent scope's, so it is not excluded and is reported.
  */
-function isCoreTool(tools, agent, name, core, inherited) {
-  if (!core.has(name)) return false
-  return tools.get(name, agent) === tools.get(name) || !inherited.has(name)
+function isCoreTool(name, core, contributed, inherited) {
+  return (core.has(name) || contributed.has(name)) && !inherited.has(name)
 }
 
 /**
@@ -131,9 +131,12 @@ async function overriddenManagerTools(ctx, managerPreset) {
   const agents = managerAgents(ctx, managerPreset)
   if (agents.length === 0 || typeof tools?.schemas !== 'function') return []
   const core = await loadCoreToolNames()
+  const instance = ctx.get(services.instance)
+  const contributedOf = instance?.[CONTRIBUTED_TOOLS]
   const exact = (agent) => {
     const inherited = toolNames(tools, scopeParentOf(agent))
-    const model = [...toolNames(tools, agent)].filter((name) => !isCoreTool(tools, agent, name, core, inherited))
+    const contributed = new Set(typeof contributedOf === 'function' ? contributedOf.call(instance, agent) : [])
+    const model = [...toolNames(tools, agent)].filter((name) => !isCoreTool(name, core, contributed, inherited))
     return sameSet(model, GUARDS.managerTools)
   }
   return agents.every(exact) ? [] : [code.managerTools]

@@ -65,7 +65,11 @@ const MESSAGE = Object.freeze({
   updateNeeds: 'schedule_update needs a new title, prompt, or one of at, every_seconds, daily, weekly, or cron.',
 })
 
-/** Stored task states; `schedule_list` reports them as each reminder's `status`. */
+/**
+ * Stored task states; `schedule_list` reports them as each reminder's `status`. Nothing sets
+ * `paused` since the V2 page API went (F-WIRE); it stays a valid stored state so a store holding
+ * one still loads and lists it rather than being refused.
+ */
 const TASK_STATUS = Object.freeze({ active: 'active', paused: 'paused', ended: 'ended' })
 
 /** The two delivery states the schedule tool reports; a stale target reads `overdue`. */

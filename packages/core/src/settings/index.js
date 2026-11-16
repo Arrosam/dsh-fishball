@@ -9,6 +9,7 @@
  * through `remote.credentials`. So this route is the page's only server code.
  */
 import { UI_SEAM } from 'fishball-shared/ui-seam'
+import { BEGIN_VIA } from '../link/connect.js'
 import { GUARDS } from '../../contracts/constants.js'
 import { CONNECT_ROUTE } from './constants.js'
 
@@ -63,9 +64,11 @@ function answering(ctx, act) {
  *   callback, and then `begin()` is called with no argument, as K3a's `FishballConnect.begin()` is
  */
 export function registerSettingsRoutes(ctx, { callbackFor = () => undefined } = {}) {
+  // A press whose page needs the web callback (or can take none) goes through core's route-only
+  // begin; a loopback press is K3a's plain `begin()`.
   const begin = (connect, request) => {
     const via = callbackFor(request)
-    return via === undefined ? connect.begin() : connect.begin(via)
+    return via === undefined || typeof connect[BEGIN_VIA] !== 'function' ? connect.begin() : connect[BEGIN_VIA](via)
   }
   return ctx.connection.fetch.register({
     path: CONNECT_ROUTE.path,
@@ -83,7 +86,7 @@ export function registerSettingsRoutes(ctx, { callbackFor = () => undefined } = 
 export function registerConnectCancelRoute(ctx) {
   return ctx.connection.fetch.register({
     path: CONNECT_ROUTE.cancelPath,
-    methods: [CONNECT_ROUTE.begin],
+    methods: [CONNECT_ROUTE.cancel],
     requestBody: CONNECT_ROUTE.requestBody,
     fetch: answering(ctx, async (connect) => {
       connect.cancel()

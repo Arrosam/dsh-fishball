@@ -18,7 +18,7 @@
  *    `needs-configuration` / `not-a-connector`, before any authorization request;
  * 5. one `ctx.authorization` attempt: PKCE S256, `state`, `resource`, `iss`, the callback, and
  *    `agent_id` = `identity.id` (R13, R-OA-22) so the page binds core's id. The callback is the
- *    caller's choice (`begin({callback})`): by default the loopback one on a fresh OS port; for a
+ *    Connect route's choice (`control[BEGIN_VIA](via)`): by default the loopback one on a fresh OS port; for a
  *    browser on another machine (Q-A3 B) core's web callback (`web-callback.js`), which the
  *    Connect route picks from the page's own origin; a page whose origin cannot take it is
  *    answered `needs-configuration` / `web-callback-insecure` before anything is sent (R-OA-14).
@@ -37,6 +37,9 @@
  *
  */
 import { OAUTH_CLIENT, OAuthAttemptError, clientMetadataUrlProblem, discoverServer } from 'fishball-shared/oauth-client'
+
+/** The key of Connect's route-only begin (see `control[BEGIN_VIA]`); exported for core's Connect route alone. */
+export const BEGIN_VIA = Symbol('fishball-core connect: begin with a callback choice')
 import { CONNECT, MCP } from '../../contracts/constants.js'
 import { issuerOf } from './schema.js'
 import { checkTarget } from './target.js'
@@ -258,6 +261,8 @@ export function createConnect(ctx, { store, target, clientId, clientMetadataUrl,
     return start(usable, discovery, via.callback)
   }
 
+  const begin = (via) => (beginning ??= beginOnce(via).finally(() => { beginning = undefined }))
+
   refresh()
   return Object.freeze({
     control: Object.freeze({
@@ -270,8 +275,14 @@ export function createConnect(ctx, { store, target, clientId, clientMetadataUrl,
         return current
       },
       onChange: (fn) => subscribe(listeners, fn),
-      /** K3a `begin()`, plus the Connect route's optional callback choice (`beginOnce`); concurrent calls share the first's decision. */
-      begin: (via) => (beginning ??= beginOnce(via).finally(() => { beginning = undefined })),
+      /** K3a `begin()`: the loopback callback; concurrent calls share the first's decision. */
+      begin: () => begin(),
+      /**
+       * Core's own Connect route only (`BEGIN_VIA`, a symbol nothing outside core holds): `begin`
+       * with the press's callback choice (`beginOnce`). Kept off K3a's `begin()`, so no other plugin
+       * reading `fishballInstance.ui.connect` can choose the redirect URI.
+       */
+      [BEGIN_VIA]: (via) => begin(via),
       cancel: () => {
         if (attempt !== undefined) ctx.authorization.cancel(attempt.key)
         else if (beginning !== undefined) cancelled = true

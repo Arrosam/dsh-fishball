@@ -10,13 +10,17 @@ export const MAIN = Object.freeze({
   /** The row id and Cordis plugin name: also its settings namespace (SETTINGS.namespace, FISHBALL_MODEL). */
   name: SETTINGS.namespace,
   /**
-   * The DSH services the row cannot start without (both SDKs). `storageDomain` is dsh-storage-domain's
-   * facility (`ctx.storage.domain`), `credentials` and `authorization` the link's (F-LINK-SAVE),
-   * `connection` and `webServer` the routes', `settings` the identity write, `agents` / `tools` the
-   * manager, `llm` and `agentDefaultModel` the model rule (src/manager/session.js). Reading them in
-   * `inject` makes Cordis start the row only once they exist, so nothing is looked up as absent.
+   * The DSH services the row cannot start without (both SDKs): `storageDomain` (dsh-storage-domain's
+   * facility, `ctx.storage.domain`) for its tables, `credentials` and `authorization` the link's
+   * (F-LINK-SAVE), `connection` the owner-only routes', `settings` the instance's target read,
+   * `agents` / `tools` the manager's. Injecting them makes Cordis start the row only once they exist.
+   * Read on use instead, because Fishball runs without them: `webServer` (only for the web callback;
+   * a DSH without dsh-web-app's listener has no browser on another machine to serve), `llm`,
+   * `agentDefaultModel` and `workspaceRegistry` (the manager session reads them as optional).
    */
-  inject: Object.freeze(['agents', 'tools', 'credentials', 'authorization', 'storage', 'storageDomain', 'connection', 'webServer', 'settings', 'llm', 'agentDefaultModel']),
+  inject: Object.freeze(['agents', 'tools', 'credentials', 'authorization', 'storage', 'storageDomain', 'connection', 'settings']),
+  /** DSH's web listener, read on use (above). */
+  webServer: 'webServer',
   /** `fishballInstance` (K3 `index.d.ts`), its version, and the status service (F-STATUS). */
   service: 'fishballInstance',
   apiVersion: 1,
@@ -32,7 +36,6 @@ export const MAIN = Object.freeze({
   instanceTarget: HOSTED_IMPORT.targetSetting,
   /** DSH events: a volatile config change of a row (cordis-plugin-loader) and a settings document change (dsh-settings). */
   event: Object.freeze({ volatileUpdate: 'loader/volatile-update', settingsUpdated: 'settings/document-updated' }),
-  /** dsh-settings' path-operation verb. */
   /** The plugin id core's own manager-scope contributions register under (X2). */
   setupId: Object.freeze({ asks: 'fishball-core-asks', reminders: 'fishball-core-reminders', bridge: 'fishball-core-bridge' }),
   /** The image input modality of a model (dsh-llm `inputModalities`, 0.2.2; absent = unknown, allowed, as the V2 image gate judged it). */
@@ -40,13 +43,12 @@ export const MAIN = Object.freeze({
   logger: 'fishball-core',
   text: Object.freeze({
     failed: '%s failed (%s)',
-    open: 'opening fishball-core',
     recover: 'recovering the acceptance ledger',
     reconcile: 'reconciling the ask cards',
     intake: 'taking a polled event',
+    page: 'taking a polled page',
     resume: 'resuming pending notices',
     model: 'applying Fishball\'s model',
-    reconnect: 'reconnecting after a settings change',
   }),
 })
 

@@ -72,6 +72,28 @@ state under published names and as core's own copy of the MCP surface. K3a's ear
   its patch from the started bundles) it logs `fishball-core-missing` and changes nothing; core
   reports nothing when fishball-ui is absent.
 
+## F-WIRE amendment (K3/K3a, 2026-11-16)
+
+Additions only; no frozen name or value changes meaning:
+- **`FISHBALL_MODEL`** (`constants.js`, new): Fishball's own model is core's setting
+  `fishball-core.model` = `{provider, model, reasoningEffort?}`; absent, unroutable or unreadable
+  means this DSH's default model, and nothing blocks on it (the user: "同步只是同步model list，至于
+  fishball用什么还要在fishball内设置"; "所有版本：先用DSH的默认模型"). Only core's settings page and
+  fishball-ui's model dialog write it; no DSH-side package reads it.
+- **`GUARDS.coreTools`**: the V2 session-tools table is gone with the slim child; the tables are now
+  `../manager/reminders.js` `TOOL`, `../manager/skills.js` `PRIVATE_SKILL_TOOL` and
+  `../asks/constants.js` `ASK_TOOL`. R-FB-13 also leaves out every tool an X2 contribution holds in
+  the manager's scope (the bridge façade's connector tools, the board's): X2 is the one way into
+  that scope, so they are Fishball's own, not the preset's. Core reads them through a module symbol
+  on `fishballInstance` (`src/manager/contributed.js`), which is not a member of this contract.
+- **`ui.connect.begin()`** stays K3a's: no argument, the loopback callback. Core's own Connect route
+  picks the web callback (Q-A3 B, `CONNECT.callback.webPath`) through a module-symbol member of the
+  same object that no other plugin holds, so no plugin can choose a redirect URI.
+- **`ui.guards.report()`** is `null` while core's guard row is absent or not ready yet (its row is
+  separate from the main row and may start later).
+- **`fishballInstance`** is provided by core's main row `fishball-core` (`src/main/`), beside
+  `fishballStatus` (F-STATUS), in a standalone DSH and a hosted child alike.
+
 ## Interception
 
 - `intercept({pluginId, types, filter?, priority?}, onEvent) → dispose`. An invalid registration

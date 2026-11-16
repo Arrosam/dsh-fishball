@@ -35,6 +35,7 @@ window.__ModuleLoader__.load({
       // `SEAM_STATUS.control` and the `approval-url` ConnectBegin outcome (K3a connect.d.ts).
       action: Object.freeze({ connect: 'connect', cancel: 'cancel' }),
       approvalOutcome: 'approval-url',
+      webSchemes: Object.freeze(['https:', 'http:']),
       open: Object.freeze({ target: '_blank', features: 'noopener', rel: 'noopener noreferrer' }),
       chinese: 'zh',
       lang: Object.freeze({ zh: 'zh', en: 'en' }),
@@ -89,7 +90,10 @@ window.__ModuleLoader__.load({
       try {
         const response = await fetch(apiUrl(action === STRIP.action.connect ? STRIP.connect : STRIP.cancel), STRIP.press)
         const body = response.ok ? await response.json() : undefined
-        return body?.outcome === STRIP.approvalOutcome && typeof body.url === 'string' ? body.url : undefined
+        // Only a web address is opened or linked: a defence in depth, since core's route answers only
+        // the connector's approval URL.
+        if (body?.outcome !== STRIP.approvalOutcome || typeof body.url !== 'string' || !URL.canParse(body.url)) return undefined
+        return STRIP.webSchemes.includes(new URL(body.url).protocol) ? body.url : undefined
       } catch { return undefined }
     }
 
