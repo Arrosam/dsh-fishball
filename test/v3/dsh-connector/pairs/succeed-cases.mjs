@@ -12,7 +12,7 @@
  */
 import assert from 'node:assert/strict'
 import { assertUniqueNames, at, bind, changes, nameRefused, paired, row, setName } from './cases.mjs'
-import { FIXTURE, LATER, REFUSAL, SUCCEED, principalLabel, succeedRefusal } from './constants.mjs'
+import { FIXTURE, REFUSAL, SUCCEED, principalLabel, succeedRefusal } from './constants.mjs'
 
 const E = FIXTURE.entry
 const CASE = Object.freeze({ hostUc03: 'HOST-UC-03', dt: 'K1-AMEND-2', nameSt01: 'NAME-ST-01' })
@@ -51,7 +51,7 @@ async function assertNoChange(w, call, expected) {
 }
 
 function useCase(sdk) {
-  const uc = (part, title, fn, owner) => row(sdk, CASE.hostUc03, part, title, fn, owner)
+  const uc = (part, title, fn) => row(sdk, CASE.hostUc03, part, title, fn)
   uc('main step 1 (name)', 'En pairs with the name Eo holds: paired nameless, nameRefused name-taken', async (w) => {
     const { successor } = await navigatorWorld(w)
     assert.equal(successor.name, null)
@@ -69,7 +69,7 @@ function useCase(sdk) {
     await succeed(w)
     assert.deepEqual(principalLabel(w.store.pairOf(E(NEW)).name, SUCCEED.newId), principalLabel(SUCCEED.navigator, SUCCEED.newId))
   })
-  uc('E2', 'the step fails midway (injected storage failure): nothing moved, En nameless, Eo keeps its name', null, LATER.succeedFailure)
+  // E2 (an injected storage failure in the succession step changes nothing) runs in test/v3/dsh-connector/hosted (C-SUCCEED).
   uc('post', 'durable: after a restart En is still Navigator, Eo is gone, and nobody else can take Navigator', async (w) => {
     const { old, successor } = await navigatorWorld(w)
     await succeed(w)

@@ -295,7 +295,6 @@ export const MD_BLOCK_START = /^\s*(?:\||[-*]\s|#)/
 
 /** Owners of the rows this gate cannot run (v3 W4 briefs). */
 export const LATER = Object.freeze({
-  succeed: 'C-SUCCEED (Mailbox.transfer behaviour, packages/dsh-connector/src/mailbox/ transfer only)',
   wire: 'C-WIRE (binds SettingsWriter and SessionNotes, W4b)',
   reveal: 'C-TOKENS-REVEAL (create / createHosted generate dsht_ values, digest-only records, token-duplicate)',
   childRetry: 'K3b / I-HOST (child.d.ts retry() still says a deleted entry is replaced; host-services README names its owner)',

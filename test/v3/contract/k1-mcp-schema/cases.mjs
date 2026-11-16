@@ -343,8 +343,7 @@ export function registerK1Cases(sdk) {
   todos(sdk, 'AUTH-BVA-01', LATER.oauth, [['1–8', 'requests at t0 … t0 + 3601 with a fake clock; re-authentication at expiry; no extension by use']])
   // AUTH-BVA-07, AUTH-BVA-08, AUTH-ST-05, AUTH-DT-09 rows 1–7, AUTH-EP-08, AUTH-ST-04 and AUTH-DT-08 run in test/v3/dsh-connector/oauth-web.
   todos(sdk, 'AUTH-BVA-05', LATER.pair, [['1–5', 'lastSeenAt at 0 / 59 / 60 s after the last write, after pairing, on a 401']])
-  todos(sdk, 'AUTH-DT-04', 'C-REVOKE (revocation effects by item kind)', [['1–12', 'disable / delete effects on streams, offers, sessions, queued events, the designated role, ATs']])
-  todos(sdk, 'AUTH-UC-06', 'C-REVOKE (revocation effects by item kind)', [['main, A1–A4, E1', 'disable, delete, value change and 30-day expiry of a designated principal']])
+  // AUTH-DT-04 and AUTH-UC-06 (revocation effects) run in test/v3/dsh-connector/revocation (C-REVOKE).
 
   // ======================================================================================
   // AUTH-BVA-06 (K, P:S7): token-endpoint rate limit; AUTH-DT-09 (K): approval port; AUTH-EP-08 (K): CIMD
@@ -483,7 +482,7 @@ export function registerK1Cases(sdk) {
     const found = leaves(mod).filter((l) => l.value instanceof RegExp && MEANING.offerId(l.path)).map((l) => l.value)
     assert.ok(found.some(fits), 'no exported offer-id RegExp fits <request>.r<n>: ' + found)
   })
-  todos(sdk, 'HOST-UC-03', 'C-SUCCEED (succession re-issues offers as r<n+1>)', [['main, E1a', 'succession moves offers with new revisions; the old id answers expired; the user is never refused']])
+  // HOST-UC-03 main and E1a (succession re-issues offers as r<n+1>) run in test/v3/dsh-connector/hosted (C-SUCCEED).
 
   // ======================================================================================
   // PLAT: protocol, body limits, "connected", board and set completeness

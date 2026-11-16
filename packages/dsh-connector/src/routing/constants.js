@@ -86,7 +86,12 @@ export const MISUSE = Object.freeze({
   entryKey: 'fishball routing: endPrincipal needs an entry key, a non-empty string',
   freshRetirements: 'fishball routing: endPrincipal needs {freshRetirements: boolean} (false for a delete)',
   maxQueuedInputs: 'fishball routing: maxQueuedInputs() must return a positive whole number',
+  succession: 'fishball routing: succeedPrincipal needs two different principal keys and a commit function',
+  revision: 'fishball routing: a re-issued offer\'s revision would not fit the K1 offer id',
 })
+
+/** A succession re-issues a live offer with the next revision (R-HOST-09, Q-S3-1: `r<n>` → `r<n+1>`). */
+export const OFFER_REVISION = Object.freeze({ step: 1 })
 
 /** Background log lines: `logger.warn(LOG.format, line, diagnostic code)`; no payload, key or id is ever logged. */
 export const LOG = Object.freeze({
@@ -98,4 +103,7 @@ export const LOG = Object.freeze({
   heldDeleteFailed: 'routing: a moved held message could not be deleted; a restart may deliver it again',
   listenerFailed: 'routing: a change listener threw',
   watchFailed: 'routing: producing a turn-finished or state event failed',
+  moveUndoFailed: 'routing: moving managed sessions back after a failed succession step failed; they still name the successor',
+  succeedUndoFailed: 'routing: undoing a failed succession step failed; managed state or events may still name the successor',
+  reissueFailed: 'routing: retiring a re-issued offer\'s old event failed; it stays pending, and answers to it are refused expired',
 })

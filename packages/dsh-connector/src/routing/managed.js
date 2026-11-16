@@ -41,7 +41,7 @@ const assertPrincipal = (principalKey) => { if (!isNonEmptyString(principalKey))
  *   after a session stopped being managed (its live offers are retired with `reason`); it must not
  *   reject. `leaveOptions` is `endAllOf`'s, passed through unread (it is the offer ledger's to
  *   judge); what `leave` resolves to is handed back as `left`.
- * @returns `{state, assign, end, endAllOf, withState, drain}`: `state` is the K1c `ManagedState`;
+ * @returns `{state, assign, end, endAllOf, moveAllNow, withState, drain}`: `state` is the K1c `ManagedState`;
  *   the rest is for the hand-over service, revocation and the offer path, never handed to C-TOOLS.
  */
 export function createManagedState({ table, logger, leave }) {
@@ -139,6 +139,42 @@ export function createManagedState({ table, logger, leave }) {
     })
   }
 
+  /** Writes `sessions` as managed by `principalKey`, in order; one change event for the batch. */
+  async function putManagers(sessions, principalKey) {
+    try {
+      for (const sessionId of sessions) {
+        await table.put(managedKeyOf(sessionId), { sessionId, principalKey })
+        managers.set(sessionId, principalKey)
+      }
+    } finally {
+      if (sessions.length > 0) changes.fire()
+    }
+  }
+
+  /**
+   * C-SUCCEED (R-HOST-09 step 1, R-WATCH-04): every session `from` manages is managed by `to`
+   * from now on. It is not an end and a new start: no `leave`, no follow-up, no retirement, and
+   * no session is unmanaged at any moment, so `managed()` never drops one (handover/index.js).
+   * **Only from inside a `withState` step** (it does not queue itself: the succession's later
+   * steps must see it, and an undo must run before any other change).
+   * @returns `{sessions, undo}`: `undo()` gives them back to `from` (the succession failed later)
+   * @throws (rejects) the managed table's storage error; the rows already moved are moved back
+   *   first (a failure there is logged, and the original error is still the one thrown)
+   */
+  async function moveAllNow(from, to) {
+    assertPrincipal(from)
+    assertPrincipal(to)
+    const sessions = [...managers].filter(([, manager]) => manager === from).map(([sessionId]) => sessionId)
+    const undo = () => putManagers(sessions.filter((sessionId) => managers.get(sessionId) === to), from)
+    try {
+      await putManagers(sessions, to)
+    } catch (error) {
+      await undo().catch((undoError) => logger.warn(LOG.format, LOG.moveUndoFailed, diagnosticOf(undoError)))
+      throw error
+    }
+    return Object.freeze({ sessions: Object.freeze(sessions), undo })
+  }
+
   const state = Object.freeze({
     managerOf: (sessionId) => managers.get(sessionId),
     managed: () => Object.freeze([...managers].map(([sessionId, principalKey]) => Object.freeze({ sessionId, principalKey }))),
@@ -155,6 +191,7 @@ export function createManagedState({ table, logger, leave }) {
     assign,
     end,
     endAllOf,
+    moveAllNow,
     /**
      * Runs `step` on the managed chain: no change can land between its read of the manager and its end.
      * A step must never await another managed-chain call (`assign`, `end`, `endAllOf`, or routing's

@@ -358,7 +358,7 @@ function equivalencePartitions(sdk) {
       assertUniqueNames(w)
     })
   }
-  todo(sdk, CASE.nameEp02, '9 (revocation)', 'disabling the holder\'s entry keeps its pair, so its name stays held until delete', LATER.revoke)
+  // Row 9 (revocation: a disabled holder keeps its pair and name until delete) runs in test/v3/dsh-connector/revocation.
 
   // NAME-EP-03: who may call set_name.
   row(sdk, CASE.nameEp03, '1', 'full power: processed', async (w) => {
