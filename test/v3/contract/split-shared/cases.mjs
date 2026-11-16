@@ -19,12 +19,12 @@ import { after } from 'node:test'
 import { pathToFileURL } from 'node:url'
 import { REPO, TEST_HOMES } from '../../../support/constants.mjs'
 import { assertNoEdges, caseTest, describeRef, edgesTo, has, importersOf, manifestEdges, unitOf } from '../package-boundaries/cases.mjs'
-import { NPM, SDK, SIDES, V3 } from '../package-boundaries/constants.mjs'
+import { MOVED_INTO_CORE, NPM, SDK, SIDES, V3 } from '../package-boundaries/constants.mjs'
 import { observe, readManifest } from '../package-boundaries/packages.mjs'
 import { WITHDRAWN_BY, withdrawnRow } from '../../dsh-instance/host/withdrawn.mjs'
 import {
-  ADMIN_PROTOCOL, BASE, CODE_SAMPLES, CORE_CHILD_HALVES, DSH_EXPORTS, DSH_MODULES, EXPECTED_LIBRARY, FILES_MODULE, FINGERPRINT_SAMPLES, FORMER_INTERIM_COPIES, HEADER, HOST_PEERS, INSIDE_CASES,
-  LATER, LONG_RUN, MANIFEST_EXPORT, PLACED, PROFILE_SAMPLES, REDACT, REDACT_SAMPLES, SDK_SCOPE, moduleFile, sdkModules, subpath,
+  ADMIN_PROTOCOL, BASE, CODE_SAMPLES, CORE_CHILD_HALVES, DSH_EXPORTS, DSH_MODULES, EXPECTED_LIBRARY, FILES_MODULE, FINGERPRINT_SAMPLES, FORMER_INTERIM_COPIES, HOST_PEERS, INSIDE_CASES,
+  LONG_RUN, MANIFEST_EXPORT, PLACED, PROFILE_SAMPLES, REDACT, REDACT_SAMPLES, SDK_SCOPE, SHARED_EXPORTS, moduleFile, sdkModules, subpath,
 } from './constants.mjs'
 
 const show = (v) => JSON.stringify(v)
@@ -140,14 +140,18 @@ export function registerSplitCases(sdk) {
   for (const side of Object.values(SIDES)) {
     const other = otherSide(side)
     for (const from of side.packages) {
-      // design §1.0b row 2: core's V2 edge to dsh-connector (./contract, peer) goes with REMOVE-V2.
-      const banned = from.name === V3.core.name ? names(other.packages).filter((n) => n !== V3.connector.name) : names(other.packages)
+      // Since F-WIRE core has no V2 edge to dsh-connector left (design §1.0b row 2), so every package,
+      // core included, is banned the whole other side.
+      const banned = names(other.packages)
       caseTest(sdk, 'SPLIT-DT-01', `${side.id}→${other.id} ${from.name}`, `${from.name} imports and lists in no dependency field any ${other.id}-side package (${banned.join(', ')})`, async () => {
         await assertNoEdges(from.name, banned)
       }, has(from) ? undefined : 'the task that creates ' + from.name)
     }
   }
-  caseTest(sdk, 'SPLIT-DT-01', 'Fishball→DSH fishball-core dsh-connector', 'fishball-core imports and depends on nothing of dsh-connector', null, LATER.removeV2)
+  // Was a REMOVE-V2 todo: core's ./contract import and dsh-connector peer went with F-WIRE (R-ARCH-10).
+  caseTest(sdk, 'SPLIT-DT-01', 'Fishball→DSH fishball-core dsh-connector', 'fishball-core imports and depends on nothing of dsh-connector', async () => {
+    await assertNoEdges(V3.core.name, [V3.connector.name])
+  }, has(V3.core) ? undefined : 'the task that creates ' + V3.core.name)
 
   // ---------------------------------------------------------------- SPLIT-UC-01/02: each package uses its own side's library
   for (const [name, expected] of Object.entries(EXPECTED_LIBRARY)) {
@@ -199,10 +203,13 @@ export function registerSplitCases(sdk) {
     assert.deepEqual(Object.keys(peers).sort(), [...HOST_PEERS].sort())
     assert.deepEqual(peers, before)
   })
-  caseTest(sdk, 'SPLIT-EP-01', 3, 'fishball-shared keeps ./files (one copy per library)', () => {
-    const exports = readManifest(V3.shared.dir).exports ?? {}
-    assert.equal(exports[subpath(FILES_MODULE)], subpath(moduleFile(FILES_MODULE)))
-    assert.ok(fs.existsSync(libraryFile(V3.shared, FILES_MODULE)))
+  // Rewritten by REMOVE-V2b (R-ARCH-08 strict, Fishball 2026-11-16): the row was "fishball-shared keeps
+  // ./files (one copy per library)". files and oauth-client had one Fishball-side user, core, and moved
+  // into it, so fishball-shared now holds only ui-seam. dsh-connector-shared's ./files is row 1's.
+  caseTest(sdk, 'SPLIT-EP-01', 3, `fishball-shared exports exactly ${Object.keys(SHARED_EXPORTS).join(', ')} and ships no ${MOVED_INTO_CORE.map((m) => m.file).join(' or ')}`, () => {
+    needLibrary(V3.shared)
+    assert.deepEqual(readManifest(V3.shared.dir).exports ?? {}, SHARED_EXPORTS)
+    for (const { module, file } of MOVED_INTO_CORE) assert.equal(fs.existsSync(libraryFile(V3.shared, module)), false, 'fishball-shared still ships ' + file)
   })
   caseTest(sdk, 'SPLIT-EP-01', 4, 'release packer: no tarball carries the other side\'s library', async () => {
     const { packed } = await observe()
@@ -234,21 +241,18 @@ export function registerSplitCases(sdk) {
   })
 
   // ---------------------------------------------------------------- SPLIT-EP-02: drift guard between the two copies
-  // The interim copies are gone (I-HOST), so only `files` still has two copies to compare.
+  // The interim copies are gone (I-HOST), and REMOVE-V2b moved fishball-shared's `files` into core
+  // (R-ARCH-08 strict), so no module has two library copies left to compare: every row is withdrawn.
   for (const module of FORMER_INTERIM_COPIES) withdrawn(sdk, 'SPLIT-EP-02', module, `${moduleFile(module)}: the two libraries' copies hold the same code below their header comment`)
-  for (const module of [FILES_MODULE]) {
-    caseTest(sdk, 'SPLIT-EP-02', module, `${moduleFile(module)}: the two libraries' copies hold the same code below their header comment`, () => {
-      needLibrary(V3.dshShared)
-      const body = (lib) => fs.readFileSync(libraryFile(lib, module), 'utf8').replace(HEADER, '')
-      assert.ok(body(V3.dshShared).length > 0, 'empty module')
-      assert.equal(body(V3.shared), body(V3.dshShared))
-    })
-  }
+  withdrawn(sdk, 'SPLIT-EP-02', FILES_MODULE, `${moduleFile(FILES_MODULE)}: the two libraries' copies hold the same code below their header comment`, WITHDRAWN_BY.sharedSingleUsers)
 
-  // ---------------------------------------------------------------- SPLIT-EP/BVA inside(root, file), both copies
+  // ---------------------------------------------------------------- SPLIT-EP/BVA inside(root, file), dsh-connector-shared's copy
+  // fishball-shared's rows are withdrawn by REMOVE-V2b (its files.js moved into core); the same names stay listed.
   for (const lib of [V3.dshShared, V3.shared]) {
     for (const [id, title, root, file, expected] of INSIDE_CASES) {
-      caseTest(sdk, 'SPLIT-' + id.split('-')[0] + '-03', `${lib.name} ${id}`, `inside(${show(root)}, ${show(file)}) is ${expected}: ${title}`, async () => {
+      const [caseId, row, name] = ['SPLIT-' + id.split('-')[0] + '-03', `${lib.name} ${id}`, `inside(${show(root)}, ${show(file)}) is ${expected}: ${title}`]
+      if (lib === V3.shared) { withdrawn(sdk, caseId, row, name, WITHDRAWN_BY.sharedSingleUsers); continue }
+      caseTest(sdk, caseId, row, name, async () => {
         const { inside } = await load(sdk, libraryFile(lib, FILES_MODULE))
         assert.equal(inside(root, file), expected)
       })

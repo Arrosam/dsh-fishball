@@ -7,13 +7,15 @@
  * refreshes when a token is due or refused), plus `authorizationParameters` (core passes its
  * `agent_id`, R-OA-22) and `grantId` (the grant's own random, non-secret identity, so a later
  * Connect is a new credential for core's pairing records).
+ * It was fishball-shared's `./oauth-client` until REMOVE-V2b: core is its one user, so R-ARCH-08
+ * strict (two importers on a library's side, Fishball 2026-11-16) puts it in core's link.
  *
  * Generic: it knows OAuth 2.1 + PKCE against an MCP server, a Client ID Metadata Document client
  * id, the loopback callback, and one `grant` record in DSH's credential store. It knows no server
  * check; that is the caller's.
  *
  * It imports nothing but Node. The caller passes the MCP client SDK module
- * (`@modelcontextprotocol/client` 2.2.0, the line both hosts ship), so this library takes no package
+ * (`@modelcontextprotocol/client` 2.2.0, the line both hosts ship), so this module takes no package
  * edge. The protocol steps are the SDK's own primitives (`startAuthorization`, `exchangeAuthorization`,
  * `refreshAuthorization`, `validateAuthorizationResponseIssuer`, the two discovery reads). The SDK's
  * `auth()` orchestrator is NOT used: on an `invalid_grant` from the code exchange it runs the exchange

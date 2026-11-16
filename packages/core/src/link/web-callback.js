@@ -10,7 +10,7 @@
  *
  * Which callback a press uses is decided from the page's own origin (`callbackFor`):
  * - a loopback host (`LINK.hosts.loopbackNames`), or no `Origin` with a loopback `Host`: the loopback
- *   callback (the default of `fishball-shared/oauth-client`);
+ *   callback (the default of `./oauth-client.js`);
  * - an `https:` origin whose authority is the request's own `Host` (DSH's connection fence already
  *   refused a foreign Origin; comparing again keeps a forged Host out of the redirect URI): the web
  *   callback at that origin;
@@ -25,7 +25,7 @@
  * else can end it. `authorize` then checks `state` and `iss` again and redeems the code with the
  * attempt's PKCE verifier.
  */
-import { OAUTH_CLIENT } from 'fishball-shared/oauth-client'
+import { OAUTH_CLIENT } from './oauth-client.js'
 import { CONNECT, LINK } from '../../contracts/constants.js'
 import { WEB_CALLBACK } from './constants.js'
 

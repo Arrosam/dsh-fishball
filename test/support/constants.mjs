@@ -61,10 +61,6 @@ export const EMBED_UI = Object.freeze({
   // I-HOST (QD1 = B): the card's model block is the instance's own settings page chunk now.
   instanceCard: path.join(REPO, 'packages', 'dsh-instance', 'client.models.js'),
   statusLine: path.join(REPO, 'packages', 'dsh-instance', 'client.status.js'),
-  /** The served package-local chunks that carry the moved UI (its words and controls), U-SHELL's split. */
-  clientChunks: Object.freeze(['client.shell.js', 'client.marks.js', 'client.attention.js']),
-  /** DSH's boot page graph global (dsh-client-modules, both SDKs). */
-  bootGraph: /globalThis\["__DSH_BOOT__"\]\s*=\s*(\{.*?\});?\s*<\/script>/s,
 })
 /** FBTEST_LINK entry: embed-UI linked and enabled, for cases that read the served Fishball client. */
 export const EMBED_UI_LINK = Object.freeze({ name: EMBED_UI.name, dir: EMBED_UI.dir, enabled: true })
@@ -209,16 +205,6 @@ export const LIMITS_R11_REMOVED = {
   pluginManagerStartMs: { old: 'FISHBALL_PACKAGES.managerStartMs' },
   defaultReplyCapTokens: { old: 'CONTEXT.outputMax' },
 }
-/** rev11-limits: package-operation constants removed in favour of DSH's plugin-manager settings (§16 "Values that stay constants"). */
-export const REMOVED_PACKAGE_CONSTANTS = ['FISHBALL_PACKAGES.outputBytes', 'FISHBALL_PACKAGES.idleTimeoutMs', 'FISHBALL_PACKAGES.lockWaitMs', 'FISHBALL_PACKAGES.lookupTimeoutMs']
-/**
- * rev11-limits: constants that stay (§16 "Values that stay constants"), by the name the table gives.
- * Not listed any more: HOUR_MS (the hourly caps), dshDefaults, minCapTokens, WORDS_PER_TOKEN and
- * ROUNDING_GUARD (the context window), modelInfoTimeoutMs (the model gate) and FIBER_ACTIVE (the
- * in-process agent's fiber): their owners were deleted with the in-process Fishball (slim §12).
- */
-export const STAYING_CONSTANTS = ['maxTimerMs', 'idPattern', 'dedupeKeyBytes', 'descriptionBytes', 'sourceTitleBytes', 'nameBytes', 'maxSubagentDepth', 'resumeAttempts', 'resumeRetryMs', 'maxAttempts', 'SEQ_DIGITS', 'DIGEST_HEX_CHARS']
-
 /** R-COMPOSITION: names never shown to Fishball. */
 export const HIDDEN_TOOLS = [
   'image_generate', 'video_generate', 'mover_move_session', 'create_worktree', 'git_worktree',

@@ -4,7 +4,7 @@
  * link at the repo root; the tarball install test resolves it as a sibling in the profile instead.
  *
  * test/run.mjs makes the link before node:test starts any file: files that import instance modules
- * directly (body-soul-*, limits-source, …) would otherwise race the first worker boot and fail with
+ * directly (body-soul-*, …) would otherwise race the first worker boot and fail with
  * ERR_MODULE_NOT_FOUND. The worker still calls it, for a file run on its own without run.mjs.
  */
 import fs from 'node:fs'
