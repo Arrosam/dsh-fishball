@@ -304,9 +304,19 @@ export function createManagerSession(ctx, options) {
    * A DSH without the preset registry composes no preset, as DSH's controller does.
    */
   async function composePersona(agentCtx, live) {
-    await ctx.get(services.agentPresets)?.mount(agentCtx)
+    await ctx.get(services.agentPresets)?.mount(agentCtx, presetId)
     applyPersona(agentCtx.systemPrompt)
     await setup(agentCtx, live)
+  }
+
+  /**
+   * The preset the manager runs on: the registry's default (core's patch makes it `fishball`),
+   * resolved once per activation as DSH's controller does, so the create records it in the
+   * Session's header (`meta.agentPreset`) and DSH reports it (`presetForSession`) like any session's.
+   */
+  let presetId
+  async function resolvePreset() {
+    presetId = (await ctx.get(services.agentPresets)?.resolve())?.id
   }
 
   /**
@@ -328,7 +338,9 @@ export function createManagerSession(ctx, options) {
     const id = MANAGER_SESSION.sessionPrefix + randomUUID()
     await ensureFolder()
     await record(id)
-    const handle = await agents.create({ sessionId: id, meta: { cwd }, agentOptions: agentOptions(selection), setup: configure })
+    const handle = await agents.create({
+      sessionId: id, meta: { cwd, ...(presetId === undefined ? {} : { agentPreset: presetId }) }, agentOptions: agentOptions(selection), setup: configure,
+    })
     return handle.agent
   }
 
@@ -475,6 +487,7 @@ export function createManagerSession(ctx, options) {
     // Read once per open: routability lists providers and models, and the resume retries and the
     // apply below must all use the same choice.
     const selection = await effectiveSelection()
+    await resolvePreset()
     if (closed) unavailable()
     const existing = sessionId === undefined ? undefined : agents.get(sessionId)
     const live = existing ?? await (sessionId === undefined ? createSession(agents, selection) : resumeSession(agents, sessionId, selection))
