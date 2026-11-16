@@ -379,6 +379,21 @@ export const CONNECT = Object.freeze({
   grantRecordScope: CORE_RECORD_SCOPE,
 })
 
+// ------------------------------------------------------------------------- Fishball's model (F-WIRE)
+
+/**
+ * Fishball's own model choice (the user, 2026-11-16: "同步只是同步model list，至于fishball用什么还要在
+ * fishball内设置"; "所有版本：先用DSH的默认模型"): a field of core's own row settings, `{provider, model,
+ * reasoningEffort?}`; absent means this DSH's default model, and nothing ever blocks on it. Only
+ * core's settings page and fishball-ui's model dialog write it (no DSH-side package reads it, the
+ * user's cancellation of U-MODEL, 2026-11-16). `settingsNamespace` is core's main row id, the
+ * namespace DSH's `settings.mutate` addresses; `path` is the field inside it.
+ */
+export const FISHBALL_MODEL = Object.freeze({
+  settingsNamespace: CORE_RECORD_SCOPE,
+  path: Object.freeze(['model']),
+})
+
 // ------------------------------------------------------------------------- the fishball-ui seam (ui.d.ts)
 
 // `UI_SEAM` moved unchanged to `fishball-shared/ui-seam` (F-UI, as K3a announced): fishball-ui
@@ -421,13 +436,13 @@ export const GUARDS = Object.freeze({
   /**
    * Core's own model tools, by module (relative to `src/guards/`) and exported name table (user
    * decision 2026-11-14: core's tools are not the preset's and are left out of the R-FB-13 check).
-   * Loaded lazily, because these modules import `dsh-connector/contract`, which a standalone
-   * core may not resolve; a module that cannot load registers no tools, so its names cannot appear.
+   * Loaded lazily, because these modules import DSH host packages (`@deepseek-ai/*`) that resolve
+   * only inside DSH; a module that cannot load registers no tools, so its names cannot appear.
    */
   coreTools: Object.freeze([
-    Object.freeze({ module: '../slim/child/session-tools.js', table: 'SESSION_TOOL' }),
-    Object.freeze({ module: '../slim/child/reminders.js', table: 'TOOL' }),
-    Object.freeze({ module: '../slim/child/skills.js', table: 'PRIVATE_SKILL_TOOL' }),
+    Object.freeze({ module: '../manager/reminder-tools.js', table: 'TOOL' }),
+    Object.freeze({ module: '../manager/skills.js', table: 'PRIVATE_SKILL_TOOL' }),
+    Object.freeze({ module: '../asks/constants.js', table: 'ASK_TOOL' }),
   ]),
   /** ReorderOutcome. */
   reorder: Object.freeze({ moved: 'moved', unchanged: 'unchanged', failed: 'failed' }),
@@ -447,8 +462,8 @@ export const GUARDS = Object.freeze({
   /**
    * The Cordis services the guards read, none injected (a missing one is "nothing to check"):
    * `profileContext` and `appReady` are read once at the row's start, the rest at each check.
-   * `fishballInstance` is `EXTENSION_SERVICE` of src/slim/child/extensions.js, restated because that
-   * module imports `dsh-connector/contract`, which a standalone core may not resolve.
+   * `fishballInstance` is the service core's main row (`src/main/`) provides, restated here because
+   * this file imports nothing (the K3 freeze above).
    */
   services: Object.freeze({
     loader: 'loader',

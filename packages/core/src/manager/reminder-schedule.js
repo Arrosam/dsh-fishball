@@ -1,12 +1,14 @@
 /**
- * Reminder rule arithmetic for the slim child's own scheduler (§15 T10).
+ * Reminder rule arithmetic for Fishball's own scheduler (reminders.js). Lives in core's manager
+ * folder since V3 F-WIRE (the user's decision 2026-11-16: keep reminders, move them into V3 core
+ * unchanged), beside the module that uses it.
  *
- * DSH's `@deepseek-ai/dsh-schedule` Service cannot mount in a base-only child: 0.2.1-rc.3/rc.5
- * hard-inject `sessionController`, a Web-bundle service, and the Service's own API changed
- * between rc.3/rc.5 (`list`/`update`/`delete`) and 0.2.2-rc.1 (`list`/`view`/`edit`). The child
- * therefore owns its tasks (reminders.js) and repeats the schedule tool's timing here, in plain
- * JavaScript with no build step (§2.1, Q10): one-shot `after`/`at`, fixed-rate `every`,
- * wall-clock `daily`/`weekly`, and five-field `cron`.
+ * DSH's `@deepseek-ai/dsh-schedule` Service cannot be relied on: 0.2.1-rc.3/rc.5 hard-inject
+ * `sessionController`, a Web-bundle service, and the Service's own API changed between
+ * rc.3/rc.5 (`list`/`update`/`delete`) and 0.2.2-rc.1 (`list`/`view`/`edit`). Fishball therefore
+ * owns its tasks (reminders.js) and repeats the schedule tool's timing here, in plain JavaScript
+ * with no build step: one-shot `after`/`at`, fixed-rate `every`, wall-clock `daily`/`weekly`,
+ * and five-field `cron`.
  *
  * A wall-clock rule is interpreted in its explicit IANA zone with the schedule tool's documented
  * rules: a local time that does not exist (a spring-forward gap) skips that date, and a repeated
@@ -14,8 +16,8 @@
  * wall clock as an argument, so this module holds no timer and stays pure.
  *
  * The record shape matches the schedule service's durable record (`kind` plus the timing fields
- * that kind selects) so `reminders.js` can store it as-is and the T10 view model keeps the same
- * fields the slim UI already reads.
+ * that kind selects) so `reminders.js` can store it as-is and `schedule_list` reports the
+ * schedule tool's own fields.
  */
 
 /** The timing discriminants; every stored record carries exactly one. */
@@ -31,7 +33,7 @@ export const KIND = Object.freeze({
 /** Kinds that repeat; the other two deliver once and end. */
 const RECURRING = Object.freeze([KIND.every, KIND.daily, KIND.weekly, KIND.cron])
 
-/** Stable typed codes; the API maps them to 400 and the tools return them unchanged. */
+/** Stable typed codes; the tools return them unchanged. */
 export const RULE_ERROR = Object.freeze({
   prompt: 'invalid_prompt',
   selector: 'invalid_selector',
@@ -102,7 +104,7 @@ export const TIMING_FIELDS = Object.freeze({
   [KIND.cron]: Object.freeze(['expression', 'timeZone']),
 })
 
-/** A typed rule refusal; reminders.js answers 400 and the agent tools return `{code, message}`. */
+/** A typed rule refusal; the agent tools in reminders.js return its `{code, message}`. */
 export class ScheduleRuleError extends Error {
   constructor(code, message) {
     super(message)
@@ -284,7 +286,7 @@ function normalizeWeekdays(value) {
 }
 
 const INTEGER_TEXT = /^(?:0|[1-9]\d*)$/
-/** Cron fields tolerate leading zeros ("05"), unlike the API's canonical integer query values. */
+/** Cron fields tolerate leading zeros ("05"), as five-field cron spells them. */
 const CRON_NUMBER = /^\d+$/
 const AT_INSTANT = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?(?:Z|[+-]\d{2}:\d{2})$/
 const DATE_TEXT = /^(\d{4})-(\d{2})-(\d{2})$/

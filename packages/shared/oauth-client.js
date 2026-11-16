@@ -164,9 +164,14 @@ function requestUrl(req) {
 }
 
 /**
+ * A callback listener is `{redirectUrl, received, close}`: the redirect URI sent in the
+ * authorization request, a promise of the first callback's query parameters, and `close()` at the
+ * end of the attempt, after which the URI is dead (S7c rules). `authorize` takes any such listener
+ * (`options.callback`), so a caller with its own https web route (core's web callback for a browser
+ * on another machine, Q-A3 B) supplies one; the default is this loopback one.
+ *
  * One attempt's loopback callback listener on 127.0.0.1 with an OS port. It answers every request
- * until the attempt ends and delivers only the first one on the callback path; `close()` at the end
- * of the attempt leaves nothing listening, so the URL is dead once the attempt ends (S7c rules).
+ * until the attempt ends and delivers only the first one on the callback path.
  */
 function listenForCallback() {
   let deliver
@@ -182,7 +187,10 @@ function listenForCallback() {
     // closeAllConnections: a browser's keep-alive socket must not hold the attempt's end open.
     const close = () => new Promise((r) => { server.closeAllConnections(); server.close(() => r()) })
     server.once(OAUTH_CLIENT.event.error, reject)
-    server.listen(OAUTH_CLIENT.osPort, OAUTH_CLIENT.loopbackHost, () => resolve({ port: server.address().port, close, received }))
+    server.listen(OAUTH_CLIENT.osPort, OAUTH_CLIENT.loopbackHost, () => {
+      const redirectUrl = `http://${OAUTH_CLIENT.loopbackHost}:${server.address().port}${OAUTH_CLIENT.callbackPath}`
+      resolve({ redirectUrl, close, received })
+    })
   })
 }
 
@@ -303,23 +311,24 @@ export function createTokenManager({ sdk, credentials, key, now = Date.now, refr
 
     /**
      * One interactive attempt inside a `ctx.authorization` flow session: CIMD client id, PKCE S256,
-     * `state`, `resource`, scope, extra `authorizationParameters`, loopback callback, `iss` check,
+     * `state`, `resource`, scope, extra `authorizationParameters`, the callback (`options.callback`, a
+     * listener factory as `listenForCallback`; default the loopback one), `iss` check,
      * code exchange with no secret, commit of the grant record (once, R9). Resolves after the commit.
      * @param options.discovery `discoverServer`'s result (the caller has already decided to trust it).
      * @param options.message the notice text that goes with the approval URL.
      * @param options.timeoutMs the attempt's lifetime; `timers` the clock that measures it.
      * @throws OAuthAttemptError denied / rejected / expired / failed, or the signal's reason on abort.
      */
-    async authorize({ session, serverUrl, clientMetadataUrl, discovery, authorizationParameters = {}, message, timeoutMs, timers = globalThis }) {
+    async authorize({ session, serverUrl, clientMetadataUrl, discovery, authorizationParameters = {}, message, timeoutMs, timers = globalThis, callback = listenForCallback }) {
       const metadata = discovery.authorizationServerMetadata
       // CIMD only (R-OA-13): no dynamic-registration fallback, and no hard-coded client.
       if (metadata.client_id_metadata_document_supported !== true) throw new OAuthAttemptError(OAUTH_CLIENT.attemptEnd.failed, MESSAGE.noCimd)
       const clientInformation = { client_id: clientMetadataUrl }
       const resource = await sdk.selectResourceURL(new URL(serverUrl), {}, discovery.resourceMetadata)
-      const listener = await listenForCallback()
+      const listener = await callback()
       try {
         session.signal.throwIfAborted()
-        const redirectUrl = `http://${OAUTH_CLIENT.loopbackHost}:${listener.port}${OAUTH_CLIENT.callbackPath}`
+        const redirectUrl = listener.redirectUrl
         const state = opaqueValue(OAUTH_CLIENT.stateBytes)
         const { authorizationUrl, codeVerifier } = await sdk.startAuthorization(discovery.authorizationServerUrl, {
           metadata, clientInformation, redirectUrl, scope: scopeFor(discovery), state, resource,

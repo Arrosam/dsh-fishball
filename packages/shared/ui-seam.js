@@ -8,6 +8,7 @@
  *   `fishballInstance` member fishball-ui reads (core's `contracts/ui.d.ts`); `coreMissing` is the
  *   one line fishball-ui logs, and then changes nothing, without core (Q-G2 = A; the board's R-FB-06
  *   word). Core shows no hint of a missing fishball-ui (Q-G1), so there is no value for that.
+ * - `UI_STATUS`: the name of core's status service the strip reads (F-WIRE).
  * - `UI_GUARDS`: the service fishball-ui's row provides so core's guard check also reports the UI
  *   guard rows fishball-ui's patch holds (R-FB-09): `{rows}`, that patch's guard-row ids.
  * - `SEAM_STATUS`: the words of core's status snapshot that fishball-ui's strip view draws.
@@ -19,6 +20,16 @@
 export const UI_SEAM = Object.freeze({
   member: 'ui',
   coreMissing: 'fishball-core-missing',
+})
+
+/**
+ * Core's status service (F-STATUS `createStatus`, provided by core's main row, F-WIRE): fishball-ui's
+ * strip route draws its snapshot; without it the strip reads `SEAM_STATUS.fishball.off`. Core's
+ * `STATUS_MODEL.serviceName` takes it from here, so the two cannot differ. Its own object, because
+ * `UI_SEAM` is K3a's frozen set.
+ */
+export const UI_STATUS = Object.freeze({
+  service: 'fishballStatus',
 })
 
 export const UI_GUARDS = Object.freeze({

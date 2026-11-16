@@ -8,7 +8,7 @@
  * - no `fishball-ui` member: core runs normally without it and reports nothing (Q-G1);
  * - no `fishball-hosted-settings` member: removed (1.34) and never reported (HOST-DT-03 rule 10).
  */
-import { SEAM_STATUS } from 'fishball-shared/ui-seam'
+import { SEAM_STATUS, UI_STATUS } from 'fishball-shared/ui-seam'
 import { GUARDS } from '../../contracts/constants.js'
 
 export const STATUS_MODEL = Object.freeze({
@@ -20,8 +20,8 @@ export const STATUS_MODEL = Object.freeze({
   /** The set members core checks (requirements 1.34, 1.37, 1.41: the Fishball set is core + board). */
   members: Object.freeze(['fishball-board']),
   control: SEAM_STATUS.control,
-  /** The Cordis service F-WIRE provides with `createStatus`'s object. */
-  serviceName: 'fishballStatus',
+  /** The Cordis service core's main row provides with `createStatus`'s object (the seam's name, read by fishball-ui's strip). */
+  serviceName: UI_STATUS.service,
   /** The DSH services and events the status reads (none injected: a missing one is "nothing to read"). */
   services: Object.freeze({ appReady: GUARDS.services.appReady, pluginManager: 'pluginManager', loader: GUARDS.services.loader }),
   // The same two DSH events as GUARDS.triggers, named one by one because status reacts to each

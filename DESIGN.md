@@ -2119,3 +2119,21 @@ Decided with the user while I-HOST ran (answers Q1–Q7 and the model-sync clari
 | Child halves of admin and model sync | moved from core into `dsh-instance/src/child/`, mounted by `dsh-instance-child`; fishball-shared's interim copies deleted | design §1.0b row 5; Q-G7. Model sync copies providers and model lists only: "同步只是同步model list，至于fishball用什么还要在fishball内设置"; the admin's live-session model hook into core is gone (Q6 = A) |
 | The instance's page | `dsh-instance`'s own `client.js` (status, Retry and its notice, Reconnect, Open Fishball in a new tab, model sync, `enabled`, `targetUrl`); dsh-connector-ui draws no instance card and has no model routes | Q-D1 = B, R-ARCH-05, Q7 = A |
 
+
+## 20. V3 F-WIRE: core's main row and the Fishball-side wiring (2026-11-16)
+
+Decided with the user while F-WIRE ran (answers to the five product questions and the model rules of
+2026-11-16), and by Fishball's session where noted:
+
+| Point | Decision | Reason |
+|---|---|---|
+| Core's rows | One main row `fishball-core` (`fishball-core/main`, src/main/) composes the link, Connect, the interception service, the ask cards, status, the bridge façade and the one manager session; it provides `fishballInstance` (apiVersion 1) and `fishballStatus`. The V2 child rows (`fishball-native-session-tools`, `-approvals`, `-app`, `-inbox`) and `src/slim/**` are deleted, with core's `dsh-connector` peer | V2 was never deployed (the user's rule): no V2 path is kept; R-ARCH-10 |
+| Reminders | `schedule_create/list/update/delete` kept, unchanged, registered in the manager's scope only; their V2 page API is gone | the user's answer 1 |
+| Window style | No frame-only rule: the page in dsh-connector-ui's window is exactly the standalone page | the user's answer 2 |
+| Fishball's model | Core's own setting `model` ({provider, model, reasoningEffort?}); unset, unroutable or unreadable means this DSH's default model; nothing blocks. Only core's settings page and fishball-ui's model dialog write it; the composer's model picker (`ui-model-selection`) is a fishball-ui guard row | the user: "所有版本：先用DSH的默认模型"; answers 3 and 4 |
+| Model dialog | fishball-ui's `client.model.js`: on opening the Fishball page with `model` unset, a dialog lists DSH's model catalog and writes the choice; dismissed, it returns at the next page open; with no model it says so and opens DSH Settings | the user, 2026-11-16 ("fishball打开的时候…弹出要求选择模型的页面") |
+| Persona | V2 wording kept; tools renamed to their V3 names; sentences on features V3 lacks removed | the user's answer 5 |
+| Cross-machine Connect | A press from a page whose `Origin` is https and whose authority is the request's `Host` uses core's web callback `<origin>/api/fishball/connect/callback` (a raw web route, since the cross-site redirect carries no `SameSite=Strict` cookie; it serves only the one pending attempt, whose `state`, `iss` and PKCE are checked); a loopback origin uses the loopback callback; anything else is `web-callback-insecure` | Q-A3 = B; R-OA-14 and the user's rule that only loopback may use http |
+| Generated `identity.id` | Kept in core's storage domain `fishball_core_main`, not in the settings document; the user's `identity.id` wins when set | a settings save reconciles the profile at once, which would apply the moved bundle order in the first start (R-FB-12: from the next start with HMR off). Fishball's decision |
+| Live core on/off | fishball-ui's rows read core's selection in the profile manifest while HMR runs, else the started bundles | so switching core in a running DSH switches fishball-ui's rows. Fishball's decision |
+| Readiness of a hosted child | Core offers no readiness signal to the instance; I-READY gates on generic DSH signals | R-ARCH-10, R-FB-10 as amended by 1.39 |

@@ -2,13 +2,19 @@
 # This file is the ONE definition of the UI guard rows: src/guards.js reads them back at runtime and
 # core's guard check reports them through the `fishballUiGuards` service (R-FB-09).
 #
-# Every row here depends on whether fishball-core is in this DSH: `fishball-core` is among the
-# bundles this DSH process started with (`profileContext.startedBundles`, both SDKs: the layers that
-# loaded, so a deselected or skipped core counts as missing). Two anchors, one test and its
-# negation; YAML cannot share the bundle name with code, so it is spelled here as in core's
-# `GUARDS.bundleName`. Limits, accepted for this task: `startedBundles` is the boot's list, so a
-# live change of core's bundle (the plugin manager with HMR on) reaches these rows only at the next
-# start; and a core whose bundle loads but whose rows fail still counts as present.
+# Every row here depends on whether fishball-core is in this DSH. Two anchors, one test and its
+# negation; YAML can neither share the bundle name with code nor reuse one expression in another,
+# so the test is spelled out in both anchors, and `fishball-core` as in core's `GUARDS.bundleName`:
+# - with HMR (the `hmr` service, a standalone DSH by default): core is selected in the profile
+#   manifest's `dsh.profile.bundles` now, read when the loader evaluates the row. DSH's HMR
+#   recomposes the profile after the plugin manager changes that list and re-evaluates every row's
+#   `disabled` (cordis-plugin-loader `EntryGroup.update`, both SDKs), so switching core on or off in
+#   a running DSH switches these rows with it (F-WIRE: live core on/off);
+# - without HMR (a hosted child: the instance switches HMR off), or when the manifest cannot be
+#   read: core is among the bundles this process started with (`profileContext.startedBundles`,
+#   the layers that loaded), as a change then needs a restart anyway.
+# Limit, accepted: a core whose bundle is selected but skipped, or whose rows fail, counts as
+# present while HMR is on.
 # - With core: the UI guard rows are switched off, and the page, the Recommended tab and the
 #   fishball-ui row run.
 # - Without core (Q-G2 = A): nothing changes in this DSH. The guard rows leave DSH's rows on, the
@@ -27,21 +33,26 @@
 # starts sessions); entry-customization: More-menu rows that start sessions; ui-open-in-app: native
 # launches off the page; ui-sidebar-terminal: a shell outside read-only. They are browser rows with
 # an empty Node half and no service another row injects (checked in 0.2.1-rc.5 and 0.2.2-rc.1).
-- { id: ui-subagent, disabled: &with-core !!js "ctx.get('profileContext')?.startedBundles?.includes('fishball-core') === true" }
+- { id: ui-subagent, disabled: &with-core !!js "((profile = ctx.get('profileContext')) => { try { return (ctx.get('hmr') === undefined ? profile?.startedBundles : JSON.parse(process.getBuiltinModule('node:fs').readFileSync(process.getBuiltinModule('node:path').join(profile.dir, 'package.json'), 'utf8')).dsh?.profile?.bundles)?.includes('fishball-core') === true } catch { return profile?.startedBundles?.includes('fishball-core') === true } })()" }
 - { id: ui-schedule, disabled: *with-core }
 - { id: ui-permission, disabled: *with-core }
 - { id: ui-agent-preset, disabled: *with-core }
 - { id: entry-customization, disabled: *with-core }
 - { id: ui-open-in-app, disabled: *with-core }
 - { id: ui-sidebar-terminal, disabled: *with-core }
+# ui-model-selection: the composer's model seat and the /model popup (dsh-web-app, both SDKs). Only
+# core's settings choose Fishball's model (the user, 2026-11-16: "Hide it. Only core's settings
+# choose the model"); fishball-ui's model dialog and core's settings page write it. No other row
+# injects its `modelDirectories` service (checked in 0.2.1-rc.5 and 0.2.2-rc.1).
+- { id: ui-model-selection, disabled: *with-core }
 
 - insert:
-    # fishball-ui's Node row: the `fishballUiGuards` service; its browser half is ./client (the
-    # ask cards, the two settings entries). The package's one path row with no manifest of its own,
+    # fishball-ui's Node row: the `fishballUiGuards` service and the status strip's route; its
+    # browser half is ./client (the ask cards, the two settings entries, the strip, the model dialog). The package's one path row with no manifest of its own,
     # so DSH serves fishball-ui's client once.
     - id: fishball-ui
       name: ./index.js
-      disabled: &without-core !!js "ctx.get('profileContext')?.startedBundles?.includes('fishball-core') !== true"
+      disabled: &without-core !!js "!((profile = ctx.get('profileContext')) => { try { return (ctx.get('hmr') === undefined ? profile?.startedBundles : JSON.parse(process.getBuiltinModule('node:fs').readFileSync(process.getBuiltinModule('node:path').join(profile.dir, 'package.json'), 'utf8')).dsh?.profile?.bundles)?.includes('fishball-core') === true } catch { return profile?.startedBundles?.includes('fishball-core') === true } })()"
     # The page packages (I-PLACE). Each is its own small package (its own manifest and ./client), so
     # its path row is a client source of that package, not a second one of fishball-ui.
     - { id: fishball-page, name: ./fishball-page/index.js, disabled: *without-core }
