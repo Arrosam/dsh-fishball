@@ -191,5 +191,4 @@ export const LATER = Object.freeze({
   wireRoutes: 'C-WIRE (the connector row: nothing but its listed routes is served; the service is a Cordis service of this process only)',
   wireToUser: 'C-WIRE (DSH approval binding: a retired or unmanaged offer is answered by the user in the session)',
   toolsAnswer: 'C-TOOLS (approval_answer on the ask offer answers the waiting ask_agent)',
-  succeed: 'C-SUCCEED (Q24 succession moves management and pending events, R-HOST-09)',
 })

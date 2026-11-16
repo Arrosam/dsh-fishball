@@ -3,8 +3,9 @@
  * retention itself (`MAILBOX.disabledRetentionMs`) and the revocation kinds (`REVOCATION_KIND`)
  * are K1's and are imported where they are used.
  */
+import { TIME_UNIT } from '../../mcp-schema/index.js'
 
-const SECOND_MS = 1000
+const SECOND_MS = TIME_UNIT.msPerSecond
 const MINUTE_MS = 60 * SECOND_MS
 const HOUR_MS = 60 * MINUTE_MS
 
@@ -51,4 +52,5 @@ export const STEP = Object.freeze({
   removePair: 'removePair',
   clearDesignated: 'clearDesignated',
   release: 'release',
+  askDropped: 'askDropped',
 })

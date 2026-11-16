@@ -107,7 +107,6 @@ export const WAIT = Object.freeze({ ackMs: 10000 })
 export const LATER = Object.freeze({
   firstCommit: 'C-WIRE or the W3 merge: needs C-ROUTE merged, a live offer raised by a real session through the real V2 approvals domain in a DSH host (no child launch here); first-commit-wins is never faked (Fishball Q2)',
   domain: 'C-WIRE or the W3 merge: needs the real V2 session domain in a DSH host process (no child launch here) and its relayed populate port (Fishball Q2)',
-  succeed: 'C-SUCCEED (succession: same request, revision + 1, the old id expired)',
   attention: 'U-ATTN (embed-ui.attention.* contributed through C-EXT when embed-UI is present)',
   settings: 'C-WIRE (the connector settings schema: no setting stops delegated items)',
 })

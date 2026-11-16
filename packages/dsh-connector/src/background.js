@@ -1,9 +1,10 @@
 /**
- * Background steps of `revocation/` (C-REVOKE): retry-until-done for a step that must not be
- * skipped (the drop after its retirements), and the one-`system`-note-per-session write. Kept in
- * their own file because the succession (C-SUCCEED) needs the same two.
+ * Background steps of the V3 connector modules that must not be skipped (C-REVOKE's drop after its
+ * retirements, C-SUCCEED's delete of a succeeded entry): retry-until-done, and the
+ * one-`system`-note-per-session write (K1d SessionNotes). Shared by `revocation/` and `hosted/`,
+ * so it belongs to neither.
  */
-import { diagnosticOf } from '../errors.js'
+import { diagnosticOf } from './errors.js'
 
 /** The rejection a pending retry gets when its owner closes: the caller ends its job there, quietly. */
 export const RETRY_CLOSED = Symbol('retry closed')
@@ -14,9 +15,10 @@ export const RETRY_CLOSED = Symbol('retry closed')
  * @param options.logger - `{warn(format, line, code)}`
  * @param {string} options.format - the connector's `'%s (%s)'` log format
  * @param {number} options.retryMs - the wait before the next try
- * @returns `{untilDone(line, step), close()}`: `untilDone` runs `step` until it resolves, logging
- *   each rejection as `line` with its diagnostic code only; it rejects `RETRY_CLOSED` once `close`
- *   ran. `close` cancels every pending retry.
+ * @returns `{untilDone(line, step), later(line, step), close()}`: `untilDone` runs `step` until it
+ *   resolves, logging each rejection as `line` with its diagnostic code only; it rejects
+ *   `RETRY_CLOSED` once `close` ran. `later` is the same, its first try after `retryMs` (for a step
+ *   that has just failed in the caller's own try). `close` cancels every pending retry.
  */
 export function createRetrier({ timers, logger, format, retryMs }) {
   /** Pending retry timer → the rejection that ends its job. */
@@ -51,13 +53,14 @@ export function createRetrier({ timers, logger, format, retryMs }) {
 
   return Object.freeze({
     untilDone: (line, step) => run(line, step, false),
+    later: (line, step) => run(line, step, true),
     close,
   })
 }
 
 /**
- * One `system` note per session (K1d SessionNotes; R-ROUTE-06, R-HOST-09 step 7). A note that fails
- * is reported to `onFailed` and not retried: the change it reports stands either way.
+ * One `system` note per session (K1d SessionNotes; R-ROUTE-06). A note that fails is reported to
+ * `onFailed`, which decides whether to retry it (C-REVOKE does not, C-SUCCEED does).
  * @returns once every note was written or failed (never rejects)
  */
 export const writeNotes = (notes, sessionIds, text, onFailed) => Promise.all(sessionIds

@@ -15,8 +15,8 @@
  * no-recipient queue, principals(), onChange).
  *
  * Not here (the brief): WATCH-UC-01 E1 and WATCH-ST-01 rows 7–8 are C-TOOLS'; the `system` notes
- * of revocation are C-REVOKE's (the rows assert only that management ends); succession rows are
- * C-SUCCEED's `todo`.
+ * of revocation are C-REVOKE's (the rows assert only that management ends); succession rows run
+ * in test/v3/dsh-connector/hosted (C-SUCCEED).
  *
  * Level: C-ROUTE's module over real DSH storage and the real C-MAILBOX of the SDK under test, with
  * the other ports faked (subject.mjs); EVT-EP-04 adds the real C-HTTP route and SDK MCP clients.
@@ -582,7 +582,7 @@ function equivalencePartitions(sdk) {
     await turnTo(w, S.s1, p)
     assert.deepEqual(await pendingOf(w, d), [])
   })
-  todoRow(sdk, 'WATCH-EP-01', '6', 'after Q24 succession P → P\' → P\' only', LATER.succeed)
+  // Row 6 (after Q24 succession P → P' only) runs in test/v3/dsh-connector/hosted (C-SUCCEED).
 
   // HAND-EP-01 — Who can reach the hand-over service.
   worldRow(sdk, 'HAND-EP-01', '1', `a plugin in the same DSH injects ${HANDOVER.service} and can call handOver / takeBack / managed / principals`, async (w, t) => {
@@ -1071,7 +1071,7 @@ function stateTransitions(sdk) {
     await until(() => w.managed.managerOf(S.s1) === undefined, 'S1 unmanaged')
   })
   // Row 6's system note and the offers to the user run in test/v3/dsh-connector/revocation (C-REVOKE).
-  todoRow(sdk, 'HAND-ST-01', '7', 'Managed(P) → Q24 succession P → P\' → Managed(P\'); one system note; later events to P\'', LATER.succeed)
+  // Row 7 (Q24 succession P → P' → Managed(P')) runs in test/v3/dsh-connector/hosted (C-SUCCEED).
   worldRow(sdk, 'HAND-ST-01', '8', 'Managed(P) → the designated Fishball changes → Managed(P); nothing produced', async (w) => {
     const { p } = await managedByP(w)
     w.principal(ID.q, { connected: true })
@@ -1122,7 +1122,7 @@ function stateTransitions(sdk) {
   worldRow(sdk, 'WATCH-ST-01', '4', 'Watched(P) → Take back → Unwatched; the same', (w) => watchEnds(w, ENDINGS.takeBack))
   worldRow(sdk, 'WATCH-ST-01', '5 disabled', 'Watched(P) → P\'s entry disabled → Unwatched; no later events', (w) => watchEnds(w, ENDINGS.disabled))
   worldRow(sdk, 'WATCH-ST-01', '5 deleted', 'Watched(P) → P\'s entry deleted → Unwatched; no later events', (w) => watchEnds(w, ENDINGS.deleted))
-  todoRow(sdk, 'WATCH-ST-01', '6', 'Watched(P) → succession P → P\' → Watched(P\'); later events to P\' only, none sent twice', LATER.succeed)
+  // Row 6 (succession P → P' → Watched(P')) runs in test/v3/dsh-connector/hosted (C-SUCCEED).
 
   // ROUTE-ST-01 — K1c ManagedState of one session.
   worldRow(sdk, 'ROUTE-ST-01', '1', 'Unmanaged → manage(P) → Managed(P): ok, managerOf and managed() show it once resolved, no event', async (w) => {

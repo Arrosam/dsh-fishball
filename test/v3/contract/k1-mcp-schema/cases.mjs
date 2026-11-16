@@ -482,7 +482,7 @@ export function registerK1Cases(sdk) {
     const found = leaves(mod).filter((l) => l.value instanceof RegExp && MEANING.offerId(l.path)).map((l) => l.value)
     assert.ok(found.some(fits), 'no exported offer-id RegExp fits <request>.r<n>: ' + found)
   })
-  todos(sdk, 'HOST-UC-03', 'C-SUCCEED (succession re-issues offers as r<n+1>)', [['main, E1a', 'succession moves offers with new revisions; the old id answers expired; the user is never refused']])
+  // HOST-UC-03 main and E1a (succession re-issues offers as r<n+1>) run in test/v3/dsh-connector/hosted (C-SUCCEED).
 
   // ======================================================================================
   // PLAT: protocol, body limits, "connected", board and set completeness

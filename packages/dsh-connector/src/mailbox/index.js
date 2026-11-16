@@ -5,7 +5,7 @@
  *
  * - `openMailboxTables(ctx, {defineDomain, domainTable})` → `{tables, close}`.
  * - `createMailbox({tables, hints, now?, newId?, maxQueuedInputs?, logger?})` → the K1 `Mailbox`
- *   plus `expireHolds(now)`.
+ *   plus `expireHolds(now)` and `stage(from, to)` (C-SUCCEED's staged transfer).
  * - `inboxPollTool`, `inboxAckTool` → K1 `CallToolResult`s. `readEventsResource` → the summary
  *   JSON text (design §3.3: never event bodies).
  */

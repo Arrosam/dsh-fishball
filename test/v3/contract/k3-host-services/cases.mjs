@@ -267,10 +267,7 @@ export function registerK3Cases(sdk) {
     assert.match(found.returns, INTERCEPT.promise, 'retire is asynchronous')
     assert.ok(resultCodes(host(), found).size > 0, 'retire has no refusal code')
   })
-  for (const [row, title] of [
-    ['main 3', 'one atomic step moves sessions, role, name, offers (new ids), events; deletes Eo'],
-    ['E2', 'a failure midway moves nothing'], ['E3', 'a user-made old entry is refused; nothing moves'],
-  ]) caseTest(sdk, 'HOST-UC-03', row, title, null, LATER.succeed)
+  // HOST-UC-03 main 3, E2 and E3 (the retire behaviour) run in test/v3/dsh-connector/hosted (C-SUCCEED).
 
   // ================================================================ HOST / UIM: dshInstanceChild (D§4.1, §6.1, K)
   caseTest(sdk, 'HOST-ST-01', 'K', `the service ${SERVICE.child} is declared with ${CHILD.members.join(', ')}`, () => {
