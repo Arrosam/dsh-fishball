@@ -36,12 +36,12 @@ export const UI_ROUTE = Object.freeze({
 })
 
 /**
- * The route bodies: each closed, every other key refused. `maxBytes` bounds one body, so one
- * request cannot hand the hand-over service an unbounded note (no requirement sets a note limit;
- * K3 takes any string). It is a route bound of this module, not the connector's `maxMessageBytes`
- * setting (config.js), whose default is the same 64 KiB: the setting is the user's and can change,
- * this bound does not follow it. DSH has already buffered the body when it is checked, so it
- * bounds what is passed on, not what is read.
+ * The route bodies: each closed, every other key refused. `maxBytes` bounds one whole body: a
+ * route bound of this module, so a body is never parsed past it. The note itself is bounded by the
+ * connector's live `maxMessageBytes` setting (the backend's `maxNoteBytes` port, C-WIRE: "the Hand
+ * over note bound"), which the user may set above this bound: a note larger than this whole-body
+ * bound is then still refused as an invalid request. DSH has already buffered the body when it is
+ * checked, so it bounds what is passed on, not what is read.
  */
 export const UI_BODY = Object.freeze({
   maxBytes: 65536,
@@ -54,6 +54,8 @@ export const UI_CODE = Object.freeze({
   invalid: 'invalid-request',
   /** The hand-over service threw: K2's shared `operation-failed` wording, reused for the route (HTTP 500). */
   failed: CALL_CODE.operationFailed,
+  /** A Hand over or Take back note over the connector's `maxMessageBytes` (K2's shared word; HTTP 400). */
+  noteTooLarge: CALL_CODE.limitExceeded,
   /** Declared by the notify tool (K2 `codes`): the message is empty after trimming. */
   messageEmpty: 'message-empty',
 })

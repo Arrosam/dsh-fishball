@@ -30,13 +30,6 @@ export const SERVICE = Object.freeze({
   child: 'dshInstanceChild',
   ui: 'dshConnectorUi',
   tools: 'dshConnectorTools',
-  /**
-   * V2's connector service (dsh-connector/contract CONNECTOR_SERVICE), the W3 fallback: until
-   * C-WIRE (W4b) wires `ui` into the connector row and removes the V2 path, a V2 connector still
-   * counts as the local connector (Q-U1) and shows its V2 frame through it, and nothing else.
-   * Remove this name with that path.
-   */
-  legacyConnector: 'dshConnector',
   /** DSH's app-ready service (dsh profile-boot, both SDKs): `onReady(fn)` also calls a late subscriber. */
   appReady: 'appReady',
 })

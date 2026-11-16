@@ -43,10 +43,12 @@ async function closedBody(request, shape) {
  * @param deps.handover - K3 `DshConnectorHandover`
  * @param deps.state - the UI state (`./state.js`)
  * @param deps.streams - the stream set (`createStreams`)
+ * @param deps.maxNoteBytes - `() => number`: the live note bound in UTF-8 bytes (the connector's
+ *   `maxMessageBytes`); a note over it is refused before the hand-over service is called
  * @param deps.logger - `{warn}`
  * @returns `[{path, methods, fetch}]`
  */
-export function uiRoutes({ handover, state, streams, logger }) {
+export function uiRoutes({ handover, state, streams, maxNoteBytes, logger }) {
   const snapshot = () => state.snapshot()
   const answered = (fields) => json(HTTP.ok, { ok: true, ...fields, state: snapshot() })
 
@@ -57,6 +59,7 @@ export function uiRoutes({ handover, state, streams, logger }) {
   const operation = (shape, run, fieldsOf) => async (request) => {
     const body = await closedBody(request, shape)
     if (body === undefined) return INVALID()
+    if (body.note !== undefined && byteLength(body.note) > maxNoteBytes()) return json(HTTP.badRequest, { ok: false, code: UI_CODE.noteTooLarge })
     let result
     try { result = await run(body) } catch (error) {
       logger.warn(LOG.format, LOG.handoverFailed, diagnosticOf(error))

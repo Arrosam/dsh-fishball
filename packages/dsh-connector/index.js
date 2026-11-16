@@ -23,6 +23,13 @@
  * An instance reaches all of this only through the contract's `dshConnector` service
  * (src/connector-service.js), which binds one instance's transport to this row's own state
  * (fishballSessionState) and the bridge (src/slim/host/*).
+ *
+ * The V3 connector (src/wire/, task C-WIRE) runs beside it in the same row: the MCP endpoint at
+ * /api/agent/mcp, the OAuth server and approval listener, tokens, pairs, mailbox, routing and
+ * revocation, the hosted-token service, the UI backend and the contribution service, and the
+ * connector's own settings page (client.js). The V2 approval broker is not switched to V3 routing
+ * yet (the user's split, 2026-11-16; C-WIRE-2), so the two share no state. A V3 failure to open is
+ * logged and leaves the V2 path running.
  * There is no in-process Fishball agent or session: the legacy one was removed, because a second
  * Fishball in the main process took every input the user meant for the child.
  */
@@ -50,6 +57,9 @@ import { GRANT_TOOL, Grants } from './src/grants.js'
 import { ResultWording } from './src/result-wording.js'
 import { byteLength, latestFirst } from './src/text.js'
 import { registerRoutes } from './src/http.js'
+import { defineDomain, domainTable } from '@deepseek-ai/dsh-storage-domain'
+import { openV3 } from './src/wire/index.js'
+import { LOG as V3_LOG } from './src/wire/constants.js'
 
 export const name = PLUGIN.name
 export { Config }
@@ -105,6 +115,15 @@ export async function apply(ctx, config) {
   // before this row's registries are up: with no session state the bridge answers feature-off
   // instead of the instance failing to connect (contract §1, §9).
   binding = provideConnectorService(ctx, { onChange: () => publish() })
+
+  // The V3 connector opens on its own: it shares no store with the V2 path, so neither waits for
+  // or fails with the other. Its close is the row's effect from the start, so a row that unloads
+  // while V3 is still opening closes it once it has opened.
+  ctx.effect(() => {
+    const opened = openV3(ctx, { config, storageDomain: { defineDomain, domainTable }, limits, volatileEvent: EVENT.volatileUpdate, namespace: PLUGIN.name, logger })
+      .catch((error) => { logger.warn(V3_LOG.format, V3_LOG.openFailed, diagnosticOf(error)) })
+    return () => { void opened.then((v3) => v3?.close()) }
+  }, V3_LOG.label)
 
   let store
   try {

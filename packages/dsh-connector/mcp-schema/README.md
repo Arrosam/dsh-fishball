@@ -482,6 +482,7 @@ constants migration, 2026-11-14).
 | K1d-5 | `reconnectFromPage` of an unpaired entry throws `TypeError` (a caller bug); `RefreshRecord.chainStartedAt` is withdrawn with the chain cap (no V3 store has shipped, decided item 44); `DERIVED_AGENT_ID` hashes the UTF-8 `client_id` as received and base32-encodes the raw digest, unpadded | decided by Fishball, PROPOSED (2026-11-16) |
 | K1d-6 | A page reconnect revokes the principal's older refresh chains, from the same client id URL and from others, with their access tokens and unredeemed codes, before its new code is minted (`OAuthTokenStore.revokeEntryChains`); a first bind and an `already-paired` revoke nothing; chainless (machine) access tokens are kept | decided by Fishball, not the user (2026-11-16; C-PAGE-ID review) |
 | K1d-7 | Refresh records stay bounded with no chain cap: per chain the store keeps only the newest spent record and the live one, pruning older spent records at each rotation. The newest spent token is still reuse (it revokes the chain after the grace window); an older one is unknown (`invalid_grant`, the chain lives) | decided by Fishball, not the user (2026-11-16; C-PAGE-ID review) |
+| W4b-1 | `READ_ROLE`: `session_read`'s message roles are V2's ROLE with `fishball` renamed `principal` (requirements 1.41 Q-G8 = B); `Mailbox.stage` / `StagedTransfer`, C-MAILBOX's staged transfer that C-SUCCEED's succession uses, is frozen as built (index.d.ts) | the user (Q-G8); `stage` decided by Fishball (2026-11-16, C-WIRE) |
 
 ## Departure from the specification
 
