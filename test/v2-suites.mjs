@@ -77,7 +77,6 @@ export const V2_SUITES = Object.freeze({
     cases('test/body-soul-i6-settings-view.test.mjs', '^P3-ACT-EP-02 ', DISPOSITION.withdrawn, 'the admin service has no currentModel hook into core (I-HOST, Q-G7, R-ARCH-10); successor test/v3/dsh-instance/host MOVED admin; V2 never deployed (user, 2026-11-16)'),
     cases('test/e1-p1-connector-departure.test.mjs', '^P1-ST-0[12] ', DISPOSITION.withdrawn, 'connector-missing removed with the V2 binding (I-HOST: the instance starts with or without a connector); V2 never deployed (user, 2026-11-16)'),
     cases('test/v2-r2-start-detail.test.mjs', '^R2-UC-01/02/03 ', DISPOSITION.withdrawn, 'the status/Retry answer is {state, code, detail, notice} (I-HOST settings page routes); V2 never deployed (user, 2026-11-16)'),
-    cases( '^R3-UC-01 row: ', DISPOSITION.withdrawn, 'the V2 embed broker /fishball/embed/ removed (I-HOST Q7: Open Fishball through one admission); V2 never deployed (user, 2026-11-16)'),
     cases('test/v2-r4-exit-race.test.mjs', '^R4-EXIT-05 ', DISPOSITION.withdrawn, 'connector-missing (the connector disabled during a start) removed with the V2 binding (I-HOST); V2 never deployed (user, 2026-11-16)'),
     cases('test/body-soul-i9-lang.test.mjs', "^(I9 U6 record words equal the connector's|precondition: the connector source has record\\.\\* words|I9-U6-0[1-5] )", DISPOSITION.withdrawn, "main-DSH inline records removed (requirements 1.41 Q-G4 = A, U-DRAW): no connector record.* words to compare"),
   ]),
