@@ -165,6 +165,9 @@ export const V2_SUITES = Object.freeze({
     // V3 F-PAIR (AUTH-UC-05 decisions, AUTH-DT-06, AUTH-ST-03 non-warning-UI rows, NAME-UC-02 core part, NAME-DT-03 core reaction, token-revoked: AUTH-ST-03 row 10, HOST-UC-04 main); run with test/run-v3.mjs.
     file('test/v3/fishball-core/identity/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 fishball-core identity, pairing decisions and token-revoked (F-PAIR)'),
     file('test/v3/fishball-core/identity/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 fishball-core identity, pairing decisions and token-revoked (F-PAIR)'),
+    // V3 F-LINK-SAVE (REM-UC-04, REM-ST-01, FLS-EP-01…05, FLS-DT-01…03, FLS-BVA-01…03; R7, R9, R10, R12 = B, R14, Q-LS1 = A); run with test/run-v3.mjs.
+    file('test/v3/fishball-core/link-save/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 fishball-core saved credentials and Connect (F-LINK-SAVE)'),
+    file('test/v3/fishball-core/link-save/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 fishball-core saved credentials and Connect (F-LINK-SAVE)'),
     // V3 F-SETTINGS (SET3-UC-01…10 and their EP/BVA/DT/ST rows; requirements 1.34 item 4); run with test/run-v3.mjs.
     file('test/v3/fishball-core/settings/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, "V3 fishball-core's own settings page, token field, Connect and Fishball-page entries (F-SETTINGS)"),
     file('test/v3/fishball-core/settings/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, "V3 fishball-core's own settings page, token field, Connect and Fishball-page entries (F-SETTINGS)"),

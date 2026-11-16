@@ -29,6 +29,54 @@ export const LINK_MCP = Object.freeze({
   onInsufficientScope: 'throw',
   // No request follows a redirect: a credential never travels to a redirect target (design §6.3).
   redirect: 'error',
+  // The SDK's `invalidateCredentials` scope for the client's own credentials, and the message of
+  // the refusal its retry ends with (link.js `clientCredentialsOnce`; no value in it).
+  invalidatedClient: 'client',
+  refusedOnce: 'the target refused this client secret',
+})
+
+/**
+ * Core's saved credential and Connect (task F-LINK-SAVE; requirements 1.29 R7, 1.30 R9, 1.31 R10,
+ * 1.32 R12–R14; Q-LS1 = A; design §5.4, §6.3, §6.3a). The published names are K3a's
+ * (`HOSTED_IMPORT`, `CONNECT`); these are the module's own.
+ * - `hostedPayload`: the payload of `HOSTED_IMPORT.savedRecord` (K3a: "core's own format"): a
+ *   version and the accepted token value per target origin (R9: "keyed by target origin");
+ * - `grantRecordIdPrefix` / `originEncoding`: the id segment of Connect's grant record for one
+ *   target origin (K3a leaves it to core): DSH's key grammar is `[a-z][a-z0-9-]*`, an origin holds
+ *   `:` `/` `.` and upper case, so the origin's UTF-8 bytes go in lowercase hex (the adapter's way);
+ * - `credentialId`: the non-secret id of one credential, which F-PAIR keys its records on
+ *   (decided item 13): a token by a SHA-256 of its value under core's `domain` prefix (so it never
+ *   equals the connector's own lookup digest), so the token in the reference and its saved copy are
+ *   one credential; a Connect grant by the random id it was saved with;
+ * - `refreshLeadMs`: a Connect access token is refreshed this long before it expires, the adapter's
+ *   K value (S7c; the connector's access token lives 3600 s, Q27);
+ * - `attemptTimeoutMs`: one Connect attempt's lifetime, the connector's pending-request lifetime
+ *   (R-OA-15), the most an approval can take;
+ * - `flow`: the `ctx.authorization` flow core registers per grant record (one method: the browser);
+ * - `events`: DSH's credential events (dsh-credentials, both SDKs);
+ * - `logger`, `text`: background log lines (a code, never a value) and the notice of the approval URL.
+ */
+export const LINK_SAVE = Object.freeze({
+  hostedPayload: Object.freeze({ version: 1 }),
+  grantRecordIdPrefix: 'connect-',
+  originEncoding: 'hex',
+  credentialId: Object.freeze({ tokenPrefix: 'token:', grantPrefix: 'grant:', domain: 'fishball-core credential id\n', digest: 'sha256', digestEncoding: 'hex' }),
+  /** The `ConnectBegin` outcome with an approval URL (`connect.d.ts`), and DSH's `begin()` status word for a committed grant (dsh-authorization `AuthorizationStatus`). */
+  approvalUrlOutcome: 'approval-url',
+  authorizationAuthorized: 'authorized',
+  refreshLeadMs: 300_000,
+  attemptTimeoutMs: 600_000,
+  flow: Object.freeze({ label: 'Fishball Connect', method: Object.freeze({ id: 'browser', label: 'Connect with the browser' }) }),
+  events: Object.freeze({ referenceUpdated: 'credentials/reference-updated', recordUpdated: 'credentials/record-updated' }),
+  logger: 'fishball-link',
+  text: Object.freeze({
+    approval: 'Open this URL in your browser and enter a token freshly generated in the target DSH\'s connector settings. The URL holds no secret and stops working once this Connect ends.',
+    failed: '%s failed (%s)',
+    save: 'saving the accepted credential',
+    unset: 'clearing the imported token reference',
+    read: 'reading the saved credential',
+    forget: 'removing the replaced credential',
+  }),
 })
 
 /**
