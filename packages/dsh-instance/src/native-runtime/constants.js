@@ -336,6 +336,8 @@ export const LOOPBACK = Object.freeze({
   served: Object.freeze(['127.0.0.1', 'localhost']),
   all: Object.freeze(['127.0.0.1', 'localhost', '[::1]']),
   views: Object.freeze(['chat', 'settings']),
+  /** The view the instance page's Open Fishball admits: the child's Fishball page (Q-G3; the user's answer Q7 = A). */
+  openView: 'chat',
   langs: Object.freeze(['zh', 'en']),
   code: Object.freeze({ hostnameRefused: 'hostname-refused', notReady: 'not-ready' }),
 })
