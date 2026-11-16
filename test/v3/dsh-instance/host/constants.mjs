@@ -24,7 +24,7 @@ export const RELAYED = Object.freeze({
     runtime: path.join('src', 'native-runtime', 'index.js'),
     admin: path.join('src', 'child', 'admin.js'),
     syncTarget: path.join('src', 'child', 'provider-sync-target.js'),
-    syncRoutes: path.join('src', 'slim', 'host', 'provider-sync-routes.js'),
+    syncRoutes: path.join('src', 'host', 'provider-sync-routes.js'),
   }),
   exports: Object.freeze({
     locator: 'createChildLocator',
@@ -150,7 +150,6 @@ export const PAGE = Object.freeze({
 /** The modules moved by I-HOST (brief "Exported surface"). */
 export const MOVED = Object.freeze({
   present: Object.freeze([
-    [V3.instance, path.join('src', 'child', 'admin.js')],
     [V3.instance, path.join('src', 'child', 'provider-sync-target.js')],
     [V3.instance, 'child-row.js'],
     [V3.instance, 'client.js'],

@@ -1,5 +1,5 @@
 import path from 'node:path'
-import { fail, RUNTIME, NATIVE_WEB, HOSTED } from './constants.js'
+import { fail, RUNTIME, HOSTED } from './constants.js'
 
 /** Row identities the attached profile composes; each id is also the patch target below. */
 const ROW = Object.freeze({
@@ -9,7 +9,6 @@ const ROW = Object.freeze({
   lifecycle: 'fishball-native-child',
   webserver: 'webserver',
   webRuntime: 'web-runtime',
-  nativeWeb: 'fishball-native-web',
   child: HOSTED.childRow,
 })
 
@@ -17,13 +16,13 @@ const WEB_CONFIG = Object.freeze({ host: RUNTIME.host, port: 0, tls: undefined }
 const WEB_RUNTIME_CONFIG = Object.freeze({ openBrowser: false, printUrl: false, publicUrl: undefined })
 /**
  * What the launch overlay carries (R-HOST-04; design §6.2; Q-5 and the isolation patches decided
- * 2026-11-15): HMR off, the child's own origin and port, the three instance runtime rows (the
- * lifecycle row, the native-web adapter and the child-side row `dsh-instance-child`, whose config
- * is the target URL core reads, from the instance's snapshot) and the isolation of the
+ * 2026-11-15): HMR off, the child's own origin and port, the two instance runtime rows (the
+ * lifecycle row and the child-side row `dsh-instance-child`, whose config is the target URL core
+ * reads, from the instance's snapshot; I-READY removed V2's native-web adapter row, whose
+ * launch-token probe the readiness gate no longer makes) and the isolation of the
  * child's instructions and skills from the user's own. No guard row: the guards are fishball-core's
  * own patch (F-GUARDS), which applies because the instance places core last (placement.js). No
- * plugin-set row: those are placed bundles, which the child's owner can switch off (R-BND-02);
- * core's own patch inserts its V2 child rows.
+ * plugin-set row: those are placed bundles, which the child's owner can switch off (R-BND-02).
  *
  * No token value and no key: the hosted import travels on the wire (credential.js), and the
  * admission key is derived from the lifecycle secret at both ends (ticket.js).
@@ -75,16 +74,14 @@ export function launchOverlay(paths, record, childModule, limits, control, entri
     { id: ROW.webserver, disabled: false, config: { ...rows.get(ROW.webserver).config, ...WEB_CONFIG } },
     { id: ROW.webRuntime, disabled: false, config: { ...rows.get(ROW.webRuntime).config, ...WEB_RUNTIME_CONFIG } },
     { insert: [
-      // Native Web supplies its standard services. PG-1 owns navigation and permission
-      // enforcement; this composition alone is not a read-only or session-isolation boundary.
-      { id: ROW.nativeWeb, name: path.join(path.dirname(childModule), NATIVE_WEB.adapterModule), required: true, config },
-      // The lifecycle row provides nativeRuntime, which core's session-tools, admin and
-      // provider-sync rows inject (core's cordis.patch.yml), so they start once it is up.
+      // The lifecycle row provides nativeRuntime, which the child-side row injects.
       { id: ROW.lifecycle, name: childModule, required: true, config },
       // The child-side row (child-row.js): it injects the lifecycle row's nativeRuntime, so it
-      // starts after it. Not `required`: a failure there loses the import and the admission, which
-      // the host reports through their own answers, and never blocks the child's start.
-      { id: ROW.child, name: path.join(path.dirname(childModule), RUNTIME.snapshot.childRow), config: { [HOSTED.targetField]: child[HOSTED.targetField] } },
+      // starts after it. `required` since I-READY: the child is ready only once this row's
+      // admission route is up (child.js childReadiness), so a row that cannot load fails the
+      // child's boot at once. A part of it that fails later is logged by the row and leaves the
+      // child `starting`, which the host reports as a failed start at its startup bound.
+      { id: ROW.child, name: path.join(path.dirname(childModule), RUNTIME.snapshot.childRow), required: true, config: { [HOSTED.targetField]: child[HOSTED.targetField] } },
     ] },
   ]
 }

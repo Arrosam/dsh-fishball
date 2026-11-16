@@ -19,11 +19,11 @@ either library on its own (PLAT-EP-07 rows 3/7b, 4, 5, 6, 7a) are registered onc
 | --- | --- |
 | R1 | Two sides with no dependency between them. The DSH side is dsh-connector, dsh-connector-ui, dsh-instance, dsh-connector-adapter (joined with C-MCP-ADAPTER) and the library dsh-connector-shared (`packages/dsh-connector-shared`). The Fishball side is fishball-core, fishball-ui (since F-UI, R-FB-14), fishball-board and the library fishball-shared (`packages/shared`). |
 | R2 | No package is shared across the sides: no import and no dependency field names a package of the other side (libraries included). Neither library imports any other V3 package. |
-| R3 | dsh-connector-shared holds `./admin-protocol`, `./provider-sync`, `./provider-sync-codec`, `./provider-sync-host`, `./redact` and `./files`. Their contracts are those of today's fishball-shared modules (moved, behaviour unchanged). Since C-MCP-ADAPTER it also holds `./oauth-client` (requirements 1.40, design §6.3a: the adapter's token manager, one copy per side), which has no base counterpart. |
+| R3 | dsh-connector-shared holds `./files`, `./provider-sync`, `./provider-sync-codec`, `./provider-sync-host`, `./redact`, `./request-host` and `./oauth-client`. The five moved modules keep the contracts of the fishball-shared modules they came from (moved, behaviour unchanged). Since C-MCP-ADAPTER it also holds `./oauth-client` (requirements 1.40, design §6.3a: the adapter's token manager, one copy per side), and since I-HOST `./request-host`; neither has a base counterpart. It no longer holds `./admin-protocol` (no file, no export): remove-v2-followups D14 (R-ARCH-08 strict: a library module needs a user on its side) deleted it after I-READY deleted dsh-instance's admin relay, its one user (the user's decision 2026-11-16, "Delete it"). |
 | R4 | `files` is duplicated, one copy per library. fishball-shared keeps `./files`. |
 | R5 | Interim rule: until I-HOST, fishball-shared keeps the admin protocol and provider-sync (codec, engine, host, with redact as the host's internal helper) for core's child halves. Core imports only `fishball-shared/*`. The instance, the connector and the adapter import only `dsh-connector-shared/*`. No Fishball-side package imports fishball-shared's `./redact`. |
 | R6 | Both are libraries, not plugins (no `dsh` field), and both are root workspaces. Every importer lists its library in `dependencies` and `bundleDependencies`. dsh-connector-shared peers on cosmokit, dsh-app-boot and dsh-llm-pi-ai. |
-| R7 | Hosted-child placement puts both libraries in `vendor/` and `node_modules/`, beside the bundles and the contract-only connector, never as profile bundles. dsh-connector-shared comes from the instance's dependencies. fishball-shared comes from core's own package location, never from the instance's graph. The instance imports no Fishball-side module. |
+| R7 | Hosted-child placement puts both libraries in `vendor/` and `node_modules/`, beside the bundles, never as profile bundles. I-READY removes dsh-connector: it is neither placed nor a profile dependency. dsh-connector-shared comes from the instance's dependencies. fishball-shared comes from core's own package location, never from the instance's graph. The instance imports no Fishball-side module. |
 | R8 | Drift guard (interim): each pair of copies, the five interim modules and `files`, holds the same code below its leading header comment. |
 
 ## Use Cases
@@ -31,7 +31,7 @@ either library on its own (PLAT-EP-07 rows 3/7b, 4, 5, 6, 7a) are registered onc
 **SPLIT-UC-01: a DSH-side package author uses shared code.** Actor: the author of dsh-instance,
 dsh-connector or dsh-connector-adapter. Main flow: the author imports a moved module as `dsh-connector-shared/<module>`, and
 lists the library in `dependencies` and `bundleDependencies`. A1: every import into the library uses
-one of its export subpaths (the six moved modules and `oauth-client`). E1: an import of any Fishball-side package, fishball-shared included,
+one of its export subpaths (the five moved modules, `oauth-client` and `request-host`). E1: an import of any Fishball-side package, fishball-shared included,
 breaks R2 (SPLIT-DT-01).
 
 **SPLIT-UC-02: a Fishball-side package author uses shared code.** Actor: the author of fishball-core
@@ -47,8 +47,9 @@ row 4). A2: a library itself is refused by DSH's bundle inspection as not-a-bund
 
 **SPLIT-UC-04: the hosted-child placement composes a child profile.** Actor: dsh-instance's
 placement, at every child start (here through the public `composedProfile`, which writes files only and
-starts no process). Main flow: both libraries and the contract-only connector are placed in `vendor/`
-and `node_modules/`, as dependencies, never as bundles. A1: core's fishball-shared is the one beside
+starts no process). Main flow: both libraries are placed in `vendor/`
+and `node_modules/`, as dependencies, never as bundles. Since I-READY, dsh-connector is absent
+from both placement locations and from profile dependencies and bundles. A1: core's fishball-shared is the one beside
 core, even when the instance's own graph resolves another copy (a decoy with a marker file). ST: a
 second start on the same home places them again (placed → placed). E1: with no fishball-shared beside
 core and none in the instance's graph, composition is refused with a typed code.
@@ -60,11 +61,12 @@ core and none in the instance's graph, composition is refused with a typed code.
 | SPLIT-DT-01 | `DSH→Fishball <pkg>` for the connector, the connector-ui, the instance, the adapter and dsh-connector-shared | Decision table (side of importer × side of target) | the package's shipped code and manifest | no import or dependency field names core, board or fishball-shared |
 | SPLIT-DT-01 | `Fishball→DSH <pkg>` for core, board and fishball-shared | Decision table | the same | no import or field names the connector-ui, the instance, the adapter or dsh-connector-shared; also the connector, except for core (REMOVE-V2 `todo`) |
 | SPLIT-UC-01 | main (instance, connector, adapter) | Use Case | manifests and import graph | imports dsh-connector-shared and lists it in both fields; reaches no fishball-shared |
-| SPLIT-UC-01 | A1 | Use Case / EP | every edge into dsh-connector-shared | the specifier is one of the seven `dsh-connector-shared/<module>` (six moved, `oauth-client` added) |
+| SPLIT-UC-01 | A1 | Use Case / EP | every edge into dsh-connector-shared | the specifier is one of the seven `dsh-connector-shared/<module>` (five moved; `oauth-client`, `request-host` added) |
 | SPLIT-UC-02 | main (core) | Use Case | the same | imports fishball-shared and lists it in both fields; reaches no dsh-connector-shared |
 | SPLIT-UC-02 | main (fishball-ui) | Use Case | the same (F-UI) | imports fishball-shared and lists it in both fields; reaches no dsh-connector-shared |
 | SPLIT-UC-02 | A1 | Use Case | Fishball-side edges | none lands on fishball-shared's `redact.js` |
-| SPLIT-EP-01 | 1 | EP (library contents) | dsh-connector-shared's `exports` | the seven subpaths (six moved, `oauth-client` added) map to `./<module>.js` and the files exist; `./package.json` is exported |
+| SPLIT-EP-01 | 1 | EP (library contents) | dsh-connector-shared's `exports` | the seven subpaths (five moved; `oauth-client`, `request-host` added) map to `./<module>.js` and the files exist; `./package.json` is exported |
+| SPLIT-EP-01 | 1 (D14) | EP (library contents) | dsh-connector-shared's `exports` and files | no `./admin-protocol` export and no `admin-protocol.js` (remove-v2-followups D14) |
 | SPLIT-EP-01 | 2 | EP | its `peerDependencies` | exactly cosmokit, dsh-app-boot and dsh-llm-pi-ai, equal to the base library's |
 | SPLIT-EP-01 | 3 | EP | fishball-shared's `exports` | `./files` stays |
 | SPLIT-EP-01 | 4 | EP (packer) | every packed listing | no `node_modules/<other side's library>/` path |
@@ -78,8 +80,8 @@ core and none in the instance's graph, composition is refused with a typed code.
 | SPLIT-EP-04 | redact | EP / BVA | bearer, `token=`, JSON `apiKey`, `password:`, a file path, runs of 31/32/33, plain text, empty | the same output as base; 31 stays, 32 is masked |
 | SPLIT-EP-04 | provider-sync | EP | `syncFingerprint` samples; `unsafeProfileReason` over safe, http, userinfo, headers, duplicate model, zero tokens, null, array | the same as base |
 | SPLIT-EP-04 | provider-sync-codec | EP / BVA | `safeCode` (valid, uppercase, long codes, empty, space, non-string); codec request/encode/decode/acceptRequest, bad JSON, unknown action | the same as base |
-| SPLIT-EP-04 | admin-protocol | EP | `refusal` per code, `refusalOf` typed and untyped, `validateRequest` per operation with `{}` and `null` | the same as base |
-| SPLIT-UC-04 | main | Use Case (integration, no process) | `composedProfile` on a scratch tree | both libraries and dsh-connector in `vendor/` and `node_modules/`, as dependencies, not bundles |
+| SPLIT-EP-04 | admin-protocol (both rows: the export surface and the refusal/validator differential) | — | **withdrawn** by remove-v2-followups D14: I-READY deleted dsh-instance's admin relay, so nothing imports admin-protocol and dsh-connector-shared no longer holds it | registered as a skip with that reason |
+| SPLIT-UC-04 | main | Use Case (integration, no process) | `composedProfile` on a scratch tree | both libraries in `vendor/` and `node_modules/`, as dependencies, not bundles; dsh-connector absent from placement, dependencies and bundles |
 | SPLIT-UC-04 | main | Use Case | the placed dsh-connector-shared | exactly its shipped files (`files` plus package.json) |
 | SPLIT-UC-04 | A1 | Use Case | core's copy has a marker; the instance's graph has a decoy | the placed fishball-shared carries core's marker, not the decoy's |
 | SPLIT-UC-04 | ST | State transition | two compositions on one home | still placed, still not bundles |
@@ -95,6 +97,6 @@ and the instance reaches nothing of fishball-shared.
 ## Open point for Fishball
 
 R-ARCH-08 rule 5 says a library holds modules "more than one" package uses. The SPLIT-SHARED contents
-contradict that at this commit. In dsh-connector-shared, the admin protocol, files and provider-sync
-have one user (the instance), and only redact has two. fishball-shared has one user (core) until F-UI.
+contradict that at this commit. In dsh-connector-shared, files and provider-sync have one user (the
+instance), and only redact has two (the admin protocol, which had one, was deleted by D14). fishball-shared has one user (core) until F-UI.
 PLAT-EP-07 row 6 "at least two" is therefore a `todo` until Fishball reconciles the two texts.

@@ -166,6 +166,8 @@ export const V3_SUITES = Object.freeze({
   // Drives the instance's own modules (locator, hosted token, ticket, credential wire, child-side
   // row, routes, placement) over fakes, reads the K3 host-service freeze, core's patch and session
   // route, the Fishball-side manifests for the boundary rows, and dsh-connector-shared's sync host.
+  'dsh-instance.ready': suite('generic child readiness, safe origin, lifecycle boundary (I-READY)', v3('dsh-instance/ready'),
+    [all(PACKAGE.dshInstance)]),
   'dsh-instance.host': suite("the hosted child's token, locator, admission, child-side row, settings page, placement with fishball-ui (I-HOST)", v3('dsh-instance/host'),
     [all(PACKAGE.dshInstance), sub(PACKAGE.dshConnector, 'host-services'), all(PACKAGE.dshConnectorShared), all(PACKAGE.fishballCore), all(PACKAGE.fishballUi),
       all(PACKAGE.fishballShared), all(PACKAGE.fishballBoard), all(PACKAGE.dshConnectorUi), 'test/v3/contract/k3-host-services/**', 'test/v3/contract/package-boundaries/**',
@@ -264,15 +266,11 @@ export const V2_GROUPS = Object.freeze({
   // These boot the instance's real child (lifecycle, admission, embed): a change in the instance,
   // the core it places, or either shared library (the instance's own, core's placed copy) reruns them.
   'v2.instance': suite('the instance: launch, lifecycle, embed, provider sync, child pages', v2([
-    'body-soul-i1c-status', 'body-soul-i2-launch', 'body-soul-i3-admission', 'body-soul-i6-sync', 'body-soul-i9-embed',
+    'body-soul-i1c-status', 'body-soul-i2-launch', 'body-soul-i6-sync',
     'e1-p1-connector-departure', 'e1-p3-sync-https', 'instance-ext-fakehost', 'provider-sync-coordinator', 'provider-sync-official',
-    'runtime-isolation-boundary', 'runtime-isolation-transport', 'v2-pg-origin-broker', 'v2-r2-start-detail', 'v2-r3-native-access',
+    'runtime-isolation-boundary', 'runtime-isolation-transport', 'v2-r2-start-detail',
     'v2-r4-core-copy', 'v2-r4-exit-race', 'test/verification/w0-host-session.test.mjs',
-    'packages/dsh-instance/test/instance-ext/manager-attach-background.test.mjs', 'packages/dsh-instance/test/instance-ext/manager-workspace.test.mjs',
-    'packages/dsh-instance/test/instance-ext/page-open-session.test.mjs', 'packages/dsh-instance/test/instance-ext/ready-gate.test.mjs',
-    'packages/dsh-instance/test/instance-ext/x0-c-held-context.test.mjs', 'packages/dsh-instance/test/instance-ext/x0-c.test.mjs',
-    'test/v2-page-cases/child-boot.test.mjs', 'test/v2-page-cases/child-boot-nav.test.mjs', 'test/v2-page-cases/child-boot-reopen.test.mjs',
-    'test/v2-page-cases/set-main-only-sync.test.mjs',
+    'test/v2-page-cases/child-boot.test.mjs', 'test/v2-page-cases/child-boot-nav.test.mjs',
   ]), [all(PACKAGE.dshInstance), all(PACKAGE.fishballCore), all(PACKAGE.fishballUi), all(PACKAGE.dshConnectorShared), all(PACKAGE.fishballShared), sub(PACKAGE.dshConnector, 'contract')]),
   'v2.fishball-core': suite('core\'s slim child and pages: chat, records, i18n, persona, skills, settings, lite', v2([
     'body-soul-i6-settings-view', 'body-soul-i7-records', 'body-soul-i9-lang', 'e1-p2-model-choice', 'e1-p4-header-name',
@@ -280,9 +278,8 @@ export const V2_GROUPS = Object.freeze({
     'test/private-skills/sk-bva.test.mjs', 'test/private-skills/sk-dt.test.mjs', 'test/private-skills/sk-ep.test.mjs',
     'test/private-skills/sk-st.test.mjs', 'test/private-skills/sk-uc.test.mjs',
     'test/v2-page-cases/lite.test.mjs', 'test/v2-page-cases/page.test.mjs', 'test/v2-page-cases/pg-origin.test.mjs',
-    'test/v2-page-cases/ready.test.mjs', 'test/v2-page-cases/set.test.mjs',
+    'test/v2-page-cases/ready.test.mjs',
     'test/v2-recommendation/sdk-0.2.1-rc.5.test.mjs', 'test/v2-recommendation/sdk-0.2.2-rc.1.test.mjs',
-    'packages/dsh-instance/test/instance-ext/page-boot-unwind.test.mjs', 'packages/dsh-instance/test/instance-ext/page-open-listed.test.mjs',
     // The page and the Recommended tab are fishball-ui's since F-UI.
   ]), [all(PACKAGE.fishballCore), all(PACKAGE.fishballUi), all(PACKAGE.dshInstance), sub(PACKAGE.dshConnector, 'contract')]),
   // The engine and host adapter are dsh-connector-shared's only copy since I-HOST removed the interim ones.

@@ -12,8 +12,8 @@
  * frame after the main side read it for that confirmation.
  *
  * Transport: the main host starts and owns this child, so the two already trust each other. The target rides
- * the already-authenticated lifecycle wire on its own payload channel, exactly like the T11 admin
- * protocol. The frame shapes are dsh-connector-shared/provider-sync-codec's; this module owns the
+ * the already-authenticated lifecycle wire on its own payload channel, as the hosted token's
+ * `mcp-credential` channel does. The frame shapes are dsh-connector-shared/provider-sync-codec's; this module owns the
  * endpoint and its mount; the wiring is:
  *   1. src/native-runtime/wire.js carries PROVIDER_SYNC_TARGET.channel;
  *   2. src/native-runtime/child.js publishes the child end through onProviderSyncTransport;
@@ -80,8 +80,8 @@ const refusalOf = (error) => ({
 
 /**
  * The child's end of the provider-sync channel. The transport view is `{send, onMessage,
- * onClose}` over the authenticated lifecycle wire; it has no `close`, because the admin and
- * session-bridge protocols share that wire and a sync problem must not drop them.
+ * onClose}` over the authenticated lifecycle wire; it has no `close`, because the lifecycle and
+ * the credential channel share that wire and a sync problem must not drop them.
  */
 export function createProviderSyncTargetEndpoint({ target } = {}) {
   if (typeof target?.handle !== 'function') throw new TypeError('dsh-instance provider sync: the target must implement handle')

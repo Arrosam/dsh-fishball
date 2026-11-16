@@ -7,7 +7,7 @@
  * - createChildProviderSync (src/provider-sync-service.js) `check()` / `add({checkId, ids})`, wired
  *   over an in-memory lifecycle wire to the child's real provider-sync endpoint and engine, whose
  *   host is the existing fake child host (writes observable) — test/support/body-soul-sync.mjs;
- * - registerProviderSyncRoutes (src/slim/host/provider-sync-routes.js) with a stand-in Fetch
+ * - registerProviderSyncRoutes (src/host/provider-sync-routes.js) with a stand-in Fetch
  *   registry, for the two owner routes `models/check` and `models/add`.
  * The card's UI (ticks, disabled states, the result line) is the browser phase.
  *
@@ -58,7 +58,7 @@ import { loadInstance } from './support/body-soul-env.mjs'
 import { PREVIEW_LIFE_MS, SYNC_IDS as ID, post, routeContext, syncHarness } from './support/body-soul-sync.mjs'
 
 const { SYNC_PAGE } = await loadInstance('src/provider-sync-service.js')
-const { registerProviderSyncRoutes, PROVIDER_SYNC_ROUTE } = await loadInstance('src/slim/host/provider-sync-routes.js')
+const { registerProviderSyncRoutes, PROVIDER_SYNC_ROUTE } = await loadInstance('src/host/provider-sync-routes.js')
 
 const ROUTE = Object.freeze({ check: '/api/dsh-instance/models/check', add: '/api/dsh-instance/models/add' })
 /** The refusals §10 names for an Add whose check is no longer valid. */
