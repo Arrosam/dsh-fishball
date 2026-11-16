@@ -30,6 +30,10 @@ import { exists, writePrivate } from '../native-runtime/files.js'
  *   already there), false after a refusal; it never rejects. Concurrent calls share one run.
  */
 export function createInitialSync({ sync, codes, root, warn = () => {} }) {
+  // Concurrency (none of it writes a wrong marker; a refused attempt is retried at the next start):
+  // the owner's Check at the same moment shares this check (D26), so the owner's Add then answers
+  // `preview-expired`; an owner's Add during this one answers `sync-busy`; and a restart while an
+  // attempt is still pending reuses that attempt, which the replaced wire refuses.
   let running
   const marker = () => path.join(root(), INITIAL_SYNC.file)
   async function attempt() {
@@ -41,8 +45,8 @@ export function createInitialSync({ sync, codes, root, warn = () => {} }) {
       const added = await sync.add({ checkId: checked.result.checkId, ids })
       if (!added?.ok) { warn(INITIAL_SYNC.failedLog, added?.error?.code ?? codes.failed); return false }
       // The item's `reason` is the engine's text, which this rule does not vouch for, so only the
-      // outcome code is logged; the owner's manual Check shows what is still missing.
-      for (const item of added.result.items) if (item.outcome === codes.outcomeFailed) warn(INITIAL_SYNC.itemFailedLog, codes.outcomeFailed)
+      // outcome code is logged, once; the owner's manual Check shows what is still missing.
+      if (added.result.items.some((item) => item.outcome === codes.outcomeFailed)) warn(INITIAL_SYNC.itemFailedLog, codes.outcomeFailed)
     }
     await writePrivate(marker(), { format: INITIAL_SYNC.format })
     return true

@@ -215,7 +215,12 @@ export async function apply(ctx, config) {
     // T16: the child is the sync target. The source host reads the main profile's API-key
     // records only inside the sync's confirm step; the page never sees a value (§10).
     providerSync = createChildProviderSync({ ctx })
-    initialSync = createInitialSync({ sync: providerSync, codes: { failed: CHILD_SYNC.code.failed, outcomeFailed: CHILD_SYNC.outcome.failed }, root: () => pathsFor(ctx.profileContext.home).root, warn: (format, value) => logger?.warn(format, value) })
+    initialSync = createInitialSync({
+      sync: providerSync,
+      codes: { failed: CHILD_SYNC.code.failed, outcomeFailed: CHILD_SYNC.outcome.failed },
+      root: () => pathsFor(ctx.profileContext.home).root,
+      warn: (format, value) => logger?.warn(format, value),
+    })
     owner = createNativeRuntime({
       mainHome: key, installAnchor: ctx.profileContext.installAnchor,
       get mainWorkspaces() { return ctx.workspaceRegistry.list().map(workspace => workspace.path) },

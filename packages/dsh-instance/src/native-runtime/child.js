@@ -3,14 +3,11 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { realpath, readFile, chmod, unlink } from 'node:fs/promises'
 import { randomUUID } from 'node:crypto'
-import { RUNTIME, runtimeLimits, fail, loopbackOrigin } from './constants.js'
+import { RUNTIME, READY_CAPABILITIES, runtimeLimits, fail, loopbackOrigin } from './constants.js'
 import { jsonPrivate, readPrivate, writePrivate, privateDirectory, launchPath, snapshotPath, pathsFor, lifecycleLog } from './files.js'
 import { inside } from 'dsh-connector-shared/files'
 import { Wire, ChannelPublisher, proof, sameProof } from './wire.js'
 import { admissionKey, createTicketRedeemer } from './ticket.js'
-
-/** What a ready child reports beside its origin (the host checks the same list, index.js readyHealth). */
-const READY_CAPABILITIES = Object.freeze([...RUNTIME.requiredServices, RUNTIME.capabilities.admission, RUNTIME.capabilities.lifecycle])
 
 /**
  * The base DSH services a hosted child must have mounted (RUNTIME.requiredServices).

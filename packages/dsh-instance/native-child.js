@@ -1,4 +1,5 @@
 import { applyNativeChild } from './src/native-runtime/child.js'
+import { RUNTIME } from './src/native-runtime/constants.js'
 
 /**
  * The attached child's lifecycle row: identity checks, the authenticated lifecycle wire, the
@@ -10,7 +11,7 @@ import { applyNativeChild } from './src/native-runtime/child.js'
  * `pluginPackages`, so the row, and with it the child-side row, starts only once they are up.
  */
 export const name = 'fishball-native-child'
-export const inject = ['profileContext', 'pluginPackages', 'agents', 'sessions', 'tools', 'appExit', 'appReady']
+export const inject = ['pluginPackages', ...RUNTIME.requiredServices]
 export async function apply(ctx, config) {
   await applyNativeChild(ctx, config)
 }

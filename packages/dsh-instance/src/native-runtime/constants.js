@@ -63,6 +63,9 @@ export const RUNTIME = Object.freeze({
   fatalStartupCodes: Object.freeze(['CHILD_IDENTITY_MISMATCH', 'MISSING_CAPABILITY', 'UNSAFE_CHILD_ORIGIN']),
 })
 
+/** What a ready child's health answer lists (child.js); the host requires every one (index.js readyHealth). */
+export const READY_CAPABILITIES = Object.freeze([...RUNTIME.requiredServices, RUNTIME.capabilities.admission, RUNTIME.capabilities.lifecycle])
+
 /**
  * How the child is launched (D28, design §0.5 "Child launch": "主DSH怎么启动，fishball就怎么
  * 启动"): with the main process's own `process.execPath` and `process.execArgv`, and these runtime
@@ -284,7 +287,7 @@ export const INITIAL_SYNC = Object.freeze({
   file: 'initial-model-sync.json',
   format: 1,
   failedLog: 'initial model sync failed (%s)',
-  itemFailedLog: 'initial model sync: a provider was not added (%s)',
+  itemFailedLog: 'initial model sync: some providers were not added (%s)',
 })
 
 /**
