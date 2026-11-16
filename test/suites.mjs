@@ -160,6 +160,12 @@ export const V3_SUITES = Object.freeze({
     [sub(PACKAGE.fishballCore, 'src', 'identity'), ...CORE_LINK, sub(PACKAGE.dshConnector, 'src', 'pairs'), ...CONNECTOR_CORE, ...CONNECTOR_CONTRACTS,
       // Its name rows read the own-schema suite's constants.
       'test/v3/contract/own-schema/constants.mjs']),
+  // Core's link, its saved credentials and Connect (src/link) with F-PAIR's pairing over them; the
+  // Fishball side's OAuth client copy; the fakes reuse F-PAIR's fake pair registry and the
+  // oauth-client suite's in-process DSH host.
+  'fishball-core.link-save': suite('saved credentials once on first acceptance, Connect (F-LINK-SAVE)', v3('fishball-core/link-save'),
+    [sub(PACKAGE.fishballCore, 'src', 'identity'), ...CORE_LINK, PACKAGE.fishballShared + '/oauth-client.js', PACKAGE.fishballShared + '/package.json',
+      'test/v3/fishball-core/identity/**', 'test/v3/dsh-connector-shared/oauth-client/subject.mjs', 'test/v3/dsh-connector/pairs/subject.mjs', ...CONNECTOR_CONTRACTS]),
   // The strip view is fishball-ui's src/status since F-UI (it reads fishball-shared's ui-seam); the line reads the link's target rule.
   'fishball-core.status': suite('status, strip view, set completeness, guards notice (F-STATUS)', v3('fishball-core/status'),
     [sub(PACKAGE.fishballCore, 'src', 'status'), sub(PACKAGE.fishballUi, 'src'), all(PACKAGE.fishballShared), ...CORE_LINK]),
