@@ -1,7 +1,7 @@
 /**
  * The one map from source paths to test suites (the user, 2026-11-16: "按照实际插件的模块分布拆分，
  * 每次动了哪个模块才跑哪个的测试"). test/run-affected.mjs reads it to pick the suites a change needs;
- * test/run-suite.mjs runs one named suite; test/run-v3.mjs and test/run-v2.mjs stay the full runs.
+ * test/run-v3.mjs stays the full V3 run (REMOVE-V2 removed the V2 release run, test/run-v2.mjs).
  *
  * A suite is a list of test files. It is selected when a changed path matches one of its
  * `triggers` (node:path matchesGlob, repo-relative, `/` separators), or when the suite's own files
@@ -15,7 +15,7 @@
  *   through the profile, not through imports, so it triggers on the whole package;
  * - a static check that reads every file of a package (the contract suites) triggers on it all.
  * Revisit an entry when a suite starts loading another module. `node test/run-affected.mjs --check`
- * reports every V2- or V3-selected test file no suite owns, any owned twice, and any listed file
+ * reports every pre-V3- or V3-selected test file no suite owns, any owned twice, and any listed file
  * that does not exist.
  */
 
@@ -223,10 +223,10 @@ export const V3_SUITES = Object.freeze({
 })
 
 /**
- * V2 release suites by the package they exercise. The files stay where they are (the V2 release
- * selection, test/v2-suites.mjs, and its V2B-SUITE checks name them by path); only the grouping is
- * new. `v2.connector-host` boots a real DSH with the connector and the stub instance (H-STUB), so a
- * change to what that row loads (CONNECTOR_BOOT) or to a shared library reruns it.
+ * Pre-V3 suites by the package they exercise. The files stay where they are (the pre-V3 selection,
+ * test/v2-suites.mjs, names the nested ones by path); only the grouping is new. `v2.connector-host`
+ * boots a real DSH with the connector and the stub instance (H-STUB), so a change to what that row
+ * loads (CONNECTOR_BOOT) or to a shared library reruns it.
  */
 const v2 = (names) => names.map((n) => (n.includes('/') ? n : `test/${n}.test.mjs`))
 export const V2_GROUPS = Object.freeze({
@@ -241,13 +241,12 @@ export const V2_GROUPS = Object.freeze({
     'start-session-model', 'start-session-model-persistence', 'start-session-model-races', 'watches-durable', 'watches-fire',
     'watches-http', 'e1-d2-invalid-main-home',
   ]), [...CONNECTOR_BOOT, all(PACKAGE.dshConnectorShared), all(PACKAGE.fishballShared), sub(PACKAGE.dshConnectorUi, 'src', 'client')]),
-  'v2.connector-unit': suite('connector contract and modules, no host (V2 D1–D3)', v2([
-    'v2-d1-contract', 'v2-d1-d3-schema', 'v2-d1-runtime', 'v2-d2-config-retention', 'v2-d3-connector-attention', 'v2-d3-signal-producer',
-    'packages/dsh-connector/test/instance-ext/k1.test.mjs', 'slim-022-install',
+  'v2.connector-unit': suite('the connector\'s W0 K1 semantic profile, no host', v2([
+    'packages/dsh-connector/test/instance-ext/k1.test.mjs',
   ]), [all(PACKAGE.dshConnector)]),
-  'v2.connector-ui': suite('the moved V2 client: brand, frame, card titles, framed lang', v2([
-    'brand-font-language', 'v2-pg-origin-frame-policy', 'body-soul-k2-frame', 'e1-card-titles',
-  ]), [all(PACKAGE.dshConnectorUi), sub(PACKAGE.dshConnector, 'contract'), top(PACKAGE.dshConnector), top(PACKAGE.dshInstance)]),
+  'v2.connector-ui': suite('the moved client: frame policy, card titles, framed lang', v2([
+    'v2-pg-origin-frame-policy', 'body-soul-k2-frame', 'e1-card-titles',
+  ]), [all(PACKAGE.dshConnectorUi), top(PACKAGE.dshConnector), top(PACKAGE.dshInstance)]),
   // These boot the instance's real child (lifecycle, admission, embed): a change in the instance,
   // the core it places, or either shared library (the instance's own, core's placed copy) reruns them.
   'v2.instance': suite('the instance: launch, lifecycle, embed, provider sync, child pages', v2([
@@ -274,10 +273,10 @@ export const V2_GROUPS = Object.freeze({
   ]), [all(PACKAGE.fishballCore), all(PACKAGE.fishballUi), all(PACKAGE.dshInstance), sub(PACKAGE.dshConnector, 'contract')]),
   'v2.fishball-shared': suite('fishball-shared\'s interim provider-sync engine and host copy (until I-HOST)', v2(['provider-sync-engine', 'provider-sync-host']),
     [all(PACKAGE.fishballShared)]),
-  // Static readers of whole packages: v2-boundary reads every manifest and the V2 selection,
-  // limits-source every src/ and contract/ file of four packages and the plugin author guide.
-  'v2.boundary': suite('V2 release boundary, suite selection and the source-level limit checks', v2(['v2-boundary', 'limits-source']),
-    [...Object.values(PACKAGE).map(all), 'test/v2-suites.mjs', 'docs/plugin-author-guide.md']),
+  // A static reader of whole packages: limits-source reads every src/ and contract/ file of four
+  // packages and the plugin author guide.
+  'v2.boundary': suite('the source-level limit checks', v2(['limits-source']),
+    [...Object.values(PACKAGE).map(all), 'docs/plugin-author-guide.md']),
 })
 
 /** Every suite by id. */

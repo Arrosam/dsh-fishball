@@ -7,9 +7,6 @@
  *   `isolatedEnvironment(paths, host)` (host = a stand-in for `process`: env, versions, execPath),
  *   with `paths` from files.js `pathsFor(<temp main home>)`;
  * - packages/dsh-instance/host.js `Config` (the row's schema);
- * - packages/dsh-instance/src/settings-migration.js `migrateLaunchSettings(ctx, {namespace, schema})`
- *   with a stand-in row context whose profile context composes the old `fishball-native-host` row
- *   from a launch overlay (DSH's own patch reader does the composing).
  * The real spawn (executable, detached, no window, no stdin, both versions reach ready) is E1.
  *
  * | id | technique | expected |
@@ -32,24 +29,17 @@
  * | I2-E-DT-05 | DT (Electron, var `0` in main) | ELECTRON_RUN_AS_NODE=1 ("whatever the main process has") |
  * | I2-C-P-01 | P | Config has exactly the field `enabled` |
  * | I2-C-EP-01 | EP (old stored values) | a config with nodeExecutable / executableSearchPath / providerSync / limits is accepted (ignored, not an error) |
- * | I2-M-DT-01 | DT (old row: enabled + both old values; new empty; no marker) | copies only `{enabled}`; the old values are not written and not logged |
- * | I2-M-DT-02 | DT (old row: only the two old values) | nothing written; nothing about them logged |
- * | I2-M-DT-03 | DT (new row already has a user `enabled`) | not overwritten |
- * | I2-M-DT-04 | DT (marker present) | a second boot copies nothing |
- * | I2-M-DT-05 | DT (no old row) | nothing written |
- * | I2-M-EP-01 | EP (old `enabled` invalid) | skipped; logged by key, never by value |
  * | I2-S-01 | static | node-default.js is deleted; no `verifyNode` in packages/dsh-instance |
  */
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
 import { describe, it } from 'node:test'
-import { BODY_SOUL, loadInstance, runtimeAnchor, tempDir } from './support/body-soul-env.mjs'
+import { BODY_SOUL, loadInstance } from './support/body-soul-env.mjs'
 
 const { childExecArgv, isolatedEnvironment } = await loadInstance('src/native-runtime/installation.js')
 const { pathsFor } = await loadInstance('src/native-runtime/files.js')
 const { Config } = await loadInstance('host.js')
-const { migrateLaunchSettings } = await loadInstance('src/settings-migration.js')
 
 const KEPT = Object.freeze(['--use-system-ca', '--max-http-header-size=131072', '--import', 'file:///Applications/DSH.app/compat/a.mjs', '--import', 'file:///Applications/DSH.app/compat/b.mjs'])
 const FAKE_KEY = 'sk-fbtest-planted-0123456789abcdef'
@@ -126,7 +116,7 @@ describe('I2 environment', () => {
   }
 })
 
-describe('I2 the row\'s form and the migration', () => {
+describe('I2 the row\'s form', () => {
   it('I2-C-P-01 the dsh-instance Config has exactly the field enabled', () => {
     assert.deepEqual(Object.keys(Config.dict), ['enabled'])
   })
@@ -134,65 +124,6 @@ describe('I2 the row\'s form and the migration', () => {
     assert.doesNotThrow(() => Config({ enabled: true, nodeExecutable: '/opt/fake/node', executableSearchPath: ['/opt/fake'], providerSync: true, limits: {} }))
   })
 
-  const OLD = Object.freeze({ nodeExecutable: '/opt/fbtest-old/node', executableSearchPath: ['/opt/fbtest-old/bin'] })
-  /** A stand-in row context; `old` is the old row's config (undefined: no old row). */
-  async function migration(t, { old, user = {}, marker = false } = {}) {
-    const dir = await tempDir(t)
-    const profile = path.join(dir, 'profile')
-    fs.mkdirSync(profile)
-    fs.writeFileSync(path.join(profile, 'package.json'), JSON.stringify({ name: 'fbtest-profile', private: true, dsh: { profile: { bundles: [] } } }))
-    const logs = []
-    const updates = []
-    const store = new Map(marker ? [['fishball-native-host', { migratedAt: '2026-11-07T00:00:00.000Z' }]] : [])
-    const ctx = {
-      logger: () => ({ warn: (...a) => logs.push(a.join(' ')), info: (...a) => logs.push(a.join(' ')), debug: (...a) => logs.push(a.join(' ')) }),
-      storageDomain: { open: async () => ({ table: () => ({ get: (k) => store.get(k), put: async (k, v) => { store.set(k, v) } }), close: async () => {} }) },
-      settings: { describe: () => [{ ns: 'dsh-instance', user }], update: async (ns, values) => { updates.push([ns, values]) } },
-      profileContext: {
-        name: 'fbtest-profile', dir: profile, patchPath: path.join(profile, 'cordis.patch.yml'), installAnchor: runtimeAnchor(), cwd: dir, home: dir,
-        startedBundles: [], telemetryDisabledEnv: undefined,
-        overlays: old === undefined ? [] : [{ insert: [{ id: 'fishball-native-host', name: 'fishball-native-host', config: old }] }],
-      },
-    }
-    const copied = await migrateLaunchSettings(ctx, { namespace: 'dsh-instance', schema: Config })
-    const written = Object.assign({}, ...updates.map(([, values]) => values))
-    const logText = logs.join('\n')
-    return { copied, updates, written, logText }
-  }
-  const assertOldValuesSilent = (logText) => {
-    for (const word of ['nodeExecutable', 'executableSearchPath', OLD.nodeExecutable, OLD.executableSearchPath[0]]) assert.equal(logText.includes(word), false, 'the log names ' + word)
-  }
-
-  it('I2-M-DT-01 copies only enabled; the old launch values are not written and not logged', async (t) => {
-    const m = await migration(t, { old: { enabled: false, ...OLD } })
-    assert.deepEqual(m.written, { enabled: false })
-    assert.ok(m.updates.every(([ns]) => ns === 'dsh-instance'))
-    assertOldValuesSilent(m.logText)
-  })
-  it('I2-M-DT-02 an old row with only the two launch values writes nothing and says nothing about them', async (t) => {
-    const m = await migration(t, { old: { ...OLD } })
-    assert.deepEqual(m.written, {})
-    assertOldValuesSilent(m.logText)
-  })
-  it('I2-M-DT-03 a user value already in the new row is not overwritten', async (t) => {
-    const m = await migration(t, { old: { enabled: false, ...OLD }, user: { enabled: true } })
-    assert.equal(Object.hasOwn(m.written, 'enabled'), false)
-  })
-  it('I2-M-DT-04 with the marker present a second boot copies nothing', async (t) => {
-    const m = await migration(t, { old: { enabled: false, ...OLD }, marker: true })
-    assert.deepEqual(m.updates, [])
-  })
-  it('I2-M-DT-05 no old row → nothing written', async (t) => {
-    const m = await migration(t, {})
-    assert.deepEqual(m.written, {})
-  })
-  it('I2-M-EP-01 an invalid old enabled is skipped and logged by key, never by value', async (t) => {
-    const m = await migration(t, { old: { enabled: 'fbtest-not-a-boolean', ...OLD } })
-    assert.deepEqual(m.written, {})
-    assert.ok(m.logText.includes('enabled'), 'logged by its key')
-    assert.equal(m.logText.includes('fbtest-not-a-boolean'), false, 'never by its value')
-    assertOldValuesSilent(m.logText)
-  })
 })
 
 describe('I2 static', () => {

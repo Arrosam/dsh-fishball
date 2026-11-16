@@ -112,7 +112,7 @@ export const HARNESS = Object.freeze({
   workerBody: 'the worker\'s own body, not Fishball\'s',
   /** chmod modes: an existing directory that refuses new entries, and the owner's normal mode. */
   mode: Object.freeze({ noWrite: 0o500, owner: 0o700 }),
-  /** Rows launchOverlay requires (v2-boundary V2B.overlayRows) plus the stock skill provider row. */
+  /** Rows launchOverlay requires plus the stock skill provider row. */
   overlayRows: Object.freeze(['hmr', 'sandbox-policy', 'approval', 'webserver', 'web-runtime']),
   overlaySkillRow: Object.freeze({ id: 'skill-filesystem', name: '@deepseek-ai/dsh-skill-filesystem' }),
   overlayRecord: Object.freeze({ hostId: 'fbtest-host', instanceId: 'fbtest-instance' }),

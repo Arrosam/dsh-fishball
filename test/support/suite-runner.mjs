@@ -1,5 +1,5 @@
 /**
- * The one way the suite entries (test/run.mjs: every root file; test/run-v2.mjs: the V2 selection)
+ * The one way the suite entries (test/run.mjs: every root file; test/run-affected.mjs: the selected suites)
  * run node:test, so both prepare test homes and the contract link identically.
  * Each test file boots its own throwaway DSH_HOME under the OS temp directory;
  * homes from earlier runs are removed first.
