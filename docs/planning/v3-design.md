@@ -12,6 +12,91 @@ SDK paths are shortened: `rc.5` = `~/Library/Application Support/DSH/data/versio
 
 ## 1. Architecture
 
+### 1.0 Two sides with no dependency (requirements 1.34–1.40; supersedes the diagram and tables below where they differ)
+
+The user (2026-11-16): "dsh一侧和fishball一侧是没有依赖的。dsh一侧的connector等插件相当于把dsh的功能透过mcp暴露给外部agent。fishball相当于只是一个能用这个mcp的agent，只是透过一系列插件把dsh改造成了一个单session，但是兼容dsh插件的fishball。"
+and "dsh的connector侧的插件间可以share一个包，fishball侧的插件间也可以share一个包".
+
+```text
+ DSH side (exposes a DSH over MCP to any agent)          Fishball side (one MCP client agent)
+ ┌──────────────────────────────────────────────┐        ┌──────────────────────────────────────┐
+ │ dsh-connector           MCP backend          │◄─ MCP ─┤ fishball-core   backend: session,    │
+ │ dsh-connector-ui        its frontend         │ +OAuth │                 preset, link, Connect│
+ │ dsh-instance            hosted-child helper  │        │ fishball-ui     every UI change,     │
+ │ dsh-connector-adapter   MCP client row       │        │                 window style         │
+ │ dsh-connector-shared    library              │        │ fishball-board  board tools          │
+ └──────────────────────────────────────────────┘        │ fishball-shared library              │
+   only coupling: the connector's public MCP surface      └──────────────────────────────────────┘
+```
+
+| Side | Package | Installed in | Owns |
+| --- | --- | --- | --- |
+| DSH | `dsh-connector` | a DSH to expose | the MCP endpoint and OAuth AS for **any** agent: tokens, pairs and names, mailbox, routing, hand-over, contribution service; every operation and all state behind embed-UI; its own settings page (tokens, limits, approval port) |
+| DSH | `dsh-connector-ui` | beside the connector (requires it) | draws only: the sidebar fish and its light; the **window**, which opens only the hosted child's Fishball page; a hint when no child is running (no instance, or only an external agent connected) to go to the external instance's page (Q-G3); the notify prompt; the managed marks and Hand over / Take back (Q-G5); declares the `notify` tool, handled by the connector; no cards (Q-U2), no inline records (Q-G4) |
+| DSH | `dsh-instance` | a host DSH | a private child DSH: launch, lifecycle, plugin installation **by package name or tarball** from its settings, the token import into the child's credential store (`dsh-agent-token`) with the URL in `dsh-instance.targetUrl`, model sync entirely (writing the child's own DSH model settings, Q-G7), the child locator; its own settings page; imports no Fishball code |
+| DSH | `dsh-connector-adapter` | a DSH that uses another DSH's connector | a stock `dsh-mcp-client` row with OAuth (§5.5b) |
+| DSH | `dsh-connector-shared` | inside the DSH-side tarballs that use it | modules more than one DSH-side package uses |
+| Fishball | `fishball-core` | a Fishball DSH | backend: the manager session and preset, the MCP link, Connect, interception service, status, card store, pairing, non-UI guard rows, its own settings page; runs normally without `fishball-ui`, with no status hint (Q-G1) |
+| Fishball | `fishball-ui` | a Fishball DSH (requires core) | every UI change inside Fishball: the A-lite page, UI guard rows, Recommended tab, status strip, pairing warning, ask cards, the two settings entries, the window style; no reply folding; without core it logs `fishball-core-missing` and changes nothing (Q-G2) |
+| Fishball | `fishball-board` | a Fishball DSH | board tools and archive |
+| Fishball | `fishball-shared` | inside the Fishball-side tarballs that use it | modules more than one Fishball-side package uses |
+
+**Not in V3:** `fishball-fold-notify` (its function is embed-UI's `notify` tool), `fishball-hosted-settings`, Watchdog (a separate project, `.runtime/reports/watchdog-project-notes.md`).
+**Release:** every package starts at `1.0.0-alpha.1`; V3 is installed from zero and handles no earlier version (requirements 1.38 Q-M1).
+
+### 1.0b Cross-side audit (requirements 1.39), with how each dependency is removed
+
+| # | Found (merged W1–W3 code or design) | Removed by |
+| --- | --- | --- |
+| 1 | `core/vendor/mcp-schema/` is generated from the connector's `mcp-schema` (F-LINK) | core keeps its **own** copy of the MCP-surface constants it needs, in `fishball-shared`; no generator reads the connector; drift is caught by a contract test against the connector's real `tools/list` and metadata (decided item D1) |
+| 2 | 17 core files import `fishball-connector/contract` (V2 path); core peers on `fishball-connector` | REMOVE-V2 (Q-E2 A) deletes the V2 child path; the peer goes |
+| 3 | the instance bundles core and the features (`bundled/`, `RUNTIME.bundledPlugins`, core-last placement, `fishball-hosted-settings`) | the instance installs whatever its settings name, by package name or tarball spec, through DSH's own plugin installation; no ordering rule; core and ui reorder themselves (R-FB-12) |
+| 4 | the instance's child rows import core (`native-child.js`, the `mcp-credential` receiver handing the value to core, K3a `importToken` / `hasCredential`) | the child-side row (instance code) writes the value into the child's credential store under `dsh-agent-token`; core reads that reference; presence is DSH's `credentials.describe`; K3a is void (Q-G6 for the contract) |
+| 5 | `fishball-shared` is used by both sides: the admin protocol and provider-sync (instance host + core's `slim/child` halves), `files` (instance + core), `redact` (connector + instance) | split per side. The admin protocol, provider-sync (codec, engine, host) and `redact` move to `dsh-connector-shared`; their child halves move from core's `slim/child` into the instance's own child-side row, because applying model settings and admin operations in a child DSH is generic DSH work. `files` is duplicated: one copy in each library. `fishball-shared` keeps the core/ui contract and Fishball's own constants |
+| 6 | the adapter is Fishball-only and checks for the `/api/fishball` paths and the `fishball` scope | the adapter is `dsh-connector-adapter`, a client of a `dsh-connector` endpoint; its check reads `/api/agent/mcp`, `/api/agent/oauth` and the `agent` scope (§1.0c); no Fishball-side code is involved |
+| 7 | the `fishball` OAuth scope and `fishball:pair`, the `/api/fishball/*` paths, `fishball_id`, the `fishball-events` resource and the `*_fishball` tool names | renamed neutrally (§1.0c, Q-G8 = B) |
+| 8 | `message_fishball` / `ask_fishball` and the designated "Fishball" principal | renamed `message_agent` / `ask_agent`, "designated agent" (§1.0c) |
+| 9 | embed-UI's hosted-child page, status, Retry and model-sync trigger came from the instance's locator, with Fishball wording | the window shows the child's DSH page generically; Fishball wording is `fishball-ui`'s styling inside the page |
+| 10 | the `fishballInstance` X1–X19 members the instance used to provide | already moved to core in V3 (Fishball side only) |
+
+### 1.0c Neutral names (requirements 1.41 Q-G8 = B, Q-G9 = B)
+
+Every DSH-side name that said "fishball" is renamed, because the DSH side serves any agent. The
+Fishball side keeps its names. Text written before 1.41 reads with this table.
+
+| Kind | Old | New |
+| --- | --- | --- |
+| Package | `fishball-connector` | `dsh-connector` |
+| Package | `fishball-embed-ui` | `dsh-connector-ui` |
+| Package | `fishball-instance` | `dsh-instance` |
+| Package | `fishball-connector-adapter` | `dsh-connector-adapter` |
+| Library | `fishball-shared` (DSH-side half) | `dsh-connector-shared` |
+| MCP endpoint | `/api/fishball/mcp` | `/api/agent/mcp` |
+| OAuth issuer | `/api/fishball/oauth` | `/api/agent/oauth` |
+| Token endpoint | `/api/fishball/oauth/token` | `/api/agent/oauth/token` |
+| Protected-resource metadata | `/.well-known/oauth-protected-resource/api/fishball/mcp` | `/.well-known/oauth-protected-resource/api/agent/mcp` |
+| AS metadata | `/.well-known/oauth-authorization-server/api/fishball/oauth` | `/.well-known/oauth-authorization-server/api/agent/oauth` |
+| OAuth scope | `fishball`, `fishball:pair` | `agent`, `agent:pair` |
+| Event resource | `fishball-events`, `fishball://events` | `agent-events`, `dsh-agent://events` |
+| Authorization parameter | `fishball_id` | `agent_id` |
+| Tools for sessions | `message_fishball`, `ask_fishball` | `message_agent`, `ask_agent` |
+| Routing setting | `routing.fishballToken` | `routing.agentToken` (the designated agent) |
+| Refusal codes | `no-fishball` | `no-agent` |
+| Host-only services | `fishballConnectorTools`, `fishballConnectorHandover`, `fishballConnectorTokens`, `fishballChild` | `dshConnectorTools`, `dshConnectorHandover`, `dshConnectorTokens`, `dshInstanceChild` |
+| Contributor metadata key | `io.github.dsh-fishball/contributor` | `io.github.dsh-connector/contributor` |
+| Storage domains | `fishball_tokens`, `fishball_oauth`, `fishball_intake` | `dsh_connector_tokens`, `dsh_connector_oauth`, `dsh_connector_intake` |
+| Generated token prefix | `fbt_` | `dsht_` |
+| Child credential reference (Q-G6) | (new) | `dsh-agent-token` |
+| Child target URL setting (Q-G6) | (new) | `dsh-instance.targetUrl` |
+| Notify tool | (new) | `dsh-connector-ui.notify` |
+| Fishball-only words in the connector | "designated Fishball", "Fishball principal" | "designated agent", "principal" |
+
+Unchanged: `fishball-core`, `fishball-ui`, `fishball-board`, `fishball-shared` (Fishball side), and
+the separate project `dsh-fishball-watchdog`, named by the user. Fishball's own `identity.id` is
+sent as `agent_id`; ids keep the `fb-` prefix core generates.
+
+### 1.0a Earlier text (kept for reference; superseded where §1.0 differs)
+
 Q1's answer sets the shape: every piece is an ordinary DSH plugin, and Fishball itself is a set of
 plugins that turns an ordinary DSH into Fishball. Hosted mode wraps that set with a launcher;
 standalone mode is the same set installed by hand.
@@ -33,16 +118,16 @@ standalone mode is the same set installed by hand.
                │  an ordinary DSH + the Fishball set ─────┘ │  + the Fishball plugin set ───────────┘
                └──────────────────────────────────────────┘ └───────────────────────────────────────┘
      Fishball plugin set (same packages in both):  fishball-core (incl. its fishball-ui component) ·
-                                                    fishball-board · fishball-fold-notify · fishball-watchdog
+                                                    fishball-board   (1.0a is history: fold-notify removed, Watchdog a separate project)
 ```
 
 ### 1.1 Packages
 
 | Package | Installed in | Owns | Never does |
 | --- | --- | --- | --- |
-| `fishball-connector` | a main DSH | MCP server; its own client-credentials OAuth authorization server (§5.5); tokens over `ctx.credentials`; pairs and names (§5.8); per-pair mailbox; routing (R-ROUTE, Q7 decided); session operations (today's `src/*.js` domain); `message_fishball` / `ask_fishball`; managed-session approval interception; the contribution service `fishballConnectorTools` (§13); the no-UI hand-over service (Q3, decided) | browser client, slots, HTML, CSS, iframes; an attention latch |
-| `fishball-instance` | a host DSH | hosted mode only (§6): launching the child with its launch configuration, its lifecycle, placing the four plugins, target and token hand-off, the child locator `fishballChild`, hosted model sync (engine), the hosted settings bundle `fishball-hosted-settings` it places in the child (R-HOST-11), uninstall cleanup | any session, approval, question or prompt service of the host DSH (R-ARCH-05); UI |
-| `fishball-embed-ui` | the host DSH, beside the instance | the sidebar entry and fish, the attention latch and its contributed tools (§13.6), marks and Hand over / Take back buttons that drive the connector's hand-over service (Q3, decided), the frame around the child page, status and Retry, the Plugins card and the model-sync trigger | secrets; session operations of its own; a Fishball page or frame without the instance (R-UI-01); anything at all with neither a connector nor an instance (R-UI-08) |
+| `fishball-connector` | a main DSH | MCP server; its own client-credentials OAuth authorization server (§5.5); tokens over `ctx.credentials`; pairs and names (§5.8); per-pair mailbox; routing (R-ROUTE, Q7 decided); session operations (today's `src/*.js` domain); `message_fishball` / `ask_fishball`; managed-session approval interception; the contribution service `fishballConnectorTools` (§13); the no-UI hand-over service (Q3, decided); **its own plugin settings page** with New token and the one-time reveal (§5.9; requirements 1.28: a settings page is not UI) | any change to DSH's own UI: sidebar, other slots, HTML pages, global CSS, iframes; an attention latch |
+| `fishball-instance` | a host DSH | hosted mode only (§6): launching the child with its launch configuration, its lifecycle, placing the four plugins, target and token hand-off, the child locator `fishballChild`, hosted model sync (engine), the hosted settings bundle `fishball-hosted-settings` it places in the child (R-HOST-11), uninstall cleanup (never touching hosted token entries, Q-B3 B); **its own plugin settings page** (requirements 1.33 Q-D1, Q-D2): child status, Retry, Reconnect, the model-sync trigger | any session, approval, question or prompt service of the host DSH (R-ARCH-05); UI |
+| `fishball-embed-ui` | the host DSH, beside the instance | **amended by requirements 1.33 (Q-D2: "embed UI什么都不管，只是显示一个可以打开dsh页面的按钮"; Q-D4):** the sidebar fish that opens the Fishball page in its frame, or shows a hint when there is a connector but no instance. The marks, Hand over / Take back, attention latch and inline records it held before are the open question Q-F1 | secrets; settings cards (moved to the owners' own settings pages); session operations of its own; anything with no instance and no connector; with the connector alone it is not involved (no fish) |
 | `fishball-connector-adapter` (S7c, §5.5b) | a DSH that uses another DSH's connector | for each configured Fishball connector: the OAuth grant in `ctx.credentials`, the loopback proxy, a stock `dsh-mcp-client` child row, and the `fishball_connector_sign_in` tool | serving any server that is not a Fishball connector; a host patch; tokens in config, logs or the chat |
 | **Fishball plugin set** (Q2, decided: four plugins) | a Fishball DSH (hosted child or standalone) | §5a | acting on any DSH except its own, other than through the target connector's MCP (R-FB-08) |
 
@@ -55,8 +140,6 @@ client module) inside `fishball-core`'s package, installed, enabled and removed 
 | --- | --- | --- |
 | `fishball-core` | **agent:** the manager session and persona; the MCP link to the target (§6.3); the `fishball-events` subscription, the interception service and the acceptance ledger (§6.4); the scoped bridge façade (X12), claims (X15) and send gate (X19); the extension service `fishballInstance` (X1–X19) for feature plugins; manager tools; the private Skills tool; the admin and settings routes it serves to its own web page. **`fishball-ui` component:** the A-lite page client module (Fishball-only page, hidden navigation, shortcut remapping or unbinding, explicit return from Settings/Plugins); the guard rows in core's bundle patch (read-only preset with the Skills exception, disabled session-creating rows); the `fishball-recommended` tab; the generic slim settings panel with its settings-section extension point (hosted-only sections are injected by the instance, R-HOST-11); the **ask card** for asks Fishball cannot decide (R-FB-11) | — |
 | `fishball-board` | board tools, `board_search`, archive | `fishball-core` |
-| `fishball-fold-notify` | notice batching, attention via embed-UI's tool | `fishball-core` |
-| `fishball-watchdog` | supervision (§7) | `fishball-core` |
 
 Inside core, the two parts stay separate modules with a narrow interface: the ui component reads
 the manager's identity and status from the agent side, and has no session powers of its own. So
@@ -246,7 +329,7 @@ V3 drafts had named lanes for Watchdog; they are dropped (requirements 1.8 item 
 - **Answer authority.** `approval_answer` or `question_answer` is accepted only for the current
   `offerId`, from a full access token of the pair that holds the offer. The first committed
   outcome wins (OQ-14). No timer ever settles an offer (R-CON-05). Inside a Fishball DSH, who
-  answers (Fishball or its Watchdog) is the Fishball DSH's own business (§7); the connector sees
+  answers is the Fishball DSH's own business; the connector sees
   one principal.
 - **Bounds.** `maxQueuedInputs` (default 200) still caps automated kinds per pair with
   `queue-full`; user hand-over notes are always accepted (contract 1.2 §9 rule). The page limit
@@ -366,9 +449,10 @@ fishballChild = {
     With the connector services but no instance, it still draws marks, Hand over / Take back and
     the fish with its dots, and contributes its attention tools, with no page or frame (Q18,
     decided; R-UI-08). With neither, it registers nothing.
-  - With it, it registers its own authenticated DSH Fetch routes for status, Retry, admission and
-    model sync, re-serving the locator's results to its own web client. `connection.fetch`
-    already authenticates the browser owner. This is V2's route set, moved out of the instance.
+  - With it, it registers its own authenticated DSH Fetch route for admission only, re-serving
+    the locator's ticket to its frame. **Amended by requirements 1.33 (Q-D1, Q-D2):** status,
+    Retry, Reconnect and model sync move to the instance's own plugin settings page, which calls
+    the instance's own owner-only routes.
 - **Web half** (`dsh.client`, the same injects as today's connector and instance clients):
   - the sidebar entry and fish (the one Fishball entry; DSH's brand mark is not overridden, R-UI-11);
   - **no** answer controls for `ask_fishball` (R-UI-12);
@@ -379,8 +463,11 @@ fishballChild = {
     request and resolution (a `conversation.chat.node` record). The principal's name comes from the
     existing `managed()`. No new service member, no connector read API;
   - the frame: `src` comes from `admit`; when `lang` changes it asks for a new admission;
-  - status and Retry, outside the frame;
-  - the Plugins card with the model-sync trigger;
+  - ~~status and Retry, outside the frame; the Plugins card with the model-sync trigger~~ — moved
+    to the instance's own settings page (requirements 1.33 Q-D1, Q-D2); embed-UI's connector card
+    (the limits) moves to the connector's own settings page;
+  - with a connector but no instance, the fish shows a hint that the Fishball page needs the
+    instance plugin (Q-D4);
   - with `fishballConnectorHandover` present (Q3, decided): managed marks with principal names
     (or `ID: <id>`), the Hand over control (one button or the "Handover to…" dropdown, R-UI-10)
     and Take back, which call the service (§3.6);
@@ -398,49 +485,60 @@ fishballChild = {
 
 ## 5. Tokens
 
-### 5.1 Model
+### 5.1 Model (amended by requirements 1.27)
 
-- A token is a **connector settings list entry** plus a value in DSH's credential store:
+- A token is a **connector settings list entry** plus a **digest** of its value in the
+  connector's own storage domain:
   ```yaml
   tokens:
-    - label: Fishball (local)        # shown in the native form; not a secret
+    - label: Claude on the laptop    # shown in the native form; not a secret
       enabled: true
-      ref: FISHBALL_TOKEN_LOCAL       # credential reference (POSIX env-var name), role('credential-ref')
+      key: 6kq2…                      # opaque entry key the connector wrote at creation; not a secret
   ```
-- The value lives **only** in `ctx.credentials` under `ref`. In the local provider, that means
-  `$DSH_HOME/.credentials.yaml`, then the environment and `.env` fallbacks.
-- The settings document holds the label, the switch and the reference name, never the value.
-  This is DSH's own pattern for keys: `apiKeyEnv: z.string().role('credential-ref')` in
-  `dsh-web-search-deepseek` and `dsh-llm-*`, resolved per operation with `credentials.resolve`.
-- `role('secret')` fields are **not** used. They are redacted on the wire but stored in the
-  settings document, which R-TOK-04 forbids.
+- **Only the connector generates a value**, and it is shown **once**, in the reveal modal (§5.9).
+  Nobody can view or edit it afterwards (requirements 1.27).
+- **Storage is digest-only.** The connector keeps `SHA-256(value)` (K1 `TOKEN_VALUE.digestAlgorithm`)
+  in the entry's record (C-TOKENS' `fishball_tokens` domain) and never the value. This is enough,
+  because nothing ever reads a value back:
+  - the client-credentials grant authenticates with `TokenRegistry.match(client_secret)`
+    (`mcp/oauth/client-credentials.js`), a constant-time compare of the presented value's digest;
+  - the approval page authorizes with the same `match(value)` (`mcp/oauth-web/approval.js`);
+  - access and refresh tokens are already digest-only and carry the entry's generation (§5.5).
+- **Why a plain digest and no HMAC key.** W2's HMAC fingerprint key (`tokens/fingerprint.js`, C-TOKENS
+  question 2 = A) existed so that a stored digest of a short, user-chosen value could not be
+  brute-forced offline. Every value is now 256 random bits, so a SHA-256 digest is not
+  guessable, and the key record is no longer needed.
+- **No exception for hosted entries (R1, requirements 1.28).** A "Fishball (hosted)" value is
+  stored only inside the Fishball child (§5.4). The connector keeps its digest, like any other, and
+  the host DSH's credential store holds no token value at all.
+- The settings document holds the label, the switch and the entry key, never the value, a digest
+  or a reference. `role('secret')` and `role('credential-ref')` fields are not used.
 
-### 5.2 Creation (R-TOK-08; Q5 decided)
+### 5.2 Creation (R-TOK-03, R-TOK-08, R-TOK-11; requirements 1.27)
 
-- The user adds a list entry in **Plugins → fishball-connector → settings**: DSH's native,
-  auto-generated form. There is no custom page.
-- On the settings change (`settings/document-updated`), for each enabled entry whose `ref` is not
-  configured (`credentials.describe(ref).configured === false`) and is writable, the connector:
-  1. generates a value: 32 random bytes from `crypto.randomBytes`, base64url, with prefix
-     `fbt_`, so secret scanners and DSH's own secret mask recognise it;
-  2. stores it with `credentials.set(ref, value)`;
-  3. keeps it in memory only for the comparison digest (§5.5).
-- The value is never shown in any DSH UI. The user hands it to an external agent by reading
-  their own credential store, or sets a value of their choice there or in the environment before
-  enabling the entry. The connector then uses it as is, if it has at least 32 characters
-  (else `token-too-short`). An unwritable store leaves the entry `token-unconfigured` and
-  unusable; two entries with one `ref` are refused at save with `ref-duplicate` (R-TOK-08, TQ-4
-  decided A).
-- **Finding:** in both SDKs DSH's generic plugin form has no secret-entry widget. The native
-  secret inputs (`SettingsSecretField` plus `remote.credentials.set`) are used only by DSH's own
-  Models and web-search pages. The plugin-manager auto form has no secret handling. So a typed-in
-  value through the generic form is not available without a custom page. That is why Q5 was
-  asked; the user chose this design (A).
+- The user presses **New token** on the connector's own plugin settings page in **Plugins**
+  (§5.9; R2, requirements 1.28), and types a label.
+- The connector then:
+  1. generates a value: 32 random bytes from `crypto.randomBytes`, base64url, with prefix `fbt_`,
+     so secret scanners and DSH's own secret mask can recognise it;
+  2. writes the entry's record (entry key, label, digest, generation 0) **before** the settings
+     item, so the sync that sees the new `key` finds its record;
+  3. adds `{label, enabled: true, key}` to the native list through the K1d `SettingsWriter`;
+  4. returns the value **once**, to the caller that asked for it, and keeps no copy.
+- If step 2 or 3 fails, nothing is returned and the record is removed again: there is no entry
+  whose value nobody saw.
+- **Withdrawn (1.27):** a value the user sets in the store or the environment; `token-too-short`
+  and its 32-character minimum (TQ-4's length part); `token-unconfigured`; `ref-duplicate` and
+  value-duplicate (C-TOKENS questions 4 and 5 lapse with them); "a value unset waits for a
+  save". Only label and switch edits, removals and reordering are accepted; duplicates are
+  refused with a notice (R3, §5.9).
+- **Finding (still true):** DSH's generic plugin form has no secret-entry widget and no one-shot
+  display, so the reveal needs the connector's own settings page (§5.9).
 
 ### 5.3 Revocation
 
-Disabling or deleting an entry, or changing or unsetting its credential value, revokes the
-principal at the next request (R-TOK-05, R-OA-06). TQ-2 is decided **A**. Common to every
+Disabling or deleting an entry revokes the principal at the next request (a value can no longer
+change or be unset, requirements 1.27; K1 `RevocationKind` `value-changed` is withdrawn) (R-TOK-05, R-OA-06). TQ-2 is decided **A**. Common to every
 revocation:
 - every access token derived from the entry is invalid; MCP requests get 401 and the token
   endpoint answers `invalid_client`. A request already past the token check completes; the next
@@ -451,7 +549,7 @@ revocation:
   user in their sessions;
 - managed sessions become unmanaged, with one `system` note each.
 
-**Disable** (also a changed or unset value): every other queued event, of every type, `ask`
+**Disable:** every other queued event, of every type, `ask`
 included, is kept for **30 days**; re-enabling the same entry restores the same pair (R-ID-09) and
 the events are pollable again. The designated-Fishball role stays with the entry, so while it is
 off `ask_fishball` from an unmanaged session answers `unavailable` and `message_fishball` queues
@@ -465,23 +563,56 @@ off `ask_fishball` from an unmanaged session answers `unavailable` and `message_
 principal is available, so the session never waits for an answer that cannot come. While the
 entry is only disabled, the call keeps waiting: no timer settles it (R-CON-05).
 
-Deleting an entry also asks `credentials.unset(ref)` when the connector generated the value
-(recorded in its storage domain), and never otherwise.
+Deleting an entry drops its digest record. No value is stored on the connector's side, hosted
+ones included, so nothing is unset (requirements 1.27, 1.28). A deleted hosted entry's value stays
+in the child's credential store, dead, until the user enters a new token in Fishball's settings or
+a reinstall replaces it (§5.4; R6 = B, R8).
 
 ### 5.4 The Fishball DSH's token (R-HOST-05; Q8 decided)
 
 **Hosted, connector in the same DSH (automatic; Q8 revised by requirements 1.9).**
 - The connector provides a host-only service `fishballConnectorTokens`
-  (`{apiVersion: 1, createHosted(instanceId) → Promise<{ref, entryKey, label}>, retire(oldEntryKey, successorEntryKey)}`).
-  `createHosted` creates a **new** "Fishball (hosted)" token entry, stores its value in the
-  shared credential store and returns only the reference and an opaque entry key, never the
-  value. It is called only when the child holds no paired credential (first start, or after a
-  reinstall), never on restart or reconnect.
-- The instance resolves the value with `ctx.credentials.resolve` and sends it to the child over
-  the authenticated lifecycle wire (mutual HMAC proof, `src/native-runtime/wire.js`) on a new
-  channel, `mcp-credential`, after `auth accepted`. `fishball-core` holds it only in memory, and
-  uses it as its OAuth client secret (§5.5).
-- Nothing is written to the child home, the overlay, argv or env (R-HOST-05).
+  (`{apiVersion: 1, createHosted(instanceId) → Promise<{entryKey, label, value}>, entryState, retire(oldEntryKey, successorEntryKey)}`).
+  `createHosted` creates a **new** "Fishball (hosted)" token entry, keeps only its digest, and
+  returns the value **once**, in process, to the instance (the only caller; never to a UI, and no
+  reveal modal). It is called only when the child holds no paired credential (first start, or
+  after a reinstall), never on restart or reconnect.
+- **Nobody sets a token by hand (R10, requirements 1.31: "不允许主动设置token，只能依靠生成").**
+  The plugins are the same in hosted and standalone mode (R8); only the credential source differs:
+  the instance's automatic import here, the user's **Connect** in standalone mode (§6.3a). There is
+  no token input field anywhere in Fishball. This supersedes 1.30's "enter it in core's settings".
+- **The import (R1, requirements 1.28: "存在fishball子实例内，第一次启动的时候由instance插件传入").**
+  At the child's first start (core reports, yes/no, that it holds no credential for the target),
+  the instance calls `createHosted` and sends the value **once** over the authenticated lifecycle
+  wire (mutual HMAC proof, `src/native-runtime/wire.js`) on the channel `mcp-credential`, after
+  `auth accepted`. The child-side receiver (instance code in the child) writes it into the **child
+  DSH's credential store** under the documented reference `dsh-agent-token` and drops it
+  (requirements 1.39: no cross-side code call). Core reads its import from that reference and,
+  once the target accepts it, saves its own copy by R9 (below) and unsets the reference. Whether a
+  credential is present is DSH's own `credentials.describe`, not a core call. The host keeps
+  **no** copy: not in its credential store, lifecycle state, overlay, argv or env.
+- **What the receiver reports back.** Only "accepted and saved", or a failure code: the instance
+  records the entry key only after "saved". If the target refuses the token or core cannot save
+  it, the instance deletes the new hosted entry and reports `credentials-unwritable` (PROPOSED;
+  the K3 code moves from the connector's side to the child's).
+- **Host restart, child restart or crash:** core holds its saved copy, so nothing is created or
+  sent. **Reinstall** (child home removed or reinstalled): the saved copy is gone with the old
+  home, so the new child's start is a first start: a new hosted entry, its value imported once,
+  then succession (R-HOST-09, below). **Uninstall:** the copy goes with the child runtime; the
+  hosted entry's digest stays in the connector until the user deletes the entry. **User delete,
+  then Retry** (R-HOST-10; R6 = B, R11, Q-B1 B): Retry creates **no** token automatically. Its
+  notice lists the ways to replace the token: **Reconnect** on the instance's own settings page
+  (one click: a new hosted entry, its value imported once); a newly generated token pasted in
+  core's own write-only token field in the child (opened through embed-UI's frame); or Connect.
+  Replacing moves nothing: the old entry keeps its name, role and sessions until the user deletes
+  it by hand.
+- **One Fishball UI (Q-B2, requirements 1.33: "一直显示，可以顺手换新，子实例内的界面和独立版本一样，只是套在框里，子实例内这个token框本意是用于连接新的dsh实例。而子实例的主dsh只是被视作一个普通的dsh，只是有一个instance插件可以方便启用和连接").**
+  The child's settings are the standalone settings, framed. Core's own settings always show
+  **Connect** and one **write-only token field**, in both modes. A pasted token is used with
+  `client_credentials` and core's `identity.id`, paired with `pair`, saved by R9, cleared from the
+  field and never displayed. The instance's automatic import and Reconnect (always shown, so the
+  user can rotate a working token in one click) feed the same credential-reference path. The host DSH is
+  an ordinary DSH. **Uninstall (Q-B3 B)** never touches hosted entries.
 - **Reinstall succession (Q24, decided; R-HOST-09).** The instance keeps the entry key of the
   hosted entry it created (non-secret, in its lifecycle state). When a reinstalled child pairs
   with a new hosted token, the instance calls `retire(oldEntryKey, newEntryKey)`. In one storage
@@ -492,20 +623,27 @@ Deleting an entry also asks `credentials.unset(ref)` when the connector generate
   4. re-issues the old entry's live offers into the new mailbox with new offer ids (old ids then
      answer `expired`);
   5. moves pending events with their `eventId`s;
-  6. deletes the old entry and unsets its generated credential value;
+  6. deletes the old entry (its digest; there is no value on the host to unset);
   7. adds one `system` note per moved session.
   `retire` refuses any old entry that `createHosted` did not create for this instance. A failure
   rolls everything back, and the instance retries at its next start.
 - A user who disables a hosted entry gets `token-revoked` in the child and no automatic
   replacement (R-HOST-10).
 
-**Hosted with a remote target.** The instance's `target.tokenRef` names a reference in the host
-DSH's credential store. The user puts there the value of a token created in the remote
-connector's settings (§5.2). The hand-off to the child is the same as above.
-
-**Standalone.** `fishball-core`'s own settings name `target.url` and `target.tokenRef`. The value
-lives in the standalone DSH's credential store, and `fishball-core` resolves it per connection.
-Nothing goes over a lifecycle wire, because there is none.
+**Saved once at the first connection (R7, requirements 1.29: "在第一次连接远程dsh的时候保存一次到fishball本地，这也apply to standalone fishball"; R9 = recommended, 1.30; R10, 1.31).**
+- **Hosted with the same-DSH connector:** the imported token (above), saved after the target first
+  accepts it in a `client_credentials` request, into a core-owned credential record keyed by the
+  target origin (`kind: grant`, as C-TOKENS' key record did).
+- **Standalone, and hosted with a remote target:** the user presses **Connect** (§6.3a); core saves
+  the OAuth **grant** (access and refresh token, no token value) after the code exchange first
+  succeeds, in the same kind of record. Refresh rotates the stored tokens in place, as OAuth
+  requires (R-OA-16); that is not a new save. The instance imports nothing for a remote target.
+- **A changed target origin** is a new first connection: nothing saved applies to it until an import
+  or a Connect for it succeeds.
+- **A refused saved credential** (`token-refused`, `token-revoked`, `invalid_grant` on refresh)
+  stays until a **different** one is accepted, and then it is replaced: a new import (hosted) or a
+  new Connect with another token (standalone).
+- Core never writes or deletes a credential reference the user owns; `target.tokenRef` is withdrawn.
 
 ### 5.5 OAuth: client credentials, the connector as its own authorization server (R-OA)
 
@@ -586,8 +724,30 @@ back to its entry.
 
 The user's answers: the OAuth page also authenticates ("同时兼顾网页认证和机器换码"), with no direct
 access, and the page on its own port ("授权的网页单开一个，改成单独一个端口暴露，不然会被DSH的token要求卡住").
-External behaviour follows MCP 2026-07-28 (requirements 1.17). Machine exchange (§5.5) is unchanged
-and stays the only path for `fishball-core` (R-OA-19).
+External behaviour follows MCP 2026-07-28 (requirements 1.17). Machine exchange (§5.5) is unchanged.
+**Amended by requirements 1.31:** a hosted `fishball-core` uses machine exchange with the imported
+token; a standalone or remote-target `fishball-core` uses this browser flow through **Connect**
+(§6.3a, R-OA-19).
+**Amended by requirements 1.32 (R13: "授权页上填的是名字，ID是被连接的dsh接受来自fishball的id传入。fishball-ish的agent连接时必须提供一个id"; R14: "取消一次连接365天的限制，只要有token和id就能连接") and 1.33 (Q-A1 B, Q-A2 A):**
+the page below asks for the token and an optional **name only**; there is no id field (R-OA-22).
+- **The id comes from the agent.** A Fishball-like agent adds `fishball_id=<its id>` to the
+  authorization request. RFC 6749 §3.1 lets an authorization server define extra request
+  parameters, and a server that does not know one ignores it. The connector checks the id
+  (`id-invalid`, `id-taken`) and shows any refusal on the page.
+- **A client that passes no id** (a generic MCP client) gets a fixed id derived from its client id
+  URL: `cid-` followed by the first 16 lowercase base32 characters of SHA-256(client id URL). It is
+  deterministic, contains no dot, and fits R-ID-02. A collision with another entry's id is
+  `id-taken`, as for any id.
+- **Authorize binds at once, with full rights** (`scope: "fishball"`): one atomic step records the
+  id, the client id URL, the redirect URI, the name or none, and `pairedAt`. No `pair` call is
+  needed.
+- **Reconnect (Q-A2 A).** A bound token entered again with the **same** id (passed, or derived from
+  the same client id URL) gets a new code and chain for the same principal, keeping its name,
+  sessions and queued events. Any other id gets `already-paired`.
+- **Machine clients are unchanged.** Their fishball id **is** their OAuth `client_id`, sent with
+  `client_secret_basic` on every token request [spec: OAuth Client Credentials extension; RFC 6749
+  §2.3.1], and they bind with `pair`.
+- **No chain cap** (R-OA-23): the 365-day cap and the renewal of step 6 below are withdrawn.
 
 **Listeners.**
 
@@ -772,26 +932,30 @@ for both listeners.
 
 ### 5.6 Token hygiene: the token is the security boundary (R-TOK-00)
 
-- Entropy: generated tokens are 32 random bytes, base64url, `fbt_` prefix. A user-set value
-  under 32 characters is refused with `token-too-short` (TQ-4).
-- Storage: values live only in `ctx.credentials`. Digests live in memory, and pairs and access
-  tokens are stored by digest only. Nothing leaves in settings, logs, chat, tool results, test
+- Entropy: every token is generated: 32 random bytes, base64url, `fbt_` prefix. There is no
+  user-set value (requirements 1.27), so no length rule.
+- Storage: the connector keeps a SHA-256 digest of each value and never the value (§5.1); a hosted
+  value lives only in the child's own credential store (§5.4). Pairs and access tokens are stored by
+  digest only.
+  The value leaves the connector once, in the creation response to the reveal modal (§5.9). Nothing leaves in settings, logs, chat, tool results, test
   fixtures or error details.
 - Comparison is constant-time. 401 responses are uniform. Failed attempts are counted per remote
   address for backoff, and the counter holds no token material.
-- Revocation happens by disabling, deleting or changing the entry, and takes effect on the next
-  request for every derived access token.
+- Revocation happens by disabling or deleting the entry, and takes effect on the next request
+  for every derived access token. A value never changes; a lost one is replaced by delete plus
+  create (§5.9).
 - The Host and Origin checks, TLS rule, body limits and rate limits apply to the token endpoint,
   the MCP endpoint and the approval listener alike.
 - "Keep it minimal" applies only to pairing and ids (§5.8), never to this section.
 
 ### 5.7 Where the user manages tokens
 
-All of it is in DSH's native Plugins settings for `fishball-connector`: add, label, enable or
-disable, delete, choose the designated Fishball (`routing.fishballToken`), and see each entry's
-pair state (and, for an entry created by browser approval, its client id URL) (bound id, name, last seen, connected). Values live
-in DSH's credential store. Embed-UI, the instance and every Fishball DSH show only a token's label and
-its configured or unconfigured state, never the value.
+All of it is in DSH's native Plugins settings for `fishball-connector`: label, enable or
+disable, delete and **create** (New token, on the connector's own settings page there, §5.9), choose the designated Fishball (`routing.fishballToken`), and see each entry's
+pair state (and, for an entry created by browser approval, its client id URL) (bound id, name, last seen, connected). The
+connector keeps only a digest of each value (§5.1). Embed-UI, the instance and every Fishball DSH
+show only a token's label, never the value; the connector's one-time reveal modal (§5.9) is the
+only place a value is ever shown.
 
 ### 5.8 Pairing and names (R-ID, R-NAME)
 
@@ -832,6 +996,126 @@ its configured or unconfigured state, never the value.
   principal (R-ID-11). Pairing only prevents one token being spread over many agents. Events are
   delivered per pair, so one event wakes one agent.
 
+### 5.9 One-time reveal, and what it changes (requirements 1.27, 1.28; W4 question 1, R1–R4)
+
+The user's words (W4 question 1, 2026-11-15): "不允许改token值，一旦生成确定了连看都不能看，只有生成的时候弹出modal显示token并允许复制".
+R2 (2026-11-15): "生成入口放在插件设置页内，这个不算UI，不带UI的意思是不影响dsh本身的UI".
+
+**Who owns the modal: the connector (R2).** It lives on the connector's **own plugin settings
+page**, which by the user's rule is not "UI": "no UI" means the connector does not change DSH's own
+UI. R-ARCH-03 and R-ARCH-04 are reworded to match (requirements 1.28). So:
+- the connector gets one `dsh.client` entry whose only registration is its settings page, in the
+  Plugins page's **`plugins.row.config`** slot under the key `fishball-connector#fishball-connector`
+  (`<package>#<row id>`; present on both SDKs, `dsh-client-ui-plugin-manager` `slot-contract.d.ts`).
+  The page receives DSH's host-owned `form` (`state`, `mutate`), so every list edit is an ordinary
+  settings save through DSH's settings service. It registers nothing else: no sidebar, no other
+  slot, no global CSS;
+- embed-UI's existing `plugins.bundle.config` card for the connector (its limits form, D24) is a
+  different key; it moves to the connector's own page (requirements 1.33 Q-D2), so embed-UI keeps
+  no settings card;
+- with embed-UI uninstalled, the connector's settings page, New token and the modal still work.
+
+**Where it appears.** The connector's row page in **Plugins**: the token list (label, switch,
+delete, reorder; pair state read-only, R-ID-12), a label field and **New token**, and the duplicate
+notice (below). The other connector settings (designated Fishball, approval port) are on the same
+page.
+
+**Flow.**
+1. The owner types a label and presses **New token**.
+2. The page POSTs `{label}` to the connector's own owner-only Fetch route (`connection.fetch`,
+   behind DSH's Host and Origin fence; JSON body bound). The route serves JSON only, never HTML.
+3. The route calls the registry's `create(label)`: §5.2 steps 1–4. It resolves
+   `{entryKey, label, value}`. With `createHosted`, these are the **only** two calls that ever
+   return a value, each once per entry.
+4. The route answers `{ok: true, entryKey, label, value}` with `Cache-Control: no-store`, and logs
+   nothing but the label.
+5. The page opens a modal showing the value, with **Copy** (`navigator.clipboard.writeText`) and
+   **Close**, which works at any time (requirements 1.33 Q-D3 B). The value lives only in that
+   modal's state; closing it drops it. Nothing re-opens it.
+6. The list refreshes and shows the new entry, without a value.
+- A failure at step 3 answers a refusal code and shows no modal; nothing was created.
+- If the answer is lost after step 3 (page closed, network), the entry exists but nobody saw its
+  value: the owner deletes it and creates another. Nothing can show it again.
+- Hosted entries never use this path and never show a modal (§5.4).
+
+**Storage decision: digest only** (§5.1). The OAuth and client-credentials checks need only a
+digest: the client-credentials grant and the approval page both call `TokenRegistry.match(value)`,
+and the bearer verifier needs only `get(entryKey)` and the generation. By R1 there is no exception
+any more: a hosted value lives only in the child's own credential store (§5.4), so the host DSH
+holds no token value at all.
+
+**Regenerate: none (R4 = the recommended option).** A lost or leaked value is replaced by
+**delete** plus **New token**; there is no Replace control. That is a new principal: the old one's
+sessions become unmanaged (R-ROUTE-06), its queued events are dropped, the designated role is
+cleared, and its id and name are freed (R-ID-13), so the agent pairs again with the new token and
+may take the same name.
+
+**Duplicates (R3: "发现有重复的就拒绝服务并提示"), read narrowly.** A duplicate is two items with
+the same identity: the same entry `key`, or two entries with the same value digest. The page cannot
+make one, so one comes only from a settings document edited by hand or a store edited by hand.
+- In a **save**: the save is refused and the previous list written back (the existing
+  `restoreTokens` path), and the settings page shows a notice naming the labels. Code PROPOSED:
+  `token-duplicate` (K1d `SETTINGS_REFUSAL`, replacing `ref-duplicate` and `value-duplicate`).
+- Found **outside a save** (at start, or a store edited by hand): every entry involved refuses
+  service (no token request, approval or MCP request succeeds for it) until it is fixed, and the
+  page shows the same notice. This is the W2 "stays unusable" rule, with a notice added.
+- An item with **no record** (added by hand, so no digest; R5 = the recommendation, requirements
+  1.29) is treated like a duplicate: a save that adds one is refused with the same notice; one found
+  at start is listed with the notice and can never authenticate.
+
+**What this changes in existing code (W2 C-TOKENS, merged in `integrate/v3-w2`):**
+
+| Area | Today | After |
+| --- | --- | --- |
+| `tokens/registry.js` | each sync reads every `ref` with `credentials.resolve`, fingerprints it, generates for an unconfigured `ref`, refuses `ref-duplicate` / value-duplicate, tracks `awaitSave` (C-TOKENS Q5 = B), announces `value-changed`; `refresh()` on `credentials/reference-updated` | sync reads no credential: entries come from their records; `create(label)` and `createHosted` generate, record the digest, add the item; the duplicate check above (R3); revocations only `disabled` / `deleted`; `refresh()`, the credential listener, `awaitsSave`, `introduced`, `valueGroups` and `refClashesOf` go. `match` compares SHA-256 digests in constant time over every entry, as now |
+| `tokens/fingerprint.js` | HMAC key in a connector-owned credential record (C-TOKENS Q2 = A) | removed: a 256-bit random value needs no key (§5.1) |
+| `tokens/store.js` | record `{entryKey, ref, label, enabled, generation, generated, fingerprint, keyId, awaitSave, removed}` | `{entryKey, label, enabled, generation, digest, hosted, removed}` (the `instanceId` stays in C-SUCCEED's `hosted/` storage); `TOKEN_STORE.version` 2 |
+| `tokens/constants.js`, `index.js` | `REVOCATION.valueChanged`, `SYNC_REASON.credentials`, `REF_PATTERN`, `findRefDuplicates`, value-duplicate logs | removed (no credential reference is left on the connector's side); a `findDuplicates` (key or digest) replaces `findRefDuplicates` |
+| Settings schema (C-WIRE, W4b) | planned items `{label, enabled, ref}` with `role('credential-ref')` | items `{label, enabled, key}`; no credential reference |
+| Connector package (R-ARCH-03 reworded, R2) | no `dsh.client` (R-EMBED, design §9.1) | one `dsh.client` entry, the settings page only (`plugins.row.config`, its own row key), and one owner-only JSON Fetch route for `create`; PLAT-EP-03 row 1 and HAND-EP-01 row 3 are reworded to allow exactly these |
+| Instance (I-HOST) | resolves the hosted value from the host's store at every child start and sends it on `mcp-credential` | imports it **once**, at the child's first start, from `createHosted`'s answer, through the child receiver into core's `importToken` (K3a); asks core whether it holds a credential; no token or credential reference in its settings; imports nothing for a remote target; the host stores nothing (R1, R10) |
+| Core link (F-LINK-SAVE) | `credentials()` reads `target.tokenRef` (standalone) or the wire value (hosted); `ClientCredentialsProvider` only | hosted: `importToken(value)` (K3a, the receiver's only) and `client_credentials`; standalone and remote: **Connect**, an authorization-code + PKCE `authProvider` built on `fishball-shared/oauth-client` (the S7c K2 token manager, moved from C-MCP-ADAPTER); one saved credential per target origin after first acceptance (R9); `target.tokenRef` and any token field withdrawn (R10) |
+| Shared libraries (requirements 1.40) | one `fishball-shared` for both sides | `dsh-connector-shared` (admin protocol, provider-sync, redact, files, `./oauth-client` for the adapter) and `fishball-shared` (core/ui contract, Fishball constants, the MCP-surface constants core needs, files, `./oauth-client` for Connect) |
+| Pairing (C-PAIR, C-OAUTH-WEB; R13, Q-A1, Q-A2) | the page takes `id` and binds in one step (`PairStore.bindFromPage`); a re-entered token is `already-paired` | the page takes no `id`; the id comes from the `fishball_id` request parameter, or is derived from the client id URL; Authorize binds at once with full rights; the same token with the same id reconnects the same principal (`PairStore.reconnectFromPage`); machine `pair` unchanged |
+| Chain cap (C-OAUTH, C-OAUTH-WEB; R14) | `LIFETIME.refreshChainMaxMs` 365 d, `chainsOf`, `renewFromPage`, renewal on the page | all withdrawn (K1d); a chain ends only by reuse or entry revocation |
+| K1 `ENTRY_STATUS` | `ok`, `token-too-short`, `token-unconfigured` | `ok` only. The field stays, so `mcp/oauth/bearer-verifier.js` and `mcp/oauth-web/issue.js` (`status === ok`) are unchanged |
+| K1 `SETTINGS_REFUSAL` | `ref-duplicate`, `value-duplicate` | `token-duplicate` (PROPOSED, R3); plus R5's code if R5 is answered "refuse" |
+| K1 `TOKEN_VALUE.minChars`, `isTokenLongEnough` | 32 code points | withdrawn |
+| K1 `RevocationKind`, `TokenEntry` | `value-changed`; `ref`, `generated` | `disabled`, `deleted`; `hosted: boolean` replaces `ref` and `generated` (no caller outside `tokens/` reads them) |
+| K3 `host-services/tokens.d.ts` | `createHosted → {ref, entryKey, label}` (value resolved from the host store), `entryState`, `retire`; `disabled` also means "changed or unset its value" | `createHosted → {entryKey, label, value}`, once, to the instance (R1); `create(label)` is connector-internal (its own route), not a K3 member; `credentials-unwritable` becomes the instance's, reported when the child cannot store the value; `disabled` means switched off only |
+| Callers: `mcp/oauth/*`, `mcp/oauth-web/*`, `pairs/`, `routing/`, `handover/` | `match`, `get`, `list`, `onRevoked` | unchanged; C-OAUTH's `followRevocations` already treats every kind alike |
+
+**Requirements and cases withdrawn or changed** (IDs kept, as for R-OA-10):
+- Requirements changed: R-FB-03, R-FB-04, R-OA-19, R-ID-07 (1.31 R10), R-HOST-05 (1.30, 1.31), R-HOST-10 (1.29 R6, 1.31), R-ARCH-03, R-ARCH-04 (1.28, R2), R-TOK-03, R-TOK-04, R-TOK-08, R-TOK-09,
+  R-OA-06, R-CON-10, R-HOST-05 (where the hosted value lives, R1; remote target), R-HOST-09 (no
+  value to unset), R-UI-03; new R-TOK-11. Withdrawn parts: TQ-4's 32-character minimum and
+  `token-too-short`; `token-unconfigured`; `ref-duplicate`; value-duplicate (C-TOKENS question 4 = A);
+  the unset-value wait (C-TOKENS question 5 = B); the HMAC key (C-TOKENS question 2 = A, superseded);
+  "changed value" revocations (W4 question 1, which this answer dissolves).
+- Cases withdrawn: AUTH-UC-01 A1, A2, E1, E2, E3; AUTH-UC-06 A2, A3; AUTH-EP-04 rows 2–7, 7a;
+  AUTH-BVA-03 rows 1–6; AUTH-DT-04 row 12; AUTH-DT-05 rows 3, 4; AUTH-DT-08 rule 4; AUTH-ST-01 row
+  10 and C-TOKENS' rows 10a–10m.
+- Cases changed: AUTH-UC-01 (main: create and reveal; post: the one response that carries the
+  value); AUTH-EP-04 rows 1, 8; AUTH-DT-05 rows 1, 2 (a hosted value only); AUTH-ST-01 (state
+  Unconfigured removed; row 1 becomes "none → New token → Ready"); AUTH-ST-02 row 4, AUTH-ST-05
+  rows 6, 12b, 12d, AUTH-EP-02 row 5 and AUTH-ST-06 row 15: the "value changed" trigger goes;
+  HOST-UC-02 precondition (value copied from the modal); the K1 code-freeze row (AUTH-UC-02 K);
+  HOST-EP-02 rows 1–3 (R1: present in the **child's** credential store only; absent from the host
+  credential store, child home files other than that store, overlays and lifecycle files) and row 7
+  (on `mcp-credential` at the first start only); HOST-UC-01 main 2–3 (C returns the value once, to I; I passes it in once and the child stores it); PLAT-EP-03 row 1 and HAND-EP-01 row 3 (the connector's settings page and its one route).
+- Cases to author (new IDs): **AUTH-UC-15** create a token and copy it once; **AUTH-DT-13** what a
+  save of the tokens list does (duplicates refused with a notice, R3; R5's rule); **AUTH-ST-08** the
+  reveal modal (open → copied / closed, never re-shown); **HOST-ST-03** the hosted value's
+  lifecycle (first start → stored in the child; host restart, child restart, reinstall, uninstall,
+  delete then Retry → notice, no token, R6 = B); **REM-ST-01** the saved credential (imported or Connected →
+  accepted → saved; refused → not saved; changed origin → none; refused copy → replaced by a
+  different accepted one; R7, R9), in standalone and hosted; **REM-UC-04** Connect (standalone and
+  remote target: approval page, code exchange, grant saved, no token value anywhere in Fishball);
+  REM-UC-01's precondition and REM-EP-02/03 (a token in core's settings) are rewritten to Connect.
+
+**R11–R14 answered (requirements 1.32).** Every product question still open after them is
+collected, with options, in `.runtime/reports/v3-open-questions.md` (2026-11-16 sweep).
+
 ## 5a. The Fishball plugin set in any DSH
 
 ### 5a.1 Composition
@@ -865,7 +1149,7 @@ component's part of it), so they work without an instance:
   deleted** — and core's own `preset-fishball` inserted with `agent-preset-registry.default:
   fishball`. The session-creating tools live inside each shipped preset's `config.plugins`, which
   no patch can reach (S6 §3.2), so switching the presets off is how they leave the model.
-  `fishball-watchdog` contributes its own `preset-watchdog` for its side sessions (§7);
+  *(requirements 1.37: no Watchdog preset; core offers only its own `fishball` preset)*;
 - the read-only permission preset (sandbox read-only, approval policy) with the private Skills
   root exception;
 - its client module: the A-lite page, shortcut remapping, the recommended tab and the slim
@@ -908,9 +1192,11 @@ rc.5 has no `presetForSession` ([impl], R-FB-13).
 ### 5a.3 Standalone setup, step by step
 
 1. Install the four tarballs (core is required; the three features are optional) in the DSH with DSH's native "add plugin", then restart that DSH.
-2. In the **target** DSH's connector settings, add a token entry (§5.2).
-3. Put that token's value in the standalone DSH's credential store, under the reference named in
-   `fishball-core`'s settings, and enter the target URL there.
+2. In the **target** DSH's connector settings, press New token (§5.2) and copy the value from
+   the reveal modal (§5.9); it is never shown again.
+3. Enter the target URL in `fishball-core`'s settings, press **Connect** on the Fishball page,
+   and paste the token on the connector's approval page (§6.3a). There is no token field in
+   Fishball; core keeps only the OAuth grant.
 4. Open the standalone DSH's web UI. It is the Fishball page.
 
 `fishball-core` reports `target-unset`, `target-unreachable` or `token-refused` until steps 2–3
@@ -936,8 +1222,9 @@ are done.
 - Host row `inject`: lifecycle, webserver (for the origin), credentials (for the token), settings,
   storage, and the optional `fishballConnectorTokens?` (§5.4). **No** session, approval,
   question or prompt service (R-ARCH-05).
-- The settings form holds `target.url` (blank means a connector in this DSH), `target.tokenRef`,
-  and a read-only target status note. Status codes gain `TARGET_UNREACHABLE`, `TOKEN_REFUSED` and
+- The settings form holds `target.url` (blank means a connector in this DSH) and a read-only target
+  status note; the instance's own settings page (requirements 1.33) adds status, Retry, Reconnect
+  and the model-sync trigger; no token or credential reference (R8: the token is entered inside Fishball). Status codes gain `TARGET_UNREACHABLE`, `TOKEN_REFUSED` and
   `TARGET_INCOMPATIBLE`. These are locator codes; they no longer travel in a contract.
 
 ### 6.2 Launch configuration (no guards; Q20, decided)
@@ -967,20 +1254,77 @@ reports `fishball-off` (R-FB-10).
     resource, §3.3);
   - reconnect with bounded backoff;
   - poll once on every (re)connect.
-- **The credentials:**
-  - hosted mode: the token arrives over the lifecycle wire, in memory (§5.4);
-  - standalone mode: `fishball-core` resolves it from its own DSH's credential store per
-    connection, as DSH's own providers do (`ctx.credentials.resolve`);
-  - either way it is the OAuth client secret, with the fishball id as the client id (§5.5). It is
-    sent only to the target's token endpoint, pinned by `expectedIssuer`, and only over `https:`
-    for a non-loopback target. MCP requests carry only the access token. Credentials are never
-    forwarded on a redirect.
+- **The credentials (requirements 1.31: no token is ever set by hand):**
+  - **hosted with the same-DSH connector:** the instance's one-time import, read from the child
+    credential reference `dsh-agent-token` (§5.4); core uses it as its OAuth client secret with its fishball id as the client id
+    (`ClientCredentialsProvider`, §5.5);
+  - **standalone, and hosted with a remote target:** the grant from **Connect** (§6.3a); core
+    holds no token value;
+  - core saves either credential once, after its first acceptance, per target origin (R9, §5.4),
+    and then resolves the saved copy per connection (`ctx.credentials.resolve`);
+  - a client secret goes only to the target's token endpoint, pinned by `expectedIssuer`, and only
+    over `https:` for a non-loopback target. MCP requests carry only the access token. Credentials
+    are never forwarded on a redirect.
 - **No raw `mcp__…` tools reach the model.** Fishball's manager tools stay the X12 bridge façade
   (`bridge(pluginId, operations)`), under the local scope, the X19 send gate and the image gates.
   All contributed tools are re-exposed through the same façade, unfiltered (Q17, decided). The
   stock `dsh-mcp-client` is not mounted for the target.
 - An answer attempted while the link is down fails `disconnected`. The offer waits at the
   connector (R-REM-04).
+
+### 6.3a Connect: core as a browser OAuth client (requirements 1.31; R-FB-03, R-OA-19)
+
+The user's flow: "the user clicks Connect in Fishball. That opens the connector's browser
+authorization page … and the user pastes the freshly generated token there. Fishball receives only
+the OAuth credentials, never the raw token."
+
+**Yes, core must run the authorization-code + PKCE client flow.** It is exactly the flow a
+browser client runs against §5.5a, and S7c already built and proved it on both SDKs for
+`fishball-connector-adapter` (§5.5b, `51e9ff1`): CIMD `client_id`, PKCE S256, `state` generated
+and checked by the client, `resource`, `iss` checked on success and error (RFC 9207), a loopback
+callback on a fresh OS port per attempt through DSH's `ctx.authorization`, the code exchange with
+no secret, and single-flight refresh under `credentials.modifyRecord`'s cross-process lock.
+
+**One copy per side (requirements 1.40).** The S7c **K2 token manager** is needed by the adapter
+(DSH side) and by core's Connect (Fishball side). Most of it is the SDK's own `auth()` and
+`OAuthClientProvider`; the rest (CIMD client id, `state`, `iss`, the loopback callback through
+`ctx.authorization`, single-flight refresh) is written twice: in `dsh-connector-shared/oauth-client`
+for the adapter and in `fishball-shared/oauth-client` for core. Each is tested on its own side. The rest of the adapter is not reused: core
+needs no loopback proxy and no stock child row, because its own link (§6.3) takes an
+`authProvider` from the same `@modelcontextprotocol/client` 2.2.0 it already pins. The
+Fishball-connector check of §5.5b runs before Connect too, so core never sends an authorization
+request to a server that is not a Fishball connector.
+
+**The flow.**
+1. With a target set and no saved grant for its origin, the Fishball page's status strip shows
+   **Connect** (instead of `token-refused` / `target-unset` wording; F-STATUS shows the state).
+2. Connect starts one `ctx.authorization` attempt and opens the approval URL in the user's
+   browser. The URL carries no secret and is dead once the attempt ends (S7c rules).
+3. On the connector's approval page (§5.5a) the user pastes a freshly generated token (New token,
+   §5.9), the fishball id and an optional name, and presses Authorize. Core never sees the token.
+4. The loopback callback delivers `code`, `state` and `iss`; core checks them, exchanges the code
+   with `code_verifier` and `resource`, and saves the grant once (R9, §5.4).
+5. Core's link connects with the access token and refreshes it per R-OA-16; `invalid_grant` drops
+   the grant and shows **Connect** again, once, with no retry loop.
+- **R13 and Q-A1 (1.32, 1.33):** Connect passes core's `identity.id` as `fishball_id`, so the
+  page binds it at once (R-OA-22). `id-taken` and `already-paired` are shown on the page; core
+  shows "finish on the approval page" until the code arrives. Core reports its name with `set_name`
+  when the page left it empty (R-NAME).
+- **Q-A3 B (1.33): from another machine.** When the Fishball page is opened from a browser that
+  is not on Fishball's machine, Connect uses a second redirect URI: Fishball's own https web
+  address plus a fixed path served by core's owner-only route. The user's CIMD document must list
+  it too (the README template shows both). The callback is accepted only for a pending attempt,
+  with its `state` and `iss` checked. A plain-HTTP non-loopback address is refused, because
+  R-OA-14 requires `https:` for a non-loopback redirect.
+- **R12 = B (1.32):** `connect.clientMetadataUrl` is a required core setting with no default, a
+  user-hosted CIMD document (the adapter's README template applies, with core's loopback callback
+  in `redirect_uris`). Without it Connect reports `needs-configuration` and sends nothing.
+- **R14 (1.32):** no chain cap, so a Connect grant lives until it is revoked; no renewal step.
+- A hosted child with a remote target uses the same Connect; the callback listens on the child's
+  loopback, on the same machine as the user's browser.
+
+R12–R14 are answered (requirements 1.32). The remaining product questions are collected in
+`.runtime/reports/v3-open-questions.md`.
 
 ### 6.4 Interception service and wake (R-INT, R-EVT-03; Q30 decided)
 
@@ -1017,17 +1361,9 @@ listen hint / reconnect ─► inbox_poll ─► acceptance ledger (durable, Fis
    ─► inbox_ack after the receiving side's durable acceptance (R-INT-08)
 ```
 
-- **Watchdog's registrations** (R-INT-07; Q13 decided; redefined by requirements 1.14),
-  priority 0:
-  - `types: ['permission']`, `filter: e => supervision.isActive(e.sourceSessionId)` (healthy X14
-    state and a live X15 claim);
-  - `types: ['settlement', 'retirement']`, `filter: e => watchdog.handled(e.correlationId)`
-    (offers it held or escalated to the user).
-  Everything else (every `turn-finished`, mid-work or idle; `state`; questions, plan reviews,
-  messages, asks, hand-over and take-back, notices, contributor events, unsupervised sessions)
-  matches no Watchdog registration and reaches Fishball. Watchdog's patrol is not an
-  interception; it is driven by its own timer (§7.1).
-- **Other plugins** may register too (fold-notify, the board, third-party child plugins), for
+- **No built-in interceptor** (requirements 1.37: Watchdog is a separate project). Every event
+  reaches Fishball unless a plugin the user added registers for it.
+- **Plugins** may register (the board, third-party child plugins), for
   example for `contributed:<ns>.*` types. The same rules apply. A registration with the same
   types and priority as another is accepted with one logged warning (R-INT-03).
 - **Exactly once inside the Fishball DSH:** the acceptance ledger is **core's** (S2-Q1 / Q-S3-2
@@ -1054,8 +1390,8 @@ listen hint / reconnect ─► inbox_poll ─► acceptance ledger (durable, Fis
   admission discards the event** (S2-Q3 decided A): acked, never retried; offers inside it stay
   live at the connector (R-CON-05). S2-Q1 is decided (§6.4 `ctl.accept()`). Nothing in this design claims exactly-once model
   execution.
-- When Watchdog fails (X14 `fail()`), its filter turns false at once and it disposes its
-  registration. In-flight events it has not accepted fall back to Fishball (R-WD-07, R-INT-04).
+- When an interceptor fails, its registration is disposed. In-flight events it has not accepted
+  fall back to Fishball (R-INT-04).
 - **External agents** have none of this. Their subscription receives the typed events
   unchanged (R-EVS-04).
 - The custom first-party push of decision 1a is retired (Q11, decided). A standalone Fishball
@@ -1069,90 +1405,13 @@ listen hint / reconnect ─► inbox_poll ─► acceptance ledger (durable, Fis
   never stops remote sessions.
 - In hosted mode the embed frame stays local; only the child's MCP link is remote.
 
-## 7. Watchdog
+## 7. Watchdog — withdrawn from Fishball V3 (requirements 1.37)
 
-### 7.0 What Watchdog is (R-WD-00; Q10 decided, revised by requirements 1.8)
-
-Watchdog is Fishball's helper, like a subagent of Fishball. At the connector it does not exist:
-everything it does goes out as Fishball's principal, through `fishball-core`'s MCP link. It has
-no token, subscription, mailbox or lane of its own.
-
-### 7.1 How events reach it (R-WD-02, R-INT-07)
-
-1. On `fishball-core`'s X14 `ready()`, Watchdog registers with core's interception service
-   (§6.4) for `permission` requests of the sessions it supervises while healthy, and for
-   `settlement` / `retirement` of offers it held or escalated. That is all it intercepts
-   (requirements 1.14). This replaces the V2 X9 `inbox.claim` and the earlier "router claim";
-   there is no new transport extension point, and X20 of earlier drafts is dropped.
-2. Core hands it the matching events without a Fishball LLM turn.
-3. Watchdog calls `await ctl.accept()` first; core's record is the durable acceptance, and core
-   acks only after it (R-INT-08). Watchdog's answers go through `ctl.commit(send)`. A decision it
-   makes alone (allow, justified reject) leaves no trace in Fishball's context; it is logged only
-   (R-INT-09).
-4. **Patrol (R-WD-14):** for each supervised session, Watchdog's own timer fires once every
-   `minCheckIntervalSeconds`. It then reads the session through core's link: `sessions_list`
-   for running and pending state, and `session_read` from its last patrol watermark, bounded
-   by its read limits. It needs no `turn-finished` or `state` events, which all go to Fishball.
-5. One Watchdog side session per watched session (U8), running Watchdog's own `watchdog` agent
-   preset (contributed by `fishball-watchdog`; R-WD-16), handles that session's permission
-   requests and patrols, on Watchdog's own model settings.
-6. An escalation **to Fishball** is `ctl.release(e, {toFishball: true})` (R-INT-05). An
-   escalation **to the user** commits `escalate` at the connector (§7.2).
-7. **No on-demand runs (Q33 decided).** Fishball has no `watchdog_check_now`. `watchdog_refine`
-   only stores a new brief or criteria for a session, which Watchdog reads at its next permission
-   judgement or patrol. It starts no turn and moves no timer (R-WD-15).
-
-### 7.2 Requests to Fishball inside the Fishball DSH (R-WD-08)
-
-Watchdog never talks to Fishball over MCP. It uses the Fishball DSH's in-session communication:
-- `manager.notify` (X10) for "watchdog is down", reports and abnormalities: one waking notice
-  turn, durably deduped;
-- an **escalation to Fishball** (only an item that is not high-risk and that Watchdog cannot
-  decide) **re-routes** the offer to the Fishball branch. It is still the same live offer at the
-  connector, with the same offer id, because the principal is the same. Watchdog adds one
-  `manager.notify` carrying its reasoning, so Fishball's turn has the context;
-- an **escalation to the user** (any other high-risk item, Q13 decided) is committed through
-  core's link as `approval_answer` with decision `escalate`. The connector shows the user's card in
-  that session, with no time limit and no Fishball turn. When the user settles it, the
-  `settlement` event is intercepted by Watchdog (its second registration), and Watchdog gives
-  Fishball a non-waking `manager.notify` (`wake: false`) with the outcome for its next turn;
-- answers Watchdog commits (allow, justified reject) go out through core's link as Fishball's
-  principal. The connector's first-commit rule (OQ-14) still settles races with the user.
-
-### 7.3 Behaviour (carried from T0 and the user's rules)
-
-- **Activation (requirements 1.14, R-WD-03):** exactly two cases: a supervised session's
-  permission request, and Watchdog's own patrol timer, once every `minCheckIntervalSeconds` per
-  session (default 1740, inclusive 60–86400). There is one timer per watched session, for patrol
-  only. Permission handling is never delayed by it. Nothing else starts a Watchdog run:
-  there is no `check_now`, and a refine only updates the brief (Q33 decided, R-WD-15). No other
-  timers exist (R-WD-05).
-- **Decision table:**
-
-  | Request | Watchdog decision |
-  | --- | --- |
-  | in scope, low risk | allow |
-  | beyond the task **and** dangerous | reject, with a justification |
-  | other high risk | `escalate` to the user's card, no Fishball turn (Q13, decided) |
-  | not high-risk, but Watchdog cannot decide | re-route to Fishball (§7.2) |
-  | question / plan review | never reaches Watchdog |
-
-- **Failure = off** (R-WD-07):
-  - The X14 `fail()` runs synchronously: it disposes its interception registration; items it was
-    offered or accepted but had not decided go to Fishball once; an answer whose `commit` had begun
-    stays Watchdog's (committed or fenced, never both, R-INT-04); stale callbacks are fenced.
-  - It also sends one `manager.notify` "watchdog is down" per down episode.
-  - Watchdog has no stream of its own. Loss of core's link is core's status, not a Watchdog
-    failure; events simply wait at the connector until the link is back.
-  - When a hosted child cannot start (R-BND-03), the instance keeps the pending notice in its
-    lifecycle state and delivers it on the next successful start (R-HOST-08). In a standalone
-    DSH, `fishball-core` checks at app ready whether an enabled `fishball-watchdog` has
-    registered, and sends the notice if not (R-FB-07).
-- **Pause = stop the session first** (R-WD-10). Models follow DSH native session timing; Save
-  does no model lookup.
-- **If the link to the connector is down,** neither Watchdog nor Fishball can answer. Offers wait
-  at the connector (R-REM-04). After reconnect core dispatches again from the mailbox, and an
-  answer from before the outage that never committed is not replayed.
+Watchdog is a separate project, `dsh-fishball-watchdog`. Its design notes are in
+`.runtime/reports/watchdog-project-notes.md`. Nothing in this design serves it: no supervision
+service, no interception registration, no preset, no notice, no contract member. Without it,
+every permission request of a managed session reaches that session's Fishball (§3.5), which
+answers or escalates it to the user's card (R-CON-05, R-FB-11).
 
 ## 8. Placement of the plugin set
 
@@ -1202,7 +1461,6 @@ moves itself last at its first start; the guard holds at once with HMR, or after
 (R-FB-12). So:
 - `fishball-core` reports which expected members are missing or skipped in its status
   (`plugin-set-incomplete`, naming them);
-- a skipped or failed Watchdog produces one "watchdog is down" notice per start (R-FB-07);
 - there is no placement record: the user's native switches are the truth, as in hosted mode.
 
 ### 8.3 How each feature fits V3
@@ -1211,7 +1469,7 @@ moves itself last at its first start; the guard holds at once with HMR, or after
 | --- | --- | --- |
 | board | X1, X2 (tools `board_*` + `board_search`, dynamic context) | none to its domain. Archive forever, 30-day visibility. Export offer: the instance's uninstall in hosted mode; in standalone mode, a `board_export` manager tool and a note in the README, because DSH's native remove offers no hook |
 | fold-notify | X2, X9 batcher, X8 attention | X8 now calls embed-UI's contributed `embed-ui.attention.signal` over the MCP link. If it is absent, the call gets `unsupported-operation` (D3 rule). The batcher sits on the Fishball branch, after interception (§6.4) |
-| watchdog | X1, X2, X9 (now the interception service), X10, X11, X12, X13, X14, X15, X16, X19 | an interceptor in core for supervised `permission` only (§6.4, §7); patrol by its own timer; no `check_now`, and refine is a data update (R-WD-15) |
+| watchdog | — | *withdrawn from V3 (requirements 1.37): a separate project* |
 
 ## 9. Packaging and compatibility
 
@@ -1219,11 +1477,11 @@ moves itself last at its first start; the guard holds at once with HMR, or after
 
 | Package | Change |
 | --- | --- |
-| `fishball-connector` | Drop `dsh.client`, `client.js`, `client.records.js`, `assets`, UI locale, and the `./client`, `./contract` and `./records` exports. Add `./mcp-schema` (tool and event schemas, limits, vocabularies) and `./tools` (contribution types, `apiVersion`, the shared result-code vocabulary, a `defineTool` helper that validates at the call site; data and types only). Add a runtime `dependencies` entry for the MCP server SDK and its Node adapter, installed inside the connector's folder, never as a DSH peer. Keep `engines.dsh >=0.2.1-rc.5`. |
+| `fishball-connector` | Replace the V2 `dsh.client` with one that registers only its settings page (§5.9; requirements 1.28); drop `client.js`'s V2 parts, `client.records.js`, `assets`, and the `./client`, `./contract` and `./records` exports. Add `./mcp-schema` (tool and event schemas, limits, vocabularies) and `./tools` (contribution types, `apiVersion`, the shared result-code vocabulary, a `defineTool` helper that validates at the call site; data and types only). Add a runtime `dependencies` entry for the MCP server SDK and its Node adapter, installed inside the connector's folder, never as a DSH peer. Keep `engines.dsh >=0.2.1-rc.5`. |
 | `fishball-instance` | Depend on `fishball-shared` (bundled); never on `fishball-core` (R-BND-01 strict). Drop the `fishball-connector` peer, the main-side `client.js`, `child-web/` and the `LITE` guard overlays. Keep `src/child-settings/` as the source of the `fishball-hosted-settings` bundle (R-HOST-11; Q-6; instance-owned source, a plain bundle with one row and a `dsh.client` entry, registering into core's settings-section extension point). Keep the host row, the native runtime (lifecycle, launch configuration, placement), `uninstall.js` and hosted model sync. Add `bundled/` (the four set members) to `files`. |
 | `fishball-core` (new, from `packages/instance/src/slim/child/**`, `src/persona.js`, the private Skills tool, `native-child.js`'s app pieces, and, as its `ui/` component, `packages/instance/child-web/**` and the `LITE` overlay rows) | Bundle row(s) for the Fishball DSH; its `cordis.patch.yml` also carries the guard rows; `dsh.client` (platform web) for the `fishball-ui` page, recommended tab and slim settings. Runtime dependency on `fishball-shared` (bundled), `@modelcontextprotocol/client` 2.x and `fishball-connector/mcp-schema`, vendored as a copy so a standalone install needs nothing from the connector package at runtime. |
 | `fishball-shared` (new, `packages/shared`; TQ-R3 and TQ-R5 decided, R-ARCH-08) | A **library**, not a plugin: no `dsh` field, no row, no client. Holds only modules **more than one** V3 package uses; first contents: the child `admin` constants, the provider-sync wire codec, the file helpers core and the instance share. Imports nothing from any other V3 package. **Any** V3 package may depend on it (connector, embed-UI, core, instance, feature plugins, `fishball-hosted-settings`); each that does lists it in `dependencies` **and** `bundleDependencies`, so its release tarball carries it and nothing is fetched from a registry. Loading it never loads a module of the Fishball set (R-BND-01). |
-| `fishball-board`, `fishball-fold-notify`, `fishball-watchdog` | Change the peer from `fishball-instance` to nothing: they find `fishball-core` through the optional `fishballInstance?` inject. |
+| `fishball-board` (requirements 1.34, 1.37: the only feature plugin) | Change the peer from `fishball-instance` to nothing: they find `fishball-core` through the optional `fishballInstance?` inject. |
 | `fishball-embed-ui` (new; S4-Q3 decided B) | Host row + `dsh.client` (platform web) with the inject lists of today's two main-DSH clients combined. Optional peers `fishball-instance` and `fishball-connector` (the latter for `./tools` types only; embed-UI never imports connector code). Owns the moved locale strings. |
 | `fishball-connector-adapter` (new, `packages/connector-adapter/`; S7c) | A standalone plugin row for the client DSH: settings `clientMetadataUrl` (required, no default) and `servers`; uses `ctx.credentials`, `ctx.authorization` and `ctx.tools`; mounts `@deepseek-ai/dsh-mcp-client` as a child. Versioning and dependency pins are **carried** (v3-remaining-plan §3 Q4 recommends: versioned with the set, `@modelcontextprotocol/client` pinned as K1 pins the server SDK, no `fishball-shared` dependency unless a module is genuinely shared). |
 
@@ -1286,7 +1544,7 @@ Order matters, because embed-UI is new and the connector loses its UI:
 4. **Install embed-UI.** The fish, marks and page return.
 
 There are no compatibility adapters and no dual control period (1c = B). A V2 child profile that
-already contains a manually installed board, fold-notify or Watchdog: placement replaces the
+already contains a manually installed board: placement replaces the
 `node_modules` copy with the bundled one and keeps the on/off state the user had. A test pins
 this case.
 
@@ -1334,10 +1592,9 @@ Process stays: requirements → independent case authoring → implementation wi
 - **The token is the security boundary (R-TOK-00).** Ids, pairs and names are foolproofing
   only, and never relax a token rule (§5.6).
 - **Credentials:**
-  - Token values live only in `ctx.credentials`; MCP requests carry short-lived, audience-bound
+  - The connector keeps only digests of token values; a hosted value lives only in the child's credential store (§5.1, §5.4); MCP requests carry short-lived, audience-bound
     access tokens (§5.5).
-  - Hosted: the token goes to the child over the authenticated wire, in memory only. Standalone:
-    it stays in that DSH's credential store and is resolved per connection.
+  - Hosted: the instance imports the token once, at the child's first start, over the authenticated wire; core saves its copy after the target first accepts it (R9). Standalone and remote targets: Connect (§6.3a); core holds only the OAuth grant, never a token value.
   - They are never in settings, logs, lifecycle files, temp files, argv, env, URLs, tool results,
     resource contents or browser responses.
   - The `Authorization` header is never logged. Error details name only the reference or the
@@ -1352,7 +1609,6 @@ Process stays: requirements → independent case authoring → implementation wi
   - offers are fenced by `offerId` and the pair, and the first commit wins;
   - acks and notifications never grant authority;
   - revocation takes effect at the next request;
-  - Watchdog failure releases authority synchronously, with nothing settled by time.
 - **Verification hook (R-SEC-02):** the acceptance suite plants recognisable token values and
   greps every log, lifecycle file, child home and temp directory after a full run. Any hit is a
   failure.
@@ -1600,8 +1856,7 @@ The README is the authority; this table only names them.
   mailbox (an event of type `retirement` replaces each); acked ones stay with their client.
 - **In a Fishball DSH:** contributor events go through core's interception service like every
   event (R-INT-02): to a plugin registered for their `contributed:…` type, else to the Fishball
-  agent through the X9 pipeline (fold-notify may batch them), possibly waking its LLM. Watchdog
-  never registers for them. No allowlist filters them (Q17, decided).
+  agent, possibly waking its LLM. No allowlist filters them (Q17, decided).
 - **Not an authority path:** an event carries data only. Fishball decides what to do; the event
   cannot answer, approve or hand over anything.
 
