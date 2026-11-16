@@ -155,26 +155,42 @@ export function registerSettingsPageCases(sdk) {
 
   // ---- PLAT-EP-03 row 1 and HAND-EP-01 row 3 (reworded): the routes and their registration ----
 
-  row(sdk, ID.plat03, '1 (routes)', 'the settings page serves exactly two routes: POST create and GET notice, at the relayed paths', async (t) => {
+  // C-WIRE (2026-11-16): an optional `state` port adds the third route, GET state, the page's
+  // read-only pair state (R-ID-12, AUTH-UC-09) and approval status (R-OA-20); without it there are two.
+  const PATHS = Object.freeze({ two: [[ROUTE.create, [ROUTE.post]], [ROUTE.notice, [ROUTE.get]]], three: [[ROUTE.create, [ROUTE.post]], [ROUTE.notice, [ROUTE.get]], [ROUTE.state, [ROUTE.get]]] })
+  const routeSet = (routes) => routes.map((r) => [r.path, r.methods.map((m) => m.toUpperCase()).sort()]).sort()
+  row(sdk, ID.plat03, '1 (routes)', 'without a state port the settings page serves exactly two routes: POST create and GET notice, at the relayed paths', async (t) => {
     const { routes } = await routeWorld(t, sdk)
     const mod = await pageModule(sdk)
-    assert.deepEqual(mod[SUBJECT.constants].route, { create: ROUTE.create, notice: ROUTE.notice })
+    assert.deepEqual(mod[SUBJECT.constants].route, { create: ROUTE.create, notice: ROUTE.notice, state: ROUTE.state })
     assert.equal(mod[SUBJECT.constants].maxBodyBytes, ROUTE.maxBodyBytes)
-    assert.deepEqual(routes.map((r) => [r.path, r.methods.map((m) => m.toUpperCase()).sort()]).sort(), [[ROUTE.create, [ROUTE.post]], [ROUTE.notice, [ROUTE.get]]].sort())
+    assert.deepEqual(routeSet(routes), [...PATHS.two].sort())
   })
-  row(sdk, ID.plat03, '1 (registration)', 'registerSettingsPage registers exactly those routes with connection.fetch, each with requestBody: buffered, and nothing else', async (t) => {
+  row(sdk, ID.plat03, '1 (routes, state)', 'with a state port: exactly three routes, GET state answering {ok: true, ...state()} as JSON, no-store', async (t) => {
     const world = await worldFor(t, sdk)
     const mod = await pageModule(sdk)
-    const registered = []
-    const ctx = {
-      connection: { fetch: { register: (options) => { registered.push(options); return () => {} } } },
-      effect: (fn) => fn(),
-    }
-    await mod[SUBJECT.register](ctx, { tokens: world.registry, logger: world.logger })
-    assert.deepEqual(registered.map((r) => r.path).sort(), [ROUTE.create, ROUTE.notice].sort())
-    assert.ok(registered.every((r) => r.requestBody === ROUTE.requestBody && typeof r.fetch === 'function'), 'a route without requestBody: buffered')
+    const routes = mod[SUBJECT.routes]({ tokens: world.registry, state: () => FIXTURE.stateAnswer, logger: world.logger })
+    assert.deepEqual(routeSet(routes), [...PATHS.three].sort())
+    const answer = await send(routes, url(ROUTE.state), { method: ROUTE.get })
+    assertJsonNoStore(answer)
+    assert.equal(answer.status, ROUTE.ok)
+    assert.deepEqual(answer.json, { ok: true, ...FIXTURE.stateAnswer })
   })
-  row(sdk, ID.hand01, '3 (reworded)', 'a browser fetch reaches only the page\'s two routes: none serves hand-over, HTML or a value outside the create answer', async (t) => {
+  for (const withState of [false, true]) {
+    row(sdk, ID.plat03, `1 (registration${withState ? ', state' : ''})`, 'registerSettingsPage registers exactly those routes with connection.fetch, each with requestBody: buffered, and nothing else', async (t) => {
+      const world = await worldFor(t, sdk)
+      const mod = await pageModule(sdk)
+      const registered = []
+      const ctx = {
+        connection: { fetch: { register: (options) => { registered.push(options); return () => {} } } },
+        effect: (fn) => fn(),
+      }
+      await mod[SUBJECT.register](ctx, { tokens: world.registry, logger: world.logger, ...(withState ? { state: () => FIXTURE.stateAnswer } : {}) })
+      assert.deepEqual(registered.map((r) => r.path).sort(), (withState ? PATHS.three : PATHS.two).map(([p]) => p).sort())
+      assert.ok(registered.every((r) => r.requestBody === ROUTE.requestBody && typeof r.fetch === 'function'), 'a route without requestBody: buffered')
+    })
+  }
+  row(sdk, ID.hand01, '3 (reworded)', 'a browser fetch reaches only the page\'s routes: none serves hand-over, HTML or a value outside the create answer', async (t) => {
     const { world, routes } = await routeWorld(t, sdk)
     assert.deepEqual(routes.filter((r) => /hand[-_]?over|take[-_]?back/i.test(r.path)), [])
     const made = await world.registry.create(FIXTURE.labelA)

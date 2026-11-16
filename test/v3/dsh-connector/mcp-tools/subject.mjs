@@ -80,13 +80,20 @@ export class FakeManaged {
   #listeners = new Set()
   managerOf(sessionId) { return this.#managers.get(sessionId) }
   managed() { return [...this.#managers].map(([sessionId, principalKey]) => ({ sessionId, principalKey })) }
-  async manage(sessionId, principalKey) {
-    if (this.#managers.has(sessionId)) return { ok: false, code: MANAGED_REFUSAL.alreadyManaged }
+  /**
+   * C-WIRE R18 (aligned with the real C-ROUTE ManagedState, relayed 2026-11-16): an empty or
+   * non-string session id makes `manage` throw TypeError synchronously (so it is not an async
+   * method), and the async `release` reject with TypeError.
+   */
+  manage(sessionId, principalKey) {
+    if (typeof sessionId !== 'string' || sessionId === '') throw new TypeError('manage: the session id must be a non-empty string')
+    if (this.#managers.has(sessionId)) return Promise.resolve({ ok: false, code: MANAGED_REFUSAL.alreadyManaged })
     this.#managers.set(sessionId, principalKey)
     this.#changed()
-    return { ok: true }
+    return Promise.resolve({ ok: true })
   }
   async release(sessionId, principalKey) {
+    if (typeof sessionId !== 'string' || sessionId === '') throw new TypeError('release: the session id must be a non-empty string')
     const manager = this.#managers.get(sessionId)
     if (manager === undefined) return { ok: false, code: MANAGED_REFUSAL.notManaged }
     if (manager !== principalKey) return { ok: false, code: MANAGED_REFUSAL.otherManager }
