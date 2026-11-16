@@ -180,10 +180,11 @@ export const CHILD = Object.freeze({
   targetStates: Object.freeze(['connected', 'target-unreachable', 'token-refused', 'target-unset']),
   /**
    * HOST-ST-01 (K: status codes): the lifecycle codes the requirements name for the locator:
-   * R-HOST-10 `token-revoked`, R-FB-10 `fishball-off`, design §8.1 `PROFILE_INCOMPATIBLE`, and the
-   * §6.1 locator codes `TARGET_UNREACHABLE`, `TOKEN_REFUSED`, `TARGET_INCOMPATIBLE`.
+   * R-HOST-10 `token-revoked`, design §8.1 `PROFILE_INCOMPATIBLE`, and the §6.1 locator codes
+   * `TARGET_UNREACHABLE`, `TOKEN_REFUSED`, `TARGET_INCOMPATIBLE`. `fishball-off` is withdrawn (R-FB-10
+   * amended by 1.39, the user's I-HOST answer Q4: the instance reports only generic child states).
    */
-  statusCodes: Object.freeze(['token-revoked', 'fishball-off', 'PROFILE_INCOMPATIBLE', 'TARGET_UNREACHABLE', 'TOKEN_REFUSED', 'TARGET_INCOMPATIBLE']),
+  statusCodes: Object.freeze(['token-revoked', 'PROFILE_INCOMPATIBLE', 'TARGET_UNREACHABLE', 'TOKEN_REFUSED', 'TARGET_INCOMPATIBLE']),
   /** HOST-ST-01 states (Stopped, Starting, Running = ready, Failed). */
   states: Object.freeze(['starting', 'ready', 'failed']),
 })

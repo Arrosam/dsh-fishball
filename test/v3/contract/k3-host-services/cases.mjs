@@ -276,7 +276,7 @@ export function registerK3Cases(sdk) {
     [1, 'Stopped → host app ready → Starting'], [2, 'Starting → ready → Running, origin set'],
     [3, 'incompatible member → Failed, PROFILE_INCOMPATIBLE naming it'], [4, 'Running → crash → Failed, crash code'],
     [5, 'Failed → Retry → Starting'], [6, 'Running → restart → Starting, origin null until ready'],
-    [7, 'Running → host exits → Stopped'], [8, 'core disabled → Running, fishball-off'],
+    [7, 'Running → host exits → Stopped'], [8, 'core disabled → Running (no fishball-off, R-FB-10 amended by 1.39)'],
     [9, 'Stopped → Retry before host ready → Stopped (K)'], [10, 'Running → uninstall → Removed, export offered first'],
   ]) caseTest(sdk, 'HOST-ST-01', row, title, null, LATER.host)
   caseTest(sdk, 'UIM-EP-02', 5, 'LOCALHOST (case variant) → localhost:<child>, page loads (K: case-normalised)', null, LATER.host)

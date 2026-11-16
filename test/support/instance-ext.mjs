@@ -19,7 +19,7 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tempPath } from './temp-path.mjs'
 import path from 'node:path'
 import { linkContractForSourceRun } from './contract-link.mjs'
-import { loadConnector, loadCore } from './body-soul-env.mjs'
+import { loadConnector, loadCore, loadInstance } from './body-soul-env.mjs'
 import { startWorkspaceRegistry } from './workspace-registry.mjs'
 
 linkContractForSourceRun()
@@ -812,10 +812,11 @@ export async function bootChild(t, { activate = false, attachments = undefined, 
   await applyRow('app', 'src/slim/child/app.js')
   if (process.env.FBTEST_DEBUG_HARNESS) console.error('chat service before inbox:', Object.keys(ctx.get(SERVICES.chat) ?? {}), 'provided:', [...context.provided.keys()])
   await applyRow('inbox', 'src/slim/child/inbox.js')
-  const admin = await loadCore('src/slim/child/admin.js')
+  // I-HOST: the admin child half is the instance's src/child/admin.js (no row; mountAdmin(ctx)).
+  const admin = await loadInstance('src/child/admin.js')
   rows.admin = admin
   if (typeof nativeRuntime.onAdminTransport === 'function') {
-    const adminDispose = admin.apply(ctx)
+    const adminDispose = await admin.mountAdmin(ctx)
     if (typeof adminDispose === 'function') rowDisposers.push(adminDispose)
   }
   // The launcher commits once the tree has applied; the main host attaches its transport only

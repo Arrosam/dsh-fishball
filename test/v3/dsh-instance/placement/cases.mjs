@@ -31,6 +31,7 @@ import { bootHost, newHome, until } from '../../../support/host.mjs'
 import { ROUTE, runtimeOf } from '../../fishball-core/package/constants.mjs'
 import { admitChild, bootGraph } from '../../fishball-core/package/page.mjs'
 import { withdrawnCase } from '../../fishball-core/settings/withdrawn.mjs'
+import { WITHDRAWN_BY, withdrawnRow } from '../host/withdrawn.mjs'
 import { corePatchFile } from '../../fishball-core/package/static.mjs'
 import { caseName, caseTest } from '../../contract/package-boundaries/cases.mjs'
 import { V3 } from '../../contract/package-boundaries/constants.mjs'
@@ -209,8 +210,8 @@ export function registerIPlaceCases(sdk) {
 
   // ============================================================== Use Cases
   // ---- HOST-UC-06 postcondition (R-HOST-04, Q-5; design §6.2): the launch overlay carries only launch configuration.
-  // Q-5 (dev 6d13f6a1): the overlay inserts exactly the two instance runtime rows; no guard, V2 child, settings or forced-on row.
-  caseTest(sdk, 'HOST-UC-06', 'post', 'the launch overlay inserts only fishball-native-web and fishball-native-child (no guard, V2 child, settings or forced-on row)', async (t) => {
+  // Q-5 (dev 6d13f6a1): the overlay inserts exactly the instance runtime rows (I-HOST adds dsh-instance-child); no guard, V2 child, settings or forced-on row.
+  caseTest(sdk, 'HOST-UC-06', 'post', 'the launch overlay inserts only fishball-native-web, fishball-native-child and dsh-instance-child (no guard, V2 child, settings or forced-on row)', async (t) => {
     const ops = await overlayOps(sdk, scratch(t, 'fbtest-iplace-ovl-'), [])
     assert.deepEqual(insertedOf(ops).map((r) => r.id).sort(), [...OVERLAY.runtimeRows].sort())
   })
@@ -290,7 +291,7 @@ export function registerIPlaceCases(sdk) {
   })
 
   // ---- HOST-UC-08 (R-BND-02, R-BND-04).
-  integrationCase(sdk, 'HOST-UC-08', 'main 1', "the child's profile holds the set members (board, core), all on, core last", async () => {
+  integrationCase(sdk, 'HOST-UC-08', 'main 1', "the child's profile holds the set members (board, fishball-ui, core), all on, core last", async () => {
     const { home } = await ready()
     const bundles = profileBundles(home)
     for (const name of SET.placed) assert.ok(bundles.includes(name), name + ' is not on: ' + show(bundles))
@@ -393,7 +394,7 @@ export function registerIPlaceCases(sdk) {
   }
   caseTest(sdk, 'PLAT-DT-01', 6, 'core on and incompatible blocks the start too (R-FB-10: core follows the same rules)', null, LATER.host)
   caseTest(sdk, 'PLAT-DT-01', 8, 'a toggle while the child runs takes effect at the next restart; the UI says "restart required"', null, LATER.restartNotice)
-  caseTest(sdk, 'PLAT-DT-01', 1, 'core disabled by the owner: the instance starts the child anyway and reports fishball-off', null, LATER.host)
+  withdrawnRow(sdk, 'PLAT-DT-01', 1, 'core disabled by the owner: the instance starts the child anyway and reports fishball-off', WITHDRAWN_BY.offCode)
 
   // ---- PLAT-DT-01 rule 9 (R-BND-01 strict): the host never lists or loads the bundled copies.
   caseTest(sdk, 'PLAT-DT-01', 9, "the instance's own manifest selects no set member or library as a bundle or dependency of the host", () => {
@@ -468,7 +469,7 @@ export function registerIPlaceCases(sdk) {
     assert.deepEqual(ids.filter((id) => RELAYED.rows.movedToUi.includes(id)), [])
   })
   caseTest(sdk, 'HOST-EP-03', 7, "a hosted child places fishball-ui, whose page and tab rows are path rows into their own packages", null, LATER.placeUi)
-  caseTest(sdk, 'HOST-EP-03', 7, 'every slim child row (fishball-native-{session-tools,approvals,app,inbox,admin,provider-sync}) is a fishball-core/slim/* subpath', async () => {
+  caseTest(sdk, 'HOST-EP-03', 7, 'every slim child row (fishball-native-{session-tools,approvals,app,inbox}; admin and provider-sync moved to the instance by I-HOST) is a fishball-core/slim/* subpath', async () => {
     const rows = await corePatchInserts()
     for (const id of RELAYED.rows.slim) {
       const row = rows.find((r) => r.id === id)
@@ -476,7 +477,7 @@ export function registerIPlaceCases(sdk) {
       assert.ok(typeof row.name === 'string' && row.name.startsWith(RELAYED.rows.slimPrefix), `${id}: ${show(row.name)} is not a ${RELAYED.rows.slimPrefix}* subpath`)
     }
   })
-  integrationCase(sdk, 'HOST-EP-03', 7, 'the child profile and the placement record hold the set members (board, core), and nothing else of Fishball', async () => {
+  integrationCase(sdk, 'HOST-EP-03', 7, 'the child profile and the placement record hold the set members (board, fishball-ui, core), and nothing else of Fishball', async () => {
     const { home } = await ready()
     const fishball = (list) => list.filter((n) => n.startsWith('fishball-'))
     assert.deepEqual(fishball(placementRecord(home)[RELAYED.record.key]).sort(), [...SET.placed].sort())

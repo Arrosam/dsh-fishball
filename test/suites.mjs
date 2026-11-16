@@ -146,6 +146,13 @@ export const V3_SUITES = Object.freeze({
   // vocabulary (whose split constants name fishball-ui's rows).
   'dsh-instance.placement': suite('placement of the set, launch overlay, hosted-child guards (I-PLACE)', v3('dsh-instance/placement'),
     [all(PACKAGE.dshInstance), all(PACKAGE.fishballCore), all(PACKAGE.dshConnectorShared), all(PACKAGE.fishballShared), 'test/v3/fishball-ui/guards/constants.mjs']),
+  // Drives the instance's own modules (locator, hosted token, ticket, credential wire, child-side
+  // row, routes, placement) over fakes, reads the K3 host-service freeze, core's patch and session
+  // route, the Fishball-side manifests for the boundary rows, and dsh-connector-shared's sync host.
+  'dsh-instance.host': suite("the hosted child's token, locator, admission, child-side row, settings page, placement with fishball-ui (I-HOST)", v3('dsh-instance/host'),
+    [all(PACKAGE.dshInstance), sub(PACKAGE.dshConnector, 'host-services'), all(PACKAGE.dshConnectorShared), all(PACKAGE.fishballCore), all(PACKAGE.fishballUi),
+      all(PACKAGE.fishballShared), all(PACKAGE.fishballBoard), all(PACKAGE.dshConnectorUi), 'test/v3/contract/k3-host-services/**', 'test/v3/contract/package-boundaries/**',
+      'test/v3/dsh-connector-shared/oauth-client/subject.mjs']),
   'fishball-core.package': suite('core package, slim child move (R-CORE; the settings-section point withdrawn, 1.34)', v3('fishball-core/package'),
     [all(PACKAGE.fishballCore), sub(PACKAGE.dshInstance, 'src', 'slim'), sub(PACKAGE.dshInstance, 'src', 'child'), PACKAGE.dshInstance + '/client*.js']),
   'fishball-core.bridge': suite('bridge façade, list_changed refresh, X8 attention (F-FACADE)', v3('fishball-core/bridge'),

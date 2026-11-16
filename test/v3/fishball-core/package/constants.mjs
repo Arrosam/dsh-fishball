@@ -39,8 +39,11 @@ export const MOVED = Object.freeze({
   files: Object.freeze(['src/persona.js']),
 })
 
-/** R-EMBED: the instance-owned home of its status line (client.status.js, HOST-EP-03 row 2). */
-export const CHILD_SETTINGS = Object.freeze({ folder: 'src/child-settings/', dir: path.join(V3.instance.dir, 'src', 'child-settings') })
+/**
+ * R-EMBED: the instance-owned home of its status line (HOST-EP-03 row 2). I-HOST (QD1 = B) moved it
+ * from src/child-settings/ to the instance's root, beside its settings page entry client.js.
+ */
+export const CHILD_SETTINGS = Object.freeze({ statusFile: 'client.status.js' })
 
 /** The public page markers the R-CORE rows read (the slim panel's were withdrawn with it, 1.34 item 4). */
 export const MARK = Object.freeze({
@@ -58,7 +61,9 @@ export const SLOT = Object.freeze({ main: 'main', header: 'conversation.session.
 /** The hosted child's routes, at the host and at the child's own origin. */
 export const ROUTE = Object.freeze({
   status: '/api/dsh-instance/status',
-  embed: '/fishball/embed/',
+  /** I-HOST (Q7): the instance's Open Fishball route; it admits to the child's Fishball page. */
+  open: '/api/dsh-instance/open',
+  openLang: 'en',
   /** R-HOST-07: the child has no model-sync route; DSH answers 404. */
   sync: Object.freeze(['/api/dsh-instance/models/check', '/api/dsh-instance/models/add']),
   instancePrefix: '/api/dsh-instance/',

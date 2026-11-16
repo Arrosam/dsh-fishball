@@ -469,7 +469,8 @@ const CASE_TABLES = {
   },
   // EP: representative root names of other families are never skipped (non-interference).
   'non-interference': {
-    kept: ['I1c-V-02', 'XW-P-01', 'XI-EP-01', 'XI-EP-02', 'D3-CONNECTOR-LATCH', 'X11-HOST-SESSION', 'V2B-SUITE-01'].map(x),
+    // I1c-V-02 was the I1c representative; I-HOST withdrew that family with the V2 binding (test/v2-suites.mjs).
+    kept: ['XW-P-01', 'XI-EP-01', 'XI-EP-02', 'D3-CONNECTOR-LATCH', 'X11-HOST-SESSION', 'V2B-SUITE-01'].map(x),
     skipped: [], disposition: null, files: null,
   },
 }

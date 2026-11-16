@@ -21,6 +21,7 @@ import { REPO, TEST_HOMES } from '../../../support/constants.mjs'
 import { assertNoEdges, caseTest, describeRef, edgesTo, has, importersOf, manifestEdges, unitOf } from '../package-boundaries/cases.mjs'
 import { NPM, SDK, SIDES, V3 } from '../package-boundaries/constants.mjs'
 import { observe, readManifest } from '../package-boundaries/packages.mjs'
+import { WITHDRAWN_BY, withdrawnRow } from '../../dsh-instance/host/withdrawn.mjs'
 import {
   BASE, CODE_SAMPLES, CORE_CHILD_HALVES, DSH_EXPORTS, DSH_MODULES, EXPECTED_LIBRARY, FILES_MODULE, FINGERPRINT_SAMPLES, HEADER, HOST_PEERS, INSIDE_CASES,
   INTERIM_COPIES, LATER, LONG_RUN, MANIFEST_EXPORT, PLACED, PROFILE_SAMPLES, REDACT, REDACT_SAMPLES, SDK_SCOPE, moduleFile, sdkModules, subpath,
@@ -91,6 +92,9 @@ function surface(module) {
   }
   return Object.fromEntries(Object.keys(module).sort().map((k) => [k, picture(module[k])]))
 }
+const SYNC_HOST_MODULE = 'provider-sync-host'
+/** A row I-HOST withdrew: still listed, skipped with the reason. */
+const withdrawn = (sdk, id, row, title) => withdrawnRow(sdk, id, row, title, WITHDRAWN_BY.halves)
 const outcome = (fn) => { try { return { value: fn() } } catch (error) { return { error: error?.code ?? error?.message } } }
 
 // -------------------------------------------------------------------------------- placement world
@@ -106,12 +110,16 @@ function placementTree(t) {
   const root = scratch((fn) => t.after(fn), PLACED.tempPrefix)
   const tree = path.join(root, 'tree')
   const noModules = (src) => !src.split(path.sep).includes('node_modules')
-  for (const p of [V3.instance, V3.core, V3.board]) fs.cpSync(p.dir, path.join(tree, path.relative(REPO, p.dir)), { recursive: true, verbatimSymlinks: true, filter: noModules })
+  // I-HOST (Q1, Q2): placement also places fishball-ui, so the tree carries its folder too.
+  for (const p of [V3.instance, V3.core, V3.board, V3.ui]) fs.cpSync(p.dir, path.join(tree, path.relative(REPO, p.dir)), { recursive: true, verbatimSymlinks: true, filter: noModules })
   const graph = path.join(tree, 'node_modules')
   fs.mkdirSync(graph)
   for (const p of [V3.dshShared, V3.connector]) fs.symlinkSync(p.dir, path.join(graph, p.name))
   const marker = (dir, name) => { fs.cpSync(V3.shared.dir, dir, { recursive: true, filter: noModules }); fs.writeFileSync(path.join(dir, name), 'export {}\n'); return name }
   const coreMarker = marker(path.join(tree, path.relative(REPO, V3.core.dir), 'node_modules', V3.shared.name), 'fbtest-core-copy.js')
+  // fishball-ui bundles fishball-shared the same way (I-HOST: placed once); its copy carries the same
+  // marker, so "a Fishball-side package's own copy, never the instance graph's" is still what is checked.
+  marker(path.join(tree, path.relative(REPO, V3.ui.dir), 'node_modules', V3.shared.name), coreMarker)
   const decoyMarker = marker(path.join(graph, V3.shared.name), 'fbtest-instance-graph-decoy.js')
   const home = path.join(root, 'home')
   fs.mkdirSync(home)
@@ -209,23 +217,21 @@ export function registerSplitCases(sdk) {
 
   // ---------------------------------------------------------------- SPLIT-DT-02: the interim copies (requirement 5)
   const halvesPresent = () => CORE_CHILD_HALVES.every((f) => fs.existsSync(path.join(V3.core.dir, f)))
+  // I-HOST moved core's child halves into the instance (src/child/), so the table's "halves
+  // present" rule is withdrawn and its "halves moved" rule now runs.
   for (const module of INTERIM_COPIES) {
-    caseTest(sdk, 'SPLIT-DT-02', 'halves present', `core's child halves exist → fishball-shared ships its own ${moduleFile(module)}`, () => {
-      assert.ok(halvesPresent(), 'precondition: core ships ' + CORE_CHILD_HALVES.join(', '))
-      assert.ok(fs.existsSync(libraryFile(V3.shared, module)), 'fishball-shared lacks ' + moduleFile(module))
-      assert.ok(readManifest(V3.shared.dir).files.some((f) => f === moduleFile(module) || f === '*.js'), moduleFile(module) + ' is not in fishball-shared files')
-    })
+    withdrawn(sdk, 'SPLIT-DT-02', 'halves present', `core's child halves exist → fishball-shared ships its own ${moduleFile(module)}`)
   }
-  caseTest(sdk, 'SPLIT-DT-02', 'halves present', "core's child halves import the admin protocol and provider-sync from fishball-shared only", async () => {
-    const unit = await unitOf(V3.core.name)
-    const posix = CORE_CHILD_HALVES.map((f) => f.split(path.sep).join('/'))
-    for (const file of posix) assert.ok(unit.refs.some((r) => r.file === file && r.target === V3.shared.name), file + ' imports nothing from fishball-shared')
-    assert.deepEqual(unit.refs.filter((r) => posix.includes(r.file) && r.target === V3.dshShared.name).map(describeRef), [])
+  withdrawn(sdk, 'SPLIT-DT-02', 'halves present', "core's child halves import the admin protocol and provider-sync from fishball-shared only")
+  caseTest(sdk, 'SPLIT-DT-02', 'halves moved', "core's child halves gone (I-HOST) → fishball-shared drops the interim copies", () => {
+    assert.equal(halvesPresent(), false, 'precondition: core no longer ships ' + CORE_CHILD_HALVES.join(', '))
+    for (const module of INTERIM_COPIES) assert.equal(fs.existsSync(libraryFile(V3.shared, module)), false, 'fishball-shared still ships ' + moduleFile(module))
   })
-  caseTest(sdk, 'SPLIT-DT-02', 'halves moved', "core's child halves gone (I-HOST) → fishball-shared drops the interim copies", null, LATER.iHost)
 
   // ---------------------------------------------------------------- SPLIT-EP-02: drift guard between the two copies
-  for (const module of [...INTERIM_COPIES, FILES_MODULE]) {
+  // The interim copies are gone (I-HOST), so only `files` still has two copies to compare.
+  for (const module of INTERIM_COPIES) withdrawn(sdk, 'SPLIT-EP-02', module, `${moduleFile(module)}: the two libraries' copies hold the same code below their header comment`)
+  for (const module of [FILES_MODULE]) {
     caseTest(sdk, 'SPLIT-EP-02', module, `${moduleFile(module)}: the two libraries' copies hold the same code below their header comment`, () => {
       needLibrary(V3.dshShared)
       const body = (lib) => fs.readFileSync(libraryFile(lib, module), 'utf8').replace(HEADER, '')
@@ -245,7 +251,11 @@ export function registerSplitCases(sdk) {
   }
 
   // ---------------------------------------------------------------- SPLIT-EP-04: moved, behaviour unchanged (differential against BASE)
-  for (const module of DSH_MODULES) {
+  // I-HOST renamed provider-sync-host's Fishball words to the neutral ones (design §1.0c:
+  // dsh-sync-default, dsh-sync-default-model, dsh-provider-sync), so its "same constants as at BASE"
+  // row is withdrawn; test/v3/dsh-instance/host SYNC names checks the new values.
+  withdrawn(sdk, 'SPLIT-EP-04', SYNC_HOST_MODULE, `dsh-connector-shared/${SYNC_HOST_MODULE} has the same exports and constant values as fishball-shared/${SYNC_HOST_MODULE} at ${BASE.ref}`)
+  for (const module of DSH_MODULES.filter((m) => m !== SYNC_HOST_MODULE)) {
     caseTest(sdk, 'SPLIT-EP-04', module, `dsh-connector-shared/${module} has the same exports and constant values as fishball-shared/${module} at ${BASE.ref}`, async (t) => {
       needLibrary(V3.dshShared)
       assert.deepEqual(surface(await load(sdk, libraryFile(V3.dshShared, module))), surface(await baseModule(sdk, module)))
