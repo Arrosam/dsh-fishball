@@ -28,7 +28,16 @@ import { randomUUID } from 'node:crypto'
 import path from 'node:path'
 import { isModelInvocable, isSkillName } from '@deepseek-ai/dsh-skill'
 import { FileSystemSkillProvider } from '@deepseek-ai/dsh-skill-filesystem'
-import { inside } from 'fishball-shared/files'
+
+/**
+ * Whether `file` is `root` or below it, by path only (no link is resolved). It was fishball-shared's
+ * `./files` until REMOVE-V2b; this store is its one Fishball-side user, so R-ARCH-08 strict (a
+ * library module needs two importers on its side; Fishball, 2026-11-16) puts it here.
+ */
+const inside = (root, file) => {
+  const relative = path.relative(root, file)
+  return relative === '' || (!relative.startsWith('..' + path.sep) && relative !== '..' && !path.isAbsolute(relative))
+}
 
 export const SKILL_STORE = Object.freeze({
   rootDirectory: 'skills',

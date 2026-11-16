@@ -5,7 +5,7 @@
  *
  * Two layers, so each has one owner:
  * - `OAuthClient`: the S7c K2 token manager (`v3-s7c.md` §4 K2), Fishball side's copy in
- *   `fishball-shared/oauth-client` (design §6.3a "one copy per side"; most of it is the MCP SDK's own
+ *   core's `src/link/oauth-client.js` (design §6.3a "one copy per side"; most of it is the MCP SDK's own
  *   `auth()` and `OAuthClientProvider`). It knows nothing about Fishball;
  * - `FishballConnect`: core's Connect control on top of it (F-LINK-SAVE builds it; F-STATUS and
  *   fishball-ui draw it).
@@ -82,7 +82,7 @@ export interface OAuthClient {
   forget(): Promise<void>
 }
 
-/** `fishball-shared/oauth-client`'s one export (the factory); the context is the caller's DSH `ctx`. */
+/** `src/link/oauth-client.js`'s one export (the factory); the context is the caller's DSH `ctx`. */
 export type CreateOAuthClient = (ctx: unknown, options: OAuthClientOptions) => OAuthClient
 
 /**

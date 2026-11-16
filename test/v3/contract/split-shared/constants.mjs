@@ -46,8 +46,14 @@ export const DSH_EXPORTS = Object.freeze([...DSH_MODULES, ...ADDED_MODULES])
 export const INTERIM_COPIES = Object.freeze(['provider-sync', 'provider-sync-codec', 'provider-sync-host', 'redact'])
 /** Every module fishball-shared held an interim copy of, ADMIN_PROTOCOL included (all dropped by I-HOST). */
 export const FORMER_INTERIM_COPIES = Object.freeze([...INTERIM_COPIES, ADMIN_PROTOCOL])
-/** Requirement 4: `files` is duplicated, one copy per library. */
+/**
+ * Requirement 4 (as first written): `files` is duplicated, one copy per library. REMOVE-V2b
+ * (R-ARCH-08 strict, Fishball 2026-11-16) moved fishball-shared's copy into its one user, core, so
+ * only dsh-connector-shared still ships it (until C-WIRE-2 moves it into the instance).
+ */
 export const FILES_MODULE = 'files'
+/** REMOVE-V2b: fishball-shared's whole export map, exactly (ui-seam is used by core and fishball-ui). */
+export const SHARED_EXPORTS = Object.freeze({ './ui-seam': './ui-seam.js', './package.json': './package.json' })
 /** Requirement 5: core's child halves, the only reason for the interim copies. */
 export const CORE_CHILD_HALVES = Object.freeze([path.join('src', 'slim', 'child', 'admin.js'), path.join('src', 'slim', 'child', 'provider-sync-target.js')])
 /** Requirement 5: no Fishball-side package imports fishball-shared's redact. */
@@ -68,8 +74,8 @@ export const sdkModules = (sdk) => path.join(SDK.versionsDir, sdk, 'node_modules
  * Requirement 1: which library each existing package of a side is expected to import and bundle
  * (the packages that use the moved modules today). The connector uses `redact`, the instance
  * provider-sync and files (its admin protocol went with the admin relay, D14), the adapter `./oauth-client` (design §6.3a, its library is
- * its own side's), core its child halves and the Skills store, and fishball-ui (a Fishball-side
- * package since F-UI) the ui-seam.
+ * its own side's), and core and fishball-ui (a Fishball-side package since F-UI) the ui-seam (since
+ * REMOVE-V2b fishball-shared's only module).
  */
 export const EXPECTED_LIBRARY = Object.freeze({
   [V3.instance.name]: V3.dshShared.name,
@@ -142,12 +148,8 @@ export const PROFILE_SAMPLES = Object.freeze([
 export const CODE_SAMPLES = Object.freeze(['ok', 'a-b-c', 'Upper', 'x'.repeat(64), 'x'.repeat(65), 'x'.repeat(200), '', 'a b', 7, null])
 export const FINGERPRINT_SAMPLES = Object.freeze([{ b: 1, a: [2, { d: 3, c: 4 }] }, [], 'text', 0])
 
-/** The leading header comment(s) a copy may change (drift guard: the code after them is the same). */
-export const HEADER = /^(?:\s*\/\*[\s\S]*?\*\/)*\s*/
-
 /** Owners of the rows SPLIT-SHARED cannot check. */
 export const LATER = Object.freeze({
   iHost: 'I-HOST (moves core\'s child halves into the instance; fishball-shared\'s interim copies are deleted then)',
-  removeV2: 'REMOVE-V2 (design §1.0b row 2: core still imports dsh-connector/contract and peers on dsh-connector until the V2 child path goes)',
   relPack: 'REL-PACK (a packed instance tarball, with bundled/ sources, places core\'s fishball-shared from the packed core)',
 })

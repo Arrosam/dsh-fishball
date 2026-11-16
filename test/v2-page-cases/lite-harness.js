@@ -118,7 +118,7 @@
    * Harness plumbing, not an oracle: the page takes DSH's design-system `Button` from the client
    * primitives. The stand-in renders the one native `<button type="button">` the real one renders
    * (variant/size are styling only), so cases that find a button by tag and text stay valid.
-   * The real styled Button is observed in the real SDK web boot (child-boot-nav.test.mjs).
+   * The real styled Button was observed in the V2 child-web boot (child-boot-nav, deleted with it).
    */
   function PrimitiveButton({ variant: _variant, size: _size, children, ...props }) {
     return createElement(H.buttonType, { type: H.buttonType, ...props }, children)

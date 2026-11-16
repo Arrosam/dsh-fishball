@@ -145,8 +145,9 @@ window.__ModuleLoader__.load({
       }
     }
 
-    // Hide the LABELS launchers. V2 ships no bundled plugins (v2-final-scope §1), so no plugin's
-    // Remove control is hidden: every child plugin keeps its native uninstall. The conversation's
+    // Hide the LABELS launchers. No plugin's Remove control is hidden (v3-design §6.2: V2's Remove-
+    // hiding is not revived; a removed set member is re-placed at the next start), so every child
+    // plugin keeps its native uninstall. The conversation's
     // top navigation, the session-hierarchy nav, is hidden whole: its crumb buttons open other
     // sessions (ui-conversation open(id)) and in 0.2.2-rc.1 every crumb, the current title too, is
     // a tabIndex 0 context-menu trigger for Fork/Archive/Rename/Pin (ui-workspace session menus).
@@ -427,7 +428,7 @@ window.__ModuleLoader__.load({
        * beginNavigation), and a later one sees the main reference set and stops, so the manager
        * stays on screen. Only the first selection waits here: once made, list changes never
        * select again (selectOnce), so they cannot undo the user's in-page navigation. The blank Session that
-       * restoration may already have created stays (accepted for V2, docs/planning/v2-lite.md).
+       * restoration may already have created stays (accepted in docs/planning/v2-lite.md).
        */
       const listed = target => ctx.sessions.list.getSnapshot().byId[target] !== undefined
       function select() {

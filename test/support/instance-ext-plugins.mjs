@@ -7,7 +7,7 @@ import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { linkContractForSourceRun } from './contract-link.mjs'
-import { loadInstance } from './body-soul-env.mjs'
+import { resolveOfficialSDK } from './provider-sync-sdk.mjs'
 import { REPO } from './constants.mjs'
 
 linkContractForSourceRun()
@@ -34,8 +34,9 @@ export async function packageJson(pkg) {
 /** Import one module of a package by its path inside the package. */
 export async function packageModule(pkg, relative) {
   await packageFile(pkg, relative)
-  // Install the DSH runtime resolve hooks the same way the instance tests do.
-  await loadInstance('src/slim/contract.js')
+  // The DSH runtime resolve hooks (`@deepseek-ai/*` from FBTEST_DSH_RUNTIME). They used to be
+  // installed as a side effect of loading the V2 instance contract, which is gone.
+  resolveOfficialSDK()
   return import(pathToFileURL(path.join(REPO, pkg.dir, relative)).href)
 }
 

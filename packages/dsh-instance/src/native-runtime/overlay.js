@@ -42,7 +42,7 @@ export function launchOverlay(paths, record, childModule, limits, control, entri
   const instructionConfig = config => ({ ...config, projectRootMarkers: [] })
   // `<child home>/skills` is Fishball's private library (SK). It is deliberately NOT a root of the
   // standard provider: that stock reader follows symbolic links, so only the manager-scoped
-  // confined provider of fishball-core src/slim/child/skills.js may read it.
+  // confined provider of fishball-core src/manager/skills.js may read it.
   const skillConfig = config => ({
     ...config, includeDefaultRoots: false, watchFollowSymlinks: false,
     customSkillDirs: [path.join(paths.agentsHome, 'skills'), path.join(paths.workspace, '.dsh', 'skills'), path.join(paths.workspace, '.agents', 'skills')],

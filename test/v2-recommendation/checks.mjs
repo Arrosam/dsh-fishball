@@ -75,7 +75,17 @@ export const RP_CHECK = freezeData({
   /** Historical checked versions (DESIGN §10f): not new install pins (AC2). */
   historicalVersions: ['0.3.0', '2.4.1', '0.3.15', '0.3.12', '0.32.4', '0.31.1', '3.3.17', '0.1.8', '0.1.7', '1.0.21', '1.0.17', '0.2.3', '0.1.0'],
   sourceUrl: /^https?:\/\//,
-  v3Words: /board|watchdog|fold-notify|bundled/i,
+  /**
+   * AC9 re-baselined for V3 (REMOVE-WD; R-FB-01 as amended, design §1.0): the instance places
+   * fishball-core, fishball-ui and fishball-board whatever the tab does, so a board row or a
+   * `bundled/` path is no longer evidence against AC9. What AC9 still forbids is anything placed,
+   * inserted or depended on *because of* the tab: a recommended package, the recommendation module
+   * as a standalone bundle, or a feature plugin the tab would need (install matrix row 13b: core
+   * alone is a full Fishball DSH, so the tab cannot require the board).
+   */
+  featurePlugins: ['fishball-board'],
+  dependencyFields: ['dependencies', 'peerDependencies', 'optionalDependencies', 'bundleDependencies', 'bundledDependencies'],
+  profileManifest: 'package.json',
   noteKeyOwner: 'meow-memory',
   /** Semantics of the meow-memory note (AC8), per locale; not exact prose. */
   note: {
@@ -149,6 +159,10 @@ function sourceFiles(dir) {
     else if (RP_CHECK.sourceExtensions.includes(path.extname(entry.name))) found.push(full)
   }
   return found
+}
+/** True when `file` (any separator) has a path segment run equal to package `name` (scoped names have a '/'). */
+function namesPackage(file, name) {
+  return ('/' + file.split(path.sep).join('/') + '/').includes('/' + name + '/')
 }
 function assertNoNeedles(files) {
   for (const file of files) {
@@ -536,29 +550,42 @@ export const CHECKS = Object.freeze({
     await t.test('fresh main/child composition on this SDK', { todo: RP_CHECK.todoE2E })
   },
 
-  // Static/artifact part (AC9): opt-in only, no auto-bundled recommendations or V3 payload.
+  // Static/artifact part (AC9): opt-in only. The placed set (core, ui, board) is not under test here;
+  // nothing may be placed, inserted or depended on because of the tab (see RP_CHECK.featurePlugins).
   async 'TC-32'(ctx, t) {
     const { RUNTIME } = await loadInstance('src/native-runtime/constants.js')
-    assert.equal(RUNTIME.bundledPlugins, undefined, 'no bundled-plugin placement')
     const listed = new Set(allIds())
-    assert.ok(!RUNTIME.profile.bundles.some((b) => listed.has(b) || b === RP_CHECK.plugin.name), 'no recommendation in the child profile bundles')
-    const base = scratch(t)
-    const { paths, record } = overlayArgs(base)
+    const notRecommendation = (b) => !listed.has(b) && b !== RP_CHECK.plugin.name
+    assert.ok(RUNTIME.profile.bundles.every(notRecommendation), 'no recommendation in the child profile bundles')
+    // The composed hosted child (placement, profile, overlay; no process), as in TC-31.
+    linkContractForSourceRun()
+    const { composedProfile } = await loadInstance('src/native-runtime/index.js')
+    const composed = await composedProfile({ mainHome: realpathSync(scratch(t)), installAnchor: path.join(ctx.sdkModules, RP_CHECK.plugin.installAnchor) })
+    const composedBundles = JSON.parse(readFileSync(path.join(composed.paths.profile, RP_CHECK.profileManifest), 'utf8')).dsh.profile.bundles
+    assert.ok(composedBundles.every(notRecommendation), 'composed child profile enables no recommendation bundle: ' + composedBundles)
+    const placed = readdirSync(composed.paths.profile, { recursive: true }).map(String)
+    for (const id of listed) assert.deepEqual(placed.filter((rel) => namesPackage(rel, id)), [], 'recommended package ' + id + ' placed in the child profile')
+    const { paths, record } = overlayArgs(scratch(t))
     const { launchOverlay } = await loadInstance('src/native-runtime/overlay.js')
-    const rows = insertedRows(launchOverlay(paths, record, path.join(BODY_SOUL.instance, 'native-child.js'), {}, {}, overlayEntries()))
+    const rows = [...insertedRows(launchOverlay(paths, record, path.join(BODY_SOUL.instance, 'native-child.js'), {}, {}, overlayEntries())), ...insertedRows(composed.overlay)]
     for (const row of rows) {
-      assert.ok(!listed.has(row.id) && ![...listed].some((id) => String(row.name).includes(path.sep + id + path.sep)), 'overlay loads no recommended package: ' + row.id)
-      assert.doesNotMatch(String(row.id) + ' ' + String(row.name), RP_CHECK.v3Words, 'no V3/bundled row ' + row.id)
+      assert.ok(notRecommendation(row.id) && ![...listed].some((id) => namesPackage(String(row.name), id)), 'overlay loads no recommended package: ' + row.id)
+      assert.ok(!namesPackage(String(row.name), RP_CHECK.plugin.owner), 'overlay inserts no standalone recommendation row: ' + row.id)
     }
-    const pkg = JSON.parse(readFileSync(path.join(RP.pluginDir, 'package.json'), 'utf8'))
-    for (const field of ['dependencies', 'peerDependencies', 'optionalDependencies', 'bundleDependencies', 'bundledDependencies']) {
-      for (const dep of Object.keys(pkg[field] ?? {})) assert.ok(!listed.has(dep) && !RP_CHECK.v3Words.test(dep), field + ' ' + dep)
+    // Neither the tab's own manifest nor its owner package (fishball-ui) needs a recommended package
+    // or a feature plugin to start.
+    for (const dir of [RP.pluginDir, RP_CHECK.plugin.ownerDir]) {
+      const pkg = JSON.parse(readFileSync(path.join(dir, 'package.json'), 'utf8'))
+      for (const field of RP_CHECK.dependencyFields) {
+        const deps = Array.isArray(pkg[field]) ? pkg[field] : Object.keys(pkg[field] ?? {})
+        for (const dep of deps) assert.ok(!listed.has(dep) && !RP_CHECK.featurePlugins.includes(dep), pkg.name + ' ' + field + ' ' + dep)
+      }
     }
     const { accessed } = applyNodeHalf(await loadUi(RP.indexModule))
     assert.ok(accessed.every((name) => name === 'connection' || name === 'effect'), 'Node half needs only its route at startup: ' + accessed)
     const { world } = await openTab()
     assert.equal(world.installs.length + world.inspects.length, 0, 'activation installs nothing without an explicit Install')
-    await t.test('fresh V2 release artifact/profile/loader inspection', { todo: RP_CHECK.todoE2E })
+    await t.test('fresh release artifact/hosted-child profile/loader inspection', { todo: RP_CHECK.todoE2E })
   },
 
   // EP en/zh, meow absent/present, Pet empty (AC2, AC8).

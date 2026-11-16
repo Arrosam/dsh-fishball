@@ -1,6 +1,6 @@
 /**
- * Supplementary B1 framework verification, not real tools/agents host API evidence (the FN-1 rows
- * left with fishball-fold-notify, REMOVE-WD, design §1.0).
+ * Supplementary B1 framework verification, not real tools/agents host API evidence (B1 = the
+ * board's row; REMOVE-WD removed the other feature plugin, design §1.0).
  * Oracles: instance-ext-w0-decisions.md §4 and instance-ext-w0-skeleton-use-cases.md
  * B1-UC-LOAD only. No product implementation is inspected by this test.
  * V3 realignment: R-FB-06 (docs/planning/v3-requirements.md line 869) replaces W0's
