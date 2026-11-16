@@ -5,6 +5,7 @@
  */
 import { readProfileManifest } from '@deepseek-ai/dsh-app-boot'
 import { scopeParentOf } from '@deepseek-ai/dsh-scope'
+import { UI_GUARDS } from 'fishball-shared/ui-seam'
 import { GUARDS } from '../../contracts/constants.js'
 import { bundlesOf, coreLast } from './reorder.js'
 
@@ -29,6 +30,18 @@ function overriddenRows(ctx, rows) {
   const enabled = new Set()
   for (const entry of loader.entries()) if (!entry.disabled) enabled.add(entry.options?.id)
   return rows.filter((id) => enabled.has(id)).map((id) => code.rowPrefix + id)
+}
+
+/**
+ * The guard rows in this DSH: core's own patch rows, then the UI guard rows fishball-ui's patch
+ * holds (R-FB-14: UI-only rows are fishball-ui's), read from its `fishballUiGuards` service while it
+ * is there. Without fishball-ui there are no UI rows to report (Q-G1); a service that is not
+ * fishball-ui's shape adds none.
+ */
+function guardedRows(ctx, intended) {
+  const ui = ctx.get(UI_GUARDS.service)?.rows
+  const extra = Array.isArray(ui) ? ui.filter((id) => typeof id === 'string' && !intended.rows.includes(id)) : []
+  return [...intended.rows, ...extra]
 }
 
 /** The intended value of one IntendedPolicy key (readIntendedGuards). */
@@ -135,7 +148,7 @@ async function overriddenManagerTools(ctx, managerPreset) {
 export async function checkGuards(ctx, intended) {
   const managerPreset = intendedValue(intended, GUARDS.managerPresetKey)
   const overridden = Object.freeze([
-    ...overriddenRows(ctx, intended.rows),
+    ...overriddenRows(ctx, guardedRows(ctx, intended)),
     ...overriddenPolicy(ctx, intended),
     ...await overriddenPresets(ctx, managerPreset),
     ...overriddenOrder(ctx),

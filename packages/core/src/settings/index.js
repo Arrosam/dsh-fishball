@@ -8,7 +8,8 @@
  * through DSH's settings service, and the write-only token field writes DSH's credential store
  * through `remote.credentials`. So this route is the page's only server code.
  */
-import { GUARDS, UI_SEAM } from '../../contracts/constants.js'
+import { UI_SEAM } from 'fishball-shared/ui-seam'
+import { GUARDS } from '../../contracts/constants.js'
 import { CONNECT_ROUTE } from './constants.js'
 
 export { CONNECT_ROUTE, SETTINGS } from './constants.js'

@@ -2,7 +2,8 @@
  * The Fishball page's pairing copy (task F-PAIR; R-ID-07, R-ID-10, R-NAME-03; cases AUTH-UC-05,
  * NAME-DT-03). PROPOSED wording (W3 question P-3): the user reviews the en and zh lists at the W3
  * merge. Data only: frozen strings and pure template formatters that interpolate names only.
- * F-WIRE draws it from `fishball-core/src/identity`'s `pairing.state()`.
+ * F-WIRE draws it from core's `fishballInstance.ui.pairing.state()` (K3a `ui.d.ts`); moved here from
+ * core's `ui/pairing` by F-UI.
  *
  * Keys are the property names of the words they draw: `PAIRING_STATE` (`warnMatch`, `needId`, …),
  * `CHOICE` (`continue`, `newToken`, …), K1's `REFUSAL` (`nameTaken`, `nameInvalid`) and

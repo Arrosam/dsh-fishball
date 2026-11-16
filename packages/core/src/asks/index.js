@@ -4,8 +4,8 @@
  *
  * An `ask` (a session's `ask_agent`) is Fishball's to answer. When its model cannot decide, it files
  * the ask as a card with the `ask_user` tool; the user answers Allow or Reject, with an optional
- * reason, in Fishball's own conversation (client.asks.js), and core commits that answer through its
- * link as Fishball's `approval_answer` on the card's `offerId`. The main DSH shows nothing (Q-U2):
+ * reason, in Fishball's own conversation (fishball-ui's client.asks.js), and core commits that
+ * answer through its link as Fishball's `approval_answer` on the card's `offerId`. The main DSH shows nothing (Q-U2):
  * nothing here is registered outside the Fishball DSH.
  *
  * - `createAsks({link, table, logger})`: follows the link's polls (every `ask`, `settlement` and
