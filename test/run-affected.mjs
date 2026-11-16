@@ -5,14 +5,13 @@
  *     untracked files (the working tree against base);
  *   node test/run-affected.mjs --suite=<id>[,<id>…] [--sdk=<v>] [--list] [extra args]
  *     the named suites (ids as in test/suites.mjs, or a prefix such as `dsh-connector`);
- *   node test/run-affected.mjs --all [--sdk=<v>]   every suite (V3 and the V2 release selection);
+ *   node test/run-affected.mjs --all [--sdk=<v>]   every suite (V3 and the pre-V3 selection);
  *   node test/run-affected.mjs --check             the map's self-check (no test runs).
  *
  * --sdk picks the V3 per-SDK files: `0.2.1-rc.5`, `0.2.2-rc.1` or `both` (default). The SDK the
  * host suites boot is FBTEST_DSH_RUNTIME, as for test/run-v3.mjs; set it to match.
- * --list prints the selection and exits. V3 and V2 files run as two node --test runs, as the full
- * runs do: the V2 release case exclusions (test/v2-suites.mjs) go to the V2 run only, exactly as
- * test/run-v2.mjs passes them, so a suite here reports what the full run reports for its files.
+ * --list prints the selection and exits. V3 and pre-V3 files run as two node --test runs: the pre-V3
+ * case exclusions (test/v2-suites.mjs) go to the pre-V3 run only.
  */
 import { execFileSync } from 'node:child_process'
 import fs from 'node:fs'
@@ -76,7 +75,7 @@ export function checkMap() {
     twice: [...owners].filter(([, ids]) => ids.length > 1).map(([f, ids]) => `${f}: ${ids.join(', ')}`),
     v3Unowned: v3.filter((f) => !v3Owned.has(f)),
     v2Unowned: v2.filter((f) => !v2Owned.has(f)),
-    // A V2 group file the release selection does not run would be run here but not by test:v2.
+    // A V2 group file the pre-V3 selection (test/v2-suites.mjs) does not list: the two lists must name the same nested files.
     v2NotReleased: [...v2Owned].filter((f) => !v2.includes(f)),
   }
 }

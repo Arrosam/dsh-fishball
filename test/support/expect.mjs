@@ -3,7 +3,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { createRequire } from 'node:module'
 import { pathToFileURL } from 'node:url'
-import { EMBED_UI, ACTION, API, CLICK, PILE_API, ASK_FISHBALL, ASK_REASON, ASK_TOOL, AUTHOR_KIND, INTAKE_DIR, MANAGED_API, MANAGED_IDENTITY, BLOCKED, DSH_COMPACTION, DSH_STATE, FISHBALL_GROUP_KEYS, FISHBALL_PLUGINS_DIR, FIXTURE_BUNDLE, KIND, MANAGER_API, OUTCOME, OUTPUT_CAP_MAX, PLUGIN_STATUS, PRESET, PRIVATE_ROW_PREFIX, PROFILE, PROMPT_ARROW, ROW_ID, RUNS, RUNTIME, SETTINGS_ACTION, SETTINGS_FIXTURE, SETTINGS_TABLE, STORE } from './constants.mjs'
+import { ACTION, API, CLICK, PILE_API, ASK_FISHBALL, ASK_REASON, ASK_TOOL, AUTHOR_KIND, INTAKE_DIR, MANAGED_API, MANAGED_IDENTITY, BLOCKED, DSH_COMPACTION, DSH_STATE, FISHBALL_GROUP_KEYS, FISHBALL_PLUGINS_DIR, FIXTURE_BUNDLE, KIND, MANAGER_API, OUTCOME, OUTPUT_CAP_MAX, PLUGIN_STATUS, PRESET, PRIVATE_ROW_PREFIX, PROFILE, PROMPT_ARROW, ROW_ID, RUNS, RUNTIME, SETTINGS_ACTION, SETTINGS_FIXTURE, SETTINGS_TABLE, STORE } from './constants.mjs'
 import { until } from './util.mjs'
 
 export const toolNames = (request) => (request?.tools ?? []).map((t) => t.name)
@@ -401,31 +401,9 @@ export const outboxNow = async (host) => (await host.state()).outbox.entries
 /** A string of exactly n UTF-8 bytes made of 2-byte characters (n even), or ASCII when ascii is set. */
 export const bytesOf = (n, ascii = false) => (ascii ? 'b'.repeat(n) : 'é'.repeat(n / 2))
 
-/**
- * The served Fishball client, read like a browser (M5): the combo script that carries
- * dsh-connector-ui/client.js, plus the package-local chunks with the moved connector UI
- * (R-EMBED; split into parts by U-SHELL), served at plugins/dsh-connector-ui/<chunk> with the entry's rev.
- */
-export async function fishballClientBundle(host) {
-  const index = await host.get('/')
-  // Bootstrap batches load with <script src>, application batches are preloaded with <link href>.
-  const entry = new RegExp('(?:src|href)="([^"]*' + EMBED_UI.name + '\\/client\\.js[^"]*)"', 'g')
-  const urls = [...index.text.matchAll(entry)].map((m) => m[1].replaceAll('&amp;', '&'))
-  if (urls.length === 0) return { found: false, status: index.status }
-  const res = await host.get('/' + urls[0])
-  // A chunk is served under its own entry's rev (the boot graph), not the combo batch's.
-  const graph = EMBED_UI.bootGraph.exec(index.text)
-  const rev = graph ? JSON.parse(graph[1]).entries.find((e) => e.id === EMBED_UI.name)?.rev : undefined
-  const chunks = []
-  for (const file of EMBED_UI.clientChunks) chunks.push(await host.get('/plugins/' + EMBED_UI.name + '/' + file + '?rev=' + rev))
-  const failed = chunks.find((chunk) => chunk.status !== 200)
-  return { found: true, status: res.status === 200 ? (failed?.status ?? res.status) : res.status, text: [res.text, ...chunks.map((chunk) => chunk.text)].join('\n') }
-}
-
 // ---- P6 helpers (watches) ----
 
 export const watchesNow = async (host) => (await host.state()).watches
-export const watchById = async (host, id) => (await watchesNow(host))?.watches.find((w) => w.id === id)
 export const watchesOn = async (host, sessionId) => ((await watchesNow(host))?.watches ?? []).filter((w) => w.targetSessionId === sessionId)
 
 /** Fishball's watch notices: fishball-notice user messages that name the watch id. */
@@ -473,24 +451,6 @@ export async function resultOfCall(host, fb, callId, timeoutMs = 10000) {
 export const approvalsNow = async (host) => (await host.state()).approvals
 /** UTF-8 byte length. */
 export const bytes = (s) => Buffer.byteLength(String(s), 'utf8')
-
-// ---- P8 helpers (ctx.fishball sources) ----
-
-export const sourcesNow = async (host) => (await host.state()).sources
-export const sourceIn = async (host, identity) => (await sourcesNow(host))?.sources?.find((s) => s.identity === identity)
-/** Fishball's plugin-event notices (fishball-notice user messages) containing needle. */
-export async function pluginNotices(host, fb, needle) {
-  const events = (await host.call('inspect', { sessionId: fb, events: true })).events ?? []
-  return events.filter((e) => e.type === 'user/message' && e.source?.kind === 'fishball-notice' && e.text.includes(needle))
-}
-/** Register a source as a fixture row; throws when the precondition (a captured context) is missing. */
-export async function register(host, label, def, key) {
-  const r = await host.call('sourceRegister', { label, def, ...(key ? { key } : {}) })
-  if (r.error?.code === 'FBTEST_NO_CONTEXT') throw new Error('precondition: ' + r.error.message)
-  return r
-}
-/** publish on a kept source: {ok, value} or {ok:false, error:{code}}. */
-export const publish = (host, key, event) => host.call('sourcePublish', { key, event })
 
 export const T = { timeout: 55000 }
 export const HOOK = { timeout: 60000 }

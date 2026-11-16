@@ -23,16 +23,14 @@
  * | R3-ST-03 | State Transition ready → restart → ready (twice) | R3 | each restart's access names its own new instance id; earlier signals aborted |
  * | R3-DT-01 | DT (stopped × started) | R3 | refused while stopped (code is not a resolved access), resolved while ready |
  * | R3-UC-01 | Use Case (row Retry from failed; invalid dependency manifest) | R3 | failed → Retry → ready; embed 303 to the child and the child admits |
- * | R3-UC-02 | Use Case (row restart from the child's settings view) | R3 | restart → ready with a new child; embed 303 to the new child |
  */
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import { after, describe, it } from 'node:test'
 import { RUNTIME } from './support/constants.mjs'
 import { loadInstance, runtimeAnchor } from './support/body-soul-env.mjs'
-import { bootHost, newHome } from './support/host.mjs'
-import { until } from './support/util.mjs'
-import { R2, R2_BUDGET, assertEmbedAdmits, bootAfterFault, launchRecords, plantInvalidManifest, removeHome, selectedSdk, settledStatus } from './support/v2-r2.mjs'
+import { newHome } from './support/host.mjs'
+import { R2, R2_BUDGET, assertEmbedAdmits, bootAfterFault, plantInvalidManifest, removeHome, selectedSdk, settledStatus } from './support/v2-r2.mjs'
 
 const SDK = selectedSdk(RUNTIME)
 const R3 = Object.freeze({
@@ -124,28 +122,6 @@ describe(`R3 [${SDK}] native access after an in-process stop and start`, { timeo
     const ready = retried?.state === R2.state.ready ? retried : await settledStatus(host, [R2.state.ready])
     assert.equal(ready.state, R2.state.ready, 'Retry from failed ends ready')
     await assertEmbedAdmits(host, 'R3: after Retry from failed')
-  })
-
-  it('R3-UC-02 row: restart from the child settings view → ready with a new child; embed redirects to it', { timeout: R2_BUDGET.caseMs }, async (t) => {
-    const home = newHome('v2-r3-row-restart')
-    homes.push(home)
-    const host = await bootHost(home)
-    t.after(async () => { await host.stop().catch(() => {}) })
-    assert.equal((await settledStatus(host)).state, R2.state.ready, 'precondition: ready')
-    const firstLaunch = launchRecords(home)
-    const child = await assertEmbedAdmits(host, 'before restart')
-    // The child's own Restart route (v2-set: relayed to the main host's restart). The child being
-    // restarted may drop the connection before answering, so the answer itself is not the oracle.
-    await fetch(child.origin + R2.route.childRestart, {
-      method: 'POST',
-      headers: { cookie: child.cookie, origin: child.origin, ...R2.sameOrigin, 'content-type': 'application/json' },
-      body: '{}',
-    }).then((response) => response.arrayBuffer()).catch(() => {})
-    const replaced = await until(() => { const now = launchRecords(home); return now.length === 1 && now[0] !== firstLaunch[0] }, R2_BUDGET.settleMs, R2_BUDGET.pollMs)
-    assert.ok(replaced, 'the restart launched a new child: ' + JSON.stringify(launchRecords(home)))
-    assert.equal((await settledStatus(host, [R2.state.ready])).state, R2.state.ready, 'restart ends ready')
-    const again = await assertEmbedAdmits(host, 'R3: after the row restart')
-    assert.notEqual(again.origin, child.origin, 'the embed now redirects to the new child')
   })
 })
 

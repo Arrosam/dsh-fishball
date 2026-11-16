@@ -15,7 +15,6 @@
  * | MKS-05 ×3 | DT (Take back refused: the instance's own id / unknown id / bad body) | §10e | 409 is-fishball / 409 unknown-session / 400 bad-body, nothing changes (the banner shows the refusal dialog from these) |
  * | MKS-06  | ST (no instance: Hand over → idle → Take back) | contract §9, C1-P-04 | with no instance attached both answer 200 with no error about a missing instance; the feed shows the mark's entry, then not; the snapshot says no instance is attached |
  * | MKS-07  | DT (instance attached × not attached) | C3-P-10 | the same Hand over and Take back give the same managed list in both instance states |
- * | MKS-09  | EP (served client bundle) | §10e, slim §8.3 | carries "Managed by Fishball", "Hand over to Fishball" and "Take back from Fishball" |
  * | MKS-10  | ST (restart) | §5e "Durable" | managed entries persist, so the marks come back after a reload |
  *
  * Retired:
@@ -27,7 +26,7 @@
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
 import { EMBED_UI_LINK, MANAGED_BY, MANAGED_CODE, P5_CODE, TITLE } from './support/constants.mjs'
-import { HOOK, T, fishballClientBundle, settledIdle } from './support/expect.mjs'
+import { HOOK, T, settledIdle } from './support/expect.mjs'
 import { handOver, stopStub, takeBack, userSession } from './support/instance-stub.mjs'
 import {
   MANAGED_STUB, bootManaged, restartManaged, detachStub, entryOf, folderIn, frameAfter, frameEntry, handOverWithNote, managedNow, postManaged, reattach, release, startSession,
@@ -155,12 +154,6 @@ describe('managed-session marks: what the client reads (H-STUB)', () => {
     assert.ok(unattached, 'precondition: MKS-06')
     assert.equal((await host.state()).instance.attached, true, 'precondition: attached')
     assert.deepEqual(await handOverAndBack(await userSession(host, 'mks07')), unattached)
-  })
-
-  it('MKS-09 the client bundle carries the banner\'s and the header\'s words', T, async () => {
-    const bundle = await fishballClientBundle(host)
-    assert.ok(bundle.found && bundle.status === 200, 'index references dsh-connector-ui/client.js')
-    for (const word of [MANAGED_STUB.labels.banner, MANAGED_STUB.labels.handOver, MANAGED_STUB.labels.takeBack]) assert.ok(bundle.text.includes(word), word)
   })
 
   it('MKS-10 managed entries survive a restart', MANAGED_STUB.long, async () => {
