@@ -153,6 +153,8 @@ export const V3_SUITES = Object.freeze({
   'dsh-connector-ui.draw': suite('draw-only frontend: fish, window, hint, Retry link, marks, Hand over / Take back, light, notify prompt, tool declaration (U-DRAW)', v3('dsh-connector-ui/draw'),
     [all(PACKAGE.dshConnectorUi), sub(PACKAGE.dshConnector, 'src', 'ui'), sub(PACKAGE.dshConnector, 'src', 'contrib'), sub(PACKAGE.dshConnector, 'tools'),
       sub(PACKAGE.dshConnector, 'host-services'), all(PACKAGE.dshConnectorShared), ...CONNECTOR_CORE, ...CONNECTOR_CONTRACTS]),
+  'dsh-connector-ui.wire': suite('install matrix and no-V2 boundaries (U-WIRE)', v3('dsh-connector-ui/wire'),
+    [all(PACKAGE.dshConnectorUi), sub(PACKAGE.dshConnector, 'src', 'ui'), sub(PACKAGE.dshConnector, 'host-services')]),
   // Reads the instance's whole placement and launch overlay, core's patch it places, and the F-GUARDS
   // vocabulary (whose split constants name fishball-ui's rows).
   'dsh-instance.placement': suite('placement of the set, launch overlay, hosted-child guards (I-PLACE)', v3('dsh-instance/placement'),

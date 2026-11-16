@@ -105,9 +105,9 @@ export const ROUTE = Object.freeze({
   /** The `child/*` routes: each answers `instance-missing` without a usable locator. */
   // #77: no retry route any more. I-HOST (QD1 = B): no child/models/* either (model sync is the instance's page).
   child: Object.freeze(['status', 'admit']),
-  // U-DRAW: availability is connector / page (+ legacy until C-WIRE, dev correction 2026-11-16); no handover or tools flags.
-  servicesKeys: Object.freeze(['ok', 'connector', 'page', 'legacy', 'routes', 'ui']),
-  removedKeys: Object.freeze(['handover', 'tools']),
+  // U-DRAW: availability is connector / page (no legacy flag: V2 never deployed (U-WIRE)); no handover or tools flags.
+  servicesKeys: Object.freeze(['ok', 'connector', 'page', 'routes', 'ui']),
+  removedKeys: Object.freeze(['legacy', 'handover', 'tools']),
   statusKeys: Object.freeze(['ok', 'status', 'target']),
 })
 /** The routes' refusals (relayed): HTTP status and code. */

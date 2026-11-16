@@ -113,7 +113,8 @@ const assertNothingDrawn = (setup, regs) => {
 }
 const assertOneEntry = (regs) => assert.equal(bySlot(regs, SLOT.entry).length, 1, 'embed-UI\'s sidebar entries: ' + JSON.stringify(bySlot(regs, SLOT.entry).map((r) => r.id ?? r.key)))
 const assertNoBrand = (regs) => assert.deepEqual(regs.filter((r) => SLOT.brand.includes(r.slot)), [], 'a sidebar.brand.* slot was used')
-const assertCard = (regs) => assert.ok(regs.some((r) => SLOT.card.includes(r.slot)), 'no Plugins card (' + SLOT.card.join(', ') + ')')
+// V2 never deployed (U-WIRE): settings belong inside the child; embed-UI has no card.
+const assertNoCard = (regs) => assert.equal(regs.some((r) => SLOT.card.includes(r.slot)), false, 'embed-UI registered a Plugins card')
 /** K3's literal vocabulary of a type, by a member path from a service (`dshInstanceChild.admit` → request → field). */
 const k3 = () => contracts(FOLDER.hostServices)
 const admitField = (field) => {
@@ -275,10 +276,10 @@ export function registerUShellCases(sdk) {
   caseTest(sdk, 'UIM-EP-01', 3, 'connector services, no dshInstanceChild → marks and Hand over', null, LATER.marks)
   caseTest(sdk, 'UIM-EP-01', 3, 'connector services, no dshInstanceChild → fish light and the contributed tools', null, LATER.attn)
   // #77: the ready window has no Retry button; Retry is on the instance's settings page.
-  integrationCase(sdk, 'UIM-EP-01', 4, 'all services → the page with its frame, and the Plugins card; no Retry button; no diagnostic', async (t) => {
+  integrationCase(sdk, 'UIM-EP-01', 4, 'all services → the child frame, no Plugins card (V2 never deployed (U-WIRE)); no Retry button; no diagnostic', async (t) => {
     const { setup, page, regs } = await shellOf(t, sdk, SCENARIO.all)
     assert.equal(pageEntries(page).length, 1, 'Fishball page entries')
-    assertCard(regs)
+    assertNoCard(regs)
     const opened = await openFishball(page)
     assert.ok(opened.iframe(), 'no frame')
     assert.deepEqual(frameRetries(opened), [], 'a Retry button on the window')
@@ -369,7 +370,7 @@ export function registerUShellCases(sdk) {
     for (const file of SPLIT.parts) assert.ok(files.includes([...SPLIT.clientDir, file].join('/')), 'not shipped: ' + file)
   })
   withdrawnRow(sdk, 'U-SHELL', 'O6', 'the status-line symlink keeps its name and target and still resolves to the instance\'s file', WITHDRAWN_BY.page)
-  caseTest(sdk, 'U-SHELL', 'done', 'the Plugins card starts model sync on the Plugins page (R-HOST-07) in a browser', null, LATER.e2e)
+  // V2 never deployed (U-WIRE): embed-UI has no Plugins card; model sync belongs to the instance.
 
   // ============================================================ the host half's constants equal the frozen contracts
   // Requirements 1.34: embed-UI follows dshConnectorUi (C-UI-BACKEND's UI_SERVICE), no longer dshConnectorHandover. Values are compared,
@@ -396,14 +397,14 @@ export function registerUShellCases(sdk) {
   })
 
   // ============================================================ the host routes (relayed surface; design §4.2)
-  // U-DRAW: availability is {connector, page} (+ legacy until C-WIRE); the handover and tools flags are gone; ui is {} without the connector.
+  // U-DRAW: availability is {connector, page} (no legacy flag: V2 never deployed (U-WIRE)); the handover and tools flags are gone; ui is {} without the connector.
   integrationCase(sdk, 'U-SHELL', 'routes', 'GET services answers which services are usable now, per UIM-EP-01 partition (connector ⇔ a v1 dshConnectorUi; page ⇔ a v1 locator; no handover or tools flag)', async () => {
-    for (const [scenario, expected] of [[SCENARIO.none, [false, false, false]], [SCENARIO.child, [false, true, false]], [SCENARIO.connector, [true, false, false]], [SCENARIO.all, [true, true, false]], [SCENARIO.older, [true, false, false]], [SCENARIO.disabled, [true, false, false]]]) {
+    for (const [scenario, expected] of [[SCENARIO.none, [false, false]], [SCENARIO.child, [false, true]], [SCENARIO.connector, [true, false]], [SCENARIO.all, [true, true]], [SCENARIO.older, [true, false]], [SCENARIO.disabled, [true, false]]]) {
       const answer = await routeCall(await hostFor(sdk, scenario), PAGE_NAME.ipv4, 'GET', ROUTE.services)
       assert.equal(answer.status, HTTP_OK, scenario.label + ': ' + answer.text)
       assert.deepEqual(ROUTE.servicesKeys.filter((k) => !(k in answer.json)), [], scenario.label + ' keys')
       assert.deepEqual(ROUTE.removedKeys.filter((k) => k in answer.json), [], scenario.label + ' still has V2 flags')
-      assert.deepEqual([answer.json.connector, answer.json.page, answer.json.legacy], expected, scenario.label)
+      assert.deepEqual([answer.json.connector, answer.json.page], expected, scenario.label)
       if (!answer.json.connector) assert.deepEqual(answer.json.ui, {}, scenario.label + ' ui without a connector')
     }
   })

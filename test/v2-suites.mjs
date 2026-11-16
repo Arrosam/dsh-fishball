@@ -180,6 +180,8 @@ export const V2_SUITES = Object.freeze({
     // V3 U-DRAW (the fish, window, hint, Retry link, marks, Hand over / Take back, light, notify prompt, tool declaration; Q-U1, Q-G3, Q-G4, Q-G5, R-FN-01, R-UI-04/05/10); run with test/run-v3.mjs.
     file('test/v3/dsh-connector-ui/draw/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 embed-UI draw-only frontend over the connector UI backend (U-DRAW)'),
     file('test/v3/dsh-connector-ui/draw/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 embed-UI draw-only frontend over the connector UI backend (U-DRAW)'),
+    file('test/v3/dsh-connector-ui/wire/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 U-WIRE headless install matrix'),
+    file('test/v3/dsh-connector-ui/wire/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 U-WIRE headless install matrix'),
     // V3 I-PLACE (PLAT-DT-01, HOST-ST-01 rows 1–3, HOST-UC-06 post, HOST-UC-08 main 1/A1–A3, HOST-EP-03 rows 6–7, HOST-DT-03, PLAT-DT-04 rule 1 hosted, LITE-UC-03/LITE-EP-13/SET-EP-12 hosted, K3 unmount); run with test/run-v3.mjs.
     file('test/v3/dsh-instance/placement/sdk-0.2.1-rc.5.test.mjs', DISPOSITION.v3, 'V3 instance placement of the set and fishball-hosted-settings, launch overlay and hosted-child guards (I-PLACE)'),
     file('test/v3/dsh-instance/placement/sdk-0.2.2-rc.1.test.mjs', DISPOSITION.v3, 'V3 instance placement of the set and fishball-hosted-settings, launch overlay and hosted-child guards (I-PLACE)'),

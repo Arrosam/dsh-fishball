@@ -143,6 +143,7 @@ function createAppReady() {
  * @param options.legacy - provide the V2 `dshConnector` service (DECIDED.legacy).
  * @param options.appReady - `'none'` (no service: diagnostics at once) or `'pending'`.
  * @param options.embedFirst - load embed-UI's row before the connector row (UDRAW-ST-04 #5).
+ * @param options.embed - false leaves embed-UI uninstalled (U-WIRE matrix).
  */
 export async function hostWorld(t, sdk, options = {}) {
   const { ui = true, tools = true, uiApiVersion, child: childOptions = {}, legacy = false, appReady = 'none', embedFirst = false } = options
@@ -221,7 +222,7 @@ export async function hostWorld(t, sdk, options = {}) {
   loader.builtins.legacy = { name: SERVICE.legacy, apply(cctx) { cctx.provide(SERVICE.legacy, { fbtestLegacy: true }) } }
 
   const connectorRow = async () => { if (ui || tools) world.connectorId = await loader.create({ name: FIXTURE.builtinPrefix + 'connector' }) }
-  const embedRow = async () => { world.embedId = await loader.create({ name: embedUrl(sdk) }) }
+  const embedRow = async () => { if (options.embed !== false) world.embedId = await loader.create({ name: embedUrl(sdk) }) }
   if (child) await loader.create({ name: FIXTURE.builtinPrefix + 'instance', ...(childOptions?.disabled ? { disabled: true } : {}) })
   if (legacy) await loader.create({ name: FIXTURE.builtinPrefix + 'legacy' })
   await loader.await()
@@ -324,9 +325,9 @@ function eventSourceClass(world, page) {
  * @param options.host - the page's hostname (PAGE_HOST).
  * @param options.failServices - the services read fails (a network error), UDRAW-EP-02 row 5.
  */
-export async function openPage(t, world, { host = PAGE_HOST.loopback, failServices = false } = {}) {
+export async function openPage(t, world, { host = PAGE_HOST.loopback, failServices = false, withoutConfigForms = false, embed = true } = {}) {
   const baseURI = PAGE_HOST.scheme + host + ':' + PAGE_HOST.port + ROUTE.absolutePrefix
-  const page = { baseURI, requests: [], streams: [], navigations: [], dictionaries: [], errors: [] }
+  const page = { baseURI, requests: [], chunks: [], streams: [], navigations: [], dictionaries: [], errors: [] }
   const pageFetch = async (input, init = {}) => {
     const url = new URL(String(input instanceof Request ? input.url : input), baseURI)
     const method = String(init.method ?? (input instanceof Request ? input.method : 'GET')).toUpperCase()
@@ -344,16 +345,17 @@ export async function openPage(t, world, { host = PAGE_HOST.loopback, failServic
   const shim = createReactShim({ stale() {} })
   const { React } = shim
   const platform = { [DSH.react]: React, [DSH.reactDom]: { createPortal: (node) => node }, [DSH.primitives]: primitivesFor(React) }
-  const graph = [{ id: EMBED.moduleId, rev: EMBED.rev }]
+  const graph = embed ? [{ id: EMBED.moduleId, rev: EMBED.rev }] : []
   const chunkLoads = new Set()
   const runFile = (file) => sandbox.run(fs.readFileSync(path.join(EMBED.clientDir, file), 'utf8'), path.join(EMBED.clientDir, file), new URL(file, baseURI).href)
   const loadChunk = (_owner, file) => {
+    page.chunks.push(file)
     const load = Promise.resolve().then(() => runFile(file))
     chunkLoads.add(load)
     load.finally(() => chunkLoads.delete(load)).catch(() => {})
     return load
   }
-  runFile(EMBED.clientEntry)
+  if (embed) runFile(EMBED.clientEntry)
   const table = moduleTable({ page: sandbox, platform, graph, loadChunk })
 
   const { Context } = await importSdk(world.sdk, DSH.cordis)
@@ -372,7 +374,7 @@ export async function openPage(t, world, { host = PAGE_HOST.loopback, failServic
   }
   const pluginNavigation = { openBundle: (name) => page.navigations.push({ openBundle: name }), openList: () => page.navigations.push({ openList: true }) }
   const provided = { slots, locale, configForms: configForms(), pluginNavigation, layout: services.layout }
-  for (const [name, value] of Object.entries(provided)) root.provide(name, value)
+  for (const [name, value] of Object.entries(provided)) if (!withoutConfigForms || name !== 'configForms') root.provide(name, value)
   const plugins = applyPlugins(root, graph, table, page.errors)
   t.after(async () => {
     for (const key of shim.roots()) shim.unmountRoot(key)
