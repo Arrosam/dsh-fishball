@@ -12,6 +12,7 @@ import Schema from '@deepseek-ai/schemastery'
 import { QUESTION_MODE } from './constants.js'
 // The default of maxQueuedInputs has one owner, K1's QUEUE (data only, no DSH import).
 import { QUEUE } from '../mcp-schema/constants.js'
+import { SETTINGS_SCHEMA } from './settings/schema.js'
 
 /** Minimum for counts and sizes. No limit has a maximum (conn-OQ-19). */
 const MIN = Object.freeze({ count: 1 })
@@ -47,8 +48,12 @@ export const QUESTION_MODE_SETTING = Object.freeze({
   description: 'Who answers the questions and plan reviews of sessions Fishball manages: auto (Fishball, when your own words cover it), fishball (Fishball\'s judgement) or user (you).',
 })
 
-/** Active limits only; saved questionMode and approvalAnswerSeconds are inert legacy data. */
+/**
+ * Active limits, plus the V3 settings (src/settings/schema.js: the token list, the designated
+ * agent, the approval port; C-WIRE); saved questionMode and approvalAnswerSeconds are inert legacy data.
+ */
 export const Config = Schema.object({
+  ...SETTINGS_SCHEMA,
   ...Object.fromEntries(LIMITS.map(({ field, defaultValue, min, description }) => [
     field,
     Schema.natural().min(min).default(defaultValue).description(description).volatile(),

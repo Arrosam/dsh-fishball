@@ -17,6 +17,12 @@ export const SETTINGS_PAGE = Object.freeze({
   route: Object.freeze({
     create: '/api/dsh-connector/tokens/create',
     notice: '/api/dsh-connector/tokens/notice',
+    /**
+     * GET → `{ok: true, entries, approval, designated}`: the page's read-only rows (C-WIRE;
+     * R-ID-12, AUTH-UC-09): per entry its pair state, id, name, `lastSeenAt` and connection, in
+     * settings order; the approval listener's status and port (R-OA-20); the designated entry.
+     */
+    state: '/api/dsh-connector/settings/state',
   }),
   /**
    * The largest create body read (design §5.9 "JSON body bound"; the value is this route's own

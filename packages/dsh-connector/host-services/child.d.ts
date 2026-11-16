@@ -113,9 +113,10 @@ export interface AdmitRequest {
 export type AdmitErrorCode = 'hostname-refused' | 'not-ready'
 
 /**
- * Hosted model sync (R-HOST-07; 1.41 Q-G7), V2's `providerSync`, started only from the instance's
- * own settings page. It copies the host's providers and their model lists into the child and
- * nothing else: the model Fishball uses is chosen in Fishball's settings inside the child (the
+ * Hosted model sync (R-HOST-07; 1.41 Q-G7), V2's `providerSync`, started from the instance's own
+ * settings page, and once automatically when a new child first becomes ready (the user, 2026-11-16:
+ * "instance初次安装时同步一次"). It copies the host's providers and their model lists into the child
+ * and nothing else: the model Fishball uses is chosen in Fishball's settings inside the child (the
  * user, 2026-11-16: "同步只是同步model list，至于fishball用什么还要在fishball内设置").
  */
 export interface ProviderSyncStatus {

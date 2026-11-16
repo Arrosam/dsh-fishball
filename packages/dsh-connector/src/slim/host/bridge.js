@@ -833,7 +833,7 @@ function boundRead(messages, alreadyTruncated, maxMessages, maxBytes) {
  * absolute path is not allowed (forbidden); a workspace whose folder is gone, or an absolute path
  * that is not an existing directory, is not found (unknown-session).
  */
-async function placeOf(service, folder) {
+export async function placeOf(service, folder) {
   const workspaces = await service.workspaces()
   const workspace = workspaces.find((entry) => entry.id === folder)
   if (workspace !== undefined) {

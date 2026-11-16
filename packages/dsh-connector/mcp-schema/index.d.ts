@@ -350,6 +350,31 @@ export interface Mailbox {
    *   both are the same; nothing changes.
    */
   transfer(fromPrincipal: PrincipalKey, toPrincipal: PrincipalKey): Promise<{ readonly moved: number }>
+  /**
+   * `transfer` staged for a succession that may still fail (K1 amendment at W4b, C-WIRE; C-SUCCEED's
+   * routing `succeedPrincipal`). In one serial step it sets a barrier in `toPrincipal`'s mailbox at
+   * its next sequence, then moves `fromPrincipal`'s pending events in as `transfer` does. Until
+   * `confirm` or `undo`, `poll` stops at the barrier and `ack` treats what lies past it as unknown.
+   * The barrier is in memory only: a crash while staged leaves each event in one mailbox, visible.
+   * @throws TypeError synchronously as `transfer`; rejects TypeError when `toPrincipal` is staged already
+   */
+  stage(fromPrincipal: PrincipalKey, toPrincipal: PrincipalKey): Promise<StagedTransfer>
+}
+
+/** `Mailbox.stage`'s handle (K1 amendment at W4b). */
+export interface StagedTransfer {
+  /** The `eventId`s moved from the source, in order. */
+  readonly movedIds: readonly string[]
+  /** Commits `draft` into the destination past the barrier; `undo` removes it again. @returns its eventId */
+  commit(draft: EventDraft): Promise<string>
+  /** Lifts the barrier (synchronous, cannot fail) and hints the destination's listen streams. */
+  confirm(): void
+  /**
+   * Removes the staged commits, moves the transferred events still pending back to the source, and
+   * moves back every other event committed past the barrier whose `sourceSessionId` is in
+   * `sourceSessions`; then lifts the barrier.
+   */
+  undo(sourceSessions: readonly string[]): Promise<void>
 }
 
 /** C-HTTP's side of the hint (R-EVT-04): the mailbox calls it after each commit, for that pair only. */
@@ -846,6 +871,7 @@ export declare const SCOPE: { readonly full: "agent"; readonly pair: "agent:pair
 export declare const SDK_PINS: { readonly "@modelcontextprotocol/server": "2.2.0"; readonly "@modelcontextprotocol/node": "2.1.0" }
 export declare const SETTINGS_REFUSAL: { readonly tokenDuplicate: "token-duplicate" }
 export declare const SETTLED_BY: { readonly user: "user"; readonly principal: "principal" }
+export declare const READ_ROLE: { readonly user: "user"; readonly assistant: "assistant"; readonly principal: "principal"; readonly agent: "agent"; readonly context: "context" }
 export declare const SETTLEMENT_OUTCOME: { readonly allowed: "allowed"; readonly rejected: "rejected"; readonly answered: "answered" }
 export declare const TARGET_CODE: { readonly unreachable: "TARGET_UNREACHABLE"; readonly refused: "TOKEN_REFUSED"; readonly incompatible: "TARGET_INCOMPATIBLE"; readonly revoked: "token-revoked"; readonly insecure: "target-insecure"; readonly invalid: "target-invalid" }
 export declare const TARGET_STATE: { readonly connected: "connected"; readonly unreachable: "target-unreachable"; readonly refused: "token-refused"; readonly unset: "target-unset" }

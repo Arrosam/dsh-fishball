@@ -6,9 +6,9 @@
  * the V2 `LIMITS` and the connector settings, with the codes contract 1.2 names.
  */
 import {
-  ARGUMENTS_STATUS, APPROVAL_KIND, DECISION, DELIVERY, GRANT_KIND, IMAGE_TYPES, PLAN_REVIEW, PROMPT_DECISIONS, RISK, ROLE,
+  ARGUMENTS_STATUS, APPROVAL_KIND, DECISION, DELIVERY, GRANT_KIND, IMAGE_TYPES, PLAN_REVIEW, PROMPT_DECISIONS, RISK,
 } from '../contract/contract.js'
-import { DECISION_KIND, EVENT_TYPE, RETIREMENT_REASON, SETTLED_BY, SETTLEMENT_OUTCOME } from './constants.js'
+import { DECISION_KIND, EVENT_TYPE, READ_ROLE, RETIREMENT_REASON, SETTLED_BY, SETTLEMENT_OUTCOME } from './constants.js'
 import { anyValue, array, boolean, constant, integer, nullable, object, oneOfStrings, string } from './schema.js'
 
 /** Milliseconds since the Unix epoch (WIRE). */
@@ -50,7 +50,7 @@ export const sessionSummary = () => object({
 })
 
 export const readMessage = () => object({
-  seq: integer(), role: oneOfStrings(Object.values(ROLE)), author: string(), text: string(), images: array(imageRef()),
+  seq: integer(), role: oneOfStrings(Object.values(READ_ROLE)), author: string(), text: string(), images: array(imageRef()),
 })
 
 export const grantSpec = () => object(

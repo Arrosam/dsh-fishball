@@ -41,7 +41,7 @@ const attachments = () => array(string(), 'hostRefs from attachment_put, each us
 const pairBound = () => object({ idMatches: boolean(), boundId: string(), name: nullable(string()), pairedAt: time(), lastSeenAt: nullable(time()) })
 
 const DEFINITIONS = [
-  tool(TOOL.sessionsList, 'List the main-DSH sessions related to you. Sessions another principal manages are omitted.',
+  tool(TOOL.sessionsList, 'List the main-DSH sessions you manage. Sessions nobody manages and sessions another principal manages are omitted.',
     object({ limit: integer() }, { workspaceId: string() }),
     success({ sessions: array(sessionSummary()) })),
   tool(TOOL.sessionStart, 'Start a session in a workspace or an absolute folder and send its first message. You become its managing principal.',
@@ -56,7 +56,7 @@ const DEFINITIONS = [
   tool(TOOL.sessionStop, 'Stop the running turn of a session you manage.',
     object({ sessionId: string() }, { reason: string() }),
     success({ stopped: constant(true) })),
-  tool(TOOL.sessionRead, 'Read the latest messages of a session related to you, within the given bounds.',
+  tool(TOOL.sessionRead, 'Read the latest messages of a session you manage, within the given bounds.',
     object({ sessionId: string(), maxMessages: integer(), maxBytes: integer() }),
     success({ messages: array(readMessage()), truncated: boolean() })),
   tool(TOOL.sessionRelease, 'Give a session you manage back to the user, with a reason.',

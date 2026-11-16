@@ -23,11 +23,19 @@
  * An instance reaches all of this only through the contract's `dshConnector` service
  * (src/connector-service.js), which binds one instance's transport to this row's own state
  * (fishballSessionState) and the bridge (src/slim/host/*).
+ *
+ * The V3 connector (src/wire/, task C-WIRE) runs beside it in the same row: the MCP endpoint at
+ * /api/agent/mcp, the OAuth server and approval listener, tokens, pairs, mailbox, routing and
+ * revocation, the hosted-token service, the UI backend and the contribution service, and the
+ * connector's own settings page (client.js). The V2 approval broker is not switched to V3 routing
+ * yet (the user's split, 2026-11-16; C-WIRE-2), so the two share no state. A V3 failure to open is
+ * logged and leaves the V2 path running. The row requires dsh-web-app (the user, 2026-11-17): its
+ * injected web-app services keep it pending without the web app (src/constants.js WEB_SERVICE).
  * There is no in-process Fishball agent or session: the legacy one was removed, because a second
  * Fishball in the main process took every input the user meant for the child.
  */
 import { Config, QUESTION_MODE_SETTING, readLimits } from './src/config.js'
-import { PLUGIN, ERROR, STATUS, SERVICE, API_CODE, WATCH_BY, CARD_END, PILE_SCOPE, FISHBALL, EVENT, DECISION_ACTION, DECISION_IDLE, DECISION_OK, INTAKE_SOURCE } from './src/constants.js'
+import { PLUGIN, ERROR, STATUS, SERVICE, WEB_SERVICE, API_CODE, WATCH_BY, CARD_END, PILE_SCOPE, FISHBALL, EVENT, DECISION_ACTION, DECISION_IDLE, DECISION_OK, INTAKE_SOURCE } from './src/constants.js'
 import { LifecycleStateError, diagnosticOf } from './src/errors.js'
 import { StateFeed } from './src/state-feed.js'
 import { Store } from './src/store.js'
@@ -50,6 +58,9 @@ import { GRANT_TOOL, Grants } from './src/grants.js'
 import { ResultWording } from './src/result-wording.js'
 import { byteLength, latestFirst } from './src/text.js'
 import { registerRoutes } from './src/http.js'
+import { defineDomain, domainTable } from '@deepseek-ai/dsh-storage-domain'
+import { openV3 } from './src/wire/index.js'
+import { LOG as V3_LOG } from './src/wire/constants.js'
 
 export const name = PLUGIN.name
 export { Config }
@@ -106,9 +117,29 @@ export async function apply(ctx, config) {
   // instead of the instance failing to connect (contract §1, §9).
   binding = provideConnectorService(ctx, { onChange: () => publish() })
 
+  // The V3 connector shares no store with the V2 path, so a V3 failure is logged and leaves V2
+  // running. Its close is the row's effect from the start, so a row that unloads while V3 is still
+  // opening closes it once it has opened; the effect returns that close's promise, which Cordis
+  // awaits, so a remount opens its storage domains and routes only once these are released.
+  // apply awaits the open (alongside V2's store, so a slow V3 open never delays V2's): DSH's app
+  // ready waits for every row's apply, so the V3 services and routes (dshConnectorUi among them)
+  // exist by then, and a plugin that checks for them at app ready finds them. V3 needs DSH's web
+  // server (its MCP and OAuth routes); a DSH without the web app runs V2 alone.
+  let v3Active = true
+  let openedV3 = Promise.resolve()
+  if (ctx.get(WEB_SERVICE.webServer) === undefined) logger.warn(V3_LOG.format, V3_LOG.noWebServer, WEB_SERVICE.webServer)
+  else ctx.effect(() => {
+    openedV3 = openV3(ctx, { config, storageDomain: { defineDomain, domainTable }, limits, volatileEvent: EVENT.volatileUpdate, namespace: PLUGIN.name, logger })
+      .catch((error) => { if (v3Active) logger.warn(V3_LOG.format, V3_LOG.openFailed, diagnosticOf(error)) })
+    return () => {
+      v3Active = false
+      return openedV3.then((v3) => v3?.close())
+    }
+  }, V3_LOG.label)
+
   let store
   try {
-    store = await Store.open(ctx)
+    ;[store] = await Promise.all([Store.open(ctx), openedV3])
   } catch (error) {
     logger.warn('store could not be opened (%s)', diagnosticOf(error))
     status = { status: STATUS.failed, error: { code: ERROR.storeUnreadable } }
