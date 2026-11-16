@@ -18,9 +18,8 @@ export const ROW = Object.freeze({ name: 'dsh-connector-ui', logger: 'dsh-connec
  * row). `apiVersion` is the one version each must carry; any other value is the service absent
  * (K3 index.d.ts, README; UIM-EP-01 row 5).
  * - child: K3 `DshInstanceChild` (child.d.ts), the instance's locator;
- * - ui: the connector's UI backend (dsh-connector src/ui/constants.js `UI_SERVICE.name`; K3b has
- *   not frozen it yet, so C-UI-BACKEND's name is restated here): every state and operation embed-UI
- *   draws, the routes it draws them from, and `contribute(register)` for its tools (1.34);
+ * - ui: K3 `DshConnectorUi` (ui.d.ts), the connector's UI backend: every state and operation
+ *   embed-UI draws, the routes it draws them from, and `contribute(register)` for its tools (1.34);
  * - tools: K2 `TOOLS_API.service` (dsh-connector/tools constants.js), the contribution service
  *   embed-UI's tools are registered through (R-EXT-13).
  * The connector's hand-over service is no longer looked up: the UI backend draws on it (1.34).

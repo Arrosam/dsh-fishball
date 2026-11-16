@@ -3,7 +3,7 @@
  * from the DSH side comes from this package, and it only draws: requirements 1.34). It loads its
  * parts and runs each as its own sub-plugin of this row, so each keeps its name, injects and effects:
  * - client.shell.js: the shell (the window or the no-instance hint, the sidebar fish, the
- *   connector's Plugins card, the style sheet and dictionary) and the kit the parts share;
+ *   style sheet and dictionary) and the kit the parts share;
  * - client.marks.js: the managed-session marks and Hand over / Take back (Q-G5 = A);
  * - client.attention.js: the fish's light and the notify prompt (R-FN-01, §13.6).
  * The instance's card moved to the instance's own settings page with I-HOST (requirements 1.33
@@ -20,11 +20,18 @@
  * the other. A part that arrives after this row stopped is not started. The marks and attention
  * parts need the shell's kit, so they start once the shell's chunk arrived; without it they are
  * logged as unavailable with it. Because the parts arrive as chunks after this entry
- * runs, they start one chunk request later than the V2 bundles did (DESIGN.md §17).
+ * runs, they start one chunk request after it (DESIGN.md §17).
  */
 window.__ModuleLoader__.load({
   id: 'dsh-connector-ui',
   factory(require) {
+    /**
+     * Nothing runs without a local connector (Q-U1: "embed UI是connector的附属插件，不能脱离connector
+     * 运作"; the host half logs `connector-missing`): every part, the shell included, needs the
+     * connector's UI backend, which the connector row provides. V2 was never deployed, so no V2
+     * connector counts as one.
+     */
+    const NEEDS_CONNECTOR = Object.freeze([Object.freeze(['connector'])])
     const EMBED = Object.freeze({
       name: 'dsh-connector-ui',
       shell: './client.shell.js',
@@ -35,16 +42,10 @@ window.__ModuleLoader__.load({
        * connector UI backend, so they need it alone.
        */
       parts: Object.freeze([
-        Object.freeze({ chunk: './client.marks.js', factory: 'marksPart', needs: Object.freeze([Object.freeze(['connector'])]) }),
-        Object.freeze({ chunk: './client.attention.js', factory: 'attentionPart', needs: Object.freeze([Object.freeze(['connector'])]) }),
+        Object.freeze({ chunk: './client.marks.js', factory: 'marksPart', needs: NEEDS_CONNECTOR }),
+        Object.freeze({ chunk: './client.attention.js', factory: 'attentionPart', needs: NEEDS_CONNECTOR }),
       ]),
-      /**
-       * Nothing runs without a local connector (Q-U1: "embed UI是connector的附属插件，不能脱离connector
-       * 运作"; the host half logs `connector-missing`). The shell runs only with the connector's UI
-       * backend, which the connector row provides; it is the only alternative (V2 was never
-       * deployed, so no V2 connector counts as one).
-       */
-      shellNeeds: Object.freeze([Object.freeze(['connector'])]),
+      shellNeeds: NEEDS_CONNECTOR,
       /**
        * What the host half reports usable (src/host/constants.js ROUTE.services, page-relative; this
        * classic script cannot import it): `{ok, connector, page, routes, ui}`. Read here,
@@ -86,7 +87,7 @@ window.__ModuleLoader__.load({
     const wanted = (available, needs) => needs.some((flags) => flags.every((flag) => available[flag] === true))
 
     /**
-     * Reads what the host half reports usable once (the shell's readAvailability), then starts
+     * Reads what the host half reports usable once (readAvailability), then starts
      * only the parts it allows: without a local connector, nothing registers (Q-U1; the host half
      * logs `connector-missing`). A part that is not started loads no chunk.
      */

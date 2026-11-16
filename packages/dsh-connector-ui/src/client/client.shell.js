@@ -1,8 +1,8 @@
 /**
- * dsh-connector-ui, the shell part (V3 U-SHELL split of the V2 connector client, DESIGN §10):
+ * dsh-connector-ui, the shell part (U-SHELL, U-DRAW, U-WIRE):
  * 1. The one Fishball entry (R-UI-11): the fish row in DSH's sidebar panel list. DSH's own brand
- *    mark and name are not overridden (no sidebar.brand.* slot), so V2's brand override, its
- *    click takeover and the Sidebar entry preference are gone.
+ *    mark and name are not overridden (no sidebar.brand.* slot): a brand override would change
+ *    the host UI for every user of that DSH.
  * 2. No settings card (R-UI-06, 1.33 Q-D2): the connector's limits are on the connector's own
  *    settings page, and Fishball's two settings entries are fishball-ui's, inside the framed page
  *    (1.34; the user, U-WIRE: the window adds none of its own).
@@ -18,8 +18,6 @@
  *    Hand over / Take back (client.marks.js) and the light with the notify prompt
  *    (client.attention.js) are parts of their own. There are no cards (Q-U2) and no inline
  *    records (Q-G4).
- * The in-process Fishball's own surfaces (its chat dock, pile, welcome card, model gate, the
- * Plugins page's Fishball tab and install dialog, the Messenger look) were removed with it.
  *
  * The mark is FishMark from the owner's fishball app (THIRD_PARTY_NOTICES); the connector's own
  * icon is FishMark with a wrench badge (assets/connector-icon.svg, D22).
@@ -46,12 +44,12 @@ window.__ModuleLoader__.load({
     /** Client services read on demand (not injected: Fishball works without each of them). */
     const SERVICE = Object.freeze({ layout: 'layout' })
     /**
-     * The Fishball view (§7) and the connector's frame around it (design §0.5 "The frame", D27).
+     * The Fishball window (R-UI-02) and its chrome.
      * `panelId` is one key shared by the `main` occupant and its `sidebar.panellist` row, as DSH's
      * Plugins ("plugins") and Tasks ("schedules") panels do. `panelOrder` puts the row first, before
      * Plugins (0) and Tasks (10): Fishball is the conversation you open most, so it sits where a
-     * pinned session would. `pluginsPanelId` is DSH's own Plugins panel, which the empty state
-     * opens at its list (conn-OQ-31). `warningIconPx` is the glyph of DSH's own empty/error state
+     * pinned session would. `pluginsPanelId` is DSH's own Plugins panel, which the Retry link
+     * opens when DSH has no plugin navigation service. `warningIconPx` is the glyph of DSH's own empty/error state
      * (dsh-client-ui-schedule's list error, 24px). `stateTone` maps the frame's state to DSH's Tag
      * tones (the ones its plugin page uses). DSH's Tag styles `danger`, not `error`, on
      * 0.2.1-rc.5 and 0.2.2-rc.1 (dsh-web-frontend's `[data-tone=danger]`), so failed states keep `danger`.
@@ -63,8 +61,9 @@ window.__ModuleLoader__.load({
       /**
        * Clipboard write only, for every origin the frame lands on: admit's one-time URL at the
        * child's own loopback origin (design §4.1) and the child's redirect to its clean page, where
-       * native copy actions would otherwise be refused. The grant is write-only: no clipboard-read
-       * or any other feature (Fishball's decision, 2026-11-10).
+       * native copy actions would otherwise be refused. The wildcard is safe because `src` is only
+       * ever the host half's admit URL, and the grant is write-only: no clipboard-read or any other
+       * feature (Fishball's decision, 2026-11-10).
        */
       iframeAllow: 'clipboard-write *',
       /**
@@ -79,7 +78,7 @@ window.__ModuleLoader__.load({
      * view has one page, so the header is one line of DSH's title-row height plus padding.
      */
     const DSH_SESSION_HEADER = Object.freeze({ minHeight: '52px', padding: '10px 28px', startPadding: '20px', gap: '8px', nameFont: '14px', nameLine: '20px' })
-    /** DSH's empty/error state (dsh-client-ui-schedule TaskManagerPage .empty, .emptyAction). */
+    /** DSH's empty/error state (dsh-client-ui-schedule TaskManagerPage .empty). */
     const DSH_EMPTY_STATE = Object.freeze({ padding: '48px 20px', gap: '8px', font: '14px' })
     /**
      * The window's reads of the host half's child routes (the browser never calls the instance).
@@ -238,8 +237,8 @@ window.__ModuleLoader__.load({
     })
     /**
      * The one Fishball accent (§8.5): the app's magenta. It is declared once here and exposed
-     * once as `--fb-accent` (the style sheet below); the ring, the switches and the mark's
-     * badge all read it. DSH mounts this plugin's surfaces in several slots, so the variable is
+     * once as `--fb-accent` (the style sheet below); the important notice's ring and the Retry
+     * link's fallback colour read it, and the mark's eye and the count pill use it directly. DSH mounts this plugin's surfaces in several slots, so the variable is
      * set on the document rather than on a single root element.
      */
     const FISHBALL_ACCENT = '#EC0A6E'
@@ -374,9 +373,7 @@ window.__ModuleLoader__.load({
       `.${CLS.notice}[data-fishball-notice-important="true"]{box-shadow:0 0 0 1px color-mix(in srgb, var(--fb-accent) 55%, transparent)}`,
       `.${CLS.noticeText}{white-space:pre-wrap;overflow-wrap:anywhere}`,
       `.${CLS.noticeCount}{flex:none;min-width:${UNREAD_BADGE.minWidth};height:${UNREAD_BADGE.height};padding:0 ${UNREAD_BADGE.paddingX};border-radius:${UNREAD_BADGE.radius};background:${UNREAD_BADGE.fill};color:${UNREAD_BADGE.textColor};font:${UNREAD_BADGE.fontWeight} ${UNREAD_BADGE.fontSize}/${UNREAD_BADGE.height} ${UNREAD_BADGE.fontFamily};text-align:center}`,
-      // The one accent token and the one ring (§8.5). The ring mixes the accent with whatever
-      // surface is under it, so it reads on light and dark; DSH's own variant supplies hover,
-      // active and focus-visible.
+      // The one accent token (§8.5).
       `:root{--fb-accent:${FISHBALL_ACCENT}}`,
     ].join('')
 
@@ -469,7 +466,6 @@ window.__ModuleLoader__.load({
         return { ok: false, code: null, answer: null }
       }
     }
-
 
     /** The wrench badge's two strokes (WRENCH_BADGE). */
     const wrenchBadge = () => h('g', { fill: 'none', stroke: WRENCH_BADGE.color, strokeWidth: WRENCH_BADGE.strokeWidth, strokeLinecap: WRENCH_BADGE.lineCap, 'data-fishball-wrench': true },
@@ -568,7 +564,7 @@ window.__ModuleLoader__.load({
     const isChildAnswer = (value) => value.ok === true || value.code === CHILD_UI.instanceMissing
 
     /** Whether two answers show the same thing, so a steady poll re-renders nothing. */
-    const sameInstance = (a, b) => JSON.stringify(a) === JSON.stringify(b)
+    const sameAnswer = (a, b) => JSON.stringify(a) === JSON.stringify(b)
 
     /**
      * Re-reads `path` at once and then every FRAME_UI.pollMs while the caller is mounted and the
@@ -584,7 +580,7 @@ window.__ModuleLoader__.load({
           if (polling || document.hidden) return
           polling = true
           void readJson(path, valid, abort.signal).then((next) => {
-            if (next !== undefined && !abort.signal.aborted) setLatest((previous) => (sameInstance(previous, next) ? previous : next))
+            if (next !== undefined && !abort.signal.aborted) setLatest((previous) => (sameAnswer(previous, next) ? previous : next))
           }).finally(() => { polling = false })
         }
         poll()
@@ -618,9 +614,9 @@ window.__ModuleLoader__.load({
     /** DSH's own empty/error state, centred in the view (dsh-client-ui-schedule .empty). */
     const emptyState = (...children) => h('div', { className: CLS.embedError }, ...children)
     /**
-     * The one framed page (both views): only its key and src differ by view, so it is created in
-     * one place with one `allow` and one referrer policy (see EMBED_UI.iframeAllow,
-     * iframeReferrerPolicy). The shell registers exactly one view, so one such frame exists.
+     * The one framed page (the child view's), with one `allow` and one referrer policy (see
+     * EMBED_UI.iframeAllow, iframeReferrerPolicy). The shell registers exactly one view, so one
+     * such frame exists.
      * @param key - the frame document's identity: a new key remounts it, which is a reload.
      */
     const framedPageFrame = (t, key, src) => h('iframe', { key, className: CLS.embedFrame, src, title: t('embedTitle'), allow: EMBED_UI.iframeAllow, referrerPolicy: EMBED_UI.iframeReferrerPolicy, 'data-fishball-embed-frame': true })
@@ -649,32 +645,31 @@ window.__ModuleLoader__.load({
     }
 
     /**
-     * What the framing view does while mounted: the window's opening. The window frames only the
-     * hosted child's chat page (Q-G3): the child's settings are the instance's own page.
-     * @returns the framed page and the language the frame opens in.
+     * What the framing view does while mounted: the window's opening, and the language the frame
+     * opens in, followed live. The window frames only the hosted child's Fishball page
+     * (`FRAME_UI.page.chat`, Q-G3).
+     * @returns the frame's `lang`.
      */
-    function useViewPage(frameLang) {
+    function useFrameLang(frameLang) {
       useWindowOpened()
-      const page = FRAME_UI.page.chat
-      const lang = React.useSyncExternalStore(frameLang.subscribe, frameLang.get)
-      return { page, lang }
+      return React.useSyncExternalStore(frameLang.subscribe, frameLang.get)
     }
 
     /**
-     * The window's chrome (design §0.5 "The frame"): DSH's session header with the title, then the
-     * body. Every view draws it, so the header cannot drift between them. Optional parts:
+     * The window's chrome: DSH's session header with the title, then the body. Every view draws
+     * it, so the header cannot drift between them. It has no settings button: Fishball settings
+     * and DSH settings are fishball-ui's entries inside the framed page (the user, U-WIRE).
+     * Optional parts:
      * - `state` (and `code`): the state tag; the hint has none, as there is no child to describe;
-     * - `onRefresh`: Refresh, enabled by `canRefresh`;
-     * - `actions`: more header buttons.
+     * - `onRefresh`: Refresh, enabled by `canRefresh`.
      */
-    function FrameChrome({ t, page, state, code, canRefresh, onRefresh, actions, body }) {
+    function FrameChrome({ t, page, state, code, canRefresh, onRefresh, body }) {
       return h('section', { className: CLS.embed, 'aria-label': t('viewTitle'), 'data-fishball-embed': true, 'data-fishball-embed-page': page },
         h('header', { className: CLS.embedBar, 'data-window-drag': true },
           h('span', { className: CLS.embedName }, t('viewTitle')),
           state === undefined ? null : h(FrameState, { state, code, t }),
           h('div', { className: CLS.embedActions },
-            onRefresh === undefined ? null : h(Button, { type: 'button', size: 'sm', variant: 'ghost', disabled: !canRefresh, onClick: onRefresh }, t('embedRefresh')),
-            actions)),
+            onRefresh === undefined ? null : h(Button, { type: 'button', size: 'sm', variant: 'ghost', disabled: !canRefresh, onClick: onRefresh }, t('embedRefresh')))),
         body)
     }
 
@@ -727,7 +722,8 @@ window.__ModuleLoader__.load({
       const frameLang = frameLangStore(ctx.locale)
       return function FishballChildView() {
         const status = usePoll(route.status, isChildAnswer, undefined)
-        const { page, lang } = useViewPage(frameLang)
+        const page = FRAME_UI.page.chat
+        const lang = useFrameLang(frameLang)
         const [generation, setGeneration] = React.useState(0)
         const state = status?.status?.state ?? FRAME_UI.loading
         const code = status?.status?.code ?? null
@@ -752,7 +748,7 @@ window.__ModuleLoader__.load({
           t, page, state, code,
           canRefresh: admission !== undefined && !hostnameRefused,
           onRefresh: () => setGeneration((value) => value + 1),
-          actions: null, body,
+          body,
         })
       }
     }
@@ -775,15 +771,13 @@ window.__ModuleLoader__.load({
     })
 
     /**
-     * The Fishball row in DSH's sidebar panel list: embed-UI's one Fishball entry (R-UI-11). It no
-     * longer follows V2's Sidebar entry preference, because the brand it could fall back to is no
-     * longer overridden. DSH draws the row, its label and its selected highlight (`aria-current`
+     * The Fishball row in DSH's sidebar panel list: embed-UI's one Fishball entry (R-UI-11). DSH draws the row, its label and its selected highlight (`aria-current`
      * while the view is open, cleared when you open a session), exactly as for Plugins and Tasks;
      * the icon is the fish mark (the attention part's latch in it, when that part runs).
      */
     const registerSidebarEntry = (ctx, Icon, t) => ctx.slots.inject(SLOT.panelList, () => ctx.slots.register({ name: SLOT.panelList, id: EMBED_UI.panelId, order: EMBED_UI.panelOrder, locale: NS, label: () => t('viewTitle') }, Icon))
 
-    /** One value components share and follow (dialog requests, the tab's open page); set() notifies them. */
+    /** One value components share and follow (dialog requests, the seats); set() notifies them. */
     function valueStore(initial) {
       let current = initial
       const listeners = new Set()
