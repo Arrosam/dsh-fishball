@@ -5,7 +5,9 @@
  *
  * It replaces the `ui` / `status` / `retry` fields V2 passed through contract 1.2. The vocabulary
  * below is V2's (`dsh-connector/contract` STATUS, STATUS_CODES) plus the V3 codes the
- * requirements name; the values are spelled exactly as the requirements spell them.
+ * requirements name; the values are spelled exactly as the requirements spell them. I-HOST
+ * amended it (2026-11-16): `fishball-off` withdrawn, `targetStatus` from the host's own state,
+ * `[::1]` not served, `retry` creates no token, `reconnect` added.
  */
 import type { Dispose } from './index.js'
 
@@ -14,14 +16,15 @@ export type ChildState = 'disabled' | 'waiting' | 'starting' | 'ready' | 'stoppi
 
 /**
  * Lifecycle codes (V2 STATUS_CODES and the instance's own launch codes, plus V3's).
- * - `PROFILE_INCOMPATIBLE`: an enabled set member was skipped by the child's profile load; the
- *   start is blocked (design §8.1, R-BND-03);
- * - `fishball-off`: the owner disabled `fishball-core` in the child; the child runs anyway
- *   (R-FB-10). It is a code with state `ready`, not a state of its own.
+ * - `PROFILE_INCOMPATIBLE`: an enabled placed bundle was skipped by the child's profile load; the
+ *   start is blocked (design §8.1, R-BND-03).
+ * `fishball-off` is withdrawn (I-HOST, the user's answer Q4 = A, R-FB-10 amended by 1.39: "the
+ * instance reports only generic child states"; whether Fishball is on is core's own status inside
+ * the child).
  */
 export type LifecycleCode =
   | 'NATIVE_START_FAILED' | 'NATIVE_STOP_FAILED' | 'NATIVE_CHILD_EXITED' | 'NATIVE_UNAVAILABLE'
-  | 'NATIVE_TIMEOUT' | 'NATIVE_DISABLED' | 'INVALID_MAIN_HOME' | 'PROFILE_INCOMPATIBLE' | 'fishball-off'
+  | 'NATIVE_TIMEOUT' | 'NATIVE_DISABLED' | 'INVALID_MAIN_HOME' | 'PROFILE_INCOMPATIBLE'
 
 /**
  * Target codes (design §6.1), reported in `status().code` while the child itself is ready:
@@ -53,14 +56,15 @@ export interface ChildStatus {
 }
 
 /**
- * The child's MCP link to its target (R-FB-03, R-FB-04):
- * - `connected`: the link holds a listen stream on the target's `agent-events`;
- * - `target-unreachable`: the target did not answer, or is not a V3 connector;
- * - `token-refused`: the target refused the token (`code` is `token-revoked` when it had accepted
- *   it before, else `TOKEN_REFUSED`);
- * - `target-unset`: there is nothing to connect with: no connector in this DSH and a blank
- *   `target.url`, or a `target.tokenRef` that holds no value (HOST-UC-05 A1, which the case left
- *   open between this and `token-refused`: PROPOSED).
+ * The child's target as the DSH side can see it (I-HOST, the user's answer Q3 = A, 2026-11-16).
+ * Since requirements 1.39 the instance cannot read core's link inside the child, so it answers from
+ * the host's own state only:
+ * - `connected`: a same-DSH connector and the last hosted entry the instance created is `enabled`;
+ * - `target-unreachable` (`TARGET_UNREACHABLE`): the instance's `targetUrl` names a remote target,
+ *   which only Fishball's own page can report on;
+ * - `token-refused` (`token-revoked`): the last hosted entry is `disabled` or `deleted`;
+ * - `target-unset`: no same-DSH connector and no remote target, or a connector but no hosted entry
+ *   created yet.
  * The runtime values are K1's `TARGET_STATE` (DECIDED D7); a change here changes that object in the
  * same amendment.
  */
@@ -72,8 +76,10 @@ export interface TargetStatus {
 }
 
 /**
- * The loopback names the frame may use (S4-Q1 decided A, R-UI-02). The child is reachable under
- * all three. A host name is case-insensitive (RFC 3986 §3.2.2) and a WHATWG URL's `hostname` is
+ * The loopback names the frame may use (S4-Q1 decided A, R-UI-02). The child's web server listens
+ * on `127.0.0.1`, so it is reachable as `127.0.0.1` and `localhost`; `[::1]` stays in the type,
+ * and `admit` answers it `not-ready` and `origin` `null` (I-HOST, the user's answer Q5 = A: a
+ * second loopback listener is not designed). A host name is case-insensitive (RFC 3986 §3.2.2) and a WHATWG URL's `hostname` is
  * already lower-case, so a caller passes the hostname of the main page's request as its URL parsed
  * it; a page opened as `LOCALHOST` therefore arrives as `localhost`. Embed-UI's admit route checks
  * the main page's hostname against these three before it calls the locator, and refuses any other
@@ -82,8 +88,9 @@ export interface TargetStatus {
 export type LoopbackHostname = '127.0.0.1' | 'localhost' | '[::1]'
 
 /**
- * The child view the frame opens: Fishball's conversation (`chat`) or its slim settings panel
- * (`settings`). V2's two descriptor views (instance host.js `PLUGIN.ui`), with the same names.
+ * The child view the frame opens: the child's Fishball page (`chat`), or that page with core's own
+ * plugin settings opened (`settings`, fishball-ui's `view=settings` continuation). V2's two
+ * descriptor views, with the same names (requirements 1.41 Q-G3: only the child's Fishball page).
  */
 export type AdmitView = 'chat' | 'settings'
 
@@ -104,7 +111,12 @@ export interface AdmitRequest {
  */
 export type AdmitErrorCode = 'hostname-refused' | 'not-ready'
 
-/** Hosted model sync (R-HOST-07), V2's `providerSync`, started only from embed-UI's Plugins card. */
+/**
+ * Hosted model sync (R-HOST-07; 1.41 Q-G7), V2's `providerSync`, started only from the instance's
+ * own settings page. It copies the host's providers and their model lists into the child and
+ * nothing else: the model Fishball uses is chosen in Fishball's settings inside the child (the
+ * user, 2026-11-16: "同步只是同步model list，至于fishball用什么还要在fishball内设置").
+ */
 export interface ProviderSyncStatus {
   readonly state: 'inactive' | 'ready'
   readonly instanceId?: string
@@ -137,6 +149,9 @@ export interface ProviderSync {
   add(request: { readonly checkId: string; readonly ids: readonly string[] }): Promise<ProviderSyncAddResult>
 }
 
+/** Why `reconnect` refuses (PROPOSED spellings, I-HOST). */
+export type ReconnectRefusalCode = 'not-ready' | 'connector-missing' | 'target-remote' | 'operation-failed' | 'credentials-unwritable'
+
 export interface DshInstanceChild {
   readonly apiVersion: 1
 
@@ -161,16 +176,30 @@ export interface DshInstanceChild {
   admit(request: AdmitRequest): Promise<{ readonly url: string }>
 
   /**
-   * Retry (decided 1 = A). It acts in exactly two cases and changes nothing otherwise, so a Retry
-   * before the host is ready leaves a stopped child stopped (HOST-ST-01 #9):
+   * Retry (decided 1 = A; R-HOST-10 amended by 1.29 R6 = B, 1.32 R11). It never creates a token,
+   * and it acts in exactly two cases, changing nothing otherwise, so a Retry before the host is
+   * ready leaves a stopped child stopped (HOST-ST-01 #9):
    * - state `failed`: restarts the child (V2's rule);
-   * - code `token-revoked` with a same-DSH connector: the instance reads
-   *   `dshConnectorTokens.entryState` of its hosted entry. `deleted`: it creates a new hosted
-   *   entry and the child pairs with it (R-HOST-10, HOST-DT-01 rule 5; never a succession).
-   *   `disabled` or `enabled`: nothing, so a disabled entry is never replaced.
+   * - target code `token-revoked` and `dshConnectorTokens.entryState` of the last hosted entry is
+   *   `deleted`: it records the instance's notice `hosted-entry-deleted`, which the instance's own
+   *   settings page shows with the ways to replace the token (Reconnect there, a newly generated
+   *   token in core's token field in the child, or Connect). `disabled`: nothing, so a disabled
+   *   entry is never replaced, and re-enabling it restores it.
    * Resolves once the retry has run; read `status()` for its outcome.
    */
   retry(): Promise<void>
+
+  /**
+   * Reconnect (R11; 1.33 Q-D1 = B, Q-B1 = B): one `createHosted`, its value imported into the
+   * child's credential reference once, the entry key recorded after the child stored it. Always
+   * available on the instance's own settings page, so a working token can be rotated in one click.
+   * Replacing moves nothing: the old entry keeps its name, role and sessions until the user deletes
+   * it. Refusals (data, never thrown): `not-ready`, `connector-missing` (no usable
+   * `dshConnectorTokens`), `target-remote` (the instance names a remote target; the user uses
+   * Connect in Fishball), `operation-failed` (`createHosted` rejected), `credentials-unwritable`
+   * (the child could not store the value; the new entry stays for the user to delete, Q-B3 = B).
+   */
+  reconnect(): Promise<{ readonly ok: true } | { readonly ok: false; readonly code: ReconnectRefusalCode }>
 
   targetStatus(): TargetStatus
 

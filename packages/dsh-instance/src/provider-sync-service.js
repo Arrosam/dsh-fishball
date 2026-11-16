@@ -50,9 +50,9 @@ const defaultCreateHost = async (ctx, options) => {
  * Wiring: src/native-runtime/wire.js carries the `provider-sync` payload channel;
  * src/native-runtime/index.js and child.js publish each end through `onProviderSyncTransport`;
  * native-host.js attaches this bridge and exposes it as `service.providerSync`;
- * src/native-runtime/overlay.js mounts fishball-core src/slim/child/provider-sync-target.js in the child; and
- * src/native-runtime/placement.js places core's fishball-shared (the target's engine, host adapter
- * and codec) in the child profile's node_modules.
+ * src/native-runtime/overlay.js inserts the child-side row (child-row.js), which mounts
+ * src/child/provider-sync-target.js; and src/native-runtime/placement.js places dsh-connector-shared
+ * (the target's engine, host adapter and codec) in the child profile's node_modules.
  */
 export const CHILD_SYNC = Object.freeze({
   state: Object.freeze({ inactive: 'inactive', ready: 'ready' }),

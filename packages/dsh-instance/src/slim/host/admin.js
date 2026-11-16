@@ -4,7 +4,7 @@
  * The rebuilt settings page (T12) reads and changes the isolated child's model, plugins and
  * settings, and restarts it, without the main process writing one child file. This module is
  * the relay: the page calls `request()`, the child's admin service
- * (fishball-core src/slim/child/admin.js) applies the change with its own DSH services, and this file only
+ * (src/child/admin.js, mounted by the child-side row) applies the change with its own DSH services, and this file only
  * frames requests, correlates replies and answers the two host-side operations.
  *
  * Rules kept here, because they are the relay's part of the contract:
@@ -29,12 +29,12 @@
  *    `{send, onMessage, onClose}`. The bridge keeps `control` exclusively.
  * 2. The main host row creates one relay with the lifecycle's status and restart, and calls
  *    `attach(transport)` from `ctx.nativeRuntime.onAdminTransport(listener)` on every
- *    (re)connect; the child overlay inserts fishball-core src/slim/child/admin.js as its own row, which does
- *    the same with its end of that channel.
+ *    (re)connect; the child overlay inserts the child-side row (child-row.js), whose
+ *    src/child/admin.js does the same with its end of that channel.
  * 3. T12's routes call `relay.request(operation, payload)`; they never reach the child
  *    directly and never write a file.
  */
-import { INSTANCE_CODES, INSTANCE_STATES } from '../../host/binding.js'
+import { INSTANCE_CODES, INSTANCE_STATES } from '../../native-runtime/constants.js'
 // The protocol comes from dsh-connector-shared, never from the child's module (R-BND-01: the host loads
 // no Fishball-side module); it is bound to the same contract values the child binds it to.
 import {
@@ -53,7 +53,7 @@ const TRANSPORT_METHODS = Object.freeze(['send', 'onMessage', 'onClose'])
 /**
  * The states and codes `admin.status` and `admin.restart` may answer: the instance's own
  * vocabulary, the contract's STATUS/STATUS_CODES plus `connector-missing` and the refused-attach
- * codes (src/host/binding.js). Both operations are local, so this answer never crosses the wire and
+ * codes (src/native-runtime/constants.js). Both operations are local, so this answer never crosses the wire and
  * the child's contract-only result check does not apply to it; checking it against STATUS alone
  * made a `connector-missing` instance answer `operation-failed`.
  */

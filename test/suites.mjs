@@ -134,8 +134,9 @@ export const V3_SUITES = Object.freeze({
     [all(PACKAGE.dshConnectorAdapter), PACKAGE.dshConnectorShared + '/oauth-client.js', PACKAGE.dshConnectorShared + '/package.json']),
   'dsh-connector-shared.oauth-client': suite('the DSH side\'s OAuth browser client and token manager (C-MCP-ADAPTER)', v3('dsh-connector-shared/oauth-client'),
     [PACKAGE.dshConnectorShared + '/oauth-client.js', PACKAGE.dshConnectorShared + '/package.json']),
+  // The instance's settings page (client*.js) replaced the card the shell rows used to read (I-HOST).
   'dsh-connector-ui.shell': suite('host half and client shell (U-SHELL)', v3('dsh-connector-ui/shell'),
-    [all(PACKAGE.dshConnectorUi), sub(PACKAGE.dshInstance, 'src', 'child-settings'), sub(PACKAGE.dshConnector, 'tools'), sub(PACKAGE.dshConnector, 'host-services')]),
+    [all(PACKAGE.dshConnectorUi), PACKAGE.dshInstance + '/client*.js', sub(PACKAGE.dshConnector, 'tools'), sub(PACKAGE.dshConnector, 'host-services')]),
   // The draw rows run embed-UI over the real UI backend (C-UI-BACKEND) and the real contribution
   // service (C-EXT), so a change in either reruns them.
   'dsh-connector-ui.draw': suite('draw-only frontend: fish, window, hint, Retry link, marks, Hand over / Take back, light, notify prompt, tool declaration (U-DRAW)', v3('dsh-connector-ui/draw'),
@@ -146,7 +147,7 @@ export const V3_SUITES = Object.freeze({
   'dsh-instance.placement': suite('placement of the set, launch overlay, hosted-child guards (I-PLACE)', v3('dsh-instance/placement'),
     [all(PACKAGE.dshInstance), all(PACKAGE.fishballCore), all(PACKAGE.dshConnectorShared), all(PACKAGE.fishballShared), 'test/v3/fishball-ui/guards/constants.mjs']),
   'fishball-core.package': suite('core package, slim child move (R-CORE; the settings-section point withdrawn, 1.34)', v3('fishball-core/package'),
-    [all(PACKAGE.fishballCore), sub(PACKAGE.dshInstance, 'src', 'slim'), sub(PACKAGE.dshInstance, 'src', 'child-settings')]),
+    [all(PACKAGE.fishballCore), sub(PACKAGE.dshInstance, 'src', 'slim'), sub(PACKAGE.dshInstance, 'src', 'child'), PACKAGE.dshInstance + '/client*.js']),
   'fishball-core.bridge': suite('bridge façade, list_changed refresh, X8 attention (F-FACADE)', v3('fishball-core/bridge'),
     [sub(PACKAGE.fishballCore, 'src', 'bridge'), sub(PACKAGE.fishballCore, 'src', 'events'), ...CORE_LINK, ...CONNECTOR_CONTRACTS]),
   'fishball-core.events': suite('interception, acceptance ledger, wake (F-INTERCEPT)', v3('fishball-core/events'),
@@ -261,8 +262,9 @@ export const V2_GROUPS = Object.freeze({
     'packages/dsh-instance/test/instance-ext/page-boot-unwind.test.mjs', 'packages/dsh-instance/test/instance-ext/page-open-listed.test.mjs',
     // The page and the Recommended tab are fishball-ui's since F-UI.
   ]), [all(PACKAGE.fishballCore), all(PACKAGE.fishballUi), all(PACKAGE.dshInstance), sub(PACKAGE.dshConnector, 'contract')]),
-  'v2.fishball-shared': suite('fishball-shared\'s interim provider-sync engine and host copy (until I-HOST)', v2(['provider-sync-engine', 'provider-sync-host']),
-    [all(PACKAGE.fishballShared)]),
+  // The engine and host adapter are dsh-connector-shared's only copy since I-HOST removed the interim ones.
+  'v2.dsh-connector-shared': suite('dsh-connector-shared\'s provider-sync engine and host adapter', v2(['provider-sync-engine', 'provider-sync-host']),
+    [all(PACKAGE.dshConnectorShared)]),
   // Static readers of whole packages: v2-boundary reads every manifest and the V2 selection,
   // limits-source every src/ and contract/ file of four packages and the plugin author guide.
   'v2.boundary': suite('V2 release boundary, suite selection and the source-level limit checks', v2(['v2-boundary', 'limits-source']),

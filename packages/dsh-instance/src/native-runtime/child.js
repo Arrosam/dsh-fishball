@@ -10,6 +10,7 @@ import { BEARER, ROUTES } from '../slim/contract.js'
 import { jsonPrivate, readPrivate, writePrivate, privateDirectory, launchPath, snapshotPath, pathsFor, lifecycleLog } from './files.js'
 import { inside } from 'dsh-connector-shared/files'
 import { Wire, proof, sameProof } from './wire.js'
+import { admissionKey, createTicketRedeemer } from './ticket.js'
 
 const HTTP = Object.freeze({ success: 200 })
 async function probeHttp(url, timeoutMs, bearer) {
@@ -91,13 +92,18 @@ export async function applyNativeChild(ctx, config) {
   const syncListeners = new Set()
   // SET's settings relay: the child panel's requests to the main host, on the same wire.
   const settingsListeners = new Set()
+  // The hosted token's probe and one import (credential.js), on the same wire.
+  const credentialListeners = new Set()
   let current
   let currentAdmin
   let currentSync
   let currentSettings
+  let currentCredential
   let ready
   let stopped = false
   const identity = { hostId: marker.hostId, instanceId: record.instanceId }
+  // The frame's tickets: the key comes from the lifecycle secret, never from an overlay.
+  const tickets = createTicketRedeemer(admissionKey(secret), identity.instanceId)
   const service = {
     ...identity,
     onControlTransport(listener) {
@@ -132,6 +138,14 @@ export async function applyNativeChild(ctx, config) {
       if (currentSettings && !currentSettings.wire.closed) listener(currentSettings.transport)
       return () => settingsListeners.delete(listener)
     },
+    /** The `mcp-credential` transport of the current authenticated connection; same rules as above. */
+    onCredentialTransport(listener) {
+      credentialListeners.add(listener)
+      if (currentCredential && !currentCredential.wire.closed) listener(currentCredential.transport)
+      return () => credentialListeners.delete(listener)
+    },
+    /** Redeems one admission ticket for this generation (design §4.1; ticket.js createTicketRedeemer). */
+    redeemTicket: (ticket, audience) => tickets.redeem(ticket, audience),
   }
   ctx.provide('nativeRuntime', service)
   const connections = new Set()
@@ -147,6 +161,7 @@ export async function applyNativeChild(ctx, config) {
       if (currentAdmin?.wire === wire) currentAdmin = undefined
       if (currentSync?.wire === wire) currentSync = undefined
       if (currentSettings?.wire === wire) currentSettings = undefined
+      if (currentCredential?.wire === wire) currentCredential = undefined
     })
     wire.on('auth', message => {
       if (message.channel !== 'auth' || message.step !== 'hello' || message.nonce !== nonce || message.hostId !== identity.hostId || message.instanceId !== identity.instanceId || typeof message.challenge !== 'string' || !sameProof(message.proof, proof(secret, 'main', identity, [nonce, message.challenge]))) return wire.close()
@@ -170,11 +185,13 @@ export async function applyNativeChild(ctx, config) {
           // its child row attaches, so publishing here is enough.
           currentSync = { wire, transport: wire.providerSyncTransport() }
           currentSettings = { wire, transport: wire.instanceSettingsTransport() }
+          currentCredential = { wire, transport: wire.credentialTransport() }
           // Register receivers before the main logical host emits its protocol greeting.
           for (const listener of listeners) listener(current.transport, metadata)
           for (const listener of adminListeners) listener(currentAdmin.transport)
           for (const listener of syncListeners) listener(currentSync.transport)
           for (const listener of settingsListeners) listener(currentSettings.transport)
+          for (const listener of credentialListeners) listener(currentCredential.transport)
           payload = metadata
         } else if (message.operation === NATIVE_WEB.operation) {
           if (!ready || stopped) fail('NOT_READY')
@@ -211,7 +228,7 @@ export async function applyNativeChild(ctx, config) {
   // listener then keeps the event loop alive after appExit, so the parent waited out its whole
   // stopTimeout. The row's teardown must be an effect, exactly like the app row's disposers.
   ctx.effect(() => async () => {
-    stopped = true; ready = undefined; cancelReady(); listeners.clear(); adminListeners.clear(); syncListeners.clear(); settingsListeners.clear()
+    stopped = true; ready = undefined; cancelReady(); listeners.clear(); adminListeners.clear(); syncListeners.clear(); settingsListeners.clear(); credentialListeners.clear()
     for (const wire of connections) wire.close()
     await new Promise(resolve => server.close(resolve))
     await unlink(path.join(directory, RUNTIME.endpoint)).catch(error => { if (error.code !== 'ENOENT') throw error })

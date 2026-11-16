@@ -30,7 +30,7 @@ const NATIVE = Object.freeze({
   registrationError: 'fishball embed: registration unavailable',
 })
 import { ADMISSION, BEARER, LIMITS, ROUTES, STATUS, STATUS_CODES, UI_LANG } from '../contract.js'
-import { INSTANCE_CODES, INSTANCE_STATES } from '../../host/binding.js'
+import { INSTANCE_CODES, INSTANCE_STATES } from '../../native-runtime/constants.js'
 
 const PREFIX = ROUTES.prefix
 const DOCUMENT = ROUTES.document

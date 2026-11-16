@@ -30,8 +30,8 @@ window.__ModuleLoader__.load({
     })
     /**
      * The non-secret continuation PG-ORIGIN carries across native admission in the fragment
-     * (dsh-instance src/slim/host/embed.js CONTINUATION, its host.js PLUGIN.ui and src/slim/ui/shell.js VIEW; keep
-     * all four in step). Any other name or value is ignored, never acted on.
+     * (dsh-instance's admission route, child-row.js with its constants.js TICKET.fragment, and the V2
+     * src/slim/host/embed.js CONTINUATION; keep them in step). Any other name or value is ignored, never acted on.
      */
     const SETTINGS_VIEW = 'settings'
     const CONTINUATION = Object.freeze({
@@ -207,7 +207,7 @@ window.__ModuleLoader__.load({
       ctx.locale.setLocale(lang)
     }
 
-    // Producer contract (session-route.js): document-relative, native cookie auth, no-store.
+    // Producer contract (fishball-core src/session/route.js): document-relative, native cookie auth, no-store.
     // GET is a read-only lookup (null = no manager yet); POST ensures THE manager and must
     // return an ID. 503/auth/transport/malformed responses reject and never select a guessed
     // or stale session.

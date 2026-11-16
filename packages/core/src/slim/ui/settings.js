@@ -376,7 +376,7 @@ export function createSettingsView(options = {}) {
       const name = el('span', CLASS.grow)
       name.append(el('code', CLASS.code, bundle.name), ...(bundle.version ? [el('span', CLASS.hint, ' ' + bundle.version)] : []))
       item.append(name)
-      // Only a package this profile installed can change (src/slim/child/admin.js manageable()).
+      // Only a package this profile installed can change (dsh-instance src/child/admin.js manageable()).
       if (bundle.removable && bundle.installed) {
         const toggle = el('input')
         toggle.type = 'checkbox'
