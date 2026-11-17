@@ -116,7 +116,7 @@ export interface InterceptControl {
  *   an event offered but not accepted, or accepted with no `commit` begun, goes to Fishball once;
  *   one whose `commit` began stays with the interceptor (R-INT-04).
  * - After a restart of the Fishball DSH, an open record is offered again to the registration of
- *   the same `pluginId` (the handler dedupes by `eventId`); when that plugin is off or down, the
+ *   the same `pluginId` (the handler dedupes by `(source.targetId, source.endpointEpoch, eventId)`, MULTI-0); when that plugin is off or down, the
  *   event goes to Fishball once.
  */
 export type InterceptHandler = (event: InterceptedEvent, ctl: InterceptControl) => Promise<void>

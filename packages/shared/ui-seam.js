@@ -81,9 +81,9 @@ export const SEAM_STATUS = Object.freeze({
  * - `identity`: the live-identity capability shown in details (`TargetIdentityState`);
  * - `placeholder`: what to show for `name === null` (Q01), by the copy key fishball-ui owns: no
  *   URL-derived name;
- * - `route`: core's owner-only routes (DSH's exact Fetch routes). Every POST body is JSON with
- *   `targetIdField` and the members named; a missing, unknown or removed id answers 404 with
- *   `refusal.unknownTarget`. `connect` answers K3a `ConnectBegin`; the rest `{ok: true}` or
+ * - `route`: core's owner-only routes (DSH's exact Fetch routes). Every POST (`method`) body is
+ *   JSON with `targetIdField` and the members named (`add` has `url` and no id); in a POST that
+ *   names one, a missing, unknown or removed id answers 404 with `refusal.unknownTarget`. `connect` answers K3a `ConnectBegin`; the rest `{ok: true}` or
  *   `{ok: false, code}`. The add/remove/url routes serve core's settings page;
  * - `route.list` (MULTI-0 amendment, MULTI-1's finding, 2026-11-18): `read` (GET), owner-only like
  *   the others, no body; 200 with the `TargetsSnapshot` JSON, exactly what `ui.targets.list()`

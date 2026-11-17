@@ -94,7 +94,7 @@ Additions only; no frozen name or value changes meaning:
   the manager's scope (the bridge façade's connector tools, a set member's): X2 is the one way into
   that scope, so they are Fishball's own, not the preset's. Core reads them through a module symbol
   on `fishballInstance` (`src/manager/contributed.js`), which is not a member of this contract.
-- **`ui.connect.begin()`** stays K3a's: no argument, the loopback callback. Core's own Connect route
+- **`ui.connect.begin()`** stays K3a's: no argument, the loopback callback (MULTI-0: now `ui.targets.begin(targetId)`, same rule). Core's own Connect route
   picks the web callback (Q-A3 B, `CONNECT.callback.webPath`) through a module-symbol member of the
   same object that no other plugin holds, so no plugin can choose a redirect URI.
 - **`ui.guards.report()`** is `null` while core's guard row is absent or not ready yet (its row is
@@ -110,9 +110,10 @@ Source: [PLAN-MULTI](<../../../docs/planning/v3-multi-dsh.md>) §3–§7 (D01–
 
 | Point | Frozen as |
 | --- | --- |
-| Target record | `TargetRecord {id, kind, url, endpointEpoch, order, serverName, duplicateSuffix}`; storage `fishball_core_targets/targets` v1; no token value; no count cap (Q12) |
+| Target record | `TargetRecord {id, kind, url, endpointEpoch, order, serverName, duplicateSuffix}`; storage `fishball_core_targets/targets` v1, tool bindings and their tombstones `fishball_core_targets/tool-bindings` v1; no token value; no count cap (Q12) |
 | Ids | target `t-` + 16 base32 letters, epoch `e-` + 16; reserved parent id `parent`; a new epoch on every canonical-endpoint change |
 | List / status API | `fishballInstance.ui.targets` (`FishballTargets`): `list()` → `TargetsSnapshot {version: 1, targets: TargetView[]}`, `onChange`, `add`, `remove`, `setUrl`, `begin`, `cancel`, `retry`, `choose`, each by `targetId`. K3a's scalar `ui.link`, `ui.connect`, `ui.pairing` are withdrawn. Core's status snapshot carries `targets` beside the global `fishball`, `guards`, `set` |
+| Per-target strip | `TargetView.line {kind, code}` = core's `stripLine(...).line` for that target (amendment from MULTI-3), with `control` and `contributedTools` |
 | Public state | `connected`, `connecting`, `failed`, `not-set` (rule in `SEAM_TARGETS`' comment); `name: null` shows the placeholder, never a URL (Q01) |
 | Routes | `SEAM_TARGETS.route`: GET `/api/fishball/targets` → 200 `TargetsSnapshot` (= `ui.targets.list()`; amendment from MULTI-1, so core's settings page needs no fishball-ui); POST `/api/fishball/targets/{connect,cancel,retry,pairing,add,remove,url}` with `{targetId, …}`; unknown id → 404 `unknown-target`; refusals `target-duplicate` (Q04), `target-reserved`, `confirmation-required` (Q07) |
 | Provenance | `TargetSource {targetId, endpointEpoch, serverName, name}` on every `InterceptedEvent` (`source`) and `AskCard` (`source`); only id/epoch are trusted |
@@ -121,7 +122,7 @@ Source: [PLAN-MULTI](<../../../docs/planning/v3-multi-dsh.md>) §3–§7 (D01–
 | Duplicate names | ` (n)`, n from 2, lowest free complete name (literal collisions count), persisted, never renumbers (D07, Q03) |
 | Tool names | `mcp__<readable≤16>__<facade>_<digest12>`, ≤ 64, `[A-Za-z0-9_-]`; digest SHA-256 of `JSON.stringify([1, targetId, endpointEpoch, name, origin, rawName])`; every exposed remote tool and the local `ask_user`; withheld, reminder and skill tools unprefixed; a name bound (or retired) for another tuple fails closed. Supersedes V3 §6.3's ban on model-facing `mcp__…` names. Examples below |
 | Target-bound seams | `fishballInstance.bridge(pluginId, ops, {targetId})`, `attention.signal(pluginId, input, {targetId})`; `apiVersion` 2 |
-| Hosted reservation | hosted child: first target `parent`/`parent`, URL = `dsh-instance-child.targetUrl`, read-only, not removable; it alone owns `DSH_AGENT_TOKEN`, `fishball-core/hosted-agent`, `fishball-core/pending-token-origin` |
+| Hosted reservation | hosted child: first target `parent`/`parent`, URL = `dsh-instance-child.targetUrl`, read-only, not removable; it alone owns `DSH_AGENT_TOKEN`, `fishball-core/hosted-agent` and core's internal pending-origin record `fishball-core/pending-token-origin` (`src/link/constants.js` `LINK_SAVE.pendingOrigin`; core-only, so not a contract value) |
 | Added credentials | reference `FISHBALL_TARGET_TOKEN_<id>__<epoch>` (`-` → `_`); records `fishball-core/token-<id>-<epoch>`, `fishball-core/connect-<id>-<epoch>` |
 | Identity push | subscribe `dsh-agent://events` and `dsh-agent://identity` on the one listen stream; on `notifications/resources/updated {uri: identity}` and after every listen acknowledgement, `client.discover()` at once (one in flight + dirty), read `_meta['io.modelcontextprotocol/serverInfo'].name`; no polling. Live only if `resources/list` lists the URI |
 | Unchanged | one manager, one reminder store, notify, CIMD URL (global, Q06), wire tool schemas, receipts, OAuth |
