@@ -7,10 +7,13 @@
  * (requirements 1.38 item 4: "core只负责做后端"). They meet only here:
  * - fishball-ui's Node half reads core's `fishballInstance.ui` (`UI_SEAM.member`) at runtime with
  *   `ctx.get`, never through `inject` (a missing core must not fail its load); its browser half
- *   draws through core's published owner-only routes (F-UI: the Connect route, the ask-card routes);
+ *   draws through core's published owner-only routes (F-UI: the Connect route, the ask-card routes)
+ *   and through its own Node row's routes over this seam (the strip, and the pairing card since
+ *   R-FIX-FUI);
  * - no core: fishball-ui logs `UI_SEAM.coreMissing` once and changes nothing (Q-G2 = A). F-UI
- *   decides "no core" in fishball-ui's patch, from the bundles the DSH started with, so that its UI
- *   guard rows, which a running row cannot switch, follow the same rule;
+ *   decides "no core" in fishball-ui's patch, from the bundles the DSH started with (live while HMR
+ *   runs). Its UI guard rows are in core's patch since R-FIX-FUI, conditional on fishball-ui, because
+ *   a patch row in fishball-ui's patch would change a row even without core;
  * - no fishball-ui: core runs normally and reports nothing about it (Q-G1).
  *
  * Every member reads or acts on state core already owns (F-LINK, F-PAIR, F-GUARDS, F-ASKCARD,

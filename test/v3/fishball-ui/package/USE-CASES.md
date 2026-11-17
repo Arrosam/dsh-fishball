@@ -117,3 +117,28 @@ skip with no Chromium).
 | UIPF-NAV-DT-01 unavailable / failed / pending × en / zh | DT | `span[role=status][data-fishball-nav-status]`, unchanged text, StateDot error / error / spinner `ongoing`; order settings, fishball, plugins, status, retry. |
 | UIPF-NAV-ST-02 | ST | Pending → config read: status and Retry go. |
 | UIPF-NAV-UC-01 settings / fishball from plugins / fishball after drift / plugins / retry | UC | Clicks behave as before. |
+
+## R-FIX-FUI F2 (Q-G2 = A, the user 2026-11-18): without core, fishball-ui changes nothing
+
+The UI guard rows and the Preview Notice row moved from fishball-ui's patch into core's, each guard a
+bare `{id, disabled: !!js}` row true exactly when `fishball-ui` is in the profile (live with HMR,
+else `startedBundles`). Re-baselined rows: UI-BVA-01 (fishball-ui has no id-override row), UI-DT-01
+(only insert rows), UI-EP-01 (insert rows only; UI-EP-03 is the guards' EP over `fishball-ui`),
+EFIX3-UI-SHAPE-01 / DT-01 / EP-01 / EP-02 (the notice row is core's; its condition is fishball-ui
+started), EFIX3-UI-GUARD-01 (core's `readIntendedGuards()` `{rows, uiRows, policy}`; no
+`src/guards.js`, no dsh-app-boot peer), UI-UC-08 (core's patch holds the 8 rows), UI-UC-01 main 3
+(`fishballUiGuards` is a marker without `rows`), UI-UC-06 moved (PAIRING_TEXT added title,
+chooseFailed, locale), UI-UC-04 (five parts, client.pairing.js before client.model.js; the entry
+requires react and the primitives).
+
+`no-core-cases.mjs` (DSH's own composition over dsh-base, dsh-web-app and an earlier bundle layer):
+
+| Id | Technique | Expected outcome |
+| --- | --- | --- |
+| NOCORE-DT-01 (a) | DT | fishball-ui only: the earlier `ui-permission` disable and welcome ack stay |
+| NOCORE-EP-01 (a) | EP | fishball-ui only: every guard / notice value equals the DSH without Fishball; only core-missing on |
+| NOCORE-DT-01 (b) | DT | core + fishball-ui: all 8 UI rows and core's guards disabled |
+| NOCORE-DT-01 (c) | DT | core only: the 8 UI rows enabled (documented limit), core's guards disabled |
+| NOCORE-DT-02 1–6 | DT (HMR × manifest × started) | With HMR the manifest decides, unreadable → startedBundles; without HMR startedBundles |
+| NOCORE-DT-03 | DT | Hosted child with both → '2026-09-28.1'; standalone or core only → undefined |
+| F7-EP-01 | static | guards.d.ts `GuardedRow` = core's guard rows (no presets) ∪ uiRows |

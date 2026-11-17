@@ -489,7 +489,7 @@ export const GUARDS = Object.freeze({
   serviceName: 'fishballGuards',
   /**
    * The guard row's id and Cordis plugin name (src/guards/row.js `name`). It was `fishball-ui`
-   * until F-UI made fishball-ui a package of its own, which now holds the UI guard rows.
+   * until F-UI made fishball-ui a package of its own.
    */
   pluginName: 'fishball-core-guards',
   /** Core's own bundle name in `dsh.profile.bundles`. */

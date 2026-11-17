@@ -138,3 +138,11 @@ and the Button stand-in keeps `variant` as `data-fbtest-variant`.
 | UIPF-CORE-EP-01 sections en / zh | EP | `section[data-fishball-model]`, `section[data-fishball-connect]` |
 | UIPF-CORE-EP-01 connect heading en / zh | EP | Visible `h3` `Connect` / `连接` naming the section (`aria-labelledby`, no `aria-label`), a StateDot |
 | UIPF-CORE-DT-01 `<state>` (every CONNECT.state, unavailable) | DT | Heading and StateDot in every state; the Connect button primary in needs-authorization and failed, outline otherwise |
+
+## R-FIX-FUI F5 / F6 (`connect-cases.mjs`): the Connect control's races and press notices
+
+Every Connect GET / POST is held and answered by the case. CONNECT-ST-01 (an older read never
+publishes after a newer one), ST-02 (a read started before a press is ignored), ST-03 (after unmount:
+no window.open, no GET, no state update), ST-04 (only the latest press opens its page and publishes its
+notice), CONNECT-DT-01 (press refusal × statuses after it, en and zh: the alert stays while (state,
+code) is unchanged, goes when it changes). Run against the pre-task chunk, 17 of the 20 rows fail.

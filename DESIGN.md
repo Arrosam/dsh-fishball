@@ -2228,3 +2228,19 @@ Updated planning estimate: **81–125 person-hours** — MULTI-0 **11–17h**, M
 - **Q12 — No hard cap:** no new target-count limit; all targets remain reachable with scrolling/overflow and independent failure handling. Existing transport/tool/provider budgets still apply.
 
 The [original decision record](<docs/planning/v3-multi-dsh.md#11-settled-user-decisions-not-questions>) and [resolved Q01–Q12 record](<docs/planning/v3-multi-dsh.md#9-resolved-product-decisions-q01q12>) preserve the answers and attribution; **no open product questions remain**. Freeze the technical seams before the three implementation slices begin; Q11's host/owner-change report-back gate remains mandatory.
+
+## 25. V3 R-FIX-FUI: fishball-ui review fixes (2026-11-18)
+
+The fixes for the fishball-ui review (`.runtime/reports/review-x-fishball-ui.md`), the user's one product answer, and the rules they follow:
+
+| Point | Decision | Reason |
+|---|---|---|
+| Rows that change DSH's UI | fishball-ui's patch only inserts its own rows. The UI guard rows (`ui-*`, `entry-customization`) and the hosted child's Preview Notice acknowledgement are in **core's** patch, each conditional on `fishball-ui` being in the profile (live while HMR runs, else `startedBundles`). Core's check reports them only while fishball-ui's `fishballUiGuards` presence service is there. Accepted limit: with core but without fishball-ui these rows read DSH's stock values, so an earlier bundle's setting of one of them is not kept | the user, 2026-11-18 (option 1). The host's patch merge writes every override whatever its `!!js` value, so a row in fishball-ui's patch changed earlier composition without core (Q-G2 = A) |
+| Pairing warning | fishball-ui draws core's `ui.pairing` as a dock card over its own routes `GET /api/fishball/pairing` (SSE, `pairingView`) and `POST /api/fishball/pairing/choose` (core's `choose`, answered as it is). Continue is enabled only with its box ticked, and core still refuses it unconfirmed. Last-seen times are in the page's language and the browser's time zone. The pairing words (`SEAM_PAIRING`) and `fishballInstance`'s name and version (`UI_INSTANCE`) are fishball-shared's, and core takes them from there | R-ID-07 (import/pasted-token path), R-NAME-03 |
+| A lost stream | The strip, ask cards and pairing card share one browser stream lifecycle (client.js kit): an `error` marks the cached view stale; CLOSED offers Reconnect, which reopens every stream of the row. Until a fresh valid frame: the strip drops its cached state, lines and control; the ask and pairing cards keep their cached text readable under the notice, with every control disabled | a cached frame must not look authoritative or be acted on; what was asked stays readable, and core refuses a late answer anyway |
+| Pairing confirmation | The box resets with each new warning (`pairingView` `key`: state, bound pair, name refusal), also between two warnings of the same state | a tick confirms one pairing only (R-ID-07) |
+| Connect presses | Only the latest press opens its approval page or publishes its notice | a double press must not open a dead attempt |
+| Model dialog | Every opening reads DSH's catalog again; a failed read offers Try again | the catalog may change while the dialog is closed |
+| Core Connect control | Reads and presses are sequenced; only the latest read publishes, and nothing settles after unmount (no open, no read, no state). A press's notice stays until a later read's (state, code) differs from the first read after the press | review findings 5 and 6 |
+| Ask-card time | Formatted in the DSH UI language's locale (`en` / `zh-CN`), in the browser's time zone | as DSH's own schedule UI |
+| Same-side status words (finding 8) | Not changed: `SEAM_STATUS.link/connect/guards` still restate K3's frozen data-only file; equality coverage stays | K3 freeze; needs an approved contract change |
