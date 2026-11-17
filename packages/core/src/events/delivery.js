@@ -32,9 +32,9 @@
  */
 import { freezeMessage } from '@deepseek-ai/dsh-llm'
 import { MESSAGE, PRESENT_RETRY, REASON, STATE, TEXT } from '../../contracts/constants.js'
-import { HOST, LOG } from './constants.js'
+import { LOG } from './constants.js'
 import { codeOf } from './diagnostics.js'
-import { REDELIVER, claimVerdict, createOwnRemovals, whenTrulyIdle } from './handover.js'
+import { createHandover } from './handover.js'
 import { messageIdOf } from './ledger.js'
 
 /** The backoff (K3 PRESENT_RETRY, DECIDED D1) before attempt n + 1 of presenting an event (n is 1-based). */
@@ -62,8 +62,6 @@ export function createDelivery({ ledger, fishball, logger, delay = realDelay }) 
    * watched, so whichever turn admits or discards it, core records that once (review 2, finding 1).
    */
   const tracked = new Map()
-  /** messageId → the agent whose turn claimed it and has not admitted it yet. */
-  const claimed = new Map()
   /** eventId → failed presentation attempts so far (in memory: a restart starts again). */
   const failures = new Map()
   /** eventIds waiting out a presentation backoff; not in `queue` meanwhile. */
@@ -77,9 +75,6 @@ export function createDelivery({ ledger, fishball, logger, delay = realDelay }) 
   const givenUp = new Set()
   /** Ledger writes of admissions not yet durable; the flush checkpoint waits for them. */
   const writes = new Set()
-  const watched = new WeakSet()
-  // Core's own removal of a stale copy before its hand-over is not the user's discard (R-FIX F11).
-  const ownRemovals = createOwnRemovals()
   let draining = false
   // A drain asked for while one runs; honoured as soon as that one ends, so no request is lost.
   let again = false
@@ -107,7 +102,7 @@ export function createDelivery({ ledger, fishball, logger, delay = realDelay }) 
   function untrack(messageId) {
     const eventId = tracked.get(messageId)
     tracked.delete(messageId)
-    claimed.delete(messageId)
+    handover.forget(messageId)
     prepared.delete(eventId)
     backingOff.delete(eventId)
     dequeue(eventId)
@@ -138,7 +133,7 @@ export function createDelivery({ ledger, fishball, logger, delay = realDelay }) 
    * already built, is kept, so it is not presented again.
    */
   function redeliver(eventId, message) {
-    claimed.delete(messageIdOf(eventId))
+    handover.forget(messageIdOf(eventId))
     if (message !== undefined) prepared.set(eventId, message)
     if (!queue.includes(eventId)) queue.unshift(eventId)
     void drain()
@@ -150,45 +145,23 @@ export function createDelivery({ ledger, fishball, logger, delay = realDelay }) 
   }
 
   /**
-   * One appended event of one agent's own session (dsh-session `session/event`): the admission
-   * (`user/message` with a tracked id) ends the event; the end of a turn that claimed one without
-   * admitting it decides it by claimVerdict. Only that agent's own claims are decided.
+   * Each agent is followed through its live events (handover.js `createHandover`): an admission
+   * ends the event; a claim whose turn ended without admitting it is decided by the turn's end; any
+   * removal from DSH's inbox but core's own is the user's (B1, 2026-11-14; see the header). DSH's
+   * checkpoint before a model request (`session/flush`) waits for the admission writes.
    */
-  function observe(agent, event) {
-    const messageId = event.data?.id
-    if (event.type === HOST.userMessage && tracked.has(messageId)) {
+  const handover = createHandover({
+    isMine: (messageId) => tracked.has(messageId),
+    admitted(messageId) {
       const reason = givenUp.delete(tracked.get(messageId)) ? REASON.presentGivenUp : REASON.handled
-      return settleOne(messageId, STATE.admitted, reason)
-    }
-    if (event.type !== HOST.turnEnd) return undefined
-    const verdict = claimVerdict(event.data?.reason)
-    for (const [claimedId, owner] of [...claimed]) {
-      if (owner !== agent) continue
-      if (verdict === REDELIVER) redeliver(tracked.get(claimedId))
-      else settleOne(claimedId, STATE.discarded, verdict)
-    }
-    return undefined
-  }
-
-  /**
-   * Follow one agent, all through its public live events (dsh-agent, both SDKs), never its log:
-   * - `agent/inbox/claimed`: a turn took our message (it is admitted or its turn ends next);
-   * - `agent/inbox/discarded`: removed from the inbox before admission, the user's (S2-Q3 A);
-   * - `session/event`: the admission, and the claiming turn's end;
-   * - `session/flush`: DSH's checkpoint before a model request waits for our admission writes;
-   * - `agent/status` idle: the next hand-over.
-   */
-  function watch(agent) {
-    if (watched.has(agent)) return
-    watched.add(agent)
-    const mine = (payload) => !closed && payload.agent === agent && tracked.has(payload.message?.id)
-    agent.ctx.on(HOST.inboxClaimed, (payload) => { if (mine(payload)) claimed.set(payload.message.id, agent) })
-    // B1 (2026-11-14): any removal counts as the user's; see the header.
-    agent.ctx.on(HOST.inboxDiscarded, (payload) => { if (mine(payload) && !ownRemovals.isOwn(payload.message.id)) settleOne(payload.message.id, STATE.discarded, REASON.userStopped) })
-    agent.ctx.on(HOST.sessionEvent, (session, event) => { if (!closed && session === agent.session) observe(agent, event) })
-    agent.ctx.on(HOST.sessionFlush, (session) => (session === agent.session ? Promise.all([...writes]) : undefined))
-    agent.ctx.on(HOST.agentStatus, ({ status }) => { if (status === HOST.idle && !closed) void drain() })
-  }
+      settleOne(messageId, STATE.admitted, reason)
+    },
+    dropped: (messageId, reason) => settleOne(messageId, STATE.discarded, reason),
+    redeliver: (messageId) => redeliver(tracked.get(messageId)),
+    idle: () => { void drain() },
+    closed: () => closed,
+    flush: () => Promise.all([...writes]),
+  })
 
   /**
    * The model-facing content of the head event. A presenter that throws is retried after the
@@ -254,7 +227,7 @@ export function createDelivery({ ledger, fishball, logger, delay = realDelay }) 
     // A close while activating: held events wait for the next owner's recovery rather than
     // entering an agent that is being disposed (S2 §2.2 owner teardown).
     if (closed || queue.length === 0) return
-    watch(agent)
+    handover.watch(agent)
     const eventId = queue[0]
     if (!prepared.has(eventId)) {
       const record = ledger.get(eventId)
@@ -266,7 +239,7 @@ export function createDelivery({ ledger, fishball, logger, delay = realDelay }) 
     // "Fully idle" is the true-idle claim of runMaintenance. Parked input is not waited for: in an
     // idle agent it never wakes by itself (S2 §2.1 item 3), so waiting would hold the event forever.
     // A copy left pending by an earlier generation is removed first, so one id is pending once.
-    const task = whenTrulyIdle(agent, async () => { ownRemovals.remove(agent, message.id); agent.followup(message) }, () => { if (!closed) void drain() })
+    const task = handover.handOver(agent, message)
     if (task === undefined) return
     dequeue(eventId)
     prepared.delete(eventId)
@@ -301,7 +274,7 @@ export function createDelivery({ ledger, fishball, logger, delay = realDelay }) 
         for (const record of ledger.inOrder([STATE.fishball])) if (track(record.eventId)) { queue.push(record.eventId); mine.push(record.eventId) }
         if (queue.length === 0 || closed) return
         try {
-          watch(await fishball.activate())
+          handover.watch(await fishball.activate())
         } catch (error) {
           for (const eventId of mine) untrack(messageIdOf(eventId))
           throw error

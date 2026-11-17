@@ -198,9 +198,10 @@ export function createManagerSession(ctx, options) {
   let activation
   // The sessionId() value listeners last heard, so they hear each change exactly once.
   let announced
-  // Each read of the model setting for applying it; a validation overtaken by a newer read never
-  // applies its older choice (R-FIX F06: last write wins).
+  // The newest read of the model setting, `{read, promise}`: a validation overtaken by a newer read
+  // never applies its older choice (R-FIX F06: last write wins).
   let modelReads = 0
+  let latestRead
   let started = false
   let closed = false
 
@@ -284,15 +285,23 @@ export function createManagerSession(ctx, options) {
    * `chosen`, or DSH's current default when the setting is unset or unroutable; a session that once
    * ran on the setting goes back to the default when the setting is cleared; `undefined` when DSH
    * reports no default), for the newest setting. Routability is asynchronous, so the setting may
-   * change while it is checked: a read overtaken by a newer one is not used, and the newest read's
-   * answer is awaited instead, so concurrent callers all apply the latest setting.
+   * change while it is checked: an answer overtaken by a newer read is not used, and that newer
+   * read's own promise is awaited instead. No caller starts another read for being overtaken, so
+   * overlapping callers never leapfrog each other: each read is started by one caller only.
+   * @param {Promise<object>} [start] a read already begun (`readSelection`); by default a new one
    */
-  async function latestSelection() {
-    for (;;) {
-      const read = ++modelReads
-      const chosen = await chosenSelection()
-      if (read === modelReads) return { read, chosen, selection: chosen ?? defaultSelection() }
-    }
+  async function latestSelection(start = readSelection()) {
+    let answer = await start
+    while (answer.read !== latestRead.read) answer = await latestRead.promise
+    return answer
+  }
+
+  /** Begins one read of the setting and its routability; it becomes the newest read. */
+  function readSelection() {
+    const read = ++modelReads
+    const promise = chosenSelection().then((chosen) => ({ read, chosen, selection: chosen ?? defaultSelection() }))
+    latestRead = { read, promise }
+    return promise
   }
 
   function agentOptions(selection) {
@@ -561,7 +570,7 @@ export function createManagerSession(ctx, options) {
     if (closed) unavailable()
     // A read of the setting made while the Session opened (`applyModel`) is newer: the latest is
     // applied, never the choice this open started with.
-    if (read.read !== modelReads) read = await latestSelection()
+    if (read.read !== latestRead.read) read = await latestSelection(latestRead.promise)
     if (closed) unavailable()
     syncModel(live, read.selection)
     agent = live
@@ -631,9 +640,9 @@ export function createManagerSession(ctx, options) {
    */
   async function applyModel() {
     if (liveAgent() === undefined) {
-      // No live manager to apply to; an open in flight read the setting before this change, so
-      // its read is marked overtaken and the open applies the newest setting (`open`).
-      modelReads += 1
+      // No live manager to apply to. An open in flight read the setting before this change: a
+      // newer read makes it apply the newest setting (`open`). Without one nothing is read.
+      if (activation !== undefined) await latestSelection()
       return
     }
     const { selection } = await latestSelection()

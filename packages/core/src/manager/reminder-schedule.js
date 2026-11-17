@@ -267,6 +267,11 @@ function normalizeTime(value) {
   }
 }
 
+/** Whether `value` is a valid clock time by `normalizeTime`'s rule (the caller reports its own message). */
+function isClockTime(value) {
+  try { normalizeTime(value); return true } catch { return false }
+}
+
 /** Validate a UTC or IANA zone name; the stored spelling is kept so a view reads it back. */
 function normalizeZone(value) {
   if (typeof value !== 'string' || value === '' || value.trim() !== value) fail(RULE_ERROR.timeZone, MESSAGE.timeZone)
@@ -313,8 +318,7 @@ function instantOfAt(value, now) {
     // Each part is checked by the rules the local form uses (a real calendar date, a clock time),
     // so an impossible date is refused instead of rolling over into another day (R-FIX F15).
     const match = AT_INSTANT.exec(value)
-    if (match === null || dateOfText(match[1]) === undefined) fail(RULE_ERROR.rule, MESSAGE.at)
-    normalizeTime(match[2])
+    if (match === null || dateOfText(match[1]) === undefined || !isClockTime(match[2])) fail(RULE_ERROR.rule, MESSAGE.at)
     if (match[3] !== undefined && (Number(match[4]) > LIMIT.maxOffsetHours || Number(match[5]) > LIMIT.maxOffsetMinutes)) fail(RULE_ERROR.rule, MESSAGE.at)
     instant = Date.parse(value)
   } else if (isRecord(value)) {

@@ -270,7 +270,8 @@ export function createConnect(ctx, { store, target, clientId, clientMetadataUrl,
     if (attempt !== undefined) {
       // A pending attempt for this target's grant answers its URL again; one for another origin
       // (the target changed) is withdrawn: a new origin is a new first connection (R9).
-      if (attempt.key === (usable && store.grantKey(usable.origin)) && attempt.serverUrl === usable.url.href) {
+      // An attempt begun for other settings (another id or metadata URL) is withdrawn too (R-FIX F16).
+      if (attempt.key === (usable && store.grantKey(usable.origin)) && attempt.serverUrl === usable.url.href && attempt.settings === snapshot.settings) {
         if (attempt.url !== undefined) return approval(attempt.url)
       } else ctx.authorization.cancel(attempt.key)
     }
