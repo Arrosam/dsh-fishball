@@ -17,12 +17,6 @@ export function checkedFields(type, fields) {
 }
 
 /**
- * The serial chain moved to the connector-neutral `../serial.js` (review F10); re-exported here so
- * the modules that import it from routing (settings among them) keep working unchanged.
- */
-export { serialChain } from '../serial.js'
-
-/**
  * A listener set. `fire(...args)` calls every listener in turn; one that throws is logged by its
  * diagnostic code only and the rest still run.
  * @param logger - `{warn(format, line, code)}`

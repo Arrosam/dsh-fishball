@@ -51,7 +51,7 @@ const NOBODY_ENDED = Object.freeze({ principalKey: undefined, sessions: Object.f
  * A detached copy of a caller's payload, taken as C-MAILBOX snapshots a draft (`structuredClone`).
  * A value that cannot be copied is not a valid payload: a caller bug, like any other bad draft.
  * C-MAILBOX's private `snapshotOf` is the same copy; it is not exported and its folder is outside
- * C-ROUTE's, so a later task may move both into one shared helper (as `serialChain`, support.js).
+ * C-ROUTE's, so a later task may move both into one shared helper (as `serialChain`, ../serial.js).
  */
 function detachedPayload(payload) {
   try {
@@ -103,9 +103,15 @@ export async function openRouting(ctx, storageDomain, { mailbox, pairs, tokens, 
    * grants follow their sessions; X-SEC X-08). Awaited, not fired (review F05): a participant's move
    * is part of the all-or-nothing step. `undo()` gives back exactly what it moved (not everything
    * `to` holds: `to` may have grants of its own), and runs in reverse order when a later step
-   * fails. A participant that rejects must have undone its own partial move first.
+   * fails. A participant that rejects must undo its own partial move (at least queue that undo
+   * ahead of anything that could read it); routing undoes only the participants that resolved.
    */
   const succeeding = new Set()
+  /** Whether the live request `offerId` names is held by `principalKey` (any holder when it is undefined). */
+  const heldBy = (offerId, principalKey) => {
+    const holder = ledger.holderOf(offerId)
+    return holder !== undefined && (principalKey === undefined || holder.principalKey === principalKey)
+  }
   async function leave(...args) {
     const offers = await ledger.retireSession(...args)
     if (offers.length > 0) left.fire(offers)
@@ -271,8 +277,8 @@ export async function openRouting(ctx, storageDomain, { mailbox, pairs, tokens, 
     async settle(offerId, settlement, { principalKey } = {}) {
       const payload = detachedPayload(settlement)
       return managed.withState(async () => {
+        if (!heldBy(offerId, principalKey)) return false
         const holder = ledger.holderOf(offerId)
-        if (holder === undefined || (principalKey !== undefined && holder.principalKey !== principalKey)) return false
         // The current revision's id: after a succession the user's card may still name an older one (E1a).
         const draft = checkedFields(EVENT_TYPE.settlement, { sourceSessionId: holder.sessionId, correlationId: holder.offerId, payload })
         await produce({ type: EVENT_TYPE.settlement, sessionId: holder.sessionId, followsPrincipal: holder.principalKey }, draft)
@@ -285,7 +291,7 @@ export async function openRouting(ctx, storageDomain, { mailbox, pairs, tokens, 
      * Whether the live request `offerId` names is held by `principalKey` now (read synchronously,
      * so a caller that decides in the same step cannot be overtaken by a succession; review F02).
      */
-    holds: (offerId, principalKey) => ledger.holderOf(offerId)?.principalKey === principalKey,
+    holds: (offerId, principalKey) => principalKey !== undefined && heldBy(offerId, principalKey),
 
     /**
      * A principal's `escalate` (C-WIRE-2): the offer is the user's from now on and settles nothing
@@ -294,8 +300,7 @@ export async function openRouting(ctx, storageDomain, { mailbox, pairs, tokens, 
      * @param options.principalKey - the escalating principal: the offer must still be its (review F02)
      * @returns whether the offer was live and the agent's
      */
-    escalate: (offerId, { principalKey } = {}) => managed.withState(async () => (
-      (principalKey === undefined || ledger.holderOf(offerId)?.principalKey === principalKey) && ledger.escalate(offerId))),
+    escalate: (offerId, { principalKey } = {}) => managed.withState(async () => heldBy(offerId, principalKey) && ledger.escalate(offerId)),
 
     /**
      * The session's call ended before an answer: the offer is retired `withdrawn` from its pair.

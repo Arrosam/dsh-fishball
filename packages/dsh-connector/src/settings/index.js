@@ -32,7 +32,7 @@
  */
 import { APPROVAL_LISTENER } from '../../mcp-schema/index.js'
 import { diagnosticOf } from '../errors.js'
-import { serialChain } from '../routing/support.js'
+import { serialChain } from '../serial.js'
 import { SYNC_REASON } from '../tokens/index.js'
 import { HMR_TRANSACTION_FIELD, LOG, MISUSE, PATH_OP, SETTING, SETTINGS_SERVICE } from './constants.js'
 

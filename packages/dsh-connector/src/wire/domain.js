@@ -83,6 +83,8 @@ export async function createSessionDomain(ctx, { storageDomain, readLimits, rout
     closers.push(() => tools.close())
 
     let sweepQueued = false
+    let closing = false
+    closers.push(() => { closing = true })
     const disposers = [
       routing.onLeft((offers) => {
         for (const { offerId } of offers) {
@@ -96,9 +98,10 @@ export async function createSessionDomain(ctx, { storageDomain, readLimits, rout
       // moved and ends a grant the step is about to give back. Changes queued while a sweep waits
       // share it.
       routing.managed.onChange(() => {
-        if (sweepQueued) return
+        if (sweepQueued || closing) return
         sweepQueued = true
-        routing.afterChanges(() => { sweepQueued = false; return grants.endUnmanaged() }).catch(warn)
+        // A sweep queued before close finds the grants table closed: skipped, not a logged failure.
+        routing.afterChanges(() => { sweepQueued = false; return closing ? undefined : grants.endUnmanaged() }).catch(warn)
       }),
       // Awaited by the succession, which undoes it when a later step fails (R-HOST-09).
       routing.onSucceeded((from, to) => grants.moveOwner(from, to)),
