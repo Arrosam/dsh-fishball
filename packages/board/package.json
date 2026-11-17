@@ -1,9 +1,16 @@
 {
   "name": "fishball-board",
-  "version": "0.1.0-alpha.0",
+  "version": "1.0.0-alpha.1",
   "description": "The Fishball instance's persistent work board (W0 skeleton).",
-  "private": true,
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Arrosam/dsh-fishball.git",
+    "directory": "packages/board"
+  },
+  "publishConfig": {
+    "tag": "alpha"
+  },
   "type": "module",
   "main": "./index.js",
   "exports": {
@@ -17,7 +24,7 @@
     "README.md"
   ],
   "engines": {
-    "node": ">=22",
+    "node": ">=22.14",
     "dsh": ">=0.2.1-rc.5"
   },
   "peerDependencies": {
