@@ -581,7 +581,7 @@ export const TARGETS = Object.freeze({
   id: Object.freeze({ prefix: 't-', randomChars: TARGET_ID_RANDOM_CHARS, alphabet: TARGET_ID_ALPHABET }),
   epoch: Object.freeze({ prefix: 'e-', randomChars: TARGET_ID_RANDOM_CHARS, alphabet: TARGET_ID_ALPHABET }),
   store: Object.freeze({ domain: 'fishball_core_targets', table: 'targets', version: 1 }),
-  bindingStore: Object.freeze({ domain: 'fishball_core_targets', table: 'tool-bindings', version: 1 }),
+  bindingStore: Object.freeze({ domain: 'fishball_core_targets', table: 'tool_bindings', version: 1 }),
   key: Object.freeze({
     kind: Object.freeze({ event: 'event', approval: 'approval', session: 'session' }),
     encoding: 'base64url',

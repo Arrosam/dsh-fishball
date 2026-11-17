@@ -37,13 +37,13 @@ import {
   literalUnion, membersOf, pathOf, reachableNames, sdkDir, sdkMissing, uiSeam, unfrozen,
 } from './surface.mjs'
 
-const pick = (object, keys) => Object.fromEntries(keys.map((k) => [k, object[k]]))
+export const pick = (object, keys) => Object.fromEntries(keys.map((k) => [k, object[k]]))
 const sorted = (values) => [...values].sort()
-const sameSet = (actual, expected, what) => assert.deepEqual(sorted(actual), sorted(expected), what)
+export const sameSet = (actual, expected, what) => assert.deepEqual(sorted(actual), sorted(expected), what)
 /** Both sides at once: core's constants module and the connector's published values. */
-const both = async () => ({ c: await coreConstants(), pub: await connector() })
+export const both = async () => ({ c: await coreConstants(), pub: await connector() })
 /** A case that needs one SDK's credentials library; skipped with a reason when that SDK is not installed. */
-function sdkCase(sdk, id, row, title, fn) {
+export function sdkCase(sdk, id, row, title, fn) {
   const dir = sdkDir(sdk)
   caseTest(sdk, id, row, title, dir ? async (t) => fn(await credentials(dir), dir, t) : (t) => t.skip(sdkMissing(sdk)))
 }
@@ -413,7 +413,7 @@ export function registerK3aCases(sdk) {
   caseTest(sdk, 'K3a-CONNECT', 'ui part', `${TYPES.fishballConnect} is status, onChange, begin, cancel of the client: no forget, no authProvider`, () => {
     const c = core()
     needDeclarations(c)
-    sameSet([...membersOf(c, TYPES.fishballConnect).keys()], Object.keys(UI.groups.connect), TYPES.fishballConnect)
+    sameSet([...membersOf(c, TYPES.fishballConnect).keys()], UI.fishballConnect, TYPES.fishballConnect)
   })
   for (const [row, title] of [
     ['needs-configuration', 'without connect.clientMetadataUrl (or not https, or root path) Connect sends no request and reports the rule\'s code'],
@@ -460,6 +460,20 @@ export function registerK3aCases(sdk) {
       assert.ok(functionType(c, onChange.returns), 'returns ' + onChange.returns + ', not a dispose function')
     })
   }
+  // MULTI-0 re-baseline: the scalar link / connect / pairing rows became the `targets` rows above.
+  caseTest(sdk, 'K3a-UI', 'withdrawn', `FishballUi has no ${UI.withdrawn.join(', ')} member any more (MULTI-0: one ${UI.targetsGroup} list)`, () => {
+    assert.deepEqual(UI.withdrawn.filter((n) => ui().has(n)), [])
+  })
+  for (const name of UI.targetIdParam.methods) {
+    caseTest(sdk, 'K3a-UI', UI.targetsGroup, `ui.${UI.targetsGroup}.${name} names the target first: (${UI.targetIdParam.name}: ${UI.targetIdParam.type}, …)`, () => {
+      const [first] = member(membersOf(core(), member(ui(), UI.targetsGroup, { method: false }).type), name).params
+      assert.deepEqual([first?.name, first?.type.trim(), first?.optional], [UI.targetIdParam.name, UI.targetIdParam.type, false])
+    })
+  }
+  caseTest(sdk, 'K3a-UI', UI.answer.group, `ui.${UI.answer.group}.${UI.answer.method}'s first parameter is ${UI.answer.first}: ${UI.answer.firstType} (the card's opaque handle, MULTI-0)`, () => {
+    const [first] = member(membersOf(core(), member(ui(), UI.answer.group, { method: false }).type), UI.answer.method).params
+    assert.deepEqual([first?.name, first?.type.trim()], [UI.answer.first, UI.answer.firstType])
+  })
   caseTest(sdk, 'K3a-UI', 'no secret', 'no member, parameter or field reachable from fishballInstance.ui is named like a token or secret', () => {
     const found = reachableNames(core(), TYPES.fishballUi).filter((n) => UI.secretField.test(n.name) || n.name === UI.tokenCarrier)
     assert.deepEqual(found.map((n) => n.where), [])
