@@ -175,23 +175,26 @@ export function registerIHostCases(sdk) {
     assert.deepEqual(w.tokens.calls.retired, [])
   })
 
-  // ===================================================================== HOST-UC-05: remote target
-  caseTest(sdk, 'HOST-UC-05', 'post', 'a remote targetUrl: the first start calls no createHosted and sends no import, even with no credential and a connector present', async (t) => {
+  // MULTI-2 §3.3 supersedes the single remote override: an unrelated/old extra field is
+  // adversarial input, never a migration path and never a reason to refuse actual-parent tokens.
+  caseTest(sdk, 'HOST-UC-05', 'post (MULTI-2)', 'an extra remoteTarget field cannot suppress actual-parent first-start provisioning', async (t) => {
     const w = await hostedWorld(t, sdk, { remote: FIXTURE.remote })
     await w.hosted.firstStart()
-    assert.deepEqual(w.tokens.calls.created, [])
-    assert.deepEqual(w.imports(), [])
+    assert.deepEqual(w.tokens.calls.created, [FIXTURE.instanceId])
+    assert.equal(w.imports().length, 1)
   })
-  caseTest(sdk, 'HOST-UC-05', 'E1', 'a remote targetUrl: targetStatus is {target-unreachable, TARGET_UNREACHABLE} (Q3 A: the DSH side cannot see it)', async (t) => {
+  caseTest(sdk, 'HOST-UC-05', 'E1 (MULTI-2)', 'an extra remoteTarget field cannot replace the reserved actual-parent target status', async (t) => {
     const w = await hostedWorld(t, sdk, { remote: FIXTURE.remote })
-    assert.deepEqual(w.locator.targetStatus(), { state: K3.target.unreachable, code: K3.code.unreachable })
+    assert.deepEqual(w.locator.targetStatus(), { state: K3.target.unset, code: null })
+    await w.hosted.firstStart()
+    assert.deepEqual(w.locator.targetStatus(), { state: K3.target.connected, code: null })
   })
-  caseTest(sdk, 'HOST-UC-05', 'main', 'a remote targetUrl: Reconnect refuses target-remote and creates nothing', async (t) => {
+  caseTest(sdk, 'HOST-UC-05', 'main (MULTI-2)', 'Reconnect always provisions actual parent; removed remote override cannot cause target-remote refusal', async (t) => {
     const w = await hostedWorld(t, sdk, { remote: FIXTURE.remote })
-    assert.deepEqual(await w.locator.reconnect(), { ok: false, code: K3.reconnect.remote })
-    assert.deepEqual(w.tokens.calls.created, [])
+    assert.deepEqual(await w.locator.reconnect(), { ok: true })
+    assert.deepEqual(w.tokens.calls.created, [FIXTURE.instanceId])
+    assert.equal(w.imports().length, 1)
   })
-  skipped(sdk, 'HOST-UC-05', 'main', 'core authenticates against the remote connector after the user presses Connect in Fishball', SKIP.hosted('HOST-UC-05 main'))
 
   // ===================================================================== HOST-UC-06: lifecycle with the host DSH
   caseTest(sdk, 'HOST-UC-06', 'A1', 'a crashed child reports its code; Retry restarts it (failed → starting)', async (t) => {
@@ -246,12 +249,10 @@ export function registerIHostCases(sdk) {
     const host = await instanceModule(sdk, 'host')
     assert.equal(host.inject.some((n) => n.replace(/\?$/, '') === 'dshConnectorTokens'), false)
   })
-  caseTest(sdk, 'HOST-EP-01', 'R-HOST-05', 'the host Config has a targetUrl string field, default \'\', volatile, and no token or credential-reference field', async () => {
+  caseTest(sdk, 'HOST-EP-01', 'R-HOST-05 (MULTI-2)', 'the host Config removes targetUrl override entirely and still has no token or credential-reference field', async () => {
     const { Config } = await instanceModule(sdk, 'host')
-    assert.ok(Config?.dict?.targetUrl, 'no targetUrl field: ' + show(Object.keys(Config?.dict ?? {})))
-    assert.equal(Config.dict.targetUrl.type, 'string')
-    assert.equal(Config.dict.targetUrl.meta?.default, '')
-    assert.equal(Config.dict.targetUrl.meta?.volatile, true)
+    assert.ok(Config?.dict, 'no host Config dictionary')
+    assert.equal(Object.hasOwn(Config.dict, IMPORT.targetField), false, 'host schema still advertises the removed remote override')
     assert.deepEqual(Object.keys(Config.dict).filter((k) => SECRET_LIKE.test(k)), [])
   })
   caseTest(sdk, 'HOST-EP-01', 4, 'the instance\'s browser code is its own settings page only (QD1 = B): dsh.client web, ./client export, client.js + its two chunks shipped', async () => {
@@ -384,8 +385,8 @@ export function registerIHostCases(sdk) {
     [5, 'blank, connector, stale credential, entry deleted, Retry → nothing, a notice (R6 = B)', { credentials: { record: true }, remove: true }, 'retry', 0],
     [8, 'blank, no connector, no credential, start → nothing', { tokens: false }, 'start', 0],
     ['8b', 'blank, a connector with another apiVersion (unusable), no credential, start → nothing', { tokens: 2 }, 'start', 0],
-    [9, 'remote, connector, no credential, start → never', { remote: FIXTURE.remote }, 'start', 0],
-    ['9b', 'remote, connector, credential present, Retry → never', { remote: FIXTURE.remote, credentials: { ref: true } }, 'retry', 0],
+    [9, 'MULTI-2 unrelated remote field, parent connector, no credential, start → one parent import', { remote: FIXTURE.remote }, 'start', 1],
+    ['9b', 'MULTI-2 unrelated remote field, reserved credential present, Retry → no replacement', { remote: FIXTURE.remote, credentials: { ref: true } }, 'retry', 0],
   ]) {
     caseTest(sdk, 'HOST-DT-01', rule, title, async (t) => {
       const w = await hostedWorld(t, sdk, { tokens: setup.tokens, remote: setup.remote, credentials: setup.credentials })
@@ -419,8 +420,8 @@ export function registerIHostCases(sdk) {
 
   // ===================================================================== targetStatus (Q3 A) decision table
   for (const [rule, title, setup, expected] of [
-    [1, 'targetUrl non-blank → target-unreachable / TARGET_UNREACHABLE', { remote: FIXTURE.remote }, { state: K3.target.unreachable, code: K3.code.unreachable }],
-    ['1b', 'targetUrl one character → still remote (BVA: non-blank)', { remote: 'x' }, { state: K3.target.unreachable, code: K3.code.unreachable }],
+    [1, 'MULTI-2 extra remote field cannot replace absent actual parent entry', { remote: FIXTURE.remote }, { state: K3.target.unset, code: null }],
+    ['1b', 'MULTI-2 one-character extra field cannot replace absent actual parent entry', { remote: 'x' }, { state: K3.target.unset, code: null }],
     [2, 'blank, no usable dshConnectorTokens → target-unset / null', { tokens: false }, { state: K3.target.unset, code: null }],
     ['2b', 'blank, dshConnectorTokens apiVersion 2 (unusable) → target-unset / null', { tokens: 2 }, { state: K3.target.unset, code: null }],
     [3, 'blank, connector, no recorded entry → target-unset / null', {}, { state: K3.target.unset, code: null }],
@@ -447,7 +448,7 @@ export function registerIHostCases(sdk) {
     [1, 'child not ready → not-ready, nothing created', { lifecycle: { state: K3.state.stopped, code: null } }, { ok: false, code: K3.reconnect.notReady }, 0],
     [2, 'no usable dshConnectorTokens → connector-missing', { tokens: false }, { ok: false, code: K3.reconnect.connectorMissing }, 0],
     ['2b', 'dshConnectorTokens apiVersion 2 → connector-missing', { tokens: 2 }, { ok: false, code: K3.reconnect.connectorMissing }, 0],
-    [3, 'remote targetUrl → target-remote', { remote: FIXTURE.remote }, { ok: false, code: K3.reconnect.remote }, 0],
+    [3, 'MULTI-2 extra remote field cannot refuse actual-parent reconnect', { remote: FIXTURE.remote }, { ok: true }, 1],
     [4, 'createHosted rejects → operation-failed; nothing imported or recorded', { failCreate: true }, { ok: false, code: K3.reconnect.failed }, 1],
     [5, 'the child cannot store it → credentials-unwritable; not recorded', { credentials: { failSet: true } }, { ok: false, code: K3.reconnect.unwritable }, 1],
     [6, 'no answer on the channel → credentials-unwritable', { receiver: false, timeoutMs: FIXTURE.shortTimeoutMs }, { ok: false, code: K3.reconnect.unwritable }, 1],
@@ -843,11 +844,11 @@ export function registerIHostCases(sdk) {
   for (const [rule, input, expected] of [
     [1, { instanceTargetUrl: '', hostOrigin: FIXTURE.hostOrigin, connectorUsable: true }, FIXTURE.hostOrigin + CONNECTOR_MCP],
     [2, { instanceTargetUrl: '', hostOrigin: FIXTURE.hostOrigin, connectorUsable: false }, ''],
-    [3, { instanceTargetUrl: FIXTURE.remote, hostOrigin: FIXTURE.hostOrigin, connectorUsable: true }, FIXTURE.remote],
-    [4, { instanceTargetUrl: FIXTURE.remote, hostOrigin: FIXTURE.hostOrigin, connectorUsable: false }, FIXTURE.remote],
+    [3, { instanceTargetUrl: FIXTURE.remote, hostOrigin: FIXTURE.hostOrigin, connectorUsable: true }, FIXTURE.hostOrigin + CONNECTOR_MCP],
+    [4, { instanceTargetUrl: FIXTURE.remote, hostOrigin: FIXTURE.hostOrigin, connectorUsable: false }, ''],
     [5, { instanceTargetUrl: FIXTURE.spaces, hostOrigin: FIXTURE.hostOrigin, connectorUsable: true }, FIXTURE.hostOrigin + CONNECTOR_MCP],
     [6, { instanceTargetUrl: '', hostOrigin: undefined, connectorUsable: true }, ''],
-    [7, { instanceTargetUrl: 'x', hostOrigin: FIXTURE.hostOrigin, connectorUsable: true }, 'x'],
+    [7, { instanceTargetUrl: 'x', hostOrigin: FIXTURE.hostOrigin, connectorUsable: true }, FIXTURE.hostOrigin + CONNECTOR_MCP],
   ]) {
     caseTest(sdk, 'TARGET-URL', rule, `childTargetUrl(${show(input)}) → ${show(expected)}`, async () => {
       const { childTargetUrl } = await hostedModule(sdk)

@@ -20,10 +20,9 @@
  * F-LINK-SAVE); the seam adds no behaviour. Each `onChange` returns its disposer and calls its
  * listener after each change of the matching read, never with a token value.
  */
-import type { LinkStatus } from './link.js'
-import type { FishballConnect } from './connect.js'
 import type { GuardReport } from './guards.js'
 import type { AskCard, AskCardAnswer } from './ask-card.js'
+import type { FishballTargets } from './targets.js'
 
 /** A listener's disposer. */
 export type Dispose = () => void
@@ -47,30 +46,26 @@ export interface FishballUi {
   /** The manager session's id once it exists (X1), so the page opens it. */
   managerSessionId(): string | undefined
 
-  /** The status strip: the link (`target-unset`, `token-refused`, …). */
-  readonly link: { status(): LinkStatus; onChange(fn: (status: LinkStatus) => void): Dispose }
-
-  /** The Connect control of the status strip (design §6.3a step 1). */
-  readonly connect: FishballConnect
-
-  /** The pairing warning and its choices (R-ID-07); `choose` is F-PAIR's, with its refusals. */
-  readonly pairing: {
-    state(): UiPairingView
-    onChange(fn: (view: UiPairingView) => void): Dispose
-    choose(choice: string, options?: { readonly confirmed?: boolean }): Promise<UiResult>
-  }
+  /**
+   * MULTI-0 (2026-11-18): every target's link, Connect and pairing, addressed by `targetId`
+   * (`targets.d.ts`). It replaces K3a's scalar `link`, `connect` and `pairing` members, which are
+   * withdrawn: there is no "the" target any more (PLAN-MULTI D01, Q09).
+   */
+  readonly targets: FishballTargets
 
   /** The `guards-overridden` line of the status strip (R-FB-09). */
   /** `null` while core's guard row is absent or not ready yet (F-WIRE amendment, README). */
   readonly guards: { report(): GuardReport | null; onChange(fn: (report: GuardReport | null) => void): Dispose }
 
   /**
-   * The ask cards in Fishball's conversation (R-FB-11). `answer` commits once through core's link;
-   * a late answer on a card that is not `open` changes nothing and answers the K1 refusal.
+   * The ask cards in Fishball's conversation (R-FB-11). `answer` commits once through the link of
+   * the card's own target (MULTI-0: by the card's opaque `handle`, never a raw `approvalId`; an
+   * unknown handle answers `SEAM_TARGETS.refusal.unknownTarget`); a late answer on a card that is
+   * not `open` changes nothing and answers the K1 refusal.
    */
   readonly asks: {
     list(): readonly AskCard[]
     onChange(fn: (cards: readonly AskCard[]) => void): Dispose
-    answer(approvalId: string, answer: AskCardAnswer): Promise<UiResult>
+    answer(handle: string, answer: AskCardAnswer): Promise<UiResult>
   }
 }

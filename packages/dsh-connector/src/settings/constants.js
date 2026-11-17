@@ -9,8 +9,8 @@
  * Where each V3 setting sits in the row's config (DSH's settings service addresses it by path).
  * - `tokens`: the token list, `{label, enabled, key}` items (K1d TokenSettingsItem);
  * - `approval.port`: the approval listener's port (R-OA-20, Q-OA-7 A);
- * - `approval.dshName`: the name the approval page shows for this DSH (R-OA-11 "this DSH's name";
- *   the user, 2026-11-17: an optional "DSH name" field; unset or empty shows the listener origin).
+ * - `approval.dshName`: the raw base of the MCP server name and the approval page's DSH name;
+ *   unset or whitespace-only uses `node:os.hostname()` (MULTI-2).
  * C-WIRE-2 withdrew `routing.agentToken`, the designated agent (the user's answer q5, 2026-11-17:
  * "Remove agentToken entirely").
  */
@@ -40,7 +40,7 @@ export const SETTING_TEXT = Object.freeze({
   tokenEnabled: 'Off: the agent using this token is refused until it is switched on again.',
   tokenKey: 'The entry\'s key, written when it was created. Do not edit it.',
   approvalPort: 'The port of the approval page that browser agents sign in on. It binds the same host as DSH.',
-  dshName: 'The name the approval page shows for this DSH. Empty: the page shows this DSH\'s address.',
+  dshName: 'The DSH name shown on the approval page and advertised over MCP with -DSH appended. Empty: the OS device name.',
 })
 
 /** Programming errors (thrown, never shown to a user). */

@@ -88,7 +88,8 @@ export const K3 = Object.freeze({
   withdrawnCode: 'fishball-off',
   target: Object.freeze({ connected: 'connected', unreachable: 'target-unreachable', refused: 'token-refused', unset: 'target-unset' }),
   admitError: Object.freeze({ hostname: 'hostname-refused', notReady: 'not-ready' }),
-  reconnect: Object.freeze({ notReady: 'not-ready', connectorMissing: 'connector-missing', remote: 'target-remote', failed: 'operation-failed', unwritable: 'credentials-unwritable' }),
+  // MULTI-0 child.d.ts freeze withdraws target-remote with the instance override.
+  reconnect: Object.freeze({ notReady: 'not-ready', connectorMissing: 'connector-missing', failed: 'operation-failed', unwritable: 'credentials-unwritable' }),
   views: Object.freeze(['chat', 'settings']),
   langs: Object.freeze(['zh', 'en']),
   entry: Object.freeze({ enabled: 'enabled', disabled: 'disabled', deleted: 'deleted' }),

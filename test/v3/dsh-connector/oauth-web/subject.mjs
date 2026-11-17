@@ -108,7 +108,7 @@ export async function webWorld(t, sdk, options = {}) {
   let refreshGrant
   const boot = async () => {
     handler = mod[SUBJECT.handler]({
-      gate, originOf, secure: facts.secure, cimd, tokens, pairs, store, limiter, dshName: STUB.dshName,
+      gate, originOf, secure: facts.secure, cimd, tokens, pairs, store, limiter, dshName: options.dshName ?? STUB.dshName,
       dshPort: () => FIXTURE.dshPort, approvalPort: () => port, now: clock.now, logger,
     })
     assert.equal(typeof handler, 'function', `${SUBJECT.handler}() returned no request handler`)

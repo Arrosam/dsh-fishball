@@ -6,3 +6,6 @@ import { registerCuiSettingsCases } from './cui-cases.mjs'
 registerSettingsPageCases('0.2.2-rc.1')
 registerPolishSettingsCases('0.2.2-rc.1')
 registerCuiSettingsCases('0.2.2-rc.1')
+
+import { registerMultiSettingsCases } from './multi-cases.mjs'
+registerMultiSettingsCases('0.2.2-rc.1')

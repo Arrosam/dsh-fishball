@@ -29,6 +29,7 @@
  */
 import { readFile } from 'node:fs/promises'
 import https from 'node:https'
+import { hostname } from 'node:os'
 import { resolve } from 'node:path'
 import { APPROVAL_LISTENER, HOSTS, PATHS } from '../../mcp-schema/index.js'
 import { createContributions } from '../contrib/index.js'
@@ -36,6 +37,7 @@ import { diagnosticOf } from '../errors.js'
 import { HOSTED_SERVICE, createHostedTokens, openHostedStore } from '../hosted/index.js'
 import { createMailbox, openMailboxTables, readEventsResource } from '../mailbox/index.js'
 import { createMcpEndpoint, createRequestGate } from '../mcp/http/index.js'
+import { HOSTNAME_WATCH } from '../mcp/http/constants.js'
 import { createBearerVerifier, createFailureLimiter, createTokenEndpoint, followRevocations, openOAuthTokenStore, originOf } from '../mcp/oauth/index.js'
 import {
   approvalOriginFor, createApprovalHandler, createApprovalListener, createAuthorizationCodeGrant, createCimdFetcher, createRefreshTokenGrant,
@@ -93,18 +95,42 @@ async function serverFactory(webServer, secure) {
   }
 }
 
-/**
- * The name the approval page shows for this DSH (R-OA-11: "this DSH's name"), read at each page:
- * the `approval.dshName` setting (the user, 2026-11-17: an optional "DSH name" field; "The approval
- * page shows it, or the listener origin when it is empty"). DSH has no instance name of its own,
- * so the fallback is DSH's listener origin. Before DSH's listener has bound a port (or for a bind
- * address with a zone id) `getOrigin` throws, and the bind host stands in. The page names the
- * canonical MCP URI beside it.
- */
-const dshNameOf = (webServer, settings) => () => {
+/** Blank settings use the OS device name; nonblank values retain all whitespace and Unicode. */
+const configuredName = (settings) => {
   const named = settings.read().dshName
-  if (typeof named === 'string' && named.trim().length > 0) return named
-  try { return webServer.getOrigin() } catch { return webServer.host }
+  return typeof named === 'string' && named.trim().length > 0 ? named : undefined
+}
+
+/**
+ * One live base-name getter for MCP and the approval page. Fishball's decision: Node has no
+ * portable hostname-change event, so check locally every 30 s only while that fallback is used.
+ * Reads also detect a rename immediately; neither path polls the network or changes authorization.
+ */
+function followDshName(settings, changed) {
+  let previous
+  let timer
+  const read = () => {
+    const name = configuredName(settings) ?? hostname()
+    const renamed = previous !== undefined && previous !== name
+    previous = name
+    if (renamed) changed()
+    return name
+  }
+  const follow = () => {
+    read()
+    if (configuredName(settings) === undefined) {
+      if (timer === undefined) {
+        timer = setInterval(read, HOSTNAME_WATCH.intervalMs)
+        timer.unref?.()
+      }
+    } else {
+      clearInterval(timer)
+      timer = undefined
+    }
+  }
+  follow()
+  const unsubscribe = settings.onChange(follow)
+  return { read, close() { unsubscribe(); clearInterval(timer) } }
 }
 
 /**
@@ -144,6 +170,8 @@ export async function openV3(ctx, { config, storageDomain, limits, volatileEvent
     // The MCP endpoint is the mailbox's hint sink and routing's presence, and its tools need the
     // routing composition, so its `hints` and `presence` are reached through late-bound ports.
     let endpoint
+    const dshName = followDshName(settings, () => endpoint?.identityChanged())
+    closers.push(() => dshName.close())
     const hints = Object.freeze({ resourceUpdated: (principalKey, uri) => endpoint?.hints.resourceUpdated(principalKey, uri) })
     const mailboxTables = await openMailboxTables(ctx, storageDomain)
     closers.push(mailboxTables.close)
@@ -207,7 +235,7 @@ export async function openV3(ctx, { config, storageDomain, limits, volatileEvent
     endpoint = createMcpEndpoint({
       gate, verifier, failures, pairs, secure: facts.secure,
       readEvents: (principalKey) => readEventsResource(mailbox, principalKey),
-      populate, now: Date.now, logger,
+      dshName: dshName.read, populate, now: Date.now, logger,
     })
     closers.push(() => endpoint.close())
     closers.push(endpoint.presence.onChange((principalKey, connected) => {
@@ -225,7 +253,7 @@ export async function openV3(ctx, { config, storageDomain, limits, volatileEvent
     tokenEndpoint.register(createRefreshTokenGrant(grantDeps))
     const handler = createApprovalHandler({
       gate, originOf, secure: facts.secure, cimd: createCimdFetcher(), tokens, pairs, store: oauthStore, limiter: failures,
-      dshName: dshNameOf(webServer, settings), dshPort, approvalPort, now: Date.now, logger,
+      dshName: dshName.read, dshPort, approvalPort, now: Date.now, logger,
     })
     approval = createApprovalListener({
       handler, host: facts.host, port: settings.read().approvalPort, createServer: await serverFactory(webServer, facts.secure), logger,

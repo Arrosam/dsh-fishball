@@ -32,10 +32,16 @@ Version `1.0.0-alpha.1`. Install and uninstall are in the [root README](<../../R
 
 ## The hosted token
 
-At each start the instance asks the child whether it already holds a credential. Only when it does
-not, and the target is this DSH's own connector, it calls the connector's `createHosted` once and
-imports the value into the child's credential reference `DSH_AGENT_TOKEN`; the value never stays on
-the host. The entry keys it created, and its stable instance id, are kept in
+The actual parent DSH is the hosted child's reserved first target (`id: parent`, `kind: parent`).
+Its URL comes only from `dsh-instance-child.targetUrl`; Fishball keeps it read-only and non-removable.
+The instance has no remote-target override. Add other targets inside Fishball instead.
+
+At each start the instance asks whether the child already holds a **parent** credential. Only when
+it does not, with a usable parent connector, it calls `createHosted` once and imports the value into
+`DSH_AGENT_TOKEN`; the value never stays on the host. That reference, `fishball-core/hosted-agent`
+and `pending-token-origin` belong only to the reserved parent. Additional targets have separate
+credentials and cannot satisfy the hosted probe or suppress parent provisioning. The child-row
+configuration and credential handoff wire are unchanged. The entry keys it created, and its stable instance id, are kept in
 `<DSH_HOME>/fishball/hosted.json`, outside the runtime tree, so an uninstall or reinstall keeps
 them. Retry never creates a token; after you delete the hosted entry it leaves the notice
 `hosted-entry-deleted`. **Reconnect** creates one new entry and imports it once; it moves and
@@ -55,9 +61,7 @@ DSH → Plugins → `dsh-instance` (`client.js`, `client.status.js`, `client.mod
 
 - the child's status, its failed-start detail, **Retry** and its notice;
 - **Reconnect** and **Open Fishball** (a new tab; open DSH at `127.0.0.1` or `localhost`);
-- `enabled` (saving it off stops the child at once, on starts it; private data is kept) and
-  `targetUrl` (**Remote target**: the MCP endpoint of another DSH's connector; blank uses this DSH's
-  connector; applies at the next start);
+- `enabled` (saving it off stops the child at once, on starts it; private data is kept);
 - **Model for Fishball**: model sync.
 
 ## Model sync
@@ -77,9 +81,9 @@ model dialog.
 
 ## Without the connector
 
-The child still starts. With no connector in this DSH and no remote target, it has no target: set
-one in fishball-core's settings, or install `dsh-connector` and press Reconnect. Reconnect answers
-`connector-missing` while there is none.
+The child still starts, retaining its reserved parent entry as not set/failed rather than replacing
+it with an arbitrary remote. Install `dsh-connector` in the parent and press Reconnect; it answers
+`connector-missing` while there is none. Additional targets can still be configured inside Fishball.
 
 ## Uninstall
 
