@@ -173,6 +173,18 @@ const ops = {
   history: () => history,
   probe: () => globalThis.__fbgProbe ?? null,
   rows: ({ ids }) => ids.map(rowState),
+  /**
+   * E-FIX-3 (B7): one row's public setting as the browser reads it: the namespace value DSH's own
+   * settings service describes (`ctx.settings.describe()`, both SDKs), its `field` own key
+   * (`has`: present and not undefined; JSON drops undefined), and the entry's presence.
+   */
+  rowConfig: ({ id, field }) => {
+    const view = (ctx.get('settings')?.describe() ?? []).find((d) => String(d.ns) === id)
+    const value = view?.value
+    const has = value !== null && typeof value === 'object' && Object.hasOwn(value, field) && value[field] !== undefined
+    return { present: entryOf(id) !== undefined, described: view !== undefined, has, value: has ? value[field] : null }
+  },
+
   /** Ids of every loader entry that is disabled (its `!!js` condition evaluated, as DSH reads it). */
   disabledIds: () => [...ctx.loader.entries()].filter((entry) => entry.disabled).map((entry) => entry.options?.id).filter((id) => id !== undefined),
   /** Every log line so far, optionally of one logger name. */

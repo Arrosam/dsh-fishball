@@ -160,6 +160,43 @@ export const CORE_CLIENT = Object.freeze({ dir: V3.core.dir, file: 'client.js', 
 /** The SDK's Cordis: its entry, the fiber status event and FiberState FAILED (cordis lib/types/fiber.d.ts, both SDKs). */
 export const CORDIS = Object.freeze({ entry: path.join('@deepseek-ai', 'cordis', 'lib', 'index.js'), statusEvent: 'internal/status', failed: 3 })
 
+/**
+ * E-FIX-3 (B7, relayed by Fishball 2026-11-17): no DSH Preview Notice in a hosted Fishball child.
+ * DSH's welcome step (dsh-client-ui-settings-models, `settings.onboarding`) shows until the public
+ * setting `ui-settings-general.welcomeNoticeVersion` equals DSH's copy version
+ * (dsh-client-ui-settings-models lib/types/onboarding-copy.d.ts `WELCOME_NOTICE_VERSION`, the same
+ * in 0.2.1-rc.5, 0.2.2-rc.1 and 0.2.2-rc.3; `versionSource` re-reads it from each SDK's client
+ * bundle as a drift check). fishball-ui's patch sets it on the `ui-settings-general` row, a third
+ * kind of op beside the bare guard rows and the insert (the amendment of UI-BVA-01 and UI-DT-01).
+ * The decision: core in `profileContext.startedBundles` AND a `--patch` overlay
+ * (`profileContext.overlays`) that inserts a row with id `dsh-instance-child` (the instance's
+ * child-side row) → the version; otherwise `undefined`.
+ */
+export const NOTICE = Object.freeze({
+  row: 'ui-settings-general',
+  field: 'welcomeNoticeVersion',
+  version: '2026-09-28.1',
+  versionSource: Object.freeze({ pkg: 'dsh-client-ui-settings-models', file: path.join('lib', 'client.js'), pattern: /WELCOME_NOTICE_VERSION = "([^"]+)"/ }),
+  childRow: 'dsh-instance-child',
+  /** An owner's own value in their profile layer (test data). */
+  ownerValue: 'fbtest-owner-ack',
+})
+const childInsert = Object.freeze({ insert: Object.freeze([Object.freeze({ id: NOTICE.childRow, name: 'fbtest-child-row', config: Object.freeze({ targetUrl: '' }) })]) })
+/** `profileContext.overlays` partitions (EP): [label, overlays, inserts the child row]. */
+export const OVERLAYS = Object.freeze([
+  ['no overlay (BVA: empty list)', Object.freeze([]), false],
+  ['one overlay inserting dsh-instance-child (the hosted launch)', Object.freeze([childInsert]), true],
+  ['the child row inserted after other patches, beside another inserted row', Object.freeze([
+    Object.freeze({ id: 'hmr', disabled: true }),
+    Object.freeze({ insert: Object.freeze([Object.freeze({ id: 'fbtest-lifecycle', name: 'fbtest-lifecycle' }), ...childInsert.insert]) }),
+  ]), true],
+  ['an overlay inserting other rows only', Object.freeze([Object.freeze({ insert: Object.freeze([Object.freeze({ id: 'fbtest-other-row', name: 'fbtest-other-row' })]) })]), false],
+  ['an overlay inserting a near id (dsh-instance-child-x)', Object.freeze([Object.freeze({ insert: Object.freeze([Object.freeze({ id: NOTICE.childRow + '-x', name: 'fbtest-x' })]) })]), false],
+  ['an overlay that patches (does not insert) a row with that id', Object.freeze([Object.freeze({ id: NOTICE.childRow, disabled: false })]), false],
+])
+/** The two `startedBundles` the decision table uses: core with fishball-ui, and fishball-ui alone. */
+export const NOTICE_STARTED = Object.freeze({ withCore: Object.freeze([V3.core.name, V3.ui.name]), withoutCore: Object.freeze([V3.ui.name]) })
+
 /** Test fixtures (never product values). */
 export const FIXTURE = Object.freeze({
   styleId: 'fbtest-ui-style',

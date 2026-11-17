@@ -32,11 +32,12 @@ import { bootGraph } from '../../fishball-core/package/page.mjs'
 import { BUDGET as G_BUDGET, REPORT } from '../guards/constants.mjs'
 import { bootEnv, isOk, scenario, waitReport } from '../guards/harness.mjs'
 import {
-  CLIENT, CONDITION, CORDIS, CORE_CLIENT, CORE_MISSING, CORE_SPLIT, FIXTURE, FORBIDDEN, KEEP_ON, LATER, MOVED, ROUTE, ROWS, SEAM, STARTED, UI_PACKAGE, UI_PACKAGES, WAIT,
+  CLIENT, CONDITION, CORDIS, CORE_CLIENT, CORE_MISSING, CORE_SPLIT, FIXTURE, FORBIDDEN, KEEP_ON, LATER, MOVED, NOTICE, NOTICE_STARTED, OVERLAYS, ROUTE, ROWS, SEAM, STARTED,
+  UI_PACKAGE, UI_PACKAGES, WAIT,
 } from './constants.mjs'
 import {
-  CHUNK_FAILS, composedWith, coreConstants, corePatch, disabledWhen, findRows, insertedOf, isExpression, loadChunk, loadClient, namesFile, needUi, rowFile, rowOps,
-  seamModule, styleHead, uiManifest, uiPatch,
+  CHUNK_FAILS, composedWith, configWhen, coreConstants, corePatch, disabledWhen, findRows, insertedOf, isExpression, loadChunk, loadClient, namesFile, needUi, profileContextOf,
+  rowFile, rowOps, seamModule, styleHead, uiGuardReader, uiManifest, uiPatch,
 } from './subject.mjs'
 
 const show = (v) => JSON.stringify(v)
@@ -163,10 +164,16 @@ export function registerUiCases(sdk) {
 
   // ================================================================ UI-DT-01 / UI-BVA-01: the patch rows
   // Re-baselined (F-WIRE): eight rows, ui-model-selection last; the user: "Hide it. Only core's settings choose the model".
-  t('UI-BVA-01', 'guards', `fishball-ui's patch has exactly the ${ROWS.guards.length} UI guard row ops, in order: ${ROWS.guards.join(', ')}`, async () => {
+  // Re-baselined (E-FIX-3, B7, Fishball 2026-11-17): the patch has a third kind of op, the
+  // `ui-settings-general` config row `{id, config: {welcomeNoticeVersion}}` (no `disabled`); the
+  // guard rows themselves are unchanged. So: the bare {id, disabled} ops are exactly the guard rows
+  // in order, and the only other non-insert op is that config row.
+  t('UI-BVA-01', 'guards', `fishball-ui's patch has exactly the ${ROWS.guards.length} UI guard row ops (bare {id, disabled}), in order: ${ROWS.guards.join(', ')}; its only other non-insert op is the ${NOTICE.row} config row (E-FIX-3)`, async () => {
     const ops = rowOps(await uiPatch(sdk))
-    assert.deepEqual(ops.map((r) => r.id), [...ROWS.guards])
-    for (const op of ops) assert.deepEqual(Object.keys(op).sort(), ['disabled', 'id'], op.id + ' is not a bare {id, disabled} row')
+    const guards = ops.filter((op) => op.id !== NOTICE.row)
+    assert.deepEqual(guards.map((r) => r.id), [...ROWS.guards])
+    for (const op of guards) assert.deepEqual(Object.keys(op).sort(), ['disabled', 'id'], op.id + ' is not a bare {id, disabled} row')
+    assert.deepEqual(ops.filter((op) => op.id === NOTICE.row).map((op) => Object.keys(op).sort()), [['config', 'id']], 'the notice row op')
   })
   t('UI-BVA-01', 'inserted', `fishball-ui's patch inserts exactly ${ALL_INSERTED.join(', ')}`, async () => {
     assert.deepEqual(insertedOf(await uiPatch(sdk)).map((r) => r.id).sort(), [...ALL_INSERTED].sort())
@@ -190,10 +197,15 @@ export function registerUiCases(sdk) {
       assert.ok(own?.dsh?.client, folder + ' declares no dsh.client')
     })
   }
-  t('UI-DT-01', 'shape', 'every condition in fishball-ui\'s patch is a !!js expression (decided at DSH start), not a fixed boolean', async () => {
+  // Re-baselined (E-FIX-3, B7): the `ui-settings-general` config row carries no `disabled` (it sets a
+  // config value, EFIX3-UI-*); every `disabled` condition the patch does carry is still a !!js expression.
+  t('UI-DT-01', 'shape', 'every disabled condition in fishball-ui\'s patch is a !!js expression (decided at DSH start), not a fixed boolean; only the ui-settings-general config row has none', async () => {
     const rows = [...rowOps(await uiPatch(sdk)), ...insertedOf(await uiPatch(sdk))]
     const fixed = []
-    for (const r of rows) if (!(await isExpression(sdk, r.disabled))) fixed.push(r.id + ': ' + show(r.disabled))
+    for (const r of rows) {
+      if (r.id === NOTICE.row && !Object.hasOwn(r, 'disabled')) continue
+      if (!(await isExpression(sdk, r.disabled))) fixed.push(r.id + ': ' + show(r.disabled))
+    }
     assert.deepEqual(fixed, [])
   })
   const kinds = [
@@ -226,6 +238,69 @@ export function registerUiCases(sdk) {
     const effective = await composedWith(sdk, await corePatch(sdk), await uiPatch(sdk))
     const missing = ROWS.guards.filter((id) => findRows(effective, id).length === 0)
     assert.deepEqual(missing, [], 'UI guard rows DSH does not have on this SDK')
+  })
+
+  // ================================================================ E-FIX-3 (B7): no DSH Preview Notice in a hosted child
+  /** The notice row op of fishball-ui's patch, as DSH's loadOverlayPatches parsed it. */
+  async function noticeOp() {
+    const ops = rowOps(await uiPatch(sdk)).filter((op) => op.id === NOTICE.row)
+    assert.equal(ops.length, 1, `fishball-ui's patch has ${ops.length} ${NOTICE.row} ops`)
+    return ops[0]
+  }
+  /** The resolved `welcomeNoticeVersion` of the notice row for one `profileContext` (null: none). */
+  const resolvedVersion = async (profileContext) => (await configWhen(sdk, (await noticeOp()).config, profileContext))?.[NOTICE.field]
+  t('EFIX3-UI-SHAPE-01', 'row', `fishball-ui's patch has one op {id: ${NOTICE.row}, config: {${NOTICE.field}: …}}: only that config key, no disabled, no name`, async () => {
+    const op = await noticeOp()
+    assert.deepEqual(Object.keys(op).sort(), ['config', 'id'])
+    assert.deepEqual(Object.keys(op.config ?? {}), [NOTICE.field])
+  })
+  t('EFIX3-UI-SHAPE-01', 'version drift', `DSH's copy version is ${NOTICE.version} in this SDK's welcome step (dsh-client-ui-settings-models)`, () => {
+    const file = path.join(runtimeOf(sdk), '@deepseek-ai', NOTICE.versionSource.pkg, NOTICE.versionSource.file)
+    assert.equal(fs.readFileSync(file, 'utf8').match(NOTICE.versionSource.pattern)?.[1], NOTICE.version)
+  })
+  t('EFIX3-UI-SHAPE-01', 'composed', `composed with DSH's own layers and core's patch: the ${NOTICE.row} row exists (a patch that matches nothing is skipped) and carries the notice config`, async () => {
+    const effective = await composedWith(sdk, await corePatch(sdk), await uiPatch(sdk))
+    const rows = findRows(effective, NOTICE.row)
+    assert.equal(rows.length, 1, `${NOTICE.row} rows in the composed list`)
+    assert.ok(Object.hasOwn(rows[0].config ?? {}, NOTICE.field), show(rows[0]))
+  })
+  // Decision table EFIX3-UI-DT-01 (the requirement's five rules).
+  const [hostedOverlay] = OVERLAYS.filter(([, , child]) => child)
+  const [standaloneOverlay] = OVERLAYS.filter(([, overlays]) => overlays.length === 0)
+  const noticeRules = [
+    ['rule 1', 'core started × child row inserted (hosted child)', profileContextOf(NOTICE_STARTED.withCore, hostedOverlay[1]), NOTICE.version],
+    ['rule 2', 'core started × no overlay (standalone DSH)', profileContextOf(NOTICE_STARTED.withCore, standaloneOverlay[1]), undefined],
+    ['rule 3', 'core not started × child row inserted', profileContextOf(NOTICE_STARTED.withoutCore, hostedOverlay[1]), undefined],
+    ['rule 4', 'core not started × no overlay', profileContextOf(NOTICE_STARTED.withoutCore, standaloneOverlay[1]), undefined],
+    ['rule 5', 'no profileContext at all', null, undefined],
+  ]
+  for (const [rule, title, profileContext, expected] of noticeRules) {
+    t('EFIX3-UI-DT-01', rule, `${title} → ${NOTICE.field} resolves to ${show(expected) ?? 'undefined'}`, async () => {
+      assert.equal(await resolvedVersion(profileContext), expected)
+    })
+  }
+  // EP over profileContext.overlays with core started: only an INSERTED row with exactly that id counts.
+  for (const [label, overlays, child] of OVERLAYS) {
+    t('EFIX3-UI-EP-01', label, `core started, overlays ${label} → ${child ? NOTICE.version : 'undefined'}`, async () => {
+      assert.equal(await resolvedVersion(profileContextOf(NOTICE_STARTED.withCore, overlays)), child ? NOTICE.version : undefined)
+    })
+  }
+  // EP over startedBundles (UI-EP-01's partitions) with the hosted overlay: only an exact fishball-core counts.
+  for (const [label, bundles, coreStarted] of STARTED) {
+    t('EFIX3-UI-EP-02', label, `child row inserted, startedBundles ${show(bundles)} → ${coreStarted ? NOTICE.version : 'undefined'}`, async () => {
+      assert.equal(await resolvedVersion(profileContextOf(bundles, hostedOverlay[1])), coreStarted ? NOTICE.version : undefined)
+    })
+  }
+  t('EFIX3-UI-GUARD-01', 'guards unchanged', `readUiGuardRows() (fishball-ui src/guards.js) reads exactly the ${ROWS.guards.length} guard rows, in order; ${NOTICE.row} is not a guard row`, async () => {
+    const rows = (await uiGuardReader(sdk))()
+    assert.deepEqual([...rows], [...ROWS.guards])
+  })
+  t('EFIX3-UI-OWNER-01', 'owner layer', `the owner's profile layer setting ${NOTICE.row}.config.${NOTICE.field} still wins over fishball-ui's (composed by DSH after the bundle patches)`, async () => {
+    const owner = [{ id: NOTICE.row, config: { [NOTICE.field]: NOTICE.ownerValue } }]
+    const effective = await composedWith(sdk, await corePatch(sdk), await uiPatch(sdk), owner)
+    const [row] = findRows(effective, NOTICE.row)
+    const resolved = await configWhen(sdk, row.config, profileContextOf(NOTICE_STARTED.withCore, hostedOverlay[1]))
+    assert.equal(resolved?.[NOTICE.field], NOTICE.ownerValue)
   })
 
   // ================================================================ UI-UC-08: core's patch after the split
@@ -395,6 +470,7 @@ export function registerUiCases(sdk) {
     f.report = await waitReport(h, (r) => r !== null, G_BUDGET.readyMs)
     f.settled = await waitReport(h, isOk, G_BUDGET.readyMs)
     f.rows = await h.call('rows', { ids: [...ROWS.guards, ...ALL_INSERTED] })
+    f.notice = await h.call('rowConfig', { id: NOTICE.row, field: NOTICE.field })
     f.service = await h.call('service', { name: CONDITION.service2 })
     f.graph = (await bootGraph({ origin: h.origin, cookie: h.cookie })).map((e) => e.id)
     f.tab = (await fetch(h.origin + ROUTE.recommended, { headers: { cookie: h.cookie } })).status
@@ -440,6 +516,13 @@ export function registerUiCases(sdk) {
     for (const id of [UI, ...Object.values(UI_PACKAGES)]) assert.ok(f.graph.includes(id), id + ' not in ' + show(f.graph))
     assert.equal(f.tab, ROUTE.ok)
   })
+  t('EFIX3-UI-SYS-01', 'standalone', `core + fishball-ui in a real standalone DSH (no --patch child row): ${NOTICE.row} runs with no ${NOTICE.field} (the notice behaves as before)`, async () => {
+    const f = await both()
+    assert.equal(f.notice.present, true, 'no ' + NOTICE.row + ' row: ' + show(f.notice))
+    assert.equal(f.notice.described, true, 'DSH\'s settings service does not describe ' + NOTICE.row + ': ' + show(f.notice))
+    assert.equal(f.notice.has, false, show(f.notice))
+  })
+  t('EFIX3-UI-SYS-01', 'hosted', `a hosted child resolves ${NOTICE.field} to ${NOTICE.version} in a real process`, null, 'out of scope for E-FIX-3 tests (the parent excluded rows that launch a hosted child); EFIX3-UI-DT-01 rule 1 covers it with DSH\'s own evaluator')
   t('UI-UC-01', 'E1', 'core + fishball-ui: no fishball-core-missing line', async () => {
     const f = await both()
     assert.deepEqual(coreMissingLines(f.logs), [])

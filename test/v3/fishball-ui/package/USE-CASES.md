@@ -56,3 +56,43 @@ package-local chunks).
 
 Rows a later task owns are `todo` and name it: a hosted child does not place fishball-ui until I-HOST;
 browser rendering is E2E-UI's; there is no frame-only window-style rule yet (interface item 11).
+
+## E-FIX-3 (B7): no DSH Preview Notice in a hosted Fishball child
+
+Requirement (relayed by Fishball, 2026-11-17): DSH's welcome step (dsh-client-ui-settings-models,
+`settings.onboarding`) shows until the public setting `ui-settings-general.welcomeNoticeVersion`
+equals DSH's copy version `2026-09-28.1`. fishball-ui's patch sets it only in a hosted child, and
+changes nothing elsewhere. The value is resolved as DSH's Loader resolves a row's config: the SDK's
+own `interpolate` (`evaluate` = `new Function('ctx','expr','with (ctx) { return eval(expr) }')`)
+against a real Cordis Context of that SDK that provides `profileContext`.
+
+**Amendment of UI-BVA-01 `guards` and UI-DT-01 `shape` (E-FIX-3, Fishball 2026-11-17).** The patch
+now has a third kind of op besides the bare `{id, disabled}` guard rows and the `insert`: the
+config row `{id: 'ui-settings-general', config: {welcomeNoticeVersion: !!js …}}`, with no
+`disabled`. Re-baselined:
+- UI-BVA-01 `guards`: the bare `{id, disabled}` ops are exactly the eight guard rows, in order,
+  and the only other non-insert op is that config row (keys `id`, `config`).
+- UI-DT-01 `shape`: every `disabled` condition is still a `!!js` expression. Only that config row
+  has none.
+
+**EFIX3-UI-DT-01** (the requirement's decision table; rows are rules 1–5):
+
+| Rule | fishball-core in `startedBundles` | an overlay inserts `dsh-instance-child` | resolved `welcomeNoticeVersion` |
+| --- | --- | --- | --- |
+| 1 | yes | yes | `'2026-09-28.1'` |
+| 2 | yes | no (standalone) | `undefined` |
+| 3 | no | yes | `undefined` |
+| 4 | no | no | `undefined` |
+| 5 | no `profileContext` at all | — | `undefined` |
+
+| Id | Technique | Case |
+| --- | --- | --- |
+| EFIX3-UI-SHAPE-01 row | EP | One op `{id, config}` whose config has only `welcomeNoticeVersion`. |
+| EFIX3-UI-SHAPE-01 version drift | drift | The SDK's welcome step still compares with `2026-09-28.1`. |
+| EFIX3-UI-SHAPE-01 composed | integration | Composed with DSH's layers and core's patch: the row exists and carries the config. |
+| EFIX3-UI-EP-01 (6 rows) | EP / BVA | With core started, over `overlays`: none (BVA 0), the child insert alone, the child insert after other patches beside another row, other inserted rows only, a near id `dsh-instance-child-x`, and a non-insert patch of that id. Only an inserted row with exactly that id counts. |
+| EFIX3-UI-EP-02 (9 rows) | EP / BVA | With the child insert, over UI-EP-01's `startedBundles` partitions: only an exact `fishball-core` counts. |
+| EFIX3-UI-GUARD-01 | EP | `readUiGuardRows()` reads exactly the eight guard rows. The config row is not a guard row. |
+| EFIX3-UI-OWNER-01 | integration | The owner's profile layer value wins over fishball-ui's. |
+| EFIX3-UI-SYS-01 standalone | system | A real standalone DSH with core and fishball-ui (scenario BOTH): DSH's settings service describes `ui-settings-general` with no `welcomeNoticeVersion`, so the notice behaves as before. |
+| EFIX3-UI-SYS-01 hosted | todo | Out of scope: rows that launch a hosted child. Rule 1 covers it with DSH's own evaluator. |
