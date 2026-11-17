@@ -65,6 +65,9 @@ fs.writeFileSync(overlay, JSON.stringify([
 ], null, 2))
 
 const { ctx, shutdown } = await runProfile({ environment: loadLayeredEnv('dsh'), profile: WORLD.profile, patchFiles: [overlay], args: ['--no-open', '--port', '0'] })
+// R-FIX-CORE F09: the background log as DSH's logger exports it (core logs `id-invalid` by code).
+const logs = []
+ctx.logger.exporter({ levels: { default: 3 }, export: (m) => logs.push({ name: m.name, type: m.type, text: m.args.map((a) => (typeof a === 'string' ? a : JSON.stringify(a))).join(' ') }) })
 const appReady = { at: null }
 ctx.get('appReady')?.onReady(() => { appReady.at = Date.now() })
 
@@ -121,6 +124,8 @@ const ops = {
   /** Every request of a session from `since` (ms epoch) on: deliveries arrive without a turn. */
   requestsSince: ({ sessionId, since }) => requestsOf(sessionId).filter((r) => r.at >= since),
   now: () => Date.now(),
+  /** R-FIX-CORE F09: the log records from index `from` on. */
+  logs: ({ from = 0 } = {}) => logs.slice(from),
   async newSession() {
     const created = await ctx.sessionController.create({ cwd })
     return { sessionId: created.sessionId, requests: await turn(created.sessionId) }

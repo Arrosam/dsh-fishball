@@ -25,7 +25,7 @@ import { mcpClient } from '../../contract/k1-mcp-schema/schema-module.mjs'
 import { storageContext } from '../../dsh-connector/pairs/subject.mjs'
 import { canonicalTmp, cleanups, leakHits, logText, openHost, requireModule, sweepableHome } from '../../dsh-connector-adapter/oauth-client/subject.mjs'
 import { identityModule } from '../identity/subject.mjs'
-import { CONNECT, EVENT, FIXTURE, HARNESS, HOSTED_IMPORT, IDENTITY, RELAYED, SUBJECT } from './constants.mjs'
+import { CONNECT, EVENT, FIXTURE, HARNESS, HOSTED_IMPORT, IDENTITY, RELAYED, RFIX, SUBJECT } from './constants.mjs'
 import { startFakeConnector } from './fakes.mjs'
 
 const CREDENTIALS_PACKAGE = '@deepseek-ai/dsh-credentials'
@@ -91,6 +91,8 @@ export async function linkSaveWorld(t, sdk, options = {}) {
       ref: credentialRef(HOSTED_IMPORT.credentialRef),
       userRef: credentialRef(FIXTURE.userRef),
       hosted: credentialKey(...HOSTED_IMPORT.savedRecord.key.split('/')),
+      // R-FIX-CORE F01: the pending reference's origin binding (RFIX.pendingTokenOrigin).
+      pendingOrigin: credentialKey(...RFIX.pendingTokenOrigin.split('/')),
       scopeOf: credentialKeyScope,
     }
     host_.ctx.on(EVENT.referenceUpdated, (ref) => events.push({ event: EVENT.referenceUpdated, subject: String(ref) }))

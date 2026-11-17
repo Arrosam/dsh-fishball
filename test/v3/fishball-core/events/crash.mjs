@@ -25,6 +25,8 @@ const PHASE = Object.freeze({ cut: 'cut', recover: 'recover', restart: 'restart'
 const EVENT_NUMBER = 1
 /** The event a faulty recover phase publishes after its failed recovery (decision 2026-11-14 2). */
 const LATER_EVENT_NUMBER = 2
+/** R-FIX-CORE F11: the second event a `second` scenario publishes with the first. */
+const SECOND_EVENT_NUMBER = 3
 const interceptedType = contributedType()
 
 /** Startup-recovery faults of the recover phase (decision 2026-11-14 2), by name. */
@@ -61,6 +63,10 @@ export const SCENARIO = Object.freeze({
   // the user removes the stale copy from the inbox. A later event then passes more idle edges.
   stalePendingUserWakes: { type: EVENT_TYPE.message, cut: 'pending', atRestart: 'userWakes', later: true },
   stalePendingUserRemoves: { type: EVENT_TYPE.message, cut: 'pending', atRestart: 'userRemoves', later: true },
+  // R-FIX-CORE F11: E1 and E2 accepted for Fishball, E1's message left pending in Fishball's DSH
+  // inbox by the first process (every wake of that process is cancelled keeping the inbox), then the
+  // crash; recovery finds the stale E1 copy and both ledger records in state fishball.
+  stalePendingTwo: { type: EVENT_TYPE.message, cut: 'pending', second: true, holdAll: true },
 })
 
 /** Whether core's message for `event` waits in `agent`'s DSH inbox (either pending list). */
@@ -71,11 +77,12 @@ const pendingIn = (agent, event) => [...agent.inbox.nextTurn, ...agent.inbox.nex
  * inbox, so the message stays pending and unclaimed and no turn opens. The cut phase then dies
  * (child()). Only the first such wake is cancelled.
  */
-function holdPending(world, event) {
+function holdPending(world, event, all = false) {
   let done = false
   world.ctx.on(DSH.agentStatus, (payload) => {
     if (done || payload.status !== DSH.running || !pendingIn(world.agent, event)) return
-    done = true
+    // `all` (F11): every such wake of the cut phase is cancelled, so no turn of it admits anything.
+    done = !all
     world.agent.cancel(DSH.hookCancel, { keepInbox: true })
   })
 }
@@ -163,6 +170,7 @@ function interceptor(world, scenario, phase) {
 async function child(sdk, root, name, phase) {
   const scenario = SCENARIO[name]
   const event = makeEvent(scenario.type, EVENT_NUMBER)
+  const second = scenario.second ? makeEvent(EVENT_TYPE.message, SECOND_EVENT_NUMBER) : undefined
   let world
   const cutAt = (point) => phase === PHASE.cut && scenario.cut === point
   const linkHooks = {
@@ -190,7 +198,9 @@ async function child(sdk, root, name, phase) {
     linkHooks, onRequest, plugins, seam, fishballSession,
     onOpen: (w) => {
       world = w
-      if (cutAt('pending')) holdPending(w, event)
+      if (cutAt('pending')) holdPending(w, event, scenario.holdAll === true)
+      // F11 harness fact: the stale copy of the first event was pending when this process opened.
+      if (recovering && second !== undefined) atOpen.pendingAtRestart = pendingIn(w.agent, event)
       if (!recovering || scenario.atRestart === undefined) return
       atOpen.pendingAtRestart = pendingIn(w.agent, event)
       atOpen.acted = AT_RESTART[scenario.atRestart](w, event)
@@ -204,12 +214,13 @@ async function child(sdk, root, name, phase) {
     })
     if (cutAt('queued')) await startBusy(world, gate)
     world.link.publish(event)
+    if (second !== undefined) world.link.publish(second)
     if (cutAt('queued')) {
       await until(() => world.link.acked(event.eventId), WAIT.settleMs, WAIT.pollMs)
       if (world.link.acked(event.eventId)) await die(world)
     } else if (cutAt('pending')) {
       // Dies once the event is acked and its message waits, unclaimed, in the inbox (flushed: durable).
-      const left = () => world.link.acked(event.eventId) && pendingIn(world.agent, event)
+      const left = () => world.link.acked(event.eventId) && pendingIn(world.agent, event) && (second === undefined || world.link.acked(second.eventId))
       await until(left, WAIT.settleMs, WAIT.pollMs)
       if (left()) await die(world)
     } else {
@@ -249,6 +260,13 @@ async function child(sdk, root, name, phase) {
     ledgerStates: ledgerStates(world, event),
     // Every time core's message for the event was queued in this session's inbox (both processes).
     handOvers: log.filter((e) => e.type === DSH.inboxSpliced && (e.data?.inserted ?? []).some((m) => m.id === CORE.messageId(event.eventId))).length,
+    // R-FIX-CORE F11: the second event's wakes, ledger states and ack; and every discard reason logged.
+    ...(second === undefined ? {} : {
+      secondAdmissions: (await world.admissions(second.marker)).length,
+      secondLedgerStates: ledgerStates(world, second),
+      secondAcked: world.link.acked(second.eventId),
+      userStoppedLogs: world.logs.filter((l) => l.text.includes(CORE.userStopped) && (l.text.includes(event.eventId) || l.text.includes(second.eventId))).length,
+    }),
   }
   await world.close()
   process.stdout.write(JSON.stringify(report) + '\n')

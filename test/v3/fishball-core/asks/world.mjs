@@ -130,10 +130,13 @@ export class FakeLink {
     this.#listeners.add(fn)
     return () => { this.#listeners.delete(fn) }
   }
+  /** Delivers one page; returns what each listener resolved with (R-FIX-CORE F12: the failed ids). */
   async poll(...events) {
     const page = { ok: true, events: structuredClone(events), nextCursor: String(events.at(-1)?.sequence ?? 0), hasMore: false }
-    for (const fn of [...this.#listeners]) await fn(page)
+    const results = []
+    for (const fn of [...this.#listeners]) results.push(await fn(page))
     await turns()
+    return results
   }
   async callTool(name, args) {
     this.calls.push({ name, args: structuredClone(args) })
@@ -235,12 +238,30 @@ async function openHost(sdk, root, { agent: withAgent, script }) {
   return { ctx, agent: handle.agent, closers, requests, freezeMessage: p[DSH.llm].freezeMessage }
 }
 
+/** The KvTable's write methods (dsh-storage-domain), the ones `tableFault` may fail (R-FIX-CORE F12). */
+const TABLE_WRITES = Object.freeze(['put', 'update', 'delete'])
+/** `table` with `fault({op, args})` asked before each write: a truthy answer makes that write reject. */
+function faultyTable(table, fault) {
+  return new Proxy(table, {
+    get(target, prop) {
+      const value = Reflect.get(target, prop, target)
+      if (typeof value !== 'function') return value
+      if (!TABLE_WRITES.includes(prop)) return value.bind(target)
+      return async (...args) => {
+        if (fault({ op: prop, args })) throw Object.assign(new Error('fbtest-rfix EIO card table'), { code: 'EIO' })
+        return value.apply(target, args)
+      }
+    },
+  })
+}
+
 /**
  * The world of one case: the module over a real cards table and a fake link. `t.after` closes it
  * and removes its root. `agent: true` also registers `tool` in the DSH tool runtime of a real
  * Fishball agent. `restart()` closes everything and opens a new store over the same table.
+ * `tableFault({op, args})` (R-FIX-CORE F12): a truthy answer makes that card-table write reject.
  */
-export async function worldFor(t, sdk, { agent = false, module } = {}) {
+export async function worldFor(t, sdk, { agent = false, module, tableFault } = {}) {
   const root = await newRoot()
   // `module`: another build of the module to open first (the pre-F-FIX one, subject.mjs); a case
   // sets `world.mod` before `restart()`, which then opens that build over the same table.
@@ -261,7 +282,8 @@ export async function worldFor(t, sdk, { agent = false, module } = {}) {
     const opened = await exported(world.mod, 'open')(host.ctx, await importSdk(sdk, DSH.storageDomain))
     closers.push(() => opened.close())
     const link = new FakeLink()
-    const asksOf = exported(world.mod, 'create')({ link, table: opened.table, logger: host.ctx.logger(FIXTURE.loggerName) })
+    const table = tableFault === undefined ? opened.table : faultyTable(opened.table, tableFault)
+    const asksOf = exported(world.mod, 'create')({ link, table, logger: host.ctx.logger(FIXTURE.loggerName) })
     // A case may close the store itself (ASK-UC-06); cleanup then does not close it a second time.
     let asksClosed = false
     const closeAsks = async () => { if (!asksClosed) { asksClosed = true; await asksOf.close() } }
@@ -287,8 +309,9 @@ export async function worldFor(t, sdk, { agent = false, module } = {}) {
      * a store may write its table (a disk write) after the poll listener returns.
      */
     async poll(...events) {
-      await world.link.poll(...events)
+      const results = await world.link.poll(...events)
       await quiet(() => json(world.service.list()))
+      return results
     },
     /** Polls `events`, then files the first one's offer with the tool. */
     async file(event, ...more) {
