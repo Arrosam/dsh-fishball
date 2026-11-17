@@ -25,9 +25,14 @@ export const name = HOSTED.childRow
 /**
  * The row's settings: the target the instance supplies (written by the launch overlay at every
  * start; blank when there is none). Core reads it by its published name; the owner never edits it.
+ *
+ * `.volatile()` is what makes it readable at all (E-FIX-1, B1): core reads the target from DSH's
+ * `settings.describe()`, which lists only rows with a volatile field (dsh-settings `volatileForm`,
+ * the same in 0.2.1-rc.5 and 0.2.2-rc.1). This row reads no config itself, so a live value changes
+ * nothing here.
  */
 export const Config = Schema.object({
-  [HOSTED.targetField]: Schema.string().default(''),
+  [HOSTED.targetField]: Schema.string().default('').volatile(),
 })
 // The provider-sync target's inject list is the one core's row had (no `sessionController`), so
 // moving it changed nothing it does; the row gates on no session service. `pluginManager` left
@@ -103,11 +108,12 @@ export function admitAndPublish(ctx) {
   return () => { unpublish(); unregister() }
 }
 
-/** The row's three parts. Each is its own effect, and a part that fails is logged with its code only. */
+/** The row's four parts. Each is its own effect, and a part that fails is logged with its code only. */
 const PART = Object.freeze({
   credential: HOSTED.childRow + ': credential receiver',
   admission: ADMIT.label,
   sync: HOSTED.childRow + ': provider sync',
+  target: HOSTED.childRow + ': target announcement',
   failed: '%s failed (%s)',
 })
 
@@ -133,4 +139,13 @@ export function apply(ctx) {
   })
   part(PART.admission, () => admitAndPublish(ctx))
   part(PART.sync, () => mountProviderSyncTarget(ctx))
+  // Core reads the target once at its own start and again on `settings/document-updated`. DSH
+  // emits that event only from inside a `describe()` call, and describe skips a fiber that is still
+  // loading (both SDKs). Core can start before this row is active, because this row waits for
+  // `nativeRuntime`. So once this fiber is active, one call lists the row and emits the update core
+  // follows. Otherwise core sees no target until something else, such as a settings page, calls
+  // describe. It is an ordinary describe: it emits the update for every row whose settings changed
+  // since the last call (for every row, on the first call), and moves no revision otherwise. If the
+  // row stops while it waits, the call may fail; `part` logs that as a failed part.
+  part(PART.target, () => ctx.fiber.await().then(() => { ctx.settings.describe() }))
 }

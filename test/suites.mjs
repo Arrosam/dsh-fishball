@@ -191,6 +191,10 @@ export const V3_SUITES = Object.freeze({
   // route, the Fishball-side manifests for the boundary rows, and dsh-connector-shared's sync host.
   'dsh-instance.ready': suite('generic child readiness, safe origin, lifecycle boundary (I-READY)', v3('dsh-instance/ready'),
     [all(PACKAGE.dshInstance)]),
+  // Drives the runtime's uninstall() with a fake ps over a real tree laid out by its own files.js,
+  // and runs uninstall.js itself; both import only src/native-runtime (E-FIX-1 B8).
+  'dsh-instance.uninstall': suite('uninstall: child running versus state unknown, removal, nothing to remove (E-FIX-1 B8)', v3('dsh-instance/uninstall'),
+    [sub(PACKAGE.dshInstance, 'src', 'native-runtime'), PACKAGE.dshInstance + '/uninstall.js']),
   'dsh-instance.host': suite("the hosted child's token, locator, admission, child-side row, settings page, placement with fishball-ui (I-HOST)", v3('dsh-instance/host'),
     [all(PACKAGE.dshInstance), sub(PACKAGE.dshConnector, 'host-services'), all(PACKAGE.dshConnectorShared), all(PACKAGE.fishballCore), all(PACKAGE.fishballUi),
       all(PACKAGE.fishballShared), all(PACKAGE.fishballBoard), all(PACKAGE.dshConnectorUi), 'test/v3/contract/k3-host-services/**', 'test/v3/contract/package-boundaries/**',
