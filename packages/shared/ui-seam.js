@@ -123,6 +123,9 @@ export const SEAM_STATUS = Object.freeze({
  *   `targetIdField` and the members named; a missing, unknown or removed id answers 404 with
  *   `refusal.unknownTarget`. `connect` answers K3a `ConnectBegin`; the rest `{ok: true}` or
  *   `{ok: false, code}`. The add/remove/url routes serve core's settings page;
+ * - `route.list` (MULTI-0 amendment, MULTI-1's finding, 2026-11-18): `read` (GET), owner-only like
+ *   the others, no body; 200 with the `TargetsSnapshot` JSON, exactly what `ui.targets.list()`
+ *   returns. Core serves it so its own settings page reads the list without fishball-ui (Q-G1);
  * - `ask`: the ask card's answer body now names an opaque target-qualified `handle`
  *   (`AskCard.handle`), never a raw `approvalId`; `voided` is the state of a card whose target was
  *   removed or whose endpoint retired (Q07): read-only, never answered;
@@ -137,6 +140,8 @@ export const SEAM_TARGETS = Object.freeze({
   identity: Object.freeze({ pending: 'pending', live: 'live', unsupported: 'unsupported', stale: 'stale' }),
   placeholder: Object.freeze({ unnamed: 'name-unavailable', unset: 'not-set' }),
   route: Object.freeze({
+    list: '/api/fishball/targets',
+    read: 'GET',
     connect: '/api/fishball/targets/connect',
     cancel: '/api/fishball/targets/cancel',
     retry: '/api/fishball/targets/retry',
