@@ -109,8 +109,14 @@ const STORE = Object.freeze({
   missingFile: 'ENOENT',
 })
 
-/** Node timers clamp above this; a longer wait is re-armed when the timer fires. */
-const TIMER = Object.freeze({ maxDelayMs: 2_147_483_647 })
+/**
+ * Node timers clamp above `maxDelayMs`; a longer wait is re-armed when the timer fires.
+ * `retryMs`: a step of delivery that failed (the manager could not be activated yet, a store write
+ * failed) is tried again this long after, besides the manager's next idle edge, so a transient
+ * failure never leaves a due occurrence waiting for an unrelated event (R-FIX F08; the user,
+ * 2026-11-18: an occurrence is dropped only by a Stop or by deleting its reminder).
+ */
+const TIMER = Object.freeze({ maxDelayMs: 2_147_483_647, retryMs: 5_000 })
 
 /** The model-facing frame the schedule service uses; the chat shows `schedule` as "Reminder". */
 const DELIVERY = Object.freeze({
@@ -629,9 +635,10 @@ export function createReminders(ctx, options = {}) {
 
   /**
    * Every due task becomes a pending occurrence, durably; then, while no occurrence is handed over,
-   * the oldest pending one is handed over. A failed step leaves the task out of this pass and its
-   * timer, so one unreachable target cannot spin the loop; the next change, idle edge or restart
-   * retries it.
+   * the oldest pending one is handed over. A failed step is transient: the occurrence stays as it
+   * is (due, or pending in the store), the task is left out of the rest of this pass only, so one
+   * unreachable target cannot spin the loop, and `scheduleNext` tries again after `TIMER.retryMs`
+   * (or at the manager's next idle edge, whichever comes first).
    */
   async function deliverDue() {
     failed = new Set()
@@ -671,6 +678,8 @@ export function createReminders(ctx, options = {}) {
       const at = Date.parse(task.record.scheduledAt)
       if (next === undefined || at < next) next = at
     }
+    // A failed step of this pass is retried after the backoff (see deliverDue).
+    if (failed.size > 0) next = Math.min(next ?? Infinity, Date.now() + TIMER.retryMs)
     if (next === undefined) return
     timer = setTimeout(() => {
       timer = undefined
