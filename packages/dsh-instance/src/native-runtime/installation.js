@@ -145,7 +145,7 @@ export async function initializeProfile(paths, installation, preflight, mainWork
   if (fresh) await privateTree(paths.profile)
   await nativeProfileBundles(boot, paths.profile)
   // The plugin set, placed before the profile loads (design §8.1).
-  await placeBundles(paths, boot)
+  await placeBundles(paths, boot, installation)
   await validateStartupFiles(paths)
   const profile = boot.loadProfileDirectory('fishball', paths.profile, installation.installAnchor)
   // Every enabled bundle DSH skipped blocks the start, named with DSH's reason (R-BND-03); the

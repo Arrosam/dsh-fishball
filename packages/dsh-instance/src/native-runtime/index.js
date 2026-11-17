@@ -245,7 +245,7 @@ class NativeRuntime {
     }
   }
   async launch(signal) {
-    this.installation = await resolveInstallation(this.options.installAnchor)
+    this.installation = { ...await resolveInstallation(this.options.installAnchor), packageManager: this.options.packageManager }
     let record = await this.active()
     if (record) {
       let status

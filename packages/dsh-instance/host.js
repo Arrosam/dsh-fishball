@@ -223,6 +223,8 @@ export async function apply(ctx, config) {
     })
     owner = createNativeRuntime({
       mainHome: key, installAnchor: ctx.profileContext.installAnchor,
+      // A packaged DSH supplies its own pnpm; the packed set's install runs it (placement.js installPackedSet).
+      packageManager: ctx.profileContext.packageManager,
       get mainWorkspaces() { return ctx.workspaceRegistry.list().map(workspace => workspace.path) },
       limits: LIFECYCLE_LIMITS,
       // The child-side row's target at each start (R-HOST-05): this DSH's connector endpoint, or
