@@ -1,7 +1,8 @@
 /**
- * The V3 connector, mounted in the `dsh-connector` row beside the V2 path (task C-WIRE; design
- * §3, §5, §13; the user's split, 2026-11-16: the V2 approval broker keeps running and is switched
- * to V3 routing in C-WIRE-2, so in this task no permission request becomes a V3 offer).
+ * The connector, mounted in the `dsh-connector` row (tasks C-WIRE, C-WIRE-2; design §3, §5, §13).
+ * Since C-WIRE-2 it is the only path: the V2 broker is gone, and permission requests, questions,
+ * plan reviews, prompts, grants and `message_agent` route session → the agent that manages it →
+ * the user (src/domain/, bound in domain.js).
  *
  * `openV3(ctx, {config, storageDomain, limits, volatileEvent, namespace, logger})` → `{close, …}`
  * opens every V3 module once per row life
@@ -12,9 +13,10 @@
  *    announces is missed (revocation/index.js);
  * 3. the start sync; then `revocation.start()` and `hosted.resume()` (both "after the start
  *    sync"), and the settings follower, so later saves reach the registry;
- * 4. HTTP: the one request gate with DSH's listener facts, the token endpoint with C-OAUTH-WEB's
- *    two grants registered, the MCP endpoint with C-TOOLS' and C-EXT's tools, the approval
- *    listener on DSH's host and the `approval.port` setting;
+ * 4. the domain (its grants table, DSH's approval and question listeners, the managed sessions'
+ *    tool); HTTP: the one request gate with DSH's listener facts, the token endpoint with
+ *    C-OAUTH-WEB's two grants registered, the MCP endpoint with C-TOOLS' and C-EXT's tools, the
+ *    approval listener on DSH's host and the `approval.port` setting;
  * 5. the host services: dshConnectorHandover, dshConnectorTools, dshConnectorTokens, dshConnectorUi,
  *    and the settings page's routes.
  * Every module's close and every provided service's disposer is one entry of `closers`, run last
@@ -23,7 +25,7 @@
  *
  * `inbox_ack` goes through routing's mailbox port (routing/index.js: "C-WIRE and C-TOOLS must route
  * every `inbox_ack` through this port"): the mailbox C-TOOLS and C-HTTP get is the one whose
- * `ack` fires `onAcked`, so an ack frees room for held messages and marks offers acked.
+ * `ack` fires `onAcked`, so an ack marks offers acked.
  */
 import { readFile } from 'node:fs/promises'
 import https from 'node:https'
@@ -51,13 +53,6 @@ import { LABEL, LOG, MISUSE, OPTIONAL_WIRE_SERVICE, ROUTE_KIND, TLS_FILE } from 
 import { createSessionDomain } from './domain.js'
 import { withAckSignal } from './mailbox.js'
 import { createSessionNotes, createSessionSource, sessionExistsIn } from './sessions.js'
-
-/**
- * The cards port of revocation (`toUser`): the split's interim. A V3 offer comes only from the V2
- * broker once C-WIRE-2 switches it, and the broker itself already sends a request to the user when
- * its session leaves management; until then there is no V3 offer to hand over.
- */
-const NO_CARDS = Object.freeze({ toUser: () => {} })
 
 /**
  * DSH's listener facts (K1 GateListenerFacts): its bind host, TLS and `--trusted-host`, read once,
@@ -100,12 +95,15 @@ async function serverFactory(webServer, secure) {
 
 /**
  * The name the approval page shows for this DSH (R-OA-11: "this DSH's name"), read at each page:
- * DSH has no instance name of its own, so it is the listener's origin. Before DSH's listener has
- * bound a port (or for a bind address with a zone id) `getOrigin` throws, and the bind host stands
- * in. The page names the canonical MCP URI beside it. Open question for the user (C-WIRE report):
- * which name the page should show.
+ * the `approval.dshName` setting (the user, 2026-11-17: an optional "DSH name" field; "The approval
+ * page shows it, or the listener origin when it is empty"). DSH has no instance name of its own,
+ * so the fallback is DSH's listener origin. Before DSH's listener has bound a port (or for a bind
+ * address with a zone id) `getOrigin` throws, and the bind host stands in. The page names the
+ * canonical MCP URI beside it.
  */
-const dshNameOf = (webServer) => () => {
+const dshNameOf = (webServer, settings) => () => {
+  const named = settings.read().dshName
+  if (typeof named === 'string' && named.trim().length > 0) return named
   try { return webServer.getOrigin() } catch { return webServer.host }
 }
 
@@ -149,9 +147,9 @@ export async function openV3(ctx, { config, storageDomain, limits, volatileEvent
     const hints = Object.freeze({ resourceUpdated: (principalKey, uri) => endpoint?.hints.resourceUpdated(principalKey, uri) })
     const mailboxTables = await openMailboxTables(ctx, storageDomain)
     closers.push(mailboxTables.close)
-    // C-MAILBOX reads maxQueuedInputs once at creation; routing reads it live (routing/index.js:
-    // "C-WIRE aligns the two when it builds them"): both start from the one setting.
-    const mailbox = withAckSignal(createMailbox({ tables: mailboxTables.tables, hints, maxQueuedInputs: limits().maxQueuedInputs, logger }), logger)
+    // The mailbox reads maxQueuedInputs at each commit, so a change in DSH's form applies live
+    // (C-WIRE-2: the routing queue that used to read it live is gone).
+    const mailbox = withAckSignal(createMailbox({ tables: mailboxTables.tables, hints, maxQueuedInputs: () => limits().maxQueuedInputs, logger }), logger)
 
     const sessions = createSessionSource(ctx, logger)
     const presenceListeners = new Set()
@@ -162,7 +160,7 @@ export async function openV3(ctx, { config, storageDomain, limits, volatileEvent
         return () => { presenceListeners.delete(listener) }
       },
     })
-    const routing = await openRouting(ctx, storageDomain, { mailbox, pairs, tokens, presence, settings: { get: settings.read, onChange: settings.onChange }, sessions, logger })
+    const routing = await openRouting(ctx, storageDomain, { mailbox, pairs, tokens, presence, settings: { onChange: settings.onChange }, sessions, logger })
     closers.push(() => routing.close())
 
     const { store: oauthStore, close: closeOAuth } = await openOAuthTokenStore(ctx, storageDomain)
@@ -183,14 +181,13 @@ export async function openV3(ctx, { config, storageDomain, limits, volatileEvent
     const revocation = createRevocation({
       tokens, routing, mailbox, pairs,
       closeEntry: (entryKey) => endpoint?.closeEntry(entryKey),
-      settings: { get: settings.read, onChange: settings.onChange },
-      writer: settings.writer, notes, cards: NO_CARDS, now: Date.now, logger,
+      settings: { onChange: settings.onChange }, notes, now: Date.now, logger,
     })
     closers.push(() => revocation.close())
 
     const hostedStore = await openHostedStore(ctx, storageDomain)
     closers.push(hostedStore.close)
-    const hosted = createHostedTokens({ table: hostedStore.table, tokens, pairs, routing, writer: settings.writer, notes, settings: { get: settings.read }, logger })
+    const hosted = createHostedTokens({ table: hostedStore.table, tokens, pairs, routing, writer: settings.writer, notes, logger })
     closers.push(() => hosted.close())
 
     // Step 3: the start sync, then what runs after it.
@@ -204,7 +201,8 @@ export async function openV3(ctx, { config, storageDomain, limits, volatileEvent
 
     // Step 4: HTTP.
     const contributions = createContributions({ mailbox, router: routing.router, sessionExists: sessionExistsIn(ctx), onToolsChanged: () => endpoint?.toolsChanged(), logger })
-    const domain = createSessionDomain(ctx, { readLimits: limits, routing })
+    const domain = await createSessionDomain(ctx, { storageDomain, readLimits: limits, routing, logger })
+    closers.push(() => domain.close())
     const populate = createCoreTools({ pairs, mailbox, managed: routing.managed, domain, contributions, now: Date.now, logger })
     endpoint = createMcpEndpoint({
       gate, verifier, failures, pairs, secure: facts.secure,
@@ -227,7 +225,7 @@ export async function openV3(ctx, { config, storageDomain, limits, volatileEvent
     tokenEndpoint.register(createRefreshTokenGrant(grantDeps))
     const handler = createApprovalHandler({
       gate, originOf, secure: facts.secure, cimd: createCimdFetcher(), tokens, pairs, store: oauthStore, limiter: failures,
-      dshName: dshNameOf(webServer), dshPort, approvalPort, now: Date.now, logger,
+      dshName: dshNameOf(webServer, settings), dshPort, approvalPort, now: Date.now, logger,
     })
     approval = createApprovalListener({
       handler, host: facts.host, port: settings.read().approvalPort, createServer: await serverFactory(webServer, facts.secure), logger,
@@ -262,6 +260,7 @@ export async function openV3(ctx, { config, storageDomain, limits, volatileEvent
  * The settings page's read-only state (R-ID-12, AUTH-UC-09; R-OA-20's status): per token entry,
  * in settings order, its pair state, bound id, name, `lastSeenAt` and whether it is connected
  * now; and the approval listener's status and port. No value or digest: neither reaches here.
+ * C-WIRE-2 dropped `designated` with the designated agent (the user's answer q5, 2026-11-17).
  */
 function settingsState({ tokens, pairs, presence, settings, approval }) {
   return Object.freeze({
@@ -274,6 +273,5 @@ function settingsState({ tokens, pairs, presence, settings, approval }) {
       })
     }),
     approval: Object.freeze({ status: approval.status(), port: approval.port(), defaultPort: APPROVAL_LISTENER.defaultPort }),
-    designated: settings.read().agentToken ?? null,
   })
 }

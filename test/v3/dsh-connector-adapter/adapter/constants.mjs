@@ -1,13 +1,13 @@
 /**
  * Vocabulary for the dsh-connector-adapter cases (USE-CASES.md beside this file). The shared values
  * (K values, OAuth / MCP / HTTP words, fixtures, the K1 connector values) are declared once in
- * ../../dsh-connector-shared/oauth-client/constants.mjs and re-exported here; this file adds only
+ * ../../dsh-connector-adapter/oauth-client/constants.mjs and re-exported here; this file adds only
  * the adapter's relayed contract (test brief "Relayed interface"). Nothing comes from the code.
  */
 import path from 'node:path'
 import { REPO } from '../../../support/constants.mjs'
 
-export { DSH, FIXTURE, K, K1, MARK, OAUTH, RPC, SDK, WAIT, WEB } from '../../dsh-connector-shared/oauth-client/constants.mjs'
+export { DSH, FIXTURE, K, K1, MARK, OAUTH, RPC, SDK, WAIT, WEB } from '../../dsh-connector-adapter/oauth-client/constants.mjs'
 
 /** The plugin under test and its relayed named exports. */
 export const ADAPTER = Object.freeze({
@@ -134,4 +134,15 @@ export const ROWS = Object.freeze({
 export const LSOF = Object.freeze({
   bin: '/usr/sbin/lsof',
   args: (pid) => ['-nP', '-a', '-p', String(pid), '-iTCP', '-sTCP:LISTEN', '-Fn'],
+})
+
+/** X-SEC rows (xsec-cases.mjs; x-sec-audit.md X-05/06/07/13, relayed 2026-11-17). Fixture data and wire words. */
+export const XSEC = Object.freeze({
+  id: Object.freeze({ x05: 'X-SEC X-05', x06: 'X-SEC X-06', x07: 'X-SEC X-07', x13: 'X-SEC X-13' }),
+  httpRemote: 'http://agent.example',
+  localhostName: 'https://fbtest.localhost',
+  /** RFC 8414 `code_challenge_methods_supported`, and a method that is not S256. */
+  pkceField: 'code_challenge_methods_supported',
+  plainMethod: 'plain',
+  whoami: 'whoami',
 })

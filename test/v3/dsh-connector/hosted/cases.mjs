@@ -17,6 +17,9 @@
  * (fakes.mjs). The agent-answer rows add C-TOOLS on C-HTTP's endpoint (world.mjs).
  *
  * ── Use Cases ────────────────────────────────────────────────────────────────────────────────
+ * C-WIRE-2 re-baseline (the user's q5, "Remove agentToken entirely"; "不给ask_agent工具"): Eo holds no
+ * designated role and no ask; the succession moves sessions, events, offers and the name only. The
+ * rows about the role and the ask are listed as skipped with the decision (constants.mjs WITHDRAWN).
  * HOST-UC-03 Reinstall succession (connector part).
  *   Pre: Eo = createHosted(I), paired as fb-old named "Navigator", designated, manages S1 and S2,
  *   holds live permission O1 (S1) and live question O2 (S2), pending events e1 (turn-finished S1) and
@@ -88,7 +91,7 @@ import path from 'node:path'
 import { descriptor, pendingOf, quiet, settlementOf, settlesWithin, until } from '../routing/cases.mjs'
 import {
   CALL, CASE, DECISION, DECISION_KIND_OF, DOMAIN, EVENT_TYPE, FIXTURE, HOSTED_LABEL, K3, LATER, LOGGED_LEVELS, MAILBOX, OFFER_ID, OFFER_TYPES,
-  PORT, QUEUE, REFUSAL, RETIREMENT_REASON, REVOCATION_KIND, RISK, SUBJECT, SUCCEED_TIMING, TIME_UNIT, TOOL, VALUE_ANYWHERE, VALUE_PATTERN, WAIT,
+  PORT, QUEUE, REFUSAL, RETIREMENT_REASON, REVOCATION_KIND, RISK, SUBJECT, SUCCEED_TIMING, TIME_UNIT, TOOL, VALUE_ANYWHERE, VALUE_PATTERN, WAIT, WITHDRAWN,
   formatOfferId, k3Literals, nameKey, principalLabel,
 } from './constants.mjs'
 import { afterCommit, callStep, sameStep, writeStep } from './fakes.mjs'
@@ -114,15 +117,16 @@ function row(sdk, id, part, title, fn, todo, timeout = T) {
 }
 const worldRow = (sdk, id, part, title, fn) => row(sdk, id, part, title, async (t) => fn(await succeedWorld(t, sdk), t))
 const todoRow = (sdk, id, part, title, owner) => row(sdk, id, part, title, null, owner)
+/** A row a later decision withdrew: still listed, skipped with the decision (C-WIRE-2). */
+const withdrawnRow = (sdk, id, part, title, reason) => test(caseName(sdk, id, part, title), { skip: reason }, () => {})
 
 // ------------------------------------------------------------------------------------------------
 // Preconditions (HOST-UC-03 Pre)
 
-/** Eo (hosted, fb-old, `name`; `null` = nameless), connected; `designated` makes it routing.agentToken. Returns {eo, old}. */
-async function oldEntry(w, { name = NAME.navigator, designated = true, instance = FIXTURE.instance } = {}) {
+/** Eo (hosted, fb-old, `name`; `null` = nameless), connected. Returns {eo, old}. (C-WIRE-2: no designated role, q5.) */
+async function oldEntry(w, { name = NAME.navigator, instance = FIXTURE.instance } = {}) {
   const eo = await w.hostedEntry(instance)
   const { key } = await w.pair(eo, ID.old, name)
-  if (designated) w.designate(eo)
   return { eo, old: key }
 }
 /** En (hosted for `instance`), paired as fb-new asking for `name` (`null` = none) unless `paired` is false. Returns {en, succ, paired}. */
@@ -141,14 +145,6 @@ async function offerOf(w, sessionId, type, key) {
   assert.ok(event, 'harness: the offer is not pending')
   return { descriptor: d, event }
 }
-/** A live ask from `sessionId` (routing.askAgent with a K1 ask descriptor) that lands in `key`'s mailbox. Returns {descriptor, event, promise}. */
-async function liveAskOf(w, sessionId, key) {
-  const d = descriptor(ET.ask)
-  const promise = w.routing.askAgent(sessionId, d)
-  let event
-  await until(async () => { event = (await pendingOf(w, key)).find((e) => e.offer?.offerId === d.offerId); return event }, 'the ask in the manager\'s mailbox')
-  return { descriptor: d, event, promise }
-}
 /** A plain event committed straight to `key`'s mailbox (e1 / e2 of the case: not offers). Returns its eventId. */
 async function plainEvent(w, key, draft) {
   const r = await w.realMailbox.commit(key, draft)
@@ -161,11 +157,11 @@ const messageDraft = (sessionId, n) => ({ type: ET.message, sourceSessionId: ses
 /**
  * HOST-UC-03's whole precondition (see the header). `sessions`: how many of S1, S2 Eo manages (BVA);
  * `offers`: the offer types Eo holds, one each, from the moved sessions in turn (so at least one
- * session when any); `ask`: a live ask from S2 (Eo manages S2 or is designated); `events`: how many
+ * session when any); `events`: how many
  * plain pending events (e1 turn-finished of S1, e2 a message of S2) Eo has; `oldName` /
  * `successorName`: `null` = nameless.
  */
-async function navigatorWorld(w, { sessions = 2, offers = [ET.permission, ET.question], ask = false, events = 2, oldName = NAME.navigator, successorName = NAME.navigator } = {}) {
+async function navigatorWorld(w, { sessions = 2, offers = [ET.permission, ET.question], events = 2, oldName = NAME.navigator, successorName = NAME.navigator } = {}) {
   const { eo, old } = await oldEntry(w, { name: oldName })
   const q = await w.userEntry()
   const { key: qKey } = await w.pair(q, ID.q, NAME.q)
@@ -177,13 +173,12 @@ async function navigatorWorld(w, { sessions = 2, offers = [ET.permission, ET.que
   assert.ok(offers.length === 0 || moved.length > 0, 'harness: an offer needs a managed session')
   const held = []
   for (const [i, type] of offers.entries()) held.push(await offerOf(w, moved[i % moved.length], type, old))
-  const liveAsk = ask ? await liveAskOf(w, S.s2, old) : undefined
   const drafts = [turnDraft(S.s1), messageDraft(S.s2, 0)]
   const pending = []
   for (const d of drafts.slice(0, events)) pending.push(await plainEvent(w, old, d))
   const n = await successor(w, { name: successorName })
   await w.manage(S.s4, n.succ)
-  return { eo, old, q, qKey, qOffer, moved, held, liveAsk, pending, ...n }
+  return { eo, old, q, qKey, qOffer, moved, held, pending, ...n }
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -204,7 +199,6 @@ async function stateOf(w) {
   return {
     managed: managedSet(w),
     pairs: pairsOf(w),
-    designated: w.settings.get().agentToken ?? null,
     tokens: w.doc.tokens.map((i) => ({ ...i })),
     entries: w.registry.list().map((e) => ({ entryKey: e.entryKey, enabled: e.enabled, hosted: e.hosted })),
     // Whole records (phase 3): a rolled-back step must also undo the `succeededBy` mark.
@@ -305,11 +299,10 @@ const watchCommitTo = (key) => (s) => callStep(PORT.mailbox, CALL.commit)(s) && 
 // Oracles of a succeeded step (each stated once)
 
 /** HOST-UC-03 main step 3: sessions, role, name, events and deletion of Eo, after {ok: true}. */
-async function assertSucceeded(w, u, { designated = true } = {}) {
+async function assertSucceeded(w, u) {
   for (const s of u.moved) assert.equal(w.managed.managerOf(s), u.succ, `${s} is not managed by the successor`)
   assert.equal(w.managed.managerOf(S.s3), u.qKey, 'S3 changed manager')
   assert.equal(w.managed.managerOf(S.s4), u.succ, 'S4 (the successor\'s own) changed manager')
-  if (designated) assert.equal(w.settings.get().agentToken, u.en, 'the designated role did not move to the successor')
   const succ = w.pairs.pairOf(u.en)
   assert.equal(succ.id, ID.new)
   assert.equal(succ.principalKey, u.succ, 'the successor\'s principal key changed')
@@ -458,25 +451,22 @@ function useCases(sdk) {
     assert.deepEqual(w.routing.liveOffers(S.s3).map((o) => [o.principalKey, o.descriptor.offerId]), [[u.qKey, u.qOffer.descriptor.offerId]])
     assert.ok((await pendingOf(w, u.qKey)).some((e) => e.eventId === u.qOffer.event.eventId), 'Q\'s offer left its mailbox')
   })
-  uc('A1', 'Eo managed no sessions, held no role, no offer, no event → only the name moves and Eo is deleted; no note', async (w) => {
-    const { eo } = await oldEntry(w, { designated: false })
+  uc('A1', 'Eo managed no sessions, no offer, no event → only the name moves and Eo is deleted; no note', async (w) => {
+    const { eo } = await oldEntry(w)
     const { en } = await successor(w)
     for (const s of [S.s1, S.s2]) w.session(s)
     assert.deepEqual(await w.service.retire(eo, en), OK)
     assert.equal(w.pairs.pairOf(en).name, NAME.navigator)
     assert.equal(w.pairs.pairOf(eo), undefined)
     assert.equal(w.registry.get(eo), undefined)
-    assert.equal(w.settings.get().agentToken, undefined, 'a designated role appeared')
-    assert.deepEqual(w.writer.of(CALL.setDesignated), [], 'setDesignated was called though Eo held no role')
     assert.deepEqual(w.notes.calls, [])
   })
-  uc('A1 (unpaired old)', 'Eo never paired: nothing to move; Eo is deleted; the successor keeps its own name; the designated role moves', async (w) => {
+  // Re-baselined by C-WIRE-2 (q5): no designated role moves.
+  uc('A1 (unpaired old)', 'Eo never paired: nothing to move; Eo is deleted; the successor keeps its own name', async (w) => {
     const eo = await w.hostedEntry()
-    await w.designate(eo)
     const { en } = await successor(w, { name: NAME.successorOwn })
     assert.deepEqual(await w.service.retire(eo, en), OK)
     assert.equal(w.pairs.pairOf(en).name, NAME.successorOwn)
-    assert.equal(w.settings.get().agentToken, en)
     assert.equal(w.registry.get(eo), undefined)
     assert.equal(w.service.entryState(eo), K3.states.deleted)
     assert.deepEqual(w.notes.calls, [])
@@ -588,30 +578,8 @@ function useCases(sdk) {
       assert.ok(hintsTo(w, u.succ) > hints, 'En was not hinted after the commit')
     } finally { gate.open() }
   })
-  uc('E5 (acked ask)', 'Eo had already acked a live ask → after retire En polls it once (same offer id, session and payload, a new eventId) and En\'s answer settles the waiting asker', async (w) => {
-    const u = await navigatorWorld(w, { offers: [], ask: true })
-    const ask = u.liveAsk.event
-    assert.deepEqual(await w.mailbox.ack(u.old, [receipt(ask)]), { ok: true, acked: 1 })
-    assert.deepEqual(await w.service.retire(u.eo, u.en), OK)
-    const asks = (await pendingOf(w, u.succ)).filter((e) => e.type === ET.ask)
-    assert.equal(asks.length, 1, 'the acked ask is not pending once in En\'s box')
-    const [again] = asks
-    assert.deepEqual([again.offer?.offerId, again.sourceSessionId, again.payload], [ask.offer.offerId, ask.sourceSessionId, ask.payload])
-    assert.notEqual(again.eventId, ask.eventId, 'the acked event itself was moved (it is not pending)')
-    assert.equal(await settlesWithin(u.liveAsk.promise, WAIT.quietMs), false, 'the asker stopped waiting')
-    const s = settlementOf(ask.payload.approvalId)
-    assert.equal(await w.routing.settle(again.offer.offerId, s), true)
-    assert.deepEqual(await u.liveAsk.promise, { ok: true, settlement: s })
-  })
-  uc('E5 (acked ask, rollback)', 'Eo had acked a live ask; PairStore.succeed fails → operation-failed, the world as before: En never sees the ask, the asker keeps waiting', async (w) => {
-    const u = await navigatorWorld(w, { offers: [], ask: true })
-    assert.deepEqual(await w.mailbox.ack(u.old, [receipt(u.liveAsk.event)]), { ok: true, acked: 1 })
-    const before = await stateOf(w)
-    assert.deepEqual(await retireFailing(w, u, writeStep(DOMAIN.pairs)), refused(CODE.operationFailed))
-    assert.deepEqual(await stateOf(w), before)
-    assert.ok(!(await pendingOf(w, u.succ)).some((e) => e.type === ET.ask), 'En sees the ask after the rollback')
-    assert.equal(await settlesWithin(u.liveAsk.promise, WAIT.quietMs), false, 'the asker stopped waiting')
-  })
+  withdrawnRow(sdk, CASE.uc03, 'E5 (acked ask)', 'Eo had already acked a live ask → after retire En polls it once and En\'s answer settles the waiting asker', WITHDRAWN.ask)
+  withdrawnRow(sdk, CASE.uc03, 'E5 (acked ask, rollback)', 'Eo had acked a live ask; PairStore.succeed fails → En never sees the ask', WITHDRAWN.ask)
   uc('E6 (durable cleanup)', 'removeToken(Eo) fails at every try until close → {ok: true}; at once Eo is deleted for entryState and not-hosted for retire though still listed; after a restart resume() removes Eo\'s item and hosted record, and nothing else', async (w) => {
     const u = await navigatorWorld(w)
     const failing = w.seam.failEvery(afterCommit(DOMAIN.pairs, callStep(PORT.writer, CALL.removeToken)))
@@ -642,7 +610,6 @@ function useCases(sdk) {
   uc('E3', 'the old entry was made by the user (New token), not by createHosted → not-hosted; nothing moves', async (w) => {
     const eo = await w.userEntry()
     const { key: old } = await w.pair(eo, ID.old, NAME.navigator)
-    await w.designate(eo)
     w.session(S.s1)
     await w.manage(S.s1, old)
     const { en } = await successor(w)
@@ -785,10 +752,7 @@ function partitions(sdk) {
     assert.notEqual(a.value, b.value)
     assert.deepEqual(w.doc.tokens.filter((i) => i.label === HOSTED_LABEL).length, 2)
   })
-  worldRow(sdk, CASE.create, '5', 'createHosted does not designate the new entry (the designated default is routing\'s rule, R-ROUTE-04)', async (w) => {
-    await w.service.createHosted(FIXTURE.instance)
-    assert.deepEqual(w.writer.of(CALL.setDesignated), [])
-  })
+  withdrawnRow(sdk, CASE.create, '5', 'createHosted does not designate the new entry', WITHDRAWN.designated)
 
   // SUCC-EP-03 — entryState's key (read only).
   const stateRow = (part, title, make, want) => worldRow(sdk, CASE.state, part, `${title} → ${want}; nothing changes`, async (w) => {
@@ -838,19 +802,7 @@ function partitions(sdk) {
       await assertReissued(w, u)
     })
   }
-  worldRow(sdk, CASE.offers, ET.ask, 'a live ask Eo holds → moves to En with its event (same eventId and offer id), not re-issued; the asker keeps waiting and En\'s answer answers it', async (w) => {
-    const u = await navigatorWorld(w, { offers: [], ask: true })
-    assert.deepEqual(await w.service.retire(u.eo, u.en), OK)
-    const mine = await pendingOf(w, u.succ)
-    const ask = u.liveAsk.event
-    assert.deepEqual(mine.filter((e) => e.eventId === ask.eventId).map((e) => e.offer?.offerId), [ask.offer.offerId], 'the ask did not move with its event id and offer id')
-    assert.ok(!mine.some((e) => e.type === ET.ask && e.eventId !== ask.eventId), 'the ask was re-issued')
-    assert.ok(!mine.some((e) => e.type === ET.retirement && e.payload.retiredEventId === ask.eventId), 'the ask was retired')
-    assert.equal(await settlesWithin(u.liveAsk.promise, WAIT.quietMs), false, 'the asker stopped waiting')
-    const s = settlementOf(ask.payload.approvalId)
-    assert.equal(await w.routing.settle(ask.offer.offerId, s), true)
-    assert.deepEqual(await u.liveAsk.promise, { ok: true, settlement: s })
-  })
+  withdrawnRow(sdk, CASE.offers, ET.ask, 'a live ask Eo holds → moves to En with its event, not re-issued; the asker keeps waiting', WITHDRAWN.ask)
   worldRow(sdk, CASE.offers, 'none', 'Eo holds no live offer → nothing is re-issued and nothing retired', async (w) => {
     const u = await navigatorWorld(w, { offers: [] })
     assert.deepEqual(await w.service.retire(u.eo, u.en), OK)
@@ -1045,18 +997,7 @@ function decisionTables(sdk) {
     assert.equal(w.pairs.pairOf(u.en).name, null)
     assertNotes(w, u, labelOf(null, ID.new))
   })
-  worldRow(sdk, CASE.stepDt, '4', 'old not designated (another entry is) → the designated role is not touched', async (w) => {
-    const { eo, old } = await oldEntry(w, { designated: false })
-    const q = await w.userEntry()
-    await w.pair(q, ID.q, NAME.q)
-    await w.designate(q)
-    w.session(S.s1)
-    await w.manage(S.s1, old)
-    const { en } = await successor(w)
-    assert.deepEqual(await w.service.retire(eo, en), OK)
-    assert.equal(w.settings.get().agentToken, q)
-    assert.deepEqual(w.writer.of(CALL.setDesignated), [])
-  })
+  withdrawnRow(sdk, CASE.stepDt, '4', 'old not designated (another entry is) → the designated role is not touched', WITHDRAWN.designated)
 
   // The failure sweep: every pre-commit step fails in its own world (HOST-UC-03 E2 at EVERY step).
   const build = (w) => navigatorWorld(w)
@@ -1206,9 +1147,10 @@ function transitions(sdk) {
     assert.deepEqual(await retireFailing(w, u, callStep(PORT.mailbox, CALL.stage)), refused(CODE.operationFailed))
     assert.deepEqual(await stateOf(w), before)
   })
-  worldRow(sdk, CASE.st02, '4', 'Old + New provisional (the role move failed) → the instance\'s next start retries, succession ok → New(En) only', async (w) => {
+  // Re-baselined by C-WIRE-2 (q5): no role move exists, so the failing pre-commit step is the staged transfer.
+  worldRow(sdk, CASE.st02, '4', 'Old + New provisional (a pre-commit step failed) → the instance\'s next start retries, succession ok → New(En) only', async (w) => {
     const u = await navigatorWorld(w)
-    assert.deepEqual(await retireFailing(w, u, callStep(PORT.writer, CALL.setDesignated)), refused(CODE.operationFailed))
+    assert.deepEqual(await retireFailing(w, u, callStep(PORT.mailbox, CALL.stage)), refused(CODE.operationFailed))
     assert.deepEqual(await w.service.retire(u.eo, u.en), OK)
     await assertSucceeded(w, u)
   })

@@ -7,7 +7,7 @@
  * refresh once and retry once. The access token never reaches the child row or its configuration.
  */
 import { createHash, timingSafeEqual } from 'node:crypto'
-import { listenLoopback, opaqueValue } from 'dsh-connector-shared/oauth-client'
+import { listenLoopback, opaqueValue } from './oauth-client.js'
 import { LIMIT, PROXY } from './constants.js'
 
 const digest = (value) => createHash('sha256').update(String(value ?? '')).digest()
@@ -95,7 +95,13 @@ export async function startProxy({ servers, fetchFn }) {
       // one that just failed would fail again, so there is no retry then.
       await upstream.body?.cancel()
       const next = await server.recover(first)
-      if (next === undefined || next === first) return refuse(res, PROXY.status.unauthorized)
+      // No new token (no refresh token, or a refresh that declined): the grant is spent, so the
+      // server needs authorization again (R-OA-21 rule 5; X-SEC X-07), not a live state for ever.
+      if (next === undefined || next === first) {
+        refuse(res, PROXY.status.unauthorized)
+        await server.lose(first)
+        return
+      }
       upstream = await send(next)
       if (upstream.status === PROXY.status.unauthorized) {
         await upstream.body?.cancel()

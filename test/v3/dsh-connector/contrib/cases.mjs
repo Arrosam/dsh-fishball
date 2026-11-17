@@ -57,6 +57,9 @@ export function row(sdk, id, part, title, fn, todo, options = T) {
   if (todo !== undefined) test.todo(`${name} — TODO ${todo}`)
   else test(name, options, fn)
 }
+/** A row C-WIRE-2 withdrew (the user's q5, "Remove agentToken entirely"): listed, skipped with the decision. */
+const NO_DESIGNATED = 'withdrawn by C-WIRE-2: the user (q5) "Remove agentToken entirely" — no designated agent; an emit with no session or an unmanaged one is no-agent'
+const withdrawnRow = (sdk, id, part, title) => test(caseName(sdk, id, part, title), { skip: NO_DESIGNATED }, () => {})
 
 // ------------------------------------------------------------------------------------------------
 // Shared steps and oracles (each states one requirement oracle once).
@@ -410,18 +413,17 @@ function registerUseCases(sdk) {
     assert.ok(K1.isEventType(event.type))
     assert.deepEqual(world.mailbox.pending(D.principalKey), [], 'D got the event too')
   })
-  row(sdk, ID.uc02, 'A1', 'no sessionId → the event goes to D', async (t) => {
-    const world = await worldFor(t, sdk)
+  // A1 / A2 re-baselined by C-WIRE-2 (the user's q5, "Remove agentToken entirely"): no designated D, so
+  // an emit with no session or an unmanaged session has no recipient → no-agent, nothing queued.
+  row(sdk, ID.uc02, 'A1', 'no sessionId → no-agent (no designated agent since C-WIRE-2, q5); nothing queued', async (t) => {
+    const world = await worldFor(t, sdk, { designated: null })
     const c = await world.add(FIXTURE.pkg.ci, { tools: [] })
-    await assertEmitOk(world, c, note())
-    assert.equal(lastCommit(world).recipient, D.principalKey)
-    assert.equal(lastCommit(world).event.sourceSessionId, null)
+    await assertEmitRefused(world, c, note(), EMIT_REFUSAL.noAgent)
   })
-  row(sdk, ID.uc02, 'A2', 'sessionId of an unmanaged session → to D', async (t) => {
-    const world = await worldFor(t, sdk)
+  row(sdk, ID.uc02, 'A2', 'sessionId of an unmanaged session → no-agent (C-WIRE-2, q5); nothing queued', async (t) => {
+    const world = await worldFor(t, sdk, { designated: null })
     const c = await world.add(FIXTURE.pkg.ci, { tools: [] })
-    await assertEmitOk(world, c, note({ sessionId: FIXTURE.session.unmanaged }))
-    assert.equal(lastCommit(world).recipient, D.principalKey)
+    await assertEmitRefused(world, c, note({ sessionId: FIXTURE.session.unmanaged }), EMIT_REFUSAL.noAgent)
   })
   row(sdk, ID.uc02, 'A3', 'in HF\'s Fishball DSH the event reaches the Fishball agent through X9', null, LATER.facade)
   row(sdk, ID.uc02, 'E1', 'no recipient (no D, no manager) → no-agent, nothing queued', async (t) => {
@@ -1042,9 +1044,10 @@ function registerDecisionTables(sdk) {
   })
   const none = { designated: null }
   recipient(1, 'sessionId given, managed by M → M', { sessionId: FIXTURE.session.managed }, { to: E2.principalKey })
-  recipient(2, 'sessionId given, unmanaged, D designated → D', { sessionId: FIXTURE.session.unmanaged }, { to: D.principalKey })
+  // Rules 2 and 4 (a designated D) are withdrawn by C-WIRE-2 (the user's q5); rules 3 and 5 are the V3 rule.
+  withdrawnRow(sdk, ID.dt02, 2, 'sessionId given, unmanaged, D designated → D')
   recipient(3, 'sessionId given, unmanaged, none designated → no-agent', { sessionId: FIXTURE.session.unmanaged }, { code: EMIT_REFUSAL.noAgent }, none)
-  recipient(4, 'no sessionId, D designated → D', {}, { to: D.principalKey })
+  withdrawnRow(sdk, ID.dt02, 4, 'no sessionId, D designated → D')
   recipient(5, 'no sessionId, none designated → no-agent', {}, { code: EMIT_REFUSAL.noAgent }, none)
   recipient(6, 'sessionId of no session of this DSH → event-invalid, nothing queued (TQ-14)', { sessionId: FIXTURE.session.unknown }, { code: EMIT_REFUSAL.eventInvalid })
 

@@ -6,8 +6,8 @@
  * proxy can read the access token per request without touching the store.
  */
 import { MAX_TIMER_DELAY_MS } from '@deepseek-ai/dsh-timeout'
-import { OAUTH_CLIENT, OAuthAttemptError, accessTokenOf, createTokenManager, discoverServer, isGrantFor } from 'dsh-connector-shared/oauth-client'
-import { isConnectorResource, isConnectorUrl } from './connector-check.js'
+import { OAUTH_CLIENT, OAuthAttemptError, accessTokenOf, createTokenManager, discoverServer, isGrantFor } from './oauth-client.js'
+import { isConnectorAuthorizationServer, isConnectorResource, isConnectorUrl } from './connector-check.js'
 import { ADAPTER, CHILD_ROW, LIMIT, REASON, SIGN_IN_TOOL, STATE, TEXT } from './constants.js'
 
 /** An attempt that ends with one of these leaves `needs-authorization` (END); any other end is `failed`. */
@@ -130,7 +130,8 @@ export function createServer({ spec, key, routeId, configProblem, host }) {
     if (!isConnectorUrl(spec.url)) return refusalOf(STATE.needsConfiguration, REASON.notADshConnector)
     try {
       const discovery = await discoverServer({ sdk, serverUrl: spec.url, fetchFn, acceptResource: (prm) => isConnectorResource(spec.url, prm) })
-      return discovery ?? refusalOf(STATE.needsConfiguration, REASON.notADshConnector)
+      if (discovery === undefined || !isConnectorAuthorizationServer(spec.url, discovery.authorizationServerMetadata)) return refusalOf(STATE.needsConfiguration, REASON.notADshConnector)
+      return discovery
     } catch (error) {
       if (!(error instanceof OAuthAttemptError)) throw error
       return refusalOf(STATE.failed, REASON.discoveryFailed)

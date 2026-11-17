@@ -143,7 +143,9 @@ export const HANDOVER = Object.freeze({
   /** HAND-DT-02 rule 4. */
   takeBackCodes: Object.freeze(['unknown-session']),
   /** Design §3.6 `principals()` fields (R-UI-10: enabled + paired are listed; online = listen stream). */
-  principalFields: Object.freeze(['key', 'name', 'id', 'online', 'enabled', 'paired', 'designated']),
+  /** C-WIRE-2 (the user's q5, "Remove agentToken entirely"): no `designated` field. */
+  principalFields: Object.freeze(['key', 'name', 'id', 'online', 'enabled', 'paired']),
+  withdrawnField: 'designated',
   /** Design §3.6 `managed()` entries. */
   managedFields: Object.freeze(['sessionId', 'principal']),
   /** HAND-EP-01 row 5: no session read, approval, question, prompt or answer power on the service. */

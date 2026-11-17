@@ -20,7 +20,7 @@ import { NODE } from '../../../../support/constants.mjs'
 import { scenario } from '../world.mjs'
 import { ENV, PACKAGES } from '../constants.mjs'
 import { BUDGET, HTTP, K1, OP, SURFACE, V3_SERVICES } from './constants.mjs'
-import { ADDED, CREATE_FIELDS, EXIT, LATER_ROWS, REMOUNT_ERRORS, UI_AVAILABILITY } from './added-constants.mjs'
+import { ADDED, CREATE_FIELDS, EXIT, LATER_ROWS, MOVED, REMOUNT_ERRORS, UI_AVAILABILITY } from './added-constants.mjs'
 import { assertMetadata, remount } from './steps.mjs'
 
 const T = Object.freeze({ timeout: BUDGET.testMs })
@@ -86,5 +86,5 @@ export function registerAddedReviewCases(sdk) {
     }
   })
 
-  for (const name of LATER_ROWS) test.todo(`${name} [SDK ${sdk}]`)
+  for (const name of LATER_ROWS) test(`${name} [SDK ${sdk}]`, { skip: MOVED }, () => {})
 }

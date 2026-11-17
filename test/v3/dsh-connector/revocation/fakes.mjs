@@ -112,7 +112,12 @@ export class PortCalls {
       }
     }
   }
-  /** `fn` as the synchronous port method `label` (closeEntry, liveAsksOf): journaled only. */
+  /** An event the module caused but did not call as a port (routing.onLeft since C-WIRE-2): journaled as a call that is done. */
+  record(label, ...args) {
+    this.#log(label, PHASE.call, args)
+    this.#log(label, PHASE.done, args, { result: undefined })
+  }
+  /** `fn` as the synchronous port method `label` (closeEntry): journaled only. */
   wrapSync(label, fn) {
     return (...args) => {
       this.#log(label, PHASE.call, args)

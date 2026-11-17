@@ -2,7 +2,9 @@
 import { registerCOAuthWebAmendCases } from './amend-cases.mjs'
 import { registerCOAuthWebCases } from './cases.mjs'
 import { registerPageIdCases } from './page-id-cases.mjs'
+import { registerXsecWebCases } from './xsec-cases.mjs'
 
 registerCOAuthWebCases('0.2.1-rc.5')
 registerCOAuthWebAmendCases('0.2.1-rc.5')
 registerPageIdCases('0.2.1-rc.5')
+registerXsecWebCases('0.2.1-rc.5')

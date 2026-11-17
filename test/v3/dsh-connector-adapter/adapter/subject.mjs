@@ -17,7 +17,7 @@ import { execFileSync } from 'node:child_process'
 import fs from 'node:fs'
 import { ADAPTER, DSH, FIXTURE, LSOF, RPC, STATE, WAIT, WEB, K1 } from './constants.mjs'
 import { eventually, fakeClock, otherServer, recordingFetch, startFakeConnector } from './fakes.mjs'
-import { cleanups, openHost, requireModule, tempRoot } from '../../dsh-connector-shared/oauth-client/subject.mjs'
+import { cleanups, openHost, requireModule, tempRoot } from '../../dsh-connector-adapter/oauth-client/subject.mjs'
 
 export const adapterModule = (sdk) => requireModule(sdk, ADAPTER)
 

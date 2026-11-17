@@ -222,7 +222,6 @@ export async function succeedWorld(t, sdk) {
       return { result, key }
     },
     principalOf: (entryKey) => open.pairs.store.pairOf(entryKey)?.principalKey,
-    designate: (entryKey) => ports.settings.set({ agentToken: entryKey }),
     session(id) { sessionIds.add(id); return ports.sessions.add(id) },
     async manage(sessionId, key) {
       assert.deepEqual(await open.routing.managed.manage(sessionId, key), { ok: true }, 'harness: manage refused')

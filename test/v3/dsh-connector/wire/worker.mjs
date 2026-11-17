@@ -83,6 +83,17 @@ function contributorBundle(name) {
   return dir
 }
 
+/**
+ * An opt-in extension (ENV.extension: a module path) for suites that reuse this worker:
+ * - `bundles()` → [{name, dir}]: fixture bundles installed BEFORE the connector, so their rows mount
+ *   first. A listener such a row prepends to a waterfall then runs after the connector's own
+ *   (prepended later, at its apply) and before DSH's own answerers (V2's fbtest-tools order);
+ * - `overlayRows()`: rows inserted into the boot overlay (extra presets);
+ * - `ops(deps)`: operations that join the worker's ops once DSH runs.
+ * Without it the C-WIRE boot is unchanged.
+ */
+const extension = process.env[ENV.extension] ? await import(pathToFileURL(process.env[ENV.extension]).href) : null
+
 if (!fs.existsSync(profileDir)) {
   initializeProfileFromDefault(DSH.profile, 'web', home)
   if (process.env[ENV.noWebApp] === ENV.on) {
@@ -91,6 +102,7 @@ if (!fs.existsSync(profileDir)) {
     writeManifest(pkg)
   }
   for (const library of PACKAGES.libraries) if (fs.existsSync(library.dir)) install(library.name, library.dir, false)
+  for (const bundle of extension?.bundles?.() ?? []) install(bundle.name, bundle.dir, true)
   if (process.env[ENV.noConnector] !== ENV.on) install(PACKAGES.connector.name, PACKAGES.connector.dir, true)
   for (const extra of json(ENV.link, [])) install(extra.name, extra.dir, true)
   for (const name of json(ENV.contributors, [])) install(name, contributorBundle(name), true)
@@ -107,6 +119,7 @@ fs.writeFileSync(overlay, JSON.stringify([
   { id: DSH.defaultModelRow, config: { provider: FAKE.provider, model: FAKE.model } },
   { insert: [{ id: DSH.fakeLlmRow, name: FAKE_LLM_MODULE }] },
   { insert: [{ id: DSH.readyProbeRow, name: path.join(import.meta.dirname, 'ready-probe.mjs') }] },
+  ...(extension?.overlayRows ? [{ insert: extension.overlayRows() }] : []),
 ], null, 2))
 
 const trusted = [FIXTURE.tunnelHost, `${FIXTURE.tunnelHost}:${FIXTURE.tunnelPort}`].flatMap((h) => ['--trusted-host', h])
@@ -302,6 +315,8 @@ const ops = {
     return true
   },
 }
+
+if (extension?.ops) Object.assign(ops, await extension.ops({ ctx, model, agentOf, eventSummary, errorInfo, plain, createUserMessage, until, budget: BUDGET }))
 
 process.on('message', async (msg) => {
   if (!msg || msg.type !== 'call') return

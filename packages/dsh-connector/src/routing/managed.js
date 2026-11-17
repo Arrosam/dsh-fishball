@@ -6,7 +6,7 @@
  *   table is read back at open, so a connector restart keeps it (K1c-1).
  * - Serial: every change runs on one chain, so of two overlapping calls the first wins and the
  *   second sees its result (the rule of V2's ManagedRegistry, review M1). Offer commits run on the
- *   same chain (`withState`), and so do settle, withdraw and askDropped, so a release can never
+ *   same chain (`withState`), and so do settle, escalate and withdraw, so a release can never
  *   miss an offer committed while it runs.
  * - Visible on resolve: the in-memory map changes right after the write, inside the same step.
  * - One way in (`assign`: `session_start`, Hand over) and one way out (`end`: `session_release`,
@@ -195,7 +195,7 @@ export function createManagedState({ table, logger, leave }) {
     /**
      * Runs `step` on the managed chain: no change can land between its read of the manager and its end.
      * A step must never await another managed-chain call (`assign`, `end`, `endAllOf`, or routing's
-     * `settle`, `withdraw`, `askDropped`, `endPrincipal`): it would wait on itself.
+     * `settle`, `escalate`, `withdraw`, `endPrincipal`): it would wait on itself.
      */
     withState: (step) => serial(step),
     /** Resolves once every change queued so far has settled (`close`). */

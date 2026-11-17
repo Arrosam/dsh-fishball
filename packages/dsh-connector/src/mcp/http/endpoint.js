@@ -219,11 +219,15 @@ export function createMcpEndpoint({ gate, verifier, failures, pairs, secure, rea
     if (url.searchParams.has(BEARER_CHALLENGE.queryParameter)) return void writeRefusal(res, QUERY_TOKEN)
     const failureKey = { remoteAddress: req.socket?.remoteAddress ?? UNKNOWN_ADDRESS }
     const at = now()
-    const limited = failures.check(failureKey, at)
-    if (limited.limited) return void writeRefusal(res, rateLimited(limited.retryAfterMs))
+    // Verified first (X-SEC X-03): a valid bearer always passes, so one client's refused bearers on
+    // a shared address (loopback, the user's tunnel) never lock out another, the hosted agent
+    // included. A 256-bit bearer cannot be guessed, so the limit only slows a failing caller: only
+    // a refused bearer is answered 429 while its address is limited (FAILURE_LIMIT, values kept).
     const caller = verifier.verify(req.headers[HTTP_HEADER.authorization], oauthUrls(origin).resource, at)
     if (caller.error === BEARER_MISSING) return void writeChallenge(res, HTTP_STATUS.unauthorized, bearerChallenge(origin))
     if (caller.error !== undefined) {
+      const limited = failures.check(failureKey, at)
+      if (limited.limited) return void writeRefusal(res, rateLimited(limited.retryAfterMs))
       // A refused credential counts toward the shared failure limit (FAILURE_LIMIT, AUTH-UC-07); no token is not one.
       failures.recordFailure(failureKey, at)
       return void writeChallenge(res, HTTP_STATUS.unauthorized, invalidTokenChallenge(origin))

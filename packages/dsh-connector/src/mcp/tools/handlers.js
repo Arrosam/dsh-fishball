@@ -1,23 +1,21 @@
 /**
  * The 22 core tools' bodies (task C-TOOLS; design §3.2; K1 TOOLS). Each body gets arguments that
- * already passed K1's input schema and the V2 payload rules (dispatch.js), and returns
+ * already passed K1's input schema and the payload rules (dispatch.js), and returns
  * `{ok: true, …fields}` or `{ok: false, code}`; dispatch.js builds the K1 envelope. A body never
  * builds prose: a refusal is a code. A domain port signals a refusal by returning `{ok: false,
- * code}` or throwing the V2 contract's `ContractError`; anything else it throws is
- * `operation-failed` (dispatch.js).
+ * code}` or throwing a `RefusalError`; anything else it throws is `operation-failed` (dispatch.js).
  *
- * The V2 domain is reached only through the `domain` port (index.js documents its shape), so the
- * V2 top-level modules stay untouched (W3 O2) and C-WIRE adapts them. Who manages a session is
- * K1c's `ManagedState` only; the V2 managed registry is never read here.
+ * The domain is reached only through the `domain` port (index.js documents its shape), which
+ * C-WIRE binds. Who manages a session is K1c's `ManagedState` only.
  */
-import { REFUSAL, TOOL } from '../../../mcp-schema/index.js'
+import { APPROVAL_DECISION, REFUSAL, TOOL } from '../../../mcp-schema/index.js'
 import { hasVisibleCharacter } from '../../text.js'
 import { inboxAckTool, inboxPollTool } from '../../mailbox/index.js'
 import { AUTHORITY, LOG, SESSION_ACCESS } from './constants.js'
 import { diagnosticOf } from '../../errors.js'
 
 const refused = (code) => ({ ok: false, code })
-/** `grant_revoke` of a listed grant whose session is not the caller's (sessions.js table, rows 1 and 3). */
+/** `grant_revoke` of a held grant whose session is not the caller's (sessions.js table, rows 1 and 3). */
 const GRANT_REFUSAL = Object.freeze({ [AUTHORITY.other]: REFUSAL.forbidden, [AUTHORITY.none]: REFUSAL.notManaged })
 const ok = (fields) => ({ ok: true, ...fields })
 /** `fields` with the optional keys whose value is undefined left out. */
@@ -112,10 +110,12 @@ export function createHandlers({ pairs, mailbox, managed, domain, now, logger },
       return passed(await managed.release(root, caller.principalKey), () => ({ sessionId: args.sessionId, managed: false }))
     }),
     [TOOL.approvalsList]: managing(async (args, caller, root) => ok({ approvals: await offers.heldBy(root, caller.principalKey) })),
-    [TOOL.approvalAnswer]: (args, { caller }) => answered(args, caller, args.approvalId, async (sessionId) => passed(
-      await interactions.answerApproval({ sessionId, approvalId: args.approvalId, answer: args.answer }),
+    // `ask` never reaches the domain (X-SEC X-02; the user, 2026-11-17: refused). K1's schema already
+    // refuses it; this guard keeps the rule should the schema ever widen.
+    [TOOL.approvalAnswer]: (args, { caller }) => (args.answer.decision === APPROVAL_DECISION.ask ? refused(REFUSAL.invalidDecision) : answered(args, caller, args.approvalId, async (sessionId) => passed(
+      await interactions.answerApproval({ sessionId, approvalId: args.approvalId, answer: args.answer, principalKey: caller.principalKey }),
       (result) => defined({ accepted: true, grantId: result.grantId, expiresAt: result.grantId === undefined ? undefined : result.expiresAt }),
-    )),
+    ))),
     [TOOL.questionAnswer]: (args, { caller }) => {
       const { offerId, ...answer } = args
       return answered(args, caller, args.questionId, async (sessionId) => passed(
@@ -124,16 +124,18 @@ export function createHandlers({ pairs, mailbox, managed, domain, now, logger },
     },
     [TOOL.questionAsk]: notYet,
     [TOOL.questionAnswerOwn]: notYet,
+    // Only sessions the caller manages (the user, 2026-11-17: "Prompts can be listed and answered
+    // only on sessions the agent manages").
     async [TOOL.promptsList](args, { caller }) {
       const prompts = await interactions.listPrompts()
       return ok({ prompts: prompts.filter((prompt) => access.isMine(prompt.sessionId, caller.principalKey)) })
     },
-    [TOOL.promptAnswer]: managing(async (args) => {
-      // V2's prompt rules (slim/host/approvals.js answerPrompt), raw ids as there: a closed prompt is
-      // expired, another session's forbidden. A prompt is answered with the sessionId prompts_list showed.
+    [TOOL.promptAnswer]: managing(async (args, caller, root) => {
+      // A closed prompt is expired; a prompt of another session than the one named is forbidden,
+      // so a caller can never answer a session it does not manage through a session it does.
       const prompt = (await interactions.listPrompts()).find((entry) => entry.promptId === args.promptId)
       if (prompt === undefined) return refused(REFUSAL.expired)
-      if (prompt.sessionId !== args.sessionId) return refused(REFUSAL.forbidden)
+      if (prompt.sessionId !== root) return refused(REFUSAL.forbidden)
       const result = await interactions.answerPrompt(defined({ promptId: args.promptId, decision: args.decision, risk: args.risk, reason: args.reason }))
       return passed(result, (answer) => ({ promptId: answer.promptId, decision: answer.decision, managed: answer.managed === true }))
     }),
@@ -142,8 +144,8 @@ export function createHandlers({ pairs, mailbox, managed, domain, now, logger },
       return ok({ grants: grants.filter((grant) => access.isMine(grant.sessionId, caller.principalKey)) })
     },
     async [TOOL.grantRevoke](args, { caller }) {
-      // A listed grant is its session's manager's (R-ROUTE-02); V2 refused a grant whose session
-      // is no longer managed `not-managed`. An unlisted id is the domain's own answer (`unknown`, `ended`).
+      // A grant is its session's manager's (R-ROUTE-02); V2 refused a grant whose session is no
+      // longer managed `not-managed`. An unlisted id is the domain's own answer (`unknown`, `ended`).
       const grant = (await interactions.listGrants()).find((entry) => entry.grantId === args.grantId)
       if (grant !== undefined) {
         const { relation } = access.relationOf(grant.sessionId, caller.principalKey)

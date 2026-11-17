@@ -44,7 +44,7 @@ export const DSH_SIDE = Object.freeze({
     ['dsh-connector-ui', true],
     ['dsh-instance/child', true],
     ['dsh-connector-adapter', true],
-    ['dsh-connector-shared/oauth-client', true],
+    ['dsh-connector-shared/redact', true],
     ['dsh-connectors', false],
     ['dsh-instance-child', false],
     ['fishball-shared', false],

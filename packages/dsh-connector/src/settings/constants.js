@@ -1,6 +1,6 @@
 /**
  * The connector row's V3 settings: their paths in the row's config, the approval port's range, and
- * the log lines (task C-WIRE; design §5.1, §5.9, R-TOK-08, R-ROUTE-04, R-OA-20 Q-OA-7, R-CON-10).
+ * the log lines (task C-WIRE; design §5.1, §5.9, R-TOK-08, R-OA-20 Q-OA-7, R-CON-10; C-WIRE-2).
  * The default port is K1's (APPROVAL_LISTENER.defaultPort) and the item shape K1d's
  * (TokenSettingsItem); both are imported where used, never restated.
  */
@@ -8,13 +8,16 @@
 /**
  * Where each V3 setting sits in the row's config (DSH's settings service addresses it by path).
  * - `tokens`: the token list, `{label, enabled, key}` items (K1d TokenSettingsItem);
- * - `routing.agentToken`: the designated agent's entry key (design §1.0c), unset by default;
- * - `approval.port`: the approval listener's port (R-OA-20, Q-OA-7 A).
+ * - `approval.port`: the approval listener's port (R-OA-20, Q-OA-7 A);
+ * - `approval.dshName`: the name the approval page shows for this DSH (R-OA-11 "this DSH's name";
+ *   the user, 2026-11-17: an optional "DSH name" field; unset or empty shows the listener origin).
+ * C-WIRE-2 withdrew `routing.agentToken`, the designated agent (the user's answer q5, 2026-11-17:
+ * "Remove agentToken entirely").
  */
 export const SETTING = Object.freeze({
   tokens: Object.freeze(['tokens']),
-  agentToken: Object.freeze(['routing', 'agentToken']),
   approvalPort: Object.freeze(['approval', 'port']),
+  dshName: Object.freeze(['approval', 'dshName']),
 })
 
 /** DSH's settings-service path edits (dsh-settings SettingsPathOp). */
@@ -36,8 +39,8 @@ export const SETTING_TEXT = Object.freeze({
   tokenLabel: 'A name for the entry; it is shown, not secret.',
   tokenEnabled: 'Off: the agent using this token is refused until it is switched on again.',
   tokenKey: 'The entry\'s key, written when it was created. Do not edit it.',
-  agentToken: 'The designated agent: messages and questions from sessions nobody manages go to this entry\'s agent. Unset: none, so they wait (messages) or are answered unavailable (questions).',
   approvalPort: 'The port of the approval page that browser agents sign in on. It binds the same host as DSH.',
+  dshName: 'The name the approval page shows for this DSH. Empty: the page shows this DSH\'s address.',
 })
 
 /** Programming errors (thrown, never shown to a user). */

@@ -16,10 +16,23 @@ import { SDK, V3 } from '../package-boundaries/constants.mjs'
 export const BASE = Object.freeze({ ref: '131ad65f', folder: 'packages/shared' })
 
 /**
- * Requirement 3: the moved modules dsh-connector-shared still holds, by module file and export subpath.
- * remove-v2-followups D14 deleted `admin-protocol` from it (ADMIN_PROTOCOL below).
+ * Requirement 3: the modules SPLIT-SHARED moved out of the old library (at BASE), by module file.
+ * remove-v2-followups D14 deleted `admin-protocol` (ADMIN_PROTOCOL below). R-ARCH-08 strict (Fishball's
+ * decision at C-WIRE-2, 2026-11-17: every library module needs two importers on its side) then moved
+ * the ones with one DSH-side user out of dsh-connector-shared into that user (DSH_MOVED_TO).
  */
 export const DSH_MODULES = Object.freeze(['provider-sync', 'provider-sync-codec', 'provider-sync-host', 'redact', 'files'])
+/**
+ * C-WIRE-2 (R-ARCH-08 strict): where each DSH-side module lives now when dsh-connector-shared no longer
+ * holds it: `files` and `provider-sync*` in the instance (its only user), `oauth-client` in the adapter.
+ */
+export const DSH_MOVED_TO = Object.freeze({
+  'provider-sync': Object.freeze([V3.instance, 'src', 'lib']),
+  'provider-sync-codec': Object.freeze([V3.instance, 'src', 'lib']),
+  'provider-sync-host': Object.freeze([V3.instance, 'src', 'lib']),
+  files: Object.freeze([V3.instance, 'src', 'lib']),
+  'oauth-client': Object.freeze([V3.adapter, 'src']),
+})
 /**
  * Moved into dsh-connector-shared by SPLIT-SHARED, then deleted from it by remove-v2-followups D14
  * (R-ARCH-08 strict: a library module needs a user on its side) once I-READY deleted dsh-instance's
@@ -35,8 +48,11 @@ export const ADMIN_PROTOCOL = 'admin-protocol'
 // I-HOST added `request-host` (requestHostname(request)): the instance's settings routes and
 // dsh-connector-ui's admit route both read the request's own Host (more than one DSH-side user, R-ARCH-08).
 export const ADDED_MODULES = Object.freeze(['oauth-client', 'request-host'])
-/** Every export subpath module of dsh-connector-shared: the moved ones and the added ones. */
-export const DSH_EXPORTS = Object.freeze([...DSH_MODULES, ...ADDED_MODULES])
+/**
+ * Every export subpath module dsh-connector-shared holds since C-WIRE-2 (R-ARCH-08 strict): `redact`
+ * (the connector and the instance) and `request-host` (dsh-connector-ui and the instance).
+ */
+export const DSH_EXPORTS = Object.freeze([...DSH_MODULES, ...ADDED_MODULES].filter((m) => DSH_MOVED_TO[m] === undefined))
 /**
  * Requirement 5 (interim, until I-HOST): fishball-shared keeps its own copies of these for core's
  * child halves; `redact` stays only as provider-sync-host's internal helper (no export needed).
@@ -64,8 +80,12 @@ export const moduleFile = (module) => module + '.js'
 /** A library's export map entry for its own manifest (every package exposes it). */
 export const MANIFEST_EXPORT = './package.json'
 
-/** Requirement 6: dsh-connector-shared's peers, the same host packages as today's library. */
-export const HOST_PEERS = Object.freeze(['@deepseek-ai/cosmokit', '@deepseek-ai/dsh-app-boot', '@deepseek-ai/dsh-llm-pi-ai'])
+/**
+ * Requirement 6: dsh-connector-shared's peers. The host packages the old library peered on
+ * (@deepseek-ai/cosmokit, dsh-app-boot, dsh-llm-pi-ai) served the provider-sync modules, which left
+ * with C-WIRE-2 (R-ARCH-08 strict), so the library peers on nothing now (relayed 2026-11-17).
+ */
+export const HOST_PEERS = Object.freeze([])
 /** DSH's own packages, resolved from the SDK under test when a library module is loaded. */
 export const SDK_SCOPE = '@deepseek-ai/'
 export const sdkModules = (sdk) => path.join(SDK.versionsDir, sdk, 'node_modules')
@@ -77,13 +97,16 @@ export const sdkModules = (sdk) => path.join(SDK.versionsDir, sdk, 'node_modules
  * its own side's), and core and fishball-ui (a Fishball-side package since F-UI) the ui-seam (since
  * REMOVE-V2b fishball-shared's only module).
  */
+// C-WIRE-2 (R-ARCH-08 strict): the adapter owns its oauth-client and takes no library (NO_LIBRARY).
 export const EXPECTED_LIBRARY = Object.freeze({
   [V3.instance.name]: V3.dshShared.name,
   [V3.connector.name]: V3.dshShared.name,
-  [V3.adapter.name]: V3.dshShared.name,
   [V3.core.name]: V3.shared.name,
   [V3.ui.name]: V3.shared.name,
 })
+
+/** Packages of a side that import no library since C-WIRE-2 (R-ARCH-08 strict). */
+export const NO_LIBRARY = Object.freeze([V3.adapter.name])
 
 /** Requirement 7: the placed copies in the child profile and the contract-only connector. */
 export const PLACED = Object.freeze({

@@ -37,10 +37,18 @@ export const EMBED = Object.freeze({
   }),
 })
 
-/** R-EMBED (3): the client entries the connector and the instance lose in the same change. */
-export const OLD_CLIENT = Object.freeze({
-  connector: Object.freeze({ exports: Object.freeze(['./client', './records']), files: Object.freeze(['client.js', 'client.records.js']) }),
-  instance: Object.freeze({ exports: Object.freeze(['./client']), files: Object.freeze(['client.js']) }),
+/**
+ * The connector's own settings page (design §5.9; requirements 1.28 R2, R-ARCH-03 amended): its only
+ * browser code is `client.js`, which registers only the Plugins page's `plugins.row.config` slot.
+ * PLAT-EP-03 rows 1 and 3 were repointed to it at C-WIRE-2; the V2 records part stays gone.
+ */
+export const CONNECTOR_CLIENT = Object.freeze({
+  platform: 'web',
+  exportKey: './client',
+  entry: 'client.js',
+  slot: 'plugins.row.config',
+  goneExports: Object.freeze(['./records']),
+  goneFiles: Object.freeze(['client.records.js']),
 })
 
 /** The V2 main-DSH client manifests R-EMBED moves (their combined inject list, design §9.1). */
@@ -84,9 +92,6 @@ export const GIT = Object.freeze({ symlinkMode: /^120000 / })
 export const FIELD = Object.freeze({ peers: 'peerDependencies', peersMeta: 'peerDependenciesMeta', engines: 'engines', dsh: 'dsh' })
 /** Fishball packages start with this prefix (every peer of this family must be optional for embed-UI). */
 export const FISHBALL_PREFIX = 'fishball-'
-
-/** The browser module loader every DSH client bundle registers with (dsh-client-modules, both SDKs). */
-export const MODULE_LOADER = '__ModuleLoader__'
 
 /**
  * Host-DSH slots the V2 main clients fill (S4 §2.2 and the V2 Plugins cards). Only distinctive

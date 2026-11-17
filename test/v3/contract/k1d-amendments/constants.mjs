@@ -216,11 +216,12 @@ export const RETIRE_MISUSE = Object.freeze({
 /** G3 item 4, design §5.1, §5.2 step 3, W4 Q2 = A: the two connector-internal ports. */
 export const PORTS = Object.freeze({
   writer: 'SettingsWriter',
-  writerMembers: Object.freeze([['addToken', 1], ['removeToken', 1], ['setDesignated', 1]]),
+  /** C-WIRE-2 (the user's q5, "Remove agentToken entirely"): setDesignated is withdrawn. */
+  writerMembers: Object.freeze([['addToken', 1], ['removeToken', 1]]),
+  withdrawnMember: 'setDesignated',
   item: Object.freeze(['label', 'enabled', 'key']),
   /** §5.1: "never the value, a digest or a reference". */
   itemForbidden: /value|digest|ref|secret|token/i,
-  designatedUnset: /\bundefined\b/,
   writerDoc: Object.freeze([['resolves once the document is saved', /saved/i], ['and the registry has applied it', /registry/i]]),
   notes: 'SessionNotes',
   notesMember: 'system',
@@ -256,7 +257,6 @@ export const NEW_NAMES = Object.freeze({
   resource: Object.freeze(['agent-events', 'dsh-agent://events']),
   pathPrefix: '/api/agent/',
   noAgent: 'no-agent',
-  designated: 'routing.agentToken',
   services: Object.freeze(['dshConnectorHandover', 'dshConnectorTokens', 'dshInstanceChild']),
   oldServicePrefix: /^fishball/i,
   contextType: 'Context',

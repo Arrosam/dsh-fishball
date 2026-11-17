@@ -6,7 +6,7 @@ import { RUNTIME, HOSTED, NativeRuntimeError, fail } from './constants.js'
 /**
  * Payload channels that ride the authenticated lifecycle wire beside its own operations. Each
  * carries one JSON string per frame: T16's provider-sync target owns `provider-sync`
- * (`PROVIDER_SYNC_TARGET.channel` in dsh-connector-shared/provider-sync-codec), and the hosted
+ * (`PROVIDER_SYNC_TARGET.channel` in src/lib/provider-sync-codec.js), and the hosted
  * token's probe and one import own `mcp-credential` (`HOSTED.channel`, credential.js; design §5.4).
  * Any other channel closes the connection, so this list is the wire's protocol, not an open
  * tunnel. I-READY removed V2's `control` (the session bridge), `admin` (the admin relay, the

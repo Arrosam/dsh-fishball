@@ -12,16 +12,18 @@
  * 4. The body: the form media type, at most TOKEN_ENDPOINT_LIMITS.formBodyBytes, no repeated
  *    parameter (RFC 6749 §3.2), else 400 `invalid_request`. An empty value counts as omitted (§3.1).
  * 5. Client authentication: two methods at once is 400 `invalid_request` (§2.3).
- * 6. The limits per (address, client id): FAILURE_LIMIT through the shared `FailureLimiter`, then
- *    RATE_LIMITS. The client id is the one the request names, before it is verified (K1
- *    FAILURE_LIMIT). Every request reaching this step counts toward RATE_LIMITS, whatever its
- *    grant (R-OA-17).
+ * 6. RATE_LIMITS per (address, client id): every request reaching this step counts, whatever its
+ *    grant (R-OA-17). The client id is the one the request names, before it is verified.
  * 7. `grant_type`: missing is 400 `invalid_request`; with no handler 400 `unsupported_grant_type`.
- * 8. The grant's handler; its result is written unchanged (Fishball 2026-11-14), with
- *    `WWW-Authenticate: Basic` on `invalid_client` after Basic, and its counted failure recorded.
- *    A throw is 500 `server_error`.
- * Over a limit (2 or 6): 429, `Retry-After` in whole seconds (the longest wait when several
- * apply), `temporarily_unavailable`; a refused request counts toward no limit.
+ * 8. The grant's handler. A success is written at once: a valid credential is never refused by
+ *    FAILURE_LIMIT (X-SEC X-03, C-WIRE-2), so one client's wrong secrets on a shared address
+ *    (loopback, the user's tunnel) never lock out another, the hosted agent included. A counted
+ *    failure is answered with FAILURE_LIMIT's 429 while its key or address is already limited
+ *    (uncounted), else recorded and written unchanged (Fishball 2026-11-14), with
+ *    `WWW-Authenticate: Basic` on `invalid_client` after Basic. A throw is 500 `server_error`.
+ *    FAILURE_LIMIT's values are kept (#19, #21); only the order moved (verify, then limit).
+ * Over a limit (2, 6 or 8): 429, `Retry-After` in whole seconds, `temporarily_unavailable`; a
+ * refused request counts toward no limit.
  *
  * Steps 6–8 run one request at a time per (address, client id): a handler that awaits (the
  * durable `putRefresh` of C-OAUTH-WEB's grants) would otherwise let parallel requests of one key
@@ -186,17 +188,10 @@ export function createTokenEndpoint({ gate, failureLimiter, tokenStore, tokenReg
 
   const rateLimitedHeaders = (retryAfterMs) => ({ [RATE_LIMITS.retryAfterHeader]: retryAfterSeconds(retryAfterMs) })
 
-  /** The wait of the per-key limits (FAILURE_LIMIT, RATE_LIMITS) at `at`: 0 when the key may proceed. */
-  function keyWaitMs(failureKey, at) {
-    const failure = failureLimiter.check(failureKey, at)
-    const rateMs = requests.retryAfterMs(limitKeyOf(failureKey), at, RATE_LIMITS.tokenRequestsPerWindow)
-    return Math.max(failure.limited ? failure.retryAfterMs : 0, rateMs)
-  }
-
   /** Steps 6–8, one at a time per key (see the header). */
   async function grant(res, form, auth, failureKey, origin) {
     const at = now()
-    const waitMs = keyWaitMs(failureKey, at)
+    const waitMs = requests.retryAfterMs(limitKeyOf(failureKey), at, RATE_LIMITS.tokenRequestsPerWindow)
     if (waitMs > 0) return writeOAuthError(res, OAUTH_ERROR.temporarilyUnavailable, rateLimitedHeaders(waitMs))
     requests.add(limitKeyOf(failureKey), at)
 
@@ -217,7 +212,11 @@ export function createTokenEndpoint({ gate, failureLimiter, tokenStore, tokenReg
       return writeServerError(res)
     }
     if (result.ok) return writeToken(res, HTTP_STATUS.ok, result.body)
-    if (result.countedFailure) failureLimiter.recordFailure(failureKey, at)
+    if (result.countedFailure) {
+      const limited = failureLimiter.check(failureKey, at)
+      if (limited.limited) return writeOAuthError(res, OAUTH_ERROR.temporarilyUnavailable, rateLimitedHeaders(limited.retryAfterMs))
+      failureLimiter.recordFailure(failureKey, at)
+    }
     // RFC 6749 §5.2: a 401 `invalid_client` after Basic names the scheme the client used (K1 basicScheme).
     const basic = result.error === OAUTH_ERROR.invalidClient && auth.client.method === CLIENT_AUTH.basic
     return writeOAuthError(res, result.error, basic ? { [HEADER.wwwAuthenticate]: BEARER_CHALLENGE.basicScheme } : {}, result.description)

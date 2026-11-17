@@ -103,8 +103,8 @@ export const FIXTURE = Object.freeze({
   multiByte: '€',
   pad: 'x',
   settleRounds: 40,
-  /** A stand-in for the wired row's `state()` (relayed shape), echoed by GET state. */
-  stateAnswer: Object.freeze({ entries: Object.freeze([]), approval: Object.freeze({ status: 'ok', port: 1, defaultPort: 47615 }), designated: null }),
+  /** A stand-in for the wired row's `state()` (relayed shape; C-WIRE-2: no `designated`, the user's q5), echoed by GET state. */
+  stateAnswer: Object.freeze({ entries: Object.freeze([]), approval: Object.freeze({ status: 'ok', port: 1, defaultPort: 47615 }) }),
   revision: 1,
 })
 

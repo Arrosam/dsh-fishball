@@ -1,5 +1,6 @@
 /** Requirement/contract vocabulary only. No connector implementation is imported by these cases. */
-import { DECISION, DELIVERY, LIMITS, RISK } from '../../../../../packages/dsh-connector/contract/contract.js'
+// K1 owns these vocabularies since C-WIRE-2 (the V2 ./contract export is gone; LIMITS is K1 PAYLOAD_LIMITS).
+import { APPROVAL_DECISION as DECISION, DELIVERY, PAYLOAD_LIMITS as LIMITS, RISK } from '../../../../../packages/dsh-connector/mcp-schema/index.js'
 import { BUDGET, FIXTURE, HTTP, K1, SURFACE } from '../constants.mjs'
 import { LIST_ACTIVITY } from '../../../../support/session-list-activity-data.mjs'
 
@@ -10,6 +11,7 @@ export const OP = Object.freeze({
   row: 'row', services: 'services', logs: 'logs', bundleEnabled: 'bundleEnabled',
   settingsMutate: 'settingsMutate', settingsUpdate: 'settingsUpdate', raceHostedUserSave: 'raceHostedUserSave',
   createSession: 'createSession', userDrive: 'userDrive', session: 'session', waitIdle: 'waitIdle', activity: 'activity',
+  requestTools: 'requestTools',
 })
 
 /** The two exact K1 sentences are independent public-contract oracles, not implementation text. */
@@ -30,7 +32,7 @@ export const EXPECT = Object.freeze({
 
 /** Values only identify disposable fixtures and scenarios, never product behavior. */
 export const DATA = Object.freeze({
-  scenario: Object.freeze({ b1: 'review-b1', b2: 'review-b2', access: 'review-access', noWeb: 'review-no-web', port: 'review-port-zero', race: 'review-own-write-race' }),
+  scenario: Object.freeze({ noCap: 'review-c-wire-2', b1: 'review-b1', b2: 'review-b2', access: 'review-access', noWeb: 'review-no-web', port: 'review-port-zero', race: 'review-own-write-race' }),
   id: 'wire-review-agent', folder: 'wire-review-session', promptId: 'wire-review-unmanaged-prompt',
   label: 'Review principal', copyLabel: 'Review duplicate copy', hostedInstance: 'wire-review-hosted-instance',
   message: 'Review principal delivery remains visible', userText: 'Review user message establishes recent activity',
@@ -45,4 +47,16 @@ export const SCHEMA_TEXT = Object.freeze({
   // K1's MCP endpoint is POST-only. The resource's GET metadata route is a different route.
   protectedResource: K1.PATHS.protectedResourcePrefix + K1.PATHS.mcp,
   authorizationServer: K1.PATHS.authorizationServerPrefix + K1.PATHS.issuer,
+})
+
+/**
+ * The two C-WIRE-2 rows (the user's decisions, 2026-11-16/17): no cap on pending approvals, and the
+ * deleted main-session tools. V2's maxPendingApprovals default was 8 (test/support LIMITS).
+ */
+export const FUTURE = Object.freeze({
+  v2Cap: 8,
+  noCapCount: 10,
+  capField: 'maxPendingApprovals',
+  messageTool: 'message_agent',
+  deletedTools: Object.freeze(['list_user_messages', 'ask_agent']),
 })

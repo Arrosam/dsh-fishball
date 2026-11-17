@@ -5,7 +5,9 @@
  *
  * - **Latch** (design §13.6, D3 behaviour, owner moved to the connector by R-EXT-13 amended 1.34):
  *   0/1 with importance; a signal sets it, the window's opening clears it once, and it resets when
- *   embed-UI's contribution ends or the designated agent's connection is lost. No timer.
+ *   embed-UI's contribution ends. No timer. C-WIRE-2 withdrew design §13.6's reset "on loss of the
+ *   designated Fishball principal's connection" with the designated agent (the user's answer q5,
+ *   2026-11-17: "Remove agentToken entirely").
  * - **Notice** (R-FN-01): the newest notify message, its importance and how many arrived since the
  *   user last clicked the prompt or opened the window. A newer notice replaces the text.
  * - **Snapshot**: `marks` is `managed()` as it is, so names always match it; `targets` is what the
@@ -27,29 +29,12 @@ const CLEARED = Object.freeze({ count: LATCH.clear, important: false })
 export function createUiState({ handover, changed }) {
   let latch = CLEARED
   let notice = null
-  /**
-   * The key of the designated agent that was connected at the last hand-over change, or undefined
-   * (the reset rule's edge). It is followed by key, not as a yes/no: a designation that moves from
-   * one connected agent to another is the first one's loss too.
-   */
-  let connectedDesignated
-
-  /**
-   * The designated agent's key while it is enabled and connected now, else undefined. Enabled, as
-   * routing's designated agent (`routing/index.js` `designated`): a disabled designated entry
-   * counts as no designated agent, so its disable is a loss even before its streams close.
-   */
-  const connectedDesignatedKey = () => handover.principals().find((row) => row.designated && row.enabled && row.online)?.key
-
-  /**
-   * Applies a change. It publishes only if something changed, so a no-op sends no frame, and only
-   * when `publish` is true: the hand-over listener publishes once itself (one frame per change).
-   */
-  function update(nextLatch, nextNotice, publish = true) {
+  /** Applies a change. It publishes only if something changed, so a no-op sends no frame. */
+  function update(nextLatch, nextNotice) {
     const same = nextLatch.count === latch.count && nextLatch.important === latch.important && nextNotice === notice
     latch = nextLatch
     notice = nextNotice
-    if (!same && publish) changed()
+    if (!same) changed()
   }
   /** Clears the latch and the prompt. */
   const clearAll = () => update(CLEARED, null)
@@ -72,20 +57,6 @@ export function createUiState({ handover, changed }) {
     opened: clearAll,
     /** Embed-UI's contribution ended (its unload): nothing it showed survives it (§13.6). */
     reset: clearAll,
-    /**
-     * Called on each hand-over change, before the caller publishes it: the latch resets on the loss
-     * of the designated agent's connection (§13.6), read from the hand-over service. The connected
-     * designated agent is lost when it disconnects, is disabled or deleted, or stops being the
-     * designated one (the designation moves or is unset); the notice is not the latch and stays.
-     * It does not publish: the caller sends the one frame for this change.
-     */
-    followDesignated() {
-      const now = connectedDesignatedKey()
-      if (connectedDesignated !== undefined && now !== connectedDesignated) update(CLEARED, notice, false)
-      connectedDesignated = now
-    },
-    /** Starts the reset rule's edge from the hand-over service's state now. */
-    startFollowing() { connectedDesignated = connectedDesignatedKey() },
     snapshot() {
       const marks = freezeAll(handover.managed().map(({ sessionId, principal }) => ({ sessionId, principal: Object.freeze({ key: principal.key, name: principal.name, id: principal.id }) })))
       const targets = freezeAll(handover.principals().filter((row) => row.enabled && row.paired).map(({ key, name, id, online }) => ({ key, name, id, online })))

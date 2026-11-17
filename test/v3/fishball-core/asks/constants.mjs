@@ -6,7 +6,8 @@
  * Every product value comes from a frozen contract or from the requirements the test author was
  * given, never from the implementation:
  * - K1 `dsh-connector/mcp-schema`: event types, tool names, offer ids, refusal codes;
- * - the V2 contract K1 re-uses (`dsh-connector/contract`): the answer's `decision` and `risk` words;
+ * - K1's answer vocabulary (`APPROVAL_DECISION`, `RISK`, `APPROVAL_KIND`, moved there from the V2
+ *   contract by C-WIRE-2): the answer's `decision` and `risk` words;
  * - K3 `ask-card.d.ts`: the card's fields and its three states (types only, so they are written
  *   here as the declaration spells them);
  * - the F-ASKCARD requirements: the tool name `ask_user`, the default reason line, the two routes,
@@ -14,7 +15,7 @@
  * DSH's own vocabulary is the installed SDK's. The rest is fixture data and harness timing.
  */
 import path from 'node:path'
-import { APPROVAL_KIND, DECISION, RISK } from '../../../../packages/dsh-connector/contract/contract.js'
+import { APPROVAL_KIND, APPROVAL_DECISION as DECISION, RISK } from '../../../../packages/dsh-connector/mcp-schema/index.js'
 import {
   DECISION_KIND, EVENT_TYPE, LINK_REFUSAL, OFFER_ID, REFUSAL, RETIREMENT_REASON, SETTLED_BY, SETTLEMENT_OUTCOME, TOOL,
 } from '../../../../packages/dsh-connector/mcp-schema/index.js'

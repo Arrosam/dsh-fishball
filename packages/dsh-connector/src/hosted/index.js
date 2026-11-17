@@ -11,7 +11,7 @@
  * `retire(old, successor)`: the refusals first, as data, each moving nothing (`unknown-entry`,
  * `not-hosted`, `successor-unpaired`), then the transfer as one step on the managed chain
  * (routing `succeedPrincipal`, which moves the sessions, the pending events and the live offers,
- * then calls this module's `commit`: the designated role, then `PairStore.succeed`, the commit
+ * then calls this module's `commit`: `PairStore.succeed`, the commit
  * point for the name, so the sessions move in the same step as the name; R-NAME-07). A failure
  * up to the commit point is rolled back and answers `operation-failed`, and the instance retries at
  * its next start. After it, the old entry's settings item and hosted record are deleted and each
@@ -85,14 +85,13 @@ const labelOf = (pair) => {
  * @param ports.tokens - C-TOKENS' registry: `createHosted()`, `get(entryKey)`
  * @param ports.pairs - K1 `PairStore`: `pairOf`, `succeed`
  * @param ports.routing - the routing composition: `succeedPrincipal`
- * @param ports.writer - K1d `SettingsWriter`: `removeToken`, `setDesignated`
+ * @param ports.writer - K1d `SettingsWriter`: `removeToken`
  * @param ports.notes - K1d `SessionNotes`
- * @param ports.settings - `{get() → {agentToken?}}`, the port routing takes
  * @param ports.timers - `{setTimeout, clearTimeout}`, the globals by default
  * @param ports.logger - `{warn}`
  * @returns `{service, resume, close}`; `service` is the frozen K3 `DshConnectorTokens`
  */
-export function createHostedTokens({ table, tokens, pairs, routing, writer, notes, settings, timers = globalThis, logger }) {
+export function createHostedTokens({ table, tokens, pairs, routing, writer, notes, timers = globalThis, logger }) {
   const warn = (line) => (error) => logger.warn(LOG.format, line, diagnosticOf(error))
   const retrier = createRetrier({ timers, logger, format: LOG.format, retryMs: HOSTED_TIMING.retryMs })
   /** Retries a step that failed once already, in the background (logged as `line`); `close` ends it. */
@@ -138,9 +137,10 @@ export function createHostedTokens({ table, tokens, pairs, routing, writer, note
   /**
    * The caller's half of the step (routing `succeedPrincipal`'s `commit`), all inside the managed
    * step: the old record is marked `succeededBy` (so a crash after the commit point still finishes
-   * the delete at the next start), the designated role moves (R-HOST-09 step 2), then
-   * `PairStore.succeed`, the commit point for the name. A refusal or a rejection gives the role
-   * back and clears the mark first; a failing compensation is logged, never the error returned.
+   * the delete at the next start), then `PairStore.succeed`, the commit point for the name. A
+   * refusal or a rejection clears the mark first; a failing compensation is logged, never the error
+   * returned. C-WIRE-2 removed the designated role, so R-HOST-09 step 2 moves nothing (the user's
+   * answer q5, 2026-11-17: "Remove agentToken entirely").
    */
   function committer(oldEntryKey, successorEntryKey, oldRecord) {
     return async () => {
@@ -149,10 +149,6 @@ export function createHostedTokens({ table, tokens, pairs, routing, writer, note
       try {
         await table.put(oldEntryKey, { ...oldRecord, succeededBy: successorEntryKey })
         undos.push(() => table.put(oldEntryKey, oldRecord))
-        if (settings.get().agentToken === oldEntryKey) {
-          await writer.setDesignated(successorEntryKey)
-          undos.push(() => writer.setDesignated(oldEntryKey))
-        }
         const result = await pairs.succeed(oldEntryKey, successorEntryKey)
         if (!result.ok) await undoAll()
         return result
@@ -176,7 +172,7 @@ export function createHostedTokens({ table, tokens, pairs, routing, writer, note
     const commit = committer(oldEntryKey, successorEntryKey, table.get(oldEntryKey))
     let moved
     try {
-      // An old entry that never paired has no principal: nothing to move but the designated role.
+      // An old entry that never paired has no principal: nothing moves, its record is only marked.
       const result = oldPair === undefined ? await commit() : await routing.succeedPrincipal(oldPair.principalKey, successorPair.principalKey, commit)
       if (!result.ok) return refusal(result.code)
       moved = result.sessions ?? []

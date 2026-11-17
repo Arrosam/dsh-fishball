@@ -42,12 +42,11 @@ function noteDraft(type, sessionId, note) {
  * @param deps.managed - the managed-state owner (`../routing/managed.js`: `state`, `assign`, `end`)
  * @param deps.produce - the routing module's one commit path (`(subject, draft) => Promise`)
  * @param deps.pairs - K1 `PairStore`; @param deps.tokens - K1 `TokenRegistry`; @param deps.presence - K1 `Presence`
- * @param deps.designatedEntry - `() => EntryKey | undefined`: `routing.agentToken` now
  * @param deps.sessionExists - `(sessionId) => boolean | Promise<boolean>`
  * @param deps.changes - the routing module's listener set (`add`), fired on every K3 change
  * @returns `{service, provide(ctx)}`
  */
-export function createHandover({ managed, produce, pairs, tokens, presence, designatedEntry, sessionExists, changes }) {
+export function createHandover({ managed, produce, pairs, tokens, presence, sessionExists, changes }) {
   const principalRef = (pair) => Object.freeze({ key: pair.principalKey, name: pair.name, id: pair.id })
 
   /**
@@ -75,10 +74,9 @@ export function createHandover({ managed, produce, pairs, tokens, presence, desi
     },
 
     principals() {
-      const designated = designatedEntry()
       return Object.freeze(tokens.list().map((entry) => {
         const pair = pairs.pairOf(entry.entryKey)
-        const common = { enabled: entry.enabled, designated: designated === entry.entryKey }
+        const common = { enabled: entry.enabled }
         if (pair === undefined) return Object.freeze({ key: entry.entryKey, name: null, id: null, online: false, ...common, paired: false })
         return Object.freeze({ key: pair.principalKey, name: pair.name, id: pair.id, online: presence.isConnected(pair.principalKey), ...common, paired: true })
       }))

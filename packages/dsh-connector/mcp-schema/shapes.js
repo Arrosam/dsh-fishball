@@ -1,14 +1,14 @@
 /**
  * Shared JSON Schema shapes of the core tools and events (task K1). They restate the V2 domain's
- * payloads (contract 1.2 §4–§5, `packages/dsh-connector/contract/contract.js`) as MCP tool schemas,
- * timer-free (no `expiresAt` on a descriptor, D1) and without the V2 watch fields (R-WATCH-03).
- * Bounds that the subset cannot express (lengths, counts, bytes) stay the domain's checks against
- * the V2 `LIMITS` and the connector settings, with the codes contract 1.2 names.
+ * payloads (contract 1.2 §4–§5; the vocabularies moved into constants.js with C-WIRE-2) as MCP tool
+ * schemas, timer-free (no `expiresAt` on a descriptor, D1) and without the V2 watch fields
+ * (R-WATCH-03). Bounds that the subset cannot express (lengths, counts, bytes) stay the domain's
+ * checks against PAYLOAD_LIMITS and the connector settings, with the codes contract 1.2 names.
  */
 import {
-  ARGUMENTS_STATUS, APPROVAL_KIND, DECISION, DELIVERY, GRANT_KIND, IMAGE_TYPES, PLAN_REVIEW, PROMPT_DECISIONS, RISK,
-} from '../contract/contract.js'
-import { DECISION_KIND, EVENT_TYPE, READ_ROLE, RETIREMENT_REASON, SETTLED_BY, SETTLEMENT_OUTCOME } from './constants.js'
+  ANSWER_DECISIONS, APPROVAL_KIND, ARGUMENTS_STATUS, DECISION_KIND, DELIVERY, EVENT_TYPE, GRANT_KIND, IMAGE_TYPES, PLAN_REVIEW,
+  PROMPT_DECISIONS, READ_ROLE, RETIREMENT_REASON, RISK, SETTLED_BY, SETTLEMENT_OUTCOME,
+} from './constants.js'
 import { anyValue, array, boolean, constant, integer, nullable, object, oneOfStrings, string } from './schema.js'
 
 /** Milliseconds since the Unix epoch (WIRE). */
@@ -58,9 +58,14 @@ export const grantSpec = () => object(
   { prefix: string() },
 )
 
+/**
+ * `approval_answer`'s answer. The decisions a principal may send are APPROVAL_DECISION without
+ * `ask`, and there is no `question` field (X-SEC X-02; the user's answer, 2026-11-17: an `ask` is
+ * refused; there is no ask_agent to carry it back): a schema-level `invalid-arguments`.
+ */
 export const approvalAnswer = () => object(
-  { decision: oneOfStrings(Object.values(DECISION)) },
-  { risk: oneOfStrings(Object.values(RISK)), reason: string(), question: string(), grant: grantSpec() },
+  { decision: oneOfStrings(ANSWER_DECISIONS) },
+  { risk: oneOfStrings(Object.values(RISK)), reason: string(), grant: grantSpec() },
 )
 
 export const promptSummary = () => object({

@@ -11,17 +11,18 @@
  * One job per revocation, serial per entry: two jobs of one entry never overlap (a disable and the
  * delete that follows it run in order), jobs of different entries may.
  * - Always: the entry's listen streams close (`closeEntry`); routing ends the principal's
- *   management and retires its live offers (`endPrincipal`); then one `system` note per ended
- *   session and each retired offer to the user's card. A note or card that fails is logged, never
- *   retried: the management change stands either way.
+ *   management and retires its live offers (`endPrincipal`), which hands each waiting call to the
+ *   user in its session (routing `onLeft`, the one port every end of management fires, C-WIRE-2);
+ *   then one `system` note per ended session. A note that fails is logged, never retried: the
+ *   management change stands either way.
  * - Disable: the pair's box is held **before** `endPrincipal` (`freshRetirements: true`), so the
- *   fresh retirements land in the held box with no hint and are pollable on re-enable. The
- *   designated role (`routing.agentToken`) stays with the entry (R-ROUTE-04).
+ *   fresh retirements land in the held box with no hint and are pollable on re-enable.
  * - Delete: `endPrincipal` (`freshRetirements: false`), and only once it has resolved the box is
  *   dropped (the user's decision at the W3 merge: the drop never runs before the `revoked`
- *   retirements of that pair); each dropped ask, and each live ask of that pair it had acked
- *   already, answers its asker `unavailable`; then the pair is removed (its id and name are
- *   free); then `routing.agentToken` is unset, only when it named this entry.
+ *   retirements of that pair); then the pair is removed (its id and name are free).
+ * C-WIRE-2 removed the designated agent (the user's answer q5, 2026-11-17: "Remove agentToken
+ * entirely") and `ask_agent`, so a delete clears no designated role and answers no ask; the
+ * mailbox's `droppedAsks` is always empty and is not read.
  * - A step that rejects is logged and retried from that step after `REVOCATION_TIMING.retryMs`;
  *   earlier steps are not repeated, later ones wait. So a rejected `endPrincipal` never drops.
  *   Limit: when `endPrincipal` rejects partway, the sessions it ended before the failure are not
@@ -31,9 +32,7 @@
  *   `TokenRegistry.apply`, as routing's own port): a held entry that is enabled again gets
  *   `Mailbox.release`, on the entry's chain, so after the disable job that held it.
  * - Hold expiry (G8): `Mailbox.expireHolds(now)` at start and then every
- *   `REVOCATION_TIMING.expirySweepMs`; each dropped ask answers `unavailable`. Only asks that were
- *   dropped are answered: an acked ask of a held box can still be answered by its pair after a
- *   re-enable, so no timer settles it (R-CON-05).
+ *   `REVOCATION_TIMING.expirySweepMs`. It only drops events; no timer settles an offer (R-CON-05).
  */
 import { REVOCATION_KIND } from '../../mcp-schema/index.js'
 import { diagnosticOf } from '../errors.js'
@@ -51,21 +50,18 @@ const LEAVE = Object.freeze({
 /**
  * @param {object} ports
  * @param ports.tokens - K1 `TokenRegistry` (`get`, `onRevoked`)
- * @param ports.routing - the routing composition: `endPrincipal`, `askDropped`, `liveAsksOf`
+ * @param ports.routing - the routing composition: `endPrincipal`
  * @param ports.mailbox - K1 `Mailbox` plus `expireHolds(at)` (C-MAILBOX): `hold`, `release`, `drop`, `expireHolds`
  * @param ports.pairs - K1 `PairStore`: `pairOf`, `list`, `remove`
  * @param {(entryKey: string) => void} ports.closeEntry - C-HTTP's: closes the entry's listen streams
- * @param ports.settings - `{get() → {agentToken?}, onChange(fn) → dispose}`, the port routing takes
- * @param ports.writer - K1d `SettingsWriter` (`setDesignated` only)
+ * @param ports.settings - `{onChange(fn) → dispose}`, the port routing takes (re-enables)
  * @param ports.notes - K1d `SessionNotes`
- * @param ports.cards - `{toUser({offerId, sessionId, type})}`: hands one withdrawn offer to the
- *   user's card in its session (the V2 domain's port, C-WIRE binds it)
  * @param {() => number} ports.now - epoch ms
  * @param ports.timers - `{setTimeout, clearTimeout}`, the globals by default
  * @param ports.logger - `{warn}`
  * @returns `{start, close}`
  */
-export function createRevocation({ tokens, routing, mailbox, pairs, closeEntry, settings, writer, notes, cards, now, timers = globalThis, logger }) {
+export function createRevocation({ tokens, routing, mailbox, pairs, closeEntry, settings, notes, now, timers = globalThis, logger }) {
   const warn = (line) => (error) => logger.warn(LOG.format, line, diagnosticOf(error))
   /** entryKey → its serial chain (created on first use; entries are few, so none is ever removed). */
   const chains = new Map()
@@ -84,19 +80,8 @@ export function createRevocation({ tokens, routing, mailbox, pairs, closeEntry, 
     chainOf(entryKey)(job).catch((error) => { if (error !== RETRY_CLOSED) warn(LOG.stepFailed)(error) })
   }
 
-  /** One note per ended session and each retired offer to the user (failures logged, not retried). */
-  async function tellEnded({ sessions, offers }) {
-    await Promise.all([
-      writeNotes(notes, sessions, REVOCATION_NOTE.text, warn(LOG.noteFailed)),
-      ...offers.map((offer) => Promise.resolve().then(() => cards.toUser(offer)).catch(warn(LOG.cardFailed))),
-    ])
-  }
-
-  /**
-   * Answers each ask among `offerIds` `unavailable` (routing `askDropped`; one that is not live is
-   * a no-op). Each is retried until it resolves: its asker would otherwise wait for ever.
-   */
-  const answerDropped = (offerIds) => Promise.all([...new Set(offerIds)].map((offerId) => untilDone(STEP.askDropped, () => routing.askDropped(offerId))))
+  /** One note per ended session (failures logged, not retried); routing handed the offers to the user. */
+  const tellEnded = ({ sessions }) => writeNotes(notes, sessions, REVOCATION_NOTE.text, warn(LOG.noteFailed))
 
   /** End the principal's management (retried until it resolves) and tell the sessions and the user. */
   async function endManagement(entryKey, kind) {
@@ -115,13 +100,8 @@ export function createRevocation({ tokens, routing, mailbox, pairs, closeEntry, 
     // The principal routing ended is the one whose box goes: it knows the pair even when the same
     // sync already removed it (routing `lastPair`).
     const { principalKey } = await endManagement(entryKey, REVOCATION_KIND.deleted)
-    if (principalKey !== undefined) {
-      const { droppedAsks } = await untilDone(STEP.drop, () => mailbox.drop(principalKey))
-      // An acked ask is not in the box any more, but its asker still waits for a pair that is gone.
-      await answerDropped([...droppedAsks, ...routing.liveAsksOf(principalKey)])
-    }
+    if (principalKey !== undefined) await untilDone(STEP.drop, () => mailbox.drop(principalKey))
     await untilDone(STEP.removePair, () => pairs.remove(entryKey))
-    if (settings.get().agentToken === entryKey) await untilDone(STEP.clearDesignated, () => writer.setDesignated(undefined))
   }
 
   function onRevoked(entryKey, kind) {
@@ -154,11 +134,8 @@ export function createRevocation({ tokens, routing, mailbox, pairs, closeEntry, 
     }
   }
 
-  /** One hold-expiry sweep; its dropped asks answer `unavailable`. A failure is logged; the next sweep retries. */
-  const sweep = () => sweeps(async () => {
-    const expired = await mailbox.expireHolds(now())
-    await answerDropped(expired.flatMap((box) => box.droppedAsks))
-  }).catch((error) => { if (error !== RETRY_CLOSED) warn(LOG.expiryFailed)(error) })
+  /** One hold-expiry sweep. A failure is logged; the next sweep retries. */
+  const sweep = () => sweeps(async () => { await mailbox.expireHolds(now()) }).catch((error) => { if (error !== RETRY_CLOSED) warn(LOG.expiryFailed)(error) })
 
   function armSweep() {
     if (closed) return
