@@ -1,7 +1,7 @@
 {
   "name": "fishball-board",
   "version": "1.0.0-alpha.1",
-  "description": "The Fishball instance's persistent work board (W0 skeleton).",
+  "description": "The Fishball instance's persistent work board.",
   "license": "MIT",
   "repository": {
     "type": "git",

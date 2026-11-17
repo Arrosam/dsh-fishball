@@ -214,7 +214,7 @@ export function createManagerService(ctx) {
    * The names of the tools X2 contributions registered in each live manager's scope, while they
    * stay registered. R-FB-13's check (src/guards/check.js) leaves them out: X2 is the one way into
    * the manager's scope (instance-extension-points X2), so what arrives through it is Fishball's
-   * own (core's tools, the façade's, a set member's such as the board's), never a preset or DSH
+   * own (core's tools, the façade's, a set member's), never a preset or DSH
    * composition change. The scope a callback gets is the X2 fiber's own, with only `tools.register`
    * observed: the registration itself is the scope's (its visibility and effect owner unchanged).
    */

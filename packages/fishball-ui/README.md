@@ -1,12 +1,11 @@
 # fishball-ui
 
-Every UI change inside a Fishball DSH, drawn over `fishball-core`'s backend (requirements R-FB-14).
+Every UI change inside a Fishball DSH, drawn over `fishball-core`'s backend.
 Core keeps every state; this package only draws it. It reads core through core's published routes
 and `fishball-shared/ui-seam`, never by importing `fishball-core`, and depends on no DSH-side
 package.
 
-Version `1.0.0-alpha.1` in the release (this checkout's manifest still reads `0.1.0-alpha.0`).
-Requires DSH `>=0.2.1-rc.5`. In hosted mode `dsh-instance` places it in Fishball's child, before
+Version `1.0.0-alpha.1`. Requires DSH `>=0.2.1-rc.5`. In hosted mode `dsh-instance` places it in Fishball's child, before
 core; in a standalone DSH you install it yourself, before core (see the
 [root README](<../../README.md>)).
 
@@ -38,4 +37,4 @@ and dark themes and its language (en and zh).
 
 Every row is switched on or off by whether `fishball-core` is in the profile (read live while HMR
 runs). Without core, only `fishball-ui-core-missing` runs: it logs `fishball-core-missing` and
-changes nothing (Q-G2).
+changes nothing.

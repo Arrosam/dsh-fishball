@@ -2,8 +2,11 @@
 
 **V3 is the current design (2026-11-17).** Fishball is now two sides that never import each other:
 the DSH side (`dsh-connector`, `dsh-connector-ui`, `dsh-instance`, `dsh-connector-adapter`,
-`dsh-connector-shared`) and the Fishball side (`fishball-core`, `fishball-ui`, `fishball-board`,
-`fishball-shared`), release `1.0.0-alpha.1`, a fresh install. Read
+`dsh-connector-shared`) and the Fishball side (`fishball-core`, `fishball-ui`, `fishball-shared`),
+release `1.0.0-alpha.1`, a fresh install. `fishball-board` is **shelved, not in 1.0.0-alpha.1** (the
+user, 2026-11-18: "fishball-board先从这次release中移除…先封存，留到下一批再说。所以不要预留在子实例的Fishball内"):
+`packages/board` stays unchanged for a later release; the release is eight tarballs and the hosted
+child places only `fishball-ui` and `fishball-core` (v3-requirements 1.42). Read
 [v3-design.md](<docs/planning/v3-design.md>) §1.0 and §17–§20 below first. Everything above §17 is
 the V1/V2 decision history: V2 was never deployed, fold-notify, the hosted settings bundle and
 Watchdog are gone, and the V2 history documents it links to were deleted by the DOCS task (the
@@ -2117,7 +2120,7 @@ Decided with the user while I-HOST ran (answers Q1–Q7 and the model-sync clari
 
 | Point | Decision | Reason |
 |---|---|---|
-| Plugin placement | I-PLACE's copying stays; the set is `fishball-board`, `fishball-ui`, `fishball-core`, appended in that order (core last) | Q1 = A: install by package name or tarball waits for REL-PACK's tarballs. Q2 = A: fishball-ui's guard rows target DSH's base rows, so they hold in any order; core's check needs core last |
+| Plugin placement | I-PLACE's copying stays; the set is `fishball-board`, `fishball-ui`, `fishball-core`, appended in that order (core last). *Since SHELVE-BOARD (2026-11-18): `fishball-ui`, `fishball-core`; the board is shelved* | Q1 = A: install by package name or tarball waits for REL-PACK's tarballs. Q2 = A: fishball-ui's guard rows target DSH's base rows, so they hold in any order; core's check needs core last |
 | The Fishball page in a hosted child | fishball-core serves `GET/POST /api/fishball/session` itself (row `fishball-core-session`, `src/session/route.js`); the instance's native-web row no longer does | the route reads core's own `fishballInstance`, so it is Fishball-side code, and fishball-ui's page needs it in both modes |
 | The hosted token | At each authenticated wire the host asks the child, on `mcp-credential`, whether it holds a credential (`DSH_AGENT_TOKEN` set, or core's `fishball-core/hosted-agent` record). Only when absent, with this DSH's connector and no remote target, it calls `createHosted` once and imports the value into `DSH_AGENT_TOKEN`; probes, creates and imports run in one serial chain. The entry key is kept in `<home>/fishball/hosted.json`, with the instance's stable id, after the child stored it; that file sits beside the runtime tree so a reset or uninstall keeps the succession candidates. An unanswered import (bounded by the credential lock wait) is settled by probing again | R1, Q-G6; DSH answers presence alone; no value is ever on the host |
 | What the instance no longer reports | the pending "watchdog is down" notice (withdrawn with Watchdog, 1.37) and `fishball-off` (Q4); the uninstall board-archive export offer has no board export to offer (board dropped `board_export` and its uninstall export, W3 2026-11-15), so it is deferred until a board export exists | requirements 1.37, Q4; packages/board/src/store.js |

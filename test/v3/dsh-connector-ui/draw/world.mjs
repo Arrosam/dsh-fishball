@@ -324,8 +324,9 @@ function eventSourceClass(world, page) {
  * Open the main page at `host` and apply embed-UI's browser half.
  * @param options.host - the page's hostname (PAGE_HOST).
  * @param options.failServices - the services read fails (a network error), UDRAW-EP-02 row 5.
+ * @param options.lang - the page language (TEXT.langs; default English).
  */
-export async function openPage(t, world, { host = PAGE_HOST.loopback, failServices = false, withoutConfigForms = false, embed = true } = {}) {
+export async function openPage(t, world, { host = PAGE_HOST.loopback, failServices = false, withoutConfigForms = false, embed = true, lang = TEXT.langs[0] } = {}) {
   const baseURI = PAGE_HOST.scheme + host + ':' + PAGE_HOST.port + ROUTE.absolutePrefix
   const page = { baseURI, requests: [], chunks: [], streams: [], navigations: [], dictionaries: [], errors: [] }
   const pageFetch = async (input, init = {}) => {
@@ -337,7 +338,7 @@ export async function openPage(t, world, { host = PAGE_HOST.loopback, failServic
     return world.connection.dispatch(method, url.href, { body, headers: init.headers ?? {} })
   }
   const pageConsole = { ...console, error: (...args) => page.errors.push(args.map(String).join(' ')), warn() {}, log() {}, info() {}, debug() {} }
-  const sandbox = createBrowserSandbox({ lang: TEXT.langs[0], baseURI, fetch: pageFetch, console: pageConsole })
+  const sandbox = createBrowserSandbox({ lang, baseURI, fetch: pageFetch, console: pageConsole })
   const PageEventSource = eventSourceClass(world, page)
   sandbox.sandbox.EventSource = PageEventSource
   sandbox.window.EventSource = PageEventSource
@@ -360,7 +361,7 @@ export async function openPage(t, world, { host = PAGE_HOST.loopback, failServic
 
   const { Context } = await importSdk(world.sdk, DSH.cordis)
   const root = new Context()
-  const services = pageServices(shim, TEXT.langs[0])
+  const services = pageServices(shim, lang)
   const locale = { ...services.locale, register(ns, dicts) { page.dictionaries.push({ ns, dicts }); return services.locale.register(ns, dicts) } }
   const registrations = []
   const slots = {
@@ -416,6 +417,8 @@ export async function openPage(t, world, { host = PAGE_HOST.loopback, failServic
   }
   const api = {
     ...page, shim, plugins, registrations,
+    /** The page's document (a case may answer its queries, e.g. where the sidebar fish is on screen). */
+    document: sandbox.document,
     live: () => registrations.filter((r) => !r.disposed),
     entries,
     settle: settleAll,

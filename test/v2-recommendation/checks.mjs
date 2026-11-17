@@ -77,7 +77,8 @@ export const RP_CHECK = freezeData({
   sourceUrl: /^https?:\/\//,
   /**
    * AC9 re-baselined for V3 (REMOVE-WD; R-FB-01 as amended, design §1.0): the instance places
-   * fishball-core, fishball-ui and fishball-board whatever the tab does, so a board row or a
+   * fishball-core and fishball-ui whatever the tab does (fishball-board no longer: SHELVE-BOARD, the
+   * user 2026-11-18, "先封存…不要预留在子实例的Fishball内"), so a board row or a
    * `bundled/` path is no longer evidence against AC9. What AC9 still forbids is anything placed,
    * inserted or depended on *because of* the tab: a recommended package, the recommendation module
    * as a standalone bundle, or a feature plugin the tab would need (install matrix row 13b: core
@@ -550,7 +551,7 @@ export const CHECKS = Object.freeze({
     await t.test('fresh main/child composition on this SDK', { todo: RP_CHECK.todoE2E })
   },
 
-  // Static/artifact part (AC9): opt-in only. The placed set (core, ui, board) is not under test here;
+  // Static/artifact part (AC9): opt-in only. The placed set (core, ui; board shelved, SHELVE-BOARD) is not under test here;
   // nothing may be placed, inserted or depended on because of the tab (see RP_CHECK.featurePlugins).
   async 'TC-32'(ctx, t) {
     const { RUNTIME } = await loadInstance('src/native-runtime/constants.js')

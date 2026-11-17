@@ -1,7 +1,7 @@
 {
   "name": "dsh-connector-ui",
   "version": "1.0.0-alpha.1",
-  "description": "Fishball's UI in the main DeepSeek Harness: the one package that changes the host DSH's UI for Fishball (R-ARCH-04).",
+  "description": "Fishball's UI in the main DeepSeek Harness: the one package that changes the host DSH's UI for Fishball.",
   "license": "MIT",
   "repository": {
     "type": "git",

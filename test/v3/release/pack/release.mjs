@@ -13,10 +13,11 @@ import { createHash } from 'node:crypto'
 import fs from 'node:fs'
 import { mkdtemp, rm } from 'node:fs/promises'
 import { createRequire } from 'node:module'
+import net from 'node:net'
 import os from 'node:os'
 import path from 'node:path'
 import { gunzipSync } from 'node:zlib'
-import { ALL, BUDGET, BUNDLE, DSH, ISOLATION, JUNK, LIBRARIES, PACK_SCRIPT, RELEASE, REPORT, TAR_TOOL, TARBALL, TEMP, VERSION } from './constants.mjs'
+import { ALL, BUDGET, BUNDLE, CHILD_PLACEMENT, DSH, INSTALL_DOC, ISOLATION, JUNK, LIBRARIES, OFFLINE, PACK_SCRIPT, RELEASE, REPORT, SHELVED, TAR_TOOL, TARBALL, TEMP, VERSION } from './constants.mjs'
 
 /** ustar header layout (POSIX.1-1988 / pax): field offsets and the type flags this suite tells apart. */
 const TAR = Object.freeze({
@@ -123,10 +124,12 @@ export function isJunk(rel) {
 export function readJson(file) {
   return fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, 'utf8')) : null
 }
-/** The semver DSH ships with this SDK (DSH checks engines.dsh with it). */
-export function sdkSemver(sdk) {
-  return createRequire(path.join(DSH.versionsDir, sdk, DSH.semverAnchor))(DSH.semver)
+/** A module the SDK ships in its own node_modules (semver, yaml), loaded from there. */
+export function sdkModule(sdk, name) {
+  return createRequire(path.join(DSH.versionsDir, sdk, DSH.semverAnchor))(name)
 }
+/** The semver DSH ships with this SDK (DSH checks engines.dsh with it). */
+export const sdkSemver = (sdk) => sdkModule(sdk, DSH.semver)
 /**
  * Node's package lookup: `<dir>/node_modules/<name>/package.json` from `fromDir` up to the top
  * (`.` for a tarball-relative path, `/` for an absolute one), skipping `node_modules` folders
@@ -206,8 +209,11 @@ export function runTool(file, args, { env, cwd, timeoutMs }) {
 }
 export const tarListing = (file) => runTool(TAR_TOOL.file, [TAR_TOOL.list, file], { env: { PATH: ISOLATION.path }, timeoutMs: BUDGET.dryRunMs })
 
-/** The environment of every child: built from scratch, no user npm config, a dead proxy for any network attempt. */
-export function isolatedEnv(scratch, extra = {}) {
+/**
+ * The environment of every child: built from scratch, no user npm config, a dead proxy for any
+ * network attempt (or `proxy`, e.g. a counting one, which answers nothing either).
+ */
+export function isolatedEnv(scratch, extra = {}, proxy = ISOLATION.deadProxy) {
   const home = path.join(scratch, ISOLATION.homeDir)
   const cache = path.join(scratch, ISOLATION.npmCacheDir)
   const globalconfig = path.join(scratch, ISOLATION.globalconfigFile)
@@ -218,7 +224,7 @@ export function isolatedEnv(scratch, extra = {}) {
     npm_config_userconfig: ISOLATION.userconfig, npm_config_globalconfig: globalconfig, npm_config_cache: cache,
     ...extra,
   }
-  for (const v of ISOLATION.proxyVars) env[v] = ISOLATION.deadProxy
+  for (const v of ISOLATION.proxyVars) env[v] = proxy
   return env
 }
 
@@ -260,7 +266,7 @@ export async function removeScratch(dir) {
 export async function dshAdd(sdk, scratch, tarballs, { store, cache }) {
   const home = path.join(scratch, ISOLATION.dshHomeDir)
   const env = isolatedEnv(scratch, { DSH_HOME: home })
-  const result = await runTool(path.join(DSH.versionsDir, sdk, DSH.bin), DSH.pluginArgs(DSH.profile, tarballs, store, cache), { env, cwd: scratch, timeoutMs: BUDGET.installMs })
+  const result = await runTool(cliPath(sdk), DSH.pluginArgs(DSH.profile, tarballs, store, cache), { env, cwd: scratch, timeoutMs: BUDGET.installMs })
   return { ...result, home, profileDir: DSH.profileDir(home, DSH.profile) }
 }
 
@@ -274,10 +280,16 @@ export const bundlesOf = (manifest) => DSH.bundlesPath.reduce((v, k) => v?.[k], 
 export const releaseStore = () => ({ store: path.join(releaseDir(), RELEASE.store), cache: path.join(releaseDir(), RELEASE.cache) })
 export const installedDir = (profileDir, pkg) => path.join(profileDir, TARBALL.nodeModules, pkg.name)
 
-/** `dshAdd`, after asserting the SDK's CLI exists (a missing CLI must never pass a "must fail" case). */
-export async function dshAddChecked(sdk, scratch, tarballs, where) {
-  const bin = path.join(DSH.versionsDir, sdk, DSH.bin)
+const cliPath = (sdk) => path.join(DSH.versionsDir, sdk, DSH.bin)
+/** The SDK's real `dsh` CLI, asserted to exist (a missing CLI must never pass a "must fail" case). */
+export function checkedCli(sdk) {
+  const bin = cliPath(sdk)
   assert.ok(fs.existsSync(bin), `DSH ${sdk} CLI is missing at ${bin} (FBTEST_DSH_VERSIONS moves its folder)`)
+  return bin
+}
+/** `dshAdd`, after asserting the SDK's CLI exists. */
+export async function dshAddChecked(sdk, scratch, tarballs, where) {
+  checkedCli(sdk)
   return dshAdd(sdk, scratch, tarballs, where)
 }
 /**
@@ -318,6 +330,29 @@ export function assertFromOwnBundle(profileDir, owner, dep) {
   assert.ok(found.startsWith(path.join(from, TARBALL.nodeModules) + path.sep), `${dep.name} resolves outside ${owner.name}'s bundle: ${found}`)
   if (dep.version !== undefined) assert.equal(readJson(found).version, dep.version)
 }
+/**
+ * SHELVE-BOARD (the user, 2026-11-18: "…所以不要预留在子实例的Fishball内"): every trace of the shelved
+ * board in the hosted child profile at `profileDir`, empty when none. A copy in vendor/ or
+ * node_modules/ (a folder or a tarball named after it), a dependency, a `dsh.profile.bundles` entry,
+ * any mention in the placement record (so a disabled or reserved entry counts), an install spec
+ * `fishball-board@…` anywhere in the profile manifest. Shared by every instance suite's SHELVE rows.
+ */
+export function shelvedTraces(profileDir) {
+  const { name } = SHELVED.board
+  const manifest = readJson(path.join(profileDir, TARBALL.manifest)) ?? {}
+  const record = readJson(path.join(profileDir, CHILD_PLACEMENT.record))
+  const copies = CHILD_PLACEMENT.copyDirs.flatMap((dir) => {
+    const at = path.join(profileDir, dir)
+    return fs.existsSync(at) ? fs.readdirSync(at).filter((f) => f.startsWith(name)).map((f) => `${dir}/${f}`) : []
+  })
+  return [
+    ...copies,
+    ...(Object.hasOwn(manifest.dependencies ?? {}, name) ? [`dependencies.${name} = ${show(manifest.dependencies[name])}`] : []),
+    ...(bundlesOf(manifest).includes(name) ? [`${DSH.bundlesPath.join('.')} holds ${name}`] : []),
+    ...(JSON.stringify(record).includes(name) ? [`${CHILD_PLACEMENT.record} names ${name}: ${show(record)}`] : []),
+    ...(JSON.stringify(manifest).includes(name + '@') ? [`an install spec ${name}@… in the profile manifest`] : []),
+  ]
+}
 /** XOR one byte of `file` at `offset` with the tamper mask, in place. */
 export function flipByte(file, offset) {
   const fd = fs.openSync(file, 'r+')
@@ -328,5 +363,109 @@ export function flipByte(file, offset) {
     fs.writeSync(fd, b, 0, 1, offset)
   } finally {
     fs.closeSync(fd)
+  }
+}
+
+/** A copy of the release folder inside `scratch` (so a case may modify or delete it). */
+export function copyRelease(scratch) {
+  const copy = path.join(scratch, ISOLATION.copyDir)
+  fs.cpSync(releaseDir(), copy, { recursive: true, verbatimSymlinks: true })
+  return copy
+}
+/** Every file path under `dir`, relative to it (sorted). */
+export const filesUnder = (dir) => fs.readdirSync(dir, { recursive: true }).filter((f) => fs.statSync(path.join(dir, f)).isFile()).sort()
+
+/**
+ * Run `fn(proxyUrl, hits)` with a local proxy that records every connection and answers none, so a
+ * child pointed at it can reach no registry and any attempt is counted (an ephemeral port, never a
+ * fixed one).
+ */
+export async function withCountingProxy(fn) {
+  const hits = []
+  const server = net.createServer((socket) => { hits.push(socket.remoteAddress); socket.destroy() })
+  await new Promise((resolve) => server.listen(0, ISOLATION.proxyHost, resolve))
+  try {
+    return await fn(ISOLATION.proxyScheme + ISOLATION.proxyHost + ':' + server.address().port, hits)
+  } finally {
+    await new Promise((resolve) => server.close(resolve))
+  }
+}
+
+// ---- INSTALL.md, read and run as written (E-FIX-2) ----
+
+/** INSTALL.md of the release folder `dir`, as lines. */
+export function installDocLines(dir = releaseDir()) {
+  const file = path.join(dir, INSTALL_DOC.file)
+  assert.ok(fs.existsSync(file), missing(INSTALL_DOC.file))
+  return fs.readFileSync(file, 'utf8').split(RELEASE.lineBreak)
+}
+/** The fenced code blocks: { open, close, lines } (the fence lines' indexes and the lines between). */
+export function fencedBlocks(lines) {
+  const blocks = []
+  let open = null
+  lines.forEach((line, i) => {
+    if (!INSTALL_DOC.fence.test(line)) return
+    if (open === null) { open = i; return }
+    blocks.push({ open, close: i, lines: lines.slice(open + 1, i) })
+    open = null
+  })
+  return blocks
+}
+export const isAddLine = (line) => INSTALL_DOC.addLine.test(line)
+const tarballsOf = (line) => line.match(INSTALL_DOC.tarballArg) ?? []
+const specsOf = (line) => [...line.matchAll(INSTALL_DOC.onlineSpec)].map((m) => m[1])
+/** The one fenced block with an add line whose .tgz arguments are exactly `pkgs`' tarballs, in order. */
+export function offlineBlock(lines, pkgs) {
+  const want = show(pkgs.map((p) => p.tarball))
+  const found = fencedBlocks(lines).filter((b) => b.lines.some((l) => isAddLine(l) && show(tarballsOf(l)) === want))
+  assert.equal(found.length, 1, `${INSTALL_DOC.file} has ${found.length} fenced blocks adding exactly ${want} (one expected)`)
+  return found[0]
+}
+/** The first add line naming exactly `pkgs` as `<name>@VERSION`, in order, with no tarball; -1 when none. */
+export function onlineLineIndex(lines, pkgs) {
+  const want = show(pkgs.map((p) => p.name))
+  return lines.findIndex((l) => isAddLine(l) && tarballsOf(l).length === 0 && show(specsOf(l)) === want)
+}
+/** The `## ` section holding line `at` (from its heading to the next one). */
+export function sectionOf(lines, at) {
+  const start = lines.findLastIndex((l, i) => i <= at && INSTALL_DOC.heading.test(l))
+  const next = lines.findIndex((l, i) => i > at && INSTALL_DOC.heading.test(l))
+  return lines.slice(Math.max(start, 0), next === -1 ? lines.length : next)
+}
+/** Paragraphs (runs of non-blank lines), each joined into one string. */
+export function paragraphs(lines) {
+  const out = [[]]
+  for (const l of lines) if (INSTALL_DOC.paragraphBreak.test(l)) out.push([]); else out.at(-1).push(l)
+  return out.filter((p) => p.length > 0).map((p) => p.join(RELEASE.lineBreak))
+}
+
+/**
+ * A DSH home under `scratch` for running INSTALL.md as a user would: `dsh` on PATH is the SDK's real
+ * CLI, every network attempt goes to `proxy`. `cli(args)` runs the CLI; `runBlock(block, cwd)` runs a
+ * fenced block's lines, in order, as one bash script (stopping at a failed line); `storeDir()` is
+ * node_modules/.modules.yaml's storeDir (read with the SDK's own yaml); `storePath()` is
+ * `dsh plugin --profile <p> store path`.
+ */
+export function docProfile(sdk, scratch, proxy) {
+  const bin = path.join(scratch, OFFLINE.binDir)
+  fs.mkdirSync(bin, { recursive: true })
+  fs.symlinkSync(checkedCli(sdk), path.join(bin, OFFLINE.cliName))
+  const home = path.join(scratch, ISOLATION.dshHomeDir)
+  const profileDir = DSH.profileDir(home, DSH.profile)
+  const env = isolatedEnv(scratch, { DSH_HOME: home, PATH: bin + path.delimiter + ISOLATION.path }, proxy)
+  const run = (file, args, cwd = scratch) => runTool(file, args, { env, cwd, timeoutMs: BUDGET.installMs })
+  const cli = (args) => run(cliPath(sdk), args)
+  return {
+    home, profileDir, cli,
+    runBlock: (block, cwd) => run(OFFLINE.shell, [...OFFLINE.shellArgs, block.lines.join(RELEASE.lineBreak)], cwd),
+    storeDir: () => {
+      const file = path.join(profileDir, ...OFFLINE.modulesYaml)
+      return fs.existsSync(file) ? sdkModule(sdk, OFFLINE.yaml).parse(fs.readFileSync(file, 'utf8'))?.[OFFLINE.storeDirKey] : undefined
+    },
+    storePath: async () => {
+      const r = await cli(OFFLINE.storePathArgs(DSH.profile))
+      assert.equal(r.code, DSH.okExit, tail(r.output))
+      return r.stdout.split(RELEASE.lineBreak).map((l) => l.trim()).filter(Boolean).at(-1)
+    },
   }
 }

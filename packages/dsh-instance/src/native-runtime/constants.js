@@ -105,6 +105,11 @@ export const LIFETIME = Object.freeze({
   registryKey: 'dsh-fishball.native-lifecycle.v1',
 })
 
+/** Every refusal of `uninstall.js` starts so; what follows tells the user what to do. */
+const UNINSTALL_REFUSED = 'Nothing was removed from {path} ({code}). '
+const CHILD_STATE_UNKNOWN = 'CHILD_STATE_UNKNOWN'
+/** Why the child's state is unknown. Each cause has its own remedy (the user's split, E-FIX-1). */
+const STATE_UNKNOWN_CAUSE = Object.freeze({ noPidRecord: 'NO_PID_RECORD', probeFailed: 'PS_UNAVAILABLE' })
 /**
  * The uninstall cleanup command, `uninstall.js` (design §0.10, Q3). Neither DSH 0.2.1-rc.5 nor
  * 0.2.2-rc.1 runs plugin code on removal: the Plugins page disposes the row as a disable does, then
@@ -121,8 +126,14 @@ export const UNINSTALL = Object.freeze({
   defaultHomeDirectory: '.dsh',
   tilde: '~',
   tildePrefixes: Object.freeze(['~/', '~\\']),
-  // The recorded child is alive or its state is unknown: DSH has not been quit yet.
+  // The recorded child is alive: DSH has not been quit yet.
   childRunning: 'CHILD_RUNNING',
+  // Whether the recorded child runs cannot be checked: it has no pid record, or `/bin/ps` cannot
+  // be run or answers unreadably (E-FIX-1, B8). It is refused the same way, but quitting DSH and
+  // retrying cannot help, so it has its own code, and a message per cause. The cause travels as the
+  // error's message, which is always one of these fixed names, never a path or a value from a file.
+  childStateUnknown: CHILD_STATE_UNKNOWN,
+  stateUnknownCause: STATE_UNKNOWN_CAUSE,
   // Not LIFETIME's codes: those are the child process's own exit; these are the command's.
   exitCode: Object.freeze({ done: 0, refused: 1, usage: 2 }),
   message: Object.freeze({
@@ -130,7 +141,16 @@ export const UNINSTALL = Object.freeze({
     removed: 'Removed the Fishball instance data: {path}\n',
     absent: 'Nothing to remove: {path} does not exist.\n',
     // The codes are listed in the README ("Uninstall"); the most common is CHILD_RUNNING.
-    refused: 'Nothing was removed from {path} ({code}). Quit DSH, wait a few seconds and run it again.\n',
+    refused: UNINSTALL_REFUSED + 'Quit DSH, wait a few seconds and run it again.\n',
+    // The refusals with their own text, by code and then cause; any other refusal gets `refused`.
+    // A missing pid record is permanent, so its remedy is the user's own deletion of the folder (the
+    // user's rule for uninstall: "在说明里写清楚，用户自己删那个文件夹（推荐）").
+    refusedBy: Object.freeze({
+      [CHILD_STATE_UNKNOWN]: Object.freeze({
+        [STATE_UNKNOWN_CAUSE.probeFailed]: UNINSTALL_REFUSED + 'Could not check whether the Fishball child still runs: /bin/ps could not be run. If /bin/ps cannot be run here (in a sandbox, say), quit DSH and run this command where it works.\n',
+        [STATE_UNKNOWN_CAUSE.noPidRecord]: UNINSTALL_REFUSED + "The Fishball child's state cannot be confirmed: its launch record is missing. Stop DSH, check that no Fishball child process is left running, then delete {path} yourself.\n",
+      }),
+    }),
   }),
 })
 
@@ -154,11 +174,11 @@ export const PLACEMENT = Object.freeze({
    * fishball-core last, so its guard patch reaches every row the others insert (R-FB-12).
    * `directory` names a set member's sibling workspace folder `../<directory>` in a checkout; a
    * packed instance ships it as `bundled/<tarball(name, version)>` instead (REL-PACK output, never
-   * committed; Q-22). The set is core, fishball-ui and board (requirements 1.39 R-BND-01: "the
-   * default set is `fishball-core`, `fishball-ui` and `fishball-board`").
+   * committed; Q-22). The set is fishball-ui and core. fishball-board is shelved, not in 1.0.0-alpha.1
+   * (SHELVE-BOARD, the user, 2026-11-18: "不要预留在子实例的Fishball内"), so nothing places, installs or
+   * reserves it in the child; add it back here and in `install.order` for its release.
    */
   bundles: Object.freeze([
-    Object.freeze({ name: 'fishball-board', directory: 'board' }),
     // fishball-ui before core (I-HOST, the user's answer Q2 = A): its guard rows target DSH's base
     // rows, which precede every plugin bundle, so they hold in any order, while core's own guard
     // check reports `bundle-order` unless core is last.
@@ -184,7 +204,7 @@ export const PLACEMENT = Object.freeze({
   tarball: (name, version) => name + '-' + version + '.tgz',
   /**
    * The packed set's install (REL-PACK item 5). `order` is the order the user gave for the add
-   * (fishball-ui, then fishball-board, then fishball-core last); the bundle order above is separate.
+   * (fishball-ui, then fishball-core last); the bundle order above is separate.
    * DSH's own plugin-manager operation runs pnpm in the child profile under the profile lock, with
    * the plugin manager's default limits (PluginManager.Config) and the installation's own pnpm
    * (profileContext.packageManager, when DSH supplies one). `activateNewBundles: false` because DSH
@@ -203,7 +223,7 @@ export const PLACEMENT = Object.freeze({
    * as any DSH plugin install does; the offline fallback needs none of them.
    */
   install: Object.freeze({
-    order: Object.freeze(['fishball-ui', 'fishball-board', 'fishball-core']),
+    order: Object.freeze(['fishball-ui', 'fishball-core']),
     operations: '@deepseek-ai/dsh-plugin-manager/operations',
     manager: '@deepseek-ai/dsh-plugin-manager',
     command: 'add',

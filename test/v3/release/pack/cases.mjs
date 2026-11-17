@@ -13,7 +13,23 @@
  * - Decision Table: plugin vs library × engines.dsh (REL-DT-01), dsh-connector-ui's peer × semver
  *   includePrerelease (REL-DT-02), lists-the-library-in-dependencies × bundled copy (REL-DT-03),
  *   store and cache (warmed vs empty) × closure (bundled vs from the registry) (REL-DT-04);
- * - State Transition: a copied release valid → tampered → restored → … under `--check` (REL-ST-01).
+ *   INSTALL.md's offline block per set × profile state (fresh, used from another store) (REL-DT-05 is "used",
+ *   REL-ST-02 "fresh");
+ * - State Transition: a copied release valid → tampered → restored → … under `--check` (REL-ST-01); a fresh
+ *   profile → offline block → offline block again → a later --offline add of a tarball from elsewhere with the
+ *   release's --cache-dir and --registry, the release folder kept (INSTALL.md says both) (REL-ST-02).
+ *
+ * E-FIX-2 (bugs B2, B3, B4, B6): INSTALL.md is read and its offline blocks are run exactly as written
+ * (bash, from a copy of the release folder, `dsh` the SDK's CLI) (REL-EP-10, REL-EP-11, REL-DT-05,
+ * REL-ST-02); every tarball's README and description are checked for stale and internal text (REL-EP-12, 13).
+ *
+ * SHELVE-BOARD (REL-SHELVE; re-baselined REL-EP-03, REL-EP-07, REL-SYS-02, REL-DT-05/REL-ST-02's
+ * "other" plugin): fishball-board is out of 1.0.0-alpha.1. The user, 2026-11-18:
+ * "fishball-board先从这次release中移除，我要改的地方太多了。先封存，留到下一批再说。所以不要预留在子实例的Fishball内。"
+ * So the release holds exactly 8 tarballs (BVA on the count: 8, not 9 or 7), none is the board, SHA256SUMS
+ * has 8 lines, dsh-instance's bundled/ holds exactly fishball-ui and fishball-core, INSTALL.md and
+ * PUBLISH.md never name the board (8 publish lines), and `--check` flags an extra board tarball as
+ * unexpected (state transition valid → board tarball added → removed).
  *
  * Levels: unit (the release output read entry by entry; no product module is loaded), integration
  * (`npm pack --dry-run` of each repo folder; the pack script's `--check`) and system (DSH's own
@@ -28,12 +44,14 @@ import test from 'node:test'
 import { NODE, REPO } from '../../../support/constants.mjs'
 import { caseName } from '../../contract/package-boundaries/cases.mjs'
 import {
-  ALL, ALL_NAMES, BUDGET, CASE, CORE_CLOSURE, DRY_RUN, DSH, INSTANCE_BUNDLED, ISOLATION, JUNK, LIBRARIES, MANIFEST, NAMED_IMPORTERS,
-  NPM_TOOL, PACK_SCRIPT, RELEASE, SETS, TARBALL, UI_PEERS, VERSION, isLibrary,
+  ALL, ALL_NAMES, BUDGET, CASE, CORE_CLOSURE, DOC_TEXT, DRY_RUN, DSH, INSTALL_DOC, INSTANCE_BUNDLED, ISOLATION, JUNK, LIBRARIES, MANIFEST,
+  NAMED_IMPORTERS, NPM_TOOL, OFFLINE, PACK_SCRIPT, RELEASE, RELEASE_COUNT, SETS, SHELVED, SHELVED_DOC, TARBALL, UI_PEERS, VERSION, isLibrary,
 } from './constants.mjs'
 import {
-  assertFromOwnBundle, assertLibraryCopies, describeEntry, dshAddChecked, flipByte, installAndCheck, installedDir, isJunk, isLink, isolatedEnv,
-  isRegular, releaseDir, resolveIn, runTool, sdkSemver, sha256, show, tail, tarball, tarballPath, tarListing, withScratch,
+  assertFromOwnBundle, assertLibraryCopies, copyRelease, describeEntry, docProfile, dshAddChecked, fencedBlocks, filesUnder, flipByte,
+  installAndCheck, installDocLines, installedDir, installProblems, isAddLine, isJunk, isLink, isolatedEnv, isRegular, offlineBlock,
+  onlineLineIndex, paragraphs, releaseDir, resolveIn, runTool, sdkSemver, sectionOf, sha256, show, tail, tarball, tarballPath, tarListing,
+  withCountingProxy, withScratch,
 } from './release.mjs'
 
 /**
@@ -44,6 +62,8 @@ export function relCase(sdk, id, row, title, fn, timeout) {
   test(caseName(sdk, id, row, title), timeout === undefined ? {} : { timeout }, fn)
 }
 const json = (entry) => JSON.parse(entry.data.toString('utf8'))
+/** The banned `patterns` that `text` matches, each shown with the text it matched. */
+const textHits = (patterns, text) => patterns.map((re) => re.exec(text)).filter(Boolean).map((m) => show(m[0]))
 
 // ------------------------------------------------------------------ rules (problem lists)
 
@@ -72,7 +92,7 @@ export function nestedManifests(files) {
     && !rel.split('/').includes(TARBALL.nodeModules)).map(([rel, entry]) => ({ rel, manifest: json(entry) }))
 }
 
-/** Requirement 2: every entry on another of the 9 names exactly VERSION (dependencies, optionalDependencies). */
+/** Requirement 2: every entry on another of the 8 names exactly VERSION (dependencies, optionalDependencies). */
 export function internalVersionProblems(pkg, m) {
   const p = []
   for (const f of MANIFEST.exactInternalFields) {
@@ -124,8 +144,7 @@ async function runCheck(scratch, dir) {
 /** A copy of the release in a throwaway folder; `expectCheck(state, ok)` runs `--check --out <copy>` and asserts its exit. */
 function onCopy(fn) {
   return withScratch(async (scratch) => {
-    const copy = path.join(scratch, ISOLATION.copyDir)
-    fs.cpSync(releaseDir(), copy, { recursive: true, verbatimSymlinks: true })
+    const copy = copyRelease(scratch)
     const target = tarballPath(PACK_SCRIPT.tamperTarget, copy)
     const pristine = fs.readFileSync(target)
     const expectCheck = async (state, ok) => {
@@ -149,6 +168,9 @@ export function registerPackCases(sdk) {
   // The checker runs before the installs: pnpm may add the local tarballs to the release's warmed store.
   registerCheck(sdk)
   registerInstalls(sdk)
+  registerDocText(sdk)
+  registerDocInstalls(sdk)
+  registerShelved(sdk)
 }
 
 /** REL-ORACLE: this suite's own oracles (no release needed), and the tarball parser against `tar -tzf`. */
@@ -157,6 +179,12 @@ function registerOracle(sdk) {
     assert.deepEqual(JUNK.samples.junk.filter((s) => !isJunk(s)), [])
     assert.deepEqual(JUNK.samples.clean.filter(isJunk), [])
   })
+  for (const [rule, { hit, clean }] of Object.entries(DOC_TEXT.samples)) {
+    relCase(sdk, CASE.oracle, 'doc text ' + rule, `the ${rule} text rule flags each banned form and none of its look-alikes (BVA)`, () => {
+      assert.deepEqual(hit.filter((t) => textHits(DOC_TEXT[rule], t).length === 0), [])
+      assert.deepEqual(clean.filter((t) => textHits(DOC_TEXT[rule], t).length > 0), [])
+    })
+  }
   relCase(sdk, CASE.oracle, 'sums', 'the SHA256SUMS line shape admits 64 hex + two spaces + a name and nothing at 63/65 hex, one or three spaces (BVA)', () => {
     assert.deepEqual(RELEASE.sumSamples.valid.filter((s) => !RELEASE.sumLine.test(s)), [])
     assert.deepEqual(RELEASE.sumSamples.invalid.filter((s) => RELEASE.sumLine.test(s)), [])
@@ -189,7 +217,8 @@ function registerLayout(sdk) {
       assert.ok(fs.existsSync(at) && fs.statSync(at).isDirectory() && fs.readdirSync(at).length > 0, d + '/ is missing or empty')
     }
   })
-  relCase(sdk, CASE.extras, 'tgz', 'the release holds no .tgz other than the nine package tarballs', () => {
+  // Re-baselined (SHELVE-BOARD, was "nine"): fishball-board is out of this release (the user, 2026-11-18).
+  relCase(sdk, CASE.extras, 'tgz', 'the release holds no .tgz other than the eight package tarballs', () => {
     const tgz = fs.readdirSync(releaseDir()).filter((f) => f.endsWith(RELEASE.tarballSuffix)).sort()
     assert.deepEqual(tgz, ALL.map((p) => p.tarball).sort())
   })
@@ -221,7 +250,7 @@ function registerManifests(sdk) {
       const wrong = nestedManifests(tarball(pkg).files).filter((n) => n.manifest.version !== VERSION).map((n) => `${n.rel}: ${show(n.manifest.version)}`)
       assert.deepEqual(wrong, [])
     })
-    relCase(sdk, CASE.peers, 'exact ' + pkg.name, `every dependency of ${pkg.name} on another of the nine names exactly ${VERSION}`, () => {
+    relCase(sdk, CASE.peers, 'exact ' + pkg.name, `every dependency of ${pkg.name} on another of the eight names exactly ${VERSION}`, () => {
       assert.deepEqual(internalVersionProblems(pkg, tarball(pkg).manifest), [])
     })
     if (isLibrary(pkg)) {
@@ -275,6 +304,7 @@ function registerContents(sdk) {
     assert.deepEqual(closureProblems(tarball(CORE_CLOSURE.owner).files), [])
   })
   const { owner, dir, packages, statusFile } = INSTANCE_BUNDLED
+  // Re-baselined (SHELVE-BOARD, was ui, board, core): "不要预留在子实例的Fishball内" (the user, 2026-11-18).
   relCase(sdk, CASE.instance, 'set', `${owner.tarball} ${dir} holds exactly the hosted child's plugin set as tarballs`, () => {
     const held = [...tarball(owner).files.keys()].filter((rel) => rel.startsWith(dir) && rel.endsWith(RELEASE.tarballSuffix)).sort()
     assert.deepEqual(held, packages.map((p) => dir + p.tarball).sort())
@@ -349,7 +379,7 @@ function registerCheck(sdk) {
 
 /** REL-SYS-01..03, REL-DT-04: offline installs with DSH's own `dsh plugin add`. */
 function registerInstalls(sdk) {
-  relCase(sdk, CASE.hosted, 'set', `hosted set (${SETS.hosted.map((p) => p.name).join(', ')}) in one add into profile ${DSH.profile}: installed, bundled, the child's three tarballs in place`, () => withScratch(async (scratch) => {
+  relCase(sdk, CASE.hosted, 'set', `hosted set (${SETS.hosted.map((p) => p.name).join(', ')}) in one add into profile ${DSH.profile}: installed, bundled, the child's ${INSTANCE_BUNDLED.packages.length} tarballs in place`, () => withScratch(async (scratch) => {
     const r = await installAndCheck(sdk, scratch, SETS.hosted, { bundles: true })
     const bundledDir = path.join(installedDir(r.profileDir, INSTANCE_BUNDLED.owner), INSTANCE_BUNDLED.dir)
     for (const p of INSTANCE_BUNDLED.packages) {
@@ -358,6 +388,7 @@ function registerInstalls(sdk) {
       assert.ok(fs.readFileSync(file).equals(fs.readFileSync(tarballPath(p))), file + ' differs from the release tarball')
     }
   }), BUDGET.installCaseMs)
+  // Re-baselined (SHELVE-BOARD, was ui, board, core, adapter): the board is shelved (the user, 2026-11-18).
   relCase(sdk, CASE.standalone, 'set', `standalone set (${SETS.standalone.map((p) => p.name).join(', ')}) in one add, in that order: installed, bundled, core's MCP client from its bundle`, () => withScratch(async (scratch) => {
     const r = await installAndCheck(sdk, scratch, SETS.standalone, { bundles: true })
     assertFromOwnBundle(r.profileDir, CORE_CLOSURE.owner, CORE_CLOSURE.mcpClient)
@@ -381,4 +412,185 @@ function registerInstalls(sdk) {
     const r = await dshAddChecked(sdk, scratch, [tarballPath(registry)], empty(scratch))
     assert.notEqual(r.code, DSH.okExit, 'installed with an empty store: ' + tail(r.output))
   }), BUDGET.installCaseMs)
+}
+
+/** REL-EP-10, REL-EP-11 (B2, B6): what INSTALL.md says; REL-EP-12, REL-EP-13 (B3, B4): each tarball's README and description. */
+function registerDocText(sdk) {
+  for (const set of OFFLINE.sets) {
+    const names = set.pkgs.map((p) => p.name).join(', ')
+    relCase(sdk, CASE.docOrder, set.key, `${INSTALL_DOC.file} shows the online add of ${names} at ${VERSION} before its one offline block, whose add line is ${OFFLINE.offlineFlag}`, () => {
+      const lines = installDocLines()
+      const block = offlineBlock(lines, set.pkgs)
+      assert.ok(block.lines.filter(isAddLine).every((l) => l.includes(OFFLINE.offlineFlag)), `the offline block's add line lacks ${OFFLINE.offlineFlag}`)
+      const online = onlineLineIndex(lines, set.pkgs)
+      assert.ok(online >= 0, `no \`dsh plugin --profile ${DSH.profile} add\` of ${names} at ${VERSION}`)
+      assert.ok(online < block.open, `the online add (line ${online + 1}) comes after the offline block (line ${block.open + 1})`)
+    })
+  }
+  relCase(sdk, CASE.docBefore, 'earlier', `before its first add command, ${INSTALL_DOC.file} says to remove each earlier Fishball package and <DSH_HOME>/fishball/`, () => {
+    const lines = installDocLines()
+    const first = fencedBlocks(lines).find((b) => b.lines.some(isAddLine))
+    assert.ok(first, `${INSTALL_DOC.file} has no fenced add command`)
+    const before = lines.slice(0, first.open).join(RELEASE.lineBreak)
+    assert.deepEqual([...INSTALL_DOC.earlier.names, INSTALL_DOC.earlier.verb].filter((re) => !re.test(before)).map(String), [])
+  })
+  relCase(sdk, CASE.docBefore, 'missing peer', `one paragraph of ${INSTALL_DOC.file} says pnpm's missing-peer warning about DSH's own @deepseek-ai/* packages is expected`, () => {
+    assert.ok(paragraphs(installDocLines()).some((p) => INSTALL_DOC.missingPeer.every((re) => re.test(p))), `no paragraph matches all of ${INSTALL_DOC.missingPeer.join(' ')}`)
+  })
+  relCase(sdk, CASE.docBefore, 'keep folder', `${INSTALL_DOC.file}'s paragraph on installing from the folder with no network tells the user to keep the folder and that a later --offline add needs its --cache-dir and --registry`, () => {
+    const offline = paragraphs(installDocLines()).filter((p) => INSTALL_DOC.offlineParagraph.every((re) => re.test(p)))
+    assert.equal(offline.length, 1, `paragraphs matching all of ${INSTALL_DOC.offlineParagraph.join(' ')}: ${offline.length} (one expected)`)
+    assert.match(offline[0], INSTALL_DOC.keepFolder)
+    assert.deepEqual(INSTALL_DOC.laterNeeds.filter((re) => !re.test(offline[0])).map(String), [], 'the paragraph does not say a later --offline add needs the cache and registry')
+  })
+  relCase(sdk, CASE.docBefore, 'token path', `the standalone section names the token-field path (New token on the connector settings page → "Token for connecting a DSH", Target set) as well as Connect`, () => {
+    const lines = installDocLines()
+    const set = OFFLINE.sets.find((s) => s.key === INSTALL_DOC.standaloneKey)
+    const section = sectionOf(lines, offlineBlock(lines, set.pkgs).open).join(RELEASE.lineBreak)
+    assert.deepEqual(INSTALL_DOC.tokenPath.filter((re) => !re.test(section)).map(String), [])
+  })
+  for (const pkg of ALL) {
+    relCase(sdk, CASE.readme, pkg.name, `${pkg.tarball} package/${DOC_TEXT.readme} names no ask_agent, does not say "not published", has no stale or internal text`, () => {
+      const entry = tarball(pkg).files.get(DOC_TEXT.readme)
+      assert.ok(entry && isRegular(entry), `no regular package/${DOC_TEXT.readme}`)
+      assert.deepEqual(textHits([...DOC_TEXT.b3, ...DOC_TEXT.b4], entry.data.toString('utf8')), [])
+    })
+    relCase(sdk, CASE.description, pkg.name, `${pkg.tarball} package.json ${DOC_TEXT.descriptionField} has no stale or internal text`, () => {
+      assert.deepEqual(textHits(DOC_TEXT.b4, String(tarball(pkg).manifest?.[DOC_TEXT.descriptionField] ?? '')), [])
+    })
+  }
+}
+
+/**
+ * One INSTALL.md case: a copy of the release folder (the cwd of its offline block), a DSH home whose
+ * `dsh` is the SDK's CLI, and a counting proxy no registry is behind.
+ */
+function onDocProfile(sdk, fn) {
+  return withScratch((scratch) => withCountingProxy(async (proxy, hits) => {
+    const copy = copyRelease(scratch)
+    await fn({ scratch, copy, hits, profile: docProfile(sdk, scratch, proxy) })
+  }))
+}
+const assertExit0 = (what, r) => assert.equal(r.code, DSH.okExit, `${what}: ${tail(r.output)}`)
+/**
+ * What must hold after a step: `set` installed (bundled), every `kept` package still installed, the
+ * profile linked to `store`, no request sent.
+ */
+function assertProfile({ profile, hits }, what, set, kept, store) {
+  assert.deepEqual([...installProblems(profile.profileDir, set.pkgs, { bundles: true }), ...installProblems(profile.profileDir, kept, { bundles: false })], [], what)
+  assert.equal(profile.storeDir(), store, `${what}: node_modules is linked to another store`)
+  assert.deepEqual(hits, [], `${what}: a network request was sent`)
+}
+/** Run the set's offline block as written, OFFLINE.runs times in a row (idempotence); each run exits 0 and leaves the profile as `assertProfile` says. */
+async function runDocBlockTwice(ctx, set, kept, store) {
+  const block = offlineBlock(installDocLines(ctx.copy), set.pkgs)
+  for (let run = 1; run <= OFFLINE.runs; run++) {
+    const what = `${set.key} offline block, run ${run}`
+    assertExit0(what, await ctx.profile.runBlock(block, ctx.copy))
+    assertProfile(ctx, what, set, kept, store)
+  }
+}
+
+/** REL-DT-05 (B2, set × used profile) and REL-ST-02 (B2, fresh profile: block → block → a later add, the release folder kept). */
+function registerDocInstalls(sdk) {
+  for (const set of OFFLINE.sets) {
+    relCase(sdk, CASE.docUsed, set.key, `${set.key} offline block as written, twice, on a profile given ${set.other.name} from another store: exit 0, ${set.other.name} kept, the profile stays on that store and its files stay, no request`, () => onDocProfile(sdk, async (ctx) => {
+      const other = path.join(ctx.scratch, OFFLINE.otherStoreDir)
+      assertExit0(`${set.other.name} from another store`, await ctx.profile.cli(OFFLINE.otherArgs(DSH.profile, tarballPath(set.other, ctx.copy), other)))
+      const store = ctx.profile.storeDir()
+      assert.ok(typeof store === 'string' && store.startsWith(other + path.sep), `the used profile is linked to ${show(store)}, not ${other}`)
+      const files = filesUnder(other)
+      await runDocBlockTwice(ctx, set, [set.other], store)
+      assert.deepEqual(files.filter((f) => !fs.existsSync(path.join(other, f))), [], 'files of the other store were deleted')
+    }), BUDGET.docCaseMs)
+    relCase(sdk, CASE.docFresh, set.key, `${set.key} offline block as written on a fresh profile: exit 0 twice on pnpm's own store (\`store path\`); with the release folder kept, a later --offline add of a tarball from elsewhere (its --cache-dir and --registry, no --store-dir) exits 0 on the same store`, () => onDocProfile(sdk, async (ctx) => {
+      const store = await ctx.profile.storePath()
+      assert.ok(store && !store.startsWith(ctx.copy + path.sep), `\`store path\` is ${show(store)}`)
+      await runDocBlockTwice(ctx, set, [], store)
+      const later = path.join(ctx.scratch, OFFLINE.laterDir, set.other.tarball)
+      fs.mkdirSync(path.dirname(later))
+      fs.copyFileSync(tarballPath(set.other, ctx.copy), later)
+      const r = await ctx.profile.cli(OFFLINE.laterArgs(DSH.profile, later, path.join(ctx.copy, RELEASE.cache)))
+      assert.doesNotMatch(r.output, OFFLINE.unexpectedStore)
+      assertExit0(`later add of ${set.other.name} from ${OFFLINE.laterDir}/`, r)
+      assertProfile(ctx, 'after the later add', set, [set.other], store)
+    }), BUDGET.docCaseMs)
+  }
+}
+
+/** The lines of a release doc (PUBLISH.md, INSTALL.md) of `dir`. */
+function releaseDocText(doc, dir = releaseDir()) {
+  const file = path.join(dir, doc)
+  assert.ok(fs.existsSync(file), doc + ' is missing: ' + RELEASE.missingHint)
+  return fs.readFileSync(file, 'utf8')
+}
+/** The tarball each `npm publish` line of PUBLISH.md publishes, in order. */
+const publishedTarballs = (text) => text.split(RELEASE.lineBreak).map((l) => SHELVED_DOC.publishLine.exec(l)?.[1]).filter(Boolean)
+
+/**
+ * REL-SHELVE (SHELVE-BOARD): the shelved board is nowhere in the release. The user, 2026-11-18:
+ * "fishball-board先从这次release中移除…先封存，留到下一批再说。所以不要预留在子实例的Fishball内。"
+ */
+function registerShelved(sdk) {
+  const { board } = SHELVED
+  // Oracle self-checks (EP): the doc rule and the publish-line rule on samples, no release needed.
+  relCase(sdk, CASE.oracle, 'shelved names', 'the shelved-board doc rule flags fishball-board and the word board, and none of dashboard, clipboard, onboarding, keyboard', () => {
+    const hits = (t) => SHELVED_DOC.names.some((re) => re.test(t))
+    assert.deepEqual(SHELVED_DOC.samples.hit.filter((t) => !hits(t)), [])
+    assert.deepEqual(SHELVED_DOC.samples.clean.filter(hits), [])
+  })
+  relCase(sdk, CASE.oracle, 'publish line', 'the publish-line rule reads the tarball of each npm publish line and of nothing else', () => {
+    assert.deepEqual(SHELVED_DOC.publishSamples.hit.filter((l) => publishedTarballs(l).length !== 1), [])
+    assert.deepEqual(SHELVED_DOC.publishSamples.clean.filter((l) => publishedTarballs(l).length !== 0), [])
+  })
+  // BVA on the count: exactly 8 (9 was the old release; 7 would have lost one).
+  relCase(sdk, CASE.shelved, 'count', `the release folder holds exactly ${RELEASE_COUNT.tarballs} tarballs, each <name>-${VERSION}.tgz, and ${board.tarball} is not one of them`, () => {
+    const tgz = fs.readdirSync(releaseDir()).filter((f) => f.endsWith(RELEASE.tarballSuffix))
+    assert.equal(tgz.length, RELEASE_COUNT.tarballs, show(tgz))
+    assert.equal(ALL.length, RELEASE_COUNT.tarballs, 'the suite\'s own package list')
+    assert.deepEqual(tgz.filter((f) => f.startsWith(board.name)), [], 'a board tarball is in the release')
+  })
+  relCase(sdk, CASE.shelved, 'sums', `${RELEASE.sums} has exactly ${RELEASE_COUNT.tarballs} lines and none names ${board.name}`, () => {
+    const text = releaseDocText(RELEASE.sums)
+    const lines = text.split(RELEASE.lineBreak).filter((l) => l !== '')
+    assert.equal(lines.length, RELEASE_COUNT.tarballs, show(lines))
+    assert.deepEqual(lines.filter((l) => l.includes(board.name)), [])
+  })
+  relCase(sdk, CASE.shelved, 'bundled', `${INSTANCE_BUNDLED.owner.tarball} ${INSTANCE_BUNDLED.dir} holds exactly ${RELEASE_COUNT.bundled} tarballs (fishball-ui, fishball-core), and nothing of ${board.name} anywhere in the tarball`, () => {
+    const files = [...tarball(INSTANCE_BUNDLED.owner).files.keys()]
+    const held = files.filter((rel) => rel.startsWith(INSTANCE_BUNDLED.dir) && rel.endsWith(RELEASE.tarballSuffix))
+    assert.equal(held.length, RELEASE_COUNT.bundled, show(held))
+    assert.deepEqual(files.filter((rel) => rel.includes(board.name)), [])
+  })
+  for (const doc of RELEASE.docs) {
+    relCase(sdk, CASE.shelved, 'doc ' + doc, `${doc} never mentions ${board.name} or the board`, () => {
+      const text = releaseDocText(doc)
+      const hits = SHELVED_DOC.names.map((re) => re.exec(text)?.[0]).filter(Boolean)
+      assert.deepEqual(hits, [])
+    })
+  }
+  relCase(sdk, CASE.shelved, 'publish', `${SHELVED_DOC.publishDoc} has exactly ${RELEASE_COUNT.tarballs} npm publish lines, one per release tarball, none of ${board.tarball}`, () => {
+    const published = publishedTarballs(releaseDocText(SHELVED_DOC.publishDoc))
+    assert.equal(published.length, RELEASE_COUNT.tarballs, show(published))
+    assert.deepEqual([...published].sort(), ALL.map((p) => p.tarball).sort())
+  })
+  relCase(sdk, CASE.shelved, 'install sets', `${INSTALL_DOC.file}'s offline add lines name exactly the four sets: hosted, managed, standalone (fishball-ui then fishball-core, core last), adapter`, () => {
+    const lines = installDocLines()
+    for (const set of OFFLINE.sets) offlineBlock(lines, set.pkgs)
+    const standalone = OFFLINE.sets.find((s) => s.key === INSTALL_DOC.standaloneKey).pkgs
+    assert.equal(standalone.at(-1), CORE_CLOSURE.owner, 'core is not last in the standalone set')
+  })
+  // State transition on a copy: valid (0) → an extra fishball-board tarball (non-zero, named unexpected) → removed (0).
+  relCase(sdk, CASE.shelved, 'check', `a copied release: valid (0) → ${board.tarball} added (non-zero, reported unexpected) → removed (0)`, () => onCopy(async ({ copy, pristine, expectCheck }) => {
+    const extra = path.join(copy, board.tarball)
+    fs.writeFileSync(extra, pristine)
+    await withScratch(async (scratch) => {
+      const r = await runCheck(scratch, copy)
+      assert.notEqual(r.code, PACK_SCRIPT.okExit, `${board.tarball} added: ${PACK_SCRIPT.check} passed`)
+      assert.match(r.output, SHELVED_DOC.unexpected, tail(r.output))
+      assert.ok(r.output.includes(board.tarball), `the report does not name ${board.tarball}: ${tail(r.output)}`)
+    })
+    fs.rmSync(extra)
+    await expectCheck(`${board.tarball} removed`, true)
+  }), BUDGET.checkCaseMs)
 }
