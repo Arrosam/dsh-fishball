@@ -33,7 +33,7 @@ import { fields, forms, isRequired, masked, pageText } from './browser.mjs'
 import {
   APPROVAL_LISTENER, CIMD_LIMITS, CLIENT_AUTH, CONNECTOR_STATUS, DOC, FAILURE_LIMIT, FIXTURE, GATE_SURFACE, GRANT,
   HOSTS, HTTP_HEADER, HTTP_METHOD, HTTP_STATUS, ID_REFUSAL, LATER, LIFETIME, NAME_RULES, OAUTH_ERROR, PAGE_TEXT, PARAM, PATHS, PLAIN_METHOD,
-  REFRESH_RECORD_MEMBERS, REFUSAL, RELAYED, REQUEST_GATE, SCOPE, STUB, SUBJECT, TIME_UNIT, oauthUrls,
+  REFRESH_RECORD_MEMBERS, REFUSAL, RELAYED, REQUEST_GATE, SCOPE, STUB, SUBJECT, TIME_UNIT, XSEC, oauthUrls,
 } from './constants.mjs'
 import {
   approvalListener, authorizeParams, cimdFetcher, digest, documentOf, freePort, holdPort, lockDefaultPort, pkce, probe, read,
@@ -73,6 +73,22 @@ export async function open(w, { browser = w.browser(), overrides = {} } = {}) {
   const { verifier, challenge } = pkce()
   const res = await browser.open(PATHS.authorize, authorizeParams(w, challenge, overrides))
   return { b: browser, verifier, challenge, page: res }
+}
+/**
+ * Opens `count` pending requests from the world's one address within GET /authorize's rate limit
+ * (X-SEC X-04: RATE_LIMITS.tokenRequestsPerAddressPerWindow per RATE_LIMITS.windowMs): after each full
+ * batch the injected clock moves one window on. The whole run stays inside LIFETIME.pendingRequestMs,
+ * so no request expires on its own. Returns the flows, oldest first.
+ */
+export async function openPaced(w, count) {
+  const batch = XSEC.authorizePerAddress
+  assert.ok(Math.ceil(count / batch) * XSEC.windowMs < LIFETIME.pendingRequestMs, 'harness: the paced opens would outlive a pending request')
+  const flows = []
+  for (let i = 0; i < count; i += 1) {
+    if (i > 0 && i % batch === 0) w.clock.advance(XSEC.windowMs)
+    flows.push(await open(w))
+  }
+  return flows
 }
 /**
  * Opens a request and presses Authorize with `fill` (default: v(E5), no name). The id is not a
@@ -611,11 +627,11 @@ function boundaryValues(sdk) {
   }
 
   // The pending-request cap (relayed: 256, oldest evicted first; an evicted request reads as expired).
+  // Re-baselined by X-SEC X-04: the opens are paced within GET /authorize's per-address rate (openPaced).
   for (const [part, count] of [['cap', RELAYED.pendingMax], ['cap + 1', RELAYED.pendingMax + 1]]) {
     row(sdk, CASE.st04, `pending ${part}`, `${count} pending requests → the oldest ${count > RELAYED.pendingMax ? 'reads as expired' : 'still authorizes'}`, async (w) => {
       w.tokens.add(5, V(5))
-      const flows = []
-      for (let i = 0; i < count; i += 1) flows.push(await open(w))
+      const flows = await openPaced(w, count)
       const res = await flows[0].b.authorize({ token: V(5) })
       if (count > RELAYED.pendingMax) assertOnPage(res, PAGE_TEXT.expired)
       else assertCode(w, { res, redirect: redirectOf(res) })
@@ -993,17 +1009,19 @@ function stateTransitions(sdk) {
     assertOnPage(await flow.b.authorize({ token: V(5) }), PAGE_TEXT.expired)
     assert.equal(w.pairs.pairOf(E(5)), undefined)
   })
-  st04('7', 'Pending → the per-client failure limit reached → refused with the rate-limit answer, valid or not; nothing revealed', async (w) => {
+  // Re-baselined by X-SEC X-03 (C-WIRE-2): a valid token always authorizes; only a failing one is refused
+  // while limited (K1 FAILURE_LIMIT, amending S7b P2 "even a valid credential is refused").
+  st04('7', 'Pending → the per-client failure limit reached → a wrong token gets the 429 rate-limit answer, uncounted; the right token still authorizes (X-03)', async (w) => {
     w.tokens.add(5, V(5))
     const flow = await open(w)
     for (let i = 0; i < FAILURE_LIMIT.perKeyPerWindow; i += 1) assertOnPage(await flow.b.authorize({ token: V(1) }), PAGE_TEXT.invalid)
-    const valid = await flow.b.authorize({ token: V(5) })
     const invalid = await flow.b.authorize({ token: V(1) })
-    assert.equal(valid.status, HTTP_STATUS.tooManyRequests)
-    assert.equal(valid.headers[HTTP_HEADER.location], undefined)
-    assert.equal(masked(valid.body), masked(invalid.body), 'a limited answer says nothing about the token')
-    assert.equal(w.pairs.pairOf(E(5)), undefined)
+    assert.equal(invalid.status, HTTP_STATUS.tooManyRequests)
+    assert.equal(invalid.headers[HTTP_HEADER.location], undefined)
     assert.equal(w.limiter.failures.length, FAILURE_LIMIT.perKeyPerWindow, 'a limited request is not counted again')
+    assert.equal(w.pairs.pairOf(E(5)), undefined)
+    const valid = await flow.b.authorize({ token: V(5) })
+    assertCode(w, { ...flow, res: valid, redirect: redirectOf(valid) })
   })
   st04('8', 'CodeIssued → the token request with the correct verifier, redirect and resource within 60 s → Redeemed: scope fishball AT', async (w) => {
     w.tokens.add(5, V(5))

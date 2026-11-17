@@ -140,6 +140,7 @@ export const WEB = Object.freeze({
   accepted: 202,
   ok: 200,
   seeOther: 303,
+  temporaryRedirect: 307,
   badRequest: 400,
   unauthorized: 401,
   notFound: 404,
@@ -177,6 +178,8 @@ export const FIXTURE = Object.freeze({
   }),
   /** Paths the DT-11 rules put in the metadata in place of the connector's own. */
   wrong: Object.freeze({ resourcePath: '/api/agent/other', issuerPath: '/api/agent/other-oauth', mcpPath: '/mcp' }),
+  /** X-SEC X-05: where a 307 from the token endpoint points (a path the fake never serves). */
+  redirectedTokenPath: '/fbtest-redirected-token',
   /** The library cases' own credential key scope (any plugin-shaped segment). */
   libraryKeyScope: 'fbtest-oauth-client',
   serverId: (serverName) => 'server-' + Buffer.from(serverName, 'utf8').toString('hex'),

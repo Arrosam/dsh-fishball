@@ -11,7 +11,7 @@
  */
 import path from 'node:path'
 // K1 owns these vocabularies since C-WIRE-2 (the V2 ./contract export is gone).
-import { APPROVAL_DECISION as DECISION, RISK } from '../../../../packages/dsh-connector/mcp-schema/index.js'
+import { ANSWER_DECISIONS, APPROVAL_DECISION as DECISION, RISK } from '../../../../packages/dsh-connector/mcp-schema/index.js'
 import {
   EVENT_TYPE, MAILBOX, MANAGED_REFUSAL, PAIR_ADVICE, PAIR_ONLY, PROTOCOL, REFUSAL, RESOURCE, SCOPE, TOOL, TOOL_NAMES, TOOLS, formatOfferId,
   oauthUrls, toolDefinition,
@@ -113,3 +113,6 @@ export const LATER = Object.freeze({
   attention: 'U-ATTN (embed-ui.attention.* contributed through C-EXT when embed-UI is present)',
   settings: 'C-WIRE (the connector settings schema: no setting stops delegated items)',
 })
+
+/** X-SEC X-02 (C-WIRE-2): approval_answer admits K1 ANSWER_DECISIONS only, and no `question`. */
+export const XSEC = Object.freeze({ id: 'X-SEC X-02', decisions: ANSWER_DECISIONS, ask: DECISION.ask, questionMember: 'question' })

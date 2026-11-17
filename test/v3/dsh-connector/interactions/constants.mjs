@@ -52,6 +52,8 @@ export const RELAYED = Object.freeze({
   prefixTools: Object.freeze({ bash: 'command', pwsh: 'command', terminal_send: 'text' }),
   promptKeys: Object.freeze(['argumentsStatus', 'managed', 'promptId', 'sessionId', 'since', 'title', 'toolName']),
   settlementWithAnswers: 'answers',
+  /** X-SEC X-02: the member approval_answer no longer declares. */
+  questionMember: 'question',
 })
 
 /** The user's decisions (2026-11-16/17), quoted by the rows that rely on them. */
@@ -81,6 +83,8 @@ export const IX = Object.freeze({
     toolResult: 'tool/result', userMessage: 'user/message',
     userSource: 'user', running: 'running', idle: 'idle',
     workDir: 'work',
+    /** DSH's attachment store under DSH_HOME (dsh-attachment-local: `DSH_HOME/attachments/v1`). */
+    attachmentsDir: 'attachments',
     planOn: '/plan', planOff: '/plan off',
     askTool: 'ask_user_question', planTool: 'exit_plan_mode', subagentTool: 'subagent', runCode: 'run_code',
     /** exit_plan_mode's result words (dsh-plan-mode). */
@@ -201,3 +205,13 @@ export const FIXTURE = Object.freeze({
 
 /** Harness timing only. */
 export const BUDGET = Object.freeze({ ...WIRE_BUDGET, eventMs: 30000, quietMs: 2000 })
+
+/** The review fixes and X-SEC rows of this suite (xsec-cases.mjs; relayed 2026-11-17). */
+export const XSEC = Object.freeze({
+  id: Object.freeze({ rv01: 'C-WIRE-2 RV-01', rv02: 'C-WIRE-2 RV-02', rv03: 'C-WIRE-2 RV-03', rv04: 'C-WIRE-2 RV-04', x08: 'X-SEC X-08', x09: 'X-SEC X-09' }),
+  /** The hostRef cap the requirements name (X-09: "past the 256-hostRef cap"). */
+  hostRefCap: 256,
+  instanceId: 'fbix-hosted-instance',
+  /** Own boots: one disables the connector row; one fills the shared hostRef table; one holds grant rows. */
+  scenario: Object.freeze({ close: 'ix-close', attachments: 'ix-attachments', grants: 'ix-grants-x08' }),
+})

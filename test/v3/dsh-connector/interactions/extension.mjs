@@ -139,5 +139,11 @@ export async function ops({ ctx, model, agentOf, eventSummary, plain, createUser
     isHeld: ({ sessionId }) => typeof model.holds?.get(sessionId) === 'function',
     releaseHold({ sessionId }) { const r = model.holds?.get(sessionId); model.holds?.delete(sessionId); if (typeof r === 'function') r(); return typeof r === 'function' },
     events: ({ sessionId }) => live(sessionId).session.snapshotEvents().map(eventSummary),
+    /** Files under DSH's attachment store (X-SEC X-09: a refused put writes nothing). */
+    attachmentFiles() {
+      const root = path.join(process.env.DSH_HOME, IX.dsh.attachmentsDir)
+      if (!fs.existsSync(root)) return 0
+      return fs.readdirSync(root, { recursive: true }).filter((f) => fs.statSync(path.join(root, String(f))).isFile()).length
+    },
   }
 }
