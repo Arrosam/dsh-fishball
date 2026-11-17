@@ -15,14 +15,14 @@
  * DSH's own vocabulary is the installed SDK's. The rest is fixture data and harness timing.
  */
 import path from 'node:path'
-import { APPROVAL_KIND, APPROVAL_DECISION as DECISION, RISK } from '../../../../packages/dsh-connector/mcp-schema/index.js'
+import { APPROVAL_KIND, APPROVAL_DECISION as DECISION, ARGUMENTS_STATUS, RISK } from '../../../../packages/dsh-connector/mcp-schema/index.js'
 import {
   DECISION_KIND, DECISION_KIND_OF, EVENT_TYPE, LINK_REFUSAL, OFFER_ID, REFUSAL, RETIREMENT_REASON, SETTLED_BY, SETTLEMENT_OUTCOME, TOOL,
 } from '../../../../packages/dsh-connector/mcp-schema/index.js'
 import { PACKAGE } from '../../../suites.mjs'
 import { REPO } from '../../../support/constants.mjs'
 
-export { APPROVAL_KIND, DECISION_KIND, DECISION_KIND_OF, EVENT_TYPE, OFFER_ID, RETIREMENT_REASON, SETTLED_BY, SETTLEMENT_OUTCOME, TOOL }
+export { APPROVAL_KIND, ARGUMENTS_STATUS, DECISION_KIND, DECISION_KIND_OF, EVENT_TYPE, OFFER_ID, RETIREMENT_REASON, SETTLED_BY, SETTLEMENT_OUTCOME, TOOL }
 
 /**
  * F-FIX (the user, 2026-11-17, answering "ask cards after ask_agent removed": "Permission requests
@@ -48,11 +48,28 @@ export const SUBJECT = Object.freeze({
   chunk: Object.freeze({ file: path.join(UI_DIR, 'client.asks.js'), name: 'client.asks.js', owner: 'fishball-ui', export: 'asksPart' }),
   /** The manifest whose `files` ship the chunk (fishball-ui's since F-UI). */
   chunkManifest: path.join(UI_DIR, 'package.json'),
+  /**
+   * The pre-F-FIX module (the F-FIX base, integrate/v3-w2 @ c2995aa9), only to write a card record
+   * in the old shape. `files` is its import closure at that commit.
+   */
+  legacy: Object.freeze({
+    ref: 'c2995aa9',
+    entry: 'packages/core/src/asks/index.js',
+    files: Object.freeze([
+      'packages/core/src/asks/index.js', 'packages/core/src/asks/store.js', 'packages/core/src/asks/routes.js', 'packages/core/src/asks/constants.js',
+      'packages/core/src/link/listeners.js', 'packages/core/src/events/diagnostics.js', 'packages/core/contracts/constants.js',
+    ]),
+    manifest: 'package.json',
+    tempPrefix: 'fbtest-f-askcard-legacy-',
+  }),
 })
 
-/** K3 ask-card.d.ts: the card's fields and states, as the declaration spells them. */
+/**
+ * K3 ask-card.d.ts: the card's fields and states, as the declaration spells them. F-FIX (the user,
+ * 2026-11-17: "Show arguments and reason") adds `arguments`, `argumentsStatus` and `reason`.
+ */
 export const K3 = Object.freeze({
-  fields: Object.freeze(['approvalId', 'offerId', 'sessionId', 'sessionTitle', 'question', 'choices', 'askedAt', 'state']),
+  fields: Object.freeze(['approvalId', 'offerId', 'sessionId', 'sessionTitle', 'question', 'arguments', 'argumentsStatus', 'reason', 'choices', 'askedAt', 'state']),
   state: Object.freeze({ open: 'open', answered: 'answered', closed: 'closed' }),
 })
 
@@ -164,6 +181,10 @@ export const FIXTURE = Object.freeze({
   emptyTitle: '',
   /** Appended to a re-offer's prompt (F-FIX re-offer rows): the replaced record's question is its own. */
   reofferSuffix: ' (re-offer r',
+  /** F-FIX card detail: a call's arguments as the connector sends them (text), with markup in it. */
+  argumentsText: '{"command":"rm -rf <b>build</b>","cwd":"/tmp/fbtest"}',
+  /** A session reason holding markup, which the drawn card must show as text. */
+  markupReason: 'FBTEST-R <img src=x onerror=alert(1)> & <script>alert(2)</script>',
   origin: 'http://127.0.0.1:4000',
   modelText: 'fbtest ok',
   callId: 'fbtest-call-',
@@ -204,6 +225,42 @@ export const INVALID_ANSWERS = Object.freeze([
   ['text is a number', Object.freeze({ choice: DECISION.allow, text: 7 })],
   ['text is null', Object.freeze({ choice: DECISION.reject, text: null })],
 ])
+
+/**
+ * ASK-EP-07 (F-FIX card detail): the descriptor's `argumentsStatus` partitions and the choices each
+ * one offers (ask-card.d.ts: Reject only when the status is set and not `complete`).
+ */
+export const DETAIL_STATUS_ROWS = Object.freeze([
+  ['absent', undefined, Object.freeze([DECISION.allow, DECISION.reject])],
+  [ARGUMENTS_STATUS.complete, ARGUMENTS_STATUS.complete, Object.freeze([DECISION.allow, DECISION.reject])],
+  [ARGUMENTS_STATUS.truncated, ARGUMENTS_STATUS.truncated, Object.freeze([DECISION.reject])],
+  [ARGUMENTS_STATUS.unavailable, ARGUMENTS_STATUS.unavailable, Object.freeze([DECISION.reject])],
+])
+/** ASK-BVA-03 (F-FIX card detail): the descriptor's `reason` at the blank / non-blank edge (null = shown as none). */
+export const DETAIL_REASON_ROWS = Object.freeze([
+  ['empty', '', null],
+  ['spaces only', '   ', null],
+  ['newline and tab only', '\n\t', null],
+  ['one character', 'x', 'x'],
+])
+
+/**
+ * ASK-UI-01 (the drawn card, render.mjs): DSH's slot the card dock sits in (dsh-web-app's
+ * conversation input dock, both SDKs), the events route the page follows (ROUTE.events), and the
+ * words a user reads (en): the two answer buttons and the requirement's "a note that the arguments
+ * are incomplete".
+ */
+export const RENDER = Object.freeze({
+  slot: 'conversation.input.dock',
+  eventsPath: '/api/fishball/asks/events',
+  managerSession: 'fbtest-fishball',
+  messageEvent: 'message',
+  mountKey: 'fbtest-ask-dock-',
+  button: 'button',
+  join: ' ',
+  label: Object.freeze({ allow: /^allow\b/i, reject: /^reject\b/i }),
+  incompleteNote: /\bincomplete\b/i,
+})
 
 /** ASK-EP-01: `ask_user` arguments that are not a string offer id. */
 export const INVALID_TOOL_ARGS = Object.freeze([

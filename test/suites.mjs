@@ -196,8 +196,10 @@ export const V3_SUITES = Object.freeze({
   'fishball-core.link': suite('MCP link (F-LINK)', v3('fishball-core/link'),
     [...CORE_LINK, top(PACKAGE.fishballCore), ...CONNECTOR_CONTRACTS, ...CONNECTOR_CORE, CONNECTOR_MANIFEST, sub(PACKAGE.dshConnector, 'host-services')]),
   // The card's browser half is fishball-ui's chunk since F-UI; its package.json ships it.
-  'fishball-core.asks': suite('ask cards: ask_user, the asks service and routes (F-ASKCARD)', v3('fishball-core/asks'),
-    [sub(PACKAGE.fishballCore, 'src', 'asks'), PACKAGE.fishballUi + '/client.asks.js', PACKAGE.fishballUi + '/package.json', ...CORE_LINK]),
+  // F-FIX: ASK-UI-01 draws the card with fishball-ui's client.js and client.asks.js in the F-SETTINGS scripted page.
+  'fishball-core.asks': suite('ask cards: ask_user, the asks service and routes, the drawn card (F-ASKCARD, F-FIX)', v3('fishball-core/asks'),
+    [sub(PACKAGE.fishballCore, 'src', 'asks'), PACKAGE.fishballUi + '/client.asks.js', PACKAGE.fishballUi + '/client.js', PACKAGE.fishballUi + '/package.json', ...CORE_LINK,
+      'test/v3/fishball-core/settings/page.mjs', 'test/v3/fishball-core/settings/primitives.mjs', 'test/v3/fishball-core/settings/constants.mjs']),
   'fishball-core.identity': suite('identity, pairing decisions, token-revoked (F-PAIR)', v3('fishball-core/identity'),
     [sub(PACKAGE.fishballCore, 'src', 'identity'), ...CORE_LINK, sub(PACKAGE.dshConnector, 'src', 'pairs'), ...CONNECTOR_CORE, ...CONNECTOR_CONTRACTS,
       // Its name rows read the own-schema suite's constants.
