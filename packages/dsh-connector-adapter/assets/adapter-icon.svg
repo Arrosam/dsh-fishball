@@ -1,10 +1,12 @@
 <svg width="36" height="36" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <!-- dsh-connector-adapter's icon (ICON-SET, the user, 2026-11-18): the Fishball set's shared base, FishMark from
-       Arrosam/fishball (app/src/main/java/org/areel/fishball/ui/Surfaces.kt, f4a887d; MIT, same
-       author) on the launcher's ink tile, with this package's own badge at the bottom right. The badge
-       is a paper chip in an ink ring (the ring is the cut-out that lifts it off the fish), holding a
-       16-unit glyph scaled 0.44 about the chip's centre. The glyph is a plug, drawn for this repository (DSH's icon set has no plug or key), for the adapter that plugs one DSH into another's connector.
-       The colours are the launcher's, so one asset reads on DSH's light and dark surfaces.
+  <!-- dsh-connector-adapter's icon (ICON-SET, the user, 2026-11-18): the Fishball set's shared base,
+       FishMark from Arrosam/fishball (app/src/main/java/org/areel/fishball/ui/Surfaces.kt, f4a887d;
+       MIT, same author) on the launcher's ink tile, with this package's own badge at the bottom right.
+       The badge is a paper chip in an ink ring (the ring is the cut-out that lifts it off the fish),
+       holding a 16-unit glyph scaled 0.44 about the chip's centre. The glyph is a plug, drawn for this
+       repository (DSH's icon set has no plug or key), for the adapter that plugs one DSH into
+       another's connector. The colours are the launcher's, so one asset reads on DSH's light and dark
+       surfaces. -->
   <rect width="24" height="24" rx="5" fill="#101010"/>
   <path d="M7.4 16.6 L7.4 9.9 L11.3 5.6 L18.4 5.6 L18.4 12.7 L14.1 16.6 Z M7.4 16.6 L2.6 21.4 L7.4 21.4 Z" fill="#F2F2EE"/>
   <path d="M14.6 7.4 h2 v2 h-2 Z" fill="#EC0A6E"/>
