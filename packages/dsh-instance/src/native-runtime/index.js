@@ -149,9 +149,11 @@ class NativeRuntime {
     await this.prepare()
     const record = await this.active()
     if (record) {
-      const alive = await this.alive(await this.pid(record))
+      const pid = await this.pid(record)
+      if (pid === undefined) fail(UNINSTALL.childStateUnknown, UNINSTALL.stateUnknownCause.noPidRecord)
+      const alive = await this.alive(pid)
       if (alive === true) fail(UNINSTALL.childRunning)
-      if (alive !== false) fail(UNINSTALL.childStateUnknown)
+      if (alive !== false) fail(UNINSTALL.childStateUnknown, UNINSTALL.stateUnknownCause.probeFailed)
     }
     await removeRuntime(this.paths)
     return { removed: true, root: this.paths.root }

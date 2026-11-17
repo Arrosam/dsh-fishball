@@ -52,9 +52,11 @@ async function main() {
     process.stdout.write(say(removed ? UNINSTALL.message.removed : UNINSTALL.message.absent, { path: root }))
     return UNINSTALL.exitCode.done
   } catch (error) {
-    // Only the code: a message could carry a path or a value from a private file.
+    // Only the code is printed: a message could carry a path or a value from a private file. The
+    // message only picks a known cause's text (UNINSTALL.stateUnknownCause, fixed names).
     const code = error?.code ?? error?.name ?? typeof error
-    process.stderr.write(say(UNINSTALL.message.refusedBy[code] ?? UNINSTALL.message.refused, { code, path: root }))
+    const text = UNINSTALL.message.refusedBy[code]?.[error?.message] ?? UNINSTALL.message.refused
+    process.stderr.write(say(text, { code, path: root }))
     return UNINSTALL.exitCode.refused
   }
 }
