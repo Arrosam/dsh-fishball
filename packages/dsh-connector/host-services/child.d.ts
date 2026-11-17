@@ -61,11 +61,12 @@ export interface ChildStatus {
  * Since requirements 1.39 the instance cannot read core's link inside the child, so it answers from
  * the host's own state only:
  * - `connected`: a same-DSH connector and the last hosted entry the instance created is `enabled`;
- * - `target-unreachable` (`TARGET_UNREACHABLE`): the instance's `targetUrl` names a remote target,
- *   which only Fishball's own page can report on;
  * - `token-refused` (`token-revoked`): the last hosted entry is `disabled` or `deleted`;
- * - `target-unset`: no same-DSH connector and no remote target, or a connector but no hosted entry
- *   created yet.
+ * - `target-unset`: no same-DSH connector, or a connector but no hosted entry created yet.
+ * MULTI-0 (2026-11-18; PLAN-MULTI §3.3, D09): the child's target is always this DSH's own
+ * connector (the actual parent). The instance's remote-target override is withdrawn from its
+ * settings, launch and token rules, so `target-unreachable` no longer arises from a remote URL;
+ * further targets are added inside Fishball (core's `targets.d.ts`), which the instance never sees.
  * The runtime values are K1's `TARGET_STATE` (DECIDED D7); a change here changes that object in the
  * same amendment.
  */
@@ -151,8 +152,8 @@ export interface ProviderSync {
   add(request: { readonly checkId: string; readonly ids: readonly string[] }): Promise<ProviderSyncAddResult>
 }
 
-/** Why `reconnect` refuses (PROPOSED spellings, I-HOST). */
-export type ReconnectRefusalCode = 'not-ready' | 'connector-missing' | 'target-remote' | 'operation-failed' | 'credentials-unwritable'
+/** Why `reconnect` refuses (PROPOSED spellings, I-HOST). MULTI-0 withdrew `target-remote` with the remote override. */
+export type ReconnectRefusalCode = 'not-ready' | 'connector-missing' | 'operation-failed' | 'credentials-unwritable'
 
 export interface DshInstanceChild {
   readonly apiVersion: 1
@@ -203,8 +204,7 @@ export interface DshInstanceChild {
    * available on the instance's own settings page, so a working token can be rotated in one click.
    * Replacing moves nothing: the old entry keeps its name, role and sessions until the user deletes
    * it. Refusals (data, never thrown): `not-ready`, `connector-missing` (no usable
-   * `dshConnectorTokens`), `target-remote` (the instance names a remote target; the user uses
-   * Connect in Fishball), `operation-failed` (`createHosted` rejected), `credentials-unwritable`
+   * `dshConnectorTokens`), `operation-failed` (`createHosted` rejected), `credentials-unwritable`
    * (the child could not store the value; the new entry stays for the user to delete, Q-B3 = B).
    */
   reconnect(): Promise<{ readonly ok: true } | { readonly ok: false; readonly code: ReconnectRefusalCode }>
