@@ -54,8 +54,7 @@ async function main() {
   } catch (error) {
     // Only the code: a message could carry a path or a value from a private file.
     const code = error?.code ?? error?.name ?? typeof error
-    const text = code === UNINSTALL.childStateUnknown ? UNINSTALL.message.stateUnknown : UNINSTALL.message.refused
-    process.stderr.write(say(text, { code, path: root }))
+    process.stderr.write(say(UNINSTALL.message.refusedBy[code] ?? UNINSTALL.message.refused, { code, path: root }))
     return UNINSTALL.exitCode.refused
   }
 }

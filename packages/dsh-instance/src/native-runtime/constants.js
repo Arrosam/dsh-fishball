@@ -105,6 +105,9 @@ export const LIFETIME = Object.freeze({
   registryKey: 'dsh-fishball.native-lifecycle.v1',
 })
 
+/** Every refusal of `uninstall.js` starts so; what follows tells the user what to do. */
+const UNINSTALL_REFUSED = 'Nothing was removed from {path} ({code}). '
+const CHILD_STATE_UNKNOWN = 'CHILD_STATE_UNKNOWN'
 /**
  * The uninstall cleanup command, `uninstall.js` (design §0.10, Q3). Neither DSH 0.2.1-rc.5 nor
  * 0.2.2-rc.1 runs plugin code on removal: the Plugins page disposes the row as a disable does, then
@@ -126,7 +129,7 @@ export const UNINSTALL = Object.freeze({
   // Whether the recorded child runs cannot be checked: it has no pid record, or `/bin/ps` cannot
   // be run or answers unreadably (E-FIX-1, B8). It is refused the same way, but quitting DSH and
   // retrying cannot help, so it has its own code and message.
-  childStateUnknown: 'CHILD_STATE_UNKNOWN',
+  childStateUnknown: CHILD_STATE_UNKNOWN,
   // Not LIFETIME's codes: those are the child process's own exit; these are the command's.
   exitCode: Object.freeze({ done: 0, refused: 1, usage: 2 }),
   message: Object.freeze({
@@ -134,9 +137,12 @@ export const UNINSTALL = Object.freeze({
     removed: 'Removed the Fishball instance data: {path}\n',
     absent: 'Nothing to remove: {path} does not exist.\n',
     // The codes are listed in the README ("Uninstall"); the most common is CHILD_RUNNING.
-    refused: 'Nothing was removed from {path} ({code}). Quit DSH, wait a few seconds and run it again.\n',
-    // The refusal for `childStateUnknown`.
-    stateUnknown: 'Nothing was removed from {path} ({code}). Could not check whether the Fishball child still runs: it has no pid record, or /bin/ps cannot be run here. Quit DSH, then run this command where /bin/ps works.\n',
+    refused: UNINSTALL_REFUSED + 'Quit DSH, wait a few seconds and run it again.\n',
+    // The refusals with their own text, by code; any other code gets `refused`. The remedy names
+    // only the `/bin/ps` cause: no remedy for a missing pid record is decided yet (E-FIX-1 review).
+    refusedBy: Object.freeze({
+      [CHILD_STATE_UNKNOWN]: UNINSTALL_REFUSED + 'Could not check whether the Fishball child still runs: it has no pid record, or /bin/ps could not be run. If /bin/ps cannot be run here (in a sandbox, say), quit DSH and run this command where it works.\n',
+    }),
   }),
 })
 
