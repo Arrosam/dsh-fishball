@@ -213,11 +213,16 @@ async function installPackedSet(paths, installation, set, signal) {
   const add = (specs, ...flags) => runPluginCommand(context, [install.command, ...specs, ...flags], options).catch((error) => ({ error }))
   if ((await add(install.order.map((name) => install.spec(name, set.version)))).exitCode === install.succeeded) return
   if (signal?.aborted) fail('START_INTERRUPTED')
+  // Proven an owned real directory before anything in it is removed (R-FIX-INSTANCE F02): `vendor/`
+  // is not one of the layout's checked directories, and a linked one would let the rm below delete
+  // the link target's file. Its parent, the profile, is (files.js prepareLayout).
+  const vendor = path.join(paths.profile, PLACEMENT.vendor)
+  await ownedDirectory(vendor)
   const vendored = []
   for (const name of install.order) {
     const source = set.tarball(name)
     if (!(await exists(source))?.isFile()) fail(PLACEMENT.code.installFailed, PLACEMENT.installFailed('missing ' + source))
-    const target = path.join(paths.profile, PLACEMENT.vendor, path.basename(source))
+    const target = path.join(vendor, path.basename(source))
     await rm(target, { force: true })
     await copyFile(source, target)
     vendored.push(target)
