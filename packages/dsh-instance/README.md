@@ -6,8 +6,7 @@ plugins in the child, gives the child a token from this DSH's connector once, sy
 and has its own settings page. It imports no Fishball-side code and has no `dsh-connector` peer: it
 looks the connector's services up at runtime (`dshConnectorTokens`).
 
-Version `1.0.0-alpha.1` in the release (this checkout's manifest still reads `0.1.0-alpha.0`).
-Install and uninstall are in the [root README](<../../README.md>).
+Version `1.0.0-alpha.1`. Install and uninstall are in the [root README](<../../README.md>).
 
 ## The child
 
@@ -22,7 +21,7 @@ Install and uninstall are in the [root README](<../../README.md>).
 - **Placement:** at every start, before the profile loads, `fishball-board`, `fishball-ui` and
   `fishball-core` are copied into `<profile>/vendor/<name>` and `<profile>/node_modules/<name>` and
   appended to the profile's bundles in that order, core last. Sources: `bundled/<dir>` in a packed
-  instance, else the sibling workspace folders of this checkout. The record
+  instance, else the sibling workspace folders of a source checkout. The record
   `fishball-placement.json` keeps your switches: a plugin is on at its first placement, a later
   disable survives, and one deleted while off comes back off. An enabled plugin the child cannot
   load fails the start with `PROFILE_INCOMPATIBLE`, naming it.

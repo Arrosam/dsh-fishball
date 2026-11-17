@@ -1,27 +1,50 @@
 /**
  * The release's two documents (REL-PACK item 7 and the user's 2026-11-17 publish brief), written from
  * the same constants the pack uses, so a renamed package or a new version cannot leave a document
- * naming the old one.
+ * naming the old one. The release folder also gets the helper INSTALL.md's offline install runs.
  */
 import fs from 'node:fs'
 import path from 'node:path'
-import { COMMAND, DIST_TAG, INSTALL_SETS, LAYOUT, PACKAGES, PROFILE, REGISTRY, SDKS, VERSION } from './constants.mjs'
+import { fileURLToPath } from 'node:url'
+import { COMMAND, DIST_TAG, INSTALL_SETS, LAYOUT, OFFLINE, PACKAGES, PROFILE, REGISTRY, SDKS, VERSION } from './constants.mjs'
 
 const fence = (lines) => ['```bash', ...lines, '```'].join('\n')
 
-/** `dsh plugin --profile web add …` for the given package names. */
-const add = (specs, ...flags) => ['dsh plugin --profile', PROFILE, 'add', ...specs, ...flags].join(' ')
-const remove = (names) => ['dsh plugin --profile', PROFILE, 'remove', ...names].join(' ')
+/** `dsh plugin --profile web <args>`. */
+const dsh = (...args) => ['dsh plugin --profile', PROFILE, ...args].join(' ')
+const add = (specs, ...flags) => dsh('add', ...specs, ...flags)
+const remove = (names) => dsh('remove', ...names)
+
+/** A path inside the release folder, as the offline commands spell it (run from that folder). */
+const here = (name) => '"$PWD/' + name + '"'
+
+/**
+ * The offline install of `tarballs`, two lines run from the release folder (e2e B2). The first
+ * copies the release's store into the profile's own store and keeps its path; the second installs
+ * with that store. Never `--store-dir` the release store itself: pnpm refuses it on a profile whose
+ * node_modules came from another store (ERR_PNPM_UNEXPECTED_STORE), and it would bind a fresh
+ * profile to this folder. The paths are absolute because DSH runs pnpm in the profile folder and
+ * anchors only bare `./x` package specs. The registry is named because pnpm keys its metadata cache
+ * by registry, and the cache here was filled from this one; `--offline` sends no request to it.
+ */
+function offlineAdd(tarballs) {
+  const store = OFFLINE.storeVariable + '="$(node ' + here(LAYOUT.offlineStore) + ' ' + here(LAYOUT.store) + ' "$(' + dsh(OFFLINE.modulesQuery) + ')" "$(' + dsh(OFFLINE.storeQuery) + ')")" &&'
+  return [store, add(tarballs.map(here), COMMAND.offline, '--store-dir="$' + OFFLINE.storeVariable + '"', '--cache-dir=' + here(LAYOUT.cache), COMMAND.registry)]
+}
+
+/** One set's install: from npm (the usual way), then offline from this folder. */
+function installBlocks(set, name) {
+  const keys = INSTALL_SETS[set]
+  return [
+    fence([add(keys.map((key) => name(key) + '@' + VERSION))]),
+    'Offline, from this folder:',
+    fence(offlineAdd(keys.map((key) => LAYOUT.tarball(name(key), VERSION)))),
+  ].join('\n\n')
+}
 
 function installMarkdown(packages) {
   const name = (key) => packages[key].manifest.name
   const names = (set) => INSTALL_SETS[set].map(name)
-  const spec = (key) => name(key) + '@' + VERSION
-  // Absolute: DSH runs pnpm in the profile folder and anchors only bare `./x` package specs, so a
-  // relative store path would point into the profile. The registry is named because pnpm keys its
-  // metadata cache by registry, and the cache here was filled from this one.
-  const offline = [COMMAND.offline, '--store-dir="$PWD/' + LAYOUT.store + '"', '--cache-dir="$PWD/' + LAYOUT.cache + '"', COMMAND.registry]
-  const tarball = (key) => '"$PWD/' + LAYOUT.tarball(name(key), VERSION) + '"'
   return `# Fishball ${VERSION}: install and uninstall
 
 Supported: DeepSeek Harness (DSH) ${SDKS.join(' and ')}. The packages declare \`engines.dsh\` \`>=0.2.1-rc.5\` and
@@ -30,13 +53,26 @@ Node \`>=22.14\`; DSH 0.2.2-rc.1 itself declares Node 24.9 or later.
 All commands use the profile \`${PROFILE}\`. Put your own profile name after \`--profile\`. **Quit DSH before
 you run any \`dsh plugin\` command.**
 
+## Before you install
+
+- **Remove any earlier Fishball packages** (\`dsh-fishball\`, \`fishball-connector\`, \`fishball-instance\`,
+  \`fishball-embed-ui\`, \`dsh-fishball-*\`) with \`${dsh('remove <name>')}\`, and delete \`<DSH_HOME>/fishball/\` if an
+  earlier release left it. This release is a fresh install: it reads and migrates nothing.
+- pnpm may print a long list of DSH's own packages (\`@deepseek-ai/*\`) as **missing peers**. DSH provides them
+  when it runs, so that warning is expected.
+
 ## Two ways to install
 
-- **From npm** (once the packages are published, see PUBLISH.md): \`dsh plugin --profile ${PROFILE} add <name>@${VERSION}\`.
-  DSH's plugin manager fetches each package and its declared dependencies.
-- **From this folder, with no network**: run the commands from this folder (they use \`$PWD\`). Each package is a tarball here, and
-  \`${LAYOUT.store}/\` and \`${LAYOUT.cache}/\` hold every third-party dependency, so pnpm needs no registry:
-  add \`${offline.join(' ')}\` to the command.
+- **From npm**, the usual way: \`${add(['<name>@' + VERSION])}\`. DSH's plugin manager fetches each package
+  and its declared dependencies from your registry. If pnpm stops with \`ERR_PNPM_UNEXPECTED_STORE\` (a profile once
+  installed with its own \`--store-dir\`), add \`--store-dir=<the store the message says node_modules is linked from>\`
+  to the same command; nothing needs deleting.
+- **From this folder, with no network.** Each package is a tarball here, and \`${LAYOUT.store}/\` and \`${LAYOUT.cache}/\` hold every
+  third-party dependency. Run the commands from this folder, in bash or zsh (they use \`$PWD\`), both lines as shown. The
+  first line runs \`${LAYOUT.offlineStore}\` (in this folder), which copies the packages of \`${LAYOUT.store}/\` into the pnpm
+  store your profile already uses, adding files and deleting or replacing none, and prints that store's path. The
+  second line installs with that store. It works on a profile that already has plugins, and the profile stays on its
+  own store, so later installs need nothing from this folder.
 
 Check the tarballs first: \`shasum -a 256 -c ${LAYOUT.sums}\`.
 
@@ -44,37 +80,50 @@ Check the tarballs first: \`shasum -a 256 -c ${LAYOUT.sums}\`.
 
 Install the connector, its UI and the built-in instance into your main DSH, in one command:
 
-${fence([add(INSTALL_SETS.hosted.map(spec)), '', '# or, offline from this folder:', add(INSTALL_SETS.hosted.map(tarball), ...offline)])}
+${installBlocks('hosted', name)}
 
 The connector needs DSH's web app in the profile (the \`${PROFILE}\` profile has it). Start DSH as usual.
 At its first start the instance creates a private Fishball DSH under \`<DSH_HOME>/fishball/runtime\` and
 installs the Fishball plugins into it (fishball-ui, then fishball-board, then fishball-core last). It installs
 them from npm at exactly version ${VERSION}, and when the registry cannot be reached it installs them from
 the copies it carries, with no network. It reinstalls only when that version is missing. You do not
-install the fishball-* packages yourself in hosted mode.
+install the fishball-* packages yourself in hosted mode. It also gives the child a token from this DSH's
+connector and copies your DSH's model list into the child once.
 
 The DSH home must be a canonical real path (on macOS, \`/private/tmp\`, not \`/tmp\`); otherwise the
 instance reports \`INVALID_MAIN_HOME\` and does not start.
 
+Open Fishball with the fish in the sidebar, or with **Open Fishball** on the instance's settings page
+(**Plugins → ${name('instance')}**). Open DSH at \`127.0.0.1\` or \`localhost\`: the window refuses other host names.
+With no model set, Fishball asks you to choose one.
+
 ## Standalone: a Fishball DSH of its own
 
-Install the Fishball plugins into the DSH that will be Fishball, in this order (core last):
+1. In the **managed DSH** (the one Fishball works for), install \`${name('connector')}\` and, for the fish and
+   Hand over there, \`${name('connectorUi')}\`, as in the hosted set but without \`${name('instance')}\`:
 
-${fence([add(INSTALL_SETS.standalone.map(spec)), '', '# or, offline from this folder:', add(INSTALL_SETS.standalone.map(tarball), ...offline)])}
+${fence([add([name('connector') + '@' + VERSION, name('connectorUi') + '@' + VERSION])])}
 
-Then start that DSH, open **Plugins → ${name('core')} → settings**, set **Target** to the connector URL of the DSH it works for and
-**Client metadata URL** to the https URL of the client metadata document you host, then press **Connect**. The DSH you connect to needs \`${name('connector')}\` (and, for its UI,
-\`${name('connectorUi')}\`) installed as in the hosted set, without \`${name('instance')}\`:
+2. In the **Fishball DSH**, install the Fishball plugins, in this order (core last):
 
-${fence([add([spec('connector'), spec('connectorUi')])])}
+${installBlocks('standalone', name)}
 
-fishball-ui and fishball-board are optional: fishball-core alone is a full Fishball DSH.
+   fishball-ui and fishball-board are optional: fishball-core alone is a full Fishball DSH.
+
+3. Start the Fishball DSH and open **Plugins → ${name('core')} → settings**. Set **Target** to the managed DSH's
+   connector endpoint, for example \`http://127.0.0.1:<port>/api/agent/mcp\`. A target on another machine must be
+   https. Then link it in one of two ways:
+   - **With a token:** on the managed DSH's connector settings page, press **New token** and copy the value (it is
+     shown once). Paste it into **Token for connecting a DSH** in ${name('core')}'s settings and press **Save**. The
+     token is used at the next connection.
+   - **With Connect:** set **Client metadata URL** to the https URL of the client metadata document you host,
+     press **Connect**, open the approval page and enter a token made with **New token** there.
 
 ## The connector adapter
 
 In a DSH that should use another DSH's connector through DSH's own MCP client:
 
-${fence([add(INSTALL_SETS.adapter.map(spec)), '', '# or, offline from this folder:', add(INSTALL_SETS.adapter.map(tarball), ...offline)])}
+${installBlocks('adapter', name)}
 
 Set its \`clientMetadataUrl\` (an https URL of the client metadata document you host) and its servers in
 its settings, then ask the agent to sign in with the \`dsh_connector_sign_in\` tool.
@@ -139,8 +188,9 @@ the registry and can be skipped. A published version cannot be overwritten: fix 
 `
 }
 
-/** Write INSTALL.md and PUBLISH.md into `out`. */
+/** Write INSTALL.md, PUBLISH.md and INSTALL.md's offline helper (this folder's copy) into `out`. */
 export function writeDocuments(out, packages) {
   fs.writeFileSync(path.join(out, LAYOUT.install), installMarkdown(packages))
   fs.writeFileSync(path.join(out, LAYOUT.publish), publishMarkdown(packages))
+  fs.copyFileSync(fileURLToPath(new URL(LAYOUT.offlineStore, import.meta.url)), path.join(out, LAYOUT.offlineStore))
 }
