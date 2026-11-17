@@ -200,6 +200,46 @@ OAC-LEAK-01:
 the OAC-EP-03 row 2–4 case uses that form. The refresh rule is: stored = failed, OR within the lead
 (OAC-DT-01 rule 5 expects `refreshed`).
 
+## Review fixes (R-FIX-ADAPTER): added rows
+
+Source: the deep review `review-x-dsh-connector-adapter.md`, findings F1 and F3, and the fix brief
+(the new `upstream` option of `createTokenManager`). Rows are in
+[review-fix-cases.mjs](review-fix-cases.mjs). "Foreign" means the record under this key was
+rewritten with `upstream = https://foreign.example/api/agent/mcp`. "v = 2" means it was rewritten
+with another record version.
+
+### OAC-FIX-F1: upstream binding (decision table)
+
+Conditions: the record (own / foreign / v = 2), whether `upstream` is set, the call form, and
+whether the stored grant is due.
+
+| Row | Record | `upstream` set | Call | Due | Outcome | Token requests | Record after |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| rule 1 | own | yes | `refresh({failed = stored})` | no | `refreshed` | 1 | rotated (control) |
+| rule 2 | foreign | yes | `refresh({failed = stored})` | no | `no-refresh-token` | 0 | byte-identical |
+| rule 3 | foreign | yes | `refresh()` | yes (E − LEAD) | `no-refresh-token` | 0 | byte-identical |
+| rule 4 | v = 2 | yes | `refresh({failed = stored})` | no | `no-refresh-token` | 0 | byte-identical |
+| rule 5 | v = 2 | yes | `refresh()` | yes | `no-refresh-token` | 0 | byte-identical |
+| rule 6 | foreign | no | `refresh({failed = stored})` | no | `refreshed` (as before: no binding check) | 1 | rotated |
+| drop 1 | own | yes | `dropTokens({failed = stored})` | — | — | — | tokens dropped (control) |
+| drop 2 | foreign | yes | `dropTokens({failed = stored})` | — | — | — | byte-identical |
+| drop 3 | foreign | yes | `dropTokens()` | — | — | — | byte-identical |
+| drop 4 | v = 2 | yes | `dropTokens({failed = stored})` | — | — | — | byte-identical |
+
+### OAC-FIX-F3: mixed-token single flight (state transitions, both orderings)
+
+Setup: a grant rotated once, so A is stale and B is stored, with refresh token RB. The calls enter
+the record lock together, in the order listed, because the store's `modifyRecord` is gated until all
+of them are issued.
+
+| Row | Calls (in order) | Expected |
+| --- | --- | --- |
+| mixed 1 | `refresh(A)`, `refresh(B)` | A: `declined`, and sees B. B: `refreshed` with a new C. 1 refresh grant; RB presented once; no reuse; the stored grant is C and still has a refresh token |
+| mixed 2 | `refresh(B)`, `refresh(A)` | B as in mixed 1; A: `declined` (sees B or C) |
+| same 1 | `refresh(B)`, `refresh(B)` | both `refreshed` with the same C; 1 refresh grant |
+| timer 1, 2 | `refresh()` (not due) with `refresh(B)`, both orders | B's caller gets a fresh C from exactly 1 refresh grant; RB presented once |
+| timer 3, 4 | `refresh()` (due, E − LEAD) with `refresh(B)`, both orders | the same. B's caller may report `refreshed` or `declined` (the timer's flight refreshed first), but it holds C |
+
 ## Not covered, and why
 
 - `invalid_grant` at the code exchange: the contract gives no attempt-end code for it (`failed`

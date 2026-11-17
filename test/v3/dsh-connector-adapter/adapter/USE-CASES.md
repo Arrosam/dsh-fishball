@@ -298,6 +298,50 @@ S6 (remount after the stock row gave up reconnecting) is not covered. The row is
 stock row gives up only after ten failed reconnects, whose timers run on the real clock (500 ms
 doubling up to 30 s), so it is impractical in-process.
 
+## Review fixes (R-FIX-ADAPTER): added rows
+
+Source: the deep review `review-x-dsh-connector-adapter.md`, findings F1–F8, with the user's
+decision on F4 relayed in the fix brief. Rows are in [review-fix-cases.mjs](review-fix-cases.mjs).
+They use these new fake-connector hooks:
+- `mcpReply`: answers a proxied request directly;
+- `tokenError.times`: a repeated token error;
+- `tokenDrop`: drops the connection at the token endpoint.
+
+A second host on the same `.credentials.yaml` stands for another process. The product's named
+constants are read from `src/constants.js`: `LIMIT.refreshRetryFirstMs`, `refreshRetryMaxMs` and
+`refreshRetryFactor`, and `PROXY.status.badGateway`. The F0 guard checks them once against the
+requirement's numbers.
+
+| Id | Row | Technique | Input | Expected | Source |
+| --- | --- | --- | --- | --- | --- |
+| ADP-FIX-F0 | guard | BVA | the named constants | 30 000 / 300 000 / 2. The delays they give are 30, 60, 120, 240, 300, 300 s; `badGateway` = 502 | F4, F2 |
+| ADP-FIX-F1 | rule 1–3 | DT (record × due) | while a request with A is held at C, another process rewrites the same key: rule 1 another upstream, not due; rule 2 another upstream, due (`expiresAt = now + LEAD`); rule 3 `v: 2`. C then answers 401 | no planted foreign token in any request C receives; the request's upstream attempts carry only `Bearer A`; no refresh grant; `.credentials.yaml` byte-identical after the foreign write; `needs-authorization`; child disposed | F1 |
+| ADP-FIX-F2 | 301 / 302 / 303 / 307 / 308 cross-origin | EP (each followable status) | the upstream answers with `Location` = a loopback sink on another port; the client is a default-follow `fetch` | 502 (`PROXY.status.badGateway`); no `Location`; `redirected` false; the sink receives nothing | F2 |
+| ADP-FIX-F2 | 307 / 308 same-origin | EP | `Location` = a path on C's own origin | the same; C receives nothing on that path | F2 |
+| ADP-FIX-F2 | 307 to plain http | EP (https→http) | `Location` = `http://agent.example/…` (read raw; nothing is contacted) | 502, no `Location` | F2 |
+| ADP-FIX-F2 | 300, 304 | BVA (neighbours of the set) | the upstream answers 300 / 304 | relayed as 300 / 304 | F2 |
+| ADP-FIX-F3 | mixed 1, 2 | ST (both orderings) | a request with A held at C; the timer rotates to B; a request with B held; both get 401, released A-then-B / B-then-A | the B request succeeds, its last attempt carrying the new C; exactly one more refresh grant; no reuse; tokens kept; `authorized` | F3 |
+| ADP-FIX-F3 | timer + 401 | ST | a request with A gets 401 as the clock reaches E − LEAD | the request succeeds with a fresh C; 1 refresh grant in total; no reuse | F3 |
+| ADP-FIX-F4 | schedule | BVA + ST | a standing `server_error` (500) from E − LEAD on | attempts at +30, +60, +120, +240, +300, +300 s; none at delay − 1 ms; credentials unchanged; `authorized` | F4 |
+| ADP-FIX-F4 | 429, 503, network error, timeout | EP (transient classes) | one scheduled failure of each class (the timeout waits the real 30 s request deadline) | the next attempt exactly 30 s later, none 1 ms before; credentials kept; `authorized` | F4 |
+| ADP-FIX-F4 | recovery | ST (reset) | two failures, then a success; then one more failure at the next E − LEAD | the success is stored; the next refresh at the new E − LEAD (none 1 ms before); the later failure retries after 30 s (backoff reset) | F4 |
+| ADP-FIX-F4 | invalid_grant | DT | a transient failure, then `invalid_grant` on the retry | `needs-authorization`; tokens dropped; no refresh over 4 × 300 s | F4 |
+| ADP-FIX-F4 | dispose | ST | the adapter is disposed during the backoff | no refresh request over 4 × 300 s | F4 |
+| ADP-FIX-F5 | 502 / 503 / 504 / broken body | DT (outage, no recovery) | one proxied answer of that kind, then the timer rotates the token | the child is disposed and a fresh one mounted; it reconnects (`server/discover`) and works | F5 |
+| ADP-FIX-F5 | 502 / broken body, then a 200 | DT (recovered) | as above, then one successful proxied request, then the rotation | the same child fiber stays | F5 |
+| ADP-FIX-F5 | 400, 500 | BVA (not gateway statuses) | one proxied 400 / 500, then the rotation | the same child stays | F5 |
+| ADP-FIX-F5 | 401 | EP | one proxied 401, recovered by a refresh | the token rotates; the same child stays | F5 |
+| ADP-FIX-F5 | client disconnect | EP | the client drops a streaming response itself, then the rotation | the same child stays | F5 |
+| ADP-FIX-F6 | stall + resume | ST | the client pauses; the upstream streams 512 × 64 KiB as fast as drain allows | after 1.5 s, fewer than 25 % of the chunks have been pulled; on resume, all 32 MiB arrive in order | F6 |
+| ADP-FIX-F6 | disconnect while blocked | ST | the paused client disconnects | the upstream response closes before it finishes; the next proxied request is answered 200 | F6 |
+| ADP-FIX-F6 | SSE | ST | the upstream writes 3 SSE frames one by one | each frame reaches the client before the next is written; then the end | F6 |
+| ADP-FIX-F7 | rotation | ST | another process rotates A→B (still due) just before N's scheduled refresh, which fails once (500) | `authorized`; the next proxied request carries B; `.credentials.yaml` unchanged since | F7 |
+| ADP-FIX-F7 | removal | ST | another process deletes the record just before N's failing scheduled refresh | `needs-authorization`; child disposed | F7 |
+| ADP-FIX-F8 | one name, upper case, two names with whitespace, with `keep-alive` | EP | the upstream response `Connection` names `x-fbtest-hop-a` and/or `-b` | the named headers are absent downstream; the un-named one, `x-fbtest-e2e`, `mcp-session-id` and `content-type` are present | F8 |
+
+These rows supersede the earlier S6 note: F5 covers the remount after an outage through a token
+rotation. The stock row's ten-attempt give-up is still not run.
+
 ## Not covered, and why
 
 - AUTH-UC-12 against the S7b connector prototype: it needs a booted DSH (`spikes/v3-s7b`
