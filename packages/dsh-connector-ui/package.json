@@ -2,6 +2,7 @@
   "name": "dsh-connector-ui",
   "version": "1.0.0-alpha.1",
   "description": "Fishball's UI in the main DeepSeek Harness: the one package that changes the host DSH's UI for Fishball.",
+  "icon": "./assets/connector-ui-icon.svg",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -24,6 +25,7 @@
   "files": [
     "index.js",
     "src/",
+    "assets/connector-ui-icon.svg",
     "locale/*.json",
     "cordis.patch.yml",
     "LICENSE",

@@ -2,6 +2,7 @@
   "name": "dsh-instance",
   "version": "1.0.0-alpha.1",
   "description": "The built-in Fishball instance: runs Fishball in its own private DSH profile attached to the main DSH. It places and launches the Fishball plugins in the child, sets up the hosted token once, and has its own plugin settings page; it imports no Fishball-side code.",
+  "icon": "./assets/instance-icon.svg",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -34,6 +35,7 @@
     "uninstall.js",
     "src/",
     "bundled/",
+    "assets/instance-icon.svg",
     "locale/*.json",
     "cordis.patch.yml",
     "LICENSE",

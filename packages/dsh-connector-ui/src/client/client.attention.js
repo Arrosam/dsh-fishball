@@ -52,7 +52,7 @@ globalThis.__ModuleLoader__?.load({
           'data-fishball-fish-light': light.on ? FISH.on : FISH.off,
           ...(light.important ? { 'data-fishball-fish-important': true } : {}),
         },
-          h(FishballIcon, { size, unread: light.important, badge: true }),
+          h(FishballIcon, { size, unread: light.important }),
           light.on ? attentionDot(ROW_MARK.dot.lit) : null)
       }
 
