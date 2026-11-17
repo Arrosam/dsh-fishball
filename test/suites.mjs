@@ -70,6 +70,9 @@ const CONNECTOR_BOOT = Object.freeze([
   sub(PACKAGE.dshConnector, 'host-services'), sub(PACKAGE.dshConnector, 'locale'), sub(PACKAGE.dshConnector, 'assets'),
 ])
 
+/** The release pack (REL-PACK): its script and helpers. */
+const RELEASE_SCRIPTS = 'scripts/**'
+
 /** Test support every suite may load, and the runners: a change there reruns every suite. */
 export const FULL = Object.freeze(['test/support/**', 'test/suites.mjs', 'test/run-*.mjs', 'test/run-*.sh', 'package.json'])
 
@@ -177,7 +180,8 @@ export const V3_SUITES = Object.freeze({
   // Reads the instance's whole placement and launch overlay, core's patch it places, and the F-GUARDS
   // vocabulary (whose split constants name fishball-ui's rows).
   'dsh-instance.placement': suite('placement of the set, launch overlay, hosted-child guards (I-PLACE)', v3('dsh-instance/placement'),
-    [all(PACKAGE.dshInstance), all(PACKAGE.fishballCore), all(PACKAGE.dshConnectorShared), all(PACKAGE.fishballShared), 'test/v3/fishball-ui/guards/constants.mjs']),
+    [all(PACKAGE.dshInstance), all(PACKAGE.fishballCore), all(PACKAGE.dshConnectorShared), all(PACKAGE.fishballShared), 'test/v3/fishball-ui/guards/constants.mjs',
+      RELEASE_SCRIPTS, 'test/v3/release/pack/release.mjs']),
   // Drives the instance's own modules (locator, hosted token, ticket, credential wire, child-side
   // row, routes, placement) over fakes, reads the K3 host-service freeze, core's patch and session
   // route, the Fishball-side manifests for the boundary rows, and dsh-connector-shared's sync host.
@@ -258,12 +262,22 @@ export const V3_SUITES = Object.freeze({
     [sub(PACKAGE.fishballCore, 'contracts'), top(PACKAGE.fishballCore), all(PACKAGE.fishballShared), sub(PACKAGE.dshConnector, 'host-services'), ...CONNECTOR_CONTRACTS,
       all(PACKAGE.dshConnector), all(PACKAGE.dshConnectorUi), all(PACKAGE.dshInstance)]),
   'contract.package-boundaries': suite('package boundaries, imports, packing (R-SHARED, PLAT-EP-07)', v3('contract/package-boundaries'),
-    [...Object.values(PACKAGE).map(all)]),
+    [...Object.values(PACKAGE).map(all), RELEASE_SCRIPTS, 'test/v3/release/pack/release.mjs']),
   // Reads every package's manifest and import graph and runs the placement over package copies.
   'contract.split-shared': suite('one shared library per side: cross-side edges, library contents, interim copies, placement (SPLIT-SHARED)', v3('contract/split-shared'),
     [...Object.values(PACKAGE).map(all)]),
   'contract.embed': suite('connector-ui package and the moved client (R-EMBED)', v3('contract/embed'),
     [all(PACKAGE.dshConnectorUi), all(PACKAGE.dshInstance), all(PACKAGE.dshConnector)]),
+  // REL-PACK: the release tarballs scripts/pack-v3.mjs writes. Every package's shipped files and
+  // manifest are in a tarball, so any package file, or the pack script itself, reruns it. It reads
+  // the release output (.runtime/release/<version>/, built beforehand), so run the pack first.
+  'release.pack': suite('the release tarballs: contents, versions, checksums, offline install with the DSH CLI (REL-PACK)', v3('release/pack'),
+    [...Object.values(PACKAGE).map(all), RELEASE_SCRIPTS]),
+  // The packed instance's install of the hosted set (REL-PACK item 5), through composedProfile on an
+  // instance installed from the release tarballs; it reuses release/pack's helpers.
+  'dsh-instance.placement-install': suite('the packed instance installs the hosted set by spec, else from its bundled tarballs (REL-PACK)', v3('dsh-instance/placement-install'),
+    [all(PACKAGE.dshInstance), all(PACKAGE.fishballCore), all(PACKAGE.fishballUi), all(PACKAGE.fishballBoard), all(PACKAGE.fishballShared), all(PACKAGE.dshConnectorShared),
+      RELEASE_SCRIPTS, 'test/v3/release/pack/**']),
 })
 
 /**
