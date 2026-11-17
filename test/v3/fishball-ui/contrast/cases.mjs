@@ -10,6 +10,12 @@
  * - Decision table UIFF-STRIP-DT-01: language × theme, state connected → badge text at least 4.5:1
  *   against the badge's own painted fill; badge shape (fill or outline) at least WCAG.shape (3:1)
  *   against the heading row behind it;
+ * - Decision table RESHOOT-ASKBADGE-DT-01 (RESHOOT fix 1): card type × language × theme, state
+ *   open → the card's state badge reads the open words in a `warning` DSH Tag, its text at least
+ *   WCAG.text against its own painted fill; dark: text and fill equal DSH's own warning Tag drawn
+ *   outside the card, and the text equals `--dsw-alias-state-warn-primary` (DSH's look unchanged);
+ * - State transitions RESHOOT-ASKBADGE-ST-01: open → answered / closed × theme → the badge is a
+ *   `neutral` DSH Tag that looks exactly as DSH's own neutral Tag (out of fix 1's scope);
  * - Equivalence partitions UIFF-TOKENS-EP-01: every declaration of Fishball's own sheets that
  *   applies to a measured element (the textarea and its card; the badge's Tag, its heading row and
  *   card) is token-only: no hard-coded colour (hex, colour function, named colour);
@@ -28,9 +34,11 @@ import { EVENT_TYPE, K3 } from '../../fishball-core/asks/constants.mjs'
 import { askEvent, expectedCard } from '../../fishball-core/asks/world.mjs'
 import { snapshotOf, stripPage } from '../model-dialog/strip.mjs'
 import { chromeBinary } from '../../../v2-page-cases/lite-browser.mjs'
-import { COLOUR_PROPS, DSH_FILES, HARNESS, HOOK, NOT_LITERAL, PLACEHOLDER, THEME, WCAG } from './constants.mjs'
+import { ASK_BADGE, COLOUR_PROPS, DSH_FILES, HARNESS, HOOK, NOT_LITERAL, PLACEHOLDER, THEME, WCAG } from './constants.mjs'
 import { PROBE, documentOf, dshSheetCount, holds, measure, sheetCollector, stopBrowser } from './page.mjs'
 import { backdrop, contrast, over, parseColour, shown } from './wcag.mjs'
+import { STAND_IN } from '../../fishball-core/settings/primitives.mjs'
+import { findAll, textOf } from '../../../support/rp-recommend.mjs'
 
 const json = (v) => JSON.stringify(v)
 const CARD_TYPES = Object.freeze([EVENT_TYPE.permission, EVENT_TYPE.ask])
@@ -85,6 +93,61 @@ function badgePaint(result) {
   return { fill, row, text, textRatio: contrast(text, fill), shapes, best }
 }
 
+// ------------------------------------------------------------- RESHOOT fix 1: the ask card's badge
+
+const isTag = (n) => n.props?.[STAND_IN.primitive] === HOOK.tagPrimitive
+/** A copy of `nodes` with `attr` added to every element `pick` accepts (the written HTML's handle). */
+const marked = (nodes, pick, attr) => nodes.map((n) => (typeof n === 'string' ? n
+  : { ...n, props: pick(n) ? { ...n.props, [attr]: '' } : n.props, children: marked(n.children ?? [], pick, attr) }))
+/** DSH Tags of `tones` drawn straight in the page body, outside every card: DSH's own Tag look. */
+const referenceTags = (tones) => tones.map((tone) => ({ tag: 'span', props: { [STAND_IN.primitive]: HOOK.tagPrimitive, 'data-tone': tone, [ASK_BADGE.reference]: tone }, children: [ASK_BADGE.referenceText] }))
+const BADGE_TARGET = `${HOOK.askCard} [${ASK_BADGE.marker}]`
+const referenceTarget = (tone) => `[${ASK_BADGE.reference}="${tone}"]`
+
+/**
+ * One card of `type` in `state`, drawn in `lang`, its state badge marked (the first DSH Tag inside
+ * the card root: DSH's Tag forwards no hook of its own), with reference warning and neutral Tags
+ * beside the card. Returns the drawn document and the badge's rendered node.
+ */
+async function badgeDocument(t, sdk, type, lang, state) {
+  const sheets = sheetCollector()
+  const page = await cardPage(t, sdk, { lang, onDocument: sheets.onDocument })
+  await page.show([expectedCard(askEvent({ type }), state)])
+  const tree = page.world.shim.tree()
+  const card = findAll(tree, (n) => n.props?.[ASK_BADGE.cardAttr] !== undefined)[0]
+  assert.ok(card, 'precondition: the dock draws an ask card')
+  const badge = findAll([card], isTag)[0]
+  assert.ok(badge, 'precondition: the ask card draws a DSH Tag (its state badge)')
+  const tags = referenceTags([ASK_BADGE.openTone, ASK_BADGE.settledTone])
+  return { drawn: { tree: [...marked(tree, (n) => n === badge, ASK_BADGE.marker), ...tags], sheets: sheets.live() }, badge }
+}
+
+/** The badge's computed text, its painted fill and text, and the ratio. */
+function askBadgePaint(result) {
+  const fill = backdrop(result.toneLayers)
+  const text = over(parseColour(result.text), fill)
+  return { fill, text, ratio: contrast(text, fill) }
+}
+
+/** Whether two computed colours are the same colour (every channel and alpha within ASK_BADGE.sameColourTolerance). */
+function sameColour(a, b) {
+  const [x, y] = [parseColour(a), parseColour(b)]
+  return ['r', 'g', 'b', 'a'].every((c) => Math.abs(x[c] - y[c]) < ASK_BADGE.sameColourTolerance)
+}
+
+/** The measured badge and the reference Tag of `tone` in one document. */
+async function badgeAndReference(sdk, drawn, theme, tone) {
+  const badge = await probed(sdk, drawn, theme, { target: BADGE_TARGET, tone: HOOK.tag, root: HOOK.askCard })
+  const reference = await probed(sdk, drawn, theme, { target: referenceTarget(tone), tone: HOOK.tag, root: ASK_BADGE.pageRoot })
+  return { badge, reference }
+}
+
+/** Assert the badge looks as DSH's own Tag of the same tone (text colour and own background). */
+function assertDshTagLook(badge, reference, what) {
+  assert.ok(sameColour(badge.text, reference.text), `${what}: badge text ${badge.text} is not DSH's Tag text ${reference.text}`)
+  assert.ok(sameColour(badge.toneLayers[0], reference.toneLayers[0]), `${what}: badge background ${badge.toneLayers[0]} is not DSH's Tag background ${reference.toneLayers[0]}`)
+}
+
 /** A browser row: skipped (as the LITE rows are) where no Chromium exists. */
 function browserRow(sdk, id, row, title, fn) {
   caseTest(sdk, id, row, title, async (t) => {
@@ -129,10 +192,50 @@ export function registerContrastCases(sdk) {
     }
   }
 
+  // ====================================== RESHOOT-ASKBADGE-DT-01: the open ask card's warning badge
+  const WARN_TOKEN = `var(${ASK_BADGE.warnToken})`
+  for (const type of CARD_TYPES) {
+    for (const lang of LANGS) {
+      for (const theme of THEME.all()) {
+        const dark = theme === THEME.dark
+        browserRow(sdk, 'RESHOOT-ASKBADGE-DT-01', `open ${type} ${lang} ${theme.id}`, `(${lang}, ${theme.id}) an open ${type} card's badge reads ${json(ASK_BADGE.open[lang])} in a ${ASK_BADGE.openTone} DSH Tag; its text has at least ${WCAG.text}:1 against the badge's own fill${dark ? `; dark: the text is DSH's own ${ASK_BADGE.openTone} Tag colour (${ASK_BADGE.warnToken}) and the fill DSH's, unchanged` : ''}`, async (t) => {
+          const { drawn, badge } = await badgeDocument(t, sdk, type, lang, K3.state.open)
+          assert.equal(textOf(badge).trim(), ASK_BADGE.open[lang], 'badge words')
+          assert.equal(badge.props['data-tone'], ASK_BADGE.openTone, 'badge tone')
+          const { badge: result, reference } = await badgeAndReference(sdk, drawn, theme, ASK_BADGE.openTone)
+          const paint = askBadgePaint(result)
+          t.diagnostic(`measured ${shown(paint.ratio)}:1 (text ${result.text}, badge ${json(result.toneLayers)}; DSH ${ASK_BADGE.openTone} Tag text ${reference.text} ${shown(askBadgePaint(reference).ratio)}:1)`)
+          assert.ok(paint.ratio >= WCAG.text, `ask badge text contrast ${shown(paint.ratio)}:1 < ${WCAG.text}:1 (${theme.id}, SDK ${sdk}; text ${result.text} over ${json(result.toneLayers)})`)
+          if (dark) {
+            assertDshTagLook(result, reference, `dark, DSH's ${ASK_BADGE.openTone} Tag`)
+            const withToken = await probed(sdk, drawn, theme, { target: BADGE_TARGET, tone: HOOK.tag, root: HOOK.askCard, colours: [WARN_TOKEN] })
+            assert.ok(sameColour(result.text, withToken.colours[WARN_TOKEN]), `dark: badge text ${result.text} is not ${ASK_BADGE.warnToken} (${withToken.colours[WARN_TOKEN]})`)
+          }
+        })
+      }
+    }
+  }
+
+  // ======================== RESHOOT-ASKBADGE-ST-01: an answered / closed card's badge is unchanged
+  for (const state of [K3.state.answered, K3.state.closed]) {
+    for (const theme of THEME.all()) {
+      browserRow(sdk, 'RESHOOT-ASKBADGE-ST-01', `${state} ${theme.id}`, `(${theme.id}) a card moved to ${state}: its badge is a ${ASK_BADGE.settledTone} DSH Tag that looks as DSH's own ${ASK_BADGE.settledTone} Tag (text and fill unchanged)`, async (t) => {
+        const { drawn, badge } = await badgeDocument(t, sdk, EVENT_TYPE.permission, LANGS[0], state)
+        assert.equal(badge.props['data-tone'], ASK_BADGE.settledTone, 'badge tone')
+        assert.notEqual(textOf(badge).trim(), ASK_BADGE.open[LANGS[0]], 'a settled card does not say it is waiting')
+        const { badge: result, reference } = await badgeAndReference(sdk, drawn, theme, ASK_BADGE.settledTone)
+        t.diagnostic(`badge text ${result.text} on ${result.toneLayers[0]}; DSH ${ASK_BADGE.settledTone} Tag ${reference.text} on ${reference.toneLayers[0]}`)
+        assertDshTagLook(result, reference, `${theme.id}, DSH's ${ASK_BADGE.settledTone} Tag`)
+      })
+    }
+  }
+
   // ===================================================== UIFF-TOKENS-EP-01: DSH design tokens only
   const tokenRows = [
     ['ask card', (t) => askDocument(t, sdk, EVENT_TYPE.permission, LANGS[0]), { target: ASK_TARGET, root: HOOK.askCard }],
     ['status card', (t) => stripDocument(t, sdk, LANGS[0]), { target: STRIP_TARGET, tone: HOOK.tag, behind: 'parent', root: HOOK.strip }],
+    // RESHOOT fix 1: the open ask card's badge, its colours drawn from DSH tokens only.
+    ['open ask badge', async (t) => (await badgeDocument(t, sdk, EVENT_TYPE.permission, LANGS[0], K3.state.open)).drawn, { target: BADGE_TARGET, tone: HOOK.tag, root: HOOK.askCard }],
   ]
   for (const [label, draw, arg] of tokenRows) {
     for (const theme of THEME.all()) {
@@ -162,6 +265,14 @@ export function registerContrastCases(sdk) {
     const ratio = contrast(over(parseColour(result.colours[SUCCESS_TOKEN]), fill), fill)
     t.diagnostic(`control measured ${shown(ratio)}:1`)
     assert.ok(ratio < WCAG.text, `the plain success colour measures ${shown(ratio)}:1, so the oracle cannot tell the audited defect apart`)
+  })
+
+  browserRow(sdk, 'UIFF-ORACLE-CTRL-01', 'warning Tag light', `(light) control: DSH's own ${ASK_BADGE.openTone} Tag on the page background, outside the card, measures below ${WCAG.text}:1`, async (t) => {
+    const { drawn } = await badgeDocument(t, sdk, EVENT_TYPE.permission, LANGS[0], K3.state.open)
+    const { reference } = await badgeAndReference(sdk, drawn, THEME.light, ASK_BADGE.openTone)
+    const { ratio } = askBadgePaint(reference)
+    t.diagnostic(`control measured ${shown(ratio)}:1 (text ${reference.text} over ${json(reference.toneLayers)})`)
+    assert.ok(ratio < WCAG.text, `DSH's ${ASK_BADGE.openTone} Tag measures ${shown(ratio)}:1, so the oracle cannot tell the audited defect apart`)
   })
 
   // ========================================================= UIFF-ORACLE-BVA-01: the WCAG oracle
