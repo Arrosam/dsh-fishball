@@ -274,6 +274,14 @@ export const V3_SUITES = Object.freeze({
     [all(PACKAGE.fishballUi), all(PACKAGE.fishballCore), all(PACKAGE.fishballShared), 'test/v3/fishball-core/wire/**', 'test/v3/fishball-core/settings/**', 'test/v3/fishball-ui/guards/**',
       // UI-POLISH-F: the drawn status card rows build their frames with the F-STATUS strip view binding and its card constants.
       'test/v3/fishball-core/status/subject.mjs', 'test/v3/fishball-core/status/constants.mjs']),
+  // UI-FIX-F: the drawn ask and status cards (fishball-ui's client and parts, with core's client, in the
+  // F-SETTINGS scripted page through the ask-card and strip harnesses; frames from fishball-ui's
+  // stripView over fishball-shared's ui-seam) laid out in the LITE rows' headless Chromium with DSH's
+  // theme and page styles, measured for WCAG contrast.
+  'fishball-ui.contrast': suite('ask-card reason placeholder and connected status badge contrast, both DSH themes, DSH tokens only (UI-FIX-F)', v3('fishball-ui/contrast'),
+    [all(PACKAGE.fishballUi), all(PACKAGE.fishballCore), all(PACKAGE.fishballShared),
+      'test/v3/fishball-core/asks/**', 'test/v3/fishball-core/settings/**', 'test/v3/fishball-core/status/**', 'test/v3/fishball-ui/model-dialog/**',
+      'test/v3/contract/package-boundaries/**', 'test/v2-page-cases/lite-browser.mjs', 'test/private-skills/support/**']),
   'fishball-board.peers': suite('board without core (FEAT-PEERS; fold-notify was removed, REMOVE-WD)', v3('fishball-board/peers'),
     [all(PACKAGE.fishballBoard), sub(PACKAGE.dshConnector, 'mcp-schema')]),
   // The contract suites read every file of the packages they bound, so any change there reruns them.
