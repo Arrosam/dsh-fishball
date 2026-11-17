@@ -8,7 +8,8 @@
  * then writes the launch records the runtime reads (active.json, launches/<id>/pid.json) for one
  * recorded child. The only fake is the `spawn` dependency of `createNativeRuntime`, which plays
  * `/bin/ps`; no process is started and no real pid is probed. The command rows run the real
- * `uninstall.js` under plain Node, choosing only states that need no ps answer.
+ * `uninstall.js` under plain Node; the one that needs ps preloads ps-unavailable.mjs, which makes
+ * `/bin/ps` unrunnable for that process. The real ps is never run.
  *
  * Decision table (constants.mjs PS_ROWS, one row per ps ending × output), plus:
  * - no pid record for the active record → CHILD_STATE_UNKNOWN (B8);
@@ -21,11 +22,12 @@ import { randomUUID } from 'node:crypto'
 import { EventEmitter } from 'node:events'
 import fs from 'node:fs'
 import path from 'node:path'
+import { pathToFileURL } from 'node:url'
 import { importInstance } from '../../../private-skills/support/sdk.mjs'
 import { V3 } from '../../contract/package-boundaries/constants.mjs'
 import { caseTest } from '../../contract/package-boundaries/cases.mjs'
 import { canonicalTmp, cleanups } from '../../dsh-connector-adapter/oauth-client/subject.mjs'
-import { CODE, EXIT, FIXTURE, LAYOUT, MODULES, PS_ROWS, TEXT } from './constants.mjs'
+import { CODE, EXIT, FIXTURE, LAYOUT, MODULES, PS_ROWS, PS_UNAVAILABLE, TEXT, UNKNOWN_CAUSES } from './constants.mjs'
 
 /** A scratch main home (canonical, as the runtime requires), removed after the test. */
 function mainHome(t) {
@@ -95,10 +97,14 @@ function assertKept(home, outcome, code) {
   assert.ok(fs.existsSync(path.join(runtimeRoot(home), LAYOUT.active)), 'the refusal removed the tree')
 }
 
-/** Runs the real command for `home` (no DSH_HOME, so only --home names it). */
-function command(home) {
+/**
+ * Runs the real command for `home` (no DSH_HOME, so only --home names it). `psUnavailable` preloads
+ * ps-unavailable.mjs, so `/bin/ps` cannot be run for that one process.
+ */
+function command(home, { psUnavailable = false } = {}) {
   const file = path.join(V3.instance.dir, MODULES.command)
-  return spawnSync(process.execPath, [file, MODULES.homeFlag, home], { encoding: 'utf8', env: { ...process.env, ...FIXTURE.env } })
+  const preload = psUnavailable ? [PS_UNAVAILABLE.importFlag, pathToFileURL(path.join(import.meta.dirname, PS_UNAVAILABLE.preload)).href] : []
+  return spawnSync(process.execPath, [...preload, file, MODULES.homeFlag, home], { encoding: 'utf8', env: { ...process.env, ...FIXTURE.env } })
 }
 
 const EXPECT = {
@@ -143,16 +149,22 @@ export function registerUninstallCases(sdk) {
     assert.equal(run.status, EXIT.done, run.stderr)
     assert.ok(run.stdout.includes(TEXT.absent), run.stdout)
   })
-  caseTest(sdk, 'UNINST-CLI', 'state unknown', 'no pid record → exit 1 with CHILD_STATE_UNKNOWN; stderr says the state could not be checked, not only "wait and run it again"; nothing removed', async (t) => {
-    const home = mainHome(t)
-    await recordedTree(sdk, home, { pid: false })
-    const run = command(home)
-    assert.equal(run.status, EXIT.refused, run.stdout + run.stderr)
-    assert.ok(run.stderr.includes(CODE.unknown), run.stderr)
-    assert.equal(run.stderr.includes(CODE.running), false, 'reported as running: ' + run.stderr)
-    // B8 forbids "Quit DSH, wait a few seconds and run it again" only as the sole remedy: the
-    // message must say the state could not be checked, so other advice beside it is allowed.
-    assert.match(run.stderr, TEXT.cannotCheck)
-    assert.ok(fs.existsSync(path.join(runtimeRoot(home), LAYOUT.active)), 'the refusal removed the tree')
-  })
+  // One CLI row per cause of CHILD_STATE_UNKNOWN: same code and exit, a message of its own.
+  for (const c of UNKNOWN_CAUSES) {
+    caseTest(sdk, 'UNINST-CLI', `state unknown: ${c.cause}`, `${c.cause} → exit 1 with CHILD_STATE_UNKNOWN and the message for that cause; nothing removed`, async (t) => {
+      const home = mainHome(t)
+      await recordedTree(sdk, home, c.tree)
+      const run = command(home, { psUnavailable: c.psUnavailable })
+      assert.equal(run.status, EXIT.refused, run.stdout + run.stderr)
+      assert.ok(run.stderr.includes(CODE.unknown), run.stderr)
+      assert.equal(run.stderr.includes(CODE.running), false, 'reported as running: ' + run.stderr)
+      assert.doesNotMatch(run.stderr, TEXT.retry, 'the never-succeeding retry remedy')
+      for (const phrase of c.mustSay) {
+        if (typeof phrase === 'string') assert.ok(run.stderr.includes(runtimeRoot(home)), 'names no runtime root ' + runtimeRoot(home) + ': ' + run.stderr)
+        else assert.match(run.stderr, phrase)
+      }
+      for (const phrase of c.mustNotSay) assert.doesNotMatch(run.stderr, phrase)
+      assert.ok(fs.existsSync(path.join(runtimeRoot(home), LAYOUT.active)), 'the refusal removed the tree')
+    })
+  }
 }

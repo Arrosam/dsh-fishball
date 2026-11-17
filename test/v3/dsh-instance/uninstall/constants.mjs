@@ -18,8 +18,51 @@ export const EXIT = Object.freeze({ done: 0, refused: 1 })
 /** What the command prints (README "Uninstall"). */
 export const TEXT = Object.freeze({
   absent: 'Nothing to remove',
-  /** The unknown refusal says the child's state could not be checked (so "wait and retry" is not its only remedy). */
-  cannotCheck: /could not (?:be )?check/i,
+  /** The remedy that can never succeed for an unknown state; neither cause may give it. */
+  retry: /wait a few seconds/i,
+})
+
+/**
+ * The two causes of CHILD_STATE_UNKNOWN and what each stderr must and must not say (the user's
+ * B8 amendment, 2026-11-18). Phrases are matched loosely: the requirement fixes the meaning, not
+ * the exact wording. `{root}` in a `mustSay` entry is replaced by the runtime root path.
+ */
+export const UNKNOWN_CAUSES = Object.freeze([
+  Object.freeze({
+    // ps cannot be run (here: its spawn fails with ENOENT, ps-unavailable.mjs), the record is complete.
+    cause: 'ps cannot be run', tree: Object.freeze({ pid: true }), psUnavailable: true,
+    mustSay: Object.freeze([
+      /could not (?:be )?check/i, // the child could not be checked …
+      /\/bin\/ps could not be run/i, // … because /bin/ps could not be run
+      /quit DSH/i, // the remedy: quit DSH …
+      /run (?:this|the|it)[^.]*where[^.]*works/i, // … and rerun where /bin/ps works
+    ]),
+    mustNotSay: Object.freeze([/launch record/i]), // not the other cause's words
+  }),
+  Object.freeze({
+    // The active record has no pid record: ps is never the problem.
+    cause: 'no pid record', tree: Object.freeze({ pid: false }), psUnavailable: false,
+    mustSay: Object.freeze([
+      /cannot be confirmed/i, // the child's state cannot be confirmed …
+      /launch record is missing/i, // … because its launch record is missing
+      /nothing was removed/i,
+      /stop DSH/i,
+      /no Fishball child process is left running/i, // check no child process is left
+      '{root}', // the folder the user deletes is the runtime root …
+      /yourself/i, // … by themselves
+    ]),
+    // It must not send the user to rerun where /bin/ps works: that cannot fix a missing record.
+    mustNotSay: Object.freeze([/where[^.]*works/i, /\/bin\/ps/]),
+  }),
+])
+
+/** The preload that makes `/bin/ps` unrunnable for one command run (ps-unavailable.mjs). */
+export const PS_UNAVAILABLE = Object.freeze({
+  command: '/bin/ps',
+  /** An absolute path that cannot exist, so the spawn fails with ENOENT on any machine. */
+  missing: '/nonexistent/fbtest-uninstall/ps',
+  preload: 'ps-unavailable.mjs',
+  importFlag: '--import',
 })
 
 /** Layout names under the main home (README: the command removes `<DSH_HOME>/fishball/runtime`). */

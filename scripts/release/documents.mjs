@@ -92,8 +92,9 @@ ${fence([`node <DSH_HOME>/profiles/${PROFILE}/node_modules/${name('instance')}/u
 
    It removes \`<DSH_HOME>/fishball/runtime\` (the child's home, profile, plugins, sessions and logs) and nothing
    else. If it refuses, it prints a code and removes nothing (\`CHILD_RUNNING\`: quit DSH, wait a few seconds and run
-   it again; \`CHILD_STATE_UNKNOWN\`: it could not check the child, so if \`/bin/ps\` cannot be run there, run it
-   where it works). For another home, add \`--home <DSH_HOME>\`.
+   it again; \`CHILD_STATE_UNKNOWN\`: it could not check the child. If \`/bin/ps\` cannot be run there, run it where
+   it works. If the child's launch record is missing, stop DSH, check that no Fishball child process is left
+   running, then delete \`<DSH_HOME>/fishball/runtime\` yourself). For another home, add \`--home <DSH_HOME>\`.
 3. Remove the packages:
 
 ${fence([remove(names('hosted'))])}
