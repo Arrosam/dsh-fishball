@@ -25,12 +25,15 @@ import { SDK, V3 } from '../../contract/package-boundaries/constants.mjs'
 import { readManifest } from '../../contract/package-boundaries/packages.mjs'
 import { specifiers } from '../../contract/k3-host-services/declarations.mjs'
 import {
-  ANSWER, CLIENT_PIN, CODE, DISCONNECTED, HARNESS, K1, LATER, LINK, OFFER, OFFER_PAYLOAD, PRINCIPAL, RPC, SETTLEMENT_PAYLOAD, STATE,
+  ANSWER, CLIENT_PIN, CODE, DISCONNECTED, HARNESS, K1, LATER, LINK, LINK_BACKOFF, LINK_MCP, LINK_SAVE, OFFER, OFFER_PAYLOAD, PRINCIPAL, RPC, SETTLEMENT_PAYLOAD, STATE,
   STOPPING_TOOLS, TARGET, WEB, mcpUrl,
 } from './constants.mjs'
 import { MODE, freePort, mailboxEvent, startFakeConnector, startRecorder } from './fake-connector.mjs'
-import { defer, openLink, untilState, untilTrue } from './link-driver.mjs'
+import { countClientImport, failClientImport } from './import-fault.mjs'
+import { defer, openLink, openRawLink, untilState, untilTrue } from './link-driver.mjs'
+import { CODE_THROW, THROWN, assertNoSecret, assertOneWarning, logRecorder } from './log-privacy.mjs'
 import { watchNetwork } from './net-probe.mjs'
+import { mcpClient } from '../../contract/k1-mcp-schema/schema-module.mjs'
 
 const JS = /\.(?:c|m)?js$/
 const MCP_CLIENT = CLIENT_PIN.name
@@ -281,4 +284,123 @@ export function registerFLinkCases(sdk) {
 
   // F-OWN-SCHEMA (design §1.0b row 1): generation is forbidden, not a packing step.
   caseTest(sdk, 'F-LINK', 'done 7', 'generated schema and generator are absent', assertNoGeneratedSchema)
+
+  registerFix3Cases(sdk)
+}
+
+/**
+ * F-FIX-3 (Fishball, 2026-11-17): the link's lazy import of its MCP client, when no `sdk` option is
+ * given, logs one `warn(LINK_SAVE.text.failed, LINK_MCP.clientImport, code)` per failed attempt on
+ * its optional `logger` (code = String(error.code ?? error.name ?? typeof error)), then behaves as
+ * before: `target-unreachable`, retried with K3's backoff. No logger → the same, without a crash. A
+ * supplied `sdk` never imports, so never warns. In-process: import-fault.mjs fails exactly that
+ * import from core with the thrown value chosen; the link's retry timers are the test's
+ * (openRawLink), so each attempt is counted without waiting out the backoff.
+ */
+const importWarning = (code) => [LINK_SAVE.text.failed, LINK_MCP.clientImport, code]
+/** A target nothing listens on: an attempt that gets past the import ends unreachable too. */
+const silentTarget = async () => mcpUrl(K1.HOSTS.loopbackScheme, TARGET.anyLoopback, await freePort())
+const principal = async () => ({ clientId: PRINCIPAL.clientId, secret: PRINCIPAL.secret })
+/** A raw link to a silent target with `extra` options; its first attempt is over (unreachable, a retry pending). */
+async function firstAttempt(t, sdk, extra) {
+  const url = await silentTarget()
+  const raw = await openRawLink(t, sdk, { target: () => url, credentials: principal, ...extra })
+  raw.link.start()
+  await untilState(raw.link, STATE.unreachable)
+  assert.ok(await untilTrue(() => raw.pending().length > 0), 'no retry was scheduled after the failed attempt')
+  return raw
+}
+/** The next attempt: run the pending retry, then wait until a new one is pending (the attempt is over). */
+async function nextAttempt(raw) {
+  const before = raw.timers.length
+  assert.equal(raw.fire(), 1, 'not exactly one pending retry')
+  assert.ok(await untilTrue(() => raw.timers.length > before && raw.pending().length > 0), 'no retry was scheduled after the attempt')
+  assert.equal(raw.link.status()?.state, STATE.unreachable, 'after the attempt: ' + JSON.stringify(raw.link.status()))
+}
+const expectedDelays = (n) => Array.from({ length: n }, (_, i) => Math.min(LINK_BACKOFF.initialMs * LINK_BACKOFF.factor ** i, LINK_BACKOFF.maxMs))
+
+function registerFix3Cases(sdk) {
+  // ---------------------------------------------------------------- LNK-FIX3-EP-01: the thrown value → the code logged
+  for (const [row, title, make, code] of THROWN) {
+    caseTest(sdk, 'LNK-FIX3-EP-01', row, `the client import fails with ${title}: target-unreachable, one warning with exactly that code and nothing else of the failure`, async (t) => {
+      const log = logRecorder()
+      const fault = failClientImport(t, make)
+      await firstAttempt(t, sdk, { logger: log.of(LINK_SAVE.logger) })
+      assert.ok(fault.resolves() >= 1, 'the link never imported its client')
+      assertOneWarning(log.logs, LINK_SAVE.logger, importWarning(code), row, [PRINCIPAL.secret])
+    })
+  }
+
+  // ---------------------------------------------------------------- LNK-FIX3-DT-01: sdk option × import outcome × logger option
+  caseTest(sdk, 'LNK-FIX3-DT-01', 'rule 1', 'no sdk, the import fails, a logger → target-unreachable, a retry scheduled, one warning', async (t) => {
+    const log = logRecorder()
+    failClientImport(t, CODE_THROW.make)
+    const raw = await firstAttempt(t, sdk, { logger: log.of(LINK_SAVE.logger) })
+    assert.deepEqual(raw.pending().map((h) => h.ms), expectedDelays(1), 'the first retry is not at the backoff\'s first delay')
+    assertOneWarning(log.logs, LINK_SAVE.logger, importWarning(CODE_THROW.code), 'rule 1', [PRINCIPAL.secret])
+  })
+  caseTest(sdk, 'LNK-FIX3-DT-01', 'rule 2', 'no sdk, the import fails, no logger option → the same: target-unreachable and retried, nothing thrown', async (t) => {
+    failClientImport(t, CODE_THROW.make)
+    const raw = await firstAttempt(t, sdk, {})
+    await nextAttempt(raw)
+    assert.deepEqual(raw.timers.map((h) => h.ms), expectedDelays(2))
+  })
+  caseTest(sdk, 'LNK-FIX3-DT-01', 'rule 3', 'an sdk supplied, the import would fail, a logger → the import is never asked for, no warning', async (t) => {
+    const log = logRecorder()
+    const fault = failClientImport(t, CODE_THROW.make)
+    const raw = await firstAttempt(t, sdk, { sdk: await mcpClient(sdk), logger: log.of(LINK_SAVE.logger) })
+    await nextAttempt(raw)
+    assert.equal(fault.resolves(), 0, 'the link imported its client although one was supplied')
+    assert.deepEqual(log.logs, [], 'a supplied sdk logged')
+  })
+  caseTest(sdk, 'LNK-FIX3-DT-01', 'rule 4', 'no sdk, the import succeeds, a logger → the attempt goes on (unreachable target), no warning', async (t) => {
+    const log = logRecorder()
+    const count = countClientImport(t)
+    const raw = await firstAttempt(t, sdk, { logger: log.of(LINK_SAVE.logger) })
+    await nextAttempt(raw)
+    assert.ok(count.resolves() >= 1, 'the link never imported its client')
+    assert.deepEqual(log.logs, [], 'a successful import logged')
+  })
+
+  // ---------------------------------------------------------------- LNK-FIX3-BVA-01: one warning per failed attempt (1, 2, 3, 4 attempts)
+  for (const attempts of [1, 2, 3, 4]) {
+    caseTest(sdk, 'LNK-FIX3-BVA-01', `${attempts} attempts`, `${attempts} failed attempt${attempts === 1 ? '' : 's'} → exactly ${attempts} warning${attempts === 1 ? '' : 's'}; retries at the backoff's delays`, async (t) => {
+      const log = logRecorder()
+      failClientImport(t, CODE_THROW.make)
+      const raw = await firstAttempt(t, sdk, { logger: log.of(LINK_SAVE.logger) })
+      for (let i = 1; i < attempts; i++) await nextAttempt(raw)
+      assert.deepEqual(log.logs.map((l) => [l.name, l.level, l.args]), Array.from({ length: attempts }, () => [LINK_SAVE.logger, 'warn', importWarning(CODE_THROW.code)]))
+      assert.deepEqual(raw.timers.map((h) => h.ms), expectedDelays(attempts))
+      assertNoSecret(log.logs, [PRINCIPAL.secret])
+    })
+  }
+
+  // ---------------------------------------------------------------- LNK-FIX3-ST-01: failing → installed again → stopped
+  caseTest(sdk, 'LNK-FIX3-ST-01', '1', 'import failing (two attempts, two warnings) → the package loads again: the next attempt warns no more → stop: nothing more', async (t) => {
+    const log = logRecorder()
+    failClientImport(t, CODE_THROW.make)
+    const raw = await firstAttempt(t, sdk, { logger: log.of(LINK_SAVE.logger) })
+    await nextAttempt(raw)
+    assert.equal(log.logs.length, 2, 'warnings while failing')
+    const count = countClientImport(t)
+    await nextAttempt(raw)
+    assert.ok(count.resolves() >= 1, 'the attempt after recovery did not import the client again')
+    assert.equal(log.logs.length, 2, 'an attempt whose import succeeded logged: ' + JSON.stringify(log.logs.slice(2)))
+    await raw.link.stop()
+    raw.fire()
+    await sleep(HARNESS.quietMs)
+    assert.equal(log.logs.length, 2, 'the stopped link logged')
+    assertNoSecret(log.logs, [PRINCIPAL.secret])
+  })
+  caseTest(sdk, 'LNK-FIX3-ST-01', '2', 'reconnect() while the import fails → that attempt warns once more, its own warning', async (t) => {
+    const log = logRecorder()
+    failClientImport(t, CODE_THROW.make)
+    const raw = await firstAttempt(t, sdk, { logger: log.of(LINK_SAVE.logger) })
+    const before = raw.timers.length
+    raw.link.reconnect()
+    assert.ok(await untilTrue(() => log.logs.length >= 2 && raw.timers.length > before && raw.pending().length > 0), 'no attempt after reconnect(): ' + JSON.stringify(log.logs))
+    await sleep(HARNESS.quietMs)
+    assert.deepEqual(log.logs.map((l) => l.args), [importWarning(CODE_THROW.code), importWarning(CODE_THROW.code)])
+    assert.equal(raw.link.status()?.state, STATE.unreachable)
+  })
 }

@@ -41,7 +41,8 @@
  * wiring (F-WIRE).
  */
 import { LINK, LINK_BACKOFF, MCP } from '../../contracts/constants.js'
-import { LINK_MCP } from './constants.js'
+import { codeOf } from '../events/diagnostics.js'
+import { LINK_MCP, LINK_SAVE } from './constants.js'
 import { checkTarget } from './target.js'
 import { OffTargetRequest, STATUS, failureStatus } from './status.js'
 import { emitIsolated, subscribe } from './listeners.js'
@@ -100,6 +101,8 @@ const OPEN_GATE = Object.freeze({ hold: () => null, admit: async () => null, pai
  * @property {object} [sdk] the `@modelcontextprotocol/client` module; defaults to core's packaged
  *   copy (§9.1). A caller may pass another 2.2.x copy (both hosts' copies are byte-identical).
  * @property {typeof fetch} [fetch] the network fetch; defaults to the global one
+ * @property {{warn: Function}} [logger] the background log: warned once per failed import of the
+ *   MCP client, with the error's code only
  * @property {(fn: () => void, ms: number) => unknown} [setTimer] defaults to `setTimeout`
  * @property {(handle: unknown) => void} [clearTimer] defaults to `clearTimeout`
  */
@@ -293,9 +296,18 @@ export class McpLink {
     return paired ? STATUS.revoked : status
   }
 
-  /** Core's packaged MCP client (design §9.1), unless the caller supplied one. */
+  /**
+   * Core's packaged MCP client (design §9.1), unless the caller supplied one. A failed import is
+   * logged (code only) and rethrown: the attempt still fails as `target-unreachable`, but the log
+   * tells a broken install from a target that cannot be reached.
+   */
   async #sdk() {
-    this.#options.sdk ??= await import(LINK_MCP.clientPackage)
+    try {
+      this.#options.sdk ??= await import(LINK_MCP.clientPackage)
+    } catch (error) {
+      this.#options.logger?.warn(LINK_SAVE.text.failed, LINK_MCP.clientImport, codeOf(error))
+      throw error
+    }
     return this.#options.sdk
   }
 

@@ -55,8 +55,12 @@ const CONNECTOR_UI_DRAW_TRIGGERS = Object.freeze([all(PACKAGE.dshConnectorUi), s
   sub(PACKAGE.dshConnector, 'host-services'), all(PACKAGE.dshConnectorShared), ...CONNECTOR_CORE, ...CONNECTOR_CONTRACTS])
 /** The connector's manifest: k1 reads its dependencies. */
 const CONNECTOR_MANIFEST = PACKAGE.dshConnector + '/package.json'
-/** core's link and its own K3a contracts every link-side module imports (core/src/link → contracts; F-OWN-SCHEMA). */
-const CORE_LINK = Object.freeze([sub(PACKAGE.fishballCore, 'src', 'link'), sub(PACKAGE.fishballCore, 'contracts')])
+/**
+ * core's link, its own K3a contracts every link-side module imports (core/src/link → contracts;
+ * F-OWN-SCHEMA), and the `codeOf` log rule (src/events/diagnostics.js) the link and the Connect
+ * route log failures by (F-FIX-3).
+ */
+const CORE_LINK = Object.freeze([sub(PACKAGE.fishballCore, 'src', 'link'), sub(PACKAGE.fishballCore, 'contracts'), `${PACKAGE.fishballCore}/src/events/diagnostics.js`])
 
 /**
  * What a booted connector row loads: the import closure of its entry, plus the files DSH reads to
@@ -219,9 +223,11 @@ export const V3_SUITES = Object.freeze({
     [sub(PACKAGE.fishballCore, 'src', 'status'), sub(PACKAGE.fishballUi, 'src'), all(PACKAGE.fishballShared), ...CORE_LINK]),
   // The chunk loads only through core's client.js and reads core's contracts (constants.js); the page
   // also loads fishball-ui's client, whose entries chunk holds the two Fishball-page entries (F-UI).
+  // F-FIX-3: the route imports core's link (its log line, BEGIN_VIA); the route rows share the link
+  // suite's thrown-value partitions and log oracle (log-privacy.mjs).
   'fishball-core.settings': suite("core's own settings page, token field, Connect, Fishball-page entries (F-SETTINGS)", v3('fishball-core/settings'),
     ['packages/core/client.settings.js', 'packages/core/client.js', sub(PACKAGE.fishballCore, 'src', 'settings'), sub(PACKAGE.fishballCore, 'contracts'),
-      top(PACKAGE.fishballUi), sub(PACKAGE.fishballUi, 'src'), all(PACKAGE.fishballShared)]),
+      top(PACKAGE.fishballUi), sub(PACKAGE.fishballUi, 'src'), all(PACKAGE.fishballShared), ...CORE_LINK, 'test/v3/fishball-core/link/log-privacy.mjs']),
   // Boots a real standalone DSH with core and fishball-ui installed as whole bundles (F-UI splits the
   // guard rows between their two patches; the instance's launch code is read for the LITE rows).
   'fishball-ui.guards': suite('guard rows, override report, self-reorder (F-GUARDS)', v3('fishball-ui/guards'),

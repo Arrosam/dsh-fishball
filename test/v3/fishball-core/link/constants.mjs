@@ -153,6 +153,15 @@ export const CLIENT_PIN = Object.freeze({
 
 // F-OWN-SCHEMA: generator fixtures withdrawn (design §1.0b row 1).
 
+/**
+ * F-FIX-3 (Fishball, 2026-11-17): when the link's own import of its MCP client fails, it logs one
+ * `warn(LINK_SAVE.text.failed, LINK_MCP.clientImport, code)` per failed attempt on its optional
+ * `logger`, and is `target-unreachable`, retried with K3's backoff, as before. The line, the reason
+ * and the backoff are imported from their owners, never restated.
+ */
+export { LINK_MCP, LINK_SAVE } from '../../../../packages/core/src/link/constants.js'
+export { LINK_BACKOFF } from '../../../../packages/core/contracts/constants.js'
+
 /** Rows that need a later task. */
 export const LATER = Object.freeze({
   intercept: 'F-INTERCEPT (a polled event, the settlement included, reaches core\'s acceptance ledger and dispatch: no event lost)',
