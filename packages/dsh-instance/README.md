@@ -85,5 +85,5 @@ one in fishball-core's settings, or install `dsh-connector` and press Reconnect.
 
 DSH has no uninstall hook, so the package ships `uninstall.js`, run with DSH quit before removing
 the package. It removes `<DSH_HOME>/fishball/runtime` and nothing else. See the root README for the
-command and its refusal codes (`CHILD_RUNNING`, `UNSAFE_DIRECTORY`, `UNOWNED_RUNTIME`,
+command and its refusal codes (`CHILD_RUNNING`, `CHILD_STATE_UNKNOWN`, `UNSAFE_DIRECTORY`, `UNOWNED_RUNTIME`,
 `INVALID_MAIN_HOME`).
