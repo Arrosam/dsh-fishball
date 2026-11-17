@@ -17,6 +17,7 @@ import {
 } from './constants.mjs'
 import { scenario, startFakeTarget } from './subject.mjs'
 import { registerRfixManagerCases } from './rfix.mjs'
+import { registerRfix2ManagerCases } from './rfix2.mjs'
 
 const isCoreTool = (name) => TOOLS.reminders.includes(name) || name === TOOLS.ask || TOOLS.privateSkill.test(name)
 const set = (path, value) => ({ op: OP.set, path: [...path], value })
@@ -80,6 +81,8 @@ const createArgs = (row) => ({ title: row.title, prompt: REMINDER.promptOf(row.t
 export function registerManagerCases(sdk) {
   // R-FIX-CORE (F05–F08, F15, F17, F18): in-process rows, rfix.mjs.
   registerRfixManagerCases(sdk)
+  // R-FIX-CORE-2 (the 90% create/update bound, delivery's reserve): in-process rows, rfix2.mjs.
+  registerRfix2ManagerCases(sdk)
   let target
   after(async () => target?.stop())
 

@@ -56,3 +56,7 @@ Core's own page on DSH's Plugins page (`client.js` with `client.settings.js`, in
 Core runs normally without `fishball-ui` (no page, no strip) and reports nothing about it. Core's
 status's set check has no member in 1.0.0-alpha.1 (`fishball-board`, its one member, is shelved, not
 in this release), so it always reports the set `ok`.
+
+## Known limits
+
+- Reminders: creates and growing updates may fill 90% of the 4 MiB store, and the rest is kept for delivery. Roughly 10k+ tiny recurring reminders (their delivery receipts), or thousands falling due at once, can still use up that reserve; the failed delivery is then logged, and the reminder stays due and is retried until space frees up.
