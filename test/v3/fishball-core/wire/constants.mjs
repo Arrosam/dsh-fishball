@@ -1,5 +1,6 @@
 import path from 'node:path'
 import { FAKE, TEST_HOMES } from '../../../support/constants.mjs'
+import { SHELVED } from '../../release/pack/constants.mjs'
 export const C = Object.freeze({
   core: 'fishball-core', ui: 'fishball-ui', board: 'fishball-board', shared: 'fishball-shared',
   sdk: ['0.2.1-rc.5', '0.2.2-rc.1'], apiVersion: 1,
@@ -16,7 +17,9 @@ export const C = Object.freeze({
   absentRows: ['fishball-native-session-tools', 'fishball-native-session-approvals', 'fishball-native-session-app', 'fishball-native-session-inbox'],
   exports: ['./client', './link', './contracts', './main', './session-route', './package.json'],
   main: 'fishball-core/main', forbiddenDependency: /^(?:dsh-agent-connector|dsh-connector)(?:$|[-/])/,
-  scanRoots: ['packages/core', 'packages/fishball-ui', 'packages/shared', 'packages/board'],
+  // SHELVE-BOARD: packages/board left this scan (core's suite no longer reads the shelved package); the
+  // board's own no-DSH-import rule stays SPLIT-DT-01 `Fishball→DSH fishball-board` (contract/split-shared).
+  scanRoots: ['packages/core', 'packages/fishball-ui', 'packages/shared'],
   source: /\.(?:[cm]?js|tsx?)$/, imports: /(?:\bfrom\s*|\bimport\s*\(|\brequire\s*\(|\bimport\s*)['"]((?:dsh-agent-connector|dsh-connector)[^'"]*)['"]/g,
   coreTools: ['ask_user', 'schedule_create', 'schedule_list', 'schedule_update', 'schedule_delete'],
   privateSkill: /^private_skill_/,
@@ -31,9 +34,15 @@ export const C = Object.freeze({
    */
   shelved: Object.freeze({
     set: Object.freeze({ status: 'ok', missing: Object.freeze([]) }),
-    mention: /fishball-board|(?<![a-z])board(?![a-z])/i,
+    /** REL-PACK's one board-mention rule. */
+    mention: SHELVED.mention,
     impossibleEngine: '>=99.0.0',
     brokenPrefix: 'wire-broken-board-',
+    /**
+     * The "board present" partitions use a stand-in bundle named fishball-board (one trivial row),
+     * never the shelved packages/board, so a later rework of the board cannot break core's rows.
+     */
+    standIn: path.join(import.meta.dirname, 'fixtures', 'fishball-board'),
   }),
   members: ['manager', 'events', 'ui', 'bridge', 'attention'],
   managerMembers: ['sessionId', 'ensureSession', 'registerSetup', 'notify', 'userTexts'],

@@ -42,8 +42,6 @@ export const CHILD = Object.freeze({
   specOrder: Object.freeze([PACKAGES.ui, PACKAGES.core]),
   /** SHELVE-BOARD: never placed, installed, bundled, recorded or reserved in the child. */
   shelved: SHELVED.board,
-  /** The placement record the instance writes in the child profile (I-PLACE's relayed seam). */
-  record: 'fishball-placement.json',
   core: PACKAGES.core,
   /** BVA on the skip rule: the prerelease just below the instance version (1.0.0-alpha.1) is not "already at <v>". */
   staleVersion: '1.0.0-alpha.0',

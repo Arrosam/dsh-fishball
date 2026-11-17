@@ -34,6 +34,7 @@ import { contracts, member, serviceMembers, vocabulary } from '../../contract/k3
 import { FOLDER } from '../../contract/k3-host-services/constants.mjs'
 import { requireModule } from '../../dsh-connector-adapter/oauth-client/subject.mjs'
 import { runtimeOf } from '../../fishball-core/package/constants.mjs'
+import { shelvedTraces } from '../../release/pack/release.mjs'
 import {
   ADMISSION_KEY_FIELD, CONNECTOR_MCP, FIXTURE, FISHBALL_SIDE, HEX64, HOSTNAME, IMPORT, K3, MOVED, PAGE, PLACEMENT, RELAYED, ROUTE, SECRET_LIKE,
   SESSION_LIKE, SKIP, SYNC_HOST, UI_FREEZE,
@@ -46,28 +47,6 @@ import {
 
 const show = (v) => JSON.stringify(v)
 const skipped = (sdk, id, row, title, reason) => test(caseName(sdk, id, row, title), { skip: reason }, () => {})
-const readJsonFile = (file) => (fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, 'utf8')) : null)
-/**
- * SHELVE-BOARD: every trace of the shelved board in the child profile at `profile` (empty when none):
- * a copy in vendor/ or node_modules/ (folder or tarball), a dependency, a bundle, a placement-record
- * entry (any mention, so a disabled or reserved one counts), an install spec `fishball-board@…`.
- */
-function shelvedTraces(profile) {
-  const name = PLACEMENT.shelved
-  const manifest = readJsonFile(path.join(profile, PLACEMENT.manifest)) ?? {}
-  const copies = PLACEMENT.copyDirs.flatMap((dir) => {
-    const at = path.join(profile, dir)
-    return fs.existsSync(at) ? fs.readdirSync(at).filter((f) => f.startsWith(name)).map((f) => dir + '/' + f) : []
-  })
-  const record = readJsonFile(path.join(profile, PLACEMENT.record))
-  return [
-    ...copies,
-    ...(Object.hasOwn(manifest.dependencies ?? {}, name) ? ['dependencies.' + name] : []),
-    ...((manifest.dsh?.profile?.bundles ?? []).includes(name) ? ['dsh.profile.bundles'] : []),
-    ...(JSON.stringify(record).includes(name) ? [PLACEMENT.record + ': ' + show(record)] : []),
-    ...(JSON.stringify(manifest).includes(name + '@') ? ['install spec ' + name + '@…'] : []),
-  ]
-}
 
 export function registerIHostCases(sdk) {
   // ===================================================================== HOST-UC-01: first hosted start

@@ -38,7 +38,7 @@ import { caseTest } from '../../contract/package-boundaries/cases.mjs'
 import { relCase } from '../../release/pack/cases.mjs'
 import { ISOLATION, TARBALL } from '../../release/pack/constants.mjs'
 import {
-  assertFromOwnBundle, bundlesOf, flipByte, installAndCheck, installedDir, installProblems, makeScratch, readJson, removeScratch, show, withProcessEnv,
+  assertFromOwnBundle, bundlesOf, flipByte, installAndCheck, installedDir, installProblems, makeScratch, readJson, removeScratch, shelvedTraces, show, withProcessEnv,
 } from '../../release/pack/release.mjs'
 import { BUDGET, CASE, CHILD, DEAD_NETWORK, FAILED, LATER, PACKED, SCRATCH, TAMPER } from './constants.mjs'
 
@@ -50,25 +50,6 @@ function deadEnv(scratch) {
   return { ...Object.fromEntries(ISOLATION.proxyVars.map((v) => [v, DEAD_NETWORK.url])), npm_config_userconfig: ISOLATION.userconfig, npm_config_cache: npmCache, HOME: home }
 }
 const childProfile = (mainHome) => path.join(mainHome, ...CHILD.profile)
-/**
- * SHELVE-BOARD: every trace of the shelved board in a placed child profile (empty when none): a vendor
- * tarball or folder, a node_modules copy, a dependency, a bundle, a record entry, an install spec.
- */
-function shelvedTraces(mainHome) {
-  const profileDir = childProfile(mainHome)
-  const { name } = CHILD.shelved
-  const manifest = childManifest(mainHome) ?? {}
-  const vendor = path.join(profileDir, CHILD.vendorDir)
-  const record = readJson(path.join(profileDir, CHILD.record))
-  return [
-    ...(fs.existsSync(vendor) ? fs.readdirSync(vendor).filter((f) => f.startsWith(name)).map((f) => `${CHILD.vendorDir}/${f}`) : []),
-    ...(fs.existsSync(installedDir(profileDir, CHILD.shelved)) ? [`${TARBALL.nodeModules}/${name}`] : []),
-    ...(Object.hasOwn(manifest.dependencies ?? {}, name) ? [`dependencies.${name} = ${show(manifest.dependencies[name])}`] : []),
-    ...(bundlesOf(manifest).includes(name) ? ['dsh.profile.bundles holds ' + name] : []),
-    ...(JSON.stringify(record ?? null).includes(name) ? [`${CHILD.record} names ${name}: ${show(record)}`] : []),
-    ...(JSON.stringify(manifest).includes(name + '@') ? [`an install spec ${name}@… in the profile manifest`] : []),
-  ]
-}
 const childManifest = (mainHome) => readJson(path.join(childProfile(mainHome), CHILD.manifest))
 const readBytes = (file) => (fs.existsSync(file) ? fs.readFileSync(file) : null)
 const snapshot = (mainHome) => ({
@@ -164,7 +145,7 @@ export function registerPlacementInstallCases(sdk) {
   // SHELVE-BOARD state "first placed": nothing of the board, not even reserved or disabled.
   relCase(sdk, CASE.shelved, 'first', `after the first placement the child profile holds nothing of ${CHILD.shelved.name} (vendor, node_modules, dependencies, bundles, ${CHILD.record}, install spec); its bundles end ${CHILD.bundleOrder.map((p) => p.name).join(', ')}`, async () => {
     await placed()
-    assert.deepEqual(shelvedTraces(home), [])
+    assert.deepEqual(shelvedTraces(childProfile(home)), [])
     const bundles = bundlesOf(childManifest(home))
     assert.deepEqual(bundles.filter((b) => b.startsWith('fishball-')), CHILD.bundleOrder.map((p) => p.name), 'the Fishball bundles ' + show(bundles))
   }, BUDGET.caseMs)
@@ -175,7 +156,7 @@ export function registerPlacementInstallCases(sdk) {
     await p.compose(home)
     assert.deepEqual(snapshot(home), before)
     // SHELVE-BOARD state "started again": the re-run adds nothing of the board either.
-    assert.deepEqual(shelvedTraces(home), [], 'after the second run')
+    assert.deepEqual(shelvedTraces(childProfile(home)), [], 'after the second run')
   }, BUDGET.caseMs)
   for (const member of CHILD.bundleOrder) {
     relCase(sdk, CASE.id, 'disable ' + member.name, `${member.name} disabled by the owner (bundles edited while the child is down) → the next run keeps it off and the others on (R-BND-02)`, async () => {
@@ -207,7 +188,7 @@ export function registerPlacementInstallCases(sdk) {
       fs.writeFileSync(file, JSON.stringify({ ...manifest, version: CHILD.staleVersion }, null, 2))
       await p.compose(home)
       assertPlaced(p.instanceDir, home)
-      assert.deepEqual(shelvedTraces(home), [], 'after the re-install')
+      assert.deepEqual(shelvedTraces(childProfile(home)), [], 'after the re-install')
     }, BUDGET.caseMs)
   }
   relCase(sdk, CASE.fail, 'missing installed', `installed ${CHILD.core.name} removed from node_modules → the next run installs it again`, async () => {

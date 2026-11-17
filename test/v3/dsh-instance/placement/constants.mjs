@@ -7,6 +7,7 @@
  */
 import path from 'node:path'
 import { V3 } from '../../contract/package-boundaries/constants.mjs'
+import { CHILD_PLACEMENT } from '../../release/pack/constants.mjs'
 
 /**
  * The set a hosted child holds (design §1.0, plan §4; R-FB-01; R-BND-01 amended by 1.39). I-HOST
@@ -38,7 +39,7 @@ export const SET = Object.freeze({
  */
 export const RELAYED = Object.freeze({
   /** 1. `<H>/fishball/runtime/dsh-home/profiles/fishball/fishball-placement.json`, mode 0600. */
-  record: Object.freeze({ file: 'fishball-placement.json', mode: 0o600, format: 1, key: 'placed' }),
+  record: Object.freeze({ file: CHILD_PLACEMENT.record, mode: 0o600, format: 1, key: 'placed' }),
   childProfile: Object.freeze(['fishball', 'runtime', 'dsh-home', 'profiles', 'fishball']),
   /** 2. `<H>/fishball/runtime/launches/<instanceId>/launch.patch.yml`, a JSON array of patch ops, removed at stop. */
   launches: Object.freeze(['fishball', 'runtime', 'launches']),
@@ -46,7 +47,7 @@ export const RELAYED = Object.freeze({
   /** The pure export with the V2 arguments: launchOverlay(paths, record, childModule, limits, control, entries). */
   overlayModule: Object.freeze({ specifier: 'dsh-instance/native-runtime', file: Object.freeze(['src', 'native-runtime', 'index.js']), name: 'launchOverlay' }),
   /** 3. Each placed package goes to both folders of the child profile. */
-  copyDirs: Object.freeze(['vendor', 'node_modules']),
+  copyDirs: CHILD_PLACEMENT.copyDirs,
   /**
    * The bundle a blocked start names: K3 ChildStatus `plugin` (PROPOSED), or the relayed message
    * (dev 6d13f6a1) in the status `detail` or `message`.

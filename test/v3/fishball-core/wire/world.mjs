@@ -18,11 +18,12 @@ if (!fs.existsSync(profile)) {
   initializeProfileFromDefault(C.profile, 'web', home)
   const pkg = JSON.parse(fs.readFileSync(manifest, C.encoding))
   const members = JSON.parse(process.env.FBW_MEMBERS)
-  const folders = { [C.core]: 'core', [C.ui]: 'fishball-ui', [C.board]: 'board', [C.shared]: 'shared' }
-  // SHELVE-BOARD: a member may come from another folder (the broken board copy); default the repo's.
+  // SHELVE-BOARD: fishball-board is the suite's stand-in bundle, never the shelved packages/board.
+  const folders = { [C.core]: path.join(C.repo, 'packages', 'core'), [C.ui]: path.join(C.repo, 'packages', 'fishball-ui'), [C.board]: C.shelved.standIn, [C.shared]: path.join(C.repo, 'packages', 'shared') }
+  // A member may come from another folder (the broken stand-in copy).
   const dirs = JSON.parse(process.env.FBW_DIRS ?? '{}')
   for (const name of [...members, C.shared]) {
-    const dir = dirs[name] ?? path.join(C.repo, 'packages', folders[name])
+    const dir = dirs[name] ?? folders[name]
     pkg.dependencies = { ...pkg.dependencies, [name]: 'link:' + dir }
     fs.mkdirSync(path.join(profile, 'node_modules'), { recursive: true })
     fs.symlinkSync(dir, path.join(profile, 'node_modules', name))
