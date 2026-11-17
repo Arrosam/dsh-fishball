@@ -245,10 +245,15 @@ const packageRoot = (anchor, name) => path.dirname(createRequire(anchor).resolve
  * Fishball-side package (requirements 1.40, design §1.0b row 5); they are copied as files only.
  * Resolution walks up past the bundle's folder, so a copy found there must be the exact version the
  * bundle pins; a missing or different one refuses the start like a missing member.
+ * Only the set's own libraries are copied: a bundled dependency pinned at the member's own version,
+ * because the libraries move with the set's version (R-ARCH-08 rule 6). A third-party bundle (core's
+ * @modelcontextprotocol/client, REL-PACK item 2) ships inside the packed tarball only, which the
+ * packed path installs; a checkout's dev child runs without it, as before REL-PACK.
  */
 async function bundledLibraries(member) {
   const anchor = path.join(member.root, PLACEMENT.manifest)
-  return Promise.all((member.manifest[PLACEMENT.bundledField] ?? []).map(async (name) => {
+  const own = (member.manifest[PLACEMENT.bundledField] ?? []).filter((name) => member.manifest.dependencies?.[name] === member.manifest.version)
+  return Promise.all(own.map(async (name) => {
     let library
     try { library = await libraryPackage(name, packageRoot(anchor, name)) } catch (error) {
       if (error?.code === PLACEMENT.unresolved) fail(PLACEMENT.code.missing, name)
