@@ -209,3 +209,29 @@ Connect states are `CONNECT.state`.
 - **X-13 (R-OA-02: refuse an authorization server without S256):** `code_challenge_methods_supported`
   absent, `[]` or `['plain']` → no approval URL, Connect `failed`. `['S256']` and `['plain','S256']`
   → authorized, with S256 in the URL.
+
+## E-FIX-3: Connect's MCP client load logs its failure (`import-fault.mjs`)
+
+Requirement (relayed by Fishball, 2026-11-17, the F-FIX-3 leftover): `createLinkCredentials`
+without an `sdk` option loads `@modelcontextprotocol/client` itself, for Connect and for the
+saved-grant token manager. When that load fails it logs ONE
+`warn(LINK_SAVE.text.failed, LINK_MCP.clientImport, codeOf(error))` on
+`ctx.logger(LINK_SAVE.logger)` per failed load attempt, and rethrows. Connect still reports no
+approval URL and is neither `authorizing` nor `authorized`. No secret is logged (no token, client
+secret, URL query or error message). A successful load logs nothing. A supplied `sdk` is never
+imported.
+
+The world (subject.mjs) gains `noSdk` (core gets no `sdk` option) and `logger` (a recorder). The
+fault and the secret-free oracle are the link suite's (`../link/import-fault.mjs`,
+`../link/log-privacy.mjs`). "One per failed load attempt" is checked as: the import warnings equal
+the loads the hook refused, and there is at least one per `begin()`.
+
+| Id | Technique | Case |
+| --- | --- | --- |
+| EFIX3-LS-EP-01 rows 1–11 | EP / BVA | The thrown-value partitions of log-privacy.mjs (`code` set, `0`, `''`, `null`; name only; a plain Error; a string, `undefined`, `null`, an object, a number) give that code, and no secret. |
+| EFIX3-LS-DT-01 rule 1 | Decision Table | No sdk and a failing import: Connect unavailable or failed, warnings as above. |
+| EFIX3-LS-DT-01 rule 2 | Decision Table | No sdk and a working import: an approval URL, no import warning. |
+| EFIX3-LS-DT-01 rule 3 | Decision Table | An sdk supplied: never imported, an approval URL, no warning. |
+| EFIX3-LS-BVA-01 1 / 2 / 3 begins | BVA | Warnings equal the failed loads, at least one per begin. |
+| EFIX3-LS-ST-01 1 | State Transition | Failing, then loads again: the next begin gives the URL and adds no warning. |
+| EFIX3-LS-ST-01 2 | State Transition | A grant saved with no sdk (no warning), then a restart while the import fails: the token manager warns once per failed load, the link is not connected, no secret. |

@@ -251,7 +251,9 @@ export const V3_SUITES = Object.freeze({
   // and boots a real standalone DSH with them (the guards worker, so its harness files too).
   'fishball-ui.package': suite('fishball-ui package, patch rows and conditions, ui-seam, browser half, core/ui system rows (F-UI)', v3('fishball-ui/package'),
     [all(PACKAGE.fishballUi), all(PACKAGE.fishballCore), all(PACKAGE.fishballShared), 'test/v3/fishball-ui/guards/**', 'test/v3/fishball-core/package/**',
-      'test/v3/fishball-core/status/constants.mjs']),
+      'test/v3/fishball-core/status/constants.mjs',
+      // E-FIX-3: the guard-row reader is imported bound to the SDK through the oauth-client suite's importBound.
+      'test/v3/dsh-connector-adapter/oauth-client/subject.mjs']),
   // F-WIRE: core's main row, boots a real standalone DSH with core, fishball-ui and board as whole
   // bundles (the guards worker), and scans the Fishball side for DSH-side imports.
   'fishball-core.wire': suite("core's main row: fishballInstance, fishballStatus, the manager, model, Connect routes and web callback (F-WIRE)", v3('fishball-core/wire'),

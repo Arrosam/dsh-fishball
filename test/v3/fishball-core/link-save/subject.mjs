@@ -42,11 +42,14 @@ export const untilTrue = (predicate, timeoutMs = HARNESS.settleMs) => until(pred
  * - `name`: the raw `identity.name` setting (`undefined` = absent);
  * - `host`: the loopback name of the target URL (FIXTURE.host.first);
  * - `skewMs`: core's clock runs this far ahead of real time (`w.skew(ms)` moves it later; R14 rows);
- * - `start`: open core at once (default true).
+ * - `start`: open core at once (default true);
+ * - `noSdk`: E-FIX-3, open core WITHOUT the `sdk` option, so it loads its MCP client itself (only
+ *   `createLinkCredentials`; the pairing's link keeps the SDK's client);
+ * - `logger`: E-FIX-3, `(name) => logger` core gets as `ctx.logger` instead of DSH's (a recorder).
  * @param {import('node:test').TestContext} t
  */
 export async function linkSaveWorld(t, sdk, options = {}) {
-  const { name, host = FIXTURE.host.first, start = true } = options
+  const { name, host = FIXTURE.host.first, start = true, noSdk = false, logger } = options
   // An explicit `cimd: undefined` is the unset setting, so the default applies only when the key is absent.
   const cimd = Object.hasOwn(options, 'cimd') ? options.cimd : FIXTURE.cimd.valid
   const clock = { skewMs: 0 }
@@ -99,13 +102,13 @@ export async function linkSaveWorld(t, sdk, options = {}) {
       credentials: host_.ctx.credentials,
       authorization: host_.ctx.authorization,
       on: (event, fn) => host_.ctx.on(event, fn),
-      logger: (loggerName) => host_.ctx.logger(loggerName),
+      logger: logger ?? ((loggerName) => host_.ctx.logger(loggerName)),
     }
     const made = mod[SUBJECT.factory](ctx, {
       target: () => settings.get('target'),
       clientId: () => settings.get(IDENTITY.idKey),
       clientMetadataUrl: () => settings.get('cimd'),
-      sdk: client,
+      ...(noSdk ? {} : { sdk: client }),
       now: () => Date.now() + clock.skewMs,
     })
     for (const member of SUBJECT.members) assert.notEqual(made?.[member], undefined, `${SUBJECT.factory}() returned no ${member}`)

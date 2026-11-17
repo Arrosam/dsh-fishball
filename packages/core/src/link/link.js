@@ -47,6 +47,23 @@ import { checkTarget } from './target.js'
 import { OffTargetRequest, STATUS, failureStatus } from './status.js'
 import { emitIsolated, subscribe } from './listeners.js'
 
+/**
+ * Imports core's packaged MCP client (design §9.1). A failed import is logged on `logger` (the
+ * error's code only, F-FIX-3) and rethrown: the caller still fails as before, but the log tells a
+ * broken install from a target that cannot be reached. Not cached here: each caller keeps its own
+ * module, so a later import is tried (and logged) again. Shared by the link and by the credentials'
+ * Connect and saved grants (credentials.js `loadSdk`, E-FIX-3).
+ * @param {{warn: Function}} [logger]
+ */
+export async function importMcpClient(logger) {
+  try {
+    return await import(LINK_MCP.clientPackage)
+  } catch (error) {
+    logger?.warn(LINK_SAVE.text.failed, LINK_MCP.clientImport, codeOf(error))
+    throw error
+  }
+}
+
 /** Delay before the n-th consecutive retry (from 0), bounded by `LINK_BACKOFF.maxMs`. */
 export const backoffDelayMs = (attempt) => Math.min(LINK_BACKOFF.initialMs * LINK_BACKOFF.factor ** attempt, LINK_BACKOFF.maxMs)
 
@@ -297,17 +314,11 @@ export class McpLink {
   }
 
   /**
-   * Core's packaged MCP client (design §9.1), unless the caller supplied one. A failed import is
-   * logged (code only) and rethrown: the attempt still fails as `target-unreachable`, but the log
-   * tells a broken install from a target that cannot be reached.
+   * Core's packaged MCP client, unless the caller supplied one (`importMcpClient`: a failed import
+   * is logged and the attempt still fails as `target-unreachable`).
    */
   async #sdk() {
-    try {
-      this.#options.sdk ??= await import(LINK_MCP.clientPackage)
-    } catch (error) {
-      this.#options.logger?.warn(LINK_SAVE.text.failed, LINK_MCP.clientImport, codeOf(error))
-      throw error
-    }
+    this.#options.sdk ??= await importMcpClient(this.#options.logger)
     return this.#options.sdk
   }
 

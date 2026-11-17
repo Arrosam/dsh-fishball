@@ -100,3 +100,26 @@ ordinary, told apart by their visible text, not by exact wording) and SET3-ST-05
 Rows for withdrawn behaviour elsewhere (the slim panel, its Read Only line and Open Plugins link,
 the `fishballSettingsSections` service) are marked withdrawn where they live, citing requirements
 1.34 item 4, R-HOST-11 withdrawn, F-SETTINGS.
+
+## E-FIX-3 (B5): the model catalog under Cordis's inject rule (`model-catalog.mjs`)
+
+Requirement (relayed by Fishball, 2026-11-17): in a real DSH the "Fishball's model" select always
+said "The models could not be read.", because the page plugin read `ctx.remote.session` without
+injecting `remote.session`, and Cordis (both SDKs) throws on that read. The old scripted `remote`
+answered any namespace, so it could not see the bug. With `createWorld({remoteSession})` the page's
+Remote carries Cordis's own `remote` service tracker, and `remote.session` is provided by its own
+plugin fiber, as DSH's gateway mounts a namespace. The SDK's real Cordis then applies the rule:
+`ctx.remote.session` is the `remote.session` service only for a plugin that injected it.
+`ctx.get('remote.session')` answers it or `undefined`. A namespace DSH does not mount is absent.
+`chunkFiles` loads another copy of `client.settings.js`, which the mutating-test row uses.
+
+| Id | Technique | Case |
+| --- | --- | --- |
+| EFIX3-SET-RULE-01 | precondition | The harness enforces the rule with the SDK's Cordis: reading without inject throws, reading with inject gives the face, and `ctx.get` gives the face. |
+| EFIX3-SET-UC-01 main en / zh | Use Case | A catalog of two groups, plain models and a model with two efforts gives one option per model and one per effort. No "could not be read" / "无法读取模型。". |
+| EFIX3-SET-BVA-01 1 model / 0 groups | BVA | One model gives exactly one option. `groups: []` gives "No model is configured in this DSH yet.". |
+| EFIX3-SET-DT-01 rules 1–3 (en, zh) | Decision Table | No `remote.session`, `{ok:false}`, or a rejection: the page still registers and renders and says "could not be read". |
+| EFIX3-SET-DT-01 rule 4 | Decision Table | A catalog: listed, and the rest of the page (the setting fields) is there. |
+| EFIX3-SET-MUT-01 | mutating test | `client.settings.js` at `c4845000` (read with `git show` into a scratch folder) in the same world does NOT list the catalog and says "could not be read". The bug is reproduced, so the harness tells the two apart. |
+
+"Not required to register" is DT rule 1: with no `remote.session` the page still registers.
