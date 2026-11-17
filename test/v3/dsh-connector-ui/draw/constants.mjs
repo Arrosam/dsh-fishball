@@ -132,14 +132,21 @@ export const SLOT = Object.freeze({
   mainKey: 'fishball',
   overlay: 'shell.overlay',
   rowLeading: 'sidebar.session.row.leading',
-  header: 'conversation.session.header.actions',
+  /**
+   * The session header's two seats (UI-FIX-D, 2026-11-18): "Managed by <principal>" stays
+   * title-adjacent in header.actions; Hand over / Handover to… / Take back moved to DSH's
+   * right-aligned header.utilities. Cases mount both as the one header DSH draws.
+   */
+  header: Object.freeze(['conversation.session.header.actions', 'conversation.session.header.utilities']),
+  headerActions: 'conversation.session.header.actions',
+  headerUtilities: 'conversation.session.header.utilities',
   rowMenu: 'sidebar.workspaces.session.menu.item',
   /** Q-G4 = A: embed-UI registers neither (no inline records). */
   withdrawn: Object.freeze(['tool.call.toolview', 'conversation.chat.node']),
-  /** The seats only the connector UI backend feeds (marks, Hand over, the prompt). */
-  connectorSeats: Object.freeze(['sidebar.session.row.leading', 'conversation.session.header.actions', 'sidebar.workspaces.session.menu.item']),
+  /** The seats only the connector UI backend feeds (marks, Hand over, the prompt); UI-FIX-D adds header.utilities. */
+  connectorSeats: Object.freeze(['sidebar.session.row.leading', 'conversation.session.header.actions', 'conversation.session.header.utilities', 'sidebar.workspaces.session.menu.item']),
   /** Session-scoped slots: the renderer hands the Session id to `inject(key)` (dsh-client-ui-conversation slot contract). */
-  sessionScoped: Object.freeze(['conversation.session.header.actions']),
+  sessionScoped: Object.freeze(['conversation.session.header.actions', 'conversation.session.header.utilities']),
   /** The sidebar row's icon size the owner passes (dsh-client-ui-sidebar SidebarPanelIconOwnerProps). */
   fishSize: 16,
 })
