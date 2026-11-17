@@ -38,8 +38,9 @@ import { createHash } from 'node:crypto'
 import { createTokenManager, accessTokenOf, isGrantFor } from './oauth-client.js'
 import { CONNECT, HOSTED_IMPORT } from '../../contracts/constants.js'
 import { codeOf } from '../events/diagnostics.js'
-import { LINK_MCP, LINK_SAVE } from './constants.js'
+import { LINK_SAVE } from './constants.js'
 import { createConnect } from './connect.js'
+import { importMcpClient } from './link.js'
 import { emitIsolated, subscribe } from './listeners.js'
 
 const REF = HOSTED_IMPORT.credentialRef
@@ -179,7 +180,8 @@ export function createLinkCredentials(ctx, { target, clientId, clientMetadataUrl
   const warn = (what) => (error) => logger?.warn(LINK_SAVE.text.failed, what, codeOf(error))
   const reconnects = new Set()
   let sdkModule = sdk
-  const loadSdk = async () => (sdkModule ??= await import(LINK_MCP.clientPackage))
+  // Connect's and the saved grants' MCP client; a failed import is logged as the link's (E-FIX-3).
+  const loadSdk = async () => (sdkModule ??= await importMcpClient(logger))
   const store = createSavedStore(ctx.credentials, { sdk: loadSdk, fetch, now })
   // Q-LS1 = A: the reference value the target refused while a saved credential existed (by id);
   // cleared when the reference changes. And the saved credential the target refused, by id.

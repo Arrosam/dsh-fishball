@@ -97,6 +97,12 @@ window.__ModuleLoader__.load({
        * effort) triples as JSON, plus the empty "DSH's default" option that clears the field.
        */
       model: Object.freeze({ unset: '', effortless: null, catalog: Object.freeze({ loading: 'loading', ready: 'ready', failed: 'failed' }) }),
+      /**
+       * DSH's remote session face (`remote.session`, dsh-api-session-controller, both SDKs), looked
+       * up with `ctx.get`, never as `ctx.remote.session`: the page does not inject it, and Cordis
+       * throws on a property read of a service the plugin did not inject (E-FIX-3 B5).
+       */
+      remoteSession: 'remote.session',
     })
     const en = {
       summary: 'Fishball\'s target, connection and identity.',
@@ -401,8 +407,9 @@ window.__ModuleLoader__.load({
       React.useEffect(() => {
         let live = true
         // Read on use, never injected: a DSH whose remote session face is missing shows the page
-        // with the model control's failed note, not no page at all.
-        Promise.resolve().then(() => ctx.remote.session.modelCatalog()).then((answer) => {
+        // with the model control's failed note, not no page at all. Hence the lookup by name, read
+        // once per mount: a namespace not mounted yet reads as failed until the page opens again.
+        Promise.resolve().then(() => ctx.get(PAGE.remoteSession).modelCatalog()).then((answer) => {
           if (live) setCatalog(answer?.ok === true ? { status: PAGE.model.catalog.ready, value: answer.value } : { status: PAGE.model.catalog.failed })
         }, () => { if (live) setCatalog({ status: PAGE.model.catalog.failed }) })
         return () => { live = false }
