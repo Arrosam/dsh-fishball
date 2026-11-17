@@ -34,7 +34,8 @@ export const SETTINGS = Object.freeze({
  * - POST `cancelPath`: `cancel()`, then `200 ConnectStatus` (fishball-ui's strip Cancel, design
  *   §6.3a step 2);
  * - no compatible `fishballInstance.ui.connect`, or it threw: `503 {code: unavailableCode}`, with no
- *   error detail, so nothing about a credential can leave through an exception message. The page
+ *   error detail, so nothing about a credential can leave through an exception message (a throw is
+ *   logged by its code alone, `connectFailed`, so it is told apart from a missing service). The page
  *   reads any non-200 as "unavailable"; the code names the cause for a reader of the network log.
  * - `instanceApiVersion`: K3's `fishballInstance.apiVersion`, the only service version this route
  *   understands (another version may shape `ui.connect` differently).
@@ -51,6 +52,11 @@ export const CONNECT_ROUTE = Object.freeze({
   ok: 200,
   unavailable: 503,
   unavailableCode: 'CONNECT_UNAVAILABLE',
+  /**
+   * The background-log reason of a 503 for a throw (F-FIX-3), on the link's logger with its line
+   * (`LINK_SAVE.logger`, `LINK_SAVE.text.failed`) and the error's code only.
+   */
+  connectFailed: 'answering the Connect route',
   headers: Object.freeze({ 'content-type': 'application/json', 'cache-control': 'no-store' }),
   /** The `ConnectBegin` members each outcome carries besides `outcome` (connect.d.ts). */
   beginMembers: Object.freeze({
