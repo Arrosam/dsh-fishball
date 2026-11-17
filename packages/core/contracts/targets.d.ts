@@ -85,6 +85,9 @@ export interface TargetRecord {
  * - `state`: derived from `link`, `connect` and `connecting` by the rule of `SEAM_TARGETS.state`'s comment;
  * - `connecting`: a link attempt (connect, list, pair, listen) is in flight;
  * - `connect`: this target's Connect, or `null` for the parent while it uses the hosted import;
+ * - `line` (MULTI-0 amendment, MULTI-3's finding): this target's status line, exactly core's
+ *   existing `stripLine(link, url, connect).line` for it (`kind` a `LINK.state` / `CONNECT.state`
+ *   word, `code` its code or `null`), so fishball-ui draws it without re-deriving core's rule;
  * - `control`: the one control (`SEAM_STATUS.control`), as the old strip's `control`;
  * - `contributedTools`: the contributed tools on offer from this target, zero included; `null`
  *   before the first list;
@@ -99,6 +102,7 @@ export interface TargetView extends TargetSource {
   readonly connecting: boolean
   readonly link: LinkStatus
   readonly connect: ConnectStatus | null
+  readonly line: { readonly kind: string; readonly code: string | null }
   readonly control: 'connect' | 'cancel' | null
   readonly pairing: UiPairingView
   readonly identity: TargetIdentityState
