@@ -80,7 +80,8 @@ export function registerIHostCases(sdk) {
     await w.hosted.firstStart()
     assert.deepEqual(w.locator.targetStatus(), { state: K3.target.connected, code: null })
   })
-  caseTest(sdk, 'HOST-UC-01', 'main 2', 'the hosted record file is <mainHome>/fishball/hosted.json, mode 0600, {format: 1, instanceId, entries: [entryKey]}, and holds no token value', async (t) => {
+  // Re-baselined by I-SUCCEED (the user's Q3 = A, 2026-11-17): hosted.json gains `runtime`, the child runtime id the newest entry was created under.
+  caseTest(sdk, 'HOST-UC-01', 'main 2', 'the hosted record file is <mainHome>/fishball/hosted.json, mode 0600, {format: 1, instanceId, entries: [entryKey], runtime}, and holds no token value', async (t) => {
     const w = await hostedWorld(t, sdk, { record: 'file' })
     await w.hosted.firstStart()
     const file = recordFile(w.mainHome)
@@ -88,7 +89,7 @@ export function registerIHostCases(sdk) {
     assert.equal(fs.statSync(file).mode & 0o777, RELAYED.record.mode)
     const json = JSON.parse(fs.readFileSync(file, 'utf8'))
     assert.equal(typeof json[RELAYED.record.idKey], 'string')
-    assert.deepEqual(json, { format: RELAYED.record.format, [RELAYED.record.idKey]: json[RELAYED.record.idKey], entries: [FIXTURE.entryPrefix + 1] })
+    assert.deepEqual(json, { format: RELAYED.record.format, [RELAYED.record.idKey]: json[RELAYED.record.idKey], entries: [FIXTURE.entryPrefix + 1], [RELAYED.record.runtimeKey]: FIXTURE.runtimeId })
     for (const v of w.tokens.values()) assert.equal(fs.readFileSync(file, 'utf8').includes(v), false, 'token value in the record')
   })
   caseTest(sdk, 'HOST-UC-01', 'E1', 'a blocked start reports {state: failed, code: PROFILE_INCOMPATIBLE, plugin: <the bundle>} through the locator', async (t) => {
@@ -399,7 +400,7 @@ export function registerIHostCases(sdk) {
       if (rule === 5) assert.equal(w.hosted.notice(), RELAYED.notice)
     })
   }
-  skipped(sdk, 'HOST-DT-01', 6, 'child reinstalled with the old entry enabled → create, pair, then succession (I-SUCCEED, W5)', 'I-SUCCEED (W5): succession is not I-HOST\'s; the create part is HOST-ST-03 row 3')
+  skipped(sdk, 'HOST-DT-01', 6, 'child reinstalled with the old entry enabled → create, pair, then succession (I-SUCCEED, W5)', 'moved to test/v3/dsh-instance/succession (I-SUCCEED: ISUCC-DT-01 rules 2–3); the create part is HOST-ST-03 row 3')
   skipped(sdk, 'HOST-DT-01', 7, 'pair answers already-paired → create another new entry', SKIP.hosted('HOST-DT-01 rule 7: the pair answer comes from core in a running child'))
   caseTest(sdk, 'HOST-DT-01', 'probe', 'a probe with no answer (the channel is unavailable) is not "absent": nothing is created', async (t) => {
     const w = await hostedWorld(t, sdk, { receiver: false, timeoutMs: FIXTURE.shortTimeoutMs })

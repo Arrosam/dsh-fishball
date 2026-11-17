@@ -6,7 +6,7 @@
  *   openHostedStore(ctx, {defineDomain, domainTable}) → Promise<{table, close}>   (domain dsh_connector_hosted)
  *   createHostedTokens(ports) → {service, resume(), close()}   (phase 3: C-WIRE calls `resume` once at start)
  *     ports = {table, tokens, pairs, routing, writer, notes, settings, timers, logger}
- *   service: K3 DshConnectorTokens, frozen {apiVersion, createHosted, entryState, retire}
+ *   service: K3 DshConnectorTokens, frozen {apiVersion, createHosted, entryState, retire, onChange}   (onChange: K3 amendment I-SUCCEED, the user's Q1 = C, 2026-11-17)
  *   HOSTED_SERVICE {name, apiVersion}, HOSTED_TIMING {retryMs}, HOSTED_ENTRY_STATE, RETIRE_REFUSAL,
  *   SUCCESSION_NOTE {text(label)}, HostedServiceError
  *

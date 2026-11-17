@@ -41,6 +41,14 @@ them. Retry never creates a token; after you delete the hosted entry it leaves t
 `hosted-entry-deleted`. **Reconnect** creates one new entry and imports it once; it moves and
 deletes nothing, so delete the old entry yourself on the connector's settings page.
 
+**Reinstall.** When the child has lost its credential (its home was removed, or the instance was
+reinstalled) and `hosted.json` already lists an entry the instance made, the new entry becomes that
+entry's successor: once the new Fishball has paired, the instance asks the connector (`retire`) to
+move the old entry's managed sessions, name, live offers and pending events to it and to delete the
+old entry. Until that has happened it is retried at each start and whenever the connector's pairs
+change; a Reconnect meanwhile makes its new entry the successor. A deleted or user-made entry is
+never succeeded.
+
 ## Settings page
 
 DSH → Plugins → `dsh-instance` (`client.js`, `client.status.js`, `client.models.js`):

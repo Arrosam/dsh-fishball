@@ -37,6 +37,7 @@ DECIDED (#n) are ones the user kept at the value review (relayed by Fishball; #n
 | `principals()` order | the order of the entries in the connector's native settings list (PROPOSED) | R-UI-10 "stable order" |
 | online | an open `agent-events` listen stream, as K1's `CONNECTED` | design §3.5, HAND-ST-02 |
 | Principal `key` stability | "stable for the life of the token entry" holds from pairing onward; an unpaired entry's key changes once, when it pairs (DECIDED #W3-3) | K3 note at the W3 merge |
+| `onChange` | K3 amendment (I-SUCCEED, the user's Q1 = C, 2026-11-17): `fn()` after each pair-store change (K1 `PairStore.onChange`); the instance retries a `successor-unpaired` `retire` on it | R-HOST-09, HOST-DT-02 #2 |
 | `retire` refusals | `unknown-entry`, `not-hosted`, `successor-unpaired`, `operation-failed`; all move nothing (codes DECIDED #13) | R-HOST-09, HOST-DT-02 |
 | `createHosted` answer | `{entryKey, label, value}`, the value once and to the instance only; the connector keeps its digest only (K1d) | design §5.4, §5.9; R1 |
 | `createHosted` failures | rejects with `operation-failed`; creates nothing (DECIDED #14). `credentials-unwritable` is the instance's now: the child could not store the value (K1d, PROPOSED) | design §5.2, §5.4 |

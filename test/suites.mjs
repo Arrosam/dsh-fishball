@@ -195,6 +195,21 @@ export const V3_SUITES = Object.freeze({
     [all(PACKAGE.dshInstance), sub(PACKAGE.dshConnector, 'host-services'), all(PACKAGE.dshConnectorShared), all(PACKAGE.fishballCore), all(PACKAGE.fishballUi),
       all(PACKAGE.fishballShared), all(PACKAGE.fishballBoard), all(PACKAGE.dshConnectorUi), 'test/v3/contract/k3-host-services/**', 'test/v3/contract/package-boundaries/**',
       'test/v3/dsh-connector-adapter/oauth-client/subject.mjs']),
+  // I-SUCCEED drives the instance's hosted-token logic and record (reusing the I-HOST suite's binding and
+  // fakes) and, in its integration rows, the real connector hosted service through the C-SUCCEED world.
+  'dsh-instance.succession': suite("the instance's half of reinstall succession: pending in hosted.json, retire retries, Reconnect retargets (I-SUCCEED)", v3('dsh-instance/succession'),
+    [sub(PACKAGE.dshInstance, 'src', 'host'), sub(PACKAGE.dshInstance, 'src', 'native-runtime'), sub(PACKAGE.dshConnector, 'src', 'hosted'),
+      sub(PACKAGE.dshConnector, 'host-services'), 'test/v3/dsh-instance/host/**', 'test/v3/dsh-connector/hosted/**',
+      // What the C-SUCCEED world loads beside the hosted module (as dsh-connector.hosted).
+      sub(PACKAGE.dshConnector, 'src', 'routing'), sub(PACKAGE.dshConnector, 'src', 'handover'), sub(PACKAGE.dshConnector, 'src', 'mailbox'),
+      sub(PACKAGE.dshConnector, 'src', 'pairs'), sub(PACKAGE.dshConnector, 'src', 'tokens'), sub(PACKAGE.dshConnector, 'src', 'revocation'),
+      sub(PACKAGE.dshConnector, 'src', 'mcp'), sub(PACKAGE.dshConnector, 'src', 'schema-value'),
+      'test/v3/dsh-connector/routing/**', 'test/v3/dsh-connector/pairs/**', 'test/v3/dsh-connector/tokens/**', 'test/v3/dsh-connector/mailbox/**',
+      'test/v3/dsh-connector/revocation/**', 'test/v3/dsh-connector/mcp-http/**', 'test/v3/dsh-connector/mcp-tools/**',
+      // The rest of its import closure (measured 2026-11-17): the I-HOST binding's helpers and the C-SUCCEED world's.
+      'test/v3/dsh-connector-adapter/oauth-client/subject.mjs', 'test/v3/dsh-connector-adapter/oauth-client/constants.mjs',
+      'test/v3/contract/package-boundaries/**', 'test/private-skills/support/**', 'test/v3/release/pack/release.mjs', 'test/v3/release/pack/constants.mjs',
+      ...CONNECTOR_CORE, ...CONNECTOR_CONTRACTS]),
   'fishball-core.package': suite('core package, slim child move (R-CORE; the settings-section point withdrawn, 1.34)', v3('fishball-core/package'),
     [all(PACKAGE.fishballCore), sub(PACKAGE.dshInstance, 'src', 'slim'), sub(PACKAGE.dshInstance, 'src', 'child'), PACKAGE.dshInstance + '/client*.js']),
   'fishball-core.bridge': suite('bridge façade, list_changed refresh, X8 attention (F-FACADE)', v3('fishball-core/bridge'),

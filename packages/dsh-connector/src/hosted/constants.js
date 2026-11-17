@@ -70,5 +70,6 @@ export const LOG = Object.freeze({
 export const MISUSE = Object.freeze({
   instanceId: 'dshConnectorTokens: createHosted needs an instance id, a non-empty string',
   sameEntry: 'dshConnectorTokens: retire needs two different entry keys',
+  listener: 'dshConnectorTokens: onChange needs a function',
   record: 'dshConnectorTokens: invalid hosted record',
 })
