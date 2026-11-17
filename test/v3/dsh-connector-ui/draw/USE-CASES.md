@@ -158,3 +158,16 @@ loaded after embed-UI → three.
 
 **UDRAW-ST-05 the window follows the child** — #1 failed (state tag, link) –child becomes ready→
 iframe, no reload (UIM-UC-01 E1, amended by #77: the retry itself is on the instance's page).
+
+## UI-POLISH-D (polish-cases.mjs)
+
+Written from the UI-POLISH-D requirements relayed 2026-11-18 (and the developer's notes of that day:
+the window's fish glyphs are decorative and carry no `data-fishball-mark`; the bubble sits level
+with the fish's top). One test per row; ids `UIPD-DRAW-*`.
+
+| Id | Technique | Rows |
+|---|---|---|
+| UIPD-DRAW-HINT | EP (language) | en / zh: no instance → lead `noInstanceTitle` ("Fishball isn't running here" / "Fishball 不在这里运行") above the unchanged hint `[data-fishball-no-instance]`; a decorative fish glyph; no `data-fishball-mark` in the window; not the warning icon |
+| UIPD-DRAW-NOTREADY | EP (K3 not-ready state × language) | disabled, waiting, starting, stopping, stopped, failed × en / zh → lead "Fishball isn't ready (<state words>)." / "Fishball 尚未就绪（<state words>）。" above "State <code>state</code>" (and "Code <code>code</code>" when there is one); the state tag holds a StateDot before its words |
+| UIPD-DRAW-CHROME | UC | the ready window's header: a decorative fish before "Fishball"; the ready tag's StateDot; Refresh keeps its word and has a refresh icon |
+| UIPD-DRAW-PLACE | ST / EP | fish visible → `data-fishball-notice-place=mark`, left = fish right + 8, top = fish top; fish hidden (width 0) → `corner`, left = bottom = 16; visible again → `mark`. No fish on the page → `corner`; the bubble stays a button in a `role=status` region with its hooks and aria-label |

@@ -30,7 +30,7 @@ const relative = (absolute) => absolute.slice(ROUTE.absolutePrefix.length)
 // --------------------------------------------------------------------------------------------- worlds
 
 /** Host + page; `principals` are fixture principals (`{online}` per row via `over`), `managed` maps session → principal. */
-async function world(t, sdk, { host: hostOptions = {}, page: pageOptions = {}, principals = [], managed = [] } = {}) {
+export async function world(t, sdk, { host: hostOptions = {}, page: pageOptions = {}, principals = [], managed = [] } = {}) {
   const w = await hostWorld(t, sdk, hostOptions)
   if (principals.length || managed.length) w.handover.set({ principals: principals.map(([p, over]) => row(p, over)), managed: managed.map(([sessionId, p]) => ({ sessionId, principal: p })) })
   const page = await openPage(t, w, pageOptions)
@@ -43,15 +43,15 @@ const offline = (p) => [p, { online: false }]
 
 const isFish = (entry) => entry.options.id === SLOT.fishId
 const isMain = (entry) => entry.options.key === SLOT.mainKey
-const mountFish = (page) => page.mount(SLOT.fish, fishProps(), isFish)
-const mountMain = (page) => page.mount(SLOT.main, {}, isMain)
-const mountOverlay = (page) => page.mount(SLOT.overlay)
+export const mountFish = (page) => page.mount(SLOT.fish, fishProps(), isFish)
+export const mountMain = (page) => page.mount(SLOT.main, {}, isMain)
+export const mountOverlay = (page) => page.mount(SLOT.overlay)
 const mountHeader = (page, sessionId = S1) => page.mount(SLOT.header, sessionProps(sessionId))
 const mountRowMark = (page, sessionId = S1) => page.mount(SLOT.rowLeading, sessionProps(sessionId))
 const mountRowMenu = (page, sessionId = S1) => page.mount(SLOT.rowMenu, sessionProps(sessionId))
 const one = (nodes, what) => { assert.equal(nodes.length, 1, what + ': ' + nodes.length); return nodes[0] }
 const fishNode = (view) => withAttr(view.tree(), ATTR.fishLight)[0]
-const noticeNode = (page) => withAttr(page.tree(), ATTR.notice)[0]
+export const noticeNode = (page) => withAttr(page.tree(), ATTR.notice)[0]
 const alerts = (page) => findRole(page.tree(), ATTR.alert)
 const findRole = (nodes, role) => withAttr(nodes, ATTR.role, role)
 const handOverButtons = (view) => withAttr(view.tree(), ATTR.handOver)
@@ -97,14 +97,14 @@ const assertNothingRegistered = (page) => assert.deepEqual(page.live().map((r) =
 const assertNoFrame = (view) => assert.deepEqual(byTag(view.tree(), TAG.iframe), [], 'an iframe was drawn')
 const assertNoFrameRetry = (page) => assert.deepEqual(withAttr(page.tree(), ATTR.frameRetry), [], 'a Retry button of embed-UI was drawn (#77)')
 /** The hint view (Q-G3): the exact text, no iframe, no state tag. */
-function assertHint(view) {
+export function assertHint(view) {
   const hint = one(withAttr(view.tree(), ATTR.noInstance), 'hint nodes')
   assert.ok(textIn(hint).includes(TEXT.hint), 'hint text: ' + JSON.stringify(textIn(hint)))
   assertNoFrame(view)
   assert.deepEqual(withAttr(view.tree(), ATTR.embedState), [], 'a state tag beside the hint')
 }
 /** The not-ready view (#77): state (+ code) tag, a Retry link to the instance's page, no frame, no hint. */
-async function assertNotReady(page, view, w, status) {
+export async function assertNotReady(page, view, w, status) {
   assert.ok(await page.waitFor(() => withAttr(view.tree(), ATTR.embedState, status.state).length > 0), 'no state tag ' + status.state)
   if (status.code !== null) assert.equal(withAttr(view.tree(), ATTR.embedCode, status.code).length, EXPECT.once, 'no code tag ' + status.code)
   assertNoFrame(view)
