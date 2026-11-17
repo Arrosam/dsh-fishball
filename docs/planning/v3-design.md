@@ -585,7 +585,10 @@ a reinstall replaces it (§5.4; R6 = B, R8).
 
 **Hosted, connector in the same DSH (automatic; Q8 revised by requirements 1.9).**
 - The connector provides a host-only service `fishballConnectorTokens`
-  (`{apiVersion: 1, createHosted(instanceId) → Promise<{entryKey, label, value}>, entryState, retire(oldEntryKey, successorEntryKey)}`).
+  (`{apiVersion: 1, createHosted(instanceId) → Promise<{entryKey, label, value}>, entryState, retire(oldEntryKey, successorEntryKey), onChange(fn)}`;
+  `onChange` is the K3 amendment of I-SUCCEED, the user's Q1 = C, 2026-11-17: it forwards K1
+  `PairStore.onChange`, so the instance retries a `successor-unpaired` `retire` once the new child
+  has paired).
   `createHosted` creates a **new** "Fishball (hosted)" token entry, keeps only its digest, and
   returns the value **once**, in process, to the instance (the only caller; never to a UI, and no
   reveal modal). It is called only when the child holds no paired credential (first start, or
@@ -633,7 +636,12 @@ a reinstall replaces it (§5.4; R6 = B, R8).
   an ordinary DSH. **Uninstall (Q-B3 B)** never touches hosted entries.
 - **Reinstall succession (Q24, decided; R-HOST-09).** The instance keeps the entry key of the
   hosted entry it created (non-secret, in its lifecycle state). When a reinstalled child pairs
-  with a new hosted token, the instance calls `retire(oldEntryKey, newEntryKey)`. In one storage
+  with a new hosted token, the instance calls `retire(oldEntryKey, newEntryKey)`. *As built
+  (I-SUCCEED, 2026-11-17):* a reinstall is a first start's new entry under a **new child runtime
+  folder** (the user's Q3 = A), so a Connect inside the child, which replaces core's hosted copy,
+  starts none; while one is pending, a Reconnect or another reinstall retargets it to the newest
+  entry (Q2); `retire` runs at every start, after a Reconnect, and on `onChange` while it answers
+  `successor-unpaired`. In one storage
   transaction the connector:
   1. moves managed sessions, and with them their watch (R-WATCH-04);
   2. moves the designated role, if the old entry held it;
@@ -1108,7 +1116,7 @@ make one, so one comes only from a settings document edited by hand or a store e
 | K1 `SETTINGS_REFUSAL` | `ref-duplicate`, `value-duplicate` | `token-duplicate` (PROPOSED, R3); plus R5's code if R5 is answered "refuse" |
 | K1 `TOKEN_VALUE.minChars`, `isTokenLongEnough` | 32 code points | withdrawn |
 | K1 `RevocationKind`, `TokenEntry` | `value-changed`; `ref`, `generated` | `disabled`, `deleted`; `hosted: boolean` replaces `ref` and `generated` (no caller outside `tokens/` reads them) |
-| K3 `host-services/tokens.d.ts` | `createHosted → {ref, entryKey, label}` (value resolved from the host store), `entryState`, `retire`; `disabled` also means "changed or unset its value" | `createHosted → {entryKey, label, value}`, once, to the instance (R1); `create(label)` is connector-internal (its own route), not a K3 member; `credentials-unwritable` becomes the instance's, reported when the child cannot store the value; `disabled` means switched off only |
+| K3 `host-services/tokens.d.ts` | `createHosted → {ref, entryKey, label}` (value resolved from the host store), `entryState`, `retire`; `disabled` also means "changed or unset its value" | `createHosted → {entryKey, label, value}`, once, to the instance (R1); `create(label)` is connector-internal (its own route), not a K3 member; `credentials-unwritable` becomes the instance's, reported when the child cannot store the value; `disabled` means switched off only; `onChange(fn)` added by I-SUCCEED (the user's Q1 = C, 2026-11-17) |
 | Callers: `mcp/oauth/*`, `mcp/oauth-web/*`, `pairs/`, `routing/`, `handover/` | `match`, `get`, `list`, `onRevoked` | unchanged; C-OAUTH's `followRevocations` already treats every kind alike |
 
 **Requirements and cases withdrawn or changed** (IDs kept, as for R-OA-10):

@@ -4,7 +4,8 @@
  *
  * I-HOST (requirements 1.28 R1, 1.33 Q-D1, 1.39, 1.41 Q-G3/Q-G6/Q-G7): it also provides the K3
  * child locator `dshInstanceChild` (src/host/locator.js), sets up the hosted token once at the
- * child's first start and on Reconnect (src/host/hosted.js), supplies the child its target URL
+ * child's first start and on Reconnect, and finishes a reinstall's succession (src/host/hosted.js,
+ * I-SUCCEED), supplies the child its target URL
  * (the child-side row's `targetUrl`), and serves its own settings page's routes (src/host/routes.js).
  * It imports no Fishball-side code (R-ARCH-10).
  */
@@ -174,12 +175,16 @@ export async function apply(ctx, config) {
    */
   let hostedNow
   const hostedReady = openHostedRecord(HOSTED_RECORD(ctx.profileContext.home)).then((record) => {
+    // A row that shut down while the record was read starts nothing: its successor row decides.
+    if (closed) return undefined
     hostedNow = createHostedToken({
       tokens: connectorTokens,
       record,
       credentials: () => credentialClient,
       instanceId: () => record.instanceId,
       remoteTarget,
+      // The child runtime folder's id (its owner marker, read at each start): new after a reinstall.
+      runtimeId: () => owner?.hostId,
       changed: () => changed(),
       warn: (format, value) => logger?.warn(format, value),
     })
@@ -338,6 +343,7 @@ export async function apply(ctx, config) {
     cancelReady()
     unsubscribeCredential()
     credentialClient?.close()
+    hostedNow?.close()
     changeListeners.clear()
     unsubscribeProviderSync()
     providerSync?.close()

@@ -265,6 +265,9 @@ export const REFUSAL = Object.freeze({
   invalid: 'invalid-request',
 })
 
+/** HOSTED.retire's own word for a record with no successor (named once, used twice there). */
+const NO_SUCCESSOR = 'no-successor'
+
 /**
  * The hosted token's set-up (I-HOST; design §5.4; requirements 1.28 R1, 1.39, 1.41 Q-G6; K3a
  * `HOSTED_IMPORT` names, of which this is the instance's own copy: the two sides share no code,
@@ -280,7 +283,8 @@ export const REFUSAL = Object.freeze({
  *   DSH's credential document lock, so the import waits that long plus the lifecycle request
  *   bound (host.js); the probe keeps the lifecycle request bound;
  * - `record`: the host's non-secret list of the hosted entry keys it created, newest last, with
- *   the instance's stable id (host/hosted-record.js);
+ *   the instance's stable id and the old entry of an unfinished succession (host/hosted-record.js);
+ * - `retire`: the reinstall succession's K3 answers and log lines (I-SUCCEED);
  * - `notice`: the instance's one notice, after Retry found the hosted entry deleted (R6 = B);
  * - `reconnect`: its refusals (K3 `ReconnectRefusalCode`).
  */
@@ -306,6 +310,23 @@ export const HOSTED = Object.freeze({
   tokensService: 'dshConnectorTokens',
   apiVersion: 1,
   entryState: Object.freeze({ enabled: 'enabled', disabled: 'disabled', deleted: 'deleted' }),
+  /**
+   * Reinstall succession (I-SUCCEED; hosted.js `attempt`): K3 `RetireRefusalCode` words, restated
+   * because the instance imports no connector module (as `entryState`), and one word of its own.
+   * - `unpaired` (`successor-unpaired`): waits for the connector's next pair change, and each start;
+   * - `final`: `unknown-entry` (an entry was deleted: never a reinstall, R-HOST-10) and `not-hosted`
+   *   (not this instance's, or already succeeded) end it; `operation-failed` is not final: K3
+   *   "the instance retries at its next start";
+   * - `noSuccessor`: the instance's own word, logged when the newest entry is the old one itself;
+   * - the logs carry a code only, never an entry key or a value.
+   */
+  retire: Object.freeze({
+    unpaired: 'successor-unpaired',
+    noSuccessor: NO_SUCCESSOR,
+    final: Object.freeze(['unknown-entry', 'not-hosted', NO_SUCCESSOR]),
+    droppedLog: 'hosted succession dropped (%s)',
+    pendingLog: 'hosted succession not finished (%s); it is retried at the next start',
+  }),
   /**
    * K3 `TargetStatus` answers (K1 `TARGET_STATE` / `TARGET_CODE` words, restated because the
    * instance imports no connector module; the K3 suite checks them): see hosted.js targetStatus.
