@@ -110,7 +110,7 @@ Source: [PLAN-MULTI](<../../../docs/planning/v3-multi-dsh.md>) §3–§7 (D01–
 
 | Point | Frozen as |
 | --- | --- |
-| Target record | `TargetRecord {id, kind, url, endpointEpoch, order, serverName, duplicateSuffix}`; storage `fishball_core_targets/targets` v1, tool bindings and their tombstones `fishball_core_targets/tool-bindings` v1; no token value; no count cap (Q12) |
+| Target record | `TargetRecord {id, kind, url, endpointEpoch, order, serverName, duplicateSuffix}`; storage `fishball_core_targets/targets` v1, tool bindings and their tombstones `fishball_core_targets/tool_bindings` v1 (domain and table names in DSH storage's `UNIT_NAME_RE` `^[a-z][a-z0-9_]*$`, both SDKs); no token value; no count cap (Q12) |
 | Ids | target `t-` + 16 base32 letters, epoch `e-` + 16; reserved parent id `parent`; a new epoch on every canonical-endpoint change |
 | List / status API | `fishballInstance.ui.targets` (`FishballTargets`): `list()` → `TargetsSnapshot {version: 1, targets: TargetView[]}`, `onChange`, `add`, `remove`, `setUrl`, `begin`, `cancel`, `retry`, `choose`, each by `targetId`. K3a's scalar `ui.link`, `ui.connect`, `ui.pairing` are withdrawn. Core's status snapshot carries `targets` beside the global `fishball`, `guards`, `set` |
 | Per-target strip | `TargetView.line {kind, code}` = core's `stripLine(...).line` for that target (amendment from MULTI-3), with `control` and `contributedTools` |

@@ -34,7 +34,7 @@ const exported = (mod, name) => {
 }
 
 /** index.d.ts as code (comments blanked, whitespace-only lines dropped, as K1b reads it) and its model. */
-function declarations() {
+export function declarations() {
   const [file, text] = declarationText()
   const code = blankComments(text).replace(/\n[ \t]*(?=\n)/g, '')
   return { text, code: blankComments(text), m: model(new Map([[file, code]])) }
@@ -47,7 +47,7 @@ function aliasBranches(m, name) {
 }
 const memberType = (m, type, name) => m.members(type).get(name)?.type?.trim()
 /** The object type text of `export declare const <name>: { … }` (code text, braces matched). */
-function declaredConstType(code, name) {
+export function declaredConstType(code, name) {
   const at = new RegExp(String.raw`export\s+declare\s+const\s+${name}\s*:`).exec(code)
   assert.ok(at, `index.d.ts has no export declare const ${name}`)
   const open = code.indexOf('{', at.index + at[0].length)
@@ -58,11 +58,11 @@ function declaredConstType(code, name) {
   }
   return code.slice(open)
 }
-const unquote = (t) => t?.replace(/^(['"])(.*)\1$/, '$2')
+export const unquote = (t) => t?.replace(/^(['"])(.*)\1$/, '$2')
 
 /** The README, and the body of the `## …` section whose heading starts with `heading`. */
-const readme = () => fs.readFileSync(path.join(REPO, SCHEMA_MODULE.folder, README.file), 'utf8')
-function section(text, heading) {
+export const readme = () => fs.readFileSync(path.join(REPO, SCHEMA_MODULE.folder, README.file), 'utf8')
+export function section(text, heading) {
   const start = text.indexOf(heading)
   assert.ok(start >= 0, `README has no "${heading}" section`)
   const rest = text.slice(start + heading.length)

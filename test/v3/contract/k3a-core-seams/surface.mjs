@@ -14,7 +14,7 @@ import { folderFiles, model, specifiers } from '../k3-host-services/declarations
 import { SDK } from '../package-boundaries/constants.mjs'
 import { CREDENTIALS, DSH_SIDE, FILE, HOSTED, TYPES, UI } from './constants.mjs'
 
-const importFile = (file) => import(pathToFileURL(file).href)
+export const importFile = (file) => import(pathToFileURL(file).href)
 
 export const core = () => contracts(FOLDER.coreContracts)
 export const coreConstants = () => importFile(FILE.coreConstants)

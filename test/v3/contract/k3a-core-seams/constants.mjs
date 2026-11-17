@@ -171,14 +171,35 @@ export const UI = Object.freeze({
   instance: 'fishballInstance',
   /** `FishballUi` members and their arities (the relayed surface). */
   top: Object.freeze({ managerSessionId: Object.freeze({ params: 0 }) }),
+  /**
+   * Re-baselined by MULTI-0 (core contracts README "MULTI-0 amendment", ui.d.ts, targets.d.ts):
+   * the scalar `link`, `connect` and `pairing` groups are withdrawn for `targets` (FishballTargets),
+   * whose actions each name a `targetId` first, except `add(url)`.
+   */
   groups: Object.freeze({
-    link: Object.freeze({ status: Object.freeze({ params: 0 }), onChange: Object.freeze({ params: 1 }) }),
-    connect: Object.freeze({ status: Object.freeze({ params: 0 }), onChange: Object.freeze({ params: 1 }), begin: Object.freeze({ params: 0 }), cancel: Object.freeze({ params: 0 }) }),
-    pairing: Object.freeze({ state: Object.freeze({ params: 0 }), onChange: Object.freeze({ params: 1 }), choose: Object.freeze({ params: 2, optionalFrom: 1 }) }),
+    targets: Object.freeze({
+      list: Object.freeze({ params: 0 }),
+      onChange: Object.freeze({ params: 1 }),
+      add: Object.freeze({ params: 1 }),
+      remove: Object.freeze({ params: 2, optionalFrom: 1 }),
+      setUrl: Object.freeze({ params: 3, optionalFrom: 2 }),
+      begin: Object.freeze({ params: 1 }),
+      cancel: Object.freeze({ params: 1 }),
+      retry: Object.freeze({ params: 1 }),
+      choose: Object.freeze({ params: 3, optionalFrom: 2 }),
+    }),
     guards: Object.freeze({ report: Object.freeze({ params: 0 }), onChange: Object.freeze({ params: 1 }) }),
     asks: Object.freeze({ list: Object.freeze({ params: 0 }), onChange: Object.freeze({ params: 1 }), answer: Object.freeze({ params: 2 }) }),
   }),
   onChange: 'onChange',
+  /** `FishballConnect` (connect.d.ts, still declared): the client's status, onChange, begin, cancel. */
+  fishballConnect: Object.freeze(['status', 'onChange', 'begin', 'cancel']),
+  /** MULTI-0: the withdrawn scalar members of `FishballUi`, and the target selector each `targets` action names first. */
+  withdrawn: Object.freeze(['link', 'connect', 'pairing']),
+  targetsGroup: 'targets',
+  targetIdParam: Object.freeze({ name: 'targetId', type: 'TargetId', methods: Object.freeze(['remove', 'setUrl', 'begin', 'cancel', 'retry', 'choose']) }),
+  /** MULTI-0: `ui.asks.answer(handle, answer)`: the card's opaque handle, never a raw approvalId. */
+  answer: Object.freeze({ group: 'asks', method: 'answer', first: 'handle', firstType: 'string' }),
   /** K3's secret-name test plus the OAuth secrets (bearer, PKCE verifier). */
   secretField: new RegExp(HANDOVER.secretField.source + '|bearer|verifier', 'i'),
   /** The provider that hands tokens to an MCP client; fishball-ui must not get it. */
