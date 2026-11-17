@@ -60,6 +60,15 @@ globalThis.__ModuleLoader__?.load({
       state: Object.freeze({ idle: 'idle', running: 'running' }),
     })
     /**
+     * A session's root as DSH's own header breadcrumb follows it (dsh-client-ui-conversation
+     * `deriveAncestry`: a summary whose `origin` is `subagent` belongs to its `parentId`). Hand over
+     * and Take back are per root session (review UI-01), and DSH draws the header and its utilities
+     * in a subagent's session too, so the header shows and acts on the root's state. `maxDepth` is
+     * the connector's own walk bound (dsh-connector src/constants.js SESSION_INFO.maxSubagentDepth;
+     * a browser chunk cannot import it, so it is written here once more: change both together).
+     */
+    const ROOT = Object.freeze({ subagentOrigin: 'subagent', maxDepth: 8 })
+    /**
      * The refusals with their own words (the backend's answers: K3 HandOverRefusalCode,
      * TakeBackRefusalCode, and its own `invalid-request`). Any other answer, `operation-failed`
      * or no answer at all, reads `refusalFailed`. `noCode` marks an answer that carried no code.
@@ -82,6 +91,26 @@ globalThis.__ModuleLoader__?.load({
       const useSnapshot = snapshotHook(routes)
       /** The session's mark (`{sessionId, principal}`), or undefined while it is unmanaged. */
       const markOf = (snapshot, sessionId) => snapshot.marks.find((mark) => mark.sessionId === sessionId)
+      /**
+       * The root id of `sessionId` in DSH's session list (`{byId}`, ROOT); a session the list does
+       * not hold yet, or a parent it does not hold, ends the walk there (the backend resolves the
+       * root again, so a Hand over or Take back still acts on the root).
+       */
+      function rootIn(list, sessionId) {
+        let id = sessionId
+        for (let depth = 0; depth < ROOT.maxDepth; depth++) {
+          const summary = list?.byId?.[id]
+          if (summary?.origin !== ROOT.subagentOrigin || typeof summary.parentId !== 'string' || list.byId[summary.parentId] === undefined) return id
+          id = summary.parentId
+        }
+        return id
+      }
+      /**
+       * The root session a seat's entry stands for: DSH's standard `useSessions` hook, which every
+       * slot entry receives; without it (an SDK that does not pass it) the session itself. The
+       * presence of the prop does not change between renders of one entry, so the hook order holds.
+       */
+      const useRootId = (sessionId, useSessions) => (typeof useSessions === 'function' ? useSessions((list) => rootIn(list, sessionId)) : sessionId)
       const refusalKey = (code) => (REFUSAL.known.includes(code) ? REFUSAL.prefix + code : REFUSAL.failed)
       /** A refusal as an alert, its code beside it for a reader that needs it. */
       const refusalAlert = (t, code) => h('div', { role: 'alert', className: CLS.refusal, 'data-fishball-refusal': code ?? REFUSAL.noCode }, t(refusalKey(code)))
@@ -207,8 +236,8 @@ globalThis.__ModuleLoader__?.load({
        * DSH drops its own agent-preset label); its `title` keeps the words.
        */
       function makeHeaderAction(t) {
-        return function FishballManagedByHeaderAction({ sessionId }) {
-          const mark = markOf(useSnapshot(), sessionId)
+        return function FishballManagedByHeaderAction({ sessionId, useSessions }) {
+          const mark = markOf(useSnapshot(), useRootId(sessionId, useSessions))
           if (mark === undefined) return null
           return h('span', { className: CLS.managedBy, title: managedByText(t, mark.principal), 'data-fishball-managed-by': mark.principal.key },
             withName(t, 'managedBy', principalLabel(t, mark.principal)))
@@ -218,18 +247,19 @@ globalThis.__ModuleLoader__?.load({
       /**
        * The header's control, in DSH's right-aligned utilities (HAND_OVER): Take back for a managed
        * session (its tooltip "Managed by <principal>"), else the Hand over control, which is absent with no target (R-UI-10: "With none it
-       * shows no control").
+       * shows no control"). Both act on the root (useRootId): a subagent's header hands over or takes back its root.
        */
       function makeHeaderControl(t) {
-        return function FishballHandOverHeaderControl({ sessionId }) {
+        return function FishballHandOverHeaderControl({ sessionId, useSessions }) {
           const snapshot = useSnapshot()
-          const mark = markOf(snapshot, sessionId)
+          const root = useRootId(sessionId, useSessions)
+          const mark = markOf(snapshot, root)
           if (mark !== undefined) {
             // Its tooltip names the managing principal, which a narrow header hides beside the title.
-            return h(Button, { type: 'button', size: 'sm', variant: 'ghost', title: managedByText(t, mark.principal), 'data-fishball-take-back': true, onClick: () => void takeBack(sessionId) }, t('takeBack'))
+            return h(Button, { type: 'button', size: 'sm', variant: 'ghost', title: managedByText(t, mark.principal), 'data-fishball-take-back': true, onClick: () => void takeBack(root) }, t('takeBack'))
           }
           if (snapshot.targets.length === 0) return null
-          return h(HandOverControl, { t, sessionId, targets: snapshot.targets })
+          return h(HandOverControl, { t, sessionId: root, targets: snapshot.targets })
         }
       }
 
@@ -240,15 +270,17 @@ globalThis.__ModuleLoader__?.load({
        * <principal>" with its light; the header carries the "Handover to…" dropdown itself.
        */
       function makeMenuItems(t) {
-        return function FishballHandOverMenuItems({ sessionId, useMenuOpenState }) {
+        return function FishballHandOverMenuItems({ sessionId, useSessions, useMenuOpenState }) {
           const snapshot = useSnapshot()
+          // DSH's sidebar lists root sessions only, so this is the row itself; it is kept to one rule with the header.
+          const root = useRootId(sessionId, useSessions)
           const [, setMenuOpen] = useMenuOpenState()
           const run = (action) => () => { setMenuOpen(false); action() }
-          if (markOf(snapshot, sessionId) !== undefined) {
-            return h(MenuItemButton, { onSelect: run(() => void takeBack(sessionId)), 'data-fishball-take-back': true }, t('takeBack'))
+          if (markOf(snapshot, root) !== undefined) {
+            return h(MenuItemButton, { onSelect: run(() => void takeBack(root)), 'data-fishball-take-back': true }, t('takeBack'))
           }
           return h(React.Fragment, null, snapshot.targets.map((target) => h(MenuItemButton, {
-            key: target.key, onSelect: run(() => handOverRequest.open(sessionId, target)), 'data-fishball-hand-over': true, 'data-fishball-target': target.key,
+            key: target.key, onSelect: run(() => handOverRequest.open(root, target)), 'data-fishball-hand-over': true, 'data-fishball-target': target.key,
           }, handOverLabel(t, target))))
         }
       }

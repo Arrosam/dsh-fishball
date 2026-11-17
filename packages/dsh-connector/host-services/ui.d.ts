@@ -52,7 +52,8 @@ export interface UiSnapshot {
  * The owner-only DSH Fetch routes embed-UI's browser half calls (DSH's `connection.fetch`:
  * owner-only, Host/Origin fenced). Each answers JSON, no-store:
  * - `state` (GET) → `{ok: true, state}`;
- * - `events` (GET) → server-sent events, one `UiSnapshot` at once and one per change;
+ * - `events` (GET) → server-sent events, one `UiSnapshot` at once and one per change. A reader that
+ *   does not keep up gets the latest snapshot, not every one in between (R-FIX-CUI, review UI-02);
  * - `handover` (POST `{sessionId, principalKey, note?}`) → `{ok: true, principal, state}` or a K3
  *   refusal `{ok: false, code, state}` (409);
  * - `takeback` (POST `{sessionId, note?}`) → `{ok: true, state}` or a K3 refusal (409);

@@ -94,8 +94,12 @@ export const UI_TOOL = Object.freeze({
 /** The latch's two counts (design §13.6, D3: a 0/1 latch with importance). */
 export const LATCH = Object.freeze({ clear: 0, set: 1 })
 
-/** Server-sent event framing (the HTML event-stream format V2's state stream uses too). */
-export const SSE = Object.freeze({ prefix: 'data: ', suffix: '\n\n' })
+/**
+ * Server-sent event framing (the HTML event-stream format V2's state stream uses too), and how many
+ * frames one stream queues for its reader before newer snapshots replace the one kept aside
+ * (routes.js `createStreams`, review UI-02): one, since every frame is the whole current state.
+ */
+export const SSE = Object.freeze({ prefix: 'data: ', suffix: '\n\n', queuedFrames: 1 })
 
 /** Log lines (the connector's `'%s (%s)'` format: a line and a diagnostic code only). */
 export const LOG = Object.freeze({

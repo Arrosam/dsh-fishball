@@ -108,8 +108,18 @@ window.__ModuleLoader__.load({
     })
     /** Stands for a `{name}` that is a node (withName): a character no dictionary or name holds. */
     const NAME_SLOT = '{name}'
-    /** The key that saves a number field, as its blur does. */
+    /** The key that saves a field, as its blur does, and the key that discards its unsaved text. */
     const ENTER_KEY = 'Enter'
+    const ESCAPE_KEY = 'Escape'
+    /**
+     * How often the page re-reads the connector's read-only state (pair rows, the approval
+     * listener) while it is mounted and the document is visible (review UI-04): pairing, a
+     * connection, last-seen and a listener retry change it without any config change. Once a
+     * second, as embed-UI's window re-reads its child's status (dsh-connector-ui FRAME_UI.pollMs).
+     */
+    const STATE_POLL_MS = 1000
+    /** The read-only state's three conditions: not read yet, read, or its last read failed. */
+    const STATE_READ = Object.freeze({ loading: 'loading', ok: 'ok', failed: 'failed' })
     /** Every limit's minimum (src/config.js MIN.count): the Host's schema refuses anything below it. */
     const LIMIT_MIN = 1
     /**
@@ -248,6 +258,9 @@ window.__ModuleLoader__.load({
       saving: 'Saving…',
       discard: 'Discard',
       saveFailed: 'The settings were not saved.',
+      changedElsewhere: 'This setting was changed elsewhere meanwhile. Leave the field or press Enter again to save your value over it, or press Esc to keep the new one.',
+      stateFailed: 'The connector\'s status could not be read ({code}).',
+      retry: 'Retry',
       readOnly: 'This deployment stores settings read-only.',
       unavailable: 'The connector is not loaded, so its tokens cannot be managed right now.',
       newLabel: 'Label for the new token',
@@ -271,7 +284,7 @@ window.__ModuleLoader__.load({
       neverSeen: 'never seen',
       idPrefix: 'ID:',
       dshName: 'DSH name',
-      dshNameHint: 'The name the approval page shows for this DSH. Empty: it shows this DSH\'s address.',
+      dshNameHint: 'The name the approval page shows for this DSH. Empty: this DSH shows as <device name>-DSH.',
       approvalPort: 'Approval page port',
       approvalHint: 'Browser agents sign in on this port of DSH\'s host.',
       approvalStatus: 'Approval page: {status}',
@@ -301,6 +314,9 @@ window.__ModuleLoader__.load({
       saving: '保存中…',
       discard: '放弃',
       saveFailed: '设置没有保存。',
+      changedElsewhere: '此设置已在别处被修改。再次离开此字段或按 Enter 将用你的值覆盖它，按 Esc 则保留新值。',
+      stateFailed: '无法读取连接器的状态（{code}）。',
+      retry: '重试',
       readOnly: '本部署的设置是只读的。',
       unavailable: '连接器未加载，暂时无法管理它的 token。',
       newLabel: '新 token 的标签',
@@ -324,7 +340,7 @@ window.__ModuleLoader__.load({
       neverSeen: '从未连接',
       idPrefix: 'ID:',
       dshName: 'DSH 名称',
-      dshNameHint: '授权页面为此 DSH 显示的名称。留空则显示此 DSH 的地址。',
+      dshNameHint: '授权页面为此 DSH 显示的名称。留空则此 DSH 显示为 <设备名称>-DSH。',
       approvalPort: '授权页面端口',
       approvalHint: '浏览器 agent 在 DSH 主机的这个端口上登录。',
       approvalStatus: '授权页面：{status}',
@@ -395,8 +411,11 @@ window.__ModuleLoader__.load({
      * `ID:` and its id, R-NAME-08), whether it is connected now and when it was last seen. React
      * escapes the name, so markup in it is shown, never run. DSH's StateDot leads a paired line
      * (green connected, grey not); the words say the same, so colour is not the only signal.
+     * `known` is false while the state is not read or its read failed: nothing is claimed then
+     * (review UI-04: a failed read is not "Not paired"; the page shows the failure once).
      */
-    function PairState({ t, row }) {
+    function PairState({ t, row, known }) {
+      if (!known) return null
       if (row === undefined || !row.paired) return h('span', { style: STYLE.pair, [DATA.pair]: 'unpaired' }, t('unpaired'))
       const name = row.name ?? h(React.Fragment, null, h('strong', null, t('idPrefix')), ' ', row.id)
       const seen = row.lastSeenAt === null ? t('neverSeen') : t('lastSeen', { at: new Date(row.lastSeenAt).toLocaleString() })
@@ -421,11 +440,11 @@ window.__ModuleLoader__.load({
      * One list row: the label and its pair state, then the switch, reorder and delete, all staged
      * until Save; the pair state is read only.
      */
-    function TokenRow({ t, item, index, count, disabled, edit, pair }) {
+    function TokenRow({ t, item, index, count, disabled, edit, pair, known }) {
       return h('li', { style: { ...cardRowStyle(index), ...STYLE.tokenRow }, [DATA.row]: item.key },
         h('div', { style: STYLE.tokenMain },
           h(Input, { type: 'text', 'aria-label': t('label'), value: item.label, disabled, onChange: (event) => edit.label(index, event.target.value) }),
-          h(PairState, { t, row: pair })),
+          h(PairState, { t, row: pair, known })),
         h('div', { style: STYLE.tokenTools },
           h('span', { style: STYLE.switchGap }, h(Switch, { checked: item.enabled, label: t('enabled'), title: t('enabled'), disabled, onChange: (on) => edit.enabled(index, on) })),
           iconButton(IconChevronUpOutlineRegular, t('up'), { disabled: disabled || index === 0, onClick: () => edit.move(index, MOVE.up) }),
@@ -481,28 +500,79 @@ window.__ModuleLoader__.load({
     const valueAt = (value, path) => path.reduce((node, key) => node?.[key], value)
 
     /**
-     * The DSH name (the user, 2026-11-17): one text field saved on blur or Enter. An empty field
-     * unsets it, and the approval page then shows this DSH's address.
+     * One single-field setting's unsaved text and its save (the DSH name, the port, each limit):
+     * the one draft rule both scalar fields share (review UI-03).
+     *
+     * The draft remembers the field's saved value when typing began (`base`). The save is fenced by
+     * the live revision, so a change of another field meanwhile does not refuse it; but when this
+     * field itself was changed elsewhere since (`base` differs from `saved`), the first blur or
+     * Enter sends nothing and shows `changedElsewhere`, keeping the typed text. Another blur or
+     * Enter then saves it over the newer value on purpose; Escape discards it at any time. A newer
+     * change after that warning warns again (`warned` is the value the user was warned about).
+     * @param saved - the field's live saved value
+     * @returns `{text, busy, failed, conflict, edit(text), discard(), commit(ops)}`: `conflict` is
+     *   `{value}` (the newer value warned about) or undefined; `text` is null
+     *   without a draft; `commit(null)` means "nothing to save" (unchanged or invalid text) and drops the draft
+     */
+    function useScalarDraft(form, snapshot, saved) {
+      const { busy, failed, save } = useFieldSave(form, snapshot)
+      const [draft, setDraft] = React.useState(null)
+      const edit = (text) => setDraft((current) => (current === null ? { text, base: saved, warned: undefined } : { ...current, text }))
+      const discard = () => setDraft(null)
+      const changedElsewhere = draft !== null && !Object.is(draft.base, saved)
+      const commit = (ops) => {
+        if (draft === null || ops === null) { discard(); return }
+        if (changedElsewhere && !(draft.warned !== undefined && Object.is(draft.warned.value, saved))) {
+          setDraft({ ...draft, warned: { value: saved } })
+          return
+        }
+        // A refused save keeps the typed text, so the user sees what was not saved beside the error.
+        void save(ops).then((accepted) => { if (accepted) discard() })
+      }
+      // `conflict` is the value warned about (undefined: no warning), so a newer change elsewhere
+      // after a warning shows a fresh alert, which a screen reader announces again.
+      const conflict = changedElsewhere ? draft.warned : undefined
+      return { text: draft?.text ?? null, busy, failed, conflict, edit, discard, commit }
+    }
+
+    /** A scalar field's input events: change stages, blur and Enter commit, Escape discards (useScalarDraft). */
+    const scalarInput = (draft, commit) => ({
+      onChange: (event) => draft.edit(event.target.value),
+      onBlur: commit,
+      onKeyDown: (event) => {
+        if (event.key === ENTER_KEY) commit()
+        else if (event.key === ESCAPE_KEY) draft.discard()
+      },
+    })
+    /** The conflict alert's React key prefix; the warned value follows it, so each warning is a new alert. */
+    const CONFLICT_KEY = 'conflict:'
+    /** A scalar field's alerts: the conflict warning and a refused save. */
+    const scalarErrors = (t, draft) => [
+      draft.conflict === undefined ? null : h('span', { key: CONFLICT_KEY + JSON.stringify(draft.conflict.value), role: 'alert' }, t('changedElsewhere')),
+      draft.failed ? h('span', { key: 'failed', role: 'alert' }, t('saveFailed')) : null,
+    ]
+
+    /**
+     * The DSH name (the user, 2026-11-17): one text field saved on blur or Enter. Left blank, this
+     * DSH shows as `<device name>-DSH` (multi-DSH plan D04/D05, docs/planning/v3-multi-dsh.md).
+     * A name is kept exactly as typed, surrounding spaces included (D06, the user: "照 MCP 协议来",
+     * no sanitising); only an entirely blank field unsets it, as the connector's own resolver
+     * counts a whitespace-only setting as unset.
      */
     function DshName({ t, form, snapshot, disabled }) {
-      const { busy, failed, save } = useFieldSave(form, snapshot)
       const saved = valueAt(snapshot.value, SETTING_PATH.dshName) ?? ''
-      const [text, setText] = React.useState(null)
+      const draft = useScalarDraft(form, snapshot, saved)
       const commit = () => {
-        const next = (text ?? saved).trim()
-        if (text === null || next === saved) { setText(null); return }
-        void save([next === '' ? { op: OP_UNSET, path: SETTING_PATH.dshName } : { op: OP_SET, path: SETTING_PATH.dshName, value: next }])
-          .then((accepted) => { if (accepted) setText(null) })
+        const next = draft.text ?? saved
+        const blank = next.trim() === ''
+        draft.commit(next === saved || (blank && saved === '') ? null : [blank ? { op: OP_UNSET, path: SETTING_PATH.dshName } : { op: OP_SET, path: SETTING_PATH.dshName, value: next }])
       }
       return h(SettingRow, {
         data: SETTING_PATH.dshName.join('.'),
         title: t('dshName'),
         hint: h('p', { style: STYLE.hint }, t('dshNameHint')),
-        control: h(Input, {
-          type: 'text', value: text ?? saved, disabled: disabled || busy,
-          onChange: (event) => setText(event.target.value), onBlur: commit, onKeyDown: (event) => { if (event.key === ENTER_KEY) commit() },
-        }),
-        errors: [failed ? h('span', { key: 'failed', role: 'alert' }, t('saveFailed')) : null],
+        control: h(Input, { type: 'text', value: draft.text ?? saved, disabled: disabled || draft.busy, ...scalarInput(draft, commit) }),
+        errors: scalarErrors(t, draft),
       })
     }
 
@@ -511,29 +581,20 @@ window.__ModuleLoader__.load({
      * `hint` is the row's left-hand detail under its title (or null).
      */
     function NumberSetting({ t, form, snapshot, path, label, hint = null, min, max, disabled, data }) {
-      const { busy, failed, save } = useFieldSave(form, snapshot)
       const saved = valueAt(snapshot.value, path)
-      const [text, setText] = React.useState(null)
-      const shown = text ?? (saved === undefined ? '' : String(saved))
-      const number = Number(shown)
-      const invalid = text !== null && !(Number.isSafeInteger(number) && number >= min && (max === undefined || number <= max))
-      const commit = () => {
-        if (text === null || invalid || number === saved) { setText(null); return }
-        // A refused save keeps the typed text, so the user sees what was not saved beside the error.
-        void save([{ op: OP_SET, path, value: number }]).then((accepted) => { if (accepted) setText(null) })
-      }
+      const draft = useScalarDraft(form, snapshot, saved)
+      const shown = draft.text ?? (saved === undefined ? '' : String(saved))
+      // A blank field is no number (review UI-05: `Number('')` is 0, which for the port would rebind
+      // to an OS-assigned port); only an explicit `0` is the port's "let the OS choose".
+      const number = shown.trim() === '' ? NaN : Number(shown)
+      const invalid = draft.text !== null && !(Number.isSafeInteger(number) && number >= min && (max === undefined || number <= max))
+      const commit = () => draft.commit(invalid || number === saved ? null : [{ op: OP_SET, path, value: number }])
       return h(SettingRow, {
         data,
         title: label,
         hint,
-        control: h(Input, {
-          type: 'text', inputMode: 'numeric', value: shown, disabled: disabled || busy, 'aria-invalid': invalid,
-          onChange: (event) => setText(event.target.value), onBlur: commit, onKeyDown: (event) => { if (event.key === ENTER_KEY) commit() },
-        }),
-        errors: [
-          invalid ? h('span', { key: 'invalid', role: 'alert' }, t('invalid')) : null,
-          failed ? h('span', { key: 'failed', role: 'alert' }, t('saveFailed')) : null,
-        ],
+        control: h(Input, { type: 'text', inputMode: 'numeric', value: shown, disabled: disabled || draft.busy, 'aria-invalid': invalid, ...scalarInput(draft, commit) }),
+        errors: [invalid ? h('span', { key: 'invalid', role: 'alert' }, t('invalid')) : null, ...scalarErrors(t, draft)],
       })
     }
 
@@ -564,6 +625,48 @@ window.__ModuleLoader__.load({
     }
 
     /**
+     * The connector's read-only state (the state route: pair rows, the approval listener), read
+     * while `active` at once and every STATE_POLL_MS while the document is visible (review UI-04).
+     * A poll is skipped while one is in flight, so a slow host is not asked twice; `read()` (Retry,
+     * a config change) always asks. Only the newest read's answer is kept: an older one that lands
+     * later is dropped, and none lands after unmount.
+     * @returns `{state, read}`: `state` is `{status: STATE_READ.loading}`, `{status: ok, value}` or
+     *   `{status: failed, code}`.
+     */
+    function useRuntimeState(active) {
+      const [state, setState] = React.useState({ status: STATE_READ.loading })
+      const latest = React.useRef(0)
+      const inFlight = React.useRef(0)
+      const read = React.useCallback(async () => {
+        const ticket = ++latest.current
+        inFlight.current++
+        let answer
+        try { answer = await call(ROUTE.state, ROUTE.get) } finally { inFlight.current-- }
+        if (ticket !== latest.current) return
+        const next = answer.ok ? { status: STATE_READ.ok, value: answer } : { status: STATE_READ.failed, code: answer.code ?? ROUTE.unreadable }
+        // A steady poll changes nothing, so it re-renders nothing (the page's inputs keep their state either way).
+        setState((current) => (JSON.stringify(current) === JSON.stringify(next) ? current : next))
+      }, [])
+      React.useEffect(() => {
+        if (!active) return undefined
+        const timer = setInterval(() => { if (!document.hidden && inFlight.current === 0) void read() }, STATE_POLL_MS)
+        return () => {
+          clearInterval(timer)
+          latest.current++
+        }
+      }, [active, read])
+      return { state, read }
+    }
+
+    /** The failed state read, once for the page, with Retry (review UI-04). */
+    function StateFailure({ t, state, retry }) {
+      if (state.status !== STATE_READ.failed) return null
+      return h('div', { style: STYLE.actions },
+        h('p', { style: { ...STYLE.error, flex: GROW.one }, role: 'alert' }, t('stateFailed', { code: state.code })),
+        h(Button, { type: 'button', size: 'sm', variant: 'outline', onClick: () => void retry() }, t('retry')))
+    }
+
+    /**
      * The page over DSH's host-owned `form` (`{state, mutate}`, plugin-manager slot-contract
      * ConfigPageForm) that the Plugins page hands its row entry (design §5.9): the page owner
      * refreshes `state`, so an accepted change, including the item `create` adds, re-renders it.
@@ -584,15 +687,16 @@ window.__ModuleLoader__.load({
         const [newLabel, setNewLabel] = React.useState('')
         // The value of the token just created: only here, only until Close (R-TOK-11).
         const [revealed, setRevealed] = React.useState(null)
-        // The read-only state (pair rows, the approval listener): refreshed with the notice.
-        const [state, setState] = React.useState(undefined)
-        const refreshNotice = React.useCallback(async () => {
-          const [answer, read] = await Promise.all([call(ROUTE.notice, ROUTE.get), call(ROUTE.state, ROUTE.get)])
-          setNotice(answer.ok ? answer.notice ?? null : null)
-          setState(read.ok ? read : undefined)
-        }, [])
         const onPage = props.view === PAGE.pageView && snapshot !== undefined && snapshot.status !== PAGE.unavailable
+        // The read-only state (pair rows, the approval listener): polled, and read again with the notice.
+        const runtime = useRuntimeState(onPage)
+        const readState = runtime.read
+        const refreshNotice = React.useCallback(async () => {
+          const [answer] = await Promise.all([call(ROUTE.notice, ROUTE.get), readState()])
+          setNotice(answer.ok ? answer.notice ?? null : null)
+        }, [readState])
         React.useEffect(() => { if (onPage) void refreshNotice() }, [refreshNotice, onPage, snapshot?.revision])
+        const state = runtime.state.status === STATE_READ.ok ? runtime.state.value : undefined
         if (props.view !== PAGE.pageView) return t('summary')
         if (!onPage) return h('p', { style: STYLE.hint }, t('unavailable'))
         if (snapshot.status === PAGE.loading) return h('p', { style: STYLE.hint, role: 'status' }, t('loading'))
@@ -636,6 +740,7 @@ window.__ModuleLoader__.load({
         // approval page (its port and the DSH name it shows) and the limits.
         const newLabelEmpty = newLabel.trim() === ''
         return h('div', { style: STYLE.page, [DATA.root]: true },
+          h(StateFailure, { t, state: runtime.state, retry: readState }),
           section(t('tokens'), list.length === 0 ? undefined : String(list.length), {},
             h('p', { style: STYLE.lead }, t('hint')),
             snapshot.writable ? null : h('p', { style: STYLE.hint }, t('readOnly')),
@@ -646,7 +751,7 @@ window.__ModuleLoader__.load({
                 // it; a key two items share is a duplicate (design §5.9), whose second row is keyed apart.
                 list.map((item, index) => h(TokenRow, {
                   key: list.findIndex((other) => other.key === item.key) === index ? item.key : item.key + DUPLICATE_ROW + index,
-                  t, item, index, count: list.length, disabled, edit, pair: state?.entries?.find((row) => row.key === item.key),
+                  t, item, index, count: list.length, disabled, edit, known: state !== undefined, pair: state?.entries?.find((row) => row.key === item.key),
                 }))),
               h('div', { style: { ...RULED_ROW, ...STYLE.addRow } },
                 h('div', { style: STYLE.addLabel },

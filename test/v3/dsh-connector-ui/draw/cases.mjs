@@ -24,7 +24,7 @@ const S1 = FIXTURE.sessions.s1
 const P = FIXTURE
 /** A case: its id, row, title and the spec rows it covers (in the name), run on `sdk`. */
 const draw = (sdk, id, part, title, specs, fn) => test(caseName(sdk, id, part, title + ' (' + specs + ')'), { timeout: WAIT.testMs }, fn)
-const routePathOf = (key) => BACKEND.routes[key][1]
+export const routePathOf = (key) => BACKEND.routes[key][1]
 const relative = (absolute) => absolute.slice(ROUTE.absolutePrefix.length)
 
 // --------------------------------------------------------------------------------------------- worlds
@@ -36,7 +36,7 @@ export async function world(t, sdk, { host: hostOptions = {}, page: pageOptions 
   const page = await openPage(t, w, pageOptions)
   return { w, page }
 }
-const online = (p) => [p, { online: true }]
+export const online = (p) => [p, { online: true }]
 const offline = (p) => [p, { online: false }]
 
 // --------------------------------------------------------------------------------------------- page readers
@@ -54,7 +54,7 @@ const fishNode = (view) => withAttr(view.tree(), ATTR.fishLight)[0]
 export const noticeNode = (page) => withAttr(page.tree(), ATTR.notice)[0]
 const alerts = (page) => findRole(page.tree(), ATTR.alert)
 const findRole = (nodes, role) => withAttr(nodes, ATTR.role, role)
-const handOverButtons = (view) => withAttr(view.tree(), ATTR.handOver)
+export const handOverButtons = (view) => withAttr(view.tree(), ATTR.handOver)
 const manyButtons = (view) => withAttr(view.tree(), ATTR.handOverMany)
 const menuItems = (view) => withAttr(view.tree(), ATTR.menuItemId)
 const confirmButton = (page) => withAttr(page.tree(), ATTR.confirm)[0]
@@ -66,7 +66,7 @@ async function openMenu(page, view) {
   return menuItems(view)
 }
 /** Confirms the note dialog with `note` (typed when given). */
-async function confirmNote(page, note) {
+export async function confirmNote(page, note) {
   assert.ok(await page.waitFor(() => confirmButton(page)), 'no note dialog with a confirm button [' + ATTR.confirm + ']')
   if (note !== undefined) await type(page, noteField(page), note)
   await press(page, confirmButton(page))
