@@ -364,7 +364,9 @@ export const V2_GROUPS = Object.freeze({
     'test/v2-page-cases/ready.test.mjs',
     'test/v2-recommendation/sdk-0.2.1-rc.5.test.mjs', 'test/v2-recommendation/sdk-0.2.2-rc.1.test.mjs',
     // The page and the Recommended tab are fishball-ui's since F-UI.
-  ]), [all(PACKAGE.fishballCore), all(PACKAGE.fishballUi), all(PACKAGE.dshInstance)]),
+  ]), [all(PACKAGE.fishballCore), all(PACKAGE.fishballUi), all(PACKAGE.dshInstance),
+    // lite.test.mjs's browser environment and harness page (fishball-ui.contrast reuses the browser too).
+    'test/v2-page-cases/lite-browser.mjs', 'test/v2-page-cases/lite-harness.js']),
 })
 
 /** Every suite by id. */

@@ -26,7 +26,7 @@ import { createBrowserSandbox } from '../../../support/browser-sandbox.mjs'
 import { createReactShim, walk } from '../../../support/rp-recommend.mjs'
 import { launchChromium } from '../../../v2-page-cases/lite-browser.mjs'
 import { STAND_IN } from '../../fishball-core/settings/primitives.mjs'
-import { DSH_FILES, THEME } from './constants.mjs'
+import { DSH_FILES, HOOK, THEME } from './constants.mjs'
 
 const UTF8 = 'utf8'
 const PAGE = Object.freeze({ blank: 'about:blank', base: 'http://127.0.0.1/', lang: 'en' })
@@ -104,7 +104,7 @@ const kebab = (name) => name.replace(/[A-Z]/g, (c) => '-' + c.toLowerCase())
 function htmlOf(node, tagClass) {
   if (typeof node === 'string') return escapeText(node)
   const props = { ...node.props }
-  if (props[STAND_IN.primitive] === 'Tag') props.className = [tagClass, props.className].filter(Boolean).join(' ')
+  if (props[STAND_IN.primitive] === HOOK.tagPrimitive) props.className = [tagClass, props.className].filter(Boolean).join(' ')
   let inner = (node.children ?? []).map((c) => htmlOf(c, tagClass)).join('')
   if (node.tag === 'textarea' && props.value !== undefined) { inner = escapeText(props.value); delete props.value }
   const attrs = Object.entries(props).flatMap(([name, value]) => {
