@@ -1,6 +1,6 @@
 /**
  * The V3 suites: /opt/homebrew/bin/node test/run-v3.mjs [extra node --test args]
- * Runs every test/v3/**\/*.test.mjs (V3 suites stay out of the pre-V3 selection, test/v2-suites.mjs).
+ * Runs every test/v3/**\/*.test.mjs.
  */
 import fs from 'node:fs'
 import path from 'node:path'
