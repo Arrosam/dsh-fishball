@@ -29,11 +29,15 @@ export const snapshotOf = (kind, { control = null, contributedTools = null } = {
   fishball: STRIP_PAGE.on, link: null, connect: null, line: { kind, code: null }, control, guards: null, set: null, contributedTools,
 })
 
-/** The Fishball page with the strip entry mounted. `show(snapshot)` sends the frame of that snapshot. */
-export async function stripPage(t, sdk, { lang = STRIP_PAGE.langs[0] } = {}) {
+/**
+ * The Fishball page with the strip entry mounted. `show(snapshot)` sends the frame of that snapshot.
+ * UI-FIX-F: `onDocument(document)` sees the page's document before any script runs.
+ */
+export async function stripPage(t, sdk, { lang = STRIP_PAGE.langs[0], onDocument } = {}) {
   const opened = []
   const w = createWorld({ sdk, lang })
   w.EventSource = class extends FakeEventSource { constructor(url) { super(url); opened.push(this) } }
+  w.onDocument = onDocument
   const page = await loadPage(t, w)
   const entries = w.entries(STRIP_PAGE.slot).filter((e) => (e.options.id ?? e.options.key) === STRIP_PAGE.entryId)
   assert.equal(entries.length, 1, `no ${STRIP_PAGE.slot} entry ${STRIP_PAGE.entryId}: ${JSON.stringify(w.entries(STRIP_PAGE.slot).map((e) => e.options))}`)
