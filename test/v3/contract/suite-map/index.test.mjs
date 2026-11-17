@@ -31,8 +31,15 @@ const MAP = Object.freeze({
   shelvedId: 'fishball-board.peers',
   shelvedPrefix: 'fishball-board',
   shelvedDir: 'test/v3/fishball-board/peers/',
-  /** A suite the board's package triggers too (it boots core, fishball-ui and the board), never shelved. */
+  /** A never-shelved suite (rules 4, 5, 8, EP-01); it boots core and fishball-ui, no longer the board. */
   neighbourId: 'fishball-core.wire',
+  /**
+   * Rule 2's neighbour: a never-shelved suite that still triggers on packages/board. fishball-core.wire
+   * no longer does: the user shelved the board on 2026-11-18 and 9f5a4228 removed wire's packages/board
+   * trigger. package-boundaries reads every package (test/suites.mjs), the board included, since its
+   * SHELVE-EP-01 and feature-edge rows bound the board itself, so a board change must still rerun it.
+   */
+  boardNeighbourId: 'contract.package-boundaries',
   boardPath: 'packages/board/fbtest-shelve-change.js',
   fullPath: 'test/support/fbtest-shelve-change.mjs',
   unmappedPath: 'fbtest-shelve-unmapped.bin',
@@ -112,11 +119,14 @@ test('SHELVE-SUITES-DT-01 rule 1 --all --list: every suite\'s files but the shel
   assert.deepEqual(listed, filesOf(unshelvedIds()))
 })
 
-for (const [rule, title, changed, expectNeighbour] of [
-  ['2', 'a change only the board package\'s triggers claim', MAP.boardPath, true],
-  ['3', 'a change to the shelved suite\'s own files only', MAP.shelvedOwnPath, false],
-  ['4', 'a FULL path (every suite)', MAP.fullPath, true],
-  ['5', 'an unmapped path (every suite, the safe default)', MAP.unmappedPath, true],
+// The last column is the suite that must be selected too, or null when nothing else may be.
+for (const [rule, title, changed, neighbourId] of [
+  // Repointed from MAP.neighbourId (fishball-core.wire), whose packages/board trigger 9f5a4228 removed
+  // when the user shelved the board (2026-11-18); see MAP.boardNeighbourId.
+  ['2', 'a change only the board package\'s triggers claim', MAP.boardPath, MAP.boardNeighbourId],
+  ['3', 'a change to the shelved suite\'s own files only', MAP.shelvedOwnPath, null],
+  ['4', 'a FULL path (every suite)', MAP.fullPath, MAP.neighbourId],
+  ['5', 'an unmapped path (every suite, the safe default)', MAP.unmappedPath, MAP.neighbourId],
 ]) {
   test(`SHELVE-SUITES-DT-01 rule ${rule} <base> --list after ${title}: the shelved suite is never selected`, (t) => {
     const repo = scratchRepo(t)
@@ -125,8 +135,7 @@ for (const [rule, title, changed, expectNeighbour] of [
     assert.equal(r.code, MAP.okExit, r.output)
     const listed = listedFiles(r.output)
     assert.deepEqual(listed.filter(isShelvedFile), [], 'a shelved file is listed')
-    const neighbour = SUITES[MAP.neighbourId].files
-    if (expectNeighbour) assert.deepEqual(neighbour.filter((f) => !listed.includes(f)), [], `${MAP.neighbourId} is not selected`)
+    if (neighbourId) assert.deepEqual(SUITES[neighbourId].files.filter((f) => !listed.includes(f)), [], `${neighbourId} is not selected`)
     else assert.deepEqual(listed, [], 'the shelved suite\'s own change selected other files')
   })
 }
