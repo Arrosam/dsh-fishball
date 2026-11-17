@@ -42,13 +42,10 @@ const refused = (code) => Object.freeze({ ok: false, code })
  * @param deps.storageDomain - `{defineDomain, domainTable}` of the running SDK
  * @param deps.readLimits - the connector's live limits (src/config.js)
  * @param deps.routing - the routing composition
- * @param deps.recoveredSuccessions - `[{from, to}]` the hosted start recovery completed before
- *   this domain existed (hosted `resume`, review F03): their grants move before `reconcile`, which
- *   would otherwise end them as no longer their principal's
  * @param deps.logger - the row's logger
  * @returns `{sessions, interactions, attachments, close}`
  */
-export async function createSessionDomain(ctx, { storageDomain, readLimits, routing, recoveredSuccessions = [], logger }) {
+export async function createSessionDomain(ctx, { storageDomain, readLimits, routing, logger }) {
   const now = Date.now
   const warn = (error) => logger.warn(LOG.format, LOG.grantWriteFailed, diagnosticOf(error))
   const managerOf = (sessionId) => routing.managed.managerOf(sessionId)
@@ -107,7 +104,6 @@ export async function createSessionDomain(ctx, { storageDomain, readLimits, rout
       routing.onSucceeded((from, to) => grants.moveOwner(from, to)),
     ]
     closers.push(() => { for (const dispose of disposers.splice(0)) dispose?.() })
-    for (const { from, to } of recoveredSuccessions) await grants.moveOwner(from, to).catch(warn)
     await grants.reconcile()
 
     const sessions = Object.freeze({
