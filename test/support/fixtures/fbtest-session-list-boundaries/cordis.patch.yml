@@ -1,4 +1,0 @@
-# Opt-in black-box port probes; no existing test or host row is changed.
-- insert:
-    - id: fbtest-session-list-boundaries
-      name: fbtest-session-list-boundaries

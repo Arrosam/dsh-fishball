@@ -206,11 +206,30 @@ export const FIXTURE = Object.freeze({
 /** Harness timing only. */
 export const BUDGET = Object.freeze({ ...WIRE_BUDGET, eventMs: 30000, quietMs: 2000 })
 
+// X-09's pacing inputs (XSEC.pace). The stock SDK's callTool sends one `tools/call` POST per put (it
+// lists tools again only to recover from a header mismatch). The headroom covers what the principal's
+// connection spent before the puts (initialize, initialized, pair; the OAuth token request goes to the
+// token endpoint, not the MCP bucket), with room to spare. MINUTE_MS turns requestsPerMinute into a rate.
+const PACE_REQUESTS_PER_PUT = 1
+const PACE_HEADROOM_REQUESTS = 10
+const MINUTE_MS = 60 * K1.TIME_UNIT.msPerSecond
+
 /** The review fixes and X-SEC rows of this suite (xsec-cases.mjs; relayed 2026-11-17). */
 export const XSEC = Object.freeze({
   id: Object.freeze({ rv01: 'C-WIRE-2 RV-01', rv02: 'C-WIRE-2 RV-02', rv03: 'C-WIRE-2 RV-03', rv04: 'C-WIRE-2 RV-04', x08: 'X-SEC X-08', x09: 'X-SEC X-09' }),
   /** The hostRef cap the requirements name (X-09: "past the 256-hostRef cap"). */
   hostRefCap: 256,
+  /**
+   * X-09's pacing under the MCP endpoint's token bucket (K1 ENDPOINT_LIMITS: one bucket per token
+   * entry, refilled continuously). The cap + 1 puts are more than one burst holds, so unpaced they
+   * are refused with 429 before the cap is reached. The first `burstPuts` puts spend the burst less
+   * the headroom; every later put first waits `refillMs`, the time the bucket takes to refill what
+   * one put costs, so the bucket never runs dry. Harness timing only, not an oracle.
+   */
+  pace: Object.freeze({
+    burstPuts: (K1.ENDPOINT_LIMITS.requestBurst - PACE_HEADROOM_REQUESTS) / PACE_REQUESTS_PER_PUT,
+    refillMs: PACE_REQUESTS_PER_PUT * MINUTE_MS / K1.ENDPOINT_LIMITS.requestsPerMinute,
+  }),
   instanceId: 'fbix-hosted-instance',
   /** Own boots: one disables the connector row; one fills the shared hostRef table; one holds grant rows. */
   scenario: Object.freeze({ close: 'ix-close', attachments: 'ix-attachments', grants: 'ix-grants-x08' }),
