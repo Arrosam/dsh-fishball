@@ -26,6 +26,10 @@ import http from 'node:http'
 
 /** Fixed protocol and storage vocabulary of this client. */
 export const OAUTH_CLIENT = Object.freeze({
+  /** Fetch's redirect mode on every OAuth request: a redirect is an error, never followed (X-05). */
+  redirect: 'error',
+  /** The PKCE method the authorization server must advertise (MCP Authorization; X-13). */
+  pkceMethod: 'S256',
   /** RFC 8252 §7.3: a loopback IP literal, never `localhost` (R-OA-14 treats them as distinct hosts). */
   loopbackHost: '127.0.0.1',
   /** The path the user's CIMD document registers; the port is the OS's, fresh per attempt (R-OA-14). */
@@ -74,6 +78,7 @@ export const OAUTH_CLIENT = Object.freeze({
 const MESSAGE = Object.freeze({
   discovery: 'the server\'s OAuth metadata could not be read',
   noCimd: 'the authorization server does not accept Client ID Metadata Documents',
+  noS256: 'the authorization server does not support PKCE S256',
   noAuthorizationServer: 'the protected-resource metadata names no authorization server',
   [OAUTH_CLIENT.attemptEnd.denied]: 'the authorization was denied',
   [OAUTH_CLIENT.attemptEnd.rejected]: 'the authorization response was not accepted (state or issuer)',
@@ -243,6 +248,9 @@ function awaitCallback(listener, { signal, timers, timeoutMs }) {
 function withDeadline(fetchFn, timeoutMs) {
   return (input, init = {}) => fetchFn(input, {
     ...init,
+    // Never followed (X-SEC X-05): a 307/308 would re-send a code, verifier or refresh token to
+    // whatever the `Location` names; the SDK checks only the first URL.
+    redirect: OAUTH_CLIENT.redirect,
     signal: AbortSignal.any([AbortSignal.timeout(timeoutMs), ...(init.signal ? [init.signal] : [])]),
   })
 }
@@ -331,6 +339,9 @@ export function createTokenManager({ sdk, credentials, key, now = Date.now, refr
       const metadata = discovery.authorizationServerMetadata
       // CIMD only (R-OA-13): no dynamic-registration fallback, and no hard-coded client.
       if (metadata.client_id_metadata_document_supported !== true) throw new OAuthAttemptError(OAUTH_CLIENT.attemptEnd.failed, MESSAGE.noCimd)
+      // MCP Authorization: a client MUST refuse an authorization server that does not advertise
+      // S256 (X-SEC X-13); the SDK checks it only when the list is present.
+      if (!metadata.code_challenge_methods_supported?.includes(OAUTH_CLIENT.pkceMethod)) throw new OAuthAttemptError(OAUTH_CLIENT.attemptEnd.failed, MESSAGE.noS256)
       const clientInformation = { client_id: clientMetadataUrl }
       const resource = await sdk.selectResourceURL(new URL(serverUrl), {}, discovery.resourceMetadata)
       const listener = await listenForCallback()

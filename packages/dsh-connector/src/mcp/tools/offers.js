@@ -13,7 +13,7 @@
  * - not live, and this connector settled that `offerId` for the caller → `already-settled`;
  *   for another principal → `forbidden`; anything else not live → `expired`.
  *
- * **First commit wins (OQ-14).** The V2 domain settles a request once. On top of that, answers to
+ * **First commit wins (OQ-14).** The domain settles a request once. On top of that, answers to
  * one request through these tools run one after another, so of two principal answers the second
  * sees the first's outcome (`already-settled`), never a half-done state. A user's answer in the
  * session still races in the domain; the loser then sees the request not live (`expired`).

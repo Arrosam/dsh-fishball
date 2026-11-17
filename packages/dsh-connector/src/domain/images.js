@@ -125,6 +125,10 @@ function createPort({ attachments, sessionQuery, now }) {
     const image = isImageMediaType(payload.mediaType)
     const maxBytes = image ? PAYLOAD_LIMITS.imageBytes : maxChunkedBytes()
     const data = verifyTransfer(payload, { maxBytes })
+    // The table's cap is checked before anything is written (X-SEC X-09): a refused put stores no
+    // bytes in DSH's persistent attachment store.
+    pruneExpired(now())
+    if (refs.size >= HOST_IMAGES.maxHostRefs) throw new RefusalError(REFUSAL.limitExceeded)
     const name = payload.name
     let block
     try {
@@ -140,6 +144,7 @@ function createPort({ attachments, sessionQuery, now }) {
     }
     const at = now()
     pruneExpired(at)
+    // Checked again: puts that were saving at once may have filled the table meanwhile.
     if (refs.size >= HOST_IMAGES.maxHostRefs) throw new RefusalError(REFUSAL.limitExceeded)
     const hostRef = randomUUID()
     const expiresAt = at + PAYLOAD_LIMITS.hostRefTtlMs

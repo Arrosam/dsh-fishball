@@ -2141,7 +2141,7 @@ Decided with the user while F-WIRE ran (answers to the five product questions an
 | Live core on/off | fishball-ui's rows read core's selection in the profile manifest while HMR runs, else the started bundles | so switching core in a running DSH switches fishball-ui's rows. Fishball's decision |
 | Readiness of a hosted child | Core offers no readiness signal to the instance; I-READY gates on generic DSH signals | R-ARCH-10, R-FB-10 as amended by 1.39 |
 
-## 20. V3 C-WIRE-2: one broker, routed session → managing agent → user (2026-11-17)
+## 21. V3 C-WIRE-2: one broker, routed session → managing agent → user (2026-11-17)
 
 Decided by the user on 2026-11-16/17 while C-WIRE-2 ran (the task brief and the answers to its seven questions). This supersedes §7a's V2 broker (Fishball's pile, `ask_fishball`, `list_user_messages`, the pass and ticket machinery, the audit) and §16's `maxPendingApprovals`.
 

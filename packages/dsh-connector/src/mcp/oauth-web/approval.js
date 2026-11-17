@@ -24,6 +24,7 @@ import {
   ADDRESS, AUTHORIZE_PARAM, FORM_ACTION, FORM_FIELD, LOG, PAGE_HTTP, PAGE_TEXT, RESPONSE_PARAM,
   URL_RULES,
 } from './constants.js'
+import { createWindowLog } from '../oauth/window-log.js'
 import { SILENT_LOGGER, readCapped } from './io.js'
 import { issuerOriginFor } from './origin.js'
 import { errorPage, fill, formPage, principalHtml } from './page.js'
@@ -43,7 +44,7 @@ function send(res, status, headers, body) {
   res.writeHead(status, headers)
   res.end(body)
 }
-/** Every answer of the page's own routes carries the page headers (no-store, no-referrer, CSP; R-OA-11/12). */
+/** Every answer of the page's own routes carries the page headers (no-store, same-origin referrer, CSP; R-OA-11/12, X-01). */
 const sendEmpty = (res, status, extra = {}) => send(res, status, { ...APPROVAL_LISTENER.headers, ...extra })
 const sendHtml = (res, status, html, extra = {}) => send(res, status, { ...APPROVAL_LISTENER.headers, ...PAGE_HTTP.contentType, ...extra }, html)
 
@@ -146,8 +147,19 @@ export function createApprovalHandler(deps) {
     }, messageHtml), extra)
   }
 
-  async function authorize(query, res, origin) {
+  /**
+   * GET /authorize's request rate per address (X-SEC X-04; R-OA-17: "the rate limits … apply to the
+   * approval listener as to DSH's listener"): the token endpoint's own per-address ceiling and
+   * window (RATE_LIMITS), counted before the CIMD fetch, so no address can evict every pending
+   * request or make the connector fetch without bound.
+   */
+  const authorizeRequests = createWindowLog(RATE_LIMITS.windowMs)
+
+  async function authorize(query, res, origin, address) {
     const at = now()
+    const waitMs = authorizeRequests.retryAfterMs(address, at, RATE_LIMITS.tokenRequestsPerAddressPerWindow)
+    if (waitMs > 0) return sendEmpty(res, HTTP_STATUS.tooManyRequests, { [RATE_LIMITS.retryAfterHeader]: String(Math.ceil(waitMs / TIME_UNIT.msPerSecond)) })
+    authorizeRequests.add(address, at)
     // The origin passed C-OAUTH's `originOf`; one this rule cannot split into scheme, host and port
     // could only yield a broken `iss`, so it is refused before anything is fetched or redirected.
     const issuerOrigin = issuerOriginFor(origin, approvalPort(), dshPort())
@@ -220,18 +232,21 @@ export function createApprovalHandler(deps) {
   }
 
   async function authorizeDecision(res, request, form, failureKey, at) {
-    const limit = limiter.check(failureKey, at)
-    if (limit.limited) {
-      const retryAfter = String(Math.ceil(limit.retryAfterMs / TIME_UNIT.msPerSecond))
-      return showForm(res, request, fill(PAGE_TEXT.rateLimited), HTTP_STATUS.tooManyRequests, { [RATE_LIMITS.retryAfterHeader]: retryAfter })
-    }
     const value = form.get(FORM_FIELD.token) ?? ''
     // AUTH-DT-08 rule 10: an empty field is not a credential, so it is not counted.
     if (value === '') return showForm(res, request, fill(PAGE_TEXT.enterToken))
+    // The token is checked first (X-SEC X-03): a valid one always authorizes, so a stranger's wrong
+    // guesses through a shared address (loopback, a tunnel) never lock the owner out. Only a wrong
+    // value is slowed: while its key is limited it gets the limit's answer, uncounted.
     // Rules 1–4: an unknown, disabled, deleted or too-short value has one answer (match covers
     // only enabled, usable entries), counted toward the per-client limit shared with the token endpoint.
     const entry = tokens.match(value)
     if (entry === undefined) {
+      const limit = limiter.check(failureKey, at)
+      if (limit.limited) {
+        const retryAfter = String(Math.ceil(limit.retryAfterMs / TIME_UNIT.msPerSecond))
+        return showForm(res, request, fill(PAGE_TEXT.rateLimited), HTTP_STATUS.tooManyRequests, { [RATE_LIMITS.retryAfterHeader]: retryAfter })
+      }
       limiter.recordFailure(failureKey, at)
       return showForm(res, request, fill(PAGE_TEXT.invalidToken))
     }
@@ -274,7 +289,7 @@ export function createApprovalHandler(deps) {
       if (path !== PATHS.authorize && path !== PATHS.decision) return sendEmpty(res, HTTP_STATUS.notFound)
       const origin = originOf(req, { secure })
       if (origin === undefined) return sendEmpty(res, HTTP_STATUS.badRequest)
-      return await (path === PATHS.authorize ? authorize(query, res, origin) : decision(req, res))
+      return await (path === PATHS.authorize ? authorize(query, res, origin, req.socket?.remoteAddress ?? ADDRESS.unknown) : decision(req, res))
     } catch (error) {
       logger.warn(LOG.format, LOG.handlerFailed, diagnosticOf(error))
       if (!res.headersSent) sendEmpty(res, HTTP_STATUS.internalServerError)

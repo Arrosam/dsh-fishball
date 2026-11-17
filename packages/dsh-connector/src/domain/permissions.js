@@ -27,18 +27,16 @@
  * Take back, revocation) retires the offer with its own reason (routing) and hands the call to the
  * stock prompt (`toUser`).
  * Every request exists only inside a running turn of its session, so nothing is restored after a
- * restart (V2 contract §5.1, design §10).
+ * restart (V2 contract §5.1, design §10). Closing the connector (unload, remount) hands every
+ * waiting call to the user's stock prompt, as V2's broker did on unload (`close`).
  */
-import { randomUUID } from 'node:crypto'
-import { APPROVAL_DECISION, ARGUMENTS_STATUS, APPROVAL_KIND, EVENT_TYPE, OFFER_ID, REFUSAL, RISK, SETTLED_BY, SETTLEMENT_OUTCOME, formatOfferId } from '../../mcp-schema/index.js'
+import { ANSWER_DECISIONS, APPROVAL_DECISION, ARGUMENTS_STATUS, APPROVAL_KIND, EVENT_TYPE, OFFER_ID, REFUSAL, RISK, SETTLED_BY, SETTLEMENT_OUTCOME, formatOfferId } from '../../mcp-schema/index.js'
 import { diagnosticOf } from '../errors.js'
 import { rootSessionOf } from '../session-info.js'
 import { argumentsOf } from './call-log.js'
 import { checkGrant } from './grants.js'
-import { APPROVAL, LOG, OFFERED_DECISIONS, REQUEST_ID, SUMMARY } from './constants.js'
-
-const refused = (code) => Object.freeze({ ok: false, code })
-const trimmed = (text) => (typeof text === 'string' ? text.trim() : '')
+import { APPROVAL, LOG, REQUEST_ID, SUMMARY } from './constants.js'
+import { mintId, refused, trimmed } from './support.js'
 
 /** The settlement each final decision commits, and the call's DSH outcome. */
 const FINAL = Object.freeze({
@@ -61,7 +59,7 @@ export function allowRuleBroken(risk, reason, argumentsStatus) {
 }
 
 /**
- * @param ctx - the row's context (`on`, `waterfall`, `sessions`)
+ * @param ctx - the row's context (`on`, `sessions` through rootSessionOf)
  * @param deps.routing - `offer`, `settle`, `escalate`, `withdraw`
  * @param deps.managerOf - K1c `ManagedState.managerOf`
  * @param deps.grants - grants.js
@@ -80,7 +78,7 @@ export function createPermissions(ctx, { routing, managerOf, grants, gate, wordi
   /** The descriptor one offer carries (K1 `descriptor`, timer-free). */
   const descriptorOf = (request, title) => Object.freeze({
     approvalId: request.id, offerId: request.offerId, kind: APPROVAL_KIND.approval, prompt: SUMMARY.permission(request.toolName),
-    choices: [...OFFERED_DECISIONS], title, at: request.at, toolName: request.toolName, callId: request.callId ?? null,
+    choices: [...ANSWER_DECISIONS], title, at: request.at, toolName: request.toolName, callId: request.callId ?? null,
     reason: request.reason, quotes: [], arguments: request.args.text, argumentsStatus: request.args.status,
   })
 
@@ -101,15 +99,14 @@ export function createPermissions(ctx, { routing, managerOf, grants, gate, wordi
     if (gate.isPassing(req) || req.agent === undefined) return next()
     const via = { target, req, next }
     const sessionId = rootSessionOf(ctx, req.agent.id)
-    const session = ctx.sessions.get(sessionId) ?? req.agent.session
     const args = argumentsOf(req.agent.session, req.callId, req.toolName, readLimits().argumentExcerptBytes)
     const call = { sessionId, toolName: req.toolName, callId: req.callId, args }
     if (managerOf(sessionId) === undefined) return gate.show(via, { ...call, escalated: false })
     if (grants.cover(sessionId, req.toolName, args.value) !== undefined) return APPROVAL.outcome.allowedOnce
-    const id = REQUEST_ID.permission + randomUUID().replace(REQUEST_ID.uuidSeparator, '')
+    const id = mintId(REQUEST_ID.permission)
     let resolve
     const answered = new Promise((settle) => { resolve = settle })
-    const request = { ...call, id, offerId: formatOfferId(id, OFFER_ID.firstRevision), at: now(), reason: typeof req.reason === 'string' ? req.reason : '', session, resolve }
+    const request = { ...call, id, offerId: formatOfferId(id, OFFER_ID.firstRevision), at: now(), reason: typeof req.reason === 'string' ? req.reason : '', resolve }
     live.set(id, request)
     const onAbort = () => {
       if (end(id, { cancelled: true })) void routing.withdraw(request.offerId).catch(warn(LOG.withdrawFailed))
@@ -117,8 +114,12 @@ export function createPermissions(ctx, { routing, managerOf, grants, gate, wordi
     req.signal?.addEventListener('abort', onAbort, { once: true })
     try {
       const offered = await routing.offer(sessionId, EVENT_TYPE.permission, descriptorOf(request, await titleOf(sessionId)))
-      // Released between the check and the commit: the router named nobody, so it is the user's.
-      if (offered.recipient === undefined) end(id, { toUser: true })
+      // Released between the check and the commit: the router named nobody (NoRecipient's
+      // `recipient: null`), or the mailbox refused it; either way it is the user's.
+      if (typeof offered.recipient !== 'string') end(id, { toUser: true })
+      // Ended while the offer was being made (an abort during the title read or the commit, or a
+      // close): its withdraw ran before the offer existed, so the committed offer is retired now.
+      else if (!live.has(id)) void routing.withdraw(request.offerId).catch(warn(LOG.withdrawFailed))
     } catch (error) {
       warn(LOG.offerFailed)(error)
       end(id, { toUser: true })
@@ -144,13 +145,17 @@ export function createPermissions(ctx, { routing, managerOf, grants, gate, wordi
    * Commits the principal's settlement, then releases the call. Routing settles once, on the
    * managed chain, against a racing release or withdraw: `false` there means the offer left first
    * and the call is not answered here. A call that ends between the two (its turn stopped) keeps
-   * the committed settlement; the call itself is cancelled.
+   * the committed settlement; the call itself is cancelled. A reject's wording is marked only
+   * once the settlement won (V2's order), so a call that lost to a release and then went to the
+   * user's prompt is never reworded as the agent's rejection.
    * @returns whether the settlement was committed
    */
-  async function settle(request, decision) {
+  async function settle(request, decision, reason) {
     const committed = await routing.settle(request.offerId, { approvalId: request.id, outcome: FINAL[decision].outcome, by: SETTLED_BY.principal })
-    if (committed) end(request.id, { call: FINAL[decision].call })
-    return committed
+    if (!committed) return false
+    if (decision === APPROVAL_DECISION.reject) wording.reject(request.sessionId, request.callId, request.toolName, reason)
+    end(request.id, { call: FINAL[decision].call })
+    return true
   }
 
   const dispose = ctx.on(APPROVAL.waterfall, function (req, next) { return route(this, req, next) }, { prepend: true })
@@ -158,10 +163,11 @@ export function createPermissions(ctx, { routing, managerOf, grants, gate, wordi
   return Object.freeze({
     /**
      * The domain half of `approval_answer` (the core tools already checked the offer's holder and
-     * id, and the payload rules). A refusal leaves the offer live.
+     * id, and the payload rules). `principalKey` is the answering holder, whose grant it becomes.
+     * A refusal leaves the offer live.
      * @returns `{ok: true, grantId?, expiresAt?}` or `{ok: false, code}`
      */
-    async answer({ approvalId, answer }) {
+    async answer({ approvalId, answer, principalKey }) {
       const request = live.get(approvalId)
       if (request === undefined) return refused(REFUSAL.expired)
       const { decision, risk, reason } = answer
@@ -183,12 +189,11 @@ export function createPermissions(ctx, { routing, managerOf, grants, gate, wordi
         const spec = checkGrant(answer.grant, { toolName: request.toolName, args: request.args.value })
         if (spec.error !== undefined) return refused(spec.error)
         // Written before the settlement, so an answer never names a grant a failed write lost.
-        const grantId = await grants.create({ sessionId: request.sessionId, toolName: request.toolName, args: request.args.value, spec })
+        const grantId = await grants.create({ sessionId: request.sessionId, principalKey, toolName: request.toolName, args: request.args.value, spec })
         if (grantId === undefined) return refused(REFUSAL.expired)
         grant = { grantId, expiresAt: spec.expiresAt }
       }
-      if (decision === APPROVAL_DECISION.reject) wording.reject(request.sessionId, request.callId, request.toolName, trimmed(reason))
-      if (!(await settle(request, decision))) {
+      if (!(await settle(request, decision, trimmed(reason)))) {
         if (grant !== undefined) await grants.discard(grant.grantId)
         return refused(REFUSAL.expired)
       }
@@ -201,7 +206,15 @@ export function createPermissions(ctx, { routing, managerOf, grants, gate, wordi
      */
     toUser: (approvalId) => end(approvalId, { toUser: true }),
 
-    /** Stops answering DSH; requests already waiting keep their offers until their calls end. */
-    close: () => dispose?.(),
+    /**
+     * Stops answering DSH and hands every waiting call to the user's stock prompt, as V2's broker
+     * did on unload (releaseAll): the MCP endpoint is closing, so no agent can answer it any more.
+     * Its offer stays in the mailbox and is not retired: the connector is going down, and the next
+     * start begins with no live offers (offers.js: no offer survives a restart).
+     */
+    close() {
+      dispose?.()
+      for (const id of [...live.keys()]) end(id, { toUser: true })
+    },
   })
 }

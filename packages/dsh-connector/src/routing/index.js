@@ -97,6 +97,12 @@ export async function openRouting(ctx, storageDomain, { mailbox, pairs, tokens, 
    * three ways, so no way is left out; a throwing listener is logged.
    */
   const left = listenerSet(logger, LOG.format, LOG.listenerFailed)
+  /**
+   * Fired with `(from, to)` as a succession moves `from`'s sessions to `to`, before the managed
+   * table changes (so before its onChange), and with `(to, from)` when a failed succession is
+   * undone (C-WIRE-2: the domain's grants follow their sessions; X-SEC X-08).
+   */
+  const succeeded = listenerSet(logger, LOG.format, LOG.listenerFailed)
   async function leave(...args) {
     const offers = await ledger.retireSession(...args)
     if (offers.length > 0) left.fire(offers)
@@ -191,6 +197,8 @@ export async function openRouting(ctx, storageDomain, { mailbox, pairs, tokens, 
     managed: managed.state,
     /** `onLeft(fn(offers))` → dispose: see `leave` above; `offers` is `[{offerId, sessionId, type}]`. */
     onLeft: left.add,
+    /** `onSucceeded(fn(from, to))` → dispose: see `succeeded` above (R-HOST-09). */
+    onSucceeded: succeeded.add,
     handover: handover.service,
     provide: handover.provide,
 
@@ -316,6 +324,8 @@ export async function openRouting(ctx, storageDomain, { mailbox, pairs, tokens, 
         let staged
         let reissued
         try {
+          succeeded.fire(from, to)
+          undos.push(() => succeeded.fire(to, from))
           moved = await managed.moveAllNow(from, to)
           undos.push(moved.undo)
           staged = await mailbox.stage(from, to)

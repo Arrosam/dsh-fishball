@@ -26,16 +26,14 @@
  * (old ids are `expired`, nothing is offered again). A live child's question DSH refuses before the
  * waterfall (S36 Q5).
  */
-import { randomUUID } from 'node:crypto'
 import { APPROVAL_KIND, EVENT_TYPE, OFFER_ID, PLAN_REVIEW, REFUSAL, SETTLED_BY, SETTLEMENT_OUTCOME, formatOfferId } from '../../mcp-schema/index.js'
 import { diagnosticOf } from '../errors.js'
 import { rootSessionOf } from '../session-info.js'
 import { questionCallIdOf } from './call-log.js'
 import { ANSWER_RULE, LOG, QUESTION, QUESTION_TEXT, REQUEST_ID, SUMMARY } from './constants.js'
+import { joinSignal, mintId, refused, trimmed } from './support.js'
 
-const refused = (code) => Object.freeze({ ok: false, code })
 const ACCEPTED = Object.freeze({ ok: true })
-const trimmed = (text) => (typeof text === 'string' ? text.trim() : '')
 
 /** A plan review is one question carrying the plan-review intent (S36 Q3). */
 const isPlanReview = (questions) => questions.length === 1 && questions[0].intent?.kind === QUESTION.planIntent
@@ -163,16 +161,14 @@ export function createQuestions(ctx, { routing, managerOf, titleOf, now, logger 
     if (managerOf(sessionId) === undefined) return next()
     const questions = req.questions ?? []
     const original = req.signal
-    const own = new AbortController()
-    const signal = original === undefined ? own.signal : AbortSignal.any([original, own.signal])
-    try { req.signal = signal } catch { /* a frozen request: checked below */ }
+    const { own, placed } = joinSignal(req)
     // DSH froze the request (not seen in rc.2 to rc.5, S36): the question stays in its session.
-    if (req.signal !== signal) {
+    if (!placed) {
       logger.warn(LOG.format, LOG.frozenRequest, QUESTION.waterfall)
       return next()
     }
     const plan = isPlanReview(questions)
-    const id = REQUEST_ID.question + randomUUID().replace(REQUEST_ID.uuidSeparator, '')
+    const id = mintId(REQUEST_ID.question)
     const first = Promise.withResolvers()
     const entry = {
       id, offerId: formatOfferId(id, OFFER_ID.firstRevision), sessionId, questions, plan, at: now(),
@@ -197,8 +193,12 @@ export function createQuestions(ctx, { routing, managerOf, titleOf, now, logger 
     if (original?.aborted) onAbort()
     try {
       const offered = await routing.offer(sessionId, plan ? EVENT_TYPE.planReview : EVENT_TYPE.question, descriptorOf(entry, await titleOf(sessionId)))
-      // Released between the check and the commit: the router named nobody, so the card is all there is.
-      if (offered.recipient === undefined) toUser(id)
+      // Released between the check and the commit: the router named nobody (NoRecipient's
+      // `recipient: null`), or the mailbox refused it; the card is all there is.
+      if (typeof offered.recipient !== 'string') toUser(id)
+      // Settled while the offer was being made (the user answered, or the call ended): the
+      // committed offer is retired now, since the settle or withdraw ran before it existed.
+      else if (entry.settled) void routing.withdraw(entry.offerId).catch(warn(LOG.withdrawFailed))
     } catch (error) {
       warn(LOG.offerFailed)(error)
       toUser(id)
@@ -251,9 +251,11 @@ export function createQuestions(ctx, { routing, managerOf, titleOf, now, logger 
       }
       const built = batchFor(entry, { answers, approve, feedback })
       if (built.rule !== undefined) return refused(REFUSAL.badAnswer)
-      // The race with the user's card is decided in memory first (first answer wins); the
-      // settlement follows. A release that retired the offer meanwhile makes it a no-op.
-      if (!entry.settle({ batch: built.batch })) return refused(REFUSAL.expired)
+      // The race with the user's card is decided in memory first (first answer wins), checked again
+      // here because the offer desk read the offer live before awaiting: a release meanwhile took the
+      // question from the agent (toUser), so its answer is refused, never the call's. The
+      // settlement follows; a retirement that raced it makes it a no-op.
+      if (!live.has(questionId) || !entry.settle({ batch: built.batch })) return refused(REFUSAL.expired)
       await routing.settle(entry.offerId, { approvalId: questionId, outcome: SETTLEMENT_OUTCOME.answered, by: SETTLED_BY.principal, answers: built.batch.answers })
       return ACCEPTED
     },
@@ -261,7 +263,13 @@ export function createQuestions(ctx, { routing, managerOf, titleOf, now, logger 
     /** Revocation's and release's hand-over (routing retired the offer): the question stays in its card. */
     toUser,
 
-    /** Stops answering DSH. */
-    close: () => dispose?.(),
+    /**
+     * Stops answering DSH, and every open question goes to its card alone, its timed-wait hold
+     * released (the MCP endpoint is closing; V2's router did the same on unload).
+     */
+    close() {
+      dispose?.()
+      for (const id of [...live.keys()]) toUser(id)
+    },
   })
 }

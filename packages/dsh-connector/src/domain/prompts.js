@@ -9,8 +9,8 @@
 import { APPROVAL_DECISION, REFUSAL } from '../../mcp-schema/index.js'
 import { allowRuleBroken } from './permissions.js'
 import { APPROVAL } from './constants.js'
+import { refused } from './support.js'
 
-const refused = (code) => Object.freeze({ ok: false, code })
 /** `prompt_answer`'s decision as DSH's outcome (allow or reject only). */
 const OUTCOME = Object.freeze({ [APPROVAL_DECISION.allow]: APPROVAL.outcome.allowedOnce, [APPROVAL_DECISION.reject]: APPROVAL.outcome.rejected })
 
@@ -40,9 +40,12 @@ export function createPrompts({ gate, wording, titleOf }) {
         if (risk === undefined) return refused(REFUSAL.riskRequired)
         const broken = allowRuleBroken(risk, reason, prompt.args.status)
         if (broken !== undefined) return refused(broken)
-      } else wording.reject(prompt.sessionId, prompt.callId, prompt.toolName, reason.trim())
+      }
       // Lost the race (the user clicked, or the call was cancelled, a moment ago): already answered.
       if (!prompt.answer(OUTCOME[decision])) return refused(REFUSAL.expired)
+      // Marked only once this answer won, before the call's result exists: `answer` resolves the
+      // gate's promise, and DSH runs the tool and its post-execute only after that resolves.
+      if (decision === APPROVAL_DECISION.reject) wording.reject(prompt.sessionId, prompt.callId, prompt.toolName, reason.trim())
       return Object.freeze({ ok: true, promptId, decision, managed: true })
     },
   })

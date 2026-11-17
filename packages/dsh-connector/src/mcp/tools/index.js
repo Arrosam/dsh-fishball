@@ -28,7 +28,7 @@
  *     - `liveOffers(rootSessionId) → [{principalKey, descriptor}]`: the session's live offers,
  *       each descriptor with its current `offerId` (`<approvalId>.r<revision>`), held by
  *       `principalKey` (C-ROUTE / C-WIRE; Fishball's decision Q1, 2026-11-14);
- *     - `answerApproval({sessionId, approvalId, answer})`, `answerQuestion({sessionId, questionId,
+ *     - `answerApproval({sessionId, approvalId, answer, principalKey})` (the answering holder), `answerQuestion({sessionId, questionId,
  *       answers?, approve?, feedback?, toUser?, note?})` → `{ok, code?, grantId?, expiresAt?}`;
  *     - `listPrompts() → PromptSummary[]` (every open prompt; the tools keep the caller's);
  *       `answerPrompt({promptId, decision, risk?, reason}) → {ok, code?, promptId, decision, managed}`;

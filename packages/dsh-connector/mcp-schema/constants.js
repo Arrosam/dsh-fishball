@@ -309,7 +309,12 @@ export const RATE_LIMITS = Object.freeze({
  *   agent out. No token material is in a key.
  * - Limited (PROPOSED; S7b's `>=` rule, over S7b's one address-only key): a key with `perKeyPerWindow` or more counted failures within
  *   the last `windowMs`, or an address with `perAddressPerWindow` or more over all its keys.
- *   While limited, even a valid credential is refused (S7b P2), with RATE_LIMITS' 429 answer.
+ *   While limited, a **failing** credential gets RATE_LIMITS' 429 answer, uncounted. A valid one
+ *   always passes (X-SEC X-03, C-WIRE-2, amending S7b P2 "even a valid credential is refused"):
+ *   the credential is verified first, as MCP Authorization's guidance on token validation and
+ *   OAuth 2.1 §7 (brute-force protection on failed attempts) expect, so one client's failures on a
+ *   shared address (loopback, the user's tunnel) never lock out another, the hosted agent included.
+ *   The values are unchanged (#19, #21).
  */
 export const FAILURE_LIMIT = Object.freeze({
   // Its own window: a failure window and a request-rate window mean different things, even
@@ -343,6 +348,8 @@ export const APPROVAL_DECISION = Object.freeze({ allow: 'allow', grant: 'grant',
 export const RISK = Object.freeze({ low: 'low', high: 'high' })
 export const GRANT_KIND = Object.freeze({ exact: 'exact', prefix: 'prefix' })
 export const PROMPT_DECISIONS = Object.freeze([APPROVAL_DECISION.allow, APPROVAL_DECISION.reject])
+/** `approval_answer`'s accepted decisions and a permission offer's `choices`: every decision but `ask` (X-02). */
+export const ANSWER_DECISIONS = Object.freeze(Object.values(APPROVAL_DECISION).filter((decision) => decision !== APPROVAL_DECISION.ask))
 export const APPROVAL_KIND = Object.freeze({ approval: 'approval', question: 'question' })
 export const PLAN_REVIEW = 'plan-review'
 export const ARGUMENTS_STATUS = Object.freeze({ complete: 'complete', truncated: 'truncated', unavailable: 'unavailable' })
@@ -528,7 +535,12 @@ export const APPROVAL_LISTENER = Object.freeze({
   // The page's response headers (R-OA-11, R-OA-12; S7b P-rows).
   headers: Object.freeze({
     'cache-control': 'no-store',
-    'referrer-policy': 'no-referrer',
+    // `same-origin` (X-SEC X-01, C-WIRE-2; was S7b's `no-referrer`): under `no-referrer` a browser
+    // posts the form with `Origin: null` (Fetch, "append a request Origin header"), which the gate
+    // rightly refuses, so no real browser could press Authorize. `same-origin` keeps the page's own
+    // Origin on its POST and still sends no Referer across origins (the 303 to the client's
+    // redirect_uri included). The gate keeps refusing `null`: an attacker can choose it.
+    'referrer-policy': 'same-origin',
     // S7b's verified value. No `form-action`: browsers apply it to the 303 that follows the POST,
     // which would block the redirect to the client's loopback `redirect_uri`.
     'content-security-policy': "default-src 'none'; frame-ancestors 'none'",

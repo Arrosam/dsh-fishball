@@ -25,7 +25,7 @@
  *
  * `inbox_ack` goes through routing's mailbox port (routing/index.js: "C-WIRE and C-TOOLS must route
  * every `inbox_ack` through this port"): the mailbox C-TOOLS and C-HTTP get is the one whose
- * `ack` fires `onAcked`, so an ack frees room for held messages and marks offers acked.
+ * `ack` fires `onAcked`, so an ack marks offers acked.
  */
 import { readFile } from 'node:fs/promises'
 import https from 'node:https'
