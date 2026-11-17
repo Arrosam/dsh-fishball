@@ -26,10 +26,12 @@ import path from 'node:path'
 
 const STORE = Object.freeze({
   // pnpm's record of how node_modules was installed, `storeDir` among it. pnpm 10 writes it as
-  // JSON; earlier majors wrote YAML, so the reader takes both spellings of the one line.
+  // JSON; earlier majors wrote YAML, so the reader takes both spellings of the one line, a JSON
+  // string, a YAML single-quoted one or a plain value.
   modulesFile: '.modules.yaml',
   storeDirLine: /^\s*"?storeDir"?\s*:\s*(.+?)\s*,?\s*$/m,
   quoted: '"',
+  singleQuoted: /^'(.*)'$/,
   // The two content folders of a store; see above for why `projects/` is left out.
   contents: Object.freeze(['files', 'index']),
 })
@@ -47,7 +49,18 @@ function linkedStore(modules) {
   }
   const value = STORE.storeDirLine.exec(text)?.[1]
   if (!value) return undefined
-  return value.startsWith(STORE.quoted) ? JSON.parse(value) : value
+  if (value.startsWith(STORE.quoted)) return JSON.parse(value)
+  return STORE.singleQuoted.exec(value)?.[1].replaceAll("''", "'") ?? value
+}
+
+/**
+ * A path a `dsh plugin` query printed: its last non-empty line, which must be absolute. A notice
+ * pnpm printed before the path would otherwise resolve into a folder under the release.
+ */
+function printedPath(text, what) {
+  const line = text.split('\n').map((row) => row.trim()).filter(Boolean).at(-1)
+  if (!line || !path.isAbsolute(line)) throw new Error(what + ' is not an absolute path: ' + JSON.stringify(text))
+  return line
 }
 
 /**
@@ -56,9 +69,10 @@ function linkedStore(modules) {
  * release made by another pnpm major is refused rather than mixed in.
  */
 function prepare(releaseRoot, modules, fallback) {
-  const store = path.resolve(linkedStore(modules) ?? fallback)
-  const release = path.resolve(releaseRoot, path.basename(store))
-  if (!fs.existsSync(release)) throw new Error('this release has no ' + path.basename(store) + ' store for ' + store + ' (packed with another pnpm major version)')
+  const store = path.resolve(linkedStore(printedPath(modules, 'the profile\'s node_modules')) ?? printedPath(fallback, 'the pnpm store path'))
+  const layout = path.basename(store)
+  const release = path.resolve(releaseRoot, layout)
+  if (!fs.existsSync(release)) throw new Error('your profile\'s pnpm uses store layout ' + layout + ' (' + store + '); this release has only ' + fs.readdirSync(releaseRoot).join(', '))
   if (release !== store) for (const name of STORE.contents) {
     fs.cpSync(path.join(release, name), path.join(store, name), { recursive: true, force: false, errorOnExist: false })
   }

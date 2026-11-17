@@ -9,6 +9,8 @@ import { fileURLToPath } from 'node:url'
 import { COMMAND, DIST_TAG, INSTALL_SETS, LAYOUT, OFFLINE, PACKAGES, PROFILE, REGISTRY, SDKS, VERSION } from './constants.mjs'
 
 const fence = (lines) => ['```bash', ...lines, '```'].join('\n')
+/** `text` indented under a numbered list item, so its fences stay inside the item (CommonMark). */
+const item = (text) => text.split('\n').map((line) => (line ? '   ' + line : line)).join('\n')
 
 /** `dsh plugin --profile web <args>`. */
 const dsh = (...args) => ['dsh plugin --profile', PROFILE, ...args].join(' ')
@@ -73,7 +75,9 @@ you run any \`dsh plugin\` command.**
   store your profile already uses, adding files and deleting or replacing none, and prints that store's path. The
   second line installs with that store. It works on a profile that already has plugins, and the profile stays on its
   own store. The profile records each package by its tarball's path in this folder, and later \`dsh plugin\` commands
-  read those tarballs again, so **keep this folder where it is** while the packages are installed this way.
+  read those tarballs again, so **keep this folder where it is** while the packages are installed this way. Once
+  the packages are on npm, adding them again from npm (\`${add(['<name>@' + VERSION])}\`) replaces those records,
+  and the folder may go.
 
 Check the tarballs first: \`shasum -a 256 -c ${LAYOUT.sums}\`.
 
@@ -103,11 +107,11 @@ With no model set, Fishball asks you to choose one.
 1. In the **managed DSH** (the one Fishball works for), install \`${name('connector')}\` and, for the fish and
    Hand over there, \`${name('connectorUi')}\`, as in the hosted set but without \`${name('instance')}\`:
 
-${fence([add([name('connector') + '@' + VERSION, name('connectorUi') + '@' + VERSION])])}
+${item(installBlocks('managed', name))}
 
 2. In the **Fishball DSH**, install the Fishball plugins, in this order (core last):
 
-${installBlocks('standalone', name)}
+${item(installBlocks('standalone', name))}
 
    fishball-ui and fishball-board are optional: fishball-core alone is a full Fishball DSH.
 
