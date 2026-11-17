@@ -11,6 +11,9 @@
  * - gate K3a (requirements 1.39–1.41): the link's status and the hosted import's published names
  *   (`link.d.ts`), Connect (`connect.d.ts`), the fishball-ui seam `fishballInstance.ui` (`ui.d.ts`),
  *   and core's own copy of the connector's MCP surface (`constants.js` `MCP`; values only).
+ * - MULTI-0 (2026-11-18): multiple targets (`targets.d.ts`, `constants.js` `TARGETS`,
+ *   `fishball-shared/ui-seam` `SEAM_TARGETS`); `fishballInstance.bridge` / `attention` become
+ *   target-bound (`FishballTargetBound`), `apiVersion` 2.
  */
 export type {
   FishballInstanceEvents, InterceptRegistration, InterceptHandler, InterceptControl, InterceptedEvent,
@@ -27,17 +30,23 @@ export type {
   FishballConnect,
 } from './connect.js'
 export type { FishballUi, UiPairingView, UiResult, Dispose } from './ui.js'
+export type {
+  TargetId, EndpointEpoch, TargetKind, TargetState, TargetIdentityState, TargetSource, TargetRecord, TargetView,
+  TargetsSnapshot, TargetActionResult, FishballTargets, FishballTargetBound,
+} from './targets.js'
 
 import type { FishballInstanceEvents } from './events.js'
 import type { FishballUi } from './ui.js'
+import type { FishballTargetBound } from './targets.js'
 
 /**
  * The `fishballInstance` service as far as K3 and K3a freeze it: `apiVersion`, the `events`
  * member and the `ui` member (K3a: what fishball-ui draws, `ui.d.ts`). Its other members are the
  * X1–X19 contract and are not restated here; K3b withdraws the Watchdog-only ones.
  */
-export interface FishballInstance {
-  readonly apiVersion: 1
+export interface FishballInstance extends FishballTargetBound {
+  /** MULTI-0: 2, because `ui`, `bridge` and `attention` changed shape; a reader of 1 attaches nothing. */
+  readonly apiVersion: 2
   readonly events: FishballInstanceEvents
   readonly ui: FishballUi
 }
