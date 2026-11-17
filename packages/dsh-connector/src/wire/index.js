@@ -193,7 +193,7 @@ export async function openV3(ctx, { config, storageDomain, limits, volatileEvent
     // Step 3: the start sync, then what runs after it.
     await settings.start()
     await revocation.start()
-    await hosted.resume()
+    const recoveredSuccessions = await hosted.resume()
     // Pushed before the follower, so on close the follower goes first and then the chain drains,
     // before hosted, revocation and routing (pushed earlier) close: no queued sync reaches them.
     closers.push(() => settings.drain())
@@ -201,7 +201,7 @@ export async function openV3(ctx, { config, storageDomain, limits, volatileEvent
 
     // Step 4: HTTP.
     const contributions = createContributions({ mailbox, router: routing.router, sessionExists: sessionExistsIn(ctx), onToolsChanged: () => endpoint?.toolsChanged(), logger })
-    const domain = await createSessionDomain(ctx, { storageDomain, readLimits: limits, routing, logger })
+    const domain = await createSessionDomain(ctx, { storageDomain, readLimits: limits, routing, recoveredSuccessions, logger })
     closers.push(() => domain.close())
     const populate = createCoreTools({ pairs, mailbox, managed: routing.managed, domain, contributions, now: Date.now, logger })
     endpoint = createMcpEndpoint({

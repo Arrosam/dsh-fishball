@@ -21,18 +21,20 @@
  *       (folder resolution, title, model, first message) with no watch; it awaits
  *       `onCreated(sessionId)` once the session exists and before its first message, so the
  *       caller manages it before its first turn can produce an event (R-ROUTE-01);
- *     - `message`, `redirect({sessionId, message, attachments}) → Promise<{status}>`;
- *     - `stop({sessionId, reason?})`;
+ *     - `message`, `redirect({sessionId, message, attachments, admit}) → Promise<{status}>`;
+ *     - `stop({sessionId, reason?, admit})`. `admit()` throws a `RefusalError` once the caller no
+ *       longer manages the session; the port calls it after each DSH await and right before its
+ *       side effect (review F02);
  *     - `read({sessionId, maxMessages, maxBytes}) → Promise<{messages, truncated}>`;
  *   - `domain.interactions`:
  *     - `liveOffers(rootSessionId) → [{principalKey, descriptor}]`: the session's live offers,
  *       each descriptor with its current `offerId` (`<approvalId>.r<revision>`), held by
  *       `principalKey` (C-ROUTE / C-WIRE; Fishball's decision Q1, 2026-11-14);
  *     - `answerApproval({sessionId, approvalId, answer, principalKey})` (the answering holder), `answerQuestion({sessionId, questionId,
- *       answers?, approve?, feedback?, toUser?, note?})` → `{ok, code?, grantId?, expiresAt?}`;
+ *       answers?, approve?, feedback?, toUser?, note?, principalKey})` (the answering holder) → `{ok, code?, grantId?, expiresAt?}`;
  *     - `listPrompts() → PromptSummary[]` (every open prompt; the tools keep the caller's);
  *       `answerPrompt({promptId, decision, risk?, reason}) → {ok, code?, promptId, decision, managed}`;
- *     - `listGrants() → GrantSummary[]`; `revokeGrant({grantId, reason}) → {ok, code?}`;
+ *     - `listGrants() → GrantSummary[]`; `revokeGrant({grantId, reason, principalKey}) → {ok, code?}` (rejects when the revocation could not be stored);
  *   - `domain.attachments`: `put(args) → {hostRef, expiresAt}`, `read({sessionId, attachmentId})`;
  * - `contributions` (optional): C-EXT's `{list, call}`; contributed tools follow the core tools;
  * - `now`: the injected clock (epoch ms); `logger`: `{warn}`.

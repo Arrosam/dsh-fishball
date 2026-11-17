@@ -17,6 +17,12 @@
  * Read messages carry the port's own projection (seq, role, author and image metadata); the role
  * vocabulary and the per-event text helper are shared with src/session-info.js.
  *
+ * Authority (review F02): message, redirect and stop take an optional `admit()` from the core tools,
+ * which throws when the caller no longer manages the session. It runs after each DSH await and
+ * immediately before the side effect (the steer, the cancel, the follow-up), so a Take back or Hand
+ * over during a lookup stops the call before it acts for a former manager. Start needs none: its
+ * session is new, and becomes the caller's in `onCreated`.
+ *
  * Attachments (§6.4) are the image port from images.js: attachment.read/put serve the two
  * transfer tools, and start/message/redirect consume the hostRefs a principal just put into the
  * one user message they build. A file becomes DSH's own file block, which request assembly
@@ -43,6 +49,8 @@ const NEVER_ABORTED = new AbortController().signal
 const TITLE_PROJECTION = 'title'
 /** DSH's history page needs a message budget of at least one (its request validator refuses 0, and a new session's cursor is -1). */
 const MIN_PAGE_MESSAGES = 1
+/** `admit` when the caller passes none (start's own first delivery): nothing to recheck. */
+const ADMITTED = () => {}
 /** The session address kind every ordinary Session uses. */
 const SESSION_ADDRESS = 'session'
 /** dsh-agent's status for a Session with a turn in progress; 0.2.1 exposes it on the live agent. */
@@ -276,10 +284,11 @@ export function createSessionPort(ctx, options) {
     return attachment.resolve(hostRefs)
   }
 
-  /** Resolve and deliver one message with already-consumed attachment blocks. */
-  async function deliverWith(sessionId, text, send, attachments, via) {
+  /** Resolve and deliver one message with already-consumed attachment blocks; `admit` runs right before `send`. */
+  async function deliverWith(sessionId, text, send, attachments, via, admit = ADMITTED) {
     const resolved = await ctx.sessionController.resolveAgent(sessionId)
     if (resolved.agent === undefined) throw new RefusalError(REFUSAL.unknownSession)
+    admit()
     return handOver(resolved.agent, text, send, attachments, via)
   }
 
@@ -287,9 +296,10 @@ export function createSessionPort(ctx, options) {
    * Consume hostRefs and deliver. A refused hostRef fails before resolveAgent, so an invalid
    * or expired ref cannot activate a session or leave a half-built message behind.
    */
-  async function deliver(sessionId, text, send, hostRefs = [], via = SOURCE.via.message) {
+  async function deliver(sessionId, text, send, { hostRefs = [], via = SOURCE.via.message, admit = ADMITTED } = {}) {
     const attachments = await attachmentsOf(hostRefs)
-    return deliverWith(sessionId, text, send, attachments, via)
+    admit()
+    return deliverWith(sessionId, text, send, attachments, via, admit)
   }
 
   /**
@@ -321,9 +331,9 @@ export function createSessionPort(ctx, options) {
   }
 
   /** session_message: steer the message into the session. */
-  async function message({ sessionId, message: text, attachments }) {
+  async function message({ sessionId, message: text, attachments, admit }) {
     boundMessage(text, readLimits())
-    return deliver(sessionId, text, (agent, input) => agent.steer(input), attachments)
+    return deliver(sessionId, text, (agent, input) => agent.steer(input), { hostRefs: attachments, admit })
   }
 
   /**
@@ -419,19 +429,21 @@ export function createSessionPort(ctx, options) {
     },
     start,
     message,
-    async redirect({ sessionId, message, attachments }) {
+    async redirect({ sessionId, message, attachments, admit = ADMITTED }) {
       const delivered = await deliver(sessionId, message, async (agent, input) => {
         // The Stop button's path, then the instruction as the next turn (src/messaging.js).
         await ctx.sessionController.cancel({ sessionId })
+        admit()
         agent.followup(input)
-      }, attachments, SOURCE.via.redirect)
+      }, { hostRefs: attachments, via: SOURCE.via.redirect, admit })
       return delivered
     },
-    async stop({ sessionId, reason }) {
+    async stop({ sessionId, reason, admit = ADMITTED }) {
       // A loaded but idle agent still sits in ctx.agents, so its presence is not "something is
       // running"; the host's passive state (0.2.2) or the live agent's status (0.2.1) decides.
       // DSH's cancel is the Stop button, and an idle stop is a no-op.
       const { running } = await activityOf(sessionId)
+      admit()
       if (running) await ctx.sessionController.cancel({ sessionId })
     },
     read,

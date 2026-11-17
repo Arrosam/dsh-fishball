@@ -653,6 +653,13 @@ a reinstall replaces it (§5.4; R6 = B, R8).
   7. adds one `system` note per moved session.
   `retire` refuses any old entry that `createHosted` did not create for this instance. A failure
   rolls everything back, and the instance retries at its next start.
+  *As built (R-FIX-CONNECTOR, review F03):* the storage domains give no cross-domain transaction, so
+  the step is journalled. The old hosted record is marked `succeededBy` before anything moves, and
+  the pair step (the name move, with the old pair's removal) is the commit record. At a start after
+  a crash, a mark whose old entry has no pair any more finishes step 6; a mark whose old pair still
+  exists is rolled **forward** (the succession runs again and moves whatever is still the old
+  principal's), since a crash leaves no record of which sessions or events had moved. Grants move
+  as an awaited participant of the same step, and back on its undo (F05).
 - A user who disables a hosted entry gets `token-revoked` in the child and no automatic
   replacement (R-HOST-10).
 

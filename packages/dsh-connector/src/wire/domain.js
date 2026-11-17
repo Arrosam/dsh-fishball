@@ -42,10 +42,13 @@ const refused = (code) => Object.freeze({ ok: false, code })
  * @param deps.storageDomain - `{defineDomain, domainTable}` of the running SDK
  * @param deps.readLimits - the connector's live limits (src/config.js)
  * @param deps.routing - the routing composition
+ * @param deps.recoveredSuccessions - `[{from, to}]` the hosted start recovery completed before
+ *   this domain existed (hosted `resume`, review F03): their grants move before `reconcile`, which
+ *   would otherwise end them as no longer their principal's
  * @param deps.logger - the row's logger
  * @returns `{sessions, interactions, attachments, close}`
  */
-export async function createSessionDomain(ctx, { storageDomain, readLimits, routing, logger }) {
+export async function createSessionDomain(ctx, { storageDomain, readLimits, routing, recoveredSuccessions = [], logger }) {
   const now = Date.now
   const warn = (error) => logger.warn(LOG.format, LOG.grantWriteFailed, diagnosticOf(error))
   const managerOf = (sessionId) => routing.managed.managerOf(sessionId)
@@ -82,6 +85,7 @@ export async function createSessionDomain(ctx, { storageDomain, readLimits, rout
     const tools = createSessionTools(ctx, { routing, managed: routing.managed, readLimits, logger })
     closers.push(() => tools.close())
 
+    let sweepQueued = false
     const disposers = [
       routing.onLeft((offers) => {
         for (const { offerId } of offers) {
@@ -89,12 +93,21 @@ export async function createSessionDomain(ctx, { storageDomain, readLimits, rout
           if (!permissions.toUser(requestId)) questions.toUser(requestId)
         }
       }),
-      // Every management change ends the grants their principal no longer covers (X-08); a
-      // succession moves them first (onSucceeded fires before any later change), so it ends none.
-      routing.managed.onChange(() => void grants.endUnmanaged().catch(warn)),
-      routing.onSucceeded((from, to) => void grants.moveOwner(from, to).catch(warn)),
+      // Every management change ends the grants their principal no longer covers (X-08). The sweep
+      // runs on the managed chain after the change's own step (review F05): a succession, or its
+      // undo, has then moved both the managers and the grant owners, so it never sees one half
+      // moved and ends a grant the step is about to give back. Changes queued while a sweep waits
+      // share it.
+      routing.managed.onChange(() => {
+        if (sweepQueued) return
+        sweepQueued = true
+        routing.afterChanges(() => { sweepQueued = false; return grants.endUnmanaged() }).catch(warn)
+      }),
+      // Awaited by the succession, which undoes it when a later step fails (R-HOST-09).
+      routing.onSucceeded((from, to) => grants.moveOwner(from, to)),
     ]
     closers.push(() => { for (const dispose of disposers.splice(0)) dispose?.() })
+    for (const { from, to } of recoveredSuccessions) await grants.moveOwner(from, to).catch(warn)
     await grants.reconcile()
 
     const sessions = Object.freeze({
@@ -109,8 +122,8 @@ export async function createSessionDomain(ctx, { storageDomain, readLimits, rout
           onCreated,
         })
       },
-      message: ({ sessionId, message, attachments }) => port.message({ sessionId, message, attachments }),
-      redirect: ({ sessionId, message, attachments }) => port.redirect({ sessionId, message, attachments }),
+      message: ({ sessionId, message, attachments, admit }) => port.message({ sessionId, message, attachments, admit }),
+      redirect: ({ sessionId, message, attachments, admit }) => port.redirect({ sessionId, message, attachments, admit }),
       stop: (input) => port.stop(input),
       async read(input) {
         const read = await port.read(input)
@@ -125,8 +138,9 @@ export async function createSessionDomain(ctx, { storageDomain, readLimits, rout
       listPrompts: () => prompts.list(),
       answerPrompt: (answer) => prompts.answer(answer),
       listGrants: async () => grants.list(),
-      async revokeGrant({ grantId }) {
-        const code = await grants.revoke(grantId)
+      // A failed durable delete rejects (dispatch answers `operation-failed`, review F01).
+      async revokeGrant({ grantId, principalKey }) {
+        const code = await grants.revoke(grantId, principalKey)
         return code === undefined ? Object.freeze({ ok: true }) : refused(code)
       },
     })

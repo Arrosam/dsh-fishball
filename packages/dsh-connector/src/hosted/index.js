@@ -19,12 +19,26 @@
  * moved), and an unfinished delete is finished at the next start (`resume`).
  * The delete makes C-REVOKE see a `deleted` revocation of the old entry; by then it has no pair,
  * no sessions and no pending events, so that does nothing visible.
+ *
+ * Crash recovery (review F03). The storage domains give no cross-domain transaction, and a crash
+ * inside the step cannot run the in-memory undo, so the step is journalled:
+ * - prepared: the old record is marked `succeededBy` **before** anything moves (the journal), and
+ *   unmarked again when the step is refused or rolls back;
+ * - committed: `PairStore.succeed` removes the old pair in the same atomic registry write that moves
+ *   the name, so "the old entry has no pair" is the durable commit record. The mark alone never
+ *   says the step committed.
+ * `resume` reads both: a committed mark finishes the delete; a prepared one is rolled forward, by
+ * running the same succession again (each participant moves whatever `from` still holds, so a run
+ * that crashed halfway is completed, and one that moved nothing moves everything). Forward, not
+ * back: a crash leaves no record of which sessions or events had moved, and the instance would ask
+ * for the same succession at its next start anyway. A roll-forward that is refused (an entry was
+ * deleted meanwhile) leaves the old entry unmarked and hosted, for the instance to retry or drop.
  */
 import { principalLabel } from '../../mcp-schema/index.js'
 import { diagnosticOf } from '../errors.js'
 import { isNonEmptyString } from '../mailbox/draft.js'
 import { RETRY_CLOSED, createRetrier } from '../background.js'
-import { serialChain } from '../routing/support.js'
+import { serialChain } from '../serial.js'
 import {
   CREATE_HOSTED_ERROR, HOSTED_ENTRY_STATE, HOSTED_SERVICE, HOSTED_STORE, HOSTED_TIMING, LOG, MISUSE, RETIRE_REFUSAL, SUCCESSION_NOTE,
 } from './constants.js'
@@ -135,27 +149,27 @@ export function createHostedTokens({ table, tokens, pairs, routing, writer, note
   }))
 
   /**
-   * The caller's half of the step (routing `succeedPrincipal`'s `commit`), all inside the managed
-   * step: the old record is marked `succeededBy` (so a crash after the commit point still finishes
-   * the delete at the next start), then `PairStore.succeed`, the commit point for the name. A
-   * refusal or a rejection clears the mark first; a failing compensation is logged, never the error
-   * returned. C-WIRE-2 removed the designated role, so R-HOST-09 step 2 moves nothing (the user's
-   * answer q5, 2026-11-17: "Remove agentToken entirely").
+   * The succession's transfer between its journal marks (module comment): the old record is marked
+   * prepared, routing moves every participant and calls `PairStore.succeed` as its commit (the
+   * commit point for the name), and a refusal or a rejection unmarks the record again (a failing
+   * unmark is logged; the next start then rolls the step forward). C-WIRE-2 removed the designated
+   * role, so R-HOST-09 step 2 moves nothing (the user's answer q5, 2026-11-17: "Remove agentToken
+   * entirely"). An old entry that never paired has no principal: nothing moves.
+   * @returns routing's result (`{ok: true, sessions}` or a refusal)
+   * @throws (rejects) the failing step's error, after the unmark
    */
-  function committer(oldEntryKey, successorEntryKey, oldRecord) {
-    return async () => {
-      const undos = []
-      const undoAll = async () => { for (const undo of undos.reverse()) await compensate(undo, warn(LOG.undoFailed)) }
-      try {
-        await table.put(oldEntryKey, { ...oldRecord, succeededBy: successorEntryKey })
-        undos.push(() => table.put(oldEntryKey, oldRecord))
-        const result = await pairs.succeed(oldEntryKey, successorEntryKey)
-        if (!result.ok) await undoAll()
-        return result
-      } catch (error) {
-        await undoAll()
-        throw error
-      }
+  async function transfer(oldEntryKey, successorEntryKey, oldPair, successorPair) {
+    const oldRecord = table.get(oldEntryKey)
+    await table.put(oldEntryKey, { ...oldRecord, succeededBy: successorEntryKey })
+    const unmark = () => compensate(() => table.put(oldEntryKey, oldRecord), warn(LOG.undoFailed))
+    const commit = () => pairs.succeed(oldEntryKey, successorEntryKey)
+    try {
+      const result = oldPair === undefined ? await commit() : await routing.succeedPrincipal(oldPair.principalKey, successorPair.principalKey, commit)
+      if (!result.ok) await unmark()
+      return result
+    } catch (error) {
+      await unmark()
+      throw error
     }
   }
 
@@ -169,11 +183,9 @@ export function createHostedTokens({ table, tokens, pairs, routing, writer, note
     // Read here, outside the managed step; a racing delete of the old entry is caught by
     // `PairStore.succeed` itself (old unpaired: nothing moves but the role, as below).
     const oldPair = pairs.pairOf(oldEntryKey)
-    const commit = committer(oldEntryKey, successorEntryKey, table.get(oldEntryKey))
     let moved
     try {
-      // An old entry that never paired has no principal: nothing moves, its record is only marked.
-      const result = oldPair === undefined ? await commit() : await routing.succeedPrincipal(oldPair.principalKey, successorPair.principalKey, commit)
+      const result = await transfer(oldEntryKey, successorEntryKey, oldPair, successorPair)
       if (!result.ok) return refusal(result.code)
       moved = result.sessions ?? []
     } catch (error) {
@@ -259,11 +271,33 @@ export function createHostedTokens({ table, tokens, pairs, routing, writer, note
   return Object.freeze({
     service,
     /**
-     * Run once at start (C-WIRE), after the token registry's start sync: finishes the delete of
-     * every entry a succession committed before the connector stopped (`succeededBy`).
+     * Run once at start (C-WIRE), after the token registry's start sync and before the domain
+     * opens: finishes every succession journalled before the connector stopped (module comment).
+     * A committed one (the old entry has no pair) has its delete finished; a prepared one is
+     * unmarked and run again. A recovery step that fails is logged and left marked, so the next
+     * start tries again; it never fails the start.
+     * @returns the principal moves `[{from, to}]` a roll-forward completed: the domain moves their
+     *   grants before it reconciles them (no grant participant is registered this early)
      */
     resume: () => serial(async () => {
-      for (const [entryKey, record] of [...table.entries()]) if (record.succeededBy !== undefined) await deleteEntry(entryKey)
+      const recovered = []
+      for (const [entryKey, record] of [...table.entries()]) {
+        if (record.succeededBy === undefined) continue
+        const oldPair = pairs.pairOf(entryKey)
+        if (oldPair === undefined) {
+          await deleteEntry(entryKey)
+          continue
+        }
+        const { succeededBy, ...prepared } = record
+        try {
+          await table.put(entryKey, prepared)
+          const to = pairs.pairOf(succeededBy)?.principalKey
+          if ((await succeed(entryKey, succeededBy)).ok && to !== undefined) recovered.push(Object.freeze({ from: oldPair.principalKey, to }))
+        } catch (error) {
+          warn(LOG.recoveryFailed)(error)
+        }
+      }
+      return Object.freeze(recovered)
     }),
     /** Ends every background retry and waits for a running `retire`. */
     async close() {

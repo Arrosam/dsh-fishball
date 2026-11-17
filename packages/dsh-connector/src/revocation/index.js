@@ -36,7 +36,7 @@
  */
 import { REVOCATION_KIND } from '../../mcp-schema/index.js'
 import { diagnosticOf } from '../errors.js'
-import { serialChain } from '../routing/support.js'
+import { serialChain } from '../serial.js'
 import { RETRY_CLOSED, createRetrier, writeNotes } from '../background.js'
 import { LOG, REVOCATION_NOTE, REVOCATION_TIMING, STEP } from './constants.js'
 

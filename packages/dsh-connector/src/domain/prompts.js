@@ -7,7 +7,7 @@
  * the session ("Answering never takes over management").
  */
 import { APPROVAL_DECISION, REFUSAL } from '../../mcp-schema/index.js'
-import { allowRuleBroken } from './permissions.js'
+import { decisionRuleBroken } from './permissions.js'
 import { APPROVAL } from './constants.js'
 import { refused } from './support.js'
 
@@ -36,11 +36,8 @@ export function createPrompts({ gate, wording, titleOf }) {
     answer({ promptId, decision, risk, reason }) {
       const prompt = open().find((entry) => entry.promptId === promptId)
       if (prompt === undefined) return refused(REFUSAL.expired)
-      if (decision === APPROVAL_DECISION.allow) {
-        if (risk === undefined) return refused(REFUSAL.riskRequired)
-        const broken = allowRuleBroken(risk, reason, prompt.args.status)
-        if (broken !== undefined) return refused(broken)
-      }
+      const broken = decisionRuleBroken(decision, risk, reason, prompt.args.status)
+      if (broken !== undefined) return refused(broken)
       // Lost the race (the user clicked, or the call was cancelled, a moment ago): already answered.
       if (!prompt.answer(OUTCOME[decision])) return refused(REFUSAL.expired)
       // Marked only once this answer won, before the call's result exists: `answer` resolves the

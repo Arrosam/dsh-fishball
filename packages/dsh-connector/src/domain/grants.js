@@ -20,11 +20,17 @@
  *   once: V3 keeps no audit (the user's answer, 2026-11-17: delete the V2 audit). Its id is kept in
  *   memory for the connector's life, so a second `grant_revoke` answers `ended` (V2's word) and not
  *   `unknown`; after a restart it is `unknown`, as the offer desk's settled set is (Q2, 2026-11-14).
+ * - Fail closed (review F01): a grant ends in memory before its delete is written, and an ended
+ *   grant never covers, lists or moves again, even while its record is still stored. A delete that
+ *   fails leaves the record `undeleted`: `grant_revoke` then rejects (the core tools answer
+ *   `operation-failed`, never `revoked: true`), and the delete is tried again by the next revoke of
+ *   it and by every sweep (expiry, end of management, start). No timer of its own: the record can
+ *   only revive after a restart, and the caller was told the revocation is not durable yet.
  */
 import { z } from 'zod'
 import { GRANT_KIND, REFUSAL } from '../../mcp-schema/index.js'
 import { diagnosticOf } from '../errors.js'
-import { serialChain } from '../routing/support.js'
+import { serialChain } from '../serial.js'
 import { argumentsDigest } from './call-log.js'
 import { GRANT, GRANT_STORE, LOG, REQUEST_ID } from './constants.js'
 import { mintId } from './support.js'
@@ -98,9 +104,12 @@ export function createGrants({ table, managerOf, now, timers = globalThis, logge
   const serial = serialChain()
   /** Ids of grants that ended in this connector life (see the module comment). */
   const ended = new Set()
+  /** Ended ids whose record is still stored because its delete failed; retried (module comment). */
+  const undeleted = new Set()
   let timer
   let stopped = false
-  const entries = () => [...table.entries()]
+  /** The stored grants that have not ended: the only ones that cover, list, move or arm the timer. */
+  const entries = () => [...table.entries()].filter(([id]) => !ended.has(id))
 
   function arm() {
     timers.clearTimeout(timer)
@@ -113,13 +122,21 @@ export function createGrants({ table, managerOf, now, timers = globalThis, logge
     timer?.unref?.()
   }
 
-  /** Ends the listed grants (one failed delete does not stop the others), then re-arms. */
+  /** Ends one grant: at once in memory, then durably; rejects with the delete's error (kept `undeleted`). */
+  async function endOne(id) {
+    ended.add(id)
+    undeleted.add(id)
+    await serial(() => table.delete(id))
+    undeleted.delete(id)
+  }
+
+  /**
+   * Ends the listed grants and retries every earlier failed delete (one failed delete does not stop
+   * the others; each is logged), then re-arms.
+   */
   async function endAll(ids) {
     try {
-      for (const id of ids) {
-        ended.add(id)
-        await serial(() => table.delete(id)).catch(warn(LOG.grantWriteFailed))
-      }
+      for (const id of new Set([...ids, ...undeleted])) await endOne(id).catch(warn(LOG.grantWriteFailed))
     } finally {
       arm()
     }
@@ -168,7 +185,8 @@ export function createGrants({ table, managerOf, now, timers = globalThis, logge
         if (stored.expiresAt <= now()) { void endAll([id]); continue }
         if (!matches(stored, toolName, args)) continue
         void serial(async () => {
-          const current = table.get(id)
+          // An end queued before this count wins: the count never writes an ended grant back.
+          const current = ended.has(id) ? undefined : table.get(id)
           if (current !== undefined) await table.put(id, { ...current, uses: current.uses + 1, lastUsedAt: now() })
         }).catch(warn(LOG.grantWriteFailed))
         return id
@@ -176,13 +194,26 @@ export function createGrants({ table, managerOf, now, timers = globalThis, logge
       return undefined
     },
 
-    /** `grant_revoke`: `unknown` for an id never issued here, `ended` for one already over (or no longer its principal's). */
-    async revoke(id) {
+    /**
+     * `grant_revoke` by `principalKey`: `unknown` for an id never issued here, `ended` for one
+     * already over (or no longer its principal's). A revoke whose delete fails rejects, and the
+     * grant covers nothing from then on (module comment); revoking it again retries the delete and
+     * succeeds once it lands, since only then is the revocation durable.
+     * @returns undefined (revoked) or a REFUSAL code
+     * @throws (rejects) the table's storage error
+     */
+    async revoke(id, principalKey) {
       const stored = table.get(id)
-      if (stored === undefined || !owned(stored)) return ended.has(id) || stored !== undefined ? REFUSAL.grantEnded : REFUSAL.grantUnknown
-      await endAll([id])
+      if (stored === undefined) return ended.has(id) ? REFUSAL.grantEnded : REFUSAL.grantUnknown
+      const retry = undeleted.has(id) && stored.principalKey === principalKey
+      if (!retry && (ended.has(id) || !owned(stored))) return REFUSAL.grantEnded
+      try {
+        await endOne(id)
+      } finally {
+        arm()
+      }
       // One whose end time had passed was already over: it ends here, as an expiry, not a revoke.
-      return stored.expiresAt <= now() ? REFUSAL.grantEnded : undefined
+      return stored.expiresAt <= now() || !owned(stored) ? REFUSAL.grantEnded : undefined
     },
 
     /**
@@ -193,12 +224,32 @@ export function createGrants({ table, managerOf, now, timers = globalThis, logge
     endUnmanaged: () => serial(async () => entries().filter(([, stored]) => !owned(stored)).map(([id]) => id)).then(endAll),
 
     /**
-     * C-SUCCEED: every grant of `from` belongs to `to`, whose sessions they are now (R-HOST-09).
-     * Called before the managed table moves, so this write is queued ahead of the sweep its change
-     * triggers, which then finds the grants owned by their new manager.
+     * C-SUCCEED: every grant of `from` belongs to `to`, whose sessions they are now (R-HOST-09). A
+     * routing succession participant, awaited before the managed table moves; the end-of-management
+     * sweep runs only after the whole succession step (wire/domain.js), so it never sees one half.
+     * @returns `{undo}`: gives exactly the moved grants back to `from` (review F05)
+     * @throws (rejects) the table's storage error, after the grants already moved went back
      */
     moveOwner: (from, to) => serial(async () => {
-      for (const [id, stored] of entries()) if (stored.principalKey === from) await table.put(id, { ...stored, principalKey: to })
+      const moved = []
+      const putOwner = (ids, principalKey) => serial(async () => {
+        for (const id of ids) {
+          const current = ended.has(id) ? undefined : table.get(id)
+          if (current !== undefined) await table.put(id, { ...current, principalKey })
+        }
+      })
+      try {
+        for (const [id, stored] of entries()) {
+          if (stored.principalKey !== from) continue
+          await table.put(id, { ...stored, principalKey: to })
+          moved.push(id)
+        }
+      } catch (error) {
+        // Queued behind this step, so it runs once the step has rejected.
+        void putOwner(moved, from).catch(warn(LOG.grantWriteFailed))
+        throw error
+      }
+      return Object.freeze({ undo: () => putOwner(moved, from) })
     }),
 
     /** `grants_list`'s rows (K1 `grantSummary`), newest first; never paused (see the module comment). */
