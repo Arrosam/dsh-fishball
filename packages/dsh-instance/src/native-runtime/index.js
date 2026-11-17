@@ -275,7 +275,7 @@ class NativeRuntime {
     try {
       await privateDirectory(directory)
       await writePrivate(path.join(directory, RUNTIME.marker), record, true)
-      const profile = await initializeProfile(this.paths, this.installation, this.options.preflight ?? defaultPreflight, this.options.mainWorkspaces ?? [])
+      const profile = await initializeProfile(this.paths, this.installation, this.options.preflight ?? defaultPreflight, this.options.mainWorkspaces ?? [], signal)
       this.warnings = profile.warnings
       const childModule = await copyChildCode(this.paths, record)
       const overlay = path.join(directory, 'launch.patch.yml')

@@ -19,7 +19,8 @@ export const COMPOSE_RECORD = Object.freeze({
  * and launch overlay a start runs (index.js launch), for readers that check what a start would
  * compose. It writes what a start writes before its launch (the runtime layout, the placed
  * bundles, the placement record and the profile manifest) and nothing after it: no launch
- * directory, no snapshot, no overlay file, no process.
+ * directory, no snapshot, no overlay file, no child process. In a packed instance that includes
+ * the set's install, which runs pnpm and may use the registry (placement.js installPackedSet).
  * @param {{mainHome: string, installAnchor: string}} options - a canonical main DSH home, and the
  *   installed DSH package.json whose installation the child would run.
  * @returns {Promise<{paths: object, entries: object[], overlay: object[], record: object}>} the
