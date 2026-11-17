@@ -3,7 +3,7 @@
  * W2): EVT-UC-01, EVT-EP-02, EVT-EP-04 rows 1, 2, 5, 6 (rows 3–4 are C-HTTP's), EVT-BVA-01,
  * EVT-BVA-02, EVT-ST-01.
  *
- * Every product value comes from the K1 freeze `dsh-connector/mcp-schema` (event types, the
+ * Every product value comes from the K1 freeze `dsh-agent-connector/mcp-schema` (event types, the
  * events resource, page limits, the queue bound, refusal codes, retirement reasons, offer ids, the
  * digest grammar, the event and summary schemas). DSH's own package names are the installed SDK's.
  * The rest is fixture data (principal keys, markers, the case's own burst size) and harness values,

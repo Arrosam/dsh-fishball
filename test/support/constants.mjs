@@ -25,8 +25,10 @@ export const PROFILE = 'fbtest'
  * After M1 (docs/package-layout.md) the repository holds two plugin packages and the root is not a
  * plugin. The connector carries the row, client and settings namespace the host cases exercise;
  * the instance is the built-in Fishball. Both are linked into every test profile.
+ * The npm name is dsh-agent-connector (the user, 2026-11-17); its folder, row id and settings
+ * namespace stay dsh-connector.
  */
-export const CONNECTOR = { name: 'dsh-connector', dir: path.join(REPO, 'packages', 'dsh-connector') }
+export const CONNECTOR = { name: 'dsh-agent-connector', dir: path.join(REPO, 'packages', 'dsh-connector') }
 export const INSTANCE = { name: 'dsh-instance', dir: path.join(REPO, 'packages', 'dsh-instance') }
 /**
  * V3 R-SHARED (R-ARCH-08, one library per side since requirements 1.40 / SPLIT-SHARED): the libraries

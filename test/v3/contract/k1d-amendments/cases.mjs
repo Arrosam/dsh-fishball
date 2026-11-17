@@ -1,6 +1,6 @@
 import { assertNoGeneratedSchema } from '../own-schema/absence.mjs'
 /**
- * K1d black-box cases: the W4 contract gate (W4 briefs G3) that amends K1 (`dsh-connector/mcp-schema`)
+ * K1d black-box cases: the W4 contract gate (W4 briefs G3) that amends K1 (`dsh-agent-connector/mcp-schema`)
  * and K3's `host-services/tokens.d.ts` before C-REVOKE and C-SUCCEED start.
  *
  * Spec: `design/v3` `9a531192` — design §1.0c, §5.1–§5.5a, §5.9; requirements 1.27–1.33, 1.41,

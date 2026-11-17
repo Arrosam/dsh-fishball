@@ -4,7 +4,7 @@
  * WATCH-UC-03, and the rows moved here from C-ROUTE (O8, Q-15): WATCH-UC-01 E1 and WATCH-ST-01
  * rows 7 and 8 (06-watch.md).
  *
- * Every product value is K1's (`dsh-connector/mcp-schema`: TOOLS, TOOL, REFUSAL, PAIR_ONLY,
+ * Every product value is K1's (`dsh-agent-connector/mcp-schema`: TOOLS, TOOL, REFUSAL, PAIR_ONLY,
  * MAILBOX, …) or the V2 contract vocabulary K1 reuses (`dsh-connector/contract`). The MCP
  * error code of an unknown tool comes from the SDK under test (subject.mjs). The rest is fixture
  * data (ids, names, session ids) or the requirement words for the removed V2 tools.

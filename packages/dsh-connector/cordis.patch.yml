@@ -9,5 +9,5 @@
 # The built-in instance inserts its own row from its own package (packages/dsh-instance).
 - insert:
     - id: dsh-connector
-      name: 'dsh-connector'
+      name: 'dsh-agent-connector'
       config: {}

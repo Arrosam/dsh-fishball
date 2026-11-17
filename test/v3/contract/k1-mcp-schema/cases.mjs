@@ -1,5 +1,5 @@
 /**
- * K1 black-box cases: the freeze of `dsh-connector/mcp-schema` (v3-tasks.md row K1 at
+ * K1 black-box cases: the freeze of `dsh-agent-connector/mcp-schema` (v3-tasks.md row K1 at
  * `b1295de`). K1 "resolves the K flags in AUTH, NAME, EVT, PLAT, WATCH", and its definition of done
  * is "every K value used by a case is in the module or explicitly left to a task". So the cases are
  * the K-flagged rows of 01-auth-pairing.md, 02-names.md, 04-events-interception.md,

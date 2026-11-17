@@ -1,6 +1,6 @@
 /**
  * Vocabulary of the C-WIRE-2 interactions cases (USE-CASES.md). Product values come only from:
- * - K1 `dsh-connector/mcp-schema` (tools, refusal codes, event types, offer ids, the payload limits
+ * - K1 `dsh-agent-connector/mcp-schema` (tools, refusal codes, event types, offer ids, the payload limits
  *   and the vocabularies C-WIRE-2 moved into K1: APPROVAL_DECISION, RISK, GRANT_KIND, …);
  * - the C-WIRE world's constants (wire/constants.mjs: settings keys, services, the row id);
  * - the user's decisions of 2026-11-16/17 and the surface the dev session relayed for C-WIRE-2
