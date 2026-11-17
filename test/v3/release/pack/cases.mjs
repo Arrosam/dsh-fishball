@@ -16,7 +16,8 @@
  *   INSTALL.md's offline block per set × profile state (fresh, used from another store) (REL-DT-05 is "used",
  *   REL-ST-02 "fresh");
  * - State Transition: a copied release valid → tampered → restored → … under `--check` (REL-ST-01); a fresh
- *   profile → offline block → offline block again → release folder deleted → a later --offline add (REL-ST-02).
+ *   profile → offline block → offline block again → a later --offline add of a tarball from elsewhere with the
+ *   release's --cache-dir and --registry, the release folder kept (INSTALL.md says both) (REL-ST-02).
  *
  * E-FIX-2 (bugs B2, B3, B4, B6): INSTALL.md is read and its offline blocks are run exactly as written
  * (bash, from a copy of the release folder, `dsh` the SDK's CLI) (REL-EP-10, REL-EP-11, REL-DT-05,
@@ -424,6 +425,12 @@ function registerDocText(sdk) {
   relCase(sdk, CASE.docBefore, 'missing peer', `one paragraph of ${INSTALL_DOC.file} says pnpm's missing-peer warning about DSH's own @deepseek-ai/* packages is expected`, () => {
     assert.ok(paragraphs(installDocLines()).some((p) => INSTALL_DOC.missingPeer.every((re) => re.test(p))), `no paragraph matches all of ${INSTALL_DOC.missingPeer.join(' ')}`)
   })
+  relCase(sdk, CASE.docBefore, 'keep folder', `${INSTALL_DOC.file}'s paragraph on installing from the folder with no network tells the user to keep the folder and that a later --offline add needs its --cache-dir and --registry`, () => {
+    const offline = paragraphs(installDocLines()).filter((p) => INSTALL_DOC.offlineParagraph.every((re) => re.test(p)))
+    assert.equal(offline.length, 1, `paragraphs matching all of ${INSTALL_DOC.offlineParagraph.join(' ')}: ${offline.length} (one expected)`)
+    assert.match(offline[0], INSTALL_DOC.keepFolder)
+    assert.deepEqual(INSTALL_DOC.laterNeeds.filter((re) => !re.test(offline[0])).map(String), [], 'the paragraph does not say a later --offline add needs the cache and registry')
+  })
   relCase(sdk, CASE.docBefore, 'token path', `the standalone section names the token-field path (New token on the connector settings page → "Token for connecting a DSH", Target set) as well as Connect`, () => {
     const lines = installDocLines()
     const set = OFFLINE.sets.find((s) => s.key === INSTALL_DOC.standaloneKey)
@@ -472,7 +479,7 @@ async function runDocBlockTwice(ctx, set, kept, store) {
   }
 }
 
-/** REL-DT-05 (B2, set × used profile) and REL-ST-02 (B2, fresh profile: block → block → release deleted → later add). */
+/** REL-DT-05 (B2, set × used profile) and REL-ST-02 (B2, fresh profile: block → block → a later add, the release folder kept). */
 function registerDocInstalls(sdk) {
   for (const set of OFFLINE.sets) {
     relCase(sdk, CASE.docUsed, set.key, `${set.key} offline block as written, twice, on a profile given ${set.other.name} from another store: exit 0, ${set.other.name} kept, the profile stays on that store and its files stay, no request`, () => onDocProfile(sdk, async (ctx) => {
@@ -484,15 +491,16 @@ function registerDocInstalls(sdk) {
       await runDocBlockTwice(ctx, set, [set.other], store)
       assert.deepEqual(files.filter((f) => !fs.existsSync(path.join(other, f))), [], 'files of the other store were deleted')
     }), BUDGET.docCaseMs)
-    relCase(sdk, CASE.docFresh, set.key, `${set.key} offline block as written on a fresh profile: exit 0 twice on pnpm's own store (\`store path\`); after the release folder is deleted, an --offline add of ${set.other.name} without --store-dir still works`, () => onDocProfile(sdk, async (ctx) => {
+    relCase(sdk, CASE.docFresh, set.key, `${set.key} offline block as written on a fresh profile: exit 0 twice on pnpm's own store (\`store path\`); with the release folder kept, a later --offline add of a tarball from elsewhere (its --cache-dir and --registry, no --store-dir) exits 0 on the same store`, () => onDocProfile(sdk, async (ctx) => {
       const store = await ctx.profile.storePath()
       assert.ok(store && !store.startsWith(ctx.copy + path.sep), `\`store path\` is ${show(store)}`)
       await runDocBlockTwice(ctx, set, [], store)
       const later = path.join(ctx.scratch, OFFLINE.laterDir, set.other.tarball)
       fs.mkdirSync(path.dirname(later))
       fs.copyFileSync(tarballPath(set.other, ctx.copy), later)
-      fs.rmSync(ctx.copy, { recursive: true })
-      assertExit0(`later add of ${set.other.name} after the release folder is deleted`, await ctx.profile.cli(OFFLINE.laterArgs(DSH.profile, later)))
+      const r = await ctx.profile.cli(OFFLINE.laterArgs(DSH.profile, later, path.join(ctx.copy, RELEASE.cache)))
+      assert.doesNotMatch(r.output, OFFLINE.unexpectedStore)
+      assertExit0(`later add of ${set.other.name} from ${OFFLINE.laterDir}/`, r)
       assertProfile(ctx, 'after the later add', set, [set.other], store)
     }), BUDGET.docCaseMs)
   }
