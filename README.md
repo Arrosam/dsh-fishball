@@ -17,11 +17,14 @@ The design is in [docs/planning/v3-design.md](<docs/planning/v3-design.md>) (§1
 ## Status
 
 Release **1.0.0-alpha.1** (V3). Every package carries this version. This is a fresh install: it
-reads, migrates and accepts nothing from an earlier Fishball release, and nothing is published to
-npm. The older "dsh-fishball (df)" preview is archived at tag `archive/df-preview-2026-10-23`.
+reads, migrates and accepts nothing from an earlier Fishball release. The older "dsh-fishball (df)"
+preview is archived at tag `archive/df-preview-2026-10-23`.
 
-> The manifests in this checkout still read `0.1.0-alpha.0`. The release step (REL-PACK) sets
-> `1.0.0-alpha.1`, `engines.dsh` `>=0.2.1-rc.5` and the bundled libraries for every tarball.
+`node scripts/pack-v3.mjs` builds the nine release tarballs into `.runtime/release/1.0.0-alpha.1/`,
+with SHA256SUMS, an offline pnpm store, `INSTALL.md` (install and uninstall, from npm or offline) and
+`PUBLISH.md` (the publish commands). The packages are published to npm under the `alpha` tag by the
+maintainer only. The connector's npm name is **`dsh-agent-connector`** (`dsh-connector` is taken on
+npm); its folder, plugin row id and settings stay `dsh-connector`.
 
 ## Packages
 
@@ -66,14 +69,14 @@ This is the usual set-up. The commands use the profile `web`; use your own profi
 2. **Install the three DSH-side plugins** from the release tarballs:
 
    ```bash
-   dsh plugin --profile web add ./dsh-connector-1.0.0-alpha.1.tgz
-   dsh plugin --profile web add ./dsh-connector-ui-1.0.0-alpha.1.tgz
-   dsh plugin --profile web add ./dsh-instance-1.0.0-alpha.1.tgz
+   dsh plugin --profile web add dsh-agent-connector@1.0.0-alpha.1 dsh-connector-ui@1.0.0-alpha.1 dsh-instance@1.0.0-alpha.1
    ```
 
-   You do not install the Fishball-side packages: the instance carries them and places
-   `fishball-board`, `fishball-ui` and `fishball-core` (in that order, core last) in its child at
-   every start. pnpm may list DSH's own packages as missing peers; DSH provides them when it runs,
+   To install from the release folder with no network, see its `INSTALL.md`.
+   You do not install the Fishball-side packages: the instance installs `fishball-ui`,
+   `fishball-board` and `fishball-core` into its child, from npm at its own version, or from the
+   tarballs it carries when the registry cannot be reached; the child's bundles end with board, ui,
+   then core last. pnpm may list DSH's own packages as missing peers; DSH provides them when it runs,
    so that warning is expected.
 
 3. **Start DSH.** The instance starts Fishball once DSH is ready. On its first start it creates the
@@ -96,14 +99,12 @@ DSH UI changes at all.
 Use a separate DSH (on this machine or another one) as Fishball, and link it to the DSH you want it
 to manage:
 
-1. In the **managed DSH**, install `dsh-connector` (and `dsh-connector-ui` if you want the fish and
+1. In the **managed DSH**, install `dsh-agent-connector` (and `dsh-connector-ui` if you want the fish and
    Hand over there).
 2. In the **Fishball DSH**, install the three Fishball plugins, core last:
 
    ```bash
-   dsh plugin --profile web add ./fishball-board-1.0.0-alpha.1.tgz
-   dsh plugin --profile web add ./fishball-ui-1.0.0-alpha.1.tgz
-   dsh plugin --profile web add ./fishball-core-1.0.0-alpha.1.tgz
+   dsh plugin --profile web add fishball-ui@1.0.0-alpha.1 fishball-board@1.0.0-alpha.1 fishball-core@1.0.0-alpha.1
    ```
 
    If core is not last, it moves itself to the end of the profile's bundles at its first start;
@@ -217,7 +218,7 @@ link; what it points to is never touched.
 "Nothing to remove" (exit code 0) means that home has no tree. If you removed the package without
 running the command, quit DSH and delete `<DSH_HOME>/fishball/runtime` yourself.
 
-### `dsh-connector`, `dsh-connector-ui`, `dsh-connector-adapter`
+### `dsh-agent-connector`, `dsh-connector-ui`, `dsh-connector-adapter`
 
 Remove them like any plugin (`dsh plugin --profile web remove <name>`, or on the Plugins page).
 Their data is kept, as for any DSH plugin. Agents using a removed connector lose their access.

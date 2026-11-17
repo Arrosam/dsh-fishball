@@ -22,7 +22,8 @@ export const V3 = Object.freeze({
   /** Fishball's UI plugin, split out of core (requirements 1.38 Q-N2, R-FB-14; task F-UI). */
   ui: pkg('fishball-ui', 'fishball-ui'),
   instance: pkg('dsh-instance', 'dsh-instance'),
-  connector: pkg('dsh-connector', 'dsh-connector'),
+  /** npm name dsh-agent-connector (the user, 2026-11-17); the folder stays packages/dsh-connector. */
+  connector: pkg('dsh-agent-connector', 'dsh-connector'),
   // S4-Q3 decided B (questions.md at b1295de): all lowercase, as npm and DSH's plugin manager require.
   embed: pkg('dsh-connector-ui', 'dsh-connector-ui'),
   board: pkg('fishball-board', 'board'),
@@ -50,7 +51,7 @@ export const SET_SIDE = Object.freeze([V3.core.name, V3.ui.name, V3.board.name])
 /** Design §9.1: the feature plugin finds core only through the optional `fishballInstance?` inject. */
 export const FEATURES = Object.freeze([V3.board.name])
 /** Design §9.1: embed-UI may take `./tools` from the connector (types and data), nothing else. */
-export const EMBED_CONNECTOR_ALLOWED = Object.freeze(['dsh-connector/tools'])
+export const EMBED_CONNECTOR_ALLOWED = Object.freeze(['dsh-agent-connector/tools'])
 
 /** Manifest fields that name a package edge, and the bundled-dependency fields (npm reads both spellings). */
 export const DEP_FIELDS = Object.freeze(['dependencies', 'peerDependencies', 'optionalDependencies', 'devDependencies'])

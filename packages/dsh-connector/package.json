@@ -1,10 +1,19 @@
 {
-  "name": "dsh-connector",
-  "//version": "The package version is the release's (user decision 2026-11-07: 0.1.0-alpha.0 for every package).",
-  "version": "0.1.0-alpha.0",
+  "name": "dsh-agent-connector",
+  "//name": "The npm name is dsh-agent-connector (the user, 2026-11-17: dsh-connector is taken on npm by an unrelated package). Only the package name changed: the folder stays packages/dsh-connector, and the row id dsh-connector, its settings namespace and every /api/agent/* and /api/dsh-connector/* path are code constants and stay as they are. The profile row's `name` is the package specifier DSH loads, so cordis.patch.yml names the new package.",
+  "//version": "The package version is the release's, shared by every V3 package (REL-PACK, requirements Q-G10: 1.0.0-alpha.1).",
+  "version": "1.0.0-alpha.1",
   "description": "Exposes this DeepSeek Harness to the agents that manage its sessions, over MCP with OAuth: sessions, permission requests, questions, plan reviews, prompts and grants route session → its managing agent → the user.",
   "icon": "./assets/connector-icon.svg",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Arrosam/dsh-fishball.git",
+    "directory": "packages/dsh-connector"
+  },
+  "publishConfig": {
+    "tag": "alpha"
+  },
   "type": "module",
   "main": "./index.js",
   "//exports": "./mcp-schema (tool and event schemas, limits, vocabularies) and ./tools (contribution types, apiVersion, defineTool) are V3's data-and-types modules (design §9.1), frozen by the V3-K tasks K1 and K2. ./client is the connector's own settings page (design §5.9). C-WIRE-2 removed ./contract (the V2 contract) with the V2 broker; ./records moved to dsh-connector-ui with the UI (R-EMBED).",
@@ -38,7 +47,7 @@
   "dependencies": {
     "@modelcontextprotocol/node": "2.1.0",
     "@modelcontextprotocol/server": "2.2.0",
-    "dsh-connector-shared": "0.1.0-alpha.0",
+    "dsh-connector-shared": "1.0.0-alpha.1",
     "hono": "^4.11.4"
   },
   "//bundleDependencies": "dsh-connector-shared (R-ARCH-08, the DSH side's library) is bundled, as in the instance, so the tarball carries it and an install fetches nothing from a registry. The connector uses its ./redact, the secret-shape scrub a contributed tool's refusal message passes (design §13.5; C-EXT, decided by Fishball 2026-11-14).",

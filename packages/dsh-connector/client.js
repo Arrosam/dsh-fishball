@@ -4,7 +4,7 @@
  *
  * By the user's rule a plugin's own settings page is not "UI" ("不带UI的意思是不影响dsh本身的UI"), so
  * this entry registers exactly one thing: the Plugins page's `plugins.row.config` entry for the
- * connector's own row, `dsh-connector#dsh-connector`, while DSH serves that row's settings. No
+ * connector's own row, `dsh-agent-connector#dsh-connector`, while DSH serves that row's settings. No
  * sidebar, no other slot, no style element; it works with dsh-connector-ui uninstalled.
  *
  * The page shows the tokens list (label, switch, delete, reorder; one Save writes the list through
@@ -24,19 +24,29 @@
  * through DSH's form, as the token list's. The strings are this file's dictionaries: DSH's client loads no JSON, and the package's
  * locale/*.json hold only the Plugins page's `meta` text.
  */
+/**
+ * The package's npm name (the user, 2026-11-17: `dsh-connector` is taken on npm). The Loader
+ * registers a package's client under it (dsh-client-modules graphRow), and the settings slot key
+ * starts with it; the row id below did not change.
+ */
+const PACKAGE_NAME = 'dsh-agent-connector'
+
 window.__ModuleLoader__.load({
-  id: 'dsh-connector',
+  id: PACKAGE_NAME,
   factory(require) {
     const React = require('react')
     const { Button, Modal, Switch } = require('@deepseek-ai/dsh-client-ui-primitives')
     const h = React.createElement
 
     /**
-     * The row's identity: the row id is the settings namespace DSH serves and the package name, so
-     * the slot key is `<package>#<row id>` (design §5.9). `tokensField` is the settings list.
+     * The row's identity (design §5.9): the slot key is `<package>#<row id>`, DSH's rowConfigKey
+     * (dsh-client-ui-plugin-manager). The row id is the settings namespace DSH serves and stays
+     * `dsh-connector`; the package is `dsh-agent-connector` since the npm rename (the user,
+     * 2026-11-17). `tokensField` is the settings list.
      */
     const PAGE = Object.freeze({
       id: 'dsh-connector',
+      packageName: PACKAGE_NAME,
       slot: 'plugins.row.config',
       locale: 'dsh-connector-tokens',
       tokensField: 'tokens',
@@ -493,7 +503,7 @@ window.__ModuleLoader__.load({
       ctx.effect(() => ctx.configForms.whileServed([PAGE.id], () =>
         ctx.slots.inject(PAGE.slot, () => ctx.slots.register({
           name: PAGE.slot,
-          key: `${PAGE.id}#${PAGE.id}`,
+          key: `${PAGE.packageName}#${PAGE.id}`,
           locale: PAGE.locale,
         }, makePage(t)))), PAGE.effect.page)
     }

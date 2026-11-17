@@ -5,7 +5,7 @@
  * 1, 2 and 11–14 (01-auth-pairing.md), and the K1b rows the K1 suite left `todo` for C-HTTP
  * (k1b-cases.mjs: K1b-UC-01, K1b-DT-05, K1b-BVA-02, K1b-ST-02).
  *
- * Every product value is K1's (`dsh-connector/mcp-schema`): statuses, paths, the request
+ * Every product value is K1's (`dsh-agent-connector/mcp-schema`): statuses, paths, the request
  * gate's routes, orders, headers and Retry-After (REQUEST_GATE), limits, refusal words, the
  * protocol revision and codes, the bearer challenge. MCP wire names that the SDK owns (the `_meta`
  * keys, the legacy revision, METHOD_NOT_FOUND) come from the SDK under test (subject.mjs). The rest

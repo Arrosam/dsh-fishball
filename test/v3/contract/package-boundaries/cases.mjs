@@ -317,7 +317,7 @@ function registerPackageCases(sdk) {
     for (const name of FEATURES) await assertNoEdges(name, [V3.core.name])
   })
   caseTest(sdk, 'PLAT-EP-07', '7c', 'the feature plugin names no dsh-instance peer (it finds core through the optional fishballInstance? inject)', null, LATER.featurePeers)
-  caseTest(sdk, 'PLAT-EP-07', '7c', 'embed-UI imports no connector code (only dsh-connector/tools)', async () => {
+  caseTest(sdk, 'PLAT-EP-07', '7c', 'embed-UI imports no connector code (only dsh-agent-connector/tools)', async () => {
     const unit = await unitOf(V3.embed.name)
     const code = edgesTo(unit, V3.connector.name).filter((r) => !EMBED_CONNECTOR_ALLOWED.includes(r.specifier)).map(describeRef)
     assert.deepEqual(code, [])

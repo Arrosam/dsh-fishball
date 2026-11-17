@@ -2,7 +2,7 @@
  * C-EXT black-box cases (v3-tasks.md row C-EXT, wave W2; docs/test-design/v3/07-contributors.md):
  * EXT-UC-01, EXT-UC-02, EXT-UC-03, EXT-EP-01…04, EXT-BVA-01…04, EXT-DT-01, EXT-DT-02, EXT-ST-01,
  * plus the C-EXT rows of EXT-DT-03 and the K2 suite's C-EXT `todo` rows (test/v3/contract/k2-tools/cases.mjs),
- * which run here. Requirements R-EXT-01…20, R-SEC-04; design §13; K2 `dsh-connector/tools`.
+ * which run here. Requirements R-EXT-01…20, R-SEC-04; design §13; K2 `dsh-agent-connector/tools`.
  *
  * Techniques, and only these, in this order: Use Case (each test names its flow), then Equivalence
  * Partitioning (one test per row), Boundary Value Analysis (one test per value), Decision Table

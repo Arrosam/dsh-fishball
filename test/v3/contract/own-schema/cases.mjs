@@ -32,13 +32,13 @@ export function registerOwnSchemaCases(sdk) {
       const manifest = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'))
       for (const section of ['dependencies', 'peerDependencies', 'optionalDependencies']) {
         for (const name of Object.keys(manifest[section] ?? {})) {
-          if (OWN.dsh.test(name) && !(pkg === 'core' && section === 'peerDependencies' && name === 'dsh-connector')) bad.push(`${pkg} ${section}: ${name}`)
+          if (OWN.dsh.test(name) && !(pkg === 'core' && section === 'peerDependencies' && name === 'dsh-agent-connector')) bad.push(`${pkg} ${section}: ${name}`)
         }
       }
       for (const file of files(root)) {
         const relative = path.relative(root, file).split(path.sep).join('/')
         if (pkg === 'core' && relative.startsWith('scripts/')) {
-          assert.doesNotMatch(fs.readFileSync(file, 'utf8'), /dsh-connector|packages[/'"\s,+]*connector/, 'a core generator still reads the connector')
+          assert.doesNotMatch(fs.readFileSync(file, 'utf8'), /dsh-agent-connector|dsh-connector|packages[/'"\s,+]*connector/, 'a core generator still reads the connector')
         }
         for (const [, spec] of fs.readFileSync(file, 'utf8').matchAll(OWN.imports)) {
           const v2 = pkg === 'core' && OWN.v2.test(relative)

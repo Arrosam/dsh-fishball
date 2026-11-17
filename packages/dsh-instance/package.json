@@ -45,7 +45,7 @@
   },
   "//dependencies": "dsh-connector-shared is the DSH side's library (R-ARCH-08, requirements 1.40, design §1.0b row 5): redact, which the connector uses too, and request-host, which embed-UI uses too. Provider-sync and the file helpers are this package's own (src/lib/), since only the instance uses them (R-ARCH-08 strict, C-WIRE-2). It is bundled, so the tarball carries it and an install fetches nothing from a registry; the version moves with this package's. The instance depends on no Fishball-side package: core's fishball-shared reaches the child as files placed from core's own folder (src/native-runtime/placement.js).",
   "dependencies": {
-    "dsh-connector-shared": "0.1.0-alpha.0"
+    "dsh-connector-shared": "1.0.0-alpha.1"
   },
   "bundleDependencies": [
     "dsh-connector-shared"

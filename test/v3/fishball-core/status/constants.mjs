@@ -1,7 +1,7 @@
 /**
  * Vocabulary for the F-STATUS cases (USE-CASES.md). Every expected word comes from a requirement or
  * a frozen contract, never from the implementation:
- * - K1 `dsh-connector/mcp-schema`: the link's TargetStatus words (TARGET_STATE, TARGET_CODE), the
+ * - K1 `dsh-agent-connector/mcp-schema`: the link's TargetStatus words (TARGET_STATE, TARGET_CODE), the
  *   loopback names of F-LINK's target rule (HOSTS) and the OAuth error words;
  * - core's contracts (`packages/core/contracts/constants.js`): Connect's states and configuration
  *   codes (CONNECT, connect.d.ts), the guard report's words (GUARDS, guards.d.ts);

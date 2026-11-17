@@ -1,5 +1,5 @@
 /**
- * Vocabulary for the K1d cases: the W4 contract gate that amends K1 (`dsh-connector/mcp-schema`)
+ * Vocabulary for the K1d cases: the W4 contract gate that amends K1 (`dsh-agent-connector/mcp-schema`)
  * and K3's `host-services/tokens.d.ts` before C-REVOKE and C-SUCCEED (W4 briefs G3).
  *
  * Every expected value comes from the spec at `design/v3` `9a531192`: v3-design.md §1.0c, §5.1–

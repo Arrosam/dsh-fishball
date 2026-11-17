@@ -32,18 +32,18 @@
   },
   "//dependencies": "dsh-connector-shared is the DSH side's library (R-ARCH-08): the request-hostname rule the admit route shares with dsh-instance. It is bundled, so the tarball carries it, as for the connector and the instance.",
   "dependencies": {
-    "dsh-connector-shared": "0.1.0-alpha.0"
+    "dsh-connector-shared": "1.0.0-alpha.1"
   },
   "bundleDependencies": [
     "dsh-connector-shared"
   ],
-  "//peerDependencies": "Both optional (design §9.1): the UI's parts follow the instance's and the connector's services and routes when present, and embed-UI imports no code of either. The range is the instance's own for the connector: from this release's 0.1.0-alpha.0 up to, not including, 2.",
+  "//peerDependencies": "Both optional (design §9.1): the UI's parts follow the instance's and the connector's services and routes when present, and embed-UI imports no code of either. The range is this release's 1.0.0-alpha.1 up to, not including, 2. The connector's npm name is dsh-agent-connector (the user, 2026-11-17).",
   "peerDependencies": {
-    "dsh-connector": ">=0.1.0-alpha.0 <2",
+    "dsh-agent-connector": ">=1.0.0-alpha.1 <2",
     "dsh-instance": ">=1.0.0-alpha.1 <2"
   },
   "peerDependenciesMeta": {
-    "dsh-connector": {
+    "dsh-agent-connector": {
       "optional": true
     },
     "dsh-instance": {

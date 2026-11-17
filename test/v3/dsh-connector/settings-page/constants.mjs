@@ -59,12 +59,14 @@ export const HTTP = Object.freeze({
 
 /** The client module (relayed) and DSH's slot (slot-contract.d.ts). */
 export const CLIENT = Object.freeze({
-  moduleId: 'dsh-connector',
+  /** The client module registers under the npm name (dsh-agent-connector since 2026-11-17); its plugin keeps the row id's name (the plugin key is unchanged). */
+  moduleId: 'dsh-agent-connector',
   pluginName: 'dsh-connector',
   inject: Object.freeze(['slots', 'locale', 'configForms']),
   requires: Object.freeze(['react', '@deepseek-ai/dsh-client-ui-primitives']),
   slot: 'plugins.row.config',
-  slotKey: 'dsh-connector#dsh-connector',
+  /** DSH's rowConfigKey `<package>#<row id>`: the package renamed, the row id kept. */
+  slotKey: 'dsh-agent-connector#dsh-connector',
   servedNamespace: 'dsh-connector',
   localeNamespace: 'dsh-connector-tokens',
   locales: Object.freeze(['en', 'zh']),

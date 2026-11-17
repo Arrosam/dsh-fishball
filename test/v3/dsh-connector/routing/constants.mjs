@@ -5,9 +5,9 @@
  * HAND-ST-01, HAND-UC-02 (service part), PLAT-UC-03, and the K1c / K3 rules no case file numbers
  * (the ROUTE-* ids, cases.mjs).
  *
- * Every product value comes from K1 (`dsh-connector/mcp-schema`: event types, refusal codes,
+ * Every product value comes from K1 (`dsh-agent-connector/mcp-schema`: event types, refusal codes,
  * MANAGED_REFUSAL, QUEUE, RETIREMENT_REASON, OFFER_ID, CONNECTED, TOOL_NAMES), K2
- * (`dsh-connector/tools`: `no-agent`, the namespace separator) or K3
+ * (`dsh-agent-connector/tools`: `no-agent`, the namespace separator) or K3
  * (`host-services/handover.d.ts`, types only, so its codes are restated in HANDOVER below and
  * checked against the declaration text). Nothing comes from `packages/dsh-connector/src/routing/` or
  * `src/handover/`. The rest is fixture data and harness timing, which are not product values.

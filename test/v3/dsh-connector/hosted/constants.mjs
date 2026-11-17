@@ -4,7 +4,7 @@
  * row 7, WATCH-EP-01 row 6, WATCH-ST-01 row 6, PLAT-ST-01 row 7, the K1d `Mailbox.transfer` rows and
  * the K3 `dshConnectorTokens` members (`createHosted`, `entryState`, `retire`).
  *
- * Product values come from K1 / K1d (`dsh-connector/mcp-schema`) and K3 (`host-services/tokens.d.ts`,
+ * Product values come from K1 / K1d (`dsh-agent-connector/mcp-schema`) and K3 (`host-services/tokens.d.ts`,
  * types only, so its literals are restated here and read back from the declaration text by
  * `k3Literals`). The hosted module's own names (SUBJECT) and the storage domain names (DOMAIN) are
  * the surface the dev session relayed. Nothing comes from `packages/dsh-connector/src/`. The rest is

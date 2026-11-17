@@ -1,6 +1,6 @@
 import { assertNoGeneratedSchema } from '../own-schema/absence.mjs'
 /**
- * K2 black-box cases: the freeze of `dsh-connector/tools` (v3-tasks.md row K2). K2 "resolves
+ * K2 black-box cases: the freeze of `dsh-agent-connector/tools` (v3-tasks.md row K2). K2 "resolves
  * the K flags in EXT", so the cases are the K-flagged EXT cases of 07-contributors.md (`fb1cbd2`):
  * EXT-UC-03 (N of M), EXT-EP-01 (grammar, keyword subset), EXT-BVA-01 … 04 (limits, ceilings) and
  * EXT-DT-01 (emit vocabulary), plus the row's own freeze items (apiVersion, signatures, codes, the
@@ -48,7 +48,7 @@ const publicName = (mod, local) => SHORT_NAMESPACE + mod.NAMESPACE.separator + l
 const ofBytes = (bytes) => EURO.repeat(Math.floor(bytes / utf8(EURO))) + FIXTURE.pad.repeat(bytes % utf8(EURO))
 const assertExported = (mod, values) => {
   const strings = exportedStrings(mod)
-  assert.deepEqual(values.filter((v) => !strings.has(v)), [], 'not exported as data by dsh-connector/tools')
+  assert.deepEqual(values.filter((v) => !strings.has(v)), [], 'not exported as data by dsh-agent-connector/tools')
 }
 /** A frozen number of the module, found at a path that means `meaning`; `expected` when the requirement fixes it. */
 const assertFrozenNumber = (mod, meaning, expected) => {
@@ -69,7 +69,7 @@ const withKeyword = ([keyword, value]) => ({ ...FIXTURE.valid.inputSchema, [keyw
 export function registerK2Cases(sdk) {
   // ---- The module itself (K2 freeze: apiVersion, defineTool, signatures, vocabularies) ----
   // import.meta.resolve does not check that the target exists, so the row also imports the module.
-  caseTest(sdk, 'EXT-EP-01', 'K2', 'dsh-connector/tools resolves and loads on this SDK', (mod) => {
+  caseTest(sdk, 'EXT-EP-01', 'K2', 'dsh-agent-connector/tools resolves and loads on this SDK', (mod) => {
     assert.ok(resolveToolsFile())
     assert.ok(Object.keys(mod).length > 0, 'the module exports nothing')
   })
@@ -118,7 +118,7 @@ export function registerK2Cases(sdk) {
   })
   caseTest(sdk, 'EXT-EP-01', 'K2', 'the protocol revision handed to execute is 2026-07-28 (R-EXT-10)', (mod) => {
     const inText = [...folderTexts().values()].some((t) => t.includes(PROTOCOL_VERSION))
-    assert.ok(inText || exportedStrings(mod).has(PROTOCOL_VERSION), PROTOCOL_VERSION + ' is not in dsh-connector/tools')
+    assert.ok(inText || exportedStrings(mod).has(PROTOCOL_VERSION), PROTOCOL_VERSION + ' is not in dsh-agent-connector/tools')
   })
 
   // ---- EXT-EP-01: registration validity (defineTool rows; registry rows are C-EXT's) ----
@@ -293,7 +293,7 @@ export function registerExternalNameCases(sdk) {
   const text = (file) => fs.readFileSync(path.join(REPO, file), 'utf8')
   const external = (mod, publicName) => publicName.split(mod[A.name].replaced).join(mod[A.name].replacement)
   rule(1, `${A.name} is exported, frozen, and is exactly {replaced: '.', replacement: '__'}`, (mod) => {
-    assert.equal(typeof mod[A.name], 'object', `dsh-connector/tools exports no ${A.name}`)
+    assert.equal(typeof mod[A.name], 'object', `dsh-agent-connector/tools exports no ${A.name}`)
     assert.ok(Object.isFrozen(mod[A.name]), `${A.name} is not frozen`)
     assert.deepEqual({ ...mod[A.name] }, A.value)
   })

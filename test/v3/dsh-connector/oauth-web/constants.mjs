@@ -3,7 +3,7 @@
  * AUTH-DT-08, AUTH-DT-09, AUTH-ST-04, AUTH-ST-05, AUTH-BVA-07, AUTH-BVA-08, AUTH-EP-08, AUTH-EP-10,
  * and K1b-DT-07 (the approval listener over the gate).
  *
- * Every product value comes from K1, `dsh-connector/mcp-schema` (`index.js`, typed by the
+ * Every product value comes from K1, `dsh-agent-connector/mcp-schema` (`index.js`, typed by the
  * frozen `index.d.ts`). Nothing comes from `packages/dsh-connector/src/mcp/oauth-web/`. The rest is case
  * data (the documents, ids, names and values the case tables name), the page wording the
  * requirements quote (R-OA-11, R-OA-12, R-OA-15) and fixture keys, which are not product values.
