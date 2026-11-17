@@ -35,6 +35,22 @@ const AUTHORIZATION_NAMES = Object.freeze(['Authorization', 'authorization', 'AU
 /** Rule 3d: the characters that end an unquoted value (whitespace, quotes, `,`, `;`, `&`). */
 const VALUE_TERMINATORS = Object.freeze({ space: ' ', tab: '\t', newline: '\n', 'double quote': '"', 'single quote': "'", comma: ',', semicolon: ';', ampersand: '&' })
 
+/**
+ * Performance rows (the second review, 2026-11-18): about 64 KiB that a careless scan would read
+ * quadratically (a quote that looks for its closer, nested brackets) redacts within `budgetMs`
+ * ("well under one second"). Each is one unbalanced container, so all of it is masked.
+ */
+const KIB_64 = 65536
+export const PERF = Object.freeze({
+  budgetMs: 1000,
+  rows: Object.freeze([
+    row('RED-PERF-01', 'escaped quotes', "the review's input: a lone ' then 32768 \\' on one line", "token=[ '" + "\\'".repeat(KIB_64 / 2), `token=${MASK}`, ["\\'\\'"]),
+    row('RED-PERF-01', 'lone quote per line', '32768 lines each holding a lone quote', 'token=[\n' + "'\n".repeat(KIB_64 / 2), `token=${MASK}`, ["'\n'"]),
+    row('RED-PERF-01', 'deep nesting', '65536 open brackets', 'token=' + '['.repeat(KIB_64), `token=${MASK}`, ['[[']),
+    row('RED-PERF-01', 'escaped mode', 'an escaped container holding 32768 lone \\"', String.raw`{\"token\":[` + '\\"'.repeat(KIB_64 / 2), String.raw`{\"token\":` + MASK, ['\\"\\"']),
+  ]),
+})
+
 export const REDACT_ROWS = Object.freeze([
   // ---------------------------------------------------------------- RED-EP-01/02: credential names
   ...SENSITIVE_NAMES.map((name) => row('RED-EP-01', name, `sensitive name ${name}`, `${name}=${SECRET}`, `${name}=${MASK}`, [SECRET])),
@@ -54,6 +70,19 @@ export const REDACT_ROWS = Object.freeze([
   same('RED-BVA-01', 'newline before separator', 'a newline is not allowed before the separator', 'password\n=hunter2'),
   same('RED-BVA-01', 'newline after separator', 'a newline after the separator: no value', 'password=\nhunter2'),
   same('RED-BVA-01', 'separator at end of text', 'a separator followed by nothing', 'password='),
+  // `=>` separates only after a quoted name (util.inspect prints Map entries as `'key' => value`); after a
+  // bare name it is an arrow function in a crash's printed source line (the second review, 2026-11-18).
+  row('RED-BVA-01', 'arrow, Map entry', '`=>` separates a quoted name from a quoted value', "Map(1) { 'password' => 'hunter2' }", `Map(1) { 'password' => '${MASK}' }`, ['hunter2']),
+  row('RED-BVA-01', 'arrow, Map of two', 'only the sensitive entry is masked', "Map(2) { 'password' => 'hunter2', 'user' => 'bob' }", `Map(2) { 'password' => '${MASK}', 'user' => 'bob' }`, ['hunter2']),
+  row('RED-BVA-01', 'arrow, Map container', '`=>` before a container value', "Map(1) { 'secrets' => [ 'a1', 'b2' ] }", `Map(1) { 'secrets' => ${MASK} }`, ["'a1'", "'b2'"]),
+  row('RED-BVA-01', 'arrow, double-quoted name', '`=>` after a "…" name', '{ "api_key" => abc123 }', `{ "api_key" => ${MASK} }`, ['abc123']),
+  row('RED-BVA-01', 'arrow, escaped name', '`=>` after a \\"…\\" name', String.raw`{\"token\" => \"abc\"}`, String.raw`{\"token\" => \"` + MASK + String.raw`\"}`, ['abc']),
+  same('RED-BVA-01', 'arrow, bare name', '`=>` after a bare name is not a separator (an arrow function)', 'token => abc123'),
+  same('RED-BVA-01', 'arrow, crash source line', 'a printed source line with an arrow function stays',
+    'file.js:10\n  keys.forEach(token => {\n  ^\nReferenceError: x\n    at file.js:10:5'),
+  row('RED-BVA-01', 'equals after a bare name', 'a bare name with `=` still separates', 'token=abc', `token=${MASK}`, ['abc']),
+  same('RED-BVA-01', 'arrow, plain name pw', 'pw is not sensitive', 'pw: x => y'),
+  same('RED-BVA-01', 'arrow, plain name a', 'a is not sensitive', 'a => b'),
 
   // ---------------------------------------------------------------- RED-DT-01: value form a, quoted strings
   row('RED-DT-01', 'a double-quoted words', 'quoted value with spaces', 'password="two word secret"', `password="${MASK}"`, ['two word secret', 'two ']),
@@ -73,6 +102,9 @@ export const REDACT_ROWS = Object.freeze([
   row('RED-DT-01', 'a unterminated, then a line', 'unterminated: masked to end of line, later lines kept', 'password="abc def\nnext line', `password="${MASK}\nnext line`, ['abc def']),
   row('RED-DT-01', 'a unterminated at end of text', 'unterminated at the end of the text', 'password="abc def', `password="${MASK}`, ['abc def']),
   row('RED-DT-01', 'a unterminated single', 'unterminated single-quoted value', "token='abc def\nok", `token='${MASK}\nok`, ['abc def']),
+  row('RED-DT-01', 'a backtick', 'a backtick-quoted value keeps its backticks', "{ token: `it's \"hunter2 x\"` }", "{ token: `" + MASK + "` }", ['hunter2', "it's"]),
+  row('RED-DT-01', 'a backtick words', 'a backtick value with spaces', 'password=`a b`', 'password=`' + MASK + '`', ['a b']),
+  same('RED-DT-01', 'a empty backtick', 'BVA: an empty backtick value stays', 'password=``'),
   row('RED-DT-01', 'a quoted Authorization', 'a quoted Authorization value follows rule a', '{"Authorization":"Basic dXNl"}', `{"Authorization":"${MASK}"}`, ['dXNl', 'Basic']),
 
   // ---------------------------------------------------------------- RED-DT-01: value form b, containers
@@ -83,6 +115,35 @@ export const REDACT_ROWS = Object.freeze([
   row('RED-DT-01', 'b pretty-printed', 'a container spanning lines',
     '{\n  "credentials": {\n    "user": "u1",\n    "pass": "p1"\n  },\n  "name": "n"\n}', `{\n  "credentials": ${MASK},\n  "name": "n"\n}`, ['u1', 'p1']),
   row('RED-DT-01', 'b unbalanced', 'an unbalanced container is masked to the end of the text', 'tokens=[1, 2\nnext line\nmore', `tokens=${MASK}`, ['next line', 'more']),
+  // Inside a container a ', " or ` opens a string only when an unescaped closing quote follows on the same
+  // line (escapes honoured); a quote with no closer on its line is an ordinary character (the second review).
+  row('RED-DT-01', 'b single-quoted ] in an array', "a ] inside a '…' string does not close the array", "{ apiKeys: [ 'ab]cd-secret', 'second-secret' ] }", `{ apiKeys: ${MASK} }`, ['ab]cd', 'cd-secret', 'second-secret']),
+  row('RED-DT-01', 'b single-quoted } in an object', "a } inside a '…' string does not close the object", "{ credentials: { user: 'bob', pass: 'x}y-secret' }, n: 1 }", `{ credentials: ${MASK}, n: 1 }`, ['bob', 'x}y', 'y-secret']),
+  row('RED-DT-01', 'b escaped single quote', "an escaped ' inside a '…' string does not end it", "keys=['a\\']', 'b2'] end", `keys=${MASK} end`, ["'b2'"]),
+  row('RED-DT-01', 'b lone quote, ] on its line', "a ' with no closer on its line is ordinary, so the ] after it closes", "tokens=['abc]\n] tail", `tokens=${MASK}\n] tail`, ['abc']),
+  row('RED-DT-01', 'b lone double quote, } on its line', 'the same with a lone " in an object', 'secrets={"a": "x}\n}, next', `secrets=${MASK}\n}, next`, ['"x']),
+  row('RED-DT-01', 'b apostrophe in prose', "an apostrophe is ordinary; later lines stay", "token={ msg: don't } tail\nline2 visible\nline3 visible", `token=${MASK} tail\nline2 visible\nline3 visible`, ["don't"]),
+  row('RED-DT-01', 'b apostrophe in an inspected error', "util.inspect's [Error: …] with an apostrophe", "sync failed { credentials: [Error: can't reach vault], retry: 3 }\n    at sync (a.js)",
+    `sync failed { credentials: ${MASK}, retry: 3 }\n    at sync (a.js)`, ["can't", 'vault']),
+  // A backtick is a quote everywhere a quote is (util.inspect uses it for a string holding both ' and ").
+  row('RED-DT-01', 'b backtick string in an array', 'a ] inside a backtick string does not count',
+    "{ secret: [ `it's \"x\"`, '] tail', 'hunter2' ] }\nnext", `{ secret: ${MASK} }\nnext`, ['hunter2', "it's", "'] tail'"]),
+  row('RED-DT-01', 'b lone backtick', 'a backtick with no closer on its line is ordinary', 'keys=[`abc]\n] tail', `keys=${MASK}\n] tail`, ['abc']),
+  // An escaped key (\"name\") reads its container in escaped mode: strings are \"…\", and a raw " (the end of the enclosing string) ends it.
+  row('RED-DT-01', 'b escaped container', "the review's provider error: only the escaped array is masked",
+    'provider said "{\\"error\\":{\\"api_key\\":[\\"is invalid\\"]},\\"request_id\\":\\"r-1\\"}"\nat retry (/srv/a.js:1:1)\nnext diagnostic',
+    `provider said "{\\"error\\":{\\"api_key\\":${MASK}},\\"request_id\\":\\"r-1\\"}"\nat retry (/srv/a.js:1:1)\nnext diagnostic`, ['is invalid']),
+  row('RED-DT-01', 'b escaped container, escaped-escaped quote', 'an inner \\\\\\" does not end an escaped string, so its ] does not count',
+    String.raw`{\"api_key\":[\"a\\\"]b\"],\"x\":1}`, String.raw`{\"api_key\":` + MASK + String.raw`,\"x\":1}`, [String.raw`a\\`, ']b']),
+  row('RED-DT-01', 'b escaped container ended by a raw quote', 'a raw " ends the enclosing string and the container',
+    String.raw`msg "{\"tokens\":[1,2" tail`, String.raw`msg "{\"tokens\":` + MASK + '" tail', ['1,2']),
+  // An escaped string not closed by \\" ends at the raw " (which also ends the container) or at its line end, where counting resumes.
+  row('RED-DT-01', 'b escaped string ended by a raw quote', 'an unclosed escaped string and its container end at the raw "',
+    String.raw`msg="{\"token\":[\"abc" rest` + '\nline2 visible', String.raw`msg="{\"token\":` + MASK + '" rest\nline2 visible', ['abc']),
+  row('RED-DT-01', 'b escaped string ended by its line', 'an unclosed escaped string ends at its line; counting resumes on the next',
+    String.raw`m="{\"token\":[\"abc` + '\n' + String.raw`[\"x\"],\"leak3\"]}"`, String.raw`m="{\"token\":` + MASK + '}"', ['abc', 'leak3']),
+  row('RED-DT-01', 'b escaped container, unbalanced', 'with no raw quote an unbalanced escaped container runs to the end of the text',
+    String.raw`{\"tokens\":[1,2` + '\nnext line', String.raw`{\"tokens\":` + MASK, ['1,2', 'next line']),
 
   // ---------------------------------------------------------------- RED-DT-01: value form c, Authorization names
   row('RED-DT-01', 'c Basic', 'scheme and credential together', 'Authorization: Basic dXNlcjpwYXNz', `Authorization: ${MASK}`, ['Basic', 'dXNlcjpwYXNz']),
@@ -116,6 +177,8 @@ export const REDACT_ROWS = Object.freeze([
   row('RED-EP-04', 'in quotes', 'a quote ends the credential', '"Bearer abc"', `"Bearer ${MASK}"`, ['abc']),
   same('RED-EP-04', 'no credential', 'BVA: Bearer with nothing after it', 'Bearer'),
   same('RED-EP-04', 'standalone Basic', 'Basic without a credential name is not masked', 'Basic plan required'),
+  row('RED-EP-04', 'tab before the credential', 'a tab separates scheme and credential', 'Bearer\tabc', `Bearer\t${MASK}`, ['abc']),
+  same('RED-EP-04', 'newline before the credential', 'a newline is not a scheme gap', 'bearer\n\nnext: line'),
 
   // ---------------------------------------------------------------- RED-BVA-02: opaque runs
   same('RED-BVA-02', OPAQUE.below, '31 characters stay', run(OPAQUE.below)),

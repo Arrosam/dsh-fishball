@@ -15,12 +15,12 @@ export const LOG = Object.freeze({ file: 'child-stderr.log', rotated: 'child-std
 export const SETTLE = Object.freeze({ pollMs: 10, stableReads: 10, timeoutMs: 5000 })
 
 /**
- * `atEnd` for the rows that buffer exactly the cap: the end then writes cap + 1 bytes (the text and its
- * newline) in one write, more than the whole file may hold. The requirements do not say what a write
- * larger than `limitBytes` does (relayed 2026-11-18: only "rotate before a write would push past"), so
- * those rows check only what is fixed: nothing is written before the end and nothing is cut.
+ * The user's rule for a single write larger than `limitBytes` after redaction (relayed 2026-11-18):
+ * cuts are on a UTF-8 character boundary, so no file ever holds U+FFFD or a partial character
+ * (`replacement`). The final write at the end keeps its head plus the mark; a newline-terminated
+ * block keeps its last bytes. Below `markBytes` the final write is the mark alone.
  */
-export const NOT_CUT = Symbol('written at the end, not cut')
+export const OVERSIZE = Object.freeze({ replacement: '\uFFFD', markBytes: Buffer.byteLength(LOG.truncated + LOG.newline) })
 
 /** The small cap the BVA and state rows use; F4's report cap is the real one. */
 export const CAP = 64
@@ -31,6 +31,13 @@ export const F4 = Object.freeze({
   fillUnit: 'x ',
   fillRepeat: 32756,
   splitAt: 24,
+})
+/** The review's probe at F4's cap: two earlier lines, a 131072-character line in two writes, then the newline and one more line. */
+export const REVIEW_PROBE = Object.freeze({
+  earlier: Object.freeze(['EARLIER DIAGNOSTIC 1\n', 'EARLIER 2\n']),
+  lineChars: 131072,
+  writes: 2,
+  after: 'after\n',
 })
 
 /** A text of `bytes` UTF-8 bytes made of `unit`; throws when `unit`'s byte length does not divide `bytes` (a row-authoring slip). */

@@ -18,7 +18,7 @@ import { setTimeout as sleep } from 'node:timers/promises'
 import { pathToFileURL } from 'node:url'
 import { REPO } from '../../../support/constants.mjs'
 import { caseTest } from '../../contract/package-boundaries/cases.mjs'
-import { CAP, LOG, NOT_CUT, SETTLE } from './constants.mjs'
+import { CAP, LOG, OVERSIZE, SETTLE } from './constants.mjs'
 import { STDERR_ROWS, line } from './rows.mjs'
 
 const MODULE = path.join(REPO, 'packages', 'dsh-instance', 'src', 'native-runtime', 'stderr-log.js')
@@ -69,7 +69,7 @@ async function start(t, limitBytes) {
 }
 
 /** Feed one row's steps, checking what the log gained after each chunk and at the end. */
-async function runRow(t, { cap, steps, atEnd, secrets }) {
+async function runRow(t, { cap, steps, atEnd, secrets, files: expectedFiles }) {
   const { root, stream } = await start(t, cap)
   let expected = ''
   const check = async (label, gained) => {
@@ -79,14 +79,16 @@ async function runRow(t, { cap, steps, atEnd, secrets }) {
     return got
   }
   assert.notEqual((await check('created', '')).current, null, LOG.file + ' is not created at once')
-  for (const [index, [chunk, written]] of steps.entries()) { stream.write(chunk); await check(`after chunk ${index} ${show(chunk)}`, written) }
-  stream.end()
-  const final = atEnd === NOT_CUT ? await settle(() => files(root), (f) => joined(f) !== expected) : await check('after end', atEnd)
-  if (atEnd === NOT_CUT) {
-    assert.notEqual(joined(final), expected, 'nothing written at the end')
-    assert.equal(joined(final).includes(LOG.truncated), false, `cut at the cap: ${show(joined(final))}`)
+  for (const [index, [chunk, written, dropped = '']] of steps.entries()) {
+    assert.ok(expected.startsWith(dropped), 'row slip: dropped text is not the front of the log')
+    expected = expected.slice(dropped.length)
+    stream.write(chunk)
+    await check(`after chunk ${index} ${show(chunk)}`, written)
   }
-  for (const secret of secrets) for (const [name, text] of Object.entries(final)) assert.equal((text ?? '').includes(secret), false, `${show(secret)} in the ${name} file`)
+  stream.end()
+  const final = await check('after end', atEnd)
+  if (expectedFiles) assert.deepEqual(final, expectedFiles)
+  for (const secret of [...secrets, OVERSIZE.replacement]) for (const [name, text] of Object.entries(final)) assert.equal((text ?? '').includes(secret), false, `${show(secret)} in the ${name} file`)
 }
 
 /** Feed lines one chunk at a time and settle on the two files (the rotation rows). */
