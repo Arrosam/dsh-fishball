@@ -38,12 +38,15 @@ function primitives(React) {
     Modal: ({ open, children, footer, title, ...rest }) => (open === false ? null : h('div', { [CLIENT.primitiveAttr]: CLIENT.modal, ...rest }, title ?? null, children, footer ?? null)),
   }
   const cache = new Map()
+  // Each component keeps its export name (displayName), so a case can tell which primitive an
+  // element prop such as a Button's `icon` holds, as DSH's own component names would.
+  for (const [name, component] of Object.entries(known)) component.displayName = name
   const proxy = new Proxy({}, {
     get(_t, name) {
       if (typeof name === 'symbol' || name === 'then' || name === '__esModule') return undefined
       if (name === 'default') return proxy
       if (name in known) return known[name]
-      if (!cache.has(name)) cache.set(name, ({ children, ...rest }) => h('div', { [CLIENT.primitiveAttr]: name, ...rest }, children))
+      if (!cache.has(name)) cache.set(name, Object.assign(({ children, ...rest }) => h('div', { [CLIENT.primitiveAttr]: name, ...rest }, children), { displayName: name }))
       return cache.get(name)
     },
   })
@@ -59,8 +62,9 @@ export const treeText = (tree) => JSON.stringify(tree)
  * @param options.sdk - the SDK whose cordis applies the plugin.
  * @param options.world - a tokens world (../tokens/world.mjs) whose registry the routes serve.
  * @param options.routes - the settings-page routes over that registry.
+ * @param options.lang - the page language (default FIXTURE.lang).
  */
-export async function openTokensPage(t, { sdk, world, routes }) {
+export async function openTokensPage(t, { sdk, world, routes, lang = FIXTURE.lang }) {
   const errors = []
   const requests = []
   const clipboard = []
@@ -74,7 +78,7 @@ export async function openTokensPage(t, { sdk, world, routes }) {
     const answer = await send(routes, url.href, { method, body, headers: init.headers })
     return new Response(answer.text, { status: answer.status, headers: answer.headers })
   }
-  const page = createBrowserSandbox({ lang: FIXTURE.lang, baseURI: FIXTURE.baseURI, fetch: pageFetch, console: pageConsole })
+  const page = createBrowserSandbox({ lang, baseURI: FIXTURE.baseURI, fetch: pageFetch, console: pageConsole })
   const { document } = page
   const createElement = document.createElement
   document.createElement = (tag, ...rest) => { created.tags.push(String(tag).toLowerCase()); return createElement(tag, ...rest) }
@@ -98,7 +102,7 @@ export async function openTokensPage(t, { sdk, world, routes }) {
     return modules[spec]
   })
 
-  const services = pageServices(shim, FIXTURE.lang)
+  const services = pageServices(shim, lang)
   const registrations = []
   const slots = {
     ...services.slots,

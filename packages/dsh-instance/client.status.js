@@ -12,7 +12,7 @@ window.__ModuleLoader__.load({
   chunk: 'client.status.js',
   factory(require) {
     const React = require('react')
-    const { Button, Tag } = require('@deepseek-ai/dsh-client-ui-primitives')
+    const { Button, StateDot, Tag } = require('@deepseek-ai/dsh-client-ui-primitives')
     const h = React.createElement
 
     /**
@@ -38,23 +38,44 @@ window.__ModuleLoader__.load({
       failed: 'failed',
       stateTone: Object.freeze({ ready: 'info', failed: 'danger' }),
       neutralTone: 'neutral',
+      /**
+       * DSH's StateDot per state (green running, red failed, grey at rest); a state not listed is
+       * moving (starting, stopping, waiting, checking) and shows DSH's spinner. The Tag's words
+       * carry the state, so the dot is never the only signal.
+       */
+      dot: Object.freeze({ ready: 'done', failed: 'error', stopped: 'idle', disabled: 'idle', unavailable: 'warning' }),
+      pendingDot: 'ongoing',
+      dotPx: 8,
+      pendingDotPx: 12,
     })
     /** Classes the main card's model block reuses too (`statusRow`, `hint`), so their rules live once, here. */
-    const CLS = Object.freeze({ status: 'fb-instance-status', statusRow: 'fb-instance-status-row', hint: 'fb-instance-hint' })
+    const CLS = Object.freeze({ status: 'fb-instance-status', statusRow: 'fb-instance-status-row', statusHead: 'fb-instance-status-head', statusTitle: 'fb-instance-status-title', hint: 'fb-instance-hint', code: 'fb-instance-code', card: 'fb-instance-card' })
     /**
      * Layout tokens shared with the main card's own rules. The sheet id is the V2 card's: each page
-     * mounts one sheet under it (the main card mounts these rules plus its own).
+     * mounts one sheet under it (the main card mounts these rules plus its own). The look uses DSH's
+     * theme tokens only (so light and dark follow DSH); DSH has no spacing tokens, so the gaps copy
+     * its Plugins page (32px between sections, 12px inside one) and its settings rows (12px × 16px
+     * in a layer-1 card with an l2 rule between rows).
      */
     const STYLE = Object.freeze({
       id: 'dsh-instance-style',
       gap: '16px',
+      sectionGap: '32px',
+      blockGap: '12px',
       stackGap: '6px',
+      rowPadding: '12px 16px',
       hintSize: '12px',
       lineHeight: '1.5',
     })
     const css = [
       `.${CLS.hint}{margin:0;color:var(--dsw-alias-label-tertiary);font-size:${STYLE.hintSize};line-height:${STYLE.lineHeight}}`,
-      `.${CLS.status}{display:grid;gap:${STYLE.stackGap};margin-bottom:${STYLE.gap}}`,
+      `.${CLS.code}{font-family:var(--dsw-font-markdown-code-font-family);font-size:${STYLE.hintSize};color:var(--dsw-alias-label-secondary)}`,
+      // A card of rows (DSH's settings list on a layer-1 surface); the status is the page's first card.
+      `.${CLS.card}{display:grid;border:.5px solid var(--dsw-alias-border-l3);border-radius:var(--dsw-radius-md);background:var(--dsw-alias-bg-layer-1);overflow:hidden}`,
+      `.${CLS.card}>*{padding:${STYLE.rowPadding};min-width:0}`,
+      `.${CLS.card}>*+*{border-top:.5px solid var(--dsw-alias-border-l2)}`,
+      `.${CLS.statusHead}{display:flex;align-items:center;justify-content:space-between;gap:${STYLE.blockGap}}`,
+      `.${CLS.statusTitle}{font:var(--dsw-font-s-strong-14);color:var(--dsw-alias-label-primary)}`,
       `.${CLS.statusRow}{display:flex;align-items:center;flex-wrap:wrap;gap:${STYLE.stackGap};color:var(--dsw-alias-label-primary);font:var(--dsw-font-xs-13);line-height:${STYLE.lineHeight}}`,
     ].join('')
 
@@ -145,13 +166,21 @@ window.__ModuleLoader__.load({
         setRetrying(false)
         if (next !== undefined) setStatus(next)
       }
-      return h('div', { className: CLS.status, 'data-fishball-instance-state': state, ...(code ? { 'data-fishball-instance-code': code } : {}) },
-        h('div', { className: CLS.statusRow, role: 'status' },
-          h('span', null, t('status')),
-          h(Tag, { tone: STATUS_UI.stateTone[state] ?? STATUS_UI.neutralTone }, t('state.' + state)),
-          code ? h('code', null, code) : null,
+      const dot = STATUS_UI.dot[state]
+      // A card: the status line (its title left, Retry right), then the reason, the detail and the
+      // notice as its rows, each present only when there is something to say.
+      return h('div', { className: [CLS.status, CLS.card].join(' '), 'data-fishball-instance-state': state, ...(code ? { 'data-fishball-instance-code': code } : {}) },
+        h('div', { className: CLS.statusHead },
+          h('div', { className: CLS.statusRow, role: 'status' },
+            h('span', { className: CLS.statusTitle }, t('status')),
+            h(Tag, { tone: STATUS_UI.stateTone[state] ?? STATUS_UI.neutralTone },
+              h('span', { className: CLS.statusRow },
+                dot === undefined ? h(StateDot, { state: STATUS_UI.pendingDot, size: STATUS_UI.pendingDotPx }) : h(StateDot, { state: dot, size: STATUS_UI.dotPx }),
+                t('state.' + state))),
+            code ? h('code', { className: CLS.code }, code) : null),
+          // DSH's Button has no `secondary` variant (its variants: primary, ghost, outline, toolbar).
           state === STATUS_UI.failed
-            ? h(Button, { type: 'button', size: 'sm', variant: 'secondary', disabled: retrying, 'data-fishball-instance-retry': true, onClick: () => void retry() }, retrying ? t('retrying') : t('retry'))
+            ? h(Button, { type: 'button', size: 'sm', variant: 'primary', disabled: retrying, 'data-fishball-instance-retry': true, onClick: () => void retry() }, retrying ? t('retrying') : t('retry'))
             : null),
         reason ? h('p', { className: CLS.hint }, reason) : null,
         // A failed start's specific cause (host.js, already sanitized and bounded by the route).

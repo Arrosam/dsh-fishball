@@ -1,4 +1,6 @@
-// I-HOST (the hosted child's token, locator, admission, child-side row, settings page routes, placement with fishball-ui) registered for DSH 0.2.2-rc.1; see cases.mjs.
+// I-HOST (the hosted child's token, locator, admission, child-side row, settings page routes, placement with fishball-ui; the UI-POLISH-D settings-page rows of polish-cases.mjs) registered for DSH 0.2.2-rc.1; see cases.mjs.
 import { registerIHostCases } from './cases.mjs'
+import { registerInstancePolishCases } from './polish-cases.mjs'
 
 registerIHostCases('0.2.2-rc.1')
+registerInstancePolishCases('0.2.2-rc.1')
