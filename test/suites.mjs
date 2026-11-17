@@ -201,6 +201,12 @@ export const V3_SUITES = Object.freeze({
       'test/v3/dsh-connector-adapter/oauth-client/subject.mjs']),
   // I-SUCCEED drives the instance's hosted-token logic and record (reusing the I-HOST suite's binding and
   // fakes) and, in its integration rows, the real connector hosted service through the C-SUCCEED world.
+  // R-FIX-REDACT: the redactor on its own (the library imports nothing).
+  'dsh-connector-shared.redact': suite('the redactor: credential names, value forms, Authorization, Bearer, opaque runs, merged masks (R-FIX-REDACT)', v3('dsh-connector-shared/redact'),
+    [all(PACKAGE.dshConnectorShared)]),
+  // R-FIX-REDACT: the child-stderr log over the real redactor; its rows read the redact suite's constants.
+  'dsh-instance.stderr-log': suite("the child-stderr log: line buffering through redact, one rotation, fix F4's cut of an over-long line (R-FIX-REDACT)", v3('dsh-instance/stderr-log'),
+    [sub(PACKAGE.dshInstance, 'src', 'native-runtime'), all(PACKAGE.dshConnectorShared), 'test/v3/dsh-connector-shared/redact/constants.mjs']),
   'dsh-instance.succession': suite("the instance's half of reinstall succession: pending in hosted.json, retire retries, Reconnect retargets (I-SUCCEED)", v3('dsh-instance/succession'),
     [sub(PACKAGE.dshInstance, 'src', 'host'), sub(PACKAGE.dshInstance, 'src', 'native-runtime'), sub(PACKAGE.dshConnector, 'src', 'hosted'),
       sub(PACKAGE.dshConnector, 'host-services'), 'test/v3/dsh-instance/host/**', 'test/v3/dsh-connector/hosted/**',
