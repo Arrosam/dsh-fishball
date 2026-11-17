@@ -171,7 +171,7 @@ Revision 11 also amends rows 2 and 4: `message_fishball` exists in managed sessi
 
 **UI [V].**
 - **Transport:** authenticated `/api/*` routes through `ctx.connection.fetch.register`, plus a hand-written `window.__ModuleLoader__` client. This is the pattern your own `dsh-idle-compact` uses on rc.2, and it avoids the Typert code generator, which is not installed.
-- **UI seats:** `sidebar.panellist` with `main`, `sidebar.workspaces.session.menu.item`, `conversation.session.header.actions`, `plugins.bundle.config`.
+- **UI seats:** `sidebar.panellist` with `main`, `sidebar.workspaces.session.menu.item`, `conversation.session.header.actions`, `conversation.session.header.utilities`, `plugins.bundle.config`.
 - **Brand row:**
   - `sidebar.brand.mark` and `sidebar.brand.name` are single slots declared by `dsh-client-ui-sidebar`. `dsh-client-ui-brand-official` fills them with the DeepSeek art.
   - A single slot shows only one occupant, and one registered at runtime outranks the shipped one (`dsh-client-ui-renderer/lib/types/client/registry.d.ts:18-31`).
@@ -1246,7 +1246,7 @@ Drawing points in DSH's browser were checked by S37 (§13d), in light and dark o
 | Your pile | `conversation.input.dock` (full-width entries above the composer, as DSH's Todo and Queue docks), rendered only for Fishball's session, fed by the state stream; height capped and scrolling so the composer stays in view |
 | Allow once / Reject on the running `ask_fishball` row | `tool.call.toolview`, key `ask_fishball`. DSH has no view for that tool, so the keyed entry is the whole row: Fishball draws its title, arguments and state with DSH primitives (`Button`, `Tag`, `DisclosureRow`). Buttons while `phase === 'start'` and the snapshot holds a card for that `callId`; arguments from `block.argsRaw` (start) or `block.call.argsRaw` (result). DSH's Auto-review denial still shows DSH's generic row |
 | Every tag ("Asked Fishball" plus the decision, "Sent to you", "Answered by Fishball: …", "Allowed by Fishball's grant: …"; texts are constants of the client's wording) | `conversation.chat.turnTail`: shows the tag records whose `seq` lies between the turn's `start.seq` and `end.seq`, visible in folded turns (your answer, 2026-11-01). S37's question-row wrapper (`tool.call.toolview` key `ask_user_question`) is not used |
-| Hand over / Take back | `sidebar.workspaces.session.menu.item` and `conversation.session.header.actions`, beside Send to Fishball |
+| Hand over / Take back | `sidebar.workspaces.session.menu.item`; in the session header the control is in `conversation.session.header.utilities` (right-aligned, first of DSH's utilities; UI-FIX-D: in `header.actions` it was drawn over DSH's own header buttons at 390 px) and "Managed by" stays title-adjacent in `conversation.session.header.actions` |
 | Managed-session banner (item 30, rev11i) | `conversation.input.dock`, rendered only in a managed session's chat |
 | Managed-session sidebar icon (item 30, rev11i) | `sidebar.session.row.leading`, DSH's seat in the status light's place, rendered only while the session's primary status is idle (`showStatus = primaryStatus.state !== 'idle'`, else `SessionStatusDots`); DSH 0.2.1-rc.2 has no slot on the light itself |
 

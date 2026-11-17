@@ -333,9 +333,12 @@ window.__ModuleLoader__.load({
      *   (ConversationRoot .crumb max-width, 0.2.1-rc.5 and 0.2.2-rc.1);
      * - `narrowRowPx`: the title row's width (DSH makes it an inline-size container) at or below
      *   which "Managed by <principal>" is dropped, DSH's own breakpoint for its agent-preset label
-     *   in the same row (dsh-client-ui-agent-preset `@container (width<=540px)`).
+     *   in the same row (dsh-client-ui-agent-preset `@container (width<=540px)`);
+     * - `controlShareCqi`: the share of that row a header control may take, in container-query
+     *   units, so on a 390 px header a long "Hand over to <name>" still leaves DSH's own utilities
+     *   and the sidebar toggle (all `flex:none`) inside the row: they take about two-thirds of it.
      */
-    const HEADER_LABEL = Object.freeze({ maxWidthPx: 220, narrowRowPx: 540 })
+    const HEADER_LABEL = Object.freeze({ maxWidthPx: 220, narrowRowPx: 540, controlShareCqi: 30 })
     /**
      * DSH's caption and body type and its tinted-box padding (the sizes its settings fields and
      * Tag use), for the parts this sheet draws beyond DSH's own components.
@@ -422,7 +425,7 @@ window.__ModuleLoader__.load({
       `.${CLS.managedBy}{display:inline-block;max-width:${HEADER_LABEL.maxWidthPx}px;overflow:hidden;text-overflow:ellipsis;color:var(--dsw-alias-label-tertiary);font:${TYPE.caption};white-space:nowrap}`,
       `@container (width<=${HEADER_LABEL.narrowRowPx}px){.${CLS.managedBy}{display:none}}`,
       // A header control's label: one line, capped as DSH caps a crumb, ending in an ellipsis.
-      `.${CLS.headerControl}{max-width:${HEADER_LABEL.maxWidthPx}px;white-space:nowrap}`,
+      `.${CLS.headerControl}{max-width:min(${HEADER_LABEL.maxWidthPx}px, ${HEADER_LABEL.controlShareCqi}cqi);white-space:nowrap}`,
       `.${CLS.headerControl} .${CLS.principal}{min-width:0;overflow-wrap:normal}`,
       `.${CLS.ellipsis}{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}`,
       // A hand-over refusal inside its dialog: DSH's danger tint (its Tag's danger tone) with an error
