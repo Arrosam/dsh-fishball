@@ -42,7 +42,7 @@ window.__ModuleLoader__.load({
       answer: 'api/fishball/asks/answer',
       jsonHeaders: Object.freeze({ 'content-type': 'application/json' }),
       state: Object.freeze({ open: 'open', answered: 'answered', closed: 'closed' }),
-      css: Object.freeze({ id: 'fishball-asks-style', root: 'fb-asks', card: 'fb-ask-card', meta: 'fb-ask-meta', from: 'fb-ask-from', time: 'fb-ask-time', body: 'fb-ask-body', question: 'fb-ask-question', detail: 'fb-ask-detail', label: 'fb-ask-label', args: 'fb-ask-args', row: 'fb-ask-row', reason: 'fb-ask-reason', error: 'fb-ask-error' }),
+      css: Object.freeze({ id: 'fishball-asks-style', root: 'fb-asks', card: 'fb-ask-card', meta: 'fb-ask-meta', from: 'fb-ask-from', time: 'fb-ask-time', body: 'fb-ask-body', badge: 'fb-ask-badge', question: 'fb-ask-question', detail: 'fb-ask-detail', label: 'fb-ask-label', args: 'fb-ask-args', row: 'fb-ask-row', reason: 'fb-ask-reason', error: 'fb-ask-error' }),
       // K1's ARGUMENTS_STATUS word for whole arguments (core's AskCard.argumentsStatus, ask-card.d.ts).
       argumentsComplete: 'complete',
       // DSH's Tag tones: an open card sits in the approval card's warn band; a finished one is quiet.
@@ -57,6 +57,19 @@ window.__ModuleLoader__.load({
        * draws them at 54%) would otherwise undo the ratio.
        */
       placeholderInk: '--dsw-alias-label-secondary',
+      /**
+       * RESHOOT: the open card's "waiting" badge ink in the light theme only. DSH's warning Tag draws
+       * `--dsw-alias-state-warn-primary` (#f59e0b) on its #fdeacc tint there: 1.8:1. DSH's own warn
+       * text token (`--dsw-alias-state-warn-label`, #dd8629) half mixed with the primary label is
+       * #764c1f, 6.3:1 on the badge (WCAG AA 4.5:1), and stays in the warn hue. The dark theme
+       * already reads 5.8-7.3:1 and mixing with its near-white label would change it, so the rule is
+       * scoped to the light theme by the body attribute DSH sets for dark (dsh-client-ui-layout's
+       * ThemePresenter; dsh-client-ui-theme's token sheets key on the same attribute).
+       */
+      waitingInk: Object.freeze({
+        lightScope: 'body:not([data-ds-dark-theme])',
+        ink: 'color-mix(in srgb,var(--dsw-alias-state-warn-label) 50%,var(--dsw-alias-label-primary))',
+      }),
       /**
        * R-FIX-FUI: the Intl locale a card's time is written in, per page language (kit `useLang`), as
        * DSH's own schedule copy names one per language; the browser's time zone is kept.
@@ -103,6 +116,7 @@ window.__ModuleLoader__.load({
       `.${ASKS_UI.css.meta}{display:flex;align-items:center;flex-wrap:wrap;gap:8px;padding:8px 16px;font:var(--dsw-font-xxs-12);color:var(--dsw-alias-label-tertiary)}`,
       // Only the Tag carries the warn colour: warn text on the warn band is too faint to read.
       `.${ASKS_UI.css.card}${openCard} .${ASKS_UI.css.meta}{background:var(--dsw-alias-state-warn-tertiary);color:var(--dsw-alias-label-secondary)}`,
+      `${ASKS_UI.waitingInk.lightScope} .${ASKS_UI.css.card}${openCard} .${ASKS_UI.css.badge}{color:${ASKS_UI.waitingInk.ink}}`,
       `.${ASKS_UI.css.from}{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}`,
       `.${ASKS_UI.css.time}{margin-left:auto;white-space:nowrap}`,
       `.${ASKS_UI.css.body}{display:grid;gap:8px;padding:12px 16px 14px}`,
@@ -158,7 +172,7 @@ window.__ModuleLoader__.load({
         }
         return h('div', { className: [kit.css.card, ASKS_UI.css.card].join(' '), 'data-fishball-ask': card.approvalId, 'data-fishball-ask-state': card.state },
           h('div', { className: ASKS_UI.css.meta },
-            h(Tag, { tone: open ? ASKS_UI.tone.open : ASKS_UI.tone.done }, open ? t('waiting') : t('state.' + card.state)),
+            h(Tag, { tone: open ? ASKS_UI.tone.open : ASKS_UI.tone.done, className: ASKS_UI.css.badge }, open ? t('waiting') : t('state.' + card.state)),
             h('span', { className: ASKS_UI.css.from }, t('from') + ': ' + (card.sessionTitle ?? card.sessionId)),
             h('span', { className: ASKS_UI.css.time }, new Date(card.askedAt).toLocaleString(timeLocale))),
           h('div', { className: ASKS_UI.css.body },

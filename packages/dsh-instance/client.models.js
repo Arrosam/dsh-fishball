@@ -178,7 +178,7 @@ window.__ModuleLoader__.load({
       'sync.outcome.skipped': 'skipped',
       'sync.outcome.failed': 'failed',
       'sync.refused': 'Refused: {code}',
-      'sync.help': 'Copies API-key providers (including keys from environment variables) from DSH into Fishball; logins are not copied and nothing Fishball has is changed. Fishball\'s model catalog then checks what was added, which may read keys set for its other providers.',
+      'sync.help': 'Copies API-key providers (including keys from environment variables) from DSH into Fishball; logins are not copied and none of Fishball\'s existing data is changed. Fishball\'s model catalog then checks what was added, which may read keys set for its other providers.',
       'syncReason.oauth-login': 'Uses a login, not an API key: log in inside Fishball.',
       'syncReason.unsupported-provider': 'Not a plain API-key provider (for example custom headers). Set it up inside Fishball.',
       'syncReason.non-https-endpoint': 'Its endpoint must use https; only https endpoints can be synced.',
