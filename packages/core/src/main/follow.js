@@ -1,7 +1,7 @@
 /**
  * A port over another row's service that may start after core's main row, be replaced or go away
  * (the guard row's `fishballGuards`). Cordis emits `internal/service` with the service's name for
- * each of these (both SDKs, as board's `followInstance` relies on), so the port follows it with no
+ * each of these (both SDKs), so the port follows it with no
  * inject (a missing service must not stop this row) and no timer.
  */
 import { GUARDS } from '../../contracts/constants.js'

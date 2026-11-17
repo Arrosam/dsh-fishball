@@ -1,6 +1,6 @@
 # Package layout (V3)
 
-The repository holds nine packages in two sides that never import each other (requirements
+The repository holds nine packages (one, `fishball-board`, shelved: not in 1.0.0-alpha.1) in two sides that never import each other (requirements
 R-ARCH-10; design §1.0). The root `package.json` is private and not a plugin; it only lists the
 workspaces. Install, uninstall and the supported DSH versions are in the [README](<../README.md>).
 
@@ -42,7 +42,7 @@ packages/
   fishball-ui/                  Fishball side, plugin: every UI change in a Fishball DSH
     client.js client.{entries,asks,strip,model}.js
     fishball-page/  fishball-recommend-plugins/   their own small packages
-  board/                        Fishball side, plugin `fishball-board`
+  board/                        Fishball side, plugin `fishball-board`: shelved, not in 1.0.0-alpha.1
   shared/                       Fishball side, library `fishball-shared` (no `dsh` field): ui-seam
 ```
 
@@ -58,7 +58,7 @@ packages/
 - **Chunks, not folders, for browser code.** DSH serves a package's `client.js` and only
   `client.<name>.js` files beside it, so browser parts are flat chunks.
 - **The instance carries the Fishball plugins as data.** In a packed `dsh-instance`, `bundled/`
-  holds `board`, `fishball-ui` and `core`, each exactly its package's `files` plus `package.json`
+  holds `fishball-ui` and `core` (`fishball-board` is shelved, not in 1.0.0-alpha.1), each exactly its package's `files` plus `package.json`
   and its own bundled libraries. In a checkout, placement reads the sibling workspace folders. The
   host DSH never resolves or loads them.
 

@@ -118,9 +118,15 @@ export const IMPORT = Object.freeze({
 /** The connector's MCP route (design §1.0c). */
 export const CONNECTOR_MCP = '/api/agent/mcp'
 
-/** Q2: the order the instance appends its placed bundles, core last (R-BND-01 default set). */
+/**
+ * Q2: the order the instance appends its placed bundles, core last (R-BND-01 default set).
+ * Re-baselined (SHELVE-BOARD, was board, ui, core): fishball-ui then fishball-core. The user,
+ * 2026-11-18: "fishball-board先从这次release中移除，我要改的地方太多了。先封存，留到下一批再说。
+ * 所以不要预留在子实例的Fishball内。" `shelved` is never placed, installed, bundled or recorded.
+ */
 export const PLACEMENT = Object.freeze({
-  bundles: Object.freeze([V3.board.name, V3.ui.name, V3.core.name]),
+  bundles: Object.freeze([V3.ui.name, V3.core.name]),
+  shelved: V3.board.name,
   uiDirectory: 'fishball-ui',
   library: V3.shared.name,
   vendor: 'vendor',

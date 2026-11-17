@@ -2,8 +2,11 @@
 
 **V3 is the current design (2026-11-17).** Fishball is now two sides that never import each other:
 the DSH side (`dsh-connector`, `dsh-connector-ui`, `dsh-instance`, `dsh-connector-adapter`,
-`dsh-connector-shared`) and the Fishball side (`fishball-core`, `fishball-ui`, `fishball-board`,
-`fishball-shared`), release `1.0.0-alpha.1`, a fresh install. Read
+`dsh-connector-shared`) and the Fishball side (`fishball-core`, `fishball-ui`, `fishball-shared`),
+release `1.0.0-alpha.1`, a fresh install. `fishball-board` is **shelved, not in 1.0.0-alpha.1** (the
+user, 2026-11-18: "fishball-board先从这次release中移除…先封存，留到下一批再说。所以不要预留在子实例的Fishball内"):
+`packages/board` stays unchanged for a later release; the release is eight tarballs and the hosted
+child places only `fishball-ui` and `fishball-core` (v3-requirements 1.42). Read
 [v3-design.md](<docs/planning/v3-design.md>) §1.0 and §17–§20 below first. Everything above §17 is
 the V1/V2 decision history: V2 was never deployed, fold-notify, the hosted settings bundle and
 Watchdog are gone, and the V2 history documents it links to were deleted by the DOCS task (the
@@ -2118,7 +2121,7 @@ Decided with the user while I-HOST ran (answers Q1–Q7 and the model-sync clari
 
 | Point | Decision | Reason |
 |---|---|---|
-| Plugin placement | I-PLACE's copying stays; the set is `fishball-board`, `fishball-ui`, `fishball-core`, appended in that order (core last) | Q1 = A: install by package name or tarball waits for REL-PACK's tarballs. Q2 = A: fishball-ui's guard rows target DSH's base rows, so they hold in any order; core's check needs core last |
+| Plugin placement | I-PLACE's copying stays; the set is `fishball-board`, `fishball-ui`, `fishball-core`, appended in that order (core last). *Since SHELVE-BOARD (2026-11-18): `fishball-ui`, `fishball-core`; the board is shelved* | Q1 = A: install by package name or tarball waits for REL-PACK's tarballs. Q2 = A: fishball-ui's guard rows target DSH's base rows, so they hold in any order; core's check needs core last |
 | The Fishball page in a hosted child | fishball-core serves `GET/POST /api/fishball/session` itself (row `fishball-core-session`, `src/session/route.js`); the instance's native-web row no longer does | the route reads core's own `fishballInstance`, so it is Fishball-side code, and fishball-ui's page needs it in both modes |
 | The hosted token | At each authenticated wire the host asks the child, on `mcp-credential`, whether it holds a credential (`DSH_AGENT_TOKEN` set, or core's `fishball-core/hosted-agent` record). Only when absent, with this DSH's connector and no remote target, it calls `createHosted` once and imports the value into `DSH_AGENT_TOKEN`; probes, creates and imports run in one serial chain. The entry key is kept in `<home>/fishball/hosted.json`, with the instance's stable id, after the child stored it; that file sits beside the runtime tree so a reset or uninstall keeps the succession candidates. An unanswered import (bounded by the credential lock wait) is settled by probing again | R1, Q-G6; DSH answers presence alone; no value is ever on the host |
 | What the instance no longer reports | the pending "watchdog is down" notice (withdrawn with Watchdog, 1.37) and `fishball-off` (Q4); the uninstall board-archive export offer has no board export to offer (board dropped `board_export` and its uninstall export, W3 2026-11-15), so it is deferred until a board export exists | requirements 1.37, Q4; packages/board/src/store.js |
@@ -2170,3 +2173,17 @@ Decided by the user on 2026-11-16/17 while C-WIRE-2 ran (the task brief and the 
 | DSH name | optional `approval.dshName`; the approval page shows it, or DSH's listener origin when it is empty | the user, 2026-11-17 |
 | V2 removed | `./contract`, `attachInstance`, the `dshConnector` and `fishballSessionState` services, `src/slim/**`, the V2 row path and every `/api/fishball/*` route of the connector; its vocabularies and payload bounds moved unchanged into K1 (`mcp-schema`) | "第三版其实就是第一版" (V2 was never deployed); q4 |
 | R-ARCH-08 strict | dsh-connector-shared keeps `redact` and `request-host` (two DSH-side users each); `files` and `provider-sync*` moved into dsh-instance (`src/lib/`), `oauth-client` into dsh-connector-adapter | Fishball's decision, 2026-11-17 |
+
+## 22. V3 UI-POLISH-F: the Fishball side's look (2026-11-18)
+
+The user (verbatim): "侧边栏的按钮被收到了这里，这是可以的，但是我更乐意看到是按钮的图标，同时target的UI设计太丑了，让Opus用它自己的审美重新设计一遍，所有这个插件的UI都需要设计的美观". Visuals and markup only: no behaviour, route, settings key or contract name changed.
+
+| Point | Decision | Reason |
+|---|---|---|
+| Material | DSH's own primitives (`Button`, `Tooltip`, `Tag`, `StateDot`, `Modal`, the settings fields), its icons and its `--dsw-*` tokens only; no new dependency or hard-coded colour | Light and dark themes come from DSH; the brief |
+| Page navigation | A floating bar in DSH's menu material with three icon buttons (DSH's Settings gear, DSH's fish mark for Fishball, DSH's Plugins pinwheel); the name is the aria-label and DSH's Tooltip; Retry is the refresh icon beside the status | "我更乐意看到是按钮的图标" |
+| Status card | The strip is a card above the composer: a heading ("Target DSH") with the state's dot and badge, the contributed-tools chip and the one control; the other lines below. `stripView` adds `card` {state, title, badge, toolsHint, openApproval}; `card.state` is one of `CARD` (connected, unset, disconnected, connecting, attention, failed, off), from the link line's kind; an unknown kind is `failed` | "target的UI设计太丑了" |
+| Other parts | Ask cards take DSH's approval-card layout; the model dialog groups models under their provider; the header entries are icons; core's settings page puts the model and Connect in DSH settings cards. fishball-board is shelved from this release (the user), so it gets nothing | "所有这个插件的UI都需要设计的美观" |
+| Wording changed | strip `tools` (now a chip: "N contributed tools" / "N 个贡献工具"); new `card` words; the approval link reads "Open the approval page" / "打开授权页面" instead of the raw URL (still its `title`) | Needed by the design; listed for the user's zh review |
+| Package icons (ICON-SET) | fishball-core and fishball-ui get the shared fish base with their own badge, from ICON-SET's spec (copied, not imported): core a link (DSH's link glyph: the link to the target), fishball-ui a speech bubble with three dots (Fishball's conversation). Both are clearly apart from the DSH side's wrench, window, server and plug at 30 px. Nothing on the Fishball side draws the connector's wrench. fishball-board is shelved and gets none | The user: "只有connector插件的设置页的图标带有这个小扳手，然后每个插件的右下角都要有个各自的图标" |
+| Narrow window | Below 480 px (DSH's own chat breakpoint) the conversation is lifted by the page bar's height, so the bar never covers DSH's composer stats | Found in the 390 px screenshots |

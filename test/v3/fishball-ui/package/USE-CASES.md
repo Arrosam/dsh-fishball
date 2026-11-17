@@ -96,3 +96,24 @@ config row `{id: 'ui-settings-general', config: {welcomeNoticeVersion: !!js …}
 | EFIX3-UI-OWNER-01 | integration | The owner's profile layer value wins over fishball-ui's. |
 | EFIX3-UI-SYS-01 standalone | system | A real standalone DSH with core and fishball-ui (scenario BOTH): DSH's settings service describes `ui-settings-general` with no `welcomeNoticeVersion`, so the notice behaves as before. |
 | EFIX3-UI-SYS-01 hosted | todo | Out of scope: rows that launch a hosted child. Rule 1 covers it with DSH's own evaluator. |
+
+## UI-POLISH-F §1: the Fishball page's icon navigation (`nav-cases.mjs`, `nav-page.mjs`)
+
+Requirement: `.runtime/reports/ui-polish-f/SPEC.md` §1 (the user, 2026-11-17: "我更乐意看到是按钮的图标").
+Component level, offline: the real `fishball-page/client.js` in the node:vm page over the SDK's real
+dsh-client-shortcuts service and the LITE harness's fakes; DSH's Button, Tooltip, StateDot and icons
+are the F-SETTINGS stand-ins (`../../fishball-core/settings/primitives.mjs`, render shapes read from
+both SDKs' dsh-web-frontend bundle). The LITE browser rows cover the same page in Chromium (they
+skip with no Chromium).
+
+| Id | Technique | Case |
+| --- | --- | --- |
+| UIPF-NAV-EP-01 order en / zh | EP | No status: exactly settings, fishball, plugins, in that order. |
+| UIPF-NAV-EP-01 `<control>` en / zh (settings, fishball, plugins, retry) | EP | One `<svg aria-hidden="true">`, no text node, aria-label en/zh, Tooltip label = aria-label. |
+| UIPF-NAV-EP-01 settings hooks | EP | `button.fishball-settings-launcher[aria-haspopup=dialog]` inside the nav. |
+| UIPF-NAV-BVA-01 settingsOpen false / true / false → true | BVA, ST | `aria-expanded` follows the launcher owner prop. |
+| UIPF-NAV-BVA-01 shortcut none / two keys | BVA | The Settings tooltip shows DSH's shortcut keys only when given. |
+| UIPF-NAV-ST-01 `<control>` hover / focus | ST | No tooltip → one portalled `role=tooltip` with the label → none on leave / blur. |
+| UIPF-NAV-DT-01 unavailable / failed / pending × en / zh | DT | `span[role=status][data-fishball-nav-status]`, unchanged text, StateDot error / error / spinner `ongoing`; order settings, fishball, plugins, status, retry. |
+| UIPF-NAV-ST-02 | ST | Pending → config read: status and Retry go. |
+| UIPF-NAV-UC-01 settings / fishball from plugins / fishball after drift / plugins / retry | UC | Clicks behave as before. |

@@ -17,7 +17,7 @@ import net from 'node:net'
 import os from 'node:os'
 import path from 'node:path'
 import { gunzipSync } from 'node:zlib'
-import { ALL, BUDGET, BUNDLE, DSH, INSTALL_DOC, ISOLATION, JUNK, LIBRARIES, OFFLINE, PACK_SCRIPT, RELEASE, REPORT, TAR_TOOL, TARBALL, TEMP, VERSION } from './constants.mjs'
+import { ALL, BUDGET, BUNDLE, CHILD_PLACEMENT, DSH, INSTALL_DOC, ISOLATION, JUNK, LIBRARIES, OFFLINE, PACK_SCRIPT, RELEASE, REPORT, SHELVED, TAR_TOOL, TARBALL, TEMP, VERSION } from './constants.mjs'
 
 /** ustar header layout (POSIX.1-1988 / pax): field offsets and the type flags this suite tells apart. */
 const TAR = Object.freeze({
@@ -329,6 +329,29 @@ export function assertFromOwnBundle(profileDir, owner, dep) {
   assert.ok(found, `${dep.name} does not resolve from ${from}`)
   assert.ok(found.startsWith(path.join(from, TARBALL.nodeModules) + path.sep), `${dep.name} resolves outside ${owner.name}'s bundle: ${found}`)
   if (dep.version !== undefined) assert.equal(readJson(found).version, dep.version)
+}
+/**
+ * SHELVE-BOARD (the user, 2026-11-18: "…所以不要预留在子实例的Fishball内"): every trace of the shelved
+ * board in the hosted child profile at `profileDir`, empty when none. A copy in vendor/ or
+ * node_modules/ (a folder or a tarball named after it), a dependency, a `dsh.profile.bundles` entry,
+ * any mention in the placement record (so a disabled or reserved entry counts), an install spec
+ * `fishball-board@…` anywhere in the profile manifest. Shared by every instance suite's SHELVE rows.
+ */
+export function shelvedTraces(profileDir) {
+  const { name } = SHELVED.board
+  const manifest = readJson(path.join(profileDir, TARBALL.manifest)) ?? {}
+  const record = readJson(path.join(profileDir, CHILD_PLACEMENT.record))
+  const copies = CHILD_PLACEMENT.copyDirs.flatMap((dir) => {
+    const at = path.join(profileDir, dir)
+    return fs.existsSync(at) ? fs.readdirSync(at).filter((f) => f.startsWith(name)).map((f) => `${dir}/${f}`) : []
+  })
+  return [
+    ...copies,
+    ...(Object.hasOwn(manifest.dependencies ?? {}, name) ? [`dependencies.${name} = ${show(manifest.dependencies[name])}`] : []),
+    ...(bundlesOf(manifest).includes(name) ? [`${DSH.bundlesPath.join('.')} holds ${name}`] : []),
+    ...(JSON.stringify(record).includes(name) ? [`${CHILD_PLACEMENT.record} names ${name}: ${show(record)}`] : []),
+    ...(JSON.stringify(manifest).includes(name + '@') ? [`an install spec ${name}@… in the profile manifest`] : []),
+  ]
 }
 /** XOR one byte of `file` at `offset` with the tamper mask, in place. */
 export function flipByte(file, offset) {

@@ -20,8 +20,9 @@ import { pathToFileURL } from 'node:url'
 import { REPO } from '../../../support/constants.mjs'
 import {
   BUNDLED_FIELDS, DEP_FIELDS, DSH_FIELD, DSH_SIDE, EMBED_CONNECTOR_ALLOWED, FEATURES, JS_FILE, LATER, LIBRARIES, MIN_LIBRARY_USERS, MOVED_INTO_CORE, NPM, ROOT_WORKSPACE,
-  RUNTIME_DEP_FIELD, SDK, SET_SIDE, SHARED_READER, USERS_RULE, V3, V3_NAMES, sideOf,
+  RUNTIME_DEP_FIELD, SDK, SET_SIDE, SHARED_READER, SHELVED_BOARD, USERS_RULE, V3, V3_NAMES, sideOf,
 } from './constants.mjs'
+import { readTokens } from '../../fishball-core/package/static.mjs'
 import { manifestNames, npmTempRoot, observe, readManifest } from './packages.mjs'
 import { assertLibraryCopies } from '../../release/pack/release.mjs'
 
@@ -155,6 +156,48 @@ export function registerSharedCases(sdk) {
   for (const lib of LIBRARIES) registerLibraryCases(sdk, lib)
   registerUsersRuleCases(sdk)
   registerPackageCases(sdk)
+  registerShelvedBoardCases(sdk)
+}
+
+/**
+ * SHELVE-BOARD (EP per holder × kind of reference: code token, shipped data file, manifest field): core
+ * and fishball-ui hold no hard reference to the shelved fishball-board (constants.mjs SHELVED_BOARD).
+ */
+function registerShelvedBoardCases(sdk) {
+  const { pkg, holders, mention, prose, samples } = SHELVED_BOARD
+  caseTest(sdk, 'SHELVE-EP-01', 'rule', 'the board-mention rule flags the package name, a board route, the board_ tool prefix and the word, and none of dashboard, clipboard, onboarding, keyboard', () => {
+    assert.deepEqual(samples.hit.filter((t) => !mention.test(t)), [])
+    assert.deepEqual(samples.clean.filter((t) => mention.test(t)), [])
+  })
+  for (const holder of holders) {
+    caseTest(sdk, 'SHELVE-EP-01', 'code ' + holder.name, `no identifier or string of ${holder.name}'s shipped JS names ${pkg.name} or the board (no nav entry, route, guard, settings link, persona or tool mention)`, async () => {
+      const unit = await unitOf(holder.name)
+      assert.ok(unit, holder.name + ' is not packed')
+      const own = fs.realpathSync(holder.dir)
+      const js = unit.files.filter((f) => JS_FILE.test(f) && !f.split('/').includes('node_modules'))
+      assert.ok(js.length > 0, holder.name + ' ships no JS (precondition)')
+      const results = await readTokens(js.map((f) => path.join(own, f)))
+      const hits = []
+      for (const f of js) {
+        const r = results[path.join(own, f)]
+        assert.equal(r?.error, undefined, `${f} does not parse: ${r?.error}`)
+        for (const v of [...r.names, ...r.strings]) if (mention.test(v)) hits.push(`${f}: ${JSON.stringify(v)}`)
+      }
+      assert.deepEqual(hits, [])
+    })
+    caseTest(sdk, 'SHELVE-EP-01', 'data ' + holder.name, `no shipped data file of ${holder.name} (its patch, package.json files; READMEs aside) names ${pkg.name} or the board`, async () => {
+      const unit = await unitOf(holder.name)
+      const data = unit.files.filter((f) => !JS_FILE.test(f) && !prose.test(f) && !f.split('/').includes('node_modules'))
+      assert.ok(data.length > 0, holder.name + ' ships no data file (precondition)')
+      const hits = data.filter((f) => mention.test(fs.readFileSync(path.join(holder.dir, f), 'utf8')))
+      assert.deepEqual(hits, [])
+    })
+    caseTest(sdk, 'SHELVE-EP-01', 'manifest ' + holder.name, `${holder.name}'s manifest names ${pkg.name} in no dependency, peer, optional-peer or bundle field`, () => {
+      const manifest = readManifest(holder.dir)
+      const named = [...manifestNames(manifest, [...DEP_FIELDS, ...BUNDLED_FIELDS, 'peerDependenciesMeta'])].filter((e) => e.name === pkg.name)
+      assert.deepEqual(named, [])
+    })
+  }
 }
 
 /** The rows every library meets on its own (PLAT-EP-07 rows 3, 4, 5, 6, 7a, 7b), for one library. */

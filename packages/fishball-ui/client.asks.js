@@ -42,10 +42,11 @@ window.__ModuleLoader__.load({
       answer: 'api/fishball/asks/answer',
       jsonHeaders: Object.freeze({ 'content-type': 'application/json' }),
       state: Object.freeze({ open: 'open', answered: 'answered', closed: 'closed' }),
-      css: Object.freeze({ id: 'fishball-asks-style', root: 'fb-asks', card: 'fb-ask-card', meta: 'fb-ask-meta', question: 'fb-ask-question', detail: 'fb-ask-detail', args: 'fb-ask-args', row: 'fb-ask-row', reason: 'fb-ask-reason', error: 'fb-ask-error' }),
+      css: Object.freeze({ id: 'fishball-asks-style', root: 'fb-asks', card: 'fb-ask-card', meta: 'fb-ask-meta', from: 'fb-ask-from', time: 'fb-ask-time', body: 'fb-ask-body', question: 'fb-ask-question', detail: 'fb-ask-detail', label: 'fb-ask-label', args: 'fb-ask-args', row: 'fb-ask-row', reason: 'fb-ask-reason', error: 'fb-ask-error' }),
       // K1's ARGUMENTS_STATUS word for whole arguments (core's AskCard.argumentsStatus, ask-card.d.ts).
       argumentsComplete: 'complete',
-      tone: Object.freeze({ open: 'info', done: 'neutral' }),
+      // DSH's Tag tones: an open card sits in the approval card's warn band; a finished one is quiet.
+      tone: Object.freeze({ open: 'warning', done: 'neutral' }),
       reasonRows: 2,
     })
 
@@ -76,15 +77,31 @@ window.__ModuleLoader__.load({
       failed: '回答被拒绝。',
     }
 
+    // UI-POLISH-F: the layout of DSH's own approval card (dsh-client-ui-approval, both SDKs): a warn
+    // band naming who asks, the question as the headline, the details, and the choices at the end.
+    // An answered or closed card keeps only the band and the question, muted.
+    const openCard = `[data-fishball-ask-state="${ASKS_UI.state.open}"]`
     const css = [
-      `.${ASKS_UI.css.root}{display:grid;gap:8px;margin:0 0 8px}`,
-      `.${ASKS_UI.css.card}{display:grid;gap:6px;padding:10px 12px;border:1px solid var(--dsw-alias-border-l1);border-radius:var(--dsw-radius-md);background:var(--dsw-alias-bg-layer-1);font:var(--dsw-font-xs-13)}`,
-      `.${ASKS_UI.css.meta}{display:flex;align-items:center;flex-wrap:wrap;gap:6px;color:var(--dsw-alias-label-tertiary)}`,
-      `.${ASKS_UI.css.question}{margin:0;white-space:pre-wrap;color:var(--dsw-alias-label-primary)}`,
+      // The warn stroke is an overlay above the children, so the opaque band cannot paint over it.
+      `.${ASKS_UI.css.card}{position:relative}`,
+      `.${ASKS_UI.css.card}${openCard}::after{content:"";position:absolute;inset:0;border-radius:inherit;box-shadow:inset 0 0 0 1px var(--dsw-alias-state-warn-secondary);pointer-events:none}`,
+      `.${ASKS_UI.css.card}:not(${openCard}){color:var(--dsw-alias-label-secondary)}`,
+      `.${ASKS_UI.css.meta}{display:flex;align-items:center;flex-wrap:wrap;gap:8px;padding:8px 16px;font:var(--dsw-font-xxs-12);color:var(--dsw-alias-label-tertiary)}`,
+      // Only the Tag carries the warn colour: warn text on the warn band is too faint to read.
+      `.${ASKS_UI.css.card}${openCard} .${ASKS_UI.css.meta}{background:var(--dsw-alias-state-warn-tertiary);color:var(--dsw-alias-label-secondary)}`,
+      `.${ASKS_UI.css.from}{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}`,
+      `.${ASKS_UI.css.time}{margin-left:auto;white-space:nowrap}`,
+      `.${ASKS_UI.css.body}{display:grid;gap:8px;padding:12px 16px 14px}`,
+      `.${ASKS_UI.css.question}{margin:0;white-space:pre-wrap;font:var(--dsw-font-s-strong-14);color:var(--dsw-alias-label-primary)}`,
+      `.${ASKS_UI.css.card}:not(${openCard}) .${ASKS_UI.css.question}{font:var(--dsw-font-xs-13);color:var(--dsw-alias-label-secondary)}`,
       `.${ASKS_UI.css.detail}{margin:0;color:var(--dsw-alias-label-secondary);white-space:pre-wrap}`,
-      `.${ASKS_UI.css.args}{margin:0;max-height:12em;overflow:auto;padding:6px 8px;border-radius:var(--dsw-radius-md);background:var(--dsw-alias-bg-layer-2);font-family:var(--dsw-font-family-mono, monospace);white-space:pre-wrap;word-break:break-all}`,
-      `.${ASKS_UI.css.row}{display:flex;align-items:center;flex-wrap:wrap;gap:8px}`,
-      `.${ASKS_UI.css.reason}{width:100%;box-sizing:border-box;resize:vertical;font:inherit}`,
+      `.${ASKS_UI.css.label}{margin:0 0 4px;font:var(--dsw-font-xxs-strong-12);color:var(--dsw-alias-label-tertiary)}`,
+      `.${ASKS_UI.css.args}{margin:0;max-height:12em;overflow:auto;padding:8px 10px;border-radius:var(--dsw-radius-sm);background:var(--dsw-alias-bg-module-platform);font:var(--dsw-font-xxs-12);font-family:var(--ds-font-family-code, monospace);color:var(--dsw-alias-label-secondary);white-space:pre-wrap;word-break:break-all}`,
+      `.${ASKS_UI.css.row}{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:8px}`,
+      // The input look of DSH's settings fields (SettingsValueField, both SDKs).
+      `.${ASKS_UI.css.reason}{width:100%;box-sizing:border-box;resize:vertical;padding:6px 10px;border:.5px solid var(--dsw-alias-border-l4);border-radius:var(--dsw-radius-md);background:var(--dsw-alias-bg-layer-3);color:var(--dsw-alias-label-primary);font:var(--dsw-font-xs-13)}`,
+      `.${ASKS_UI.css.reason}::placeholder{color:var(--dsw-alias-label-dimmed)}`,
+      `.${ASKS_UI.css.reason}:focus-visible{outline:var(--dsw-focus-ring-width) solid var(--dsw-focus-ring-color, var(--dsw-alias-state-business-primary));outline-offset:-1px}`,
       `.${ASKS_UI.css.error}{margin:0;color:var(--dsw-alias-state-error-primary)}`,
     ].join('')
 
@@ -119,7 +136,7 @@ window.__ModuleLoader__.load({
       }
     }
 
-    function makeDock(stream) {
+    function makeDock(stream, kit) {
       /** One card: the asking session, the question, and Allow / Reject with an optional reason. */
       function AskCard({ card, t }) {
         const [reason, setReason] = React.useState('')
@@ -138,29 +155,30 @@ window.__ModuleLoader__.load({
           // A refusal that closed the card arrives on the stream; any other leaves it answerable.
           if (!ok) setFailed(true)
         }
-        return h('div', { className: ASKS_UI.css.card, 'data-fishball-ask': card.approvalId, 'data-fishball-ask-state': card.state },
+        return h('div', { className: [kit.css.card, ASKS_UI.css.card].join(' '), 'data-fishball-ask': card.approvalId, 'data-fishball-ask-state': card.state },
           h('div', { className: ASKS_UI.css.meta },
             h(Tag, { tone: open ? ASKS_UI.tone.open : ASKS_UI.tone.done }, open ? t('waiting') : t('state.' + card.state)),
-            h('span', null, t('from') + ': ' + (card.sessionTitle ?? card.sessionId)),
-            h('span', null, new Date(card.askedAt).toLocaleString())),
-          h('p', { className: ASKS_UI.css.question }, card.question),
-          // The user, 2026-11-17: "Show arguments and reason". Plain text children: React escapes them.
-          card.arguments == null ? null : h('div', { 'data-fishball-ask-arguments': true },
-            h('p', { className: ASKS_UI.css.detail }, t('detail.arguments')),
-            h('pre', { className: ASKS_UI.css.args }, card.arguments)),
-          card.reason == null ? null : h('p', { className: ASKS_UI.css.detail, 'data-fishball-ask-reason': true }, t('detail.reason') + ': ' + card.reason),
-          open && card.argumentsStatus != null && card.argumentsStatus !== ASKS_UI.argumentsComplete
-            ? h('p', { className: ASKS_UI.css.detail, 'data-fishball-ask-incomplete': true }, t('detail.incomplete')) : null,
-          open ? h('textarea', {
-            className: ASKS_UI.css.reason, rows: ASKS_UI.reasonRows, value: reason, placeholder: t('reason'), 'aria-label': t('reason'),
-            disabled: sending, onChange: (event) => setReason(event.target.value),
-          }) : null,
-          open ? h('div', { className: ASKS_UI.css.row },
-            card.choices.map((choice) => h(Button, {
-              key: choice, type: 'button', size: 'sm', variant: choice === card.choices[0] ? 'primary' : 'outline',
-              disabled: sending, 'data-fishball-ask-choice': choice, onClick: () => send(choice),
-            }, t('choice.' + choice)))) : null,
-          failed && open ? h('p', { className: ASKS_UI.css.error, role: 'alert' }, t('failed')) : null)
+            h('span', { className: ASKS_UI.css.from }, t('from') + ': ' + (card.sessionTitle ?? card.sessionId)),
+            h('span', { className: ASKS_UI.css.time }, new Date(card.askedAt).toLocaleString())),
+          h('div', { className: ASKS_UI.css.body },
+            h('p', { className: ASKS_UI.css.question }, card.question),
+            // The user, 2026-11-17: "Show arguments and reason". Plain text children: React escapes them.
+            card.arguments == null ? null : h('div', { 'data-fishball-ask-arguments': true },
+              h('p', { className: ASKS_UI.css.label }, t('detail.arguments')),
+              h('pre', { className: ASKS_UI.css.args }, card.arguments)),
+            card.reason == null ? null : h('p', { className: ASKS_UI.css.detail, 'data-fishball-ask-reason': true }, t('detail.reason') + ': ' + card.reason),
+            open && card.argumentsStatus != null && card.argumentsStatus !== ASKS_UI.argumentsComplete
+              ? h('p', { className: ASKS_UI.css.detail, 'data-fishball-ask-incomplete': true }, t('detail.incomplete')) : null,
+            open ? h('textarea', {
+              className: ASKS_UI.css.reason, rows: ASKS_UI.reasonRows, value: reason, placeholder: t('reason'), 'aria-label': t('reason'),
+              disabled: sending, onChange: (event) => setReason(event.target.value),
+            }) : null,
+            open ? h('div', { className: ASKS_UI.css.row },
+              card.choices.map((choice) => h(Button, {
+                key: choice, type: 'button', size: 'sm', variant: choice === card.choices[0] ? 'primary' : 'outline',
+                disabled: sending, 'data-fishball-ask-choice': choice, onClick: () => send(choice),
+              }, t('choice.' + choice)))) : null,
+            failed && open ? h('p', { className: ASKS_UI.css.error, role: 'alert' }, t('failed')) : null))
       }
 
       // `t` is the slot's own locale prop (registered with `locale`), so a language switch re-renders
@@ -169,7 +187,7 @@ window.__ModuleLoader__.load({
         const { managerSessionId, cards } = React.useSyncExternalStore(stream.subscribe, stream.get)
         // Only Fishball's own conversation shows its cards (Q-U2: never another session's view).
         if (sessionId === undefined || sessionId !== managerSessionId || cards.length === 0) return null
-        return h('div', { className: ASKS_UI.css.root, 'data-fishball-asks': true }, cards.map((card) => h(AskCard, { key: card.approvalId, card, t })))
+        return h('div', { className: [kit.css.dock, ASKS_UI.css.root].join(' '), 'data-fishball-asks': true }, cards.map((card) => h(AskCard, { key: card.approvalId, card, t })))
       }
     }
 
@@ -182,7 +200,7 @@ window.__ModuleLoader__.load({
         ctx.effect(() => ctx.slots.inject(ASKS_UI.slot, () => ctx.slots.register({
           name: ASKS_UI.slot, id: ASKS_UI.id, order: ASKS_UI.order, locale: ASKS_UI.locale,
           inject: (sessionId) => ({ sessionId }),
-        }, makeDock(stream))), 'fishball asks: card dock')
+        }, makeDock(stream, kit))), 'fishball asks: card dock')
       }
       return Object.freeze({ name: ASKS_UI.name, inject: ['slots', 'locale'], apply })
     }

@@ -18,9 +18,10 @@ Version `1.0.0-alpha.1`. Install and uninstall are in the [root README](<../../R
   instance rows (the lifecycle row and the child-side row `dsh-instance-child`, whose config holds
   the target URL) and the isolation of the child's instructions and skills from yours. No guard row
   and no token: the guards are fishball-core's own patch.
-- **Placement:** at every start, before the profile loads, `fishball-board`, `fishball-ui` and
+- **Placement:** at every start, before the profile loads, `fishball-ui` and
   `fishball-core` are copied into `<profile>/vendor/<name>` and `<profile>/node_modules/<name>` and
-  appended to the profile's bundles in that order, core last. Sources: `bundled/<dir>` in a packed
+  appended to the profile's bundles in that order, core last (`fishball-board` is shelved, not in
+  1.0.0-alpha.1, and is never placed). Sources: `bundled/<dir>` in a packed
   instance, else the sibling workspace folders of a source checkout. The record
   `fishball-placement.json` keeps your switches: a plugin is on at its first placement, a later
   disable survives, and one deleted while off comes back off. An enabled plugin the child cannot

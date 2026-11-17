@@ -9,6 +9,7 @@
 import os from 'node:os'
 import path from 'node:path'
 import { REPO, TEST_HOMES } from '../../../support/constants.mjs'
+import { SHELVED } from '../../release/pack/constants.mjs'
 
 const pkg = (name, folder) => Object.freeze({ name, dir: path.join(REPO, 'packages', folder) })
 
@@ -50,6 +51,25 @@ export const sideOf = (name) => Object.values(SIDES).find((side) => side.package
 export const SET_SIDE = Object.freeze([V3.core.name, V3.ui.name, V3.board.name])
 /** Design §9.1: the feature plugin finds core only through the optional `fishballInstance?` inject. */
 export const FEATURES = Object.freeze([V3.board.name])
+/**
+ * SHELVE-BOARD: fishball-board is shelved, not in 1.0.0-alpha.1 (the user, 2026-11-18:
+ * "fishball-board先从这次release中移除，我要改的地方太多了。先封存，留到下一批再说。所以不要预留在子实例的Fishball内。").
+ * packages/board stays in the repo, but core and fishball-ui hold no hard reference to it: no
+ * identifier or string in their shipped code (a nav entry, route, guard, settings link, persona or
+ * tool mention would be one), no line of their patch or other shipped data file, no manifest field
+ * (an optional peer included). READMEs are prose for the reader, not a reference, so they are left out.
+ * `mention` is REL-PACK's one board-mention rule (release/pack/constants.mjs SHELVED.mention).
+ */
+export const SHELVED_BOARD = Object.freeze({
+  pkg: V3.board,
+  holders: Object.freeze([V3.core, V3.ui]),
+  mention: SHELVED.mention,
+  prose: /(?:^|\/)(?:README|LICENSE|THIRD_PARTY_NOTICES)[^/]*$/i,
+  samples: Object.freeze({
+    hit: Object.freeze(['fishball-board', '/api/fishball/board', 'board_search', 'Board', 'open the board']),
+    clean: Object.freeze(['dashboard', 'clipboard-write', 'onboarding', 'keyboard', 'settings.onboarding']),
+  }),
+})
 /** Design §9.1: embed-UI may take `./tools` from the connector (types and data), nothing else. */
 export const EMBED_CONNECTOR_ALLOWED = Object.freeze(['dsh-agent-connector/tools'])
 

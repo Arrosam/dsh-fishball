@@ -6,6 +6,8 @@ import { boot, request } from '../../fishball-core/wire/subject.mjs'
 import { C } from '../../fishball-core/wire/constants.mjs'
 import { page, firstFrame, routeStatus } from './subject.mjs'
 import { U } from './constants.mjs'
+import { registerModelPolishCases } from './polish-cases.mjs'
+import { registerStripCases } from './strip-cases.mjs'
 /** Press the dialog's dismiss control, then let a window focus pass (a reopen trigger it must ignore). */
 async function dismiss(p) {
   await p.press(p.buttons().find((n) => U.dismiss.test(textOf(n))))
@@ -17,6 +19,9 @@ async function dismiss(p) {
 // (code review, F-WIRE): the dialog shows only while the mark is present; a dismissal lasts while
 // the page stays open and is forgotten when the mark goes away, so it shows again when it returns.
 export function registerModelDialogCases(sdk) {
+  // UI-POLISH-F §4 (grouped choices, aria-labels) and §2 (the drawn status card).
+  registerModelPolishCases(sdk)
+  registerStripCases(sdk)
   for (const lang of U.lang) {
     test(`${sdk} MODEL-EP-01 ${lang} unset model prompts with all catalog models`, async (t) => {
       const p = await page(t, sdk, { lang })

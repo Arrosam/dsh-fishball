@@ -148,7 +148,7 @@ async function replaceSlot(parent, name, populate) {
 /**
  * A set member's source in a checkout: its sibling workspace folder, as copyChildCode read core
  * before I-PLACE. The folder counts only when its manifest names the member: an installed instance
- * sits in a node_modules whose siblings are unrelated packages (npm has `core` and `board`).
+ * sits in a node_modules whose siblings are unrelated packages (npm has a `core` package).
  */
 async function memberSource(bundle) {
   const root = path.join(INSTANCE_ROOT, PLACEMENT.parent, bundle.directory)
@@ -319,7 +319,7 @@ async function copiedSources(paths, installation, signal) {
  *   while off returns off (R-BND-02). The manifest is read before the install, because the install
  *   itself declares the members;
  * - every other bundle keeps its place, and the placed ones follow in PLACEMENT.bundles order:
- *   board, fishball-ui, then fishball-core last (R-FB-12; fishball-ui's guard rows hold in any
+ *   fishball-ui, then fishball-core last (R-FB-12; fishball-ui's guard rows hold in any
  *   order, core's need it last). fishball-ui and core both bundle fishball-shared; it is placed once.
  * Installs and copies come first and the manifest and record after, so a failed copy or install
  * changes no selection.

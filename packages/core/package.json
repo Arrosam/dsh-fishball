@@ -2,6 +2,7 @@
   "name": "fishball-core",
   "version": "1.0.0-alpha.1",
   "description": "Fishball's core plugin, the backend: the Fishball manager session and its preset, persona, reminders and private Skills tools, the link, Connect, the interception service, status, the ask-card store, pairing, the non-UI guard rows and its own plugin settings page. Every other UI change inside Fishball is the fishball-ui plugin's.",
+  "icon": "./assets/fishball-core-icon.svg",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -24,6 +25,7 @@
   },
   "//files": "contracts/constants.js is K3's one data-only runtime module (K3 amendment 2026-11-14); src/ imports it, so it ships, while the contract's .d.ts files are types only and do not. Core keeps no copy of the connector's files and generates nothing from it (F-OWN-SCHEMA, design §1.0b row 1): its link reads K3a's MCP and LINK in contracts/constants.js, checked against the connector by contract tests.",
   "files": [
+    "assets/fishball-core-icon.svg",
     "client.js",
     "client.settings.js",
     "contracts/constants.js",

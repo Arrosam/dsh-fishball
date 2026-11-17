@@ -1,7 +1,7 @@
 /**
  * F-STATUS black-box cases (USE-CASES.md): core's status snapshot, the strip view, the set
- * completeness check (PLAT-DT-02 rewritten for board only; HOST-DT-03 rule 10), the guards notice
- * (R-FB-09, design §5a.2), the contributed-tools count (R-EXT-14), `fishball-off` (R-FB-10) and the
+ * completeness check (PLAT-DT-02, no member since SHELVE-BOARD 2026-11-18, so always ok; HOST-DT-03
+ * rule 10), the guards notice (R-FB-09, design §5a.2), the contributed-tools count (R-EXT-14), `fishball-off` (R-FB-10) and the
  * display of core's target status (REM-DT-01; R-FB-03, R-FB-04; design §6.3a Connect).
  *
  * Techniques, Use Cases first (UC-STATUS-01…06), then Decision Tables (REM-DT-01 display rules,
@@ -19,8 +19,8 @@ import { spawnSync } from 'node:child_process'
 import { caseTest } from '../../contract/package-boundaries/cases.mjs'
 import { watchNetwork } from '../link/net-probe.mjs'
 import {
-  CONNECT_STATUS, FIXTURE, GUARD, HOST, LANG, LATER, LINE, LINK_STATUS, MODEL, NEVER_REPORTED, NEVER_SHOWN, PROBE, REASON_TEXT_EN, SECRET,
-  SNAPSHOT_KEYS, STRIP, SUBJECT, TARGET, WAIT,
+  BOARD, CONNECT_STATUS, FIXTURE, GUARD, HOST, LANG, LATER, LINE, LINK_STATUS, MODEL, NEVER_REPORTED, NEVER_SHOWN, PROBE, REASON_TEXT_EN, SECRET,
+  SNAPSHOT_KEYS, STRIP, SUBJECT, TARGET, UI_CARD, WAIT,
 } from './constants.mjs'
 import { NOTIFY, NO_FIBER, bundle, entry, initializingEntry, loadingEntry } from './fakes.mjs'
 import { statusModule, statusOf, stripModule, stripView } from './subject.mjs'
@@ -29,12 +29,22 @@ import { ABSENT, settle, worldFor } from './world.mjs'
 const show = (value) => JSON.stringify(value)
 /** The line a link status gives when the link's word is kept: `{kind: state, code}`. */
 const linkLine = (status) => ({ kind: status.state, code: status.code })
-const BOARD = MODEL.members[0]
-/** The board as a loaded member: bundle on, its row's entry active. */
-const boardBundle = (options) => bundle(BOARD, { rows: [[FIXTURE.boardRow, FIXTURE.boardEntry]], ...options })
-const boardEntry = (options) => entry(FIXTURE.boardEntry, options)
+/** The stand-in board (constants.mjs BOARD), loaded: bundle on, its row's entry active. */
+const boardBundle = (options) => bundle(BOARD.name, { rows: [[BOARD.row, BOARD.entry]], ...options })
+const boardEntry = (options) => entry(BOARD.entry, options)
 const SET_OK = Object.freeze({ status: MODEL.set.ok, missing: [] })
-const missing = (reason, code = null) => ({ status: MODEL.set.incomplete, missing: [{ name: BOARD, reason, code }] })
+/**
+ * SHELVE-BOARD (the user, 2026-11-18): core checks no member, so the set is `ok` whatever the board's
+ * state: the snapshot's set is SET_OK, and neither language's strip has a set line or mentions the board.
+ */
+async function assertBoardNeverReported(sdk, snapshot, why) {
+  assert.deepEqual(snapshot.set, SET_OK, `${why}: set`)
+  for (const lang of [LANG.en, LANG.zh]) {
+    const lines = (await stripView(sdk, snapshot, lang)).lines
+    assert.ok(!linesOf({ lines }).includes(STRIP.set), `${why}: ${lang} set line ${show(lines)}`)
+    assert.equal(BOARD.mention.exec(show(lines))?.[0], undefined, `${why}: ${lang} strip mentions the board ${show(lines)}`)
+  }
+}
 
 /** Every key of a value, at any depth. */
 function keysDeep(value, out = []) {
@@ -74,6 +84,8 @@ export function registerStatusCases(sdk) {
   const t = (id, row, title, fn, todo) => caseTest(sdk, id, row, title, fn, todo)
 
   // ---------------------------------------------------------------- the exported surface
+  // SHELVE-BOARD (the user, 2026-11-18): MODEL.members is now [] (was [fishball-board]): the board left
+  // the check, and STATUS_MODEL must spell no member.
   t('F-STATUS-00', 'surface', 'STATUS_MODEL is frozen and spells the relayed words; guardsNotice names the list', async () => {
     const mod = await statusModule(sdk)
     const model = mod[SUBJECT.model]
@@ -298,7 +310,7 @@ export function registerStatusCases(sdk) {
     assert.deepEqual(net.all(), [], 'a network attempt')
   })
 
-  // ---------------------------------------------------------------- PLAT-DT-02 (board only) and the app-ready boundary
+  // ---------------------------------------------------------------- PLAT-DT-02 (no member since SHELVE-BOARD) and the app-ready boundary
   t('F-STATUS-ST-04', 'before ready', 'set is null before app ready, also across plugin-manager/changed; computed at app ready', async (c) => {
     const w = await worldFor(c, sdk, { bundles: [boardBundle()], entries: [boardEntry()] })
     w.changed()
@@ -312,46 +324,47 @@ export function registerStatusCases(sdk) {
     assert.deepEqual((await w.until((s) => s.set !== null)).set, SET_OK)
   })
 
+  // SHELVE-BOARD (the user, 2026-11-18): the board left core's set check (no member remains), so every
+  // rule's board state gives `ok` with nothing missing and no set line. Rules 1, 2, 5 and 6 were `ok`
+  // already; rules 3 and 4 (the board reported skipped or failed) are re-baselined at their rows.
   const setRules = [
-    ['rule 1', 'board on and loaded → ok', [boardBundle()], [boardEntry()], SET_OK],
-    ['rule 2', 'board not installed (absent from the list) → ok, nothing reported', [], [], SET_OK],
-    ['rule 2 listed', 'board listed but not installed and not selected → ok', [bundle(BOARD, { enabled: false, installed: false })], [], SET_OK],
-    ['rule 3', 'board enabled but skipped (incompatible) → reported, skipped with the manager code', [bundle(BOARD, { error: HOST.incompatible })], [], missing(MODEL.reason.skipped, HOST.incompatible)],
-    ['rule 3 other code', 'board enabled, skipped with operation-error → reported with that code', [bundle(BOARD, { error: HOST.operationError })], [], missing(MODEL.reason.skipped, HOST.operationError)],
+    ['rule 1', 'board on and loaded → ok', [boardBundle()], [boardEntry()]],
+    ['rule 2', 'board not installed (absent from the list) → ok, nothing reported', [], []],
+    ['rule 2 listed', 'board listed but not installed and not selected → ok', [bundle(BOARD.name, { enabled: false, installed: false })], []],
+    // SHELVE-BOARD (the user, 2026-11-18): was "reported, skipped with the manager code"; the board is no member.
+    ['rule 3', 'board enabled but skipped (incompatible) → ok, never reported', [bundle(BOARD.name, { error: HOST.incompatible })], []],
+    // SHELVE-BOARD (the user, 2026-11-18): was "reported with that code"; any skip code is not reported.
+    ['rule 3 other code', 'board enabled, skipped with operation-error → ok, never reported', [bundle(BOARD.name, { error: HOST.operationError })], []],
     // Dev session decision 2026-11-16 (R-BND-05, design §8.2): selected but unresolvable or unreadable is
-    // "enabled but skipped", reported with DSH's error.code; "not installed" is not selected or not listed.
-    ['rule 3 unresolved', 'board selected, package not installed (not-bundle) → reported, skipped with that code', [bundle(BOARD, { installed: false, error: HOST.notBundle })], [], missing(MODEL.reason.skipped, HOST.notBundle)],
-    ['rule 3 unreadable', 'board selected and installed, package unreadable (not-bundle) → reported, skipped with that code', [bundle(BOARD, { error: HOST.notBundle })], [], missing(MODEL.reason.skipped, HOST.notBundle)],
-    ['rule 2 unselected unreadable', 'board not selected, package unreadable (not-bundle) → ok (not selected is not installed)', [bundle(BOARD, { enabled: false, error: HOST.notBundle })], [], SET_OK],
-    ['rule 4', 'board enabled, its row failed to load (fiber FAILED) → reported, failed, code null', [boardBundle()], [boardEntry({ state: HOST.fiberFailed })], missing(MODEL.reason.failed)],
+    // "enabled but skipped". SHELVE-BOARD (the user, 2026-11-18): it was reported with DSH's error.code;
+    // the board is no member now, so unresolved and unreadable are not reported either.
+    ['rule 3 unresolved', 'board selected, package not installed (not-bundle) → ok, never reported', [bundle(BOARD.name, { installed: false, error: HOST.notBundle })], []],
+    ['rule 3 unreadable', 'board selected and installed, package unreadable (not-bundle) → ok, never reported', [bundle(BOARD.name, { error: HOST.notBundle })], []],
+    ['rule 2 unselected unreadable', 'board not selected, package unreadable (not-bundle) → ok (not selected is not installed)', [bundle(BOARD.name, { enabled: false, error: HOST.notBundle })], []],
+    // SHELVE-BOARD (the user, 2026-11-18): was "reported, failed, code null"; a failed board row is not reported.
+    ['rule 4', 'board enabled, its row failed to load (fiber FAILED) → ok, never reported', [boardBundle()], [boardEntry({ state: HOST.fiberFailed })]],
     // Dev session amendment 2026-11-16: the loader catches an import error and leaves fiber undefined.
-    ['rule 4 no fiber', 'board enabled, its live entry has no fiber after its import settled → reported, failed, code null', [boardBundle()], [boardEntry({ state: NO_FIBER })], missing(MODEL.reason.failed)],
-    ['rule 5', 'board switched off by the owner → ok', [boardBundle({ enabled: false })], [], SET_OK],
-    ['rule 5 incompatible', 'board off while incompatible → ok (only an enabled member is missing)', [bundle(BOARD, { enabled: false, error: HOST.incompatible })], [], SET_OK],
-    ['rule 6', "board enabled, its row switched off by the owner (entry disabled) → ok", [boardBundle()], [boardEntry({ disabled: true, state: NO_FIBER })], SET_OK],
+    // SHELVE-BOARD (the user, 2026-11-18): was "reported, failed, code null"; the board is no member.
+    ['rule 4 no fiber', 'board enabled, its live entry has no fiber after its import settled → ok, never reported', [boardBundle()], [boardEntry({ state: NO_FIBER })]],
+    ['rule 5', 'board switched off by the owner → ok', [boardBundle({ enabled: false })], []],
+    ['rule 5 incompatible', 'board off while incompatible → ok', [bundle(BOARD.name, { enabled: false, error: HOST.incompatible })], []],
+    ['rule 6', "board enabled, its row switched off by the owner (entry disabled) → ok", [boardBundle()], [boardEntry({ disabled: true, state: NO_FIBER })]],
   ]
-  for (const [rule, title, bundles, entries, expected] of setRules) {
+  for (const [rule, title, bundles, entries] of setRules) {
     t('PLAT-DT-02', rule, title, async (c) => {
       const w = await worldFor(c, sdk, { bundles, entries })
-      const set = await readySet(w)
-      assert.deepEqual(set, expected)
-      const view = await stripView(sdk, w.snapshot())
-      if (expected.status === MODEL.set.incomplete) await assertBilingual(sdk, w.snapshot(), STRIP.set, [BOARD])
-      if (expected.status === MODEL.set.incomplete) {
-        const en = lineOf(await stripView(sdk, w.snapshot(), LANG.en), STRIP.set).text
-        const zh = lineOf(await stripView(sdk, w.snapshot(), LANG.zh), STRIP.set).text
-        const word = REASON_TEXT_EN[expected.missing[0].reason]
-        assert.ok(en.includes(word), `en set line lacks the reason word ${show(word)}: ${en}`)
-        assert.ok(!zh.includes(word), `zh set line keeps the en reason word ${show(word)}: ${zh}`)
-      }
-      else assert.ok(!linesOf(view).includes(STRIP.set), `a set line while the set is ok: ${show(view.lines)}`)
+      await readySet(w)
+      await assertBoardNeverReported(sdk, w.snapshot(), rule)
     })
   }
 
-  t('F-STATUS-BVA-02', 'fiber', 'fiber ACTIVE (2) is loaded and FAILED (3) is failed', async (c) => {
-    for (const [state, expected] of [[HOST.fiberActive, SET_OK], [HOST.fiberFailed, missing(MODEL.reason.failed)]]) {
+  // SHELVE-BOARD (the user, 2026-11-18): was "ACTIVE (2) is loaded and FAILED (3) is failed"; the board
+  // is no member, so both sides of the boundary give ok.
+  t('F-STATUS-BVA-02', 'fiber', 'board row fiber ACTIVE (2) and FAILED (3): ok either way, the board never reported', async (c) => {
+    for (const state of [HOST.fiberActive, HOST.fiberFailed]) {
       const w = await worldFor(c, sdk, { bundles: [boardBundle()], entries: [boardEntry({ state })] })
-      assert.deepEqual(await readySet(w), expected, 'fiber state ' + state)
+      await readySet(w)
+      await assertBoardNeverReported(sdk, w.snapshot(), 'fiber state ' + state)
     }
   })
 
@@ -364,57 +377,76 @@ export function registerStatusCases(sdk) {
   })
 
   for (const [name, which] of [['fishball-ui (Q-G1)', NEVER_REPORTED.ui], ['Watchdog (R-FB-07 withdrawn)', NEVER_REPORTED.watchdog], ['an ordinary other bundle', NEVER_REPORTED.other]]) {
-    t('F-STATUS-EP-02', name, `${which} enabled but skipped, or with a failed row, is never reported; the board alone is`, async (c) => {
+    // SHELVE-BOARD (the user, 2026-11-18): was "…; the board alone is" (reported skipped); the board is
+    // no member now, so with both skipped the set is ok and the strip names neither.
+    t('F-STATUS-EP-02', name, `${which} enabled but skipped, or with a failed row, is never reported; nor is the skipped board`, async (c) => {
       const w = await worldFor(c, sdk, {
-        bundles: [bundle(BOARD, { error: HOST.incompatible }), bundle(which, { error: HOST.incompatible, rows: [[which, FIXTURE.otherEntry]] })],
+        bundles: [bundle(BOARD.name, { error: HOST.incompatible }), bundle(which, { error: HOST.incompatible, rows: [[which, FIXTURE.otherEntry]] })],
         entries: [entry(FIXTURE.otherEntry, { state: HOST.fiberFailed })],
       })
-      assert.deepEqual(await readySet(w), missing(MODEL.reason.skipped, HOST.incompatible))
+      await readySet(w)
+      await assertBoardNeverReported(sdk, w.snapshot(), which)
       const view = await stripView(sdk, w.snapshot())
       assert.ok(!show(view).includes(which), `the strip names ${which}: ${show(view.lines)}`)
     })
   }
 
-  t('F-STATUS-ST-02', 'changed', 'the set follows plugin-manager/changed: ok → skipped → failed → ok, each emitted', async (c) => {
+  // SHELVE-BOARD (the user, 2026-11-18): was "ok → skipped → failed → ok, each emitted"; the board is no
+  // member, so the set stays ok through every board state, and (UC-STATUS-01 main 4: equal snapshots
+  // do not re-emit) no emission follows a change that leaves the snapshot equal.
+  t('F-STATUS-ST-02', 'changed', 'the set stays ok across plugin-manager/changed while the board goes loaded → skipped → failed → loaded; nothing re-emitted', async (c) => {
     const w = await worldFor(c, sdk, { bundles: [boardBundle()], entries: [boardEntry()] })
     assert.deepEqual(await readySet(w), SET_OK)
+    await settle()
+    const before = w.emitted.length
     const steps = [
-      [() => { w.pluginManager.bundles = [bundle(BOARD, { error: HOST.incompatible })] }, missing(MODEL.reason.skipped, HOST.incompatible)],
-      [() => { w.pluginManager.bundles = [boardBundle()]; w.loader.list = [boardEntry({ state: HOST.fiberFailed })] }, missing(MODEL.reason.failed)],
-      [() => { w.loader.list = [boardEntry()] }, SET_OK],
+      ['skipped', () => { w.pluginManager.bundles = [bundle(BOARD.name, { error: HOST.incompatible })] }],
+      ['failed', () => { w.pluginManager.bundles = [boardBundle()]; w.loader.list = [boardEntry({ state: HOST.fiberFailed })] }],
+      ['loaded', () => { w.loader.list = [boardEntry()] }],
     ]
-    for (const [act, expected] of steps) {
-      const before = w.emitted.length
+    for (const [state, act] of steps) {
       act()
       w.changed()
-      const s = await w.until((x) => show(x.set) === show(expected))
-      assert.deepEqual(s.set, expected)
-      assert.ok(w.emitted.length > before && show(w.emitted.at(-1).set) === show(expected), 'the change is emitted')
+      await settle()
+      await assertBoardNeverReported(sdk, w.snapshot(), 'board ' + state)
     }
+    assert.equal(w.emitted.length, before, `re-emitted an equal snapshot: ${show(w.emitted.slice(before))}`)
     assert.deepEqual(w.pluginManager.mutations, [], 'the check changed the plugin manager')
   })
 
+  /** No snapshot the status emitted carried a set other than null (before app ready) or ok. */
+  const assertNeverIncomplete = (w) => {
+    const sets = w.emitted.map((s) => s.set).filter((set) => set !== null)
+    assert.deepEqual(sets.filter((set) => show(set) !== show(SET_OK)), [], 'an emitted set that is not ok')
+  }
   for (const [name, start] of [['fiber loading', loadingEntry], ['import running', initializingEntry]]) {
-    for (const [end, expected] of [[HOST.fiberFailed, missing(MODEL.reason.failed)], [HOST.fiberActive, SET_OK]]) {
-      t('PLAT-DT-02', `rule 4 ${name} ends ${end}`, `plugin-manager/changed while the board row is still loading (${name}): the set is classified once it ends in fiber state ${end}`, async (c) => {
-        const row = start(FIXTURE.boardEntry)
+    for (const end of [HOST.fiberFailed, HOST.fiberActive]) {
+      // SHELVE-BOARD (the user, 2026-11-18): for end 3 it was "failed"; the board is no member, so the row
+      // ending FAILED gives ok too. End 2 was ok already.
+      t('PLAT-DT-02', `rule 4 ${name} ends ${end}`, `plugin-manager/changed while the board row is still loading (${name}): ok once it ends in fiber state ${end}, never reported`, async (c) => {
+        const row = start(BOARD.entry)
         const w = await worldFor(c, sdk, { bundles: [boardBundle()], entries: [row.entry], ready: true })
         w.changed()
         await settle()
         row.end(end)
-        const s = await w.until((x) => show(x.set) === show(expected))
-        assert.deepEqual(s.set, expected, 'set after the row settled')
+        await w.until((x) => x.set !== null)
+        await settle()
+        await assertBoardNeverReported(sdk, w.snapshot(), 'set after the row settled')
+        assertNeverIncomplete(w)
       })
     }
   }
-  t('PLAT-DT-02', 'rule 4 import failed', 'a row whose import is running ends with no fiber (import error) → failed', async (c) => {
-    const row = initializingEntry(FIXTURE.boardEntry)
+  // SHELVE-BOARD (the user, 2026-11-18): was "→ failed"; the board is no member, so its import failing is not reported.
+  t('PLAT-DT-02', 'rule 4 import failed', 'a board row whose import is running ends with no fiber (import error) → ok, never reported', async (c) => {
+    const row = initializingEntry(BOARD.entry)
     const w = await worldFor(c, sdk, { bundles: [boardBundle()], entries: [row.entry], ready: true })
     w.changed()
     await settle()
     row.end(NO_FIBER)
-    const s = await w.until((x) => show(x.set) === show(missing(MODEL.reason.failed)))
-    assert.deepEqual(s.set, missing(MODEL.reason.failed))
+    await w.until((x) => x.set !== null)
+    await settle()
+    await assertBoardNeverReported(sdk, w.snapshot(), 'set after the import failed')
+    assertNeverIncomplete(w)
   })
 
   t('UC-STATUS-02', 'A3', 'no pluginManager service: set stays null after app ready and plugin-manager/changed', async (c) => {
@@ -645,18 +677,39 @@ export function registerStatusCases(sdk) {
   })
 
   // ---------------------------------------------------------------- stripView
-  t('F-STATUS-STRIP', 'order', 'lines in order: link, guards, set, tools; control connect with a label that differs in en and zh', async (c) => {
+  // SHELVE-BOARD (the user, 2026-11-18): was "link, guards, set, tools" with the board skipped; the board
+  // is no member, so the set is ok and its line never appears: link, guards, tools.
+  t('F-STATUS-STRIP', 'order', 'lines in order: link, guards, tools (the skipped board gives no set line); control connect with a label that differs in en and zh', async (c) => {
     const w = await worldFor(c, sdk, {
       link: LINK_STATUS.refused, connect: CONNECT_STATUS.needsAuthorization, guards: GUARD.overridden(GUARD.second), bridge: FIXTURE.tools.many,
-      ready: true, bundles: [bundle(BOARD, { error: HOST.incompatible })], entries: [],
+      ready: true, bundles: [bundle(BOARD.name, { error: HOST.incompatible })], entries: [],
     })
     const s = await w.until((x) => x.set !== null)
     const [en, zh] = [await stripView(sdk, s, LANG.en), await stripView(sdk, s, LANG.zh)]
-    assert.deepEqual(linesOf(en), [s.line.kind, ...STRIP.order.slice(1)])
+    assert.deepEqual(linesOf(en), [s.line.kind, ...STRIP.order.slice(1).filter((kind) => kind !== STRIP.set)])
     assert.deepEqual(linesOf(zh), linesOf(en))
+    await assertBoardNeverReported(sdk, s, 'order')
     assert.equal(en.control?.action, MODEL.control.connect)
     assert.ok(en.control.label && zh.control?.label && en.control.label !== zh.control.label, `labels ${show([en.control, zh.control])}`)
   })
+
+  // SHELVE-BOARD (the user, 2026-11-18): added. Core checks no member now, but the check's mechanism is kept
+  // for a later member; the strip's set line, which the board's rule 3/4 rows used to reach, is checked
+  // on a hand-built snapshot naming a made-up member: its place in the order, its member and reason
+  // words (en `skipped` / `failed to start`, zh differs).
+  for (const [reason, code] of [[MODEL.reason.skipped, HOST.incompatible], [MODEL.reason.failed, null]]) {
+    t('F-STATUS-STRIP', `set mechanism ${reason}`, `a snapshot missing a later member (${reason}): link, guards, set, tools; the set line names the member and its reason`, async (c) => {
+      const w = await worldFor(c, sdk, { link: LINK_STATUS.refused, guards: GUARD.overridden(GUARD.second), bridge: FIXTURE.tools.many })
+      await settle()
+      const s = { ...w.snapshot(), set: { status: MODEL.set.incomplete, missing: [{ name: FIXTURE.laterMember, reason, code }] } }
+      const { en, zh } = await assertBilingual(sdk, s, STRIP.set, [FIXTURE.laterMember])
+      assert.deepEqual(linesOf(en), [s.line.kind, ...STRIP.order.slice(1)])
+      assert.deepEqual(linesOf(zh), linesOf(en))
+      const word = REASON_TEXT_EN[reason]
+      assert.ok(lineOf(en, STRIP.set).text.includes(word), `en set line lacks the reason word ${show(word)}: ${lineOf(en, STRIP.set).text}`)
+      assert.ok(!lineOf(zh, STRIP.set).text.includes(word), `zh set line keeps the en reason word ${show(word)}: ${lineOf(zh, STRIP.set).text}`)
+    })
+  }
 
   t('F-STATUS-STRIP', 'cancel', 'a pending attempt: control cancel with a label', async (c) => {
     const w = await worldFor(c, sdk, { link: LINK_STATUS.unset, connect: CONNECT_STATUS.authorizing })
@@ -677,7 +730,7 @@ export function registerStatusCases(sdk) {
   t('F-STATUS-STRIP', 'never', 'no strip line or kind about fishball-ui, Watchdog or fishball-hosted-settings, in any language', async (c) => {
     const w = await worldFor(c, sdk, {
       link: LINK_STATUS.refused, connect: CONNECT_STATUS.needsAuthorization, guards: GUARD.overridden(GUARD.first), bridge: FIXTURE.tools.one,
-      ready: true, bundles: [bundle(BOARD, { error: HOST.incompatible }), bundle(NEVER_REPORTED.ui, { error: HOST.incompatible }),
+      ready: true, bundles: [bundle(BOARD.name, { error: HOST.incompatible }), bundle(NEVER_REPORTED.ui, { error: HOST.incompatible }),
         bundle(NEVER_REPORTED.hostedSettings, { error: HOST.incompatible }), bundle(NEVER_REPORTED.watchdog, { error: HOST.incompatible })],
       entries: [],
     })
@@ -685,6 +738,89 @@ export function registerStatusCases(sdk) {
     for (const lang of [LANG.en, LANG.zh]) {
       const text = show((await stripView(sdk, s, lang)).lines)
       for (const word of NEVER_SHOWN) assert.ok(!text.includes(word), `${lang} strip mentions ${word}: ${text}`)
+    }
+    // SHELVE-BOARD (the user, 2026-11-18): the skipped board among them is not reported either.
+    await assertBoardNeverReported(sdk, s, 'never')
+  })
+
+  // ---------------------------------------------------------------- UI-POLISH-F §2: the status card (stripView(snapshot, lang).card)
+  // Decision table UIPF-CARD-DT-01: the first line's kind → card.state and badge, en and zh; the
+  // title (Target DSH, or Fishball for off) and the two fixed texts. Pure: the snapshot is built
+  // here with its `line` set, so each rule is one kind (the any-other-kind rule a fixture word).
+  // BVA UIPF-CARD-BVA-01: the contributed-tools chip at 0, 1, 2. Unchanged rows: lines and control.
+  const cardSnapshot = (kind, extra = {}) => (kind === UI_CARD.offKind
+    ? { fishball: MODEL.fishball.off }
+    : { fishball: MODEL.fishball.on, link: null, connect: null, line: { kind, code: null }, control: null, guards: null, set: null, contributedTools: null, ...extra })
+  for (const [kind, [state, badgeEn, badgeZh]] of [...Object.entries(UI_CARD.table), [UI_CARD.otherKind, UI_CARD.otherRow]]) {
+    t('UIPF-CARD-DT-01', kind, `first line ${kind} → card.state ${state}, badge en ${JSON.stringify(badgeEn)} / zh ${JSON.stringify(badgeZh)}`, async () => {
+      for (const [lang, badge] of [[LANG.en, badgeEn], [LANG.zh, badgeZh]]) {
+        const view = await stripView(sdk, cardSnapshot(kind), lang)
+        assert.ok(view.card, `${lang}: stripView returns no card: ${show(view)}`)
+        assert.deepEqual(Object.keys(view.card).sort(), [...UI_CARD.cardKeys].sort(), `${lang}: card keys`)
+        const off = kind === UI_CARD.offKind
+        assert.deepEqual(view.card, {
+          state, badge, title: off ? UI_CARD.title.off : UI_CARD.title[lang], toolsHint: UI_CARD.toolsHint[lang], openApproval: UI_CARD.openApproval[lang],
+        }, `${lang} card`)
+        assert.equal(view.lines[0].kind, kind, `${lang}: the first line keeps its kind`)
+      }
+    })
+  }
+  t('UIPF-CARD-DT-01', 'statusOf off', 'statusOf(undefined) (no core) → card off, title Fishball, badge Off / 已关闭', async () => {
+    const s = await statusOf(sdk, undefined)
+    const [en, zh] = [await stripView(sdk, s, LANG.en), await stripView(sdk, s, LANG.zh)]
+    assert.deepEqual([en.card?.state, en.card?.title, en.card?.badge], [UI_CARD.table[UI_CARD.offKind][0], UI_CARD.title.off, UI_CARD.table[UI_CARD.offKind][1]])
+    assert.deepEqual([zh.card?.state, zh.card?.title, zh.card?.badge], [UI_CARD.table[UI_CARD.offKind][0], UI_CARD.title.off, UI_CARD.table[UI_CARD.offKind][2]])
+  })
+  t('UIPF-CARD-DT-01', 'unknown lang', 'an unknown lang gives the en card; no lang gives the en card', async () => {
+    const s = cardSnapshot(LINE.authorizing)
+    const en = await stripView(sdk, s, LANG.en)
+    assert.deepEqual((await stripView(sdk, s, LANG.unknown)).card, en.card)
+    assert.deepEqual((await stripView(sdk, s)).card, en.card)
+  })
+  // Through the real status (worldFor), the rules REM-DT-01 and F-STATUS-DT-01 already pin: each
+  // first line the status gives lands on its card state (integration of the two halves).
+  for (const [row, inputs, kind] of [
+    ['connected', { link: LINK_STATUS.connected }, LINE.connected],
+    ['unset', { link: LINK_STATUS.unset, target: TARGET.unusable.empty }, LINK_STATUS.unset.state],
+    ['needs-authorization', { link: LINK_STATUS.unset, connect: CONNECT_STATUS.needsAuthorization }, CONNECT_STATUS.needsAuthorization.state],
+    ['authorizing', { link: LINK_STATUS.unset, connect: CONNECT_STATUS.authorizing }, LINE.authorizing],
+    ['needs-configuration', { link: LINK_STATUS.unset, connect: CONNECT_STATUS.needsConfiguration }, LINE.needsConfiguration],
+    ['target-unreachable', { link: LINK_STATUS.unreachable }, LINK_STATUS.unreachable.state],
+    ['token-refused', { link: LINK_STATUS.refused }, LINK_STATUS.refused.state],
+    ['failed', { link: LINK_STATUS.unset, connect: CONNECT_STATUS.failedDenied }, CONNECT_STATUS.failedDenied.state],
+  ]) {
+    t('UIPF-CARD-DT-01', `${row} via status`, `the real status giving a ${kind} first line → card.state ${UI_CARD.table[kind][0]}`, async (c) => {
+      const w = await worldFor(c, sdk, inputs)
+      await settle()
+      const view = await stripView(sdk, w.snapshot(), LANG.en)
+      assert.equal(view.lines[0].kind, kind, 'precondition: the first line')
+      assert.equal(view.card?.state, UI_CARD.table[kind][0])
+    })
+  }
+  for (const count of UI_CARD.toolsBva) {
+    t('UIPF-CARD-BVA-01', `tools ${count}`, `contributed count ${count}: the ${STRIP.tools} line reads en ${JSON.stringify(UI_CARD.tools.en(count))}, zh ${JSON.stringify(UI_CARD.tools.zh(count))}`, async (c) => {
+      const w = await worldFor(c, sdk, { bridge: count })
+      await settle()
+      for (const lang of [LANG.en, LANG.zh]) {
+        const line = lineOf(await stripView(sdk, w.snapshot(), lang), STRIP.tools)
+        assert.equal(line?.text, UI_CARD.tools[lang](count), `${lang} tools line`)
+      }
+    })
+  }
+  t('UIPF-CARD-BVA-01', 'no bridge', 'without the bridge there is still no tools line (the card has its toolsHint all the same)', async (c) => {
+    const w = await worldFor(c, sdk, {})
+    const view = await stripView(sdk, w.snapshot(), LANG.en)
+    assert.ok(!linesOf(view).includes(STRIP.tools))
+    assert.equal(view.card?.toolsHint, UI_CARD.toolsHint.en)
+  })
+  t('UIPF-CARD-EP-01', 'control labels', 'the control keeps its labels: Connect / 连接 and Cancel / 取消', async (c) => {
+    for (const [inputs, action] of [[{ link: LINK_STATUS.unset, connect: CONNECT_STATUS.needsAuthorization }, MODEL.control.connect], [{ link: LINK_STATUS.unset, connect: CONNECT_STATUS.authorizing }, MODEL.control.cancel]]) {
+      const w = await worldFor(c, sdk, inputs)
+      await settle()
+      for (const lang of [LANG.en, LANG.zh]) {
+        const view = await stripView(sdk, w.snapshot(), lang)
+        assert.deepEqual(view.control, { action, label: UI_CARD.control[action][lang] }, `${lang} ${action}`)
+      }
     }
   })
 

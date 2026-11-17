@@ -174,11 +174,11 @@ export const PLACEMENT = Object.freeze({
    * fishball-core last, so its guard patch reaches every row the others insert (R-FB-12).
    * `directory` names a set member's sibling workspace folder `../<directory>` in a checkout; a
    * packed instance ships it as `bundled/<tarball(name, version)>` instead (REL-PACK output, never
-   * committed; Q-22). The set is core, fishball-ui and board (requirements 1.39 R-BND-01: "the
-   * default set is `fishball-core`, `fishball-ui` and `fishball-board`").
+   * committed; Q-22). The set is fishball-ui and core. fishball-board is shelved, not in 1.0.0-alpha.1
+   * (SHELVE-BOARD, the user, 2026-11-18: "不要预留在子实例的Fishball内"), so nothing places, installs or
+   * reserves it in the child; add it back here and in `install.order` for its release.
    */
   bundles: Object.freeze([
-    Object.freeze({ name: 'fishball-board', directory: 'board' }),
     // fishball-ui before core (I-HOST, the user's answer Q2 = A): its guard rows target DSH's base
     // rows, which precede every plugin bundle, so they hold in any order, while core's own guard
     // check reports `bundle-order` unless core is last.
@@ -204,7 +204,7 @@ export const PLACEMENT = Object.freeze({
   tarball: (name, version) => name + '-' + version + '.tgz',
   /**
    * The packed set's install (REL-PACK item 5). `order` is the order the user gave for the add
-   * (fishball-ui, then fishball-board, then fishball-core last); the bundle order above is separate.
+   * (fishball-ui, then fishball-core last); the bundle order above is separate.
    * DSH's own plugin-manager operation runs pnpm in the child profile under the profile lock, with
    * the plugin manager's default limits (PluginManager.Config) and the installation's own pnpm
    * (profileContext.packageManager, when DSH supplies one). `activateNewBundles: false` because DSH
@@ -223,7 +223,7 @@ export const PLACEMENT = Object.freeze({
    * as any DSH plugin install does; the offline fallback needs none of them.
    */
   install: Object.freeze({
-    order: Object.freeze(['fishball-ui', 'fishball-board', 'fishball-core']),
+    order: Object.freeze(['fishball-ui', 'fishball-core']),
     operations: '@deepseek-ai/dsh-plugin-manager/operations',
     manager: '@deepseek-ai/dsh-plugin-manager',
     command: 'add',

@@ -31,13 +31,34 @@ window.__ModuleLoader__.load({
         Object.freeze({ chunk: './client.model.js', factory: 'modelPart' }),
       ]),
       unavailable: 'fishball-ui: part unavailable',
+      base: 'fishball-ui-base-style',
     })
 
     /**
-     * What the parts share. `mountStyle(id, cssText)` adds one style sheet to the document and
-     * returns its disposer, for a part's `ctx.effect`; the id names it for a reader of the DOM.
+     * The look the parts share (UI-POLISH-F), one style sheet for the row, DSH tokens only:
+     * - `dock`: a block in DSH's `conversation.input.dock` sized as DSH's own goal dock is (the
+     *   composer's side clearance and dock inset, both SDKs), so Fishball's cards line up with it;
+     * - `card`: the surface of DSH's composer cards (approval, questions): the input fill, the panel
+     *   elevation, the xl radius;
+     * - `iconButton`: a square, icon-only DSH sm Button, as DSH's own header actions are.
+     */
+    const CSS = Object.freeze({ dock: 'fb-ui-dock', card: 'fb-ui-card', iconButton: 'fb-ui-icon-button' })
+    const baseCss = [
+      // The composer variables are the conversation's (dsh-client-ui-conversation), not the theme's;
+      // the fallbacks keep the width valid if a dock ever renders outside it.
+      `.${CSS.dock}{box-sizing:border-box;width:calc(100% - 2 * var(--dsh-composer-side-clearance, 0px) - 4 * var(--dsh-composer-dock-inset, 0px));max-width:calc(var(--dsh-composer-card-max-width, 100%) - 4 * var(--dsh-composer-dock-inset, 0px));margin:0 auto 8px;display:grid;gap:8px}`,
+      `.${CSS.card}{box-sizing:border-box;min-width:0;border-radius:var(--dsw-radius-xl);background:var(--dsw-specific-input-major);--dsw-elevation-stroke-color:var(--dsw-alias-border-l2);box-shadow:var(--dsw-elevation-panel);color:var(--dsw-alias-label-primary);font:var(--dsw-font-xs-13);overflow:hidden}`,
+      `.${CSS.iconButton}{width:28px;padding:0;color:var(--dsw-alias-label-secondary)}`,
+    ].join('')
+
+    /**
+     * What the parts share: `css`, the shared class names, and `mountStyle(id, cssText)`, which adds
+     * one style sheet to the document and returns its disposer, for a part's `ctx.effect`; the id
+     * names it for a reader of the DOM.
      */
     const kit = Object.freeze({
+      /** The shared class names (`CSS`); their sheet is mounted once by this row. */
+      css: CSS,
       mountStyle(id, cssText) {
         const style = document.createElement('style')
         style.id = id
@@ -58,6 +79,7 @@ window.__ModuleLoader__.load({
     }
 
     function apply(ctx) {
+      ctx.effect(() => kit.mountStyle(UI.base, baseCss), UI.name + ': base styles')
       for (const part of UI.parts) start(ctx, part)
     }
 

@@ -5,7 +5,7 @@ window.__ModuleLoader__.load({
     const React = require('react')
     const h = React.createElement
     const { createPortal } = require('react-dom')
-    const { Button } = require('@deepseek-ai/dsh-client-ui-primitives')
+    const { Button, Tooltip, StateDot, FishLogo, FISH_LOGO_PATH, FISH_LOGO_VIEWBOX, IconSettingsOutlineRegular, IconPluginPinwheelOutlineRegular, IconRefreshOutlineRegular } = require('@deepseek-ai/dsh-client-ui-primitives')
     const PAGE = Object.freeze({
       name: 'fishball-page', route: 'api/fishball/session', read: 'GET', ensure: 'POST',
       requestFailed: 'FISHBALL_SESSION_REQUEST_FAILED', invalidSession: 'FISHBALL_SESSION_INVALID',
@@ -21,6 +21,25 @@ window.__ModuleLoader__.load({
       launcherSeat: 'fishball-page-launcher-seat',
       // DSH's design-system Button for every navigation control (B4): the page draws no button of its own.
       button: Object.freeze({ size: 'sm', variant: 'ghost' }),
+      /**
+       * UI-POLISH-F (the user: "我更乐意看到是按钮的图标"): the controls are DSH's own icons with the
+       * name as aria-label and DSH's Tooltip, as DSH's collapsed sidebar rail draws its Settings
+       * trigger. Glyphs are the ones DSH uses for the same destinations (its Settings trigger, its
+       * Plugins panel icon, its brand fish), all exported by the primitives in 0.2.1-rc.5 and 0.2.2-rc.1.
+       */
+      icon: Object.freeze({ size: 16 }),
+      // Above the controls: the bar sits on the window's bottom edge. Portalled, so the overlay's
+      // stacking cannot clip it.
+      tooltip: Object.freeze({ side: 'top', portal: true }),
+      navKind: 'data-fishball-nav', statusKind: 'data-fishball-nav-status',
+      /**
+       * Narrow windows: DSH's composer reaches the window's bottom edge there (its stats row sits
+       * under the bar), so the conversation is lifted by the bar's height. 480px is the narrow
+       * breakpoint DSH's chat CSS uses (dsh-client-ui-chat, both SDKs); 44px is the bar (28px
+       * buttons, 4px padding each side) plus its 8px offset from the edge.
+       */
+      narrow: Object.freeze({ query: '(max-width: 480px)', clearancePx: 44 }),
+      css: Object.freeze({ iconButton: 'fishball-page-icon-button', status: 'fishball-page-status', divider: 'fishball-page-divider' }),
       // The active-locale prefix that selects TEXT.zh; every other language reads TEXT.en.
       chinese: 'zh',
       main: '[data-slot="main.conversation"]', sidebarSlot: '[data-slot="sidebar"]',
@@ -93,8 +112,26 @@ window.__ModuleLoader__.load({
      * workspace" trigger only open this slot, so with the shadow neither can leave the session.
      */
     const SHADOWED_SLOTS = Object.freeze(['conversation.hero.workspace'])
+    /** The navigation controls' `data-fishball-nav` hooks. */
+    const NAV = Object.freeze({ settings: 'settings', fishball: 'fishball', plugins: 'plugins', retry: 'retry' })
     /** Gate states: pending waits for real native events, never for a timer. */
     const GATE = Object.freeze({ pending: 'pending', protected: 'protected', failed: 'failed' })
+    /** The navigation status kinds (`data-fishball-nav-status`) and the DSH StateDot each shows. */
+    const NAV_STATUS = Object.freeze({
+      unavailable: Object.freeze({ kind: 'unavailable', dot: 'error' }),
+      failed: Object.freeze({ kind: 'failed', dot: 'error' }),
+      pending: Object.freeze({ kind: 'pending', dot: 'ongoing' }),
+    })
+    /**
+     * The reply's avatar: DSH's own fish mark (primitives FISH_LOGO_PATH / FISH_LOGO_VIEWBOX) as a CSS
+     * mask, painted in a theme token, so it follows light and dark. A data: URL, which DSH's CSP
+     * admits for images (img-src data:, both SDKs); the mark is a pseudo-element because the reply
+     * rows are native and the page only styles them.
+     */
+    const AVATAR = Object.freeze({
+      svg: (path, box) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${box.width} ${box.height}"><path d="${path}"/></svg>`,
+      url: (svg) => `url("data:image/svg+xml,${encodeURIComponent(svg)}")`,
+    })
     /** In-frame navigation policy; see mountFrameGuard. */
     const FRAME = Object.freeze({
       navigate: 'navigate', click: 'click', anchor: 'a[href],area[href]', blank: '_blank', frame: 'iframe',
@@ -117,6 +154,7 @@ window.__ModuleLoader__.load({
       }
       const sheet = new CSSStyleSheet()
       const root = `[${PAGE.root}]`
+      const avatar = AVATAR.url(AVATAR.svg(FISH_LOGO_PATH, FISH_LOGO_VIEWBOX))
       const rules = [
         `${root} ${PAGE.sidebar}{visibility:hidden!important;min-width:0!important;pointer-events:none}`,
         // Descendants too: native ui-workspace CSS sets visibility:visible on the workspace header
@@ -127,12 +165,26 @@ window.__ModuleLoader__.load({
         `${root} [data-conversation-header-leading],${root} [data-slot="conversation.session.header.lineage"],${root} [data-slot="conversation.hero.workspace"]{display:none!important}`,
         `.${PAGE.launcherSeat}{display:contents}`,
         `${root}:not([${PAGE.ready}]) ${PAGE.main}{visibility:hidden!important;pointer-events:none!important}`,
-        `.${PAGE.navigation}{position:fixed;bottom:8px;left:8px;z-index:100;display:flex;gap:8px;align-items:center;pointer-events:auto;background:var(--dsw-alias-bg-module-platform);color:var(--dsw-alias-label-primary);font:var(--dsw-font-xs-13);border-radius:8px;padding:4px}`,
-        `${root} ${PAGE.main} [data-chat-flow-kind="assistant-step"][data-chat-group-part="response"]{position:relative;margin:6px 12% 6px 0;padding:18px 0 0 36px}`,
-        `${root} ${PAGE.main} [data-chat-flow-kind="assistant-step"][data-chat-group-part="response"]::after{content:"Fishball";position:absolute;top:0;left:36px;font-size:12px;color:var(--dsw-alias-label-tertiary)}`,
-        `${root} ${PAGE.main} [data-chat-flow-kind="user"] [class$="_bubble"]{background:var(--dsw-specific-bubble);border:1px solid var(--dsw-alias-border-l2)}`,
-        `${root} ${PAGE.main} [data-chat-flow-kind="assistant-step"][data-chat-group-part="response"]::before{content:"🐟";position:absolute;left:0;top:6px;font-size:22px}`,
-        `${root} ${PAGE.main} [data-chat-flow-kind="assistant-step"][data-chat-group-part="response"]>[data-slot="conversation.chat.node"]>*{padding:6px 12px;border-radius:4px 18px 18px 18px;background:var(--dsw-alias-bg-module-platform);border:1px solid var(--dsw-alias-border-l2);min-width:0}`,
+        // A floating toolbar in DSH's menu material (the goal dock's surface: menu fill, blur, panel
+        // elevation), so it reads as part of DSH in both themes rather than a bare pill of text.
+        `.${PAGE.navigation}{position:fixed;bottom:8px;left:8px;z-index:100;display:flex;gap:2px;align-items:center;pointer-events:auto;padding:4px;border-radius:var(--dsw-radius-md);background:var(--dsw-specific-menu);-webkit-backdrop-filter:var(--dsw-menu-backdrop-filter);backdrop-filter:var(--dsw-menu-backdrop-filter);--dsw-elevation-stroke-color:var(--dsw-alias-border-l1);box-shadow:var(--dsw-elevation-panel);color:var(--dsw-alias-label-secondary);font:var(--dsw-font-xxs-12)}`,
+        // Square icon buttons: DSH's sm Button is 28px high; the rail's own trigger is square too.
+        // Restated, not shared, with fishball-ui's `fb-ui-icon-button` (client.js): this page is its
+        // own package and loads no chunk of fishball-ui's client.
+        `.${PAGE.css.iconButton}{width:28px;padding:0;color:var(--dsw-alias-label-secondary)}`,
+        `.${PAGE.css.iconButton}[aria-expanded="true"]{background:var(--dsw-alias-interactive-bg-active);color:var(--dsw-alias-label-primary)}`,
+        `.${PAGE.css.divider}{align-self:stretch;width:.5px;margin:4px 4px;background:var(--dsw-alias-border-l2)}`,
+        // The main slot is display:contents, so its element child (the conversation root) takes it.
+        `@media ${PAGE.narrow.query}{${root} ${PAGE.main}>*{padding-bottom:${PAGE.narrow.clearancePx}px;box-sizing:border-box}}`,
+        `.${PAGE.css.status}{display:inline-flex;align-items:center;gap:6px;padding:0 4px;white-space:nowrap}`,
+        `.${PAGE.css.status}[${PAGE.statusKind}="unavailable"],.${PAGE.css.status}[${PAGE.statusKind}="failed"]{color:var(--dsw-alias-state-error-primary)}`,
+        // Fishball's replies: DSH's fish mark and the name above an assistant bubble, the user's own
+        // bubble left as DSH draws it, with its thin stroke.
+        `${root} ${PAGE.main} [data-chat-flow-kind="assistant-step"][data-chat-group-part="response"]{position:relative;margin:6px 12% 6px 0;padding:20px 0 0 36px}`,
+        `${root} ${PAGE.main} [data-chat-flow-kind="assistant-step"][data-chat-group-part="response"]::after{content:"Fishball";position:absolute;top:0;left:36px;font:var(--dsw-font-xxs-strong-12);color:var(--dsw-alias-label-tertiary)}`,
+        `${root} ${PAGE.main} [data-chat-flow-kind="user"] [class$="_bubble"]{background:var(--dsw-specific-bubble);box-shadow:inset 0 0 0 .5px var(--dsw-alias-border-l2)}`,
+        `${root} ${PAGE.main} [data-chat-flow-kind="assistant-step"][data-chat-group-part="response"]::before{content:"";position:absolute;left:2px;top:22px;width:24px;height:24px;background:var(--dsw-alias-state-business-primary);-webkit-mask:${avatar} center/contain no-repeat;mask:${avatar} center/contain no-repeat}`,
+        `${root} ${PAGE.main} [data-chat-flow-kind="assistant-step"][data-chat-group-part="response"]>[data-slot="conversation.chat.node"]>*{padding:8px 14px;border-radius:var(--dsw-radius-xs) var(--dsw-radius-xl) var(--dsw-radius-xl) var(--dsw-radius-xl);background:var(--dsw-alias-bg-module-platform);box-shadow:inset 0 0 0 .5px var(--dsw-alias-border-l2);min-width:0}`,
         `${root} ${PAGE.main} .md-table-wide{width:auto;max-width:100%;margin-left:0;padding-left:0}`,
       ]
       for (const rule of rules) sheet.insertRule(rule, sheet.cssRules.length)
@@ -536,14 +588,14 @@ window.__ModuleLoader__.load({
     /** The empty occupant of a shadowed slot. */
     const Empty = () => null
     /**
-     * The navigation status, or null when the page is protected and needs none. Session trouble
-     * outranks the shortcut gate; a known manager behind a pending gate is shown as pending,
-     * never as a blank page.
+     * The navigation status (`NAV_STATUS` kind and dot, and its text), or null when the page is
+     * protected and needs none. Session trouble outranks the shortcut gate; a known manager behind a
+     * pending gate is shown as pending, never as a blank page.
      */
-    function statusText(text, { unavailable, gate }) {
-      if (unavailable) return text.unavailable
-      if (gate === GATE.failed) return text.shortcuts
-      if (gate === GATE.pending) return text.pending
+    function navStatus(text, { unavailable, gate }) {
+      if (unavailable) return { ...NAV_STATUS.unavailable, text: text.unavailable }
+      if (gate === GATE.failed) return { ...NAV_STATUS.failed, text: text.shortcuts }
+      if (gate === GATE.pending) return { ...NAV_STATUS.pending, text: text.pending }
       return null
     }
 
@@ -614,7 +666,13 @@ window.__ModuleLoader__.load({
         // covered the Fishball button. One flex row owns both, so their widths cannot collide.
         const launcherSeat = createCell(null)
         own(() => launcherSeat.clear())
-        const navButton = (props, label) => h(Button, { ...PAGE.button, type: 'button', ...props }, label)
+        /**
+         * One icon control: DSH's Button holding only the glyph, named by `label` (aria-label) and
+         * shown in DSH's Tooltip on hover and focus. `kind` is its `data-fishball-nav` hook.
+         */
+        const navButton = ({ kind, label, Icon, shortcutKeys, className, ...props }) => h(Tooltip, { ...PAGE.tooltip, label, shortcutKeys },
+          h(Button, { ...PAGE.button, type: 'button', ...props, className: [PAGE.css.iconButton, className].filter(Boolean).join(' '), [PAGE.navKind]: kind, 'aria-label': label },
+            h(Icon, { size: PAGE.icon.size })))
         function Navigation() {
           const text = useText(locale)
           // Every hook runs on every render (no short-circuit between them).
@@ -622,15 +680,16 @@ window.__ModuleLoader__.load({
           const selectFailed = useCell(session.selectFailed)
           const assigned = useCell(manager)
           const state = useCell(gate)
-          const status = statusText(text, { unavailable: lookupFailed || selectFailed || assigned === null, gate: state })
+          const status = navStatus(text, { unavailable: lookupFailed || selectFailed || assigned === null, gate: state })
           return h('nav', { className: PAGE.navigation, 'aria-label': PAGE.name },
             // React renders nothing into this span itself; the launcher portals into it.
             h('span', { className: PAGE.launcherSeat, ref: launcherSeat.set }),
-            navButton({ onClick: () => session.back() }, text.back),
-            navButton({ onClick: () => ctx.layout.selectPanel(PAGE.plugins) }, text.plugins),
+            navButton({ kind: NAV.fishball, label: text.back, Icon: FishLogo, onClick: () => session.back() }),
+            navButton({ kind: NAV.plugins, label: text.plugins, Icon: IconPluginPinwheelOutlineRegular, onClick: () => ctx.layout.selectPanel(PAGE.plugins) }),
             status === null ? null : h(React.Fragment, null,
-              h('span', { role: 'status' }, status),
-              navButton({ onClick: () => session.retry() }, text.retry)))
+              h('span', { className: PAGE.css.divider, 'aria-hidden': 'true' }),
+              h('span', { className: PAGE.css.status, role: 'status', [PAGE.statusKind]: status.kind }, h(StateDot, { state: status.dot }), status.text),
+              navButton({ kind: NAV.retry, label: text.retry, Icon: IconRefreshOutlineRegular, onClick: () => session.retry() })))
         }
         // Consume the native launcher owner callback instead of inventing a global settings API.
         // A portal into the navigation's seat keeps the trigger usable outside the rc.1 drawer's
@@ -639,11 +698,14 @@ window.__ModuleLoader__.load({
         // `view=settings` is not handled here: fishball-ui's entries part (client.entries.js) opens
         // core's own settings page for it, and its "DSH settings" header entry presses this button,
         // so the launcher must stay on the page.
-        function SettingsLauncher({ openSettings, settingsOpen }) {
+        // `settingsShortcut` is the native owner prop (settings-general, both SDKs) the native rail
+        // trigger shows in its tooltip; shown the same way here when DSH binds one.
+        function SettingsLauncher({ openSettings, settingsOpen, settingsShortcut }) {
           const text = useText(locale)
           const seat = useCell(launcherSeat)
-          return seat === null ? null : createPortal(navButton({ className: PAGE.settingsButton,
-            'aria-haspopup': 'dialog', 'aria-expanded': settingsOpen, onClick: openSettings }, text.settings), seat)
+          return seat === null ? null : createPortal(navButton({ kind: NAV.settings, label: text.settings, Icon: IconSettingsOutlineRegular,
+            shortcutKeys: settingsShortcut?.keys, className: PAGE.settingsButton, 'aria-keyshortcuts': settingsShortcut?.aria,
+            'aria-haspopup': 'dialog', 'aria-expanded': settingsOpen, onClick: openSettings }), seat)
         }
         // Every page occupant (Settings launcher, shadowed slots) takes its single slot's seat
         // at PAGE.priority, through inject so the registration follows the slot's own lifetime.

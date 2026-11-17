@@ -201,7 +201,7 @@ export const V3_SUITES = Object.freeze({
     [sub(PACKAGE.dshInstance, 'src', 'native-runtime'), PACKAGE.dshInstance + '/uninstall.js']),
   'dsh-instance.host': suite("the hosted child's token, locator, admission, child-side row, settings page, placement with fishball-ui (I-HOST)", v3('dsh-instance/host'),
     [all(PACKAGE.dshInstance), sub(PACKAGE.dshConnector, 'host-services'), all(PACKAGE.dshConnectorShared), all(PACKAGE.fishballCore), all(PACKAGE.fishballUi),
-      all(PACKAGE.fishballShared), all(PACKAGE.fishballBoard), all(PACKAGE.dshConnectorUi), 'test/v3/contract/k3-host-services/**', 'test/v3/contract/package-boundaries/**',
+      all(PACKAGE.fishballShared), all(PACKAGE.dshConnectorUi), 'test/v3/contract/k3-host-services/**', 'test/v3/contract/package-boundaries/**',
       'test/v3/dsh-connector-adapter/oauth-client/subject.mjs']),
   // R-FIX-REDACT: the redactor on its own (the library imports nothing).
   'dsh-connector-shared.redact': suite('the redactor: credential names, value forms, Authorization, Bearer, opaque runs, merged masks (R-FIX-REDACT)', v3('dsh-connector-shared/redact'),
@@ -267,18 +267,23 @@ export const V3_SUITES = Object.freeze({
     [all(PACKAGE.fishballUi), all(PACKAGE.fishballCore), all(PACKAGE.fishballShared), 'test/v3/fishball-ui/guards/**', 'test/v3/fishball-core/package/**',
       'test/v3/fishball-core/status/constants.mjs',
       // E-FIX-3: the guard-row reader is imported bound to the SDK through the oauth-client suite's importBound.
-      'test/v3/dsh-connector-adapter/oauth-client/subject.mjs']),
-  // F-WIRE: core's main row, boots a real standalone DSH with core, fishball-ui and board as whole
-  // bundles (the guards worker), and scans the Fishball side for DSH-side imports.
+      'test/v3/dsh-connector-adapter/oauth-client/subject.mjs',
+      // UI-POLISH-F: the navigation rows (nav-page.mjs) render through the F-SETTINGS primitive stand-ins and their constants.
+      'test/v3/fishball-core/settings/primitives.mjs', 'test/v3/fishball-core/settings/constants.mjs']),
+  // F-WIRE: core's main row, boots a real standalone DSH with core and fishball-ui as whole bundles
+  // (the guards worker), and scans the Fishball side for DSH-side imports. fishball-board is shelved
+  // (the user, 2026-11-18); the board-present partitions use the suite's own stand-in fixture.
   'fishball-core.wire': suite("core's main row: fishballInstance, fishballStatus, the manager, model, Connect routes and web callback (F-WIRE)", v3('fishball-core/wire'),
-    [all(PACKAGE.fishballCore), all(PACKAGE.fishballUi), all(PACKAGE.fishballShared), all(PACKAGE.fishballBoard), 'test/v3/fishball-ui/guards/**']),
+    [all(PACKAGE.fishballCore), all(PACKAGE.fishballUi), all(PACKAGE.fishballShared), 'test/v3/fishball-ui/guards/**']),
   // F-WIRE: core's manager in a real standalone DSH (core + shared only): reminders, the singleton,
   // the preset and persona, the generated identity and the model rule, with the scripted model.
   'fishball-core.manager': suite("core's manager: reminders, singleton, preset and persona, generated identity, model (F-WIRE)", v3('fishball-core/manager'),
     [all(PACKAGE.fishballCore), all(PACKAGE.fishballShared), 'test/support/fixtures/fake-llm.mjs', 'test/support/host.mjs']),
   // F-WIRE: fishball-ui's model dialog, strip route and live core rows, in the browser sandbox and a real DSH.
   'fishball-ui.model-dialog': suite('fishball-ui model dialog, status strip route, live core on/off, composer picker guard (F-WIRE)', v3('fishball-ui/model-dialog'),
-    [all(PACKAGE.fishballUi), all(PACKAGE.fishballCore), all(PACKAGE.fishballShared), 'test/v3/fishball-core/wire/**', 'test/v3/fishball-core/settings/**', 'test/v3/fishball-ui/guards/**']),
+    [all(PACKAGE.fishballUi), all(PACKAGE.fishballCore), all(PACKAGE.fishballShared), 'test/v3/fishball-core/wire/**', 'test/v3/fishball-core/settings/**', 'test/v3/fishball-ui/guards/**',
+      // UI-POLISH-F: the drawn status card rows build their frames with the F-STATUS strip view binding and its card constants.
+      'test/v3/fishball-core/status/subject.mjs', 'test/v3/fishball-core/status/constants.mjs']),
   'fishball-board.peers': suite('board without core (FEAT-PEERS; fold-notify was removed, REMOVE-WD)', v3('fishball-board/peers'),
     [all(PACKAGE.fishballBoard), sub(PACKAGE.dshConnector, 'mcp-schema')]),
   // The contract suites read every file of the packages they bound, so any change there reruns them.
@@ -298,13 +303,18 @@ export const V3_SUITES = Object.freeze({
   'contract.k3a-core-seams': suite('K3a core-side seams: own MCP-surface copy, hosted import names, Connect, fishball-ui seam', v3('contract/k3a-core-seams'),
     [sub(PACKAGE.fishballCore, 'contracts'), top(PACKAGE.fishballCore), all(PACKAGE.fishballShared), sub(PACKAGE.dshConnector, 'host-services'), ...CONNECTOR_CONTRACTS,
       all(PACKAGE.dshConnector), all(PACKAGE.dshConnectorUi), all(PACKAGE.dshInstance)]),
+  // SHELVE-BOARD: its core/ui board-reference rows read source tokens with the R-CORE suite's token worker.
   'contract.package-boundaries': suite('package boundaries, imports, packing (R-SHARED, PLAT-EP-07)', v3('contract/package-boundaries'),
-    [...Object.values(PACKAGE).map(all), RELEASE_SCRIPTS, 'test/v3/release/pack/release.mjs']),
+    [...Object.values(PACKAGE).map(all), RELEASE_SCRIPTS, 'test/v3/release/pack/release.mjs',
+      'test/v3/fishball-core/package/static.mjs', 'test/v3/fishball-core/package/constants.mjs', 'test/v3/fishball-core/package/tokens-worker.mjs']),
   // Reads every package's manifest and import graph and runs the placement over package copies.
   'contract.split-shared': suite('one shared library per side: cross-side edges, library contents, interim copies, placement (SPLIT-SHARED)', v3('contract/split-shared'),
     [...Object.values(PACKAGE).map(all)]),
   'contract.embed': suite('connector-ui package and the moved client (R-EMBED)', v3('contract/embed'),
     [all(PACKAGE.dshConnectorUi), all(PACKAGE.dshInstance), all(PACKAGE.dshConnector)]),
+  // SHELVE-BOARD: the runners' selection of shelved suites, through their command lines (no SDK).
+  'contract.suite-map': suite('the runners leave shelved suites out of default runs, --suite still runs them (SHELVE-BOARD)', ['test/v3/contract/suite-map/index.test.mjs'],
+    ['test/run-affected.mjs', 'test/run-v3.mjs', 'test/suites.mjs', 'test/support/suite-runner.mjs', 'test/support/contract-link.mjs', 'test/support/constants.mjs']),
   // REL-PACK: the release tarballs scripts/pack-v3.mjs writes. Every package's shipped files and
   // manifest are in a tarball, so any package file, or the pack script itself, reruns it. It reads
   // the release output (.runtime/release/<version>/, built beforehand), so run the pack first.
@@ -313,7 +323,7 @@ export const V3_SUITES = Object.freeze({
   // The packed instance's install of the hosted set (REL-PACK item 5), through composedProfile on an
   // instance installed from the release tarballs; it reuses release/pack's helpers.
   'dsh-instance.placement-install': suite('the packed instance installs the hosted set by spec, else from its bundled tarballs (REL-PACK)', v3('dsh-instance/placement-install'),
-    [all(PACKAGE.dshInstance), all(PACKAGE.fishballCore), all(PACKAGE.fishballUi), all(PACKAGE.fishballBoard), all(PACKAGE.fishballShared), all(PACKAGE.dshConnectorShared),
+    [all(PACKAGE.dshInstance), all(PACKAGE.fishballCore), all(PACKAGE.fishballUi), all(PACKAGE.fishballShared), all(PACKAGE.dshConnectorShared),
       RELEASE_SCRIPTS, 'test/v3/release/pack/**']),
 })
 
@@ -361,6 +371,16 @@ export const V2_GROUPS = Object.freeze({
 
 /** Every suite by id. */
 export const SUITES = Object.freeze({ ...V3_SUITES, ...V2_GROUPS })
+
+/**
+ * Suites of shelved packages: kept in the repo and in the map (so `--check` still owns their files),
+ * but left out of every default run (test/run-v3.mjs, and test/run-affected.mjs by base ref or
+ * `--all`). Naming one with `--suite=<id>` still runs it. fishball-board is shelved, not in
+ * 1.0.0-alpha.1 (SHELVE-BOARD, the user, 2026-11-18); remove its id here when it is released again.
+ */
+export const SHELVED_SUITES = Object.freeze(['fishball-board.peers'])
+/** The files of the shelved suites, which the default runs skip. */
+export const SHELVED_FILES = Object.freeze(SHELVED_SUITES.flatMap((id) => SUITES[id].files))
 
 
 /** Changed paths that need no suite (documents, reports, the design). */
