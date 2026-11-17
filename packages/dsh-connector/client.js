@@ -284,7 +284,7 @@ window.__ModuleLoader__.load({
       neverSeen: 'never seen',
       idPrefix: 'ID:',
       dshName: 'DSH name',
-      dshNameHint: 'The name the approval page shows for this DSH. Empty: it shows this DSH\'s address.',
+      dshNameHint: 'The name the approval page shows for this DSH. Empty: this DSH shows as <device name>-DSH.',
       approvalPort: 'Approval page port',
       approvalHint: 'Browser agents sign in on this port of DSH\'s host.',
       approvalStatus: 'Approval page: {status}',
@@ -340,7 +340,7 @@ window.__ModuleLoader__.load({
       neverSeen: '从未连接',
       idPrefix: 'ID:',
       dshName: 'DSH 名称',
-      dshNameHint: '授权页面为此 DSH 显示的名称。留空则显示此 DSH 的地址。',
+      dshNameHint: '授权页面为此 DSH 显示的名称。留空则此 DSH 显示为 <设备名称>-DSH。',
       approvalPort: '授权页面端口',
       approvalHint: '浏览器 agent 在 DSH 主机的这个端口上登录。',
       approvalStatus: '授权页面：{status}',
@@ -553,15 +553,19 @@ window.__ModuleLoader__.load({
     ]
 
     /**
-     * The DSH name (the user, 2026-11-17): one text field saved on blur or Enter. An empty field
-     * unsets it, and the approval page then shows this DSH's address.
+     * The DSH name (the user, 2026-11-17): one text field saved on blur or Enter. Left blank, this
+     * DSH shows as `<device name>-DSH` (multi-DSH plan D04/D05, docs/planning/v3-multi-dsh.md).
+     * A name is kept exactly as typed, surrounding spaces included (D06, the user: "照 MCP 协议来",
+     * no sanitising); only an entirely blank field unsets it, as the connector's own resolver
+     * counts a whitespace-only setting as unset.
      */
     function DshName({ t, form, snapshot, disabled }) {
       const saved = valueAt(snapshot.value, SETTING_PATH.dshName) ?? ''
       const draft = useScalarDraft(form, snapshot, saved)
       const commit = () => {
-        const next = (draft.text ?? saved).trim()
-        draft.commit(next === saved ? null : [next === '' ? { op: OP_UNSET, path: SETTING_PATH.dshName } : { op: OP_SET, path: SETTING_PATH.dshName, value: next }])
+        const next = draft.text ?? saved
+        const blank = next.trim() === ''
+        draft.commit(next === saved || (blank && saved === '') ? null : [blank ? { op: OP_UNSET, path: SETTING_PATH.dshName } : { op: OP_SET, path: SETTING_PATH.dshName, value: next }])
       }
       return h(SettingRow, {
         data: SETTING_PATH.dshName.join('.'),

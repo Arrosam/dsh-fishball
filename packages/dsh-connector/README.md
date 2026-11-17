@@ -101,8 +101,9 @@ field or press Enter again to save it anyway, or press Esc to keep the other cha
 
 ### DSH name
 
-Optional. The name the approval page shows for this DSH. When it is empty, the page shows this
-DSH's address instead.
+Optional. The name the approval page shows for this DSH. When it is empty, this DSH shows as
+`<device name>-DSH`. The name is kept exactly as you type it, spaces included; a field with only
+spaces counts as empty.
 
 ### Limits
 
