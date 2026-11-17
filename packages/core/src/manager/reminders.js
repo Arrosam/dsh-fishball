@@ -18,7 +18,10 @@
  *   so a restart loses nothing. On startup a missed one-shot fires once and a missed recurring
  *   task fires once for its latest occurrence, then keeps its cadence. The store is bounded
  *   (`STORE.maxBytes`): a change that would outgrow it is refused, and a store that cannot be read
- *   whole makes the tools unavailable rather than being read as empty and overwritten (R-FIX F07);
+ *   whole makes the tools unavailable rather than being read as empty and overwritten (R-FIX F07).
+ *   A create, or an update that grows the store, may fill only `STORE.editShare` of it; the rest
+ *   is kept for delivery's bookkeeping, so a due reminder normally still fires in a store the
+ *   tools have filled (R-FIX-CORE-2; the extreme cases are the README's known limits);
  * - a reminder whose last occurrence was delivered is removed at once, so ended reminders never
  *   pile up (the user's decision 2026-11-18, "响过立刻删");
  * - delivery (R-FIX F08) uses the hand-over the events use (events/handover.js): a due occurrence
@@ -57,7 +60,8 @@ import {
 const LOGGER = 'fishball-native-reminders'
 /**
  * The boundary failures the tools return as data: the durable store could not be read, or a change
- * would make it larger than it may be (`STORE.maxBytes`).
+ * would make it larger than it may be (`STORE.maxBytes`; `EDIT_LIMIT_BYTES` for a create or a
+ * growing update).
  */
 const ERROR = Object.freeze({ unavailable: 'schedule-unavailable', full: 'schedule-store-full' })
 
@@ -105,9 +109,19 @@ const STORE = Object.freeze({
   tempSuffix: '.tmp',
   // The largest store a load reads; a write that would exceed it is refused (R-FIX F07).
   maxBytes: 4_194_304,
+  // The share of `maxBytes` a create, or an update that grows the store, may fill (R-FIX-CORE-2,
+  // Fishball's numeric decision under the user's "改个数值的事…你自己决定"). The space above it is
+  // reserved for delivery bookkeeping (a pending occurrence, a settlement), which may use all of
+  // `maxBytes`, so tool edits alone cannot leave a due reminder without room to fire. An update
+  // that does not grow the store is never refused for space (the user, R-FIX-CORE-2): bookkeeping
+  // can push the store past this share, and a rename or a timing change must still work there.
+  editShare: 0.9,
   encoding: 'utf8',
   missingFile: 'ENOENT',
 })
+
+/** The largest store a create or a growing update may leave; the rest of `STORE.maxBytes` is delivery's. */
+const EDIT_LIMIT_BYTES = STORE.maxBytes * STORE.editShare
 
 /**
  * Node timers clamp above `maxDelayMs`; a longer wait is re-armed when the timer fires.
@@ -145,6 +159,7 @@ const LOG = Object.freeze({
   handOverFailed: 'reminder %s could not be handed to its agent (%s)',
   malformed: '%d stored reminder(s) were ignored as malformed',
   dispatchStopped: 'the reminder dispatch stopped (%s)',
+  noSpace: '%d due reminder(s) wait for space in the reminder store (%s)',
 })
 
 /** Fields a reminder view keeps; target ids and Host bookkeeping never leave this module. */
@@ -390,6 +405,9 @@ export function createReminders(ctx, options = {}) {
   const directory = path.join(profile.home, STORE.directory)
   const file = path.join(directory, STORE.file)
   let tasks = []
+  // The byte size of the store file as last read or written (0 while there is none), so an update
+  // can tell whether it grows the store (`STORE.editShare`).
+  let storedBytes = 0
   let storeClosed = false
   let closed = false
   let timer
@@ -428,7 +446,8 @@ export function createReminders(ctx, options = {}) {
       if (error?.code !== STORE.missingFile) closeStore(LOG.unreadable, codeOf(error))
       return
     }
-    if (Buffer.byteLength(raw, STORE.encoding) > STORE.maxBytes) return closeStore(LOG.tooLarge)
+    const bytes = Buffer.byteLength(raw, STORE.encoding)
+    if (bytes > STORE.maxBytes) return closeStore(LOG.tooLarge)
     let parsed
     try {
       parsed = JSON.parse(raw)
@@ -448,6 +467,7 @@ export function createReminders(ctx, options = {}) {
     if (ignored > 0) logger?.warn(LOG.malformed, ignored)
     if (ended > 0) logger?.info?.(LOG.ended, ended)
     tasks = loaded
+    storedBytes = bytes
   }
 
   /** The store cannot be read whole: it stays closed (`storeClosed`) and untouched in this process. */
@@ -465,15 +485,22 @@ export function createReminders(ctx, options = {}) {
 
   /**
    * Durability before visibility: a failed write leaves the previous tasks in place. A closed store
-   * is never written, and a store that would outgrow what a load reads is refused before writing.
+   * is never written, and a store larger than `limitBytes` is refused before writing. The default
+   * is what a load reads; a create passes `EDIT_LIMIT_BYTES`, an update `updateLimitBytes()` (see
+   * `STORE.editShare`).
    */
-  async function commit(next) {
+  async function commit(next, limitBytes = STORE.maxBytes) {
     if (storeClosed) unavailable()
     const text = JSON.stringify({ version: STORE.version, tasks: next }) + '\n'
-    if (Buffer.byteLength(text, STORE.encoding) > STORE.maxBytes) throw new ReminderStoreError(ERROR.full, MESSAGE.full)
+    const bytes = Buffer.byteLength(text, STORE.encoding)
+    if (bytes > limitBytes) throw new ReminderStoreError(ERROR.full, MESSAGE.full)
     await persist(text)
     tasks = next
+    storedBytes = bytes
   }
+
+  /** An update is refused only when it grows the store past `EDIT_LIMIT_BYTES`. */
+  const updateLimitBytes = () => Math.max(EDIT_LIMIT_BYTES, storedBytes)
 
   async function requireStore() {
     await ready
@@ -485,7 +512,7 @@ export function createReminders(ctx, options = {}) {
       const record = recordFor({ id: randomUUID(), title, prompt, timing, now })
       const stamp = new Date(now).toISOString()
       const task = Object.freeze({ sessionId, record, status: TASK_STATUS.active, createdAt: stamp, updatedAt: stamp })
-      await commit([...tasks, task])
+      await commit([...tasks, task], EDIT_LIMIT_BYTES)
       return task
     })
   }
@@ -517,7 +544,7 @@ export function createReminders(ctx, options = {}) {
       const updated = Object.freeze({ ...base, record, status, updatedAt: new Date(now).toISOString() })
       const next = [...tasks]
       next[index] = updated
-      await commit(next)
+      await commit(next, updateLimitBytes())
       return { task: updated }
     })
   }
@@ -638,16 +665,24 @@ export function createReminders(ctx, options = {}) {
    * the oldest pending one is handed over. A failed step is transient: the occurrence stays as it
    * is (due, or pending in the store), the task is left out of the rest of this pass only, so one
    * unreachable target cannot spin the loop, and `scheduleNext` tries again after `TIMER.retryMs`
-   * (or at the manager's next idle edge, whichever comes first).
+   * (or at the manager's next idle edge, whichever comes first). A store with no room left for a
+   * pending occurrence leaves every remaining due task for the next pass, with one log line:
+   * trying each would serialise the whole store once per task for the same refusal.
    */
   async function deliverDue() {
     failed = new Set()
     const due = tasks
       .filter((task) => isDue(task, Date.now()))
       .sort((left, right) => Date.parse(left.record.scheduledAt) - Date.parse(right.record.scheduledAt))
-    for (const task of due) {
+    for (const [index, task] of due.entries()) {
       if (closed) return
       try { await markPending(task, Date.now()) } catch (error) {
+        if (error?.code === ERROR.full) {
+          const waiting = due.slice(index)
+          for (const rest of waiting) failed.add(rest.record.id)
+          logger?.warn(LOG.noSpace, waiting.length, codeOf(error))
+          break
+        }
         failed.add(task.record.id)
         logger?.warn(LOG.notDelivered, task.record.id, codeOf(error))
       }

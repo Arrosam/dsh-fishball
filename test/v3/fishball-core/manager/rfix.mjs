@@ -5,7 +5,8 @@
  * - F05: a record naming a session whose log does not exist is created under that id; other resume
  *   failures still refuse `chat-session` and never create;
  * - F06: overlapping applyModel() calls and an activation during a setting change end on the newest setting;
- * - F07: the reminder store is bounded (4,194,304 bytes, refused `schedule-store-full`), fails
+ * - F07: the reminder store is bounded (4,194,304 bytes; R-FIX-CORE-2: a create or update is refused
+ *   `schedule-store-full` once its result would pass 90% of it, 3,774,873 bytes), fails
  *   closed (`schedule-unavailable`, never overwritten), and ended reminders are removed at once;
  * - F08: a due reminder is handed over only when truly idle, settled on admission, dropped on a
  *   user Stop or removal, delivered again after owner teardown or restart, never fired twice;
@@ -21,7 +22,7 @@ import { setTimeout as sleep } from 'node:timers/promises'
 import { pathToFileURL } from 'node:url'
 import { INPROC, coreModule, eventually, gate, openInproc } from './inproc.mjs'
 
-const name = (sdk, id, row, text) => `${id} ${row} [SDK ${sdk}] ${text}`
+export const name = (sdk, id, row, text) => `${id} ${row} [SDK ${sdk}] ${text}`
 
 /**
  * Removes the durable log directory of `sessionId` under DSH's JSONL root (`<sessions>/<project
@@ -39,14 +40,21 @@ function removeSessionLog(sessionsDir, sessionId) {
   }
   return removed
 }
-const T = { timeout: 120000 }
+export const T = { timeout: 120000 }
 const M = INPROC.models
 const sel = (model) => Object.freeze({ provider: INPROC.provider, model })
 
 /** Words of these rows (the requirements' codes and the schedule tool's parameters). */
-const RFIX = Object.freeze({
+export const RFIX = Object.freeze({
   chatSession: 'chat-session',
   storeFull: 'schedule-store-full',
+  /**
+   * R-FIX-CORE-2: a create or update is refused once its resulting store would pass 90% of the
+   * 4 MiB limit (the rest is kept for delivery's bookkeeping): 3,774,873 bytes is the largest
+   * resulting file a create or update may write (90% of 4,194,304 is 3,774,873.6).
+   */
+  createSharePercent: 90,
+  percent: 100,
   unavailable: 'schedule-unavailable',
   invalidRule: 'invalid_rule',
   ended: 'ended',
@@ -64,8 +72,40 @@ const RFIX = Object.freeze({
 })
 
 /** schedule tool result fields the rows read. */
-const codeOf = (r) => r.json?.code ?? r.json?.error?.code ?? (r.text.match(/"code"\s*:\s*"([^"]+)"/)?.[1])
-const listOf = (r) => (Array.isArray(r.json) ? r.json : r.json?.reminders ?? r.json?.tasks ?? [])
+export const codeOf = (r) => r.json?.code ?? r.json?.error?.code ?? (r.text.match(/"code"\s*:\s*"([^"]+)"/)?.[1])
+export const listOf = (r) => (Array.isArray(r.json) ? r.json : r.json?.reminders ?? r.json?.tasks ?? [])
+
+// F08 helpers, shared with the R-FIX-CORE-2 rows (rfix2.mjs).
+/** A one-shot reminder `seconds` from now with a prompt marker; returns the marker. */
+export async function oneShot(w, title, seconds = 1) {
+  const marker = 'FBTEST-RFIX-REMINDER-' + title
+  const r = await w.tool(RFIX.tool.create, { title, prompt: marker, after_seconds: seconds })
+  assert.equal(codeOf(r), undefined, 'harness: create refused ' + r.text.slice(0, 200))
+  return marker
+}
+export const listedTitles = async (w) => listOf(await w.tool(RFIX.tool.list, {})).map((e) => e.title)
+export const storeText = (w) => (fs.existsSync(w.storeFile()) ? fs.readFileSync(w.storeFile(), 'utf8') : '')
+/** A model hook holding the turn carrying `needle` (and nothing else) until released or stopped. */
+export function busyOn(needle) {
+  const reached = Promise.withResolvers()
+  const released = Promise.withResolvers()
+  let held = false
+  return {
+    onRequest: async (options) => {
+      if (held || !JSON.stringify(options.messages ?? []).includes(needle)) return undefined
+      held = true
+      reached.resolve()
+      const aborted = new Promise((resolve) => options.signal?.addEventListener('abort', () => resolve('aborted'), { once: true }))
+      return Promise.race([released.promise.then(() => undefined), aborted])
+    },
+    reached: reached.promise,
+    release: () => released.resolve(),
+  }
+}
+export const userTurn = (w, agent, text) => agent.followup(w.p[INPROC.llm].freezeMessage({ id: 'fbtest-rfix-busy-' + Math.random().toString(36).slice(2), role: 'user', content: [{ type: 'text', text }], source: { kind: 'user' } }))
+
+/** The largest resulting store a create or update may write (R-FIX-CORE-2). */
+export const CREATE_BOUND_BYTES = Math.floor(INPROC.store.maxBytes * RFIX.createSharePercent / RFIX.percent)
 
 export function registerRfixManagerCases(sdk) {
   registerF05(sdk)
@@ -188,22 +228,22 @@ function registerF07(sdk) {
       const r = await create(w, i)
       if (r.isError || codeOf(r) !== undefined) return { count: i, refused: r }
       i += 1
-      assert.ok(fs.statSync(w.storeFile()).size <= INPROC.store.maxBytes, `the store grew past ${INPROC.store.maxBytes} bytes at ${i} reminders`)
+      assert.ok(fs.statSync(w.storeFile()).size <= CREATE_BOUND_BYTES, `creates grew the store past ${CREATE_BOUND_BYTES} bytes (90% of the limit) at ${i} reminders`)
       assert.ok(i < 1000, 'harness: no refusal after 1000 reminders')
     }
   }
-  test(name(sdk, 'RFIX-F07-BVA-01', 'create over the bound', `creates up to the byte bound are kept; the create that would pass ${INPROC.store.maxBytes} bytes is refused ${RFIX.storeFull}; nothing written; the previous tasks stay, also after a restart`), T, async (t) => {
+  test(name(sdk, 'RFIX-F07-BVA-01', 'create over the bound', `creates up to the byte bound are kept; the create that would pass ${CREATE_BOUND_BYTES} bytes (90% of ${INPROC.store.maxBytes}) is refused ${RFIX.storeFull}; nothing written; the previous tasks stay, also after a restart`), T, async (t) => {
     const w = await openInproc(t, sdk, { reminders: true })
     const { count, refused } = await fill(w)
     assert.equal(codeOf(refused), RFIX.storeFull, 'the refusal: ' + refused.text.slice(0, 200))
     const before = fs.readFileSync(w.storeFile())
-    assert.ok(before.length + RFIX.promptBytes > INPROC.store.maxBytes, 'harness: the refused create would have fitted')
+    assert.ok(before.length + RFIX.promptBytes > CREATE_BOUND_BYTES, 'harness: the refused create would have fitted under 90%')
     assert.equal(listOf(await w.tool(RFIX.tool.list, {})).length, count, 'reminders listed after the refusal')
     await w.close()
     const again = await openInproc(t, sdk, { root: w.root, reminders: true })
     assert.equal(listOf(await again.tool(RFIX.tool.list, {})).length, count, 'reminders listed after a restart')
   })
-  test(name(sdk, 'RFIX-F07-BVA-01', 'update over the bound', `an update whose result would pass the bound is refused ${RFIX.storeFull}; the reminder keeps its old prompt`), T, async (t) => {
+  test(name(sdk, 'RFIX-F07-BVA-01', 'update over the bound', `an update whose result would pass the bound (${CREATE_BOUND_BYTES} bytes, 90%) is refused ${RFIX.storeFull}; the reminder keeps its old prompt`), T, async (t) => {
     const w = await openInproc(t, sdk, { reminders: true })
     const { count } = await fill(w)
     const [first] = listOf(await w.tool(RFIX.tool.list, {}))
@@ -269,34 +309,6 @@ function registerF07(sdk) {
 
 // ================================================================== F08: the delivery boundary
 function registerF08(sdk) {
-  /** A one-shot reminder `seconds` from now with a prompt marker; returns the marker. */
-  async function oneShot(w, title, seconds = 1) {
-    const marker = 'FBTEST-RFIX-REMINDER-' + title
-    const r = await w.tool(RFIX.tool.create, { title, prompt: marker, after_seconds: seconds })
-    assert.equal(codeOf(r), undefined, 'harness: create refused ' + r.text.slice(0, 200))
-    return marker
-  }
-  const listedTitles = async (w) => listOf(await w.tool(RFIX.tool.list, {})).map((e) => e.title)
-  const storeText = (w) => (fs.existsSync(w.storeFile()) ? fs.readFileSync(w.storeFile(), 'utf8') : '')
-  /** A model hook holding the turn carrying `needle` (and nothing else) until released or stopped. */
-  function busyOn(needle) {
-    const reached = Promise.withResolvers()
-    const released = Promise.withResolvers()
-    let held = false
-    return {
-      onRequest: async (options) => {
-        if (held || !JSON.stringify(options.messages ?? []).includes(needle)) return undefined
-        held = true
-        reached.resolve()
-        const aborted = new Promise((resolve) => options.signal?.addEventListener('abort', () => resolve('aborted'), { once: true }))
-        return Promise.race([released.promise.then(() => undefined), aborted])
-      },
-      reached: reached.promise,
-      release: () => released.resolve(),
-    }
-  }
-  const userTurn = (w, agent, text) => agent.followup(w.p[INPROC.llm].freezeMessage({ id: 'fbtest-rfix-busy-' + Math.random().toString(36).slice(2), role: 'user', content: [{ type: 'text', text }], source: { kind: 'user' } }))
-
   test(name(sdk, 'RFIX-F08-ST-01', 'idle → admitted', 'a due one-shot while idle is its own turn; admitted once; then removed (not listed)'), T, async (t) => {
     const w = await openInproc(t, sdk, { reminders: true })
     const title = RFIX.title('idle')
