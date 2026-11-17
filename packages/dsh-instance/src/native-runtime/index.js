@@ -136,8 +136,9 @@ class NativeRuntime {
    * link in its path or its layout directories, and an owner marker naming this home
    * (existingLayout, then prepareLayout, which throws for a missing or foreign marker).
    *
-   * The child must be stopped already: a recorded child that is alive, or whose state is unknown
-   * (no pid record, `ps` unreadable), is refused with CHILD_RUNNING and nothing is removed.
+   * The child must be stopped already. A recorded child that is alive is refused with
+   * CHILD_RUNNING. One whose state is unknown (no pid record, `ps` unreadable) is refused with
+   * CHILD_STATE_UNKNOWN. In both cases nothing is removed.
    * Quitting DSH stops it: the parent pipe closes and the child exits by itself
    * (parent-watch.js, LIFETIME.childExitTimeoutMs). The command does not stop the child itself:
    * a main DSH that still runs owns it and could start it again into the tree being deleted.
@@ -147,7 +148,11 @@ class NativeRuntime {
     if (!await existingLayout(this.options.mainHome)) return { removed: false, root: this.paths.root }
     await this.prepare()
     const record = await this.active()
-    if (record && await this.alive(await this.pid(record)) !== false) fail(UNINSTALL.childRunning)
+    if (record) {
+      const alive = await this.alive(await this.pid(record))
+      if (alive === true) fail(UNINSTALL.childRunning)
+      if (alive !== false) fail(UNINSTALL.childStateUnknown)
+    }
     await removeRuntime(this.paths)
     return { removed: true, root: this.paths.root }
   }) }
