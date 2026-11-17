@@ -46,12 +46,22 @@ export function createServer({ spec, key, routeId, configProblem, host }) {
    * already-due token into a tight loop (review F4; backoff schedule by the user's decision).
    */
   let retryMs
+  /**
+   * The failure the backoff last stepped for. A timer that fires during a timer refresh joins the
+   * same flight (the token manager shares it) and gets the same rejection; it must not step again.
+   * Skipping such a timer instead could drop the one an adoption armed just before the flight ended.
+   */
+  let steppedFor
   /** A pending attempt: `{url}` once the approval URL is known. */
   let attempt
   /** The refusal or failure the last sign-in left, cleared by the next one or by a grant. */
   let outcome
   let signingIn
-  /** While this server writes its own record, the store's update event is ours and is not re-read. */
+  /**
+   * While this server writes its own record, the store's update events are not re-read: every exit
+   * of `own()` adopts the store's current record instead (an event then may also be the store's
+   * reconciliation of another process's change, review F7).
+   */
   let writing = 0
   let adopting = Promise.resolve()
   let disposed = false
@@ -101,18 +111,21 @@ export function createServer({ spec, key, routeId, configProblem, host }) {
     timer = timers.setTimeout(refreshByTimer, Math.min(MAX_TIMER_DELAY_MS, Math.max(LIMIT.minRefreshDelayMs, dueInMs, retryMs ?? LIMIT.minRefreshDelayMs)))
     timer.unref?.()
   }
+  /**
+   * The timer's refresh. A success adopts new tokens, and adopt() ends the backoff; the delay stays
+   * set during the flight, so an adoption meanwhile (a 401 recovery's re-read) re-arms nothing.
+   */
   async function refreshByTimer() {
-    const failedBefore = retryMs
     const tokenBefore = accessTokenOf(grant)
-    // Cleared first, so the adoption of a successful refresh arms the normal schedule.
-    retryMs = undefined
     try {
       await refresh()
     } catch (error) {
+      if (error === steppedFor) return
+      steppedFor = error
       warnRefresh(error)
       // Tokens another process stored meanwhile were adopted with their own schedule.
       if (accessTokenOf(grant) !== tokenBefore) return
-      retryMs = failedBefore === undefined ? LIMIT.refreshRetryFirstMs : Math.min(LIMIT.refreshRetryMaxMs, failedBefore * LIMIT.refreshRetryFactor)
+      retryMs = retryMs === undefined ? LIMIT.refreshRetryFirstMs : Math.min(LIMIT.refreshRetryMaxMs, retryMs * LIMIT.refreshRetryFactor)
       armTimer()
     }
   }
@@ -133,9 +146,10 @@ export function createServer({ spec, key, routeId, configProblem, host }) {
       const after = accessTokenOf(grant)
       if (after !== undefined) outcome = undefined
       if (lost && before !== undefined && after === undefined) ctx.logger.warn(TEXT.needsAuthorizationAgain, ADAPTER.logLabel, spec.serverName)
-      // New tokens (a 401 refresh, another process, a sign-in) end an outage's backoff.
+      // New tokens (a 401 refresh, another process, a sign-in) end an outage's backoff. Without them
+      // a pending retry keeps its time: re-arming from now would push it later on every failed 401.
       if (after !== before) retryMs = undefined
-      armTimer()
+      if (retryMs === undefined) armTimer()
       if (after === undefined || configProblem !== undefined) { await disposeChild(); return }
       if (upstreamFailed && after !== before) await disposeChild()
       mountChild()
@@ -274,7 +288,11 @@ export function createServer({ spec, key, routeId, configProblem, host }) {
     accessToken: () => accessTokenOf(grant),
     recover: (failedAccessToken) => refresh(failedAccessToken),
     lose: async (failedAccessToken) => adopt(await own(() => manager.dropTokens({ failedAccessToken })), { lost: true }),
-    /** The proxy could not reach the connector (no answer, a gateway status or a broken body; not the child's own abort). */
+    /**
+     * The proxy could not reach the connector for the child (no answer, a gateway status, a broken
+     * body, a redirect, a failed 401 refresh: each reaches the child as an error that counts against
+     * its reconnect budget; not the child's own abort).
+     */
     unreachable: () => { if (child !== undefined) upstreamFailed = true },
     /** The connector answered the child through the proxy: the child is not stuck in its reconnect budget. */
     reachable: () => { upstreamFailed = false },

@@ -148,10 +148,16 @@ export const PROXY = Object.freeze({
   redirect: 'manual',
   /** The statuses fetch follows (WHATWG Fetch "redirect status"). */
   redirectStatuses: Object.freeze([301, 302, 303, 307, 308]),
-  /** Bad Gateway, Service Unavailable, Gateway Timeout: what a tunnel answers while the connector is down. */
-  gatewayStatuses: Object.freeze([HTTP_STATUS.badGateway, HTTP_STATUS.serviceUnavailable, HTTP_STATUS.gatewayTimeout]),
-  /** stream.Readable options for the relayed body. */
-  byteStream: Object.freeze({ objectMode: false }),
+  /**
+   * What a gateway or tunnel answers while the connector behind it is down (review F5; the user's
+   * decision): Bad Gateway, Service Unavailable, Gateway Timeout, and Cloudflare's 520–530 origin
+   * errors (cloudflared). ngrok's 404 for an offline endpoint is not here: it cannot be told from a
+   * real 404. Any other answer counts as the connector reachable.
+   */
+  gateway: Object.freeze({
+    statuses: Object.freeze([HTTP_STATUS.badGateway, HTTP_STATUS.serviceUnavailable, HTTP_STATUS.gatewayTimeout]),
+    tunnelRange: Object.freeze({ first: 520, last: 530 }),
+  }),
   /** The local-bearer comparison digests both sides first. */
   digestAlgorithm: 'sha256',
   /** The response's close event: the child went away, so the upstream request is aborted. */

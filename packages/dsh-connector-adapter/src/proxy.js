@@ -53,6 +53,9 @@ function forwardHeaders(incoming, accessToken) {
   return headers
 }
 
+/** Whether a status is a gateway's answer for a connector that is down (PROXY.gateway). */
+const isGatewayStatus = (status) => PROXY.gateway.statuses.includes(status) || (status >= PROXY.gateway.tunnelRange.first && status <= PROXY.gateway.tunnelRange.last)
+
 const refuse = (res, status) => { res.writeHead(status); res.end() }
 
 /** The upstream's response headers that go on to the child. */
@@ -93,15 +96,16 @@ export async function startProxy({ servers, fetchFn }) {
     }
     const abort = new AbortController()
     res.on(PROXY.closeEvent, () => abort.abort())
+    // The child's own close aborts the request; any other failure means the connector is unreachable.
+    const failed = (error) => {
+      if (!abort.signal.aborted) server.unreachable()
+      throw error
+    }
     const send = async (accessToken) => {
-      const upstream = await fetchFn(server.upstream, { method: req.method, headers: forwardHeaders(req.headers, accessToken), body, redirect: PROXY.redirect, signal: abort.signal }).catch((error) => {
-        // The child's own close aborts the request; anything else means the connector is unreachable.
-        if (!abort.signal.aborted) server.unreachable()
-        throw error
-      })
+      const upstream = await fetchFn(server.upstream, { method: req.method, headers: forwardHeaders(req.headers, accessToken), body, redirect: PROXY.redirect, signal: abort.signal }).catch(failed)
       // A tunnel or gateway in front of the connector answers for it while it is down (review F5);
       // a redirect reaches the child as a gateway error too (below).
-      if (PROXY.gatewayStatuses.includes(upstream.status) || PROXY.redirectStatuses.includes(upstream.status)) server.unreachable()
+      if (isGatewayStatus(upstream.status) || PROXY.redirectStatuses.includes(upstream.status)) server.unreachable()
       else server.reachable()
       return upstream
     }
@@ -114,7 +118,8 @@ export async function startProxy({ servers, fetchFn }) {
       // token share one refresh (the token manager's single flight). A "recovered" token equal to the
       // one that just failed would fail again, so there is no retry then.
       await upstream.body?.cancel()
-      const next = await server.recover(first)
+      // A refresh that fails (token endpoint down) answers the child 502 as well (handle's catch).
+      const next = await server.recover(first).catch(failed)
       // No new token (no refresh token, or a refresh that declined): the grant is spent, so the
       // server needs authorization again (R-OA-21 rule 5; X-SEC X-07), not a live state for ever.
       if (next === undefined || next === first) {
@@ -143,9 +148,8 @@ export async function startProxy({ servers, fetchFn }) {
     res.flushHeaders()
     // Streamed chunk by chunk, so a listen stream stays open for as long as the connector keeps it.
     // pipeline() waits while the child reads slowly (review F6), and on either side's end or failure
-    // destroys the other: a closed child cancels the upstream body. Byte mode bounds the read-ahead
-    // in bytes, not in chunks of any size.
-    const source = Readable.from(upstream.body, PROXY.byteStream)
+    // destroys the other: a closed child cancels the upstream body.
+    const source = Readable.from(upstream.body)
     // Classified on the source's own error: it fires before pipeline() destroys the response, whose
     // close would make a broken connector body look like the child's own abort.
     source.once(PROXY.errorEvent, () => { if (!abort.signal.aborted) server.unreachable() })

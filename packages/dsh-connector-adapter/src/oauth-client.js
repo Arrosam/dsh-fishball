@@ -267,7 +267,8 @@ function withDeadline(fetchFn, timeoutMs) {
  * @param options.upstream the server URL the record's grant must be bound to (`isGrantFor`). The key
  *   names a server, not a URL, so another process with another URL for that name can store its own
  *   grant here: such a record counts as absent and is never refreshed, dropped or returned. Omitted:
- *   no binding check (a caller that keys records by URL itself).
+ *   no binding check, the contract before review F1 (a caller whose key already names one URL). The
+ *   adapter's server always passes it.
  */
 export function createTokenManager({ sdk, credentials, key, now = Date.now, refreshLeadMs, fetchFn = globalThis.fetch, requestTimeoutMs = OAUTH_CLIENT.requestTimeoutMs, upstream }) {
   const tokenFetch = withDeadline(fetchFn, requestTimeoutMs)
