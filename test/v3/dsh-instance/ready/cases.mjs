@@ -77,7 +77,7 @@ export function registerReadyCases(sdk) {
   })
   row('IREADY-EP-05', 'package', 'no removed modules, connector peer or native-web package entry', () => {
     const manifest = JSON.parse(fs.readFileSync(at('package.json'), 'utf8'))
-    assert.equal(manifest.peerDependencies?.['dsh-connector'], undefined)
+    assert.equal(manifest.peerDependencies?.['dsh-agent-connector'], undefined)
     assert.equal(manifest.files.includes('native-web.js'), false)
     for (const file of READY.absent) assert.equal(fs.existsSync(at(file)), false, file)
   })
@@ -85,7 +85,7 @@ export function registerReadyCases(sdk) {
     for (const file of sourceFiles()) {
       const text = fs.readFileSync(file, 'utf8')
       for (const forbidden of READY.forbiddenText) assert.equal(text.includes(forbidden), false, `${file}: ${forbidden}`)
-      assert.doesNotMatch(text, /(?:from\s*|import\s*\(|require\s*\()\s*['"]dsh-connector(?:\/[^'"]*)?['"]/, file)
+      assert.doesNotMatch(text, /(?:from\s*|import\s*\(|require\s*\()\s*['"](?:dsh-agent-connector|dsh-connector)(?:\/[^'"]*)?['"]/, file)
     }
   })
   row('IREADY-EP-07', 'host', 'host has no migration, storageDomain injection or removed native routes', () => {

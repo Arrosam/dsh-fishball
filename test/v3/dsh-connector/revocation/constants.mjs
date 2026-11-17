@@ -2,7 +2,7 @@
  * Vocabulary for the C-REVOKE cases: step 1 (cases.mjs: the routing surface `endPrincipal`, the
  * routing member `askDropped`, and K1d `Mailbox.retire` misuse) and step 2 (handler-cases.mjs: the
  * revocation module `createRevocation`). Every product value comes from K1
- * (`dsh-connector/mcp-schema`) through the C-ROUTE suite's constants (which take them from K1 and
+ * (`dsh-agent-connector/mcp-schema`) through the C-ROUTE suite's constants (which take them from K1 and
  * K3 only), or from the two constants the step-2 module exports (REVOCATION_TIMING,
  * REVOCATION_NOTE, read by subject.mjs); nothing comes from `packages/dsh-connector/src/`. The
  * rest is fixture data and harness values.

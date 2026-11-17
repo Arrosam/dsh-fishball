@@ -1,6 +1,6 @@
 /**
  * Oracles for the K1c rows: the K1 amendment that freezes the managed-state seam in
- * `dsh-connector/mcp-schema` (Fishball's K1c spec, relayed 2026-11-14):
+ * `dsh-agent-connector/mcp-schema` (Fishball's K1c spec, relayed 2026-11-14):
  * - a runtime constant MANAGED_REFUSAL, frozen, exactly {alreadyManaged: 'conflict',
  *   notManaged: 'not-managed', otherManager: 'forbidden'}, each value the same string as
  *   REFUSAL.conflict / REFUSAL.notManaged / REFUSAL.forbidden (one owner per value), and a member of
@@ -30,7 +30,7 @@ export const REFUSAL_KEY_OF = Object.freeze({
   notManaged: 'notManaged',
   otherManager: 'forbidden',
 })
-/** K2's shared code list (dsh-connector/tools `SHARED_CODES`) and the MANAGED_REFUSAL keys whose value it has. */
+/** K2's shared code list (dsh-agent-connector/tools `SHARED_CODES`) and the MANAGED_REFUSAL keys whose value it has. */
 export const K2_SHARED = Object.freeze({ exportName: 'SHARED_CODES', keys: Object.freeze(['alreadyManaged', 'otherManager']) })
 
 /** Spec item 2: NOTICE's fields; `codes` is empty. */

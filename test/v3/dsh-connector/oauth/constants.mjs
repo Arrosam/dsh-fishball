@@ -6,7 +6,7 @@
  * K1b rows K1b-UC-02 and K1b-DT-06, and the C-PAIR rows that named C-OAUTH (AUTH-UC-02, AUTH-UC-04,
  * AUTH-EP-03, AUTH-EP-06 row 9, AUTH-ST-01 row 14).
  *
- * Every product value comes from K1, `dsh-connector/mcp-schema` (index.js; the `RevocationKind`
+ * Every product value comes from K1, `dsh-agent-connector/mcp-schema` (index.js; the `RevocationKind`
  * words from K1d's REVOCATION_KIND). Nothing comes from `packages/dsh-connector/src/mcp/oauth/`.
  * The rest is case data (the ids, hosts and inputs the case tables name), HTTP's own vocabulary and
  * fixture keys, which are not product values.

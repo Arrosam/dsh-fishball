@@ -1,8 +1,16 @@
 {
   "name": "fishball-ui",
-  "version": "0.1.0-alpha.0",
+  "version": "1.0.0-alpha.1",
   "description": "Fishball's UI plugin: every UI change inside a Fishball DSH (the Fishball page, the UI guard rows, the Recommended tab, the status strip, the pairing views, the ask cards, the model dialog and the two settings entries), drawn over fishball-core's backend.",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Arrosam/dsh-fishball.git",
+    "directory": "packages/fishball-ui"
+  },
+  "publishConfig": {
+    "tag": "alpha"
+  },
   "type": "module",
   "//": "A DSH bundle of the Fishball plugin set (R-FB-01, R-FB-14; requirements 1.38 Q-N2). F-UI moved core's UI here: core is the backend and keeps every state; this package draws it. Its rows run only beside fishball-core (cordis.patch.yml); without core it logs fishball-core-missing and changes nothing (Q-G2 = A). It reads core through core's published routes and fishball-shared/ui-seam only, never by importing fishball-core, and depends on no DSH-side package (R-ARCH-10). fishball-page reads api/fishball/session, core's own manager-session route (src/session/route.js, since I-HOST).",
   "//exports": "./client is the fishball-ui row's browser half, with the chunks client.entries.js, client.asks.js, client.strip.js and client.model.js beside it. ./core-missing is the row that logs without core: a package subpath, never a path row, because a second path row inside this folder would be a second client source of the package (I-PLACE probe Q-13). fishball-page/ and fishball-recommend-plugins/ are their own small packages with their own manifests.",
@@ -26,12 +34,12 @@
     "LICENSE"
   ],
   "engines": {
-    "node": ">=22",
+    "node": ">=22.14",
     "dsh": ">=0.2.1-rc.5"
   },
   "//dependencies": "fishball-shared is the Fishball side's library (R-ARCH-08), here for the core / ui seam (./ui-seam); it is bundled, so the tarball carries it.",
   "dependencies": {
-    "fishball-shared": "0.1.0-alpha.0"
+    "fishball-shared": "1.0.0-alpha.1"
   },
   "bundleDependencies": [
     "fishball-shared"

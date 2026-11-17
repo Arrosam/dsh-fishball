@@ -1,6 +1,6 @@
 /**
  * A faithful fake DSH connector for the F-LINK-SAVE cases. It speaks only what the requirements and
- * the frozen contracts define, from K1's own builders (`dsh-connector/mcp-schema`):
+ * the frozen contracts define, from K1's own builders (`dsh-agent-connector/mcp-schema`):
  *
  * - web listener (dual-stack, so `127.0.0.1` and `localhost` are two origins of one fake):
  *   RFC 9728 / RFC 8414 metadata (with the overrides the not-a-connector rows need), the token

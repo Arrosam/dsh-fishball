@@ -136,24 +136,26 @@ export const UNINSTALL = Object.freeze({
 
 /**
  * Placement of the plugin set into the child profile (R-BND-01/02/03, R-HOST-01, design §8.1;
- * bundled-placement note `f71717e` P3 + 3a). Each placed package is copied, at every child start
- * and before the profile loads, to `<profile>/vendor/<name>` and `<profile>/node_modules/<name>` with `dependencies[name] = file:./vendor/<name>`, so DSH resolves it
- * as a profile package and a later pnpm operation in the child keeps it (I-PLACE probe, both SDKs:
- * `dsh plugin --profile fishball install <tarball>` succeeds, every placed copy stays, and the next
- * start places and loads again; core's own dependencies are not fetched). The host never resolves
- * these copies: their sources are data inside dsh-instance's own folder (R-BND-01).
+ * bundled-placement note `f71717e` P3 + 3a). The set's source is chosen at every child start:
+ * - a packed instance (REL-PACK: `bundled/<name>-<version>.tgz` for every set member, at this
+ *   instance's own version) installs the set with DSH's own plugin manager, by exact npm spec first
+ *   and offline from those tarballs when the registry fails, and only when the profile lacks that
+ *   exact version (the user's answers to REL-PACK Q2-Q4, 2026-11-17; placement.js installPackedSet);
+ * - a checkout copies each member, at every start and before the profile loads, to
+ *   `<profile>/vendor/<name>` and `<profile>/node_modules/<name>` with
+ *   `dependencies[name] = file:./vendor/<name>`, so DSH resolves it as a profile package and a later
+ *   pnpm operation in the child keeps it (I-PLACE probe, both SDKs).
+ * The libraries (`shared`) are copied in both cases. The host never resolves or loads the set: its
+ * sources are data inside dsh-instance's own folder (R-BND-01).
  */
 export const PLACEMENT = Object.freeze({
   /**
    * The bundles, in the order they are appended to `dsh.profile.bundles` after every other bundle:
    * fishball-core last, so its guard patch reaches every row the others insert (R-FB-12).
-   * `directory` names a set member's folder: `bundled/<directory>` in a packed instance (REL-PACK
-   * output, never committed; Q-22), else the sibling workspace folder `../<directory>` of a checkout.
-   * A packed member carries its own `bundleDependencies` in `bundled/<directory>/node_modules/<name>`,
-   * as extracting its tarball leaves them (placement.js bundledLibraries reads them from there).
-   * The set is core, fishball-ui and board (requirements 1.39 R-BND-01: "the default set is
-   * `fishball-core`, `fishball-ui` and `fishball-board`"; the user's answer Q1 = A keeps copying them
-   * from the checkout or `bundled/` until REL-PACK makes installable tarballs).
+   * `directory` names a set member's sibling workspace folder `../<directory>` in a checkout; a
+   * packed instance ships it as `bundled/<tarball(name, version)>` instead (REL-PACK output, never
+   * committed; Q-22). The set is core, fishball-ui and board (requirements 1.39 R-BND-01: "the
+   * default set is `fishball-core`, `fishball-ui` and `fishball-board`").
    */
   bundles: Object.freeze([
     Object.freeze({ name: 'fishball-board', directory: 'board' }),
@@ -176,7 +178,42 @@ export const PLACEMENT = Object.freeze({
   bundledField: 'bundleDependencies',
   // Node's code for a package that a resolver cannot find (createRequire().resolve).
   unresolved: 'MODULE_NOT_FOUND',
+  // A packed instance's folder of set tarballs; its presence selects the install path.
   packed: 'bundled',
+  // npm pack's file name for an unscoped package, as REL-PACK writes the set into `bundled/`.
+  tarball: (name, version) => name + '-' + version + '.tgz',
+  /**
+   * The packed set's install (REL-PACK item 5). `order` is the order the user gave for the add
+   * (fishball-ui, then fishball-board, then fishball-core last); the bundle order above is separate.
+   * DSH's own plugin-manager operation runs pnpm in the child profile under the profile lock, with
+   * the plugin manager's default limits (PluginManager.Config) and the installation's own pnpm
+   * (profileContext.packageManager, when DSH supplies one). `activateNewBundles: false` because DSH
+   * would append new bundles in dependency-name order, putting core before fishball-ui;
+   * placeBundles writes the order itself. `noRetries` turns pnpm's fetch retries off through the
+   * run's environment: pnpm retries an unreachable registry for about 70 s per request (measured,
+   * pnpm 10.33), and the plugin manager first runs one `pnpm view` per spec, which ignores a
+   * `--config.fetch-retries` flag; three specs then took 211 s, past the 60 s start bound, so the
+   * tarball fallback would never run. With it a dead registry fails in about a second. The
+   * environment reaches both the lookups and the add (operations.js runProfilePnpm `options.env`).
+   * `fetchTimeout` bounds one registry request by the plugin manager's own lookup bound
+   * (PluginManager.Config inspectTimeoutMs), so a network that drops packets fails like a refused
+   * one instead of waiting pnpm's 60 s default; the run also takes the start's abort signal, so a
+   * start that times out or is stopped cancels it and frees the profile lock. The registry run uses
+   * the main DSH's scrubbed environment and so the user's own registry, proxy and mirror settings,
+   * as any DSH plugin install does; the offline fallback needs none of them.
+   */
+  install: Object.freeze({
+    order: Object.freeze(['fishball-ui', 'fishball-board', 'fishball-core']),
+    operations: '@deepseek-ai/dsh-plugin-manager/operations',
+    manager: '@deepseek-ai/dsh-plugin-manager',
+    command: 'add',
+    execution: 'service',
+    spec: (name, version) => name + '@' + version,
+    noRetries: Object.freeze({ npm_config_fetch_retries: '0' }),
+    fetchTimeout: 'npm_config_fetch_timeout',
+    offline: '--offline',
+    succeeded: 0,
+  }),
   parent: '..',
   vendor: 'vendor',
   modules: 'node_modules',
@@ -201,9 +238,11 @@ export const PLACEMENT = Object.freeze({
   // load in the child, loudly. The one relative dynamic import a copied module has
   // (src/child/provider-sync-target.js → src/lib/provider-sync-host.js) is a snapshot entry itself.
   specifiers: /^\s*(?:(?:import|export)\s[^'";]*?\sfrom\s*|import\s*)['"](\.{1,2}\/[^'"]+)['"]/gm,
-  code: Object.freeze({ missing: 'PLACEMENT_SOURCE_UNAVAILABLE', unsafe: 'UNSAFE_PLACEMENT_SOURCE', unsafeDirectory: 'UNSAFE_DIRECTORY', record: 'INVALID_PLACEMENT_RECORD', incompatible: 'PROFILE_INCOMPATIBLE' }),
+  code: Object.freeze({ missing: 'PLACEMENT_SOURCE_UNAVAILABLE', unsafe: 'UNSAFE_PLACEMENT_SOURCE', unsafeDirectory: 'UNSAFE_DIRECTORY', record: 'INVALID_PLACEMENT_RECORD', incompatible: 'PROFILE_INCOMPATIBLE', installFailed: 'PLACEMENT_INSTALL_FAILED' }),
   /** The NativeRuntimeError field naming the first skipped bundle of an `incompatible` refusal (K3 `ChildStatus.plugin`). */
   pluginField: 'plugin',
+  // installPackedSet's refusal detail: the missing tarball, or the plugin manager's diagnostic log of the failed offline add.
+  installFailed: (detail) => 'The Fishball plugins could not be installed from the registry or from the bundled tarballs (' + detail + ')',
   // R-BND-03: an enabled bundle that DSH skips blocks the start; the status names it and DSH's
   // reason. One line, because the host's launch detail keeps only the first line (launch-detail.js).
   incompatible: (skipped) => 'Enabled bundles cannot load: ' + skipped.map(({ packageName, reason }) => packageName + ' (' + String(reason).replace(/\s+/g, ' ').trim() + ')').join('; '),

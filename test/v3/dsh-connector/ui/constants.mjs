@@ -3,7 +3,7 @@
  * Q-N1 / Q-N3 = A, R-EXT-13, design §13.6; Q-U2, Q-G4). Every literal the cases use lives here.
  *
  * Product values come from three places only:
- * - K2 `dsh-connector/tools` (namespaces, public names, the protocol version, call codes);
+ * - K2 `dsh-agent-connector/tools` (namespaces, public names, the protocol version, call codes);
  * - K3 `host-services/handover.d.ts` (refusal codes, read back from the declaration by the C-ROUTE
  *   suite's `handoverCodes`, so a K3 amendment fails a row instead of drifting);
  * - the surface relayed by the dev session (2026-11-16, "the contract, not the implementation"):

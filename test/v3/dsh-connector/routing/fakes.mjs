@@ -1,6 +1,6 @@
 /**
  * The fakes of C-ROUTE's injected ports (subject.mjs names each port). Each implements the K1
- * interface it stands for (`dsh-connector/mcp-schema/index.d.ts`) plus the test-only drivers
+ * interface it stands for (`dsh-agent-connector/mcp-schema/index.d.ts`) plus the test-only drivers
  * named in its comment; nothing here reads C-ROUTE's code.
  *
  * Keys follow FIXTURE: entry `fbtest-entry-<id>`, principal `fbtest-principal-<id>` (the same

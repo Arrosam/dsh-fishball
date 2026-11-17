@@ -3,7 +3,7 @@
  * C-ROUTE, wave W3). Written from the requirements (R-EVS-02/03, R-ROUTE-01…06, R-WATCH-01/02/04/05,
  * R-CON-03/08/09/11, R-SEC-01, R-ARCH-03), the case files (docs/test-design/v3/03-handover.md,
  * 04-events-interception.md, 06-watch.md, 11-platform.md), the K1 / K1c freeze
- * (`dsh-connector/mcp-schema`: Router, Presence, ManagedState, MANAGED_REFUSAL, QUEUE,
+ * (`dsh-agent-connector/mcp-schema`: Router, Presence, ManagedState, MANAGED_REFUSAL, QUEUE,
  * NoRecipient) and K3 (`host-services/handover.d.ts`), and Fishball's answers of 2026-11-14
  * (constants.mjs RELAYED). No file of packages/dsh-connector/src/routing/ or src/handover/ was read.
  *

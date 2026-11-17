@@ -34,7 +34,7 @@ const TITLE = Object.freeze({
   instance: { en: 'Fishball instance', zh: 'Fishball 实例' },
 })
 const PACKAGES = Object.freeze({
-  connector: { dir: BODY_SOUL.connector, name: 'dsh-connector' },
+  connector: { dir: BODY_SOUL.connector, name: 'dsh-agent-connector' },
   instance: { dir: BODY_SOUL.instance, name: 'dsh-instance' },
 })
 const LANGS = Object.freeze(['en', 'zh'])

@@ -3,7 +3,7 @@
  * I-PLACE): PLAT-DT-01, HOST-ST-01 rows 1–3, HOST-UC-06 (overlay postcondition), HOST-UC-08 main 1
  * and A3, HOST-EP-03 rows 6–7, PLAT-DT-04 rule 1 in a real hosted child (the fishball-hosted-settings
  * rows HOST-UC-08 A1/A2 and HOST-DT-03 left with that bundle: REMOVE-WD, design §1.0), the V2 guard cases LITE-UC-03, LITE-EP-13 and SET-EP-12 restored in a hosted child
- * (V3 rule: design §5a.2 and §6.2), the child isolation rows (Fishball 2026-11-15) and PLAT-EP-07 row 5 (stays failing, REL-PACK).
+ * (V3 rule: design §5a.2 and §6.2), the child isolation rows (Fishball 2026-11-15) and PLAT-EP-07 row 5 (on the REL-PACK release tarballs).
  * Requirements R-BND-01…05, R-FB-02/09/10/12, R-HOST-02/04, R-ARCH-08. The K3 `unmount` rows of the
  * settings-section point are withdrawn with it (requirements 1.34 item 4, R-HOST-11 withdrawn; F-SETTINGS).
  *
@@ -36,6 +36,7 @@ import { corePatchFile } from '../../fishball-core/package/static.mjs'
 import { caseName, caseTest } from '../../contract/package-boundaries/cases.mjs'
 import { V3 } from '../../contract/package-boundaries/constants.mjs'
 import { readManifest } from '../../contract/package-boundaries/packages.mjs'
+import { assertLibraryCopies } from '../../release/pack/release.mjs'
 import {
   BUDGET, CHILD, CORE_COPY, CORE_GUARD_ROWS, DSH_ROW, GUARDS, INTEGRATION, LATER, OVERLAY, PANEL, POLICY, RELAYED, REPORT, SET,
 } from './constants.mjs'
@@ -542,7 +543,11 @@ export function registerIPlaceCases(sdk) {
     ['unmount reopen', 'close then reopen → a second mount; its own unmount at the next close (once per mount, not once per section)'],
   ]) withdrawnCase(sdk, 'K3 settings sections', row, title + ' [integration]')
 
-  // ============================================================== PLAT-EP-07 row 5 (REL-PACK): stays failing, allow-listed there.
-  caseTest(sdk, 'PLAT-EP-07', 5, 'every importer\'s tarball carries a real copy of its side\'s library (P-1 mechanism B)', null, LATER.relPack)
+  // ============================================================== PLAT-EP-07 row 5 (REL-PACK), on the release tarballs.
+  // The property is about shipped packages (the working tree cannot carry a library copy without
+  // shadowing its source), so it reads `node scripts/pack-v3.mjs`'s output through REL-PACK's own check.
+  caseTest(sdk, 'PLAT-EP-07', 5, 'every importer\'s tarball carries a real copy of its side\'s library (P-1 mechanism B)', () => {
+    for (const lib of [V3.dshShared, V3.shared]) assertLibraryCopies(lib.name)
+  })
   caseTest(sdk, 'HOST-ST-01', 10, 'Running → uninstall → Removed, the export offered first', null, LATER.uninstall)
 }

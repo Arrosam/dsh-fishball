@@ -4,7 +4,7 @@
  * AUTH-UC-01 (rewritten), AUTH-UC-15, AUTH-EP-04 rows 1 and 8, AUTH-DT-05 rows 1–2 and 5,
  * AUTH-DT-13, AUTH-ST-01 (no Unconfigured state). See USE-CASES.md.
  *
- * Product values come from the K1d freeze `dsh-connector/mcp-schema` (TOKEN_VALUE, ENTRY_STATUS,
+ * Product values come from the K1d freeze `dsh-agent-connector/mcp-schema` (TOKEN_VALUE, ENTRY_STATUS,
  * SETTINGS_REFUSAL, REVOCATION_KIND), from the design (the storage domain name, §1.0c) and from K3
  * `host-services/tokens.d.ts` (the hosted label). The module's own layout (SUBJECT) is the surface
  * the dev session relayed, the public contract the cases bind to (subject.mjs). The rest is

@@ -1,5 +1,5 @@
 /**
- * Black-box access to the frozen `dsh-connector/mcp-schema` module for the K1 cases.
+ * Black-box access to the frozen `dsh-agent-connector/mcp-schema` module for the K1 cases.
  *
  * The module is reached through its package specifier (the connector's export map, linked at the
  * repository root as the suite runner links it), then imported bound to one installed SDK with the

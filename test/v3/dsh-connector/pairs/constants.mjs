@@ -4,7 +4,7 @@
  * NAME-EP-01, NAME-EP-02, NAME-EP-03, NAME-EP-04, NAME-BVA-01, NAME-BVA-03, NAME-DT-01, NAME-DT-02,
  * NAME-ST-01 (rows 1–7).
  *
- * Every product value comes from K1, `dsh-connector/mcp-schema`: the runtime constants and
+ * Every product value comes from K1, `dsh-agent-connector/mcp-schema`: the runtime constants and
  * rules from `index.js`, and the `PairStore` member list from the frozen `index.d.ts` (types only,
  * so it is read from the declaration text). Nothing comes from `packages/dsh-connector/src/pairs/`.
  * The rest is case data (the ids, names and inputs the case tables name) and fixture keys, which

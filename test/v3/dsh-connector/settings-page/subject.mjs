@@ -8,7 +8,7 @@
  *       ctx.connection.fetch.register({...route, requestBody: 'buffered'}) and nothing else
  *     SETTINGS_PAGE {route: {create, notice}, maxBodyBytes}
  *   packages/dsh-connector/client.js
- *     a classic browser script: window.__ModuleLoader__.load({id: 'dsh-connector', factory(require)})
+ *     a classic browser script: window.__ModuleLoader__.load({id: 'dsh-agent-connector', factory(require)})
  *
  * The routes run over the real token registry of ../tokens/world.mjs (a DSH storage domain of the
  * SDK under test), so a page or route row is an integration of page → route → registry.

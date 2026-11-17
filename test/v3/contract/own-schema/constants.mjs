@@ -4,7 +4,7 @@ export const OWN = Object.freeze({
   core: path.join(REPO, 'packages/core'),
   packages: Object.freeze(['core', 'board', 'shared']),
   source: /\.(?:[cm]?js|tsx?|vue)$/,
-  dsh: /^(?:dsh-connector(?:-ui|-adapter|-shared)?|dsh-instance)(?:\/|$)/,
+  dsh: /^(?:dsh-agent-connector|dsh-connector(?:-ui|-adapter|-shared)?|dsh-instance)(?:\/|$)/,
   imports: /(?:\b(?:import|export)\s+(?:[^;'"\n]*?\s+from\s*)?|\bimport\s*\(|\brequire\s*\()\s*['"]([^'"]+)['"]/g,
   v2: /^(?:src\/slim\/|src\/persona\.js$)/,
   contract: 'dsh-connector/contract',

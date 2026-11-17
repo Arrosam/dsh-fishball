@@ -1,5 +1,5 @@
 /**
- * Vocabulary for the K2 cases: the freeze of `dsh-connector/tools` (v3-tasks.md row K2,
+ * Vocabulary for the K2 cases: the freeze of `dsh-agent-connector/tools` (v3-tasks.md row K2,
  * "resolves K flags in EXT"). The K-flagged EXT cases are EXT-UC-03, EXT-EP-01, EXT-BVA-01…04 and
  * EXT-DT-01 (docs/test-design/v3/07-contributors.md at `fb1cbd2`).
  *
@@ -11,7 +11,7 @@ import path from 'node:path'
 
 /** The frozen module, as consumers import it (R-CONN declared the subpath; K2 fills the folder). */
 export const TOOLS_MODULE = Object.freeze({
-  specifier: 'dsh-connector/tools',
+  specifier: 'dsh-agent-connector/tools',
   /** Its folder in the connector package (the K2 "Owns" column). */
   folder: path.join('packages', 'dsh-connector', 'tools'),
   /** Source and declaration files whose text carries the service signatures (types only). */

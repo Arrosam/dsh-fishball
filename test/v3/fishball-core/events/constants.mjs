@@ -3,8 +3,8 @@
  * W2): EVT-UC-02, EVT-UC-03, EVT-EP-03, EVT-EP-05, EVT-DT-02, EVT-DT-03, EVT-DT-04, EVT-ST-02.
  *
  * Every product value comes from a frozen contract module, never from an implementation:
- * - K1 `dsh-connector/mcp-schema` (event types, tool names, offer ids, the events resource);
- * - K2 `dsh-connector/tools` (the contributed-type prefix, through K1's re-export);
+ * - K1 `dsh-agent-connector/mcp-schema` (event types, tool names, offer ids, the events resource);
+ * - K2 `dsh-agent-connector/tools` (the contributed-type prefix, through K1's re-export);
  * - K3 `packages/core/contracts/events.d.ts` (types only, so its three values are read from the
  *   declaration text: the default priority, the `fenced` code and the `disconnected` code).
  * - K3 `packages/core/contracts/constants.js`, for the values the user's decisions of 2026-11-14 name
