@@ -11,9 +11,12 @@
  *   change is what shows cards already stored when the page connected before the manager existed.
  *   The stream is the connector's state stream (dsh-connector src/http.js `events`), copied because
  *   the two sides share no package (requirements 1.39).
- * - POST `ASK_ROUTE.answer` `{approvalId, choice, text?}`: `service.answer`; 200 `{ok: true}`,
- *   409 for a refusal, 400 for an unreadable body or `invalid-arguments`.
+ * - POST `ASK_ROUTE.answer` `{handle, choice, text?}` (MULTI-0: the card's opaque target-qualified
+ *   `handle`, `SEAM_TARGETS.ask.handleField`, never a raw `approvalId`): `service.answer`; 200
+ *   `{ok: true}`, 404 for `unknown-target`, 409 for another refusal, 400 for an unreadable body or
+ *   `invalid-arguments`.
  */
+import { SEAM_TARGETS } from 'fishball-shared/ui-seam'
 import { MCP } from '../../contracts/constants.js'
 import { ASK_HTTP, ASK_ROUTE } from './constants.js'
 
@@ -22,6 +25,7 @@ const REFUSAL = MCP.refusal
 const json = (status, value) => new Response(JSON.stringify(value), { status, headers: ASK_HTTP.json })
 const statusOf = (result) => {
   if (result.ok === true) return ASK_HTTP.ok
+  if (result.code === SEAM_TARGETS.refusal.unknownTarget) return ASK_HTTP.notFound
   return result.code === REFUSAL.invalidArguments ? ASK_HTTP.badRequest : ASK_HTTP.conflict
 }
 
@@ -69,8 +73,8 @@ export function registerAskRoutes(ctx, { service, managerSessionId, onManagerCha
     let body
     try { body = await request.json() } catch { return json(ASK_HTTP.badRequest, { ok: false, code: REFUSAL.invalidArguments }) }
     if (body === null || typeof body !== 'object') return json(ASK_HTTP.badRequest, { ok: false, code: REFUSAL.invalidArguments })
-    const { approvalId, choice, text } = body
-    const result = await service.answer(approvalId, text === undefined ? { choice } : { choice, text })
+    const { [SEAM_TARGETS.ask.handleField]: handle, choice, text } = body
+    const result = await service.answer(handle, text === undefined ? { choice } : { choice, text })
     return json(statusOf(result), result)
   }
 

@@ -7,8 +7,19 @@ import { MCP } from '../../contracts/constants.js'
 import { isAgentId, normaliseName } from '../link/schema.js'
 import { IDENTITY } from './constants.js'
 
-// 32 letters: a byte masked to 0–31 picks each one with equal probability (see IDENTITY).
-const LETTER_MASK = IDENTITY.idAlphabet.length - 1
+/**
+ * A random id: `prefix` and `randomChars` letters of `alphabet`. The alphabet has 32 letters
+ * (lowercase base32), a number that divides 256, so one random byte masked to `length - 1` picks
+ * each letter with equal probability. `identity.id` and the target ids and endpoint epochs
+ * (`TARGETS.id`, `TARGETS.epoch`) share it, because the freeze specifies the same generator for
+ * all three.
+ * @param {{prefix: string, randomChars: number, alphabet: string}} spec
+ * @param {(size: number) => Uint8Array} [random] random bytes; defaults to `crypto.randomBytes`
+ */
+export function generateToken({ prefix, randomChars, alphabet }, random = randomBytes) {
+  const mask = alphabet.length - 1
+  return prefix + [...random(randomChars)].map((byte) => alphabet[byte & mask]).join('')
+}
 
 /**
  * A new `identity.id` for the first start (R-ID-10): `fb-` and 16 random lowercase base32
@@ -16,8 +27,7 @@ const LETTER_MASK = IDENTITY.idAlphabet.length - 1
  * @param {(size: number) => Uint8Array} [random] random bytes; defaults to `crypto.randomBytes`
  */
 export function generateId(random = randomBytes) {
-  const letters = [...random(IDENTITY.idRandomChars)].map((byte) => IDENTITY.idAlphabet[byte & LETTER_MASK])
-  return IDENTITY.idPrefix + letters.join('')
+  return generateToken({ prefix: IDENTITY.idPrefix, randomChars: IDENTITY.idRandomChars, alphabet: IDENTITY.idAlphabet }, random)
 }
 
 /**

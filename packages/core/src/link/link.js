@@ -15,8 +15,12 @@
  *    a refused credential is told so (`credentials.refused()`) before the status is reported;
  * 4. `server/discover` at the pinned revision (modern only, Q12), `tools/list`, the gate's `admit`,
  *    `tools/list` again (R-FIX F02: a first `pair` turns the pair-only list into the full one, and
- *    the connector sends no list change for it), then a `subscriptions/listen` stream on
- *    `dsh-agent://events` and tool-list changes;
+ *    the connector sends no list change for it), `resources/list`, then a `subscriptions/listen`
+ *    stream on `dsh-agent://events`, `dsh-agent://identity` (MULTI-1) and tool-list changes;
+ * 4a. MULTI-1 (PLAN-MULTI §4.3): the server's name is the `_meta` `serverInfo.name` of a
+ *    `server/discover` result: the connect-time one, then a rediscovery after every listen
+ *    acknowledgement and on every `notifications/resources/updated` for the identity resource
+ *    (coalesced, generation-fenced; `#rediscover`). No polling and no retry timer;
  * 5. a drain of the mailbox on every (re)connect and on every events hint (hints may drop; polls
  *    recover them, design §6.5): `inbox_poll` pages followed by `nextCursor` while `hasMore`, one
  *    drain at a time (R-FIX F03: one page per hint stranded a backlog above one page).
@@ -30,7 +34,9 @@
  *
  * Status while not connected (the user's decision, 2026-11-14): `stop()` and `reconnect()` turn a
  * `connected` status into `target-unreachable` / `TARGET_UNREACHABLE` until the next attempt
- * classifies; any other status is kept. There is no "connecting" word (K3 `TargetState`).
+ * classifies; any other status is kept. There is no "connecting" word in the status (K3
+ * `TargetState`); MULTI-1's `detail().connecting` says an attempt is in flight instead, from its
+ * first request until it is classified (MULTI-0 `TargetView.connecting`).
  *
  * Every request goes through one fetch wrapper that refuses any URL outside the target origin and
  * follows no redirect, so neither the client secret nor an access token can reach another origin
@@ -47,6 +53,7 @@
  * dispatching events (F-INTERCEPT), the bridge façade (F-FACADE), the status display (F-STATUS),
  * wiring (F-WIRE).
  */
+import { SEAM_TARGETS } from 'fishball-shared/ui-seam'
 import { LINK, LINK_BACKOFF, MCP } from '../../contracts/constants.js'
 import { codeOf } from '../events/diagnostics.js'
 import { LINK_MCP, LINK_SAVE } from './constants.js'
@@ -146,10 +153,28 @@ const OPEN_GATE = Object.freeze({ hold: () => null, admit: async () => null, pai
  *   credential the gate holds a paired record for (status rule 4a)
  */
 
+/** The live-identity capability words (MULTI-0 `TargetIdentityState`, `SEAM_TARGETS.identity`). */
+const IDENTITY_STATE = SEAM_TARGETS.identity
+
+/** The server's MCP `Implementation.name` in a `server/discover` result, or `undefined` (absent or malformed). */
+const serverNameOf = (discover) => {
+  const name = discover?._meta?.[LINK_MCP.serverInfoKey]?.name
+  return typeof name === 'string' ? name : undefined
+}
+
 export class McpLink {
   #options
   #status = STATUS.unset
-  #listeners = { status: new Set(), poll: new Set(), tools: new Set() }
+  #listeners = { status: new Set(), poll: new Set(), tools: new Set(), detail: new Set() }
+  // MULTI-1 (PLAN-MULTI §4.3): the server's name as last discovered in this link's life (`null`
+  // before the first), the identity capability, and whether an attempt is in flight. A failed or
+  // malformed rediscovery keeps the last name (`stale`); there is no timer: the next hint or
+  // (re)connect discovers again.
+  #detail = Object.freeze({ serverName: null, identity: IDENTITY_STATE.pending, connecting: false })
+  // The capability the open link found (`live` / `unsupported`), restored after a stale discovery.
+  #capability
+  // The rediscovery of the open link: one in flight, a hint meanwhile asks for one more.
+  #discovering
   #generation = 0
   #failures = 0
   #timer
@@ -193,6 +218,16 @@ export class McpLink {
   /** Calls `fn(tools)` after each `tools/list` the link made. */
   onTools(fn) { return subscribe(this.#listeners.tools, fn) }
 
+  /**
+   * MULTI-1: `{serverName, identity, connecting}`: the server's last discovered MCP name (raw,
+   * untrusted; `null` before any discovery), the live-identity capability (`SEAM_TARGETS.identity`)
+   * and whether an attempt is in flight (`TargetView.connecting`).
+   */
+  detail() { return this.#detail }
+
+  /** Calls `fn(detail)` after each change of `detail()`. Returns its disposer. */
+  onDetail(fn) { return subscribe(this.#listeners.detail, fn) }
+
   /** Starts connecting. Idempotent. */
   start() {
     if (this.#started) return
@@ -215,6 +250,7 @@ export class McpLink {
     this.#generation += 1
     this.#cancelTimer()
     this.#leaveConnected()
+    this.#setDetail({ connecting: false })
     await this.#teardown()
   }
 
@@ -242,9 +278,18 @@ export class McpLink {
   }
 
   #setStatus(next) {
+    // A classified status ends the attempt (connected, held, refused or failed alike).
+    this.#setDetail({ connecting: false })
     if (next === this.#status) return
     this.#status = next
     emitIsolated(this.#listeners.status, next)
+  }
+
+  #setDetail(changes) {
+    const next = { ...this.#detail, ...changes }
+    if (Object.keys(next).every((key) => next[key] === this.#detail[key])) return
+    this.#detail = Object.freeze(next)
+    emitIsolated(this.#listeners.detail, this.#detail)
   }
 
   /** The user's decision: a link that stops being connected says so until it is classified again. */
@@ -272,6 +317,8 @@ export class McpLink {
     this.#client = undefined
     this.#connected = undefined
     this.#open = undefined
+    this.#discovering = undefined
+    this.#capability = undefined
     // Closing is best effort: the peer may already be gone.
     await subscription?.close().catch(() => {})
     await client?.close().catch(() => {})
@@ -291,6 +338,7 @@ export class McpLink {
     try {
       const target = checkTarget(this.#options.target())
       if (!target.ok) return this.#setStatus(target.status)
+      this.#setDetail({ connecting: true })
       credentials = await this.#options.credentials(target)
       if (!this.#current(generation)) return
       if (!credentials?.secret && credentials?.authProvider === undefined) return this.#setStatus(STATUS.unset)
@@ -379,13 +427,19 @@ export class McpLink {
       onInsufficientScope: LINK_MCP.onInsufficientScope,
     })
     const client = new sdk.Client(LINK_MCP.clientInfo, { versionNegotiation: { mode: { pin: LINK_MCP.versionPin } } })
+    // Installed before the listen stream opens, so no hint can arrive unhandled (PLAN-MULTI §4.3).
     client.setNotificationHandler(LINK_MCP.resourceUpdated, (notification) => {
-      if (notification?.params?.uri === LINK_MCP.eventsUri) this.#poll(generation)
+      const uri = notification?.params?.uri
+      if (uri === LINK_MCP.eventsUri) this.#poll(generation)
+      else if (uri === LINK_MCP.identityUri) this.#rediscover(client, generation)
     })
     // A failed re-list keeps the previous list; the next change or (re)connect lists again.
     client.setNotificationHandler(LINK_MCP.toolsListChanged, () => { this.#listTools(client, generation).catch(() => {}) })
     this.#client = client
     await client.connect(transport)
+    // The connect-time discovery's name (the SDK keeps it as `getDiscoverResult()`), so a target
+    // held by pairing still shows its name. Never `getServerVersion()`, which a rediscovery leaves stale.
+    this.#takeName(client.getDiscoverResult?.())
     // The token endpoint issued an access token for this token: the target accepted it (K3a step 3, R9).
     if (credentials.authProvider === undefined && provider.tokens() !== undefined) await credentials.accepted?.()
     if (!this.#current(generation)) return client
@@ -405,15 +459,68 @@ export class McpLink {
     // `pair` grants full power to the same access token, R-ID-03), so the list is taken again.
     await this.#listTools(client, generation)
     if (!this.#current(generation)) return client
-    const subscription = await client.listen({ resourceSubscriptions: [LINK_MCP.eventsUri], toolsListChanged: true })
+    // The identity resource exists only if the server lists it: an honoured filter proves the
+    // capability, not the resource (PLAN-MULTI §4.3). A failed list is no listing.
+    const listed = await this.#listsIdentity(client)
+    if (!this.#current(generation)) return client
+    const subscription = await client.listen({ resourceSubscriptions: [LINK_MCP.eventsUri, LINK_MCP.identityUri], toolsListChanged: true })
     this.#subscription = subscription
     // Connected means a listen stream on agent-events (K3 TargetState). A V3 connector always
     // honours it, so a target that does not is not one (the user's decision, 2026-11-14).
-    if (!subscription.honoredFilter?.resourceSubscriptions?.includes(LINK_MCP.eventsUri)) throw new LinkFailure(STATUS.incompatible)
+    const honored = subscription.honoredFilter?.resourceSubscriptions ?? []
+    if (!honored.includes(LINK_MCP.eventsUri)) throw new LinkFailure(STATUS.incompatible)
+    this.#capability = listed && honored.includes(LINK_MCP.identityUri) ? IDENTITY_STATE.live : IDENTITY_STATE.unsupported
+    this.#setDetail({ identity: this.#capability })
+    // After every acknowledgement: closes the gap between the connect-time discovery and the
+    // subscription, and recovers a rename missed while the stream was down. An unsupported server
+    // is still read once here, never polled.
+    this.#rediscover(client, generation)
     // Any end of the stream we did not cause ('graceful' included: a revocation closes it, R-TOK-05)
     // drops the link; the next attempt reports what the target says then.
     void subscription.closed.then(() => this.#lost(generation, subscription))
     return client
+  }
+
+  /** A discovery result's name, kept when the result names none (a malformed answer keeps the last). */
+  #takeName(discover) {
+    const serverName = serverNameOf(discover)
+    if (serverName !== undefined) this.#setDetail({ serverName })
+    return serverName !== undefined
+  }
+
+  /** Whether `resources/list` lists the identity resource (any failure: no). */
+  async #listsIdentity(client) {
+    try {
+      const { resources } = await client.listResources()
+      return Array.isArray(resources) && resources.some((resource) => resource?.uri === LINK_MCP.identityUri)
+    } catch { return false }
+  }
+
+  /**
+   * One authoritative `server/discover` on the open client for `generation` (PLAN-MULTI §4.3): one
+   * in flight; a hint meanwhile makes exactly one more after it. A result for an overtaken
+   * generation is dropped. A failure that refuses the credential ends the link as any refused call
+   * (`#refusedWhileOpen`); any other failure, or an answer without a name, keeps the last name and
+   * shows `stale` until the next good answer. No retry timer.
+   */
+  #rediscover(client, generation) {
+    if (this.#discovering?.generation === generation) { this.#discovering.again = true; return }
+    const run = { generation, again: true }
+    this.#discovering = run
+    void (async () => {
+      while (run.again && this.#current(generation) && this.#client === client) {
+        run.again = false
+        let result
+        try { result = await client.discover() } catch (error) {
+          this.#refusedWhileOpen(client, error)
+          if (this.#current(generation) && this.#client === client) this.#setDetail({ identity: IDENTITY_STATE.stale })
+          continue
+        }
+        if (!this.#current(generation) || this.#client !== client) return
+        this.#setDetail(this.#takeName(result) ? { identity: this.#capability ?? IDENTITY_STATE.pending } : { identity: IDENTITY_STATE.stale })
+      }
+      if (this.#discovering === run) this.#discovering = undefined
+    })()
   }
 
   /** Fetch for this attempt: target origin only, no redirects, and the MCP URL's last status recorded. */

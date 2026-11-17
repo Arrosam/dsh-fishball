@@ -28,7 +28,15 @@
  * - the user's answer committed on an offer → answered (that offer only);
  * - `settlement` naming the approvalId, or `retirement` naming the record's eventId → closed (open only);
  * - a connector answer of `already-settled` / `expired` to an offer → closed (that offer only).
+ * - the request's target removed, or its endpoint epoch retired (MULTI-1, Q07) → voided (open only):
+ *   read-only history, never answered and nothing sent; an unfiled one is deleted.
  * The per-offer moves keep a late answer to an older offer from moving its replacement.
+ *
+ * MULTI-1 (PLAN-MULTI §5; MULTI-0 `ask-card.d.ts`): one table serves every target. A record is
+ * keyed by its local key `["approval", targetId, endpointEpoch, approvalId]` (`key`), never by the
+ * raw `approvalId`, so two targets' equal ids are two records; it holds its trusted `source` and
+ * its opaque `handle` (the key's base64url), the only id a card is answered by. An offer id is
+ * looked up within its own target epoch only.
  *
  * An unfiled record that closes is deleted rather than kept closed: every request Fishball answers
  * itself ends that way, and keeping them would grow the table by one record per request forever.
@@ -37,7 +45,8 @@
  * intake chain (index.js), where offers are also added, so its delete cannot remove a replacement
  * that arrived meanwhile; a filed record is never deleted.
  */
-import { APPROVAL } from '../../contracts/constants.js'
+import { APPROVAL, TARGETS } from '../../contracts/constants.js'
+import { handleOf, keyOf } from '../targets/keys.js'
 import { ASKS, ASK_MISUSE, CARD_STATE } from './constants.js'
 
 const STATES = new Set(Object.values(CARD_STATE))
@@ -49,7 +58,8 @@ const textOrNull = (value) => (isText(value) && value.trim() !== '' ? value : nu
 /** Validates a stored record when the domain opens; a malformed one fails the open (as the ledger's). */
 const recordSchema = Object.freeze({
   parse(value) {
-    const ok = value !== null && typeof value === 'object' && [value.approvalId, value.offerId, value.eventId, value.sessionId, value.question].every(isText)
+    const ok = value !== null && typeof value === 'object' && [value.key, value.handle, value.approvalId, value.offerId, value.eventId, value.sessionId, value.question].every(isText)
+      && isText(value.source?.targetId) && isText(value.source.endpointEpoch)
       && (value.sessionTitle === null || isText(value.sessionTitle)) && Array.isArray(value.choices) && value.choices.every(isText)
       && Number.isSafeInteger(value.askedAt) && STATES.has(value.state) && typeof value.filed === 'boolean'
       && (value.revision === undefined || value.revision === null || Number.isSafeInteger(value.revision))
@@ -77,6 +87,8 @@ export async function openAskCards(ctx, { defineDomain, domainTable }) {
 
 /** The K3 `AskCard` of a record: its frozen public fields only. */
 export const cardOf = (record) => Object.freeze({
+  handle: record.handle,
+  source: Object.freeze({ ...record.source }),
   approvalId: record.approvalId,
   offerId: record.offerId,
   sessionId: record.sessionId,
@@ -101,11 +113,19 @@ export const cardOf = (record) => Object.freeze({
  */
 const incomplete = (status) => isText(status) && status !== APPROVAL.argumentsStatus.complete
 
-export function recordOf(event) {
+/** The record key of `approvalId` on the target epoch `source`. */
+export const cardKeyOf = (source, approvalId) => keyOf(TARGETS.key.kind.approval, source.targetId, source.endpointEpoch, approvalId)
+
+/** The record an offer event from `source` (a `TargetSource`) becomes, or undefined (see above). */
+export function recordOf(event, source) {
   const descriptor = event?.payload
   const fields = [descriptor?.approvalId, descriptor?.offerId, descriptor?.prompt, descriptor?.title, event?.eventId, event?.sourceSessionId]
   if (!fields.every(isText) || !Number.isSafeInteger(descriptor.at)) return undefined
+  const key = cardKeyOf(source, descriptor.approvalId)
   return {
+    key,
+    handle: handleOf(key),
+    source: { targetId: source.targetId, endpointEpoch: source.endpointEpoch, serverName: source.serverName, name: source.name },
     approvalId: descriptor.approvalId,
     offerId: descriptor.offerId,
     eventId: event.eventId,
@@ -132,14 +152,18 @@ export function recordOf(event) {
 export function createCardStore(table, onChange) {
   const closedOffers = new Set()
   const records = () => [...table.entries()].map(([, record]) => record)
-  const byOffer = (offerId) => records().find((record) => record.offerId === offerId)
+  // Within one target epoch only: offer ids are the connector's, unique per connector.
+  const sameEpoch = (record, source) => record.source.targetId === source.targetId && record.source.endpointEpoch === source.endpointEpoch
+  const byOffer = (source, offerId) => records().find((record) => sameEpoch(record, source) && record.offerId === offerId)
+  // Closed offers by target epoch, as the records' own key, so two targets' equal offer ids never meet.
+  const offerKey = (source, offerId) => JSON.stringify([source.targetId, source.endpointEpoch, offerId])
   const changed = (record) => { if (record.filed) onChange() }
 
   /** Apply `next` when `guard(current)` holds; returns the moved record, or undefined. */
-  async function move(approvalId, guard, next) {
+  async function move(key, guard, next) {
     let moved
-    if (table.get(approvalId) === undefined) return undefined
-    await table.update(approvalId, (current) => {
+    if (table.get(key) === undefined) return undefined
+    await table.update(key, (current) => {
       if (!guard(current)) return current
       moved = { ...current, ...next }
       return moved
@@ -155,19 +179,19 @@ export function createCardStore(table, onChange) {
     && Number.isSafeInteger(next.revision) && Number.isSafeInteger(current.revision) && next.revision > current.revision
 
   /** Closes the record when `guard` holds; an unfiled one is then deleted (see the header). */
-  async function closeWhere(approvalId, guard) {
-    const closed = await move(approvalId, guard, { state: CARD_STATE.closed })
+  async function closeWhere(key, guard, state = CARD_STATE.closed) {
+    const closed = await move(key, guard, { state })
     if (closed === undefined || closed.filed) return
-    closedOffers.add(closed.offerId)
-    await table.delete(approvalId)
+    closedOffers.add(offerKey(closed.source, closed.offerId))
+    await table.delete(key)
   }
 
   return Object.freeze({
-    get: (approvalId) => table.get(approvalId),
+    get: (key) => table.get(key),
     byOffer,
     /** Filed records, oldest request first. */
     cards: () => records().filter((record) => record.filed).sort((a, b) => a.askedAt - b.askedAt),
-    wasClosed: (offerId) => closedOffers.has(offerId),
+    wasClosed: (source, offerId) => closedOffers.has(offerKey(source, offerId)),
 
     /**
      * Records an offer. An unknown request is stored; a known one is replaced only by a newer offer
@@ -177,24 +201,24 @@ export function createCardStore(table, onChange) {
      * connector refuses `expired`, which closes it, so nothing is committed twice.
      */
     async add(record) {
-      if (closedOffers.has(record.offerId)) return
-      if (table.get(record.approvalId) === undefined) { await table.put(record.approvalId, record); return }
+      if (closedOffers.has(offerKey(record.source, record.offerId))) return
+      if (table.get(record.key) === undefined) { await table.put(record.key, record); return }
       let replaced
-      await table.update(record.approvalId, (current) => {
+      await table.update(record.key, (current) => {
         if (!supersedes(record, current)) return current
         replaced = current
         return record
       })
       if (replaced === undefined) return
-      closedOffers.add(replaced.offerId)
+      closedOffers.add(offerKey(replaced.source, replaced.offerId))
       // A filed card the new offer replaced leaves the list until the model files the new offer.
       changed(replaced)
     },
 
-    file: (approvalId, offerId) => move(approvalId, (current) => isOffer(offerId)(current) && isOpen(current) && !current.filed, { filed: true }),
+    file: (key, offerId) => move(key, (current) => isOffer(offerId)(current) && isOpen(current) && !current.filed, { filed: true }),
 
     /** The committed answer on `offerId` wins over any close that arrived while it was in flight. */
-    answered: (approvalId, offerId) => move(approvalId, (current) => isOffer(offerId)(current) && current.state !== CARD_STATE.answered, { state: CARD_STATE.answered }),
+    answered: (key, offerId) => move(key, (current) => isOffer(offerId)(current) && current.state !== CARD_STATE.answered, { state: CARD_STATE.answered }),
 
     /**
      * Closes an open record, whatever its offer (a settlement or retirement ends the request). The
@@ -202,18 +226,29 @@ export function createCardStore(table, onChange) {
      * one queued after it finds the request closed; only a record still unfiled after the close is
      * deleted (see the header).
      */
-    close: (approvalId) => closeWhere(approvalId, isOpen),
+    close: (key) => closeWhere(key, isOpen),
 
     /** Closes the open record only while it still holds `offerId` (the connector refused that offer's answer). */
-    closeOffer: (approvalId, offerId) => closeWhere(approvalId, (current) => isOffer(offerId)(current) && isOpen(current)),
+    closeOffer: (key, offerId) => closeWhere(key, (current) => isOffer(offerId)(current) && isOpen(current)),
 
     /** Deletes an open record only while it is unfiled and still holds `offerId`: a filing that won the race keeps its card open. */
-    dropUnfiled: (approvalId, offerId) => closeWhere(approvalId, (current) => isOffer(offerId)(current) && isOpen(current) && !current.filed),
+    dropUnfiled: (key, offerId) => closeWhere(key, (current) => isOffer(offerId)(current) && isOpen(current) && !current.filed),
 
-    /** Open, unfiled records: the startup reconciliation's candidates. */
-    unfiled: () => records().filter((record) => isOpen(record) && !record.filed),
+    /** Open, unfiled records of one target epoch: its startup reconciliation's candidates. */
+    unfiled: (source) => records().filter((record) => sameEpoch(record, source) && isOpen(record) && !record.filed),
 
-    /** The approvalId of the open record whose offer event is `eventId` (a retirement names the event). */
-    approvalOfEvent: (eventId) => records().find((record) => record.eventId === eventId)?.approvalId,
+    /** The key of the record of target epoch `source` whose offer event is `eventId` (a retirement names the event). */
+    keyOfEvent: (source, eventId) => records().find((record) => sameEpoch(record, source) && record.eventId === eventId)?.key,
+
+    /**
+     * Voids every open record for which `retired(record.source)` holds (MULTI-1, Q07: its target
+     * was removed or its endpoint retired). One compare-and-set per record, as any close; an unfiled
+     * one is deleted. Sends nothing.
+     */
+    async voidWhere(retired) {
+      for (const record of records()) {
+        if (isOpen(record) && retired(record.source)) await closeWhere(record.key, isOpen, CARD_STATE.voided)
+      }
+    },
   })
 }

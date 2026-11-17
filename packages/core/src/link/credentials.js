@@ -44,7 +44,7 @@
  */
 import { createHash } from 'node:crypto'
 import { createTokenManager, accessTokenOf, isGrantFor } from './oauth-client.js'
-import { CONNECT, HOSTED_IMPORT } from '../../contracts/constants.js'
+import { CONNECT, HOSTED_IMPORT, TARGETS } from '../../contracts/constants.js'
 import { codeOf } from '../events/diagnostics.js'
 import { LINK_SAVE } from './constants.js'
 import { createConnect } from './connect.js'
@@ -52,9 +52,51 @@ import { importMcpClient } from './link.js'
 import { emitIsolated, subscribe } from './listeners.js'
 import { checkTarget } from './target.js'
 
-const REF = HOSTED_IMPORT.credentialRef
-const HOSTED_KEY = HOSTED_IMPORT.savedRecord.key
 const PENDING = LINK_SAVE.pendingOrigin
+const CRED = TARGETS.credentials
+
+/** Connect's grant record key for a target origin (see `LINK_SAVE.grantRecordIdPrefix`): the parent's only. */
+export const grantRecordKey = (origin) => `${CONNECT.grantRecordScope}/${LINK_SAVE.grantRecordIdPrefix}${Buffer.from(origin).toString(LINK_SAVE.originEncoding)}`
+
+/** An added target's record key `fishball-core/<prefix><id>-<epoch>` (MULTI-0 `TARGETS.credentials`). */
+const targetRecordKey = (prefix, targetId, endpointEpoch) => `${CONNECT.grantRecordScope}/${prefix}${targetId}${CRED.recordSeparator}${endpointEpoch}`
+
+/**
+ * The credential names one target epoch reads and writes (MULTI-0 `TARGETS.credentials`,
+ * `link.d.ts` hosted reservation): the reserved parent alone has the hosted import's reference and
+ * record, the pending-origin binding and the origin-keyed grant record; an added target has its own
+ * reference and two records keyed by its id and epoch, so it can never satisfy the instance's
+ * hosted probe, and two targets on one origin never share a credential.
+ * - `ref`: the token entry reference (DSH's grammar `^[A-Za-z_][A-Za-z0-9_]*$`, every `-` written `_`);
+ * - `tokenRecord`: the saved token copy, payload `LINK_SAVE.hostedPayload` (value by origin);
+ * - `pending`: the reference value's origin binding record, or `undefined` for an added target,
+ *   whose reference exists for its one epoch, so the value is bound to that endpoint by its name;
+ * - `grantKey(origin)`: Connect's grant record.
+ * @param {{targetId: string, endpointEpoch: string}} target
+ */
+export function credentialNames({ targetId, endpointEpoch }) {
+  if (targetId === TARGETS.parentId) {
+    return Object.freeze({ ref: HOSTED_IMPORT.credentialRef, tokenRecord: HOSTED_IMPORT.savedRecord.key, pending: PENDING.key, grantKey: grantRecordKey })
+  }
+  const grant = targetRecordKey(CRED.grantRecordPrefix, targetId, endpointEpoch)
+  return Object.freeze({
+    ref: (CRED.tokenRefPrefix + targetId + CRED.tokenRefSeparator + endpointEpoch).split(CRED.refReplaced).join(CRED.refReplacement),
+    tokenRecord: targetRecordKey(CRED.tokenRecordPrefix, targetId, endpointEpoch),
+    pending: undefined,
+    grantKey: () => grant,
+  })
+}
+
+/**
+ * Deletes an added target epoch's token material (MULTI-0 `FishballTargets.remove` / `setUrl`,
+ * Q07): its reference and both records. Local only: nothing is revoked at the connector. The
+ * parent's names are never passed here (it is not removable).
+ */
+export async function forgetCredentials(credentials, names) {
+  await credentials.unset(names.ref)
+  await credentials.deleteRecord(names.tokenRecord)
+  await credentials.deleteRecord(names.grantKey())
+}
 
 /** The link credential kinds (`LinkCredentials.kind`). */
 export const CREDENTIAL_KIND = Object.freeze({ token: 'token', grant: 'grant' })
@@ -67,9 +109,6 @@ export const tokenCredentialId = (value) => LINK_SAVE.credentialId.tokenPrefix
   + createHash(LINK_SAVE.credentialId.digest).update(LINK_SAVE.credentialId.domain + value).digest(LINK_SAVE.credentialId.digestEncoding)
 const grantCredentialId = (grant) => LINK_SAVE.credentialId.grantPrefix + grant.grantId
 
-/** Connect's grant record key for a target origin (see `LINK_SAVE.grantRecordIdPrefix`). */
-export const grantRecordKey = (origin) => `${CONNECT.grantRecordScope}/${LINK_SAVE.grantRecordIdPrefix}${Buffer.from(origin).toString(LINK_SAVE.originEncoding)}`
-
 /**
  * The token copies of the hosted record by origin. A payload of another version reads as none; V3
  * is installed fresh (Q-M1), so only this version is ever written, and `dropToken` leaves another
@@ -77,6 +116,7 @@ export const grantRecordKey = (origin) => `${CONNECT.grantRecordScope}/${LINK_SA
  */
 const isOwnVersion = (record) => record?.payload?.v === LINK_SAVE.hostedPayload.version
 const hostedTokens = (record) => (isOwnVersion(record) ? record.payload.tokens ?? {} : {})
+// The hosted record's kind serves every saved token copy (the parent's and an added target's).
 const hostedRecord = (tokens) => Object.freeze({ kind: HOSTED_IMPORT.savedRecord.kind, payload: { v: LINK_SAVE.hostedPayload.version, tokens } })
 /**
  * A grant the link can connect with for `serverUrl` as fishball id `clientId`: issued for that URL,
@@ -100,8 +140,10 @@ const bindingRecord = (ref, origin) => Object.freeze({ kind: PENDING.kind, paylo
  * The saved credentials in DSH's credential store (`ctx.credentials`), and one token manager per
  * grant record, so a refresh is single-flight for the link and Connect alike.
  */
-function createSavedStore(credentials, { sdk, fetch, now, clientId }) {
+function createSavedStore(credentials, { names, sdk, fetch, now, clientId }) {
   const managers = new Map()
+  const HOSTED_KEY = names.tokenRecord
+  const grantRecordKey = names.grantKey
   return Object.freeze({
     grantKey: grantRecordKey,
     async managerFor(origin) {
@@ -188,7 +230,10 @@ function grantAuthProvider(manager, initial) {
  * @param {object} ctx core's row context: `credentials` and `authorization` (DSH), `on` (Cordis),
  *   optional `logger(name)`
  * @param {object} options
- * @param {() => unknown} options.target the effective target URL (F-SETTINGS `effectiveTarget`)
+ * @param {() => unknown} options.target the target epoch's URL (MULTI-1: its target record's, or
+ *   the instance's for the parent)
+ * @param {{ref: string, tokenRecord: string, pending: string | undefined, grantKey: Function}} [options.names]
+ *   the target epoch's credential names (`credentialNames`); default the parent's
  * @param {() => string} options.clientId `identity.id`
  * @param {() => unknown} options.clientMetadataUrl `connect.clientMetadataUrl`
  * @param {object} [options.sdk] the `@modelcontextprotocol/client` module; defaults to core's copy
@@ -200,14 +245,15 @@ function grantAuthProvider(manager, initial) {
  *   `credentials` is the link's option; `connect` is K3a's `FishballConnect`; `onChange(fn)` calls
  *   `fn` when the link should reconnect (a new value in the reference, or a Connect grant saved)
  */
-export function createLinkCredentials(ctx, { target, clientId, clientMetadataUrl, sdk, fetch = (...args) => globalThis.fetch(...args), now = Date.now, timers = globalThis }) {
+export function createLinkCredentials(ctx, { target, clientId, clientMetadataUrl, names = credentialNames({ targetId: TARGETS.parentId }), sdk, fetch = (...args) => globalThis.fetch(...args), now = Date.now, timers = globalThis }) {
   const logger = ctx.logger?.(LINK_SAVE.logger)
   const warn = (what) => (error) => logger?.warn(LINK_SAVE.text.failed, what, codeOf(error))
   const reconnects = new Set()
   let sdkModule = sdk
   // Connect's and the saved grants' MCP client; a failed import is logged as the link's (E-FIX-3).
   const loadSdk = async () => (sdkModule ??= await importMcpClient(logger))
-  const store = createSavedStore(ctx.credentials, { sdk: loadSdk, fetch, now, clientId })
+  const store = createSavedStore(ctx.credentials, { names, sdk: loadSdk, fetch, now, clientId })
+  const REF = names.ref
   // Q-LS1 = A: the reference value the target refused while a saved credential existed (by id);
   // cleared when the reference changes. And the saved credential the target refused, by id.
   let refusedReference
@@ -233,8 +279,12 @@ export function createLinkCredentials(ctx, { target, clientId, clientMetadataUrl
     if ((await ctx.credentials.resolve(REF))?.value === value) await ctx.credentials.unset(REF)
   }
 
-  /** Binds the reference value with id `ref` to `origin` (a new write: whatever it was bound to). */
-  const bind = (ref, origin) => ctx.credentials.modifyRecord(PENDING.key, async (current) => (boundOrigin(current, ref) === origin ? undefined : bindingRecord(ref, origin)))
+  /**
+   * Binds the reference value with id `ref` to `origin` (a new write: whatever it was bound to).
+   * An added target's reference names its one endpoint epoch, so it needs no binding record.
+   */
+  const bind = (ref, origin) => (names.pending === undefined ? Promise.resolve()
+    : ctx.credentials.modifyRecord(names.pending, async (current) => (boundOrigin(current, ref) === origin ? undefined : bindingRecord(ref, origin))))
 
   /**
    * The origin the reference value with id `ref` is for. An unbound value is bound to `origin`, the
@@ -242,10 +292,13 @@ export function createLinkCredentials(ctx, { target, clientId, clientMetadataUrl
    * process made meanwhile wins.
    */
   async function originOfReference(ref, origin) {
+    // An added target's reference is for its own epoch, whose endpoint never changes (a URL edit
+    // is a new epoch with a new reference), so its value is always for the origin dialled.
+    if (names.pending === undefined) return origin
     // A plain read first: a bound value (every retry) takes no lock and needs no writable store.
-    const bound = boundOrigin(await ctx.credentials.readRecord(PENDING.key), ref)
+    const bound = boundOrigin(await ctx.credentials.readRecord(names.pending), ref)
     if (bound !== undefined) return bound
-    const record = await ctx.credentials.modifyRecord(PENDING.key, async (current) => (boundOrigin(current, ref) === undefined ? bindingRecord(ref, origin) : undefined))
+    const record = await ctx.credentials.modifyRecord(names.pending, async (current) => (boundOrigin(current, ref) === undefined ? bindingRecord(ref, origin) : undefined))
     return boundOrigin(record, ref)
   }
 

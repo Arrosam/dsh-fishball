@@ -9,12 +9,12 @@
  * answer through its link as Fishball's `approval_answer` on the card's `offerId`. The main DSH shows nothing (Q-U2):
  * nothing here is registered outside the Fishball DSH.
  *
- * - `createAsks({link, table, logger})`: follows the link's polls (every offer of `ASKS.eventTypes`,
+ * - `createAsks({targets, table, logger})`: takes each target's polls (`take`; every offer of `ASKS.eventTypes`,
  *   `settlement` and `retirement`; a page is read whoever the event was dispatched to, so an interceptor or Fishball
  *   taking it changes nothing here), and returns `service` (the K3 `fishballInstance.ui.asks`),
- *   `tool` (the filing tool's raw DSH definition; core's main row registers it with `tools.register`
- *   in the manager's scope), `reconcile()` (below) and `close()`. Its `onPoll` listener resolves once
- *   the page's cards are stored, with the ids of the page's events whose card could not be stored
+ *   `toolFor(source, name)` (one target's filing tool, raw DSH definition; core's target collection
+ *   registers it in the manager's scope), `reconcile(source)` (below), `voidWhere` and `close()`.
+ *   `take(page, source)` resolves once the page's cards are stored, with the ids of the page's events whose card could not be stored
  *   (R-FIX F12: the caller must not let those be acked, or the offer is gone for good).
  * - `openAskCards(ctx, storageDomain)`: the durable table.
  * - `registerAskRoutes(ctx, options)`: the owner-only routes the browser half reads (routes.js).
@@ -30,12 +30,22 @@
  * sends; so of two answers the second sees the first's outcome. The connector settles an ask once
  * whatever core does, so a lost race there answers `already-settled` / `expired`, and the card
  * closes. No timer (R-CON-05): a card waits until it is answered here or closed by an event.
+ *
+ * MULTI-1 (PLAN-MULTI §5; MULTI-0 `ask-card.d.ts`, `ui.d.ts`): one store and one service for every
+ * target. Each target's pipeline hands its pages here with its trusted `source` (`take(result,
+ * source)`); a card carries that source and its opaque `handle`, and `answer(handle, …)` commits
+ * through the handle's own target only (`targets.callTool(source, …)`), never by a raw `approvalId`.
+ * Each target has its own filing tool (`toolFor(source, name)`), which finds offers of that target
+ * epoch only; its model-facing name is the caller's (the namespaced `ask_user`, PLAN-MULTI §4.4).
+ * Removing a target or retiring its epoch voids its open cards (`voidWhere`), sending nothing.
  */
+import { SEAM_TARGETS } from 'fishball-shared/ui-seam'
 import { LINK, MCP } from '../../contracts/constants.js'
+import { tupleOfHandle } from '../targets/keys.js'
 import { emitIsolated, subscribe } from '../link/listeners.js'
 import { codeOf } from '../events/diagnostics.js'
 import { ASKS, ASK_CODE, ASK_LOG, ASK_MISUSE, ASK_TOOL_DEFINITION, ASK_TEXT, CARD_STATE } from './constants.js'
-import { cardOf, createCardStore, recordOf } from './store.js'
+import { cardKeyOf, cardOf, createCardStore, recordOf } from './store.js'
 
 // Core's own copy of the connector's MCP surface (K3a; F-OWN-SCHEMA), under the names this module reads.
 const REFUSAL = MCP.refusal
@@ -81,13 +91,14 @@ function keyedSerial() {
 
 /**
  * @param {object} options
- * @param {{onPoll(fn: (result: object) => void): () => void, callTool(name: string, args: object): Promise<object>}} options.link
- *   core's link (link.js `McpLink`), public API only
+ * @param {{callTool(source: object, name: string, args: object): Promise<object>, live(source: object): boolean}} options.targets
+ *   the targets' links: a call through the link of `source`'s target epoch (`disconnected` when it
+ *   is not current), and whether that epoch is current
  * @param {object} options.table the card KvTable, from `openAskCards`
  * @param {{warn: Function}} [options.logger] the background log
  */
-export function createAsks({ link, table, logger }) {
-  if (typeof link?.onPoll !== 'function' || typeof link?.callTool !== 'function') throw new TypeError(ASK_MISUSE.link)
+export function createAsks({ targets, table, logger }) {
+  if (typeof targets?.callTool !== 'function' || typeof targets?.live !== 'function') throw new TypeError(ASK_MISUSE.targets)
   const listeners = new Set()
   const list = () => Object.freeze(store.cards().map(cardOf))
   const store = createCardStore(table, () => emitIsolated(listeners, list()))
@@ -95,16 +106,17 @@ export function createAsks({ link, table, logger }) {
   let intake = Promise.resolve()
   let closed = false
 
-  /** One polled event; anything but a card-able offer (`ASKS.eventTypes`), its settlement or its retirement is not the store's. */
-  async function take(event) {
+  /** One polled event of `source`; anything but a card-able offer (`ASKS.eventTypes`), its settlement or its retirement is not the store's. */
+  async function takeOne(event, source) {
     if (ASKS.eventTypes.includes(event?.type)) {
-      const record = recordOf(event)
+      const record = recordOf(event, source)
       if (record === undefined) { logger?.warn(ASK_LOG.malformed, String(event.eventId)); return }
       await store.add(record)
     } else if (event?.type === EVENT_TYPE.settlement) {
-      await store.close(event.payload?.approvalId)
+      if (typeof event.payload?.approvalId === 'string') await store.close(cardKeyOf(source, event.payload.approvalId))
     } else if (event?.type === EVENT_TYPE.retirement) {
-      await store.close(store.approvalOfEvent(event.payload?.retiredEventId))
+      const key = store.keyOfEvent(source, event.payload?.retiredEventId)
+      if (key !== undefined) await store.close(key)
     }
   }
 
@@ -114,7 +126,8 @@ export function createAsks({ link, table, logger }) {
   // lets the same events be acked (F-WIRE: "store the card before the ack"); the link ignores it.
   // The promise resolves to the ids of the events whose write failed: those stay unacked at the
   // caller, so the connector offers them again and the write is retried at the next poll.
-  const offPoll = link.onPoll((result) => {
+  /** One polled page of the target epoch `source` (see above); resolves to the ids of the events not stored. */
+  function take(result, source) {
     if (closed || result?.ok !== true || !Array.isArray(result.events)) return intake.then(() => NO_FAILURES)
     const events = [...result.events]
     // Each event's failure is its own: a later settlement in the same page must still close its
@@ -123,7 +136,7 @@ export function createAsks({ link, table, logger }) {
       const failed = []
       for (const event of events) {
         if (closed) break
-        try { await take(event) } catch (error) {
+        try { await takeOne(event, source) } catch (error) {
           logger?.warn(ASK_LOG.writeFailed, codeOf(error))
           failed.push(event?.eventId)
         }
@@ -132,7 +145,7 @@ export function createAsks({ link, table, logger }) {
     })
     intake = page.then(() => undefined)
     return page
-  })
+  }
 
   /**
    * A card write after the connector answered. Its failure is only logged: the connector's answer
@@ -147,7 +160,7 @@ export function createAsks({ link, table, logger }) {
   async function commit(record, answer) {
     let result
     try {
-      result = await link.callTool(TOOL.approvalAnswer, {
+      result = await targets.callTool(record.source, TOOL.approvalAnswer, {
         sessionId: record.sessionId, approvalId: record.approvalId, offerId: record.offerId, answer: approvalAnswerOf(answer),
       })
     } catch (error) {
@@ -156,9 +169,9 @@ export function createAsks({ link, table, logger }) {
       return refusal(REFUSAL.operationFailed)
     }
     // Both moves name the answered offer, so a newer offer that replaced it meanwhile stays as it is.
-    if (result?.ok === true) { await recorded(() => store.answered(record.approvalId, record.offerId)); return OK }
+    if (result?.ok === true) { await recorded(() => store.answered(record.key, record.offerId)); return OK }
     const code = typeof result?.code === 'string' ? result.code : REFUSAL.operationFailed
-    if (ASKS.closingCodes.includes(code)) await recorded(() => store.closeOffer(record.approvalId, record.offerId))
+    if (ASKS.closingCodes.includes(code)) await recorded(() => store.closeOffer(record.key, record.offerId))
     // `disconnected` (never sent) and the connector's own refusals leave the ask waiting there,
     // so the card stays open for another answer.
     else if (code !== LINK.disconnected) logger?.warn(ASK_LOG.commitFailed, record.approvalId, code)
@@ -169,16 +182,20 @@ export function createAsks({ link, table, logger }) {
     list,
     onChange: (fn) => subscribe(listeners, fn),
     /**
-     * Commits the user's answer once. Argument checks come first and send nothing; then a card that
-     * is not listed, or closed, answers `expired`, and an answered one `already-settled` (the K1
-     * refusals a second answer gets at the connector).
+     * Commits the user's answer once, through the card's own target (MULTI-0: by its `handle`).
+     * Argument checks come first and send nothing; a handle that names no card of core's answers
+     * `unknown-target`; then a card that is not filed, closed or voided answers `expired`, and an
+     * answered one `already-settled` (the K1 refusals a second answer gets at the connector).
      */
-    answer(approvalId, answer) {
+    answer(handle, answer) {
       const checked = answerOf(answer)
-      if (typeof approvalId !== 'string' || checked === undefined) return Promise.resolve(refusal(REFUSAL.invalidArguments))
-      return serial(approvalId, async () => {
-        const record = store.get(approvalId)
-        if (record?.filed !== true || record.state === CARD_STATE.closed) return refusal(REFUSAL.expired)
+      if (typeof handle !== 'string' || checked === undefined) return Promise.resolve(refusal(REFUSAL.invalidArguments))
+      const tuple = tupleOfHandle(handle)
+      const key = tuple === undefined ? undefined : cardKeyOf(tuple, tuple.remoteId)
+      if (key === undefined || store.get(key) === undefined) return Promise.resolve(refusal(SEAM_TARGETS.refusal.unknownTarget))
+      return serial(key, async () => {
+        const record = store.get(key)
+        if (record?.filed !== true || record.state === CARD_STATE.closed || record.state === CARD_STATE.voided) return refusal(REFUSAL.expired)
         if (record.state === CARD_STATE.answered) return refusal(REFUSAL.alreadySettled)
         // A choice the card does not offer (Allow on incomplete arguments) is refused before sending.
         if (!record.choices.includes(checked.choice)) return refusal(REFUSAL.invalidArguments)
@@ -188,19 +205,20 @@ export function createAsks({ link, table, logger }) {
   })
 
   /**
-   * The startup reconciliation (see the header). Its candidates are the unfiled asks recorded when
-   * it begins, after the pages already polled are taken; an ask that arrives meanwhile is not one.
+   * The startup reconciliation of one target epoch (see the header). Its candidates are that epoch's
+   * unfiled asks recorded when it begins, after the pages already polled are taken; an ask that
+   * arrives meanwhile is not one.
    * @returns {Promise<{deleted: number, kept: number}>}
    */
-  async function reconcile() {
+  async function reconcile(source) {
     await intake
-    const bySession = Map.groupBy(store.unfiled(), (record) => record.sessionId)
+    const bySession = Map.groupBy(store.unfiled(source), (record) => record.sessionId)
     let deleted = 0
     for (const [sessionId, records] of bySession) {
-      const ended = await endedOf(sessionId, records)
+      const ended = await endedOf(source, sessionId, records)
       // On the intake chain, where offers are added: an unfiled record is deleted only there, so
       // the delete can never remove a newer offer that replaced it (store.js header).
-      const drops = intake.then(async () => { for (const record of ended) await store.dropUnfiled(record.approvalId, record.offerId) })
+      const drops = intake.then(async () => { for (const record of ended) await store.dropUnfiled(record.key, record.offerId) })
       // A failed delete fails this reconciliation, as before, but never the chain later pages wait on.
       intake = drops.catch(() => {})
       await drops
@@ -212,9 +230,9 @@ export function createAsks({ link, table, logger }) {
   }
 
   /** The records of one session whose call ended, by its `approvals_list` answer; none when unsure. */
-  async function endedOf(sessionId, records) {
+  async function endedOf(source, sessionId, records) {
     let result
-    try { result = await link.callTool(TOOL.approvalsList, { sessionId }) } catch (error) {
+    try { result = await targets.callTool(source, TOOL.approvalsList, { sessionId }) } catch (error) {
       logger?.warn(ASK_LOG.reconcileFailed, codeOf(error))
       return []
     }
@@ -225,45 +243,66 @@ export function createAsks({ link, table, logger }) {
     return ASKS.endedCodes.includes(result?.code) ? records : []
   }
 
-  /** `ask_user({offer_id})`: files the request with that offer id as a card (idempotent while open). */
-  async function fileCard(args) {
+  /** `ask_user({offer_id})` of target epoch `source`: files that offer as a card (idempotent while open). */
+  async function fileCard(source, args) {
     const offerId = args?.[ASKS.offerArgument]
     if (typeof offerId !== 'string' || offerId === '') return refusal(REFUSAL.invalidArguments)
+    // A tool kept by a model after its target went: nothing of another target is ever filed.
+    if (!targets.live(source)) return refusal(SEAM_TARGETS.refusal.unknownTarget)
     // After the ask events already polled are taken, so a card filed right after its event is found.
     await intake
-    const record = store.byOffer(offerId)
-    if (record === undefined) return refusal(store.wasClosed(offerId) ? REFUSAL.expired : ASK_CODE.unknownOffer)
+    const record = store.byOffer(source, offerId)
+    if (record === undefined) return refusal(store.wasClosed(source, offerId) ? REFUSAL.expired : ASK_CODE.unknownOffer)
     if (record.state !== CARD_STATE.open) return refusal(REFUSAL.expired)
-    await store.file(record.approvalId, offerId)
-    const filed = store.get(record.approvalId)
+    await store.file(record.key, offerId)
+    const filed = store.get(record.key)
     // A newer offer that replaced this one meanwhile is not filed by it: this offer has expired.
     return filed?.offerId === offerId && filed.filed === true && filed.state === CARD_STATE.open ? { ok: true, card: cardOf(filed) } : refusal(REFUSAL.expired)
   }
 
-  const tool = Object.freeze({
-    name: ASKS.tool,
-    description: ASK_TEXT.description,
+  /**
+   * The filing tool of one target epoch, in the raw form `tools.register` takes, under the
+   * model-facing `name` the caller gives it (the namespaced `ask_user`) and the caller's
+   * `description` (its own, with the target's name framed as data).
+   */
+  const toolFor = (source, name, description = ASK_TEXT.description) => Object.freeze({
+    name,
+    description,
     parameters: ASK_TOOL_DEFINITION.parameters,
     output: {
       schema: ASK_TOOL_DEFINITION.schema,
       render: (_args, value) => [{ type: ASK_TOOL_DEFINITION.blockType, text: JSON.stringify(value, null, ASK_TOOL_DEFINITION.jsonIndent) }],
     },
     execute: async (args) => {
-      try { return await fileCard(args) } catch (error) {
+      try { return await fileCard(source, args) } catch (error) {
         logger?.warn(ASK_LOG.writeFailed, codeOf(error))
         return refusal(REFUSAL.operationFailed)
       }
     },
   })
 
+  /**
+   * Voids the open cards of every target epoch `retired(source)` names (MULTI-1, Q07), after the
+   * pages already polled are taken and on the intake chain, so a page of that epoch still in flight
+   * cannot re-open one. Sends nothing remote.
+   */
+  function voidWhere(retired) {
+    const run = intake.then(() => store.voidWhere(retired))
+    intake = run.catch(() => {})
+    return run
+  }
+
   return Object.freeze({
     service,
-    tool,
+    take,
+    toolFor,
     reconcile,
-    /** Stops following the link; cards and the table stay as they are (the table is the caller's). */
+    voidWhere,
+    /** Resolves once every page taken so far is stored. */
+    drained: () => intake,
+    /** Stops taking pages; cards and the table stay as they are (the table is the caller's). */
     close() {
       closed = true
-      offPoll()
       listeners.clear()
     },
   })

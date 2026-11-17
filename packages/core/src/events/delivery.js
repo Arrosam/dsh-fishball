@@ -44,6 +44,9 @@ const backoffAfter = (attempt) => PRESENT_RETRY.backoffMs * PRESENT_RETRY.backof
 const realDelay = (ms) => new Promise((resolve) => { setTimeout(resolve, ms).unref?.() })
 
 /**
+ * MULTI-1: every list and map here is keyed by the ledger record's local key (`record.key`,
+ * ledger.js `recordKeyOf`), named `eventId` in the code below as before; the raw `eventId` is
+ * only logged and shown.
  * @param options.ledger - the acceptance ledger (ledger.js).
  * @param options.fishball - the Fishball side's port:
  *   - `activate(): Promise<Agent>` resolves the manager session's live agent (creating or resuming
@@ -84,10 +87,10 @@ export function createDelivery({ ledger, fishball, logger, delay = realDelay }) 
   let recovering = false
 
   const messageOf = (record, content) => freezeMessage({
-    id: messageIdOf(record.eventId),
+    id: messageIdOf(record.key),
     role: MESSAGE.role,
     content,
-    source: { kind: MESSAGE.sourceKind, eventId: record.eventId, type: record.event.type },
+    source: { kind: MESSAGE.sourceKind, eventId: record.eventId, type: record.event.type, targetId: record.event.source.targetId },
   })
 
   /** Start tracking a record's message id; returns false when it was already tracked. */
@@ -118,9 +121,9 @@ export function createDelivery({ ledger, fishball, logger, delay = realDelay }) 
   function finish(eventId, state, reason) {
     const write = ledger.move(eventId, (current) => current.state === STATE.fishball, () => ({ state, reason })).then((won) => {
       if (!won) return
-      const { type } = ledger.get(eventId).event
-      if (state === STATE.admitted) logger?.info(LOG.admitted, eventId, type)
-      else logger?.info(LOG.discarded, eventId, type, reason)
+      const { eventId: raw, event: { type } } = ledger.get(eventId)
+      if (state === STATE.admitted) logger?.info(LOG.admitted, raw, type)
+      else logger?.info(LOG.discarded, raw, type, reason)
       // A2 (2026-11-14): a failed write is logged, never rethrown into the flush; see the header.
     }, (error) => logger?.warn(LOG.deliverFailed, eventId, codeOf(error)))
     writes.add(write)
@@ -173,24 +176,24 @@ export function createDelivery({ ledger, fishball, logger, delay = realDelay }) 
   function contentOf(record) {
     try {
       const content = fishball.present(record.event)
-      failures.delete(record.eventId)
+      failures.delete(record.key)
       return content
     } catch (error) {
-      const attempt = (failures.get(record.eventId) ?? 0) + 1
-      failures.set(record.eventId, attempt)
+      const attempt = (failures.get(record.key) ?? 0) + 1
+      failures.set(record.key, attempt)
       if (attempt < PRESENT_RETRY.attempts) {
         logger?.warn(LOG.presentFailed, record.eventId, record.event.type, codeOf(error))
-        backingOff.add(record.eventId)
+        backingOff.add(record.key)
         void delay(backoffAfter(attempt)).then(() => {
-          backingOff.delete(record.eventId)
-          if (closed || ledger.get(record.eventId)?.state !== STATE.fishball || queue.includes(record.eventId)) return
-          queue.push(record.eventId)
+          backingOff.delete(record.key)
+          if (closed || ledger.get(record.key)?.state !== STATE.fishball || queue.includes(record.key)) return
+          queue.push(record.key)
           void drain()
         })
         return undefined
       }
-      failures.delete(record.eventId)
-      givenUp.add(record.eventId)
+      failures.delete(record.key)
+      givenUp.add(record.key)
       logger?.warn(LOG.presentGivenUp, record.eventId, record.event.type, REASON.presentGivenUp, codeOf(error))
       return [{ type: TEXT.blockType, text: TEXT.presentGivenUp(record.eventId, record.event.type) }]
     }
@@ -253,8 +256,8 @@ export function createDelivery({ ledger, fishball, logger, delay = realDelay }) 
   return Object.freeze({
     /** A record just accepted for Fishball (state `fishball`); delivered at the next true idle. */
     add(record) {
-      if (closed || !track(record.eventId)) return
-      queue.push(record.eventId)
+      if (closed || !track(record.key)) return
+      queue.push(record.key)
       void drain()
     },
     /**
@@ -271,7 +274,7 @@ export function createDelivery({ ledger, fishball, logger, delay = realDelay }) 
       recovering = true
       const mine = []
       try {
-        for (const record of ledger.inOrder([STATE.fishball])) if (track(record.eventId)) { queue.push(record.eventId); mine.push(record.eventId) }
+        for (const record of ledger.inOrder([STATE.fishball])) if (track(record.key)) { queue.push(record.key); mine.push(record.key) }
         if (queue.length === 0 || closed) return
         try {
           handover.watch(await fishball.activate())

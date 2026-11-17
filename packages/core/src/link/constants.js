@@ -25,10 +25,14 @@ export const LINK_MCP = Object.freeze({
   clientInfo: Object.freeze({ name: 'fishball-core', version: CORE_VERSION }),
   versionPin: MCP.protocolVersion,
   eventsUri: MCP.events.uri,
+  // MULTI-0: the identity resource the same listen stream also subscribes to, and where
+  // `server/discover` carries the server's name (PLAN-MULTI §4.3).
+  identityUri: MCP.identity.uri,
+  serverInfoKey: MCP.serverIdentity.discoverMetaKey,
   // `inbox_poll`'s page argument (K1 `inbox_poll({cursor?, limit?})`); no limit is sent, so each
   // page is the connector's default size.
   cursorArgument: 'cursor',
-  resourceUpdated: 'notifications/resources/updated',
+  resourceUpdated: MCP.serverIdentity.updatedNotification,
   toolsListChanged: 'notifications/tools/list_changed',
   // A client-credentials client cannot widen its scope by re-authorizing, so a 403
   // insufficient_scope is reported, not retried (the SDK's own advice for m2m clients).
