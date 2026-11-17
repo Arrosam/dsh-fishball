@@ -12,7 +12,7 @@
  * The connector's `create(label)` for the settings page's New token is connector-internal (its own
  * owner-only route, R2), not a member of this service.
  */
-import type { Refusal } from './index.js'
+import type { Dispose, Refusal } from './index.js'
 
 /**
  * The new hosted entry and its value, returned **once** (R-HOST-05, R1; K1d).
@@ -92,4 +92,14 @@ export interface DshConnectorTokens {
    * `system` note per moved session (design §5.4 steps 1–7). All or nothing.
    */
   retire(oldEntryKey: string, successorEntryKey: string): Promise<RetireResult>
+
+  /**
+   * K3 amendment (I-SUCCEED, the user's Q1 = C, 2026-11-17). Calls `fn` (no argument) after each
+   * change of the connector's pairs (K1 `PairStore.onChange`), such as a new child's `pair`. The
+   * instance uses it to retry a `retire` refused `successor-unpaired`: since requirements 1.39 it
+   * cannot see core's pairing inside the child. It reveals nothing; the instance re-asks `retire`.
+   * Returns the disposer of this listener.
+   * @throws TypeError when `fn` is not a function (a caller bug, as `retire`'s TypeError).
+   */
+  onChange(fn: () => void): Dispose
 }

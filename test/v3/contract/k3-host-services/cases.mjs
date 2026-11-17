@@ -221,6 +221,12 @@ export function registerK3Cases(sdk) {
     assert.match(found.returns, INTERCEPT.promise, 'retire is asynchronous')
     assert.ok(resultCodes(host(), found).size > 0, 'retire has no refusal code')
   })
+  // K3 amendment I-SUCCEED, the user's Q1 = C, 2026-11-17: the instance retries a successor-unpaired retire on this signal.
+  caseTest(sdk, 'HOST-DT-02', 2, 'onChange(fn) takes one listener and returns a dispose function (K3 amendment I-SUCCEED)', () => {
+    const found = member(tokens(), 'onChange')
+    assertParams(found, TOKENS.onChange)
+    assertDisposer(host(), found)
+  })
   // HOST-UC-03 main 3, E2 and E3 (the retire behaviour) run in test/v3/dsh-connector/hosted (C-SUCCEED).
 
   // ================================================================ HOST / UIM: dshInstanceChild (D§4.1, §6.1, K)

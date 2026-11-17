@@ -38,9 +38,10 @@ export const RELAYED = Object.freeze({
   }),
   /**
    * `<mainHome>/fishball/hosted.json` (beside the runtime tree, dev ba1fecd5), mode 0600,
-   * `{format: 1, instanceId: <uuid>, entries: [...]}` newest last; written at once when missing.
+   * `{format: 1, instanceId: <uuid>, entries: [...], runtime?}` newest last; written at once when missing.
+   * I-SUCCEED (Q3 = A): `runtime` is the child runtime id the newest entry was created under.
    */
-  record: Object.freeze({ dirs: Object.freeze(['fishball']), file: 'hosted.json', mode: 0o600, format: 1, key: 'entries', idKey: 'instanceId', damaged: 'INVALID_HOSTED_RECORD' }),
+  record: Object.freeze({ dirs: Object.freeze(['fishball']), file: 'hosted.json', mode: 0o600, format: 1, key: 'entries', idKey: 'instanceId', runtimeKey: 'runtime', damaged: 'INVALID_HOSTED_RECORD' }),
   /** The credential client's rejection when no answer can come (dev 2026-11-16). */
   channelUnavailable: 'CREDENTIAL_CHANNEL_UNAVAILABLE',
   /** Invalid admit input (a view or lang outside K3; dev ba1fecd5, documented in child.d.ts). */
@@ -204,6 +205,8 @@ export const UI_FREEZE = Object.freeze({
 /** Fixtures: planted values and ids (recognisable, never a real secret). */
 export const FIXTURE = Object.freeze({
   instanceId: 'fbtest-ihost-instance',
+  /** I-SUCCEED (the user's Q3 = A): the child runtime id `runtimeId()` answers; one runtime for every I-HOST row. */
+  runtimeId: 'fbtest-ihost-runtime',
   generation: 'fbtest-ihost-generation',
   otherGeneration: 'fbtest-ihost-generation-2',
   port: 49321,

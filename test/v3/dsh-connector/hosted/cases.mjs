@@ -1,6 +1,6 @@
 /**
  * C-SUCCEED black-box cases: the K3 `dshConnectorTokens` service of `packages/dsh-connector/src/hosted/`
- * (createHosted, entryState, retire), routing's succession step, and K1d `Mailbox.transfer`.
+ * (createHosted, entryState, retire, onChange), routing's succession step, and K1d `Mailbox.transfer`.
  * Written from the requirements only: R-HOST-05, R-HOST-09, R-HOST-10, R-NAME-07, R-WATCH-04, R-ROUTE-01,
  * R-EVT-02; design §5.4; K3 host-services/tokens.d.ts + README (DECIDED #13, #14); K1 / K1d
  * `PairStore.succeed`, `Mailbox.transfer`, `SettingsWriter`, `SessionNotes`; the test designs HOST-UC-03,
@@ -715,6 +715,53 @@ function partitions(sdk) {
     assert.equal(mod.HOSTED_TIMING.retryMs, SUCCEED_TIMING.retrySeconds * TIME_UNIT.msPerSecond)
   })
   todoRow(sdk, CASE.service, '4', `the service is provided on the connector's context as ${K3.service} (not by this module)`, LATER.wire)
+
+  // SUCC-EP-01 row 6 — K3 amendment I-SUCCEED, the user's Q1 = C, 2026-11-17: `onChange(fn) → dispose`,
+  // `fn()` after each change of the pair store (K1 PairStore.onChange: "Listeners run once after a change").
+  // States: subscribed → (pair change) → fn() once → dispose → (pair change) → no call; dispose twice is harmless (K3 Dispose).
+  worldRow(sdk, CASE.service, '6 (pair)', 'onChange(fn): a successor\'s pair → fn called once, with no argument; it returns a dispose function', async (w) => {
+    await oldEntry(w)
+    const en = await w.hostedEntry()
+    const seen = []
+    const dispose = w.service.onChange((...args) => { seen.push(args) })
+    assert.equal(typeof dispose, 'function', 'onChange returned no disposer')
+    await w.pair(en, ID.new, NAME.successorOwn)
+    await until(() => seen.length > 0, 'onChange after the pair')
+    await quiet()
+    assert.deepEqual(seen, [[]], 'one call with no argument per pair change')
+  })
+  worldRow(sdk, CASE.service, '6 (dispose)', 'after dispose, a pair change calls fn no more; a second dispose does nothing; another listener still hears it', async (w) => {
+    const [first, second] = [await w.hostedEntry(), await w.hostedEntry()]
+    let disposed = 0
+    let kept = 0
+    const dispose = w.service.onChange(() => { disposed += 1 })
+    const keep = w.service.onChange(() => { kept += 1 })
+    dispose()
+    dispose()
+    await w.pair(first, ID.old, NAME.navigator)
+    await until(() => kept > 0, 'the kept listener after the pair')
+    await w.pair(second, ID.new, NAME.successorOwn)
+    await until(() => kept > 1, 'the kept listener after the second pair')
+    await quiet()
+    assert.equal(disposed, 0, 'a disposed listener was called')
+    keep()
+  })
+  // EP of onChange's argument: a function / anything else (relayed round 2: a non-function is a caller bug → TypeError).
+  for (const [kind, value] of Object.entries({ undefined, null: null, number: 42, string: 'fn', object: Object.freeze({}) })) {
+    worldRow(sdk, CASE.service, '6 (argument)', `onChange(${kind}) → throws TypeError; a pair change afterwards still works`, async (w) => {
+      assert.throws(() => w.service.onChange(value), TypeError)
+      await w.pair(await w.hostedEntry(), ID.new, NAME.successorOwn)
+    })
+  }
+  worldRow(sdk, CASE.service, '6 (retire)', 'a successful retire changes the pairs (the old pair goes, the name moves) → fn called', async (w) => {
+    const { eo } = await oldEntry(w)
+    const { en } = await successor(w)
+    let calls = 0
+    const dispose = w.service.onChange(() => { calls += 1 })
+    assert.deepEqual(await w.service.retire(eo, en), OK)
+    await until(() => calls > 0, 'onChange after the succession')
+    dispose()
+  })
 
   // SUCC-EP-02 — createHosted's instanceId.
   for (const [name, value] of Object.entries(FIXTURE.badInstances)) {

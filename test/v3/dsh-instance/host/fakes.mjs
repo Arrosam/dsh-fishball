@@ -106,11 +106,34 @@ export function memoryWire() {
   }
 }
 
-/** The hosted entries record as `{entries(), add(entryKey)}` in memory (a fake of openHostedRecord's result). */
+/**
+ * The hosted entries record in memory (a fake of openHostedRecord's result):
+ * `{entries(), runtime(), pending(), add(entryKey, {runtime?, succession?}), settle(oldEntryKey)}`.
+ * I-SUCCEED: record contract gains pending/settle (and runtime, the user's Q3 = A, 2026-11-17).
+ * `add` lists the key newest last and records `runtime` (the child runtime id the newest entry was
+ * created under) when given. `succession: true` marks the entry listed before `key` as the pending
+ * succession's old entry unless one is already pending (the original old entry is kept, the
+ * user's Q2). `settle(old)` clears the pending succession only when `old` is the pending one. This
+ * suite's world gives the instance one runtime id throughout, so its rows never start a succession.
+ */
 export function memoryRecord(entries = []) {
   const list = [...entries]
   const added = []
-  return { entries: () => [...list], async add(key) { added.push(key); list.push(key) }, added }
+  let pending
+  let runtime
+  return {
+    entries: () => [...list],
+    runtime: () => runtime,
+    async add(key, options) {
+      added.push(key)
+      if (options?.succession === true && pending === undefined) pending = list.at(-1)
+      if (options?.runtime !== undefined) runtime = options.runtime
+      list.push(key)
+    },
+    pending: () => pending,
+    async settle(old) { if (old === pending) pending = undefined },
+    added,
+  }
 }
 
 /**
