@@ -6,8 +6,7 @@ plugins in the child, gives the child a token from this DSH's connector once, sy
 and has its own settings page. It imports no Fishball-side code and has no `dsh-connector` peer: it
 looks the connector's services up at runtime (`dshConnectorTokens`).
 
-Version `1.0.0-alpha.1` in the release (this checkout's manifest still reads `0.1.0-alpha.0`).
-Install and uninstall are in the [root README](<../../README.md>).
+Version `1.0.0-alpha.1`. Install and uninstall are in the [root README](<../../README.md>).
 
 ## The child
 
@@ -19,10 +18,11 @@ Install and uninstall are in the [root README](<../../README.md>).
   instance rows (the lifecycle row and the child-side row `dsh-instance-child`, whose config holds
   the target URL) and the isolation of the child's instructions and skills from yours. No guard row
   and no token: the guards are fishball-core's own patch.
-- **Placement:** at every start, before the profile loads, `fishball-board`, `fishball-ui` and
+- **Placement:** at every start, before the profile loads, `fishball-ui` and
   `fishball-core` are copied into `<profile>/vendor/<name>` and `<profile>/node_modules/<name>` and
-  appended to the profile's bundles in that order, core last. Sources: `bundled/<dir>` in a packed
-  instance, else the sibling workspace folders of this checkout. The record
+  appended to the profile's bundles in that order, core last (`fishball-board` is shelved, not in
+  1.0.0-alpha.1, and is never placed). Sources: `bundled/<dir>` in a packed
+  instance, else the sibling workspace folders of a source checkout. The record
   `fishball-placement.json` keeps your switches: a plugin is on at its first placement, a later
   disable survives, and one deleted while off comes back off. An enabled plugin the child cannot
   load fails the start with `PROFILE_INCOMPATIBLE`, naming it.
@@ -85,5 +85,5 @@ one in fishball-core's settings, or install `dsh-connector` and press Reconnect.
 
 DSH has no uninstall hook, so the package ships `uninstall.js`, run with DSH quit before removing
 the package. It removes `<DSH_HOME>/fishball/runtime` and nothing else. See the root README for the
-command and its refusal codes (`CHILD_RUNNING`, `UNSAFE_DIRECTORY`, `UNOWNED_RUNTIME`,
+command and its refusal codes (`CHILD_RUNNING`, `CHILD_STATE_UNKNOWN`, `UNSAFE_DIRECTORY`, `UNOWNED_RUNTIME`,
 `INVALID_MAIN_HOME`).

@@ -3,13 +3,15 @@
  * REL-PACK: one command that turns a clean checkout into the V3 release (task REL-PACK items 2,
  * 3, 5, 6; the user's release brief of 2026-11-17).
  *
- *   node scripts/pack-v3.mjs [--out <dir>]            pack the nine tarballs, the checksums, the
+ *   node scripts/pack-v3.mjs [--out <dir>]            pack the eight tarballs, the checksums, the
  *                                                     offline pnpm store and the two documents
  *   node scripts/pack-v3.mjs --check [--out <dir>]    re-verify an existing release, offline
  *
  * Output (default `.runtime/release/<version>/`): `<name>-<version>.tgz` for every package,
  * SHA256SUMS, INSTALL.md, PUBLISH.md, and `pnpm-store/` + `pnpm-cache/`, which let
- * `dsh plugin add <tarballs> --offline --store-dir=… --cache-dir=…` run with no registry.
+ * `dsh plugin add <tarballs> --offline --store-dir=… --cache-dir=…` run with no registry. The store
+ * is a source, not the store to install with: INSTALL.md's `offline-store.mjs` copies it into the
+ * profile's own store first (scripts/release/offline-store.mjs says why).
  *
  * Only one step needs the registry: fetching the declared third-party dependencies (fishball-core's
  * bundled closure and the store). No lockfile is committed (the user's rule), so the closure takes
@@ -167,7 +169,7 @@ function writeSums(out) {
 
 /**
  * Re-verify a release offline: exactly the expected tarballs and no other, each with a matching
- * SHA256SUMS line; the documents and the store present; no link in any tarball; the hosted set in
+ * SHA256SUMS line; the documents, the offline helper and the store present; no link in any tarball; the hosted set in
  * dsh-instance's `bundled/` byte-identical to the top-level tarballs. The store's contents are not
  * checked: the documented offline add writes into it (pnpm records each local tarball), and it is a
  * local aid that is never published.
@@ -182,7 +184,7 @@ function check(out) {
   const problems = [
     ...expected.filter((name) => !present.includes(name)).map((name) => 'missing ' + name),
     ...present.filter((name) => !expected.includes(name)).map((name) => 'unexpected ' + name),
-    ...[LAYOUT.sums, LAYOUT.install, LAYOUT.publish, LAYOUT.store, LAYOUT.cache].filter((name) => !fs.existsSync(path.join(out, name))).map((name) => 'missing ' + name),
+    ...[LAYOUT.sums, LAYOUT.install, LAYOUT.publish, LAYOUT.offlineStore, LAYOUT.store, LAYOUT.cache].filter((name) => !fs.existsSync(path.join(out, name))).map((name) => 'missing ' + name),
   ]
   if (fs.existsSync(path.join(out, LAYOUT.sums))) {
     const sums = new Map()

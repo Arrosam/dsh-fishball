@@ -9,10 +9,16 @@
  * no child process is launched. While it runs, every proxy of this process points at a dead port, so
  * the registry spec install fails and the bundled-tarball fallback is what places the set.
  *
+ * SHELVE-BOARD (the user, 2026-11-18: "fishball-board先从这次release中移除…先封存，留到下一批再说。
+ * 所以不要预留在子实例的Fishball内。"): the set is fishball-ui then fishball-core (was board, ui, core),
+ * and PINST-SHELVE checks after the first placement and after a re-run that nothing of fishball-board
+ * is in the child profile: no vendor tarball or folder, no node_modules copy, no dependency, no bundle,
+ * no placement-record entry (not even a disabled or reserved one).
+ *
  * Techniques:
  * - State Transition (PINST-ST-01): fresh → placed by the fallback → re-run skipped (manifest and
  *   lockfile byte-identical) → a member disabled by the owner → re-run keeps it off;
- * - Decision Table (PINST-DT-01, the skip rule × the install outcome): all three installed at <v> →
+ * - Decision Table (PINST-DT-01, the skip rule × the install outcome): the whole set installed at <v> →
  *   skip; one member at the version just below <v> (BVA) or missing → install again, back at <v>;
  *   registry dead and a bundled tarball tampered (first/middle/last byte, BVA) or missing →
  *   PLACEMENT_INSTALL_FAILED;
@@ -32,7 +38,7 @@ import { caseTest } from '../../contract/package-boundaries/cases.mjs'
 import { relCase } from '../../release/pack/cases.mjs'
 import { ISOLATION, TARBALL } from '../../release/pack/constants.mjs'
 import {
-  assertFromOwnBundle, bundlesOf, flipByte, installAndCheck, installedDir, installProblems, makeScratch, readJson, removeScratch, show, withProcessEnv,
+  assertFromOwnBundle, bundlesOf, flipByte, installAndCheck, installedDir, installProblems, makeScratch, readJson, removeScratch, shelvedTraces, show, withProcessEnv,
 } from '../../release/pack/release.mjs'
 import { BUDGET, CASE, CHILD, DEAD_NETWORK, FAILED, LATER, PACKED, SCRATCH, TAMPER } from './constants.mjs'
 
@@ -122,7 +128,8 @@ export function registerPlacementInstallCases(sdk) {
   }
 
   // ---- PINST-ST-01: fresh → fallback placement → skip → disable survives
-  relCase(sdk, CASE.id, 'first', 'fresh child profile, registry dead → the bundled fallback places the set: vendor tarballs, dependencies, versions, bundles board, ui, core (core last)', async () => {
+  // Re-baselined (SHELVE-BOARD, was "bundles board, ui, core"): the board is shelved (the user, 2026-11-18).
+  relCase(sdk, CASE.id, 'first', 'fresh child profile, registry dead → the bundled fallback places the set: vendor tarballs, dependencies, versions, bundles fishball-ui, fishball-core (core last)', async () => {
     const p = await packedInstance(sdk)
     const mainHome = p.newHome()
     await p.compose(mainHome)
@@ -135,12 +142,21 @@ export function registerPlacementInstallCases(sdk) {
     }
     assertPlaced(p.instanceDir, mainHome)
   }, BUDGET.caseMs)
-  relCase(sdk, CASE.id, 'skip', 'second run with all three installed at the instance version → nothing installed: package.json and pnpm-lock.yaml byte-identical', async () => {
+  // SHELVE-BOARD state "first placed": nothing of the board, not even reserved or disabled.
+  relCase(sdk, CASE.shelved, 'first', `after the first placement the child profile holds nothing of ${CHILD.shelved.name} (vendor, node_modules, dependencies, bundles, ${CHILD.record}, install spec); its bundles end ${CHILD.bundleOrder.map((p) => p.name).join(', ')}`, async () => {
+    await placed()
+    assert.deepEqual(shelvedTraces(childProfile(home)), [])
+    const bundles = bundlesOf(childManifest(home))
+    assert.deepEqual(bundles.filter((b) => b.startsWith('fishball-')), CHILD.bundleOrder.map((p) => p.name), 'the Fishball bundles ' + show(bundles))
+  }, BUDGET.caseMs)
+  relCase(sdk, CASE.id, 'skip', `second run with all ${CHILD.bundleOrder.length} installed at the instance version → nothing installed: package.json and pnpm-lock.yaml byte-identical`, async () => {
     const p = await placed()
     const before = snapshot(home)
     assert.ok(before.manifest, 'no child package.json after the first placement')
     await p.compose(home)
     assert.deepEqual(snapshot(home), before)
+    // SHELVE-BOARD state "started again": the re-run adds nothing of the board either.
+    assert.deepEqual(shelvedTraces(childProfile(home)), [], 'after the second run')
   }, BUDGET.caseMs)
   for (const member of CHILD.bundleOrder) {
     relCase(sdk, CASE.id, 'disable ' + member.name, `${member.name} disabled by the owner (bundles edited while the child is down) → the next run keeps it off and the others on (R-BND-02)`, async () => {
@@ -165,13 +181,14 @@ export function registerPlacementInstallCases(sdk) {
 
   // ---- PINST-DT-01: the skip rule's "otherwise" rows (one member stale or missing → installed again)
   for (const member of CHILD.bundleOrder) {
-    relCase(sdk, CASE.fail, 'stale ' + member.name, `installed ${member.name} at ${CHILD.staleVersion} (just below the instance version) → the next run installs again: all three back at the instance version`, async () => {
+    relCase(sdk, CASE.fail, 'stale ' + member.name, `installed ${member.name} at ${CHILD.staleVersion} (just below the instance version) → the next run installs again: the whole set back at the instance version`, async () => {
       const p = await placed()
       const file = path.join(installedDir(childProfile(home), member), TARBALL.manifest)
       const manifest = JSON.parse(fs.readFileSync(file, 'utf8'))
       fs.writeFileSync(file, JSON.stringify({ ...manifest, version: CHILD.staleVersion }, null, 2))
       await p.compose(home)
       assertPlaced(p.instanceDir, home)
+      assert.deepEqual(shelvedTraces(childProfile(home)), [], 'after the re-install')
     }, BUDGET.caseMs)
   }
   relCase(sdk, CASE.fail, 'missing installed', `installed ${CHILD.core.name} removed from node_modules → the next run installs it again`, async () => {
@@ -198,6 +215,6 @@ export function registerPlacementInstallCases(sdk) {
     }, BUDGET.caseMs)
   }
 
-  // ---- PINST-UC-01: the registry spec path (fishball-ui@<v>, fishball-board@<v>, fishball-core@<v>, in that order)
+  // ---- PINST-UC-01: the registry spec path (fishball-ui@<v>, fishball-core@<v>, in that order; SHELVE-BOARD dropped fishball-board@<v>)
   caseTest(sdk, CASE.registry, 'main', `a reachable registry: DSH's plugin-manager add of ${CHILD.specOrder.map((p) => `${p.name}@${CHILD.version}`).join(', ')} places the set (no vendor fallback)`, null, LATER.registry)
 }

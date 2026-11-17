@@ -280,3 +280,41 @@ export const WAIT = Object.freeze({
 export const DECIDED = Object.freeze({
   legacy: 'dev correction 2026-11-16: V2 never deployed (U-WIRE): a V2-only dshConnector is absent for Q-U1',
 })
+
+/**
+ * UI-POLISH-D rows (polish-cases.mjs; the requirements relayed 2026-11-18, the developer's notes of
+ * that day): the hint's lead line, the not-ready lead line per K3 state, the window header's fish,
+ * the state tag's StateDot, the Refresh icon and where the notify bubble sits. `frameState` are the
+ * page's own state words (its dictionary, en and zh) that fill `{state}`.
+ */
+export const POLISH = Object.freeze({
+  id: Object.freeze({ hint: 'UIPD-DRAW-HINT', notReady: 'UIPD-DRAW-NOTREADY', chrome: 'UIPD-DRAW-CHROME', place: 'UIPD-DRAW-PLACE' }),
+  noInstanceTitle: Object.freeze({ en: "Fishball isn't running here", zh: 'Fishball 不在这里运行' }),
+  noInstance: Object.freeze({ en: TEXT.hint, zh: '此处没有正在运行的 Fishball 子实例。请打开你的 Fishball 实例自己的页面。' }),
+  notReady: Object.freeze({ en: (state) => `Fishball isn't ready (${state}).`, zh: (state) => `Fishball 尚未就绪（${state}）。` }),
+  frameState: Object.freeze({
+    en: Object.freeze({ disabled: 'disabled', waiting: 'waiting', starting: 'starting', stopping: 'stopping', stopped: 'stopped', failed: 'failed', ready: 'running' }),
+    zh: Object.freeze({ disabled: '已禁用', waiting: '等待中', starting: '启动中', stopping: '停止中', stopped: '已停止', failed: '失败', ready: '运行中' }),
+  }),
+  /** The safe details' leading words (unchanged): "State <code>state</code>", "Code <code>code</code>". */
+  details: Object.freeze({ en: Object.freeze({ state: 'State', code: 'Code' }), zh: Object.freeze({ state: '状态', code: '代码' }) }),
+  viewTitle: 'Fishball',
+  refresh: Object.freeze({ en: 'Refresh', zh: '刷新' }),
+  primitiveAttr: 'data-primitive',
+  stateDot: 'StateDot',
+  warningIcon: /Warning/,
+  refreshIcon: /Refresh/,
+  ariaHidden: 'aria-hidden',
+  code: 'code',
+  header: 'header',
+  /** data-fishball-notice-place values, and the placement the requirements give each. */
+  placeAttr: 'data-fishball-notice-place',
+  place: Object.freeze({ mark: 'mark', corner: 'corner' }),
+  edgePx: 16,
+  gapPx: 8,
+  /** Where the scripted sidebar fish sits on screen (fixture), and its hidden state (width 0). */
+  fishRect: Object.freeze({ left: 4, top: 120, right: 20, bottom: 136, width: 16, height: 16, x: 4, y: 120 }),
+  hiddenRect: Object.freeze({ left: 0, top: 0, right: 0, bottom: 0, width: 0, height: 0, x: 0, y: 0 }),
+  /** The hooks a page could find the sidebar fish by (the relayed data attributes). */
+  fishSelectors: Object.freeze(['data-fishball-fish-light', 'data-fishball-mark']),
+})

@@ -404,7 +404,7 @@ Each `K`-flagged case row whose answer is a behaviour rather than a value, keyed
 | K1b `GrantRegistry` | Registering a built-in, already-registered or unsupported `grant_type` throws `TypeError`, a wiring bug, as K3's `intercept` (DECIDED #17) (PROPOSED: open for the user's review). |
 | PLAT-UC-01 E5 | An `Mcp-Session-Id` header is ignored: the request is served statelessly and no session is created [spec: 2026-07-28 has no protocol sessions; S1 C21]. |
 | PLAT-BVA-02 | Body limit `ENDPOINT_LIMITS.bodyBytes` = 8 MiB: at the limit processed, one byte over 413; in-flight one over `inFlightPerPrincipal` 429 (PROPOSED values). |
-| PLAT-BVA-01 (K) | Left to FEAT-PEERS: the board's day length and whether 30 d is inclusive are board rules, not part of the MCP surface. |
+| PLAT-BVA-01 (K) | Left to FEAT-PEERS: the board's day length and whether 30 d is inclusive are board rules, not part of the MCP surface (the board is shelved, not in 1.0.0-alpha.1). |
 | PLAT-DT-02 (K) | Left to F-STATUS: `plugin-set-incomplete` and "rule 4 reports nothing missing" are core's status rules, not part of the MCP surface. |
 
 ## Internal module interfaces (`index.d.ts`, types only)
@@ -441,6 +441,7 @@ quotes the K1 text it replaces.
 | K3 handover.d.ts `HandoverPrincipal.designated` | withdrawn | q5 |
 | K3 tokens.d.ts `retire`: succession moves "the designated role" | moves sessions, name, offers and events only | q5 |
 | `APPROVAL_LISTENER.headers` `referrer-policy: no-referrer` (S7b; R-OA-11) | `same-origin`: a browser's form POST then carries the page's Origin; `no-referrer` made it `Origin: null`, refused by the gate (X-SEC X-01). No Referer leaves the origin either way | X-SEC X-01 (security audit), the R-OA-11 text needs the same amendment |
+| `APPROVAL_LISTENER.headers` `content-security-policy: default-src 'none'; frame-ancestors 'none'` (S7b) | `default-src 'none'; style-src 'sha256-wkX+PGd3j5mohFYHazp5lMQO5mPsM8loy17wNal+3SA='; frame-ancestors 'none'`: the page's one inline `<style>` (src/mcp/oauth-web/page-theme.js `PAGE_STYLE`) is admitted by its hash alone; no `'unsafe-inline'`, no style attribute, no stylesheet route; every other directive is unchanged. The hash moves with every edit of `PAGE_STYLE` | UI-POLISH-D, the user's choice of 2026-11-18 ("hash-pinned inline style") |
 | `FAILURE_LIMIT`: "While limited, even a valid credential is refused (S7b P2)" | a valid credential always passes; only a failing one is answered 429 while limited (MCP bearer, token endpoint, approval page). Values and counting unchanged | X-SEC X-03; the user's rule: keep the FAILURE_LIMIT values |
 | `shapes.js` `approvalAnswer`: `decision` any APPROVAL_DECISION, optional `question` | `decision` is ANSWER_DECISIONS (no `ask`), no `question` field: an `ask` is `invalid-arguments` at the schema (X-SEC X-02) | q1 "Refuse it" |
 | `REFUSAL.empty` (new) | `message_agent`'s empty message, the one DSH-side tool's refusal code (V2's `empty`) | no `ask_agent`; R-CON-08 |
@@ -466,7 +467,7 @@ step; UI's latch reset on the designated agent's loss; contrib's designated reci
 | `dshConnectorTokens`, hosted status codes (08-hosted) | K3 / I-HOST |
 | interceptor priority range (EVT-DT-02 7) and core's interception (EVT) | K3 / F-INTERCEPT |
 | core's target status reporting (09 rows 74, 103); the codes are frozen above | F-LINK / F-STATUS |
-| `plugin-set-incomplete`, board 30 d edge (11-platform) | F-STATUS / FEAT-PEERS |
+| `plugin-set-incomplete`, board 30 d edge (11-platform; the board is shelved, not in 1.0.0-alpha.1) | F-STATUS / FEAT-PEERS |
 | embed-UI rows (10-embed-ui-matrix) | U-SHELL / U-MARKS / U-RECORDS |
 | the `dsh-mcp-client` adapter | C-MCP-ADAPTER (S7c) |
 

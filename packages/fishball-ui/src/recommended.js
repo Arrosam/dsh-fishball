@@ -37,7 +37,7 @@ const noteOf = (item) => (item.noteKey === undefined ? {} : { noteKey: item.note
 /**
  * One npm entry: its spec is its package name, and its source is its npm page.
  * `options.noteKey` (optional) names a message-dictionary key for a note shown under the entry
- * (board design §7, task B6). The key is data only: the dictionaries and its drawing belong to the
+ * (task B6). The key is data only: the dictionaries and its drawing belong to the
  * presentation owner (RP), so an entry without it keeps exactly its earlier shape.
  */
 const npm = (category, packageName, options = {}) => Object.freeze({

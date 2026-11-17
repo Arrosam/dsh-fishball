@@ -20,7 +20,7 @@ Release **1.0.0-alpha.1** (V3). Every package carries this version. This is a fr
 reads, migrates and accepts nothing from an earlier Fishball release. The older "dsh-fishball (df)"
 preview is archived at tag `archive/df-preview-2026-10-23`.
 
-`node scripts/pack-v3.mjs` builds the nine release tarballs into `.runtime/release/1.0.0-alpha.1/`,
+`node scripts/pack-v3.mjs` builds the eight release tarballs into `.runtime/release/1.0.0-alpha.1/`,
 with SHA256SUMS, an offline pnpm store, `INSTALL.md` (install and uninstall, from npm or offline) and
 `PUBLISH.md` (the publish commands). The packages are published to npm under the `alpha` tag by the
 maintainer only. The connector's npm name is **`dsh-agent-connector`** (`dsh-connector` is taken on
@@ -32,7 +32,7 @@ npm); its folder, plugin row id and settings stay `dsh-connector`.
 
 | Package | What it does |
 | --- | --- |
-| [`dsh-connector`](packages/dsh-connector) | The backend. The MCP endpoint `/api/agent/mcp` and its own OAuth server (`/api/agent/oauth`, scope `agent`); token entries, pairs and names, the per-agent mailbox, routing, `message_agent` / `ask_agent`, the hand-over service and the tool contribution service. Its own settings page: tokens (New token, revealed once), the designated agent, the approval-page port, the limits. It changes no other DSH UI. Needs `@deepseek-ai/dsh-web-app` in the profile. |
+| [`dsh-connector`](packages/dsh-connector) | The backend. The MCP endpoint `/api/agent/mcp` and its own OAuth server (`/api/agent/oauth`, scope `agent`); token entries, pairs and names, the per-agent mailbox, routing, the `message_agent` tool in managed sessions, the hand-over service and the tool contribution service. Its own settings page: tokens (New token, revealed once), the approval-page port, the DSH name, the limits. It changes no other DSH UI. Needs `@deepseek-ai/dsh-web-app` in the profile. |
 | [`dsh-connector-ui`](packages/dsh-connector-ui) | The frontend. The sidebar fish and its light; the window that opens the hosted child's Fishball page; a hint when no child instance runs here; the notify prompt; the managed marks with **Hand over** / **Take back**. It declares the `notify` and `attention.*` tools, which the connector handles. It stores nothing. Without a connector it logs `connector-missing` and draws nothing. |
 | [`dsh-instance`](packages/dsh-instance) | The hosted child. Runs Fishball in its own private DSH profile under `<DSH_HOME>/fishball/runtime`, started after DSH is ready and stopped with it. Places the Fishball plugins in the child, gives the child a token from this DSH's connector once, and has its own settings page (status, Retry, Reconnect, Open Fishball, model sync, `enabled`, `targetUrl`). It imports no Fishball code. |
 | [`dsh-connector-adapter`](packages/dsh-connector-adapter) | Optional, for a DSH that uses **another** DSH's connector through DSH's own MCP client (`dsh-mcp-client`): browser sign-in, refreshed tokens and a loopback proxy. See [Use a connector from another DSH](#use-a-connector-from-another-dsh). |
@@ -44,11 +44,12 @@ npm); its folder, plugin row id and settings stay `dsh-connector`.
 | --- | --- |
 | [`fishball-core`](packages/core) | The backend: the one manager session and its preset, persona, reminders and private Skills; the MCP link to the target connector, Connect, interception, status, the ask cards, the guard rows; its own settings page (target, Connect, identity, token field, **Fishball's model**). |
 | [`fishball-ui`](packages/fishball-ui) | Every UI change inside a Fishball DSH: the Fishball page, the UI guard rows, the Recommended tab, the status strip, the pairing views, the ask cards and the model dialog. Without core it logs `fishball-core-missing` and changes nothing. |
-| [`fishball-board`](packages/board) | Fishball's work board: `board_*` tools, `board_search`, the archive. |
 | [`fishball-shared`](packages/shared) | A library inside the Fishball-side tarballs (today only the core/ui seam). Not a plugin. |
 
 Not in this release: fold-notify (its notify function is `dsh-connector-ui`'s `notify` tool), the
-hosted settings bundle, and Watchdog (a separate future project). The repository root is not a
+hosted settings bundle, Watchdog (a separate future project), and `fishball-board`, Fishball's work
+board: shelved, not in 1.0.0-alpha.1. Its code stays in [`packages/board`](packages/board) for a later
+release; nothing in this release installs or places it. The repository root is not a
 plugin. See [docs/package-layout.md](<docs/package-layout.md>).
 
 ## Supported DSH versions
@@ -66,17 +67,17 @@ This is the usual set-up. The commands use the profile `web`; use your own profi
    `fishball-instance`, `fishball-embed-ui`, `dsh-fishball-*`), and delete
    `<DSH_HOME>/fishball/` if an earlier release left it. Nothing is migrated.
 
-2. **Install the three DSH-side plugins** from the release tarballs:
+2. **Install the three DSH-side plugins** from npm:
 
    ```bash
    dsh plugin --profile web add dsh-agent-connector@1.0.0-alpha.1 dsh-connector-ui@1.0.0-alpha.1 dsh-instance@1.0.0-alpha.1
    ```
 
-   To install from the release folder with no network, see its `INSTALL.md`.
-   You do not install the Fishball-side packages: the instance installs `fishball-ui`,
-   `fishball-board` and `fishball-core` into its child, from npm at its own version, or from the
-   tarballs it carries when the registry cannot be reached; the child's bundles end with board, ui,
-   then core last. pnpm may list DSH's own packages as missing peers; DSH provides them when it runs,
+   To install from a release folder (`node scripts/pack-v3.mjs`) with no network, follow its
+   `INSTALL.md`: it works on a profile that already has plugins.
+   You do not install the Fishball-side packages: the instance installs `fishball-ui` and
+   `fishball-core` into its child, from npm at its own version, or from the tarballs it carries when
+   the registry cannot be reached; the child's bundles end with ui, then core last. pnpm may list DSH's own packages as missing peers; DSH provides them when it runs,
    so that warning is expected.
 
 3. **Start DSH.** The instance starts Fishball once DSH is ready. On its first start it creates the
@@ -101,20 +102,25 @@ to manage:
 
 1. In the **managed DSH**, install `dsh-agent-connector` (and `dsh-connector-ui` if you want the fish and
    Hand over there).
-2. In the **Fishball DSH**, install the three Fishball plugins, core last:
+2. In the **Fishball DSH**, install the two Fishball plugins, core last:
 
    ```bash
-   dsh plugin --profile web add fishball-ui@1.0.0-alpha.1 fishball-board@1.0.0-alpha.1 fishball-core@1.0.0-alpha.1
+   dsh plugin --profile web add fishball-ui@1.0.0-alpha.1 fishball-core@1.0.0-alpha.1
    ```
 
    If core is not last, it moves itself to the end of the profile's bundles at its first start;
-   its guards then hold after one restart (or at once with HMR on).
-3. Host a Client ID Metadata Document (below) and put its https URL in **fishball-core**'s
-   settings as **Client metadata URL**. Set **Target** to the managed DSH's connector endpoint,
-   for example `http://127.0.0.1:<port>/api/agent/mcp`.
-4. Press **Connect** in fishball-core's settings, open the approval page, and enter a token you
-   created with **New token** on the managed DSH's connector settings page. Fishball's id is sent
-   for you. The grant is saved and refreshed; a restart needs no new sign-in.
+   its guards then hold after one restart (or at once with HMR on). As in the hosted install,
+   remove any earlier Fishball packages first, and expect pnpm's missing-peer warning.
+3. In **fishball-core**'s settings, set **Target** to the managed DSH's connector endpoint, for
+   example `http://127.0.0.1:<port>/api/agent/mcp`.
+4. Link it in one of two ways. Either way the token comes from **New token** on the managed DSH's
+   connector settings page, and Fishball's id is sent for you.
+   - **With a token:** paste the token into **Token for connecting a DSH** in fishball-core's
+     settings and press **Save**. It is used at the next connection and saved once the target
+     accepts it.
+   - **With Connect:** host a Client ID Metadata Document (below), put its https URL in
+     **Client metadata URL**, press **Connect**, open the approval page and enter the token there.
+     The grant is saved and refreshed; a restart needs no new sign-in.
 
 A target on another machine must be **https** (only loopback may use plain http), for example
 through your own tunnel. Connect from a browser on another machine also needs Fishball's own page
@@ -199,7 +205,7 @@ Disable does, and `dsh plugin remove` only runs pnpm. So the instance ships a cl
    on the Plugins page.
 
 **What it removes:** the whole `<DSH_HOME>/fishball/runtime` tree and nothing else: the child's
-DSH home (its profile, Fishball's session, settings, model keys, private Skills, board data and
+DSH home (its profile, Fishball's session, settings, model keys, private Skills and
 placed plugins), its workspace and other folders, the owner marker, secret and logs. It keeps
 `<DSH_HOME>/fishball/hosted.json` (the keys of the token entries the instance created, so a
 reinstall can retire them) and never touches the connector's token entries: delete a dead hosted
@@ -210,7 +216,8 @@ link; what it points to is never touched.
 
 | Code | Meaning |
 | --- | --- |
-| `CHILD_RUNNING` | Fishball's child may still be running, or its state cannot be read. Quit DSH, wait a few seconds and run it again. |
+| `CHILD_RUNNING` | Fishball's child is still running. Quit DSH, wait a few seconds and run it again. |
+| `CHILD_STATE_UNKNOWN` | Whether Fishball's child runs cannot be checked. The message names the cause. If `/bin/ps` cannot be run here (in a sandbox, say), quit DSH and run the command where it works. If the child's launch record is missing, its state cannot be confirmed: stop DSH, check that no Fishball child process is left running, then delete `<DSH_HOME>/fishball/runtime` yourself. |
 | `UNSAFE_DIRECTORY` | A folder on the way (`fishball`, `runtime` or one inside it) is a symbolic link, not private to you, or not a folder. |
 | `UNOWNED_RUNTIME` | The tree belongs to another DSH home: its owner marker names a different home. |
 | `INVALID_MAIN_HOME` | The home is not an absolute real path. Pass the real path with `--home`. |
@@ -225,9 +232,7 @@ Their data is kept, as for any DSH plugin. Agents using a removed connector lose
 
 ### Fishball plugins in a standalone DSH
 
-Remove `fishball-core`, `fishball-ui` and `fishball-board` like any plugin. The board's data stays
-in `<DSH home>/fishball-board/`, because DSH gives a plugin no removal hook. **We recommend that you
-delete that folder yourself** after removing the plugin. There is no board export.
+Remove `fishball-core` and `fishball-ui` like any plugin.
 
 ### Reinstall
 
@@ -237,4 +242,5 @@ the model list once more.
 ## Licence
 
 [MIT](LICENSE). Each package carries its own `LICENSE` and, where it has third-party code,
-`THIRD_PARTY_NOTICES.md`. The repository is public on GitHub. The packages are not published to npm.
+`THIRD_PARTY_NOTICES.md`. The repository is public on GitHub, and the packages are on npm under the
+`alpha` tag.

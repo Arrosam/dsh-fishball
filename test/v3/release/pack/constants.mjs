@@ -21,9 +21,11 @@ const tarballName = (name) => `${name}-${VERSION}.tgz`
 const pkg = (name, folder) => Object.freeze({ name, folder: 'packages/' + folder, tarball: tarballName(name) })
 
 /**
- * The 9 packages and their repo folders: the ONE place a package name lives (the connector's npm
+ * The 8 packages and their repo folders: the ONE place a package name lives (the connector's npm
  * name was an open product question; the lead set it to `dsh-agent-connector` on 2026-11-17, its
  * folder stays packages/dsh-connector). A rename is a one-line edit here.
+ * Re-baselined (SHELVE-BOARD, was 9): fishball-board is out of 1.0.0-alpha.1. The user, 2026-11-18:
+ * "fishball-board先从这次release中移除，我要改的地方太多了。先封存，留到下一批再说。所以不要预留在子实例的Fishball内。"
  */
 export const PACKAGES = Object.freeze({
   connector: pkg('dsh-agent-connector', 'dsh-connector'),
@@ -33,8 +35,47 @@ export const PACKAGES = Object.freeze({
   dshShared: pkg('dsh-connector-shared', 'dsh-connector-shared'),
   core: pkg('fishball-core', 'core'),
   ui: pkg('fishball-ui', 'fishball-ui'),
-  board: pkg('fishball-board', 'board'),
   shared: pkg('fishball-shared', 'shared'),
+})
+/**
+ * SHELVE-BOARD: the shelved package (packages/board stays in the repo, unchanged). It is named only
+ * so the cases can say it is absent: no tarball, no SHA256SUMS line, no bundled copy, no doc mention,
+ * nothing in a hosted child. `mention` is the one rule for "names the board" every SHELVE row uses
+ * (release docs, core/ui sources, the manager's prompt): the package name, or the word itself (also
+ * as a `board_` tool prefix); "dashboard", "clipboard", "onboarding" are other words.
+ */
+export const SHELVED = Object.freeze({
+  board: pkg('fishball-board', 'board'),
+  mention: /fishball-board|(?<![a-z])board(?![a-z])/i,
+})
+/**
+ * The hosted child profile's placement files (I-PLACE's relayed seam, 2026-11-15): the record the
+ * instance writes, and the two folders each placed package is copied to. The one place these names
+ * live; dsh-instance/placement's RELAYED and the SHELVE rows read them from here.
+ */
+export const CHILD_PLACEMENT = Object.freeze({ record: 'fishball-placement.json', copyDirs: Object.freeze(['vendor', 'node_modules']) })
+/** SHELVE-BOARD (BVA on the count): exactly this many tarballs, SHA256SUMS lines and publish lines. */
+export const RELEASE_COUNT = Object.freeze({ tarballs: 8, bundled: 2 })
+/**
+ * SHELVE-BOARD: what INSTALL.md and PUBLISH.md must never name (the package, or the board at all);
+ * the word itself (also as a tool prefix, board_…), so "dashboard" or "clipboard" do not count. Each doc's `npm publish` lines.
+ */
+export const SHELVED_DOC = Object.freeze({
+  names: Object.freeze([SHELVED.mention]),
+  publishLine: /^\s*npm publish\s+\S*?([\w.-]+\.tgz)\b/,
+  publishDoc: 'PUBLISH.md',
+  /** `--check`'s word for an extra tarball in the folder (SHELVE-BOARD requirement 1). */
+  unexpected: /unexpected/i,
+  /** Oracle self-check (EP: the package name and the bare word; look-alikes that are other words). */
+  samples: Object.freeze({
+    hit: Object.freeze(['fishball-board', 'Fishball-Board@1.0.0-alpha.1', 'the board', 'Board:', '(board)', 'board_search']),
+    clean: Object.freeze(['dashboard', 'clipboard-write', 'onboarding', 'keyboard', 'fishball-ui', 'billboards']),
+  }),
+  /** Oracle self-check of `publishLine` (EP: a publish line with ./ and without; lines that publish nothing). */
+  publishSamples: Object.freeze({
+    hit: Object.freeze(['npm publish ./fishball-core-1.0.0-alpha.1.tgz --tag alpha', '  npm publish fishball-ui-1.0.0-alpha.1.tgz']),
+    clean: Object.freeze(['npm view fishball-core@1.0.0-alpha.1 version', '# npm publish', 'shasum -a 256 -c SHA256SUMS']),
+  }),
 })
 export const ALL = Object.freeze(Object.values(PACKAGES))
 export const ALL_NAMES = Object.freeze(ALL.map((p) => p.name))
@@ -107,7 +148,7 @@ export const MANIFEST = Object.freeze({
   peerField: 'peerDependencies',
   hostScope: '@deepseek-ai/',
   hostPeerRange: '*',
-  /** Requirement 2: fields whose entries on another of the 9 must name exactly VERSION (peers only "admit" it). */
+  /** Requirement 2: fields whose entries on another of the 8 must name exactly VERSION (peers only "admit" it). */
   exactInternalFields: Object.freeze(['dependencies', 'optionalDependencies']),
   /** How DSH checks engines.dsh (semver with prerelease admitted). */
   dshSemverOptions: Object.freeze({ includePrerelease: true }),
@@ -139,11 +180,15 @@ export const CORE_CLOSURE = Object.freeze({
   packageDir: /(?:^|\/)node_modules\/(?:@[^/]+\/)?[^/]+$/,
 })
 
-/** Requirement 5: the hosted child's plugin set, shipped inside dsh-instance as tarballs. */
+/**
+ * Requirement 5: the hosted child's plugin set, shipped inside dsh-instance as tarballs.
+ * Re-baselined (SHELVE-BOARD, was ui, board, core): fishball-ui and fishball-core only, the user's
+ * decision of 2026-11-18 ("不要预留在子实例的Fishball内": nothing of the board in the child).
+ */
 export const INSTANCE_BUNDLED = Object.freeze({
   owner: PACKAGES.instance,
   dir: 'bundled/',
-  packages: Object.freeze([PACKAGES.ui, PACKAGES.board, PACKAGES.core]),
+  packages: Object.freeze([PACKAGES.ui, PACKAGES.core]),
   /** Requirement 6: a regular file at package/client.status.js. */
   statusFile: 'client.status.js',
 })
@@ -177,6 +222,9 @@ export const DRY_RUN = Object.freeze({
   ]),
 })
 
+/** The metadata cache and the registry it is keyed by: what an offline add needs of the release's pnpm-cache/ (lead, 2026-11-17). */
+const cacheArgs = (cache) => ['--cache-dir=' + cache, '--registry=https://registry.npmjs.org']
+
 /** The DSH SDKs (R-COMPAT-01); FBTEST_DSH_VERSIONS moves their parent folder. */
 export const DSH = Object.freeze({
   versionsDir: process.env.FBTEST_DSH_VERSIONS ?? path.join(os.homedir(), 'Library', 'Application Support', 'DSH', 'data', 'versions'),
@@ -189,7 +237,7 @@ export const DSH = Object.freeze({
   profileDir: (home, profile) => path.join(home, 'profiles', profile),
   /** `plugin --profile <p> add <tarballs…> <offline flags>` (lead, 2026-11-17: store, cache and the registry the cache is keyed by). */
   pluginArgs: (profile, tarballs, store, cache) => ['plugin', '--profile', profile, 'add', ...tarballs, '--offline',
-    '--store-dir=' + store, '--cache-dir=' + cache, '--registry=https://registry.npmjs.org', '--ignore-scripts'],
+    '--store-dir=' + store, ...cacheArgs(cache), '--ignore-scripts'],
   okExit: 0,
   bundlesPath: Object.freeze(['dsh', 'profile', 'bundles']),
 })
@@ -197,10 +245,124 @@ export const DSH = Object.freeze({
 /** The install sets of the system cases. */
 export const SETS = Object.freeze({
   hosted: Object.freeze([PACKAGES.connector, PACKAGES.connectorUi, PACKAGES.instance]),
-  /** In this order: fishball-ui, then fishball-board, then fishball-core, plus the adapter. */
-  standalone: Object.freeze([PACKAGES.ui, PACKAGES.board, PACKAGES.core, PACKAGES.adapter]),
+  /**
+   * In this order: fishball-ui, then fishball-core (core last), plus the adapter. Re-baselined
+   * (SHELVE-BOARD, was ui, board, core): the board is out of 1.0.0-alpha.1 (the user, 2026-11-18).
+   */
+  standalone: Object.freeze([PACKAGES.ui, PACKAGES.core, PACKAGES.adapter]),
   /** Empty store and cache: core's closure is bundled (installs), the connector's dependencies come from the registry (fails). */
   emptyStore: Object.freeze({ bundled: PACKAGES.core, registry: PACKAGES.connector }),
+})
+
+/**
+ * E-FIX-2 (bug B2): INSTALL.md's documented offline install, run as written. A set's offline block
+ * is the fenced block holding a `dsh plugin … add` line whose .tgz arguments are exactly the set's
+ * tarballs, in order; its online command is an add line naming the set's packages at VERSION, in order.
+ * Each set's `other` is a second plugin with no third-party dependency: a "used" profile gets it first
+ * from another store, and on a fresh profile it is the later install (from a tarball outside the
+ * release folder, which stays in place: INSTALL.md says to keep it while packages are installed from
+ * it). Re-baselined (SHELVE-BOARD): fishball-board, the bug report's example, is no longer in the
+ * release (the user, 2026-11-18: "fishball-board先从这次release中移除…先封存"), so the other plugin is
+ * fishball-ui, a plugin of the release with no third-party dependency (its one dependency is bundled),
+ * as the board was; the standalone set holds fishball-ui itself, so its other stays dsh-connector-shared
+ * (so "the earlier plugin stays" is not trivially true).
+ */
+export const OFFLINE = Object.freeze({
+  sets: Object.freeze([
+    Object.freeze({ key: 'hosted', pkgs: SETS.hosted, other: PACKAGES.ui }),
+    /** Standalone step 1: the managed DSH's connector and its UI (its own offline block since 0ff8cdfb). */
+    Object.freeze({ key: 'managed', pkgs: Object.freeze([PACKAGES.connector, PACKAGES.connectorUi]), other: PACKAGES.ui }),
+    // SHELVE-BOARD: fishball-ui then fishball-core, core last (was ui, board, core).
+    Object.freeze({ key: 'standalone', pkgs: Object.freeze([PACKAGES.ui, PACKAGES.core]), other: PACKAGES.dshShared }),
+    Object.freeze({ key: 'adapter', pkgs: Object.freeze([PACKAGES.adapter]), other: PACKAGES.ui }),
+  ]),
+  /** Profile states (decision table): never given a plugin, or given the set's `other` from another store first. */
+  states: Object.freeze({ fresh: 'fresh', used: 'used' }),
+  /** The doc says bash or zsh; `-e` stops at a failed line, so every line of the block must succeed. */
+  shell: '/bin/bash',
+  shellArgs: Object.freeze(['-e', '-c']),
+  /** The block calls `dsh` from PATH: a folder of the scratch dir holding a link to the SDK's CLI. */
+  binDir: 'bin',
+  cliName: 'dsh',
+  otherStoreDir: 'other-store',
+  /** The later install's tarball is copied here, outside the release folder. */
+  laterDir: 'later',
+  /** The bug B2 error a later add must not show. */
+  unexpectedStore: /ERR_PNPM_UNEXPECTED_STORE/,
+  /** "No registry": the block's add line carries pnpm's offline flag. */
+  offlineFlag: '--offline',
+  /** Idempotence: the block run this many times in a row. */
+  runs: 2,
+  modulesYaml: Object.freeze([TARBALL.nodeModules, '.modules.yaml']),
+  storeDirKey: 'storeDir',
+  yaml: 'yaml',
+  storePathArgs: (profile) => ['plugin', '--profile', profile, 'store', 'path'],
+  /** "Used" profile set-up, from the bug report: `add <tarball> --offline --store-dir=<another temp store>`. */
+  otherArgs: (profile, tarball, store) => ['plugin', '--profile', profile, 'add', tarball, '--offline', '--store-dir=' + store],
+  /**
+   * A later install with no --store-dir (the profile must not be linked to the release folder's store),
+   * with the release's metadata cache and registry, as INSTALL.md says a later --offline add needs (66dbf20d).
+   */
+  laterArgs: (profile, tarball, cache) => ['plugin', '--profile', profile, 'add', tarball, '--offline', ...cacheArgs(cache)],
+})
+
+/** Escape a literal for a RegExp. */
+const literal = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+/** A literal not glued to a longer name (`dsh-fishball` must not match inside `dsh-fishball-*`). */
+const standalone = (s) => new RegExp(`(?<![\\w-])${literal(s)}(?![\\w-])`)
+
+/** E-FIX-2 (bugs B2, B6): what INSTALL.md must say. */
+export const INSTALL_DOC = Object.freeze({
+  file: RELEASE.docs[0],
+  fence: /^\s*```/,
+  heading: /^## /,
+  paragraphBreak: /^\s*$/,
+  addLine: new RegExp(`\\bdsh plugin --profile ${literal(DSH.profile)} add\\s`),
+  tarballArg: /[\w.-]+\.tgz/g,
+  onlineSpec: new RegExp(`([\\w.-]+)@${literal(VERSION)}`, 'g'),
+  /** B6: earlier Fishball packages and the old data folder, removed before installing. */
+  earlier: Object.freeze({
+    names: Object.freeze(['dsh-fishball', 'fishball-connector', 'fishball-instance', 'fishball-embed-ui', 'dsh-fishball-*', '<DSH_HOME>/fishball/'].map(standalone)),
+    verb: /\bremove\b/i,
+  }),
+  /** B6: pnpm's "missing peer" warning about DSH's own packages is expected (one paragraph says all three). */
+  missingPeer: Object.freeze([/missing peer/i, /@deepseek-ai\//, /\bexpected\b/i]),
+  /** The paragraph on installing from the release folder with no network, and its instruction to keep the folder. */
+  offlineParagraph: Object.freeze([new RegExp(literal(RELEASE.store + '/')), /no network/i]),
+  keepFolder: /\bkeep\b[^.]*\bfolder\b/i,
+  /** …and that a later --offline add on that profile needs the folder's cache and the registry (both flags as the rows pass them). */
+  laterNeeds: Object.freeze([/\blater\b[^.]*--offline/i, new RegExp(literal(`--cache-dir="$PWD/${RELEASE.cache}"`)), new RegExp(literal(cacheArgs('')[1]))]),
+  /** B6: standalone's token-field path beside Connect, in the section of the standalone offline block. */
+  tokenPath: Object.freeze([/New token/, /connector settings/, /Token for connecting a DSH/, /fishball-core/, /\bTarget\b/, /\bConnect\b/]),
+  standaloneKey: 'standalone',
+})
+
+/**
+ * E-FIX-2: each tarball's own top-level README.md and its manifest description. B3: the README names
+ * no `ask_agent` and does not say the packages are not published. B4: README and description carry no
+ * stale version note and no internal id (`R-XXX-NN`, `Q-XN`, `PLAT-XXX-NN`, `W<digit>`, `K<digit>`).
+ * The connector's mcp-schema/README.md and tools/README.md are maintainers' notes, out of scope.
+ */
+export const DOC_TEXT = Object.freeze({
+  readme: 'README.md',
+  descriptionField: 'description',
+  /** B3, README only. */
+  b3: Object.freeze([/ask_agent/, /\bnot\s+(?:\w+\s+){0,2}published\b/i, /\bunpublished\b/i]),
+  /** B4, README and description. */
+  b4: Object.freeze([/0\.1\.0-alpha\.0/, /manifest still reads/i, /\bskeleton\b/i, /\bW\d+\b/, /\bK\d+\b/,
+    /\bR-[A-Z]+-\d+\b/, /\bQ-[A-Z]\d+\b/, /\bPLAT-[A-Z]+-\d+\b/]),
+  /** Oracle self-check (EP: each banned form; BVA: 0..2 words between "not" and "published", ids glued to letters). */
+  samples: Object.freeze({
+    b3: Object.freeze({
+      hit: Object.freeze(['use ask_agent', 'not published', 'not yet published', 'has not yet been published', 'unpublished packages', 'Not Published']),
+      clean: Object.freeze(['published on npm', 'once the packages are published', 'publishing', 'ask the agent', 'not a plugin; published', 'not one of the three that are published']),
+    }),
+    b4: Object.freeze({
+      hit: Object.freeze(['0.1.0-alpha.0', 'the manifest still reads', 'W0 skeleton', 'Skeleton', 'W4', 'K2', 'R-ARCH-04', 'R-FB-12', 'R-BRD-01',
+        'PLAT-BVA-01', 'Q-G2', '(R-COMPAT-01)']),
+      clean: Object.freeze(['1.0.0-alpha.1', 'W3C', 'K8s', 'Windows', 'KW', 'R-1', 'R-ARCH', 'Q-G', 'PLAT-01', 'MCP over OAuth', 'skeletons', 'w0']),
+    }),
+  }),
 })
 
 /**
@@ -213,6 +375,9 @@ export const ISOLATION = Object.freeze({
   /** npm refuses one file as both user and global config, so the global one is an empty file of the scratch folder. */
   globalconfigFile: 'globalrc',
   deadProxy: 'http://127.0.0.1:9',
+  /** E-FIX-2: the counting proxy (an ephemeral loopback port; it answers nothing, like the dead one). */
+  proxyScheme: 'http://',
+  proxyHost: '127.0.0.1',
   proxyVars: Object.freeze(['HTTPS_PROXY', 'HTTP_PROXY', 'https_proxy', 'http_proxy', 'npm_config_https_proxy', 'npm_config_proxy']),
   homeDir: 'home',
   npmCacheDir: 'npm-cache',
@@ -226,7 +391,7 @@ export const ISOLATION = Object.freeze({
 export const NPM_TOOL = '/opt/homebrew/bin/npm'
 
 /** Harness budgets (waiting only). */
-export const BUDGET = Object.freeze({ installMs: 300000, installCaseMs: 600000, checkMs: 300000, checkCaseMs: 1800000, dryRunMs: 120000, maxOutputBytes: 64 * 1024 * 1024 })
+export const BUDGET = Object.freeze({ installMs: 300000, installCaseMs: 600000, checkMs: 300000, checkCaseMs: 1800000, docCaseMs: 1200000, dryRunMs: 120000, maxOutputBytes: 64 * 1024 * 1024 })
 /** How much of a failed child's output a failure message shows (harness). */
 export const REPORT = Object.freeze({ tailChars: 4000 })
 export const TEMP = Object.freeze({ prefix: 'fbtest-rel-pack-' })
@@ -238,4 +403,8 @@ export const CASE = Object.freeze({
   manifest: 'REL-EP-04', engines: 'REL-DT-01', peers: 'REL-DT-02', links: 'REL-EP-05', bundling: 'REL-DT-03',
   closure: 'REL-EP-06', instance: 'REL-EP-07', junk: 'REL-EP-08', dryRun: 'REL-EP-09',
   check: 'REL-ST-01', hosted: 'REL-SYS-01', standalone: 'REL-SYS-02', alone: 'REL-SYS-03', emptyStore: 'REL-DT-04',
+  // E-FIX-2: INSTALL.md's offline blocks (set × profile state; the fresh profile's transitions), its text, the READMEs.
+  docUsed: 'REL-DT-05', docFresh: 'REL-ST-02', docOrder: 'REL-EP-10', docBefore: 'REL-EP-11', readme: 'REL-EP-12', description: 'REL-EP-13',
+  // SHELVE-BOARD: the shelved board is nowhere in the release (counts, docs, --check on an extra board tarball).
+  shelved: 'REL-SHELVE',
 })

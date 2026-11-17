@@ -57,13 +57,14 @@ globalThis.__ModuleLoader__?.load({
       }
 
       /**
-       * Where the bubble sits: beside the sidebar fish when it is on screen, else in the window's
-       * bottom-left corner (NOTICE_BUBBLE). Read at each render: the sidebar can move or close.
+       * Where the bubble sits: beside the sidebar fish when it is on screen (with its tail toward
+       * the fish), else in the window's bottom-left corner (NOTICE_BUBBLE). Read at each render: the
+       * sidebar can move or close. @returns `{place, style}`.
        */
       function bubblePlace() {
         const mark = document.querySelector(NOTICE.markSelector)?.getBoundingClientRect()
-        if (mark === undefined || mark.width === 0) return { left: NOTICE_BUBBLE.edgePx, bottom: NOTICE_BUBBLE.edgePx }
-        return { left: mark.right + NOTICE_BUBBLE.gapPx, top: mark.top }
+        if (mark === undefined || mark.width === 0) return { place: NOTICE_BUBBLE.place.corner, style: { left: NOTICE_BUBBLE.edgePx, bottom: NOTICE_BUBBLE.edgePx } }
+        return { place: NOTICE_BUBBLE.place.mark, style: { left: mark.right + NOTICE_BUBBLE.gapPx, top: mark.top } }
       }
 
       /**
@@ -75,9 +76,10 @@ globalThis.__ModuleLoader__?.load({
       function makeNotice(t) {
         return function FishballNotice() {
           const { notice } = useSnapshot()
+          const at = notice === null ? null : bubblePlace()
           return h('div', { role: 'status', 'data-fishball-notice-region': true },
             notice === null ? null : h('button', {
-              type: 'button', className: CLS.notice, style: bubblePlace(),
+              type: 'button', className: CLS.notice, style: at.style, 'data-fishball-notice-place': at.place,
               'aria-label': t('noticeLabel', { count: notice.count, message: notice.message }),
               'data-fishball-notice': true,
               ...(notice.important ? { 'data-fishball-notice-important': true } : {}),

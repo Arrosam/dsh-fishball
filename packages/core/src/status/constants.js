@@ -17,8 +17,13 @@ export const STATUS_MODEL = Object.freeze({
   fishball: SEAM_STATUS.fishball,
   set: SEAM_STATUS.set,
   reason: SEAM_STATUS.reason,
-  /** The set members core checks (requirements 1.34, 1.37, 1.41: the Fishball set is core + board). */
-  members: Object.freeze(['fishball-board']),
+  /**
+   * The set members core checks (requirements 1.34, 1.37, 1.41). Empty in 1.0.0-alpha.1: its one
+   * member, fishball-board, is shelved from this release (SHELVE-BOARD, the user, 2026-11-18), so the
+   * check finds nothing to report and the set is always `ok`. The check itself stays for a later
+   * member; add fishball-board back here when it is released again.
+   */
+  members: Object.freeze([]),
   control: SEAM_STATUS.control,
   /** The Cordis service core's main row provides with `createStatus`'s object (the seam's name, read by fishball-ui's strip). */
   serviceName: UI_STATUS.service,

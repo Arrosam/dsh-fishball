@@ -195,7 +195,9 @@ routing.
 Other plugins in the same DSH can add tools and events through the contribution service. Their
 names are `<namespace>.<tool>`, and they are listed after the connector's own tools.
 [`./tools`](<tools/README.md>) describes the contribution interface, and
-[`./mcp-schema`](<mcp-schema/README.md>) the full contract: schemas, events, codes and limits.
+[`./mcp-schema`](<mcp-schema/README.md>) the full contract: schemas, events, codes and limits. Both
+are the maintainers' contract notes, with the history of each decision; this README is the
+user-facing description.
 
 ## Licence
 

@@ -115,3 +115,48 @@ export const LATER = Object.freeze({
   fence: 'C-WIRE (the route mounted in a real DSH: owner-only, behind DSH\'s Host and Origin fence; a non-owner or cross-origin request is refused before it reaches the route)',
   plugins: 'E2E (the Plugins page of a real DSH in a browser: the row\'s configure control opens this page; the clipboard really holds the value)',
 })
+
+/**
+ * UI-POLISH-D rows (polish-cases.mjs; the requirements relayed 2026-11-18): the page is three titled
+ * `h3` sections; the token count beside Tokens; the row's icon-only buttons named by the old words;
+ * DSH's StateDot before a pair state and the approval status; the Input primitive for every text
+ * field. Words are the page's dictionary values the requirements quote (en and zh).
+ */
+export const POLISH = Object.freeze({
+  id: Object.freeze({ sections: 'UIPD-SET-SECTIONS', count: 'UIPD-SET-COUNT', buttons: 'UIPD-SET-BUTTONS', dots: 'UIPD-SET-DOTS', primitives: 'UIPD-SET-PRIMITIVES' }),
+  langs: Object.freeze(['en', 'zh']),
+  headingTag: 'h3',
+  headings: Object.freeze({
+    en: Object.freeze(['Tokens', 'Approval page', 'Safety limits']),
+    zh: Object.freeze(['Token', '授权页面', '安全限制']),
+  }),
+  buttons: Object.freeze({
+    en: Object.freeze({ up: 'Move up', down: 'Move down', remove: 'Delete' }),
+    zh: Object.freeze({ up: '上移', down: '下移', remove: '删除' }),
+  }),
+  /** BVA over the list's length and a row's index: a single item, and the first / middle / last of three. */
+  counts: Object.freeze([0, 1, 3]),
+  labels: Object.freeze(['Agent A', 'Agent B', 'Agent C']),
+  /** DSH StateDot states the requirements name for a paired entry. */
+  dot: Object.freeze({ connected: 'done', offline: 'idle' }),
+  stateDot: 'StateDot',
+  input: 'Input',
+  iconPrefix: 'Icon',
+  /** The icon names' words the requirements give (a plus on New token; Copy swaps to a check). */
+  icon: Object.freeze({ plus: /Plus/, copy: /Copy/, check: /Check/, warning: /Warning/ }),
+  ariaLabel: 'aria-label',
+  title: 'title',
+  role: 'role',
+  status: 'status',
+  /** The words of the approval status (unchanged): `Approval page: listening on port N`. */
+  approvalOk: (port) => `Approval page: listening on port ${port}`,
+  approvalPrefix: 'Approval page: ',
+  approvalPort: 47616,
+  /** K1 CONNECTOR_STATUS.approvalPortInUse, as the state route reports it. */
+  portInUse: 'approval-port-in-use',
+  defaultPort: 47615,
+  pairId: 'agent-a-1',
+  pairName: 'Navigator',
+  attr: Object.freeze({ pair: 'data-dsh-connector-pair', connected: 'data-dsh-connector-connected', approval: 'data-dsh-connector-approval', setting: 'data-dsh-connector-setting' }),
+  paired: 'paired',
+})

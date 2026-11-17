@@ -1,14 +1,13 @@
 # fishball-core
 
-The backend of the Fishball plugin set (`fishball-core`, `fishball-ui`, `fishball-board`), on the
+The backend of the Fishball plugin set (`fishball-core`, `fishball-ui`), on the
 Fishball side. It turns a DSH into Fishball: one long-lived manager session that reaches the DSH it
 manages only through that DSH's `dsh-connector` MCP endpoint, as any agent does. It imports nothing
-from the DSH-side packages (requirements R-ARCH-10); its copy of the connector's public MCP surface
+from the DSH-side packages; its copy of the connector's public MCP surface
 is its own (`contracts/constants.js`, `MCP` and `LINK`), checked against the connector by contract
 tests.
 
-Version `1.0.0-alpha.1` in the release (this checkout's manifest still reads `0.1.0-alpha.0`).
-Requires DSH `>=0.2.1-rc.5`. In hosted mode `dsh-instance` places it in Fishball's child (last, so
+Version `1.0.0-alpha.1`. Requires DSH `>=0.2.1-rc.5`. In hosted mode `dsh-instance` places it in Fishball's child (last, so
 its guard patch reaches every row); in a standalone DSH you install it yourself, last (see the
 [root README](<../../README.md>)).
 
@@ -21,7 +20,7 @@ its guard patch reaches every row); in a standalone DSH you install it yourself,
 - `fishball-core-session` (`src/session/route.js`): `GET|POST /api/fishball/session`, the manager
   session the Fishball page opens.
 - `fishball-core-guards` (`src/guards/`): the guard check, the `guards-overridden` report and, in a
-  standalone DSH, the self-reorder to the end of `dsh.profile.bundles` (R-FB-12).
+  standalone DSH, the self-reorder to the end of `dsh.profile.bundles`.
 - `preset-fishball`: core's own agent preset (read and read_image only).
 - Guard rows: the session-creating service rows (`schedule`, `open-in-app`,
   `terminal-controller`), `dsh-instance` (no nested hosted Fishball), every DSH-shipped agent preset
@@ -55,4 +54,5 @@ Core's own page on DSH's Plugins page (`client.js` with `client.settings.js`, in
 ## Without the other plugins
 
 Core runs normally without `fishball-ui` (no page, no strip) and reports nothing about it. Core's
-status names `fishball-board` when it is missing from the set.
+status's set check has no member in 1.0.0-alpha.1 (`fishball-board`, its one member, is shelved, not
+in this release), so it always reports the set `ok`.

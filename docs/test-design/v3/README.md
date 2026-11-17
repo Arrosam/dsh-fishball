@@ -12,9 +12,13 @@ V3-K; such expectations carry the flag `D§n`.
 `fishball-instance` as `dsh-instance`, `fishball-connector-adapter` as `dsh-connector-adapter`, and the
 MCP names by design §1.0c (`/api/agent/mcp`, scope `agent`, `agent_id`, `message_agent`,
 `ask_agent`). `fishball-hosted-settings` (R-HOST-11) and fold-notify (1.34) are withdrawn: a row
-about either expects nothing. The hosted set the instance places is `fishball-board`,
-`fishball-ui`, `fishball-core` (core last). The executable cases under `test/v3/` are the ones kept
-current.
+about either expects nothing. The hosted set the instance places is `fishball-ui`, `fishball-core`
+(core last). **`fishball-board` is shelved** (SHELVE-BOARD, the user, 2026-11-18: "fishball-board先从这次release中移除，我要改的地方太多了。先封存，留到下一批再说。所以不要预留在子实例的Fishball内。"):
+it is not in release 1.0.0-alpha.1, nothing places, installs, enables or records it in a hosted child,
+core's set check has no member, and a row below that expects the board placed, bundled, listed in a
+release, or named by core's status reads as "the board is absent". Its own rows (PLAT-UC-06, PLAT-BVA-01,
+FEAT-PEERS) stay with the shelved package and its shelved suite `fishball-board.peers`. The executable
+cases under `test/v3/` are the ones kept current.
 
 **Watchdog left V3** (requirements 1.37): its cases (the former `05-watchdog.md`, area `WD`) are
 gone; its notes are the separate project's. A managed session's permission requests go to its

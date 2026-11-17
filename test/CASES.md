@@ -2517,3 +2517,62 @@ The user's decision "不允许子实例发起模型同步，只能主实例主�
 - `slim-022-install.test.mjs` (deleted in c5c5692e) INST-06: named as the main card's route (its path is the main origin's; unchanged behaviour).
 - `child-native-runtime-row.mjs` (deleted in 230547b9): comment names the three child routes.
 - [body-soul-i6-sync.test.mjs](body-soul-i6-sync.test.mjs), `child-boot.test.mjs` (deleted in 230547b9), [lite.test.mjs](v2-page-cases/lite.test.mjs): read, unchanged. I6 covers the main owner routes, which stay; CHILD-BOOT and LITE assert no sync behaviour.
+
+## SHELVE-BOARD (fishball-board shelved from 1.0.0-alpha.1; the user, 2026-11-18)
+
+The user's decision, the reason for every re-baselined row: "fishball-board先从这次release中移除，我要改的地方太多了。先封存，留到下一批再说。所以不要预留在子实例的Fishball内。"
+(take fishball-board out of this release; shelve it for the next batch; do not reserve it in the child
+instance's Fishball). Written from the requirements alone, no implementation read. `packages/board/**` and
+`test/v3/fishball-board/**` are unchanged; that suite is listed in `SHELVED_SUITES`.
+
+Re-baselined (was → now):
+
+| File | Case | Was | Now |
+| --- | --- | --- | --- |
+| test/v3/release/pack (constants, cases) | REL-EP-01, 04, 05, 08, 09, 12, 13, REL-DT-01/02, REL-SYS-03, REL-ORACLE tar (per package) | 9 packages | 8 (no fishball-board) |
+| same | REL-EP-03 tgz | "the nine package tarballs" | the eight |
+| same | REL-EP-07 set / per tarball | bundled/ ui, board, core | ui, core |
+| same | REL-SYS-01 set | the child's three tarballs | its two |
+| same | REL-SYS-02 set | ui, board, core, adapter | ui, core, adapter (core last of the Fishball set) |
+| same | REL-EP-10, REL-DT-05, REL-ST-02 (standalone) | ui, board, core | ui, core |
+| same | REL-DT-05, REL-ST-02 (hosted, managed, adapter) | other plugin fishball-board | fishball-ui (a release plugin with no third-party dependency, as the board was) |
+| test/v3/dsh-instance/placement-install | PINST-ST-01 first, disable ×, PINST-DT-01 stale ×, missing ×, PINST-UC-01 | board, ui, core / ui, board, core | ui, core |
+| test/v3/dsh-instance/host | PLACE Q2 (both rows) | ends board, ui, core | Fishball bundles exactly ui, core; PLACEMENT names no board |
+| same | HOST-UC-01 E1 | blocking plugin fishball-board | fishball-ui (a member the child holds) |
+| test/v3/dsh-instance/placement | SET, HOST-UC-08 main 1, PLAT-DT-01 rules 1–7, HOST-EP-03 row 7, PLAT-DT-04 rule 1 | board, ui, core; DT walk on the board | ui, core; DT walk on fishball-ui |
+| test/v3/contract/split-shared | SPLIT-UC-04 placement tree | copies instance, core, board, ui | instance, core, ui |
+| test/v3/fishball-core/wire | WIRE-SYS (USE-CASES.md), WIRE-EP-02 | board+UI+core composition on packages/board; scan included packages/board | "board" is the stand-in bundle `wire/fixtures/fishball-board` (core's suite reads nothing of the shelved package); the scan drops packages/board (SPLIT-DT-01 keeps the board's own no-DSH-import rule); plus the SHELVE rows |
+| test/v2-recommendation/checks.mjs | AC9 / TC-32 comments | placed set core, ui, board | core, ui |
+
+Added:
+
+| Case | Technique | Oracle |
+| --- | --- | --- |
+| REL-SHELVE count | BVA (8, not 9 or 7) | exactly 8 `<name>-1.0.0-alpha.1.tgz`, none fishball-board |
+| REL-SHELVE sums | BVA | SHA256SUMS exactly 8 lines, none names fishball-board |
+| REL-SHELVE bundled | BVA | dsh-instance's bundled/ exactly 2 tarballs; nothing of fishball-board in the tarball |
+| REL-SHELVE doc INSTALL.md / PUBLISH.md | EP | neither names fishball-board or the word board |
+| REL-SHELVE publish | BVA | PUBLISH.md has exactly 8 `npm publish` lines, one per release tarball |
+| REL-SHELVE install sets | DT | INSTALL.md's offline blocks: hosted, managed, standalone (ui then core), adapter |
+| REL-SHELVE check | ST | copied release valid → fishball-board tarball added (non-zero, "unexpected", names it) → removed (0) |
+| REL-ORACLE shelved names, publish line | EP | the doc and publish-line rules on samples (dashboard, clipboard, onboarding are not the board) |
+| PINST-SHELVE first; PINST-ST-01 skip, PINST-DT-01 stale × | ST (first placement → re-run → re-install) | no vendor tarball, node_modules copy, dependency, bundle, record entry or install spec of fishball-board |
+| PLACE SHELVE (I-HOST) | ST (first start → second start, composedProfile) | the same, from the repo checkout |
+| HOST-EP-03 SHELVE compose (I-PLACE, unit) | ST | first and second compose: no board copy, dependency, bundle or record entry; Fishball bundles exactly ui, core |
+| HOST-EP-03 SHELVE first / restart (I-PLACE, integration) | ST | a real child after the first start and after a restart: the same |
+| SHELVE-EP-01 code / data / manifest × core, ui; rule | EP | no token, shipped data line (patch, nested manifests) or manifest field (optional peers included) of core or fishball-ui names the board |
+| WIRE-SYS SHELVE set (core; ui+core; board+ui+core) | EP (board absent / present) | core's `set` is `{status: ok, missing: []}` |
+| WIRE-SYS SHELVE broken board | EP (present and broken: engines.dsh no SDK meets) | `set` ok, nothing missing |
+| WIRE-SYS persona (no board) | EP | the manager's prompt and tools never mention the board |
+| SHELVE-SUITES-00, DT-01 rules 1–8, EP-01, EP-02 (test/v3/contract/suite-map) | DT (mode × change), EP | `--all` and a base ref (board-only change, shelved suite's own change, FULL path, unmapped path) never select `fishball-board.peers`; `--suite` by id, prefix or beside another does; run-v3 runs every V3 file but the shelved ones; `--check` clean |
+
+Left alone (owned by UI-POLISH-F): test/v3/fishball-core/status (cases.mjs PLAT-DT-02 rules 1–6, F-STATUS-00,
+F-STATUS-BVA-02, F-STATUS-EP-02, F-STATUS-ST-02, the strip order rows; constants.mjs `MODEL.members`,
+`FIXTURE.boardRow/boardEntry`; USE-CASES.md PLAT-DT-02) still expect the board as the checked member.
+
+
+Pre-existing, not SHELVE-BOARD's (dsh-instance.placement with FBTEST_V3_INTEGRATION=1, SDK 0.2.1-rc.5, failing the
+same way at the base `ee67f533` with the board as the toggled feature): HOST-ST-01 row 3 and PLAT-DT-01 row 6 (an
+enabled incompatible member: the child comes up `ready`, not `failed`/PROFILE_INCOMPATIBLE), PLAT-DT-01 row 5 (a member
+deleted while on comes back off), HOST-EP-03 row 7 libraries (dsh-agent-connector, the contract-only connector, is not
+in the child's vendor/).
