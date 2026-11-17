@@ -7,10 +7,12 @@
  * refresh once and retry once. The access token never reaches the child row or its configuration.
  */
 import { createHash, timingSafeEqual } from 'node:crypto'
+import { Readable } from 'node:stream'
+import { pipeline } from 'node:stream/promises'
 import { listenLoopback, opaqueValue } from './oauth-client.js'
 import { LIMIT, PROXY } from './constants.js'
 
-const digest = (value) => createHash('sha256').update(String(value ?? '')).digest()
+const digest = (value) => createHash(PROXY.digestAlgorithm).update(String(value ?? '')).digest()
 /** Constant time over digests, so neither the content nor the length of the local bearer leaks. */
 const sameSecret = (presented, expected) => timingSafeEqual(digest(presented), digest(expected))
 
@@ -28,16 +30,23 @@ async function readBody(req, maxBytes) {
 
 /** The field names a `Connection` header lists (lower case; node's own header names already are). */
 const connectionListed = (value) => [value ?? []].flat().flatMap((v) => v.split(PROXY.listSeparator)).map((n) => n.trim().toLowerCase()).filter(Boolean)
+/**
+ * Whether a (lower-case) field stays on this hop: on the fixed list, or named by the message's own
+ * `Connection` header (RFC 9110 §7.6.1). Requests and responses each have their own fixed list.
+ */
+const hopByHop = (fixed, connection) => {
+  const listed = connectionListed(connection)
+  return (name) => fixed.includes(name) || listed.includes(name)
+}
 
 /**
- * The caller's headers minus hop-by-hop fields (the fixed list, plus every field its `Connection`
- * header names, RFC 9110 §7.6.1) and its own credentials, plus the real bearer.
+ * The caller's headers minus hop-by-hop fields and its own credentials, plus the real bearer.
  */
 function forwardHeaders(incoming, accessToken) {
   const headers = new Headers()
-  const listed = connectionListed(incoming[PROXY.connection])
+  const dropped = hopByHop(PROXY.dropRequestHeaders, incoming[PROXY.connection])
   for (const [name, value] of Object.entries(incoming)) {
-    if (value === undefined || PROXY.dropRequestHeaders.includes(name) || listed.includes(name)) continue
+    if (value === undefined || dropped(name)) continue
     for (const one of [value].flat()) headers.append(name, one)
   }
   headers.set(PROXY.authorization, PROXY.bearerPrefix + accessToken)
@@ -46,12 +55,20 @@ function forwardHeaders(incoming, accessToken) {
 
 const refuse = (res, status) => { res.writeHead(status); res.end() }
 
+/** The upstream's response headers that go on to the child. */
+function relayedHeaders(upstream) {
+  const dropped = hopByHop(PROXY.dropResponseHeaders, upstream.headers.get(PROXY.connection))
+  const headers = {}
+  for (const [name, value] of upstream.headers) if (!dropped(name)) headers[name] = value
+  return headers
+}
+
 /**
  * Start the proxy on 127.0.0.1 with an OS port.
  * @param options.servers `Map<routeId, server>`; a server offers `upstream`, `accessToken()`,
  *   `recover(failedAccessToken)` → the next token or `undefined`, `lose(failedAccessToken)`
- *   (drop the tokens after a second 401, only while they are still the failed ones), and
- *   `unreachable()` (the connector could not be reached for the child).
+ *   (drop the tokens after a second 401, only while they are still the failed ones),
+ *   `unreachable()` (the connector could not be reached for the child) and `reachable()` (it answered).
  * @param options.fetchFn the fetch every upstream request uses.
  * @returns `{route(routeId)}` → the child row's `{url, headers}` for that route (its per-start local
  *   bearer, never on disk); and `close()`.
@@ -77,13 +94,16 @@ export async function startProxy({ servers, fetchFn }) {
     const abort = new AbortController()
     res.on(PROXY.closeEvent, () => abort.abort())
     const send = async (accessToken) => {
-      try {
-        return await fetchFn(server.upstream, { method: req.method, headers: forwardHeaders(req.headers, accessToken), body, redirect: PROXY.redirect, signal: abort.signal })
-      } catch (error) {
+      const upstream = await fetchFn(server.upstream, { method: req.method, headers: forwardHeaders(req.headers, accessToken), body, redirect: PROXY.redirect, signal: abort.signal }).catch((error) => {
         // The child's own close aborts the request; anything else means the connector is unreachable.
         if (!abort.signal.aborted) server.unreachable()
         throw error
-      }
+      })
+      // A tunnel or gateway in front of the connector answers for it while it is down (review F5);
+      // a redirect reaches the child as a gateway error too (below).
+      if (PROXY.gatewayStatuses.includes(upstream.status) || PROXY.redirectStatuses.includes(upstream.status)) server.unreachable()
+      else server.reachable()
+      return upstream
     }
 
     const first = server.accessToken()
@@ -110,14 +130,26 @@ export async function startProxy({ servers, fetchFn }) {
         return
       }
     }
-    const headers = {}
-    for (const [name, value] of upstream.headers) if (!PROXY.dropResponseHeaders.includes(name)) headers[name] = value
-    res.writeHead(upstream.status, headers)
+    if (PROXY.redirectStatuses.includes(upstream.status)) {
+      // Relayed, a redirect would make the child's own fetch follow it and send the MCP body straight
+      // to the `Location`, past this proxy's URL rule (review F2). Redirects are no part of the
+      // connector's MCP surface, so the request fails here; the child sees a gateway error.
+      await upstream.body?.cancel()
+      refuse(res, PROXY.status.badGateway)
+      return
+    }
+    res.writeHead(upstream.status, relayedHeaders(upstream))
     if (upstream.body === null) { res.end(); return }
     res.flushHeaders()
     // Streamed chunk by chunk, so a listen stream stays open for as long as the connector keeps it.
-    for await (const chunk of upstream.body) res.write(chunk)
-    res.end()
+    // pipeline() waits while the child reads slowly (review F6), and on either side's end or failure
+    // destroys the other: a closed child cancels the upstream body. Byte mode bounds the read-ahead
+    // in bytes, not in chunks of any size.
+    const source = Readable.from(upstream.body, PROXY.byteStream)
+    // Classified on the source's own error: it fires before pipeline() destroys the response, whose
+    // close would make a broken connector body look like the child's own abort.
+    source.once(PROXY.errorEvent, () => { if (!abort.signal.aborted) server.unreachable() })
+    await pipeline(source, res)
   }
 
   const listener = await listenLoopback((req, res) => {
