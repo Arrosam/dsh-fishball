@@ -2245,7 +2245,8 @@ K2 (A).
   button, shown only when the attached instance registered `ui.settings`; it opens that path
   framed in the Fishball view. (6) The fixed icon, the fish logo built from DSH's
   `FISH_LOGO_PATH` with a wrench badge, is on the sidebar row, the brand button and the Plugins
-  card. It keeps the unread count and, on managed session rows, the green and yellow dots, and it
+  card. *Superseded by ICON-SET (the user, 2026-11-18): the sidebar fish is plain, and the wrench
+  is on the connector's own icon only; see conn-OQ-37.* It keeps the unread count and, on managed session rows, the green and yellow dots, and it
   uses the current text colour in light and dark. (7) Managed-row marks and Hand over keep their
   current behaviour.
 - T: P; EP (instance: none / attached without ui / `ui: {}` / chat only / settings only / both;
@@ -2516,7 +2517,7 @@ here is also an item of §18.6.
 | conn-OQ-34 | One item: Hand over posts the forward (`POST /api/fishball/send`), which publishes one `user` item (the user's note, possibly empty, and the session excerpt) and then marks the session managed without a second note (`src/messaging.js` `forward`, `ManagedRegistry.manage`). The `user` change note exists only for Take back. |
 | conn-OQ-35 | Closed, confirmed. |
 | conn-OQ-36 | The row id is `fishball-connector` (§0.2, with the one-time migration). DSH's Plugins page shows "Fishball connector" for it, and "Fishball instance" for `fishball-instance`. |
-| conn-OQ-37 | The icon is built from DSH's `FISH_LOGO_PATH` and `FISH_LOGO_VIEWBOX` (`dsh-client-ui-primitives`) plus a wrench badge at the bottom right, one SVG in `assets/connector-icon.svg` (the package `icon`) and the same drawing in the client. It is on the sidebar row, the brand button and the connector's Plugins card. The unread count stays on the brand and the row, and the green and yellow dots stay on managed session rows (§8.2). It uses `currentColor` with the magenta eye (`--fb-accent`), so light and dark need no second asset. |
+| conn-OQ-37 | **ICON-SET (the user, 2026-11-18) supersedes the placement below:** the sidebar row and managed-session marks draw the plain fish, and only the connector's own icon (its Plugins card and settings page) carries the wrench. Every package of the set has the same base (FishMark on the ink tile) with its own badge at the bottom right: a paper chip in an ink ring, holding a DSH-style glyph (dsh-connector a wrench, dsh-connector-ui a window, dsh-instance a box, dsh-connector-adapter a plug; the Fishball side matches). Before: the icon is built from DSH's `FISH_LOGO_PATH` and `FISH_LOGO_VIEWBOX` (`dsh-client-ui-primitives`) plus a wrench badge at the bottom right, one SVG in `assets/connector-icon.svg` (the package `icon`) and the same drawing in the client. It is on the sidebar row, the brand button and the connector's Plugins card. The unread count stays on the brand and the row, and the green and yellow dots stay on managed session rows (§8.2). It uses `currentColor` with the magenta eye (`--fb-accent`), so light and dark need no second asset. |
 | conn-OQ-38 | Closed, confirmed. |
 | conn-OQ-39 | Yes: the panel-list row is always shown; the brand button is a second way in. |
 | conn-OQ-40 | Confirmed: I6 shows no connector value and edits none (inst-OQ-05), and E2E-B5 is rewritten to change the limit in DSH's own form (§18.4). |
