@@ -55,6 +55,8 @@ export const SET_CARRIER = Object.freeze({ key: 'instance', folder: 'bundled' })
  */
 export const INSTALL_SETS = Object.freeze({
   hosted: Object.freeze(['connector', 'connectorUi', 'instance']),
+  // Standalone's managed DSH: the hosted set without the instance.
+  managed: Object.freeze(['connector', 'connectorUi']),
   standalone: Object.freeze(['ui', 'board', 'core']),
   adapter: Object.freeze(['adapter']),
 })
@@ -94,8 +96,9 @@ export const LAYOUT = Object.freeze({
 export const OFFLINE = Object.freeze({
   storeVariable: 'FISHBALL_STORE',
   // DSH's own pnpm pass-through answers for the profile: its node_modules, and pnpm's store for it.
-  modulesQuery: 'root',
-  storeQuery: 'store path',
+  // `--silent`: inside `$(…)` stdout is no TTY, so pnpm would print its notices there, before the path.
+  modulesQuery: 'root --silent',
+  storeQuery: 'store path --silent',
 })
 
 /**
