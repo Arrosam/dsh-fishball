@@ -325,8 +325,10 @@ function eventSourceClass(world, page) {
  * @param options.host - the page's hostname (PAGE_HOST).
  * @param options.failServices - the services read fails (a network error), UDRAW-EP-02 row 5.
  * @param options.lang - the page language (TEXT.langs; default English).
+ * @param options.holdChunks - R-FIX-CUI (UI-06): chunk files whose load waits until
+ *   `releaseChunk(file)` (a chunk that arrives late; a permitted load order of the real entry).
  */
-export async function openPage(t, world, { host = PAGE_HOST.loopback, failServices = false, withoutConfigForms = false, embed = true, lang = TEXT.langs[0] } = {}) {
+export async function openPage(t, world, { host = PAGE_HOST.loopback, failServices = false, withoutConfigForms = false, embed = true, lang = TEXT.langs[0], holdChunks = [] } = {}) {
   const baseURI = PAGE_HOST.scheme + host + ':' + PAGE_HOST.port + ROUTE.absolutePrefix
   const page = { baseURI, requests: [], chunks: [], streams: [], navigations: [], dictionaries: [], errors: [] }
   const pageFetch = async (input, init = {}) => {
@@ -339,6 +341,7 @@ export async function openPage(t, world, { host = PAGE_HOST.loopback, failServic
   }
   const pageConsole = { ...console, error: (...args) => page.errors.push(args.map(String).join(' ')), warn() {}, log() {}, info() {}, debug() {} }
   const sandbox = createBrowserSandbox({ lang, baseURI, fetch: pageFetch, console: pageConsole })
+  const frames = scriptedFrames(sandbox)
   const PageEventSource = eventSourceClass(world, page)
   sandbox.sandbox.EventSource = PageEventSource
   sandbox.window.EventSource = PageEventSource
@@ -349,11 +352,20 @@ export async function openPage(t, world, { host = PAGE_HOST.loopback, failServic
   const graph = embed ? [{ id: EMBED.moduleId, rev: EMBED.rev }] : []
   const chunkLoads = new Set()
   const runFile = (file) => sandbox.run(fs.readFileSync(path.join(EMBED.clientDir, file), 'utf8'), path.join(EMBED.clientDir, file), new URL(file, baseURI).href)
+  const track = (load) => { chunkLoads.add(load); load.finally(() => chunkLoads.delete(load)).catch(() => {}) }
+  // A held chunk's load is tracked only once released, so settling the page does not wait for it.
+  const held = new Map()
   const loadChunk = (_owner, file) => {
     page.chunks.push(file)
+    if (holdChunks.includes(file)) {
+      let release
+      const gate = new Promise((resolve) => { release = resolve })
+      const load = gate.then(() => runFile(file))
+      held.set(file, () => { track(load); release() })
+      return load
+    }
     const load = Promise.resolve().then(() => runFile(file))
-    chunkLoads.add(load)
-    load.finally(() => chunkLoads.delete(load)).catch(() => {})
+    track(load)
     return load
   }
   if (embed) runFile(EMBED.clientEntry)
@@ -441,8 +453,45 @@ export async function openPage(t, world, { host = PAGE_HOST.loopback, failServic
     posts: (pathname) => page.requests.filter((r) => r.method === 'POST' && r.path === pathname),
     /** Waits until `predicate()` holds, re-settling the page between polls. */
     async waitFor(predicate, ms = WAIT.settleMs) { return until(async () => { await settleAll(); return predicate() }, ms) },
+    /** Whether `file`'s load was asked for and is still held (holdChunks). */
+    isHeld: (file) => held.has(file),
+    /** Lets a held chunk load (UI-06), then settles the page. */
+    async releaseChunk(file) {
+      assert.ok(held.has(file), 'harness: ' + file + ' was never asked for or is not held')
+      held.get(file)()
+      held.delete(file)
+      await settleAll()
+    },
+    /** The page's animation frames and window events (R-FIX-CUI UI-07; scriptedFrames). */
+    frames,
   }
   return api
+}
+
+/**
+ * The page's animation frames and window events, scripted (R-FIX-CUI UI-07): requestAnimationFrame
+ * queues a callback that runs only on `runFrame()`, cancelAnimationFrame drops it; window listeners
+ * are kept, so `dispatch(type)` fires one event (e.g. `resize`). The page sees the same functions as
+ * globals and as `window` members (in a browser `window` is the global object).
+ */
+function scriptedFrames(sandbox) {
+  const queued = new Map()
+  let next = 0
+  const listeners = new Map()
+  const requestAnimationFrame = (fn) => { next += 1; queued.set(next, fn); return next }
+  const cancelAnimationFrame = (id) => { queued.delete(id) }
+  const addEventListener = (type, fn) => { if (!listeners.has(type)) listeners.set(type, new Set()); listeners.get(type).add(fn) }
+  const removeEventListener = (type, fn) => { listeners.get(type)?.delete(fn) }
+  for (const target of [sandbox.sandbox, sandbox.window]) Object.assign(target, { requestAnimationFrame, cancelAnimationFrame, addEventListener, removeEventListener })
+  return {
+    /** Callbacks waiting for the next frame. */
+    pending: () => queued.size,
+    /** Runs the callbacks queued before this frame (those they queue wait for the next one). */
+    runFrame() { const due = [...queued.values()]; queued.clear(); for (const fn of due) fn(performance.now()) },
+    /** How many listeners of `type` the page holds on window. */
+    listening: (type) => listeners.get(type)?.size ?? 0,
+    dispatch(type) { for (const fn of [...(listeners.get(type) ?? [])]) fn({ type }) },
+  }
 }
 
 // ---------------------------------------------------------------------------------------------

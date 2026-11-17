@@ -18,8 +18,11 @@
  *   `onRevoked`, so a re-enable, an added or a removed entry reaches this module only through this
  *   port: **C-WIRE fires `settings.onChange` after `TokenRegistry.apply` has resolved**, so the K3
  *   listeners read the new entries. `maxQueuedInputs` is the mailbox's own bound (C-MAILBOX).
- * - `sessions`: `{exists(id), onTurnFinished(fn(id, {running, queued})), onState(fn(id, {running,
- *   pendingInteraction}))}` over root session ids (binding it to DSH is C-WIRE's);
+ * - `sessions`: `{exists(id), rootOf?(id), onTurnFinished(fn(id, {running, queued})), onState(fn(id, {running,
+ *   pendingInteraction}))}` over root session ids (binding it to DSH is C-WIRE's). `rootOf(id)` →
+ *   `Promise<root id | undefined>` (undefined: no such session) is what Hand over and Take back act
+ *   on (review UI-01). C-WIRE's source always has it; a source without it (the routing suites' fakes
+ *   of sessions that have no subagents) makes each existing session its own root;
  * - `logger` (`{warn}`).
  *
  * One commit path (`produce`): every event C-ROUTE produces asks the router first and commits to the
@@ -196,7 +199,7 @@ export async function openRouting(ctx, storageDomain, { mailbox, pairs, tokens, 
 
   const handover = createHandover({
     managed, produce, pairs, tokens, presence, changes,
-    sessionExists: (sessionId) => sessions.exists(sessionId),
+    rootOf: sessions.rootOf ?? (async (sessionId) => ((await sessions.exists(sessionId)) ? sessionId : undefined)),
   })
 
   // Not frozen: this is the composition C-WIRE wires from, not a service handed to another plugin

@@ -8,20 +8,85 @@
 import { foldSessionTitle } from '@deepseek-ai/dsh-session-title'
 import { SESSION_INFO, SOURCE, USER_SOURCES } from './constants.js'
 
+/** Whether a session header is a subagent's, with the parent it belongs to. */
+export const isSubagentHeader = (header) => header?.origin === SESSION_INFO.subagentOrigin && header.parentSession !== undefined
+
+/**
+ * Roots `storedRootOf` resolved from stored headers: subagent id → root id. Session ids are unique
+ * across a DSH (and the connector runs in one DSH), and a session's ancestry is header data that
+ * never changes, so one process-wide map never goes stale; only a walk that reached a real root is
+ * kept (a "parent gone" answer is not). It holds subagent ids only, at most one entry per subagent
+ * session a Hand over, Take back or session tool named. Not keyed by `ctx.sessions`: Cordis hands
+ * out a new proxy of a service on each read, so it is no stable key.
+ */
+const knownRoots = new Map()
+
 /**
  * The session the user sees for a session id: a subagent's session belongs to its parent
- * (header origin 'subagent', parentSession), up to the root. Reads attached sessions only: a
- * subagent calling the tool is attached, and so are its running ancestors; if a middle
+ * (header origin 'subagent', parentSession), up to the root. Synchronous: it follows attached
+ * sessions, and the roots `storedRootOf` already resolved, so a session the session tools judged
+ * on its stored root is routed to that same root even while a middle ancestor is cold (review of
+ * R-FIX-CUI: session access and permission routing must name one manager). Otherwise, if a middle
  * ancestor is cold (detached), the message is attributed to that ancestor (review L2).
  */
 export function rootSessionOf(ctx, sessionId) {
   let id = sessionId
   for (let depth = 0; depth < SESSION_INFO.maxSubagentDepth; depth++) {
+    if (knownRoots.has(id)) return knownRoots.get(id)
     const header = ctx.sessions.get(id)?.header
-    if (header?.origin !== SESSION_INFO.subagentOrigin || header.parentSession === undefined) return id
+    if (!isSubagentHeader(header)) return id
     id = header.parentSession
   }
   return id
+}
+
+/**
+ * The root of a session as `rootSessionOf` follows it, but over every session DSH holds, stopped
+ * ones included, so a stopped subagent's session is followed to its root too. Hand over and Take
+ * back act on this root (review UI-01): management is per root session (K1c), and a subagent's
+ * session must never get a manager of its own beside its root's. One header listing
+ * (sessionQuery.traceSession, on 0.2.1-rc.5 and 0.2.2-rc.1), no log is read; DSH refuses a cyclic
+ * ancestry. Fork lineage (a `parentSession` without the subagent origin) is not followed.
+ * @returns the root id, or undefined when `sessionId` is not a session of this DSH. A parent that
+ *   is gone ends the walk at the last session that exists.
+ * @throws (rejects) any read failure other than DSH's not-found: the ancestry is then unknown, and
+ *   taking the session for a root could split its ownership.
+ */
+export async function storedRootOf(ctx, sessionId) {
+  if (knownRoots.has(sessionId)) return knownRoots.get(sessionId)
+  let trace
+  try {
+    trace = await ctx.sessionQuery.traceSession(sessionId)
+  } catch (error) {
+    if (isNotFound(error)) return undefined
+    throw error
+  }
+  const chain = [sessionId]
+  let header = trace.target.header
+  // `ancestors` runs from the immediate parent outward and stops before a parent that is gone.
+  for (const ancestor of trace.ancestors) {
+    if (!isSubagentHeader(header)) break
+    header = ancestor.header
+    chain.push(header.id)
+  }
+  const root = chain.at(-1)
+  if (!isSubagentHeader(header)) for (const id of chain.slice(0, -1)) knownRoots.set(id, root)
+  return root
+}
+
+/**
+ * A session's header, live or stored, or undefined when DSH reports it not found (any other failure
+ * rejects). A live session's header is read directly, without copying its events.
+ */
+export async function headerOf(ctx, sessionId) {
+  const live = ctx.sessions.get(sessionId)
+  if (live !== undefined) return live.header
+  try {
+    return (await persistedEventsOf(ctx, sessionId)).header
+  } catch (error) {
+    if (isNotFound(error)) return undefined
+    throw error
+  }
 }
 
 /**

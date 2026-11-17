@@ -250,3 +250,18 @@ export const REVIEW_X = Object.freeze({
   t0: Date.UTC(2026, 10, 18),
   tickMs: 1,
 })
+
+/**
+ * R-FIX-CUI UI-01 rows (cui-cases.mjs; .runtime/reports/review-x-dsh-connector-ui.md UI-01):
+ * management is recorded per ROOT session; Hand over / Take back of a subagent child act on its
+ * root. Fixture data only: root R, its child C, C's child G, and O, a child whose parent is not a
+ * session of this DSH (its walk stops at O).
+ */
+export const CUI = Object.freeze({
+  id: 'RFC-UI01',
+  /** The user's rule the finding cites. */
+  rule: 'Agent不能回答不归自己管的会话，只能操作自己管的会话',
+  ids: Object.freeze({ a: 'cui-agent-a', b: 'cui-agent-b' }),
+  sessions: Object.freeze({ root: 'fbtest-cui-root', child: 'fbtest-cui-child', grandchild: 'fbtest-cui-grandchild', orphan: 'fbtest-cui-orphan', goneParent: 'fbtest-cui-gone-parent' }),
+  note: 'fbtest cui note',
+})

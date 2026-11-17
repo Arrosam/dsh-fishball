@@ -90,7 +90,14 @@ appears in the same list.
 The port of the approval page that browser clients sign in on. The default is **47615**. It binds
 the same host as DSH (and uses DSH's TLS when DSH has it). The page shows the listener's status. If
 the port is in use, the connector tries again every 30 seconds. Choose another port, or free this
-one.
+one. Port `0` lets the system choose a free port; an empty field is not saved.
+
+The page re-reads the pairing states and the listener's status about once a second while it is
+open. If they cannot be read, the page says so and offers **Retry**.
+
+A field is saved when you leave it or press Enter; Esc discards your change. If someone changes the
+same setting elsewhere while you are editing it, the page tells you and keeps your text. Leave the
+field or press Enter again to save it anyway, or press Esc to keep the other change.
 
 ### DSH name
 
