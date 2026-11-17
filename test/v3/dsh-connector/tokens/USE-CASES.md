@@ -125,3 +125,16 @@ error spans sit outside its `<label>`). Behaviour, routes, keys, hooks and roles
 | UIPD-SET-BUTTONS | EP (language), BVA (row index), ST | each row's Move up / Move down / Delete (上移 / 下移 / 删除) are icon-only, named by aria-label and title; single item: up and down disabled; first of 3: up disabled; middle: both enabled; last: down disabled; Delete always enabled; Move down on row 1 stages B, A, C, saves nothing |
 | UIPD-SET-DOTS | EP (pair state, listener status) | paired + connected → StateDot `done`; paired + offline → `idle`; unpaired → no dot; approval ok → a `role=status` line, StateDot, "Approval page: listening on port N"; port in use → a different dot; the status sits beside the port's `<label>`, not in it |
 | UIPD-SET-PRIMITIVES | UC / EP | text fields are DSH's Input (hooks on it); New token has a plus icon; Copy keeps its word, its icon turns to a check after a copy, "Copied"; the duplicate notice keeps `role=alert` with a warning icon first; a limit field's error (`role=alert`, invalid only) sits outside its `<label data-dsh-connector-setting>` |
+
+### R-FIX-CUI — scalar drafts, runtime state, number fields (../settings-page/cui-cases.mjs)
+
+From the requirements relayed for R-FIX-CUI (2026-11-18; `.runtime/reports/review-x-dsh-connector-ui.md`
+UI-03, UI-04, UI-05) and the dev session's answers of that day (the conflict alert's words, `request-failed`,
+Retry, the 1000 ms poll that skips while a read is pending and pauses while hidden). The page's host form
+holds the row's other settings and refuses a mutate whose expected revision is stale, as DSH fences it.
+
+| Id | Technique | Rows |
+|---|---|---|
+| RFC-UI03 | DT (same field changed × blur / Enter), ST | DSH name, approval port, a limit: a draft, then another editor saves the same field → blur / Enter sends nothing, the draft stays, a role=alert says "changed elsewhere"; a second blur / Enter saves the draft with the live revision, the alert goes; Escape discards it and shows the live value; Escape with no conflict discards; another field changed (revision bumps) → the draft saves with the live revision, both changes kept |
+| RFC-UI04 | ST, EP | the state refreshes with no config change (unpaired / port in use → paired / ok within 3 s); re-read while mounted, none after unmount; none while hidden, again once visible; first read pending → no pair line, no "Not paired"; a failed read (500 `{ok:false, operation-failed}`, fetch rejects, body not JSON) → no pair line, one alert "The connector's status could not be read (<code>)." with Retry; Retry re-reads and the alert goes; a held older read answering after a newer one (Retry / revision re-read) does not overwrite it |
+| RFC-UI05 | BVA, EP | approval.port: "" / "   " / "\t\n" / "-1" / "65536" / "abc" → "Enter a whole number.", aria-invalid, blur sends nothing, the field reverts; "0", "65535" save; a limit: "" / "  " refused, "1" saves; Enter on a cleared port sends nothing |

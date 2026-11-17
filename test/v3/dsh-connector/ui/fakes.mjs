@@ -17,11 +17,18 @@ const ref = ({ key, name, id }) => ({ key, name, id })
 /** A K3 HandoverPrincipal row of a fixture principal; `over` changes fields. */
 export const row = (p, over = {}) => ({ key: p.key, name: p.name, id: p.id, online: false, enabled: true, paired: true, ...over })
 
-/** K3 `DshConnectorHandover`. Drivers: `set({managed, principals})`, `fire()`, `script`. */
+/**
+ * K3 `DshConnectorHandover`. Drivers: `set({managed, principals})`, `fire()`, `script`, and
+ * (R-FIX-CUI, UI-01: handOver / takeBack act on the root of the session they are given) `parents`,
+ * a child → parent map: the default answers resolve the given id to its root first, as the real
+ * service does. A takeBack of an unmanaged root answers `not-managed`, and a handOver of a managed
+ * one `conflict` (K3), only when `parents` is used, so the older rows keep their answers.
+ */
 export class FakeHandover {
   apiVersion = 1
   #managed = []
   #principals = []
+  parents = new Map()
   listeners = new Set()
   calls = { handOver: [], takeBack: [] }
   /** The next answers: a result object, `{throws: Error}` (sync throw) or `{rejects: Error}`. */
@@ -49,10 +56,19 @@ export class FakeHandover {
     if (scripted !== undefined) return Promise.resolve(scripted)
     return Promise.resolve(fallback())
   }
+  /** The root of `sessionId` through `parents`. */
+  rootOf(sessionId) {
+    let root = sessionId
+    while (this.parents.has(root)) root = this.parents.get(root)
+    return root
+  }
+  #isManaged = (sessionId) => this.#managed.some((m) => m.sessionId === sessionId)
   handOver(...args) {
     this.calls.handOver.push(args)
     return this.#answer('handOver', () => {
-      const [sessionId, principalKey] = args
+      const [given, principalKey] = args
+      const sessionId = this.rootOf(given)
+      if (this.parents.size > 0 && this.#isManaged(sessionId)) return { ok: false, code: 'conflict' }
       const p = this.#principals.find((x) => x.key === principalKey)
       this.set({ managed: [...this.#managed, { sessionId, principal: p }] })
       return { ok: true, principal: ref(p) }
@@ -61,7 +77,9 @@ export class FakeHandover {
   takeBack(...args) {
     this.calls.takeBack.push(args)
     return this.#answer('takeBack', () => {
-      this.set({ managed: this.#managed.filter((m) => m.sessionId !== args[0]) })
+      const sessionId = this.rootOf(args[0])
+      if (this.parents.size > 0 && !this.#isManaged(sessionId)) return { ok: false, code: 'not-managed' }
+      this.set({ managed: this.#managed.filter((m) => m.sessionId !== sessionId) })
       return { ok: true }
     })
   }

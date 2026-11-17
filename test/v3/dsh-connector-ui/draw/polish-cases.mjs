@@ -33,14 +33,14 @@ const iconName = (element) => (typeof element?.type === 'function' ? String(elem
 const headerOf = (view) => byTag(view.tree(), POLISH.header)[0]
 
 /** Answers the page's queries for the sidebar fish with `rect()` (null: no fish on the page). */
-function scriptFish(page, rect) {
+export function scriptFish(page, rect) {
   const isFish = (selector) => POLISH.fishSelectors.some((hook) => String(selector).includes(hook))
   const element = () => ({ getBoundingClientRect: () => ({ ...rect() }) })
   page.document.querySelector = (selector) => (isFish(selector) && rect() !== null ? element() : null)
   page.document.querySelectorAll = (selector) => (isFish(selector) && rect() !== null ? [element()] : [])
 }
 /** The bubble's place and inline position. */
-const placeOf = (page) => { const n = noticeNode(page); return { place: attrOf(n, POLISH.placeAttr), style: { ...(n?.props.style ?? {}) } } }
+export const placeOf = (page) => { const n = noticeNode(page); return { place: attrOf(n, POLISH.placeAttr), style: { ...(n?.props.style ?? {}) } } }
 
 export function registerUDrawPolishCases(sdk) {
   // ---------------------------------------------------------------- the no-instance view

@@ -25,6 +25,7 @@ import { DECIDED, EXPECT, FIXTURE, K2, K3, SURFACE, WAIT } from './constants.mjs
 import { FakeCtx, captureRegister, requestOf, row as principalRow, sseReader } from './fakes.mjs'
 import { unitBackend } from './subject.mjs'
 import { contribWorld, routedBackend } from './world.mjs'
+import { registerCuiBackendCases } from './cui-cases.mjs'
 
 const T = { timeout: WAIT.testMs }
 const TR = { timeout: WAIT.routeTestMs }
@@ -64,7 +65,7 @@ const quiet = () => new Promise((resolve) => setTimeout(resolve, WAIT.quietMs))
  * The backend is provided on a FakeCtx and contributed to a capturing register before the case
  * sets any principal row, so it follows the hand-over service from the first change on.
  */
-async function unit(t, sdk, { contribute = true } = {}) {
+export async function unit(t, sdk, { contribute = true } = {}) {
   const u = await unitBackend(t, sdk)
   const ctx = new FakeCtx()
   u.backend.provide(ctx)
@@ -97,7 +98,7 @@ const callOf = () => ({ principal: FIXTURE.caller, protocolVersion: K2.TOOLS_API
 
 const ACCEPTED = Object.freeze({ ok: true, data: Object.freeze({ accepted: true }) })
 /** A JSON answer: status and the two headers every JSON answer has (relayed surface). */
-async function jsonAnswer(response, status) {
+export async function jsonAnswer(response, status) {
   assert.equal(response.status, status, 'status')
   assert.equal(response.headers.get('content-type'), SURFACE.headers.contentType)
   assert.equal(response.headers.get('cache-control'), SURFACE.headers.cacheControl)
@@ -144,6 +145,7 @@ export function registerCUiBackendCases(sdk) {
   transitions(sdk)
   contribution(sdk)
   routed(sdk)
+  registerCuiBackendCases(sdk)
 }
 
 function useCases(sdk) {

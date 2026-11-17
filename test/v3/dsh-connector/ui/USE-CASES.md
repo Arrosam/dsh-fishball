@@ -181,3 +181,14 @@ contributor package `dsh-connector-ui`, which only declares the tools), the **ha
 Rows 1–6: a principal connects (light green), disconnects (red), is renamed (name in targets and
 marks), is disabled (leaves targets), a new one pairs (joins targets), a hand over through the route
 marks the session and a take back clears it; the designated principal's disconnect resets the latch.
+
+## R-FIX-CUI (cui-cases.mjs)
+
+From the requirements relayed for R-FIX-CUI (2026-11-18; `.runtime/reports/review-x-dsh-connector-ui.md`
+UI-01, UI-02) and the dev session's port answer (routing `sessions.rootOf(id) → Promise<root | undefined>`;
+a read failure → 500 `operation-failed`). The routing world's FakeSessions holds R, its child C and C's child G.
+
+| Id | Technique | Rows |
+|---|---|---|
+| RFC-UI01 | DT (route × given id × root state), EP | POST handover of C, R unmanaged → 200, marks [R: B], no mark for C; of G with R managed by A → 409 `conflict`, marks unchanged; POST takeback of C, R managed → 200, no mark; R unmanaged → 409 `not-managed`; the session store unreadable → 500 `operation-failed` for both, marks unchanged |
+| RFC-UI02 | BVA (N = 1, 2, 2000), ST | a stream nobody reads; N changes → a reader that starts then gets ≤ 3 frames, the last the current snapshot (count N); stalled 2000 → draining → each later change one frame = snapshot; a draining reader sees each change in order; stalled 2000 then cancel / abort / close → the stream ends with ≤ 3 frames left; later changes do not throw |

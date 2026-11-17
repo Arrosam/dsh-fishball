@@ -178,3 +178,16 @@ Re-baselined by R-FIX-CONNECTOR (review F08, 2026-11-18): APR-05r "reject with n
 `risk-required`, but DESIGN.md §7a.3 (reject: "A non-empty reason") and docs/connector-contract.md
 ("reject needs a reason") ask only for a reason. It is now accepted with the rejection wording and
 settlement `rejected`; a reject with a missing, empty or whitespace reason stays `reason-required`.
+
+## R-FIX-CUI (cui-cases.mjs)
+
+UI-01 of `.runtime/reports/review-x-dsh-connector-ui.md` end to end ("Agent不能回答不归自己管的会话，只能操作自己管的会话"):
+a real subagent child C of root R (DSH's `subagent` tool, finished, so it resolves through its persisted header).
+
+| Id | Technique | Rows |
+|---|---|---|
+| RFC-UI01 ST ×2 | ST (service, UI route) | Hand over C to P → ok; managed() lists R only; one handover naming R; Take back C → ok; nothing managed; one takeback naming R |
+| RFC-UI01 DT ×2 | DT (service, UI route) | R managed by P; Hand over C to Q → `conflict`, R still P's; R taken back; Take back C → `not-managed` |
+| RFC-UI01 DT reads ×2 | DT | after Hand over from C: P reads C and R (ok); Q → `forbidden` on both |
+| RFC-UI01 DT routing | DT | after Hand over from C: a new child's permission request reaches P, never Q |
+| RFC-UI01 EP | EP | the UI routes for C: 200, 409 `conflict`, 200, 409 `not-managed` |
