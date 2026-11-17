@@ -48,6 +48,14 @@ window.__ModuleLoader__.load({
       // DSH's Tag tones: an open card sits in the approval card's warn band; a finished one is quiet.
       tone: Object.freeze({ open: 'warning', done: 'neutral' }),
       reasonRows: 2,
+      /**
+       * UI-FIX-F: the reason box's placeholder ink. DSH's own input placeholder token
+       * (`--dsw-alias-label-dimmed`) is 1.26:1 on the box's layer-3 fill in both themes, so the hint
+       * could not be read. The secondary label is 5.8:1 (light) and 8.0:1 (dark) there, past WCAG
+       * AA's 4.5:1; tertiary would be 3.7:1 in light. Typed text stays primary, so it still reads as
+       * a hint.
+       */
+      placeholderInk: '--dsw-alias-label-secondary',
     })
 
     const en = {
@@ -82,6 +90,8 @@ window.__ModuleLoader__.load({
     // An answered or closed card keeps only the band and the question, muted.
     const openCard = `[data-fishball-ask-state="${ASKS_UI.state.open}"]`
     const css = [
+      // The arguments wrap at spaces first and split a token only when it is longer than the line
+      // (`overflow-wrap:anywhere`, UI-FIX-F): `word-break:break-all` cut `--runInBand` mid-word at 390px.
       // The warn stroke is an overlay above the children, so the opaque band cannot paint over it.
       `.${ASKS_UI.css.card}{position:relative}`,
       `.${ASKS_UI.css.card}${openCard}::after{content:"";position:absolute;inset:0;border-radius:inherit;box-shadow:inset 0 0 0 1px var(--dsw-alias-state-warn-secondary);pointer-events:none}`,
@@ -96,11 +106,11 @@ window.__ModuleLoader__.load({
       `.${ASKS_UI.css.card}:not(${openCard}) .${ASKS_UI.css.question}{font:var(--dsw-font-xs-13);color:var(--dsw-alias-label-secondary)}`,
       `.${ASKS_UI.css.detail}{margin:0;color:var(--dsw-alias-label-secondary);white-space:pre-wrap}`,
       `.${ASKS_UI.css.label}{margin:0 0 4px;font:var(--dsw-font-xxs-strong-12);color:var(--dsw-alias-label-tertiary)}`,
-      `.${ASKS_UI.css.args}{margin:0;max-height:12em;overflow:auto;padding:8px 10px;border-radius:var(--dsw-radius-sm);background:var(--dsw-alias-bg-module-platform);font:var(--dsw-font-xxs-12);font-family:var(--ds-font-family-code, monospace);color:var(--dsw-alias-label-secondary);white-space:pre-wrap;word-break:break-all}`,
+      `.${ASKS_UI.css.args}{margin:0;max-height:12em;overflow:auto;padding:8px 10px;border-radius:var(--dsw-radius-sm);background:var(--dsw-alias-bg-module-platform);font:var(--dsw-font-xxs-12);font-family:var(--ds-font-family-code, monospace);color:var(--dsw-alias-label-secondary);white-space:pre-wrap;overflow-wrap:anywhere}`,
       `.${ASKS_UI.css.row}{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:8px}`,
       // The input look of DSH's settings fields (SettingsValueField, both SDKs).
       `.${ASKS_UI.css.reason}{width:100%;box-sizing:border-box;resize:vertical;padding:6px 10px;border:.5px solid var(--dsw-alias-border-l4);border-radius:var(--dsw-radius-md);background:var(--dsw-alias-bg-layer-3);color:var(--dsw-alias-label-primary);font:var(--dsw-font-xs-13)}`,
-      `.${ASKS_UI.css.reason}::placeholder{color:var(--dsw-alias-label-dimmed)}`,
+      `.${ASKS_UI.css.reason}::placeholder{color:var(${ASKS_UI.placeholderInk});opacity:1}`,
       `.${ASKS_UI.css.reason}:focus-visible{outline:var(--dsw-focus-ring-width) solid var(--dsw-focus-ring-color, var(--dsw-alias-state-business-primary));outline-offset:-1px}`,
       `.${ASKS_UI.css.error}{margin:0;color:var(--dsw-alias-state-error-primary)}`,
     ].join('')
