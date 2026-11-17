@@ -205,3 +205,48 @@ export const LATER = Object.freeze({
   wireRoutes: 'C-WIRE (the connector row: nothing but its listed routes is served; the service is a Cordis service of this process only)',
   wireToUser: 'C-WIRE (DSH approval binding: a retired or unmanaged offer is answered by the user in the session)',
 })
+
+/**
+ * R-FIX-CONNECTOR review rows (review-x-cases.mjs, findings F01, F04, F05, F08, F09 of
+ * .runtime/reports/review-x-dsh-connector.md). Product words are K1's (imported where used) or DSH's
+ * own, restated here as the installed SDKs spell them; the rest is fixture data.
+ */
+export const REVIEW_X = Object.freeze({
+  /** The session domain's composition entry (C-WIRE's), and the session-info module F09 names. */
+  domainEntry: path.join(REPO, 'packages', 'dsh-connector', 'src', 'wire', 'domain.js'),
+  domainFactory: 'createSessionDomain',
+  grantsEntry: path.join(REPO, 'packages', 'dsh-connector', 'src', 'domain', 'grants.js'),
+  grantsFactory: 'createGrants',
+  sessionInfoEntry: path.join(REPO, 'packages', 'dsh-connector', 'src', 'session-info.js'),
+  /** F09: the V2 helpers that go, and the shared ones that stay. */
+  removedExports: Object.freeze(['describeSession', 'lastSeqOf', 'readSessionMessages']),
+  keptExports: Object.freeze(['rootSessionOf', 'isSessionGone', 'titleOf', 'senderOf', 'textOfEvent']),
+  /** The storage domains a fault is injected into (the grants' and routing's managed table). */
+  grantsDomain: Object.freeze({ domain: 'dsh_connector_grants', table: 'grants' }),
+  managedDomain: Object.freeze({ domain: 'dsh_connector_routing', table: 'managed' }),
+  /** DSH's words: the approval waterfall, its outcomes, and the log facts a call's arguments come from. */
+  dsh: Object.freeze({
+    approvalWaterfall: 'approval/request',
+    outcome: Object.freeze({ allowed: 'allowed-once', rejected: 'rejected', cancelled: 'cancelled', unavailable: 'unavailable' }),
+    assistantEvent: 'assistant/message',
+    toolCallBlock: 'tool-call',
+    /** The DSH services the session port requires on its context (stubs: no session is ever attached). */
+    services: Object.freeze(['sessions', 'sessionController', 'agents', 'workspaceRegistry']),
+  }),
+  /** The session domain's live limits (only the argument excerpt is read on this path). */
+  readLimits: Object.freeze({ argumentExcerptBytes: 8192, maxMessageBytes: 65536, readSessionMessages: 12, readSessionBytes: 12288 }),
+  /** Fixture data. */
+  ids: Object.freeze({ a: 'agent-a', b: 'agent-b' }),
+  sessions: Object.freeze({ s: 'fbtest-rx-s', t: 'fbtest-rx-t' }),
+  shellTool: 'bash',
+  shellArgument: 'command',
+  command: (n) => `fbtest-rx-command-${n}`,
+  reason: 'Do not run',
+  allowReason: 'fbtest allow reason',
+  dshReason: 'fbtest rx permission',
+  grantMs: 3600 * 1000,
+  injected: 'fbtest rx injected storage failure',
+  /** The fake grants clock and its one-tick boundary (BVA of an end time). */
+  t0: Date.UTC(2026, 10, 18),
+  tickMs: 1,
+})

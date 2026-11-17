@@ -116,9 +116,11 @@ function routingDriver(routing) {
 /**
  * One C-ROUTE world for `t`: real storage and mailbox, fake ports, the routing module opened.
  * `hints` defaults to a recording HintSink; `port` builds the mailbox port C-ROUTE is given over
- * the real mailbox (default fakes.mjs mailboxPort; gatedMailboxPort for a slow commit). Cleaned up by `t`.
+ * the real mailbox (default fakes.mjs mailboxPort; gatedMailboxPort for a slow commit). `prepare(ctx)`
+ * runs on each storage context before any table opens (R-FIX-CONNECTOR review rows: a write seam, and
+ * the DSH services the session domain needs). Cleaned up by `t`.
  */
-export async function routeWorld(t, sdk, { hints = recordingHints(), port = mailboxPort } = {}) {
+export async function routeWorld(t, sdk, { hints = recordingHints(), port = mailboxPort, prepare = () => {} } = {}) {
   const [route, mail] = await Promise.all([
     moduleOf(sdk, SUBJECT.entry, [SUBJECT.open], 'C-ROUTE "Owns" packages/dsh-connector/src/routing/'),
     moduleOf(sdk, SUBJECT.mailboxEntry, [SUBJECT.mailboxOpen, SUBJECT.mailboxCreate], 'C-MAILBOX, merged in W2'),
@@ -131,6 +133,7 @@ export async function routeWorld(t, sdk, { hints = recordingHints(), port = mail
   let open
   const start = async () => {
     const { ctx, helpers } = await storageContext(sdk, root)
+    prepare(ctx)
     const tables = await mail[SUBJECT.mailboxOpen](ctx, helpers)
     // C-WIRE-2 (relayed 2026-11-17): the bound is the mailbox's own, read at each commit, as C-WIRE passes
     // `() => limits().maxQueuedInputs`; here the live FakeSettings value (unset = the K1 default).
@@ -144,10 +147,13 @@ export async function routeWorld(t, sdk, { hints = recordingHints(), port = mail
     assert.equal(typeof routing.router.recipientFor, 'function', 'router has no recipientFor() (K1 Router)')
     for (const m of MANAGED_STATE_METHODS) assert.equal(typeof routing.managed[m], 'function', `managed has no ${m}() (K1c ManagedState)`)
     assert.equal(routing.handover.apiVersion, HANDOVER.apiVersion, 'handover.apiVersion is not 1 (K3)')
-    return { ctx, tables, real, mailbox, routing, driver: routingDriver(routing) }
+    return { ctx, helpers, tables, real, mailbox, routing, driver: routingDriver(routing) }
   }
+  /** Run first at each stop, newest first: whatever a row built over this world's context closes before it. */
+  const closers = []
   const stop = async () => {
     if (open === undefined) return
+    for (const close of closers.splice(0).reverse()) await close()
     const { ctx, tables, routing } = open
     open = undefined
     await routing.close?.()
@@ -198,6 +204,11 @@ export async function routeWorld(t, sdk, { hints = recordingHints(), port = mail
     },
     /** A session of this DSH. */
     session: (id) => ports.sessions.add(id),
+    /** The storage context and the SDK's storage-domain helpers routing was opened on. */
+    get ctx() { return open.ctx },
+    get helpers() { return open.helpers },
+    /** `close()` runs before routing closes at the next stop (the row's own modules over `ctx`). */
+    beforeClose: (close) => { closers.push(close) },
   }
   return world
 }

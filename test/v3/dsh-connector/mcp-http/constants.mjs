@@ -155,3 +155,6 @@ export const LATER = Object.freeze({
   web: 'C-OAUTH-WEB (approval listener: its port and its two paths)',
   wire: 'C-WIRE (the connector row: every route mounted on DSH\'s listener, nothing else listening)',
 })
+
+/** R-FIX-CONNECTOR review rows (review-x-cases.mjs, finding F07): the row id. */
+export const REVIEW_X = Object.freeze({ id: 'RX-F07' })

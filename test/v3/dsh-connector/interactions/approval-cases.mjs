@@ -103,8 +103,12 @@ export function registerApprovalCases(sdk) {
     // Re-baselined by X-SEC X-02: K1's input schema no longer admits `ask` or `question` (q1 "Refuse it").
     ['decision ask (q1, X-02)', { decision: APPROVAL_DECISION.ask, risk: RISK.low, reason: FIXTURE.reason }, REFUSAL.invalidArguments],
     ['a question member (X-02)', { ...A.allow(), [RELAYED.questionMember]: FIXTURE.otherReason }, REFUSAL.invalidArguments],
-    ['reject with no risk', { decision: APPROVAL_DECISION.reject, reason: FIXTURE.reason }, REFUSAL.riskRequired],
+    // Re-baselined by R-FIX-CONNECTOR (review F08): a reject needs a reason only, no risk (DESIGN.md
+    // §7a.3; docs/connector-contract.md "reject needs a reason"), so `reject with no risk` is now an
+    // accepted row below; a reject without a reason is still refused.
     ['reject with reason \'\'', { decision: APPROVAL_DECISION.reject, risk: RISK.high, reason: '' }, REFUSAL.reasonRequired],
+    ['RX-F08 reject with no reason and no risk', { decision: APPROVAL_DECISION.reject }, REFUSAL.reasonRequired],
+    ['RX-F08 reject with reason whitespace and no risk', { decision: APPROVAL_DECISION.reject, reason: ' \n\t ' }, REFUSAL.reasonRequired],
   ]) {
     row(sdk, 'APR-05', `DT (${label})`, `→ ${code}; still listed and waiting; a later valid allow is accepted${label.includes('q1') ? ` (${DECISION_TEXT.q1}; X-SEC X-02)` : ''}`, async (t) => {
       const w = await w0()
@@ -133,19 +137,23 @@ export function registerApprovalCases(sdk) {
     assert.deepEqual(await answer(p, r, A.reject()), { ok: true, accepted: true })
     assert.equal((await decided(w, r.text)).outcome, IX.outcome.rejected)
   })
-  row(sdk, 'APR-05r / DIR-02', 'DT (reject + risk + reason)', 'accepted; the call is rejected; the agent\'s result is blocked with "The managing agent rejected this call: <reason>"; settlement {rejected, principal}', async (t) => {
-    const w = await w0()
-    const p = await principal(t, w)
-    const sid = await managed(w, p)
-    const r = await asked(w, p, sid)
-    const why = tok('why')
-    assert.deepEqual(await answer(p, r, A.reject(why)), { ok: true, accepted: true })
-    assert.equal((await decided(w, r.text)).outcome, IX.outcome.rejected)
-    const result = await resultOf(w, sid, r.id)
-    assert.equal(result.isError, true)
-    assert.ok(result.text.includes(RELAYED.rejected(why)), result.text)
-    assert.deepEqual((await settlement(p.client, r.d.approvalId)).payload, { approvalId: r.d.approvalId, outcome: SETTLEMENT_OUTCOME.rejected, by: SETTLED_BY.principal })
-  })
+  // A reject with a reason is accepted whatever its risk, and with none (F08 re-baseline above).
+  for (const [id, label, risked] of [['APR-05r / DIR-02', 'reject + risk + reason', true], ['APR-05r / RX-F08', 'reject + reason, no risk', false]]) {
+    row(sdk, id, `DT (${label})`, 'accepted; the call is rejected; the agent\'s result is blocked with "The managing agent rejected this call: <reason>"; settlement {rejected, principal}', async (t) => {
+      const w = await w0()
+      const p = await principal(t, w)
+      const sid = await managed(w, p)
+      const r = await asked(w, p, sid)
+      const why = tok('why')
+      const { risk, ...riskless } = A.reject(why)
+      assert.deepEqual(await answer(p, r, risked ? { ...riskless, risk } : riskless), { ok: true, accepted: true })
+      assert.equal((await decided(w, r.text)).outcome, IX.outcome.rejected)
+      const result = await resultOf(w, sid, r.id)
+      assert.equal(result.isError, true)
+      assert.ok(result.text.includes(RELAYED.rejected(why)), result.text)
+      assert.deepEqual((await settlement(p.client, r.d.approvalId)).payload, { approvalId: r.d.approvalId, outcome: SETTLEMENT_OUTCOME.rejected, by: SETTLED_BY.principal })
+    })
+  }
   row(sdk, 'DIR-01', 'EP (allow: the tool\'s own output)', 'an allowed call\'s result is the tool\'s own output, with nothing appended', async (t) => {
     const w = await w0()
     const p = await principal(t, w)

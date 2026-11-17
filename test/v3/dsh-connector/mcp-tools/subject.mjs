@@ -157,10 +157,11 @@ const readEvents = async () => ({ contents: [{ uri: RESOURCE.events.uri, mimeTyp
  * A C-TOOLS world for `t` on `sdk`: real pair store and mailbox over one storage context, the fake
  * ManagedState, the tripwire domain, C-HTTP's real gate and endpoint with C-TOOLS' populate, on
  * loopback. `overridePairs(store)` may wrap the real store (the F6 row's throwing `pair`); it is
- * handed `overridableStore(store)`, not the frozen store itself.
+ * handed `overridableStore(store)`, not the frozen store itself. `domain` replaces the tripwire with a
+ * fake domain port that follows mcp/tools/index.js's documented shape (R-FIX-CONNECTOR review rows).
  * Returns {pairs, mailbox, managed, domainCalls, clock, logger, full(id, name), pairOnly(id), connect(token)}.
  */
-export async function toolsWorld(t, sdk, { overridePairs } = {}) {
+export async function toolsWorld(t, sdk, { overridePairs, domain } = {}) {
   linkContractForSourceRun()
   resolveRuntimePackages()
   const [createTools, pairsMod, mailboxMod, httpMod] = await Promise.all([
@@ -178,7 +179,7 @@ export async function toolsWorld(t, sdk, { overridePairs } = {}) {
   const managed = new FakeManaged()
   const domainCalls = []
   const pairs = overridePairs ? overridePairs(overridableStore(opened.store)) : opened.store
-  const made = createTools({ pairs, mailbox, managed, domain: tripwire(domainCalls), now: clock.now, logger })
+  const made = createTools({ pairs, mailbox, managed, domain: domain ?? tripwire(domainCalls), now: clock.now, logger })
   const populate = typeof made === 'function' ? made : made?.populate
   assert.equal(typeof populate, 'function', 'the C-TOOLS factory returned no populate(server, caller)')
   domainCalls.length = 0

@@ -249,6 +249,8 @@ export async function httpWorld(t, sdk, facts = {}, { failures = new FakeFailure
 
   const world = {
     port, gate, verifier, failures, tokens, pairs, hints: route.hints, logger, clock, facts: listenerFacts,
+    /** K1 `Presence` of the route (R-FIX-CONNECTOR F07: a revoked principal is not connected). */
+    presence: route.presence,
     /** The Host of a request to this listener under its loopback name, and its origin. */
     host: `${FIXTURE.loopback}:${port}`,
     get origin() { return `${HOSTS.loopbackScheme}//${world.host}` },
