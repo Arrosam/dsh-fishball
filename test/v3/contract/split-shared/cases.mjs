@@ -299,10 +299,10 @@ export function registerSplitCases(sdk) {
       assert.deepEqual(surface(await load(sdk, dshFile(module))), surface(await baseModule(sdk, module)))
     })
   }
-  caseTest(sdk, 'SPLIT-EP-04', 'redact', 'redact masks exactly as before on every sample (bearer, assignments, long runs at 31/32/33, paths, empty)', async (t) => {
+  // R-FIX-REDACT changed redaction on purpose, so this row's oracle is the requirements, no longer BASE.
+  caseTest(sdk, 'SPLIT-EP-04', 'redact', 'redact masks every sample as the requirements say (Authorization, assignments, JSON, long runs at 31/32/33, paths, empty)', async (t) => {
     const now = (await load(sdk, libraryFile(V3.dshShared, REDACT))).redact
-    const before = (await baseModule(sdk, REDACT)).redact
-    for (const text of REDACT_SAMPLES) assert.equal(now(text), before(text), show(text))
+    for (const [text, expected] of REDACT_SAMPLES) assert.equal(now(text), expected, show(text))
     assert.equal(now(LONG_RUN.below), LONG_RUN.below, 'a 31-character run is masked')
     assert.notEqual(now(LONG_RUN.at), LONG_RUN.at, 'a 32-character run is not masked')
   })
