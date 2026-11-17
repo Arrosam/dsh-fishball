@@ -38,8 +38,7 @@ import { randomUUID } from 'node:crypto'
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
 import { freezeMessage } from '@deepseek-ai/dsh-llm'
 import { defineTool } from '@deepseek-ai/dsh-tools'
-import { HOST } from '../events/constants.js'
-import { REDELIVER, claimVerdict, createOwnRemovals, whenTrulyIdle } from '../events/handover.js'
+import { createHandover } from '../events/handover.js'
 import { TOOL } from './reminder-tools.js'
 import {
   advance,
@@ -75,6 +74,9 @@ const MESSAGE = Object.freeze({
   full: 'The reminder store is full. Delete reminders that are no longer needed, then try again.',
   toolFailed: 'The schedule operation failed.',
   subagent: 'A delegated subagent cannot use scheduled tasks.',
+  // Log-only (a delivery's failure code is the error's name).
+  noOwner: 'no activation owner is configured',
+  noAgent: 'no live Agent owns the reminder target',
   toolSelector: 'the tool selector is malformed.',
   id: 'the reminder id must be a non-empty trimmed string.',
   createSelector: 'schedule_create accepts exactly one of after_seconds, at, every_seconds, daily, weekly, or cron.',
@@ -104,6 +106,7 @@ const STORE = Object.freeze({
   // The largest store a load reads; a write that would exceed it is refused (R-FIX F07).
   maxBytes: 4_194_304,
   encoding: 'utf8',
+  missingFile: 'ENOENT',
 })
 
 /** Node timers clamp above this; a longer wait is re-armed when the timer fires. */
@@ -134,6 +137,8 @@ const LOG = Object.freeze({
   notDelivered: 'reminder %s was not delivered (%s)',
   settleFailed: 'reminder %s: its delivery could not be recorded (%s)',
   handOverFailed: 'reminder %s could not be handed to its agent (%s)',
+  malformed: '%d stored reminder(s) were ignored as malformed',
+  dispatchStopped: 'the reminder dispatch stopped (%s)',
 })
 
 /** Fields a reminder view keeps; target ids and Host bookkeeping never leave this module. */
@@ -379,7 +384,7 @@ export function createReminders(ctx, options = {}) {
   const directory = path.join(profile.home, STORE.directory)
   const file = path.join(directory, STORE.file)
   let tasks = []
-  let storeError
+  let storeClosed = false
   let closed = false
   let timer
   let chain = Promise.resolve()
@@ -387,13 +392,12 @@ export function createReminders(ctx, options = {}) {
   let requested = false
   let failed = new Set()
   // Delivery in this process (module header): message id → reminder id of each occurrence handed
-  // over and not settled; message id → the agent whose turn claimed it; the agents followed; and
-  // the occurrences whose settlement could not be written, never handed over again in this process.
+  // over and not settled; the occurrences handed over again after an owner teardown; and those
+  // not to be handed over again in this process (their settlement could not be written, or a
+  // second teardown), which wait for the next start.
   const handed = new Map()
-  const claimed = new Map()
-  const watched = new WeakSet()
+  const redelivered = new Set()
   const unsettled = new Set()
-  const ownRemovals = createOwnRemovals()
 
   const ready = load()
 
@@ -406,7 +410,7 @@ export function createReminders(ctx, options = {}) {
 
   /**
    * Reads the store. A missing file is an empty store. A store that exists but cannot be read
-   * whole (unreadable, too large, not JSON, another shape) closes the store (`storeError`): the
+   * whole (unreadable, too large, not JSON, another shape) closes the store (`storeClosed`): the
    * tools answer `schedule-unavailable` and nothing is written over it, so no acknowledged reminder
    * is lost by a later write (R-FIX F07). Ended reminders of an older store are dropped.
    */
@@ -415,17 +419,17 @@ export function createReminders(ctx, options = {}) {
     try {
       raw = await readFile(file, STORE.encoding)
     } catch (error) {
-      if (error?.code !== 'ENOENT') closeStore(error, LOG.unreadable, codeOf(error))
+      if (error?.code !== STORE.missingFile) closeStore(LOG.unreadable, codeOf(error))
       return
     }
-    if (Buffer.byteLength(raw, STORE.encoding) > STORE.maxBytes) return closeStore(ERROR.unavailable, LOG.tooLarge)
+    if (Buffer.byteLength(raw, STORE.encoding) > STORE.maxBytes) return closeStore(LOG.tooLarge)
     let parsed
     try {
       parsed = JSON.parse(raw)
     } catch {
-      return closeStore(ERROR.unavailable, LOG.notJson)
+      return closeStore(LOG.notJson)
     }
-    if (!isRecord(parsed) || parsed.version !== STORE.version || !Array.isArray(parsed.tasks)) return closeStore(ERROR.unavailable, LOG.badShape)
+    if (!isRecord(parsed) || parsed.version !== STORE.version || !Array.isArray(parsed.tasks)) return closeStore(LOG.badShape)
     const loaded = []
     let ignored = 0
     let ended = 0
@@ -435,13 +439,14 @@ export function createReminders(ctx, options = {}) {
       else if (task.status === TASK_STATUS.ended) ended += 1
       else loaded.push(task)
     }
-    if (ignored > 0) logger?.warn('%d stored reminder(s) were ignored as malformed', ignored)
+    if (ignored > 0) logger?.warn(LOG.malformed, ignored)
     if (ended > 0) logger?.info?.(LOG.ended, ended)
     tasks = loaded
   }
 
-  function closeStore(reason, line, ...values) {
-    storeError = reason
+  /** The store cannot be read whole: it stays closed (`storeClosed`) and untouched in this process. */
+  function closeStore(line, ...values) {
+    storeClosed = true
     logger?.warn(line, ...values)
   }
 
@@ -457,7 +462,7 @@ export function createReminders(ctx, options = {}) {
    * is never written, and a store that would outgrow what a load reads is refused before writing.
    */
   async function commit(next) {
-    if (storeError !== undefined) unavailable()
+    if (storeClosed) unavailable()
     const text = JSON.stringify({ version: STORE.version, tasks: next }) + '\n'
     if (Buffer.byteLength(text, STORE.encoding) > STORE.maxBytes) throw new ReminderStoreError(ERROR.full, MESSAGE.full)
     await persist(text)
@@ -466,7 +471,7 @@ export function createReminders(ctx, options = {}) {
 
   async function requireStore() {
     await ready
-    if (storeError !== undefined) unavailable()
+    if (storeClosed) unavailable()
   }
 
   async function createTask({ sessionId, title, prompt, timing, now }) {
@@ -550,55 +555,44 @@ export function createReminders(ctx, options = {}) {
   }
 
   /**
-   * Hands one pending occurrence to its agent as its own turn, under true-idle maintenance (a copy
-   * an earlier process left pending is removed first, so one id is pending once). An agent that is
-   * not idle refuses; the next idle edge drives again. A refusal of the activation throws.
+   * The live half of the hand-over (events/handover.js, shared with the event delivery): an
+   * admission settles the occurrence as delivered; a Stop of its claiming turn, or any removal of
+   * the queued message but core's own, drops it; owner teardown of the claiming turn hands it over
+   * again, once per occurrence in this process (a second teardown leaves it pending for the next
+   * start, so a host that keeps tearing the turn down cannot make it loop).
+   */
+  const handover = createHandover({
+    isMine: (messageId) => handed.has(messageId),
+    admitted: (messageId) => settle(messageId, true),
+    dropped: (messageId) => settle(messageId, false),
+    redeliver(messageId) {
+      handed.delete(messageId)
+      if (redelivered.has(messageId)) unsettled.add(messageId)
+      else redelivered.add(messageId)
+      requestDrive()
+    },
+    idle: () => requestDrive(),
+    closed: () => closed,
+  })
+
+  /**
+   * Hands one pending occurrence to its agent as its own turn (`handover.handOver`: true idle, a
+   * stale copy removed first). An agent that is not idle refuses; its next idle edge drives again.
+   * A refusal of the activation throws.
    */
   async function handOver(task) {
-    if (typeof resolveAgent !== 'function') throw new Error('no activation owner is configured')
+    if (typeof resolveAgent !== 'function') throw new Error(MESSAGE.noOwner)
     const agent = await resolveAgent(task.sessionId, async () => undefined)
-    if (agent === undefined) throw new Error('no live Agent owns the reminder target')
+    if (agent === undefined) throw new Error(MESSAGE.noAgent)
     if (closed) return
-    watch(agent)
     const message = messageOf(task)
-    const job = whenTrulyIdle(agent, async () => { ownRemovals.remove(agent, message.id); agent.followup(message) }, () => requestDrive())
+    const job = handover.handOver(agent, message)
     if (job === undefined) return
     handed.set(message.id, task.record.id)
     job.catch((error) => {
       logger?.warn(LOG.handOverFailed, task.record.id, codeOf(error))
       if (handed.delete(message.id)) requestDrive()
     })
-  }
-
-  /**
-   * Follows one agent's public live events, as the event delivery does: a claim of a handed-over
-   * message, its removal before admission, its admission and the claiming turn's end, and idle.
-   */
-  function watch(agent) {
-    if (watched.has(agent)) return
-    watched.add(agent)
-    const mine = (payload) => !closed && payload.agent === agent && handed.has(payload.message?.id)
-    agent.ctx.on(HOST.inboxClaimed, (payload) => { if (mine(payload)) claimed.set(payload.message.id, agent) })
-    // Any removal but core's own counts as the user's: a Stop clears the queued message.
-    agent.ctx.on(HOST.inboxDiscarded, (payload) => { if (mine(payload) && !ownRemovals.isOwn(payload.message.id)) settle(payload.message.id, false) })
-    agent.ctx.on(HOST.sessionEvent, (session, event) => { if (!closed && session === agent.session) observe(agent, event) })
-    agent.ctx.on(HOST.agentStatus, ({ status }) => { if (status === HOST.idle) requestDrive() })
-  }
-
-  function observe(agent, event) {
-    const messageId = event.data?.id
-    if (event.type === HOST.userMessage && handed.has(messageId)) return settle(messageId, true)
-    if (event.type !== HOST.turnEnd) return undefined
-    const verdict = claimVerdict(event.data?.reason)
-    for (const [claimedId, owner] of [...claimed]) {
-      if (owner !== agent) continue
-      if (verdict !== REDELIVER) { settle(claimedId, false); continue }
-      // Owner teardown: the occurrence stays pending and is handed over again.
-      claimed.delete(claimedId)
-      handed.delete(claimedId)
-      requestDrive()
-    }
-    return undefined
   }
 
   /**
@@ -609,7 +603,6 @@ export function createReminders(ctx, options = {}) {
   function settle(messageId, delivered) {
     const reminderId = handed.get(messageId)
     handed.delete(messageId)
-    claimed.delete(messageId)
     void mutate(async () => {
       if (closed) return
       const index = tasks.findIndex((task) => task.record.id === reminderId && task.pending?.messageId === messageId)
@@ -700,7 +693,7 @@ export function createReminders(ctx, options = {}) {
           await mutate(deliverDue)
         }
       } catch (error) {
-        logger?.warn('the reminder dispatch stopped (%s)', codeOf(error))
+        logger?.warn(LOG.dispatchStopped, codeOf(error))
       } finally {
         driving = false
         scheduleNext()

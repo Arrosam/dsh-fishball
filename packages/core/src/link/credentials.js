@@ -242,6 +242,9 @@ export function createLinkCredentials(ctx, { target, clientId, clientMetadataUrl
    * process made meanwhile wins.
    */
   async function originOfReference(ref, origin) {
+    // A plain read first: a bound value (every retry) takes no lock and needs no writable store.
+    const bound = boundOrigin(await ctx.credentials.readRecord(PENDING.key), ref)
+    if (bound !== undefined) return bound
     const record = await ctx.credentials.modifyRecord(PENDING.key, async (current) => (boundOrigin(current, ref) === undefined ? bindingRecord(ref, origin) : undefined))
     return boundOrigin(record, ref)
   }

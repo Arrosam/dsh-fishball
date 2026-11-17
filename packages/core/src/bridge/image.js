@@ -20,6 +20,7 @@ export const IMAGE = Object.freeze({
   mediaTypes: Object.freeze(['image/png', 'image/jpeg', 'image/webp', 'image/gif']),
   /** Contract §4.4 `LIMITS.imageBytes`: 4 MiB. */
   maxBytes: 4 * 1024 * 1024,
+  bytesPerMib: 1024 * 1024,
   /** Canonical padded base64 (dsh-mcp-client's own test, both SDKs). */
   canonicalBase64: /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/,
   encoding: 'base64',
@@ -38,7 +39,7 @@ export const IMAGE_PROBLEM = Object.freeze({
   mediaType: 'its media type is not PNG, JPEG, WebP or GIF',
   base64: 'a chunk is not canonical base64',
   size: 'its decoded size does not match its total',
-  tooLarge: 'it is larger than 4 MiB',
+  tooLarge: `it is larger than ${IMAGE.maxBytes / IMAGE.bytesPerMib} MiB`,
   digest: 'its SHA-256 does not match its bytes',
   noStore: 'this DSH has no attachment store',
   store: 'the attachment store refused it',
@@ -51,11 +52,9 @@ const TEXT = Object.freeze({
 class ImageProblem extends Error {}
 const problem = (reason) => { throw new ImageProblem(reason) }
 
-const isRecord = (value) => typeof value === 'object' && value !== null && !Array.isArray(value)
-
 /** The checked image bytes of an `attachment_read` result (the module header's rules). */
 function bytesOf(result) {
-  if (!isRecord(result) || !Array.isArray(result.chunks) || !Number.isSafeInteger(result.total) || typeof result.sha256 !== 'string') problem(IMAGE_PROBLEM.shape)
+  if (result === null || typeof result !== 'object' || !Array.isArray(result.chunks) || !Number.isSafeInteger(result.total) || typeof result.sha256 !== 'string') problem(IMAGE_PROBLEM.shape)
   if (!IMAGE.mediaTypes.includes(result.mediaType)) problem(IMAGE_PROBLEM.mediaType)
   if (result.total > IMAGE.maxBytes) problem(IMAGE_PROBLEM.tooLarge)
   const parts = result.chunks.map((chunk) => {
