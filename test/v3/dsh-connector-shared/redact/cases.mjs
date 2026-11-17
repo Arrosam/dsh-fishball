@@ -9,7 +9,8 @@
  */
 import assert from 'node:assert/strict'
 import { caseTest } from '../../contract/package-boundaries/cases.mjs'
-import { REDACT_ROWS } from './constants.mjs'
+import { performance } from 'node:perf_hooks'
+import { PERF, REDACT_ROWS } from './constants.mjs'
 
 const subject = async () => (await import('dsh-connector-shared/redact')).redact
 const show = (v) => JSON.stringify(v)
@@ -25,6 +26,15 @@ export function assertRedactRow(redact, { input, expected, secrets }) {
 export function registerRedactCases(sdk) {
   for (const r of REDACT_ROWS) caseTest(sdk, r.id, r.part, r.title, async () => assertRedactRow(await subject(), r))
 
+  for (const r of PERF.rows) caseTest(sdk, r.id, r.part, `${r.title}: under ${PERF.budgetMs} ms`, async () => {
+    const redact = await subject()
+    const started = performance.now()
+    const got = redact(r.input)
+    const ms = performance.now() - started
+    assert.ok(ms < PERF.budgetMs, `${Math.round(ms)} ms`)
+    assert.equal(got, r.expected)
+    for (const secret of r.secrets) assert.equal(got.includes(secret), false, `${show(secret)} survives`)
+  })
   caseTest(sdk, 'RED-ST-01', 'stateless', 'a call never changes the next one (masked → plain → masked → plain)', async () => {
     const redact = await subject()
     const masked = REDACT_ROWS.find((r) => r.expected !== r.input)
