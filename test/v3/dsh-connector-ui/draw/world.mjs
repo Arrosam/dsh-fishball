@@ -422,11 +422,16 @@ export async function openPage(t, world, { host = PAGE_HOST.loopback, failServic
     live: () => registrations.filter((r) => !r.disposed),
     entries,
     settle: settleAll,
-    /** Mount every entry of `slot` with `props` in one root; returns `{tree(), unmount()}`. */
+    /**
+     * Mount every entry of `slot` with `props` in one root; returns `{tree(), unmount()}`. `slot` may be
+     * a list of slots (UI-FIX-D: DSH draws the session header's actions and utilities seats in one
+     * header, so a case reads both as one header); their entries mount in that order.
+     */
     async mount(slot, props = {}, pick = () => true) {
       const key = 'fbtest-' + ++mounted
-      const scopeKey = SLOT.sessionScoped.includes(slot) ? props.sessionId : undefined
-      shim.mount(key, () => React.createElement(React.Fragment, null, entries(slot).filter(pick).map((entry, i) => React.createElement(entry.Component, { key: String(i), ...injectedProps(entry, scopeKey), ...props }))))
+      const slots = Array.isArray(slot) ? slot : [slot]
+      const seated = slots.flatMap((name) => entries(name).filter(pick).map((entry) => ({ entry, scopeKey: SLOT.sessionScoped.includes(name) ? props.sessionId : undefined })))
+      shim.mount(key, () => React.createElement(React.Fragment, null, seated.map(({ entry, scopeKey }, i) => React.createElement(entry.Component, { key: String(i), ...injectedProps(entry, scopeKey), ...props }))))
       await settleAll()
       return { tree: () => shim.treeOf(key), unmount: async () => { shim.unmountRoot(key); await settleAll() } }
     },
