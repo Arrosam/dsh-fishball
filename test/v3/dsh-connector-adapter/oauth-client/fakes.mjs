@@ -36,9 +36,9 @@ const sendJson = (res, status, body, headers = {}) => {
   res.writeHead(status, { 'content-type': WEB.json, ...headers })
   res.end(JSON.stringify(body))
 }
-const rpcResult = (id, result) => ({ jsonrpc: RPC.jsonrpc, id, result: { resultType: RPC.resultComplete, ...result } })
+export const rpcResult = (id, result) => ({ jsonrpc: RPC.jsonrpc, id, result: { resultType: RPC.resultComplete, ...result } })
 const rpcError = (id, code, message) => ({ jsonrpc: RPC.jsonrpc, id, error: { code, message } })
-const sseFrame = (message) => `event: message\ndata: ${JSON.stringify(message)}\n\n`
+export const sseFrame = (message) => `event: message\ndata: ${JSON.stringify(message)}\n\n`
 const listenOn = (server, port = 0) => new Promise((resolve, reject) => {
   server.once('error', reject)
   server.listen(port, FIXTURE.loopback, () => { server.off('error', reject); resolve(server.address().port) })
@@ -75,6 +75,13 @@ export const toolText = (agentId) => 'fbtest pair id=' + agentId
  *   answers that request 401 (the S4 race is sequenced through it);
  * - `tokenRedirect`: a URL; every token request is answered 307 to it (X-SEC X-05);
  * - `asOverride`: members merged over the AS metadata (`undefined` removes one): X-06, X-13.
+ * - `tokenError.times`: how many token requests of that grant the error answers (default 1, once);
+ *   `Infinity` makes it standing (review F4: repeated transient failures);
+ * - `tokenDrop`: the next this many token requests are recorded, then their socket is destroyed (a
+ *   network failure, review F4);
+ * - `mcpReply(record, res)`: an async hook run after the access token was accepted; resolving `true`
+ *   means it answered the request itself (review F2/F5/F6/F8: redirects, gateway statuses, streams,
+ *   response headers).
  */
 export async function startFakeConnector({ issueRefresh = true } = {}) {
   const requests = []
@@ -114,6 +121,10 @@ export async function startFakeConnector({ issueRefresh = true } = {}) {
 
   function tokenEndpoint(req, res, body) {
     if (script.tokenStall) return undefined
+    if (script.tokenDrop > 0) {
+      script.tokenDrop -= 1
+      return req.socket.destroy()
+    }
     if (script.tokenRedirect !== undefined) {
       res.writeHead(WEB.temporaryRedirect, { [WEB.location]: script.tokenRedirect })
       return res.end()
@@ -122,8 +133,8 @@ export async function startFakeConnector({ issueRefresh = true } = {}) {
     const grant = form.get(OAUTH.grantType)
     const fail = (error, status = K1.OAUTH_ERROR_STATUS[error] ?? WEB.badRequest) => sendJson(res, status, K1.oauthErrorBody(error), K1.TOKEN_RESPONSE_HEADERS)
     if (script.tokenError?.grant === grant) {
-      const { error, status } = script.tokenError
-      script.tokenError = undefined
+      const { error, status, times = 1 } = script.tokenError
+      script.tokenError = times > 1 ? { ...script.tokenError, times: times - 1 } : undefined
       return fail(error, status)
     }
     if (form.has(OAUTH.clientSecret) || req.headers.authorization) return fail(K1.OAUTH_ERROR.invalidClient)
@@ -173,6 +184,7 @@ export async function startFakeConnector({ issueRefresh = true } = {}) {
     if (forced || script.rejectAllAccess || held === undefined || !held.chain.live || !entry.enabled) {
       return sendJson(res, WEB.unauthorized, {}, { [WEB.wwwAuthenticate]: token ? K1.invalidTokenChallenge(origin) : K1.bearerChallenge(origin) })
     }
+    if (script.mcpReply !== undefined && await script.mcpReply(record, res)) return undefined
     let message
     try { message = JSON.parse(body.toString('utf8')) } catch { return sendJson(res, WEB.badRequest, rpcError(null, RPC.parseError, 'parse error')) }
     if (message.id === undefined) { res.writeHead(WEB.accepted); return res.end() }

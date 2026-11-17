@@ -27,7 +27,7 @@ const PAIR = 'pair'
 // ------------------------------------------------------------------ shared steps
 
 /** Signs `m` in end to end: approval-url, owner approves, authorized, child mounted. Returns the URL result. */
-async function signedIn(w, n = w.n, server = M) {
+export async function signedIn(w, n = w.n, server = M) {
   const r = await n.signIn(server)
   assert.equal(r.status, RESULT.approvalUrl, 'sign-in did not return approval-url: ' + JSON.stringify(r))
   await browser.approve(w.c, r.url)
@@ -36,17 +36,17 @@ async function signedIn(w, n = w.n, server = M) {
   return r
 }
 /** A world already signed in, with the first grant's expiry E. */
-async function authorizedWorld(t, sdk, options) {
+export async function authorizedWorld(t, sdk, options) {
   const w = await adapterWorld(t, sdk, options)
   await signedIn(w)
   const grant = (await w.n.record(M)).payload
   return { w, grant, E: grant.tokens.expiresAt }
 }
 /** The stored access token of `m`. */
-const storedToken = async (n, server = M) => (await n.record(server))?.payload?.tokens?.access_token
+export const storedToken = async (n, server = M) => (await n.record(server))?.payload?.tokens?.access_token
 
 /** One raw HTTP request to the proxy (no client library), recording status and body. */
-function proxyRequest(proxyUrl, { method = WEB.post, headers = {}, body, chunked = false } = {}) {
+export function proxyRequest(proxyUrl, { method = WEB.post, headers = {}, body, chunked = false } = {}) {
   return new Promise((resolve, reject) => {
     const u = new URL(proxyUrl)
     const req = http.request({ host: u.hostname, port: u.port, path: u.pathname, method, headers }, (res) => {
@@ -62,9 +62,11 @@ function proxyRequest(proxyUrl, { method = WEB.post, headers = {}, body, chunked
   })
 }
 /** The upstream requests C received for one tools/call id (the proxy forwarding it). */
-const forwardedOf = (c, id) => c.mcpRequests().filter((r) => r.body.includes(`"id":${id}`))
+/** Whether an upstream request record carries the JSON-RPC id `id`. */
+export const carriesId = (r, id) => r.body.includes(`"id":${id}`)
+export const forwardedOf = (c, id) => c.mcpRequests().filter((r) => carriesId(r, id))
 let rawId = ROWS.rawId
-const nextId = () => ++rawId
+export const nextId = () => ++rawId
 
 /** The parameters of an approval URL. */
 const paramsOf = (url) => new URL(url).searchParams
@@ -1118,7 +1120,7 @@ async function expectNotDsh(w, server) {
 }
 
 /** A raw `subscriptions/listen` POST through the proxy with the child's bearer; the SSE text accumulates. */
-function openListen(proxy) {
+export function openListen(proxy) {
   return new Promise((resolve, reject) => {
     const u = new URL(proxy.url)
     let text = ''

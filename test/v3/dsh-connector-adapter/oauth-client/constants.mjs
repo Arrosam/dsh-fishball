@@ -220,3 +220,14 @@ export const WAIT = Object.freeze({
   pollMs: 20,
   settleMs: 40,
 })
+
+/**
+ * Review-fix rows (R-FIX-ADAPTER; review-x-dsh-connector-adapter.md findings F1–F8). Fixture data:
+ * a grant bound to another upstream under the same key (F1), the case-id prefix of the new rows.
+ */
+export const REVIEW_FIX = Object.freeze({
+  libraryId: (finding) => 'OAC-FIX-' + finding,
+  adapterId: (finding) => 'ADP-FIX-' + finding,
+  /** Another connector's server URL, written over the record of this key (F1); never contacted. */
+  foreignUpstream: 'https://foreign.example/api/agent/mcp',
+})
