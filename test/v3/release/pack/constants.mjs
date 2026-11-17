@@ -204,6 +204,100 @@ export const SETS = Object.freeze({
 })
 
 /**
+ * E-FIX-2 (bug B2): INSTALL.md's documented offline install, run as written. A set's offline block
+ * is the fenced block holding a `dsh plugin … add` line whose .tgz arguments are exactly the set's
+ * tarballs, in order; its online command is an add line naming the set's packages at VERSION, in order.
+ * Each set's `other` is a second plugin with no third-party dependency: a "used" profile gets it first
+ * from another store, and on a fresh profile it is the later install after the release folder is
+ * deleted. fishball-board (the bug report's example), or dsh-connector-shared for the standalone set,
+ * which holds fishball-board itself (so "the earlier plugin stays" is not trivially true).
+ */
+export const OFFLINE = Object.freeze({
+  sets: Object.freeze([
+    Object.freeze({ key: 'hosted', pkgs: SETS.hosted, other: PACKAGES.board }),
+    Object.freeze({ key: 'standalone', pkgs: Object.freeze([PACKAGES.ui, PACKAGES.board, PACKAGES.core]), other: PACKAGES.dshShared }),
+    Object.freeze({ key: 'adapter', pkgs: Object.freeze([PACKAGES.adapter]), other: PACKAGES.board }),
+  ]),
+  /** Profile states (decision table): never given a plugin, or given the set's `other` from another store first. */
+  states: Object.freeze({ fresh: 'fresh', used: 'used' }),
+  /** The doc says bash or zsh; `-e` stops at a failed line, so every line of the block must succeed. */
+  shell: '/bin/bash',
+  shellArgs: Object.freeze(['-e', '-c']),
+  /** The block calls `dsh` from PATH: a folder of the scratch dir holding a link to the SDK's CLI. */
+  binDir: 'bin',
+  cliName: 'dsh',
+  otherStoreDir: 'other-store',
+  /** The later install's tarball is copied here, out of the release folder, before that folder is deleted. */
+  laterDir: 'later',
+  /** "No registry": the block's add line carries pnpm's offline flag. */
+  offlineFlag: '--offline',
+  /** Idempotence: the block run this many times in a row. */
+  runs: 2,
+  modulesYaml: Object.freeze([TARBALL.nodeModules, '.modules.yaml']),
+  storeDirKey: 'storeDir',
+  yaml: 'yaml',
+  storePathArgs: (profile) => ['plugin', '--profile', profile, 'store', 'path'],
+  /** "Used" profile set-up, from the bug report: `add <tarball> --offline --store-dir=<another temp store>`. */
+  otherArgs: (profile, tarball, store) => ['plugin', '--profile', profile, 'add', tarball, '--offline', '--store-dir=' + store],
+  /** A later install with no --store-dir (it must not need the deleted release folder's store). */
+  laterArgs: (profile, tarball) => ['plugin', '--profile', profile, 'add', tarball, '--offline'],
+})
+
+/** Escape a literal for a RegExp. */
+const literal = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+/** A literal not glued to a longer name (`dsh-fishball` must not match inside `dsh-fishball-*`). */
+const standalone = (s) => new RegExp(`(?<![\\w-])${literal(s)}(?![\\w-])`)
+
+/** E-FIX-2 (bugs B2, B6): what INSTALL.md must say. */
+export const INSTALL_DOC = Object.freeze({
+  file: RELEASE.docs[0],
+  fence: /^\s*```/,
+  heading: /^## /,
+  paragraphBreak: /^\s*$/,
+  addLine: new RegExp(`\\bdsh plugin --profile ${literal(DSH.profile)} add\\s`),
+  tarballArg: /[\w.-]+\.tgz/g,
+  onlineSpec: new RegExp(`([\\w.-]+)@${literal(VERSION)}`, 'g'),
+  /** B6: earlier Fishball packages and the old data folder, removed before installing. */
+  earlier: Object.freeze({
+    names: Object.freeze(['dsh-fishball', 'fishball-connector', 'fishball-instance', 'fishball-embed-ui', 'dsh-fishball-*', '<DSH_HOME>/fishball/'].map(standalone)),
+    verb: /\bremove\b/i,
+  }),
+  /** B6: pnpm's "missing peer" warning about DSH's own packages is expected (one paragraph says all three). */
+  missingPeer: Object.freeze([/missing peer/i, /@deepseek-ai\//, /\bexpected\b/i]),
+  /** B6: standalone's token-field path beside Connect, in the section of the standalone offline block. */
+  tokenPath: Object.freeze([/New token/, /connector settings/, /Token for connecting a DSH/, /fishball-core/, /\bTarget\b/, /\bConnect\b/]),
+  standaloneKey: 'standalone',
+})
+
+/**
+ * E-FIX-2: each tarball's own top-level README.md and its manifest description. B3: the README names
+ * no `ask_agent` and does not say the packages are not published. B4: README and description carry no
+ * stale version note and no internal id (`R-XXX-NN`, `Q-XN`, `PLAT-XXX-NN`, `W<digit>`, `K<digit>`).
+ * The connector's mcp-schema/README.md and tools/README.md are maintainers' notes, out of scope.
+ */
+export const DOC_TEXT = Object.freeze({
+  readme: 'README.md',
+  descriptionField: 'description',
+  /** B3, README only. */
+  b3: Object.freeze([/ask_agent/, /\bnot\s+(?:\w+\s+){0,2}published\b/i, /\bunpublished\b/i]),
+  /** B4, README and description. */
+  b4: Object.freeze([/0\.1\.0-alpha\.0/, /manifest still reads/i, /\bskeleton\b/i, /\bW\d+\b/, /\bK\d+\b/,
+    /\bR-[A-Z]+-\d+\b/, /\bQ-[A-Z]\d+\b/, /\bPLAT-[A-Z]+-\d+\b/]),
+  /** Oracle self-check (EP: each banned form; BVA: 0..2 words between "not" and "published", ids glued to letters). */
+  samples: Object.freeze({
+    b3: Object.freeze({
+      hit: Object.freeze(['use ask_agent', 'not published', 'not yet published', 'has not yet been published', 'unpublished packages', 'Not Published']),
+      clean: Object.freeze(['published on npm', 'once the packages are published', 'publishing', 'ask the agent', 'not a plugin; published', 'not one of the three that are published']),
+    }),
+    b4: Object.freeze({
+      hit: Object.freeze(['0.1.0-alpha.0', 'the manifest still reads', 'W0 skeleton', 'Skeleton', 'W4', 'K2', 'R-ARCH-04', 'R-FB-12', 'R-BRD-01',
+        'PLAT-BVA-01', 'Q-G2', '(R-COMPAT-01)']),
+      clean: Object.freeze(['1.0.0-alpha.1', 'W3C', 'K8s', 'Windows', 'KW', 'R-1', 'R-ARCH', 'Q-G', 'PLAT-01', 'MCP over OAuth', 'skeletons', 'w0']),
+    }),
+  }),
+})
+
+/**
  * Isolation of every child process: no user npm config, a temp HOME and npm cache, and a dead proxy
  * so any network attempt fails (lead, 2026-11-17). The environment is built from scratch (harness).
  */
@@ -213,6 +307,9 @@ export const ISOLATION = Object.freeze({
   /** npm refuses one file as both user and global config, so the global one is an empty file of the scratch folder. */
   globalconfigFile: 'globalrc',
   deadProxy: 'http://127.0.0.1:9',
+  /** E-FIX-2: the counting proxy (an ephemeral loopback port; it answers nothing, like the dead one). */
+  proxyScheme: 'http://',
+  proxyHost: '127.0.0.1',
   proxyVars: Object.freeze(['HTTPS_PROXY', 'HTTP_PROXY', 'https_proxy', 'http_proxy', 'npm_config_https_proxy', 'npm_config_proxy']),
   homeDir: 'home',
   npmCacheDir: 'npm-cache',
@@ -226,7 +323,7 @@ export const ISOLATION = Object.freeze({
 export const NPM_TOOL = '/opt/homebrew/bin/npm'
 
 /** Harness budgets (waiting only). */
-export const BUDGET = Object.freeze({ installMs: 300000, installCaseMs: 600000, checkMs: 300000, checkCaseMs: 1800000, dryRunMs: 120000, maxOutputBytes: 64 * 1024 * 1024 })
+export const BUDGET = Object.freeze({ installMs: 300000, installCaseMs: 600000, checkMs: 300000, checkCaseMs: 1800000, docCaseMs: 1200000, dryRunMs: 120000, maxOutputBytes: 64 * 1024 * 1024 })
 /** How much of a failed child's output a failure message shows (harness). */
 export const REPORT = Object.freeze({ tailChars: 4000 })
 export const TEMP = Object.freeze({ prefix: 'fbtest-rel-pack-' })
@@ -238,4 +335,6 @@ export const CASE = Object.freeze({
   manifest: 'REL-EP-04', engines: 'REL-DT-01', peers: 'REL-DT-02', links: 'REL-EP-05', bundling: 'REL-DT-03',
   closure: 'REL-EP-06', instance: 'REL-EP-07', junk: 'REL-EP-08', dryRun: 'REL-EP-09',
   check: 'REL-ST-01', hosted: 'REL-SYS-01', standalone: 'REL-SYS-02', alone: 'REL-SYS-03', emptyStore: 'REL-DT-04',
+  // E-FIX-2: INSTALL.md's offline blocks (set × profile state; the fresh profile's transitions), its text, the READMEs.
+  docUsed: 'REL-DT-05', docFresh: 'REL-ST-02', docOrder: 'REL-EP-10', docBefore: 'REL-EP-11', readme: 'REL-EP-12', description: 'REL-EP-13',
 })

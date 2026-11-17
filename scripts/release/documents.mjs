@@ -72,7 +72,8 @@ you run any \`dsh plugin\` command.**
   first line runs \`${LAYOUT.offlineStore}\` (in this folder), which copies the packages of \`${LAYOUT.store}/\` into the pnpm
   store your profile already uses, adding files and deleting or replacing none, and prints that store's path. The
   second line installs with that store. It works on a profile that already has plugins, and the profile stays on its
-  own store, so later installs need nothing from this folder.
+  own store. The profile records each package by its tarball's path in this folder, and later \`dsh plugin\` commands
+  read those tarballs again, so **keep this folder where it is** while the packages are installed this way.
 
 Check the tarballs first: \`shasum -a 256 -c ${LAYOUT.sums}\`.
 
