@@ -140,21 +140,25 @@ export const INSIDE_CASES = Object.freeze([
 ])
 
 /**
- * Inputs for the redaction differential (behaviour unchanged against BASE): EP of the masked shapes
- * the module documents (an Authorization bearer, a key/token/secret assignment, a long opaque run)
- * and of text that must stay readable (file paths), BVA at the long run's threshold.
+ * The redaction samples, each with its expected output. Until R-FIX-REDACT this row compared the
+ * new redactor with the one at BASE; R-FIX-REDACT changed redaction on purpose (relayed 2026-11-18:
+ * whole credential values, any Authorization scheme, the mask `[redacted]`), so the oracle is now
+ * those requirements. EP of the masked shapes (an Authorization header, a key/token assignment, a
+ * JSON member, a long opaque run) and of text that must stay readable (a file path, plain text,
+ * empty), BVA at the long run's threshold. The full rule set is dsh-connector-shared.redact's.
  */
 const run = (length) => 'A1b2C3d4'.repeat(8).slice(0, length)
+const MASK = '[redacted]'
 export const REDACT_SAMPLES = Object.freeze([
-  'Authorization: Bearer abc.def-ghi',
-  'token=abc123&next=1',
-  '{"apiKey": "sk-live-value"}',
-  'password: hunter2',
-  'at /usr/local/lib/node_modules/dsh/lib/index.js:10:5',
-  run(31), run(32), run(33),
-  'plain diagnostic text',
-  '',
-])
+  ['Authorization: Bearer abc.def-ghi', `Authorization: ${MASK}`],
+  ['token=abc123&next=1', `token=${MASK}&next=1`],
+  ['{"apiKey": "sk-live-value"}', `{"apiKey": "${MASK}"}`],
+  ['password: hunter2', `password: ${MASK}`],
+  ['at /usr/local/lib/node_modules/dsh/lib/index.js:10:5', 'at /usr/local/lib/node_modules/dsh/lib/index.js:10:5'],
+  [run(31), run(31)], [run(32), MASK], [run(33), MASK],
+  ['plain diagnostic text', 'plain diagnostic text'],
+  ['', ''],
+].map((pair) => Object.freeze(pair)))
 export const LONG_RUN = Object.freeze({ below: run(31), at: run(32) })
 
 /** Inputs for the pure provider-sync functions (differential against BASE). */
