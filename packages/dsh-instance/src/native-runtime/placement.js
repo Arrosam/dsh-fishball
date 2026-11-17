@@ -1,5 +1,5 @@
 import { mkdir, lstat, readdir, readFile, rename, rm } from 'node:fs/promises'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import { createRequire } from 'node:module'
 import path from 'node:path'
 import { randomUUID } from 'node:crypto'
@@ -146,20 +146,81 @@ async function replaceSlot(parent, name, populate) {
 }
 
 /**
- * A set member's source: the packed `bundled/<directory>` (REL-PACK output, Q-22), else the
- * checkout's sibling workspace folder, as copyChildCode read core before I-PLACE. A packed
- * `bundled/` wins, so a checkout where a pack once ran reads that output until it is removed. A
- * folder counts only when its manifest names the member: an installed instance without `bundled/`
+ * A set member's source in a checkout: its sibling workspace folder, as copyChildCode read core
+ * before I-PLACE. The folder counts only when its manifest names the member: an installed instance
  * sits in a node_modules whose siblings are unrelated packages (npm has `core` and `board`).
  */
 async function memberSource(bundle) {
-  for (const root of [path.join(INSTANCE_ROOT, PLACEMENT.packed, bundle.directory), path.join(INSTANCE_ROOT, PLACEMENT.parent, bundle.directory)]) {
-    const file = path.join(root, PLACEMENT.manifest)
-    if (!(await exists(file))?.isFile()) continue
+  const root = path.join(INSTANCE_ROOT, PLACEMENT.parent, bundle.directory)
+  const file = path.join(root, PLACEMENT.manifest)
+  if ((await exists(file))?.isFile()) {
     const manifest = await json(file)
     if (manifest.name === bundle.name) return { root, files: await shippedFiles(root, manifest), manifest }
   }
   fail(PLACEMENT.code.missing, bundle.name)
+}
+
+/**
+ * The packed set (REL-PACK), or undefined in a checkout. The pack script writes `bundled/` only into
+ * its staging copy of the instance, never into the checkout, so its presence alone marks a packed
+ * instance; a tarball missing from it then fails the fallback, not the choice of path.
+ * @returns {Promise<{version: string, tarball: (name: string) => string} | undefined>}
+ */
+async function packedSet() {
+  const directory = path.join(INSTANCE_ROOT, PLACEMENT.packed)
+  if (!(await exists(directory))?.isDirectory()) return undefined
+  const { version } = await json(path.join(INSTANCE_ROOT, PLACEMENT.manifest))
+  return { version, tarball: (name) => path.join(directory, PLACEMENT.tarball(name, version)) }
+}
+
+/** Whether the profile already holds package `name` at exactly `version`. */
+async function installedAt(profile, name, version) {
+  const file = path.join(profile, PLACEMENT.modules, name, PLACEMENT.manifest)
+  return Boolean((await exists(file))?.isFile()) && (await json(file)).version === version
+}
+
+/** A module of the running DSH installation, resolved from its own anchor as bootPath is. */
+const hostModule = (installation, specifier) => import(pathToFileURL(createRequire(installation.installAnchor).resolve(specifier)).href)
+
+/**
+ * Install the packed set into the child profile with DSH's own plugin-manager operation
+ * (PLACEMENT.install): nothing when every member is already at the instance's version; else the
+ * exact npm specs; on any failure of that run, the bundled tarballs, copied into `vendor/` and added
+ * offline. Bundles are not activated here: placeBundles writes the bundle list.
+ * @param installation - resolveInstallation's result, with the host's `packageManager` when DSH
+ *   supplies one (the plugin manager's own rule: that invocation, else `pnpmCommand`).
+ */
+async function installPackedSet(paths, installation, set) {
+  const install = PLACEMENT.install
+  const present = await Promise.all(install.order.map((name) => installedAt(paths.profile, name, set.version)))
+  if (present.every(Boolean)) return
+  const [{ runPluginCommand }, { PluginManager }] = await Promise.all([hostModule(installation, install.operations), hostModule(installation, install.manager)])
+  const config = PluginManager.Config({})
+  const manager = installation.packageManager ?? { command: config.pnpmCommand }
+  const options = {
+    ...manager,
+    env: { ...manager.env, ...install.noRetries },
+    execution: install.execution,
+    activateNewBundles: false,
+    outputBytes: config.outputBytes,
+    lockWaitMs: config.lockWaitMs,
+    idleTimeoutMs: config.idleTimeoutMs,
+    lookupTimeoutMs: config.inspectTimeoutMs,
+  }
+  const context = { profile: RUNTIME.profileName, dir: paths.profile, installAnchor: installation.installAnchor, cwd: paths.profile }
+  const add = (specs, ...flags) => runPluginCommand(context, [install.command, ...specs, ...flags], options)
+  if ((await add(install.order.map((name) => install.spec(name, set.version)))).exitCode === install.succeeded) return
+  const vendored = []
+  for (const name of install.order) {
+    const source = set.tarball(name)
+    if (!(await exists(source))?.isFile()) fail(PLACEMENT.code.installFailed, PLACEMENT.installFailed(source))
+    const target = path.join(paths.profile, PLACEMENT.vendor, path.basename(source))
+    await rm(target, { force: true })
+    await copyFile(source, target)
+    vendored.push(target)
+  }
+  const result = await add(vendored, install.offline)
+  if (result.exitCode !== install.succeeded) fail(PLACEMENT.code.installFailed, PLACEMENT.installFailed(result.logPath))
 }
 
 /** One library package as its shipped files (Q-21), from its folder `root`. */
@@ -225,24 +286,42 @@ async function readRecord(file) {
 }
 
 /**
+ * The packages placeBundles copies: in a checkout every set member and its libraries; in a packed
+ * instance only the instance's own library, after installPackedSet put the set in (each tarball
+ * carries its own libraries in its node_modules).
+ */
+async function copiedSources(paths, installation) {
+  const set = await packedSet()
+  if (set) {
+    await installPackedSet(paths, installation, set)
+    return librarySources()
+  }
+  const members = await Promise.all(PLACEMENT.bundles.map(async (bundle) => ({ name: bundle.name, ...await memberSource(bundle) })))
+  const libraries = [...(await Promise.all(members.map(bundledLibraries))).flat(), ...await librarySources()]
+  return [...members, ...distinctLibraries(libraries)]
+}
+
+/**
  * Place the set and its libraries into the child profile, before it
- * loads (design §8.1). Every start refreshes each copy from the running instance's sources, then
- * writes `dsh.profile.bundles`:
+ * loads (design §8.1). Every start installs or refreshes the set (copiedSources), then writes
+ * `dsh.profile.bundles`:
  * - a bundle is switched on at its first placement only: a name the record holds, or one the
- *   profile already declares as a dependency (a V2 profile's hand-installed copy, design §10),
- *   keeps the state the owner gave it, so a disable survives and a copy deleted while off returns
- *   off (R-BND-02);
+ *   profile already declared as a dependency before this start (a V2 profile's hand-installed
+ *   copy, design §10), keeps the state the owner gave it, so a disable survives and a copy deleted
+ *   while off returns off (R-BND-02). The manifest is read before the install, because the install
+ *   itself declares the members;
  * - every other bundle keeps its place, and the placed ones follow in PLACEMENT.bundles order:
  *   board, fishball-ui, then fishball-core last (R-FB-12; fishball-ui's guard rows hold in any
  *   order, core's need it last). fishball-ui and core both bundle fishball-shared; it is placed once.
- * Copies come first and the manifest and record after, so a failed copy changes no selection.
+ * Installs and copies come first and the manifest and record after, so a failed copy or install
+ * changes no selection.
  * @param paths - the runtime layout (files.js pathsFor).
  * @param boot - the installation's dsh-app-boot module (readProfileManifest, writeProfileBundles).
+ * @param installation - the running DSH installation (installation.js resolveInstallation).
  */
-export async function placeBundles(paths, boot) {
-  const members = await Promise.all(PLACEMENT.bundles.map(async (bundle) => ({ name: bundle.name, ...await memberSource(bundle) })))
-  const libraries = [...(await Promise.all(members.map(bundledLibraries))).flat(), ...await librarySources()]
-  const sources = [...members, ...distinctLibraries(libraries)]
+export async function placeBundles(paths, boot, installation) {
+  const before = boot.readProfileManifest(RUNTIME.profileName, paths.profile).dependencies ?? {}
+  const sources = await copiedSources(paths, installation)
   for (const source of sources) {
     for (const parent of [PLACEMENT.vendor, PLACEMENT.modules]) {
       await replaceSlot(path.join(paths.profile, parent), source.name, (target) => writePackage(source.root, source.files, source.manifest, target))
@@ -254,7 +333,7 @@ export async function placeBundles(paths, boot) {
   const declared = manifest.dependencies ?? {}
   const current = manifest.dsh?.profile?.bundles ?? []
   const names = PLACEMENT.bundles.map((bundle) => bundle.name)
-  const enabled = names.filter((name) => current.includes(name) || !(placed.has(name) || Object.hasOwn(declared, name)))
+  const enabled = names.filter((name) => current.includes(name) || !(placed.has(name) || Object.hasOwn(before, name)))
   const bundles = [...current.filter((name) => !names.includes(name)), ...enabled]
   const dependencies = { ...declared, ...Object.fromEntries(sources.map((source) => [source.name, PLACEMENT.dependency(source.name)])) }
   const unchanged = sameBundles(current, bundles) && sources.every((source) => declared[source.name] === dependencies[source.name])
