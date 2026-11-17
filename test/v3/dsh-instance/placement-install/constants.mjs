@@ -8,7 +8,7 @@
  * implementation. Package names and the release layout are REL-PACK's (../../release/pack/constants.mjs).
  */
 import path from 'node:path'
-import { DSH, INSTANCE_BUNDLED, PACKAGES, SETS, TARBALL, VERSION } from '../../release/pack/constants.mjs'
+import { DSH, INSTANCE_BUNDLED, PACKAGES, SETS, SHELVED, TARBALL, VERSION } from '../../release/pack/constants.mjs'
 
 /** The packed instance is built as REL-SYS-01 builds it: the hosted set in one offline add. */
 export const PACKED = Object.freeze({
@@ -31,10 +31,19 @@ export const CHILD = Object.freeze({
   manifest: TARBALL.manifest,
   lockfile: 'pnpm-lock.yaml',
   vendorDir: 'vendor',
-  /** dsh.profile.bundles ends with these, in this order (core last, design §19). */
-  bundleOrder: Object.freeze([PACKAGES.board, PACKAGES.ui, PACKAGES.core]),
-  /** The npm spec order of the registry add (fishball-ui@<v>, fishball-board@<v>, fishball-core@<v>). */
-  specOrder: Object.freeze([PACKAGES.ui, PACKAGES.board, PACKAGES.core]),
+  /**
+   * dsh.profile.bundles ends with these, in this order (core last, design §19). Re-baselined
+   * (SHELVE-BOARD, was board, ui, core; specOrder was ui, board, core): fishball-board is out of
+   * 1.0.0-alpha.1. The user, 2026-11-18: "fishball-board先从这次release中移除，我要改的地方太多了。
+   * 先封存，留到下一批再说。所以不要预留在子实例的Fishball内。"
+   */
+  bundleOrder: Object.freeze([PACKAGES.ui, PACKAGES.core]),
+  /** The npm spec order of the registry add (fishball-ui@<v>, fishball-core@<v>). */
+  specOrder: Object.freeze([PACKAGES.ui, PACKAGES.core]),
+  /** SHELVE-BOARD: never placed, installed, bundled, recorded or reserved in the child. */
+  shelved: SHELVED.board,
+  /** The placement record the instance writes in the child profile (I-PLACE's relayed seam). */
+  record: 'fishball-placement.json',
   core: PACKAGES.core,
   /** BVA on the skip rule: the prerelease just below the instance version (1.0.0-alpha.1) is not "already at <v>". */
   staleVersion: '1.0.0-alpha.0',
@@ -62,7 +71,7 @@ export const SCRATCH = Object.freeze({ home: 'compose-home', npmCache: 'compose-
 /** Harness budgets (waiting only). */
 export const BUDGET = Object.freeze({ caseMs: 900000 })
 
-export const CASE = Object.freeze({ id: 'PINST-ST-01', fail: 'PINST-DT-01', registry: 'PINST-UC-01' })
+export const CASE = Object.freeze({ id: 'PINST-ST-01', fail: 'PINST-DT-01', registry: 'PINST-UC-01', shelved: 'PINST-SHELVE' })
 export const LATER = Object.freeze({
-  registry: 'REL-PUBLISH (the registry spec path needs fishball-ui, fishball-board and fishball-core published at the instance version; nothing is published yet)',
+  registry: 'REL-PUBLISH (the registry spec path needs fishball-ui and fishball-core published at the instance version; nothing is published yet)',
 })

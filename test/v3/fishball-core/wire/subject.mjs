@@ -25,10 +25,23 @@ export function forbiddenImports() {
   for (const root of C.scanRoots) visit(path.join(C.repo, root))
   return hits
 }
-export async function boot(sdk, members, home) {
+/**
+ * A copy of packages/board whose engines.dsh no SDK meets (SHELVE-BOARD's "present and broken" board),
+ * under the test-homes root; DSH skips it as incompatible. Removed by the caller's `after`.
+ */
+export function brokenBoardCopy() {
+  fs.mkdirSync(path.join(C.temp, C.homesSuffix), { recursive: true })
+  const dir = fs.mkdtempSync(path.join(C.temp, C.homesSuffix, C.shelved.brokenPrefix))
+  fs.cpSync(path.join(C.repo, 'packages', 'board'), dir, { recursive: true, filter: (src) => !src.split(path.sep).includes('node_modules') })
+  const file = path.join(dir, 'package.json')
+  const pkg = JSON.parse(fs.readFileSync(file, C.encoding))
+  fs.writeFileSync(file, JSON.stringify({ ...pkg, engines: { ...pkg.engines, dsh: C.shelved.impossibleEngine } }))
+  return dir
+}
+export async function boot(sdk, members, home, dirs = {}) {
   fs.mkdirSync(path.join(C.temp, C.homesSuffix), { recursive: true })
   home ??= fs.mkdtempSync(path.join(C.temp, C.homesSuffix, C.homePrefix))
-  const child = spawn(process.execPath, [C.worker], { env: { ...process.env, HOME: home, DSH_HOME: home, FBW_SDK: sdk, FBW_MEMBERS: JSON.stringify(members), FBTEST_DSH_RUNTIME: runtimeOf(sdk), FBTEST_CHROME: C.env.chrome, npm_config_userconfig: C.env.userconfig, [C.env.testHomes]: C.testHomes }, stdio: ['pipe', 'pipe', 'pipe', 'ipc'] })
+  const child = spawn(process.execPath, [C.worker], { env: { ...process.env, HOME: home, DSH_HOME: home, FBW_SDK: sdk, FBW_MEMBERS: JSON.stringify(members), FBW_DIRS: JSON.stringify(dirs), FBTEST_DSH_RUNTIME: runtimeOf(sdk), FBTEST_CHROME: C.env.chrome, npm_config_userconfig: C.env.userconfig, [C.env.testHomes]: C.testHomes }, stdio: ['pipe', 'pipe', 'pipe', 'ipc'] })
   let output = C.empty; let exited = false; let ready = false; let next = C.first
   const pending = new Map()
   child.stdout.on('data', (d) => { output += d }); child.stderr.on('data', (d) => { output += d })

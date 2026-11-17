@@ -113,7 +113,7 @@ const outcome = (fn) => { try { return { value: fn() } } catch (error) { return 
 // -------------------------------------------------------------------------------- placement world
 
 /**
- * A scratch checkout for the instance's placement: copies of the instance, core and board under
+ * A scratch checkout for the instance's placement: copies of the instance, core and fishball-ui under
  * `packages/`, and a root `node_modules` standing in for the instance's dependency graph
  * (dsh-connector-shared, dsh-connector). Core gets its own `node_modules/fishball-shared` copy with
  * a marker module, and the root graph holds a decoy fishball-shared with another marker: the placed
@@ -124,7 +124,9 @@ function placementTree(t) {
   const tree = path.join(root, 'tree')
   const noModules = (src) => !src.split(path.sep).includes('node_modules')
   // I-HOST (Q1, Q2): placement also places fishball-ui, so the tree carries its folder too.
-  for (const p of [V3.instance, V3.core, V3.board, V3.ui]) fs.cpSync(p.dir, path.join(tree, path.relative(REPO, p.dir)), { recursive: true, verbatimSymlinks: true, filter: noModules })
+  // Re-baselined (SHELVE-BOARD): no board folder, so placement is shown to need none. The user,
+  // 2026-11-18: "fishball-board先从这次release中移除…先封存，留到下一批再说。所以不要预留在子实例的Fishball内。"
+  for (const p of [V3.instance, V3.core, V3.ui]) fs.cpSync(p.dir, path.join(tree, path.relative(REPO, p.dir)), { recursive: true, verbatimSymlinks: true, filter: noModules })
   const graph = path.join(tree, 'node_modules')
   fs.mkdirSync(graph)
   for (const p of [V3.dshShared, V3.connector]) fs.symlinkSync(p.dir, path.join(graph, p.name))

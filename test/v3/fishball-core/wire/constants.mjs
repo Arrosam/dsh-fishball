@@ -22,6 +22,19 @@ export const C = Object.freeze({
   privateSkill: /^private_skill_/,
   coreToolTables: [{ module: '../manager/reminders.js', table: 'TOOL' }, { module: '../manager/skills.js', table: 'PRIVATE_SKILL_TOOL' }, { module: '../asks/constants.js', table: 'ASK_TOOL' }],
   baseTools: ['read', 'read_image', 'working_directory'], boardToolPrefix: 'board_', guardsOk: 'ok',
+  /**
+   * SHELVE-BOARD: fishball-board is shelved, not in 1.0.0-alpha.1. The user, 2026-11-18:
+   * "fishball-board先从这次release中移除，我要改的地方太多了。先封存，留到下一批再说。所以不要预留在子实例的Fishball内。"
+   * Core's set check has no board member: with the board absent, present, or present and broken (a copy
+   * whose engines.dsh no SDK meets, so DSH skips it as incompatible), core's `set` is `ok`, nothing
+   * missing. Without the board, the manager's prompt never mentions it (no persona or tool mention).
+   */
+  shelved: Object.freeze({
+    set: Object.freeze({ status: 'ok', missing: Object.freeze([]) }),
+    mention: /fishball-board|(?<![a-z])board(?![a-z])/i,
+    impossibleEngine: '>=99.0.0',
+    brokenPrefix: 'wire-broken-board-',
+  }),
   members: ['manager', 'events', 'ui', 'bridge', 'attention'],
   managerMembers: ['sessionId', 'ensureSession', 'registerSetup', 'notify', 'userTexts'],
   uiMembers: ['managerSessionId', 'link', 'connect', 'pairing', 'guards', 'asks'],

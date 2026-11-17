@@ -288,13 +288,18 @@ export const V3_SUITES = Object.freeze({
   'contract.k3a-core-seams': suite('K3a core-side seams: own MCP-surface copy, hosted import names, Connect, fishball-ui seam', v3('contract/k3a-core-seams'),
     [sub(PACKAGE.fishballCore, 'contracts'), top(PACKAGE.fishballCore), all(PACKAGE.fishballShared), sub(PACKAGE.dshConnector, 'host-services'), ...CONNECTOR_CONTRACTS,
       all(PACKAGE.dshConnector), all(PACKAGE.dshConnectorUi), all(PACKAGE.dshInstance)]),
+  // SHELVE-BOARD: its core/ui board-reference rows read source tokens with the R-CORE suite's token worker.
   'contract.package-boundaries': suite('package boundaries, imports, packing (R-SHARED, PLAT-EP-07)', v3('contract/package-boundaries'),
-    [...Object.values(PACKAGE).map(all), RELEASE_SCRIPTS, 'test/v3/release/pack/release.mjs']),
+    [...Object.values(PACKAGE).map(all), RELEASE_SCRIPTS, 'test/v3/release/pack/release.mjs',
+      'test/v3/fishball-core/package/static.mjs', 'test/v3/fishball-core/package/constants.mjs', 'test/v3/fishball-core/package/tokens-worker.mjs']),
   // Reads every package's manifest and import graph and runs the placement over package copies.
   'contract.split-shared': suite('one shared library per side: cross-side edges, library contents, interim copies, placement (SPLIT-SHARED)', v3('contract/split-shared'),
     [...Object.values(PACKAGE).map(all)]),
   'contract.embed': suite('connector-ui package and the moved client (R-EMBED)', v3('contract/embed'),
     [all(PACKAGE.dshConnectorUi), all(PACKAGE.dshInstance), all(PACKAGE.dshConnector)]),
+  // SHELVE-BOARD: the runners' selection of shelved suites, through their command lines (no SDK).
+  'contract.suite-map': suite('the runners leave shelved suites out of default runs, --suite still runs them (SHELVE-BOARD)', ['test/v3/contract/suite-map/index.test.mjs'],
+    ['test/run-affected.mjs', 'test/run-v3.mjs', 'test/suites.mjs', 'test/support/suite-runner.mjs', 'test/support/contract-link.mjs', 'test/support/constants.mjs']),
   // REL-PACK: the release tarballs scripts/pack-v3.mjs writes. Every package's shipped files and
   // manifest are in a tarball, so any package file, or the pack script itself, reruns it. It reads
   // the release output (.runtime/release/<version>/, built beforehand), so run the pack first.

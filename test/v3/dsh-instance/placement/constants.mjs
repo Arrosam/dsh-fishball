@@ -9,13 +9,17 @@ import path from 'node:path'
 import { V3 } from '../../contract/package-boundaries/constants.mjs'
 
 /**
- * The set a hosted child holds (design §1.0, plan §4; R-FB-01; R-BND-01 amended by 1.39: the
- * default set is core, fishball-ui and board). I-HOST (Q1, Q2) adds fishball-ui, appended after
- * board and before core.
+ * The set a hosted child holds (design §1.0, plan §4; R-FB-01; R-BND-01 amended by 1.39). I-HOST
+ * (Q1, Q2) adds fishball-ui before core. Re-baselined (SHELVE-BOARD, was board, fishball-ui, core):
+ * fishball-ui then core. The user, 2026-11-18: "fishball-board先从这次release中移除，我要改的地方太多了。
+ * 先封存，留到下一批再说。所以不要预留在子实例的Fishball内。" `shelved` is never placed, installed,
+ * enabled or recorded in the child, not even disabled. The one feature the DT-01 walk toggles is
+ * now fishball-ui (`features[0]`), the only non-core member.
  */
 export const SET = Object.freeze({
   core: V3.core.name,
-  features: Object.freeze([V3.board.name, V3.ui.name]),
+  features: Object.freeze([V3.ui.name]),
+  shelved: V3.board.name,
   /** Design §8.1 "Order": the features come before core, core is last. */
   get placed() { return Object.freeze([...this.features, this.core]) },
   /**
