@@ -211,3 +211,25 @@ export const CUI = Object.freeze({
   refreshMs: 3000,
   silentMs: 2500,
 })
+
+/**
+ * R-FIX-CUI multi-DSH naming rows (cui-cases.mjs, the user's decision relayed 2026-11-18): the DSH
+ * name field's hint (en / zh, `<device name>` / `<设备名称>` literal), the old address wording gone,
+ * and the name saved exactly as typed ("照 MCP 协议来": no sanitising); only an entirely blank value
+ * unsets. `unsetOp` is dsh-settings' SettingsPathOpView op name.
+ */
+export const DSH_NAME = Object.freeze({
+  id: 'RFC-DSHNAME',
+  hint: Object.freeze({
+    en: 'The name the approval page shows for this DSH. Empty: this DSH shows as <device name>-DSH.',
+    zh: '授权页面为此 DSH 显示的名称。留空则此 DSH 显示为 <设备名称>-DSH。',
+  }),
+  oldHint: Object.freeze({ en: "Empty: it shows this DSH's address.", zh: '留空则显示此 DSH 的地址。' }),
+  unsetOp: 'unset',
+  saved: 'Original name',
+  padded: '  Office DSH  ',
+  special: 'Lab/α <b>x</b>',
+  markupTag: 'b',
+  plain: 'Office',
+  blanks: Object.freeze([['empty', ''], ['spaces', '   '], ['tab', '\t']]),
+})
