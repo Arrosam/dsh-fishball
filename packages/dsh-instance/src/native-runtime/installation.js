@@ -133,7 +133,7 @@ async function nativeProfileBundles(boot, profileDir) {
   await writeProfileBundles(boot, profileDir, manifest, bundles)
 }
 
-export async function initializeProfile(paths, installation, preflight, mainWorkspaces) {
+export async function initializeProfile(paths, installation, preflight, mainWorkspaces, signal) {
   const args = { mainHome: paths.mainHome, runtimeRoot: paths.root, workspace: paths.workspace, mainWorkspaces, installRoot: installation.installRoot, profileDir: paths.profile }
   // First reject ambient ancestry before importing even the installation's metadata API.
   await preflight(args)
@@ -145,7 +145,7 @@ export async function initializeProfile(paths, installation, preflight, mainWork
   if (fresh) await privateTree(paths.profile)
   await nativeProfileBundles(boot, paths.profile)
   // The plugin set, placed before the profile loads (design §8.1).
-  await placeBundles(paths, boot)
+  await placeBundles(paths, boot, installation, signal)
   await validateStartupFiles(paths)
   const profile = boot.loadProfileDirectory('fishball', paths.profile, installation.installAnchor)
   // Every enabled bundle DSH skipped blocks the start, named with DSH's reason (R-BND-03); the

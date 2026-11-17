@@ -1,5 +1,5 @@
 /**
- * Vocabulary for the K1 cases: the freeze of `dsh-connector/mcp-schema` (v3-tasks.md row K1,
+ * Vocabulary for the K1 cases: the freeze of `dsh-agent-connector/mcp-schema` (v3-tasks.md row K1,
  * "resolves K flags in AUTH, NAME, EVT, PLAT, WATCH"), read at `test/v3-cases` `b1295de`.
  *
  * Every value comes from docs/planning/v3-requirements.md, from docs/planning/v3-design.md where a
@@ -10,7 +10,7 @@ import path from 'node:path'
 
 /** The frozen module, as consumers import it (R-CONN declared the subpath; K1 fills the folder). */
 export const SCHEMA_MODULE = Object.freeze({
-  specifier: 'dsh-connector/mcp-schema',
+  specifier: 'dsh-agent-connector/mcp-schema',
   folder: path.join('packages', 'dsh-connector', 'mcp-schema'),
   /** The declaration file that types the internal interfaces (task K1a names it). */
   declarations: 'index.d.ts',
@@ -20,7 +20,7 @@ export const SCHEMA_MODULE = Object.freeze({
   codeFile: /\.(?:c|m)?(?:js|ts)$/,
 })
 /** K2's frozen module: K1 shares its protocol version and the contributed-event prefix (Fishball, 2026-11-12). */
-export const TOOLS_SPECIFIER = 'dsh-connector/tools'
+export const TOOLS_SPECIFIER = 'dsh-agent-connector/tools'
 /** The connector manifest that carries the pinned SDK versions (K1 row: a change of a pin is a K1 amendment). */
 export const CONNECTOR_MANIFEST = path.join('packages', 'dsh-connector', 'package.json')
 

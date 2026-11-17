@@ -15,14 +15,16 @@
     "packages/shared"
   ],
   "engines": {
-    "node": ">=22",
-    "dsh": ">=0.2.1-rc.2"
+    "node": ">=22.14",
+    "dsh": ">=0.2.1-rc.5"
   },
   "scripts": {
     "test": "node test/run.mjs",
     "test:v3": "node test/run-v3.mjs",
     "test:affected": "node test/run-affected.mjs",
     "test:all": "node test/run-affected.mjs --all",
-    "test:map": "node test/run-affected.mjs --check"
+    "test:map": "node test/run-affected.mjs --check",
+    "pack:v3": "node scripts/pack-v3.mjs",
+    "pack:v3:check": "node scripts/pack-v3.mjs --check"
   }
 }

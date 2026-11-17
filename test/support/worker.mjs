@@ -58,7 +58,10 @@ function pluginPackages() {
   const target = process.env.FBTEST_PLUGIN_DIR
   if (!target) return [CONNECTOR, INSTANCE]
   const pkg = JSON.parse(fs.readFileSync(path.join(target, 'package.json'), 'utf8'))
-  if (pkg.workspaces) return [{ name: CONNECTOR.name, dir: path.join(target, 'packages', 'dsh-connector') }, { name: INSTANCE.name, dir: path.join(target, 'packages', 'dsh-instance') }]
+  // The connector's npm name changed (dsh-connector → dsh-agent-connector, 2026-11-17), so another
+  // checkout's connector is linked under the name its own manifest gives (its row loads that name).
+  const connectorDir = path.join(target, 'packages', 'dsh-connector')
+  if (pkg.workspaces) return [{ name: JSON.parse(fs.readFileSync(path.join(connectorDir, 'package.json'), 'utf8')).name, dir: connectorDir }, { name: INSTANCE.name, dir: path.join(target, 'packages', 'dsh-instance') }]
   // Old single-package checkout: one bundle holding both rows; there is no instance package to link.
   return [{ name: pkg.name, dir: target }]
 }

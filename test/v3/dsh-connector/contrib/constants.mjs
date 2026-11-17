@@ -4,9 +4,9 @@
  * rows other tasks own (todo).
  *
  * Every product value comes from a frozen contract module, never from an implementation:
- * - K2 `dsh-connector/tools` (packages/dsh-connector/tools/): codes, limits, grammar, the `_meta`
+ * - K2 `dsh-agent-connector/tools` (packages/dsh-connector/tools/): codes, limits, grammar, the `_meta`
  *   key, the alias and reserved namespaces, abort reasons, the emit check order;
- * - K1 `dsh-connector/mcp-schema` (packages/dsh-connector/mcp-schema/): the K1 interfaces' words
+ * - K1 `dsh-agent-connector/mcp-schema` (packages/dsh-connector/mcp-schema/): the K1 interfaces' words
  *   the fakes speak (retirement reason, queue size, scope, the generated-token prefix).
  * The rest is fixture data (package names, markers, pairs) and harness timing, which are not
  * product values.

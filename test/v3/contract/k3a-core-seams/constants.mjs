@@ -39,8 +39,8 @@ export const DSH_SIDE = Object.freeze({
   folders: Object.freeze(['dsh-connector', 'dsh-connector-ui', 'dsh-instance', 'dsh-connector-adapter', 'dsh-connector-shared'].map((f) => path.join(PACKAGES_DIR, f))),
   /** Self-check of the specifier matcher (EP over the name rule): [specifier, is a DSH-side reference?]. */
   samples: Object.freeze([
-    ['dsh-connector', true],
-    ['dsh-connector/mcp-schema', true],
+    ['dsh-agent-connector', true],
+    ['dsh-agent-connector/mcp-schema', true],
     ['dsh-connector-ui', true],
     ['dsh-instance/child', true],
     ['dsh-connector-adapter', true],

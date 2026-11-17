@@ -1,41 +1,52 @@
 {
   "name": "dsh-connector-ui",
-  "version": "0.1.0-alpha.0",
+  "version": "1.0.0-alpha.1",
   "description": "Fishball's UI in the main DeepSeek Harness: the one package that changes the host DSH's UI for Fishball (R-ARCH-04).",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Arrosam/dsh-fishball.git",
+    "directory": "packages/dsh-connector-ui"
+  },
+  "publishConfig": {
+    "tag": "alpha"
+  },
   "type": "module",
   "main": "./index.js",
   "//": "Lowercase name (S4-Q3 decided B). The host half is index.js with src/host/ (U-SHELL, U-DRAW: runtime service lookup, connector-missing and instance-missing, the notify and attention tool declaration, and its own owner-only Fetch routes for availability, status and admission). The browser half is src/client/client.js with its package-local chunks beside it, flat client.<part>.js files because DSH serves only client.<name>.js siblings of a package's client.js: client.shell.js, client.marks.js, client.attention.js (U-DRAW removed client.records.js: no inline records, requirements 1.41 Q-G4; I-HOST moved the instance card, client.instance.js and the status-line symlink client.status.js, to the instance's own settings page).",
+  "//locale": "The Plugins page card title (design §0.7), as for dsh-agent-connector and dsh-instance: DSH reads meta.title from the exported ./locale/*.json without loading this package, and shows the package name when that file is absent.",
   "exports": {
     ".": "./index.js",
     "./client": "./src/client/client.js",
+    "./locale/*.json": "./locale/*.json",
     "./package.json": "./package.json"
   },
   "files": [
     "index.js",
     "src/",
+    "locale/*.json",
     "cordis.patch.yml",
     "LICENSE",
     "THIRD_PARTY_NOTICES.md"
   ],
   "engines": {
-    "node": ">=22",
+    "node": ">=22.14",
     "dsh": ">=0.2.1-rc.5"
   },
   "//dependencies": "dsh-connector-shared is the DSH side's library (R-ARCH-08): the request-hostname rule the admit route shares with dsh-instance. It is bundled, so the tarball carries it, as for the connector and the instance.",
   "dependencies": {
-    "dsh-connector-shared": "0.1.0-alpha.0"
+    "dsh-connector-shared": "1.0.0-alpha.1"
   },
   "bundleDependencies": [
     "dsh-connector-shared"
   ],
-  "//peerDependencies": "Both optional (design §9.1): the UI's parts follow the instance's and the connector's services and routes when present, and embed-UI imports no code of either. The range is the instance's own for the connector: from this release's 0.1.0-alpha.0 up to, not including, 2.",
+  "//peerDependencies": "Both optional (design §9.1): the UI's parts follow the instance's and the connector's services and routes when present, and embed-UI imports no code of either. The range is this release's 1.0.0-alpha.1 up to, not including, 2. The connector's npm name is dsh-agent-connector (the user, 2026-11-17).",
   "peerDependencies": {
-    "dsh-connector": ">=0.1.0-alpha.0 <2",
-    "dsh-instance": ">=0.1.0-alpha.0 <2"
+    "dsh-agent-connector": ">=1.0.0-alpha.1 <2",
+    "dsh-instance": ">=1.0.0-alpha.1 <2"
   },
   "peerDependenciesMeta": {
-    "dsh-connector": {
+    "dsh-agent-connector": {
       "optional": true
     },
     "dsh-instance": {

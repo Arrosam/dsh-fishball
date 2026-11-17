@@ -5,7 +5,7 @@
  * - the observable contract the dev session relayed for U-DRAW (2026-11-16: routes, answers, data
  *   attributes, slots, the locale namespace) and its correction of the same day (the V2
  *   `dshConnector` fallback and the `legacy` flag are removed (V2 never deployed, U-WIRE));
- * - K2 (`dsh-connector/tools`, read at runtime) and K3 (`host-services/*.d.ts`, restated);
+ * - K2 (`dsh-agent-connector/tools`, read at runtime) and K3 (`host-services/*.d.ts`, restated);
  * - the C-UI-BACKEND suite's relayed surface (its SURFACE, reused, never restated);
  * - fixture data and harness timing, which are not product values.
  * No embed-UI implementation was read.

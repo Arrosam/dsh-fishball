@@ -5,7 +5,7 @@
  *
  * Every product value comes from a frozen contract or from the requirements the test author was
  * given, never from the implementation:
- * - K1 `dsh-connector/mcp-schema`: event types, tool names, offer ids, refusal codes;
+ * - K1 `dsh-agent-connector/mcp-schema`: event types, tool names, offer ids, refusal codes;
  * - K1's answer vocabulary (`APPROVAL_DECISION`, `RISK`, `APPROVAL_KIND`, moved there from the V2
  *   contract by C-WIRE-2): the answer's `decision` and `risk` words;
  * - K3 `ask-card.d.ts`: the card's fields and its three states (types only, so they are written

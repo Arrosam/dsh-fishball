@@ -163,7 +163,6 @@ export const LATER = Object.freeze({
   host: 'I-HOST (W4: the dshInstanceChild locator, Retry, lifecycle codes such as fishball-off)',
   placeUi: 'I-HOST (the instance places fishball-ui in the hosted child; until then the child has core only, so no page, Recommended tab or UI guard row)',
   restartNotice: 'U-SHELL / E2E-UI (the "restart required" line in the UI)',
-  relPack: 'REL-PACK (P-1 mechanism B: a real copy of its side\'s library in each tarball; PLAT-EP-07 row 5 stays failing until then)',
   uninstall: 'I-HOST (HOST-ST-01 row 10: uninstall with the export offer, Q-23)',
   e2e: 'E2E-UI (W6 browser flows; no browser in this suite)',
 })

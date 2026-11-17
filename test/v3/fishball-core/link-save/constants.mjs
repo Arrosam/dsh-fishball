@@ -5,7 +5,7 @@
  * Every expected value comes from the requirements relayed in the test brief (R7, R9, R10, R12 = B,
  * R14, Q-LS1 = A), the frozen K3a contract (`packages/core/contracts/link.d.ts`, `connect.d.ts`,
  * `constants.js`: HOSTED_IMPORT, CONNECT, MCP, LINK, LINK_BACKOFF), the relayed F-PAIR words
- * (../identity/constants.mjs RELAYED) and K1's published builders (`dsh-connector/mcp-schema`),
+ * (../identity/constants.mjs RELAYED) and K1's published builders (`dsh-agent-connector/mcp-schema`),
  * which the fake connector speaks. None comes from the code under test. Fixture values (ids, names,
  * the CIMD URL) are test data. No token, code or grant is a literal: the fake generates them.
  */

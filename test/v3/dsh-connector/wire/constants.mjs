@@ -4,8 +4,8 @@
  * R-ROUTE-04/06, 1.41 Q-G8; the parent's C-WIRE brief R1–R21).
  *
  * Product values come only from:
- * - K1 `dsh-connector/mcp-schema` (paths, scopes, tools, the read roles, limits, codes);
- * - K2 `dsh-connector/tools` (emit refusals);
+ * - K1 `dsh-agent-connector/mcp-schema` (paths, scopes, tools, the read roles, limits, codes);
+ * - K2 `dsh-agent-connector/tools` (emit refusals);
  * - K3 `host-services/*.d.ts` (service names and refusal codes, restated below as the declarations
  *   spell them);
  * - the surface the dev session relayed (2026-11-16): the settings routes, the UI routes, the row id,
@@ -25,7 +25,8 @@ const UI_DIR = path.join(REPO, 'packages', 'dsh-connector-ui')
 
 /** The packages a wire profile links (by folder; the instance is never linked, so no child starts). */
 export const PACKAGES = Object.freeze({
-  connector: Object.freeze({ name: 'dsh-connector', dir: CONNECTOR_DIR }),
+  /** npm name dsh-agent-connector (the user, 2026-11-17); the folder and the row id stay dsh-connector. */
+  connector: Object.freeze({ name: 'dsh-agent-connector', dir: CONNECTOR_DIR }),
   ui: Object.freeze({ name: 'dsh-connector-ui', dir: UI_DIR }),
   /** The two libraries, plain dependencies (never bundles). */
   libraries: Object.freeze([
@@ -57,7 +58,7 @@ export const SURFACE = Object.freeze({
   clientEntry: 'client.js',
   /** design §5.9: the settings page's only slot and its `<package>#<row id>` key. */
   slot: 'plugins.row.config',
-  slotKey: 'dsh-connector#dsh-connector',
+  slotKey: 'dsh-agent-connector#dsh-connector',
   settings: Object.freeze({
     tokens: 'tokens',
     /** Withdrawn by C-WIRE-2 (the user's q5, "Remove agentToken entirely"): named only to assert they are gone. */
