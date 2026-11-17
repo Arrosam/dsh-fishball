@@ -93,14 +93,13 @@ const escapedQuoteAt = (text, at) => text[at] === REDACTION.escape && REDACTION.
  * end. Any quote that closes on its line opens a string, so a bracket inside one (util.inspect prints
  * '…' strings) cannot close the container early. A quote that does not close on its line (`don't`,
  * `can't`) is an ordinary character: skipping its line could hide the bracket that closes the
- * container and mask every later line. `escaped` reads a container inside an escaped JSON string,
- * whose strings are \"…\" and which ends at that enclosing string's raw '"'.
+ * container and mask every later line. A quote still open at the text's end (a cut-off line, as
+ * stderr's F4 head) stays a string, so a bracket inside a cut-off secret cannot end the mask early.
+ * `escaped` reads a container inside an escaped JSON string, whose strings are \"…\" and which ends
+ * at that enclosing string's raw '"'. `unclosedUntil` is the text's memo of quotes found unclosed.
  */
-function containerEnd(text, from, escaped) {
+function containerEnd(text, from, escaped, unclosedUntil) {
   let depth = 0
-  // A quote character's last unclosed line end: a later same quote before it cannot close either,
-  // and remembering that keeps the scan linear on a run of escaped quotes.
-  const unclosedUntil = {}
   for (let at = from; at < text.length; at++) {
     const char = text[at]
     if (escaped && escapedQuoteAt(text, at)) {
@@ -110,9 +109,11 @@ function containerEnd(text, from, escaped) {
       if (text[at] === REDACTION.enclosingQuote) return at
       if (text[at] === REDACTION.escape) at++
     } else if (escaped && char === REDACTION.enclosingQuote) return at
+    // Outside a string an escape takes the next character with it: an escaped quote opens none.
+    else if (!escaped && char === REDACTION.escape) at++
     else if (!escaped && REDACTION.quotes.includes(char) && !(unclosedUntil[char] > at)) {
       const close = quotedEnd(text, at + 1, char, false)
-      if (text[close] === char) at = close
+      if (text[close] === char || close === text.length) at = close
       else unclosedUntil[char] = close
     } else if (REDACTION.containerOpen.includes(char)) depth++
     else if (REDACTION.containerClose.includes(char) && --depth === 0) return at + 1
@@ -123,8 +124,9 @@ function containerEnd(text, from, escaped) {
 /**
  * The private span of the value that starts at `from` after a credential name, or null when it is
  * empty. `escaped`: the name was an escaped JSON key, so the value is inside an escaped JSON string.
+ * `unclosedUntil`: the text's unclosed-quote memo (privateSpans).
  */
-function valueSpan(text, from, components, escaped) {
+function valueSpan(text, from, components, escaped, unclosedUntil) {
   const span = (start, end) => (end > start ? { start, end } : null)
   const first = text[from]
   if (escapedQuoteAt(text, from)) {
@@ -132,7 +134,7 @@ function valueSpan(text, from, components, escaped) {
     return span(start, quotedEnd(text, start, text[from + 1], true))
   }
   if (REDACTION.quotes.includes(first)) return span(from + 1, quotedEnd(text, from + 1, first, false))
-  if (REDACTION.containerOpen.includes(first)) return span(from, containerEnd(text, from, escaped))
+  if (REDACTION.containerOpen.includes(first)) return span(from, containerEnd(text, from, escaped, unclosedUntil))
   if (components.some((c) => REDACTION.authorizationComponent.test(c))) return span(from, lineEnd(text, from))
   const rest = text.slice(from)
   const run = rest.match(REDACTION.schemeValue) ?? rest.match(REDACTION.bareValue)
@@ -145,11 +147,15 @@ function privateSpans(text) {
   // Resume after each masked value: a name inside it is masked already, and rescanning every
   // nested `password=[` of an unbalanced value to the text's end would be quadratic.
   const assignment = new RegExp(REDACTION.assignment)
+  // Each quote character's last line end found unclosed, shared by every container of the text:
+  // whether a quote closes on its line depends on the text alone, and a later same quote before
+  // that line end cannot close either. One memo per text keeps every container scan together linear.
+  const unclosedUntil = {}
   for (let match = assignment.exec(text); match; match = assignment.exec(text)) {
     const name = match.groups.name ?? match.groups.bare
     const components = nameComponents(name)
     if (!components.some((c) => REDACTION.sensitiveComponent.test(c))) continue
-    const span = valueSpan(text, match.index + match[0].length, components, name.startsWith(REDACTION.escape))
+    const span = valueSpan(text, match.index + match[0].length, components, name.startsWith(REDACTION.escape), unclosedUntil)
     if (!span) continue
     assignments.push(span)
     assignment.lastIndex = span.end
