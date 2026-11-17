@@ -5,9 +5,9 @@
  * here from dsh-connector-ui's `client.instance.js`: dsh-connector-ui draws no instance card any
  * more. A chunk of the instance's `client.js`, which loads it with the status line chunk.
  *
- * The main DSH holds only what the instance needs before its child exists: `enabled` and the
- * remote `targetUrl` (blank = this DSH's connector), edited in DSH's own form for the instance's
- * row. No token and no credential reference (R-HOST-05). Above them:
+ * The main DSH holds only `enabled`, needed before the child exists. The actual parent is fixed;
+ * additional targets are configured inside Fishball, never through this instance page. No token
+ * and no credential reference is editable here. Above the switch:
  * - the status line (client.status.js) with Retry, and Retry's notice after a deleted hosted entry;
  * - Reconnect: a new hosted token imported into the child once (R11; always shown, Q-B2);
  * - Open Fishball: the child's Fishball page in a new tab, through one admission (Q7 = A);
@@ -23,7 +23,7 @@ window.__ModuleLoader__.load({
     const module = { exports: {} }
     const exports = module.exports
     const React = require('react')
-    const { Button, Checkbox, IconRightUpOutlineRegular, Input, SettingsForm, SettingsFormModel, Switch, Tag } = require('@deepseek-ai/dsh-client-ui-primitives')
+    const { Button, Checkbox, IconRightUpOutlineRegular, SettingsForm, SettingsFormModel, Switch, Tag } = require('@deepseek-ai/dsh-client-ui-primitives')
 
     const h = React.createElement
 
@@ -39,12 +39,9 @@ window.__ModuleLoader__.load({
     })
     /** The form's two views; `summary` is the row's one-liner, `page` the form and its Save. */
     const VIEW = Object.freeze({ summary: 'summary', page: 'page' })
-    /** The whole main-DSH surface of the instance settings (§0.7, inst-OQ-04; R-HOST-05's target). */
-    const FIELD = Object.freeze({
-      enabled: 'enabled',
-      targetUrl: 'targetUrl',
-    })
-    const LAUNCH_FIELDS = Object.freeze([FIELD.enabled, FIELD.targetUrl])
+    /** The only launch field: the parent URL is supplied by the host, not editable here. */
+    const FIELD = Object.freeze({ enabled: 'enabled' })
+    const LAUNCH_FIELDS = Object.freeze([FIELD.enabled])
     /**
      * The page's own actions (src/host/routes.js INSTANCE_ROUTE, page-relative): Reconnect answers
      * `{ok}` or `{ok: false, code}`; Open answers `{ok: true, url}`, opened in a new tab with no
@@ -96,9 +93,7 @@ window.__ModuleLoader__.load({
      * layout tokens come from the status-line module (`layout.classes`, `layout.style`), which
      * defines those rules once for both pages; the model block reuses them.
      */
-    const OWN_CLS = Object.freeze({ page: 'fb-instance-page', section: 'fb-instance-section', sectionTitle: 'fb-instance-section-title', actions: 'fb-instance-actions', feature: 'fb-instance-feature', toggleRow: 'fb-instance-toggle-row', toggleText: 'fb-instance-toggle-text', control: 'fb-instance-control', sync: 'fb-instance-sync', syncTitle: 'fb-instance-sync-title', syncList: 'fb-instance-sync-list', syncRow: 'fb-instance-sync-row', syncModels: 'fb-instance-sync-models', error: 'fb-instance-error' })
-    /** The width of a row's right-hand control (the remote target field), as the connector's page. */
-    const CONTROL_WIDTH = '280px'
+    const OWN_CLS = Object.freeze({ page: 'fb-instance-page', section: 'fb-instance-section', sectionTitle: 'fb-instance-section-title', actions: 'fb-instance-actions', feature: 'fb-instance-feature', toggleRow: 'fb-instance-toggle-row', toggleText: 'fb-instance-toggle-text', sync: 'fb-instance-sync', syncTitle: 'fb-instance-sync-title', syncList: 'fb-instance-sync-list', syncRow: 'fb-instance-sync-row', syncModels: 'fb-instance-sync-models', error: 'fb-instance-error' })
     /** DSH's small-button glyph size. */
     const ICON_PX = 14
     /**
@@ -116,8 +111,6 @@ window.__ModuleLoader__.load({
       `.${OWN_CLS.feature}{display:grid;gap:${STYLE.stackGap}}`,
       `.${OWN_CLS.toggleRow}{display:flex;align-items:center;justify-content:space-between;gap:${STYLE.gap};color:var(--dsw-alias-label-primary);font:var(--dsw-font-xs-13);line-height:${STYLE.lineHeight}}`,
       `.${OWN_CLS.toggleText}{font-weight:500}`,
-      `.${OWN_CLS.control}{flex:0 1 ${CONTROL_WIDTH};min-width:0}`,
-      `.${OWN_CLS.control}>*{width:100%;box-sizing:border-box}`,
       `.${OWN_CLS.sync}{display:grid;gap:${STYLE.blockGap};color:var(--dsw-alias-label-primary);font:var(--dsw-font-xs-13);line-height:${STYLE.lineHeight}}`,
       `.${OWN_CLS.syncList}{list-style:none;margin:0;padding:0;display:grid;border:.5px solid var(--dsw-alias-border-l3);border-radius:var(--dsw-radius-sm);overflow:hidden}`,
       `.${OWN_CLS.syncRow}{display:flex;align-items:center;flex-wrap:wrap;gap:${STYLE.stackGap};padding:10px 12px}`,
@@ -131,18 +124,14 @@ window.__ModuleLoader__.load({
     const en = {
       summary: 'Fishball\'s private instance: how DSH starts it.',
       'field.enabled': 'Enabled',
-      'field.targetUrl': 'Remote target',
       launch: 'Launch',
       actions: 'Fishball',
-      targetUrlPlaceholder: 'This DSH\'s connector',
-      targetUrlHint: 'The MCP endpoint of another DSH\'s connector. Leave blank to use the connector in this DSH. Applies at the next start.',
       reconnect: 'Reconnect',
       reconnecting: 'Reconnecting…',
       reconnected: 'A new hosted token was imported into Fishball. The old hosted entry stays in the connector until you delete it.',
       reconnectHint: 'Creates a new hosted token in this DSH\'s connector and gives it to Fishball once.',
       'reconnectRefused.not-ready': 'Fishball is not running.',
       'reconnectRefused.connector-missing': 'There is no connector in this DSH.',
-      'reconnectRefused.target-remote': 'Fishball links to a remote target: use Connect in Fishball\'s settings.',
       'reconnectRefused.operation-failed': 'The connector could not create a token.',
       'reconnectRefused.credentials-unwritable': 'Fishball could not store the token. Delete the new hosted entry in the connector\'s settings.',
       open: 'Open Fishball',
@@ -198,18 +187,14 @@ window.__ModuleLoader__.load({
     const zh = {
       summary: 'Fishball 的私有实例：DSH 如何启动它。',
       'field.enabled': '启用',
-      'field.targetUrl': '远程目标',
       launch: '启动',
       actions: 'Fishball',
-      targetUrlPlaceholder: '本 DSH 的连接器',
-      targetUrlHint: '另一个 DSH 的连接器 MCP 地址。留空则使用本 DSH 的连接器。下次启动时生效。',
       reconnect: '重新连接',
       reconnecting: '正在重新连接…',
       reconnected: '已向 Fishball 导入一个新的托管 token。旧的托管条目会保留在连接器中，直到你删除它。',
       reconnectHint: '在本 DSH 的连接器中创建一个新的托管 token，并交给 Fishball 一次。',
       'reconnectRefused.not-ready': 'Fishball 未在运行。',
       'reconnectRefused.connector-missing': '本 DSH 中没有连接器。',
-      'reconnectRefused.target-remote': 'Fishball 连接的是远程目标：请在 Fishball 设置中使用 Connect。',
       'reconnectRefused.operation-failed': '连接器无法创建 token。',
       'reconnectRefused.credentials-unwritable': 'Fishball 无法保存该 token。请在连接器设置中删除新的托管条目。',
       open: '打开 Fishball',
@@ -294,17 +279,9 @@ window.__ModuleLoader__.load({
      * @param scope - the row's configuration form (`configForms.get`).
      * @returns the page's snapshot, its form actions and its disposer.
      */
-    /** `targetUrl` as a staged text field, trimmed; blank is the connector in this DSH. */
-    const targetUrlField = Object.freeze({
-      field: FIELD.targetUrl,
-      format: (value) => (typeof value === 'string' ? value : ''),
-      parse: (text) => ({ kind: 'set', value: text.trim() }),
-    })
-
     function launchSection(scope) {
       const form = new SettingsFormModel(scope, [
         enabledField,
-        targetUrlField,
       ])
       const store = form.bind(() => ({
         ...form.shell(),
@@ -449,8 +426,8 @@ window.__ModuleLoader__.load({
     }
 
     /**
-     * The page: the status line, the actions, the model block, then the `enabled` switch and the
-     * remote target. The switch stages a boolean.
+     * The page: the status line, the actions, the model block, then the `enabled` switch.
+     * The switch stages a boolean; the actual parent cannot be overridden.
      * @param section - the staged form from {@link launchSection}.
      * @param t - this card's locale reader.
      * @param shared - the status-line module (client.status.js).
@@ -496,21 +473,7 @@ window.__ModuleLoader__.load({
                 disabled,
                 onChange: (on) => section.actions.edit(FIELD.enabled, on ? FLAG.on : FLAG.off),
               })),
-            h('p', { className: CLS.hint }, t('enabledHint'))),
-          h('div', { className: CLS.feature },
-            h('label', { className: CLS.toggleRow },
-              h('span', { className: CLS.toggleText }, t('field.targetUrl')),
-              h('span', { className: CLS.control },
-                h(Input, {
-                  type: 'url',
-                  value: state.fields[FIELD.targetUrl].text,
-                  disabled,
-                  placeholder: t('targetUrlPlaceholder'),
-                  'aria-label': t('field.targetUrl'),
-                  'data-dsh-instance-target': true,
-                  onChange: (event) => section.actions.edit(FIELD.targetUrl, event.target.value),
-                }))),
-            h('p', { className: CLS.hint }, t('targetUrlHint')))))))
+            h('p', { className: CLS.hint }, t('enabledHint')))))))
       }
     }
 

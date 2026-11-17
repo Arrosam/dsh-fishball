@@ -11,3 +11,6 @@ registerReviewXHttpCases('0.2.2-rc.1')
 
 import { registerMultiHttpCases } from './multi-cases.mjs'
 registerMultiHttpCases('0.2.2-rc.1')
+
+import { registerMultiHttpResourceCases } from './multi-resource-cases.mjs'
+registerMultiHttpResourceCases('0.2.2-rc.1')

@@ -113,9 +113,17 @@ no network requests. Setting a nonblank name stops the watcher; clearing it star
 again. Disposing the connector stops it. A live identity read also observes hostname changes
 without waiting for the next check.
 
-This independent MULTI-2 foundation does not yet send rename notifications: the identity-resource
-and push hookup waits for MULTI-0's frozen contract. The settings page's preservation of padded
-nonblank names is pending its R-FIX-CUI owner; the server already preserves stored values verbatim.
+Full-power clients can list/read `dsh-agent://identity` (`dsh-identity`, `application/json`). Its
+single JSON text content is the same live `{name, version}` as modern MCP discovery at
+`result._meta['io.modelcontextprotocol/serverInfo']`. Include that URI in the existing
+`subscriptions/listen` filter to receive standard `notifications/resources/updated {uri}` hints.
+A setting rename or observed hostname change broadcasts only to subscribed authenticated clients;
+unchanged effective names send nothing. Rediscover/read on a hint and after reopening the stream:
+hints are not durable replay. Renames do not remount the endpoint, change tools or OAuth, or require
+re-pairing. Pair-only clients retain their existing restricted surface.
+
+The settings page and the server preserve nonblank names verbatim, including leading/trailing
+spaces. A whitespace-only setting counts as unset.
 
 ### Limits
 

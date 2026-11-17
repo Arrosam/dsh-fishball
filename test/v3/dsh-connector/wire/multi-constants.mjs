@@ -1,7 +1,7 @@
 /** MULTI-2 requirement/fixture data; not imported from product internals. */
 export const MULTI = Object.freeze({
   id: 'MULTI-2', scenario: 'multi-identity', suffix: '-DSH', identityUri: 'dsh-agent://identity',
-  infoKey: 'io.modelcontextprotocol/serverInfo', mimeType: 'application/json',
+  infoKey: 'io.modelcontextprotocol/serverInfo', subscriptionKey: 'io.modelcontextprotocol/subscriptionId', mimeType: 'application/json',
   updated: 'notifications/resources/updated', toolsChanged: 'notifications/tools/list_changed',
   watchMs: 30000, beforeWatchMs: 29999, boundaryStepMs: 1,
   hostname: 'MULTI host α', nextHostname: 'MULTI host β', finalHostname: 'MULTI host γ',

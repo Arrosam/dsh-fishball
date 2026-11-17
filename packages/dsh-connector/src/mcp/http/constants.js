@@ -76,8 +76,8 @@ export const UNKNOWN_ADDRESS = 'unknown'
 /** The URL base for parsing a request target's query; only the query is read, never this host. */
 export const URL_BASE = 'http://request.invalid'
 
-/** MULTI-2: raw MCP identity suffix and Fishball's local-only hostname check interval. */
-export const SERVER_IDENTITY = Object.freeze({ suffix: '-DSH', hostnameCheckMs: 30 * TIME_UNIT.msPerSecond })
+/** Fishball's decision: sample the local hostname only while the configured DSH name is blank. */
+export const HOSTNAME_WATCH = Object.freeze({ intervalMs: 30 * TIME_UNIT.msPerSecond })
 /** The connector manifest, relative to this module, read once for `serverInfo.version`. */
 export const MANIFEST_URL = new URL('../../../package.json', import.meta.url)
 
