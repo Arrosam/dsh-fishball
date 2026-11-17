@@ -16,11 +16,11 @@ decided at review (relayed by Fishball); `#n` is its row in [User decisions](#us
 the RFCs it cites (requirements 1.18).
 
 One owner per value: the protocol version, the `contributed:` prefix and the shared refusal words
-are K2's (`../tools/constants.js`); this module imports them and never restates them. The V2
-domain's operation codes, payload vocabularies and payload bounds were `./contract`'s until
-C-WIRE-2 deleted it; they moved here unchanged (`REFUSAL`, `DELIVERY`, `APPROVAL_DECISION`, `RISK`,
-`GRANT_KIND`, `PROMPT_DECISIONS`, `APPROVAL_KIND`, `PLAN_REVIEW`, `ARGUMENTS_STATUS`,
-`IMAGE_MEDIA`, `IMAGE_TYPES`, `PAYLOAD_LIMITS`): a move, not an amendment.
+are K2's (`../tools/constants.js`); this module imports them and never restates them. The
+domain's operation codes, payload vocabularies and payload bounds are this module's own
+(`REFUSAL`, `DELIVERY`, `APPROVAL_DECISION`, `RISK`, `GRANT_KIND`, `PROMPT_DECISIONS`,
+`APPROVAL_KIND`, `PLAN_REVIEW`, `ARGUMENTS_STATUS`, `IMAGE_MEDIA`, `IMAGE_TYPES`,
+`PAYLOAD_LIMITS`).
 
 ## Protocol
 
