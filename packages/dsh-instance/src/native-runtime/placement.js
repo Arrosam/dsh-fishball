@@ -190,7 +190,7 @@ const hostModule = (installation, specifier) => import(pathToFileURL(createRequi
  * @param installation - resolveInstallation's result, with the host's `packageManager` when DSH
  *   supplies one (the plugin manager's own rule: that invocation, else `pnpmCommand`).
  */
-async function installPackedSet(paths, installation, set) {
+async function installPackedSet(paths, installation, set, signal) {
   const install = PLACEMENT.install
   const present = await Promise.all(install.order.map((name) => installedAt(paths.profile, name, set.version)))
   if (present.every(Boolean)) return
@@ -199,7 +199,8 @@ async function installPackedSet(paths, installation, set) {
   const manager = installation.packageManager ?? { command: config.pnpmCommand }
   const options = {
     ...manager,
-    env: { ...manager.env, ...install.noRetries },
+    env: { ...manager.env, ...install.noRetries, [install.fetchTimeout]: String(config.inspectTimeoutMs) },
+    ...(signal ? { signal } : {}),
     execution: install.execution,
     activateNewBundles: false,
     outputBytes: config.outputBytes,
@@ -208,19 +209,21 @@ async function installPackedSet(paths, installation, set) {
     lookupTimeoutMs: config.inspectTimeoutMs,
   }
   const context = { profile: RUNTIME.profileName, dir: paths.profile, installAnchor: installation.installAnchor, cwd: paths.profile }
-  const add = (specs, ...flags) => runPluginCommand(context, [install.command, ...specs, ...flags], options)
+  // A throw (lock wait, pnpm missing, cancellation) counts as a failed run, as a non-zero exit does.
+  const add = (specs, ...flags) => runPluginCommand(context, [install.command, ...specs, ...flags], options).catch((error) => ({ error }))
   if ((await add(install.order.map((name) => install.spec(name, set.version)))).exitCode === install.succeeded) return
+  if (signal?.aborted) fail('START_INTERRUPTED')
   const vendored = []
   for (const name of install.order) {
     const source = set.tarball(name)
-    if (!(await exists(source))?.isFile()) fail(PLACEMENT.code.installFailed, PLACEMENT.installFailed(source))
+    if (!(await exists(source))?.isFile()) fail(PLACEMENT.code.installFailed, PLACEMENT.installFailed('missing ' + source))
     const target = path.join(paths.profile, PLACEMENT.vendor, path.basename(source))
     await rm(target, { force: true })
     await copyFile(source, target)
     vendored.push(target)
   }
   const result = await add(vendored, install.offline)
-  if (result.exitCode !== install.succeeded) fail(PLACEMENT.code.installFailed, PLACEMENT.installFailed(result.logPath))
+  if (result.exitCode !== install.succeeded) fail(PLACEMENT.code.installFailed, PLACEMENT.installFailed(result.logPath ? 'see ' + result.logPath : String(result.error?.code ?? result.error?.message)))
 }
 
 /** One library package as its shipped files (Q-21), from its folder `root`. */
@@ -290,10 +293,10 @@ async function readRecord(file) {
  * instance only the instance's own library, after installPackedSet put the set in (each tarball
  * carries its own libraries in its node_modules).
  */
-async function copiedSources(paths, installation) {
+async function copiedSources(paths, installation, signal) {
   const set = await packedSet()
   if (set) {
-    await installPackedSet(paths, installation, set)
+    await installPackedSet(paths, installation, set, signal)
     return librarySources()
   }
   const members = await Promise.all(PLACEMENT.bundles.map(async (bundle) => ({ name: bundle.name, ...await memberSource(bundle) })))
@@ -318,10 +321,11 @@ async function copiedSources(paths, installation) {
  * @param paths - the runtime layout (files.js pathsFor).
  * @param boot - the installation's dsh-app-boot module (readProfileManifest, writeProfileBundles).
  * @param installation - the running DSH installation (installation.js resolveInstallation).
+ * @param [signal] - the start's abort signal; it cancels a packed install still running.
  */
-export async function placeBundles(paths, boot, installation) {
+export async function placeBundles(paths, boot, installation, signal) {
   const before = boot.readProfileManifest(RUNTIME.profileName, paths.profile).dependencies ?? {}
-  const sources = await copiedSources(paths, installation)
+  const sources = await copiedSources(paths, installation, signal)
   for (const source of sources) {
     for (const parent of [PLACEMENT.vendor, PLACEMENT.modules]) {
       await replaceSlot(path.join(paths.profile, parent), source.name, (target) => writePackage(source.root, source.files, source.manifest, target))

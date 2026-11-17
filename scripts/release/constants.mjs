@@ -77,6 +77,12 @@ export const LAYOUT = Object.freeze({
   sumLine: (digest, name) => digest + '  ' + name,
   sumPattern: /^([0-9a-f]{64}) {2}(\S+)$/,
   tarballSuffix: '.tgz',
+  // A store index entry pnpm writes for a local file: tarball (`file+<path>`); a release store holds none.
+  localStoreEntry: /^file\+/,
+  // npm pack puts every file under `package/`; `tar -tv` marks a symlink `l`, a hard link `h`.
+  packageRoot: 'package',
+  tar: 'tar',
+  linkEntry: /^[lh]/,
 })
 
 /**
@@ -85,7 +91,8 @@ export const LAYOUT = Object.freeze({
  * tarball holds runtime code, manifests and licences only.
  */
 export const JUNK = Object.freeze({
-  directories: Object.freeze(['test', 'tests', '__tests__', 'spikes', '.runtime', 'coverage']),
+  // .bin holds links to bundled packages' executables; nothing in a plugin runs them.
+  directories: Object.freeze(['test', 'tests', '__tests__', 'spikes', '.runtime', 'coverage', '.bin']),
   names: Object.freeze(['.DS_Store', '.env', '.npmrc', 'pnpm-lock.yaml', 'package-lock.json']),
   patterns: Object.freeze([/\.test\.[^/]+$/, /\.log$/, /\.sqlite/, /\.db$/, /^\.env\./]),
 })
@@ -107,14 +114,54 @@ export const COMMAND = Object.freeze({
   ignoreScripts: '--ignore-scripts',
   registry: '--registry=' + REGISTRY,
   offline: '--offline',
+  // No lockfile is written or committed (the user's REL-PACK rule).
+  noLockfile: '--config.lockfile=false',
   // npm 11 refuses /dev/null as the global config too, so the pack writes an empty one (see isolate).
   userconfig: '/dev/null',
 })
 
+/** How a pack isolates npm and pnpm from the user's configuration (tools.mjs isolate). */
+export const ISOLATION = Object.freeze({
+  // Every npm or pnpm setting the shell exports, in either case (NPM_CONFIG_USERCONFIG included).
+  npmSetting: /^npm_config_/i,
+  home: 'home',
+  globalconfig: 'npmrc-global',
+  npmCache: 'npm-cache',
+  // pnpm also reads $XDG_CONFIG_HOME/pnpm/rc and keeps state under the other two.
+  xdg: Object.freeze(['config', 'data', 'cache', 'state']),
+  xdgVariable: (name) => 'XDG_' + name.toUpperCase() + '_HOME',
+  // npm pack --json of fishball-core lists ~1000 files; this bounds a run's captured stdout.
+  maxOutputBytes: 256 * 1024 * 1024,
+})
+
+/** The pack's scratch folder layout and the closure project it installs third-party packages in. */
+export const SCRATCH = Object.freeze({
+  prefix: 'rel-pack-',
+  stage: 'stage',
+  closure: 'closure',
+  storeProject: 'store',
+  projectName: 'rel-pack-closure',
+  modules: 'node_modules',
+  manifest: 'package.json',
+  workspace: 'pnpm-workspace.yaml',
+  hidden: '.',
+  scope: '@',
+  /**
+   * pnpm settings for the closure project: the text dsh-app-boot initProfile writes into every DSH
+   * profile (PROFILE_PNPM_WORKSPACE, identical in 0.2.1-rc.5 and 0.2.2-rc.1), so the closure
+   * resolves and lays out as a profile install does. A copy, because the pack runs from a checkout
+   * with no DSH installed; revisit if DSH changes that text.
+   */
+  workspaceText: 'packages:\n  - .\n\nnodeLinker: hoisted\nautoInstallPeers: false\n',
+})
+
+
 /** The pack script's command line. */
 export const CLI = Object.freeze({
-  check: '--check',
-  out: '--out',
+  check: 'check',
+  out: 'out',
   usage: 'Usage: node scripts/pack-v3.mjs [--out <dir>]\n       node scripts/pack-v3.mjs --check [--out <dir>]\n',
+  // A pack replaces --out only when it is empty, missing or an earlier release (it holds SHA256SUMS).
+  refuseOut: (out) => 'refusing to replace ' + out + ': not empty and not a release folder (no SHA256SUMS)\n',
   exit: Object.freeze({ ok: 0, failed: 1, usage: 2 }),
 })

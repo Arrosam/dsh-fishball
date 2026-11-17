@@ -195,6 +195,12 @@ export const PLACEMENT = Object.freeze({
    * `--config.fetch-retries` flag; three specs then took 211 s, past the 60 s start bound, so the
    * tarball fallback would never run. With it a dead registry fails in about a second. The
    * environment reaches both the lookups and the add (operations.js runProfilePnpm `options.env`).
+   * `fetchTimeout` bounds one registry request by the plugin manager's own lookup bound
+   * (PluginManager.Config inspectTimeoutMs), so a network that drops packets fails like a refused
+   * one instead of waiting pnpm's 60 s default; the run also takes the start's abort signal, so a
+   * start that times out or is stopped cancels it and frees the profile lock. The registry run uses
+   * the main DSH's scrubbed environment and so the user's own registry, proxy and mirror settings,
+   * as any DSH plugin install does; the offline fallback needs none of them.
    */
   install: Object.freeze({
     order: Object.freeze(['fishball-ui', 'fishball-board', 'fishball-core']),
@@ -204,6 +210,7 @@ export const PLACEMENT = Object.freeze({
     execution: 'service',
     spec: (name, version) => name + '@' + version,
     noRetries: Object.freeze({ npm_config_fetch_retries: '0' }),
+    fetchTimeout: 'npm_config_fetch_timeout',
     offline: '--offline',
     succeeded: 0,
   }),
@@ -235,7 +242,7 @@ export const PLACEMENT = Object.freeze({
   /** The NativeRuntimeError field naming the first skipped bundle of an `incompatible` refusal (K3 `ChildStatus.plugin`). */
   pluginField: 'plugin',
   // installPackedSet's refusal detail: the missing tarball, or the plugin manager's diagnostic log of the failed offline add.
-  installFailed: (where) => 'The Fishball plugins could not be installed from the registry or from ' + where,
+  installFailed: (detail) => 'The Fishball plugins could not be installed from the registry or from the bundled tarballs (' + detail + ')',
   // R-BND-03: an enabled bundle that DSH skips blocks the start; the status names it and DSH's
   // reason. One line, because the host's launch detail keeps only the first line (launch-detail.js).
   incompatible: (skipped) => 'Enabled bundles cannot load: ' + skipped.map(({ packageName, reason }) => packageName + ' (' + String(reason).replace(/\s+/g, ' ').trim() + ')').join('; '),

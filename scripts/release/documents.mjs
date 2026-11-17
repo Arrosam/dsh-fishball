@@ -17,12 +17,15 @@ function installMarkdown(packages) {
   const name = (key) => packages[key].manifest.name
   const names = (set) => INSTALL_SETS[set].map(name)
   const spec = (key) => name(key) + '@' + VERSION
-  const tarball = (key) => './' + LAYOUT.tarball(name(key), VERSION)
-  const offline = ['--offline', '--store-dir=./' + LAYOUT.store, '--cache-dir=./' + LAYOUT.cache]
+  // Absolute: DSH runs pnpm in the profile folder and anchors only bare `./x` package specs, so a
+  // relative store path would point into the profile. The registry is named because pnpm keys its
+  // metadata cache by registry, and the cache here was filled from this one.
+  const offline = [COMMAND.offline, '--store-dir="$PWD/' + LAYOUT.store + '"', '--cache-dir="$PWD/' + LAYOUT.cache + '"', COMMAND.registry]
+  const tarball = (key) => '"$PWD/' + LAYOUT.tarball(name(key), VERSION) + '"'
   return `# Fishball ${VERSION}: install and uninstall
 
 Supported: DeepSeek Harness (DSH) ${SDKS.join(' and ')}. The packages declare \`engines.dsh\` \`>=0.2.1-rc.5\` and
-Node \`>=22.14\`; DSH itself runs on Node 24.9 or later.
+Node \`>=22.14\`; DSH 0.2.2-rc.1 itself declares Node 24.9 or later.
 
 All commands use the profile \`${PROFILE}\`. Put your own profile name after \`--profile\`. **Quit DSH before
 you run any \`dsh plugin\` command.**
@@ -31,7 +34,7 @@ you run any \`dsh plugin\` command.**
 
 - **From npm** (once the packages are published, see PUBLISH.md): \`dsh plugin --profile ${PROFILE} add <name>@${VERSION}\`.
   DSH's plugin manager fetches each package and its declared dependencies.
-- **From this folder, with no network**: run the commands in this folder. Each package is a tarball here, and
+- **From this folder, with no network**: run the commands from this folder (they use \`$PWD\`). Each package is a tarball here, and
   \`${LAYOUT.store}/\` and \`${LAYOUT.cache}/\` hold every third-party dependency, so pnpm needs no registry:
   add \`${offline.join(' ')}\` to the command.
 
