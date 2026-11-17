@@ -1,14 +1,23 @@
-# `fishball-instance` extension points: one change for fold-notify, board and watchdog
+# `fishball-instance` extension points: one change for board and watchdog
 
 Status: design, updated 2026-11-09. Branch `design/instance-ext`, first cut from `feat/body-soul` at
 003db61, **rebased onto `feat/body-soul` 1425384** ("Merge branch 'fix/e1-p3'"; it includes
 90ec004). The file references below were checked against 1425384.
 
+**V3 status (2026-11-17).** This is a historical design. The V3 code wins where they differ:
+- fold-notify is not in V3. Its notify function is dsh-connector-ui's `notify` tool.
+- The watchdog is not in V3. It is a separate future project.
+- `fishball-instance` is now `dsh-instance`. `fishballInstance` is provided by `fishball-core`
+  (`packages/core/src/main/index.js`), not by the instance.
+- The instance places exactly `fishball-board`, `fishball-ui` and `fishball-core` (core last)
+  into the child (`packages/dsh-instance/src/native-runtime/constants.js` `PLACEMENT.bundles`).
+- The board has no archive export (the user's decision 2026-11-15; §12.6).
+
 Sources, kept as they are (§8 lists the doc edits each one needs to use the canonical names):
 
 | Plugin | Branch, commit | Design | Its points |
 | --- | --- | --- | --- |
-| fold-notify | `design/fold-notify` 7347c1f | `docs/plugins/fold-notify-design.md` §9, §13 | E1–E9 (fE1…fE9) |
+| fold-notify (not in V3; its notify function is dsh-connector-ui's `notify` tool; the fE ids below are kept for traceability) | `design/fold-notify` 7347c1f | — | E1–E9 (fE1…fE9) |
 | watchdog | `design/watchdog` 1bef938 | `docs/plugins/watchdog-design.md` §13, §4.5 | E1–E10 (wE1…wE10) |
 | board | `design/recall-memory` fc9bc8d | `docs/plugins/board-design.md` §8, §7 | 4 needs (b1…b4) built on fE1, fE2, fE4, fE8/9 |
 
@@ -36,7 +45,7 @@ verification plans below are not current attention acceptance criteria or execut
 
 | # | Decision (user's words where given) | Where it lands |
 | --- | --- | --- |
-| U1 | The watchdog is **bundled** with `fishball-instance`, like fold-notify and board: on by default, can be turned off, cannot be removed | X17, X18 |
+| U1 | The watchdog is **bundled** with `fishball-instance`, like board: on by default, can be turned off, cannot be removed | X17, X18 |
 | U2 | "开着时Fishball在启动会话时必须一并Assign Watchdog": while the watchdog is on, every session Fishball starts gets a brief at start | X16, enforced in code (§2.3) |
 | U3 | With the watchdog **off**, Fishball runs everything directly, as v1 does today: permission requests and supervision go to Fishball; no watchdog tools, no watchdog prompt sections | §2.4 |
 | U4 | "中途关掉会自动转交给Fishball": turning it off mid-way **hands the supervised sessions to Fishball**. The sessions keep running, nothing is halted. Fishball gets **one** notice listing them. Briefs and criteria are kept. U20 extends this same hand-over to watchdog faults and supersedes Q13 halting. The coupling rule (R17) still holds, with Fishball as the supervisor | X14 hand-over, §2.4 |
@@ -53,7 +62,7 @@ verification plans below are not current attention acceptance criteria or execut
 | U16 | "watchdog是无论用户在不在都要激活的，原理是利用一个小上下文的小助理来处理工作中反复被唤起，需要允许权限，以及监督会话防止跑偏的。这是一个token节约器，而非一个额外的安全选项。" The watchdog is a **token saver** for Fishball, active whether or not the user is present; not a security layer | §12.3 |
 | U17 | **Final, Q-Q clarified.** Clear a resolved card at once; return the requesting tool's result. Decision records are ordinary chat-history entries only at the layers the request reached: watchdog-only decisions never enter Fishball's context or transcript **automatically**; requests escalated to Fishball or the user do. Q-T permits an explicit `watchdog_decisions` pull, including watchdog-only decisions (§12.8). Compaction removes the record from model context, not the searchable transcript. No separate decision-audit or attribution-label retention store | §12.4 |
 | U18 | X0-C coverage gaps: option A. The tests cover them; behaviour they exposed as unspecified is specified in §12.5 | §12.5 |
-| U19 | "看板任务永不清理，永久都可以通过grep查询关键字来找到过去完成的看板。而看板上的任务一旦完成就留30天，除非主动清除。" Board records are never deleted **while installed**; a closed task stays **on the board** for 30 days unless cleared early, then remains archived. Q-R = B: `board_search` searches the archive. Q-S = A: uninstall offers an archive export first, then deletes the runtime including the archive | §12.6 |
+| U19 | "看板任务永不清理，永久都可以通过grep查询关键字来找到过去完成的看板。而看板上的任务一旦完成就留30天，除非主动清除。" Board records are never deleted **while installed**; a closed task stays **on the board** for 30 days unless cleared early, then remains archived. Q-R = B: `board_search` searches the archive. Q-S = A: uninstall offers an archive export first, then deletes the runtime including the archive. *(Q-S superseded by the user's decision 2026-11-15: no archive export; §12.6.)* | §12.6 |
 | U20 | "如果是watchdog的故障，视作没有开启Watchdog插件": watchdog faults are effective off. Fishball takes supervision/permissions; X19 passes sends. Supersedes Q13 stop/halt and narrows Q-A=B and K-3 to a healthy enabled watchdog. Recovery preserves U6 dormant briefs, not automatic re-claim | §2.3–§2.6 |
 | U21 | Questions and plan reviews are never claimed by the watchdog; Fishball always handles them and may separately refine the watched session's direction while answering | §2.7, WD-11 |
 | U22 | Old timer-contract third-party instances (1.1) are incompatible; no legacy exception. The earlier custom-2.0 negotiation is superseded by one-way MCP: remove old control endpoint/exports and refuse incompatible consumers before delegation; mandatory timer-free behavior remains | §3, §12.1, K1/K2, MCP-SERVER |
@@ -61,23 +70,23 @@ verification plans below are not current attention acceptance criteria or execut
 
 ## 1. The canonical extension points
 
-**One service.** Every point is a member of one Cordis service, **`fishballInstance`**, provided
-by the instance's app row: `{apiVersion: 1, manager, chat, inbox, ui, attention, bridge,
-sideAgents, approvals, supervision, sessionStarts}`.
+**One service.** Every point is a member of one Cordis service, **`fishballInstance`**. This
+design had the instance's app row provide it as `{apiVersion: 1, manager, chat, inbox, ui,
+attention, bridge, sideAgents, approvals, supervision, sessionStarts}`. In V3, `fishball-core`
+provides it (`packages/core/src/main/index.js`).
 
-*Why one service, and this name.* Fold and board named it `fishballInstanceExtensions`, the
+*Why one service, and this name.* The board design named it `fishballInstanceExtensions`, the
 watchdog `fishballInstance`. The watchdog's name is chosen because it is **versioned**
 (`apiVersion`): a plugin injects it optionally (`'fishballInstance?'`), so a missing service or an
-older `apiVersion` is "older instance". That covers board §11 `instance-hooks-missing` and fold
-"plugin off" without a second probe. `fishballChat` stays the instance's **internal** port. No
+older `apiVersion` is "older instance". That covers board §11 `instance-hooks-missing` without a
+second probe. `fishballChat` stays the instance's **internal** port. No
 plugin reads it, so the manager's identity (fE1) moves to `manager.sessionId()`.
 
 **Rules for every point**
-- `pluginId` is the caller's npm name (`fishball-fold-notify`, `fishball-board`,
-  `fishball-watchdog`). It is also the **namespace**: record types are `plugin:<pluginId>/…`,
+- `pluginId` is the caller's npm name (`fishball-board`, `fishball-watchdog`). It is also the
+  **namespace**: record types are `plugin:<pluginId>/…`,
   routes `api/ext/<pluginId>/…`, UI files `ui/ext/<pluginId>/…`, signals `(pluginId, type)`.
-  *Why.* fold used `fold-notify` in one place and the board used `fishball-board`; one rule means
-  no second registry of short names.
+  *Why.* One rule means no second registry of short names.
 - Every `register…`/`set…` returns `dispose()`. The plugin wraps it in its own `ctx.effect`, so a
   disposed row (disable, reload) removes all of its registrations. A second `dispose` is a no-op.
 - **Single-owner** points refuse a second owner with `{code: 'owner-busy'}`. Fold's "first
@@ -107,7 +116,7 @@ plugin reads it, so the manager's identity (fE1) moves to `manager.sessionId()`.
 | X15 | `approvals.claim(sessionId, {id, name, onCard(card)}) → release`; `card(approvalId)`; `onSettled(listener)`; `answerApproval({…, decidedBy})`; the escalation card in the chat | **per-session claim (U8)**: a claimed session's `kind: approval` cards go to its claimant's `onCard`, every other session's to Fishball. At most one claim per session (a second → `owner-busy`). Questions/plan reviews never enter this claim (U21). A claim is accepted only while X14 is healthy and holds the session as `active` or `paused` (else `not-supervised`), and the instance drops it itself when X14 moves the session to `dormant` or clears it (§2.6). While a session is claimed, Fishball's `answer_approval` `grant` on it is refused `grant-off-supervised`, and `answerApproval` with `decidedBy` answers only cards of sessions the caller has claimed. The "代批 / Watchdog" tag; the open escalation card | watchdog | wE6 + wE9; **replaces** the global `setDelegate` and `supervised(sessionIds)` |
 | X16 | `sessionStarts.register(pluginId, {parameter, schema, validate(arg) → {ok:true} \| {code}, attach(sessionId, arg) → Promise<{ok:true} \| {code}>}) → dispose`, single owner | **new (U2/U20)**: while registered **and effective on**, `start_session` has one more **required** argument and cannot start a session without it (§2.3). `attach` ends with `supervision.set(id, 'active')` and `approvals.claim(id, …)`, so the started session is sendable and subsequent permission cards go to its watchdog; pre-attach cards go to Fishball (§2.3) | watchdog | new |
 | X19 | **Send gate** (instance-internal; the plugin only feeds it through X14): one check `gate.send(operation, sessionId) → ok \| {code, reason}` called by the bridge client for every manager→session send operation (`SUPERVISION.sendOperations` = `session.message`, `session.redirect`), plus the hand-over hint (§2.5) | **new (U5)**: while the gate is on, no send reaches a session without an **active** brief; replaces wE10's gate, which only covered `paused`/`halted`. **The gate is on only while `fishball-watchdog` is enabled AND healthy** (U7/U20); faults hand over to Fishball and pass sends | watchdog | wE10 gate + U5 + U7 |
-| X17 | `RUNTIME.bundledPlugins = [{name: 'fishball-fold-notify'}, {name: 'fishball-board'}, {name: 'fishball-watchdog'}]` and placement at every child start | built in, on at first placement | all three | fE8 = b4 |
+| X17 | `RUNTIME.bundledPlugins = [{name: 'fishball-fold-notify'}, {name: 'fishball-board'}, {name: 'fishball-watchdog'}]` and placement at every child start *(V3: the list is `PLACEMENT.bundles` = `fishball-board`, `fishball-ui`, `fishball-core`, core last; `packages/dsh-instance/src/native-runtime/constants.js`)* | built in, on at first placement | all three | fE8 = b4 |
 | X18 | `admin.plugins.get` marks a bundled plugin `{bundled: true, removable: false}`; `admin.plugin.remove` refuses `bundled-plugin`; enable/disable work. **Added:** disabling `fishball-watchdog`, through any path, is a hand-over (§2.4, U7) | the off switch the user keeps | all three | fE9 + U4 |
 | K1 / connector | optional `attention.signal` + connector-owned `state.unread = {count, important}` | green sidebar dot, existing important animation; count is a 0/1 latch reset on page open and detach | fold | fE6 (wire half), fold §9.1 |
 
@@ -119,8 +128,8 @@ plugin reads it, so the manager's identity (fE1) moves to `manager.sessionId()`.
 | Service name | `fishballInstanceExtensions` vs `fishballInstance` | `fishballInstance` (`apiVersion: 1`) | versioned; one optional inject detects an older instance |
 | Manager identity | `fishballChat.sessionId()` vs `manager.sessionId()` | `manager.sessionId()` | keeps `fishballChat` internal; it sits next to the other manager members |
 | Single-owner refusal code | "first registered wins" (fE5) vs `delegate-busy` (wE6) | `owner-busy` for X7 presenter, X9 batcher, X15 (per session), X16 | one rule, one test partition |
-| Namespace | `fold-notify` vs `fishball-board` | the package name | one rule for records, routes, files and signals |
-| Showing plugin records | fE3 needs a page module; the watchdog has none | X3 with an optional `text` fallback | the watchdog's guard notice must reach the user even with fold-notify off (watchdog §4.5.4 step 3) |
+| Namespace | a short name vs the package name (`fishball-board`) | the package name | one rule for records, routes, files and signals |
+| Showing plugin records | fE3 needs a page module; the watchdog has none | X3 with an optional `text` fallback | the watchdog's guard notice must reach the user with no page module (watchdog §4.5.4 step 3) |
 | Inbox: claims vs batcher order | not stated by either | claims first, then the batcher; a released item re-enters after the claims | a claimed approval notice must never be delivered, batched or not; a released notice is an ordinary notice for fold §7 |
 | Watchdog's own `enabled` setting (watchdog §9) vs the Plugins block switch (X18) | two off switches | **one**: the Plugins block switch; the `enabled` setting is removed | fold §10 did the same. With two switches, "off" would have two meanings (halt vs hand-over), and U4 defines off as hand-over |
 
@@ -163,8 +172,8 @@ conditions):
    - So that check ignores exactly the bundled names whose placement failed **this** start; every
      other skipped bundle stays fatal.
    - The manifest is not edited on a failure, because its bundle list is the user's enable state;
-7. Bundle removal still deletes the runtime; B10 adds the archive-export offer before deletion
-   (U19/Q-S, §12.6).
+7. Bundle removal still deletes the runtime. There is no archive export (the user's decision
+   2026-11-15; B10 is withdrawn, §12.6).
 
 Each name is placed **independently**: one failed placement does not stop the others.
 
@@ -586,29 +595,21 @@ other X0 task owns **its own** new file `child/ext/<area>.js` and fills its memb
 
 | Task | Was | Owns | Depends |
 | --- | --- | --- | --- |
-| FN-1 skeleton | FN-1 | `packages/fold-notify/{package.json,cordis.patch.yml,index.js,src/constants.js,src/config.js}` | — |
-| FN-2 tool + section | FN-2 | `src/tool.js` | X0-C (X1, X2), FN-1 |
-| FN-3 notices, seen, attention | FN-3 | `src/notices.js`, the `seen` Fetch route | X0-C, X0-W (X8), FN-1, CHILD-WEB (Fetch routes) |
-| FN-4 fold as a DSH conversation plugin | FN-4 | `packages/fold-notify/client/` (`dsh.client`: a group/node definition on `uiConversation`, its CSS, i18n) | PG-1 |
-| FN-5 notify side (viewed, title, system notification, important bar) | FN-5 | `packages/fold-notify/client/notify.js` (+ its CSS after FN-4) | FN-3, FN-4 |
-| FN-6 turn batching | FN-6 | `src/batcher.js` | X0-I (X9 batcher), FN-1 |
-| FN-A connector alert | FN-A | `packages/connector/client.js` (fold §9.1 rows) | K1 |
-| — | FN-0, FN-E6, FN-K, FN-B | absorbed into X0-*, K1 | — |
+| FN-0 … FN-7, FN-A, FN-E6, FN-K, FN-B | withdrawn | fold-notify is not in V3; its notify function is dsh-connector-ui's `notify` tool | — |
 | WD-1 … WD-10 | same, with U14/Q-P edits: WD-1 loses approval-time settings and the window-sum check; WD-8 keeps check timeouts only and WD-10 has no R4, escalating immediately on any decision-turn end without a decision; U17/Q-Q: WD-4 excludes decision records from its audit/rotation (operational audit remains); WD-8's rollover digest does not retain compacted decision entries; WD-9/WD-10 replace decision-audit/manager-label copies with reached-layer transcript records (§12.4); U20: WD-9 reports model/store failure or the retained 3-failure/900 s health thresholds through X14 `fail(cause)`, not stop/halt; remove plugin-gone grace-stop logic; U21: WD-3 persists optimistic refine revisions, WD-4 refreshes the brief section, WD-6 triggers `revised` only for active briefs, WD-10 never queues questions/plan reviews (§2.7) | `packages/watchdog/…` as watchdog §14 | WD-0 → the X0 task that owns the point (WD-8: X0-G; WD-10: X0-I, X0-A) |
 | WD-11 manager tools | WD-11; Q-T = modified B: keep `watchdog_decisions {offset?, limit?, session_id?}`; done when §12.8's count-range defaults/bounds, newest-first order, result fields, refusals and EP/BVA cases hold, including watchdog-only and compacted history; explicit pull only, no automatic delivery or separate audit store; U21: reuse `watchdog_refine {brief_id, expected_revision, reason, <fields>}` and its answer-path guide (§2.7), with revision/refusal/bounds handling; answering questions/plan reviews is independent of optional refinement, stale revisions require explicit reconciliation, dormant/paused refinements do not check/resume/claim | `src/manager-tools.js` | registers through **X2** (not wE3/wE4); X0-C, WD-2, WD-3, WD-6, WD-9, WD-13; reads WD-8/WD-10's ordinary decision transcripts |
 | WD-13 coupling | WD-13; U20 replaces Q13 halt coupling with continuous Fishball/watchdog ownership | `src/coupling.js` | X0-S; both `endingReason()` values use §2.4 hand-over with no stop/halt; readiness checks and durable `handedOver` → `dormant` recovery precede `ready()`, with one recovery notice; only explicit `watchdog_resume` or new `watchdog_brief` restores active/claims; old halted records migrate via hand-over, no automatic re-stop |
 | **WD-14** start-time assignment (new) | U20: attach failure/timeout/lost generation hands over rather than stopping or retrying a successful start | new `src/start-assign.js` | X0-S (X16), WD-2, WD-6, WD-13; late completions cannot restore authority |
 | WD-12 integration | WD-12; adds U20 whole-plugin failure/recovery and U21 routing/refine coverage (§6) | `index.js` wiring, e2e | all WD, X0-B |
 | B1 … B4 | same, with U19 edits: B1 the visibility window; B3 the archive and visibility (§12.6); B4 the `clear` item | `packages/board/…` as board §14, plus `src/archive.js` | X0-C (X1, X2) |
-| B5 board context + panel | B5 | `src/{inject,routes}.js` and `packages/board/client/` (`dsh.client`: a `rightbar` panel entry); U19 acceptance: one visibility projection for panel/context, Done **and Dropped** through 30 days inclusive, early clear removes either, reopen restores it; existing context budgets remain; `doneWindowHours` is only a recent-done count, never the panel cutoff | B4, PG-1 |
-| **B10** archive export before uninstall | new, Q-S = A | `uninstall.js` and its existing removal entry point; complete archive export, not just `board.json`; export offered before removal, accepted export completes outside runtime, failure preserves runtime, decline permits deletion (§12.6) | B3, X0-B |
+| B5 board context + panel | B5 | `src/{inject,routes}.js` and `packages/board/client/` (`dsh.client`: a `rightbar` panel entry); U19 acceptance: one visibility projection for panel/context, Done **and Dropped** while less than 30 days have passed since `closedAt` (at exactly 30 days the card is archived), early clear removes either, reopen restores it; existing context budgets remain; `doneWindowHours` is only a recent-done count, never the panel cutoff | B4, PG-1 |
+| ~~B10~~ archive export before uninstall | **withdrawn** (the user's decision 2026-11-15: no archive export; §12.6) | — | — |
 | **B11** archive search | new, Q-R = B | `packages/board/src/search.js`, tool registration and guide; `board_search {query, status?, limit?}` and the exact result/refusal/limit contract of §12.7; finds a keyword in a card older than 30 days, including cleared cards, without changing visibility | B3, B4, X0-C |
 | B6 meow-memory recommended | B6 | `src/recommended.js` (the `noteKey` and the meow entry), DESIGN.md; the tab itself is RP | — (RP reads it) |
 | B7 meow in the child | B7 | test rig only | B6 |
-| B8 board e2e | B8 | `test/e2e/board.*`; includes visibility/clear/reopen, old-card search, and export-before-uninstall | B1–B5, B10, B11, X0-B |
+| B8 board e2e | B8 | `test/e2e/board.*`; includes visibility/clear/reopen and old-card search (no export: B10 is withdrawn) | B1–B5, B11, X0-B |
 | — | B9 | absorbed into X0-B (all three names) | — |
-| **X-E2E** three bundled together | new | `test/e2e/bundled.*` | X0-*, FN-7, WD-12, B8 |
-| FN-7 docs | FN-7 | README, contract cross-check | all FN |
+| **X-E2E** three bundled together | new | `test/e2e/bundled.*` | X0-*, WD-12, B8 |
 
 ### 5.4 A-lite page tasks (U10–U12, §11)
 
@@ -633,9 +634,11 @@ other X0 task owns **its own** new file `child/ext/<area>.js` and fills its memb
 | W0 | **Added:** MCP-S1 and MCP-S2 in parallel → MCP-S3 freeze → **changed K1** shared schemas/fixtures. In parallel: **changed X0-C** local seams (align with K1 before W1), retained FN-1, WD-1, B1. No old custom-control implementation |
 | W1 | **Added:** MCP-SERVER and FB-PUSH after K1/X0-C as applicable; integrate with **changed** K2, X0-W, X0-I/X0-A and FN-A against shared fixtures, ship coordinated removal/consumer upgrade together. **Retained:** SP-PG first for page work; X0-G, X0-S; WD-2, WD-3, WD-4, WD-5, WD-7; B2, B3 (existing dependencies apply) |
 | W2 | CHILD-WEB, then EMB and PG-1 (all after SP-PG); X0-B (after X0-S); FN-2, FN-6; WD-6, WD-8, WD-9; B4 |
-| W3 | PANELS (after PG-1, X0-A, K2), SET (after PG-1), RP (after X0-B); FN-3, FN-4 (after PG-1); B5 (after PG-1), B10 (after B3, X0-B), B11 (after B3, B4); B6 (W1 is fine: data only); WD-10, WD-11, WD-13 |
+| W3 | PANELS (after PG-1, X0-A, K2), SET (after PG-1), RP (after X0-B); FN-3, FN-4 (after PG-1); B5 (after PG-1), B11 (after B3, B4); B6 (W1 is fine: data only); WD-10, WD-11, WD-13 |
 | W4 | FN-5; WD-14; B7 (after RP); RETIRE (after PANELS, SET, RP, FN-4, B5) |
 | W5 | FN-7, WD-12, B8, then X-E2E |
+
+The FN-* entries in this table are history: fold-notify is not in V3 (§5.2).
 
 ### 5.5 What changed for W0 and X0 (U10–U22, Q-P–Q-T)
 
@@ -688,9 +691,9 @@ other X0 task owns **its own** new file `child/ext/<area>.js` and fills its memb
   answer; dormant/paused refinement neither checks, resumes nor claims. No parallel update tool.
 - **K2/PANELS:** their U17 scope is final, not conditional on draft approval; K2 clears connector
   cards, X0-A clears instance cards, PANELS removes UI cards without erasing transcript results.
-- **B5/B10/B11:** B5 shares the 30-day Done/Dropped visibility projection between panel/context
-  with early clear/reopen; B10 exports before uninstall; B11 searches the permanent-while-installed
-  archive. B8 covers all three. No Q-P–Q-T decision remains open.
+- **B5/B11:** B5 shares the 30-day Done/Dropped visibility projection between panel/context
+  with early clear/reopen; B11 searches the permanent-while-installed archive. B10 (export before
+  uninstall) is withdrawn: no archive export (the user's decision 2026-11-15). B8 covers B5 and B11. No Q-P–Q-T decision remains open.
 - **X0-B:** the "Built in" tag case and the settings-view cases are dropped; X17/X18 server cases
   stand.
 
@@ -706,7 +709,6 @@ lines.
 | K1, K2, MCP-SERVER | shared schemas/contract docs and connector integration | K1 freezes fixtures first; K2 owns lifecycle, MCP-SERVER owns transport/removal; merge shared edits in that order, release together |
 | X0-C, X0-W, FB-PUSH | child bridge/chat lifecycle seams | X0-C ports first; X0-W owns MCP controls, FB-PUSH owns event/ack adapter; coordinate wiring, no duplicate intake |
 | MCP-SERVER, X0-B, CHILD-WEB | manifests and `src/native-runtime/installation.js` | MCP-SERVER removes old contract snapshot/import binding; X0-B/CHILD-WEB rebase their placement/web additions |
-| FN-4, FN-5 | `packages/fold-notify/client/*.css` | FN-4 first |
 | CHILD-WEB, X0-B | `src/native-runtime/{constants,installation}.js` | X0-B first (placement), CHILD-WEB rebases |
 | CHILD-WEB, EMB | none (child vs host), but EMB tests need CHILD-WEB | CHILD-WEB first |
 | PG-1, PANELS, SET | `child-web/fishball-page/` | PG-1 first; PANELS and SET add files only |
@@ -717,16 +719,16 @@ lines.
 
 The tests are black-box and live outside `test/run.mjs`'s `test/*.test.mjs` glob, so the existing
 suite stays green and each task is selected by file. The full case table, the technique counts and
-the open questions are in `docs/test-design/instance-ext-w0.md`. The developer's check command is
+the open questions were in the W0 test design (deleted V2 document). The developer's check command is
 `node --test <file>` with `FBTEST_DSH_RUNTIME` naming the installed 0.2.2-rc.1 runtime.
 
 | Wave/task | Gating test file | Covers |
 | --- | --- | --- |
 | **W0 K1** | `packages/connector/test/instance-ext/k1.test.mjs` | contract 1.2 `instance.attention`, `LIMITS.unreadMax`, mixed peers, the host bridge and `state.unread` |
 | **W0 X0-C** | `packages/instance/test/instance-ext/x0-c.test.mjs` | X1, X2, X10, X11, durable dedupe/cap, typed stub refusal, disabled send paths and ordered array delivery (§12.5); no X3 (U15) |
-| **W0 FN-1** | `packages/fold-notify/test/instance-ext/fn-1.test.mjs` | package, row, config bounds, fixed constants |
+| ~~W0 FN-1~~ | — | withdrawn: fold-notify is not in V3; its notify function is dsh-connector-ui's `notify` tool |
 | **W0 WD-1** | `packages/watchdog/test/instance-ext/wd-1.test.mjs` | package, row, remaining config bounds; no approval timers/window-sum (U14), token-saving helper (U16), no `enabled` field (U7) |
-| **W0 B1** | `packages/board/test/instance-ext/b1.test.mjs` | package, row, config and public constants without a visibility-key assumption; load compatibility; U19 visibility/search/clear/export journeys are owned TODOs |
+| **W0 B1** | `packages/board/test/instance-ext/b1.test.mjs` | package, row, config and public constants without a visibility-key assumption; load compatibility; U19 visibility/search/clear journeys are owned TODOs (no export journey: B10 is withdrawn) |
 | W1 X0-I | `test/instance-ext/x0-i.test.mjs` | X9 |
 | W1 X0-G | `test/instance-ext/x0-g.test.mjs` | X13 |
 | W1 X0-A | `test/instance-ext/x0-a.test.mjs` | X15 server half (claims and routing; tag/card are PANELS) |
@@ -925,11 +927,10 @@ decision table, **ST** state transitions.
   - DT for disabling `fishball-watchdog`: `setBundleEnabled` ok or failed × supervised set empty or
     not → hand-over or nothing changed.
   - BVA: `bundled` state file absent, empty, or listing an unknown name.
-  - uninstall offers full archive export first, then leaves no runtime data; an accepted export
-    survives outside runtime, and export failure prevents deletion (B10).
+  - uninstall leaves no runtime data. There is no archive export (B10 is withdrawn, §12.6).
 - **Plugin tasks.** As each design's §15, with these test-design changes:
-  - fold: the namespace is `fishball-fold-notify`; a second presenter or attention owner gets
-    `owner-busy`.
+  - fold: withdrawn (fold-notify is not in V3; its notify function is dsh-connector-ui's
+    `notify` tool).
   - board: the inject is `fishballInstance?`, and a missing service gives `instance-hooks-missing`.
   - watchdog (WD-12 integrates these U20/U21 cases):
     - DT disable/fault with zero/one/many briefs → effective off, whole-plugin hand-over, no halt;
@@ -1030,8 +1031,8 @@ decision table, **ST** state transitions.
   advances immediately, idle non-polling delegated items and user cards wait. Descriptor `expiresAt`
   absent → valid, present (past/future/null) → refusal using K1's frozen domain mapping; no legacy
   exception. First committed outcome wins (OQ-14); settlement clears/returns once (§12.1/§12.4).
-- **B5/B10/B11.** Use §12.6/§12.7's shared board visibility, full export before uninstall and
-  historical keyword search cases. These are required coverage, not unchanged source-design tests.
+- **B5/B11.** Use §12.6/§12.7's shared board visibility and historical keyword search cases
+  (B10 is withdrawn: no archive export). These are required coverage, not unchanged source-design tests.
 - **RETIRE.** No old page route answers; the instance's other routes still do.
 - **WD-14.**
   - EP: arg valid / each `invalid-brief:<field>`.
@@ -1061,8 +1062,7 @@ decision table, **ST** state transitions.
     idle never-polling items wait, and user/agent races have only one committed outcome (OQ-14);
   - an important notify gives the brand alert;
   - the board panel refreshes;
-  - uninstall offers full archive export first, then leaves no runtime data; an accepted export
-    survives outside runtime, and export failure prevents deletion (B10).
+  - uninstall leaves no runtime data; there is no archive export (B10 is withdrawn, §12.6).
 
 ## 7. Compatibility boundaries and unchanged scope
 
@@ -1088,8 +1088,8 @@ decision table, **ST** state transitions.
 
 | Design | Edit |
 | --- | --- |
-| fold-notify | (U10) §5/§9 E3–E5 → the fold is a `dsh.client` conversation group/node plugin and `seen` is a Fetch route; §13 the package gains `client/`; service `fishballInstanceExtensions` → `fishballInstance`; fE1 `fishballChat.sessionId()` → `manager.sessionId()`; fE2 → X2 `manager.registerSetup(pluginId, fn)`; fE3/fE5 → DSH conversation record/group definitions using PG-1's U15 namespace helper (no X3 projector or X7 presenter API); fE4 → DSH client slots, Fetch routes and notifications (§11); fE6 → X8 + K1/MCP-SERVER under one-way MCP, with optional attention and no legacy custom-control path; update peer tests to §3 (custom envelope v2 is parked history); fE7 → X9 `inbox.setBatcher`; fE8/9 → X17/X18; seen route `api/fold-notify/seen` and `api/ext/fold-notify/seen` → `api/ext/fishball-fold-notify/seen`; §14 FN-0, FN-E6, FN-K, FN-B point to X0-*/K1; inject list in §13 |
-| board | (U19) §6 storage: `board.json` (on-board cards) + append-only `archive.jsonl`; "prune age" → board visibility window; §3.2 `board_write` gains `{id, clear: true}`; §3.2/§5 add `board_search` and its guide/contract (§12.7, B11), not a grep instruction; §9 `BOARD_LIMITS` replaces prune age with visibility and adds search bounds; §5/§9/§10 replace `doneWindowHours` as panel cutoff with the inclusive 30-day visibility window (keep it only for the recent-done count), show Dropped as well as Done, and share clear/reopen visibility between context and panel within existing budgets; §6/B-D6 uninstall offers full archive export first, then deletes runtime (Q-S = A, B10); “never delete” applies while installed; (U10) §10 the panel is a `dsh.client` `rightbar` panel entry with Fetch routes, not a page module; inject `fishballInstanceExtensions?` → `fishballInstance?`; §8 rows → X1, X2, DSH client slots/Fetch/notifications (§11), X17/X18; remove the withdrawn `ui.signal`/custom-page APIs; `engines.dsh` `>=0.2.1-rc.5`; §14 X0 → X0-C plus CHILD-WEB/PG-1 for native UI, B9 → X0-B, B0 done (S1 yes), add B10/B11 and update B5/B8; §5 guide text: "the newest board block is the current one" (S1 note) |
+| fold-notify | none: fold-notify is not in V3. Its notify function is dsh-connector-ui's `notify` tool |
+| board | (U19) §6 storage: `board.json` (on-board cards) + append-only `archive.jsonl`; "prune age" → board visibility window; §3.2 `board_write` gains `{id, clear: true}`; §3.2/§5 add `board_search` and its guide/contract (§12.7, B11), not a grep instruction; §9 `BOARD_LIMITS` replaces prune age with visibility and adds search bounds; §5/§9/§10 replace `doneWindowHours` as panel cutoff with the 30-day visibility window (half-open: a closed card is on the board while less than 30 days have passed since `closedAt`, and is archived at exactly 30 days, `packages/board/src/store.js`; keep `doneWindowHours` only for the recent-done count), show Dropped as well as Done, and share clear/reopen visibility between context and panel within existing budgets; §6/B-D6 no archive export (the user's decision 2026-11-15). Hosted: the instance's uninstall removes the child's runtime tree, which holds the board data. Standalone: the user deletes `<DSH home>/fishball-board/` themselves after removing the plugin; “never delete” applies while installed; (U10) §10 the panel is a `dsh.client` `rightbar` panel entry with Fetch routes, not a page module; inject `fishballInstanceExtensions?` → `fishballInstance?` (provided by `fishball-core` in V3); §8 rows → X1, X2, DSH client slots/Fetch/notifications (§11), X17/X18; remove the withdrawn `ui.signal`/custom-page APIs; `engines.dsh` `>=0.2.1-rc.5`; §14 X0 → X0-C plus CHILD-WEB/PG-1 for native UI, B9 → X0-B, B0 done (S1 yes), add B11 (B10 is withdrawn) and update B5/B8; §5 guide text: "the newest board block is the current one" (S1 note) |
 | watchdog (U1–U22 **are** design changes) | (U20) §4.5/§6/§9/§13–§15 and WD-9/WD-13/WD-14 replace Q13 fault stops, plugin-gone grace and live `halted` state with whole-plugin effective-off hand-over: X14 `ready()`/`fail(cause)`, generation-bound authority, X19 passes, X15/X9 release, one visible cause/session notice, no managed-session stop; keep 3-failure/900 s health detectors and intentional pause, distinguish them from forbidden approval timers; failed start attach returns the successful session with Fishball/unassigned metadata; verified model/stores/hooks and persisted dormant briefs precede readiness, explicit resume/new brief precedes re-claim; migrate old halted records; (U21) §6 routing restricts watchdog to permission cards, questions/plan reviews always Fishball; §4.4/§5/§14–§15 reuse `watchdog_refine {brief_id, expected_revision, reason, <fields>}` independently of answers, WD-11 tool/guide, WD-3 optimistic persistence, WD-4/WD-6 section/active-only trigger, WD-12 race/refusal/state coverage (§2.7); no check/resume/claim for dormant/paused refinement; (U22 / 1c = B) require timer-free MCP semantics and remove old custom control endpoint/exports with built-in upgrades, no legacy migration or expiry exceptions; (U14) remove the approval timers, R4, the window sum and the deadline wording (§12.1 list); (U16) reword as a token saver (§12.3); (U14/Q-P) any decision-turn end without a decision escalates at once, no custom fail-safe timer; (final U17/Q-Q) §8/§9 and WD-9/WD-10 remove retained decision-audit/label copies and associated decision-retention settings; ordinary decision entries stay only at reached layers, survive in searchable transcripts after compaction, and never re-enter context automatically; no watchdog-only X10 notification to Fishball, one wake for a user decision, and `onSettled` only updates a watchdog that handled the request (§12.4); WD-4 excludes decisions from its rotated audit, WD-8 removes decision retention from rollover digests, and WD-11 keeps `watchdog_decisions` under Q-T = modified B: §4.4 replaces its limit-only parameters with §12.8's count-range contract, including watchdog-only transcript decisions on explicit pull, not automatic delivery; update §14 WD-11 done-when and §15 EP/BVA accordingly; (U12) side sessions are instance-owned agent runs, allowed by the new-session refusal's exception (Q-H) and never viewable; the escalation card is a chat-node definition (PANELS); §6.2 R1 "no brief" → "session not claimed" (X15 `approvals.claim`, §2.6), R2 "plugin disabled" drops (a disabled plugin has no claims); E6 `setDelegate`/`supervised` → per-session `approvals.claim`; §9 has no `enabled` (U7); §2.1 "installed with Install for Fishball" → bundled (X17/X18); §12 package note; §13 wE3 and wE4's section half → X2, wE4 notify → X10, wE2 → X9 claims, wE9 → X15, wE10 → X14 + hand-over; remove the §9 `enabled` setting and the `disabled` halt cause (§4.5.4); add §4.5.6 "Turned off: hand-over" (§2.4 here), §4.5.7 "Turned on again: briefs stay dormant until `watchdog_resume`" (U6), and "Every managed session needs an active brief" (§2.3 `start_session.watchdog` + §2.5 send gate) |
 | watchdog (state mapping continued) | §4.5.1 gains `dormant` (any running state allowed; sends refused only when enabled and healthy), hand-over/effective-off and “no brief” rows, removes live `halted` fault state; §4.5.2's intentional-pause gate → X19 `supervision-paused`; §4.4 `watchdog_brief` gains `sendUnlocked` and supersedes dormant rather than `brief-exists`; `watchdog_resume` accepts dormant/paused only through readiness/check steps; manager section narrows U5 to enabled AND healthy; §10 “Plugin uninstalled” → “not removable; failed placement is immediate effective-off Fishball hand-over, no stop”; §14 WD-0 → X0-*, add WD-14 and all revised done-when rows above; §15 adopts §6 cases here; §16.1 records U1–U22 |
 
@@ -1103,7 +1103,7 @@ decision table, **ST** state transitions.
 | Q-P | **Closed: A.** No timers; any decision-turn end without a decision immediately escalates, including DSH transport-error termination (§12.1) | | | |
 | Q-Q | **Closed: user clarification, neither old option.** No separate bounded audit/label store; ordinary records stay at reached layers, leave context on compaction and remain searchable in transcripts. U17 is final (§12.4) | | | |
 | Q-R | **Closed: B.** Add manager-scoped `board_search {query, status?, limit?}` over the archive, owned by B11 (§12.7) | | | |
-| Q-S | **Closed: A.** Offer archive export first, then uninstall deletes runtime/archive; permanent retention means while installed (§12.6, B10) | | | |
+| Q-S | **Closed: A, then superseded.** The user's decision 2026-11-15: no archive export. Uninstall deletes the runtime and the archive with it; permanent retention means while installed (§12.6) | | | |
 | Q-T | **Closed: B, modified by the user.** Keep `watchdog_decisions`; Fishball may explicitly read recent watchdog decisions by count range, including watchdog-only outcomes. No automatic push; the U17 reached-layer rule governs automatic context delivery, not this pull (§12.8) | | | |
 
 No open user questions remain from Q-P–Q-T.
@@ -1242,7 +1242,7 @@ each, so this is indicative only. The homes were deleted, and no process was lef
 | K1 `instance.attention` and the connector alert | instance → connector wire | **kept** |
 | Every X point on the server side (X1–X3, X8–X19), the watchdog, the board's tools and context | child core, not the page | **kept** |
 | X3 record projection | DSH's chat renders session records through its own projection; a plugin record needs a DSH chat node renderer | **redo**, as a slot entry on `conversation.chat.node` |
-| Fold-notify's presenter (FN-4/FN-5) and X7 `setTimelinePresenter` | DSH's chat list is React and slot-driven; folding becomes a chat-node or group plugin (`ConversationGroupRegistry` is exported, `dsh-client-ui-conversation/lib/types/client/index.d.ts:25`) | **redo** |
+| Fold-notify's presenter (FN-4/FN-5) and X7 `setTimelinePresenter` | withdrawn: fold-notify is not in V3; its notify function is dsh-connector-ui's `notify` tool | **gone** |
 | Board panel (B5) and X7 `sidebar` | a `rightbar` or `main` panel slot entry instead of our aside | **redo** (small) |
 | Bubbles and avatars (UI-1) | eaa33f5's messenger **was** this, as a slot plugin with a stylesheet on `conversation.chat.node` (§10.1) | **reuse eaa33f5** almost as it is, instead of porting it to plain DOM |
 | Read Only chip (D8) | disable `ui-permission`; the `/permission` command still works, so the core `permission` row must be limited to `read-only` (SP spike F3) | **redo** as configuration |
@@ -1429,7 +1429,7 @@ order: bundles, profile layer, home layer, `--patch` overlays).
 what the model can make DSH's tools do. A plugin's **own storage**, written by its own Node code
 through `node:fs`, is not a tool call and is not sandboxed. So these keep working:
 - `board.json` and the append-only board archive, the watchdog's brief, criteria and supervision
-  files, fold-notify's `seen.json`;
+  files;
 - `chat.json`, reminders and ordinary reached-layer decision transcript entries (no separate
   approval-label retention store, final U17);
 - provider/model sync (X0 code, D-series);
@@ -1457,7 +1457,7 @@ them. The risks:
 | X0-B | X17/X18 server half unchanged; the bundled plugins show in DSH's Plugins page, with Remove hidden by `fishball-page` (Q-K B, §11.10) |
 | Custom settings view (I6) | **kept, slimmed** (U13, §11.8). Only what DSH's own pages cannot do stays; the user can also open the child DSH's Settings |
 | FN-4/FN-5 | the fold presenter becomes a conversation group/node plugin (`ConversationGroupRegistry`, `dsh-client-ui-conversation/lib/types/client/index.d.ts:25`); `seen` uses a Fetch route |
-| B5 | the board panel is a `rightbar` panel entry, with its read and export Fetch routes |
+| B5 | the board panel is a `rightbar` panel entry, with its read Fetch route (no export route: no archive export, the user's decision 2026-11-15) |
 | UI-1 | becomes the messenger module of `fishball-page` (§11.2) |
 | Connector embed | the broker forwards DSH's shell (EMB, SP-PG(1)) |
 
@@ -1623,7 +1623,7 @@ check timeout.
   definition (`uiConversation.events.register`, matched by event type) only matches
   `plugin:<its package name>/…`.
 - **Owner: PG-1.** PG-1 ships a shared helper used by every Fishball `dsh.client` plugin
-  (`fishball-page`, fold-notify, the watchdog's PANELS card, board):
+  (`fishball-page`, the watchdog's PANELS card, board):
   `recordDefinition(packageName, suffix, render)`. It refuses (throws at registration) a type
   outside `plugin:<packageName>/`.
 - Tests: in PG-1, a definition with a foreign prefix fails to register; an own-prefix one renders.
@@ -1859,7 +1859,7 @@ owns the per-item wire-ack integration; W0 tests the chat receipt/queue boundary
 failure queues no partial turn; the existing inbox owner's image-refusal handling is separate.
 
 **Array validation and BVA:**
-- 1–20 items inclusive, using fold-notify's approved `BATCH.maxItems = 20`. An empty array rejects
+- 1–20 items inclusive, using the 20-item cap from the fold-notify design (fold-notify is not in V3). An empty array rejects
   with an error whose `name` is `ChatApiError` and `code` is **`invalid-input`**; it does not throw
   synchronously. Non-record items, missing/empty/non-string text, invalid supplied typed metadata
   or options also reject `invalid-input`, except the image-specific refusals below. Error message
@@ -1894,7 +1894,7 @@ failure queues no partial turn; the existing inbox owner's image-refusal handlin
 [chat error vocabulary and byte limit](../../packages/instance/src/slim/child/chat.js#L88-L139)
 supply `invalid-input` / `too-large` and 65,536 bytes;
 [connector §4.5](../connector-contract.md#L415-L449) supplies the wire envelope/image metadata.
-Fold-notify design §7 (snapshot `7347c1f169e3f1072cfa77c136645a086647f160`) supplies 20 items,
+The fold-notify design §7 (snapshot `7347c1f169e3f1072cfa77c136645a086647f160`; not in V3) supplied 20 items,
 blank-line joining, image order and ack-after-queue rules. The array overload, validation errors
 and mixed-batch source mapping above are the normative U18 additions; the existing singleton's
 uncoded `TypeError` is **not** the empty-array test contract.
@@ -1909,8 +1909,10 @@ uncoded `TypeError` is **not** the empty-array test contract.
     instruction to use `grep`. The archive remains plain text and independently grep-able.
 - **The board** (the panel and the `fishball-board:board` context) shows the open cards, plus the
   closed cards (`done`, `dropped`) whose `closedAt` is within the **board visibility window**
-  (30 days). After that a closed card leaves the board. It is archived, not deleted, and stays
-  findable.
+  (30 days). The window is half-open: a closed card is on the board while **less than** 30 days
+  have passed since `closedAt`. At exactly 30 days it leaves the board
+  (`packages/board/src/store.js`: `at - card.closedAt < BOARD_LIMITS.visibilityDays *
+  STORAGE.millisecondsPerDay`). It is archived, not deleted, and stays findable.
   - The window replaces "prune age"; tests check the behaviour, not a constant name.
   - `board.json` holds only what is on the board. The 300-card cap applies to it.
   - A card that leaves the board, or is cleared, is no longer in `board.json`. Its full history is
@@ -1923,28 +1925,29 @@ uncoded `TypeError` is **not** the empty-array test contract.
 - **Reopen** of a card that is off the board: `board_write` with its `id` restores it from the
   archive. The transitions of board §4 apply.
 - **Panel/context (B5):** use the same on-board projection: open cards plus both Done and Dropped
-  within the 30-day inclusive window, excluding early-cleared cards. Replace `doneWindowHours`
+  within the same half-open 30-day window (less than 30 days since `closedAt`), excluding
+  early-cleared cards. Replace `doneWindowHours`
   as a panel cutoff; it may remain solely for the existing recent-done count. Existing context
   card/character budgets still apply; being on the board does not guarantee every card fits in
   the injected block. Clear/reopen refreshes panel and context together; reopening restores the
-  card to its open group. Dropped is no longer hidden or export-only.
-- **Uninstall (Q-S = A):** offer an export of the complete `archive.jsonl` before deletion, not
-  merely the on-board JSON export. Then `uninstall.js` still deletes `fishball/runtime`, including
-  the archive. “Never deleted” prohibits installed-plugin housekeeping, not explicit uninstall.
-  The export is optional; an accepted export must finish at a user-chosen location outside the
-  deleted runtime before removal proceeds. An export failure leaves the runtime intact for retry
-  or an explicit choice to uninstall without export. Owner: B10 (§5.2); no automatic move to a
-  permanent archive directory.
+  card to its open group. Dropped is no longer hidden.
+- **Uninstall: no archive export** (the user's decision 2026-11-15; it supersedes Q-S = A, and
+  B10 is withdrawn). The board has no `board_export` tool and no export route.
+  - Hosted: the instance's uninstall (`uninstall.js`) removes the child's runtime tree
+    (`<DSH home>/fishball/runtime`, `packages/dsh-instance/src/native-runtime/files.js`
+    `removeRuntime`). That tree holds the board data, so the archive goes with it.
+  - Standalone: removing the plugin leaves its data. The user deletes `<DSH home>/fishball-board/`
+    themselves after removing the plugin.
+  - “Never deleted” prohibits installed-plugin housekeeping, not explicit uninstall.
 - **Tests (B3/B4):**
-  - BVA: `closedAt` at 30 days − 1 ms, at 30 days, + 1 ms → on board, on board, off board.
+  - BVA: `closedAt` at 30 days − 1 ms, at 30 days, + 1 ms → on board, off board, off board.
   - After it leaves, the archive has its last line.
   - EP for clear: done, dropped → cleared; open → `not-closed`.
   - ST: done → on board → (30 days or clear) off board → (reopen) on board.
   - EP for search: `board_search` finds a title/note keyword in a card off the board for a year.
-  - B5: Done and Dropped use the same inclusive 30-day window; early clear removes either from
+  - B5: Done and Dropped use the same half-open 30-day window; early clear removes either from
     panel/context; reopen restores both projections, within existing context budgets.
-  - B10: export accepted → full archive exported outside runtime before deletion; declined →
-    runtime deleted; export fails → runtime remains; no archived card is pruned while installed.
+  - B10 is withdrawn (no archive export). No archived card is pruned while installed.
 
 ### 12.7 Archive search contract (Q-R = B)
 

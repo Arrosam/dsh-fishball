@@ -13,7 +13,7 @@ The token service is `fishballConnectorTokens` with `createHosted` and `retire` 
 - **Actor:** the instance, in host DSH H that also runs C.
 - **Preconditions:** I freshly installed; target blank; no hosted entry exists; no designated principal set.
 - **Main flow:**
-  1. H's app ready fires; I places the plugins (core, board, fold-notify) and `fishball-hosted-settings` into the child profile **before** the profile loads, all **on**, with `fishball-core` **last** in the child's `dsh.profile.bundles` (after `fishball-instance`, the features and `fishball-hosted-settings`; R-FB-12).
+  1. H's app ready fires; I places the plugins (`fishball-board`, `fishball-ui`, `fishball-core`) into the child profile **before** the profile loads, all **on**, with `fishball-core` **last** in the child's `dsh.profile.bundles` (after every other bundle; R-FB-12). *(fold-notify and `fishball-hosted-settings` were in this list; both are not in V3, requirements 1.34.)*
   2. The child holds no paired credential → I asks C for a **new** "Fishball (hosted)" entry; C returns only its reference.
   3. I resolves the value and hands target and value to the child **in memory**.
   4. Core authenticates with its own `identity.id` (generated `fb-` + 16 lowercase base32) and calls `pair` with its local `identity.name` "Fishball" → paired, named "Fishball" if free, else nameless (`ID: <id>`) with the Fishball page asking for another name.

@@ -60,6 +60,14 @@ state under published names and as core's own copy of the MCP surface. K3a's ear
   are spelled as the user chose on 2026-11-16. Core saves the accepted token in the record
   `fishball-core/hosted-agent` and unsets the reference; "the child holds a credential" is
   `describe(ref).configured || describeRecord(key).configured`, answered by DSH alone.
+- **Reader order, as amended by Q-LS1 = A (the user, 2026-11-16).** `link.d.ts` still reads "1. a
+  saved copy for the target origin wins". The user chose otherwise: a new value in the reference is
+  tried **before** the saved copy and replaces it only once the target accepts it; a refused new
+  value is not sent again until the reference changes or core restarts, and core goes back to the
+  saved copy. The code follows Q-LS1 (`src/link/credentials.js`: "1. a value in the reference,
+  unless the target refused that same value while a saved credential exists … 2. the saved token
+  copy for the origin; 3. the saved Connect grant"). The `link.d.ts` comment is code and is fixed
+  outside the DOCS task; design §5.4 records the rule.
 - **Connect** (`CONNECT`, `connect.d.ts`): the S7c token manager's states and `begin` outcomes,
   `connect.clientMetadataUrl` (required, no default), the `needs-configuration` codes (PROPOSED),
   the loopback `/callback` and the web callback path (PROPOSED). Core passes `identity.id` as
