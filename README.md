@@ -210,7 +210,8 @@ link; what it points to is never touched.
 
 | Code | Meaning |
 | --- | --- |
-| `CHILD_RUNNING` | Fishball's child may still be running, or its state cannot be read. Quit DSH, wait a few seconds and run it again. |
+| `CHILD_RUNNING` | Fishball's child is still running. Quit DSH, wait a few seconds and run it again. |
+| `CHILD_STATE_UNKNOWN` | Whether Fishball's child runs cannot be checked: it has no pid record, or `/bin/ps` cannot be run (in a sandbox, say). Quit DSH, then run the command where `/bin/ps` works. |
 | `UNSAFE_DIRECTORY` | A folder on the way (`fishball`, `runtime` or one inside it) is a symbolic link, not private to you, or not a folder. |
 | `UNOWNED_RUNTIME` | The tree belongs to another DSH home: its owner marker names a different home. |
 | `INVALID_MAIN_HOME` | The home is not an absolute real path. Pass the real path with `--home`. |

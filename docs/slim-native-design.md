@@ -579,8 +579,9 @@ the logs. The connector's data (its storage domains in the main profile) and eve
   directories of this user (the same `prepareLayout` checks as a start). The owner marker must name
   this home. Otherwise it refuses (`INVALID_MAIN_HOME`, `UNSAFE_DIRECTORY`, `UNOWNED_RUNTIME`,
   `UNSAFE_SECRET`) and deletes nothing;
-- the child must be stopped: when `active.json` names a child that is alive, or whose state is
-  unknown (no pid record, `ps` unreadable), it refuses with `CHILD_RUNNING` and deletes nothing.
+- the child must be stopped: when `active.json` names a child that is alive, it refuses with
+  `CHILD_RUNNING`; when the child's state is unknown (no pid record, `ps` unreadable), it refuses
+  with `CHILD_STATE_UNKNOWN` (E-FIX-1). In both cases it deletes nothing.
   It sends no signal. Quitting DSH stops the child: the parent pipe closes, and the child exits by
   itself within `LIFETIME.childExitTimeoutMs`. A main DSH that still runs owns its child and could
   start it again into the tree being deleted;

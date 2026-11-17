@@ -121,8 +121,12 @@ export const UNINSTALL = Object.freeze({
   defaultHomeDirectory: '.dsh',
   tilde: '~',
   tildePrefixes: Object.freeze(['~/', '~\\']),
-  // The recorded child is alive or its state is unknown: DSH has not been quit yet.
+  // The recorded child is alive: DSH has not been quit yet.
   childRunning: 'CHILD_RUNNING',
+  // Whether the recorded child runs cannot be checked: it has no pid record, or `/bin/ps` cannot
+  // be run or answers unreadably (E-FIX-1, B8). It is refused the same way, but quitting DSH and
+  // retrying cannot help, so it has its own code and message.
+  childStateUnknown: 'CHILD_STATE_UNKNOWN',
   // Not LIFETIME's codes: those are the child process's own exit; these are the command's.
   exitCode: Object.freeze({ done: 0, refused: 1, usage: 2 }),
   message: Object.freeze({
@@ -131,6 +135,8 @@ export const UNINSTALL = Object.freeze({
     absent: 'Nothing to remove: {path} does not exist.\n',
     // The codes are listed in the README ("Uninstall"); the most common is CHILD_RUNNING.
     refused: 'Nothing was removed from {path} ({code}). Quit DSH, wait a few seconds and run it again.\n',
+    // The refusal for `childStateUnknown`.
+    stateUnknown: 'Nothing was removed from {path} ({code}). Could not check whether the Fishball child still runs: it has no pid record, or /bin/ps cannot be run here. Quit DSH, then run this command where /bin/ps works.\n',
   }),
 })
 
