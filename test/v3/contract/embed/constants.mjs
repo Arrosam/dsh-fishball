@@ -101,6 +101,8 @@ export const FISHBALL_PREFIX = 'fishball-'
 export const HOST_SLOTS = Object.freeze([
   'sidebar.panellist', 'sidebar.brand.mark', 'sidebar.brand.name', 'sidebar.workspaces.session.menu.item',
   'sidebar.session.row.leading', 'sidebar.session.row.trailing', 'conversation.session.header.actions',
+  // UI-FIX-D (2026-11-18): embed-UI's Hand over / Take back moved to the header's utilities seat.
+  'conversation.session.header.utilities',
   'conversation.chat.node', 'tool.call.toolview', 'plugins.bundle.config', 'plugins.row.config',
 ])
 /** Slot names a Plugins page card uses (the V2 connector card and the V2 instance card). */
@@ -115,6 +117,8 @@ export const CARD_SLOTS = Object.freeze(['plugins.bundle.config', 'plugins.row.c
 export const EXPECTED_UI = Object.freeze([
   Object.freeze({ slot: 'main', key: 'fishball' }),
   Object.freeze({ slot: 'conversation.session.header.actions', id: 'fishball-hand-over' }),
+  // UI-FIX-D (2026-11-18): "Managed by" stays in header.actions; Hand over / Take back are in header.utilities.
+  Object.freeze({ slot: 'conversation.session.header.utilities', id: 'fishball-hand-over' }),
   Object.freeze({ slot: 'sidebar.workspaces.session.menu.item', id: 'fishball-hand-over' }),
   Object.freeze({ slot: 'sidebar.session.row.leading', id: 'fishball-managed' }),
 ])
