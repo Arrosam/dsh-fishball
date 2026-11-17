@@ -29,9 +29,10 @@ let counter = 0
 /** A fresh fixture id (ids are unique per connector, R-ID-13). */
 const fresh = (base) => `${base}-${process.pid}-${++counter}`
 
-function row(sdk, id, part, title, fn, todo) {
+function row(sdk, id, part, title, fn, todo, skip) {
   const name = caseName(sdk, id, part, title)
   if (todo !== undefined) test.todo(`${name} — TODO ${todo}`)
+  else if (skip !== undefined) test(name, { skip }, () => {})
   else test(name, T, fn)
 }
 
@@ -183,12 +184,14 @@ function staticRows(sdk) {
     const quoted = [...source.matchAll(/['"`]((?:sidebar|conversation|tool|plugins|main|header|chat)\.[a-z.]+)['"`]/g)].map((m) => m[1])
     assert.deepEqual([...new Set(quoted)].filter((s) => s !== SURFACE.slot), [], 'other slot names in client.js')
   })
-  row(sdk, 'AUTH-UC-09', 'page (static)', 'client.js reads the state route and shows the tokens list, New token, the designated agent, the approval port and the limits', async () => {
+  // Re-baselined by C-WIRE-2: no designated agent (the user's q5); the page shows the DSH name (decision list item 8).
+  row(sdk, 'AUTH-UC-09', 'page (static)', 'client.js reads the state route and shows the tokens list, New token, the approval port, the DSH name and the limits; no designated agent', async () => {
     const source = fs.readFileSync(FILES.client, 'utf8')
     const routes = await settingsPageRoutes()
     assert.equal(routes.state, SURFACE.route.state, 'SETTINGS_PAGE.route.state')
     assert.ok(source.includes(routes.state.replace(/^\//, '')) || source.includes(routes.state), 'client.js never calls the state route')
-    for (const word of [S.tokens, S.agentToken, S.approval, S.port, S.maxQueuedInputs, S.maxMessageBytes]) assert.ok(source.includes(word), 'client.js does not name ' + word)
+    for (const word of [S.tokens, S.approval, S.port, S.dshName, S.maxQueuedInputs, S.maxMessageBytes]) assert.ok(source.includes(word), 'client.js does not name ' + word)
+    assert.equal(source.includes(S.agentToken), false, 'client.js still names ' + S.agentToken)
   })
   row(sdk, 'C-WIRE-R21', 'entry', 'the plugin entry exports name, inject, Config and apply; its name is the row id', async () => {
     const entry = await pluginEntry(sdk)
@@ -197,13 +200,22 @@ function staticRows(sdk) {
     assert.ok(entry.Config, 'no Config')
     assert.ok(entry.inject !== undefined, 'no inject')
   })
-  row(sdk, 'C-WIRE-R2', 'schema', 'Config resolves {} to tokens [], no routing.agentToken, approval.port = APPROVAL_LISTENER.defaultPort and the V2 limits at their defaults', async () => {
+  // Re-baselined by C-WIRE-2 (q5: no routing object; item 8: approval.dshName optional, unset; item 9: the removed fields).
+  row(sdk, 'C-WIRE-R2', 'schema', 'Config resolves {} to exactly tokens [], approval {port: APPROVAL_LISTENER.defaultPort, dshName: undefined}, and the kept limits at their defaults; no routing, no removed field', async () => {
     const value = await resolveConfig(sdk, {})
     assert.deepEqual(value[S.tokens], [])
-    assert.equal(value[S.routing]?.[S.agentToken], undefined)
-    assert.equal(value[S.approval]?.[S.port], APPROVAL_LISTENER.defaultPort)
+    // Unset optional dshName resolves to a present key with value undefined (Schemastery; relayed 2026-11-17).
+    assert.deepEqual(value[S.approval], { [S.port]: APPROVAL_LISTENER.defaultPort, [S.dshName]: undefined })
     for (const [k, d] of Object.entries(S.limits)) assert.equal(value[k], d, 'default of ' + k)
+    assert.deepEqual(Object.keys(value).sort(), [S.tokens, S.approval, ...Object.keys(S.limits)].sort())
   })
+  for (const [label, name, ok] of [['a name', FIXTURE.name.a, true], ['\'\'', '', true], ['a number', 1, false]]) {
+    row(sdk, 'C-WIRE-R2', `dshName EP (${label})`, `approval.dshName ${JSON.stringify(name)} is ${ok ? 'accepted' : 'refused'} by the schema (decision list item 8)`, async () => {
+      const input = { [S.approval]: { [S.port]: APPROVAL_LISTENER.defaultPort, [S.dshName]: name } }
+      if (ok) assert.equal((await resolveConfig(sdk, input))[S.approval][S.dshName], name)
+      else await assert.rejects(resolveConfig(sdk, input))
+    })
+  }
   // BVA on approval.port: 0..65535 (R2).
   for (const [label, port, ok] of [['min 0', S.portMin, true], ['1', 1, true], ['max 65535', S.portMax, true], ['-1', -1, false], ['65536', S.portMax + 1, false], ['1.5', 1.5, false], ['"80"', '80', false]]) {
     row(sdk, 'C-WIRE-R2', `port BVA (${label})`, `approval.port ${JSON.stringify(port)} is ${ok ? 'accepted' : 'refused'} by the schema`, async () => {
@@ -247,10 +259,12 @@ function loadRows(sdk) {
     const got = await w.call('services', { names })
     for (const n of names) assert.deepEqual([got[n].present, got[n].apiVersion], [true, SURFACE.apiVersion], n + ': ' + JSON.stringify(got[n]))
   })
-  row(sdk, 'C-WIRE-R21', 'V2 beside', 'the row still provides the V2 dshConnector service (split: the V2 path keeps running)', async () => {
+  // Re-baselined by C-WIRE-2 (decision list item 9: the V2 broker is removed; 第三版其实就是第一版).
+  row(sdk, 'C-WIRE-R21', 'V2 removed', 'the row provides neither the V2 dshConnector nor the fishballSessionState service', async () => {
     const w = await main(sdk)
-    const got = await w.call('services', { names: [SURFACE.service.v2] })
-    assert.equal(got[SURFACE.service.v2].present, true)
+    const got = await w.call('services', { names: [SURFACE.service.v2, SURFACE.service.v2SessionState] })
+    assert.equal(got[SURFACE.service.v2].present, false)
+    assert.equal(got[SURFACE.service.v2SessionState].present, false)
   })
   row(sdk, 'C-WIRE-R1', 'no child', 'no hosted child is launched: dshInstanceChild is absent (dsh-instance not installed)', async () => {
     const w = await main(sdk)
@@ -265,7 +279,7 @@ function loadRows(sdk) {
 
 // ============================================================ R2, R4: native settings, volatile, live
 function settingsRows(sdk) {
-  row(sdk, 'C-WIRE-R2', 'describe', 'DSH describes the row\'s settings: tokens, routing.agentToken, approval.port and the limits, live (no remount)', async () => {
+  row(sdk, 'C-WIRE-R2', 'describe', 'DSH describes the row\'s settings: tokens, approval.port and the kept limits; no routing and no removed field (C-WIRE-2)', async () => {
     const w = await main(sdk)
     const d = await w.settings()
     assert.ok(d, 'the row has no settings')
@@ -273,23 +287,24 @@ function settingsRows(sdk) {
     assert.ok(Array.isArray(v[S.tokens]), 'tokens')
     assert.equal(typeof v[S.approval]?.[S.port], 'number')
     for (const k of Object.keys(S.limits)) assert.equal(typeof v[k], 'number', k)
+    for (const k of [S.routing, ...S.removed]) assert.equal(Object.hasOwn(v, k), false, k + ' is still a setting')
   })
-  row(sdk, 'C-WIRE-R2', 'volatile (ST)', 'Mounted --edit a limit, the approval port, the designated entry and the tokens list--> Mounted: the row\'s fiber is the same (never remounted)', async () => {
+  // Re-baselined by C-WIRE-2: the designated entry edit became the DSH name edit (q5; decision list item 8).
+  row(sdk, 'C-WIRE-R2', 'volatile (ST)', 'Mounted --edit a limit, the approval port, the DSH name and the tokens list--> Mounted: the row\'s fiber is the same (never remounted)', async () => {
     const w = await main(sdk)
     const before = (await w.call('row')).fiber
     const was = (await settingsValue(w))[S.maxMessageBytes]
     assert.equal((await setLimit(w, S.maxMessageBytes, was + 1)).ok, true)
-    assert.equal((await w.call('settingsUpdate', { patch: { [S.approval]: { [S.port]: w.approvalPort } } })).ok, true)
-    const made = await createToken(w, FIXTURE.label.c)
-    assert.equal((await w.call('settingsUpdate', { patch: { [S.routing]: { [S.agentToken]: made.entryKey } } })).ok, true)
-    assert.equal((await w.call('settingsMutate', { ops: [{ op: 'unset', path: [S.routing, S.agentToken] }] })).ok, true)
+    assert.equal((await w.call('settingsUpdate', { patch: { [S.approval]: { [S.port]: w.approvalPort, [S.dshName]: FIXTURE.name.a } } })).ok, true)
+    await createToken(w, FIXTURE.label.c)
+    assert.equal((await w.call('settingsMutate', { ops: [{ op: 'unset', path: [S.approval, S.dshName] }] })).ok, true)
     assert.equal((await setLimit(w, S.maxMessageBytes, was)).ok, true)
     await quiet()
     const after = await w.call('row')
     assert.deepEqual([after.active, after.fiber], [true, before], 'the row was remounted by a settings edit')
   })
   // CFG / L rows of the gap report: the kept limits (BVA min 1, refusals, no upper bound).
-  for (const field of Object.keys(S.limits).filter((k) => k !== 'maxActiveWatches')) {
+  for (const field of Object.keys(S.limits)) {
     for (const [label, bad] of [['0', 0], ['-1', -1], ['0.5', 0.5], ['"5"', '5']]) {
       row(sdk, 'C-WIRE-R2', `limit ${field} refused ${label}`, `${field} = ${JSON.stringify(bad)} is refused and the value stays`, async () => {
         const w = await main(sdk)
@@ -335,14 +350,7 @@ function writerRows(sdk) {
     assert.equal(new Set(keys).size, 3)
     assert.deepEqual(r.tokens.slice(-3).map((i) => i.key), keys)
   })
-  row(sdk, 'C-WIRE-R3', 'setDesignated(undefined) (delete)', 'deleting the designated entry from the list unsets routing.agentToken', async () => {
-    const w = await main(sdk)
-    const made = await createToken(w, FIXTURE.label.b)
-    assert.equal((await w.call('settingsUpdate', { patch: { [S.routing]: { [S.agentToken]: made.entryKey } } })).ok, true)
-    assert.equal((await settingsValue(w))[S.routing]?.[S.agentToken], made.entryKey)
-    assert.equal((await saveTokens(w, (await tokensOf(w)).filter((i) => i.key !== made.entryKey))).ok, true)
-    assert.ok(await eventually(async () => (await settingsValue(w))[S.routing]?.[S.agentToken] === undefined), 'routing.agentToken still names the deleted entry')
-  })
+  row(sdk, 'C-WIRE-R3', 'setDesignated(undefined) (delete)', 'deleting the designated entry from the list unsets routing.agentToken', null, undefined, LATER.withdrawnDesignated)
   // removeToken's only caller is C-SUCCEED's retire, which needs a paired hosted successor (I-SUCCEED drives it end to end).
   row(sdk, 'C-WIRE-R3', 'removeToken (absent key)', 'removeToken of an absent key resolves with nothing changed', null, 'I-SUCCEED (retire through the real SettingsWriter on a real DSH)')
 }
@@ -572,7 +580,7 @@ function machineRows(sdk) {
     assert.deepEqual(await tokensOf(w), before)
   })
   // AUTH-UC-09 (integration part) / R13: the state route.
-  row(sdk, 'AUTH-UC-09', 'main (R13)', 'GET state: owner-only JSON no-store {ok, entries, approval, designated}; entries in settings order with {key, label, enabled, paired, id, name, lastSeenAt, connected}', async (t) => {
+  row(sdk, 'AUTH-UC-09', 'main (R13)', 'GET state: owner-only JSON no-store {ok, entries, approval} (no designated since C-WIRE-2, q5); entries in settings order with {key, label, enabled, paired, id, name, lastSeenAt, connected}', async (t) => {
     const w = await main(sdk)
     const e1 = await createToken(w, FIXTURE.label.a)
     const e2 = await pairedPrincipal(t, w, { label: FIXTURE.label.b, name: fresh(FIXTURE.name.a) })
@@ -717,8 +725,8 @@ function isolationRows(sdk) {
     const back = await pollUntil(again.client)
     assert.deepEqual(back.map((e) => e.eventId).filter((id) => ids.includes(id)).sort(), [...ids].sort(), 'held events changed identity')
   })
-  row(sdk, 'C-WIRE-R4', 'designate moves held messages', 'designating a paired entry moves held no-recipient messages into its mailbox', null, LATER.wire2)
-  row(sdk, 'C-WIRE-R9', 'ack frees room', 'inbox_ack frees room for the designated agent\'s held messages (maxQueuedInputs small)', null, LATER.wire2)
+  row(sdk, 'C-WIRE-R4', 'designate moves held messages', 'designating a paired entry moves held no-recipient messages into its mailbox', null, undefined, LATER.withdrawnDesignated)
+  row(sdk, 'C-WIRE-R9', 'ack frees room', 'inbox_ack frees room for the designated agent\'s held messages (maxQueuedInputs small)', null, undefined, LATER.withdrawnDesignated)
   row(sdk, 'C-WIRE-R8', 'inbox_ack', 'inbox_ack of polled events with their digests → acked n; the next poll no longer returns them', async (t) => {
     const w = await main(sdk)
     const p = await pairedPrincipal(t, w)
@@ -908,7 +916,6 @@ function sessionRows(sdk) {
     const events = await pollUntil(p.client, (e) => e.some((x) => x.type === EVENT_TYPE.turnFinished && x.sourceSessionId === s.sessionId))
     assert.ok(events.some((x) => x.type === EVENT_TYPE.turnFinished && x.sourceSessionId === s.sessionId))
   })
-  row(sdk, 'PLAT-EP-02', '6 (wire-2 tools)', 'the approval-side tools in this task: approvals_list [] for a real session, prompts_list and grants_list []', null, LATER.wire2)
 }
 
 // ============================================================ R11 session_read roles
@@ -1115,7 +1122,9 @@ function embedUiRows(sdk) {
   row(sdk, 'C-WIRE-R16', 'timing (connector half)', 'at app ready the row already provides dshConnectorUi, dshConnectorHandover, dshConnectorTools and dshConnectorTokens, and its owner routes answer', async () => {
     for (const w of [await main(sdk), await withUi(sdk)]) {
       const at = w.dsh.atReady
-      for (const [name, s] of Object.entries(at.services)) assert.equal(s.present, true, name + ' was missing at app ready')
+      // C-WIRE-2 (decision list item 9): the V2 services the probe also samples are gone, so they must be absent.
+      const v2 = [SURFACE.service.v2, SURFACE.service.v2SessionState]
+      for (const [name, s] of Object.entries(at.services)) assert.equal(s.present, !v2.includes(name), name + (v2.includes(name) ? ' (V2) was present' : ' was missing') + ' at app ready')
       assert.equal(at.createStatus, HTTP.ok, 'the notice route answered ' + at.createStatus + ' at app ready')
     }
   })
@@ -1148,14 +1157,26 @@ function cimdRow(sdk) {
 
 // ============================================================ rows other tasks own (gap report (B), not coverable here)
 function laterRows(sdk) {
-  for (const [id, title] of [
-    ['APR-*', 'permission requests of managed sessions become offers; approval_answer and its refusals, settlements, retirements'],
-    ['ASK-* / DIR-* / QUO-*', 'ask_agent, direct calls, quotes and their bounds'],
-    ['FLW-* / PLN-* / VAL-* / HLD-* / RST-*', 'questions and plan reviews through question_answer'],
-    ['GRT-* / END-* / PAS-*', 'grants and passes'],
-    ['FRZ-* / prompt APR-*', 'prompts already showing (prompts_list, prompt_answer)'],
-    ['MSG-* / LUM-*', 'message_agent / ask_agent / list_user_messages as main-session tools of V3-managed sessions'],
-    ['MGD-04/05/15, MGD-14, DUR-01/06', 'the managed session\'s next model request has the managed tools'],
-  ]) row(sdk, id, 'C-WIRE-2', title, null, LATER.wire2)
+  // C-WIRE-2 made these real in test/v3/dsh-connector/interactions (suite dsh-connector.interactions, USE-CASES.md);
+  // they are listed here as skipped with their new home so a run of this suite still says where each went.
+  for (const [id, title, home] of [
+    ['APR-*', 'permission requests of managed sessions become offers; approval_answer and its refusals, settlements, retirements', 'approval-cases.mjs'],
+    ['FLW-* / PLN-* / VAL-* / HLD-* / RST-*', 'questions and plan reviews through question_answer', 'question-cases.mjs, restart-cases.mjs'],
+    ['GRT-* / END-*', 'grants', 'grant-cases.mjs'],
+    ['FRZ-* / prompt APR-*', 'prompts already showing (prompts_list, prompt_answer)', 'prompt-cases.mjs'],
+    ['MSG-*', 'message_agent as the main-session tool of V3-managed sessions', 'messaging-cases.mjs'],
+    ['MGD-04/05/15, MGD-14, DUR-01/06', 'the managed session\'s next model request has the managed tools', 'messaging-cases.mjs, restart-cases.mjs'],
+  ]) row(sdk, id, 'C-WIRE-2', title, null, undefined, LATER.movedTo(home))
+  // The user (2026-11-16/17): "不给ask_agent工具"; "list_user_messages is deleted".
+  row(sdk, 'ASK-* / DIR-* / QUO-* / PAS-*', 'C-WIRE-2', 'ask_agent, its direct-call hints, quotes and passes', null, undefined, LATER.withdrawnAsk)
+  row(sdk, 'LUM-*', 'C-WIRE-2', 'list_user_messages as a main-session tool', null, undefined, LATER.withdrawnList)
+  row(sdk, 'PLAT-EP-02', '6 (wire-2 tools)', 'approvals_list of a real managed session with nothing pending, prompts_list and grants_list → []', async (t) => {
+    const w = await main(sdk)
+    const p = await pairedPrincipal(t, w)
+    const s = await startSession(w, p.client)
+    assert.deepEqual((await okCall(p.client, TOOL.approvalsList, { sessionId: s.sessionId })).approvals, [])
+    assert.deepEqual((await okCall(p.client, TOOL.promptsList, {})).prompts, [])
+    assert.deepEqual((await okCall(p.client, TOOL.grantsList, {})).grants, [])
+  })
   row(sdk, 'HOST-*', 'hosted child', 'a launched hosted child pairing with createHosted\'s value', null, LATER.hostedChild)
 }

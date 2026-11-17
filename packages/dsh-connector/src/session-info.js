@@ -5,7 +5,7 @@
  * DSH's title is folded from that log.
  */
 import { foldSessionTitle } from '@deepseek-ai/dsh-session-title'
-import { APPROVAL, SESSION_INFO, SOURCE } from './constants.js'
+import { SESSION_INFO, SOURCE, USER_SOURCES } from './constants.js'
 import { byteLength, cutToBytes } from './text.js'
 
 /** The seq a session with no events reports, so every later event counts as newer. */
@@ -149,7 +149,7 @@ export const textOfEvent = (event) => {
  * @returns a SESSION_INFO.roles value other than assistant.
  */
 export function senderOf(source, fishballId) {
-  if (APPROVAL.userSources.includes(source?.kind)) return SESSION_INFO.roles.user
+  if (USER_SOURCES.includes(source?.kind)) return SESSION_INFO.roles.user
   if (source?.kind !== SOURCE.relay.kind) return SESSION_INFO.roles.context
   return typeof fishballId === 'string' && source.senderSessionId === fishballId ? SESSION_INFO.roles.fishball : SESSION_INFO.roles.agent
 }

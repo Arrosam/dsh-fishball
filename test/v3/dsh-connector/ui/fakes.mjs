@@ -15,7 +15,7 @@ import { FIXTURE, SURFACE, WAIT } from './constants.mjs'
 
 const ref = ({ key, name, id }) => ({ key, name, id })
 /** A K3 HandoverPrincipal row of a fixture principal; `over` changes fields. */
-export const row = (p, over = {}) => ({ key: p.key, name: p.name, id: p.id, online: false, enabled: true, paired: true, designated: false, ...over })
+export const row = (p, over = {}) => ({ key: p.key, name: p.name, id: p.id, online: false, enabled: true, paired: true, ...over })
 
 /** K3 `DshConnectorHandover`. Drivers: `set({managed, principals})`, `fire()`, `script`. */
 export class FakeHandover {

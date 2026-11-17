@@ -2140,3 +2140,21 @@ Decided with the user while F-WIRE ran (answers to the five product questions an
 | Generated `identity.id` | Kept in core's storage domain `fishball_core_main`, not in the settings document; the user's `identity.id` wins when set | a settings save reconciles the profile at once, which would apply the moved bundle order in the first start (R-FB-12: from the next start with HMR off). Fishball's decision |
 | Live core on/off | fishball-ui's rows read core's selection in the profile manifest while HMR runs, else the started bundles | so switching core in a running DSH switches fishball-ui's rows. Fishball's decision |
 | Readiness of a hosted child | Core offers no readiness signal to the instance; I-READY gates on generic DSH signals | R-ARCH-10, R-FB-10 as amended by 1.39 |
+
+## 20. V3 C-WIRE-2: one broker, routed session → managing agent → user (2026-11-17)
+
+Decided by the user on 2026-11-16/17 while C-WIRE-2 ran (the task brief and the answers to its seven questions). This supersedes §7a's V2 broker (Fishball's pile, `ask_fishball`, `list_user_messages`, the pass and ticket machinery, the audit) and §16's `maxPendingApprovals`.
+
+| Point | Decision | Reason |
+|---|---|---|
+| Routing | A managed session's permission requests, questions and plan reviews become offers in its managing agent's mailbox, connected or not; an unmanaged session's go to the user as normal DSH. Managed questions also open the session's own card, and the first answer wins (q2) | The user: "When a session is managed by an agent, its user-interaction tools (`ask_user_question` and plan review, plus permission prompts) are forwarded to that agent. An unmanaged session's tools go to the user as normal DSH" |
+| No cap | A managed session's request always becomes an offer and waits; `maxPendingApprovals` is gone | "No cap on pending approvals. Requests from managed sessions wait in the queue indefinitely and are never refused for being too many" |
+| Managed-session tools | `message_agent` only, in managed sessions only; no `ask_agent`, no `list_user_messages` | "不给ask_agent工具"; "list_user_messages is deleted" |
+| `approval_answer` `ask` | refused `invalid-decision`; offers list allow, grant, reject, escalate | q1 "Refuse it" (nothing carries a question back without `ask_agent`) |
+| Designated agent | `routing.agentToken`, the no-recipient queue, the designated role in revocation and succession, and embed-UI's latch reset on its loss are removed. An event naming no managed session has no recipient: an offer is the user's, a contributor event `no-agent`, the rest dropped | q5 "Remove agentToken entirely"; "There is no 'designated agent' default for unmanaged sessions" |
+| Prompts already showing | listed and answered only on sessions the caller manages, without its own escalations; answering never takes over management | "Agent不能回答不归自己管的会话，只能操作自己管的会话"; q7 |
+| Grants | kept (exact and shell-prefix, every grant ends); never paused while the agent is disconnected; ended at Take back, release or revocation | q3 "Still covers" |
+| Audit | no approval or decision audit; `auditEntriesKept`, `rationaleChars` removed | q6 "Delete it" |
+| DSH name | optional `approval.dshName`; the approval page shows it, or DSH's listener origin when it is empty | the user, 2026-11-17 |
+| V2 removed | `./contract`, `attachInstance`, the `dshConnector` and `fishballSessionState` services, `src/slim/**`, the V2 row path and every `/api/fishball/*` route of the connector; its vocabularies and payload bounds moved unchanged into K1 (`mcp-schema`) | "第三版其实就是第一版" (V2 was never deployed); q4 |
+| R-ARCH-08 strict | dsh-connector-shared keeps `redact` and `request-host` (two DSH-side users each); `files` and `provider-sync*` moved into dsh-instance (`src/lib/`), `oauth-client` into dsh-connector-adapter | Fishball's decision, 2026-11-17 |

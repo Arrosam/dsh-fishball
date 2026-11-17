@@ -13,8 +13,8 @@
  *    (SESSION_ACCESS);
  * 4. otherwise the caller manages R and the tool runs.
  * The answer tools (`approval_answer`, `question_answer`) apply row 1 only, then authorise by the
- * offer's holder (offers.js), because an `ask` from an unmanaged session is held by the
- * designated agent.
+ * offer's holder (offers.js): the holder is the session's manager when the offer was made, and a
+ * succession moves it (R-HOST-09).
  */
 import { REFUSAL } from '../../../mcp-schema/index.js'
 import { AUTHORITY } from './constants.js'

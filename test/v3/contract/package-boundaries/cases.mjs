@@ -19,7 +19,7 @@ import test from 'node:test'
 import { pathToFileURL } from 'node:url'
 import { REPO } from '../../../support/constants.mjs'
 import {
-  BUNDLED_FIELDS, DEP_FIELDS, DSH_FIELD, DSH_SIDE, EMBED_CONNECTOR_ALLOWED, FEATURES, JS_FILE, LATER, LIBRARIES, NPM, ROOT_WORKSPACE,
+  BUNDLED_FIELDS, DEP_FIELDS, DSH_FIELD, DSH_SIDE, EMBED_CONNECTOR_ALLOWED, FEATURES, JS_FILE, LATER, LIBRARIES, LIBRARY_RULE, NPM, ROOT_WORKSPACE,
   RUNTIME_DEP_FIELD, SDK, SET_SIDE, SHARED_READER, V3, V3_NAMES, sideOf,
 } from './constants.mjs'
 import { manifestNames, npmTempRoot, observe, readManifest } from './packages.mjs'
@@ -180,11 +180,22 @@ function registerLibraryCases(sdk, lib) {
     assert.ok(js.length > 0, lib.name + ' ships no module')
     assert.deepEqual(js.filter((m) => !usage.has(m)), [], 'modules no V3 package imports')
   })
-  // R-ARCH-08 says each library holds modules "more than one" package of its side uses, but the
-  // SPLIT-SHARED contents (design §1.0b row 5, plan §5) put files and provider-sync in
-  // dsh-connector-shared for the instance alone (the admin protocol left with D14), and fishball-shared serves core alone until F-UI.
-  // The two-users rule is left open until Fishball reconciles the two texts.
-  caseTest(sdk, 'PLAT-EP-07', 6, `every ${lib.name} module is used by at least two V3 packages`, null, LATER.twoUsers)
+  // R-ARCH-08 strict (Fishball's decision at C-WIRE-2, 2026-11-17): every library module needs at least
+  // two importers on its own side, counted as the distinct packages whose imports reach it (libraryUsage).
+  // C-WIRE-2 moved files / provider-sync* into dsh-instance and oauth-client into dsh-connector-adapter,
+  // so dsh-connector-shared meets it now; fishball-shared is not in this task and stays todo.
+  // Named 'C-WIRE-2' so the REMOVE-V2b todo of the same row merges visibly.
+  if (lib.name === V3.dshShared.name) {
+    caseTest(sdk, 'PLAT-EP-07', 6, `every ${lib.name} module is used by at least two V3 packages (R-ARCH-08 strict, C-WIRE-2)`, async () => {
+      assert.ok(has(lib), manifestMissing(lib))
+      const { units, packed } = await observe()
+      const usage = libraryUsage(units, lib.name)
+      const js = packed[lib.name].filter((f) => JS_FILE.test(f))
+      assert.ok(js.length > 0, lib.name + ' ships no module')
+      const few = js.map((m) => [m, [...(usage.get(m) ?? [])].sort()]).filter(([, users]) => users.length < LIBRARY_RULE.minUsers)
+      assert.deepEqual(few, [], 'modules with fewer than ' + LIBRARY_RULE.minUsers + ' importing V3 packages')
+    })
+  } else caseTest(sdk, 'PLAT-EP-07', 6, `every ${lib.name} module is used by at least two V3 packages`, null, LATER.twoUsers)
   caseTest(sdk, 'PLAT-EP-07', 6, `no ${lib.name} module is also a live copy in a plugin package (one owner per side)`, async () => {
     assert.ok(has(lib), manifestMissing(lib))
     const { units } = await observe()

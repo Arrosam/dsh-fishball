@@ -20,9 +20,9 @@
  *                  to `onRevoked` (C-REVOKE step 1): a revocation ends management through
  *                  `endPrincipal`, which C-REVOKE's own handler calls
  *       presence   K1 `Presence` (isConnected, onChange; fake; CONNECTED = an open listen stream)
- *       settings   `{get() → {agentToken?: EntryKey, maxQueuedInputs?: number}, onChange(fn) →
- *                  dispose}`: the live `routing.agentToken` and `maxQueuedInputs` (unset =
- *                  QUEUE.maxQueuedInputs)
+ *       settings   `{get() → {maxQueuedInputs?: number}, onChange(fn) → dispose}`: the live
+ *                  `maxQueuedInputs` (unset = QUEUE.maxQueuedInputs). C-WIRE-2: no
+ *                  `routing.agentToken` (the user, q5: "Remove agentToken entirely")
  *       sessions   the session source (Fishball 2026-11-14 #7; binding it to DSH is C-WIRE's):
  *                  `exists(sessionId) → boolean`, `onTurnFinished(fn(sessionId, {running, queued}))
  *                  → dispose`, `onState(fn(sessionId, {running, pendingInteraction})) → dispose`.
@@ -35,16 +35,12 @@
  *     managed     K1c `ManagedState`
  *     handover    K3 `DshConnectorHandover` (the object `provide` provides)
  *     provide(ctx)                provides `handover` as `dshConnectorHandover` on `ctx`
- *     messageAgent(sessionId, {text, images}) → Promise<{ok: true} | {ok: false, code: 'queue-full'}>
- *                                 the `message_agent` tool's routing (R-ROUTE-03, K1c-3)
- *     askAgent(sessionId, descriptor) → Promise
- *                                 `ask_agent`, `descriptor` a full K1 ask descriptor
- *                                 (EVENT_PAYLOAD_SHAPES.ask: approvalId, offerId, kind, prompt, …).
- *                                 The cases pass `{question}`; the world's `routing` builds the
- *                                 descriptor from it (askDescriptor below). Resolves
- *                                 `{ok: false, code: 'unavailable'}` at once with no connected
- *                                 recipient; else commits one `ask` offer
- *                                 and stays pending until it is answered (C-TOOLS answers it)
+ *     messageAgent(sessionId, {text, images}) → Promise<{ok: true} | {ok: false, code: 'queue-full' | 'not-managed'}>
+ *                                 the `message_agent` tool's routing: one `message` to the
+ *                                 session's manager (connected or not); `not-managed` for a
+ *                                 session nobody manages, nothing committed or held (C-WIRE-2:
+ *                                 no designated agent, no no-recipient queue; the user's q5).
+ *                                 `askAgent` is gone (the user: "不给ask_agent工具")
  *     offer(sessionId, type, descriptor) → Promise<{recipient: PrincipalKey, eventId} | NoRecipient>
  *                                 the approval hook: a `permission`, `question` or `plan-review`
  *                                 of the session, `descriptor` the K1 offer descriptor (its
@@ -58,6 +54,15 @@
  *                                 (routing/index.js JSDoc; on the managed chain, merge review fix 1)
  *     withdraw(offerId) → Promise<boolean>
  *                                 the session's call ended: the offer is retired `withdrawn`
+ *     escalate(offerId) → Promise<boolean>
+ *                                 C-WIRE-2: the offer goes to the user's stock prompt; it leaves
+ *                                 the live offers, the user's later answer (settle) settles it to
+ *                                 the same pair; if its session leaves management first it is
+ *                                 dropped with no retirement
+ *     onLeft(fn(offers)) → dispose
+ *                                 C-WIRE-2: fires once after each end of management (release,
+ *                                 Take back, revocation) that retired at least one offer, with
+ *                                 `[{offerId, sessionId, type}]` (they go to the user's prompt)
  *     endPrincipal(entryKey, {freshRetirements}) → Promise<{principalKey, sessions, offers}>
  *                                 C-REVOKE step 1: ends the entry's principal's management and
  *                                 retires its live offers `revoked` (test/v3/dsh-connector/revocation)
@@ -73,12 +78,11 @@ import fs from 'node:fs'
 import { mkdtemp, rm } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
-import { APPROVAL_KIND } from '../../../../packages/dsh-connector/contract/contract.js'
 import { INSTANCE } from '../../../support/constants.mjs'
 import { importInstance, importSdk } from '../../../private-skills/support/sdk.mjs'
 import { DSH } from '../pairs/constants.mjs'
 import { resolveRuntimePackages, storageContext } from '../pairs/subject.mjs'
-import { FIXTURE, HANDOVER, MANAGED_STATE_METHODS, OFFER_ID, SUBJECT, formatOfferId } from './constants.mjs'
+import { FIXTURE, HANDOVER, MANAGED_STATE_METHODS, QUEUE, SUBJECT } from './constants.mjs'
 import { FakePairs, FakePresence, FakeSessions, FakeSettings, FakeTokens, fakeClock, mailboxPort, recordingLogger } from './fakes.mjs'
 
 /** `entry` bound to `sdk`, with `names` required as functions; `owner` names the task for the message. */
@@ -97,33 +101,12 @@ function recordingHints() {
 }
 
 /**
- * The driver's own fixture for ask descriptors. The approval ids get their own prefix so they never
- * collide with the offer descriptors cases.mjs numbers from FIXTURE.offerPrefix.
+ * `routing` as the cases drive it: every member is the module's own, methods bound to it so private
+ * state keeps working. (C-WIRE-2 removed the `askAgent` wrapper: the user, "不给ask_agent工具".)
  */
-const ASK_FIXTURE = Object.freeze({ approvalPrefix: FIXTURE.offerPrefix + 'ask-' })
-let askCounter = 0
-/**
- * A K1 ask descriptor (shapes.js `descriptor`, timer-free) built from the cases' `{question}`: an
- * `ask` is an approval-kind request with no `questions`, so the question is its prompt, title and
- * reason (as cases.mjs fills its offer descriptors), stamped by the world's clock.
- */
-function askDescriptor({ question }, now) {
-  const approvalId = ASK_FIXTURE.approvalPrefix + ++askCounter
-  return {
-    approvalId, offerId: formatOfferId(approvalId, OFFER_ID.firstRevision), kind: APPROVAL_KIND.approval, prompt: question,
-    choices: [], title: question, at: now(), toolName: FIXTURE.toolName, callId: null, reason: question, quotes: [],
-  }
-}
-/**
- * `routing` as the cases drive it: every member is the module's own (methods bound to it, so
- * private state keeps working), except `askAgent`, which takes the cases' `{question}` and
- * passes the module a full ask descriptor.
- */
-function routingDriver(routing, now) {
-  const askAgent = (sessionId, ask) => routing.askAgent(sessionId, askDescriptor(ask, now))
+function routingDriver(routing) {
   return new Proxy(routing, {
     get(target, prop) {
-      if (prop === 'askAgent') return askAgent
       const value = Reflect.get(target, prop, target)
       return typeof value === 'function' ? value.bind(target) : value
     },
@@ -149,7 +132,9 @@ export async function routeWorld(t, sdk, { hints = recordingHints(), port = mail
   const start = async () => {
     const { ctx, helpers } = await storageContext(sdk, root)
     const tables = await mail[SUBJECT.mailboxOpen](ctx, helpers)
-    const real = mail[SUBJECT.mailboxCreate]({ tables: tables.tables, hints, now: ports.clock.now })
+    // C-WIRE-2 (relayed 2026-11-17): the bound is the mailbox's own, read at each commit, as C-WIRE passes
+    // `() => limits().maxQueuedInputs`; here the live FakeSettings value (unset = the K1 default).
+    const real = mail[SUBJECT.mailboxCreate]({ tables: tables.tables, hints, now: ports.clock.now, maxQueuedInputs: () => ports.settings.get().maxQueuedInputs ?? QUEUE.maxQueuedInputs })
     const mailbox = port(real)
     const routing = await route[SUBJECT.open](ctx, helpers, {
       mailbox, pairs: ports.pairs, tokens: ports.tokens, presence: ports.presence, settings: ports.settings,
@@ -159,7 +144,7 @@ export async function routeWorld(t, sdk, { hints = recordingHints(), port = mail
     assert.equal(typeof routing.router.recipientFor, 'function', 'router has no recipientFor() (K1 Router)')
     for (const m of MANAGED_STATE_METHODS) assert.equal(typeof routing.managed[m], 'function', `managed has no ${m}() (K1c ManagedState)`)
     assert.equal(routing.handover.apiVersion, HANDOVER.apiVersion, 'handover.apiVersion is not 1 (K3)')
-    return { ctx, tables, real, mailbox, routing, driver: routingDriver(routing, ports.clock.now) }
+    return { ctx, tables, real, mailbox, routing, driver: routingDriver(routing) }
   }
   const stop = async () => {
     if (open === undefined) return
@@ -181,7 +166,7 @@ export async function routeWorld(t, sdk, { hints = recordingHints(), port = mail
   const world = {
     ...ports,
     hints,
-    /** The routing object as the cases drive it (routingDriver: `askAgent` takes `{question}`). */
+    /** The routing object as the cases drive it (routingDriver). */
     get routing() { return open.driver },
     get router() { return open.routing.router },
     get managed() { return open.routing.managed },
@@ -196,12 +181,12 @@ export async function routeWorld(t, sdk, { hints = recordingHints(), port = mail
     async reopen() { await stop(); open = await start() },
     /**
      * A token entry with id `id`, enabled; `paired` binds it (with `name`); `connected` opens its
-     * listen stream; `designated` makes it `routing.agentToken`. Returns the key the handover
+     * listen stream. Returns the key the handover
      * service lists it under: its principal key when paired, else its entry key. An unpaired entry
      * has no principal key yet (C-PAIR mints one only when it binds), so its key is the opaque
      * EntryKey (K3 handover.d.ts; ROUTE-EP-01 rows 3 and 7).
      */
-    principal(id, { name = null, paired = true, connected = false, designated = false } = {}) {
+    principal(id, { name = null, paired = true, connected = false } = {}) {
       const entryKey = ports.tokens.add(id)
       const key = FIXTURE.principal(id)
       // `keys` names mailboxes, so it keeps the principal key even while unpaired: that is where
@@ -209,7 +194,6 @@ export async function routeWorld(t, sdk, { hints = recordingHints(), port = mail
       keys.add(key)
       if (paired) ports.pairs.bind(id, name)
       if (connected) ports.presence.connect(key)
-      if (designated) ports.settings.set({ agentToken: entryKey })
       return paired ? key : entryKey
     },
     /** A session of this DSH. */

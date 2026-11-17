@@ -178,8 +178,7 @@ export const WAIT = Object.freeze({
  * the design, not the user's), cited by the rows that rely on one.
  */
 export const DECIDED = Object.freeze({
-  designatedDeleted: 'Q-UIB-1 (dev 2026-11-16): the online designated principal\'s row leaving principals() is a loss; the latch resets, the notice stays',
-  designatedDisabled: 'Q-UIB-2 (dev 2026-11-16): designated counts an enabled entry only; a disable is a loss even while online; the notice stays',
+  // Q-UIB-1 / Q-UIB-2 (designated loss) are void since C-WIRE-2 (the user's q5: no designated principal).
   ignoredBodyLimit: 'Q-UIB-3 (dev 2026-11-16): dismiss and opened never read their body; no limit or shape check, any body gets 200',
   emptyIds: 'Q-UIB-4 (dev 2026-11-16): an empty string is a string; passed to the service unchanged, which answers its own refusal',
   secondContribute: 'Q-UIB-5 (dev 2026-11-16): each contribute() is independent; a refusal by the contribution service disposes what it registered and is rethrown; the first is unaffected; ending one resets latch and notice',

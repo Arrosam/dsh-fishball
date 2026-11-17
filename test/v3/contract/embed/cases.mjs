@@ -35,8 +35,8 @@ import { caseTest, dshInspect, integrationCase as gatedCase } from '../package-b
 import { DSH_FIELD, JS_FILE, NPM, SDK, V3 } from '../package-boundaries/constants.mjs'
 import { npmTempRoot, observe, readManifest } from '../package-boundaries/packages.mjs'
 import {
-  BASE, CARD_SLOTS, CHILD_COPY, GIT, CLIENT_LOADER_ERROR, EMBED, EMBED_WORDS, EXPECTED_UI, FIELD, FISHBALL_PREFIX, HOST_SLOTS,
-  INTEGRATION, LATER, MODULE_LOADER, OLD_CLIENT,
+  BASE, CARD_SLOTS, CHILD_COPY, CONNECTOR_CLIENT, GIT, CLIENT_LOADER_ERROR, EMBED, EMBED_WORDS, EXPECTED_UI, FIELD, FISHBALL_PREFIX, HOST_SLOTS,
+  INTEGRATION, LATER,
 } from './constants.mjs'
 import { hostGraph, openMainPage } from './page.mjs'
 
@@ -62,16 +62,6 @@ async function unitTokens(pkg) {
   const unit = await unitOf(pkg.name)
   assert.ok(unit, pkg.name + ' is not packed')
   return tokensOf(fs.realpathSync(pkg.dir), ownFiles(unit).filter((f) => JS_FILE.test(f)))
-}
-
-/** Files of a unit naming the browser module loader or a host-DSH slot (host UI, PLAT-EP-03 rows 1 and 3). */
-async function hostUiFiles(pkg) {
-  const hits = []
-  for (const [file, t] of await unitTokens(pkg)) {
-    const names = [...t.names.filter((n) => n === MODULE_LOADER), ...t.strings.filter((s) => s === MODULE_LOADER || HOST_SLOTS.includes(s))]
-    if (names.length) hits.push(file + ': ' + [...new Set(names)].join(', '))
-  }
-  return hits
 }
 
 /** Run `fn` only at integration: it boots a host DSH and launches a child (see INTEGRATION). */
@@ -166,17 +156,25 @@ export function registerEmbedCases(sdk) {
   })
 
   // ================================================================ R-EMBED (3) = PLAT-EP-03 row 1, HOST-EP-03 row 5
-  caseTest(sdk, 'PLAT-EP-03', 1, 'the connector manifest has no dsh.client and no ./client or ./records export', () => {
+  // Repointed at C-WIRE-2: by design §5.9 (requirements 1.28 R2, R-ARCH-03 amended) the connector has its
+  // own settings page, client.js registering only plugins.row.config. The rows now say that is its only
+  // client registration, and that the V2 records part (./records, client.records.js) stays gone.
+  caseTest(sdk, 'PLAT-EP-03', 1, "the connector manifest's only dsh.client is its settings page (platform web, ./client = client.js); no ./records export", () => {
     const manifest = manifestOf(V3.connector)
-    assert.equal(manifest[DSH_FIELD]?.client, undefined, 'dsh.client: ' + JSON.stringify(manifest[DSH_FIELD]?.client))
-    assert.deepEqual(exportKeys(manifest).filter((k) => OLD_CLIENT.connector.exports.includes(k)), [])
+    assert.equal(manifest[DSH_FIELD]?.client?.platform, CONNECTOR_CLIENT.platform, 'dsh.client: ' + JSON.stringify(manifest[DSH_FIELD]?.client))
+    const target = manifest.exports?.[CONNECTOR_CLIENT.exportKey]
+    assert.equal(path.posix.basename(String(typeof target === 'string' ? target : target?.default)), CONNECTOR_CLIENT.entry)
+    assert.deepEqual(exportKeys(manifest).filter((k) => CONNECTOR_CLIENT.goneExports.includes(k)), [])
   })
-  caseTest(sdk, 'PLAT-EP-03', 1, 'the connector packs no client.js or client.records.js', async () => {
+  caseTest(sdk, 'PLAT-EP-03', 1, 'the connector packs its settings page client.js and no client.records.js', async () => {
     const { packed } = await observe()
-    assert.deepEqual(packed[V3.connector.name].filter((f) => OLD_CLIENT.connector.files.includes(f)), [])
+    assert.ok(packed[V3.connector.name].includes(CONNECTOR_CLIENT.entry), 'client.js is not packed')
+    assert.deepEqual(packed[V3.connector.name].filter((f) => CONNECTOR_CLIENT.goneFiles.includes(f)), [])
   })
-  caseTest(sdk, 'PLAT-EP-03', 1, "the connector's shipped code registers no browser module and names no host-DSH slot", async () => {
-    assert.deepEqual(await hostUiFiles(V3.connector), [])
+  caseTest(sdk, 'PLAT-EP-03', 1, `the connector's shipped code names no host-DSH slot but ${CONNECTOR_CLIENT.slot} (its settings page)`, async () => {
+    const slots = []
+    for (const [file, t] of await unitTokens(V3.connector)) for (const s of t.strings) if (HOST_SLOTS.includes(s) && s !== CONNECTOR_CLIENT.slot) slots.push(file + ': ' + s)
+    assert.deepEqual(slots, [])
   })
   // R-ARCH-05 amended by 1.33 / QD1 = B: the instance's only browser code is its own settings page, so these rows are withdrawn.
   withdrawnRow(sdk, 'HOST-EP-03', 5, 'the instance manifest has no dsh.client and no ./client export', WITHDRAWN_BY.page)
@@ -185,10 +183,11 @@ export function registerEmbedCases(sdk) {
   // ================================================================ PLAT-EP-03 row 3: embed-UI is the only host-UI package
   // The host side's library is dsh-connector-shared since SPLIT-SHARED (requirements 1.40); fishball-shared is the Fishball side's.
   // I-HOST (QD1 = B): the instance declares dsh.client for its own settings page; the row's partition is the connector and the library.
-  caseTest(sdk, 'PLAT-EP-03', 3, 'of the host-side packages, the connector and dsh-connector-shared declare no dsh.client (embed-UI and the instance\'s own settings page do)', () => {
+  // C-WIRE-2: the connector's own settings page (design §5.9) declares dsh.client too; only the library has none.
+  caseTest(sdk, 'PLAT-EP-03', 3, 'of the host-side packages, only dsh-connector-shared declares no dsh.client (embed-UI, the instance\'s and the connector\'s own settings pages do)', () => {
     needEmbed()
     const withClient = [V3.connector, V3.instance, V3.dshShared, V3.embed].filter((p) => readManifest(p.dir)?.[DSH_FIELD]?.client !== undefined).map((p) => p.name)
-    assert.deepEqual(withClient.sort(), [V3.embed.name, V3.instance.name].sort())
+    assert.deepEqual(withClient.sort(), [V3.connector.name, V3.embed.name, V3.instance.name].sort())
   })
   withdrawnRow(sdk, 'PLAT-EP-03', 3, "the instance's own shipped code (not its status-line chunk) registers no browser module and names no host-DSH slot", WITHDRAWN_BY.page)
 

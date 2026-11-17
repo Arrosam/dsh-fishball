@@ -36,7 +36,7 @@ const PLUGIN = Object.freeze({
   // source never calls the catalog read `verify`, which only the child's target runs.
   dependencies: ['profileContext', 'workspaceRegistry', 'appReady', 'connection', 'webServer',
     // B9: the provider-sync source host is built on this row's ctx (createChildProviderSync) and
-    // reads llm, settings, configEditor, credentials and authorization (dsh-connector-shared/provider-sync-host).
+    // reads llm, settings, configEditor, credentials and authorization (src/lib/provider-sync-host.js).
     // dsh-base turns settings/configEditor off only without profileContext, which is required
     // above anyway.
     'llm', 'settings', 'configEditor', 'credentials', 'authorization',

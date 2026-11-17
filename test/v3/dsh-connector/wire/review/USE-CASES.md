@@ -85,6 +85,15 @@ Two `test.todo('C-WIRE-2')` rows are separately labelled by their enclosing suit
 
 These are deliberately not passing tests or an implementation exemption.
 
+**C-WIRE-2 (2026-11-17):** both are real rows now, on the interactions world (`../../interactions/`):
+1. BVA — ten pending permission requests of managed sessions (V2's cap was 8) are all offered and
+   listed, none reaches the stock prompt, and `maxPendingApprovals` is no setting (the user: "No cap
+   on pending approvals. Requests from managed sessions wait in the queue indefinitely and are never
+   refused for being too many").
+2. EP — a managed session's next model request lists `message_agent` and neither
+   `list_user_messages` nor `ask_agent`; neither is an MCP tool or in K1 (the user: "list_user_messages
+   is deleted"; "不给ask_agent工具"). The `LATER_ROWS` of added-cases.mjs are skipped rows pointing here.
+
 ## Execution ownership
 
 Parent coordinates every run and the environment. This writer launches **no DSH host or hosted

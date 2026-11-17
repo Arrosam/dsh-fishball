@@ -5,7 +5,7 @@ import { realpath, readFile, chmod, unlink } from 'node:fs/promises'
 import { randomUUID } from 'node:crypto'
 import { RUNTIME, READY_CAPABILITIES, runtimeLimits, fail, loopbackOrigin } from './constants.js'
 import { jsonPrivate, readPrivate, writePrivate, privateDirectory, launchPath, snapshotPath, pathsFor, lifecycleLog } from './files.js'
-import { inside } from 'dsh-connector-shared/files'
+import { inside } from '../lib/files.js'
 import { Wire, ChannelPublisher, proof, sameProof } from './wire.js'
 import { admissionKey, createTicketRedeemer } from './ticket.js'
 

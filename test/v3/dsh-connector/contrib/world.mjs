@@ -129,7 +129,13 @@ class FakeMailbox {
   async drop() { return { droppedAsks: [] } }
 }
 
-/** K1 `Router` for contributor events (R-EXT-17): the session's manager, else the designated pair. */
+/**
+ * K1 `Router` for contributor events (R-EXT-17): the session's manager, else `designated`. Since
+ * C-WIRE-2 (the user's q5, "Remove agentToken entirely") the real router has no designated pair and
+ * answers no-agent for an unmanaged session or none (routing suite EVT-EP-01 16); here `designated`
+ * is only a stand-in recipient for the rows that need some recipient, and `{designated: null}` is the
+ * V3 rule.
+ */
 class FakeRouter {
   designated = FIXTURE.pairs.d.principalKey
   managed = new Map([[FIXTURE.session.managed, FIXTURE.pairs.e2.principalKey]])

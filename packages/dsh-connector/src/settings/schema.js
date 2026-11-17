@@ -21,11 +21,11 @@ const tokenItem = Schema.object({
 /** The V3 fields of the row's Config (see the module comment). */
 export const SETTINGS_SCHEMA = Object.freeze({
   [SETTING.tokens[0]]: Schema.array(tokenItem).default([]).description(SETTING_TEXT.tokens).volatile(),
-  [SETTING.agentToken[0]]: Schema.object({
-    [SETTING.agentToken[1]]: Schema.string().description(SETTING_TEXT.agentToken).volatile(),
-  }),
+  // `approval.port` and `approval.dshName` share one object, so both paths name one section.
   [SETTING.approvalPort[0]]: Schema.object({
     [SETTING.approvalPort[1]]: Schema.natural().min(PORT_RANGE.min).max(PORT_RANGE.max).default(APPROVAL_LISTENER.defaultPort)
       .description(SETTING_TEXT.approvalPort).volatile(),
+    // Optional, with no default: the page shows the listener origin while it is unset or empty.
+    [SETTING.dshName[1]]: Schema.string().description(SETTING_TEXT.dshName).volatile(),
   }),
 })

@@ -21,6 +21,18 @@ export class LifecycleStateError extends Error {
   }
 }
 
+/**
+ * A domain refusal thrown from deep in a port (the session and image ports): `code` is a K1
+ * REFUSAL word, which the core tools answer as that refusal (mcp/tools/dispatch.js). It replaces
+ * the V2 contract's ContractError (C-WIRE-2).
+ */
+export class RefusalError extends Error {
+  constructor(code) {
+    super(code)
+    this.code = code
+  }
+}
+
 /** Diagnostic used when an error has neither a code nor a class name. */
 const UNKNOWN_ERROR = 'Error'
 

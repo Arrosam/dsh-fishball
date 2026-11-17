@@ -17,8 +17,7 @@
  *   `stage.undo` calls; `confirm()` is synchronous and passes through.
  * - `FakeWriter` (K1d SettingsWriter over the world's settings document, as the C-TOKENS world's):
  *   calls run in call order; `addToken` / `removeToken` write the document and resolve after the
- *   registry's sync of it (rejecting when that sync refuses it); `setDesignated` sets the live
- *   `routing.agentToken`.
+ *   registry's sync of it (rejecting when that sync refuses it). C-WIRE-2 (q5): no `setDesignated`.
  * - `FakeNotes` (K1d SessionNotes): records every `system(sessionId, note)` attempt in `calls`, and
  *   in `stored` only the ones the seam let through (a note that was written).
  * - `FakeTimers`: `{setTimeout, clearTimeout}` that never fire on their own; `runAll()` fires what is due.
@@ -227,7 +226,6 @@ export class FakeWriter {
   }
   addToken(item) { return this.#serial(CALL.addToken, { item }, () => this.#save([...this.world.doc.tokens, item])) }
   removeToken(entryKey) { return this.#serial(CALL.removeToken, { entryKey }, () => this.#save(this.world.doc.tokens.filter((i) => i.key !== entryKey))) }
-  setDesignated(entryKey) { return this.#serial(CALL.setDesignated, { entryKey }, async () => { this.world.settings.set({ agentToken: entryKey }) }) }
   /** The calls of `op`. */
   of(op) { return this.calls.filter((c) => c.op === op) }
 }

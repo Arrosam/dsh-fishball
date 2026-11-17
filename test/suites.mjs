@@ -148,12 +148,21 @@ export const V3_SUITES = Object.freeze({
   // and the fishball-core package suite's SDK paths, and owns its own worker.
   'dsh-connector.wire': suite('the wired connector row in a real DSH: settings, routes, services, tokens, MCP end to end (C-WIRE)', [...v3('dsh-connector/wire'), ...v3('dsh-connector/wire/review')],
     [all(PACKAGE.dshConnector), all(PACKAGE.dshConnectorUi), all(PACKAGE.dshConnectorShared), all(PACKAGE.fishballShared),
-      'test/v3/dsh-connector/pairs/subject.mjs', 'test/v3/fishball-core/package/constants.mjs', 'test/v3/dsh-connector/mcp-tools/subject.mjs']),
-  // The adapter imports only its own package and dsh-connector-shared/oauth-client (C-MCP-ADAPTER).
+      'test/v3/dsh-connector/pairs/subject.mjs', 'test/v3/fishball-core/package/constants.mjs', 'test/v3/dsh-connector/mcp-tools/subject.mjs',
+      // C-WIRE-2: the review rows' two C-WIRE-2 rows drive the interactions world (its subject, constants and worker extension).
+      'test/v3/dsh-connector/interactions/**']),
+  // C-WIRE-2 boots the C-WIRE world (its worker, with this suite's extension) with the whole connector
+  // bundle and drives the stock MCP client (wire/review/steps.mjs) and the scripted model.
+  'dsh-connector.interactions': suite("managed sessions on a real DSH: message_agent, permission requests, questions and plan reviews, grants, prompts already showing (C-WIRE-2)", v3('dsh-connector/interactions'),
+    [all(PACKAGE.dshConnector), all(PACKAGE.dshConnectorShared), all(PACKAGE.fishballShared), 'test/v3/dsh-connector/wire/**',
+      'test/v3/dsh-connector/pairs/subject.mjs', 'test/v3/fishball-core/package/constants.mjs', 'test/v3/contract/package-boundaries/cases.mjs',
+      'test/support/fixtures/fake-llm.mjs']),
+  // The adapter imports only its own package (C-MCP-ADAPTER); since C-WIRE-2 (R-ARCH-08 strict) its
+  // OAuth client module is its own (src/oauth-client.js), and it reuses the oauth-client suite's world.
   'dsh-connector-adapter.adapter': suite('connector adapter: check, sign-in tool, proxy, child row, refresh (C-MCP-ADAPTER)', v3('dsh-connector-adapter/adapter'),
-    [all(PACKAGE.dshConnectorAdapter), PACKAGE.dshConnectorShared + '/oauth-client.js', PACKAGE.dshConnectorShared + '/package.json']),
-  'dsh-connector-shared.oauth-client': suite('the DSH side\'s OAuth browser client and token manager (C-MCP-ADAPTER)', v3('dsh-connector-shared/oauth-client'),
-    [PACKAGE.dshConnectorShared + '/oauth-client.js', PACKAGE.dshConnectorShared + '/package.json']),
+    [all(PACKAGE.dshConnectorAdapter), 'test/v3/dsh-connector-adapter/oauth-client/**']),
+  'dsh-connector-adapter.oauth-client': suite('the adapter\'s OAuth browser client and token manager (C-MCP-ADAPTER; moved from dsh-connector-shared at C-WIRE-2)', v3('dsh-connector-adapter/oauth-client'),
+    [PACKAGE.dshConnectorAdapter + '/src/oauth-client.js', PACKAGE.dshConnectorAdapter + '/package.json']),
   // The instance's settings page (client*.js) replaced the card the shell rows used to read (I-HOST).
   'dsh-connector-ui.shell': suite('host half and client shell (U-SHELL)', v3('dsh-connector-ui/shell'),
     [all(PACKAGE.dshConnectorUi), PACKAGE.dshInstance + '/client*.js', sub(PACKAGE.dshConnector, 'tools'), sub(PACKAGE.dshConnector, 'host-services')]),
@@ -177,7 +186,7 @@ export const V3_SUITES = Object.freeze({
   'dsh-instance.host': suite("the hosted child's token, locator, admission, child-side row, settings page, placement with fishball-ui (I-HOST)", v3('dsh-instance/host'),
     [all(PACKAGE.dshInstance), sub(PACKAGE.dshConnector, 'host-services'), all(PACKAGE.dshConnectorShared), all(PACKAGE.fishballCore), all(PACKAGE.fishballUi),
       all(PACKAGE.fishballShared), all(PACKAGE.fishballBoard), all(PACKAGE.dshConnectorUi), 'test/v3/contract/k3-host-services/**', 'test/v3/contract/package-boundaries/**',
-      'test/v3/dsh-connector-shared/oauth-client/subject.mjs']),
+      'test/v3/dsh-connector-adapter/oauth-client/subject.mjs']),
   'fishball-core.package': suite('core package, slim child move (R-CORE; the settings-section point withdrawn, 1.34)', v3('fishball-core/package'),
     [all(PACKAGE.fishballCore), sub(PACKAGE.dshInstance, 'src', 'slim'), sub(PACKAGE.dshInstance, 'src', 'child'), PACKAGE.dshInstance + '/client*.js']),
   'fishball-core.bridge': suite('bridge façade, list_changed refresh, X8 attention (F-FACADE)', v3('fishball-core/bridge'),
@@ -198,7 +207,7 @@ export const V3_SUITES = Object.freeze({
   // oauth-client suite's in-process DSH host.
   'fishball-core.link-save': suite('saved credentials once on first acceptance, Connect (F-LINK-SAVE)', v3('fishball-core/link-save'),
     [sub(PACKAGE.fishballCore, 'src', 'identity'), ...CORE_LINK, PACKAGE.fishballShared + '/oauth-client.js', PACKAGE.fishballShared + '/package.json',
-      'test/v3/fishball-core/identity/**', 'test/v3/dsh-connector-shared/oauth-client/subject.mjs', 'test/v3/dsh-connector/pairs/subject.mjs', ...CONNECTOR_CONTRACTS]),
+      'test/v3/fishball-core/identity/**', 'test/v3/dsh-connector-adapter/oauth-client/subject.mjs', 'test/v3/dsh-connector/pairs/subject.mjs', ...CONNECTOR_CONTRACTS]),
   // The strip view is fishball-ui's src/status since F-UI (it reads fishball-shared's ui-seam); the line reads the link's target rule.
   'fishball-core.status': suite('status, strip view, set completeness, guards notice (F-STATUS)', v3('fishball-core/status'),
     [sub(PACKAGE.fishballCore, 'src', 'status'), sub(PACKAGE.fishballUi, 'src'), all(PACKAGE.fishballShared), ...CORE_LINK]),

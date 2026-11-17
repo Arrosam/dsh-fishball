@@ -8,7 +8,7 @@
 import { createUserMessage, boundContextSummary } from '@deepseek-ai/dsh-llm'
 import { diagnosticOf } from '../errors.js'
 import { isSessionGone, rootSessionOf } from '../session-info.js'
-import { RUNNING_AGENT } from '../slim/host/session-port.js'
+import { RUNNING_AGENT } from '../domain/session-port.js'
 import { LOG, SESSION_EVENT, SYSTEM_NOTE } from './constants.js'
 
 /**

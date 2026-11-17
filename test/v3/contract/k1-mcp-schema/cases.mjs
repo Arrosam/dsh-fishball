@@ -494,7 +494,9 @@ export function registerK1Cases(sdk) {
   for (const [id, row, what] of RECORDED.filter(([id]) => id.startsWith('PLAT-'))) caseTest(sdk, id, row, `K recorded: ${what}`, () => assertRecorded(id, row))
   todos(sdk, 'PLAT-UC-01', LATER.http, [['main, E1–E6', '2026-07-28 client flow; initialize, old version, GET/DELETE, resources/subscribe, Mcp-Session-Id, header mismatch']])
   todos(sdk, 'PLAT-BVA-02', LATER.http, [['1–4', 'body limit − 1, limit, limit + 1 (413 structured); in-flight max + 1 (429 structured)']])
-  todos(sdk, 'PLAT-UC-03', LATER.route, [['main, A1, E1, E2', 'message_agent / ask_agent routing; unavailable at once when not connected']])
+  // C-WIRE-2 (the user: "不给ask_agent工具"; q5 no designated agent): message_agent routing only; it runs
+  // in test/v3/dsh-connector/routing (PLAT-UC-03) and on a real DSH in dsh-connector.interactions (MSG-*).
+  todos(sdk, 'PLAT-UC-03', LATER.route, [['main, A1, E1, E2', 'message_agent routing: a managed session\'s message to its manager; not-managed otherwise']])
   // PLAT-UC-07 (the ask card) is F-ASKCARD's: test/v3/fishball-core/asks/cases.mjs.
   todos(sdk, 'PLAT-BVA-01', LATER.board, [['1–3', 'board done-item visibility at 29 d 23:59:59, 30 d, 30 d + 1 s (fake clock)']])
   todos(sdk, 'PLAT-DT-02', LATER.status, [['1–4', 'standalone set completeness']])

@@ -34,6 +34,8 @@ export const V3_NAMES = Object.freeze(Object.values(V3).map((p) => p.name))
 /** The two libraries, one per side (R-ARCH-08 amended by 1.40): not plugins, never bundles. */
 export const LIBRARIES = Object.freeze([V3.dshShared, V3.shared])
 export const LIBRARY_NAMES = Object.freeze(LIBRARIES.map((p) => p.name))
+/** R-ARCH-08 strict (Fishball's decision at C-WIRE-2): a library module needs this many importing packages of its side. */
+export const LIBRARY_RULE = Object.freeze({ minUsers: 2 })
 /**
  * The two sides with no dependency between them (design §1.0, requirements 1.34–1.41). Each side's
  * library is its last member. `dsh-connector-adapter` joined with C-MCP-ADAPTER; `fishball-ui` is a
@@ -112,7 +114,7 @@ export const LATER = Object.freeze({
   featurePeers: 'FEAT-PEERS (the feature plugin drops the dsh-instance peer for the optional fishballInstance? inject)',
   pluginsPage: 'X-MATRIX (no Plugins page of a started DSH lists either library)',
   hostTrace: 'X-SEC (PLAT-EP-07 runtime part: module-load trace of a running hosted setup C + I + U)',
-  twoUsers: 'Fishball (R-ARCH-08 rule 5 "more than one package uses it" conflicts with the SPLIT-SHARED contents: files and provider-sync have one DSH-side user, the instance; most fishball-shared modules have one, core, and ui-seam is fishball-ui\'s and core\'s since F-UI)',
+  twoUsers: 'the fishball-shared half of R-ARCH-08 strict (C-WIRE-2 made the dsh-connector-shared half real; most fishball-shared modules have one user, core, and ui-seam is fishball-ui\'s and core\'s since F-UI)',
   removeV2: 'REMOVE-V2 (design §1.0b row 2: core peered on dsh-connector for the V2 contract; F-WIRE removed core\'s V2 child path and C-WIRE-2 deleted dsh-connector/contract)',
   standalone: 'unassigned in v3-tasks.md (standalone install of the core tarball with no registry; core is not standalone-loadable before S6/F-GUARDS)',
 })
