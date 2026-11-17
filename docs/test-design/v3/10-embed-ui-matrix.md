@@ -39,7 +39,7 @@ Requirements: R-UI-01…09, R-ARCH-03, R-ARCH-04, requirements §4 (rows 1–15)
 
 - **Actor:** DSH owner, row 7 (I + U, remote target).
 - **Main flow:** the Fishball page, status and Retry work; the frame is the **local** child.
-- **Alternative flows:** A1. Fishball's attention signal (fold-notify) goes to the remote connector; it lights the remote DSH's fish if that DSH runs embed-UI, else `unsupported-operation`.
+- **Alternative flows:** A1. Fishball's attention signal (core's `attention.signal` bridge; fold-notify is not in V3, requirements 1.34) goes to the remote connector; it lights the remote DSH's fish if that DSH runs embed-UI, else `unsupported-operation`.
 - **Exception flows:** —
 - **Postconditions:** in this DSH: no dots, no marks, no Hand over, no contributed tools, and no traffic over the lifecycle wire other than lifecycle (no relay).
 
@@ -144,7 +144,7 @@ Columns: MCP = endpoint served; Page = Fishball page in this DSH; Marks = marks 
 | 11 | F + C | — | — | — | — | — | — | unsupported: no checks promised (excluded) |
 | 12 | C used by hosted + standalone | yes | yes | yes | yes | yes | two | both default to "Fishball" locally: the first holds it, the second is nameless (`ID: <id>`) until renamed; clashing rename `name-taken` |
 | 13 | feature plugins, no core | no | no | no | no | no | no | each logs `fishball-core-missing` once; boot succeeds |
-| 13b | core only | no | own UI | no | no | no | yes | board, fold-notify absent |
+| 13b | core only | no | own UI | no | no | no | yes | board absent (fold-notify: withdrawn (fold-notify is not in V3; requirements 1.34)) |
 | 14 | any F, guard overridden | — | yes | — | — | — | yes | `guards-overridden` naming the guard |
 | 15 | hosted child, core disabled | — | yes (status) | — | — | — | no | `fishball-off`; child starts |
 

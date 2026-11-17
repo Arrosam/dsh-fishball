@@ -1,4 +1,4 @@
-# 11. Protocol, core tools, plugin set, placement, board, fold-notify, migration, compatibility, security (PLAT)
+# 11. Protocol, core tools, plugin set, placement, board, migration, compatibility, security (PLAT)
 
 Requirements: R-ARCH-01…07, R-CON-01, 02, 05…10, R-EVT-01, R-FB-01, 02, 06, 08, 09, 10, R-BND-01…05,
 R-BRD-01, 02, R-FN-01, R-MIG-01…05, R-COMPAT-01, R-SEC-01…04. Conventions: [README](<README.md>).
@@ -146,9 +146,9 @@ Each row fails exactly one check (and later checks would also fail); the expecte
 | # | Installed | Expected |
 | --- | --- | --- |
 | 1 | board only | one `fishball-core-missing` line; boot ok |
-| 2 | fold-notify only | same |
+| 2 | *(withdrawn (fold-notify is not in V3; requirements 1.34))* | — |
 | 3 | *(withdrawn: Watchdog left V3, requirements 1.37)* | — |
-| 4 | both, no core | two lines; boot ok |
+| 4 | *(withdrawn (fold-notify is not in V3; requirements 1.34): "both" was board and fold-notify)* | — |
 
 ### PLAT-EP-05 — Secret leakage sweep
 **Req:** R-SEC-02, R-TOK-04 · **Level:** integration (full-run acceptance) · **Flags:** —
@@ -188,7 +188,7 @@ Plant recognisable token values, admission tickets and `Authorization` headers; 
 | 4 | `fishball-shared` manifest | no `dsh` field: no bundle, row, `dsh.client` or service; not listed on any Plugins page |
 | 5 | every V3 package that imports `fishball-shared` | has it in `dependencies` and `bundleDependencies`; its packed tarball contains it |
 | 6 | contents of `fishball-shared` | every module in it is imported by **at least two** V3 packages; a module imported by only one package fails the check |
-| 7a | allowed edges **into** `fishball-shared` (TQ-R5 = B) | from `fishball-connector`, `fishball-embed-ui`, `fishball-core`, `fishball-instance`, `fishball-board`, `fishball-fold-notify`, `fishball-hosted-settings`: all allowed |
+| 7a | allowed edges **into** `fishball-shared` (TQ-R5 = B) | from `fishball-connector`, `fishball-embed-ui`, `fishball-core`, `fishball-instance`, `fishball-board`, `fishball-hosted-settings`: all allowed (`fishball-fold-notify`: withdrawn (fold-notify is not in V3; requirements 1.34)) |
 | 7b | edges **out of** `fishball-shared` | none to any V3 package |
 | 7c | other cross-package edges | unchanged: the feature plugins reach core only through the optional `fishballInstance?` inject; embed-UI imports no connector code (types from `./tools` only); the connector imports no Fishball-set package |
 | 8 | host DSH process of a running hosted setup (C + I + U, with the connector or embed-UI importing `fishball-shared`) | no module from `fishball-core`, the feature plugins or `fishball-hosted-settings` is loaded (module-load trace); `fishball-shared` modules may be |
@@ -237,9 +237,9 @@ Applies equally to core (R-FB-10). `fishball-hosted-settings` follows the same r
 ### PLAT-DT-02 — Standalone set completeness
 **Req:** R-BND-05, R-FB-07 · **Level:** integration · **Flags:** K (`plugin-set-incomplete`, D§8.2)
 
-| Rule | core | board | fold-notify | Core status |
+| Rule | core | board | fold-notify *(withdrawn (fold-notify is not in V3; requirements 1.34))* | Core status |
 | --- | --- | --- | --- | --- |
-| 1 | on | on | on | ok |
+| 1 | on | on | — | ok |
 | 2 | on | — | — | ok; nothing reported (a feature that is not installed is not "missing", TQ-17 decided) |
 | 3 | *(withdrawn: Watchdog left V3, requirements 1.37)* | | | |
 | 4 | *(withdrawn: Watchdog left V3, requirements 1.37)* | | | |

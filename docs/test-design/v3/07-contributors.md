@@ -44,7 +44,7 @@ caller's loader-entry package. The EXT cases are no longer provisional on S5 unl
 - **Alternative flows:**
   - A1. No `sessionId` → the event goes to D.
   - A2. `sessionId` of an unmanaged session → to D.
-  - A3. In HF's Fishball DSH, no plugin intercepts `contributed:ci-watch.build.failed` → it reaches the Fishball agent through the X9 pipeline (fold-notify may batch it).
+  - A3. In HF's Fishball DSH, no plugin intercepts `contributed:ci-watch.build.failed` → it reaches the Fishball agent through the X9 pipeline.
 - **Exception flows:**
   - E1. No recipient (no D, no session manager) → `no-fishball`, nothing queued.
   - E2. Limits: see EXT-BVA-02/03.
@@ -65,13 +65,13 @@ caller's loader-entry package. The EXT cases are no longer provisional on S5 unl
 ### EXT-UC-04 — Embed-UI contributes the attention tools
 **Req:** R-EXT-13, R-UI-04, R-FN-01, R-EXT-03 · **Level:** integration · **Flags:** D§13.6
 
-- **Actor:** embed-UI; Fishball's fold-notify.
+- **Actor:** embed-UI; the Fishball DSH (core's `attention.signal` bridge, `packages/core/src/bridge/index.js`). *(The earlier actor, fold-notify, is withdrawn (fold-notify is not in V3; requirements 1.34).)*
 - **Preconditions:** C + U in one DSH.
 - **Main flow:**
   1. `tools/list` shows `embed-ui.attention.signal` and `embed-ui.attention.state` (namespace alias `embed-ui`).
-  2. Fold-notify calls `embed-ui.attention.signal({important: true})` over MCP → `{ok: true, accepted: true}`; the latch is `count 1, important true`; the fish shows the important dot.
+  2. The Fishball DSH calls `embed-ui.attention.signal({important: true})` over MCP → `{ok: true, accepted: true}`; the latch is `count 1, important true`; the fish shows the important dot.
   3. The user opens the Fishball page → the latch clears once.
-- **Alternative flows:** A1. Without U, the tools are absent; fold-notify's call gets `unsupported-operation` and nothing else changes.
+- **Alternative flows:** A1. Without U, the tools are absent; the Fishball DSH's call gets `unsupported-operation` and nothing else changes.
 - **Exception flows:** —
 - **Postconditions:** the connector has no attention tool or state of its own.
 

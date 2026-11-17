@@ -7,6 +7,15 @@ read. The requirements are the authority. The design is used only where a requir
 (for example R-TOK-05 → design §5.3) or for a proposed name that is still review vocabulary until
 V3-K; such expectations carry the flag `D§n`.
 
+**Read with the current names (DOCS, 2026-11-17).** The cases predate requirements 1.41: read
+`fishball-connector` as `dsh-connector`, `fishball-embed-ui` as `dsh-connector-ui`,
+`fishball-instance` as `dsh-instance`, `fishball-connector-adapter` as `dsh-connector-adapter`, and the
+MCP names by design §1.0c (`/api/agent/mcp`, scope `agent`, `agent_id`, `message_agent`,
+`ask_agent`). `fishball-hosted-settings` (R-HOST-11) and fold-notify (1.34) are withdrawn: a row
+about either expects nothing. The hosted set the instance places is `fishball-board`,
+`fishball-ui`, `fishball-core` (core last). The executable cases under `test/v3/` are the ones kept
+current.
+
 **Watchdog left V3** (requirements 1.37): its cases (the former `05-watchdog.md`, area `WD`) are
 gone; its notes are the separate project's. A managed session's permission requests go to its
 Fishball and on to the user.
@@ -27,7 +36,7 @@ are open in [questions.md](<questions.md>).
 | 8 | Hosted launch, token per pairing, reinstall takeover | [08-hosted.md](<08-hosted.md>) |
 | 9 | Standalone Fishball and remote DSH | [09-standalone-remote.md](<09-standalone-remote.md>) |
 | 10 | Embed-UI and the install matrix | [10-embed-ui-matrix.md](<10-embed-ui-matrix.md>) |
-| 11 | Everything else (protocol, routing rest, plugin set, placement, board, fold-notify, migration, compatibility, security) | [11-platform.md](<11-platform.md>) |
+| 11 | Everything else (protocol, routing rest, plugin set, placement, board, migration, compatibility, security) | [11-platform.md](<11-platform.md>) |
 | — | Traceability: requirement → cases | [traceability.md](<traceability.md>) |
 | — | Gaps and contradictions found while writing the cases | [questions.md](<questions.md>) |
 
