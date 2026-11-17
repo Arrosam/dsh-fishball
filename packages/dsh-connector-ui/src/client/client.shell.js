@@ -225,6 +225,8 @@ window.__ModuleLoader__.load({
     const SEAT = Object.freeze({ mark: 'mark', pageOpened: 'pageOpened' })
     const SLOT = Object.freeze({
       headerActions: 'conversation.session.header.actions',
+      /** DSH's right-aligned session utilities (open-in-app, the log export), laid out beside the title, never over it. */
+      headerUtilities: 'conversation.session.header.utilities',
       sessionMenu: 'sidebar.workspaces.session.menu.item',
       overlay: 'shell.overlay',
       /**
@@ -300,7 +302,7 @@ window.__ModuleLoader__.load({
       wag: Object.freeze([[0, 0], [55, 0], [62, -14], [70, 12], [78, -9], [86, 5], [100, 0]]),
     })
     const STYLE_ID = 'fishball-style'
-    const CLS = Object.freeze({ field: 'fb-field', note: 'fb-note', code: 'fb-code', mark: 'fb-mark', markBox: 'fb-mark-box', wag: 'fb-wag', muted: 'fb-muted', managedRow: 'fb-managed-row', managedRowDot: 'fb-managed-row-dot', flip: 'fb-flip', embed: 'fb-embed', embedBar: 'fb-embed-bar', embedTitle: 'fb-embed-title', embedName: 'fb-embed-name', embedState: 'fb-embed-state', embedStateWords: 'fb-embed-state-words', embedActions: 'fb-embed-actions', embedFrame: 'fb-embed-frame', embedError: 'fb-embed-error', embedGlyph: 'fb-embed-glyph', embedDetails: 'fb-embed-details', embedLead: 'fb-embed-lead', link: 'fb-link', light: 'fb-light', principal: 'fb-principal', managedBy: 'fb-managed-by', refusal: 'fb-refusal', notice: 'fb-notice', noticeText: 'fb-notice-text', noticeCount: 'fb-notice-count' })
+    const CLS = Object.freeze({ field: 'fb-field', note: 'fb-note', code: 'fb-code', mark: 'fb-mark', markBox: 'fb-mark-box', wag: 'fb-wag', muted: 'fb-muted', managedRow: 'fb-managed-row', managedRowDot: 'fb-managed-row-dot', flip: 'fb-flip', embed: 'fb-embed', embedBar: 'fb-embed-bar', embedTitle: 'fb-embed-title', embedName: 'fb-embed-name', embedState: 'fb-embed-state', embedStateWords: 'fb-embed-state-words', embedCode: 'fb-embed-code', headerControl: 'fb-header-control', ellipsis: 'fb-ellipsis', embedActions: 'fb-embed-actions', embedFrame: 'fb-embed-frame', embedError: 'fb-embed-error', embedGlyph: 'fb-embed-glyph', embedDetails: 'fb-embed-details', embedLead: 'fb-embed-lead', link: 'fb-link', light: 'fb-light', principal: 'fb-principal', managedBy: 'fb-managed-by', refusal: 'fb-refusal', notice: 'fb-notice', noticeText: 'fb-notice-text', noticeCount: 'fb-notice-count' })
     /**
      * The fish's prompt bubble (R-FN-01: "a bubble beside the sidebar fish"): it sits `gapPx` to
      * the right of the fish's mark, level with its top, and keeps to `maxWidthPx` wide and
@@ -325,6 +327,15 @@ window.__ModuleLoader__.load({
     })
     /** The gap between a principal's light and its label (R-UI-10). */
     const PRINCIPAL_GAP_PX = 6
+    /**
+     * The session header's text beside DSH's own (UI-FIX-D, the 390 px retake):
+     * - `maxWidthPx`: the widest a one-line label grows before its ellipsis, DSH's own crumb cap
+     *   (ConversationRoot .crumb max-width, 0.2.1-rc.5 and 0.2.2-rc.1);
+     * - `narrowRowPx`: the title row's width (DSH makes it an inline-size container) at or below
+     *   which "Managed by <principal>" is dropped, DSH's own breakpoint for its agent-preset label
+     *   in the same row (dsh-client-ui-agent-preset `@container (width<=540px)`).
+     */
+    const HEADER_LABEL = Object.freeze({ maxWidthPx: 220, narrowRowPx: 540 })
     /**
      * DSH's caption and body type and its tinted-box padding (the sizes its settings fields and
      * Tag use), for the parts this sheet draws beyond DSH's own components.
@@ -373,13 +384,18 @@ window.__ModuleLoader__.load({
       `.${CLS.embed}{display:flex;flex-direction:column;flex:1;width:100%;height:100%;min-width:0;min-height:0;background:var(--dsw-alias-bg-base)}`,
       `.${CLS.embedBar}{box-sizing:border-box;flex:none;display:flex;align-items:center;gap:${DSH_SESSION_HEADER.gap};min-height:${DSH_SESSION_HEADER.minHeight};padding:${DSH_SESSION_HEADER.padding};padding-inline-start:max(${DSH_SESSION_HEADER.startPadding}, var(--dsh-frame-leading-clearance,0px));border-bottom:.5px solid var(--dsw-alias-border-l3)}`,
       // The fish and the name read as one title, as a session's crumb does.
-      `.${CLS.embedTitle}{display:inline-flex;align-items:center;gap:${DSH_SESSION_HEADER.gap};min-width:0}`,
+      // The title, the tag and Refresh keep their size; only the code gives way on a narrow header.
+      `.${CLS.embedTitle}{display:inline-flex;flex:none;align-items:center;gap:${DSH_SESSION_HEADER.gap}}`,
       `.${CLS.embedName}{color:var(--dsw-alias-label-primary);font-size:${DSH_SESSION_HEADER.nameFont};line-height:${DSH_SESSION_HEADER.nameLine};font-weight:500;white-space:nowrap}`,
       // The state tag and its safe code sit together, as one item of the header line.
-      `.${CLS.embedState}{display:inline-flex;align-items:center;gap:${DSH_SESSION_HEADER.gap}}`,
+      `.${CLS.embedState}{display:inline-flex;flex:0 1 auto;align-items:center;gap:${DSH_SESSION_HEADER.gap};min-width:0}`,
+      `.${CLS.embedState}>:first-child{flex:none}`,
       `.${CLS.embedStateWords}{display:inline-flex;align-items:center;gap:${PRINCIPAL_GAP_PX}px}`,
+      // The header's code is one line that ends in an ellipsis (its `title` and the body's details
+      // carry it whole): a code such as INVALID_MAIN_HOME broke into three lines at 390 px.
+      `.${CLS.embedCode}{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;overflow-wrap:normal}`,
       // The header is a window-drag area on macOS Desktop, as DSH's own; its buttons are not.
-      `.${CLS.embedActions}{display:flex;align-items:center;gap:${DSH_SESSION_HEADER.gap};margin-inline-start:auto;-webkit-app-region:no-drag}`,
+      `.${CLS.embedActions}{display:flex;flex:none;align-items:center;gap:${DSH_SESSION_HEADER.gap};margin-inline-start:auto;-webkit-app-region:no-drag}`,
       `.${CLS.embedFrame}{display:block;flex:1;width:100%;min-height:0;border:0;background:var(--dsw-alias-bg-base)}`,
       // Not ready, failed or still checking: DSH's empty/error state (dsh-client-ui-schedule .empty), centred in the view.
       `.${CLS.embedError}{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:${DSH_EMPTY_STATE.gap};padding:${DSH_EMPTY_STATE.padding};text-align:center;color:var(--dsw-alias-label-tertiary);font-size:${DSH_EMPTY_STATE.font};line-height:1.6}`,
@@ -401,8 +417,14 @@ window.__ModuleLoader__.load({
       `.${CLS.light}{display:inline-block;flex:none;width:${ROW_MARK.dot.sizePx}px;height:${ROW_MARK.dot.sizePx}px;border-radius:50%;background:var(--dsw-alias-state-error-primary)}`,
       `.${CLS.light}[data-fishball-online="true"]{background:var(--dsw-alias-state-success-primary)}`,
       `.${CLS.principal}{display:inline-flex;align-items:center;gap:${PRINCIPAL_GAP_PX}px;overflow-wrap:anywhere}`,
-      // "Managed by <principal>" in the session header: DSH's caption size, so it sits as metadata beside Take back.
-      `.${CLS.managedBy}{display:inline-flex;align-items:center;gap:${PRINCIPAL_GAP_PX}px;color:var(--dsw-alias-label-tertiary);font:${TYPE.caption};white-space:nowrap}`,
+      // "Managed by <principal>" beside the session title: DSH's caption size, as metadata, one line
+      // capped as DSH caps a crumb; a narrow title row drops it (HEADER_LABEL), as DSH drops its preset label.
+      `.${CLS.managedBy}{display:inline-block;max-width:${HEADER_LABEL.maxWidthPx}px;overflow:hidden;text-overflow:ellipsis;color:var(--dsw-alias-label-tertiary);font:${TYPE.caption};white-space:nowrap}`,
+      `@container (width<=${HEADER_LABEL.narrowRowPx}px){.${CLS.managedBy}{display:none}}`,
+      // A header control's label: one line, capped as DSH caps a crumb, ending in an ellipsis.
+      `.${CLS.headerControl}{max-width:${HEADER_LABEL.maxWidthPx}px;white-space:nowrap}`,
+      `.${CLS.headerControl} .${CLS.principal}{min-width:0;overflow-wrap:normal}`,
+      `.${CLS.ellipsis}{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}`,
       // A hand-over refusal inside its dialog: DSH's danger tint (its Tag's danger tone) with an error
       // bar at its start; the words keep the label colour, so they read at full contrast on the tint.
       `.${CLS.refusal}{margin-top:${TYPE.boxGapPx}px;padding:${TYPE.boxPadding};border:.5px solid color-mix(in srgb, var(--dsw-alias-state-error-primary) 30%, transparent);border-radius:var(--dsw-radius-sm);background:color-mix(in srgb, var(--dsw-alias-state-error-primary) 8%, transparent);color:var(--dsw-alias-label-primary);font:${TYPE.body};border-inline-start:${TYPE.barPx}px solid var(--dsw-alias-state-error-primary)}`,
@@ -655,7 +677,7 @@ window.__ModuleLoader__.load({
           h('span', { className: CLS.embedStateWords },
             dot === undefined ? h(StateDot, { state: STATE_DOT.pending, size: STATE_DOT.pendingSizePx }) : h(StateDot, { state: dot, size: STATE_DOT.sizePx }),
             t('frameState.' + state))),
-        code ? h('code', { className: [CLS.code, CLS.muted].join(' ') }, code) : null)
+        code ? h('code', { className: [CLS.code, CLS.muted, CLS.embedCode].join(' '), title: code }, code) : null)
     }
 
     /**

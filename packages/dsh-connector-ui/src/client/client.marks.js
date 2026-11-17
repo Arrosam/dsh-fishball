@@ -7,7 +7,8 @@
  * It only draws (1.34: "connector当后端，embed UI当前端"): the marks and the Hand over targets come
  * from the connector UI backend's snapshot stream, and Hand over / Take back are the backend's
  * routes, which call its hand-over service. Nothing is kept here but the open dialog.
- * - A managed session shows "Managed by <principal>" and Take back (one click, no note).
+ * - A managed session shows "Managed by <principal>" beside its title and Take back (one click,
+ *   no note) in the header's utilities.
  * - An unmanaged one shows the backend's `targets` (enabled and paired, online or not, in the
  *   connector's order; R-UI-10): none → no control; one → "Hand over to <principal>"; more → the
  *   "Handover to…" dropdown. Each carries its green / red light with its words.
@@ -29,18 +30,26 @@ globalThis.__ModuleLoader__?.load({
     const PART = Object.freeze({ name: 'dsh-connector-ui: marks', inject: Object.freeze(['slots', 'locale']) })
     /** Cordis effect labels. */
     const LABEL = Object.freeze({
-      header: 'fishball: hand-over header action', menu: 'fishball: session menu', dialogs: 'fishball: hand-over dialogs',
+      header: 'fishball: hand-over header action', headerControl: 'fishball: hand-over header control',
+      menu: 'fishball: session menu', dialogs: 'fishball: hand-over dialogs',
       rowMark: 'fishball: managed row mark', rowRunning: 'fishball: managed row running mark',
     })
 
     /**
      * The one hand-over entry: the session header and the session-row menu share it. Menu order:
-     * after DSH's own pin/rename/fork/archive, before the id; header order: just before Fishball's
-     * own settings action. The dialog and the refusal notice are two overlay entries, so each has
-     * its own id. `menuAlign` opens the dropdown under its button's end, as DSH's own header menus.
+     * after DSH's own pin/rename/fork/archive, before the id. In the header it is two entries:
+     * - "Managed by <principal>" stays title-adjacent (`headerOrder`, the header actions, just
+     *   before Fishball's own settings action), as metadata of the title;
+     * - the control (Take back, Hand over) sits in DSH's right-aligned utilities
+     *   (`utilitiesOrder`), first of them, before open-in-app (-10) and the schedule catalog (-5).
+     *   The title-adjacent actions are `flex:none` inside a title cluster that does not clip on
+     *   0.2.1-rc.5, so a control there was drawn over DSH's own utilities at narrow widths (the
+     *   390 px retake); the utilities are laid out beside them and never overlap.
+     * The dialog and the refusal notice are two overlay entries, so each has its own id.
+     * `menuAlign` opens the dropdown under its button's end, as DSH's own header menus.
      */
     const HAND_OVER = Object.freeze({
-      id: 'fishball-hand-over', noticeId: 'fishball-hand-over-notice', menuOrder: 422, headerOrder: 4.5,
+      id: 'fishball-hand-over', noticeId: 'fishball-hand-over-notice', menuOrder: 422, headerOrder: 4.5, utilitiesOrder: -20,
       menuAlign: 'end', noteRows: 4,
     })
     /** The managed mark in a sidebar row (DESIGN §10e item 30): its cell and its two states. */
@@ -156,13 +165,20 @@ globalThis.__ModuleLoader__?.load({
       /** "Hand over to <principal>", with the principal's light (R-UI-10). */
       const handOverLabel = (t, target) => principalWithLight(t, target, withName(t, 'handOverTo', principalLabel(t, target)))
 
-      /** The one-target button, or the "Handover to…" dropdown for more (R-UI-10). */
+      /**
+       * The one-target button, or the "Handover to…" dropdown for more (R-UI-10). In the header the
+       * one-target label keeps to one line and ends in an ellipsis when a long name would crowd the
+       * title (CLS.headerControl); its `title` holds the whole text.
+       */
       function HandOverControl({ t, sessionId, targets }) {
         const [open, setOpen] = React.useState(false)
         const choose = (target) => handOverRequest.open(sessionId, target)
         if (targets.length === 1) {
           const [target] = targets
-          return h(Button, { type: 'button', size: 'sm', variant: 'ghost', 'data-fishball-hand-over': true, 'data-fishball-target': target.key, onClick: () => choose(target) }, handOverLabel(t, target))
+          return h(Button, {
+            type: 'button', size: 'sm', variant: 'ghost', className: CLS.headerControl, title: t('handOverTo', { name: principalText(t, target) }),
+            'data-fishball-hand-over': true, 'data-fishball-target': target.key, onClick: () => choose(target),
+          }, principalWithLight(t, target, h('span', { className: CLS.ellipsis }, withName(t, 'handOverTo', principalLabel(t, target)))))
         }
         return h(Menu, {
           open,
@@ -180,17 +196,29 @@ globalThis.__ModuleLoader__?.load({
       }
 
       /**
-       * The header's entry: a managed session's "Managed by <principal>" and Take back, else the
-       * Hand over control, which is absent with no target (R-UI-10: "With none it shows no control").
+       * The header's title-adjacent entry: a managed session's "Managed by <principal>", else
+       * nothing. It is metadata of the title, so DSH's narrow header drops it (CLS.managedBy, as
+       * DSH drops its own agent-preset label); its `title` keeps the words.
        */
       function makeHeaderAction(t) {
-        return function FishballHandOverHeaderAction({ sessionId }) {
+        return function FishballManagedByHeaderAction({ sessionId }) {
+          const mark = markOf(useSnapshot(), sessionId)
+          if (mark === undefined) return null
+          return h('span', { className: CLS.managedBy, title: t('managedBy', { name: principalText(t, mark.principal) }), 'data-fishball-managed-by': mark.principal.key },
+            withName(t, 'managedBy', principalLabel(t, mark.principal)))
+        }
+      }
+
+      /**
+       * The header's control, in DSH's right-aligned utilities (HAND_OVER): Take back for a managed
+       * session, else the Hand over control, which is absent with no target (R-UI-10: "With none it
+       * shows no control").
+       */
+      function makeHeaderControl(t) {
+        return function FishballHandOverHeaderControl({ sessionId }) {
           const snapshot = useSnapshot()
-          const mark = markOf(snapshot, sessionId)
-          if (mark !== undefined) {
-            return h(React.Fragment, null,
-              h('span', { className: CLS.managedBy, 'data-fishball-managed-by': mark.principal.key }, withName(t, 'managedBy', principalLabel(t, mark.principal))),
-              h(Button, { type: 'button', size: 'sm', variant: 'ghost', 'data-fishball-take-back': true, onClick: () => void takeBack(sessionId) }, t('takeBack')))
+          if (markOf(snapshot, sessionId) !== undefined) {
+            return h(Button, { type: 'button', size: 'sm', variant: 'ghost', 'data-fishball-take-back': true, onClick: () => void takeBack(sessionId) }, t('takeBack'))
           }
           if (snapshot.targets.length === 0) return null
           return h(HandOverControl, { t, sessionId, targets: snapshot.targets })
@@ -270,6 +298,7 @@ globalThis.__ModuleLoader__?.load({
           const t = ctx.locale.bind(NS)
           const register = (slot, entry, Component) => ctx.slots.register({ name: slot, locale: NS, ...entry }, Component)
           ctx.effect(() => ctx.slots.inject(SLOT.headerActions, () => register(SLOT.headerActions, { id: HAND_OVER.id, order: HAND_OVER.headerOrder }, makeHeaderAction(t))), LABEL.header)
+          ctx.effect(() => ctx.slots.inject(SLOT.headerUtilities, () => register(SLOT.headerUtilities, { id: HAND_OVER.id, order: HAND_OVER.utilitiesOrder }, makeHeaderControl(t))), LABEL.headerControl)
           ctx.effect(() => ctx.slots.inject(SLOT.sessionMenu, () => register(SLOT.sessionMenu, { id: HAND_OVER.id, order: HAND_OVER.menuOrder }, makeMenuItems(t))), LABEL.menu)
           ctx.effect(() => ctx.slots.inject(SLOT.overlay, function* () {
             yield register(SLOT.overlay, { id: HAND_OVER.id }, makeHandOverDialog(t))

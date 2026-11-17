@@ -127,7 +127,20 @@ window.__ModuleLoader__.load({
      * so it reads as one of DSH's own settings pages.
      */
     const GAP = Object.freeze({ page: '32px', section: '12px', row: '12px', item: '8px', tight: '6px', column: '24px', icon: '4px' })
-    const SIZE = Object.freeze({ control: '240px', iconButton: '28px', dot: 8, icon: 14, noticeIcon: 16 })
+    /**
+     * `control`: a setting's input beside its words. `column`: the narrowest a row's part gets
+     * before the row stacks (UI-FIX-D: at 390 px the words were squeezed beside the inputs and the
+     * pair line touched the switch). The page has no style sheet for a media query, so a row stacks
+     * by flex wrapping: its words keep at least `column` beside the control, else they take a line
+     * of their own and the control the next one.
+     */
+    const SIZE = Object.freeze({ control: '240px', column: '240px', iconButton: '28px', dot: 8, icon: 14, noticeIcon: 16 })
+    /**
+     * The wrapping row's two shares: the words take every free pixel (`fill`, the Every Layout
+     * "sidebar" pattern), so on one line the control stays at its `control` basis; each part fills
+     * its own line once the row stacks.
+     */
+    const GROW = Object.freeze({ fill: 999, one: 1 })
     const TOKEN = Object.freeze({
       label: 'var(--dsw-alias-label-primary)',
       secondary: 'var(--dsw-alias-label-secondary)',
@@ -152,8 +165,17 @@ window.__ModuleLoader__.load({
       body: Object.freeze({ fontSize: '13px', lineHeight: '20px' }),
       heading: Object.freeze({ fontSize: '14px', lineHeight: '20px', fontWeight: 500 }),
     })
-    /** One setting row's grid: its words on the left, its control on the right (DSH's settings rows). */
-    const ROW_AREA = Object.freeze({ title: 'title', hint: 'hint', control: 'control', error: 'error' })
+    /**
+     * A wrapping row's two parts (SIZE.column, GROW): the words (`main`) first, at least `column`
+     * wide and taking the free space; the control or tools (`end`) beside them while both fit, else
+     * on a line of their own. `endTools` keeps its own size and sits at the line's end either way.
+     */
+    const WRAP = Object.freeze({
+      row: Object.freeze({ display: 'flex', flexWrap: 'wrap', alignItems: 'center', columnGap: GAP.column, rowGap: GAP.item, minWidth: 0 }),
+      main: Object.freeze({ flex: `${GROW.fill} 1 ${SIZE.column}`, minWidth: 0 }),
+      end: Object.freeze({ flex: `${GROW.one} 1 ${SIZE.control}`, minWidth: 0 }),
+      endTools: Object.freeze({ flex: 'none', marginInlineStart: 'auto' }),
+    })
     const STYLE = Object.freeze({
       page: Object.freeze({ display: 'grid', gap: GAP.page, color: TOKEN.label, font: TOKEN.body }),
       section: Object.freeze({ display: 'grid', gap: GAP.section, minWidth: 0 }),
@@ -168,24 +190,28 @@ window.__ModuleLoader__.load({
       cardRow: Object.freeze({ padding: `${GAP.row} 16px`, minWidth: 0 }),
       cardRule: Object.freeze({ borderTop: TOKEN.rule }),
       empty: Object.freeze({ margin: 0, padding: '20px 16px', textAlign: 'center', color: TOKEN.tertiary }),
-      tokenRow: Object.freeze({ display: 'flex', alignItems: 'center', gap: GAP.row, minWidth: 0 }),
-      tokenMain: Object.freeze({ display: 'grid', gap: GAP.tight, flex: 1, minWidth: 0 }),
-      tokenTools: Object.freeze({ display: 'flex', alignItems: 'center', gap: GAP.icon, flex: 'none' }),
+      // A token's label and pair line, then its switch and buttons, which wrap to their own line
+      // (at its end) on a narrow page instead of squeezing the label and touching the pair line.
+      tokenRow: Object.freeze({ ...WRAP.row, columnGap: GAP.row }),
+      tokenMain: Object.freeze({ ...WRAP.main, display: 'grid', gap: GAP.tight }),
+      tokenTools: Object.freeze({ ...WRAP.endTools, display: 'flex', alignItems: 'center', gap: GAP.icon }),
       switchGap: Object.freeze({ marginInlineEnd: GAP.item, display: 'inline-flex' }),
       iconButton: Object.freeze({ width: SIZE.iconButton, padding: 0 }),
       pair: Object.freeze({ display: 'flex', alignItems: 'center', gap: GAP.tight, color: TOKEN.tertiary, ...TYPE.caption, minWidth: 0, overflowWrap: 'anywhere' }),
-      addRow: Object.freeze({ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) auto', alignItems: 'center', gap: GAP.item }),
+      // The new token's label field, then New token, which wraps under it on a narrow page.
+      addRow: Object.freeze({ ...WRAP.row, columnGap: GAP.item }),
+      addLabel: Object.freeze({ ...WRAP.main, display: 'grid' }),
+      addButton: Object.freeze({ ...WRAP.endTools, display: 'inline-flex' }),
       actions: Object.freeze({ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: GAP.item }),
-      setting: Object.freeze({
-        display: 'grid', gridTemplateColumns: `minmax(0, 1fr) minmax(0, ${SIZE.control})`, columnGap: GAP.column, rowGap: '2px', alignItems: 'center',
-        gridTemplateAreas: `"${ROW_AREA.title} ${ROW_AREA.control}" "${ROW_AREA.hint} ${ROW_AREA.control}" "${ROW_AREA.hint} ${ROW_AREA.error}"`,
-      }),
-      // The label stays the input's label (its text names the field) while its parts take the row's grid.
-      settingLabel: Object.freeze({ display: 'contents' }),
-      settingTitle: Object.freeze({ gridArea: ROW_AREA.title, fontWeight: TYPE.heading.fontWeight, lineHeight: TYPE.body.lineHeight }),
-      settingHint: Object.freeze({ gridArea: ROW_AREA.hint, display: 'grid', gap: GAP.icon, alignSelf: 'start' }),
-      settingControl: Object.freeze({ gridArea: ROW_AREA.control, display: 'grid', minWidth: 0 }),
-      settingError: Object.freeze({ gridArea: ROW_AREA.error, display: 'grid', color: TOKEN.error, ...TYPE.caption }),
+      // DSH's settings row (its general settings rows: words, then the control at the row's end, a
+      // 24px gap), wrapping as WRAP says: on a narrow page the title and hint take the full width
+      // and the input the next line, full width, with its errors under it.
+      setting: WRAP.row,
+      settingWords: Object.freeze({ ...WRAP.main, display: 'grid', gap: '2px' }),
+      settingTitle: Object.freeze({ fontWeight: TYPE.heading.fontWeight, lineHeight: TYPE.body.lineHeight }),
+      settingHint: Object.freeze({ display: 'grid', gap: GAP.icon }),
+      settingControl: Object.freeze({ ...WRAP.end, display: 'grid', gap: GAP.icon }),
+      settingError: Object.freeze({ display: 'grid', color: TOKEN.error, ...TYPE.caption }),
       status: Object.freeze({ margin: 0, display: 'flex', alignItems: 'center', gap: GAP.tight, ...TYPE.caption }),
       // The words in the label colour (full contrast on the tint); the error colour is the tint, the
       // frame, the start bar and the icon, so the box still reads as an error.
@@ -415,18 +441,21 @@ window.__ModuleLoader__.load({
     const card = (rows) => h('div', { style: STYLE.card }, rows.map((row, index) => h('div', { key: row.key ?? index, style: cardRowStyle(index) }, row)))
 
     /**
-     * One setting row, DSH's settings layout: its title and hint on the left, its control on the
-     * right, its errors under the control. The `label` wraps the title and the control (so the title
-     * names the field); it is `display: contents`, so its parts sit in the row's grid.
+     * One setting row, DSH's settings layout: its title and hint, then its control with its errors
+     * under it; beside each other while both fit, else stacked (WRAP). The title is the control's
+     * `label` through `for`/`id`, so the words and the control can be two blocks of the row; the
+     * errors are outside the label, so an alert never becomes part of the input's accessible name.
+     * @param control - the input element; the row gives it the id its label names.
      */
     function SettingRow({ data, title, hint, control, errors }) {
-      return h('div', { style: STYLE.setting },
-        h('label', { style: STYLE.settingLabel, [DATA.setting]: data },
-          h('span', { style: STYLE.settingTitle }, title),
-          h('span', { style: STYLE.settingControl }, control)),
-        // Outside the label, so an alert never becomes part of the input's accessible name.
-        errors.some(Boolean) ? h('span', { style: STYLE.settingError }, ...errors) : null,
-        hint === null ? null : h('div', { style: STYLE.settingHint }, hint))
+      const id = React.useId()
+      return h('div', { style: STYLE.setting, [DATA.setting]: data },
+        h('div', { style: STYLE.settingWords },
+          h('label', { htmlFor: id, style: STYLE.settingTitle }, title),
+          hint === null ? null : h('div', { style: STYLE.settingHint }, hint)),
+        h('div', { style: STYLE.settingControl },
+          React.cloneElement(control, { id }),
+          errors.some(Boolean) ? h('span', { style: STYLE.settingError }, ...errors) : null))
     }
 
     /**
@@ -619,8 +648,9 @@ window.__ModuleLoader__.load({
                   t, item, index, count: list.length, disabled, edit, pair: state?.entries?.find((row) => row.key === item.key),
                 }))),
               h('div', { style: { ...RULED_ROW, ...STYLE.addRow } },
-                h(Input, { type: 'text', 'aria-label': t('newLabel'), placeholder: t('newLabel'), value: newLabel, disabled: disabled || dirty, [DATA.newLabel]: true, onChange: (event) => setNewLabel(event.target.value) }),
-                h(Button, { type: 'button', size: 'sm', variant: 'outline', icon: h(IconPlusOutlineRegular, { size: SIZE.icon }), disabled: disabled || dirty || newLabelEmpty, [DATA.newToken]: true, onClick: () => void create() }, busy === BUSY.creating ? t('creating') : t('newToken')))),
+                h('div', { style: STYLE.addLabel },
+                  h(Input, { type: 'text', 'aria-label': t('newLabel'), placeholder: t('newLabel'), value: newLabel, disabled: disabled || dirty, [DATA.newLabel]: true, onChange: (event) => setNewLabel(event.target.value) })),
+                h(Button, { type: 'button', size: 'sm', variant: 'outline', style: STYLE.addButton, icon: h(IconPlusOutlineRegular, { size: SIZE.icon }), disabled: disabled || dirty || newLabelEmpty, [DATA.newToken]: true, onClick: () => void create() }, busy === BUSY.creating ? t('creating') : t('newToken')))),
             dirty ? h('div', { style: STYLE.actions },
               h(Button, { type: 'button', size: 'sm', variant: 'ghost', disabled: busy !== BUSY.none, onClick: () => { setDraft(null); setProblem(null) } }, t('discard')),
               h(Button, { type: 'button', size: 'sm', variant: 'primary', disabled, onClick: () => void save() }, busy === BUSY.saving ? t('saving') : t('save'))) : null,
