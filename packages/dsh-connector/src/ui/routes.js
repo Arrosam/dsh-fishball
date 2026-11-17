@@ -96,6 +96,13 @@ export function uiRoutes({ handover, state, streams, maxNoteBytes, logger }) {
  * to every open one; `close()` ends them all. A stream ends when its request aborts, when its
  * reader cancels, or when a write to it fails (a browser that went away between abort and cleanup).
  * After `close()` a new request gets a stream that ends at once, after its one frame.
+ *
+ * Bounded per reader (review UI-02): a frame is a whole current-state snapshot, not a ledger entry,
+ * so a reader that does not drain needs only the latest one. Each stream queues at most
+ * `SSE.queuedFrames` frames (its strategy's high-water mark) and keeps one more, the latest, aside;
+ * a newer snapshot replaces that one, and `pull` (the reader made room) queues it. A stalled
+ * browser therefore holds a constant number of frames however many changes the agents cause, and
+ * when it drains, its last frame is the current state.
  * @param snapshot - `() => Snapshot`
  * @param logger - `{warn}`: a snapshot that throws while publishing is logged, never thrown into
  *   the change that caused it (that change has already taken effect)
@@ -111,21 +118,39 @@ export function createStreams(snapshot, logger) {
     // Built before the stream is tracked, so a snapshot that throws leaves no stream behind (the
     // route then fails as a whole).
     const first = frame(snapshot())
+    /** The latest frame the reader had no room for yet, or undefined (see above). */
+    let pending
+    let controller
+    const enqueue = (bytes) => { try { controller.enqueue(bytes) } catch { stream.end() } }
     const body = new ReadableStream({
-      start(controller) {
+      start(streamController) {
+        controller = streamController
         const end = () => {
           if (!open.delete(stream)) return
           request.signal?.removeEventListener('abort', end)
+          pending = undefined
           try { controller.close() } catch { /* already closed by the reader */ }
         }
-        stream = { end, push: (bytes) => { try { controller.enqueue(bytes) } catch { end() } } }
+        stream = {
+          end,
+          push(bytes) {
+            if (controller.desiredSize > 0) enqueue(bytes)
+            else pending = bytes
+          },
+        }
         open.add(stream)
         request.signal?.addEventListener('abort', end, { once: true })
         stream.push(first)
         if (closed || request.signal?.aborted) end()
       },
+      pull() {
+        if (pending === undefined) return
+        const bytes = pending
+        pending = undefined
+        enqueue(bytes)
+      },
       cancel: () => stream?.end(),
-    })
+    }, new CountQueuingStrategy({ highWaterMark: SSE.queuedFrames }))
     return new Response(body, { status: HTTP.ok, headers: RESPONSE_HEADERS.eventStream })
   }
 

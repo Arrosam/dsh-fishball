@@ -7,7 +7,7 @@
  */
 import { createUserMessage, boundContextSummary } from '@deepseek-ai/dsh-llm'
 import { diagnosticOf } from '../errors.js'
-import { isSessionGone, rootSessionOf } from '../session-info.js'
+import { isSessionGone, rootSessionOf, storedRootOf } from '../session-info.js'
 import { RUNNING_AGENT } from '../domain/session-port.js'
 import { LOG, SESSION_EVENT, SYSTEM_NOTE } from './constants.js'
 
@@ -22,6 +22,8 @@ export function sessionExistsIn(ctx) {
 /**
  * Routing's `sessions` source. A subagent's turn or state counts as its root's (K1c keys are root
  * ids), as V2's watches judged it.
+ * - `rootOf(id)`: the root Hand over and Take back act on, stopped sessions included
+ *   (session-info.js `storedRootOf`; review UI-01), or undefined for no such session;
  * - `onTurnFinished(fn(rootId, {running, queued}))`: after each `turn/end`; `running` is whether
  *   another turn has started already, `queued` whether input waits for the next turn;
  * - `onState(fn(rootId, {running, pendingInteraction}))`: on each agent status change.
@@ -48,6 +50,7 @@ export function createSessionSource(ctx, logger) {
 
   return Object.freeze({
     exists,
+    rootOf: (sessionId) => storedRootOf(ctx, sessionId),
     onTurnFinished(listener) {
       return ctx.on(SESSION_EVENT.sessionEvent, (session, event) => {
         if (event.type !== SESSION_EVENT.turnEnd) return
