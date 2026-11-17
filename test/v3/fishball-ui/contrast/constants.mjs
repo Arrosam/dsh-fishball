@@ -70,5 +70,5 @@ export const COLOUR_PROPS = Object.freeze(['color', 'background', 'background-co
 /** CSS-wide or derived colour words that are not a hard-coded colour value. */
 export const NOT_LITERAL = Object.freeze(['transparent', 'currentcolor', 'inherit', 'initial', 'unset', 'revert', 'none'])
 
-/** Harness only, never an oracle: the scripted page's mount key prefix and the browser's page budget. */
-export const HARNESS = Object.freeze({ loadBudgetMs: 15000, pollMs: 20, skipNoChrome: 'no Chromium (FBTEST_CHROME or the Playwright headless shell) on this machine' })
+/** Harness only, never an oracle: why a browser row is skipped. */
+export const HARNESS = Object.freeze({ skipNoChrome: 'no Chromium (FBTEST_CHROME or the Playwright headless shell) on this machine' })
