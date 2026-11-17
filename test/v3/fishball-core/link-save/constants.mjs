@@ -125,6 +125,68 @@ export const FIXTURE = Object.freeze({
   entryPrefix: 'fbtest-link-save-entry-',
 })
 
+/**
+ * X-11 (security audit .runtime/reports/x-sec-audit.md; design §6.3 "credentials are never
+ * forwarded on a redirect"): the OAuth steps whose answer may be a redirect, the redirect statuses
+ * (RFC 9110 §15.4: every one that names a Location to follow), and the trap listener's path.
+ */
+export const REDIRECT = Object.freeze({
+  step: Object.freeze({
+    protectedResource: 'protected-resource discovery',
+    authorizationServer: 'authorization-server discovery',
+    codeExchange: 'authorization-code exchange',
+    refresh: 'refresh-token request',
+  }),
+  statuses: Object.freeze([301, 302, 303, 307, 308]),
+  trapPath: '/fbtest-redirect-trap',
+})
+
+/**
+ * X-12 (audit X-12, X-11 "pin token_endpoint to the target origin"): the authorization server's
+ * endpoint classes. `approval` is the fake's own approval origin; `origin` the target's.
+ * The accepted loopback names are exactly LINK's / K1's `localhost`, `127.0.0.1`, `[::1]`.
+ */
+export const ENDPOINT = Object.freeze({
+  /** An accepted endpoint row reads only the approval URL; it never opens it (nothing listens there). */
+  authorizeRefused: Object.freeze([
+    ['http on another host', 'http://other-host.example/authorize'],
+    ['http on a localhost subdomain', 'http://foo.localhost/authorize'],
+    ['http on 127.0.0.2 (loopback range, not the name)', 'http://127.0.0.2:47615/authorize'],
+  ]),
+  /**
+   * F-FIX requirement correction (the parent, relaying it, 2026-11-17): a document the metadata
+   * schema refuses is a failed discovery, not a connector refusal. These overrides make the
+   * RFC 8414 document itself invalid: begin() rejects and Connect reads `failed`.
+   */
+  invalidDocument: Object.freeze([
+    ['authorization_endpoint a javascript: URL', Object.freeze({ authorization_endpoint: 'javascript:alert(1)' })],
+    ['authorization_endpoint not a URL', Object.freeze({ authorization_endpoint: 'not a url' })],
+    ['authorization_endpoint absent', Object.freeze({ authorization_endpoint: undefined })],
+    ['token_endpoint absent', Object.freeze({ token_endpoint: undefined })],
+  ]),
+  authorizeAccepted: Object.freeze([
+    ['https on any host', 'https://any-host.example/authorize'],
+    ['http on 127.0.0.1', 'http://127.0.0.1:47615/authorize'],
+    ['http on localhost', 'http://localhost:47615/authorize'],
+    ['http on [::1]', 'http://[::1]:47615/authorize'],
+  ]),
+  /** token_endpoint values other than exactly `<target origin>/api/agent/oauth/token`. */
+  tokenRefused: Object.freeze([
+    ['on another origin', () => 'https://other-host.example' + MCP.paths.token],
+    ['on another port of the same host', (origin) => { const u = new URL(origin); u.port = String(Number(u.port) + 1); return u.origin + MCP.paths.token }],
+    ['on another path of the target origin', (origin) => origin + '/api/other/oauth/token'],
+    ['on the https twin of the target origin', (origin) => origin.replace(/^http:/, 'https:') + MCP.paths.token],
+    ['on the other loopback name of the same listener', (origin) => origin.replace('//' + K1.HOSTS.loopbackNames[0], '//' + K1.HOSTS.loopbackNames[1]) + MCP.paths.token],
+    ['with a trailing slash', (origin) => origin + MCP.paths.token + '/'],
+  ]),
+})
+
+/** X-13 (audit X-13; R-OA-02 "clients MUST refuse an AS without it"): code_challenge_methods_supported classes. */
+export const PKCE_METHODS = Object.freeze({
+  refused: Object.freeze([['absent', undefined], ['empty', []], ['plain only', ['plain']]]),
+  accepted: Object.freeze([['S256 only', [K1.PKCE.method]], ['plain and S256', ['plain', K1.PKCE.method]]]),
+})
+
 /** `<scheme>//<host>:<port><mcp path>` for a loopback target. */
 export const mcpUrl = (host, port) => `${K1.HOSTS.loopbackScheme}//${host}:${port}${MCP.paths.mcp}`
 
