@@ -9,7 +9,7 @@ Its interface may change in any release.
 
 | Export | What it holds |
 | --- | --- |
-| `dsh-connector-shared/redact` | `redact(text)`: masks secret shapes in a diagnostic line before it is logged (a `Bearer` value, `token=` / `key=` / `secret=` / `password=` assignments, and long opaque runs). |
+| `dsh-connector-shared/redact` | `redact(text)`: masks secret shapes in a diagnostic line before it is logged: the whole value of a credential name (`token`, `key`, `secret`, `password`, `credential` or `authorization` as a word of the name, such as `apiKey`, `access_token`, `X-Api-Key`), whether it is a header, a query parameter, a JSON property or a `key=value` pair, quoted or bare; an `Authorization` header's scheme and credential (Basic, Bearer or any other); a `Bearer` credential; and long opaque runs. |
 | `dsh-connector-shared/request-host` | `requestHostname(request)`: the hostname of a Fetch request's `Host` header, parsed as a WHATWG URL parses it, or `undefined` when the header is missing or malformed. |
 
 Both are plain ES modules with no dependencies.
