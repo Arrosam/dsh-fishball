@@ -27,6 +27,19 @@
  * call prepares the content, and the tool's `projectContent` (DSH ToolRuntime, both SDKs) hands it
  * to the model in place of the JSON text, which never carries the image's base64.
  * Mounting, the wiring of the gate and of the model lookup are F-WIRE's (it mounts nothing here).
+ *
+ * MULTI-1 (PLAN-MULTI §4.3, §4.4): one façade per target epoch, over that target's link only, so a
+ * call (one in flight included) can only ever reach the link it was offered for. The target's
+ * collection passes `naming`:
+ * - `finalName(facade, rawName)`: the target-qualified model name (`targets/names.js` `toolNameOf`);
+ * - `admit(offered)`: whether the name may be registered (its binding is free or this tuple's own;
+ *   a name bound, or once bound, to another tuple is refused and logged, never overwritten);
+ * - `label()`: the target's resolved name, shown in each description as JSON-quoted untrusted data.
+ * `rename()` re-derives every name after the target's name changed: the old set is withdrawn and the
+ * new one registered in the same synchronous turn; if any of the new registrations fails, every one
+ * of that generation is disposed again, so the target's tools are unavailable rather than half
+ * renamed (other targets are untouched). `close()` (removal, URL edit) withdraws everything, and a
+ * call reaching a closed façade sends nothing.
  */
 import { randomUUID } from 'node:crypto'
 import { isDeepStrictEqual } from 'node:util'
@@ -114,7 +127,10 @@ function raced(promise, signal) {
  *   looked up per call (it may load later); without one an image is shown as unavailable
  * @param {{info: Function, warn: Function}} [options.logger] the background log
  */
-export function createBridge({ link, ctx, gate = OPEN_GATE, imagesSupported = async () => true, attachments = () => undefined, logger }) {
+/** A façade of one link with no namespace (a single-link caller): the façade names, all admitted, no label. */
+const BARE_NAMING = Object.freeze({ finalName: undefined, admit: () => true, label: () => undefined })
+
+export function createBridge({ link, ctx, gate = OPEN_GATE, imagesSupported = async () => true, attachments = () => undefined, logger, naming = BARE_NAMING }) {
   if (!isPortLink(link)) throw new TypeError(MISUSE.link)
   // Checked here so a wrong port fails at wiring time, not as a refused call at the model's turn.
   if (typeof gate?.send !== 'function') throw new TypeError(MISUSE.gate)
@@ -132,6 +148,7 @@ export function createBridge({ link, ctx, gate = OPEN_GATE, imagesSupported = as
 
   /** Steps 1–4 of the header: a refusal, or `undefined` when the call may be sent. Sends nothing. */
   async function check(name, args, exec) {
+    if (closed) return refusal(CODE.unknownTarget)
     if (link.status()?.state !== LINK.state.connected) return refusal(CODE.disconnected)
     if (!listed(name)) return refusal(CODE.unsupported)
     if (Object.hasOwn(FACADE.sendOperations, name)) {
@@ -166,9 +183,11 @@ export function createBridge({ link, ctx, gate = OPEN_GATE, imagesSupported = as
 
   /** The DSH tool definition of one offered tool (dsh-mcp-client's raw form, both SDKs). */
   function definitionOf({ name, modelName, tool }) {
+    const label = naming.label()
+    const description = tool.description ?? TEXT.noDescription
     const definition = {
       name: modelName,
-      description: tool.description ?? TEXT.noDescription,
+      description: label === undefined ? description : TEXT.targetHeader(JSON.stringify(label)) + description,
       parameters: tool.inputSchema,
       output: { schema: TOOL_OUTPUT.schema, render },
       execute: (args, exec) => call(name, args, exec),
@@ -212,23 +231,36 @@ export function createBridge({ link, ctx, gate = OPEN_GATE, imagesSupported = as
    * failed generation back to zero tools, the façade is Fishball's only path to the connector, so
    * one bad contributed tool must not take the core tools away with it.
    */
-  function sync(mount) {
+  function sync(mount, atomic = false) {
     withdraw(mount)
     for (const entry of offer.offered) {
       try { mount.disposers.push(mount.tools.register(definitionOf(entry))) }
-      catch (error) { logger?.warn(LOG.registerFailed, logName(entry.modelName), codeOf(error)) }
+      catch (error) {
+        logger?.warn(LOG.registerFailed, logName(entry.modelName), codeOf(error))
+        // A rename registers all of its new names or none (see the header): no mixed set.
+        if (atomic) { withdraw(mount); return }
+      }
     }
   }
 
-  /** A new list from the link: a new offer, logged, synced into every mount, then announced. */
-  function refresh(tools) {
-    offer = offerOf(tools)
+  /** The offer for `tools`: the namespaced names, minus any whose binding is another tuple's. */
+  function offerFor(tools) {
+    const computed = offerOf(tools, naming.finalName)
+    const admitted = computed.offered.filter((entry) => naming.admit(entry))
+    const bound = computed.offered.filter((entry) => !admitted.includes(entry)).map((entry) => Object.freeze({ name: entry.name, modelName: entry.modelName, reason: LOG.reason.bound }))
+    return Object.freeze({ offered: Object.freeze(admitted), refused: Object.freeze([...computed.refused, ...bound]) })
+  }
+
+  /** A new offer, logged, synced into every mount, then announced. */
+  function refresh(tools, atomic = false) {
+    offer = offerFor(tools)
     for (const { name, modelName, reason } of offer.refused) {
-      if (reported.has(name)) continue
-      reported.add(name)
+      const seen = JSON.stringify([name, modelName])
+      if (reported.has(seen)) continue
+      reported.add(seen)
       logger?.warn(LOG.notOffered, logName(name), logName(modelName), reason)
     }
-    for (const mount of mounts) sync(mount)
+    for (const mount of mounts) sync(mount, atomic)
     for (const fn of [...listeners]) { try { fn() } catch { /* a listener owns its failure */ } }
   }
   refresh(link.tools())
@@ -301,6 +333,10 @@ export function createBridge({ link, ctx, gate = OPEN_GATE, imagesSupported = as
     contributedCount: () => offer.offered.filter((entry) => entry.contributed).length,
     /** Calls `fn()` after each refresh of the offer. Returns its disposer. */
     onChange(fn) { listeners.add(fn); return () => { listeners.delete(fn) } },
+    /** The target's name changed: every model name is derived again, atomically (see the header). */
+    rename() { if (!closed) refresh(link.tools(), true) },
+    /** The model names on offer now (for the persona's and the guards' reads). */
+    offered: () => offer.offered.map((entry) => entry.modelName),
     /** Withdraw every offered tool and stop following the link. */
     close() {
       closed = true

@@ -9,6 +9,7 @@
  * What is left is this module's own: the card states, its storage domain, the filing tool, the
  * answer mapping the user chose, its owner-only routes and its log lines.
  */
+import { SEAM_TARGETS } from 'fishball-shared/ui-seam'
 import { APPROVAL, MCP } from '../../contracts/constants.js'
 
 const REFUSAL = MCP.refusal
@@ -16,7 +17,7 @@ const DECISION = APPROVAL.decision
 const RISK = APPROVAL.risk
 
 /** `AskCard.state` (K3 PROPOSED, kept as proposed: v3-proposed-values.md row 52). */
-export const CARD_STATE = Object.freeze({ open: 'open', answered: 'answered', closed: 'closed' })
+export const CARD_STATE = Object.freeze({ open: 'open', answered: 'answered', closed: 'closed', voided: SEAM_TARGETS.ask.voided })
 
 /**
  * The filing tool's name table. It is core's own model tool on the manager, so GUARDS.coreTools
@@ -115,6 +116,7 @@ export const ASK_ROUTE = Object.freeze({
 export const ASK_HTTP = Object.freeze({
   ok: 200,
   badRequest: 400,
+  notFound: 404,
   conflict: 409,
   json: Object.freeze({ 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' }),
   eventStream: Object.freeze({ 'content-type': 'text/event-stream; charset=utf-8', 'cache-control': 'no-store', connection: 'keep-alive' }),
@@ -132,5 +134,5 @@ export const ASK_LOG = Object.freeze({
 
 export const ASK_MISUSE = Object.freeze({
   record: 'fishball asks: malformed card record',
-  link: 'fishball asks: link must provide onPoll and callTool',
+  targets: 'fishball asks: targets must provide callTool and live',
 })
