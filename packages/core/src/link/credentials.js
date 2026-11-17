@@ -14,9 +14,10 @@
  *   the record `fishball-core/connect-<origin in hex>`; core never holds a token value for it.
  *
  * Which credential an attempt uses (first match):
- * 1. a value in the reference, unless the target refused that same value while a saved credential
- *    exists (Q-LS1 = A: a new token is tried first and replaces the saved one only once accepted;
- *    a refused one is not sent again until the reference changes or core restarts);
+ * 1. a value in the reference, for the target origin it was put there for only (R-FIX F01, below),
+ *    unless the target refused that same value while a saved credential exists (Q-LS1 = A: a new
+ *    token is tried first and replaces the saved one only once accepted; a refused one is not sent
+ *    again until the reference changes or core restarts);
  * 2. the saved token copy for the origin;
  * 3. the saved Connect grant for the origin, while it holds tokens (an `invalid_grant` drops them:
  *    Connect is needed again, once, with no retry loop);
@@ -30,6 +31,13 @@
  * saved at every connection, which changes nothing once saved. Emptying the reference by hand asks
  * for no reconnect: the link goes on with the credential it holds until its next attempt.
  *
+ * The reference's value belongs to one target origin (R-FB-03: a changed origin is a new first
+ * connection). Core binds it to the effective target origin when the reference is written (its
+ * update event), or, for a value written while core was not running or no target was usable, at the
+ * first attempt that finds it unbound (`LINK_SAVE.pendingOrigin`). A value bound elsewhere is not
+ * this origin's credential, so a target changed before the first acceptance never receives it; a
+ * new write of the reference (the same value included) binds it to the origin in force then.
+ *
  * Every credential carries a non-secret `ref` (`LINK_SAVE.credentialId`) that F-PAIR keys its
  * records and holds on (decided item 13): the same token is one credential whether it is still in
  * the reference or already saved, so saving it never makes pairing start over.
@@ -42,9 +50,11 @@ import { LINK_SAVE } from './constants.js'
 import { createConnect } from './connect.js'
 import { importMcpClient } from './link.js'
 import { emitIsolated, subscribe } from './listeners.js'
+import { checkTarget } from './target.js'
 
 const REF = HOSTED_IMPORT.credentialRef
 const HOSTED_KEY = HOSTED_IMPORT.savedRecord.key
+const PENDING = LINK_SAVE.pendingOrigin
 
 /** The link credential kinds (`LinkCredentials.kind`). */
 export const CREDENTIAL_KIND = Object.freeze({ token: 'token', grant: 'grant' })
@@ -68,14 +78,29 @@ export const grantRecordKey = (origin) => `${CONNECT.grantRecordScope}/${LINK_SA
 const isOwnVersion = (record) => record?.payload?.v === LINK_SAVE.hostedPayload.version
 const hostedTokens = (record) => (isOwnVersion(record) ? record.payload.tokens ?? {} : {})
 const hostedRecord = (tokens) => Object.freeze({ kind: HOSTED_IMPORT.savedRecord.kind, payload: { v: LINK_SAVE.hostedPayload.version, tokens } })
-/** A grant the link can connect with for `serverUrl`: issued for it, and still holding tokens. */
-const usableGrant = (grant, serverUrl) => isGrantFor(grant, serverUrl) && grant.tokens !== undefined
+/**
+ * A grant the link can connect with for `serverUrl` as fishball id `clientId`: issued for that URL,
+ * still holding tokens, and approved for that id (R-FIX F10). The approval page bound the entry to
+ * the id Connect passed (`agentId`, R-OA-22); refreshing never changes it, so after a change of
+ * `identity.id` the grant still acts as the old id, and only a new Connect gives the new one. A
+ * grant saved before Connect recorded its id has no `agentId`; the pairing records' id check
+ * (identity/pairing.js) holds it.
+ */
+const usableGrant = (grant, serverUrl, clientId) => isGrantFor(grant, serverUrl) && grant.tokens !== undefined
+  && (grant[LINK_SAVE.grantAgentIdField] === undefined || grant[LINK_SAVE.grantAgentIdField] === clientId)
+
+/**
+ * The reference value's binding (`LINK_SAVE.pendingOrigin`): its origin when it is bound to the
+ * value with id `ref`, else `undefined` (no record, another version, or another value's record).
+ */
+const boundOrigin = (record, ref) => (record?.payload?.v === PENDING.version && record.payload.ref === ref ? record.payload.origin : undefined)
+const bindingRecord = (ref, origin) => Object.freeze({ kind: PENDING.kind, payload: { v: PENDING.version, ref, origin } })
 
 /**
  * The saved credentials in DSH's credential store (`ctx.credentials`), and one token manager per
  * grant record, so a refresh is single-flight for the link and Connect alike.
  */
-function createSavedStore(credentials, { sdk, fetch, now }) {
+function createSavedStore(credentials, { sdk, fetch, now, clientId }) {
   const managers = new Map()
   return Object.freeze({
     grantKey: grantRecordKey,
@@ -90,7 +115,7 @@ function createSavedStore(credentials, { sdk, fetch, now }) {
       return { token: hostedTokens(hosted)[origin], grant: grant?.payload }
     },
     /** Whether `saved` (from `read`) holds a credential the link can use for `serverUrl`. */
-    hasSaved: (saved, serverUrl) => saved.token !== undefined || usableGrant(saved.grant, serverUrl),
+    hasSaved: (saved, serverUrl) => saved.token !== undefined || usableGrant(saved.grant, serverUrl, clientId()),
     /**
      * Saves the accepted token for `origin` (once) and removes the grant `replaced` (the one `read`
      * found for the attempt): one saved credential per origin. Only that grant goes: a grant another
@@ -182,7 +207,7 @@ export function createLinkCredentials(ctx, { target, clientId, clientMetadataUrl
   let sdkModule = sdk
   // Connect's and the saved grants' MCP client; a failed import is logged as the link's (E-FIX-3).
   const loadSdk = async () => (sdkModule ??= await importMcpClient(logger))
-  const store = createSavedStore(ctx.credentials, { sdk: loadSdk, fetch, now })
+  const store = createSavedStore(ctx.credentials, { sdk: loadSdk, fetch, now, clientId })
   // Q-LS1 = A: the reference value the target refused while a saved credential existed (by id);
   // cleared when the reference changes. And the saved credential the target refused, by id.
   let refusedReference
@@ -206,6 +231,19 @@ export function createLinkCredentials(ctx, { target, clientId, clientMetadataUrl
    */
   async function unsetIfSaved(value) {
     if ((await ctx.credentials.resolve(REF))?.value === value) await ctx.credentials.unset(REF)
+  }
+
+  /** Binds the reference value with id `ref` to `origin` (a new write: whatever it was bound to). */
+  const bind = (ref, origin) => ctx.credentials.modifyRecord(PENDING.key, async (current) => (boundOrigin(current, ref) === origin ? undefined : bindingRecord(ref, origin)))
+
+  /**
+   * The origin the reference value with id `ref` is for. An unbound value is bound to `origin`, the
+   * target this attempt dials (its first attempt); the write is conditional, so a binding another
+   * process made meanwhile wins.
+   */
+  async function originOfReference(ref, origin) {
+    const record = await ctx.credentials.modifyRecord(PENDING.key, async (current) => (boundOrigin(current, ref) === undefined ? bindingRecord(ref, origin) : undefined))
+    return boundOrigin(record, ref)
   }
 
   /**
@@ -260,11 +298,12 @@ export function createLinkCredentials(ctx, { target, clientId, clientMetadataUrl
     connect.refresh()
     const [reference, saved] = await Promise.all([ctx.credentials.resolve(REF), store.read(origin)])
     const value = reference?.value
-    if (value && !(store.hasSaved(saved, serverUrl) && tokenCredentialId(value) === refusedReference)) {
+    if (value && !(store.hasSaved(saved, serverUrl) && tokenCredentialId(value) === refusedReference)
+      && await originOfReference(tokenCredentialId(value), origin) === origin) {
       return tokenCredentials(origin, value, { fromReference: true, saved, serverUrl })
     }
     if (saved.token !== undefined) return tokenCredentials(origin, saved.token, { fromReference: false })
-    if (usableGrant(saved.grant, serverUrl)) return grantCredentials(origin, saved.grant)
+    if (usableGrant(saved.grant, serverUrl, clientId())) return grantCredentials(origin, saved.grant)
     return null
   }
 
@@ -275,7 +314,12 @@ export function createLinkCredentials(ctx, { target, clientId, clientMetadataUrl
    */
   async function referenceChanged() {
     const value = (await ctx.credentials.resolve(REF))?.value
-    if (!value || tokenCredentialId(value) === refusedReference) return
+    if (!value) return
+    // A write is an import for the target in force now (the module header); without a usable
+    // target the first attempt binds it.
+    const usable = checkTarget(target())
+    if (usable.ok) await bind(tokenCredentialId(value), usable.origin)
+    if (tokenCredentialId(value) === refusedReference) return
     refusedReference = undefined
     emitIsolated(reconnects)
   }

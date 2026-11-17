@@ -11,6 +11,7 @@
  * | 1a | absent, a Connect grant | any | `pair({name})`: `already-paired` with `idMatches: true` → write the record, work (below) |
  * | 4 | present | holds `agent` | work, no `pair` (R-ID-05) |
  * | 5 | present | `agent:pair` (anything without `agent`) | hold: a new token is needed (R-ID-10), no `pair` |
+ * | 5a | present, for another fishball id | any | hold as rule 5 (R-FIX F10): full scope proves the credential's own bound id, not the current `identity.id` |
  * | 6 | present | (refused) | the link reports `token-refused` / `token-revoked`, and retries (no hold) |
  * | 8 | warning open | — | the link is held before its first request: nothing reaches the target |
  * | 9 | — | — | state from `scope` and `pair` only (R-OA-18), for a token and a Connect grant alike |
@@ -204,7 +205,10 @@ export function createPairing({ records, name, now = Date.now, createLink: makeL
     if (kept !== undefined) await writePaired(attempt, kept)
     const record = stored(attempt)
     if (record === undefined) return pair(attempt, call)
-    if (!isFull(scope)) {
+    // Rule 5a: the record names the id this credential was paired with. A Connect grant keeps
+    // acting as that id after `identity.id` changed (its refresh never rebinds it), so its full
+    // scope says nothing about the new id.
+    if (!isFull(scope) || record.id !== attempt.clientId) {
       if (isLatest(attempt)) enter(PAIRING_STATE.idMismatch, attempt)
       return HOLD_STATUS
     }

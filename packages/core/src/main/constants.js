@@ -21,6 +21,8 @@ export const MAIN = Object.freeze({
   inject: Object.freeze(['agents', 'tools', 'credentials', 'authorization', 'storage', 'storageDomain', 'connection', 'settings']),
   /** DSH's web listener, read on use (above). */
   webServer: 'webServer',
+  /** DSH's attachment store (dsh-attachment), read on use: the façade saves an image the model reads into it. */
+  attachments: 'attachments',
   /** `fishballInstance` (K3 `index.d.ts`), its version, and the status service (F-STATUS). */
   service: 'fishballInstance',
   apiVersion: 1,
@@ -49,6 +51,7 @@ export const MAIN = Object.freeze({
     page: 'taking a polled page',
     resume: 'resuming pending notices',
     model: 'applying Fishball\'s model',
+    id: 'applying Fishball\'s id setting',
   }),
 })
 

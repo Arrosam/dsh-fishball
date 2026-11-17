@@ -20,7 +20,8 @@
  *
  * The poll pipeline (F-WIRE "store the card before the ack"): every `inbox_poll` page is first taken
  * by the ask cards and only then handed to the interception service event by event, which acks each
- * event once its side accepted it. So a card is durable before its `ask` event is acked.
+ * event once its side accepted it. So a card is durable before its `ask` event is acked; an event
+ * whose card could not be stored is not handed on (R-FIX F12), so it stays unacked and comes back.
  *
  * Start order (K3 events.d.ts, F-ASKCARD): the link starts at once; `events.recover()` runs once at
  * app ready, when the plugins of this DSH have registered, and polled pages wait for it before any
@@ -37,7 +38,7 @@ import { createBridge } from '../bridge/index.js'
 import { codeOf } from '../events/diagnostics.js'
 import { LOG as EVENTS_LOG } from '../events/constants.js'
 import { createEvents, openLedger } from '../events/index.js'
-import { createPairing, openRecords, createRecords } from '../identity/index.js'
+import { acceptId, createPairing, openRecords, createRecords } from '../identity/index.js'
 import { LINK_SAVE, createLinkCredentials } from '../link/index.js'
 import { createWebCallback } from '../link/web-callback.js'
 import { LOG as BRIDGE_LOG } from '../bridge/constants.js'
@@ -103,8 +104,7 @@ export async function apply(ctx, config) {
   const [{ table: records }, { table: ledger }, { table: cards }, generated] = await Promise.all([
     own(openRecords), own(openLedger), own(openAskCards), own(openGeneratedId),
   ])
-  // The user's id wins whenever it holds a value (R-ID-10); a blank setting is no value.
-  const clientId = () => setting('id') || generated.id
+  const clientId = idInForce(() => setting('id'), generated.id, logger)
 
   // 2. the link, its credentials and Connect
   // Without DSH's web listener there is no web callback; Connect then uses the loopback one.
@@ -130,6 +130,7 @@ export async function apply(ctx, config) {
   const bridge = createBridge({
     link,
     logger: ctx.logger(BRIDGE_LOG.name),
+    attachments: () => ctx.get(MAIN.attachments),
     imagesSupported: async () => {
       const selection = session.currentModel()
       if (selection === undefined) return true
@@ -216,6 +217,27 @@ export async function apply(ctx, config) {
 }
 
 /**
+ * The `identity.id` in force (R-ID-02, R-ID-10; R-FIX F09). The user's id wins whenever it holds a
+ * value; a blank setting is no value, so the generated id applies. DSH saves a volatile setting
+ * without asking the row (its settings service checks only that the path is volatile), so the save
+ * rule `acceptId` runs here, on every read: an invalid value is never used or sent, the id in force
+ * stays the last valid one (the generated id at first), and the refusal is logged once per value,
+ * by its code only.
+ * @returns {() => string} the id to connect and pair with
+ */
+function idInForce(read, generated, logger) {
+  let previous = generated
+  let refused
+  return () => {
+    const next = read() || generated
+    const accepted = acceptId(next, previous)
+    if (accepted.ok) { previous = accepted.id; refused = undefined }
+    else if (refused !== next) { refused = next; logger.warn(MAIN.text.failed, MAIN.text.id, accepted.code) }
+    return accepted.id
+  }
+}
+
+/**
  * The ask cards over a link whose polls reach the interception service only after the cards took
  * them (the module header's pipeline). The cards see the link through a port whose `onPoll` is fed
  * here; their other link calls go to the link itself.
@@ -232,9 +254,11 @@ function createAsksOnPipeline({ link, cards, events, logger, recovered }) {
     // Each page is its own link of the chain and ends caught, so one failed page never stops the
     // pages after it (a page left untaken is simply polled again, nothing was acked for it).
     pipeline = pipeline.then(async () => {
-      for (const fn of [...pages]) await fn(result)
+      const unstored = new Set()
+      for (const fn of [...pages]) for (const eventId of (await fn(result)) ?? []) unstored.add(eventId)
       if (result?.ok !== true || !Array.isArray(result.events)) return
       for (const event of result.events) {
+        if (unstored.has(event?.eventId)) continue
         try { await events.intake(event) } catch (error) { logger.warn(MAIN.text.failed, MAIN.text.intake, codeOf(error)) }
       }
     }).catch((error) => logger.warn(MAIN.text.failed, MAIN.text.page, codeOf(error)))

@@ -106,6 +106,8 @@ export function createInterception({ ledger, registry, delivery, link, logger })
     // Core keeps the record open only until the handler settles (K3): from then on the controller
     // is fenced, so a late commit can never race the close (review finding 6).
     let settled = false
+    // A commit whose fence write failed sent nothing: the open record goes to Fishball (see commit).
+    let fenceFailed = false
     /**
      * The durable move offered → open.
      * @returns {Promise<{won: boolean, moved: boolean}>} `moved` when this call made the move.
@@ -132,8 +134,18 @@ export function createInterception({ ledger, registry, delivery, link, logger })
       },
       commit(send) {
         const task = (async () => {
-          const won = !settled && await ledger.move(eventId, (current) => !settled && owns(current) && current.state === STATE.open,
-            () => ({ state: STATE.committing }))
+          let won
+          // K3: commit never rejects. A fence write that failed moved nothing, so nothing was sent
+          // and the record is still accepted (open): this commit is fenced, and the handler's end
+          // sends the record to Fishball (R-FIX F14).
+          try {
+            won = !settled && await ledger.move(eventId, (current) => !settled && owns(current) && current.state === STATE.open,
+              () => ({ state: STATE.committing }))
+          } catch (error) {
+            logger?.warn(LOG.commitFenceFailed, eventId, codeOf(error))
+            fenceFailed = true
+            won = false
+          }
           if (!won) return { ok: false, code: INTERCEPT.fenced }
           logger?.info(LOG.committing, eventId, event.type, entry.pluginId)
           let result
@@ -143,7 +155,7 @@ export function createInterception({ ledger, registry, delivery, link, logger })
           // One move committing → fishball, so no crash can fall between two writes (finding 15).
           // Not after close() (see `closed`): a rejected move would also break "commit never
           // rejects" (K3). The record stays committing.
-          if (!closed && result?.ok === false && result.code === LINK.disconnected) await toFishball(eventId, attempt, REASON.sendNotDelivered, [STATE.committing])
+          if (!closed && result?.ok === false && result.code === LINK.disconnected) await fallBack(eventId, attempt, REASON.sendNotDelivered, [STATE.committing])
           return result
         })()
         commits.push(task)
@@ -168,16 +180,29 @@ export function createInterception({ ledger, registry, delivery, link, logger })
     if (record.state === STATE.offered) {
       // An effect made before accept counts as not accepted (R-INT-01, EVT-DT-04 rule 9).
       await toFishball(eventId, attempt, failed ? REASON.handlerFailed : REASON.notAccepted)
-    } else if (record.state === STATE.open && failed) {
-      await toFishball(eventId, attempt, REASON.handlerFailed)
+    } else if (record.state === STATE.open && (failed || fenceFailed)) {
+      await toFishball(eventId, attempt, fenceFailed ? REASON.sendNotDelivered : REASON.handlerFailed)
     } else {
       await close(entry, eventId, attempt, failed ? REASON.commitInterrupted : REASON.handled)
     }
   }
 
+  /**
+   * A move to Fishball whose write failure is logged, never thrown: it runs inside `commit`, which
+   * never rejects (K3). The record stays where it was, and the next start's recovery settles it.
+   */
+  async function fallBack(eventId, attempt, reason, from) {
+    try { return await toFishball(eventId, attempt, reason, from) } catch (error) {
+      logger?.warn(LOG.fallbackFailed, eventId, codeOf(error))
+      return false
+    }
+  }
+
   /** Re-check liveness after the durable write (S3 §4 item 1), then hand over or fall back. */
   async function handOver(entry, event, attempt) {
-    if (registry.isLive(entry)) { void offer(entry, event, attempt); return }
+    // The offer runs detached; a ledger write that fails at its end is logged (never unhandled),
+    // and the record is left for the next start's recovery, as a crash would leave it.
+    if (registry.isLive(entry)) { void offer(entry, event, attempt).catch((error) => logger?.warn(LOG.offerFailed, event.eventId, codeOf(error))); return }
     // A record whose commit began (re-offered after a restart) cannot fall back; it closes.
     if (!(await toFishball(event.eventId, attempt, REASON.pluginNotLive))) await close(entry, event.eventId, attempt, REASON.commitInterrupted)
   }
@@ -226,7 +251,7 @@ export function createInterception({ ledger, registry, delivery, link, logger })
   function dispose(entry) {
     // The registration still goes (it is in memory); only the fallback needs the ledger.
     if (!registry.remove(entry) || closed) return
-    for (const [eventId, attempt] of entry.held) void toFishball(eventId, attempt, REASON.disposed)
+    for (const [eventId, attempt] of entry.held) void fallBack(eventId, attempt, REASON.disposed, UNDECIDED)
   }
 
   /**

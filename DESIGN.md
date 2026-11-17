@@ -2169,3 +2169,15 @@ Decided by the user on 2026-11-16/17 while C-WIRE-2 ran (the task brief and the 
 | DSH name | optional `approval.dshName`; the approval page shows it, or DSH's listener origin when it is empty | the user, 2026-11-17 |
 | V2 removed | `./contract`, `attachInstance`, the `dshConnector` and `fishballSessionState` services, `src/slim/**`, the V2 row path and every `/api/fishball/*` route of the connector; its vocabularies and payload bounds moved unchanged into K1 (`mcp-schema`) | "第三版其实就是第一版" (V2 was never deployed); q4 |
 | R-ARCH-08 strict | dsh-connector-shared keeps `redact` and `request-host` (two DSH-side users each); `files` and `provider-sync*` moved into dsh-instance (`src/lib/`), `oauth-client` into dsh-connector-adapter | Fishball's decision, 2026-11-17 |
+
+## 22. V3 R-FIX-CORE: core review fixes (2026-11-18)
+
+The user's answers to the three product questions of the core review (`.runtime/reports/review-x-fishball-core.md`), and the rules the fixes follow:
+
+| Point | Decision | Reason |
+|---|---|---|
+| Ended reminders | A reminder whose last occurrence was delivered (or dropped by a Stop) is removed from the store at once; ended reminders in an older store are dropped on load. A change that would outgrow the 4 MiB store is refused `schedule-store-full`; a store that cannot be read whole makes the tools `schedule-unavailable` and is never written over | the user, 2026-11-18: "响过立刻删" (F07) |
+| Reminder delivery | A due occurrence is recorded `pending` with a fixed message id, then handed to the manager under `runMaintenance` (true idle, its own turn), like Fishball events (`src/events/handover.js`). It is delivered when the session admits it. A user Stop of the claiming turn, or any removal of the queued message, drops it; owner teardown and a restart with it pending hand it over again | the user, 2026-11-18: "提醒保留在上下文，如果被停止了就丢掉"; teardown and crash keep the tool's "Delivery can repeat after a crash" (F08) |
+| Manager record without a log | When the record's session has no log (`SessionPersistenceNotFoundError`), core creates it under the same id | the user, 2026-11-18 (F05); as DSH's own restore-or-create |
+| Pending token origin | A value in `DSH_AGENT_TOKEN` is bound to the target origin in force when it is written (or at the first attempt), in the record `fishball-core/pending-token-origin`; it is never sent to another origin | R-FB-03 (F01) |
+| Connect grant id | A grant records the `agent_id` it was approved for (`agentId`); it is usable only while `identity.id` is that id. A paired record for another id holds the link `id-mismatch` | R-ID-10 (F10) |

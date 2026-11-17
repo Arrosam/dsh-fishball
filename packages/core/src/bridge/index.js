@@ -23,12 +23,17 @@
  * 5. `link.callTool`.
  * A failure in steps 1–4 sent nothing (`operation-failed`, "not sent"); a failure of step 5 may
  * have reached the connector, and the model is told to check before repeating it.
+ * For the model, an image tool's successful result is shown as an image (image.js, R-FIX F13): the
+ * call prepares the content, and the tool's `projectContent` (DSH ToolRuntime, both SDKs) hands it
+ * to the model in place of the JSON text, which never carries the image's base64.
  * Mounting, the wiring of the gate and of the model lookup are F-WIRE's (it mounts nothing here).
  */
 import { randomUUID } from 'node:crypto'
+import { isDeepStrictEqual } from 'node:util'
 import { LINK } from '../../contracts/constants.js'
 import { isEventType } from '../link/schema.js'
 import { CODE, FACADE, LOG, MISUSE, TEXT, TOOL_OUTPUT } from './constants.js'
+import { imageContent } from './image.js'
 import { offerOf } from './names.js'
 
 export { FACADE, MODEL_NAME, TEXT as FACADE_TEXT } from './constants.js'
@@ -47,6 +52,9 @@ const textBlock = (text) => [{ type: TOOL_OUTPUT.blockType, text }]
 
 /** One JSON text block of a result, as session-tools.js renders its own. */
 const render = (_args, value) => textBlock(JSON.stringify(value, null, TOOL_OUTPUT.jsonIndent))
+
+/** An image tool's text rendering: its result without the image's chunks (image.js shows the image). */
+const renderWithoutChunks = (args, value) => render(args, value?.ok === true ? { ...value, [FACADE.imageChunksField]: undefined } : value)
 
 /** What a failure contributes to the log: its code or name, never its message (R-SEC-02). */
 const codeOf = (error) => String(error?.code ?? error?.name ?? typeof error)
@@ -102,9 +110,11 @@ function raced(promise, signal) {
  *   at each model call with DSH's tool execution, whether the calling agent's current model takes
  *   image input (the model can change between turns, so it is never a fixed value); default: an
  *   unknown model takes them (as images.js judges it)
+ * @param {() => ({saveImages: Function} | undefined)} [options.attachments] DSH's attachment store,
+ *   looked up per call (it may load later); without one an image is shown as unavailable
  * @param {{info: Function, warn: Function}} [options.logger] the background log
  */
-export function createBridge({ link, ctx, gate = OPEN_GATE, imagesSupported = async () => true, logger }) {
+export function createBridge({ link, ctx, gate = OPEN_GATE, imagesSupported = async () => true, attachments = () => undefined, logger }) {
   if (!isPortLink(link)) throw new TypeError(MISUSE.link)
   // Checked here so a wrong port fails at wiring time, not as a refused call at the model's turn.
   if (typeof gate?.send !== 'function') throw new TypeError(MISUSE.gate)
@@ -156,12 +166,36 @@ export function createBridge({ link, ctx, gate = OPEN_GATE, imagesSupported = as
 
   /** The DSH tool definition of one offered tool (dsh-mcp-client's raw form, both SDKs). */
   function definitionOf({ name, modelName, tool }) {
-    return {
+    const definition = {
       name: modelName,
       description: tool.description ?? TEXT.noDescription,
       parameters: tool.inputSchema,
       output: { schema: TOOL_OUTPUT.schema, render },
       execute: (args, exec) => call(name, args, exec),
+    }
+    return FACADE.imageTools.includes(name) ? withImageProjection(definition) : definition
+  }
+
+  /**
+   * An image tool: its successful result's model content is prepared during the call, keyed by
+   * the execution, and handed over by `projectContent` only for that very value (as dsh-mcp-client
+   * does), so a result a later policy replaced keeps its own rendering.
+   */
+  function withImageProjection(definition) {
+    const projections = new WeakMap()
+    return {
+      ...definition,
+      output: { ...definition.output, render: renderWithoutChunks },
+      async execute(args, exec) {
+        const value = await definition.execute(args, exec)
+        if (exec !== undefined && value?.ok === true) projections.set(exec, { value, content: await imageContent(value, attachments()) })
+        return value
+      },
+      projectContent(exec, result) {
+        const projection = projections.get(exec)
+        projections.delete(exec)
+        return projection === undefined || result.isError || !isDeepStrictEqual(result.value, projection.value) ? undefined : projection.content
+      },
     }
   }
 
