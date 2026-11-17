@@ -70,6 +70,8 @@ In a session's header and in its row menu:
 - **A managed session** shows **Managed by <name>** and **Take back**. Take back returns the session
   to you in one click, and the agent is told.
 - An agent without a name is shown by its id.
+- A subagent's session belongs to its parent session. Its header shows the top session's state, and
+  Hand over or Take back there acts on that session, so one agent manages the whole tree.
 
 ### The notify tool
 

@@ -176,3 +176,17 @@ with the fish's top). One test per row; ids `UIPD-DRAW-*`.
 | UIPD-DRAW-NOTREADY | EP (K3 not-ready state × language) | disabled, waiting, starting, stopping, stopped, failed × en / zh → lead "Fishball isn't ready (<state words>)." / "Fishball 尚未就绪（<state words>）。" above "State <code>state</code>" (and "Code <code>code</code>" when there is one); the state tag holds a StateDot before its words |
 | UIPD-DRAW-CHROME | UC | the ready window's header: a decorative fish before "Fishball"; the ready tag's StateDot; Refresh keeps its word and has a refresh icon |
 | UIPD-DRAW-PLACE | ST / EP | fish visible → `data-fishball-notice-place=mark`, left = fish right + 8, top = fish top; fish hidden (width 0) → `corner`, left = bottom = 16; visible again → `mark`. No fish on the page → `corner`; the bubble stays a button in a `role=status` region with its hooks and aria-label |
+
+## R-FIX-CUI (cui-cases.mjs)
+
+From the requirements relayed for R-FIX-CUI (2026-11-18; `.runtime/reports/review-x-dsh-connector-ui.md`
+UI-01 marks, UI-06, UI-07). The FakeHandover's `parents` map resolves a child to its root as the real K3
+service does (C-ROUTE's RFC-UI01 rows test that service); the page's chunk loads can be held and its
+animation frames and window events are scripted (world.mjs). The header gets DSH's `useSessions` over
+`{byId: {[id]: {id, origin: 'subagent', parentId}}}`.
+
+| Id | Technique | Rows |
+|---|---|---|
+| RFC-UI01 | DT (header of child / grandchild / root × root managed × useSessions), ST | root managed → the child's and grandchild's headers show "Managed by Navigator" and Take back, no Hand over; Take back there → nothing managed, Hand over back; root unmanaged → Hand over in the child's header manages the root, the header turns to Take back; without useSessions the child's own id is used (Hand over, no "Managed by"); the root's header as before |
+| RFC-UI06 | ST | window mounted while client.attention.js is held → no `opened`; the chunk registers → exactly one; rerenders → one; remount → two; a pending notice is cleared once the chunk registers |
+| RFC-UI07 | ST, EP | bubble beside the fish; fish hidden (no new notification) → after one animation frame / one window `resize` → corner (16, 16); fish moved → beside it (right + 8, top); hidden → visible → beside again; while shown a resize listener and a queued frame; clicked away or unmounted → no listener, frames stop |

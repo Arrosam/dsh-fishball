@@ -23,7 +23,7 @@ import { byAttr, createReactShim, textOf } from '../../../support/rp-recommend.m
 import { BOOT, runtimeOf } from '../../fishball-core/package/constants.mjs'
 import { pageServices } from '../../fishball-core/package/page.mjs'
 import { eventually } from '../tokens/world.mjs'
-import { CLIENT, FIXTURE, SUBJECT } from './constants.mjs'
+import { CLIENT, FIXTURE, ROUTE, SUBJECT } from './constants.mjs'
 import { clientSource, send } from './subject.mjs'
 
 const settle = async () => { for (let i = 0; i < FIXTURE.settleRounds; i++) await new Promise((resolve) => setImmediate(resolve)) }
@@ -63,23 +63,41 @@ export const treeText = (tree) => JSON.stringify(tree)
  * @param options.world - a tokens world (../tokens/world.mjs) whose registry the routes serve.
  * @param options.routes - the settings-page routes over that registry.
  * @param options.lang - the page language (default FIXTURE.lang).
+ * @param options.settings - the row's other settings at the start (R-FIX-CUI: `approval`, the
+ *   limits), held by the host form beside `tokens`; `set` / `unset` ops on them are applied.
+ * @param options.answerState - R-FIX-CUI: `(n) => Promise<Response> | undefined` answers the n-th
+ *   (1-based) GET state itself (a held, failed or changed read); undefined leaves it to the routes.
  */
-export async function openTokensPage(t, { sdk, world, routes, lang = FIXTURE.lang }) {
+export async function openTokensPage(t, { sdk, world, routes, lang = FIXTURE.lang, settings = {}, answerState }) {
   const errors = []
   const requests = []
   const clipboard = []
   const created = { tags: [], appended: [] }
   const pageConsole = { ...console, error: (...a) => errors.push(a.map(String).join(' ')), warn: () => {}, log: () => {}, info: () => {}, debug: () => {} }
+  let stateReads = 0
   const pageFetch = async (input, init = {}) => {
     const url = new URL(String(input instanceof Request ? input.url : input), FIXTURE.baseURI)
     const method = String(init.method ?? (input instanceof Request ? input.method : 'GET')).toUpperCase()
     const body = init.body === undefined ? undefined : String(init.body)
     requests.push({ method, url: url.href, body })
+    if (url.pathname === ROUTE.state) stateReads += 1
+    const scripted = url.pathname === ROUTE.state ? answerState?.(stateReads) : undefined
+    if (scripted !== undefined) return scripted
     const answer = await send(routes, url.href, { method, body, headers: init.headers })
     return new Response(answer.text, { status: answer.status, headers: answer.headers })
   }
   const page = createBrowserSandbox({ lang, baseURI: FIXTURE.baseURI, fetch: pageFetch, console: pageConsole })
   const { document } = page
+  // R-FIX-CUI: the document's listeners are kept, so `setHidden` can fire a visibilitychange.
+  const docListeners = new Map()
+  document.addEventListener = (type, fn) => { if (!docListeners.has(type)) docListeners.set(type, new Set()); docListeners.get(type).add(fn) }
+  document.removeEventListener = (type, fn) => { docListeners.get(type)?.delete(fn) }
+  const setHidden = async (hidden) => {
+    document.hidden = hidden
+    document.visibilityState = hidden ? CLIENT.visibility.hidden : CLIENT.visibility.visible
+    for (const fn of [...(docListeners.get(CLIENT.visibility.event) ?? [])]) fn({ type: CLIENT.visibility.event })
+    await settle()
+  }
   const createElement = document.createElement
   document.createElement = (tag, ...rest) => { created.tags.push(String(tag).toLowerCase()); return createElement(tag, ...rest) }
   for (const target of [document.head, document.body]) for (const m of ['append', 'appendChild']) {
@@ -128,19 +146,32 @@ export async function openTokensPage(t, { sdk, world, routes, lang = FIXTURE.lan
   const fiber = root.plugin(plugin.default ?? plugin)
   await settle()
 
-  // The Plugins page's host-owned form over the world's settings document.
+  // The Plugins page's host-owned form over the world's settings document. `others` holds the row's
+  // other settings (R-FIX-CUI); a mutate whose expected revision is not the live one is refused and
+  // changes nothing, as DSH's settings service fences it (the dev session, 2026-11-18: the page never
+  // relies on a stale revision being accepted).
   let revision = FIXTURE.revision
+  const others = structuredClone(settings)
   const mutations = []
   function snapshot() {
-    return { status: 'ready', value: { [CLIENT.tokensField]: world.doc.tokens }, base: undefined, user: undefined, revision, writable: true }
+    return { status: 'ready', value: { ...structuredClone(others), [CLIENT.tokensField]: world.doc.tokens }, base: undefined, user: undefined, revision, writable: true }
+  }
+  /** One `set` / `unset` op on `others` (a path below `tokens` is the world's). */
+  function applyOther(op) {
+    const parent = op.path.slice(0, -1).reduce((node, key) => (node[key] ??= {}), others)
+    if (op.op === CLIENT.setOp) parent[op.path.at(-1)] = op.value
+    else delete parent[op.path.at(-1)]
   }
   async function mutate(ops, expected) {
     // The page's arrays come from the vm realm (another Array.prototype), so they are recorded as
     // plain data of this realm: deepStrictEqual compares prototypes, which is not what a case asserts.
-    mutations.push({ ops: JSON.parse(JSON.stringify(ops)), expected })
+    const plain = JSON.parse(JSON.stringify(ops))
+    mutations.push({ ops: plain, expected, liveRevision: revision })
+    if (expected !== undefined && expected !== revision) return false
     let accepted = true
-    for (const op of ops) {
-      if (op.op !== CLIENT.setOp || op.path?.[0] !== CLIENT.tokensField) continue
+    for (const op of plain) {
+      if (op.path?.[0] !== CLIENT.tokensField) { applyOther(op); continue }
+      if (op.op !== CLIENT.setOp) continue
       const result = await world.save(op.value)
       accepted &&= result?.ok === true
     }
@@ -148,6 +179,13 @@ export async function openTokensPage(t, { sdk, world, routes, lang = FIXTURE.lan
     revision += 1
     shim.rerender()
     return accepted
+  }
+  /** Another editor (another tab) saves `ops` at the live revision: the page re-renders with it. */
+  async function external(ops) {
+    for (const op of ops) applyOther(op)
+    revision += 1
+    shim.rerender()
+    await settle()
   }
 
   let mounted = 0
@@ -157,7 +195,13 @@ export async function openTokensPage(t, { sdk, world, routes, lang = FIXTURE.lan
     await fiber.dispose?.()
   })
   const pageApi = {
-    definition, plugin, required, registrations, dictionaries, served, errors, requests, clipboard, created, mutations, document,
+    definition, plugin, required, registrations, dictionaries, served, errors, requests, clipboard, created, mutations, document, external, setHidden,
+    /** The page's window and the sandbox's own timers' cleanup (R-FIX-CUI: visibility, unmount). */
+    window: page.window,
+    stateReads: () => stateReads,
+    /** The host form's live value and revision (what a save changed). */
+    value: () => snapshot().value,
+    revision: () => revision,
     /** The page entry of the slot key (CLIENT.slotKey). */
     entry: () => registrations.find((r) => !r.disposed && r.options.name === CLIENT.slot && r.options.key === CLIENT.slotKey),
     /** Renders the page entry in a new root, as the Plugins page opens it; returns its tree reader. */

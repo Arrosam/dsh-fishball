@@ -30,16 +30,21 @@ import { AUTHORITY } from './constants.js'
 /**
  * @param {object} ports
  * @param {Pick<import('../../../mcp-schema/index.js').ManagedState, 'managerOf'>} ports.managed
- * @param {{rootOf(sessionId: string): string, describe(sessionId: string): Promise<object | undefined>}} ports.sessions
+ * @param {{rootOf(sessionId: string): string, storedRootOf?(sessionId: string): Promise<string | undefined>, describe(sessionId: string): Promise<object | undefined>}} ports.sessions
+ *   `rootOf` follows attached sessions only (synchronous, for the list filters and the rechecks);
+ *   `storedRootOf` follows stored headers too, so a stopped subagent's session is its root's
+ *   (R-FIX-CUI: after a Hand over from a child's header the root's manager must reach that child).
+ *   A port without `storedRootOf` knows attached sessions only.
  */
 export function createSessionAccess({ managed, sessions }) {
   /**
    * The caller's relation to the session's root (AUTHORITY). A managed id is already a root
-   * (K1c keys), so the root is resolved only for an id nobody manages.
+   * (K1c keys), so the root is resolved only for an id nobody manages: `knownRoot` when the call
+   * resolved it already (`check`), else from the attached sessions.
    */
-  function relationOf(sessionId, principalKey) {
+  function relationOf(sessionId, principalKey, knownRoot) {
     const direct = managed.managerOf(sessionId)
-    const root = direct === undefined ? sessions.rootOf(sessionId) : sessionId
+    const root = direct === undefined ? knownRoot ?? sessions.rootOf(sessionId) : sessionId
     const manager = direct ?? (root === sessionId ? undefined : managed.managerOf(root))
     if (manager === undefined) return { relation: AUTHORITY.none, root }
     return { relation: manager === principalKey ? AUTHORITY.mine : AUTHORITY.other, root }
@@ -52,21 +57,28 @@ export function createSessionAccess({ managed, sessions }) {
    * @param {{unmanaged: string}} access a SESSION_ACCESS row
    */
   function recheck(sessionId, principalKey, access, root) {
-    const current = relationOf(sessionId, principalKey)
+    const current = relationOf(sessionId, principalKey, root)
     if (current.relation === AUTHORITY.other) return REFUSAL.forbidden
     if (current.relation === AUTHORITY.none) return access.unmanaged
     return current.root === root ? undefined : REFUSAL.forbidden
   }
 
   /**
-   * The table above for one call, rechecked after the DSH existence read (see `recheck`).
+   * The table above for one call, rechecked after the DSH existence read (see `recheck`). Row 1 is
+   * first judged on the attached root, before any DSH read; once the session is known to exist its
+   * stored root is read (a stopped subagent's session, `storedRootOf`) and rows 1, 3 and 4 are
+   * judged on it.
    * @param {{unmanaged: string}} access a SESSION_ACCESS row
    * @returns {Promise<{root: string} | {code: string}>}
+   * @throws (rejects) when the stored root cannot be read (not a not-found): the call fails rather
+   *   than taking the session for a root of its own
    */
   async function check(sessionId, principalKey, access) {
-    const { relation, root } = relationOf(sessionId, principalKey)
-    if (relation === AUTHORITY.other) return { code: REFUSAL.forbidden }
+    if (relationOf(sessionId, principalKey).relation === AUTHORITY.other) return { code: REFUSAL.forbidden }
     if ((await sessions.describe(sessionId)) === undefined) return { code: REFUSAL.unknownSession }
+    const stored = sessions.storedRootOf === undefined ? undefined : await sessions.storedRootOf(sessionId)
+    const { relation, root } = relationOf(sessionId, principalKey, stored)
+    if (relation === AUTHORITY.other) return { code: REFUSAL.forbidden }
     if (relation === AUTHORITY.none) return { code: access.unmanaged }
     const code = recheck(sessionId, principalKey, access, root)
     return code === undefined ? { root } : { code }

@@ -184,3 +184,20 @@ export const DECIDED = Object.freeze({
   secondContribute: 'Q-UIB-5 (dev 2026-11-16): each contribute() is independent; a refusal by the contribution service disposes what it registered and is rethrown; the first is unaffected; ending one resets latch and notice',
   noOpFrame: 'Q-UIB-7 (dev 2026-11-16): no frame for a change that leaves the snapshot as it was; a hand-over onChange always sends one',
 })
+
+/**
+ * R-FIX-CUI rows (cui-cases.mjs; .runtime/reports/review-x-dsh-connector-ui.md UI-01, UI-02).
+ * `maxQueuedFrames` is the requirement's "bounded by a small constant (≤ 2 or 3, independent of
+ * N)": the larger bound, so a row fails only past what the requirement allows. `changeCounts` are
+ * the BVA points of N (one, two, and the review probe's 2,000).
+ */
+export const CUI = Object.freeze({
+  id: Object.freeze({ ui01: 'RFC-UI01', ui02: 'RFC-UI02' }),
+  code: Object.freeze({ conflict: 'conflict', notManaged: 'not-managed' }),
+  maxQueuedFrames: 3,
+  manyChanges: 2000,
+  changeCounts: Object.freeze([1, 2, 2000]),
+  liveChanges: 3,
+  /** The order row's three changes (read, 1, 2, read, 3, drain). */
+  orderChanges: 3,
+})

@@ -32,7 +32,7 @@ const all = (nodes) => findAll(nodes, () => true)
 const text = (node) => textOf(node).replace(/\s+/g, ' ').trim()
 const isPrimitive = (node, name) => node.props[CLIENT.primitiveAttr] === name
 /** The parent of every node, by identity. */
-function parents(nodes) {
+export function parents(nodes) {
   const map = new Map()
   for (const { node, parent } of walk(nodes)) map.set(node, parent)
   return map
@@ -54,14 +54,15 @@ const firstElement = (node) => (node.children ?? []).find((c) => typeof c !== 's
 
 /**
  * The page over a world holding `labels` (each created through the registry, so each has a record),
- * with GET state answering `state(world)` when given. Returns `{world, page, view}`.
+ * with GET state answering `state(world)` when given; `settings` and `answerState` go to
+ * openTokensPage (R-FIX-CUI). Returns `{world, page, view}`.
  */
-async function openPolished(t, sdk, { labels = [], state, lang, tokens } = {}) {
+export async function openPolished(t, sdk, { labels = [], state, lang, tokens, settings, answerState } = {}) {
   const world = await worldFor(t, sdk, tokens === undefined ? {} : { tokens })
   for (const label of labels) await world.registry.create(label)
   const mod = await pageModule(sdk)
   const routes = mod[SUBJECT.routes]({ tokens: world.registry, logger: world.logger, ...(state === undefined ? {} : { state: () => state(world) }) })
-  const page = await openTokensPage(t, { sdk, world, routes, lang })
+  const page = await openTokensPage(t, { sdk, world, routes, lang, settings, answerState })
   const view = await page.open()
   return { world, page, view }
 }
@@ -77,9 +78,9 @@ function rowButtons(rowNode, lang) {
   }))
 }
 /** A state answer: `entries(world)` rows and the approval listener's status. */
-const stateWith = (entries, approval = { status: 'ok', port: POLISH.approvalPort, defaultPort: POLISH.defaultPort }) => (world) => ({ entries: entries(world), approval })
+export const stateWith = (entries, approval = { status: 'ok', port: POLISH.approvalPort, defaultPort: POLISH.defaultPort }) => (world) => ({ entries: entries(world), approval })
 /** A state route row of entry `item` (C-WIRE state shape). */
-const entryRow = (item, over) => ({ key: item.key, label: item.label, enabled: item.enabled, paired: false, id: null, name: null, connected: false, lastSeenAt: null, ...over })
+export const entryRow = (item, over) => ({ key: item.key, label: item.label, enabled: item.enabled, paired: false, id: null, name: null, connected: false, lastSeenAt: null, ...over })
 
 export function registerPolishSettingsCases(sdk) {
   // ---------------------------------------------------------------- sections (EP over the language)

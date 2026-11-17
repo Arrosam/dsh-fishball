@@ -588,6 +588,7 @@ window.__ModuleLoader__.load({
           store.set(value)
           return () => { if (store.get() === value) store.set(undefined) }
         },
+        // Kit API: a part may read a seat once outside React; the shell itself follows seats with `use`.
         get: (seat) => stores.get(seat).get(),
         use: (seat) => { const store = stores.get(seat); return React.useSyncExternalStore(store.subscribe, store.get) },
       })
@@ -709,14 +710,18 @@ window.__ModuleLoader__.load({
      * Tells the attention part the window opened, once per mount (not on every snapshot or iframe
      * refresh; a ref keeps a re-run effect from clearing twice): the backend then clears the latch
      * and the prompt (§13.6, R-FN-01). The hint is the window too, so it counts.
+     * The seat is followed, not read once (review UI-06): the attention chunk loads on its own and
+     * may register after the window mounted, and that open still clears. The open counts as
+     * delivered only once a registered callback was called.
      */
     function useWindowOpened() {
       const opened = React.useRef(false)
+      const pageOpened = seats.use(SEAT.pageOpened)
       React.useEffect(() => {
-        if (opened.current) return
+        if (opened.current || pageOpened === undefined) return
         opened.current = true
-        seats.get(SEAT.pageOpened)?.()
-      }, [])
+        pageOpened()
+      }, [pageOpened])
     }
 
     /**

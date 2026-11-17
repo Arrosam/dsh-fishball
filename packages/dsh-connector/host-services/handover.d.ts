@@ -78,6 +78,12 @@ export type TakeBackRefusalCode = 'unknown-session' | 'not-managed'
 export type HandOverResult = { readonly ok: true; readonly principal: PrincipalRef } | Refusal<HandOverRefusalCode>
 export type TakeBackResult = { readonly ok: true } | Refusal<TakeBackRefusalCode>
 
+/**
+ * Root sessions (R-FIX-CUI, review UI-01): management is per root session (K1c). `handOver` and
+ * `takeBack` act on the root of the session they name, so a subagent's session hands over or takes
+ * back its root, its events and `managed()` name the root, and no subagent session ever has a
+ * manager of its own. `conflict` and `not-managed` are therefore judged on the root.
+ */
 export interface DshConnectorHandover {
   readonly apiVersion: 1
 
