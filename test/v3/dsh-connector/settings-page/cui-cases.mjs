@@ -28,7 +28,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import { caseName } from '../../contract/package-boundaries/cases.mjs'
 import { findAll, textOf } from '../../../support/rp-recommend.mjs'
-import { CLIENT, CUI, FIXTURE, POLISH, WAIT } from './constants.mjs'
+import { CLIENT, CUI, DSH_NAME, FIXTURE, POLISH, WAIT } from './constants.mjs'
 import { click } from './page.mjs'
 import { entryRow, openPolished, parents, stateWith } from './polish-cases.mjs'
 
@@ -317,9 +317,82 @@ function runtimeState(sdk) {
   }
 }
 
+// ------------------------------------------------------------------------------------------------ multi-DSH naming
+
+/** The page with the row's settings, its DSH name `saved` (undefined: none saved), in `lang`. */
+async function nameField(t, sdk, { saved, lang } = {}) {
+  const settings = structuredClone(CUI.settings)
+  if (saved === undefined) delete settings.approval.dshName
+  else settings.approval.dshName = saved
+  const opened = await openSettings(t, sdk, { settings, lang })
+  return { ...opened, field: settingField(opened.page, opened.view, CUI.field.dshName) }
+}
+const unsetOf = (path) => [{ op: DSH_NAME.unsetOp, path: [...path] }]
+
+function dshNaming(sdk) {
+  const id = DSH_NAME.id
+  // ---- the hint (EP over the language)
+  for (const lang of POLISH.langs) {
+    row(sdk, id, `EP hint (${lang})`, `the DSH name row's hint reads "${DSH_NAME.hint[lang]}"; the old address wording "${DSH_NAME.oldHint[lang]}" appears nowhere on the page`, async (t) => {
+      const { view } = await nameField(t, sdk, { lang, saved: DSH_NAME.saved })
+      const rowNode = parents(view.tree()).get(view.one(POLISH.attr.setting, CUI.field.dshName))
+      assert.ok(text(rowNode).includes(DSH_NAME.hint[lang]), 'hint: ' + text(rowNode))
+      assert.ok(!view.text().includes(DSH_NAME.oldHint[lang]), 'the old address wording is still shown')
+    })
+  }
+  // ---- what a blur saves (DT: saved name × typed value; EP of the typed value; BVA at the saved string)
+  const S = DSH_NAME.saved
+  const P = CUI.path.dshName
+  const table = [
+    ['EP padded, saved', S, DSH_NAME.padded, setOf(P, DSH_NAME.padded)],
+    ['EP padded, none saved', undefined, DSH_NAME.padded, setOf(P, DSH_NAME.padded)],
+    ['EP special characters', S, DSH_NAME.special, setOf(P, DSH_NAME.special)],
+    ['EP plain, none saved', undefined, DSH_NAME.plain, setOf(P, DSH_NAME.plain)],
+    ['BVA equal to saved', S, S, null],
+    ['BVA saved + one trailing space', S, S + ' ', setOf(P, S + ' ')],
+    ['BVA saved padded, typed the same', DSH_NAME.padded, DSH_NAME.padded, null],
+    ['BVA saved padded, typed trimmed', DSH_NAME.padded, DSH_NAME.padded.trim(), setOf(P, DSH_NAME.padded.trim())],
+    ...DSH_NAME.blanks.flatMap(([part, blank]) => [
+      [`DT blank (${part}), saved`, S, blank, unsetOf(P)],
+      [`DT blank (${part}), none saved`, undefined, blank, null],
+    ]),
+  ]
+  for (const [part, saved, typed, ops] of table) {
+    row(sdk, id, part, `saved ${JSON.stringify(saved ?? null)}, typed ${JSON.stringify(typed)}, blur → ${ops === null ? 'nothing sent' : JSON.stringify(ops)}`, async (t) => {
+      const { page, field } = await nameField(t, sdk, { saved })
+      await field.type(typed)
+      await field.blur()
+      if (ops === null) {
+        await page.settle()
+        assert.deepEqual(sent(page), [], 'a mutation was sent')
+        assert.equal(valueAt(page.value(), P), saved)
+        return
+      }
+      await page.until(() => page.mutations.length > 0)
+      assert.deepEqual(sent(page), [ops])
+      const want = ops[0].op === DSH_NAME.unsetOp ? undefined : typed
+      await page.until(() => valueAt(page.value(), P) === want)
+      assert.equal(field.shown(), want ?? '', 'the field does not show the saved name exactly')
+    })
+  }
+  row(sdk, id, 'EP Enter (padded)', `Enter saves ${JSON.stringify(DSH_NAME.padded)} verbatim, as blur does`, async (t) => {
+    const { page, field } = await nameField(t, sdk, { saved: S })
+    await field.type(DSH_NAME.padded)
+    await field.key(CUI.keys.enter)
+    await page.until(() => page.mutations.length > 0)
+    assert.deepEqual(sent(page), [setOf(P, DSH_NAME.padded)])
+  })
+  row(sdk, id, 'EP special characters shown as text', `a saved ${JSON.stringify(DSH_NAME.special)} is shown in the field exactly, as text: no <${DSH_NAME.markupTag}> element on the page`, async (t) => {
+    const { view, field } = await nameField(t, sdk, { saved: DSH_NAME.special })
+    assert.equal(field.shown(), DSH_NAME.special)
+    assert.deepEqual(findAll(view.tree(), (n) => n.tag === DSH_NAME.markupTag), [], 'the name was rendered as markup')
+  })
+}
+
 /** Every R-FIX-CUI row of the settings-page suite for `sdk`. */
 export function registerCuiSettingsCases(sdk) {
   scalarConflicts(sdk)
   numberInputs(sdk)
   runtimeState(sdk)
+  dshNaming(sdk)
 }

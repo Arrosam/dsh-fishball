@@ -138,3 +138,13 @@ holds the row's other settings and refuses a mutate whose expected revision is s
 | RFC-UI03 | DT (same field changed × blur / Enter), ST | DSH name, approval port, a limit: a draft, then another editor saves the same field → blur / Enter sends nothing, the draft stays, a role=alert says "changed elsewhere"; a second blur / Enter saves the draft with the live revision, the alert goes; Escape discards it and shows the live value; Escape with no conflict discards; another field changed (revision bumps) → the draft saves with the live revision, both changes kept |
 | RFC-UI04 | ST, EP | the state refreshes with no config change (unpaired / port in use → paired / ok within 3 s); re-read while mounted, none after unmount; none while hidden, again once visible; first read pending → no pair line, no "Not paired"; a failed read (500 `{ok:false, operation-failed}`, fetch rejects, body not JSON) → no pair line, one alert "The connector's status could not be read (<code>)." with Retry; Retry re-reads and the alert goes; a held older read answering after a newer one (Retry / revision re-read) does not overwrite it |
 | RFC-UI05 | BVA, EP | approval.port: "" / "   " / "\t\n" / "-1" / "65536" / "abc" → "Enter a whole number.", aria-invalid, blur sends nothing, the field reverts; "0", "65535" save; a limit: "" / "  " refused, "1" saves; Enter on a cleared port sends nothing |
+
+### R-FIX-CUI — the DSH name field, multi-DSH naming (../settings-page/cui-cases.mjs)
+
+From the user's multi-DSH naming decision relayed 2026-11-18 ("照 MCP 协议来": the name is saved exactly
+as typed; only an entirely blank value unsets).
+
+| Id | Technique | Rows |
+|---|---|---|
+| RFC-DSHNAME hint | EP (language) | en "The name the approval page shows for this DSH. Empty: this DSH shows as <device name>-DSH." / zh "授权页面为此 DSH 显示的名称。留空则此 DSH 显示为 <设备名称>-DSH。" in the row; the old address wording nowhere |
+| RFC-DSHNAME save | DT (saved × typed), EP, BVA | "  Office DSH  " → `set` verbatim (saved or not; blur and Enter); "Lab/α <b>x</b>" → `set` verbatim, shown as text (no `<b>` element); "Office" with none saved → `set`; equal to saved → nothing; saved + one trailing space → `set`; a padded saved name typed the same → nothing, typed trimmed → `set`; '' / "   " / "\t" → `unset` with a saved name, nothing without one |
