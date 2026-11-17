@@ -21,6 +21,16 @@ window.__ModuleLoader__.load({
     const { Button, StateDot, Tag, Tooltip, IconCordisPluginOutlineRegular } = require('@deepseek-ai/dsh-client-ui-primitives')
     const h = React.createElement
 
+    /**
+     * The connected badge's ink (UI-FIX-F), DSH tokens only. DSH's success Tag draws
+     * `--dsw-alias-state-success-primary` (#22c55e in both themes) on a 10% tint of itself: 2.0:1 in
+     * the light theme, and the tint is 1.1:1 (light) / 1.2:1 (dark) against the heading row, so
+     * neither the word nor the badge's edge could be seen. Half the success colour, half the theme's
+     * primary label, darkens it in light and lightens it in dark: the word is 5.7:1 (light) and
+     * 6.8:1 (dark) on the badge (WCAG AA 4.5:1), and the same ink as a 1px outline is 6.2:1 / 8.0:1
+     * against the heading row (non-text 3:1). It stays green.
+     */
+    const SUCCESS_INK = 'color-mix(in srgb,var(--dsw-alias-state-success-primary) 50%,var(--dsw-alias-label-primary))'
     const STRIP = Object.freeze({
       name: 'fishball-ui: strip',
       slot: 'conversation.input.dock',
@@ -53,27 +63,16 @@ window.__ModuleLoader__.load({
        * state. A state this chunk does not know draws as failed, as `stripView` itself does.
        */
       // `accent`: the state's colour token, tinting the heading row; quiet states have none.
-      // `ink`: the badge's text and outline colour where DSH's Tag tone alone is too faint (UI-FIX-F);
-      // null keeps the Tag's own look.
+      // `ink`: the badge's text and outline colour where DSH's Tag tone alone is too faint (UI-FIX-F,
+      // `SUCCESS_INK` above); null keeps the Tag's own look.
       tone: Object.freeze({
-        connected: Object.freeze({ tag: 'success', dot: 'done', accent: '--dsw-alias-state-success-primary', ink: 'successInk' }),
+        connected: Object.freeze({ tag: 'success', dot: 'done', accent: '--dsw-alias-state-success-primary', ink: SUCCESS_INK }),
         unset: Object.freeze({ tag: 'neutral', dot: 'idle', accent: null, ink: null }),
         disconnected: Object.freeze({ tag: 'outline', dot: 'idle', accent: null, ink: null }),
         connecting: Object.freeze({ tag: 'info', dot: 'ongoing', accent: '--dsw-alias-state-business-primary', ink: null }),
         attention: Object.freeze({ tag: 'warning', dot: 'warning', accent: '--dsw-alias-state-warn-primary', ink: null }),
         failed: Object.freeze({ tag: 'danger', dot: 'error', accent: '--dsw-alias-state-error-primary', ink: null }),
         off: Object.freeze({ tag: 'neutral', dot: 'idle', accent: null, ink: null }),
-      }),
-      /**
-       * Badge inks (UI-FIX-F), DSH tokens only. DSH's success Tag draws `--dsw-alias-state-success-primary`
-       * (#22c55e in both themes) on a 10% tint of itself: 2.0:1 in the light theme, and the tint is
-       * 1.1:1 against the heading row, so neither the word nor the badge's edge could be seen. Half
-       * the success colour, half the theme's primary label, darkens it in light and lightens it in
-       * dark: the word is 5.8:1 (light) and 6.9:1 (dark) on the badge (WCAG AA 4.5:1), and the same
-       * ink as a 1px outline is 6.2:1 / 8.1:1 against the heading row (non-text 3:1). It stays green.
-       */
-      ink: Object.freeze({
-        successInk: 'color-mix(in srgb,var(--dsw-alias-state-success-primary) 50%,var(--dsw-alias-label-primary))',
       }),
       tooltip: Object.freeze({ side: 'top', portal: true }),
       fallbackTone: 'failed',
@@ -82,9 +81,9 @@ window.__ModuleLoader__.load({
       icon: 14,
     })
     // The card's accent is the state's own colour in DSH's tokens, as a faint tint like DSH's Tag's.
-    const accent = (state, token) => `.${STRIP.css.root}[data-fishball-strip-state="${state}"] .${STRIP.css.head}{background:color-mix(in srgb,var(${token}) 6%,transparent)}`
+    const accentRule = (state, token) => `.${STRIP.css.root}[data-fishball-strip-state="${state}"] .${STRIP.css.head}{background:color-mix(in srgb,var(${token}) 6%,transparent)}`
     // The badge keeps the Tag's tint fill; only its words and a 1px inner outline take the ink.
-    const ink = (state, name) => `.${STRIP.css.root}[data-fishball-strip-state="${state}"] .${STRIP.css.badge}{color:${STRIP.ink[name]};box-shadow:inset 0 0 0 1px ${STRIP.ink[name]}}`
+    const inkRule = (state, ink) => `.${STRIP.css.root}[data-fishball-strip-state="${state}"] .${STRIP.css.badge}{color:${ink};box-shadow:inset 0 0 0 1px ${ink}}`
     const css = [
       `.${STRIP.css.head}{display:flex;align-items:center;flex-wrap:wrap;gap:8px;padding:10px 12px 10px 16px;min-height:28px}`,
       `.${STRIP.css.title}{font:var(--dsw-font-xs-strong-13);color:var(--dsw-alias-label-primary)}`,
@@ -96,8 +95,8 @@ window.__ModuleLoader__.load({
       `.${STRIP.css.line}{margin:0}`,
       `.${STRIP.css.link}{justify-self:start;color:var(--dsw-alias-link);text-decoration:none}`,
       `.${STRIP.css.link}:hover{text-decoration:underline}`,
-      ...Object.entries(STRIP.tone).filter(([, tone]) => tone.accent !== null).map(([state, tone]) => accent(state, tone.accent)),
-      ...Object.entries(STRIP.tone).filter(([, tone]) => tone.ink !== null).map(([state, tone]) => ink(state, tone.ink)),
+      ...Object.entries(STRIP.tone).filter(([, tone]) => tone.accent !== null).map(([state, tone]) => accentRule(state, tone.accent)),
+      ...Object.entries(STRIP.tone).filter(([, tone]) => tone.ink !== null).map(([state, tone]) => inkRule(state, tone.ink)),
     ].join('')
     const apiUrl = (path) => new URL(path, document.baseURI)
 
