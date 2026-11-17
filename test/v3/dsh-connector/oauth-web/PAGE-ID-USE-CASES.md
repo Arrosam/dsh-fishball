@@ -206,3 +206,12 @@ Conditions are evaluated in this order: token, binding, id, name.
 - Real `OAuthTokenStore` and the token endpoint: `test/v3/dsh-connector/oauth/chain-cases.mjs`.
 - Stock SDK / Python authorization-code client passing `agent_id` end to end: `todo` naming
   C-WIRE (the oauth-web world has no metadata or wired token endpoint for a stock client).
+
+## UI-POLISH-D — the page's look and its CSP (polish-cases.mjs)
+
+From the UI-POLISH-D requirements relayed 2026-11-18 and the CSP change the user approved that day.
+
+| Id | Technique | Rows |
+|---|---|---|
+| UIPD-WEB-CSP | EP (response kind), DT (hash) | K1's header, the form page, the error page, a re-render with an alert, an empty 413 and the 303 after Cancel each carry exactly `default-src 'none'; style-src 'sha256-X'; frame-ancestors 'none'` (no `'unsafe-inline'`) with `cache-control: no-store` and `referrer-policy: same-origin`; on the form and error pages X = base64(SHA-256(UTF-8 `<style>` text)), one `<style>`, the same block on both; no `style=`, `<script>` or `<link>` |
+| UIPD-WEB-MARKUP | EP | head: viewport and color-scheme metas; `<main class="card">`; `<p class="eyebrow">` "Fishball connector" above the `<h1>`, beside an `aria-hidden` mark holding an `<svg>`; `<div class="facts">` Client, Redirect host, DSH in that order, then the localhost `role="note"`, then `<div class="terms">`; a client with a non-loopback redirect → no note; labels `class="field"`; in `<div class="actions">` Authorize first (`primary`), Cancel (`secondary`, `formnovalidate`); `<p class="alert" role="alert">` on the error page and on a refused token; a client name with markup escaped in the title, the `<h1>`, the Client fact and the placeholder |

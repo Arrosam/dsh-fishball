@@ -35,7 +35,7 @@ window.__ModuleLoader__.load({
     const module = { exports: {} }
     const exports = module.exports
     const React = require('react')
-    const { Button, IconWarningOutlineRegular, Tag } = require('@deepseek-ai/dsh-client-ui-primitives')
+    const { Button, IconRefreshOutlineRegular, IconWarningOutlineRegular, StateDot, Tag } = require('@deepseek-ai/dsh-client-ui-primitives')
     const h = React.createElement
 
     /** The shell's sub-plugin name, beside the parts' `dsh-connector-ui: marks` and `: attention`. */
@@ -56,7 +56,7 @@ window.__ModuleLoader__.load({
      * The frame's address is only ever admit's one-time URL (CHILD_UI).
      */
     const EMBED_UI = Object.freeze({
-      panelId: 'fishball', panelOrder: -10, pluginsPanelId: 'plugins', warningIconPx: 24,
+      panelId: 'fishball', panelOrder: -10, pluginsPanelId: 'plugins', warningIconPx: 24, refreshIconPx: 14,
       stateTone: Object.freeze({ ready: 'info', failed: 'danger' }), neutralTone: 'neutral',
       /**
        * Clipboard write only, for every origin the frame lands on: admit's one-time URL at the
@@ -78,8 +78,12 @@ window.__ModuleLoader__.load({
      * view has one page, so the header is one line of DSH's title-row height plus padding.
      */
     const DSH_SESSION_HEADER = Object.freeze({ minHeight: '52px', padding: '10px 28px', startPadding: '20px', gap: '8px', nameFont: '14px', nameLine: '20px' })
-    /** DSH's empty/error state (dsh-client-ui-schedule TaskManagerPage .empty). */
-    const DSH_EMPTY_STATE = Object.freeze({ padding: '48px 20px', gap: '8px', font: '14px' })
+    /**
+     * DSH's empty/error state (dsh-client-ui-schedule TaskManagerPage .empty), with the glyph in a
+     * soft round well (DSH's neutral Tag fill) so a not-framed view has one clear focal point. The
+     * column keeps to `maxWidth`, so a long hint wraps as a paragraph, not as one line.
+     */
+    const DSH_EMPTY_STATE = Object.freeze({ padding: '48px 20px', gap: '8px', font: '14px', maxWidth: '360px', wellPx: 56, wellGapPx: 8 })
     /**
      * The window's reads of the host half's child routes (the browser never calls the instance).
      * The open window re-reads the child's status once a second (`pollMs`), only while it is
@@ -148,7 +152,9 @@ window.__ModuleLoader__.load({
      */
     const DRAW_WORDING = Object.freeze({
       en: Object.freeze({
+        noInstanceTitle: 'Fishball isn\'t running here',
         noInstance: 'No Fishball child instance is running here. Open your Fishball instance\'s own page.',
+        notReady: 'Fishball isn\'t ready ({state}).',
         retryLink: 'Retry',
         handOverTo: 'Hand over to {name}', handOverMany: 'Handover to…', takeBack: 'Take back', managedBy: 'Managed by {name}',
         idPrefix: 'ID:', online: 'online', offline: 'offline',
@@ -163,7 +169,9 @@ window.__ModuleLoader__.load({
         noticeLabel: 'Notice ({count} since you last looked): {message}. Click to dismiss.',
       }),
       zh: Object.freeze({
+        noInstanceTitle: 'Fishball 不在这里运行',
         noInstance: '此处没有正在运行的 Fishball 子实例。请打开你的 Fishball 实例自己的页面。',
+        notReady: 'Fishball 尚未就绪（{state}）。',
         retryLink: '重试',
         handOverTo: '交给 {name}', handOverMany: '交给…', takeBack: '收回', managedBy: '由 {name} 管理',
         idPrefix: 'ID:', online: '在线', offline: '离线',
@@ -292,7 +300,7 @@ window.__ModuleLoader__.load({
       wag: Object.freeze([[0, 0], [55, 0], [62, -14], [70, 12], [78, -9], [86, 5], [100, 0]]),
     })
     const STYLE_ID = 'fishball-style'
-    const CLS = Object.freeze({ field: 'fb-field', note: 'fb-note', code: 'fb-code', mark: 'fb-mark', markBox: 'fb-mark-box', wag: 'fb-wag', muted: 'fb-muted', managedRow: 'fb-managed-row', managedRowDot: 'fb-managed-row-dot', flip: 'fb-flip', embed: 'fb-embed', embedBar: 'fb-embed-bar', embedName: 'fb-embed-name', embedState: 'fb-embed-state', embedActions: 'fb-embed-actions', embedFrame: 'fb-embed-frame', embedError: 'fb-embed-error', embedGlyph: 'fb-embed-glyph', link: 'fb-link', light: 'fb-light', principal: 'fb-principal', notice: 'fb-notice', noticeText: 'fb-notice-text', noticeCount: 'fb-notice-count' })
+    const CLS = Object.freeze({ field: 'fb-field', note: 'fb-note', code: 'fb-code', mark: 'fb-mark', markBox: 'fb-mark-box', wag: 'fb-wag', muted: 'fb-muted', managedRow: 'fb-managed-row', managedRowDot: 'fb-managed-row-dot', flip: 'fb-flip', embed: 'fb-embed', embedBar: 'fb-embed-bar', embedTitle: 'fb-embed-title', embedName: 'fb-embed-name', embedState: 'fb-embed-state', embedStateWords: 'fb-embed-state-words', embedActions: 'fb-embed-actions', embedFrame: 'fb-embed-frame', embedError: 'fb-embed-error', embedGlyph: 'fb-embed-glyph', embedDetails: 'fb-embed-details', embedLead: 'fb-embed-lead', link: 'fb-link', light: 'fb-light', principal: 'fb-principal', managedBy: 'fb-managed-by', refusal: 'fb-refusal', notice: 'fb-notice', noticeText: 'fb-notice-text', noticeCount: 'fb-notice-count' })
     /**
      * The fish's prompt bubble (R-FN-01: "a bubble beside the sidebar fish"): it sits `gapPx` to
      * the right of the fish's mark, level with its top, and keeps to `maxWidthPx` wide and
@@ -303,10 +311,29 @@ window.__ModuleLoader__.load({
     const NOTICE_BUBBLE = Object.freeze({
       gapPx: 8, edgePx: 16, maxWidthPx: 280, maxHeightPx: 160, layer: 1000,
       /** Its inside: DSH's menu-row padding and caption size, the text-to-count gap. */
-      padding: '8px 12px', fontSize: '13px', lineHeight: 1.5, innerGapPx: 8,
+      paddingYPx: 10, paddingXPx: 12, fontSize: '13px', lineHeight: 1.5, innerGapPx: 10,
+      /** Its entrance (a short fade from the fish's side) and the keyframe that draws it. */
+      enterAnimation: 'fb-notice-in', enterShiftPx: 4,
+      /** Values of data-fishball-notice-place: beside the fish (with the tail) or in the corner. */
+      place: Object.freeze({ mark: 'mark', corner: 'corner' }),
+      /**
+       * Its tail: a small square turned 45°, half outside the bubble's left edge, `tailTopPx` down,
+       * so it points at the middle of the fish the bubble is level with (DSH's 16px panel icon);
+       * none in the corner place, where there is no fish.
+       */
+      tailPx: 8, tailTopPx: 4,
     })
     /** The gap between a principal's light and its label (R-UI-10). */
     const PRINCIPAL_GAP_PX = 6
+    /**
+     * DSH's caption and body type and its tinted-box padding (the sizes its settings fields and
+     * Tag use), for the parts this sheet draws beyond DSH's own components.
+     */
+    const TYPE = Object.freeze({ caption: '12px/18px var(--dsw-font-family)', body: 'var(--dsw-font-xs-13)', boxPadding: '10px 12px', boxGapPx: 12, barPx: 3, detailGap: '4px 12px' })
+    /** The header's fish beside the title (FishMark with the wrench, the window's one brand mark). */
+    const HEADER_MARK_PX = 18
+    /** The window's state line: DSH's StateDot sizes, and the tones of each state's dot. */
+    const STATE_DOT = Object.freeze({ sizePx: 8, byState: Object.freeze({ ready: 'done', failed: 'error', stopped: 'idle', disabled: 'idle' }), pending: 'ongoing', pendingSizePx: 12 })
 
     const en = {
       ...PROPOSED_WORDING.en,
@@ -345,16 +372,24 @@ window.__ModuleLoader__.load({
       // name style; the frame takes the rest.
       `.${CLS.embed}{display:flex;flex-direction:column;flex:1;width:100%;height:100%;min-width:0;min-height:0;background:var(--dsw-alias-bg-base)}`,
       `.${CLS.embedBar}{box-sizing:border-box;flex:none;display:flex;align-items:center;gap:${DSH_SESSION_HEADER.gap};min-height:${DSH_SESSION_HEADER.minHeight};padding:${DSH_SESSION_HEADER.padding};padding-inline-start:max(${DSH_SESSION_HEADER.startPadding}, var(--dsh-frame-leading-clearance,0px));border-bottom:.5px solid var(--dsw-alias-border-l3)}`,
+      // The fish and the name read as one title, as a session's crumb does.
+      `.${CLS.embedTitle}{display:inline-flex;align-items:center;gap:${DSH_SESSION_HEADER.gap};min-width:0}`,
       `.${CLS.embedName}{color:var(--dsw-alias-label-primary);font-size:${DSH_SESSION_HEADER.nameFont};line-height:${DSH_SESSION_HEADER.nameLine};font-weight:500;white-space:nowrap}`,
       // The state tag and its safe code sit together, as one item of the header line.
       `.${CLS.embedState}{display:inline-flex;align-items:center;gap:${DSH_SESSION_HEADER.gap}}`,
+      `.${CLS.embedStateWords}{display:inline-flex;align-items:center;gap:${PRINCIPAL_GAP_PX}px}`,
       // The header is a window-drag area on macOS Desktop, as DSH's own; its buttons are not.
       `.${CLS.embedActions}{display:flex;align-items:center;gap:${DSH_SESSION_HEADER.gap};margin-inline-start:auto;-webkit-app-region:no-drag}`,
       `.${CLS.embedFrame}{display:block;flex:1;width:100%;min-height:0;border:0;background:var(--dsw-alias-bg-base)}`,
       // Not ready, failed or still checking: DSH's empty/error state (dsh-client-ui-schedule .empty), centred in the view.
       `.${CLS.embedError}{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:${DSH_EMPTY_STATE.gap};padding:${DSH_EMPTY_STATE.padding};text-align:center;color:var(--dsw-alias-label-tertiary);font-size:${DSH_EMPTY_STATE.font};line-height:1.6}`,
+      `.${CLS.embedError}>*{max-width:${DSH_EMPTY_STATE.maxWidth}}`,
       `.${CLS.embedError} p{margin:0}`,
-      `.${CLS.embedGlyph}{color:var(--dsw-alias-label-caption)}`,
+      // The glyph's round well: DSH's neutral fill, the caption colour inside.
+      `.${CLS.embedGlyph}{display:inline-flex;align-items:center;justify-content:center;width:${DSH_EMPTY_STATE.wellPx}px;height:${DSH_EMPTY_STATE.wellPx}px;margin-bottom:${DSH_EMPTY_STATE.wellGapPx}px;border-radius:50%;background:var(--dsw-alias-bg-module-platform);color:var(--dsw-alias-label-caption)}`,
+      // The state's message reads first, in the primary colour; the safe details follow, smaller.
+      `.${CLS.embedLead}{color:var(--dsw-alias-label-primary)}`,
+      `.${CLS.embedDetails}{display:flex;flex-wrap:wrap;justify-content:center;gap:${TYPE.detailGap};font:${TYPE.caption}}`,
       `.${CLS.field}{display:flex;flex-direction:column;gap:6px;margin-top:8px}`,
       // DSH's input colours (dsh-client-ui-primitives SettingsValueField): --dsw-alias-border-primary is not defined in dialogs.
       `.${CLS.note}{width:100%;box-sizing:border-box;padding:8px 12px;border:.5px solid var(--dsw-alias-border-l4);border-radius:var(--dsw-radius-md);background:var(--dsw-alias-bg-layer-3);color:var(--dsw-alias-label-primary);font:inherit;resize:vertical}`,
@@ -366,12 +401,26 @@ window.__ModuleLoader__.load({
       `.${CLS.light}{display:inline-block;flex:none;width:${ROW_MARK.dot.sizePx}px;height:${ROW_MARK.dot.sizePx}px;border-radius:50%;background:var(--dsw-alias-state-error-primary)}`,
       `.${CLS.light}[data-fishball-online="true"]{background:var(--dsw-alias-state-success-primary)}`,
       `.${CLS.principal}{display:inline-flex;align-items:center;gap:${PRINCIPAL_GAP_PX}px;overflow-wrap:anywhere}`,
+      // "Managed by <principal>" in the session header: DSH's caption size, so it sits as metadata beside Take back.
+      `.${CLS.managedBy}{display:inline-flex;align-items:center;gap:${PRINCIPAL_GAP_PX}px;color:var(--dsw-alias-label-tertiary);font:${TYPE.caption};white-space:nowrap}`,
+      // A hand-over refusal inside its dialog: DSH's danger tint (its Tag's danger tone) with an error
+      // bar at its start; the words keep the label colour, so they read at full contrast on the tint.
+      `.${CLS.refusal}{margin-top:${TYPE.boxGapPx}px;padding:${TYPE.boxPadding};border:.5px solid color-mix(in srgb, var(--dsw-alias-state-error-primary) 30%, transparent);border-radius:var(--dsw-radius-sm);background:color-mix(in srgb, var(--dsw-alias-state-error-primary) 8%, transparent);color:var(--dsw-alias-label-primary);font:${TYPE.body};border-inline-start:${TYPE.barPx}px solid var(--dsw-alias-state-error-primary)}`,
       // The Retry link (decided #77) reads as a link: DSH's accent label colour, underlined, no button chrome.
       `.${CLS.link}{padding:0;border:0;background:none;color:var(--dsw-alias-label-link,var(--fb-accent));font:inherit;text-decoration:underline;cursor:pointer}`,
       // The notify prompt (R-FN-01): DSH's menu material and radius, beside the fish (NOTICE_BUBBLE).
-      `.${CLS.notice}{position:fixed;z-index:${NOTICE_BUBBLE.layer};display:flex;align-items:flex-start;gap:${NOTICE_BUBBLE.innerGapPx}px;box-sizing:border-box;max-width:${NOTICE_BUBBLE.maxWidthPx}px;max-height:${NOTICE_BUBBLE.maxHeightPx}px;overflow:auto;padding:${NOTICE_BUBBLE.padding};border:.5px solid var(--dsw-alias-border-l3);border-radius:var(--dsw-radius-md);background:var(--dsw-menu-surface-fill,var(--dsw-alias-bg-layer-3));color:var(--dsw-alias-label-primary);font:inherit;font-size:${NOTICE_BUBBLE.fontSize};line-height:${NOTICE_BUBBLE.lineHeight};text-align:start;cursor:pointer}`,
-      `.${CLS.notice}[data-fishball-notice-important="true"]{box-shadow:0 0 0 1px color-mix(in srgb, var(--fb-accent) 55%, transparent)}`,
-      `.${CLS.noticeText}{white-space:pre-wrap;overflow-wrap:anywhere}`,
+      // DSH's popover material: an opaque layer-2 surface with its prominent elevation (DSH's menu
+      // fill is translucent and needs a backdrop blur this plain element cannot rely on), so the text
+      // reads on any page behind it. The message scrolls inside the text, so the tail stays put.
+      `.${CLS.notice}{position:fixed;z-index:${NOTICE_BUBBLE.layer};display:flex;align-items:flex-start;gap:${NOTICE_BUBBLE.innerGapPx}px;box-sizing:border-box;max-width:${NOTICE_BUBBLE.maxWidthPx}px;max-height:${NOTICE_BUBBLE.maxHeightPx}px;padding:${NOTICE_BUBBLE.paddingYPx}px ${NOTICE_BUBBLE.paddingXPx}px;border:0;border-radius:var(--dsw-radius-md);background:var(--dsw-alias-bg-layer-2);box-shadow:var(--dsw-elevation-prominent);color:var(--dsw-alias-label-primary);font:inherit;font-size:${NOTICE_BUBBLE.fontSize};line-height:${NOTICE_BUBBLE.lineHeight};text-align:start;cursor:pointer;animation:${NOTICE_BUBBLE.enterAnimation} var(--ds-transition-duration,.2s) var(--ds-ease-in-out,ease)}`,
+      `.${CLS.notice}:hover{background:color-mix(in srgb, var(--dsw-alias-bg-layer-2) 92%, var(--dsw-alias-label-primary))}`,
+      `.${CLS.notice}:focus-visible{outline:var(--dsw-focus-ring-width,2px) solid var(--dsw-focus-ring-color, var(--dsw-alias-state-business-primary));outline-offset:2px}`,
+      `.${CLS.notice}[data-fishball-notice-place="${NOTICE_BUBBLE.place.mark}"]::before{content:"";position:absolute;left:-${NOTICE_BUBBLE.tailPx / 2}px;top:${NOTICE_BUBBLE.tailTopPx}px;width:${NOTICE_BUBBLE.tailPx}px;height:${NOTICE_BUBBLE.tailPx}px;background:inherit;transform:rotate(45deg);box-shadow:-.5px .5px 0 0 var(--dsw-alias-border-l3)}`,
+      // Important: the one accent as a ring around the bubble (§8.5).
+      `.${CLS.notice}[data-fishball-notice-important="true"]{box-shadow:var(--dsw-elevation-prominent),0 0 0 1px color-mix(in srgb, var(--fb-accent) 55%, transparent)}`,
+      `@keyframes ${NOTICE_BUBBLE.enterAnimation}{from{opacity:0;transform:translateX(-${NOTICE_BUBBLE.enterShiftPx}px)}to{opacity:1;transform:none}}`,
+      `@media (prefers-reduced-motion:reduce){.${CLS.notice}{animation:none}}`,
+      `.${CLS.noticeText}{max-height:${NOTICE_BUBBLE.maxHeightPx - 2 * NOTICE_BUBBLE.paddingYPx}px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere}`,
       `.${CLS.noticeCount}{flex:none;min-width:${UNREAD_BADGE.minWidth};height:${UNREAD_BADGE.height};padding:0 ${UNREAD_BADGE.paddingX};border-radius:${UNREAD_BADGE.radius};background:${UNREAD_BADGE.fill};color:${UNREAD_BADGE.textColor};font:${UNREAD_BADGE.fontWeight} ${UNREAD_BADGE.fontSize}/${UNREAD_BADGE.height} ${UNREAD_BADGE.fontFamily};text-align:center}`,
       // The one accent token (§8.5).
       `:root{--fb-accent:${FISHBALL_ACCENT}}`,
@@ -480,9 +529,12 @@ window.__ModuleLoader__.load({
      * user's answer to D0: the icon keeps both). The package icon on the Plugins card is the same
      * drawing (assets/connector-icon.svg).
      */
-    function FishballIcon({ size, unread, moving, badge }) {
+    function FishballIcon({ size, unread, moving, badge, decorative = false }) {
       const animation = moving ? CLS.flip : unread ? CLS.wag : null
-      return h('svg', { width: size, height: size, viewBox: FISH_MARK.viewBox, className: [CLS.mark, animation].filter(Boolean).join(' '), 'aria-hidden': true, 'data-fishball-mark': true },
+      // `decorative`: a brand glyph in the window's chrome (its header, the hint's well). It carries
+      // no `data-fishball-mark`, which names the fish that stands for the light (the sidebar's and
+      // the managed rows'), so the hook keeps meaning exactly that fish.
+      return h('svg', { width: size, height: size, viewBox: FISH_MARK.viewBox, className: [CLS.mark, animation].filter(Boolean).join(' '), 'aria-hidden': true, ...(decorative ? {} : { 'data-fishball-mark': true }) },
         h('path', { d: FISH_MARK.body, fill: FISH_MARK.bodyColor }),
         h('path', { d: FISH_MARK.eye, fill: FISH_MARK.eyeColor }),
         badge ? wrenchBadge() : null)
@@ -590,12 +642,20 @@ window.__ModuleLoader__.load({
       return latest
     }
 
-    /** The frame's state tag: the state, and the safe code beside it when there is one. */
+    /**
+     * The frame's state tag: DSH's StateDot (a spinner while it moves, green running, red failed,
+     * grey at rest) and Tag with the state's words, and the safe code beside it when there is one.
+     * The words carry the state, so the dot is never the only signal.
+     */
     function FrameState({ state, code, t }) {
+      const dot = STATE_DOT.byState[state]
       return h('span', { className: CLS.embedState, 'data-fishball-embed-state': state, ...(code ? { 'data-fishball-embed-code': code } : {}) },
         // DSH's Tag takes no data attributes, so the hooks sit on this wrapper.
-        h(Tag, { tone: EMBED_UI.stateTone[state] ?? EMBED_UI.neutralTone }, t('frameState.' + state)),
-        code ? h('code', { className: CLS.code }, code) : null)
+        h(Tag, { tone: EMBED_UI.stateTone[state] ?? EMBED_UI.neutralTone },
+          h('span', { className: CLS.embedStateWords },
+            dot === undefined ? h(StateDot, { state: STATE_DOT.pending, size: STATE_DOT.pendingSizePx }) : h(StateDot, { state: dot, size: STATE_DOT.sizePx }),
+            t('frameState.' + state))),
+        code ? h('code', { className: [CLS.code, CLS.muted].join(' ') }, code) : null)
     }
 
     /**
@@ -620,14 +680,23 @@ window.__ModuleLoader__.load({
      * @param key - the frame document's identity: a new key remounts it, which is a reload.
      */
     const framedPageFrame = (t, key, src) => h('iframe', { key, className: CLS.embedFrame, src, title: t('embedTitle'), allow: EMBED_UI.iframeAllow, referrerPolicy: EMBED_UI.iframeReferrerPolicy, 'data-fishball-embed-frame': true })
-    /** The view's "checking" state, before its first answer. */
-    const loadingState = (t) => emptyState(h('p', { role: 'status' }, t('frameState.' + FRAME_UI.loading)))
-    /** The warning glyph that opens every not-framed state. */
-    const warningGlyph = () => h(IconWarningOutlineRegular, { size: EMBED_UI.warningIconPx, className: CLS.embedGlyph })
-    /** "State <state>" and, when there is one, "Code <code>": the not-framed state's safe details. */
+    /** The glyph that opens every not-framed state, in its round well; decorative, as the words say it. */
+    const glyphWell = (glyph) => h('span', { className: CLS.embedGlyph, 'aria-hidden': true }, glyph)
+    /** The view's "checking" state, before its first answer: DSH's spinner over the words. */
+    const loadingState = (t) => emptyState(
+      glyphWell(h(StateDot, { state: STATE_DOT.pending, size: EMBED_UI.warningIconPx })),
+      h('p', { role: 'status' }, t('frameState.' + FRAME_UI.loading)))
+    /** The warning glyph of a not-ready child or a refused admission. */
+    const warningGlyph = () => glyphWell(h(IconWarningOutlineRegular, { size: EMBED_UI.warningIconPx }))
+    /**
+     * A not-ready child: "Fishball isn't ready (<state>)." as the lead line, then "State <state>"
+     * and, when there is one, "Code <code>" as the safe details, side by side.
+     */
     const stateDetails = (t, state, code) => [
-      h('p', { key: 'state' }, t('embedState'), ' ', h('code', { className: CLS.code }, state)),
-      code ? h('p', { key: 'code' }, t('embedCode'), ' ', h('code', { className: CLS.code }, code)) : null,
+      h('p', { key: 'lead', className: CLS.embedLead }, t('notReady', { state: t('frameState.' + state) })),
+      h('div', { key: 'details', className: CLS.embedDetails },
+        h('p', null, t('embedState'), ' ', h('code', { className: CLS.code }, state)),
+        code ? h('p', null, t('embedCode'), ' ', h('code', { className: CLS.code }, code)) : null),
     ]
 
     /**
@@ -666,10 +735,12 @@ window.__ModuleLoader__.load({
     function FrameChrome({ t, page, state, code, canRefresh, onRefresh, body }) {
       return h('section', { className: CLS.embed, 'aria-label': t('viewTitle'), 'data-fishball-embed': true, 'data-fishball-embed-page': page },
         h('header', { className: CLS.embedBar, 'data-window-drag': true },
-          h('span', { className: CLS.embedName }, t('viewTitle')),
+          h('span', { className: CLS.embedTitle },
+            h(FishballIcon, { size: HEADER_MARK_PX, unread: false, badge: false, decorative: true }),
+            h('span', { className: CLS.embedName }, t('viewTitle'))),
           state === undefined ? null : h(FrameState, { state, code, t }),
           h('div', { className: CLS.embedActions },
-            onRefresh === undefined ? null : h(Button, { type: 'button', size: 'sm', variant: 'ghost', disabled: !canRefresh, onClick: onRefresh }, t('embedRefresh')))),
+            onRefresh === undefined ? null : h(Button, { type: 'button', size: 'sm', variant: 'ghost', icon: h(IconRefreshOutlineRegular, { size: EMBED_UI.refreshIconPx }), disabled: !canRefresh, onClick: onRefresh }, t('embedRefresh')))),
         body)
     }
 
@@ -767,7 +838,10 @@ window.__ModuleLoader__.load({
     /** The hint inside the window's chrome: no frame, no state, no Retry. */
     const hintChrome = (t) => h(FrameChrome, {
       t, page: FRAME_UI.page.chat,
-      body: emptyState(warningGlyph(), h('p', { 'data-fishball-no-instance': true }, t('noInstance'))),
+      body: emptyState(
+        glyphWell(h(FishballIcon, { size: EMBED_UI.warningIconPx, unread: false, badge: false, decorative: true })),
+        h('p', { className: CLS.embedLead }, t('noInstanceTitle')),
+        h('p', { 'data-fishball-no-instance': true }, t('noInstance'))),
     })
 
     /**
