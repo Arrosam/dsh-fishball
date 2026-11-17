@@ -181,6 +181,13 @@ export const V3_SUITES = Object.freeze({
   // rerun on everything draw reruns on, and on a change to those test modules.
   'dsh-connector-ui.wire': suite('install matrix and no-V2 boundaries (U-WIRE)', v3('dsh-connector-ui/wire'),
     [...CONNECTOR_UI_DRAW_TRIGGERS, 'test/v3/dsh-connector-ui/draw/**', 'test/v3/dsh-connector-ui/shell/constants.mjs', 'test/v3/dsh-connector/ui/**', 'test/v3/dsh-connector/routing/constants.mjs']),
+  // UI-FIX-D: boots real DSH profiles (C-WIRE's worker with the connector and embed-UI as whole
+  // bundles; the shared worker with the instance on a symlinked home) and draws them in a real
+  // headless Chromium, so it triggers on those packages and on the harness files it reuses.
+  'dsh-connector-ui.layout': suite('narrow-width layout in a real browser: header Hand over / Take back, connector settings rows, window error code (UI-FIX-D)', v3('dsh-connector-ui/layout'),
+    [all(PACKAGE.dshConnectorUi), all(PACKAGE.dshConnector), all(PACKAGE.dshConnectorShared), all(PACKAGE.fishballShared), all(PACKAGE.dshInstance),
+      all(PACKAGE.fishballCore), all(PACKAGE.fishballUi), 'test/v3/dsh-connector/wire/**', 'test/v3/fishball-core/package/constants.mjs',
+      'test/v3/contract/package-boundaries/cases.mjs', 'test/v3/dsh-connector/pairs/subject.mjs']),
   // Reads the instance's whole placement and launch overlay, core's patch it places, and the F-GUARDS
   // vocabulary (whose split constants name fishball-ui's rows).
   'dsh-instance.placement': suite('placement of the set, launch overlay, hosted-child guards (I-PLACE)', v3('dsh-instance/placement'),

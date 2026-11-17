@@ -48,6 +48,11 @@ contributed tools through C-EXT); *embed-UI* (`dsh-connector-ui`, host half and 
 - E1: the backend refuses (`unknown-session`, `conflict`, `no-agent`, `operation-failed`) →
   `[role=alert][data-fishball-refusal=<code>]`; the session stays unmanaged.
 - E2: no target → no Hand over control, in the header and in the row menu.
+- UI-FIX-D (2026-11-18): "the session header" is DSH's two header seats. Hand over / Handover to… /
+  Take back sit in the right-aligned `conversation.session.header.utilities` (to the left of DSH's
+  own utilities); "Managed by <principal>" stays title-adjacent in `conversation.session.header.actions`.
+  The rows mount both seats as one header; behaviour, hooks and routes are unchanged. Their real
+  layout (no overlap with DSH's buttons at 320–1440 px) is test/v3/dsh-connector-ui/layout.
 
 ### UDRAW-UC-03 Take back a managed session (R-UI-05, R-UI-10; HAND-UC-02)
 - Main: a managed session shows `[data-fishball-managed-by]` with the principal label and
