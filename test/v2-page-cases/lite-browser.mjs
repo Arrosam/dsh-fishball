@@ -159,7 +159,9 @@ async function teardown({ socket, proc, servers, dir }) {
  */
 async function launchInto(parts, binary) {
   parts.dir = mkdtempSync(path.join(os.tmpdir(), LITE_ENV.tempPrefix))
-  parts.proc = spawn(binary, ['--no-first-run', '--no-default-browser-check', '--disable-gpu', '--no-sandbox', '--remote-allow-origins=*', '--remote-debugging-port=0', '--user-data-dir=' + parts.dir, 'about:blank'], { stdio: 'ignore' })
+  // --headless for a full Chrome given by FBTEST_CHROME (the headless shell ignores it); the mock
+  // keychain and the basic password store keep any Chromium off the user's macOS keychain.
+  parts.proc = spawn(binary, ['--headless', '--use-mock-keychain', '--password-store=basic', '--no-first-run', '--no-default-browser-check', '--disable-gpu', '--no-sandbox', '--remote-allow-origins=*', '--remote-debugging-port=0', '--user-data-dir=' + parts.dir, 'about:blank'], { stdio: 'ignore' })
   let spawnError = null
   parts.proc.once('error', (error) => { spawnError = error })
   const portFile = path.join(parts.dir, 'DevToolsActivePort')

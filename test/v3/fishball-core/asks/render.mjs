@@ -33,12 +33,15 @@ class FakeEventSource {
 /**
  * A Fishball page with the card dock mounted for Fishball's own conversation. `show(cards)` sends
  * one frame and settles; the handle reads the rendered card of one approvalId.
+ * UI-FIX-F: `lang` picks the page language (default en) and `onDocument(document)` sees the page's
+ * document before any script runs (the contrast rows collect the mounted style sheets).
  */
-export async function cardPage(t, sdk) {
+export async function cardPage(t, sdk, { lang, onDocument } = {}) {
   const opened = []
   const Source = class extends FakeEventSource { constructor(url) { super(url); opened.push(this) } }
-  const w = createWorld({ sdk })
+  const w = createWorld({ sdk, lang })
   w.EventSource = Source
+  w.onDocument = onDocument
   await loadPage(t, w)
   const docks = w.entries(RENDER.slot)
   assert.ok(docks.length > 0, `no entry in ${RENDER.slot}: fishball-ui's card dock did not register`)
