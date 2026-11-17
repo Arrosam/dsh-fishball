@@ -47,7 +47,8 @@ export const OAUTH_CLIENT = Object.freeze({
    * Fetch's redirect mode for every outbound OAuth request: a redirect is an error, never followed.
    * A 307/308 from the token endpoint would re-POST the code and verifier, or the refresh token, to
    * any `Location` (X-SEC X-11; design §6.3 "credentials are never forwarded on a redirect"), and the
-   * SDK checks only the first URL. The link's own requests already refuse redirects (LINK_MCP.redirect).
+   * SDK checks only the first URL. The same value as the link's `LINK_MCP.redirect`, restated because
+   * this module imports nothing but Node (see the header).
    */
   redirect: 'error',
   /** The one PKCE method this client sends; an authorization server that does not list it is refused (X-SEC X-13). */

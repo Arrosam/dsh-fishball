@@ -71,9 +71,11 @@ function isConnectorResource(url, resourceMetadata) {
 /**
  * The connector check's authorization-server half (step 4 of the module header; X-SEC X-11, X-12).
  * The token endpoint, which receives the code and verifier and later the refresh token, must be the
- * target origin's connector endpoint (`MCP.paths.token`), as the link pins it for the hosted
- * import. The authorization endpoint, the page on which the user types a connector token, must be
- * https or loopback http (`isSecureOrLoopback`): it is the connector's own approval listener, which
+ * target origin's connector endpoint (`MCP.paths.token`): the link keeps the hosted import's
+ * requests on the target origin, and Connect's own exchange and refresh must not leave it either.
+ * Grants saved before this check keep the token endpoint they were saved with (only a new Connect
+ * is checked). The authorization endpoint, the page on which the user types a connector token, must
+ * be https or loopback http (`isSecureOrLoopback`): it is the connector's own approval listener, which
  * may be on another loopback port, so only its transport is checked, not its origin.
  */
 function isConnectorServer(url, serverMetadata) {

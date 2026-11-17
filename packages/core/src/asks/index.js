@@ -145,9 +145,10 @@ export function createAsks({ link, table, logger }) {
       logger?.warn(ASK_LOG.commitFailed, record.approvalId, codeOf(error))
       return refusal(REFUSAL.operationFailed)
     }
-    if (result?.ok === true) { await recorded(() => store.answered(record.approvalId)); return OK }
+    // Both moves name the answered offer, so a newer offer that replaced it meanwhile stays as it is.
+    if (result?.ok === true) { await recorded(() => store.answered(record.approvalId, record.offerId)); return OK }
     const code = typeof result?.code === 'string' ? result.code : REFUSAL.operationFailed
-    if (ASKS.closingCodes.includes(code)) await recorded(() => store.close(record.approvalId))
+    if (ASKS.closingCodes.includes(code)) await recorded(() => store.closeOffer(record.approvalId, record.offerId))
     // `disconnected` (never sent) and the connector's own refusals leave the ask waiting there,
     // so the card stays open for another answer.
     else if (code !== LINK.disconnected) logger?.warn(ASK_LOG.commitFailed, record.approvalId, code)
@@ -169,6 +170,8 @@ export function createAsks({ link, table, logger }) {
         const record = store.get(approvalId)
         if (record?.filed !== true || record.state === CARD_STATE.closed) return refusal(REFUSAL.expired)
         if (record.state === CARD_STATE.answered) return refusal(REFUSAL.alreadySettled)
+        // A choice the card does not offer (Allow on incomplete arguments) is refused before sending.
+        if (!record.choices.includes(checked.choice)) return refusal(REFUSAL.invalidArguments)
         return commit(record, checked)
       })
     },
@@ -185,7 +188,12 @@ export function createAsks({ link, table, logger }) {
     let deleted = 0
     for (const [sessionId, records] of bySession) {
       const ended = await endedOf(sessionId, records)
-      for (const record of ended) await store.dropUnfiled(record.approvalId)
+      // On the intake chain, where offers are added: an unfiled record is deleted only there, so
+      // the delete can never remove a newer offer that replaced it (store.js header).
+      const drops = intake.then(async () => { for (const record of ended) await store.dropUnfiled(record.approvalId, record.offerId) })
+      // A failed delete fails this reconciliation, as before, but never the chain later pages wait on.
+      intake = drops.catch(() => {})
+      await drops
       deleted += ended.length
     }
     const kept = [...bySession.values()].reduce((sum, records) => sum + records.length, 0) - deleted
@@ -207,7 +215,7 @@ export function createAsks({ link, table, logger }) {
     return ASKS.endedCodes.includes(result?.code) ? records : []
   }
 
-  /** `ask_user({offer_id})`: files the ask with that offer id as a card (idempotent while open). */
+  /** `ask_user({offer_id})`: files the request with that offer id as a card (idempotent while open). */
   async function fileCard(args) {
     const offerId = args?.[ASKS.offerArgument]
     if (typeof offerId !== 'string' || offerId === '') return refusal(REFUSAL.invalidArguments)
@@ -216,9 +224,10 @@ export function createAsks({ link, table, logger }) {
     const record = store.byOffer(offerId)
     if (record === undefined) return refusal(store.wasClosed(offerId) ? REFUSAL.expired : ASK_CODE.unknownOffer)
     if (record.state !== CARD_STATE.open) return refusal(REFUSAL.expired)
-    await store.file(record.approvalId)
+    await store.file(record.approvalId, offerId)
     const filed = store.get(record.approvalId)
-    return filed?.filed === true && filed.state === CARD_STATE.open ? { ok: true, card: cardOf(filed) } : refusal(REFUSAL.expired)
+    // A newer offer that replaced this one meanwhile is not filed by it: this offer has expired.
+    return filed?.offerId === offerId && filed.filed === true && filed.state === CARD_STATE.open ? { ok: true, card: cardOf(filed) } : refusal(REFUSAL.expired)
   }
 
   const tool = Object.freeze({

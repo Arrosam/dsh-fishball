@@ -47,6 +47,8 @@ export const ASKS = Object.freeze({
    * permission offer accepts (the connector's broker), so the choice is the K1 decision word itself.
    */
   choices: Object.freeze([DECISION.allow, DECISION.reject]),
+  /** The choices of a card whose call arguments are not complete: the connector refuses an allow then (`arguments-incomplete`), so only Reject is offered (the user, 2026-11-17). */
+  incompleteChoices: Object.freeze([DECISION.reject]),
   /**
    * The risk each choice is sent with. The connector's broker refuses an allow without risk `low`
    * and a reject without any risk (`risk-required`), and the card has no risk field, so core fills
@@ -121,7 +123,7 @@ export const ASK_HTTP = Object.freeze({
 
 /** Background log lines (printf format); never a question, reason or token. */
 export const ASK_LOG = Object.freeze({
-  malformed: 'ask event %s ignored: malformed payload',
+  malformed: 'offer event %s ignored: malformed payload',
   commitFailed: 'ask card %s: the answer could not be sent (%s)',
   writeFailed: 'ask card store write failed (%s)',
   reconciled: 'ask card reconciliation: %d ended unfiled ask(s) deleted, %d kept',

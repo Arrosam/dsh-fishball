@@ -20,8 +20,8 @@ const unusable = (status) => Object.freeze({ ok: false, status })
 const refused = (code) => unusable(refusedTarget(code))
 
 /**
- * The link's transport rule, the one place for every URL core sends a credential to or opens for
- * one (the target, and Connect's authorization endpoint): `https:` to any host, or `http:` only to
+ * The link's transport rule for the target URL and Connect's authorization endpoint (the web
+ * callback and the CIMD URL keep their own, stricter rules): `https:` to any host, or `http:` only to
  * a loopback name, an exact WHATWG hostname match (so `foo.localhost` and `127.0.0.2` are not
  * loopback here, unlike the MCP SDK's own token-endpoint exemption).
  * @param {URL} url
