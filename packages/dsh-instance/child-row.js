@@ -144,6 +144,8 @@ export function apply(ctx) {
   // loading (both SDKs). Core can start before this row is active, because this row waits for
   // `nativeRuntime`. So once this fiber is active, one call lists the row and emits the update core
   // follows. Otherwise core sees no target until something else, such as a settings page, calls
-  // describe. If the row was already listed, the call emits nothing and changes nothing.
+  // describe. It is an ordinary describe: it emits the update for every row whose settings changed
+  // since the last call (for every row, on the first call), and moves no revision otherwise. If the
+  // row stops while it waits, the call may fail; `part` logs that as a failed part.
   part(PART.target, () => ctx.fiber.await().then(() => { ctx.settings.describe() }))
 }
