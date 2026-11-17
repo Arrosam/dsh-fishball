@@ -90,11 +90,11 @@ export class FakePresence {
 }
 
 /**
- * The connector's live routing settings: `routing.agentToken` (an EntryKey or undefined) and
- * `maxQueuedInputs` (undefined = the K1 default). Driver: `set(patch)` fires `onChange`.
+ * The connector's live routing settings: `maxQueuedInputs` (undefined = the K1 default). C-WIRE-2:
+ * no `routing.agentToken` (the user's q5, "Remove agentToken entirely"). Driver: `set(patch)` fires `onChange`.
  */
 export class FakeSettings {
-  #values = { agentToken: undefined, maxQueuedInputs: undefined }
+  #values = { maxQueuedInputs: undefined }
   #changed = new Set()
   get() { return { ...this.#values } }
   set(patch) { this.#values = { ...this.#values, ...patch }; fire(this.#changed) }

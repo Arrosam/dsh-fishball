@@ -4,7 +4,7 @@ import { once } from 'node:events'
 import fs from 'node:fs'
 import path from 'node:path'
 import { V3 } from '../../contract/package-boundaries/constants.mjs'
-import { requireModule } from '../../dsh-connector-shared/oauth-client/subject.mjs'
+import { requireModule } from '../../dsh-connector-adapter/oauth-client/subject.mjs'
 
 export const at = (relative) => path.join(V3.instance.dir, relative)
 export const moduleOf = (sdk, file, exports) => requireModule(sdk, {

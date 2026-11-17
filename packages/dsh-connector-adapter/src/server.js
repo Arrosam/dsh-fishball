@@ -6,7 +6,7 @@
  * proxy can read the access token per request without touching the store.
  */
 import { MAX_TIMER_DELAY_MS } from '@deepseek-ai/dsh-timeout'
-import { OAUTH_CLIENT, OAuthAttemptError, accessTokenOf, createTokenManager, discoverServer, isGrantFor } from 'dsh-connector-shared/oauth-client'
+import { OAUTH_CLIENT, OAuthAttemptError, accessTokenOf, createTokenManager, discoverServer, isGrantFor } from './oauth-client.js'
 import { isConnectorResource, isConnectorUrl } from './connector-check.js'
 import { ADAPTER, CHILD_ROW, LIMIT, REASON, SIGN_IN_TOOL, STATE, TEXT } from './constants.js'
 

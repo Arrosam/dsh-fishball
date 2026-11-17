@@ -36,7 +36,8 @@ export interface ManagedSession {
  *   stream do not make it online (HAND-ST-02 #4). After a connector restart every principal is
  *   offline until it listens again.
  * - `enabled` is the entry's switch in the connector's native settings.
- * - `designated` marks the designated-agent entry (R-ROUTE-04). It plays no part in Hand over.
+ * - C-WIRE-2 withdrew `designated` with the designated agent (the user's answer q5, 2026-11-17:
+ *   "Remove agentToken entirely").
  *
  * The Hand over control lists only entries with `enabled && paired`, online or not (R-UI-10).
  */
@@ -47,7 +48,6 @@ export interface HandoverPrincipal {
   readonly online: boolean
   readonly enabled: boolean
   readonly paired: boolean
-  readonly designated: boolean
 }
 
 /**
@@ -93,7 +93,7 @@ export interface DshConnectorHandover {
 
   /**
    * Calls `fn` after any change of the managed set, of a principal's name, connection
-   * (`online`), entry state (`enabled`, `paired`, `designated`) or of the entry list. `fn` gets no
+   * (`online`), entry state (`enabled`, `paired`) or of the entry list. `fn` gets no
    * argument: it reads `managed()` and `principals()` again. A throwing listener does not stop the
    * others (PROPOSED). Returns the disposer of this listener.
    */

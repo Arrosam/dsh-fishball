@@ -1,53 +1,49 @@
 /**
- * The connector's routing module (task C-ROUTE): managed state, the router, watch = manage, the
- * `message_agent` / `ask_agent` routing with the no-recipient rules, the live-offer ledger and
- * the host-only hand-over service (`../handover/`). Composition only; C-WIRE mounts it.
+ * The connector's routing module (task C-ROUTE; C-WIRE-2): managed state, the router, watch =
+ * manage, `message_agent` routing, the live-offer ledger and the host-only hand-over service
+ * (`../handover/`). Composition only; C-WIRE mounts it. Since C-WIRE-2 there is no designated
+ * agent, no no-recipient queue and no `ask` (the user, 2026-11-17: "不给ask_agent工具"; q5 "Remove
+ * agentToken entirely"): an event naming no managed session reaches no principal.
  *
  * `openRouting(ctx, {defineDomain, domainTable}, ports)` → `Routing`. Every port is injected, so the
  * module depends on the frozen K1/K3 interfaces, plus the C-MAILBOX extension `stage` named below:
  * - `mailbox`: K1 `Mailbox` plus C-MAILBOX's `stage` (C-SUCCEED's staged transfer) and
  *   `onAcked(listener(principalKey, receipts)) → dispose`, fired after
- *   each successful `inbox_ack` with its receipts (the signal that frees room for held messages and
- *   marks offers acked). **C-WIRE and C-TOOLS must route every `inbox_ack` through this port.**
+ *   each successful `inbox_ack` with its receipts (the signal that marks offers acked).
+ *   **C-WIRE and C-TOOLS must route every `inbox_ack` through this port.**
  * - `pairs` K1 `PairStore`; `tokens` K1 `TokenRegistry` (read only: `get`; routing does not
  *   subscribe to `onRevoked`, C-REVOKE calls `endPrincipal` from its own handler); `presence` K1
  *   `Presence`;
- * - `settings`: `{get() → {agentToken?, maxQueuedInputs?}, onChange(fn) → dispose}`, the live
- *   `routing.agentToken` and `maxQueuedInputs` (unset = K1 QUEUE.maxQueuedInputs). K1
- *   `TokenRegistry` has no change event besides `onRevoked`, so a re-enable, an added or a removed
- *   entry reaches this module only through this port: **C-WIRE fires `settings.onChange` after
- *   `TokenRegistry.apply` has resolved**, so the K3 listeners and the held-queue flush read the new
- *   entries. (C-MAILBOX reads `maxQueuedInputs` once at creation, this queue reads it live: C-WIRE
- *   aligns the two when it builds them.)
+ * - `settings`: `{onChange(fn) → dispose}`. K1 `TokenRegistry` has no change event besides
+ *   `onRevoked`, so a re-enable, an added or a removed entry reaches this module only through this
+ *   port: **C-WIRE fires `settings.onChange` after `TokenRegistry.apply` has resolved**, so the K3
+ *   listeners read the new entries. `maxQueuedInputs` is the mailbox's own bound (C-MAILBOX).
  * - `sessions`: `{exists(id), onTurnFinished(fn(id, {running, queued})), onState(fn(id, {running,
  *   pendingInteraction}))}` over root session ids (binding it to DSH is C-WIRE's);
  * - `logger` (`{warn}`).
  *
  * One commit path (`produce`): every event C-ROUTE produces asks the router first and commits to the
  * one recipient it names, or to nobody (R-EVS-03, EVT-DT-01 rule 9: exactly one mailbox entry).
- * `message` routing and the held-queue flush share one serial chain, so a new message never
- * overtakes a held one (K1c-3). Every ledger change (offer and ask commits, `settle`, `withdraw`,
- * `askDropped`) and every management change share the managed chain (`managed.withState`), so
- * none of them lands halfway through another (K1c-2).
+ * Every ledger change (offer commits, `settle`, `withdraw`) and every management change share the
+ * managed chain (`managed.withState`), so none of them lands halfway through another (K1c-2).
  */
-import { randomUUID } from 'node:crypto'
-import { DECISION_KIND_OF, EVENT_TYPE, OFFER_TYPES, QUEUE, REFUSAL, RETIREMENT_REASON, formatOfferId, parseOfferId } from '../../mcp-schema/index.js'
+import { DECISION_KIND_OF, EVENT_TYPE, OFFER_TYPES, REFUSAL, RETIREMENT_REASON, formatOfferId, parseOfferId } from '../../mcp-schema/index.js'
 import { diagnosticOf } from '../errors.js'
 import { createHandover } from '../handover/index.js'
 import { isNonEmptyString } from '../mailbox/draft.js'
-import { HELD_MINIMUM, LOG, MISUSE, OFFER_REVISION } from './constants.js'
-import { createHeldQueue } from './held.js'
+import { LOG, MISUSE, OFFER_REVISION } from './constants.js'
 import { createManagedState } from './managed.js'
 import { createOfferLedger } from './offers.js'
 import { createRouter } from './router.js'
 import { openRoutingTables } from './store.js'
-import { checkedFields, listenerSet, serialChain } from './support.js'
+import { checkedFields, listenerSet } from './support.js'
 
 export { createRouter } from './router.js'
 export { ROUTE_FALLBACK } from './constants.js'
 
-const UNAVAILABLE = Object.freeze({ ok: false, code: REFUSAL.unavailable })
 const OK = Object.freeze({ ok: true })
+/** `message_agent` from a session nobody manages: it has no recipient (no designated agent since C-WIRE-2). */
+const NOT_MANAGED = Object.freeze({ ok: false, code: REFUSAL.notManaged })
 /** `endPrincipal`'s answer for an entry with no current or last-seen pair: nothing was managed or live. */
 const NOBODY_ENDED = Object.freeze({ principalKey: undefined, sessions: Object.freeze([]), offers: Object.freeze([]) })
 
@@ -67,43 +63,18 @@ function detachedPayload(payload) {
 
 /**
  * @returns {Promise<Routing>} see the module comment; members `router`, `managed`, `handover`,
- *   `provide`, `messageAgent`, `askAgent`, `offer`, `settle`, `withdraw`, `askDropped`,
- *   `liveAsksOf`, `liveOffers`, `succeedPrincipal`, `endPrincipal`, `close`.
+ *   `provide`, `messageAgent`, `offer`, `settle`, `withdraw`, `liveOffers`, `succeedPrincipal`,
+ *   `endPrincipal`, `close`.
  */
 export async function openRouting(ctx, storageDomain, { mailbox, pairs, tokens, presence, settings, sessions, logger }) {
   const { tables, close: closeTables } = await openRoutingTables(ctx, storageDomain)
   const warn = (line) => (error) => logger.warn(LOG.format, line, diagnosticOf(error))
-  const routeSerial = serialChain()
   const disposers = []
 
-  /** The live `maxQueuedInputs` (K1c-3), checked: a bad setting is a wiring bug, not a client's refusal. */
-  function maxQueuedInputs() {
-    const value = settings.get().maxQueuedInputs ?? QUEUE.maxQueuedInputs
-    if (!Number.isSafeInteger(value) || value < HELD_MINIMUM.queuedInputs) throw new TypeError(MISUSE.maxQueuedInputs)
-    return value
-  }
-  const designatedEntry = () => settings.get().agentToken
-  /**
-   * The designated agent's principal, only while `routing.agentToken` names an entry that is
-   * paired (K1c-3) and enabled: a paired but disabled designated entry counts as no designated
-   * agent (Fishball 2026-11-14 #6), so held messages wait and an `ask` is `unavailable`.
-   */
-  const designated = () => {
-    const entryKey = designatedEntry()
-    if (entryKey === undefined || tokens.get(entryKey)?.enabled !== true) return undefined
-    return pairs.pairOf(entryKey)?.principalKey
-  }
-
-  const held = createHeldQueue({ table: tables.held, newKey: randomUUID, limit: maxQueuedInputs, onDeleteFailed: warn(LOG.heldDeleteFailed) })
   // `managed` is assigned below, before any call can reach the router (the router and the ledger
   // need each other's owner only at call time).
   let managed
-  const router = createRouter({
-    managerOf: (sessionId) => managed.state.managerOf(sessionId),
-    designated,
-    isConnected: (principalKey) => presence.isConnected(principalKey),
-    heldCount: held.count,
-  })
+  const router = createRouter({ managerOf: (sessionId) => managed.state.managerOf(sessionId) })
 
   /**
    * The one commit path: routes `subject`, then commits `{type, ...draft}` to its recipient.
@@ -119,17 +90,21 @@ export async function openRouting(ctx, storageDomain, { mailbox, pairs, tokens, 
 
   // The change stands even if a retirement fails (it is logged): the session is unmanaged either way.
   const ledger = createOfferLedger({ mailbox, produce, onRetireFailed: warn(LOG.retireFailed) })
-  managed = createManagedState({ table: tables.managed, logger, leave: ledger.retireSession })
-
-  /** Moves held messages into the designated mailbox, in order, as far as they fit (K1c-3). */
-  function flush() {
-    return routeSerial(async () => {
-      const recipient = designated()
-      if (recipient !== undefined) await held.flushTo(recipient, (to, draft) => mailbox.commit(to, draft))
-    }).catch(warn(LOG.flushFailed))
+  /**
+   * Fired with the offers every end of management retired (release, Take back, revocation), after
+   * the retirements: the domain hands each waiting call to the user's prompt in its session
+   * (R-ROUTE-06, K1c-2 "The offers then go to the user in the session"). One listener port for all
+   * three ways, so no way is left out; a throwing listener is logged.
+   */
+  const left = listenerSet(logger, LOG.format, LOG.listenerFailed)
+  async function leave(...args) {
+    const offers = await ledger.retireSession(...args)
+    if (offers.length > 0) left.fire(offers)
+    return offers
   }
+  managed = createManagedState({ table: tables.managed, logger, leave })
 
-  // K3 onChange: managed set, names, connection, entry state and designation (handover.d.ts).
+  // K3 onChange: managed set, names, connection and entry state (handover.d.ts).
   const changes = listenerSet(logger, LOG.format, LOG.listenerFailed)
   const changed = () => changes.fire()
   /**
@@ -144,13 +119,9 @@ export async function openRouting(ctx, storageDomain, { mailbox, pairs, tokens, 
   const remember = () => { for (const pair of pairs.list()) lastPair.set(pair.entryKey, pair.principalKey) }
   remember()
   disposers.push(managed.state.onChange(changed), presence.onChange(changed))
-  disposers.push(pairs.onChange(() => { remember(); changed(); flush() }))
-  disposers.push(settings.onChange(() => { changed(); flush() }))
-
-  disposers.push(mailbox.onAcked((principalKey, receipts) => {
-    ledger.markAcked(principalKey, receipts)
-    if (principalKey === designated()) flush()
-  }))
+  disposers.push(pairs.onChange(() => { remember(); changed() }))
+  disposers.push(settings.onChange(changed))
+  disposers.push(mailbox.onAcked((principalKey, receipts) => ledger.markAcked(principalKey, receipts)))
 
   // Watch = manage (R-WATCH-01/02): produced for managed sessions only; the router drops the rest.
   const watch = (type) => (sessionId, facts) => {
@@ -169,12 +140,12 @@ export async function openRouting(ctx, storageDomain, { mailbox, pairs, tokens, 
   }
 
   /**
-   * Commits an answerable event and records it as live; `answer` resolves an ask's waiting call.
+   * Commits an offer and records it as live.
    * Route, commit and record run as one step on the managed chain (`withState`), so a release, Take
    * back or revocation either runs before it (the offer then routes by the new state) or after it
    * (and then finds and retires the recorded offer); never in between (K1c-2).
    */
-  function commitAnswerable(type, sessionId, descriptor, answer) {
+  function commitAnswerable(type, sessionId, descriptor) {
     const draft = answerable(type, sessionId, descriptor)
     return managed.withState(async () => {
       // Checked on the chain, so two concurrent offers with one id cannot both pass it. The ledger
@@ -184,27 +155,20 @@ export async function openRouting(ctx, storageDomain, { mailbox, pairs, tokens, 
       const { route, committed } = await produce({ type, sessionId }, draft)
       if (route.recipient !== null && committed.ok) {
         // A detached copy of the committed draft: a succession re-issues the offer from it.
-        ledger.record(descriptor.offerId, { type, sessionId, principalKey: route.recipient, eventId: committed.eventId, draft: structuredClone(draft), answer })
+        ledger.record(descriptor.offerId, { type, sessionId, principalKey: route.recipient, eventId: committed.eventId, draft: structuredClone(draft) })
       }
       return { route, committed }
     })
   }
 
   /**
-   * What a succession commits to the successor for one live request it now holds (steps 3, 5):
-   * - an offer: its revision n+1 (R-HOST-09, Q-S3-1), whose old event is retired `reissued` later;
-   * - an ask whose event was not among the moved pending ones (`from` had acked it): the same draft
-   *   again, same offer id. `to` never received it, and an ask left with nobody holding its event
-   *   would keep its asker waiting for an answer that cannot come (design §5.3 "Dropped `ask`");
-   * - a pending ask: nothing (it moved with its `eventId`).
-   * @returns `{requestId, type, offerId, draft, oldEventId?}` (not frozen: the staged commit adds
-   *   its `eventId`), or undefined
+   * What a succession commits to the successor for one live offer it now holds (steps 3, 5): its
+   * revision n+1 (R-HOST-09, Q-S3-1), whose old event is retired `reissued` later.
+   * @returns `{requestId, type, offerId, draft, oldEventId}` (not frozen: the staged commit adds
+   *   its `eventId`)
    */
-  function successorDraft(requestId, movedIds) {
+  function successorDraft(requestId) {
     const record = ledger.current(requestId)
-    if (!OFFER_TYPES.includes(record.type)) {
-      return movedIds.includes(record.eventId) ? undefined : { requestId, type: record.type, offerId: record.offerId, draft: record.draft }
-    }
     const revision = record.draft.offer.revision + OFFER_REVISION.step
     const offerId = formatOfferId(requestId, revision)
     if (offerId === undefined) throw new RangeError(MISUSE.revision)
@@ -215,9 +179,8 @@ export async function openRouting(ctx, storageDomain, { mailbox, pairs, tokens, 
     return { requestId, type: record.type, offerId, draft, oldEventId: record.eventId }
   }
 
-  await flush()
   const handover = createHandover({
-    managed, produce, pairs, tokens, presence, designatedEntry, changes,
+    managed, produce, pairs, tokens, presence, changes,
     sessionExists: (sessionId) => sessions.exists(sessionId),
   })
 
@@ -226,41 +189,27 @@ export async function openRouting(ctx, storageDomain, { mailbox, pairs, tokens, 
   return {
     router,
     managed: managed.state,
+    /** `onLeft(fn(offers))` → dispose: see `leave` above; `offers` is `[{offerId, sessionId, type}]`. */
+    onLeft: left.add,
     handover: handover.service,
     provide: handover.provide,
 
     /**
-     * `message_agent` (R-ROUTE-03, R-CON-09, K1c-3): to the manager, else the designated paired
-     * agent, else held. `queue-full` is the mailbox's bound or the held queue's.
+     * `message_agent` (R-ROUTE-03 as amended by C-WIRE-2): one `message` to the session's manager,
+     * connected or not. A session nobody manages has no recipient and is `not-managed`: the tool
+     * exists only in managed sessions (the user, 2026-11-17), so this answers a call that raced a
+     * release or a Take back. `queue-full` is the mailbox's bound.
      * @throws TypeError (synchronously) for a bad session id, or a payload that cannot be copied or
      *   is not a valid K1 message payload
      */
     messageAgent(sessionId, payload) {
-      // A held record must pass its schema at the next open (store.js), so a bad id is refused here.
-      if (sessionId !== undefined && sessionId !== null && !isNonEmptyString(sessionId)) throw new TypeError(MISUSE.sessionId)
-      // The payload is copied at the call, and only the copy is checked, routed and held. The step
-      // below runs later on the chain and a held message waits until a flush: a caller that changed
-      // its object meanwhile would change what was checked, and could turn the head of the held
-      // queue into a draft the mailbox refuses, which would block every message behind it.
-      const draft = checkedFields(EVENT_TYPE.message, { sourceSessionId: sessionId ?? null, correlationId: null, payload: detachedPayload(payload) })
-      return routeSerial(async () => {
-        const { route, committed } = await produce({ type: EVENT_TYPE.message, sessionId: draft.sourceSessionId }, draft)
-        if (route.recipient === null) return held.hold(draft.sourceSessionId, draft.payload)
+      if (!isNonEmptyString(sessionId)) throw new TypeError(MISUSE.sessionId)
+      // Copied at the call, so a caller that changes its object later cannot change what was checked.
+      const draft = checkedFields(EVENT_TYPE.message, { sourceSessionId: sessionId, correlationId: null, payload: detachedPayload(payload) })
+      return produce({ type: EVENT_TYPE.message, sessionId }, draft).then(({ route, committed }) => {
+        if (route.recipient === null) return NOT_MANAGED
         return committed.ok ? OK : Object.freeze({ ok: false, code: committed.code })
       })
-    },
-
-    /**
-     * `ask_agent` (R-CON-08/09, R-ROUTE-03/04): `unavailable` at once when the session is
-     * unmanaged and no designated paired agent is connected; otherwise one `ask` offer, and the
-     * call stays pending until `settle` (an answer) or `withdraw` resolves it.
-     */
-    async askAgent(sessionId, descriptor) {
-      let answer
-      const answered = new Promise((resolve) => { answer = resolve })
-      const { route, committed } = await commitAnswerable(EVENT_TYPE.ask, sessionId, descriptor, answer)
-      if (route.recipient === null) return UNAVAILABLE
-      return committed.ok ? answered : Object.freeze({ ok: false, code: committed.code })
     },
 
     /**
@@ -278,8 +227,8 @@ export async function openRouting(ctx, storageDomain, { mailbox, pairs, tokens, 
     },
 
     /**
-     * An offer's or ask's outcome (C-TOOLS' first committed answer, or the user's): one `settlement`
-     * to the pair that held it (R-EVS-03 follow-up); a waiting `ask_agent` gets `{ok: true, settlement}`.
+     * An offer's outcome (C-TOOLS' first committed answer, or the user's): one `settlement`
+     * to the pair that held it (R-EVS-03 follow-up).
      *
      * Runs on the managed chain, as the offer's own commit and `withdraw` do. Off it, a settle that
      * arrives while its offer's commit is still queued or running there finds nothing live and
@@ -299,34 +248,27 @@ export async function openRouting(ctx, storageDomain, { mailbox, pairs, tokens, 
         if (holder === undefined) return false
         // The current revision's id: after a succession the user's card may still name an older one (E1a).
         const draft = checkedFields(EVENT_TYPE.settlement, { sourceSessionId: holder.sessionId, correlationId: holder.offerId, payload })
-        ledger.settle(offerId, Object.freeze({ ok: true, settlement: payload }))
+        ledger.settle(offerId)
         await produce({ type: EVENT_TYPE.settlement, sessionId: holder.sessionId, followsPrincipal: holder.principalKey }, draft)
         return true
       })
     },
 
     /**
-     * The session's call ended before an answer: the offer (or ask) is retired `withdrawn` from its
-     * pair; a waiting `ask_agent` answers `unavailable`.
+     * A principal's `escalate` (C-WIRE-2): the offer is the user's from now on and settles nothing
+     * yet (K1); its later `settle` (the user's answer) or `withdraw` still goes to the same pair.
+     * On the managed chain, as `settle` is, so it never lands between a release and its retirements.
+     * @returns whether the offer was live and the agent's
+     */
+    escalate: (offerId) => managed.withState(async () => ledger.escalate(offerId)),
+
+    /**
+     * The session's call ended before an answer: the offer is retired `withdrawn` from its pair.
      * Runs on the managed chain, as the offer's own commit does: a withdraw that arrives while its
      * offer is still queued there runs after it, and so finds it.
      * @returns whether the offer was live
      */
-    withdraw: (offerId) => managed.withState(() => ledger.withdraw(offerId, RETIREMENT_REASON.withdrawn, UNAVAILABLE)),
-
-    /**
-     * C-REVOKE: an `ask` event was dropped with its mailbox (delete, or the end of the 30 days;
-     * K1 `Mailbox.drop` / `expireHolds` `droppedAsks`). Its asker answers `unavailable` at once
-     * (R-TOK-05); nothing is retired or committed, because the pair that held it is gone.
-     * @returns whether the ask was live
-     */
-    askDropped: (offerId) => managed.withState(async () => ledger.settle(offerId, UNAVAILABLE)),
-
-    /**
-     * C-REVOKE step 2: the offer ids of the live `ask`s `principalKey` holds, acked ones included
-     * (offers.js `asksOf`), so a dropped box's acked asks are answered `unavailable` too.
-     */
-    liveAsksOf: (principalKey) => ledger.asksOf(principalKey),
+    withdraw: (offerId) => managed.withState(() => ledger.withdraw(offerId, RETIREMENT_REASON.withdrawn)),
 
     /**
      * C-TOOLS' `interactions.liveOffers(rootSessionId)` (mcp/tools/index.js): the session's live
@@ -344,11 +286,9 @@ export async function openRouting(ctx, storageDomain, { mailbox, pairs, tokens, 
      *   1. every session `from` manages is managed by `to` (no session is ever unmanaged);
      *   2. K1d `Mailbox.transfer(from → to)`, staged (C-MAILBOX `stage`): `from`'s pending events
      *      move to `to` with their `eventId`s, behind a barrier that `to` cannot poll or ack past;
-     *   3. every live offer and ask of `from` is held by `to`; each live **offer** (K1 OFFER_TYPES)
-     *      is committed again behind the barrier as `<requestId>.r<n+1>`; an `ask` is no offer and
-     *      keeps its id: a pending one moved with its event, and one `from` had acked already is
-     *      committed again to `to` as it was (`successorDraft`);
-     *   4. `commit()`, the caller's steps (C-SUCCEED: the designated role, then `PairStore.succeed`,
+     *   3. every live offer of `from` is held by `to`, and is committed again behind the barrier as
+     *      `<requestId>.r<n+1>` (`successorDraft`);
+     *   4. `commit()`, the caller's steps (C-SUCCEED: `PairStore.succeed`,
      *      the commit point for the name). It resolves `{ok: true}` or a refusal, or rejects.
      * A refusal or a rejection in 1–4 undoes the earlier steps in reverse order (`commit` undoes its
      * own): the staged commits go, the moved events and every event routed to `to` for the moved
@@ -382,7 +322,7 @@ export async function openRouting(ctx, storageDomain, { mailbox, pairs, tokens, 
           undos.push(() => staged.undo(moved.sessions))
           const holders = ledger.moveHolder(from, to)
           undos.push(holders.undo)
-          reissued = holders.requests.map((requestId) => successorDraft(requestId, staged.movedIds)).filter(Boolean)
+          reissued = holders.requests.map(successorDraft)
           for (const offer of reissued) offer.eventId = await staged.commit({ type: offer.type, ...offer.draft })
           const result = await commit()
           if (result?.ok !== true) {
@@ -396,8 +336,7 @@ export async function openRouting(ctx, storageDomain, { mailbox, pairs, tokens, 
         staged.confirm()
         for (const { requestId, offerId, eventId, draft, oldEventId } of reissued) {
           ledger.reissued(requestId, { offerId, eventId, draft })
-          // A re-delivered ask (`oldEventId` undefined) has no old event in `to`'s box to retire.
-          if (oldEventId !== undefined) await mailbox.retire(to, oldEventId, RETIREMENT_REASON.reissued).catch(warn(LOG.reissueFailed))
+          await mailbox.retire(to, oldEventId, RETIREMENT_REASON.reissued).catch(warn(LOG.reissueFailed))
         }
         changed()
         return Object.freeze({ ok: true, sessions: moved.sessions })
@@ -410,8 +349,7 @@ export async function openRouting(ctx, storageDomain, { mailbox, pairs, tokens, 
      * it from its own `onRevoked` handler (routing no longer subscribes, W4 brief G1), because a
      * delete must drop the mailbox only after these retirements, and a listener cannot be awaited.
      * The principal is the entry's pair, or the pair it was last seen bound to when the same sync
-     * removed it (`lastPair`). An `ask` is not retired: on disable its asker keeps waiting; on a
-     * delete C-REVOKE answers it through `askDropped` after the drop.
+     * removed it (`lastPair`).
      * @param options.freshRetirements - `true` for a disable (an acked offer gets a fresh
      *   `retirement` in the held box, pollable on re-enable); `false` for a delete (the box is
      *   dropped next, so nothing is committed for an acked offer; offers.js)
@@ -449,7 +387,6 @@ export async function openRouting(ctx, storageDomain, { mailbox, pairs, tokens, 
     async close() {
       for (const dispose of disposers.splice(0)) dispose?.()
       await managed.drain()
-      await routeSerial(async () => {})
       await closeTables()
     },
   }

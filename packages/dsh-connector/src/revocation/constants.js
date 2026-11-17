@@ -39,7 +39,6 @@ export const LOG = Object.freeze({
   format: '%s (%s)',
   stepFailed: 'revocation: a step failed and is retried',
   noteFailed: 'revocation: a system note could not be written',
-  cardFailed: 'revocation: a withdrawn offer could not be handed to the user',
   expiryFailed: 'revocation: the hold-expiry sweep failed; the next sweep retries it',
   closeEntryFailed: 'revocation: closing the entry\'s listen streams failed',
 })
@@ -50,7 +49,5 @@ export const STEP = Object.freeze({
   endPrincipal: 'endPrincipal',
   drop: 'drop',
   removePair: 'removePair',
-  clearDesignated: 'clearDesignated',
   release: 'release',
-  askDropped: 'askDropped',
 })

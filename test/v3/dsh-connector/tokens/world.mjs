@@ -13,7 +13,7 @@
  *   (`{label, enabled, key}[]`). `world.save(list)` is the user's save of it (through DSH's form or
  *   a hand edit of the document): it writes the list and feeds it to `apply` with the settings
  *   reason. `world.restart()` keeps the document (it is DSH's file);
- * - the K1d `SettingsWriter` (`addToken`, `removeToken`, `setDesignated`): it writes the document,
+ * - the K1d `SettingsWriter` (`addToken`, `removeToken`; C-WIRE-2 withdrew `setDesignated`, the user's q5): it writes the document,
  *   then awaits `apply` of the new list, and resolves only after that, or rejects when that sync
  *   refuses it (index.d.ts) or when `world.failSaves` is set (a failed save; nothing is written);
  * - `restoreTokens(previous)`: writes `previous` back into the document and, as C-WIRE's
@@ -160,7 +160,6 @@ export async function openWorld(sdk, root, doc, { stage, stageVersion = STORE.ve
       return writeThenSync({ op: 'addToken', item }, (tokens) => [...tokens, item])
     },
     removeToken: (entryKey) => writeThenSync({ op: 'removeToken', entryKey }, (tokens) => tokens.filter((i) => i.key !== entryKey)),
-    async setDesignated(entryKey) { world.settingsCalls.push({ op: 'setDesignated', entryKey }) },
   }
   world.recordOfKey = recordOfKey
   const restoreTokens = (previous) => {

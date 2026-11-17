@@ -14,8 +14,11 @@ export const RUNTIME = Object.freeze({
   // The snapshot holds only the instance's own lifecycle code (Q-5): the lifecycle row, the
   // child-side row and the parent-watch preload the launch imports by path (index.js), each with
   // the relative-import closure of its module. The plugin set is placed bundles (PLACEMENT), never
-  // snapshot code.
-  snapshot: Object.freeze({ lifecycle: 'native-child.js', childRow: 'child-row.js', entries: Object.freeze(['src/native-runtime/parent-watch.js']) }),
+  // snapshot code. `src/lib/provider-sync-host.js` is an entry of its own because the child-side
+  // row imports it lazily (src/child/provider-sync-target.js), and the closure reads static imports
+  // only (PLACEMENT.specifiers); it moved here from dsh-connector-shared (R-ARCH-08 strict: the
+  // instance is its only user), where it was placed as a library.
+  snapshot: Object.freeze({ lifecycle: 'native-child.js', childRow: 'child-row.js', entries: Object.freeze(['src/native-runtime/parent-watch.js', 'src/lib/provider-sync-host.js']) }),
   host: '127.0.0.1',
   socketName: 'control.sock',
   socketPathBytes: 100,

@@ -6,33 +6,33 @@
  * user, 2026-11-16: "同步只是同步model list，至于fishball用什么还要在fishball内设置").
  *
  * The source is the main DSH; the target is this child's own home. The preview and confirmation
- * rules stay in dsh-connector-shared/provider-sync: this module only reaches that engine over the lifecycle
+ * rules stay in src/lib/provider-sync.js: this module only reaches that engine over the lifecycle
  * wire and supplies the child's own services. Nothing here reads a credential value; the engine's
  * inventory actions describe presence only, and a record arrives solely in a confirmed `import`
  * frame after the main side read it for that confirmation.
  *
  * Transport: the main host starts and owns this child, so the two already trust each other. The target rides
  * the already-authenticated lifecycle wire on its own payload channel, as the hosted token's
- * `mcp-credential` channel does. The frame shapes are dsh-connector-shared/provider-sync-codec's; this module owns the
+ * `mcp-credential` channel does. The frame shapes are src/lib/provider-sync-codec.js's; this module owns the
  * endpoint and its mount; the wiring is:
  *   1. src/native-runtime/wire.js carries PROVIDER_SYNC_TARGET.channel;
  *   2. src/native-runtime/child.js publishes the child end through onProviderSyncTransport;
  *   3. src/native-runtime/index.js publishes the main end the same way;
  *   4. the child-side row (child-row.js, inserted by the launch overlay) calls mountProviderSyncTarget;
- *   5. src/native-runtime/placement.js places dsh-connector-shared in the child profile's
- *      node_modules, where this module, copied in the lifecycle snapshot, resolves it.
+ *   5. this module and its src/lib/ modules are copied in the lifecycle snapshot (the host
+ *      adapter as an entry of its own: it is imported lazily, RUNTIME.snapshot).
  *
  * No value ever appears in a preview, a refusal or a result: group entries are exact-key checked
- * against metadata only, and the record validator lives in dsh-connector-shared/provider-sync.
+ * against metadata only, and the record validator lives in src/lib/provider-sync.js.
  */
 import { randomUUID } from 'node:crypto'
 import { HOSTED } from '../native-runtime/constants.js'
-import { ProviderSyncEngine, ProviderSyncError } from 'dsh-connector-shared/provider-sync'
+import { ProviderSyncEngine, ProviderSyncError } from '../lib/provider-sync.js'
 import {
   PROVIDER_SYNC_TARGET, ProviderSyncTargetError, createProviderSyncCodec, plain, providerSyncIdentity, safeCode,
-} from 'dsh-connector-shared/provider-sync-codec'
+} from '../lib/provider-sync-codec.js'
 
-// The frame codec and the identity are dsh-connector-shared's, used by both ends; re-exported for this
+// The frame codec and the identity are src/lib/provider-sync-codec.js's, used by both ends; re-exported for this
 // module's existing readers.
 export { PROVIDER_SYNC_TARGET, ProviderSyncTargetError, createProviderSyncCodec, providerSyncIdentity }
 const T = PROVIDER_SYNC_TARGET
@@ -164,7 +164,7 @@ const MOUNT = Object.freeze({ logger: HOSTED.childRow, identityUnavailable: 'the
 /**
  * Mount the target on the child's lifecycle runtime (child-row.js). The transport arrives with each
  * authenticated main connection and is replaced after a restart. The engine and host adapter are
- * the shared modules (dsh-connector-shared/provider-sync, …/provider-sync-host), so the child
+ * the instance's own modules (src/lib/provider-sync.js, src/lib/provider-sync-host.js), so the child
  * applies exactly the reviewed preview/confirm rules.
  * @param ctx - the child-side row's context (`nativeRuntime`, `settings`, `credentials`, `llm`,
  *   `configEditor`, `authorization`, `profileContext`)
@@ -177,7 +177,7 @@ export async function mountProviderSyncTarget(ctx) {
     return undefined
   }
   // Imported lazily: the pi-ai adapter boundary loads only once the identity is known.
-  const { createProviderSyncHost } = await import('dsh-connector-shared/provider-sync-host')
+  const { createProviderSyncHost } = await import('../lib/provider-sync-host.js')
   const host = createProviderSyncHost(ctx, { identity })
   const engine = new ProviderSyncEngine({ host })
   const endpoint = createProviderSyncTargetEndpoint({ target: createProviderSyncTarget({ engine }) })

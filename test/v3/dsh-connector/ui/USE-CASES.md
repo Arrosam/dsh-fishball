@@ -95,7 +95,7 @@ contributor package `dsh-connector-ui`, which only declares the tools), the **ha
 | 7 | 1 | false | yes | true | true | true |
 | 8 | 1 | true | yes | false | true | true |
 
-**UIB-DT-02 latch reset on the designated principal** (a set latch; a change of principals())
+**UIB-DT-02 latch reset on the designated principal** — re-baselined by C-WIRE-2 (the user's q5, "Remove agentToken entirely"): no designated principal exists, so rules 1–3 and 7–11 keep the latch (and the notice) and rules 4–6 are withdrawn; A3, UIB-ST-01 #7 and the routed row 6 keep the latch; UIB-ST-04 #2g is withdrawn. The table below is the original. (a set latch; a change of principals())
 
 | Rule | before | after | reset |
 | --- | --- | --- | --- |

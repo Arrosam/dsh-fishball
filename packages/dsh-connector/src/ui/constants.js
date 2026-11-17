@@ -60,15 +60,15 @@ export const UI_CODE = Object.freeze({
   messageEmpty: 'message-empty',
 })
 
-/** R-FN-01: a notify message is 1–4000 code points after trimming (fold-notify's `NOTIFY.maxChars`). */
+/** R-FN-01: a notify message is 1–4000 code points after trimming; R-FN-01 is the bound's one source. */
 export const NOTIFY = Object.freeze({ maxChars: 4000 })
 
 /**
  * The tools embed-UI declares through the contribution service (R-EXT-13). The local names are
  * embed-UI's; the namespace comes from the caller (`dsh-connector-ui`, K2's alias `embed-ui`), so
  * the public names are `embed-ui.notify`, `embed-ui.attention.signal`, `embed-ui.attention.state`.
- * The descriptions are model-facing text; fold-notify's own notify wording is kept where it still
- * applies (REMOVE-FN: "its notify text and limits move to C-UI-BACKEND's constants").
+ * The descriptions are model-facing text, worded after R-FN-01 (its notify text and limits are
+ * these constants' own since REMOVE-FN).
  */
 export const UI_TOOL = Object.freeze({
   notify: Object.freeze({
@@ -81,7 +81,7 @@ export const UI_TOOL = Object.freeze({
   signal: Object.freeze({
     name: 'attention.signal',
     title: 'Light the fish',
-    description: 'Light the user\'s sidebar fish until they next open the window; it also goes out when this tool is withdrawn or the designated agent disconnects. Stateless: no count, no replay. important makes it animate.',
+    description: 'Light the user\'s sidebar fish until they next open the window; it also goes out when this tool is withdrawn. Stateless: no count, no replay. important makes it animate.',
     important: 'True when the user must act.',
   }),
   state: Object.freeze({

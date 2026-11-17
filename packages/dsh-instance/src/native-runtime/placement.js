@@ -3,7 +3,7 @@ import { fileURLToPath } from 'node:url'
 import { createRequire } from 'node:module'
 import path from 'node:path'
 import { randomUUID } from 'node:crypto'
-import { inside } from 'dsh-connector-shared/files'
+import { inside } from '../lib/files.js'
 import { RUNTIME, PLACEMENT, fail } from './constants.js'
 import { exists, jsonPrivate, writePrivate, writeProfileBundles, sameBundles } from './files.js'
 

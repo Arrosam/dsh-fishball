@@ -5,7 +5,7 @@
  * reconnects, which voids a preview taken on the old connection.
  */
 import { randomBytes } from 'node:crypto'
-import { PROVIDER_SYNC, ProviderSyncError, syncFingerprint } from 'dsh-connector-shared/provider-sync'
+import { PROVIDER_SYNC, ProviderSyncError, syncFingerprint } from './lib/provider-sync.js'
 
 const error = (code) => { throw new ProviderSyncError(code) }
 export class ProviderSyncCoordinator {

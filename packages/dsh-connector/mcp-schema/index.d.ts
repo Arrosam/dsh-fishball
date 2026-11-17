@@ -149,10 +149,10 @@ export interface TokenSettingsItem {
 
 /**
  * The one writer of the connector's settings document for the connector's own modules (K1d; C-WIRE
- * binds it, W4b). C-TOKENS-REVEAL's `create` and `createHosted` call `addToken`; C-REVOKE calls
- * `setDesignated(undefined)` on the delete of the designated entry (R-ROUTE-04); C-SUCCEED calls
- * `removeToken` and `setDesignated` in a succession (R-HOST-09). Defined once so that these tasks
- * share one port. Connector-internal: never a DSH service, never reachable over MCP or HTTP.
+ * binds it, W4b). C-TOKENS-REVEAL's `create` and `createHosted` call `addToken`; C-SUCCEED calls
+ * `removeToken` in a succession (R-HOST-09). Defined once so that these tasks share one port.
+ * C-WIRE-2 withdrew `setDesignated` with the designated agent (the user's answer q5, 2026-11-17:
+ * "Remove agentToken entirely"). Connector-internal: never a DSH service, never reachable over MCP or HTTP.
  *
  * Every method resolves only once the document is saved through DSH's settings service **and** the
  * token registry's sync of that save has resolved, so a caller that continues sees the change in
@@ -165,8 +165,6 @@ export interface SettingsWriter {
   addToken(item: TokenSettingsItem): Promise<void>
   /** Removes the item whose `key` is `entryKey`; resolves with nothing changed when there is none. */
   removeToken(entryKey: EntryKey): Promise<void>
-  /** Sets `routing.agentToken` (the designated agent) to `entryKey`, or unsets it with `undefined`. */
-  setDesignated(entryKey: EntryKey | undefined): Promise<void>
 }
 
 /**
@@ -486,21 +484,18 @@ export interface RouteSubject {
 }
 
 /**
- * The no-recipient outcome, by type (R-CON-09, R-EXT-17). `queue` is the connector's durable
- * no-recipient queue of `message` events (task K1c; README "Managed state", K1c-3): it holds while
- * no **paired** entry is designated, bounded by the live `maxQueuedInputs` setting (default
- * QUEUE.maxQueuedInputs), `queue-full` past it. Once a paired entry is designated, connected or not,
- * the held messages move in order into its mailbox; those that do not fit stay queued in order and
- * move in as room frees. While the queue is not empty, a new such message joins its end instead of
- * going to the mailbox, so none overtakes an older one. A held message is never dropped once accepted.
+ * The no-recipient outcome, by type (R-CON-09, R-EXT-17; C-WIRE-2): an offer is the user's
+ * (`to-user`), a contributor event is `no-agent`, any other event is not produced (`dropped`).
+ * C-WIRE-2 withdrew `queue` (K1c-3's no-recipient queue) and `unavailable` (`ask_agent`'s) with
+ * the designated agent (the user's answer q5, 2026-11-17: "Remove agentToken entirely"; "There is
+ * no 'designated agent' default for unmanaged sessions").
  */
-export type NoRecipient = { recipient: null; fallback: 'to-user' | 'queue' | 'unavailable' | 'no-agent' | 'dropped' }
+export type NoRecipient = { recipient: null; fallback: 'to-user' | 'no-agent' | 'dropped' }
 
 /**
  * C-ROUTE's router: exactly one recipient per event, decided at creation (R-EVS-03, EVT-DT-01).
- * A follow-up goes to `followsPrincipal`; a managed session's event to its manager; an unmanaged
- * session's (or no session's) `message`, `ask`, `notice` or contributor event to the designated
- * agent; unmanaged `turn-finished` / `state` are not produced at all (`dropped`).
+ * A follow-up goes to `followsPrincipal`; a managed session's event to its manager; an event that
+ * names no managed session has no recipient (NoRecipient).
  */
 export interface Router {
   recipientFor(subject: RouteSubject): { recipient: PrincipalKey } | NoRecipient
@@ -786,7 +781,10 @@ export interface GrantRegistry {
 // ---------------------------------------------------------------------------------------------
 
 export declare const ANSWERABLE_TYPES: readonly ["permission", "question", "plan-review", "ask"]
+export declare const APPROVAL_DECISION: { readonly allow: "allow"; readonly grant: "grant"; readonly reject: "reject"; readonly ask: "ask"; readonly escalate: "escalate" }
+export declare const APPROVAL_KIND: { readonly approval: "approval"; readonly question: "question" }
 export declare const APPROVAL_LISTENER: { readonly defaultPort: number; readonly retryMs: number; readonly decisionBodyBytes: number; readonly pendingRequestsMax: number; readonly headers: { readonly "cache-control": "no-store"; readonly "referrer-policy": "no-referrer"; readonly "content-security-policy": "default-src 'none'; frame-ancestors 'none'" }; readonly redirectStatus: 303 }
+export declare const ARGUMENTS_STATUS: { readonly complete: "complete"; readonly truncated: "truncated"; readonly unavailable: "unavailable" }
 export declare const AUTHORIZE_EXTENSION: { readonly agentIdParam: "agent_id" }
 export declare const BEARER_CHALLENGE: { readonly scheme: "Bearer"; readonly basicScheme: "Basic"; readonly params: readonly ["error", "error_description", "scope", "resource_metadata"]; readonly queryParameter: "access_token"; readonly queryClientSecret: "client_secret" }
 export declare const CIMD_LIMITS: { readonly maxBytes: 5120; readonly timeoutMs: number; readonly maxCacheMs: number; readonly cacheEntriesMax: number; readonly scheme: "https:"; readonly forbiddenAuthFields: readonly ["client_secret", "client_secret_expires_at"] }
@@ -796,6 +794,7 @@ export declare const CONNECTOR_STATUS: { readonly approvalPortInUse: "approval-p
 export declare const CONTRIBUTED_TYPE_PREFIX: "contributed:"
 export declare const DECISION_KIND: { readonly approval: "approval"; readonly question: "question" }
 export declare const DECISION_KIND_OF: { readonly permission: "approval"; readonly ask: "approval"; readonly question: "question"; readonly "plan-review": "question" }
+export declare const DELIVERY: { readonly delivered: "delivered"; readonly unconfirmed: "unconfirmed" }
 export declare const DERIVED_AGENT_ID: { readonly prefix: "cid-"; readonly chars: 16; readonly alphabet: "abcdefghijklmnopqrstuvwxyz234567"; readonly digestAlgorithm: "sha256" }
 export declare const ENDPOINT_LIMITS: { readonly bodyBytes: number; readonly inFlightPerPrincipal: number; readonly listenStreamsPerPrincipal: number; readonly requestsPerMinute: number; readonly requestBurst: number; readonly jsonRpcCode: number; readonly jsonRpcVersion: "2.0" }
 export declare const ENTRY_STATUS: { readonly ok: "ok" }
@@ -804,12 +803,15 @@ export declare const FAILURE_LIMIT: { readonly windowMs: number; readonly keyPar
 export declare const GATE_SURFACE: { readonly mcp: "mcp"; readonly token: "token"; readonly approval: "approval" }
 export declare const GRANT: { readonly clientCredentials: "client_credentials"; readonly authorizationCode: "authorization_code"; readonly refreshToken: "refresh_token" }
 export declare const GRANT_DISPATCH: { readonly formField: "grant_type"; readonly builtIn: readonly ["client_credentials"] }
+export declare const GRANT_KIND: { readonly exact: "exact"; readonly prefix: "prefix" }
 export declare const HOSTS: { readonly loopbackNames: readonly ["localhost", "127.0.0.1", "[::1]"]; readonly loopbackScheme: "http:"; readonly remoteScheme: "https:"; readonly forwardedHeadersIgnored: readonly ["forwarded", "x-forwarded-proto", "x-forwarded-host"] }
 export declare const HTTP_METHOD: { readonly get: "GET"; readonly post: "POST" }
 export declare const HTTP_REFUSAL: { readonly insecureListener: "insecure-listener"; readonly tooLarge: "limit-exceeded"; readonly rateLimited: "rate-limited" }
 export declare const HTTP_STATUS: { readonly ok: 200; readonly seeOther: 303; readonly badRequest: 400; readonly unauthorized: 401; readonly forbidden: 403; readonly notFound: 404; readonly methodNotAllowed: 405; readonly payloadTooLarge: 413; readonly tooManyRequests: 429; readonly internalServerError: 500; readonly serviceUnavailable: 503 }
 export declare const ID_GRAMMAR: { readonly pattern: RegExp }
 export declare const ID_REFUSAL: { readonly idInvalid: "id-invalid" }
+export declare const IMAGE_MEDIA: { readonly prefix: "image/"; readonly png: "image/png"; readonly jpeg: "image/jpeg"; readonly webp: "image/webp"; readonly gif: "image/gif" }
+export declare const IMAGE_TYPES: readonly ["image/png", "image/jpeg", "image/webp", "image/gif"]
 export declare const LINK_REFUSAL: { readonly disconnected: "disconnected" }
 export declare const OAUTH_METADATA: {
   readonly protectedResource: { readonly bearer_methods_supported: readonly ["header"]; readonly scopes_supported: readonly ["agent"] }
@@ -839,11 +841,14 @@ export declare const PAIR_ONLY: { readonly methods: readonly ["server/discover",
 export declare const PAIR_STATE: { readonly paired: "paired"; readonly unpaired: "unpaired" }
 export declare const PAIR_TIMING: { readonly lastSeenWriteIntervalMs: 60000 }
 export declare const PATHS: { readonly mcp: "/api/agent/mcp"; readonly issuer: "/api/agent/oauth"; readonly token: "/api/agent/oauth/token"; readonly protectedResourcePrefix: "/.well-known/oauth-protected-resource"; readonly authorizationServerPrefix: "/.well-known/oauth-authorization-server"; readonly authorize: "/authorize"; readonly decision: "/authorize/decision" }
+export declare const PAYLOAD_LIMITS: { readonly sessionsListed: 100; readonly attachmentEnvelopeBytes: number; readonly imageBytes: number; readonly imagePixels: 4194304; readonly imagesPerMessage: 20; readonly attachmentsPerMessage: 20; readonly chunkBytes: number; readonly hostRefTtlMs: number; readonly reasonChars: 500; readonly questionChars: 500; readonly noteChars: 500; readonly feedbackChars: 500; readonly customChars: 500; readonly labelChars: 200; readonly titleChars: 200; readonly quoteBytes: 2048; readonly grantPrefixChars: 512; readonly questionsPerRequest: 32; readonly selectedLabelsPerAnswer: 32 }
 export declare const PKCE: { readonly method: "S256" }
+export declare const PLAN_REVIEW: "plan-review"
+export declare const PROMPT_DECISIONS: readonly ["allow", "reject"]
 export declare const PROTOCOL: { readonly version: "2026-07-28"; readonly unsupportedVersionCode: -32022; readonly headerMismatchCode: -32020; readonly ignoredHeaders: readonly ["mcp-session-id"]; readonly clientCredentialsExtension: "io.modelcontextprotocol/oauth-client-credentials" }
 export declare const QUEUE: { readonly maxQueuedInputs: 200; readonly refusedTypes: readonly ["message", "turn-finished", "state", "notice"]; readonly contributedRefused: true }
 export declare const RATE_LIMITS: { readonly windowMs: number; readonly tokenRequestsPerWindow: number; readonly tokenRequestsPerAddressPerWindow: number; readonly retryAfterHeader: "retry-after" }
-export declare const REFUSAL: { readonly limitExceeded: "limit-exceeded"; readonly invalidArguments: "invalid-arguments"; readonly queueFull: "queue-full"; readonly rateLimited: "rate-limited"; readonly operationFailed: "operation-failed"; readonly forbidden: "forbidden"; readonly unknownSession: "unknown-session"; readonly expired: "expired"; readonly conflict: "conflict"; readonly unavailable: "unavailable"; readonly unsupportedOperation: "unsupported-operation"; readonly notReferenced: "not-referenced"; readonly tooLarge: "too-large"; readonly imagesUnsupported: "images-unsupported"; readonly notManaged: "not-managed"; readonly featureOff: "feature-off"; readonly sessionNotLive: "session-not-live"; readonly invalidDecision: "invalid-decision"; readonly riskRequired: "risk-required"; readonly reasonRequired: "reason-required"; readonly allowNeedsLowRisk: "allow-needs-low-risk"; readonly argumentsIncomplete: "arguments-incomplete"; readonly questionRequired: "question-required"; readonly modeUser: "mode-user"; readonly badAnswer: "bad-answer"; readonly alreadySettled: "already-settled"; readonly grantInvalid: "grant-invalid"; readonly prefixNotShellTool: "prefix-not-shell-tool"; readonly prefixEmpty: "prefix-empty"; readonly prefixNotInCall: "prefix-not-in-call"; readonly expiresRequired: "expires-at-required"; readonly expiresInvalid: "expires-at-invalid"; readonly expiresPast: "expires-at-past"; readonly grantUnknown: "unknown"; readonly grantEnded: "ended"; readonly alreadyPaired: "already-paired"; readonly idTaken: "id-taken"; readonly nameInvalid: "name-invalid"; readonly nameTaken: "name-taken"; readonly unknownEvent: "unknown-event"; readonly digestMismatch: "digest-mismatch"; readonly successorUnpaired: "successor-unpaired" }
+export declare const REFUSAL: { readonly limitExceeded: "limit-exceeded"; readonly invalidArguments: "invalid-arguments"; readonly queueFull: "queue-full"; readonly rateLimited: "rate-limited"; readonly operationFailed: "operation-failed"; readonly forbidden: "forbidden"; readonly unknownSession: "unknown-session"; readonly expired: "expired"; readonly conflict: "conflict"; readonly unavailable: "unavailable"; readonly unsupportedOperation: "unsupported-operation"; readonly notReferenced: "not-referenced"; readonly tooLarge: "too-large"; readonly imagesUnsupported: "images-unsupported"; readonly notManaged: "not-managed"; readonly featureOff: "feature-off"; readonly sessionNotLive: "session-not-live"; readonly invalidDecision: "invalid-decision"; readonly riskRequired: "risk-required"; readonly reasonRequired: "reason-required"; readonly allowNeedsLowRisk: "allow-needs-low-risk"; readonly argumentsIncomplete: "arguments-incomplete"; readonly questionRequired: "question-required"; readonly modeUser: "mode-user"; readonly badAnswer: "bad-answer"; readonly alreadySettled: "already-settled"; readonly grantInvalid: "grant-invalid"; readonly prefixNotShellTool: "prefix-not-shell-tool"; readonly prefixEmpty: "prefix-empty"; readonly prefixNotInCall: "prefix-not-in-call"; readonly expiresRequired: "expires-at-required"; readonly expiresInvalid: "expires-at-invalid"; readonly expiresPast: "expires-at-past"; readonly grantUnknown: "unknown"; readonly grantEnded: "ended"; readonly empty: "empty"; readonly alreadyPaired: "already-paired"; readonly idTaken: "id-taken"; readonly nameInvalid: "name-invalid"; readonly nameTaken: "name-taken"; readonly unknownEvent: "unknown-event"; readonly digestMismatch: "digest-mismatch"; readonly successorUnpaired: "successor-unpaired" }
 export declare const REQUEST_GATE: {
   readonly checkOrder: readonly [405, 403, 503]
   readonly admitOrder: readonly [413, 429]
@@ -867,6 +872,7 @@ export declare const RESPONSE_TYPE: { readonly code: "code" }
 export declare const RESYNC_REASON: { readonly staleCursor: "stale-cursor" }
 export declare const RETIREMENT_REASON: { readonly withdrawn: "withdrawn"; readonly revoked: "revoked"; readonly released: "released"; readonly reissued: "reissued"; readonly contributorWithdrawn: "contributor-withdrawn" }
 export declare const REVOCATION_KIND: { readonly disabled: "disabled"; readonly deleted: "deleted" }
+export declare const RISK: { readonly low: "low"; readonly high: "high" }
 export declare const SCOPE: { readonly full: "agent"; readonly pair: "agent:pair" }
 export declare const SDK_PINS: { readonly "@modelcontextprotocol/server": "2.2.0"; readonly "@modelcontextprotocol/node": "2.1.0" }
 export declare const SETTINGS_REFUSAL: { readonly tokenDuplicate: "token-duplicate" }

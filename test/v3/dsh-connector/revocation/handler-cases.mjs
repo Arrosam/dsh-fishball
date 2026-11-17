@@ -12,6 +12,10 @@
  * port and the timers (fakes.mjs PortCalls, FakeTimers over the world's fake clock).
  *
  * ── Use Cases ────────────────────────────────────────────────────────────────────────────────
+ * C-WIRE-2 re-baseline (the user: "不给ask_agent工具"; q5 "Remove agentToken entirely"; relayed
+ * 2026-11-17: no `cards` port, routing.onLeft): the steps and rows about the ask, the designated role
+ * and setDesignated are withdrawn (listed as skipped with the decision); the offers to the user are
+ * observed through routing.onLeft. The text below is the original brief.
  * AUTH-UC-06 The user revokes P(E1), the designated principal, by disabling or deleting E1.
  *   Pre: P manages S1 (pending permission O1, an acked question) and S2 (a pending plan-review);
  *   P's box holds a `message` and a `turn-finished`, and an `ask` from unmanaged S3 whose asker
@@ -65,17 +69,22 @@ import assert from 'node:assert/strict'
 import { httpWorld } from '../mcp-http/subject.mjs'
 import { listener } from '../mcp-http/cases.mjs'
 import {
-  ackOffer, askTo, counting, expectNone, expectOne, manage, messageTo, offerTo, pendingOf, quiet, settlementOf, settlesWithin,
+  ackOffer, counting, expectOne, manage, messageTo, offerTo, pendingOf, quiet, settlementOf, settlesWithin,
   unwatched, until,
 } from '../routing/cases.mjs'
 import {
-  UNAVAILABLE, assertAnsweredUnavailable, assertDroppedEmpty, assertNotLive, assertRetiredBeforeDrop, assertRetiredIn, journalOf, listed,
-  retirementsNaming, row,
+  NO_ASK, assertDroppedEmpty, assertNotLive, assertRetiredBeforeDrop, assertRetiredIn, journalOf, listed,
+  retirementsNaming, row, withdrawnRow,
 } from './cases.mjs'
 import {
   CASE, EVENT_TYPE, FIXTURE, HANDLER_FIXTURE, HANDLER_WAIT, LATER, LOGGED_LEVELS, MAILBOX, NOTE_RULE, OP, PHASE, PORT, REFUSAL, RELAYED_TIMING,
   REVOCATION, TIMER, WAIT,
 } from './constants.mjs'
+
+/** C-WIRE-2 (the user's q5, "Remove agentToken entirely"): no designated agent, so no designated role to keep or clear. */
+const NO_DESIGNATED = 'withdrawn by C-WIRE-2: the user (q5) "Remove agentToken entirely" — no designated role, no setDesignated, no no-recipient queue (第三版其实就是第一版)'
+/** C-WIRE-2 (relayed 2026-11-17): the `cards` port is gone; routing hands retired offers to the user itself (routing.onLeft). */
+const NO_CARD_PORT = 'withdrawn by C-WIRE-2: createRevocation takes no cards port; routing.onLeft hands the offers to the user (routing suite ROUTE-ST-06)'
 import { revocationModuleWorld } from './subject.mjs'
 
 const { ids: ID, sessions: S } = FIXTURE
@@ -166,7 +175,7 @@ function endedBy(w, e, nth = 0) {
 }
 const byOffer = (a, b) => a.offerId.localeCompare(b.offerId)
 const offerFields = (o) => ({ offerId: o.offerId, sessionId: o.sessionId, type: o.type })
-/** The offers handed to the user's card, as `{offerId, sessionId, type}`, sorted. */
+/** The offers handed to the user (routing.onLeft, journaled as PORT.card), as `{offerId, sessionId, type}`, sorted. */
 const cards = (w) => callsOf(w, PORT.card).map((c) => offerFields(c.args[0])).sort(byOffer)
 /** The system notes, as `[sessionId, note]`, sorted by session. */
 const notes = (w) => argsOf(w, PORT.note).map(([sessionId, note]) => [sessionId, note]).sort((a, b) => a[0].localeCompare(b[0]))
@@ -202,30 +211,19 @@ const logged = (w) => w.revLogger.lines.filter((l) => LOGGED_LEVELS.includes(l.l
 function assertOnlySweep(w) {
   assert.deepEqual(w.timers.pending().map((x) => x.delay), [w.TIMING.expirySweepMs], 'a timer other than the one expiry sweep is armed')
 }
-/** An ask_agent from unmanaged `sessionId` answers `unavailable` at once and produces nothing. */
-async function askUnavailableNow(w, sessionId) {
-  const { value } = await expectNone(w, () => ({ promise: w.routing.askAgent(sessionId, { question: FIXTURE.question }) }))
-  assert.ok(await settlesWithin(value.promise, WAIT.quietMs), 'ask_agent did not answer at once')
-  assert.deepEqual(await value.promise, UNAVAILABLE)
-}
-/** A message_agent from unmanaged `sessionId` is accepted and queued: nothing in any observed mailbox. */
-async function messageQueued(w, sessionId) {
-  const { value } = await expectNone(w, () => w.routing.messageAgent(sessionId, { text: HANDLER_FIXTURE.heldText, images: [] }))
-  assert.deepEqual(value, { ok: true })
-}
-
 // ------------------------------------------------------------------------------------------------
 // Worlds
 
 /**
- * AUTH-UC-06's world: P (designated) manages S1 (pending permission, acked question) and S2
- * (pending plan-review); P's box holds a turn-finished, a message and an ask from unmanaged S3
- * whose asker waits; Q manages S4 with a pending permission. Returns the keys and events.
+ * AUTH-UC-06's world: P manages S1 (pending permission, acked question) and S2 (pending
+ * plan-review); P's box holds a turn-finished and a message of S1; Q manages S4 with a pending
+ * permission. Returns the keys and events. (C-WIRE-2: P is no designated agent and there is no ask,
+ * so the message is a managed session's: the user's q5 and "不给ask_agent工具".)
  */
 async function ucWorld(w) {
-  const p = w.principal(ID.p, { connected: true, designated: true })
+  const p = w.principal(ID.p, { connected: true })
   const q = w.principal(ID.q, { connected: true })
-  for (const s of [S.s1, S.s2, S.s3, X.s4]) w.session(s)
+  for (const s of [S.s1, S.s2, X.s4]) w.session(s)
   await manage(w, S.s1, p)
   await manage(w, S.s2, p)
   await manage(w, X.s4, q)
@@ -235,11 +233,10 @@ async function ucWorld(w) {
   const planReview = await offerTo(w, S.s2, ET.planReview, p)
   const qOffer = await offerTo(w, X.s4, ET.permission, q)
   const turnEvent = (await expectOne(w, () => w.sessions.finishTurn(S.s1), p, ET.turnFinished)).event
-  const message = await messageTo(w, S.s3, p)
-  const ask = await askTo(w, S.s3, p)
+  const message = await messageTo(w, S.s1, p)
   return {
-    p, q, e: E(ID.p), permission, question, planReview, qOffer, ask,
-    offers: [permission, question, planReview], sessions: [S.s1, S.s2], kept: [turnEvent, message, ask.event],
+    p, q, e: E(ID.p), permission, question, planReview, qOffer,
+    offers: [permission, question, planReview], sessions: [S.s1, S.s2], kept: [turnEvent, message],
   }
 }
 /**
@@ -274,14 +271,14 @@ function assertDisableCalls(w, x, heldAt) {
   assert.deepEqual(ends.map((c) => [c.args[0], c.args[1]?.freshRetirements]), [[x.e, true]], 'not one endPrincipal(E, {freshRetirements: true})')
   assert.ok(at(w, PORT.closeEntry, PHASE.call, x.e) < at(w, PORT.endPrincipal, PHASE.call, x.e), 'the streams closed after management ended')
   assert.ok(at(w, PORT.hold, PHASE.done, x.p) < at(w, PORT.endPrincipal, PHASE.call, x.e), 'endPrincipal ran before the box was held')
-  for (const label of [PORT.drop, PORT.remove, PORT.setDesignated, PORT.release]) assert.deepEqual(argsOf(w, label), [], `a disable called ${label}`)
+  for (const label of [PORT.drop, PORT.remove, PORT.release]) assert.deepEqual(argsOf(w, label), [], `a disable called ${label}`)
 }
 /**
  * The delete's port calls, in order: closeEntry; endPrincipal(E, fresh: false); only after it
- * resolved, drop(P); then askDropped for each id of `asks`; then pairs.remove(E); then
- * setDesignated(undefined) exactly when `designated`. No hold, no release, no fresh retirement.
+ * resolved, drop(P); then pairs.remove(E). No hold, no release, no fresh retirement. (C-WIRE-2: no
+ * askDropped and no setDesignated: "不给ask_agent工具"; q5.)
  */
-function assertDeleteCalls(w, x, asks, designated) {
+function assertDeleteCalls(w, x) {
   assert.deepEqual(argsOf(w, PORT.closeEntry), [[x.e]])
   const ends = callsOf(w, PORT.endPrincipal)
   assert.deepEqual(ends.map((c) => [c.args[0], c.args[1]?.freshRetirements]), [[x.e, false]], 'not one endPrincipal(E, {freshRetirements: false})')
@@ -289,17 +286,10 @@ function assertDeleteCalls(w, x, asks, designated) {
   assert.ok(at(w, PORT.drop, PHASE.call, x.p) > at(w, PORT.endPrincipal, PHASE.done, x.e), 'the drop started before endPrincipal resolved')
   assertRetiredBeforeDrop(w)
   assert.deepEqual(journalOf(w, OP.freshRetirement), [], 'a fresh retirement was committed on a delete')
-  assert.deepEqual(argsOf(w, PORT.askDropped).map(([id]) => id).sort(), [...asks].sort(), 'askDropped did not answer exactly the dropped and live asks')
-  const dropped = at(w, PORT.drop, PHASE.done, x.p)
-  for (const id of asks) assert.ok(at(w, PORT.askDropped, PHASE.call, id) > dropped, 'an ask was answered before the drop resolved')
   assert.deepEqual(argsOf(w, PORT.remove), [[x.e]], 'the pair was not removed once')
-  const lastAsk = Math.max(dropped, ...asks.map((id) => at(w, PORT.askDropped, PHASE.done, id)))
-  assert.ok(at(w, PORT.remove, PHASE.call, x.e) > lastAsk, 'the pair was removed before the drop and its answers')
-  assert.deepEqual(argsOf(w, PORT.setDesignated), designated ? [[undefined]] : [], 'the designated role was not cleared exactly when the entry held it')
-  if (designated) assert.ok(at(w, PORT.setDesignated, PHASE.call) > at(w, PORT.remove, PHASE.done, x.e), 'the designated role was cleared before the pair was removed')
+  assert.ok(at(w, PORT.remove, PHASE.call, x.e) > at(w, PORT.drop, PHASE.done, x.p), 'the pair was removed before the drop')
   for (const label of [PORT.hold, PORT.release]) assert.deepEqual(argsOf(w, label), [], `a delete called ${label}`)
 }
-const offerIdOf = (ask) => ask.event.offer.offerId
 /** The journal index of the last step of entry `e`'s first job: its first endPrincipal's resolution, or a later note or card. */
 function jobEnd(w, e) {
   const settled = [...w.calls.of(PORT.note, PHASE.done), ...w.calls.of(PORT.note, PHASE.failed), ...w.calls.of(PORT.card, PHASE.done), ...w.calls.of(PORT.card, PHASE.failed)]
@@ -311,7 +301,8 @@ function jobEnd(w, e) {
 // ================================================================================================
 
 function useCases(sdk) {
-  moduleRow(sdk, CASE.authUc06, 'main', 'disable: streams closed; box held before management ends; offers retired and to the user; S1, S2 unmanaged with one note each; kept events and the waiting ask; still designated; re-enable → same pair, events pollable', async (w) => {
+  // Re-baselined by C-WIRE-2: no waiting ask ("不给ask_agent工具") and no designated role (q5); offers reach the user through routing.onLeft.
+  moduleRow(sdk, CASE.authUc06, 'main', 'disable: streams closed; box held before management ends; offers retired and to the user; S1, S2 unmanaged with one note each; kept events; re-enable → same pair, events pollable', async (w) => {
     const x = await ucWorld(w)
     const heldAt = w.clock.now()
     await disable(w, ID.p)
@@ -326,11 +317,7 @@ function useCases(sdk) {
     await assertQUntouched(w, x)
     // Step 5.
     await assertHeld(w, x.p)
-    assert.equal(await settlesWithin(x.ask.promise, WAIT.quietMs), false, 'the asker was answered on a disable')
-    // Step 6.
-    assert.equal(w.settings.get().agentToken, x.e, 'the designated role left the disabled entry')
-    await askUnavailableNow(w, S.s3)
-    await messageQueued(w, S.s3)
+    // Step 6 (the designated role) is withdrawn by C-WIRE-2 (q5).
     // Step 7.
     await reenable(w, ID.p)
     assert.deepEqual(argsOf(w, PORT.release), [[x.p]])
@@ -339,28 +326,23 @@ function useCases(sdk) {
     const events = await pendingOf(w, x.p)
     for (const offer of [x.permission, x.planReview]) assertRetiredIn(events, offer)
     assert.equal(retirementsNaming(events, x.question.eventId).length, 1, 'the acked offer got no fresh retirement')
-    assert.equal(await settlesWithin(x.ask.promise, WAIT.quietMs), false, 'the asker was answered on a re-enable')
   })
-  moduleRow(sdk, CASE.authUc06, 'A1', 'delete: retirements before the drop, none fresh; the box dropped and the ask answered unavailable; the pair removed; the designated role unset; one note per session; offers to the user', async (w) => {
+  moduleRow(sdk, CASE.authUc06, 'A1', 'delete: retirements before the drop, none fresh; the box dropped; the pair removed; nothing else cleared (q5); one note per session; offers to the user', async (w) => {
     const x = await ucWorld(w)
     await remove(w, ID.p)
-    assertDeleteCalls(w, x, [offerIdOf(x.ask)], true)
-    await assertAnsweredUnavailable(x.ask)
+    assertDeleteCalls(w, x)
     assertNotes(w, x.sessions)
     assertCards(w, x.e, x.offers)
-    assert.equal(w.settings.get().agentToken, undefined, 'routing.agentToken still names the deleted entry')
     assert.equal(w.pairs.pairOf(x.e), undefined, 'the deleted entry is still paired')
     await assertDroppedEmpty(w, x.p)
     await assertQUntouched(w, x)
   })
-  moduleRow(sdk, CASE.authUc06, 'A4', 'disabled for MAILBOX.disabledRetentionMs → the kept events are dropped, the asker gets unavailable; the pair and the designated role stay; re-enable → an empty box', async (w) => {
+  moduleRow(sdk, CASE.authUc06, 'A4', 'disabled for MAILBOX.disabledRetentionMs → the kept events are dropped; the pair stays; re-enable → an empty box', async (w) => {
     const x = await ucWorld(w)
     const heldAt = w.clock.now()
     await disable(w, ID.p)
     await jumpTo(w, heldAt + R + HANDLER_FIXTURE.pastHoldMs)
-    assert.deepEqual(argsOf(w, PORT.askDropped), [[offerIdOf(x.ask)]])
-    await assertAnsweredUnavailable(x.ask)
-    assert.deepEqual([argsOf(w, PORT.remove), argsOf(w, PORT.setDesignated)], [[], []], 'the expiry removed the pair or the designated role')
+    assert.deepEqual(argsOf(w, PORT.remove), [], 'the expiry removed the pair')
     await reenable(w, ID.p)
     assert.equal(w.pairs.pairOf(x.e)?.principalKey, x.p)
     assert.deepEqual(await pendingOf(w, x.p), [], 'the expired hold kept events')
@@ -415,17 +397,17 @@ function useCases(sdk) {
 
 function equivalencePartitions(sdk) {
   // REV-EP-06 — the revoked entry.
-  moduleRow(sdk, CASE.ep06, 'never paired deleted', 'a deleted entry that was never paired (the succession\'s old hosted entry with no pair) → streams closed, endPrincipal finds nothing; no hold, drop, note, card or askDropped', async (w) => {
+  moduleRow(sdk, CASE.ep06, 'never paired deleted', 'a deleted entry that was never paired (the succession\'s old hosted entry with no pair) → streams closed, endPrincipal finds nothing; no hold, drop, note or card', async (w) => {
     w.principal(ID.x, { paired: false })
     await remove(w, ID.x)
     assert.deepEqual(argsOf(w, PORT.closeEntry), [[E(ID.x)]])
     assert.deepEqual(argsOf(w, PORT.endPrincipal).map(([e, o]) => [e, o?.freshRetirements]), [[E(ID.x), false]])
-    for (const label of [PORT.hold, PORT.drop, PORT.note, PORT.card, PORT.askDropped, PORT.setDesignated]) assert.deepEqual(argsOf(w, label), [], `${label} was called`)
+    for (const label of [PORT.hold, PORT.drop, PORT.note, PORT.card]) assert.deepEqual(argsOf(w, label), [], `${label} was called`)
   })
-  moduleRow(sdk, CASE.ep06, 'paired, nothing held, deleted', 'a deleted paired entry with no session, no offer and an empty box (as after a succession) → no note, no card, no askDropped; the pair is removed', async (w) => {
+  moduleRow(sdk, CASE.ep06, 'paired, nothing held, deleted', 'a deleted paired entry with no session, no offer and an empty box (as after a succession) → no note, no card; the pair is removed', async (w) => {
     const p = w.principal(ID.p, { connected: true })
     await remove(w, ID.p)
-    for (const label of [PORT.note, PORT.card, PORT.askDropped]) assert.deepEqual(argsOf(w, label), [], `${label} was called`)
+    for (const label of [PORT.note, PORT.card]) assert.deepEqual(argsOf(w, label), [], `${label} was called`)
     assert.deepEqual(argsOf(w, PORT.remove), [[E(ID.p)]])
     await assertDroppedEmpty(w, p)
   })
@@ -454,89 +436,64 @@ function equivalencePartitions(sdk) {
     for (const ms of Object.values(RELAYED_TIMING)) assert.ok(ms > 0 && ms <= TIMER.maxDelayMs)
   })
 
-  // REV-EP-08 — a deleted principal's asks: waiting in its box (drop's droppedAsks), acked (routing's live asks), none.
-  for (const [name, acked] of [['waiting', [false]], ['acked', [true]], ['waiting and acked', [false, true]], ['none', []]]) {
-    moduleRow(sdk, CASE.ep08, `delete ${name}`, `delete with ${name === 'none' ? 'no ask' : `a ${name} ask`} → askDropped exactly for ${name === 'none' ? 'nothing' : 'each'}; each asker answers unavailable`, async (w) => {
-      const p = w.principal(ID.p, { connected: true })
-      for (const s of [S.s1, S.s2]) { w.session(s); await manage(w, s, p) }
-      const asks = []
-      for (const [i, isAcked] of acked.entries()) {
-        const ask = await askTo(w, [S.s1, S.s2][i], p)
-        if (isAcked) await ackOffer(w, p, ask.event)
-        asks.push(ask)
-      }
-      await remove(w, ID.p)
-      assert.deepEqual(argsOf(w, PORT.askDropped).map(([id]) => id).sort(), asks.map(offerIdOf).sort())
-      for (const ask of asks) await assertAnsweredUnavailable(ask)
-    })
-  }
-  moduleRow(sdk, CASE.ep08, 'acked ask at expiry', 'disabled with an acked and a waiting ask → the hold ends: only the waiting (dropped) ask answers unavailable; the acked asker waits (no timer settles it) until the entry is deleted', async (w) => {
-    const p = w.principal(ID.p, { connected: true })
-    for (const s of [S.s1, S.s2]) { w.session(s); await manage(w, s, p) }
-    const ackedAsk = await askTo(w, S.s1, p)
-    await ackOffer(w, p, ackedAsk.event)
-    const waiting = await askTo(w, S.s2, p)
-    const heldAt = w.clock.now()
-    await disable(w, ID.p)
-    await jumpTo(w, heldAt + R + HANDLER_FIXTURE.pastHoldMs)
-    assert.deepEqual(argsOf(w, PORT.askDropped), [[offerIdOf(waiting)]], 'the expiry answered an ask its box no longer held')
-    await assertAnsweredUnavailable(waiting)
-    assert.equal(await settlesWithin(ackedAsk.promise, WAIT.quietMs), false, 'the acked asker was answered at the expiry')
-    await remove(w, ID.p)
-    await assertAnsweredUnavailable(ackedAsk)
-  })
+  // REV-EP-08 — a deleted principal's asks. Withdrawn by C-WIRE-2 (NO_ASK).
+  for (const name of ['waiting', 'acked', 'waiting and acked', 'none']) withdrawnRow(sdk, CASE.ep08, `delete ${name}`, `delete with ${name} asks → askDropped for each`, NO_ASK)
+  withdrawnRow(sdk, CASE.ep08, 'acked ask at expiry', 'disabled with an acked and a waiting ask → the hold ends: only the waiting ask answers unavailable', NO_ASK)
 }
 
 // ================================================================================================
 // Boundary Values
 // ================================================================================================
 
-/** P manages S1 with a waiting ask; P is disabled; returns `{p, ask, heldAt}`. */
-async function heldWithAsk(w) {
+/**
+ * P manages S1 with one queued turn-finished; P is disabled; returns `{p, heldAt}`. (C-WIRE-2: the
+ * held box's ask became a turn-finished, "不给ask_agent工具"; a drop is now seen in the box itself.)
+ */
+async function heldWithEvent(w) {
   const p = w.principal(ID.p, { connected: true })
   w.session(S.s1)
   await manage(w, S.s1, p)
-  const ask = await askTo(w, S.s1, p)
+  await expectOne(w, () => w.sessions.finishTurn(S.s1), p, ET.turnFinished)
   const heldAt = w.clock.now()
   await disable(w, ID.p)
-  return { p, ask, heldAt }
+  return { p, heldAt }
+}
+/** The held box still holds its event (not dropped). */
+async function assertKept(w, key) {
+  await assertHeld(w, key)
+  assert.ok((await w.realMailbox.summary(key)).pending > 0, 'the held box was dropped before the hold ended')
 }
 
 function boundaryValues(sdk) {
   // REV-BVA-02 — the end of the hold, at start (expireHolds(now()) once).
-  moduleRow(sdk, CASE.bva02, 'start at since + retention − 1', 'the module restarts 1 ms before the hold ends → expireHolds(that instant) drops nothing: no askDropped, the asker waits, the box still held', async (w) => {
-    const x = await heldWithAsk(w)
+  moduleRow(sdk, CASE.bva02, 'start at since + retention − 1', 'the module restarts 1 ms before the hold ends → expireHolds(that instant) drops nothing: the box still held with its event', async (w) => {
+    const x = await heldWithEvent(w)
     w.clock.advance(x.heldAt + R - 1 - w.clock.now())
     await w.restartRevocation()
     await drain(w)
     assert.deepEqual(argsOf(w, PORT.expireHolds).at(-1), [x.heldAt + R - 1])
-    assert.deepEqual(argsOf(w, PORT.askDropped), [])
-    assert.equal(await settlesWithin(x.ask.promise, WAIT.quietMs), false, 'the asker was answered before the hold ended')
-    await assertHeld(w, x.p)
+    await assertKept(w, x.p)
   })
-  moduleRow(sdk, CASE.bva02, 'start at since + retention', 'the module restarts exactly when the hold ends → expireHolds drops the box: askDropped for the ask, the asker answers unavailable', async (w) => {
-    const x = await heldWithAsk(w)
+  moduleRow(sdk, CASE.bva02, 'start at since + retention', 'the module restarts exactly when the hold ends → expireHolds drops the box: nothing pending', async (w) => {
+    const x = await heldWithEvent(w)
     w.clock.advance(x.heldAt + R - w.clock.now())
     await w.restartRevocation()
     await drain(w)
     assert.deepEqual(argsOf(w, PORT.expireHolds).at(-1), [x.heldAt + R])
-    assert.deepEqual(argsOf(w, PORT.askDropped), [[offerIdOf(x.ask)]])
-    await assertAnsweredUnavailable(x.ask)
+    await assertDroppedEmpty(w, x.p)
   })
   // On the sweep timer: a sweep due exactly at the end of the hold. Every delay the module arms is
   // setTimeout-safe (FakeTimers fires a longer one at once, as Node does).
   moduleRow(sdk, CASE.bva02, 'sweep at since + retention − 1 and at it', 'a sweep re-armed every expirySweepMs: nothing drops while the clock is 1 ms short of the hold\'s end; the sweep at the end drops it; every delay ≤ 2^31−1 and only one sweep is armed', async (w) => {
-    const x = await heldWithAsk(w)
+    const x = await heldWithEvent(w)
     const end = x.heldAt + R
     await jumpTo(w, end - w.TIMING.expirySweepMs)
     assertOnlySweep(w)
     await advance(w, w.TIMING.expirySweepMs - 1)
-    assert.deepEqual(argsOf(w, PORT.askDropped), [], 'a sweep before the hold\'s end dropped it')
-    assert.equal(await settlesWithin(x.ask.promise, WAIT.quietMs), false)
+    await assertKept(w, x.p)
     await advance(w, 1)
     assert.deepEqual(argsOf(w, PORT.expireHolds).at(-1), [end])
-    assert.deepEqual(argsOf(w, PORT.askDropped), [[offerIdOf(x.ask)]])
-    await assertAnsweredUnavailable(x.ask)
+    await assertDroppedEmpty(w, x.p)
     assertOnlySweep(w)
     assert.ok(w.timers.delays.every((ms) => ms <= TIMER.maxDelayMs), `a delay above ${TIMER.maxDelayMs} ms: ${w.timers.delays}`)
   })
@@ -572,50 +529,43 @@ function boundaryValues(sdk) {
 // Decision Tables
 // ================================================================================================
 
-/** REV-DT-03's "designated" condition: which entry routing.agentToken names. */
-const DESIGNATED = Object.freeze({ this: 'this entry', other: 'another entry', none: 'none' })
-
 /**
  * The retried steps of each job, in contract order (closeEntry, the first step of both, is checked
- * on its own: the contract does not order it against `hold`). REV-DT-04 fails one of them, except
- * askDropped (an answer to an asker, not a retried step), and checks the rest.
+ * on its own: the contract does not order it against `hold`). C-WIRE-2: no askDropped and no
+ * setDesignated in a delete ("不给ask_agent工具"; q5).
  */
 const STEPS = Object.freeze({
   disable: Object.freeze([PORT.hold, PORT.endPrincipal]),
-  delete: Object.freeze([PORT.endPrincipal, PORT.drop, PORT.askDropped, PORT.remove, PORT.setDesignated]),
+  delete: Object.freeze([PORT.endPrincipal, PORT.drop, PORT.remove]),
 })
 /** How many times each step of `steps` was called. */
 const counts = (w, steps) => steps.map((label) => callsOf(w, label).length)
 
 function decisionTables(sdk) {
-  // REV-DT-03 — kind × paired × designated → the module's port calls (one test per rule).
+  // REV-DT-03 — kind × paired → the module's port calls (one test per rule). Its "designated" column is
+  // withdrawn by C-WIRE-2 (the user's q5): no rule calls the writer any more.
   for (const kind of [REVOCATION.disabled, REVOCATION.deleted]) {
     for (const paired of [true, false]) {
-      for (const designated of Object.values(DESIGNATED)) {
-        const deleting = kind === REVOCATION.deleted
-        const clears = deleting && designated === DESIGNATED.this
-        moduleRow(sdk, CASE.dt03, `${kind} ${paired ? 'paired' : 'unpaired'} designated ${designated}`, `${kind}, ${paired ? 'paired' : 'never paired'}, designated ${designated} → closeEntry; endPrincipal(fresh: ${!deleting})${paired && !deleting ? '; hold first' : ''}${paired && deleting ? '; drop, remove' : ''}${clears ? '; setDesignated(undefined)' : '; no writer call'}`, async (w) => {
-          const key = w.principal(ID.p, { connected: true, paired, designated: designated === DESIGNATED.this })
-          if (designated === DESIGNATED.other) w.principal(ID.q, { designated: true })
-          w.session(S.s1)
-          const offer = paired ? (await manage(w, S.s1, key), await offerTo(w, S.s1, ET.permission, key)) : undefined
-          const heldAt = w.clock.now()
-          if (deleting) await remove(w, ID.p)
-          else await disable(w, ID.p)
-          assert.deepEqual(argsOf(w, PORT.closeEntry), [[E(ID.p)]])
-          assert.deepEqual(argsOf(w, PORT.endPrincipal).map(([e, o]) => [e, o?.freshRetirements]), [[E(ID.p), !deleting]])
-          assert.deepEqual(argsOf(w, PORT.hold), paired && !deleting ? [[key, heldAt]] : [])
-          assert.deepEqual(argsOf(w, PORT.drop), paired && deleting ? [[key]] : [])
-          if (!deleting) assert.deepEqual(argsOf(w, PORT.remove), [])
-          if (paired && deleting) assert.deepEqual(argsOf(w, PORT.remove), [[E(ID.p)]])
-          assert.deepEqual(argsOf(w, PORT.setDesignated), clears ? [[undefined]] : [])
-          assertNotes(w, paired ? [S.s1] : [])
-          assert.deepEqual(cards(w), paired ? [listed(offer)] : [])
-          assert.deepEqual(argsOf(w, PORT.release), [])
-          const want = designated === DESIGNATED.this ? (clears ? undefined : E(ID.p)) : designated === DESIGNATED.other ? E(ID.q) : undefined
-          assert.equal(w.settings.get().agentToken, want, 'routing.agentToken is not what the rule says')
-        })
-      }
+      const deleting = kind === REVOCATION.deleted
+      moduleRow(sdk, CASE.dt03, `${kind} ${paired ? 'paired' : 'unpaired'} designated none`, `${kind}, ${paired ? 'paired' : 'never paired'} → closeEntry; endPrincipal(fresh: ${!deleting})${paired && !deleting ? '; hold first' : ''}${paired && deleting ? '; drop, remove' : ''}; no writer call`, async (w) => {
+        const key = w.principal(ID.p, { connected: true, paired })
+        w.session(S.s1)
+        const offer = paired ? (await manage(w, S.s1, key), await offerTo(w, S.s1, ET.permission, key)) : undefined
+        const heldAt = w.clock.now()
+        if (deleting) await remove(w, ID.p)
+        else await disable(w, ID.p)
+        assert.deepEqual(argsOf(w, PORT.closeEntry), [[E(ID.p)]])
+        assert.deepEqual(argsOf(w, PORT.endPrincipal).map(([e, o]) => [e, o?.freshRetirements]), [[E(ID.p), !deleting]])
+        assert.deepEqual(argsOf(w, PORT.hold), paired && !deleting ? [[key, heldAt]] : [])
+        assert.deepEqual(argsOf(w, PORT.drop), paired && deleting ? [[key]] : [])
+        if (!deleting) assert.deepEqual(argsOf(w, PORT.remove), [])
+        if (paired && deleting) assert.deepEqual(argsOf(w, PORT.remove), [[E(ID.p)]])
+        assert.deepEqual([...argsOf(w, PORT.addToken), ...argsOf(w, PORT.removeToken)], [], 'a revocation called the SettingsWriter')
+        assertNotes(w, paired ? [S.s1] : [])
+        assert.deepEqual(cards(w), paired ? [listed(offer)] : [])
+        assert.deepEqual(argsOf(w, PORT.release), [])
+      })
+      for (const designated of ['this entry', 'another entry']) withdrawnRow(sdk, CASE.dt03, `${kind} ${paired ? 'paired' : 'unpaired'} designated ${designated}`, `${kind}, designated ${designated}`, NO_DESIGNATED)
     }
   }
 
@@ -665,23 +615,8 @@ function decisionTables(sdk) {
       await reenable(w, ID.p)
       await assertPollable(w, x.p, queued)
     })
-    dt('7', kind, `${kind}: the queued ask is ${deleting ? 'dropped and its asker answers unavailable' : 'kept, its asker waits with no timer, pollable on re-enable'}`, async (w) => {
-      const x = await ucWorld(w)
-      await revoke(w, kind)
-      if (deleting) return assertAnsweredUnavailable(x.ask)
-      await advance(w, FIXTURE.longWaitMs)
-      assert.equal(await settlesWithin(x.ask.promise, WAIT.quietMs), false, 'the asker was answered')
-      await reenable(w, ID.p)
-      await assertPollable(w, x.p, [x.ask.event])
-    })
-    dt('9', kind, `${kind}: the designated role is ${deleting ? 'cleared (setDesignated(undefined))' : 'kept: ask_agent answers unavailable at once, message_agent queues'}`, async (w) => {
-      const x = await ucWorld(w)
-      await revoke(w, kind)
-      assert.deepEqual(argsOf(w, PORT.setDesignated), deleting ? [[undefined]] : [])
-      assert.equal(w.settings.get().agentToken, deleting ? undefined : x.e)
-      await askUnavailableNow(w, S.s3)
-      await messageQueued(w, S.s3)
-    })
+    withdrawnRow(sdk, CASE.authDt04, `7 ${kind}`, `${kind}: the queued ask is ${deleting ? 'dropped and its asker answers unavailable' : 'kept, its asker waits'}`, NO_ASK)
+    withdrawnRow(sdk, CASE.authDt04, `9 ${kind}`, `${kind}: the designated role is ${deleting ? 'cleared' : 'kept'}`, NO_DESIGNATED)
   }
   dt('2a (service)', REVOCATION.deleted, 'deleted: an answer in flight when the delete lands completes (settle true); its offer goes to no card', async (w) => {
     const x = await ucWorld(w)
@@ -692,12 +627,11 @@ function decisionTables(sdk) {
     await drain(w)
     assertCards(w, x.e, [x.question, x.planReview])
   })
-  dt('8', REVOCATION.disabled, 'disabled for 30 days: the kept events are dropped as on delete and the asker gets unavailable', async (w) => {
+  dt('8', REVOCATION.disabled, 'disabled for 30 days: the kept events are dropped as on delete', async (w) => {
     const x = await ucWorld(w)
     const heldAt = w.clock.now()
     await disable(w, ID.p)
     await jumpTo(w, heldAt + R + HANDLER_FIXTURE.pastHoldMs)
-    await assertAnsweredUnavailable(x.ask)
     await reenable(w, ID.p)
     assert.deepEqual(await pendingOf(w, x.p), [])
   })
@@ -721,7 +655,7 @@ function decisionTables(sdk) {
   // REV-DT-04 — a step rejects → logged, retried after retryMs from that step only; earlier steps
   // are not repeated (no note twice) and later steps wait for it.
   for (const [kind, steps] of [[REVOCATION.disabled, STEPS.disable], [REVOCATION.deleted, STEPS.delete]]) {
-    for (const failing of steps.filter((label) => label !== PORT.askDropped)) {
+    for (const failing of steps) {
       const k = steps.indexOf(failing)
       moduleRow(sdk, CASE.dt04, `${kind} ${failing}`, `${kind}, ${failing} rejects once → logged; nothing later runs and nothing earlier repeats; at retryMs − 1 still waiting; at retryMs ${failing} again, then the rest once; one note per session`, async (w) => {
         const x = await ucWorld(w)
@@ -736,7 +670,6 @@ function decisionTables(sdk) {
         assert.deepEqual(counts(w, steps), steps.map((_, i) => (i === k ? 2 : 1)), 'not retried from the failed step only')
         assert.deepEqual(argsOf(w, PORT.closeEntry), [[x.e]], 'the streams were closed again on the retry')
         assertNotes(w, x.sessions)
-        if (kind === REVOCATION.deleted) await assertAnsweredUnavailable(x.ask)
       })
     }
   }
@@ -765,7 +698,8 @@ function decisionTables(sdk) {
     w.keys.add(x.p)
     await assertPollable(w, x.p, x.kept)
   })
-  for (const [label, what] of [[PORT.note, 'a system note'], [PORT.card, 'a card']]) {
+  withdrawnRow(sdk, CASE.dt04, 'disabled cards.toUser', 'a card rejects → logged and never retried', NO_CARD_PORT)
+  for (const [label, what] of [[PORT.note, 'a system note']]) {
     moduleRow(sdk, CASE.dt04, `disabled ${label}`, `${what} rejects → logged and never retried; every other note and card is delivered`, async (w) => {
       const x = await ucWorld(w)
       w.calls.failNext(label)
@@ -785,17 +719,15 @@ function decisionTables(sdk) {
 
 function stateTransitions(sdk) {
   // REV-ST-04 — the per-entry job chain.
-  moduleRow(sdk, CASE.st04, '1', 'Disabled (held) → deleted inside the hold → the delete job drops the box; the kept ask answers unavailable; no note again; the hold ends nothing more later', async (w) => {
+  moduleRow(sdk, CASE.st04, '1', 'Disabled (held) → deleted inside the hold → the delete job drops the box; no note again; the hold ends nothing more later', async (w) => {
     const x = await ucWorld(w)
     const heldAt = w.clock.now()
     await disable(w, ID.p)
     await remove(w, ID.p)
     assert.deepEqual(argsOf(w, PORT.drop), [[x.p]])
-    assert.deepEqual(argsOf(w, PORT.askDropped), [[offerIdOf(x.ask)]])
-    await assertAnsweredUnavailable(x.ask)
     assertNotes(w, x.sessions)
     await jumpTo(w, heldAt + R + HANDLER_FIXTURE.pastHoldMs)
-    assert.deepEqual(argsOf(w, PORT.askDropped), [[offerIdOf(x.ask)]], 'the cancelled hold still ended something')
+    assert.deepEqual(argsOf(w, PORT.drop), [[x.p]], 'the cancelled hold still dropped something')
     assert.deepEqual(argsOf(w, PORT.release), [])
   })
   // Row 2 (dev session decision, 2026-11-16): closeEntry runs AT ONCE, synchronously inside the
@@ -828,7 +760,7 @@ function stateTransitions(sdk) {
       assert.ok(deleteClosed < firstOfJob, `the delete's closeEntry ran after its ${label}`)
     }
   })
-  moduleRow(sdk, CASE.st04, '2b', 'a delete while the disable job of the same entry is running → the delete\'s endPrincipal and drop run only after the disable job ended; the ask answers unavailable', async (w) => {
+  moduleRow(sdk, CASE.st04, '2b', 'a delete while the disable job of the same entry is running → the delete\'s endPrincipal and drop run only after the disable job ended', async (w) => {
     const { x, gate } = await deleteDuringDisable(w)
     try {
       assert.deepEqual([callsOf(w, PORT.endPrincipal).length, callsOf(w, PORT.drop).length], [1, 0], 'the delete job went on while the disable job was running')
@@ -837,7 +769,6 @@ function stateTransitions(sdk) {
     assert.ok(at(w, PORT.endPrincipal, PHASE.call, x.e, 1) > jobEnd(w, x.e), 'the delete\'s endPrincipal ran before the disable job ended')
     assert.deepEqual(argsOf(w, PORT.endPrincipal).map(([, o]) => o?.freshRetirements), [true, false])
     assert.deepEqual(argsOf(w, PORT.drop), [[x.p]])
-    await assertAnsweredUnavailable(x.ask)
   })
   moduleRow(sdk, CASE.st04, '3', 'two entries revoked together → their jobs may overlap: Q\'s job ends while P\'s is still running', async (w) => {
     const x = await ucWorld(w)

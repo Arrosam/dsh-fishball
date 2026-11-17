@@ -1,53 +1,10 @@
 /**
  * Constants of the core MCP tools (task C-TOOLS). Every value of the MCP surface (tool names,
  * schemas, refusal codes, pair-only power) is K1's and is imported from `../../../mcp-schema`;
- * the V2 payload rules (limits, codes) are `../../../contract`'s. This file holds only what is
- * this module's own: which V2 validator checks which tool, the session-access rows, and log lines.
+ * the payload bounds are K1's PAYLOAD_LIMITS, checked in payload-rules.js. This file holds only
+ * what is this module's own: the session-access rows and log lines.
  */
-import { OPERATION } from '../../../contract/index.js'
-import { REFUSAL, TOOL } from '../../../mcp-schema/index.js'
-
-/**
- * The V2 request validator (contract 1.2 §4, §8) that checks a tool's arguments after K1's input
- * schema: the schema subset cannot express lengths, counts, bytes or "reason required", so those
- * stay V2's domain checks with V2's codes (design §3.2). The tools absent here have no V2 payload
- * fields to check: `prompts_list` and `grants_list` take none (V2's rule is "no keys", which K1's
- * closed schema already says), and inbox, `pair` and `set_name` are new in V3.
- */
-export const V2_PAYLOAD = Object.freeze({
-  [TOOL.sessionsList]: OPERATION.sessionList,
-  [TOOL.sessionStart]: OPERATION.sessionStart,
-  [TOOL.sessionMessage]: OPERATION.sessionMessage,
-  [TOOL.sessionRedirect]: OPERATION.sessionRedirect,
-  [TOOL.sessionStop]: OPERATION.sessionStop,
-  [TOOL.sessionRead]: OPERATION.sessionRead,
-  [TOOL.sessionRelease]: OPERATION.sessionRelease,
-  [TOOL.approvalsList]: OPERATION.approvalList,
-  [TOOL.approvalAnswer]: OPERATION.approvalAnswer,
-  [TOOL.questionAnswer]: OPERATION.questionAnswer,
-  // Fishball's decision R5 (2026-11-14): V2's question counts and character limits apply before
-  // `unsupported-operation` (handlers.js); dispatch.js adapts the V3 arguments to V2's payload.
-  [TOOL.questionAsk]: OPERATION.questionAsk,
-  [TOOL.questionAnswerOwn]: OPERATION.questionAnswerOwn,
-  [TOOL.promptAnswer]: OPERATION.promptAnswer,
-  [TOOL.grantRevoke]: OPERATION.grantRevoke,
-  [TOOL.attachmentPut]: OPERATION.attachmentPut,
-  [TOOL.attachmentRead]: OPERATION.attachmentRead,
-})
-
-
-/**
- * How a V3 tool's arguments become the V2 payload its validator reads, where they differ (K1 README
- * "Payloads"). The V2 validator refuses an unknown key and requires its own:
- * - `question_answer` names the offer it answers, as `approval_answer` does; V2's had no offer;
- * - `question_ask` takes no `sessionId` (the caller is the principal, not a child session); V2's
- *   required one, so a placeholder stands in for the check only. It is never used as a session.
- */
-const V2_SESSION_PLACEHOLDER = 'question-ask'
-export const V2_ADAPT = Object.freeze({
-  [TOOL.questionAnswer]: ({ offerId, ...rest }) => rest,
-  [TOOL.questionAsk]: (args) => ({ ...args, sessionId: V2_SESSION_PLACEHOLDER }),
-})
+import { REFUSAL } from '../../../mcp-schema/index.js'
 
 /**
  * What an unmanaged session answers, by what the tool does with it (sessions.js has the whole

@@ -16,9 +16,6 @@
  * coincide. Every RegExp is frozen and has no `g` flag, so importers share no `lastIndex` state.
  */
 import { CALL_CODE, CONTRIBUTED_EVENT, NAME_GRAMMAR, SHARED_CODES, TOOLS_API } from '../tools/constants.js'
-// The V2 domain's operation codes keep their one owner, `./contract`, until C-WIRE retires it;
-// C-WIRE then moves these values here unchanged (a move, not a K1 amendment).
-import { ERROR as V2_ERROR, LIMITS as V2_LIMITS } from '../contract/contract.js'
 
 // K2's frozen SHARED_CODES, by its declared order (tools/README.md "Codes"), so each word keeps
 // K2 as its one owner. The order is part of K2's freeze: reordering it is a K2 amendment, and
@@ -328,6 +325,62 @@ export const FAILURE_LIMIT = Object.freeze({
 })
 
 /**
+ * The payload vocabularies and bounds of the core tools, moved here unchanged from the V2 contract
+ * (contract 1.2 §4, §6.2, §8) when C-WIRE-2 deleted `./contract`: a move, not a K1 amendment (this
+ * file's own note, K1). Each keeps its V2 value; only the one owner changed. The schemas in
+ * shapes.js and the domain's bound checks read them from here.
+ * - DELIVERY: `session_message` / `session_redirect` / `session_start` status; `unconfirmed` is never retried.
+ * - APPROVAL_DECISION: `approval_answer`'s decisions. `ask` stays in the frozen list (core's
+ *   APPROVAL copy mirrors it) but has no producer since C-WIRE-2: there is no `ask_agent` (the
+ *   user, 2026-11-17), and a permission offer refuses `ask` with `invalid-decision` (the user's
+ *   answer, 2026-11-17: "Refuse it").
+ * - PROMPT_DECISIONS: `prompt_answer` takes allow or reject only.
+ * - APPROVAL_KIND, PLAN_REVIEW: the descriptor's `kind` and the plan-review intent.
+ * - IMAGE_TYPES: 0.2.2's image media types; any other media type travels as a file.
+ */
+export const DELIVERY = Object.freeze({ delivered: 'delivered', unconfirmed: 'unconfirmed' })
+export const APPROVAL_DECISION = Object.freeze({ allow: 'allow', grant: 'grant', reject: 'reject', ask: 'ask', escalate: 'escalate' })
+export const RISK = Object.freeze({ low: 'low', high: 'high' })
+export const GRANT_KIND = Object.freeze({ exact: 'exact', prefix: 'prefix' })
+export const PROMPT_DECISIONS = Object.freeze([APPROVAL_DECISION.allow, APPROVAL_DECISION.reject])
+export const APPROVAL_KIND = Object.freeze({ approval: 'approval', question: 'question' })
+export const PLAN_REVIEW = 'plan-review'
+export const ARGUMENTS_STATUS = Object.freeze({ complete: 'complete', truncated: 'truncated', unavailable: 'unavailable' })
+export const IMAGE_MEDIA = Object.freeze({ prefix: 'image/', png: 'image/png', jpeg: 'image/jpeg', webp: 'image/webp', gif: 'image/gif' })
+export const IMAGE_TYPES = Object.freeze([IMAGE_MEDIA.png, IMAGE_MEDIA.jpeg, IMAGE_MEDIA.webp, IMAGE_MEDIA.gif])
+
+/**
+ * The payload bounds the core tools check in domain code (design §3.2: the schema subset cannot
+ * express lengths, counts or bytes), V2's LIMITS of contract 1.2 §8 unchanged, minus the embed
+ * broker's, the envelope's and the V2 attach's, which have no MCP meaning. A value over a bound is
+ * `limit-exceeded`, never clamped. Character bounds count code points.
+ */
+const MIB = KIB * KIB
+export const PAYLOAD_LIMITS = Object.freeze({
+  sessionsListed: 100,
+  // One attachment_put of a 4 MiB image in base64, plus headroom (ENDPOINT_LIMITS.bodyBytes is this value).
+  attachmentEnvelopeBytes: 8 * MIB,
+  imageBytes: 4 * MIB,
+  // DSH's own pixel budget; equal to imageBytes' byte value by coincidence only.
+  imagePixels: 4_194_304,
+  imagesPerMessage: 20,
+  attachmentsPerMessage: 20,
+  chunkBytes: 512 * KIB,
+  hostRefTtlMs: 10 * MINUTE_MS,
+  reasonChars: 500,
+  questionChars: 500,
+  noteChars: 500,
+  feedbackChars: 500,
+  customChars: 500,
+  labelChars: 200,
+  titleChars: 200,
+  quoteBytes: 2048,
+  grantPrefixChars: 512,
+  questionsPerRequest: 32,
+  selectedLabelsPerAnswer: 32,
+})
+
+/**
  * MCP endpoint limits (R-SEC-03, R-TOK-06, design §3.1 step 4). PROPOSED values.
  * - bodyBytes: one request body. 8 MiB, V2's attachment frame bound (contract §8
  *   `attachmentEnvelopeBytes`), so one `attachment_put` of a 4 MiB image in base64 fits.
@@ -349,7 +402,7 @@ export const FAILURE_LIMIT = Object.freeze({
  * -32768…-32000.
  */
 export const ENDPOINT_LIMITS = Object.freeze({
-  bodyBytes: V2_LIMITS.attachmentEnvelopeBytes,
+  bodyBytes: PAYLOAD_LIMITS.attachmentEnvelopeBytes,
   inFlightPerPrincipal: 32,
   listenStreamsPerPrincipal: 8,
   requestsPerMinute: 600,
@@ -750,31 +803,34 @@ export const REFUSAL = Object.freeze({
   conflict,
   unavailable,
   unsupportedOperation,
-  // The V2 domain's operation codes (contract 1.2 §7), unchanged.
-  notReferenced: V2_ERROR.notReferenced,
-  tooLarge: V2_ERROR.tooLarge,
-  imagesUnsupported: V2_ERROR.imagesUnsupported,
-  notManaged: V2_ERROR.notManaged,
-  featureOff: V2_ERROR.featureOff,
-  sessionNotLive: V2_ERROR.sessionNotLive,
-  invalidDecision: V2_ERROR.invalidDecision,
-  riskRequired: V2_ERROR.riskRequired,
-  reasonRequired: V2_ERROR.reasonRequired,
-  allowNeedsLowRisk: V2_ERROR.allowNeedsLowRisk,
-  argumentsIncomplete: V2_ERROR.argumentsIncomplete,
-  questionRequired: V2_ERROR.questionRequired,
-  modeUser: V2_ERROR.modeUser,
-  badAnswer: V2_ERROR.badAnswer,
-  alreadySettled: V2_ERROR.alreadySettled,
-  grantInvalid: V2_ERROR.grantInvalid,
-  prefixNotShellTool: V2_ERROR.prefixNotShellTool,
-  prefixEmpty: V2_ERROR.prefixEmpty,
-  prefixNotInCall: V2_ERROR.prefixNotInCall,
-  expiresRequired: V2_ERROR.expiresRequired,
-  expiresInvalid: V2_ERROR.expiresInvalid,
-  expiresPast: V2_ERROR.expiresPast,
-  grantUnknown: V2_ERROR.grantUnknown,
-  grantEnded: V2_ERROR.grantEnded,
+  // The V2 domain's operation codes (contract 1.2 §7), unchanged; moved here with the payload
+  // vocabularies when C-WIRE-2 deleted `./contract`.
+  notReferenced: 'not-referenced',
+  tooLarge: 'too-large',
+  imagesUnsupported: 'images-unsupported',
+  notManaged: 'not-managed',
+  featureOff: 'feature-off',
+  sessionNotLive: 'session-not-live',
+  invalidDecision: 'invalid-decision',
+  riskRequired: 'risk-required',
+  reasonRequired: 'reason-required',
+  allowNeedsLowRisk: 'allow-needs-low-risk',
+  argumentsIncomplete: 'arguments-incomplete',
+  questionRequired: 'question-required',
+  modeUser: 'mode-user',
+  badAnswer: 'bad-answer',
+  alreadySettled: 'already-settled',
+  grantInvalid: 'grant-invalid',
+  prefixNotShellTool: 'prefix-not-shell-tool',
+  prefixEmpty: 'prefix-empty',
+  prefixNotInCall: 'prefix-not-in-call',
+  expiresRequired: 'expires-at-required',
+  expiresInvalid: 'expires-at-invalid',
+  expiresPast: 'expires-at-past',
+  grantUnknown: 'unknown',
+  grantEnded: 'ended',
+  // message_agent (the managed session's own tool): an empty message.
+  empty: 'empty',
   // New in V3.
   alreadyPaired: 'already-paired',
   idTaken: 'id-taken',

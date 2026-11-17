@@ -176,9 +176,12 @@ export const MOVED = Object.freeze({
   adminHooks: Object.freeze(['applyModel', 'currentModel']),
 })
 
-/** dsh-connector-shared/provider-sync-host.js neutral names (design §1.0c). */
+/**
+ * provider-sync-host.js neutral names (design §1.0c). C-WIRE-2 (R-ARCH-08 strict: its only user is the
+ * instance) moved it from dsh-connector-shared to dsh-instance/src/lib/.
+ */
 export const SYNC_HOST = Object.freeze({
-  file: path.join(V3.dshShared.dir, 'provider-sync-host.js'),
+  file: path.join(V3.instance.dir, 'src', 'lib', 'provider-sync-host.js'),
   constant: 'PROVIDER_SYNC_HOST',
   defaultRoute: 'dsh-sync-default',
   defaultModel: 'dsh-sync-default-model',

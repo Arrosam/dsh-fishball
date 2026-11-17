@@ -6,7 +6,8 @@
 import assert from 'node:assert/strict'
 import test, { describe } from 'node:test'
 import { freePort, nonWebScenario, scenario } from '../world.mjs'
-import { BUDGET, DATA, DECISION, DELIVERY, DESCRIPTION, EXPECT, FIXTURE, K1, OP, RISK, SCHEMA_TEXT, SURFACE, V3_SERVICES } from './constants.mjs'
+import * as IXS from '../../interactions/subject.mjs'
+import { BUDGET, DATA, DECISION, DELIVERY, DESCRIPTION, EXPECT, FIXTURE, FUTURE, K1, OP, RISK, SCHEMA_TEXT, SURFACE, V3_SERVICES } from './constants.mjs'
 import {
   activityAfter, assertDuplicateRefused, assertMetadata, connect, createToken, duplicateOf, eventually,
   fresh, handOver, listedIds, managedOf, managedSession, noticeOf, okCall, ownerJson, paired, read,
@@ -237,19 +238,39 @@ export function registerReviewCases(sdk) {
     })
   })
 
-  // K1 QUEUE: "offers always reach their manager's mailbox (R-CON-09 'always')". DESIGN root
-  // §7a.1's historical "over the cap (maxPendingApprovals)" is superseded by the direct brief:
-  // "Add two explicitly labelled future rows test.todo('C-WIRE-2') for no cap on pending approvals,
-  // list_user_messages deleted." These are future obligations, not current passing coverage.
-  describe(`C-WIRE future: no cap on pending approvals [SDK ${sdk}]`, () => {
-    test.todo('C-WIRE-2')
+  // K1 QUEUE: "offers always reach their manager's mailbox (R-CON-09 'always')". The user (2026-11-16/17):
+  // "No cap on pending approvals. Requests from managed sessions wait in the queue indefinitely and are
+  // never refused for being too many". Made real by C-WIRE-2 on the interactions world (its asking fixture
+  // tools and stock-prompt stand-in; test/v3/dsh-connector/interactions/subject.mjs).
+  describe(`C-WIRE future: no cap on pending approvals [SDK ${sdk}]`, SERIAL, () => {
+    test(`C-WIRE-2 BVA: ${FUTURE.noCapCount} pending requests of managed sessions (V2's cap was ${FUTURE.v2Cap}) are all offered and listed; none goes to the stock prompt`, T, async (t) => {
+      const w = await IXS.world(sdk, DATA.scenario.noCap)
+      const p = await IXS.principal(t, w)
+      const reqs = []
+      for (let i = 0; i < FUTURE.noCapCount; i++) reqs.push(await IXS.asked(w, p, await IXS.managed(w, p)))
+      for (const r of reqs) assert.ok(await IXS.isListed(p, r), 'not offered: ' + r.text)
+      for (const r of reqs) assert.deepEqual(await IXS.stockFor(w, r.text), [], 'refused to the stock prompt: ' + r.text)
+      assert.equal(Object.hasOwn((await w.settings()).value, FUTURE.capField), false, 'maxPendingApprovals is still a setting')
+      for (const r of reqs) await IXS.free(w, r.sid)
+    })
   })
 
-  // DESIGN root §7a.1: "Its agent has ask_fishball and list_user_messages" (historical; superseded
-  // by this user amendment). K1 tools.js: "The core tools in tools/list order." The direct brief:
-  // "Add two explicitly labelled future rows test.todo('C-WIRE-2') ... list_user_messages deleted."
-  // K1 tools.js's closed tool list contains no list_user_messages; deletion of its V2 path is future.
-  describe(`C-WIRE future: list_user_messages deleted [SDK ${sdk}]`, () => {
-    test.todo('C-WIRE-2')
+  // The user (2026-11-16/17): "list_user_messages is deleted"; "不给ask_agent工具". K1 tools.js's closed
+  // tool list contains neither. Made real by C-WIRE-2: a managed session's model request and the MCP list.
+  describe(`C-WIRE future: list_user_messages deleted [SDK ${sdk}]`, SERIAL, () => {
+    test('C-WIRE-2 EP: a managed session\'s next model request has message_agent and neither list_user_messages nor ask_agent; tools/list has neither', T, async (t) => {
+      const w = await IXS.world(sdk, DATA.scenario.noCap)
+      const p = await IXS.principal(t, w)
+      const sid = await IXS.managed(w, p)
+      await IXS.turn(w, sid, [[{ text: IXS.tok('hi') }]])
+      const names = (await w.call(OP.requestTools, { sessionId: sid })).at(-1).map((tool) => tool.name)
+      assert.ok(names.includes(FUTURE.messageTool), 'no ' + FUTURE.messageTool)
+      for (const gone of FUTURE.deletedTools) assert.equal(names.includes(gone), false, gone + ' is still a session tool')
+      const listed = (await p.client.listTools({}, { timeout: BUDGET.rpcMs })).tools.map((tool) => tool.name)
+      for (const gone of FUTURE.deletedTools) {
+        assert.equal(listed.includes(gone), false, gone + ' is an MCP tool')
+        assert.equal(K1.TOOL_NAMES.includes(gone), false, gone + ' is in K1')
+      }
+    })
   })
 }

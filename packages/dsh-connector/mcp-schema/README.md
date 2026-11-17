@@ -16,8 +16,11 @@ decided at review (relayed by Fishball); `#n` is its row in [User decisions](#us
 the RFCs it cites (requirements 1.18).
 
 One owner per value: the protocol version, the `contributed:` prefix and the shared refusal words
-are K2's (`../tools/constants.js`), and the V2 domain's operation codes and payload vocabularies are
-`./contract`'s until C-WIRE retires it. This module imports them; it never restates them.
+are K2's (`../tools/constants.js`); this module imports them and never restates them. The V2
+domain's operation codes, payload vocabularies and payload bounds were `./contract`'s until
+C-WIRE-2 deleted it; they moved here unchanged (`REFUSAL`, `DELIVERY`, `APPROVAL_DECISION`, `RISK`,
+`GRANT_KIND`, `PROMPT_DECISIONS`, `APPROVAL_KIND`, `PLAN_REVIEW`, `ARGUMENTS_STATUS`,
+`IMAGE_MEDIA`, `IMAGE_TYPES`, `PAYLOAD_LIMITS`): a move, not an amendment.
 
 ## Protocol
 
@@ -49,12 +52,15 @@ tool (R-EXT-12).
   checks (design §3.2), with V2's `LIMITS` and codes (`limit-exceeded`, …).
 - **Objects are closed:** an undeclared argument (`notifyWhenFinished` included) is
   `invalid-arguments` with `isError: true` [spec: tools § Security Considerations; TQ-12].
-- **Payloads are V2's** (contract 1.2 §4), timer-free, with these V3 changes: no
+- **Payloads are V2's** (contract 1.2 §4; bounds `PAYLOAD_LIMITS`), timer-free, with these V3 changes: no
   `notifyWhenFinished` / `watchId` / `watchError`; `question_ask` takes no `sessionId` (the caller is
   the principal, not a child session); `question_answer` names the `offerId` it answers, like
   `approval_answer` (S3: authority is the live offer id and the pair, design §3.4).
 - **An `ask` event** (`ask_agent`) is answered with `approval_answer` on its `offer.offerId`, as
-  V2's asked request was.
+  V2's asked request was. *Withdrawn by C-WIRE-2:* there is no `ask_agent` (the user, 2026-11-17:
+  "不给ask_agent工具"), so nothing produces an `ask`; the type and the `ask` decision stay frozen
+  words. A permission offer refuses `approval_answer` with `ask` as `invalid-decision` (the user's
+  answer, 2026-11-17: "Refuse it"), and its `choices` are `allow`, `grant`, `reject`, `escalate`.
 - **`question_ask`'s answer** arrives as a `settlement` event with `answers` (V2 sent it through the
   inbox).
 
@@ -97,8 +103,8 @@ endpoint an invalid id is `invalid_client` (R-ID-02).
 ## Events
 
 - **Types (`EVENT_TYPE`):** `permission`, `question`, `plan-review`, `settlement`, `retirement`,
-  `turn-finished`, `state`, `message`, `ask`, `handover`, `takeback`, `notice`, and
-  `contributed:<namespace>.<event>` (`isEventType`).
+  `turn-finished`, `state`, `message`, `ask` (no producer since C-WIRE-2), `handover`, `takeback`,
+  `notice`, and `contributed:<namespace>.<event>` (`isEventType`).
 - **Event shape (`MAILBOX_EVENT_SCHEMA`):** `{eventId, mailboxGeneration, sequence, type, at,
   sourceSessionId, correlationId, offer?, payload, payloadDigest}`; `offer = {offerId, revision,
   decisionKind}` on the answerable types (`ANSWERABLE_TYPES`).
@@ -113,14 +119,17 @@ endpoint an invalid id is `invalid_client` (R-ID-02).
 - **Resource:** `agent-events`, `dsh-agent://events`, `application/json`; `resources/read`
   returns `{pending, headSequence, mailboxGeneration}`, never bodies.
 - **Connected (`CONNECTED`):** a principal is connected exactly while it holds an open listen
-  stream subscribed to `dsh-agent://events`. One definition for embed-UI's lights,
-  `ask_agent`'s `unavailable` and the native status. This is design §3.6's definition (R-UI-10
+  stream subscribed to `dsh-agent://events`. One definition for embed-UI's lights and the native
+  status (`ask_agent`'s `unavailable` went with `ask_agent`, C-WIRE-2). This is design §3.6's definition (R-UI-10
   "an open `agent-events` listen stream now"); design §3.5's earlier wording ("an authenticated
   request or a listen stream within the current connector life") is superseded and needs the
   design session's amendment.
 - **Settlement (`SETTLEMENT_OUTCOME`, `SETTLED_BY`, PROPOSED):** `allow` / `grant` → `allowed`,
   `reject` → `rejected`, an answered question or plan review → `answered`; `ask` and `escalate`
-  settle nothing (the user's later answer does). `by` is `user` or `principal`.
+  settle nothing (the user's later answer does). `by` is `user` or `principal`. An escalated offer
+  (or a question sent `toUser`) is the user's: it leaves `approvals_list`, an agent's answer to it
+  is refused, and the user's answer in the session is its settlement, to the same pair
+  (C-WIRE-2). If its session leaves the pair's management first, it ends with no event.
 
 ### Managed state (`ManagedState`, `MANAGED_REFUSAL`; task K1c)
 
@@ -150,16 +159,16 @@ by Fishball (K1c-1), including these rules:
   frozen: one `retirement` with reason `released` per live offer, to the releasing pair. C-ROUTE's
   `release` performs them once the change is stored; C-TOOLS calls nothing else. The offers then go
   to the user in the session.
-- **No-recipient `message` queue** (W3 Q-17, K1c-3): while no **paired** entry is designated (none
-  set, or the designated entry unpaired), a `message_agent` from an unmanaged session (or none)
-  is held in a durable connector queue (`NoRecipient.fallback` `queue`), bounded by the live
-  `maxQueuedInputs` (default `QUEUE.maxQueuedInputs`); one more is `queue-full`. Once a paired entry
-  is designated, connected or not, the held messages move into its mailbox in order; those that do
-  not fit stay queued, in order, and move in as room frees up. While the queue is not empty, a new
-  such message is appended to it rather than sent to the mailbox, so it never overtakes an older one
-  (a managed session's message goes to its manager and never waits here). A held message is never
-  dropped once accepted. Only `message` is held: `ask` is `unavailable` at once, and a contributor
-  `emit` is `no-agent`.
+- **No-recipient `message` queue** (W3 Q-17, K1c-3): *withdrawn by C-WIRE-2* with the designated
+  agent (the user's answer q5, 2026-11-17: "Remove agentToken entirely"; "There is no 'designated
+  agent' default for unmanaged sessions"). It said: "while no **paired** entry is designated …, a
+  `message_agent` from an unmanaged session (or none) is held in a durable connector queue
+  (`NoRecipient.fallback` `queue`)". Now `message_agent` exists only in managed sessions (the user:
+  "When a session is managed by an agent, its user-interaction tools … are forwarded to that
+  agent. An unmanaged session's tools go to the user as normal DSH") and goes to its manager; a
+  call that races a release answers `not-managed`. An event that names no managed session has no
+  recipient: an offer is the user's (`to-user`), a contributor `emit` is `no-agent`, anything else
+  is `dropped` (`NoRecipient`, index.d.ts).
 
 ### Core's link to its target (`TARGET_STATE`, `TARGET_CODE`, `LINK_REFUSAL`)
 
@@ -415,6 +424,33 @@ of both; C-HTTP against a fake `FailureLimiter`. The one `RequestGate` is C-HTTP
 C-OAUTH-WEB build against fakes of it. The runtime exports are declared there too. Keys are
 opaque: `EntryKey`, `PrincipalKey`; no interface carries a token value.
 
+## C-WIRE-2 amendments (2026-11-17)
+
+The user's decisions of 2026-11-16/17, relayed with the task, change these frozen texts. Each row
+quotes the K1 text it replaces.
+
+| K1 text (as frozen) | Now | Decision |
+| --- | --- | --- |
+| tools.js `approval_answer`: "Answer a permission request (or an ask_agent request) by its current offer id." | "Answer a permission request by its current offer id." | "不给ask_agent工具" (no `ask_agent`) |
+| README Events: "**An `ask` event** (`ask_agent`) is answered with `approval_answer`" | no producer; `ask` on a permission offer is `invalid-decision`; `choices` omit `ask` | no `ask_agent`; q1 "Refuse it" |
+| README Managed state: "**No-recipient `message` queue** (W3 Q-17, K1c-3) …" | withdrawn; NoRecipient is `to-user` / `no-agent` / `dropped` | q5 "Remove agentToken entirely"; no designated default |
+| index.d.ts `SettingsWriter.setDesignated(entryKey)`: "Sets `routing.agentToken` (the designated agent)" | withdrawn; the setting `routing.agentToken` is gone | q5 |
+| index.d.ts `Router`: "an unmanaged session's (or no session's) `message`, `ask`, `notice` or contributor event to the designated agent" | an event naming no managed session has no recipient | q5 |
+| README Connected: "One definition for embed-UI's lights, `ask_agent`'s `unavailable` and the native status" | `ask_agent`'s `unavailable` withdrawn | no `ask_agent` |
+| K3 handover.d.ts `HandoverPrincipal.designated` | withdrawn | q5 |
+| K3 tokens.d.ts `retire`: succession moves "the designated role" | moves sessions, name, offers and events only | q5 |
+| `QUEUE` comment: "an `ask` waits for an answer like an offer" | `ask` keeps its frozen place in the list, with no producer | no `ask_agent` |
+| `prompts_list` (README §Tools, design §4.3): V2 listed "the prompts already showing in other sessions" | only sessions the caller manages, without its own escalations; answering never takes over management | "Agent不能回答不归自己管的会话，只能操作自己管的会话"; q7 |
+| V2 `maxPendingApprovals` (DESIGN §16: "Extra requests go straight to you") | no cap: a managed session's request always becomes an offer and waits | "No cap on pending approvals … never refused for being too many" |
+| V2 `list_user_messages` (DESIGN §7a.2) | deleted | "list_user_messages is deleted" |
+| `grants_list` `paused` (V2: paused while the instance is off) | always `false`: a grant covers while its agent is disconnected | q3 "Still covers" |
+
+Rows that change with them (the case catalogues' owners re-baselined them in this task; the list is
+`.runtime/reports/c-wire-2-gap-ports.md`): routing ROUTE-* designated/held/ask rows, PLAT-UC-03
+"E1 no D", "E2 ask"; revocation's `askDropped` and clear-designated steps; hosted's designated-role
+step; UI's latch reset on the designated agent's loss; contrib's designated recipient; K1d
+`setDesignated`; the C-TOOLS approval, question, prompt and grant todos (now real).
+
 ## Left to a task (not frozen here)
 
 | What (case rows flagged `K`) | Task |
@@ -473,7 +509,7 @@ constants migration, 2026-11-14).
 | D7 | Runtime owners: K1 for `TARGET_STATE`, `TARGET_CODE`, `LINK_REFUSAL`; K3 core `contracts/constants.js` for the interception, link-backoff and guard values | decided by Fishball under the user's rule 0mwexcc0, not the user's own choice (2026-11-14) |
 | K1c-1 | `ManagedState` (`managerOf`, `managed`, `manage`, `release`, `onChange`) and `MANAGED_REFUSAL`: root session ids as keys; `unknown-session` stays the caller's (C-TOOLS); Hand over and Take back stay K3's; durable, serial (first wins), visible to `managerOf` once a change resolves, a throwing listener does not stop the others | decided by Fishball, not the user (2026-11-14) |
 | K1c-2 | W3 Q-16: `session_release` commits no event of its own (no release event); its only events are the retirements of its live offers (`released`, to the releasing pair), which C-ROUTE's `release` performs; the offers then go to the user | decided by Fishball, not the user (2026-11-14) |
-| K1c-3 | W3 Q-17: the no-recipient `message` queue: held while no paired entry is designated; durable, bounded by `maxQueuedInputs` with `queue-full`, flushed in order once a paired entry is designated (connected or not); what does not fit stays queued in order; while it is not empty a new message joins its end; never dropped once accepted | decided by Fishball, not the user (2026-11-14) |
+| K1c-3 | W3 Q-17: the no-recipient `message` queue: held while no paired entry is designated; durable, bounded by `maxQueuedInputs` with `queue-full`, flushed in order once a paired entry is designated (connected or not); what does not fit stays queued in order; while it is not empty a new message joins its end; never dropped once accepted | decided by Fishball, not the user (2026-11-14); **withdrawn** by the user's q5 (2026-11-17, C-WIRE-2) |
 | K1c-4 | No `notice` code is frozen: `NOTICE.codes` stays empty, and C-ROUTE produces none | decided by Fishball, not the user (2026-11-14) |
 | K1d-1 | `Mailbox.transfer(from, to) → {moved}`: every pending event (held ones included) moves in order with its `eventId` and payload digest, renumbered in the new box; nothing committed; misuse is a synchronous `TypeError`. PROPOSED details: moved events follow the destination's own, `maxQueuedInputs` never refuses one, the destination's streams get the hint when `moved > 0` | decided by Fishball, not the user (2026-11-16; W4 briefs G3) |
 | K1d-2 | `Mailbox.retire` misuse (bad principal key, event id or reason) stays a synchronous `TypeError` before the call is queued | decided by Fishball (open-questions decided item 45, 2026-11-16) |

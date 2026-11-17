@@ -22,7 +22,7 @@ values (`packages/dsh-connector/mcp-schema`) give the paths and the scope.
   - the adapter, from `createAdapterPlugin({now, timers, fetch})`. A fake clock drives `now` and
     `timers`. `fetch` records every request and is the only route to other hosts.
 - A restart of N disposes the context and builds a new one on the same credentials file.
-- **C** is a fake DSH connector on 127.0.0.1 ([fakes.mjs](../../dsh-connector-shared/oauth-client/fakes.mjs)):
+- **C** is a fake DSH connector on 127.0.0.1 ([fakes.mjs](../../dsh-connector-adapter/oauth-client/fakes.mjs)):
   - it serves PRM, AS metadata, an approval listener on its own port, the token endpoint with
     rotation and reuse detection, and an MCP 2026-07-28 endpoint;
   - it can restart (access tokens lost, refresh tokens kept), drop access tokens early, and disable

@@ -121,11 +121,7 @@ export function createUiBackend({ handover, maxNoteBytes = defaultNoteBytes, log
       if (provided) throw new Error(MISUSE.provideTwice)
       provided = true
       return ctx.effect(() => {
-        state.startFollowing()
-        unfollow = handover.onChange(() => {
-          state.followDesignated()
-          streams.publish()
-        })
+        unfollow = handover.onChange(() => streams.publish())
         const disposers = []
         const end = () => {
           close()

@@ -7,7 +7,7 @@
  * refresh once and retry once. The access token never reaches the child row or its configuration.
  */
 import { createHash, timingSafeEqual } from 'node:crypto'
-import { listenLoopback, opaqueValue } from 'dsh-connector-shared/oauth-client'
+import { listenLoopback, opaqueValue } from './oauth-client.js'
 import { LIMIT, PROXY } from './constants.js'
 
 const digest = (value) => createHash('sha256').update(String(value ?? '')).digest()

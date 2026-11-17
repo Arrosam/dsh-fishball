@@ -9,11 +9,11 @@
  * mask or an environment variable's name.
  */
 import { randomUUID } from 'node:crypto'
-import { ProviderSyncError } from 'dsh-connector-shared/provider-sync'
+import { ProviderSyncError } from './lib/provider-sync.js'
 import { ProviderSyncCoordinator } from './provider-sync-coordinator.js'
-// The wire codec and identity are dsh-connector-shared's (the child target uses its side's copy); this host
+// The wire codec and identity are src/lib/provider-sync-codec.js's (the child target imports the same file); this host
 // end never imports the child's module (R-BND-01).
-import { createProviderSyncCodec, providerSyncIdentity, PROVIDER_SYNC_TARGET } from 'dsh-connector-shared/provider-sync-codec'
+import { createProviderSyncCodec, providerSyncIdentity, PROVIDER_SYNC_TARGET } from './lib/provider-sync-codec.js'
 
 // The owner route's transport rules live with the routes (src/host/provider-sync-routes.js);
 // re-exported here for this module's existing readers.
@@ -21,7 +21,7 @@ import { SYNC_PAGE } from './host/provider-sync-routes.js'
 export { SYNC_PAGE }
 const P = SYNC_PAGE
 const defaultCreateHost = async (ctx, options) => {
-  const { createProviderSyncHost } = await import('dsh-connector-shared/provider-sync-host')
+  const { createProviderSyncHost } = await import('./lib/provider-sync-host.js')
   return createProviderSyncHost(ctx, options)
 }
 
@@ -50,8 +50,8 @@ const defaultCreateHost = async (ctx, options) => {
  * src/native-runtime/index.js and child.js publish each end through `onProviderSyncTransport`;
  * host.js attaches this bridge and exposes it as `service.providerSync`;
  * src/native-runtime/overlay.js inserts the child-side row (child-row.js), which mounts
- * src/child/provider-sync-target.js; and src/native-runtime/placement.js places dsh-connector-shared
- * (the target's engine, host adapter and codec) in the child profile's node_modules.
+ * src/child/provider-sync-target.js, whose engine, codec and host adapter (src/lib/) travel with
+ * it in the lifecycle snapshot (src/native-runtime/constants.js RUNTIME.snapshot).
  */
 export const CHILD_SYNC = Object.freeze({
   state: Object.freeze({ inactive: 'inactive', ready: 'ready' }),
@@ -69,9 +69,9 @@ export const CHILD_SYNC = Object.freeze({
   }),
   /** What the page shows per chosen provider (§10); the engine's finer config/key outcomes stay on the host. */
   outcome: Object.freeze({ added: 'added', skipped: 'skipped', failed: 'failed' }),
-  /** The engine's per-item statuses (dsh-connector-shared/provider-sync confirm). */
+  /** The engine's per-item statuses (src/lib/provider-sync.js confirm). */
   status: Object.freeze({ succeeded: 'succeeded', skipped: 'skipped', partial: 'partial', unknown: 'unknown' }),
-  /** The engine's per-item key outcome for a key that was already there (dsh-connector-shared/provider-sync confirm). */
+  /** The engine's per-item key outcome for a key that was already there (src/lib/provider-sync.js confirm). */
   key: Object.freeze({ exists: 'exists' }),
   /** The engine's per-item profile outcome for an item whose profile this run did not write. */
   config: Object.freeze({ unchanged: 'unchanged' }),
