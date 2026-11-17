@@ -58,28 +58,38 @@ const PALETTE = Object.freeze({
 })
 
 /**
- * The connector's mark, drawn as assets/connector-icon.svg draws it on the Plugins card (D22): an
- * ink tile, a paper fish and wrench, and Fishball's one accent, the magenta eye. The same in both
+ * The connector's mark, drawn as assets/connector-icon.svg draws it on the Plugins card (D22,
+ * ICON-SET): an ink tile, a paper fish, Fishball's one accent (the magenta eye), and the wrench
+ * badge, a paper chip in an ink ring at the bottom right with the wrench in ink. The same in both
  * themes, as a launcher icon is.
  */
 /**
- * The mark: assets/connector-icon.svg's paths on its 24-unit grid (FishMark from the owner's
- * fishball app with the wrench badge; dsh-connector-ui's client.shell.js FISH_MARK and WRENCH_BADGE
- * draw the same; change all three together), its colours and its size. page.js writes them as SVG
+ * The mark: assets/connector-icon.svg's shapes on its 24-unit grid (FishMark from the owner's
+ * fishball app with the wrench badge; change the two together), its colours and its size. The badge
+ * is a chip of radius `chipRadius` in a ring of radius `ringRadius` around `badgeCentre`, and the
+ * wrench is a 16-unit glyph scaled by `glyphScale` about that centre. page.js writes them as SVG
  * presentation attributes, which CSP `style-src` does not govern, so the mark keeps its size and
  * colours even if the style block were ever refused.
  */
 export const MARK_SHAPE = Object.freeze({
   colors: Object.freeze({ tile: '#101010', paper: '#F2F2EE', accent: '#EC0A6E' }),
   sizePx: 40,
-  wrenchStroke: 1.6,
-  wrenchCap: 'round',
   viewBox: '0 0 24 24',
   tileSize: 24,
   tileRadius: 5,
   body: 'M7.4 16.6 L7.4 9.9 L11.3 5.6 L18.4 5.6 L18.4 12.7 L14.1 16.6 Z M7.4 16.6 L2.6 21.4 L7.4 21.4 Z',
   eye: 'M14.6 7.4 h2 v2 h-2 Z',
-  wrench: Object.freeze(['M22.93 17.48 A2 2 0 1 1 21.52 16.07', 'M19.59 19.41 L16.4 22.6']),
+  badgeCentre: 17.6,
+  ringRadius: 6.2,
+  chipRadius: 5,
+  glyphGrid: 16,
+  glyphScale: 0.44,
+  glyphStroke: 2.4,
+  glyphCap: 'round',
+  glyphJoin: 'round',
+  /** Decimal places of a computed coordinate, so float noise never reaches the markup. */
+  coordDigits: 3,
+  wrench: Object.freeze(['M14.24 6.24A3.5 3.5 0 1 1 9.76 1.76', 'M9.53 6.47L3 13']),
 })
 
 /** DSH's type, radii and the page's measures (DSH's settings field and modal sizes). */

@@ -10,4 +10,8 @@ The package manager installs these alongside the adapter. None of their code is 
 - `@modelcontextprotocol/client` 2.2.0 and its `@modelcontextprotocol/core` 2.2.0 (Copyright (c) 2024-2025 Model Context Protocol a Series of LF Projects, LLC). Their manifests declare MIT. Their LICENSE files describe the MCP project's move from MIT to Apache-2.0 and carry both texts.
 - Their own dependencies, as the package manager resolves them.
 
+## FishMark
+
+The Fishball mark in `assets/adapter-icon.svg` is FishMark from the owner's own fishball app (`app/src/main/java/org/areel/fishball/ui/Surfaces.kt` at `f4a887d`; MIT, same author), redrawn as SVG with the launcher icon's colours. Its plug badge is drawn for this repository.
+
 Any third-party code added later must be listed here with its licence and notice.

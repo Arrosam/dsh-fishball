@@ -33,12 +33,17 @@ const paragraph = (html, role, className) =>
  * The connector's mark (assets/connector-icon.svg), decorative: the title carries the meaning. Size
  * and colours are presentation attributes, not style, so it renders the same without the style block.
  */
-const { colors: MARK_COLOR } = MARK_SHAPE
+const { colors: MARK_COLOR, badgeCentre: BADGE_C } = MARK_SHAPE
+/** The glyph's offset: its grid's centre lands on the badge's centre after scaling. */
+const GLYPH_AT = Number((BADGE_C - (MARK_SHAPE.glyphGrid / 2) * MARK_SHAPE.glyphScale).toFixed(MARK_SHAPE.coordDigits))
 const MARK_HTML = `<span class="${PAGE_CLASS.mark}" aria-hidden="true">`
   + `<svg width="${MARK_SHAPE.sizePx}" height="${MARK_SHAPE.sizePx}" viewBox="${MARK_SHAPE.viewBox}">`
   + `<rect width="${MARK_SHAPE.tileSize}" height="${MARK_SHAPE.tileSize}" rx="${MARK_SHAPE.tileRadius}" fill="${MARK_COLOR.tile}"/>`
   + `<path d="${MARK_SHAPE.body}" fill="${MARK_COLOR.paper}"/><path d="${MARK_SHAPE.eye}" fill="${MARK_COLOR.accent}"/>`
-  + `<g fill="none" stroke="${MARK_COLOR.paper}" stroke-width="${MARK_SHAPE.wrenchStroke}" stroke-linecap="${MARK_SHAPE.wrenchCap}">`
+  + `<circle cx="${BADGE_C}" cy="${BADGE_C}" r="${MARK_SHAPE.ringRadius}" fill="${MARK_COLOR.tile}"/>`
+  + `<circle cx="${BADGE_C}" cy="${BADGE_C}" r="${MARK_SHAPE.chipRadius}" fill="${MARK_COLOR.paper}"/>`
+  + `<g transform="translate(${GLYPH_AT} ${GLYPH_AT}) scale(${MARK_SHAPE.glyphScale})" fill="none" stroke="${MARK_COLOR.tile}"`
+  + ` stroke-width="${MARK_SHAPE.glyphStroke}" stroke-linecap="${MARK_SHAPE.glyphCap}" stroke-linejoin="${MARK_SHAPE.glyphJoin}">`
   + `${MARK_SHAPE.wrench.map((d) => `<path d="${d}"/>`).join('')}</g></svg></span>`
 
 /**
