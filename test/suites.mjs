@@ -260,10 +260,11 @@ export const V3_SUITES = Object.freeze({
       'test/v3/dsh-connector-adapter/oauth-client/subject.mjs',
       // UI-POLISH-F: the navigation rows (nav-page.mjs) render through the F-SETTINGS primitive stand-ins and their constants.
       'test/v3/fishball-core/settings/primitives.mjs', 'test/v3/fishball-core/settings/constants.mjs']),
-  // F-WIRE: core's main row, boots a real standalone DSH with core, fishball-ui and board as whole
-  // bundles (the guards worker), and scans the Fishball side for DSH-side imports.
+  // F-WIRE: core's main row, boots a real standalone DSH with core and fishball-ui as whole bundles
+  // (the guards worker), and scans the Fishball side for DSH-side imports. fishball-board is shelved
+  // (the user, 2026-11-18); the board-present partitions use the suite's own stand-in fixture.
   'fishball-core.wire': suite("core's main row: fishballInstance, fishballStatus, the manager, model, Connect routes and web callback (F-WIRE)", v3('fishball-core/wire'),
-    [all(PACKAGE.fishballCore), all(PACKAGE.fishballUi), all(PACKAGE.fishballShared), all(PACKAGE.fishballBoard), 'test/v3/fishball-ui/guards/**']),
+    [all(PACKAGE.fishballCore), all(PACKAGE.fishballUi), all(PACKAGE.fishballShared), 'test/v3/fishball-ui/guards/**']),
   // F-WIRE: core's manager in a real standalone DSH (core + shared only): reminders, the singleton,
   // the preset and persona, the generated identity and the model rule, with the scripted model.
   'fishball-core.manager': suite("core's manager: reminders, singleton, preset and persona, generated identity, model (F-WIRE)", v3('fishball-core/manager'),

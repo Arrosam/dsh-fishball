@@ -15,7 +15,7 @@ import path from 'node:path'
 import { HOSTS, OAUTH_ERROR, TARGET_CODE, TARGET_STATE } from '../../../../packages/dsh-connector/mcp-schema/index.js'
 import { CONNECT, GUARDS } from '../../../../packages/core/contracts/constants.js'
 import { REPO } from '../../../support/constants.mjs'
-import { V3 } from '../../contract/package-boundaries/constants.mjs'
+import { SHELVED_BOARD, V3 } from '../../contract/package-boundaries/constants.mjs'
 
 export { CONNECT, OAUTH_ERROR, TARGET_CODE, TARGET_STATE }
 
@@ -36,8 +36,10 @@ export const MODEL = Object.freeze({
   fishball: Object.freeze({ on: 'on', off: 'fishball-off' }),
   set: Object.freeze({ ok: 'ok', incomplete: 'plugin-set-incomplete' }),
   reason: Object.freeze({ skipped: 'skipped', failed: 'failed' }),
-  // After requirements 1.34–1.41 the only checked set member is the board (R-BND-05).
-  members: Object.freeze([V3.board.name]),
+  // SHELVE-BOARD (the user, 2026-11-18): fishball-board is shelved from 1.0.0-alpha.1, so the board,
+  // the only member after requirements 1.34–1.41 (R-BND-05), left the check. No member remains; the
+  // check's mechanism is kept for a later member.
+  members: Object.freeze([]),
   control: Object.freeze({ connect: 'connect', cancel: 'cancel' }),
   serviceName: 'fishballStatus',
   notice: Object.freeze({ pluginId: V3.core.name, guardsKeyPrefix: 'fishball-status:guards:' }),
@@ -155,11 +157,28 @@ export const NEVER_REPORTED = Object.freeze({
 /** Words no strip line may carry (kinds and texts). */
 export const NEVER_SHOWN = Object.freeze([NEVER_REPORTED.ui, NEVER_REPORTED.hostedSettings, NEVER_REPORTED.watchdog, 'watchdog', 'Watchdog'])
 
-/** Fixture rows and entries: the board's row id is its patch's (packages/board/cordis.patch.yml). */
+/**
+ * SHELVE-BOARD (the user, 2026-11-18): "fishball-board先从这次release中移除，我要改的地方太多了。先封存，
+ * 留到下一批再说。所以不要预留在子实例的Fishball内。" The board in these rows is a stand-in: a fake
+ * BundleInfo only named fishball-board, with one row of the same id, as F-WIRE's stand-in fixture
+ * (wire/fixtures/fishball-board) has. packages/board is never read or loaded. `mention` is REL-PACK's
+ * one board-mention rule: no snapshot set and no strip line may match it.
+ */
+export const BOARD = Object.freeze({
+  name: SHELVED_BOARD.pkg.name,
+  row: SHELVED_BOARD.pkg.name,
+  entry: 'fbtest-entry-board',
+  mention: SHELVED_BOARD.mention,
+})
+
+/** Fixture rows and entries. */
 export const FIXTURE = Object.freeze({
-  boardRow: V3.board.name,
-  boardEntry: 'fbtest-entry-board',
   otherEntry: 'fbtest-entry-other',
+  /**
+   * A made-up set member for the strip's set-line mechanism (kept for a later member): core checks
+   * none now, so only a hand-built snapshot can carry a missing member.
+   */
+  laterMember: 'fbtest-later-member',
   /** Contributed-tool counts: BVA 0, 1 and n. */
   tools: Object.freeze({ none: 0, one: 1, many: 7 }),
   /** Stands in for the number when two counts' texts are compared (singular vs plural). */
