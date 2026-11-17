@@ -18,6 +18,7 @@ import {
 } from './constants.mjs'
 import { CODE_THROW, SECRET, THROWN, assertNoSecret, assertOneWarning } from '../link/log-privacy.mjs'
 import { createWorld, loadChunkAlone, loadPage, settle } from './page.mjs'
+import { registerModelCatalogCases } from './model-catalog.mjs'
 import { STAND_IN } from './primitives.mjs'
 import { instanceWith, routeWorld, targetRule } from './route.mjs'
 
@@ -1136,6 +1137,9 @@ export function registerSettingsCases(sdk) {
     await page.open(DSH.view.page)
     assert.equal(inputValue(page, FIELDS.url.name), FIXTURE.storedUrl)
   })
+
+  // ============================================================== E-FIX-3 (B5): the model catalog under Cordis's inject rule
+  registerModelCatalogCases(sdk)
 
   // ============================================================== later
   caseTest(sdk, 'SET3-UC-01', 'e2e', "the page on DSH's real Plugins page, both views", null, LATER.e2e)

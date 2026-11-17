@@ -139,6 +139,15 @@ export const DSH = Object.freeze({
   services: Object.freeze(['slots', 'layout', 'locale', 'configForms', 'remote', 'remote.credentials']),
   /** The credentials Remote namespace as its own service (dsh-api-gateway `remote.<namespace>`). */
   remoteCredentials: 'remote.credentials',
+  /**
+   * E-FIX-3 (B5): the session Remote namespace as its own service, the Remote service's own name
+   * and namespace member, and the `property` of the tracker Cordis's `Service` constructor gives
+   * every service (cordis lib/index.js, both SDKs: `{associate: name, property: 'ctx'}`).
+   */
+  remoteSession: 'remote.session',
+  remoteName: 'remote',
+  sessionNamespace: 'session',
+  trackerProperty: 'ctx',
   /** The removed slim panel's `main` slot key (requirement 9). */
   removedPanelKey: 'fishball-settings',
   /** ConfigFormSnapshot.status. */
@@ -201,6 +210,42 @@ export const FIXTURE = Object.freeze({
   nonJson: '<html>not json</html>',
   routeError: 'fbtest route failure detail',
 })
+
+/**
+ * E-FIX-3 (B5, relayed by Fishball 2026-11-17): the "Fishball's model" select of core's settings
+ * page over DSH's catalog (`remote.session.modelCatalog()` → `{ok, value: {groups: [{id, name,
+ * models: [{id, name, reasoning?: {efforts: [{id, name}]}}]}]}}`, both SDKs). The page lists one
+ * option per model, or one per reasoning effort of a model that has efforts. The words are the
+ * requirement's own (`none` was relayed in English only, so only `failed` is checked in zh).
+ */
+export const MODEL_SELECT = Object.freeze({
+  failed: Object.freeze({ en: 'The models could not be read.', zh: '无法读取模型。' }),
+  none: Object.freeze({ en: 'No model is configured in this DSH yet.' }),
+  select: 'select',
+  option: 'option',
+  /** The base commit the mutating-test check loads the chunk from (the commit before E-FIX-3). */
+  baseRef: 'c4845000',
+  baseChunk: 'packages/core/client.settings.js',
+  tempPrefix: 'fbtest-efix3-base-',
+})
+const model = (id, name, efforts) => Object.freeze({ id, name, ...(efforts ? { reasoning: Object.freeze({ efforts: Object.freeze(efforts.map(([eid, ename]) => Object.freeze({ id: eid, name: ename }))) }) } : {}) })
+const group = (id, name, models) => Object.freeze({ id, name, models: Object.freeze(models) })
+/** Catalog fixtures (test data): names are unique substrings so an option is told apart by its text. */
+export const CATALOG = Object.freeze({
+  /** BVA: no group at all. */
+  empty: Object.freeze({ groups: Object.freeze([]) }),
+  /** BVA: one group with one model, no efforts → exactly one model option. */
+  one: Object.freeze({ groups: Object.freeze([group('fbtest-p1', 'Fbtest Provider One', [model('m-solo', 'Fbtest Solo Model')])]) }),
+  /** EP: two groups, plain models and a model with two reasoning efforts. */
+  mixed: Object.freeze({
+    groups: Object.freeze([
+      group('fbtest-p1', 'Fbtest Provider One', [model('m-alpha', 'Fbtest Alpha Model'), model('m-beta', 'Fbtest Beta Model')]),
+      group('fbtest-p2', 'Fbtest Provider Two', [model('m-think', 'Fbtest Thinker Model', [['e-quick', 'Fbtest Quick Effort'], ['e-deep', 'Fbtest Deep Effort']])]),
+    ]),
+  }),
+})
+/** What a test makes `modelCatalog()` do: answer the catalog, answer `{ok:false}`, or reject. */
+export const CATALOG_ANSWER = Object.freeze({ ok: 'ok', refused: 'refused', rejects: 'rejects' })
 
 /** A token value made fresh per call, so no secret is a literal of this folder. */
 export const freshToken = () => 'fbtest-token-' + randomBytes(18).toString('base64url')

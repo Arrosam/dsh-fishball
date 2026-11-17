@@ -15,6 +15,7 @@ import { createBrowserSandbox } from '../../../support/browser-sandbox.mjs'
 import { V3 } from '../../contract/package-boundaries/constants.mjs'
 import { readManifest } from '../../contract/package-boundaries/packages.mjs'
 import { runtimeOf } from '../../fishball-core/package/constants.mjs'
+import { importBound } from '../../dsh-connector-adapter/oauth-client/subject.mjs'
 import { CONDITION, CORE_SPLIT, FIXTURE, SEAM, UI_PACKAGE } from './constants.mjs'
 
 const SDK_SCOPE = '@deepseek-ai/'
@@ -157,3 +158,25 @@ export function styleHead(page) {
   page.document.querySelector = (selector) => styles.find((s) => '#' + s.id === selector || `style#${s.id}` === selector) ?? null
   return styles
 }
+
+/**
+ * E-FIX-3 (B7): a row's `config` as DSH's Loader resolves it at entry activation: every `!!js`
+ * node evaluated by the SDK's own `interpolate` (cordis-plugin-loader; `evaluate` is
+ * `new Function('ctx', 'expr', 'with (ctx) { return eval(expr) }')`) against a real Cordis Context
+ * of that SDK, which provides `profileContext` when one is given (`null`: no `profileContext`, a
+ * Cordis context outside a dsh-launched profile).
+ */
+export async function configWhen(sdk, config, profileContext) {
+  const [{ Context }, { interpolate }] = await Promise.all([sdkModule(sdk, 'cordis'), sdkModule(sdk, 'cordis-plugin-loader')])
+  const ctx = new Context()
+  if (profileContext !== null) ctx.provide(CONDITION.service, Object.freeze({ ...profileContext }))
+  try { return interpolate(ctx, config) } finally { await ctx.fiber?.dispose?.() }
+}
+/** A `profileContext` with the facts the decision reads (`startedBundles`, `overlays`). */
+export const profileContextOf = (startedBundles, overlays) => ({ startedBundles: Object.freeze([...startedBundles]), overlays: Object.freeze([...overlays]) })
+/**
+ * fishball-ui's guard-row reader (src/guards.js `readUiGuardRows`, the requirement's public name),
+ * imported bound to `sdk` (its `@deepseek-ai/*` imports, dsh-app-boot among them, resolve to that
+ * SDK, as in a DSH process; the repository installs no DSH package itself).
+ */
+export const uiGuardReader = async (sdk) => (await importBound(sdk, path.join(UI_PACKAGE.dir, 'src', 'guards.js'))).readUiGuardRows

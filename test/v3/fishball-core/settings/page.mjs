@@ -114,13 +114,25 @@ function namespaceForm(world, ns) {
  * @param options.omit - service names this page does not provide.
  * @param options.activePanel - the layout's active panel at load (default null).
  * @param options.clients - CLIENTS.both (core and fishball-ui, the default) or CLIENTS.coreOnly.
+ * @param options.remoteSession - E-FIX-3 (B5). `undefined` (the default): the legacy scripted
+ *   `remote` above. Otherwise the page's `remote` is modelled as DSH's own Remote service is under
+ *   Cordis (dsh-api-gateway client, both SDKs): it carries the tracker Cordis's `Service`
+ *   constructor gives a service named `remote` (`{associate: 'remote', property: 'ctx'}`), so the
+ *   SDK's real Cordis redirects `ctx.remote.<ns>` to the service `remote.<ns>` and applies its rule
+ *   (a plugin that did not inject it gets "cannot get property … without inject"), and a namespace
+ *   DSH does not mount is absent (`undefined`). A face `{modelCatalog(), $on?}` is then provided as
+ *   `remote.session` by its OWN plugin fiber, as DSH's gateway provides every namespace
+ *   (`ownerCtx.plugin({name: 'remote.<ns>'})`): a service on an ancestor fiber (the root) would be
+ *   readable without inject and hide the rule. `null`: the same Remote, no `remote.session`.
+ * @param options.chunkFiles - E-FIX-3: `{<chunk file name>: <absolute path>}` loads that file in
+ *   place of the package's own chunk (the base-commit copy of the mutating-test check).
  */
 export function createWorld({
   sdk, lang = 'en', base = FIXTURE.base, hash = '', core = {}, coreUser, instanceTarget = null, configured = false,
-  navigation = true, launcher = true, omit = [], activePanel = null, clients = CLIENTS.both,
+  navigation = true, launcher = true, omit = [], activePanel = null, clients = CLIENTS.both, remoteSession, chunkFiles = {},
 } = {}) {
   const world = {
-    sdk, lang, base, clients,
+    sdk, lang, base, clients, remoteSession, chunkFiles,
     namespaces: new Map(),
     forms: new Map(),
     watchers: [],
@@ -414,21 +426,45 @@ export async function loadPage(t, world) {
   for (const e of entries) run(e.file)
   const graph = entries.map((e) => ({ id: e.id, rev: 'fbtest' }))
   const dirOf = (owner) => path.dirname(entries.find((e) => e.id === owner).file)
-  const table = moduleTable({ page, platform, graph, loadChunk: async (owner, file) => run(path.join(dirOf(owner), file)) })
+  const table = moduleTable({ page, platform, graph, loadChunk: async (owner, file) => run(world.chunkFiles[file] ?? path.join(dirOf(owner), file)) })
 
-  const { Context } = await import(pathToFileURL(path.join(runtimeOf(world.sdk), CORDIS_ENTRY)).href)
+  const { Context, Service } = await import(pathToFileURL(path.join(runtimeOf(world.sdk), CORDIS_ENTRY)).href)
   const root = new Context()
   root.on(STATUS_EVENT, (fiber) => { if (fiber.state === FIBER.failed) world.failedFibers.push(fiber.runtime?.name ?? fiber.name ?? '?') })
+  if (world.remoteSession !== undefined) world.services.remote = cordisRemote(world.services.remote, Service.tracker)
   for (const name of world.provided) root.provide(name, world.services[name])
+  const owned = []
+  if (world.remoteSession) {
+    const fiber = root.plugin({ name: DSH.remoteSession, apply: (ctx) => { ctx.provide(DSH.remoteSession, world.remoteSession) } })
+    await fiber
+    owned.push(fiber)
+  }
   const plugins = applyPlugins(root, graph, table, world.errors)
   world.root = root
   t.after(async () => {
     for (const key of world.shim.roots()) world.shim.unmountRoot(key)
     page.clearTimers()
     for (const p of plugins.reverse()) await p.fiber.dispose?.().catch?.(() => {})
+    for (const fiber of owned) await fiber.dispose?.().catch?.(() => {})
   })
   await settle()
   return pageHandle(world)
+}
+
+/**
+ * The scripted `remote` as DSH's Remote service meets Cordis (createWorld `remoteSession`): Cordis's
+ * own tracker for a service named `remote`, and no `session` member of its own, so `ctx.remote.session`
+ * is either the `remote.session` service under Cordis's inject rule or absent.
+ */
+export function cordisRemote(remote, trackerKey) {
+  const tracker = Object.freeze({ associate: DSH.remoteName, property: DSH.trackerProperty })
+  return new Proxy(remote, {
+    get(target, name, receiver) {
+      if (name === trackerKey) return tracker
+      if (name === DSH.sessionNamespace) return undefined
+      return Reflect.get(target, name, receiver)
+    },
+  })
 }
 
 /** The automatic JSX runtime a bundled classic script may require, over the same shim. */
