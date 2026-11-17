@@ -82,6 +82,27 @@ export const PERSONA = Object.freeze({
   absent: Object.freeze(['message_session', 'answer_approval', 'list_plugins', 'watch_session']),
 })
 
+/**
+ * F-FIX persona rows (the user's decisions of 2026-11-16/17): no `ask_agent` tool ("不给ask_agent工具");
+ * `approval_answer` with decision `ask` is refused ("Refuse it"); permission requests become cards
+ * (2026-11-17: "Permission requests become cards"), filed with `ask_user` and answered Allow once
+ * or Reject. The words come from the requirements; the patterns only find them in prose.
+ */
+export const PERSONA_FIX = Object.freeze({
+  entry: path.join(import.meta.dirname, '..', '..', '..', '..', 'packages', 'core', 'src', 'persona.js'),
+  export: 'PERSONA_ROLE',
+  absentTool: 'ask_agent',
+  /** `ask` offered as a decision word: quoted or code-spanned, `decision: ask`, "ask the session", or listed beside another decision. */
+  askDecision: Object.freeze([/[`'"]ask[`'"]/, /decision\W{0,4}ask\b/i, /\bask the session\b/i, /\bask\b\s*(?:,|\/|or)\s*(?:escalate|reject|grant|allow)\b/i, /\b(?:escalate|reject|grant|allow)\s*(?:,|\/|or)\s*ask\b/i]),
+  decisions: Object.freeze(['allow', 'grant', 'reject', 'escalate']),
+  askTool: 'ask_user',
+  permission: /permission/i,
+  allowOnce: /allow once/i,
+  reject: /\breject\b/i,
+  /** The retired wording of the ask card's source (an `ask` event filed as a card). */
+  askEvent: /\ban [`'"]?ask[`'"]? event\b/i,
+})
+
 export const PRESET = Object.freeze({ fishball: 'fishball' })
 /** DSH settings.mutate op words and the message role a reminder delivery has. */
 export const OP = Object.freeze({ set: 'set', unset: 'unset' })

@@ -18,7 +18,7 @@ import path from 'node:path'
 import { importSdk } from '../../../private-skills/support/sdk.mjs'
 import { until } from '../../../support/util.mjs'
 import {
-  ANSWER, APPROVAL_KIND, ASK_TOOL, CONNECTOR_OK, DECISION_KIND, DSH, EVENT_TYPE, FIXTURE, OFFER_ID, RECONCILE, RETIREMENT_REASON, ROUTE,
+  ANSWER, APPROVAL_KIND, ASK_TOOL, CONNECTOR_OK, DECISION_KIND, DECISION_KIND_OF, DSH, EVENT_TYPE, FIXTURE, OFFER_ID, RECONCILE, RETIREMENT_REASON, ROUTE,
   SETTLED_BY, SETTLEMENT_OUTCOME, TOOL, WAIT,
 } from './constants.mjs'
 import { asksModule, exported } from './subject.mjs'
@@ -41,21 +41,38 @@ function mailboxEvent(type, payload, extra = {}) {
 
 let asks = 0
 /**
- * A K1 `ask` event: an ask_agent of `sourceSessionId`, its payload the descriptor. `type` lets a row
- * build the same shape for another answerable type (a permission), which is no ask.
+ * A K1 offer event of `type` from `sourceSessionId`, its payload the V2 descriptor: an `ask` by
+ * default, or a `permission` (card-able since F-FIX, the user 2026-11-17: "Permission requests
+ * become cards"), or a `question` / `plan-review` (never card-able; their descriptor kind and
+ * decision kind are K1's `question`, DECISION_KIND_OF).
  */
 export function askEvent({ title = FIXTURE.title, choices = [], sourceSessionId = FIXTURE.askingSession, type = EVENT_TYPE.ask } = {}) {
   asks += 1
   const approvalId = FIXTURE.approvalPrefix + asks
-  const offerId = approvalId + OFFER_ID.separator + OFFER_ID.firstRevision
+  const decisionKind = DECISION_KIND_OF[type] ?? DECISION_KIND.approval
   const descriptor = {
-    approvalId, offerId, kind: APPROVAL_KIND.approval, prompt: FIXTURE.question + FIXTURE.numberSeparator + asks, choices: [...choices], title,
+    approvalId, offerId: undefined, kind: decisionKind === DECISION_KIND.question ? APPROVAL_KIND.question : APPROVAL_KIND.approval,
+    prompt: FIXTURE.question + FIXTURE.numberSeparator + asks, choices: [...choices], title,
     at: FIXTURE.askedAt + asks, toolName: FIXTURE.toolName, callId: null, reason: FIXTURE.reason, quotes: [],
   }
-  return mailboxEvent(type, descriptor, {
-    sourceSessionId, correlationId: offerId, offer: { offerId, revision: OFFER_ID.firstRevision, decisionKind: DECISION_KIND.approval },
+  return offerEvent(type, descriptor, sourceSessionId, OFFER_ID.firstRevision)
+}
+/** One offer event for `descriptor` at `revision` (its offer id is `<approvalId>.r<revision>`). */
+function offerEvent(type, descriptor, sourceSessionId, revision) {
+  const offerId = descriptor.approvalId + OFFER_ID.separator + revision
+  return mailboxEvent(type, { ...descriptor, offerId }, {
+    sourceSessionId, correlationId: offerId, offer: { offerId, revision, decisionKind: DECISION_KIND_OF[type] ?? DECISION_KIND.approval },
   })
 }
+/**
+ * A re-offer of `event` (F-FIX): a new event of the same type, the same approvalId and session, a
+ * NEW offerId (the next revision), and its own prompt, so the replaced record is seen to change.
+ */
+export function reofferOf(event, revision = event.offer.revision + 1) {
+  return offerEvent(event.type, { ...event.payload, prompt: event.payload.prompt + FIXTURE.reofferSuffix + revision }, event.sourceSessionId, revision)
+}
+/** The same event delivered again (a replay: the same eventId and offerId). */
+export const replayOf = (event) => structuredClone(event)
 /** A `settlement` naming `approvalId` (R-CON-06: settled elsewhere). */
 export const settlementOf = (approvalId) => mailboxEvent(EVENT_TYPE.settlement, { approvalId, outcome: SETTLEMENT_OUTCOME.allowed, by: SETTLED_BY.user })
 /** A `retirement` withdrawing the event `retiredEventId`. */

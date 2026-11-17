@@ -17,12 +17,21 @@
 import path from 'node:path'
 import { APPROVAL_KIND, APPROVAL_DECISION as DECISION, RISK } from '../../../../packages/dsh-connector/mcp-schema/index.js'
 import {
-  DECISION_KIND, EVENT_TYPE, LINK_REFUSAL, OFFER_ID, REFUSAL, RETIREMENT_REASON, SETTLED_BY, SETTLEMENT_OUTCOME, TOOL,
+  DECISION_KIND, DECISION_KIND_OF, EVENT_TYPE, LINK_REFUSAL, OFFER_ID, REFUSAL, RETIREMENT_REASON, SETTLED_BY, SETTLEMENT_OUTCOME, TOOL,
 } from '../../../../packages/dsh-connector/mcp-schema/index.js'
 import { PACKAGE } from '../../../suites.mjs'
 import { REPO } from '../../../support/constants.mjs'
 
-export { APPROVAL_KIND, DECISION_KIND, EVENT_TYPE, OFFER_ID, RETIREMENT_REASON, SETTLED_BY, SETTLEMENT_OUTCOME, TOOL }
+export { APPROVAL_KIND, DECISION_KIND, DECISION_KIND_OF, EVENT_TYPE, OFFER_ID, RETIREMENT_REASON, SETTLED_BY, SETTLEMENT_OUTCOME, TOOL }
+
+/**
+ * F-FIX (the user, 2026-11-17, answering "ask cards after ask_agent removed": "Permission requests
+ * become cards"): the offer types ask_user files (`ask` stays, frozen) and those it never files.
+ */
+export const CARDABLE = Object.freeze({
+  filed: Object.freeze([EVENT_TYPE.permission, EVENT_TYPE.ask]),
+  never: Object.freeze([EVENT_TYPE.question, EVENT_TYPE.planReview]),
+})
 
 const CORE_DIR = path.join(REPO, 'packages', 'core')
 /** F-UI: the card's browser half is fishball-ui's (R-FB-14); the Node half stays core's. */
@@ -153,6 +162,8 @@ export const FIXTURE = Object.freeze({
   askedAt: 1_800_000_000_000,
   eventAtOffsetMs: 7_000,
   emptyTitle: '',
+  /** Appended to a re-offer's prompt (F-FIX re-offer rows): the replaced record's question is its own. */
+  reofferSuffix: ' (re-offer r',
   origin: 'http://127.0.0.1:4000',
   modelText: 'fbtest ok',
   callId: 'fbtest-call-',

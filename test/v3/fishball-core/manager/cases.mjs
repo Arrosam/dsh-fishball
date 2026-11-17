@@ -9,9 +9,10 @@
  */
 import assert from 'node:assert/strict'
 import { after, test } from 'node:test'
+import { pathToFileURL } from 'node:url'
 import { sleep, until } from '../../../support/util.mjs'
 import {
-  BUDGET, CONNECT_INPUT, FISHBALL_MODEL, GUARD_OK, HTTP, IDENTITY, MCP, MODEL, OP, PERSONA, PRESET, REMINDER, ROLE,
+  BUDGET, CONNECT_INPUT, FISHBALL_MODEL, GUARD_OK, HTTP, IDENTITY, MCP, MODEL, OP, PERSONA, PERSONA_FIX, PRESET, REMINDER, ROLE,
   RETIRED, ROUTE, SDK, TODO, TOOLS,
 } from './constants.mjs'
 import { scenario, startFakeTarget } from './subject.mjs'
@@ -265,6 +266,39 @@ export function registerManagerCases(sdk) {
     const system = f.managerTurn.map((r) => r.system).join('\n')
     for (const word of PERSONA.present) assert.ok(system.includes(word), word + ' missing from the persona')
     for (const word of PERSONA.absent) assert.equal(system.includes(word), false, word + ' still in the persona')
+  })
+
+  // ------------------------------------------------------------------ MGR-SET-EP-04: the persona text (F-FIX)
+  // The user's decisions of 2026-11-16/17: no ask_agent tool ("不给ask_agent工具"); approval_answer
+  // with decision `ask` is refused ("Refuse it"); permission requests become cards ("Permission
+  // requests become cards"). Unit level: PERSONA_ROLE, the text Fishball's model reads, imported as a
+  // black box (no DSH is booted). EP: a forbidden mention / a required one.
+  const persona = async () => {
+    const mod = await import(pathToFileURL(PERSONA_FIX.entry).href)
+    const role = mod[PERSONA_FIX.export]
+    assert.ok(typeof role === 'string' || Array.isArray(role), PERSONA_FIX.export + ' is not a text')
+    return Array.isArray(role) ? role.join('\n') : role
+  }
+  test(name('MGR-SET-EP-04 1', `the persona does not mention ${PERSONA_FIX.absentTool} (no such tool)`), async () => {
+    assert.equal((await persona()).includes(PERSONA_FIX.absentTool), false)
+  })
+  test(name('MGR-SET-EP-04 2', 'the persona does not offer ask as an approval_answer decision (no "ask the session a question")'), async () => {
+    const text = await persona()
+    assert.deepEqual(PERSONA_FIX.askDecision.map((re) => text.match(re)?.[0]).filter(Boolean), [])
+  })
+  test(name('MGR-SET-EP-04 3', `the persona still names the decisions ${PERSONA_FIX.decisions.join(', ')}`), async () => {
+    const text = await persona()
+    assert.deepEqual(PERSONA_FIX.decisions.filter((d) => !new RegExp(`\\b${d}\\b`, 'i').test(text)), [])
+  })
+  test(name('MGR-SET-EP-04 4', `the persona tells Fishball to file permission requests with ${PERSONA_FIX.askTool}, answered Allow once / Reject`), async () => {
+    const text = await persona()
+    assert.ok(text.includes(PERSONA_FIX.askTool), PERSONA_FIX.askTool + ' missing')
+    assert.ok(PERSONA_FIX.permission.test(text), 'no mention of permission requests')
+    assert.ok(PERSONA_FIX.allowOnce.test(text), 'no "Allow once"')
+    assert.ok(PERSONA_FIX.reject.test(text), 'no "Reject"')
+  })
+  test(name('MGR-SET-EP-04 5', 'the persona no longer speaks of "an ask event" as the card source'), async () => {
+    assert.equal((await persona()).match(PERSONA_FIX.askEvent)?.[0] ?? null, null)
   })
 
   // ------------------------------------------------------------------ MGR-ID: generated identity (R-ID-10, DESIGN §20)

@@ -200,11 +200,20 @@ export function registerCoreCases(sdk) {
   // Re-pointed (R-HOST-07 still holds; the slim panel and its links are removed, 1.34 item 4): no
   // script the child serves carries a model-sync marker, the page makes no sync request, and the
   // child has no sync route.
-  caseTest(sdk, 'HOST-UC-08', 'A4', 'hosted child: no served script carries a model-sync trigger, the page makes no sync request, and the child has no sync route (R-HOST-07)', async (t) => {
+  // Re-baselined (F-FIX) under the user's decisions: 1.33 Q-D2 puts the sync trigger only on the
+  // instance's own plugin settings page in H, and 1.41 Q-G7 = A puts model sync entirely in
+  // dsh-instance (its child-side row is the provider-sync target on the lifecycle wire, not an HTTP
+  // route) while Fishball's model is chosen in core's settings or fishball-ui's model dialog ("同步只是
+  // 同步model list，至于fishball用什么还要在fishball内设置", the user, 2026-11-16). So the first check
+  // matches the sync-control family and the sync routes only (MARK.modelSync, ROUTE.sync); the
+  // model-choice controls (`data-fishball-model-select`, `-dialog`, `-choice`, …) are required and
+  // no longer count. The old whole-prefix match failed on exactly those since F-WIRE.
+  caseTest(sdk, 'HOST-UC-08', 'A4', 'hosted child: no served script carries a model-sync trigger (sync controls or routes; model choice is not sync, 1.41 Q-G7), the page makes no sync request, and the child has no sync route (R-HOST-07, 1.33 Q-D2)', async (t) => {
     const { child } = await readyChild(sdk)
     const page = await openSettingsPage(t, { sdk, child })
     await page.settled()
-    assert.deepEqual(page.scripts.filter((s) => s.source.includes(MARK.modelPrefix)).map((s) => s.url), [], 'model-sync markers in served scripts')
+    const syncTrigger = (source) => MARK.modelSync.test(source) || ROUTE.sync.some((route) => source.includes(route.slice(1)))
+    assert.deepEqual(page.scripts.filter((s) => syncTrigger(s.source)).map((s) => s.url), [], 'model-sync triggers in served scripts')
     assert.deepEqual(page.requests.filter((r) => ROUTE.sync.includes(r.pathname)), [], 'the page requested a sync route')
     for (const route of ROUTE.sync) assert.equal((await childRequest(child, 'POST', route, '{}')).status, HTTP.notFound, 'the child answers ' + route)
     assert.deepEqual(page.failed(), [], 'failed plugins; plugins ' + describePlugins(page))
