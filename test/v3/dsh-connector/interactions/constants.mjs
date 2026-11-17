@@ -142,7 +142,7 @@ export const IX = Object.freeze({
 export const WORLD = Object.freeze({
   extension: path.join(import.meta.dirname, 'extension.mjs'),
   envKey: ENV.extension,
-  scenario: Object.freeze({ main: 'ix-main', ptc: 'ix-ptc', restart: 'ix-restart', grants: 'ix-grants', questions: 'ix-questions', limits: 'ix-limits' }),
+  scenario: Object.freeze({ main: 'ix-main', ptc: 'ix-ptc', restart: 'ix-restart', grants: 'ix-grants', questions: 'ix-questions', limits: 'ix-limits', coldRoot: 'ix-cold-root' }),
 })
 
 /** Fixture data (not product values). */

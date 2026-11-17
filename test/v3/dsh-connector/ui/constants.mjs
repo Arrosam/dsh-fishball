@@ -198,4 +198,6 @@ export const CUI = Object.freeze({
   manyChanges: 2000,
   changeCounts: Object.freeze([1, 2, 2000]),
   liveChanges: 3,
+  /** The order row's three changes (read, 1, 2, read, 3, drain). */
+  orderChanges: 3,
 })
