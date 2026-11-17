@@ -1,7 +1,8 @@
 /**
  * The DSH-side ports the V3 modules take for sessions (task C-WIRE): routing's `sessions` source
- * (routing/index.js: `exists`, `onTurnFinished`, `onState` over root session ids), the
- * `sessionExists` port of the hand-over service and of C-EXT's `emit`, and K1d `SessionNotes`.
+ * (routing/index.js: `exists`, `rootOf`, `onTurnFinished`, `onState` over root session ids; `rootOf`
+ * is what the hand-over service acts on), the `sessionExists` port of C-EXT's `emit`, and K1d
+ * `SessionNotes`.
  * All of them read DSH through the services the V2 domain already uses (session-info.js, the
  * session controller), so no session rule is written twice.
  */

@@ -510,7 +510,8 @@ window.__ModuleLoader__.load({
      * Enter then saves it over the newer value on purpose; Escape discards it at any time. A newer
      * change after that warning warns again (`warned` is the value the user was warned about).
      * @param saved - the field's live saved value
-     * @returns `{text, busy, failed, conflict, edit(text), discard(), commit(ops)}`: `text` is null
+     * @returns `{text, busy, failed, conflict, edit(text), discard(), commit(ops)}`: `conflict` is
+     *   `{value}` (the newer value warned about) or undefined; `text` is null
      *   without a draft; `commit(null)` means "nothing to save" (unchanged or invalid text) and drops the draft
      */
     function useScalarDraft(form, snapshot, saved) {
@@ -528,7 +529,10 @@ window.__ModuleLoader__.load({
         // A refused save keeps the typed text, so the user sees what was not saved beside the error.
         void save(ops).then((accepted) => { if (accepted) discard() })
       }
-      return { text: draft?.text ?? null, busy, failed, conflict: changedElsewhere && draft.warned !== undefined, edit, discard, commit }
+      // `conflict` is the value warned about (undefined: no warning), so a newer change elsewhere
+      // after a warning shows a fresh alert, which a screen reader announces again.
+      const conflict = changedElsewhere ? draft.warned : undefined
+      return { text: draft?.text ?? null, busy, failed, conflict, edit, discard, commit }
     }
 
     /** A scalar field's input events: change stages, blur and Enter commit, Escape discards (useScalarDraft). */
@@ -540,9 +544,11 @@ window.__ModuleLoader__.load({
         else if (event.key === ESCAPE_KEY) draft.discard()
       },
     })
+    /** The conflict alert's React key prefix; the warned value follows it, so each warning is a new alert. */
+    const CONFLICT_KEY = 'conflict:'
     /** A scalar field's alerts: the conflict warning and a refused save. */
     const scalarErrors = (t, draft) => [
-      draft.conflict ? h('span', { key: 'conflict', role: 'alert' }, t('changedElsewhere')) : null,
+      draft.conflict === undefined ? null : h('span', { key: CONFLICT_KEY + JSON.stringify(draft.conflict.value), role: 'alert' }, t('changedElsewhere')),
       draft.failed ? h('span', { key: 'failed', role: 'alert' }, t('saveFailed')) : null,
     ]
 

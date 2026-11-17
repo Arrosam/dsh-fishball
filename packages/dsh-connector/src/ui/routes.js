@@ -133,8 +133,11 @@ export function createStreams(snapshot, logger) {
         }
         stream = {
           end,
+          // While a frame is held aside, a newer one replaces it there, even if the queue has room
+          // again: the reader can empty the queue while a pull is still running, and a direct
+          // enqueue would then be followed by the older held frame (review of R-FIX-CUI).
           push(bytes) {
-            if (controller.desiredSize > 0) enqueue(bytes)
+            if (pending === undefined && controller.desiredSize > 0) enqueue(bytes)
             else pending = bytes
           },
         }
