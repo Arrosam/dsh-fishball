@@ -108,3 +108,10 @@ export const WAIT = Object.freeze({
 export const E2E = Object.freeze({
   child: (row) => `E2E: needs a real hosted child DSH launch (${row})`,
 })
+
+/** R-FIX-INSTANCE rows of this suite (relayed 2026-11-18; F06 as corrected by the fixer that day: no retry). */
+export const RFI = Object.freeze({
+  f06: 'RFI-F06',
+  /** The child receiver's refusal when the store write fails (the I-HOST suite's RELAYED.receiver.unwritable). */
+  unwritable: HOST_RELAYED.receiver.unwritable,
+})

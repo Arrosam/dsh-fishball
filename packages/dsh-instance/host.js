@@ -13,7 +13,7 @@ import path from 'node:path'
 import Schema from '@deepseek-ai/schemastery'
 import { createNativeRuntime, RUNTIME_LIMITS } from './src/native-runtime/index.js'
 import { LIFETIME, HOSTED, LOCATOR, LOOPBACK, CHILD_STATE, LIFECYCLE_CODE, PLACEMENT, REFUSAL, RUNTIME } from './src/native-runtime/constants.js'
-import { pathsFor } from './src/native-runtime/files.js'
+import { fishballDirectory, pathsFor } from './src/native-runtime/files.js'
 import { createCredentialClient } from './src/native-runtime/credential.js'
 import { openHostedRecord } from './src/host/hosted-record.js'
 import { childTargetUrl, createHostedToken, usableTokens } from './src/host/hosted.js'
@@ -94,8 +94,12 @@ export const Config = Schema.object({
   [HOSTED.targetField]: Schema.string().default('').volatile().description('The MCP endpoint of a remote DSH connector for Fishball to link to. Leave blank to use the connector in this DSH. Applies at the next start of the instance.'),
 })
 const unavailable = code => Object.assign(new Error(code), { code })
-/** The hosted record, beside the runtime folder under the main home (hosted-record.js says why). */
-const HOSTED_RECORD = (home) => path.join(path.dirname(pathsFor(home).root), HOSTED.record.file)
+/**
+ * The hosted record, beside the runtime folder under the main home (hosted-record.js says why).
+ * Only through the runtime layout's own proof of that folder (fishballDirectory): an aliased main
+ * home is refused before anything is read or created there (R-FIX-INSTANCE F08).
+ */
+const hostedRecordFile = async (home) => path.join(await fishballDirectory(home), HOSTED.record.file)
 /**
  * The card's detail for a failed start: the specific code, then the failure's own first message
  * line when it has one beyond the code. Only the message text is handed on (never the error
@@ -121,10 +125,20 @@ const registry = globalThis[Symbol.for(LIFETIME.registryKey)] ??= new Map()
 
 export async function apply(ctx, config) {
   let enabled = fieldValue(config.enabled) !== false
+  /** The live `targetUrl` setting: what the next start writes into the child's launch. */
   const remoteTarget = () => {
     const value = fieldValue(config[HOSTED.targetField])
     return typeof value === 'string' ? value : ''
   }
+  /**
+   * The remote target the current child was launched with, captured when its launch overlay is
+   * written (`child` below), or undefined before any launch. The setting applies at the next start
+   * only, so the hosted-token rules follow this, never the live setting (R-FIX-INSTANCE F01): a
+   * cleared setting must not hand this DSH's connector token to a child still linked elsewhere.
+   * It stays after that child stops (no wire then, so nothing can be imported) until the next launch.
+   */
+  let launchedTarget
+  const activeTarget = () => launchedTarget ?? remoteTarget()
   const logger = typeof ctx.logger === 'function' ? ctx.logger(PLUGIN.name) : undefined
   let state = enabled ? PLUGIN.state.waiting : PLUGIN.state.disabled
   let code = null
@@ -142,6 +156,10 @@ export async function apply(ctx, config) {
   let appReady = false
   let owner
   let startup
+  /** Counts the stops, so a start can tell whether a stop came after a startup began (F07). */
+  let stops = 0
+  /** The stop count `startup` began under. */
+  let startupStops
   let disposal
   let cancelReady = () => {}
   let unsubscribeProviderSync = () => {}
@@ -174,7 +192,15 @@ export async function apply(ctx, config) {
    * that resolves; before it, Reconnect answers not-ready and the target status reads target-unset.
    */
   let hostedNow
-  const hostedReady = openHostedRecord(HOSTED_RECORD(ctx.profileContext.home)).then((record) => {
+  const key = ctx.profileContext.home
+  const predecessor = registry.get(key)
+  // Start teardown immediately, before the new module can queue startup.
+  const barrier = predecessor ? predecessor.shutdown() : Promise.resolve()
+  barrier.catch(() => { if (!closed) set(PLUGIN.state.failed, PLUGIN.code.stop) })
+  // Opened after the predecessor row is gone, whatever its shutdown's outcome: its record writes
+  // have drained by then (shutdown awaits them), so its last write never lands on top of this row's
+  // (R-FIX-INSTANCE F05). Each row keeps its own copy of the record.
+  const hostedReady = barrier.catch(() => {}).then(() => hostedRecordFile(key)).then(openHostedRecord).then((record) => {
     // A row that shut down while the record was read starts nothing: its successor row decides.
     if (closed) return undefined
     hostedNow = createHostedToken({
@@ -182,7 +208,7 @@ export async function apply(ctx, config) {
       record,
       credentials: () => credentialClient,
       instanceId: () => record.instanceId,
-      remoteTarget,
+      remoteTarget: activeTarget,
       // The child runtime folder's id (its owner marker, read at each start): new after a reinstall.
       runtimeId: () => owner?.hostId,
       changed: () => changed(),
@@ -209,11 +235,6 @@ export async function apply(ctx, config) {
     logger?.warn(PLUGIN.startFailedLog, error?.code ?? PLUGIN.code.failed)
     return set(PLUGIN.state.failed, failedCode, startFailureDetail(error), failedCode === PLUGIN.code.incompatible ? error?.[PLACEMENT.pluginField] : undefined)
   }
-  const key = ctx.profileContext.home
-  const predecessor = registry.get(key)
-  // Start teardown immediately, before the new module can queue startup.
-  const barrier = predecessor ? predecessor.shutdown() : Promise.resolve()
-  barrier.catch(() => { if (!closed) set(PLUGIN.state.failed, PLUGIN.code.stop) })
   try {
     // Created once per host row and shared by every host object; a wiring failure is a native
     // failure, never a main-boot failure (the catch below keeps the row unready).
@@ -233,8 +254,12 @@ export async function apply(ctx, config) {
       get mainWorkspaces() { return ctx.workspaceRegistry.list().map(workspace => workspace.path) },
       limits: LIFECYCLE_LIMITS,
       // The child-side row's target at each start (R-HOST-05): this DSH's connector endpoint, or
-      // the remote target the instance names. A URL, never a token.
-      child: () => ({ [HOSTED.targetField]: childTargetUrl({ instanceTargetUrl: remoteTarget(), hostOrigin: hostOrigin(), connectorUsable: usableTokens(connectorTokens()) !== undefined }) }),
+      // the remote target the instance names. A URL, never a token. Called once per launch, so it
+      // also records the launch's target for the hosted-token rules (activeTarget).
+      child: () => {
+        launchedTarget = remoteTarget()
+        return { [HOSTED.targetField]: childTargetUrl({ instanceTargetUrl: launchedTarget, hostOrigin: hostOrigin(), connectorUsable: usableTokens(connectorTokens()) !== undefined }) }
+      },
       onExit() { if (state === PLUGIN.state.ready || state === PLUGIN.state.starting) set(PLUGIN.state.failed, PLUGIN.code.exited) },
     })
     // No V2 connector binding, admin relay or settings relay (I-HOST, I-READY; user decision
@@ -273,8 +298,15 @@ export async function apply(ctx, config) {
     // The child starts after main appReady (R-HOST-02), with or without a connector in this DSH:
     // a remote target needs none, and without any target core reports `target-unset` itself.
     if (!appReady) return set(PLUGIN.state.waiting)
-    if (startup) return startup
-    startup = (async () => {
+    if (startup) {
+      // A start already running is this start, unless a stop came since it began: that one is
+      // aborted, and its cleanup may still run (off, then on before it ended: R-FIX-INSTANCE F07).
+      // Then this start waits for it to settle and starts afresh, rather than end with its outcome.
+      if (startupStops === stops) return startup
+      await startup.catch(() => {})
+      return start()
+    }
+    const current = (async () => {
       set(PLUGIN.state.starting)
       try {
         await barrier
@@ -302,11 +334,14 @@ export async function apply(ctx, config) {
         }
       }
       return status()
-    })().finally(() => { startup = undefined })
+    })().finally(() => { if (startup === current) startup = undefined })
+    startup = current
+    startupStops = stops
     return startup
   }
   async function stop() {
     if (!owner) return status()
+    stops++
     set(PLUGIN.state.stopping)
     try {
       await barrier
@@ -343,7 +378,9 @@ export async function apply(ctx, config) {
     cancelReady()
     unsubscribeCredential()
     credentialClient?.close()
-    hostedNow?.close()
+    // Its steps still running end here (the credential channel just closed, so none waits long);
+    // the successor opens the record only after this disposal (below).
+    const hostedDrained = hostedNow?.close()
     changeListeners.clear()
     unsubscribeProviderSync()
     providerSync?.close()
@@ -358,6 +395,13 @@ export async function apply(ctx, config) {
       } catch {
         set(PLUGIN.state.failed, PLUGIN.code.stop)
         throw unavailable(PLUGIN.code.stop)
+      } finally {
+        // Whatever the child's stop did: the record's open (a new record writes at once) and the
+        // hosted steps still running finish before a successor opens its copy (F05). Neither rejects.
+        // Not bounded: a step may be inside the connector's own createHosted or retire, in-process
+        // calls with no wait of their own, and giving up on one would reopen F05's lost write.
+        await hostedReady
+        await hostedDrained
       }
     })()
     disposal.catch(() => {})

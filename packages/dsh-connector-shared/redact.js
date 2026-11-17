@@ -89,26 +89,30 @@ function quotedEnd(text, from, quote, escaped) {
 const escapedQuoteAt = (text, at) => text[at] === REDACTION.escape && REDACTION.quotes.includes(text[at + 1])
 
 /**
- * The end (exclusive) of the balanced [ / { container at `from`; an unbalanced one runs to the text's
- * end. Any quote that closes on its line opens a string, so a bracket inside one (util.inspect prints
- * '…' strings) cannot close the container early. A quote that does not close on its line (`don't`,
- * `can't`) is an ordinary character: skipping its line could hide the bracket that closes the
- * container and mask every later line. A quote still open at the text's end (a cut-off line, as
- * stderr's F4 head) stays a string, so a bracket inside a cut-off secret cannot end the mask early.
+ * The balanced [ / { container at `from`: `{end, open}`, its end (exclusive) and, when it is still
+ * open at the text's end (an unbalanced one runs to there), `open = {depth, escaped}`, the state a
+ * later text resumes it with (redactContinued); else `open` is null. `depth` is the nesting already
+ * open before `from` (0 for a container that starts at `from`). Any quote that closes on its line
+ * opens a string, so a bracket inside one (util.inspect prints '…' strings) cannot close the
+ * container early. A quote that does not close on its line (`don't`, `can't`) is an ordinary
+ * character: skipping its line could hide the bracket that closes the container and mask every later
+ * line. A quote still open at the text's end (a cut-off line, as stderr's F4 head) stays a string, so
+ * a bracket inside a cut-off secret cannot end the mask early. Every string ends with its line, so the
+ * nesting depth is the only state a container carries from one line to the next.
  * `escaped` reads a container inside an escaped JSON string, whose strings are \"…\" and which ends
  * at that enclosing string's raw '"'. `unclosedUntil` is the text's memo of quotes found unclosed.
  */
-function containerEnd(text, from, escaped, unclosedUntil) {
-  let depth = 0
+function containerScan(text, from, escaped, unclosedUntil, depth = 0) {
+  const closed = (end) => ({ end, open: null })
   for (let at = from; at < text.length; at++) {
     const char = text[at]
     if (escaped && escapedQuoteAt(text, at)) {
       at = quotedEnd(text, at + REDACTION.escapedQuoteLength, text[at + 1], true)
       // Stopped on a raw '"' (the enclosing string ends), a closing \" pair (step onto its quote) or
       // a line end (left for the loop to step past).
-      if (text[at] === REDACTION.enclosingQuote) return at
+      if (text[at] === REDACTION.enclosingQuote) return closed(at)
       if (text[at] === REDACTION.escape) at++
-    } else if (escaped && char === REDACTION.enclosingQuote) return at
+    } else if (escaped && char === REDACTION.enclosingQuote) return closed(at)
     // Outside a string an escape takes the next character with it: an escaped quote opens none.
     else if (!escaped && char === REDACTION.escape) at++
     else if (!escaped && REDACTION.quotes.includes(char) && !(unclosedUntil[char] > at)) {
@@ -116,15 +120,16 @@ function containerEnd(text, from, escaped, unclosedUntil) {
       if (text[close] === char || close === text.length) at = close
       else unclosedUntil[char] = close
     } else if (REDACTION.containerOpen.includes(char)) depth++
-    else if (REDACTION.containerClose.includes(char) && --depth === 0) return at + 1
+    else if (REDACTION.containerClose.includes(char) && --depth === 0) return closed(at + 1)
   }
-  return text.length
+  return { end: text.length, open: { depth, escaped } }
 }
 
 /**
  * The private span of the value that starts at `from` after a credential name, or null when it is
  * empty. `escaped`: the name was an escaped JSON key, so the value is inside an escaped JSON string.
- * `unclosedUntil`: the text's unclosed-quote memo (privateSpans).
+ * `unclosedUntil`: the text's unclosed-quote memo (privateSpans). A container still open at the
+ * text's end carries its `open` state (containerScan).
  */
 function valueSpan(text, from, components, escaped, unclosedUntil) {
   const span = (start, end) => (end > start ? { start, end } : null)
@@ -134,15 +139,23 @@ function valueSpan(text, from, components, escaped, unclosedUntil) {
     return span(start, quotedEnd(text, start, text[from + 1], true))
   }
   if (REDACTION.quotes.includes(first)) return span(from + 1, quotedEnd(text, from + 1, first, false))
-  if (REDACTION.containerOpen.includes(first)) return span(from, containerEnd(text, from, escaped, unclosedUntil))
+  if (REDACTION.containerOpen.includes(first)) {
+    const { end, open } = containerScan(text, from, escaped, unclosedUntil)
+    return { ...span(from, end), open }
+  }
   if (components.some((c) => REDACTION.authorizationComponent.test(c))) return span(from, lineEnd(text, from))
   const rest = text.slice(from)
   const run = rest.match(REDACTION.schemeValue) ?? rest.match(REDACTION.bareValue)
   return run ? span(from, from + run[0].length) : null
 }
 
-/** Every private span of `text`, all found on the original text, so no mask can hide or create syntax. */
-function privateSpans(text) {
+/**
+ * Every private span of `text`, all found on the original text, so no mask can hide or create
+ * syntax, and the state of a credential container still open at the text's end (`open`, or null).
+ * `carry` is that state from the text before this one (redactContinued): the text then starts inside
+ * that container, so its first span runs from 0 to where the container closes.
+ */
+function privateSpans(text, carry) {
   const assignments = []
   // Resume after each masked value: a name inside it is masked already, and rescanning every
   // nested `password=[` of an unbalanced value to the text's end would be quadratic.
@@ -151,6 +164,13 @@ function privateSpans(text) {
   // whether a quote closes on its line depends on the text alone, and a later same quote before
   // that line end cannot close either. One memo per text keeps every container scan together linear.
   const unclosedUntil = {}
+  let open = null
+  if (carry) {
+    const resumed = containerScan(text, 0, carry.escaped, unclosedUntil, carry.depth)
+    assignments.push({ start: 0, end: resumed.end })
+    assignment.lastIndex = resumed.end
+    open = resumed.open
+  }
   for (let match = assignment.exec(text); match; match = assignment.exec(text)) {
     const name = match.groups.name ?? match.groups.bare
     const components = nameComponents(name)
@@ -159,26 +179,21 @@ function privateSpans(text) {
     if (!span) continue
     assignments.push(span)
     assignment.lastIndex = span.end
+    // Only a container can reach the text's end still open, and then no later assignment follows.
+    open = span.open ?? null
   }
   const bearers = [...text.matchAll(REDACTION.bearer)].map((match) => {
     const [start, end] = match.indices.groups.credential
     return { start, end }
   })
   const runs = [...text.matchAll(REDACTION.opaqueRun)].map((match) => ({ start: match.index, end: match.index + match[0].length }))
-  return [...assignments, ...bearers, ...runs].sort((a, b) => a.start - b.start || b.end - a.end)
+  return { spans: [...assignments, ...bearers, ...runs].sort((a, b) => a.start - b.start || b.end - a.end), open }
 }
 
-/**
- * Mask the secret shapes above in a diagnostic: a child stderr block, a provider-sync failure
- * message or a contributed tool's refusal message. Overlapping or touching spans become one mask,
- * so redacting the output again changes nothing.
- *
- * @param {string} text
- * @returns {string} the text with every private span replaced by `[redacted]`.
- */
-export function redact(text) {
+/** `text` with each span replaced by the mask; overlapping or touching spans become one mask. */
+function maskSpans(text, spans) {
   const merged = []
-  for (const span of privateSpans(text)) {
+  for (const span of spans) {
     const previous = merged.at(-1)
     if (previous && span.start <= previous.end) previous.end = Math.max(previous.end, span.end)
     else merged.push({ ...span })
@@ -191,4 +206,37 @@ export function redact(text) {
   }
   parts.push(text.slice(cursor))
   return parts.join('')
+}
+
+/**
+ * Mask the secret shapes above in a diagnostic: a child stderr block, a provider-sync failure
+ * message or a contributed tool's refusal message. Overlapping or touching spans become one mask,
+ * so redacting the output again changes nothing.
+ *
+ * @param {string} text
+ * @returns {string} the text with every private span replaced by `[redacted]`.
+ */
+export function redact(text) {
+  return maskSpans(text, privateSpans(text).spans)
+}
+
+/**
+ * redact for a text that arrives in pieces (the child's stderr, R-FIX-INSTANCE F03): a credential
+ * container opened in one piece (`credentials: {` on its own line) keeps masking the next pieces
+ * until it closes, so the result never depends on where the text was split. For whole-line pieces
+ * p1…pn, threading `carry` through the calls and joining the `text` outputs gives exactly
+ * redact(p1 + … + pn). Pieces must end at a line end: a value other than a container never spans a
+ * line, so the open container's nesting is the only state carried.
+ *
+ * @param {string} text - the next piece.
+ * @param {object | null} [carry] - the previous call's `carry`; null (or omitted) for a first piece.
+ * @returns {{text: string, carry: object | null}} the masked piece, and the opaque state of a
+ *   container still open at its end (null when none). A piece that starts inside an open container
+ *   leaves out its leading mask, since the previous piece's output already ends with it; so a piece
+ *   wholly inside one gives ''.
+ */
+export function redactContinued(text, carry = null) {
+  const { spans, open } = privateSpans(text, carry)
+  const masked = maskSpans(text, spans)
+  return { text: carry ? masked.slice(REDACTION.mask.length) : masked, carry: open }
 }
