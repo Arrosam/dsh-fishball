@@ -11,6 +11,21 @@ export const mintId = (prefix) => prefix + randomUUID().replace(REQUEST_ID.uuidS
 /** A domain refusal `{ok: false, code}` (a K1 REFUSAL code). */
 export const refused = (code) => Object.freeze({ ok: false, code })
 
+/**
+ * Settles an offer whose call already has its answer (the user's, or a question's first answer).
+ * Routing keeps an offer live when its settlement cannot be stored (review F04), so the answer can
+ * be retried; here nothing can retry it, so the offer is retired `withdrawn` instead of staying
+ * live with nobody to settle it. A failed withdraw goes to `onWithdrawFailed`.
+ * @returns routing's settle result
+ * @throws (rejects) the settlement's storage error, after the withdraw
+ */
+export function settleOrWithdraw(routing, offerId, settlement, onWithdrawFailed) {
+  return routing.settle(offerId, settlement).catch(async (error) => {
+    await routing.withdraw(offerId).catch(onWithdrawFailed)
+    throw error
+  })
+}
+
 /** A text trimmed, or '' for anything that is not a string. */
 export const trimmed = (text) => (typeof text === 'string' ? text.trim() : '')
 

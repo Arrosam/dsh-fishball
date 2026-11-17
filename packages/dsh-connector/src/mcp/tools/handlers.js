@@ -12,7 +12,7 @@ import { APPROVAL_DECISION, REFUSAL, TOOL } from '../../../mcp-schema/index.js'
 import { hasVisibleCharacter } from '../../text.js'
 import { inboxAckTool, inboxPollTool } from '../../mailbox/index.js'
 import { AUTHORITY, LOG, SESSION_ACCESS } from './constants.js'
-import { diagnosticOf } from '../../errors.js'
+import { RefusalError, diagnosticOf } from '../../errors.js'
 
 const refused = (code) => ({ ok: false, code })
 /** `grant_revoke` of a held grant whose session is not the caller's (sessions.js table, rows 1 and 3). */
@@ -34,14 +34,27 @@ const unwrapped = (result) => result.structuredContent
 export function createHandlers({ pairs, mailbox, managed, domain, now, logger }, access, offers) {
   const { sessions, interactions, attachments } = domain
 
-  /** Runs `body` with the session's root once the session table (sessions.js) allows it. */
+  /**
+   * Runs `body(args, caller, root, admit)` once the session table (sessions.js) allows it. `admit()`
+   * applies the table again against the current managed state and throws the refusal
+   * (`RefusalError`, answered by dispatch.js) when the caller no longer manages the session: the
+   * body and the session port call it after each await, right before each side effect and before
+   * read data is returned (review F02).
+   */
   const onSession = (accessRow, body) => async (args, { caller }) => {
     const checked = await access.check(args.sessionId, caller.principalKey, accessRow)
-    return checked.code === undefined ? body(args, caller, checked.root) : refused(checked.code)
+    if (checked.code !== undefined) return refused(checked.code)
+    const admit = () => {
+      const code = access.recheck(args.sessionId, caller.principalKey, accessRow, checked.root)
+      if (code !== undefined) throw new RefusalError(code)
+    }
+    return body(args, caller, checked.root, admit)
   }
   const managing = (body) => onSession(SESSION_ACCESS.manage, body)
   const reading = (body) => onSession(SESSION_ACCESS.read, body)
-  const delivery = (send) => managing(async (args) => ok({ status: (await send({ sessionId: args.sessionId, message: args.message, attachments: args.attachments })).status }))
+  const delivery = (send) => managing(async (args, caller, root, admit) => ok({
+    status: (await send({ sessionId: args.sessionId, message: args.message, attachments: args.attachments, admit })).status,
+  }))
 
   /** Makes the caller the new session's manager before its first message (R-ROUTE-01). */
   async function manageNew(sessionId, principalKey) {
@@ -83,6 +96,8 @@ export function createHandlers({ pairs, mailbox, managed, domain, now, logger },
         if (principalKey !== caller.principalKey) continue
         const summary = await sessions.describe(sessionId)
         if (summary === undefined || (args.workspaceId !== undefined && summary.workspaceId !== args.workspaceId)) continue
+        // Taken back or handed over while it was described: no longer the caller's (review F02).
+        if (!access.isMine(sessionId, caller.principalKey)) continue
         listed.push(summary)
       }
       return ok({ sessions: listed })
@@ -96,12 +111,13 @@ export function createHandlers({ pairs, mailbox, managed, domain, now, logger },
     },
     [TOOL.sessionMessage]: delivery((input) => sessions.message(input)),
     [TOOL.sessionRedirect]: delivery((input) => sessions.redirect(input)),
-    [TOOL.sessionStop]: managing(async (args) => {
-      await sessions.stop(defined({ sessionId: args.sessionId, reason: args.reason }))
+    [TOOL.sessionStop]: managing(async (args, caller, root, admit) => {
+      await sessions.stop(defined({ sessionId: args.sessionId, reason: args.reason, admit }))
       return ok({ stopped: true })
     }),
-    [TOOL.sessionRead]: reading(async (args) => {
+    [TOOL.sessionRead]: reading(async (args, caller, root, admit) => {
       const read = await sessions.read({ sessionId: args.sessionId, maxMessages: args.maxMessages, maxBytes: args.maxBytes })
+      admit()
       return ok({ messages: read.messages, truncated: read.truncated })
     }),
     // The reason is checked (V2: required) but has no V3 consumer: K1c's `release` is the only
@@ -119,7 +135,7 @@ export function createHandlers({ pairs, mailbox, managed, domain, now, logger },
     [TOOL.questionAnswer]: (args, { caller }) => {
       const { offerId, ...answer } = args
       return answered(args, caller, args.questionId, async (sessionId) => passed(
-        await interactions.answerQuestion({ ...answer, sessionId }), () => ({ accepted: true }),
+        await interactions.answerQuestion({ ...answer, sessionId, principalKey: caller.principalKey }), () => ({ accepted: true }),
       ))
     },
     [TOOL.questionAsk]: notYet,
@@ -130,12 +146,14 @@ export function createHandlers({ pairs, mailbox, managed, domain, now, logger },
       const prompts = await interactions.listPrompts()
       return ok({ prompts: prompts.filter((prompt) => access.isMine(prompt.sessionId, caller.principalKey)) })
     },
-    [TOOL.promptAnswer]: managing(async (args, caller, root) => {
+    [TOOL.promptAnswer]: managing(async (args, caller, root, admit) => {
       // A closed prompt is expired; a prompt of another session than the one named is forbidden,
       // so a caller can never answer a session it does not manage through a session it does.
       const prompt = (await interactions.listPrompts()).find((entry) => entry.promptId === args.promptId)
+      admit()
       if (prompt === undefined) return refused(REFUSAL.expired)
       if (prompt.sessionId !== root) return refused(REFUSAL.forbidden)
+      // No await between `admit` and the answer: the prompts port answers synchronously.
       const result = await interactions.answerPrompt(defined({ promptId: args.promptId, decision: args.decision, risk: args.risk, reason: args.reason }))
       return passed(result, (answer) => ({ promptId: answer.promptId, decision: answer.decision, managed: answer.managed === true }))
     }),
@@ -152,14 +170,16 @@ export function createHandlers({ pairs, mailbox, managed, domain, now, logger },
         const code = GRANT_REFUSAL[relation]
         if (code !== undefined) return refused(code)
       }
-      return passed(await interactions.revokeGrant({ grantId: args.grantId, reason: args.reason }), () => ({ grantId: args.grantId, revoked: true }))
+      const revoked = await interactions.revokeGrant({ grantId: args.grantId, reason: args.reason, principalKey: caller.principalKey })
+      return passed(revoked, () => ({ grantId: args.grantId, revoked: true }))
     },
     async [TOOL.attachmentPut](args) {
       const put = await attachments.put(args)
       return ok({ hostRef: put.hostRef, expiresAt: put.expiresAt })
     },
-    [TOOL.attachmentRead]: reading(async (args) => {
+    [TOOL.attachmentRead]: reading(async (args, caller, root, admit) => {
       const read = await attachments.read({ sessionId: args.sessionId, attachmentId: args.attachmentId })
+      admit()
       return ok({ attachmentId: read.attachmentId, mediaType: read.mediaType, total: read.total, sha256: read.sha256, chunks: read.chunks })
     }),
     [TOOL.inboxPoll]: async (args, { caller }) => unwrapped(await inboxPollTool(mailbox, caller.principalKey, args)),

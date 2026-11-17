@@ -31,7 +31,7 @@ import { diagnosticOf } from '../errors.js'
 import { rootSessionOf } from '../session-info.js'
 import { questionCallIdOf } from './call-log.js'
 import { ANSWER_RULE, LOG, QUESTION, QUESTION_TEXT, REQUEST_ID, SUMMARY } from './constants.js'
-import { joinSignal, mintId, refused, trimmed } from './support.js'
+import { joinSignal, mintId, refused, settleOrWithdraw, trimmed } from './support.js'
 
 const ACCEPTED = Object.freeze({ ok: true })
 
@@ -111,7 +111,7 @@ function batchFor(entry, { answers, approve, feedback }) {
 
 /**
  * @param ctx - the row's context (`on`, `get`, `sessions`)
- * @param deps.routing - `offer`, `settle`, `escalate`, `withdraw`
+ * @param deps.routing - `offer`, `settle`, `escalate`, `withdraw`, `holds`
  * @param deps.managerOf - K1c `ManagedState.managerOf`
  * @param deps.titleOf - `(sessionId) => Promise<string>`
  * @param {() => number} deps.now - epoch ms
@@ -212,7 +212,8 @@ export function createQuestions(ctx, { routing, managerOf, titleOf, now, logger 
     }
     if (result.error === undefined) {
       // The user's answer in the card; a question that left the agent (released) settles nothing.
-      void routing.settle(entry.offerId, { approvalId: id, outcome: SETTLEMENT_OUTCOME.answered, by: SETTLED_BY.user, answers: result.user.answers ?? [] }).catch(warn(LOG.settleFailed))
+      const settlement = { approvalId: id, outcome: SETTLEMENT_OUTCOME.answered, by: SETTLED_BY.user, answers: result.user.answers ?? [] }
+      void settleOrWithdraw(routing, entry.offerId, settlement, warn(LOG.withdrawFailed)).catch(warn(LOG.settleFailed))
       return result.user
     }
     void routing.withdraw(entry.offerId).catch(warn(LOG.withdrawFailed))
@@ -239,14 +240,17 @@ export function createQuestions(ctx, { routing, managerOf, titleOf, now, logger 
      * The domain half of `question_answer` (the core tools already checked the offer's holder and
      * id, and the payload rules). A refusal leaves the question open.
      */
-    async answer({ questionId, answers, approve, feedback, toUser: leave }) {
+    async answer({ questionId, answers, approve, feedback, toUser: leave, principalKey }) {
       const entry = live.get(questionId)
       if (entry === undefined) return refused(REFUSAL.expired)
+      // The offer desk checked the holder before an await; a succession or Take back since then
+      // moved it (review F02). Read synchronously, in the same step as the in-memory settle below.
+      if (!routing.holds(entry.offerId, principalKey)) return refused(REFUSAL.expired)
       const answering = answers !== undefined || approve !== undefined || feedback !== undefined
       if (leave === true) {
         if (answering) return refused(REFUSAL.badAnswer)
         // The card answers the call now; the user's answer there settles it (route above).
-        if (!(await routing.escalate(entry.offerId)) || !toUser(questionId)) return refused(REFUSAL.expired)
+        if (!(await routing.escalate(entry.offerId, { principalKey })) || !toUser(questionId)) return refused(REFUSAL.expired)
         return ACCEPTED
       }
       const built = batchFor(entry, { answers, approve, feedback })
@@ -256,7 +260,11 @@ export function createQuestions(ctx, { routing, managerOf, titleOf, now, logger 
       // question from the agent (toUser), so its answer is refused, never the call's. The
       // settlement follows; a retirement that raced it makes it a no-op.
       if (!live.has(questionId) || !entry.settle({ batch: built.batch })) return refused(REFUSAL.expired)
-      await routing.settle(entry.offerId, { approvalId: questionId, outcome: SETTLEMENT_OUTCOME.answered, by: SETTLED_BY.principal, answers: built.batch.answers })
+      const settlement = { approvalId: questionId, outcome: SETTLEMENT_OUTCOME.answered, by: SETTLED_BY.principal, answers: built.batch.answers }
+      // The call already has this answer (first answer wins in memory), so the answer is accepted
+      // whatever the settlement's storage does: reporting a failure would invite a retry that can
+      // only be `expired`. A settlement that could not be stored is logged and the offer withdrawn.
+      await settleOrWithdraw(routing, entry.offerId, settlement, warn(LOG.withdrawFailed)).catch(warn(LOG.settleFailed))
       return ACCEPTED
     },
 

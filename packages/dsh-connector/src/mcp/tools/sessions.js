@@ -15,6 +15,14 @@
  * The answer tools (`approval_answer`, `question_answer`) apply row 1 only, then authorise by the
  * offer's holder (offers.js): the holder is the session's manager when the offer was made, and a
  * succession moves it (R-HOST-09).
+ *
+ * **Current, not admitted (review F02; the user: "Agent不能回答不归自己管的会话，只能操作自己管的会话").**
+ * Management can change while a tool awaits DSH (Take back, Hand over, a succession), and no
+ * exception lets an admitted call finish under a former manager (R-TOK-05's admitted-request rule
+ * is about token revocation only). So the table is applied again after every awaited lookup and
+ * immediately before each side effect and before read data is returned (`recheck`), from the same
+ * synchronous managed state the change itself writes: an awaited step that started before the
+ * change may still run, but its result never reaches a former manager and no later step runs.
  */
 import { REFUSAL } from '../../../mcp-schema/index.js'
 import { AUTHORITY } from './constants.js'
@@ -38,7 +46,20 @@ export function createSessionAccess({ managed, sessions }) {
   }
 
   /**
-   * The table above for one call.
+   * Rows 1, 3 and 4 against the managed state as it is now (no DSH read): the code, or undefined
+   * when the caller still manages `root`. A call that started with the caller managing the session
+   * is refused once it does not: by another principal → `forbidden`, by nobody → the row's code.
+   * @param {{unmanaged: string}} access a SESSION_ACCESS row
+   */
+  function recheck(sessionId, principalKey, access, root) {
+    const current = relationOf(sessionId, principalKey)
+    if (current.relation === AUTHORITY.other) return REFUSAL.forbidden
+    if (current.relation === AUTHORITY.none) return access.unmanaged
+    return current.root === root ? undefined : REFUSAL.forbidden
+  }
+
+  /**
+   * The table above for one call, rechecked after the DSH existence read (see `recheck`).
    * @param {{unmanaged: string}} access a SESSION_ACCESS row
    * @returns {Promise<{root: string} | {code: string}>}
    */
@@ -47,11 +68,12 @@ export function createSessionAccess({ managed, sessions }) {
     if (relation === AUTHORITY.other) return { code: REFUSAL.forbidden }
     if ((await sessions.describe(sessionId)) === undefined) return { code: REFUSAL.unknownSession }
     if (relation === AUTHORITY.none) return { code: access.unmanaged }
-    return { root }
+    const code = recheck(sessionId, principalKey, access, root)
+    return code === undefined ? { root } : { code }
   }
 
   /** Whether the caller manages the session's root (the list tools' filter); no DSH existence read. */
   const isMine = (sessionId, principalKey) => relationOf(sessionId, principalKey).relation === AUTHORITY.mine
 
-  return Object.freeze({ relationOf, check, isMine })
+  return Object.freeze({ relationOf, check, recheck, isMine })
 }

@@ -116,3 +116,25 @@ export const LATER = Object.freeze({
 
 /** X-SEC X-02 (C-WIRE-2): approval_answer admits K1 ANSWER_DECISIONS only, and no `question`. */
 export const XSEC = Object.freeze({ id: 'X-SEC X-02', decisions: ANSWER_DECISIONS, ask: DECISION.ask, questionMember: 'question' })
+
+/**
+ * R-FIX-CONNECTOR review rows (review-x-cases.mjs, finding F02 of
+ * .runtime/reports/review-x-dsh-connector.md: "an agent can operate only on sessions it manages").
+ * Fixture data only; product words are K1's.
+ */
+export const REVIEW_X = Object.freeze({
+  /** The awaited lookups a row can hold (the fake domain's gate names). */
+  gate: Object.freeze({ describe: 'describe', deliver: 'deliver', stop: 'stop', read: 'read', attachment: 'attachment', prompts: 'prompts' }),
+  /** What the fake domain records as executed. */
+  effect: Object.freeze({ message: 'message', redirect: 'redirect', stop: 'stop', read: 'read', attachment: 'attachment', prompt: 'prompt' }),
+  /** The management change while the lookup is held. */
+  change: Object.freeze({ takeBack: 'take back', handOver: 'take back, then hand over to Q' }),
+  promptId: 'prm_fbtest_rx',
+  attachmentId: 'fbtest-rx-attachment',
+  mediaType: 'image/png',
+  chunk: 'iVBORw0KGgo=',
+  sha256: '0'.repeat(64),
+  toolName: 'bash',
+  /** A summary row's fields (K1 sessionSummary) for the fake describe. */
+  title: 'fbtest rx title',
+})

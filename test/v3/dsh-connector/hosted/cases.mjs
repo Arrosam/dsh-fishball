@@ -99,6 +99,7 @@ import { pollAll } from '../mailbox/cases.mjs'
 import { worldFor as mailboxWorld } from '../mailbox/subject.mjs'
 import { hostedModule, succeedWorld } from './subject.mjs'
 import { toolsOver } from './world.mjs'
+import { registerReviewXHostedCases } from './review-x-cases.mjs'
 
 const T = { timeout: WAIT.testMs }
 const { ids: ID, names: NAME, sessions: S } = FIXTURE
@@ -1520,5 +1521,6 @@ export function registerSucceedCases(sdk) {
   transitions(sdk)
   transferRows(sdk)
   stageRows(sdk)
+  registerReviewXHostedCases(sdk)
 }
 

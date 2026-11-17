@@ -26,6 +26,7 @@ import {
 } from '../../mcp-schema/index.js'
 import { EMIT_REFUSAL } from '../../tools/index.js'
 import { canonical } from '../digest.js'
+import { serialChain } from '../serial.js'
 import { EVENT_STATE, HASH, LOG, MINIMUM, MISUSE, RETIRE_OUTCOME, SAFE_KEY, START_SEQUENCE } from './constants.js'
 import { decodeCursor, encodeCursor } from './cursor.js'
 import { assertDraft, contributorOf, isNonEmptyString } from './draft.js'
@@ -128,13 +129,8 @@ export function createMailbox({ tables, hints, now = Date.now, newId = randomUUI
     entry.head = Math.max(entry.head, record.event.sequence)
   }
 
-  let chain = Promise.resolve()
   /** Runs `step` after every earlier mutation has settled. A failed step never blocks later ones. */
-  function serial(step) {
-    const run = chain.then(step)
-    chain = run.catch(() => {})
-    return run
-  }
+  const serial = serialChain()
 
   const boxKeyOf = (principalKey) => hash(principalKey)
   const recordsIn = (ids) => [...ids].map((eventId) => events.get(eventId))

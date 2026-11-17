@@ -39,6 +39,7 @@
 import { randomBytes, timingSafeEqual } from 'node:crypto'
 import { ENTRY_STATUS, REVOCATION_KIND, SETTINGS_REFUSAL, TOKEN_VALUE } from '../../mcp-schema/constants.js'
 import { diagnosticOf } from '../errors.js'
+import { serialChain } from '../serial.js'
 // The connector's one hash of a secret value (lowercase hex SHA-256, K1 TOKEN_VALUE.digestAlgorithm;
 // mcp/oauth/digest.js): a token value's stored digest is taken the same way as every OAuth token's.
 import { DIGEST_ENCODING } from '../mcp/oauth/constants.js'
@@ -137,7 +138,7 @@ export function createTokenRegistry({ ctx, logger, settings, restoreTokens }) {
   const listeners = new Set()
   let store
   let ready
-  let chain = Promise.resolve()
+  const chain = serialChain()
 
   /**
    * Opens the store once. A failed open is kept: every later call rejects and nothing
@@ -151,11 +152,8 @@ export function createTokenRegistry({ ctx, logger, settings, restoreTokens }) {
     }
   })())
 
-  const serial = (task) => {
-    const run = chain.then(() => init()).then(task)
-    chain = run.catch(() => {})
-    return run
-  }
+  /** Every task runs on the registry's own chain, after the store opened (init is memoised). */
+  const serial = (task) => chain(() => init().then(task))
 
   const liveRecord = (key) => {
     const record = records.get(key)

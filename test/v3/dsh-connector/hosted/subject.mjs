@@ -188,6 +188,16 @@ export async function succeedWorld(t, sdk) {
       assert.ok(keys.length > 0, 'harness: no hosted record to lose')
       for (const k of keys) await table.delete(k)
     },
+    /**
+     * A crash snapshot (R-FIX-CONNECTOR F03): the hosted record of `entryKey` rewritten with `patch`
+     * through DSH's own open domain runtime, not through the module (and not journaled by the seam).
+     */
+    async patchHostedRecord(entryKey, patch) {
+      const table = open.ctx.storageDomain.get(DOMAIN.hosted).table(DOMAIN.hostedTable)
+      const found = [...table.entries()].find(([k, r]) => k === entryKey || r?.entryKey === entryKey)
+      assert.ok(found, 'harness: no hosted record to patch')
+      await table.put(found[0], { ...found[1], ...patch })
+    },
     /** Closes the hosted service only (createHostedTokens' `close`), as the connector's stop does first. */
     closeService: () => open.made.close(),
     /** createHostedTokens' `resume()`, as C-WIRE calls it once at start (phase 3). */

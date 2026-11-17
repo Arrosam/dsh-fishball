@@ -32,6 +32,7 @@ import {
   SESSION_CONTROL, TOOL, TOOL_NAMES, formatOfferId, toolDefinition,
 } from './constants.mjs'
 import { protocolCodes, toolsWorld } from './subject.mjs'
+import { registerReviewXToolsCases } from './review-x-cases.mjs'
 
 const CASE = Object.freeze({
   platUc02: 'PLAT-UC-02', watchUc01: 'WATCH-UC-01', watchUc03: 'WATCH-UC-03',
@@ -403,4 +404,5 @@ export function registerCToolsCases(sdk) {
   partitions(sdk)
   boundaries(sdk)
   transitions(sdk)
+  registerReviewXToolsCases(sdk)
 }

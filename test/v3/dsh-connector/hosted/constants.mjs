@@ -180,3 +180,6 @@ export const LATER = Object.freeze({
   instance: 'I-HOST (the instance decides when to call retire: reinstall, Retry after a user delete, restart)',
   wire: 'C-WIRE (the service provided as dshConnectorTokens, and the SessionNotes port on a real DSH: the note starts no turn)',
 })
+
+/** R-FIX-CONNECTOR review rows (review-x-cases.mjs, finding F03): the row id. */
+export const REVIEW_X = Object.freeze({ id: 'RX-F03' })

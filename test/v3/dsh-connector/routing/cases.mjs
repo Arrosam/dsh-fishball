@@ -41,6 +41,7 @@ import {
 import { MUTATION, RETIRE_OUTCOME, SETTLED_BY, SETTLEMENT_OUTCOME, SETTLE_FIXTURE } from './constants.mjs'
 import { gatedMailboxPort, lateAckPort } from './fakes.mjs'
 import { cordisContext, routeWorld } from './subject.mjs'
+import { registerReviewXCases } from './review-x-cases.mjs'
 
 const T = { timeout: WAIT.testMs }
 const { ids: ID, sessions: S, names: NAME } = FIXTURE
@@ -1602,4 +1603,5 @@ export function registerRouteCases(sdk) {
   settleTransitions(sdk)
   payloadPartitions(sdk)
   retireOutcomeTables(sdk)
+  registerReviewXCases(sdk)
 }

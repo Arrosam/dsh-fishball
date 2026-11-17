@@ -17,22 +17,6 @@ export function checkedFields(type, fields) {
 }
 
 /**
- * A serial chain: each step runs after every earlier one has settled, and a failed step never
- * blocks later ones (the rule of V2's ManagedRegistry and of C-MAILBOX). C-MAILBOX and C-TOKENS
- * each keep a private copy of the same chain; a later task may move all three into one shared
- * helper (outside C-ROUTE's folders in W3).
- * @returns {(step: () => Promise<T>) => Promise<T>}
- */
-export function serialChain() {
-  let chain = Promise.resolve()
-  return (step) => {
-    const run = chain.then(step)
-    chain = run.catch(() => {})
-    return run
-  }
-}
-
-/**
  * A listener set. `fire(...args)` calls every listener in turn; one that throws is logged by its
  * diagnostic code only and the rest still run.
  * @param logger - `{warn(format, line, code)}`
