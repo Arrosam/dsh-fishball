@@ -36,7 +36,7 @@ import { corePatchFile } from '../../fishball-core/package/static.mjs'
 import { caseName, caseTest } from '../../contract/package-boundaries/cases.mjs'
 import { V3 } from '../../contract/package-boundaries/constants.mjs'
 import { readManifest } from '../../contract/package-boundaries/packages.mjs'
-import { assertLibraryCopies } from '../../release/pack/release.mjs'
+import { assertLibraryCopies, shelvedTraces } from '../../release/pack/release.mjs'
 import {
   BUDGET, CHILD, CORE_COPY, CORE_GUARD_ROWS, DSH_ROW, GUARDS, INTEGRATION, LATER, OVERLAY, PANEL, POLICY, RELAYED, REPORT, SET,
 } from './constants.mjs'
@@ -487,28 +487,21 @@ export function registerIPlaceCases(sdk) {
     assert.deepEqual(fishball(profileBundles(home)).sort(), [...SET.placed].sort())
   })
   // SHELVE-BOARD at unit level (composedProfile, no process): fresh → composed → composed again on the same home.
-  caseTest(sdk, 'HOST-EP-03', 'SHELVE compose', `a fresh compose and a second compose on the same home: no ${SET.shelved} copy, dependency, bundle or placement-record entry; the Fishball bundles are exactly ${SET.placed.join(', ')}`, async (t) => {
+  caseTest(sdk, 'HOST-EP-03', 'SHELVE compose', `a fresh compose and a second compose on the same home: no ${SET.shelved} copy, dependency, bundle, placement-record entry or install spec; the Fishball bundles are exactly ${SET.placed.join(', ')}`, async (t) => {
     const mainHome = path.join(scratch(t, 'fbtest-iplace-shelve-'), 'main')
     for (const run of ['first', 'second']) {
       await composeChild(mainHome)
       const home = fs.realpathSync(mainHome)
-      for (const dir of RELAYED.copyDirs) assert.equal(fs.existsSync(placedCopy(home, SET.shelved, dir)), false, `${run}: ${SET.shelved} in ${dir}/`)
-      assert.equal(Object.hasOwn(profileManifest(home)?.dependencies ?? {}, SET.shelved), false, `${run}: a profile dependency`)
+      assert.deepEqual(shelvedTraces(childProfile(home)), [], `after the ${run} compose`)
       assert.deepEqual(profileBundles(home).filter((b) => b.startsWith('fishball-')), [...SET.placed], `${run}: bundles ${show(profileBundles(home))}`)
-      assert.equal(JSON.stringify(placementRecord(home)).includes(SET.shelved), false, `${run}: placement record ${show(placementRecord(home))}`)
     }
   })
   // SHELVE-BOARD (state transition: first start → restart): nothing of the board in a real child, not even reserved.
   for (const [row, title, restart] of [['SHELVE first', 'after the first start', false], ['SHELVE restart', 'after a restart', true]]) {
-    integrationCase(sdk, 'HOST-EP-03', row, `${title}: no ${SET.shelved} in vendor/ or node_modules/, the profile's dependencies or bundles, or the placement record (not even disabled)`, async () => {
+    integrationCase(sdk, 'HOST-EP-03', row, `${title}: no ${SET.shelved} in vendor/ or node_modules/, the profile's dependencies or bundles, the placement record (not even disabled) or an install spec`, async () => {
       await ready()
       if (restart) assert.equal((await setup.restart(sdk))?.state, CHILD.state.ready, 'the child did not start again')
-      const home = setup.home
-      for (const dir of RELAYED.copyDirs) assert.equal(fs.existsSync(placedCopy(home, SET.shelved, dir)), false, `${SET.shelved} in ${dir}/`)
-      const manifest = profileManifest(home) ?? {}
-      assert.equal(Object.hasOwn(manifest.dependencies ?? {}, SET.shelved), false, 'a profile dependency')
-      assert.equal(profileBundles(home).includes(SET.shelved), false, 'a profile bundle')
-      assert.equal(JSON.stringify(placementRecord(home)).includes(SET.shelved), false, 'in the placement record: ' + show(placementRecord(home)))
+      assert.deepEqual(shelvedTraces(childProfile(setup.home)), [], title)
     })
   }
   integrationCase(sdk, 'HOST-EP-03', 7, 'both libraries (dsh-connector-shared, fishball-shared) and the contract-only connector sit beside core in the child, never as a profile bundle', async () => {

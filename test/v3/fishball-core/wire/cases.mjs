@@ -50,7 +50,10 @@ export function registerWireCases(sdk) {
     })
     // SHELVE-BOARD: core's set check has no board member, so the set is ok with the board absent or present.
     test(`${prefix} SHELVE set is ok, nothing missing, never naming fishball-board`, async () => {
-      assert.deepEqual(await settledSet(await get()), C.shelved.set)
+      const h = await get()
+      // Precondition of the "board present" partition: the stand-in's row really is loaded.
+      if (members.includes(C.board)) assert.deepEqual((await h.call('rows', { ids: [C.board] })).map((r) => [r.present, r.disabled]), [[true, false]], 'the stand-in board row is not loaded')
+      assert.deepEqual(await settledSet(h), C.shelved.set)
     })
     test(`${prefix} manager ensure is idempotent; generated identity stays out of settings`, async () => {
       const h = await get(); const f = await h.call('ensure')

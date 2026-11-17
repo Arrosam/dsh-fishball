@@ -39,9 +39,21 @@ export const PACKAGES = Object.freeze({
 })
 /**
  * SHELVE-BOARD: the shelved package (packages/board stays in the repo, unchanged). It is named only
- * so the cases can say it is absent: no tarball, no SHA256SUMS line, no bundled copy, no doc mention.
+ * so the cases can say it is absent: no tarball, no SHA256SUMS line, no bundled copy, no doc mention,
+ * nothing in a hosted child. `mention` is the one rule for "names the board" every SHELVE row uses
+ * (release docs, core/ui sources, the manager's prompt): the package name, or the word itself (also
+ * as a `board_` tool prefix); "dashboard", "clipboard", "onboarding" are other words.
  */
-export const SHELVED = Object.freeze({ board: pkg('fishball-board', 'board') })
+export const SHELVED = Object.freeze({
+  board: pkg('fishball-board', 'board'),
+  mention: /fishball-board|(?<![a-z])board(?![a-z])/i,
+})
+/**
+ * The hosted child profile's placement files (I-PLACE's relayed seam, 2026-11-15): the record the
+ * instance writes, and the two folders each placed package is copied to. The one place these names
+ * live; dsh-instance/placement's RELAYED and the SHELVE rows read them from here.
+ */
+export const CHILD_PLACEMENT = Object.freeze({ record: 'fishball-placement.json', copyDirs: Object.freeze(['vendor', 'node_modules']) })
 /** SHELVE-BOARD (BVA on the count): exactly this many tarballs, SHA256SUMS lines and publish lines. */
 export const RELEASE_COUNT = Object.freeze({ tarballs: 8, bundled: 2 })
 /**
@@ -49,7 +61,7 @@ export const RELEASE_COUNT = Object.freeze({ tarballs: 8, bundled: 2 })
  * the word itself (also as a tool prefix, board_…), so "dashboard" or "clipboard" do not count. Each doc's `npm publish` lines.
  */
 export const SHELVED_DOC = Object.freeze({
-  names: Object.freeze([/fishball-board/i, /(?<![\w-])board(?![a-z])/i]),
+  names: Object.freeze([SHELVED.mention]),
   publishLine: /^\s*npm publish\s+\S*?([\w.-]+\.tgz)\b/,
   publishDoc: 'PUBLISH.md',
   /** `--check`'s word for an extra tarball in the folder (SHELVE-BOARD requirement 1). */

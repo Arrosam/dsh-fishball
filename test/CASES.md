@@ -2541,7 +2541,7 @@ Re-baselined (was → now):
 | same | HOST-UC-01 E1 | blocking plugin fishball-board | fishball-ui (a member the child holds) |
 | test/v3/dsh-instance/placement | SET, HOST-UC-08 main 1, PLAT-DT-01 rules 1–7, HOST-EP-03 row 7, PLAT-DT-04 rule 1 | board, ui, core; DT walk on the board | ui, core; DT walk on fishball-ui |
 | test/v3/contract/split-shared | SPLIT-UC-04 placement tree | copies instance, core, board, ui | instance, core, ui |
-| test/v3/fishball-core/wire | WIRE-SYS (USE-CASES.md) | board+UI+core composition | kept (board present), plus the SHELVE rows |
+| test/v3/fishball-core/wire | WIRE-SYS (USE-CASES.md), WIRE-EP-02 | board+UI+core composition on packages/board; scan included packages/board | "board" is the stand-in bundle `wire/fixtures/fishball-board` (core's suite reads nothing of the shelved package); the scan drops packages/board (SPLIT-DT-01 keeps the board's own no-DSH-import rule); plus the SHELVE rows |
 | test/v2-recommendation/checks.mjs | AC9 / TC-32 comments | placed set core, ui, board | core, ui |
 
 Added:

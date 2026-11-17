@@ -127,8 +127,6 @@ export const CONNECTOR_MCP = '/api/agent/mcp'
 export const PLACEMENT = Object.freeze({
   bundles: Object.freeze([V3.ui.name, V3.core.name]),
   shelved: V3.board.name,
-  record: 'fishball-placement.json',
-  copyDirs: Object.freeze(['vendor', 'node_modules']),
   uiDirectory: 'fishball-ui',
   library: V3.shared.name,
   vendor: 'vendor',

@@ -26,13 +26,14 @@ export function forbiddenImports() {
   return hits
 }
 /**
- * A copy of packages/board whose engines.dsh no SDK meets (SHELVE-BOARD's "present and broken" board),
- * under the test-homes root; DSH skips it as incompatible. Removed by the caller's `after`.
+ * A copy of the suite's fishball-board stand-in whose engines.dsh no SDK meets (SHELVE-BOARD's
+ * "present and broken" board), under the test-homes root; DSH skips it as incompatible. Removed by
+ * the caller's `after`. The shelved packages/board is never read.
  */
 export function brokenBoardCopy() {
   fs.mkdirSync(path.join(C.temp, C.homesSuffix), { recursive: true })
   const dir = fs.mkdtempSync(path.join(C.temp, C.homesSuffix, C.shelved.brokenPrefix))
-  fs.cpSync(path.join(C.repo, 'packages', 'board'), dir, { recursive: true, filter: (src) => !src.split(path.sep).includes('node_modules') })
+  fs.cpSync(C.shelved.standIn, dir, { recursive: true })
   const file = path.join(dir, 'package.json')
   const pkg = JSON.parse(fs.readFileSync(file, C.encoding))
   fs.writeFileSync(file, JSON.stringify({ ...pkg, engines: { ...pkg.engines, dsh: C.shelved.impossibleEngine } }))
