@@ -300,6 +300,19 @@ export const V3_SUITES = Object.freeze({
     [all(PACKAGE.fishballUi), all(PACKAGE.fishballCore), all(PACKAGE.fishballShared),
       'test/v3/fishball-core/asks/**', 'test/v3/fishball-core/settings/**', 'test/v3/fishball-core/status/**', 'test/v3/fishball-ui/model-dialog/**',
       'test/v3/contract/package-boundaries/**', 'test/v2-page-cases/lite-browser.mjs', 'test/private-skills/support/**']),
+  // R-FIX-FUI F1: the pairing warning UI. The view model and the Node row (fishball-ui's index.js, its
+  // pairing and strip routes, the shared view stream) in a real Cordis root; the card through
+  // fishball-ui's client in the F-SETTINGS scripted page, with the F3 stream stand-in.
+  'fishball-ui.pairing': suite('the pairing warning: pairingView, the pairing stream and choose routes, the drawn card and its stream health (R-FIX-FUI F1)', v3('fishball-ui/pairing'),
+    [all(PACKAGE.fishballUi), all(PACKAGE.fishballShared), 'test/v3/fishball-core/settings/page.mjs', 'test/v3/fishball-core/settings/primitives.mjs',
+      'test/v3/fishball-core/settings/constants.mjs', 'test/v3/fishball-ui/stream/**', 'test/v3/dsh-connector-adapter/oauth-client/subject.mjs', 'test/v3/fishball-core/package/constants.mjs']),
+  // R-FIX-FUI F3 / F9: every fishball-ui dock (strip, ask cards, pairing card) over one health-aware
+  // EventSource stand-in, frames from the real stripView / pairingView and the F-ASKCARD card shape.
+  'fishball-ui.stream': suite('stream health of the strip, ask cards and pairing card; the ask card time in the DSH UI language (R-FIX-FUI F3, F9)', v3('fishball-ui/stream'),
+    [all(PACKAGE.fishballUi), all(PACKAGE.fishballShared), 'test/v3/fishball-core/settings/page.mjs', 'test/v3/fishball-core/settings/primitives.mjs',
+      'test/v3/fishball-core/settings/constants.mjs', 'test/v3/fishball-core/asks/world.mjs', 'test/v3/fishball-core/asks/constants.mjs', 'test/v3/fishball-core/asks/subject.mjs',
+      'test/v3/fishball-core/status/subject.mjs', 'test/v3/fishball-core/status/constants.mjs', 'test/v3/fishball-ui/model-dialog/strip.mjs', 'test/v3/fishball-ui/model-dialog/constants.mjs',
+      'test/v3/fishball-ui/pairing/**', 'test/v3/dsh-connector-adapter/oauth-client/subject.mjs', 'test/v3/fishball-core/package/constants.mjs']),
   'fishball-board.peers': suite('board without core (FEAT-PEERS; fold-notify was removed, REMOVE-WD)', v3('fishball-board/peers'),
     [all(PACKAGE.fishballBoard), sub(PACKAGE.dshConnector, 'mcp-schema')]),
   // The contract suites read every file of the packages they bound, so any change there reruns them.

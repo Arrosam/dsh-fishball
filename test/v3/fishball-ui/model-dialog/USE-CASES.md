@@ -40,3 +40,13 @@ frames built by the real pure `stripView(snapshot, lang)`.
 | UIPF-MODEL-EP-02 role group | EP | Each group is `role="group"` named by its heading and holds exactly its choices |
 | UIPF-MODEL-BVA-01 one group | BVA | One group, one model → one choice |
 | UIPF-MODEL-EP-03 refused / none | EP | Refused read: one `role=alert` line, no choice. Empty catalog: no choice, Open DSH settings |
+
+## R-FIX-FUI F4 (`catalog-cases.mjs`): the catalog on every opening
+
+| Id | Technique | Expected outcome |
+| --- | --- | --- |
+| CAT-ST-01 | ST | Opened with A → closed → opened with B: B's models, none of A's |
+| CAT-BVA-01 | BVA | One read per opening; focus and re-renders read nothing |
+| CAT-ST-02/03 | ST | Pending → loading, no choice; the reopening's first paint is loading |
+| CAT-ST-04 | ST | A read settling after close changes nothing; a late read of an earlier opening is never shown |
+| CAT-EP-01 | EP (refused / rejects × lang) | Failed alert and `[data-fishball-model-retry]` 'Try again' / '重试'; it reads again; success shows the models |

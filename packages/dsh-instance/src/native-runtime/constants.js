@@ -179,9 +179,9 @@ export const PLACEMENT = Object.freeze({
    * reserves it in the child; add it back here and in `install.order` for its release.
    */
   bundles: Object.freeze([
-    // fishball-ui before core (I-HOST, the user's answer Q2 = A): its guard rows target DSH's base
-    // rows, which precede every plugin bundle, so they hold in any order, while core's own guard
-    // check reports `bundle-order` unless core is last.
+    // fishball-ui before core (I-HOST, the user's answer Q2 = A): fishball-ui's patch only inserts
+    // its own rows, so it holds in any order, while core's patch (which holds every guard row) needs
+    // core last: its guard check reports `bundle-order` otherwise.
     Object.freeze({ name: 'fishball-ui', directory: 'fishball-ui' }),
     Object.freeze({ name: 'fishball-core', directory: 'core' }),
   ]),
