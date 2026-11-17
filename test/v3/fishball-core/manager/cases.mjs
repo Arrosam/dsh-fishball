@@ -16,6 +16,7 @@ import {
   RETIRED, ROUTE, SDK, TODO, TOOLS,
 } from './constants.mjs'
 import { scenario, startFakeTarget } from './subject.mjs'
+import { registerRfixManagerCases } from './rfix.mjs'
 
 const isCoreTool = (name) => TOOLS.reminders.includes(name) || name === TOOLS.ask || TOOLS.privateSkill.test(name)
 const set = (path, value) => ({ op: OP.set, path: [...path], value })
@@ -77,6 +78,8 @@ const callTool = (h, sessionId, tool, args, n) => h.call('callTool', { sessionId
 const createArgs = (row) => ({ title: row.title, prompt: REMINDER.promptOf(row.title), ...row.args })
 
 export function registerManagerCases(sdk) {
+  // R-FIX-CORE (F05–F08, F15, F17, F18): in-process rows, rfix.mjs.
+  registerRfixManagerCases(sdk)
   let target
   after(async () => target?.stop())
 
@@ -152,6 +155,24 @@ export function registerManagerCases(sdk) {
       f.connectUser = await waitAgentId(h, (v) => v === IDENTITY.user)
       await h.call('mutate', { ops: [unset(IDENTITY.path)] })
       f.connectBack = await waitAgentId(h, (v) => v !== IDENTITY.user && v !== null)
+      // R-FIX-CORE F09: invalid ids are never used or sent; the id in force stays the previous valid one.
+      f.f09 = {}
+      for (const [key, value] of Object.entries(IDENTITY.invalid)) {
+        const from = (await h.call('logs')).length
+        await h.call('mutate', { ops: [set(IDENTITY.path, value)] })
+        await sleep(BUDGET.applyPollMs)
+        f.f09[key] = { connect: await connectAgentId(h), logs: await h.call('logs', { from }) }
+      }
+      await h.call('mutate', { ops: [set(IDENTITY.path, IDENTITY.user)] })
+      f.f09.validAfter = await waitAgentId(h, (v) => v === IDENTITY.user)
+      await h.call('mutate', { ops: [set(IDENTITY.path, IDENTITY.invalid.dot)] })
+      await sleep(BUDGET.applyPollMs)
+      f.f09.invalidAfterUser = await connectAgentId(h)
+      await h.call('mutate', { ops: [set(IDENTITY.path, IDENTITY.longestValid)] })
+      f.f09.longest = await waitAgentId(h, (v) => v === IDENTITY.longestValid)
+      await h.call('mutate', { ops: [set(IDENTITY.path, IDENTITY.blank)] })
+      f.f09.blank = await waitAgentId(h, (v) => v !== IDENTITY.longestValid && v !== null)
+      await h.call('mutate', { ops: [unset(IDENTITY.path)] })
       f.guardsB = await h.call('guards')
     },
   ])
@@ -324,6 +345,34 @@ export function registerManagerCases(sdk) {
   test(name('MGR-ID-ST-03', 'identity.id unset again: the kept generated id is used again'), async () => {
     const f = await read('connectBack', 'connectA')
     assert.equal(f.connectBack.agentId, f.connectA.agentId)
+  })
+
+  // ------------------------------------------------------------------ RFIX-F09: identity.id validation (R-ID-02)
+  for (const [key, value] of Object.entries(IDENTITY.invalid)) {
+    test(name('RFIX-F09-EP-01', `${key}: identity.id ${JSON.stringify(value.length > 20 ? value.slice(0, 8) + '…(' + value.length + ')' : value)} is not used or sent; the generated id stays in force; ${IDENTITY.idInvalid} is logged by code only`), async () => {
+      const f = await read('f09', 'connectA')
+      const got = f.f09[key]
+      assert.equal(got.connect.agentId, f.connectA.agentId, 'Connect passed ' + JSON.stringify(got.connect))
+      const lines = got.logs.filter((l) => l.text.includes(IDENTITY.idInvalid))
+      assert.ok(lines.length >= 1, `no ${IDENTITY.idInvalid} log line: ` + JSON.stringify(got.logs.slice(-5)))
+      assert.deepEqual(lines.filter((l) => l.text.includes(value)), [], 'the refused value was logged')
+    })
+  }
+  test(name('RFIX-F09-ST-01', 'a valid user id after invalid ones is used at once'), async () => {
+    const f = await read('f09')
+    assert.equal(f.f09.validAfter.agentId, IDENTITY.user)
+  })
+  test(name('RFIX-F09-ST-01', 'an invalid id after a valid user id: the user id stays in force (the previous valid one)'), async () => {
+    const f = await read('f09')
+    assert.equal(f.f09.invalidAfterUser.agentId, IDENTITY.user)
+  })
+  test(name('RFIX-F09-BVA-01', 'a 64-character id (the grammar\'s maximum) is valid and used; 65 is refused (EP row long)'), async () => {
+    const f = await read('f09')
+    assert.equal(f.f09.longest.agentId, IDENTITY.longestValid)
+  })
+  test(name('RFIX-F09-EP-02', 'a blank identity.id means the generated id'), async () => {
+    const f = await read('f09', 'connectA')
+    assert.equal(f.f09.blank.agentId, f.connectA.agentId)
   })
 
   // ------------------------------------------------------------------ MGR-MOD: Fishball's model (DESIGN §20)

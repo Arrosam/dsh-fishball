@@ -25,6 +25,7 @@ import {
   REASON_ROWS, ROUTE, SUBJECT, SWEEP, TOOL, WAIT,
 } from './constants.mjs'
 import { askEvent, expectedCard, frames, offerOf, reofferOf, replayOf, request, retirementOf, routesFor, settlementOf, turns, worldFor } from './world.mjs'
+import { registerRfixAskCases } from './rfix.mjs'
 import { asksModule, exported, legacyAsksModule } from './subject.mjs'
 import { until } from '../../../support/util.mjs'
 import { cardPage } from './render.mjs'
@@ -634,6 +635,8 @@ function registerPermissionCases(sdk) {
 }
 
 export function registerAskCases(sdk) {
+  // R-FIX-CORE (F12): rfix.mjs.
+  registerRfixAskCases(sdk)
   registerReconcileCases(sdk)
   // ============================================================== PLAT-UC-07 / ASK-UC-01 (system)
   row(sdk, ID.uc07, 'main 1–3', 'S1\'s ask reaches Fishball; its model calls ask_user → one open card in Fishball\'s conversation; the user\'s Allow is committed once as Fishball\'s approval_answer', async (t) => {

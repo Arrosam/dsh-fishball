@@ -49,7 +49,7 @@ async function bound(sdk, file, owner) {
  * One façade over `link`, mounted on `ctx.tools`. `gate` and `imagesSupported` are passed only
  * when a case sets them, so the module's own defaults apply otherwise.
  */
-export async function makeBridge(sdk, { ctx, link, logger, gate, imagesSupported }) {
+export async function makeBridge(sdk, { ctx, link, logger, gate, imagesSupported, attachments }) {
   const mod = await bound(sdk, SUBJECT.entry, 'F-FACADE "Owns" packages/core/src/bridge/')
   assert.equal(typeof mod[SUBJECT.factory], 'function', `packages/core/src/bridge/index.js exports no ${SUBJECT.factory}()`)
   const bridge = mod[SUBJECT.factory]({
@@ -57,6 +57,8 @@ export async function makeBridge(sdk, { ctx, link, logger, gate, imagesSupported
     ...(gate === undefined ? {} : { gate }),
     // The cases say true/false; the module takes the function form.
     ...(imagesSupported === undefined ? {} : { imagesSupported: () => imagesSupported }),
+    // R-FIX-CORE F13: DSH's attachment store, looked up per call (`() => store`).
+    ...(attachments === undefined ? {} : { attachments }),
   })
   assert.equal(typeof bridge?.mount, 'function', `${SUBJECT.factory}() returned no mount()`)
   let dispose = bridge.mount(ctx.tools)

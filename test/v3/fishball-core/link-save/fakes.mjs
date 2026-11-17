@@ -92,6 +92,8 @@ function serve(handler, port, host) {
  *   request it gets (`trapRequests()`), so a followed redirect is seen there;
  * - `authorizationServer`: `(origin, approvalOrigin) => overrides` (X-12, X-13): fields replacing
  *   the RFC 8414 document's own; an `undefined` value drops the field.
+ * - `discoveryHold`: a promise every OAuth metadata request (RFC 9728 / RFC 8414) waits on before it
+ *   is answered (R-FIX-CORE F16: settings change while Connect's begin() awaits discovery).
  */
 export async function startFakeConnector() {
   const pairs = new RetirablePairs()
@@ -270,6 +272,8 @@ export async function startFakeConnector() {
       res.writeHead(script.redirect.status, { [WEB.location]: trapUrl() })
       return res.end()
     }
+    const discovery = req.method === WEB.get && (url.pathname.startsWith(MCP.paths.protectedResourcePrefix) || url.pathname.startsWith(MCP.paths.authorizationServerPrefix))
+    if (discovery && script.discoveryHold !== undefined) await script.discoveryHold
     if (req.method === WEB.get && url.pathname.startsWith(MCP.paths.protectedResourcePrefix)) return sendJson(res, K1.HTTP_STATUS.ok, prmFor(origin))
     if (req.method === WEB.get && url.pathname.startsWith(MCP.paths.authorizationServerPrefix)) {
       // Any issuer path is served with its own issuer, so a not-a-connector row fails the check, not the read.

@@ -69,6 +69,11 @@ export const CORE = Object.freeze({
   get presentGivenUpReason() { return coreValue('REASON').presentGivenUp },
   /** The acceptance ledger's state of an admitted event (decision 4). */
   get admitted() { return coreValue('STATE').admitted },
+  /** The ledger's discarded state and the user-stopped reason (R-FIX-CORE F11: neither may appear). */
+  get discarded() { return coreValue('STATE').discarded },
+  get userStopped() { return coreValue('REASON').userStopped },
+  /** REASON.sendNotDelivered: a commit that never reached the connector goes to Fishball (R-FIX-CORE F14). */
+  get sendNotDelivered() { return coreValue('REASON').sendNotDelivered },
   /** The acceptance ledger's state of an interceptor record whose commit began (K3 `committing`). */
   get committing() { return coreValue('STATE').committing },
   /** Every acceptance-ledger state, to read a record's state without knowing its field (decision 4). */
