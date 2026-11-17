@@ -13,9 +13,10 @@
 import assert from 'node:assert/strict'
 import { caseTest } from '../../contract/package-boundaries/cases.mjs'
 import {
-  CLIENTS, CONNECT, CONTINUATION, CORE, DSH, ENTRY_ACTION, FIELD_ORDER, FIELDS, FIXTURE, HARNESS, HOSTED_IMPORT, INSTANCE_TARGET, MARK, OPEN, OUTCOME,
+  CLIENTS, CONNECT, CONNECT_ROUTE, CONTINUATION, CORE, DSH, ENTRY_ACTION, FIELD_ORDER, FIELDS, FIXTURE, HARNESS, HOSTED_IMPORT, INSTANCE_TARGET, LINK_SAVE, MARK, OPEN, OUTCOME,
   ROUTE, SUBJECT, TOKEN_FIELD, freshToken,
 } from './constants.mjs'
+import { CODE_THROW, SECRET, THROWN, assertNoSecret, assertOneWarning } from '../link/log-privacy.mjs'
 import { createWorld, loadChunkAlone, loadPage, settle } from './page.mjs'
 import { STAND_IN } from './primitives.mjs'
 import { instanceWith, routeWorld, targetRule } from './route.mjs'
@@ -592,6 +593,150 @@ export function registerSettingsCases(sdk) {
       } else await unavailable(services, method, title)
     })
   }
+
+  // ============================================================== F-FIX-3: a throw behind the Connect routes is logged (Fishball, 2026-11-17)
+  // The answer stays exactly SET3-DT-05's (503 CONNECT_UNAVAILABLE, no detail, no-store); in
+  // addition one warn(LINK_SAVE.text.failed, CONNECT_ROUTE.connectFailed, code) goes to
+  // ctx.logger(LINK_SAVE.logger), code = String(error.code ?? error.name ?? typeof error). No other
+  // 503 (no service, an undefined answer) and no 200 logs anything. Nothing of the failure but its
+  // code is logged (log-privacy.mjs: every thrown value carries fresh secrets in every field).
+  const failedWarning = (code) => [LINK_SAVE.text.failed, CONNECT_ROUTE.connectFailed, code]
+  /** One request on a fresh route world; the answer must be SET3-DT-05's 503. */
+  const unavailableLogged = async (r, method, at, label) => {
+    const answer = await r.request(method, undefined, at)
+    assert.equal(answer.status, ROUTE.unavailable.status, label)
+    assert.deepEqual(answer.json, ROUTE.unavailable.body, label)
+    assert.equal(answer.headers.get(ROUTE.cacheControl), ROUTE.noStore, label)
+    for (const secret of [FIXTURE.routeError, SECRET.token, SECRET.clientSecret, SECRET.url]) assert.equal(answer.text.includes(secret), false, 'error detail in the answer: ' + label)
+    return answer
+  }
+  const throwing = (make) => () => { throw make() }
+  const rejecting = (make) => () => Promise.reject(make())
+  const VIA = Object.freeze({ fbtestCallback: 'web' })
+  /**
+   * The failing member of each route, by the request that reaches it (EP over the four calls), and
+   * how it can fail. connect.d.ts types `status()` and `cancel()` as synchronous, so they fail by a
+   * throw only; `begin()` (and the route-only BEGIN_VIA begin) returns a promise, so it may also reject.
+   */
+  const SYNC_ONLY = Object.freeze([['throws', throwing]])
+  const SYNC_OR_ASYNC = Object.freeze([['throws', throwing], ['rejects', rejecting]])
+  const MEMBERS = Object.freeze([
+    ['GET status', ROUTE.get, ROUTE.path, (fail) => ({ status: fail }), {}, SYNC_ONLY],
+    ['POST begin', ROUTE.post, ROUTE.path, (fail) => ({ begin: fail }), {}, SYNC_OR_ASYNC],
+    ['POST begin via', ROUTE.post, ROUTE.path, (fail) => ({ via: fail, begin: { outcome: OUTCOME.authorized } }), { callbackFor: () => VIA }, SYNC_OR_ASYNC],
+    ['cancel', ROUTE.post, ROUTE.cancelPath, (fail) => ({ cancel: fail, status: ok }), { cancel: true }, SYNC_ONLY],
+  ])
+
+  caseTest(sdk, 'SET3-UC-05', 'E3 (F-FIX-3)', "status() throws → the same 503, and one warning on ctx.logger('fishball-link'): the fixed line, the fixed reason, the code", async () => {
+    const r = await routeWorld({ [DSH.service.instance]: instanceWith({ status: throwing(CODE_THROW.make) }).service })
+    await unavailableLogged(r, ROUTE.get, ROUTE.path, 'GET')
+    assert.ok(r.log.names.includes(LINK_SAVE.logger), "no ctx.logger('" + LINK_SAVE.logger + "'): " + show(r.log.names))
+    assertOneWarning(r.log.logs, LINK_SAVE.logger, failedWarning(CODE_THROW.code), 'GET')
+  })
+
+  // ---- SET3-EP-09: the thrown value partitions → the code logged (Error with code / name only / neither; non-Error throws)
+  for (const [row, title, make, code] of THROWN) {
+    caseTest(sdk, 'SET3-EP-09', row, `status() throws ${title}; 503 and one warning carrying exactly that code, no message, URL, token or secret`, async () => {
+      const r = await routeWorld({ [DSH.service.instance]: instanceWith({ status: throwing(make) }).service })
+      await unavailableLogged(r, ROUTE.get, ROUTE.path, row)
+      assertOneWarning(r.log.logs, LINK_SAVE.logger, failedWarning(code), row)
+    })
+  }
+  caseTest(sdk, 'SET3-EP-09', '12 every partition on every member', 'each thrown partition, thrown by status, begin, begin via the web callback and cancel, and rejected by both begins → 503 and its one warning with its code', async () => {
+    for (const [member, method, at, shape, options, failures] of MEMBERS) {
+      for (const [kind, wrap] of failures) {
+        for (const [row, , make, code] of THROWN) {
+          const label = `${member} ${kind} ${row}`
+          const r = await routeWorld({ [DSH.service.instance]: instanceWith(shape(wrap(make))).service }, options)
+          await unavailableLogged(r, method, at, label)
+          assertOneWarning(r.log.logs, LINK_SAVE.logger, failedWarning(code), label)
+        }
+      }
+    }
+  })
+
+  // ---- SET3-DT-07: route × member × what the member does → answer, warnings (one test per rule)
+  /**
+   * `status()` answering `undefined` breaks the ConnectStatus contract: the route's own read of
+   * `{state, code}` from it throws a TypeError, an error the route swallows, so it warns with that
+   * error's name (Fishball's correction, 2026-11-17). `begin()` resolving `undefined` or an unknown
+   * outcome is no error (the answer is only absent): 503, no warning.
+   */
+  const READ_UNDEFINED = 'TypeError'
+  const DT7 = [
+    // [rule, title, method, path, service options, route options, status, the code of its one warning (null: none)]
+    [1, 'GET, status() answers → 200, nothing logged', ROUTE.get, ROUTE.path, { status: ok }, {}, ROUTE.ok, null],
+    [2, 'GET, status() throws → 503, one warning', ROUTE.get, ROUTE.path, { status: throwing(CODE_THROW.make) }, {}, ROUTE.unavailable.status, CODE_THROW.code],
+    [3, "GET, status() answers undefined (outside ConnectStatus) → 503, one warning: reading {state, code} from it throws, code 'TypeError'", ROUTE.get, ROUTE.path, { status: undefined }, {}, ROUTE.unavailable.status, READ_UNDEFINED],
+    [4, 'POST, begin() answers → 200, nothing logged', ROUTE.post, ROUTE.path, { begin: { outcome: OUTCOME.authorized } }, {}, ROUTE.ok, null],
+    [5, 'POST, begin() throws synchronously → 503, one warning', ROUTE.post, ROUTE.path, { begin: throwing(CODE_THROW.make) }, {}, ROUTE.unavailable.status, CODE_THROW.code],
+    [6, 'POST, begin() rejects → 503, one warning', ROUTE.post, ROUTE.path, { begin: rejecting(CODE_THROW.make) }, {}, ROUTE.unavailable.status, CODE_THROW.code],
+    [7, 'POST, begin() answers undefined → 503, nothing logged', ROUTE.post, ROUTE.path, { begin: undefined }, {}, ROUTE.unavailable.status, null],
+    [8, 'POST with a web callback, BEGIN_VIA begin answers → 200, nothing logged', ROUTE.post, ROUTE.path, { via: { outcome: OUTCOME.authorized } }, { callbackFor: () => VIA }, ROUTE.ok, null],
+    [9, 'POST with a web callback, BEGIN_VIA begin throws → 503, one warning', ROUTE.post, ROUTE.path, { via: throwing(CODE_THROW.make) }, { callbackFor: () => VIA }, ROUTE.unavailable.status, CODE_THROW.code],
+    [10, 'POST with a web callback, BEGIN_VIA begin rejects → 503, one warning', ROUTE.post, ROUTE.path, { via: rejecting(CODE_THROW.make) }, { callbackFor: () => VIA }, ROUTE.unavailable.status, CODE_THROW.code],
+    [11, 'cancel, cancel() and status() answer → 200, nothing logged', ROUTE.post, ROUTE.cancelPath, { status: ok }, { cancel: true }, ROUTE.ok, null],
+    [12, 'cancel, cancel() throws → 503, one warning', ROUTE.post, ROUTE.cancelPath, { cancel: throwing(CODE_THROW.make), status: ok }, { cancel: true }, ROUTE.unavailable.status, CODE_THROW.code],
+    [13, 'cancel, cancel() answers, then status() throws → 503, one warning', ROUTE.post, ROUTE.cancelPath, { status: throwing(CODE_THROW.make) }, { cancel: true }, ROUTE.unavailable.status, CODE_THROW.code],
+    [19, 'POST, begin() answers an outcome outside connect.d.ts → 503, nothing logged (no error: the answer is absent)', ROUTE.post, ROUTE.path, { begin: { outcome: FIXTURE.bogusState, url: SECRET.url } }, {}, ROUTE.unavailable.status, null],
+  ]
+  for (const [rule, title, method, at, options, routeOptions, status, code] of DT7) {
+    caseTest(sdk, 'SET3-DT-07', rule, title, async () => {
+      const r = await routeWorld({ [DSH.service.instance]: instanceWith(options).service }, routeOptions)
+      if (status === ROUTE.ok) {
+        const answer = await r.request(method, undefined, at)
+        assert.equal(answer.status, ROUTE.ok, title)
+        assert.equal(answer.headers.get(ROUTE.cacheControl), ROUTE.noStore)
+      } else await unavailableLogged(r, method, at, title)
+      if (code === null) assert.deepEqual(r.log.logs, [], 'logged without a swallowed error: ' + title)
+      else assertOneWarning(r.log.logs, LINK_SAVE.logger, failedWarning(code), title)
+    })
+  }
+  for (const [rule, title, service] of [
+    [14, 'no fishballInstance → 503 on GET, POST and cancel, nothing logged', undefined],
+    [15, 'apiVersion 2 (another service version) → 503 on GET, POST and cancel, nothing logged', instanceWith({ apiVersion: ROUTE.apiVersion + 1, status: throwing(CODE_THROW.make), begin: throwing(CODE_THROW.make), cancel: throwing(CODE_THROW.make) }).service],
+    [16, 'ui without connect → 503 on GET, POST and cancel, nothing logged', { apiVersion: ROUTE.apiVersion, ui: {} }],
+  ]) {
+    caseTest(sdk, 'SET3-DT-07', rule, title, async () => {
+      const r = await routeWorld(service === undefined ? {} : { [DSH.service.instance]: service }, { cancel: true })
+      for (const [method, at] of [[ROUTE.get, ROUTE.path], [ROUTE.post, ROUTE.path], [ROUTE.post, ROUTE.cancelPath]]) await unavailableLogged(r, method, at, `${method} ${at}`)
+      assert.deepEqual(r.log.logs, [], 'a missing service was logged as a failure')
+    })
+  }
+  caseTest(sdk, 'SET3-DT-07', 17, 'ctx without logger: status(), begin() and cancel() throwing still answer 503, and registering does not throw', async () => {
+    const r = await routeWorld({ [DSH.service.instance]: instanceWith({ status: throwing(CODE_THROW.make), begin: rejecting(CODE_THROW.make), cancel: throwing(CODE_THROW.make) }).service }, { logger: false, cancel: true })
+    for (const [method, at] of [[ROUTE.get, ROUTE.path], [ROUTE.post, ROUTE.path], [ROUTE.post, ROUTE.cancelPath]]) await unavailableLogged(r, method, at, `${method} ${at}`)
+    assert.deepEqual(r.log.logs, [])
+  })
+  caseTest(sdk, 'SET3-DT-07', 18, 'ctx without logger: a compatible service still answers 200 on GET, POST and cancel', async () => {
+    const r = await routeWorld({ [DSH.service.instance]: instanceWith({ status: ok, begin: { outcome: OUTCOME.authorized } }).service }, { logger: false, cancel: true })
+    for (const [method, at] of [[ROUTE.get, ROUTE.path], [ROUTE.post, ROUTE.path], [ROUTE.post, ROUTE.cancelPath]]) assert.equal((await r.request(method, undefined, at)).status, ROUTE.ok, `${method} ${at}`)
+  })
+
+  // ---- SET3-BVA-05: warnings counted per failing request (0, 1, 2, 3 requests)
+  for (const n of [0, 1, 2, 3]) {
+    caseTest(sdk, 'SET3-BVA-05', `${n} requests`, `${n} failing GET${n === 1 ? '' : 's'} → exactly ${n} warning${n === 1 ? '' : 's'}, one per request`, async () => {
+      const r = await routeWorld({ [DSH.service.instance]: instanceWith({ status: throwing(CODE_THROW.make) }).service })
+      for (let i = 0; i < n; i++) await unavailableLogged(r, ROUTE.get, ROUTE.path, 'request ' + (i + 1))
+      assert.deepEqual(r.log.logs.map((l) => [l.name, l.level, l.args]), Array.from({ length: n }, () => [LINK_SAVE.logger, 'warn', failedWarning(CODE_THROW.code)]))
+      assertNoSecret(r.log.logs)
+    })
+  }
+
+  // ---- SET3-ST-06: the same route over a service that fails, recovers, goes and fails again
+  caseTest(sdk, 'SET3-ST-06', '1', 'throwing → answering → withdrawn → throwing (another code): warnings only for the two throws, each with its own code', async () => {
+    const r = await routeWorld({ [DSH.service.instance]: instanceWith({ status: throwing(CODE_THROW.make) }).service })
+    await unavailableLogged(r, ROUTE.get, ROUTE.path, 'throwing')
+    r.setInstance(instanceWith({ status: ok }).service)
+    assert.equal((await r.request(ROUTE.get)).status, ROUTE.ok, 'answering')
+    r.setInstance(undefined)
+    await unavailableLogged(r, ROUTE.get, ROUTE.path, 'withdrawn')
+    const [, , makeOther, otherCode] = THROWN.find(([row]) => row === '7 string')
+    r.setInstance(instanceWith({ status: throwing(makeOther) }).service)
+    await unavailableLogged(r, ROUTE.get, ROUTE.path, 'throwing again')
+    assert.deepEqual(r.log.logs.map((l) => [l.name, l.level, l.args]), [[LINK_SAVE.logger, 'warn', failedWarning(CODE_THROW.code)], [LINK_SAVE.logger, 'warn', failedWarning(otherCode)]])
+    assertNoSecret(r.log.logs)
+  })
 
   // ============================================================== SET3-UC-06: the hosted target line (req 6)
   caseTest(sdk, 'SET3-UC-06', 'main', "the instance namespace serves a non-blank targetUrl → one read-only line showing it", async (t) => {

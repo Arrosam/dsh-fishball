@@ -23,6 +23,17 @@ import { SDK } from '../../contract/package-boundaries/constants.mjs'
 export { CONNECT, HOSTED_IMPORT }
 
 /**
+ * F-FIX-3 (Fishball, 2026-11-17): a throw behind the Connect routes is logged as one
+ * `warn(LINK_SAVE.text.failed, CONNECT_ROUTE.connectFailed, code)` on `ctx.logger(LINK_SAVE.logger)`.
+ * The format, the reason and the logger name are imported from their owners, as the requirement
+ * says, never restated. `BEGIN_VIA` is the route-only begin key (link/connect.js exports it for the
+ * route alone): a press whose page origin picks a web callback calls `connect[BEGIN_VIA](via)`.
+ */
+export { LINK_SAVE } from '../../../../packages/core/src/link/constants.js'
+export { CONNECT_ROUTE } from '../../../../packages/core/src/settings/constants.js'
+export { BEGIN_VIA } from '../../../../packages/core/src/link/connect.js'
+
+/**
  * The files under test: core's browser entry, its settings chunk, and the Node route module; and,
  * since F-UI (interface items 8–9), fishball-ui's browser entry, whose entries chunk holds the two
  * Fishball-page entries and the `view=settings` continuation that were core's.
@@ -39,6 +50,8 @@ export const SUBJECT = Object.freeze({
   pluginExport: 'settingsPlugin',
   route: process.env.FBTEST_F_SETTINGS_ROUTE ?? path.join(REPO, 'packages', 'core', 'src', 'settings', 'index.js'),
   routeExport: 'registerSettingsRoutes',
+  /** The strip's Cancel route, from the same module (F-WIRE; F-FIX-3 logs its throws). */
+  cancelExport: 'registerConnectCancelRoute',
   /** The target-precedence rule, pure, from the same module (Fishball's decision, 2026-11-16). */
   targetExports: Object.freeze({ effective: 'effectiveTarget', hasInstance: 'hasInstanceTarget' }),
 })
@@ -144,6 +157,8 @@ export const ROUTE = Object.freeze({
   requestBody: 'buffered',
   get: 'GET',
   post: 'POST',
+  /** The strip's Cancel route (F-WIRE): POST only, answering the status after `cancel()`. */
+  cancelPath: '/api/fishball/connect/cancel',
   credentials: 'same-origin',
   cache: 'no-store',
   unavailable: Object.freeze({ status: 503, body: Object.freeze({ code: 'CONNECT_UNAVAILABLE' }) }),

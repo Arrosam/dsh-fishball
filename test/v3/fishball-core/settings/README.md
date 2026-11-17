@@ -32,7 +32,7 @@ Levels:
 | SET3-UC-02 | Edit and save core's settings | Owner | 1. The form shows `target.url`, the token field, `connect.clientMetadataUrl`, `identity.id`, `identity.name`, in that order, with the stored values. 2. The owner changes `target.url`. 3. Save sends one `mutate` with a `set` op on the nested path and the read revision. (req 2) | A1 clearing a stored field sends `unset`. A2 a field typed back to its stored value sends nothing. E1 the Host refuses: DSH's save-failed line; the staged text stays. E2 the write rejects: the same line. |
 | SET3-UC-03 | Paste a token for connecting to a DSH | Owner | 1. The password field is blank. 2. The owner pastes a token and saves. 3. Core writes it with `remote.credentials.set('DSH_AGENT_TOKEN', trimmed value)`. 4. The field is blank again; the state label says a token is waiting. (req 3) | A1 blank or spaces only: nothing written. E1 the write is refused or rejects: the save-failed line. Post: the value is never rendered, logged, put in a URL or sent elsewhere; the label follows `describe(...).configured` only. |
 | SET3-UC-04 | Connect | Owner | 1. The page reads `GET api/fishball/connect` and shows the state. 2. The owner presses Connect: `POST`. 3. `approval-url` opens the URL in a new browsing context (`noopener`). 4. The page re-reads the state. (req 4) | A1 `authorized`: re-read, nothing opened. A2 `needs-configuration`: the code's words. A3 window focus: re-read. E1 503, non-JSON or network failure: an "unavailable" line, nothing opened. |
-| SET3-UC-05 | The Connect route answers the page | The page (DSH's fetch) | 1. `registerSettingsRoutes(ctx)` registers `{path, methods: [GET, POST], requestBody: 'buffered', fetch}`. 2. GET → `200 {state, code}` of `fishballInstance.ui.connect.status()`. 3. POST → `200` with `await begin()`. Every answer is JSON, `cache-control: no-store`. (req 5) | E1 no service, another `apiVersion`, no `ui.connect`: `503 {code: 'CONNECT_UNAVAILABLE'}`. E2 `status()` throws or `begin()` rejects: the same 503, no detail. Post: the service is looked up per request. |
+| SET3-UC-05 | The Connect route answers the page | The page (DSH's fetch) | 1. `registerSettingsRoutes(ctx)` registers `{path, methods: [GET, POST], requestBody: 'buffered', fetch}`. 2. GET → `200 {state, code}` of `fishballInstance.ui.connect.status()`. 3. POST → `200` with `await begin()`. Every answer is JSON, `cache-control: no-store`. (req 5) | E1 no service, another `apiVersion`, no `ui.connect`: `503 {code: 'CONNECT_UNAVAILABLE'}`. E2 `status()` throws or `begin()` rejects: the same 503, no detail. E3 (F-FIX-3) such a throw (also of the `BEGIN_VIA` begin and of the Cancel route's `cancel()` / `status()`) also logs one `warn(LINK_SAVE.text.failed, CONNECT_ROUTE.connectFailed, code)` on `ctx.logger('fishball-link')`, `code` = `String(error.code ?? error.name ?? typeof error)`, nothing else of the failure; E1, `begin()` answering `undefined` or an unknown outcome, and a 200 log nothing; `status()` answering `undefined` (outside `ConnectStatus`) makes the route's read throw, so it warns with `TypeError`; a ctx without `logger` still answers. Post: the service is looked up per request. |
 | SET3-UC-06 | See the target the instance supplies | Owner of a hosted child | 1. The Host serves `dsh-instance-child` with a non-blank `targetUrl`. 2. The page shows that URL read-only as supplied by the instance. (req 6) | A1 not served, blank, or not a string: no such line. |
 | SET3-UC-07 | Reach the settings from the Fishball page | Owner on the Fishball page | 1. The session header shows two actions, Fishball settings and DSH settings. 2. Fishball settings → `pluginNavigation.openBundle('fishball-core')`. 3. DSH settings → presses DSH's native Settings launcher. (req 7) | A1 no `pluginNavigation`: `layout.selectPanel('plugins')`. E1 no launcher on the page: an alert line, nothing else. |
 | SET3-UC-08 | Arrive with `#view=settings` | The page load (PG-ORIGIN continuation) | 1. The page loads with `#view=settings`: core's settings page opens once. 2. `<html>` first gets `data-fishball-session`: it opens once more if the active panel is none or Plugins. (req 8) | A1 the owner navigated elsewhere first: no second open. A2 any other fragment: nothing. |
@@ -47,20 +47,35 @@ Levels:
   answers (every `CONNECT.state`, and the unusable answers); SET3-EP-04 Connect begin answers;
   SET3-EP-05 fragment values; SET3-EP-06 `fishballInstance` partitions at the route; SET3-EP-07 the
   instance's `targetUrl` partitions; SET3-EP-08 the same instance partitions as SET3-DT-06 on the
-  page (line present or not, `target.url` hint "not used" or ordinary, en and zh).
+  page (line present or not, `target.url` hint "not used" or ordinary, en and zh); SET3-EP-09 (F-FIX-3)
+  the thrown value → the code logged: an Error with `code` (`'EFBTEST_FIX3'`, and the nullish edge
+  `0`, `''`, `null`), with `name` only, a plain Error, a thrown string, `undefined`, `null`, a plain
+  object, a number (rows 1–11 on `status()`; row 12 every partition on every member, thrown, and
+  rejected by both begins). Every thrown value carries fresh secrets (token, client secret, a URL
+  with both) in its message, `url`, `cause`; no logged argument may hold any of them.
 - **BVA**: SET3-BVA-01 token trimming (`''`, one space, one character, a padded value); SET3-BVA-02
   `apiVersion` 0 / 1 / 2; SET3-BVA-03 counts: exactly five fields, two header actions, one
   `mutate` per Save, one `window.open` per approval, one re-read per focus; SET3-BVA-04 the instance
-  value's white-space edge (one space, tab+newline, one character, one padded character).
+  value's white-space edge (one space, tab+newline, one character, one padded character);
+  SET3-BVA-05 (F-FIX-3) warnings per failing request: 0, 1, 2, 3 requests → as many warnings.
 - **Decision Table**: SET3-DT-01 Save (settings changed × token typed × Host answer × credential
   answer); SET3-DT-02 the Fishball-settings entry (navigation present / absent); SET3-DT-03 the DSH
   settings entry (launcher present / absent); SET3-DT-04 the second `view=settings` open (fragment ×
-  active panel); SET3-DT-05 the route (method × service); SET3-DT-06 target precedence, below.
+  active panel); SET3-DT-05 the route (method × service); SET3-DT-06 target precedence, below;
+  SET3-DT-07 (F-FIX-3) the routes' warning (route GET / POST / POST via the web callback / cancel ×
+  the member answers, throws, rejects (begins only: `status()` and `cancel()` are synchronous in
+  `connect.d.ts`), answers `undefined` or an unknown outcome × service present / absent / another
+  `apiVersion` / no `ui.connect` × ctx with / without `logger`): rules 1–13 and 19 one member each
+  (rule 3: `status()` → `undefined` warns `TypeError`; rules 7 and 19: `begin()` → `undefined` or an
+  unknown outcome warn nothing), 14–16 no compatible service on all three routes (no warning), 17–18
+  no `logger` (503 / 200 unchanged, nothing thrown).
 - **State Transition**: SET3-ST-01 the page entry (not served ↔ registered); SET3-ST-02 the token
   field (blank → staged → saved / failed); SET3-ST-03 the Connect control (read → shown → pressed →
   re-read; unavailable → recovered); SET3-ST-04 the continuation (loaded → session marked → marked
   again); SET3-ST-05 the instance line and `target.url` hint (not served → served → withdrawn →
-  served, en and zh; value A → value B; URL → blank → URL).
+  served, en and zh; value A → value B; URL → blank → URL); SET3-ST-06 (F-FIX-3) one route over a
+  service that throws → answers → is withdrawn → throws another value: one warning per throw, each
+  with its own code, none for the 200 or the withdrawn service.
 
 ### SET3-DT-06: target precedence (`effectiveTarget` / `hasInstanceTarget`)
 

@@ -33,6 +33,9 @@ export const LINK_MCP = Object.freeze({
   // the refusal its retry ends with (link.js `clientCredentialsOnce`; no value in it).
   invalidatedClient: 'client',
   refusedOnce: 'the target refused this client secret',
+  // The background-log reason when this package cannot be imported (a broken install): without it
+  // the attempt reads only as `target-unreachable` (F-FIX-3). Logged with `LINK_SAVE.text.failed`.
+  clientImport: 'loading the MCP client package',
 })
 
 /**
