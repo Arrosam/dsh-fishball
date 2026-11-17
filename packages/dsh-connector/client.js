@@ -35,7 +35,13 @@ window.__ModuleLoader__.load({
   id: PACKAGE_NAME,
   factory(require) {
     const React = require('react')
-    const { Button, Modal, Switch } = require('@deepseek-ai/dsh-client-ui-primitives')
+    // DSH's own primitives and icons (the same exports on 0.2.1-rc.5 and 0.2.2-rc.1): the page
+    // draws no control of its own, so focus rings, hover, disabled and both themes are DSH's.
+    const {
+      Button, Input, Modal, StateDot, Switch,
+      IconCheckOutlineRegular, IconChevronDownOutlineRegular, IconChevronUpOutlineRegular,
+      IconCopyOutlineRegular, IconPlusOutlineRegular, IconTrashOutlineRegular, IconWarningOutlineRegular,
+    } = require('@deepseek-ai/dsh-client-ui-primitives')
     const h = React.createElement
 
     /**
@@ -112,21 +118,84 @@ window.__ModuleLoader__.load({
      */
     const LIMIT_FIELDS = Object.freeze(['maxQueuedInputs', 'argumentExcerptBytes', 'maxMessageBytes', 'readSessionMessages', 'readSessionBytes'])
     /**
-     * Inline layout: the page adds no style sheet (R-ARCH-03). Colours and fonts are DSH's theme
-     * tokens (dsh-client-ui-theme); DSH has no spacing tokens, so the gaps are named here, at the
-     * values core's settings panel uses (packages/core/client.settings.js).
+     * Inline layout: the page adds no style sheet (R-ARCH-03), so every rule is an inline style and
+     * every interactive state (focus, hover, disabled) comes from DSH's primitives. Colours, fonts and
+     * radii are DSH's theme tokens (dsh-client-ui-theme), so light and dark both follow DSH. DSH has
+     * no spacing tokens; the gaps copy its Plugins page (detailSections 32px, detailSection 12px) and
+     * its settings field (SettingsValueField: 12px rows, 6px inside, a 0.5px l2 rule between rows).
+     * The page is three sections (tokens, the approval page, the limits), each a titled card of rows,
+     * so it reads as one of DSH's own settings pages.
      */
-    const GAP = Object.freeze({ section: '12px', item: '8px' })
-    const STYLE = Object.freeze({
-      page: Object.freeze({ display: 'grid', gap: GAP.section, color: 'var(--dsw-alias-label-primary)', font: 'var(--dsw-font-xs-13)' }),
-      row: Object.freeze({ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: GAP.item }),
-      list: Object.freeze({ listStyle: 'none', margin: 0, padding: 0, display: 'grid', gap: GAP.item }),
-      hint: Object.freeze({ margin: 0, color: 'var(--dsw-alias-label-tertiary)' }),
-      error: Object.freeze({ margin: 0, color: 'var(--dsw-alias-state-error-primary)' }),
-      value: Object.freeze({ margin: 0, padding: GAP.item, fontFamily: 'var(--dsw-font-markdown-code-font-family)', overflowWrap: 'anywhere', whiteSpace: 'pre-wrap', userSelect: 'all' }),
-      section: Object.freeze({ display: 'grid', gap: GAP.item }),
-      heading: Object.freeze({ margin: 0, font: 'inherit', fontWeight: 600 }),
+    const GAP = Object.freeze({ page: '32px', section: '12px', row: '12px', item: '8px', tight: '6px', column: '24px', icon: '4px' })
+    const SIZE = Object.freeze({ control: '240px', iconButton: '28px', dot: 8, icon: 14, noticeIcon: 16 })
+    const TOKEN = Object.freeze({
+      label: 'var(--dsw-alias-label-primary)',
+      secondary: 'var(--dsw-alias-label-secondary)',
+      tertiary: 'var(--dsw-alias-label-tertiary)',
+      error: 'var(--dsw-alias-state-error-primary)',
+      rule: '.5px solid var(--dsw-alias-border-l2)',
+      frame: '.5px solid var(--dsw-alias-border-l3)',
+      card: 'var(--dsw-alias-bg-layer-1)',
+      code: 'var(--dsw-alias-markdown-code-block)',
+      codeFont: 'var(--dsw-font-markdown-code-font-family)',
+      radius: 'var(--dsw-radius-md)',
+      radiusSmall: 'var(--dsw-radius-sm)',
+      body: 'var(--dsw-font-xs-13)',
+      // DSH's danger tint (its Tag's `danger` tone mixes the error colour at 10%).
+      errorTint: 'color-mix(in srgb, var(--dsw-alias-state-error-primary) 8%, transparent)',
+      errorFrame: '.5px solid color-mix(in srgb, var(--dsw-alias-state-error-primary) 30%, transparent)',
+      errorBar: '3px solid var(--dsw-alias-state-error-primary)',
     })
+    /** DSH's type steps the page uses (its settings field: 12/18 captions, 13/20 body, 14/20 headings). */
+    const TYPE = Object.freeze({
+      caption: Object.freeze({ fontSize: '12px', lineHeight: '18px' }),
+      body: Object.freeze({ fontSize: '13px', lineHeight: '20px' }),
+      heading: Object.freeze({ fontSize: '14px', lineHeight: '20px', fontWeight: 500 }),
+    })
+    /** One setting row's grid: its words on the left, its control on the right (DSH's settings rows). */
+    const ROW_AREA = Object.freeze({ title: 'title', hint: 'hint', control: 'control', error: 'error' })
+    const STYLE = Object.freeze({
+      page: Object.freeze({ display: 'grid', gap: GAP.page, color: TOKEN.label, font: TOKEN.body }),
+      section: Object.freeze({ display: 'grid', gap: GAP.section, minWidth: 0 }),
+      head: Object.freeze({ display: 'flex', alignItems: 'baseline', gap: GAP.item }),
+      heading: Object.freeze({ margin: 0, ...TYPE.heading }),
+      count: Object.freeze({ color: TOKEN.secondary, ...TYPE.caption }),
+      lead: Object.freeze({ margin: 0, color: TOKEN.secondary, ...TYPE.caption }),
+      hint: Object.freeze({ margin: 0, color: TOKEN.tertiary, ...TYPE.caption }),
+      error: Object.freeze({ margin: 0, color: TOKEN.error, ...TYPE.caption }),
+      card: Object.freeze({ display: 'grid', minWidth: 0, border: TOKEN.frame, borderRadius: TOKEN.radius, background: TOKEN.card, overflow: 'hidden' }),
+      list: Object.freeze({ listStyle: 'none', margin: 0, padding: 0, display: 'grid' }),
+      cardRow: Object.freeze({ padding: `${GAP.row} 16px`, minWidth: 0 }),
+      cardRule: Object.freeze({ borderTop: TOKEN.rule }),
+      empty: Object.freeze({ margin: 0, padding: '20px 16px', textAlign: 'center', color: TOKEN.tertiary }),
+      tokenRow: Object.freeze({ display: 'flex', alignItems: 'center', gap: GAP.row, minWidth: 0 }),
+      tokenMain: Object.freeze({ display: 'grid', gap: GAP.tight, flex: 1, minWidth: 0 }),
+      tokenTools: Object.freeze({ display: 'flex', alignItems: 'center', gap: GAP.icon, flex: 'none' }),
+      switchGap: Object.freeze({ marginInlineEnd: GAP.item, display: 'inline-flex' }),
+      iconButton: Object.freeze({ width: SIZE.iconButton, padding: 0 }),
+      pair: Object.freeze({ display: 'flex', alignItems: 'center', gap: GAP.tight, color: TOKEN.tertiary, ...TYPE.caption, minWidth: 0, overflowWrap: 'anywhere' }),
+      addRow: Object.freeze({ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) auto', alignItems: 'center', gap: GAP.item }),
+      actions: Object.freeze({ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: GAP.item }),
+      setting: Object.freeze({
+        display: 'grid', gridTemplateColumns: `minmax(0, 1fr) minmax(0, ${SIZE.control})`, columnGap: GAP.column, rowGap: '2px', alignItems: 'center',
+        gridTemplateAreas: `"${ROW_AREA.title} ${ROW_AREA.control}" "${ROW_AREA.hint} ${ROW_AREA.control}" "${ROW_AREA.hint} ${ROW_AREA.error}"`,
+      }),
+      // The label stays the input's label (its text names the field) while its parts take the row's grid.
+      settingLabel: Object.freeze({ display: 'contents' }),
+      settingTitle: Object.freeze({ gridArea: ROW_AREA.title, fontWeight: TYPE.heading.fontWeight, lineHeight: TYPE.body.lineHeight }),
+      settingHint: Object.freeze({ gridArea: ROW_AREA.hint, display: 'grid', gap: GAP.icon, alignSelf: 'start' }),
+      settingControl: Object.freeze({ gridArea: ROW_AREA.control, display: 'grid', minWidth: 0 }),
+      settingError: Object.freeze({ gridArea: ROW_AREA.error, display: 'grid', color: TOKEN.error, ...TYPE.caption }),
+      status: Object.freeze({ margin: 0, display: 'flex', alignItems: 'center', gap: GAP.tight, ...TYPE.caption }),
+      // The words in the label colour (full contrast on the tint); the error colour is the tint, the
+      // frame, the start bar and the icon, so the box still reads as an error.
+      notice: Object.freeze({ margin: 0, display: 'flex', alignItems: 'flex-start', gap: GAP.item, padding: '10px 12px', border: TOKEN.errorFrame, borderInlineStart: TOKEN.errorBar, borderRadius: TOKEN.radiusSmall, background: TOKEN.errorTint, color: TOKEN.label, lineHeight: TYPE.body.lineHeight }),
+      noticeIcon: Object.freeze({ flex: 'none', marginTop: '2px', color: TOKEN.error }),
+      revealBody: Object.freeze({ display: 'grid', gap: GAP.section }),
+      value: Object.freeze({ margin: 0, padding: '12px 14px', border: TOKEN.frame, borderRadius: TOKEN.radiusSmall, background: TOKEN.code, fontFamily: TOKEN.codeFont, ...TYPE.body, overflowWrap: 'anywhere', whiteSpace: 'pre-wrap', userSelect: 'all' }),
+    })
+    /** DSH's StateDot states the pair line and the listener line use (dsh-client-ui-primitives StateDot). */
+    const DOT = Object.freeze({ on: 'done', off: 'idle', problem: 'error' })
     /** What the page is doing: one action at a time, each with its own button text. */
     const BUSY = Object.freeze({ none: null, saving: 'saving', creating: 'creating' })
     /** The Copy button's outcome, by its message key. */
@@ -138,6 +207,8 @@ window.__ModuleLoader__.load({
 
     const en = {
       summary: 'Tokens for agents that connect to this DSH.',
+      tokens: 'Tokens',
+      approvalSection: 'Approval page',
       loading: 'Loading…',
       hint: 'Each agent gets its own token. A token is shown once, when it is created; nobody can view or edit it afterwards. To replace a token, delete it and create a new one.',
       empty: 'No tokens yet.',
@@ -189,6 +260,8 @@ window.__ModuleLoader__.load({
     }
     const zh = {
       summary: '连接到此 DSH 的 agent 所用的 token。',
+      tokens: 'Token',
+      approvalSection: '授权页面',
       loading: '加载中…',
       hint: '每个 agent 使用自己的 token。token 只在创建时显示一次，之后任何人都无法查看或修改。要更换 token，请删除它并新建一个。',
       empty: '还没有 token。',
@@ -254,11 +327,14 @@ window.__ModuleLoader__.load({
       .map((item) => ({ label: typeof item?.label === 'string' ? item.label : '', enabled: item?.enabled === true, key: typeof item?.key === 'string' ? item.key : '' }))
     const sameList = (a, b) => JSON.stringify(a) === JSON.stringify(b)
 
-    /** The duplicate notice (R3, R5): labels only, one group per problem. */
+    /** The duplicate notice (R3, R5): labels only, one group per problem, in DSH's danger tint. */
     function Notice({ t, notice }) {
       if (notice === null) return null
       const labels = notice.labels.map((group) => group.join(t('labelSeparator'))).join(t('noticeSeparator'))
-      return h('p', { style: STYLE.error, role: 'alert', [DATA.notice]: notice.code }, t('notice', { labels }))
+      return h('p', { style: STYLE.notice, role: 'alert', [DATA.notice]: notice.code },
+        // DSH's icons take no style prop, so the glyph's offset sits on a wrapper.
+        h('span', { style: STYLE.noticeIcon, 'aria-hidden': true }, h(IconWarningOutlineRegular, { size: SIZE.noticeIcon })),
+        h('span', null, t('notice', { labels })))
     }
 
     /**
@@ -270,31 +346,36 @@ window.__ModuleLoader__.load({
       const copyValue = async () => {
         try { await navigator.clipboard.writeText(value); setCopy(COPY.done) } catch { setCopy(COPY.failed) }
       }
+      // A done copy swaps Copy's glyph for a check; the words stay, and the status line says it.
+      const copied = copy === COPY.done
       return h(Modal, {
         open: true,
         onClose,
         closeLabel: t('close'),
         title: t('revealTitle'),
         footer: h(React.Fragment, null,
-          h(Button, { type: 'button', variant: 'outline', [DATA.copy]: true, onClick: () => void copyValue() }, t('copy')),
+          h(Button, { type: 'button', variant: 'outline', icon: h(copied ? IconCheckOutlineRegular : IconCopyOutlineRegular, { size: SIZE.icon }), [DATA.copy]: true, onClick: () => void copyValue() }, t('copy')),
           h(Button, { type: 'button', variant: 'primary', onClick: onClose }, t('close'))),
       },
-        h('p', { style: STYLE.hint }, t('revealHint')),
-        h('pre', { style: STYLE.value, [DATA.reveal]: true }, value),
-        copy === null ? null : h('p', { style: copy === COPY.done ? STYLE.hint : STYLE.error, role: 'status' }, t(copy)))
+        h('div', { style: STYLE.revealBody },
+          h('p', { style: STYLE.lead }, t('revealHint')),
+          h('pre', { style: STYLE.value, [DATA.reveal]: true }, value),
+          copy === null ? null : h('p', { style: copied ? STYLE.hint : STYLE.error, role: 'status' }, t(copy))))
     }
 
     /**
      * An entry's read-only pair state (R-ID-12, AUTH-UC-09): paired or not, its name (or a bold
      * `ID:` and its id, R-NAME-08), whether it is connected now and when it was last seen. React
-     * escapes the name, so markup in it is shown, never run.
+     * escapes the name, so markup in it is shown, never run. DSH's StateDot leads a paired line
+     * (green connected, grey not); the words say the same, so colour is not the only signal.
      */
     function PairState({ t, row }) {
-      if (row === undefined || !row.paired) return h('span', { style: STYLE.hint, [DATA.pair]: 'unpaired' }, t('unpaired'))
+      if (row === undefined || !row.paired) return h('span', { style: STYLE.pair, [DATA.pair]: 'unpaired' }, t('unpaired'))
       const name = row.name ?? h(React.Fragment, null, h('strong', null, t('idPrefix')), ' ', row.id)
       const seen = row.lastSeenAt === null ? t('neverSeen') : t('lastSeen', { at: new Date(row.lastSeenAt).toLocaleString() })
-      return h('span', { style: STYLE.hint, [DATA.pair]: 'paired', [DATA.connected]: row.connected },
-        withName(t('paired'), name), ' · ', t(row.connected ? 'connected' : 'offline'), ' · ', seen)
+      return h('span', { style: STYLE.pair, [DATA.pair]: 'paired', [DATA.connected]: row.connected },
+        h(StateDot, { state: row.connected ? DOT.on : DOT.off, size: SIZE.dot }),
+        h('span', null, withName(t('paired'), name), ' · ', t(row.connected ? 'connected' : 'offline'), ' · ', seen))
     }
     /** `text` with its `{name}` replaced by the node `name` (a name is never formatted into a string). */
     function withName(text, name) {
@@ -302,15 +383,50 @@ window.__ModuleLoader__.load({
       return at < 0 ? text : h(React.Fragment, null, text.slice(0, at), name, text.slice(at + NAME_SLOT.length))
     }
 
-    /** One list row: label, switch, reorder and delete, all staged until Save; its pair state read only. */
+    /** A card row's style: every row after the first carries the l2 rule above it (DSH's settings list). */
+    const RULED_ROW = Object.freeze({ ...STYLE.cardRow, ...STYLE.cardRule })
+    const cardRowStyle = (index) => (index === 0 ? STYLE.cardRow : RULED_ROW)
+
+    /** An icon-only ghost button: its words are its name and tooltip, so it reads the same without the glyph. */
+    const iconButton = (Icon, label, props) => h(Button, { type: 'button', size: 'sm', variant: 'ghost', 'aria-label': label, title: label, style: STYLE.iconButton, ...props }, h(Icon, { size: SIZE.icon }))
+
+    /**
+     * One list row: the label and its pair state, then the switch, reorder and delete, all staged
+     * until Save; the pair state is read only.
+     */
     function TokenRow({ t, item, index, count, disabled, edit, pair }) {
-      return h('li', { style: STYLE.row, [DATA.row]: item.key },
-        h('input', { type: 'text', 'aria-label': t('label'), value: item.label, disabled, onChange: (event) => edit.label(index, event.target.value) }),
-        h(Switch, { checked: item.enabled, label: t('enabled'), disabled, onChange: (on) => edit.enabled(index, on) }),
-        h(Button, { type: 'button', size: 'sm', variant: 'ghost', disabled: disabled || index === 0, onClick: () => edit.move(index, MOVE.up) }, t('up')),
-        h(Button, { type: 'button', size: 'sm', variant: 'ghost', disabled: disabled || index === count - 1, onClick: () => edit.move(index, MOVE.down) }, t('down')),
-        h(Button, { type: 'button', size: 'sm', variant: 'ghost', disabled, onClick: () => edit.remove(index) }, t('remove')),
-        h(PairState, { t, row: pair }))
+      return h('li', { style: { ...cardRowStyle(index), ...STYLE.tokenRow }, [DATA.row]: item.key },
+        h('div', { style: STYLE.tokenMain },
+          h(Input, { type: 'text', 'aria-label': t('label'), value: item.label, disabled, onChange: (event) => edit.label(index, event.target.value) }),
+          h(PairState, { t, row: pair })),
+        h('div', { style: STYLE.tokenTools },
+          h('span', { style: STYLE.switchGap }, h(Switch, { checked: item.enabled, label: t('enabled'), title: t('enabled'), disabled, onChange: (on) => edit.enabled(index, on) })),
+          iconButton(IconChevronUpOutlineRegular, t('up'), { disabled: disabled || index === 0, onClick: () => edit.move(index, MOVE.up) }),
+          iconButton(IconChevronDownOutlineRegular, t('down'), { disabled: disabled || index === count - 1, onClick: () => edit.move(index, MOVE.down) }),
+          iconButton(IconTrashOutlineRegular, t('remove'), { disabled, onClick: () => edit.remove(index) })))
+    }
+
+    /** A titled section of the page (DSH's Plugins page section: a heading, an optional count, then its parts). */
+    const section = (title, count, data, ...children) => h('section', { style: STYLE.section, ...data },
+      h('div', { style: STYLE.head }, h('h3', { style: STYLE.heading }, title), count === undefined ? null : h('span', { style: STYLE.count }, count)),
+      ...children)
+
+    /** A card of rows (DSH's settings list on a layer-1 surface): each child is one row. */
+    const card = (rows) => h('div', { style: STYLE.card }, rows.map((row, index) => h('div', { key: row.key ?? index, style: cardRowStyle(index) }, row)))
+
+    /**
+     * One setting row, DSH's settings layout: its title and hint on the left, its control on the
+     * right, its errors under the control. The `label` wraps the title and the control (so the title
+     * names the field); it is `display: contents`, so its parts sit in the row's grid.
+     */
+    function SettingRow({ data, title, hint, control, errors }) {
+      return h('div', { style: STYLE.setting },
+        h('label', { style: STYLE.settingLabel, [DATA.setting]: data },
+          h('span', { style: STYLE.settingTitle }, title),
+          h('span', { style: STYLE.settingControl }, control)),
+        // Outside the label, so an alert never becomes part of the input's accessible name.
+        errors.some(Boolean) ? h('span', { style: STYLE.settingError }, ...errors) : null,
+        hint === null ? null : h('div', { style: STYLE.settingHint }, hint))
     }
 
     /**
@@ -348,18 +464,23 @@ window.__ModuleLoader__.load({
         void save([next === '' ? { op: OP_UNSET, path: SETTING_PATH.dshName } : { op: OP_SET, path: SETTING_PATH.dshName, value: next }])
           .then((accepted) => { if (accepted) setText(null) })
       }
-      return h('div', { style: STYLE.section },
-        h('label', { style: STYLE.row, [DATA.setting]: SETTING_PATH.dshName.join('.') }, t('dshName'),
-          h('input', {
-            type: 'text', value: text ?? saved, disabled: disabled || busy,
-            onChange: (event) => setText(event.target.value), onBlur: commit, onKeyDown: (event) => { if (event.key === ENTER_KEY) commit() },
-          })),
-        h('p', { style: STYLE.hint }, t('dshNameHint')),
-        failed ? h('p', { style: STYLE.error, role: 'alert' }, t('saveFailed')) : null)
+      return h(SettingRow, {
+        data: SETTING_PATH.dshName.join('.'),
+        title: t('dshName'),
+        hint: h('p', { style: STYLE.hint }, t('dshNameHint')),
+        control: h(Input, {
+          type: 'text', value: text ?? saved, disabled: disabled || busy,
+          onChange: (event) => setText(event.target.value), onBlur: commit, onKeyDown: (event) => { if (event.key === ENTER_KEY) commit() },
+        }),
+        errors: [failed ? h('span', { key: 'failed', role: 'alert' }, t('saveFailed')) : null],
+      })
     }
 
-    /** One whole-number field saved on blur or Enter; a value outside `min`–`max` is refused here. */
-    function NumberSetting({ t, form, snapshot, path, label, min, max, disabled, data }) {
+    /**
+     * One whole-number field saved on blur or Enter; a value outside `min`–`max` is refused here.
+     * `hint` is the row's left-hand detail under its title (or null).
+     */
+    function NumberSetting({ t, form, snapshot, path, label, hint = null, min, max, disabled, data }) {
       const { busy, failed, save } = useFieldSave(form, snapshot)
       const saved = valueAt(snapshot.value, path)
       const [text, setText] = React.useState(null)
@@ -371,24 +492,36 @@ window.__ModuleLoader__.load({
         // A refused save keeps the typed text, so the user sees what was not saved beside the error.
         void save([{ op: OP_SET, path, value: number }]).then((accepted) => { if (accepted) setText(null) })
       }
-      return h('label', { style: STYLE.row, [DATA.setting]: data },
-        label,
-        h('input', {
+      return h(SettingRow, {
+        data,
+        title: label,
+        hint,
+        control: h(Input, {
           type: 'text', inputMode: 'numeric', value: shown, disabled: disabled || busy, 'aria-invalid': invalid,
           onChange: (event) => setText(event.target.value), onBlur: commit, onKeyDown: (event) => { if (event.key === ENTER_KEY) commit() },
         }),
-        invalid ? h('span', { style: STYLE.error, role: 'alert' }, t('invalid')) : null,
-        failed ? h('span', { style: STYLE.error, role: 'alert' }, t('saveFailed')) : null)
+        errors: [
+          invalid ? h('span', { key: 'invalid', role: 'alert' }, t('invalid')) : null,
+          failed ? h('span', { key: 'failed', role: 'alert' }, t('saveFailed')) : null,
+        ],
+      })
     }
 
-    /** The approval page's port (R-OA-20, Q-OA-7 A) and the listener's status from the state route. */
+    /**
+     * The approval page's port (R-OA-20, Q-OA-7 A) with the listener's status from the state route
+     * under its hint: DSH's StateDot (green listening, red otherwise) and the status words.
+     */
     function Approval({ t, form, snapshot, approval, disabled }) {
+      const ok = approval?.status === LISTENER_OK
       const status = approval === undefined ? null
-        : approval.status === LISTENER_OK ? t('approvalOk', { port: approval.port }) : t(APPROVAL_STATUS_KEY + approval.status)
-      return h('div', { style: STYLE.section, [DATA.approval]: approval?.status ?? '' },
-        h(NumberSetting, { t, form, snapshot, path: SETTING_PATH.approvalPort, label: t('approvalPort'), min: PORT_RANGE.min, max: PORT_RANGE.max, disabled, data: SETTING_PATH.approvalPort.join('.') }),
+        : ok ? t('approvalOk', { port: approval.port }) : t(APPROVAL_STATUS_KEY + approval.status)
+      const hint = h(React.Fragment, null,
         h('p', { style: STYLE.hint }, t('approvalHint')),
-        status === null ? null : h('p', { style: approval.status === LISTENER_OK ? STYLE.hint : STYLE.error, role: 'status' }, t('approvalStatus', { status })))
+        status === null ? null : h('p', { style: { ...STYLE.status, color: ok ? TOKEN.secondary : TOKEN.error }, role: 'status' },
+          h(StateDot, { state: ok ? DOT.on : DOT.problem, size: SIZE.dot }),
+          h('span', null, t('approvalStatus', { status }))))
+      return h('div', { [DATA.approval]: approval?.status ?? '' },
+        h(NumberSetting, { t, form, snapshot, path: SETTING_PATH.approvalPort, label: t('approvalPort'), hint, min: PORT_RANGE.min, max: PORT_RANGE.max, disabled, data: SETTING_PATH.approvalPort.join('.') }))
     }
 
     /**
@@ -396,9 +529,8 @@ window.__ModuleLoader__.load({
      * with its page label; the Host's schema still decides validity.
      */
     function Limits({ t, form, snapshot, disabled }) {
-      return h('div', { style: STYLE.section, [DATA.limits]: true },
-        h('h3', { style: STYLE.heading }, t('limits')),
-        LIMIT_FIELDS.map((field) => h(NumberSetting, { key: field, t, form, snapshot, path: [field], label: t('field.' + field), min: LIMIT_MIN, disabled, data: field })))
+      return section(t('limits'), undefined, { [DATA.limits]: true },
+        card(LIMIT_FIELDS.map((field) => h(NumberSetting, { key: field, t, form, snapshot, path: [field], label: t('field.' + field), min: LIMIT_MIN, disabled, data: field }))))
     }
 
     /**
@@ -469,27 +601,35 @@ window.__ModuleLoader__.load({
           setNewLabel('')
           setRevealed(answer.value)
         }
-        // No heading: the Plugins page draws the row's title above its configuration.
+        // No page heading: the Plugins page draws the row's title above its configuration. The page
+        // is DSH's section rhythm: Tokens (the list and New token in one card, Save under it), the
+        // approval page (its port and the DSH name it shows) and the limits.
+        const newLabelEmpty = newLabel.trim() === ''
         return h('div', { style: STYLE.page, [DATA.root]: true },
-          h('p', { style: STYLE.hint }, t('hint')),
-          snapshot.writable ? null : h('p', { style: STYLE.hint }, t('readOnly')),
-          h(Notice, { t, notice }),
-          list.length === 0 ? h('p', { style: STYLE.hint }, t('empty')) : h('ul', { style: STYLE.list },
-            // Keyed by the entry key, so a reorder moves a row (and its focus) instead of remounting
-            // it; a key two items share is a duplicate (design §5.9), whose second row is keyed apart.
-            list.map((item, index) => h(TokenRow, {
-              key: list.findIndex((other) => other.key === item.key) === index ? item.key : item.key + DUPLICATE_ROW + index,
-              t, item, index, count: list.length, disabled, edit, pair: state?.entries?.find((row) => row.key === item.key),
-            }))),
-          dirty ? h('div', { style: STYLE.row },
-            h(Button, { type: 'button', size: 'sm', variant: 'primary', disabled, onClick: () => void save() }, busy === BUSY.saving ? t('saving') : t('save')),
-            h(Button, { type: 'button', size: 'sm', variant: 'ghost', disabled: busy !== BUSY.none, onClick: () => { setDraft(null); setProblem(null) } }, t('discard'))) : null,
-          h('div', { style: STYLE.row },
-            h('input', { type: 'text', 'aria-label': t('newLabel'), placeholder: t('newLabel'), value: newLabel, disabled: disabled || dirty, [DATA.newLabel]: true, onChange: (event) => setNewLabel(event.target.value) }),
-            h(Button, { type: 'button', size: 'sm', variant: 'outline', disabled: disabled || dirty || newLabel.trim() === '', [DATA.newToken]: true, onClick: () => void create() }, busy === BUSY.creating ? t('creating') : t('newToken'))),
-          problem === null ? null : h('p', { style: STYLE.error, role: 'alert' }, problem),
-          h(Approval, { t, form, snapshot, approval: state?.approval, disabled }),
-          h(DshName, { t, form, snapshot, disabled }),
+          section(t('tokens'), list.length === 0 ? undefined : String(list.length), {},
+            h('p', { style: STYLE.lead }, t('hint')),
+            snapshot.writable ? null : h('p', { style: STYLE.hint }, t('readOnly')),
+            h(Notice, { t, notice }),
+            h('div', { style: STYLE.card },
+              list.length === 0 ? h('p', { style: STYLE.empty }, t('empty')) : h('ul', { style: STYLE.list },
+                // Keyed by the entry key, so a reorder moves a row (and its focus) instead of remounting
+                // it; a key two items share is a duplicate (design §5.9), whose second row is keyed apart.
+                list.map((item, index) => h(TokenRow, {
+                  key: list.findIndex((other) => other.key === item.key) === index ? item.key : item.key + DUPLICATE_ROW + index,
+                  t, item, index, count: list.length, disabled, edit, pair: state?.entries?.find((row) => row.key === item.key),
+                }))),
+              h('div', { style: { ...RULED_ROW, ...STYLE.addRow } },
+                h(Input, { type: 'text', 'aria-label': t('newLabel'), placeholder: t('newLabel'), value: newLabel, disabled: disabled || dirty, [DATA.newLabel]: true, onChange: (event) => setNewLabel(event.target.value) }),
+                h(Button, { type: 'button', size: 'sm', variant: 'outline', icon: h(IconPlusOutlineRegular, { size: SIZE.icon }), disabled: disabled || dirty || newLabelEmpty, [DATA.newToken]: true, onClick: () => void create() }, busy === BUSY.creating ? t('creating') : t('newToken')))),
+            dirty ? h('div', { style: STYLE.actions },
+              h(Button, { type: 'button', size: 'sm', variant: 'ghost', disabled: busy !== BUSY.none, onClick: () => { setDraft(null); setProblem(null) } }, t('discard')),
+              h(Button, { type: 'button', size: 'sm', variant: 'primary', disabled, onClick: () => void save() }, busy === BUSY.saving ? t('saving') : t('save'))) : null,
+            problem === null ? null : h('p', { style: STYLE.error, role: 'alert' }, problem)),
+          section(t('approvalSection'), undefined, {},
+            card([
+              h(Approval, { key: 'port', t, form, snapshot, approval: state?.approval, disabled }),
+              h(DshName, { key: 'name', t, form, snapshot, disabled }),
+            ])),
           h(Limits, { t, form, snapshot, disabled }),
           revealed === null ? null : h(Reveal, { t, value: revealed, onClose: () => setRevealed(null) }))
       }
