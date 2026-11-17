@@ -158,9 +158,11 @@ export const HANDOVER = Object.freeze({
 
 /** Design §5.4 (HOST): `dshConnectorTokens`. */
 export const TOKENS = Object.freeze({
-  members: Object.freeze(['apiVersion', 'createHosted', 'retire']),
+  // K3 amendment I-SUCCEED, the user's Q1 = C, 2026-11-17: `onChange(fn) → dispose` added.
+  members: Object.freeze(['apiVersion', 'createHosted', 'retire', 'onChange']),
   createHosted: Object.freeze({ params: 1 }),
   retire: Object.freeze({ params: 2 }),
+  onChange: Object.freeze({ params: 1 }),
   /** K1d (design §5.4, §5.9; R1): createHosted resolves {entryKey, label, value}, the value once, to the instance. */
   createdFields: Object.freeze(['entryKey', 'label', 'value']),
   /** K1d: no credential reference is left on the connector's side. */

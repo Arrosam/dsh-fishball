@@ -3,10 +3,10 @@
  * relayed, 2026-11-16; constants.mjs RELAYED). If the surface differs, only this file is adapted.
  *
  *   createChildLocator({lifecycle, origin, ticket, hosted, providerSync}) → K3 dshInstanceChild
- *   createHostedToken({tokens, record, credentials, instanceId, remoteTarget, changed})
+ *   createHostedToken({tokens, record, credentials, instanceId, remoteTarget, runtimeId, changed})
  *     → {firstStart(), reconnect(), targetStatus(), retryNotice(), notice()}
  *   childTargetUrl({instanceTargetUrl, hostOrigin, connectorUsable}) → string
- *   openHostedRecord(file) → {entries(), add(entryKey)}
+ *   openHostedRecord(file) → {entries(), runtime(), pending(), add(entryKey, {runtime?, succession?}), settle(oldEntryKey)}   (I-SUCCEED: record contract gains pending/settle/runtime)
  *   registerInstanceRoutes(ctx, service)          ctx.connection.fetch.register({path, fetch})
  *   admissionKey(secret), mintTicket(key, {generation, audience, view, lang}, now),
  *   verifyTicket(key, ticket, {generation, audience}, now), createTicketRedeemer(key, generation, now)
@@ -71,6 +71,40 @@ export function recordFile(mainHome) {
 }
 
 /**
+ * The lifecycle wire between the host and a child's credential store on `sdk`: the real receiver
+ * on the child end of an in-memory wire and the real credential client on the host end.
+ * `connect()` opens a new authenticated wire (a start, a restart or a reconnect of the link) and
+ * closes the previous ends; `client()` is the current host end. `receiver: false` is a child that
+ * never answers on the channel (the client's timeout rows). Shared with the I-SUCCEED suite.
+ */
+export async function childLink(t, sdk, { credentials, receiver: answers = true, timeoutMs = FIXTURE.longTimeoutMs }) {
+  const { createCredentialClient, createCredentialReceiver } = await credentialModule(sdk)
+  const wires = []
+  const clients = []
+  let client
+  let receiver
+  function connect() {
+    client?.close()
+    receiver?.close()
+    const wire = memoryWire()
+    receiver = answers ? createCredentialReceiver({ credentials }) : undefined
+    receiver?.attach(wire.child)
+    client = createCredentialClient(wire.host, { timeoutMs, importTimeoutMs: timeoutMs })
+    clients.push(client)
+    wires.push(wire)
+    return wire
+  }
+  t.after(() => { for (const c of clients) c.close(); receiver?.close() })
+  return {
+    connect,
+    client: () => client,
+    wires,
+    /** The import frames the host sent (parsed). */
+    imports: () => wires.flatMap((w) => w.frames.toChild).map(parse).filter((f) => f?.op === IMPORT.ops.import),
+  }
+}
+
+/**
  * One hosted world on `sdk`: the fake connector service, the child's credential store with the
  * real receiver on the child end of an in-memory wire, the real credential client on the host end,
  * the real hosted-token logic and the real locator over a fake lifecycle.
@@ -83,7 +117,6 @@ export function recordFile(mainHome) {
  * `order` records the observable order of the child's store write and the record's add.
  */
 export async function hostedWorld(t, sdk, options = {}) {
-  const { createCredentialClient, createCredentialReceiver } = await credentialModule(sdk)
   const { createHostedToken } = await hostedModule(sdk)
   const { createChildLocator } = await locatorModule(sdk)
   const order = []
@@ -99,37 +132,30 @@ export async function hostedWorld(t, sdk, options = {}) {
     record = await openHostedRecord(recordFile(mainHome))
   } else record = memoryRecord(options.record ?? [])
   const add = record.add.bind(record)
-  const recorded = { add: async (key) => { order.push('record-add'); return add(key) }, entries: () => record.entries() }
+  // I-SUCCEED: record contract gains pending/settle (and add's options), passed through unchanged.
+  const recorded = {
+    add: async (key, options) => { order.push('record-add'); return add(key, options) },
+    entries: () => record.entries(),
+    runtime: () => record.runtime(),
+    pending: () => record.pending(),
+    settle: (oldEntryKey) => record.settle(oldEntryKey),
+  }
   const lifecycle = fakeLifecycle(options.lifecycle)
   const providerSync = fakeProviderSync()
-  const timeoutMs = options.timeoutMs ?? FIXTURE.longTimeoutMs
-  const wires = []
-  let client
-  let receiver
-  const clients = []
-  /** A new authenticated wire (a start, a restart or a reconnect of the link). */
-  function connect() {
-    client?.close()
-    receiver?.close()
-    const wire = memoryWire()
-    // `receiver: false` is a child that never answers on the channel (the client's timeout rows).
-    receiver = options.receiver === false ? undefined : createCredentialReceiver({ credentials })
-    receiver?.attach(wire.child)
-    client = createCredentialClient(wire.host, { timeoutMs, importTimeoutMs: timeoutMs })
-    clients.push(client)
-    wires.push(wire)
-    return wire
-  }
+  const link = await childLink(t, sdk, { credentials, receiver: options.receiver !== false, timeoutMs: options.timeoutMs ?? FIXTURE.longTimeoutMs })
+  const { connect, wires } = link
   if (options.wire !== false) connect()
-  t.after(() => { for (const c of clients) c.close(); receiver?.close() })
   let changes = 0
   let remote = options.remote ?? FIXTURE.blank
   const hosted = createHostedToken({
     tokens: () => tokens,
     record: recorded,
-    credentials: () => client,
+    credentials: () => link.client(),
     instanceId: () => FIXTURE.instanceId,
     remoteTarget: () => remote,
+    // I-SUCCEED: createHostedToken takes runtimeId (Q3 = A). One runtime throughout: an I-HOST reinstall
+    // (credentials wiped) is then a same-runtime first start, which starts no succession.
+    runtimeId: () => FIXTURE.runtimeId,
     changed: () => { changes += 1 },
   })
   const issued = []
@@ -146,8 +172,7 @@ export async function hostedWorld(t, sdk, options = {}) {
     setRemote(value) { remote = value },
     /** Every frame on every wire so far, both directions. */
     frames: () => wires.flatMap((w) => [...w.frames.toChild.map((text) => ({ dir: 'toChild', text })), ...w.frames.toHost.map((text) => ({ dir: 'toHost', text }))]),
-    /** The import frames the host sent (parsed). */
-    imports: () => wires.flatMap((w) => w.frames.toChild).map(parse).filter((f) => f?.op === IMPORT.ops.import),
+    imports: link.imports,
     /** A child restart: a new wire, then the host's first-start question again. */
     async restart() { connect(); await hosted.firstStart() },
     /** A reinstall: the child home (and its store) is gone, then a start. */

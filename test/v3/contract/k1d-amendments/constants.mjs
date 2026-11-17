@@ -91,7 +91,8 @@ export const TOKEN_ENTRY = Object.freeze({
 /** Design §5.4, §5.9 row "K3 host-services/tokens.d.ts"; G3 item 5. */
 export const HOSTED = Object.freeze({
   service: 'dshConnectorTokens',
-  members: Object.freeze(['apiVersion', 'createHosted', 'entryState', 'retire']),
+  // K3 amendment I-SUCCEED, the user's Q1 = C, 2026-11-17: `onChange(fn) → dispose` added.
+  members: Object.freeze(['apiVersion', 'createHosted', 'entryState', 'retire', 'onChange']),
   /** "`create(label)` is connector-internal (its own route), not a K3 member". */
   notMembers: Object.freeze(['create']),
   createHosted: Object.freeze({ params: 1 }),
