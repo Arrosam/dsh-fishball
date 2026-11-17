@@ -21,11 +21,13 @@ import vm from 'node:vm'
 import { caseName } from '../../contract/package-boundaries/cases.mjs'
 import { REPO } from '../../../support/constants.mjs'
 import {
-  ANSWER, ASK_TOOL, CLOCK, CODE, CONNECTOR_OK, EVENT_TYPE, FIXTURE, INVALID_ANSWERS, INVALID_TOOL_ARGS, K3, MAIN_DSH_FORBIDDEN, MAIN_DSH_PACKAGES,
+  ANSWER, ARGUMENTS_STATUS, ASK_TOOL, CARDABLE, CLOCK, CODE, CONNECTOR_OK, DETAIL_REASON_ROWS, DETAIL_STATUS_ROWS, EVENT_TYPE, RENDER, FIXTURE, INVALID_ANSWERS, INVALID_TOOL_ARGS, K3, MAIN_DSH_FORBIDDEN, MAIN_DSH_PACKAGES,
   REASON_ROWS, ROUTE, SUBJECT, SWEEP, TOOL, WAIT,
 } from './constants.mjs'
-import { askEvent, expectedCard, frames, offerOf, request, retirementOf, routesFor, settlementOf, turns, worldFor } from './world.mjs'
-import { asksModule, exported } from './subject.mjs'
+import { askEvent, expectedCard, frames, offerOf, reofferOf, replayOf, request, retirementOf, routesFor, settlementOf, turns, worldFor } from './world.mjs'
+import { asksModule, exported, legacyAsksModule } from './subject.mjs'
+import { until } from '../../../support/util.mjs'
+import { cardPage } from './render.mjs'
 
 const T = { timeout: WAIT.testMs }
 const json = (value) => JSON.stringify(value)
@@ -34,6 +36,7 @@ const ID = Object.freeze({
   ep01: 'ASK-EP-01', ep02: 'ASK-EP-02', ep03: 'ASK-EP-03', ep04: 'ASK-EP-04', bva01: 'ASK-BVA-01', bva02: 'ASK-BVA-02',
   dt01: 'ASK-DT-01', dt02: 'ASK-DT-02', dt03: 'ASK-DT-03', st01: 'ASK-ST-01',
   rc07: 'ASK-UC-07', ep05: 'ASK-EP-05', dt04: 'ASK-DT-04',
+  ep06: 'ASK-EP-06', uc08: 'ASK-UC-08', st02: 'ASK-ST-02', st03: 'ASK-ST-03', ep07: 'ASK-EP-07', bva03: 'ASK-BVA-03', ui01: 'ASK-UI-01',
 })
 const row = (sdk, id, part, title, fn) => test(caseName(sdk, id, part, title), T, fn)
 
@@ -244,6 +247,390 @@ function registerReconcileCases(sdk) {
     assert.deepEqual(w.link.listed(), [])
     await assertKept(w, event)
   })
+}
+
+// ------------------------------------------------------------------------------------------------
+// F-FIX: permission requests become cards (the user, 2026-11-17, answering "ask cards after
+// ask_agent removed": "Permission requests become cards"). ask-card.d.ts as amended: a card is filed
+// for a `permission` offer (or a frozen, unproduced `ask`); fields unchanged; question = prompt.
+
+const permissionEvent = (options = {}) => askEvent({ ...options, type: EVENT_TYPE.permission })
+/** The new offer of a re-offer is open and unfiled: list() does not show it until it is filed. */
+const listedOffers = (w) => w.service.list().map((c) => c.offerId)
+
+function registerPermissionCases(sdk) {
+  // ASK-EP-06: which offer types ask_user files (EP over K1's offer types).
+  for (const type of CARDABLE.filed) {
+    row(sdk, ID.ep06, `card-able (${type})`, `ask_user with a polled ${type} event's offer id → {ok:true, card}: sessionId, sessionTitle, question = prompt, choices exactly allow/reject, state open`, async (t) => {
+      const w = await worldFor(t, sdk)
+      const event = askEvent({ type, choices: FIXTURE.otherChoices })
+      const filed = await w.file(event)
+      assert.equal(filed?.ok, true, `ask_user did not file the ${type}: ${json(filed)}`)
+      assert.deepEqual({ ...filed.card, choices: [...filed.card.choices] }, expectedCard(event, K3.state.open))
+      assertCard(w, event, K3.state.open)
+    })
+  }
+  row(sdk, ID.ep06, 'permission, empty title', 'a permission whose title is "" → sessionTitle null', async (t) => {
+    const w = await worldFor(t, sdk)
+    const event = await openCard(w, { type: EVENT_TYPE.permission, title: FIXTURE.emptyTitle })
+    assert.equal(w.card(approvalIdOf(event)).sessionTitle, null)
+  })
+  row(sdk, ID.ep06, 'permission, unfiled', 'a polled permission that Fishball does not file → no card listed, nothing sent', async (t) => {
+    const w = await worldFor(t, sdk)
+    await w.poll(permissionEvent())
+    assert.deepEqual(w.service.list(), [])
+    assert.deepEqual(w.link.sent(), [])
+  })
+
+  // ASK-UC-08: the permission card's life, as an ask card's (DT over choice × reason; closing events).
+  for (const choice of ANSWER.choices) {
+    for (const [reasonLabel, text, reason] of [['with a reason', FIXTURE.text, FIXTURE.text], ['no reason', undefined, ANSWER.defaultReason]]) {
+      row(sdk, ID.uc08, `answer ${choice}, ${reasonLabel}`, `the user answers a permission card ${choice} (${reasonLabel}) → one approval_answer {sessionId, approvalId, offerId, answer: {decision, risk, reason}}; the card is answered`, async (t) => {
+        const w = await worldFor(t, sdk)
+        const event = await openCard(w, { type: EVENT_TYPE.permission })
+        assert.deepEqual(await answer(w, event, choice, text), ok)
+        assert.deepEqual(w.link.sent().map((c) => c.args), [answerArgs(event, choice, reason)])
+        assertCard(w, event, K3.state.answered)
+        assert.deepEqual(await answer(w, event, choice), refused(CODE.alreadySettled))
+        assert.equal(w.link.sent().length, 1)
+      })
+    }
+  }
+  for (const [how, closer] of [['a settlement', (e) => settlementOf(approvalIdOf(e))], ['a retirement', (e) => retirementOf(e.eventId)]]) {
+    row(sdk, ID.uc08, `closed by ${how}`, `a filed permission card is closed by ${how}; a late answer gets expired and sends nothing`, async (t) => {
+      const w = await worldFor(t, sdk)
+      const event = await openCard(w, { type: EVENT_TYPE.permission })
+      await w.poll(closer(event))
+      assertCard(w, event, K3.state.closed)
+      const before = w.service.list()
+      assert.deepEqual(await answer(w, event, ANSWER.allow), refused(CODE.expired))
+      assertUnchanged(w, before)
+    })
+    row(sdk, ID.uc08, `ended before filing by ${how}`, `a permission ended by ${how} before it was filed → ask_user answers expired, no card`, async (t) => {
+      const w = await worldFor(t, sdk)
+      const event = permissionEvent()
+      await w.poll(event, closer(event))
+      assert.deepEqual(await w.tool.execute({ [ASK_TOOL.arg]: offerOf(event) }), refused(CODE.expired))
+      assert.deepEqual(w.service.list(), [])
+    })
+  }
+  row(sdk, ID.uc08, 'ask still works', 'an ask event is still filed and answered as before (the type stays frozen) beside a permission card', async (t) => {
+    const w = await worldFor(t, sdk)
+    const permission = await openCard(w, { type: EVENT_TYPE.permission })
+    const ask = await openCard(w)
+    assertCard(w, ask, K3.state.open)
+    assert.deepEqual(await answer(w, ask, ANSWER.reject), ok)
+    assert.deepEqual(w.link.sent().map((c) => c.args), [answerArgs(ask, ANSWER.reject)])
+    assertCard(w, ask, K3.state.answered)
+    assertCard(w, permission, K3.state.open)
+  })
+  row(sdk, ID.uc08, 'system', 'a polled permission reaches Fishball; its model calls ask_user({offer_id}) in a real DSH turn → one open card', async (t) => {
+    const w = await worldFor(t, sdk, { agent: true })
+    const event = permissionEvent()
+    await w.poll(event)
+    const result = await w.fishballTurn({ [ASK_TOOL.arg]: offerOf(event) })
+    assert.ok(result && json(result.content).includes(approvalIdOf(event)), `the tool result names no card: ${json(result?.content)}`)
+    assertCard(w, event, K3.state.open)
+  })
+
+  // ASK-ST-02: re-offer, by revision (F-FIX, corrected 2026-11-17: the order is the mailbox event's
+  // `offer.revision`, offer ids `<approvalId>.r<n>`). A HIGHER revision on a record not answered
+  // replaces it, open and unfiled (not listed until filed), and the replaced offer id then answers
+  // `expired`; the same or a LOWER revision is a replay and changes nothing; a new offer for an
+  // answered record changes nothing. BVA on the revision: n+1, n+2 (higher), n (same), n-1 (lower).
+  const assertExpired = async (w, event) => assert.deepEqual(await w.tool.execute({ [ASK_TOOL.arg]: offerOf(event) }), refused(CODE.expired), `filing the replaced ${offerOf(event)}`)
+  const assertFiles = async (w, event) => {
+    const filed = await w.tool.execute({ [ASK_TOOL.arg]: offerOf(event) })
+    assert.equal(filed?.ok, true, `filing ${offerOf(event)} answered ${json(filed)}`)
+    assertCard(w, event, K3.state.open)
+  }
+  for (const [label, step] of [['r1 → r2 (n+1)', 1], ['r1 → r3 (n+2)', 2]]) {
+    row(sdk, ID.st02, `unfiled, higher ${label}`, `an unfiled permission, then ${label} → replaced: not listed; the replaced id answers expired; the new id files with its own prompt`, async (t) => {
+      const w = await worldFor(t, sdk)
+      const first = permissionEvent()
+      const next = reofferOf(first, first.offer.revision + step)
+      await w.poll(first)
+      await w.poll(next)
+      assert.deepEqual(w.service.list(), [], 'an unfiled re-offer is listed')
+      await assertExpired(w, first)
+      assert.deepEqual(w.service.list(), [], 'filing the replaced id filed something')
+      await assertFiles(w, next)
+      assert.equal(w.service.list().length, 1)
+    })
+  }
+  row(sdk, ID.st02, 'open, higher', 'a filed, unanswered card, then r2 → replaced, unfiled: neither r1 nor r2 listed; r1 answers expired; r2 files; its answer commits r2\'s offer id', async (t) => {
+    const w = await worldFor(t, sdk)
+    const first = await openCard(w, { type: EVENT_TYPE.permission })
+    const second = reofferOf(first)
+    await w.poll(second)
+    assert.deepEqual(listedOffers(w), [], `listed after the re-offer: ${json(listedOffers(w))}`)
+    await assertExpired(w, first)
+    await assertFiles(w, second)
+    assert.deepEqual(await answer(w, second, ANSWER.allow), ok)
+    assert.deepEqual(w.link.sent().map((c) => c.args), [answerArgs(second, ANSWER.allow)], 'the answer did not commit the new offer id')
+  })
+  row(sdk, ID.st02, 'open, same (replay)', 'a replay of the filed offer (same revision) changes nothing: the card stays; filing again answers the same card', async (t) => {
+    const w = await worldFor(t, sdk)
+    const event = permissionEvent()
+    const first = await w.file(event)
+    const before = w.service.list()
+    await w.poll(replayOf(event))
+    assert.deepEqual(w.service.list(), before)
+    assert.deepEqual(await w.tool.execute({ [ASK_TOOL.arg]: offerOf(event) }), first)
+  })
+  row(sdk, ID.st02, 'unfiled, same (replay)', 'a replay of an unfiled offer changes nothing: still not listed; it can still be filed', async (t) => {
+    const w = await worldFor(t, sdk)
+    const event = permissionEvent()
+    await w.poll(event)
+    await w.poll(replayOf(event))
+    assert.deepEqual(w.service.list(), [])
+    await assertFiles(w, event)
+  })
+  row(sdk, ID.st02, 'open r2, lower r1', 'r2 filed, then r1 arrives (a lower revision) → a replay: the r2 card stays filed and listed; r1 answers expired', async (t) => {
+    const w = await worldFor(t, sdk)
+    const first = permissionEvent()
+    const second = reofferOf(first)
+    await w.poll(first, second)
+    await assertFiles(w, second)
+    const before = w.service.list()
+    await w.poll(replayOf(first))
+    assert.deepEqual(w.service.list(), before, 'a lower revision changed the cards')
+    await assertExpired(w, first)
+    assertCard(w, second, K3.state.open)
+  })
+  row(sdk, ID.st02, 're-polled page [r1, r2]', 'r2 filed, then the page [r1, r2] is polled again → nothing changes: the r2 card stays filed and listed', async (t) => {
+    const w = await worldFor(t, sdk)
+    const first = permissionEvent()
+    const second = reofferOf(first)
+    await w.poll(first, second)
+    await assertFiles(w, second)
+    const before = w.service.list()
+    await w.poll(replayOf(first), replayOf(second))
+    assert.deepEqual(w.service.list(), before)
+    assertCard(w, second, K3.state.open)
+  })
+  // r2 here was never the record (it came after r3), so it was never "replaced": the requirement
+  // fixes `expired` only for a replaced id, and a lower revision only "changes nothing". So r2 is
+  // refused with either code, and r3 stays the record.
+  row(sdk, ID.st02, 'unfiled r3, lower r2', 'unfiled r1 → r3, then r2 (lower than r3) → nothing changes: r2 cannot be filed (unknown-offer or expired), r3 files', async (t) => {
+    const w = await worldFor(t, sdk)
+    const r1 = permissionEvent()
+    const r3 = reofferOf(r1, r1.offer.revision + 2)
+    const r2 = reofferOf(r1, r1.offer.revision + 1)
+    await w.poll(r1)
+    await w.poll(r3)
+    await w.poll(r2)
+    const late = await w.tool.execute({ [ASK_TOOL.arg]: offerOf(r2) })
+    assert.ok(late?.ok === false && [CODE.unknownOffer, CODE.expired].includes(late.code), `filing the never-held r2 answered ${json(late)}`)
+    assert.deepEqual(w.service.list(), [])
+    await assertFiles(w, r3)
+  })
+  row(sdk, ID.st02, 'answered, higher', 'a new offer for an already answered card changes nothing: the answered card stays, nothing is sent; the new id is not filed', async (t) => {
+    const w = await worldFor(t, sdk)
+    const first = await openCard(w, { type: EVENT_TYPE.permission })
+    assert.deepEqual(await answer(w, first, ANSWER.reject), ok)
+    const before = w.service.list()
+    const second = reofferOf(first)
+    await w.poll(second)
+    assertUnchanged(w, before, 1)
+    assertCard(w, first, K3.state.answered)
+  })
+  row(sdk, ID.st02, 'two re-offers', 'unfiled r1 → r2 → r3: r1 and r2 answer expired; only r3 files', async (t) => {
+    const w = await worldFor(t, sdk)
+    const r1 = permissionEvent()
+    const r2 = reofferOf(r1)
+    const r3 = reofferOf(r2)
+    await w.poll(r1)
+    await w.poll(r2)
+    await w.poll(r3)
+    for (const stale of [r1, r2]) await assertExpired(w, stale)
+    await assertFiles(w, r3)
+  })
+
+  // ASK-ST-03: moves that act on one offer (F-FIX). Each move names the offer it acts on; a record
+  // that moved on to a newer offer is not changed by a move on the older one.
+  /** r1 filed and its answer held; r2 replaces the record while the answer is in flight. */
+  async function answerInFlight(w, outcome) {
+    const r1 = await openCard(w, { type: EVENT_TYPE.permission })
+    const gate = Promise.withResolvers()
+    w.link.answers.push({ hold: gate.promise, then: outcome })
+    const pending = answer(w, r1, ANSWER.allow)
+    await turns()
+    assert.equal(w.link.sent().length, 1, 'precondition: r1\'s answer was not sent')
+    const r2 = reofferOf(r1)
+    await w.poll(r2)
+    gate.resolve()
+    await pending.catch(() => undefined)
+    await turns()
+    return { r1, r2 }
+  }
+  for (const code of [CODE.expired, CODE.alreadySettled]) {
+    row(sdk, ID.st03, `r1 answer ${code} after r2`, `r1's answer in flight, r2 replaces the record, then the connector answers r1 ${code} → r2 stays open and unfiled; filing r2 succeeds`, async (t) => {
+      const w = await worldFor(t, sdk)
+      const { r2 } = await answerInFlight(w, refused(code))
+      assert.deepEqual(listedOffers(w), [], `listed after r1's late refusal: ${json(w.service.list())}`)
+      await assertFiles(w, r2)
+    })
+  }
+  row(sdk, ID.st03, 'r1 answer ok after r2', 'r1\'s answer in flight, r2 replaces the record, then r1\'s answer succeeds → r2 is not marked answered', async (t) => {
+    const w = await worldFor(t, sdk)
+    const { r2 } = await answerInFlight(w, { ...CONNECTOR_OK })
+    assert.equal(w.service.list().some((c) => c.offerId === offerOf(r2) && c.state === K3.state.answered), false, `r2 listed as answered: ${json(w.service.list())}`)
+    const filed = await w.tool.execute({ [ASK_TOOL.arg]: offerOf(r2) })
+    assert.notEqual(filed?.card?.state, K3.state.answered, `filing r2 answered ${json(filed)}`)
+  })
+  row(sdk, ID.st03, 'ask_user(r1) after r2', 'ask_user on r1 after r2 replaced it → expired, and r2 is not filed by it', async (t) => {
+    const w = await worldFor(t, sdk)
+    const r1 = await openCard(w, { type: EVENT_TYPE.permission })
+    const r2 = reofferOf(r1)
+    await w.poll(r2)
+    await assertExpired(w, r1)
+    assert.deepEqual(w.service.list(), [], `ask_user(r1) filed something: ${json(w.service.list())}`)
+    await assertFiles(w, r2)
+  })
+  row(sdk, ID.st03, 'settlement closes r2 card', 'r1 filed, r2 replaces it and is filed; a settlement naming the approvalId closes the r2 card', async (t) => {
+    const w = await worldFor(t, sdk)
+    const r1 = await openCard(w, { type: EVENT_TYPE.permission })
+    const r2 = reofferOf(r1)
+    await w.poll(r2)
+    await assertFiles(w, r2)
+    await w.poll(settlementOf(approvalIdOf(r1)))
+    assertCard(w, r2, K3.state.closed)
+  })
+  row(sdk, ID.st03, 'settlement ends unfiled r2', 'r1 filed, r2 replaces it (unfiled); a settlement naming the approvalId ends it: ask_user(r2) answers expired, nothing listed', async (t) => {
+    const w = await worldFor(t, sdk)
+    const r1 = await openCard(w, { type: EVENT_TYPE.permission })
+    const r2 = reofferOf(r1)
+    await w.poll(r2)
+    await w.poll(settlementOf(approvalIdOf(r1)))
+    assert.deepEqual(await w.tool.execute({ [ASK_TOOL.arg]: offerOf(r2) }), refused(CODE.expired))
+    assert.equal(w.service.list().some((c) => c.state === K3.state.open), false, `an open card after the settlement: ${json(w.service.list())}`)
+  })
+  row(sdk, ID.st03, 'retirement closes r2 card', 'r2 filed after replacing r1; a retirement naming r2\'s event closes the card', async (t) => {
+    const w = await worldFor(t, sdk)
+    const r1 = await openCard(w, { type: EVENT_TYPE.permission })
+    const r2 = reofferOf(r1)
+    await w.poll(r2)
+    await assertFiles(w, r2)
+    await w.poll(retirementOf(r2.eventId))
+    assertCard(w, r2, K3.state.closed)
+  })
+  row(sdk, ID.st03, 'reconcile vs re-offer', 'startup reconcile judges unfiled r1 ended, but r2 replaced it while approvals_list was in flight → the record is kept: r2 files', async (t) => {
+    const w = await worldFor(t, sdk)
+    const r1 = permissionEvent()
+    await unfiledAtStartup(w, r1)
+    const gate = Promise.withResolvers()
+    w.link.approvals.set(r1.sourceSessionId, { hold: gate.promise, then: live() })
+    const reconciled = w.reconcile()
+    assert.ok(await until(() => w.link.listed().length > 0, WAIT.settleMs, WAIT.pollMs), 'precondition: reconcile sent no approvals_list')
+    const r2 = reofferOf(r1)
+    await w.poll(r2)
+    gate.resolve()
+    await reconciled
+    await assertFiles(w, r2)
+  })
+  row(sdk, ID.st03, 'reconcile, no re-offer (control)', 'startup reconcile judges unfiled r1 ended and nothing replaced it → deleted: ask_user(r1) answers expired', async (t) => {
+    const w = await worldFor(t, sdk)
+    const r1 = permissionEvent()
+    await unfiledAtStartup(w, r1)
+    w.link.approvals.set(r1.sourceSessionId, live())
+    await w.reconcile()
+    await assertDeleted(w, r1)
+  })
+
+  // ASK-EP-07: the card's detail (F-FIX; the user, 2026-11-17: "Show arguments and reason").
+  for (const [label, status, choices] of DETAIL_STATUS_ROWS) {
+    row(sdk, ID.ep07, `argumentsStatus ${label}`, `a permission with arguments and argumentsStatus ${label} → card.arguments is the text, argumentsStatus ${status ?? 'null'}, choices ${json(choices)}`, async (t) => {
+      const w = await worldFor(t, sdk)
+      const event = await openCard(w, { type: EVENT_TYPE.permission, argumentsText: FIXTURE.argumentsText, argumentsStatus: status })
+      assertCard(w, event, K3.state.open)
+      assert.deepEqual([...w.card(approvalIdOf(event)).choices], [...choices])
+    })
+  }
+  row(sdk, ID.ep07, 'no arguments', 'a permission with neither arguments nor argumentsStatus → both null, choices allow/reject', async (t) => {
+    const w = await worldFor(t, sdk)
+    const event = await openCard(w, { type: EVENT_TYPE.permission })
+    const card = w.card(approvalIdOf(event))
+    assert.deepEqual({ arguments: card.arguments, argumentsStatus: card.argumentsStatus, choices: [...card.choices] }, { arguments: null, argumentsStatus: null, choices: [...ANSWER.choices] })
+  })
+  for (const status of [ARGUMENTS_STATUS.truncated, ARGUMENTS_STATUS.unavailable]) {
+    row(sdk, ID.ep07, `allow on a ${status} card`, `answering allow on a card whose arguments are ${status} → invalid-arguments, nothing sent, the card stays open; reject still commits`, async (t) => {
+      const w = await worldFor(t, sdk)
+      const event = await openCard(w, { type: EVENT_TYPE.permission, argumentsText: FIXTURE.argumentsText, argumentsStatus: status })
+      const before = w.service.list()
+      assert.deepEqual(await answer(w, event, ANSWER.allow), refused(CODE.invalidArguments))
+      assertUnchanged(w, before)
+      assert.deepEqual(await answer(w, event, ANSWER.reject), ok)
+      assert.deepEqual(w.link.sent().map((c) => c.args), [answerArgs(event, ANSWER.reject)])
+    })
+  }
+  row(sdk, ID.ep07, 'stored before F-FIX', 'a card stored by the pre-F-FIX module (no arguments, argumentsStatus or reason) lists with nulls after the upgrade and can still be answered', async (t) => {
+    const w = await worldFor(t, sdk, { module: await legacyAsksModule(t) })
+    const event = askEvent({ argumentsText: FIXTURE.argumentsText, argumentsStatus: ARGUMENTS_STATUS.complete })
+    const filed = await w.file(event)
+    assert.equal(filed?.ok, true, `the pre-F-FIX module did not file the ask: ${json(filed)}`)
+    w.mod = await asksModule(sdk)
+    await w.restart()
+    const card = w.card(approvalIdOf(event))
+    assert.ok(card, `no card after the upgrade; list ${json(w.service.list())}`)
+    assert.deepEqual(Object.keys(card).sort(), [...K3.fields].sort())
+    assert.deepEqual({ ...card, choices: [...card.choices] }, { ...expectedCard(event, K3.state.open), arguments: null, argumentsStatus: null, reason: null, choices: [...ANSWER.choices] })
+    assert.deepEqual(await answer(w, event, ANSWER.allow), ok)
+  })
+  // ASK-UI-01: the drawn card (F-FIX; the user, 2026-11-17: "Show arguments and reason"). Component
+  // level, fishball-ui's real chunk in the scripted page (render.mjs). EP: complete / incomplete
+  // arguments; markup in a value is shown as plain text, never interpreted.
+  const drawn = (event) => expectedCard(event, K3.state.open)
+  const elementTags = new Set(['b', 'i', 'img', 'script'])
+  row(sdk, ID.ui01, 'complete', 'a card with complete arguments and a reason shows the question, the arguments, the reason, and Allow and Reject buttons', async (t) => {
+    const p = await cardPage(t, sdk)
+    const event = permissionEvent({ argumentsText: FIXTURE.argumentsText, argumentsStatus: ARGUMENTS_STATUS.complete })
+    await p.show([drawn(event)])
+    const text = p.text()
+    for (const shown of [event.payload.prompt, FIXTURE.argumentsText, FIXTURE.reason]) assert.ok(text.includes(shown), `the card does not show ${json(shown)}: ${text}`)
+    const buttons = p.buttons()
+    assert.ok(buttons.some((b) => RENDER.label.allow.test(b)) && buttons.some((b) => RENDER.label.reject.test(b)), `buttons ${json(buttons)}`)
+    assert.equal(RENDER.incompleteNote.test(text), false, 'a complete card says the arguments are incomplete')
+  })
+  for (const status of [ARGUMENTS_STATUS.truncated, ARGUMENTS_STATUS.unavailable]) {
+    row(sdk, ID.ui01, status, `a card whose arguments are ${status} shows only the Reject button and a note that the arguments are incomplete`, async (t) => {
+      const p = await cardPage(t, sdk)
+      const event = permissionEvent({ argumentsText: FIXTURE.argumentsText, argumentsStatus: status })
+      await p.show([drawn(event)])
+      const answers = p.buttons().filter((b) => RENDER.label.allow.test(b) || RENDER.label.reject.test(b))
+      assert.equal(answers.length, 1, `answer buttons ${json(p.buttons())}`)
+      assert.ok(RENDER.label.reject.test(answers[0]), `the one answer button is ${json(answers[0])}`)
+      assert.ok(RENDER.incompleteNote.test(p.text()), `no note that the arguments are incomplete: ${p.text()}`)
+    })
+  }
+  row(sdk, ID.ui01, 'markup is text', 'markup in the arguments and in the reason is shown as plain text: the exact strings appear, and no element they name is created', async (t) => {
+    const p = await cardPage(t, sdk)
+    const event = permissionEvent({ argumentsText: FIXTURE.argumentsText, argumentsStatus: ARGUMENTS_STATUS.complete, reason: FIXTURE.markupReason })
+    await p.show([drawn(event)])
+    const strings = p.strings().join('\n')
+    assert.ok(strings.includes(FIXTURE.argumentsText), `the arguments are not shown verbatim: ${strings}`)
+    assert.ok(strings.includes(FIXTURE.markupReason), `the reason is not shown verbatim: ${strings}`)
+    assert.deepEqual(p.tags().filter((tag) => elementTags.has(tag)), [], 'markup in a value became elements')
+    assert.equal(p.tags().includes(undefined), false)
+  })
+  row(sdk, ID.ui01, 'no detail', 'a card with no arguments and no reason (null) shows its question, no incomplete note, and Allow and Reject', async (t) => {
+    const p = await cardPage(t, sdk)
+    const event = permissionEvent({ reason: '' })
+    await p.show([drawn(event)])
+    assert.ok(p.text().includes(event.payload.prompt))
+    assert.equal(RENDER.incompleteNote.test(p.text()), false)
+    const buttons = p.buttons()
+    assert.ok(buttons.some((b) => RENDER.label.allow.test(b)) && buttons.some((b) => RENDER.label.reject.test(b)), `buttons ${json(buttons)}`)
+  })
+
+  // ASK-BVA-03: the descriptor's reason at the blank / non-blank edge.
+  for (const [label, reason, shown] of DETAIL_REASON_ROWS) {
+    row(sdk, ID.bva03, `reason ${label}`, `a permission whose reason is ${label} → card.reason ${shown === null ? 'null' : json(shown)}`, async (t) => {
+      const w = await worldFor(t, sdk)
+      const event = await openCard(w, { type: EVENT_TYPE.permission, reason })
+      assert.equal(w.card(approvalIdOf(event)).reason, shown)
+    })
+  }
 }
 
 export function registerAskCases(sdk) {
@@ -545,13 +932,18 @@ export function registerAskCases(sdk) {
     assert.deepEqual(await w.tool.execute({ [ASK_TOOL.arg]: offerOf(askEvent()) }), refused(CODE.unknownOffer))
     assert.deepEqual(w.service.list(), [])
   })
-  row(sdk, ID.ep01, 'not an ask', 'ask_user with the offer id of a permission event (not an ask) → unknown-offer, no card', async (t) => {
-    const w = await worldFor(t, sdk)
-    const permission = askEvent({ type: EVENT_TYPE.permission })
-    await w.poll(permission)
-    assert.deepEqual(await w.tool.execute({ [ASK_TOOL.arg]: offerOf(permission) }), refused(CODE.unknownOffer))
-    assert.deepEqual(w.service.list(), [])
-  })
+  // Re-baselined (F-FIX; the user, 2026-11-17: "Permission requests become cards"): row 5 was "a
+  // permission event's offer id → unknown-offer". A permission is now card-able (ASK-EP-06), so
+  // row 5 is the offer types that are still never card-able: question and plan-review.
+  for (const type of CARDABLE.never) {
+    row(sdk, ID.ep01, `not card-able (${type})`, `ask_user with the offer id of a ${type} event → unknown-offer, no card`, async (t) => {
+      const w = await worldFor(t, sdk)
+      const event = askEvent({ type })
+      await w.poll(event)
+      assert.deepEqual(await w.tool.execute({ [ASK_TOOL.arg]: offerOf(event) }), refused(CODE.unknownOffer))
+      assert.deepEqual(w.service.list(), [])
+    })
+  }
   row(sdk, ID.ep01, 'a seen ask', 'ask_user with a polled ask\'s offer id → {ok:true, card}, the card list() shows', async (t) => {
     const w = await worldFor(t, sdk)
     const event = askEvent()
@@ -560,6 +952,8 @@ export function registerAskCases(sdk) {
     assert.deepEqual({ ...filed.card, choices: [...filed.card.choices] }, expectedCard(event, K3.state.open))
     assertCard(w, event, K3.state.open)
   })
+
+  registerPermissionCases(sdk)
 
   // ============================================================== ASK-EP-02: card fields
   row(sdk, ID.ep02, 1, 'every field comes from the event: ids and question from the descriptor, sessionId from sourceSessionId, askedAt from the descriptor\'s at', async (t) => {

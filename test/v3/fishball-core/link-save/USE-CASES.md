@@ -187,3 +187,25 @@ Connect states are `CONNECT.state`.
   1. `/` is refused as a root path.
   2. `/a` is accepted.
 - **FLS-BVA-03 (R14):** a grant ten years old still refreshes, because there is no chain-age cap.
+
+## F-FIX security rows (audit `.runtime/reports/x-sec-audit.md` X-11, X-12, X-13)
+
+- **X-11 (design §6.3: credentials are never forwarded on a redirect):** EP over four steps
+  (protected-resource discovery, authorization-server discovery, the code exchange, refresh) × BVA
+  over 301, 302, 303, 307 and 308. The answer points at a trap on another origin, and the trap
+  gets no request.
+  - Discovery or exchange: Connect ends `failed`, and no grant is saved.
+  - Refresh: the saved grant is unchanged.
+- **X-12 (endpoint pinning, before any authorization request):**
+  - `token_endpoint` must be exactly `<target origin>/api/agent/oauth/token`. Another origin,
+    another port, another path, the https twin, the other loopback name or a trailing slash →
+    `needs-configuration` / `not-a-connector`.
+  - `authorization_endpoint` is accepted when it is https on any host, or http on exactly
+    `localhost`, `127.0.0.1` or `[::1]`. http on another host, on `foo.localhost` or on
+    `127.0.0.2` → `not-a-connector`.
+  - A document the metadata schema refuses (an endpoint absent, `not a url`, `javascript:`) is a
+    failed discovery, not a connector refusal (F-FIX requirement correction). begin() rejects and
+    Connect reads `failed`.
+- **X-13 (R-OA-02: refuse an authorization server without S256):** `code_challenge_methods_supported`
+  absent, `[]` or `['plain']` → no approval URL, Connect `failed`. `['S256']` and `['plain','S256']`
+  → authorized, with S256 in the URL.

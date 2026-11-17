@@ -26,7 +26,7 @@ import { createHash, randomBytes } from 'node:crypto'
 import http from 'node:http'
 import { FakePairs } from '../identity/fake-connector.mjs'
 import { token as generatedToken } from '../identity/constants.mjs'
-import { FIXTURE, K1, MCP, OAUTH, RPC, WEB } from './constants.mjs'
+import { FIXTURE, K1, MCP, OAUTH, REDIRECT, RPC, WEB } from './constants.mjs'
 
 /** F-PAIR's FakePairs, where a retired entry no longer holds a pair (its id and name are free). */
 class RetirablePairs extends FakePairs {
@@ -86,7 +86,12 @@ function serve(handler, port, host) {
  * cases set:
  * - `metadata`: `{resource?, authorizationServers?, scopes?}` (`scopes: null` drops the field);
  * - `codeError`: an OAuth error the next `authorization_code` request answers, once;
- * - `refreshError`: an OAuth error every `refresh_token` request answers while set.
+ * - `refreshError`: an OAuth error every `refresh_token` request answers while set;
+ * - `redirect`: `{step, status}` (X-11): every request of that OAuth step (REDIRECT.step) is answered
+ *   with `status` and a `Location` on the fake's trap listener, another origin that records every
+ *   request it gets (`trapRequests()`), so a followed redirect is seen there;
+ * - `authorizationServer`: `(origin, approvalOrigin) => overrides` (X-12, X-13): fields replacing
+ *   the RFC 8414 document's own; an `undefined` value drops the field.
  */
 export async function startFakeConnector() {
   const pairs = new RetirablePairs()
@@ -238,16 +243,37 @@ export async function startFakeConnector() {
     return doc
   }
 
+  function asmFor(origin, issuer) {
+    const doc = { ...K1.authorizationServerMetadata(origin, approvalOrigin()), issuer, ...(script.authorizationServer?.(origin, approvalOrigin()) ?? {}) }
+    for (const [k, v] of Object.entries(doc)) if (v === undefined) delete doc[k]
+    return doc
+  }
+
+  /** The OAuth step one web request is (REDIRECT.step), or undefined. */
+  function stepOf(req, url, body) {
+    if (req.method === WEB.get && url.pathname.startsWith(MCP.paths.protectedResourcePrefix)) return REDIRECT.step.protectedResource
+    if (req.method === WEB.get && url.pathname.startsWith(MCP.paths.authorizationServerPrefix)) return REDIRECT.step.authorizationServer
+    if (req.method === WEB.post && url.pathname === MCP.paths.token) {
+      const grant = new URLSearchParams(body).get(OAUTH.grantType)
+      if (grant === K1.GRANT.authorizationCode) return REDIRECT.step.codeExchange
+      if (grant === K1.GRANT.refreshToken) return REDIRECT.step.refresh
+    }
+    return undefined
+  }
+
   async function webHandler(req, res) {
     const body = await readBody(req)
     const url = new URL(req.url, originOfHost(req.headers.host))
     requests.push({ listener: 'web', at: Date.now(), host: req.headers.host, method: req.method, path: url.pathname, query: url.search, headers: { ...req.headers }, body })
     const origin = originOfHost(req.headers.host)
+    if (script.redirect !== undefined && stepOf(req, url, body) === script.redirect.step) {
+      res.writeHead(script.redirect.status, { [WEB.location]: trapUrl() })
+      return res.end()
+    }
     if (req.method === WEB.get && url.pathname.startsWith(MCP.paths.protectedResourcePrefix)) return sendJson(res, K1.HTTP_STATUS.ok, prmFor(origin))
     if (req.method === WEB.get && url.pathname.startsWith(MCP.paths.authorizationServerPrefix)) {
       // Any issuer path is served with its own issuer, so a not-a-connector row fails the check, not the read.
-      const issuer = origin + url.pathname.slice(MCP.paths.authorizationServerPrefix.length)
-      return sendJson(res, K1.HTTP_STATUS.ok, { ...K1.authorizationServerMetadata(origin, approvalOrigin()), issuer })
+      return sendJson(res, K1.HTTP_STATUS.ok, asmFor(origin, origin + url.pathname.slice(MCP.paths.authorizationServerPrefix.length)))
     }
     if (req.method === WEB.post && url.pathname === MCP.paths.token) return tokenEndpoint(req, res, body)
     if (url.pathname === MCP.paths.mcp && req.method === WEB.post) return mcpEndpoint(req, res, body)
@@ -297,11 +323,21 @@ export async function startFakeConnector() {
     return sendJson(res, K1.HTTP_STATUS.notFound, {})
   }
 
+  /** X-11: where a scripted redirect points. Any request here is a followed redirect. */
+  async function trapHandler(req, res) {
+    const body = await readBody(req)
+    requests.push({ listener: 'trap', at: Date.now(), host: req.headers.host, method: req.method, path: new URL(req.url, `http://${req.headers.host}`).pathname, headers: { ...req.headers }, body })
+    return sendJson(res, K1.HTTP_STATUS.notFound, {})
+  }
+
   const web = serve(webHandler, 0, FIXTURE.bindHost)
   const approval = serve(approvalHandler, 0, FIXTURE.approvalHost)
+  const trap = serve(trapHandler, 0, FIXTURE.approvalHost)
   await web.listen()
   await approval.listen()
+  await trap.listen()
   const approvalOrigin = () => `${K1.HOSTS.loopbackScheme}//${FIXTURE.approvalHost}:${approval.port}`
+  const trapUrl = () => `${K1.HOSTS.loopbackScheme}//${FIXTURE.approvalHost}:${trap.port}${REDIRECT.trapPath}`
 
   const tokenRequests = () => requests.filter((r) => r.listener === 'web' && r.path === MCP.paths.token)
   const grantOf = (r) => new URLSearchParams(r.body).get(OAUTH.grantType)
@@ -342,9 +378,14 @@ export async function startFakeConnector() {
     /** The secrets presented with client_credentials, in order, with the Host each went to. */
     presented: () => c.clientCredentialRequests().map((r) => ({ at: r.at, host: r.host, secret: clientOf(r.headers, new URLSearchParams(r.body)).secret, clientId: clientOf(r.headers, new URLSearchParams(r.body)).clientId })),
     approvalRequests: () => requests.filter((r) => r.listener === 'approval'),
+    /** X-11: every request the trap got (a followed redirect), and every web request of one OAuth step. */
+    trapRequests: () => requests.filter((r) => r.listener === 'trap'),
+    stepRequests: (step) => requests.filter((r) => r.listener === 'web' && stepOf(r, new URL(r.path, originOfHost(r.host)), r.body) === step),
+    /** The approval origin the fake's own metadata names (X-12 rows build endpoints beside it). */
+    approvalOrigin: () => approvalOrigin(),
     callsOf: (name) => calls.filter((call) => call.name === name),
     eventListens: () => listens.filter((l) => (l.filter.resourceSubscriptions ?? []).includes(K1.CONNECTED.listenResource) && !l.res.destroyed),
-    stop: async () => { await web.close(); await approval.close() },
+    stop: async () => { await web.close(); await approval.close(); await trap.close() },
   }
   return c
 }

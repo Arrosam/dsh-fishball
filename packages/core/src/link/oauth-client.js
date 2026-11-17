@@ -43,6 +43,16 @@ export const OAUTH_CLIENT = Object.freeze({
   stateBytes: 32,
   /** Default deadline of each outbound OAuth request (discovery, code exchange, refresh), 30 s, as the DSH side's copy. */
   requestTimeoutMs: 30_000,
+  /**
+   * Fetch's redirect mode for every outbound OAuth request: a redirect is an error, never followed.
+   * A 307/308 from the token endpoint would re-POST the code and verifier, or the refresh token, to
+   * any `Location` (X-SEC X-11; design §6.3 "credentials are never forwarded on a redirect"), and the
+   * SDK checks only the first URL. The same value as the link's `LINK_MCP.redirect`, restated because
+   * this module imports nothing but Node (see the header).
+   */
+  redirect: 'error',
+  /** The one PKCE method this client sends; an authorization server that does not list it is refused (X-SEC X-13). */
+  pkceMethod: 'S256',
   /** listen() port 0: the OS picks a free port. */
   osPort: 0,
   /** Node event names this module listens to. */
@@ -76,6 +86,7 @@ export const OAUTH_CLIENT = Object.freeze({
 const MESSAGE = Object.freeze({
   discovery: 'the server\'s OAuth metadata could not be read',
   noCimd: 'the authorization server does not accept Client ID Metadata Documents',
+  noS256: 'the authorization server does not list PKCE S256',
   noAuthorizationServer: 'the protected-resource metadata names no authorization server',
   [OAUTH_CLIENT.attemptEnd.denied]: 'the authorization was denied',
   [OAUTH_CLIENT.attemptEnd.rejected]: 'the authorization response was not accepted (state or issuer)',
@@ -235,14 +246,16 @@ function awaitCallback(listener, { signal, timers, timeoutMs }) {
 }
 
 /**
- * `fetchFn` with a deadline on every request, joined to the caller's own signal. The refresh runs
- * inside `credentials.modifyRecord`, which holds the store's cross-process lock, so an unanswered
- * token endpoint must not hold it longer than a writer elsewhere waits for that lock
- * (dsh-credentials-local DOCUMENT_LOCK_WAIT_MS, 30 s).
+ * `fetchFn` with a deadline on every request, joined to the caller's own signal, and no redirect
+ * followed (`OAUTH_CLIENT.redirect`, set after the caller's init so nothing can turn it back on).
+ * The refresh runs inside `credentials.modifyRecord`, which holds the store's cross-process lock,
+ * so an unanswered token endpoint must not hold it longer than a writer elsewhere waits for that
+ * lock (dsh-credentials-local DOCUMENT_LOCK_WAIT_MS, 30 s).
  */
 function withDeadline(fetchFn, timeoutMs) {
   return (input, init = {}) => fetchFn(input, {
     ...init,
+    redirect: OAUTH_CLIENT.redirect,
     signal: AbortSignal.any([AbortSignal.timeout(timeoutMs), ...(init.signal ? [init.signal] : [])]),
   })
 }
@@ -327,6 +340,10 @@ export function createTokenManager({ sdk, credentials, key, now = Date.now, refr
       const metadata = discovery.authorizationServerMetadata
       // CIMD only (R-OA-13): no dynamic-registration fallback, and no hard-coded client.
       if (metadata.client_id_metadata_document_supported !== true) throw new OAuthAttemptError(OAUTH_CLIENT.attemptEnd.failed, MESSAGE.noCimd)
+      // MCP Authorization: a client MUST refuse a server that does not list S256 (R-OA-02). The SDK
+      // checks the list only when it is present, so an absent list would pass there (X-SEC X-13).
+      const methods = metadata.code_challenge_methods_supported
+      if (!Array.isArray(methods) || !methods.includes(OAUTH_CLIENT.pkceMethod)) throw new OAuthAttemptError(OAUTH_CLIENT.attemptEnd.failed, MESSAGE.noS256)
       const clientInformation = { client_id: clientMetadataUrl }
       const resource = await sdk.selectResourceURL(new URL(serverUrl), {}, discovery.resourceMetadata)
       const listener = await callback()

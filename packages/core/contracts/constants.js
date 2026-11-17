@@ -301,15 +301,19 @@ export const MCP = Object.freeze({
 
 /**
  * The approval words of the connector's published `approval_answer` input schema (its `answer`
- * object's `decision` and `risk` enums), and the `approvals_list` refusal that says the asked
+ * object's `decision` and `risk` enums), an offer descriptor's `argumentsStatus` words, and the `approvals_list` refusal that says the asked
  * session is gone. Core's ask cards (F-ASKCARD) answer and reconcile with them. They sit beside
  * `MCP`, not in it, because `MCP.refusal` is K3a's frozen set; `test/v3/contract/own-schema/`
  * checks every value here against the connector, as for `MCP` (Fishball's decision, 2026-11-16,
- * after F-OWN-SCHEMA removed the vendored V2 contract they were read from).
+ * after F-OWN-SCHEMA removed the vendored V2 contract they were read from). No `ask`: the
+ * connector's `approval_answer` refuses it (the user, 2026-11-17: "Refuse it"; X-SEC X-02), so core
+ * neither sends nor offers it (F-FIX).
  */
 export const APPROVAL = Object.freeze({
-  decision: Object.freeze({ allow: 'allow', grant: 'grant', reject: 'reject', ask: 'ask', escalate: 'escalate' }),
+  decision: Object.freeze({ allow: 'allow', grant: 'grant', reject: 'reject', escalate: 'escalate' }),
   risk: Object.freeze({ low: 'low', high: 'high' }),
+  /** An offer descriptor's `argumentsStatus` (K1 ARGUMENTS_STATUS); only `complete` arguments can be allowed (the connector's `arguments-incomplete`). */
+  argumentsStatus: Object.freeze({ complete: 'complete', truncated: 'truncated', unavailable: 'unavailable' }),
   refusal: Object.freeze({ unknownSession: 'unknown-session' }),
 })
 

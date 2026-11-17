@@ -2,14 +2,15 @@
  * fishball-core's ask cards, server half (task F-ASKCARD; K3 `contracts/ask-card.d.ts`, `ui.d.ts`
  * `asks`; R-FB-11, R-UI-12, R-CON-05, R-CON-06, R-CON-08; PLAT-UC-07; Q3 = A).
  *
- * An `ask` (a session's `ask_agent`) is Fishball's to answer. When its model cannot decide, it files
- * the ask as a card with the `ask_user` tool; the user answers Allow or Reject, with an optional
+ * A permission request (a `permission` offer; the user, 2026-11-17, after `ask_agent` was removed)
+ * is Fishball's to answer. When its model cannot decide, it may file the request as a card with the
+ * `ask_user` tool (or escalate it to the session's own prompt); the user answers Allow or Reject, with an optional
  * reason, in Fishball's own conversation (fishball-ui's client.asks.js), and core commits that
  * answer through its link as Fishball's `approval_answer` on the card's `offerId`. The main DSH shows nothing (Q-U2):
  * nothing here is registered outside the Fishball DSH.
  *
- * - `createAsks({link, table, logger})`: follows the link's polls (every `ask`, `settlement` and
- *   `retirement`; a page is read whoever the event was dispatched to, so an interceptor or Fishball
+ * - `createAsks({link, table, logger})`: follows the link's polls (every offer of `ASKS.eventTypes`,
+ *   `settlement` and `retirement`; a page is read whoever the event was dispatched to, so an interceptor or Fishball
  *   taking it changes nothing here), and returns `service` (the K3 `fishballInstance.ui.asks`),
  *   `tool` (the filing tool's raw DSH definition; core's main row registers it with `tools.register`
  *   in the manager's scope), `reconcile()` (below) and `close()`. Its `onPoll` listener resolves once
@@ -92,9 +93,9 @@ export function createAsks({ link, table, logger }) {
   let intake = Promise.resolve()
   let closed = false
 
-  /** One polled event; anything but an ask, its settlement or its retirement is not the store's. */
+  /** One polled event; anything but a card-able offer (`ASKS.eventTypes`), its settlement or its retirement is not the store's. */
   async function take(event) {
-    if (event?.type === EVENT_TYPE.ask) {
+    if (ASKS.eventTypes.includes(event?.type)) {
       const record = recordOf(event)
       if (record === undefined) { logger?.warn(ASK_LOG.malformed, String(event.eventId)); return }
       await store.add(record)
@@ -144,9 +145,10 @@ export function createAsks({ link, table, logger }) {
       logger?.warn(ASK_LOG.commitFailed, record.approvalId, codeOf(error))
       return refusal(REFUSAL.operationFailed)
     }
-    if (result?.ok === true) { await recorded(() => store.answered(record.approvalId)); return OK }
+    // Both moves name the answered offer, so a newer offer that replaced it meanwhile stays as it is.
+    if (result?.ok === true) { await recorded(() => store.answered(record.approvalId, record.offerId)); return OK }
     const code = typeof result?.code === 'string' ? result.code : REFUSAL.operationFailed
-    if (ASKS.closingCodes.includes(code)) await recorded(() => store.close(record.approvalId))
+    if (ASKS.closingCodes.includes(code)) await recorded(() => store.closeOffer(record.approvalId, record.offerId))
     // `disconnected` (never sent) and the connector's own refusals leave the ask waiting there,
     // so the card stays open for another answer.
     else if (code !== LINK.disconnected) logger?.warn(ASK_LOG.commitFailed, record.approvalId, code)
@@ -168,6 +170,8 @@ export function createAsks({ link, table, logger }) {
         const record = store.get(approvalId)
         if (record?.filed !== true || record.state === CARD_STATE.closed) return refusal(REFUSAL.expired)
         if (record.state === CARD_STATE.answered) return refusal(REFUSAL.alreadySettled)
+        // A choice the card does not offer (Allow on incomplete arguments) is refused before sending.
+        if (!record.choices.includes(checked.choice)) return refusal(REFUSAL.invalidArguments)
         return commit(record, checked)
       })
     },
@@ -184,7 +188,12 @@ export function createAsks({ link, table, logger }) {
     let deleted = 0
     for (const [sessionId, records] of bySession) {
       const ended = await endedOf(sessionId, records)
-      for (const record of ended) await store.dropUnfiled(record.approvalId)
+      // On the intake chain, where offers are added: an unfiled record is deleted only there, so
+      // the delete can never remove a newer offer that replaced it (store.js header).
+      const drops = intake.then(async () => { for (const record of ended) await store.dropUnfiled(record.approvalId, record.offerId) })
+      // A failed delete fails this reconciliation, as before, but never the chain later pages wait on.
+      intake = drops.catch(() => {})
+      await drops
       deleted += ended.length
     }
     const kept = [...bySession.values()].reduce((sum, records) => sum + records.length, 0) - deleted
@@ -206,7 +215,7 @@ export function createAsks({ link, table, logger }) {
     return ASKS.endedCodes.includes(result?.code) ? records : []
   }
 
-  /** `ask_user({offer_id})`: files the ask with that offer id as a card (idempotent while open). */
+  /** `ask_user({offer_id})`: files the request with that offer id as a card (idempotent while open). */
   async function fileCard(args) {
     const offerId = args?.[ASKS.offerArgument]
     if (typeof offerId !== 'string' || offerId === '') return refusal(REFUSAL.invalidArguments)
@@ -215,9 +224,10 @@ export function createAsks({ link, table, logger }) {
     const record = store.byOffer(offerId)
     if (record === undefined) return refusal(store.wasClosed(offerId) ? REFUSAL.expired : ASK_CODE.unknownOffer)
     if (record.state !== CARD_STATE.open) return refusal(REFUSAL.expired)
-    await store.file(record.approvalId)
+    await store.file(record.approvalId, offerId)
     const filed = store.get(record.approvalId)
-    return filed?.filed === true && filed.state === CARD_STATE.open ? { ok: true, card: cardOf(filed) } : refusal(REFUSAL.expired)
+    // A newer offer that replaced this one meanwhile is not filed by it: this offer has expired.
+    return filed?.offerId === offerId && filed.filed === true && filed.state === CARD_STATE.open ? { ok: true, card: cardOf(filed) } : refusal(REFUSAL.expired)
   }
 
   const tool = Object.freeze({
