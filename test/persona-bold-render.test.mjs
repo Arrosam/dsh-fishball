@@ -16,8 +16,7 @@
  */
 import assert from 'node:assert/strict'
 import { before, describe, it } from 'node:test'
-import { AFTER_NON_WORD, AFTER_PUNCT, AFTER_WORD, BOLD_SENTENCES, CHINESE_PUNCT, DSH_MARKDOWN, PERSONA_BOLD } from './support/constants.mjs'
-import { T } from './support/expect.mjs'
+import { AFTER_NON_WORD, AFTER_PUNCT, AFTER_WORD, BOLD_SENTENCES, CHINESE_PUNCT, DSH_MARKDOWN, PERSONA_BOLD, T } from './support/constants.mjs'
 import { boldSummary, loadRenderer } from './support/dsh-markdown.mjs'
 import { loadCurrent, personaLines, isRuleLine } from './support/persona-bold.mjs'
 

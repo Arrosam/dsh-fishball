@@ -19,7 +19,7 @@ import { FIXTURE, IX, REFUSAL, RELAYED, RETIREMENT_REASON, SURFACE, TOOL, XSEC }
 import { row } from './rows.mjs'
 import {
   A, answer, asked, assertCovered, assertOffered, call, cardOf, cid, connect, decided, eventually, free, fresh, handOver, managed, okCall, prefixGrant,
-  principal, qAnswer, questioned, quiet, resultOf, retirement, step, stockFor, takeBack, tok, untilStock, userClicks, world,
+  principal, qAnswer, questioned, quiet, resultOf, retirement, sleep, step, stockFor, takeBack, tok, untilStock, userClicks, world,
 } from './subject.mjs'
 
 const SHELL = 'bash'
@@ -170,7 +170,13 @@ export function registerXsecInteractionCases(sdk) {
     const p = await principal(t, w)
     const bytes = Buffer.from(FIXTURE.png, 'base64')
     const sha256 = createHash('sha256').update(bytes).digest('hex')
-    const put = () => call(p.client, TOOL.attachmentPut, { transferId: tok('xfer'), total: bytes.length, sha256, mediaType: FIXTURE.pngType, chunks: [FIXTURE.png] })
+    // Every put past the burst first waits for the bucket to refill one put (XSEC.pace), so the
+    // endpoint's rate limit never refuses a put and only the hostRef cap can.
+    let puts = 0
+    const put = async () => {
+      if (puts++ >= XSEC.pace.burstPuts) await sleep(XSEC.pace.refillMs)
+      return call(p.client, TOOL.attachmentPut, { transferId: tok('xfer'), total: bytes.length, sha256, mediaType: FIXTURE.pngType, chunks: [FIXTURE.png] })
+    }
     for (let i = 0; i < XSEC.hostRefCap; i += 1) assert.equal((await put()).ok, true, 'put ' + (i + 1) + ' refused')
     const files = await w.call('attachmentFiles')
     const over = await put()

@@ -11,12 +11,12 @@
  * (its own modules and the package modules they load), closed over the packages' own import
  * graph, so a module's suite also runs when a module it imports changes. Two kinds of file are
  * wider than their imports and say why at their entry:
- * - a suite that boots a real DSH host (H-STUB, the slim child) loads whole packages at runtime
+ * - a suite that boots a real DSH host (the worker's profile) loads whole packages at runtime
  *   through the profile, not through imports, so it triggers on the whole package;
  * - a static check that reads every file of a package (the contract suites) triggers on it all.
  * Revisit an entry when a suite starts loading another module. `node test/run-affected.mjs --check`
- * reports every pre-V3- or V3-selected test file no suite owns, any owned twice, and any listed file
- * that does not exist.
+ * reports every V3 test file no V3 suite owns, every root test file no suite owns, any file owned
+ * twice, and any listed file that does not exist.
  */
 
 /** Package folders by their package name (design §1.0c). Folder names are the checkout's. */
@@ -38,11 +38,11 @@ const sub = (pkg, ...parts) => [pkg, ...parts].join('/') + '/**'
 const top = (pkg) => pkg + '/*'
 
 /**
- * Package modules many suites depend on: the K1/K2/V2 contracts the connector's modules import,
+ * Package modules many suites depend on: the K1/K2 contracts the connector's modules import,
  * and the shared libraries. Changing one reruns every suite that imports it (closure above).
  */
 const CONNECTOR_CONTRACTS = Object.freeze([
-  sub(PACKAGE.dshConnector, 'mcp-schema'), sub(PACKAGE.dshConnector, 'tools'), sub(PACKAGE.dshConnector, 'contract'),
+  sub(PACKAGE.dshConnector, 'mcp-schema'), sub(PACKAGE.dshConnector, 'tools'),
 ])
 /**
  * The connector's top-level src/*.js files the V3 modules import (src/tokens … src/mcp/*): measured
@@ -71,7 +71,7 @@ const CONNECTOR_BOOT = Object.freeze([
 ])
 
 /** Test support every suite may load, and the runners: a change there reruns every suite. */
-export const FULL = Object.freeze(['test/support/**', 'test/suites.mjs', 'test/run-*.mjs', 'test/run-*.sh', 'test/v2-suites.mjs', 'package.json'])
+export const FULL = Object.freeze(['test/support/**', 'test/suites.mjs', 'test/run-*.mjs', 'test/run-*.sh', 'package.json'])
 
 /** The SDKs each V3 suite has one entry file for (test/v3/<package>/<module>/sdk-<version>.test.mjs). */
 export const SDK_VERSIONS = Object.freeze(['0.2.1-rc.5', '0.2.2-rc.1'])
@@ -265,24 +265,17 @@ export const V3_SUITES = Object.freeze({
 })
 
 /**
- * Pre-V3 suites by the package they exercise. The files stay where they are (the pre-V3 selection,
- * test/v2-suites.mjs, names the nested ones by path); only the grouping is new. `v2.connector-host`
- * boots a real DSH with the connector and the stub instance (H-STUB), so a change to what that row
- * loads (CONNECTOR_BOOT) or to a shared library reruns it.
+ * Pre-V3 suites by the package they exercise. The files stay where they are; only the grouping is
+ * new. REMOVE-V2c deleted the H-STUB suites (the connector booted with a stub instance) and the
+ * pre-V3 selection (test/v2-suites.mjs) with them. `v2.connector-host` keeps the one file that still
+ * boots the worker's DSH with both plugins linked, so a change to what that row loads
+ * (CONNECTOR_BOOT) or to a shared library reruns it.
  */
 const v2 = (names) => names.map((n) => (n.includes('/') ? n : `test/${n}.test.mjs`))
 export const V2_GROUPS = Object.freeze({
-  'v2.connector-host': suite('connector behaviour on a booted DSH with the stub instance (H-STUB)', v2([
-    'approvals-broker', 'approvals-provenance', 'approvals-ptc', 'approvals-routing', 'config', 'limits-config', 'limits-live',
-    'limits-read-roles', 'managed-durable', 'managed-list', 'managed-marks', 'managed-start', 'managed-ways', 'messaging-durable',
-    'messaging-inbound', 'messaging-outbound', 'messaging-read-roles', 'messaging-send', 'messaging-start-halfmade',
-    'messaging-start-title', 'persona-bold', 'rev11b-ask', 'rev11b-direct', 'rev11b-list', 'rev11b-pass', 'rev11b-ptc',
-    'rev11b-quotes', 'rev11b-sources', 'rev11c-answer', 'rev11c-leave', 'rev11c-pile', 'rev11d-end', 'rev11d-grants',
-    'rev11d-regress', 'rev11e-answer', 'rev11e-direct', 'rev11e-frozen', 'rev11g-flow', 'rev11g-hold', 'rev11g-modes',
-    'rev11g-plan', 'rev11g-restart', 'rev11g-validate', 'rev11h-stop', 'session-list-activity', 'session-list-activity-boundaries',
-    'start-session-model', 'start-session-model-persistence', 'start-session-model-races', 'watches-durable', 'watches-fire',
-    'watches-http', 'e1-d2-invalid-main-home',
-  ]), [...CONNECTOR_BOOT, all(PACKAGE.dshConnectorShared), all(PACKAGE.fishballShared), sub(PACKAGE.dshConnectorUi, 'src', 'client')]),
+  'v2.connector-host': suite("the instance's INVALID_MAIN_HOME status on a booted DSH with both plugins linked", v2([
+    'e1-d2-invalid-main-home',
+  ]), [...CONNECTOR_BOOT, all(PACKAGE.dshInstance), all(PACKAGE.dshConnectorShared), all(PACKAGE.fishballShared), sub(PACKAGE.dshConnectorUi, 'src', 'client')]),
   'v2.connector-unit': suite('the connector\'s W0 K1 semantic profile, no host', v2([
     'packages/dsh-connector/test/instance-ext/k1.test.mjs',
   ]), [all(PACKAGE.dshConnector)]),
@@ -295,12 +288,11 @@ export const V2_GROUPS = Object.freeze({
   // V2 child-web page boots (v2-page-cases/child-boot*): their subjects are gone (V2 never deployed).
   // v2-page-cases/ready stays: core's manager keeps the READY gate (src/manager/service.js).
   'v2.instance': suite('the instance: launch, lifecycle, provider sync', v2([
-    'body-soul-i2-launch', 'body-soul-i6-sync',
-    'e1-p3-sync-https', 'provider-sync-coordinator', 'provider-sync-official',
+    'body-soul-i2-launch', 'provider-sync-official',
     'runtime-isolation-boundary', 'runtime-isolation-transport', 'v2-r2-start-detail',
     'v2-r4-core-copy', 'v2-r4-exit-race',
   ]), [// v2-r2's support reads the I-HOST suite's status-route keys (ROUTE.statusKeys, REMOVE-V2b).
-    'test/v3/dsh-instance/host/constants.mjs', all(PACKAGE.dshInstance), all(PACKAGE.fishballCore), all(PACKAGE.fishballUi), all(PACKAGE.dshConnectorShared), all(PACKAGE.fishballShared), sub(PACKAGE.dshConnector, 'contract')]),
+    'test/v3/dsh-instance/host/constants.mjs', all(PACKAGE.dshInstance), all(PACKAGE.fishballCore), all(PACKAGE.fishballUi), all(PACKAGE.dshConnectorShared), all(PACKAGE.fishballShared)]),
   // F-WIRE deleted core's slim child and its suites (V2 was never deployed, the user's rule); the
   // persona, private Skills and the page cases stay.
   'v2.fishball-core': suite('core\'s persona, private Skills and the Fishball page cases', v2([
@@ -311,10 +303,7 @@ export const V2_GROUPS = Object.freeze({
     'test/v2-page-cases/ready.test.mjs',
     'test/v2-recommendation/sdk-0.2.1-rc.5.test.mjs', 'test/v2-recommendation/sdk-0.2.2-rc.1.test.mjs',
     // The page and the Recommended tab are fishball-ui's since F-UI.
-  ]), [all(PACKAGE.fishballCore), all(PACKAGE.fishballUi), all(PACKAGE.dshInstance), sub(PACKAGE.dshConnector, 'contract')]),
-  // The engine and host adapter are dsh-connector-shared's only copy since I-HOST removed the interim ones.
-  'v2.dsh-connector-shared': suite('dsh-connector-shared\'s provider-sync engine and host adapter', v2(['provider-sync-engine', 'provider-sync-host']),
-    [all(PACKAGE.dshConnectorShared)]),
+  ]), [all(PACKAGE.fishballCore), all(PACKAGE.fishballUi), all(PACKAGE.dshInstance)]),
 })
 
 /** Every suite by id. */
