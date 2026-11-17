@@ -25,7 +25,7 @@ export const SETTINGS_SCHEMA = Object.freeze({
   [SETTING.approvalPort[0]]: Schema.object({
     [SETTING.approvalPort[1]]: Schema.natural().min(PORT_RANGE.min).max(PORT_RANGE.max).default(APPROVAL_LISTENER.defaultPort)
       .description(SETTING_TEXT.approvalPort).volatile(),
-    // Optional, with no default: the page shows the listener origin while it is unset or empty.
+    // Optional, with no default: unset or whitespace-only uses the OS hostname.
     [SETTING.dshName[1]]: Schema.string().description(SETTING_TEXT.dshName).volatile(),
   }),
 })

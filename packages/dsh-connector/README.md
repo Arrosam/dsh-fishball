@@ -94,8 +94,21 @@ one.
 
 ### DSH name
 
-Optional. The name the approval page shows for this DSH. When it is empty, the page shows this
-DSH's address instead.
+Optional. MCP discovery advertises `<name>-DSH`, where `<name>` is this setting verbatim, or
+`node:os.hostname()` (the OS device name) when unset, empty or whitespace-only. Nonblank names
+keep Unicode, spaces and special characters unchanged. The literal suffix is always appended,
+including to a name that already ends in `-DSH`. The approval page shows the same base name,
+without the appended suffix; neither identity is derived from an address or request Host.
+
+**Fishball's decision:** while the setting is blank, a small local watcher checks the OS hostname
+every 30 seconds and detects changes through the same local trigger as a setting rename. It makes
+no network requests. Setting a nonblank name stops the watcher; clearing it starts the watcher
+again. Disposing the connector stops it. A live identity read also observes hostname changes
+without waiting for the next check.
+
+This independent MULTI-2 foundation does not yet send rename notifications: the identity-resource
+and push hookup waits for MULTI-0's frozen contract. The settings page's preservation of padded
+nonblank names is pending its R-FIX-CUI owner; the server already preserves stored values verbatim.
 
 ### Limits
 

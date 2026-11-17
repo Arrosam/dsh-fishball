@@ -14,3 +14,6 @@ registerXsecWebCases('0.2.1-rc.5')
 registerPolishWebCases('0.2.1-rc.5')
 registerIconWebCases('0.2.1-rc.5')
 registerReviewXWebCases('0.2.1-rc.5')
+
+import { registerMultiApprovalCases } from './multi-cases.mjs'
+registerMultiApprovalCases('0.2.1-rc.5')
