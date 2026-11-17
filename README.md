@@ -20,7 +20,7 @@ Release **1.0.0-alpha.1** (V3). Every package carries this version. This is a fr
 reads, migrates and accepts nothing from an earlier Fishball release. The older "dsh-fishball (df)"
 preview is archived at tag `archive/df-preview-2026-10-23`.
 
-`node scripts/pack-v3.mjs` builds the nine release tarballs into `.runtime/release/1.0.0-alpha.1/`,
+`node scripts/pack-v3.mjs` builds the eight release tarballs into `.runtime/release/1.0.0-alpha.1/`,
 with SHA256SUMS, an offline pnpm store, `INSTALL.md` (install and uninstall, from npm or offline) and
 `PUBLISH.md` (the publish commands). The packages are published to npm under the `alpha` tag by the
 maintainer only. The connector's npm name is **`dsh-agent-connector`** (`dsh-connector` is taken on

@@ -5,7 +5,7 @@
  *     untracked files (the working tree against base);
  *   node test/run-affected.mjs --suite=<id>[,<id>…] [--sdk=<v>] [--list] [extra args]
  *     the named suites (ids as in test/suites.mjs, or a prefix such as `dsh-connector`);
- *   node test/run-affected.mjs --all [--sdk=<v>]   every suite (V3 and the pre-V3 groups);
+ *   node test/run-affected.mjs --all [--sdk=<v>]   every suite but the shelved ones (V3 and the pre-V3 groups);
  *   node test/run-affected.mjs --check             the map's self-check (no test runs).
  *
  * A base ref and --all leave out the shelved suites (test/suites.mjs SHELVED_SUITES); --suite runs
@@ -124,7 +124,9 @@ function main(argv) {
     const paths = changedPaths(opts.base)
     const picked = selectSuites(paths)
     console.log(`${paths.length} changed path(s) against ${opts.base}`)
-    for (const id of picked.ids) console.log(`  ${id}  (${picked.reasons[id]})`)
+    for (const id of unshelved(picked.ids)) console.log(`  ${id}  (${picked.reasons[id]})`)
+    const dropped = picked.ids.filter((id) => SHELVED_SUITES.includes(id))
+    if (dropped.length) console.log(`shelved, not run: ${dropped.join(' ')}`)
     // A path no suite claims could be anything a test reads: run everything rather than guess.
     if (picked.unmapped.length) { console.log(`unmapped, so every suite runs:\n  ${picked.unmapped.join('\n  ')}`); ids = unshelved(Object.keys(SUITES)) } else ids = unshelved(picked.ids)
   } else throw new Error('give a base ref, --suite=<id>, --all or --check')

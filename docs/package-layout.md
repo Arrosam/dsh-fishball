@@ -1,6 +1,6 @@
 # Package layout (V3)
 
-The repository holds nine packages in two sides that never import each other (requirements
+The repository holds nine packages (one, `fishball-board`, shelved: not in 1.0.0-alpha.1) in two sides that never import each other (requirements
 R-ARCH-10; design §1.0). The root `package.json` is private and not a plugin; it only lists the
 workspaces. Install, uninstall and the supported DSH versions are in the [README](<../README.md>).
 
