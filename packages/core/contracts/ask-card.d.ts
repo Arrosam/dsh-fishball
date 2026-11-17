@@ -1,4 +1,8 @@
 /**
+ * Amended by F-FIX (the user, 2026-11-17): with `ask_agent` removed, a card is filed for a
+ * `permission` offer (or a frozen but unproduced `ask`). The fields are unchanged; `question` is
+ * the offer descriptor's `prompt`.
+ *
  * The ask card: an `ask` event (`ask_agent`) that Fishball cannot decide, shown to the user in
  * Fishball's own conversation (task K3 freezes its fields; R-FB-11, PLAT-UC-07; S4-Q2 decided).
  * Types only. F-ASKCARD builds it in `packages/core/src/asks/` (the store, the `ask_user` filing

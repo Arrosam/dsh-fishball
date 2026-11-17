@@ -26,9 +26,10 @@
  * An unfiled ask that closes is deleted rather than kept closed: every ask Fishball answers itself
  * ends that way, and keeping them would grow the table by one record per ask forever. Its offer id
  * stays in memory only (`closedOffers`) so that filing it in the same process answers `expired`;
- * after a restart such an id is unknown. A new revision of a known ask (another `offerId` for the
- * same `approvalId`) is not handled: K1 gives an `ask` one offer for its life (C-ROUTE commits it
- * once), so there is no rule to follow; revisit if an ask is ever re-offered.
+ * after a restart such an id is unknown. A new revision of a known request (another `offerId` for
+ * the same `approvalId`) replaces its record unless that was answered: a permission request is
+ * re-offered after its earlier offer was retired (re-enable, re-hand; F-FIX), and only the newest
+ * offer can be answered, so the new offer is a new, unfiled record the model may file again.
  */
 import { ASKS, ASK_MISUSE, CARD_STATE } from './constants.js'
 
@@ -140,14 +141,19 @@ export function createCardStore(table, onChange) {
     wasClosed: (offerId) => closedOffers.has(offerId),
 
     /**
-     * Records a new ask; a known approvalId (a replay) is left as it is, and so is one this process
+     * Records a new request; a known offer (a replay) is left as it is, and so is one this process
      * already closed and deleted (an unacked replay of it). After a restart such a replay is
      * recorded again as open: filing it then gives a card whose answer the connector refuses
-     * `expired`, which closes it, so nothing is committed twice.
+     * `expired`, which closes it, so nothing is committed twice. A new offer of a known, unanswered
+     * request replaces its record (see the header).
      */
     async add(record) {
-      if (table.get(record.approvalId) !== undefined || closedOffers.has(record.offerId)) return
+      const known = table.get(record.approvalId)
+      const reoffered = known !== undefined && known.offerId !== record.offerId && known.state !== CARD_STATE.answered
+      if ((known !== undefined && !reoffered) || closedOffers.has(record.offerId)) return
       await table.put(record.approvalId, record)
+      // A filed card the new offer replaced leaves the list until the model files the new offer.
+      if (reoffered && known.filed) onChange()
     },
 
     file: (approvalId) => move(approvalId, (current) => isOpen(current) && !current.filed, { filed: true }),

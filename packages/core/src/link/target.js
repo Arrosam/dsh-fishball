@@ -20,6 +20,18 @@ const unusable = (status) => Object.freeze({ ok: false, status })
 const refused = (code) => unusable(refusedTarget(code))
 
 /**
+ * The link's transport rule, the one place for every URL core sends a credential to or opens for
+ * one (the target, and Connect's authorization endpoint): `https:` to any host, or `http:` only to
+ * a loopback name, an exact WHATWG hostname match (so `foo.localhost` and `127.0.0.2` are not
+ * loopback here, unlike the MCP SDK's own token-endpoint exemption).
+ * @param {URL} url
+ */
+export function isSecureOrLoopback(url) {
+  if (url.protocol === LINK.hosts.remoteScheme) return true
+  return url.protocol === LINK.hosts.loopbackScheme && LINK.hosts.loopbackNames.includes(url.hostname)
+}
+
+/**
  * Checks a configured target URL.
  * The refusal carries the TargetStatus to report (`status`), so the rule has one place.
  * - blank (absent, empty or white space only): `target-unset`, code `null` (R-FB-03);
@@ -36,8 +48,7 @@ export function checkTarget(value) {
   if (typeof value !== 'string' || !URL.canParse(value)) return refused(LINK.code.invalid)
   const url = new URL(value)
   if (url.username !== '' || url.password !== '') return refused(LINK.code.invalid)
-  const loopback = LINK.hosts.loopbackNames.includes(url.hostname)
-  if (url.protocol === LINK.hosts.loopbackScheme && !loopback) return refused(LINK.code.insecure)
   if (url.protocol !== LINK.hosts.loopbackScheme && url.protocol !== LINK.hosts.remoteScheme) return refused(LINK.code.invalid)
+  if (!isSecureOrLoopback(url)) return refused(LINK.code.insecure)
   return Object.freeze({ ok: true, url, origin: url.origin, issuer: issuerOf(url.origin) })
 }

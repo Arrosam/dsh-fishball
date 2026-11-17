@@ -31,12 +31,20 @@ export const ASKS = Object.freeze({
   table: 'cards',
   version: 1,
   tool: ASK_TOOL.fileCard,
+  /**
+   * The offer events a card can be filed for. `permission`: the user's answer of 2026-11-17 (F-FIX),
+   * after C-WIRE-2 removed `ask_agent` ("不给ask_agent工具"), which left no producer of `ask`: a
+   * permission request Fishball cannot decide may become a card on the Fishball page (e2e R2-06),
+   * answered Allow once / Reject as Fishball's `approval_answer`. `ask` stays: K1 keeps the type
+   * frozen. Questions and plan reviews never become cards (R-FB-11: the user answers them in the session).
+   */
+  eventTypes: Object.freeze([MCP.eventTypes.permission, MCP.eventTypes.ask]),
   /** The filing tool's one argument. */
   offerArgument: 'offer_id',
   /**
    * Q3 = A (the user, 2026-11-15): the card offers exactly Allow and Reject, each with an optional
-   * reason; free text goes into the reason. They are the two final `approval_answer` decisions an
-   * `ask` accepts (the connector's broker), so the choice is the K1 decision word itself.
+   * reason; free text goes into the reason. They are two final `approval_answer` decisions a
+   * permission offer accepts (the connector's broker), so the choice is the K1 decision word itself.
    */
   choices: Object.freeze([DECISION.allow, DECISION.reject]),
   /**
@@ -61,15 +69,15 @@ export const ASKS = Object.freeze({
   endedCodes: Object.freeze([APPROVAL.refusal.unknownSession]),
 })
 
-/** The filing tool's own refusal: no `ask` event with that offer id was seen. PROPOSED spelling. */
+/** The filing tool's own refusal: no offer event of `ASKS.eventTypes` with that offer id was seen. PROPOSED spelling. */
 export const ASK_CODE = Object.freeze({ unknownOffer: 'unknown-offer' })
 
 /** The filing tool's model-facing texts (English only, Q7). PROPOSED wording. */
 export const ASK_TEXT = Object.freeze({
-  description: 'Show an ask (an `ask` event) you cannot decide to the user as a card in your own conversation. '
-    + 'Give the event\'s offer id. The user answers Allow or Reject, with an optional reason; their answer is sent for you, '
-    + 'and the ask\'s settlement event tells you the outcome. Do not answer the ask yourself after filing it.',
-  offerArgument: 'The `offer.offerId` of the ask event to show.',
+  description: 'Show a permission request (a `permission` event) you cannot decide to the user as a card in your own conversation. '
+    + 'Give the event\'s offer id. The user answers Allow once or Reject, with an optional reason; their answer is sent for you, '
+    + 'and the request\'s settlement event tells you the outcome. Do not answer the request yourself after filing it.',
+  offerArgument: 'The `offer.offerId` of the permission event to show.',
 })
 
 /**
