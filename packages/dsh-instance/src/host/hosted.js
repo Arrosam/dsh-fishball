@@ -43,7 +43,9 @@ export function childTargetUrl({ instanceTargetUrl, hostOrigin, connectorUsable 
  * @param deps.record - the hosted record (hosted-record.js)
  * @param deps.credentials - `() => credential client | undefined` of the current wire (credential.js)
  * @param deps.instanceId - `() => string`, the instance's own non-secret id for `createHosted`
- * @param deps.remoteTarget - `() => string`, the instance's `targetUrl` ('' = this DSH)
+ * @param deps.remoteTarget - `() => string`, the remote target the running child was launched with
+ *   ('' = this DSH): not the live `targetUrl` setting, which applies only at the next start, since
+ *   a token for this DSH's connector must never reach a child that links elsewhere (F01)
  * @param [deps.runtimeId] - `() => string | undefined`, the id of the child runtime folder now (its
  *   owner marker's `hostId`; a reinstall or a runtime reset makes a new one), undefined when unknown;
  *   omitted, every runtime is unknown and no first start is a reinstall (the safe side: nothing moves)
@@ -68,8 +70,9 @@ export function createHostedToken({ tokens, record, credentials, instanceId, rem
     try { return service.entryState(key) } catch { return undefined }
   }
 
-  /** What blocks an import now, or undefined. */
+  /** What blocks an import now, or undefined. A closed row imports nothing. */
   function refusal(client) {
+    if (closed) return REFUSAL.notReady
     if (!blank(remoteTarget())) return REFUSAL.targetRemote
     if (connector() === undefined) return REFUSAL.connectorMissing
     if (client === undefined) return REFUSAL.notReady
@@ -116,16 +119,28 @@ export function createHostedToken({ tokens, record, credentials, instanceId, rem
   }
 
   /**
-   * One `createHosted` and its one import. The key is recorded once the child stored the value;
-   * an unanswered import is resolved by asking the child again, so a slow but successful write is
-   * never reported as a failure. One the child still does not confirm answers K3's frozen
-   * `credentials-unwritable`: the child did not show the value stored.
+   * The child's own answer to importing `value`; one with no answer (timed out, or the channel
+   * closed) answers K3's frozen `credentials-unwritable`: the child did not show this value stored.
+   * Only the child's answer to this import counts (R-FIX-INSTANCE F06). Whether it holds *some*
+   * credential says nothing about it, since before a Reconnect it holds the old one.
+   */
+  async function importAnswer(client, value) {
+    try { return await client.importToken(value) } catch { return { ok: false, code: REFUSAL.unwritable } }
+  }
+
+  /**
+   * One `createHosted` and its one import. The key is recorded once the child stored the value. The
+   * value goes only to the wire it was created for: a wire that was replaced meanwhile, or a row
+   * that closed, gets nothing (R-FIX-INSTANCE F01, F05), and the new entry stays for the user to
+   * delete, as after a refusal.
    */
   async function createAndImport(client, reinstall) {
     let entry
     try { entry = await connector().createHosted(instanceId()) } catch { return { ok: false, code: REFUSAL.failed } }
-    let stored
-    try { stored = await client.importToken(entry.value) } catch { stored = (await present(client)) === true ? { ok: true } : { ok: false, code: REFUSAL.unwritable } }
+    // Asked again after the wait: the call may have outlived this wire, its child's target or the row.
+    const blocked = credentials() === client ? refusal(client) : REFUSAL.notReady
+    if (blocked !== undefined) return { ok: false, code: blocked }
+    const stored = await importAnswer(client, entry.value)
     // A definite refusal: the new entry stays for the user to delete (Q-B3 = B).
     if (stored.ok !== true) return { ok: false, code: stored.code ?? REFUSAL.unwritable }
     await recordAdd(entry.entryKey, { runtime: runtimeId(), succession: reinstall && isReinstall() })
@@ -238,8 +253,13 @@ export function createHostedToken({ tokens, record, credentials, instanceId, rem
       await attempt()
       return result
     }),
-    /** Ends the pair-change subscription for good (the host row closed). */
-    close() { closed = true; unlisten() },
+    /**
+     * Ends the pair-change subscription for good (the host row closed); later steps run nothing.
+     * @returns {Promise<void>} settled once the steps already running have finished, their record
+     *   writes included (R-FIX-INSTANCE F05): a successor row opens the record only after it, so
+     *   this row's last write can never overwrite the successor's.
+     */
+    close() { closed = true; unlisten(); return chain },
     /** The K3 target status from the host's own state (the user's answer Q3 = A). */
     targetStatus() {
       if (!blank(remoteTarget())) return STATUS.remote

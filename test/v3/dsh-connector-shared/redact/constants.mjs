@@ -232,3 +232,32 @@ export const REDACT_ROWS = Object.freeze([
   same('RED-EP-06', 'plain name with a colon', 'a non-sensitive name before `:`', 'keyboard layout: us'),
   same('RED-EP-06', 'empty', 'BVA: the empty string', ''),
 ])
+
+/**
+ * R-FIX-INSTANCE F03 (relayed 2026-11-18): `redactContinued(text, carry = null) → {text, carry}`.
+ * For whole-line pieces p1..pn of a text, the outputs (threading `carry`) concatenate to
+ * redact(p1+…+pn); with carry null the text output equals redact(text); `carry` is null when no
+ * sensitive container is open at the piece's end; a piece wholly inside an open container outputs ''.
+ * Each text's `expected` is what R3b (whole containers, nested, multi-line, unbalanced to the end)
+ * and R3d give for the whole text; `secrets` must be absent from every piece's output.
+ */
+const continued = (id, title, text, expected, secrets, openAtEnd = false) => Object.freeze({ id: 'RFI-F03-' + id, title, text, expected, secrets: Object.freeze(secrets), openAtEnd })
+export const CONTINUED = Object.freeze({
+  /** The finding's probe, piece by piece, and the piece wholly inside the container (its output is ''). */
+  probe: Object.freeze({ pieces: Object.freeze(['credentials: {\n', "  provider: 'small-secret',\n", '}\n']), expected: `credentials: ${MASK}\n`, inside: 1, secret: 'small-secret' }),
+  texts: Object.freeze([
+    continued('probe', 'the probe: a three-line object', "credentials: {\n  provider: 'small-secret',\n}\n", `credentials: ${MASK}\n`, ['small-secret', 'provider']),
+    continued('nested', 'depth 2+: an array holding an array and an object; later lines redacted normally',
+      'token = [\n  [\n    "a1",\n  ],\n  { secret: "b2" }\n]\napi_key=abc\nafter line\n', `token = ${MASK}\napi_key=${MASK}\nafter line\n`, ['"a1"', 'b2', 'abc']),
+    continued('inspect', "util.inspect style: a nested object with a '…' string holding }",
+      "{ credentials: {\n    user: 'bob',\n    pass: 'x}y-secret'\n  },\n  n: 1 }\nnext\n", `{ credentials: ${MASK},\n  n: 1 }\nnext\n`, ['bob', 'x}y', 'y-secret']),
+    continued('json', 'a pretty-printed JSON member with a quoted key',
+      '{\n  "credentials": {\n    "user": "u1",\n    "pass": "p1"\n  },\n  "name": "n"\n}\n', `{\n  "credentials": ${MASK},\n  "name": "n"\n}\n`, ['u1', 'p1']),
+    continued('two', 'two containers one after the other, plain lines between',
+      "secrets={\n  a: 1\n}\nok\n'token': [\n  'x',\n]\ndone\n", `secrets=${MASK}\nok\n'token': ${MASK}\ndone\n`, ['a: 1', "'x'"]),
+    continued('unbalanced', 'a container still open at the end masks every following line', 'tokens=[1, 2\nnext line\nmore\n', `tokens=${MASK}`, ['1, 2', 'next line', 'more'], true),
+  ]),
+  /** Plain multi-line text: no container, so carry stays null throughout. */
+  plain: 'line one\npassword=hunter2\nline three\n',
+  newline: '\n',
+})
