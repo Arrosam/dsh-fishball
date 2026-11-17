@@ -325,3 +325,21 @@ export const POLISH = Object.freeze({
   /** The hooks a page could find the sidebar fish by (the relayed data attributes). */
   fishSelectors: Object.freeze(['data-fishball-fish-light', 'data-fishball-mark']),
 })
+
+/**
+ * R-FIX-CUI rows (cui-cases.mjs; .runtime/reports/review-x-dsh-connector-ui.md UI-01 marks, UI-06,
+ * UI-07). Fixture data and DSH's words only: a subagent child's session summary as DSH's standard
+ * `useSessions(selector)` hook gives it (`{byId: {[id]: {id, origin, parentId}}}`,
+ * dsh-api-session-controller SessionListState / SessionSummary, both SDKs), the attention chunk
+ * file, the window event the bubble re-measures on, and a second on-screen place of the fish.
+ */
+export const CUI = Object.freeze({
+  id: Object.freeze({ ui01: 'RFC-UI01', ui06: 'RFC-UI06', ui07: 'RFC-UI07' }),
+  /** Root R (FIXTURE.sessions.s1), its child C, C's child G. */
+  sessions: Object.freeze({ root: FIXTURE.sessions.s1, child: 'fbtest-draw-child', grandchild: 'fbtest-draw-grandchild' }),
+  subagentOrigin: 'subagent',
+  attentionChunk: 'client.attention.js',
+  resize: 'resize',
+  /** The fish moved down and right (the sidebar re-laid out). */
+  movedRect: Object.freeze({ left: 40, top: 300, right: 56, bottom: 316, width: 16, height: 16, x: 40, y: 300 }),
+})

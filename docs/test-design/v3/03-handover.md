@@ -166,3 +166,24 @@ States: **Unmanaged**, **Managed(P)**.
 | 11 | Managed(P) | Hand over (service call) | Managed(P) | `conflict` |
 | 12 | Unmanaged | Hand over to a principal that just disconnected | Managed(P) | one `handover` waits in P's mailbox |
 | 13 | Unmanaged | Hand over to a principal disabled a moment before | Unmanaged | `no-fishball` |
+
+### RFC-UI01 (R-FIX-CUI) — Hand over / Take back of a subagent child act on its root
+
+`test/v3/dsh-connector/routing/cui-cases.mjs` (UI-01 of `.runtime/reports/review-x-dsh-connector-ui.md`;
+"Agent不能回答不归自己管的会话，只能操作自己管的会话"). Management is recorded per root session. The
+session source's `rootOf(id)` resolves a child (origin `subagent`, `parentSession`) to its root, several levels up.
+
+| Given | Root R's state | Operation | Outcome |
+| --- | --- | --- | --- |
+| child C | unmanaged | Hand over C to B | ok; B manages R; managed() lists R only; one `handover {sessionId: R}` to B |
+| child C | managed by A | Hand over C to B (or to A) | `conflict`; nothing changes; no event |
+| child C | managed by A | Take back C | ok; R unmanaged; one `takeback {sessionId: R}` to A |
+| child C | unmanaged | Take back C | `not-managed`; no event |
+| root R | either | Hand over / Take back R | as before |
+| unknown id | — | either | `unknown-session` |
+| O, parent gone | unmanaged | Hand over O to B | B manages O (the walk stops at the last session that exists) |
+| child C, store unreadable | managed by A | either | fails (never ok); nothing changes; no event |
+| grandchild G | unmanaged / managed by A | Hand over / Take back G | acts on the top root R |
+
+State transitions: Unmanaged –Hand over C to B→ Managed(B) of R –Hand over R to A→ `conflict` –Take back R→
+Unmanaged –Hand over G to A→ Managed(A) of R –Take back C→ Unmanaged; a restart after Hand over of C keeps R B's, with no C entry.

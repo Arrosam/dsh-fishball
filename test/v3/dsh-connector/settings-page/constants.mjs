@@ -89,6 +89,8 @@ export const CLIENT = Object.freeze({
   modal: 'Modal',
   /** DOM element names a page would use to add global CSS. */
   styleTags: Object.freeze(['style', 'link']),
+  /** The Page Visibility API's words (document.hidden / visibilityState, the visibilitychange event). */
+  visibility: Object.freeze({ hidden: 'hidden', visible: 'visible', event: 'visibilitychange' }),
 })
 
 /** Fixture data and harness settings: not product values. */
@@ -159,4 +161,53 @@ export const POLISH = Object.freeze({
   pairName: 'Navigator',
   attr: Object.freeze({ pair: 'data-dsh-connector-pair', connected: 'data-dsh-connector-connected', approval: 'data-dsh-connector-approval', setting: 'data-dsh-connector-setting' }),
   paired: 'paired',
+})
+
+/**
+ * R-FIX-CUI rows (cui-cases.mjs; .runtime/reports/review-x-dsh-connector-ui.md UI-03, UI-04,
+ * UI-05). Words are the requirements' and the dev session's (2026-11-18): the conflict alert, the
+ * status-failure alert and its Retry; the poll period (about once a second, 1000 ms relayed) is
+ * waited for with `refreshMs` and watched for silence with `silentMs`. The rest is fixture data.
+ */
+export const CUI = Object.freeze({
+  id: Object.freeze({ ui03: 'RFC-UI03', ui04: 'RFC-UI04', ui05: 'RFC-UI05' }),
+  /** The setting rows' data hooks (POLISH.attr.setting values). */
+  field: Object.freeze({ port: 'approval.port', dshName: 'approval.dshName', limit: 'maxQueuedInputs' }),
+  path: Object.freeze({ port: Object.freeze(['approval', 'port']), dshName: Object.freeze(['approval', 'dshName']), limit: Object.freeze(['maxQueuedInputs']), otherLimit: Object.freeze(['readSessionBytes']) }),
+  /** The row's settings at the start. */
+  settings: Object.freeze({ approval: Object.freeze({ port: 47615, dshName: 'Original name' }), maxQueuedInputs: 200, readSessionBytes: 12288 }),
+  /** What this editor types, and what another editor saves meanwhile, per field. */
+  draft: Object.freeze({ dshName: 'Local draft', port: '47620', limit: '300' }),
+  draftValue: Object.freeze({ dshName: 'Local draft', port: 47620, limit: 300 }),
+  other: Object.freeze({ dshName: 'Other editor', port: 47700, limit: 400, otherLimit: 24576 }),
+  conflict: /changed elsewhere/i,
+  invalid: 'Enter a whole number.',
+  keys: Object.freeze({ enter: 'Enter', escape: 'Escape' }),
+  /** UI-05: the number field's text partitions and boundaries; `saves` is the saved number or null (refused). */
+  portInputs: Object.freeze([
+    Object.freeze({ part: 'BVA empty', text: '', saves: null }),
+    Object.freeze({ part: 'EP whitespace', text: '   ', saves: null }),
+    Object.freeze({ part: 'EP tab and newline', text: '\t\n', saves: null }),
+    Object.freeze({ part: 'BVA min 0', text: '0', saves: 0 }),
+    Object.freeze({ part: 'BVA below min', text: '-1', saves: null }),
+    Object.freeze({ part: 'BVA max 65535', text: '65535', saves: 65535 }),
+    Object.freeze({ part: 'BVA above max', text: '65536', saves: null }),
+    Object.freeze({ part: 'EP non-numeric', text: 'abc', saves: null }),
+  ]),
+  limitInputs: Object.freeze([
+    Object.freeze({ part: 'BVA empty', text: '', saves: null }),
+    Object.freeze({ part: 'EP whitespace', text: '  ', saves: null }),
+    Object.freeze({ part: 'BVA min 1', text: '1', saves: 1 }),
+  ]),
+  /** UI-04. */
+  statusFailed: (code) => `The connector's status could not be read (${code}).`,
+  retry: 'Retry',
+  failure: Object.freeze({ status: 500, body: Object.freeze({ ok: false, code: 'operation-failed' }) }),
+  requestFailed: 'request-failed',
+  notJson: 'fbtest: not JSON',
+  notPaired: 'Not paired',
+  pairName: Object.freeze({ old: 'Old navigator', fresh: 'New navigator' }),
+  pairId: 'cui-agent-1',
+  refreshMs: 3000,
+  silentMs: 2500,
 })

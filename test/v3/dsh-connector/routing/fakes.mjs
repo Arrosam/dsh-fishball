@@ -104,13 +104,31 @@ export class FakeSettings {
 /**
  * The session source (Fishball 2026-11-14 #7): which sessions exist, and their turn ends and state
  * changes. Drivers: `add(id)`, `finishTurn(id, {running, queued})`, `changeState(id, {running, pendingInteraction})`.
+ *
+ * R-FIX-CUI (UI-01; the port the dev session relayed 2026-11-18): `rootOf(id) → Promise<string |
+ * undefined>`, the session's root (a subagent child belongs to its parent, up to the root), or
+ * undefined when no such session exists. A session added with `add` is its own root, as without
+ * the member. Drivers: `child(id, parent)` adds a subagent child of `parent` (the parent need not
+ * exist: the walk stops at the last session that exists); `failRoots = true` makes `rootOf` reject
+ * (a read failure that is not "not found").
  */
 export class FakeSessions {
   #sessions = new Set()
+  #parents = new Map()
   #turns = new Set()
   #states = new Set()
+  failRoots = false
   add(id) { this.#sessions.add(id); return id }
+  child(id, parent) { this.#parents.set(id, parent); return this.add(id) }
   exists(id) { return this.#sessions.has(id) }
+  // A bound member: a port's function may be taken off the source and called on its own.
+  rootOf = async (id) => {
+    if (this.failRoots) throw new Error('fbtest: the session store could not be read')
+    if (!this.exists(id)) return undefined
+    let root = id
+    while (this.#parents.has(root) && this.exists(this.#parents.get(root))) root = this.#parents.get(root)
+    return root
+  }
   onTurnFinished(listener) { return subscribe(this.#turns, listener) }
   onState(listener) { return subscribe(this.#states, listener) }
   finishTurn(id, { running = false, queued = false } = {}) { fire(this.#turns, id, { running, queued }) }
