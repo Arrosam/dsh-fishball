@@ -55,6 +55,8 @@ export const SET_CARRIER = Object.freeze({ key: 'instance', folder: 'bundled' })
  */
 export const INSTALL_SETS = Object.freeze({
   hosted: Object.freeze(['connector', 'connectorUi', 'instance']),
+  // Standalone's managed DSH: the hosted set without the instance.
+  managed: Object.freeze(['connector', 'connectorUi']),
   standalone: Object.freeze(['ui', 'board', 'core']),
   adapter: Object.freeze(['adapter']),
 })
@@ -77,10 +79,26 @@ export const LAYOUT = Object.freeze({
   sumLine: (digest, name) => digest + '  ' + name,
   sumPattern: /^([0-9a-f]{64}) {2}(\S+)$/,
   tarballSuffix: '.tgz',
+  // The helper INSTALL.md's offline install runs (scripts/release/offline-store.mjs, copied as is).
+  offlineStore: 'offline-store.mjs',
   // npm pack puts every file under `package/`; `tar -tv` marks a symlink `l`, a hard link `h`.
   packageRoot: 'package',
   tar: 'tar',
   linkEntry: /^[lh]/,
+})
+
+/**
+ * INSTALL.md's offline install (e2e B2). pnpm refuses a `--store-dir` other than the store a
+ * profile's node_modules is linked to, so the release's store is copied into the profile's own
+ * store first (offline-store.mjs) and that store is named. These are the shell spellings the
+ * document's commands use; `storeVariable` holds the helper's answer between the two lines.
+ */
+export const OFFLINE = Object.freeze({
+  storeVariable: 'FISHBALL_STORE',
+  // DSH's own pnpm pass-through answers for the profile: its node_modules, and pnpm's store for it.
+  // `--silent`: inside `$(…)` stdout is no TTY, so pnpm would print its notices there, before the path.
+  modulesQuery: 'root --silent',
+  storeQuery: 'store path --silent',
 })
 
 /**

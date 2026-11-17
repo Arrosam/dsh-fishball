@@ -1,8 +1,7 @@
 # fishball-board
 
 Fishball's work board, a plugin of the Fishball set (`fishball-core`, `fishball-ui`,
-`fishball-board`). Version `1.0.0-alpha.1` in the release (this checkout's manifest still reads
-`0.1.0-alpha.0`; the release step sets it). Requires DSH `>=0.2.1-rc.5`; it uses only the
+`fishball-board`), version `1.0.0-alpha.1`. Requires DSH `>=0.2.1-rc.5`; it uses only the
 Schemastery API shared by `0.2.1-rc.5` and `0.2.2-rc.1`.
 
 In hosted mode you do not install it: `dsh-instance` places it in Fishball's child at every start.
@@ -16,7 +15,7 @@ fishball-core's public `fishballInstance` service at runtime through `ctx.get`; 
 tools only in the manager's own agent scope (`fishballInstance.manager.registerSetup`), so no other
 session sees them. The package has no peer dependency on any Fishball package. Both supported Cordis
 versions treat injected names literally, so `fishballInstance?` must not be in `inject`: it would
-block the row. Without fishball-core (R-FB-06) the row logs one `fishball-core-missing` line at
+block the row. Without fishball-core the row logs one `fishball-core-missing` line at
 DSH's app ready and does nothing else; the DSH boots as usual.
 
 Tools: `board_read`, `board_write` (the complete list of open cards; `{id, clear: true}` takes a done or dropped
@@ -37,11 +36,11 @@ text/card/link budgets and context ordering.
 ## Visibility and the archive
 
 A Done or Dropped card stays on the board while **less than 30 days** (a day is 86 400 s) have
-passed since it closed. At exactly 30 days it leaves the board (R-BRD-01, PLAT-BVA-01); the window
+passed since it closed. At exactly 30 days it leaves the board; the window
 is half-open, not inclusive: `at - card.closedAt < BOARD_LIMITS.visibilityDays *
 STORAGE.millisecondsPerDay` (`src/store.js`). That window is not a deletion age: no board record is
 deleted while the board is installed, and `board_search` finds archived cards. The recent-done
-count does not shorten the window. There is no archive export (the user's decision, 2026-11-15).
+count does not shorten the window. There is no archive export.
 
 ## Removing the board
 

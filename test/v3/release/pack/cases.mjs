@@ -13,7 +13,15 @@
  * - Decision Table: plugin vs library × engines.dsh (REL-DT-01), dsh-connector-ui's peer × semver
  *   includePrerelease (REL-DT-02), lists-the-library-in-dependencies × bundled copy (REL-DT-03),
  *   store and cache (warmed vs empty) × closure (bundled vs from the registry) (REL-DT-04);
- * - State Transition: a copied release valid → tampered → restored → … under `--check` (REL-ST-01).
+ *   INSTALL.md's offline block per set × profile state (fresh, used from another store) (REL-DT-05 is "used",
+ *   REL-ST-02 "fresh");
+ * - State Transition: a copied release valid → tampered → restored → … under `--check` (REL-ST-01); a fresh
+ *   profile → offline block → offline block again → a later --offline add of a tarball from elsewhere with the
+ *   release's --cache-dir and --registry, the release folder kept (INSTALL.md says both) (REL-ST-02).
+ *
+ * E-FIX-2 (bugs B2, B3, B4, B6): INSTALL.md is read and its offline blocks are run exactly as written
+ * (bash, from a copy of the release folder, `dsh` the SDK's CLI) (REL-EP-10, REL-EP-11, REL-DT-05,
+ * REL-ST-02); every tarball's README and description are checked for stale and internal text (REL-EP-12, 13).
  *
  * Levels: unit (the release output read entry by entry; no product module is loaded), integration
  * (`npm pack --dry-run` of each repo folder; the pack script's `--check`) and system (DSH's own
@@ -28,12 +36,14 @@ import test from 'node:test'
 import { NODE, REPO } from '../../../support/constants.mjs'
 import { caseName } from '../../contract/package-boundaries/cases.mjs'
 import {
-  ALL, ALL_NAMES, BUDGET, CASE, CORE_CLOSURE, DRY_RUN, DSH, INSTANCE_BUNDLED, ISOLATION, JUNK, LIBRARIES, MANIFEST, NAMED_IMPORTERS,
-  NPM_TOOL, PACK_SCRIPT, RELEASE, SETS, TARBALL, UI_PEERS, VERSION, isLibrary,
+  ALL, ALL_NAMES, BUDGET, CASE, CORE_CLOSURE, DOC_TEXT, DRY_RUN, DSH, INSTALL_DOC, INSTANCE_BUNDLED, ISOLATION, JUNK, LIBRARIES, MANIFEST,
+  NAMED_IMPORTERS, NPM_TOOL, OFFLINE, PACK_SCRIPT, RELEASE, SETS, TARBALL, UI_PEERS, VERSION, isLibrary,
 } from './constants.mjs'
 import {
-  assertFromOwnBundle, assertLibraryCopies, describeEntry, dshAddChecked, flipByte, installAndCheck, installedDir, isJunk, isLink, isolatedEnv,
-  isRegular, releaseDir, resolveIn, runTool, sdkSemver, sha256, show, tail, tarball, tarballPath, tarListing, withScratch,
+  assertFromOwnBundle, assertLibraryCopies, copyRelease, describeEntry, docProfile, dshAddChecked, fencedBlocks, filesUnder, flipByte,
+  installAndCheck, installDocLines, installedDir, installProblems, isAddLine, isJunk, isLink, isolatedEnv, isRegular, offlineBlock,
+  onlineLineIndex, paragraphs, releaseDir, resolveIn, runTool, sdkSemver, sectionOf, sha256, show, tail, tarball, tarballPath, tarListing,
+  withCountingProxy, withScratch,
 } from './release.mjs'
 
 /**
@@ -44,6 +54,8 @@ export function relCase(sdk, id, row, title, fn, timeout) {
   test(caseName(sdk, id, row, title), timeout === undefined ? {} : { timeout }, fn)
 }
 const json = (entry) => JSON.parse(entry.data.toString('utf8'))
+/** The banned `patterns` that `text` matches, each shown with the text it matched. */
+const textHits = (patterns, text) => patterns.map((re) => re.exec(text)).filter(Boolean).map((m) => show(m[0]))
 
 // ------------------------------------------------------------------ rules (problem lists)
 
@@ -124,8 +136,7 @@ async function runCheck(scratch, dir) {
 /** A copy of the release in a throwaway folder; `expectCheck(state, ok)` runs `--check --out <copy>` and asserts its exit. */
 function onCopy(fn) {
   return withScratch(async (scratch) => {
-    const copy = path.join(scratch, ISOLATION.copyDir)
-    fs.cpSync(releaseDir(), copy, { recursive: true, verbatimSymlinks: true })
+    const copy = copyRelease(scratch)
     const target = tarballPath(PACK_SCRIPT.tamperTarget, copy)
     const pristine = fs.readFileSync(target)
     const expectCheck = async (state, ok) => {
@@ -149,6 +160,8 @@ export function registerPackCases(sdk) {
   // The checker runs before the installs: pnpm may add the local tarballs to the release's warmed store.
   registerCheck(sdk)
   registerInstalls(sdk)
+  registerDocText(sdk)
+  registerDocInstalls(sdk)
 }
 
 /** REL-ORACLE: this suite's own oracles (no release needed), and the tarball parser against `tar -tzf`. */
@@ -157,6 +170,12 @@ function registerOracle(sdk) {
     assert.deepEqual(JUNK.samples.junk.filter((s) => !isJunk(s)), [])
     assert.deepEqual(JUNK.samples.clean.filter(isJunk), [])
   })
+  for (const [rule, { hit, clean }] of Object.entries(DOC_TEXT.samples)) {
+    relCase(sdk, CASE.oracle, 'doc text ' + rule, `the ${rule} text rule flags each banned form and none of its look-alikes (BVA)`, () => {
+      assert.deepEqual(hit.filter((t) => textHits(DOC_TEXT[rule], t).length === 0), [])
+      assert.deepEqual(clean.filter((t) => textHits(DOC_TEXT[rule], t).length > 0), [])
+    })
+  }
   relCase(sdk, CASE.oracle, 'sums', 'the SHA256SUMS line shape admits 64 hex + two spaces + a name and nothing at 63/65 hex, one or three spaces (BVA)', () => {
     assert.deepEqual(RELEASE.sumSamples.valid.filter((s) => !RELEASE.sumLine.test(s)), [])
     assert.deepEqual(RELEASE.sumSamples.invalid.filter((s) => RELEASE.sumLine.test(s)), [])
@@ -381,4 +400,108 @@ function registerInstalls(sdk) {
     const r = await dshAddChecked(sdk, scratch, [tarballPath(registry)], empty(scratch))
     assert.notEqual(r.code, DSH.okExit, 'installed with an empty store: ' + tail(r.output))
   }), BUDGET.installCaseMs)
+}
+
+/** REL-EP-10, REL-EP-11 (B2, B6): what INSTALL.md says; REL-EP-12, REL-EP-13 (B3, B4): each tarball's README and description. */
+function registerDocText(sdk) {
+  for (const set of OFFLINE.sets) {
+    const names = set.pkgs.map((p) => p.name).join(', ')
+    relCase(sdk, CASE.docOrder, set.key, `${INSTALL_DOC.file} shows the online add of ${names} at ${VERSION} before its one offline block, whose add line is ${OFFLINE.offlineFlag}`, () => {
+      const lines = installDocLines()
+      const block = offlineBlock(lines, set.pkgs)
+      assert.ok(block.lines.filter(isAddLine).every((l) => l.includes(OFFLINE.offlineFlag)), `the offline block's add line lacks ${OFFLINE.offlineFlag}`)
+      const online = onlineLineIndex(lines, set.pkgs)
+      assert.ok(online >= 0, `no \`dsh plugin --profile ${DSH.profile} add\` of ${names} at ${VERSION}`)
+      assert.ok(online < block.open, `the online add (line ${online + 1}) comes after the offline block (line ${block.open + 1})`)
+    })
+  }
+  relCase(sdk, CASE.docBefore, 'earlier', `before its first add command, ${INSTALL_DOC.file} says to remove each earlier Fishball package and <DSH_HOME>/fishball/`, () => {
+    const lines = installDocLines()
+    const first = fencedBlocks(lines).find((b) => b.lines.some(isAddLine))
+    assert.ok(first, `${INSTALL_DOC.file} has no fenced add command`)
+    const before = lines.slice(0, first.open).join(RELEASE.lineBreak)
+    assert.deepEqual([...INSTALL_DOC.earlier.names, INSTALL_DOC.earlier.verb].filter((re) => !re.test(before)).map(String), [])
+  })
+  relCase(sdk, CASE.docBefore, 'missing peer', `one paragraph of ${INSTALL_DOC.file} says pnpm's missing-peer warning about DSH's own @deepseek-ai/* packages is expected`, () => {
+    assert.ok(paragraphs(installDocLines()).some((p) => INSTALL_DOC.missingPeer.every((re) => re.test(p))), `no paragraph matches all of ${INSTALL_DOC.missingPeer.join(' ')}`)
+  })
+  relCase(sdk, CASE.docBefore, 'keep folder', `${INSTALL_DOC.file}'s paragraph on installing from the folder with no network tells the user to keep the folder and that a later --offline add needs its --cache-dir and --registry`, () => {
+    const offline = paragraphs(installDocLines()).filter((p) => INSTALL_DOC.offlineParagraph.every((re) => re.test(p)))
+    assert.equal(offline.length, 1, `paragraphs matching all of ${INSTALL_DOC.offlineParagraph.join(' ')}: ${offline.length} (one expected)`)
+    assert.match(offline[0], INSTALL_DOC.keepFolder)
+    assert.deepEqual(INSTALL_DOC.laterNeeds.filter((re) => !re.test(offline[0])).map(String), [], 'the paragraph does not say a later --offline add needs the cache and registry')
+  })
+  relCase(sdk, CASE.docBefore, 'token path', `the standalone section names the token-field path (New token on the connector settings page → "Token for connecting a DSH", Target set) as well as Connect`, () => {
+    const lines = installDocLines()
+    const set = OFFLINE.sets.find((s) => s.key === INSTALL_DOC.standaloneKey)
+    const section = sectionOf(lines, offlineBlock(lines, set.pkgs).open).join(RELEASE.lineBreak)
+    assert.deepEqual(INSTALL_DOC.tokenPath.filter((re) => !re.test(section)).map(String), [])
+  })
+  for (const pkg of ALL) {
+    relCase(sdk, CASE.readme, pkg.name, `${pkg.tarball} package/${DOC_TEXT.readme} names no ask_agent, does not say "not published", has no stale or internal text`, () => {
+      const entry = tarball(pkg).files.get(DOC_TEXT.readme)
+      assert.ok(entry && isRegular(entry), `no regular package/${DOC_TEXT.readme}`)
+      assert.deepEqual(textHits([...DOC_TEXT.b3, ...DOC_TEXT.b4], entry.data.toString('utf8')), [])
+    })
+    relCase(sdk, CASE.description, pkg.name, `${pkg.tarball} package.json ${DOC_TEXT.descriptionField} has no stale or internal text`, () => {
+      assert.deepEqual(textHits(DOC_TEXT.b4, String(tarball(pkg).manifest?.[DOC_TEXT.descriptionField] ?? '')), [])
+    })
+  }
+}
+
+/**
+ * One INSTALL.md case: a copy of the release folder (the cwd of its offline block), a DSH home whose
+ * `dsh` is the SDK's CLI, and a counting proxy no registry is behind.
+ */
+function onDocProfile(sdk, fn) {
+  return withScratch((scratch) => withCountingProxy(async (proxy, hits) => {
+    const copy = copyRelease(scratch)
+    await fn({ scratch, copy, hits, profile: docProfile(sdk, scratch, proxy) })
+  }))
+}
+const assertExit0 = (what, r) => assert.equal(r.code, DSH.okExit, `${what}: ${tail(r.output)}`)
+/**
+ * What must hold after a step: `set` installed (bundled), every `kept` package still installed, the
+ * profile linked to `store`, no request sent.
+ */
+function assertProfile({ profile, hits }, what, set, kept, store) {
+  assert.deepEqual([...installProblems(profile.profileDir, set.pkgs, { bundles: true }), ...installProblems(profile.profileDir, kept, { bundles: false })], [], what)
+  assert.equal(profile.storeDir(), store, `${what}: node_modules is linked to another store`)
+  assert.deepEqual(hits, [], `${what}: a network request was sent`)
+}
+/** Run the set's offline block as written, OFFLINE.runs times in a row (idempotence); each run exits 0 and leaves the profile as `assertProfile` says. */
+async function runDocBlockTwice(ctx, set, kept, store) {
+  const block = offlineBlock(installDocLines(ctx.copy), set.pkgs)
+  for (let run = 1; run <= OFFLINE.runs; run++) {
+    const what = `${set.key} offline block, run ${run}`
+    assertExit0(what, await ctx.profile.runBlock(block, ctx.copy))
+    assertProfile(ctx, what, set, kept, store)
+  }
+}
+
+/** REL-DT-05 (B2, set × used profile) and REL-ST-02 (B2, fresh profile: block → block → a later add, the release folder kept). */
+function registerDocInstalls(sdk) {
+  for (const set of OFFLINE.sets) {
+    relCase(sdk, CASE.docUsed, set.key, `${set.key} offline block as written, twice, on a profile given ${set.other.name} from another store: exit 0, ${set.other.name} kept, the profile stays on that store and its files stay, no request`, () => onDocProfile(sdk, async (ctx) => {
+      const other = path.join(ctx.scratch, OFFLINE.otherStoreDir)
+      assertExit0(`${set.other.name} from another store`, await ctx.profile.cli(OFFLINE.otherArgs(DSH.profile, tarballPath(set.other, ctx.copy), other)))
+      const store = ctx.profile.storeDir()
+      assert.ok(typeof store === 'string' && store.startsWith(other + path.sep), `the used profile is linked to ${show(store)}, not ${other}`)
+      const files = filesUnder(other)
+      await runDocBlockTwice(ctx, set, [set.other], store)
+      assert.deepEqual(files.filter((f) => !fs.existsSync(path.join(other, f))), [], 'files of the other store were deleted')
+    }), BUDGET.docCaseMs)
+    relCase(sdk, CASE.docFresh, set.key, `${set.key} offline block as written on a fresh profile: exit 0 twice on pnpm's own store (\`store path\`); with the release folder kept, a later --offline add of a tarball from elsewhere (its --cache-dir and --registry, no --store-dir) exits 0 on the same store`, () => onDocProfile(sdk, async (ctx) => {
+      const store = await ctx.profile.storePath()
+      assert.ok(store && !store.startsWith(ctx.copy + path.sep), `\`store path\` is ${show(store)}`)
+      await runDocBlockTwice(ctx, set, [], store)
+      const later = path.join(ctx.scratch, OFFLINE.laterDir, set.other.tarball)
+      fs.mkdirSync(path.dirname(later))
+      fs.copyFileSync(tarballPath(set.other, ctx.copy), later)
+      const r = await ctx.profile.cli(OFFLINE.laterArgs(DSH.profile, later, path.join(ctx.copy, RELEASE.cache)))
+      assert.doesNotMatch(r.output, OFFLINE.unexpectedStore)
+      assertExit0(`later add of ${set.other.name} from ${OFFLINE.laterDir}/`, r)
+      assertProfile(ctx, 'after the later add', set, [set.other], store)
+    }), BUDGET.docCaseMs)
+  }
 }
