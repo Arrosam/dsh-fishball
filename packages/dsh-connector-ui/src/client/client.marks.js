@@ -75,7 +75,7 @@ globalThis.__ModuleLoader__?.load({
       const markOf = (snapshot, sessionId) => snapshot.marks.find((mark) => mark.sessionId === sessionId)
       const refusalKey = (code) => (REFUSAL.known.includes(code) ? REFUSAL.prefix + code : REFUSAL.failed)
       /** A refusal as an alert, its code beside it for a reader that needs it. */
-      const refusalAlert = (t, code) => h('div', { role: 'alert', 'data-fishball-refusal': code ?? REFUSAL.noCode }, t(refusalKey(code)))
+      const refusalAlert = (t, code) => h('div', { role: 'alert', className: CLS.refusal, 'data-fishball-refusal': code ?? REFUSAL.noCode }, t(refusalKey(code)))
 
       /**
        * The open Hand over dialog (`{sessionId, target}`), shared by the header and the row menu:
@@ -189,7 +189,7 @@ globalThis.__ModuleLoader__?.load({
           const mark = markOf(snapshot, sessionId)
           if (mark !== undefined) {
             return h(React.Fragment, null,
-              h('span', { className: CLS.muted, 'data-fishball-managed-by': mark.principal.key }, withName(t, 'managedBy', principalLabel(t, mark.principal))),
+              h('span', { className: CLS.managedBy, 'data-fishball-managed-by': mark.principal.key }, withName(t, 'managedBy', principalLabel(t, mark.principal))),
               h(Button, { type: 'button', size: 'sm', variant: 'ghost', 'data-fishball-take-back': true, onClick: () => void takeBack(sessionId) }, t('takeBack')))
           }
           if (snapshot.targets.length === 0) return null

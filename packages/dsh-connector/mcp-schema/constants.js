@@ -543,7 +543,11 @@ export const APPROVAL_LISTENER = Object.freeze({
     'referrer-policy': 'same-origin',
     // S7b's verified value. No `form-action`: browsers apply it to the 303 that follows the POST,
     // which would block the redirect to the client's loopback `redirect_uri`.
-    'content-security-policy': "default-src 'none'; frame-ancestors 'none'",
+    // `style-src` (UI-POLISH-D; the user, 2026-11-18): the page's one inline `<style>` block, admitted
+    // by its SHA-256 alone (src/mcp/oauth-web/page-theme.js PAGE_STYLE). No 'unsafe-inline', so a
+    // style attribute or any other style block is still refused, and scripts, images, fonts,
+    // connections and framing stay `'none'`. Editing PAGE_STYLE changes this hash: update both.
+    'content-security-policy': "default-src 'none'; style-src 'sha256-wkX+PGd3j5mohFYHazp5lMQO5mPsM8loy17wNal+3SA='; frame-ancestors 'none'",
   }),
   // [spec] RFC 9700 §4.12: the redirect after the form POST is 303, never 307.
   redirectStatus: HTTP_STATUS.seeOther,

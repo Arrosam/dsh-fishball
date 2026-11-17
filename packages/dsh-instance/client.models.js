@@ -23,7 +23,7 @@ window.__ModuleLoader__.load({
     const module = { exports: {} }
     const exports = module.exports
     const React = require('react')
-    const { Button, SettingsForm, SettingsFormModel, Switch, Tag } = require('@deepseek-ai/dsh-client-ui-primitives')
+    const { Button, Checkbox, IconRightUpOutlineRegular, Input, SettingsForm, SettingsFormModel, Switch, Tag } = require('@deepseek-ai/dsh-client-ui-primitives')
 
     const h = React.createElement
 
@@ -96,18 +96,34 @@ window.__ModuleLoader__.load({
      * layout tokens come from the status-line module (`layout.classes`, `layout.style`), which
      * defines those rules once for both pages; the model block reuses them.
      */
-    const OWN_CLS = Object.freeze({ actions: 'fb-instance-actions', feature: 'fb-instance-feature', toggleRow: 'fb-instance-toggle-row', sync: 'fb-instance-sync', syncTitle: 'fb-instance-sync-title', syncList: 'fb-instance-sync-list', syncRow: 'fb-instance-sync-row', syncModels: 'fb-instance-sync-models', error: 'fb-instance-error' })
-    /** The card's own rules, over the status line's layout tokens. */
+    const OWN_CLS = Object.freeze({ page: 'fb-instance-page', section: 'fb-instance-section', sectionTitle: 'fb-instance-section-title', actions: 'fb-instance-actions', feature: 'fb-instance-feature', toggleRow: 'fb-instance-toggle-row', toggleText: 'fb-instance-toggle-text', control: 'fb-instance-control', sync: 'fb-instance-sync', syncTitle: 'fb-instance-sync-title', syncList: 'fb-instance-sync-list', syncRow: 'fb-instance-sync-row', syncModels: 'fb-instance-sync-models', error: 'fb-instance-error' })
+    /** The width of a row's right-hand control (the remote target field), as the connector's page. */
+    const CONTROL_WIDTH = '280px'
+    /** DSH's small-button glyph size. */
+    const ICON_PX = 14
+    /**
+     * The card's own rules, over the status line's layout tokens: DSH's Plugins page rhythm (a titled
+     * section per part, its rows in a layer-1 card) and its settings rows (words left, control right).
+     */
     const cardCss = (STYLE) => [
-      `.${OWN_CLS.actions}{display:flex;flex-wrap:wrap;gap:${STYLE.stackGap};margin-bottom:${STYLE.gap}}`,
+      // One grid for the page's sections: DSH's Plugins page spaces only its own slot entries, so the
+      // page's parts sit in one wrapper and take DSH's section gap from it.
+      `.${OWN_CLS.page}{display:grid;gap:${STYLE.sectionGap};min-width:0}`,
+      `.${OWN_CLS.section}{display:grid;gap:${STYLE.blockGap};color:var(--dsw-alias-label-primary);font:var(--dsw-font-xs-13);line-height:${STYLE.lineHeight}}`,
+      `.${OWN_CLS.sectionTitle},.${OWN_CLS.syncTitle}{margin:0;font:var(--dsw-font-s-strong-14)}`,
+      `.${OWN_CLS.actions}{display:flex;flex-wrap:wrap;align-items:center;gap:${STYLE.stackGap}}`,
+      // A card row's content (the card's own rules give each row its padding and the rule between rows).
       `.${OWN_CLS.feature}{display:grid;gap:${STYLE.stackGap}}`,
-      `.${OWN_CLS.toggleRow}{display:flex;align-items:flex-start;justify-content:space-between;gap:${STYLE.gap};color:var(--dsw-alias-label-primary);font:var(--dsw-font-xs-13);line-height:${STYLE.lineHeight}}`,
-      `.${OWN_CLS.sync}{display:grid;gap:${STYLE.stackGap};margin-bottom:${STYLE.gap};color:var(--dsw-alias-label-primary);font:var(--dsw-font-xs-13);line-height:${STYLE.lineHeight}}`,
-      `.${OWN_CLS.syncTitle}{margin:0;font:var(--dsw-font-s-strong-14)}`,
-      `.${OWN_CLS.syncList}{list-style:none;margin:0;padding:0;display:grid;gap:${STYLE.stackGap}}`,
-      `.${OWN_CLS.syncRow}{display:flex;align-items:flex-start;flex-wrap:wrap;gap:${STYLE.stackGap}}`,
+      `.${OWN_CLS.toggleRow}{display:flex;align-items:center;justify-content:space-between;gap:${STYLE.gap};color:var(--dsw-alias-label-primary);font:var(--dsw-font-xs-13);line-height:${STYLE.lineHeight}}`,
+      `.${OWN_CLS.toggleText}{font-weight:500}`,
+      `.${OWN_CLS.control}{flex:0 1 ${CONTROL_WIDTH};min-width:0}`,
+      `.${OWN_CLS.control}>*{width:100%;box-sizing:border-box}`,
+      `.${OWN_CLS.sync}{display:grid;gap:${STYLE.blockGap};color:var(--dsw-alias-label-primary);font:var(--dsw-font-xs-13);line-height:${STYLE.lineHeight}}`,
+      `.${OWN_CLS.syncList}{list-style:none;margin:0;padding:0;display:grid;border:.5px solid var(--dsw-alias-border-l3);border-radius:var(--dsw-radius-sm);overflow:hidden}`,
+      `.${OWN_CLS.syncRow}{display:flex;align-items:center;flex-wrap:wrap;gap:${STYLE.stackGap};padding:10px 12px}`,
+      `.${OWN_CLS.syncRow}+.${OWN_CLS.syncRow}{border-top:.5px solid var(--dsw-alias-border-l2)}`,
       `.${OWN_CLS.syncModels}{flex-basis:100%;margin:0;color:var(--dsw-alias-label-tertiary);font-size:${STYLE.hintSize};overflow-wrap:anywhere}`,
-      `.${OWN_CLS.error}{margin:0;color:var(--dsw-alias-state-error-primary)}`,
+      `.${OWN_CLS.error}{margin:0;color:var(--dsw-alias-state-error-primary);font-size:${STYLE.hintSize};line-height:${STYLE.lineHeight}}`,
     ].join('')
 
     // Locale dictionaries are flat key→text maps (the service looks a key up verbatim), so the
@@ -116,6 +132,9 @@ window.__ModuleLoader__.load({
       summary: 'Fishball\'s private instance: how DSH starts it.',
       'field.enabled': 'Enabled',
       'field.targetUrl': 'Remote target',
+      launch: 'Launch',
+      actions: 'Fishball',
+      targetUrlPlaceholder: 'This DSH\'s connector',
       targetUrlHint: 'The MCP endpoint of another DSH\'s connector. Leave blank to use the connector in this DSH. Applies at the next start.',
       reconnect: 'Reconnect',
       reconnecting: 'Reconnecting…',
@@ -180,6 +199,9 @@ window.__ModuleLoader__.load({
       summary: 'Fishball 的私有实例：DSH 如何启动它。',
       'field.enabled': '启用',
       'field.targetUrl': '远程目标',
+      launch: '启动',
+      actions: 'Fishball',
+      targetUrlPlaceholder: '本 DSH 的连接器',
       targetUrlHint: '另一个 DSH 的连接器 MCP 地址。留空则使用本 DSH 的连接器。下次启动时生效。',
       reconnect: '重新连接',
       reconnecting: '正在重新连接…',
@@ -329,13 +351,15 @@ window.__ModuleLoader__.load({
         if (answer.ok && typeof answer.url === 'string') { window.open(answer.url, ACTION.target, ACTION.features); return }
         setView({ busy: false, message: refusalText(t, 'openRefused.', answer.code), error: true })
       }
-      return h('div', { className: CLS.status },
-        h('div', { className: CLS.actions },
-          h(Button, { type: 'button', size: 'sm', variant: 'primary', disabled: !ready, 'data-dsh-instance-open': true, onClick: () => void open() }, t('open')),
-          h(Button, { type: 'button', size: 'sm', variant: 'outline', disabled: view.busy, 'aria-busy': view.busy, 'data-dsh-instance-reconnect': true, onClick: () => void reconnect() },
-            view.busy ? t('reconnecting') : t('reconnect'))),
-        h('p', { className: CLS.hint }, t('reconnectHint')),
-        view.message ? h('p', { className: view.error ? CLS.error : CLS.hint, role: view.error ? 'alert' : 'status' }, view.message) : null)
+      // One card row: the two actions on the left, Reconnect's hint and its outcome under them.
+      return h('div', { className: CLS.card },
+        h('div', { className: CLS.feature },
+          h('div', { className: CLS.actions },
+            h(Button, { type: 'button', size: 'sm', variant: 'primary', icon: h(IconRightUpOutlineRegular, { size: ICON_PX }), disabled: !ready, 'data-dsh-instance-open': true, onClick: () => void open() }, t('open')),
+            h(Button, { type: 'button', size: 'sm', variant: 'outline', disabled: view.busy, 'aria-busy': view.busy, 'data-dsh-instance-reconnect': true, onClick: () => void reconnect() },
+              view.busy ? t('reconnecting') : t('reconnect'))),
+          h('p', { className: CLS.hint }, t('reconnectHint')),
+          view.message ? h('p', { className: view.error ? CLS.error : CLS.hint, role: view.error ? 'alert' : 'status' }, view.message) : null))
     }
 
     /** One model-sync call. @returns `{ok, result|error}`; an unreadable answer is a typed refusal. */
@@ -389,8 +413,11 @@ window.__ModuleLoader__.load({
       const busy = view.phase === P.checking || view.phase === P.adding
       const nameOf = (id) => view.check?.missing.find((entry) => entry.id === id)?.name ?? id
       const counts = view.items ? Object.values(MODEL_SYNC_UI.outcome).map((outcome) => [outcome, view.items.filter((item) => item.outcome === outcome).length]).filter(([, count]) => count > 0) : []
-      return h('div', { className: CLS.sync, 'data-fishball-model-sync': view.phase },
+      // A titled section with one card row: Check, the state lines and the list under it.
+      return h('section', { className: CLS.section },
         h('h3', { className: CLS.syncTitle }, t('sync.title')),
+        h('div', { className: CLS.card },
+        h('div', { className: [CLS.feature, CLS.sync].join(' '), 'data-fishball-model-sync': view.phase },
         h('div', { className: CLS.statusRow },
           h(Button, { type: 'button', size: 'sm', variant: 'outline', disabled: !ready || busy, 'aria-busy': view.phase === P.checking, 'data-fishball-model-check': true, onClick: () => void check() },
             view.phase === P.checking ? t('sync.checking') : view.phase === P.result ? t('sync.checkAgain') : t('sync.check'))),
@@ -400,9 +427,8 @@ window.__ModuleLoader__.load({
         listed && view.check.missing.length === 0 ? h('p', { className: CLS.hint, role: 'status' }, t('sync.nothing')) : null,
         listed && view.check.missing.length > 0 ? h('ul', { className: CLS.syncList },
           view.check.missing.map((entry) => h('li', { key: entry.id, className: CLS.syncRow, 'data-fishball-model-entry': entry.id },
-            h('label', { className: CLS.statusRow },
-              h('input', { type: 'checkbox', checked: view.ticked.includes(entry.id), disabled: busy, onChange: (event) => toggle(entry.id, event.target.checked) }),
-              h('strong', null, entry.name)),
+            // DSH's Checkbox: its label is the provider's name, in the list's own weight.
+            h(Checkbox, { checked: view.ticked.includes(entry.id), disabled: busy, label: h('strong', null, entry.name), onChange: (on) => toggle(entry.id, on) }),
             h('p', { className: CLS.syncModels }, entry.models.length > 0 ? t('sync.models', { models: entry.models.join(', ') }) : t('sync.noModels'))))) : null,
         listed && view.check.missing.length > 0 ? h('div', { className: CLS.statusRow },
           h(Button, { type: 'button', size: 'sm', variant: 'primary', disabled: busy || view.ticked.length === 0 || !ready, 'data-fishball-model-add': true, onClick: () => void add() },
@@ -419,7 +445,7 @@ window.__ModuleLoader__.load({
           h('summary', { className: CLS.hint }, t('sync.notOffered', { count: view.check.notOffered.length })),
           h('ul', { className: CLS.syncList }, view.check.notOffered.map((entry) => h('li', { key: entry.id, className: CLS.hint },
             h('strong', null, entry.name), ' — ', reason(entry.reason))))) : null,
-        h('p', { className: CLS.hint }, t('sync.help')))
+        h('p', { className: CLS.hint }, t('sync.help')))))
     }
 
     /**
@@ -444,15 +470,26 @@ window.__ModuleLoader__.load({
         const [status, setStatus] = useInstanceStatus()
         if (props.view !== VIEW.page) return t('summary')
         const disabled = !state.writable || state.saving
-        return h(React.Fragment, null, h(InstanceStatus, { t, status, setStatus }), h(Actions, { t, state: status?.state, CLS, lang: activeLang() }), h(ModelSync, { t, state: status?.state, CLS, neutralTone, paths }), h(SettingsForm, {
+        // DSH's section rhythm: the status card, Fishball's actions, the model sync, then the launch
+        // settings in DSH's own form frame (its Save row under the card).
+        return h('div', { className: CLS.page },
+          h(InstanceStatus, { t, status, setStatus }),
+          h('section', { className: CLS.section },
+            h('h3', { className: CLS.sectionTitle }, t('actions')),
+            h(Actions, { t, state: status?.state, CLS, lang: activeLang() })),
+          h(ModelSync, { t, state: status?.state, CLS, neutralTone, paths }),
+          h('section', { className: CLS.section },
+          h('h3', { className: CLS.sectionTitle }, t('launch')),
+          h(SettingsForm, {
           labels: formLabels(t),
           state,
           onSave: section.actions.save,
           onDiscard: section.actions.discard,
         },
-          h('div', { key: FIELD.enabled, className: CLS.feature },
+          h('div', { key: FIELD.enabled, className: CLS.card },
+          h('div', { className: CLS.feature },
             h('label', { className: CLS.toggleRow },
-              h('span', null, t('field.enabled')),
+              h('span', { className: CLS.toggleText }, t('field.enabled')),
               h(Switch, {
                 checked: state.fields[FIELD.enabled].text === FLAG.on,
                 label: t('field.enabled'),
@@ -460,18 +497,20 @@ window.__ModuleLoader__.load({
                 onChange: (on) => section.actions.edit(FIELD.enabled, on ? FLAG.on : FLAG.off),
               })),
             h('p', { className: CLS.hint }, t('enabledHint'))),
-          h('div', { key: FIELD.targetUrl, className: CLS.feature },
+          h('div', { className: CLS.feature },
             h('label', { className: CLS.toggleRow },
-              h('span', null, t('field.targetUrl')),
-              h('input', {
-                type: 'url',
-                value: state.fields[FIELD.targetUrl].text,
-                disabled,
-                'aria-label': t('field.targetUrl'),
-                'data-dsh-instance-target': true,
-                onChange: (event) => section.actions.edit(FIELD.targetUrl, event.target.value),
-              })),
-            h('p', { className: CLS.hint }, t('targetUrlHint')))))
+              h('span', { className: CLS.toggleText }, t('field.targetUrl')),
+              h('span', { className: CLS.control },
+                h(Input, {
+                  type: 'url',
+                  value: state.fields[FIELD.targetUrl].text,
+                  disabled,
+                  placeholder: t('targetUrlPlaceholder'),
+                  'aria-label': t('field.targetUrl'),
+                  'data-dsh-instance-target': true,
+                  onChange: (event) => section.actions.edit(FIELD.targetUrl, event.target.value),
+                }))),
+            h('p', { className: CLS.hint }, t('targetUrlHint')))))))
       }
     }
 

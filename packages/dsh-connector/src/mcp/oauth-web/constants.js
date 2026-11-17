@@ -173,6 +173,9 @@ export const PAGE_HTTP = Object.freeze({
  */
 export const PAGE_TEXT = Object.freeze({
   lang: 'en',
+  // The line above the title beside the connector's mark (UI-POLISH-D): the connector's Plugins
+  // card title (locale/en.json meta.title), so the page names what is asking.
+  brand: 'Fishball connector',
   title: 'Authorize {client} (unverified)',
   errorTitle: 'Authorization error',
   client: 'Client: {client} (unverified), client id host {host}.',
