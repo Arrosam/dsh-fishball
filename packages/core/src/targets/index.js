@@ -126,7 +126,9 @@ export function createTargets(ctx, { tables, identityRecords, asks, events, reco
   function named(id, serverName) {
     const record = records.get(id)
     if (record === undefined || record.serverName === serverName) return
-    const taken = new Set([...records.values()].filter((other) => other.id !== id && other.serverName !== null).map((other) => resolvedName(other.serverName, other.duplicateSuffix)))
+    // The other CURRENT targets' complete names (D07 "other current target"): a stored parent record
+    // of a profile that is no longer hosted holds no name.
+    const taken = new Set(ordered().filter((other) => other.id !== id && other.serverName !== null).map((other) => resolvedName(other.serverName, other.duplicateSuffix)))
     save({ ...record, serverName, duplicateSuffix: allocateSuffix(serverName, taken) })
     runtimes.get(id)?.bridge.rename()
     refresh()
