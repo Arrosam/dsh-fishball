@@ -5,8 +5,8 @@
        is a paper chip in an ink ring (the ring is the cut-out that lifts it off the fish), holding a
        16-unit glyph scaled 0.44 about the chip's centre. The glyph is a server: two stacked units with
        a status light each, drawn for this repository on DSH's 16-unit icon grid and stroke style
-       (DSH's icon set has no server; its box, IconArchiveOutlineRegular, read too close to
-       dsh-connector-ui's window at the Plugins row's 30 px), for the private DSH the instance runs
+       (DSH's set has no server: its IconDatabaseOutlineRegular reads as a data store, not a running
+       DSH, and its box, IconArchiveOutlineRegular, read like dsh-connector-ui's window at 30 px), for the private DSH the instance runs
        Fishball in. The colours are the launcher's, so one asset reads on DSH's light and dark
        surfaces. -->
   <rect width="24" height="24" rx="5" fill="#101010"/>

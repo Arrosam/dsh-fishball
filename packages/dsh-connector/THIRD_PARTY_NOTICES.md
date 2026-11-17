@@ -13,6 +13,6 @@ The package manager installs these alongside the connector. None of their code i
 
 ## FishMark
 
-The Fishball mark in `assets/connector-icon.svg` and `client.js` is FishMark from the owner's own fishball app (`app/src/main/java/org/areel/fishball/ui/Surfaces.kt` at `f4a887d`; MIT, same author), redrawn as SVG with the launcher icon's colours. The connector's icon adds a wrench badge, drawn for this repository; the approval page (`src/mcp/oauth-web/page-theme.js`) draws the same icon.
+The Fishball mark in `assets/connector-icon.svg` is FishMark from the owner's own fishball app (`app/src/main/java/org/areel/fishball/ui/Surfaces.kt` at `f4a887d`; MIT, same author), redrawn as SVG with the launcher icon's colours. The connector's icon adds a wrench badge, drawn for this repository; the approval page (`src/mcp/oauth-web/page-theme.js`) draws the same icon.
 
 Any third-party code added later must be listed here with its licence and notice.
