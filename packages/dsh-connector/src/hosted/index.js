@@ -83,7 +83,7 @@ const labelOf = (pair) => {
  * @param {object} ports
  * @param ports.table - the hosted table (`openHostedStore`)
  * @param ports.tokens - C-TOKENS' registry: `createHosted()`, `get(entryKey)`
- * @param ports.pairs - K1 `PairStore`: `pairOf`, `succeed`
+ * @param ports.pairs - K1 `PairStore`: `pairOf`, `succeed`, `onChange`
  * @param ports.routing - the routing composition: `succeedPrincipal`
  * @param ports.writer - K1d `SettingsWriter`: `removeToken`
  * @param ports.notes - K1d `SessionNotes`
@@ -240,6 +240,19 @@ export function createHostedTokens({ table, tokens, pairs, routing, writer, note
     async retire(oldEntryKey, successorEntryKey) {
       if (oldEntryKey === successorEntryKey) throw new TypeError(MISUSE.sameEntry)
       return serial(() => succeed(oldEntryKey, successorEntryKey))
+    },
+
+    /**
+     * K3 amendment (I-SUCCEED, the user's Q1 = C, 2026-11-17): calls `fn` with no argument after
+     * each change of the pair store, K1 `PairStore.onChange` ("Listeners run once after a change"),
+     * so the instance retries a `successor-unpaired` succession once the new child has paired. The
+     * pair store's own listener loop logs a throwing `fn` and runs the others.
+     * @returns the K3 `Dispose` (the pair store's disposer is idempotent)
+     * @throws TypeError for a listener that is not a function (a caller bug, as `createHosted`'s)
+     */
+    onChange(fn) {
+      if (typeof fn !== 'function') throw new TypeError(MISUSE.listener)
+      return pairs.onChange(() => fn())
     },
   })
 
