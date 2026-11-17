@@ -304,26 +304,36 @@ function fakeTimers() {
     async runAll() { const due = [...pending.values()]; pending.clear(); for (const fn of due) await fn() },
   }
 }
-/** The real createGrants over a MapTable; A manages S until `manager.set` says otherwise. */
-async function grantsUnit(sdk) {
+/**
+ * The real createGrants over a MapTable; A manages S until `manager.set` says otherwise. The grant is
+ * created, then activated once its answer is settled, as the answer path does (`activate: false`
+ * leaves it pending: an answer whose settlement never stored). `restart()` is a connector restart:
+ * the old instance stops, a new one over the same table runs `reconcile`.
+ */
+async function grantsUnit(sdk, { activate = true } = {}) {
   const mod = await moduleOf(sdk, RX.grantsEntry, [RX.grantsFactory])
   const table = new MapTable()
   const managers = new Map([[S.s, FIXTURE.principal(RX.ids.a)]])
   let now = RX.t0
   const timers = fakeTimers()
   const logger = { warn() {}, info() {}, debug() {}, error() {} }
-  const grants = mod[RX.grantsFactory]({ table, managerOf: (s) => managers.get(s), now: () => now, timers, logger })
+  const open = () => mod[RX.grantsFactory]({ table, managerOf: (s) => managers.get(s), now: () => now, timers, logger })
   const A = FIXTURE.principal(RX.ids.a)
   const args = { [RX.shellArgument]: RX.command(1) }
   const expiresAt = RX.t0 + RX.grantMs
-  const id = await grants.create({ sessionId: S.s, principalKey: A, toolName: RX.shellTool, args, spec: { kind: GRANT_KIND.exact, expiresAt } })
-  assert.equal(typeof id, 'string', 'harness: create gave no grant id')
-  return {
-    grants, table, managers, timers, A, args, expiresAt, id,
-    setNow: (ms) => { now = ms },
-    covers: () => grants.cover(S.s, RX.shellTool, args),
-    listedIds: () => grants.list().map((g) => g.grantId),
+  const u = { table, managers, timers, A, args, expiresAt, grants: open() }
+  u.id = await u.grants.create({ sessionId: S.s, principalKey: A, toolName: RX.shellTool, args, spec: { kind: GRANT_KIND.exact, expiresAt } })
+  assert.equal(typeof u.id, 'string', 'harness: create gave no grant id')
+  if (activate) await u.grants.activate(u.id)
+  u.setNow = (ms) => { now = ms }
+  u.covers = () => u.grants.cover(S.s, RX.shellTool, args)
+  u.listedIds = () => u.grants.list().map((g) => g.grantId)
+  u.restart = async () => {
+    u.grants.stop()
+    u.grants = open()
+    await u.grants.reconcile()
   }
+  return u
 }
 
 function f01Unit(sdk) {
@@ -367,6 +377,24 @@ function f01Unit(sdk) {
     assert.equal(await u.grants.revoke(u.id, u.A), undefined)
     assert.equal(u.table.get(u.id), undefined, 'the record is still stored after the retry')
     assert.equal(await u.grants.revoke(u.id, u.A), REFUSAL.grantEnded)
+    u.grants.stop()
+  })
+  row(sdk, 'RX-F04', 'ST (unit) failed answer, then restart', 'a grant created for an answer whose settlement never stored (never activated) covers nothing; after a restart (reconcile over the same table) it still covers nothing and is not listed', async () => {
+    const u = await grantsUnit(sdk, { activate: false })
+    assert.equal(u.covers(), undefined, 'a grant whose answer never settled covers')
+    await u.restart()
+    assert.equal(u.covers(), undefined, 'a grant whose answer never settled covers after a restart')
+    assert.ok(!u.listedIds().includes(u.id))
+    u.grants.stop()
+  })
+  row(sdk, 'RX-F01', 'ST (unit) failed revoke delete, then restart', 'a revoke whose delete failed; after a restart (reconcile over the same table, deletes still failing) the grant covers nothing and is not listed', async () => {
+    const u = await grantsUnit(sdk)
+    assert.equal(u.covers(), u.id, 'harness: the activated grant does not cover')
+    u.table.failDeletes = true
+    assert.ok((await ended(u.grants.revoke(u.id, u.A))).error !== undefined, 'a revoke whose delete failed did not reject')
+    await u.restart()
+    assert.equal(u.covers(), undefined, 'a revoked grant revived after a restart')
+    assert.ok(!u.listedIds().includes(u.id))
     u.grants.stop()
   })
 }
