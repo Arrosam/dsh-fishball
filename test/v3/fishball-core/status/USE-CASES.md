@@ -1,7 +1,8 @@
 # F-STATUS — use cases and test design
 
 Source of truth: the F-STATUS brief relayed by the dev session (2026-11-16): R-FB-03, R-FB-04
-(REM-DT-01), design §6.3a (Connect), R-BND-05 / TQ-17 (PLAT-DT-02, rewritten for board only),
+(REM-DT-01), design §6.3a (Connect), R-BND-05 / TQ-17 (PLAT-DT-02, rewritten for board only, then emptied by
+SHELVE-BOARD 2026-11-18),
 HOST-DT-03 rule 10, Q-G1, R-FB-07 (withdrawn), R-FB-09 / design §5a.2, R-EXT-14, R-FB-10, and the
 relayed exported surface (`createStatus`, `statusOf`, `STATUS_MODEL`, `STATUS_TEXT`, `stripView`).
 The implementation under `packages/core/src/status/` and `packages/fishball-ui/src/status/` (the strip
@@ -45,50 +46,76 @@ host services (`appReady`, `pluginManager`, `loader`, the two Cordis events).
 
 ## UC-STATUS-02 — Core reports a missing set member (R-BND-05, TQ-17; PLAT-DT-02 rewritten)
 
+**SHELVE-BOARD (the user, 2026-11-18):** "fishball-board先从这次release中移除，我要改的地方太多了。先封存，
+留到下一批再说。所以不要预留在子实例的Fishball内。" fishball-board is shelved from 1.0.0-alpha.1. Core's
+set check, whose only member was the board, now has **no member** (`STATUS_MODEL.members` is `[]`):
+core never reports `fishball-board`, and after app ready `set` is always `{status: ok, missing: []}`,
+whatever the board's state. The check's mechanism stays for a later member.
+
 1. Until app ready, `set` is null.
 2. At app ready core reads `pluginManager.listBundles()` and the loader's entries and computes `set`
-   for the only checked member, `fishball-board`.
-3. On each `plugin-manager/changed` it computes `set` again.
+   for the checked members: none now, so `ok`.
+3. On each `plugin-manager/changed` it computes `set` again (still `ok`; an equal snapshot is not re-emitted).
 
-- **A1:** board not installed → `ok`, nothing reported. **A2:** board switched off by the owner →
-  `ok`. **E1:** board enabled but skipped (its bundle carries `error.code`, e.g.
-  `incompatible-version`) → `plugin-set-incomplete`, missing `{fishball-board, skipped, <code>}`.
-  **E2:** board enabled, one of its rows failed to load (loader entry `fiber.state` FAILED = 3, or
-  a live entry with no fiber once its import settled: the loader catches an import error) →
-  missing `{fishball-board, failed, null}`. A row still loading (`_initTask` pending or fiber
-  LOADING) when `plugin-manager/changed` fires is classified once it settles (amended 2026-11-16).
-- The strip's set line names each missing member and its reason word, translated (en `skipped` /
-  `failed to start`; zh differs).
+- The board in any state is never reported and never named in the strip: absent, listed but not
+  installed, on and loaded, switched off, enabled but skipped (any `error.code`: `incompatible-version`,
+  `operation-error`, `not-bundle` for unresolved or unreadable), a row failed (fiber FAILED = 3, or no
+  fiber once its import settled), a row still loading that then fails, an import that fails.
+  *Before SHELVE-BOARD* the skipped and failed states were `plugin-set-incomplete` with missing
+  `{fishball-board, skipped, <code>}` / `{fishball-board, failed, null}`.
+- The strip's set line (kept for a later member) names each missing member and its reason word,
+  translated (en `skipped` / `failed to start`; zh differs). With no member, the status never gives
+  one; it is checked on a hand-built snapshot naming a made-up member (F-STATUS-STRIP set mechanism).
 - **A3:** no `pluginManager` service → `set` stays null.
 - Never reported: `fishball-ui` (Q-G1), `fishball-hosted-settings` (HOST-DT-03 rule 10), any
-  Watchdog (R-FB-07 withdrawn), any bundle that is not a checked member.
+  Watchdog (R-FB-07 withdrawn), any bundle that is not a checked member (now every bundle).
 
-### PLAT-DT-02 (rewritten for board only)
+The board in these rows is a stand-in (constants.mjs `BOARD`): a fake BundleInfo only named
+`fishball-board`, with one row of that id, as F-WIRE's stand-in fixture (`wire/fixtures/fishball-board`)
+has. `packages/board` is never read or loaded by this suite.
 
-| Rule | board | Core's `set` |
-| --- | --- | --- |
-| 1 | on, loaded | `ok`, missing `[]` |
-| 2 | not installed (absent; or listed with installed false, enabled false) | `ok`, nothing reported |
-| 3 | enabled but skipped (incompatible) | `plugin-set-incomplete`, names `fishball-board` (reason `skipped`, the manager's code) |
-| 4 | enabled, a row failed to load (fiber FAILED, or no fiber after its import settled; classified after a pending load settles) | `plugin-set-incomplete` (reason `failed`, code null) |
-| 5 | off (owner switched the bundle off; also while incompatible) | `ok`, nothing reported |
-| 6 | enabled, its row switched off by the owner (entry disabled) | `ok`, nothing reported (F-STATUS-xx: "a member the owner switched off") |
+### PLAT-DT-02 (rewritten for board only; re-baselined by SHELVE-BOARD 2026-11-18)
 
-Old columns fold-notify / Watchdog and old rules 3–4: **withdrawn**.
+| Rule | board | Core's `set` before SHELVE-BOARD | Core's `set` now |
+| --- | --- | --- | --- |
+| 1 | on, loaded | `ok` | `ok`, missing `[]` |
+| 2 | not installed (absent; or listed with installed false, enabled false) | `ok` | `ok` |
+| 3 | enabled but skipped (`incompatible-version`; other code `operation-error`) | `plugin-set-incomplete` (`skipped`, the code) | **`ok`, never reported** |
+| 4 | enabled, a row failed to load (fiber FAILED, or no fiber after its import settled; classified after a pending load settles) | `plugin-set-incomplete` (`failed`, null) | **`ok`, never reported** |
+| 5 | off (owner switched the bundle off; also while incompatible) | `ok` | `ok` |
+| 6 | enabled, its row switched off by the owner (entry disabled) | `ok` | `ok` |
+
+Every rule also checks that neither language's strip has a `plugin-set-incomplete` line or mentions the
+board (REL-PACK's board-mention rule). Old columns fold-notify / Watchdog and old rules 3–4: **withdrawn**.
 
 **PLAT-EP-04 row 3** (Watchdog only, no core): **withdrawn** with Watchdog (requirements 1.37);
 no runnable case.
 
 Added rows (dev session decision 2026-11-16, under R-BND-05 and design §8.2): a board selected in
 the profile whose package cannot be resolved or read is "enabled but skipped" (DSH's boot skips it
-too: `loadProfileDirectory` `skippedBundles`), reported with whatever `error.code` DSH gives.
-"Not installed" means not selected (`enabled: false`) or not listed at all.
+too: `loadProfileDirectory` `skippedBundles`). "Not installed" means not selected (`enabled: false`)
+or not listed at all.
 
-| Rule | board | Core's `set` |
+| Rule | board | before SHELVE-BOARD | now |
+| --- | --- | --- | --- |
+| 3 unresolved | selected, package not resolvable (`enabled: true, installed: false, error: not-bundle`) | incomplete (`skipped`, `not-bundle`) | **`ok`, never reported** |
+| 3 unreadable | selected and installed, package unreadable (`enabled: true, installed: true, error: not-bundle`) | incomplete (`skipped`, `not-bundle`) | **`ok`, never reported** |
+| 2 unselected unreadable | not selected, package unreadable (`enabled: false, error: not-bundle`) | `ok` | `ok` |
+| 4 fiber loading / import running ends 3 | still loading at `plugin-manager/changed`, then FAILED | incomplete (`failed`) | **`ok`; no emitted set other than `ok`** |
+| 4 fiber loading / import running ends 2 | still loading, then ACTIVE | `ok` | `ok` |
+| 4 import failed | import running, then no fiber | incomplete (`failed`) | **`ok`; no emitted set other than `ok`** |
+
+### Other rows re-baselined by SHELVE-BOARD (the user, 2026-11-18)
+
+| Id | Before | Now |
 | --- | --- | --- |
-| 3 unresolved | selected, package not resolvable (`enabled: true, installed: false, error: not-bundle`) | `plugin-set-incomplete` (reason `skipped`, code `not-bundle`) |
-| 3 unreadable | selected and installed, package unreadable (`enabled: true, installed: true, error: not-bundle`) | `plugin-set-incomplete` (reason `skipped`, code `not-bundle`) |
-| 2 unselected unreadable | not selected, package unreadable (`enabled: false, error: not-bundle`) | `ok`, nothing reported |
+| F-STATUS-00 surface | `STATUS_MODEL.members` is `[fishball-board]` | `[]` |
+| F-STATUS-BVA-02 fiber | ACTIVE (2) loaded → ok, FAILED (3) → failed | both `ok`, the board never reported |
+| F-STATUS-EP-02 ×3 | the other bundle is never reported; the skipped board alone is | neither is reported: `ok` |
+| F-STATUS-ST-02 changed | `ok → skipped → failed → ok`, each emitted | the board goes loaded → skipped → failed → loaded, the set stays `ok`, nothing re-emitted |
+| F-STATUS-STRIP order | link, guards, set, tools (board skipped) | link, guards, tools: the skipped board gives no set line |
+| F-STATUS-STRIP never | the strip names none of fishball-ui, Watchdog, hosted-settings | also: no set line and no board mention |
+| F-STATUS-STRIP set mechanism skipped / failed (**added**) | (reached through board rules 3/4) | a hand-built snapshot missing a made-up member: link, guards, set, tools; the set line names the member, en reason word, zh differs |
 
 ## UC-STATUS-03 — Guards overridden (R-FB-09, design §5a.2)
 
@@ -146,13 +173,13 @@ Order rows check "first match wins": 1 over 3 and 4, and `target-unreachable` un
 
 - Use cases: UC-STATUS-01…06 above (flows named in each test).
 - Decision tables: REM-DT-01 rules 1–6 (display), F-STATUS-DT-01 rules 1–5 plus order rows,
-  PLAT-DT-02 rules 1–6, HOST-DT-03 rule 10.
+  PLAT-DT-02 rules 1–6 (all `ok` since SHELVE-BOARD), HOST-DT-03 rule 10.
 - EP / BVA: F-STATUS-EP-01 (target usability: usable https / loopback http names vs non-loopback
   http, 127.0.0.2, [::2], userinfo, blank, white space, other scheme, not a URL), F-STATUS-EP-02
   (bundles never reported), F-STATUS-BVA-01 (contributed count 0 / 1 / n), F-STATUS-BVA-02 (loader
-  fiber state ACTIVE 2 vs FAILED 3).
+  fiber state ACTIVE 2 vs FAILED 3 of the board's row: both `ok` since SHELVE-BOARD).
 - State transitions: F-STATUS-ST-01 (Connect: needs-authorization → authorizing → authorized /
-  failed), F-STATUS-ST-02 (set across `plugin-manager/changed`), F-STATUS-ST-03 (notice: none →
+  failed), F-STATUS-ST-02 (set across `plugin-manager/changed`: stays `ok` since SHELVE-BOARD), F-STATUS-ST-03 (notice: none →
   sent once → never again), F-STATUS-ST-04 (app ready: null → computed).
 
 ## Not runnable here (todo)
@@ -162,3 +189,16 @@ Order rows check "first match wins": 1 over 3 and 4, and `target-unreachable` un
 - PLAT-DT-02 in a real standalone DSH (the status service provided by F-WIRE as `fishballStatus`):
   F-WIRE.
 - Hosted mode (core in a hosted child: no Connect control): I-HOST; no child is launched here.
+
+## UI-POLISH-F §2: `stripView(snapshot, lang).card`
+
+Requirement: `.runtime/reports/ui-polish-f/SPEC.md` §2. `stripView` keeps `lines` and `control` and gains
+`card: {state, title, badge, toolsHint, openApproval}` (constants.mjs `UI_CARD`).
+
+| Id | Technique | Case |
+| --- | --- | --- |
+| UIPF-CARD-DT-01 `<kind>` (connected, target-unset, needs-authorization, authorizing, needs-configuration, target-unreachable, token-refused, failed, fishball-off, any other) | DT | The card exactly, en and zh: state, badge, title (`Target DSH` / `目标 DSH`, `Fishball` for off), toolsHint, openApproval |
+| UIPF-CARD-DT-01 statusOf off, unknown lang | DT, EP | No core → off; unknown / absent lang → the en card |
+| UIPF-CARD-DT-01 `<kind>` via status | DT (integration) | The real status's first line lands on its card state |
+| UIPF-CARD-BVA-01 tools 0 / 1 / 2, no bridge | BVA | en `0 contributed tools` / `1 contributed tool` / `2 contributed tools`, zh `N 个贡献工具`; no bridge → no line |
+| UIPF-CARD-EP-01 control labels | EP | Connect / 连接, Cancel / 取消 unchanged |

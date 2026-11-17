@@ -90,6 +90,12 @@ export const STAND_IN = Object.freeze({
   saveFailed: 'data-fbtest-save-failed',
   unavailable: 'data-fbtest-form-unavailable',
   secretState: 'data-fbtest-secret-configured',
+  /** UI-POLISH-F: the design stand-ins' handles (variant of a Button, a Tooltip's label and side, its bubble, shortcut keys). */
+  variant: 'data-fbtest-variant',
+  tooltip: 'data-fbtest-tooltip',
+  tooltipSide: 'data-fbtest-tooltip-side',
+  portal: 'data-fbtest-portal',
+  shortcut: 'data-fbtest-shortcut',
 })
 
 /** The primitives module for one SDK, rendering through `React` (the hook shim). */
@@ -123,16 +129,88 @@ export function primitivesFor(sdk, React) {
       h('input', { id: props.id, type: 'text', value: props.text, placeholder: props.placeholder ?? '', disabled: props.disabled, onChange: (event) => props.onEdit(event.target.value) }),
       props.invalid || props.hint ? h('p', null, props.invalid ? props.invalidLabel : props.hint) : null)
   }
-  function Button({ children, variant, size, icon, ...rest }) {
-    return h('button', { type: 'button', [STAND_IN.primitive]: 'Button', ...rest }, icon ?? null, children)
+  // UI-POLISH-F: the stand-in keeps `variant` as a harness handle, so a case can tell DSH's primary
+  // and outline looks apart (SPEC §2 control, §3 first choice, §7 Connect); DSH's own default is ghost.
+  function Button({ children, variant = DESIGN.defaultVariant, size, icon, ...rest }) {
+    return h('button', { type: 'button', [STAND_IN.primitive]: 'Button', [STAND_IN.variant]: variant, ...rest }, icon ?? null, children)
   }
-  const known = { SettingsFormModel, settingsTextField, SettingsForm, SettingsSecretField, SettingsValueField, Button }
+  const design = designStandIns(React)
+  return proxied({ SettingsFormModel, settingsTextField, SettingsForm, SettingsSecretField, SettingsValueField, Button, ...design.known }, h, design.icon)
+}
+
+/**
+ * UI-POLISH-F: DSH's design primitives as they render on both SDKs (dsh-web-frontend's bundle, the
+ * functions behind the primitives module's `StateDot`, `Tag`, `Tooltip`, `FishLogo` and `Icon*`
+ * exports, read 2026-11-18). Kept faithful where a case observes them:
+ * - StateDot `{state}`: `ongoing` → `<svg data-state="ongoing" aria-hidden>` (the spinner), any other
+ *   state → `<span data-state aria-hidden>`;
+ * - Tag `{tone, className, children}`: `<span data-tone>`; DSH's Tag forwards NO other prop, so a
+ *   `data-*` hook given to it is lost in a real DSH (and here);
+ * - Tooltip `{label, shortcutKeys, side, portal, children}`: renders its one child with hover and
+ *   focus handlers chained to the child's own; while hovered or focused it adds the bubble
+ *   `<span role="tooltip">` with the label (a string or a function) and the shortcut keys. DSH
+ *   portals the bubble to document.body when `portal` is set; here the bubble stays inline and
+ *   carries `data-fbtest-portal`. The stand-in stamps `data-fbtest-tooltip` (label) and
+ *   `data-fbtest-tooltip-side` on the child, harness handles only;
+ * - FishLogo and every `Icon*` export: one `<svg aria-hidden="true">`.
+ */
+export const DESIGN = Object.freeze({
+  defaultVariant: 'ghost',
+  ongoing: 'ongoing',
+  tooltipRole: 'tooltip',
+  hidden: 'true',
+  iconPrefix: 'Icon',
+  logos: Object.freeze(['FishLogo', 'BrandWordmark']),
+})
+function designStandIns(React) {
+  const h = React.createElement
+  const svg = (name) => function Icon() { return h('svg', { [STAND_IN.primitive]: name, 'aria-hidden': DESIGN.hidden }) }
+  function StateDot({ state }) {
+    return state === DESIGN.ongoing
+      ? h('svg', { [STAND_IN.primitive]: 'StateDot', 'data-state': state, 'aria-hidden': DESIGN.hidden })
+      : h('span', { [STAND_IN.primitive]: 'StateDot', 'data-state': state, 'aria-hidden': DESIGN.hidden })
+  }
+  function Tag({ tone = 'outline', className, children }) {
+    return h('span', { [STAND_IN.primitive]: 'Tag', 'data-tone': tone, className }, children)
+  }
+  function Tooltip({ label, shortcutKeys, side = 'right', portal = false, disabled = false, children }) {
+    const [open, setOpen] = React.useState(false)
+    const child = Array.isArray(children) ? children[0] : children
+    if (!child || !child.$$rp) return child ?? null
+    const chain = (name, next) => (event) => { child.props[name]?.(event); next() }
+    const text = typeof label === 'function' ? label() : label
+    const props = {
+      ...child.props,
+      [STAND_IN.tooltip]: text, [STAND_IN.tooltipSide]: side,
+      onMouseEnter: chain('onMouseEnter', () => setOpen(true)), onMouseLeave: chain('onMouseLeave', () => setOpen(false)),
+      onFocus: chain('onFocus', () => setOpen(true)), onBlur: chain('onBlur', () => setOpen(false)),
+    }
+    const clone = { ...child, props }
+    if (!open || disabled) return clone
+    return h(React.Fragment, null, clone,
+      h('span', { role: DESIGN.tooltipRole, [STAND_IN.portal]: String(Boolean(portal)) },
+        text ? h('span', null, text) : null,
+        shortcutKeys?.length ? h('span', { [STAND_IN.shortcut]: true }, shortcutKeys.join(' ')) : null))
+  }
+  const icons = new Map()
+  const icon = (name) => {
+    if (!name.startsWith(DESIGN.iconPrefix) && !DESIGN.logos.includes(name)) return undefined
+    if (!icons.has(name)) icons.set(name, svg(name))
+    return icons.get(name)
+  }
+  return { known: { StateDot, Tag, Tooltip }, icon }
+}
+
+/** A primitives module: the `known` components, `special(name)` when it answers, and a generic element for every other export. */
+function proxied(known, h, special = () => undefined) {
   const generic = new Map()
   const primitives = new Proxy(known, {
     get(target, name) {
       if (typeof name === 'symbol' || name === 'then' || name === '__esModule') return undefined
       if (name === 'default') return primitives
       if (name in target) return target[name]
+      const own = special(name)
+      if (own) return own
       if (!generic.has(name)) generic.set(name, function Primitive({ children, ...rest }) { return h('div', { [STAND_IN.primitive]: name, ...rest }, children) })
       return generic.get(name)
     },

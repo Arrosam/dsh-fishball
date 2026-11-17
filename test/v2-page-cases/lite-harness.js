@@ -123,7 +123,20 @@
   function PrimitiveButton({ variant: _variant, size: _size, children, ...props }) {
     return createElement(H.buttonType, { type: H.buttonType, ...props }, children)
   }
-  const pagePrimitives = { Button: PrimitiveButton, modalSelector: '[role="dialog"][aria-modal="true"]' }
+  // UI-POLISH-F: the page also takes DSH's Tooltip, StateDot and icons. The stand-ins render what the
+  // real ones render where a case looks: Tooltip its one child (the bubble is hover-only), StateDot an
+  // aria-hidden dot, an icon one aria-hidden <svg>.
+  const PrimitiveTooltip = ({ children }) => (Array.isArray(children) ? children[0] : children) ?? null
+  const PrimitiveStateDot = ({ state }) => createElement('span', { 'data-state': state, 'aria-hidden': 'true' })
+  const PrimitiveIcon = () => createElement('svg', { 'aria-hidden': 'true' })
+  const pagePrimitives = new Proxy({ Button: PrimitiveButton, Tooltip: PrimitiveTooltip, StateDot: PrimitiveStateDot, modalSelector: '[role="dialog"][aria-modal="true"]' }, {
+    get: (target, key) => (key in target ? target[key] : typeof key === 'string' && /^(Icon|FishLogo)/.test(key) ? PrimitiveIcon : undefined),
+  })
+  /**
+   * UI-POLISH-F (SPEC §1): the nav buttons are icon-only, their name is the aria-label. A button's
+   * name is its aria-label when it has one, else its text (the accessible-name rule for buttons).
+   */
+  const nameOf = (node) => node.getAttribute('aria-label') ?? node.textContent
   const ReactDOM = { createPortal: (node, container) => ({ portal: true, node, container }) }
   function setProps(element, props, root) {
     for (const [name, value] of Object.entries(props)) {
@@ -517,7 +530,8 @@
     /** Snapshot of the page-visible state the cases assert on. */
     state() {
       const statuses = [...document.querySelectorAll('[role="status"]')].map((node) => node.textContent)
-      const buttons = [...document.querySelectorAll('[data-fbtest-slot] button, [data-fbtest-portal] button')].map((node) => node.textContent)
+      // UI-POLISH-F: buttons by accessible name (icon-only nav buttons have no text).
+      const buttons = [...document.querySelectorAll('[data-fbtest-slot] button, [data-fbtest-portal] button')].map(nameOf)
       return {
         protectedMarker: document.documentElement.hasAttribute('data-fishball-session'),
         statuses, buttons,
@@ -529,7 +543,8 @@
       }
     },
     clickSlotButton(text) {
-      const button = [...document.querySelectorAll('[data-fbtest-slot] button, [data-fbtest-portal] button')].find((node) => node.textContent === text)
+      // UI-POLISH-F: found by accessible name (icon-only nav buttons have no text).
+      const button = [...document.querySelectorAll('[data-fbtest-slot] button, [data-fbtest-portal] button')].find((node) => nameOf(node) === text)
       if (!button) return false
       log.timeline.push({ kind: 'user', button: text })
       button.click()
@@ -550,7 +565,8 @@
       const shown = (node) => node.checkVisibility({ visibilityProperty: true }) && node.getBoundingClientRect().width > 0
       return {
         statuses: [...document.querySelectorAll('[role="status"]')].filter(shown).map((node) => node.textContent.trim()).filter(Boolean),
-        retry: [...document.querySelectorAll('button')].some((node) => node.textContent === 'Retry' && shown(node)),
+        // UI-POLISH-F: Retry is icon-only; its name is its aria-label.
+        retry: [...document.querySelectorAll('button')].some((node) => nameOf(node) === 'Retry' && shown(node)),
       }
     },
     /** Status nodes and buttons inside the page's own bottom-left navigation. */
@@ -559,7 +575,8 @@
       if (!nav) return null
       return {
         statuses: [...nav.querySelectorAll(H.statusRole)].map((node) => node.textContent.trim()),
-        buttons: [...nav.querySelectorAll('button')].map((node) => node.textContent.trim()),
+        // UI-POLISH-F: by accessible name (icon-only).
+        buttons: [...nav.querySelectorAll('button')].map((node) => nameOf(node).trim()),
         text: nav.textContent,
       }
     },

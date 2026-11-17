@@ -20,7 +20,7 @@ Release **1.0.0-alpha.1** (V3). Every package carries this version. This is a fr
 reads, migrates and accepts nothing from an earlier Fishball release. The older "dsh-fishball (df)"
 preview is archived at tag `archive/df-preview-2026-10-23`.
 
-`node scripts/pack-v3.mjs` builds the nine release tarballs into `.runtime/release/1.0.0-alpha.1/`,
+`node scripts/pack-v3.mjs` builds the eight release tarballs into `.runtime/release/1.0.0-alpha.1/`,
 with SHA256SUMS, an offline pnpm store, `INSTALL.md` (install and uninstall, from npm or offline) and
 `PUBLISH.md` (the publish commands). The packages are published to npm under the `alpha` tag by the
 maintainer only. The connector's npm name is **`dsh-agent-connector`** (`dsh-connector` is taken on
@@ -44,11 +44,12 @@ npm); its folder, plugin row id and settings stay `dsh-connector`.
 | --- | --- |
 | [`fishball-core`](packages/core) | The backend: the one manager session and its preset, persona, reminders and private Skills; the MCP link to the target connector, Connect, interception, status, the ask cards, the guard rows; its own settings page (target, Connect, identity, token field, **Fishball's model**). |
 | [`fishball-ui`](packages/fishball-ui) | Every UI change inside a Fishball DSH: the Fishball page, the UI guard rows, the Recommended tab, the status strip, the pairing views, the ask cards and the model dialog. Without core it logs `fishball-core-missing` and changes nothing. |
-| [`fishball-board`](packages/board) | Fishball's work board: `board_*` tools, `board_search`, the archive. |
 | [`fishball-shared`](packages/shared) | A library inside the Fishball-side tarballs (today only the core/ui seam). Not a plugin. |
 
 Not in this release: fold-notify (its notify function is `dsh-connector-ui`'s `notify` tool), the
-hosted settings bundle, and Watchdog (a separate future project). The repository root is not a
+hosted settings bundle, Watchdog (a separate future project), and `fishball-board`, Fishball's work
+board: shelved, not in 1.0.0-alpha.1. Its code stays in [`packages/board`](packages/board) for a later
+release; nothing in this release installs or places it. The repository root is not a
 plugin. See [docs/package-layout.md](<docs/package-layout.md>).
 
 ## Supported DSH versions
@@ -74,10 +75,9 @@ This is the usual set-up. The commands use the profile `web`; use your own profi
 
    To install from a release folder (`node scripts/pack-v3.mjs`) with no network, follow its
    `INSTALL.md`: it works on a profile that already has plugins.
-   You do not install the Fishball-side packages: the instance installs `fishball-ui`,
-   `fishball-board` and `fishball-core` into its child, from npm at its own version, or from the
-   tarballs it carries when the registry cannot be reached; the child's bundles end with board, ui,
-   then core last. pnpm may list DSH's own packages as missing peers; DSH provides them when it runs,
+   You do not install the Fishball-side packages: the instance installs `fishball-ui` and
+   `fishball-core` into its child, from npm at its own version, or from the tarballs it carries when
+   the registry cannot be reached; the child's bundles end with ui, then core last. pnpm may list DSH's own packages as missing peers; DSH provides them when it runs,
    so that warning is expected.
 
 3. **Start DSH.** The instance starts Fishball once DSH is ready. On its first start it creates the
@@ -102,10 +102,10 @@ to manage:
 
 1. In the **managed DSH**, install `dsh-agent-connector` (and `dsh-connector-ui` if you want the fish and
    Hand over there).
-2. In the **Fishball DSH**, install the three Fishball plugins, core last:
+2. In the **Fishball DSH**, install the two Fishball plugins, core last:
 
    ```bash
-   dsh plugin --profile web add fishball-ui@1.0.0-alpha.1 fishball-board@1.0.0-alpha.1 fishball-core@1.0.0-alpha.1
+   dsh plugin --profile web add fishball-ui@1.0.0-alpha.1 fishball-core@1.0.0-alpha.1
    ```
 
    If core is not last, it moves itself to the end of the profile's bundles at its first start;
@@ -205,7 +205,7 @@ Disable does, and `dsh plugin remove` only runs pnpm. So the instance ships a cl
    on the Plugins page.
 
 **What it removes:** the whole `<DSH_HOME>/fishball/runtime` tree and nothing else: the child's
-DSH home (its profile, Fishball's session, settings, model keys, private Skills, board data and
+DSH home (its profile, Fishball's session, settings, model keys, private Skills and
 placed plugins), its workspace and other folders, the owner marker, secret and logs. It keeps
 `<DSH_HOME>/fishball/hosted.json` (the keys of the token entries the instance created, so a
 reinstall can retire them) and never touches the connector's token entries: delete a dead hosted
@@ -232,9 +232,7 @@ Their data is kept, as for any DSH plugin. Agents using a removed connector lose
 
 ### Fishball plugins in a standalone DSH
 
-Remove `fishball-core`, `fishball-ui` and `fishball-board` like any plugin. The board's data stays
-in `<DSH home>/fishball-board/`, because DSH gives a plugin no removal hook. **We recommend that you
-delete that folder yourself** after removing the plugin. There is no board export.
+Remove `fishball-core` and `fishball-ui` like any plugin.
 
 ### Reinstall
 

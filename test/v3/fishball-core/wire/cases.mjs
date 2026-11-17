@@ -1,8 +1,16 @@
 import assert from 'node:assert/strict'
 import { test, after } from 'node:test'
 import { C } from './constants.mjs'
-import { boot, contracts, forbiddenImports, manifest, patches, request, requestAs } from './subject.mjs'
+import fs from 'node:fs'
+import path from 'node:path'
+import { boot, brokenBoardCopy, contracts, forbiddenImports, manifest, patches, request, requestAs } from './subject.mjs'
 import { until } from '../../../support/util.mjs'
+/** Core's `set` once app ready has settled it (null before). */
+async function settledSet(h) {
+  let s
+  await until(async () => { s = await h.call('snapshot'); return s?.set != null }, C.budget.call, C.budget.poll)
+  return s?.set
+}
 export function registerWireCases(sdk) {
   test(`${sdk} WIRE-EP-01 manifest exports and dependency boundary`, () => {
     const pkg = manifest()
@@ -40,6 +48,13 @@ export function registerWireCases(sdk) {
       // F-STATUS's frozen view model: `line` is `{kind, code}` (test/v3/fishball-core/status).
       assert.equal(s.line?.kind, 'target-unset', JSON.stringify(s))
     })
+    // SHELVE-BOARD: core's set check has no board member, so the set is ok with the board absent or present.
+    test(`${prefix} SHELVE set is ok, nothing missing, never naming fishball-board`, async () => {
+      const h = await get()
+      // Precondition of the "board present" partition: the stand-in's row really is loaded.
+      if (members.includes(C.board)) assert.deepEqual((await h.call('rows', { ids: [C.board] })).map((r) => [r.present, r.disabled]), [[true, false]], 'the stand-in board row is not loaded')
+      assert.deepEqual(await settledSet(h), C.shelved.set)
+    })
     test(`${prefix} manager ensure is idempotent; generated identity stays out of settings`, async () => {
       const h = await get(); const f = await h.call('ensure')
       assert.ok(f.id)
@@ -66,6 +81,8 @@ export function registerWireCases(sdk) {
       const system = requests.map((r) => r.system).join(C.empty)
       for (const name of C.persona.present) assert.ok(system.includes(name), name)
       for (const name of C.persona.absent) assert.equal(system.includes(name), false, name)
+      // SHELVE-BOARD: without the board, nothing in the manager's prompt or tools mentions it.
+      if (!members.includes(C.board)) assert.equal(C.shelved.mention.exec(JSON.stringify(requests.map((r) => ({ system: r.system, tools: r.tools?.map((t) => t.name) }))))?.[0], undefined, 'a board mention')
       assert.equal(JSON.stringify(requests).includes(C.opaqueSecret), false)
     })
     test(`${prefix} Connect GET, POST, cancel and callback without cookie`, async () => {
@@ -115,6 +132,20 @@ export function registerWireCases(sdk) {
       // DESIGN §20 keeps the generated id out of settings; its persistence across a restart is
       // fishball-core/manager MGR-ID-ST-01. Here: the user's layer is unchanged by the restart.
       assert.deepEqual((await live.call('config')).user, config.user)
+    })
+  }
+  // SHELVE-BOARD: the board present but broken (incompatible, so DSH skips it) is not reported either.
+  {
+    let live; let copy
+    after(async () => {
+      await live?.stop()
+      // Guard the one recursive delete: the broken copy this file made under the test-homes root.
+      if (copy && path.dirname(copy) === path.join(C.temp, C.homesSuffix) && path.basename(copy).startsWith(C.shelved.brokenPrefix)) fs.rmSync(copy, { recursive: true, force: true })
+    })
+    test(`${sdk} WIRE-SYS SHELVE broken fishball-board+fishball-ui+fishball-core: set ok, nothing missing`, async () => {
+      copy = brokenBoardCopy()
+      live = await boot(sdk, [C.board, C.ui, C.core], undefined, { [C.board]: copy })
+      assert.deepEqual(await settledSet(live), C.shelved.set)
     })
   }
   test(`${sdk} WIRE browser callback completion and matching HTTPS redirect_uri`, { todo: C.todo }, () => {})

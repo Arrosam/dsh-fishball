@@ -266,3 +266,26 @@ export const STATUS_EVENT = 'internal/status'
  * every withdrawn row cites the same decision.
  */
 export const WITHDRAWN = 'withdrawn: requirements 1.34 item 4 (fishball-hosted-settings removed; core\'s settings are its own Plugins-page settings) and R-HOST-11 withdrawn; F-SETTINGS, test/v3/fishball-core/settings'
+
+/** UI-POLISH-F (.runtime/reports/ui-polish-f/SPEC.md §5, §7): the header entries' accessible names and the Connect card. */
+export const POLISH_ENTRIES = Object.freeze({
+  hook: 'data-fishball-settings-entry',
+  labels: Object.freeze({
+    en: Object.freeze({ fishball: 'Fishball settings', dsh: 'DSH settings' }),
+    zh: Object.freeze({ fishball: 'Fishball 设置', dsh: 'DSH 设置' }),
+  }),
+  side: 'bottom',
+  haspopup: 'dialog',
+  /**
+   * Glyphs (SPEC §5, revised): sliders for Fishball settings, gear for DSH settings. DSH's icon
+   * exports name them (dsh-web-frontend primitives: IconSlidersTwoOutline*, IconSettingsOutline*).
+   */
+  glyph: Object.freeze({ fishball: /^IconSliders/, dsh: /^IconSettings/ }),
+})
+
+/** SPEC §7: the Connect section's visible heading (the existing connectTitle text) and its button's look. */
+export const POLISH_CONNECT = Object.freeze({
+  section: 'section', heading: Object.freeze({ en: 'Connect', zh: '连接' }), headingTag: 'h3',
+  /** SPEC §7 (revised): the Connect button is primary while the state is needs-authorization or failed, outline otherwise. */
+  primaryIn: Object.freeze([CONNECT.state.needsAuthorization, CONNECT.state.failed]), primary: 'primary', otherwise: 'outline',
+})

@@ -21,10 +21,12 @@ export const REGISTRY = 'https://registry.npmjs.org'
 export const RELEASE_DIR = path.join(REPO, '.runtime', 'release', VERSION)
 
 /**
- * The nine packages, by key, in publish order: every package after the ones it depends on, so a
+ * The eight packages, by key, in publish order: every package after the ones it depends on, so a
  * registry install of any of them never names an unpublished version. A library is a bundled
  * dependency, but publishing it first also keeps it installable on its own. `library` marks the two
  * libraries, which are not DSH plugins (R-ARCH-08: no `dsh` field) and carry no engines.dsh.
+ * fishball-board (packages/board) is not one of them: it is shelved, not in this release (SHELVE-BOARD,
+ * the user, 2026-11-18). Its folder stays in the repo unchanged; add it back here for its release.
  */
 export const PACKAGES = Object.freeze([
   Object.freeze({ key: 'dshShared', folder: 'packages/dsh-connector-shared', library: true }),
@@ -33,7 +35,6 @@ export const PACKAGES = Object.freeze([
   Object.freeze({ key: 'instance', folder: 'packages/dsh-instance' }),
   Object.freeze({ key: 'connectorUi', folder: 'packages/dsh-connector-ui' }),
   Object.freeze({ key: 'adapter', folder: 'packages/dsh-connector-adapter' }),
-  Object.freeze({ key: 'board', folder: 'packages/board' }),
   Object.freeze({ key: 'ui', folder: 'packages/fishball-ui' }),
   Object.freeze({ key: 'core', folder: 'packages/core' }),
 ])
@@ -42,7 +43,7 @@ export const PACKAGES = Object.freeze([
  * The hosted child's set, which dsh-instance carries as tarballs in `bundled/` (REL-PACK item 5;
  * the instance's placement reads them, src/native-runtime/placement.js). Keys of PACKAGES.
  */
-export const HOSTED_SET = Object.freeze(['ui', 'board', 'core'])
+export const HOSTED_SET = Object.freeze(['ui', 'core'])
 
 /** Which package carries the hosted set, and the folder it goes in (dsh-instance PLACEMENT.packed). */
 export const SET_CARRIER = Object.freeze({ key: 'instance', folder: 'bundled' })
@@ -50,14 +51,14 @@ export const SET_CARRIER = Object.freeze({ key: 'instance', folder: 'bundled' })
 /**
  * The install procedure's two sets (REL-PACK item 7). Hosted: the main DSH gets the connector,
  * its UI and the instance. Standalone: a Fishball DSH gets the fishball-* plugins in the order the
- * instance installs them (fishball-ui, fishball-board, fishball-core last); the connector it pairs
+ * instance installs them (fishball-ui, then fishball-core last); the connector it pairs
  * with runs in another DSH. The adapter goes into a DSH that uses another DSH's connector.
  */
 export const INSTALL_SETS = Object.freeze({
   hosted: Object.freeze(['connector', 'connectorUi', 'instance']),
   // Standalone's managed DSH: the hosted set without the instance.
   managed: Object.freeze(['connector', 'connectorUi']),
-  standalone: Object.freeze(['ui', 'board', 'core']),
+  standalone: Object.freeze(['ui', 'core']),
   adapter: Object.freeze(['adapter']),
 })
 

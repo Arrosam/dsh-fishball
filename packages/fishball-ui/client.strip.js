@@ -4,8 +4,10 @@
  * `client.<name>.js` chunks, CLIENT_CHUNK, both SDKs); client.js starts `stripPart`.
  *
  * It draws what fishball-ui's Node row serves (src/status/route.js: `stripView` of core's status
- * snapshot, one SSE frame per change), as one line per entry above the composer in DSH's
- * `conversation.input.dock` slot, and its one control: Connect or Cancel, which call core's own
+ * snapshot, one SSE frame per change), as a status card above the composer in DSH's
+ * `conversation.input.dock` slot (UI-POLISH-F: a heading row with the state's dot, badge, the
+ * contributed-tools chip and the control; the other lines below it), and its one control: Connect
+ * or Cancel, which call core's own
  * Connect routes (K3a: fishball-ui draws through core's routes). Connect opens the approval page in
  * a new tab with no link back to this page, and also shows it as a link, as core's settings page
  * does (a browser may block an open after an await unnoticed). The strip holds no state of its own.
@@ -16,7 +18,7 @@ window.__ModuleLoader__.load({
   chunk: 'client.strip.js',
   factory(require) {
     const React = require('react')
-    const { Button } = require('@deepseek-ai/dsh-client-ui-primitives')
+    const { Button, StateDot, Tag, Tooltip, IconCordisPluginOutlineRegular } = require('@deepseek-ai/dsh-client-ui-primitives')
     const h = React.createElement
 
     const STRIP = Object.freeze({
@@ -39,12 +41,46 @@ window.__ModuleLoader__.load({
       open: Object.freeze({ target: '_blank', features: 'noopener', rel: 'noopener noreferrer' }),
       chinese: 'zh',
       lang: Object.freeze({ zh: 'zh', en: 'en' }),
-      css: Object.freeze({ id: 'fishball-strip-style', root: 'fb-strip', line: 'fb-strip-line', row: 'fb-strip-row' }),
+      css: Object.freeze({
+        id: 'fishball-strip-style', root: 'fb-strip', card: 'fb-strip-card', head: 'fb-strip-head', title: 'fb-strip-title',
+        aside: 'fb-strip-aside', chip: 'fb-strip-chip', body: 'fb-strip-body', line: 'fb-strip-line', link: 'fb-strip-link',
+      }),
+      /** `stripView`'s tools line kind (src/status/index.js `STRIP_KIND.tools`): drawn as the chip, not a line. */
+      toolsKind: 'contributed-tools',
+      /**
+       * The card's look per `card.state` (src/status/text.js `CARD`): DSH's Tag tone and StateDot
+       * state. A state this chunk does not know draws as failed, as `stripView` itself does.
+       */
+      // `accent`: the state's colour token, tinting the heading row; quiet states have none.
+      tone: Object.freeze({
+        connected: Object.freeze({ tag: 'success', dot: 'done', accent: '--dsw-alias-state-success-primary' }),
+        unset: Object.freeze({ tag: 'neutral', dot: 'idle', accent: null }),
+        disconnected: Object.freeze({ tag: 'outline', dot: 'idle', accent: null }),
+        connecting: Object.freeze({ tag: 'info', dot: 'ongoing', accent: '--dsw-alias-state-business-primary' }),
+        attention: Object.freeze({ tag: 'warning', dot: 'warning', accent: '--dsw-alias-state-warn-primary' }),
+        failed: Object.freeze({ tag: 'danger', dot: 'error', accent: '--dsw-alias-state-error-primary' }),
+        off: Object.freeze({ tag: 'neutral', dot: 'idle', accent: null }),
+      }),
+      tooltip: Object.freeze({ side: 'top', portal: true }),
+      fallbackTone: 'failed',
+      // Connect is the card's call to action; Cancel only backs out of an attempt.
+      buttonVariant: Object.freeze({ connect: 'primary', cancel: 'outline' }),
+      icon: 14,
     })
+    // The card's accent is the state's own colour in DSH's tokens, as a faint tint like DSH's Tag's.
+    const accent = (state, token) => `.${STRIP.css.root}[data-fishball-strip-state="${state}"] .${STRIP.css.head}{background:color-mix(in srgb,var(${token}) 6%,transparent)}`
     const css = [
-      `.${STRIP.css.root}{display:grid;gap:4px;margin:0 0 8px;font:var(--dsw-font-xs-13);color:var(--dsw-alias-label-secondary)}`,
+      `.${STRIP.css.head}{display:flex;align-items:center;flex-wrap:wrap;gap:8px;padding:10px 12px 10px 16px;min-height:28px}`,
+      `.${STRIP.css.title}{font:var(--dsw-font-xs-strong-13);color:var(--dsw-alias-label-primary)}`,
+      `.${STRIP.css.aside}{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-left:auto}`,
+      `.${STRIP.css.chip}{display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 8px;border-radius:999px;background:var(--dsw-alias-bg-layer-2);box-shadow:inset 0 0 0 .5px var(--dsw-alias-border-l2);color:var(--dsw-alias-label-secondary);font:var(--dsw-font-xxs-12);white-space:nowrap}`,
+      // The lines start under the heading's title: the head's 16px padding, the 10px dot and its 8px gap.
+      `.${STRIP.css.body}{display:grid;gap:4px;padding:0 16px 12px 34px;color:var(--dsw-alias-label-secondary)}`,
+      `.${STRIP.css.body}:empty{display:none}`,
       `.${STRIP.css.line}{margin:0}`,
-      `.${STRIP.css.row}{display:flex;align-items:center;flex-wrap:wrap;gap:8px}`,
+      `.${STRIP.css.link}{justify-self:start;color:var(--dsw-alias-link);text-decoration:none}`,
+      `.${STRIP.css.link}:hover{text-decoration:underline}`,
+      ...Object.entries(STRIP.tone).filter(([, tone]) => tone.accent !== null).map(([state, tone]) => accent(state, tone.accent)),
     ].join('')
     const apiUrl = (path) => new URL(path, document.baseURI)
 
@@ -97,7 +133,7 @@ window.__ModuleLoader__.load({
       } catch { return undefined }
     }
 
-    function makeDock(ctx, stream) {
+    function makeDock(ctx, stream, kit) {
       return function FishballStrip() {
         const lang = React.useSyncExternalStore((listener) => ctx.locale.subscribe(listener), () => ctx.locale.getLocale().active).startsWith(STRIP.chinese) ? STRIP.lang.zh : STRIP.lang.en
         React.useEffect(() => { stream.use(lang) }, [lang])
@@ -109,12 +145,26 @@ window.__ModuleLoader__.load({
           if (url !== undefined) window.open(url, STRIP.open.target, STRIP.open.features)
           setApprovalUrl(url)
         }
-        return h('div', { className: STRIP.css.root, 'data-fishball-strip': true, role: 'status' },
-          view.lines.map((line) => h('p', { key: line.kind, className: STRIP.css.line, 'data-fishball-strip-line': line.kind }, line.text)),
-          view.control === null ? null : h('div', { className: STRIP.css.row },
-            h(Button, { type: 'button', size: 'sm', variant: 'outline', 'data-fishball-strip-control': view.control.action, onClick: () => void onPress() }, view.control.label),
-            approvalUrl === undefined || view.control.action !== STRIP.action.cancel ? null
-              : h('a', { href: approvalUrl, target: STRIP.open.target, rel: STRIP.open.rel }, approvalUrl)))
+        const { card } = view
+        const tone = STRIP.tone[card.state] ?? STRIP.tone[STRIP.fallbackTone]
+        const tools = view.lines.find((line) => line.kind === STRIP.toolsKind)
+        const control = view.control
+        // The heading row holds the state and the one action; the lines below say why.
+        return h('div', { className: [kit.css.dock, STRIP.css.root].join(' '), 'data-fishball-strip': true, 'data-fishball-strip-state': card.state, role: 'status' },
+          h('div', { className: [kit.css.card, STRIP.css.card].join(' ') },
+            h('div', { className: STRIP.css.head },
+              h(StateDot, { state: tone.dot }),
+              h('span', { className: STRIP.css.title }, card.title),
+              h(Tag, { tone: tone.tag }, h('span', { 'data-fishball-strip-badge': true }, card.badge)),
+              h('div', { className: STRIP.css.aside },
+                tools === undefined ? null : h(Tooltip, { ...STRIP.tooltip, label: card.toolsHint },
+                  h('span', { className: STRIP.css.chip, tabIndex: 0, 'aria-label': `${tools.text} · ${card.toolsHint}`, 'data-fishball-strip-line': tools.kind },
+                    h(IconCordisPluginOutlineRegular, { size: STRIP.icon }), tools.text)),
+                control === null ? null : h(Button, { type: 'button', size: 'sm', variant: STRIP.buttonVariant[control.action], 'data-fishball-strip-control': control.action, onClick: () => void onPress() }, control.label))),
+            h('div', { className: STRIP.css.body },
+              view.lines.filter((line) => line !== tools).map((line) => h('p', { key: line.kind, className: STRIP.css.line, 'data-fishball-strip-line': line.kind }, line.text)),
+              approvalUrl === undefined || control?.action !== STRIP.action.cancel ? null
+                : h('a', { className: STRIP.css.link, href: approvalUrl, title: approvalUrl, target: STRIP.open.target, rel: STRIP.open.rel, 'data-fishball-strip-approval': true }, card.openApproval))))
       }
     }
 
@@ -124,7 +174,7 @@ window.__ModuleLoader__.load({
         const stream = stripStream()
         stream.use(STRIP.lang.en)
         ctx.effect(() => kit.mountStyle(STRIP.css.id, css), STRIP.name + ': styles')
-        ctx.effect(() => ctx.slots.inject(STRIP.slot, () => ctx.slots.register({ name: STRIP.slot, id: STRIP.id, order: STRIP.order }, makeDock(ctx, stream))), STRIP.name + ': dock')
+        ctx.effect(() => ctx.slots.inject(STRIP.slot, () => ctx.slots.register({ name: STRIP.slot, id: STRIP.id, order: STRIP.order }, makeDock(ctx, stream, kit))), STRIP.name + ': dock')
       }
       return Object.freeze({ name: STRIP.name, inject: ['slots', 'locale'], apply })
     }

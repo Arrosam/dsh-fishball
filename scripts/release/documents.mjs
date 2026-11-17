@@ -90,7 +90,7 @@ ${installBlocks('hosted', name)}
 
 The connector needs DSH's web app in the profile (the \`${PROFILE}\` profile has it). Start DSH as usual.
 At its first start the instance creates a private Fishball DSH under \`<DSH_HOME>/fishball/runtime\` and
-installs the Fishball plugins into it (fishball-ui, then fishball-board, then fishball-core last). It installs
+installs the Fishball plugins into it (fishball-ui, then fishball-core last). It installs
 them from npm at exactly version ${VERSION}, and when the registry cannot be reached it installs them from
 the copies it carries, with no network. It reinstalls only when that version is missing. You do not
 install the fishball-* packages yourself in hosted mode. It also gives the child a token from this DSH's
@@ -114,7 +114,7 @@ ${item(installBlocks('managed', name))}
 
 ${item(installBlocks('standalone', name))}
 
-   fishball-ui and fishball-board are optional: fishball-core alone is a full Fishball DSH.
+   fishball-ui is optional: fishball-core alone is a full Fishball DSH.
 
 3. Start the Fishball DSH and open **Plugins → ${name('core')} → settings**. Set **Target** to the managed DSH's
    connector endpoint, for example \`http://127.0.0.1:<port>/api/agent/mcp\`. A target on another machine must be
@@ -159,10 +159,6 @@ The connector's own data stays, as for any DSH plugin.
 ### Standalone
 
 ${fence([remove(names('standalone'))])}
-
-The board keeps its data in \`<DSH_HOME>/fishball-board/\`, and DSH's remove gives the board no hook to delete it.
-**The user deletes \`<DSH_HOME>/fishball-board/\` themselves (recommended)** after removing the plugin. Delete it
-only if you no longer want the board's cards.
 
 ### Adapter
 

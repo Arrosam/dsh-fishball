@@ -34,6 +34,7 @@ import { contracts, member, serviceMembers, vocabulary } from '../../contract/k3
 import { FOLDER } from '../../contract/k3-host-services/constants.mjs'
 import { requireModule } from '../../dsh-connector-adapter/oauth-client/subject.mjs'
 import { runtimeOf } from '../../fishball-core/package/constants.mjs'
+import { shelvedTraces } from '../../release/pack/release.mjs'
 import {
   ADMISSION_KEY_FIELD, CONNECTOR_MCP, FIXTURE, FISHBALL_SIDE, HEX64, HOSTNAME, IMPORT, K3, MOVED, PAGE, PLACEMENT, RELAYED, ROUTE, SECRET_LIKE,
   SESSION_LIKE, SKIP, SYNC_HOST, UI_FREEZE,
@@ -92,10 +93,12 @@ export function registerIHostCases(sdk) {
     assert.deepEqual(json, { format: RELAYED.record.format, [RELAYED.record.idKey]: json[RELAYED.record.idKey], entries: [FIXTURE.entryPrefix + 1], [RELAYED.record.runtimeKey]: FIXTURE.runtimeId })
     for (const v of w.tokens.values()) assert.equal(fs.readFileSync(file, 'utf8').includes(v), false, 'token value in the record')
   })
+  // Re-baselined (SHELVE-BOARD): the blocking bundle was fishball-board, which a child no longer holds
+  // ("不要预留在子实例的Fishball内", the user, 2026-11-18); fishball-ui is a member the child does hold.
   caseTest(sdk, 'HOST-UC-01', 'E1', 'a blocked start reports {state: failed, code: PROFILE_INCOMPATIBLE, plugin: <the bundle>} through the locator', async (t) => {
-    const w = await hostedWorld(t, sdk, { lifecycle: { state: K3.state.failed, code: K3.code.incompatible, plugin: V3.board.name } })
+    const w = await hostedWorld(t, sdk, { lifecycle: { state: K3.state.failed, code: K3.code.incompatible, plugin: V3.ui.name } })
     const status = w.locator.status()
-    assert.deepEqual([status.state, status.code, status.plugin], [K3.state.failed, K3.code.incompatible, V3.board.name])
+    assert.deepEqual([status.state, status.code, status.plugin], [K3.state.failed, K3.code.incompatible, V3.ui.name])
   })
   skipped(sdk, 'HOST-UC-01', 'main 4–5', 'core authenticates with its own identity.id, pairs, and the hosted entry becomes the default designated agent', SKIP.hosted('HOST-UC-01 main 4–5'))
   skipped(sdk, 'HOST-UC-01', 'E2', 'fishball-core disabled: the child starts anyway (no fishball-off from the instance, Q4)', SKIP.hosted('HOST-UC-01 E2'))
@@ -974,17 +977,32 @@ export function registerIHostCases(sdk) {
   })
 
   // ===================================================================== placement (Q1, Q2)
-  caseTest(sdk, 'PLACE', 'Q2', 'PLACEMENT.bundles is fishball-board, fishball-ui, fishball-core (core last); fishball-ui\'s directory is fishball-ui', async () => {
+  // Re-baselined (SHELVE-BOARD, was fishball-board, fishball-ui, fishball-core): the board is shelved, not
+  // in 1.0.0-alpha.1 (the user, 2026-11-18: "先封存，留到下一批再说。所以不要预留在子实例的Fishball内。").
+  caseTest(sdk, 'PLACE', 'Q2', 'PLACEMENT.bundles is fishball-ui, fishball-core (core last), with no fishball-board entry; fishball-ui\'s directory is fishball-ui', async () => {
     const { PLACEMENT: placement } = await constantsModule(sdk)
     assert.deepEqual(placement.bundles.map((b) => b.name), [...PLACEMENT.bundles])
     assert.equal(placement.bundles.find((b) => b.name === V3.ui.name)?.directory, PLACEMENT.uiDirectory)
+    assert.equal(JSON.stringify(placement).includes(PLACEMENT.shelved), false, 'PLACEMENT names ' + PLACEMENT.shelved + ': ' + show(placement))
   })
-  caseTest(sdk, 'PLACE', 'Q2', 'the composed child profile ends …, fishball-board, fishball-ui, fishball-core', async (t) => {
+  caseTest(sdk, 'PLACE', 'Q2', 'the composed child profile\'s Fishball bundles are exactly fishball-ui, fishball-core, and they end the list', async (t) => {
     const { composedProfile } = await runtimeModule(sdk)
     const mainHome = fs.realpathSync(scratch(t))
     const { paths } = await composedProfile({ mainHome, installAnchor: path.join(runtimeOf(sdk), '@deepseek-ai', 'dsh', 'package.json') })
     const bundles = JSON.parse(fs.readFileSync(path.join(paths.profile, PLACEMENT.manifest), 'utf8')).dsh.profile.bundles
-    assert.deepEqual(bundles.slice(-3), [...PLACEMENT.bundles])
+    assert.deepEqual(bundles.slice(-PLACEMENT.bundles.length), [...PLACEMENT.bundles])
+    assert.deepEqual(bundles.filter((b) => b.startsWith('fishball-')), [...PLACEMENT.bundles], show(bundles))
+  })
+  // SHELVE-BOARD (state transition: fresh → first start → second start on the same home): after each,
+  // nothing of fishball-board is in the child profile, not even a disabled or reserved entry.
+  caseTest(sdk, 'PLACE', 'SHELVE', 'first start and a second start on the same home: no fishball-board in vendor/, node_modules/, dependencies, bundles, the placement record or an install spec', async (t) => {
+    const { composedProfile } = await runtimeModule(sdk)
+    const mainHome = fs.realpathSync(scratch(t))
+    const installAnchor = path.join(runtimeOf(sdk), '@deepseek-ai', 'dsh', 'package.json')
+    for (const start of ['first', 'second']) {
+      const { paths } = await composedProfile({ mainHome, installAnchor })
+      assert.deepEqual(shelvedTraces(paths.profile), [], `after the ${start} start`)
+    }
   })
   caseTest(sdk, 'PLACE', 'Q1', 'fishball-ui is placed (a copy in vendor/), and its fishball-shared is placed once', async (t) => {
     const { composedProfile } = await runtimeModule(sdk)

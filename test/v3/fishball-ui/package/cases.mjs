@@ -39,6 +39,7 @@ import {
   CHUNK_FAILS, composedWith, configWhen, coreConstants, corePatch, disabledWhen, findRows, insertedOf, isExpression, loadChunk, loadClient, namesFile, needUi, profileContextOf,
   rowFile, rowOps, seamModule, styleHead, uiGuardReader, uiManifest, uiPatch,
 } from './subject.mjs'
+import { registerNavCases } from './nav-cases.mjs'
 
 const show = (v) => JSON.stringify(v)
 const CORE = V3.core.name
@@ -93,6 +94,9 @@ export function registerUiCases(sdk) {
   }
 
   const t = (id, row, title, fn, todo) => caseTest(sdk, id, row, title, fn, todo)
+
+  // ================================================================ UI-POLISH-F §1: the Fishball page's icon navigation
+  registerNavCases(sdk)
 
   // ================================================================ UI-UC-06: the package
   t('UI-UC-06', 'main 1', 'fishball-ui exists in packages/fishball-ui and is a root workspace', () => {

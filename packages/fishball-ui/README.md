@@ -12,20 +12,26 @@ core; in a standalone DSH you install it yourself, before core (see the
 ## What it draws
 
 - **The Fishball page** (`fishball-page/`): the page opens only Fishball's manager session, with
-  DSH's navigation hidden and explicit returns from Settings and Plugins. In a hosted child, the
+  DSH's navigation hidden and explicit returns from Settings and Plugins: a small floating bar of
+  DSH's own icons (Settings, Fishball, Plugins), each named in a tooltip. In a hosted child, the
   main DSH's `dsh-connector-ui` window shows this same page.
-- **The two settings entries** on the page: "Fishball settings" (fishball-core's own settings page)
-  and "DSH settings".
+- **The two settings entries** in the page's header, as icons with tooltips: "Fishball settings"
+  (fishball-core's own settings page) and "DSH settings".
 - **The model dialog** (`client.model.js`): when the Fishball page opens and core's `model` is
   unset, a dialog lists DSH's model catalog and writes the choice into core's `model` setting.
   Dismissed, it comes back at the next page open. With no model configured in DSH it says so and
   opens DSH Settings. The model can be changed later in fishball-core's settings.
-- **The status strip** (`client.strip.js`, `/api/fishball/strip`), **the pairing views**
+- **The status card** above the composer (`client.strip.js`, `/api/fishball/strip`): the target's
+  state (connected, not set, not connected, connecting, needs setup, failed, off) as a badge, the
+  number of contributed tools offered to Fishball's model, and Connect or Cancel. **The pairing views**
   (`src/pairing/`) and **the ask cards** (`client.asks.js`) for asks Fishball cannot decide.
 - **The Recommended tab** (`fishball-recommend-plugins/`) on DSH's Plugins page.
 - **UI guard rows**: `ui-subagent`, `ui-schedule`, `ui-permission`, `ui-agent-preset`,
   `entry-customization`, `ui-open-in-app`, `ui-sidebar-terminal` and `ui-model-selection` (the
   composer's model picker) are switched off while `fishball-core` is in the profile.
+
+Everything is drawn with DSH's own components, icons and theme tokens, so it follows DSH's light
+and dark themes and its language (en and zh).
 
 ## Without core
 
