@@ -1,7 +1,9 @@
 /**
- * The instance imports `dsh-connector/contract` (docs/package-layout.md §5). In the repo the
- * connector is not installed as its dependency, so a source-linked run needs the workspace-shaped
- * link at the repo root; the tarball install test resolves it as a sibling in the profile instead.
+ * V3 suites import the connector's published modules by name (`dsh-connector/mcp-schema`,
+ * `dsh-connector/tools`: the K1/K2 and core-seam rows). In the repo the connector is not installed
+ * as a dependency, so a source-linked run needs the workspace-shaped link at the repo root. (The V2
+ * `dsh-connector/contract` this link was first made for is gone since C-WIRE-2; REMOVE-V2c kept the
+ * link because those V3 rows still resolve through it.)
  *
  * test/run.mjs makes the link before node:test starts any file: files that import instance modules
  * directly (body-soul-*, …) would otherwise race the first worker boot and fail with
@@ -14,7 +16,7 @@ import { CONNECTOR, LIBRARIES, REPO } from './constants.mjs'
 /**
  * Also links each library (V3 R-SHARED, R-ARCH-08; `dsh-connector-shared` and `fishball-shared` since
  * SPLIT-SHARED) when this checkout has its folder: instance, connector and core modules import them by
- * name and Node resolves them from their real path, so each needs the same root link as the contract.
+ * name and Node resolves them from their real path, so each needs the same root link as the connector.
  * A checkout from before a library has no such folder and gets no link for it.
  */
 export function linkContractForSourceRun() {

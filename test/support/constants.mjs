@@ -62,20 +62,10 @@ export const EMBED_UI = Object.freeze({
   instanceCard: path.join(REPO, 'packages', 'dsh-instance', 'client.models.js'),
   statusLine: path.join(REPO, 'packages', 'dsh-instance', 'client.status.js'),
 })
-/** FBTEST_LINK entry: embed-UI linked and enabled, for cases that read the served Fishball client. */
-export const EMBED_UI_LINK = Object.freeze({ name: EMBED_UI.name, dir: EMBED_UI.dir, enabled: true })
 export const PACKAGE_NAME = CONNECTOR.name
 export const INSTANCE_NAME = INSTANCE.name
-export const ROW_ID = CONNECTOR.name
 export const INSTANCE_ROW_ID = INSTANCE.name
 export const SENTINEL_PRESET = 'fishball:assistant'
-/**
- * Files whose requirement the connector still owns (docs/slim-native-design.md §12 "Kept on the main
- * side") but whose cases drive it through the deleted in-process Fishball session: its live agent,
- * its own tool calls and its model requests. They are skipped whole, kept as the requirement source,
- * until they are rewritten on the attached-instance stub of docs/test-design/connector.md (H-STUB).
- */
-export const NEEDS_INSTANCE_STUB = 'drives the removed in-process Fishball session (slim §12); rewrite on the connector H-STUB harness (docs/test-design/connector.md)'
 
 /** Fixture bundle linked into the test profile, before the plugin under test. */
 export const FIXTURE_BUNDLE = { name: 'fbtest-tools', dir: path.join(SUPPORT, 'fixtures', 'fbtest-tools') }
@@ -159,52 +149,6 @@ export const PRESET = {
 
 export const assistantDir = (home) => path.join(home, 'fishball', 'assistant')
 
-/**
- * R-CONFIG: field -> default and minimum valid whole number. C2 (conn-OQ-20, 474b876) keeps only the
- * fields the connector still reads: maxSourcesPerPlugin, maxFishballOnlyPlugins and the three hourly
- * caps went with the in-process agent (slim §12), and a stored value of one is ignored.
- */
-export const LIMITS = {
-  maxQueuedInputs: { default: 200, min: 1 },
-  maxActiveWatches: { default: 50, min: 1 },
-  maxPendingApprovals: { default: 8, min: 1 },
-  argumentExcerptBytes: { default: 8192, min: 1 },
-  maxMessageBytes: { default: 65536, min: 1 },
-  auditEntriesKept: { default: 500, min: 1 },
-}
-
-/**
- * Revision 11 rev11-limits (DESIGN §16 "Hard-coded limits moved to config", table "Today's constants"):
- * the sixteen fields added to the fishball row's config, with today's value as the default. Every
- * value is a whole number of at least 1 (§16 "Rules"), except replyCapShare, whose minimum is 2 (user's
- * decision 2026-11-01: the automatic reply cap is never more than half the window); `old` is the
- * constant's name in "Today in code". C2 (conn-OQ-20) keeps the six the connector still reads.
- */
-export const LIMITS_R11 = {
-  requestUserMessageBytes: { default: 2048, min: 1, old: 'APPROVAL.userMessageBytes' },
-  rationaleChars: { default: 500, min: 1, old: 'APPROVAL.rationaleChars' },
-  watchesShown: { default: 50, min: 1, old: 'WATCH.shown' },
-  readSessionMessages: { default: 12, min: 1, old: 'WATCH.readMessages' },
-  readSessionBytes: { default: 12288, min: 1, old: 'WATCH.readBytes' },
-  forwardExcerptBytes: { default: 3072, min: 1, old: 'SESSION_INFO.excerptBytes' },
-}
-/**
- * rev11-limits fields C2 removed from the row config: the in-process agent's (context window, plugin
- * manager, outbox) went with it (slim §12), approvalsShown with ApprovalBroker.snapshot() and
- * intakeRowsShown became the fixed INTAKE.rowsShown (474b876). Their old constants must stay unread.
- */
-export const LIMITS_R11_REMOVED = {
-  approvalsShown: { old: 'APPROVAL.shown' },
-  intakeRowsShown: { old: 'INTAKE.snapshotRows' },
-  outboxShown: { old: 'OUTBOX_SHOWN' },
-  pluginHistoryShown: { old: 'PLUGIN_MANAGER.historyEntries' },
-  settingsPromptValueBytes: { old: 'PLUGIN_MANAGER.promptValueBytes' },
-  replyCapShare: { old: 'CONTEXT.outputShare' },
-  headroomShare: { old: 'CONTEXT.headroomShare' },
-  minWindowTokens: { old: 'CONTEXT.minWindowTokens' },
-  pluginManagerStartMs: { old: 'FISHBALL_PACKAGES.managerStartMs' },
-  defaultReplyCapTokens: { old: 'CONTEXT.outputMax' },
-}
 /** R-COMPOSITION: names never shown to Fishball. */
 export const HIDDEN_TOOLS = [
   'image_generate', 'video_generate', 'mover_move_session', 'create_worktree', 'git_worktree',
@@ -266,9 +210,6 @@ export const SETTLED = Object.values(STATUS).filter((s) => s !== STATUS.starting
 export const ERROR_CODE = { storeUnreadable: 'store-unreadable', composeFailed: 'compose-failed' }
 export const CONFLICT_CODE = { notInRecovery: 'not-in-recovery', unavailable: 'unavailable' }
 
-/** Fishball's own storage domain file (DESIGN.md §9: domain "fishball", version 1, global record). */
-export const STORE = { file: (home) => path.join(home, 'storages', 'fishball.json'), name: 'fishball', version: 1 }
-
 export const API = {
   state: '/api/fishball/state', events: '/api/fishball/events', recovery: '/api/fishball/recovery',
   plugins: '/api/fishball/plugins', removeApproval: '/api/fishball/tool-approvals/remove',
@@ -290,53 +231,11 @@ export const STATE_KEYS = ['approvals', 'catalog', 'contextWindow', 'cwd', 'erro
 /** Brand icon feature (DESIGN §9/§10 1b): state.preferences = {brandStyle}, default 'fishball'. */
 export const STATE_KEYS_OPTIONAL = ['tags']
 export const PREFERENCES = { keys: ['brandStyle'], styles: ['fishball', 'deepseek'], defaultStyle: 'fishball' }
-/** P5 M1: the tool every other agent has, and M6/M7 Fishball's own outbound tools. */
-export const INBOUND_TOOL = 'message_agent'
-export const OUTBOUND_TOOLS = ['message_session', 'start_session']
-export const RELAY = { kind: 'agent-message', form: 'relay', via: 'message' }
-/** A relay a redirect sent: the tool is recorded in its source (SOURCE.via.redirect, ORG-01). */
-export const RELAY_REDIRECT = { ...RELAY, via: 'redirect' }
-export const NOTICE = { kind: 'fishball-notice', form: 'notice' }
-/** P5 result and route codes. */
-export const P5_CODE = {
-  empty: 'empty', tooLarge: 'too-large', queueFull: 'queue-full', unknownSession: 'unknown-session', fromFishball: 'from-fishball',
-  unavailable: 'unavailable', badBody: 'bad-body', isFishball: 'is-fishball', archived: 'archived', hourlyCap: 'hourly-cap',
-  deliveryFailed: 'delivery-failed', noFolder: 'no-folder', notAbsolute: 'not-absolute',
-}
-/**
- * start_session names the session it starts (R1-R7): the refusal code for a missing title, the `titleError`
- * values of an ok result whose naming failed, and a plain title every start_session case that is not about
- * titles passes (DSH keeps it as given: single line, short, no edge whitespace).
- */
-export const TITLE = { refused: 'no-title', unavailable: 'title-unavailable', invalid: 'title-invalid', failed: 'title-failed', plain: 'Fbtest started session' }
-/**
- * start_session keeps a session DSH created but could not add to the workspace (DESIGN 5d, Q-start-half-made): the
- * error code DSH's create throws, and the value of the `workspaceError` field the answer carries.
- */
-export const HALF_MADE = { dshCode: 'session/workspace-attach-failed', workspaceError: 'workspace-attach-failed' }
 export const INTAKE_KEYS = ['failed', 'items', 'queued', 'wakeupsThisHour']
 export const INTAKE_ITEM_KEYS = ['createdAt', 'errorCode', 'intakeId', 'kind', 'sourceIdentity', 'status']
 export const INTAKE_KINDS = ['session', 'user', 'system']
-export const INTAKE_STATUSES = ['pending', 'accepted', 'consumed', 'discarded', 'failed']
-/** Required outbox entry keys; folder and errorCode are optional (M8). */
-export const OUTBOX_KEYS = ['at', 'key', 'kind', 'messageDigest', 'status', 'targetSessionId']
-export const OUTBOX_OPTIONAL = ['errorCode', 'folder']
-/** M8/M9: at most this many entries/items in the state. */
-export const STATE_LIST_MAX = 20
-/** M4 (review update): the forwarded session's last answer is cut to at most this many UTF-8 bytes, ending with '…' when cut. */
-export const FORWARD_ANSWER_MAX_BYTES = 3072
-export const ELLIPSIS = '…'
-export const NO_NOTE = 'The user added no note.'
-/** M1/M4 (review update): the trusted first lines of a relayed message and of a forward, and the forward's notice summary. */
-export const RELAY_HEADER = 'Fishball: a message from another session follows.'
-export const FORWARD_HEADER = "Fishball: the user forwarded a session to you from DSH's sidebar."
-export const NOTE_PREFIX = "The user's note: "
+/** M1/M4 (review update): the forward's notice summary. */
 export const FORWARD_SUMMARY = 'The user forwarded a session'
-/** M1 result notes (review update). */
-export const NOTE_TEXT = { delivered: 'Delivered to Fishball.', queuedPrefix: 'Queued for Fishball' }
-export const IDENTITY = { session: (id) => 'session/' + id, forward: (id) => 'user/forward/' + id, unchecked: 'fishball/unchecked-tools' }
-/** M10: the intake store (per-record files). */
-export const INTAKE_DIR = (home) => path.join(home, 'storages', 'dsh_connector_intake')
 
 // ---- P6 (watches) ----
 export const WATCH_API = { add: '/api/fishball/watches', remove: '/api/fishball/watches/remove' }
@@ -345,7 +244,6 @@ export const WATCHES_KEYS = ['active', 'watches']
 export const WATCH_KEYS = ['condition', 'createdAt', 'createdBy', 'firedCount', 'id', 'lastFiredAt', 'lastReason', 'mode', 'status', 'targetSessionId']
 export const WATCH_CONDITIONS = ['finished', 'per-turn']
 export const WATCH_MODES = ['once', 'repeat']
-export const WATCH_STATUS = { active: 'active', closed: 'closed', targetMissing: 'target-missing' }
 export const WATCH_CREATORS = ['user', 'assistant', 'agent']
 /** W1: the state lists at most this many watches, newest first. */
 export const WATCH_LIST_MAX = 50
@@ -360,8 +258,6 @@ export const WATCH_SUMMARY = (reason) => 'A watched session finished (' + reason
 export const WATCH_TEXT = { finished: 'a session you are watching finished', perTurn: 'ended a turn' }
 /** W5: Fishball's watch tools (only Fishball has them). */
 export const WATCH_TOOLS = ['watch_session', 'list_watches', 'unwatch_session', 'read_session']
-/** W5: read_session bounds. */
-export const READ_MAX = { messages: 12, bytes: 12288 }
 export const READ_ROLES = ['user', 'assistant']
 /** Q-read-roles: the five labels read_session gives a message, from the source DSH recorded with it. */
 export const READ_ROLE = { user: 'user', assistant: 'assistant', fishball: 'fishball', agent: 'agent', context: 'context' }
@@ -369,19 +265,15 @@ export const READ_ROLE = { user: 'user', assistant: 'assistant', fishball: 'fish
 /** P4 C1: keys of state.contextWindow, and its refusal codes (C3, C7). */
 export const CONTEXT_WINDOW_KEYS = ['compactionOff', 'contextWindowTokens', 'effectiveWindow', 'error', 'maxOutputTokens', 'modelWindow', 'outputCap', 'pressureTokens', 'threshold']
 export const CW_CODE = { windowTooSmall: 'window-too-small', outputTooLarge: 'output-too-large', modelWindowUnknown: 'model-window-unknown', unavailable: 'unavailable', badBody: 'bad-body' }
-/** P4 C2/C4/C5: DSH's default compaction policy constants and the summary headings Fishball's compaction asks for. */
-export const DSH_COMPACTION = { thresholdRatio: 0.8, headroom: 65536, retainRatio: 0.16 }
 /** P4 review: a smaller window below this is always window-too-small; the summary word budget is floor(H * ratio). */
 export const MIN_WINDOW = 4096
 export const SUMMARY_WORDS_PER_TOKEN = 0.75
-export const OUTPUT_CAP_MAX = 32000
 export const SUMMARY_HEADINGS = ['## Standing permissions', '## Commitments', '## Open loops', '## Watches', '## Preferences', '## Sources', '## Current conversation']
 
 /** P3 R1: Fishball's own model tools. */
 /** Plugin statuses: Fishball's own model tools (plugin statuses feature adds remove_plugin). */
 /** P12 (plugin manager) adds get_plugin_settings and set_plugin_settings. */
 export const FISHBALL_TOOLS = ['list_plugins', 'set_plugin_enabled', 'add_plugin', 'remove_plugin', 'get_plugin_settings', 'set_plugin_settings']
-export const KIND = { profile: 'profile', only: 'fishball-only', builtin: 'builtin', installed: 'fishball-installed' }
 /** Revision 10c adds other-sessions: message_agent, registered for every other session and never visible to Fishball. */
 export const TOOL_STATUS = { visible: 'visible', hidden: 'hidden', pluginOff: 'plugin-off', unchecked: 'unchecked', otherSessions: 'other-sessions' }
 export const CHANGED_BY = { fishball: 'fishball', user: 'user' }
@@ -392,13 +284,8 @@ export const CATALOG_KEYS = ['allowedTools', 'otherTools', 'plugins']
  * Revision 10b adds blocked (21 keys).
  */
 export const PLUGIN_KEYS = ['actions', 'applied', 'blocked', 'changedBy', 'description', 'dsh', 'hasIcon', 'kind', 'lastError', 'meta', 'on', 'packageName', 'plugin', 'removing', 'runs', 'settings', 'status', 'title', 'tools', 'version', 'waiting']
-/** Plugin statuses feature: the status of a catalog entry and the actions it offers. */
-export const PLUGIN_STATUS = { installed: 'installed-in-fishball', dshEnabled: 'dsh-enabled', dshDisabled: 'dsh-disabled', builtin: 'builtin' }
-export const ACTION = { enable: 'enable', disable: 'disable', uninstall: 'uninstall' }
 /** The catalog key of a Fishball-installed plugin is this prefix + its package name. */
 export const INSTALLED_KEY = (name) => 'fishball:' + name
-/** Fishball's own package folder (a pnpm project), separate from the DSH profile (implementer's answer). */
-export const FISHBALL_PLUGINS_DIR = (home) => path.join(home, 'profiles', '.fishball-plugins')
 /** add_plugin install-failed reasons named by the requirements. */
 export const INSTALL_REASON = { invalidSpec: 'invalid-spec', alreadyInstalled: 'already-installed', notBundle: 'not-bundle' }
 /**
@@ -424,12 +311,6 @@ export const NOT_BUNDLE = { name: 'fbtest-notbundle', dir: path.join(SUPPORT, 'f
 export const OLD_VERSION = { commit: 'f368ad2' }
 /** Post-review: the only values lastError may take (besides null). */
 export const LAST_ERRORS = ['edits-other-rows', 'no-rows', 'row-failed', 'leaks-service', 'no-profile', 'row-id-conflict', 'limit-reached']
-/**
- * Revision 10b (DESIGN §4 "Known before trying", §10d): why a package plugin cannot run in Fishball's tree,
- * the catalog entry's `blocked` (null otherwise). The first three come from its patch, known when the list is read;
- * leaks-service once Fishball turned it off for publishing a service, until it is reinstalled.
- */
-export const BLOCKED = { editsOtherRows: 'edits-other-rows', noRows: 'no-rows', noProfile: 'no-profile', leaksService: 'leaks-service' }
 /** Revision 10b, S32: DSH's own optional bundles whose patch edits other rows (blocked when the installation ships them). */
 export const DSH_BLOCKED_BUNDLES = ['agent-team-profile', 'session-titles-bundle'].map((n) => '@deepseek-ai/dsh-experimental-' + n)
 /** Revision 10b: a self-contained package whose patch edits another row, installed for Fishball only (blocked, uninstallable). */
@@ -465,37 +346,13 @@ export const CODE = {
 
 /** DSH approval outcomes a test answerer can return (dsh-user-approval ApprovalOutcome). */
 export const OUTCOME = { allow: 'allowed-once', reject: 'rejected', cancelled: 'cancelled', unavailable: 'unavailable' }
-/** Not an outcome: the scripted answerer throws instead of answering (post-review change 8). */
-export const APPROVER_THROWS = 'throw'
-/** Not an outcome: the scripted answerer holds the question open until the test releases it (race cases). */
-export const APPROVER_HOLDS = 'hold'
 
 // ---- P7 (ApprovalBroker) ----
-/**
- * P7: with FBTEST_APPROVER_AFTER=1 the scripted answerer stands in for the browser prompt AFTER the
- * broker (see worker.mjs), and the root registers this asking tool for ordinary sessions.
- */
-export const ASK_TOOL = 'fbtest_ask'
-export const ASK_REASON = (text) => 'fbtest asks for ' + text
-export const APPROVER_AFTER_ENV = { FBTEST_APPROVER_AFTER: '1' }
-/** P1: the request message. */
-/** P1 (review update): the tool name is JSON-quoted in the summary. */
-export const APPROVAL_SUMMARY = (tool) => 'Permission request: ' + JSON.stringify(tool)
-export const APPROVAL_ID = /^apr_[0-9a-f]+$/
 export const APPROVAL_PREFIX = /^\[permission request (apr_[0-9a-f]+)\]/
-/** P1 block fields (review update adds approval_policy); the optional ones appear only in their cases. */
-export const APPROVAL_FIELDS = ['session_id', 'session_title', 'session_folder', 'permission_mode', 'approval_policy', 'tool', 'reason_given', 'arguments', 'latest_user_message']
+/** P1 block fields that appear only in their cases. */
 export const APPROVAL_OPTIONAL_FIELDS = ['asked_by_subagent_session', 'call_was_to_tool']
-export const ARGS_STATUS = { complete: 'complete', truncated: 'truncated', unavailable: 'unavailable' }
-export const STARTED_BY = { user: 'the user', fishball: 'Fishball (start_session)' }
-export const TURN_BY = { user: 'the user', fishball: 'Fishball (message_session)', other: 'another agent or a notice' }
-/** Provenance update: a session not started by the user or Fishball. */
-export const STARTED_BY_OTHER = ['another agent or a notice', 'unknown']
 /** P1: latest_user_message is cut to at most this many UTF-8 bytes. */
 export const LATEST_USER_MAX_BYTES = 2048
-/** P2: answer_approval and its codes. */
-export const ANSWER_TOOL = 'answer_approval'
-export const APR_CODE = { lowRisk: 'allow-needs-low-risk', reason: 'reason-required', incomplete: 'arguments-incomplete', expired: 'expired' }
 /** P4-P6: the non-waking notes Fishball gets. */
 export const APR_NOTE = {
   escalated: (id, outcome) => 'Fishball notice: permission request ' + id + " was escalated; the user's answer in that session: " + outcome,
@@ -524,6 +381,7 @@ export const RUBRIC_REMOVED = ['You cannot reject']
 export const REJECT_RULE = { reject: /reject/i, beyond: /beyond|outside|more than|not ask/i, danger: /dangerous|danger/i }
 
 export const MS = { boot: 45000, live: 20000, turn: 20000, stop: 20000, poll: 100, sseFirstFrame: 3000, sseChange: 8000 }
+export const T = { timeout: 55000 }
 
 // ---- Unread replies from Fishball ----
 /** R1/R5: the snapshot's unread object, and the stored record (domain fishball, table 'unread', key 'assistant'). */
@@ -534,8 +392,7 @@ export const UNREAD_UI = { badgeAttr: 'data-fishball-badge', openLabel: 'Open Fi
 // ---- P11 (Messenger look, revision 9) ----
 /** R2: keys of state.look once the catalog exists. */
 export const LOOK_KEYS = ['messenger']
-/** R4: author kinds and the keys an author may carry. */
-export const AUTHOR_KIND = { session: 'session', user: 'user', watch: 'watch', approval: 'approval', plugin: 'plugin', system: 'system' }
+/** R4: the keys an author may carry. */
 export const AUTHOR_KEYS = ['kind', 'name', 'seed']
 /** R4: an author name is at most this many UTF-8 bytes, the ellipsis included. */
 export const AUTHOR_NAME_MAX_BYTES = 200
@@ -547,7 +404,6 @@ export const PRE_MESSENGER = { commit: 'e221d23' }
 // ---- P12 (plugin manager, revision 10; DESIGN §10d) ----
 /** P12: FBTEST_MANAGER=1 links the settings fixtures (MANAGER_BUNDLES) at the first boot of a home. */
 export const MANAGER_ENV = { FBTEST_MANAGER: '1' }
-export const MANAGER_API = { detail: '/api/fishball/plugins/detail', icon: '/api/fishball/plugins/icon', settings: '/api/fishball/plugins/settings' }
 /**
  * P12 fixtures. settings: installed but not selected (fishball-only), two rows (one with every field
  * kind, one without a Config), a package description, version 1.2.3 and an icon. dsh: selected in
@@ -593,9 +449,6 @@ export const SETTINGS_FIXTURE = {
   choiceField: { path: 'mode', choices: ['fast', 'slow'] },
 }
 /** P12 snapshot enums (DESIGN §10d "Host API"). */
-/** Revision 10c adds fishball: Fishball's own plugins (the first group, with the Messenger look). */
-export const DSH_STATE = { on: 'on', off: 'off', builtin: 'builtin', none: 'none', fishball: 'fishball' }
-export const RUNS = { everywhere: 'everywhere', dsh: 'dsh', fishball: 'fishball', nowhere: 'nowhere' }
 export const SETTINGS_STATE = { unused: 'unused', none: 'none', changed: 'changed', default: 'default' }
 /** P12 route and tool codes. */
 export const MANAGER_CODE = {
@@ -612,33 +465,13 @@ export const GET_FIELD_KEYS = ['changed', 'description', 'kind', 'path', 'plugin
 export const GET_CHOICE_FIELD_KEYS = ['changed', 'choices', 'description', 'kind', 'path', 'pluginValue', 'secret', 'value']
 export const GET_SECRET_FIELD_KEYS = ['changed', 'description', 'kind', 'path', 'secret', 'set']
 /** set_plugin_settings' prompt: each changed field as `path: old → new`, each value as JSON cut to this many bytes. */
-export const PROMPT_ARROW = ' → '
 export const PROMPT_VALUE_BYTES = 200
-/** The audit action of a settings change, and the outcome of one that went through (or was rejected). */
-export const SETTINGS_ACTION = 'settings'
+/** The outcome of a settings change that went through (or was rejected). */
 export const AUDIT_OUTCOME = { ok: 'ok', rejected: 'rejected' }
 /** The Compaction built-in and its engine row, whose config is the context-window policy (§6, S29). */
 export const COMPACTION = { plugin: 'builtin:compaction', engineRow: 'compaction-basic' }
-/** Stored values: domain fishball, table plugin_settings (§9). */
-export const SETTINGS_TABLE = 'plugin_settings'
-/** Private-tree row ids carry this prefix (DESIGN §4 "Row ids"): fbo-<bundle>--<row>. */
-export const PRIVATE_ROW_PREFIX = 'fbo-'
 
 // ---- Revision 10c (Fishball's own plugins; DESIGN §10d "Fishball's own plugins", Q-own-plugins) ----
-/**
- * The four new built-in plugins that hold every tool Fishball registers. `feature` names the snapshot's
- * features field that is true while the plugin runs (desired on AND applied).
- */
-export const OWN_PLUGINS = {
-  // Revision 11 rev11a: release_session joins Session messages (DESIGN §5e "Which Fishball plugin", §10d).
-  messages: { key: 'builtin:session-messages', title: 'Session messages', feature: 'messages', tools: ['message_session', 'start_session', 'message_agent', 'release_session', 'stop_session', 'redirect_session'] },
-  watching: { key: 'builtin:session-watching', title: 'Session watching', feature: 'watching', tools: ['watch_session', 'list_watches', 'unwatch_session', 'read_session'] },
-  plugins: { key: 'builtin:plugin-management', title: 'Plugin management', feature: 'plugins', tools: ['list_plugins', 'set_plugin_enabled', 'add_plugin', 'remove_plugin', 'get_plugin_settings', 'set_plugin_settings'] },
-  // Revision 11 rev11b: ask_agent and list_user_messages belong to Permission requests, for managed sessions only (§5e, §7a.2).
-  approvals: { key: 'builtin:permission-requests', title: 'Permission requests', feature: 'approvals', tools: ['answer_approval', 'ask_agent', 'list_user_messages', 'list_grants', 'revoke_grant', 'list_frozen_sessions', 'answer_prompt', 'withdraw_request', 'answer_question'] },
-}
-/** The five entries of the "Fishball" group (snapshot dsh 'fishball'): the four above and the Messenger look. */
-export const FISHBALL_GROUP_KEYS = [...Object.values(OWN_PLUGINS).map((p) => p.key), 'builtin:messenger']
 /** The snapshot's features object. */
 export const FEATURE_KEYS = ['approvals', 'messages', 'plugins', 'watching']
 /** Route answer (409) and watchError when the feature's plugin is off. */
@@ -649,23 +482,8 @@ export const OWN_ASK = 'Fishball asks to turn on'
 export const PRE_OWN_PLUGINS = { commit: '90a6a8c' }
 
 // ---- Revision 11 rev11a (managed sessions; DESIGN §5b, §5e, §7a.1, §9, §10e) ----
-/** Hand over / Take back: POST {sessionId, managed: boolean} (§10e "Host API"). */
-export const MANAGED_API = '/api/fishball/managed'
-/**
- * The snapshot's managed entries: exactly these keys (§10e "Snapshot"). The rev11a follow-up adds `title`
- * (the session's current DSH title, null while unknown): managed: [{sessionId, title, since, by}].
- */
-export const MANAGED_ENTRY_KEYS = ['by', 'sessionId', 'since', 'title']
-/** The ways in that rev11a builds, as the registry's `by` names them (§9; prompt-answer comes with rev11e). */
-export const MANAGED_BY = { start: 'start', message: 'message', handOver: 'hand-over', send: 'send' }
-/** The route's 409 codes (§10e). */
-export const MANAGED_CODE = { unknownSession: 'unknown-session', isFishball: 'is-fishball', featureOff: 'feature-off', unavailable: 'unavailable' }
-/** Source identity of the note a hand-over, take-back or release sends Fishball (§5e item 5). */
-export const MANAGED_IDENTITY = (sessionId) => 'fishball/managed/' + sessionId
 /** Fishball's tool that ends management (§5e item 4). */
 export const RELEASE_TOOL = 'release_session'
-/** DSH's own refusal of a tool the calling session cannot see (S34: `Error: unknown tool "<name>"`, UNKNOWN_TOOL). */
-export const UNKNOWN_TOOL_TEXT = /unknown tool|UNKNOWN_TOOL/i
 /**
  * rev11a follow-up (§10e "Settings page"): the Permission requests section's managed-sessions list. The heading
  * and the by-tags are the wording the coordinator stated; Take back is labelled 'Take back from Fishball' and an empty
@@ -678,48 +496,8 @@ export const MANAGED_LIST_LABELS = {
 }
 /** The commit before rev11a (an install from before managed sessions existed). */
 export const PRE_REV11A = { commit: 'a5aed26' }
-/** Item 3: nothing in a session that is yours mentions Fishball. Case-sensitive, because the test homes sit under the lowercase dsh-fishball checkout path. */
-export const FISHBALL_WORD = /Fishball/
 
 // ---- Revision 11 rev11b (asking Fishball first, passes, direct calls; DESIGN §7a.1-§7a.6, §9, §16; S35) ----
-/** The two tools rev11b adds to each managed agent, beside message_agent (§7a.2, §5e). */
-export const ASK_FISHBALL = 'ask_agent'
-export const LIST_USER_MESSAGES = 'list_user_messages'
-export const MANAGED_TOOLS = [INBOUND_TOOL, ASK_FISHBALL, LIST_USER_MESSAGES]
-/**
- * ask_agent's result codes (§7a.2; contract given to the test writer). The interim `to-user` answer of rev11b is gone: from rev11c an escalated or timed-out request waits on a card. `ok` is true only for `allowed`.
- */
-export const ASK_CODE = {
-  allowed: 'allowed', rejected: 'rejected', question: 'question', unavailable: 'unavailable',
-  overCapacity: 'over-capacity', noLongerManaged: 'no-longer-managed',
-  notUserMessage: 'not-user-message', tooLarge: 'too-large', expired: 'expired',
-}
-/** Codes refused before anything is sent: no request id, no Fishball step (§7a.2). */
-export const ASK_REFUSALS = [ASK_CODE.notUserMessage, ASK_CODE.tooLarge, ASK_CODE.expired]
-/** answer_approval's four rev11b decisions (§7a.3; grant is rev11d) and its new refusal code. */
-export const DECISION = { allow: 'allow', reject: 'reject', ask: 'ask', escalate: 'escalate' }
-export const QUESTION_REQUIRED = 'question-required'
-/** S35 wording, appended to an allowed direct call's own output and following Fishball's reject reason (§7a.4). */
-export const HINT_NEXT = 'Next time, call ask_agent before a call that needs approval, and explain why it is needed.'
-export const HINT_ALLOWED = 'Fishball approved this call once. ' + HINT_NEXT
-export const ALLOWED_TEXT = (output) => output + '\n\n' + HINT_ALLOWED
-export const REJECTED_TEXT = (reason) => 'Fishball rejected this call: ' + reason + '\n' + HINT_NEXT
-/** DSH's own wording that the rewrite replaces (S35). */
-export const DSH_REJECT_WORDS = 'the user rejected'
-/** The body of the asking fixture tool returns 'outcome=<DSH outcome>' (worker.mjs). */
-export const ASK_OUTPUT = (outcome) => 'outcome=' + outcome
-/** rev11b's new limits (§16 "Revision 11's new limits"): plugin config of the fishball row. */
-export const LIMITS_R11B = {
-  userMessagesListed: { default: 20, min: 1 },
-  userMessageExcerptChars: { default: 1000, min: 1 },
-}
-/** Audit (§9 "Revision 11 additions"): approvals rows' kind and answers, and the decisions rows your clicks add. */
-export const AUDIT_KIND = { asked: 'asked', direct: 'direct' }
-export const AUDIT_ANSWER = { allow: 'allow', reject: 'reject', ask: 'ask', escalate: 'escalate', timeout: 'timeout', pass: 'pass', released: 'released', withdrawn: 'withdrawn' }
-export const DECISION_ACTION = { allowOnce: 'allow-once', reject: 'reject' }
-export const DECISIONS_TABLE = 'decisions'
-/** A message source the web prompt records: kind 'user' with an rpc id (DSH's "user-rpc" source, dsh-api-session-controller). */
-export const USER_RPC_SOURCE = { kind: 'user', rpcId: 'rpc-fbtest', clientTimeZone: 'UTC' }
 /**
  * A scripted tool argument with exactly this value becomes the newest apr_<hex> id seen in the session's
  * conversation (fixtures/fake-llm.mjs), so a script can continue a request minted during the turn.
@@ -727,15 +505,6 @@ export const USER_RPC_SOURCE = { kind: 'user', rpcId: 'rpc-fbtest', clientTimeZo
 export const REQUEST_PLACEHOLDER = '$fbtest:last-request-id'
 
 // ---- Revision 11 rev11c (your pile, buttons in both places, tags; DESIGN §7a.6, §9, §10e, §16; S37) ----
-/** Allow once / Reject on a card: POST {requestId, decision: 'allow'|'reject', note?} (§10e "Host API"); 409 `expired` when the card already left. */
-export const PILE_API = { answer: '/api/fishball/requests/answer' }
-export const PILE_CODE = { expired: 'expired', badBody: 'bad-body' }
-/** The user's two decisions on a card. */
-export const CLICK = { allow: 'allow', reject: 'reject' }
-/** Card kinds (§9 "Session cards"); rev11c builds 'asked' only (direct calls come with rev11e, questions with rev11g). */
-export const CARD_KIND = { asked: 'asked', direct: 'direct', question: 'question' }
-/** Keys every card of an ask_agent request carries (§9; callId is what S37's running-row buttons match on). */
-export const CARD_KEYS = ['arguments', 'callId', 'kind', 'requestId', 'sessionId', 'since', 'toolName', 'why']
 /** rev11c's new limit (§16 "Revision 11's new limits"): plugin config, whole number of at least 1 (§16 "Rules"). */
 export const LIMITS_R11C = { pileMaxHeightVh: { default: 45, min: 1 } }
 /** Tag records (§9 "Tag records"): table `tags` of the fishball domain, rows {sessionId, callId, seq, answer, kind, at}. */
@@ -746,16 +515,13 @@ export const TAG_KEYS = ['answer', 'at', 'callId', 'kind', 'seq', 'sessionId']
 export const TOO_MANY_WAITING = 'too-many-waiting'
 
 // ---- Revision 11 rev11d (standing grants; DESIGN §7a.3, §7a.8, §9, §10e; requirements items 17-19) ----
-/** answer_approval's fifth decision (the DECISION table above is rev11b's four). */
-export const GRANT_DECISION = 'grant'
 /** Fishball's grant tools (§7a.8). */
 export const GRANT_TOOLS = { list: 'list_grants', revoke: 'revoke_grant' }
 /** Grant kinds (§7a.8, §9). */
 export const GRANT_KIND = { exact: 'exact', prefix: 'prefix' }
 /** The user's Revoke: POST {grantId}; 409 `unknown` or `ended` (§10e). */
 export const GRANT_API = { revoke: '/api/fishball/grants/revoke' }
-/** Table `grants` of the fishball domain (§9) and its statuses. */
-export const GRANTS_TABLE = 'grants'
+/** The statuses of a row of table `grants` of the fishball domain (§9). */
 export const GRANT_STATUS = { active: 'active', expired: 'expired', revoked: 'revoked', ended: 'ended' }
 /** `endedBy` values (§9). */
 export const GRANT_ENDED_BY = { user: 'user', fishball: 'fishball', expiry: 'expiry', takeBack: 'take-back', release: 'release' }
@@ -765,19 +531,8 @@ export const GRANT_ACTION = { grant: 'grant', revoke: 'revoke' }
 export const GRANT_AUDIT = { grant: 'grant', used: 'grant-used' }
 /** A tag record made for a call a grant covered (§9 "Tag records"). */
 export const GRANT_TAG_KIND = 'grant'
-/** run_code is a DSH built-in that only exists in PTC mode and cannot be a fixture here; demo_echo stands in for "every other tool" (exact-only). */
-/** Tools that accept prefix grants (shell commands only, §7a.8, Q-r11-prefix-tools), and tools that get exact grants only. */
-export const PREFIX_TOOLS = ['bash', 'pwsh', 'terminal_send']
-/** terminal_open has no command text (the manager's decision, 2026-11-02): exact-call grants only. */
-export const EXACT_ONLY_TOOLS = ['demo_echo', 'fbtest_ask', 'terminal_open']
-/** The fixture tools that ask for approval in their body (fixture-tools.mjs). */
-export const ASKING_SHELL_ENV = { FBTEST_ASKING_TOOLS: PREFIX_TOOLS.concat('demo_echo', 'terminal_open').join(',') }
 
 // ---- Revision 11 rev11e (prompts already showing, the fifth way in, cards for direct calls; DESIGN §7a.1, §7a.6, §7a.9, §9, §10e, §16; S33) ----
-/** Fishball's two tools for prompts already showing (§7a.9), under Permission requests (§10d). */
-export const PROMPT_TOOLS = { list: 'list_frozen_sessions', answer: 'answer_prompt' }
-/** answer_prompt's decisions (§7a.9). */
-export const PROMPT_DECISION = { allow: 'allow', reject: 'reject' }
 /** The registry's `by` for a session that became managed through answer_prompt (§9). */
 export const PROMPT_MANAGED_BY = 'prompt-answer'
 /** The tag record kind (§9 "Tag records"), the audit row kind (§9 "Audit") and the decisions action (§9 "Fishball's other decisions"). */
@@ -803,33 +558,14 @@ export const OWN_MORE = /and (\d+) more$/
 export const CUT_MARK = '…'
 /** The `too-many-waiting` text gains "or withdraw one" (the manager's decision for the user, 2026-11-02, DESIGN §16). */
 export const OWN_WITHDRAW_HINT = /or withdraw one/i
-/** The fixture plugin tool that asks DSH for approval in its body (fixture-tools.mjs, FBTEST_ASKING_TOOLS) and is visible to Fishball. */
-export const OWN_ASKING_TOOL = 'demo_echo'
 
 // ---- Revision 11 rev11g (questions and plan reviews in managed sessions; DESIGN §7a.10, §9, §10e, §11, §14, §16; requirements items 25-27; S36, S37) ----
-/** Fishball's tool (§7a.10): {question_id, answers?, approve?, feedback?, to_user?, note?}. */
-export const ANSWER_QUESTION = 'answer_question'
-/** Host routes (§10e "Host API"): answer a question card; set the mode. */
-export const QUESTION_API = { answer: '/api/fishball/questions/answer', mode: '/api/fishball/question-mode' }
-/** The three modes (item 25); `auto` is the default. */
-export const QUESTION_MODE = { auto: 'auto', fishball: 'fishball', user: 'user' }
-/** D2 load-only settings: retain stored values, but never include these in active form/limit loops. */
-export const LEGACY_INTERACTION = Object.freeze({
-  fields: Object.freeze({ mode: 'questionMode', seconds: 'approvalAnswerSeconds' }),
-  approvalAnswerSeconds: Object.freeze({ default: 120, min: 1 }),
-  questionMode: Object.freeze({ default: QUESTION_MODE.auto }),
-})
 /** The code answer_question gives in User mode (§7a.10 "Code enforces only User mode"). */
 export const MODE_USER_CODE = 'mode-user'
 /** Table `settings`, key `questions`: {mode, changedAt} (§9). */
 export const QUESTION_SETTINGS = { table: 'settings', key: 'questions' }
 /** Tag kinds rev11g adds (§9 "Tag records"). */
 export const QUESTION_TAG_KIND = { question: 'question', planReview: 'plan-review' }
-/** DSH's own wording for a plan-review outcome (dsh-plan-mode), and the tool names. */
-export const PLAN = { exit: 'exit_plan_mode', approve: 'Approve', keep: 'Keep planning', approved: /Plan approved/, feedbackPrefix: 'The user chose to keep planning; their feedback: ', dismissed: /dismissed the plan review/ }
-/** The ask_user_question tool and the id of a plan review's single question. */
-export const ASK_USER_QUESTION = 'ask_user_question'
-export const PLAN_REVIEW_ID = 'plan-review'
 /** A timed question's pending result carries these (dsh-tool-ask-user). */
 export const PENDING = { key: 'pending' }
 

@@ -5,22 +5,21 @@
  *     untracked files (the working tree against base);
  *   node test/run-affected.mjs --suite=<id>[,<id>…] [--sdk=<v>] [--list] [extra args]
  *     the named suites (ids as in test/suites.mjs, or a prefix such as `dsh-connector`);
- *   node test/run-affected.mjs --all [--sdk=<v>]   every suite (V3 and the pre-V3 selection);
+ *   node test/run-affected.mjs --all [--sdk=<v>]   every suite (V3 and the pre-V3 groups);
  *   node test/run-affected.mjs --check             the map's self-check (no test runs).
  *
  * --sdk picks the V3 per-SDK files: `0.2.1-rc.5`, `0.2.2-rc.1` or `both` (default). The SDK the
  * host suites boot is FBTEST_DSH_RUNTIME, as for test/run-v3.mjs; set it to match.
- * --list prints the selection and exits. V3 and pre-V3 files run as two node --test runs: the pre-V3
- * case exclusions (test/v2-suites.mjs) go to the pre-V3 run only.
+ * --list prints the selection and exits. REMOVE-V2c deleted the pre-V3 selection (test/v2-suites.mjs)
+ * with its last case exclusions, so every selected file runs in one node --test run.
  */
 import { execFileSync } from 'node:child_process'
 import fs from 'node:fs'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { REPO } from './support/constants.mjs'
-import { runSuites } from './support/suite-runner.mjs'
-import { FULL, IGNORED, SDK_VERSIONS, SUITES, V2_GROUPS, V3_SUITES } from './suites.mjs'
-import { selectV2Suites } from './v2-suites.mjs'
+import { rootSuiteFiles, runSuites } from './support/suite-runner.mjs'
+import { FULL, IGNORED, SDK_VERSIONS, SUITES, V3_SUITES } from './suites.mjs'
 
 const ARG = Object.freeze({ suite: '--suite=', sdk: '--sdk=', list: '--list', all: '--all', check: '--check', separator: ',' })
 const SDKS = Object.freeze({ both: 'both', values: SDK_VERSIONS })
@@ -62,21 +61,20 @@ export function suiteFiles(ids, sdk = SDKS.both) {
   return [...new Set(files.filter((f) => { const m = f.match(SDK_FILE); return !m || sdk === SDKS.both || m[1] === sdk }))].sort()
 }
 
-/** Self-check: every file the full runs select is owned by exactly one suite, and every listed file exists. */
+/**
+ * Self-check: every V3 test file is owned by a V3 suite, every root test file (test/run.mjs's rule)
+ * by some suite, no file twice, and every listed file exists.
+ */
 export function checkMap() {
   const owners = new Map()
   for (const [id, s] of Object.entries(SUITES)) for (const f of s.files) owners.set(f, [...(owners.get(f) ?? []), id])
   const v3 = git(GIT.tracked).filter((f) => f.startsWith(V3_DIR) && TEST_FILE.test(f))
-  const v2 = selectV2Suites().files
-  const v2Owned = new Set(Object.values(V2_GROUPS).flatMap((s) => s.files))
   const v3Owned = new Set(Object.values(V3_SUITES).flatMap((s) => s.files))
   return {
     missing: [...owners.keys()].filter((f) => !fs.existsSync(path.join(REPO, f))),
     twice: [...owners].filter(([, ids]) => ids.length > 1).map(([f, ids]) => `${f}: ${ids.join(', ')}`),
     v3Unowned: v3.filter((f) => !v3Owned.has(f)),
-    v2Unowned: v2.filter((f) => !v2Owned.has(f)),
-    // A V2 group file the pre-V3 selection (test/v2-suites.mjs) does not list: the two lists must name the same nested files.
-    v2NotReleased: [...v2Owned].filter((f) => !v2.includes(f)),
+    rootUnowned: rootSuiteFiles().filter((f) => !owners.has(f)),
   }
 }
 
@@ -128,12 +126,7 @@ function main(argv) {
   console.log(`${ids.length} suite(s), ${files.length} file(s)`)
   if (opts.list) { for (const f of files) console.log('  ' + f); return 0 }
   if (files.length === 0) { console.log('nothing to run'); return 0 }
-  const v3 = files.filter((f) => f.startsWith(V3_DIR))
-  const v2 = files.filter((f) => !f.startsWith(V3_DIR))
-  const skip = selectV2Suites().skipPatterns.map((p) => '--test-skip-pattern=' + p)
-  // Each run resets the test homes (runSuites); the two never overlap, so a later reset is safe.
-  const status = [v3.length ? runSuites(v3, opts.rest) : 0, v2.length ? runSuites(v2, [...skip, ...opts.rest]) : 0]
-  return status.find((s) => s !== 0) ?? 0
+  return runSuites(files, opts.rest)
 }
 
 // Imported (by a check or another script) it only exports; run as a script it runs.
