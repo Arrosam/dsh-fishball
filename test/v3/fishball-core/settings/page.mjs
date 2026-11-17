@@ -403,6 +403,9 @@ export async function loadPage(t, world) {
   page.sandbox.removeEventListener = page.window.removeEventListener
   // A case may stand in its own server-sent stream (the ask-card render rows feed the card frames).
   if (world.EventSource !== undefined) { page.sandbox.EventSource = world.EventSource; page.window.EventSource = world.EventSource }
+  // UI-FIX-F: a case may observe the page's document before any script runs (the contrast rows
+  // collect the style sheets the page mounts in <head>; test/v3/fishball-ui/contrast/page.mjs).
+  world.onDocument?.(page.document)
   page.window.open = (...args) => { world.opened.push(args); return null }
   page.sandbox.open = page.window.open
   const launcher = { className: DSH.launcherClass, classList: { contains: (c) => c === DSH.launcherClass }, click() { world.launcherPresses += 1 }, dispatchEvent() { world.launcherPresses += 1; return true }, focus() {} }

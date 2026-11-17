@@ -54,8 +54,8 @@ Core's own page on DSH's Plugins page (`client.js` with `client.settings.js`, in
 ## Without the other plugins
 
 Core runs normally without `fishball-ui` (no page, no strip) and reports nothing about it. Core's
-status's set check has no member in 1.0.0-alpha.1 (`fishball-board`, its one member, is shelved, not
-in this release), so it always reports the set `ok`.
+status's set check has no member in 1.0.0-alpha.1, so it always reports the set `ok`.
+`fishball-board` is shelved, not in 1.0.0-alpha.1.
 
 ## Known limits
 
