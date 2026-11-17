@@ -43,6 +43,17 @@ export interface LinkStatus {
  * Core changes nothing about `credentialRef` except reading it and unsetting it after step 3, and
  * never writes a reference the user owns (R-FB-03).
  */
+/*
+ * MULTI-0 (2026-11-18; PLAN-MULTI §3.3, D09): the hosted reservation. In a hosted child (the
+ * instance's setting `targetSetting` is present) core's target list always begins with one
+ * reserved target, id `TARGETS.parentId` (`parent`), kind `parent`, whose URL is that setting's
+ * value, read-only and not removable (`target-reserved`); with the setting absent or blank it
+ * stays `not-set`, never replaced by a user URL. Standalone has no reserved target. The names
+ * below (`credentialRef`, `savedRecord`, and core's own pending-origin record) belong to the
+ * parent alone: an added target never reads, writes or unsets them (`TARGETS.credentials`), so the
+ * instance's "the child holds a credential" probe answers for the parent only. The instance's wire
+ * and these names are unchanged; the instance's own remote-target override is withdrawn.
+ */
 export interface HostedImportNames {
   /** DSH's reference grammar `^[A-Za-z_][A-Za-z0-9_]*$` (both SDKs). */
   readonly credentialRef: 'DSH_AGENT_TOKEN'

@@ -20,6 +20,7 @@
  * 2026-11-15) fixes the answer: Allow and Reject, each with an optional reason, the free text going
  * into the reason (F-ASKCARD amendment, Fishball's decision 2026-11-16).
  */
+import type { TargetSource } from './targets.js'
 
 /**
  * - `approvalId` / `offerId`: the request id and its current offer id (K1's descriptor); the
@@ -37,8 +38,16 @@
  * - `askedAt`: epoch milliseconds of the request;
  * - `state`: `open` until an answer is committed (`answered`) or the request is settled or withdrawn
  *   elsewhere (`closed`). A late answer on a non-open card changes nothing.
+ *   MULTI-0: `voided` when its target was removed or its endpoint epoch retired (Q07): read-only
+ *   history, never answered, and nothing is sent remotely for it;
+ * - MULTI-0 `handle`: the card's opaque target-qualified handle (`TARGETS.key`, kind `approval`):
+ *   the only id the UI keys, posts and answers by. Core resolves it to the stored target, epoch and
+ *   remote `approvalId`; two targets' equal `approvalId`s are two cards with two handles;
+ * - MULTI-0 `source`: the trusted target id/epoch plus the untrusted names, shown as plain text.
  */
 export interface AskCard {
+  readonly handle: string
+  readonly source: TargetSource
   readonly approvalId: string
   readonly offerId: string
   readonly sessionId: string
@@ -49,7 +58,7 @@ export interface AskCard {
   readonly reason: string | null
   readonly choices: readonly ('allow' | 'reject')[]
   readonly askedAt: number
-  readonly state: 'open' | 'answered' | 'closed'
+  readonly state: 'open' | 'answered' | 'closed' | 'voided'
 }
 
 /**
