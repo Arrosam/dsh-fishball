@@ -149,8 +149,6 @@ export const LATER = Object.freeze({
   featurePeers: 'FEAT-PEERS (the feature plugin drops the dsh-instance peer for the optional fishballInstance? inject)',
   pluginsPage: 'X-MATRIX (no Plugins page of a started DSH lists either library)',
   hostTrace: 'X-SEC (PLAT-EP-07 runtime part: module-load trace of a running hosted setup C + I + U)',
-  dshSingleUsers: 'C-WIRE-2 (R-ARCH-08 rule 5 strict, Fishball 2026-11-16: each dsh-connector-shared module with one DSH-side user moves into that user: files, provider-sync, provider-sync-codec, provider-sync-host → dsh-instance; oauth-client → dsh-connector-adapter)',
   standalone: 'unassigned in v3-tasks.md (standalone install of the core tarball with no registry; core is not standalone-loadable before S6/F-GUARDS)',
 })
 /** PLAT-EP-07 row 6 "at least two users": the library whose single-user modules a later task moves out, with that task. */
-export const SINGLE_USERS_LATER = Object.freeze({ [V3.dshShared.name]: LATER.dshSingleUsers })

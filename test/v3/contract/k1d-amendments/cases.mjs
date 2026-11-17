@@ -352,11 +352,10 @@ function portCases(sdk) {
     sameSet(fields, PORTS.item, 'the settings item')
     assert.deepEqual(fields.filter((f) => PORTS.itemForbidden.test(f)), [])
   })
-  caseTest(sdk, ID.ports, 3, 'removeToken takes an entry key; setDesignated takes an entry key or undefined (unset)', () => {
+  // Re-baselined by C-WIRE-2 (the user's q5, "Remove agentToken entirely"): setDesignated is gone from the writer.
+  caseTest(sdk, ID.ports, 3, `removeToken takes an entry key; ${PORTS.writer} has no ${PORTS.withdrawnMember} (C-WIRE-2, q5)`, () => {
     assert.match(method(writer(), 'removeToken').params[0].type, /EntryKey|string/)
-    const designated = method(writer(), 'setDesignated').params[0].type
-    assert.match(designated, /EntryKey|string/)
-    assert.match(designated, PORTS.designatedUnset, 'setDesignated cannot unset')
+    assert.equal(writer().has(PORTS.withdrawnMember), false, `${PORTS.writer} still declares ${PORTS.withdrawnMember}`)
   })
   docRows(sdk, ID.ports, 4, PORTS.writer, PORTS.writerDoc, () => docOf(k1().text, 'interface', PORTS.writer))
   caseTest(sdk, ID.ports, 5, `${PORTS.notes}.${PORTS.notesMember}(${PORTS.notesParams.join(', ')}) resolves a Promise`, () => {
@@ -370,7 +369,7 @@ function portCases(sdk) {
     })
   }
   todos(sdk, ID.ports, LATER.wire, [
-    ['B1', 'addToken / removeToken / setDesignated resolve only after the save and the token registry\'s sync; a refused save rejects and the previous list stays'],
+    ['B1', 'addToken / removeToken resolve only after the save and the token registry\'s sync; a refused save rejects and the previous list stays'],
     ['B2', 'SessionNotes.system appends a system entry that starts no turn (Q2 = A)'],
   ])
 }
@@ -398,9 +397,10 @@ function nameCases(sdk) {
     const paths = Object.values(mod.PATHS ?? {}).filter((p) => p.startsWith('/api/'))
     assert.ok(paths.length > 0 && paths.every((p) => p.startsWith(NEW_NAMES.pathPrefix)), `API paths: ${JSON.stringify(paths)}`)
   })
-  caseTest(sdk, ID.names, 4, `the no-recipient fallback is ${NEW_NAMES.noAgent}, and the designated setting is worded ${NEW_NAMES.designated}`, () => {
+  // Re-baselined by C-WIRE-2 (the user's q5, "Remove agentToken entirely"): the designated setting is gone.
+  caseTest(sdk, ID.names, 4, `the no-recipient fallback is ${NEW_NAMES.noAgent}; no designated setting is named (C-WIRE-2, q5)`, () => {
     assert.ok(codeLiterals(k1().code).has(NEW_NAMES.noAgent), `${NEW_NAMES.noAgent} is not a type literal`)
-    assert.ok(k1().text.includes(NEW_NAMES.designated), `${NEW_NAMES.designated} is not named`)
+    assert.doesNotMatch(k1().code, /\bagentToken\b|\bsetDesignated\b/, 'K1 code still names the designated agent')
   })
   caseTest(sdk, ID.names, 5, `the host-only services are ${NEW_NAMES.services.join(', ')} and none is named fishball*`, () => {
     const context = host().m.members(NEW_NAMES.contextType)

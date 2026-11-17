@@ -138,9 +138,11 @@ export function registerK3Cases(sdk) {
   caseTest(sdk, 'HAND-EP-01', 5, 'the service has no session read, approval, question, prompt or answer member', () => {
     assert.deepEqual([...handover().keys()].filter((n) => HANDOVER.forbiddenMember.test(n) && !HANDOVER.members.includes(n)), [])
   })
-  caseTest(sdk, 'HAND-EP-01', 5, 'principals() entries carry key, name, id, online, enabled, paired, designated and no token or entry label', () => {
+  // Re-baselined by C-WIRE-2 (the user's q5, "Remove agentToken entirely"): no `designated` field.
+  caseTest(sdk, 'HAND-EP-01', 5, 'principals() entries carry key, name, id, online, enabled, paired (no designated, C-WIRE-2 q5) and no token or entry label', () => {
     const entry = resultMembers(host(), member(handover(), 'principals'))
     assertMembers(entry, HANDOVER.principalFields, 'a principals() entry')
+    assert.equal(entry.has(HANDOVER.withdrawnField), false, 'principals() still carries designated')
     assert.deepEqual([...entry.keys()].filter((n) => HANDOVER.secretField.test(n)), [], 'secret-looking fields')
   })
   caseTest(sdk, 'HAND-EP-01', 5, 'managed() entries carry sessionId and principal {key, name, id}, and no secret field', () => {

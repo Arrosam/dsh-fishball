@@ -14,8 +14,8 @@ export {
   EVENT_TYPE, FIXTURE, MAILBOX, OFFER_TYPES, REFUSAL, RETIREMENT_REASON, RETIRE_OUTCOME, REVOCATION, SETTLED_BY, SETTLEMENT_OUTCOME, WAIT,
 } from '../routing/constants.mjs'
 
-/** The routing members this suite drives beyond C-ROUTE's own list (the step-1 surface the dev relayed). */
-export const SURFACE = Object.freeze({ endPrincipal: 'endPrincipal', askDropped: 'askDropped' })
+/** The routing members this suite drives beyond C-ROUTE's own list (C-WIRE-2: no askDropped, "不给ask_agent工具"). */
+export const SURFACE = Object.freeze({ endPrincipal: 'endPrincipal', onLeft: 'onLeft' })
 
 /** Case ids of this suite (cases.mjs names what each covers). */
 export const CASE = Object.freeze({
@@ -44,8 +44,6 @@ export const REVOKE_SUBJECT = Object.freeze({
   timing: 'REVOCATION_TIMING',
   note: 'REVOCATION_NOTE',
   methods: Object.freeze(['start', 'close']),
-  /** The routing member step 2 adds (the routing port is endPrincipal, askDropped and this). */
-  liveAsksOf: 'liveAsksOf',
   /** K1 Mailbox members passed to the real mailbox unrecorded (the module's own calls are hold, release, drop, expireHolds). */
   mailboxReads: Object.freeze(['commit', 'poll', 'ack', 'summary', 'retire', 'retireContributor', 'transfer']),
 })
@@ -54,18 +52,16 @@ export const REVOKE_SUBJECT = Object.freeze({
 export const PORT = Object.freeze({
   closeEntry: 'closeEntry',
   endPrincipal: 'endPrincipal',
-  askDropped: 'askDropped',
-  liveAsksOf: 'liveAsksOf',
   hold: 'hold',
   release: 'release',
   drop: 'drop',
   expireHolds: 'expireHolds',
   remove: 'pairs.remove',
-  setDesignated: 'setDesignated',
   addToken: 'addToken',
   removeToken: 'removeToken',
   note: 'notes.system',
-  card: 'cards.toUser',
+  /** An offer handed to the user's prompt (routing.onLeft since C-WIRE-2; was the `cards.toUser` port). */
+  card: 'routing.onLeft',
 })
 /** A journal entry is a call's start, its resolution or its rejection. */
 export const PHASE = Object.freeze({ call: 'call', done: 'done', failed: 'failed' })

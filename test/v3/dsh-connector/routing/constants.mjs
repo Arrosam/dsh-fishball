@@ -19,7 +19,8 @@ import {
   QUEUE, REFUSAL, REQUEST_GATE, RETIREMENT_REASON, TOOL_NAMES, formatOfferId,
 } from '../../../../packages/dsh-connector/mcp-schema/index.js'
 import { EMIT_REFUSAL, NAMESPACE } from '../../../../packages/dsh-connector/tools/index.js'
-import { IMAGE_TYPES } from '../../../../packages/dsh-connector/contract/contract.js'
+// K1 owns IMAGE_TYPES since C-WIRE-2 (the V2 ./contract export is gone).
+import { IMAGE_TYPES } from '../../../../packages/dsh-connector/mcp-schema/index.js'
 import { REPO } from '../../../support/constants.mjs'
 
 export {
@@ -43,8 +44,11 @@ export const REVOCATION = Object.freeze({ disabled: 'disabled', deleted: 'delete
 export const SUBJECT = Object.freeze({
   entry: process.env.FBTEST_C_ROUTE_ENTRY ?? path.join(REPO, 'packages', 'dsh-connector', 'src', 'routing', 'index.js'),
   open: 'openRouting',
-  /** Members of the opened routing object the cases drive (subject.mjs). */
-  members: Object.freeze(['router', 'managed', 'handover', 'provide', 'messageAgent', 'askAgent', 'offer', 'endPrincipal']),
+  /**
+   * Members of the opened routing object the cases drive (subject.mjs). C-WIRE-2 (the user: "不给ask_agent工具";
+   * q5 "Remove agentToken entirely"): no askAgent, askDropped or liveAsksOf; escalate and onLeft are new.
+   */
+  members: Object.freeze(['router', 'managed', 'handover', 'provide', 'messageAgent', 'offer', 'settle', 'withdraw', 'escalate', 'onLeft', 'liveOffers', 'endPrincipal']),
   /** C-MAILBOX's entry and its two composition functions (as test/v3/dsh-connector/mailbox/subject.mjs binds them). */
   mailboxEntry: process.env.FBTEST_C_MAILBOX_ENTRY ?? path.join(REPO, 'packages', 'dsh-connector', 'src', 'mailbox', 'index.js'),
   mailboxOpen: 'openMailboxTables',
@@ -65,7 +69,8 @@ export const HANDOVER = Object.freeze({
   apiVersion: 1,
   /** Exactly these members (HAND-EP-01 row 5: no session read, approval or answer member). */
   members: Object.freeze(['apiVersion', 'managed', 'principals', 'onChange', 'handOver', 'takeBack']),
-  principalFields: Object.freeze(['key', 'name', 'id', 'online', 'enabled', 'paired', 'designated']),
+  /** C-WIRE-2 (the user's q5, "Remove agentToken entirely"): the rows carry no `designated`. */
+  principalFields: Object.freeze(['key', 'name', 'id', 'online', 'enabled', 'paired']),
   refFields: Object.freeze(['key', 'name', 'id']),
   codes: Object.freeze({ unknownSession: 'unknown-session', conflict: 'conflict', noAgent: EMIT_REFUSAL.noAgent, notManaged: MANAGED_REFUSAL.notManaged }),
   /** The `note` an event carries when the call omits it (K3 README "note"). */
@@ -78,11 +83,14 @@ export function handoverCodes(typeName) {
   return [...m[1].matchAll(/'([^']+)'/g)].map((x) => x[1])
 }
 
-/** K1 `NoRecipient.fallback` values (index.d.ts, types only) and the type each applies to. */
+/**
+ * K1 `NoRecipient.fallback` values (index.d.ts, types only). C-WIRE-2 narrows them to these three
+ * (relayed by the dev session, 2026-11-17): offers → to-user; message, turn-finished, state, notice,
+ * handover, ask → dropped; contributor events → no-agent. `queue` and `unavailable` are gone with the
+ * designated agent (the user's q5).
+ */
 export const FALLBACK = Object.freeze({
   toUser: 'to-user',
-  queue: 'queue',
-  unavailable: 'unavailable',
   noAgent: EMIT_REFUSAL.noAgent,
   dropped: 'dropped',
 })
@@ -99,6 +107,13 @@ export const RELAYED = Object.freeze({
   noticeNoD: 'Fishball 2026-11-14 #5: a notice with no D goes to the background log only',
   offersUnmanaged: 'Fishball 2026-11-14 #5: question / plan-review of an unmanaged session go to the user',
   disabledD: 'Fishball 2026-11-14 #6: a paired but disabled designated entry counts as no D',
+  /** C-WIRE-2 (the user, 2026-11-16/17), quoted by the re-baselined and withdrawn rows. */
+  noDesignated: 'withdrawn by C-WIRE-2: the user (q5) "Remove agentToken entirely" — no designated agent and no no-recipient queue (第三版其实就是第一版)',
+  noAsk: 'withdrawn by C-WIRE-2: the user "不给ask_agent工具" — no ask_agent, so no ask offer',
+  unmanagedMessage: 'C-WIRE-2 (the user, q5): a message_agent of a session nobody manages is not-managed, nothing held',
+  movedToWire2: 'moved by C-WIRE-2 to test/v3/dsh-connector/interactions (the main-session tools and the approval hook on a real DSH)',
+  escalate: 'C-WIRE-2 (relayed 2026-11-17): escalate(offerId) sends an offer to the user; it leaves the live offers; the user\'s answer settles it to the same pair; dropped with no retirement if its session leaves management first',
+  onLeft: 'C-WIRE-2 (relayed 2026-11-17): onLeft(fn(offers)) fires once after an end of management that retired offers, [{offerId, sessionId, type}]',
   sessionSource: 'Fishball 2026-11-14 #7: C-ROUTE takes an injected session source; binding it to DSH is C-WIRE\'s',
 })
 
@@ -187,8 +202,6 @@ export const WAIT = Object.freeze({
 /** Owners of rows C-ROUTE cannot check alone (v3-tasks.md W3–W4; the brief's "Not yours"). */
 export const LATER = Object.freeze({
   wire: 'C-WIRE (binding the session source to a real DSH session controller on both SDKs; Fishball 2026-11-14 #7)',
-  wireTools: 'C-WIRE (the main-session tools message_agent / ask_agent and the approval hook on a real DSH)',
   wireRoutes: 'C-WIRE (the connector row: nothing but its listed routes is served; the service is a Cordis service of this process only)',
   wireToUser: 'C-WIRE (DSH approval binding: a retired or unmanaged offer is answered by the user in the session)',
-  toolsAnswer: 'C-TOOLS (approval_answer on the ask offer answers the waiting ask_agent)',
 })

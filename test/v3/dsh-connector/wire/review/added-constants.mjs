@@ -14,11 +14,15 @@ export const REMOUNT_ERRORS = Object.freeze([/already open/i, /duplicate route/i
 /** Brief item 7 (UIM-DT-01, connector half): embed-UI's availability route and its diagnostic. */
 export const UI_AVAILABILITY = Object.freeze({ route: SURFACE.uiServicesRoute, connectorField: 'connector', missing: SURFACE.connectorMissing })
 
-/** Brief item 6: the rows C-WIRE-2 owns, named so the run output says what is missing. */
+/**
+ * Brief item 6: the rows C-WIRE-2 owned. They are real since C-WIRE-2 (review/cases.mjs "C-WIRE future"
+ * describes, and dsh-connector.interactions RTE-02 / MSG-01); listed as skipped with where they run.
+ */
 export const LATER_ROWS = Object.freeze([
   'no maxPendingApprovals cap — C-WIRE-2',
   'list_user_messages deleted — C-WIRE-2',
 ])
+export const MOVED = 'covered since C-WIRE-2 by review/cases.mjs (C-WIRE future describes) and dsh-connector.interactions (RTE-02 / MSG-01)'
 
 /** Brief item 8: a plain `node --test` (no --test-force-exit) of a wire file must exit by itself. */
 export const EXIT = Object.freeze({

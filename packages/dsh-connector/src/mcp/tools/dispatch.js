@@ -23,11 +23,11 @@
  *    (C-EXT is built never to) is `operation-failed`, so no thrown message reaches the client;
  * 3. the arguments against K1's closed `inputSchema` → `invalid-arguments` (an undeclared
  *    `notifyWhenFinished` included, R-WATCH-03);
- * 4. V2's payload rules (contract 1.2 §8: lengths, counts, bytes, required reasons) → V2's code,
- *    with V2's shape break read as the client's `invalid-arguments`;
+ * 4. the payload rules (payload-rules.js: contract 1.2 §8's lengths, counts, bytes and required
+ *    reasons) → their K1 code;
  * 5. the tool's body (handlers.js). A `{ok: false, code}` is that refusal; a code outside K1's
  *    REFUSAL is a wiring fault, logged by that code and answered `operation-failed`. A throw is a
- *    refusal only for a V2 `ContractError` whose code is in K1's REFUSAL; anything else
+ *    refusal only for a domain `RefusalError` whose code is in K1's REFUSAL; anything else
  *    (`PairStore.pair`'s `TypeError` for an invalid id, W3 brief F6, included) is
  *    `operation-failed`, logged by its error code or class only, never its message, so no id,
  *    argument or token reaches the client or the log;
@@ -37,11 +37,11 @@
  * Nothing here starts a timer (R-CON-05).
  */
 import { ProtocolError, ProtocolErrorCode } from '@modelcontextprotocol/server'
-import { ContractError, ERROR as V2_ERROR, validateRequest } from '../../../contract/index.js'
 import { PAIR_ONLY, REFUSAL, SCOPE, TOOLS, okResult, refusalResult } from '../../../mcp-schema/index.js'
-import { diagnosticOf } from '../../errors.js'
+import { RefusalError, diagnosticOf } from '../../errors.js'
 import { validateValue } from '../../schema-value/index.js'
-import { ENVELOPE_KEYS, LOG, TOOLS_METHOD, UNKNOWN_TOOL, V2_ADAPT, V2_PAYLOAD } from './constants.js'
+import { ENVELOPE_KEYS, LOG, TOOLS_METHOD, UNKNOWN_TOOL } from './constants.js'
+import { payloadRefusal } from './payload-rules.js'
 
 /** The codes a refusal may carry: K1's vocabulary only (R-CON-02). */
 const REFUSAL_CODES = new Set(Object.values(REFUSAL))
@@ -62,27 +62,8 @@ const PAIR_ONLY_TOOLS = TOOLS.filter((definition) => PAIR_ONLY.tools.includes(de
 const fullPower = (caller) => caller.scope === SCOPE.full
 const unknownTool = () => new ProtocolError(ProtocolErrorCode.InvalidParams, UNKNOWN_TOOL)
 
-/** A V2 contract throw's code, when it is K1 vocabulary. */
-const contractCode = (error) => (error instanceof ContractError && REFUSAL_CODES.has(error.code) ? error.code : undefined)
-
-/**
- * Step 4: the V2 payload rule's refusal code, or undefined when it passes. Only here is V2's
- * shape break (`invalid-envelope`) the client's `invalid-arguments`; from a body it is a fault.
- */
-function v2Refusal(name, args, now) {
-  const operation = V2_PAYLOAD[name]
-  if (operation === undefined) return undefined
-  const adapt = V2_ADAPT[name] ?? ((value) => value)
-  try {
-    validateRequest(operation, adapt(args), { now })
-    return undefined
-  } catch (error) {
-    if (error instanceof ContractError && error.code === V2_ERROR.invalid) return REFUSAL.invalidArguments
-    // V2's payload codes are all K1 vocabulary (K1 REFUSAL restates them); anything else is a fault.
-    if (contractCode(error) !== undefined) return error.code
-    throw error
-  }
-}
+/** A domain refusal's code, when it is K1 vocabulary. */
+const refusalCode = (error) => (error instanceof RefusalError && REFUSAL_CODES.has(error.code) ? error.code : undefined)
 
 /**
  * @param {object} deps
@@ -113,11 +94,11 @@ export function createDispatch({ handlers, contributions, pairs, now, logger }) 
     const { name, inputSchema } = core.definition
     if (!validateValue(inputSchema, args).ok) return refusalResult(REFUSAL.invalidArguments)
     try {
-      const refused = v2Refusal(name, args, now())
+      const refused = payloadRefusal(name, args, now())
       if (refused !== undefined) return refusalResult(refused)
       return envelope(core, await handlers[name](args, { caller }))
     } catch (error) {
-      const code = contractCode(error)
+      const code = refusalCode(error)
       return code === undefined ? failed(LOG.toolFailed, diagnosticOf(error)) : refusalResult(code)
     }
   }

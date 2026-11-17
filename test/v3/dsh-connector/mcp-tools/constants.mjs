@@ -10,7 +10,8 @@
  * data (ids, names, session ids) or the requirement words for the removed V2 tools.
  */
 import path from 'node:path'
-import { DECISION, RISK } from '../../../../packages/dsh-connector/contract/contract.js'
+// K1 owns these vocabularies since C-WIRE-2 (the V2 ./contract export is gone).
+import { ANSWER_DECISIONS, APPROVAL_DECISION as DECISION, RISK } from '../../../../packages/dsh-connector/mcp-schema/index.js'
 import {
   EVENT_TYPE, MAILBOX, MANAGED_REFUSAL, PAIR_ADVICE, PAIR_ONLY, PROTOCOL, REFUSAL, RESOURCE, SCOPE, TOOL, TOOL_NAMES, TOOLS, formatOfferId,
   oauthUrls, toolDefinition,
@@ -105,8 +106,13 @@ export const WAIT = Object.freeze({ ackMs: 10000 })
 
 /** Owners of the rows C-TOOLS cannot run alone (Fishball's answer to Q2, 2026-11-14). */
 export const LATER = Object.freeze({
-  firstCommit: 'C-WIRE or the W3 merge: needs C-ROUTE merged, a live offer raised by a real session through the real V2 approvals domain in a DSH host (no child launch here); first-commit-wins is never faked (Fishball Q2)',
-  domain: 'C-WIRE or the W3 merge: needs the real V2 session domain in a DSH host process (no child launch here) and its relayed populate port (Fishball Q2)',
+  // C-WIRE-2: these rows need a real DSH domain, which this suite's tripwire domain deliberately is not; they
+  // run on a real DSH in test/v3/dsh-connector/interactions (suite dsh-connector.interactions) and wire/.
+  firstCommit: 'covered by C-WIRE-2 on a real DSH: dsh-connector.interactions APR-01/04/06/07/08/10 (approvals), FLW-02/03/05 (questions); this suite keeps a tripwire domain (unit level)',
+  domain: 'covered by C-WIRE-2 / C-WIRE on a real DSH: dsh-connector.wire PLAT-EP-02 4a, RDR-07 / PLAT-EP-02 5, dsh-connector.interactions MSG-09; this suite keeps a tripwire domain (unit level)',
   attention: 'U-ATTN (embed-ui.attention.* contributed through C-EXT when embed-UI is present)',
   settings: 'C-WIRE (the connector settings schema: no setting stops delegated items)',
 })
+
+/** X-SEC X-02 (C-WIRE-2): approval_answer admits K1 ANSWER_DECISIONS only, and no `question`. */
+export const XSEC = Object.freeze({ id: 'X-SEC X-02', decisions: ANSWER_DECISIONS, ask: DECISION.ask, questionMember: 'question' })

@@ -32,7 +32,7 @@ import { V3 } from '../../contract/package-boundaries/constants.mjs'
 import { observe, readManifest } from '../../contract/package-boundaries/packages.mjs'
 import { contracts, member, serviceMembers, vocabulary } from '../../contract/k3-host-services/contracts.mjs'
 import { FOLDER } from '../../contract/k3-host-services/constants.mjs'
-import { requireModule } from '../../dsh-connector-shared/oauth-client/subject.mjs'
+import { requireModule } from '../../dsh-connector-adapter/oauth-client/subject.mjs'
 import { runtimeOf } from '../../fishball-core/package/constants.mjs'
 import {
   ADMISSION_KEY_FIELD, CONNECTOR_MCP, FIXTURE, FISHBALL_SIDE, HEX64, HOSTNAME, IMPORT, K3, MOVED, PAGE, PLACEMENT, RELAYED, ROUTE, SECRET_LIKE,

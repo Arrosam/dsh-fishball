@@ -36,6 +36,12 @@ const CODE = SURFACE.code
 const json = (value) => JSON.stringify(value)
 const ref = ({ key, name, id }) => ({ key, name, id })
 const target = ({ key, name, id, online }) => ({ key, name, id, online })
+/**
+ * C-WIRE-2 (the user's q5, "Remove agentToken entirely"): there is no designated principal, so the
+ * attention latch resets only on window open and embed-UI unload; a principal's connection loss keeps it.
+ */
+const NO_DESIGNATED = 'withdrawn by C-WIRE-2: the user (q5) "Remove agentToken entirely" — no designated principal; the latch resets only on window open and embed-UI unload'
+const withdrawnRow = (sdk, id, part, title) => test(caseName(sdk, id, part, title), { skip: NO_DESIGNATED }, () => {})
 
 /** One test per case row; `todo` carries the open question. */
 function row(sdk, id, part, title, fn, todo, options = T) {
@@ -288,13 +294,14 @@ function useCases(sdk) {
     w.dispose()
     assert.deepEqual(latchOf(w), EXPECT.latch.clear)
   })
-  row(sdk, id4, 'A3', 'the designated principal goes offline → the latch is reset', async (t) => {
+  // Re-baselined by C-WIRE-2 (q5): no designated principal; a connection loss resets nothing.
+  row(sdk, id4, 'A3', 'a connected principal goes offline → the latch is kept (it resets only on open and unload)', async (t) => {
     const w = await unit(t, sdk)
-    w.handover.set({ principals: [principalRow(D, { online: true, designated: true })] })
+    w.handover.set({ principals: [principalRow(D, { online: true })] })
     await w.signal(true)
     w.handover.patch(D.key, { online: false })
-    await eventually(() => latchOf(w).count === EXPECT.latch.clear.count, 'the latch reset')
-    assert.deepEqual(latchOf(w), EXPECT.latch.clear)
+    await quiet()
+    assert.deepEqual(latchOf(w), EXPECT.latch.setImportant)
   })
 
   const id5 = 'UIB-UC-05'
@@ -339,7 +346,7 @@ function partitions(sdk) {
     ['4', 'not paired → not listed', U, { paired: false }, false],
     ['5', 'disabled and not paired → not listed', U, { paired: false, enabled: false }, false],
     ['6', 'nameless → listed with name null', Q, {}, true],
-    ['7', 'the designated principal → listed like any', D, { designated: true, online: true }, true],
+    ['7', 'any principal (no designated role since C-WIRE-2, q5) → listed like any', D, { online: true }, true],
   ]
   for (const [part, title, p, over, listed] of ep1) {
     row(sdk, 'UIB-EP-01', part, title, async (t) => {
@@ -648,49 +655,36 @@ function decisions(sdk) {
     })
   }
 
-  // UIB-DT-02: latch reset on the designated principal's connection loss.
-  const dOn = principalRow(D, { online: true, designated: true })
-  const dOff = principalRow(D, { designated: true })
+  // UIB-DT-02: latch reset on the designated principal's connection loss. Re-baselined by C-WIRE-2 (q5,
+  // "Remove agentToken entirely"): no designated principal exists, so no principals() change resets
+  // the latch; the rules about the designation itself are withdrawn.
+  const dOn = principalRow(D, { online: true })
+  const dOff = principalRow(D)
   const pOn = principalRow(P, { online: true })
   const dt2 = [
-    ['1', 'D designated online → offline', [dOn], [dOff], true],
-    ['2', 'D designated offline; another principal renamed', [dOff, principalRow(P)], [dOff, principalRow(P, { name: FIXTURE.renamed })], false],
-    ['3', 'D designated offline → online', [dOff], [dOn], false],
-    ['4', 'D designated online; the designation moves to online P', [dOn, pOn], [principalRow(D, { online: true }), principalRow(P, { online: true, designated: true })], true],
-    ['5', 'D designated online; no principal designated any more', [dOn], [principalRow(D, { online: true })], true],
-    ['6', 'D designated offline; the designation moves to online P', [dOff, pOn], [principalRow(D), principalRow(P, { online: true, designated: true })], false],
-    ['7', 'D designated online; another online principal goes offline', [dOn, pOn], [dOn, principalRow(P)], false],
-    ['8', 'D designated online; D renamed', [dOn], [{ ...dOn, name: FIXTURE.renamed }], false],
-    ['9', 'no designated principal; an online principal goes offline', [pOn], [principalRow(P)], false],
+    ['1', 'D online → offline', [dOn], [dOff]],
+    ['2', 'D offline; another principal renamed', [dOff, principalRow(P)], [dOff, principalRow(P, { name: FIXTURE.renamed })]],
+    ['3', 'D offline → online', [dOff], [dOn]],
+    ['7', 'D online; another online principal goes offline', [dOn, pOn], [dOn, principalRow(P)]],
+    ['8', 'D online; D renamed', [dOn], [{ ...dOn, name: FIXTURE.renamed }]],
+    ['9', 'an online principal goes offline', [pOn], [principalRow(P)]],
+    ['10', 'D online; its entry deleted (its row leaves principals())', [dOn, principalRow(P)], [principalRow(P)]],
+    ['11', 'D online; its entry disabled, still online', [dOn, principalRow(P)], [{ ...dOn, enabled: false }, principalRow(P)]],
   ]
-  for (const [rule, title, before, after, reset] of dt2) {
-    row(sdk, 'UIB-DT-02', 'rule ' + rule, `${title} → latch ${reset ? 'reset' : 'kept'}`, async (t) => {
+  for (const [rule, title, before, after] of dt2) {
+    row(sdk, 'UIB-DT-02', 'rule ' + rule, `${title} → latch and notice kept (C-WIRE-2, q5)`, async (t) => {
       const w = await unit(t, sdk)
       w.handover.set({ principals: before })
-      await w.signal(true)
-      w.handover.set({ principals: after })
-      if (reset) await eventually(() => latchOf(w).count === EXPECT.latch.clear.count, 'the latch reset')
-      else await quiet()
-      assert.deepEqual(latchOf(w), reset ? EXPECT.latch.clear : EXPECT.latch.setImportant)
-    })
-  }
-  const dt2Entry = [
-    ['10', 'D designated online; its entry deleted (its row leaves principals())', [principalRow(P)], DECIDED.designatedDeleted],
-    ['11', 'D designated online; its entry disabled, still online', [{ ...dOn, enabled: false }, principalRow(P)], DECIDED.designatedDisabled],
-  ]
-  for (const [rule, title, after, why] of dt2Entry) {
-    row(sdk, 'UIB-DT-02', 'rule ' + rule, `${title} → latch reset, the notice stays (${why})`, async (t) => {
-      const w = await unit(t, sdk)
-      w.handover.set({ principals: [dOn, principalRow(P)] })
       await w.signal(true)
       await w.notify({ message: FIXTURE.message })
       const notice = noticeOf(w)
       w.handover.set({ principals: after })
-      await eventually(() => latchOf(w).count === EXPECT.latch.clear.count, 'the latch reset')
-      assert.deepEqual(latchOf(w), EXPECT.latch.clear)
+      await quiet()
+      assert.deepEqual(latchOf(w), EXPECT.latch.setImportant)
       assert.deepEqual(noticeOf(w), notice)
     })
   }
+  for (const [rule, title] of [['4', 'the designation moves to online P'], ['5', 'no principal designated any more'], ['6', 'D offline; the designation moves to online P']]) withdrawnRow(sdk, 'UIB-DT-02', 'rule ' + rule, title)
 
   // UIB-DT-03: the hand-over routes.
   const routes = [
@@ -753,9 +747,10 @@ function transitions(sdk) {
   // UIB-ST-01: the latch. Each row reaches `from` then fires the event.
   const to = { clear: EXPECT.latch.clear, set: EXPECT.latch.set, hot: EXPECT.latch.setImportant }
   const reach = { clear: async () => {}, set: (w) => w.signal(false), hot: (w) => w.signal(true) }
-  const designatedLoss = async (w) => {
+  // Re-baselined by C-WIRE-2 (q5): a principal's connection loss is no latch event any more.
+  const principalLoss = async (w) => {
     w.handover.patch(D.key, { online: false })
-    await eventually(() => latchOf(w).count === EXPECT.latch.clear.count, 'the latch reset')
+    await quiet()
   }
   const st1 = [
     ['1', 'clear', 'signal(false)', (w) => w.signal(false), 'set'],
@@ -764,7 +759,7 @@ function transitions(sdk) {
     ['4', 'set', 'signal(true)', (w) => w.signal(true), 'hot'],
     ['5', 'hot', 'signal(false) (important stays)', (w) => w.signal(false), 'hot'],
     ['6', 'hot', 'opened', (w) => w.route('opened'), 'clear'],
-    ['7', 'set', 'designated loss', designatedLoss, 'clear'],
+    ['7', 'set', 'a principal\'s connection loss (C-WIRE-2, q5)', principalLoss, 'set'],
     ['8', 'hot', 'contribution end', (w) => w.dispose(), 'clear'],
     ['9', 'set', 'dismiss', (w) => w.route('dismiss'), 'set'],
     ['10', 'clear', 'opened', (w) => w.route('opened'), 'clear'],
@@ -772,7 +767,7 @@ function transitions(sdk) {
   for (const [n, from, event, act, end] of st1) {
     row(sdk, 'UIB-ST-01', '#' + n, `${from} --${event}--> ${end}`, async (t) => {
       const w = await unit(t, sdk)
-      w.handover.set({ principals: [principalRow(D, { online: true, designated: true })] })
+      w.handover.set({ principals: [principalRow(D, { online: true })] })
       await reach[from](w)
       assert.deepEqual(latchOf(w), to[from], 'harness: not in ' + from)
       await act(w)
@@ -909,15 +904,7 @@ function transitions(sdk) {
       assert.deepEqual(frames[0], w.snapshot())
     })
   }
-  row(sdk, id4, '#2g', 'a latch reset by the designated loss → a frame showing the cleared latch', async (t) => {
-    const w = await unit(t, sdk)
-    w.handover.set({ principals: [principalRow(D, { online: true, designated: true })] })
-    await w.signal(true)
-    const { sse } = await w.stream()
-    await sse.next()
-    w.handover.patch(D.key, { online: false })
-    await sse.seen((s) => s.attention.count === EXPECT.latch.clear.count && s.light.on === false, 'the reset latch')
-  })
+  withdrawnRow(sdk, id4, '#2g', 'a latch reset by the designated loss → a frame showing the cleared latch')
   // Q-UIB-7: a change that leaves the snapshot as it was sends no frame; onChange always sends one.
   const noOps = [
     ['#2i', 'a signal on a set latch with the same importance', async (w) => w.signal(true), (w) => w.signal(true)],
@@ -1125,16 +1112,19 @@ function routed(sdk) {
     const again = await jsonAnswer(await send('takeBack', { sessionId: S.s1 }), ST.refused)
     assert.ok(K3.takeBackCodes.includes(again.code), 'not a K3 code: ' + again.code)
   }, undefined, TR)
-  row(sdk, id, '6', 'the designated principal disconnects → the latch resets', async (t) => {
+  // Re-baselined by C-WIRE-2 (q5): no designated principal; a disconnect keeps the latch.
+  row(sdk, id, '6', 'a connected principal disconnects → the latch is kept (real hand-over service)', async (t) => {
     const { w, backend } = await routedBackend(t, sdk)
     const capture = captureRegister()
     const dispose = backend.service.contribute(capture.register)
     t.after(dispose)
-    const d = w.principal(R.d, { name: N.d, connected: true, designated: true })
+    const d = w.principal(R.d, { name: N.d, connected: true })
     await eventually(() => targetOf(backend, d)?.online === true, 'D online')
     await capture.byName(TOOL.signal).execute({ important: true }, callOf())
     assert.deepEqual(backend.snapshot().attention, EXPECT.latch.setImportant)
     w.presence.disconnect(d)
-    await eventually(() => backend.snapshot().attention.count === EXPECT.latch.clear.count, 'the latch reset')
+    await eventually(() => targetOf(backend, d)?.online === false, 'D offline')
+    await quiet()
+    assert.deepEqual(backend.snapshot().attention, EXPECT.latch.setImportant)
   }, undefined, TR)
 }

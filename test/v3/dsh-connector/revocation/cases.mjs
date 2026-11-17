@@ -1,5 +1,6 @@
 /**
- * C-REVOKE step 1 black-box cases: routing's `endPrincipal`, `askDropped`, and K1d
+ * C-REVOKE step 1 black-box cases: routing's `endPrincipal` (C-WIRE-2 removed `askDropped`: no
+ * ask_agent, the user's "不给ask_agent工具"), and K1d
  * `Mailbox.retire` misuse. Written from the requirements only (design/v3 @ 9a531192:
  * docs/planning/v3-design.md §5.3; v3-requirements.md R-TOK-05, R-ROUTE-06, R-WATCH-01, R-CON-05;
  * K1 / K1d `mcp-schema/index.d.ts` `Mailbox`) and the step-1 routing surface the dev session
@@ -53,11 +54,11 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import { caseName } from '../../contract/package-boundaries/cases.mjs'
 import {
-  ackOffer, askSettled, askTo, counting, expectEntries, expectNone, managedByP, managedSet, manage, offerTo, pendingOf, quiet,
-  refusedAtCall, settleRefused, settledTo, settlementOf, settlesWithin, unwatched, until,
+  ackOffer, counting, expectEntries, expectNone, managedByP, managedSet, manage, offerTo, pendingOf, quiet,
+  refusedAtCall, settleRefused, settlementOf, settlesWithin, unwatched, until,
 } from '../routing/cases.mjs'
 import {
-  CASE, EVENT_TYPE, FIXTURE, LOGGED_LEVELS, MISUSE, OFFER_TYPES, OP, REFUSAL, RETIREMENT_REASON, RETIRE_OUTCOME, REVOCATION,
+  CASE, EVENT_TYPE, FIXTURE, LOGGED_LEVELS, MISUSE, OFFER_TYPES, OP, RETIREMENT_REASON, RETIRE_OUTCOME, REVOCATION,
   WAIT,
 } from './constants.mjs'
 import { revocationWorld } from './subject.mjs'
@@ -66,7 +67,11 @@ const T = { timeout: WAIT.testMs }
 const { ids: ID, sessions: S } = FIXTURE
 const ET = EVENT_TYPE
 const REVOKED = RETIREMENT_REASON.revoked
-export const UNAVAILABLE = Object.freeze({ ok: false, code: REFUSAL.unavailable })
+/**
+ * C-WIRE-2 (the user: "不给ask_agent工具"): nothing produces an `ask`, so no asker exists and
+ * `Mailbox.drop`'s `droppedAsks` is always empty (K1 keeps the field; C-MAILBOX is unchanged).
+ */
+const NO_ASK = 'withdrawn by C-WIRE-2: the user "不给ask_agent工具" — no ask_agent, so no ask offer, no asker and no askDropped (第三版其实就是第一版)'
 
 // ------------------------------------------------------------------------------------------------
 // Row registration
@@ -76,6 +81,9 @@ export function row(sdk, id, part, title, fn, todo) {
   if (todo !== undefined) test.todo(`${name} — TODO ${todo}`)
   else test(name, T, fn)
 }
+/** A row a later decision withdrew: still listed, skipped with the decision. */
+export const withdrawnRow = (sdk, id, part, title, reason) => test(caseName(sdk, id, part, title), { skip: reason }, () => {})
+export { NO_ASK }
 const worldRow = (sdk, id, part, title, fn, opts) => row(sdk, id, part, title, async (t) => fn(await revocationWorld(t, sdk, opts)))
 
 // ------------------------------------------------------------------------------------------------
@@ -128,37 +136,28 @@ export async function assertNotLive(w, offer) {
   await settleRefused(w, offer.offer.offerId, settlementOf(offer.payload.approvalId))
   assert.equal(await w.routing.withdraw(offer.offer.offerId), false, 'withdraw of a revoked offer found it live')
 }
-/** `ask.promise` is still waiting, also after FIXTURE.longWaitMs on the fake clock (no timer, R-CON-05). */
-async function assertStillWaiting(w, ask) {
-  w.clock.advance(FIXTURE.longWaitMs)
-  assert.equal(await settlesWithin(ask.promise, WAIT.quietMs), false, 'the asker stopped waiting')
-}
 /**
- * Drops `key`'s mailbox as C-REVOKE does on delete and answers each dropped ask through askDropped.
+ * Drops `key`'s mailbox as C-REVOKE does on delete. C-WIRE-2: no ask exists, so `droppedAsks` is
+ * always empty and there is no askDropped to call (the user: "不给ask_agent工具").
  * The deleted pair's mailbox is gone, so it leaves the world's observed keys (K1 does not say
  * whether a box dropped while held still refuses poll); rows check it with `assertDroppedEmpty`.
  */
 async function dropAndAnswer(w, key) {
   const dropped = await w.mailbox.drop(key)
   w.keys.delete(key)
-  for (const offerId of dropped.droppedAsks) await w.routing.askDropped(offerId)
+  assert.deepEqual([...(dropped.droppedAsks ?? [])], [], 'a dropped mailbox held an ask')
   return dropped
 }
 /** The dropped pair's summary counts nothing pending (the one read K1 defines for any key, as the C-MAILBOX suite reads it). */
 export async function assertDroppedEmpty(w, key) {
   assert.equal((await w.realMailbox.summary(key)).pending, 0, 'something is pending in the dropped mailbox')
 }
-/** The asker resolves `{ok: false, code: 'unavailable'}`. */
-export async function assertAnsweredUnavailable(ask) {
-  assert.ok(await settlesWithin(ask.promise, WAIT.eventMs), 'the asker of a dropped ask is still waiting')
-  assert.deepEqual(await ask.promise, UNAVAILABLE)
-}
 /** New warn / error log lines since `before` lines. */
 const loggedSince = (w, before) => w.logger.lines.slice(before).filter((l) => LOGGED_LEVELS.includes(l.level))
 
 /**
- * The UC world: P manages S1 (pending permission, acked question) and S2 (pending plan-review, a
- * waiting ask); Q manages S3 with a pending permission. Returns the events and the ask.
+ * The UC world: P manages S1 (pending permission, acked question) and S2 (pending plan-review);
+ * Q manages S3 with a pending permission. Returns the events. (C-WIRE-2: no ask, "不给ask_agent工具".)
  */
 async function ucWorld(w) {
   const { p } = await managedByP(w)
@@ -171,9 +170,8 @@ async function ucWorld(w) {
   const question = await offerTo(w, S.s1, ET.question, p)
   await ackOffer(w, p, question)
   const planReview = await offerTo(w, S.s2, ET.planReview, p)
-  const ask = await askTo(w, S.s2, p)
   const qOffer = await offerTo(w, S.s3, ET.permission, q)
-  return { p, q, permission, question, planReview, ask, qOffer, offers: [permission, question, planReview] }
+  return { p, q, permission, question, planReview, qOffer, offers: [permission, question, planReview] }
 }
 /** Q is untouched: S3 still Q's, Q's offer still pending with no retirement naming it. */
 async function assertQUntouched(w, x) {
@@ -188,7 +186,7 @@ async function assertQUntouched(w, x) {
 // ================================================================================================
 
 function useCases(sdk) {
-  worldRow(sdk, CASE.uc01, 'main', 'disable: hold, endPrincipal(fresh: true) → P\'s sessions unmanaged; pending offers replaced by revoked retirements, the acked one gets a fresh one; the ask kept; after release P polls them; Q untouched', async (w) => {
+  worldRow(sdk, CASE.uc01, 'main', 'disable: hold, endPrincipal(fresh: true) → P\'s sessions unmanaged; pending offers replaced by revoked retirements, the acked one gets a fresh one; after release P polls them; Q untouched', async (w) => {
     const x = await ucWorld(w)
     KIND.disable.token(w, ID.p)
     await hold(w, x.p)
@@ -199,23 +197,11 @@ function useCases(sdk) {
     const events = await pendingOf(w, x.p)
     for (const offer of [x.permission, x.planReview]) assertRetiredIn(events, offer)
     assert.deepEqual(retirementsNaming(events, x.question.eventId).map((e) => e.payload), [{ retiredEventId: x.question.eventId, reason: REVOKED }], 'the acked offer got no fresh retirement')
-    assert.ok(events.some((e) => e.eventId === x.ask.event.eventId), 'the ask left P\'s mailbox on a disable')
-    assert.deepEqual(retirementsNaming(events, x.ask.event.eventId), [], 'the ask was retired')
     for (const offer of x.offers) await assertNotLive(w, offer)
     await assertQUntouched(w, x)
     await unwatched(w, S.s1)
-    await assertStillWaiting(w, x.ask)
   })
-  worldRow(sdk, CASE.uc01, 'A1', 're-enabled after a disable → the ask is still live: settling it answers the asker {ok: true, settlement}', async (w) => {
-    const x = await ucWorld(w)
-    KIND.disable.token(w, ID.p)
-    await hold(w, x.p)
-    await endPrincipal(w, ID.p, KIND.disable.fresh)
-    await w.mailbox.release(x.p)
-    const s = settlementOf(x.ask.event.payload.approvalId)
-    await settledTo(w, () => w.routing.settle(x.ask.event.offer.offerId, s), x.p, x.ask.event.offer.offerId, s)
-    assert.deepEqual(await x.ask.promise, askSettled(s))
-  })
+  withdrawnRow(sdk, CASE.uc01, 'A1', 're-enabled after a disable → the ask is still live: settling it answers the asker', NO_ASK)
   worldRow(sdk, CASE.uc01, 'E1', 'an entry with no known principal (never paired) → {principalKey: undefined, sessions: [], offers: []}; nothing produced', async (w) => {
     await managedByP(w)
     w.principal(ID.x, { paired: false })
@@ -223,7 +209,7 @@ function useCases(sdk) {
     assert.deepEqual(plain(value), NOTHING)
   })
 
-  worldRow(sdk, CASE.uc02, 'main', 'delete: endPrincipal(fresh: false) then drop → retirements all before the drop, no fresh retirement for the acked offer; the dropped ask answers unavailable; P\'s mailbox empty; Q untouched', async (w) => {
+  worldRow(sdk, CASE.uc02, 'main', 'delete: endPrincipal(fresh: false) then drop → retirements all before the drop, no fresh retirement for the acked offer; no dropped ask; P\'s mailbox empty; Q untouched', async (w) => {
     const x = await ucWorld(w)
     KIND.delete.token(w, ID.p)
     const r = await endPrincipal(w, ID.p, KIND.delete.fresh)
@@ -233,8 +219,7 @@ function useCases(sdk) {
     assertRetiredBeforeDrop(w)
     for (const offer of [x.permission, x.planReview]) assertReplacedByRetire(w, x.p, offer)
     assert.deepEqual(journalOf(w, OP.freshRetirement), [], 'a fresh retirement was committed on a delete')
-    assert.deepEqual([...dropped.droppedAsks], [x.ask.event.offer.offerId])
-    await assertAnsweredUnavailable(x.ask)
+    assert.deepEqual([...dropped.droppedAsks], [])
     for (const offer of x.offers) await assertNotLive(w, offer)
     await assertDroppedEmpty(w, x.p)
     await assertQUntouched(w, x)
@@ -246,7 +231,6 @@ function useCases(sdk) {
     await endPrincipal(w, ID.p, KIND.disable.fresh)
     assertFreshRetirements(w, x.p, x.question, 1)
     assert.deepEqual(journalOf(w, OP.drop), [])
-    assert.equal(await settlesWithin(x.ask.promise, WAIT.quietMs), false, 'the asker was answered on a disable')
   })
 }
 
@@ -330,15 +314,7 @@ function equivalencePartitions(sdk) {
       assertReplacedByRetire(w, p, offer)
     })
   }
-  worldRow(sdk, CASE.ep03, 'ask', 'an ask of a managed session → not listed, not retired; it stays pending and its asker waits', async (w) => {
-    const { p } = await managedByP(w)
-    const ask = await askTo(w, S.s1, p)
-    const { value } = await expectNone(w, () => endPrincipal(w, ID.p, true))
-    assert.deepEqual(plain(value), ended(p, [S.s1], []))
-    assert.ok((await pendingOf(w, p)).some((e) => e.eventId === ask.event.eventId), 'the ask left P\'s mailbox')
-    assert.deepEqual(journalOf(w, OP.retire, ask.event.eventId), [])
-    await assertStillWaiting(w, ask)
-  })
+  withdrawnRow(sdk, CASE.ep03, 'ask', 'an ask of a managed session → not listed, not retired; its asker waits', NO_ASK)
 
   // REV-EP-04 — Mailbox.retire's arguments: misuse (throws at the call) vs data (resolves false).
   /** P with one pending permission in its real mailbox (committed through routing). */
@@ -371,28 +347,26 @@ function equivalencePartitions(sdk) {
   })
 
   // REV-EP-05 — scope: only the named entry's principal.
-  worldRow(sdk, CASE.ep05, '1', 'P and Q each manage a session with an offer; D holds an unmanaged session\'s ask → endPrincipal(P) produces exactly one retirement, in P\'s mailbox; Q\'s offer stays live; D\'s asker waits', async (w) => {
+  // Re-baselined by C-WIRE-2: D's ask is gone ("不给ask_agent工具"; q5 no designated agent).
+  worldRow(sdk, CASE.ep05, '1', 'P and Q each manage a session with an offer → endPrincipal(P) produces exactly one retirement, in P\'s mailbox; Q\'s offer stays live', async (w) => {
     const x = await ucWorldScope(w)
     const { value, fresh } = await expectEntries(w, () => endPrincipal(w, ID.p, true), 1)
     assert.deepEqual(plain(value), ended(x.p, [S.s1], [x.pOffer]))
     assert.deepEqual([fresh[0].key, fresh[0].e.type, fresh[0].e.payload.retiredEventId], [x.p, ET.retirement, x.pOffer.eventId])
     assert.equal(w.managed.managerOf(S.s2), x.q)
     assert.equal(await w.routing.withdraw(x.qOffer.offer.offerId), true, 'Q\'s offer is not live')
-    assert.equal(await settlesWithin(x.dAsk.promise, WAIT.quietMs), false, 'D\'s asker was answered')
   })
 }
-/** P manages S1 with an offer, Q manages S2 with an offer, D (designated) holds unmanaged S3's ask. */
+/** P manages S1 with an offer, Q manages S2 with an offer. */
 async function ucWorldScope(w) {
-  const { p, d } = await managedByP(w)
+  const { p } = await managedByP(w)
   const q = w.principal(ID.q, { connected: true })
   w.session(S.s2)
-  w.session(S.s3)
   await manage(w, S.s2, q)
   return {
-    p, q, d,
+    p, q,
     pOffer: await offerTo(w, S.s1, ET.permission, p),
     qOffer: await offerTo(w, S.s2, ET.permission, q),
-    dAsk: await askTo(w, S.s3, d),
   }
 }
 
@@ -465,19 +439,6 @@ const STATES = Object.freeze({
     },
     deleted: async (w, p, x, dropped) => { assertFreshRetirements(w, p, x.offer, 0); assert.deepEqual([...dropped.droppedAsks], []) },
   },
-  ask: {
-    setup: async (w, p) => ({ ask: await askTo(w, S.s1, p) }),
-    listed: () => [],
-    disabled: async (w, p, x, events) => {
-      assert.ok(events.some((e) => e.eventId === x.ask.event.eventId), 'the ask left P\'s mailbox on a disable')
-      assert.deepEqual(retirementsNaming(events, x.ask.event.eventId), [])
-      await assertStillWaiting(w, x.ask)
-    },
-    deleted: async (w, p, x, dropped) => {
-      assert.deepEqual([...dropped.droppedAsks], [x.ask.event.offer.offerId])
-      await assertAnsweredUnavailable(x.ask)
-    },
-  },
 })
 
 function decisionTables(sdk) {
@@ -490,7 +451,6 @@ function decisionTables(sdk) {
         const title = `${kindName} × ${stateName} × ${held ? 'held' : 'not held'} → ${kindName === 'disable' ? 'after release' : 'after drop'}: ` + {
           pending: 'retire {retired: true} replaced it (revoked)',
           acked: kind.fresh ? 'one fresh revoked retirement' : 'no fresh retirement',
-          ask: kind.fresh ? 'not listed, kept, asker waits' : 'not listed, dropped, askDropped → unavailable',
         }[stateName]
         worldRow(sdk, CASE.dt01, `${kindName} ${stateName} ${held ? 'held' : 'open'}`, title, async (w) => {
           const { p } = await managedByP(w)
@@ -514,6 +474,9 @@ function decisionTables(sdk) {
       }
     }
   }
+
+  // REV-DT-01's `ask` state column is withdrawn by C-WIRE-2 (NO_ASK).
+  for (const kindName of Object.keys(KIND)) for (const held of [false, true]) withdrawnRow(sdk, CASE.dt01, `${kindName} ask ${held ? 'held' : 'open'}`, `${kindName} × ask × ${held ? 'held' : 'not held'}`, NO_ASK)
 
   // REV-DT-02 — the ack landed in the mailbox but routing's onAcked had not marked it (the W3 race:
   // its retire answers {retired: false}) × freshRetirements.
@@ -655,10 +618,10 @@ function stateTransitions(sdk) {
     await w.mailbox.release(p)
     assert.equal(retirementsNaming(await pendingOf(w, p), offer.eventId).length, 1)
   })
-  worldRow(sdk, CASE.st03, '3', 'Disabled (held, endPrincipal done) → deleted → endPrincipal(fresh: false) finds nothing more → drop → Dropped; the kept ask answers unavailable', async (w) => {
+  // Re-baselined by C-WIRE-2: the kept ask is gone ("不给ask_agent工具"); the drop holds no ask.
+  worldRow(sdk, CASE.st03, '3', 'Disabled (held, endPrincipal done) → deleted → endPrincipal(fresh: false) finds nothing more → drop → Dropped', async (w) => {
     const { p } = await managedByP(w)
     const offer = await offerTo(w, S.s1, ET.permission, p)
-    const ask = await askTo(w, S.s1, p)
     KIND.disable.token(w, ID.p)
     await hold(w, p)
     await endPrincipal(w, ID.p, true)
@@ -668,8 +631,7 @@ function stateTransitions(sdk) {
     const dropped = await dropAndAnswer(w, p)
     assertRetiredBeforeDrop(w)
     assertReplacedByRetire(w, p, offer)
-    assert.deepEqual([...dropped.droppedAsks], [ask.event.offer.offerId])
-    await assertAnsweredUnavailable(ask)
+    assert.deepEqual([...dropped.droppedAsks], [])
     await assertDroppedEmpty(w, p)
   })
 }

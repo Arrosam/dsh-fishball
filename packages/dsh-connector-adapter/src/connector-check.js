@@ -28,6 +28,18 @@ export function isAllowedServerUrl(serverUrl) {
  * first entry decides, as the SDK's discovery uses it) is the same origin plus the connector's
  * issuer path, and `scopes_supported` includes the connector's scope.
  */
+/**
+ * The authorization server's two endpoints (X-SEC X-06): the approval page, where the user types the
+ * connector token, and the token endpoint, which gets the code, verifier and refresh token. Each must
+ * follow the server URL rule (https, or http on a loopback host), and the token endpoint must be the
+ * configured connector's own origin, where a connector serves it.
+ */
+export function isConnectorAuthorizationServer(serverUrl, metadata) {
+  const token = parse(metadata?.token_endpoint)
+  return isAllowedServerUrl(metadata?.authorization_endpoint) && isAllowedServerUrl(metadata?.token_endpoint)
+    && token !== undefined && token.origin === parse(serverUrl)?.origin
+}
+
 export function isConnectorResource(serverUrl, resourceMetadata) {
   if (!isConnectorUrl(serverUrl)) return false
   const configured = parse(serverUrl)

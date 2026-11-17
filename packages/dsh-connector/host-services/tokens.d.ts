@@ -86,7 +86,7 @@ export interface DshConnectorTokens {
 
   /**
    * Reinstall succession (Q24): in one storage transaction, makes the successor's principal take
-   * over the old hosted entry's managed sessions (with their watch), the designated role, the name,
+   * over the old hosted entry's managed sessions (with their watch), the name,
    * the live offers (re-issued with new offer ids) and the pending events (same `eventId`s), then
    * deletes the old entry (its digest record; no value is stored on the host to unset), with one
    * `system` note per moved session (design §5.4 steps 1–7). All or nothing.

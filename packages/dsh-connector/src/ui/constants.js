@@ -81,7 +81,7 @@ export const UI_TOOL = Object.freeze({
   signal: Object.freeze({
     name: 'attention.signal',
     title: 'Light the fish',
-    description: 'Light the user\'s sidebar fish until they next open the window; it also goes out when this tool is withdrawn or the designated agent disconnects. Stateless: no count, no replay. important makes it animate.',
+    description: 'Light the user\'s sidebar fish until they next open the window; it also goes out when this tool is withdrawn. Stateless: no count, no replay. important makes it animate.',
     important: 'True when the user must act.',
   }),
   state: Object.freeze({

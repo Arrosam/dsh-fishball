@@ -14,8 +14,11 @@ export const RUNTIME = Object.freeze({
   // The snapshot holds only the instance's own lifecycle code (Q-5): the lifecycle row, the
   // child-side row and the parent-watch preload the launch imports by path (index.js), each with
   // the relative-import closure of its module. The plugin set is placed bundles (PLACEMENT), never
-  // snapshot code.
-  snapshot: Object.freeze({ lifecycle: 'native-child.js', childRow: 'child-row.js', entries: Object.freeze(['src/native-runtime/parent-watch.js']) }),
+  // snapshot code. `src/lib/provider-sync-host.js` is an entry of its own because the child-side
+  // row imports it lazily (src/child/provider-sync-target.js), and the closure reads static imports
+  // only (PLACEMENT.specifiers); it moved here from dsh-connector-shared (R-ARCH-08 strict: the
+  // instance is its only user), where it was placed as a library.
+  snapshot: Object.freeze({ lifecycle: 'native-child.js', childRow: 'child-row.js', entries: Object.freeze(['src/native-runtime/parent-watch.js', 'src/lib/provider-sync-host.js']) }),
   host: '127.0.0.1',
   socketName: 'control.sock',
   socketPathBytes: 100,
@@ -195,7 +198,8 @@ export const PLACEMENT = Object.freeze({
   // targets are copied with a module: a placed or snapshot module must find every relative import.
   // One statement per line is read (`^`, as the source style has it); a second import on the same
   // line, or a relative dynamic `import()`, would be missed, and the copied row would then fail to
-  // load in the child, loudly. No copied module has either today.
+  // load in the child, loudly. The one relative dynamic import a copied module has
+  // (src/child/provider-sync-target.js → src/lib/provider-sync-host.js) is a snapshot entry itself.
   specifiers: /^\s*(?:(?:import|export)\s[^'";]*?\sfrom\s*|import\s*)['"](\.{1,2}\/[^'"]+)['"]/gm,
   code: Object.freeze({ missing: 'PLACEMENT_SOURCE_UNAVAILABLE', unsafe: 'UNSAFE_PLACEMENT_SOURCE', unsafeDirectory: 'UNSAFE_DIRECTORY', record: 'INVALID_PLACEMENT_RECORD', incompatible: 'PROFILE_INCOMPATIBLE' }),
   /** The NativeRuntimeError field naming the first skipped bundle of an `incompatible` refusal (K3 `ChildStatus.plugin`). */

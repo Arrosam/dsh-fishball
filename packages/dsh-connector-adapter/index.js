@@ -9,14 +9,15 @@
  * `dsh_connector_sign_in`. No host file is patched (rule 11).
  *
  * It depends on no other DSH-side plugin and on nothing of the Fishball side (design §1.0): its
- * only shared code is dsh-connector-shared/oauth-client.
+ * OAuth browser client is its own src/oauth-client.js (moved out of dsh-connector-shared by C-WIRE-2:
+ * R-ARCH-08 strict, the adapter is its only DSH-side user), so it shares no code at all.
  */
 import * as defaultSdk from '@modelcontextprotocol/client'
 import * as defaultMcpClient from '@deepseek-ai/dsh-mcp-client'
 import { credentialKey } from '@deepseek-ai/dsh-credentials'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import Schema from '@deepseek-ai/schemastery'
-import { OAUTH_CLIENT, clientMetadataUrlProblem } from 'dsh-connector-shared/oauth-client'
+import { OAUTH_CLIENT, clientMetadataUrlProblem } from './src/oauth-client.js'
 import { isAllowedServerUrl } from './src/connector-check.js'
 import { ADAPTER, CONFIG_ERROR, REASON, SERVER_ID, SERVER_NAME_PATTERN, TEXT } from './src/constants.js'
 import { startProxy } from './src/proxy.js'

@@ -28,7 +28,7 @@ import assert from 'node:assert/strict'
 import { caseTest } from '../../contract/package-boundaries/cases.mjs'
 import { validatorFor } from '../../contract/k1-mcp-schema/schema-module.mjs'
 import {
-  DECISION, EVENT_TYPE, FIXTURE, LATER, LEAK, MAILBOX, MCP_RESULT, PAIR_ADVICE, PAIR_ONLY, REFUSAL, REMOVED, RISK,
+  DECISION, EVENT_TYPE, FIXTURE, LATER, LEAK, MAILBOX, MCP_RESULT, PAIR_ADVICE, PAIR_ONLY, REFUSAL, REMOVED, RISK, XSEC,
   SESSION_CONTROL, TOOL, TOOL_NAMES, formatOfferId, toolDefinition,
 } from './constants.mjs'
 import { protocolCodes, toolsWorld } from './subject.mjs'
@@ -235,6 +235,26 @@ function partitions(sdk) {
     assertRefusal(await pc.callTool({ name: TOOL.approvalAnswer, arguments: answerArgs() }), REFUSAL.forbidden)
     assertUnchanged(w, before)
   })
+  // X-SEC X-02 (C-WIRE-2): approval_answer's input schema admits no `ask` and no `question`
+  // (K1 ANSWER_DECISIONS); the schema refuses both before the domain is reached.
+  world(sdk, XSEC.id, 'schema', `tools/list: approval_answer's answer.decision is exactly ${XSEC.decisions.join(', ')}; no question member`, async (t) => {
+    const w = await toolsWorld(t, sdk)
+    const tool = (await listed(await w.connect((await w.full(FIXTURE.idP, FIXTURE.nameP)).token))).find((x) => x.name === TOOL.approvalAnswer)
+    const answer = tool.inputSchema.properties.answer
+    assert.deepEqual([...answer.properties.decision.enum].sort(), [...XSEC.decisions].sort())
+    assert.equal(Object.hasOwn(answer.properties, XSEC.questionMember), false, 'approval_answer still declares question')
+  })
+  for (const [label, answer] of [
+    ['decision ask', { decision: XSEC.ask, risk: RISK.low, reason: FIXTURE.reason }],
+    ['a question member', { ...answerArgs().answer, [XSEC.questionMember]: FIXTURE.message }],
+  ]) {
+    world(sdk, XSEC.id, label, `approval_answer with ${label} → ${REFUSAL.invalidArguments}; the domain is not reached`, async (t) => {
+      const { w, pc } = await twoPrincipals(t, sdk, { pManages: true })
+      const before = snapshot(w)
+      assertRefusal(await pc.callTool({ name: TOOL.approvalAnswer, arguments: { ...answerArgs(), answer } }), REFUSAL.invalidArguments)
+      assertUnchanged(w, before)
+    })
+  }
   world(sdk, CASE.platEp02, 5, `refusal ${REFUSAL.unknownEvent}: inbox_ack of a receipt naming no event of the caller's mailbox`, async (t) => {
     const { w, pc, p } = await twoPrincipals(t, sdk)
     const before = await w.mailbox.summary(p.principalKey)

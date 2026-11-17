@@ -16,7 +16,8 @@ import {
   DECISION_KIND_OF, EVENT_TYPE, MAILBOX, NAME_RULES, OFFER_ID, OFFER_TYPES, QUEUE, REFUSAL, RESOURCE, RETIREMENT_REASON, REVOCATION_KIND,
   SCOPE, SETTLED_BY, SETTLEMENT_OUTCOME, TIME_UNIT, TOOL, formatOfferId, nameKey, principalLabel,
 } from '../../../../packages/dsh-connector/mcp-schema/index.js'
-import { DECISION, RISK } from '../../../../packages/dsh-connector/contract/contract.js'
+// K1 owns these vocabularies since C-WIRE-2 (the V2 ./contract export is gone).
+import { APPROVAL_DECISION as DECISION, RISK } from '../../../../packages/dsh-connector/mcp-schema/index.js'
 import { REPO } from '../../../support/constants.mjs'
 
 export {
@@ -40,7 +41,8 @@ export const SUBJECT = Object.freeze({
   /** The exported values the cases read (Amendment 1). */
   values: Object.freeze(['HOSTED_SERVICE', 'HOSTED_TIMING', 'HOSTED_ENTRY_STATE', 'RETIRE_REFUSAL', 'SUCCESSION_NOTE', 'HostedServiceError']),
   /** Routing members this suite drives beyond the C-ROUTE list (the relayed succession surface). */
-  routingMembers: Object.freeze(['succeedPrincipal', 'liveOffers', 'offer', 'askAgent', 'settle', 'withdraw']),
+  /** C-WIRE-2: no askAgent (the user, "不给ask_agent工具"). */
+  routingMembers: Object.freeze(['succeedPrincipal', 'liveOffers', 'offer', 'settle', 'withdraw']),
   /**
    * The C-MAILBOX member routing's port needs for the succession (phase 3, 2026-11-16; not K1; it
    * replaces Amendment 1's `transferReversible`): `stage(from, to) → Promise<{movedIds,
@@ -51,6 +53,12 @@ export const SUBJECT = Object.freeze({
   made: Object.freeze(['service', 'resume', 'close']),
   /** The hosted record's optional field naming the successor entry, set before the commit point (phase 3). */
   succeededBy: 'succeededBy',
+})
+
+/** C-WIRE-2's withdrawals of this suite's rows (the user's decisions, 2026-11-16/17). */
+export const WITHDRAWN = Object.freeze({
+  designated: 'withdrawn by C-WIRE-2: the user (q5) "Remove agentToken entirely" — no designated role, so the succession moves sessions and name but no role (第三版其实就是第一版)',
+  ask: 'withdrawn by C-WIRE-2: the user "不给ask_agent工具" — no ask_agent, so no live ask to move',
 })
 
 /** The relayed contract (phase 3): HOSTED_TIMING.retryMs is still 30 s, derived from K1 TIME_UNIT. */
@@ -99,7 +107,8 @@ export const CALL = Object.freeze({
   commit: 'commit', retire: 'retire', transfer: 'transfer', ack: 'ack', stage: SUBJECT.stagedTransfer,
   /** The staged transfer's handle members the seam journals (as `mailbox.stage.commit` / `mailbox.stage.undo`). */
   stagedCommit: `${SUBJECT.stagedTransfer}.commit`, stagedUndo: `${SUBJECT.stagedTransfer}.undo`,
-  addToken: 'addToken', removeToken: 'removeToken', setDesignated: 'setDesignated',
+  // C-WIRE-2 (q5): the SettingsWriter has no setDesignated.
+  addToken: 'addToken', removeToken: 'removeToken',
   system: 'system',
 })
 

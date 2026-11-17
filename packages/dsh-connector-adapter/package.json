@@ -21,14 +21,10 @@
     "node": ">=22",
     "dsh": ">=0.2.1-rc.5"
   },
-  "//dependencies": "@modelcontextprotocol/client is pinned exactly to 2.2.0, the line both hosts ship (0.2.1-rc.5 and 0.2.2-rc.1, dist byte-identical), as fishball-core pins it and K1 pins the connector's server SDK to the same line (decided item 40). dsh-connector-shared (R-ARCH-08, the DSH side's library) carries ./oauth-client, the token manager the adapter drives; it is bundled, so the tarball carries it and an install fetches nothing from a registry.",
+  "//dependencies": "@modelcontextprotocol/client is pinned exactly to 2.2.0, the line both hosts ship (0.2.1-rc.5 and 0.2.2-rc.1, dist byte-identical), as fishball-core pins it and K1 pins the connector's server SDK to the same line (decided item 40). The OAuth browser client and token manager the adapter drives is its own src/oauth-client.js: it was dsh-connector-shared/oauth-client until C-WIRE-2, and the adapter is its only DSH-side user (R-ARCH-08 strict).",
   "dependencies": {
-    "@modelcontextprotocol/client": "2.2.0",
-    "dsh-connector-shared": "0.1.0-alpha.0"
+    "@modelcontextprotocol/client": "2.2.0"
   },
-  "bundleDependencies": [
-    "dsh-connector-shared"
-  ],
   "//peerDependencies": "Host packages the adapter imports, resolved from the running DSH installation: dsh-mcp-client is the stock client it mounts as a child row (mechanism c2); dsh-credentials builds the grant record key; dsh-tools defines the sign-in tool; dsh-timeout bounds the refresh timer; schemastery declares the settings. ctx.authorization and ctx.credentials are reached through inject, not imports. '*' because engines.dsh is the real compatibility gate.",
   "peerDependencies": {
     "@deepseek-ai/dsh-credentials": "*",

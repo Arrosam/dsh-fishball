@@ -13,8 +13,8 @@ import fs from 'node:fs'
 import http from 'node:http'
 import { ADAPTER, APPROVAL_MESSAGE, DSH, END, FIXTURE, HOP, K, K1, OAUTH, REASON, RESULT, ROWS, RPC, START_ERROR, STATE, WAIT, WEB } from './constants.mjs'
 import { browser, eventually, portAccepts, staysFalse } from './fakes.mjs'
-import { leakHits, logText, modeOf, sweepableHome } from '../../dsh-connector-shared/oauth-client/subject.mjs'
-import { caseTest, closedPort, rawRequest } from '../../dsh-connector-shared/oauth-client/cases.mjs'
+import { leakHits, logText, modeOf, sweepableHome } from '../../dsh-connector-adapter/oauth-client/subject.mjs'
+import { caseTest, closedPort, rawRequest } from '../../dsh-connector-adapter/oauth-client/cases.mjs'
 import {
   adapterWorld, bodyOfBytes, callBody, discovers, isClientError, listeningEndpoints, mcpHeaders, toolCalls, untilChild, untilState,
 } from './subject.mjs'
@@ -986,7 +986,7 @@ export function registerAdapterCases(sdk) {
       const cfg = c2 ? { clientMetadataUrl: FIXTURE.cimd, servers: [{ serverName: M, url: c2.url }] } : w.n.config
       await w.restart(cfg, {
         between: mutate === null ? undefined : async () => {
-          const editor = await (await import('../../dsh-connector-shared/oauth-client/subject.mjs')).openHost(sdk, w.root)
+          const editor = await (await import('../../dsh-connector-adapter/oauth-client/subject.mjs')).openHost(sdk, w.root)
           await editor.ctx.credentials.modifyRecord(w.n.key(M), async (rec) => ({ ...rec, payload: mutate(rec.payload) }))
           await editor.close()
         },

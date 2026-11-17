@@ -1,5 +1,5 @@
 /**
- * The live-offer ledger (task C-ROUTE; K1c-2; Fishball 2026-11-14). Every offer and `ask` C-ROUTE
+ * The live-offer ledger (task C-ROUTE; K1c-2; Fishball 2026-11-14). Every offer C-ROUTE
  * commits is recorded with the pair that holds it, its event and whether that pair has acked it,
  * so a session leaving management can retire exactly its live offers.
  *
@@ -25,8 +25,15 @@
  * itself. For a delete C-REVOKE also turns fresh retirements off (`freshRetirements: false`, the
  * user's review note): the box is dropped next, so a retirement committed into it is a write
  * nobody polls. A disable keeps them on, because the held box is pollable again on re-enable.
- * An `ask` is not retired when management ends: it is not an offer for revocation (K1
- * OFFER_TYPES), and its asker keeps waiting for the answer of the pair that got it.
+ * Only offers (K1 OFFER_TYPES) are recorded: C-WIRE-2 removed `ask_agent`, the producer of `ask`.
+ *
+ * Escalated (C-WIRE-2): a principal's `escalate` moves the request to the user. K1 says escalate
+ * settles nothing, so the record stays until the user's answer settles it (to the same pair, as
+ * every settlement) or its call ends (withdrawn). It is no longer the agent's: `liveOffers` leaves
+ * it out, so `approvals_list` omits it and an answer to it is refused. When its session leaves the
+ * pair's management (release, Take back, revocation) it is dropped with no event: the agent knew
+ * it was the user's, and a later settlement would reach a pair that no longer manages the session.
+ * A succession moves it with the rest, but does not re-issue it (`moveHolder` `requests`).
  *
  * One record per **request** (C-SUCCEED; R-HOST-09, Q-S3-1: one settlement record per request,
  * offer id `<requestId>.r<revision>`). A succession re-issues a live offer as revision n+1 to the
@@ -36,7 +43,7 @@
  * is C-TOOLS' rule (`expired`), over `current` / `liveOffers`. The record keeps the event's checked
  * draft, so the offer can be re-issued.
  */
-import { EVENT_TYPE, OFFER_TYPES, parseOfferId } from '../../mcp-schema/index.js'
+import { EVENT_TYPE, parseOfferId } from '../../mcp-schema/index.js'
 
 /** The ledger key of an offer id: its request id (undefined for a value that is no offer id). */
 const requestOf = (offerId) => parseOfferId(offerId)?.requestId
@@ -50,9 +57,8 @@ const requestOf = (offerId) => parseOfferId(offerId)?.requestId
  */
 export function createOfferLedger({ mailbox, produce, onRetireFailed }) {
   /**
-   * requestId → {offerId, type, sessionId, principalKey, eventId, draft, acked, answer?}: `offerId`
-   * is the current revision's, `draft` the committed event's fields (index.js `answerable`), and
-   * `answer` resolves an ask's waiting call.
+   * requestId → {offerId, type, sessionId, principalKey, eventId, draft, acked}: `offerId` is the
+   * current revision's and `draft` the committed event's fields (index.js `answerable`).
    */
   const live = new Map()
   const recordOf = (offerId) => live.get(requestOf(offerId))
@@ -83,7 +89,7 @@ export function createOfferLedger({ mailbox, produce, onRetireFailed }) {
     /** Whether the request `offerId` names (any revision) is live. */
     has: (offerId) => recordOf(offerId) !== undefined,
 
-    /** Records an offer or ask committed as `eventId` to `principalKey`, with its draft. */
+    /** Records an offer committed as `eventId` to `principalKey`, with its draft. */
     record(offerId, entry) {
       live.set(requestOf(offerId), { ...entry, offerId, acked: false })
     },
@@ -94,14 +100,6 @@ export function createOfferLedger({ mailbox, produce, onRetireFailed }) {
       for (const record of live.values()) if (record.principalKey === principalKey && eventIds.has(record.eventId)) record.acked = true
     },
 
-    /**
-     * The offer ids of the live `ask`s `principalKey` holds, acked ones included. An acked ask is
-     * no longer pending in the mailbox, so `Mailbox.drop` cannot report it, yet its asker still
-     * waits: C-REVOKE answers these `unavailable` too when the pair's box is dropped (R-TOK-05).
-     */
-    asksOf: (principalKey) => Object.freeze([...live]
-      .filter(([, record]) => record.principalKey === principalKey && record.type === EVENT_TYPE.ask).map(([, record]) => record.offerId)),
-
     /** `{offerId, sessionId, principalKey}` of the live request `offerId` names (any revision), or undefined. */
     holderOf(offerId) {
       const record = recordOf(offerId)
@@ -111,42 +109,46 @@ export function createOfferLedger({ mailbox, produce, onRetireFailed }) {
     /**
      * The live offers of `sessionId` with their holders and current descriptors (C-TOOLS'
      * `interactions.liveOffers` port, which C-WIRE binds to this: `approvals_list` and the answer
-     * check read the current `offerId` from here). Asks are not listed: they are no approvals.
+     * check read the current `offerId` from here). Escalated ones are the user's and are left out.
      */
     liveOffers: (sessionId) => Object.freeze([...live.values()]
-      .filter((record) => record.sessionId === sessionId && OFFER_TYPES.includes(record.type))
+      .filter((record) => record.sessionId === sessionId && record.escalated !== true)
       .map((record) => Object.freeze({ principalKey: record.principalKey, descriptor: Object.freeze(structuredClone(record.draft.payload)) }))),
 
-    /** An offer or ask was answered: it is no longer live; a waiting ask gets `result`. */
-    settle(offerId, result) {
-      const record = take(offerId)
-      if (record === undefined) return false
-      record.answer?.(result)
+    /** A principal escalated the offer to the user (module comment). @returns whether it was live and the agent's */
+    escalate(offerId) {
+      const record = recordOf(offerId)
+      if (record === undefined || record.escalated === true) return false
+      record.escalated = true
       return true
     },
 
+    /** An offer was answered: it is no longer live. @returns whether it was live */
+    settle: (offerId) => take(offerId) !== undefined,
+
     /**
-     * The session's call ended before an answer: the offer (or ask) is retired from its pair by the
-     * same rule as above, and a waiting ask gets `result`.
+     * The session's call ended before an answer: the offer is retired from its pair by the same
+     * rule as above.
      * @returns whether it was live
      */
-    async withdraw(offerId, reason, result) {
+    async withdraw(offerId, reason) {
       const record = recordOf(offerId)
       if (record === undefined) return false
-      record.answer?.(result)
       await retireOne(record, reason)
       return true
     },
 
     /**
-     * C-SUCCEED (R-HOST-09): every live offer and ask `from` holds is held by `to` from now on, with
+     * C-SUCCEED (R-HOST-09): every live offer `from` holds is held by `to` from now on, with
      * its event as it is (Mailbox.transfer moved it with its `eventId`).
-     * @returns `{requests, undo}`: the moved request ids, and `undo()`, which gives them back to `from`
+     * @returns `{requests, undo}`: the moved request ids to re-issue, and `undo()`, which gives every
+     *   moved record back to `from`
      */
     moveHolder(from, to) {
       const records = [...live.values()].filter((record) => record.principalKey === from)
       for (const record of records) record.principalKey = to
-      const requests = Object.freeze(records.map((record) => requestOf(record.offerId)))
+      // Only the agent's offers are re-issued; an escalated one is the user's (module comment).
+      const requests = Object.freeze(records.filter((record) => record.escalated !== true).map((record) => requestOf(record.offerId)))
       return Object.freeze({ requests, undo: () => { for (const record of records) if (record.principalKey === to) record.principalKey = from } })
     },
 
@@ -161,7 +163,7 @@ export function createOfferLedger({ mailbox, produce, onRetireFailed }) {
 
     /**
      * The request was committed again to its holder (C-SUCCEED): its current revision is `offerId`
-     * (an offer's r<n+1>, or an ask's own id), committed as `eventId` with `draft`.
+     * (its r<n+1>), committed as `eventId` with `draft`.
      */
     reissued(requestId, { offerId, eventId, draft }) {
       const record = live.get(requestId)
@@ -178,7 +180,9 @@ export function createOfferLedger({ mailbox, produce, onRetireFailed }) {
      *   failed retire leaves its event as it was: on a disable it is pollable again on re-enable.
      */
     async retireSession(sessionId, principalKey, reason, { freshRetirements } = {}) {
-      const offers = [...live.values()].filter((record) => record.sessionId === sessionId && record.principalKey === principalKey && OFFER_TYPES.includes(record.type))
+      const held = [...live.values()].filter((record) => record.sessionId === sessionId && record.principalKey === principalKey)
+      for (const record of held) if (record.escalated === true) live.delete(requestOf(record.offerId))
+      const offers = held.filter((record) => record.escalated !== true)
       for (const record of offers) {
         try { await retireOne(record, reason, freshRetirements) } catch (error) { onRetireFailed(error) }
       }

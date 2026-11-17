@@ -44,7 +44,7 @@ import { INSTANCE, REPO } from '../../../support/constants.mjs'
 import { SKILL_SDK } from '../../../private-skills/support/constants.mjs'
 import { importInstance } from '../../../private-skills/support/sdk.mjs'
 import {
-  BEARER_CHALLENGE, FIXTURE, HEADER, HOSTS, OAUTH_ERROR, PATHS, REQUEST_GATE, RESOURCE, SCOPE, oauthUrls, SDK_CLIENT, SUBJECT, VERIFY, WAIT,
+  BEARER_CHALLENGE, FAILURE_LIMIT, FIXTURE, HEADER, HOSTS, OAUTH_ERROR, PATHS, REQUEST_GATE, RESOURCE, SCOPE, oauthUrls, SDK_CLIENT, SUBJECT, VERIFY, WAIT,
 } from './constants.mjs'
 
 /** C-HTTP's entry bound to `sdk`, with exactly one factory of each kind. */
@@ -94,8 +94,20 @@ export class FakeVerifier {
 /** K1a FailureLimiter, faked: never limited; records what it is told. */
 export class FakeFailures {
   recorded = []
-  check() { return { limited: false } }
+  checks = []
+  check(key, now) { this.checks.push({ key, now }); return { limited: false } }
   recordFailure(key, now) { this.recorded.push({ key, now }) }
+}
+/**
+ * K1a FailureLimiter, faked to K1 FAILURE_LIMIT's rule (X-SEC X-03 rows): limited once a key has
+ * perKeyPerWindow recorded failures (an MCP bearer's key is the address alone) within windowMs.
+ */
+export class LimitingFailures extends FakeFailures {
+  check(key, now) {
+    this.checks.push({ key, now })
+    const recent = this.recorded.filter((f) => f.key.remoteAddress === key.remoteAddress && now - f.now < FAILURE_LIMIT.windowMs)
+    return recent.length >= FAILURE_LIMIT.perKeyPerWindow ? { limited: true, retryAfterMs: recent[0].now + FAILURE_LIMIT.windowMs - now } : { limited: false }
+  }
 }
 
 /** Characters no bare `Host` authority holds: whitespace, path, query, fragment, userinfo, backslash. */
@@ -203,11 +215,10 @@ function gateOf(make, facts) {
  * loopback http, no trusted hosts), the route mounted on PATHS.mcp, and the fakes.
  * Returns {port, host, gate, verifier, failures, tokens, pairs, hints, logger, clock, principal, request, connect}.
  */
-export async function httpWorld(t, sdk, facts = {}) {
+export async function httpWorld(t, sdk, facts = {}, { failures = new FakeFailures() } = {}) {
   const make = await factories(sdk)
   const { gate, clock, logger, facts: listenerFacts } = gateOf(make, facts)
   const verifier = new FakeVerifier()
-  const failures = new FakeFailures()
   const tokens = new FakeTokens()
   const pairs = new FakePairs()
   const route = await make.route({

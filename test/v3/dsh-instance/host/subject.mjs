@@ -22,7 +22,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
 import { V3 } from '../../contract/package-boundaries/constants.mjs'
-import { canonicalTmp, requireModule } from '../../dsh-connector-shared/oauth-client/subject.mjs'
+import { canonicalTmp, requireModule } from '../../dsh-connector-adapter/oauth-client/subject.mjs'
 import { FIXTURE, HOSTNAME, IMPORT, K3, RELAYED } from './constants.mjs'
 import { fakeChildCredentials, fakeLifecycle, fakeProviderSync, fakeTokens, memoryRecord, memoryWire } from './fakes.mjs'
 

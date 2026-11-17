@@ -58,6 +58,8 @@ function row(sdk, id, part, title, fn, todo) {
 /** A row on a fresh C-ROUTE world. */
 const worldRow = (sdk, id, part, title, fn) => row(sdk, id, part, title, async (t) => fn(await routeWorld(t, sdk), t))
 const todoRow = (sdk, id, part, title, owner) => row(sdk, id, part, title, null, owner)
+/** A row a later decision withdrew: still listed, skipped with the decision (C-WIRE-2; RELAYED). */
+const withdrawnRow = (sdk, id, part, title, reason) => test(caseName(sdk, id, part, title), { skip: reason }, () => {})
 
 // ------------------------------------------------------------------------------------------------
 // Observation: every mailbox of the world
@@ -148,7 +150,6 @@ export function descriptor(type) {
   }
 }
 const message = () => ({ text: FIXTURE.text(++counter), images: [] })
-const designate = (w, id) => w.settings.set({ agentToken: FIXTURE.entry(id) })
 /**
  * A revocation of entry `id` (`kind`: REVOCATION.disabled or .deleted) as C-REVOKE runs it: the
  * token change, then `routing.endPrincipal`, which C-REVOKE's own onRevoked handler calls (routing
@@ -219,25 +220,13 @@ export async function messageTo(w, sessionId, key) {
   assert.deepEqual(event.payload, m)
   return event
 }
-/** A `message_agent` that is accepted and held in the no-recipient queue (nothing in any mailbox). */
-async function messageHeld(w, sessionId = S.s1) {
-  const m = message()
-  const { value } = await expectNone(w, () => w.routing.messageAgent(sessionId, m))
-  assert.deepEqual(value, { ok: true })
-  return m
-}
-/** An `ask_agent` that becomes one `ask` offer in `key`'s mailbox and keeps the asker waiting. */
-export async function askTo(w, sessionId, key) {
-  const { value, event } = await expectOne(w, () => ({ promise: w.routing.askAgent(sessionId, { question: FIXTURE.question }) }), key, ET.ask)
-  assert.equal(event.offer?.decisionKind, DECISION_KIND_OF[ET.ask])
-  assert.equal(await settlesWithin(value.promise, WAIT.quietMs), false, 'ask_agent did not wait for its answer')
-  return { event, promise: value.promise }
-}
-/** An `ask_agent` answered `unavailable` at once, with nothing produced (R-CON-09). */
-async function askUnavailable(w, sessionId) {
-  const { value } = await expectNone(w, () => ({ promise: w.routing.askAgent(sessionId, { question: FIXTURE.question }) }))
-  assert.ok(await settlesWithin(value.promise, WAIT.quietMs), 'ask_agent did not answer at once')
-  assert.deepEqual(await value.promise, { ok: false, code: REFUSAL.unavailable })
+/**
+ * A `message_agent` of a session nobody manages: `not-managed`, nothing committed or held
+ * (C-WIRE-2, RELAYED.unmanagedMessage; the user's q5 "Remove agentToken entirely").
+ */
+async function messageNotManaged(w, sessionId = S.s1) {
+  const { value } = await expectNone(w, () => w.routing.messageAgent(sessionId, message()))
+  assert.deepEqual(value, { ok: false, code: REFUSAL.notManaged })
 }
 /** The texts of the `message` events now pending in `key`'s mailbox, in mailbox order. */
 const messageTexts = async (w, key) => (await pendingOf(w, key)).filter((e) => e.type === ET.message).map((e) => e.payload.text)
@@ -271,7 +260,7 @@ const ENDINGS = Object.freeze({
 /** P manages S1 and has one turn-finished queued; `ending` ends the watch; nothing later is produced. */
 async function watchEnds(w, ending) {
   const p = w.principal(ID.p, { connected: true })
-  w.principal(ID.d, { connected: true, designated: true })
+  w.principal(ID.d, { connected: true })
   w.session(S.s1)
   await manage(w, S.s1, p)
   const queued = await turnTo(w, S.s1, p)
@@ -281,10 +270,10 @@ async function watchEnds(w, ending) {
   await unwatched(w, S.s1)
 }
 
-/** A world with P (connected) managing S1 and D designated (connected): the common start. */
+/** A world with P (connected) managing S1 and D, another connected principal (no designated role since C-WIRE-2, q5): the common start. */
 export async function managedByP(w, { pConnected = true } = {}) {
   const p = w.principal(ID.p, { connected: pConnected })
-  const d = w.principal(ID.d, { connected: true, designated: true })
+  const d = w.principal(ID.d, { connected: true })
   w.session(S.s1)
   await manage(w, S.s1, p)
   return { p, d }
@@ -345,45 +334,29 @@ function useCases(sdk) {
     w.session(S.s1)
     await assertRefused(w, () => w.handover.takeBack(S.s1), HANDOVER.codes.notManaged)
   })
-  worldRow(sdk, 'HAND-UC-02', 'post', 'after Take back S1\'s permission request goes to the user, and its message_agent to the designated Fishball', async (w) => {
-    const { p, d } = await managedByP(w)
+  // Re-baselined by C-WIRE-2 (the user's q5, "Remove agentToken entirely"): no designated agent takes the message.
+  worldRow(sdk, 'HAND-UC-02', 'post', `after Take back S1's permission request goes to the user, and its message_agent is ${REFUSAL.notManaged} (nothing produced)`, async (w) => {
+    const { p } = await managedByP(w)
     await takeBackOk(w, S.s1, p)
     await offerFallsBack(w, S.s1, ET.permission, FALLBACK.toUser)
-    await messageTo(w, S.s1, d)
+    await messageNotManaged(w)
   })
 
-  // PLAT-UC-03 — A main-DSH session calls message_agent / ask_agent.
-  worldRow(sdk, 'PLAT-UC-03', 'main', 'unmanaged S1: message_agent → one message for D; ask_agent → one ask for D, and S1 waits', async (w) => {
-    const d = w.principal(ID.d, { connected: true, designated: true })
+  // PLAT-UC-03 — A main-DSH session calls message_agent. Re-baselined by C-WIRE-2: the user "不给ask_agent工具"
+  // (no ask_agent) and q5 "Remove agentToken entirely" (no designated agent D, no no-recipient queue).
+  worldRow(sdk, 'PLAT-UC-03', 'main', `unmanaged S1: message_agent → ${REFUSAL.notManaged}, nothing produced or held (other principals connected or not)`, async (w) => {
+    w.principal(ID.d, { connected: true })
     w.session(S.s1)
-    await messageTo(w, S.s1, d)
-    await askTo(w, S.s1, d)
+    await messageNotManaged(w)
   })
-  todoRow(sdk, 'PLAT-UC-03', 'main answer', 'the waiting ask_agent gets D\'s answer', LATER.toolsAnswer)
-  worldRow(sdk, 'PLAT-UC-03', 'A1', 'S1 managed by P → both go to P, never D', async (w) => {
+  withdrawnRow(sdk, 'PLAT-UC-03', 'main answer', 'the waiting ask_agent gets D\'s answer', RELAYED.noAsk)
+  worldRow(sdk, 'PLAT-UC-03', 'A1', 'S1 managed by P → message_agent goes to P, never D', async (w) => {
     const { p } = await managedByP(w)
     await messageTo(w, S.s1, p)
-    await askTo(w, S.s1, p)
   })
-  worldRow(sdk, 'PLAT-UC-03', 'E1 no D', 'no D set → ask_agent answers unavailable at once; message_agent is held (queued), not refused', async (w) => {
-    w.session(S.s1)
-    w.principal(ID.q, { connected: true })
-    await askUnavailable(w, S.s1)
-    await messageHeld(w)
-  })
-  worldRow(sdk, 'PLAT-UC-03', 'E1 D offline', 'D set but not connected → ask_agent unavailable at once; message_agent waits in D\'s mailbox (K1c-3: connected or not)', async (w) => {
-    const d = w.principal(ID.d, { connected: false, designated: true })
-    w.session(S.s1)
-    await askUnavailable(w, S.s1)
-    await messageTo(w, S.s1, d)
-  })
-  worldRow(sdk, 'PLAT-UC-03', 'E1 full', `no D → message_agent queues up to maxQueuedInputs (live ${FIXTURE.smallQueue}), then ${REFUSAL.queueFull}`, async (w) => {
-    w.session(S.s1)
-    w.principal(ID.q)
-    w.settings.set({ maxQueuedInputs: FIXTURE.smallQueue })
-    for (let i = 0; i < FIXTURE.smallQueue; i += 1) await messageHeld(w)
-    await assertQueueFull(w)
-  })
+  withdrawnRow(sdk, 'PLAT-UC-03', 'E1 no D', 'no D set → ask_agent unavailable at once; message_agent held', RELAYED.noDesignated)
+  withdrawnRow(sdk, 'PLAT-UC-03', 'E1 D offline', 'D set but not connected → ask_agent unavailable; message_agent waits in D\'s mailbox', RELAYED.noDesignated)
+  withdrawnRow(sdk, 'PLAT-UC-03', 'E1 full', 'no D → message_agent queues up to maxQueuedInputs, then queue-full (the managed bound is ROUTE-BVA-01)', RELAYED.noDesignated)
   worldRow(sdk, 'PLAT-UC-03', 'E2', 'S1 managed by P, P not connected → S1\'s permission request is an offer in P\'s mailbox and waits (48 h later still there); never to the user', async (w) => {
     const { p } = await managedByP(w, { pConnected: false })
     const event = await offerTo(w, S.s1, ET.permission, p)
@@ -391,21 +364,12 @@ function useCases(sdk) {
     await quiet()
     assert.ok((await pendingOf(w, p)).some((e) => e.eventId === event.eventId), 'the offer left P\'s mailbox')
   })
-  worldRow(sdk, 'PLAT-UC-03', 'E2 ask', `S1 managed by P, P not connected → ask_agent is an offer waiting in P's mailbox, not unavailable (${RELAYED.askManagedOffline})`, async (w) => {
-    const { p } = await managedByP(w, { pConnected: false })
-    await askTo(w, S.s1, p)
-  })
-  worldRow(sdk, 'PLAT-UC-03', 'post', '"connected" is no timer: an ask waiting for a connected D is still waiting 48 h later (fake clock)', async (w) => {
-    const d = w.principal(ID.d, { connected: true, designated: true })
-    w.session(S.s1)
-    const { promise } = await askTo(w, S.s1, d)
-    w.clock.advance(FIXTURE.longWaitMs)
-    assert.equal(await settlesWithin(promise, WAIT.quietMs), false, 'the ask settled on a timer')
-  })
-  todoRow(sdk, 'PLAT-UC-03', 'DSH', 'the same flows through the main-session tools on a real DSH session (both SDKs)', LATER.wireTools)
+  withdrawnRow(sdk, 'PLAT-UC-03', 'E2 ask', 'S1 managed by P, P not connected → ask_agent is an offer waiting in P\'s mailbox', RELAYED.noAsk)
+  withdrawnRow(sdk, 'PLAT-UC-03', 'post', 'an ask waiting for a connected D is still waiting 48 h later (E2 keeps the timer-free offer)', RELAYED.noAsk)
+  withdrawnRow(sdk, 'PLAT-UC-03', 'DSH', 'the same flows through the main-session tools on a real DSH session (both SDKs)', RELAYED.movedToWire2)
 }
 
-/** One more message with no recipient is `queue-full` and changes nothing. */
+/** One more message to S1's manager is `queue-full` and changes nothing. */
 async function assertQueueFull(w) {
   const { value } = await expectNone(w, () => w.routing.messageAgent(S.s1, message()))
   assert.deepEqual(value, { ok: false, code: REFUSAL.queueFull })
@@ -416,7 +380,8 @@ async function assertQueueFull(w) {
 // ================================================================================================
 
 function equivalencePartitions(sdk) {
-  // EVT-EP-01 — Event types and recipient (M = manager of the named session, D = designated).
+  // EVT-EP-01 — Event types and recipient (M = manager of the named session; D was the designated agent,
+  // withdrawn by C-WIRE-2: the user's q5, "Remove agentToken entirely").
   for (const [n, type] of [['1', ET.permission], ['2', ET.question], ['3', ET.planReview]]) {
     worldRow(sdk, 'EVT-EP-01', n, `${type} of a managed session → M only`, async (w) => {
       const { p } = await managedByP(w)
@@ -424,13 +389,13 @@ function equivalencePartitions(sdk) {
     })
   }
   worldRow(sdk, 'EVT-EP-01', '4', 'permission of an unmanaged session → no principal: the user answers in the session (to-user)', async (w) => {
-    w.principal(ID.d, { connected: true, designated: true })
+    w.principal(ID.d, { connected: true })
     w.session(S.s1)
     await offerFallsBack(w, S.s1, ET.permission, FALLBACK.toUser)
   })
   for (const [n, type] of [['4a', ET.question], ['4b', ET.planReview]]) {
     worldRow(sdk, 'EVT-EP-01', n, `${type} of an unmanaged session → to-user (${RELAYED.offersUnmanaged})`, async (w) => {
-      w.principal(ID.d, { connected: true, designated: true })
+      w.principal(ID.d, { connected: true })
       w.session(S.s1)
       await offerFallsBack(w, S.s1, type, FALLBACK.toUser)
     })
@@ -457,7 +422,7 @@ function equivalencePartitions(sdk) {
     await stateTo(w, S.s1, p)
   })
   worldRow(sdk, 'EVT-EP-01', '9', 'turn-finished / state of an unmanaged session → not produced at all', async (w) => {
-    w.principal(ID.d, { connected: true, designated: true })
+    w.principal(ID.d, { connected: true })
     w.session(S.s1)
     await unwatched(w, S.s1)
   })
@@ -465,22 +430,16 @@ function equivalencePartitions(sdk) {
     const { p } = await managedByP(w)
     await messageTo(w, S.s1, p)
   })
-  worldRow(sdk, 'EVT-EP-01', '11', 'message_agent from an unmanaged session → D', async (w) => {
-    const d = w.principal(ID.d, { connected: true, designated: true })
+  // Re-baselined by C-WIRE-2 (q5): no designated agent; the session's message has no recipient.
+  worldRow(sdk, 'EVT-EP-01', '11', `message_agent from an unmanaged session → ${REFUSAL.notManaged}, nobody`, async (w) => {
+    w.principal(ID.d, { connected: true })
     w.session(S.s1)
-    await messageTo(w, S.s1, d)
+    await messageNotManaged(w)
   })
-  worldRow(sdk, 'EVT-EP-01', '12 managed', 'ask_agent from a managed session → M', async (w) => {
-    const { p } = await managedByP(w)
-    await askTo(w, S.s1, p)
-  })
-  worldRow(sdk, 'EVT-EP-01', '12 unmanaged', 'ask_agent from an unmanaged session → D', async (w) => {
-    const d = w.principal(ID.d, { connected: true, designated: true })
-    w.session(S.s1)
-    await askTo(w, S.s1, d)
-  })
+  withdrawnRow(sdk, 'EVT-EP-01', '12 managed', 'ask_agent from a managed session → M', RELAYED.noAsk)
+  withdrawnRow(sdk, 'EVT-EP-01', '12 unmanaged', 'ask_agent from an unmanaged session → D', RELAYED.noAsk)
   worldRow(sdk, 'EVT-EP-01', '13', 'handover → the principal handed to (now M), not D', async (w) => {
-    w.principal(ID.d, { connected: true, designated: true })
+    w.principal(ID.d, { connected: true })
     const p = w.principal(ID.p, { connected: true })
     w.session(S.s1)
     await handOverOk(w, S.s1, p)
@@ -489,20 +448,21 @@ function equivalencePartitions(sdk) {
     const { p } = await managedByP(w)
     await takeBackOk(w, S.s1, p)
   })
-  worldRow(sdk, 'EVT-EP-01', '15', 'notice naming no session → D (router; C-ROUTE produces no notice, K1c-4)', async (w) => {
-    const d = w.principal(ID.d, { connected: true, designated: true })
-    assert.deepEqual(w.router.recipientFor({ type: ET.notice, sessionId: null }), { recipient: d })
+  // Re-baselined by C-WIRE-2 (q5: no designated agent): "a notice naming no managed session is dropped".
+  worldRow(sdk, 'EVT-EP-01', '15', `notice naming no session → no recipient (${FALLBACK.dropped}) (router; C-ROUTE produces no notice, K1c-4)`, async (w) => {
+    w.principal(ID.d, { connected: true })
+    assert.deepEqual(w.router.recipientFor({ type: ET.notice, sessionId: null }), { recipient: null, fallback: FALLBACK.dropped })
   })
-  worldRow(sdk, 'EVT-EP-01', '16', 'contributed:<ns>.<e> with / without sessionId → EXT-DT-02 rules 1–5 (router)', async (w) => {
+  // Re-baselined by C-WIRE-2 (q5): "contributor events with no session or an unmanaged session → no-agent".
+  worldRow(sdk, 'EVT-EP-01', '16', `contributed:<ns>.<e>: a managed session → M; an unmanaged session or none → ${FALLBACK.noAgent} (router)`, async (w) => {
     const m = w.principal(ID.p)
-    const d = w.principal(ID.d, { connected: true, designated: true })
+    w.principal(ID.d, { connected: true })
     w.session(S.s1)
     w.session(S.s2)
     await manage(w, S.s1, m)
     const route = (sessionId) => w.router.recipientFor({ type: CONTRIBUTED, sessionId, contributor: FIXTURE.namespace })
-    assert.deepEqual([route(S.s1), route(S.s2), route(null)], [{ recipient: m }, { recipient: d }, { recipient: d }], 'rules 1, 2, 4')
-    w.settings.set({ agentToken: undefined })
-    assert.deepEqual([route(S.s2), route(null)], [{ recipient: null, fallback: FALLBACK.noAgent }, { recipient: null, fallback: FALLBACK.noAgent }], 'rules 3, 5')
+    const none = { recipient: null, fallback: FALLBACK.noAgent }
+    assert.deepEqual([route(S.s1), route(S.s2), route(null)], [{ recipient: m }, none, none])
   })
 
   // EVT-EP-04 — Per-principal isolation of streams and hints, end to end: C-ROUTE commits through
@@ -564,7 +524,7 @@ function equivalencePartitions(sdk) {
     await stateTo(w, S.s1, p)
   })
   worldRow(sdk, 'WATCH-EP-01', '2', 'handed over to D → D only', async (w) => {
-    const d = w.principal(ID.d, { connected: true, designated: true })
+    const d = w.principal(ID.d, { connected: true })
     w.principal(ID.p, { connected: true })
     w.session(S.s1)
     await handOverOk(w, S.s1, d)
@@ -572,7 +532,7 @@ function equivalencePartitions(sdk) {
     await stateTo(w, S.s1, d)
   })
   worldRow(sdk, 'WATCH-EP-01', '3', 'unmanaged → nobody (not produced)', async (w) => {
-    w.principal(ID.d, { connected: true, designated: true })
+    w.principal(ID.d, { connected: true })
     w.session(S.s1)
     await unwatched(w, S.s1)
   })
@@ -627,15 +587,16 @@ function equivalencePartitions(sdk) {
 
   // ROUTE-EP-01 — principals() (K3 HandoverPrincipal; R-UI-10).
   worldRow(sdk, 'ROUTE-EP-01', '1', `every token entry is listed with exactly {${HANDOVER.principalFields.join(', ')}}`, async (w) => {
-    w.principal(ID.p, { name: NAME.p, connected: true, designated: true })
+    w.principal(ID.p, { name: NAME.p, connected: true })
     w.principal(ID.x, { paired: false })
     const list = w.handover.principals()
     assert.equal(list.length, 2)
     for (const x of list) assert.deepEqual(Object.keys(x).sort(), [...HANDOVER.principalFields].sort())
   })
-  worldRow(sdk, 'ROUTE-EP-01', '2', 'enabled, paired, named, online, designated → {name, id, online: true, enabled: true, paired: true, designated: true}', async (w) => {
-    const key = w.principal(ID.p, { name: NAME.p, connected: true, designated: true })
-    assert.deepEqual(w.handover.principals(), [{ key, name: NAME.p, id: ID.p, online: true, enabled: true, paired: true, designated: true }])
+  // Re-baselined by C-WIRE-2 (q5, "Remove agentToken entirely"): the rows carry no `designated`.
+  worldRow(sdk, 'ROUTE-EP-01', '2', 'enabled, paired, named, online → {name, id, online: true, enabled: true, paired: true}', async (w) => {
+    const key = w.principal(ID.p, { name: NAME.p, connected: true })
+    assert.deepEqual(w.handover.principals(), [{ key, name: NAME.p, id: ID.p, online: true, enabled: true, paired: true }])
   })
   worldRow(sdk, 'ROUTE-EP-01', '3', 'an unpaired entry → id null, paired false, online false', async (w) => {
     w.principal(ID.x, { paired: false })
@@ -705,43 +666,37 @@ async function expectRetirement(w, act, key, offer) {
 // ================================================================================================
 
 function boundaryValues(sdk) {
-  // ROUTE-BVA-01 — The no-recipient message queue bound (K1c-3; live maxQueuedInputs).
+  // ROUTE-BVA-01 — The message bound of the manager's mailbox (live maxQueuedInputs). Re-baselined by C-WIRE-2:
+  // the no-recipient queue is gone (the user's q5); `message_agent` of a managed session fills its manager's mailbox.
   const N = FIXTURE.smallQueue
-  /** A world with no designated paired entry and S1 unmanaged; `bound` sets the live setting. */
-  const queueWorld = (w, bound) => {
+  /** P (offline) manages S1, with nothing pending; `bound` sets the live setting. */
+  const queueWorld = async (w, bound) => {
+    const p = w.principal(ID.p)
     w.session(S.s1)
+    await manage(w, S.s1, p)
     if (bound !== undefined) w.settings.set({ maxQueuedInputs: bound })
+    return p
   }
-  /** Designates D (offline) and returns D's message texts once `n` have moved in. */
-  const flushTo = async (w, n) => {
-    const d = w.principal(ID.d)
-    designate(w, ID.d)
-    await until(async () => (await messageTexts(w, d)).length >= n, `${n} messages in D's mailbox`)
-    await quiet()
-    return messageTexts(w, d)
-  }
-  worldRow(sdk, 'ROUTE-BVA-01', '1', `held max − 1 (${N - 1}) → the next message is accepted`, async (w) => {
-    queueWorld(w, N)
-    for (let i = 0; i < N - 1; i += 1) await messageHeld(w)
-    await messageHeld(w)
+  worldRow(sdk, 'ROUTE-BVA-01', '1', `P's mailbox at max − 1 (${N - 1}) → the next message is accepted`, async (w) => {
+    const p = await queueWorld(w, N)
+    for (let i = 0; i < N; i += 1) await messageTo(w, S.s1, p)
   })
-  worldRow(sdk, 'ROUTE-BVA-01', '2', `held max (${N}) → the next is ${REFUSAL.queueFull}; nothing changed (exactly ${N} move in later)`, async (w) => {
-    queueWorld(w, N)
-    const held = []
-    for (let i = 0; i < N; i += 1) held.push((await messageHeld(w)).text)
+  worldRow(sdk, 'ROUTE-BVA-01', '2', `P's mailbox at max (${N}) → the next is ${REFUSAL.queueFull}; nothing changed`, async (w) => {
+    const p = await queueWorld(w, N)
+    for (let i = 0; i < N; i += 1) await messageTo(w, S.s1, p)
     await assertQueueFull(w)
-    assert.deepEqual(await flushTo(w, N), held)
+    assert.equal((await messageTexts(w, p)).length, N)
   })
   worldRow(sdk, 'ROUTE-BVA-01', '3', `setting unset → the K1 default bound QUEUE.maxQueuedInputs (${QUEUE.maxQueuedInputs}): the ${QUEUE.maxQueuedInputs}th accepted, the next ${REFUSAL.queueFull}`, async (w) => {
-    queueWorld(w)
+    await queueWorld(w)
     for (let i = 0; i < QUEUE.maxQueuedInputs; i += 1) assert.deepEqual(await w.routing.messageAgent(S.s1, message()), { ok: true })
     await assertQueueFull(w)
   })
-  worldRow(sdk, 'ROUTE-BVA-01', '4', `held max, then the live setting raised to max + 1 → one more is accepted`, async (w) => {
-    queueWorld(w, N)
-    for (let i = 0; i < N; i += 1) await messageHeld(w)
+  worldRow(sdk, 'ROUTE-BVA-01', '4', `at max, then the live setting raised to max + 1 → one more is accepted`, async (w) => {
+    const p = await queueWorld(w, N)
+    for (let i = 0; i < N; i += 1) await messageTo(w, S.s1, p)
     w.settings.set({ maxQueuedInputs: N + 1 })
-    await messageHeld(w)
+    await messageTo(w, S.s1, p)
     await assertQueueFull(w)
   })
 }
@@ -753,71 +708,56 @@ function boundaryValues(sdk) {
 /** The router's answer for each type, as one object, for one session id. */
 const answers = (w, types, sessionId, extra = {}) => Object.fromEntries(types.map((type) => [type, w.router.recipientFor({ type, sessionId, ...(type === CONTRIBUTED ? { contributor: FIXTURE.namespace } : {}), ...extra })]))
 const all = (types, answer) => Object.fromEntries(types.map((type) => [type, answer]))
-const TO_D_TYPES = Object.freeze([ET.message, ET.ask, ET.notice, CONTRIBUTED])
+/** The types with no recipient but the manager: message, ask, notice (dropped) and contributor events (no-agent). */
+const DROPPED_TYPES = Object.freeze([ET.message, ET.ask, ET.notice])
+const TO_M_TYPES = Object.freeze([...DROPPED_TYPES, CONTRIBUTED])
 const WATCH_TYPES = Object.freeze([ET.turnFinished, ET.state])
-const SESSION_TYPES = Object.freeze([...OFFER_TYPES, ...WATCH_TYPES, ...TO_D_TYPES])
-/** The no-D answers of rules 3 and 5 (R-CON-09, R-EXT-17, K1c-3; RELAYED.noticeNoD). */
-const NO_D = Object.freeze({
-  [ET.message]: { recipient: null, fallback: FALLBACK.queue },
-  [ET.ask]: { recipient: null, fallback: FALLBACK.unavailable },
+const SESSION_TYPES = Object.freeze([...OFFER_TYPES, ...WATCH_TYPES, ...TO_M_TYPES])
+/**
+ * The answers for a session nobody manages, or none (C-WIRE-2, relayed 2026-11-17; the user's q5): offers
+ * to-user; message, turn-finished, state, notice, ask dropped; contributor events no-agent.
+ */
+const UNMANAGED = Object.freeze({
+  ...Object.fromEntries([...WATCH_TYPES, ...DROPPED_TYPES].map((type) => [type, { recipient: null, fallback: FALLBACK.dropped }])),
   [CONTRIBUTED]: { recipient: null, fallback: FALLBACK.noAgent },
 })
-/** A notice with no D reaches no agent and no user (RELAYED.noticeNoD): no recipient, not to-user, not queued. */
-function assertNoticeNowhere(answer) {
-  assert.equal(answer?.recipient, null)
-  assert.ok(![FALLBACK.toUser, FALLBACK.queue].includes(answer.fallback), `a notice with no D falls back to ${answer.fallback}`)
-}
+const pick = (types, table) => Object.fromEntries(types.map((type) => [type, table[type]]))
 
 function decisionTables(sdk) {
   // EVT-DT-01 — Recipient of an event (router, then integration).
   for (const connected of [true, false]) {
     worldRow(sdk, 'EVT-DT-01', `1 (M ${connected ? 'online' : 'offline'})`, 'names a managed session → M, for every type that names a session', async (w) => {
       const m = w.principal(ID.p, { connected })
-      w.principal(ID.d, { connected: true, designated: true })
+      w.principal(ID.d, { connected: true })
       w.session(S.s1)
       await manage(w, S.s1, m)
       assert.deepEqual(answers(w, SESSION_TYPES, S.s1), all(SESSION_TYPES, { recipient: m }))
     })
   }
-  worldRow(sdk, 'EVT-DT-01', '2', 'names an unmanaged session, D exists → D for message, ask, notice, contributor; offers to-user; turn-finished / state dropped', async (w) => {
-    const d = w.principal(ID.d, { connected: true, designated: true })
-    w.session(S.s1)
-    assert.deepEqual(answers(w, SESSION_TYPES, S.s1), {
-      ...all(OFFER_TYPES, { recipient: null, fallback: FALLBACK.toUser }),
-      ...all(WATCH_TYPES, { recipient: null, fallback: FALLBACK.dropped }),
-      ...all(TO_D_TYPES, { recipient: d }),
+  // Rules 2–5 re-baselined by C-WIRE-2 (the user's q5, "Remove agentToken entirely"): with no designated agent
+  // an unmanaged session's (or no session's) events have no principal recipient, whoever else is paired.
+  for (const [part, title, setup] of [
+    ['2', 'names an unmanaged session, another principal connected', (w) => { w.principal(ID.d, { connected: true }) }],
+    ['3', 'names an unmanaged session, no other principal', () => {}],
+    ['3a', 'names an unmanaged session, an unpaired entry exists', (w) => { w.principal(ID.d, { paired: false }) }],
+    ['3b', 'names an unmanaged session, a paired but disabled entry exists', (w) => { w.principal(ID.d, { connected: true }); w.tokens.disable(ID.d) }],
+  ]) {
+    worldRow(sdk, 'EVT-DT-01', part, `${title} → offers to-user; message, ask, notice, turn-finished / state dropped; contributor no-agent`, async (w) => {
+      w.session(S.s1)
+      setup(w)
+      assert.deepEqual(answers(w, SESSION_TYPES, S.s1), { ...all(OFFER_TYPES, { recipient: null, fallback: FALLBACK.toUser }), ...pick([...WATCH_TYPES, ...TO_M_TYPES], UNMANAGED) })
     })
-  })
-  /** Rule 3 under a "no D" variant (none, unpaired, disabled): the no-principal rules. */
-  const ruleThree = (part, title, setup) => worldRow(sdk, 'EVT-DT-01', part, title, async (w) => {
-    w.principal(ID.p, { connected: true })
-    w.session(S.s1)
-    setup(w)
-    const got = answers(w, SESSION_TYPES, S.s1)
-    assert.deepEqual({ ...got, [ET.notice]: undefined }, {
-      ...all(OFFER_TYPES, { recipient: null, fallback: FALLBACK.toUser }),
-      ...all(WATCH_TYPES, { recipient: null, fallback: FALLBACK.dropped }),
-      ...NO_D,
-      [ET.notice]: undefined,
+  }
+  for (const [part, connected] of [['4', true], ['5', false]]) {
+    worldRow(sdk, 'EVT-DT-01', part, `names no session, a principal ${connected ? 'connected' : 'absent'} → message, ask, notice dropped; contributor no-agent`, async (w) => {
+      if (connected) w.principal(ID.d, { connected: true })
+      assert.deepEqual(answers(w, TO_M_TYPES, null), pick(TO_M_TYPES, UNMANAGED))
     })
-    assertNoticeNowhere(got[ET.notice])
-  })
-  ruleThree('3', 'names an unmanaged session, no D set → message queue, ask unavailable, contributor no-agent, offers to-user, notice nowhere', () => {})
-  ruleThree('3a', 'D set to an entry that is not paired → as no D (K1c-3)', (w) => { w.principal(ID.d, { paired: false }); designate(w, ID.d) })
-  ruleThree('3b', `D paired but disabled → as no D (${RELAYED.disabledD})`, (w) => { w.principal(ID.d, { connected: true, designated: true }); w.tokens.disable(ID.d) })
-  worldRow(sdk, 'EVT-DT-01', '4', 'names no session, D exists → D', async (w) => {
-    const d = w.principal(ID.d, { connected: true, designated: true })
-    assert.deepEqual(answers(w, TO_D_TYPES, null), all(TO_D_TYPES, { recipient: d }))
-  })
-  worldRow(sdk, 'EVT-DT-01', '5', 'names no session, no D → as rule 3', async (w) => {
-    const got = answers(w, TO_D_TYPES, null)
-    assert.deepEqual({ ...got, [ET.notice]: undefined }, { ...NO_D, [ET.notice]: undefined })
-    assertNoticeNowhere(got[ET.notice])
-  })
+  }
   worldRow(sdk, 'EVT-DT-01', '6', 'settlement / retirement → the pair that held the offer, whatever the session\'s manager or D', async (w) => {
     const f = w.principal(ID.q)
     const m = w.principal(ID.p, { connected: true })
-    w.principal(ID.d, { connected: true, designated: true })
+    w.principal(ID.d, { connected: true })
     await manage(w, S.s1, m)
     const follow = [ET.settlement, ET.retirement]
     for (const sessionId of [S.s1, S.s2, null]) assert.deepEqual(answers(w, follow, sessionId, { followsPrincipal: f }), all(follow, { recipient: f }), String(sessionId))
@@ -844,9 +784,9 @@ function decisionTables(sdk) {
     await turnTo(w, S.s1, p)
     await stateTo(w, S.s1, p)
     await messageTo(w, S.s1, p)
-    await askTo(w, S.s1, p)
-    await messageTo(w, S.s2, d)
-    await askTo(w, S.s2, d)
+    // C-WIRE-2 (q5): S2 is unmanaged, so its message produces nothing; no ask_agent exists ("不给ask_agent工具").
+    await messageNotManaged(w, S.s2)
+    assert.deepEqual(await pendingOf(w, d), [])
     // S3 holds no live offer: what a Take back does to live offers is not specified (no row assumes it).
     await handOverOk(w, S.s3, p)
     await takeBackOk(w, S.s3, p)
@@ -880,11 +820,7 @@ function decisionTables(sdk) {
     const { event } = await expectOne(w, () => w.handover.handOver(S.s1, p), p, ET.handover)
     assert.equal(event.payload.note, HANDOVER.omittedNote)
   })
-  worldRow(sdk, 'HAND-DT-01', '4', 'the designated Fishball → ok, as rule 3 (no special case)', async (w) => {
-    const d = w.principal(ID.d, { connected: true, designated: true })
-    w.session(S.s1)
-    await handOverOk(w, S.s1, d)
-  })
+  withdrawnRow(sdk, 'HAND-DT-01', '4', 'the designated Fishball → ok, as rule 3 (no special case)', RELAYED.noDesignated)
   worldRow(sdk, 'HAND-DT-01', '5', 'enabled, paired, offline → ok; the handover waits in its mailbox', async (w) => {
     const p = w.principal(ID.p, { connected: false })
     w.session(S.s1)
@@ -967,7 +903,6 @@ function decisionTables(sdk) {
     pair: (w) => w.pairs.bind(ID.x),
     disable: (w) => revokeEntry(w, ID.q, REVOCATION.disabled),
     delete: async (w) => { await revokeEntry(w, ID.q, REVOCATION.deleted); await w.pairs.remove(FIXTURE.entry(ID.q)) },
-    designate: (w) => designate(w, ID.q),
     manage: (w, k) => w.managed.manage(S.s2, k.q),
     release: (w, k) => w.managed.release(S.s1, k.p),
     handOver: (w, k) => w.handover.handOver(S.s2, k.q),
@@ -1006,6 +941,7 @@ function decisionTables(sdk) {
     })
   }
   triggerTable('ROUTE-DT-01', (w) => w.handover, Object.keys(TRIGGER))
+  withdrawnRow(sdk, 'ROUTE-DT-01', 'designate', 'designate → onChange fires', RELAYED.noDesignated)
   triggerTable('ROUTE-DT-02', (w) => w.managed, ['manage', 'release', 'handOver', 'takeBack', 'revoke'])
 }
 
@@ -1071,12 +1007,7 @@ function stateTransitions(sdk) {
   })
   // Row 6's system note and the offers to the user run in test/v3/dsh-connector/revocation (C-REVOKE).
   // Row 7 (Q24 succession P → P' → Managed(P')) runs in test/v3/dsh-connector/hosted (C-SUCCEED).
-  worldRow(sdk, 'HAND-ST-01', '8', 'Managed(P) → the designated Fishball changes → Managed(P); nothing produced', async (w) => {
-    const { p } = await managedByP(w)
-    w.principal(ID.q, { connected: true })
-    await expectNone(w, () => designate(w, ID.q))
-    assert.equal(w.managed.managerOf(S.s1), p)
-  })
+  withdrawnRow(sdk, 'HAND-ST-01', '8', 'Managed(P) → the designated Fishball changes → Managed(P); nothing produced', RELAYED.noDesignated)
   worldRow(sdk, 'HAND-ST-01', '9', `Managed(P) → Q session_release → Managed(P); refused ${MANAGED_REFUSAL.otherManager}`, async (w) => {
     const { p } = await managedByP(w)
     const q = w.principal(ID.q, { connected: true })
@@ -1084,7 +1015,7 @@ function stateTransitions(sdk) {
     assert.equal(w.managed.managerOf(S.s1), p)
   })
   worldRow(sdk, 'HAND-ST-01', '10', 'Unmanaged → any event of the session → Unmanaged; no turn-finished / state for anyone', async (w) => {
-    w.principal(ID.d, { connected: true, designated: true })
+    w.principal(ID.d, { connected: true })
     w.session(S.s1)
     await unwatched(w, S.s1)
   })
@@ -1189,74 +1120,26 @@ function stateTransitions(sdk) {
     assert.deepEqual(managedSet(w), [])
   })
 
-  // ROUTE-ST-02 — The no-recipient message queue (K1c-3). States: Empty, Held(n).
-  worldRow(sdk, 'ROUTE-ST-02', '1', 'Empty → message from an unmanaged session, no D → Held(1); nothing in any mailbox', async (w) => {
-    w.session(S.s1)
-    w.principal(ID.q)
-    await messageHeld(w)
-  })
-  worldRow(sdk, 'ROUTE-ST-02', '2', 'Held(3) → a paired entry designated, offline → Empty; the three move into its mailbox in order', async (w) => {
-    w.session(S.s1)
-    const held = [await messageHeld(w), await messageHeld(w), await messageHeld(w)].map((m) => m.text)
-    const d = w.principal(ID.d)
-    designate(w, ID.d)
-    await until(async () => (await messageTexts(w, d)).length >= held.length, 'the held messages in D\'s mailbox')
-    assert.deepEqual(await messageTexts(w, d), held)
-  })
-  worldRow(sdk, 'ROUTE-ST-02', '3', 'Held(2) → an unpaired entry designated → Held(2); nothing moves', async (w) => {
-    w.session(S.s1)
-    await messageHeld(w)
-    await messageHeld(w)
-    await expectNone(w, () => { w.principal(ID.x, { paired: false }); designate(w, ID.x) })
-  })
-  worldRow(sdk, 'ROUTE-ST-02', '4', `Held(2) → a paired but disabled entry designated → Held(2) (${RELAYED.disabledD})`, async (w) => {
-    w.session(S.s1)
-    await messageHeld(w)
-    await messageHeld(w)
-    const d = w.principal(ID.d)
-    w.tokens.disable(ID.d)
-    await expectNone(w, () => designate(w, ID.d))
-    assert.deepEqual(await messageTexts(w, d), [])
-  })
-  worldRow(sdk, 'ROUTE-ST-02', '5', 'Held(2) → connector restart → Held(2) (durable); then designated → both move in, in order', async (w) => {
-    w.session(S.s1)
-    const held = [await messageHeld(w), await messageHeld(w)].map((m) => m.text)
-    await w.reopen()
-    const d = w.principal(ID.d)
-    designate(w, ID.d)
-    await until(async () => (await messageTexts(w, d)).length >= held.length, 'the held messages after a restart')
-    assert.deepEqual(await messageTexts(w, d), held)
-  })
-  worldRow(sdk, 'ROUTE-ST-02', '6', 'Held → a message from a managed session → goes to its manager at once, never into the queue', async (w) => {
+  // ROUTE-ST-02 — The no-recipient message queue (K1c-3). Withdrawn by C-WIRE-2 (the user's q5): there is no
+  // queue; an unmanaged session's message_agent is not-managed (EVT-EP-01 11), a managed one's goes to its manager.
+  for (const [part, title] of [
+    ['1', 'Empty → message from an unmanaged session, no D → Held(1)'],
+    ['2', 'Held(3) → a paired entry designated, offline → Empty; the three move in order'],
+    ['3', 'Held(2) → an unpaired entry designated → Held(2)'],
+    ['4', 'Held(2) → a paired but disabled entry designated → Held(2)'],
+    ['5', 'Held(2) → connector restart → Held(2); then designated → both move in'],
+    ['7', 'Held(2), D\'s mailbox full → designated: each freed slot moves the oldest in'],
+  ]) withdrawnRow(sdk, 'ROUTE-ST-02', part, title, RELAYED.noDesignated)
+  worldRow(sdk, 'ROUTE-ST-02', '6', 'a message from a managed session → its manager at once; an unmanaged session\'s is not-managed and held nowhere', async (w) => {
     w.session(S.s1)
     w.session(S.s2)
-    await messageHeld(w)
+    await messageNotManaged(w, S.s1)
     const p = w.principal(ID.p)
     await manage(w, S.s2, p)
     await messageTo(w, S.s2, p)
+    assert.deepEqual(await messageTexts(w, p), [(await pendingOf(w, p)).find((e) => e.type === ET.message).payload.text])
   })
-  worldRow(sdk, 'ROUTE-ST-02', '7', `Held(2), D's mailbox full → designated: nothing fits, Held(2); a new message joins the end; each freed slot (ack) moves the oldest in, in order (${RELAYED.roomSignal})`, async (w) => {
-    w.session(S.s1)
-    const d = w.principal(ID.d)
-    const fill = []
-    for (let i = 0; i < QUEUE.maxQueuedInputs; i += 1) {
-      const result = await w.realMailbox.commit(d, { type: ET.message, sourceSessionId: null, correlationId: null, payload: message() })
-      assert.equal(result?.ok, true, `filling D's mailbox: ${JSON.stringify(result)}`)
-    }
-    fill.push(...await pendingOf(w, d))
-    const held = [await messageHeld(w), await messageHeld(w)].map((m) => m.text)
-    await expectNone(w, () => designate(w, ID.d))
-    held.push((await messageHeld(w)).text)
-    for (const [i, text] of held.entries()) {
-      const ack = await w.mailbox.ack(d, [{ eventId: fill[i].eventId, payloadDigest: fill[i].payloadDigest }])
-      assert.equal(ack?.ok, true, `ack: ${JSON.stringify(ack)}`)
-      await until(async () => (await messageTexts(w, d)).includes(text), `held message ${i + 1} moved in`)
-      await quiet()
-      const texts = await messageTexts(w, d)
-      assert.deepEqual(held.filter((h) => texts.includes(h)), held.slice(0, i + 1), 'held messages moved in out of order or more than the freed room')
-    }
-  })
-  todoRow(sdk, 'ROUTE-ST-02', 'DSH', 'held messages flush after a real connector restart with the setting changed in native settings', LATER.wire)
+  withdrawnRow(sdk, 'ROUTE-ST-02', 'DSH', 'held messages flush after a real connector restart with the setting changed in native settings', RELAYED.noDesignated)
 }
 
 // ================================================================================================
@@ -1276,8 +1159,6 @@ const gatedRow = (sdk, id, part, title, fn) => row(sdk, id, part, title, async (
 })
 /** A K1 settlement payload (EVENT_PAYLOAD_SHAPES.settlement) for `approvalId`. */
 export const settlementOf = (approvalId, outcome = SETTLEMENT_OUTCOME.allowed, by = SETTLED_BY.principal) => ({ approvalId, outcome, by })
-/** The answer a waiting ask_agent gets when its ask is settled (routing/index.js JSDoc of settle). */
-export const askSettled = (settlement) => ({ ok: true, settlement })
 const UNKNOWN_OFFER = formatOfferId(MUTATION.unknownApproval, OFFER_ID.firstRevision)
 
 /** `settle` of a live offer: resolves true and commits exactly one `settlement` (correlationId = offerId, payload `want`) to `key`. */
@@ -1293,12 +1174,14 @@ export async function settleRefused(w, offerId, settlement) {
   const { value } = await expectNone(w, () => w.routing.settle(offerId, settlement))
   assert.equal(value, false, 'settle of an offer that is not live did not return false')
 }
-/** A live ask from unmanaged S1 to the connected designated D: `{d, event, offerId, approvalId, promise}`. */
-async function liveAsk(w) {
-  const d = w.principal(ID.d, { connected: true, designated: true })
-  w.session(S.s1)
-  const { event, promise } = await askTo(w, S.s1, d)
-  return { d, event, offerId: event.offer.offerId, approvalId: event.payload.approvalId, promise }
+/**
+ * A live permission offer of S1, managed by P: `{p, event, offerId, approvalId}`. C-WIRE-2 replaced the
+ * ask these rows used (the user: "不给ask_agent工具") with the permission offer, the one answerable request left.
+ */
+async function liveOffer(w) {
+  const { p } = await managedByP(w)
+  const event = await offerTo(w, S.s1, ET.permission, p)
+  return { p, event, offerId: event.offer.offerId, approvalId: event.payload.approvalId }
 }
 /**
  * Starts `start()` (an offer or ask call) with its mailbox commit held: resolves once that commit
@@ -1349,12 +1232,7 @@ function settleTransitions(sdk) {
     await expectRetirement(w, () => w.managed.release(S.s1, p), p, offer)
     await settleRefused(w, offer.offer.offerId, settlementOf(offer.payload.approvalId))
   })
-  worldRow(sdk, 'ROUTE-ST-03', '6', 'Live ask → settle → Settled: one settlement to D; the waiting ask_agent resolves {ok: true, settlement}', async (w) => {
-    const ask = await liveAsk(w)
-    const s = settlementOf(ask.approvalId)
-    await settledTo(w, () => w.routing.settle(ask.offerId, s), ask.d, ask.offerId, s)
-    assert.deepEqual(await ask.promise, askSettled(s))
-  })
+  withdrawnRow(sdk, 'ROUTE-ST-03', '6', 'Live ask → settle → Settled: one settlement to D; the waiting ask_agent resolves', RELAYED.noAsk)
   gatedRow(sdk, 'ROUTE-ST-03', '7', 'Queued (the offer\'s commit in flight) → settle → runs after the commit: true; the offer and one settlement in P\'s mailbox; a second settle → false', async (w) => {
     const { p } = await managedByP(w)
     const d = descriptor(ET.permission)
@@ -1373,23 +1251,64 @@ function settleTransitions(sdk) {
     assert.deepEqual(mine.find((e) => e.type === ET.settlement).payload, s)
     await settleRefused(w, d.offerId, s)
   })
-  gatedRow(sdk, 'ROUTE-ST-03', '8', 'Queued ask (its commit in flight) → settle → true after the commit; one settlement to D; the waiting ask_agent resolves {ok: true, settlement}', async (w) => {
-    const d = w.principal(ID.d, { connected: true, designated: true })
-    w.session(S.s1)
-    let asked
-    const { value } = await expectEntries(w, async () => {
-      const flight = await inFlight(w, ET.ask, () => w.routing.askAgent(S.s1, { question: FIXTURE.question }))
-      asked = flight.call
-      const s = settlementOf(flight.draft.payload.approvalId)
-      const settled = w.routing.settle(flight.draft.correlationId, s)
-      assert.equal(await settlesWithin(settled, WAIT.quietMs), false, 'settle answered before the ask\'s own commit ran')
-      flight.gate.open()
-      return { s, offerId: flight.draft.correlationId, settled: await settled }
-    }, 2)
-    assert.equal(value.settled, true, 'settle of an ask still queued on the chain did not find it')
-    const settlement = (await pendingOf(w, d)).filter((e) => e.type === ET.settlement)
-    assert.deepEqual(settlement.map((e) => [e.correlationId, e.payload]), [[value.offerId, value.s]])
-    assert.deepEqual(await asked, askSettled(value.s))
+  withdrawnRow(sdk, 'ROUTE-ST-03', '8', 'Queued ask (its commit in flight) → settle → true after the commit; the waiting ask_agent resolves', RELAYED.noAsk)
+
+  // ROUTE-ST-05 — escalate (C-WIRE-2, RELAYED.escalate): Live → Escalated (with the user) → Settled by the user.
+  worldRow(sdk, 'ROUTE-ST-05', '1', 'Live → escalate → true; nothing committed; the offer leaves the live offers; a second escalate → false', async (w) => {
+    const o = await liveOffer(w)
+    const { value } = await expectNone(w, () => w.routing.escalate(o.offerId))
+    assert.equal(value, true)
+    assert.deepEqual(w.routing.liveOffers(S.s1).filter((x) => x.descriptor.offerId === o.offerId), [], 'the escalated offer is still live')
+    assert.equal(await w.routing.escalate(o.offerId), false)
+  })
+  worldRow(sdk, 'ROUTE-ST-05', '2', 'Escalated → the user answers (settle by user) → one settlement to the same pair', async (w) => {
+    const o = await liveOffer(w)
+    assert.equal(await w.routing.escalate(o.offerId), true)
+    const s = settlementOf(o.approvalId, SETTLEMENT_OUTCOME.allowed, SETTLED_BY.user)
+    await settledTo(w, () => w.routing.settle(o.offerId, s), o.p, o.offerId, s)
+  })
+  worldRow(sdk, 'ROUTE-ST-05', '3', 'Escalated → release → the escalated offer is dropped with no retirement; a later settle → false', async (w) => {
+    const o = await liveOffer(w)
+    assert.equal(await w.routing.escalate(o.offerId), true)
+    const { value } = await expectNone(w, () => w.managed.release(S.s1, o.p))
+    assert.deepEqual(value, { ok: true })
+    await settleRefused(w, o.offerId, settlementOf(o.approvalId, SETTLEMENT_OUTCOME.allowed, SETTLED_BY.user))
+  })
+  worldRow(sdk, 'ROUTE-ST-05', '4', 'no such offer → escalate → false; nothing committed', async (w) => {
+    await managedByP(w)
+    const { value } = await expectNone(w, () => w.routing.escalate(UNKNOWN_OFFER))
+    assert.equal(value, false)
+  })
+  // ROUTE-ST-06 — onLeft (C-WIRE-2, RELAYED.onLeft): the offers an end of management retired go to the user.
+  for (const [part, end] of [
+    ['release', (w, p) => w.managed.release(S.s1, p)],
+    ['Take back', (w) => w.handover.takeBack(S.s1, FIXTURE.note)],
+    ['revocation', (w) => revokeEntry(w, ID.p, REVOCATION.disabled)],
+  ]) {
+    worldRow(sdk, 'ROUTE-ST-06', part, `Managed(P) with two live offers → ${part} → onLeft fires once with both [{offerId, sessionId, type}]`, async (w) => {
+      const { p } = await managedByP(w)
+      const first = await offerTo(w, S.s1, ET.permission, p)
+      const second = await offerTo(w, S.s1, ET.question, p)
+      const calls = []
+      const dispose = w.routing.onLeft((offers) => { calls.push(offers) })
+      await end(w, p)
+      await until(() => calls.length >= 1, 'onLeft')
+      await quiet()
+      dispose()
+      assert.equal(calls.length, 1, 'onLeft fired more than once')
+      const got = calls[0].map((x) => ({ offerId: x.offerId, sessionId: x.sessionId, type: x.type })).sort((a, b) => a.offerId.localeCompare(b.offerId))
+      const want = [first, second].map((e) => ({ offerId: e.offer.offerId, sessionId: S.s1, type: e.type })).sort((a, b) => a.offerId.localeCompare(b.offerId))
+      assert.deepEqual(got, want)
+    })
+  }
+  worldRow(sdk, 'ROUTE-ST-06', 'none', 'Managed(P) with no live offer → release → onLeft does not fire', async (w) => {
+    const { p } = await managedByP(w)
+    const calls = []
+    const dispose = w.routing.onLeft((offers) => { calls.push(offers) })
+    assert.deepEqual(await w.managed.release(S.s1, p), { ok: true })
+    await quiet()
+    dispose()
+    assert.deepEqual(calls, [])
   })
 
   // ROUTE-DT-03 — settle(A) racing a management change or a withdraw of A. Both are queued, in
@@ -1457,16 +1376,6 @@ async function callThenMutate(w, m, mutate, timing) {
 }
 /** The payloads of the `message` events pending in `key`'s mailbox, in mailbox order. */
 const messagePayloads = async (w, key) => (await pendingOf(w, key)).filter((e) => e.type === ET.message).map((e) => e.payload)
-/** Designates D (offline) and waits until `want` are its messages, exactly and in order; a new message then follows them. */
-async function flushedAs(w, want) {
-  const d = w.principal(ID.d)
-  designate(w, ID.d)
-  await until(async () => (await messagePayloads(w, d)).length >= want.length, `${want.length} held messages in D's mailbox`)
-  await quiet()
-  assert.deepEqual(await messagePayloads(w, d), want, 'the held queue flushed something other than the payloads as they were at their calls')
-  const next = await messageTo(w, S.s1, d)
-  assert.deepEqual(await messagePayloads(w, d), [...want, next.payload], 'a new message did not follow the flushed ones')
-}
 /** README's "refused at the call": a TypeError thrown synchronously by `call`, not a promise. */
 export function refusedAtCall(call) {
   let result
@@ -1482,18 +1391,10 @@ function payloadPartitions(sdk) {
   // ROUTE-EP-02 — message_agent's payload is taken as it was at the call (merge review fix 1).
   for (const [name, mutation] of Object.entries(PAYLOAD_MUTATIONS)) {
     for (const timing of Object.values(TIMINGS)) {
-      worldRow(sdk, 'ROUTE-EP-02', `held ${name} ${timing === TIMINGS.beforeResolve ? 'early' : 'late'}`, `no recipient: payload held, then ${name} mutation ${timing} → the flush carries the payload as at the call; the next held and a new message follow in order`, async (w) => {
-        w.session(S.s1)
-        const first = imaged()
-        const want = structuredClone(first)
-        const { value } = await expectNone(w, () => callThenMutate(w, first, mutation.apply, timing))
-        assert.deepEqual(value, { ok: true })
-        const second = await messageHeld(w)
-        await flushedAs(w, [want, second])
-      })
-      worldRow(sdk, 'ROUTE-EP-02', `routed ${name} ${timing === TIMINGS.beforeResolve ? 'early' : 'late'}`, `D designated: ${name} mutation ${timing} → D's message carries the payload as at the call; the next message follows`, async (w) => {
-        const d = w.principal(ID.d, { connected: true, designated: true })
-        w.session(S.s1)
+      withdrawnRow(sdk, 'ROUTE-EP-02', `held ${name} ${timing === TIMINGS.beforeResolve ? 'early' : 'late'}`, `no recipient: payload held, then ${name} mutation ${timing}`, RELAYED.noDesignated)
+      // Re-baselined by C-WIRE-2 (q5): the routed message goes to S1's manager P, not a designated D.
+      worldRow(sdk, 'ROUTE-EP-02', `routed ${name} ${timing === TIMINGS.beforeResolve ? 'early' : 'late'}`, `S1 managed by P: ${name} mutation ${timing} → P's message carries the payload as at the call; the next message follows`, async (w) => {
+        const { p: d } = await managedByP(w)
         const m = imaged()
         const want = structuredClone(m)
         const { value, event } = await expectOne(w, () => callThenMutate(w, m, mutation.apply, timing), d, ET.message)
@@ -1503,18 +1404,9 @@ function payloadPartitions(sdk) {
       })
     }
     if (mutation.valid) continue
-    worldRow(sdk, 'ROUTE-EP-02', `call ${name} held`, `no recipient: a payload already ${name} at the call → TypeError at the call; nothing held (only the valid messages around it flush)`, async (w) => {
-      w.session(S.s1)
-      const before = await messageHeld(w)
-      const bad = imaged()
-      mutation.apply(bad)
-      await expectNone(w, () => refusedAtCall(() => w.routing.messageAgent(S.s1, bad)))
-      const after = await messageHeld(w)
-      await flushedAs(w, [before, after])
-    })
-    worldRow(sdk, 'ROUTE-EP-02', `call ${name} routed`, `D designated: a payload already ${name} at the call → TypeError at the call; nothing committed; the next message goes through`, async (w) => {
-      const d = w.principal(ID.d, { connected: true, designated: true })
-      w.session(S.s1)
+    withdrawnRow(sdk, 'ROUTE-EP-02', `call ${name} held`, `no recipient: a payload already ${name} at the call → TypeError; nothing held`, RELAYED.noDesignated)
+    worldRow(sdk, 'ROUTE-EP-02', `call ${name} routed`, `S1 managed by P: a payload already ${name} at the call → TypeError at the call; nothing committed; the next message goes through`, async (w) => {
+      const { p: d } = await managedByP(w)
       const bad = imaged()
       mutation.apply(bad)
       await expectNone(w, () => refusedAtCall(() => w.routing.messageAgent(S.s1, bad)))
@@ -1524,12 +1416,12 @@ function payloadPartitions(sdk) {
 
   // ROUTE-EP-03 — settle's settlement payload: taken as it was at the call; an uncopyable or
   // schema-invalid one is refused (TypeError) and leaves the offer live.
-  worldRow(sdk, 'ROUTE-EP-03', '1', 'ask settled, then the settlement\'s top-level outcome changed before settle resolves → the committed payload and the ask\'s answer are as at the call', async (w) => {
-    const ask = await liveAsk(w)
-    const s = settlementOf(ask.approvalId)
+  // Rows 1, 3 and the bad-settlement rows re-baselined by C-WIRE-2 ("不给ask_agent工具"): a permission offer, not an ask.
+  worldRow(sdk, 'ROUTE-EP-03', '1', 'permission offer settled, then the settlement\'s top-level outcome changed before settle resolves → the committed payload is as at the call', async (w) => {
+    const o = await liveOffer(w)
+    const s = settlementOf(o.approvalId)
     const want = structuredClone(s)
-    await settledTo(w, () => { const pending = w.routing.settle(ask.offerId, s); s.outcome = SETTLEMENT_OUTCOME.rejected; return pending }, ask.d, ask.offerId, want)
-    assert.deepEqual(await ask.promise, askSettled(want))
+    await settledTo(w, () => { const pending = w.routing.settle(o.offerId, s); s.outcome = SETTLEMENT_OUTCOME.rejected; return pending }, o.p, o.offerId, want)
   })
   worldRow(sdk, 'ROUTE-EP-03', '2', 'question offer settled answered, then a nested answer changed before settle resolves → the committed payload is as at the call', async (w) => {
     const { p } = await managedByP(w)
@@ -1538,10 +1430,10 @@ function payloadPartitions(sdk) {
     const want = structuredClone(s)
     await settledTo(w, () => { const pending = w.routing.settle(offer.offer.offerId, s); s.answers[0].selected.push(SETTLE_FIXTURE.otherChoice); return pending }, p, offer.offer.offerId, want)
   })
-  gatedRow(sdk, 'ROUTE-EP-03', '3', 'settle queued behind the ask\'s in-flight commit; the settlement changed while queued → the committed payload and the ask\'s answer are as at the call', async (w) => {
-    const d = w.principal(ID.d, { connected: true, designated: true })
-    w.session(S.s1)
-    const { call, draft, gate } = await inFlight(w, ET.ask, () => w.routing.askAgent(S.s1, { question: FIXTURE.question }))
+  gatedRow(sdk, 'ROUTE-EP-03', '3', 'settle queued behind the offer\'s in-flight commit; the settlement changed while queued → the committed payload is as at the call', async (w) => {
+    const { p: d } = await managedByP(w)
+    const offered = descriptor(ET.permission)
+    const { call, draft, gate } = await inFlight(w, ET.permission, () => w.routing.offer(S.s1, ET.permission, offered))
     const s = settlementOf(draft.payload.approvalId)
     const want = structuredClone(s)
     const settled = w.routing.settle(draft.correlationId, s)
@@ -1551,7 +1443,7 @@ function payloadPartitions(sdk) {
     assert.equal(await settled, true)
     await until(async () => (await pendingOf(w, d)).some((e) => e.type === ET.settlement), 'the settlement in D\'s mailbox')
     assert.deepEqual((await pendingOf(w, d)).filter((e) => e.type === ET.settlement).map((e) => e.payload), [want])
-    assert.deepEqual(await call, askSettled(want))
+    assert.equal((await call)?.recipient, d)
   })
   /** Settlements no K1 settlement payload allows: uncopyable (b) and copyable but schema-invalid (c). */
   const BAD_SETTLEMENTS = Object.freeze({
@@ -1563,31 +1455,28 @@ function payloadPartitions(sdk) {
     'approvalId of the wrong type': (s) => { s.approvalId = MUTATION.wrongType },
     'an extra member': (s) => { s[MUTATION.extraKey] = MUTATION.text },
   })
-  /** Settles `ask` with a settlement made bad by `spoil`: rejects TypeError, nothing committed, the ask still waits. */
-  async function badSettleKeepsLive(w, ask, spoil) {
-    const bad = settlementOf(ask.approvalId)
+  /** Settles `o` with a settlement made bad by `spoil`: rejects TypeError, nothing committed, the offer stays live. */
+  async function badSettleKeepsLive(w, o, spoil) {
+    const bad = settlementOf(o.approvalId)
     spoil(bad)
-    await expectNone(w, () => assert.rejects(() => w.routing.settle(ask.offerId, bad), TypeError))
-    assert.equal(await settlesWithin(ask.promise, WAIT.quietMs), false, 'a refused settlement answered the waiting ask')
+    await expectNone(w, () => assert.rejects(() => w.routing.settle(o.offerId, bad), TypeError))
   }
   for (const [name, spoil] of Object.entries(BAD_SETTLEMENTS)) {
-    worldRow(sdk, 'ROUTE-EP-03', `bad ${name}`, `settle with a settlement whose ${name} → rejects TypeError; nothing committed; the ask still waits; a later valid settle → true, one settlement, the ask answered`, async (w) => {
-      const ask = await liveAsk(w)
-      await badSettleKeepsLive(w, ask, spoil)
-      const s = settlementOf(ask.approvalId)
-      await settledTo(w, () => w.routing.settle(ask.offerId, s), ask.d, ask.offerId, s)
-      assert.deepEqual(await ask.promise, askSettled(s))
+    worldRow(sdk, 'ROUTE-EP-03', `bad ${name}`, `settle with a settlement whose ${name} → rejects TypeError; nothing committed; the offer stays live; a later valid settle → true, one settlement`, async (w) => {
+      const o = await liveOffer(w)
+      await badSettleKeepsLive(w, o, spoil)
+      const s = settlementOf(o.approvalId)
+      await settledTo(w, () => w.routing.settle(o.offerId, s), o.p, o.offerId, s)
     })
   }
-  worldRow(sdk, 'ROUTE-EP-03', 'bad then withdraw', `a refused settlement, then withdraw → true; one retirement (${RETIREMENT_REASON.withdrawn}) of the ask to D; the ask answers ${REFUSAL.unavailable}`, async (w) => {
-    const ask = await liveAsk(w)
-    await badSettleKeepsLive(w, ask, BAD_SETTLEMENTS['outcome not a K1 outcome'])
-    assert.equal(await w.routing.withdraw(ask.offerId), true, 'withdraw did not find the ask live after a refused settlement')
-    await until(async () => (await endsOf(w, ask.offerId, ask.event.eventId)).length >= 1, 'the ask\'s retirement')
+  worldRow(sdk, 'ROUTE-EP-03', 'bad then withdraw', `a refused settlement, then withdraw → true; one retirement (${RETIREMENT_REASON.withdrawn}) of the offer to P`, async (w) => {
+    const o = await liveOffer(w)
+    await badSettleKeepsLive(w, o, BAD_SETTLEMENTS['outcome not a K1 outcome'])
+    assert.equal(await w.routing.withdraw(o.offerId), true, 'withdraw did not find the offer live after a refused settlement')
+    await until(async () => (await endsOf(w, o.offerId, o.event.eventId)).length >= 1, 'the offer\'s retirement')
     await quiet()
-    const ends = await endsOf(w, ask.offerId, ask.event.eventId)
-    assert.deepEqual(ends.map((x) => [x.key, x.e.type, x.e.payload.reason]), [[ask.d, ET.retirement, RETIREMENT_REASON.withdrawn]])
-    assert.deepEqual(await ask.promise, { ok: false, code: REFUSAL.unavailable })
+    const ends = await endsOf(w, o.offerId, o.event.eventId)
+    assert.deepEqual(ends.map((x) => [x.key, x.e.type, x.e.payload.reason]), [[o.p, ET.retirement, RETIREMENT_REASON.withdrawn]])
   })
 }
 

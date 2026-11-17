@@ -23,14 +23,27 @@ import { MOVED_INTO_CORE, NPM, SDK, SIDES, V3 } from '../package-boundaries/cons
 import { observe, readManifest } from '../package-boundaries/packages.mjs'
 import { WITHDRAWN_BY, withdrawnRow } from '../../dsh-instance/host/withdrawn.mjs'
 import {
-  ADMIN_PROTOCOL, BASE, CODE_SAMPLES, CORE_CHILD_HALVES, DSH_EXPORTS, DSH_MODULES, EXPECTED_LIBRARY, FILES_MODULE, FINGERPRINT_SAMPLES, FORMER_INTERIM_COPIES, HOST_PEERS, INSIDE_CASES,
-  LONG_RUN, MANIFEST_EXPORT, PLACED, PROFILE_SAMPLES, REDACT, REDACT_SAMPLES, SDK_SCOPE, SHARED_EXPORTS, moduleFile, sdkModules, subpath,
+  ADMIN_PROTOCOL, BASE, CODE_SAMPLES, CORE_CHILD_HALVES, DSH_EXPORTS, DSH_MODULES, DSH_MOVED_TO, EXPECTED_LIBRARY, FILES_MODULE, FINGERPRINT_SAMPLES, FORMER_INTERIM_COPIES,
+  HOST_PEERS, INSIDE_CASES, LONG_RUN, MANIFEST_EXPORT, NO_LIBRARY, PLACED, PROFILE_SAMPLES, REDACT, REDACT_SAMPLES, SDK_SCOPE, SHARED_EXPORTS, moduleFile, sdkModules,
+  subpath,
 } from './constants.mjs'
 
 const show = (v) => JSON.stringify(v)
 const names = (pkgs) => pkgs.map((p) => p.name)
 const otherSide = (side) => Object.values(SIDES).find((s) => s !== side)
 const libraryFile = (lib, module) => path.join(lib.dir, moduleFile(module))
+/**
+ * The DSH side's copy of `module`: dsh-connector-shared's, or, for a module C-WIRE-2 moved out of it
+ * (R-ARCH-08 strict, DSH_MOVED_TO), the file in the package that is its only user.
+ */
+function dshFile(module) {
+  const moved = DSH_MOVED_TO[module]
+  if (moved === undefined) return libraryFile(V3.dshShared, module)
+  const [pkg, ...dirs] = moved
+  return path.join(pkg.dir, ...dirs, moduleFile(module))
+}
+/** The copy of `module` in `lib` (the DSH side's library resolves moved modules to their new home). */
+const copyFile = (lib, module) => (lib === V3.dshShared ? dshFile(module) : libraryFile(lib, module))
 const needLibrary = (lib) => assert.ok(has(lib), path.relative(REPO, lib.dir) + '/package.json is missing')
 
 // -------------------------------------------------------------------------------- module loading
@@ -166,6 +179,13 @@ export function registerSplitCases(sdk) {
       assert.deepEqual([...unit.refs.filter((r) => other.includes(r.target)).map(describeRef), ...manifestEdges(manifest, other).map((e) => e.field + ': ' + e.name)], [])
     })
   }
+  // C-WIRE-2 (R-ARCH-08 strict): the adapter owns its oauth-client and takes no library at all.
+  for (const name of NO_LIBRARY) {
+    caseTest(sdk, 'SPLIT-UC-01', `main (${name})`, `${name} imports no library and names none in a dependency field (R-ARCH-08 strict, C-WIRE-2)`, async () => {
+      const unit = await unitOf(name)
+      assert.deepEqual([...unit.refs.filter((r) => PLACED.libraries.includes(r.target)).map(describeRef), ...manifestEdges(unit.manifest, PLACED.libraries).map((e) => e.field + ': ' + e.name)], [])
+    })
+  }
   caseTest(sdk, 'SPLIT-UC-01', 'A1', 'every DSH-side importer of a library module takes it from dsh-connector-shared/<module> (an exported subpath)', async () => {
     const wrong = []
     for (const p of SIDES.dsh.packages.filter((x) => x !== V3.dshShared && has(x))) {
@@ -182,26 +202,34 @@ export function registerSplitCases(sdk) {
   })
 
   // ---------------------------------------------------------------- SPLIT-EP-01: what dsh-connector-shared holds
-  caseTest(sdk, 'SPLIT-EP-01', 1, `dsh-connector-shared exports ${DSH_EXPORTS.map(subpath).join(', ')}, each a shipped file`, () => {
+  // Re-baselined by C-WIRE-2 (R-ARCH-08 strict): exactly ./redact, ./request-host and ./package.json.
+  caseTest(sdk, 'SPLIT-EP-01', 1, `dsh-connector-shared exports exactly ${[...DSH_EXPORTS.map(subpath), MANIFEST_EXPORT].join(', ')}, each a shipped file`, () => {
     needLibrary(V3.dshShared)
     const exports = readManifest(V3.dshShared.dir).exports ?? {}
     for (const module of DSH_EXPORTS) {
       assert.equal(exports[subpath(module)], subpath(moduleFile(module)), subpath(module) + ': ' + show(exports[subpath(module)]))
       assert.ok(fs.existsSync(libraryFile(V3.dshShared, module)), moduleFile(module) + ' is missing')
     }
-    assert.ok(Object.hasOwn(exports, MANIFEST_EXPORT), MANIFEST_EXPORT + ' is not exported')
+    assert.deepEqual(Object.keys(exports).sort(), [...DSH_EXPORTS.map(subpath), MANIFEST_EXPORT].sort())
   })
+  for (const [module, [pkg, ...dirs]] of Object.entries(DSH_MOVED_TO)) {
+    caseTest(sdk, 'SPLIT-EP-01', `1 (${module} moved)`, `${module} left dsh-connector-shared for ${pkg.name}/${[...dirs, moduleFile(module)].join('/')}, its only user (R-ARCH-08 strict, C-WIRE-2)`, () => {
+      needLibrary(V3.dshShared)
+      assert.equal(Object.hasOwn(readManifest(V3.dshShared.dir).exports ?? {}, subpath(module)), false, subpath(module) + ' is still exported')
+      assert.equal(fs.existsSync(libraryFile(V3.dshShared, module)), false, moduleFile(module) + ' still ships in dsh-connector-shared')
+      assert.ok(fs.existsSync(dshFile(module)), path.relative(REPO, dshFile(module)) + ' is missing')
+    })
+  }
   caseTest(sdk, 'SPLIT-EP-01', '1 (D14)', `dsh-connector-shared no longer holds ${ADMIN_PROTOCOL} (no ${subpath(ADMIN_PROTOCOL)} export, no ${moduleFile(ADMIN_PROTOCOL)})`, () => {
     needLibrary(V3.dshShared)
     assert.equal(Object.hasOwn(readManifest(V3.dshShared.dir).exports ?? {}, subpath(ADMIN_PROTOCOL)), false, subpath(ADMIN_PROTOCOL) + ' is still exported')
     assert.equal(fs.existsSync(libraryFile(V3.dshShared, ADMIN_PROTOCOL)), false, moduleFile(ADMIN_PROTOCOL) + ' still ships')
   })
-  caseTest(sdk, 'SPLIT-EP-01', 2, 'dsh-connector-shared peers on exactly the host packages of the library it came from', () => {
+  // Re-baselined by C-WIRE-2 (R-ARCH-08 strict): the provider-sync modules that needed host peers left.
+  caseTest(sdk, 'SPLIT-EP-01', 2, 'dsh-connector-shared has no peerDependencies (its provider-sync modules moved into the instance, C-WIRE-2)', () => {
     needLibrary(V3.dshShared)
-    const before = JSON.parse(execFileSync('git', ['show', `${BASE.ref}:${BASE.folder}/package.json`], { cwd: REPO, encoding: 'utf8' })).peerDependencies
     const peers = readManifest(V3.dshShared.dir).peerDependencies ?? {}
     assert.deepEqual(Object.keys(peers).sort(), [...HOST_PEERS].sort())
-    assert.deepEqual(peers, before)
   })
   // Rewritten by REMOVE-V2b (R-ARCH-08 strict, Fishball 2026-11-16): the row was "fishball-shared keeps
   // ./files (one copy per library)". files and oauth-client had one Fishball-side user, core, and moved
@@ -253,7 +281,7 @@ export function registerSplitCases(sdk) {
       const [caseId, row, name] = ['SPLIT-' + id.split('-')[0] + '-03', `${lib.name} ${id}`, `inside(${show(root)}, ${show(file)}) is ${expected}: ${title}`]
       if (lib === V3.shared) { withdrawn(sdk, caseId, row, name, WITHDRAWN_BY.sharedSingleUsers); continue }
       caseTest(sdk, caseId, row, name, async () => {
-        const { inside } = await load(sdk, libraryFile(lib, FILES_MODULE))
+        const { inside } = await load(sdk, copyFile(lib, FILES_MODULE))
         assert.equal(inside(root, file), expected)
       })
     }
@@ -264,10 +292,11 @@ export function registerSplitCases(sdk) {
   // dsh-sync-default, dsh-sync-default-model, dsh-provider-sync), so its "same constants as at BASE"
   // row is withdrawn; test/v3/dsh-instance/host SYNC names checks the new values.
   withdrawn(sdk, 'SPLIT-EP-04', SYNC_HOST_MODULE, `dsh-connector-shared/${SYNC_HOST_MODULE} has the same exports and constant values as fishball-shared/${SYNC_HOST_MODULE} at ${BASE.ref}`)
+  // C-WIRE-2 (R-ARCH-08 strict): a moved module is compared at its new home (dshFile), behaviour unchanged.
   for (const module of DSH_MODULES.filter((m) => m !== SYNC_HOST_MODULE)) {
-    caseTest(sdk, 'SPLIT-EP-04', module, `dsh-connector-shared/${module} has the same exports and constant values as fishball-shared/${module} at ${BASE.ref}`, async (t) => {
+    caseTest(sdk, 'SPLIT-EP-04', module, `the DSH side's ${module} (${path.relative(REPO, dshFile(module))}) has the same exports and constant values as fishball-shared/${module} at ${BASE.ref}`, async (t) => {
       needLibrary(V3.dshShared)
-      assert.deepEqual(surface(await load(sdk, libraryFile(V3.dshShared, module))), surface(await baseModule(sdk, module)))
+      assert.deepEqual(surface(await load(sdk, dshFile(module))), surface(await baseModule(sdk, module)))
     })
   }
   caseTest(sdk, 'SPLIT-EP-04', 'redact', 'redact masks exactly as before on every sample (bearer, assignments, long runs at 31/32/33, paths, empty)', async (t) => {
@@ -278,13 +307,13 @@ export function registerSplitCases(sdk) {
     assert.notEqual(now(LONG_RUN.at), LONG_RUN.at, 'a 32-character run is not masked')
   })
   caseTest(sdk, 'SPLIT-EP-04', 'provider-sync', 'syncFingerprint and unsafeProfileReason answer as before', async (t) => {
-    const now = await load(sdk, libraryFile(V3.dshShared, 'provider-sync'))
+    const now = await load(sdk, dshFile('provider-sync'))
     const before = await baseModule(sdk, 'provider-sync')
     for (const v of FINGERPRINT_SAMPLES) assert.equal(now.syncFingerprint(v), before.syncFingerprint(v), show(v))
     for (const p of PROFILE_SAMPLES) assert.deepEqual(outcome(() => now.unsafeProfileReason(p, true)), outcome(() => before.unsafeProfileReason(p, true)), show(p))
   })
   caseTest(sdk, 'SPLIT-EP-04', 'provider-sync-codec', 'safeCode and the frame codec (request, encode, decode, acceptRequest) answer as before', async (t) => {
-    const now = await load(sdk, libraryFile(V3.dshShared, 'provider-sync-codec'))
+    const now = await load(sdk, dshFile('provider-sync-codec'))
     const before = await baseModule(sdk, 'provider-sync-codec')
     for (const c of CODE_SAMPLES) assert.equal(now.safeCode(c), before.safeCode(c), show(c))
     const peer = Object.fromEntries(now.PROVIDER_SYNC_TARGET.identity.keys.map((k) => [k, 'fbtest-' + k]))

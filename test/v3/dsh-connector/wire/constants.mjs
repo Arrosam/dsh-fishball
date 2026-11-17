@@ -60,14 +60,24 @@ export const SURFACE = Object.freeze({
   slotKey: 'dsh-connector#dsh-connector',
   settings: Object.freeze({
     tokens: 'tokens',
+    /** Withdrawn by C-WIRE-2 (the user's q5, "Remove agentToken entirely"): named only to assert they are gone. */
     routing: 'routing',
     agentToken: 'agentToken',
     approval: 'approval',
     port: 'port',
+    /** C-WIRE-2 (decision list item 8): approval.dshName, optional, no default. */
+    dshName: 'dshName',
     maxQueuedInputs: 'maxQueuedInputs',
     maxMessageBytes: 'maxMessageBytes',
-    /** V2's kept limits and their defaults (test/support LIMITS; R2: "stay with their defaults"). */
-    limits: Object.freeze({ maxQueuedInputs: 200, maxActiveWatches: 50, maxPendingApprovals: 8, argumentExcerptBytes: 8192, maxMessageBytes: 65536, auditEntriesKept: 500 }),
+    /**
+     * The kept limits and their defaults. C-WIRE-2 (decision list item 9) removed maxActiveWatches,
+     * maxPendingApprovals and auditEntriesKept (the user: "No cap on pending approvals"; q6 no audit)
+     * and keeps readSessionMessages / readSessionBytes beside these (relayed Config({})).
+     */
+    limits: Object.freeze({ maxQueuedInputs: 200, argumentExcerptBytes: 8192, maxMessageBytes: 65536, readSessionMessages: 12, readSessionBytes: 12288 }),
+    /** C-WIRE-2 (decision list item 9): fields that no longer exist. */
+    removed: Object.freeze(['maxPendingApprovals', 'maxActiveWatches', 'watchesShown', 'auditEntriesKept', 'rationaleChars', 'requestUserMessageBytes',
+      'forwardExcerptBytes', 'userMessagesListed', 'userMessageExcerptChars', 'questionMode']),
     itemKeys: Object.freeze(['enabled', 'key', 'label']),
     portMin: 0,
     portMax: 65535,
@@ -81,8 +91,8 @@ export const SURFACE = Object.freeze({
     uiTakeBack: '/api/dsh-connector/ui/takeback',
     uiPrefix: '/api/dsh-connector/ui/',
   }),
-  /** GET state (relayed 2026-11-16): `{ok, entries, approval: {status, port, defaultPort}, designated}`. */
-  stateKeys: Object.freeze(['approval', 'designated', 'entries', 'ok']),
+  /** GET state (relayed 2026-11-17, C-WIRE-2: no `designated`, the user's q5): `{ok, entries, approval: {status, port, defaultPort}}`. */
+  stateKeys: Object.freeze(['approval', 'entries', 'ok']),
   stateEntryKeys: Object.freeze(['connected', 'enabled', 'id', 'key', 'label', 'lastSeenAt', 'name', 'paired']),
   approvalKeys: Object.freeze(['defaultPort', 'port', 'status']),
   /** design §1.0c host-only services. */
@@ -91,7 +101,9 @@ export const SURFACE = Object.freeze({
     tools: 'dshConnectorTools',
     tokens: 'dshConnectorTokens',
     ui: 'dshConnectorUi',
+    /** The V2 services C-WIRE-2 removed (named only to assert they are gone). */
     v2: 'dshConnector',
+    v2SessionState: 'fishballSessionState',
   }),
   apiVersion: 1,
   /** K3 handover.d.ts / tokens.d.ts codes and states (types-only declarations, restated). */
@@ -156,6 +168,8 @@ export const ENV = Object.freeze({
   noConnector: 'FBWIRE_NO_CONNECTOR',
   /** The base profile without dsh-web-app: no HTTP listener is expected. */
   noWebApp: 'FBWIRE_NO_WEB_APP',
+  /** A module path: an extension of this worker (extra overlay rows and ops; worker.mjs). */
+  extension: 'FBWIRE_EXTENSION',
   on: '1',
 })
 
@@ -213,6 +227,10 @@ export const HOMES = Object.freeze({ root: process.env.FBTEST_TEST_HOMES ?? path
 /** Rows another task or level owns. */
 export const LATER = Object.freeze({
   wire2: 'C-WIRE-2 (the V2 approval broker and intake are switched to V3 routing there: message_agent / permission requests become V3 events)',
+  movedTo: (file) => 'moved by C-WIRE-2 to test/v3/dsh-connector/interactions/' + file,
+  withdrawnAsk: 'withdrawn by C-WIRE-2: the user (2026-11-16/17) "不给ask_agent工具" — no ask_agent, so no ask round, direct-call hint, quote or pass',
+  withdrawnList: 'withdrawn by C-WIRE-2: the user (2026-11-16/17) "list_user_messages is deleted"',
+  withdrawnDesignated: 'withdrawn by C-WIRE-2: the user (q5, 2026-11-17) "Remove agentToken entirely" — no designated agent, no no-recipient queue',
   hostedChild: 'I-HOST / X-MATRIX (a launched hosted child; this suite launches none)',
   browser: 'E2E-UI (the real Plugins page in a browser)',
 })

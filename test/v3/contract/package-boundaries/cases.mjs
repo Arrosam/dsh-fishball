@@ -20,7 +20,7 @@ import { pathToFileURL } from 'node:url'
 import { REPO } from '../../../support/constants.mjs'
 import {
   BUNDLED_FIELDS, DEP_FIELDS, DSH_FIELD, DSH_SIDE, EMBED_CONNECTOR_ALLOWED, FEATURES, JS_FILE, LATER, LIBRARIES, MIN_LIBRARY_USERS, MOVED_INTO_CORE, NPM, ROOT_WORKSPACE,
-  RUNTIME_DEP_FIELD, SDK, SET_SIDE, SHARED_READER, SINGLE_USERS_LATER, USERS_RULE, V3, V3_NAMES, sideOf,
+  RUNTIME_DEP_FIELD, SDK, SET_SIDE, SHARED_READER, USERS_RULE, V3, V3_NAMES, sideOf,
 } from './constants.mjs'
 import { manifestNames, npmTempRoot, observe, readManifest } from './packages.mjs'
 
@@ -226,14 +226,15 @@ function registerLibraryCases(sdk, lib) {
   })
   // R-ARCH-08 rule (5) read strictly (Fishball, 2026-11-16; PLAT-EP-07 row 6): a module only one
   // package of the library's side imports belongs in that package. REMOVE-V2b moved fishball-shared's
-  // single-user modules into core; dsh-connector-shared's wait for C-WIRE-2 (SINGLE_USERS_LATER).
+  // single-user modules into core and C-WIRE-2 dsh-connector-shared's into dsh-instance and
+  // dsh-connector-adapter, so the row is real for both libraries (merged on integrate, 2026-11-17).
   caseTest(sdk, 'PLAT-EP-07', 6, `every ${lib.name} module is imported by at least ${MIN_LIBRARY_USERS} V3 packages of the ${sideOf(lib.name).id} side`, async () => {
     assert.ok(has(lib), manifestMissing(lib))
     const { units, packed } = await observe()
     const js = packed[lib.name].filter((f) => JS_FILE.test(f))
     assert.ok(js.length > 0, lib.name + ' ships no module')
     assert.deepEqual(underusedModules(units, lib.name, js), [], `modules fewer than ${MIN_LIBRARY_USERS} ${sideOf(lib.name).id}-side packages import (module: importers)`)
-  }, SINGLE_USERS_LATER[lib.name])
+  })
   caseTest(sdk, 'PLAT-EP-07', 6, `no ${lib.name} module is also a live copy in a plugin package (one owner per side)`, async () => {
     assert.ok(has(lib), manifestMissing(lib))
     const { units } = await observe()

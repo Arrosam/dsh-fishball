@@ -1,16 +1,15 @@
 /**
  * The connector row's V3 settings (task C-WIRE; design §5.1, §5.9; R-CON-10, R-TOK-08, R-ROUTE-04,
- * R-OA-20 Q-OA-7 A; K1d `SettingsWriter`).
+ * R-OA-20 Q-OA-7 A; K1d `SettingsWriter`; C-WIRE-2: the DSH name, no designated agent).
  *
  * - `SETTINGS_SCHEMA` (schema.js): the V3 fields of the row's Config.
  * - `createSettings({ctx, config, namespace, limits, volatileEvent, logger})` →
  *   `{read, onChange, writer, restoreTokens, bind, start, follow, drain}`:
- *   - `read()`: the live `{agentToken?, maxQueuedInputs?, approvalPort, maxMessageBytes}`; the
- *     shape routing, revocation and the hosted service take as their `settings.get`;
+ *   - `read()`: the live `{maxQueuedInputs, maxMessageBytes, approvalPort, dshName?}`;
  *   - `onChange(fn) → dispose`: fires after every applied change, **after `TokenRegistry.apply`
  *     of it has resolved** (the routing contract, routing/index.js: a re-enable, an added or a
  *     removed entry reaches routing and revocation only through this port);
- *   - `writer`: the K1d SettingsWriter (`addToken`, `removeToken`, `setDesignated`), one write
+ *   - `writer`: the K1d SettingsWriter (`addToken`, `removeToken`), one write
  *     after another, each resolving once DSH has saved it and the registry has applied it;
  *   - `restoreTokens(previous)`: the registry's write-back of a refused save;
  *   - `bind(registry)`: the token registry this module syncs (once, before `start`);
@@ -67,10 +66,10 @@ export function createSettings({ ctx, config, namespace, limits, volatileEvent, 
 
   const tokenList = () => liveAt(config, SETTING.tokens) ?? []
   const read = () => Object.freeze({
-    agentToken: liveAt(config, SETTING.agentToken),
     maxQueuedInputs: limits().maxQueuedInputs,
     maxMessageBytes: limits().maxMessageBytes,
     approvalPort: liveAt(config, SETTING.approvalPort) ?? APPROVAL_LISTENER.defaultPort,
+    dshName: liveAt(config, SETTING.dshName),
   })
 
   function fire() {
@@ -107,7 +106,7 @@ export function createSettings({ ctx, config, namespace, limits, volatileEvent, 
    * update it triggers, a plugin remount and HMR's own reconciles inside one transaction held in an
    * AsyncLocalStorage (dsh-hmr `runExclusive`, both SDKs), and refuses a save started inside it
    * ("HMR transactions cannot be nested"). The connector's own saves are often started there: a
-   * refused save's write-back and a delete's `setDesignated(undefined)` from inside the volatile
+   * refused save's write-back from inside the volatile
    * update, and every write of a row that was itself applied inside a transaction (a remount).
    * Exiting the store makes the save queue behind the running transaction, as any other save does.
    * dsh-hmr exposes no public way out, so this reads its private `executing` store (the same field
@@ -176,10 +175,6 @@ export function createSettings({ ctx, config, namespace, limits, volatileEvent, 
       const at = list.findIndex((item) => item.key === entryKey)
       return at < 0 ? undefined : { ops: [{ op: PATH_OP.unset, path: [...SETTING.tokens, String(at)] }], list: list.filter((_, index) => index !== at) }
     }),
-    setDesignated: (entryKey) => write((list) => ({
-      ops: [entryKey === undefined ? { op: PATH_OP.unset, path: SETTING.agentToken } : { op: PATH_OP.set, path: SETTING.agentToken, value: entryKey }],
-      list,
-    })),
   })
 
   /**

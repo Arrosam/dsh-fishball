@@ -1,15 +1,13 @@
 /**
- * The row's config: the connector's settings (design §0.7, §18.5 conn-OQ-20). They are its
- * safety limits (DESIGN §16). Every active field is `.volatile()`, so DSH's
- * settings service edits it live without remounting the row (spike S21). DSH's own Plugins →
- * settings form of `dsh-connector` is the only place they change (D24). No instance reads
- * or writes them: contract v1 has no settings operation.
+ * The row's config: the connector's settings (design §0.7, §18.5 conn-OQ-20): its safety limits
+ * (DESIGN §16) and the V3 settings (src/settings/schema.js). Every field is `.volatile()`, so DSH's
+ * settings service edits it live without remounting the row (spike S21). DSH's own Plugins form of
+ * `dsh-connector` and the connector's own settings page are the only places they change (D24).
  *
  * Each field is declared once here with its default, minimum and meaning. Every other module
  * reads the limits through `readLimits()`, so a value is never copied.
  */
 import Schema from '@deepseek-ai/schemastery'
-import { QUESTION_MODE } from './constants.js'
 // The default of maxQueuedInputs has one owner, K1's QUEUE (data only, no DSH import).
 import { QUEUE } from '../mcp-schema/constants.js'
 import { SETTINGS_SCHEMA } from './settings/schema.js'
@@ -18,40 +16,22 @@ import { SETTINGS_SCHEMA } from './settings/schema.js'
 const MIN = Object.freeze({ count: 1 })
 
 /**
- * One row per limit: [field, default, minimum, description]. Only the fields the connector's
- * code still reads after the split (conn-OQ-20). The in-process agent's fields went with it, and
- * a stored value of one is ignored.
+ * One row per limit: [field, default, minimum, description]. Only the fields the connector's code
+ * reads (conn-OQ-20). C-WIRE-2 removed the V2 broker's: maxPendingApprovals (the user, 2026-11-17:
+ * "No cap on pending approvals"), list_user_messages' two ("list_user_messages is deleted"), the
+ * audit's auditEntriesKept and rationaleChars (the user's answer: delete the V2 audit), the watches'
+ * two, and requestUserMessageBytes and forwardExcerptBytes (V2's inbox notices, which V3's typed
+ * events replace). A stored value of one is ignored (Q-M1: no migration).
  */
 export const LIMITS = Object.freeze([
-  ['maxQueuedInputs', QUEUE.maxQueuedInputs, MIN.count, 'Inputs (messages, finish notices, plugin events) that have arrived but Fishball has not read yet.'],
-  ['maxActiveWatches', 50, MIN.count, 'Open "tell Fishball when this session finishes" requests.'],
-  ['maxPendingApprovals', 8, MIN.count, 'Permission requests open at the same time: waiting for Fishball, or waiting for you in your pile; extra requests go to you in their session.'],
-  ['argumentExcerptBytes', 8192, MIN.count, 'How much of a requested tool call Fishball sees.'],
-  ['maxMessageBytes', 65536, MIN.count, 'Size of one message to or from Fishball, and of one plugin event.'],
-  ['auditEntriesKept', 500, MIN.count, 'Entries kept in each audit list (approvals, outbox, plugin changes).'],
-  // Moved from constants in revision 11 (DESIGN §16 "Hard-coded limits moved to config"); defaults are the old values.
-  ['requestUserMessageBytes', 2048, MIN.count, 'How much of your latest message in the asking session a permission request shows Fishball, in bytes.'],
-  ['rationaleChars', 500, MIN.count, 'Characters of Fishball\'s rationale kept in the approval audit.'],
-  ['watchesShown', 50, MIN.count, 'Watches the settings page and list_watches show.'],
-  ['readSessionMessages', 12, MIN.count, 'Messages read_session returns.'],
-  ['readSessionBytes', 12288, MIN.count, 'Bytes read_session returns.'],
-  ['forwardExcerptBytes', 3072, MIN.count, 'How much of a session\'s last answer a forward or a watch notice carries, in bytes.'],
-  // Revision 11 (rev11b): list_user_messages (your answer, Q-r11-list).
-  ['userMessagesListed', 20, MIN.count, 'Messages list_user_messages returns to a managed session, newest first.'],
-  ['userMessageExcerptChars', 1000, MIN.count, 'Characters of each excerpt list_user_messages returns.'],
+  ['maxQueuedInputs', QUEUE.maxQueuedInputs, MIN.count, 'Events that have arrived for an agent but it has not taken yet (messages, finish notices, contributed events).'],
+  ['argumentExcerptBytes', 8192, MIN.count, 'How much of a requested tool call the managing agent sees, in bytes.'],
+  ['maxMessageBytes', 65536, MIN.count, 'Size of one message to or from a managed session, in bytes.'],
+  ['readSessionMessages', 12, MIN.count, 'Messages session_read returns.'],
+  ['readSessionBytes', 12288, MIN.count, 'Bytes session_read returns.'],
 ].map(([field, defaultValue, min, description]) => Object.freeze({ field, defaultValue, min, description })))
 
-/** Deprecated metadata retained for old importers; no active config control or routing effect. */
-export const QUESTION_MODE_SETTING = Object.freeze({
-  field: 'questionMode',
-  defaultValue: QUESTION_MODE.auto,
-  description: 'Who answers the questions and plan reviews of sessions Fishball manages: auto (Fishball, when your own words cover it), fishball (Fishball\'s judgement) or user (you).',
-})
-
-/**
- * Active limits, plus the V3 settings (src/settings/schema.js: the token list, the designated
- * agent, the approval port; C-WIRE); saved questionMode and approvalAnswerSeconds are inert legacy data.
- */
+/** The limits, plus the V3 settings (src/settings/schema.js: the token list, the approval port and the DSH name). */
 export const Config = Schema.object({
   ...SETTINGS_SCHEMA,
   ...Object.fromEntries(LIMITS.map(({ field, defaultValue, min, description }) => [
@@ -82,11 +62,3 @@ export function readLimits(config) {
     return [field, Number.isInteger(value) && value >= min ? value : defaultValue]
   })))
 }
-
-/** Compatibility accessor: eligible questions go directly to Fishball, ignoring saved mode. */
-export function readQuestionMode() {
-  return QUESTION_MODE.fishball
-}
-
-/** Every limit at its default: what applies before any config exists (module-level state). */
-export const DEFAULT_LIMITS = readLimits(undefined)

@@ -125,10 +125,10 @@ function expectedCaller(w, e, clientId, { host, generation = FIXTURE.firstGenera
 }
 export const INVALID = Object.freeze({ error: VERIFY_ERROR.invalidToken })
 /** The fake C-OAUTH-WEB grants: a 200 with a refresh token, and the `invalid_grant` a machine client gets. */
-const okGrant = (grantType) => new FakeGrant(grantType, { ok: true, body: tokenResponse({ accessToken: FIXTURE.fakeAccess, scope: SCOPE.full, refreshToken: FIXTURE.fakeRefresh }) })
-const refusingGrant = (grantType, error, countedFailure = false) => new FakeGrant(grantType, { ok: false, error, countedFailure })
+export const okGrant = (grantType) => new FakeGrant(grantType, { ok: true, body: tokenResponse({ accessToken: FIXTURE.fakeAccess, scope: SCOPE.full, refreshToken: FIXTURE.fakeRefresh }) })
+export const refusingGrant = (grantType, error, countedFailure = false) => new FakeGrant(grantType, { ok: false, error, countedFailure })
 /** A form of the fake code grant (a public client: the id only, CLIENT_AUTH.none). */
-const codeRequest = (w, extra = []) => tokenRequest(w, { auth: CLIENT_AUTH.none, clientId: FIXTURE.cimd, grant: GRANT.authorizationCode, extra: [[FORM.code, FIXTURE.fakeCode], ...extra] })
+export const codeRequest = (w, extra = []) => tokenRequest(w, { auth: CLIENT_AUTH.none, clientId: FIXTURE.cimd, grant: GRANT.authorizationCode, extra: [[FORM.code, FIXTURE.fakeCode], ...extra] })
 
 /** One case test on a fresh world; `todo` (a LATER owner) registers a todo instead. */
 export function row(sdk, id, part, title, fn, todo) {
@@ -380,12 +380,21 @@ function useCases(sdk) {
       assert.deepEqual(res.body, { ...oauthErrorBody(error) })
     })
   }
-  k1b('AUTH-EP-01 1–5 (counted)', 'countedFailure true is recorded on ctx.failureKey: after FAILURE_LIMIT.perKeyPerWindow of them the next request is 429 and no handler runs', async (w) => {
+  // Re-baselined by X-SEC X-03 (C-WIRE-2): the handler runs first; a failing request while limited is the
+  // 429, uncounted; a valid one is served (K1 FAILURE_LIMIT, amending S7b P2).
+  k1b('AUTH-EP-01 1–5 (counted)', 'countedFailure true is recorded on ctx.failureKey: after FAILURE_LIMIT.perKeyPerWindow of them a failing request is 429 and is not counted again (X-03)', async (w) => {
     const code = refusingGrant(GRANT.authorizationCode, OAUTH_ERROR.invalidGrant, true)
     w.register(code)
     for (let i = 0; i < FAILURE_LIMIT.perKeyPerWindow; i += 1) assertError(await codeRequest(w), OAUTH_ERROR.invalidGrant)
     assertLimited(await codeRequest(w))
-    assert.equal(code.calls.length, FAILURE_LIMIT.perKeyPerWindow)
+    assert.equal(w.limiter.check({ remoteAddress: w.remoteAddresses.at(-1), clientId: FIXTURE.cimd }, w.clock.now()).limited, true)
+  })
+  k1b('AUTH-EP-01 1–5 (valid while limited)', 'a key past the failure limit: a valid authorization_code request is still served (X-03)', async (w) => {
+    const refusing = refusingGrant(GRANT.authorizationCode, OAUTH_ERROR.invalidGrant, true)
+    w.register(refusing)
+    for (let i = 0; i < FAILURE_LIMIT.perKeyPerWindow; i += 1) assertError(await codeRequest(w), OAUTH_ERROR.invalidGrant)
+    refusing.answer = okGrant(GRANT.authorizationCode).answer
+    assert.equal((await codeRequest(w)).status, HTTP_STATUS.ok)
   })
   k1b('AUTH-EP-01 1–5 (uncounted)', 'countedFailure false is not recorded: more than FAILURE_LIMIT.perKeyPerWindow refusals still reach the handler', async (w) => {
     const code = refusingGrant(GRANT.authorizationCode, OAUTH_ERROR.invalidGrant, false)
@@ -877,18 +886,21 @@ function stateTransitions(sdk) {
     fail(l, bare, FAILURE_LIMIT.perKeyPerWindow)
     assert.equal(l.check(bare, at()).limited, true)
   })
-  row(sdk, CASE.st04, '7 (shared)', 'the limiter is shared: failures another surface records on the token endpoint\'s limiter for (address, id) make its next valid request 429', async (w) => {
+  // Re-baselined by X-SEC X-03 (C-WIRE-2): a valid credential is never refused by the failure limit; a
+  // failing one while limited is the 429, uncounted (K1 FAILURE_LIMIT, amending S7b P2).
+  row(sdk, CASE.st04, '7 (shared)', 'the limiter is shared: failures another surface records for (address, id) make the next FAILING request 429; a valid one is served (X-03)', async (w) => {
     const e = w.tokens.add()
     await issue(w, e, ID.agentA, SCOPE.pair)
     fail(w.limiter, key(ID.agentA, w.remoteAddresses.at(-1)), FAILURE_LIMIT.perKeyPerWindow, w.clock.now())
-    assertLimited(await tokenRequest(w, { clientId: ID.agentA, secret: e.value }))
+    assertLimited(await tokenRequest(w, { clientId: ID.agentA, secret: FIXTURE.value() }))
+    await issue(w, e, ID.agentA, SCOPE.pair)
   })
-  row(sdk, CASE.st04, '7 (counted)', 'the endpoint counts each invalid_client on (address, client id): after perKeyPerWindow of them a valid request is 429, and the refused request is not counted again', async (w) => {
+  row(sdk, CASE.st04, '7 (counted)', 'the endpoint counts each invalid_client on (address, client id): after perKeyPerWindow of them a wrong secret is 429 and not counted again; the right secret is served (X-03)', async (w) => {
     const e = w.tokens.add()
     for (let i = 0; i < FAILURE_LIMIT.perKeyPerWindow; i += 1) assertError(await tokenRequest(w, { clientId: ID.agentA, secret: FIXTURE.value() }), OAUTH_ERROR.invalidClient)
-    const wait = assertLimited(await tokenRequest(w, { clientId: ID.agentA, secret: e.value }))
+    const wait = assertLimited(await tokenRequest(w, { clientId: ID.agentA, secret: FIXTURE.value() }))
     assert.deepEqual(w.limiter.check(key(ID.agentA, w.remoteAddresses.at(-1)), w.clock.now() + wait), { limited: false }, 'the limited request was counted')
-    assert.equal(w.tokens.matchCalls, FAILURE_LIMIT.perKeyPerWindow, 'a limited request checked its secret')
+    await issue(w, e, ID.agentA, SCOPE.pair)
   })
   const code = Object.freeze({ entryKey: FIXTURE.entryKey(1), clientId: FIXTURE.cimd, redirectUri: FIXTURE.cimd, codeChallenge: FIXTURE.digest(9), audience: FIXTURE.foreignResource, issuedAt: at() })
   storeRow(sdk, CASE.st04, '11 (store)', 'CodeIssued → takeCode → Redeemed: the record once; a second take is undefined', (s) => {

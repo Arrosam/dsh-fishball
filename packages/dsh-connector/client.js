@@ -18,8 +18,8 @@
  * config form, which shows the new entry without a value.
  *
  * C-WIRE mounts it (the package's `dsh.client`) and adds, on the same page, the read-only pair state
- * of each entry (R-ID-12), the designated agent (`routing.agentToken`, R-ROUTE-04), the approval
- * port with the approval listener's status (R-OA-20), and the connector's limits, which moved here
+ * of each entry (R-ID-12), the approval port with the approval listener's status (R-OA-20), the
+ * DSH name the approval page shows (C-WIRE-2; the user, 2026-11-17), and the connector's limits, which moved here
  * from dsh-connector-ui's card (decided item 55). Every edit is a save of the row's settings
  * through DSH's form, as the token list's. The strings are this file's dictionaries: DSH's client loads no JSON, and the package's
  * locale/*.json hold only the Plugins page's `meta` text.
@@ -68,15 +68,13 @@ window.__ModuleLoader__.load({
      * The other V3 settings, by their path in the row's config (src/settings/constants.js SETTING;
      * a browser chunk cannot import it, so the paths are written here once more: change both together).
      */
-    const SETTING_PATH = Object.freeze({ agentToken: Object.freeze(['routing', 'agentToken']), approvalPort: Object.freeze(['approval', 'port']) })
+    const SETTING_PATH = Object.freeze({ approvalPort: Object.freeze(['approval', 'port']), dshName: Object.freeze(['approval', 'dshName']) })
     /** The `approval.port` bounds (src/settings/constants.js PORT_RANGE). */
     const PORT_RANGE = Object.freeze({ min: 0, max: 65535 })
     /** The approval listener's healthy status (mcp/oauth-web LISTENER_STATUS.ok); any other is shown as its code. */
     const LISTENER_OK = 'ok'
     /** The approval status words' key prefix (one key per CONNECTOR_STATUS code). */
     const APPROVAL_STATUS_KEY = 'approval.'
-    /** The designated control's "unset" choice (an empty select value names no entry). */
-    const NO_ENTRY = ''
     /** Scripting hooks (data attributes) for the page's parts. */
     const DATA = Object.freeze({
       root: 'data-dsh-connector-tokens',
@@ -88,7 +86,6 @@ window.__ModuleLoader__.load({
       copy: 'data-dsh-connector-copy',
       pair: 'data-dsh-connector-pair',
       connected: 'data-dsh-connector-connected',
-      designated: 'data-dsh-connector-designated',
       approval: 'data-dsh-connector-approval',
       limits: 'data-dsh-connector-limits',
       setting: 'data-dsh-connector-setting',
@@ -101,12 +98,9 @@ window.__ModuleLoader__.load({
     const LIMIT_MIN = 1
     /**
      * The connector's limits, in src/config.js LIMITS order. A browser chunk cannot import that
-     * Node module, so the field names are written here once more: change both together. Inert
-     * legacy fields (questionMode, approvalAnswerSeconds) are not shown.
+     * Node module, so the field names are written here once more: change both together.
      */
-    const LIMIT_FIELDS = Object.freeze(['maxQueuedInputs', 'maxActiveWatches', 'maxPendingApprovals', 'argumentExcerptBytes', 'maxMessageBytes',
-      'auditEntriesKept', 'requestUserMessageBytes', 'rationaleChars', 'watchesShown', 'readSessionMessages', 'readSessionBytes',
-      'forwardExcerptBytes', 'userMessagesListed', 'userMessageExcerptChars'])
+    const LIMIT_FIELDS = Object.freeze(['maxQueuedInputs', 'argumentExcerptBytes', 'maxMessageBytes', 'readSessionMessages', 'readSessionBytes'])
     /**
      * Inline layout: the page adds no style sheet (R-ARCH-03). Colours and fonts are DSH's theme
      * tokens (dsh-client-ui-theme); DSH has no spacing tokens, so the gaps are named here, at the
@@ -168,9 +162,8 @@ window.__ModuleLoader__.load({
       lastSeen: 'last seen {at}',
       neverSeen: 'never seen',
       idPrefix: 'ID:',
-      designated: 'Designated agent',
-      designatedHint: 'Messages and questions from sessions nobody manages go to this agent.',
-      designatedDefault: 'None',
+      dshName: 'DSH name',
+      dshNameHint: 'The name the approval page shows for this DSH. Empty: it shows this DSH\'s address.',
       approvalPort: 'Approval page port',
       approvalHint: 'Browser agents sign in on this port of DSH\'s host.',
       approvalStatus: 'Approval page: {status}',
@@ -178,20 +171,11 @@ window.__ModuleLoader__.load({
       'approval.approval-port-in-use': 'the port is in use; it is tried again every 30 seconds. Choose another port or free this one.',
       limits: 'Safety limits',
       invalid: 'Enter a whole number.',
-      'field.maxQueuedInputs': 'Queued inputs not yet read',
-      'field.maxActiveWatches': 'Active "tell me when finished" watches',
-      'field.maxPendingApprovals': 'Permission requests open at once (waiting for Fishball or in your pile)',
-      'field.argumentExcerptBytes': 'Bytes of a request\'s command Fishball sees',
+      'field.maxQueuedInputs': 'Events queued for an agent and not yet taken',
+      'field.argumentExcerptBytes': 'Bytes of a request\'s call the managing agent sees',
       'field.maxMessageBytes': 'Bytes in one message',
-      'field.auditEntriesKept': 'Entries kept in each audit list',
-      'field.requestUserMessageBytes': 'Bytes of your latest message a permission request shows Fishball',
-      'field.rationaleChars': 'Characters of Fishball\'s reason kept in the approval audit',
-      'field.watchesShown': 'Watches kept in the state snapshot and by list_watches',
-      'field.readSessionMessages': 'Messages read_session returns',
-      'field.readSessionBytes': 'Bytes read_session returns',
-      'field.forwardExcerptBytes': 'Bytes of a session\'s last answer in a forward or watch notice',
-      'field.userMessagesListed': 'Your messages list_user_messages shows a managed session',
-      'field.userMessageExcerptChars': 'Characters of each message list_user_messages shows',
+      'field.readSessionMessages': 'Messages session_read returns',
+      'field.readSessionBytes': 'Bytes session_read returns',
     }
     const zh = {
       summary: '连接到此 DSH 的 agent 所用的 token。',
@@ -229,9 +213,8 @@ window.__ModuleLoader__.load({
       lastSeen: '最近一次 {at}',
       neverSeen: '从未连接',
       idPrefix: 'ID:',
-      designated: '指定 agent',
-      designatedHint: '无人管理的会话发出的消息和问题会交给这个 agent。',
-      designatedDefault: '无',
+      dshName: 'DSH 名称',
+      dshNameHint: '授权页面为此 DSH 显示的名称。留空则显示此 DSH 的地址。',
       approvalPort: '授权页面端口',
       approvalHint: '浏览器 agent 在 DSH 主机的这个端口上登录。',
       approvalStatus: '授权页面：{status}',
@@ -239,20 +222,11 @@ window.__ModuleLoader__.load({
       'approval.approval-port-in-use': '端口被占用；每 30 秒重试一次。请换一个端口或释放此端口。',
       limits: '安全限制',
       invalid: '请输入整数。',
-      'field.maxQueuedInputs': '尚未读取的排队输入',
-      'field.maxActiveWatches': '进行中的“完成时通知我”',
-      'field.maxPendingApprovals': '同时打开的权限请求（等待 Fishball 或在你的待处理区）',
-      'field.argumentExcerptBytes': 'Fishball 可见的请求命令字节数',
+      'field.maxQueuedInputs': '为 agent 排队、尚未取走的事件',
+      'field.argumentExcerptBytes': '管理 agent 可见的请求调用字节数',
       'field.maxMessageBytes': '单条消息字节数',
-      'field.auditEntriesKept': '每个审计列表保留的条目',
-      'field.requestUserMessageBytes': '权限请求向 Fishball 显示的你最近消息字节数',
-      'field.rationaleChars': '审批记录中保留的 Fishball 理由字符数',
-      'field.watchesShown': '状态快照与 list_watches 中保留的关注数',
-      'field.readSessionMessages': 'read_session 返回的消息数',
-      'field.readSessionBytes': 'read_session 返回的字节数',
-      'field.forwardExcerptBytes': '转发或关注通知中会话最后回答的字节数',
-      'field.userMessagesListed': 'list_user_messages 向受管会话列出的你的消息条数',
-      'field.userMessageExcerptChars': 'list_user_messages 每条消息摘录的字符数',
+      'field.readSessionMessages': 'session_read 返回的消息数',
+      'field.readSessionBytes': 'session_read 返回的字节数',
     }
 
     const routeUrl = (path) => new URL(path, document.baseURI).toString()
@@ -330,8 +304,7 @@ window.__ModuleLoader__.load({
     }
 
     /**
-     * One single-field setting saved on its own (the designated agent, the approval port, each
-     * limit): the row's config form, fenced by the revision it was read at, as the list's Save.
+     * One single-field setting saved on its own (the approval port, the DSH name, each limit): the row's config form, fenced by the revision it was read at, as the list's Save.
      * @returns `{busy, failed, save(ops)}`
      */
     function useFieldSave(form, snapshot) {
@@ -351,17 +324,27 @@ window.__ModuleLoader__.load({
     /** The value at `path` in the row's settings value. */
     const valueAt = (value, path) => path.reduce((node, key) => node?.[key], value)
 
-    /** The designated agent (R-ROUTE-04): one of the listed entries, or the default (unset). */
-    function Designated({ t, form, snapshot, items, disabled }) {
+    /**
+     * The DSH name (the user, 2026-11-17): one text field saved on blur or Enter. An empty field
+     * unsets it, and the approval page then shows this DSH's address.
+     */
+    function DshName({ t, form, snapshot, disabled }) {
       const { busy, failed, save } = useFieldSave(form, snapshot)
-      const current = valueAt(snapshot.value, SETTING_PATH.agentToken) ?? NO_ENTRY
-      const choose = (key) => void save([key === NO_ENTRY ? { op: OP_UNSET, path: SETTING_PATH.agentToken } : { op: OP_SET, path: SETTING_PATH.agentToken, value: key }])
-      return h('div', { style: STYLE.section, [DATA.designated]: true },
-        h('label', { style: STYLE.row }, t('designated'),
-          h('select', { value: current, disabled: disabled || busy, onChange: (event) => choose(event.target.value) },
-            h('option', { value: NO_ENTRY }, t('designatedDefault')),
-            items.map((item) => h('option', { key: item.key, value: item.key }, item.label)))),
-        h('p', { style: STYLE.hint }, t('designatedHint')),
+      const saved = valueAt(snapshot.value, SETTING_PATH.dshName) ?? ''
+      const [text, setText] = React.useState(null)
+      const commit = () => {
+        const next = (text ?? saved).trim()
+        if (text === null || next === saved) { setText(null); return }
+        void save([next === '' ? { op: OP_UNSET, path: SETTING_PATH.dshName } : { op: OP_SET, path: SETTING_PATH.dshName, value: next }])
+          .then((accepted) => { if (accepted) setText(null) })
+      }
+      return h('div', { style: STYLE.section },
+        h('label', { style: STYLE.row, [DATA.setting]: SETTING_PATH.dshName.join('.') }, t('dshName'),
+          h('input', {
+            type: 'text', value: text ?? saved, disabled: disabled || busy,
+            onChange: (event) => setText(event.target.value), onBlur: commit, onKeyDown: (event) => { if (event.key === ENTER_KEY) commit() },
+          })),
+        h('p', { style: STYLE.hint }, t('dshNameHint')),
         failed ? h('p', { style: STYLE.error, role: 'alert' }, t('saveFailed')) : null)
     }
 
@@ -495,8 +478,8 @@ window.__ModuleLoader__.load({
             h('input', { type: 'text', 'aria-label': t('newLabel'), placeholder: t('newLabel'), value: newLabel, disabled: disabled || dirty, [DATA.newLabel]: true, onChange: (event) => setNewLabel(event.target.value) }),
             h(Button, { type: 'button', size: 'sm', variant: 'outline', disabled: disabled || dirty || newLabel.trim() === '', [DATA.newToken]: true, onClick: () => void create() }, busy === BUSY.creating ? t('creating') : t('newToken'))),
           problem === null ? null : h('p', { style: STYLE.error, role: 'alert' }, problem),
-          h(Designated, { t, form, snapshot, items: saved, disabled }),
           h(Approval, { t, form, snapshot, approval: state?.approval, disabled }),
+          h(DshName, { t, form, snapshot, disabled }),
           h(Limits, { t, form, snapshot, disabled }),
           revealed === null ? null : h(Reveal, { t, value: revealed, onClose: () => setRevealed(null) }))
       }

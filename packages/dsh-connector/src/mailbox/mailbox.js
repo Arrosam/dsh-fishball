@@ -79,14 +79,22 @@ const markExpired = (box) => ({ ...box, held: { ...box.held, expired: true } })
  * @param {{resourceUpdated(principalKey: string, uri: string): void}} ports.hints - C-HTTP's K1 `HintSink`.
  * @param {() => number} [ports.now] - the clock, in epoch milliseconds.
  * @param {() => string} [ports.newId] - a fresh path-safe id, used for event ids and generations.
- * @param {number} [ports.maxQueuedInputs] - the connector setting (design §3.4), read once here; its
- *   default is K1's. A settings change takes effect when C-WIRE builds a new mailbox.
+ * @param {number | (() => number)} [ports.maxQueuedInputs] - the connector setting (design §3.4):
+ *   a number, or a function read at each commit so a settings change applies live (C-WIRE-2: the
+ *   no-recipient queue that read it live is gone, so the mailbox is now its only reader). Its
+ *   default is K1's. A value that is not a whole number of at least 1 is a wiring bug (TypeError).
  * @param {{warn: Function}} [ports.logger] - the background log.
  * @returns the K1 `Mailbox` plus `expireHolds(now)` (Fishball 2026-11-14, item 7) and
  *   `stage(from, to)` (C-SUCCEED's staged transfer).
  */
 export function createMailbox({ tables, hints, now = Date.now, newId = randomUUID, maxQueuedInputs = QUEUE.maxQueuedInputs, logger }) {
-  if (!Number.isSafeInteger(maxQueuedInputs) || maxQueuedInputs < MINIMUM.queuedInputs) throw new TypeError(MISUSE.maxQueuedInputs)
+  const readBound = typeof maxQueuedInputs === 'function' ? maxQueuedInputs : () => maxQueuedInputs
+  const queueBound = () => {
+    const value = readBound()
+    if (!Number.isSafeInteger(value) || value < MINIMUM.queuedInputs) throw new TypeError(MISUSE.maxQueuedInputs)
+    return value
+  }
+  queueBound()
   const { boxes, events } = tables
   const clock = () => assertTime(now())
   // Only an error's name is logged: a sink's or the storage's message could name a principal key.
@@ -422,7 +430,7 @@ export function createMailbox({ tables, hints, now = Date.now, newId = randomUUI
         const { boxKey } = await boxOf(recipient)
         // K2 EMIT_CHECK_ORDER: a duplicate is answered before queue-full.
         if (duplicateOf(boxKey, draft)) return { ok: false, code: EMIT_REFUSAL.duplicate }
-        if (refusedWhenFull(draft.type) && entryOf(boxKey).pending.size >= maxQueuedInputs) return { ok: false, code: REFUSAL.queueFull }
+        if (refusedWhenFull(draft.type) && entryOf(boxKey).pending.size >= queueBound()) return { ok: false, code: REFUSAL.queueFull }
         return { ok: true, eventId: await append(recipient, boxKey, draft) }
       })
     },
