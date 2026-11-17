@@ -19,7 +19,8 @@
  *
  * Binding: the module is imported with the per-SDK resolve hook, and the link runs on that SDK's own
  * `@modelcontextprotocol/client` (the copy K1's cases load as their oracle), so "[SDK x]" runs it
- * against that SDK. Core's own packaged client is not installed in the repository.
+ * against that SDK. Core's own packaged client resolves from the repository's root node_modules; only
+ * the F-FIX-3 rows (`openRawLink` without `sdk`) load it, through the link's own lazy import.
  */
 import assert from 'node:assert/strict'
 import path from 'node:path'
@@ -69,6 +70,30 @@ export async function openLink(t, sdk, { url, clientId, secret }) {
     status: () => link.status(),
     call: (tool, args) => link.callTool(tool, args),
     stop: () => link.stop(),
+  }
+}
+
+/**
+ * F-FIX-3: the real `createLink` with raw options, its timers held by the test. `options` are passed
+ * as they are (no `sdk` unless given), so the link imports its own MCP client. Retries are scheduled
+ * through `setTimer` and run only when the test calls `fire()`, so "one warning per failed attempt"
+ * is counted attempt by attempt with no wall-clock wait. Returns `{link, timers, fire()}`.
+ */
+export async function openRawLink(t, sdk, options) {
+  const mod = await linkModule(sdk)
+  assert.equal(typeof mod[LINK.factory], 'function', `${path.join(LINK.dir, LINK.entry)} exports no ${LINK.factory}()`)
+  const timers = []
+  const link = mod[LINK.factory]({
+    setTimer: (fn, ms) => { const handle = { fn, ms, cleared: false }; timers.push(handle); return handle },
+    clearTimer: (handle) => { if (handle) handle.cleared = true },
+    ...options,
+  })
+  defer(t, () => link.stop())
+  const pending = () => timers.filter((h) => !h.cleared && !h.fired)
+  return {
+    link, timers, pending,
+    /** Runs every pending retry timer once. Returns how many ran. */
+    fire() { const due = pending(); for (const h of due) { h.fired = true; h.fn() } return due.length },
   }
 }
 

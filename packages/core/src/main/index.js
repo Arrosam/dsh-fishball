@@ -38,7 +38,7 @@ import { codeOf } from '../events/diagnostics.js'
 import { LOG as EVENTS_LOG } from '../events/constants.js'
 import { createEvents, openLedger } from '../events/index.js'
 import { createPairing, openRecords, createRecords } from '../identity/index.js'
-import { createLinkCredentials } from '../link/index.js'
+import { LINK_SAVE, createLinkCredentials } from '../link/index.js'
 import { createWebCallback } from '../link/web-callback.js'
 import { LOG as BRIDGE_LOG } from '../bridge/constants.js'
 import { createReminders } from '../manager/reminders.js'
@@ -113,7 +113,7 @@ export async function apply(ctx, config) {
   if (webCallback !== undefined) ctx.effect(() => () => webCallback.dispose())
   const credentials = createLinkCredentials(ctx, { target, clientId, clientMetadataUrl: () => setting('metadataUrl') })
   ctx.effect(() => () => credentials.dispose())
-  const pairing = createPairing({ records: createRecords(records), name: () => setting('name'), target, credentials: credentials.credentials })
+  const pairing = createPairing({ records: createRecords(records), name: () => setting('name'), target, credentials: credentials.credentials, logger: ctx.logger(LINK_SAVE.logger) })
   const { link } = pairing
   ctx.effect(() => credentials.onChange(() => link.reconnect()))
   ctx.effect(() => () => { void link.stop() })

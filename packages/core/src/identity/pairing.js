@@ -103,7 +103,7 @@ const ownPageBinding = (attempt, result) => attempt.kind === CREDENTIAL_KIND.gra
 
 /**
  * @param {object} options the link's options (`target`, `credentials` with its `ref`, `sdk`,
- *   `fetch`, timers), plus:
+ *   `fetch`, `logger`, timers), plus:
  * @param {{get: Function, put: Function, declined: Function, decline: Function}} options.records
  *   the identity records (`createRecords`)
  * @param {() => unknown} options.name the `identity.name` setting as stored (`requestedName` reads it)

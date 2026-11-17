@@ -9,7 +9,9 @@
  * through `remote.credentials`. So this route is the page's only server code.
  */
 import { UI_SEAM } from 'fishball-shared/ui-seam'
+import { codeOf } from '../events/diagnostics.js'
 import { BEGIN_VIA } from '../link/connect.js'
+import { LINK_SAVE } from '../link/constants.js'
 import { GUARDS } from '../../contracts/constants.js'
 import { CONNECT_ROUTE } from './constants.js'
 
@@ -40,16 +42,22 @@ function beginAnswer(begin) {
 }
 const statusAnswer = (status) => pick(status, ['state', 'code'])
 
-/** One answer of a compatible `ui.connect`, or 503 (also for a throw: its message could name a credential detail). */
+/**
+ * One answer of a compatible `ui.connect`, or 503 (also for a throw: its message could name a
+ * credential detail). A throw is logged by its code alone, on the link's logger, so a broken
+ * Connect (a missing client package, say) is not mistaken for a missing service.
+ */
 function answering(ctx, act) {
   const unavailable = () => json(CONNECT_ROUTE.unavailable, { code: CONNECT_ROUTE.unavailableCode })
+  const logger = ctx.logger?.(LINK_SAVE.logger)
   return async (request) => {
     try {
       const connect = connectOf(ctx)
       if (connect === undefined) return unavailable()
       const answer = await act(connect, request)
       return answer === undefined ? unavailable() : json(CONNECT_ROUTE.ok, answer)
-    } catch {
+    } catch (error) {
+      logger?.warn(LINK_SAVE.text.failed, CONNECT_ROUTE.connectFailed, codeOf(error))
       return unavailable()
     }
   }
@@ -58,7 +66,8 @@ function answering(ctx, act) {
 /**
  * Registers `GET|POST /api/fishball/connect` (CONNECT_ROUTE) on DSH's authenticated exact-route
  * channel. Returns DSH's disposer.
- * @param {{get(name: string): any, connection: {fetch: {register(route: object): () => Promise<void>}}}} ctx core's row context
+ * @param {{get(name: string): any, connection: {fetch: {register(route: object): () => Promise<void>}}, logger?(name: string): {warn: Function}}} ctx
+ *   core's row context; its optional `logger` is told the code of a throw the route answers 503 for
  * @param {{callbackFor?: (request: Request) => object | undefined}} [options] the press's callback
  *   choice from the page's own origin (link/web-callback.js, Q-A3 B). `undefined` is the loopback
  *   callback, and then `begin()` is called with no argument, as K3a's `FishballConnect.begin()` is
