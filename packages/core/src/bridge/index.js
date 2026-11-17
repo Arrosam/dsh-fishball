@@ -34,7 +34,10 @@
  * - `finalName(facade, rawName)`: the target-qualified model name (`targets/names.js` `toolNameOf`);
  * - `admit(offered)`: whether the name may be registered (its binding is free or this tuple's own;
  *   a name bound, or once bound, to another tuple is refused and logged, never overwritten);
- * - `label()`: the target's resolved name, shown in each description as JSON-quoted untrusted data.
+ * - `label()`: `{name, targetId}`: the target's resolved name, shown in each description as
+ *   JSON-quoted untrusted data, and its trusted local id, which tells two equal names apart.
+ * `locals` are target-bound local helpers offered with the remote tools under the same naming
+ * (the target's `ask_user`, origin `local`): `{facade, build(modelName) → definition}`.
  * `rename()` re-derives every name after the target's name changed: the old set is withdrawn and the
  * new one registered in the same synchronous turn; if any of the new registrations fails, every one
  * of that generation is disposed again, so the target's tools are unavailable rather than half
@@ -128,9 +131,27 @@ function raced(promise, signal) {
  * @param {{info: Function, warn: Function}} [options.logger] the background log
  */
 /** A façade of one link with no namespace (a single-link caller): the façade names, all admitted, no label. */
-const BARE_NAMING = Object.freeze({ finalName: undefined, admit: () => true, label: () => undefined })
+const BARE_NAMING = Object.freeze({ finalName: undefined, localName: (facade) => Object.freeze({ name: facade, valid: true }), admit: () => true, label: () => undefined })
 
-export function createBridge({ link, ctx, gate = OPEN_GATE, imagesSupported = async () => true, attachments = () => undefined, logger, naming = BARE_NAMING }) {
+/** A description with the target header first (see the header), or as it is without a label. */
+const describe = (label, description) => (label === undefined ? description : TEXT.targetHeader(JSON.stringify(label.name), label.targetId) + description)
+
+/**
+ * The Fishball branch's content for one event (Q-11): a header naming its type and, since
+ * MULTI-1, the target it came from (its name JSON-quoted as data, its trusted local id), then the
+ * whole event inside an untrusted block whose fence has a random marker, so no payload text can
+ * close the block or imitate core's own framing (as the connector's framing.js). Only a K1 event
+ * type (`isEventType`) is named in the header; any other value stays inside the block. One text block.
+ */
+export function presentEvent(event) {
+  const marker = randomUUID()
+  const type = isEventType(event?.type) ? event.type : TEXT.unknownType
+  const source = event?.source
+  const header = source === undefined ? [TEXT.eventHeader(type)] : [TEXT.eventHeader(type), TEXT.eventSource(JSON.stringify(source.name), source.targetId)]
+  return textBlock([...header, TEXT.untrustedOpen(marker), TEXT.eventFields + JSON.stringify(event), TEXT.untrustedClose(marker)].join(TEXT.lineEnd))
+}
+
+export function createBridge({ link, ctx, gate = OPEN_GATE, imagesSupported = async () => true, attachments = () => undefined, logger, naming = BARE_NAMING, locals = [] }) {
   if (!isPortLink(link)) throw new TypeError(MISUSE.link)
   // Checked here so a wrong port fails at wiring time, not as a refused call at the model's turn.
   if (typeof gate?.send !== 'function') throw new TypeError(MISUSE.gate)
@@ -182,12 +203,15 @@ export function createBridge({ link, ctx, gate = OPEN_GATE, imagesSupported = as
   }
 
   /** The DSH tool definition of one offered tool (dsh-mcp-client's raw form, both SDKs). */
-  function definitionOf({ name, modelName, tool }) {
+  function definitionOf({ name, modelName, tool, local }) {
     const label = naming.label()
-    const description = tool.description ?? TEXT.noDescription
+    if (local !== undefined) {
+      const built = local.build(modelName)
+      return { ...built, description: describe(label, built.description) }
+    }
     const definition = {
       name: modelName,
-      description: label === undefined ? description : TEXT.targetHeader(JSON.stringify(label)) + description,
+      description: describe(label, tool.description ?? TEXT.noDescription),
       parameters: tool.inputSchema,
       output: { schema: TOOL_OUTPUT.schema, render },
       execute: (args, exec) => call(name, args, exec),
@@ -246,8 +270,14 @@ export function createBridge({ link, ctx, gate = OPEN_GATE, imagesSupported = as
   /** The offer for `tools`: the namespaced names, minus any whose binding is another tuple's. */
   function offerFor(tools) {
     const computed = offerOf(tools, naming.finalName)
-    const admitted = computed.offered.filter((entry) => naming.admit(entry))
-    const bound = computed.offered.filter((entry) => !admitted.includes(entry)).map((entry) => Object.freeze({ name: entry.name, modelName: entry.modelName, reason: LOG.reason.bound }))
+    const localEntries = locals.map((local) => {
+      const final = naming.localName(local.facade)
+      return Object.freeze({ name: local.facade, facade: local.facade, modelName: final.name, tuple: final.tuple, valid: final.valid, local, contributed: false })
+    })
+    const taken = new Set(computed.offered.map((entry) => entry.modelName))
+    const usable = localEntries.filter((entry) => entry.valid && !taken.has(entry.modelName))
+    const admitted = [...computed.offered, ...usable].filter((entry) => naming.admit(entry))
+    const bound = [...computed.offered, ...usable].filter((entry) => !admitted.includes(entry)).map((entry) => Object.freeze({ name: entry.name, modelName: entry.modelName, reason: LOG.reason.bound }))
     return Object.freeze({ offered: Object.freeze(admitted), refused: Object.freeze([...computed.refused, ...bound]) })
   }
 
@@ -302,18 +332,6 @@ export function createBridge({ link, ctx, gate = OPEN_GATE, imagesSupported = as
     },
   })
 
-  /**
-   * The Fishball branch's content for one event (Q-11): a header naming its type, then the whole
-   * event inside an untrusted block whose fence has a random marker, so no payload text can close
-   * the block or imitate core's own framing (as the connector's framing.js). Only a K1 event type
-   * (`isEventType`) is named in the header; any other value stays inside the block. One text block.
-   */
-  function present(event) {
-    const marker = randomUUID()
-    const type = isEventType(event?.type) ? event.type : TEXT.unknownType
-    return textBlock([TEXT.eventHeader(type), TEXT.untrustedOpen(marker), TEXT.eventFields + JSON.stringify(event), TEXT.untrustedClose(marker)].join(TEXT.lineEnd))
-  }
-
   /** Offer the tools into one DSH `tools` service (an agent scope); returns its disposer. */
   function mount(tools) {
     if (closed) return () => {}
@@ -328,7 +346,7 @@ export function createBridge({ link, ctx, gate = OPEN_GATE, imagesSupported = as
     mount,
     bridge,
     attention,
-    present,
+    present: presentEvent,
     /** How many contributed tools are on offer to the model now (R-EXT-14's status note). */
     contributedCount: () => offer.offered.filter((entry) => entry.contributed).length,
     /** Calls `fn()` after each refresh of the offer. Returns its disposer. */

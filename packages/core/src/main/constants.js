@@ -3,7 +3,7 @@
  * modules it composes is that module's own; these are the row's: its id, its inject list, the DSH
  * names it reads, and its log lines.
  */
-import { FISHBALL_MODEL, HOSTED_IMPORT } from '../../contracts/constants.js'
+import { FISHBALL_MODEL } from '../../contracts/constants.js'
 import { SETTINGS } from '../settings/constants.js'
 
 export const MAIN = Object.freeze({
@@ -23,32 +23,26 @@ export const MAIN = Object.freeze({
   webServer: 'webServer',
   /** DSH's attachment store (dsh-attachment), read on use: the façade saves an image the model reads into it. */
   attachments: 'attachments',
-  /** `fishballInstance` (K3 `index.d.ts`), its version, and the status service (F-STATUS). */
+  /** `fishballInstance` (K3 `index.d.ts`) and its version (MULTI-0: 2, `ui`, `bridge` and `attention` changed shape). */
   service: 'fishballInstance',
-  apiVersion: 1,
+  apiVersion: 2,
   /** The setting paths the row follows, as nested key paths in its own config. */
   setting: Object.freeze({
-    target: Object.freeze(['target', 'url']),
     metadataUrl: Object.freeze(['connect', 'clientMetadataUrl']),
     id: Object.freeze(['identity', 'id']),
     name: Object.freeze(['identity', 'name']),
     model: FISHBALL_MODEL.path,
   }),
-  /** The instance's target in a hosted child (K3a HOSTED_IMPORT.targetSetting): another row's settings, read from DSH's settings service. */
-  instanceTarget: HOSTED_IMPORT.targetSetting,
   /** DSH events: a volatile config change of a row (cordis-plugin-loader) and a settings document change (dsh-settings). */
   event: Object.freeze({ volatileUpdate: 'loader/volatile-update', settingsUpdated: 'settings/document-updated' }),
   /** The plugin id core's own manager-scope contributions register under (X2). */
-  setupId: Object.freeze({ asks: 'fishball-core-asks', reminders: 'fishball-core-reminders', bridge: 'fishball-core-bridge' }),
+  setupId: Object.freeze({ reminders: 'fishball-core-reminders', bridge: 'fishball-core-bridge' }),
   /** The image input modality of a model (dsh-llm `inputModalities`, 0.2.2; absent = unknown, allowed, as the V2 image gate judged it). */
   imageModality: 'image',
   logger: 'fishball-core',
   text: Object.freeze({
     failed: '%s failed (%s)',
     recover: 'recovering the acceptance ledger',
-    reconcile: 'reconciling the ask cards',
-    intake: 'taking a polled event',
-    page: 'taking a polled page',
     resume: 'resuming pending notices',
     model: 'applying Fishball\'s model',
     id: 'applying Fishball\'s id setting',
