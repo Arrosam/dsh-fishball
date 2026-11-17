@@ -73,16 +73,18 @@ globalThis.__ModuleLoader__?.load({
        * The bubble's place, measured at each render and followed while `shown` (review UI-07): the
        * sidebar collapses, moves or hides without a new snapshot, and DSH's overlay does not
        * re-render on its geometry, so while a notice is up the fish is measured again on each
-       * animation frame and window resize, and the bubble re-renders when its place changed. No DSH
+       * animation frame and window resize (a resize lands before the next frame), and the bubble
+       * re-renders from the stored place only when it changed. No DSH
        * anchored-overlay helper is exposed to plugins on 0.2.1-rc.5 or 0.2.2-rc.1. Nothing runs
        * while no notice is shown. @returns `{place, style}`, or null while not shown.
        */
       function usePlace(shown) {
-        const [, setSeen] = React.useState(null)
+        const [seen, setSeen] = React.useState(null)
         React.useEffect(() => {
           if (!shown) return undefined
           let frame
-          // The state holds the last place measured, so an unchanged place re-renders nothing.
+          // The state holds the last place measured (the first render measures once itself), so an
+          // unchanged place re-renders nothing.
           const measure = () => {
             const next = bubblePlace()
             setSeen((previous) => (previous !== null && samePlace(previous, next) ? previous : next))
@@ -93,9 +95,11 @@ globalThis.__ModuleLoader__?.load({
           return () => {
             cancelAnimationFrame(frame)
             window.removeEventListener(RESIZE_EVENT, measure)
+            // The next notice measures afresh instead of starting at this one's last place.
+            setSeen(null)
           }
         }, [shown])
-        return shown ? bubblePlace() : null
+        return shown ? seen ?? bubblePlace() : null
       }
 
       /**

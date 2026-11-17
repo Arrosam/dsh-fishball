@@ -588,6 +588,7 @@ window.__ModuleLoader__.load({
           store.set(value)
           return () => { if (store.get() === value) store.set(undefined) }
         },
+        // Kit API: a part may read a seat once outside React; the shell itself follows seats with `use`.
         get: (seat) => stores.get(seat).get(),
         use: (seat) => { const store = stores.get(seat); return React.useSyncExternalStore(store.subscribe, store.get) },
       })

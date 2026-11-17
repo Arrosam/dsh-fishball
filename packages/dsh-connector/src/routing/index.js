@@ -21,7 +21,8 @@
  * - `sessions`: `{exists(id), rootOf?(id), onTurnFinished(fn(id, {running, queued})), onState(fn(id, {running,
  *   pendingInteraction}))}` over root session ids (binding it to DSH is C-WIRE's). `rootOf(id)` →
  *   `Promise<root id | undefined>` (undefined: no such session) is what Hand over and Take back act
- *   on (review UI-01); a source without it knows no subagents, so each existing session is its own root;
+ *   on (review UI-01). C-WIRE's source always has it; a source without it (the routing suites' fakes
+ *   of sessions that have no subagents) makes each existing session its own root;
  * - `logger` (`{warn}`).
  *
  * One commit path (`produce`): every event C-ROUTE produces asks the router first and commits to the
