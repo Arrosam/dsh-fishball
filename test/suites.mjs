@@ -197,7 +197,7 @@ export const V3_SUITES = Object.freeze({
     [sub(PACKAGE.dshInstance, 'src', 'native-runtime'), PACKAGE.dshInstance + '/uninstall.js']),
   'dsh-instance.host': suite("the hosted child's token, locator, admission, child-side row, settings page, placement with fishball-ui (I-HOST)", v3('dsh-instance/host'),
     [all(PACKAGE.dshInstance), sub(PACKAGE.dshConnector, 'host-services'), all(PACKAGE.dshConnectorShared), all(PACKAGE.fishballCore), all(PACKAGE.fishballUi),
-      all(PACKAGE.fishballShared), all(PACKAGE.fishballBoard), all(PACKAGE.dshConnectorUi), 'test/v3/contract/k3-host-services/**', 'test/v3/contract/package-boundaries/**',
+      all(PACKAGE.fishballShared), all(PACKAGE.dshConnectorUi), 'test/v3/contract/k3-host-services/**', 'test/v3/contract/package-boundaries/**',
       'test/v3/dsh-connector-adapter/oauth-client/subject.mjs']),
   // I-SUCCEED drives the instance's hosted-token logic and record (reusing the I-HOST suite's binding and
   // fakes) and, in its integration rows, the real connector hosted service through the C-SUCCEED world.
@@ -303,7 +303,7 @@ export const V3_SUITES = Object.freeze({
   // The packed instance's install of the hosted set (REL-PACK item 5), through composedProfile on an
   // instance installed from the release tarballs; it reuses release/pack's helpers.
   'dsh-instance.placement-install': suite('the packed instance installs the hosted set by spec, else from its bundled tarballs (REL-PACK)', v3('dsh-instance/placement-install'),
-    [all(PACKAGE.dshInstance), all(PACKAGE.fishballCore), all(PACKAGE.fishballUi), all(PACKAGE.fishballBoard), all(PACKAGE.fishballShared), all(PACKAGE.dshConnectorShared),
+    [all(PACKAGE.dshInstance), all(PACKAGE.fishballCore), all(PACKAGE.fishballUi), all(PACKAGE.fishballShared), all(PACKAGE.dshConnectorShared),
       RELEASE_SCRIPTS, 'test/v3/release/pack/**']),
 })
 
@@ -351,6 +351,16 @@ export const V2_GROUPS = Object.freeze({
 
 /** Every suite by id. */
 export const SUITES = Object.freeze({ ...V3_SUITES, ...V2_GROUPS })
+
+/**
+ * Suites of shelved packages: kept in the repo and in the map (so `--check` still owns their files),
+ * but left out of every default run (test/run-v3.mjs, and test/run-affected.mjs by base ref or
+ * `--all`). Naming one with `--suite=<id>` still runs it. fishball-board is shelved, not in
+ * 1.0.0-alpha.1 (SHELVE-BOARD, the user, 2026-11-18); remove its id here when it is released again.
+ */
+export const SHELVED_SUITES = Object.freeze(['fishball-board.peers'])
+/** The files of the shelved suites, which the default runs skip. */
+export const SHELVED_FILES = Object.freeze(SHELVED_SUITES.flatMap((id) => SUITES[id].files))
 
 
 /** Changed paths that need no suite (documents, reports, the design). */

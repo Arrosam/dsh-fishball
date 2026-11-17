@@ -8,6 +8,9 @@
  *   node test/run-affected.mjs --all [--sdk=<v>]   every suite (V3 and the pre-V3 groups);
  *   node test/run-affected.mjs --check             the map's self-check (no test runs).
  *
+ * A base ref and --all leave out the shelved suites (test/suites.mjs SHELVED_SUITES); --suite runs
+ * whatever it names, a shelved suite included.
+ *
  * --sdk picks the V3 per-SDK files: `0.2.1-rc.5`, `0.2.2-rc.1` or `both` (default). The SDK the
  * host suites boot is FBTEST_DSH_RUNTIME, as for test/run-v3.mjs; set it to match.
  * --list prints the selection and exits. REMOVE-V2c deleted the pre-V3 selection (test/v2-suites.mjs)
@@ -19,7 +22,7 @@ import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { REPO } from './support/constants.mjs'
 import { rootSuiteFiles, runSuites } from './support/suite-runner.mjs'
-import { FULL, IGNORED, SDK_VERSIONS, SUITES, V3_SUITES } from './suites.mjs'
+import { FULL, IGNORED, SDK_VERSIONS, SHELVED_SUITES, SUITES, V3_SUITES } from './suites.mjs'
 
 const ARG = Object.freeze({ suite: '--suite=', sdk: '--sdk=', list: '--list', all: '--all', check: '--check', separator: ',' })
 const SDKS = Object.freeze({ both: 'both', values: SDK_VERSIONS })
@@ -104,6 +107,9 @@ function resolveIds(names) {
   return [...ids].sort()
 }
 
+/** `ids` without the shelved suites, sorted: what every default selection runs. */
+const unshelved = (ids) => ids.filter((id) => !SHELVED_SUITES.includes(id)).sort()
+
 function main(argv) {
   const opts = parse(argv)
   if (opts.check) {
@@ -112,7 +118,7 @@ function main(argv) {
     return Object.values(report).some((v) => v.length) ? 1 : 0
   }
   let ids
-  if (opts.all) ids = Object.keys(SUITES).sort()
+  if (opts.all) ids = unshelved(Object.keys(SUITES))
   else if (opts.ids) ids = resolveIds(opts.ids)
   else if (opts.base) {
     const paths = changedPaths(opts.base)
@@ -120,7 +126,7 @@ function main(argv) {
     console.log(`${paths.length} changed path(s) against ${opts.base}`)
     for (const id of picked.ids) console.log(`  ${id}  (${picked.reasons[id]})`)
     // A path no suite claims could be anything a test reads: run everything rather than guess.
-    if (picked.unmapped.length) { console.log(`unmapped, so every suite runs:\n  ${picked.unmapped.join('\n  ')}`); ids = Object.keys(SUITES).sort() } else ids = picked.ids
+    if (picked.unmapped.length) { console.log(`unmapped, so every suite runs:\n  ${picked.unmapped.join('\n  ')}`); ids = unshelved(Object.keys(SUITES)) } else ids = unshelved(picked.ids)
   } else throw new Error('give a base ref, --suite=<id>, --all or --check')
   const files = suiteFiles(ids, opts.sdk)
   console.log(`${ids.length} suite(s), ${files.length} file(s)`)

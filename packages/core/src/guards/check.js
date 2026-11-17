@@ -110,8 +110,8 @@ function managerAgents(ctx, managerPreset) {
  * - a name in core's tool tables (`GUARDS.coreTools`), however it got there (the private Skills,
  *   reminders and `ask_user`);
  * - a name an X2 contribution holds in this manager's scope now (`fishballInstance[CONTRIBUTED_TOOLS]`,
- *   core's own read, F-WIRE): the bridge façade's connector tools and a set member's
- *   such as the board's. X2 is the one way into the manager's scope, so they are Fishball's.
+ *   core's own read, F-WIRE): the bridge façade's connector tools and a set member's.
+ *   X2 is the one way into the manager's scope, so they are Fishball's.
  * A preset-scoped tool with one of those names, e.g. DSH's own `schedule_create` from
  * `dsh-tool-schedule`, is the parent scope's, so it is not excluded and is reported.
  */

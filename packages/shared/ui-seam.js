@@ -6,7 +6,7 @@
  *
  * - `UI_SEAM` (moved here unchanged from core's K3a constants, as K3a announced): `member` is the
  *   `fishballInstance` member fishball-ui reads (core's `contracts/ui.d.ts`); `coreMissing` is the
- *   one line fishball-ui logs, and then changes nothing, without core (Q-G2 = A; the board's R-FB-06
+ *   one line fishball-ui logs, and then changes nothing, without core (Q-G2 = A; R-FB-06's
  *   word). Core shows no hint of a missing fishball-ui (Q-G1), so there is no value for that.
  * - `UI_STATUS`: the name of core's status service the strip reads (F-WIRE).
  * - `UI_GUARDS`: the service fishball-ui's row provides so core's guard check also reports the UI

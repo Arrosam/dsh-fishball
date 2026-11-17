@@ -404,7 +404,7 @@ Each `K`-flagged case row whose answer is a behaviour rather than a value, keyed
 | K1b `GrantRegistry` | Registering a built-in, already-registered or unsupported `grant_type` throws `TypeError`, a wiring bug, as K3's `intercept` (DECIDED #17) (PROPOSED: open for the user's review). |
 | PLAT-UC-01 E5 | An `Mcp-Session-Id` header is ignored: the request is served statelessly and no session is created [spec: 2026-07-28 has no protocol sessions; S1 C21]. |
 | PLAT-BVA-02 | Body limit `ENDPOINT_LIMITS.bodyBytes` = 8 MiB: at the limit processed, one byte over 413; in-flight one over `inFlightPerPrincipal` 429 (PROPOSED values). |
-| PLAT-BVA-01 (K) | Left to FEAT-PEERS: the board's day length and whether 30 d is inclusive are board rules, not part of the MCP surface. |
+| PLAT-BVA-01 (K) | Left to FEAT-PEERS: the board's day length and whether 30 d is inclusive are board rules, not part of the MCP surface (the board is shelved, not in 1.0.0-alpha.1). |
 | PLAT-DT-02 (K) | Left to F-STATUS: `plugin-set-incomplete` and "rule 4 reports nothing missing" are core's status rules, not part of the MCP surface. |
 
 ## Internal module interfaces (`index.d.ts`, types only)
@@ -467,7 +467,7 @@ step; UI's latch reset on the designated agent's loss; contrib's designated reci
 | `dshConnectorTokens`, hosted status codes (08-hosted) | K3 / I-HOST |
 | interceptor priority range (EVT-DT-02 7) and core's interception (EVT) | K3 / F-INTERCEPT |
 | core's target status reporting (09 rows 74, 103); the codes are frozen above | F-LINK / F-STATUS |
-| `plugin-set-incomplete`, board 30 d edge (11-platform) | F-STATUS / FEAT-PEERS |
+| `plugin-set-incomplete`, board 30 d edge (11-platform; the board is shelved, not in 1.0.0-alpha.1) | F-STATUS / FEAT-PEERS |
 | embed-UI rows (10-embed-ui-matrix) | U-SHELL / U-MARKS / U-RECORDS |
 | the `dsh-mcp-client` adapter | C-MCP-ADAPTER (S7c) |
 

@@ -1,5 +1,7 @@
 # fishball-board
 
+> **Shelved, not in 1.0.0-alpha.1** (the user, 2026-11-18): kept here unchanged for a later release; nothing in this release installs, places or packs it.
+
 Fishball's work board, a plugin of the Fishball set (`fishball-core`, `fishball-ui`,
 `fishball-board`), version `1.0.0-alpha.1`. Requires DSH `>=0.2.1-rc.5`; it uses only the
 Schemastery API shared by `0.2.1-rc.5` and `0.2.2-rc.1`.

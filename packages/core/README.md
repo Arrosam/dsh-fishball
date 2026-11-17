@@ -1,6 +1,6 @@
 # fishball-core
 
-The backend of the Fishball plugin set (`fishball-core`, `fishball-ui`, `fishball-board`), on the
+The backend of the Fishball plugin set (`fishball-core`, `fishball-ui`), on the
 Fishball side. It turns a DSH into Fishball: one long-lived manager session that reaches the DSH it
 manages only through that DSH's `dsh-connector` MCP endpoint, as any agent does. It imports nothing
 from the DSH-side packages; its copy of the connector's public MCP surface
@@ -54,4 +54,5 @@ Core's own page on DSH's Plugins page (`client.js` with `client.settings.js`, in
 ## Without the other plugins
 
 Core runs normally without `fishball-ui` (no page, no strip) and reports nothing about it. Core's
-status names `fishball-board` when it is missing from the set.
+status's set check has no member in 1.0.0-alpha.1 (`fishball-board`, its one member, is shelved, not
+in this release), so it always reports the set `ok`.

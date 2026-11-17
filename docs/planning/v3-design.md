@@ -24,7 +24,7 @@ and "dsh的connector侧的插件间可以share一个包，fishball侧的插件�
  │ dsh-connector-ui        its frontend         │ +OAuth │                 preset, link, Connect│
  │ dsh-instance            hosted-child helper  │        │ fishball-ui     every UI change,     │
  │ dsh-connector-adapter   MCP client row       │        │                 window style         │
- │ dsh-connector-shared    library              │        │ fishball-board  board tools          │
+ │ dsh-connector-shared    library              │        │ fishball-board  shelved (1.42)       │
  └──────────────────────────────────────────────┘        │ fishball-shared library              │
    only coupling: the connector's public MCP surface      └──────────────────────────────────────┘
 ```
@@ -38,10 +38,11 @@ and "dsh的connector侧的插件间可以share一个包，fishball侧的插件�
 | DSH | `dsh-connector-shared` | inside the DSH-side tarballs that use it | modules more than one DSH-side package uses |
 | Fishball | `fishball-core` | a Fishball DSH | backend: the manager session and preset, the MCP link, Connect, interception service, status, card store, pairing, non-UI guard rows, its own settings page; runs normally without `fishball-ui`, with no status hint (Q-G1) |
 | Fishball | `fishball-ui` | a Fishball DSH (requires core) | every UI change inside Fishball: the A-lite page, UI guard rows, Recommended tab, status strip, pairing warning, ask cards, the two settings entries, the window style; no reply folding; without core it logs `fishball-core-missing` and changes nothing (Q-G2) |
-| Fishball | `fishball-board` | a Fishball DSH | board tools and archive |
+| Fishball | `fishball-board` | a Fishball DSH | board tools and archive. **Shelved, not in 1.0.0-alpha.1** (requirements 1.42): kept in `packages/board`, unchanged; nothing in this release packs, places or names it |
 | Fishball | `fishball-shared` | inside the Fishball-side tarballs that use it | modules more than one Fishball-side package uses |
 
 **Not in V3:** `fishball-fold-notify` (its function is embed-UI's `notify` tool), `fishball-hosted-settings`, Watchdog (a separate project, `.runtime/reports/watchdog-project-notes.md`).
+**Shelved, not in 1.0.0-alpha.1:** `fishball-board` (the user, 2026-11-18; requirements 1.42). The release is eight tarballs; the hosted child places and installs `fishball-ui` and `fishball-core` only, and reserves nothing for the board; core's set check has no member. Where this document names the board below, it describes the shelved package.
 **Release:** every package starts at `1.0.0-alpha.1`; V3 is installed from zero and handles no earlier version (requirements 1.38 Q-M1).
 
 ### 1.0b Cross-side audit (requirements 1.39), with how each dependency is removed
