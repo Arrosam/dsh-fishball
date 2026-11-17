@@ -10,11 +10,24 @@
  * because the codes are the documented words a user can look up (K3 `LinkCode`,
  * `ConnectConfigurationCode`, the plugin manager's error codes). Moved with the strip from core
  * by F-UI; the words' keys come from `fishball-shared/ui-seam`, never from core.
+ *
+ * UI-POLISH-F reworded `tools` into a chip and added `card` (the card's heading, its state badges,
+ * the tools chip's hint and the approval link's text); the line words are unchanged.
  */
 import { SEAM_STATUS } from 'fishball-shared/ui-seam'
 
 const { link: LS, connect: CS, reason: RS } = SEAM_STATUS
 const OFF = SEAM_STATUS.fishball.off
+
+/**
+ * The status card's states (UI-POLISH-F): what the card's badge, dot and accent say. One state per
+ * group of line kinds, mapped in `src/status/index.js` (`CARD_OF`); fishball-ui's own vocabulary, so
+ * it lives here and not in the seam.
+ */
+export const CARD = Object.freeze({
+  connected: 'connected', unset: 'unset', disconnected: 'disconnected', connecting: 'connecting',
+  attention: 'attention', failed: 'failed', off: 'off',
+})
 
 export const STATUS_TEXT = Object.freeze({
   en: Object.freeze({
@@ -34,9 +47,20 @@ export const STATUS_TEXT = Object.freeze({
     set: (list) => `Plugins enabled but not loaded: ${list}.`,
     reason: Object.freeze({ [RS.skipped]: 'skipped', [RS.failed]: 'failed to start' }),
     member: (name, reason) => `${name} (${reason})`,
-    tools: (count) => (count === 1 ? '1 contributed tool is offered to Fishball\'s model.' : `${count} contributed tools are offered to Fishball's model.`),
+    // UI-POLISH-F: a compact chip beside the card's heading; the sentence moved to `card.toolsHint`.
+    tools: (count) => (count === 1 ? '1 contributed tool' : `${count} contributed tools`),
     separator: ', ',
     control: Object.freeze({ [SEAM_STATUS.control.connect]: 'Connect', [SEAM_STATUS.control.cancel]: 'Cancel' }),
+    card: Object.freeze({
+      title: 'Target DSH',
+      offTitle: 'Fishball',
+      toolsHint: 'Contributed tools offered to Fishball\'s model',
+      openApproval: 'Open the approval page',
+      badge: Object.freeze({
+        [CARD.connected]: 'Connected', [CARD.unset]: 'Not set', [CARD.disconnected]: 'Not connected', [CARD.connecting]: 'Connecting',
+        [CARD.attention]: 'Needs setup', [CARD.failed]: 'Failed', [CARD.off]: 'Off',
+      }),
+    }),
   }),
   zh: Object.freeze({
     line: Object.freeze({
@@ -55,9 +79,19 @@ export const STATUS_TEXT = Object.freeze({
     set: (list) => `已启用但未加载的插件：${list}。`,
     reason: Object.freeze({ [RS.skipped]: '已跳过', [RS.failed]: '启动失败' }),
     member: (name, reason) => `${name}（${reason}）`,
-    tools: (count) => `Fishball 的模型可使用 ${count} 个贡献工具。`,
+    tools: (count) => `${count} 个贡献工具`,
     separator: '、',
     control: Object.freeze({ [SEAM_STATUS.control.connect]: '连接', [SEAM_STATUS.control.cancel]: '取消' }),
+    card: Object.freeze({
+      title: '目标 DSH',
+      offTitle: 'Fishball',
+      toolsHint: '提供给 Fishball 模型的贡献工具',
+      openApproval: '打开授权页面',
+      badge: Object.freeze({
+        [CARD.connected]: '已连接', [CARD.unset]: '未设置', [CARD.disconnected]: '未连接', [CARD.connecting]: '连接中',
+        [CARD.attention]: '需要配置', [CARD.failed]: '失败', [CARD.off]: '已关闭',
+      }),
+    }),
   }),
 })
 
