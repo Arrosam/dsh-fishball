@@ -97,6 +97,36 @@ async function drainNow(response) {
   return { sse, frames: sse.rest() }
 }
 
+/**
+ * A reader that reads only when told (a stalled consumer between reads): `next()` reads one whole
+ * frame, parsed; `drain()` reads frames until none arrives within two quiet windows.
+ */
+function manualReader(response) {
+  const reader = response.body.getReader()
+  const decoder = new TextDecoder()
+  const { prefix, end } = SURFACE.frame
+  let buffer = ''
+  let pending
+  const chunk = () => (pending ??= reader.read().finally(() => { pending = undefined }))
+  const parse = (text) => JSON.parse(text.slice(prefix.length))
+  async function next(ms = WAIT.settleMs) {
+    for (;;) {
+      const at = buffer.indexOf(end)
+      if (at >= 0) { const frame = buffer.slice(0, at); buffer = buffer.slice(at + end.length); return parse(frame) }
+      const got = await Promise.race([chunk(), new Promise((resolve) => setTimeout(() => resolve(null), ms))])
+      if (got === null || got.done) return undefined
+      buffer += decoder.decode(got.value, { stream: true })
+    }
+  }
+  return {
+    next,
+    async drain() { const frames = []; for (let f = await next(WAIT.quietMs * 2); f !== undefined; f = await next(WAIT.quietMs * 2)) frames.push(f); return frames },
+    cancel: () => reader.cancel().catch(() => {}),
+  }
+}
+/** A snapshot's notice count (0 with no notice): each notify raises it by one, so it orders the snapshots. */
+const countOf = (snapshot) => snapshot.notice?.count ?? 0
+
 function stalledStreams(sdk) {
   const id = CUI.id.ui02
   for (const n of CUI.changeCounts) {
@@ -132,6 +162,21 @@ function stalledStreams(sdk) {
       await changes(w, 1)
       assert.equal((await sse.next()).notice.count, i)
     }
+  })
+  row(sdk, id, 'ST (read → 1, 2 → read → 3 → drain)', 'read; changes 1 and 2 unread; read; change 3; drain → the last frame read is the latest snapshot (change 3), and no frame older than one already read follows it', async (t) => {
+    const w = await unit(t, sdk)
+    const r = manualReader(await w.route('events'))
+    t.after(() => r.cancel())
+    const read = [await r.next()]
+    await changes(w, 2)
+    read.push(await r.next())
+    await changes(w, 1)
+    read.push(...(await r.drain()))
+    assert.ok(read.every((f) => f !== undefined), 'a read got no frame: ' + JSON.stringify(read.map((f) => f && countOf(f))))
+    const counts = read.map(countOf)
+    assert.deepEqual(read.at(-1), w.snapshot(), 'the last frame is not the latest snapshot')
+    assert.equal(counts.at(-1), CUI.orderChanges)
+    for (let i = 1; i < counts.length; i++) assert.ok(counts[i] >= counts[i - 1], 'a frame older than one already read followed it: ' + JSON.stringify(counts))
   })
   const enders = [
     ['cancel', 'the reader cancels', async (w, response) => { await response.body.cancel() }],

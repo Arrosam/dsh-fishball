@@ -191,3 +191,10 @@ a real subagent child C of root R (DSH's `subagent` tool, finished, so it resolv
 | RFC-UI01 DT reads ×2 | DT | after Hand over from C: P reads C and R (ok); Q → `forbidden` on both |
 | RFC-UI01 DT routing | DT | after Hand over from C: a new child's permission request reaches P, never Q |
 | RFC-UI01 EP | EP | the UI routes for C: 200, 409 `conflict`, 200, 409 `not-managed` |
+| RFC-UI01 DT cold root | DT | own scenario `ix-cold-root`: R handed to P, DSH restarted (R and C cold) → P's session_read of C ok, Q's `forbidden`; P's session_message to C → `unknown-session` |
+
+Messaging a finished (or cold) subagent child is not supported: DSH gives the connector no agent for a
+subagent child, so the session tools answer `unknown-session` (the dev session's decision, 2026-11-18;
+base behaviour). A LIVE child under a cold root cannot be produced through the public tools or this
+harness (a restart leaves every session cold; the kept sessions have no subagent tool), so that
+child's permission routing under a cold root is not checked; the DT routing row checks it under a live root.
