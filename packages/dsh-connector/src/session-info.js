@@ -24,6 +24,47 @@ export function rootSessionOf(ctx, sessionId) {
   return id
 }
 
+const isSubagentHeader = (header) => header?.origin === SESSION_INFO.subagentOrigin && header.parentSession !== undefined
+
+/**
+ * A session's header, live or stored, or undefined when DSH reports it not found (any other failure
+ * rejects). A live session's header is read directly, without copying its events.
+ */
+async function headerOf(ctx, sessionId) {
+  const live = ctx.sessions.get(sessionId)
+  if (live !== undefined) return live.header
+  try {
+    return (await persistedEventsOf(ctx, sessionId)).header
+  } catch (error) {
+    if (isNotFound(error)) return undefined
+    throw error
+  }
+}
+
+/**
+ * The root of a session as `rootSessionOf` follows it, but read from the live session or else its
+ * stored log, so a stopped subagent's session is followed to its root too. Hand over and Take back
+ * act on this root (review UI-01): management is per root session (K1c), and a subagent's session
+ * must never get a manager of its own beside its root's, or session access and permission routing
+ * would name different managers for one session.
+ * @returns the root id, or undefined when `sessionId` is not a session of this DSH. A parent that
+ *   is gone ends the walk at the last session that exists.
+ * @throws (rejects) any read failure other than DSH's not-found: the ancestry is then unknown, and
+ *   taking the session for a root could split its ownership.
+ */
+export async function storedRootOf(ctx, sessionId) {
+  let header = await headerOf(ctx, sessionId)
+  if (header === undefined) return undefined
+  let id = sessionId
+  for (let depth = 0; depth < SESSION_INFO.maxSubagentDepth && isSubagentHeader(header); depth++) {
+    const parent = await headerOf(ctx, header.parentSession)
+    if (parent === undefined) break
+    id = header.parentSession
+    header = parent
+  }
+  return id
+}
+
 /**
  * DSH's "session not found": the controller throws an ApiSessionNotFound (class name; its
  * error.name stays 'Error'), the query engine a SESSION_QUERY_SESSION_NOT_FOUND code.
