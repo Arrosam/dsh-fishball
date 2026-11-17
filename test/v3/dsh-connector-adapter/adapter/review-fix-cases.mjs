@@ -46,7 +46,7 @@ const settled = (proxy, id) => exchange(proxy, id).then(async (r) => ({ ...r, en
  * With `paused`, nothing is read until `flow()` (the client stalls; F6).
  */
 function exchange(proxy, id, { paused = false } = {}) {
-  return new Promise((resolve, reject) => {
+  const head = new Promise((resolve, reject) => {
     const u = new URL(proxy.url)
     const chunks = []
     const finished = deferred()
@@ -61,6 +61,9 @@ function exchange(proxy, id, { paused = false } = {}) {
     req.on('error', (error) => { finished.resolve({ error }); reject(error) })
     req.end(callBody(id))
   })
+  // A caller still sees the rejection; one left pending when its test ended (torn down) is not unhandled.
+  head.catch(() => {})
+  return head
 }
 
 /** Answers the first upstream request carrying `id` with `answer(res)`; a retry gets C's own answer. */
@@ -74,6 +77,9 @@ function replyTo(w, id, answer) {
 }
 /** A status-only upstream answer, with optional headers and a JSON body unless bodyless. */
 const statusAnswer = (status, headers = {}, body = '{}') => (res) => { res.writeHead(status, { 'content-type': WEB.json, ...headers }); res.end(body) }
+
+/** The connector's token endpoint answers the next refresh grant with `error` / `status` (once). */
+const failOnce = (error, status) => (w) => { w.c.script.tokenError = { grant: REFRESH, error, status, times: 1 } }
 
 /** Moves to the stored grant's E − LEAD and waits until its token rotated; returns the new token. */
 async function rotateByTimer(w) {
@@ -195,11 +201,31 @@ export function registerAdapterReviewFixCases(sdk) {
       const hold = plan.find((h) => !h.done && carriesId(r, h.id) && bearerOf(r) === WEB.bearer + h.token)
       if (!hold) return false
       hold.done = true
-      hold.held.resolve()
       await hold.gate.promise
       return true
     }
-    return (id, token) => { const h = { id, token, held: deferred(), gate: deferred() }; plan.push(h); return h }
+    return (id, token) => { const h = { id, token, done: false, gate: deferred() }; plan.push(h); return h }
+  }
+  /**
+   * Waits until C holds `h`'s request. On the deadline, fails naming the bearers that request carried,
+   * so a broken premise (it went out with another token) fails fast instead of at the test timeout.
+   */
+  const untilHeld = async (w, h) => {
+    const held = await eventually(() => h.done)
+    assert.ok(held, `request ${h.id} was not held at C with the expected token; it carried: ${JSON.stringify(forwardedOf(w.c, h.id).map(bearerOf).map((b) => (b === WEB.bearer + h.token ? 'the expected token' : 'another token')))}`)
+  }
+  /**
+   * After a rotation the record holds `token` before the proxy necessarily sends it (adoption is not
+   * synchronous with the write); sends probe calls until C sees one carrying `token`.
+   */
+  const untilProxySends = async (w, token) => {
+    const p = w.n.proxyOf(M)
+    const sends = await eventually(async () => {
+      const id = nextId()
+      await proxyRequest(p.url, { headers: mcpHeaders(p.auth), body: callBody(id) })
+      return bearerOf(forwardedOf(w.c, id).at(-1) ?? { headers: {} }) === WEB.bearer + token
+    })
+    assert.ok(sends, 'the proxy never sent the rotated token')
   }
   /** The request's final answer is 200, retried with a new token C ≠ `old`; C is stored; tokens kept. */
   const expectRetriedFresh = async (w, id, answer, old) => {
@@ -222,12 +248,13 @@ export function registerAdapterReviewFixCases(sdk) {
       const ids = { A: nextId(), B: nextId() }
       const hA = hold(ids.A, A)
       const sentA = exchange(p, ids.A)
-      await hA.held.promise
+      await untilHeld(w, hA)
       const B = await rotateByTimer(w)
+      await untilProxySends(w, B)
       const refreshes = w.c.refreshRequests().length
       const hB = hold(ids.B, B)
       const sentB = exchange(p, ids.B)
-      await hB.held.promise
+      await untilHeld(w, hB)
       for (const x of order) (x === 'A' ? hA : hB).gate.resolve()
       await expectRetriedFresh(w, ids.B, await sentB, [A, B])
       assert.equal(w.c.refreshRequests().length, refreshes + 1, 'not exactly one refresh for B\'s 401')
@@ -241,7 +268,7 @@ export function registerAdapterReviewFixCases(sdk) {
     const id = nextId()
     const h = hold(id, A)
     const sent = exchange(w.n.proxyOf(M), id)
-    await h.held.promise
+    await untilHeld(w, h)
     h.gate.resolve()
     await w.clock.to(E - K.leadMs)
     await expectRetriedFresh(w, id, await sent, [A])
@@ -335,6 +362,67 @@ export function registerAdapterReviewFixCases(sdk) {
     await w.clock.advance(FIX.quietSpans * LIMIT.refreshRetryMaxMs)
     assert.equal(await staysFalse(() => w.c.refreshRequests().length > n), true, 'a refresh after the adapter was disposed')
   })
+  /** One proxied request answered 401 at C; its recovery runs against the token endpoint as scripted. */
+  const refusedOnce = (w) => { const id = nextId(); replyTo(w, id, statusAnswer(WEB.unauthorized)); return settled(w.n.proxyOf(M), id) }
+  /** Holds the next token request at C until `release()`; `held` resolves when it arrived. */
+  const holdNextToken = (w) => {
+    const held = deferred()
+    const gate = deferred()
+    w.c.script.beforeToken = async () => { w.c.script.beforeToken = undefined; held.resolve(); await gate.promise }
+    return { held: held.promise, release: gate.resolve }
+  }
+  caseTest(sdk, ID('F4'), 'overlap 401 fails in flight', 'retries 1 (+30 s) and 2 (+60 s) fail; during retry 2\'s flight a proxied 401\'s recovery fails too → no earlier timer attempt; retry 3 comes 120 s after retry 2', async (t) => {
+    const { w, grant, E } = await authorizedWorld(t, sdk)
+    const { LIMIT } = await productConstants(sdk)
+    const [first, second, third] = retryDelays(LIMIT, 3)
+    await failAtLead(w, E, transient(K1.OAUTH_ERROR.serverError, FIX.serverError))
+    await expectAttemptAt(w, first, 'retry 1 (fails)')
+    const hold = holdNextToken(w)
+    const n = w.c.refreshRequests().length
+    await w.clock.advance(second)
+    await hold.held
+    assert.equal(w.c.refreshRequests().length, n + 1, 'retry 2 did not start at +60 s')
+    const answered = refusedOnce(w)
+    await sleep(WAIT.quietMs)
+    hold.release()
+    await answered
+    await sleep(WAIT.quietMs)
+    await expectKept(w, grant)
+    await expectAttemptAt(w, third, 'retry 3 after the failed 401 recovery')
+  })
+  // A failed 401 recovery inside the wait does not move the pending retry (strict, relayed 2026-11-18).
+  caseTest(sdk, ID('F4'), 'overlap 401 fails in wait', 'retry 1 fails (next at +60 s); 10 s into the wait a proxied 401\'s recovery fails → retry 2 still exactly 60 s after retry 1 (none 1 ms before); retry 3 exactly 120 s after retry 2', async (t) => {
+    const { w, grant, E } = await authorizedWorld(t, sdk)
+    const { LIMIT } = await productConstants(sdk)
+    const [first, second, third] = retryDelays(LIMIT, 3)
+    await failAtLead(w, E, transient(K1.OAUTH_ERROR.serverError, FIX.serverError))
+    await expectAttemptAt(w, first, 'retry 1 (fails)')
+    await w.clock.advance(FIX.overlapOffsetMs)
+    await refusedOnce(w)
+    await sleep(WAIT.quietMs)
+    await expectKept(w, grant)
+    await expectAttemptAt(w, second - FIX.overlapOffsetMs, 'retry 2 after the failed 401 recovery')
+    await expectAttemptAt(w, third, 'retry 3 (the doubling went on)')
+  })
+  caseTest(sdk, ID('F4'), 'overlap 401 succeeds', 'retry 1 fails; 10 s into the wait a proxied 401 is recovered with new tokens → the backoff ends: no attempt at the old retry time; the next timer refresh is at the new E − LEAD, none 1 ms before', async (t) => {
+    const { w, E } = await authorizedWorld(t, sdk)
+    const { LIMIT } = await productConstants(sdk)
+    const [first] = retryDelays(LIMIT, 1)
+    await failAtLead(w, E, (x) => { x.c.script.tokenError = { grant: REFRESH, error: K1.OAUTH_ERROR.serverError, status: FIX.serverError, times: 2 } })
+    await expectAttemptAt(w, first, 'retry 1 (fails)')
+    await w.clock.advance(FIX.overlapOffsetMs)
+    const before = await storedToken(w.n)
+    assert.equal((await refusedOnce(w)).status, WEB.ok, 'the 401 was not recovered')
+    const fresh = await storedToken(w.n)
+    assert.ok(fresh !== undefined && fresh !== before, 'the 401 recovery stored no new token')
+    const E2 = (await w.n.record(M)).payload.tokens.expiresAt
+    const n = w.c.refreshRequests().length
+    await w.clock.to(E2 - K.leadMs - K.tickMs)
+    assert.equal(await staysFalse(() => w.c.refreshRequests().length > n), true, 'a timer refresh before the new E − LEAD (the backoff went on)')
+    await w.clock.advance(K.tickMs)
+    assert.ok(await eventually(() => w.c.refreshRequests().length === n + 1), 'no timer refresh at the new E − LEAD')
+    assert.equal(w.n.stateOf(M).state, STATE.authorized)
+  })
 
   // ================================================================== F5 gateway outages
   /** Writes a 200 head and a partial body, then breaks the upstream connection. */
@@ -362,6 +450,9 @@ export function registerAdapterReviewFixCases(sdk) {
     ['broken body, then a successful request', brokenBody, { recovered: true }, false],
     ['400 (not a gateway status)', statusAnswer(FIX.badRequest), {}, false],
     ['500 (boundary: not in 502–504)', statusAnswer(FIX.serverError), {}, false],
+    // The user's decision (2026-11-18): Cloudflare's 520–530 counts; its outer neighbours do not.
+    ...FIX.originErrors.inside.map((status) => [`${status} (origin error, inside 520–530)`, statusAnswer(status), {}, true]),
+    ...FIX.originErrors.outside.map((status) => [`${status} (outside the unreachable set)`, statusAnswer(status), {}, false]),
   ]
   for (const [row, answer, options, remounts] of gatewayRows) {
     caseTest(sdk, ID('F5'), row, `a proxied upstream answer: ${row}; then the timer rotates the token → ${remounts ? 'the child row is disposed and a fresh one mounted' : 'the same child row stays'}`, async (t) => {
@@ -383,6 +474,29 @@ export function registerAdapterReviewFixCases(sdk) {
     assert.ok(await eventually(async () => (await storedToken(w.n)) !== before), 'the 401 was not recovered by a refresh')
     await expectSameChild(w, fiber)
   })
+  // A 401 whose refresh then fails at the token endpoint: the child gets 502, and it counts as unreachable.
+  const refused = () => statusAnswer(WEB.unauthorized, {}, '{}')
+  for (const [row, failToken, recovered] of [
+    ['401, refresh 500', failOnce(K1.OAUTH_ERROR.serverError, FIX.serverError), false],
+    ['401, refresh network error', (w) => { w.c.script.tokenDrop = 1 }, false],
+    ['401, refresh 500, then a successful request', failOnce(K1.OAUTH_ERROR.serverError, FIX.serverError), true],
+  ]) {
+    caseTest(sdk, ID('F5'), row, `a proxied 401 whose refresh fails (${row}): the child gets 502; then the timer rotates the token → ${recovered ? 'the same child row stays' : 'the child row is mounted again'}`, async (t) => {
+      const { w } = await authorizedWorld(t, sdk)
+      const { PROXY } = await productConstants(sdk)
+      const fiber = w.n.child(M)
+      const connects = discovers(w.c).length
+      failToken(w)
+      const id = nextId()
+      replyTo(w, id, refused())
+      assert.equal((await settled(w.n.proxyOf(M), id)).status, PROXY.status.badGateway, 'the failed recovery was not answered 502')
+      if (recovered) assert.equal((await proxyRequest(w.n.proxyOf(M).url, { headers: mcpHeaders(w.n.proxyOf(M).auth), body: callBody(nextId()) })).status, WEB.ok)
+      await rotateByTimer(w)
+      assert.equal(w.n.stateOf(M).state, STATE.authorized)
+      if (recovered) await expectSameChild(w, fiber)
+      else await expectRemount(w, fiber, connects)
+    })
+  }
   caseTest(sdk, ID('F5'), 'client disconnect', 'the client itself disconnects mid-stream (not an upstream failure); then a rotation: the same child row stays', async (t) => {
     const { w } = await authorizedWorld(t, sdk)
     const fiber = w.n.child(M)

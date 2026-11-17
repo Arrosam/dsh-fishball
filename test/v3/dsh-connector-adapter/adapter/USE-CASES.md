@@ -339,6 +339,18 @@ requirement's numbers.
 | ADP-FIX-F7 | removal | ST | another process deletes the record just before N's failing scheduled refresh | `needs-authorization`; child disposed | F7 |
 | ADP-FIX-F8 | one name, upper case, two names with whitespace, with `keep-alive` | EP | the upstream response `Connection` names `x-fbtest-hop-a` and/or `-b` | the named headers are absent downstream; the un-named one, `x-fbtest-e2e`, `mcp-session-id` and `content-type` are present | F8 |
 
+### Follow-up rows (requirements changed after the review; relayed 2026-11-18)
+
+| Id | Row | Technique | Input | Expected | Source |
+| --- | --- | --- | --- | --- | --- |
+| ADP-FIX-F5 | 520, 525, 530 | EP + BVA (the ends and middle of Cloudflare's 520–530, the user's decision) | one proxied answer of that status, then a timer rotation | the child is remounted | F5 (a) |
+| ADP-FIX-F5 | 519, 531, 501, 505, 404 | BVA (just outside 520–530 and 502–504) + EP (an ngrok-style 404) | the same | the same child stays | F5 (a) |
+| ADP-FIX-F5 | 401, refresh 500 / 401, refresh network error | DT | the upstream answers 401, and the recovery's refresh fails (500 once, or the connection is dropped) | the child gets 502 (`PROXY.status.badGateway`); the next timer rotation remounts the child | F5 (b) |
+| ADP-FIX-F5 | 401, refresh 500, then a 200 | DT | as above, then one successful proxied request | the rotation keeps the same child | F5 (b) |
+| ADP-FIX-F4 | overlap 401 fails in flight | ST | retries 1 (+30 s) and 2 (+60 s) fail. Retry 2's token request is held at C (`beforeToken`), and meanwhile a proxied 401's recovery fails too | credentials kept; the next timer attempt comes exactly 120 s after retry 2, none 1 ms before | F4 (c) |
+| ADP-FIX-F4 | overlap 401 fails in wait | ST | retry 1 fails; 10 s into the 60 s wait a proxied 401's recovery fails | the pending retry does not move: retry 2 is exactly 60 s after retry 1 (none 1 ms before); retry 3 is exactly 120 s after retry 2 | F4 (c) |
+| ADP-FIX-F4 | overlap 401 succeeds | ST | retry 1 fails; 10 s into the wait a proxied 401 is recovered with new tokens | the backoff ends: no timer refresh before the new E − LEAD, and one at it | F4 (c) |
+
 These rows supersede the earlier S6 note: F5 covers the remount after an outage through a token
 rotation. The stock row's ten-attempt give-up is still not run.
 
