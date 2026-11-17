@@ -123,3 +123,18 @@ plugin fiber, as DSH's gateway mounts a namespace. The SDK's real Cordis then ap
 | EFIX3-SET-MUT-01 | mutating test | `client.settings.js` at `c4845000` (read with `git show` into a scratch folder) in the same world does NOT list the catalog and says "could not be read". The bug is reproduced, so the harness tells the two apart. |
 
 "Not required to register" is DT rule 1: with no `remote.session` the page still registers.
+
+## UI-POLISH-F §5 and §7 (`polish-cases.mjs`)
+
+Requirement: `.runtime/reports/ui-polish-f/SPEC.md` §5 (icon header entries) and §7 (core's page
+sections). `primitives.mjs` gained faithful stand-ins for DSH's Tooltip, StateDot, Tag and icons,
+and the Button stand-in keeps `variant` as `data-fbtest-variant`.
+
+| Id | Technique | Case |
+| --- | --- | --- |
+| UIPF-ENTRY-EP-01 fishball / dsh × en / zh | EP | A button, icon only (one aria-hidden svg, no text), aria-label `Fishball settings` / `DSH settings` (zh `Fishball 设置` / `DSH 设置`), Tooltip label = aria-label, side bottom; glyph sliders (Fishball) / gear (DSH) |
+| UIPF-ENTRY-EP-01 dsh haspopup | EP | `aria-haspopup="dialog"` kept |
+| UIPF-ENTRY-ST-01 tooltip | ST | Hover → one tooltip with the label → leave → none |
+| UIPF-CORE-EP-01 sections en / zh | EP | `section[data-fishball-model]`, `section[data-fishball-connect]` |
+| UIPF-CORE-EP-01 connect heading en / zh | EP | Visible `h3` `Connect` / `连接` naming the section (`aria-labelledby`, no `aria-label`), a StateDot |
+| UIPF-CORE-DT-01 `<state>` (every CONNECT.state, unavailable) | DT | Heading and StateDot in every state; the Connect button primary in needs-authorization and failed, outline otherwise |

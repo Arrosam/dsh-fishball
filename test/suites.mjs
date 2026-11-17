@@ -253,7 +253,9 @@ export const V3_SUITES = Object.freeze({
     [all(PACKAGE.fishballUi), all(PACKAGE.fishballCore), all(PACKAGE.fishballShared), 'test/v3/fishball-ui/guards/**', 'test/v3/fishball-core/package/**',
       'test/v3/fishball-core/status/constants.mjs',
       // E-FIX-3: the guard-row reader is imported bound to the SDK through the oauth-client suite's importBound.
-      'test/v3/dsh-connector-adapter/oauth-client/subject.mjs']),
+      'test/v3/dsh-connector-adapter/oauth-client/subject.mjs',
+      // UI-POLISH-F: the navigation rows (nav-page.mjs) render through the F-SETTINGS primitive stand-ins and their constants.
+      'test/v3/fishball-core/settings/primitives.mjs', 'test/v3/fishball-core/settings/constants.mjs']),
   // F-WIRE: core's main row, boots a real standalone DSH with core, fishball-ui and board as whole
   // bundles (the guards worker), and scans the Fishball side for DSH-side imports.
   'fishball-core.wire': suite("core's main row: fishballInstance, fishballStatus, the manager, model, Connect routes and web callback (F-WIRE)", v3('fishball-core/wire'),
@@ -264,7 +266,9 @@ export const V3_SUITES = Object.freeze({
     [all(PACKAGE.fishballCore), all(PACKAGE.fishballShared), 'test/support/fixtures/fake-llm.mjs', 'test/support/host.mjs']),
   // F-WIRE: fishball-ui's model dialog, strip route and live core rows, in the browser sandbox and a real DSH.
   'fishball-ui.model-dialog': suite('fishball-ui model dialog, status strip route, live core on/off, composer picker guard (F-WIRE)', v3('fishball-ui/model-dialog'),
-    [all(PACKAGE.fishballUi), all(PACKAGE.fishballCore), all(PACKAGE.fishballShared), 'test/v3/fishball-core/wire/**', 'test/v3/fishball-core/settings/**', 'test/v3/fishball-ui/guards/**']),
+    [all(PACKAGE.fishballUi), all(PACKAGE.fishballCore), all(PACKAGE.fishballShared), 'test/v3/fishball-core/wire/**', 'test/v3/fishball-core/settings/**', 'test/v3/fishball-ui/guards/**',
+      // UI-POLISH-F: the drawn status card rows build their frames with the F-STATUS strip view binding and its card constants.
+      'test/v3/fishball-core/status/subject.mjs', 'test/v3/fishball-core/status/constants.mjs']),
   'fishball-board.peers': suite('board without core (FEAT-PEERS; fold-notify was removed, REMOVE-WD)', v3('fishball-board/peers'),
     [all(PACKAGE.fishballBoard), sub(PACKAGE.dshConnector, 'mcp-schema')]),
   // The contract suites read every file of the packages they bound, so any change there reruns them.

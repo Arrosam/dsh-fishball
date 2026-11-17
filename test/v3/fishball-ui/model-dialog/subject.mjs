@@ -30,12 +30,14 @@ function withModal(React) {
  * One loaded DSH page with fishball-ui's slots mounted.
  * @param options.open - whether the Fishball page is open: the real fishball-page marks
  *   `<html data-fishball-page>` while it is, so mounting the open page sets that mark (default true).
+ * @param options.modelCatalog - UI-POLISH-F: DSH's `remote.session.modelCatalog()` stand-in (default: answers `catalog`).
  * The handle's `openPage()` / `closePage()` set / remove the mark, as opening / closing the page does.
  */
-export async function page(t, sdk, { model, catalog = U.catalog, lang = U.lang[U.first], open = true } = {}) {
+export async function page(t, sdk, { model, catalog = U.catalog, lang = U.lang[U.first], open = true, modelCatalog } = {}) {
   const w = createWorld({ sdk, lang, core: model ? { model } : {} })
   withModal(w.React)
-  const session = { modelCatalog: async () => ({ ok: true, value: structuredClone(catalog) }), $on: () => () => {} }
+  // UI-POLISH-F: `modelCatalog` stands in for DSH's read (a pending or refused catalog); default: the catalog.
+  const session = { modelCatalog: modelCatalog ?? (async () => ({ ok: true, value: structuredClone(catalog) })), $on: () => () => {} }
   // The settings page's `remote` is a Proxy without a set trap that answers every namespace with a
   // "not faked" face, so an assignment never reaches a reader: wrap it so `remote.session` is ours.
   const remote = w.services.remote
