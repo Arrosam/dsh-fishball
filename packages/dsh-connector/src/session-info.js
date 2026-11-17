@@ -24,13 +24,14 @@ export function rootSessionOf(ctx, sessionId) {
   return id
 }
 
-const isSubagentHeader = (header) => header?.origin === SESSION_INFO.subagentOrigin && header.parentSession !== undefined
+/** Whether a session header is a subagent's, with the parent it belongs to. */
+export const isSubagentHeader = (header) => header?.origin === SESSION_INFO.subagentOrigin && header.parentSession !== undefined
 
 /**
  * A session's header, live or stored, or undefined when DSH reports it not found (any other failure
  * rejects). A live session's header is read directly, without copying its events.
  */
-async function headerOf(ctx, sessionId) {
+export async function headerOf(ctx, sessionId) {
   const live = ctx.sessions.get(sessionId)
   if (live !== undefined) return live.header
   try {
