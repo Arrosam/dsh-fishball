@@ -161,6 +161,8 @@ export const FIX = Object.freeze({
   retry: Object.freeze({ firstMs: 30 * 1000, maxMs: 300 * 1000, factor: 2 }),
   /** F4 BVA: the first six retry delays, as the requirement lists them (30, 60, 120, 240, 300, 300 s). */
   retrySchedule: Object.freeze([30, 60, 120, 240, 300, 300].map((s) => s * 1000)),
+  /** F4 overlap rows: how far into a backoff wait the proxied 401 arrives. */
+  overlapOffsetMs: 10 * 1000,
   /** F4: a span of quiet after which no further refresh may follow (several capped delays). */
   quietSpans: 4,
   /** F2: the answer to a followable redirect. */
@@ -171,6 +173,12 @@ export const FIX = Object.freeze({
   notModified: 304,
   /** F5: "connector unreachable" statuses, and refusals that are not (BVA: 500). */
   gatewayStatuses: Object.freeze([502, 503, 504]),
+  /**
+   * F5 (the user's decision, relayed 2026-11-18): Cloudflare's origin-error range 520–530 inclusive
+   * counts as unreachable too. Its partition rows: inside (both ends and the middle), and the
+   * boundaries and neighbours outside it (519, 531; 501 and 505 beside 502–504; an ngrok-style 404).
+   */
+  originErrors: Object.freeze({ inside: Object.freeze([520, 525, 530]), outside: Object.freeze([519, 531, 501, 505, 404]) }),
   badRequest: 400,
   serverError: 500,
   tooManyRequests: 429,

@@ -79,6 +79,8 @@ export const toolText = (agentId) => 'fbtest pair id=' + agentId
  *   `Infinity` makes it standing (review F4: repeated transient failures);
  * - `tokenDrop`: the next this many token requests are recorded, then their socket is destroyed (a
  *   network failure, review F4);
+ * - `beforeToken(record)`: an async hook awaited before each token request is answered (it holds a
+ *   refresh in flight; review F4 overlap rows);
  * - `mcpReply(record, res)`: an async hook run after the access token was accepted; resolving `true`
  *   means it answered the request itself (review F2/F5/F6/F8: redirects, gateway statuses, streams,
  *   response headers).
@@ -119,7 +121,8 @@ export async function startFakeConnector({ issueRefresh = true } = {}) {
     return doc
   }
 
-  function tokenEndpoint(req, res, body) {
+  async function tokenEndpoint(req, res, body, record) {
+    if (script.beforeToken !== undefined) await script.beforeToken(record)
     if (script.tokenStall) return undefined
     if (script.tokenDrop > 0) {
       script.tokenDrop -= 1
@@ -268,7 +271,7 @@ export async function startFakeConnector({ issueRefresh = true } = {}) {
       for (const [k, v] of Object.entries(meta)) if (v === undefined) delete meta[k]
       return sendJson(res, WEB.ok, meta)
     }
-    if (req.method === WEB.post && url.pathname === K1.PATHS.token) return tokenEndpoint(req, res, body)
+    if (req.method === WEB.post && url.pathname === K1.PATHS.token) return tokenEndpoint(req, res, body, record)
     if (url.pathname === K1.PATHS.mcp || url.pathname === FIXTURE.wrong.mcpPath) {
       if (req.method === WEB.post) return mcpEndpoint(req, res, body, record)
       res.writeHead(WEB.methodNotAllowed, { allow: WEB.post })
