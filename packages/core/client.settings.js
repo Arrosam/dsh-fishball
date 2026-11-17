@@ -399,12 +399,15 @@ window.__ModuleLoader__.load({
      * Ownership of its async work (R-FIX-FUI, review finding 5): every read and press takes the next
      * `sequence` number, and a read publishes only while it is still the latest one, so a slow
      * earlier read never overwrites a newer state, and a press invalidates the reads before it.
+     * Presses have their own `pressed` number too: only the latest press opens its approval page and
+     * publishes its notice, so a quick second press is never overwritten by the first one's late answer.
      * After unmount nothing settles into this control: no state, no approval page opened, no
      * follow-up read. An authorization the press already started on the server is left running.
      */
     function ConnectControl({ t }) {
       const [view, setView] = React.useState({ status: undefined })
       const sequence = React.useRef(0)
+      const pressed = React.useRef(0)
       const mounted = React.useRef(true)
       const read = React.useCallback(async () => {
         const mine = ++sequence.current
@@ -423,8 +426,9 @@ window.__ModuleLoader__.load({
       }, [read])
       const begin = async () => {
         ++sequence.current
+        const mine = ++pressed.current
         const press = pressResult(await connectRequest(PAGE.connect.begin))
-        if (!mounted.current) return
+        if (!mounted.current || mine !== pressed.current) return
         if (press.approvalUrl !== undefined) window.open(press.approvalUrl, PAGE.connect.open.target, PAGE.connect.open.features)
         setView((current) => ({ status: current.status, ...press }))
         await read()

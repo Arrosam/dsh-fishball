@@ -6,8 +6,10 @@
  * - `GET /api/fishball/pairing?lang=&tz=`: the view stream (src/stream.js), each frame
  *   `pairingView(state, lang, tz)`; without core, a view with no lines;
  * - `POST /api/fishball/pairing/choose` `{choice, confirmed}`: core's `choose(choice, {confirmed})`,
- *   answered as it is (`{ok: true}` or core's refusal). Core alone decides what a choice may do: a
- *   choice it does not offer, or Continue without the confirmation, is its refusal, not this route's.
+ *   answered as it is (`{ok: true}` or core's refusal), always with 200: a refusal is an answer of
+ *   core's, as `UiResult` types it, and the card reads `ok` alone. Core alone decides what a choice
+ *   may do: a choice it does not offer, or Continue without the confirmation, is its refusal, not
+ *   this route's. Only this route's own failures have another status (400, 503).
  * Both routes are owner-only (DSH's authenticated exact-route channel), as the strip's.
  */
 import { UI_INSTANCE, UI_SEAM } from 'fishball-shared/ui-seam'

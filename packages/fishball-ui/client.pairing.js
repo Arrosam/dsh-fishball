@@ -33,9 +33,6 @@ window.__ModuleLoader__.load({
       langParameter: 'lang',
       zoneParameter: 'tz',
       press: Object.freeze({ method: 'POST', credentials: 'same-origin', cache: 'no-store', headers: Object.freeze({ 'content-type': 'application/json' }) }),
-      // `SEAM_PAIRING.choice.continue`: the one choice that needs the box ticked (R-ID-07).
-      confirmed: 'continue',
-      lang: Object.freeze({ en: 'en' }),
       dot: 'warning',
       css: Object.freeze({ id: 'fishball-pairing-style', head: 'fb-pairing-head', title: 'fb-pairing-title', body: 'fb-pairing-body', line: 'fb-pairing-line', row: 'fb-pairing-row', error: 'fb-pairing-error' }),
     })
@@ -53,26 +50,11 @@ window.__ModuleLoader__.load({
     /** The browser's own time zone, the one the last-seen time is written in. */
     const timeZone = () => Intl.DateTimeFormat().resolvedOptions().timeZone
 
-    /** One pairing stream per language for every mounted dock (kit `liveStream`). */
-    function pairingStream(kit) {
-      let lang = PAIRING.lang.en
-      const url = () => {
-        const next = apiUrl(PAIRING.events)
-        next.searchParams.set(PAIRING.langParameter, lang)
-        next.searchParams.set(PAIRING.zoneParameter, timeZone())
-        return next
-      }
-      const stream = kit.liveStream({ url, valid: (next) => next !== null && typeof next === 'object' && Array.isArray(next.lines) && Array.isArray(next.choices) })
-      return Object.freeze({
-        ...stream,
-        /** Follows `wanted` (the page's language): a change reopens the stream in it. */
-        use(wanted) {
-          if (wanted === lang) return
-          lang = wanted
-          stream.reopen()
-        },
-      })
-    }
+    /** One pairing stream per language for every mounted dock, in the browser's time zone (kit `langStream`). */
+    const pairingStream = (kit) => kit.langStream({
+      path: PAIRING.events, langParameter: PAIRING.langParameter, params: () => ({ [PAIRING.zoneParameter]: timeZone() }),
+      valid: (next) => next !== null && typeof next === 'object' && Array.isArray(next.lines) && Array.isArray(next.choices),
+    })
 
     /** One choice: core's answer `{ok}`; a refusal, a non-200 or no answer reads as not done. */
     async function choose(choice, confirmed) {
@@ -82,42 +64,50 @@ window.__ModuleLoader__.load({
       } catch { return false }
     }
 
+    /**
+     * One warning's body: its lines, the box and the choices. It is keyed by the warning
+     * (`pairingView`'s `key`), so a new warning, even one of the same state, starts with the box
+     * unticked and no failure: a tick is the user's word for that one pairing only (R-ID-07).
+     */
+    function PairingBody({ view, locked: streamLocked }) {
+      const [ticked, setTicked] = React.useState(false)
+      const [sending, setSending] = React.useState(false)
+      const [failed, setFailed] = React.useState(false)
+      const locked = sending || streamLocked
+      const press = async (choice) => {
+        setSending(true)
+        setFailed(false)
+        const ok = await choose(choice, ticked)
+        setSending(false)
+        setFailed(!ok)
+      }
+      return h('div', { className: PAIRING.css.body },
+        view.lines.map((line) => h('p', { key: line.kind, className: PAIRING.css.line, 'data-fishball-pairing-line': line.kind }, line.text)),
+        view.confirm === null ? null : h('div', { 'data-fishball-pairing-confirm': true },
+          h(Checkbox, { checked: ticked, disabled: locked, label: view.confirm, onChange: (on) => setTicked(on === true) })),
+        view.choices.length === 0 ? null : h('div', { className: PAIRING.css.row },
+          view.choices.map((entry, index) => h(Button, {
+            key: entry.choice, type: 'button', size: 'sm', variant: index === 0 ? 'primary' : 'outline',
+            disabled: locked || (entry.needsConfirm && !ticked), 'data-fishball-pairing-choice': entry.choice,
+            onClick: () => void press(entry.choice),
+          }, entry.label))),
+        failed ? h('p', { className: PAIRING.css.error, role: 'alert', 'data-fishball-pairing-failed': true }, view.failed) : null)
+    }
+
     function makeDock(ctx, stream, kit) {
       return function FishballPairing() {
         const lang = kit.useLang(ctx)
         React.useEffect(() => { stream.use(lang) }, [lang])
         const { frame: view, health } = React.useSyncExternalStore(stream.subscribe, stream.get)
-        const [ticked, setTicked] = React.useState(false)
-        const [sending, setSending] = React.useState(false)
-        const [failed, setFailed] = React.useState(false)
-        // A new warning (another state) asks again: the box and the last failure were for the old one.
-        const state = view?.state ?? null
-        React.useEffect(() => { setTicked(false); setFailed(false) }, [state])
         if (view === null || view.lines.length === 0) return null
+        // A warning from a stream that is not live may be over already: it stays readable, but no
+        // control acts on it until a fresh frame (R-FIX-FUI). Core refuses a choice it no longer offers.
         const stale = health !== kit.HEALTH.live
-        const locked = sending || stale
-        const press = async (choice) => {
-          setSending(true)
-          setFailed(false)
-          const ok = await choose(choice, ticked)
-          setSending(false)
-          setFailed(!ok)
-        }
         return h('div', { className: kit.css.dock, 'data-fishball-pairing': true, 'data-fishball-pairing-state': view.state, 'data-fishball-pairing-stale': stale ? health : undefined },
           h('div', { className: kit.css.card },
             h('div', { className: PAIRING.css.head }, h(StateDot, { state: PAIRING.dot }), h('span', { className: PAIRING.css.title }, view.title)),
-            h(kit.StreamNotice, { health, lang, onRetry: () => stream.reopen() }),
-            h('div', { className: PAIRING.css.body },
-              view.lines.map((line) => h('p', { key: line.kind, className: PAIRING.css.line, 'data-fishball-pairing-line': line.kind }, line.text)),
-              view.confirm === null ? null : h('div', { 'data-fishball-pairing-confirm': true },
-                h(Checkbox, { checked: ticked, disabled: locked, label: view.confirm, onChange: (on) => setTicked(on === true) })),
-              view.choices.length === 0 ? null : h('div', { className: PAIRING.css.row },
-                view.choices.map((entry, index) => h(Button, {
-                  key: entry.choice, type: 'button', size: 'sm', variant: index === 0 ? 'primary' : 'outline',
-                  disabled: locked || (entry.choice === PAIRING.confirmed && !ticked), 'data-fishball-pairing-choice': entry.choice,
-                  onClick: () => void press(entry.choice),
-                }, entry.label))),
-              failed ? h('p', { className: PAIRING.css.error, role: 'alert', 'data-fishball-pairing-failed': true }, view.failed) : null)))
+            h(kit.StreamNotice, { health, lang }),
+            h(PairingBody, { key: view.key, view, locked: stale })))
       }
     }
 

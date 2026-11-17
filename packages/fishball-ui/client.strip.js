@@ -115,24 +115,9 @@ window.__ModuleLoader__.load({
      * One strip stream per language for every mounted dock (kit `liveStream`: EventSource retries by
      * itself, and the kit marks the cached view stale meanwhile, R-FIX-FUI).
      */
-    function stripStream(kit) {
-      let lang = STRIP.lang.en
-      const url = () => {
-        const next = apiUrl(STRIP.events)
-        next.searchParams.set(STRIP.langParameter, lang)
-        return next
-      }
-      const stream = kit.liveStream({ url, valid: (next) => next !== null && typeof next === 'object' && Array.isArray(next.lines) })
-      return Object.freeze({
-        ...stream,
-        /** Follows `wanted` (the page's language): a change reopens the stream in it. */
-        use(wanted) {
-          if (wanted === lang) return
-          lang = wanted
-          stream.reopen()
-        },
-      })
-    }
+    const stripStream = (kit) => kit.langStream({
+      path: STRIP.events, langParameter: STRIP.langParameter, valid: (next) => next !== null && typeof next === 'object' && Array.isArray(next.lines),
+    })
 
     /** One press of the control: core's route; Connect's approval URL, when it answers one. */
     async function press(action) {
@@ -184,7 +169,7 @@ window.__ModuleLoader__.load({
                   h('span', { className: STRIP.css.chip, tabIndex: 0, 'aria-label': `${tools.text} · ${card.toolsHint}`, 'data-fishball-strip-line': tools.kind },
                     h(IconCordisPluginOutlineRegular, { size: STRIP.icon }), tools.text)),
                 control === null ? null : h(Button, { type: 'button', size: 'sm', variant: STRIP.buttonVariant[control.action], 'data-fishball-strip-control': control.action, onClick: () => void onPress() }, control.label))),
-            h(kit.StreamNotice, { health, lang, onRetry: () => stream.reopen() }),
+            h(kit.StreamNotice, { health, lang }),
             h('div', { className: STRIP.css.body },
               lines.filter((line) => line !== tools).map((line) => h('p', { key: line.kind, className: STRIP.css.line, 'data-fishball-strip-line': line.kind }, line.text)),
               approvalUrl === undefined || control?.action !== STRIP.action.cancel ? null

@@ -143,7 +143,7 @@ async function overriddenManagerTools(ctx, managerPreset) {
 /**
  * One check over the effective state.
  * @param {object} ctx - the row's Cordis context (`ctx.get` lookups only).
- * @param {{rows: readonly string[], policy: readonly {key: string, value: unknown}[]}} intended - readIntendedGuards().
+ * @param {{rows: readonly string[], uiRows: readonly string[], policy: readonly {key: string, value: unknown}[]}} intended - readIntendedGuards().
  * @returns {Promise<import('../../contracts/guards.js').GuardReport>}
  */
 export async function checkGuards(ctx, intended) {

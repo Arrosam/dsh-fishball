@@ -11,8 +11,8 @@
  *   settings (a new token or id), so there is no choice;
  * - a name refusal (`nameIssue`, any state): one more line, with the name in use.
  * unpaired and paired without a name refusal, or no core: nothing to draw (no lines).
- * A nameless principal reads `ID: <id>` (R-NAME-08); the card's lines are plain text, so its bold
- * prefix is not drawn there.
+ * A nameless principal reads as core labels it, `ID: <id>` (`inUse.prefix`, R-NAME-08); the card's
+ * lines are plain text, so its bold prefix is not drawn there.
  */
 import { SEAM_PAIRING } from 'fishball-shared/ui-seam'
 import { PAIRING_DEFAULT_LANG, PAIRING_TEXT } from './text.js'
@@ -28,21 +28,24 @@ const { state: STATE, choice: CHOICE, nameRefusal: NAME_REFUSAL } = SEAM_PAIRING
 const TIME_STYLE = Object.freeze({ dateStyle: 'medium', timeStyle: 'short' })
 /** Between a name refusal and the name in use. */
 const SENTENCE_GAP = ' '
-/** Each warning's line text key and the box it asks for (`confirm` key or null); keys of `PAIRING_TEXT`. */
+/**
+ * Each warning's line text key, the box it asks for (`confirm` key or null; keys of `PAIRING_TEXT`)
+ * and the choice that box enables (R-ID-07: Continue, only once ticked).
+ */
 const WARNING = Object.freeze({
-  [STATE.warnMatch]: Object.freeze({ text: 'warnMatch', confirm: 'confirm' }),
-  [STATE.warnMismatch]: Object.freeze({ text: 'warnMismatch', confirm: null }),
+  [STATE.warnMatch]: Object.freeze({ text: 'warnMatch', confirm: 'confirm', confirms: CHOICE.continue }),
+  [STATE.warnMismatch]: Object.freeze({ text: 'warnMismatch', confirm: null, confirms: null }),
 })
 /** The one line of a held state without a warning. */
 const NEED = Object.freeze({ [STATE.needToken]: 'needToken', [STATE.needId]: 'needId', [STATE.idMismatch]: 'idMismatch' })
 /** Each choice's label key, in the copy. */
 const CHOICE_LABEL = Object.freeze({ [CHOICE.continue]: 'continue', [CHOICE.newTokenAndId]: 'newTokenAndId', [CHOICE.newToken]: 'newToken' })
 const NAME_TEXT = Object.freeze({ [NAME_REFUSAL.nameTaken]: 'nameTaken', [NAME_REFUSAL.nameInvalid]: 'nameInvalid' })
-/** R-NAME-08: a principal with no name is shown by its id after this prefix (core's `MCP.name.namelessPrefix`). */
-const NAMELESS_PREFIX = 'ID: '
 
 const entry = (kind, text) => Object.freeze({ kind, text })
 const isName = (label) => typeof label?.name === 'string'
+/** A principal as core labels it (`principalLabel`, R-NAME-08): its name, or its prefix and id. */
+const labelText = (label) => (isName(label) ? label.name : `${label?.prefix ?? ''}${label?.id ?? ''}`)
 
 /** `epochMs` in `locale` and `timeZone`; an unknown zone reads as the process's own. */
 function formatTime(epochMs, locale, timeZone) {
@@ -55,7 +58,7 @@ function formatTime(epochMs, locale, timeZone) {
 
 function warningLine(view, text, timeZone) {
   const warning = view.warning ?? {}
-  const name = isName(warning.inUse) ? warning.inUse.name : NAMELESS_PREFIX + (warning.inUse?.id ?? warning.boundId)
+  const name = labelText(warning.inUse)
   const lastSeen = Number.isFinite(warning.lastSeenAt) ? formatTime(warning.lastSeenAt, text.locale, timeZone) : text.neverSeen
   return entry(view.state, text[WARNING[view.state].text](name, lastSeen))
 }
@@ -71,8 +74,10 @@ function nameLine(issue, text) {
  * @param {object | undefined} view core's `pairing.state()`, or undefined without core
  * @param {string} [lang] `en` or `zh`; any other value draws `en`
  * @param {string} [timeZone] the reader's IANA time zone for the last-seen time
- * @returns {{state: string | null, title: string, lines: ReadonlyArray<{kind: string, text: string}>, confirm: string | null,
- *   choices: ReadonlyArray<{choice: string, label: string}>, failed: string}}
+ * @returns {{state: string | null, key: string, title: string, lines: ReadonlyArray<{kind: string, text: string}>,
+ *   confirm: string | null, choices: ReadonlyArray<{choice: string, label: string, needsConfirm: boolean}>, failed: string}}
+ *   `key` names this warning: it changes whenever core's view does (another state, bound pair,
+ *   name refusal), so a drawn box ticked for one warning is never carried into the next.
  */
 export function pairingView(view, lang = PAIRING_DEFAULT_LANG, timeZone = undefined) {
   const text = PAIRING_TEXT[lang] ?? PAIRING_TEXT[PAIRING_DEFAULT_LANG]
@@ -85,9 +90,10 @@ export function pairingView(view, lang = PAIRING_DEFAULT_LANG, timeZone = undefi
   if (name !== null) lines.push(name)
   // Only the choices core offers now, and only those this card can name.
   const choices = warning === undefined ? [] : (view.choices ?? []).filter((choice) => Object.hasOwn(CHOICE_LABEL, choice))
-    .map((choice) => Object.freeze({ choice, label: text[CHOICE_LABEL[choice]] }))
+    .map((choice) => Object.freeze({ choice, label: text[CHOICE_LABEL[choice]], needsConfirm: choice === warning.confirms }))
   return Object.freeze({
     state,
+    key: JSON.stringify([state, view?.warning ?? null, view?.nameIssue ?? null]),
     title: text.title,
     lines: Object.freeze(lines),
     confirm: typeof warning?.confirm === 'string' ? text[warning.confirm] : null,
