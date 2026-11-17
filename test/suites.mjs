@@ -294,8 +294,9 @@ export const V3_SUITES = Object.freeze({
   // UI-FIX-F: the drawn ask and status cards (fishball-ui's client and parts, with core's client, in the
   // F-SETTINGS scripted page through the ask-card and strip harnesses; frames from fishball-ui's
   // stripView over fishball-shared's ui-seam) laid out in the LITE rows' headless Chromium with DSH's
-  // theme and page styles, measured for WCAG contrast.
-  'fishball-ui.contrast': suite('ask-card reason placeholder and connected status badge contrast, both DSH themes, DSH tokens only (UI-FIX-F)', v3('fishball-ui/contrast'),
+  // theme and page styles, measured for WCAG contrast. RESHOOT fix 1 adds the ask card's state badge
+  // (the open card's warning Tag, light ≥ 4.5:1, dark DSH's own warning Tag; answered / closed neutral).
+  'fishball-ui.contrast': suite('ask-card reason placeholder, open ask-card warning badge and connected status badge contrast, both DSH themes, DSH tokens only (UI-FIX-F, RESHOOT fix 1)', v3('fishball-ui/contrast'),
     [all(PACKAGE.fishballUi), all(PACKAGE.fishballCore), all(PACKAGE.fishballShared),
       'test/v3/fishball-core/asks/**', 'test/v3/fishball-core/settings/**', 'test/v3/fishball-core/status/**', 'test/v3/fishball-ui/model-dialog/**',
       'test/v3/contract/package-boundaries/**', 'test/v2-page-cases/lite-browser.mjs', 'test/private-skills/support/**']),
