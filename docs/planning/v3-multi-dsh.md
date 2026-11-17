@@ -197,6 +197,12 @@ Freeze exact collection/snapshot/action types, opaque handles and trusted proven
 
 Done: all three slices independently reviewed and merged; focused suites plus full non-shelved V3/map/package checks pass on both SDKs; final diff contains no migration/Board/host patch. Release remains user-published. Existing suite IDs: `contract.own-schema`, `contract.k1-mcp-schema`, `contract.k1d-amendments`, `contract.k2-tools`, `contract.k3-host-services`, `contract.k3a-core-seams`, `contract.package-boundaries`, `contract.split-shared`, `contract.embed`, `contract.suite-map`.
 
+**Freeze record (MULTI-0, 2026-11-18).** Frozen on branch `dev/v3-multi-0`; all slices branch from its freeze commit. The normative tables and boundary examples are in [core contracts README §MULTI-0](<../../packages/core/contracts/README.md>) and [K1 README §MULTI-0](<../../packages/dsh-connector/mcp-schema/README.md>). Names per slice:
+
+- **MULTI-1:** [targets.d.ts](<../../packages/core/contracts/targets.d.ts>) (`TargetRecord`, `TargetView`, `TargetsSnapshot` v1, `FishballTargets` = `ui.targets`, `TargetSource`, `FishballTargetBound`, `apiVersion` 2); [constants.js](<../../packages/core/contracts/constants.js>) `TARGETS` (ids, epoch, tuple keys, per-target credentials, duplicate suffix, tool-name scheme) and `MCP.identity` / `MCP.serverIdentity`; `AskCard.handle` / `source` / `voided`; `InterceptedEvent.source`; hosted reservation in [link.d.ts](<../../packages/core/contracts/link.d.ts>).
+- **MULTI-2:** K1 `RESOURCE.identity`, `SERVER_IDENTITY`, `ServerIdentity`; K3 [child.d.ts](<../../packages/dsh-connector/host-services/child.d.ts>) without the remote override or `target-remote`.
+- **MULTI-3:** [ui-seam](<../../packages/shared/ui-seam.js>) `SEAM_TARGETS` (states, kinds, identity capability, placeholders, routes, ask handle, refusals).
+
 ### MULTI-1 — core target composition and isolation (Opus; 37–56h)
 
 Dependency: MULTI-0 seam freeze. Parallel with MULTI-2 and MULTI-3 using frozen mocks.
