@@ -23,6 +23,7 @@ import {
   RUNTIME_DEP_FIELD, SDK, SET_SIDE, SHARED_READER, USERS_RULE, V3, V3_NAMES, sideOf,
 } from './constants.mjs'
 import { manifestNames, npmTempRoot, observe, readManifest } from './packages.mjs'
+import { assertLibraryCopies } from '../../release/pack/release.mjs'
 
 const NODE_MODULES_DIR = 'node_modules/'
 export const has = (pkg) => readManifest(pkg.dir) !== null
@@ -204,15 +205,12 @@ function registerLibraryCases(sdk, lib) {
     }
     assert.deepEqual(missing, [])
   })
-  caseTest(sdk, 'PLAT-EP-07', 5, `every importer's packed tarball contains ${lib.name}'s packed files`, async () => {
-    assert.ok(has(lib), manifestMissing(lib))
-    const { packed, units } = await observe()
-    const prefix = NPM.bundledDir(lib.name)
-    const importers = importersOf(units, lib.name)
-    assert.ok(importers.length > 0, 'no V3 package imports ' + lib.name)
-    const missing = []
-    for (const u of importers) for (const f of packed[lib.name]) if (!packed[u.name].includes(prefix + f)) missing.push(u.name + ' lacks ' + prefix + f)
-    assert.deepEqual(missing, [])
+  // Read from the release tarballs (`node scripts/pack-v3.mjs`; Fishball for the user, 2026-11-17): the
+  // property is about shipped packages, and the working tree cannot carry a library copy in
+  // packages/<importer>/node_modules without shadowing the library's source. Importers come from
+  // the packed manifests; the check is REL-PACK's own (test/v3/release/pack, REL-DT-03).
+  caseTest(sdk, 'PLAT-EP-07', 5, `every importer's release tarball contains a real, byte-identical copy of ${lib.name}'s packed files`, () => {
+    assertLibraryCopies(lib.name)
   })
 
   // ---- row 6: the library holds only modules its side uses ----
