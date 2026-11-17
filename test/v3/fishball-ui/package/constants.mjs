@@ -26,7 +26,8 @@ export const UI_PACKAGE = Object.freeze({
   hostScope: '@deepseek-ai/',
   /** The browser files it ships (interface item 8). */
   // Re-baselined (F-WIRE): client.js loads four parts; the strip and the model dialog are shipped too.
-  clientFiles: Object.freeze(['client.js', 'client.entries.js', 'client.asks.js', 'client.strip.js', 'client.model.js']),
+  // Re-baselined (R-FIX-FUI F1): the pairing card's chunk client.pairing.js is shipped too.
+  clientFiles: Object.freeze(['client.js', 'client.entries.js', 'client.asks.js', 'client.strip.js', 'client.pairing.js', 'client.model.js']),
 })
 
 /**
@@ -79,6 +80,8 @@ export const CONDITION = Object.freeze({
   core: V3.core.name,
   service: 'profileContext',
   service2: 'fishballUiGuards',
+  /** R-FIX-FUI F2: DSH's live reload service; with it the rows read the profile manifest's `dsh.profile.bundles`. */
+  hmr: 'hmr',
 })
 /**
  * EP / BVA over `profileContext.startedBundles` → is core started? (interface item 2: "true exactly
@@ -126,7 +129,11 @@ export const CLIENT = Object.freeze({
     // UI-UC-05 checks only that the plugin has a non-empty name.
     strip: Object.freeze({ file: 'client.strip.js', export: 'stripPart', plugin: null, style: null }),
     model: Object.freeze({ file: 'client.model.js', export: 'modelPart', plugin: null, style: null }),
+    // R-FIX-FUI F1: the pairing card, loaded after the strip and before the model dialog.
+    pairing: Object.freeze({ file: 'client.pairing.js', export: 'pairingPart', plugin: null, style: null }),
   }),
+  /** R-FIX-FUI F1: the order client.js loads its parts in (the pairing card after the strip, before the model dialog). */
+  partOrder: Object.freeze(['client.entries.js', 'client.asks.js', 'client.strip.js', 'client.pairing.js', 'client.model.js']),
   /** The kit member a part gets (`mountStyle(id, cssText) → dispose`). */
   kitStyle: 'mountStyle',
   /** Platform modules a chunk may require (the DSH page's served set). */
@@ -140,7 +147,8 @@ export const CLIENT = Object.freeze({
  */
 export const MOVED = Object.freeze({
   ref: 'e3cf8d5b',
-  pairing: Object.freeze({ before: 'packages/core/ui/pairing/text.js', after: path.join('src', 'pairing', 'text.js'), export: 'PAIRING_TEXT' }),
+  // R-FIX-FUI F1: the keys the pairing card added (its title, the refused-choice line, the Intl locale of its times).
+  pairing: Object.freeze({ before: 'packages/core/ui/pairing/text.js', after: path.join('src', 'pairing', 'text.js'), export: 'PAIRING_TEXT', added: Object.freeze(['title', 'chooseFailed', 'locale']) }),
   status: Object.freeze({ after: path.join('src', 'status', 'index.js'), exports: Object.freeze(['stripView', 'STATUS_TEXT', 'STRIP_KIND']) }),
   recommended: Object.freeze({ after: path.join('src', 'recommended.js'), exports: Object.freeze(['recommendedList']), prefix: 'RECOMMENDED_' }),
   /** Sample arguments for the pairing copy's formatters (fixtures). */
@@ -194,8 +202,27 @@ export const OVERLAYS = Object.freeze([
   ['an overlay inserting a near id (dsh-instance-child-x)', Object.freeze([Object.freeze({ insert: Object.freeze([Object.freeze({ id: NOTICE.childRow + '-x', name: 'fbtest-x' })]) })]), false],
   ['an overlay that patches (does not insert) a row with that id', Object.freeze([Object.freeze({ id: NOTICE.childRow, disabled: false })]), false],
 ])
-/** The two `startedBundles` the decision table uses: core with fishball-ui, and fishball-ui alone. */
-export const NOTICE_STARTED = Object.freeze({ withCore: Object.freeze([V3.core.name, V3.ui.name]), withoutCore: Object.freeze([V3.ui.name]) })
+/**
+ * The two `startedBundles` the decision table uses. Re-baselined (R-FIX-FUI F2, Q-G2 = A, the user
+ * 2026-11-18): the notice row is core's now, so it applies only with core, and its condition is
+ * fishball-ui among the started bundles: core with fishball-ui, and core alone.
+ */
+export const NOTICE_STARTED = Object.freeze({ withUi: Object.freeze([V3.core.name, V3.ui.name]), withoutUi: Object.freeze([V3.core.name]) })
+/**
+ * R-FIX-FUI F2: EP / BVA over `profileContext.startedBundles` → is fishball-ui started? Only an exact
+ * `fishball-ui` entry counts. [label, startedBundles, ui started].
+ */
+export const UI_STARTED = Object.freeze([
+  ['empty list (BVA: no bundle)', Object.freeze([]), false],
+  ['fishball-ui alone (BVA: one bundle)', Object.freeze([V3.ui.name]), true],
+  ['fishball-core alone', Object.freeze([V3.core.name]), false],
+  ['ui among others, not first', Object.freeze(['fbtest-other', V3.core.name, V3.ui.name]), true],
+  ['ui first, core after', Object.freeze([V3.ui.name, V3.core.name]), true],
+  ['a near name (fishball-ui-x)', Object.freeze([V3.ui.name + '-x']), false],
+  ['a prefix of the name (fishball-u)', Object.freeze([V3.ui.name.slice(0, -1)]), false],
+  ['another case (FISHBALL-UI)', Object.freeze([V3.ui.name.toUpperCase()]), false],
+  ['a scoped name ending in it (@x/fishball-ui)', Object.freeze(['@fbtest/' + V3.ui.name]), false],
+])
 
 /** Test fixtures (never product values). */
 export const FIXTURE = Object.freeze({

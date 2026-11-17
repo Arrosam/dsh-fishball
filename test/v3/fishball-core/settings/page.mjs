@@ -158,12 +158,19 @@ export function createWorld({
     failedFibers: [],
     launcherPresses: 0,
     windowListeners: new Map(),
+    /** R-FIX-FUI: state updates of components already unmounted (the shim's `stale` count). */
+    staleUpdates: 0,
+    /**
+     * R-FIX-FUI: the answer to a page fetch of any other URL (`(call) => answer`, same shapes as
+     * `connect`); unset, such a fetch answers 404.
+     */
+    fetchOther: undefined,
     connect: {
       get: () => ({ status: ROUTE.ok, json: { state: CONNECT.state.needsAuthorization, code: null } }),
       post: () => ({ status: ROUTE.ok, json: { outcome: 'authorized' } }),
     },
   }
-  const shim = createReactShim({ stale() {} })
+  const shim = createReactShim({ stale() { world.staleUpdates += 1 } })
   const { React } = shim
   world.shim = shim
   world.React = React
@@ -386,7 +393,7 @@ export async function loadPage(t, world) {
     const call = { url: url.href, method, credentials: option('credentials'), cache: option('cache'), body: body === undefined ? undefined : String(body) }
     world.fetches.push(call)
     const isRoute = url.href === new URL(ROUTE.relative, world.base).href
-    const handler = !isRoute ? () => ({ status: 404, text: '' }) : method === ROUTE.post ? world.connect.post : world.connect.get
+    const handler = !isRoute ? (world.fetchOther ?? (() => ({ status: 404, text: '' }))) : method === ROUTE.post ? world.connect.post : world.connect.get
     const answer = await handler(call)
     if (answer === 'reject') throw new TypeError('fbtest network failure')
     return answer.json !== undefined ? asJson(answer.json, answer.status) : new Response(answer.text ?? '', { status: answer.status })
@@ -406,6 +413,8 @@ export async function loadPage(t, world) {
   // UI-FIX-F: a case may observe the page's document before any script runs (the contrast rows
   // collect the style sheets the page mounts in <head>; test/v3/fishball-ui/contrast/page.mjs).
   world.onDocument?.(page.document)
+  // R-FIX-FUI F9: a case may adjust the page realm itself (its own Date and Intl) before any script runs.
+  world.onSandbox?.(page.sandbox)
   page.window.open = (...args) => { world.opened.push(args); return null }
   page.sandbox.open = page.window.open
   const launcher = { className: DSH.launcherClass, classList: { contains: (c) => c === DSH.launcherClass }, click() { world.launcherPresses += 1 }, dispatchEvent() { world.launcherPresses += 1; return true }, focus() {} }

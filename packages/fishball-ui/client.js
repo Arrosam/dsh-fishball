@@ -77,6 +77,14 @@ window.__ModuleLoader__.load({
     ].join('')
 
     /**
+     * Every live stream of this row, so one Reconnect reopens them all: a lost stream usually has one
+     * cause for all of them (DSH restarted, the owner's session ended), and a part whose stream stays
+     * closed would never show the next ask or pairing warning.
+     */
+    const streams = new Set()
+    const reopenAll = () => { for (const stream of streams) stream.reopen() }
+
+    /**
      * One live stream (R-FIX-FUI): an EventSource on `url()` shared by every mounted part that
      * subscribes, opened at the first subscriber and closed after the last. `valid(frame)` says which
      * parsed frames are the route's shape; any other keeps the last good one. `get()` is
@@ -91,6 +99,8 @@ window.__ModuleLoader__.load({
         snapshot = Object.freeze({ ...snapshot, ...next })
         for (const listener of [...listeners]) listener()
       }
+      // A source opened again after it gave up is trying, as EventSource's own retry is, until a frame.
+      const retrying = () => { if (snapshot.health === HEALTH.closed) publish({ health: HEALTH.stale }) }
       const open = () => {
         const current = new EventSource(url())
         source = current
@@ -107,22 +117,48 @@ window.__ModuleLoader__.load({
         }
       }
       const close = () => { source?.close(); source = undefined }
-      return Object.freeze({
+      const stream = Object.freeze({
         get: () => snapshot,
         subscribe(listener) {
           listeners.add(listener)
-          if (source === undefined) open()
+          if (source === undefined) { open(); retrying() }
           return () => {
             listeners.delete(listener)
             if (listeners.size === 0) close()
           }
         },
+        /** A fresh source, if any part is subscribed (Reconnect, or a changed `url()`). */
         reopen() {
           if (source === undefined) return
           close()
           open()
-          // Reconnect pressed: the new source is trying, as EventSource's own retry is.
-          if (snapshot.health === HEALTH.closed) publish({ health: HEALTH.stale })
+          retrying()
+        },
+      })
+      streams.add(stream)
+      return stream
+    }
+
+    /**
+     * A live stream of a fishball-ui route drawn in the page's language: `url` is `path` with the
+     * language as `langParameter` and `params()`'s extra query values. `use(wanted)` follows the
+     * page's language; a change reopens the stream in it.
+     */
+    function langStream({ path, langParameter, params = () => ({}), valid }) {
+      let lang = UI.lang.en
+      const url = () => {
+        const next = new URL(path, document.baseURI)
+        next.searchParams.set(langParameter, lang)
+        for (const [name, value] of Object.entries(params())) next.searchParams.set(name, value)
+        return next
+      }
+      const stream = liveStream({ url, valid })
+      return Object.freeze({
+        ...stream,
+        use(wanted) {
+          if (wanted === lang) return
+          lang = wanted
+          stream.reopen()
         },
       })
     }
@@ -134,29 +170,30 @@ window.__ModuleLoader__.load({
     }
 
     /**
-     * The notice a part shows over its cached view while the stream is not live, with Reconnect once
-     * the stream gave up; null while live.
+     * The notice a part shows instead of its cached view while the stream is not live, with
+     * Reconnect (every stream of this row) once the stream gave up; null while live.
      */
-    function StreamNotice({ health, lang, onRetry }) {
+    function StreamNotice({ health, lang }) {
       if (health === HEALTH.live) return null
       const text = streamText[lang] ?? streamText[UI.lang.en]
       return h('div', { className: STREAM_CSS.notice, role: 'status', 'data-fishball-stream-notice': health },
         h('span', null, text[health]),
-        health === HEALTH.closed ? h(Button, { type: 'button', size: 'sm', variant: 'outline', 'data-fishball-stream-retry': true, onClick: onRetry }, text.retry) : null)
+        health === HEALTH.closed ? h(Button, { type: 'button', size: 'sm', variant: 'outline', 'data-fishball-stream-retry': true, onClick: reopenAll }, text.retry) : null)
     }
 
     /**
      * What the parts share: `css`, the shared class names, and `mountStyle(id, cssText)`, which adds
      * one style sheet to the document and returns its disposer, for a part's `ctx.effect`; the id
      * names it for a reader of the DOM. Since R-FIX-FUI also the live streams' lifecycle
-     * (`liveStream`, `HEALTH`, `StreamNotice`, `staleText`) and `useLang`, so the strip, the ask
-     * cards and the pairing card mark a lost stream the same way.
+     * (`liveStream`, `langStream`, `HEALTH`, `StreamNotice`, `staleText`) and `useLang`, so the strip,
+     * the ask cards and the pairing card mark a lost stream the same way.
      */
     const kit = Object.freeze({
       /** The shared class names (`CSS`); their sheet is mounted once by this row. */
       css: CSS,
       HEALTH,
       liveStream,
+      langStream,
       useLang,
       StreamNotice,
       /** The badge word of a view shown while its stream is not live, in `lang`. */

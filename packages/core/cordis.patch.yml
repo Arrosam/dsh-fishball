@@ -63,7 +63,9 @@
 # whether fishball-ui is in this DSH, because UI-only rows are fishball-ui's concern (R-FB-14) and core
 # alone shows DSH's own UI (Q-G1). Accepted limit: with core but without fishball-ui these rows read
 # `disabled: false` and the Preview Notice value `undefined`. So an earlier bundle's setting of one of
-# them is lost then. No DSH-shipped bundle patches them.
+# them is lost then. No DSH-shipped bundle patches them. The counterpart, also accepted: while HMR
+# is on, a fishball-ui that is selected but skipped, or whose row fails, counts as present, so these
+# rows are off and, with no `fishballUiGuards` service, not reported.
 # The test, `fishball-ui` as in its package name (YAML can neither share it with code nor reuse one
 # expression in another, so the Preview Notice row below spells its own):
 # - with HMR (the `hmr` service, a standalone DSH by default): fishball-ui is selected in the profile

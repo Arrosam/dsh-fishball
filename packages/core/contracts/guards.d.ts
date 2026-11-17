@@ -3,9 +3,9 @@
  * R-FB-02, R-FB-09, R-FB-12, R-FB-13; spike V3-S6 `86800d2` + round 2 `7c2230e`).
  * Types; the runtime spellings are `constants.js`'s `GUARDS` beside this file (a change to one
  * changes both). F-GUARDS builds the patch rows, the self-reorder and the check, in
- * `packages/core/cordis.patch.yml` and `packages/core/src/guards/`; since F-UI the UI-only guard rows
- * (`ui-*`, `entry-customization`) are in `packages/fishball-ui/cordis.patch.yml`, reported by core's
- * check through `fishball-shared/ui-seam` `UI_GUARDS`.
+ * `packages/core/cordis.patch.yml` and `packages/core/src/guards/`; the UI-only guard rows (`ui-*`,
+ * `entry-customization`) are fishball-ui's since F-UI and in core's patch since R-FIX-FUI, held and
+ * reported only while fishball-ui's `fishball-shared/ui-seam` `UI_GUARDS` service is there.
  *
  * The row lists, presets, policy and manager tools are as decided (design §5a.2, 1.24, S6 round 2).
  * They are the same on DSH 0.2.1-rc.5 and 0.2.2-rc.1: both ship the four agent presets with these

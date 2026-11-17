@@ -156,11 +156,11 @@ window.__ModuleLoader__.load({
         React.useEffect(() => {
           if (!open) return undefined
           let live = true
-          setCatalog({ status: DIALOG.catalog.loading })
           Promise.resolve().then(() => ctx.remote.session.modelCatalog()).then((answer) => {
             if (live) setCatalog(answer?.ok === true ? { status: DIALOG.catalog.ready, value: answer.value } : { status: DIALOG.catalog.failed })
           }, () => { if (live) setCatalog({ status: DIALOG.catalog.failed }) })
-          return () => { live = false }
+          // Closing forgets the catalog, so the next opening never paints the old models first.
+          return () => { live = false; setCatalog({ status: DIALOG.catalog.loading }) }
         }, [open, attempt])
         if (!open) return null
         const groups = catalog.status === DIALOG.catalog.ready ? groupsOf(catalog.value, t) : []

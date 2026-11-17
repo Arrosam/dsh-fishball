@@ -57,6 +57,11 @@ window.__ModuleLoader__.load({
        * draws them at 54%) would otherwise undo the ratio.
        */
       placeholderInk: '--dsw-alias-label-secondary',
+      /**
+       * R-FIX-FUI: the Intl locale a card's time is written in, per page language (kit `useLang`), as
+       * DSH's own schedule copy names one per language; the browser's time zone is kept.
+       */
+      timeLocale: Object.freeze({ en: 'en', zh: 'zh-CN' }),
     })
 
     const en = {
@@ -71,8 +76,6 @@ window.__ModuleLoader__.load({
       'state.answered': 'answered',
       'state.closed': 'closed',
       failed: 'The answer was refused.',
-      // The Intl locale the card's time is written in (as DSH's schedule copy names it), R-FIX-FUI.
-      'time.locale': 'en',
     }
     const zh = {
       waiting: 'Fishball 正在等你回答',
@@ -86,7 +89,6 @@ window.__ModuleLoader__.load({
       'state.answered': '已回答',
       'state.closed': '已关闭',
       failed: '回答被拒绝。',
-      'time.locale': 'zh-CN',
     }
 
     // UI-POLISH-F: the layout of DSH's own approval card (dsh-client-ui-approval, both SDKs): a warn
@@ -134,7 +136,7 @@ window.__ModuleLoader__.load({
 
     function makeDock(ctx, stream, kit) {
       /** One card: the asking session, the question, and Allow / Reject with an optional reason. */
-      function AskCard({ card, t, stale }) {
+      function AskCard({ card, t, stale, timeLocale }) {
         const [reason, setReason] = React.useState('')
         const [sending, setSending] = React.useState(false)
         const [failed, setFailed] = React.useState(false)
@@ -158,7 +160,7 @@ window.__ModuleLoader__.load({
           h('div', { className: ASKS_UI.css.meta },
             h(Tag, { tone: open ? ASKS_UI.tone.open : ASKS_UI.tone.done }, open ? t('waiting') : t('state.' + card.state)),
             h('span', { className: ASKS_UI.css.from }, t('from') + ': ' + (card.sessionTitle ?? card.sessionId)),
-            h('span', { className: ASKS_UI.css.time }, new Date(card.askedAt).toLocaleString(t('time.locale')))),
+            h('span', { className: ASKS_UI.css.time }, new Date(card.askedAt).toLocaleString(timeLocale))),
           h('div', { className: ASKS_UI.css.body },
             h('p', { className: ASKS_UI.css.question }, card.question),
             // The user, 2026-11-17: "Show arguments and reason". Plain text children: React escapes them.
@@ -189,8 +191,8 @@ window.__ModuleLoader__.load({
         if (sessionId === undefined || sessionId !== managerSessionId || cards.length === 0) return null
         const stale = health !== kit.HEALTH.live
         return h('div', { className: [kit.css.dock, ASKS_UI.css.root].join(' '), 'data-fishball-asks': true, 'data-fishball-asks-stale': stale ? health : undefined },
-          stale ? h('div', { className: kit.css.card }, h(kit.StreamNotice, { health, lang, onRetry: () => stream.reopen() })) : null,
-          cards.map((card) => h(AskCard, { key: card.approvalId, card, t, stale })))
+          stale ? h('div', { className: kit.css.card }, h(kit.StreamNotice, { health, lang })) : null,
+          cards.map((card) => h(AskCard, { key: card.approvalId, card, t, stale, timeLocale: ASKS_UI.timeLocale[lang] })))
       }
     }
 

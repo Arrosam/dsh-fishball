@@ -5,14 +5,16 @@
  * standalone DSH and in a hosted child alike. Until I-HOST the hosted child's instance row served
  * it (dsh-instance `session-route.js`), so a hosted child had no Fishball page from fishball-ui.
  */
+import { UI_INSTANCE } from 'fishball-shared/ui-seam'
+
 const SESSION_ROUTE = Object.freeze({
   path: '/api/fishball/session',
   read: 'GET',
   ensure: 'POST',
-  service: 'fishballInstance',
+  service: UI_INSTANCE.service,
   readMember: 'sessionId',
   ensureMember: 'ensureSession',
-  apiVersion: 1,
+  apiVersion: UI_INSTANCE.apiVersion,
   requestBody: 'buffered',
   event: 'connection/request',
   ok: 200,

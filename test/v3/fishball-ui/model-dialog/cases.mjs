@@ -8,6 +8,7 @@ import { page, firstFrame, routeStatus } from './subject.mjs'
 import { U } from './constants.mjs'
 import { registerModelPolishCases } from './polish-cases.mjs'
 import { registerStripCases } from './strip-cases.mjs'
+import { registerCatalogCases } from './catalog-cases.mjs'
 /** Press the dialog's dismiss control, then let a window focus pass (a reopen trigger it must ignore). */
 async function dismiss(p) {
   await p.press(p.buttons().find((n) => U.dismiss.test(textOf(n))))
@@ -22,6 +23,8 @@ export function registerModelDialogCases(sdk) {
   // UI-POLISH-F §4 (grouped choices, aria-labels) and §2 (the drawn status card).
   registerModelPolishCases(sdk)
   registerStripCases(sdk)
+  // R-FIX-FUI F4: the catalog is read on every opening.
+  registerCatalogCases(sdk)
   for (const lang of U.lang) {
     test(`${sdk} MODEL-EP-01 ${lang} unset model prompts with all catalog models`, async (t) => {
       const p = await page(t, sdk, { lang })
