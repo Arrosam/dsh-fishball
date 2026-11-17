@@ -146,3 +146,53 @@ export const XSEC = Object.freeze({
   plainMethod: 'plain',
   whoami: 'whoami',
 })
+
+export { REVIEW_FIX } from '../../dsh-connector-adapter/oauth-client/constants.mjs'
+
+/**
+ * Adapter review-fix rows (review-fix-cases.mjs; R-FIX-ADAPTER, review findings F2–F8). The numbers
+ * are the requirements' (the user's decision on F4; WHATWG Fetch redirect statuses; RFC 9110), and
+ * one guard row checks the product's named constants against them; the other rows use the names.
+ */
+export const FIX = Object.freeze({
+  /** The product's own constants module (LIMIT.refreshRetry*, PROXY.status.badGateway), as relayed. */
+  product: Object.freeze({ task: 'R-FIX-ADAPTER', entry: path.join(REPO, 'packages', 'dsh-connector-adapter', 'src', 'constants.js'), exports: Object.freeze(['LIMIT', 'PROXY']) }),
+  /** F4: 30 s, doubling per consecutive failure, capped at 5 min. */
+  retry: Object.freeze({ firstMs: 30 * 1000, maxMs: 300 * 1000, factor: 2 }),
+  /** F4 BVA: the first six retry delays, as the requirement lists them (30, 60, 120, 240, 300, 300 s). */
+  retrySchedule: Object.freeze([30, 60, 120, 240, 300, 300].map((s) => s * 1000)),
+  /** F4 overlap rows: how far into a backoff wait the proxied 401 arrives. */
+  overlapOffsetMs: 10 * 1000,
+  /** F4: a span of quiet after which no further refresh may follow (several capped delays). */
+  quietSpans: 4,
+  /** F2: the answer to a followable redirect. */
+  badGateway: 502,
+  /** F2: the statuses a default fetch follows, and the 3xx neighbours it does not (BVA). */
+  redirectStatuses: Object.freeze([301, 302, 303, 307, 308]),
+  multipleChoices: 300,
+  notModified: 304,
+  /** F5: "connector unreachable" statuses, and refusals that are not (BVA: 500). */
+  gatewayStatuses: Object.freeze([502, 503, 504]),
+  /**
+   * F5 (the user's decision, relayed 2026-11-18): Cloudflare's origin-error range 520–530 inclusive
+   * counts as unreachable too. Its partition rows: inside (both ends and the middle), and the
+   * boundaries and neighbours outside it (519, 531; 501 and 505 beside 502–504; an ngrok-style 404).
+   */
+  originErrors: Object.freeze({ inside: Object.freeze([520, 525, 530]), outside: Object.freeze([519, 531, 501, 505, 404]) }),
+  badRequest: 400,
+  serverError: 500,
+  tooManyRequests: 429,
+  /** F2 targets: a path on C's own origin, and a plain-http host off loopback (never contacted). */
+  sinkPath: '/fbtest-redirect-sink',
+  plainHttpTarget: 'http://agent.example/fbtest-redirect-sink',
+  /** F6: a 32 MiB producer of 64 KiB chunks; while paused at most a quarter may be pulled. */
+  stream: Object.freeze({
+    chunkBytes: 64 * 1024, chunks: 512, pausedLeadFraction: 0.25, pauseMs: 1500, byteValues: 256,
+    octet: 'application/octet-stream', sseFrames: 3, sseMarker: (k) => 'fbtest-frame-' + k,
+  }),
+  /** F8: response headers named by the upstream `Connection` header, and end-to-end ones. */
+  hop: Object.freeze({
+    a: 'x-fbtest-hop-a', b: 'x-fbtest-hop-b', value: 'fbtest-hop-value',
+    endToEnd: 'x-fbtest-e2e', session: 'mcp-session-id', sessionValue: 'fbtest-session',
+  }),
+})

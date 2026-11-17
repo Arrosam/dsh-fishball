@@ -24,23 +24,44 @@ const refusalOf = (status, reason) => ({ status, reason })
  */
 export function createServer({ spec, key, routeId, configProblem, host }) {
   const { ctx, sdk, mcpClient, timers, fetchFn } = host
-  const manager = createTokenManager({ sdk, credentials: ctx.credentials, key, now: host.now, refreshLeadMs: LIMIT.refreshLeadMs, fetchFn })
+  // Bound to this server's URL: the key names the server only, so a grant another process stored for
+  // another URL under the same name is never refreshed, dropped or handed to the proxy (review F1).
+  const manager = createTokenManager({ sdk, credentials: ctx.credentials, key, now: host.now, refreshLeadMs: LIMIT.refreshLeadMs, fetchFn, upstream: spec.url })
   let grant
   let child
   /**
-   * The proxy saw the connector unreachable since the child was mounted. The stock client gives up
-   * after its reconnect budget and never tries again, so the next successful grant or refresh mounts
-   * a fresh child (Fishball's decision on the review, S6). Without such a failure a refresh leaves
-   * the child running (AUTH-UC-12 step 8: never restarted across token lifetimes).
+   * The proxy saw the connector unreachable (no answer, a gateway status, a broken body) and has not
+   * seen it answer since. The stock client gives up after its reconnect budget and never tries
+   * again, so the next successful grant or refresh mounts a fresh child (Fishball's decision on the
+   * review, S6). A child that is talking again has not given up, so a later answer clears the mark;
+   * without it a refresh leaves the child running (AUTH-UC-12 step 8: never restarted across token
+   * lifetimes).
    */
   let upstreamFailed = false
   let timer
+  /**
+   * The next timer retry's delay after a scheduled refresh failed (network, 5xx, 429; not
+   * `invalid_grant`, which drops the tokens), or `undefined` while timer refreshes succeed. It doubles
+   * per consecutive failure up to its cap, so an outage neither ends proactive refresh nor turns an
+   * already-due token into a tight loop (review F4; backoff schedule by the user's decision).
+   */
+  let retryMs
+  /**
+   * The failure the backoff last stepped for. A timer that fires during a timer refresh joins the
+   * same flight (the token manager shares it) and gets the same rejection; it must not step again.
+   * Skipping such a timer instead could drop the one an adoption armed just before the flight ended.
+   */
+  let steppedFor
   /** A pending attempt: `{url}` once the approval URL is known. */
   let attempt
   /** The refusal or failure the last sign-in left, cleared by the next one or by a grant. */
   let outcome
   let signingIn
-  /** While this server writes its own record, the store's update event is ours and is not re-read. */
+  /**
+   * While this server writes its own record, the store's update events are not re-read: every exit
+   * of `own()` adopts the store's current record instead (an event then may also be the store's
+   * reconciliation of another process's change, review F7).
+   */
   let writing = 0
   let adopting = Promise.resolve()
   let disposed = false
@@ -79,15 +100,34 @@ export function createServer({ spec, key, routeId, configProblem, host }) {
    * The refresh timer. No timer when no timer refresh applies (the token manager says so for a
    * lifetime no longer than the lead: such a token is refreshed on its first 401). A delay past
    * Node's largest is clamped: the timer then wakes early, the refresh declines (not yet due), and
-   * the adoption of the unchanged grant arms it again for the rest.
+   * the adoption of the unchanged grant arms it again for the rest. A pending retry delay is a floor:
+   * a grant adopted meanwhile that is not yet due keeps its own later time.
    */
   function armTimer() {
     timers.clearTimeout(timer)
     timer = undefined
     const dueInMs = manager.refreshDueInMs(grant)
     if (disposed || configProblem !== undefined || dueInMs === undefined) return
-    timer = timers.setTimeout(() => { refresh().catch(warnRefresh) }, Math.min(MAX_TIMER_DELAY_MS, Math.max(LIMIT.minRefreshDelayMs, dueInMs)))
+    timer = timers.setTimeout(refreshByTimer, Math.min(MAX_TIMER_DELAY_MS, Math.max(LIMIT.minRefreshDelayMs, dueInMs, retryMs ?? LIMIT.minRefreshDelayMs)))
     timer.unref?.()
+  }
+  /**
+   * The timer's refresh. A success adopts new tokens, and adopt() ends the backoff; the delay stays
+   * set during the flight, so an adoption meanwhile (a 401 recovery's re-read) re-arms nothing.
+   */
+  async function refreshByTimer() {
+    const tokenBefore = accessTokenOf(grant)
+    try {
+      await refresh()
+    } catch (error) {
+      if (error === steppedFor) return
+      steppedFor = error
+      warnRefresh(error)
+      // Tokens another process stored meanwhile were adopted with their own schedule.
+      if (accessTokenOf(grant) !== tokenBefore) return
+      retryMs = retryMs === undefined ? LIMIT.refreshRetryFirstMs : Math.min(LIMIT.refreshRetryMaxMs, retryMs * LIMIT.refreshRetryFactor)
+      armTimer()
+    }
   }
 
   /**
@@ -106,7 +146,10 @@ export function createServer({ spec, key, routeId, configProblem, host }) {
       const after = accessTokenOf(grant)
       if (after !== undefined) outcome = undefined
       if (lost && before !== undefined && after === undefined) ctx.logger.warn(TEXT.needsAuthorizationAgain, ADAPTER.logLabel, spec.serverName)
-      armTimer()
+      // New tokens (a 401 refresh, another process, a sign-in) end an outage's backoff. Without them
+      // a pending retry keeps its time: re-arming from now would push it later on every failed 401.
+      if (after !== before) retryMs = undefined
+      if (retryMs === undefined) armTimer()
       if (after === undefined || configProblem !== undefined) { await disposeChild(); return }
       if (upstreamFailed && after !== before) await disposeChild()
       mountChild()
@@ -115,14 +158,32 @@ export function createServer({ spec, key, routeId, configProblem, host }) {
     return run
   }
 
+  /**
+   * Write this server's record through the token manager. The store's update events are not re-read
+   * during the write, but the store reconciles another process's change of the file inside
+   * `modifyRecord`, before our mutation runs, and reports it then. A write that succeeds returns
+   * that reconciled record; one that throws (a refresh's network error) returns nothing, so the
+   * record is read once the lock is released, or the change would never reach memory (review F7).
+   */
   async function own(write) {
     writing += 1
-    try { return await write() } finally { writing -= 1 }
+    try {
+      return await write()
+    } catch (error) {
+      await adopt(await manager.read())
+      throw error
+    } finally {
+      writing -= 1
+    }
   }
+  /**
+   * @returns the access token of the grant adopted afterwards, never one from a grant adoption
+   *   refused (another upstream or record version, review F1).
+   */
   async function refresh(failedAccessToken) {
     const result = await own(() => manager.refresh({ failedAccessToken }))
     await adopt(result.grant, { lost: result.outcome === OAUTH_CLIENT.refreshOutcome.invalidGrant })
-    return accessTokenOf(result.grant)
+    return accessTokenOf(grant)
   }
 
   /** Discovery and the DSH-connector check (rule 2), before any authorization request. */
@@ -227,8 +288,14 @@ export function createServer({ spec, key, routeId, configProblem, host }) {
     accessToken: () => accessTokenOf(grant),
     recover: (failedAccessToken) => refresh(failedAccessToken),
     lose: async (failedAccessToken) => adopt(await own(() => manager.dropTokens({ failedAccessToken })), { lost: true }),
-    /** The proxy could not reach the connector (its request failed, not the child's own abort). */
+    /**
+     * The proxy could not reach the connector for the child (no answer, a gateway status, a broken
+     * body, a redirect, a failed 401 refresh: each reaches the child as an error that counts against
+     * its reconnect budget; not the child's own abort).
+     */
     unreachable: () => { if (child !== undefined) upstreamFailed = true },
+    /** The connector answered the child through the proxy: the child is not stuck in its reconnect budget. */
+    reachable: () => { upstreamFailed = false },
 
     async dispose() {
       disposed = true

@@ -947,7 +947,13 @@ OAuth client (§5.5a). S7c passed with this design on 0.2.1-rc.5 and 0.2.2-rc.1,
 - **The proxy:** listens on 127.0.0.1 only; authenticates the child row with a per-start random local
   bearer, never on disk, compared in constant time; drops hop-by-hop headers and the inbound
   `authorization` (no token passthrough); streams responses (listen streams stay open); handles a 401
-  by refreshing once and retrying once.
+  by refreshing once and retrying once. It never relays a redirect (502 instead: the child's fetch
+  would follow it past the proxy) and honours backpressure while streaming.
+- **Review fixes (R-FIX-ADAPTER, 2026-11-18, the user's decisions):** a grant stored for another URL
+  under the same server name counts as absent; a failed timer refresh is retried after 30 s,
+  doubling to at most 5 min, while the grant is live; 502/503/504, 520–530, a broken body or a
+  failed 401 refresh mark the connector down until it answers again, and the next new token then
+  mounts a fresh child.
 - **Restarts:** after a restart of the adapter's DSH every server comes back from its stored grant
   with no browser step. After a **connector** restart, access tokens are gone but refresh-token
   digests persist (Q-S7C-4 = A = Q-S7B-3 A, §5.5a item 6): the proxy's single 401 refresh succeeds and

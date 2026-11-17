@@ -107,8 +107,11 @@ issuer on the same origin, and the `agent` scope.
 
 Once the grant is stored, the adapter mounts a stock `dsh-mcp-client` row for the server, and its
 tools appear. The grant survives a restart of this DSH without a new sign-in. Access tokens are
-refreshed before they expire and once after a 401. If the connector refuses the grant (for example
-the token was switched off or deleted), the server returns to `needs-authorization`.
+refreshed before they expire and once after a 401. A refresh before expiry that fails for a passing
+reason (network, server error) is tried again after 30 s, then after twice the previous wait each
+time, never longer than 5 minutes. If the connector refuses the grant (for example the token was
+switched off or deleted), the server returns to `needs-authorization`. The proxy does not follow or
+pass on a redirect from the connector: the request fails with 502.
 
 Tokens are kept only in DSH's credential store. They never appear in the settings, the logs, the
 tool's result or the chat, and the stock client row never sees them.

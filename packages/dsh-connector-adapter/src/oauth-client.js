@@ -264,9 +264,19 @@ function withDeadline(fetchFn, timeoutMs) {
  * @param options.refreshLeadMs how long before expiry a timer refresh is due.
  * @param options.fetchFn fetch for every token-endpoint request (default global).
  * @param options.requestTimeoutMs the deadline of each token-endpoint request (default OAUTH_CLIENT.requestTimeoutMs).
+ * @param options.upstream the server URL the record's grant must be bound to (`isGrantFor`). The key
+ *   names a server, not a URL, so another process with another URL for that name can store its own
+ *   grant here: such a record counts as absent and is never refreshed, dropped or returned. Omitted:
+ *   no binding check, the contract before review F1 (a caller whose key already names one URL). The
+ *   adapter's server always passes it.
  */
-export function createTokenManager({ sdk, credentials, key, now = Date.now, refreshLeadMs, fetchFn = globalThis.fetch, requestTimeoutMs = OAUTH_CLIENT.requestTimeoutMs }) {
+export function createTokenManager({ sdk, credentials, key, now = Date.now, refreshLeadMs, fetchFn = globalThis.fetch, requestTimeoutMs = OAUTH_CLIENT.requestTimeoutMs, upstream }) {
   const tokenFetch = withDeadline(fetchFn, requestTimeoutMs)
+  /** The record's grant when it is this manager's to use, else `undefined`. */
+  const ownGrant = (record) => {
+    const grant = record?.payload
+    return upstream === undefined || isGrantFor(grant, upstream) ? grant : undefined
+  }
   const tokensFrom = (raw) => {
     const issuedAt = now()
     return {
@@ -284,20 +294,21 @@ export function createTokenManager({ sdk, credentials, key, now = Date.now, refr
    * again at once, forever: such a token gets no timer and is refreshed only on a 401.
    */
   const refreshesByTimer = (tokens) => dueAt(tokens) !== undefined && (tokens.issuedAt === undefined || tokens.expiresAt - tokens.issuedAt > refreshLeadMs)
-  let inFlight
+  /** The flight of each failed access token (`undefined`: the timer's), see `refresh`. */
+  const inFlight = new Map()
 
   /**
-   * Single-flight refresh (R-OA-16 (1), R-OA-21 rule 5; S7c F5). Concurrent callers in this process
-   * share one promise; the decision runs under `modifyRecord`'s cross-process lock, so a caller in
-   * another process that lost the race finds the newer token and declines. One refresh token is
-   * therefore presented once, and this client never needs the connector's 10 s grace window.
+   * Single-flight refresh (R-OA-16 (1), R-OA-21 rule 5; S7c F5). The decision runs under
+   * `modifyRecord`'s lock (the store's own queue in this process, its file lock across processes), so
+   * a caller that lost the race finds the newer token and declines. One refresh token is therefore
+   * presented once, and this client never needs the connector's 10 s grace window.
    * A caller refreshes only if the stored access token is still the one that failed, or it is within
    * the lead of expiry (the timer passes no failed token).
    */
   async function refreshNow(failedAccessToken) {
     let outcome
     const record = await credentials.modifyRecord(key, async (current) => {
-      const grant = current?.payload
+      const grant = ownGrant(current)
       const tokens = grant?.tokens
       if (tokens?.refresh_token === undefined) { outcome = OAUTH_CLIENT.refreshOutcome.noRefreshToken; return undefined }
       const stale = (failedAccessToken !== undefined && tokens.access_token === failedAccessToken) || (dueAt(tokens) !== undefined && dueAt(tokens) <= now())
@@ -319,12 +330,12 @@ export function createTokenManager({ sdk, credentials, key, now = Date.now, refr
         return grantRecord(withoutTokens(grant))
       }
     })
-    return { outcome, grant: record?.payload }
+    return { outcome, grant: ownGrant(record) }
   }
 
   return Object.freeze({
-    /** The stored grant payload, or `undefined`. */
-    read: async () => (await credentials.readRecord(key))?.payload,
+    /** The stored grant payload, or `undefined` (also when it is bound to another upstream). */
+    read: async () => ownGrant(await credentials.readRecord(key)),
 
     /**
      * One interactive attempt inside a `ctx.authorization` flow session: CIMD client id, PKCE S256,
@@ -375,10 +386,16 @@ export function createTokenManager({ sdk, credentials, key, now = Date.now, refr
       }
     },
 
-    /** @returns `{outcome, grant}`, outcome one of OAUTH_CLIENT.refreshOutcome. */
+    /**
+     * Callers share a flight only when they report the same failed token: the decision is the
+     * first caller's, and a late 401 for an older token declines (a newer one is stored) where a 401
+     * for the stored token must refresh it. Flights of different tokens queue on the record lock, so
+     * the later one sees what the earlier one stored.
+     * @returns `{outcome, grant}`, outcome one of OAUTH_CLIENT.refreshOutcome.
+     */
     refresh({ failedAccessToken } = {}) {
-      inFlight ??= refreshNow(failedAccessToken).finally(() => { inFlight = undefined })
-      return inFlight
+      if (!inFlight.has(failedAccessToken)) inFlight.set(failedAccessToken, refreshNow(failedAccessToken).finally(() => inFlight.delete(failedAccessToken)))
+      return inFlight.get(failedAccessToken)
     },
 
     /**
@@ -390,11 +407,12 @@ export function createTokenManager({ sdk, credentials, key, now = Date.now, refr
      */
     async dropTokens({ failedAccessToken } = {}) {
       const record = await credentials.modifyRecord(key, async (current) => {
-        const stored = accessTokenOf(current?.payload)
+        const grant = ownGrant(current)
+        const stored = accessTokenOf(grant)
         const drop = stored !== undefined && (failedAccessToken === undefined || stored === failedAccessToken)
-        return drop ? grantRecord(withoutTokens(current.payload)) : undefined
+        return drop ? grantRecord(withoutTokens(grant)) : undefined
       })
-      return record?.payload
+      return ownGrant(record)
     },
 
     /**
