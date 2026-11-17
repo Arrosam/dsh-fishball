@@ -110,7 +110,7 @@ the code, the offer still listed, the call still waiting.
 | APR-02 | EP | approvals_list by P / Q / unmanaged | listed / `forbidden` / `not-managed` |
 | APR-04 | DT | allow + low + reason + complete | accepted, allowed once, settlement allowed/principal |
 | APR-05 ×9 | DT, BVA | high; no risk; reason missing, '', whitespace; 500; 501; truncated arguments | each code; then a valid answer is accepted |
-| APR-05r ×3 | DT | reject + reason; reject with no risk; reject with '' reason | accepted with the rejection wording / `risk-required` / `reason-required` |
+| APR-05r ×5 | DT | reject + risk + reason; reject + reason, no risk; reject with '' reason; reject with no reason; reject with whitespace reason | accepted with the rejection wording / accepted with the rejection wording / `reason-required` ×3 |
 | APR-05q | EP | `ask` (q1) | `invalid-decision`, offer stays |
 | APR-06 ×4 | EP | unknown approvalId, unknown offerId, already answered, Q | expired, expired, already-settled, forbidden |
 | APR-07 ×2 | ST | Offered → escalate → stock prompt → Allow once / Reject | stock shows, unlisted, late answer already-settled, settlement by user allowed / rejected |
@@ -173,3 +173,8 @@ LUS-*: "list_user_messages is deleted"), the cap (RTE-02/03 as V2 wrote them, AS
 on pending approvals …"), the audit (APR-21, APR-23, APRP-10/11 audit, STP-08, RDR-05: q6), END-07's
 pause (q3), the pile and restart-pile rows (Q-U2), MSG-01 `notify_when_finished` (R-WATCH-03).
 Child-launching (hosted child) rows are not here (I-HOST / X-MATRIX).
+
+Re-baselined by R-FIX-CONNECTOR (review F08, 2026-11-18): APR-05r "reject with no risk" expected
+`risk-required`, but DESIGN.md §7a.3 (reject: "A non-empty reason") and docs/connector-contract.md
+("reject needs a reason") ask only for a reason. It is now accepted with the rejection wording and
+settlement `rejected`; a reject with a missing, empty or whitespace reason stays `reason-required`.

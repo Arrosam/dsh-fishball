@@ -31,6 +31,7 @@
 import { z } from 'zod'
 import { LIFETIME, REVOCATION_KIND } from '../../../mcp-schema/index.js'
 import { diagnosticOf } from '../../errors.js'
+import { serialChain } from '../../serial.js'
 import { LOG, MISUSE, NO_GENERATION_FLOOR, OAUTH_STORE, SILENT_LOGGER } from './constants.js'
 import { digestOf } from './digest.js'
 import { createSweptMap } from './swept-map.js'
@@ -87,13 +88,8 @@ export function createOAuthTokenStore(tables) {
   /** entryKey → the generation below which every token of the entry is revoked (this life). */
   const generationFloor = new Map()
 
-  let tail = Promise.resolve()
-  /** Runs `write` after every earlier durable write of this store, settled or not. */
-  function serial(write) {
-    const run = tail.then(write)
-    tail = run.catch(() => {})
-    return run
-  }
+  /** Runs a write after every earlier durable write of this store, settled or not. */
+  const serial = serialChain()
 
   const belowFloor = (entryKey, at) => at < (generationFloor.get(entryKey) ?? NO_GENERATION_FLOOR)
   const isRevoked = (record) => belowFloor(record.entryKey, record.generation) || (record.chainId !== undefined && revokedChains.has(record.chainId))

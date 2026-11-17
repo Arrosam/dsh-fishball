@@ -267,3 +267,5 @@ export const POLISH = Object.freeze({
   role: Object.freeze({ note: 'note', alert: 'alert' }),
   cls: Object.freeze({ card: 'card', facts: 'facts', terms: 'terms', note: 'note', alert: 'alert', field: 'field', actions: 'actions', primary: 'primary', secondary: 'secondary', eyebrow: 'eyebrow', mark: 'mark' }),
 })
+/** R-FIX-CONNECTOR review rows (review-x-cases.mjs, finding F06): the pair-store members a row holds. */
+export const REVIEW_X = Object.freeze({ id: 'RX-F06', bind: 'bindFromPage', reconnect: 'reconnectFromPage' })

@@ -34,7 +34,7 @@ const MAX_IN_FLIGHT = ENDPOINT_LIMITS.inFlightPerPrincipal
 const RETRY_AFTER = String(Math.ceil(REQUEST_GATE.inFlightRetryAfterMs / TIME_UNIT.msPerSecond))
 
 /** The MCP request headers of `rpc` (2026-07-28: version and method mirrored), with `token`'s bearer. */
-function mcpHeaders(wire, rpc, token) {
+export function mcpHeaders(wire, rpc, token) {
   return {
     [HEADER.contentType]: HEADER.json,
     [HEADER.accept]: [HEADER.json, HEADER.sse].join(HEADER.listSeparator),
@@ -49,7 +49,7 @@ function mcpHeaders(wire, rpc, token) {
  * chunked). Returns {response, write(text), finish(text), abort()}: `response` resolves with
  * {status, headers, text} whenever the route answers, whether or not the body was finished.
  */
-function upload(w, headers, declared) {
+export function upload(w, headers, declared) {
   const framing = declared === undefined ? { [UPLOAD.transferEncoding]: UPLOAD.chunked } : { [HEADER.contentLength]: declared }
   let answered = false
   let req

@@ -79,7 +79,16 @@ export const GRANT = Object.freeze({
  * The grants' durable table: one storage domain of the connector, per-record, so a use writes one
  * record. Keys are the grant ids (path-safe: prefix + hex).
  */
-export const GRANT_STORE = Object.freeze({ domain: 'dsh_connector_grants', version: 1, layout: 'per-record', table: 'grants' })
+export const GRANT_STORE = Object.freeze({
+  domain: 'dsh_connector_grants', version: 1, layout: 'per-record', table: 'grants',
+  /**
+   * A record's optional durable `state` (review F01/F04; absent = active, so earlier records read
+   * as before): `pending` until its answer's settlement is stored, `ended` once it ends, written
+   * before its delete. Neither covers or lists, and the start sweep deletes both, so neither a
+   * failed answer's grant nor a revoked grant whose delete failed can revive after a restart.
+   */
+  state: Object.freeze({ pending: 'pending', ended: 'ended' }),
+})
 
 /**
  * `message_agent`, the one tool of a managed session (the user, 2026-11-17: no `ask_agent`, no

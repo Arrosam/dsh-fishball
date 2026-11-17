@@ -236,8 +236,22 @@ export function createMcpEndpoint({ gate, verifier, failures, pairs, secure, rea
     return caller
   }
 
-  /** `subscriptions/listen`: on the pair's own handler, within its stream cap; it holds no in-flight slot. */
-  async function listen(req, res, body, caller, message, admitted) {
+  /**
+   * `subscriptions/listen`: on the pair's own handler, within its stream cap; it holds no in-flight
+   * slot. The bearer is verified again first (review F07): the body was read after the token check,
+   * and a revocation during that upload closed only the streams that existed then (`closeEntry`),
+   * so a listen admitted on the old check would open a stream nobody ever closes (R-TOK-05). The
+   * verify and the reservation are one synchronous step, so no revocation falls between them; one
+   * after the reservation is the stream registry's own guard (streams.js). An ordinary request
+   * already past its token check still completes (R-TOK-05); only a long-lived stream is refused.
+   * Not a counted failure: the bearer was valid when the request began.
+   */
+  async function listen(req, res, body, caller, message, admitted, origin) {
+    const current = verifier.verify(req.headers[HTTP_HEADER.authorization], caller.audience, now())
+    if (current.error !== undefined || current.principalKey !== caller.principalKey) {
+      admitted.done()
+      return writeChallenge(res, HTTP_STATUS.unauthorized, invalidTokenChallenge(origin))
+    }
     const reservation = streams.reserve(caller.principalKey, caller.entryKey)
     if (reservation === undefined) {
       admitted.done()
@@ -291,7 +305,7 @@ export function createMcpEndpoint({ gate, verifier, failures, pairs, secure, rea
         const { reason } = powerOf(pairs.pairOf(caller.entryKey), caller.clientId)
         return writeChallenge(res, HTTP_STATUS.forbidden, insufficientScopeChallenge(origin, reason))
       }
-      if (message?.method === JSON_RPC.listenMethod) return await listen(req, res, body, caller, message, admitted)
+      if (message?.method === JSON_RPC.listenMethod) return await listen(req, res, body, caller, message, admitted, origin)
       return await requestNode(replayed(req, body, caller), res)
     } finally {
       admitted.done()

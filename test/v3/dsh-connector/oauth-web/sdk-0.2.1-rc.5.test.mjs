@@ -5,6 +5,7 @@ import { registerIconWebCases } from './icon-cases.mjs'
 import { registerPageIdCases } from './page-id-cases.mjs'
 import { registerPolishWebCases } from './polish-cases.mjs'
 import { registerXsecWebCases } from './xsec-cases.mjs'
+import { registerReviewXWebCases } from './review-x-cases.mjs'
 
 registerCOAuthWebCases('0.2.1-rc.5')
 registerCOAuthWebAmendCases('0.2.1-rc.5')
@@ -12,3 +13,4 @@ registerPageIdCases('0.2.1-rc.5')
 registerXsecWebCases('0.2.1-rc.5')
 registerPolishWebCases('0.2.1-rc.5')
 registerIconWebCases('0.2.1-rc.5')
+registerReviewXWebCases('0.2.1-rc.5')

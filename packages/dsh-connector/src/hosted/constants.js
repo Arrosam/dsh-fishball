@@ -64,6 +64,7 @@ export const LOG = Object.freeze({
   retireFailed: 'hosted: a succession step failed and was rolled back',
   cleanupFailed: 'hosted: deleting the succeeded entry failed; it is retried',
   noteFailed: 'hosted: a succession note could not be written',
+  recoveryFailed: 'hosted: a succession interrupted by a stop could not be cleared; it is tried at the next start',
 })
 
 /** Programming-error messages (a caller bug, thrown as TypeError; never shown to a client). */
