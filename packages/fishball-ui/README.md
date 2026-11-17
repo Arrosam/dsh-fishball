@@ -11,23 +11,28 @@ core; in a standalone DSH you install it yourself, before core (see the
 
 ## What it draws
 
-- **The Fishball page** (`fishball-page/`): the page opens only Fishball's manager session, with
-  DSH's navigation hidden and explicit returns from Settings and Plugins: a small floating bar of
-  DSH's own icons (Settings, Fishball, Plugins), each named in a tooltip. In a hosted child, the
-  main DSH's `dsh-connector-ui` window shows this same page.
+- **The Fishball page** (`fishball-page/`): the page opens only Fishball's manager session. DSH's
+  own sidebar stays, with its panels (Plugins and every plugin's entry, each with its own icon),
+  Settings, and a "Fishball" button back to the manager's conversation; its workspace and session
+  browser is replaced by Fishball's DSH targets. In a narrow window (480px and below) that sidebar
+  is restyled as a 44px bar along the bottom edge that scrolls sideways when it is full; on DSH
+  0.2.2 below 768px DSH's own drawer opens it instead. In a hosted child, the main DSH's
+  `dsh-connector-ui` window shows this same page.
 - **The two settings entries** in the page's header, as icons with tooltips: "Fishball settings"
   (fishball-core's own settings page) and "DSH settings".
 - **The model dialog** (`client.model.js`): when the Fishball page opens and core's `model` is
   unset, a dialog lists DSH's model catalog and writes the choice into core's `model` setting.
   Dismissed, it comes back at the next page open. With no model configured in DSH it says so and
   opens DSH Settings. The model can be changed later in fishball-core's settings.
-- **The status card** above the composer (`client.strip.js`, `/api/fishball/strip`): the target's
-  state (connected, not set, not connected, connecting, needs setup, failed, off) as a badge, the
-  number of contributed tools offered to Fishball's model, and Connect or Cancel. **The pairing card**
-  (`client.pairing.js`, `/api/fishball/pairing`): core's pairing warning for an imported or pasted
-  token already paired elsewhere, with its choices (Continue only once its box is ticked), and what
-  core needs (a new token or id, another name). **The ask cards** (`client.asks.js`) for asks
-  Fishball cannot decide. When a card's stream is lost, the card says so, stops offering its
+- **The DSH targets** in the sidebar (`client.strip.js`, `/api/fishball/strip`): every DSH Fishball
+  connects to, by the name its server gives (shown as plain text, ` (2)` for a later duplicate),
+  or "Not set" / "Name unavailable" before it has one, with its state (connected, connecting,
+  failed, not set). Pressing a target opens its details in place: why, its address, the
+  contributed tools it offers (zero too), its live-name support, Connect or Cancel, Retry, its
+  pairing warning and choices (Continue only once its box is ticked), and Fishball settings, where
+  targets are added, removed and edited. Opening a target only shows it; it never chooses where
+  Fishball works. **The ask cards** (`client.asks.js`) for asks Fishball cannot decide, each naming
+  the DSH it came from. When a stream is lost, the list or card says so, stops offering its
   controls, and offers Reconnect once the browser gave up.
 - **The Recommended tab** (`fishball-recommend-plugins/`) on DSH's Plugins page.
 - **UI guard rows**: `ui-subagent`, `ui-schedule`, `ui-permission`, `ui-agent-preset`,

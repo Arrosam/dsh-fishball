@@ -1,81 +1,101 @@
 /**
- * The status strip's view model (task F-STATUS; design §5a.2, §6.3a step 1). Pure: it turns core's
- * status snapshot (`src/status` `createStatus().snapshot()` or `statusOf`) into the lines and the
- * one control fishball-ui draws. It draws nothing itself and mounts nothing (F-WIRE). Moved from
- * core's `ui/status` by F-UI; it reads core's words from `fishball-shared/ui-seam`, never from core.
+ * The sidebar targets' view model (MULTI-3; PLAN-MULTI §6.1, D03, Q01, Q08, Q09, Q12; first F-STATUS's
+ * strip view). Pure: it turns core's status snapshot (`UI_STATUS.service` `snapshot()`, carrying the
+ * MULTI-0 `targets` beside the global `fishball`, `guards`, `set`) into what fishball-ui's sidebar
+ * draws. It draws nothing and mounts nothing; it reads core's words from `fishball-shared/ui-seam`,
+ * never from core.
  *
- * Lines, in order: the link line, then `guards-overridden` (R-FB-09), `plugin-set-incomplete`
- * (R-BND-05) and `contributed-tools` (R-EXT-14: "core's status shows how many contributed tools
- * are offered", so 0 is shown too; absent only without the bridge, when the count is unknown). No line is ever about fishball-ui (Q-G1), Watchdog (1.37) or fishball-hosted-settings
- * (removed, 1.34). The control is `connect` or `cancel` with its label, or null; there is no token
- * field (R-FB-03).
+ * - `notices`: the once-per-process lines, not about one target: `guards-overridden` (R-FB-09) and
+ *   `plugin-set-incomplete` (R-BND-05); with Fishball off (R-FB-10) the one `fishball-off` line;
+ * - `targets`: one row per target, in core's order (Q12: no cap). A row's `name` is the server's
+ *   resolved name as plain text (D06), or `null` with `placeholder` (Q01: "Not set" / "Name
+ *   unavailable", never a URL-derived name); its `state` is one of the four public states
+ *   (`SEAM_TARGETS.state`; an unknown word reads `failed`, never success), with its badge and the
+ *   details' lines (why, URL, the contributed-tool count with zero shown, R-EXT-14), the identity
+ *   capability, the one control and the pairing view (`pairingView`).
+ * There is no chat-top card any more (D03): the old `card` and the scalar `line`/`control` are gone.
  */
-import { SEAM_STATUS } from 'fishball-shared/ui-seam'
-import { CARD, STATUS_DEFAULT_LANG, STATUS_TEXT } from './text.js'
+import { SEAM_STATUS, SEAM_TARGETS } from 'fishball-shared/ui-seam'
+import { pairingView } from '../pairing/index.js'
+import { STATUS_DEFAULT_LANG, STATUS_TEXT } from './text.js'
 
-export { CARD, STATUS_TEXT } from './text.js'
+export { STATUS_TEXT } from './text.js'
 
-/** The extra line kinds of the strip (the link line's kind is the snapshot's `line.kind`). */
-export const STRIP_KIND = Object.freeze({
+/** The notice kinds (`SEAM_STATUS` words) and the details' line kinds of one target. */
+export const TARGET_LINE = Object.freeze({
   guards: SEAM_STATUS.guards.overridden,
   set: SEAM_STATUS.set.incomplete,
-  tools: 'contributed-tools',
   off: SEAM_STATUS.fishball.off,
+  why: 'why',
+  url: 'url',
+  tools: 'contributed-tools',
+  identity: 'identity',
 })
 
 const entry = (kind, text) => Object.freeze({ kind, text })
+const STATES = Object.freeze(Object.values(SEAM_TARGETS.state))
+const stateOf = (word) => (STATES.includes(word) ? word : SEAM_TARGETS.state.failed)
 
 /**
- * The card's state for the link line's kind (UI-POLISH-F). A kind not listed (a word core adds
- * later) reads as `failed`: the card never claims a connection it cannot name.
+ * Why a target is in its state: core's `TargetView.line` `{kind, code}` (the old strip's rule, core's
+ * own; MULTI-0 `a946e5a4`). A word the copy does not know is shown verbatim: it is one of the
+ * documented codes a user can look up. A view without a line draws none.
  */
-const CARD_OF = Object.freeze({
-  [SEAM_STATUS.link.connected]: CARD.connected,
-  [SEAM_STATUS.link.unset]: CARD.unset,
-  [SEAM_STATUS.connect.needsAuthorization]: CARD.disconnected,
-  [SEAM_STATUS.connect.authorizing]: CARD.connecting,
-  [SEAM_STATUS.connect.needsConfiguration]: CARD.attention,
-  [SEAM_STATUS.link.unreachable]: CARD.failed,
-  [SEAM_STATUS.link.refused]: CARD.failed,
-  [SEAM_STATUS.connect.failed]: CARD.failed,
-  [STRIP_KIND.off]: CARD.off,
-})
+function whyLine(target, text) {
+  const line = target.line
+  if (typeof line?.kind !== 'string') return null
+  const word = text.line[line.kind] ?? line.kind
+  return entry(TARGET_LINE.why, line.code == null ? word : text.code(word, line.code))
+}
 
-/** The card's heading, state badge and the words the browser half draws around the lines. */
-function cardOf(kind, text) {
-  const state = Object.hasOwn(CARD_OF, kind) ? CARD_OF[kind] : CARD.failed
+function targetView(target, text, lang, timeZone) {
+  const state = stateOf(target.state)
+  const named = typeof target.name === 'string' && target.name !== ''
+  const lines = [whyLine(target, text), entry(TARGET_LINE.url, target.url ?? '')]
+  if (Number.isInteger(target.contributedTools)) lines.push(entry(TARGET_LINE.tools, text.tools(target.contributedTools)))
+  const identity = text.identity[target.identity]
+  if (identity !== undefined) lines.push(entry(TARGET_LINE.identity, identity))
+  const control = Object.hasOwn(text.control, target.control) ? Object.freeze({ action: target.control, label: text.control[target.control] }) : null
   return Object.freeze({
+    targetId: target.targetId,
+    kind: target.kind,
+    name: named ? target.name : null,
+    placeholder: named ? null : text.placeholder[state === SEAM_TARGETS.state.notSet ? SEAM_TARGETS.placeholder.unset : SEAM_TARGETS.placeholder.unnamed],
     state,
-    title: state === CARD.off ? text.card.offTitle : text.card.title,
-    badge: text.card.badge[state],
-    toolsHint: text.card.toolsHint,
-    openApproval: text.card.openApproval,
+    badge: text.state[state],
+    url: target.url ?? '',
+    lines: Object.freeze(lines.filter((line) => line !== null)),
+    control,
+    retry: state === SEAM_TARGETS.state.failed ? text.retry : null,
+    pairing: pairingView(target.pairing, lang, timeZone),
   })
 }
 
-function linkLine({ kind, code }, text) {
-  const word = text.line[kind] ?? kind
-  return entry(kind, code === null ? word : text.code(word, code))
-}
-
 /**
- * @param {object} snapshot core's status snapshot, or `{fishball: 'fishball-off'}`
+ * @param {object | undefined} snapshot core's status snapshot, or undefined / `{fishball: 'fishball-off'}`
  * @param {string} [lang] `en` or `zh`; any other value draws `en`
- * @returns {{lines: ReadonlyArray<{kind: string, text: string}>, control: {action: string, label: string} | null,
- *   card: {state: string, title: string, badge: string, toolsHint: string, openApproval: string}}}
- *   `card.state` is one of `CARD`, from the first line's kind (`CARD_OF`).
+ * @param {string} [timeZone] the reader's IANA time zone (pairing last-seen times)
+ * @returns {{on: boolean, title: string, empty: string | null, notices: ReadonlyArray<{kind: string, text: string}>,
+ *   targets: ReadonlyArray<object>, words: object}} `words` holds the sidebar's own labels in `lang`
  */
-export function stripView(snapshot, lang = STATUS_DEFAULT_LANG) {
+export function targetsView(snapshot, lang = STATUS_DEFAULT_LANG, timeZone = undefined) {
   const text = STATUS_TEXT[lang] ?? STATUS_TEXT[STATUS_DEFAULT_LANG]
-  if (snapshot?.fishball !== SEAM_STATUS.fishball.on) {
-    return Object.freeze({ lines: Object.freeze([entry(STRIP_KIND.off, text.line[STRIP_KIND.off])]), control: null, card: cardOf(STRIP_KIND.off, text) })
+  const on = snapshot?.fishball === SEAM_STATUS.fishball.on
+  const notices = []
+  if (!on) notices.push(entry(TARGET_LINE.off, text.line[TARGET_LINE.off]))
+  if (on && snapshot.guards?.status === SEAM_STATUS.guards.overridden) notices.push(entry(TARGET_LINE.guards, text.guards(snapshot.guards.overridden.join(text.separator))))
+  if (on && snapshot.set?.status === SEAM_STATUS.set.incomplete) {
+    notices.push(entry(TARGET_LINE.set, text.set(snapshot.set.missing.map((m) => text.member(m.name, text.reason[m.reason] ?? m.reason)).join(text.separator))))
   }
-  const lines = [linkLine(snapshot.line, text)]
-  if (snapshot.guards?.status === SEAM_STATUS.guards.overridden) lines.push(entry(STRIP_KIND.guards, text.guards(snapshot.guards.overridden.join(text.separator))))
-  if (snapshot.set?.status === SEAM_STATUS.set.incomplete) {
-    lines.push(entry(STRIP_KIND.set, text.set(snapshot.set.missing.map((m) => text.member(m.name, text.reason[m.reason] ?? m.reason)).join(text.separator))))
-  }
-  if (Number.isInteger(snapshot.contributedTools)) lines.push(entry(STRIP_KIND.tools, text.tools(snapshot.contributedTools)))
-  const control = snapshot.control === null ? null : Object.freeze({ action: snapshot.control, label: text.control[snapshot.control] })
-  return Object.freeze({ lines: Object.freeze(lines), control, card: cardOf(snapshot.line.kind, text) })
+  const list = on && snapshot[SEAM_TARGETS.member]?.version === SEAM_TARGETS.snapshotVersion && Array.isArray(snapshot[SEAM_TARGETS.member].targets)
+    ? snapshot[SEAM_TARGETS.member].targets : []
+  const targets = list.map((target) => targetView(target, text, lang, timeZone))
+  return Object.freeze({
+    on,
+    title: text.title,
+    empty: on && targets.length === 0 ? text.empty : null,
+    notices: Object.freeze(notices),
+    targets: Object.freeze(targets),
+    words: text.words,
+  })
 }

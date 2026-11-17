@@ -39,6 +39,13 @@ window.__ModuleLoader__.load({
       base: 'fishball-ui-base-style',
       chinese: 'zh',
       lang: Object.freeze({ zh: 'zh', en: 'en' }),
+      /**
+       * Core's settings page: core's bundle page on DSH's Plugins page (core's `contracts/constants.js`
+       * `GUARDS.bundleName`, restated: fishball-ui imports nothing of core, Q-G2), through DSH's
+       * plugin navigation service, else the Plugins list itself. Shared by the "Fishball settings"
+       * header entry and the sidebar targets (MULTI-3: add/remove/URL editing live there).
+       */
+      coreSettings: Object.freeze({ bundle: 'fishball-core', navigation: 'pluginNavigation', pluginsPanel: 'plugins' }),
     })
 
     /**
@@ -185,8 +192,9 @@ window.__ModuleLoader__.load({
      * What the parts share: `css`, the shared class names, and `mountStyle(id, cssText)`, which adds
      * one style sheet to the document and returns its disposer, for a part's `ctx.effect`; the id
      * names it for a reader of the DOM. Since R-FIX-FUI also the live streams' lifecycle
-     * (`liveStream`, `langStream`, `HEALTH`, `StreamNotice`, `staleText`) and `useLang`, so the strip,
-     * the ask cards and the pairing card mark a lost stream the same way.
+     * (`liveStream`, `langStream`, `HEALTH`, `StreamNotice`, `staleText`) and `useLang`, so the
+     * sidebar targets, the ask cards and the pairing card mark a lost stream the same way; since
+     * MULTI-3 `openCoreSettings`.
      */
     const kit = Object.freeze({
       /** The shared class names (`CSS`); their sheet is mounted once by this row. */
@@ -196,6 +204,12 @@ window.__ModuleLoader__.load({
       langStream,
       useLang,
       StreamNotice,
+      /** Opens core's settings page (`UI.coreSettings`); `ctx` needs `layout`. */
+      openCoreSettings(ctx) {
+        const navigation = ctx.get(UI.coreSettings.navigation)
+        if (navigation) navigation.openBundle(UI.coreSettings.bundle)
+        else ctx.layout.selectPanel(UI.coreSettings.pluginsPanel)
+      },
       /** The badge word of a view shown while its stream is not live, in `lang`. */
       staleText: (lang) => (streamText[lang] ?? streamText[UI.lang.en]).staleBadge,
       mountStyle(id, cssText) {
