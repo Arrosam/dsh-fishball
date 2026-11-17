@@ -32,14 +32,15 @@ const version = () => JSON.parse(fs.readFileSync(FILES.manifest, 'utf8')).versio
 export const expectedInfo = (name) => ({ name: name + M.suffix, version: version() })
 export const discovered = async (client) => info(await client.discover({ timeout: BUDGET.rpcMs }))
 export async function identity(client) {
-  const answer = await client.readResource({ uri: M.identityUri }, { timeout: BUDGET.rpcMs })
+  // Cacheable SDK verbs require a fresh read to test the server's live getter, not client cache.
+  const answer = await client.readResource({ uri: M.identityUri }, { timeout: BUDGET.rpcMs, cacheMode: 'refresh' })
   assert.equal(answer.contents.length, 1, 'identity resource must be a real single Implementation document')
   const [content] = answer.contents
   assert.equal(content.uri, M.identityUri)
   assert.equal(content.mimeType, M.mimeType)
   return JSON.parse(content.text)
 }
-export const toolDefinitions = async (client) => (await client.listTools({}, { timeout: BUDGET.rpcMs })).tools
+export const toolDefinitions = async (client) => (await client.listTools({}, { timeout: BUDGET.rpcMs, cacheMode: 'refresh' })).tools
 
 /** Ordinary owner-issued credential and installed SDK; observe network, never connector internals. */
 export async function observer(t, w, filter) {
@@ -76,7 +77,13 @@ export const identityNotices = (o) => o.notices.filter((n) => n.params.uri === M
 export const bothResources = Object.freeze({ resourceSubscriptions: [K1.RESOURCE.events.uri, M.identityUri] })
 export function assertStandardIdentityHint(notice) {
   assert.equal(notice.method, M.updated)
-  assert.deepEqual(notice.params, { uri: M.identityUri }, 'identity hint must contain only standard {uri}, never a custom name/version payload')
+  // MCP 2026-07-28 requires the SDK to stamp the originating listen request ID in _meta.
+  // That transport routing metadata is not an identity payload; forbid all custom business fields.
+  const { _meta, ...payload } = notice.params
+  assert.deepEqual(payload, { uri: M.identityUri }, 'identity hint must contain only standard {uri}, never a custom name/version payload')
+  assert.ok(_meta && typeof _meta === 'object', 'stream notification lacks standard subscription routing metadata')
+  assert.deepEqual(Object.keys(_meta), [M.subscriptionKey], 'identity hint added nonstandard notification metadata')
+  assert.ok(typeof _meta[M.subscriptionKey] === 'string' || typeof _meta[M.subscriptionKey] === 'number', 'subscription ID must retain the originating JSON-RPC ID type')
 }
 export async function oauthSnapshot(w) {
   const paths = [K1.PATHS.protectedResourcePrefix + K1.PATHS.mcp, K1.PATHS.authorizationServerPrefix + K1.PATHS.issuer]

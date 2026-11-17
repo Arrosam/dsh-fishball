@@ -5,7 +5,7 @@ import { caseName } from '../../contract/package-boundaries/cases.mjs'
 import { BUDGET, FIXTURE, HTTP, K1 } from './constants.mjs'
 import { sdkClient } from './world.mjs'
 import { MULTI as M } from './multi-constants.mjs'
-import { multiWorld as world, saveName, info, expectedInfo, observer, discovered, clientInfo, freshClientId } from './multi-subject.mjs'
+import { multiWorld as world, saveName, info, expectedInfo, observer, discovered, identity, clientInfo, freshClientId } from './multi-subject.mjs'
 const row = (sdk, part, title, fn) => test(caseName(sdk, M.id, part, title), { timeout: BUDGET.testMs }, fn)
 
 export function registerMultiNameCases(sdk) {
@@ -18,6 +18,7 @@ export function registerMultiNameCases(sdk) {
       const base = data.hostname ? M.hostname : data.value
       assert.deepEqual(info(o.client.getDiscoverResult()), expectedInfo(base))
       assert.deepEqual(await discovered(o.client), expectedInfo(base))
+      assert.deepEqual(await identity(o.client), expectedInfo(base), 'resource and discovery must preserve the identical unrestricted name')
       assert.equal(o.requests.some((r) => r.method === 'initialize'), false, 'modern client must not negotiate legacy initialize')
     })
   }

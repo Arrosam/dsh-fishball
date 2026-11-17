@@ -5,7 +5,7 @@
  * - first start (the child holds no credential, the target is this DSH's connector): one
  *   `createHosted`, its value imported once over `mcp-credential`; the entry key is recorded only
  *   after the child stored it. A restart, a reconnect of the link or a present credential creates
- *   nothing; a remote target never;
+ *   nothing; additional targets never affect the parent's reserved credential;
  * - Reconnect (the instance's settings page): the same, on demand, whatever the old entry's state;
  *   replacing moves nothing and deletes nothing (Q-B1 = B, Q-B3 = B);
  * - Retry after the user deleted the entry: no token, only the notice (R6 = B);
@@ -19,7 +19,6 @@
 import { HOSTED, REFUSAL } from '../native-runtime/constants.js'
 
 const { entryState: ENTRY, target: STATUS } = HOSTED
-const blank = (value) => typeof value !== 'string' || value.trim() === ''
 
 /** The connector's hosted-token service if it is usable (K3 `DshConnectorTokens`, apiVersion 1), else undefined. */
 export function usableTokens(service) {
@@ -27,13 +26,11 @@ export function usableTokens(service) {
 }
 
 /**
- * The target URL the child links to, written as the child-side row's setting: the instance's own
- * remote target when it names one, else this host's connector endpoint when a connector is here,
- * else nothing. `hostOrigin` must be a loopback origin (host.js): the child runs on this machine,
- * and core refuses plain `http:` to any other name (D5).
+ * The reserved parent's URL, written through the unchanged child-row handoff. No remote override:
+ * missing parent connector means an unset parent, never another target. `hostOrigin` must be a
+ * loopback origin (host.js): the child runs locally and core refuses other plain-http names (D5).
  */
-export function childTargetUrl({ instanceTargetUrl, hostOrigin, connectorUsable }) {
-  if (!blank(instanceTargetUrl)) return instanceTargetUrl
+export function childTargetUrl({ hostOrigin, connectorUsable }) {
   return connectorUsable && typeof hostOrigin === 'string' ? new URL(HOSTED.mcpPath, hostOrigin).href : ''
 }
 
@@ -43,16 +40,13 @@ export function childTargetUrl({ instanceTargetUrl, hostOrigin, connectorUsable 
  * @param deps.record - the hosted record (hosted-record.js)
  * @param deps.credentials - `() => credential client | undefined` of the current wire (credential.js)
  * @param deps.instanceId - `() => string`, the instance's own non-secret id for `createHosted`
- * @param deps.remoteTarget - `() => string`, the remote target the running child was launched with
- *   ('' = this DSH): not the live `targetUrl` setting, which applies only at the next start, since
- *   a token for this DSH's connector must never reach a child that links elsewhere (F01)
  * @param [deps.runtimeId] - `() => string | undefined`, the id of the child runtime folder now (its
  *   owner marker's `hostId`; a reinstall or a runtime reset makes a new one), undefined when unknown;
  *   omitted, every runtime is unknown and no first start is a reinstall (the safe side: nothing moves)
  * @param deps.changed - called after the target status or the notice changed
  * @param [deps.warn] - `(format, code) => void`, the row's logger (a code only, never a value)
  */
-export function createHostedToken({ tokens, record, credentials, instanceId, remoteTarget, runtimeId = () => undefined, changed, warn = () => {} }) {
+export function createHostedToken({ tokens, record, credentials, instanceId, runtimeId = () => undefined, changed, warn = () => {} }) {
   let notice = null
   let chain = Promise.resolve()
   /** Runs `step` after every earlier one; a failure there never breaks the chain. */
@@ -73,7 +67,6 @@ export function createHostedToken({ tokens, record, credentials, instanceId, rem
   /** What blocks an import now, or undefined. A closed row imports nothing. */
   function refusal(client) {
     if (closed) return REFUSAL.notReady
-    if (!blank(remoteTarget())) return REFUSAL.targetRemote
     if (connector() === undefined) return REFUSAL.connectorMissing
     if (client === undefined) return REFUSAL.notReady
     return undefined
@@ -201,9 +194,8 @@ export function createHostedToken({ tokens, record, credentials, instanceId, rem
     if (!(await flushAdds())) return service === undefined ? undefined : listen(service)
     const old = record.pending()
     if (old === undefined) return unlisten()
-    // A remote target: the child no longer uses this connector; the succession waits, as it does
-    // for a connector that is absent or older than `retire`.
-    if (!blank(remoteTarget()) || typeof service?.retire !== 'function') return
+    // Succession waits for a usable parent connector; added targets never suppress it.
+    if (typeof service?.retire !== 'function') return
     const successor = record.entries().at(-1)
     let outcome
     // A record whose newest entry is the old one, or that lists none (edited by hand), has no
@@ -262,14 +254,13 @@ export function createHostedToken({ tokens, record, credentials, instanceId, rem
     close() { closed = true; unlisten(); return chain },
     /** The K3 target status from the host's own state (the user's answer Q3 = A). */
     targetStatus() {
-      if (!blank(remoteTarget())) return STATUS.remote
       const state = entryState()
       if (state === undefined) return STATUS.unset
       return state === ENTRY.enabled ? STATUS.connected : STATUS.revoked
     },
     /** Retry's token rule: a deleted entry gets the notice and no token (R6 = B). */
     retryNotice() {
-      if (!blank(remoteTarget()) || entryState() !== ENTRY.deleted) return false
+      if (entryState() !== ENTRY.deleted) return false
       notice = HOSTED.notice.entryDeleted
       changed()
       return true

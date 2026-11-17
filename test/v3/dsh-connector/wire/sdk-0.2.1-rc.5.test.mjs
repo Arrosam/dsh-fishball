@@ -5,3 +5,6 @@ registerWireCases('0.2.1-rc.5')
 
 import { registerMultiNameCases } from './multi-name-cases.mjs'
 registerMultiNameCases('0.2.1-rc.5')
+
+import { registerMultiWireCases } from './multi-cases.mjs'
+registerMultiWireCases('0.2.1-rc.5')

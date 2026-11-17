@@ -2,9 +2,8 @@
  * UI-POLISH-D rows of the instance's own settings page (constants.mjs PAGE_POLISH; the requirements
  * relayed 2026-11-18 and the developer's note of that day):
  * - UIPD-INST-SECTIONS (EP over the language, en and zh): the h3 headings "Fishball" (above Open
- *   Fishball / Reconnect), "Model for Fishball" and "Launch" (above the enabled switch and the remote
- *   target); the remote target is DSH's Input, its placeholder `targetUrlPlaceholder`, its aria-label
- *   and `data-dsh-instance-target` unchanged; Open Fishball has an icon;
+ *   Fishball / Reconnect), "Model for Fishball" and "Launch" (above the enabled switch).
+ *   MULTI-2 removes the remote-target override/editor entirely; Open Fishball keeps its icon;
  * - UIPD-INST-RETRY (EP over the instance states the status route answers): Retry
  *   (`data-fishball-instance-retry`) shows only for `failed`, with variant `primary`; the status
  *   tag holds a StateDot before the state words; pressing Retry POSTs retry once;
@@ -28,21 +27,18 @@ const statusTag = (page) => page.byAttr(P.attr.state)[0]
 export function registerInstancePolishCases(sdk) {
   // ---------------------------------------------------------------- sections and the remote target (EP over the language)
   for (const lang of P.langs) {
-    caseTest(sdk, P.id.sections, lang, `headings ${P.headings[lang].join(' / ')}; the remote target is Input with placeholder "${P.placeholder[lang]}", aria-label "${P.targetLabel[lang]}", data-dsh-instance-target; Open Fishball has an icon`, async (t) => {
+    caseTest(sdk, P.id.sections, lang, `headings ${P.headings[lang].join(' / ')} remain; MULTI-2 removes remote target editor entirely; Open Fishball has an icon`, async (t) => {
       const page = await openInstancePage(t, sdk, { lang })
       await page.until(() => headings(page).length >= P.headings[lang].length)
       assert.deepEqual(headings(page), [...P.headings[lang]])
-      const [target] = page.byAttr(P.attr.target)
-      assert.ok(target, 'no data-dsh-instance-target')
-      assert.equal(primitive(target), P.input, 'the remote target is not DSH\'s Input')
-      assert.equal(target.props.placeholder, P.placeholder[lang])
-      assert.equal(target.props['aria-label'], P.targetLabel[lang])
+      // MULTI-2 removes the host override, not just its enabled state or submission handler.
+      assert.deepEqual(page.byAttr(P.attr.target), [], 'instance still exposes removed remote target editor')
+      assert.deepEqual(page.find((n) => n.props['aria-label'] === P.targetLabel[lang]), [], 'remote override is still editable under another data hook')
       const order = page.find(() => true)
-      const [actionsHeading, , launchHeading] = page.find((n) => n.tag === 'h3')
+      const [actionsHeading] = page.find((n) => n.tag === 'h3')
       const [open] = page.byAttr(P.attr.open)
       const [reconnect] = page.byAttr(P.attr.reconnect)
       assert.ok(order.indexOf(actionsHeading) < order.indexOf(open) && order.indexOf(open) < order.indexOf(reconnect), 'Open / Reconnect are not under the Fishball heading')
-      assert.ok(order.indexOf(launchHeading) < order.indexOf(target), 'the remote target is not under Launch')
       assert.ok(page.text(open).includes(P.openWords[lang]))
       assert.ok(hasIcon(open), 'Open Fishball has no icon')
     })

@@ -37,7 +37,7 @@ import { diagnosticOf } from '../errors.js'
 import { HOSTED_SERVICE, createHostedTokens, openHostedStore } from '../hosted/index.js'
 import { createMailbox, openMailboxTables, readEventsResource } from '../mailbox/index.js'
 import { createMcpEndpoint, createRequestGate } from '../mcp/http/index.js'
-import { SERVER_IDENTITY } from '../mcp/http/constants.js'
+import { HOSTNAME_WATCH } from '../mcp/http/constants.js'
 import { createBearerVerifier, createFailureLimiter, createTokenEndpoint, followRevocations, openOAuthTokenStore, originOf } from '../mcp/oauth/index.js'
 import {
   approvalOriginFor, createApprovalHandler, createApprovalListener, createAuthorizationCodeGrant, createCimdFetcher, createRefreshTokenGrant,
@@ -120,7 +120,7 @@ function followDshName(settings, changed) {
     read()
     if (configuredName(settings) === undefined) {
       if (timer === undefined) {
-        timer = setInterval(read, SERVER_IDENTITY.hostnameCheckMs)
+        timer = setInterval(read, HOSTNAME_WATCH.intervalMs)
         timer.unref?.()
       }
     } else {
@@ -169,9 +169,8 @@ export async function openV3(ctx, { config, storageDomain, limits, volatileEvent
 
     // The MCP endpoint is the mailbox's hint sink and routing's presence, and its tools need the
     // routing composition, so its `hints` and `presence` are reached through late-bound ports.
-    // The optional identity trigger is connected when the frozen identity resource is installed.
     let endpoint
-    const dshName = followDshName(settings, () => endpoint?.identityChanged?.())
+    const dshName = followDshName(settings, () => endpoint?.identityChanged())
     closers.push(() => dshName.close())
     const hints = Object.freeze({ resourceUpdated: (principalKey, uri) => endpoint?.hints.resourceUpdated(principalKey, uri) })
     const mailboxTables = await openMailboxTables(ctx, storageDomain)

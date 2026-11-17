@@ -24,14 +24,14 @@ import { hostname } from 'node:os'
 import { McpServer, createMcpHandler } from '@modelcontextprotocol/server'
 import { toNodeHandler } from '@modelcontextprotocol/node'
 import {
-  BEARER_CHALLENGE, ENDPOINT_LIMITS, GATE_SURFACE, HTTP_STATUS, OAUTH_ERROR, PAIR_ONLY, PATHS, PROTOCOL, REQUEST_GATE, RESOURCE, SCOPE,
+  BEARER_CHALLENGE, ENDPOINT_LIMITS, GATE_SURFACE, HTTP_STATUS, OAUTH_ERROR, PAIR_ONLY, PATHS, PROTOCOL, REQUEST_GATE, RESOURCE, SCOPE, SERVER_IDENTITY,
   bearerChallenge, insufficientScopeChallenge, invalidTokenChallenge, oauthErrorBody, oauthUrls,
 } from '../../../mcp-schema/index.js'
 import { diagnosticOf } from '../../errors.js'
 import { powerOf } from '../../pairs/index.js'
 import { originOf } from '../oauth/index.js'
 import {
-  BEARER_MISSING, HTTP_HEADER, JSON_RPC, LOG, MANIFEST_URL, MEDIA_TYPE, SDK_OPTION, SERVER_IDENTITY, TEXT_ENCODING, UNKNOWN_ADDRESS,
+  BEARER_MISSING, HTTP_HEADER, JSON_RPC, LOG, MANIFEST_URL, MEDIA_TYPE, SDK_OPTION, TEXT_ENCODING, UNKNOWN_ADDRESS,
   URL_BASE, unsupportedVersionMessage,
 } from './constants.js'
 import { FORBIDDEN, TOO_LARGE, bareRefusal, rateLimited } from './gate.js'
@@ -208,6 +208,9 @@ export function createMcpEndpoint({ gate, verifier, failures, pairs, secure, rea
     server.server.registerCapabilities({ extensions: { [PROTOCOL.clientCredentialsExtension]: {} } })
     if (caller.scope === SCOPE.full) {
       server.registerResource(RESOURCE.events.name, RESOURCE.events.uri, { mimeType: RESOURCE.events.mimeType }, () => readEvents(caller.principalKey))
+      server.registerResource(RESOURCE.identity.name, RESOURCE.identity.uri, { mimeType: RESOURCE.identity.mimeType }, () => ({
+        contents: [{ uri: RESOURCE.identity.uri, mimeType: RESOURCE.identity.mimeType, text: JSON.stringify(serverInfo()) }],
+      }))
     }
     populate(server, caller)
     return server
@@ -338,6 +341,8 @@ export function createMcpEndpoint({ gate, verifier, failures, pairs, secure, rea
     hints: streams.hints,
     presence: streams.presence,
     toolsChanged: streams.toolsChanged,
+    // Identity is shared, unlike mailbox hints: the SDK applies each stream's exact URI filter.
+    identityChanged: () => streams.resourceChanged(RESOURCE.identity.uri),
     closeEntry: streams.closeEntry,
     close,
   })

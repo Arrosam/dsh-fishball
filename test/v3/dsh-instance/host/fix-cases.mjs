@@ -29,7 +29,7 @@ import { test } from 'node:test'
 import { caseName } from '../../contract/package-boundaries/cases.mjs'
 import { V3 } from '../../contract/package-boundaries/constants.mjs'
 import { requireModule } from '../../dsh-connector-adapter/oauth-client/subject.mjs'
-import { FIXTURE, K3, RELAYED, RFI } from './constants.mjs'
+import { CONNECTOR_MCP, FIXTURE, K3, RELAYED, RFI } from './constants.mjs'
 import { fakeTokens, memoryRecord } from './fakes.mjs'
 import { rowWorld, gate } from './row.mjs'
 import { hostedModule, scratch, settle } from './subject.mjs'
@@ -125,19 +125,19 @@ const recordOnDisk = (home) => JSON.parse(fs.readFileSync(path.join(home, RFI.fi
 export function registerFixInstanceCases(sdk) {
   const row = (id, part, title, fn) => test(caseName(sdk, id, part, title), T, fn)
 
-  // ===================================================================== F01: the launched target decides
-  // Decision table: target at launch × live setting now → Reconnect, imports, targetStatus.
-  row('RFI-F01', 'remote, cleared', 'F01 launched with a remote target, live setting cleared → Reconnect target-remote, no createHosted, nothing imported, targetStatus target-unreachable', async (t) => {
+  // MULTI-2 §3.3 supersedes F01's old remote override matrix. Unknown legacy fields
+  // remain adversarial extras here: actual-parent handoff/import must ignore them in every state.
+  row('RFI-F01', 'remote, cleared (MULTI-2)', 'extra remote field at launch/cleared live → actual-parent launch, first import and reconnect preserved', async (t) => {
     const w = await rowWorld(t, sdk, { home: homeOf(t, 'canonical').home, targetUrl: FIXTURE.remote })
     await w.apply()
     w.fireReady()
-    assert.ok(await w.until(() => w.status().state === K3.state.ready), 'not ready: ' + show(w.status()))
-    assert.deepEqual(w.ctl.launches.map((l) => l.child?.[RFI.row.target]), [FIXTURE.remote], 'the launch overlay target')
+    assert.ok(await w.until(() => w.status().state === K3.state.ready && w.ctl.credentials.calls.set.length === 1), 'parent import missing')
+    assert.deepEqual(w.ctl.launches.map((l) => l.child?.[RFI.row.target]), [FIXTURE.hostOrigin + CONNECTOR_MCP], 'launch was redirected away from actual parent')
     w.setField(RFI.row.target, FIXTURE.blank)
-    assert.deepEqual(await w.locator().reconnect(), { ok: false, code: K3.reconnect.remote })
-    assert.deepEqual(w.tokens.calls.created, [], 'createHosted called')
-    assert.deepEqual(w.ctl.credentials.calls.set, [], 'a value was imported')
-    assert.deepEqual(w.locator().targetStatus(), UNREACHABLE)
+    assert.deepEqual(await w.locator().reconnect(), { ok: true })
+    assert.equal(w.tokens.calls.created.length, 2)
+    assert.equal(w.ctl.credentials.calls.set.length, 2)
+    assert.deepEqual(w.locator().targetStatus(), CONNECTED)
   })
   row('RFI-F01', 'local, set remote', 'F01 launched local, live setting set to remote → Reconnect still imports a local token ({ok:true}); targetStatus follows the local entry', async (t) => {
     const w = await rowWorld(t, sdk, { home: homeOf(t, 'canonical').home })
@@ -153,7 +153,7 @@ export function registerFixInstanceCases(sdk) {
     w.tokens.setState(entry(2), K3.entry.disabled)
     assert.deepEqual(w.locator().targetStatus(), { state: K3.target.refused, code: K3.code.revoked }, 'targetStatus does not follow the local entry')
   })
-  row('RFI-F01', 'next start', 'F01 the new setting applies at the next start: off/on after setting remote → Reconnect target-remote, targetStatus target-unreachable', async (t) => {
+  row('RFI-F01', 'next start (MULTI-2)', 'off/on after extra remote field still launches/reconnects actual parent', async (t) => {
     const w = await rowWorld(t, sdk, { home: homeOf(t, 'canonical').home })
     await w.apply()
     w.fireReady()
@@ -163,25 +163,25 @@ export function registerFixInstanceCases(sdk) {
     assert.ok(await w.until(() => w.status().state !== K3.state.ready), 'off did not stop')
     w.setField(RFI.row.enabled, true)
     assert.ok(await w.until(() => w.status().state === K3.state.ready && w.ctl.launches.length === 2), 'no second start: ' + show(w.status()))
-    assert.equal(w.ctl.launches[1].child?.[RFI.row.target], FIXTURE.remote)
+    assert.equal(w.ctl.launches[1].child?.[RFI.row.target], FIXTURE.hostOrigin + CONNECTOR_MCP)
     const created = w.tokens.calls.created.length
-    assert.deepEqual(await w.locator().reconnect(), { ok: false, code: K3.reconnect.remote })
-    assert.equal(w.tokens.calls.created.length, created)
-    assert.deepEqual(w.locator().targetStatus(), UNREACHABLE)
+    assert.deepEqual(await w.locator().reconnect(), { ok: true })
+    assert.equal(w.tokens.calls.created.length, created + 1)
+    assert.deepEqual(w.locator().targetStatus(), CONNECTED)
   })
-  row('RFI-F01', 'before launch', 'F01 before any launch the configured value is used: remote → target-unreachable; cleared → target-unset', async (t) => {
+  row('RFI-F01', 'before launch (MULTI-2)', 'before launch extra remote field never replaces the absent actual-parent entry', async (t) => {
     const w = await rowWorld(t, sdk, { home: homeOf(t, 'canonical').home, targetUrl: FIXTURE.remote })
     await w.apply()
     // The row opens its hosted record asynchronously: let it settle (appReady never fires here).
     await sleep(RFI.wait.quietMs)
     assert.equal(w.ctl.calls.start, 0, 'a start before appReady')
-    assert.deepEqual(w.locator().targetStatus(), UNREACHABLE)
+    assert.deepEqual(w.locator().targetStatus(), UNSET)
     w.setField(RFI.row.target, FIXTURE.blank)
     assert.deepEqual(w.locator().targetStatus(), UNSET)
   })
   for (const [part, launched, now, imports] of [
     ['first start local → remote', FIXTURE.blank, FIXTURE.remote, 1],
-    ['first start remote → blank', FIXTURE.remote, FIXTURE.blank, 0],
+    ['first start remote → blank (MULTI-2 extra field ignored)', FIXTURE.remote, FIXTURE.blank, 1],
   ]) {
     row('RFI-F01', part, `F01 the setting changes between the launch and the first-start import: the launched target decides (${imports} import)`, async (t) => {
       const w = await rowWorld(t, sdk, { home: homeOf(t, 'canonical').home, targetUrl: launched, holdStarts: 1 })
