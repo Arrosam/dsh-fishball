@@ -77,7 +77,8 @@ you run any \`dsh plugin\` command.**
   own store. The profile records each package by its tarball's path in this folder, and later \`dsh plugin\` commands
   read those tarballs again, so **keep this folder where it is** while the packages are installed this way. Once
   the packages are on npm, adding them again from npm (\`${add(['<name>@' + VERSION])}\`) replaces those records,
-  and the folder may go.
+  and the folder may go. A later \`--offline\` add on that profile also needs this folder's metadata cache: give it
+  \`--cache-dir=${here(LAYOUT.cache)} ${COMMAND.registry}\` too (an online add needs neither).
 
 Check the tarballs first: \`shasum -a 256 -c ${LAYOUT.sums}\`.
 
