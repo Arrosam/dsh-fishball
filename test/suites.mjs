@@ -74,6 +74,9 @@ const CONNECTOR_BOOT = Object.freeze([
   sub(PACKAGE.dshConnector, 'host-services'), sub(PACKAGE.dshConnector, 'locale'), sub(PACKAGE.dshConnector, 'assets'),
 ])
 
+/** The ICON-SET rows' shared reader and vocabulary (package-boundaries), which the draw and oauth-web icon rows import too. */
+const ICON_SET_SUPPORT = 'test/v3/contract/package-boundaries/icon-set.mjs'
+
 /** The release pack (REL-PACK): its script and helpers. */
 const RELEASE_SCRIPTS = 'scripts/**'
 
@@ -140,7 +143,8 @@ export const V3_SUITES = Object.freeze({
   'dsh-connector.oauth': suite('authorization server: store, limiter, verifier, token endpoint (C-OAUTH)', v3('dsh-connector/oauth'),
     [sub(PACKAGE.dshConnector, 'src', 'mcp', 'oauth'), sub(PACKAGE.dshConnector, 'src', 'pairs'), ...CONNECTOR_CORE, ...CONNECTOR_CONTRACTS]),
   'dsh-connector.oauth-web': suite('browser authorization: approval page, CIMD, code and refresh grants (C-OAUTH-WEB)', v3('dsh-connector/oauth-web'),
-    [sub(PACKAGE.dshConnector, 'src', 'mcp', 'oauth-web'), sub(PACKAGE.dshConnector, 'src', 'pairs'), ...CONNECTOR_CORE, ...CONNECTOR_CONTRACTS]),
+    // ICON-WEB-CONSIST compares the page's mark with the shipped assets/connector-icon.svg.
+    [sub(PACKAGE.dshConnector, 'src', 'mcp', 'oauth-web'), sub(PACKAGE.dshConnector, 'src', 'pairs'), sub(PACKAGE.dshConnector, 'assets'), ICON_SET_SUPPORT, ...CONNECTOR_CORE, ...CONNECTOR_CONTRACTS]),
   'dsh-connector.contrib': suite('contribution service (C-EXT)', v3('dsh-connector/contrib'),
     [sub(PACKAGE.dshConnector, 'src', 'contrib'), sub(PACKAGE.dshConnector, 'src', 'mailbox'), sub(PACKAGE.dshConnector, 'src', 'schema-value'),
       all(PACKAGE.dshConnectorShared), ...CONNECTOR_CORE, ...CONNECTOR_CONTRACTS]),
@@ -176,7 +180,7 @@ export const V3_SUITES = Object.freeze({
   // The draw rows run embed-UI over the real UI backend (C-UI-BACKEND) and the real contribution
   // service (C-EXT), so a change in either reruns them.
   'dsh-connector-ui.draw': suite('draw-only frontend: fish, window, hint, Retry link, marks, Hand over / Take back, light, notify prompt, tool declaration (U-DRAW)', v3('dsh-connector-ui/draw'),
-    CONNECTOR_UI_DRAW_TRIGGERS),
+    [...CONNECTOR_UI_DRAW_TRIGGERS, ICON_SET_SUPPORT]),
   // The wire rows boot draw's world (draw/world.mjs and the test modules it imports), so they
   // rerun on everything draw reruns on, and on a change to those test modules.
   'dsh-connector-ui.wire': suite('install matrix and no-V2 boundaries (U-WIRE)', v3('dsh-connector-ui/wire'),

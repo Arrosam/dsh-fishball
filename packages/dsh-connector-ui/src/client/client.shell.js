@@ -19,8 +19,10 @@
  *    (client.attention.js) are parts of their own. There are no cards (Q-U2) and no inline
  *    records (Q-G4).
  *
- * The mark is FishMark from the owner's fishball app (THIRD_PARTY_NOTICES); the connector's own
- * icon is FishMark with a wrench badge (assets/connector-icon.svg, D22).
+ * The mark is FishMark from the owner's fishball app (THIRD_PARTY_NOTICES), drawn plain on every
+ * surface here (ICON-SET, the user 2026-11-18): the wrench is dsh-connector's own badge and shows
+ * only on that package's icon (its Plugins card and settings page), and this package's own icon
+ * (assets/connector-ui-icon.svg, the fish with a window badge) is DSH's to draw from the manifest.
  *
  * State comes from the connector's UI backend (its `events` route, server-sent snapshots; 1.34:
  * "connector当后端，embed UI当前端").
@@ -263,21 +265,6 @@ window.__ModuleLoader__.load({
       eyeColor: FISHBALL_ACCENT,
     })
     /**
-     * The connector's fixed icon (D22, conn-OQ-37, the user's "Fishball鱼的logo加一个扳手角标"):
-     * FishMark with a wrench badge at its bottom right, on the same 24-unit grid. The wrench is an
-     * open-ended head (an arc around `head` with its jaw toward the top right) and a handle toward
-     * the bottom left, drawn as strokes in the text colour so it reads in light and dark. It sits
-     * in the corner FishMark leaves empty (right of the tail, below the body's slanted edge), so it
-     * needs no knock-out. assets/connector-icon.svg draws the same paths on the launcher tile.
-     */
-    const WRENCH_BADGE = Object.freeze({
-      head: 'M22.93 17.48 A2 2 0 1 1 21.52 16.07',
-      handle: 'M19.59 19.41 L16.4 22.6',
-      strokeWidth: 1.6,
-      lineCap: 'round',
-      color: 'currentColor',
-    })
-    /**
      * The font the unread count ends on. DSH sets <html lang> to its display language
      * (dsh-client-locale), and a bare `sans-serif` then picks a per-language face: PingFang SC in
      * Chinese, lighter and shaped differently. Named Latin faces first give every language the English face.
@@ -330,7 +317,7 @@ window.__ModuleLoader__.load({
      * Tag use), for the parts this sheet draws beyond DSH's own components.
      */
     const TYPE = Object.freeze({ caption: '12px/18px var(--dsw-font-family)', body: 'var(--dsw-font-xs-13)', boxPadding: '10px 12px', boxGapPx: 12, barPx: 3, detailGap: '4px 12px' })
-    /** The header's fish beside the title (FishMark with the wrench, the window's one brand mark). */
+    /** The header's fish beside the title (FishMark, the window's one brand mark). */
     const HEADER_MARK_PX = 18
     /** The window's state line: DSH's StateDot sizes, and the tones of each state's dot. */
     const STATE_DOT = Object.freeze({ sizePx: 8, byState: Object.freeze({ ready: 'done', failed: 'error', stopped: 'idle', disabled: 'idle' }), pending: 'ongoing', pendingSizePx: 12 })
@@ -516,28 +503,22 @@ window.__ModuleLoader__.load({
       }
     }
 
-    /** The wrench badge's two strokes (WRENCH_BADGE). */
-    const wrenchBadge = () => h('g', { fill: 'none', stroke: WRENCH_BADGE.color, strokeWidth: WRENCH_BADGE.strokeWidth, strokeLinecap: WRENCH_BADGE.lineCap, 'data-fishball-wrench': true },
-      h('path', { d: WRENCH_BADGE.head }),
-      h('path', { d: WRENCH_BADGE.handle }))
-
     /**
      * Fishball's fish: wags while anything is unread; flips while a row runs (the managed mark's
      * running variant). A moving mark never wags, so the running state has one animation.
-     * `badge` adds the wrench: the connector's one icon (D22), on its sidebar row and
-     * managed session rows, where it keeps the unread pill and the green and yellow dots (the
-     * user's answer to D0: the icon keeps both). The package icon on the Plugins card is the same
-     * drawing (assets/connector-icon.svg).
+     * The fish is plain everywhere it is drawn, the sidebar row and managed session rows included,
+     * where it keeps the unread pill and the green and yellow dots (the user's answer to D0). The
+     * wrench badge is dsh-connector's alone (ICON-SET): DSH draws it from that package's manifest
+     * icon on its Plugins card and settings page, never here.
      */
-    function FishballIcon({ size, unread, moving, badge, decorative = false }) {
+    function FishballIcon({ size, unread, moving, decorative = false }) {
       const animation = moving ? CLS.flip : unread ? CLS.wag : null
       // `decorative`: a brand glyph in the window's chrome (its header, the hint's well). It carries
       // no `data-fishball-mark`, which names the fish that stands for the light (the sidebar's and
       // the managed rows'), so the hook keeps meaning exactly that fish.
       return h('svg', { width: size, height: size, viewBox: FISH_MARK.viewBox, className: [CLS.mark, animation].filter(Boolean).join(' '), 'aria-hidden': true, ...(decorative ? {} : { 'data-fishball-mark': true }) },
         h('path', { d: FISH_MARK.body, fill: FISH_MARK.bodyColor }),
-        h('path', { d: FISH_MARK.eye, fill: FISH_MARK.eyeColor }),
-        badge ? wrenchBadge() : null)
+        h('path', { d: FISH_MARK.eye, fill: FISH_MARK.eyeColor }))
     }
 
     /** The fish's light as a dot on its mark (§13.6): no timer, no animation of its own. */
@@ -588,7 +569,7 @@ window.__ModuleLoader__.load({
     })()
 
     /** The sidebar mark before (or without) the attention part: Fishball's icon alone, with no latch (R-UI-09). */
-    const PlainMark = ({ size }) => h(FishballIcon, { size, unread: false, badge: true })
+    const PlainMark = ({ size }) => h(FishballIcon, { size, unread: false })
     /** The sidebar row's mark: the attention part's seat, else `Plain`. */
     function makeMark(Plain) {
       return function Mark(props) {
@@ -736,7 +717,7 @@ window.__ModuleLoader__.load({
       return h('section', { className: CLS.embed, 'aria-label': t('viewTitle'), 'data-fishball-embed': true, 'data-fishball-embed-page': page },
         h('header', { className: CLS.embedBar, 'data-window-drag': true },
           h('span', { className: CLS.embedTitle },
-            h(FishballIcon, { size: HEADER_MARK_PX, unread: false, badge: false, decorative: true }),
+            h(FishballIcon, { size: HEADER_MARK_PX, unread: false, decorative: true }),
             h('span', { className: CLS.embedName }, t('viewTitle'))),
           state === undefined ? null : h(FrameState, { state, code, t }),
           h('div', { className: CLS.embedActions },
@@ -839,7 +820,7 @@ window.__ModuleLoader__.load({
     const hintChrome = (t) => h(FrameChrome, {
       t, page: FRAME_UI.page.chat,
       body: emptyState(
-        glyphWell(h(FishballIcon, { size: EMBED_UI.warningIconPx, unread: false, badge: false, decorative: true })),
+        glyphWell(h(FishballIcon, { size: EMBED_UI.warningIconPx, unread: false, decorative: true })),
         h('p', { className: CLS.embedLead }, t('noInstanceTitle')),
         h('p', { 'data-fishball-no-instance': true }, t('noInstance'))),
     })

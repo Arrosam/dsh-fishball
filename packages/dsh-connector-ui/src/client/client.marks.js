@@ -228,7 +228,7 @@ globalThis.__ModuleLoader__?.load({
           className: CLS.managedRow, role: 'img', 'aria-label': label, title: label,
           'data-fishball-managed-row': mark.sessionId,
           'data-fishball-row-state': running ? MANAGED_ROW.state.running : MANAGED_ROW.state.idle,
-        }, h(FishballIcon, { size: MANAGED_ROW.iconPx, unread: false, moving: running, badge: true }))
+        }, h(FishballIcon, { size: MANAGED_ROW.iconPx, unread: false, moving: running }))
       }
 
       /**

@@ -2,6 +2,7 @@
   "name": "dsh-connector-adapter",
   "version": "1.0.0-alpha.1",
   "description": "Lets a DeepSeek Harness use another DSH's dsh-connector through DSH's own MCP client, with normal OAuth: browser sign-in, a refreshed token, and a loopback proxy for the stock dsh-mcp-client row it mounts.",
+  "icon": "./assets/adapter-icon.svg",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -23,6 +24,7 @@
   "files": [
     "index.js",
     "src/",
+    "assets/adapter-icon.svg",
     "locale/*.json",
     "cordis.patch.yml",
     "LICENSE",
