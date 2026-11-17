@@ -30,7 +30,7 @@ globalThis.__ModuleLoader__?.load({
     const PART = Object.freeze({ name: 'dsh-connector-ui: marks', inject: Object.freeze(['slots', 'locale']) })
     /** Cordis effect labels. */
     const LABEL = Object.freeze({
-      header: 'fishball: hand-over header action', headerControl: 'fishball: hand-over header control',
+      header: 'fishball: managed-by header label', headerControl: 'fishball: hand-over header control',
       menu: 'fishball: session menu', dialogs: 'fishball: hand-over dialogs',
       rowMark: 'fishball: managed row mark', rowRunning: 'fishball: managed row running mark',
     })
@@ -138,7 +138,7 @@ globalThis.__ModuleLoader__?.load({
           open: true,
           onClose: close,
           closeLabel: t('close'),
-          title: t('handOverTo', { name: principalText(t, request.target) }),
+          title: handOverText(t, request.target),
           footer: h(React.Fragment, null,
             h(Button, { type: 'button', variant: 'outline', disabled: handingOver, onClick: close }, t('cancel')),
             h(Button, { type: 'button', variant: 'primary', disabled: handingOver, 'data-fishball-hand-over-confirm': true, onClick: confirm }, handingOver ? t('handingOver') : t('handOverConfirm'))),
@@ -162,8 +162,14 @@ globalThis.__ModuleLoader__?.load({
         }
       }
 
-      /** "Hand over to <principal>", with the principal's light (R-UI-10). */
-      const handOverLabel = (t, target) => principalWithLight(t, target, withName(t, 'handOverTo', principalLabel(t, target)))
+      /** "Hand over to <principal>" and "Managed by <principal>" as plain text (a title, a dialog's title, a text alternative). */
+      const handOverText = (t, target) => t('handOverTo', { name: principalText(t, target) })
+      const managedByText = (t, principal) => t('managedBy', { name: principalText(t, principal) })
+      /**
+       * "Hand over to <principal>", with the principal's light (R-UI-10). `wrap` (optional) wraps the
+       * words, so the header's button can end them in an ellipsis without dropping the light.
+       */
+      const handOverLabel = (t, target, wrap = (words) => words) => principalWithLight(t, target, wrap(withName(t, 'handOverTo', principalLabel(t, target))))
 
       /**
        * The one-target button, or the "Handover to…" dropdown for more (R-UI-10). In the header the
@@ -176,9 +182,9 @@ globalThis.__ModuleLoader__?.load({
         if (targets.length === 1) {
           const [target] = targets
           return h(Button, {
-            type: 'button', size: 'sm', variant: 'ghost', className: CLS.headerControl, title: t('handOverTo', { name: principalText(t, target) }),
+            type: 'button', size: 'sm', variant: 'ghost', className: CLS.headerControl, title: handOverText(t, target),
             'data-fishball-hand-over': true, 'data-fishball-target': target.key, onClick: () => choose(target),
-          }, principalWithLight(t, target, h('span', { className: CLS.ellipsis }, withName(t, 'handOverTo', principalLabel(t, target)))))
+          }, handOverLabel(t, target, (words) => h('span', { className: CLS.ellipsis }, words)))
         }
         return h(Menu, {
           open,
@@ -204,21 +210,23 @@ globalThis.__ModuleLoader__?.load({
         return function FishballManagedByHeaderAction({ sessionId }) {
           const mark = markOf(useSnapshot(), sessionId)
           if (mark === undefined) return null
-          return h('span', { className: CLS.managedBy, title: t('managedBy', { name: principalText(t, mark.principal) }), 'data-fishball-managed-by': mark.principal.key },
+          return h('span', { className: CLS.managedBy, title: managedByText(t, mark.principal), 'data-fishball-managed-by': mark.principal.key },
             withName(t, 'managedBy', principalLabel(t, mark.principal)))
         }
       }
 
       /**
        * The header's control, in DSH's right-aligned utilities (HAND_OVER): Take back for a managed
-       * session, else the Hand over control, which is absent with no target (R-UI-10: "With none it
+       * session (its tooltip "Managed by <principal>"), else the Hand over control, which is absent with no target (R-UI-10: "With none it
        * shows no control").
        */
       function makeHeaderControl(t) {
         return function FishballHandOverHeaderControl({ sessionId }) {
           const snapshot = useSnapshot()
-          if (markOf(snapshot, sessionId) !== undefined) {
-            return h(Button, { type: 'button', size: 'sm', variant: 'ghost', 'data-fishball-take-back': true, onClick: () => void takeBack(sessionId) }, t('takeBack'))
+          const mark = markOf(snapshot, sessionId)
+          if (mark !== undefined) {
+            // Its tooltip names the managing principal, which a narrow header hides beside the title.
+            return h(Button, { type: 'button', size: 'sm', variant: 'ghost', title: managedByText(t, mark.principal), 'data-fishball-take-back': true, onClick: () => void takeBack(sessionId) }, t('takeBack'))
           }
           if (snapshot.targets.length === 0) return null
           return h(HandOverControl, { t, sessionId, targets: snapshot.targets })
@@ -251,7 +259,7 @@ globalThis.__ModuleLoader__?.load({
        * motion loses no information.
        */
       function ManagedMark({ t, mark, running }) {
-        const label = t('managedBy', { name: principalText(t, mark.principal) })
+        const label = managedByText(t, mark.principal)
         return h('span', {
           className: CLS.managedRow, role: 'img', 'aria-label': label, title: label,
           'data-fishball-managed-row': mark.sessionId,

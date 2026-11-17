@@ -126,7 +126,7 @@ window.__ModuleLoader__.load({
      * The page is three sections (tokens, the approval page, the limits), each a titled card of rows,
      * so it reads as one of DSH's own settings pages.
      */
-    const GAP = Object.freeze({ page: '32px', section: '12px', row: '12px', item: '8px', tight: '6px', column: '24px', icon: '4px' })
+    const GAP = Object.freeze({ page: '32px', section: '12px', row: '12px', item: '8px', tight: '6px', column: '24px', icon: '4px', hairline: '2px' })
     /**
      * `control`: a setting's input beside its words. `column`: the narrowest a row's part gets
      * before the row stacks (UI-FIX-D: at 390 px the words were squeezed beside the inputs and the
@@ -141,6 +141,8 @@ window.__ModuleLoader__.load({
      * its own line once the row stacks.
      */
     const GROW = Object.freeze({ fill: 999, one: 1 })
+    /** A setting row's element ids: its useId plus a part suffix; `separator` joins an IDREF list. */
+    const ROW_ID = Object.freeze({ title: '-title', hint: '-hint', errors: '-errors', separator: ' ' })
     const TOKEN = Object.freeze({
       label: 'var(--dsw-alias-label-primary)',
       secondary: 'var(--dsw-alias-label-secondary)',
@@ -207,7 +209,7 @@ window.__ModuleLoader__.load({
       // 24px gap), wrapping as WRAP says: on a narrow page the title and hint take the full width
       // and the input the next line, full width, with its errors under it.
       setting: WRAP.row,
-      settingWords: Object.freeze({ ...WRAP.main, display: 'grid', gap: '2px' }),
+      settingWords: Object.freeze({ ...WRAP.main, display: 'grid', gap: GAP.hairline }),
       settingTitle: Object.freeze({ fontWeight: TYPE.heading.fontWeight, lineHeight: TYPE.body.lineHeight }),
       settingHint: Object.freeze({ display: 'grid', gap: GAP.icon }),
       settingControl: Object.freeze({ ...WRAP.end, display: 'grid', gap: GAP.icon }),
@@ -442,20 +444,24 @@ window.__ModuleLoader__.load({
 
     /**
      * One setting row, DSH's settings layout: its title and hint, then its control with its errors
-     * under it; beside each other while both fit, else stacked (WRAP). The title is the control's
-     * `label` through `for`/`id`, so the words and the control can be two blocks of the row; the
-     * errors are outside the label, so an alert never becomes part of the input's accessible name.
-     * @param control - the input element; the row gives it the id its label names.
+     * under it; beside each other while both fit, else stacked (WRAP). The row is the `label` that
+     * holds the control, so the whole row focuses it; the control is named by its title alone
+     * (`aria-labelledby`) and described by the hint and the errors (`aria-describedby`), so an alert
+     * never becomes part of its accessible name.
+     * @param control - `(aria) => element`: the input, given the row's aria props.
      */
     function SettingRow({ data, title, hint, control, errors }) {
       const id = React.useId()
-      return h('div', { style: STYLE.setting, [DATA.setting]: data },
-        h('div', { style: STYLE.settingWords },
-          h('label', { htmlFor: id, style: STYLE.settingTitle }, title),
-          hint === null ? null : h('div', { style: STYLE.settingHint }, hint)),
-        h('div', { style: STYLE.settingControl },
-          React.cloneElement(control, { id }),
-          errors.some(Boolean) ? h('span', { style: STYLE.settingError }, ...errors) : null))
+      const part = (suffix) => id + suffix
+      const hasErrors = errors.some(Boolean)
+      const described = [hint === null ? null : part(ROW_ID.hint), hasErrors ? part(ROW_ID.errors) : null].filter(Boolean).join(ROW_ID.separator)
+      return h('label', { style: STYLE.setting, [DATA.setting]: data },
+        h('span', { style: STYLE.settingWords },
+          h('span', { id: part(ROW_ID.title), style: STYLE.settingTitle }, title),
+          hint === null ? null : h('span', { id: part(ROW_ID.hint), style: STYLE.settingHint }, hint)),
+        h('span', { style: STYLE.settingControl },
+          control({ 'aria-labelledby': part(ROW_ID.title), ...(described === '' ? {} : { 'aria-describedby': described }) }),
+          hasErrors ? h('span', { id: part(ROW_ID.errors), style: STYLE.settingError }, ...errors) : null))
     }
 
     /**
@@ -497,8 +503,8 @@ window.__ModuleLoader__.load({
         data: SETTING_PATH.dshName.join('.'),
         title: t('dshName'),
         hint: h('p', { style: STYLE.hint }, t('dshNameHint')),
-        control: h(Input, {
-          type: 'text', value: text ?? saved, disabled: disabled || busy,
+        control: (aria) => h(Input, {
+          ...aria, type: 'text', value: text ?? saved, disabled: disabled || busy,
           onChange: (event) => setText(event.target.value), onBlur: commit, onKeyDown: (event) => { if (event.key === ENTER_KEY) commit() },
         }),
         errors: [failed ? h('span', { key: 'failed', role: 'alert' }, t('saveFailed')) : null],
@@ -525,8 +531,8 @@ window.__ModuleLoader__.load({
         data,
         title: label,
         hint,
-        control: h(Input, {
-          type: 'text', inputMode: 'numeric', value: shown, disabled: disabled || busy, 'aria-invalid': invalid,
+        control: (aria) => h(Input, {
+          ...aria, type: 'text', inputMode: 'numeric', value: shown, disabled: disabled || busy, 'aria-invalid': invalid,
           onChange: (event) => setText(event.target.value), onBlur: commit, onKeyDown: (event) => { if (event.key === ENTER_KEY) commit() },
         }),
         errors: [
