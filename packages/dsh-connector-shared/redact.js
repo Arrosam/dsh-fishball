@@ -9,7 +9,7 @@
  * Secret shapes masked before a line reaches disk or a contributed-tool reply. The child never
  * prints its bearer or the control secret on purpose; these are defence in depth for a library or
  * crash that prints one (R-FIX-REDACT):
- * - a value assigned (`:` or `=`) to a credential name, whether the name is bare, quoted or an
+ * - a value assigned (`:` or `=`, or `=>` after a quoted name) to a credential name, whether the name is bare, quoted or an
  *   escaped JSON key, in any case style (`apiKey`, `client_secret`, `X-Api-Key`). The whole value
  *   is masked whatever its length: a complete quoted string (escapes honoured), a whole JSON
  *   container, an Authorization value's scheme and credential through the end of the line, or one
@@ -24,7 +24,10 @@ const REDACTION = Object.freeze({
   // A name, then its separator. An escaped JSON key (\"apiKey\") is tried before a plain quoted one.
   // A bare name may only start where no name character precedes it, and the atomic (?=(…))\k<bare>
   // stops it backtracking, so a long dotted run is scanned once rather than once per suffix.
-  assignment: /(?:(?<name>\\"[\w .-]+\\"|"[\w .-]+"|'[\w .-]+')|(?<![\w.-])(?=(?<bare>[\w.-]+))\k<bare>)[ \t]*[:=][ \t]*/g,
+  // `=>` is util.inspect's Map entry separator (Map(1) { 'password' => 'hunter2' }), which always
+  // quotes a string key; after a bare name it is an arrow function (`keys.forEach(token => {` in a
+  // crash's source line), whose body must not be read as a credential container.
+  assignment: /(?:(?<name>\\"[\w .-]+\\"|"[\w .-]+"|'[\w .-]+')[ \t]*(?:=>|[:=])|(?<![\w.-])(?=(?<bare>[\w.-]+))\k<bare>[ \t]*(?::|=(?!>)))[ \t]*/g,
   // Name components: split acronyms and camelCase (DSHAgentToken → DSH_Agent_Token), then delimiters.
   nameAcronymBoundary: /([A-Z])([A-Z][a-z])/g,
   nameCamelBoundary: /([a-z0-9])([A-Z])/g,
@@ -37,15 +40,17 @@ const REDACTION = Object.freeze({
   authorizationComponent: /^authorization$/,
   bareValue: /^[^\s"',;&]+/,
   schemeValue: /^(?:bearer|basic)[ \t]+[^\s"',;&]+/i,
-  bearer: /\bbearer\s+(?<credential>[^\s"',;]+)/dgi,
+  // Spaces and tabs only, as schemeValue: a bare `bearer` at a line's end must not mask the next line.
+  bearer: /\bbearer[ \t]+(?<credential>[^\s"',;]+)/dgi,
   opaqueRun: /[A-Za-z0-9_+=-]{32,}/g,
-  quotes: '"\'',
+  // util.inspect prints a string holding both ' and " in backticks.
+  quotes: '"\'`',
   escape: '\\',
   escapedQuoteLength: 2,
   containerOpen: '[{',
   containerClose: ']}',
-  // A container's strings are JSON strings: only '"' opens one, so an apostrophe cannot hide a bracket.
-  containerQuote: '"',
+  // Inside an escaped JSON string the text's own raw '"' ends that string, so it ends the container.
+  enclosingQuote: '"',
   lineEnd: /[\r\n]/,
   lineEndOrText: /[\r\n]|$/,
 })
@@ -80,28 +85,54 @@ function quotedEnd(text, from, quote, escaped) {
   return lineEnd(text, Math.min(at, text.length))
 }
 
-/** The end (exclusive) of the balanced [ / { container at `from`; an unbalanced one runs to the text's end. */
-function containerEnd(text, from) {
+/** True when an escaped quote (\" or \') starts at `at`. */
+const escapedQuoteAt = (text, at) => text[at] === REDACTION.escape && REDACTION.quotes.includes(text[at + 1])
+
+/**
+ * The end (exclusive) of the balanced [ / { container at `from`; an unbalanced one runs to the text's
+ * end. Any quote that closes on its line opens a string, so a bracket inside one (util.inspect prints
+ * '…' strings) cannot close the container early. A quote that does not close on its line (`don't`,
+ * `can't`) is an ordinary character: skipping its line could hide the bracket that closes the
+ * container and mask every later line. `escaped` reads a container inside an escaped JSON string,
+ * whose strings are \"…\" and which ends at that enclosing string's raw '"'.
+ */
+function containerEnd(text, from, escaped) {
   let depth = 0
+  // A quote character's last unclosed line end: a later same quote before it cannot close either,
+  // and remembering that keeps the scan linear on a run of escaped quotes.
+  const unclosedUntil = {}
   for (let at = from; at < text.length; at++) {
     const char = text[at]
-    if (char === REDACTION.containerQuote) at = quotedEnd(text, at + 1, char, false)
-    else if (REDACTION.containerOpen.includes(char)) depth++
+    if (escaped && escapedQuoteAt(text, at)) {
+      at = quotedEnd(text, at + REDACTION.escapedQuoteLength, text[at + 1], true)
+      // Stopped on a raw '"' (the enclosing string ends), a closing \" pair (step onto its quote) or
+      // a line end (left for the loop to step past).
+      if (text[at] === REDACTION.enclosingQuote) return at
+      if (text[at] === REDACTION.escape) at++
+    } else if (escaped && char === REDACTION.enclosingQuote) return at
+    else if (!escaped && REDACTION.quotes.includes(char) && !(unclosedUntil[char] > at)) {
+      const close = quotedEnd(text, at + 1, char, false)
+      if (text[close] === char) at = close
+      else unclosedUntil[char] = close
+    } else if (REDACTION.containerOpen.includes(char)) depth++
     else if (REDACTION.containerClose.includes(char) && --depth === 0) return at + 1
   }
   return text.length
 }
 
-/** The private span of the value that starts at `from` after a credential name, or null when it is empty. */
-function valueSpan(text, from, components) {
+/**
+ * The private span of the value that starts at `from` after a credential name, or null when it is
+ * empty. `escaped`: the name was an escaped JSON key, so the value is inside an escaped JSON string.
+ */
+function valueSpan(text, from, components, escaped) {
   const span = (start, end) => (end > start ? { start, end } : null)
   const first = text[from]
-  if (first === REDACTION.escape && REDACTION.quotes.includes(text[from + 1])) {
+  if (escapedQuoteAt(text, from)) {
     const start = from + REDACTION.escapedQuoteLength
     return span(start, quotedEnd(text, start, text[from + 1], true))
   }
   if (REDACTION.quotes.includes(first)) return span(from + 1, quotedEnd(text, from + 1, first, false))
-  if (REDACTION.containerOpen.includes(first)) return span(from, containerEnd(text, from))
+  if (REDACTION.containerOpen.includes(first)) return span(from, containerEnd(text, from, escaped))
   if (components.some((c) => REDACTION.authorizationComponent.test(c))) return span(from, lineEnd(text, from))
   const rest = text.slice(from)
   const run = rest.match(REDACTION.schemeValue) ?? rest.match(REDACTION.bareValue)
@@ -115,9 +146,10 @@ function privateSpans(text) {
   // nested `password=[` of an unbalanced value to the text's end would be quadratic.
   const assignment = new RegExp(REDACTION.assignment)
   for (let match = assignment.exec(text); match; match = assignment.exec(text)) {
-    const components = nameComponents(match.groups.name ?? match.groups.bare)
+    const name = match.groups.name ?? match.groups.bare
+    const components = nameComponents(name)
     if (!components.some((c) => REDACTION.sensitiveComponent.test(c))) continue
-    const span = valueSpan(text, match.index + match[0].length, components)
+    const span = valueSpan(text, match.index + match[0].length, components, name.startsWith(REDACTION.escape))
     if (!span) continue
     assignments.push(span)
     assignment.lastIndex = span.end

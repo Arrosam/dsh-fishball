@@ -303,8 +303,8 @@ export function registerSplitCases(sdk) {
   caseTest(sdk, 'SPLIT-EP-04', 'redact', 'redact masks every sample as the requirements say (Authorization, assignments, JSON, long runs at 31/32/33, paths, empty)', async (t) => {
     const now = (await load(sdk, libraryFile(V3.dshShared, REDACT))).redact
     for (const [text, expected] of REDACT_SAMPLES) assert.equal(now(text), expected, show(text))
-    assert.equal(now(LONG_RUN.below), LONG_RUN.below, 'a 31-character run is masked')
-    assert.notEqual(now(LONG_RUN.at), LONG_RUN.at, 'a 32-character run is not masked')
+    assert.equal(now(LONG_RUN.below), LONG_RUN.below, 'a 31-character run must stay unmasked')
+    assert.notEqual(now(LONG_RUN.at), LONG_RUN.at, 'a 32-character run must be masked')
   })
   caseTest(sdk, 'SPLIT-EP-04', 'provider-sync', 'syncFingerprint and unsafeProfileReason answer as before', async (t) => {
     const now = await load(sdk, dshFile('provider-sync'))
