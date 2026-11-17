@@ -8,3 +8,6 @@ registerCHttpCases('0.2.2-rc.1')
 registerCHttpAmendCases('0.2.2-rc.1')
 registerXsecHttpCases('0.2.2-rc.1')
 registerReviewXHttpCases('0.2.2-rc.1')
+
+import { registerMultiHttpCases } from './multi-cases.mjs'
+registerMultiHttpCases('0.2.2-rc.1')

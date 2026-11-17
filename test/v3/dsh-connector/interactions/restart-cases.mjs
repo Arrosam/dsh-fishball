@@ -78,7 +78,9 @@ export function registerRestartCases(sdk) {
     assert.equal((await value(w))[SET.approval][SET.dshName], undefined)
     assert.equal((await w.call('row')).fiber, fiber, 'a dshName edit remounted the row')
   })
-  row(sdk, 'IX-SET-04', 'EP (dshName on the consent page)', 'the OAuth approval page shows dshName when set and DSH\'s listener origin when unset or \'\'', null, {
+  // MULTI-2 user naming decision (2026-11-18): approval reuses the bare resolved base;
+  // only MCP discovery/resource identity appends -DSH. URL/origin is no longer a fallback.
+  row(sdk, 'IX-SET-04', 'EP (dshName on the consent page)', 'the OAuth approval page shows nonblank dshName verbatim and node:os.hostname() when unset, empty or whitespace-only (bare base, no MCP -DSH suffix)', null, {
     todo: 'needs an https CIMD client the real DSH can fetch (the consent form is shown only for a resolved client); the module-level rendering of a given name is C-OAUTH-WEB\'s (oauth-web cases, STUB.dshName)',
   })
   row(sdk, 'IX-SET-05', 'EP (the state route)', 'GET state answers {ok, entries, approval}: no designated field (q5)', async () => {
