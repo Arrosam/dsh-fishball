@@ -12,16 +12,14 @@ import { SESSION_INFO, SOURCE, USER_SOURCES } from './constants.js'
 export const isSubagentHeader = (header) => header?.origin === SESSION_INFO.subagentOrigin && header.parentSession !== undefined
 
 /**
- * Roots `storedRootOf` resolved from stored headers, per DSH session service: subagent id → root
- * id. A session's ancestry is header data and never changes, so an entry never goes stale; only a
- * walk that reached a real root is kept (a "parent gone" answer is not). It holds subagent ids
- * only, at most one entry per subagent session a Hand over, Take back or session tool named.
+ * Roots `storedRootOf` resolved from stored headers: subagent id → root id. Session ids are unique
+ * across a DSH (and the connector runs in one DSH), and a session's ancestry is header data that
+ * never changes, so one process-wide map never goes stale; only a walk that reached a real root is
+ * kept (a "parent gone" answer is not). It holds subagent ids only, at most one entry per subagent
+ * session a Hand over, Take back or session tool named. Not keyed by `ctx.sessions`: Cordis hands
+ * out a new proxy of a service on each read, so it is no stable key.
  */
-const knownRoots = new WeakMap()
-const knownRootsOf = (ctx) => {
-  if (!knownRoots.has(ctx.sessions)) knownRoots.set(ctx.sessions, new Map())
-  return knownRoots.get(ctx.sessions)
-}
+const knownRoots = new Map()
 
 /**
  * The session the user sees for a session id: a subagent's session belongs to its parent
@@ -32,10 +30,9 @@ const knownRootsOf = (ctx) => {
  * ancestor is cold (detached), the message is attributed to that ancestor (review L2).
  */
 export function rootSessionOf(ctx, sessionId) {
-  const known = knownRootsOf(ctx)
   let id = sessionId
   for (let depth = 0; depth < SESSION_INFO.maxSubagentDepth; depth++) {
-    if (known.has(id)) return known.get(id)
+    if (knownRoots.has(id)) return knownRoots.get(id)
     const header = ctx.sessions.get(id)?.header
     if (!isSubagentHeader(header)) return id
     id = header.parentSession
@@ -56,8 +53,7 @@ export function rootSessionOf(ctx, sessionId) {
  *   taking the session for a root could split its ownership.
  */
 export async function storedRootOf(ctx, sessionId) {
-  const known = knownRootsOf(ctx)
-  if (known.has(sessionId)) return known.get(sessionId)
+  if (knownRoots.has(sessionId)) return knownRoots.get(sessionId)
   let trace
   try {
     trace = await ctx.sessionQuery.traceSession(sessionId)
@@ -74,7 +70,7 @@ export async function storedRootOf(ctx, sessionId) {
     chain.push(header.id)
   }
   const root = chain.at(-1)
-  if (!isSubagentHeader(header)) for (const id of chain.slice(0, -1)) known.set(id, root)
+  if (!isSubagentHeader(header)) for (const id of chain.slice(0, -1)) knownRoots.set(id, root)
   return root
 }
 
