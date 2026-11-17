@@ -19,6 +19,7 @@ import {
 import { CODE_THROW, SECRET, THROWN, assertNoSecret, assertOneWarning } from '../link/log-privacy.mjs'
 import { createWorld, loadChunkAlone, loadPage, settle } from './page.mjs'
 import { registerModelCatalogCases } from './model-catalog.mjs'
+import { registerSettingsPolishCases } from './polish-cases.mjs'
 import { STAND_IN } from './primitives.mjs'
 import { instanceWith, routeWorld, targetRule } from './route.mjs'
 
@@ -1140,6 +1141,9 @@ export function registerSettingsCases(sdk) {
 
   // ============================================================== E-FIX-3 (B5): the model catalog under Cordis's inject rule
   registerModelCatalogCases(sdk)
+
+  // ============================================================== UI-POLISH-F §5, §7: icon entries, Connect card
+  registerSettingsPolishCases(sdk)
 
   // ============================================================== later
   caseTest(sdk, 'SET3-UC-01', 'e2e', "the page on DSH's real Plugins page, both views", null, LATER.e2e)

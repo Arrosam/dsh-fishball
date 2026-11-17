@@ -20,7 +20,7 @@ import { caseTest } from '../../contract/package-boundaries/cases.mjs'
 import { watchNetwork } from '../link/net-probe.mjs'
 import {
   CONNECT_STATUS, FIXTURE, GUARD, HOST, LANG, LATER, LINE, LINK_STATUS, MODEL, NEVER_REPORTED, NEVER_SHOWN, PROBE, REASON_TEXT_EN, SECRET,
-  SNAPSHOT_KEYS, STRIP, SUBJECT, TARGET, WAIT,
+  SNAPSHOT_KEYS, STRIP, SUBJECT, TARGET, UI_CARD, WAIT,
 } from './constants.mjs'
 import { NOTIFY, NO_FIBER, bundle, entry, initializingEntry, loadingEntry } from './fakes.mjs'
 import { statusModule, statusOf, stripModule, stripView } from './subject.mjs'
@@ -685,6 +685,87 @@ export function registerStatusCases(sdk) {
     for (const lang of [LANG.en, LANG.zh]) {
       const text = show((await stripView(sdk, s, lang)).lines)
       for (const word of NEVER_SHOWN) assert.ok(!text.includes(word), `${lang} strip mentions ${word}: ${text}`)
+    }
+  })
+
+  // ---------------------------------------------------------------- UI-POLISH-F §2: the status card (stripView(snapshot, lang).card)
+  // Decision table UIPF-CARD-DT-01: the first line's kind → card.state and badge, en and zh; the
+  // title (Target DSH, or Fishball for off) and the two fixed texts. Pure: the snapshot is built
+  // here with its `line` set, so each rule is one kind (the any-other-kind rule a fixture word).
+  // BVA UIPF-CARD-BVA-01: the contributed-tools chip at 0, 1, 2. Unchanged rows: lines and control.
+  const cardSnapshot = (kind, extra = {}) => (kind === UI_CARD.offKind
+    ? { fishball: MODEL.fishball.off }
+    : { fishball: MODEL.fishball.on, link: null, connect: null, line: { kind, code: null }, control: null, guards: null, set: null, contributedTools: null, ...extra })
+  for (const [kind, [state, badgeEn, badgeZh]] of [...Object.entries(UI_CARD.table), [UI_CARD.otherKind, UI_CARD.otherRow]]) {
+    t('UIPF-CARD-DT-01', kind, `first line ${kind} → card.state ${state}, badge en ${JSON.stringify(badgeEn)} / zh ${JSON.stringify(badgeZh)}`, async () => {
+      for (const [lang, badge] of [[LANG.en, badgeEn], [LANG.zh, badgeZh]]) {
+        const view = await stripView(sdk, cardSnapshot(kind), lang)
+        assert.ok(view.card, `${lang}: stripView returns no card: ${show(view)}`)
+        assert.deepEqual(Object.keys(view.card).sort(), [...UI_CARD.cardKeys].sort(), `${lang}: card keys`)
+        const off = kind === UI_CARD.offKind
+        assert.deepEqual(view.card, {
+          state, badge, title: off ? UI_CARD.title.off : UI_CARD.title[lang], toolsHint: UI_CARD.toolsHint[lang], openApproval: UI_CARD.openApproval[lang],
+        }, `${lang} card`)
+        assert.equal(view.lines[0].kind, kind, `${lang}: the first line keeps its kind`)
+      }
+    })
+  }
+  t('UIPF-CARD-DT-01', 'statusOf off', 'statusOf(undefined) (no core) → card off, title Fishball, badge Off / 已关闭', async () => {
+    const s = await statusOf(sdk, undefined)
+    const [en, zh] = [await stripView(sdk, s, LANG.en), await stripView(sdk, s, LANG.zh)]
+    assert.deepEqual([en.card?.state, en.card?.title, en.card?.badge], [UI_CARD.table[UI_CARD.offKind][0], UI_CARD.title.off, UI_CARD.table[UI_CARD.offKind][1]])
+    assert.deepEqual([zh.card?.state, zh.card?.title, zh.card?.badge], [UI_CARD.table[UI_CARD.offKind][0], UI_CARD.title.off, UI_CARD.table[UI_CARD.offKind][2]])
+  })
+  t('UIPF-CARD-DT-01', 'unknown lang', 'an unknown lang gives the en card; no lang gives the en card', async () => {
+    const s = cardSnapshot(LINE.authorizing)
+    const en = await stripView(sdk, s, LANG.en)
+    assert.deepEqual((await stripView(sdk, s, LANG.unknown)).card, en.card)
+    assert.deepEqual((await stripView(sdk, s)).card, en.card)
+  })
+  // Through the real status (worldFor), the rules REM-DT-01 and F-STATUS-DT-01 already pin: each
+  // first line the status gives lands on its card state (integration of the two halves).
+  for (const [row, inputs, kind] of [
+    ['connected', { link: LINK_STATUS.connected }, LINE.connected],
+    ['unset', { link: LINK_STATUS.unset, target: TARGET.unusable.empty }, LINK_STATUS.unset.state],
+    ['needs-authorization', { link: LINK_STATUS.unset, connect: CONNECT_STATUS.needsAuthorization }, CONNECT_STATUS.needsAuthorization.state],
+    ['authorizing', { link: LINK_STATUS.unset, connect: CONNECT_STATUS.authorizing }, LINE.authorizing],
+    ['needs-configuration', { link: LINK_STATUS.unset, connect: CONNECT_STATUS.needsConfiguration }, LINE.needsConfiguration],
+    ['target-unreachable', { link: LINK_STATUS.unreachable }, LINK_STATUS.unreachable.state],
+    ['token-refused', { link: LINK_STATUS.refused }, LINK_STATUS.refused.state],
+    ['failed', { link: LINK_STATUS.unset, connect: CONNECT_STATUS.failedDenied }, CONNECT_STATUS.failedDenied.state],
+  ]) {
+    t('UIPF-CARD-DT-01', `${row} via status`, `the real status giving a ${kind} first line → card.state ${UI_CARD.table[kind][0]}`, async (c) => {
+      const w = await worldFor(c, sdk, inputs)
+      await settle()
+      const view = await stripView(sdk, w.snapshot(), LANG.en)
+      assert.equal(view.lines[0].kind, kind, 'precondition: the first line')
+      assert.equal(view.card?.state, UI_CARD.table[kind][0])
+    })
+  }
+  for (const count of UI_CARD.toolsBva) {
+    t('UIPF-CARD-BVA-01', `tools ${count}`, `contributed count ${count}: the ${STRIP.tools} line reads en ${JSON.stringify(UI_CARD.tools.en(count))}, zh ${JSON.stringify(UI_CARD.tools.zh(count))}`, async (c) => {
+      const w = await worldFor(c, sdk, { bridge: count })
+      await settle()
+      for (const lang of [LANG.en, LANG.zh]) {
+        const line = lineOf(await stripView(sdk, w.snapshot(), lang), STRIP.tools)
+        assert.equal(line?.text, UI_CARD.tools[lang](count), `${lang} tools line`)
+      }
+    })
+  }
+  t('UIPF-CARD-BVA-01', 'no bridge', 'without the bridge there is still no tools line (the card has its toolsHint all the same)', async (c) => {
+    const w = await worldFor(c, sdk, {})
+    const view = await stripView(sdk, w.snapshot(), LANG.en)
+    assert.ok(!linesOf(view).includes(STRIP.tools))
+    assert.equal(view.card?.toolsHint, UI_CARD.toolsHint.en)
+  })
+  t('UIPF-CARD-EP-01', 'control labels', 'the control keeps its labels: Connect / 连接 and Cancel / 取消', async (c) => {
+    for (const [inputs, action] of [[{ link: LINK_STATUS.unset, connect: CONNECT_STATUS.needsAuthorization }, MODEL.control.connect], [{ link: LINK_STATUS.unset, connect: CONNECT_STATUS.authorizing }, MODEL.control.cancel]]) {
+      const w = await worldFor(c, sdk, inputs)
+      await settle()
+      for (const lang of [LANG.en, LANG.zh]) {
+        const view = await stripView(sdk, w.snapshot(), lang)
+        assert.deepEqual(view.control, { action, label: UI_CARD.control[action][lang] }, `${lang} ${action}`)
+      }
     }
   })
 

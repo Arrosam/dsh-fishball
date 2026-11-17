@@ -162,3 +162,16 @@ Order rows check "first match wins": 1 over 3 and 4, and `target-unreachable` un
 - PLAT-DT-02 in a real standalone DSH (the status service provided by F-WIRE as `fishballStatus`):
   F-WIRE.
 - Hosted mode (core in a hosted child: no Connect control): I-HOST; no child is launched here.
+
+## UI-POLISH-F §2: `stripView(snapshot, lang).card`
+
+Requirement: `.runtime/reports/ui-polish-f/SPEC.md` §2. `stripView` keeps `lines` and `control` and gains
+`card: {state, title, badge, toolsHint, openApproval}` (constants.mjs `UI_CARD`).
+
+| Id | Technique | Case |
+| --- | --- | --- |
+| UIPF-CARD-DT-01 `<kind>` (connected, target-unset, needs-authorization, authorizing, needs-configuration, target-unreachable, token-refused, failed, fishball-off, any other) | DT | The card exactly, en and zh: state, badge, title (`Target DSH` / `目标 DSH`, `Fishball` for off), toolsHint, openApproval |
+| UIPF-CARD-DT-01 statusOf off, unknown lang | DT, EP | No core → off; unknown / absent lang → the en card |
+| UIPF-CARD-DT-01 `<kind>` via status | DT (integration) | The real status's first line lands on its card state |
+| UIPF-CARD-BVA-01 tools 0 / 1 / 2, no bridge | BVA | en `0 contributed tools` / `1 contributed tool` / `2 contributed tools`, zh `N 个贡献工具`; no bridge → no line |
+| UIPF-CARD-EP-01 control labels | EP | Connect / 连接, Cancel / 取消 unchanged |

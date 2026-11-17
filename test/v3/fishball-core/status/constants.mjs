@@ -186,3 +186,51 @@ export const LATER = Object.freeze({
   wire: 'F-WIRE (the status service provided as fishballStatus in a real standalone DSH; PLAT-DT-02 at integration)',
   hosted: 'I-HOST (core in a hosted child: needs a hosted child; none is launched here)',
 })
+
+/**
+ * UI-POLISH-F (.runtime/reports/ui-polish-f/SPEC.md §2): the status card `stripView(snapshot, lang)`
+ * now returns beside `lines` and `control` (`card: {state, title, badge, toolsHint, openApproval}`),
+ * and the hooks of the drawn card. Every word is SPEC.md's.
+ */
+/** SPEC §2: the status card's decision table, by first-line kind. */
+export const UI_CARD = Object.freeze({
+  root: 'data-fishball-strip',
+  state: 'data-fishball-strip-state',
+  badgeHook: 'data-fishball-strip-badge',
+  lineHook: 'data-fishball-strip-line',
+  controlHook: 'data-fishball-strip-control',
+  approvalHook: 'data-fishball-strip-approval',
+  /** kind → [card.state, badge en, badge zh, StateDot state]. */
+  table: Object.freeze({
+    connected: Object.freeze(['connected', 'Connected', '已连接', 'done']),
+    'target-unset': Object.freeze(['unset', 'Not set', '未设置', 'idle']),
+    'needs-authorization': Object.freeze(['disconnected', 'Not connected', '未连接', 'idle']),
+    authorizing: Object.freeze(['connecting', 'Connecting', '连接中', 'ongoing']),
+    'needs-configuration': Object.freeze(['attention', 'Needs setup', '需要配置', 'warning']),
+    'target-unreachable': Object.freeze(['failed', 'Failed', '失败', 'error']),
+    'token-refused': Object.freeze(['failed', 'Failed', '失败', 'error']),
+    failed: Object.freeze(['failed', 'Failed', '失败', 'error']),
+    'fishball-off': Object.freeze(['off', 'Off', '已关闭', 'idle']),
+  }),
+  /** "any other kind" partition (fixture word, never a product kind). */
+  otherKind: 'fbtest-unknown-kind',
+  otherRow: Object.freeze(['failed', 'Failed', '失败', 'error']),
+  title: Object.freeze({ en: 'Target DSH', zh: '目标 DSH', off: 'Fishball' }),
+  toolsHint: Object.freeze({ en: "Contributed tools offered to Fishball's model", zh: '提供给 Fishball 模型的贡献工具' }),
+  openApproval: Object.freeze({ en: 'Open the approval page', zh: '打开授权页面' }),
+  /** The tools chip text (BVA 0, 1, 2). */
+  tools: Object.freeze({
+    en: (n) => (n === 1 ? '1 contributed tool' : `${n} contributed tools`),
+    zh: (n) => `${n} 个贡献工具`,
+  }),
+  toolsKind: 'contributed-tools',
+  /** The chip's aria-label joins its text and the hint with this (SPEC §2: `<chip text> · <toolsHint>`). */
+  chipSeparator: ' · ',
+  /** BVA of the chip: 0, 1 (singular in en), 2. */
+  toolsBva: Object.freeze([0, 1, 2]),
+  offKind: 'fishball-off',
+  cardKeys: Object.freeze(['state', 'title', 'badge', 'toolsHint', 'openApproval']),
+  control: Object.freeze({ connect: Object.freeze({ en: 'Connect', zh: '连接', variant: 'primary' }), cancel: Object.freeze({ en: 'Cancel', zh: '取消', variant: 'outline' }) }),
+  approval: Object.freeze({ target: '_blank', rel: 'noopener noreferrer' }),
+})
+
