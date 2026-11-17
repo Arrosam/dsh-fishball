@@ -6,7 +6,7 @@
  * checks against PAYLOAD_LIMITS and the connector settings, with the codes contract 1.2 names.
  */
 import {
-  APPROVAL_DECISION, APPROVAL_KIND, ARGUMENTS_STATUS, DECISION_KIND, DELIVERY, EVENT_TYPE, GRANT_KIND, IMAGE_TYPES, PLAN_REVIEW,
+  ANSWER_DECISIONS, APPROVAL_KIND, ARGUMENTS_STATUS, DECISION_KIND, DELIVERY, EVENT_TYPE, GRANT_KIND, IMAGE_TYPES, PLAN_REVIEW,
   PROMPT_DECISIONS, READ_ROLE, RETIREMENT_REASON, RISK, SETTLED_BY, SETTLEMENT_OUTCOME,
 } from './constants.js'
 import { anyValue, array, boolean, constant, integer, nullable, object, oneOfStrings, string } from './schema.js'
@@ -58,9 +58,14 @@ export const grantSpec = () => object(
   { prefix: string() },
 )
 
+/**
+ * `approval_answer`'s answer. The decisions a principal may send are APPROVAL_DECISION without
+ * `ask`, and there is no `question` field (X-SEC X-02; the user's answer, 2026-11-17: an `ask` is
+ * refused; there is no ask_agent to carry it back): a schema-level `invalid-arguments`.
+ */
 export const approvalAnswer = () => object(
-  { decision: oneOfStrings(Object.values(APPROVAL_DECISION)) },
-  { risk: oneOfStrings(Object.values(RISK)), reason: string(), question: string(), grant: grantSpec() },
+  { decision: oneOfStrings(ANSWER_DECISIONS) },
+  { risk: oneOfStrings(Object.values(RISK)), reason: string(), grant: grantSpec() },
 )
 
 export const promptSummary = () => object({

@@ -79,10 +79,6 @@ function approvalAnswer({ sessionId, approvalId, offerId, answer }, now) {
     if (REASONED.includes(answer.decision)) requiredReason(answer.reason)
     else chars(answer.reason, PAYLOAD_LIMITS.reasonChars)
   }
-  if (has(answer, 'question')) {
-    if (answer.decision !== APPROVAL_DECISION.ask) fail()
-    chars(answer.question, PAYLOAD_LIMITS.questionChars)
-  }
   if (answer.decision === APPROVAL_DECISION.grant && !has(answer, 'grant')) fail(REFUSAL.grantInvalid)
   if (has(answer, 'grant')) {
     if (answer.decision !== APPROVAL_DECISION.grant) fail(REFUSAL.grantInvalid)

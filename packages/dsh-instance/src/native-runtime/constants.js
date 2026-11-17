@@ -198,7 +198,8 @@ export const PLACEMENT = Object.freeze({
   // targets are copied with a module: a placed or snapshot module must find every relative import.
   // One statement per line is read (`^`, as the source style has it); a second import on the same
   // line, or a relative dynamic `import()`, would be missed, and the copied row would then fail to
-  // load in the child, loudly. No copied module has either today.
+  // load in the child, loudly. The one relative dynamic import a copied module has
+  // (src/child/provider-sync-target.js → src/lib/provider-sync-host.js) is a snapshot entry itself.
   specifiers: /^\s*(?:(?:import|export)\s[^'";]*?\sfrom\s*|import\s*)['"](\.{1,2}\/[^'"]+)['"]/gm,
   code: Object.freeze({ missing: 'PLACEMENT_SOURCE_UNAVAILABLE', unsafe: 'UNSAFE_PLACEMENT_SOURCE', unsafeDirectory: 'UNSAFE_DIRECTORY', record: 'INVALID_PLACEMENT_RECORD', incompatible: 'PROFILE_INCOMPATIBLE' }),
   /** The NativeRuntimeError field naming the first skipped bundle of an `incompatible` refusal (K3 `ChildStatus.plugin`). */

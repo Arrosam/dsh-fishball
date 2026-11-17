@@ -12,8 +12,8 @@
  * escalated prompt is the user's"), and `prompt_answer` answers one. The first settle wins: the
  * user's click (the next answerer's outcome), the agent's `prompt_answer`, or the asker's abort.
  */
-import { randomUUID } from 'node:crypto'
 import { APPROVAL, REQUEST_ID } from './constants.js'
+import { joinSignal, mintId } from './support.js'
 
 /**
  * @param ctx - the row's context (`waterfall`)
@@ -26,9 +26,8 @@ export function createPromptGate(ctx, now) {
   const passing = new WeakSet()
 
   /** Calls the next answerer with `signal` (S33); undefined when neither way can carry it. */
-  function handOn(target, req, next, signal) {
-    try { req.signal = signal } catch { /* a frozen request: re-dispatch below */ }
-    if (req.signal === signal) return Promise.resolve().then(next)
+  function handOn(target, req, next, signal, placed) {
+    if (placed) return Promise.resolve().then(next)
     if (target === undefined) return undefined
     const copy = { ...req, signal }
     passing.add(copy)
@@ -54,24 +53,22 @@ export function createPromptGate(ctx, now) {
      * @param via - `{target, req, next}` of the waterfall step
      * @param prompt - `{sessionId, toolName, callId, args, escalated}`: what `prompts_list` shows;
      *   `escalated` hides it from the agent that escalated it
-     * @param options.ready - for `prompt_answer`: the outcome goes back to DSH only once it settles
      */
     show({ target, req, next }, prompt) {
       const asker = req.signal
-      const own = new AbortController()
-      const signal = asker === undefined ? own.signal : AbortSignal.any([asker, own.signal])
-      const downstream = handOn(target, req, next, signal)
+      const { own, signal, placed } = joinSignal(req)
+      const downstream = handOn(target, req, next, signal, placed)
       if (downstream === undefined) return plainNext(next, asker)
-      const promptId = REQUEST_ID.prompt + randomUUID().replace(REQUEST_ID.uuidSeparator, '')
+      const promptId = mintId(REQUEST_ID.prompt)
       return new Promise((resolve) => {
         let settled = false
-        const finish = (outcome, ready) => {
+        const finish = (outcome) => {
           if (settled) return false
           settled = true
           showing.delete(promptId)
           asker?.removeEventListener('abort', onAbort)
           own.abort()
-          resolve(ready === undefined ? outcome : ready.then(() => outcome))
+          resolve(outcome)
           return true
         }
         const onAbort = () => finish(APPROVAL.outcome.cancelled)

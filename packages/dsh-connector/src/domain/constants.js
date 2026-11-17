@@ -53,13 +53,6 @@ export const REQUEST_ID = Object.freeze({
   uuidSeparator: /-/g,
 })
 
-/**
- * The descriptor's fixed parts (K1 `descriptor`): the decisions a permission offer lists. `ask` is
- * not offered: there is no `ask_agent` to carry a question back (the user, 2026-11-17), and an
- * `ask` answer is refused `invalid-decision` (the user's answer, 2026-11-17: "Refuse it").
- */
-export const OFFERED_DECISIONS = Object.freeze(['allow', 'grant', 'reject', 'escalate'])
-
 /** The one-line summaries a descriptor's `prompt` carries; JSON-quoted, so a tool name cannot break them. */
 export const SUMMARY = Object.freeze({
   permission: (toolName) => `Permission request: ${JSON.stringify(toolName)}`,
@@ -123,12 +116,7 @@ export const QUESTION_TEXT = Object.freeze({
 export const ANSWER_RULE = Object.freeze({
   items: 'items', ids: 'ids', labels: 'labels', custom: 'custom', single: 'single',
   planOnly: 'plan-only', questionOnly: 'question-only', planBoth: 'plan-both', feedback: 'feedback',
-  toUserBoth: 'to-user-both', nothing: 'nothing',
-})
-
-/** Programming errors (thrown, never shown to a client). */
-export const MISUSE = Object.freeze({
-  listener: 'dsh-connector domain: a listener must be a function',
+  nothing: 'nothing',
 })
 
 /** Log lines: `logger.warn(LOG.format, line, code)`; never an argument, a reason or a session's text. */
@@ -143,6 +131,5 @@ export const LOG = Object.freeze({
   frozenRequest: 'domain: a request could not be routed: its signal cannot be replaced',
   toolsFailed: 'domain: a managed session\'s tool could not be applied',
   toolsRemovalFailed: 'domain: a managed session\'s tool could not be removed',
-  messageFailed: 'domain: message_agent failed',
-  describeFailed: 'domain: a session could not be described',
+  closeFailed: 'domain: a part did not close cleanly',
 })

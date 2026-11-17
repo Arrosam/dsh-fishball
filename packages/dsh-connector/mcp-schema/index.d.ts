@@ -780,10 +780,11 @@ export interface GrantRegistry {
 // changes both files.
 // ---------------------------------------------------------------------------------------------
 
+export declare const ANSWER_DECISIONS: readonly ["allow", "grant", "reject", "escalate"]
 export declare const ANSWERABLE_TYPES: readonly ["permission", "question", "plan-review", "ask"]
 export declare const APPROVAL_DECISION: { readonly allow: "allow"; readonly grant: "grant"; readonly reject: "reject"; readonly ask: "ask"; readonly escalate: "escalate" }
 export declare const APPROVAL_KIND: { readonly approval: "approval"; readonly question: "question" }
-export declare const APPROVAL_LISTENER: { readonly defaultPort: number; readonly retryMs: number; readonly decisionBodyBytes: number; readonly pendingRequestsMax: number; readonly headers: { readonly "cache-control": "no-store"; readonly "referrer-policy": "no-referrer"; readonly "content-security-policy": "default-src 'none'; frame-ancestors 'none'" }; readonly redirectStatus: 303 }
+export declare const APPROVAL_LISTENER: { readonly defaultPort: number; readonly retryMs: number; readonly decisionBodyBytes: number; readonly pendingRequestsMax: number; readonly headers: { readonly "cache-control": "no-store"; readonly "referrer-policy": "same-origin"; readonly "content-security-policy": "default-src 'none'; frame-ancestors 'none'" }; readonly redirectStatus: 303 }
 export declare const ARGUMENTS_STATUS: { readonly complete: "complete"; readonly truncated: "truncated"; readonly unavailable: "unavailable" }
 export declare const AUTHORIZE_EXTENSION: { readonly agentIdParam: "agent_id" }
 export declare const BEARER_CHALLENGE: { readonly scheme: "Bearer"; readonly basicScheme: "Basic"; readonly params: readonly ["error", "error_description", "scope", "resource_metadata"]; readonly queryParameter: "access_token"; readonly queryClientSecret: "client_secret" }

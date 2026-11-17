@@ -1,6 +1,6 @@
 /**
  * The V3 fields of the connector row's Config (task C-WIRE; design §5.1, §5.9; R-CON-10, R-TOK-08,
- * R-ROUTE-04, R-OA-20 Q-OA-7 A): the token list, the designated agent and the approval port. Every
+ * R-OA-20 Q-OA-7 A; C-WIRE-2): the token list, the approval port and the DSH name. Every
  * one is `.volatile()`, so a save in DSH's settings service never remounts the row (spike S21).
  * The connector's limits stay src/config.js's. A module of its own, with no import beyond the
  * schema library and constants, because src/config.js (the row's schema) loads it at import time.

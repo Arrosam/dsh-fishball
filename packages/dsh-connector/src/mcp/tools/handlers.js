@@ -8,7 +8,7 @@
  * The domain is reached only through the `domain` port (index.js documents its shape), which
  * C-WIRE binds. Who manages a session is K1c's `ManagedState` only.
  */
-import { REFUSAL, TOOL } from '../../../mcp-schema/index.js'
+import { APPROVAL_DECISION, REFUSAL, TOOL } from '../../../mcp-schema/index.js'
 import { hasVisibleCharacter } from '../../text.js'
 import { inboxAckTool, inboxPollTool } from '../../mailbox/index.js'
 import { AUTHORITY, LOG, SESSION_ACCESS } from './constants.js'
@@ -110,10 +110,12 @@ export function createHandlers({ pairs, mailbox, managed, domain, now, logger },
       return passed(await managed.release(root, caller.principalKey), () => ({ sessionId: args.sessionId, managed: false }))
     }),
     [TOOL.approvalsList]: managing(async (args, caller, root) => ok({ approvals: await offers.heldBy(root, caller.principalKey) })),
-    [TOOL.approvalAnswer]: (args, { caller }) => answered(args, caller, args.approvalId, async (sessionId) => passed(
-      await interactions.answerApproval({ sessionId, approvalId: args.approvalId, answer: args.answer }),
+    // `ask` never reaches the domain (X-SEC X-02; the user, 2026-11-17: refused). K1's schema already
+    // refuses it; this guard keeps the rule should the schema ever widen.
+    [TOOL.approvalAnswer]: (args, { caller }) => (args.answer.decision === APPROVAL_DECISION.ask ? refused(REFUSAL.invalidDecision) : answered(args, caller, args.approvalId, async (sessionId) => passed(
+      await interactions.answerApproval({ sessionId, approvalId: args.approvalId, answer: args.answer, principalKey: caller.principalKey }),
       (result) => defined({ accepted: true, grantId: result.grantId, expiresAt: result.grantId === undefined ? undefined : result.expiresAt }),
-    )),
+    ))),
     [TOOL.questionAnswer]: (args, { caller }) => {
       const { offerId, ...answer } = args
       return answered(args, caller, args.questionId, async (sessionId) => passed(

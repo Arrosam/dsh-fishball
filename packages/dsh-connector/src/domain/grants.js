@@ -6,8 +6,14 @@
  *   key order), or a command prefix for the shell tools in GRANT.commandArgument only, matched on
  *   the raw command text, so `npm test` also covers `npm test && git push` (an accepted risk).
  * - Every grant ends: at its end time (a timer, and any match that finds it past), `grant_revoke`,
- *   or its session leaving management (Take back, `session_release`, revocation). No longest
- *   lifetime and no cap on how many are active (the user's answers, Q-r11-grant-bounds).
+ *   or its session leaving its principal's management (Take back, `session_release`, revocation,
+ *   or a Hand over to another agent). No longest lifetime and no cap on how many are active (the
+ *   user's answers, Q-r11-grant-bounds).
+ * - Owned (X-SEC X-08): each grant records the principal whose answer made it, and covers, lists
+ *   and revokes only while that principal manages its session. So a grant can never outlive its
+ *   manager by a race between the end-of-management sweep and a quick Hand over to someone else:
+ *   the sweep ends it, and until it runs the grant already covers nothing. A succession moves the
+ *   managed sessions to the successor (R-HOST-09), so it moves their grants too (`moveOwner`).
  * - Never paused: a grant covers whether its managing agent is connected or not (the user's answer,
  *   2026-11-17: "Still covers"); `paused` is always false.
  * - Durable: active grants survive a restart until they end. An ended grant's record is deleted at
@@ -15,16 +21,17 @@
  *   memory for the connector's life, so a second `grant_revoke` answers `ended` (V2's word) and not
  *   `unknown`; after a restart it is `unknown`, as the offer desk's settled set is (Q2, 2026-11-14).
  */
-import { randomUUID } from 'node:crypto'
 import { z } from 'zod'
 import { GRANT_KIND, REFUSAL } from '../../mcp-schema/index.js'
 import { diagnosticOf } from '../errors.js'
 import { serialChain } from '../routing/support.js'
 import { argumentsDigest } from './call-log.js'
 import { GRANT, GRANT_STORE, LOG, REQUEST_ID } from './constants.js'
+import { mintId } from './support.js'
 
 const record = z.object({
   sessionId: z.string().min(1),
+  principalKey: z.string().min(1),
   toolName: z.string().min(1),
   kind: z.enum(Object.values(GRANT_KIND)),
   argumentsDigest: z.string().optional(),
@@ -80,7 +87,7 @@ function matches(stored, toolName, args) {
 /**
  * @param {object} deps
  * @param deps.table - the grants table (`openGrantStore`)
- * @param deps.managerOf - K1c `ManagedState.managerOf`: a grant belongs to its session's manager
+ * @param deps.managerOf - K1c `ManagedState.managerOf`: a grant belongs to the principal that made it, while it manages the session
  * @param {() => number} deps.now - epoch ms
  * @param deps.timers - `{setTimeout, clearTimeout}`, the globals by default
  * @param deps.logger - `{warn}`
@@ -118,24 +125,26 @@ export function createGrants({ table, managerOf, now, timers = globalThis, logge
     }
   }
   const expireDue = () => endAll(entries().filter(([, stored]) => stored.expiresAt <= now()).map(([id]) => id))
+  /** Whether the grant's principal manages its session now (see the module comment). */
+  const owned = (stored) => managerOf(stored.sessionId) === stored.principalKey
 
   return Object.freeze({
-    /** At start: a grant whose end passed while DSH was down, or whose session is unmanaged, ends; then the timer is armed. */
+    /** At start: a grant whose end passed while DSH was down, or whose principal no longer manages its session, ends; then the timer is armed. */
     async reconcile() {
-      await endAll(entries().filter(([, stored]) => stored.expiresAt <= now() || managerOf(stored.sessionId) === undefined).map(([id]) => id))
+      await endAll(entries().filter(([, stored]) => stored.expiresAt <= now() || !owned(stored)).map(([id]) => id))
     },
 
     /**
      * Writes one grant for a managed session, before the offer is settled, so an answer never
-     * names a grant a failed write lost. Inside the write queue the session must still be managed.
-     * @returns the grant id, or undefined when the session left management meanwhile
+     * names a grant a failed write lost. Inside the write queue `principalKey` must still manage it.
+     * @returns the grant id, or undefined when the session left that principal's management meanwhile
      */
-    async create({ sessionId, toolName, args, spec }) {
-      const id = REQUEST_ID.grant + randomUUID().replace(REQUEST_ID.uuidSeparator, '')
+    async create({ sessionId, principalKey, toolName, args, spec }) {
+      const id = mintId(REQUEST_ID.grant)
       const written = await serial(async () => {
-        if (managerOf(sessionId) === undefined) return false
+        if (managerOf(sessionId) !== principalKey) return false
         await table.put(id, {
-          sessionId, toolName, kind: spec.kind,
+          sessionId, principalKey, toolName, kind: spec.kind,
           ...(spec.kind === GRANT_KIND.exact ? { argumentsDigest: argumentsDigest(args) } : { prefix: spec.prefix }),
           createdAt: now(), expiresAt: spec.expiresAt, uses: 0,
         })
@@ -155,7 +164,7 @@ export function createGrants({ table, managerOf, now, timers = globalThis, logge
     cover(sessionId, toolName, args) {
       if (args === undefined) return undefined
       for (const [id, stored] of entries()) {
-        if (stored.sessionId !== sessionId || stored.toolName !== toolName) continue
+        if (stored.sessionId !== sessionId || stored.toolName !== toolName || !owned(stored)) continue
         if (stored.expiresAt <= now()) { void endAll([id]); continue }
         if (!matches(stored, toolName, args)) continue
         void serial(async () => {
@@ -167,10 +176,10 @@ export function createGrants({ table, managerOf, now, timers = globalThis, logge
       return undefined
     },
 
-    /** `grant_revoke`: `unknown` for an id never issued here, `ended` for one already over. */
+    /** `grant_revoke`: `unknown` for an id never issued here, `ended` for one already over (or no longer its principal's). */
     async revoke(id) {
       const stored = table.get(id)
-      if (stored === undefined) return ended.has(id) ? REFUSAL.grantEnded : REFUSAL.grantUnknown
+      if (stored === undefined || !owned(stored)) return ended.has(id) || stored !== undefined ? REFUSAL.grantEnded : REFUSAL.grantUnknown
       await endAll([id])
       // One whose end time had passed was already over: it ends here, as an expiry, not a revoke.
       return stored.expiresAt <= now() ? REFUSAL.grantEnded : undefined
@@ -181,17 +190,23 @@ export function createGrants({ table, managerOf, now, timers = globalThis, logge
      * Take back, `session_release` and a revocation all end them, and handing the session over
      * again does not revive them. Read in the write queue, after any grant still being written.
      */
-    endUnmanaged: () => serial(async () => entries().filter(([, stored]) => managerOf(stored.sessionId) === undefined).map(([id]) => id)).then(endAll),
+    endUnmanaged: () => serial(async () => entries().filter(([, stored]) => !owned(stored)).map(([id]) => id)).then(endAll),
+
+    /**
+     * C-SUCCEED: every grant of `from` belongs to `to`, whose sessions they are now (R-HOST-09).
+     * Called before the managed table moves, so this write is queued ahead of the sweep its change
+     * triggers, which then finds the grants owned by their new manager.
+     */
+    moveOwner: (from, to) => serial(async () => {
+      for (const [id, stored] of entries()) if (stored.principalKey === from) await table.put(id, { ...stored, principalKey: to })
+    }),
 
     /** `grants_list`'s rows (K1 `grantSummary`), newest first; never paused (see the module comment). */
-    list: () => entries().filter(([, stored]) => stored.expiresAt > now()).sort(([, a], [, b]) => b.createdAt - a.createdAt).map(([grantId, stored]) => Object.freeze({
+    list: () => entries().filter(([, stored]) => stored.expiresAt > now() && owned(stored)).sort(([, a], [, b]) => b.createdAt - a.createdAt).map(([grantId, stored]) => Object.freeze({
       grantId, sessionId: stored.sessionId, toolName: stored.toolName, kind: stored.kind,
       ...(stored.kind === GRANT_KIND.prefix ? { prefix: stored.prefix } : {}),
       expiresAt: stored.expiresAt, uses: stored.uses, ...(stored.lastUsedAt === undefined ? {} : { lastUsedAt: stored.lastUsedAt }), paused: false,
     })),
-
-    /** The session of a grant this connector holds, or undefined (grant_revoke's authority check). */
-    sessionOf: (id) => table.get(id)?.sessionId,
 
     stop() {
       stopped = true

@@ -275,8 +275,9 @@ changes this object in the same change.
 
 - `FAILURE_LIMIT` counts every refused credential (secret, page token, bearer) in one
   `FailureLimiter` that the token endpoint, the approval page and the MCP endpoint share
-  (R-OA-17; K1a, PROPOSED). An empty page field is not counted (PROPOSED). While limited, a valid
-  credential is refused too (S7b P2), and the refused request is not counted again.
+  (R-OA-17; K1a, PROPOSED). An empty page field is not counted (PROPOSED). The credential is
+  verified first: a valid one always passes, and while limited a failing one is answered 429 and
+  not counted again (X-SEC X-03, C-WIRE-2, amending S7b P2).
 - **Settings save refusal (`SETTINGS_REFUSAL`, K1d):** `token-duplicate` (PROPOSED, R3; decided
   item 9) for two items with one entry `key`, two entries with one value digest, or an item with no
   record (R5). The previous list is written back and the notice names only entry labels; found
@@ -439,6 +440,10 @@ quotes the K1 text it replaces.
 | README Connected: "One definition for embed-UI's lights, `ask_agent`'s `unavailable` and the native status" | `ask_agent`'s `unavailable` withdrawn | no `ask_agent` |
 | K3 handover.d.ts `HandoverPrincipal.designated` | withdrawn | q5 |
 | K3 tokens.d.ts `retire`: succession moves "the designated role" | moves sessions, name, offers and events only | q5 |
+| `APPROVAL_LISTENER.headers` `referrer-policy: no-referrer` (S7b; R-OA-11) | `same-origin`: a browser's form POST then carries the page's Origin; `no-referrer` made it `Origin: null`, refused by the gate (X-SEC X-01). No Referer leaves the origin either way | X-SEC X-01 (security audit), the R-OA-11 text needs the same amendment |
+| `FAILURE_LIMIT`: "While limited, even a valid credential is refused (S7b P2)" | a valid credential always passes; only a failing one is answered 429 while limited (MCP bearer, token endpoint, approval page). Values and counting unchanged | X-SEC X-03; the user's rule: keep the FAILURE_LIMIT values |
+| `shapes.js` `approvalAnswer`: `decision` any APPROVAL_DECISION, optional `question` | `decision` is ANSWER_DECISIONS (no `ask`), no `question` field: an `ask` is `invalid-arguments` at the schema (X-SEC X-02) | q1 "Refuse it" |
+| `REFUSAL.empty` (new) | `message_agent`'s empty message, the one DSH-side tool's refusal code (V2's `empty`) | no `ask_agent`; R-CON-08 |
 | `QUEUE` comment: "an `ask` waits for an answer like an offer" | `ask` keeps its frozen place in the list, with no producer | no `ask_agent` |
 | `prompts_list` (README §Tools, design §4.3): V2 listed "the prompts already showing in other sessions" | only sessions the caller manages, without its own escalations; answering never takes over management | "Agent不能回答不归自己管的会话，只能操作自己管的会话"; q7 |
 | V2 `maxPendingApprovals` (DESIGN §16: "Extra requests go straight to you") | no cap: a managed session's request always becomes an offer and waits | "No cap on pending approvals … never refused for being too many" |
