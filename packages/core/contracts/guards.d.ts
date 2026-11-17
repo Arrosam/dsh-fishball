@@ -3,9 +3,9 @@
  * R-FB-02, R-FB-09, R-FB-12, R-FB-13; spike V3-S6 `86800d2` + round 2 `7c2230e`).
  * Types; the runtime spellings are `constants.js`'s `GUARDS` beside this file (a change to one
  * changes both). F-GUARDS builds the patch rows, the self-reorder and the check, in
- * `packages/core/cordis.patch.yml` and `packages/core/src/guards/`; since F-UI the UI-only guard rows
- * (`ui-*`, `entry-customization`) are in `packages/fishball-ui/cordis.patch.yml`, reported by core's
- * check through `fishball-shared/ui-seam` `UI_GUARDS`.
+ * `packages/core/cordis.patch.yml` and `packages/core/src/guards/`; the UI-only guard rows (`ui-*`,
+ * `entry-customization`) are fishball-ui's since F-UI and in core's patch since R-FIX-FUI, held and
+ * reported only while fishball-ui's `fishball-shared/ui-seam` `UI_GUARDS` service is there.
  *
  * The row lists, presets, policy and manager tools are as decided (design §5a.2, 1.24, S6 round 2).
  * They are the same on DSH 0.2.1-rc.5 and 0.2.2-rc.1: both ship the four agent presets with these
@@ -14,13 +14,15 @@
  */
 
 /**
- * Root rows the Fishball guards disable (session-creating rows, and no nested hosted Fishball), all
- * reported by core's check. Since F-UI the `ui-*` rows and `entry-customization` are fishball-ui's
- * patch rows, the others core's; the report's `row:<id>` vocabulary is unchanged.
+ * Root rows the Fishball guards disable (session-creating rows, the composer's model picker, and no
+ * nested hosted Fishball), all reported by core's check. The `ui-*` rows and `entry-customization`
+ * are fishball-ui's UI guard rows: in core's patch since R-FIX-FUI, held and reported only beside
+ * fishball-ui; the report's `row:<id>` vocabulary is unchanged.
  */
 export type GuardedRow =
   | 'ui-subagent' | 'ui-schedule' | 'schedule' | 'ui-permission' | 'ui-agent-preset' | 'entry-customization'
   | 'ui-open-in-app' | 'open-in-app' | 'ui-sidebar-terminal' | 'terminal-controller' | 'dsh-instance'
+  | 'ui-model-selection'
 
 /** DSH-shipped agent preset rows: switched off by core's patch, never deleted (1.24, Q-S6-2 B). */
 export type ShippedPresetRow = 'preset-standard' | 'preset-ptc' | 'preset-cordis' | 'preset-minimal'
