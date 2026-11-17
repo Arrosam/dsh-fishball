@@ -70,9 +70,40 @@ export const PATHS = Object.freeze({
   decision: '/authorize/decision',
 })
 
-/** The one event resource (R-EVS-01, R-CON-04). Its contents are a summary, never event bodies. */
+/**
+ * The connector's resources.
+ * - events: the one event resource (R-EVS-01, R-CON-04). Its contents are a summary, never event
+ *   bodies.
+ * - identity (MULTI-0 amendment, 2026-11-18; PLAN-MULTI §4.3, Q02): a read-only resource whose one
+ *   JSON text content is the standard MCP `Implementation` object `{name, version}` that
+ *   `server/discover` advertises (`SERVER_IDENTITY.discoverMetaKey`), from the same live getter. It
+ *   exists only so a rename can be pushed with the standard `notifications/resources/updated
+ *   {uri}` over the existing `subscriptions/listen` stream: MCP 2026-07-28 has no
+ *   server-name-changed notification, and `tools/list_changed` is not one.
+ */
 export const RESOURCE = Object.freeze({
   events: Object.freeze({ name: 'agent-events', uri: 'dsh-agent://events', mimeType: 'application/json' }),
+  identity: Object.freeze({ name: 'dsh-identity', uri: 'dsh-agent://identity', mimeType: 'application/json' }),
+})
+
+/**
+ * The connector's advertised MCP server identity (MULTI-0 amendment, 2026-11-18; PLAN-MULTI D04,
+ * D05, D06, §4.1, §4.3):
+ * - `serverInfo.name` is `<base><suffix>`: `base` is the `approval.dshName` setting verbatim when it
+ *   holds any non-white-space character, else `node:os.hostname()`; `suffix` is appended once as an
+ *   operation, even when the base already ends with it (no dedupe, no trim of a nonblank base);
+ *   `version` stays the connector manifest's. No title is set, and the name has no tool-name grammar
+ *   or length limit (MCP `Implementation.name`);
+ * - `discoverMetaKey`: where `server/discover` carries it ([spec] `result._meta[...]`, not
+ *   `result.serverInfo`);
+ * - `updatedNotification`: the standard notification sent with only `{uri: RESOURCE.identity.uri}`
+ *   to every authenticated listen stream subscribed to that URI, when the effective name changed;
+ *   an unchanged name sends nothing.
+ */
+export const SERVER_IDENTITY = Object.freeze({
+  suffix: '-DSH',
+  discoverMetaKey: 'io.modelcontextprotocol/serverInfo',
+  updatedNotification: 'notifications/resources/updated',
 })
 
 /**

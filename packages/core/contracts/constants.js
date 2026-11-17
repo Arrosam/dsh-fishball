@@ -189,6 +189,9 @@ const ISSUER_PATH = '/api/agent/oauth'
  *   Connect (Q-S7C-5 A): the protected-resource `resource` path is `paths.mcp`, its first
  *   authorization server is the same origin plus `paths.issuer`, and its scopes include `full`;
  * - `events`: the one event resource core listens on (R-EVS-01);
+ * - `identity`, `serverIdentity` (MULTI-0): the readable identity resource core also subscribes to
+ *   on the same listen stream, where `server/discover` carries the server's name, and the standard
+ *   notification that hints a rename (core rediscovers at once on it; no polling);
  * - `tools`: every core tool name `tools/list` lists (core tells core tools from contributed ones
  *   by this list, design §13.3);
  * - `eventTypes`, `contributedTypePrefix`: the event `type` vocabulary (R-EVS-02, K2);
@@ -214,6 +217,9 @@ export const MCP = Object.freeze({
     authorize: '/authorize',
   }),
   events: Object.freeze({ name: 'agent-events', uri: 'dsh-agent://events', mimeType: 'application/json' }),
+  // MULTI-0: K1 `RESOURCE.identity` and `SERVER_IDENTITY` (the live-rename push, PLAN-MULTI §4.3).
+  identity: Object.freeze({ name: 'dsh-identity', uri: 'dsh-agent://identity', mimeType: 'application/json' }),
+  serverIdentity: Object.freeze({ suffix: '-DSH', discoverMetaKey: 'io.modelcontextprotocol/serverInfo', updatedNotification: 'notifications/resources/updated' }),
   scope: Object.freeze({ full: 'agent', pair: 'agent:pair' }),
   tools: Object.freeze({
     sessionsList: 'sessions_list',
@@ -519,4 +525,90 @@ export const GUARDS = Object.freeze({
   }),
   /** A missing record file (Node's fs error code). */
   notFound: 'ENOENT',
+})
+
+// ------------------------------------------------------------------------- multiple targets (targets.d.ts; MULTI-0)
+
+/**
+ * Core's side of multiple DSH targets (MULTI-0 freeze, 2026-11-18; PLAN-MULTI §3–§5, §7). What
+ * fishball-ui also reads (states, kinds, routes, refusals) is `fishball-shared/ui-seam`'s
+ * `SEAM_TARGETS`, not restated here. Every local key derived from a remote id carries the
+ * locally generated `(targetId, endpointEpoch)`; server-supplied names never route anything.
+ *
+ * - `id` / `epoch`: the generated id formats (`prefix` + `randomChars` letters of `alphabet`, as
+ *   `identity.id`'s generator: one random byte masked per letter). `parentId` is the hosted
+ *   child's reserved parent, the only id not generated. Both fit DSH's credential-key segment
+ *   grammar `[a-z][a-z0-9-]*` and hold no `_`;
+ * - `store`: the durable target records (`TargetRecord`, keyed by id), one DSH storage table;
+ * - `key`: the one collision-free tuple encoding of every local key and opaque handle. A key is
+ *   `JSON.stringify([kind, targetId, endpointEpoch, remoteId])` (a JSON array: no delimiter can
+ *   make two tuples meet); a handle or message id that must be a plain token is that JSON's UTF-8
+ *   bytes in `encoding` (base64url, `[A-Za-z0-9_-]`). Kinds keep an event, an approval and a
+ *   session with the same remote id apart. The manager message id of an event is
+ *   `MESSAGE.idPrefix + handle(event tuple)`, so two targets' `event-1` never dedupe;
+ * - `credentials`: per-target credential names. The parent alone uses `HOSTED_IMPORT`'s names
+ *   (`DSH_AGENT_TOKEN`, `fishball-core/hosted-agent`) and `LINK_SAVE.pendingOrigin`; an added target
+ *   never reads or writes them, so it can never satisfy the instance's hosted probe. An added
+ *   target's token entry is the reference `tokenRefPrefix + <id> + tokenRefSeparator + <epoch>`, with
+ *   every `-` written `_` (DSH's reference grammar `^[A-Za-z_][A-Za-z0-9_]*$`); its saved token copy
+ *   and its Connect grant are the records `fishball-core/<tokenRecordPrefix|grantRecordPrefix><id>-<epoch>`.
+ *   Records still carry the canonical origin and agent-id binding they carry today;
+ * - `duplicate`: the Fishball-local display alias of an equal name (D07, Q03): `name + open + n +
+ *   close`, n from `firstSuffix`, the lowest n whose complete result no other current target holds
+ *   (a literal server name ending in ` (2)` counts). Persisted in the record; never renumbers;
+ * - `toolName`: the model-facing name of every exposed remote tool and of the target-bound local
+ *   `ask_user` (PLAN-MULTI §4.4): `prefix + readable + separator + facade + digestSeparator + digest`,
+ *   at most `maxChars`, all of `allowed`:
+ *   - readable: the resolved `name` NFKD-normalised, each run of characters outside `[A-Za-z0-9]`
+ *     made one `-`, lower-cased, `-` trimmed at both ends, cut to `readableMaxChars`, `-` trimmed
+ *     again; `readableFallback` when nothing is left (`name` null or nothing ASCII);
+ *   - facade: the K2 dotted public name with every `.` written `__` (`MCP.namespace.externalName`),
+ *     or the core tool / local helper name unchanged; cut from the end to the room left;
+ *   - digest: the first `digestHexChars` lowercase hex of SHA-256 over the UTF-8 of
+ *     `JSON.stringify([digestVersion, targetId, endpointEpoch, name, origin, rawName])`, origin one of
+ *     `origin` (`remote` for a listed tool, `local` for `ask_user`), so no two bindings share a name
+ *     by construction except by a hash collision, which registration still detects;
+ *   - a final name already bound, now or by a retired binding (`bindingStore`), to another tuple is
+ *     never registered: that tool fails closed and is logged, it never overwrites. Withheld tools
+ *     (`FACADE.withheld`) and reminder/skill tools are not namespaced; raw names and arguments go to
+ *     the connector unchanged.
+ */
+const TARGET_ID_ALPHABET = 'abcdefghijklmnopqrstuvwxyz234567'
+const TARGET_ID_RANDOM_CHARS = 16
+export const TARGETS = Object.freeze({
+  parentId: 'parent',
+  id: Object.freeze({ prefix: 't-', randomChars: TARGET_ID_RANDOM_CHARS, alphabet: TARGET_ID_ALPHABET }),
+  epoch: Object.freeze({ prefix: 'e-', randomChars: TARGET_ID_RANDOM_CHARS, alphabet: TARGET_ID_ALPHABET }),
+  store: Object.freeze({ domain: 'fishball_core_targets', table: 'targets', version: 1 }),
+  bindingStore: Object.freeze({ domain: 'fishball_core_targets', table: 'tool-bindings', version: 1 }),
+  key: Object.freeze({
+    kind: Object.freeze({ event: 'event', approval: 'approval', session: 'session' }),
+    encoding: 'base64url',
+  }),
+  credentials: Object.freeze({
+    tokenRefPrefix: 'FISHBALL_TARGET_TOKEN_',
+    tokenRefSeparator: '__',
+    refReplaced: '-',
+    refReplacement: '_',
+    tokenRecordPrefix: 'token-',
+    grantRecordPrefix: 'connect-',
+    recordSeparator: '-',
+  }),
+  duplicate: Object.freeze({ open: ' (', close: ')', firstSuffix: 2 }),
+  toolName: Object.freeze({
+    prefix: 'mcp__',
+    separator: '__',
+    digestSeparator: '_',
+    digestHexChars: 12,
+    digestAlgorithm: 'sha256',
+    digestVersion: 1,
+    readableMaxChars: 16,
+    readableFallback: 'dsh',
+    readableJoin: '-',
+    readableOutside: '[^A-Za-z0-9]+',
+    normalForm: 'NFKD',
+    maxChars: 64,
+    allowed: '^[A-Za-z0-9_-]{1,64}$',
+    origin: Object.freeze({ remote: 'remote', local: 'local' }),
+  }),
 })

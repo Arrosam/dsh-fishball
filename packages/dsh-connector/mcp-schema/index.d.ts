@@ -868,7 +868,21 @@ export declare const REQUEST_GATE: {
   readonly allowSeparator: ", "
   readonly inFlightRetryAfterMs: number
 }
-export declare const RESOURCE: { readonly events: { readonly name: "agent-events"; readonly uri: "dsh-agent://events"; readonly mimeType: "application/json" } }
+export declare const RESOURCE: {
+  readonly events: { readonly name: "agent-events"; readonly uri: "dsh-agent://events"; readonly mimeType: "application/json" }
+  readonly identity: { readonly name: "dsh-identity"; readonly uri: "dsh-agent://identity"; readonly mimeType: "application/json" }
+}
+/** MULTI-0: the advertised server identity (constants.js `SERVER_IDENTITY`). */
+export declare const SERVER_IDENTITY: { readonly suffix: "-DSH"; readonly discoverMetaKey: "io.modelcontextprotocol/serverInfo"; readonly updatedNotification: "notifications/resources/updated" }
+/**
+ * MULTI-0: the one JSON text content of `resources/read dsh-agent://identity`, exactly the MCP
+ * `Implementation` `{name, version}` of `server/discover`'s `_meta[SERVER_IDENTITY.discoverMetaKey]`
+ * (same live getter, no other member).
+ */
+export interface ServerIdentity {
+  readonly name: string
+  readonly version: string
+}
 export declare const RESPONSE_TYPE: { readonly code: "code" }
 export declare const RESYNC_REASON: { readonly staleCursor: "stale-cursor" }
 export declare const RETIREMENT_REASON: { readonly withdrawn: "withdrawn"; readonly revoked: "revoked"; readonly released: "released"; readonly reissued: "reissued"; readonly contributorWithdrawn: "contributor-withdrawn" }
