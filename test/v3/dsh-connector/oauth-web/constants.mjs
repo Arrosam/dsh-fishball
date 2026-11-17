@@ -238,3 +238,32 @@ export const XSEC = Object.freeze({
   windowMs: RATE_LIMITS.windowMs,
   retryAfterHeader: RATE_LIMITS.retryAfterHeader,
 })
+
+/**
+ * UI-POLISH-D rows of the approval page (polish-cases.mjs; the requirements relayed 2026-11-18 and
+ * the CSP change the user approved that day). The page's markup hooks and its new `brand` line; the
+ * exact CSP shape (one style hash, no other directive changed); what the hash covers (the text of
+ * the page's one `<style>` element, UTF-8, SHA-256, base64); the headers that stay as before.
+ * `markupName` is case data: a client name carrying markup and every HTML-special character.
+ */
+export const POLISH = Object.freeze({
+  id: Object.freeze({ csp: 'UIPD-WEB-CSP', markup: 'UIPD-WEB-MARKUP' }),
+  cspHeader: 'content-security-policy',
+  /** Exactly `default-src 'none'; style-src 'sha256-<base64>'; frame-ancestors 'none'`; group 1 is the hash. */
+  cspShape: /^default-src 'none'; style-src 'sha256-([A-Za-z0-9+/]+={0,2})'; frame-ancestors 'none'$/,
+  unsafeInline: "'unsafe-inline'",
+  hashAlgorithm: 'sha256',
+  hashEncoding: 'base64',
+  /** A SHA-256 digest is 32 bytes: 44 base64 characters. */
+  hashChars: 44,
+  /** The headers UI-POLISH-D left as they were. */
+  unchanged: Object.freeze({ 'cache-control': 'no-store', 'referrer-policy': 'same-origin' }),
+  brand: 'Fishball connector',
+  viewport: 'width=device-width, initial-scale=1',
+  colorScheme: 'light dark',
+  /** The fact lines, in their order: the DSH line is third (it moved above the localhost warning). */
+  facts: Object.freeze([/^Client: /, /^Redirect host: /, /^DSH: /]),
+  markupName: '<b>x</b>"&\'<script>fbtest()</script>',
+  role: Object.freeze({ note: 'note', alert: 'alert' }),
+  cls: Object.freeze({ card: 'card', facts: 'facts', terms: 'terms', note: 'note', alert: 'alert', field: 'field', actions: 'actions', primary: 'primary', secondary: 'secondary', eyebrow: 'eyebrow', mark: 'mark' }),
+})

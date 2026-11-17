@@ -15,7 +15,8 @@ export const decode = (text) => text
   .replace(/&#(\d+);/g, (_, d) => String.fromCodePoint(Number(d)))
   .replace(/&([a-z]+);/gi, (m, n) => ENTITIES[n.toLowerCase()] ?? m)
 
-function attributes(source) {
+/** The attributes of one tag's source (after its name): names lower-cased, values decoded. */
+export function attributes(source) {
   const attrs = {}
   for (const m of source.matchAll(/([^\s=/>"']+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>"']+)))?/g)) {
     attrs[m[1].toLowerCase()] = decode(m[2] ?? m[3] ?? m[4] ?? '')

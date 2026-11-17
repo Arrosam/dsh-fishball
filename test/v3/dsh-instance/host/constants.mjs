@@ -239,3 +239,51 @@ export const SKIP = Object.freeze({
   uninstall: 'needs a hosted child (HOST-UC-06 A2 / HOST-ST-01 row 10: the uninstall CLI is a child process; this suite launches none)',
   exportOffer: 'withdrawn: the board archive export no longer exists (board_export and the uninstall export dropped in W3, packages/board/src/store.js); leftover recorded by the I-HOST dev session',
 })
+
+/**
+ * UI-POLISH-D rows of the instance's own settings page (page.mjs, polish-cases.mjs; the requirements
+ * relayed 2026-11-18 and the developer's note of that day). Words are the page's dictionary values
+ * the requirements quote; hooks are the page's unchanged data attributes.
+ */
+export const PAGE_POLISH = Object.freeze({
+  id: Object.freeze({ sections: 'UIPD-INST-SECTIONS', retry: 'UIPD-INST-RETRY', sync: 'UIPD-INST-SYNC' }),
+  langs: Object.freeze(['en', 'zh']),
+  /** The three h3 headings in page order: the actions card (`actions`), model sync, Launch. */
+  headings: Object.freeze({ en: Object.freeze(['Fishball', 'Model for Fishball', 'Launch']), zh: Object.freeze(['Fishball', 'Fishball 的模型', '启动']) }),
+  placeholder: Object.freeze({ en: 'This DSH\'s connector', zh: '本 DSH 的连接器' }),
+  targetLabel: Object.freeze({ en: 'Remote target', zh: '远程目标' }),
+  retryWords: Object.freeze({ en: 'Retry', zh: '重试' }),
+  openWords: Object.freeze({ en: 'Open Fishball', zh: '打开 Fishball' }),
+  /** EP over the instance states the status route can answer (CHILD_STATE): only `failed` shows Retry. */
+  states: Object.freeze(['disabled', 'waiting', 'starting', 'ready', 'stopping', 'stopped', 'failed']),
+  failed: 'failed',
+  ready: 'ready',
+  attr: Object.freeze({
+    target: 'data-dsh-instance-target', open: 'data-dsh-instance-open', reconnect: 'data-dsh-instance-reconnect',
+    state: 'data-fishball-instance-state', retry: 'data-fishball-instance-retry',
+    check: 'data-fishball-model-check', add: 'data-fishball-model-add', entry: 'data-fishball-model-entry', sync: 'data-fishball-model-sync',
+  }),
+  /** Harness handles: the fake Button keeps the variant it was given (never a product marker). */
+  variantAttr: 'data-fbtest-variant',
+  primitiveAttr: 'data-primitive',
+  primary: 'primary',
+  stateDot: 'StateDot',
+  checkbox: 'Checkbox',
+  input: 'Input',
+  iconPrefix: 'Icon',
+  base: 'http://127.0.0.1:47000/',
+  /** The model sync check's fixture answer: three providers Fishball lacks. */
+  check: Object.freeze({
+    checkId: 'fbtest-polish-check',
+    missing: Object.freeze([
+      Object.freeze({ id: 'fbtest-p1', name: 'Provider One', models: Object.freeze(['m1']) }),
+      Object.freeze({ id: 'fbtest-p2', name: 'Provider Two', models: Object.freeze([]) }),
+      Object.freeze({ id: 'fbtest-p3', name: 'Provider Three', models: Object.freeze(['m3a', 'm3b']) }),
+    ]),
+    notOffered: Object.freeze([]),
+    present: 0,
+  }),
+  settleRounds: 40,
+  pollMs: 20,
+  waitMs: 5000,
+})

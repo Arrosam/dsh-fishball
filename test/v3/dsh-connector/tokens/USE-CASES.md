@@ -112,3 +112,16 @@ only in C-PAIR's store, so the registry's transitions are Ready's and Off's.
 ## Withdrawn (design §5.9) — deleted from the suites, IDs kept in the docs
 AUTH-UC-01 A1, A2, E1, E2, E3 (old); AUTH-EP-04 rows 2–7, 7a; AUTH-BVA-03 rows 1–7; AUTH-DT-05
 rows 3, 4; AUTH-ST-01 row 10 and 10a–10m.
+
+### UI-POLISH-D — the settings page's layout (../settings-page/polish-cases.mjs)
+
+From the UI-POLISH-D requirements relayed 2026-11-18 (and the developer's note: a setting row's
+error spans sit outside its `<label>`). Behaviour, routes, keys, hooks and roles are unchanged.
+
+| Id | Technique | Rows |
+|---|---|---|
+| UIPD-SET-SECTIONS | EP (language) | en "Tokens", "Approval page", "Safety limits" / zh "Token", "授权页面", "安全限制": three `h3` sections in order; the token parts in the first, `approval.port` and `approval.dshName` in the second, the five limits in the third |
+| UIPD-SET-COUNT | BVA (list length) | 0 → no count beside Tokens; 1 → "1"; 3 → "3" |
+| UIPD-SET-BUTTONS | EP (language), BVA (row index), ST | each row's Move up / Move down / Delete (上移 / 下移 / 删除) are icon-only, named by aria-label and title; single item: up and down disabled; first of 3: up disabled; middle: both enabled; last: down disabled; Delete always enabled; Move down on row 1 stages B, A, C, saves nothing |
+| UIPD-SET-DOTS | EP (pair state, listener status) | paired + connected → StateDot `done`; paired + offline → `idle`; unpaired → no dot; approval ok → a `role=status` line, StateDot, "Approval page: listening on port N"; port in use → a different dot; the status sits beside the port's `<label>`, not in it |
+| UIPD-SET-PRIMITIVES | UC / EP | text fields are DSH's Input (hooks on it); New token has a plus icon; Copy keeps its word, its icon turns to a check after a copy, "Copied"; the duplicate notice keeps `role=alert` with a warning icon first; a limit field's error (`role=alert`, invalid only) sits outside its `<label data-dsh-connector-setting>` |
