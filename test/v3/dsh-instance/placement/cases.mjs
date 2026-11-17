@@ -293,7 +293,8 @@ export function registerIPlaceCases(sdk) {
   })
 
   // ---- HOST-UC-08 (R-BND-02, R-BND-04).
-  integrationCase(sdk, 'HOST-UC-08', 'main 1', "the child's profile holds the set members (board, fishball-ui, core), all on, core last", async () => {
+  // Re-baselined (SHELVE-BOARD, was board, fishball-ui, core): the board is shelved (the user, 2026-11-18).
+  integrationCase(sdk, 'HOST-UC-08', 'main 1', "the child's profile holds the set members (fishball-ui, core), all on, core last", async () => {
     const { home } = await ready()
     const bundles = profileBundles(home)
     for (const name of SET.placed) assert.ok(bundles.includes(name), name + ' is not on: ' + show(bundles))
@@ -362,7 +363,7 @@ export function registerIPlaceCases(sdk) {
         2: () => {},
         3: (home) => setProfileBundles(home, profileBundles(home).filter((b) => b !== name)),
         4: (home) => { setProfileBundles(home, profileBundles(home).filter((b) => b !== name)); removePlaced(home, name) },
-        // Rule 5's member must be on when deleted: rules 3–4 left the one feature (board) off, so
+        // Rule 5's member must be on when deleted: rules 3–4 left the one feature (fishball-ui since SHELVE-BOARD) off, so
         // it is switched back on, before core, while the child is down.
         5: (home) => { if (!enabled(home, name)) setProfileBundles(home, [...profileBundles(home).filter((b) => b !== SET.core), name, SET.core]); removePlaced(home, name) },
       }[rule]
@@ -478,12 +479,38 @@ export function registerIPlaceCases(sdk) {
     assert.deepEqual(rows.filter((r) => RELAYED.rows.slim.includes(r.id)).map((r) => r.id), [])
     assert.deepEqual(rows.filter((r) => r.id === RELAYED.rows.main.id).map((r) => r.name), [RELAYED.rows.main.name])
   })
-  integrationCase(sdk, 'HOST-EP-03', 7, 'the child profile and the placement record hold the set members (board, fishball-ui, core), and nothing else of Fishball', async () => {
+  // Re-baselined (SHELVE-BOARD, was board, fishball-ui, core): "不要预留在子实例的Fishball内" (the user, 2026-11-18).
+  integrationCase(sdk, 'HOST-EP-03', 7, 'the child profile and the placement record hold the set members (fishball-ui, core), and nothing else of Fishball', async () => {
     const { home } = await ready()
     const fishball = (list) => list.filter((n) => n.startsWith('fishball-'))
     assert.deepEqual(fishball(placementRecord(home)[RELAYED.record.key]).sort(), [...SET.placed].sort())
     assert.deepEqual(fishball(profileBundles(home)).sort(), [...SET.placed].sort())
   })
+  // SHELVE-BOARD at unit level (composedProfile, no process): fresh → composed → composed again on the same home.
+  caseTest(sdk, 'HOST-EP-03', 'SHELVE compose', `a fresh compose and a second compose on the same home: no ${SET.shelved} copy, dependency, bundle or placement-record entry; the Fishball bundles are exactly ${SET.placed.join(', ')}`, async (t) => {
+    const mainHome = path.join(scratch(t, 'fbtest-iplace-shelve-'), 'main')
+    for (const run of ['first', 'second']) {
+      await composeChild(mainHome)
+      const home = fs.realpathSync(mainHome)
+      for (const dir of RELAYED.copyDirs) assert.equal(fs.existsSync(placedCopy(home, SET.shelved, dir)), false, `${run}: ${SET.shelved} in ${dir}/`)
+      assert.equal(Object.hasOwn(profileManifest(home)?.dependencies ?? {}, SET.shelved), false, `${run}: a profile dependency`)
+      assert.deepEqual(profileBundles(home).filter((b) => b.startsWith('fishball-')), [...SET.placed], `${run}: bundles ${show(profileBundles(home))}`)
+      assert.equal(JSON.stringify(placementRecord(home)).includes(SET.shelved), false, `${run}: placement record ${show(placementRecord(home))}`)
+    }
+  })
+  // SHELVE-BOARD (state transition: first start → restart): nothing of the board in a real child, not even reserved.
+  for (const [row, title, restart] of [['SHELVE first', 'after the first start', false], ['SHELVE restart', 'after a restart', true]]) {
+    integrationCase(sdk, 'HOST-EP-03', row, `${title}: no ${SET.shelved} in vendor/ or node_modules/, the profile's dependencies or bundles, or the placement record (not even disabled)`, async () => {
+      await ready()
+      if (restart) assert.equal((await setup.restart(sdk))?.state, CHILD.state.ready, 'the child did not start again')
+      const home = setup.home
+      for (const dir of RELAYED.copyDirs) assert.equal(fs.existsSync(placedCopy(home, SET.shelved, dir)), false, `${SET.shelved} in ${dir}/`)
+      const manifest = profileManifest(home) ?? {}
+      assert.equal(Object.hasOwn(manifest.dependencies ?? {}, SET.shelved), false, 'a profile dependency')
+      assert.equal(profileBundles(home).includes(SET.shelved), false, 'a profile bundle')
+      assert.equal(JSON.stringify(placementRecord(home)).includes(SET.shelved), false, 'in the placement record: ' + show(placementRecord(home)))
+    })
+  }
   integrationCase(sdk, 'HOST-EP-03', 7, 'both libraries (dsh-connector-shared, fishball-shared) and the contract-only connector sit beside core in the child, never as a profile bundle', async () => {
     const { home } = await ready()
     for (const name of [...SET.libraries, SET.contractOnly]) {

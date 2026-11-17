@@ -21,9 +21,11 @@ const tarballName = (name) => `${name}-${VERSION}.tgz`
 const pkg = (name, folder) => Object.freeze({ name, folder: 'packages/' + folder, tarball: tarballName(name) })
 
 /**
- * The 9 packages and their repo folders: the ONE place a package name lives (the connector's npm
+ * The 8 packages and their repo folders: the ONE place a package name lives (the connector's npm
  * name was an open product question; the lead set it to `dsh-agent-connector` on 2026-11-17, its
  * folder stays packages/dsh-connector). A rename is a one-line edit here.
+ * Re-baselined (SHELVE-BOARD, was 9): fishball-board is out of 1.0.0-alpha.1. The user, 2026-11-18:
+ * "fishball-board先从这次release中移除，我要改的地方太多了。先封存，留到下一批再说。所以不要预留在子实例的Fishball内。"
  */
 export const PACKAGES = Object.freeze({
   connector: pkg('dsh-agent-connector', 'dsh-connector'),
@@ -33,8 +35,35 @@ export const PACKAGES = Object.freeze({
   dshShared: pkg('dsh-connector-shared', 'dsh-connector-shared'),
   core: pkg('fishball-core', 'core'),
   ui: pkg('fishball-ui', 'fishball-ui'),
-  board: pkg('fishball-board', 'board'),
   shared: pkg('fishball-shared', 'shared'),
+})
+/**
+ * SHELVE-BOARD: the shelved package (packages/board stays in the repo, unchanged). It is named only
+ * so the cases can say it is absent: no tarball, no SHA256SUMS line, no bundled copy, no doc mention.
+ */
+export const SHELVED = Object.freeze({ board: pkg('fishball-board', 'board') })
+/** SHELVE-BOARD (BVA on the count): exactly this many tarballs, SHA256SUMS lines and publish lines. */
+export const RELEASE_COUNT = Object.freeze({ tarballs: 8, bundled: 2 })
+/**
+ * SHELVE-BOARD: what INSTALL.md and PUBLISH.md must never name (the package, or the board at all);
+ * the word itself (also as a tool prefix, board_…), so "dashboard" or "clipboard" do not count. Each doc's `npm publish` lines.
+ */
+export const SHELVED_DOC = Object.freeze({
+  names: Object.freeze([/fishball-board/i, /(?<![\w-])board(?![a-z])/i]),
+  publishLine: /^\s*npm publish\s+\S*?([\w.-]+\.tgz)\b/,
+  publishDoc: 'PUBLISH.md',
+  /** `--check`'s word for an extra tarball in the folder (SHELVE-BOARD requirement 1). */
+  unexpected: /unexpected/i,
+  /** Oracle self-check (EP: the package name and the bare word; look-alikes that are other words). */
+  samples: Object.freeze({
+    hit: Object.freeze(['fishball-board', 'Fishball-Board@1.0.0-alpha.1', 'the board', 'Board:', '(board)', 'board_search']),
+    clean: Object.freeze(['dashboard', 'clipboard-write', 'onboarding', 'keyboard', 'fishball-ui', 'billboards']),
+  }),
+  /** Oracle self-check of `publishLine` (EP: a publish line with ./ and without; lines that publish nothing). */
+  publishSamples: Object.freeze({
+    hit: Object.freeze(['npm publish ./fishball-core-1.0.0-alpha.1.tgz --tag alpha', '  npm publish fishball-ui-1.0.0-alpha.1.tgz']),
+    clean: Object.freeze(['npm view fishball-core@1.0.0-alpha.1 version', '# npm publish', 'shasum -a 256 -c SHA256SUMS']),
+  }),
 })
 export const ALL = Object.freeze(Object.values(PACKAGES))
 export const ALL_NAMES = Object.freeze(ALL.map((p) => p.name))
@@ -107,7 +136,7 @@ export const MANIFEST = Object.freeze({
   peerField: 'peerDependencies',
   hostScope: '@deepseek-ai/',
   hostPeerRange: '*',
-  /** Requirement 2: fields whose entries on another of the 9 must name exactly VERSION (peers only "admit" it). */
+  /** Requirement 2: fields whose entries on another of the 8 must name exactly VERSION (peers only "admit" it). */
   exactInternalFields: Object.freeze(['dependencies', 'optionalDependencies']),
   /** How DSH checks engines.dsh (semver with prerelease admitted). */
   dshSemverOptions: Object.freeze({ includePrerelease: true }),
@@ -139,11 +168,15 @@ export const CORE_CLOSURE = Object.freeze({
   packageDir: /(?:^|\/)node_modules\/(?:@[^/]+\/)?[^/]+$/,
 })
 
-/** Requirement 5: the hosted child's plugin set, shipped inside dsh-instance as tarballs. */
+/**
+ * Requirement 5: the hosted child's plugin set, shipped inside dsh-instance as tarballs.
+ * Re-baselined (SHELVE-BOARD, was ui, board, core): fishball-ui and fishball-core only, the user's
+ * decision of 2026-11-18 ("不要预留在子实例的Fishball内": nothing of the board in the child).
+ */
 export const INSTANCE_BUNDLED = Object.freeze({
   owner: PACKAGES.instance,
   dir: 'bundled/',
-  packages: Object.freeze([PACKAGES.ui, PACKAGES.board, PACKAGES.core]),
+  packages: Object.freeze([PACKAGES.ui, PACKAGES.core]),
   /** Requirement 6: a regular file at package/client.status.js. */
   statusFile: 'client.status.js',
 })
@@ -200,8 +233,11 @@ export const DSH = Object.freeze({
 /** The install sets of the system cases. */
 export const SETS = Object.freeze({
   hosted: Object.freeze([PACKAGES.connector, PACKAGES.connectorUi, PACKAGES.instance]),
-  /** In this order: fishball-ui, then fishball-board, then fishball-core, plus the adapter. */
-  standalone: Object.freeze([PACKAGES.ui, PACKAGES.board, PACKAGES.core, PACKAGES.adapter]),
+  /**
+   * In this order: fishball-ui, then fishball-core (core last), plus the adapter. Re-baselined
+   * (SHELVE-BOARD, was ui, board, core): the board is out of 1.0.0-alpha.1 (the user, 2026-11-18).
+   */
+  standalone: Object.freeze([PACKAGES.ui, PACKAGES.core, PACKAGES.adapter]),
   /** Empty store and cache: core's closure is bundled (installs), the connector's dependencies come from the registry (fails). */
   emptyStore: Object.freeze({ bundled: PACKAGES.core, registry: PACKAGES.connector }),
 })
@@ -213,15 +249,20 @@ export const SETS = Object.freeze({
  * Each set's `other` is a second plugin with no third-party dependency: a "used" profile gets it first
  * from another store, and on a fresh profile it is the later install (from a tarball outside the
  * release folder, which stays in place: INSTALL.md says to keep it while packages are installed from
- * it). fishball-board (the bug report's example), or dsh-connector-shared for the standalone set, which holds fishball-board itself (so "the earlier plugin stays" is not trivially true).
+ * it). Re-baselined (SHELVE-BOARD): fishball-board, the bug report's example, is no longer in the
+ * release (the user, 2026-11-18: "fishball-board先从这次release中移除…先封存"), so the other plugin is
+ * fishball-ui, a plugin of the release with no third-party dependency (its one dependency is bundled),
+ * as the board was; the standalone set holds fishball-ui itself, so its other stays dsh-connector-shared
+ * (so "the earlier plugin stays" is not trivially true).
  */
 export const OFFLINE = Object.freeze({
   sets: Object.freeze([
-    Object.freeze({ key: 'hosted', pkgs: SETS.hosted, other: PACKAGES.board }),
+    Object.freeze({ key: 'hosted', pkgs: SETS.hosted, other: PACKAGES.ui }),
     /** Standalone step 1: the managed DSH's connector and its UI (its own offline block since 0ff8cdfb). */
-    Object.freeze({ key: 'managed', pkgs: Object.freeze([PACKAGES.connector, PACKAGES.connectorUi]), other: PACKAGES.board }),
-    Object.freeze({ key: 'standalone', pkgs: Object.freeze([PACKAGES.ui, PACKAGES.board, PACKAGES.core]), other: PACKAGES.dshShared }),
-    Object.freeze({ key: 'adapter', pkgs: Object.freeze([PACKAGES.adapter]), other: PACKAGES.board }),
+    Object.freeze({ key: 'managed', pkgs: Object.freeze([PACKAGES.connector, PACKAGES.connectorUi]), other: PACKAGES.ui }),
+    // SHELVE-BOARD: fishball-ui then fishball-core, core last (was ui, board, core).
+    Object.freeze({ key: 'standalone', pkgs: Object.freeze([PACKAGES.ui, PACKAGES.core]), other: PACKAGES.dshShared }),
+    Object.freeze({ key: 'adapter', pkgs: Object.freeze([PACKAGES.adapter]), other: PACKAGES.ui }),
   ]),
   /** Profile states (decision table): never given a plugin, or given the set's `other` from another store first. */
   states: Object.freeze({ fresh: 'fresh', used: 'used' }),
@@ -352,4 +393,6 @@ export const CASE = Object.freeze({
   check: 'REL-ST-01', hosted: 'REL-SYS-01', standalone: 'REL-SYS-02', alone: 'REL-SYS-03', emptyStore: 'REL-DT-04',
   // E-FIX-2: INSTALL.md's offline blocks (set × profile state; the fresh profile's transitions), its text, the READMEs.
   docUsed: 'REL-DT-05', docFresh: 'REL-ST-02', docOrder: 'REL-EP-10', docBefore: 'REL-EP-11', readme: 'REL-EP-12', description: 'REL-EP-13',
+  // SHELVE-BOARD: the shelved board is nowhere in the release (counts, docs, --check on an extra board tarball).
+  shelved: 'REL-SHELVE',
 })
