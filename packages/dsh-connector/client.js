@@ -141,8 +141,6 @@ window.__ModuleLoader__.load({
      * its own line once the row stacks.
      */
     const GROW = Object.freeze({ fill: 999, one: 1 })
-    /** A setting row's element ids: its useId plus a part suffix; `separator` joins an IDREF list. */
-    const ROW_ID = Object.freeze({ title: '-title', hint: '-hint', errors: '-errors', separator: ' ' })
     const TOKEN = Object.freeze({
       label: 'var(--dsw-alias-label-primary)',
       secondary: 'var(--dsw-alias-label-secondary)',
@@ -206,14 +204,15 @@ window.__ModuleLoader__.load({
       addButton: Object.freeze({ ...WRAP.endTools, display: 'inline-flex' }),
       actions: Object.freeze({ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: GAP.item }),
       // DSH's settings row (its general settings rows: words, then the control at the row's end, a
-      // 24px gap), wrapping as WRAP says: on a narrow page the title and hint take the full width
-      // and the input the next line, full width, with its errors under it.
-      setting: WRAP.row,
-      settingWords: Object.freeze({ ...WRAP.main, display: 'grid', gap: GAP.hairline }),
-      settingTitle: Object.freeze({ fontWeight: TYPE.heading.fontWeight, lineHeight: TYPE.body.lineHeight }),
-      settingHint: Object.freeze({ display: 'grid', gap: GAP.icon }),
-      settingControl: Object.freeze({ ...WRAP.end, display: 'grid', gap: GAP.icon }),
-      settingError: Object.freeze({ display: 'grid', color: TOKEN.error, ...TYPE.caption }),
+      // 24px gap) as two wrapping lines with the same shares (WRAP): the label (title, input), then
+      // the hint under the title and the errors under the input. On a narrow page each part takes a
+      // line of its own: title, input, hint, errors (DSH's settings field order: input, then hint).
+      setting: Object.freeze({ ...WRAP.row, rowGap: GAP.hairline, alignItems: 'flex-start' }),
+      settingLabel: Object.freeze({ ...WRAP.row, flex: '1 1 100%' }),
+      settingTitle: Object.freeze({ ...WRAP.main, fontWeight: TYPE.heading.fontWeight, lineHeight: TYPE.body.lineHeight }),
+      settingControl: Object.freeze({ ...WRAP.end, display: 'grid' }),
+      settingHint: Object.freeze({ ...WRAP.main, display: 'grid', gap: GAP.icon }),
+      settingError: Object.freeze({ ...WRAP.end, display: 'grid', color: TOKEN.error, ...TYPE.caption }),
       status: Object.freeze({ margin: 0, display: 'flex', alignItems: 'center', gap: GAP.tight, ...TYPE.caption }),
       // The words in the label colour (full contrast on the tint); the error colour is the tint, the
       // frame, the start bar and the icon, so the box still reads as an error.
@@ -443,25 +442,21 @@ window.__ModuleLoader__.load({
     const card = (rows) => h('div', { style: STYLE.card }, rows.map((row, index) => h('div', { key: row.key ?? index, style: cardRowStyle(index) }, row)))
 
     /**
-     * One setting row, DSH's settings layout: its title and hint, then its control with its errors
-     * under it; beside each other while both fit, else stacked (WRAP). The row is the `label` that
-     * holds the control, so the whole row focuses it; the control is named by its title alone
-     * (`aria-labelledby`) and described by the hint and the errors (`aria-describedby`), so an alert
-     * never becomes part of its accessible name.
-     * @param control - `(aria) => element`: the input, given the row's aria props.
+     * One setting row, DSH's settings layout: the `label` holds exactly the title and the control,
+     * so it names the input by the title alone; the hint (with any status line) and the errors are
+     * the label's siblings, so neither becomes part of the input's accessible name (USE-CASES
+     * AUTH, limits). Both lines wrap as WRAP says (STYLE.setting).
+     * @param control - the input element.
      */
     function SettingRow({ data, title, hint, control, errors }) {
-      const id = React.useId()
-      const part = (suffix) => id + suffix
-      const hasErrors = errors.some(Boolean)
-      const described = [hint === null ? null : part(ROW_ID.hint), hasErrors ? part(ROW_ID.errors) : null].filter(Boolean).join(ROW_ID.separator)
-      return h('label', { style: STYLE.setting, [DATA.setting]: data },
-        h('span', { style: STYLE.settingWords },
-          h('span', { id: part(ROW_ID.title), style: STYLE.settingTitle }, title),
-          hint === null ? null : h('span', { id: part(ROW_ID.hint), style: STYLE.settingHint }, hint)),
-        h('span', { style: STYLE.settingControl },
-          control({ 'aria-labelledby': part(ROW_ID.title), ...(described === '' ? {} : { 'aria-describedby': described }) }),
-          hasErrors ? h('span', { id: part(ROW_ID.errors), style: STYLE.settingError }, ...errors) : null))
+      return h('div', { style: STYLE.setting },
+        h('label', { style: STYLE.settingLabel, [DATA.setting]: data },
+          h('span', { style: STYLE.settingTitle }, title),
+          h('span', { style: STYLE.settingControl }, control)),
+        hint === null ? null : h('div', { style: STYLE.settingHint }, hint),
+        // Always laid out, empty without an error, so on a wide row the hint keeps to the title's
+        // column instead of running on under the input.
+        h('span', { style: STYLE.settingError }, ...errors))
     }
 
     /**
@@ -503,8 +498,8 @@ window.__ModuleLoader__.load({
         data: SETTING_PATH.dshName.join('.'),
         title: t('dshName'),
         hint: h('p', { style: STYLE.hint }, t('dshNameHint')),
-        control: (aria) => h(Input, {
-          ...aria, type: 'text', value: text ?? saved, disabled: disabled || busy,
+        control: h(Input, {
+          type: 'text', value: text ?? saved, disabled: disabled || busy,
           onChange: (event) => setText(event.target.value), onBlur: commit, onKeyDown: (event) => { if (event.key === ENTER_KEY) commit() },
         }),
         errors: [failed ? h('span', { key: 'failed', role: 'alert' }, t('saveFailed')) : null],
@@ -531,8 +526,8 @@ window.__ModuleLoader__.load({
         data,
         title: label,
         hint,
-        control: (aria) => h(Input, {
-          ...aria, type: 'text', inputMode: 'numeric', value: shown, disabled: disabled || busy, 'aria-invalid': invalid,
+        control: h(Input, {
+          type: 'text', inputMode: 'numeric', value: shown, disabled: disabled || busy, 'aria-invalid': invalid,
           onChange: (event) => setText(event.target.value), onBlur: commit, onKeyDown: (event) => { if (event.key === ENTER_KEY) commit() },
         }),
         errors: [
