@@ -4,7 +4,8 @@
        MIT, same author) on the launcher's ink tile, with this package's own badge at the bottom right.
        The badge is a paper chip in an ink ring (the ring is the cut-out that lifts it off the fish),
        holding a 16-unit glyph scaled 0.44 about the chip's centre. The glyph is a plug, drawn for this
-       repository (DSH's icon set has no plug or key), for the adapter that plugs one DSH into
+       repository (DSH's set has no plug or key; its IconLinkOutlineRegular
+       read less clearly than the plug at the Plugins row's 30 px), for the adapter that plugs one DSH into
        another's connector. The colours are the launcher's, so one asset reads on DSH's light and dark
        surfaces. -->
   <rect width="24" height="24" rx="5" fill="#101010"/>
