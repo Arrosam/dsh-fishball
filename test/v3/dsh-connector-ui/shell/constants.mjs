@@ -64,7 +64,8 @@ export const SLOT = Object.freeze({
   main: 'main',
   pageKey: 'fishball',
   /** Seats of managed marks and Hand over / Take back (S4 §2.2): absent without the connector's UI backend (requirements 1.34). */
-  marks: Object.freeze(['conversation.session.header.actions', 'sidebar.workspaces.session.menu.item', 'sidebar.session.row.leading', 'sidebar.session.row.trailing']),
+  // UI-FIX-D (2026-11-18): Hand over / Take back sit in the header's utilities seat beside "Managed by" in header.actions.
+  marks: Object.freeze(['conversation.session.header.actions', 'conversation.session.header.utilities', 'sidebar.workspaces.session.menu.item', 'sidebar.session.row.leading', 'sidebar.session.row.trailing']),
   /** The Plugins card (R-HOST-07: the model-sync trigger lives there). */
   card: Object.freeze(['plugins.bundle.config', 'plugins.row.config']),
   // Q-G4 = A (R-UI-13 withdrawn): embed-UI registers neither record seat, so no ask_agent view and no answer control exist.
