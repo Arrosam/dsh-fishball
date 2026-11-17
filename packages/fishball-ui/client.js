@@ -12,6 +12,7 @@
  *   `view=settings` continuation;
  * - client.asks.js: the ask cards in Fishball's own conversation, over core's routes;
  * - client.strip.js: the status strip and its Connect / Cancel control (F-WIRE);
+ * - client.pairing.js: the pairing card, core's pairing warning and its choices (R-FIX-FUI);
  * - client.model.js: the dialog that asks for Fishball's model while it is unset (F-WIRE).
  *
  * A chunk that fails to load loses only its part, logged once; a chunk that arrives after this row
@@ -22,17 +23,39 @@
 window.__ModuleLoader__.load({
   id: 'fishball-ui',
   factory(require) {
+    const React = require('react')
+    const { Button } = require('@deepseek-ai/dsh-client-ui-primitives')
+    const h = React.createElement
     const UI = Object.freeze({
       name: 'fishball-ui',
       parts: Object.freeze([
         Object.freeze({ chunk: './client.entries.js', factory: 'entriesPart' }),
         Object.freeze({ chunk: './client.asks.js', factory: 'asksPart' }),
         Object.freeze({ chunk: './client.strip.js', factory: 'stripPart' }),
+        Object.freeze({ chunk: './client.pairing.js', factory: 'pairingPart' }),
         Object.freeze({ chunk: './client.model.js', factory: 'modelPart' }),
       ]),
       unavailable: 'fishball-ui: part unavailable',
       base: 'fishball-ui-base-style',
+      chinese: 'zh',
+      lang: Object.freeze({ zh: 'zh', en: 'en' }),
     })
+
+    /**
+     * A live stream's health (R-FIX-FUI): `live` while the last thing heard is a valid frame (or
+     * nothing yet), `stale` after an `error` while EventSource retries by itself, `closed` once it
+     * gave up (`readyState` CLOSED: an HTTP, auth or content-type failure), when only Reconnect
+     * opens it again. A fresh valid frame makes it `live` again. Its words are the parts' data
+     * markers (`data-fishball-*-stale`, `data-fishball-stream-notice`).
+     */
+    const HEALTH = Object.freeze({ live: 'live', stale: 'stale', closed: 'closed' })
+    /** EventSource.CLOSED, the readyState after which it never retries (WHATWG HTML §9.2). */
+    const SOURCE_CLOSED = 2
+    const STREAM_CSS = Object.freeze({ notice: 'fb-ui-stream-notice' })
+    const streamText = {
+      en: { stale: 'Reconnecting to Fishball… What is shown here may be out of date.', closed: 'The connection to Fishball was lost. What is shown here may be out of date.', retry: 'Reconnect', staleBadge: 'Out of date' },
+      zh: { stale: '正在重新连接 Fishball… 此处显示的内容可能已过时。', closed: '与 Fishball 的连接已断开。此处显示的内容可能已过时。', retry: '重新连接', staleBadge: '已过时' },
+    }
 
     /**
      * The look the parts share (UI-POLISH-F), one style sheet for the row, DSH tokens only:
@@ -49,16 +72,95 @@ window.__ModuleLoader__.load({
       `.${CSS.dock}{box-sizing:border-box;width:calc(100% - 2 * var(--dsh-composer-side-clearance, 0px) - 4 * var(--dsh-composer-dock-inset, 0px));max-width:calc(var(--dsh-composer-card-max-width, 100%) - 4 * var(--dsh-composer-dock-inset, 0px));margin:0 auto 8px;display:grid;gap:8px}`,
       `.${CSS.card}{box-sizing:border-box;min-width:0;border-radius:var(--dsw-radius-xl);background:var(--dsw-specific-input-major);--dsw-elevation-stroke-color:var(--dsw-alias-border-l2);box-shadow:var(--dsw-elevation-panel);color:var(--dsw-alias-label-primary);font:var(--dsw-font-xs-13);overflow:hidden}`,
       `.${CSS.iconButton}{width:28px;padding:0;color:var(--dsw-alias-label-secondary)}`,
+      // The stale notice: DSH's warn ink on its warn band, as the open ask card's band.
+      `.${STREAM_CSS.notice}{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:0;padding:8px 16px;background:var(--dsw-alias-state-warn-tertiary);color:var(--dsw-alias-label-secondary);font:var(--dsw-font-xxs-12)}`,
     ].join('')
+
+    /**
+     * One live stream (R-FIX-FUI): an EventSource on `url()` shared by every mounted part that
+     * subscribes, opened at the first subscriber and closed after the last. `valid(frame)` says which
+     * parsed frames are the route's shape; any other keeps the last good one. `get()` is
+     * `{frame, health}`: the last valid frame (or `initial`) and its `HEALTH`. `reopen()` closes the
+     * source and opens a fresh one (Reconnect, or a changed `url()`).
+     */
+    function liveStream({ url, valid, initial = null }) {
+      let snapshot = Object.freeze({ frame: initial, health: HEALTH.live })
+      let source
+      const listeners = new Set()
+      const publish = (next) => {
+        snapshot = Object.freeze({ ...snapshot, ...next })
+        for (const listener of [...listeners]) listener()
+      }
+      const open = () => {
+        const current = new EventSource(url())
+        source = current
+        current.onmessage = (message) => {
+          let next
+          try { next = JSON.parse(message.data) } catch { return }
+          if (!valid(next)) return
+          publish({ frame: Object.freeze(next), health: HEALTH.live })
+        }
+        // An error on a source this stream already replaced or closed says nothing about the current one.
+        current.onerror = () => {
+          if (source !== current) return
+          publish({ health: current.readyState === SOURCE_CLOSED ? HEALTH.closed : HEALTH.stale })
+        }
+      }
+      const close = () => { source?.close(); source = undefined }
+      return Object.freeze({
+        get: () => snapshot,
+        subscribe(listener) {
+          listeners.add(listener)
+          if (source === undefined) open()
+          return () => {
+            listeners.delete(listener)
+            if (listeners.size === 0) close()
+          }
+        },
+        reopen() {
+          if (source === undefined) return
+          close()
+          open()
+          // Reconnect pressed: the new source is trying, as EventSource's own retry is.
+          if (snapshot.health === HEALTH.closed) publish({ health: HEALTH.stale })
+        },
+      })
+    }
+
+    /** The page's language, `zh` or `en`, followed live (DSH's locale service, as the parts read it). */
+    function useLang(ctx) {
+      const active = React.useSyncExternalStore((listener) => ctx.locale.subscribe(listener), () => ctx.locale.getLocale().active)
+      return active.startsWith(UI.chinese) ? UI.lang.zh : UI.lang.en
+    }
+
+    /**
+     * The notice a part shows over its cached view while the stream is not live, with Reconnect once
+     * the stream gave up; null while live.
+     */
+    function StreamNotice({ health, lang, onRetry }) {
+      if (health === HEALTH.live) return null
+      const text = streamText[lang] ?? streamText[UI.lang.en]
+      return h('div', { className: STREAM_CSS.notice, role: 'status', 'data-fishball-stream-notice': health },
+        h('span', null, text[health]),
+        health === HEALTH.closed ? h(Button, { type: 'button', size: 'sm', variant: 'outline', 'data-fishball-stream-retry': true, onClick: onRetry }, text.retry) : null)
+    }
 
     /**
      * What the parts share: `css`, the shared class names, and `mountStyle(id, cssText)`, which adds
      * one style sheet to the document and returns its disposer, for a part's `ctx.effect`; the id
-     * names it for a reader of the DOM.
+     * names it for a reader of the DOM. Since R-FIX-FUI also the live streams' lifecycle
+     * (`liveStream`, `HEALTH`, `StreamNotice`, `staleText`) and `useLang`, so the strip, the ask
+     * cards and the pairing card mark a lost stream the same way.
      */
     const kit = Object.freeze({
       /** The shared class names (`CSS`); their sheet is mounted once by this row. */
       css: CSS,
+      HEALTH,
+      liveStream,
+      useLang,
+      StreamNotice,
+      /** The badge word of a view shown while its stream is not live, in `lang`. */
+      staleText: (lang) => (streamText[lang] ?? streamText[UI.lang.en]).staleBadge,
       mountStyle(id, cssText) {
         const style = document.createElement('style')
         style.id = id

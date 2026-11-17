@@ -358,40 +358,74 @@ window.__ModuleLoader__.load({
     }
 
     /**
-     * Acts on one Connect press's answer (`ConnectBegin`) and returns `{notice, approvalUrl}`:
-     * `notice` is the `needs-configuration` code, `unavailable` for any answer it cannot act on, or
-     * `undefined`; `approvalUrl` is the approval page it opened, also shown as a link.
+     * One Connect press's answer (`ConnectBegin`) as `{notice, approvalUrl}`: `notice` is the
+     * `needs-configuration` code, `unavailable` for any answer it cannot act on, or `undefined`;
+     * `approvalUrl` is the approval page to open, also shown as a link. Pure: the caller opens it,
+     * and only while its page is still mounted.
      */
     function pressResult(answer) {
-      const { outcome, open } = PAGE.connect
+      const { outcome } = PAGE.connect
       if (answer?.outcome === outcome.authorized) return {}
-      if (answer?.outcome === outcome.approvalUrl && typeof answer.url === 'string') {
-        window.open(answer.url, open.target, open.features)
-        return { approvalUrl: answer.url }
-      }
+      if (answer?.outcome === outcome.approvalUrl && typeof answer.url === 'string') return { approvalUrl: answer.url }
       return { notice: answer?.outcome === outcome.needsConfiguration && typeof answer.code === 'string' ? answer.code : PAGE.connect.unavailable }
+    }
+
+    /** The route's status, or undefined (unavailable) for anything that is not a `ConnectStatus`. */
+    const connectStatusOf = (status) => (Object.values(SHARED.connectState).includes(status?.state) ? status : undefined)
+    /** What a status says, as one comparable value: a notice is kept while this stays the same. */
+    const statusKey = (status) => JSON.stringify([status?.state ?? CONNECT_UNAVAILABLE, status?.code ?? null])
+
+    /**
+     * The status read after a press's notice (R-FIX-FUI, review finding 6). The first read after the
+     * press is the notice's basis: what the status said when the press was refused. A later read
+     * whose status says something else (the user fixed the setting, or authorized elsewhere)
+     * supersedes the refusal, so the notice goes; the same status keeps it.
+     */
+    function withStatus(current, status) {
+      if (current.notice === undefined) return { ...current, status }
+      const key = statusKey(status)
+      if (current.basis === undefined) return { ...current, status, basis: key }
+      return key === current.basis ? { ...current, status } : { status, approvalUrl: current.approvalUrl }
     }
 
     /**
      * The Connect control (design §6.3a step 1): the state of `fishballInstance.ui.connect`, read
      * on mount, on window focus and after each press, and the Connect button. Its state is one
-     * value `{status, notice, approvalUrl}`: `status` is the route's `ConnectStatus` or undefined
-     * (unavailable); `notice` and `approvalUrl` are the last press's (`pressResult`). The link
-     * shows only while the attempt is `authorizing`: the URL is dead once the attempt ended.
+     * value `{status, notice, basis, approvalUrl}`: `status` is the route's `ConnectStatus` or
+     * undefined (unavailable); `notice` and `approvalUrl` are the last press's (`pressResult`),
+     * `basis` the status the notice was shown with (`withStatus`). The link shows only while the
+     * attempt is `authorizing`: the URL is dead once the attempt ended.
+     *
+     * Ownership of its async work (R-FIX-FUI, review finding 5): every read and press takes the next
+     * `sequence` number, and a read publishes only while it is still the latest one, so a slow
+     * earlier read never overwrites a newer state, and a press invalidates the reads before it.
+     * After unmount nothing settles into this control: no state, no approval page opened, no
+     * follow-up read. An authorization the press already started on the server is left running.
      */
     function ConnectControl({ t }) {
       const [view, setView] = React.useState({ status: undefined })
+      const sequence = React.useRef(0)
+      const mounted = React.useRef(true)
       const read = React.useCallback(async () => {
-        const status = await connectRequest(PAGE.connect.read)
-        setView((current) => ({ ...current, status: Object.values(SHARED.connectState).includes(status?.state) ? status : undefined }))
+        const mine = ++sequence.current
+        const status = connectStatusOf(await connectRequest(PAGE.connect.read))
+        if (!mounted.current || mine !== sequence.current) return
+        setView((current) => withStatus(current, status))
       }, [])
       React.useEffect(() => {
+        mounted.current = true
         void read()
         window.addEventListener(PAGE.connect.reread, read)
-        return () => window.removeEventListener(PAGE.connect.reread, read)
+        return () => {
+          mounted.current = false
+          window.removeEventListener(PAGE.connect.reread, read)
+        }
       }, [read])
       const begin = async () => {
+        ++sequence.current
         const press = pressResult(await connectRequest(PAGE.connect.begin))
+        if (!mounted.current) return
+        if (press.approvalUrl !== undefined) window.open(press.approvalUrl, PAGE.connect.open.target, PAGE.connect.open.features)
         setView((current) => ({ status: current.status, ...press }))
         await read()
       }

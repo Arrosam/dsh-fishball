@@ -17,6 +17,7 @@
  *   launcher, the one native open path, as the "DSH settings" entry presses it; DSH has no public
  *   "open the Models section" call, so the user picks Models there).
  * - Set already, or set elsewhere while open (core's settings page): not shown, or closed.
+ * - Each opening reads DSH's catalog again (R-FIX-FUI), and a failed read offers Try again.
  * - A namespace this client does not see (no core row): nothing is shown.
  */
 window.__ModuleLoader__.load({
@@ -64,6 +65,7 @@ window.__ModuleLoader__.load({
       loading: 'Loading the models…',
       none: 'No model is configured in this DSH yet. Add one in DSH settings, under Models.',
       failed: 'The models could not be read.',
+      retry: 'Try again',
       openSettings: 'Open DSH settings',
       later: 'Not now',
       saveFailed: 'The model was not saved. Try again.',
@@ -76,6 +78,7 @@ window.__ModuleLoader__.load({
       loading: '正在读取模型…',
       none: '此 DSH 还没有配置模型。请在 DSH 设置的“模型”中添加。',
       failed: '无法读取模型。',
+      retry: '重试',
       openSettings: '打开 DSH 设置',
       later: '暂不选择',
       saveFailed: '模型没有保存，请重试。',
@@ -144,15 +147,21 @@ window.__ModuleLoader__.load({
         const [catalog, setCatalog] = React.useState({ status: DIALOG.catalog.loading })
         const [failed, setFailed] = React.useState(false)
         const [saving, setSaving] = React.useState(false)
+        // One count per read asked for: Try again bumps it, so the read effect runs again.
+        const [attempt, setAttempt] = React.useState(0)
         const open = onPage && !closed && isSet(snapshot) === false
+        // Every opening reads the catalog again (R-FIX-FUI): DSH's models may have changed while the
+        // dialog was closed (set elsewhere, then cleared). A read that settles after the dialog
+        // closed, or after a newer read began, is dropped by its effect's cleanup.
         React.useEffect(() => {
-          if (!open || catalog.status !== DIALOG.catalog.loading) return undefined
+          if (!open) return undefined
           let live = true
+          setCatalog({ status: DIALOG.catalog.loading })
           Promise.resolve().then(() => ctx.remote.session.modelCatalog()).then((answer) => {
             if (live) setCatalog(answer?.ok === true ? { status: DIALOG.catalog.ready, value: answer.value } : { status: DIALOG.catalog.failed })
           }, () => { if (live) setCatalog({ status: DIALOG.catalog.failed }) })
           return () => { live = false }
-        }, [open])
+        }, [open, attempt])
         if (!open) return null
         const groups = catalog.status === DIALOG.catalog.ready ? groupsOf(catalog.value, t) : []
         const headingId = (group) => `${baseId}-${groups.indexOf(group)}`
@@ -175,7 +184,8 @@ window.__ModuleLoader__.load({
         return h(Modal, { open: true, onClose: () => setClosed(true), title: t('title'), closeLabel: t('close'), description: t('intro'), footer },
           h('div', { 'data-fishball-model-dialog': catalog.status },
             catalog.status === DIALOG.catalog.loading ? h('p', { className: DIALOG.css.note }, h(StateDot, { state: DIALOG.dot.loading }), t('loading')) : null,
-            catalog.status === DIALOG.catalog.failed ? h('p', { className: DIALOG.css.error, role: 'alert' }, h(StateDot, { state: DIALOG.dot.failed }), t('failed')) : null,
+            catalog.status === DIALOG.catalog.failed ? h('p', { className: DIALOG.css.error, role: 'alert' }, h(StateDot, { state: DIALOG.dot.failed }), t('failed'),
+              h(Button, { type: 'button', size: 'sm', variant: 'outline', onClick: () => setAttempt((count) => count + 1), 'data-fishball-model-retry': true }, t('retry'))) : null,
             none ? h('p', { className: DIALOG.css.empty, 'data-fishball-model-none': true }, t('none')) : null,
             groups.length === 0 ? null : h('div', { className: DIALOG.css.groups },
               groups.map((group) => h('div', { key: group.id, className: DIALOG.css.group, role: 'group', 'aria-labelledby': headingId(group) },

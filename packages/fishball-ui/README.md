@@ -23,18 +23,24 @@ core; in a standalone DSH you install it yourself, before core (see the
   opens DSH Settings. The model can be changed later in fishball-core's settings.
 - **The status card** above the composer (`client.strip.js`, `/api/fishball/strip`): the target's
   state (connected, not set, not connected, connecting, needs setup, failed, off) as a badge, the
-  number of contributed tools offered to Fishball's model, and Connect or Cancel. **The pairing views**
-  (`src/pairing/`) and **the ask cards** (`client.asks.js`) for asks Fishball cannot decide.
+  number of contributed tools offered to Fishball's model, and Connect or Cancel. **The pairing card**
+  (`client.pairing.js`, `/api/fishball/pairing`): core's pairing warning for an imported or pasted
+  token already paired elsewhere, with its choices (Continue only once its box is ticked), and what
+  core needs (a new token or id, another name). **The ask cards** (`client.asks.js`) for asks
+  Fishball cannot decide. When a card's stream is lost, the card says so, stops offering its
+  controls, and offers Reconnect once the browser gave up.
 - **The Recommended tab** (`fishball-recommend-plugins/`) on DSH's Plugins page.
 - **UI guard rows**: `ui-subagent`, `ui-schedule`, `ui-permission`, `ui-agent-preset`,
   `entry-customization`, `ui-open-in-app`, `ui-sidebar-terminal` and `ui-model-selection` (the
-  composer's model picker) are switched off while `fishball-core` is in the profile.
+  composer's model picker) are switched off while both `fishball-ui` and `fishball-core` are in the
+  profile. The rows are in core's patch, so they cannot touch a DSH without core.
 
 Everything is drawn with DSH's own components, icons and theme tokens, so it follows DSH's light
 and dark themes and its language (en and zh).
 
 ## Without core
 
-Every row is switched on or off by whether `fishball-core` is in the profile (read live while HMR
-runs). Without core, only `fishball-ui-core-missing` runs: it logs `fishball-core-missing` and
-changes nothing.
+Every row of fishball-ui's patch is switched on or off by whether `fishball-core` is in the profile
+(read live while HMR runs). That patch only inserts its own rows. Without core, only
+`fishball-ui-core-missing` runs: it logs `fishball-core-missing` and changes nothing. The rows that
+change DSH's own UI are in core's patch, which a DSH without core does not have.

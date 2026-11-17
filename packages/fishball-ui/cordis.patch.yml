@@ -1,11 +1,16 @@
 # fishball-ui's bundle patch (requirements 1.38 Q-N2, 1.41 Q-G1/Q-G2; R-FB-14; design §1.0, §5a.2).
-# This file is the ONE definition of the UI guard rows: src/guards.js reads them back at runtime and
-# core's guard check reports them through the `fishballUiGuards` service (R-FB-09). It also holds
-# one config row, not a guard: DSH's Preview Notice acknowledged in a hosted child (E-FIX-3 B7).
 #
-# Every row here depends on whether fishball-core is in this DSH. Two anchors, one test and its
-# negation; YAML can neither share the bundle name with code nor reuse one expression in another,
-# so the test is spelled out in both anchors, and `fishball-core` as in core's `GUARDS.bundleName`:
+# Only insert rows, and only fishball-ui's own: without core (Q-G2 = A) nothing changes in this DSH.
+# A patch row that targets another layer's row always writes its value, whatever its `!!js`
+# condition evaluates to (the host's `applyEntryPatches`, both SDKs). So a row here could not leave
+# an earlier bundle's value alone without core. The UI guard rows and the hosted child's Preview
+# Notice row are therefore in core's patch, which exists exactly when core does, conditional on
+# fishball-ui (R-FIX-FUI, the user, 2026-11-18; core's `cordis.patch.yml`).
+#
+# Every row here depends on whether fishball-core is in this DSH: one test (the core-missing row) and
+# its negation (the `without-core` anchor). YAML can neither share the bundle name with code nor reuse
+# one expression in another, so the test is spelled out in both, with `fishball-core` as in core's
+# `GUARDS.bundleName`:
 # - with HMR (the `hmr` service, a standalone DSH by default): core is selected in the profile
 #   manifest's `dsh.profile.bundles` now, read when the loader evaluates the row. DSH's HMR
 #   recomposes the profile after the plugin manager changes that list and re-evaluates every row's
@@ -14,62 +19,17 @@
 # - without HMR (a hosted child: the instance switches HMR off), or when the manifest cannot be
 #   read: core is among the bundles this process started with (`profileContext.startedBundles`,
 #   the layers that loaded), as a change then needs a restart anyway.
-# Limit, accepted: a core whose bundle is selected but skipped, or whose rows fail, counts as
-# present while HMR is on.
-# - With core: the UI guard rows are switched off, and the page, the Recommended tab and the
-#   fishball-ui row run.
-# - Without core (Q-G2 = A): nothing changes in this DSH. The guard rows leave DSH's rows on, the
-#   Fishball rows stay off, and only `fishball-ui-core-missing` runs, to log `fishball-core-missing`.
-#
-# A patch reaches only rows an earlier layer inserted. The guarded rows are dsh-web-app's base rows,
-# so they are earlier than any plugin bundle, whatever the order of fishball-ui and core.
-# The owner's profile patch, home patch and launch overlays apply after this file, so the owner can
-# override any guard (Q20); core then reports `guards-overridden` and changes nothing back (R-FB-09).
-#
-# A guard row is a bare `{id, disabled}` row; src/guards.js reads exactly that shape as a guard.
-
-# UI-only session-creating rows (V2 LITE; their service rows are core's guards). ui-subagent: header
-# lineage and catalogue tree items open other sessions; ui-schedule: scheduled prompts run as new
-# sessions; ui-permission/ui-agent-preset: permission and preset pickers (the preset creator also
-# starts sessions); entry-customization: More-menu rows that start sessions; ui-open-in-app: native
-# launches off the page; ui-sidebar-terminal: a shell outside read-only. They are browser rows with
-# an empty Node half and no service another row injects (checked in 0.2.1-rc.5 and 0.2.2-rc.1).
-- { id: ui-subagent, disabled: &with-core !!js "((profile = ctx.get('profileContext')) => { try { return (ctx.get('hmr') === undefined ? profile?.startedBundles : JSON.parse(process.getBuiltinModule('node:fs').readFileSync(process.getBuiltinModule('node:path').join(profile.dir, 'package.json'), 'utf8')).dsh?.profile?.bundles)?.includes('fishball-core') === true } catch { return profile?.startedBundles?.includes('fishball-core') === true } })()" }
-- { id: ui-schedule, disabled: *with-core }
-- { id: ui-permission, disabled: *with-core }
-- { id: ui-agent-preset, disabled: *with-core }
-- { id: entry-customization, disabled: *with-core }
-- { id: ui-open-in-app, disabled: *with-core }
-- { id: ui-sidebar-terminal, disabled: *with-core }
-# ui-model-selection: the composer's model seat and the /model popup (dsh-web-app, both SDKs). Only
-# core's settings choose Fishball's model (the user, 2026-11-16: "Hide it. Only core's settings
-# choose the model"); fishball-ui's model dialog and core's settings page write it. No other row
-# injects its `modelDirectories` service (checked in 0.2.1-rc.5 and 0.2.2-rc.1).
-- { id: ui-model-selection, disabled: *with-core }
-
-# DSH's Preview Notice, in a hosted child only (E-FIX-3 B7; the user: the framed window is "完全一样"
-# as the standalone page, where the user met the notice already). Not a guard row (it has a config),
-# so src/guards.js does not read it. DSH's web welcome step (ui-settings-models) shows the notice
-# until `ui-settings-general.welcomeNoticeVersion`, the public setting it is acknowledged in
-# (dsh-client-ui-settings-general README), equals its copy version; so a hosted child starts with
-# it acknowledged. That copy version is DSH's `WELCOME_NOTICE_VERSION` (declared in
-# dsh-client-ui-settings-models `lib/types/onboarding-copy.d.ts`, no runtime export), the same in
-# 0.2.1-rc.5, 0.2.2-rc.1 and 0.2.2-rc.3. If DSH bumps it, the child shows the new notice once, as
-# DSH means a bump to. Elsewhere the value is undefined, which changes nothing: this config replaces
-# the row's whole config, and `welcomeNoticeVersion` is the only key it has; the owner's profile
-# layer applies after this file, so an acknowledgement saved there still wins.
-# Hosted child: one of this process's `--patch` overlays (`profileContext.overlays`) inserts the
-# instance's child-side row `dsh-instance-child` (the name core reads its target by, K3a
-# `HOSTED_IMPORT.targetSetting`). With core only, as every row here (Q-G2 = A); the child runs
-# without HMR, so core's presence is the without-HMR test of the anchors above (`startedBundles`).
-- id: ui-settings-general
-  config:
-    welcomeNoticeVersion: !!js "((profile = ctx.get('profileContext')) => profile?.startedBundles?.includes('fishball-core') === true && profile.overlays?.some((patch) => patch.insert?.some((row) => row.id === 'dsh-instance-child')) === true ? '2026-09-28.1' : undefined)()"
+# Accepted limit: while HMR is on, a core whose bundle is selected but skipped, or whose rows fail,
+# counts as present.
+# - With core: the page, the Recommended tab and the fishball-ui row run.
+# - Without core: only `fishball-ui-core-missing` runs, to log `fishball-core-missing`.
 
 - insert:
-    # fishball-ui's Node row: the `fishballUiGuards` service and the status strip's route; its
-    # browser half is ./client (the ask cards, the two settings entries, the strip, the model dialog). The package's one path row with no manifest of its own,
-    # so DSH serves fishball-ui's client once.
+    # fishball-ui's Node row: the `fishballUiGuards` presence service (core's check reports the UI
+    # guard rows only beside it), the status strip's and the pairing card's routes. Its browser half
+    # is ./client (the ask cards, the two settings entries, the strip, the pairing card, the model
+    # dialog). It is the package's one path row with no manifest of its own, so DSH serves fishball-ui's
+    # client once.
     - id: fishball-ui
       name: ./index.js
       disabled: &without-core !!js "!((profile = ctx.get('profileContext')) => { try { return (ctx.get('hmr') === undefined ? profile?.startedBundles : JSON.parse(process.getBuiltinModule('node:fs').readFileSync(process.getBuiltinModule('node:path').join(profile.dir, 'package.json'), 'utf8')).dsh?.profile?.bundles)?.includes('fishball-core') === true } catch { return profile?.startedBundles?.includes('fishball-core') === true } })()"
@@ -78,4 +38,6 @@
     - { id: fishball-page, name: ./fishball-page/index.js, disabled: *without-core }
     - { id: fishball-recommend-plugins, name: ./fishball-recommend-plugins/index.js, disabled: *without-core }
     # Without core: the one log line (src/core-missing.js). A package subpath, so it is no client source.
-    - { id: fishball-ui-core-missing, name: fishball-ui/core-missing, disabled: *with-core }
+    - id: fishball-ui-core-missing
+      name: fishball-ui/core-missing
+      disabled: !!js "((profile = ctx.get('profileContext')) => { try { return (ctx.get('hmr') === undefined ? profile?.startedBundles : JSON.parse(process.getBuiltinModule('node:fs').readFileSync(process.getBuiltinModule('node:path').join(profile.dir, 'package.json'), 'utf8')).dsh?.profile?.bundles)?.includes('fishball-core') === true } catch { return profile?.startedBundles?.includes('fishball-core') === true } })()"
