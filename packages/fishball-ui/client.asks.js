@@ -11,10 +11,12 @@
  * the session whose id the card stream names as the manager's. Every other session draws nothing.
  *
  * The state is the server half's (src/asks/): the stream route sends `{managerSessionId, cards}`
- * and the answer route commits once. A card shows the asking session, its question, the call's
+ * and the answer route commits once. A card shows the DSH it came from (MULTI-3: the target's
+ * resolved name, plain text), the asking session, its question, the call's
  * arguments and the session's reason when the request carries them (the user, 2026-11-17), and the
- * card's choices (Allow / Reject, or Reject alone for incomplete arguments) with an optional reason; an answered or closed card shows its state, with no control, and
- * the server refuses a late answer anyway.
+ * card's choices (Allow / Reject, or Reject alone for incomplete arguments) with an optional reason; an answered, closed or voided
+ * (its target removed, Q07) card shows its state, with no control, and the server refuses a late
+ * answer anyway. A card is keyed and answered by its opaque `handle` (MULTI-0), never its raw id.
  *
  * The words are the approval wording of the earlier Fishball page (en and zh), kept as they were;
  * the zh review is deferred by the user, so they are not reworded here.
@@ -41,8 +43,14 @@ window.__ModuleLoader__.load({
       events: 'api/fishball/asks/events',
       answer: 'api/fishball/asks/answer',
       jsonHeaders: Object.freeze({ 'content-type': 'application/json' }),
-      state: Object.freeze({ open: 'open', answered: 'answered', closed: 'closed' }),
-      css: Object.freeze({ id: 'fishball-asks-style', root: 'fb-asks', card: 'fb-ask-card', meta: 'fb-ask-meta', from: 'fb-ask-from', time: 'fb-ask-time', body: 'fb-ask-body', badge: 'fb-ask-badge', question: 'fb-ask-question', detail: 'fb-ask-detail', label: 'fb-ask-label', args: 'fb-ask-args', row: 'fb-ask-row', reason: 'fb-ask-reason', error: 'fb-ask-error' }),
+      state: Object.freeze({ open: 'open', answered: 'answered', closed: 'closed', voided: 'voided' }),
+      /**
+       * MULTI-0 (`SEAM_TARGETS.ask`, restated): the answer body names the card's opaque
+       * target-qualified `handle`, never its raw `approvalId`, so two DSHs' equal ids are two cards
+       * answered each through its own target (PLAN-MULTI §5).
+       */
+      handleField: 'handle',
+      css: Object.freeze({ id: 'fishball-asks-style', root: 'fb-asks', card: 'fb-ask-card', meta: 'fb-ask-meta', source: 'fb-ask-source', from: 'fb-ask-from', time: 'fb-ask-time', body: 'fb-ask-body', badge: 'fb-ask-badge', question: 'fb-ask-question', detail: 'fb-ask-detail', label: 'fb-ask-label', args: 'fb-ask-args', row: 'fb-ask-row', reason: 'fb-ask-reason', error: 'fb-ask-error' }),
       // K1's ARGUMENTS_STATUS word for whole arguments (core's AskCard.argumentsStatus, ask-card.d.ts).
       argumentsComplete: 'complete',
       // DSH's Tag tones: an open card sits in the approval card's warn band; a finished one is quiet.
@@ -80,6 +88,8 @@ window.__ModuleLoader__.load({
     const en = {
       waiting: 'Fishball is waiting for your answer',
       from: 'From',
+      dsh: 'DSH',
+      'dsh.unnamed': 'Name unavailable',
       'choice.allow': 'Allow once',
       'choice.reject': 'Reject',
       reason: 'Reason',
@@ -88,11 +98,14 @@ window.__ModuleLoader__.load({
       'detail.incomplete': 'The arguments are incomplete, so this request can only be rejected.',
       'state.answered': 'answered',
       'state.closed': 'closed',
+      'state.voided': 'Voided',
       failed: 'The answer was refused.',
     }
     const zh = {
       waiting: 'Fishball 正在等你回答',
       from: '来自',
+      dsh: 'DSH',
+      'dsh.unnamed': '名字未知',
       'choice.allow': '允许一次',
       'choice.reject': '拒绝',
       reason: '理由',
@@ -101,6 +114,7 @@ window.__ModuleLoader__.load({
       'detail.incomplete': '参数不完整，因此只能拒绝此请求。',
       'state.answered': '已回答',
       'state.closed': '已关闭',
+      'state.voided': '已作废',
       failed: '回答被拒绝。',
     }
 
@@ -118,6 +132,8 @@ window.__ModuleLoader__.load({
       `.${ASKS_UI.css.card}${openCard} .${ASKS_UI.css.meta}{background:var(--dsw-alias-state-warn-tertiary);color:var(--dsw-alias-label-secondary)}`,
       `${ASKS_UI.waitingInk.lightScope} .${ASKS_UI.css.card}${openCard} .${ASKS_UI.css.badge}{color:${ASKS_UI.waitingInk.ink}}`,
       `.${ASKS_UI.css.from}{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}`,
+      // Which DSH asks (MULTI-3): its name as text, cut visually with the full name as the title.
+      `.${ASKS_UI.css.source}{min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;unicode-bidi:plaintext;font:var(--dsw-font-xxs-strong-12);color:var(--dsw-alias-label-primary)}`,
       `.${ASKS_UI.css.time}{margin-left:auto;white-space:nowrap}`,
       `.${ASKS_UI.css.body}{display:grid;gap:8px;padding:12px 16px 14px}`,
       `.${ASKS_UI.css.question}{margin:0;white-space:pre-wrap;font:var(--dsw-font-s-strong-14);color:var(--dsw-alias-label-primary)}`,
@@ -163,16 +179,19 @@ window.__ModuleLoader__.load({
           setFailed(false)
           let ok = false
           try {
-            const response = await fetch(apiUrl(ASKS_UI.answer), { method: 'POST', headers: ASKS_UI.jsonHeaders, body: JSON.stringify({ approvalId: card.approvalId, choice, text: reason }) })
+            const response = await fetch(apiUrl(ASKS_UI.answer), { method: 'POST', headers: ASKS_UI.jsonHeaders, body: JSON.stringify({ [ASKS_UI.handleField]: card.handle, choice, text: reason }) })
             ok = (await response.json())?.ok === true
           } catch { ok = false }
           setSending(false)
           // A refusal that closed the card arrives on the stream; any other leaves it answerable.
           if (!ok) setFailed(true)
         }
-        return h('div', { className: [kit.css.card, ASKS_UI.css.card].join(' '), 'data-fishball-ask': card.approvalId, 'data-fishball-ask-state': card.state },
+        // The DSH the card came from (MULTI-3; PLAN-MULTI §5): its name as plain text, untrusted data.
+        const source = card.source?.name ?? t('dsh.unnamed')
+        return h('div', { className: [kit.css.card, ASKS_UI.css.card].join(' '), 'data-fishball-ask': card.handle, 'data-fishball-ask-state': card.state },
           h('div', { className: ASKS_UI.css.meta },
             h(Tag, { tone: open ? ASKS_UI.tone.open : ASKS_UI.tone.done, className: ASKS_UI.css.badge }, open ? t('waiting') : t('state.' + card.state)),
+            h('span', { className: ASKS_UI.css.source, title: source, 'aria-label': t('dsh') + ': ' + source, 'data-fishball-ask-source': card.source?.targetId }, source),
             h('span', { className: ASKS_UI.css.from }, t('from') + ': ' + (card.sessionTitle ?? card.sessionId)),
             h('span', { className: ASKS_UI.css.time }, new Date(card.askedAt).toLocaleString(timeLocale))),
           h('div', { className: ASKS_UI.css.body },
@@ -206,7 +225,7 @@ window.__ModuleLoader__.load({
         const stale = health !== kit.HEALTH.live
         return h('div', { className: [kit.css.dock, ASKS_UI.css.root].join(' '), 'data-fishball-asks': true, 'data-fishball-asks-stale': stale ? health : undefined },
           stale ? h('div', { className: kit.css.card }, h(kit.StreamNotice, { health, lang })) : null,
-          cards.map((card) => h(AskCard, { key: card.approvalId, card, t, stale, timeLocale: ASKS_UI.timeLocale[lang] })))
+          cards.map((card) => h(AskCard, { key: card.handle, card, t, stale, timeLocale: ASKS_UI.timeLocale[lang] })))
       }
     }
 

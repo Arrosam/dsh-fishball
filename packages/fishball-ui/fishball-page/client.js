@@ -4,46 +4,62 @@ window.__ModuleLoader__.load({
   factory(require) {
     const React = require('react')
     const h = React.createElement
-    const { createPortal } = require('react-dom')
-    const { Button, Tooltip, StateDot, FishLogo, FISH_LOGO_PATH, FISH_LOGO_VIEWBOX, IconSettingsOutlineRegular, IconPluginPinwheelOutlineRegular, IconRefreshOutlineRegular } = require('@deepseek-ai/dsh-client-ui-primitives')
+    const { Button, Tooltip, StateDot, FishLogo, FISH_LOGO_PATH, FISH_LOGO_VIEWBOX, IconSettingsOutlineRegular, IconRefreshOutlineRegular } = require('@deepseek-ai/dsh-client-ui-primitives')
     const PAGE = Object.freeze({
       name: 'fishball-page', route: 'api/fishball/session', read: 'GET', ensure: 'POST',
       requestFailed: 'FISHBALL_SESSION_REQUEST_FAILED', invalidSession: 'FISHBALL_SESSION_INVALID',
-      priority: -1, plugins: 'plugins',
-      // shell.overlay is a `list` slot in both SDKs (ui-layout root children): every entry needs
-      // its own id, else register() throws and the whole page entry fails to activate.
-      overlay: Object.freeze({ name: 'shell.overlay', id: 'fishball-page.navigation' }),
+      priority: -1,
       root: 'data-fishball-page', ready: 'data-fishball-session',
-      hidden: 'data-fishball-hidden', navigation: 'fishball-page-navigation', label: 'aria-label',
+      hidden: 'data-fishball-hidden', label: 'aria-label',
       settingsSlot: 'settings.launcher', settingsButton: 'fishball-settings-launcher',
-      // The launcher's seat in the navigation row (B4); display:contents, so an empty seat adds no
-      // gap and the portalled launcher is a flex item like its siblings.
-      launcherSeat: 'fishball-page-launcher-seat',
-      // DSH's design-system Button for every navigation control (B4): the page draws no button of its own.
+      /**
+       * MULTI-3 (PLAN-MULTI §6.4): "Fishball" (back to the manager's conversation) and the page's
+       * status are one entry of DSH's own `sidebar.footer.action` list ("optional actions beside
+       * Settings at the sidebar foot", both SDKs), so they sit in the real sidebar: its wide column,
+       * its rail, its rc.1 drawer and the narrow bottom bar alike. A list slot: the entry needs an id.
+       */
+      footer: Object.freeze({ name: 'sidebar.footer.action', id: 'fishball-page.return' }),
+      // DSH's design-system Button for every page control (B4): the page draws no button of its own.
       button: Object.freeze({ size: 'sm', variant: 'ghost' }),
       /**
        * UI-POLISH-F (the user: "我更乐意看到是按钮的图标"): the controls are DSH's own icons with the
        * name as aria-label and DSH's Tooltip, as DSH's collapsed sidebar rail draws its Settings
        * trigger. Glyphs are the ones DSH uses for the same destinations (its Settings trigger, its
-       * Plugins panel icon, its brand fish), all exported by the primitives in 0.2.1-rc.5 and 0.2.2-rc.1.
+       * brand fish), all exported by the primitives in 0.2.1-rc.5 and 0.2.2-rc.1. 16px in the wide
+       * column, 18px in the rail and bar, as DSH's own panel rows size theirs (dsh-client-ui-sidebar).
        */
-      icon: Object.freeze({ size: 16 }),
-      // Above the controls: the bar sits on the window's bottom edge. Portalled, so the overlay's
-      // stacking cannot clip it.
-      tooltip: Object.freeze({ side: 'top', portal: true }),
+      icon: Object.freeze({ wide: 16, rail: 18 }),
+      // The rail's tooltips open to its right, as DSH's own rail rows do; in the bottom bar, above it.
+      tooltip: Object.freeze({ rail: Object.freeze({ side: 'right', portal: true }), bar: Object.freeze({ side: 'top', portal: true }) }),
       navKind: 'data-fishball-nav', statusKind: 'data-fishball-nav-status',
       /**
-       * Narrow windows: DSH's composer reaches the window's bottom edge there (its stats row sits
-       * under the bar), so the conversation is lifted by the bar's height. 480px is the narrow
-       * breakpoint DSH's chat CSS uses (dsh-client-ui-chat, both SDKs); 44px is the bar (28px
-       * buttons, 4px padding each side) plus its 8px offset from the edge.
+       * Narrow windows (PLAN-MULTI §6.4, the user: the bottom row "实际上就是侧边栏，只是被重度修改了
+       * 样式"): DSH's real sidebar is restyled into a fixed 44px bar on the window's bottom edge, and
+       * the conversation is lifted by that height (DSH's composer stats row reaches the edge there).
+       * 480px is the narrow breakpoint DSH's chat CSS uses (dsh-client-ui-chat, both SDKs); 44px is
+       * DSH's 36px rail rows plus 4px padding each side. The row overflows by horizontal scroll (the
+       * user: no More menu). `sheetGutterPx`: an expanded sidebar leaves this much of the
+       * conversation visible, as rc.1's drawer does (dsh-client-ui-layout `viewport - 48`).
        */
-      narrow: Object.freeze({ query: '(max-width: 480px)', clearancePx: 44 }),
-      css: Object.freeze({ iconButton: 'fishball-page-icon-button', status: 'fishball-page-status', divider: 'fishball-page-divider' }),
+      narrow: Object.freeze({ query: '(max-width: 480px)', clearancePx: 44, sheetGutterPx: 48, layer: 25 }),
+      css: Object.freeze({ iconButton: 'fishball-page-icon-button', status: 'fishball-page-status', footer: 'fishball-page-footer', row: 'fishball-page-row' }),
       // The active-locale prefix that selects TEXT.zh; every other language reads TEXT.en.
       chinese: 'zh',
-      main: '[data-slot="main.conversation"]', sidebarSlot: '[data-slot="sidebar"]',
-      frame: '.pI_x6G_frame', sidebar: '.pI_x6G_sidebarCol',
+      main: '[data-slot="main.conversation"]',
+      /**
+       * DSH's stable hooks for the restyle (both SDKs), never its hashed class names: the layout
+       * frame is the parent of its `data-shell-bottom` seat and carries `data-sidebar-collapsed` /
+       * `data-sidebar-drawer` (dsh-client-ui-layout AppFrame); the sidebar's root is the one child of
+       * its slot anchor; its regions are the parents of their slot anchors (dsh-client-ui-sidebar).
+       * rc.1's drawer (below 768px) is `inert` while closed, which CSS cannot lift, so the bar never
+       * applies to a drawer frame: there the native drawer opener stays and the drawer is the sidebar.
+       */
+      hook: Object.freeze({
+        frame: ':has(>[data-shell-bottom])', drawer: '[data-sidebar-drawer]', collapsed: '[data-sidebar-collapsed]',
+        sidebar: '[data-slot="sidebar"]>*', workspaces: ':has(>[data-slot="sidebar.workspaces"])',
+        foot: ':has([data-slot="sidebar.settings"])', regions: ':has(>[data-slot="sidebar.footer.action"]),:has(>[data-slot="sidebar.settings"])',
+        leading: '[data-shell-leading]', handle: '[data-side="sidebar"]',
+      }),
       // Window focus re-reads the manager (GET only, never ensure); see refresh.
       reread: 'focus',
     })
@@ -76,7 +92,8 @@ window.__ModuleLoader__.load({
         Object.freeze({ id: 'session.archive', code: 'F16' }),
         Object.freeze({ id: 'workspace.add', code: 'F17' }),
         Object.freeze({ id: 'session.rename', code: 'F18' }),
-        Object.freeze({ id: 'sidebar.left.toggle', code: 'F19' }),
+        // MULTI-3: `sidebar.left.toggle` is no longer remapped: the sidebar is Fishball's target list
+        // now (PLAN-MULTI §6.1), and its native toggle and shortcut open it.
       ]),
       edit: 'set',
       config: Object.freeze({ loading: 'loading', unreadable: 'unreadable' }),
@@ -105,15 +122,19 @@ window.__ModuleLoader__.load({
       ]) }),
     ])
     /**
-     * Slots shadowed by an empty occupant (A-lite §11.3, first-choice mechanism): the empty-session
-     * hero's workspace picker. Picking a workspace connects or creates another blank session and
-     * opens it (ui-workspace connectBlank -> replaceMain); the menu is portalled to the body, so
-     * hiding its wrapper would not hide it. Both the chip and the inert composer's "choose
-     * workspace" trigger only open this slot, so with the shadow neither can leave the session.
+     * Slots shadowed by an empty occupant (A-lite §11.3, first-choice mechanism):
+     * - the empty-session hero's workspace picker. Picking a workspace connects or creates another
+     *   blank session and opens it (ui-workspace connectBlank -> replaceMain); the menu is portalled
+     *   to the body, so hiding its wrapper would not hide it. Both the chip and the inert composer's
+     *   "choose workspace" trigger only open this slot, so with the shadow neither can leave the session;
+     * - MULTI-3: the sidebar's workspace/session browser (`sidebar.workspaces`). fishball-ui's target
+     *   list takes the slot at a stronger priority; this shadow keeps it fail-closed (never the
+     *   native browser) while fishball-ui's part is absent or unloads (PLAN-MULTI §6.1). It is
+     *   registered before anything else, so it is the last thing released.
      */
-    const SHADOWED_SLOTS = Object.freeze(['conversation.hero.workspace'])
-    /** The navigation controls' `data-fishball-nav` hooks. */
-    const NAV = Object.freeze({ settings: 'settings', fishball: 'fishball', plugins: 'plugins', retry: 'retry' })
+    const SHADOWED_SLOTS = Object.freeze(['sidebar.workspaces', 'conversation.hero.workspace'])
+    /** The page controls' `data-fishball-nav` hooks. */
+    const NAV = Object.freeze({ settings: 'settings', fishball: 'fishball', retry: 'retry' })
     /** Gate states: pending waits for real native events, never for a timer. */
     const GATE = Object.freeze({ pending: 'pending', protected: 'protected', failed: 'failed' })
     /** The navigation status kinds (`data-fishball-nav-status`) and the DSH StateDot each shows. */
@@ -139,15 +160,55 @@ window.__ModuleLoader__.load({
       passTypes: Object.freeze(['reload', 'traverse']), primaryButton: 0,
     })
     const TEXT = Object.freeze({
-      en: { back: 'Fishball', plugins: 'Plugins', settings: 'Settings', unavailable: 'Fishball session unavailable', shortcuts: 'Fishball shortcut protection unavailable', pending: 'Preparing Fishball shortcut protection', retry: 'Retry' },
-      zh: { back: 'Fishball', plugins: '插件', settings: '设置', unavailable: 'Fishball 会话不可用', shortcuts: 'Fishball 快捷键保护不可用', pending: '正在准备 Fishball 快捷键保护', retry: '重试' },
+      en: { back: 'Fishball', settings: 'Settings', unavailable: 'Fishball session unavailable', shortcuts: 'Fishball shortcut protection unavailable', pending: 'Preparing Fishball shortcut protection', retry: 'Retry' },
+      zh: { back: 'Fishball', settings: '设置', unavailable: 'Fishball 会话不可用', shortcuts: 'Fishball 快捷键保护不可用', pending: '正在准备 Fishball 快捷键保护', retry: '重试' },
     })
+
+    /**
+     * The narrow bottom bar (PLAN-MULTI §6.4): DSH's real sidebar column, restyled. Scoped to this
+     * page, to `PAGE.narrow.query` and to a frame that is not rc.1's drawer, so DSH elsewhere and
+     * every wider window look as DSH draws them. Collapsed (the native rail), the column is a fixed
+     * 44px row on the bottom edge: the native toggle, every `sidebar.panellist` row with its own
+     * icon and active state, and the foot (this page's Fishball entry, Settings) kept in view at the
+     * row's end while the panels scroll under it. Expanded (the native toggle), it is a sheet over
+     * the conversation, leaving `sheetGutterPx` of it visible, with the target list.
+     */
+    function barRules(root) {
+      const { hook, narrow } = PAGE
+      const frame = `${root} ${hook.frame}:not(${hook.drawer})`
+      const column = `>:has(>[data-slot="sidebar"])`
+      const bar = `${frame}${hook.collapsed}${column}`
+      const sheet = `${frame}:not(${hook.collapsed})${column}`
+      const each = (prefix, list) => list.split(',').map((one) => `${prefix}${one}`).join(',')
+      const sidebar = `${bar} ${hook.sidebar}`
+      return [
+        // At this width DSH's rightbar never has a track (dsh-client-ui-layout computeColumns: the
+        // centre's 400px minimum leaves under 300px), so these tracks are exact, not a guess; only the
+        // sidebar's own track is given up, to the bar or the sheet above the conversation.
+        `${frame}{grid-template-columns:0px minmax(0px,1fr) minmax(0px,0px)!important}`,
+        `${root} ${hook.handle}{display:none}`,
+        `${bar}{position:fixed;left:0;right:0;bottom:0;top:auto;height:${narrow.clearancePx}px;width:auto;z-index:${narrow.layer};box-sizing:border-box;border-right:none;border-top:.5px solid var(--dsw-alias-border-l3);background:var(--dsw-specific-sidebar-fill)}`,
+        `${sidebar}{flex-direction:row!important;align-items:center;gap:4px;width:100%!important;height:100%;padding:4px 8px!important;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;overscroll-behavior-x:contain}`,
+        `${sidebar}>*{display:flex;flex-direction:row!important;align-items:center!important;flex:none!important;gap:4px!important;height:auto!important;margin:0!important;padding:0!important}`,
+        // The list lives in the sheet; the bar is navigation only.
+        `${sidebar}>${hook.workspaces}{display:none!important}`,
+        `${sidebar}>${hook.foot}{position:sticky;right:0;margin-left:auto!important;padding-left:8px!important;background:var(--dsw-specific-sidebar-fill);box-shadow:-.5px 0 0 var(--dsw-alias-border-l3)}`,
+        `${each(`${sidebar} `, hook.regions)}{display:flex!important;flex-direction:row;align-items:center;gap:4px;width:auto!important}`,
+        // The rail's toggle shows the brand mark until hovered; in the bar it shows DSH's own
+        // open-sidebar glyph, its sibling, so it is not taken for this page's Fishball button.
+        `${sidebar} span:has(>[data-slot="sidebar.brand.mark"]){display:none!important}`,
+        `${sidebar} span:has(>[data-slot="sidebar.brand.mark"])~svg{display:inline!important}`,
+        `${frame}${hook.collapsed} ${PAGE.main}>*{padding-bottom:${narrow.clearancePx}px;box-sizing:border-box}`,
+        `${sheet}{position:fixed;top:0;bottom:0;left:0;width:calc(100vw - ${narrow.sheetGutterPx}px);z-index:${narrow.layer};box-shadow:var(--dsw-elevation-panel)}`,
+        `${sheet} ${hook.sidebar}{width:100%!important}`,
+      ].map((rule) => `@media ${narrow.query}{${rule}}`)
+    }
 
     // Browser CSSOM, not a style element: shipped precedent in both SDKs' sidebar-documentpreview
     // client.pdf.js:7749–7777. No nonce, eval, external asset, or CSP relaxation. Native boot itself
-    // remains a separate CSP integration gate. Hashed layout hooks below are version-bounded fallbacks,
-    // verified in rc.5/rc.1, not a promise of stable SDK selectors. visibility:hidden (not opacity)
-    // keeps hidden controls out of Tab order and pointer hit-testing.
+    // remains a separate CSP integration gate. MULTI-3: the sidebar is no longer hidden: it is
+    // Fishball's target list (fishball-ui), with the workspace browser shadowed (SHADOWED_SLOTS), and
+    // the narrow bottom bar (barRules).
     function mountStyles() {
       if (typeof CSSStyleSheet !== 'function' || !('adoptedStyleSheets' in document)) {
         throw new Error('FISHBALL_CONSTRUCTED_STYLESHEET_UNAVAILABLE')
@@ -156,28 +217,26 @@ window.__ModuleLoader__.load({
       const root = `[${PAGE.root}]`
       const avatar = AVATAR.url(AVATAR.svg(FISH_LOGO_PATH, FISH_LOGO_VIEWBOX))
       const rules = [
-        `${root} ${PAGE.sidebar}{visibility:hidden!important;min-width:0!important;pointer-events:none}`,
-        // Descendants too: native ui-workspace CSS sets visibility:visible on the workspace header
-        // actions (Add workspace), which would otherwise stay Tab-focusable inside the hidden column.
-        `${root} ${PAGE.sidebar} *,${root} ${PAGE.sidebarSlot} *{visibility:hidden!important}`,
-        `${root} .pI_x6G_drawerMask,${root} ${PAGE.sidebarSlot}{visibility:hidden!important;pointer-events:none!important}`,
-        `${root} [data-shell-leading],${root} [data-sidebar-toggle],${root} [data-sidebar-drawer-mask],${root} [${PAGE.hidden}]{display:none!important}`,
+        // The hidden-control suppression (LABELS). The shell's leading seat is no longer hidden: on
+        // rc.1's drawer it holds the native drawer opener, the only way to the sidebar there (the
+        // user's choice, PLAN-MULTI §6.4); its New Session button is a LABELS launcher, still hidden.
+        `${root} [${PAGE.hidden}]{display:none!important}`,
         `${root} [data-conversation-header-leading],${root} [data-slot="conversation.session.header.lineage"],${root} [data-slot="conversation.hero.workspace"]{display:none!important}`,
-        `.${PAGE.launcherSeat}{display:contents}`,
         `${root}:not([${PAGE.ready}]) ${PAGE.main}{visibility:hidden!important;pointer-events:none!important}`,
-        // A floating toolbar in DSH's menu material (the goal dock's surface: menu fill, blur, panel
-        // elevation), so it reads as part of DSH in both themes rather than a bare pill of text.
-        `.${PAGE.navigation}{position:fixed;bottom:8px;left:8px;z-index:100;display:flex;gap:2px;align-items:center;pointer-events:auto;padding:4px;border-radius:var(--dsw-radius-md);background:var(--dsw-specific-menu);-webkit-backdrop-filter:var(--dsw-menu-backdrop-filter);backdrop-filter:var(--dsw-menu-backdrop-filter);--dsw-elevation-stroke-color:var(--dsw-alias-border-l1);box-shadow:var(--dsw-elevation-panel);color:var(--dsw-alias-label-secondary);font:var(--dsw-font-xxs-12)}`,
-        // Square icon buttons: DSH's sm Button is 28px high; the rail's own trigger is square too.
-        // Restated, not shared, with fishball-ui's `fb-ui-icon-button` (client.js): this page is its
-        // own package and loads no chunk of fishball-ui's client.
+        // Square icon buttons: DSH's sm Button is 28px high; in the rail and the bar 36px, as DSH's
+        // own rail rows. Restated, not shared, with fishball-ui's `fb-ui-icon-button` (client.js):
+        // this page is its own package and loads no chunk of fishball-ui's client.
         `.${PAGE.css.iconButton}{width:28px;padding:0;color:var(--dsw-alias-label-secondary)}`,
         `.${PAGE.css.iconButton}[aria-expanded="true"]{background:var(--dsw-alias-interactive-bg-active);color:var(--dsw-alias-label-primary)}`,
-        `.${PAGE.css.divider}{align-self:stretch;width:.5px;margin:4px 4px;background:var(--dsw-alias-border-l2)}`,
-        // The main slot is display:contents, so its element child (the conversation root) takes it.
-        `@media ${PAGE.narrow.query}{${root} ${PAGE.main}>*{padding-bottom:${PAGE.narrow.clearancePx}px;box-sizing:border-box}}`,
-        `.${PAGE.css.status}{display:inline-flex;align-items:center;gap:6px;padding:0 4px;white-space:nowrap}`,
+        `.${PAGE.css.footer}{display:flex;align-items:center;gap:2px;flex-wrap:wrap;min-width:0}`,
+        `.${PAGE.css.footer}:not([data-wide]){flex-direction:column}`,
+        `.${PAGE.css.footer}:not([data-wide]) .${PAGE.css.iconButton}{width:36px;height:36px;border-radius:var(--dsw-radius-md)}`,
+        `@media ${PAGE.narrow.query}{.${PAGE.css.footer}:not([data-wide]){flex-direction:row}}`,
+        // A wide row: icon and name, as DSH's own panel rows and Settings trigger.
+        `.${PAGE.css.row}{width:100%;justify-content:flex-start;gap:8px;height:36px;padding:0 8px;color:var(--dsw-alias-label-primary);font:var(--dsw-font-s-14)}`,
+        `.${PAGE.css.status}{display:inline-flex;align-items:center;gap:6px;padding:0 4px;min-width:0;font:var(--dsw-font-xxs-12);color:var(--dsw-alias-label-secondary)}`,
         `.${PAGE.css.status}[${PAGE.statusKind}="unavailable"],.${PAGE.css.status}[${PAGE.statusKind}="failed"]{color:var(--dsw-alias-state-error-primary)}`,
+        ...barRules(root),
         // Fishball's replies: DSH's fish mark and the name above an assistant bubble, the user's own
         // bubble left as DSH draws it, with its thin stroke.
         `${root} ${PAGE.main} [data-chat-flow-kind="assistant-step"][data-chat-group-part="response"]{position:relative;margin:6px 12% 6px 0;padding:20px 0 0 36px}`,
@@ -188,13 +247,8 @@ window.__ModuleLoader__.load({
         `${root} ${PAGE.main} .md-table-wide{width:auto;max-width:100%;margin-left:0;padding-left:0}`,
       ]
       for (const rule of rules) sheet.insertRule(rule, sheet.cssRules.length)
-      // Update only this rule's first grid track; retain the native rightbar allocation.
-      const grid = sheet.cssRules[sheet.insertRule(`${root} ${PAGE.frame}{}`, sheet.cssRules.length)]
       document.adoptedStyleSheets = [...document.adoptedStyleSheets, sheet]
-      return {
-        grid,
-        dispose() { document.adoptedStyleSheets = document.adoptedStyleSheets.filter(value => value !== sheet) },
-      }
+      return () => { document.adoptedStyleSheets = document.adoptedStyleSheets.filter(value => value !== sheet) }
     }
 
     // Hide the LABELS launchers. No plugin's Remove control is hidden (v3-design §6.2: V2's Remove-
@@ -203,7 +257,7 @@ window.__ModuleLoader__.load({
     // top navigation, the session-hierarchy nav, is hidden whole: its crumb buttons open other
     // sessions (ui-conversation open(id)) and in 0.2.2-rc.1 every crumb, the current title too, is
     // a tabIndex 0 context-menu trigger for Fork/Archive/Rename/Pin (ui-workspace session menus).
-    function mountRemovals(ctx, styles) {
+    function mountRemovals(ctx) {
       const marked = new Set()
       const text = ({ namespace, key }) => ctx.locale.bind(namespace)(key)
       function reconcile() {
@@ -219,16 +273,12 @@ window.__ModuleLoader__.load({
         for (const node of next) if (!marked.has(node)) node.setAttribute(PAGE.hidden, '')
         marked.clear()
         for (const node of next) marked.add(node)
-        const frame = document.querySelector(PAGE.frame)
-        // rc.1 mobile drawer makes the center inert while open. Close via the public action,
-        // not by stripping native inert attributes; the Settings launcher is portalled outside it.
-        if (frame?.hasAttribute('data-sidebar-drawer') && !frame.hasAttribute('data-sidebar-collapsed')) ctx.layout.toggleSidebar()
-        const columns = frame?.style.gridTemplateColumns
-        if (columns) styles.grid.style.setProperty('grid-template-columns', columns.replace(/^\S+/, '0px'), 'important')
+        // MULTI-3: the rc.1 drawer is no longer forced closed: it is how the target list is reached
+        // below 768px there (the user's choice, PLAN-MULTI §6.4).
       }
       const observer = new MutationObserver(reconcile)
       observer.observe(document.body, { subtree: true, childList: true, characterData: true,
-        attributes: true, attributeFilter: [PAGE.label, 'style', 'data-sidebar-drawer', 'data-sidebar-collapsed'] })
+        attributes: true, attributeFilter: [PAGE.label] })
       const unsubscribe = ctx.locale.subscribe(reconcile)
       reconcile()
       return () => {
@@ -638,16 +688,25 @@ window.__ModuleLoader__.load({
       }
     }
 
+    /** Whether the window is in the narrow bar range (`PAGE.narrow.query`), followed live. */
+    function useNarrow() {
+      const media = React.useMemo(() => window.matchMedia(PAGE.narrow.query), [])
+      return React.useSyncExternalStore((listener) => { media.addEventListener('change', listener); return () => media.removeEventListener('change', listener) }, () => media.matches)
+    }
+
     // Native conversation rows, composer, header actions and rightbar remain mounted: no
     // replacement chat engine or unsupported readonlySettings prop. Beyond CSS presentation the
-    // page adds only the shortcut gate, the frame guard, the manager selection and empty occupants
-    // of the shadowed slots.
+    // page adds only the shortcut gate, the frame guard, the manager selection, empty occupants of
+    // the shadowed slots, its Settings launcher and one entry beside Settings in the sidebar's foot.
     function apply(ctx) {
       ctx.effect(() => mountAll(own => {
+        // First, so it is released last: the native workspace browser never shows on this page,
+        // also not while the styles or the rest of the page mount or unwind (PLAN-MULTI §6.1).
+        const occupy = (name, Component) => ctx.slots.inject(name, () => ctx.slots.register({ name, priority: PAGE.priority }, Component))
+        for (const name of SHADOWED_SLOTS) own(occupy(name, Empty))
         const continuation = readContinuation()
         applyLanguage(ctx, continuation.lang)
-        const styles = mountStyles()
-        own(styles.dispose)
+        own(mountStyles())
         document.documentElement.setAttribute(PAGE.root, '')
         own(() => document.documentElement.removeAttribute(PAGE.root))
         const manager = createCell(null)
@@ -657,23 +716,27 @@ window.__ModuleLoader__.load({
         own(shortcuts.dispose)
         const session = mountSession(ctx, manager, gate, shortcuts)
         own(session.dispose)
-        own(mountRemovals(ctx, styles))
+        own(mountRemovals(ctx))
         own(mountFrameGuard())
         // Stable across renders, so React subscribes once; LocaleRuntime methods need `this`.
         const locale = { subscribe: listener => ctx.locale.subscribe(listener), get: () => ctx.locale.getLocale() }
-        // The navigation's seat for the Settings launcher (B4). Two separately positioned fixed
-        // controls overlapped: the launcher, a body child, stacked above the overlay layer and
-        // covered the Fishball button. One flex row owns both, so their widths cannot collide.
-        const launcherSeat = createCell(null)
-        own(() => launcherSeat.clear())
         /**
-         * One icon control: DSH's Button holding only the glyph, named by `label` (aria-label) and
-         * shown in DSH's Tooltip on hover and focus. `kind` is its `data-fishball-nav` hook.
+         * One page control in the sidebar, drawn as DSH draws the sidebar's own: in the wide column
+         * a row with its icon and name; in the rail and the bar the icon alone, named by `label`
+         * (aria-label) and shown in DSH's Tooltip. `kind` is its `data-fishball-nav` hook.
          */
-        const navButton = ({ kind, label, Icon, shortcutKeys, className, ...props }) => h(Tooltip, { ...PAGE.tooltip, label, shortcutKeys },
-          h(Button, { ...PAGE.button, type: 'button', ...props, className: [PAGE.css.iconButton, className].filter(Boolean).join(' '), [PAGE.navKind]: kind, 'aria-label': label },
-            h(Icon, { size: PAGE.icon.size })))
-        function Navigation() {
+        function PageControl({ wide, kind, label, Icon, shortcutKeys, className, ...props }) {
+          const narrow = useNarrow()
+          const classes = [PAGE.css.iconButton, wide ? PAGE.css.row : null, className].filter(Boolean).join(' ')
+          const button = h(Button, { ...PAGE.button, type: 'button', ...props, className: classes, [PAGE.navKind]: kind, 'aria-label': label },
+            h(Icon, { size: wide ? PAGE.icon.wide : PAGE.icon.rail }), wide ? h('span', null, label) : null)
+          return h(Tooltip, { ...(narrow ? PAGE.tooltip.bar : PAGE.tooltip.rail), label, shortcutKeys, disabled: wide }, button)
+        }
+        /**
+         * The page's entry beside Settings (`sidebar.footer.action`): "Fishball", back to the
+         * manager's conversation, and, while the page is not protected, its status and Retry.
+         */
+        function FishballFooter({ wide }) {
           const text = useText(locale)
           // Every hook runs on every render (no short-circuit between them).
           const lookupFailed = useCell(session.lookupFailed)
@@ -681,38 +744,32 @@ window.__ModuleLoader__.load({
           const assigned = useCell(manager)
           const state = useCell(gate)
           const status = navStatus(text, { unavailable: lookupFailed || selectFailed || assigned === null, gate: state })
-          return h('nav', { className: PAGE.navigation, 'aria-label': PAGE.name },
-            // React renders nothing into this span itself; the launcher portals into it.
-            h('span', { className: PAGE.launcherSeat, ref: launcherSeat.set }),
-            navButton({ kind: NAV.fishball, label: text.back, Icon: FishLogo, onClick: () => session.back() }),
-            navButton({ kind: NAV.plugins, label: text.plugins, Icon: IconPluginPinwheelOutlineRegular, onClick: () => ctx.layout.selectPanel(PAGE.plugins) }),
+          return h('div', { className: PAGE.css.footer, 'data-wide': wide ? '' : undefined },
+            h(PageControl, { wide, kind: NAV.fishball, label: text.back, Icon: FishLogo, onClick: () => session.back() }),
             status === null ? null : h(React.Fragment, null,
-              h('span', { className: PAGE.css.divider, 'aria-hidden': 'true' }),
-              h('span', { className: PAGE.css.status, role: 'status', [PAGE.statusKind]: status.kind }, h(StateDot, { state: status.dot }), status.text),
-              navButton({ kind: NAV.retry, label: text.retry, Icon: IconRefreshOutlineRegular, onClick: () => session.retry() })))
+              // In the rail and the bar the status is its dot, named for assistive technology and in a tooltip.
+              h(Tooltip, { ...PAGE.tooltip.rail, label: status.text, disabled: wide },
+                h('span', { className: PAGE.css.status, role: 'status', tabIndex: wide ? undefined : 0, 'aria-label': status.text, [PAGE.statusKind]: status.kind },
+                  h(StateDot, { state: status.dot }), wide ? status.text : null)),
+              h(PageControl, { wide, kind: NAV.retry, label: text.retry, Icon: IconRefreshOutlineRegular, onClick: () => session.retry() })))
         }
-        // Consume the native launcher owner callback instead of inventing a global settings API.
-        // A portal into the navigation's seat keeps the trigger usable outside the rc.1 drawer's
-        // inert subtree and Windows collapsed footer (the overlay layer is outside both); the
-        // native settings modal/state and all settings contributions stay owned.
-        // `view=settings` is not handled here: fishball-ui's entries part (client.entries.js) opens
-        // core's own settings page for it, and its "DSH settings" header entry presses this button,
-        // so the launcher must stay on the page.
-        // `settingsShortcut` is the native owner prop (settings-general, both SDKs) the native rail
-        // trigger shows in its tooltip; shown the same way here when DSH binds one.
-        function SettingsLauncher({ openSettings, settingsOpen, settingsShortcut }) {
+        // Consume the native launcher owner callback instead of inventing a global settings API: the
+        // launcher draws in DSH's own settings seat in the sidebar's foot (wide row, rail, rc.1
+        // drawer, the narrow bar), and the native settings modal/state and all settings contributions
+        // stay owned. `view=settings` is not handled here: fishball-ui's entries part
+        // (client.entries.js) opens core's own settings page for it, and its "DSH settings" header
+        // entry presses this button, so the launcher must stay on the page. `settingsShortcut` is the
+        // native owner prop (settings-general, both SDKs) the native trigger shows in its tooltip.
+        function SettingsLauncher({ wide, openSettings, settingsOpen, settingsShortcut }) {
           const text = useText(locale)
-          const seat = useCell(launcherSeat)
-          return seat === null ? null : createPortal(navButton({ kind: NAV.settings, label: text.settings, Icon: IconSettingsOutlineRegular,
+          return h(PageControl, { wide, kind: NAV.settings, label: text.settings, Icon: IconSettingsOutlineRegular,
             shortcutKeys: settingsShortcut?.keys, className: PAGE.settingsButton, 'aria-keyshortcuts': settingsShortcut?.aria,
-            'aria-haspopup': 'dialog', 'aria-expanded': settingsOpen, onClick: openSettings }), seat)
+            'aria-haspopup': 'dialog', 'aria-expanded': settingsOpen, onClick: openSettings })
         }
-        // Every page occupant (Settings launcher, shadowed slots) takes its single slot's seat
-        // at PAGE.priority, through inject so the registration follows the slot's own lifetime.
-        const occupy = (name, Component) => ctx.slots.inject(name, () => ctx.slots.register({ name, priority: PAGE.priority }, Component))
+        // Every page occupant (Settings launcher, shadowed slots) takes its single slot's seat at
+        // PAGE.priority, through inject so the registration follows the slot's own lifetime.
         own(occupy(PAGE.settingsSlot, SettingsLauncher))
-        for (const name of SHADOWED_SLOTS) own(occupy(name, Empty))
-        own(ctx.slots.register(PAGE.overlay, Navigation))
+        own(ctx.slots.inject(PAGE.footer.name, () => ctx.slots.register({ name: PAGE.footer.name, id: PAGE.footer.id }, FishballFooter)))
       }))
     }
 

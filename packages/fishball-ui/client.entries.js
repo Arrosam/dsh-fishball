@@ -27,12 +27,7 @@ window.__ModuleLoader__.load({
       // The V2 panel's header order, so the actions keep their place beside the native ones.
       order: Object.freeze({ fishball: 90, dsh: 91 }),
       id: Object.freeze({ fishball: 'fishball-core-settings', dsh: 'fishball-dsh-settings' }),
-      /**
-       * Core's bundle name (core's `contracts/constants.js` `GUARDS.bundleName`), the key of core's
-       * settings page on DSH's Plugins page. Restated: fishball-ui imports nothing of core (Q-G2).
-       */
-      coreBundle: 'fishball-core',
-      navigation: 'pluginNavigation',
+      /** DSH's Plugins panel, where core's settings page (kit `openCoreSettings`) opens. */
       pluginsPanel: 'plugins',
       /**
        * No public service opens DSH's Settings: the single `settings.launcher` owner gets the only
@@ -82,17 +77,10 @@ window.__ModuleLoader__.load({
         h(Button, { ...ENTRIES.button, ...props, className: kit.css.iconButton, 'aria-label': label }, h(Icon, { size: ENTRIES.icon })))
     }
 
-    /** Opens core's settings page: its bundle page on DSH's Plugins page, else the Plugins list. */
-    function openCoreSettings(ctx) {
-      const navigation = ctx.get(ENTRIES.navigation)
-      if (navigation) navigation.openBundle(ENTRIES.coreBundle)
-      else ctx.layout.selectPanel(ENTRIES.pluginsPanel)
-    }
-
     function makeFishballEntry(ctx, t, kit) {
       return function FishballSettingsEntry() {
         useLocale(ctx)
-        return iconEntry(kit, t('entryFishball'), IconSlidersTwoOutlineRegular, { 'data-fishball-settings-entry': 'fishball', onClick: () => openCoreSettings(ctx) })
+        return iconEntry(kit, t('entryFishball'), IconSlidersTwoOutlineRegular, { 'data-fishball-settings-entry': 'fishball', onClick: () => kit.openCoreSettings(ctx) })
       }
     }
 
@@ -119,10 +107,10 @@ window.__ModuleLoader__.load({
      * first marks its conversation ready (its one-time manager selection closes panels). Nothing
      * reopens it after that, so the user's own navigation is never overridden.
      */
-    function openFromContinuation(ctx) {
+    function openFromContinuation(ctx, kit) {
       const wanted = new URLSearchParams(window.location.hash.slice(1)).get(ENTRIES.continuation.name) === ENTRIES.continuation.value
       if (!wanted) return () => {}
-      const open = () => { try { openCoreSettings(ctx) } catch { /* the Plugins panel is not registered yet */ } }
+      const open = () => { try { kit.openCoreSettings(ctx) } catch { /* the Plugins panel is not registered yet */ } }
       // The second open only restores what the page's selection closed: when the user opened
       // another panel meanwhile, that choice stands.
       const reopen = () => { if ([null, ENTRIES.pluginsPanel].includes(ctx.layout.panelInfo.getSnapshot().activePanelId)) open() }
@@ -149,7 +137,7 @@ window.__ModuleLoader__.load({
         }, Component)), ENTRIES.name + ': ' + ENTRIES.id[key])
         header('fishball', makeFishballEntry(ctx, t, kit))
         header('dsh', makeDshEntry(ctx, t, kit))
-        ctx.effect(() => openFromContinuation(ctx), ENTRIES.name + ': view continuation')
+        ctx.effect(() => openFromContinuation(ctx, kit), ENTRIES.name + ': view continuation')
       }
       return Object.freeze({ name: ENTRIES.name, inject: ['slots', 'layout', 'locale'], apply })
     }
