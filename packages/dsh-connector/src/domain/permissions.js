@@ -36,7 +36,7 @@ import { rootSessionOf } from '../session-info.js'
 import { argumentsOf } from './call-log.js'
 import { checkGrant } from './grants.js'
 import { APPROVAL, LOG, REQUEST_ID, SUMMARY } from './constants.js'
-import { mintId, refused, trimmed } from './support.js'
+import { mintId, refused, settleOrWithdraw, trimmed } from './support.js'
 
 /** The settlement each final decision commits, and the call's DSH outcome. */
 const FINAL = Object.freeze({
@@ -48,12 +48,18 @@ const FINAL = Object.freeze({
 const USER_OUTCOME = Object.freeze({ [APPROVAL.outcome.allowedOnce]: SETTLEMENT_OUTCOME.allowed, [APPROVAL.outcome.rejected]: SETTLEMENT_OUTCOME.rejected })
 
 /**
- * allow's rules (§7a.3), shared by allow, grant and `prompt_answer`'s allow: low risk, a reason,
- * complete arguments. @returns the broken rule's code, or undefined.
+ * The §7a.3 decision rules of a final answer, shared by `approval_answer` (allow, grant, reject)
+ * and `prompt_answer` (allow, reject), so the two paths cannot drift (review F08):
+ * - reject: a non-empty reason only; `risk` is not asked for;
+ * - allow and grant: a risk (`risk-required`), low (`allow-needs-low-risk`), a non-empty reason,
+ *   complete arguments.
+ * @returns the broken rule's code, or undefined.
  */
-export function allowRuleBroken(risk, reason, argumentsStatus) {
-  if (risk !== RISK.low) return REFUSAL.allowNeedsLowRisk
+export function decisionRuleBroken(decision, risk, reason, argumentsStatus) {
+  if (decision !== APPROVAL_DECISION.reject && risk === undefined) return REFUSAL.riskRequired
   if (trimmed(reason).length === 0) return REFUSAL.reasonRequired
+  if (decision === APPROVAL_DECISION.reject) return undefined
+  if (risk !== RISK.low) return REFUSAL.allowNeedsLowRisk
   if (argumentsStatus !== ARGUMENTS_STATUS.complete) return REFUSAL.argumentsIncomplete
   return undefined
 }
@@ -135,7 +141,7 @@ export function createPermissions(ctx, { routing, managerOf, grants, gate, wordi
       // The user's click settles the escalated offer for its pair; a cancelled prompt withdraws it.
       const settled = USER_OUTCOME[outcome] === undefined
         ? routing.withdraw(request.offerId)
-        : routing.settle(request.offerId, { approvalId: id, outcome: USER_OUTCOME[outcome], by: SETTLED_BY.user })
+        : settleOrWithdraw(routing, request.offerId, { approvalId: id, outcome: USER_OUTCOME[outcome], by: SETTLED_BY.user }, warn(LOG.withdrawFailed))
       void settled.catch(warn(LOG.settleFailed))
     }
     return outcome
@@ -147,11 +153,16 @@ export function createPermissions(ctx, { routing, managerOf, grants, gate, wordi
    * and the call is not answered here. A call that ends between the two (its turn stopped) keeps
    * the committed settlement; the call itself is cancelled. A reject's wording is marked only
    * once the settlement won (V2's order), so a call that lost to a release and then went to the
-   * user's prompt is never reworded as the agent's rejection.
+   * user's prompt is never reworded as the agent's rejection. Routing settles only for the
+   * answering principal while it still holds the offer (review F02). A settlement whose commit
+   * rejects leaves the offer live and the call waiting (routing, review F04), so the answer can be
+   * retried; the rejection reaches the caller (`operation-failed`).
    * @returns whether the settlement was committed
+   * @throws (rejects) the mailbox's storage error
    */
-  async function settle(request, decision, reason) {
-    const committed = await routing.settle(request.offerId, { approvalId: request.id, outcome: FINAL[decision].outcome, by: SETTLED_BY.principal })
+  async function settle(request, decision, reason, principalKey) {
+    const outcome = { approvalId: request.id, outcome: FINAL[decision].outcome, by: SETTLED_BY.principal }
+    const committed = await routing.settle(request.offerId, outcome, { principalKey })
     if (!committed) return false
     if (decision === APPROVAL_DECISION.reject) wording.reject(request.sessionId, request.callId, request.toolName, reason)
     end(request.id, { call: FINAL[decision].call })
@@ -174,16 +185,12 @@ export function createPermissions(ctx, { routing, managerOf, grants, gate, wordi
       if (decision === APPROVAL_DECISION.ask) return refused(REFUSAL.invalidDecision)
       if (decision === APPROVAL_DECISION.escalate) {
         // Escalate settles nothing (K1); the user's answer on the stock prompt does.
-        if (!(await routing.escalate(request.offerId))) return refused(REFUSAL.expired)
+        if (!(await routing.escalate(request.offerId, { principalKey }))) return refused(REFUSAL.expired)
         end(approvalId, { escalated: true })
         return Object.freeze({ ok: true })
       }
-      if (risk === undefined) return refused(REFUSAL.riskRequired)
-      if (reason === undefined || trimmed(reason).length === 0) return refused(REFUSAL.reasonRequired)
-      if (decision !== APPROVAL_DECISION.reject) {
-        const broken = allowRuleBroken(risk, reason, request.args.status)
-        if (broken !== undefined) return refused(broken)
-      }
+      const broken = decisionRuleBroken(decision, risk, reason, request.args.status)
+      if (broken !== undefined) return refused(broken)
       let grant
       if (decision === APPROVAL_DECISION.grant) {
         const spec = checkGrant(answer.grant, { toolName: request.toolName, args: request.args.value })
@@ -193,8 +200,18 @@ export function createPermissions(ctx, { routing, managerOf, grants, gate, wordi
         if (grantId === undefined) return refused(REFUSAL.expired)
         grant = { grantId, expiresAt: spec.expiresAt }
       }
-      if (!(await settle(request, decision, trimmed(reason)))) {
-        if (grant !== undefined) await grants.discard(grant.grantId)
+      // A grant whose answer did not settle never took effect: discarded on a refusal and on a
+      // rejected settlement alike (review F04), so no grant outlives an unsuccessful answer.
+      const discard = () => (grant === undefined ? undefined : grants.discard(grant.grantId))
+      let committed
+      try {
+        committed = await settle(request, decision, trimmed(reason), principalKey)
+      } catch (error) {
+        await discard()
+        throw error
+      }
+      if (!committed) {
+        await discard()
         return refused(REFUSAL.expired)
       }
       return Object.freeze({ ok: true, ...(grant ?? {}) })

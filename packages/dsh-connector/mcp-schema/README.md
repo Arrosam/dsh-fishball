@@ -456,6 +456,22 @@ Rows that change with them (the case catalogues' owners re-baselined them in thi
 step; UI's latch reset on the designated agent's loss; contrib's designated recipient; K1d
 `setDesignated`; the C-TOOLS approval, question, prompt and grant todos (now real).
 
+## R-FIX-CONNECTOR amendments (2026-11-18, review `review-x-dsh-connector`)
+
+Implementation decisions taken to fix the review's findings. No K1 constant, shape or code changes;
+the rows below are behaviour and internal-port contracts the frozen texts left open.
+
+| Text (as built before) | Now | Finding |
+| --- | --- | --- |
+| grants: an ended grant's failed delete is logged; `grant_revoke` answers `revoked: true` | the grant stops covering and listing at once; a failed delete makes `grant_revoke` `operation-failed`, and a repeat by its principal retries it (`revoked: true` once stored) | F01 |
+| C-TOOLS session table: checked once, before the DSH lookup | applied again after every DSH await and right before each side effect / before read data is returned; no admitted-call exception (R-TOK-05 is token-only) | F02 |
+| routing `settle(offerId, settlement)` | `settle(offerId, settlement, {principalKey?})`: a principal's answer settles only while it holds the offer; the offer leaves the ledger only after its settlement is stored (a rejected commit keeps it live and answerable) | F02, F04 |
+| hosted `succeededBy`: set just before `PairStore.succeed`, read at start as "committed" | a prepared mark set before anything moves; the old pair's removal is the commit record; a prepared mark is rolled forward at start | F03 |
+| routing `onSucceeded(fn)`: fired listener | awaited participant `(from, to) → {undo}`; the grant sweep runs on the managed chain after the step | F05 |
+| approval page: a code is minted after the bind's await | only while the entry still stands at the generation the token matched; otherwise the form shows again (`CodeRecord` unchanged) | F06 |
+| MCP endpoint: one bearer check before the body | a `subscriptions/listen` is verified again, synchronously with its reservation; a revoked one is 401 `invalid_token` | F07 |
+| `approval_answer` reject: needed `risk` (`risk-required`) | needs a non-empty reason only, as §7a.3 and the contract say; one rule shared with `prompt_answer` | F08 |
+
 ## Left to a task (not frozen here)
 
 | What (case rows flagged `K`) | Task |

@@ -98,11 +98,14 @@ export async function openRouting(ctx, storageDomain, { mailbox, pairs, tokens, 
    */
   const left = listenerSet(logger, LOG.format, LOG.listenerFailed)
   /**
-   * Fired with `(from, to)` as a succession moves `from`'s sessions to `to`, before the managed
-   * table changes (so before its onChange), and with `(to, from)` when a failed succession is
-   * undone (C-WIRE-2: the domain's grants follow their sessions; X-SEC X-08).
+   * Succession participants `(from, to) => Promise<{undo}>`: awaited inside the succession step as
+   * it moves `from`'s sessions to `to`, before the managed table changes (C-WIRE-2: the domain's
+   * grants follow their sessions; X-SEC X-08). Awaited, not fired (review F05): a participant's move
+   * is part of the all-or-nothing step. `undo()` gives back exactly what it moved (not everything
+   * `to` holds: `to` may have grants of its own), and runs in reverse order when a later step
+   * fails. A participant that rejects must have undone its own partial move first.
    */
-  const succeeded = listenerSet(logger, LOG.format, LOG.listenerFailed)
+  const succeeding = new Set()
   async function leave(...args) {
     const offers = await ledger.retireSession(...args)
     if (offers.length > 0) left.fire(offers)
@@ -197,8 +200,18 @@ export async function openRouting(ctx, storageDomain, { mailbox, pairs, tokens, 
     managed: managed.state,
     /** `onLeft(fn(offers))` → dispose: see `leave` above; `offers` is `[{offerId, sessionId, type}]`. */
     onLeft: left.add,
-    /** `onSucceeded(fn(from, to))` → dispose: see `succeeded` above (R-HOST-09). */
-    onSucceeded: succeeded.add,
+    /** `onSucceeded(fn(from, to) → Promise<{undo}>)` → dispose: see `succeeding` above (R-HOST-09). */
+    onSucceeded(participant) {
+      succeeding.add(participant)
+      return () => { succeeding.delete(participant) }
+    },
+
+    /**
+     * Runs `step` on the managed chain, after every change and succession queued so far, so it
+     * never sees a succession halfway (review F05: the domain's end-of-management grant sweep reads
+     * the managed state here). The same rule as `withState`: `step` must not await a managed-chain call.
+     */
+    afterChanges: (step) => managed.withState(step),
     handover: handover.service,
     provide: handover.provide,
 
@@ -245,30 +258,44 @@ export async function openRouting(ctx, storageDomain, { mailbox, pairs, tokens, 
      * nothing) or runs after the settle (and finds nothing to retire). The settlement is copied at
      * the call, because the step reads it later; its draft is checked before the offer leaves the
      * ledger, so a bad settlement leaves the offer live instead of dead in the mailbox.
+     * The offer leaves the ledger only once the settlement is stored (review F04): a commit that
+     * rejects leaves it live, listed and answerable, so the answer can be retried and a release
+     * still hands it to the user. No other ledger change can land meanwhile (the managed chain).
      * @param settlement - the K1 settlement payload `{approvalId, outcome, by, answers?}`
-     * @returns whether the offer was live
-     * @throws (rejects) TypeError for a settlement that cannot be copied or is not a valid K1 settlement
+     * @param options.principalKey - for a principal's answer: the offer must still be held by this
+     *   principal (review F02: a succession or Take back since the answer was checked moved it)
+     * @returns whether the offer was live (and held by `principalKey` when given)
+     * @throws (rejects) TypeError for a settlement that cannot be copied or is not a valid K1
+     *   settlement; the mailbox's storage error (the offer stays live)
      */
-    async settle(offerId, settlement) {
+    async settle(offerId, settlement, { principalKey } = {}) {
       const payload = detachedPayload(settlement)
       return managed.withState(async () => {
         const holder = ledger.holderOf(offerId)
-        if (holder === undefined) return false
+        if (holder === undefined || (principalKey !== undefined && holder.principalKey !== principalKey)) return false
         // The current revision's id: after a succession the user's card may still name an older one (E1a).
         const draft = checkedFields(EVENT_TYPE.settlement, { sourceSessionId: holder.sessionId, correlationId: holder.offerId, payload })
-        ledger.settle(offerId)
         await produce({ type: EVENT_TYPE.settlement, sessionId: holder.sessionId, followsPrincipal: holder.principalKey }, draft)
+        ledger.settle(offerId)
         return true
       })
     },
 
     /**
+     * Whether the live request `offerId` names is held by `principalKey` now (read synchronously,
+     * so a caller that decides in the same step cannot be overtaken by a succession; review F02).
+     */
+    holds: (offerId, principalKey) => ledger.holderOf(offerId)?.principalKey === principalKey,
+
+    /**
      * A principal's `escalate` (C-WIRE-2): the offer is the user's from now on and settles nothing
      * yet (K1); its later `settle` (the user's answer) or `withdraw` still goes to the same pair.
      * On the managed chain, as `settle` is, so it never lands between a release and its retirements.
+     * @param options.principalKey - the escalating principal: the offer must still be its (review F02)
      * @returns whether the offer was live and the agent's
      */
-    escalate: (offerId) => managed.withState(async () => ledger.escalate(offerId)),
+    escalate: (offerId, { principalKey } = {}) => managed.withState(async () => (
+      (principalKey === undefined || ledger.holderOf(offerId)?.principalKey === principalKey) && ledger.escalate(offerId))),
 
     /**
      * The session's call ended before an answer: the offer is retired `withdrawn` from its pair.
@@ -324,8 +351,7 @@ export async function openRouting(ctx, storageDomain, { mailbox, pairs, tokens, 
         let staged
         let reissued
         try {
-          succeeded.fire(from, to)
-          undos.push(() => succeeded.fire(to, from))
+          for (const participant of [...succeeding]) undos.push((await participant(from, to)).undo)
           moved = await managed.moveAllNow(from, to)
           undos.push(moved.undo)
           staged = await mailbox.stage(from, to)

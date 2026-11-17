@@ -19,6 +19,7 @@ import {
 } from '../../../mcp-schema/index.js'
 import { diagnosticOf } from '../../errors.js'
 import { requestedAgentId } from './agent-id.js'
+import { liveBinding } from './issue.js'
 import { clientNameOf, isAllowedRedirect, isLoopbackOnly, redirectUrisOf } from './client-rules.js'
 import {
   ADDRESS, AUTHORIZE_PARAM, FORM_ACTION, FORM_FIELD, LOG, PAGE_HTTP, PAGE_TEXT, RESPONSE_PARAM,
@@ -188,11 +189,22 @@ export function createApprovalHandler(deps) {
     showForm(res, created)
   }
 
-  /** Mints the code of a bound or reconnected pair and sends the browser back with it (R-OA-14). */
-  function issueCode(res, request, entryKey, at) {
+  /**
+   * Mints the code of a bound or reconnected pair and sends the browser back with it (R-OA-14).
+   * `entry` is the entry as the token matched it, before the bind's await. The entry must still
+   * stand at that generation now (review F06): a disable or delete during the await bumped it, and
+   * its revocation dropped only the codes that existed then, so a code minted here would outlive it
+   * (the code record carries no generation, Fishball 2026-11-14, so its redemption cannot tell).
+   * Checked with no await before `putCode`, so no revocation can fall between. The stale decision
+   * then shows the form again: the person must present the token afresh, at the new generation.
+   */
+  function issueCode(res, request, entry, at) {
+    if (liveBinding({ tokens, pairs }, entry.entryKey, request.clientId, entry.generation) === undefined) {
+      return showForm(res, request, fill(PAGE_TEXT.invalidToken))
+    }
     const code = mintOpaque()
     store.putCode(digestOf(code), {
-      entryKey, clientId: request.clientId, redirectUri: request.redirectUri, codeChallenge: request.challenge, audience: request.resource, issuedAt: at,
+      entryKey: entry.entryKey, clientId: request.clientId, redirectUri: request.redirectUri, codeChallenge: request.challenge, audience: request.resource, issuedAt: at,
     })
     pending.delete(request.id)
     redirect(res, request.redirectUri, { [RESPONSE_PARAM.code]: code }, request)
@@ -215,7 +227,7 @@ export function createApprovalHandler(deps) {
     const reconnected = await pairs.reconnectFromPage(entry.entryKey, request.agentId, clientOf(request))
     if (!reconnected.ok) return showForm(res, request, alreadyPairedHtml(pairs.pairOf(entry.entryKey)))
     await store.revokeEntryChains(entry.entryKey)
-    return issueCode(res, request, entry.entryKey, at)
+    return issueCode(res, request, entry, at)
   }
 
   /**
@@ -225,7 +237,7 @@ export function createApprovalHandler(deps) {
   async function bindOrReconnect(res, request, form, entry, at) {
     if (pairs.pairOf(entry.entryKey) === undefined) {
       const bound = await pairs.bindFromPage(entry.entryKey, request.agentId, typedName(form), clientOf(request), at)
-      if (bound.ok) return issueCode(res, request, entry.entryKey, at)
+      if (bound.ok) return issueCode(res, request, entry, at)
       if (bound.code !== REFUSAL.alreadyPaired) return showForm(res, request, fill(BIND_MESSAGE[bound.code]))
     }
     return reconnect(res, request, entry, at)
