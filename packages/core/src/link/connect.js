@@ -14,7 +14,9 @@
  *    non-root path, else `needs-configuration` with the failing rule's code;
  * 4. the connector check (Q-S7C-5 A, names per design §1.0c): the target's path is `MCP.paths.mcp`,
  *    and its protected-resource metadata names exactly the target URL, the same origin plus
- *    `MCP.paths.issuer` as its first authorization server, and the `MCP.scope.full` scope; else
+ *    `MCP.paths.issuer` as its first authorization server, and the `MCP.scope.full` scope; and its
+ *    authorization-server metadata names the target origin's `MCP.paths.token` as the token
+ *    endpoint and an https or loopback-http authorization endpoint (X-SEC X-11, X-12); else
  *    `needs-configuration` / `not-a-connector`, before any authorization request;
  * 5. one `ctx.authorization` attempt: PKCE S256, `state`, `resource`, `iss`, the callback, and
  *    `agent_id` = `identity.id` (R13, R-OA-22) so the page binds core's id. The callback is the
@@ -42,7 +44,7 @@ import { OAUTH_CLIENT, OAuthAttemptError, clientMetadataUrlProblem, discoverServ
 export const BEGIN_VIA = Symbol('fishball-core connect: begin with a callback choice')
 import { CONNECT, MCP } from '../../contracts/constants.js'
 import { issuerOf } from './schema.js'
-import { checkTarget } from './target.js'
+import { checkTarget, isSecureOrLoopback } from './target.js'
 import { LINK_SAVE } from './constants.js'
 import { emitIsolated, subscribe } from './listeners.js'
 
@@ -64,6 +66,22 @@ function isConnectorResource(url, resourceMetadata) {
   return sameUrl(resourceMetadata?.resource, url.href)
     && sameUrl(resourceMetadata?.authorization_servers?.[0], new URL(issuerOf(url.origin)).href)
     && Array.isArray(resourceMetadata?.scopes_supported) && resourceMetadata.scopes_supported.includes(MCP.scope.full)
+}
+
+/**
+ * The connector check's authorization-server half (step 4 of the module header; X-SEC X-11, X-12).
+ * The token endpoint, which receives the code and verifier and later the refresh token, must be the
+ * target origin's connector endpoint (`MCP.paths.token`): the link keeps the hosted import's
+ * requests on the target origin, and Connect's own exchange and refresh must not leave it either.
+ * Grants saved before this check keep the token endpoint they were saved with (only a new Connect
+ * is checked). The authorization endpoint, the page on which the user types a connector token, must
+ * be https or loopback http (`isSecureOrLoopback`): it is the connector's own approval listener, which
+ * may be on another loopback port, so only its transport is checked, not its origin.
+ */
+function isConnectorServer(url, serverMetadata) {
+  const endpoint = serverMetadata?.authorization_endpoint
+  return sameUrl(serverMetadata?.token_endpoint, new URL(url.origin + MCP.paths.token).href)
+    && URL.canParse(endpoint) && isSecureOrLoopback(new URL(endpoint))
 }
 
 /**
@@ -253,7 +271,7 @@ export function createConnect(ctx, { store, target, clientId, clientMetadataUrl,
     } catch (error) {
       return fail(usable.url.href, error)
     }
-    if (discovery === undefined) {
+    if (discovery === undefined || !isConnectorServer(usable.url, discovery.authorizationServerMetadata)) {
       notAConnectorFor = usable.url.href
       return answer(CONNECT.configuration.notAConnector)
     }

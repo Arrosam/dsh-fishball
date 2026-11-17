@@ -16,7 +16,7 @@
 import assert from 'node:assert/strict'
 import { setTimeout as sleep } from 'node:timers/promises'
 import { caseTest } from '../../contract/package-boundaries/cases.mjs'
-import { CONNECT, EVENT, FIXTURE, HARNESS, HOSTED_IMPORT, IDENTITY, K1, LINK, LINK_BACKOFF, MCP, OAUTH, SUBJECT, WEB, mcpUrl } from './constants.mjs'
+import { CONNECT, ENDPOINT, EVENT, FIXTURE, HARNESS, HOSTED_IMPORT, IDENTITY, K1, LINK, LINK_BACKOFF, MCP, OAUTH, PKCE_METHODS, REDIRECT, SUBJECT, WEB, mcpUrl } from './constants.mjs'
 import { browser } from './fakes.mjs'
 import { linkSaveWorld, untilTrue } from './subject.mjs'
 
@@ -619,6 +619,129 @@ export function registerLinkSaveCases(sdk) {
     const w = await linkSaveWorld(t, sdk)
     assert.equal((await w.connect.begin()).outcome, SUBJECT.outcome.approvalUrl)
   })
+
+  // ================================================================ F-FIX security rows (audit .runtime/reports/x-sec-audit.md)
+  // X-11 (design §6.3 "credentials are never forwarded on a redirect"): no OAuth request of Connect
+  // or its token manager follows a redirect. EP over the four steps × BVA over the redirect
+  // statuses (every 3xx that names a Location: 301, 302, 303, 307, 308). The Location is the fake's
+  // trap, another origin: any request there is a followed redirect.
+  const discoverySteps = [REDIRECT.step.protectedResource, REDIRECT.step.authorizationServer]
+  for (const status of REDIRECT.statuses) {
+    for (const step of discoverySteps) {
+      caseTest(sdk, 'X-11', `${step} ${status}`, `${step} answered ${status}: not followed (the Location gets no request); no approval URL; Connect ends ${C.failed}`, async (t) => {
+        const w = await linkSaveWorld(t, sdk)
+        w.f.script.redirect = { step, status }
+        const b = await w.connect.begin().catch((error) => ({ rejected: String(error) }))
+        assert.notEqual(b?.outcome, SUBJECT.outcome.approvalUrl, `begin() answered ${JSON.stringify(b)}`)
+        assert.ok(w.f.stepRequests(step).length > 0, `precondition: Connect never asked for ${step}`)
+        await w.untilConnect(C.failed)
+        assert.deepEqual(w.f.trapRequests(), [], 'a redirect was followed')
+        assert.deepEqual([...w.f.approvalRequests(), ...w.f.codeRequests()], [])
+      })
+    }
+    caseTest(sdk, 'X-11', `${REDIRECT.step.codeExchange} ${status}`, `${REDIRECT.step.codeExchange} answered ${status}: the code and code_verifier never reach the Location; nothing saved; Connect ends ${C.failed}`, async (t) => {
+      const w = await linkSaveWorld(t, sdk)
+      const e = w.f.addEntry()
+      w.f.script.redirect = { step: REDIRECT.step.codeExchange, status }
+      const b = await w.connect.begin()
+      assert.equal(b?.outcome, SUBJECT.outcome.approvalUrl, `begin() answered ${JSON.stringify(b)}`)
+      await browser.approve(b.url, { token: e.secret })
+      assert.ok(await untilTrue(() => w.f.codeRequests().length > 0), 'precondition: the code was never sent to the token endpoint')
+      await w.untilConnect(C.failed)
+      await sleep(HARNESS.quietMs)
+      assert.deepEqual(w.f.trapRequests().map((r) => `${r.method} ${r.path}`), [], 'the code exchange followed a redirect')
+      assert.deepEqual(await w.grants(), [], 'a grant was saved')
+      assert.equal(w.reconnects, 0, 'the link was told to reconnect')
+    })
+    caseTest(sdk, 'X-11', `${REDIRECT.step.refresh} ${status}`, `${REDIRECT.step.refresh} answered ${status}: the refresh_token never reaches the Location; no new token is stored`, async (t) => {
+      const { w } = await connected(t, sdk)
+      const before = await w.grants()
+      const from = w.f.stepRequests(REDIRECT.step.refresh).length
+      w.f.script.redirect = { step: REDIRECT.step.refresh, status }
+      w.f.dropAccess()
+      assert.ok(await untilTrue(() => w.f.stepRequests(REDIRECT.step.refresh).length > from), 'precondition: no refresh after the access token died')
+      await sleep(HARNESS.quietMs)
+      assert.deepEqual(w.f.trapRequests().map((r) => `${r.method} ${r.path}`), [], 'the refresh followed a redirect')
+      const after = await w.grants()
+      assert.deepEqual(after.map((g) => [g.key, JSON.stringify(g.record?.payload ?? null)]), before.map((g) => [g.key, JSON.stringify(g.record?.payload ?? null)]), 'the saved grant changed after a redirected refresh')
+    })
+  }
+
+  // X-12 (audit X-12, X-11 "pin token_endpoint to the target origin"): after discovery and before
+  // any authorization request, the authorization server's two endpoints are checked. EP over the
+  // endpoint classes, BVA at the loopback-name boundary (127.0.0.1 vs 127.0.0.2, localhost vs
+  // foo.localhost) and at "exactly" (another port, the other loopback name, a trailing slash).
+  const refusedNotAConnector = async (w) => {
+    const b = await w.connect.begin()
+    assert.deepEqual(b, { outcome: SUBJECT.outcome.needsConfiguration, code: CONNECT.configuration.notAConnector })
+    assert.deepEqual({ state: w.connectStatus().state, code: w.connectStatus().code }, { state: C.needsConfiguration, code: CONNECT.configuration.notAConnector })
+    assert.deepEqual([...w.f.approvalRequests(), ...w.f.codeRequests()], [], 'an authorization request was made')
+  }
+  const tokenEndpointOf = (w) => w.origin() + MCP.paths.token
+  for (const [label, url] of ENDPOINT.authorizeRefused) {
+    caseTest(sdk, 'X-12', `authorization_endpoint ${label}`, `authorization_endpoint ${label} (${url ?? 'absent'}) → ${C.needsConfiguration} / ${CONNECT.configuration.notAConnector}; no approval URL, no authorization request`, async (t) => {
+      const w = await linkSaveWorld(t, sdk)
+      w.f.script.authorizationServer = () => ({ authorization_endpoint: url })
+      await refusedNotAConnector(w)
+    })
+  }
+  for (const [label, url] of ENDPOINT.authorizeAccepted) {
+    caseTest(sdk, 'X-12', `authorization_endpoint ${label}`, `authorization_endpoint ${label} (${url}) is accepted: begin() answers an approval URL at that endpoint`, async (t) => {
+      const w = await linkSaveWorld(t, sdk)
+      w.f.script.authorizationServer = () => ({ authorization_endpoint: url })
+      const b = await w.connect.begin()
+      assert.equal(b?.outcome, SUBJECT.outcome.approvalUrl, `begin() answered ${JSON.stringify(b)}`)
+      const at = new URL(b.url)
+      assert.equal(at.origin + at.pathname, new URL(url).origin + new URL(url).pathname)
+      await w.untilConnect(C.authorizing)
+    })
+  }
+  for (const [label, make] of ENDPOINT.tokenRefused) {
+    caseTest(sdk, 'X-12', `token_endpoint ${label}`, `token_endpoint ${label} → ${C.needsConfiguration} / ${CONNECT.configuration.notAConnector}; no approval URL, no authorization request`, async (t) => {
+      const w = await linkSaveWorld(t, sdk)
+      w.f.script.authorizationServer = (origin) => ({ token_endpoint: make(origin) })
+      await refusedNotAConnector(w)
+    })
+  }
+  // Re-baselined (F-FIX requirement correction): a document the metadata schema refuses is a failed
+  // discovery, not a connector refusal. An absent endpoint, or one that is no URL, makes the RFC 8414
+  // document invalid: begin() rejects, Connect reads failed, and nothing is sent to any
+  // authorization endpoint.
+  for (const [label, overrides] of ENDPOINT.invalidDocument) {
+    caseTest(sdk, 'X-12', label, `${label}: the authorization-server document is invalid → begin() rejects, Connect ${C.failed}; no approval URL, no authorization request`, async (t) => {
+      const w = await linkSaveWorld(t, sdk)
+      w.f.script.authorizationServer = () => overrides
+      await assert.rejects(w.connect.begin(), 'begin() did not reject on an invalid authorization-server document')
+      await w.untilConnect(C.failed)
+      assert.deepEqual([...w.f.approvalRequests(), ...w.f.codeRequests()], [], 'an authorization request was made')
+    })
+  }
+  caseTest(sdk, 'X-12', 'token_endpoint exactly <target origin>/api/agent/oauth/token', 'the exact token endpoint is accepted (and the exchange goes there): approval URL, then authorized', async (t) => {
+    const w = await linkSaveWorld(t, sdk)
+    w.f.script.authorizationServer = () => ({ token_endpoint: tokenEndpointOf(w) })
+    await authorize(w, { token: w.f.addEntry().secret })
+  })
+
+  // X-13 (audit X-13; MCP Authorization, R-OA-02 "clients MUST refuse an AS without it"): S256 is
+  // required in code_challenge_methods_supported. EP: absent, empty, without S256 / with S256.
+  for (const [label, methods] of PKCE_METHODS.refused) {
+    caseTest(sdk, 'X-13', `code_challenge_methods_supported ${label}`, `code_challenge_methods_supported ${label} → no approval URL, no authorization request; Connect ends ${C.failed}`, async (t) => {
+      const w = await linkSaveWorld(t, sdk)
+      w.f.script.authorizationServer = () => ({ code_challenge_methods_supported: methods })
+      const b = await w.connect.begin().catch((error) => ({ rejected: String(error) }))
+      assert.notEqual(b?.outcome, SUBJECT.outcome.approvalUrl, `begin() answered ${JSON.stringify(b)}`)
+      await w.untilConnect(C.failed)
+      assert.deepEqual([...w.f.approvalRequests(), ...w.f.codeRequests()], [], 'an authorization request was made')
+    })
+  }
+  for (const [label, methods] of PKCE_METHODS.accepted) {
+    caseTest(sdk, 'X-13', `code_challenge_methods_supported ${label}`, `code_challenge_methods_supported ${JSON.stringify(methods)} is accepted: approval URL with S256, then authorized`, async (t) => {
+      const w = await linkSaveWorld(t, sdk)
+      w.f.script.authorizationServer = () => ({ code_challenge_methods_supported: methods })
+      const { b } = await authorize(w, { token: w.f.addEntry().secret })
+      assert.equal(new URL(b.url).searchParams.get(OAUTH.codeChallengeMethod), MCP.oauth.pkceMethod)
+    })
+  }
 
   // FLS-EP-03: where secret values may be (R-SEC-02, R10).
   caseTest(sdk, 'FLS-EP-03', 1, 'hosted path: no token or access token in any log, status, setting, pairing record or home file', async (t) => {

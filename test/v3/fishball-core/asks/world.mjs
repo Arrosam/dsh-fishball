@@ -18,7 +18,7 @@ import path from 'node:path'
 import { importSdk } from '../../../private-skills/support/sdk.mjs'
 import { until } from '../../../support/util.mjs'
 import {
-  ANSWER, APPROVAL_KIND, ASK_TOOL, CONNECTOR_OK, DECISION_KIND, DSH, EVENT_TYPE, FIXTURE, OFFER_ID, RECONCILE, RETIREMENT_REASON, ROUTE,
+  ANSWER, APPROVAL_KIND, ARGUMENTS_STATUS, ASK_TOOL, CONNECTOR_OK, DECISION_KIND, DECISION_KIND_OF, DSH, EVENT_TYPE, FIXTURE, OFFER_ID, RECONCILE, RETIREMENT_REASON, ROUTE,
   SETTLED_BY, SETTLEMENT_OUTCOME, TOOL, WAIT,
 } from './constants.mjs'
 import { asksModule, exported } from './subject.mjs'
@@ -41,21 +41,44 @@ function mailboxEvent(type, payload, extra = {}) {
 
 let asks = 0
 /**
- * A K1 `ask` event: an ask_agent of `sourceSessionId`, its payload the descriptor. `type` lets a row
- * build the same shape for another answerable type (a permission), which is no ask.
+ * A K1 offer event of `type` from `sourceSessionId`, its payload the V2 descriptor: an `ask` by
+ * default, or a `permission` (card-able since F-FIX, the user 2026-11-17: "Permission requests
+ * become cards"), or a `question` / `plan-review` (never card-able; their descriptor kind and
+ * decision kind are K1's `question`, DECISION_KIND_OF).
  */
-export function askEvent({ title = FIXTURE.title, choices = [], sourceSessionId = FIXTURE.askingSession, type = EVENT_TYPE.ask } = {}) {
+export function askEvent({
+  title = FIXTURE.title, choices = [], sourceSessionId = FIXTURE.askingSession, type = EVENT_TYPE.ask,
+  reason = FIXTURE.reason, argumentsText, argumentsStatus,
+} = {}) {
   asks += 1
   const approvalId = FIXTURE.approvalPrefix + asks
-  const offerId = approvalId + OFFER_ID.separator + OFFER_ID.firstRevision
+  const decisionKind = DECISION_KIND_OF[type] ?? DECISION_KIND.approval
   const descriptor = {
-    approvalId, offerId, kind: APPROVAL_KIND.approval, prompt: FIXTURE.question + FIXTURE.numberSeparator + asks, choices: [...choices], title,
-    at: FIXTURE.askedAt + asks, toolName: FIXTURE.toolName, callId: null, reason: FIXTURE.reason, quotes: [],
+    approvalId, offerId: undefined, kind: decisionKind === DECISION_KIND.question ? APPROVAL_KIND.question : APPROVAL_KIND.approval,
+    prompt: FIXTURE.question + FIXTURE.numberSeparator + asks, choices: [...choices], title,
+    at: FIXTURE.askedAt + asks, toolName: FIXTURE.toolName, callId: null, reason, quotes: [],
+    // K1's descriptor: `arguments` and `argumentsStatus` are optional members (mcp-schema shapes.js).
+    ...(argumentsText === undefined ? {} : { arguments: argumentsText }),
+    ...(argumentsStatus === undefined ? {} : { argumentsStatus }),
   }
-  return mailboxEvent(type, descriptor, {
-    sourceSessionId, correlationId: offerId, offer: { offerId, revision: OFFER_ID.firstRevision, decisionKind: DECISION_KIND.approval },
+  return offerEvent(type, descriptor, sourceSessionId, OFFER_ID.firstRevision)
+}
+/** One offer event for `descriptor` at `revision` (its offer id is `<approvalId>.r<revision>`). */
+function offerEvent(type, descriptor, sourceSessionId, revision) {
+  const offerId = descriptor.approvalId + OFFER_ID.separator + revision
+  return mailboxEvent(type, { ...descriptor, offerId }, {
+    sourceSessionId, correlationId: offerId, offer: { offerId, revision, decisionKind: DECISION_KIND_OF[type] ?? DECISION_KIND.approval },
   })
 }
+/**
+ * A re-offer of `event` (F-FIX): a new event of the same type, the same approvalId and session, a
+ * NEW offerId (the next revision), and its own prompt, so the replaced record is seen to change.
+ */
+export function reofferOf(event, revision = event.offer.revision + 1) {
+  return offerEvent(event.type, { ...event.payload, prompt: event.payload.prompt + FIXTURE.reofferSuffix + revision }, event.sourceSessionId, revision)
+}
+/** The same event delivered again (a replay: the same eventId and offerId). */
+export const replayOf = (event) => structuredClone(event)
 /** A `settlement` naming `approvalId` (R-CON-06: settled elsewhere). */
 export const settlementOf = (approvalId) => mailboxEvent(EVENT_TYPE.settlement, { approvalId, outcome: SETTLEMENT_OUTCOME.allowed, by: SETTLED_BY.user })
 /** A `retirement` withdrawing the event `retiredEventId`. */
@@ -63,13 +86,21 @@ export const retirementOf = (retiredEventId) => mailboxEvent(EVENT_TYPE.retireme
 /** The offer id an ask is filed by. */
 export const offerOf = (event) => event.offer.offerId
 
-/** The card K3 and the requirements expect for an `ask` event. */
+/**
+ * The card K3 (ask-card.d.ts as amended by F-FIX) and the requirements expect for an offer event:
+ * `arguments` / `argumentsStatus` from the descriptor or null; `reason` the descriptor's, null when
+ * empty or blank (the user, 2026-11-17: "Show arguments and reason"); Reject only when the
+ * arguments are not complete.
+ */
 export function expectedCard(event, state) {
   const d = event.payload
+  const status = d.argumentsStatus ?? null
   return {
     approvalId: d.approvalId, offerId: d.offerId, sessionId: event.sourceSessionId,
     sessionTitle: d.title === FIXTURE.emptyTitle ? null : d.title, question: d.prompt,
-    choices: [...ANSWER.choices], askedAt: d.at, state,
+    arguments: d.arguments ?? null, argumentsStatus: status,
+    reason: typeof d.reason === 'string' && d.reason.trim() !== '' ? d.reason : null,
+    choices: status === null || status === ARGUMENTS_STATUS.complete ? [...ANSWER.choices] : [ANSWER.reject], askedAt: d.at, state,
   }
 }
 
@@ -109,11 +140,14 @@ export class FakeLink {
     if (name === TOOL.approvalsList) {
       const listed = this.approvals.get(args?.sessionId) ?? { ok: true, approvals: [] }
       if (listed.reject !== undefined) throw listed.reject
+      // `{hold, then}`: the call waits on `hold`, then answers `then` (a reconcile racing a re-offer).
+      if (listed.hold !== undefined) { await listed.hold; return structuredClone(listed.then) }
       return structuredClone(listed)
     }
     const next = this.answers.shift()
     if (next?.reject !== undefined) throw next.reject
-    if (next?.hold !== undefined) { await next.hold; return { ...CONNECTOR_OK } }
+    // `{hold, then?}`: the call waits on `hold`, then answers `then` (default CONNECTOR_OK).
+    if (next?.hold !== undefined) { await next.hold; return next.then ?? { ...CONNECTOR_OK } }
     return next ?? { ...CONNECTOR_OK }
   }
   /** The `approval_answer` calls core sent. */
@@ -206,9 +240,11 @@ async function openHost(sdk, root, { agent: withAgent, script }) {
  * and removes its root. `agent: true` also registers `tool` in the DSH tool runtime of a real
  * Fishball agent. `restart()` closes everything and opens a new store over the same table.
  */
-export async function worldFor(t, sdk, { agent = false } = {}) {
+export async function worldFor(t, sdk, { agent = false, module } = {}) {
   const root = await newRoot()
-  const mod = await asksModule(sdk)
+  // `module`: another build of the module to open first (the pre-F-FIX one, subject.mjs); a case
+  // sets `world.mod` before `restart()`, which then opens that build over the same table.
+  const mod = module ?? await asksModule(sdk)
   let closers = []
   const closeAll = async () => { while (closers.length > 0) await closers.pop()() }
   t.after(async () => {
@@ -222,10 +258,10 @@ export async function worldFor(t, sdk, { agent = false } = {}) {
   async function open() {
     const host = await openHost(sdk, root, { agent, script })
     closers = [...host.closers]
-    const opened = await exported(mod, 'open')(host.ctx, await importSdk(sdk, DSH.storageDomain))
+    const opened = await exported(world.mod, 'open')(host.ctx, await importSdk(sdk, DSH.storageDomain))
     closers.push(() => opened.close())
     const link = new FakeLink()
-    const asksOf = exported(mod, 'create')({ link, table: opened.table, logger: host.ctx.logger(FIXTURE.loggerName) })
+    const asksOf = exported(world.mod, 'create')({ link, table: opened.table, logger: host.ctx.logger(FIXTURE.loggerName) })
     // A case may close the store itself (ASK-UC-06); cleanup then does not close it a second time.
     let asksClosed = false
     const closeAsks = async () => { if (!asksClosed) { asksClosed = true; await asksOf.close() } }

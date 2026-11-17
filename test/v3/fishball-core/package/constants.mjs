@@ -60,8 +60,16 @@ export const MARK = Object.freeze({
   corePage: 'data-fishball-core-settings',
   /** Hosted-only: the status line (its state). */
   status: 'data-fishball-instance-state',
-  /** R-HOST-07: any model-sync control (V2 SET-MAIN-ONLY marker family). */
-  modelPrefix: 'data-fishball-model-',
+  /**
+   * R-HOST-07: the model-SYNC control family (the instance's Check for new models / Add selected
+   * block, its per-model rows and results), not the whole `data-fishball-model-` prefix.
+   * Re-baselined (F-FIX): 1.41 Q-G7 = A keeps Fishball's model CHOICE in Fishball (the user,
+   * 2026-11-16: "同步只是同步model list，至于fishball用什么还要在fishball内设置"): core's settings
+   * page and fishball-ui's model dialog carry `data-fishball-model-select` / `-dialog` / `-choice`
+   * and so on by requirement, and those are not a sync trigger. A served script also counts as a
+   * trigger when it names a sync route (ROUTE.sync).
+   */
+  modelSync: /data-fishball-model-(?:sync|check|add|entry|result)(?![\w-])/,
 })
 
 /** DSH client slots the V2 panel uses (the main panel and the conversation header). */

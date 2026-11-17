@@ -11,8 +11,9 @@
  * the session whose id the card stream names as the manager's. Every other session draws nothing.
  *
  * The state is the server half's (src/asks/): the stream route sends `{managerSessionId, cards}`
- * and the answer route commits once. A card shows the asking session, its question and Allow /
- * Reject with an optional reason; an answered or closed card shows its state, with no control, and
+ * and the answer route commits once. A card shows the asking session, its question, the call's
+ * arguments and the session's reason when the request carries them (the user, 2026-11-17), and the
+ * card's choices (Allow / Reject, or Reject alone for incomplete arguments) with an optional reason; an answered or closed card shows its state, with no control, and
  * the server refuses a late answer anyway.
  *
  * The words are the approval wording of the earlier Fishball page (en and zh), kept as they were;
@@ -41,7 +42,9 @@ window.__ModuleLoader__.load({
       answer: 'api/fishball/asks/answer',
       jsonHeaders: Object.freeze({ 'content-type': 'application/json' }),
       state: Object.freeze({ open: 'open', answered: 'answered', closed: 'closed' }),
-      css: Object.freeze({ id: 'fishball-asks-style', root: 'fb-asks', card: 'fb-ask-card', meta: 'fb-ask-meta', question: 'fb-ask-question', row: 'fb-ask-row', reason: 'fb-ask-reason', error: 'fb-ask-error' }),
+      css: Object.freeze({ id: 'fishball-asks-style', root: 'fb-asks', card: 'fb-ask-card', meta: 'fb-ask-meta', question: 'fb-ask-question', detail: 'fb-ask-detail', args: 'fb-ask-args', row: 'fb-ask-row', reason: 'fb-ask-reason', error: 'fb-ask-error' }),
+      // K1's ARGUMENTS_STATUS word for whole arguments (core's AskCard.argumentsStatus, ask-card.d.ts).
+      argumentsComplete: 'complete',
       tone: Object.freeze({ open: 'info', done: 'neutral' }),
       reasonRows: 2,
     })
@@ -52,6 +55,9 @@ window.__ModuleLoader__.load({
       'choice.allow': 'Allow once',
       'choice.reject': 'Reject',
       reason: 'Reason',
+      'detail.arguments': 'Arguments',
+      'detail.reason': 'The session\'s reason',
+      'detail.incomplete': 'The arguments are incomplete, so this request can only be rejected.',
       'state.answered': 'answered',
       'state.closed': 'closed',
       failed: 'The answer was refused.',
@@ -62,6 +68,9 @@ window.__ModuleLoader__.load({
       'choice.allow': '允许一次',
       'choice.reject': '拒绝',
       reason: '理由',
+      'detail.arguments': '参数',
+      'detail.reason': '会话给出的理由',
+      'detail.incomplete': '参数不完整，因此只能拒绝此请求。',
       'state.answered': '已回答',
       'state.closed': '已关闭',
       failed: '回答被拒绝。',
@@ -72,6 +81,8 @@ window.__ModuleLoader__.load({
       `.${ASKS_UI.css.card}{display:grid;gap:6px;padding:10px 12px;border:1px solid var(--dsw-alias-border-l1);border-radius:var(--dsw-radius-md);background:var(--dsw-alias-bg-layer-1);font:var(--dsw-font-xs-13)}`,
       `.${ASKS_UI.css.meta}{display:flex;align-items:center;flex-wrap:wrap;gap:6px;color:var(--dsw-alias-label-tertiary)}`,
       `.${ASKS_UI.css.question}{margin:0;white-space:pre-wrap;color:var(--dsw-alias-label-primary)}`,
+      `.${ASKS_UI.css.detail}{margin:0;color:var(--dsw-alias-label-secondary);white-space:pre-wrap}`,
+      `.${ASKS_UI.css.args}{margin:0;max-height:12em;overflow:auto;padding:6px 8px;border-radius:var(--dsw-radius-md);background:var(--dsw-alias-bg-layer-2);font-family:var(--dsw-font-family-mono, monospace);white-space:pre-wrap;word-break:break-all}`,
       `.${ASKS_UI.css.row}{display:flex;align-items:center;flex-wrap:wrap;gap:8px}`,
       `.${ASKS_UI.css.reason}{width:100%;box-sizing:border-box;resize:vertical;font:inherit}`,
       `.${ASKS_UI.css.error}{margin:0;color:var(--dsw-alias-state-error-primary)}`,
@@ -133,6 +144,13 @@ window.__ModuleLoader__.load({
             h('span', null, t('from') + ': ' + (card.sessionTitle ?? card.sessionId)),
             h('span', null, new Date(card.askedAt).toLocaleString())),
           h('p', { className: ASKS_UI.css.question }, card.question),
+          // The user, 2026-11-17: "Show arguments and reason". Plain text children: React escapes them.
+          card.arguments == null ? null : h('div', { 'data-fishball-ask-arguments': true },
+            h('p', { className: ASKS_UI.css.detail }, t('detail.arguments')),
+            h('pre', { className: ASKS_UI.css.args }, card.arguments)),
+          card.reason == null ? null : h('p', { className: ASKS_UI.css.detail, 'data-fishball-ask-reason': true }, t('detail.reason') + ': ' + card.reason),
+          open && card.argumentsStatus != null && card.argumentsStatus !== ASKS_UI.argumentsComplete
+            ? h('p', { className: ASKS_UI.css.detail, 'data-fishball-ask-incomplete': true }, t('detail.incomplete')) : null,
           open ? h('textarea', {
             className: ASKS_UI.css.reason, rows: ASKS_UI.reasonRows, value: reason, placeholder: t('reason'), 'aria-label': t('reason'),
             disabled: sending, onChange: (event) => setReason(event.target.value),

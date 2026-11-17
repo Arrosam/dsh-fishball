@@ -389,6 +389,8 @@ export async function loadPage(t, world) {
   page.window.removeEventListener = (name, fn) => { const list = world.windowListeners.get(name) ?? []; const at = list.indexOf(fn); if (at >= 0) list.splice(at, 1) }
   page.sandbox.addEventListener = page.window.addEventListener
   page.sandbox.removeEventListener = page.window.removeEventListener
+  // A case may stand in its own server-sent stream (the ask-card render rows feed the card frames).
+  if (world.EventSource !== undefined) { page.sandbox.EventSource = world.EventSource; page.window.EventSource = world.EventSource }
   page.window.open = (...args) => { world.opened.push(args); return null }
   page.sandbox.open = page.window.open
   const launcher = { className: DSH.launcherClass, classList: { contains: (c) => c === DSH.launcherClass }, click() { world.launcherPresses += 1 }, dispatchEvent() { world.launcherPresses += 1; return true }, focus() {} }
