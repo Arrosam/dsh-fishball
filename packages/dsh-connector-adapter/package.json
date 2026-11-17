@@ -14,13 +14,16 @@
   "type": "module",
   "main": "./index.js",
   "//": "An optional DSH-side plugin (design §1.0, §5.5b; R-OA-21, renamed by requirements 1.41). It runs in the DSH that USES a connector, never in the connector's DSH, and depends on no other V3 plugin: it talks to the connector only over its public MCP and OAuth surface. Its version moves with the set (Q-11; REL-PACK sets 1.0.0-alpha.1).",
+  "//locale": "The Plugins page card title (design §0.7), as for dsh-agent-connector and dsh-instance: DSH reads meta.title from the exported ./locale/*.json without loading this package, and shows the package name when that file is absent.",
   "exports": {
     ".": "./index.js",
+    "./locale/*.json": "./locale/*.json",
     "./package.json": "./package.json"
   },
   "files": [
     "index.js",
     "src/",
+    "locale/*.json",
     "cordis.patch.yml",
     "LICENSE",
     "THIRD_PARTY_NOTICES.md"
