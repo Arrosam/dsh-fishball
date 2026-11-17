@@ -20,12 +20,16 @@
  *   once: V3 keeps no audit (the user's answer, 2026-11-17: delete the V2 audit). Its id is kept in
  *   memory for the connector's life, so a second `grant_revoke` answers `ended` (V2's word) and not
  *   `unknown`; after a restart it is `unknown`, as the offer desk's settled set is (Q2, 2026-11-14).
- * - Fail closed (review F01): a grant ends in memory before its delete is written, and an ended
- *   grant never covers, lists or moves again, even while its record is still stored. A delete that
- *   fails leaves the record `undeleted`: `grant_revoke` then rejects (the core tools answer
- *   `operation-failed`, never `revoked: true`), and the delete is tried again by the next revoke of
- *   it and by every sweep (expiry, end of management, start). No timer of its own: the record can
- *   only revive after a restart, and the caller was told the revocation is not durable yet.
+ * - Fail closed (review F01): a grant ends in memory before anything is written, and an ended
+ *   grant never covers, lists or moves again, even while its record is still stored. Its record is
+ *   then marked `ended` (GRANT_STORE.state) and deleted. A delete that fails leaves the record
+ *   `undeleted`: `grant_revoke` then rejects (the core tools answer `operation-failed`, never
+ *   `revoked: true`), and the delete is tried again by the next revoke of it and by every sweep
+ *   (expiry, end of management, start); the `ended` mark keeps it from reviving after a restart.
+ * - Pending until settled (review F04): `create` writes the grant `pending`, before the offer is
+ *   settled, so an answer never names a grant a failed write lost; `activate` makes it cover once
+ *   the settlement is stored. A pending grant covers and lists nothing, so a grant whose answer
+ *   failed never takes effect, now or after a restart.
  */
 import { z } from 'zod'
 import { GRANT_KIND, REFUSAL } from '../../mcp-schema/index.js'
@@ -46,6 +50,7 @@ const record = z.object({
   expiresAt: z.number().int(),
   uses: z.number().int().nonnegative(),
   lastUsedAt: z.number().int().optional(),
+  state: z.enum(Object.values(GRANT_STORE.state)).optional(),
 })
 
 /** Opens the grants' durable table (one storage domain of the connector). */
@@ -106,10 +111,20 @@ export function createGrants({ table, managerOf, now, timers = globalThis, logge
   const ended = new Set()
   /** Ended ids whose record is still stored because its delete failed; retried (module comment). */
   const undeleted = new Set()
+  /** Pending ids whose answer settled in this life: they cover even if their activation write failed. */
+  const activated = new Set()
   let timer
   let stopped = false
-  /** The stored grants that have not ended: the only ones that cover, list, move or arm the timer. */
-  const entries = () => [...table.entries()].filter(([id]) => !ended.has(id))
+  /** The stored grants that have not ended (pending ones included): the ones that move, expire and are swept. */
+  const entries = () => [...table.entries()].filter(([id, stored]) => !ended.has(id) && stored.state !== GRANT_STORE.state.ended)
+  const isActive = ([id, stored]) => stored.state === undefined || activated.has(id)
+  /** The grants in effect: the only ones that cover and list (module comment). */
+  const active = () => entries().filter(isActive)
+  /** A record with `state` set, or without it (`undefined`: active). */
+  const withState = (stored, state) => {
+    const { state: _previous, ...rest } = stored
+    return state === undefined ? rest : { ...rest, state }
+  }
 
   function arm() {
     timers.clearTimeout(timer)
@@ -122,11 +137,21 @@ export function createGrants({ table, managerOf, now, timers = globalThis, logge
     timer?.unref?.()
   }
 
-  /** Ends one grant: at once in memory, then durably; rejects with the delete's error (kept `undeleted`). */
+  /**
+   * Ends one grant: at once in memory, then durably, marked `ended` before its delete (a failed mark
+   * is logged; the delete is still tried). Rejects with the delete's error (kept `undeleted`).
+   */
   async function endOne(id) {
     ended.add(id)
     undeleted.add(id)
-    await serial(() => table.delete(id))
+    await serial(async () => {
+      const current = table.get(id)
+      // Only an active record needs the mark: a pending one never covers, and an ended one has it.
+      if (current?.state === undefined && current !== undefined) {
+        await table.put(id, withState(current, GRANT_STORE.state.ended)).catch(warn(LOG.grantWriteFailed))
+      }
+      await table.delete(id)
+    })
     undeleted.delete(id)
   }
 
@@ -146,14 +171,20 @@ export function createGrants({ table, managerOf, now, timers = globalThis, logge
   const owned = (stored) => managerOf(stored.sessionId) === stored.principalKey
 
   return Object.freeze({
-    /** At start: a grant whose end passed while DSH was down, or whose principal no longer manages its session, ends; then the timer is armed. */
+    /**
+     * At start: a grant whose end passed while DSH was down, whose principal no longer manages its
+     * session, that ended or was still pending (its answer never settled) is deleted; then the timer
+     * is armed.
+     */
     async reconcile() {
-      await endAll(entries().filter(([, stored]) => stored.expiresAt <= now() || !owned(stored)).map(([id]) => id))
+      const over = ([id, stored]) => stored.state !== undefined || stored.expiresAt <= now() || !owned(stored)
+      await endAll([...table.entries()].filter(over).map(([id]) => id))
     },
 
     /**
-     * Writes one grant for a managed session, before the offer is settled, so an answer never
-     * names a grant a failed write lost. Inside the write queue `principalKey` must still manage it.
+     * Writes one `pending` grant for a managed session, before the offer is settled (module
+     * comment). Inside the write queue `principalKey` must still manage it. It covers nothing until
+     * `activate`.
      * @returns the grant id, or undefined when the session left that principal's management meanwhile
      */
     async create({ sessionId, principalKey, toolName, args, spec }) {
@@ -163,7 +194,7 @@ export function createGrants({ table, managerOf, now, timers = globalThis, logge
         await table.put(id, {
           sessionId, principalKey, toolName, kind: spec.kind,
           ...(spec.kind === GRANT_KIND.exact ? { argumentsDigest: argumentsDigest(args) } : { prefix: spec.prefix }),
-          createdAt: now(), expiresAt: spec.expiresAt, uses: 0,
+          createdAt: now(), expiresAt: spec.expiresAt, uses: 0, state: GRANT_STORE.state.pending,
         })
         return true
       })
@@ -171,7 +202,21 @@ export function createGrants({ table, managerOf, now, timers = globalThis, logge
       return written ? id : undefined
     },
 
-    /** A grant whose offer ended before the answer reached it: it never took effect. */
+    /**
+     * The grant's answer was settled: it covers from now on (in memory at once), and its record is
+     * made active. A failed write is logged, never thrown (the settlement stands): the grant still
+     * covers in this life, and a restart ends it as pending (fail closed).
+     */
+    async activate(id) {
+      activated.add(id)
+      arm()
+      await serial(async () => {
+        const current = ended.has(id) ? undefined : table.get(id)
+        if (current?.state === GRANT_STORE.state.pending) await table.put(id, withState(current, undefined))
+      }).catch(warn(LOG.grantWriteFailed))
+    },
+
+    /** A grant whose answer did not settle: it never took effect. */
     discard: (id) => endAll([id]),
 
     /**
@@ -180,7 +225,7 @@ export function createGrants({ table, managerOf, now, timers = globalThis, logge
      */
     cover(sessionId, toolName, args) {
       if (args === undefined) return undefined
-      for (const [id, stored] of entries()) {
+      for (const [id, stored] of active()) {
         if (stored.sessionId !== sessionId || stored.toolName !== toolName || !owned(stored)) continue
         if (stored.expiresAt <= now()) { void endAll([id]); continue }
         if (!matches(stored, toolName, args)) continue
@@ -205,6 +250,8 @@ export function createGrants({ table, managerOf, now, timers = globalThis, logge
     async revoke(id, principalKey) {
       const stored = table.get(id)
       if (stored === undefined) return ended.has(id) ? REFUSAL.grantEnded : REFUSAL.grantUnknown
+      // A pending grant was never handed out (its answer has not settled): as if never issued.
+      if (!ended.has(id) && !isActive([id, stored])) return REFUSAL.grantUnknown
       const retry = undeleted.has(id) && stored.principalKey === principalKey
       if (!retry && (ended.has(id) || !owned(stored))) return REFUSAL.grantEnded
       try {
@@ -227,8 +274,10 @@ export function createGrants({ table, managerOf, now, timers = globalThis, logge
      * C-SUCCEED: every grant of `from` belongs to `to`, whose sessions they are now (R-HOST-09). A
      * routing succession participant, awaited before the managed table moves; the end-of-management
      * sweep runs only after the whole succession step (wire/domain.js), so it never sees one half.
+     * Pending grants move too: their answer may settle while the step is queued.
      * @returns `{undo}`: gives exactly the moved grants back to `from` (review F05)
-     * @throws (rejects) the table's storage error, after the grants already moved went back
+     * @throws (rejects) the table's storage error; the grants already moved are queued to go back
+     *   first, ahead of any later grant write or sweep
      */
     moveOwner: (from, to) => serial(async () => {
       const moved = []
@@ -253,7 +302,7 @@ export function createGrants({ table, managerOf, now, timers = globalThis, logge
     }),
 
     /** `grants_list`'s rows (K1 `grantSummary`), newest first; never paused (see the module comment). */
-    list: () => entries().filter(([, stored]) => stored.expiresAt > now() && owned(stored)).sort(([, a], [, b]) => b.createdAt - a.createdAt).map(([grantId, stored]) => Object.freeze({
+    list: () => active().filter(([, stored]) => stored.expiresAt > now() && owned(stored)).sort(([, a], [, b]) => b.createdAt - a.createdAt).map(([grantId, stored]) => Object.freeze({
       grantId, sessionId: stored.sessionId, toolName: stored.toolName, kind: stored.kind,
       ...(stored.kind === GRANT_KIND.prefix ? { prefix: stored.prefix } : {}),
       expiresAt: stored.expiresAt, uses: stored.uses, ...(stored.lastUsedAt === undefined ? {} : { lastUsedAt: stored.lastUsedAt }), paused: false,

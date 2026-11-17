@@ -22,7 +22,8 @@ import { diagnosticOf } from '../errors.js'
 import { isNonEmptyString } from '../mailbox/draft.js'
 import { LOG, MISUSE } from './constants.js'
 import { managedKeyOf } from './store.js'
-import { listenerSet, serialChain } from './support.js'
+import { serialChain } from '../serial.js'
+import { listenerSet } from './support.js'
 
 const OK = Object.freeze({ ok: true })
 const refusal = (code) => Object.freeze({ ok: false, code })

@@ -195,7 +195,8 @@ export function createPermissions(ctx, { routing, managerOf, grants, gate, wordi
       if (decision === APPROVAL_DECISION.grant) {
         const spec = checkGrant(answer.grant, { toolName: request.toolName, args: request.args.value })
         if (spec.error !== undefined) return refused(spec.error)
-        // Written before the settlement, so an answer never names a grant a failed write lost.
+        // Written pending before the settlement, so an answer never names a grant a failed write
+        // lost; it covers only once the settlement is stored (`activate`, review F04).
         const grantId = await grants.create({ sessionId: request.sessionId, principalKey, toolName: request.toolName, args: request.args.value, spec })
         if (grantId === undefined) return refused(REFUSAL.expired)
         grant = { grantId, expiresAt: spec.expiresAt }
@@ -214,6 +215,7 @@ export function createPermissions(ctx, { routing, managerOf, grants, gate, wordi
         await discard()
         return refused(REFUSAL.expired)
       }
+      if (grant !== undefined) await grants.activate(grant.grantId)
       return Object.freeze({ ok: true, ...(grant ?? {}) })
     },
 

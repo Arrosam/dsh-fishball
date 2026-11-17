@@ -261,8 +261,10 @@ export function createQuestions(ctx, { routing, managerOf, titleOf, now, logger 
       // settlement follows; a retirement that raced it makes it a no-op.
       if (!live.has(questionId) || !entry.settle({ batch: built.batch })) return refused(REFUSAL.expired)
       const settlement = { approvalId: questionId, outcome: SETTLEMENT_OUTCOME.answered, by: SETTLED_BY.principal, answers: built.batch.answers }
-      // The call already has this answer (first answer wins in memory): it cannot be answered again.
-      await settleOrWithdraw(routing, entry.offerId, settlement, warn(LOG.withdrawFailed))
+      // The call already has this answer (first answer wins in memory), so the answer is accepted
+      // whatever the settlement's storage does: reporting a failure would invite a retry that can
+      // only be `expired`. A settlement that could not be stored is logged and the offer withdrawn.
+      await settleOrWithdraw(routing, entry.offerId, settlement, warn(LOG.withdrawFailed)).catch(warn(LOG.settleFailed))
       return ACCEPTED
     },
 

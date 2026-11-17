@@ -114,11 +114,21 @@ export function createHostedTokens({ table, tokens, pairs, routing, writer, note
   // the other is about to change.
   const serial = serialChain()
 
-  /** A listed entry made by `createHosted` and not succeeded yet, with its record, or undefined. */
+  /**
+   * Whether a record's succession committed: marked, and its old pair is gone (the commit record;
+   * module comment). A marked record whose old pair still exists is only prepared: still hosted.
+   */
+  const committed = (entryKey, record) => record.succeededBy !== undefined && pairs.pairOf(entryKey) === undefined
+
+  /**
+   * A listed entry made by `createHosted` and not succeeded yet, with its record, or undefined. A
+   * prepared mark (a crash, or an unmark that failed) leaves the entry hosted (review P3): answering
+   * `not-hosted` for it would make the instance drop a half-moved succession for good.
+   */
   function hostedOf(entryKey) {
     const entry = tokens.get(entryKey)
     const record = entry?.hosted === true ? table.get(entryKey) : undefined
-    return record === undefined || record.succeededBy !== undefined ? undefined : Object.freeze({ entry, instanceId: record.instanceId })
+    return record === undefined || committed(entryKey, record) ? undefined : Object.freeze({ entry, instanceId: record.instanceId, record })
   }
 
   /**
@@ -159,7 +169,8 @@ export function createHostedTokens({ table, tokens, pairs, routing, writer, note
    * @throws (rejects) the failing step's error, after the unmark
    */
   async function transfer(oldEntryKey, successorEntryKey, oldPair, successorPair) {
-    const oldRecord = table.get(oldEntryKey)
+    // A prepared mark left by an earlier attempt (to this or another successor) is replaced.
+    const { succeededBy: _earlier, ...oldRecord } = table.get(oldEntryKey)
     await table.put(oldEntryKey, { ...oldRecord, succeededBy: successorEntryKey })
     const unmark = () => compensate(() => table.put(oldEntryKey, oldRecord), warn(LOG.undoFailed))
     const commit = () => pairs.succeed(oldEntryKey, successorEntryKey)
@@ -280,7 +291,7 @@ export function createHostedTokens({ table, tokens, pairs, routing, writer, note
     resume: () => serial(async () => {
       for (const [entryKey, record] of [...table.entries()]) {
         if (record.succeededBy === undefined) continue
-        if (pairs.pairOf(entryKey) === undefined) {
+        if (committed(entryKey, record)) {
           await deleteEntry(entryKey)
           continue
         }
