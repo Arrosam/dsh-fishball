@@ -5,5 +5,5 @@
  * same fake.
  */
 export {
-  FAKE_TOOLS, browser, eventually, fakeClock, otherServer, plant, portAccepts, recordingFetch, sleep, startFakeConnector, staysFalse, toolText,
+  FAKE_TOOLS, browser, eventually, fakeClock, otherServer, plant, portAccepts, recordingFetch, rpcResult, sleep, sseFrame, startFakeConnector, staysFalse, toolText,
 } from '../../dsh-connector-adapter/oauth-client/fakes.mjs'

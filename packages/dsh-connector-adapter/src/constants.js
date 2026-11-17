@@ -110,6 +110,9 @@ export const TEXT = Object.freeze({
  * - proxyBodyBytes: 8 MiB, the connector's own MCP body cap (dsh-connector ENDPOINT_LIMITS.bodyBytes),
  *   so the proxy never refuses a body the connector would take.
  * - localBearerBytes: 256 bits of randomness for the per-start local bearer.
+ * - refreshRetry*: after a failed timer refresh (not `invalid_grant`) the next try waits 30 s, doubling
+ *   per consecutive failure up to 300 s (the refresh lead), for as long as the grant is live (the
+ *   user's decision on review F4).
  */
 export const LIMIT = Object.freeze({
   refreshLeadMs: 300_000,
@@ -117,7 +120,13 @@ export const LIMIT = Object.freeze({
   attemptTimeoutMs: 600_000,
   proxyBodyBytes: 8 * 1024 * 1024,
   localBearerBytes: 32,
+  refreshRetryFirstMs: 30_000,
+  refreshRetryMaxMs: 300_000,
+  refreshRetryFactor: 2,
 })
+
+/** HTTP statuses the proxy answers or classifies. */
+const HTTP_STATUS = Object.freeze({ unauthorized: 401, notFound: 404, tooLarge: 413, badGateway: 502, serviceUnavailable: 503, gatewayTimeout: 504 })
 
 /** The loopback proxy (R-OA-21 rule 7). */
 export const PROXY = Object.freeze({
@@ -134,10 +143,27 @@ export const PROXY = Object.freeze({
   dropResponseHeaders: Object.freeze(['connection', 'keep-alive', 'transfer-encoding', 'content-length', 'content-encoding', 'trailer', 'upgrade']),
   /** Methods sent with no body. */
   bodyless: Object.freeze(['GET', 'HEAD']),
-  status: Object.freeze({ unauthorized: 401, notFound: 404, tooLarge: 413, badGateway: 502 }),
+  status: HTTP_STATUS,
+  /** Not followed by the proxy's fetch, and never relayed: the child would follow them (review F2). */
   redirect: 'manual',
+  /** The statuses fetch follows (WHATWG Fetch "redirect status"). */
+  redirectStatuses: Object.freeze([301, 302, 303, 307, 308]),
+  /**
+   * What a gateway or tunnel answers while the connector behind it is down (review F5; the user's
+   * decision): Bad Gateway, Service Unavailable, Gateway Timeout, and Cloudflare's 520–530 origin
+   * errors (cloudflared). ngrok's 404 for an offline endpoint is not here: it cannot be told from a
+   * real 404. Any other answer counts as the connector reachable.
+   */
+  gateway: Object.freeze({
+    statuses: Object.freeze([HTTP_STATUS.badGateway, HTTP_STATUS.serviceUnavailable, HTTP_STATUS.gatewayTimeout]),
+    tunnelRange: Object.freeze({ first: 520, last: 530 }),
+  }),
+  /** The local-bearer comparison digests both sides first. */
+  digestAlgorithm: 'sha256',
   /** The response's close event: the child went away, so the upstream request is aborted. */
   closeEvent: 'close',
+  /** A stream's failure event (the relayed upstream body). */
+  errorEvent: 'error',
 })
 
 /** The child row: the stock dsh-mcp-client, pointed at the proxy (mechanism c2). */

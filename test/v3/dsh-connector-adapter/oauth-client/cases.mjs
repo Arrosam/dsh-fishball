@@ -58,7 +58,7 @@ function assertDeadline(started) {
  * clock, a recording fetch, a token manager for one key, and a registered authorization flow whose
  * run is one `manager.authorize` attempt.
  */
-async function libWorld(t, sdk, { issueRefresh = true, expiresInS } = {}) {
+export async function libWorld(t, sdk, { issueRefresh = true, expiresInS } = {}) {
   const scope = cleanups(t)
   const root = tempRoot(scope)
   const c = await startFakeConnector({ issueRefresh })
@@ -71,7 +71,8 @@ async function libWorld(t, sdk, { issueRefresh = true, expiresInS } = {}) {
   const clock = fakeClock()
   const recorder = recordingFetch()
   const key = host.credentialKey(FIXTURE.libraryKeyScope, FIXTURE.serverId('m'))
-  const managerOn = (credentials) => lib.createTokenManager({ sdk: sdkModule, credentials, key, now: clock.now, refreshLeadMs: K.leadMs, fetchFn: recorder.fetch })
+  /** `options` adds manager options over the defaults (review F1: `upstream`). */
+  const managerOn = (credentials, options = {}) => lib.createTokenManager({ sdk: sdkModule, credentials, key, now: clock.now, refreshLeadMs: K.leadMs, fetchFn: recorder.fetch, ...options })
   const manager = managerOn(host.ctx.credentials)
   for (const member of LIBRARY.managerMembers) assert.equal(typeof manager[member], 'function', `the token manager has no ${member}()`)
   const discovery = await lib.discoverServer({ sdk: sdkModule, serverUrl: c.url, fetchFn: recorder.fetch })
@@ -115,6 +116,13 @@ async function libWorld(t, sdk, { issueRefresh = true, expiresInS } = {}) {
   return w
 }
 const endCode = (end) => end.error?.code
+/** An authorized library world and its first grant (OAC-DT-01 and the review-fix rows). */
+export async function grantedWorld(t, sdk, options) {
+  const w = await libWorld(t, sdk, options)
+  await w.authorized()
+  const grant = await w.manager.read()
+  return { w, grant, at: w.lib.accessTokenOf(grant), expiry: grant.tokens.expiresAt }
+}
 
 export function registerOAuthClientCases(sdk) {
   // ------------------------------------------------------------------ OAC-EP-01 / OAC-BVA-01
@@ -344,13 +352,7 @@ export function registerOAuthClientCases(sdk) {
   })
 
   // ------------------------------------------------------------------ OAC-DT-01 refresh
-  /** An authorized world and its first grant. */
-  const granted = async (t, options) => {
-    const w = await libWorld(t, sdk, options)
-    await w.authorized()
-    const grant = await w.manager.read()
-    return { w, grant, at: w.lib.accessTokenOf(grant), expiry: grant.tokens.expiresAt }
-  }
+  const granted = (t, options) => grantedWorld(t, sdk, options)
   const expectRefreshed = async (w, result, before, refreshesBefore) => {
     assert.equal(result.outcome, LIBRARY.refreshOutcome.refreshed)
     assert.equal(w.c.refreshRequests().length, refreshesBefore + 1)
