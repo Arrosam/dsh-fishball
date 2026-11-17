@@ -282,6 +282,17 @@ export function registerOAuthClientCases(sdk) {
     assert.equal(endCode(await a.done), LIBRARY.attemptEnd.failed)
     assert.equal(await w.record(), undefined)
   })
+  // X-SEC X-05 (C-WIRE-2): every OAuth fetch uses redirect 'error', so a 307 ends the exchange with nothing re-posted.
+  caseTest(sdk, 'OAC-ST-01', '6b (X-05)', 'Pending + the token endpoint answers 307 at the exchange → Ended(failed); the code is posted once, the redirect is not followed; no record', async (t) => {
+    const w = await libWorld(t, sdk)
+    w.c.script.tokenRedirect = w.c.origin + FIXTURE.redirectedTokenPath
+    const a = await w.begin()
+    await browser.approve(w.c, a.url.href)
+    assert.equal(endCode(await a.done), LIBRARY.attemptEnd.failed)
+    assert.equal(w.c.codeRequests().length, 1)
+    assert.deepEqual(w.recorder.calls.filter((c) => new URL(c.url).pathname === FIXTURE.redirectedTokenPath), [], 'the redirect was followed')
+    assert.equal(await w.record(), undefined)
+  })
   caseTest(sdk, 'OAC-ST-01', 7, 'Pending at TIMEOUT − 1 ms → still Pending; the callback still listens', async (t) => {
     const w = await libWorld(t, sdk)
     const a = await w.begin()

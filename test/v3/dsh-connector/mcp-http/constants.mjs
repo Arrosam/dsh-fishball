@@ -13,13 +13,13 @@
  */
 import path from 'node:path'
 import {
-  APPROVAL_LISTENER, BEARER_CHALLENGE, ENDPOINT_LIMITS, GATE_SURFACE, HOSTS, HTTP_METHOD, HTTP_REFUSAL, HTTP_STATUS, OAUTH_ERROR,
+  APPROVAL_LISTENER, BEARER_CHALLENGE, ENDPOINT_LIMITS, FAILURE_LIMIT, GATE_SURFACE, HOSTS, HTTP_METHOD, HTTP_REFUSAL, HTTP_STATUS, OAUTH_ERROR,
   OAUTH_ERROR_STATUS, PATHS, PROTOCOL, RATE_LIMITS, REQUEST_GATE, RESOURCE, SCOPE, TIME_UNIT, bearerChallenge, oauthUrls,
 } from '../../../../packages/dsh-connector/mcp-schema/index.js'
 import { REPO } from '../../../support/constants.mjs'
 
 export {
-  APPROVAL_LISTENER, BEARER_CHALLENGE, ENDPOINT_LIMITS, GATE_SURFACE, HOSTS, HTTP_METHOD, HTTP_REFUSAL, HTTP_STATUS, OAUTH_ERROR,
+  APPROVAL_LISTENER, BEARER_CHALLENGE, ENDPOINT_LIMITS, FAILURE_LIMIT, GATE_SURFACE, HOSTS, HTTP_METHOD, HTTP_REFUSAL, HTTP_STATUS, OAUTH_ERROR,
   OAUTH_ERROR_STATUS, PATHS, PROTOCOL, RATE_LIMITS, REQUEST_GATE, RESOURCE, SCOPE, TIME_UNIT, bearerChallenge, oauthUrls,
 }
 
@@ -114,6 +114,8 @@ export const FIXTURE = Object.freeze({
   principal: (id) => `fbtest-principal-${id}`,
   /** An opaque access token value the fake verifier knows (never a real token). */
   accessToken: (name) => `fbtest-at-${name}`,
+  /** X-SEC X-03: bearers no verifier knows. */
+  wrongToken: (i) => `fbtest-at-wrong-${i}`,
   /** A value no fake verifier knows. */
   unknownToken: 'fbtest-at-unknown',
   basicCredentials: 'ZmJ0ZXN0OmZidGVzdA==',

@@ -100,11 +100,13 @@ export function registerApprovalCases(sdk) {
     ['reason \'\'', A.allow(''), REFUSAL.reasonRequired],
     ['reason whitespace', A.allow(' \n\t '), REFUSAL.reasonRequired],
     [`reason ${PAYLOAD_LIMITS.reasonChars + 1} characters`, A.allow(reason501), REFUSAL.limitExceeded],
-    ['decision ask (q1)', { decision: APPROVAL_DECISION.ask, risk: RISK.low, reason: FIXTURE.reason }, REFUSAL.invalidDecision],
+    // Re-baselined by X-SEC X-02: K1's input schema no longer admits `ask` or `question` (q1 "Refuse it").
+    ['decision ask (q1, X-02)', { decision: APPROVAL_DECISION.ask, risk: RISK.low, reason: FIXTURE.reason }, REFUSAL.invalidArguments],
+    ['a question member (X-02)', { ...A.allow(), [RELAYED.questionMember]: FIXTURE.otherReason }, REFUSAL.invalidArguments],
     ['reject with no risk', { decision: APPROVAL_DECISION.reject, reason: FIXTURE.reason }, REFUSAL.riskRequired],
     ['reject with reason \'\'', { decision: APPROVAL_DECISION.reject, risk: RISK.high, reason: '' }, REFUSAL.reasonRequired],
   ]) {
-    row(sdk, 'APR-05', `DT (${label})`, `→ ${code}; still listed and waiting; a later valid allow is accepted${label.includes('q1') ? ` (${DECISION_TEXT.q1})` : ''}`, async (t) => {
+    row(sdk, 'APR-05', `DT (${label})`, `→ ${code}; still listed and waiting; a later valid allow is accepted${label.includes('q1') ? ` (${DECISION_TEXT.q1}; X-SEC X-02)` : ''}`, async (t) => {
       const w = await w0()
       const p = await principal(t, w)
       const sid = await managed(w, p)

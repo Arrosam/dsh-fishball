@@ -8,7 +8,7 @@
  * constants, and that the relayed values are now K1's. Boundary Value Analysis, one test per value.
  */
 import assert from 'node:assert/strict'
-import { assertCode, assertOnPage, open, plain, redirectOf, resolver, row } from './cases.mjs'
+import { assertCode, assertOnPage, open, openPaced, plain, redirectOf, resolver, row } from './cases.mjs'
 import {
   APPROVAL_LISTENER, CIMD_LIMITS, FIXTURE, HTTP_HEADER, HTTP_STATUS, PAGE_TEXT, PARAM, RELAYED,
 } from './constants.mjs'
@@ -54,12 +54,12 @@ export function registerCOAuthWebAmendCases(sdk) {
   }
 
   // ---- APPROVAL_LISTENER.pendingRequestsMax ----
+  // Re-baselined by X-SEC X-04: the opens are paced within GET /authorize's per-address rate (openPaced).
   for (const [part, count] of [['pending max', PENDING_MAX], ['pending max + 1', PENDING_MAX + 1]]) {
     const evicted = count > PENDING_MAX
     row(sdk, ID, part, `${count} pending requests (APPROVAL_LISTENER.pendingRequestsMax ${PENDING_MAX}) → the oldest ${evicted ? 'is evicted and reads as expired; the newest still authorizes' : 'still authorizes'}`, async (w) => {
       w.tokens.add(5, V(5))
-      const flows = []
-      for (let i = 0; i < count; i += 1) flows.push(await open(w))
+      const flows = await openPaced(w, count)
       const res = await flows[0].b.authorize({ token: V(5) })
       if (!evicted) return assertCode(w, { res, redirect: redirectOf(res) })
       assertOnPage(res, PAGE_TEXT.expired)

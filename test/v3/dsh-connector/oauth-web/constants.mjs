@@ -12,7 +12,7 @@ import path from 'node:path'
 import {
   APPROVAL_LISTENER, AUTHORIZE_EXTENSION, CIMD_LIMITS, CLIENT_AUTH, CONNECTOR_STATUS, ENTRY_STATUS, FAILURE_LIMIT, GATE_SURFACE, GRANT, GRANT_DISPATCH, HOSTS,
   HTTP_METHOD, HTTP_STATUS, ID_REFUSAL, LIFETIME, NAME_RULES, OAUTH_ERROR, PATHS, PKCE, REFUSAL, REQUEST_GATE, RESPONSE_TYPE, SCOPE, TIME_UNIT,
-  DERIVED_AGENT_ID, ID_GRAMMAR, TOKEN_VALUE, checkName, isAgentId, nameKey, oauthUrls,
+  DERIVED_AGENT_ID, ID_GRAMMAR, RATE_LIMITS, TOKEN_VALUE, checkName, isAgentId, nameKey, oauthUrls,
 } from '../../../../packages/dsh-connector/mcp-schema/index.js'
 import { REPO } from '../../../support/constants.mjs'
 
@@ -221,4 +221,20 @@ export const STUB = Object.freeze({
   found: 302,
   secretMethod: 'client_secret_basic',
   secret: 'fbtest-client-secret',
+})
+
+/**
+ * X-SEC rows (x-sec-audit.md; the C-WIRE-2 requirements relayed 2026-11-17). Product values from K1.
+ * - X-01: the page's referrer policy and the Origin a browser sends under `no-referrer`;
+ * - X-04: GET /authorize per address at the token endpoint's own ceiling.
+ */
+export const XSEC = Object.freeze({
+  id: Object.freeze({ x01: 'X-SEC X-01', x03: 'X-SEC X-03', x04: 'X-SEC X-04' }),
+  referrerHeader: 'referrer-policy',
+  referrerPolicy: 'same-origin',
+  nullOrigin: 'null',
+  otherClient: (i) => `https://agent-${i}.example/cimd.json`,
+  authorizePerAddress: RATE_LIMITS.tokenRequestsPerAddressPerWindow,
+  windowMs: RATE_LIMITS.windowMs,
+  retryAfterHeader: RATE_LIMITS.retryAfterHeader,
 })

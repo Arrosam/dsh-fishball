@@ -72,7 +72,9 @@ export const toolText = (agentId) => 'fbtest pair id=' + agentId
  * - `rejectAllAccess`: every MCP request gets 401;
  * - `tokenStall`: the token endpoint never answers (until the fake stops; S2 deadlines);
  * - `beforeMcp(record)`: an async hook run before each MCP request is answered; resolving `true`
- *   answers that request 401 (the S4 race is sequenced through it).
+ *   answers that request 401 (the S4 race is sequenced through it);
+ * - `tokenRedirect`: a URL; every token request is answered 307 to it (X-SEC X-05);
+ * - `asOverride`: members merged over the AS metadata (`undefined` removes one): X-06, X-13.
  */
 export async function startFakeConnector({ issueRefresh = true } = {}) {
   const requests = []
@@ -112,6 +114,10 @@ export async function startFakeConnector({ issueRefresh = true } = {}) {
 
   function tokenEndpoint(req, res, body) {
     if (script.tokenStall) return undefined
+    if (script.tokenRedirect !== undefined) {
+      res.writeHead(WEB.temporaryRedirect, { [WEB.location]: script.tokenRedirect })
+      return res.end()
+    }
     const form = new URLSearchParams(body.toString('utf8'))
     const grant = form.get(OAUTH.grantType)
     const fail = (error, status = K1.OAUTH_ERROR_STATUS[error] ?? WEB.badRequest) => sendJson(res, status, K1.oauthErrorBody(error), K1.TOKEN_RESPONSE_HEADERS)
@@ -246,7 +252,9 @@ export async function startFakeConnector({ issueRefresh = true } = {}) {
       if (script.asMetadata === 'status') return sendJson(res, WEB.serverError, {})
       // Any issuer path is served with its own issuer, so DT-11 rule 4 reads valid metadata and fails only the check.
       const issuer = origin + url.pathname.slice(K1.PATHS.authorizationServerPrefix.length)
-      return sendJson(res, WEB.ok, { ...K1.authorizationServerMetadata(origin, approvalOrigin), issuer })
+      const meta = { ...K1.authorizationServerMetadata(origin, approvalOrigin), issuer, ...(script.asOverride ?? {}) }
+      for (const [k, v] of Object.entries(meta)) if (v === undefined) delete meta[k]
+      return sendJson(res, WEB.ok, meta)
     }
     if (req.method === WEB.post && url.pathname === K1.PATHS.token) return tokenEndpoint(req, res, body)
     if (url.pathname === K1.PATHS.mcp || url.pathname === FIXTURE.wrong.mcpPath) {
