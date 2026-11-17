@@ -9,7 +9,9 @@
  *
  * Output (default `.runtime/release/<version>/`): `<name>-<version>.tgz` for every package,
  * SHA256SUMS, INSTALL.md, PUBLISH.md, and `pnpm-store/` + `pnpm-cache/`, which let
- * `dsh plugin add <tarballs> --offline --store-dir=… --cache-dir=…` run with no registry.
+ * `dsh plugin add <tarballs> --offline --store-dir=… --cache-dir=…` run with no registry. The store
+ * is a source, not the store to install with: INSTALL.md's `offline-store.mjs` copies it into the
+ * profile's own store first (scripts/release/offline-store.mjs says why).
  *
  * Only one step needs the registry: fetching the declared third-party dependencies (fishball-core's
  * bundled closure and the store). No lockfile is committed (the user's rule), so the closure takes
@@ -167,7 +169,7 @@ function writeSums(out) {
 
 /**
  * Re-verify a release offline: exactly the expected tarballs and no other, each with a matching
- * SHA256SUMS line; the documents and the store present; no link in any tarball; the hosted set in
+ * SHA256SUMS line; the documents, the offline helper and the store present; no link in any tarball; the hosted set in
  * dsh-instance's `bundled/` byte-identical to the top-level tarballs. The store's contents are not
  * checked: the documented offline add writes into it (pnpm records each local tarball), and it is a
  * local aid that is never published.
@@ -182,7 +184,7 @@ function check(out) {
   const problems = [
     ...expected.filter((name) => !present.includes(name)).map((name) => 'missing ' + name),
     ...present.filter((name) => !expected.includes(name)).map((name) => 'unexpected ' + name),
-    ...[LAYOUT.sums, LAYOUT.install, LAYOUT.publish, LAYOUT.store, LAYOUT.cache].filter((name) => !fs.existsSync(path.join(out, name))).map((name) => 'missing ' + name),
+    ...[LAYOUT.sums, LAYOUT.install, LAYOUT.publish, LAYOUT.offlineStore, LAYOUT.store, LAYOUT.cache].filter((name) => !fs.existsSync(path.join(out, name))).map((name) => 'missing ' + name),
   ]
   if (fs.existsSync(path.join(out, LAYOUT.sums))) {
     const sums = new Map()
