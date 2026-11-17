@@ -3,6 +3,7 @@
  * modules it composes is that module's own; these are the row's: its id, its inject list, the DSH
  * names it reads, and its log lines.
  */
+import { UI_INSTANCE } from 'fishball-shared/ui-seam'
 import { FISHBALL_MODEL, HOSTED_IMPORT } from '../../contracts/constants.js'
 import { SETTINGS } from '../settings/constants.js'
 
@@ -23,9 +24,12 @@ export const MAIN = Object.freeze({
   webServer: 'webServer',
   /** DSH's attachment store (dsh-attachment), read on use: the façade saves an image the model reads into it. */
   attachments: 'attachments',
-  /** `fishballInstance` (K3 `index.d.ts`), its version, and the status service (F-STATUS). */
-  service: 'fishballInstance',
-  apiVersion: 1,
+  /**
+   * `fishballInstance` (K3 `index.d.ts`) and its version: fishball-shared's `UI_INSTANCE`, the
+   * values fishball-ui's pairing route reads it by (R-FIX-FUI).
+   */
+  service: UI_INSTANCE.service,
+  apiVersion: UI_INSTANCE.apiVersion,
   /** The setting paths the row follows, as nested key paths in its own config. */
   setting: Object.freeze({
     target: Object.freeze(['target', 'url']),

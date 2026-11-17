@@ -20,6 +20,7 @@ import { CODE_THROW, SECRET, THROWN, assertNoSecret, assertOneWarning } from '..
 import { createWorld, loadChunkAlone, loadPage, settle } from './page.mjs'
 import { registerModelCatalogCases } from './model-catalog.mjs'
 import { registerSettingsPolishCases } from './polish-cases.mjs'
+import { registerConnectRaceCases } from './connect-cases.mjs'
 import { STAND_IN } from './primitives.mjs'
 import { instanceWith, routeWorld, targetRule } from './route.mjs'
 
@@ -1144,6 +1145,8 @@ export function registerSettingsCases(sdk) {
 
   // ============================================================== UI-POLISH-F §5, §7: icon entries, Connect card
   registerSettingsPolishCases(sdk)
+  // R-FIX-FUI F5 / F6: the Connect control's read and press races, and its press notices.
+  registerConnectRaceCases(sdk)
 
   // ============================================================== later
   caseTest(sdk, 'SET3-UC-01', 'e2e', "the page on DSH's real Plugins page, both views", null, LATER.e2e)
