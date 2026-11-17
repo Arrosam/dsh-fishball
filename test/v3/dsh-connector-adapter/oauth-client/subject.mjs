@@ -116,13 +116,27 @@ export function tempRoot(scope, prefix = FIXTURE.tempPrefix) {
  * Every regular file under `dir` (not following links), as `[path, latin1 text]`. A file that
  * vanishes during the walk is skipped: other suites running at the same time may share a temp HOME
  * and create and delete their own scratch trees under it.
+ *
+ * The walk is explicit because `fs.readdirSync(dir, { recursive: true })` descends into symlinked
+ * directories: a temp HOME holding a pnpm store has link cycles, so that walk never ends. A dirent
+ * describes the entry itself (lstat semantics), so a symlink is neither descended into nor read;
+ * anything reached only through a link lies outside the swept tree.
  */
 export function filesUnder(dir) {
   if (!dir || !fs.existsSync(dir)) return []
-  let entries
-  try { entries = fs.readdirSync(dir, { recursive: true }) } catch { return [] }
-  const read = (f) => { try { return fs.lstatSync(f).isFile() ? [[f, fs.readFileSync(f, 'latin1')]] : [] } catch { return [] } }
-  return entries.map((f) => path.join(dir, String(f))).flatMap(read)
+  const files = []
+  const pending = [dir]
+  while (pending.length > 0) {
+    const current = pending.pop()
+    let entries
+    try { entries = fs.readdirSync(current, { withFileTypes: true }) } catch { continue }
+    for (const entry of entries) {
+      const f = path.join(current, entry.name)
+      if (entry.isDirectory()) pending.push(f)
+      else if (entry.isFile()) { try { files.push([f, fs.readFileSync(f, 'latin1')]) } catch { /* vanished */ } }
+    }
+  }
+  return files
 }
 
 /**
