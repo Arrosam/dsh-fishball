@@ -334,9 +334,11 @@ export function createTokenManager({ sdk, credentials, key, now = Date.now, refr
      * @param options.discovery `discoverServer`'s result (the caller has already decided to trust it).
      * @param options.message the notice text that goes with the approval URL.
      * @param options.timeoutMs the attempt's lifetime; `timers` the clock that measures it.
+     * @param options.payloadFields the caller's own non-secret fields, stored in the grant payload
+     *   beside this client's (core records the agent id it passed, R-FIX F10).
      * @throws OAuthAttemptError denied / rejected / expired / failed, or the signal's reason on abort.
      */
-    async authorize({ session, serverUrl, clientMetadataUrl, discovery, authorizationParameters = {}, message, timeoutMs, timers = globalThis, callback = listenForCallback }) {
+    async authorize({ session, serverUrl, clientMetadataUrl, discovery, authorizationParameters = {}, payloadFields = {}, message, timeoutMs, timers = globalThis, callback = listenForCallback }) {
       const metadata = discovery.authorizationServerMetadata
       // CIMD only (R-OA-13): no dynamic-registration fallback, and no hard-coded client.
       if (metadata.client_id_metadata_document_supported !== true) throw new OAuthAttemptError(OAUTH_CLIENT.attemptEnd.failed, MESSAGE.noCimd)
@@ -373,6 +375,7 @@ export function createTokenManager({ sdk, credentials, key, now = Date.now, refr
           throw new OAuthAttemptError(isInvalidGrant(sdk, cause) ? OAUTH_CLIENT.attemptEnd.rejected : OAUTH_CLIENT.attemptEnd.failed, undefined, { cause })
         }
         await session.commit(grantRecord({
+          ...payloadFields,
           v: OAUTH_CLIENT.grantVersion, upstream: serverUrl, clientInformation, discovery, resource: String(resource), grantId: randomUUID(), tokens: tokensFrom(tokens),
         }))
       } finally {

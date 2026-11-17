@@ -14,7 +14,8 @@
  *   taking it changes nothing here), and returns `service` (the K3 `fishballInstance.ui.asks`),
  *   `tool` (the filing tool's raw DSH definition; core's main row registers it with `tools.register`
  *   in the manager's scope), `reconcile()` (below) and `close()`. Its `onPoll` listener resolves once
- *   the page's cards are stored.
+ *   the page's cards are stored, with the ids of the page's events whose card could not be stored
+ *   (R-FIX F12: the caller must not let those be acked, or the offer is gone for good).
  * - `openAskCards(ctx, storageDomain)`: the durable table.
  * - `registerAskRoutes(ctx, options)`: the owner-only routes the browser half reads (routes.js).
  *
@@ -47,6 +48,7 @@ export { ASKS, ASK_TOOL, CARD_STATE } from './constants.js'
 
 const refusal = (code) => Object.freeze({ ok: false, code })
 const OK = Object.freeze({ ok: true })
+const NO_FAILURES = Object.freeze([])
 
 /** `{choice, text?}` with a Q3 = A choice and an optional string reason; else undefined. */
 function answerOf(answer) {
@@ -110,18 +112,26 @@ export function createAsks({ link, table, logger }) {
   // two) are applied in the order the connector committed them. The listener returns the page's
   // promise, so a caller that owns the poll pipeline (core's main row) can store the cards before it
   // lets the same events be acked (F-WIRE: "store the card before the ack"); the link ignores it.
+  // The promise resolves to the ids of the events whose write failed: those stay unacked at the
+  // caller, so the connector offers them again and the write is retried at the next poll.
   const offPoll = link.onPoll((result) => {
-    if (closed || result?.ok !== true || !Array.isArray(result.events)) return intake
+    if (closed || result?.ok !== true || !Array.isArray(result.events)) return intake.then(() => NO_FAILURES)
     const events = [...result.events]
     // Each event's failure is its own: a later settlement in the same page must still close its
     // card, because an acked page is never polled again.
-    intake = intake.then(async () => {
+    const page = intake.then(async () => {
+      const failed = []
       for (const event of events) {
-        if (closed) return
-        try { await take(event) } catch (error) { logger?.warn(ASK_LOG.writeFailed, codeOf(error)) }
+        if (closed) break
+        try { await take(event) } catch (error) {
+          logger?.warn(ASK_LOG.writeFailed, codeOf(error))
+          failed.push(event?.eventId)
+        }
       }
+      return Object.freeze(failed)
     })
-    return intake
+    intake = page.then(() => undefined)
+    return page
   })
 
   /**

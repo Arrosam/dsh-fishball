@@ -117,6 +117,11 @@ export const IDENTITY = Object.freeze({
   path: Object.freeze(['identity', 'id']),
   key: 'id',
   group: 'identity',
+  /** R-FIX-CORE F09 (R-ID-02 `^[A-Za-z0-9_-]{1,64}$`): ids outside the grammar, a blank one, and a second valid one. */
+  invalid: Object.freeze({ dot: 'bad.id', long: 'a'.repeat(65), space: 'bad id' }),
+  longestValid: 'b'.repeat(64),
+  blank: '',
+  idInvalid: 'id-invalid',
 })
 
 /** Connect inputs that reach an approval URL (R12 = B: an https CIMD URL with a path; a loopback http target). */

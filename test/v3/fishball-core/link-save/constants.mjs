@@ -207,3 +207,15 @@ export const HARNESS = Object.freeze({
   attemptGapMs: LINK_BACKOFF.initialMs / 2,
   tempPrefix: 'fbtest-link-save-',
 })
+
+/**
+ * R-FIX-CORE (.rfix-requirements.md F01, F10, F16): the pending reference's durable origin binding,
+ * a credential record of core's scope whose payload is `{v: 1, ref, origin}`, and the fixture ids
+ * the F10 / F16 rows switch `identity.id` to (R-ID-02-valid test data).
+ */
+export const RFIX = Object.freeze({
+  pendingTokenOrigin: 'fishball-core/pending-token-origin',
+  pendingVersion: 1,
+  otherId: 'fbtest-link-save-other',
+  otherCimd: 'https://agent.example/fishball-core-other.json',
+})

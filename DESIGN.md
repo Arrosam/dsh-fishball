@@ -2187,3 +2187,15 @@ The user (verbatim): "侧边栏的按钮被收到了这里，这是可以的，�
 | Wording changed | strip `tools` (now a chip: "N contributed tools" / "N 个贡献工具"); new `card` words; the approval link reads "Open the approval page" / "打开授权页面" instead of the raw URL (still its `title`) | Needed by the design; listed for the user's zh review |
 | Package icons (ICON-SET) | fishball-core and fishball-ui get the shared fish base with their own badge, from ICON-SET's spec (copied, not imported): core a link (DSH's link glyph: the link to the target), fishball-ui a speech bubble with three dots (Fishball's conversation). Both are clearly apart from the DSH side's wrench, window, server and plug at 30 px. Nothing on the Fishball side draws the connector's wrench. fishball-board is shelved and gets none | The user: "只有connector插件的设置页的图标带有这个小扳手，然后每个插件的右下角都要有个各自的图标" |
 | Narrow window | Below 480 px (DSH's own chat breakpoint) the conversation is lifted by the page bar's height, so the bar never covers DSH's composer stats | Found in the 390 px screenshots |
+
+## 23. V3 R-FIX-CORE: core review fixes (2026-11-18)
+
+The user's answers to the three product questions of the core review (`.runtime/reports/review-x-fishball-core.md`), and the rules the fixes follow:
+
+| Point | Decision | Reason |
+|---|---|---|
+| Ended reminders | A reminder whose last occurrence was delivered (or dropped by a Stop) is removed from the store at once; ended reminders in an older store are dropped on load. A change that would outgrow the 4 MiB store is refused `schedule-store-full`; a store that cannot be read whole makes the tools `schedule-unavailable` and is never written over | the user, 2026-11-18: "响过立刻删" (F07) |
+| Reminder delivery | A due occurrence is recorded `pending` with a fixed message id, then handed to the manager under `runMaintenance` (true idle, its own turn), like Fishball events (`src/events/handover.js`). It is delivered when the session admits it. A user Stop of the claiming turn, or any removal of the queued message, drops it; owner teardown and a restart with it pending hand it over again | the user, 2026-11-18: "提醒保留在上下文，如果被停止了就丢掉"; teardown and crash keep the tool's "Delivery can repeat after a crash" (F08) |
+| Manager record without a log | When the record's session has no log (`SessionPersistenceNotFoundError`), core creates it under the same id | the user, 2026-11-18 (F05); as DSH's own restore-or-create |
+| Pending token origin | A value in `DSH_AGENT_TOKEN` is bound to the target origin in force when it is written (or at the first attempt), in the record `fishball-core/pending-token-origin`; it is never sent to another origin | R-FB-03 (F01) |
+| Connect grant id | A grant records the `agent_id` it was approved for (`agentId`); it is usable only while `identity.id` is that id. A paired record for another id holds the link `id-mismatch` | R-ID-10 (F10) |
