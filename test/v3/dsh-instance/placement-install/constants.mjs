@@ -73,3 +73,16 @@ export const CASE = Object.freeze({ id: 'PINST-ST-01', fail: 'PINST-DT-01', regi
 export const LATER = Object.freeze({
   registry: 'REL-PUBLISH (the registry spec path needs fishball-ui and fishball-core published at the instance version; nothing is published yet)',
 })
+
+/**
+ * R-FIX-INSTANCE F02 (relayed 2026-11-18): the fallback copies the bundled tarballs into
+ * `<child profile>/vendor/`; when vendor is a symlink to an outside folder holding a same-named
+ * tarball, the start fails UNSAFE_DIRECTORY and the outside file keeps its bytes.
+ */
+export const F02 = Object.freeze({
+  id: 'RFI-F02',
+  code: 'UNSAFE_DIRECTORY',
+  /** The outside folder vendor/ links to (in the case's scratch), and the planted bytes of its same-named tarball. */
+  outside: 'outside-vendor',
+  planted: 'fbtest outside tarball: must not change',
+})

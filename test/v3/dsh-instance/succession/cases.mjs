@@ -36,7 +36,7 @@ import { FIXTURE as CONNECTOR_FIXTURE, k3Literals } from '../../dsh-connector/ho
 import { succeedWorld } from '../../dsh-connector/hosted/subject.mjs'
 import { until } from '../../dsh-connector/routing/cases.mjs'
 import { textOf } from '../host/subject.mjs'
-import { CASE, E2E, ENTRY, HOST_FIXTURE, HOST_K3, OUTCOME, RELAYED, RETIRE, RUNTIME, WAIT } from './constants.mjs'
+import { CASE, E2E, ENTRY, HOST_FIXTURE, HOST_K3, OUTCOME, RELAYED, RETIRE, RFI, RUNTIME, WAIT } from './constants.mjs'
 import { gate } from './fakes.mjs'
 import { expectRetired, successionWorld } from './subject.mjs'
 
@@ -556,4 +556,28 @@ function promptRows(sdk) {
     assert.equal(w.retired().some(([, successor]) => successor === undefined), false)
     await assertPending(w, undefined, 'a pending succession with no entries')
   })
+
+  // ===================================================================== R-FIX-INSTANCE F06: only a definite import answer counts
+  // pending(E1 → E2), the old credential still present in the child; Reconnect's import gets no
+  // answer (the wire closes while the child's store write hangs) or a definite refusal: either way
+  // credentials-unwritable, E3 is not recorded and the succession is not retargeted to it.
+  for (const [part, title, play] of [
+    ['unanswered', 'the wire closes while the store write hangs (no answer)', (w) => {
+      w.credentials.set = async () => { w.link.wires.at(-1).lose(); await new Promise(() => {}) }
+    }],
+    ['refused', 'the child answers its own refusal', (w) => { w.credentials.failSet = true }],
+  ]) {
+    row(sdk, RFI.f06, part, `F06 pending(E1 → E2), old credential present, Reconnect's import: ${title} → ${RFI.unwritable}; E3 not recorded; no retire aimed at E3; the pending old entry kept`, async (t) => {
+      const w = await reinstalled(t, sdk, [OUTCOME.unpaired])
+      await expectRetired(w.retired, [[ENTRY.e1, ENTRY.e2]])
+      w.tokens.answerAlways(OUTCOME.unpaired)
+      play(w)
+      assert.deepEqual(await w.locator.reconnect(), { ok: false, code: RFI.unwritable })
+      assert.deepEqual(await w.entriesOnDisk(), [ENTRY.e1, ENTRY.e2], 'hosted.json entries')
+      w.tokens.emit()
+      await expectRetired(w.retired, w.retired())
+      assert.deepEqual(w.retired().filter(([, successor]) => successor === ENTRY.e3), [], 'retargeted to an entry the child never stored: ' + JSON.stringify(w.retired()))
+      await assertPending(w, ENTRY.e1, 'the pending old entry')
+    })
+  }
 }

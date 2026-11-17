@@ -1470,6 +1470,12 @@ Diagnostics: the child's stderr goes to `<DSH_HOME>/fishball/runtime/child-stder
 (64 KiB) and rotates once to `child-stderr.log.1`. Lines are redacted before they are written:
 Authorization/Bearer values, key/token/secret/password assignments and any long opaque run are
 replaced with `[redacted]` (`src/native-runtime/stderr-log.js`). stdout stays discarded.
+Redaction does not depend on how the OS splits the stream (R-FIX-INSTANCE F03): a credential
+object or list opened on one line stays masked on the following lines until it closes, and one that
+never closes masks the rest of the stream. When a line over the cap is cut and that leaves such a
+value's end unknown, the stream is sealed: one `[redacted: rest of stream]` line, then nothing more.
+Lines waiting to be written are bounded to one cap; when a burst outruns the disk, the oldest are
+dropped and a `[dropped]` line marks the gap (F04).
 
 ## 12. Legacy retirement
 
