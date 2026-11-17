@@ -56,3 +56,7 @@ Core's own page on DSH's Plugins page (`client.js` with `client.settings.js`, in
 
 Core runs normally without `fishball-ui` (no page, no strip) and reports nothing about it. Core's
 status names `fishball-board` when it is missing from the set.
+
+## Known limits
+
+- Reminders: creates and growing updates may fill 90% of the 4 MiB store, and the rest is kept for delivery. Roughly 10k+ tiny recurring reminders (their delivery receipts), or thousands falling due at once, can still use up that reserve; the failed delivery is then logged, and the reminder stays due and is retried until space frees up.
