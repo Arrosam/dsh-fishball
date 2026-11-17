@@ -7,7 +7,8 @@
  * independent of the link (F-LINK), of how an event is framed for the model (the X9 pipeline,
  * F-FACADE) and of the chat row that owns the manager session:
  * - `table`: the ledger's KvTable, from `openLedger(ctx, storageDomain)`;
- * - `link.ack(receipts)`: `inbox_ack` through core's link (K1);
+ * - `link.ack(receipts, source)`: `inbox_ack` (K1) through the link of `source`'s target epoch,
+ *   and `link.live(source)`, whether that epoch is current (MULTI-1: the target collection);
  * - `fishball.activate()`: the manager session's live agent;
  * - `fishball.present(event)`: the model-facing content blocks of one event;
  * - `logger`: the background log (R-INT-09);
@@ -16,7 +17,8 @@
  *
  * Order of use (confirmed by Fishball 2026-11-14): F-WIRE calls `recover()` once after app ready,
  * when the Fishball DSH's plugins have registered, because an open record is offered again only
- * to a plugin that is registered (R-INT-04); then `intake(event)` for every polled event;
+ * to a plugin that is registered (R-INT-04); then `intake(event, source)` for every polled event of
+ * the target epoch `source` (MULTI-1);
  * `close()` before the agent's owner disposes it.
  */
 import { createDelivery } from './delivery.js'
@@ -24,7 +26,7 @@ import { createInterception } from './interception.js'
 import { createLedger } from './ledger.js'
 import { createRegistry } from './registry.js'
 
-export { openLedger, messageIdOf } from './ledger.js'
+export { openLedger, messageIdOf, recordKeyOf } from './ledger.js'
 export { INTERCEPT, LEDGER, PRESENT_RETRY, REASON, STATE, TEXT } from '../../contracts/constants.js'
 export { DISPATCH } from './constants.js'
 
