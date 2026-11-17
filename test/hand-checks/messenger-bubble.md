@@ -1,5 +1,7 @@
 # Messenger bubble width — independent requirement-driven regression report
 
+**Status (2026-11-17):** a historical run record. Its suites no longer exist: messenger-bubble*, messenger-layout, messenger-table and support/messenger-bubble.mjs were deleted in 100d05a7, pile-disclosure.integration.test.mjs in 76e06ff9, support/messenger-style.mjs in c5c5692e and support/dedicated-model-client.mjs in 2446c559. The links below are kept as the record, but they do not resolve.
+
 Date: 2026-11-04 (Pacific/Auckland). Base requested: delivery/2026-11-04-fixes at 312ff11. Test author loaded general-coding-principle, then actually read [repository instructions](<AGENTS.md>) before investigation. Only tests/support/report files were changed; no commit was made. The implementation author worked independently and received behavior/command/statistics reports, not test source. No in-flight implementation or implementation diff was read.
 
 ## Scope and verdict
