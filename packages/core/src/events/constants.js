@@ -83,6 +83,9 @@ export const LOG = Object.freeze({
   presentFailed: 'event %s (%s) could not be presented to Fishball; retrying (%s)',
   presentGivenUp: 'event %s (%s) given up (%s): it could not be presented to Fishball (%s)',
   recoverFailed: 'event recovery failed (%s); intake continues',
+  commitFenceFailed: 'event %s: the commit fence could not be written (%s); nothing was sent',
+  fallbackFailed: 'event %s could not fall back to Fishball (%s); recovery settles it at the next start',
+  offerFailed: 'event %s: its offer ended with a ledger failure (%s); recovery settles it at the next start',
 })
 
 /** `TypeError` texts of an invalid registration or call (K3 rule, DECIDED #17). */

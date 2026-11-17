@@ -39,12 +39,12 @@ async function newRoot() {
 /**
  * Opens the world; `t.after` closes it and removes its root.
  * @param {{tools: object[], status?: object, answers?: object}} linkOptions the fake link
- * @param {{events?: boolean, gate?: object, imagesSupported?: boolean}} options `events`: also run
+ * @param {{events?: boolean, gate?: object, imagesSupported?: boolean, attachments?: () => object}} options `events`: also run
  *   F-INTERCEPT's module with the façade's `present` as its Fishball presenter (EXT-UC-02 A3);
  *   `gate` and `imagesSupported` (a boolean here; subject.mjs passes it as `() => boolean`) go to the
  *   façade's factory
  */
-export async function worldFor(t, sdk, linkOptions, { events = false, gate, imagesSupported } = {}) {
+export async function worldFor(t, sdk, linkOptions, { events = false, gate, imagesSupported, attachments } = {}) {
   const root = await newRoot()
   const closers = []
   t.after(async () => {
@@ -97,7 +97,7 @@ export async function worldFor(t, sdk, linkOptions, { events = false, gate, imag
 
   const link = new FakeLink(linkOptions)
   const logger = ctx.logger(FIXTURE.loggerName)
-  const bridge = await makeBridge(sdk, { ctx, link, logger, gate, imagesSupported })
+  const bridge = await makeBridge(sdk, { ctx, link, logger, gate, imagesSupported, attachments })
   closers.push(() => bridge.close())
 
   let turnSeq = 0

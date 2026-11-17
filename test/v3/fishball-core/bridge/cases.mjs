@@ -33,6 +33,7 @@ import {
 } from './constants.mjs'
 import { bridgeExport, bridgeSources } from './subject.mjs'
 import { worldFor } from './world.mjs'
+import { registerRfixBridgeCases } from './rfix.mjs'
 
 const json = (value) => JSON.stringify(value)
 const names = (tools) => tools.map((t) => t.name).sort()
@@ -84,6 +85,8 @@ function contributedEvent(namespace, event, marker) {
 }
 
 export function registerFacadeCases(sdk) {
+  // R-FIX-CORE (F13): rfix.mjs.
+  registerRfixBridgeCases(sdk)
   // ------------------------------------------------------------------ EXT-UC-02 A3 (use case)
 
   caseTest(sdk, 'EXT-UC-02', 'A3', 'a contributed event nobody in the Fishball DSH intercepts reaches the Fishball agent through the façade\'s present', async (t) => {

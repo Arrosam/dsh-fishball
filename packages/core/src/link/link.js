@@ -13,13 +13,20 @@
  *    T4); a grant brings its own `authProvider` (access token only, refreshed by core's token
  *    manager); once the token endpoint accepted a token, `credentials.accepted()` saves it (R9);
  *    a refused credential is told so (`credentials.refused()`) before the status is reported;
- * 4. `server/discover` at the pinned revision (modern only, Q12), `tools/list`, then a
- *    `subscriptions/listen` stream on `dsh-agent://events` and tool-list changes;
- * 5. one `inbox_poll` on every (re)connect and on every events hint (hints may drop; polls
- *    recover them, design §6.5).
+ * 4. `server/discover` at the pinned revision (modern only, Q12), `tools/list`, the gate's `admit`,
+ *    `tools/list` again (R-FIX F02: a first `pair` turns the pair-only list into the full one, and
+ *    the connector sends no list change for it), then a `subscriptions/listen` stream on
+ *    `dsh-agent://events` and tool-list changes;
+ * 5. a drain of the mailbox on every (re)connect and on every events hint (hints may drop; polls
+ *    recover them, design §6.5): `inbox_poll` pages followed by `nextCursor` while `hasMore`, one
+ *    drain at a time (R-FIX F03: one page per hint stranded a backlog above one page).
  * A failure is classified (`failureStatus`) and retried with bounded backoff; Fishball keeps
  * running whatever the link does (R-FB-04, R-REM-04). A blank or refused target and a missing
  * token are not retried: nothing changes until the caller's `reconnect()` after a settings change.
+ * A call or poll of the open link that the target refuses as unauthenticated (the same
+ * classification, R-FIX F04: an OAuth chain revoked under a live listen stream) ends the link
+ * exactly as a refused attempt does: teardown, the credential's `refused()`, the refused status,
+ * the backoff retry. Any other call failure leaves the link connected.
  *
  * Status while not connected (the user's decision, 2026-11-14): `stop()` and `reconnect()` turn a
  * `connected` status into `target-unreachable` / `TARGET_UNREACHABLE` until the next attempt
@@ -152,6 +159,11 @@ export class McpLink {
   // teardown. Calls and polls go through it alone, so nothing is sent on a half-made connection.
   #connected
   #subscription
+  // What the open link connected with (its generation, attempt and credentials), so a refusal
+  // after connecting is settled as the attempt's own (R-FIX F04).
+  #open
+  // The running mailbox drain, `{generation, again}` (R-FIX F03): one per link generation.
+  #drainer
   #tools = Object.freeze([])
   #started = false
 
@@ -221,7 +233,12 @@ export class McpLink {
   async callTool(name, args = {}, { signal } = {}) {
     const client = this.#connected
     if (client === undefined) return { ok: false, code: LINK.disconnected }
-    return callStructured(client, name, args, signal)
+    try {
+      return await callStructured(client, name, args, signal)
+    } catch (error) {
+      this.#refusedWhileOpen(client, error)
+      throw error
+    }
   }
 
   #setStatus(next) {
@@ -254,6 +271,7 @@ export class McpLink {
     this.#subscription = undefined
     this.#client = undefined
     this.#connected = undefined
+    this.#open = undefined
     // Closing is best effort: the peer may already be gone.
     await subscription?.close().catch(() => {})
     await client?.close().catch(() => {})
@@ -285,21 +303,47 @@ export class McpLink {
       const client = await this.#connect(sdk, target, credentials, attempt, seen, generation)
       if (!this.#current(generation)) return
       this.#connected = client
+      this.#open = Object.freeze({ generation, attempt, credentials })
       this.#failures = 0
       this.#setStatus(STATUS.connected)
-      void this.#poll(generation)
+      this.#poll(generation)
     } catch (error) {
       if (!this.#current(generation)) return
       await this.#teardown()
-      if (!this.#current(generation)) return
-      const status = await this.#failed(error, attempt, seen)
-      if (!this.#current(generation)) return
-      // A held attempt was refused by the gate, not by the target; the hook never rejects.
-      if (!(error instanceof LinkHold) && (status === STATUS.refused || status === STATUS.revoked)) await credentials?.refused?.()?.catch(() => {})
-      if (!this.#current(generation)) return
-      this.#setStatus(status)
-      if (!(error instanceof LinkHold)) this.#retryLater(generation)
+      await this.#settleFailure(generation, error, attempt, seen, credentials)
     }
+  }
+
+  /**
+   * The end of a failed or held attempt, after its teardown: the status, the credential's
+   * `refused()` for a refusal by the target, and the backoff retry. Shared by a failed attempt and
+   * a refusal of the open link (`#refusedWhileOpen`). Never rejects.
+   */
+  async #settleFailure(generation, error, attempt, seen, credentials) {
+    if (!this.#current(generation)) return
+    const status = await this.#failed(error, attempt, seen)
+    if (!this.#current(generation)) return
+    // A held attempt was refused by the gate, not by the target; the hook never rejects.
+    if (!(error instanceof LinkHold) && (status === STATUS.refused || status === STATUS.revoked)) await credentials?.refused?.()?.catch(() => {})
+    if (!this.#current(generation)) return
+    this.#setStatus(status)
+    if (!(error instanceof LinkHold)) this.#retryLater(generation)
+  }
+
+  /**
+   * A call or poll of the open link on `client` failed. A refusal of the credential (status rule
+   * 4) ends the link as a refused attempt; anything else (network, abort, a server error) leaves
+   * it as it is: the call's caller decides about its own failure.
+   */
+  #refusedWhileOpen(client, error) {
+    const open = this.#open
+    if (open === undefined || this.#connected !== client || !this.#current(open.generation)) return
+    if (failureStatus(this.#options.sdk ?? {}, error, undefined) !== STATUS.refused) return
+    const generation = ++this.#generation
+    this.#failures = 0
+    this.#cancelTimer()
+    this.#leaveConnected()
+    void this.#teardown().then(() => this.#settleFailure(generation, error, open.attempt, { mcpStatus: undefined }, open.credentials))
   }
 
   /** The status of a failed or held attempt (status rules 2, 4, 4a, 6, or the gate's hold). */
@@ -336,7 +380,7 @@ export class McpLink {
     })
     const client = new sdk.Client(LINK_MCP.clientInfo, { versionNegotiation: { mode: { pin: LINK_MCP.versionPin } } })
     client.setNotificationHandler(LINK_MCP.resourceUpdated, (notification) => {
-      if (notification?.params?.uri === LINK_MCP.eventsUri) void this.#poll(generation)
+      if (notification?.params?.uri === LINK_MCP.eventsUri) this.#poll(generation)
     })
     // A failed re-list keeps the previous list; the next change or (re)connect lists again.
     client.setNotificationHandler(LINK_MCP.toolsListChanged, () => { this.#listTools(client, generation).catch(() => {}) })
@@ -355,7 +399,11 @@ export class McpLink {
       call: (name, args = {}) => callStructured(client, name, args),
     })
     if (held) throw new LinkHold(held)
-    // `admit` may have waited on `pair`: an attempt overtaken meanwhile sends no listen request.
+    // `admit` may have waited on `pair`: an attempt overtaken meanwhile sends no further request.
+    if (!this.#current(generation)) return client
+    // The authority the gate admitted may differ from the one the first list ran under (a fresh
+    // `pair` grants full power to the same access token, R-ID-03), so the list is taken again.
+    await this.#listTools(client, generation)
     if (!this.#current(generation)) return client
     const subscription = await client.listen({ resourceSubscriptions: [LINK_MCP.eventsUri], toolsListChanged: true })
     this.#subscription = subscription
@@ -386,18 +434,58 @@ export class McpLink {
     emitIsolated(this.#listeners.tools, this.#tools)
   }
 
-  async #poll(generation) {
-    const client = this.#connected
-    if (client === undefined || !this.#current(generation)) return
-    let result
-    try {
-      result = await callStructured(client, MCP.tools.inboxPoll, {})
-    } catch {
-      // A failed poll loses nothing: pending events stay at the connector until acked, and the
-      // next (re)connect or hint polls again.
-      return
+  /**
+   * Drains the mailbox for `generation`: one drain at a time per generation; a request while one
+   * runs makes exactly one more drain after it (from the start, so nothing the running one passed
+   * is missed). A drain of an older generation never blocks the current one's.
+   */
+  #poll(generation) {
+    if (this.#drainer?.generation === generation) { this.#drainer.again = true; return }
+    const drainer = { generation, again: true }
+    this.#drainer = drainer
+    void (async () => {
+      while (drainer.again && this.#current(generation)) {
+        drainer.again = false
+        await this.#drainPages(generation)
+      }
+      // In the same synchronous step as the last `again` check, so no request falls between them.
+      if (this.#drainer === drainer) this.#drainer = undefined
+    })()
+  }
+
+  /**
+   * One drain: `inbox_poll` pages, each handed to the poll listeners in order, following
+   * `nextCursor` while `hasMore` (K1 `inbox_poll`). A `resync` answer (the mailbox's storage was
+   * reset under the cursor) starts once more from no cursor. A cursor that does not move ends the
+   * drain, so a misbehaving target cannot loop it. Never rejects: a failed page loses nothing,
+   * since pending events stay at the connector until acked and the next hint or (re)connect drains
+   * again; a refusal of the credential ends the link (`#refusedWhileOpen`).
+   */
+  async #drainPages(generation) {
+    let cursor
+    let resynced = false
+    for (;;) {
+      const client = this.#connected
+      if (client === undefined || !this.#current(generation)) return
+      let result
+      try {
+        result = await callStructured(client, MCP.tools.inboxPoll, cursor === undefined ? {} : { [LINK_MCP.cursorArgument]: cursor })
+      } catch (error) {
+        this.#refusedWhileOpen(client, error)
+        return
+      }
+      if (!this.#current(generation)) return
+      emitIsolated(this.#listeners.poll, result)
+      if (result?.ok !== true) return
+      if (result.resync !== undefined) {
+        if (resynced) return
+        resynced = true
+        cursor = undefined
+        continue
+      }
+      if (result.hasMore !== true || typeof result.nextCursor !== 'string' || result.nextCursor === cursor) return
+      cursor = result.nextCursor
     }
-    if (this.#current(generation)) emitIsolated(this.#listeners.poll, result)
   }
 
   /**

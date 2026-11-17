@@ -66,15 +66,24 @@ export function mailboxEvent(sequence, type, payload, offer) {
 /**
  * Starts a fake connector on a dual-stack loopback port, so `127.0.0.1`, `localhost` and `[::1]`
  * all reach it.
- * @param {{mode?: string, clientId: string, secret: string, issuerOrigin?: string, redirectTo?: string}} options
+ * @param {{mode?: string, clientId: string, secret: string, issuerOrigin?: string, redirectTo?: string,
+ *   tools?: () => object[], onTool?: (name: string, args: object) => unknown, onRpc?: (message: object) => {status: number, body: object, headers?: object} | undefined}} options
  *   `issuerOrigin` overrides the authorization server the protected resource metadata names
- *   (a foreign issuer); `redirectTo` is the target of MODE.redirect.
+ *   (a foreign issuer); `redirectTo` is the target of MODE.redirect. R-FIX-CORE additions, each
+ *   off by default: `tools()` answers `tools/list` (default K1's full list); `onTool(name, args)`
+ *   answers a `tools/call` with its own structuredContent fields (a promise may hold the call;
+ *   `undefined` falls back to the defaults below); `onRpc(message)` answers an authenticated MCP
+ *   request with a raw HTTP status and body instead (a scripted failure).
  */
-export async function startFakeConnector({ mode = MODE.v3, clientId, secret, issuerOrigin, redirectTo }) {
+export async function startFakeConnector({ mode = MODE.v3, clientId, secret, issuerOrigin, redirectTo, tools = () => K1.TOOLS, onTool, onRpc }) {
   const requests = []
   const listens = []
+  // The open listen responses, kept apart from `listens` (a case prints those as JSON).
+  const streams = []
   const calls = []
   const issued = new Set()
+  // R-FIX-CORE: the token endpoint refuses even the right secret while false (a runtime refusal).
+  let secretAccepted = true
   const sockets = new Set()
   /** Events the next inbox_poll returns (then cleared: a fake mailbox with no cursor semantics). */
   let pending = []
@@ -86,7 +95,7 @@ export async function startFakeConnector({ mode = MODE.v3, clientId, secret, iss
   async function tokenEndpoint(req, res, body) {
     const form = new URLSearchParams(body)
     const viaPost = form.get('client_id') === clientId && form.get('client_secret') === secret
-    if (form.get('grant_type') !== K1.GRANT.clientCredentials || !(basicOk(req.headers.authorization) || viaPost)) {
+    if (form.get('grant_type') !== K1.GRANT.clientCredentials || !secretAccepted || !(basicOk(req.headers.authorization) || viaPost)) {
       const error = K1.OAUTH_ERROR.invalidClient
       return sendJson(res, K1.OAUTH_ERROR_STATUS[error], K1.oauthErrorBody(error), { 'www-authenticate': K1.BEARER_CHALLENGE.basicScheme })
     }
@@ -96,8 +105,10 @@ export async function startFakeConnector({ mode = MODE.v3, clientId, secret, iss
     return sendJson(res, K1.HTTP_STATUS.ok, K1.tokenResponse({ accessToken, scope: K1.SCOPE.full }), K1.TOKEN_RESPONSE_HEADERS)
   }
 
-  function toolResult(name, args) {
+  async function toolResult(name, args) {
     calls.push({ name, args })
+    const scripted = await onTool?.(name, args)
+    if (scripted !== undefined) return K1.okResult(scripted)
     if (name === K1.TOOL.inboxPoll) {
       const events = pending
       pending = []
@@ -108,7 +119,7 @@ export async function startFakeConnector({ mode = MODE.v3, clientId, secret, iss
     return K1.okResult({})
   }
 
-  function mcpEndpoint(req, res, body) {
+  async function mcpEndpoint(req, res, body) {
     const origin = originOf(req)
     const auth = req.headers.authorization ?? ''
     if (!auth.startsWith(WEB.bearer) || !issued.has(auth.slice(WEB.bearer.length))) {
@@ -117,6 +128,8 @@ export async function startFakeConnector({ mode = MODE.v3, clientId, secret, iss
     let message
     try { message = JSON.parse(body) } catch { return sendJson(res, K1.HTTP_STATUS.badRequest, rpcError(null, RPC.parseError, 'parse error')) }
     if (message.id === undefined) { res.writeHead(WEB.accepted); return res.end() }
+    const raw = onRpc?.(message)
+    if (raw !== undefined) return sendJson(res, raw.status, raw.body, raw.headers)
     switch (message.method) {
       case RPC.discover:
         return sendJson(res, K1.HTTP_STATUS.ok, rpcResult(message.id, {
@@ -124,9 +137,9 @@ export async function startFakeConnector({ mode = MODE.v3, clientId, secret, iss
           capabilities: { tools: { listChanged: true }, resources: { subscribe: true, listChanged: false } },
         }))
       case RPC.toolsList:
-        return sendJson(res, K1.HTTP_STATUS.ok, rpcResult(message.id, { ...CACHEABLE, tools: K1.TOOLS }))
+        return sendJson(res, K1.HTTP_STATUS.ok, rpcResult(message.id, { ...CACHEABLE, tools: tools() }))
       case RPC.toolsCall:
-        return sendJson(res, K1.HTTP_STATUS.ok, rpcResult(message.id, { ...toolResult(message.params?.name, message.params?.arguments) }))
+        return sendJson(res, K1.HTTP_STATUS.ok, rpcResult(message.id, { ...await toolResult(message.params?.name, message.params?.arguments) }))
       case RPC.resourcesRead:
         return sendJson(res, K1.HTTP_STATUS.ok, rpcResult(message.id, {
           ...CACHEABLE,
@@ -137,6 +150,7 @@ export async function startFakeConnector({ mode = MODE.v3, clientId, secret, iss
       case RPC.listen: {
         const filter = message.params?.notifications ?? {}
         listens.push({ filter, at: Date.now() })
+        streams.push({ res, id: message.id })
         res.writeHead(K1.HTTP_STATUS.ok, { 'content-type': WEB.sse, ...K1.TOKEN_RESPONSE_HEADERS })
         res.write(SSE_FRAME({ jsonrpc: RPC.jsonrpc, method: RPC.acknowledged, params: { notifications: filter, _meta: { [RPC.subscriptionIdKey]: message.id } } }))
         return undefined // held open until the client or drop() ends it
@@ -200,6 +214,20 @@ export async function startFakeConnector({ mode = MODE.v3, clientId, secret, iss
     /** The target comes back on the same port. */
     restore: listen,
     stop: close,
+    /**
+     * R-FIX-CORE: the events hint (`notifications/resources/updated` on `dsh-agent://events`) on
+     * every open listen stream, as the connector sends it after a mailbox commit (R-CON-04).
+     */
+    hint() {
+      for (const s of streams) {
+        if (s.res.destroyed || s.res.writableEnded) continue
+        s.res.write(SSE_FRAME({ jsonrpc: RPC.jsonrpc, method: RPC.resourceUpdated, params: { uri: K1.RESOURCE.events.uri, _meta: { [RPC.subscriptionIdKey]: s.id } } }))
+      }
+    },
+    /** R-FIX-CORE: every access token dies, the listen streams stay open (a revoked OAuth chain). */
+    revokeAccess: () => { issued.clear() },
+    /** R-FIX-CORE: the token endpoint refuses (`false`) or accepts (`true`) the principal's secret. */
+    acceptSecret: (accepted) => { secretAccepted = accepted },
   }
 }
 

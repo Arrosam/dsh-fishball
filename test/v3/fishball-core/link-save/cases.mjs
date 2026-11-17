@@ -20,6 +20,7 @@ import { CONNECT, ENDPOINT, EVENT, FIXTURE, HARNESS, HOSTED_IMPORT, IDENTITY, K1
 import { browser } from './fakes.mjs'
 import { linkSaveWorld, untilTrue } from './subject.mjs'
 import { registerImportFaultCases } from './import-fault.mjs'
+import { registerRfixLinkSaveCases } from './rfix.mjs'
 
 const S = LINK.state
 const C = CONNECT.state
@@ -96,6 +97,8 @@ function assertNoLeak(w, everywhere = []) {
 export function registerLinkSaveCases(sdk) {
   // E-FIX-3: Connect's own MCP client load logs its failure (import-fault.mjs).
   registerImportFaultCases(sdk)
+  // R-FIX-CORE (F01, F10, F16): rfix.mjs.
+  registerRfixLinkSaveCases(sdk)
 
   // ================================================================ Use Case REM-UC-04 (first)
   caseTest(sdk, 'REM-UC-04', 'main (hosted) 1–3', 'the hosted import is used as client secret with identity.id; once accepted it is saved once and the reference is cleared', async (t) => {

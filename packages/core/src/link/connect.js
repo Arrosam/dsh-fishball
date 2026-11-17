@@ -33,10 +33,17 @@
  * `needs-configuration` / `not-a-connector`; the last attempt for this target ended without a
  * grant (denied or cancelled included: nothing was connected) → `failed`, code `null` (no OAuth
  * word, value or code is kept); otherwise `needs-authorization` (so after `invalid_grant` dropped
- * the tokens: Connect again, once). The status follows a change of the target or of
- * `clientMetadataUrl` (both read on every `status()` and every link attempt), so a new origin is a
- * new first connection (R9).
+ * the tokens: Connect again, once). The status follows a change of the target, of
+ * `clientMetadataUrl` or of `identity.id` (read on every `status()` and every link attempt), so a
+ * new origin is a new first connection (R9), and a grant approved for another id is not
+ * `authorized` (R-FIX F10).
  *
+ * One attempt is for the settings it began with (R-FIX F16): `begin()` snapshots the target, the
+ * client metadata URL and the id, and gives up without an authorization request when any of them
+ * changed while it awaited the store or discovery; a pending attempt whose settings changed is
+ * withdrawn at the next recomputation (the link's next attempt makes one, F-WIRE reconnects it on
+ * each of those changes). The id the approval page binds (`agent_id`) is the snapshot's, and the
+ * grant records it (`agentId`). After `dispose()` no attempt starts and a pending one is withdrawn.
  */
 import { OAUTH_CLIENT, OAuthAttemptError, clientMetadataUrlProblem, discoverServer } from './oauth-client.js'
 
@@ -111,6 +118,8 @@ export function createConnect(ctx, { store, target, clientId, clientMetadataUrl,
   let beginning
   // cancel() came while begin() was still deciding (discovery runs before any attempt exists).
   let cancelled = false
+  // dispose() ran: no attempt may start or register a flow from now on.
+  let disposed = false
 
   const usableTarget = () => {
     const checked = checkTarget(target())
@@ -141,8 +150,8 @@ export function createConnect(ctx, { store, target, clientId, clientMetadataUrl,
     return status(failedFor === usable.url.href ? STATE.failed : STATE.needsAuthorization)
   }
 
-  /** The settings the status depends on besides the store, as one comparable value. */
-  const settingsKey = () => JSON.stringify([target(), clientMetadataUrl()])
+  /** The settings the status and an attempt depend on besides the store, as one comparable value. */
+  const settingsKey = () => JSON.stringify([target(), clientMetadataUrl(), clientId()])
 
   /** Sets the status and reports a change. */
   function show(next) {
@@ -154,6 +163,8 @@ export function createConnect(ctx, { store, target, clientId, clientMetadataUrl,
   /** Recomputes the status; only the latest computation may set it. A failed read keeps the last one. */
   function refresh() {
     computedFor = settingsKey()
+    // An attempt begun for other settings is not for these ones (the module header).
+    if (attempt !== undefined && attempt.settings !== computedFor) ctx.authorization.cancel(attempt.key)
     const mine = ++generation
     compute().then((next) => { if (mine === generation) show(next) }, () => {})
   }
@@ -180,11 +191,13 @@ export function createConnect(ctx, { store, target, clientId, clientMetadataUrl,
       // attempt begun from anywhere else (a surface listing every flow) passed no check and ends at once.
       run: async (session) => {
         if (attempt?.key !== key) throw new OAuthAttemptError(OAUTH_CLIENT.attemptEnd.failed)
+        const { serverUrl, clientMetadataUrl: metadataUrl, discovery, agentId, callback } = attempt
         const manager = await store.managerFor(usable.origin)
         return manager.authorize({
-          session, serverUrl: attempt.serverUrl, clientMetadataUrl: attempt.clientMetadataUrl, discovery: attempt.discovery,
-          authorizationParameters: { [MCP.oauth.agentIdParameter]: clientId() },
-          message: LINK_SAVE.text.approval, timeoutMs: LINK_SAVE.attemptTimeoutMs, timers, callback: attempt.callback,
+          session, serverUrl, clientMetadataUrl: metadataUrl, discovery,
+          authorizationParameters: { [MCP.oauth.agentIdParameter]: agentId },
+          payloadFields: { [LINK_SAVE.grantAgentIdField]: agentId },
+          message: LINK_SAVE.text.approval, timeoutMs: LINK_SAVE.attemptTimeoutMs, timers, callback,
         })
       },
     })
@@ -203,14 +216,14 @@ export function createConnect(ctx, { store, target, clientId, clientMetadataUrl,
    * An attempt that ends before its URL is known without a grant rejects (`connect.d.ts` has no
    * outcome for it): the caller learns "nothing to open", and the status says why.
    */
-  function start(usable, discovery, callback) {
+  function start(usable, discovery, callback, snapshot) {
     const key = store.grantKey(usable.origin)
     // No `ctx.authorization` (a profile without dsh-authorization) or a key another plugin claimed
     // (`DUPLICATE_FLOW`): no attempt can run, so Connect reports `failed` rather than a bare TypeError.
     try { flowFor(usable, key) } catch (error) { return fail(usable.url.href, error) }
     return new Promise((resolve, reject) => {
       // Set before begin(): DSH calls the flow's run() from begin(), and run() reads this attempt.
-      const pending = { key, url: undefined, serverUrl: usable.url.href, clientMetadataUrl: clientMetadataUrl(), discovery, callback }
+      const pending = { key, url: undefined, serverUrl: usable.url.href, clientMetadataUrl: snapshot.clientMetadataUrl, agentId: snapshot.agentId, settings: snapshot.settings, discovery, callback }
       attempt = pending
       failedFor = undefined
       refresh()
@@ -250,15 +263,20 @@ export function createConnect(ctx, { store, target, clientId, clientMetadataUrl,
    */
   async function beginOnce(via = {}) {
     cancelled = false
+    const snapshot = Object.freeze({ settings: settingsKey(), clientMetadataUrl: clientMetadataUrl(), agentId: clientId() })
+    // Overtaken: disposed, or a setting this attempt is for changed while it awaited.
+    const overtaken = () => disposed || settingsKey() !== snapshot.settings
     const usable = usableTarget()
     if (attempt !== undefined) {
       // A pending attempt for this target's grant answers its URL again; one for another origin
       // (the target changed) is withdrawn: a new origin is a new first connection (R9).
-      if (attempt.key === (usable && store.grantKey(usable.origin)) && attempt.serverUrl === usable.url.href) {
+      // An attempt begun for other settings (another id or metadata URL) is withdrawn too (R-FIX F16).
+      if (attempt.key === (usable && store.grantKey(usable.origin)) && attempt.serverUrl === usable.url.href && attempt.settings === snapshot.settings) {
         if (attempt.url !== undefined) return approval(attempt.url)
       } else ctx.authorization.cancel(attempt.key)
     }
     if (await authorized(usable)) return AUTHORIZED
+    if (overtaken()) throw new OAuthAttemptError(OAUTH_CLIENT.attemptEnd.failed)
     const code = configurationCode() ?? via.refused
     if (code !== undefined) return answer(code)
     // A blank, refused or non-connector target fails the connector check: nothing to connect to.
@@ -276,7 +294,8 @@ export function createConnect(ctx, { store, target, clientId, clientMetadataUrl,
       return answer(CONNECT.configuration.notAConnector)
     }
     if (cancelled) return fail(usable.url.href, new OAuthAttemptError(OAUTH_CLIENT.attemptEnd.denied))
-    return start(usable, discovery, via.callback)
+    if (overtaken()) throw new OAuthAttemptError(OAUTH_CLIENT.attemptEnd.failed)
+    return start(usable, discovery, via.callback, snapshot)
   }
 
   const begin = (via) => (beginning ??= beginOnce(via).finally(() => { beginning = undefined }))
@@ -308,7 +327,9 @@ export function createConnect(ctx, { store, target, clientId, clientMetadataUrl,
     }),
     refresh,
     dispose() {
+      disposed = true
       generation += 1
+      if (attempt !== undefined) ctx.authorization.cancel(attempt.key)
       for (const dispose of flows.values()) dispose()
       flows.clear()
     },

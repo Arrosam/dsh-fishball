@@ -36,6 +36,8 @@ export const RPC = Object.freeze({
   toolsCall: 'tools/call',
   listen: 'subscriptions/listen',
   acknowledged: 'notifications/subscriptions/acknowledged',
+  /** MCP's resource-change notification: the connector's events hint (R-CON-04). */
+  resourceUpdated: 'notifications/resources/updated',
   resourcesRead: 'resources/read',
   resourcesList: 'resources/list',
   legacyInitialize: 'initialize',

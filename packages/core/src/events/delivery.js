@@ -32,24 +32,10 @@
  */
 import { freezeMessage } from '@deepseek-ai/dsh-llm'
 import { MESSAGE, PRESENT_RETRY, REASON, STATE, TEXT } from '../../contracts/constants.js'
-import { HOST, LOG } from './constants.js'
+import { LOG } from './constants.js'
 import { codeOf } from './diagnostics.js'
+import { createHandover } from './handover.js'
 import { messageIdOf } from './ledger.js'
-
-const REDELIVER = Symbol('redeliver')
-
-/**
- * What the end of the turn that claimed an event, before admitting it, means (the user's decision
- * 2026-11-14 1.B; S2-Q3 A). Such a claim reached no model (S2 §2.1 item 5).
- * - owner teardown (`aborted` by `disposed`, which is not the user's decision): deliver again;
- * - a user Stop: discard (S2-Q3 A);
- * - an error, a blocked step, a stop by a parent or a hook, or any other end: discard.
- * @returns {string|symbol} a REASON to discard with, or REDELIVER.
- */
-function claimVerdict(end) {
-  if (end?.kind === HOST.aborted && end.reason?.kind === HOST.causeDisposed) return REDELIVER
-  return end?.kind === HOST.aborted && end.reason?.kind === HOST.causeUser ? REASON.userStopped : REASON.claimTurnEnded
-}
 
 /** The backoff (K3 PRESENT_RETRY, DECIDED D1) before attempt n + 1 of presenting an event (n is 1-based). */
 const backoffAfter = (attempt) => PRESENT_RETRY.backoffMs * PRESENT_RETRY.backoffFactor ** (attempt - 1)
@@ -76,8 +62,6 @@ export function createDelivery({ ledger, fishball, logger, delay = realDelay }) 
    * watched, so whichever turn admits or discards it, core records that once (review 2, finding 1).
    */
   const tracked = new Map()
-  /** messageId → the agent whose turn claimed it and has not admitted it yet. */
-  const claimed = new Map()
   /** eventId → failed presentation attempts so far (in memory: a restart starts again). */
   const failures = new Map()
   /** eventIds waiting out a presentation backoff; not in `queue` meanwhile. */
@@ -91,7 +75,6 @@ export function createDelivery({ ledger, fishball, logger, delay = realDelay }) 
   const givenUp = new Set()
   /** Ledger writes of admissions not yet durable; the flush checkpoint waits for them. */
   const writes = new Set()
-  const watched = new WeakSet()
   let draining = false
   // A drain asked for while one runs; honoured as soon as that one ends, so no request is lost.
   let again = false
@@ -119,12 +102,17 @@ export function createDelivery({ ledger, fishball, logger, delay = realDelay }) 
   function untrack(messageId) {
     const eventId = tracked.get(messageId)
     tracked.delete(messageId)
-    claimed.delete(messageId)
+    handover.forget(messageId)
     prepared.delete(eventId)
     backingOff.delete(eventId)
+    dequeue(eventId)
+    return eventId
+  }
+
+  /** Take `eventId` off the list, wherever it is: a reentrant callback may have moved the head. */
+  function dequeue(eventId) {
     const index = queue.indexOf(eventId)
     if (index >= 0) queue.splice(index, 1)
-    return eventId
   }
 
   function finish(eventId, state, reason) {
@@ -145,7 +133,7 @@ export function createDelivery({ ledger, fishball, logger, delay = realDelay }) 
    * already built, is kept, so it is not presented again.
    */
   function redeliver(eventId, message) {
-    claimed.delete(messageIdOf(eventId))
+    handover.forget(messageIdOf(eventId))
     if (message !== undefined) prepared.set(eventId, message)
     if (!queue.includes(eventId)) queue.unshift(eventId)
     void drain()
@@ -157,57 +145,23 @@ export function createDelivery({ ledger, fishball, logger, delay = realDelay }) 
   }
 
   /**
-   * One appended event of one agent's own session (dsh-session `session/event`): the admission
-   * (`user/message` with a tracked id) ends the event; the end of a turn that claimed one without
-   * admitting it decides it by claimVerdict. Only that agent's own claims are decided.
+   * Each agent is followed through its live events (handover.js `createHandover`): an admission
+   * ends the event; a claim whose turn ended without admitting it is decided by the turn's end; any
+   * removal from DSH's inbox but core's own is the user's (B1, 2026-11-14; see the header). DSH's
+   * checkpoint before a model request (`session/flush`) waits for the admission writes.
    */
-  function observe(agent, event) {
-    const messageId = event.data?.id
-    if (event.type === HOST.userMessage && tracked.has(messageId)) {
+  const handover = createHandover({
+    isMine: (messageId) => tracked.has(messageId),
+    admitted(messageId) {
       const reason = givenUp.delete(tracked.get(messageId)) ? REASON.presentGivenUp : REASON.handled
-      return settleOne(messageId, STATE.admitted, reason)
-    }
-    if (event.type !== HOST.turnEnd) return undefined
-    const verdict = claimVerdict(event.data?.reason)
-    for (const [claimedId, owner] of [...claimed]) {
-      if (owner !== agent) continue
-      if (verdict === REDELIVER) redeliver(tracked.get(claimedId))
-      else settleOne(claimedId, STATE.discarded, verdict)
-    }
-    return undefined
-  }
-
-  /**
-   * Follow one agent, all through its public live events (dsh-agent, both SDKs), never its log:
-   * - `agent/inbox/claimed`: a turn took our message (it is admitted or its turn ends next);
-   * - `agent/inbox/discarded`: removed from the inbox before admission, the user's (S2-Q3 A);
-   * - `session/event`: the admission, and the claiming turn's end;
-   * - `session/flush`: DSH's checkpoint before a model request waits for our admission writes;
-   * - `agent/status` idle: the next hand-over.
-   */
-  function watch(agent) {
-    if (watched.has(agent)) return
-    watched.add(agent)
-    const mine = (payload) => !closed && payload.agent === agent && tracked.has(payload.message?.id)
-    agent.ctx.on(HOST.inboxClaimed, (payload) => { if (mine(payload)) claimed.set(payload.message.id, agent) })
-    // B1 (2026-11-14): any removal counts as the user's; see the header.
-    agent.ctx.on(HOST.inboxDiscarded, (payload) => { if (mine(payload)) settleOne(payload.message.id, STATE.discarded, REASON.userStopped) })
-    agent.ctx.on(HOST.sessionEvent, (session, event) => { if (!closed && session === agent.session) observe(agent, event) })
-    agent.ctx.on(HOST.sessionFlush, (session) => (session === agent.session ? Promise.all([...writes]) : undefined))
-    agent.ctx.on(HOST.agentStatus, ({ status }) => { if (status === HOST.idle && !closed) void drain() })
-  }
-
-  /** Run `job` under the agent's true-idle maintenance, or retry once it is idle again. */
-  function whenTrulyIdle(agent, job) {
-    try {
-      return agent.runMaintenance(job)
-    } catch {
-      // Another owner holds the agent (a turn, or another plugin's maintenance, which emits no
-      // status edge); whenIdle follows both (dsh-agent runMaintenance contract).
-      void agent.whenIdle().then(() => { if (!closed) void drain() })
-      return undefined
-    }
-  }
+      settleOne(messageId, STATE.admitted, reason)
+    },
+    dropped: (messageId, reason) => settleOne(messageId, STATE.discarded, reason),
+    redeliver: (messageId) => redeliver(tracked.get(messageId)),
+    idle: () => { void drain() },
+    closed: () => closed,
+    flush: () => Promise.all([...writes]),
+  })
 
   /**
    * The model-facing content of the head event. A presenter that throws is retried after the
@@ -273,21 +227,21 @@ export function createDelivery({ ledger, fishball, logger, delay = realDelay }) 
     // A close while activating: held events wait for the next owner's recovery rather than
     // entering an agent that is being disposed (S2 §2.2 owner teardown).
     if (closed || queue.length === 0) return
-    watch(agent)
+    handover.watch(agent)
     const eventId = queue[0]
     if (!prepared.has(eventId)) {
       const record = ledger.get(eventId)
       const content = contentOf(record)
-      if (content === undefined) { queue.shift(); again = true; return }
+      if (content === undefined) { dequeue(eventId); again = true; return }
       prepared.set(eventId, messageOf(record, content))
     }
     const message = prepared.get(eventId)
     // "Fully idle" is the true-idle claim of runMaintenance. Parked input is not waited for: in an
     // idle agent it never wakes by itself (S2 §2.1 item 3), so waiting would hold the event forever.
     // A copy left pending by an earlier generation is removed first, so one id is pending once.
-    const task = whenTrulyIdle(agent, async () => { agent.inbox.remove(message.id); agent.followup(message) })
+    const task = handover.handOver(agent, message)
     if (task === undefined) return
-    queue.shift()
+    dequeue(eventId)
     prepared.delete(eventId)
     task.catch((error) => {
       logger?.warn(LOG.deliverFailed, eventId, codeOf(error))
@@ -320,7 +274,7 @@ export function createDelivery({ ledger, fishball, logger, delay = realDelay }) 
         for (const record of ledger.inOrder([STATE.fishball])) if (track(record.eventId)) { queue.push(record.eventId); mine.push(record.eventId) }
         if (queue.length === 0 || closed) return
         try {
-          watch(await fishball.activate())
+          handover.watch(await fishball.activate())
         } catch (error) {
           for (const eventId of mine) untrack(messageIdOf(eventId))
           throw error
