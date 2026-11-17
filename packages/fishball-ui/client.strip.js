@@ -11,6 +11,8 @@
  * Connect routes (K3a: fishball-ui draws through core's routes). Connect opens the approval page in
  * a new tab with no link back to this page, and also shows it as a link, as core's settings page
  * does (a browser may block an open after an await unnoticed). The strip holds no state of its own.
+ * When the stream is lost (R-FIX-FUI) the card stops showing the last frame's state: it marks itself
+ * stale, says so, and offers Reconnect once EventSource gave up.
  * In a Fishball DSH the page shows only the manager's conversation, so the dock draws for any session.
  */
 window.__ModuleLoader__.load({
@@ -41,6 +43,7 @@ window.__ModuleLoader__.load({
       // (core src/settings/constants.js CONNECT_ROUTE), page-relative; restated: a chunk imports no module.
       events: 'api/fishball/strip',
       langParameter: 'lang',
+      lang: Object.freeze({ en: 'en' }),
       connect: 'api/fishball/connect',
       cancel: 'api/fishball/connect/cancel',
       press: Object.freeze({ method: 'POST', credentials: 'same-origin', cache: 'no-store' }),
@@ -49,8 +52,6 @@ window.__ModuleLoader__.load({
       approvalOutcome: 'approval-url',
       webSchemes: Object.freeze(['https:', 'http:']),
       open: Object.freeze({ target: '_blank', features: 'noopener', rel: 'noopener noreferrer' }),
-      chinese: 'zh',
-      lang: Object.freeze({ zh: 'zh', en: 'en' }),
       css: Object.freeze({
         id: 'fishball-strip-style', root: 'fb-strip', card: 'fb-strip-card', head: 'fb-strip-head', title: 'fb-strip-title',
         aside: 'fb-strip-aside', chip: 'fb-strip-chip', body: 'fb-strip-body', line: 'fb-strip-line', link: 'fb-strip-link',
@@ -76,6 +77,16 @@ window.__ModuleLoader__.load({
       }),
       tooltip: Object.freeze({ side: 'top', portal: true }),
       fallbackTone: 'failed',
+      /**
+       * The look of a card whose stream is not live (R-FIX-FUI): the quiet `disconnected` look. A
+       * lost stream is not "failed", which would claim to know the target's state.
+       */
+      staleTone: 'disconnected',
+      /**
+       * The card's title before any frame arrived (`stripView`'s `card.title`, src/status/text.js
+       * `card.title`, restated: a chunk imports no module).
+       */
+      title: Object.freeze({ en: 'Target DSH', zh: '目标 DSH' }),
       // Connect is the card's call to action; Cancel only backs out of an attempt.
       buttonVariant: Object.freeze({ connect: 'primary', cancel: 'outline' }),
       icon: 14,
@@ -100,41 +111,27 @@ window.__ModuleLoader__.load({
     ].join('')
     const apiUrl = (path) => new URL(path, document.baseURI)
 
-    /** One strip stream per language for every mounted dock; EventSource reconnects by itself. */
-    function stripStream() {
-      let snapshot = null
-      let lang
-      let source
-      const listeners = new Set()
-      const open = () => {
-        const url = apiUrl(STRIP.events)
-        url.searchParams.set(STRIP.langParameter, lang)
-        source = new EventSource(url)
-        source.onmessage = (message) => {
-          let next
-          try { next = JSON.parse(message.data) } catch { return }
-          if (next === null || typeof next !== 'object' || !Array.isArray(next.lines)) return
-          snapshot = Object.freeze(next)
-          for (const listener of [...listeners]) listener()
-        }
+    /**
+     * One strip stream per language for every mounted dock (kit `liveStream`: EventSource retries by
+     * itself, and the kit marks the cached view stale meanwhile, R-FIX-FUI).
+     */
+    function stripStream(kit) {
+      let lang = STRIP.lang.en
+      const url = () => {
+        const next = apiUrl(STRIP.events)
+        next.searchParams.set(STRIP.langParameter, lang)
+        return next
       }
-      return {
-        get: () => snapshot,
+      const stream = kit.liveStream({ url, valid: (next) => next !== null && typeof next === 'object' && Array.isArray(next.lines) })
+      return Object.freeze({
+        ...stream,
         /** Follows `wanted` (the page's language): a change reopens the stream in it. */
         use(wanted) {
           if (wanted === lang) return
           lang = wanted
-          if (source !== undefined) { source.close(); open() }
+          stream.reopen()
         },
-        subscribe(listener) {
-          listeners.add(listener)
-          if (source === undefined) open()
-          return () => {
-            listeners.delete(listener)
-            if (listeners.size === 0 && source !== undefined) { source.close(); source = undefined }
-          }
-        },
-      }
+      })
     }
 
     /** One press of the control: core's route; Connect's approval URL, when it answers one. */
@@ -151,34 +148,45 @@ window.__ModuleLoader__.load({
 
     function makeDock(ctx, stream, kit) {
       return function FishballStrip() {
-        const lang = React.useSyncExternalStore((listener) => ctx.locale.subscribe(listener), () => ctx.locale.getLocale().active).startsWith(STRIP.chinese) ? STRIP.lang.zh : STRIP.lang.en
+        const lang = kit.useLang(ctx)
         React.useEffect(() => { stream.use(lang) }, [lang])
-        const view = React.useSyncExternalStore(stream.subscribe, stream.get)
+        const { frame: view, health } = React.useSyncExternalStore(stream.subscribe, stream.get)
         const [approvalUrl, setApprovalUrl] = React.useState(undefined)
-        if (view === null) return null
+        const live = health === kit.HEALTH.live
+        // Nothing heard yet and nothing wrong: nothing to draw. A stream that failed before its
+        // first frame still draws the card, so the loss is seen and Reconnect offered (R-FIX-FUI).
+        if (view === null && live) return null
         const onPress = async () => {
           const url = await press(view.control.action)
           if (url !== undefined) window.open(url, STRIP.open.target, STRIP.open.features)
           setApprovalUrl(url)
         }
-        const { card } = view
-        const tone = STRIP.tone[card.state] ?? STRIP.tone[STRIP.fallbackTone]
-        const tools = view.lines.find((line) => line.kind === STRIP.toolsKind)
-        const control = view.control
+        // While the stream is not live the cached state is no claim: the card keeps its title and
+        // drops its state, lines, tools and control, so it never says "Connected" from an old frame.
+        const card = view?.card
+        const tone = live ? STRIP.tone[card.state] ?? STRIP.tone[STRIP.fallbackTone] : STRIP.tone[STRIP.staleTone]
+        const lines = live ? view.lines : []
+        const tools = lines.find((line) => line.kind === STRIP.toolsKind)
+        const control = live ? view.control : null
+        const title = card?.title ?? (STRIP.title[lang] ?? STRIP.title[STRIP.lang.en])
         // The heading row holds the state and the one action; the lines below say why.
-        return h('div', { className: [kit.css.dock, STRIP.css.root].join(' '), 'data-fishball-strip': true, 'data-fishball-strip-state': card.state, role: 'status' },
+        return h('div', {
+          className: [kit.css.dock, STRIP.css.root].join(' '), 'data-fishball-strip': true, 'data-fishball-strip-state': live ? card.state : STRIP.staleTone,
+          'data-fishball-strip-stale': live ? undefined : health, role: 'status',
+        },
           h('div', { className: [kit.css.card, STRIP.css.card].join(' ') },
             h('div', { className: STRIP.css.head },
               h(StateDot, { state: tone.dot }),
-              h('span', { className: STRIP.css.title }, card.title),
-              h(Tag, { tone: tone.tag, className: STRIP.css.badge }, h('span', { 'data-fishball-strip-badge': true }, card.badge)),
+              h('span', { className: STRIP.css.title }, title),
+              h(Tag, { tone: tone.tag, className: STRIP.css.badge }, h('span', { 'data-fishball-strip-badge': true }, live ? card.badge : kit.staleText(lang))),
               h('div', { className: STRIP.css.aside },
                 tools === undefined ? null : h(Tooltip, { ...STRIP.tooltip, label: card.toolsHint },
                   h('span', { className: STRIP.css.chip, tabIndex: 0, 'aria-label': `${tools.text} · ${card.toolsHint}`, 'data-fishball-strip-line': tools.kind },
                     h(IconCordisPluginOutlineRegular, { size: STRIP.icon }), tools.text)),
                 control === null ? null : h(Button, { type: 'button', size: 'sm', variant: STRIP.buttonVariant[control.action], 'data-fishball-strip-control': control.action, onClick: () => void onPress() }, control.label))),
+            h(kit.StreamNotice, { health, lang, onRetry: () => stream.reopen() }),
             h('div', { className: STRIP.css.body },
-              view.lines.filter((line) => line !== tools).map((line) => h('p', { key: line.kind, className: STRIP.css.line, 'data-fishball-strip-line': line.kind }, line.text)),
+              lines.filter((line) => line !== tools).map((line) => h('p', { key: line.kind, className: STRIP.css.line, 'data-fishball-strip-line': line.kind }, line.text)),
               approvalUrl === undefined || control?.action !== STRIP.action.cancel ? null
                 : h('a', { className: STRIP.css.link, href: approvalUrl, title: approvalUrl, target: STRIP.open.target, rel: STRIP.open.rel, 'data-fishball-strip-approval': true }, card.openApproval))))
       }
@@ -187,8 +195,7 @@ window.__ModuleLoader__.load({
     /** The part as a client plugin over fishball-ui's kit (client.js `kit`). */
     function stripPart(kit) {
       function apply(ctx) {
-        const stream = stripStream()
-        stream.use(STRIP.lang.en)
+        const stream = stripStream(kit)
         ctx.effect(() => kit.mountStyle(STRIP.css.id, css), STRIP.name + ': styles')
         ctx.effect(() => ctx.slots.inject(STRIP.slot, () => ctx.slots.register({ name: STRIP.slot, id: STRIP.id, order: STRIP.order }, makeDock(ctx, stream, kit))), STRIP.name + ': dock')
       }

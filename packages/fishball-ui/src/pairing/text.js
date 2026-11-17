@@ -2,15 +2,19 @@
  * The Fishball page's pairing copy (task F-PAIR; R-ID-07, R-ID-10, R-NAME-03; cases AUTH-UC-05,
  * NAME-DT-03). PROPOSED wording (W3 question P-3): the user reviews the en and zh lists at the W3
  * merge. Data only: frozen strings and pure template formatters that interpolate names only.
- * F-WIRE draws it from core's `fishballInstance.ui.pairing.state()` (K3a `ui.d.ts`); moved here from
- * core's `ui/pairing` by F-UI.
+ * src/pairing/index.js `pairingView` draws it from core's `fishballInstance.ui.pairing.state()`
+ * (K3a `ui.d.ts`; R-FIX-FUI); moved here from core's `ui/pairing` by F-UI.
  *
  * Keys are the property names of the words they draw: `PAIRING_STATE` (`warnMatch`, `needId`, …),
  * `CHOICE` (`continue`, `newToken`, …), K1's `REFUSAL` (`nameTaken`, `nameInvalid`) and
  * `ID_REFUSAL` (`idInvalid`). The id rule's bounds are K1's `ID_GRAMMAR`, so the copy names none.
+ * R-FIX-FUI added the card's `title`, `chooseFailed` (a choice core refused or did not answer) and
+ * `locale`, the `Intl` locale its times are written in (as DSH's own schedule copy names one,
+ * `time.locale`).
  */
 export const PAIRING_TEXT = Object.freeze({
   en: Object.freeze({
+    title: 'Pairing',
     warnMatch: (name, lastSeen) => `This token is already paired with this id, by ${name} (last seen ${lastSeen}). Continue only if no other Fishball or agent uses this id with this token; otherwise use a new token and a new id.`,
     warnMismatch: (name, lastSeen) => `This token is already paired with another id, by ${name} (last seen ${lastSeen}). Use a new token.`,
     confirm: 'No other Fishball or agent uses this id with this token',
@@ -26,8 +30,11 @@ export const PAIRING_TEXT = Object.freeze({
     nameInUse: (name) => `Fishball is shown as ${name}.`,
     nameless: (id) => `Fishball has no name for now and is shown as ID: ${id}.`,
     neverSeen: 'never',
+    chooseFailed: 'That choice was not saved. Try again.',
+    locale: 'en',
   }),
   zh: Object.freeze({
+    title: '配对',
     warnMatch: (name, lastSeen) => `此令牌已被 ${name} 以此 ID 配对（最近在线 ${lastSeen}）。仅当没有其他 Fishball 或智能体以此令牌使用此 ID 时才继续；否则请使用新的令牌和新的 ID。`,
     warnMismatch: (name, lastSeen) => `此令牌已被 ${name} 以另一个 ID 配对（最近在线 ${lastSeen}）。请使用新的令牌。`,
     confirm: '没有其他 Fishball 或智能体以此令牌使用此 ID',
@@ -43,5 +50,10 @@ export const PAIRING_TEXT = Object.freeze({
     nameInUse: (name) => `Fishball 显示为 ${name}。`,
     nameless: (id) => `Fishball 暂无名称，显示为 ID: ${id}。`,
     neverSeen: '从未',
+    chooseFailed: '此选择没有保存，请重试。',
+    locale: 'zh-CN',
   }),
 })
+
+/** The language a pairing card falls back to. */
+export const PAIRING_DEFAULT_LANG = 'en'

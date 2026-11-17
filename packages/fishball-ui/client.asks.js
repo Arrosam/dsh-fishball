@@ -71,6 +71,8 @@ window.__ModuleLoader__.load({
       'state.answered': 'answered',
       'state.closed': 'closed',
       failed: 'The answer was refused.',
+      // The Intl locale the card's time is written in (as DSH's schedule copy names it), R-FIX-FUI.
+      'time.locale': 'en',
     }
     const zh = {
       waiting: 'Fishball 正在等你回答',
@@ -84,6 +86,7 @@ window.__ModuleLoader__.load({
       'state.answered': '已回答',
       'state.closed': '已关闭',
       failed: '回答被拒绝。',
+      'time.locale': 'zh-CN',
     }
 
     // UI-POLISH-F: the layout of DSH's own approval card (dsh-client-ui-approval, both SDKs): a warn
@@ -118,42 +121,27 @@ window.__ModuleLoader__.load({
 
     const apiUrl = (path) => new URL(path, document.baseURI).toString()
 
-    /** One shared stream for every mounted dock; reconnects by itself (EventSource). */
-    function cardStream() {
-      let snapshot = Object.freeze({ managerSessionId: null, cards: Object.freeze([]) })
-      const listeners = new Set()
-      let source
-      const open = () => {
-        source = new EventSource(apiUrl(ASKS_UI.events))
-        source.onmessage = (message) => {
-          let next
-          try { next = JSON.parse(message.data) } catch { return }
-          // A frame that is not the route's shape keeps the last good snapshot.
-          if (next === null || typeof next !== 'object' || !Array.isArray(next.cards)) return
-          snapshot = Object.freeze(next)
-          for (const listener of [...listeners]) listener()
-        }
-      }
-      return {
-        get: () => snapshot,
-        subscribe(listener) {
-          listeners.add(listener)
-          if (source === undefined) open()
-          return () => {
-            listeners.delete(listener)
-            if (listeners.size === 0 && source !== undefined) { source.close(); source = undefined }
-          }
-        },
-      }
-    }
+    /**
+     * One shared stream for every mounted dock (kit `liveStream`: EventSource retries by itself, and
+     * the kit marks the cached cards stale meanwhile, R-FIX-FUI). A frame that is not the route's
+     * shape keeps the last good snapshot.
+     */
+    const cardStream = (kit) => kit.liveStream({
+      url: () => apiUrl(ASKS_UI.events),
+      valid: (next) => next !== null && typeof next === 'object' && Array.isArray(next.cards),
+      initial: Object.freeze({ managerSessionId: null, cards: Object.freeze([]) }),
+    })
 
-    function makeDock(stream, kit) {
+    function makeDock(ctx, stream, kit) {
       /** One card: the asking session, the question, and Allow / Reject with an optional reason. */
-      function AskCard({ card, t }) {
+      function AskCard({ card, t, stale }) {
         const [reason, setReason] = React.useState('')
         const [sending, setSending] = React.useState(false)
         const [failed, setFailed] = React.useState(false)
         const open = card.state === ASKS_UI.state.open
+        // A card from a stream that is not live may be answered or closed already: no control acts
+        // on it until a fresh frame (R-FIX-FUI). Core still refuses a late answer anyway.
+        const locked = sending || stale
         const send = async (choice) => {
           setSending(true)
           setFailed(false)
@@ -170,7 +158,7 @@ window.__ModuleLoader__.load({
           h('div', { className: ASKS_UI.css.meta },
             h(Tag, { tone: open ? ASKS_UI.tone.open : ASKS_UI.tone.done }, open ? t('waiting') : t('state.' + card.state)),
             h('span', { className: ASKS_UI.css.from }, t('from') + ': ' + (card.sessionTitle ?? card.sessionId)),
-            h('span', { className: ASKS_UI.css.time }, new Date(card.askedAt).toLocaleString())),
+            h('span', { className: ASKS_UI.css.time }, new Date(card.askedAt).toLocaleString(t('time.locale')))),
           h('div', { className: ASKS_UI.css.body },
             h('p', { className: ASKS_UI.css.question }, card.question),
             // The user, 2026-11-17: "Show arguments and reason". Plain text children: React escapes them.
@@ -182,12 +170,12 @@ window.__ModuleLoader__.load({
               ? h('p', { className: ASKS_UI.css.detail, 'data-fishball-ask-incomplete': true }, t('detail.incomplete')) : null,
             open ? h('textarea', {
               className: ASKS_UI.css.reason, rows: ASKS_UI.reasonRows, value: reason, placeholder: t('reason'), 'aria-label': t('reason'),
-              disabled: sending, onChange: (event) => setReason(event.target.value),
+              disabled: locked, onChange: (event) => setReason(event.target.value),
             }) : null,
             open ? h('div', { className: ASKS_UI.css.row },
               card.choices.map((choice) => h(Button, {
                 key: choice, type: 'button', size: 'sm', variant: choice === card.choices[0] ? 'primary' : 'outline',
-                disabled: sending, 'data-fishball-ask-choice': choice, onClick: () => send(choice),
+                disabled: locked, 'data-fishball-ask-choice': choice, onClick: () => send(choice),
               }, t('choice.' + choice)))) : null,
             failed && open ? h('p', { className: ASKS_UI.css.error, role: 'alert' }, t('failed')) : null))
       }
@@ -195,23 +183,27 @@ window.__ModuleLoader__.load({
       // `t` is the slot's own locale prop (registered with `locale`), so a language switch re-renders
       // the dock, as DSH's goal and queue docks are drawn.
       return function FishballAsks({ sessionId, t }) {
-        const { managerSessionId, cards } = React.useSyncExternalStore(stream.subscribe, stream.get)
+        const lang = kit.useLang(ctx)
+        const { frame: { managerSessionId, cards }, health } = React.useSyncExternalStore(stream.subscribe, stream.get)
         // Only Fishball's own conversation shows its cards (Q-U2: never another session's view).
         if (sessionId === undefined || sessionId !== managerSessionId || cards.length === 0) return null
-        return h('div', { className: [kit.css.dock, ASKS_UI.css.root].join(' '), 'data-fishball-asks': true }, cards.map((card) => h(AskCard, { key: card.approvalId, card, t })))
+        const stale = health !== kit.HEALTH.live
+        return h('div', { className: [kit.css.dock, ASKS_UI.css.root].join(' '), 'data-fishball-asks': true, 'data-fishball-asks-stale': stale ? health : undefined },
+          stale ? h('div', { className: kit.css.card }, h(kit.StreamNotice, { health, lang, onRetry: () => stream.reopen() })) : null,
+          cards.map((card) => h(AskCard, { key: card.approvalId, card, t, stale })))
       }
     }
 
     /** The part as a client plugin over fishball-ui's kit (client.js `kit`). */
     function asksPart(kit) {
       function apply(ctx) {
-        const stream = cardStream()
+        const stream = cardStream(kit)
         ctx.effect(() => ctx.locale.register(ASKS_UI.locale, { en, zh }), 'fishball asks: dictionaries')
         ctx.effect(() => kit.mountStyle(ASKS_UI.css.id, css), 'fishball asks: styles')
         ctx.effect(() => ctx.slots.inject(ASKS_UI.slot, () => ctx.slots.register({
           name: ASKS_UI.slot, id: ASKS_UI.id, order: ASKS_UI.order, locale: ASKS_UI.locale,
           inject: (sessionId) => ({ sessionId }),
-        }, makeDock(stream, kit))), 'fishball asks: card dock')
+        }, makeDock(ctx, stream, kit))), 'fishball asks: card dock')
       }
       return Object.freeze({ name: ASKS_UI.name, inject: ['slots', 'locale'], apply })
     }

@@ -14,13 +14,15 @@
  */
 
 /**
- * Root rows the Fishball guards disable (session-creating rows, and no nested hosted Fishball), all
- * reported by core's check. Since F-UI the `ui-*` rows and `entry-customization` are fishball-ui's
- * patch rows, the others core's; the report's `row:<id>` vocabulary is unchanged.
+ * Root rows the Fishball guards disable (session-creating rows, the composer's model picker, and no
+ * nested hosted Fishball), all reported by core's check. The `ui-*` rows and `entry-customization`
+ * are fishball-ui's UI guard rows: in core's patch since R-FIX-FUI, held and reported only beside
+ * fishball-ui; the report's `row:<id>` vocabulary is unchanged.
  */
 export type GuardedRow =
   | 'ui-subagent' | 'ui-schedule' | 'schedule' | 'ui-permission' | 'ui-agent-preset' | 'entry-customization'
   | 'ui-open-in-app' | 'open-in-app' | 'ui-sidebar-terminal' | 'terminal-controller' | 'dsh-instance'
+  | 'ui-model-selection'
 
 /** DSH-shipped agent preset rows: switched off by core's patch, never deleted (1.24, Q-S6-2 B). */
 export type ShippedPresetRow = 'preset-standard' | 'preset-ptc' | 'preset-cordis' | 'preset-minimal'

@@ -34,15 +34,13 @@ function overriddenRows(ctx, rows) {
 }
 
 /**
- * The guard rows in this DSH: core's own patch rows, then the UI guard rows fishball-ui's patch
- * holds (R-FB-14: UI-only rows are fishball-ui's), read from its `fishballUiGuards` service while it
- * is there. Without fishball-ui there are no UI rows to report (Q-G1); a service that is not
- * fishball-ui's shape adds none.
+ * The guard rows in this DSH: core's own guard rows, then the UI guard rows (`uiRows`). Those are in
+ * core's patch since R-FIX-FUI but held only beside fishball-ui (R-FB-14: UI-only rows are
+ * fishball-ui's), so they are checked only while fishball-ui's row provides `fishballUiGuards`.
+ * Without fishball-ui they are DSH's own rows, not guards, and are never reported (Q-G1).
  */
 function guardedRows(ctx, intended) {
-  const ui = ctx.get(UI_GUARDS.service)?.rows
-  const extra = Array.isArray(ui) ? ui.filter((id) => typeof id === 'string' && !intended.rows.includes(id)) : []
-  return [...intended.rows, ...extra]
+  return ctx.get(UI_GUARDS.service) === undefined ? intended.rows : [...intended.rows, ...intended.uiRows]
 }
 
 /** The intended value of one IntendedPolicy key (readIntendedGuards). */

@@ -2199,3 +2199,17 @@ The user's answers to the three product questions of the core review (`.runtime/
 | Manager record without a log | When the record's session has no log (`SessionPersistenceNotFoundError`), core creates it under the same id | the user, 2026-11-18 (F05); as DSH's own restore-or-create |
 | Pending token origin | A value in `DSH_AGENT_TOKEN` is bound to the target origin in force when it is written (or at the first attempt), in the record `fishball-core/pending-token-origin`; it is never sent to another origin | R-FB-03 (F01) |
 | Connect grant id | A grant records the `agent_id` it was approved for (`agentId`); it is usable only while `identity.id` is that id. A paired record for another id holds the link `id-mismatch` | R-ID-10 (F10) |
+
+## 24. V3 R-FIX-FUI: fishball-ui review fixes (2026-11-18)
+
+The fixes for the fishball-ui review (`.runtime/reports/review-x-fishball-ui.md`), the user's one product answer, and the rules they follow:
+
+| Point | Decision | Reason |
+|---|---|---|
+| Rows that change DSH's UI | fishball-ui's patch only inserts its own rows. The UI guard rows (`ui-*`, `entry-customization`) and the hosted child's Preview Notice acknowledgement are in **core's** patch, each conditional on `fishball-ui` being in the profile (live while HMR runs, else `startedBundles`). Core's check reports them only while fishball-ui's `fishballUiGuards` presence service is there. Accepted limit: with core but without fishball-ui these rows read DSH's stock values, so an earlier bundle's setting of one of them is not kept | the user, 2026-11-18 (option 1). The host's patch merge writes every override whatever its `!!js` value, so a row in fishball-ui's patch changed earlier composition without core (Q-G2 = A) |
+| Pairing warning | fishball-ui draws core's `ui.pairing` as a dock card over its own routes `GET /api/fishball/pairing` (SSE, `pairingView`) and `POST /api/fishball/pairing/choose` (core's `choose`, answered as it is). Continue is enabled only with its box ticked, and core still refuses it unconfirmed. Last-seen times are in the page's language and the browser's time zone. The pairing words (`SEAM_PAIRING`) and `fishballInstance`'s name and version (`UI_INSTANCE`) are fishball-shared's, and core takes them from there | R-ID-07 (import/pasted-token path), R-NAME-03 |
+| A lost stream | The strip, ask cards and pairing card share one browser stream lifecycle (client.js kit): an `error` marks the cached view stale; CLOSED offers Reconnect. Stale views show no cached state or controls, until a fresh valid frame arrives | a cached frame must not look authoritative |
+| Model dialog | Every opening reads DSH's catalog again; a failed read offers Try again | the catalog may change while the dialog is closed |
+| Core Connect control | Reads and presses are sequenced; only the latest read publishes, and nothing settles after unmount (no open, no read, no state). A press's notice stays until a later read's (state, code) differs from the first read after the press | review findings 5 and 6 |
+| Ask-card time | Formatted in the DSH UI language's locale (`en` / `zh-CN`), in the browser's time zone | as DSH's own schedule UI |
+| Same-side status words (finding 8) | Not changed: `SEAM_STATUS.link/connect/guards` still restate K3's frozen data-only file; equality coverage stays | K3 freeze; needs an approved contract change |
