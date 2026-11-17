@@ -74,6 +74,8 @@ export const SHARED_EXPORTS = Object.freeze({ './ui-seam': './ui-seam.js', './pa
 export const CORE_CHILD_HALVES = Object.freeze([path.join('src', 'slim', 'child', 'admin.js'), path.join('src', 'slim', 'child', 'provider-sync-target.js')])
 /** Requirement 5: no Fishball-side package imports fishball-shared's redact. */
 export const REDACT = 'redact'
+/** R-FIX-INSTANCE F03: the DSH side's redact module exports exactly these (redactContinued added beside redact). */
+export const REDACT_EXPORTS = Object.freeze(['redact', 'redactContinued'])
 
 export const subpath = (module) => './' + module
 export const moduleFile = (module) => module + '.js'

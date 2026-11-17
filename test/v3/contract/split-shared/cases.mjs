@@ -24,7 +24,7 @@ import { observe, readManifest } from '../package-boundaries/packages.mjs'
 import { WITHDRAWN_BY, withdrawnRow } from '../../dsh-instance/host/withdrawn.mjs'
 import {
   ADMIN_PROTOCOL, BASE, CODE_SAMPLES, CORE_CHILD_HALVES, DSH_EXPORTS, DSH_MODULES, DSH_MOVED_TO, EXPECTED_LIBRARY, FILES_MODULE, FINGERPRINT_SAMPLES, FORMER_INTERIM_COPIES,
-  HOST_PEERS, INSIDE_CASES, LONG_RUN, MANIFEST_EXPORT, NO_LIBRARY, PLACED, PROFILE_SAMPLES, REDACT, REDACT_SAMPLES, SDK_SCOPE, SHARED_EXPORTS, moduleFile, sdkModules,
+  HOST_PEERS, INSIDE_CASES, LONG_RUN, MANIFEST_EXPORT, NO_LIBRARY, PLACED, PROFILE_SAMPLES, REDACT, REDACT_EXPORTS, REDACT_SAMPLES, SDK_SCOPE, SHARED_EXPORTS, moduleFile, sdkModules,
   subpath,
 } from './constants.mjs'
 
@@ -295,12 +295,24 @@ export function registerSplitCases(sdk) {
   // row is withdrawn; test/v3/dsh-instance/host SYNC names checks the new values.
   withdrawn(sdk, 'SPLIT-EP-04', SYNC_HOST_MODULE, `dsh-connector-shared/${SYNC_HOST_MODULE} has the same exports and constant values as fishball-shared/${SYNC_HOST_MODULE} at ${BASE.ref}`)
   // C-WIRE-2 (R-ARCH-08 strict): a moved module is compared at its new home (dshFile), behaviour unchanged.
-  for (const module of DSH_MODULES.filter((m) => m !== SYNC_HOST_MODULE)) {
+  for (const module of DSH_MODULES.filter((m) => m !== SYNC_HOST_MODULE && m !== REDACT)) {
     caseTest(sdk, 'SPLIT-EP-04', module, `the DSH side's ${module} (${path.relative(REPO, dshFile(module))}) has the same exports and constant values as fishball-shared/${module} at ${BASE.ref}`, async (t) => {
       needLibrary(V3.dshShared)
       assert.deepEqual(surface(await load(sdk, dshFile(module))), surface(await baseModule(sdk, module)))
     })
   }
+  // Re-oracled by R-FIX-INSTANCE F03: the DSH side's redact adds `redactContinued` (the stderr log's
+  // chunk-independent masking), so its exports are exactly REDACT_EXPORTS, all functions; every
+  // export BASE already had keeps BASE's kind and constant value.
+  caseTest(sdk, 'SPLIT-EP-04', REDACT, `the DSH side's ${REDACT} (${path.relative(REPO, dshFile(REDACT))}) exports exactly ${REDACT_EXPORTS.join(', ')} (functions; R-FIX-INSTANCE F03), and what fishball-shared/${REDACT} at ${BASE.ref} exported is unchanged`, async (t) => {
+    needLibrary(V3.dshShared)
+    const now = await load(sdk, dshFile(REDACT))
+    assert.deepEqual(Object.keys(now).sort(), [...REDACT_EXPORTS].sort())
+    for (const name of REDACT_EXPORTS) assert.equal(typeof now[name], 'function', name)
+    const before = surface(await baseModule(sdk, REDACT))
+    const after = surface(now)
+    for (const name of Object.keys(before)) assert.deepEqual(after[name], before[name], name)
+  })
   // R-FIX-REDACT changed redaction on purpose, so this row's oracle is the requirements, no longer BASE.
   caseTest(sdk, 'SPLIT-EP-04', 'redact', 'redact masks every sample as the requirements say (Authorization, assignments, JSON, long runs at 31/32/33, paths, empty)', async (t) => {
     const now = (await load(sdk, libraryFile(V3.dshShared, REDACT))).redact

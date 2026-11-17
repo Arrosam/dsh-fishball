@@ -293,3 +293,43 @@ export const PAGE_POLISH = Object.freeze({
   pollMs: 20,
   waitMs: 5000,
 })
+
+/**
+ * R-FIX-INSTANCE (relayed 2026-11-18) rows F01, F05, F06, F07, F08 (fix-cases.mjs). Values come from
+ * the findings' requirements; product words this file already names are reused.
+ * - `row`: the host row (host.js) the row-level cases apply over a fake ctx and a fake runtime
+ *   (row.mjs): its config fields, the loader event after a volatile change, its warn for an
+ *   unreadable hosted record, and the main-home proof's codes (F08).
+ * - `filesModule`: the new F08 export of src/native-runtime/files.js.
+ */
+export const RFI = Object.freeze({
+  task: 'R-FIX-INSTANCE',
+  /** Harness: the URL parameter that binds host.js to one row world, and the global map of worlds (row.mjs). */
+  worldParam: 'fbrow',
+  worldsKey: 'fbtest.dsh-instance.rfi-row-worlds',
+  /** The runtime module host.js imports, which row.mjs replaces for a row world. */
+  runtimeModule: /\/src\/native-runtime\/index\.js$/,
+  row: Object.freeze({
+    enabled: 'enabled',
+    target: IMPORT.targetField,
+    volatileUpdate: 'loader/volatile-update',
+    recordWarn: 'hosted record unreadable (%s)',
+    warnLevel: 'warn',
+    tokensService: 'dshConnectorTokens',
+  }),
+  files: Object.freeze({ entry: path.join('src', 'native-runtime', 'files.js'), export: 'fishballDirectory' }),
+  code: Object.freeze({ invalidHome: 'INVALID_MAIN_HOME', unsafeDirectory: 'UNSAFE_DIRECTORY', interrupted: 'START_INTERRUPTED' }),
+  /** The record folder's name under the main home (RELAYED.record.dirs). */
+  fishball: RELAYED.record.dirs[0],
+  /** What a scripted credential client's import does: no answer (the client rejects channel-unavailable), or a definite answer. */
+  answer: Object.freeze({
+    none: 'unanswered',
+    ok: Object.freeze({ ok: true }),
+    refused: Object.freeze({ ok: false, code: RELAYED.receiver.unwritable }),
+    refusedOther: Object.freeze({ ok: false, code: RELAYED.receiver.invalid }),
+  }),
+  /** Fixture names: an outside folder a link points to, an alias of a main home, its target. */
+  fixture: Object.freeze({ real: 'real-home', alias: 'alias-home', outside: 'outside', child: 'home', ancestor: 'ancestor-link', oldEntry: 'fbtest-old-entry', olderEntry: 'fbtest-older-entry' }),
+  /** Harness waits (never a product oracle). */
+  wait: Object.freeze({ testMs: 30000, pollMs: 10, readyMs: 5000, quietMs: 150, predecessorMs: 300 }),
+})

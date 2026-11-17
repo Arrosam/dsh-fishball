@@ -74,6 +74,17 @@ async function homeLayout(mainHome) {
   return { paths, parent, parentInfo }
 }
 /**
+ * `<home>/fishball`, proven as homeLayout proves it: a canonical main home, and that folder, when it
+ * exists, a real directory of its own path. Creates nothing. The host's hosted record lives there
+ * (src/host/hosted-record.js), so it is read or created only through the same proof the runtime
+ * layout uses (R-FIX-INSTANCE F08).
+ * @returns {Promise<string>}
+ * @throws INVALID_MAIN_HOME or UNSAFE_DIRECTORY
+ */
+export async function fishballDirectory(mainHome) {
+  return (await homeLayout(mainHome)).parent
+}
+/**
  * The runtime layout when its root already exists, or undefined when it does not; it creates
  * nothing (uninstall, design §0.10). The root must be a private directory of this user, not a
  * link; its owner marker is checked by prepareLayout afterwards.
