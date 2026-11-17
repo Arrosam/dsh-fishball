@@ -547,7 +547,8 @@ export const GUARDS = Object.freeze({
  *   session with the same remote id apart. The manager message id of an event is
  *   `MESSAGE.idPrefix + handle(event tuple)`, so two targets' `event-1` never dedupe;
  * - `credentials`: per-target credential names. The parent alone uses `HOSTED_IMPORT`'s names
- *   (`DSH_AGENT_TOKEN`, `fishball-core/hosted-agent`) and `LINK_SAVE.pendingOrigin`; an added target
+ *   (`DSH_AGENT_TOKEN`, `fishball-core/hosted-agent`) and core's internal pending-origin record
+ *   (`src/link/constants.js` `LINK_SAVE.pendingOrigin`, `fishball-core/pending-token-origin`); an added target
  *   never reads or writes them, so it can never satisfy the instance's hosted probe. An added
  *   target's token entry is the reference `tokenRefPrefix + <id> + tokenRefSeparator + <epoch>`, with
  *   every `-` written `_` (DSH's reference grammar `^[A-Za-z_][A-Za-z0-9_]*$`); its saved token copy
