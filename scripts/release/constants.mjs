@@ -77,8 +77,6 @@ export const LAYOUT = Object.freeze({
   sumLine: (digest, name) => digest + '  ' + name,
   sumPattern: /^([0-9a-f]{64}) {2}(\S+)$/,
   tarballSuffix: '.tgz',
-  // A store index entry pnpm writes for a local file: tarball (`file+<path>`); a release store holds none.
-  localStoreEntry: /^file\+/,
   // npm pack puts every file under `package/`; `tar -tv` marks a symlink `l`, a hard link `h`.
   packageRoot: 'package',
   tar: 'tar',

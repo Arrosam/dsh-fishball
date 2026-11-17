@@ -168,8 +168,9 @@ function writeSums(out) {
 /**
  * Re-verify a release offline: exactly the expected tarballs and no other, each with a matching
  * SHA256SUMS line; the documents and the store present; no link in any tarball; the hosted set in
- * dsh-instance's `bundled/` byte-identical to the top-level tarballs; no local-file entry in the
- * store (one comes from installing a local tarball with that store, which leaks the tarball's path).
+ * dsh-instance's `bundled/` byte-identical to the top-level tarballs. The store's contents are not
+ * checked: the documented offline add writes into it (pnpm records each local tarball), and it is a
+ * local aid that is never published.
  * @returns {string[]} the problems found; empty when the release is intact.
  */
 function check(out) {
@@ -203,12 +204,6 @@ function check(out) {
     let bytes
     try { bytes = tar(['-xOzf', path.join(out, tarball(SET_CARRIER.key)), member]) } catch { problems.push('missing ' + member + ' in ' + tarball(SET_CARRIER.key)); continue }
     if (present.includes(tarball(key)) && !bytes.equals(fs.readFileSync(path.join(out, tarball(key))))) problems.push(member + ' differs from ' + tarball(key))
-  }
-  const store = path.join(out, LAYOUT.store)
-  if (fs.existsSync(store)) for (const version of fs.readdirSync(store)) {
-    const directory = path.join(store, version)
-    if (!fs.statSync(directory).isDirectory()) continue
-    for (const entry of fs.readdirSync(directory).filter((name) => LAYOUT.localStoreEntry.test(name))) problems.push('local entry in the store: ' + path.join(version, entry))
   }
   return problems
 }
