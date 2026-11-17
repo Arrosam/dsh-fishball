@@ -48,3 +48,57 @@ export function fill(unit, bytes) {
 }
 /** Words separated by spaces, `bytes` long, ending in a space: no redaction rule matches it. */
 export const words = (bytes) => fill('w ', bytes)
+
+/**
+ * R-FIX-INSTANCE F03 (relayed 2026-11-18): masking a sensitive container must not depend on how
+ * stderr is chunked. `probe` is the finding's reproduction (three writes, one line each). `cutOpen`
+ * opens a container, then an unterminated text over the cap is cut ([truncated]): the depth is lost,
+ * so everything after it on that stream stays masked, the closing bracket and later lines included.
+ */
+export const F03 = Object.freeze({
+  probe: Object.freeze({ writes: Object.freeze(['credentials: {\n', "  provider: 'small-secret',\n", '}\n']), log: `credentials: ${MASK}\n`, secret: 'small-secret' }),
+  open: 'token = [\n',
+  inside: Object.freeze(['  plain inside line\n', '  api_key=abc\n']),
+  close: ']\n',
+  after: 'visible after\n',
+  /** An unterminated text over CAP with whitespace (so the F4 cut keeps a head). */
+  overCap: 'a b c ' + 'z'.repeat(CAP + 8),
+  /** Text after the cut that must never reach the file while the depth is unknown. */
+  hidden: Object.freeze(['zzz', 'visible after', 'plain inside', 'abc']),
+  /**
+   * The fixer's rule (2026-11-18): a cut whose dropped rest holds an opener ('{' or '['), or that
+   * happens while a sensitive container is open, seals the stream: `sealed` is written once and
+   * nothing after it from that stream reaches the log.
+   */
+  sealed: '[redacted: rest of stream]\n',
+  /** The fixer's probe at cap 100: 160 bytes with no newline, then a container over three lines. */
+  sealProbe: Object.freeze({ cap: 100, writes: Object.freeze(['a '.repeat(80), ' credentials: {\n', "  provider: 'small-secret',\n", '}\n']), secret: 'small-secret' }),
+  /** A cut whose dropped rest has no opener: the next line is logged as usual (no seal). */
+  plainCut: Object.freeze({ cap: 100, writes: Object.freeze(['a '.repeat(80), ' just words\n', 'next line\n']), next: 'next line\n' }),
+})
+
+/**
+ * R-FIX-INSTANCE F04 (relayed 2026-11-18, bound corrected by the fixer the same day): redacted
+ * blocks waiting to be written hold at most ONE limitBytes of text (plus the block being written);
+ * the oldest are dropped first and `marker` is written before the first block after a gap.
+ * `limit` is the cap of these rows; a burst line is `burst <6-digit n> ok\n` (no redaction rule matches it).
+ */
+export const F04 = Object.freeze({
+  marker: '[dropped]\n',
+  limit: 1024,
+  /** BVA over the burst size in bytes, as multiples of the limit: within (no drop) and well over. */
+  overFactor: 4,
+  /** A burst far beyond the bound: about 1.3 MB of lines in one synchronous loop. */
+  hugeLines: 60000,
+  later: 'later line\n',
+  /** Every burst line is the same size (16 bytes), so a byte count is a whole number of lines. */
+  line: (n) => `burst ${String(n).padStart(6, '0')} ok\n`,
+  linePattern: /^burst (\d+) ok$/,
+})
+
+/**
+ * F04's harness bounds (never a product value): how long a burst may take to drain, and how much
+ * more heap a huge burst may retain than a small one right after it was written. The huge burst is
+ * about 960 KB of text; an unbounded queue holds at least that, a bounded one about one limit.
+ */
+export const HEAP = Object.freeze({ drainMs: 60000, budgetBytes: 512 * 1024 })

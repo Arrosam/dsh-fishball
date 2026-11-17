@@ -40,7 +40,7 @@ import { ISOLATION, TARBALL } from '../../release/pack/constants.mjs'
 import {
   assertFromOwnBundle, bundlesOf, flipByte, installAndCheck, installedDir, installProblems, makeScratch, readJson, removeScratch, shelvedTraces, show, withProcessEnv,
 } from '../../release/pack/release.mjs'
-import { BUDGET, CASE, CHILD, DEAD_NETWORK, FAILED, LATER, PACKED, SCRATCH, TAMPER } from './constants.mjs'
+import { BUDGET, CASE, CHILD, DEAD_NETWORK, F02, FAILED, LATER, PACKED, SCRATCH, TAMPER } from './constants.mjs'
 
 /** The process environment while composedProfile runs: dead proxies, no user npm config (never ~/.npmrc), HOME and npm cache in `scratch`. */
 function deadEnv(scratch) {
@@ -214,6 +214,35 @@ export function registerPlacementInstallCases(sdk) {
       await withBundledTarball(p.instanceDir, pkg, (file) => fs.rmSync(file), () => assertRefused(p.compose(p.newHome())))
     }, BUDGET.caseMs)
   }
+
+  // ---- RFI-F02: the fallback never writes through a vendor/ symlink (R-FIX-INSTANCE F02)
+  // A placed home is made to install again (one member stale, as PINST-DT-01 does), with vendor/
+  // swapped for a link to an outside folder holding a same-named tarball of other bytes.
+  relCase(sdk, F02.id, 'vendor symlink', `F02 the fallback's vendor/ is a symlink to an outside folder with a same-named tarball → ${F02.code}; the outside file keeps its bytes`, async () => {
+    const p = await packedInstance(sdk)
+    const mainHome = p.newHome()
+    await p.compose(mainHome)
+    const profile = childProfile(mainHome)
+    const vendor = path.join(profile, CHILD.vendorDir)
+    const outside = path.join(p.scratch, F02.outside + '-' + path.basename(mainHome))
+    fs.mkdirSync(outside)
+    // Every set member's same-named tarball, so whichever the fallback copies first meets one.
+    const planted = CHILD.specOrder.map((pkg) => path.join(outside, pkg.tarball))
+    for (const file of planted) fs.writeFileSync(file, F02.planted)
+    // Guard the one recursive delete: the vendor folder directly in this case's child profile.
+    if (path.dirname(vendor) !== profile) throw new Error('unexpected folder ' + vendor)
+    fs.rmSync(vendor, { recursive: true, force: true })
+    fs.symlinkSync(outside, vendor)
+    const file = path.join(installedDir(profile, CHILD.core), TARBALL.manifest)
+    const manifest = JSON.parse(fs.readFileSync(file, 'utf8'))
+    fs.writeFileSync(file, JSON.stringify({ ...manifest, version: CHILD.staleVersion }, null, 2))
+    await assert.rejects(p.compose(mainHome), (error) => {
+      assert.equal(error?.code, F02.code, show({ code: error?.code, message: error?.message }))
+      return true
+    })
+    for (const file of planted) assert.equal(fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : null, F02.planted, `${path.basename(file)} outside the profile was deleted or overwritten`)
+    assert.deepEqual(fs.readdirSync(outside).sort(), CHILD.specOrder.map((pkg) => pkg.tarball).sort(), 'the outside folder changed')
+  }, BUDGET.caseMs)
 
   // ---- PINST-UC-01: the registry spec path (fishball-ui@<v>, fishball-core@<v>, in that order; SHELVE-BOARD dropped fishball-board@<v>)
   caseTest(sdk, CASE.registry, 'main', `a reachable registry: DSH's plugin-manager add of ${CHILD.specOrder.map((p) => `${p.name}@${CHILD.version}`).join(', ')} places the set (no vendor fallback)`, null, LATER.registry)
