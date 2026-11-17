@@ -238,3 +238,6 @@ export const XSEC = Object.freeze({
   windowMs: RATE_LIMITS.windowMs,
   retryAfterHeader: RATE_LIMITS.retryAfterHeader,
 })
+
+/** R-FIX-CONNECTOR review rows (review-x-cases.mjs, finding F06): the pair-store members a row holds. */
+export const REVIEW_X = Object.freeze({ id: 'RX-F06', bind: 'bindFromPage', reconnect: 'reconnectFromPage' })

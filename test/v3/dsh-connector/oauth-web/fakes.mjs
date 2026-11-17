@@ -92,6 +92,15 @@ export function fakePairs() {
   const others = (entryKey) => [...pairs.values()].filter((p) => p.entryKey !== entryKey)
   const put = (pair) => { pairs.set(pair.entryKey, Object.freeze(pair)); for (const l of listeners) l(); return pairs.get(pair.entryKey) }
   const nameHeld = (entryKey, name) => others(entryKey).some((p) => p.name !== null && nameKey(p.name) === nameKey(name))
+  /** R-FIX-CONNECTOR F06: the next page bind or reconnect waits until `open()` (`holdNext`). */
+  const holds = []
+  const held = async (member) => {
+    const at = holds.findIndex((h) => h.member === member)
+    if (at < 0) return
+    const [h] = holds.splice(at, 1)
+    h.arrive()
+    await h.opened
+  }
   const newPair = (entryKey, id, name, now, client) => put({
     entryKey, principalKey: `principal-${(principals += 1)}`, id, name, pairedAt: now, lastSeenAt: null, ...client,
   })
@@ -107,8 +116,21 @@ export function fakePairs() {
       const stored = usable?.ok && !nameHeld(entryKey, usable.name) ? usable.name : null
       return newPair(entryKey, id, stored, now, {})
     },
+    /**
+     * The next `member` call (bindFromPage or reconnectFromPage) waits, before it writes, until
+     * `open()`; `reached` resolves once it waits. Returns `{reached, open}`.
+     */
+    holdNext(member) {
+      let arrive
+      let open
+      const h = { member, reached: new Promise((r) => { arrive = r }), opened: new Promise((r) => { open = r }) }
+      h.arrive = arrive
+      holds.push(h)
+      return { reached: h.reached, open }
+    },
     async bindFromPage(entryKey, id, name, client, now) {
       calls.push(['bindFromPage', entryKey, id, name, client])
+      await held('bindFromPage')
       if (pairs.has(entryKey)) return { ok: false, code: REFUSAL.alreadyPaired }
       if (!isAgentId(id)) return { ok: false, code: ID_REFUSAL.idInvalid }
       if (others(entryKey).some((p) => p.id === id)) return { ok: false, code: REFUSAL.idTaken }
@@ -124,6 +146,7 @@ export function fakePairs() {
     /** K1d: the same id keeps the principal and records the newest client; any other id is already-paired. */
     async reconnectFromPage(entryKey, id, client) {
       calls.push(['reconnectFromPage', entryKey, id, client])
+      await held('reconnectFromPage')
       const p = pairs.get(entryKey)
       if (p === undefined) throw new TypeError(`reconnectFromPage of the unpaired entry ${entryKey}`)
       if (p.id !== id) return { ok: false, code: REFUSAL.alreadyPaired }
