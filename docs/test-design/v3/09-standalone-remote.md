@@ -17,7 +17,7 @@ rows 9, 9b. Conventions: [README](<README.md>).
   4. Core authenticates (client id = `identity.id`, secret = the value, issuer pinned) and pairs.
   5. F's own web UI is the Fishball page; Fishball manages B's sessions with the same tool semantics as a local target (start, read, approve).
 - **Alternative flows:**
-  - A1. Only core installed (no features) → a full Fishball DSH without board or fold-notify.
+  - A1. Only core installed (no features) → a full Fishball DSH without the board. *(fold-notify: withdrawn (fold-notify is not in V3; requirements 1.34).)*
   - A2. *(withdrawn: Watchdog left V3, requirements 1.37)*
 - **Exception flows:**
   - E1. Target unreachable → Fishball still runs; status `target-unreachable`; bounded backoff retries.

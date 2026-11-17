@@ -1,5 +1,7 @@
 # Pile group disclosure — independent black-box test report
 
+**Status (2026-11-17):** a historical run record. Its own suites no longer exist: pile-disclosure.integration/system, dedicated-model-client, rev11-pile-list, rev11-ui-fixes and support/pile-disclosure.mjs were deleted in 76e06ff9, support/dedicated-model-client.mjs in 2446c559 and messenger-client.test.mjs in 100d05a7. rev11c-answer, rev11d-end, approvals-ptc and rev11b-ptc still exist. The links below are kept as the record, but the deleted ones do not resolve.
+
 Date: 2026-11-04 (Pacific/Auckland). Scope: independent tests only; no implementation edits or commits. The test author loaded general-coding-principle and read [AGENTS.md](<../../AGENTS.md>) before work. Requirements and existing test/public host contracts supplied the oracle; the parent's implementation changes were not read. The parent received behavior conclusions, not test source.
 
 ## Scope and boundaries

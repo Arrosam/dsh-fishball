@@ -33,7 +33,7 @@ and "dsh的connector侧的插件间可以share一个包，fishball侧的插件�
 | --- | --- | --- | --- |
 | DSH | `dsh-connector` | a DSH to expose | the MCP endpoint and OAuth AS for **any** agent: tokens, pairs and names, mailbox, routing, hand-over, contribution service; every operation and all state behind embed-UI; its own settings page (tokens, limits, approval port) |
 | DSH | `dsh-connector-ui` | beside the connector (requires it) | draws only: the sidebar fish and its light; the **window**, which opens only the hosted child's Fishball page; a hint when no child is running (no instance, or only an external agent connected) to go to the external instance's page (Q-G3); the notify prompt; the managed marks and Hand over / Take back (Q-G5); declares the `notify` tool, handled by the connector; no cards (Q-U2), no inline records (Q-G4) |
-| DSH | `dsh-instance` | a host DSH | a private child DSH: launch, lifecycle, plugin installation **by package name or tarball** from its settings, the token import into the child's credential store (`dsh-agent-token`) with the URL in `dsh-instance.targetUrl`, model sync entirely (writing the child's own DSH model settings, Q-G7), the child locator; its own settings page; imports no Fishball code |
+| DSH | `dsh-instance` | a host DSH | a private child DSH: launch, lifecycle, plugin installation **by package name or tarball** from its settings (*as built: I-PLACE's copying of `fishball-board`, `fishball-ui`, `fishball-core` stays until REL-PACK makes installable tarballs, the user's Q1 = A, DESIGN §19*), the token import into the child's credential store (`dsh-agent-token`; in code `DSH_AGENT_TOKEN`) with the URL in `dsh-instance.targetUrl` (in code the child-side row's `dsh-instance-child.targetUrl`), model sync entirely (writing the child's own DSH model settings, Q-G7), the child locator; its own settings page; imports no Fishball code |
 | DSH | `dsh-connector-adapter` | a DSH that uses another DSH's connector | a stock `dsh-mcp-client` row with OAuth (§5.5b) |
 | DSH | `dsh-connector-shared` | inside the DSH-side tarballs that use it | modules more than one DSH-side package uses |
 | Fishball | `fishball-core` | a Fishball DSH | backend: the manager session and preset, the MCP link, Connect, interception service, status, card store, pairing, non-UI guard rows, its own settings page; runs normally without `fishball-ui`, with no status hint (Q-G1) |
@@ -48,11 +48,11 @@ and "dsh的connector侧的插件间可以share一个包，fishball侧的插件�
 
 | # | Found (merged W1–W3 code or design) | Removed by |
 | --- | --- | --- |
-| 1 | `core/vendor/mcp-schema/` is generated from the connector's `mcp-schema` (F-LINK) | core keeps its **own** copy of the MCP-surface constants it needs, in `fishball-shared`; no generator reads the connector; drift is caught by a contract test against the connector's real `tools/list` and metadata (decided item D1) |
+| 1 | `core/vendor/mcp-schema/` is generated from the connector's `mcp-schema` (F-LINK) | core keeps its **own** copy of the MCP-surface constants it needs (as built: `core/contracts/constants.js` `MCP` and `LINK`, F-OWN-SCHEMA; not in `fishball-shared`); no generator reads the connector; drift is caught by a contract test against the connector's real `tools/list` and metadata (decided item D1) |
 | 2 | 17 core files import `fishball-connector/contract` (V2 path); core peers on `fishball-connector` | REMOVE-V2 (Q-E2 A) deletes the V2 child path; the peer goes |
-| 3 | the instance bundles core and the features (`bundled/`, `RUNTIME.bundledPlugins`, core-last placement, `fishball-hosted-settings`) | the instance installs whatever its settings name, by package name or tarball spec, through DSH's own plugin installation; no ordering rule; core and ui reorder themselves (R-FB-12) |
+| 3 | the instance bundles core and the features (`bundled/`, `RUNTIME.bundledPlugins`, core-last placement, `fishball-hosted-settings`) | *Not yet (the user's Q1 = A, DESIGN §19): placement copies `fishball-board`, `fishball-ui`, `fishball-core` (core last) until REL-PACK; `fishball-hosted-settings` is gone.* Target: the instance installs whatever its settings name, by package name or tarball spec, through DSH's own plugin installation; no ordering rule; core and ui reorder themselves (R-FB-12) |
 | 4 | the instance's child rows import core (`native-child.js`, the `mcp-credential` receiver handing the value to core, K3a `importToken` / `hasCredential`) | the child-side row (instance code) writes the value into the child's credential store under `dsh-agent-token`; core reads that reference; presence is DSH's `credentials.describe`; K3a is void (Q-G6 for the contract) |
-| 5 | `fishball-shared` is used by both sides: the admin protocol and provider-sync (instance host + core's `slim/child` halves), `files` (instance + core), `redact` (connector + instance) | split per side. The admin protocol, provider-sync (codec, engine, host) and `redact` move to `dsh-connector-shared`; their child halves move from core's `slim/child` into the instance's own child-side row, because applying model settings and admin operations in a child DSH is generic DSH work. `files` is duplicated: one copy in each library. `fishball-shared` keeps the core/ui contract and Fishball's own constants |
+| 5 | `fishball-shared` is used by both sides: the admin protocol and provider-sync (instance host + core's `slim/child` halves), `files` (instance + core), `redact` (connector + instance) | split per side. The admin protocol, provider-sync (codec, engine, host) and `redact` move to `dsh-connector-shared`; their child halves move from core's `slim/child` into the instance's own child-side row, because applying model settings and admin operations in a child DSH is generic DSH work. `files` is duplicated: one copy in each library (*as built, REMOVE-V2b:* the Fishball-side copy is private to core's skills store, and `fishball-shared` keeps only `ui-seam`). `fishball-shared` keeps the core/ui contract |
 | 6 | the adapter is Fishball-only and checks for the `/api/fishball` paths and the `fishball` scope | the adapter is `dsh-connector-adapter`, a client of a `dsh-connector` endpoint; its check reads `/api/agent/mcp`, `/api/agent/oauth` and the `agent` scope (§1.0c); no Fishball-side code is involved |
 | 7 | the `fishball` OAuth scope and `fishball:pair`, the `/api/fishball/*` paths, `fishball_id`, the `fishball-events` resource and the `*_fishball` tool names | renamed neutrally (§1.0c, Q-G8 = B) |
 | 8 | `message_fishball` / `ask_fishball` and the designated "Fishball" principal | renamed `message_agent` / `ask_agent`, "designated agent" (§1.0c) |
@@ -118,10 +118,16 @@ standalone mode is the same set installed by hand.
                │  an ordinary DSH + the Fishball set ─────┘ │  + the Fishball plugin set ───────────┘
                └──────────────────────────────────────────┘ └───────────────────────────────────────┘
      Fishball plugin set (same packages in both):  fishball-core (incl. its fishball-ui component) ·
-                                                    fishball-board   (1.0a is history: fold-notify removed, Watchdog a separate project)
+                                                    fishball-board   (1.0a is history; see §1.0 for the set)
 ```
 
 ### 1.1 Packages
+
+*Superseded by §1.0 (DOCS, 2026-11-17).* This table and §1.2 are the 1.0a text. Today there are
+nine packages in two sides (§1.0); the **Fishball plugin set is three plugins**, `fishball-core`,
+`fishball-ui` (its own package since F-UI, requirements 1.38 Q-N2) and `fishball-board`
+(`dsh-instance` `PLACEMENT.bundles`; requirements R-FB-01 as amended). The old names read with
+§1.0c.
 
 | Package | Installed in | Owns | Never does |
 | --- | --- | --- | --- |
@@ -129,11 +135,12 @@ standalone mode is the same set installed by hand.
 | `fishball-instance` | a host DSH | hosted mode only (§6): launching the child with its launch configuration, its lifecycle, placing the four plugins, target and token hand-off, the child locator `fishballChild`, hosted model sync (engine), the hosted settings bundle `fishball-hosted-settings` it places in the child (R-HOST-11), uninstall cleanup (never touching hosted token entries, Q-B3 B); **its own plugin settings page** (requirements 1.33 Q-D1, Q-D2): child status, Retry, Reconnect, the model-sync trigger | any session, approval, question or prompt service of the host DSH (R-ARCH-05); UI |
 | `fishball-embed-ui` | the host DSH, beside the instance | **amended by requirements 1.33 (Q-D2: "embed UI什么都不管，只是显示一个可以打开dsh页面的按钮"; Q-D4):** the sidebar fish that opens the Fishball page in its frame, or shows a hint when there is a connector but no instance. The marks, Hand over / Take back, attention latch and inline records it held before are the open question Q-F1 | secrets; settings cards (moved to the owners' own settings pages); session operations of its own; anything with no instance and no connector; with the connector alone it is not involved (no fish) |
 | `fishball-connector-adapter` (S7c, §5.5b) | a DSH that uses another DSH's connector | for each configured Fishball connector: the OAuth grant in `ctx.credentials`, the loopback proxy, a stock `dsh-mcp-client` child row, and the `fishball_connector_sign_in` tool | serving any server that is not a Fishball connector; a host patch; tokens in config, logs or the chat |
-| **Fishball plugin set** (Q2, decided: four plugins) | a Fishball DSH (hosted child or standalone) | §5a | acting on any DSH except its own, other than through the target connector's MCP (R-FB-08) |
+| **Fishball plugin set** (Q2, decided: four plugins; *now three: core, ui, board, §1.0*) | a Fishball DSH (hosted child or standalone) | §5a | acting on any DSH except its own, other than through the target connector's MCP (R-FB-08) |
 
 ### 1.2 The Fishball plugin set (Q2, decided)
 
-Four plugins. `fishball-ui` is not a plugin of its own: it is a component (a directory and a
+*Superseded (requirements 1.34, 1.37, 1.38):* the set is three plugins, `fishball-core`, `fishball-ui`
+and `fishball-board`, and `fishball-ui` is its own package. Earlier text: four plugins. `fishball-ui` is not a plugin of its own: it is a component (a directory and a
 client module) inside `fishball-core`'s package, installed, enabled and removed with core.
 
 | Plugin | Contents (from V2, re-homed) | Requires |
@@ -159,7 +166,7 @@ modes. Renaming it would break the agreed X1–X19 contract for no gain.
 | Target and token | the user fills in `fishball-core`'s settings and puts the token in that DSH's credential store (manual; Q8 decided) | the instance supplies the target; with a same-DSH connector it creates and hands over the token automatically, in memory (R-HOST-05, Q8 decided) |
 | UI | that DSH's own web UI **is** the Fishball page | embed-UI frames the child in the host DSH, plus the fish, dots and hand-over |
 | Model and provider settings | that DSH's own native settings | plus hosted model sync from the host (R-HOST-07) |
-| Uninstall | DSH's native remove of each plugin | the instance's cleanup removes the child runtime after the board export offer |
+| Uninstall | DSH's native remove of each plugin; the user deletes `<home>/fishball-board/` themselves (recommended) | the instance's `uninstall.js` removes the child runtime, board data included; there is no board export (the user, 2026-11-15) |
 
 ### 1.4 Why the split is safe
 
@@ -532,6 +539,12 @@ fishballChild = {
   value-duplicate (C-TOKENS questions 4 and 5 lapse with them); "a value unset waits for a
   save". Only label and switch edits, removals and reordering are accepted; duplicates are
   refused with a notice (R3, §5.9).
+- **A value is never regenerated.** An entry keeps the value it was created with; there is no
+  rotate or regenerate action, and a lost value is replaced only by deleting the entry and pressing
+  New token again (R4, §5.9; requirements 1.33 Q-D3 = B). An entry whose value is lost or unset
+  (an item added by hand, a record removed) is not given a new value: it is listed with
+  `enabled: false` and refuses every request until it is deleted (`src/tokens/registry.js`). The
+  prefix is `dsht_` since 1.41 (§1.0c; K1 `TOKEN_VALUE.generatedPrefix`).
 - **Finding (still true):** DSH's generic plugin form has no secret-entry widget and no one-shot
   display, so the reveal needs the connector's own settings page (§5.9).
 
@@ -579,14 +592,19 @@ a reinstall replaces it (§5.4; R6 = B, R8).
   after a reinstall), never on restart or reconnect.
 - **Nobody sets a token by hand (R10, requirements 1.31: "不允许主动设置token，只能依靠生成").**
   The plugins are the same in hosted and standalone mode (R8); only the credential source differs:
-  the instance's automatic import here, the user's **Connect** in standalone mode (§6.3a). There is
-  no token input field anywhere in Fishball. This supersedes 1.30's "enter it in core's settings".
+  the instance's automatic import here, the user's **Connect** in standalone mode (§6.3a).
+  ~~There is no token input field anywhere in Fishball.~~ *Overridden by Q-B2 (requirements 1.33,
+  below):* core's settings page always shows one write-only token field, in both modes, for a
+  freshly generated token (R10 still holds: every token is generated by a connector). The 1.30 text
+  "enter it in core's settings" stays superseded only as "set a value by hand".
 - **The import (R1, requirements 1.28: "存在fishball子实例内，第一次启动的时候由instance插件传入").**
   At the child's first start (core reports, yes/no, that it holds no credential for the target),
   the instance calls `createHosted` and sends the value **once** over the authenticated lifecycle
   wire (mutual HMAC proof, `src/native-runtime/wire.js`) on the channel `mcp-credential`, after
   `auth accepted`. The child-side receiver (instance code in the child) writes it into the **child
-  DSH's credential store** under the documented reference `dsh-agent-token` and drops it
+  DSH's credential store** under the documented reference `dsh-agent-token` (in code
+  `DSH_AGENT_TOKEN`: DSH's reference grammar is `^[A-Za-z_][A-Za-z0-9_]*$`, K3a `link.d.ts`
+  `HostedImportNames.credentialRef`) and drops it
   (requirements 1.39: no cross-side code call). Core reads its import from that reference and,
   once the target accepts it, saves its own copy by R9 (below) and unsets the reference. Whether a
   credential is present is DSH's own `credentials.describe`, not a core call. The host keeps
@@ -643,6 +661,14 @@ a reinstall replaces it (§5.4; R6 = B, R8).
 - **A refused saved credential** (`token-refused`, `token-revoked`, `invalid_grant` on refresh)
   stays until a **different** one is accepted, and then it is replaced: a new import (hosted) or a
   new Connect with another token (standalone).
+- **Which credential is tried first (Q-LS1 = A, the user, 2026-11-16).** A new value in the
+  reference (an import, a Reconnect or a paste) is tried **before** a saved copy and replaces it
+  only once the target accepts it; a refused new value is not sent again until the reference
+  changes or core restarts, and core goes back to the saved copy. This refines K3a `link.d.ts`'s
+  reader order ("1. a saved copy for the target origin wins"); the code follows Q-LS1
+  (`packages/core/src/link/credentials.js`: "1. a value in the reference, unless the target
+  refused that same value while a saved credential exists … 2. the saved token copy for the
+  origin; 3. the saved Connect grant").
 - Core never writes or deletes a credential reference the user owns; `target.tokenRef` is withdrawn.
 
 ### 5.5 OAuth: client credentials, the connector as its own authorization server (R-OA)
@@ -1234,14 +1260,19 @@ run under its host:
 - `hmr` disabled (the child is restarted, not hot-reloaded);
 - the webserver and web-runtime settings that give the child its own origin and port (V2
   PG-ORIGIN);
-- the admission key for `fishball-core`'s ticket route (embed-UI's frame), and the target URL;
+- the instance's two runtime rows, the lifecycle row and the child-side row `dsh-instance-child`
+  (whose config is the target URL core reads), both `required: true`;
+- the isolation patches: the child's instruction loader gets no project-root markers and its
+  skill loader reads only the child's own folders (`overlay.js`; Q-5 and the isolation patches,
+  decided 2026-11-15);
+- no key: the frame's admission key is derived from the lifecycle secret at both ends (§4.1).
 
 It writes **no** guard rows and forces no plugin on. The guards come only from `fishball-core`'s
 own patch, exactly as in a standalone DSH, so the child's owner can override them and core
 reports `guards-overridden` (§5a.2). The child's native Plugins page is unmodified. V2's
 Q-K = B Remove-hiding is not revived. A removed plugin is re-placed at the next start, off if it
-was off (§8.1). If the owner disables `fishball-core`, the child still starts and the locator
-reports `fishball-off` (R-FB-10).
+was off (§8.1). If the owner disables `fishball-core`, the child still starts; the locator
+reports generic child states only (`fishball-off` withdrawn, requirements 1.39, DESIGN §19).
 
 ### 6.3 The MCP link (`fishball-core`, both modes)
 
@@ -1419,18 +1450,27 @@ answers or escalates it to the user's card (R-CON-05, R-FB-11).
 
 The design is the bundled-placement note (`f71717e`), options **P3 + 3a**, now applied to the
 whole set:
-- The set members' sources live under `packages/instance/bundled/{core,board,fold-notify,watchdog}/`
+*As built (I-HOST, I-READY, F-WIRE; DOCS 2026-11-17):* the set is `fishball-board`, `fishball-ui`
+and `fishball-core`, appended in that order (`dsh-instance` `PLACEMENT.bundles`). There is no
+Watchdog or `fishball-hosted-settings`; read "the four plugins" and "the three
+features" below as these three.
+- The set members' sources live under `packages/dsh-instance/bundled/{board,fishball-ui,core}/`
   in a packed instance, listed in its `files`; `bundled/` is REL-PACK output and never committed, so
-  in a checkout placement reads the sibling workspace folders (Q-22, decided 2026-11-15).
-  `fishball-hosted-settings`' source stays the instance's own `src/child-settings/` (Q-6, decided
-  2026-11-15). In the host DSH they are inert data: not in its resolution, not bundles there.
-  Each copy is exactly the package's `files` plus `package.json` (Q-21); `fishball-shared` and the
-  connector's `./contract` export are placed beside them as libraries, never as bundles.
-- Core's V2 child rows (app, session tools, approvals, inbox, admin, provider-sync target) are
-  rows of core's own patch, named by package subpath (`fishball-core/slim/<module>`): a path row
-  inside core's folder would be a second client source of `fishball-core`, which DSH's client
-  modules refuse, and a sub-plugin chain would race `appReady` (I-PLACE probe Q-13, both SDKs).
-  The launch overlay inserts only the instance's lifecycle row and native-web adapter (Q-5).
+  in a checkout placement reads the sibling workspace folders (Q-22, decided 2026-11-15). In the
+  host DSH they are inert data: not in its resolution, not bundles there. Each copy is exactly the
+  package's `files` plus `package.json` (Q-21), with its own bundled libraries (core's
+  `fishball-shared`); `dsh-connector-shared` is placed beside them for the instance's own child
+  code, never as a bundle. No connector `./contract` is placed (I-READY).
+- Core's rows are package subpaths (`fishball-core/main`, `fishball-core/session-route`): a path
+  row inside core's folder would be a second client source of `fishball-core`, which DSH's client
+  modules refuse (I-PLACE probe Q-13, both SDKs). The launch overlay inserts only the instance's
+  lifecycle row and child-side row (Q-5), with the isolation patches (§6.2).
+- **Core's patch rows cannot be `required: true` (LIFE-02 note, decided 2026-11-15):** a `required`
+  row fails the boot of any DSH where it cannot start, and core's rows run in standalone DSHs too.
+  So a broken core row is that row's failure alone; V2's LIFE-02 ("missing app row fails loud")
+  no longer holds for core. A hosted child's start still fails loudly through the instance's own
+  `required` rows and its readiness check (generic DSH signals, DESIGN §19 I-READY), not through a
+  core row.
 - At every child start, inside `initializeProfile` and before `loadProfileDirectory`, each one is
   copied to `<child>/vendor/<name>` and `<child>/node_modules/<name>` (temp + rename), with
   `dependencies[name] = file:./vendor/<name>`.
@@ -1467,8 +1507,7 @@ moves itself last at its first start; the guard holds at once with HMR, or after
 
 | Plugin | Uses | V3 change |
 | --- | --- | --- |
-| board | X1, X2 (tools `board_*` + `board_search`, dynamic context) | none to its domain. Archive forever, 30-day visibility. Export offer: the instance's uninstall in hosted mode; in standalone mode, a `board_export` manager tool and a note in the README, because DSH's native remove offers no hook |
-| fold-notify | X2, X9 batcher, X8 attention | X8 now calls embed-UI's contributed `embed-ui.attention.signal` over the MCP link. If it is absent, the call gets `unsupported-operation` (D3 rule). The batcher sits on the Fishball branch, after interception (§6.4) |
+| board | X1, X2 (tools `board_read`, `board_write`, `board_search`, dynamic context) | none to its domain. Archive forever while installed, 30-day visibility (archived at exactly 30 days). **No board export** (the user, 2026-11-15; `board_export` and the uninstall export offer dropped): in hosted mode the instance's uninstall deletes the child runtime with the board data; in standalone mode the user deletes `<home>/fishball-board/` themselves (recommended; README), because DSH's native remove offers no hook |
 | watchdog | — | *withdrawn from V3 (requirements 1.37): a separate project* |
 
 ## 9. Packaging and compatibility
@@ -1480,7 +1519,7 @@ moves itself last at its first start; the guard holds at once with HMR, or after
 | `fishball-connector` | Replace the V2 `dsh.client` with one that registers only its settings page (§5.9; requirements 1.28); drop `client.js`'s V2 parts, `client.records.js`, `assets`, and the `./client`, `./contract` and `./records` exports. Add `./mcp-schema` (tool and event schemas, limits, vocabularies) and `./tools` (contribution types, `apiVersion`, the shared result-code vocabulary, a `defineTool` helper that validates at the call site; data and types only). Add a runtime `dependencies` entry for the MCP server SDK and its Node adapter, installed inside the connector's folder, never as a DSH peer. Keep `engines.dsh >=0.2.1-rc.5`. |
 | `fishball-instance` | Depend on `fishball-shared` (bundled); never on `fishball-core` (R-BND-01 strict). Drop the `fishball-connector` peer, the main-side `client.js`, `child-web/` and the `LITE` guard overlays. Keep `src/child-settings/` as the source of the `fishball-hosted-settings` bundle (R-HOST-11; Q-6; instance-owned source, a plain bundle with one row and a `dsh.client` entry, registering into core's settings-section extension point). Keep the host row, the native runtime (lifecycle, launch configuration, placement), `uninstall.js` and hosted model sync. Add `bundled/` (the four set members) to `files`. |
 | `fishball-core` (new, from `packages/instance/src/slim/child/**`, `src/persona.js`, the private Skills tool, `native-child.js`'s app pieces, and, as its `ui/` component, `packages/instance/child-web/**` and the `LITE` overlay rows) | Bundle row(s) for the Fishball DSH; its `cordis.patch.yml` also carries the guard rows; `dsh.client` (platform web) for the `fishball-ui` page, recommended tab and slim settings. Runtime dependency on `fishball-shared` (bundled), `@modelcontextprotocol/client` 2.x and `fishball-connector/mcp-schema`, vendored as a copy so a standalone install needs nothing from the connector package at runtime. |
-| `fishball-shared` (new, `packages/shared`; TQ-R3 and TQ-R5 decided, R-ARCH-08) | A **library**, not a plugin: no `dsh` field, no row, no client. Holds only modules **more than one** V3 package uses; first contents: the child `admin` constants, the provider-sync wire codec, the file helpers core and the instance share. Imports nothing from any other V3 package. **Any** V3 package may depend on it (connector, embed-UI, core, instance, feature plugins, `fishball-hosted-settings`); each that does lists it in `dependencies` **and** `bundleDependencies`, so its release tarball carries it and nothing is fetched from a registry. Loading it never loads a module of the Fishball set (R-BND-01). |
+| `fishball-shared` (new, `packages/shared`; TQ-R3 and TQ-R5 decided, R-ARCH-08) | *As built (requirements 1.40, REMOVE-V2b):* the Fishball side's library, exporting only `./ui-seam` (core and fishball-ui). The admin constants and provider-sync went to `dsh-connector-shared` (the DSH side); `files.js` is now private to core's skills store (`src/manager/skills-store.js`) and `oauth-client.js` is `core/src/link/oauth-client.js`, since R-ARCH-08 strict puts a one-user module in its user. *Earlier text:* A **library**, not a plugin: no `dsh` field, no row, no client. Holds only modules **more than one** V3 package uses; first contents: the child `admin` constants, the provider-sync wire codec, the file helpers core and the instance share. Imports nothing from any other V3 package. **Any** V3 package may depend on it (connector, embed-UI, core, instance, feature plugins, `fishball-hosted-settings`); each that does lists it in `dependencies` **and** `bundleDependencies`, so its release tarball carries it and nothing is fetched from a registry. Loading it never loads a module of the Fishball set (R-BND-01). |
 | `fishball-board` (requirements 1.34, 1.37: the only feature plugin) | Change the peer from `fishball-instance` to nothing: they find `fishball-core` through the optional `fishballInstance?` inject. |
 | `fishball-embed-ui` (new; S4-Q3 decided B) | Host row + `dsh.client` (platform web) with the inject lists of today's two main-DSH clients combined. Optional peers `fishball-instance` and `fishball-connector` (the latter for `./tools` types only; embed-UI never imports connector code). Owns the moved locale strings. |
 | `fishball-connector-adapter` (new, `packages/connector-adapter/`; S7c) | A standalone plugin row for the client DSH: settings `clientMetadataUrl` (required, no default) and `servers`; uses `ctx.credentials`, `ctx.authorization` and `ctx.tools`; mounts `@deepseek-ai/dsh-mcp-client` as a child. Versioning and dependency pins are **carried** (v3-remaining-plan §3 Q4 recommends: versioned with the set, `@modelcontextprotocol/client` pinned as K1 pins the server SDK, no `fishball-shared` dependency unless a module is genuinely shared). |
@@ -1505,7 +1544,7 @@ released only inside the tarballs of the packages that depend on it (no registry
 | MCP server runtime | not installed | not installed | packaged by the connector |
 | Bundle patch rows `{id, disabled, config, insert}` (`cordis-plugin-include` `PatchOptions`); applied in bundle order, a patch on a row not yet inserted is skipped with a debug-level warning (S6) | present | present (`patch.d.ts`) | `fishball-core` guard rows (§5a.2) |
 | Patch composition order: bundles → profile patch file → home patch → launch overlays | `dsh-app-boot` `readProfilePatches` :1127–1132 | :1908–1913 | Q20 (decided): core's guards are overridable in both modes; the instance's overlays carry no guards |
-| Plugin-manager slots `plugins.bundle.config`, `plugins.row.config`, `plugins.tab` | present | present | embed-UI card; core's recommended tab |
+| Plugin-manager slots `plugins.bundle.config`, `plugins.row.config`, `plugins.tab` | present | present | as built: `plugins.bundle.config` for fishball-core's own settings page (keyed `fishball-core`; F-SETTINGS: `pluginNavigation.openBundle` lands there in one step); `plugins.row.config` for the connector's (`dsh-connector#dsh-connector`) and the instance's own pages; `plugins.tab` for fishball-ui's Recommended tab. Embed-UI has no card |
 | `Agent.followup` | `dsh-agent-loop` | present (different line) | `fishball-core` wake |
 | Shortcut, origin and A-lite findings | V2 final scope §4.3 | same | `fishball-core` (`fishball-ui`) |
 | Cordis service provide / optional `ctx.inject([...], cb)` sub-scope, `ctx.effect` disposers, `fiber.name` | cordis 4.0.5 | cordis 4.1.0, `Service` and `Fiber` effect/name types the same | contribution service (§13.7), `fishballInstance`, `fishballChild` |
@@ -1876,8 +1915,10 @@ The attention latch moves out of the connector into embed-UI. Its behaviour is u
     connection (§3.5), read from the connector's hand-over service.
 - Embed-UI registers these tools whenever the connector's contribution service is present
   (Q18, decided: with or without an instance). Without it they are absent, and
-  fold-notify's attention call gets `unsupported-operation`, the same D3 rule as an unserved
-  signal.
+  a caller gets `unsupported-operation`, the same D3 rule as an unserved signal. Embed-UI also
+  declares `notify` (`embed-ui.notify`: a notice beside the fish, 1–4000 code points, `important`
+  animates it), which replaced fold-notify (requirements 1.34); the connector handles all three
+  (`dsh-connector/src/ui/constants.js` `UI_TOOL`).
 - Managed marks and Hand over / Take back are connector state. Embed-UI reads and drives them
   through the hand-over service (§3.6, Q3 decided).
 
