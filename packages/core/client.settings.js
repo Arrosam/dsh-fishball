@@ -31,7 +31,7 @@ window.__ModuleLoader__.load({
   chunk: 'client.settings.js',
   factory(require) {
     const React = require('react')
-    const { Button, SettingsForm, SettingsFormModel, SettingsSecretField, SettingsValueField, settingsTextField } = require('@deepseek-ai/dsh-client-ui-primitives')
+    const { Button, SettingsForm, SettingsFormModel, SettingsSecretField, SettingsValueField, StateDot, IconInfoOutlineRegular, IconRightUpOutlineRegular, settingsTextField } = require('@deepseek-ai/dsh-client-ui-primitives')
     const h = React.createElement
 
     /**
@@ -65,6 +65,8 @@ window.__ModuleLoader__.load({
       configuration: Object.freeze(['metadata-url-missing', 'metadata-url-not-https', 'metadata-url-root-path', 'not-a-connector', 'web-callback-insecure']),
       model: 'model',
     })
+    /** The Connect control's own word for "no answer from the route" (not a `CONNECT.state`). */
+    const CONNECT_UNAVAILABLE = 'unavailable'
     const PAGE = Object.freeze({
       locale: 'fishball-core-settings',
       slot: 'plugins.bundle.config',
@@ -87,11 +89,27 @@ window.__ModuleLoader__.load({
          */
         open: Object.freeze({ target: '_blank', features: 'noopener', rel: 'noopener noreferrer' }),
         reread: 'focus',
-        unavailable: 'unavailable',
+        unavailable: CONNECT_UNAVAILABLE,
       }),
       /** DSH's remote event for a committed credential-reference change (dsh-credentials, both SDKs). */
       credentialChanged: 'credentials/reference-updated',
-      css: Object.freeze({ id: 'fishball-core-settings-style', root: 'fb-core-settings', row: 'fb-core-settings-row', hint: 'fb-core-settings-hint', error: 'fb-core-settings-error' }),
+      css: Object.freeze({
+        id: 'fishball-core-settings-style', root: 'fb-core-settings', row: 'fb-core-settings-row', hint: 'fb-core-settings-hint', error: 'fb-core-settings-error',
+        card: 'fb-core-settings-card', head: 'fb-core-settings-head', title: 'fb-core-settings-title', status: 'fb-core-settings-status',
+        select: 'fb-core-settings-select', banner: 'fb-core-settings-banner', link: 'fb-core-settings-link',
+      }),
+      /**
+       * UI-POLISH-F: the Connect state's DSH StateDot, the dot DSH's own lists show for the same
+       * meaning; `unavailable` (no answer) reads as idle, never as connected.
+       */
+      connectDot: Object.freeze({
+        [SHARED.connectState.needsConfiguration]: 'warning', [SHARED.connectState.needsAuthorization]: 'idle', [SHARED.connectState.authorizing]: 'ongoing',
+        [SHARED.connectState.authorized]: 'done', [SHARED.connectState.failed]: 'error', [CONNECT_UNAVAILABLE]: 'idle',
+      }),
+      /** Connect is the section's call to action only while it can start a grant; otherwise it stays quiet. */
+      connectPrimary: Object.freeze([SHARED.connectState.needsAuthorization, SHARED.connectState.failed]),
+      button: Object.freeze({ primary: 'primary', outline: 'outline' }),
+      icon: 14,
       /**
        * The model control: one native select whose option values are the catalog's (provider, model,
        * effort) triples as JSON, plus the empty "DSH's default" option that clears the field.
@@ -200,11 +218,26 @@ window.__ModuleLoader__.load({
       reset: '重置',
       invalid: '不是有效的值。',
     }
+    // UI-POLISH-F: the form stays DSH's own; the model and Connect sit below it as cards in DSH's
+    // settings card material (the Models settings page's cards), and the select takes the look of
+    // DSH's settings inputs (SettingsValueField, both SDKs). Tokens only.
     const css = [
       `.${PAGE.css.root}{display:grid;gap:16px}`,
       `.${PAGE.css.row}{display:flex;align-items:center;flex-wrap:wrap;gap:8px}`,
-      `.${PAGE.css.hint}{margin:0;color:var(--dsw-alias-label-tertiary);font-size:12px}`,
-      `.${PAGE.css.error}{margin:0;color:var(--dsw-alias-state-error-primary)}`,
+      `.${PAGE.css.hint}{margin:0;color:var(--dsw-alias-label-tertiary);font:var(--dsw-font-xxs-12)}`,
+      `.${PAGE.css.error}{margin:0;font:var(--dsw-font-xxs-12);color:var(--dsw-alias-state-error-primary)}`,
+      `.${PAGE.css.card}{display:grid;gap:10px;padding:14px 16px;border-radius:var(--dsw-radius-xl);background:var(--dsw-alias-settings-card-fill);box-shadow:inset 0 0 0 .5px var(--dsw-alias-settings-card-stroke)}`,
+      `.${PAGE.css.head}{display:flex;align-items:center;gap:8px;min-height:28px}`,
+      `.${PAGE.css.title}{margin:0;font:var(--dsw-font-xs-strong-13);color:var(--dsw-alias-label-primary)}`,
+      `.${PAGE.css.status}{display:inline-flex;align-items:center;gap:6px;min-width:0;color:var(--dsw-alias-label-secondary);font:var(--dsw-font-xs-13)}`,
+      `.${PAGE.css.head} > button{margin-left:auto}`,
+      `.${PAGE.css.select}{box-sizing:border-box;width:100%;height:34px;padding:0 12px;border:.5px solid var(--dsw-alias-border-l4);border-radius:var(--dsw-radius-md);background:var(--dsw-alias-bg-layer-3);font:var(--dsw-font-xs-13);color:var(--dsw-alias-label-primary)}`,
+      `.${PAGE.css.select}:focus-visible{outline:var(--dsw-focus-ring-width) solid var(--dsw-focus-ring-color, var(--dsw-alias-state-business-primary));outline-offset:-1px}`,
+      `.${PAGE.css.select}:disabled{color:var(--dsw-alias-label-tertiary)}`,
+      `.${PAGE.css.banner}{display:flex;align-items:flex-start;gap:8px;margin:0;padding:10px 12px;border-radius:var(--dsw-radius-md);background:color-mix(in srgb,var(--dsw-alias-state-business-primary) 6%,transparent);color:var(--dsw-alias-label-secondary);font:var(--dsw-font-xxs-12);overflow-wrap:anywhere}`,
+      `.${PAGE.css.banner} > svg{flex:none;margin-top:2px;color:var(--dsw-alias-state-business-primary)}`,
+      `.${PAGE.css.link}{display:inline-flex;align-items:center;gap:4px;justify-self:start;color:var(--dsw-alias-link);font:var(--dsw-font-xs-13);text-decoration:none}`,
+      `.${PAGE.css.link}:hover{text-decoration:underline}`,
     ].join('')
 
     /** The style sheet, removed by its effect's disposer; the id names it for a reader of the DOM. */
@@ -362,18 +395,21 @@ window.__ModuleLoader__.load({
         setView((current) => ({ status: current.status, ...press }))
         await read()
       }
+      const titleId = React.useId()
       const state = view.status?.state ?? PAGE.connect.unavailable
       // A press's own refusal first; else the status's code while it still needs configuration.
       const code = view.notice ?? (state === SHARED.connectState.needsConfiguration ? view.status.code : null)
       const alert = typeof code !== 'string' ? null
         : code === PAGE.connect.unavailable ? t('connect.unavailable')
           : SHARED.configuration.includes(code) ? t('config.' + code) : t('config.unknown', { code })
-      return h('section', { 'data-fishball-connect': true, 'data-fishball-connect-state': state, 'aria-label': t('connectTitle') },
-        h('div', { className: PAGE.css.row },
-          h(Button, { type: 'button', size: 'sm', variant: 'outline', 'data-fishball-connect-begin': true, onClick: () => void begin() }, t('connect')),
-          h('span', { role: 'status' }, t('connect.' + state))),
+      return h('section', { className: PAGE.css.card, 'data-fishball-connect': true, 'data-fishball-connect-state': state, 'aria-labelledby': titleId },
+        h('div', { className: PAGE.css.head },
+          h('h3', { id: titleId, className: PAGE.css.title }, t('connectTitle')),
+          h(Button, { type: 'button', size: 'sm', variant: PAGE.connectPrimary.includes(state) ? PAGE.button.primary : PAGE.button.outline, 'data-fishball-connect-begin': true, onClick: () => void begin() }, t('connect'))),
+        h('span', { className: PAGE.css.status, role: 'status' }, h(StateDot, { state: PAGE.connectDot[state] }), t('connect.' + state)),
         view.approvalUrl === undefined || state !== SHARED.connectState.authorizing ? null
-          : h('a', { href: view.approvalUrl, target: PAGE.connect.open.target, rel: PAGE.connect.open.rel, 'data-fishball-connect-approval': true }, t('connect.openApproval')),
+          : h('a', { className: PAGE.css.link, href: view.approvalUrl, target: PAGE.connect.open.target, rel: PAGE.connect.open.rel, 'data-fishball-connect-approval': true },
+            t('connect.openApproval'), h(IconRightUpOutlineRegular, { size: PAGE.icon })),
         alert === null ? null : h('p', { className: PAGE.css.error, role: 'alert' }, alert))
     }
 
@@ -424,10 +460,10 @@ window.__ModuleLoader__.load({
         setSaveFailed(!ok)
       }
       const note = catalog.status === PAGE.model.catalog.loading ? t('modelLoading') : catalog.status === PAGE.model.catalog.failed ? t('modelFailed') : choices.length === 0 ? t('modelNone') : null
-      return h('section', { 'data-fishball-model': true, 'aria-label': t('modelTitle') },
-        h('label', { htmlFor: id }, t('modelTitle')),
+      return h('section', { className: PAGE.css.card, 'data-fishball-model': true, 'aria-label': t('modelTitle') },
+        h('div', { className: PAGE.css.head }, h('label', { className: PAGE.css.title, htmlFor: id }, t('modelTitle'))),
         h('div', { className: PAGE.css.row },
-          h('select', { id, value: current, disabled: !snapshot.writable, onChange: (event) => void pick(event.target.value), 'data-fishball-model-select': true },
+          h('select', { id, className: PAGE.css.select, value: current, disabled: !snapshot.writable, onChange: (event) => void pick(event.target.value), 'data-fishball-model-select': true },
             h('option', { value: PAGE.model.unset }, t('modelDefault')),
             // A saved choice the catalog no longer lists stays shown, so the select never pretends it is unset.
             current !== PAGE.model.unset && !choices.some((entry) => entry.value === current) ? h('option', { value: current }, current) : null,
@@ -467,7 +503,7 @@ window.__ModuleLoader__.load({
             }))
         }
         return h('div', { className: PAGE.css.root, 'data-fishball-core-settings': true },
-          supplied === undefined ? null : h('p', { className: PAGE.css.hint, 'data-fishball-instance-target': true }, t('instanceTarget', { url: supplied })),
+          supplied === undefined ? null : h('p', { className: PAGE.css.banner, 'data-fishball-instance-target': true }, h(IconInfoOutlineRegular, { size: PAGE.icon }), t('instanceTarget', { url: supplied })),
           h(SettingsForm, {
             labels: { unavailable: t('unavailable'), readOnly: t('readOnly'), saveFailed: t('saveFailed'), save: t('save'), saving: t('saving') },
             state, onSave: section.actions.save, onDiscard: section.actions.discard,

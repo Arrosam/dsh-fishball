@@ -11,9 +11,9 @@
  * field (R-FB-03).
  */
 import { SEAM_STATUS } from 'fishball-shared/ui-seam'
-import { STATUS_DEFAULT_LANG, STATUS_TEXT } from './text.js'
+import { CARD, STATUS_DEFAULT_LANG, STATUS_TEXT } from './text.js'
 
-export { STATUS_TEXT } from './text.js'
+export { CARD, STATUS_TEXT } from './text.js'
 
 /** The extra line kinds of the strip (the link line's kind is the snapshot's `line.kind`). */
 export const STRIP_KIND = Object.freeze({
@@ -25,6 +25,34 @@ export const STRIP_KIND = Object.freeze({
 
 const entry = (kind, text) => Object.freeze({ kind, text })
 
+/**
+ * The card's state for the link line's kind (UI-POLISH-F). A kind not listed (a word core adds
+ * later) reads as `failed`: the card never claims a connection it cannot name.
+ */
+const CARD_OF = Object.freeze({
+  [SEAM_STATUS.link.connected]: CARD.connected,
+  [SEAM_STATUS.link.unset]: CARD.unset,
+  [SEAM_STATUS.connect.needsAuthorization]: CARD.disconnected,
+  [SEAM_STATUS.connect.authorizing]: CARD.connecting,
+  [SEAM_STATUS.connect.needsConfiguration]: CARD.attention,
+  [SEAM_STATUS.link.unreachable]: CARD.failed,
+  [SEAM_STATUS.link.refused]: CARD.failed,
+  [SEAM_STATUS.connect.failed]: CARD.failed,
+  [STRIP_KIND.off]: CARD.off,
+})
+
+/** The card's heading, state badge and the words the browser half draws around the lines. */
+function cardOf(kind, text) {
+  const state = Object.hasOwn(CARD_OF, kind) ? CARD_OF[kind] : CARD.failed
+  return Object.freeze({
+    state,
+    title: state === CARD.off ? text.card.offTitle : text.card.title,
+    badge: text.card.badge[state],
+    toolsHint: text.card.toolsHint,
+    openApproval: text.card.openApproval,
+  })
+}
+
 function linkLine({ kind, code }, text) {
   const word = text.line[kind] ?? kind
   return entry(kind, code === null ? word : text.code(word, code))
@@ -33,12 +61,14 @@ function linkLine({ kind, code }, text) {
 /**
  * @param {object} snapshot core's status snapshot, or `{fishball: 'fishball-off'}`
  * @param {string} [lang] `en` or `zh`; any other value draws `en`
- * @returns {{lines: ReadonlyArray<{kind: string, text: string}>, control: {action: string, label: string} | null}}
+ * @returns {{lines: ReadonlyArray<{kind: string, text: string}>, control: {action: string, label: string} | null,
+ *   card: {state: string, title: string, badge: string, toolsHint: string, openApproval: string}}}
+ *   `card.state` is one of `CARD`, from the first line's kind (`CARD_OF`).
  */
 export function stripView(snapshot, lang = STATUS_DEFAULT_LANG) {
   const text = STATUS_TEXT[lang] ?? STATUS_TEXT[STATUS_DEFAULT_LANG]
   if (snapshot?.fishball !== SEAM_STATUS.fishball.on) {
-    return Object.freeze({ lines: Object.freeze([entry(STRIP_KIND.off, text.line[STRIP_KIND.off])]), control: null })
+    return Object.freeze({ lines: Object.freeze([entry(STRIP_KIND.off, text.line[STRIP_KIND.off])]), control: null, card: cardOf(STRIP_KIND.off, text) })
   }
   const lines = [linkLine(snapshot.line, text)]
   if (snapshot.guards?.status === SEAM_STATUS.guards.overridden) lines.push(entry(STRIP_KIND.guards, text.guards(snapshot.guards.overridden.join(text.separator))))
@@ -47,5 +77,5 @@ export function stripView(snapshot, lang = STATUS_DEFAULT_LANG) {
   }
   if (Number.isInteger(snapshot.contributedTools)) lines.push(entry(STRIP_KIND.tools, text.tools(snapshot.contributedTools)))
   const control = snapshot.control === null ? null : Object.freeze({ action: snapshot.control, label: text.control[snapshot.control] })
-  return Object.freeze({ lines: Object.freeze(lines), control })
+  return Object.freeze({ lines: Object.freeze(lines), control, card: cardOf(snapshot.line.kind, text) })
 }

@@ -17,7 +17,7 @@ window.__ModuleLoader__.load({
   chunk: 'client.entries.js',
   factory(require) {
     const React = require('react')
-    const { Button } = require('@deepseek-ai/dsh-client-ui-primitives')
+    const { Button, Tooltip, IconSlidersTwoOutlineRegular, IconSettingsOutlineRegular } = require('@deepseek-ai/dsh-client-ui-primitives')
     const h = React.createElement
 
     const ENTRIES = Object.freeze({
@@ -49,6 +49,13 @@ window.__ModuleLoader__.load({
       sessionReady: 'data-fishball-session',
       css: Object.freeze({ id: 'fishball-ui-entries-style', headerError: 'fb-ui-entries-header-error' }),
       button: Object.freeze({ type: 'button', size: 'sm', variant: 'ghost' }),
+      /**
+       * UI-POLISH-F: icon-only, named by aria-label and DSH's Tooltip, as DSH's own header actions
+       * (jobs, subagents) are: sliders for Fishball's own settings, the gear for DSH's (the glyph of
+       * DSH's Settings trigger). Not the fish: on this page it means "back to Fishball" (the bar).
+       */
+      tooltip: Object.freeze({ side: 'bottom', align: 'end', portal: true }),
+      icon: 16,
     })
 
     const en = {
@@ -69,6 +76,12 @@ window.__ModuleLoader__.load({
       React.useSyncExternalStore((listener) => ctx.locale.subscribe(listener), () => ctx.locale.getSnapshot())
     }
 
+    /** One icon-only header entry: DSH's Button with `Icon`, named `label` in aria-label and Tooltip. */
+    function iconEntry(kit, label, Icon, props) {
+      return h(Tooltip, { ...ENTRIES.tooltip, label },
+        h(Button, { ...ENTRIES.button, ...props, className: kit.css.iconButton, 'aria-label': label }, h(Icon, { size: ENTRIES.icon })))
+    }
+
     /** Opens core's settings page: its bundle page on DSH's Plugins page, else the Plugins list. */
     function openCoreSettings(ctx) {
       const navigation = ctx.get(ENTRIES.navigation)
@@ -76,14 +89,14 @@ window.__ModuleLoader__.load({
       else ctx.layout.selectPanel(ENTRIES.pluginsPanel)
     }
 
-    function makeFishballEntry(ctx, t) {
+    function makeFishballEntry(ctx, t, kit) {
       return function FishballSettingsEntry() {
         useLocale(ctx)
-        return h(Button, { ...ENTRIES.button, 'data-fishball-settings-entry': 'fishball', onClick: () => openCoreSettings(ctx) }, t('entryFishball'))
+        return iconEntry(kit, t('entryFishball'), IconSlidersTwoOutlineRegular, { 'data-fishball-settings-entry': 'fishball', onClick: () => openCoreSettings(ctx) })
       }
     }
 
-    function makeDshEntry(ctx, t) {
+    function makeDshEntry(ctx, t, kit) {
       return function DshSettingsEntry() {
         const [missing, setMissing] = React.useState(false)
         useLocale(ctx)
@@ -96,7 +109,7 @@ window.__ModuleLoader__.load({
           launcher?.click()
         }
         return h(React.Fragment, null,
-          h(Button, { ...ENTRIES.button, 'aria-haspopup': 'dialog', 'data-fishball-settings-entry': 'dsh', onClick: open }, t('entryDsh')),
+          iconEntry(kit, t('entryDsh'), IconSettingsOutlineRegular, { 'aria-haspopup': 'dialog', 'data-fishball-settings-entry': 'dsh', onClick: open }),
           missing ? h('span', { className: ENTRIES.css.headerError, role: 'alert', title: t('settingsUnavailable') }, t('settingsUnavailable')) : null)
       }
     }
@@ -134,8 +147,8 @@ window.__ModuleLoader__.load({
         const header = (key, Component) => ctx.effect(() => ctx.slots.inject(ENTRIES.slot, () => ctx.slots.register({
           name: ENTRIES.slot, id: ENTRIES.id[key], order: ENTRIES.order[key], locale: ENTRIES.locale,
         }, Component)), ENTRIES.name + ': ' + ENTRIES.id[key])
-        header('fishball', makeFishballEntry(ctx, t))
-        header('dsh', makeDshEntry(ctx, t))
+        header('fishball', makeFishballEntry(ctx, t, kit))
+        header('dsh', makeDshEntry(ctx, t, kit))
         ctx.effect(() => openFromContinuation(ctx), ENTRIES.name + ': view continuation')
       }
       return Object.freeze({ name: ENTRIES.name, inject: ['slots', 'layout', 'locale'], apply })

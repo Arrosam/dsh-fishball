@@ -2,6 +2,7 @@
   "name": "fishball-ui",
   "version": "1.0.0-alpha.1",
   "description": "Fishball's UI plugin: every UI change inside a Fishball DSH (the Fishball page, the UI guard rows, the Recommended tab, the status strip, the pairing views, the ask cards, the model dialog and the two settings entries), drawn over fishball-core's backend.",
+  "icon": "./assets/fishball-ui-icon.svg",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -21,6 +22,7 @@
     "./package.json": "./package.json"
   },
   "files": [
+    "assets/fishball-ui-icon.svg",
     "index.js",
     "client.js",
     "client.entries.js",

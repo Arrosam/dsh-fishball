@@ -24,7 +24,7 @@ window.__ModuleLoader__.load({
   chunk: 'client.model.js',
   factory(require) {
     const React = require('react')
-    const { Button, Modal } = require('@deepseek-ai/dsh-client-ui-primitives')
+    const { Button, Modal, StateDot, Tag, IconChevronRightOutlineRegular } = require('@deepseek-ai/dsh-client-ui-primitives')
     const h = React.createElement
 
     const DIALOG = Object.freeze({
@@ -49,7 +49,13 @@ window.__ModuleLoader__.load({
        */
       pageRoot: 'data-fishball-page',
       effortless: null,
-      css: Object.freeze({ id: 'fishball-ui-model-style', list: 'fb-model-list', choice: 'fb-model-choice', note: 'fb-model-note', error: 'fb-model-error' }),
+      css: Object.freeze({
+        id: 'fishball-ui-model-style', groups: 'fb-model-groups', group: 'fb-model-group', heading: 'fb-model-heading', list: 'fb-model-list',
+        choice: 'fb-model-choice', name: 'fb-model-name', chevron: 'fb-model-chevron', note: 'fb-model-note', empty: 'fb-model-empty', error: 'fb-model-error',
+      }),
+      dot: Object.freeze({ loading: 'ongoing', failed: 'error' }),
+      effortTone: 'outline',
+      icon: 14,
     })
     const en = {
       title: 'Choose Fishball\'s model',
@@ -75,27 +81,38 @@ window.__ModuleLoader__.load({
       saveFailed: '模型没有保存，请重试。',
       close: '关闭',
     }
+    // UI-POLISH-F: the models grouped under their provider, each group one card in DSH's settings
+    // card material (the Models settings page's own grouping), each model one full-width row.
     const css = [
-      `.${DIALOG.css.list}{display:grid;gap:4px;max-height:320px;overflow-y:auto;margin:0;padding:0;list-style:none}`,
-      `.${DIALOG.css.choice}{width:100%;justify-content:flex-start}`,
-      `.${DIALOG.css.note}{margin:0;color:var(--dsw-alias-label-tertiary)}`,
-      `.${DIALOG.css.error}{margin:0;color:var(--dsw-alias-state-error-primary)}`,
+      // 320px is the list's height before UI-POLISH-F; the vh cap keeps the footer on a short window.
+      `.${DIALOG.css.groups}{display:grid;gap:12px;max-height:min(320px,50vh);overflow-y:auto;padding:2px}`,
+      `.${DIALOG.css.heading}{margin:0 0 4px;padding:0 4px;font:var(--dsw-font-xxs-strong-12);color:var(--dsw-alias-label-tertiary)}`,
+      `.${DIALOG.css.list}{display:grid;gap:2px;margin:0;padding:4px;list-style:none;border-radius:var(--dsw-radius-md);background:var(--dsw-alias-settings-card-fill);box-shadow:inset 0 0 0 .5px var(--dsw-alias-settings-card-stroke)}`,
+      `.${DIALOG.css.choice}{width:100%;justify-content:flex-start;gap:8px;font:var(--dsw-font-xs-13)}`,
+      `.${DIALOG.css.name}{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:start}`,
+      `.${DIALOG.css.chevron}{display:inline-flex;margin-left:auto;color:var(--dsw-alias-label-tertiary)}`,
+      `.${DIALOG.css.note}{display:flex;align-items:center;gap:8px;margin:0;color:var(--dsw-alias-label-tertiary)}`,
+      `.${DIALOG.css.empty}{margin:0;padding:20px 16px;border-radius:var(--dsw-radius-md);background:var(--dsw-alias-bg-module-platform);color:var(--dsw-alias-label-secondary);text-align:center}`,
+      `.${DIALOG.css.error}{display:flex;align-items:center;gap:8px;margin:0;color:var(--dsw-alias-state-error-primary)}`,
     ].join('')
 
     /**
-     * One choice per model, and one per advertised reasoning effort (DSH `ModelCatalog`, both SDKs).
-     * Core's settings page builds the same list for its picker (core client.settings.js
-     * `modelChoices`): restated, not shared, because a browser chunk imports no module and the two
-     * are separate packages (no client library chunk exists in the set; client.js says the same).
+     * One choice per model, and one per advertised reasoning effort (DSH `ModelCatalog`, both SDKs),
+     * grouped by the catalog's provider groups (a group without a model is left out). `label` is the
+     * choice's full name (`<group> / <model>`, with ` · <effort>`), its accessible name; `name` and
+     * `effort` are what the row shows under its group's heading. Core's settings page builds the same
+     * list for its picker (core client.settings.js `modelChoices`): restated, not shared, because a
+     * browser chunk imports no module and the two are separate packages (no client library chunk
+     * exists in the set; client.js says the same).
      */
-    function choicesOf(catalog, t) {
-      return (catalog?.groups ?? []).flatMap((group) => group.models.flatMap((model) => {
+    function groupsOf(catalog, t) {
+      return (catalog?.groups ?? []).map((group) => ({ id: group.id, name: group.name, choices: group.models.flatMap((model) => {
         const base = { provider: group.id, model: model.id }
         const label = group.name + ' / ' + model.name
         const efforts = model.reasoning?.efforts ?? []
-        const of = (selection, text) => ({ key: JSON.stringify([selection.provider, selection.model, selection.reasoningEffort ?? DIALOG.effortless]), label: text, selection })
-        return efforts.length === 0 ? [of(base, label)] : efforts.map((effort) => of({ ...base, reasoningEffort: effort.id }, t('effort', { model: label, effort: effort.name })))
-      }))
+        const of = (selection, text, effort) => ({ key: JSON.stringify([selection.provider, selection.model, selection.reasoningEffort ?? DIALOG.effortless]), label: text, name: model.name, effort, selection })
+        return efforts.length === 0 ? [of(base, label, null)] : efforts.map((effort) => of({ ...base, reasoningEffort: effort.id }, t('effort', { model: label, effort: effort.name }), effort.name))
+      }) })).filter((group) => group.choices.length > 0)
     }
 
     /** Whether core's form holds a model now (a complete `{provider, model}`); undefined while unknown. */
@@ -123,6 +140,7 @@ window.__ModuleLoader__.load({
         // dismissal is forgotten when the page closes (its root mark goes).
         const [closed, setClosed] = React.useState(false)
         React.useEffect(() => { if (!onPage) setClosed(false) }, [onPage])
+        const baseId = React.useId()
         const [catalog, setCatalog] = React.useState({ status: DIALOG.catalog.loading })
         const [failed, setFailed] = React.useState(false)
         const [saving, setSaving] = React.useState(false)
@@ -136,7 +154,8 @@ window.__ModuleLoader__.load({
           return () => { live = false }
         }, [open])
         if (!open) return null
-        const choices = catalog.status === DIALOG.catalog.ready ? choicesOf(catalog.value, t) : []
+        const groups = catalog.status === DIALOG.catalog.ready ? groupsOf(catalog.value, t) : []
+        const headingId = (group) => `${baseId}-${groups.indexOf(group)}`
         const choose = async (selection) => {
           setSaving(true)
           let ok = false
@@ -149,19 +168,25 @@ window.__ModuleLoader__.load({
           setClosed(true)
           document.querySelector(DIALOG.settingsLauncher)?.click()
         }
-        const none = catalog.status === DIALOG.catalog.ready && choices.length === 0
+        const none = catalog.status === DIALOG.catalog.ready && groups.length === 0
         const footer = h(React.Fragment, null,
-          none ? h(Button, { variant: 'outline', onClick: openSettings, 'data-fishball-model-settings': true }, t('openSettings')) : null,
+          none ? h(Button, { variant: 'primary', onClick: openSettings, 'data-fishball-model-settings': true }, t('openSettings')) : null,
           h(Button, { variant: 'outline', onClick: () => setClosed(true), 'data-fishball-model-later': true }, t('later')))
         return h(Modal, { open: true, onClose: () => setClosed(true), title: t('title'), closeLabel: t('close'), description: t('intro'), footer },
           h('div', { 'data-fishball-model-dialog': catalog.status },
-            catalog.status === DIALOG.catalog.loading ? h('p', { className: DIALOG.css.note }, t('loading')) : null,
-            catalog.status === DIALOG.catalog.failed ? h('p', { className: DIALOG.css.error, role: 'alert' }, t('failed')) : null,
-            none ? h('p', { className: DIALOG.css.note, 'data-fishball-model-none': true }, t('none')) : null,
-            choices.length === 0 ? null : h('ul', { className: DIALOG.css.list },
-              choices.map((choice) => h('li', { key: choice.key },
-                h(Button, { className: DIALOG.css.choice, variant: 'ghost', disabled: saving, 'data-fishball-model-choice': choice.key, onClick: () => void choose(choice.selection) }, choice.label)))),
-            failed ? h('p', { className: DIALOG.css.error, role: 'alert' }, t('saveFailed')) : null))
+            catalog.status === DIALOG.catalog.loading ? h('p', { className: DIALOG.css.note }, h(StateDot, { state: DIALOG.dot.loading }), t('loading')) : null,
+            catalog.status === DIALOG.catalog.failed ? h('p', { className: DIALOG.css.error, role: 'alert' }, h(StateDot, { state: DIALOG.dot.failed }), t('failed')) : null,
+            none ? h('p', { className: DIALOG.css.empty, 'data-fishball-model-none': true }, t('none')) : null,
+            groups.length === 0 ? null : h('div', { className: DIALOG.css.groups },
+              groups.map((group) => h('div', { key: group.id, className: DIALOG.css.group, role: 'group', 'aria-labelledby': headingId(group) },
+                h('p', { id: headingId(group), className: DIALOG.css.heading }, group.name),
+                h('ul', { className: DIALOG.css.list },
+                  group.choices.map((choice) => h('li', { key: choice.key },
+                    h(Button, { className: DIALOG.css.choice, variant: 'ghost', disabled: saving, 'aria-label': choice.label, 'data-fishball-model-choice': choice.key, onClick: () => void choose(choice.selection) },
+                      h('span', { className: DIALOG.css.name }, choice.name),
+                      choice.effort === null ? null : h(Tag, { tone: DIALOG.effortTone }, choice.effort),
+                      h('span', { className: DIALOG.css.chevron, 'aria-hidden': 'true' }, h(IconChevronRightOutlineRegular, { size: DIALOG.icon }))))))))),
+            failed ? h('p', { className: DIALOG.css.error, role: 'alert' }, h(StateDot, { state: DIALOG.dot.failed }), t('saveFailed')) : null))
       }
     }
 

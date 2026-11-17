@@ -18,7 +18,7 @@ window.__ModuleLoader__.load({
   factory(require) {
     const React = require('react')
     const h = React.createElement
-    const { Button, StateDot } = require('@deepseek-ai/dsh-client-ui-primitives')
+    const { Button, StateDot, Tag } = require('@deepseek-ai/dsh-client-ui-primitives')
 
     /** The tab's identity on the Plugins page (Q-O = B) and its locale namespace. */
     const TAB = Object.freeze({
@@ -60,6 +60,8 @@ window.__ModuleLoader__.load({
     /** One row's own pre-install read; the native dialog owns every state after it. */
     const CHECK = Object.freeze({ checking: 'checking', failed: 'failed' })
     const STATE_DOT = Object.freeze({ ongoing: 'ongoing', error: 'error', done: 'done' })
+    /** DSH's Tag tone of the "Recommended first" badge. */
+    const BADGE = Object.freeze({ tone: 'info' })
 
     const zh = {
       title: 'Fishball 推荐',
@@ -95,17 +97,23 @@ window.__ModuleLoader__.load({
     }
 
     // Design tokens only (the same aliases fishball-page uses); no hashed SDK class names.
+    // UI-POLISH-F: each category is one card in DSH's settings card material, its plugins rows
+    // divided by a hairline, as DSH's own plugin inventory lists them.
     const STYLE = Object.freeze({
-      section: { display: 'flex', flexDirection: 'column', gap: '16px', padding: '4px 0' },
-      muted: { color: 'var(--dsw-alias-label-tertiary)', fontSize: '12px', margin: 0 },
-      heading: { display: 'flex', alignItems: 'center', gap: '8px', margin: 0, fontSize: '14px' },
-      badge: { fontSize: '11px', padding: '1px 6px', borderRadius: '8px', border: '1px solid var(--dsw-alias-border-l2)' },
-      list: { listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: '8px' },
-      row: { display: 'flex', alignItems: 'flex-start', gap: '12px', padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--dsw-alias-border-l2)', background: 'var(--dsw-alias-bg-module-platform)' },
+      section: { display: 'flex', flexDirection: 'column', gap: '20px', padding: '4px 0' },
+      intro: { color: 'var(--dsw-alias-label-secondary)', font: 'var(--dsw-font-xs-13)', margin: 0 },
+      muted: { color: 'var(--dsw-alias-label-tertiary)', font: 'var(--dsw-font-xxs-12)', margin: 0 },
+      category: { display: 'flex', flexDirection: 'column', gap: '8px' },
+      heading: { display: 'flex', alignItems: 'center', gap: '8px', margin: 0, font: 'var(--dsw-font-s-strong-14)', color: 'var(--dsw-alias-label-primary)' },
+      list: { listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', borderRadius: 'var(--dsw-radius-lg)', background: 'var(--dsw-alias-settings-card-fill)', boxShadow: 'inset 0 0 0 .5px var(--dsw-alias-settings-card-stroke)' },
+      row: { display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 14px' },
+      divided: { borderTop: '.5px solid var(--dsw-alias-border-l2)' },
       body: { flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '2px' },
-      name: { fontFamily: 'monospace', fontSize: '13px', overflowWrap: 'anywhere' },
+      name: { fontFamily: 'var(--ds-font-family-code, monospace)', fontSize: '13px', color: 'var(--dsw-alias-label-primary)', overflowWrap: 'anywhere' },
+      source: { color: 'var(--dsw-alias-link)', font: 'var(--dsw-font-xxs-12)', textDecoration: 'none', alignSelf: 'flex-start' },
+      empty: { color: 'var(--dsw-alias-label-tertiary)', font: 'var(--dsw-font-xxs-12)', margin: 0, padding: '14px', borderRadius: 'var(--dsw-radius-lg)', background: 'var(--dsw-alias-bg-module-platform)', textAlign: 'center' },
       action: { display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 },
-      status: { display: 'flex', alignItems: 'center', gap: '6px', margin: 0 },
+      status: { display: 'flex', alignItems: 'center', gap: '6px', margin: 0, font: 'var(--dsw-font-xxs-12)', color: 'var(--dsw-alias-label-secondary)' },
     })
 
     /** A plain external store: one owner per value, read through React.useSyncExternalStore. */
@@ -272,7 +280,7 @@ window.__ModuleLoader__.load({
       return h('div', null, h(Status, { state: STATE_DOT.error, alert: true }, message), retry)
     }
 
-    function Row({ item, t, snapshot, controller, owner }) {
+    function Row({ item, t, snapshot, controller, owner, first }) {
       const installed = snapshot.installed.has(item.packageName)
       const check = snapshot.checks[item.packageName]
       const checking = check?.kind === CHECK.checking
@@ -287,10 +295,10 @@ window.__ModuleLoader__.load({
           : h(Button, { ...BUTTON, disabled: checking,
             onClick: () => { void controller.install(item, owner) } }, t(checking ? 'checking' : 'install'))
       }
-      return h('li', { style: STYLE.row, 'data-recommended-package': item.packageName },
+      return h('li', { style: first ? STYLE.row : { ...STYLE.row, ...STYLE.divided }, 'data-recommended-package': item.packageName },
         h('div', { style: STYLE.body },
           h('span', { style: STYLE.name }, item.packageName),
-          h('a', { href: item.source, target: DOM.linkTarget, rel: DOM.linkRel, style: STYLE.muted }, t('source')),
+          h('a', { href: item.source, target: DOM.linkTarget, rel: DOM.linkRel, style: STYLE.source }, t('source')),
           item.noteKey === undefined ? null : h('p', { style: STYLE.muted, 'data-recommended-note': item.noteKey }, t(item.noteKey)),
           check?.kind === CHECK.failed && !installed ? h(Status, { state: STATE_DOT.error, alert: true }, checkMessage(t, item.packageName, check)) : null),
         h('div', { style: STYLE.action }, action))
@@ -298,12 +306,12 @@ window.__ModuleLoader__.load({
 
     function Category({ group, t, snapshot, controller, owner }) {
       const highlighted = snapshot.highlighted.includes(group.category)
-      return h('section', { 'data-recommended-category': group.category, 'data-highlighted': String(highlighted) },
-        h('h3', { style: STYLE.heading }, t(group.category), highlighted ? h('span', { style: STYLE.badge }, t('highlight')) : null),
+      return h('section', { style: STYLE.category, 'data-recommended-category': group.category, 'data-highlighted': String(highlighted) },
+        h('h3', { style: STYLE.heading }, t(group.category), highlighted ? h(Tag, { tone: BADGE.tone }, t('highlight')) : null),
         highlighted ? h('p', { style: STYLE.muted }, t('highlightNote')) : null,
         group.plugins.length === 0
-          ? h('p', { style: STYLE.muted, 'data-recommended-empty': group.category }, t('empty'))
-          : h('ul', { style: STYLE.list }, group.plugins.map(item => h(Row, { key: item.packageName, item, t, snapshot, controller, owner }))))
+          ? h('p', { style: STYLE.empty, 'data-recommended-empty': group.category }, t('empty'))
+          : h('ul', { style: STYLE.list }, group.plugins.map((item, index) => h(Row, { key: item.packageName, item, t, snapshot, controller, owner, first: index === 0 }))))
     }
 
     function makeTab(controller) {
@@ -319,7 +327,7 @@ window.__ModuleLoader__.load({
           snapshot.inventory === STATUS.error ? h(ReadFailure, { message: t('inventoryFailed'), retry }) : null,
           snapshot.categories.map(group => h(Category, { key: group.category, group, t, snapshot, controller, owner: props })))
         return h('div', { style: STYLE.section, 'data-plugin-tab': TAB.id },
-          h('p', { style: STYLE.muted }, t('intro')), body)
+          h('p', { style: STYLE.intro }, t('intro')), body)
       }
     }
 
