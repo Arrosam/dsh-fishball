@@ -14,7 +14,9 @@
  *   thrown `RefusalError` (src/errors.js):
  *   - `domain.sessions`:
  *     - `rootOf(sessionId) → string`: the session the user sees (a subagent's root, V2's
- *       `rootSessionOf`); synchronous;
+ *       `rootSessionOf`); synchronous, over attached sessions;
+ *     - `storedRootOf(sessionId) → Promise<string | undefined>` (optional): the same over stored
+ *       headers too, so a stopped subagent's session is its root's (sessions.js `check`);
  *     - `describe(sessionId) → Promise<SessionSummary | undefined>`: undefined for no such (or an
  *       archived) session;
  *     - `start(args, {onCreated}) → Promise<{sessionId, titleError?, workspaceError?}>`: the start

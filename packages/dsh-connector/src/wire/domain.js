@@ -22,7 +22,7 @@ import { placeOf } from '../domain/folder.js'
 import { createSessionPort } from '../domain/session-port.js'
 import { createSessionTools } from '../domain/session-tools.js'
 import { createWording } from '../domain/wording.js'
-import { rootSessionOf, titleOf } from '../session-info.js'
+import { rootSessionOf, storedRootOf, titleOf } from '../session-info.js'
 import { DOMAIN } from './constants.js'
 import { LOG } from '../domain/constants.js'
 import { diagnosticOf } from '../errors.js'
@@ -111,6 +111,7 @@ export async function createSessionDomain(ctx, { storageDomain, readLimits, rout
 
     const sessions = Object.freeze({
       rootOf: (sessionId) => rootSessionOf(ctx, sessionId),
+      storedRootOf: (sessionId) => storedRootOf(ctx, sessionId),
       describe: (sessionId) => port.describe(sessionId),
       async start(args, { onCreated }) {
         const target = await placeOf(ctx, args.folder)

@@ -34,7 +34,7 @@ import { DELIVERY, REFUSAL } from '../../mcp-schema/index.js'
 import { OPTIONAL_SERVICE, SESSION_INFO, SOURCE, TITLE_ERROR, WORKSPACE_ERROR } from '../constants.js'
 import { RefusalError } from '../errors.js'
 import { MODEL_ERROR, ModelChoiceError } from '../model-catalog.js'
-import { isSessionGone, senderOf, textOfEvent } from '../session-info.js'
+import { headerOf, isSessionGone, isSubagentHeader, senderOf, textOfEvent } from '../session-info.js'
 import { prepareSessionModel, applySessionModel } from '../session-model.js'
 import { byteLength, cutToBytes } from '../text.js'
 import { createImagePort } from './images.js'
@@ -51,8 +51,13 @@ const TITLE_PROJECTION = 'title'
 const MIN_PAGE_MESSAGES = 1
 /** `admit` when the caller passes none (start's own first delivery): nothing to recheck. */
 const ADMITTED = () => {}
-/** The session address kind every ordinary Session uses. */
-const SESSION_ADDRESS = 'session'
+/**
+ * DSH 0.2.2's history addresses (dsh-api-session-controller `SessionAddress`): an ordinary Session
+ * by its id; a subagent's Session only through its direct parent, which DSH checks against the
+ * child's header (an ordinary address for it is refused `session/agent-busy`). `mode: unknown`
+ * reads either kind of child without asserting which one it is.
+ */
+const SESSION_ADDRESS = Object.freeze({ session: 'session', subagent: 'subagent', anyMode: 'unknown' })
 /** dsh-agent's status for a Session with a turn in progress; 0.2.1 exposes it on the live agent. */
 export const RUNNING_AGENT = 'running'
 
@@ -212,8 +217,19 @@ export function createSessionPort(ctx, options) {
    * shaped {type:'event', event}.
    */
   async function pageOf(sessionId, cursor, maxMessages) {
-    const request = { address: { kind: SESSION_ADDRESS, sessionId }, throughSeq: cursor, maxMessages }
+    const request = { address: await historyAddressOf(sessionId), throughSeq: cursor, maxMessages }
     return ctx.sessionController.events(request, NEVER_ABORTED)
+  }
+
+  /**
+   * The history address of a session (SESSION_ADDRESS): a subagent's session is read through its
+   * parent, so the root's manager can read a child it manages through the root (R-FIX-CUI).
+   */
+  async function historyAddressOf(sessionId) {
+    const header = await headerOf(ctx, sessionId)
+    return isSubagentHeader(header)
+      ? { kind: SESSION_ADDRESS.subagent, parentSessionId: header.parentSession, childSessionId: sessionId, mode: SESSION_ADDRESS.anyMode }
+      : { kind: SESSION_ADDRESS.session, sessionId }
   }
 
   /**

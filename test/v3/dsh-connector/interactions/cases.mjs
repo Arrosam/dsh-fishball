@@ -9,6 +9,7 @@ import { registerPromptCases } from './prompt-cases.mjs'
 import { registerQuestionCases } from './question-cases.mjs'
 import { registerRestartCases } from './restart-cases.mjs'
 import { registerXsecInteractionCases } from './xsec-cases.mjs'
+import { registerCuiInteractionCases } from './cui-cases.mjs'
 
 export function registerInteractionCases(sdk) {
   registerMessagingCases(sdk)
@@ -18,4 +19,5 @@ export function registerInteractionCases(sdk) {
   registerPromptCases(sdk)
   registerRestartCases(sdk)
   registerXsecInteractionCases(sdk)
+  registerCuiInteractionCases(sdk)
 }

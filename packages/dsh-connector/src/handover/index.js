@@ -20,8 +20,16 @@
  *
  * Order: the order of the entries in the connector's native settings list (K3 README, PROPOSED),
  * which `TokenRegistry.list()` follows; a rename, a connection change or a pairing never moves one.
+ *
+ * Root sessions only (review UI-01; the user: "Agent不能回答不归自己管的会话，只能操作自己管的会话"):
+ * `handOver` and `takeBack` act on the root of the session they name. DSH draws its session header
+ * in a subagent's session too, so the UI may name a child; management is per root (K1c), and a
+ * child entry beside its root's would let one principal operate the child while the root's
+ * manager still gets its permission requests. So a child's Hand over is its root's (`conflict`
+ * when the root is managed), its Take back ends the root's management, and the events name the root.
  */
 import { EVENT_TYPE, RETIREMENT_REASON } from '../../mcp-schema/index.js'
+import { isNonEmptyString } from '../mailbox/draft.js'
 import { checkedFields } from '../routing/support.js'
 import { HANDOVER_REFUSAL, HANDOVER_SERVICE, MISUSE, NO_NOTE } from './constants.js'
 
@@ -42,11 +50,12 @@ function noteDraft(type, sessionId, note) {
  * @param deps.managed - the managed-state owner (`../routing/managed.js`: `state`, `assign`, `end`)
  * @param deps.produce - the routing module's one commit path (`(subject, draft) => Promise`)
  * @param deps.pairs - K1 `PairStore`; @param deps.tokens - K1 `TokenRegistry`; @param deps.presence - K1 `Presence`
- * @param deps.sessionExists - `(sessionId) => boolean | Promise<boolean>`
+ * @param deps.rootOf - `(sessionId) => Promise<string | undefined>`: the session's root id, or
+ *   undefined when no session of this DSH has that id (it may reject: the call then rejects)
  * @param deps.changes - the routing module's listener set (`add`), fired on every K3 change
  * @returns `{service, provide(ctx)}`
  */
-export function createHandover({ managed, produce, pairs, tokens, presence, sessionExists, changes }) {
+export function createHandover({ managed, produce, pairs, tokens, presence, rootOf, changes }) {
   const principalRef = (pair) => Object.freeze({ key: pair.principalKey, name: pair.name, id: pair.id })
 
   /**
@@ -58,6 +67,8 @@ export function createHandover({ managed, produce, pairs, tokens, presence, sess
     const pair = typeof principalKey === 'string' ? pairs.byPrincipal(principalKey) : undefined
     return pair !== undefined && tokens.get(pair.entryKey)?.enabled === true ? pair : undefined
   }
+  /** The root of a named session, or undefined for an id that names none (K3's `unknown-session`). */
+  const rootSession = async (sessionId) => (isNonEmptyString(sessionId) ? rootOf(sessionId) : undefined)
   let provided = false
 
   const service = Object.freeze({
@@ -85,26 +96,28 @@ export function createHandover({ managed, produce, pairs, tokens, presence, sess
     onChange: (fn) => changes.add(fn),
 
     async handOver(sessionId, principalKey, note = NO_NOTE) {
-      if (typeof sessionId !== 'string' || !(await sessionExists(sessionId))) return refusal(HANDOVER_REFUSAL.unknownSession)
-      const draft = noteDraft(EVENT_TYPE.handover, sessionId, note)
+      const root = await rootSession(sessionId)
+      if (root === undefined) return refusal(HANDOVER_REFUSAL.unknownSession)
+      const draft = noteDraft(EVENT_TYPE.handover, root, note)
       let pair
-      const result = await managed.assign(sessionId, principalKey, {
+      const result = await managed.assign(root, principalKey, {
         // Checked inside the managed step, after `conflict` (K3 order), against a racing disable.
         admit: () => ((pair = eligible(principalKey)) === undefined ? refusal(HANDOVER_REFUSAL.noAgent) : undefined),
         // One `handover`, to the new manager, offline or not (it waits in its mailbox; HAND-DT-01 rule 5).
-        then: () => produce({ type: EVENT_TYPE.handover, sessionId }, draft),
+        then: () => produce({ type: EVENT_TYPE.handover, sessionId: root }, draft),
       })
       return result.ok ? Object.freeze({ ok: true, principal: principalRef(pair) }) : result
     },
 
     async takeBack(sessionId, note = NO_NOTE) {
-      if (typeof sessionId !== 'string' || !(await sessionExists(sessionId))) return refusal(HANDOVER_REFUSAL.unknownSession)
-      const draft = noteDraft(EVENT_TYPE.takeback, sessionId, note)
+      const root = await rootSession(sessionId)
+      if (root === undefined) return refusal(HANDOVER_REFUSAL.unknownSession)
+      const draft = noteDraft(EVENT_TYPE.takeback, root, note)
       // The `takeback` goes to the pair that managed it until now (R-EVS-03), committed before its
       // offers are retired; the same retirement rule as release (Fishball 2026-11-14).
-      const result = await managed.end(sessionId, {
+      const result = await managed.end(root, {
         reason: RETIREMENT_REASON.released,
-        then: (manager) => produce({ type: EVENT_TYPE.takeback, sessionId, followsPrincipal: manager }, draft),
+        then: (manager) => produce({ type: EVENT_TYPE.takeback, sessionId: root, followsPrincipal: manager }, draft),
       })
       return result.ok ? Object.freeze({ ok: true }) : refusal(HANDOVER_REFUSAL.notManaged)
     },

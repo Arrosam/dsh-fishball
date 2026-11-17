@@ -33,6 +33,8 @@ globalThis.__ModuleLoader__?.load({
     const FISH = Object.freeze({ on: 'on', off: 'off' })
     /** Cordis effect labels. */
     const LABEL = Object.freeze({ light: 'fishball: fish light', opened: 'fishball: clear on window open', notice: 'fishball: notify prompt' })
+    /** The window event after which the bubble measures the fish again (besides each frame, usePlace). */
+    const RESIZE_EVENT = 'resize'
 
     /**
      * The part as a client plugin.
@@ -58,13 +60,46 @@ globalThis.__ModuleLoader__?.load({
 
       /**
        * Where the bubble sits: beside the sidebar fish when it is on screen (with its tail toward
-       * the fish), else in the window's bottom-left corner (NOTICE_BUBBLE). Read at each render: the
-       * sidebar can move or close. @returns `{place, style}`.
+       * the fish), else in the window's bottom-left corner (NOTICE_BUBBLE). @returns `{place, style}`.
        */
       function bubblePlace() {
         const mark = document.querySelector(NOTICE.markSelector)?.getBoundingClientRect()
         if (mark === undefined || mark.width === 0) return { place: NOTICE_BUBBLE.place.corner, style: { left: NOTICE_BUBBLE.edgePx, bottom: NOTICE_BUBBLE.edgePx } }
         return { place: NOTICE_BUBBLE.place.mark, style: { left: mark.right + NOTICE_BUBBLE.gapPx, top: mark.top } }
+      }
+      const samePlace = (a, b) => a.place === b.place && a.style.left === b.style.left && a.style.top === b.style.top && a.style.bottom === b.style.bottom
+
+      /**
+       * The bubble's place, measured at each render and followed while `shown` (review UI-07): the
+       * sidebar collapses, moves or hides without a new snapshot, and DSH's overlay does not
+       * re-render on its geometry, so while a notice is up the fish is measured again on each
+       * animation frame and window resize (a resize lands before the next frame), and the bubble
+       * re-renders from the stored place only when it changed. No DSH
+       * anchored-overlay helper is exposed to plugins on 0.2.1-rc.5 or 0.2.2-rc.1. Nothing runs
+       * while no notice is shown. @returns `{place, style}`, or null while not shown.
+       */
+      function usePlace(shown) {
+        const [seen, setSeen] = React.useState(null)
+        React.useEffect(() => {
+          if (!shown) return undefined
+          let frame
+          // The state holds the last place measured (the first render measures once itself), so an
+          // unchanged place re-renders nothing.
+          const measure = () => {
+            const next = bubblePlace()
+            setSeen((previous) => (previous !== null && samePlace(previous, next) ? previous : next))
+          }
+          const onFrame = () => { measure(); frame = requestAnimationFrame(onFrame) }
+          frame = requestAnimationFrame(onFrame)
+          window.addEventListener(RESIZE_EVENT, measure)
+          return () => {
+            cancelAnimationFrame(frame)
+            window.removeEventListener(RESIZE_EVENT, measure)
+            // The next notice measures afresh instead of starting at this one's last place.
+            setSeen(null)
+          }
+        }, [shown])
+        return shown ? seen ?? bubblePlace() : null
       }
 
       /**
@@ -76,7 +111,7 @@ globalThis.__ModuleLoader__?.load({
       function makeNotice(t) {
         return function FishballNotice() {
           const { notice } = useSnapshot()
-          const at = notice === null ? null : bubblePlace()
+          const at = usePlace(notice !== null)
           return h('div', { role: 'status', 'data-fishball-notice-region': true },
             notice === null ? null : h('button', {
               type: 'button', className: CLS.notice, style: at.style, 'data-fishball-notice-place': at.place,
