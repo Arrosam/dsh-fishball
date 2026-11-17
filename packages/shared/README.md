@@ -9,7 +9,7 @@ It holds only modules that at least two Fishball-side packages use: a
 module with one user lives in that user. Today that is one module:
 
 - `./ui-seam`: the contract between `fishball-core` and `fishball-ui` (the status words, the
-  `fishballInstance.ui` seam), so fishball-ui never imports core.
+  `fishballInstance.ui` seam, and since MULTI-0 the target list `SEAM_TARGETS`), so fishball-ui never imports core.
 
 It imports no other Fishball package. The DSH side has its own library, `dsh-connector-shared`; no module
 is shared across the two sides.

@@ -102,6 +102,43 @@ Additions only; no frozen name or value changes meaning:
 - **`fishballInstance`** is provided by core's main row `fishball-core` (`src/main/`), beside
   `fishballStatus` (F-STATUS), in a standalone DSH and a hosted child alike.
 
+## MULTI-0 amendment (K3/K3a, 2026-11-18): multiple DSH targets
+
+Source: [PLAN-MULTI](<../../../docs/planning/v3-multi-dsh.md>) §3–§7 (D01–D11, Q01–Q12). Types in
+[targets.d.ts](<targets.d.ts>); core's values `TARGETS` and `MCP.identity` / `MCP.serverIdentity`
+([constants.js](<constants.js>)); fishball-ui's values `SEAM_TARGETS` (`fishball-shared/ui-seam`).
+
+| Point | Frozen as |
+| --- | --- |
+| Target record | `TargetRecord {id, kind, url, endpointEpoch, order, serverName, duplicateSuffix}`; storage `fishball_core_targets/targets` v1; no token value; no count cap (Q12) |
+| Ids | target `t-` + 16 base32 letters, epoch `e-` + 16; reserved parent id `parent`; a new epoch on every canonical-endpoint change |
+| List / status API | `fishballInstance.ui.targets` (`FishballTargets`): `list()` → `TargetsSnapshot {version: 1, targets: TargetView[]}`, `onChange`, `add`, `remove`, `setUrl`, `begin`, `cancel`, `retry`, `choose`, each by `targetId`. K3a's scalar `ui.link`, `ui.connect`, `ui.pairing` are withdrawn. Core's status snapshot carries `targets` beside the global `fishball`, `guards`, `set` |
+| Public state | `connected`, `connecting`, `failed`, `not-set` (rule in `SEAM_TARGETS`' comment); `name: null` shows the placeholder, never a URL (Q01) |
+| Routes | `SEAM_TARGETS.route`: POST `/api/fishball/targets/{connect,cancel,retry,pairing,add,remove,url}` with `{targetId, …}`; unknown id → 404 `unknown-target`; refusals `target-duplicate` (Q04), `target-reserved`, `confirmation-required` (Q07) |
+| Provenance | `TargetSource {targetId, endpointEpoch, serverName, name}` on every `InterceptedEvent` (`source`) and `AskCard` (`source`); only id/epoch are trusted |
+| Local keys | `JSON.stringify([kind, targetId, endpointEpoch, remoteId])`, kinds `event` / `approval` / `session`; plain-token form base64url of that JSON; manager message id `fbe_` + handle (two targets' `event-1` never dedupe) |
+| Ask handle | `AskCard.handle` (kind `approval`); `ui.asks.answer(handle, …)` and the answer route body `{handle, choice, text?}`; state `voided` for a removed/retired target |
+| Duplicate names | ` (n)`, n from 2, lowest free complete name (literal collisions count), persisted, never renumbers (D07, Q03) |
+| Tool names | `mcp__<readable≤16>__<facade>_<digest12>`, ≤ 64, `[A-Za-z0-9_-]`; digest SHA-256 of `JSON.stringify([1, targetId, endpointEpoch, name, origin, rawName])`; every exposed remote tool and the local `ask_user`; withheld, reminder and skill tools unprefixed; a name bound (or retired) for another tuple fails closed. Supersedes V3 §6.3's ban on model-facing `mcp__…` names. Examples below |
+| Target-bound seams | `fishballInstance.bridge(pluginId, ops, {targetId})`, `attention.signal(pluginId, input, {targetId})`; `apiVersion` 2 |
+| Hosted reservation | hosted child: first target `parent`/`parent`, URL = `dsh-instance-child.targetUrl`, read-only, not removable; it alone owns `DSH_AGENT_TOKEN`, `fishball-core/hosted-agent`, `fishball-core/pending-token-origin` |
+| Added credentials | reference `FISHBALL_TARGET_TOKEN_<id>__<epoch>` (`-` → `_`); records `fishball-core/token-<id>-<epoch>`, `fishball-core/connect-<id>-<epoch>` |
+| Identity push | subscribe `dsh-agent://events` and `dsh-agent://identity` on the one listen stream; on `notifications/resources/updated {uri: identity}` and after every listen acknowledgement, `client.discover()` at once (one in flight + dirty), read `_meta['io.modelcontextprotocol/serverInfo'].name`; no polling. Live only if `resources/list` lists the URI |
+| Unchanged | one manager, one reminder store, notify, CIMD URL (global, Q06), wire tool schemas, receipts, OAuth |
+
+Examples (normative for the slices; `t-a…`/`e-b…` stand for 16-letter ids):
+
+| Input | Result |
+| --- | --- |
+| A and B both advertise `Office-DSH` | A `Office-DSH` (suffix `null`), B `Office-DSH (2)`; A later renames to `Lab-DSH`: B stays `Office-DSH (2)`; a third `Office-DSH` gets `Office-DSH` (lowest free) |
+| A literal server name `Office-DSH (2)` already held | the next `Office-DSH` arrival is `Office-DSH (3)` if `Office-DSH` is held |
+| A and B both send `eventId` `event-1` | keys `["event","t-a…","e-a…","event-1"]` and `["event","t-b…","e-b…","event-1"]`: two records, two manager messages, each acked only through its own link |
+| A and B both offer `approvalId` `ap-1` | two cards, two handles; answering one sends `approval_answer` to its own target only |
+| `Office-DSH`, `sessions_list` | `mcp__office-dsh__sessions_list_<12 hex>` |
+| `办公室-DSH` | readable `dsh` |
+| `<b>x</b>` | readable `b-x-b`; the UI shows `<b>x</b>` as text |
+| 200-char name, `acme-tools.` + 48 chars | readable cut to 16, facade cut from the end, total exactly 64 |
+
 ## Interception
 
 - `intercept({pluginId, types, filter?, priority?}, onEvent) → dispose`. An invalid registration
