@@ -27,12 +27,12 @@
  * - committed: `PairStore.succeed` removes the old pair in the same atomic registry write that moves
  *   the name, so "the old entry has no pair" is the durable commit record. The mark alone never
  *   says the step committed.
- * `resume` reads both: a committed mark finishes the delete; a prepared one is rolled forward, by
- * running the same succession again (each participant moves whatever `from` still holds, so a run
- * that crashed halfway is completed, and one that moved nothing moves everything). Forward, not
- * back: a crash leaves no record of which sessions or events had moved, and the instance would ask
- * for the same succession at its next start anyway. A roll-forward that is refused (an entry was
- * deleted meanwhile) leaves the old entry unmarked and hosted, for the instance to retry or drop.
+ * `resume` reads both: a committed mark finishes the delete; a prepared one is cleared, so the old
+ * entry is hosted again and nothing of it is deleted. The instance then asks `retire` again at its
+ * next start (K3: "the instance retries at its next start"), and that `retire` completes a step that
+ * crashed halfway, since each participant moves whatever `from` still holds. The connector does not
+ * roll the step forward itself: the instance may have retargeted the succession to a newer entry
+ * meanwhile (a Reconnect), and only the instance knows its current successor.
  */
 import { principalLabel } from '../../mcp-schema/index.js'
 import { diagnosticOf } from '../errors.js'
@@ -152,7 +152,7 @@ export function createHostedTokens({ table, tokens, pairs, routing, writer, note
    * The succession's transfer between its journal marks (module comment): the old record is marked
    * prepared, routing moves every participant and calls `PairStore.succeed` as its commit (the
    * commit point for the name), and a refusal or a rejection unmarks the record again (a failing
-   * unmark is logged; the next start then rolls the step forward). C-WIRE-2 removed the designated
+   * unmark is logged; the next start then clears the mark). C-WIRE-2 removed the designated
    * role, so R-HOST-09 step 2 moves nothing (the user's answer q5, 2026-11-17: "Remove agentToken
    * entirely"). An old entry that never paired has no principal: nothing moves.
    * @returns routing's result (`{ok: true, sessions}` or a refusal)
@@ -271,33 +271,22 @@ export function createHostedTokens({ table, tokens, pairs, routing, writer, note
   return Object.freeze({
     service,
     /**
-     * Run once at start (C-WIRE), after the token registry's start sync and before the domain
-     * opens: finishes every succession journalled before the connector stopped (module comment).
-     * A committed one (the old entry has no pair) has its delete finished; a prepared one is
-     * unmarked and run again. A recovery step that fails is logged and left marked, so the next
-     * start tries again; it never fails the start.
-     * @returns the principal moves `[{from, to}]` a roll-forward completed: the domain moves their
-     *   grants before it reconciles them (no grant participant is registered this early)
+     * Run once at start (C-WIRE), after the token registry's start sync: settles every succession
+     * journalled before the connector stopped (module comment). A committed one (the old entry has
+     * no pair) has its delete finished; a prepared one has its mark cleared, for the instance's next
+     * `retire`. A clear that fails is logged and left marked, so the next start tries again; it
+     * never fails the start.
      */
     resume: () => serial(async () => {
-      const recovered = []
       for (const [entryKey, record] of [...table.entries()]) {
         if (record.succeededBy === undefined) continue
-        const oldPair = pairs.pairOf(entryKey)
-        if (oldPair === undefined) {
+        if (pairs.pairOf(entryKey) === undefined) {
           await deleteEntry(entryKey)
           continue
         }
         const { succeededBy, ...prepared } = record
-        try {
-          await table.put(entryKey, prepared)
-          const to = pairs.pairOf(succeededBy)?.principalKey
-          if ((await succeed(entryKey, succeededBy)).ok && to !== undefined) recovered.push(Object.freeze({ from: oldPair.principalKey, to }))
-        } catch (error) {
-          warn(LOG.recoveryFailed)(error)
-        }
+        await table.put(entryKey, prepared).catch(warn(LOG.recoveryFailed))
       }
-      return Object.freeze(recovered)
     }),
     /** Ends every background retry and waits for a running `retire`. */
     async close() {
