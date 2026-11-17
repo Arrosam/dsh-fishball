@@ -7,7 +7,10 @@
  * (core's own copy, design §1.0b row 1), the reconnect backoff in `LINK_BACKOFF`.
  */
 import { createRequire } from 'node:module'
-import { MCP } from '../../contracts/constants.js'
+import { CONNECT, MCP } from '../../contracts/constants.js'
+
+// Core's credential-record scope (K3a: Connect's grants and the hosted copy live under it).
+const CORE_RECORD_SCOPE = CONNECT.grantRecordScope
 
 // Core's own manifest is the one owner of its version, which the link reports as its clientInfo.
 const CORE_VERSION = createRequire(import.meta.url)('../../package.json').version
@@ -22,6 +25,9 @@ export const LINK_MCP = Object.freeze({
   clientInfo: Object.freeze({ name: 'fishball-core', version: CORE_VERSION }),
   versionPin: MCP.protocolVersion,
   eventsUri: MCP.events.uri,
+  // `inbox_poll`'s page argument (K1 `inbox_poll({cursor?, limit?})`); no limit is sent, so each
+  // page is the connector's default size.
+  cursorArgument: 'cursor',
   resourceUpdated: 'notifications/resources/updated',
   toolsListChanged: 'notifications/tools/list_changed',
   // A client-credentials client cannot widen its scope by re-authorizing, so a 403
@@ -61,7 +67,17 @@ export const LINK_MCP = Object.freeze({
  */
 export const LINK_SAVE = Object.freeze({
   hostedPayload: Object.freeze({ version: 1 }),
+  /**
+   * The origin a value in the credential reference was put there for (R-FIX F01; R-FB-03 "a changed
+   * target origin is a new first connection"): one record, `{v, ref, origin}`, the value's
+   * non-secret id (`credentialId`) and the target origin in force when core first saw it. The value
+   * is only ever sent to that origin; a new write of the reference binds it again. A record, not
+   * memory, so a restart between the write and the first connection keeps the binding.
+   */
+  pendingOrigin: Object.freeze({ key: CORE_RECORD_SCOPE + '/pending-token-origin', kind: 'grant', version: 1 }),
   grantRecordIdPrefix: 'connect-',
+  // The grant payload field holding the fishball id Connect passed as `agent_id` (R-FIX F10).
+  grantAgentIdField: 'agentId',
   originEncoding: 'hex',
   credentialId: Object.freeze({ tokenPrefix: 'token:', grantPrefix: 'grant:', domain: 'fishball-core credential id\n', digest: 'sha256', digestEncoding: 'hex' }),
   /** The `ConnectBegin` outcome with an approval URL (`connect.d.ts`), and DSH's `begin()` status word for a committed grant (dsh-authorization `AuthorizationStatus`). */

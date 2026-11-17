@@ -9,7 +9,10 @@
  * the same setup runs on create and resume, so a resumed session receives the current text.
  */
 import { PERSONA_PREFIX_SECTION, PERSONA_SUFFIX_SECTION } from '@deepseek-ai/dsh-system-prompt'
-import { PERSONA_ROW } from '../persona.js'
+import { HIDDEN_PROMPT_ENTRIES, PERSONA_ROW } from '../persona.js'
+
+/** The text a hidden entry is shadowed with: empty, so it contributes nothing. */
+const HIDDEN_TEXT = ''
 
 /** The registry's placement names; dsh-persona uses the same two for its row. */
 const SECTION_ORDER = Object.freeze({
@@ -18,7 +21,10 @@ const SECTION_ORDER = Object.freeze({
 })
 
 /**
- * Register Fishball's persona prefix and suffix in one prompt scope.
+ * Register Fishball's persona prefix and suffix in one prompt scope, and shadow the global prompt
+ * entries Fishball hides (HIDDEN_PROMPT_ENTRIES, R-FIX F18) with empty text: a scoped section or
+ * context shadows the global one of the same name, and empty text contributes nothing
+ * (dsh-system-prompt, both SDKs).
  * @param systemPrompt - the agent-scoped systemPrompt service.
  */
 export function applyPersona(systemPrompt) {
@@ -34,4 +40,8 @@ export function applyPersona(systemPrompt) {
     text: suffix,
   })
   if (!includeRuntimeContext) systemPrompt.suppressRuntimeContext()
+  for (const entry of HIDDEN_PROMPT_ENTRIES) {
+    if (entry.section) systemPrompt.section({ name: entry.name, order: systemPrompt.getSectionOrder(entry.orderName), text: HIDDEN_TEXT })
+    if (entry.context) systemPrompt.context({ name: entry.name, order: systemPrompt.getContextOrder(entry.orderName), text: HIDDEN_TEXT })
+  }
 }

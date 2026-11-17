@@ -56,6 +56,9 @@ const LIMIT = Object.freeze({
   secondMs: 1_000,
   offsetProbeMs: 172_800_000,
   millisecondDigits: 3,
+  // RFC 3339 §5.6 `time-numoffset`: hours 00–23, minutes 00–59.
+  maxOffsetHours: 23,
+  maxOffsetMinutes: 59,
 })
 
 /** The schedule tool's published title bound, also stated in the model-facing description. */
@@ -285,7 +288,8 @@ function normalizeWeekdays(value) {
 const INTEGER_TEXT = /^(?:0|[1-9]\d*)$/
 /** Cron fields tolerate leading zeros ("05"), as five-field cron spells them. */
 const CRON_NUMBER = /^\d+$/
-const AT_INSTANT = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?(?:Z|[+-]\d{2}:\d{2})$/
+/** An RFC 3339 instant split into its date, its time and its offset (`Z`, or sign, hours, minutes). */
+const AT_INSTANT = /^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?)(?:Z|([+-])(\d{2}):(\d{2}))$/
 const DATE_TEXT = /^(\d{4})-(\d{2})-(\d{2})$/
 
 function integerOf(value, code, message) {
@@ -306,7 +310,12 @@ function dateOfText(value) {
 function instantOfAt(value, now) {
   let instant
   if (typeof value === 'string') {
-    if (!AT_INSTANT.test(value)) fail(RULE_ERROR.rule, MESSAGE.at)
+    // Each part is checked by the rules the local form uses (a real calendar date, a clock time),
+    // so an impossible date is refused instead of rolling over into another day (R-FIX F15).
+    const match = AT_INSTANT.exec(value)
+    if (match === null || dateOfText(match[1]) === undefined) fail(RULE_ERROR.rule, MESSAGE.at)
+    normalizeTime(match[2])
+    if (match[3] !== undefined && (Number(match[4]) > LIMIT.maxOffsetHours || Number(match[5]) > LIMIT.maxOffsetMinutes)) fail(RULE_ERROR.rule, MESSAGE.at)
     instant = Date.parse(value)
   } else if (isRecord(value)) {
     const keys = Object.keys(value)

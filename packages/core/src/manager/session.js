@@ -53,6 +53,8 @@ const MANAGER_SESSION = Object.freeze({
   }),
   logger: 'fishball-manager-session',
   writerHeld: 'SessionAlreadyOwnedError',
+  /** dsh-session-persistence's refusal for an id with no durable log (both SDKs). */
+  logMissing: 'SessionPersistenceNotFoundError',
   missingFile: 'ENOENT',
   /** The durable model-selection event and request header DSH records for a Session. */
   modelEvent: Object.freeze({ selection: 'model/selection', header: 'request/header' }),
@@ -71,6 +73,7 @@ const MANAGER_SESSION = Object.freeze({
     recordNotJson: 'the manager session record is not JSON; it is ignored',
     recordNoSession: 'the manager session record names no session; it is ignored',
     resumeFailed: 'Fishball session %s could not be resumed (%s)',
+    recreated: 'Fishball session %s has no log; it is created again under the same id',
     storedElsewhere: 'Fishball session %s is stored under another folder (moved home); it stays outside the current folder\'s workspace',
     workspaceFailed: 'Fishball session %s could not join its workspace (%s: %s)',
     modelFailed: 'Fishball session %s could not apply its model (%s: %s)',
@@ -195,6 +198,9 @@ export function createManagerSession(ctx, options) {
   let activation
   // The sessionId() value listeners last heard, so they hear each change exactly once.
   let announced
+  // Each read of the model setting for applying it; a validation overtaken by a newer read never
+  // applies its older choice (R-FIX F06: last write wins).
+  let modelReads = 0
   let started = false
   let closed = false
 
@@ -274,12 +280,19 @@ export function createManagerSession(ctx, options) {
   }
 
   /**
-   * The selection the live manager should run on: the routable setting, or DSH's current default
-   * when the setting is unset or unroutable (a session that once ran on the setting goes back to the
-   * default when the setting is cleared). `undefined` when DSH reports no default.
+   * The routable setting (`chosen`) and the selection the live manager should run on (`selection`:
+   * `chosen`, or DSH's current default when the setting is unset or unroutable; a session that once
+   * ran on the setting goes back to the default when the setting is cleared; `undefined` when DSH
+   * reports no default), for the newest setting. Routability is asynchronous, so the setting may
+   * change while it is checked: a read overtaken by a newer one is not used, and the newest read's
+   * answer is awaited instead, so concurrent callers all apply the latest setting.
    */
-  async function effectiveSelection() {
-    return (await chosenSelection()) ?? defaultSelection()
+  async function latestSelection() {
+    for (;;) {
+      const read = ++modelReads
+      const chosen = await chosenSelection()
+      if (read === modelReads) return { read, chosen, selection: chosen ?? defaultSelection() }
+    }
   }
 
   function agentOptions(selection) {
@@ -371,8 +384,13 @@ export function createManagerSession(ctx, options) {
 
   async function createSession(agents, selection) {
     const id = MANAGER_SESSION.sessionPrefix + randomUUID()
-    await ensureFolder()
     await record(id)
+    return createWithId(agents, id, selection)
+  }
+
+  /** Create the Session the record names (the record is written already). */
+  async function createWithId(agents, id, selection) {
+    await ensureFolder()
     const handle = await agents.create({
       sessionId: id, meta: { cwd, ...(presetId === undefined ? {} : { agentPreset: presetId }) }, agentOptions: agentOptions(selection), setup: configure,
     })
@@ -386,6 +404,14 @@ export function createManagerSession(ctx, options) {
       } catch (error) {
         const live = agents.get(id)
         if (live !== undefined) return live
+        // The record names a Session with no log: its first create failed before DSH made it, or
+        // the log was removed. It is created under the same id, as DSH's own restore-or-create
+        // does (dsh-agent-loop, both SDKs), so the manager is not unavailable for good (R-FIX F05,
+        // the user's decision 2026-11-18). Only that refusal creates: it proves there is no log.
+        if (error?.name === MANAGER_SESSION.logMissing) {
+          logger?.warn(MANAGER_SESSION.log.recreated, id)
+          return createWithId(agents, id, selection)
+        }
         // A start while another writer still holds the log waits briefly, exactly as the legacy
         // lifecycle does; every other refusal is reported, never replaced by a silently created
         // second Session.
@@ -524,8 +550,8 @@ export function createManagerSession(ctx, options) {
     // unset, so DSH applies its own default as for any session); the sync below then moves a session
     // that still runs on an earlier setting back to the default, and selects nothing when it already
     // runs on it (on 0.2.1 every select appends a log event).
-    const chosen = await chosenSelection()
-    const selection = chosen ?? defaultSelection()
+    let read = await latestSelection()
+    const { chosen } = read
     await resolvePreset()
     if (closed) unavailable()
     const existing = sessionId === undefined ? undefined : agents.get(sessionId)
@@ -533,7 +559,11 @@ export function createManagerSession(ctx, options) {
     if (closed) unavailable()
     if (existing && agent !== existing) await composeOwn(existing.ctx, existing)
     if (closed) unavailable()
-    syncModel(live, selection)
+    // A read of the setting made while the Session opened (`applyModel`) is newer: the latest is
+    // applied, never the choice this open started with.
+    if (read.read !== modelReads) read = await latestSelection()
+    if (closed) unavailable()
+    syncModel(live, read.selection)
     agent = live
     announce()
     // The factory has now published the fully configured scope. Recovery may drive
@@ -600,8 +630,13 @@ export function createManagerSession(ctx, options) {
    * activates the Session: one not yet open gets the setting when it opens. Never rejects.
    */
   async function applyModel() {
-    if (liveAgent() === undefined) return
-    const selection = await effectiveSelection()
+    if (liveAgent() === undefined) {
+      // No live manager to apply to; an open in flight read the setting before this change, so
+      // its read is marked overtaken and the open applies the newest setting (`open`).
+      modelReads += 1
+      return
+    }
+    const { selection } = await latestSelection()
     // The agent may have closed or been replaced while the catalog was read.
     const live = liveAgent()
     if (live !== undefined) syncModel(live, selection)

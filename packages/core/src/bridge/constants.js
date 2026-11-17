@@ -51,6 +51,8 @@ export const FACADE = Object.freeze({
   sendOperations: Object.freeze({ [TOOL.sessionMessage]: X19_OPERATION.sessionMessage, [TOOL.sessionRedirect]: X19_OPERATION.sessionRedirect }),
   /** The tools that bring image bytes into Fishball's context, behind the image gate. */
   imageTools: Object.freeze([TOOL.attachmentRead]),
+  /** The image tool result's field holding the base64 chunks (K1 `attachment_read`). */
+  imageChunksField: 'chunks',
   /** The argument of a send tool naming its target session (K1 `session_message` input). */
   sessionArgument: 'sessionId',
   /** embed-UI's contributed attention tool (design §13.6), as the link lists it. */

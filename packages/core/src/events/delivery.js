@@ -34,22 +34,8 @@ import { freezeMessage } from '@deepseek-ai/dsh-llm'
 import { MESSAGE, PRESENT_RETRY, REASON, STATE, TEXT } from '../../contracts/constants.js'
 import { HOST, LOG } from './constants.js'
 import { codeOf } from './diagnostics.js'
+import { REDELIVER, claimVerdict, createOwnRemovals, whenTrulyIdle } from './handover.js'
 import { messageIdOf } from './ledger.js'
-
-const REDELIVER = Symbol('redeliver')
-
-/**
- * What the end of the turn that claimed an event, before admitting it, means (the user's decision
- * 2026-11-14 1.B; S2-Q3 A). Such a claim reached no model (S2 §2.1 item 5).
- * - owner teardown (`aborted` by `disposed`, which is not the user's decision): deliver again;
- * - a user Stop: discard (S2-Q3 A);
- * - an error, a blocked step, a stop by a parent or a hook, or any other end: discard.
- * @returns {string|symbol} a REASON to discard with, or REDELIVER.
- */
-function claimVerdict(end) {
-  if (end?.kind === HOST.aborted && end.reason?.kind === HOST.causeDisposed) return REDELIVER
-  return end?.kind === HOST.aborted && end.reason?.kind === HOST.causeUser ? REASON.userStopped : REASON.claimTurnEnded
-}
 
 /** The backoff (K3 PRESENT_RETRY, DECIDED D1) before attempt n + 1 of presenting an event (n is 1-based). */
 const backoffAfter = (attempt) => PRESENT_RETRY.backoffMs * PRESENT_RETRY.backoffFactor ** (attempt - 1)
@@ -92,6 +78,8 @@ export function createDelivery({ ledger, fishball, logger, delay = realDelay }) 
   /** Ledger writes of admissions not yet durable; the flush checkpoint waits for them. */
   const writes = new Set()
   const watched = new WeakSet()
+  // Core's own removal of a stale copy before its hand-over is not the user's discard (R-FIX F11).
+  const ownRemovals = createOwnRemovals()
   let draining = false
   // A drain asked for while one runs; honoured as soon as that one ends, so no request is lost.
   let again = false
@@ -122,9 +110,14 @@ export function createDelivery({ ledger, fishball, logger, delay = realDelay }) 
     claimed.delete(messageId)
     prepared.delete(eventId)
     backingOff.delete(eventId)
+    dequeue(eventId)
+    return eventId
+  }
+
+  /** Take `eventId` off the list, wherever it is: a reentrant callback may have moved the head. */
+  function dequeue(eventId) {
     const index = queue.indexOf(eventId)
     if (index >= 0) queue.splice(index, 1)
-    return eventId
   }
 
   function finish(eventId, state, reason) {
@@ -191,22 +184,10 @@ export function createDelivery({ ledger, fishball, logger, delay = realDelay }) 
     const mine = (payload) => !closed && payload.agent === agent && tracked.has(payload.message?.id)
     agent.ctx.on(HOST.inboxClaimed, (payload) => { if (mine(payload)) claimed.set(payload.message.id, agent) })
     // B1 (2026-11-14): any removal counts as the user's; see the header.
-    agent.ctx.on(HOST.inboxDiscarded, (payload) => { if (mine(payload)) settleOne(payload.message.id, STATE.discarded, REASON.userStopped) })
+    agent.ctx.on(HOST.inboxDiscarded, (payload) => { if (mine(payload) && !ownRemovals.isOwn(payload.message.id)) settleOne(payload.message.id, STATE.discarded, REASON.userStopped) })
     agent.ctx.on(HOST.sessionEvent, (session, event) => { if (!closed && session === agent.session) observe(agent, event) })
     agent.ctx.on(HOST.sessionFlush, (session) => (session === agent.session ? Promise.all([...writes]) : undefined))
     agent.ctx.on(HOST.agentStatus, ({ status }) => { if (status === HOST.idle && !closed) void drain() })
-  }
-
-  /** Run `job` under the agent's true-idle maintenance, or retry once it is idle again. */
-  function whenTrulyIdle(agent, job) {
-    try {
-      return agent.runMaintenance(job)
-    } catch {
-      // Another owner holds the agent (a turn, or another plugin's maintenance, which emits no
-      // status edge); whenIdle follows both (dsh-agent runMaintenance contract).
-      void agent.whenIdle().then(() => { if (!closed) void drain() })
-      return undefined
-    }
   }
 
   /**
@@ -278,16 +259,16 @@ export function createDelivery({ ledger, fishball, logger, delay = realDelay }) 
     if (!prepared.has(eventId)) {
       const record = ledger.get(eventId)
       const content = contentOf(record)
-      if (content === undefined) { queue.shift(); again = true; return }
+      if (content === undefined) { dequeue(eventId); again = true; return }
       prepared.set(eventId, messageOf(record, content))
     }
     const message = prepared.get(eventId)
     // "Fully idle" is the true-idle claim of runMaintenance. Parked input is not waited for: in an
     // idle agent it never wakes by itself (S2 §2.1 item 3), so waiting would hold the event forever.
     // A copy left pending by an earlier generation is removed first, so one id is pending once.
-    const task = whenTrulyIdle(agent, async () => { agent.inbox.remove(message.id); agent.followup(message) })
+    const task = whenTrulyIdle(agent, async () => { ownRemovals.remove(agent, message.id); agent.followup(message) }, () => { if (!closed) void drain() })
     if (task === undefined) return
-    queue.shift()
+    dequeue(eventId)
     prepared.delete(eventId)
     task.catch((error) => {
       logger?.warn(LOG.deliverFailed, eventId, codeOf(error))

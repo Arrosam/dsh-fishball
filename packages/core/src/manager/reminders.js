@@ -16,7 +16,18 @@
  *   the same on every supported DSH version;
  * - every task is written to `<profile home>/fishball/reminders.json` before it is acknowledged,
  *   so a restart loses nothing. On startup a missed one-shot fires once and a missed recurring
- *   task fires once for its latest occurrence, then keeps its cadence;
+ *   task fires once for its latest occurrence, then keeps its cadence. The store is bounded
+ *   (`STORE.maxBytes`): a change that would outgrow it is refused, and a store that cannot be read
+ *   whole makes the tools unavailable rather than being read as empty and overwritten (R-FIX F07);
+ * - a reminder whose last occurrence was delivered is removed at once, so ended reminders never
+ *   pile up (the user's decision 2026-11-18, "响过立刻删");
+ * - delivery (R-FIX F08) uses the hand-over the events use (events/handover.js): a due occurrence
+ *   is first recorded durably as the task's `pending` occurrence with a fixed message id, then
+ *   handed to the manager inside `runMaintenance` (true idle, as its own turn), one at a time. It
+ *   counts as delivered only when the session admits that message. A user Stop of the turn that
+ *   claimed it, or any removal of the queued message, drops the occurrence (the user's decision
+ *   2026-11-18: "如果被停止了就丢掉"); owner teardown of that turn, and a restart with the
+ *   occurrence still pending, hand it over again (the tool's "Delivery can repeat after a crash");
  * - the agent gets `schedule_create`, `schedule_list`, `schedule_update` and `schedule_delete`
  *   with the schedule tool's names and parameters, so the persona and the model's habits carry
  *   over from the main DSH. They are registered only into the scope the caller passes to
@@ -25,8 +36,10 @@
 import path from 'node:path'
 import { randomUUID } from 'node:crypto'
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
-import { createUserMessage } from '@deepseek-ai/dsh-llm'
+import { freezeMessage } from '@deepseek-ai/dsh-llm'
 import { defineTool } from '@deepseek-ai/dsh-tools'
+import { HOST } from '../events/constants.js'
+import { REDELIVER, claimVerdict, createOwnRemovals, whenTrulyIdle } from '../events/handover.js'
 import { TOOL } from './reminder-tools.js'
 import {
   advance,
@@ -43,8 +56,11 @@ import {
 } from './reminder-schedule.js'
 
 const LOGGER = 'fishball-native-reminders'
-/** The one boundary failure the tools return as data: the durable store could not be read. */
-const ERROR = Object.freeze({ unavailable: 'schedule-unavailable' })
+/**
+ * The boundary failures the tools return as data: the durable store could not be read, or a change
+ * would make it larger than it may be (`STORE.maxBytes`).
+ */
+const ERROR = Object.freeze({ unavailable: 'schedule-unavailable', full: 'schedule-store-full' })
 
 /** Stable result codes this module returns as data, mirroring the schedule service's own. */
 const CODE = Object.freeze({
@@ -56,6 +72,7 @@ const CODE = Object.freeze({
 const MESSAGE = Object.freeze({
   // Model-facing (a tool result), so the wording is kept as it was.
   unavailable: 'The child reminder store is unavailable.',
+  full: 'The reminder store is full. Delete reminders that are no longer needed, then try again.',
   toolFailed: 'The schedule operation failed.',
   subagent: 'A delegated subagent cannot use scheduled tasks.',
   toolSelector: 'the tool selector is malformed.',
@@ -67,8 +84,9 @@ const MESSAGE = Object.freeze({
 
 /**
  * Stored task states; `schedule_list` reports them as each reminder's `status`. Nothing sets
- * `paused` since the V2 page API went (F-WIRE); it stays a valid stored state so a store holding
- * one still loads and lists it rather than being refused.
+ * `paused` since the V2 page API went (F-WIRE), nor `ended` since a delivered last occurrence
+ * removes its reminder (R-FIX F07); both stay valid stored states so an older store still loads
+ * (a `paused` task is listed, an `ended` one is dropped on load).
  */
 const TASK_STATUS = Object.freeze({ active: 'active', paused: 'paused', ended: 'ended' })
 
@@ -83,7 +101,9 @@ const STORE = Object.freeze({
   directoryMode: 0o700,
   fileMode: 0o600,
   tempSuffix: '.tmp',
+  // The largest store a load reads; a write that would exceed it is refused (R-FIX F07).
   maxBytes: 4_194_304,
+  encoding: 'utf8',
 })
 
 /** Node timers clamp above this; a longer wait is re-armed when the timer fires. */
@@ -98,6 +118,22 @@ const DELIVERY = Object.freeze({
   idField: 'schedule_id_json',
   occurrenceField: 'occurrence_at',
   promptField: 'reminder_prompt_json',
+  /** The delivered message: a user-role message with core's own id, stored with its occurrence. */
+  role: 'user',
+  messageIdPrefix: 'fbr_',
+  blockType: 'text',
+})
+
+/** Background log lines of the store and delivery (printf format); never a prompt or a title. */
+const LOG = Object.freeze({
+  unreadable: 'the reminder store could not be read (%s); the reminder tools are unavailable',
+  tooLarge: 'the reminder store is too large; the reminder tools are unavailable until it is fixed',
+  notJson: 'the reminder store is not JSON; the reminder tools are unavailable until it is fixed',
+  badShape: 'the reminder store has an unexpected shape; the reminder tools are unavailable until it is fixed',
+  ended: '%d ended reminder(s) were removed from the store',
+  notDelivered: 'reminder %s was not delivered (%s)',
+  settleFailed: 'reminder %s: its delivery could not be recorded (%s)',
+  handOverFailed: 'reminder %s could not be handed to its agent (%s)',
 })
 
 /** Fields a reminder view keeps; target ids and Host bookkeeping never leave this module. */
@@ -260,7 +296,7 @@ function exactRecord(value, fields) {
 /** Decode one stored task; any damaged part drops only that task. */
 function decodeTask(value) {
   if (!isRecord(value)) return undefined
-  const { sessionId, status, createdAt, updatedAt, lastDelivery } = value
+  const { sessionId, status, createdAt, updatedAt, lastDelivery, pending } = value
   if (typeof sessionId !== 'string' || sessionId === '') return undefined
   if (!Object.hasOwn(TASK_STATUS, status)) return undefined
   if (typeof createdAt !== 'string' || !Number.isFinite(Date.parse(createdAt))) return undefined
@@ -277,7 +313,27 @@ function decodeTask(value) {
     }
     task.lastDelivery = receipt
   }
+  if (pending !== undefined) {
+    const occurrence = decodePending(pending)
+    if (occurrence === undefined) return undefined
+    task.pending = occurrence
+  }
   return Object.freeze(task)
+}
+
+const isInstantText = (value) => typeof value === 'string' && Number.isFinite(Date.parse(value))
+
+/** The occurrence a task was handed over for and not yet admitted, `{messageId, occurrenceAt, nextScheduledAt?}`. */
+function decodePending(value) {
+  if (!isRecord(value) || typeof value.messageId !== 'string' || value.messageId === '' || !isInstantText(value.occurrenceAt)) return undefined
+  if (value.nextScheduledAt !== undefined && !isInstantText(value.nextScheduledAt)) return undefined
+  return Object.freeze({ messageId: value.messageId, occurrenceAt: value.occurrenceAt, ...(value.nextScheduledAt === undefined ? {} : { nextScheduledAt: value.nextScheduledAt }) })
+}
+
+/** `task` without its pending occurrence. */
+function withoutPending(task) {
+  const { pending: _pending, ...rest } = task
+  return rest
 }
 
 function renderFraming(record, occurrenceAt) {
@@ -294,8 +350,8 @@ function renderFraming(record, occurrenceAt) {
  * Create the reminder store and its delivery over a row's Cordis context.
  *
  * @param {object} ctx - the owning row's context; it must have `get` and `on`.
- *   `profileContext.home` names the private store, `sessions` acknowledges a delivery, and
- *   `effect` (when present) stops the timer with the row.
+ *   `profileContext.home` names the private store, and `effect` (when present) stops the timer
+ *   with the row.
  * @param {object} [options]
  * @param {(sessionId: string, next: () => Promise<object|undefined>) => Promise<object|undefined>}
  *   [options.resolveAgent] - the caller's activation owner. Delivery resumes the reminder's target
@@ -330,6 +386,14 @@ export function createReminders(ctx, options = {}) {
   let driving = false
   let requested = false
   let failed = new Set()
+  // Delivery in this process (module header): message id → reminder id of each occurrence handed
+  // over and not settled; message id → the agent whose turn claimed it; the agents followed; and
+  // the occurrences whose settlement could not be written, never handed over again in this process.
+  const handed = new Map()
+  const claimed = new Map()
+  const watched = new WeakSet()
+  const unsettled = new Set()
+  const ownRemovals = createOwnRemovals()
 
   const ready = load()
 
@@ -340,53 +404,63 @@ export function createReminders(ctx, options = {}) {
     return run
   }
 
+  /**
+   * Reads the store. A missing file is an empty store. A store that exists but cannot be read
+   * whole (unreadable, too large, not JSON, another shape) closes the store (`storeError`): the
+   * tools answer `schedule-unavailable` and nothing is written over it, so no acknowledged reminder
+   * is lost by a later write (R-FIX F07). Ended reminders of an older store are dropped.
+   */
   async function load() {
     let raw
     try {
-      raw = await readFile(file, 'utf8')
+      raw = await readFile(file, STORE.encoding)
     } catch (error) {
-      if (error?.code !== 'ENOENT') {
-        storeError = error
-        logger?.warn('the reminder store could not be read (%s)', codeOf(error))
-      }
+      if (error?.code !== 'ENOENT') closeStore(error, LOG.unreadable, codeOf(error))
       return
     }
-    if (Buffer.byteLength(raw, 'utf8') > STORE.maxBytes) {
-      logger?.warn('the reminder store is too large; it is ignored')
-      return
-    }
+    if (Buffer.byteLength(raw, STORE.encoding) > STORE.maxBytes) return closeStore(ERROR.unavailable, LOG.tooLarge)
     let parsed
     try {
       parsed = JSON.parse(raw)
     } catch {
-      logger?.warn('the reminder store is not JSON; it is ignored')
-      return
+      return closeStore(ERROR.unavailable, LOG.notJson)
     }
-    if (!isRecord(parsed) || parsed.version !== STORE.version || !Array.isArray(parsed.tasks)) {
-      logger?.warn('the reminder store has an unexpected shape; it is ignored')
-      return
-    }
+    if (!isRecord(parsed) || parsed.version !== STORE.version || !Array.isArray(parsed.tasks)) return closeStore(ERROR.unavailable, LOG.badShape)
     const loaded = []
     let ignored = 0
+    let ended = 0
     for (const value of parsed.tasks) {
       const task = decodeTask(value)
       if (task === undefined) ignored += 1
+      else if (task.status === TASK_STATUS.ended) ended += 1
       else loaded.push(task)
     }
     if (ignored > 0) logger?.warn('%d stored reminder(s) were ignored as malformed', ignored)
+    if (ended > 0) logger?.info?.(LOG.ended, ended)
     tasks = loaded
   }
 
-  async function persist(next) {
+  function closeStore(reason, line, ...values) {
+    storeError = reason
+    logger?.warn(line, ...values)
+  }
+
+  async function persist(text) {
     await mkdir(directory, { recursive: true, mode: STORE.directoryMode })
     const temporary = file + STORE.tempSuffix
-    await writeFile(temporary, JSON.stringify({ version: STORE.version, tasks: next }) + '\n', { mode: STORE.fileMode })
+    await writeFile(temporary, text, { mode: STORE.fileMode })
     await rename(temporary, file)
   }
 
-  /** Durability before visibility: a failed write leaves the previous tasks in place. */
+  /**
+   * Durability before visibility: a failed write leaves the previous tasks in place. A closed store
+   * is never written, and a store that would outgrow what a load reads is refused before writing.
+   */
   async function commit(next) {
-    await persist(next)
+    if (storeError !== undefined) unavailable()
+    const text = JSON.stringify({ version: STORE.version, tasks: next }) + '\n'
+    if (Buffer.byteLength(text, STORE.encoding) > STORE.maxBytes) throw new ReminderStoreError(ERROR.full, MESSAGE.full)
+    await persist(text)
     tasks = next
   }
 
@@ -418,14 +492,18 @@ export function createReminders(ctx, options = {}) {
       const prompt = patch.prompt ?? current.record.prompt
       let record = current.record
       let status = current.status
+      let base = current
       if (patch.timing !== undefined) {
         record = recordFor({ id, title, prompt, timing: patch.timing, now })
         status = TASK_STATUS.active
+        // The pending occurrence belonged to the old timing: a message already handed over stays
+        // queued (as on delete), and its admission no longer moves this reminder.
+        base = withoutPending(current)
       } else if (patch.title !== undefined || patch.prompt !== undefined) {
         record = Object.freeze({ ...record, title: normalizeTitle(title), prompt: normalizePrompt(prompt) })
       }
       if (record === current.record && status === current.status) return { task: current }
-      const updated = Object.freeze({ ...current, record, status, updatedAt: new Date(now).toISOString() })
+      const updated = Object.freeze({ ...base, record, status, updatedAt: new Date(now).toISOString() })
       const next = [...tasks]
       next[index] = updated
       await commit(next)
@@ -444,60 +522,144 @@ export function createReminders(ctx, options = {}) {
 
   // ── delivery ─────────────────────────────────────────────────────────────────────────────────
 
-  /** Deliver one task and resolve the occurrence it stands for; a refusal throws. */
-  async function deliver(task, now) {
-    if (typeof resolveAgent !== 'function') throw new Error('no activation owner is configured')
-    const agent = await resolveAgent(task.sessionId, async () => undefined)
-    if (agent === undefined) throw new Error('no live Agent owns the reminder target')
+  const isDue = (task, now) => task.status === TASK_STATUS.active && task.pending === undefined && Date.parse(task.record.scheduledAt) <= now
+
+  /** Records the due occurrence of `task` as pending, with the message id it is delivered under. */
+  async function markPending(task, now) {
     const occurrence = advance(task.record, now)
-    const message = createUserMessage({
-      content: [{ type: 'text', text: renderFraming(task.record, occurrence.occurrenceAt) }],
+    const pending = Object.freeze({
+      messageId: DELIVERY.messageIdPrefix + randomUUID(),
+      occurrenceAt: occurrence.occurrenceAt,
+      ...(occurrence.nextScheduledAt === undefined ? {} : { nextScheduledAt: occurrence.nextScheduledAt }),
+    })
+    const index = tasks.findIndex((candidate) => candidate.record.id === task.record.id)
+    if (index === -1) return
+    const next = [...tasks]
+    next[index] = Object.freeze({ ...task, pending })
+    await commit(next)
+  }
+
+  /** The message of a task's pending occurrence; the same id every time it is handed over. */
+  function messageOf(task) {
+    return freezeMessage({
+      id: task.pending.messageId,
+      role: DELIVERY.role,
+      content: [{ type: DELIVERY.blockType, text: renderFraming(task.record, task.pending.occurrenceAt) }],
       source: { kind: DELIVERY.source },
     })
-    agent.followup(message)
-    // The receipt is durable only after the Session log accepted the message; marking it
-    // delivered first could lose the reminder if persistence then refuses.
-    const sessions = ctx.get('sessions')
-    if (typeof sessions?.flush !== 'function') throw new Error('the Session service cannot acknowledge a reminder')
-    if (!await sessions.flush(agent.session)) throw new Error('Session persistence did not acknowledge the reminder')
-    return occurrence
   }
 
   /**
-   * Deliver every due task once. A failed delivery stays active but is left out of this pass's
-   * timer, so one unreachable target cannot spin the loop; the next change or restart retries it.
+   * Hands one pending occurrence to its agent as its own turn, under true-idle maintenance (a copy
+   * an earlier process left pending is removed first, so one id is pending once). An agent that is
+   * not idle refuses; the next idle edge drives again. A refusal of the activation throws.
+   */
+  async function handOver(task) {
+    if (typeof resolveAgent !== 'function') throw new Error('no activation owner is configured')
+    const agent = await resolveAgent(task.sessionId, async () => undefined)
+    if (agent === undefined) throw new Error('no live Agent owns the reminder target')
+    if (closed) return
+    watch(agent)
+    const message = messageOf(task)
+    const job = whenTrulyIdle(agent, async () => { ownRemovals.remove(agent, message.id); agent.followup(message) }, () => requestDrive())
+    if (job === undefined) return
+    handed.set(message.id, task.record.id)
+    job.catch((error) => {
+      logger?.warn(LOG.handOverFailed, task.record.id, codeOf(error))
+      if (handed.delete(message.id)) requestDrive()
+    })
+  }
+
+  /**
+   * Follows one agent's public live events, as the event delivery does: a claim of a handed-over
+   * message, its removal before admission, its admission and the claiming turn's end, and idle.
+   */
+  function watch(agent) {
+    if (watched.has(agent)) return
+    watched.add(agent)
+    const mine = (payload) => !closed && payload.agent === agent && handed.has(payload.message?.id)
+    agent.ctx.on(HOST.inboxClaimed, (payload) => { if (mine(payload)) claimed.set(payload.message.id, agent) })
+    // Any removal but core's own counts as the user's: a Stop clears the queued message.
+    agent.ctx.on(HOST.inboxDiscarded, (payload) => { if (mine(payload) && !ownRemovals.isOwn(payload.message.id)) settle(payload.message.id, false) })
+    agent.ctx.on(HOST.sessionEvent, (session, event) => { if (!closed && session === agent.session) observe(agent, event) })
+    agent.ctx.on(HOST.agentStatus, ({ status }) => { if (status === HOST.idle) requestDrive() })
+  }
+
+  function observe(agent, event) {
+    const messageId = event.data?.id
+    if (event.type === HOST.userMessage && handed.has(messageId)) return settle(messageId, true)
+    if (event.type !== HOST.turnEnd) return undefined
+    const verdict = claimVerdict(event.data?.reason)
+    for (const [claimedId, owner] of [...claimed]) {
+      if (owner !== agent) continue
+      if (verdict !== REDELIVER) { settle(claimedId, false); continue }
+      // Owner teardown: the occurrence stays pending and is handed over again.
+      claimed.delete(claimedId)
+      handed.delete(claimedId)
+      requestDrive()
+    }
+    return undefined
+  }
+
+  /**
+   * The end of one handed-over occurrence: admitted (`delivered`) records its receipt, dropped (a
+   * Stop) does not; either way a one-shot reminder is removed and a recurring one moves on to its
+   * next occurrence. A reminder changed or deleted meanwhile (another pending id) is left alone.
+   */
+  function settle(messageId, delivered) {
+    const reminderId = handed.get(messageId)
+    handed.delete(messageId)
+    claimed.delete(messageId)
+    void mutate(async () => {
+      if (closed) return
+      const index = tasks.findIndex((task) => task.record.id === reminderId && task.pending?.messageId === messageId)
+      if (index === -1) return
+      const task = tasks[index]
+      const { pending } = task
+      const settledAt = new Date().toISOString()
+      const next = [...tasks]
+      if (pending.nextScheduledAt === undefined) next.splice(index, 1)
+      else {
+        next[index] = Object.freeze({
+          ...withoutPending(task),
+          record: Object.freeze({ ...task.record, scheduledAt: pending.nextScheduledAt }),
+          ...(delivered ? { lastDelivery: { scheduledAt: pending.occurrenceAt, deliveredAt: settledAt } } : {}),
+          updatedAt: settledAt,
+        })
+      }
+      try { await commit(next) } catch (error) {
+        unsettled.add(messageId)
+        logger?.warn(LOG.settleFailed, reminderId, codeOf(error))
+      }
+    }).catch((error) => logger?.warn(LOG.settleFailed, reminderId, codeOf(error))).finally(() => requestDrive())
+  }
+
+  /**
+   * Every due task becomes a pending occurrence, durably; then, while no occurrence is handed over,
+   * the oldest pending one is handed over. A failed step leaves the task out of this pass and its
+   * timer, so one unreachable target cannot spin the loop; the next change, idle edge or restart
+   * retries it.
    */
   async function deliverDue() {
     failed = new Set()
     const due = tasks
-      .filter((task) => task.status === TASK_STATUS.active && Date.parse(task.record.scheduledAt) <= Date.now())
+      .filter((task) => isDue(task, Date.now()))
       .sort((left, right) => Date.parse(left.record.scheduledAt) - Date.parse(right.record.scheduledAt))
     for (const task of due) {
       if (closed) return
-      const index = tasks.findIndex((candidate) => candidate.record.id === task.record.id)
-      if (index === -1) continue
-      try {
-        const occurrence = await deliver(task, Date.now())
-        const deliveredAt = new Date().toISOString()
-        const record = Object.freeze({
-          ...task.record,
-          scheduledAt: occurrence.nextScheduledAt ?? occurrence.occurrenceAt,
-        })
-        const status = occurrence.nextScheduledAt === undefined ? TASK_STATUS.ended : TASK_STATUS.active
-        const updated = Object.freeze({
-          ...task,
-          record,
-          status,
-          lastDelivery: { scheduledAt: occurrence.occurrenceAt, deliveredAt },
-          updatedAt: deliveredAt,
-        })
-        const next = [...tasks]
-        next[index] = updated
-        await commit(next)
-      } catch (error) {
+      try { await markPending(task, Date.now()) } catch (error) {
         failed.add(task.record.id)
-        logger?.warn('reminder %s was not delivered (%s)', task.record.id, codeOf(error))
+        logger?.warn(LOG.notDelivered, task.record.id, codeOf(error))
       }
+    }
+    if (closed || handed.size > 0) return
+    const next = tasks
+      .filter((task) => task.pending !== undefined && !unsettled.has(task.pending.messageId) && !failed.has(task.record.id))
+      .sort((left, right) => Date.parse(left.pending.occurrenceAt) - Date.parse(right.pending.occurrenceAt))[0]
+    if (next === undefined) return
+    try { await handOver(next) } catch (error) {
+      failed.add(next.record.id)
+      logger?.warn(LOG.notDelivered, next.record.id, codeOf(error))
     }
   }
 
@@ -512,7 +674,7 @@ export function createReminders(ctx, options = {}) {
     if (closed) return
     let next
     for (const task of tasks) {
-      if (task.status !== TASK_STATUS.active || failed.has(task.record.id)) continue
+      if (task.status !== TASK_STATUS.active || task.pending !== undefined || failed.has(task.record.id)) continue
       const at = Date.parse(task.record.scheduledAt)
       if (next === undefined || at < next) next = at
     }
