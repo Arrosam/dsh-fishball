@@ -109,6 +109,9 @@ export const STDERR_ROWS = Object.freeze([
     [['key=a key=a key=a ' + 'z'.repeat(13), `key=${MASK} key` + CUT]], '', ['zzz'], 30),
   row('STDERR-BVA-06', 'second cut mid character', 'the second cut backs off to a character boundary too',
     [['key=a éé ' + 'z'.repeat(20), `key=${MASK} é` + CUT]], '', ['zzz'], 30),
+  // F2 (the third review): the head '{"tokens":["ab]' + 30 c + ' ' ends inside a string, so redacted alone it masks to its end.
+  row('STDERR-BVA-06', 'head ends inside a container string', 'the head is cut after its last whitespace, redacted alone (the string runs to its end), then the mark',
+    [['{"tokens":["ab]' + 'c'.repeat(30) + ' ' + 'd'.repeat(40), `{"tokens":${MASK}` + CUT]], '', ['ab]', 'ccc', 'ddd']),
   // The review's cap-40 probe: the head 'abc password="x y ' redacts to an unterminated quoted value (24 bytes).
   withFiles(row('STDERR-BVA-06', 'review probe, cap 40', 'the head is redacted on its own; the next line rotates head and mark together',
     [['abc password="x y zzzzzz', ''], ['z'.repeat(58), 'abc password="' + MASK + CUT], ['more' + NL + 'next' + NL, 'next' + NL]], '', ['x y', 'zzz', 'more'], 40),

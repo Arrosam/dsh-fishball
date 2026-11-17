@@ -41,12 +41,20 @@ const VALUE_TERMINATORS = Object.freeze({ space: ' ', tab: '\t', newline: '\n', 
  * ("well under one second"). Each is one unbalanced container, so all of it is masked.
  */
 const KIB_64 = 65536
+/**
+ * The third review's F1: 6000 separate containers (about 66 KiB) on one line, each holding an
+ * escaped quote. The escape keeps the quote from opening a string, so each `]` closes its container.
+ */
+const MANY = 6000
+const manyContainers = (escapedQuote) => row('RED-PERF-01', `many containers, ${escapedQuote}`, `${MANY} containers each holding ${escapedQuote}: every value masked`,
+  `token=[${escapedQuote}] `.repeat(MANY), `token=${MASK} `.repeat(MANY), [`[${escapedQuote}]`])
 export const PERF = Object.freeze({
   budgetMs: 1000,
   rows: Object.freeze([
     row('RED-PERF-01', 'escaped quotes', "the review's input: a lone ' then 32768 \\' on one line", "token=[ '" + "\\'".repeat(KIB_64 / 2), `token=${MASK}`, ["\\'\\'"]),
     row('RED-PERF-01', 'lone quote per line', '32768 lines each holding a lone quote', 'token=[\n' + "'\n".repeat(KIB_64 / 2), `token=${MASK}`, ["'\n'"]),
     row('RED-PERF-01', 'deep nesting', '65536 open brackets', 'token=' + '['.repeat(KIB_64), `token=${MASK}`, ['[[']),
+    ...["\\'", '\\`', '\\"'].map(manyContainers),
     row('RED-PERF-01', 'escaped mode', 'an escaped container holding 32768 lone \\"', String.raw`{\"token\":[` + '\\"'.repeat(KIB_64 / 2), String.raw`{\"token\":` + MASK, ['\\"\\"']),
   ]),
 })
@@ -128,6 +136,17 @@ export const REDACT_ROWS = Object.freeze([
   // A backtick is a quote everywhere a quote is (util.inspect uses it for a string holding both ' and ").
   row('RED-DT-01', 'b backtick string in an array', 'a ] inside a backtick string does not count',
     "{ secret: [ `it's \"x\"`, '] tail', 'hunter2' ] }\nnext", `{ secret: ${MASK} }\nnext`, ['hunter2', "it's", "'] tail'"]),
+  // F2 (the third review): a string that runs to the END of the text still opens (the F4 cut's head
+  // ends that way); one that ends at a line with more text after it is still ordinary (R1').
+  row('RED-DT-01', 'b string to the end of the text', 'a " string running to the end of the text opens: the container masks to the end',
+    '{"tokens":["ab]cdef ', `{"tokens":${MASK}`, ['ab]', 'cdef']),
+  row('RED-DT-01', "b ' string to the end of the text", "the same with a ' string", "tokens=['ab]cdef", `tokens=${MASK}`, ['ab]', 'cdef']),
+  row('RED-DT-01', 'b backtick string to the end of the text', 'the same with a backtick string', 'tokens=[`ab]cdef', `tokens=${MASK}`, ['ab]', 'cdef']),
+  // F1's premise (the third review): an escaped quote is not a quote, so it opens no string and the ] closes.
+  ...["\\'", '\\`', '\\"'].map((q) => row('RED-DT-01', `b escaped quote ${q} in one container`, `${q} opens no string: the ] closes and the rest stays`,
+    `token=[${q}] tail`, `token=${MASK} tail`, [`[${q}]`])),
+  row('RED-DT-01', 'b string to a line end, more text', 'a " that ends at its line with more text after it is ordinary: the ] closes',
+    '{"tokens":["ab]cdef\nmore', `{"tokens":${MASK}cdef\nmore`, ['ab]']),
   row('RED-DT-01', 'b lone backtick', 'a backtick with no closer on its line is ordinary', 'keys=[`abc]\n] tail', `keys=${MASK}\n] tail`, ['abc']),
   // An escaped key (\"name\") reads its container in escaped mode: strings are \"…\", and a raw " (the end of the enclosing string) ends it.
   row('RED-DT-01', 'b escaped container', "the review's provider error: only the escaped array is masked",
