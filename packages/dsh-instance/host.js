@@ -89,9 +89,6 @@ export const inject = [...PLUGIN.dependencies]
  */
 export const Config = Schema.object({
   enabled: Schema.boolean().default(true).volatile().description('Start the private native child after main appReady. Turning it off stops the child at once and turning it on starts it, as the row switch does; private data is retained.'),
-  // R-HOST-05: the target, blank for a connector in this DSH; no token or credential reference
-  // (1.31). Read at each child start, so a change applies at the next start.
-  [HOSTED.targetField]: Schema.string().default('').volatile().description('The MCP endpoint of a remote DSH connector for Fishball to link to. Leave blank to use the connector in this DSH. Applies at the next start of the instance.'),
 })
 const unavailable = code => Object.assign(new Error(code), { code })
 /**
@@ -125,20 +122,6 @@ const registry = globalThis[Symbol.for(LIFETIME.registryKey)] ??= new Map()
 
 export async function apply(ctx, config) {
   let enabled = fieldValue(config.enabled) !== false
-  /** The live `targetUrl` setting: what the next start writes into the child's launch. */
-  const remoteTarget = () => {
-    const value = fieldValue(config[HOSTED.targetField])
-    return typeof value === 'string' ? value : ''
-  }
-  /**
-   * The remote target the current child was launched with, captured when its launch overlay is
-   * written (`child` below), or undefined before any launch. The setting applies at the next start
-   * only, so the hosted-token rules follow this, never the live setting (R-FIX-INSTANCE F01): a
-   * cleared setting must not hand this DSH's connector token to a child still linked elsewhere.
-   * It stays after that child stops (no wire then, so nothing can be imported) until the next launch.
-   */
-  let launchedTarget
-  const activeTarget = () => launchedTarget ?? remoteTarget()
   const logger = typeof ctx.logger === 'function' ? ctx.logger(PLUGIN.name) : undefined
   let state = enabled ? PLUGIN.state.waiting : PLUGIN.state.disabled
   let code = null
@@ -208,7 +191,6 @@ export async function apply(ctx, config) {
       record,
       credentials: () => credentialClient,
       instanceId: () => record.instanceId,
-      remoteTarget: activeTarget,
       // The child runtime folder's id (its owner marker, read at each start): new after a reinstall.
       runtimeId: () => owner?.hostId,
       changed: () => changed(),
@@ -253,13 +235,9 @@ export async function apply(ctx, config) {
       packageManager: ctx.profileContext.packageManager,
       get mainWorkspaces() { return ctx.workspaceRegistry.list().map(workspace => workspace.path) },
       limits: LIFECYCLE_LIMITS,
-      // The child-side row's target at each start (R-HOST-05): this DSH's connector endpoint, or
-      // the remote target the instance names. A URL, never a token. Called once per launch, so it
-      // also records the launch's target for the hosted-token rules (activeTarget).
-      child: () => {
-        launchedTarget = remoteTarget()
-        return { [HOSTED.targetField]: childTargetUrl({ instanceTargetUrl: launchedTarget, hostOrigin: hostOrigin(), connectorUsable: usableTokens(connectorTokens()) !== undefined }) }
-      },
+      // MULTI-2: only the actual parent is handed off here. Core reserves it first/read-only;
+      // additional targets are configured inside Fishball and never affect parent credentials.
+      child: () => ({ [HOSTED.targetField]: childTargetUrl({ hostOrigin: hostOrigin(), connectorUsable: usableTokens(connectorTokens()) !== undefined }) }),
       onExit() { if (state === PLUGIN.state.ready || state === PLUGIN.state.starting) set(PLUGIN.state.failed, PLUGIN.code.exited) },
     })
     // No V2 connector binding, admin relay or settings relay (I-HOST, I-READY; user decision
@@ -295,8 +273,8 @@ export async function apply(ctx, config) {
   async function start() {
     if (closed || !owner) return status()
     if (!enabled) return set(PLUGIN.state.disabled)
-    // The child starts after main appReady (R-HOST-02), with or without a connector in this DSH:
-    // a remote target needs none, and without any target core reports `target-unset` itself.
+    // The child starts after main appReady (R-HOST-02), even without a parent connector:
+    // core keeps its reserved parent entry not set rather than replacing it with a remote.
     if (!appReady) return set(PLUGIN.state.waiting)
     if (startup) {
       // A start already running is this start, unless a stop came since it began: that one is

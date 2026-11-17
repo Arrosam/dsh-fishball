@@ -76,8 +76,8 @@ export const UNKNOWN_ADDRESS = 'unknown'
 /** The URL base for parsing a request target's query; only the query is read, never this host. */
 export const URL_BASE = 'http://request.invalid'
 
-/** `serverInfo.name` of `server/discover` (Fishball 2026-11-14, Q10); the version is the package's. */
-export const SERVER_NAME = 'dsh-connector'
+/** Fishball's decision: sample the local hostname only while the configured DSH name is blank. */
+export const HOSTNAME_WATCH = Object.freeze({ intervalMs: 30 * TIME_UNIT.msPerSecond })
 /** The connector manifest, relative to this module, read once for `serverInfo.version`. */
 export const MANIFEST_URL = new URL('../../../package.json', import.meta.url)
 

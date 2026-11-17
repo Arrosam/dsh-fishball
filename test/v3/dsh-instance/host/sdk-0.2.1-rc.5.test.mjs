@@ -6,3 +6,6 @@ import { registerFixInstanceCases } from './fix-cases.mjs'
 registerIHostCases('0.2.1-rc.5')
 registerInstancePolishCases('0.2.1-rc.5')
 registerFixInstanceCases('0.2.1-rc.5')
+
+import { registerMultiHostCases } from './multi-cases.mjs'
+registerMultiHostCases('0.2.1-rc.5')

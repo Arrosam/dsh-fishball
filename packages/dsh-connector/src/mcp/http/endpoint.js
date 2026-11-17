@@ -20,23 +20,24 @@
  * so this module never derives a scheme or reads a forwarded header.
  */
 import { readFileSync } from 'node:fs'
+import { hostname } from 'node:os'
 import { McpServer, createMcpHandler } from '@modelcontextprotocol/server'
 import { toNodeHandler } from '@modelcontextprotocol/node'
 import {
-  BEARER_CHALLENGE, ENDPOINT_LIMITS, GATE_SURFACE, HTTP_STATUS, OAUTH_ERROR, PAIR_ONLY, PATHS, PROTOCOL, REQUEST_GATE, RESOURCE, SCOPE,
+  BEARER_CHALLENGE, ENDPOINT_LIMITS, GATE_SURFACE, HTTP_STATUS, OAUTH_ERROR, PAIR_ONLY, PATHS, PROTOCOL, REQUEST_GATE, RESOURCE, SCOPE, SERVER_IDENTITY,
   bearerChallenge, insufficientScopeChallenge, invalidTokenChallenge, oauthErrorBody, oauthUrls,
 } from '../../../mcp-schema/index.js'
 import { diagnosticOf } from '../../errors.js'
 import { powerOf } from '../../pairs/index.js'
 import { originOf } from '../oauth/index.js'
 import {
-  BEARER_MISSING, HTTP_HEADER, JSON_RPC, LOG, MANIFEST_URL, MEDIA_TYPE, SDK_OPTION, SERVER_NAME, TEXT_ENCODING, UNKNOWN_ADDRESS,
+  BEARER_MISSING, HTTP_HEADER, JSON_RPC, LOG, MANIFEST_URL, MEDIA_TYPE, SDK_OPTION, TEXT_ENCODING, UNKNOWN_ADDRESS,
   URL_BASE, unsupportedVersionMessage,
 } from './constants.js'
 import { FORBIDDEN, TOO_LARGE, bareRefusal, rateLimited } from './gate.js'
 import { createListenStreams, listensForEvents } from './streams.js'
 
-const SERVER_INFO = Object.freeze({ name: SERVER_NAME, version: JSON.parse(readFileSync(MANIFEST_URL, TEXT_ENCODING)).version })
+const SERVER_VERSION = JSON.parse(readFileSync(MANIFEST_URL, TEXT_ENCODING)).version
 const CAPABILITIES = Object.freeze({ tools: Object.freeze({ listChanged: true }), resources: Object.freeze({ subscribe: true }) })
 /** The Node adapter's own bound: the same as the gate's, so the SDK never answers a size the gate admitted. */
 const NODE_ADAPTER_OPTIONS = Object.freeze({ maxRequestBodySize: ENDPOINT_LIMITS.bodyBytes })
@@ -188,22 +189,28 @@ function replayed(req, body, caller) {
  * @param {boolean} ports.secure GateListenerFacts.secure of DSH's listener
  * @param {(principalKey: string) => Promise<object>} ports.readEvents the `resources/read dsh-agent://events`
  *   result for a full caller (C-WIRE binds C-MAILBOX's `readEventsResource`; Fishball 2026-11-14, Q6 B)
+ * @param {() => string} [ports.dshName] live resolved base name, without the literal MCP suffix
  * @param {(server: McpServer, caller: object) => void} [ports.populate] registers the caller's tools
  *   (C-TOOLS, C-EXT; C-WIRE composes them); pair-only callers get `pair` only (R-OA-04)
  * @param {() => number} ports.now injected clock
  * @param {{warn(...args: unknown[]): void}} ports.logger
  */
-export function createMcpEndpoint({ gate, verifier, failures, pairs, secure, readEvents, populate = () => {}, now, logger }) {
+export function createMcpEndpoint({ gate, verifier, failures, pairs, secure, readEvents, dshName = hostname, populate = () => {}, now, logger }) {
   const onerror = (error) => logger.warn(LOG.format, LOG.sdkError, diagnosticOf(error))
+  // MCP Implementation.name has no tool-name grammar. Keep the base verbatim, even its suffix.
+  const serverInfo = () => ({ name: dshName() + SERVER_IDENTITY.suffix, version: SERVER_VERSION })
 
   /** One fresh McpServer per request (the SDK's per-request factory), built for the verified caller. */
   function factory({ authInfo }) {
     const caller = authInfo.extra.caller
-    const server = new McpServer(SERVER_INFO, { capabilities: CAPABILITIES })
+    const server = new McpServer(serverInfo(), { capabilities: CAPABILITIES })
     // R-OA-09: `server/discover` advertises the client-credentials extension, with empty settings.
     server.server.registerCapabilities({ extensions: { [PROTOCOL.clientCredentialsExtension]: {} } })
     if (caller.scope === SCOPE.full) {
       server.registerResource(RESOURCE.events.name, RESOURCE.events.uri, { mimeType: RESOURCE.events.mimeType }, () => readEvents(caller.principalKey))
+      server.registerResource(RESOURCE.identity.name, RESOURCE.identity.uri, { mimeType: RESOURCE.identity.mimeType }, () => ({
+        contents: [{ uri: RESOURCE.identity.uri, mimeType: RESOURCE.identity.mimeType, text: JSON.stringify(serverInfo()) }],
+      }))
     }
     populate(server, caller)
     return server
@@ -334,6 +341,8 @@ export function createMcpEndpoint({ gate, verifier, failures, pairs, secure, rea
     hints: streams.hints,
     presence: streams.presence,
     toolsChanged: streams.toolsChanged,
+    // Identity is shared, unlike mailbox hints: the SDK applies each stream's exact URI filter.
+    identityChanged: () => streams.resourceChanged(RESOURCE.identity.uri),
     closeEntry: streams.closeEntry,
     close,
   })

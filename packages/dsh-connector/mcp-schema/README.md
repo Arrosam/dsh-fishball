@@ -474,6 +474,24 @@ the rows below are behaviour and internal-port contracts the frozen texts left o
 | MCP endpoint: one bearer check before the body | a `subscriptions/listen` is verified again, synchronously with its reservation; a revoked one is 401 `invalid_token` | F07 |
 | `approval_answer` reject: needed `risk` (`risk-required`) | needs a non-empty reason only, as §7a.3 and the contract say; one rule shared with `prompt_answer` | F08 |
 
+## MULTI-0 amendment (2026-11-18): server identity
+
+Additive only ([PLAN-MULTI](<../../../docs/planning/v3-multi-dsh.md>) D04–D08, §4.1, §4.3, Q02); no
+tool, schema, OAuth, receipt or event changes.
+
+- **`RESOURCE.identity`**: `dsh-identity`, `dsh-agent://identity`, `application/json`; listed by
+  `resources/list`, read-only; `resources/read` returns one JSON text content, exactly the MCP
+  `Implementation` `{name, version}` (`ServerIdentity`) that `server/discover` advertises, from the
+  same live getter.
+- **`SERVER_IDENTITY`**: `serverInfo.name` = (`approval.dshName` verbatim if it holds a
+  non-white-space character, else `node:os.hostname()`) + `-DSH`, appended once even if the base
+  already ends with it; no title, version from the manifest. Carried at
+  `result._meta['io.modelcontextprotocol/serverInfo']` ([spec]). No Host/Origin/URL-derived name.
+- **Push**: when the effective name changes, `notifications/resources/updated` with only
+  `{uri: 'dsh-agent://identity'}` to every authenticated listen stream subscribed to that URI; an
+  unchanged name sends nothing; the events resource is not touched. A listen stream may subscribe
+  to both URIs; `CONNECTED` still means the events URI.
+
 ## Left to a task (not frozen here)
 
 | What (case rows flagged `K`) | Task |

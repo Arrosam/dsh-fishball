@@ -39,6 +39,7 @@ import { textOf } from '../host/subject.mjs'
 import { CASE, E2E, ENTRY, HOST_FIXTURE, HOST_K3, OUTCOME, RELAYED, RETIRE, RFI, RUNTIME, WAIT } from './constants.mjs'
 import { gate } from './fakes.mjs'
 import { expectRetired, successionWorld } from './subject.mjs'
+import { seedExtraCredentials, assertExtraCredentials } from '../host/multi-fixtures.mjs'
 
 const T = { timeout: WAIT.testMs }
 const row = (sdk, id, part, title, fn) => test(caseName(sdk, id, part, title), T, fn)
@@ -63,6 +64,23 @@ async function assertPending(w, expected, message) {
 }
 
 export function registerSuccessionCases(sdk) {
+  row(sdk, 'MULTI-2', 'host ST succession with extra credentials', 'reinstall provisions actual parent and retires its predecessor while extra target credentials remain isolated', async (t) => {
+    const w = await successionWorld(t, sdk)
+    await w.start()
+    w.tokens.answer(OUTCOME.failed)
+    w.setRuntime(RUNTIME.r2)
+    w.credentials.wipe()
+    seedExtraCredentials(w.credentials)
+    await w.start()
+    assert.equal(w.created(), 2, 'added target credentials suppressed new parent import')
+    await expectRetired(w.retired, [[ENTRY.e1, ENTRY.e2]])
+    assertExtraCredentials(w.credentials)
+    await w.start()
+    assert.equal(w.created(), 2, 'retry created another parent token')
+    await expectRetired(w.retired, [[ENTRY.e1, ENTRY.e2], [ENTRY.e1, ENTRY.e2]])
+    await assertPending(w, undefined, 'successful parent succession settled')
+    assertExtraCredentials(w.credentials)
+  })
   // ===================================================================== K3: the codes this suite scripts are tokens.d.ts's
   caseTest(sdk, CASE.outcome, 'K3', 'the retire answers this suite scripts are exactly K3 RetireRefusalCode', () => {
     const scripted = [RETIRE.unknownEntry, RETIRE.notHosted, RETIRE.successorUnpaired, RETIRE.operationFailed]
@@ -107,13 +125,13 @@ export function registerSuccessionCases(sdk) {
     await expectRetired(w.retired, [[ENTRY.e1, ENTRY.e2], [ENTRY.e1, ENTRY.e2]])
     await assertPending(w, undefined, 'after the retried retire answered ok')
   })
-  row(sdk, CASE.start, '6', 'a succession pending and targetUrl now names a remote target → retire not called at the start', async (t) => {
+  row(sdk, CASE.start, '6 (MULTI-2)', 'extra remote field cannot suppress actual-parent pending succession retry', async (t) => {
     const w = await reinstalled(t, sdk, [OUTCOME.failed])
     await expectRetired(w.retired, [[ENTRY.e1, ENTRY.e2]])
     w.setRemote(HOST_FIXTURE.remote)
     await w.start()
-    w.tokens.emit()
-    await expectRetired(w.retired, [[ENTRY.e1, ENTRY.e2]], 'retire called for a remote target')
+    await expectRetired(w.retired, [[ENTRY.e1, ENTRY.e2], [ENTRY.e1, ENTRY.e2]], 'removed remote override suppressed parent succession')
+    await assertPending(w, undefined, 'successful parent succession clears pending')
   })
   row(sdk, CASE.start, '7', 'a hand-edited record whose newest entry is the pending old one → the pending succession is dropped; retire not called', async (t) => {
     const w = await reinstalled(t, sdk, [OUTCOME.failed])

@@ -129,6 +129,11 @@ export function createListenStreams({ factory, handlerOptions, logger }) {
     },
   })
 
+  /** A shared resource changed: the SDK delivers only to streams subscribed to this exact URI. */
+  function resourceChanged(uri) {
+    for (const pair of pairs.values()) pair.handler.notify.resourceUpdated(uri)
+  }
+
   /** `notifications/tools/list_changed` goes to every pair's streams that opted in (design §13.4). */
   function toolsChanged() {
     for (const pair of pairs.values()) pair.handler.notify.toolsChanged()
@@ -155,5 +160,5 @@ export function createListenStreams({ factory, handlerOptions, logger }) {
     for (const [principalKey, pair] of [...pairs]) closePair(principalKey, pair)
   }
 
-  return Object.freeze({ reserve, hints, presence, toolsChanged, closeEntry, close })
+  return Object.freeze({ reserve, hints, presence, resourceChanged, toolsChanged, closeEntry, close })
 }

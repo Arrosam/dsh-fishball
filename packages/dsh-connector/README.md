@@ -101,9 +101,29 @@ field or press Enter again to save it anyway, or press Esc to keep the other cha
 
 ### DSH name
 
-Optional. The name the approval page shows for this DSH. When it is empty, this DSH shows as
-`<device name>-DSH`. The name is kept exactly as you type it, spaces included; a field with only
-spaces counts as empty.
+Optional. MCP discovery advertises `<name>-DSH`, where `<name>` is this setting verbatim, or
+`node:os.hostname()` (the OS device name) when unset, empty or whitespace-only. Nonblank names
+keep Unicode, spaces and special characters unchanged. The literal suffix is always appended,
+including to a name that already ends in `-DSH`. The approval page shows the same base name,
+without the appended suffix; neither identity is derived from an address or request Host.
+
+**Fishball's decision:** while the setting is blank, a small local watcher checks the OS hostname
+every 30 seconds and detects changes through the same local trigger as a setting rename. It makes
+no network requests. Setting a nonblank name stops the watcher; clearing it starts the watcher
+again. Disposing the connector stops it. A live identity read also observes hostname changes
+without waiting for the next check.
+
+Full-power clients can list/read `dsh-agent://identity` (`dsh-identity`, `application/json`). Its
+single JSON text content is the same live `{name, version}` as modern MCP discovery at
+`result._meta['io.modelcontextprotocol/serverInfo']`. Include that URI in the existing
+`subscriptions/listen` filter to receive standard `notifications/resources/updated {uri}` hints.
+A setting rename or observed hostname change broadcasts only to subscribed authenticated clients;
+unchanged effective names send nothing. Rediscover/read on a hint and after reopening the stream:
+hints are not durable replay. Renames do not remount the endpoint, change tools or OAuth, or require
+re-pairing. Pair-only clients retain their existing restricted surface.
+
+The settings page and the server preserve nonblank names verbatim, including leading/trailing
+spaces. A whitespace-only setting counts as unset.
 
 ### Limits
 

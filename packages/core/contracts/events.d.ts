@@ -5,7 +5,7 @@
  * `INTERCEPT` beside this file, and `disconnected` is its `LINK.disconnected` (core's own copy, K3a). F-INTERCEPT builds the
  * service in `packages/core/src/events/`.
  *
- * Core holds its pair's one `agent-events` subscription. Every polled event is recorded in
+ * Core holds one `agent-events` subscription per target (MULTI-0; one listen stream per target, which also carries its identity subscription). Every polled event is recorded in
  * core's acceptance ledger and then dispatched with no LLM involved:
  * - the candidates are the live registrations whose `types` include the event's `type` and whose
  *   `filter` returns `true` (a throwing filter counts as `false` for that registration);
@@ -14,15 +14,24 @@
  *   priorities the earliest registration (R-INT-03). The others never see it. If that one fails,
  *   the event falls back to Fishball, never to the next candidate (EVT-DT-02 rule 8).
  */
+import type { TargetSource } from './targets.js'
 
 /**
  * An event as core hands it to an interceptor: every field of the mailbox entry (design §3.4,
  * plus `at`, epoch milliseconds of the commit). K1 freezes the entry; a K1 change to it changes
  * this type in the same amendment.
  * `type` is one of K1's event types (R-EVS-02) or `contributed:<namespace>.<event>` (K2). Two
- * deliveries of one event carry the same `eventId` (R-EVT-02); an interceptor dedupes by it.
+ * deliveries of one event carry the same `eventId` (R-EVT-02).
+ *
+ * MULTI-0 (2026-11-18; PLAN-MULTI §5): `source` is the trusted local provenance of the target the
+ * event came from; the mailbox fields stay exactly as received. An interceptor dedupes by
+ * `(source.targetId, source.endpointEpoch, eventId)`, never by `eventId` alone: two targets may
+ * send the same `eventId`. `source.serverName` / `source.name` are untrusted text. One registration
+ * covers every current and future target, with the same order and dispose rules; `filter` may read
+ * `source.targetId`.
  */
 export interface InterceptedEvent {
+  readonly source: TargetSource
   readonly eventId: string
   readonly mailboxGeneration: string
   readonly sequence: number

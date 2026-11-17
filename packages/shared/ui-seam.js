@@ -18,6 +18,8 @@
  *   them from here. `link`, `connect` and `guards` restate core's K3 `LINK.state`, `CONNECT.state`
  *   and `GUARDS.status`, because that file is data-only and imports nothing (the K3 freeze); the
  *   fishball-ui tests check that both copies are equal.
+ * - `SEAM_TARGETS` (MULTI-0, 2026-11-18): the multiple-target list fishball-ui draws in the
+ *   sidebar and the owner-only routes it acts through (core's `contracts/targets.d.ts`).
  */
 export const UI_SEAM = Object.freeze({
   member: 'ui',
@@ -95,4 +97,62 @@ export const SEAM_STATUS = Object.freeze({
   }),
   /** Core's `GUARDS.status` (K3, `GuardReport.status`). */
   guards: Object.freeze({ ok: 'ok', overridden: 'guards-overridden' }),
+})
+
+/**
+ * The multiple-target seam (MULTI-0 freeze, 2026-11-18; PLAN-MULTI §3, §5, §6.1, Q01–Q12; core's
+ * `contracts/targets.d.ts`). Defined once here: core and fishball-ui both read it, and neither
+ * imports the other.
+ *
+ * - `snapshotVersion`: `TargetsSnapshot.version`. Core's status snapshot (`UI_STATUS.service`
+ *   `snapshot()`) carries it as `targets: {version, targets}` beside the global `fishball`,
+ *   `guards` and `set`, which stay once per process; the scalar `link`, `connect`, `line`,
+ *   `control` and `contributedTools` move into each `TargetView`. fishball-ui's existing strip SSE
+ *   route serves that snapshot; there is no chat-top card any more (D03);
+ * - `state`: the four public states (D03). Core derives one from a target's detail, first match
+ *   wins: link `connected` is `connected`; an active link attempt or Connect `authorizing` is
+ *   `connecting`; link `target-unset`, or Connect `needs-authorization` / `needs-configuration`
+ *   with no credential yet, is `not-set`; anything else (`target-unreachable`, `token-refused`,
+ *   Connect `failed`, an unknown word) is `failed`, never success;
+ * - `kind`: `parent` (a hosted child's reserved, non-removable, URL-read-only first target) or
+ *   `remote` (added by the user, standalone and hosted alike);
+ * - `identity`: the live-identity capability shown in details (`TargetIdentityState`);
+ * - `placeholder`: what to show for `name === null` (Q01), by the copy key fishball-ui owns: no
+ *   URL-derived name;
+ * - `route`: core's owner-only routes (DSH's exact Fetch routes). Every POST body is JSON with
+ *   `targetIdField` and the members named; a missing, unknown or removed id answers 404 with
+ *   `refusal.unknownTarget`. `connect` answers K3a `ConnectBegin`; the rest `{ok: true}` or
+ *   `{ok: false, code}`. The add/remove/url routes serve core's settings page;
+ * - `ask`: the ask card's answer body now names an opaque target-qualified `handle`
+ *   (`AskCard.handle`), never a raw `approvalId`; `voided` is the state of a card whose target was
+ *   removed or whose endpoint retired (Q07): read-only, never answered;
+ * - `refusal`: the target actions' own codes (`TargetActionResult`); URL refusals stay K3a's
+ *   `target-insecure` / `target-invalid`.
+ */
+export const SEAM_TARGETS = Object.freeze({
+  snapshotVersion: 1,
+  member: 'targets',
+  state: Object.freeze({ connected: 'connected', connecting: 'connecting', failed: 'failed', notSet: 'not-set' }),
+  kind: Object.freeze({ parent: 'parent', remote: 'remote' }),
+  identity: Object.freeze({ pending: 'pending', live: 'live', unsupported: 'unsupported', stale: 'stale' }),
+  placeholder: Object.freeze({ unnamed: 'name-unavailable', unset: 'not-set' }),
+  route: Object.freeze({
+    connect: '/api/fishball/targets/connect',
+    cancel: '/api/fishball/targets/cancel',
+    retry: '/api/fishball/targets/retry',
+    pairing: '/api/fishball/targets/pairing',
+    add: '/api/fishball/targets/add',
+    remove: '/api/fishball/targets/remove',
+    url: '/api/fishball/targets/url',
+    method: 'POST',
+    targetIdField: 'targetId',
+    fields: Object.freeze({ url: 'url', choice: 'choice', confirmed: 'confirmed' }),
+  }),
+  ask: Object.freeze({ handleField: 'handle', voided: 'voided' }),
+  refusal: Object.freeze({
+    unknownTarget: 'unknown-target',
+    targetDuplicate: 'target-duplicate',
+    targetReserved: 'target-reserved',
+    confirmationRequired: 'confirmation-required',
+  }),
 })

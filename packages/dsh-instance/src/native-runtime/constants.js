@@ -271,7 +271,7 @@ export const PLACEMENT = Object.freeze({
 /**
  * The instance's refusal words, each defined once (I-HOST); the vocabularies below name them.
  * - `notReady`, `hostnameRefused`: K3 `AdmitErrorCode` (child.d.ts), also Reconnect's and Open's;
- * - `connectorMissing`, `targetRemote`, `unwritable`: Reconnect's (K3 `ReconnectRefusalCode`);
+ * - `connectorMissing`, `unwritable`: Reconnect's (K3 `ReconnectRefusalCode`);
  * - `failed`: K3's shared `operation-failed` (a service threw; nothing is echoed);
  * - `invalid`: a request outside its closed shape.
  */
@@ -279,7 +279,6 @@ export const REFUSAL = Object.freeze({
   notReady: 'not-ready',
   hostnameRefused: 'hostname-refused',
   connectorMissing: 'connector-missing',
-  targetRemote: 'target-remote',
   unwritable: 'credentials-unwritable',
   failed: 'operation-failed',
   invalid: 'invalid-request',
@@ -353,7 +352,6 @@ export const HOSTED = Object.freeze({
    */
   target: Object.freeze({
     connected: Object.freeze({ state: 'connected', code: null }),
-    remote: Object.freeze({ state: 'target-unreachable', code: 'TARGET_UNREACHABLE' }),
     unset: Object.freeze({ state: 'target-unset', code: null }),
     revoked: Object.freeze({ state: 'token-refused', code: 'token-revoked' }),
   }),
