@@ -3,7 +3,7 @@
  * REL-PACK: one command that turns a clean checkout into the V3 release (task REL-PACK items 2,
  * 3, 5, 6; the user's release brief of 2026-11-17).
  *
- *   node scripts/pack-v3.mjs [--out <dir>]            pack the nine tarballs, the checksums, the
+ *   node scripts/pack-v3.mjs [--out <dir>]            pack the eight tarballs, the checksums, the
  *                                                     offline pnpm store and the two documents
  *   node scripts/pack-v3.mjs --check [--out <dir>]    re-verify an existing release, offline
  *
