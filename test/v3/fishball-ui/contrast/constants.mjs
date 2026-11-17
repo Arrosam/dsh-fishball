@@ -65,6 +65,34 @@ export const HOOK = Object.freeze({
   tagPrimitive: 'Tag',
 })
 
+/**
+ * RESHOOT fix 1 (the user, 2026-11-18): the ask card's state badge, a DSH Tag. An open card's Tag
+ * reads the `open` words in `warning` tone; an answered or closed card's Tag is `neutral` (out of
+ * the fix's scope, so it must look as DSH's own neutral Tag does). Light theme: the open badge's
+ * text at least WCAG.text against its own fill (it was #F59E0B on #FDEACC, ≈1.8:1); dark theme: DSH's
+ * warning Tag look unchanged (text the Tag's default warning colour, `--dsw-alias-state-warn-primary`).
+ */
+export const ASK_BADGE = Object.freeze({
+  open: Object.freeze({ en: 'Fishball is waiting for your answer', zh: 'Fishball 正在等你回答' }),
+  openTone: 'warning',
+  settledTone: 'neutral',
+  /** DSH's own warning Tag colour token (dsh-web-frontend's `[data-tone=warning]` rule, both SDKs). */
+  warnToken: '--dsw-alias-state-warn-primary',
+  /** The ask card root's attribute (HOOK.askCard as a prop name in the drawn tree). */
+  cardAttr: 'data-fishball-ask',
+  /** Test-owned handles the rows add to the written HTML: the measured badge, and DSH Tags drawn outside the card. */
+  marker: 'data-fbtest-ask-badge',
+  reference: 'data-fbtest-reference-tag',
+  referenceText: 'FBTEST reference Tag',
+  /** The reference Tags sit straight in the page body, outside every card. */
+  pageRoot: 'body',
+  /**
+   * Two computed colours are the same when every channel and alpha (0–1) differ by less than half
+   * of one 8-bit step: Chromium writes one colour as rgb() (0–255) or color(srgb …) (0–1 floats).
+   */
+  sameColourTolerance: 0.5 / 255,
+})
+
 /** Colour-bearing properties a token-only check reads, per measured element. */
 export const COLOUR_PROPS = Object.freeze(['color', 'background', 'background-color', 'box-shadow', 'border', 'border-color', 'outline', 'outline-color'])
 /** CSS-wide or derived colour words that are not a hard-coded colour value. */
