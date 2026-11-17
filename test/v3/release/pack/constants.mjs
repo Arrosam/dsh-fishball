@@ -177,6 +177,9 @@ export const DRY_RUN = Object.freeze({
   ]),
 })
 
+/** The metadata cache and the registry it is keyed by: what an offline add needs of the release's pnpm-cache/ (lead, 2026-11-17). */
+const cacheArgs = (cache) => ['--cache-dir=' + cache, '--registry=https://registry.npmjs.org']
+
 /** The DSH SDKs (R-COMPAT-01); FBTEST_DSH_VERSIONS moves their parent folder. */
 export const DSH = Object.freeze({
   versionsDir: process.env.FBTEST_DSH_VERSIONS ?? path.join(os.homedir(), 'Library', 'Application Support', 'DSH', 'data', 'versions'),
@@ -189,7 +192,7 @@ export const DSH = Object.freeze({
   profileDir: (home, profile) => path.join(home, 'profiles', profile),
   /** `plugin --profile <p> add <tarballs…> <offline flags>` (lead, 2026-11-17: store, cache and the registry the cache is keyed by). */
   pluginArgs: (profile, tarballs, store, cache) => ['plugin', '--profile', profile, 'add', ...tarballs, '--offline',
-    '--store-dir=' + store, '--cache-dir=' + cache, '--registry=https://registry.npmjs.org', '--ignore-scripts'],
+    '--store-dir=' + store, ...cacheArgs(cache), '--ignore-scripts'],
   okExit: 0,
   bundlesPath: Object.freeze(['dsh', 'profile', 'bundles']),
 })
@@ -208,13 +211,15 @@ export const SETS = Object.freeze({
  * is the fenced block holding a `dsh plugin … add` line whose .tgz arguments are exactly the set's
  * tarballs, in order; its online command is an add line naming the set's packages at VERSION, in order.
  * Each set's `other` is a second plugin with no third-party dependency: a "used" profile gets it first
- * from another store, and on a fresh profile it is the later install after the release folder is
- * deleted. fishball-board (the bug report's example), or dsh-connector-shared for the standalone set,
- * which holds fishball-board itself (so "the earlier plugin stays" is not trivially true).
+ * from another store, and on a fresh profile it is the later install (from a tarball outside the
+ * release folder, which stays in place: INSTALL.md says to keep it while packages are installed from
+ * it). fishball-board (the bug report's example), or dsh-connector-shared for the standalone set, which holds fishball-board itself (so "the earlier plugin stays" is not trivially true).
  */
 export const OFFLINE = Object.freeze({
   sets: Object.freeze([
     Object.freeze({ key: 'hosted', pkgs: SETS.hosted, other: PACKAGES.board }),
+    /** Standalone step 1: the managed DSH's connector and its UI (its own offline block since 0ff8cdfb). */
+    Object.freeze({ key: 'managed', pkgs: Object.freeze([PACKAGES.connector, PACKAGES.connectorUi]), other: PACKAGES.board }),
     Object.freeze({ key: 'standalone', pkgs: Object.freeze([PACKAGES.ui, PACKAGES.board, PACKAGES.core]), other: PACKAGES.dshShared }),
     Object.freeze({ key: 'adapter', pkgs: Object.freeze([PACKAGES.adapter]), other: PACKAGES.board }),
   ]),
@@ -227,8 +232,10 @@ export const OFFLINE = Object.freeze({
   binDir: 'bin',
   cliName: 'dsh',
   otherStoreDir: 'other-store',
-  /** The later install's tarball is copied here, out of the release folder, before that folder is deleted. */
+  /** The later install's tarball is copied here, outside the release folder. */
   laterDir: 'later',
+  /** The bug B2 error a later add must not show. */
+  unexpectedStore: /ERR_PNPM_UNEXPECTED_STORE/,
   /** "No registry": the block's add line carries pnpm's offline flag. */
   offlineFlag: '--offline',
   /** Idempotence: the block run this many times in a row. */
@@ -239,8 +246,11 @@ export const OFFLINE = Object.freeze({
   storePathArgs: (profile) => ['plugin', '--profile', profile, 'store', 'path'],
   /** "Used" profile set-up, from the bug report: `add <tarball> --offline --store-dir=<another temp store>`. */
   otherArgs: (profile, tarball, store) => ['plugin', '--profile', profile, 'add', tarball, '--offline', '--store-dir=' + store],
-  /** A later install with no --store-dir (it must not need the deleted release folder's store). */
-  laterArgs: (profile, tarball) => ['plugin', '--profile', profile, 'add', tarball, '--offline'],
+  /**
+   * A later install with no --store-dir (the profile must not be linked to the release folder's store),
+   * with the release's metadata cache and registry, as INSTALL.md says a later --offline add needs (66dbf20d).
+   */
+  laterArgs: (profile, tarball, cache) => ['plugin', '--profile', profile, 'add', tarball, '--offline', ...cacheArgs(cache)],
 })
 
 /** Escape a literal for a RegExp. */
@@ -264,6 +274,11 @@ export const INSTALL_DOC = Object.freeze({
   }),
   /** B6: pnpm's "missing peer" warning about DSH's own packages is expected (one paragraph says all three). */
   missingPeer: Object.freeze([/missing peer/i, /@deepseek-ai\//, /\bexpected\b/i]),
+  /** The paragraph on installing from the release folder with no network, and its instruction to keep the folder. */
+  offlineParagraph: Object.freeze([new RegExp(literal(RELEASE.store + '/')), /no network/i]),
+  keepFolder: /\bkeep\b[^.]*\bfolder\b/i,
+  /** …and that a later --offline add on that profile needs the folder's cache and the registry (both flags as the rows pass them). */
+  laterNeeds: Object.freeze([/\blater\b[^.]*--offline/i, new RegExp(literal(`--cache-dir="$PWD/${RELEASE.cache}"`)), new RegExp(literal(cacheArgs('')[1]))]),
   /** B6: standalone's token-field path beside Connect, in the section of the standalone offline block. */
   tokenPath: Object.freeze([/New token/, /connector settings/, /Token for connecting a DSH/, /fishball-core/, /\bTarget\b/, /\bConnect\b/]),
   standaloneKey: 'standalone',
