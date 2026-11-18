@@ -58,7 +58,7 @@ window.__ModuleLoader__.load({
         frame: ':has(>[data-shell-bottom])', drawer: '[data-sidebar-drawer]', collapsed: '[data-sidebar-collapsed]',
         sidebar: '[data-slot="sidebar"]>*', workspaces: ':has(>[data-slot="sidebar.workspaces"])',
         foot: ':has([data-slot="sidebar.settings"])', regions: ':has(>[data-slot="sidebar.footer.action"]),:has(>[data-slot="sidebar.settings"])',
-        leading: '[data-shell-leading]', handle: '[data-side="sidebar"]', centre: ':has([data-slot="main"])',
+        handle: '[data-side="sidebar"]', centre: ':has([data-slot="main"])',
       }),
       // Window focus re-reads the manager (GET only, never ensure); see refresh.
       reread: 'focus',
