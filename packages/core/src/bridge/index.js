@@ -134,23 +134,31 @@ function raced(promise, signal) {
 const BARE_NAMING = Object.freeze({ finalName: undefined, localName: (facade) => Object.freeze({ name: facade, valid: true }), admit: () => true, label: () => undefined })
 
 /**
- * A description with its target first (MULTI-0 `TARGETS.text.toolSource`: the server's name, JSON-quoted as
- * one data token, or the placeholder word before any discovery), or as it is without a label.
+ * A description with its target first, or as it is without a label. The target's part is
+ * `TARGETS.text.toolSource` over the server's JSON-quoted name (or the placeholder word before any
+ * discovery), and it is untrusted data: it sits whole inside the random-marker block, with a fresh
+ * local marker per description, before the trusted façade description (MULTI-0 security amendment;
+ * JSON quoting alone is no trust boundary). No server-supplied text is outside the block.
  */
-const describe = (label, description) => (label === undefined ? description : TARGETS.text.toolSource(JSON.stringify(label.name ?? FACADE.unnamed)) + description)
+function describe(label, description) {
+  if (label === undefined) return description
+  const marker = randomUUID()
+  return [TEXT.untrustedOpen(marker), TARGETS.text.toolSource(JSON.stringify(label.name ?? FACADE.unnamed)), TEXT.untrustedClose(marker), description].join(TEXT.lineEnd)
+}
 
 /**
  * The Fishball branch's content for one event (Q-11): a header naming its type and, since
- * MULTI-1, the target it came from (its name JSON-quoted as data, its trusted local id), then the
- * whole event inside an untrusted block whose fence has a random marker, so no payload text can
- * close the block or imitate core's own framing (as the connector's framing.js). Only a K1 event
- * type (`isEventType`) is named in the header; any other value stays inside the block. One text block.
+ * MULTI-1, the trusted local id of the target it came from, then the whole event (its `source`
+ * with the server-supplied names included) inside an untrusted block whose fence has a random
+ * marker, so no payload or name text can close the block or imitate core's own framing (as the
+ * connector's framing.js). Only a K1 event type (`isEventType`) and the local id are in the
+ * header; any other value stays inside the block. One text block.
  */
 export function presentEvent(event) {
   const marker = randomUUID()
   const type = isEventType(event?.type) ? event.type : TEXT.unknownType
   const source = event?.source
-  const header = source === undefined ? [TEXT.eventHeader(type)] : [TEXT.eventHeader(type), TEXT.eventSource(JSON.stringify(source.name), source.targetId)]
+  const header = typeof source?.targetId === 'string' ? [TEXT.eventHeader(type), TEXT.eventSource(source.targetId)] : [TEXT.eventHeader(type)]
   return textBlock([...header, TEXT.untrustedOpen(marker), TEXT.eventFields + JSON.stringify(event), TEXT.untrustedClose(marker)].join(TEXT.lineEnd))
 }
 
