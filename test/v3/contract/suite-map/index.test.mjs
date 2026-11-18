@@ -18,6 +18,7 @@
  * run-v3 there runs only stand-in test files. `--check` runs on the real checkout.
  * TEST-SPEED step 2 adds a lane × change classification decision table and a release artifact
  * prerequisite check (absent, present-but-invalid, and complete enough for the targeted assertion).
+ * TEST-SPEED step 4 observes SDK order, overlap and environment through scratch-only test files.
  */
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
@@ -95,6 +96,33 @@ const RELEASE_GATE = Object.freeze({
   negativePasses: /✔ REL-ST-01 absent /,
   layoutFails: /✖ REL-EP-01 /,
   parserFails: /✖ REL-ORACLE tar dsh-agent-connector /,
+})
+
+const SCHEDULER = Object.freeze({
+  serial: '--serial',
+  parallel: '--parallel',
+  both: '--sdk=both',
+  sdks: Object.freeze(['0.2.1-rc.5', '0.2.2-rc.1']),
+  suites: Object.freeze(['dsh-connector.mcp-tools', 'dsh-connector.schema-value']),
+  versionedEntry: (sdk) => `test/v3/dsh-connector/mcp-tools/sdk-${sdk}.test.mjs`,
+  unversionedEntry: 'test/v3/dsh-connector/schema-value/index.test.mjs',
+  runtimesDir: 'sdk-roots',
+  runtimeLeaf: 'node_modules',
+  anchor: '.runtime/test-homes',
+  sentinel: 'anchor-owner.txt',
+  sentinelText: 'caller-owned; keep',
+  observationsDir: (run) => `scheduler-observations-${run}`,
+  observationsEnv: 'FBTEST_SCHEDULER_OBSERVATIONS',
+  observer: 'test/scheduler-probe.mjs',
+  env: Object.freeze({ versions: 'FBTEST_DSH_VERSIONS', runtime: 'FBTEST_DSH_RUNTIME', homes: 'FBTEST_TEST_HOMES', home: 'HOME', tmp: 'TMPDIR' }),
+  serialFiles: 1,
+  maxParallelFiles: 3,
+  pollMs: 20,
+  rendezvousMs: 10000,
+  concurrencyArg: '--test-concurrency=',
+  marker: (entry, phase) => `${path.basename(entry)}.${phase}`,
+  start: 'started',
+  exit: 'exited',
 })
 
 const isShelvedFile = (f) => f.startsWith(MAP.shelvedDir)
@@ -291,4 +319,108 @@ test('TEST-SPEED-RELEASE pack --check missing-directory negative control still r
   assert.equal(r.code, MAP.okExit, r.output)
   assert.match(r.output, RELEASE_GATE.negativePasses, r.output)
   assert.doesNotMatch(r.output, RELEASE_GATE.reason, r.output)
+})
+
+function schedulerFixture(t) {
+  const s = SCHEDULER
+  const repo = scratchRepo(t)
+  const versioned = s.sdks.map(s.versionedEntry)
+  const entries = [...versioned, s.unversionedEntry]
+  const anchor = path.join(repo.root, s.anchor)
+  const runtimes = path.join(repo.root, s.runtimesDir)
+  const sentinel = path.join(s.anchor, s.sentinel)
+  repo.write(sentinel, s.sentinelText)
+  for (const sdk of s.sdks) fs.mkdirSync(path.join(runtimes, sdk, s.runtimeLeaf), { recursive: true })
+
+  // A versioned test waits for its peer's start marker in parallel mode. This proves overlap
+  // without a timing benchmark. Exit markers are written on process exit, not at test-body completion.
+  repo.write(s.observer, `import assert from 'node:assert/strict'
+import fs from 'node:fs'
+import path from 'node:path'
+import test from 'node:test'
+import { setTimeout } from 'node:timers/promises'
+const names = ${JSON.stringify(s.env)}
+export function observe(entry, started, exited, peers, waitForPeers) {
+  const dir = process.env.${s.observationsEnv}
+  const file = (name) => path.join(dir, name)
+  const env = Object.fromEntries(Object.entries(names).map(([key, name]) => [key, process.env[name]]))
+  test(entry, async () => {
+    const prefix = ${JSON.stringify(s.concurrencyArg)}
+    const concurrency = Number(process.execArgv.findLast((arg) => arg.startsWith(prefix))?.slice(prefix.length))
+    const before = fs.readdirSync(dir)
+    const directories = [env.home, env.tmp, env.homes].map((dir) => fs.statSync(dir, { throwIfNoEntry: false })?.isDirectory())
+    // Exclusive creation catches a second execution of an unsuffixed test in the other SDK job.
+    fs.writeFileSync(file(started), JSON.stringify({ env, concurrency, before, directories }), { flag: 'wx' })
+    process.on('exit', () => fs.writeFileSync(file(exited), ''))
+    if (!waitForPeers) return
+    const limit = Date.now() + ${s.rendezvousMs}
+    while (!peers.every((name) => fs.existsSync(file(name)))) {
+      assert.ok(Date.now() < limit, 'the other SDK did not start while this process was running')
+      await setTimeout(${s.pollMs})
+    }
+  })
+}
+`)
+
+  const priorHomes = new Set()
+  let runNumber = 0
+  return {
+    run(mode) {
+      const parallel = mode === s.parallel
+      const observed = path.join(repo.root, s.observationsDir(++runNumber))
+      fs.mkdirSync(observed)
+      for (const entry of entries) {
+        const peers = versioned.filter((f) => f !== entry).map((f) => s.marker(f, s.start))
+        const args = [entry, s.marker(entry, s.start), s.marker(entry, s.exit), peers, parallel && versioned.includes(entry)]
+        const observer = path.posix.relative(path.posix.dirname(entry), s.observer)
+        repo.write(entry, `import { observe } from ${JSON.stringify(observer)}\nobserve(...${JSON.stringify(args)})\n`)
+      }
+      const r = repo.affected([MAP.suite(s.suites), s.both, ...(mode ? [mode] : [])], {
+        [s.env.homes]: anchor,
+        [s.env.versions]: runtimes,
+        [s.observationsEnv]: observed,
+      })
+      assert.equal(r.code, MAP.okExit, r.output)
+      assert.equal(fs.readFileSync(path.join(repo.root, sentinel), 'utf8'), s.sentinelText, 'the shared anchor was modified')
+      assert.deepEqual(fs.readdirSync(observed).sort(), entries.flatMap((entry) => [s.marker(entry, s.start), s.marker(entry, s.exit)]).sort())
+      const seen = (entry) => JSON.parse(fs.readFileSync(path.join(observed, s.marker(entry, s.start)), 'utf8'))
+      const [first, second] = versioned.map(seen)
+      const unversioned = seen(s.unversionedEntry)
+      assert.deepEqual(unversioned.env, first.env, 'the unversioned entry must run in the first SDK job')
+      for (const [index, job] of [first, second].entries()) {
+        const { runtime, homes, home, tmp } = job.env
+        assert.equal(runtime, path.join(runtimes, s.sdks[index], s.runtimeLeaf))
+        const rel = path.relative(anchor, homes)
+        assert.ok(rel && !rel.startsWith('..') && !path.isAbsolute(rel), `not a private test-homes descendant of ${anchor}: ${homes}`)
+        assert.ok(path.isAbsolute(home) && path.isAbsolute(tmp), `the SDK must receive absolute HOME/TMPDIR: ${JSON.stringify(job.env)}`)
+        assert.ok(job.directories.every(Boolean), `the SDK directories did not exist at execution: ${JSON.stringify(job.env)}`)
+      }
+      for (const key of ['homes', 'home', 'tmp']) assert.notEqual(first.env[key], second.env[key], `SDK jobs share ${s.env[key]}`)
+      for (const job of [first, second, unversioned]) {
+        if (parallel) assert.ok(Number.isInteger(job.concurrency) && job.concurrency > s.serialFiles && job.concurrency <= s.maxParallelFiles)
+        else assert.equal(job.concurrency, s.serialFiles)
+      }
+      if (!parallel) {
+        const secondStart = s.marker(versioned[1], s.start)
+        assert.ok(!first.before.includes(secondStart), 'second SDK ran before first SDK')
+        for (const entry of [versioned[0], s.unversionedEntry]) {
+          assert.ok(second.before.includes(s.marker(entry, s.exit)), `second SDK started before ${entry} exited`)
+        }
+      }
+      for (const { env } of [first, second]) {
+        assert.ok(!priorHomes.has(env.homes), `successive runs reused ${env.homes}`)
+        priorHomes.add(env.homes)
+      }
+    },
+  }
+}
+
+test('TEST-SPEED-SCHEDULER default and --serial serialize SDK jobs and files, using fresh homes on each run', (t) => {
+  const fixture = schedulerFixture(t)
+  fixture.run()
+  fixture.run(SCHEDULER.serial)
+})
+
+test('TEST-SPEED-SCHEDULER --parallel overlaps SDK jobs with bounded files and isolated environments', (t) => {
+  schedulerFixture(t).run(SCHEDULER.parallel)
 })

@@ -295,7 +295,7 @@ function settingsRows(sdk) {
     const before = (await w.call('row')).fiber
     const was = (await settingsValue(w))[S.maxMessageBytes]
     assert.equal((await setLimit(w, S.maxMessageBytes, was + 1)).ok, true)
-    assert.equal((await w.call('settingsUpdate', { patch: { [S.approval]: { [S.port]: w.approvalPort, [S.dshName]: FIXTURE.name.a } } })).ok, true)
+    assert.equal((await w.call('settingsUpdate', { patch: { [S.approval]: { [S.port]: await freePort(), [S.dshName]: FIXTURE.name.a } } })).ok, true)
     await createToken(w, FIXTURE.label.c)
     assert.equal((await w.call('settingsMutate', { ops: [{ op: 'unset', path: [S.approval, S.dshName] }] })).ok, true)
     assert.equal((await setLimit(w, S.maxMessageBytes, was)).ok, true)
@@ -436,13 +436,13 @@ function httpRows(sdk) {
   row(sdk, 'C-WIRE-R6', 'authorization_endpoint (DSH port)', 'a request to DSH\'s own port: authorization_endpoint is <scheme>//<same host name>:<approval port>/authorize', async () => {
     const w = await main(sdk)
     const asm = (await w.raw('GET', ASM)).json
-    const port = (await settingsValue(w))[S.approval][S.port]
+    const port = (await stateOf(w)).approval.port
     assert.equal(asm.authorization_endpoint, `http://${new URL(w.origin).hostname}:${port}${PATHS.authorize}`)
   })
   row(sdk, 'C-WIRE-R6', 'authorization_endpoint (localhost)', 'the same under Host localhost:<DSH port>: the endpoint names localhost on the approval port', async () => {
     const w = await main(sdk)
     const asm = (await w.raw('GET', ASM, { hostHeader: `localhost:${w.port}` })).json
-    const port = (await settingsValue(w))[S.approval][S.port]
+    const port = (await stateOf(w)).approval.port
     assert.equal(asm?.authorization_endpoint, `http://localhost:${port}${PATHS.authorize}`)
   })
   row(sdk, 'C-WIRE-R6', 'authorization_endpoint (tunnel)', 'through another origin port (a trusted tunnel host): the request\'s own origin + /authorize', async () => {
@@ -460,7 +460,7 @@ function httpRows(sdk) {
   })
   row(sdk, 'C-WIRE-R6', 'approval listener bound', 'the approval listener answers on approval.port of DSH\'s host: GET /authorize without parameters is the connector\'s page (an error page, not a socket error)', async () => {
     const w = await main(sdk)
-    const port = (await settingsValue(w))[S.approval][S.port]
+    const port = (await stateOf(w)).approval.port
     const page = await w.approval('GET', PATHS.authorize, { port })
     assert.ok(page.status >= HTTP.badRequest && page.status < 500, 'status ' + page.status)
     assert.equal(page.headers['cache-control'], APPROVAL_LISTENER.headers['cache-control'])
@@ -469,7 +469,8 @@ function httpRows(sdk) {
   })
   row(sdk, 'C-WIRE-R6', 'rebind (ST)', 'Bound(p1) --approval.port := p2--> Bound(p2): the listener answers on p2 at once, p1 is released; the metadata follows; state.approval reports it', async () => {
     const w = await main(sdk)
-    const p1 = (await settingsValue(w))[S.approval][S.port]
+    const originalPortSetting = (await settingsValue(w))[S.approval][S.port]
+    const p1 = (await stateOf(w)).approval.port
     const p2 = await freePort()
     try {
       assert.equal((await w.call('settingsUpdate', { patch: { [S.approval]: { [S.port]: p2 } } })).ok, true)
@@ -479,15 +480,18 @@ function httpRows(sdk) {
       assert.deepEqual([(await stateOf(w)).approval.port, (await stateOf(w)).approval.status], [p2, SURFACE.approvalStatusOk])
       await assert.rejects(w.approval('GET', '/fbtest-other', { port: p1 }), 'the old port still answers')
     } finally {
-      await w.call('settingsUpdate', { patch: { [S.approval]: { [S.port]: p1 } } })
-      await eventually(async () => (await w.approval('GET', '/fbtest-other', { port: p1 }).catch(() => ({}))).status === 404)
+      await w.call('settingsUpdate', { patch: { [S.approval]: { [S.port]: originalPortSetting } } })
+      await eventually(async () => {
+        const port = (await stateOf(w)).approval.port
+        return (await w.approval('GET', '/fbtest-other', { port }).catch(() => ({}))).status === 404
+      })
     }
   })
   row(sdk, 'C-WIRE-R6', 'clash (DT)', `approval.port held by another listener → state.approval.status ${CONNECTOR_STATUS.approvalPortInUse}; the MCP endpoint and the token endpoint keep working; the metadata keeps authorization_endpoint`, async (t) => {
     const w = await main(sdk)
-    const p1 = (await settingsValue(w))[S.approval][S.port]
-    const held = await freePort()
-    const holder = await holdPort(held)
+    const originalPortSetting = (await settingsValue(w))[S.approval][S.port]
+    const holder = await holdPort()
+    const held = holder.port
     try {
       assert.equal((await w.call('settingsUpdate', { patch: { [S.approval]: { [S.port]: held } } })).ok, true)
       assert.ok(await eventually(async () => (await stateOf(w)).approval.status === CONNECTOR_STATUS.approvalPortInUse), 'status: ' + JSON.stringify((await stateOf(w)).approval))
@@ -497,7 +501,7 @@ function httpRows(sdk) {
       const agent = await machineClient(t, w, { id: fresh(FIXTURE.id.a), value: made.value })
       assert.deepEqual(await toolNames(agent.client), [...PAIR_ONLY.tools])
     } finally {
-      await w.call('settingsUpdate', { patch: { [S.approval]: { [S.port]: p1 } } })
+      await w.call('settingsUpdate', { patch: { [S.approval]: { [S.port]: originalPortSetting } } })
       await holder.close()
     }
     assert.ok(await eventually(async () => (await stateOf(w)).approval.status === SURFACE.approvalStatusOk), 'the status did not recover after the port changed')

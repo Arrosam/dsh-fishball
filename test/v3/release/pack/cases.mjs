@@ -61,7 +61,7 @@ import {
 export function relCase(sdk, id, row, title, fn, timeout) {
   releaseTest(caseName(sdk, id, row, title), timeout === undefined ? {} : { timeout }, fn)
 }
-const sourceCase = (sdk, id, row, title, fn) => test(caseName(sdk, id, row, title), fn)
+const sourceCase = (sdk, id, row, title, fn, timeout) => test(caseName(sdk, id, row, title), timeout === undefined ? {} : { timeout }, fn)
 const json = (entry) => JSON.parse(entry.data.toString('utf8'))
 /** The banned `patterns` that `text` matches, each shown with the text it matched. */
 const textHits = (patterns, text) => patterns.map((re) => re.exec(text)).filter(Boolean).map((m) => show(m[0]))

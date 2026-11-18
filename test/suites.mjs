@@ -40,7 +40,6 @@ const top = (pkg) => pkg + '/*'
 const CONNECTOR_RUNTIME = `${PACKAGE.dshConnector}/**/!(README.md)`
 // Placement uses the core runtime and manifest, not the maintainers’ contract README.
 const CORE_RUNTIME = Object.freeze([top(PACKAGE.fishballCore), `${PACKAGE.fishballCore}/!(contracts)/**`, `${PACKAGE.fishballCore}/contracts/**/!(README.md)`])
-const SCHEMA_DOC = `${PACKAGE.dshConnector}/mcp-schema/README.md`
 const TOOLS_RUNTIME = `${PACKAGE.dshConnector}/tools/**/!(*.md|*.d.ts)`
 const SCHEMA_TYPES = `${PACKAGE.dshConnector}/mcp-schema/index.d.ts`
 
@@ -324,10 +323,10 @@ export const V3_SUITES = Object.freeze({
     [all(PACKAGE.fishballBoard), sub(PACKAGE.dshConnector, 'mcp-schema')]),
   // The contract suites read every file of the packages they bound, so any change there reruns them.
   'contract.k1-mcp-schema': suite('K1 MCP schema freeze', v3('contract/k1-mcp-schema'),
-    [...CONNECTOR_CONTRACTS, SCHEMA_DOC, SCHEMA_TYPES, `${PACKAGE.dshConnector}/src/**/*.js`, CONNECTOR_MANIFEST, sub(PACKAGE.dshConnector, 'host-services')]),
+    [...CONNECTOR_CONTRACTS, sub(PACKAGE.dshConnector, 'mcp-schema'), `${PACKAGE.dshConnector}/src/**/*.@(js|cjs|mjs)`, CONNECTOR_MANIFEST, sub(PACKAGE.dshConnector, 'host-services')]),
   // K1d amends K1 and K3's tokens.d.ts; its retire rows drive the real mailbox module (c-mailbox's world).
   'contract.k1d-amendments': suite('K1d amendments: token reveal, page id, Mailbox.transfer, SettingsWriter, SessionNotes', v3('contract/k1d-amendments'),
-    [...CONNECTOR_CONTRACTS, SCHEMA_DOC, SCHEMA_TYPES, sub(PACKAGE.dshConnector, 'host-services'),
+    [...CONNECTOR_CONTRACTS, sub(PACKAGE.dshConnector, 'mcp-schema'), sub(PACKAGE.dshConnector, 'host-services'),
       sub(PACKAGE.dshConnector, 'src', 'mailbox'), sub(PACKAGE.dshConnector, 'src', 'schema-value'), ...CONNECTOR_CORE]),
   'contract.k2-tools': suite('K2 contribution contract freeze', v3('contract/k2-tools'),
     [sub(PACKAGE.dshConnector, 'tools'), sub(PACKAGE.fishballCore, 'contracts')]),

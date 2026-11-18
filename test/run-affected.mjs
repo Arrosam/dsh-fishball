@@ -13,17 +13,16 @@
  * A base ref and --all leave out the shelved suites (test/suites.mjs SHELVED_SUITES); --suite runs
  * whatever it names, a shelved suite included.
  *
- * --sdk picks the V3 per-SDK files: `0.2.1-rc.5`, `0.2.2-rc.1` or `both` (default). The SDK the
- * host suites boot is FBTEST_DSH_RUNTIME, as for test/run-v3.mjs; set it to match.
- * --list prints the selection and exits. REMOVE-V2c deleted the pre-V3 selection (test/v2-suites.mjs)
- * with its last case exclusions, so every selected file runs in one node --test run.
+ * --sdk chooses matching installed runtimes: `0.2.1-rc.5`, `0.2.2-rc.1` or `both` (default).
+ * --parallel overlaps SDK jobs and files. --serial (the default) runs one file at a time.
+ * --list prints the selection and exits.
  */
 import { execFileSync } from 'node:child_process'
 import fs from 'node:fs'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { REPO, REQUIRED_RELEASE } from './support/constants.mjs'
-import { rootSuiteFiles, runSuites } from './support/suite-runner.mjs'
+import { rootSuiteFiles, runSuiteJobs } from './support/suite-runner.mjs'
 import { FULL, IGNORED, SDK_VERSIONS, SHELVED_SUITES, SUITES, V3_SUITES, V2_GROUPS } from './suites.mjs'
 import { AFFECTED_CASES } from './v3/contract/suite-map/affected-cases.mjs'
 
@@ -125,7 +124,7 @@ function resolveIds(names) {
 /** `ids` without the shelved suites, sorted: what every default selection runs. */
 const unshelved = (ids) => ids.filter((id) => !SHELVED_SUITES.includes(id)).sort()
 
-function main(argv) {
+async function main(argv) {
   const opts = parse(argv)
   if (opts.check) {
     const report = checkMap()
@@ -152,8 +151,15 @@ function main(argv) {
   if (opts.list) { for (const f of files) console.log('  ' + f); return 0 }
   if (files.length === 0) { console.log('nothing to run'); return 0 }
   if (opts.releaseCheck) process.env[REQUIRED_RELEASE.env] = REQUIRED_RELEASE.on
-  return runSuites(files, opts.rest)
+  const sdks = opts.sdk === SDKS.both ? SDKS.values : [opts.sdk]
+  const legacy = new Set(Object.values(V2_GROUPS).flatMap(({ files }) => files))
+  const jobs = sdks.map((sdk, i) => ({ sdk, files: files.filter((file) => {
+    const version = file.match(SDK_FILE)?.[1]
+    // Legacy files without an SDK suffix can gate individual rows on the active SDK.
+    return version === undefined ? i === 0 || legacy.has(file) : version === sdk
+  }) })).filter((job) => job.files.length)
+  return runSuiteJobs(jobs, opts.rest)
 }
 
 // Imported (by a check or another script) it only exports; run as a script it runs.
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) process.exit(main(process.argv.slice(2)))
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) process.exitCode = await main(process.argv.slice(2))
