@@ -383,6 +383,9 @@ export function createTokenManager({ sdk, credentials, key, now = Date.now, refr
       }
     },
 
+    /** Resolves once the refresh in flight (if any) has settled, whatever its outcome. */
+    settled: () => (inFlight ?? Promise.resolve()).then(() => undefined, () => undefined),
+
     /** @returns `{outcome, grant}`, outcome one of OAUTH_CLIENT.refreshOutcome. */
     refresh({ failedAccessToken } = {}) {
       inFlight ??= refreshNow(failedAccessToken).finally(() => { inFlight = undefined })

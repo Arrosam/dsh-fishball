@@ -95,12 +95,13 @@ function isConnectorServer(url, serverMetadata) {
  * @param {object} ctx core's row context (`authorization`)
  * @param {object} deps from `createLinkCredentials`: the saved `store` (`read`, `hasSaved`,
  *   `grantKey`, `managerFor`), the `target`, `clientId`, `clientMetadataUrl` and `sdk` / `fetch` /
- *   `timers` options, `isRefused(ref)`, `credentialIdOf(saved)`, and `onSaved(origin)` (after a
- *   grant was committed)
+ *   `timers` options, `isRefused(ref)`, `credentialIdOf(saved)`, `onSaved(origin)` (after a
+ *   grant was committed), and `bindingOf(origin, agentId)`: the binding fields a new grant's
+ *   payload carries (MULTI-1)
  * @returns {{control: object, refresh: () => void, dispose: () => void}} `control` is K3a's
  *   `FishballConnect`; `refresh()` recomputes the status after a credential changed
  */
-export function createConnect(ctx, { store, target, clientId, clientMetadataUrl, sdk, fetch, timers, isRefused, credentialIdOf, onSaved }) {
+export function createConnect(ctx, { store, target, clientId, clientMetadataUrl, sdk, fetch, timers, isRefused, credentialIdOf, onSaved, bindingOf = () => ({}) }) {
   const listeners = new Set()
   // One flow per grant record, registered on the first attempt for its origin and kept while core
   // runs: DSH refuses a second flow for one key, and a target may come back.
@@ -196,7 +197,9 @@ export function createConnect(ctx, { store, target, clientId, clientMetadataUrl,
         return manager.authorize({
           session, serverUrl, clientMetadataUrl: metadataUrl, discovery,
           authorizationParameters: { [MCP.oauth.agentIdParameter]: agentId },
-          payloadFields: { [LINK_SAVE.grantAgentIdField]: agentId },
+          // The grant records the id it was approved for (R-FIX F10) and its target-epoch binding
+          // (MULTI-0 security amendment), both as the attempt began.
+          payloadFields: { [LINK_SAVE.grantAgentIdField]: agentId, ...bindingOf(usable.origin, agentId) },
           message: LINK_SAVE.text.approval, timeoutMs: LINK_SAVE.attemptTimeoutMs, timers, callback,
         })
       },

@@ -139,6 +139,32 @@ and the Button stand-in keeps `variant` as `data-fbtest-variant`.
 | UIPF-CORE-EP-01 connect heading en / zh | EP | Visible `h3` `Connect` / `连接` naming the section (`aria-labelledby`, no `aria-label`), a StateDot |
 | UIPF-CORE-DT-01 `<state>` (every CONNECT.state, unavailable) | DT | Heading and StateDot in every state; the Connect button primary in needs-authorization and failed, outline otherwise |
 
+## MULTI-1: the page is a list of targets (PLAN-MULTI §3.1; SEAM_TARGETS; Q01, Q04, Q07)
+
+The page reads `GET api/fishball/targets` and acts through SEAM_TARGETS' POST routes by `targetId`
+(page.mjs answers them from `world.targets` / `world.targetAnswers`). Markers are the implementer's
+relayed ones (`MULTI_SET.mark`). DSH's `Modal` stand-in (primitives.mjs) renders title, description,
+children and footer while open, as DSH's bundle does.
+
+| Row | Technique | Oracle |
+| --- | --- | --- |
+| MULTI-SET-EP-01 empty / one / parent and two | EP (list size) | the list read (GET, same-origin, no-store); one card per target in list order; Add field and control |
+| MULTI-SET-EP-02 | EP (parent vs remote) | parent: no Remove, no URL field; remote: both; both have Connect, Retry and a token field |
+| MULTI-SET-EP-03 | EP (unnamed, Q01) | no URL-derived name outside the URL field |
+| MULTI-SET-ST-01 | ST (list 503 → available) | no card, nothing fails; after focus the cards appear |
+| MULTI-SET-UC-01 remote / parent / two cards | EP (which card) | token written only to that target's reference (`FISHBALL_TARGET_TOKEN_<id>__<epoch>`, or `DSH_AGENT_TOKEN` for the parent), trimmed; blank again; never rendered, logged, fetched or put in settings |
+| MULTI-SET-BVA-01 empty / one space | BVA (token text) | nothing written |
+| MULTI-SET-UC-02 connect / retry / cancel / approval url | EP (action) | `{targetId}` of that card only to the action's route; approval-url opened once with `_blank`, `noopener` |
+| MULTI-SET-ST-02 add accepted / duplicate / insecure | ST (list → add → list) | `{url}` posted; accepted → the new card after a re-read; refused → an alert, no card |
+| MULTI-SET-DT-01 remove / url × confirmed / cancelled | DT (Q07) | DSH's confirmation dialog first; `{confirmed: true}` only after confirming, for that target only; cancel posts none |
+
+Withdrawn (registered skipped, reason MULTI_SET.withdrawn; list in constants.mjs WITHDRAWN_MULTI):
+every SET3 row whose oracle was the scalar `target.url` field, the page's one `DSH_AGENT_TOKEN`
+field, the single Connect block over `/api/fishball/connect`, `registerSettingsRoutes` /
+`registerConnectCancelRoute` / `effectiveTarget`, or the instance line beside a user URL; and the
+UIPF-CORE Connect-section rows. Kept unchanged: SET3-UC-01 main 1-2 / main 3 (namespace) / A1 / A3,
+SET3-UC-02 main 3 / A1 / E2, SET3-EP-01 6-7, SET3-DT-01 6, SET3-ST-01 1-2, the entries
+(UC-07/08, DT-02/03/04, EP-05, ST-04, BVA-03 entries), UC-09, UC-10 and the model catalog rows.
 ## R-FIX-FUI F5 / F6 (`connect-cases.mjs`): the Connect control's races and press notices
 
 Every Connect GET / POST is held and answered by the case. CONNECT-ST-01 (an older read never
@@ -146,3 +172,10 @@ publishes after a newer one), ST-02 (a read started before a press is ignored), 
 no window.open, no GET, no state update), ST-04 (only the latest press opens its page and publishes its
 notice), CONNECT-DT-01 (press refusal × statuses after it, en and zh: the alert stays while (state,
 code) is unchanged, goes when it changes). Run against the pre-task chunk, 17 of the 20 rows fail.
+
+### MULTI-1 re-baseline of the R-FIX-FUI Connect rows (connect-cases.mjs)
+The CONNECT-ST/DT rows now run on card A of a two-card list (the card's Connect posts `{targetId: A}`;
+its status is A's TargetView from `GET api/fishball/targets`; B is never pressed). The shown state is
+the card's `data-fishball-target-state` (the public state of A's Connect status). CONNECT-ST-02's
+premise moved: a card exists only after the first list read, so "a read pending at the press" is a
+refocus read.

@@ -235,3 +235,21 @@ the loads the hook refused, and there is at least one per `begin()`.
 | EFIX3-LS-BVA-01 1 / 2 / 3 begins | BVA | Warnings equal the failed loads, at least one per begin. |
 | EFIX3-LS-ST-01 1 | State Transition | Failing, then loads again: the next begin gives the URL and adds no warning. |
 | EFIX3-LS-ST-01 2 | State Transition | A grant saved with no sdk (no warning), then a restart while the import fails: the token manager warns once per failed load, the link is not connected, no secret. |
+
+## MULTI-1 (per-target credentials; contracts README "Added credentials", "Hosted reservation", security amendment)
+
+Seam (relayed 2026-11-18): `createLinkCredentials(ctx, {names: credentialNames({targetId, endpointEpoch}), …})`,
+`createRecords(table, {targetId, endpointEpoch})`. The F-LINK-SAVE rows run as the parent on one fixed
+epoch (`PARENT_SOURCE`); identity rows likewise.
+
+Re-baselined: RFIX-F01-EP-01 and F01-ST-01 "back to A" read the pending binding at
+`payload.binding = {targetId: parent, endpointEpoch, origin, agentId}` (was `payload.origin`);
+RFIX-F10-DT-01: a grant whose binding names another agentId is not used at all (was "held id-mismatch"),
+per "All four binding members must match before use".
+
+| Row | Technique | Oracle |
+| --- | --- | --- |
+| MULTI-CRED-EP-01 names | EP (parent / added) | core's credentialNames equal the frozen names; an added target has no pending record |
+| MULTI-CRED-EP-02 added target | EP (added target accepted) | saved only as `fishball-core/token-<id>-<epoch>`, binding = `{targetId, endpointEpoch, origin, agentId}`; parent names untouched |
+| MULTI-CRED-DT-01 binding mismatch | DT (epoch differs / agentId differs) | the saved copy is not presented; not connected |
+| MULTI-CRED-ST-01 parent epoch retired | ST (E1 bound → same-origin E2 → restart) | the E1 hosted copy is not used for E2 |

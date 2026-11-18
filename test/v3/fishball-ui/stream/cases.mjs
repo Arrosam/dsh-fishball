@@ -1,5 +1,5 @@
 /**
- * R-FIX-FUI F3 (stream health: strip, ask cards, pairing card) and F9 (the ask card's time in the
+ * R-FIX-FUI F3 (stream health: ask cards; the strip and pairing card withdrawn by MULTI-3) and F9 (the ask card's time in the
  * DSH UI language) black-box rows. Component level: fishball-ui's real client and parts in the
  * scripted DSH page (page.mjs), one health-aware EventSource stand-in for every stream.
  *
@@ -16,92 +16,39 @@ import { caseTest } from '../../contract/package-boundaries/cases.mjs'
 import { expectedCard, askEvent } from '../../fishball-core/asks/world.mjs'
 import { EVENT_TYPE, ARGUMENTS_STATUS } from '../../fishball-core/asks/constants.mjs'
 import { settle } from '../../fishball-core/settings/page.mjs'
-import { stripView } from '../../fishball-core/status/subject.mjs'
-import { UI_CARD } from '../../fishball-core/status/constants.mjs'
-import { snapshotOf } from '../model-dialog/strip.mjs'
-import { coreView, viewModule, plain } from '../pairing/subject.mjs'
-import { FIXTURE as PAIR_FIXTURE, STATE } from '../pairing/constants.mjs'
 import { HEALTH, HEALTH_HOOK, LANGS, NOTICE_TEXT, TIME } from './constants.mjs'
 import { DOCK, dockPage } from './page.mjs'
+import { WITHDRAWN } from '../model-dialog/targets-constants.mjs'
+import { withdrawnRow } from '../model-dialog/withdrawn.mjs'
+import { withSource } from '../model-dialog/targets.mjs'
 
 const show = (v) => JSON.stringify(v)
-const STRIP = Object.freeze({ stateHook: 'data-fishball-strip-state', badge: 'data-fishball-strip-badge', line: 'data-fishball-strip-line', control: 'data-fishball-strip-control' })
 const ASK = Object.freeze({ card: 'data-fishball-ask', choice: 'data-fishball-ask-choice', time: 'fb-ask-time' })
-const PAIR = Object.freeze({ choice: 'data-fishball-pairing-choice' })
 
 export function registerStreamCases(sdk) {
   const t = (id, row, title, fn) => caseTest(sdk, id, row, title, fn)
-  const askCards = (n = 1) => Array.from({ length: n }, () => expectedCard(askEvent({ type: EVENT_TYPE.permission, argumentsText: '{}', argumentsStatus: ARGUMENTS_STATUS.complete }), 'open'))
+  // Re-baselined (MULTI-0 ask-card.d.ts): every card carries its opaque handle and source.
+  const askCards = (n = 1) => Array.from({ length: n }, () => withSource(expectedCard(askEvent({ type: EVENT_TYPE.permission, argumentsText: '{}', argumentsStatus: ARGUMENTS_STATUS.complete }), 'open')))
   const askFrame = (cards) => ({ managerSessionId: DOCK.managerSession, cards })
-  const stripFrame = (lang, kind = 'needs-authorization', control = 'connect') => stripView(sdk, snapshotOf(kind, { control }), lang)
-  const pairingFrame = async (lang) => plain((await viewModule(sdk)).pairingView(coreView(STATE.warnMatch), lang, PAIR_FIXTURE.zones[0]))
   const noticeOf = (p, among) => p.byHook(HEALTH_HOOK.notice, undefined, among)
   /** Ask-card controls: the choice buttons and the reason box. */
   const askControls = (p) => [...p.byHook(ASK.choice, undefined, p.within('asks')).filter((n) => n.tag === 'button'), ...p.within('asks').filter((n) => n.tag === 'textarea')]
 
   // ======================================================================== HEALTH-ST-00: nothing yet
-  t('HEALTH-ST-00', 'initial', 'no frame yet and no error: no notice and no stale mark anywhere', async (c) => {
+  t('HEALTH-ST-00', 'initial', 'no frame yet and no error: no notice anywhere', async (c) => {
     const p = await dockPage(c, sdk)
     assert.deepEqual(p.byHook(HEALTH_HOOK.notice), [])
-    assert.deepEqual(p.byHook(HEALTH_HOOK.stripStale), [])
   })
 
-  // ======================================================================== the strip (minimal: stale, closed + Reconnect, recovery)
+  // ======================================================================== the strip (withdrawn)
+  // Re-baselined (MULTI-3 requirement D): there is no strip card in the dock any more; the sidebar
+  // target list's own health rows are model-dialog/targets-cases.mjs TGT-SB-ST-06.
   for (const lang of LANGS) {
-    t('HEALTH-DT-01', `strip stale ${lang}`, `(${lang}) strip, error while reconnecting → [${HEALTH_HOOK.stripStale}=stale], the badge says ${show(NOTICE_TEXT.staleBadge[lang])}, no cached lines / tools / control, the stale notice`, async (c) => {
-      const p = await dockPage(c, sdk, { lang })
-      const frame = await stripFrame(lang)
-      await p.deliver('strip', frame)
-      await p.fail('strip', false)
-      const root = p.root('strip')
-      assert.ok(root, 'no strip card')
-      assert.equal(root.props[HEALTH_HOOK.stripStale], HEALTH.stale)
-      const badge = p.byHook(STRIP.badge, undefined, p.within('strip'))
-      assert.equal(badge.length, 1)
-      assert.equal(p.text(badge[0]).trim(), NOTICE_TEXT.staleBadge[lang])
-      assert.deepEqual(p.byHook(STRIP.line, undefined, p.within('strip')).map((n) => n.props[STRIP.line]), [], 'cached lines / tools chip shown')
-      assert.deepEqual(p.byHook(STRIP.control, undefined, p.within('strip')), [], 'cached control shown')
-      const notices = p.byHook(HEALTH_HOOK.notice, HEALTH.stale, p.within('strip'))
-      assert.equal(notices.length, 1)
-      assert.ok(p.text(notices[0]).includes(NOTICE_TEXT.stale[lang]))
-    })
-    t('HEALTH-ST-01', `strip closed → Reconnect ${lang}`, `(${lang}) strip, error with CLOSED → [stale=closed], the closed notice and a Reconnect button (${show(NOTICE_TEXT.retry[lang])}); pressing it closes the old EventSource and opens a new one`, async (c) => {
-      const p = await dockPage(c, sdk, { lang })
-      await p.deliver('strip', await stripFrame(lang))
-      const [old] = p.live('strip')
-      await p.fail('strip', true)
-      assert.equal(p.root('strip')?.props[HEALTH_HOOK.stripStale], HEALTH.closed)
-      const notices = p.byHook(HEALTH_HOOK.notice, HEALTH.closed, p.within('strip'))
-      assert.ok(notices.length === 1 && p.text(notices[0]).includes(NOTICE_TEXT.closed[lang]), show(notices.map((n) => p.text(n))))
-      const [retry] = p.byHook(HEALTH_HOOK.retry, undefined, p.within('strip'))
-      assert.ok(retry, 'no Reconnect')
-      assert.equal(p.text(retry).trim(), NOTICE_TEXT.retry[lang])
-      const before = p.all('strip').length
-      await p.press(retry)
-      assert.equal(old.closed, true, 'the old EventSource is still open')
-      assert.equal(p.all('strip').length, before + 1, 'no new EventSource')
-      assert.equal(p.live('strip').length, 1)
-    })
+    withdrawnRow(sdk, 'HEALTH-DT-01', `strip stale ${lang}`, `(${lang}) strip, error while reconnecting`, WITHDRAWN.strip)
+    withdrawnRow(sdk, 'HEALTH-ST-01', `strip closed → Reconnect ${lang}`, `(${lang}) strip, error with CLOSED`, WITHDRAWN.strip)
   }
-  t('HEALTH-ST-02', 'strip recovery', 'strip stale → a fresh valid frame: no stale mark, no notice, the state word, lines and control back', async (c) => {
-    const p = await dockPage(c, sdk)
-    const frame = await stripFrame('en')
-    await p.deliver('strip', frame)
-    await p.fail('strip', false)
-    assert.equal(p.root('strip')?.props[HEALTH_HOOK.stripStale], HEALTH.stale, 'precondition')
-    await p.deliver('strip', frame)
-    assert.ok([undefined, false].includes(p.root('strip')?.props[HEALTH_HOOK.stripStale]), show(p.root('strip')?.props))
-    assert.deepEqual(noticeOf(p, p.within('strip')), [])
-    assert.equal(p.root('strip')?.props[STRIP.stateHook], UI_CARD.table['needs-authorization'][0])
-    assert.ok(p.byHook(STRIP.control, undefined, p.within('strip')).length === 1, 'the control did not come back')
-  })
-  t('HEALTH-ST-03', 'initial closed', 'no frame ever, error with CLOSED → the strip card is drawn with the closed notice and Reconnect', async (c) => {
-    const p = await dockPage(c, sdk)
-    await p.fail('strip', true)
-    assert.ok(p.root('strip'), 'no strip card')
-    assert.equal(p.byHook(HEALTH_HOOK.notice, HEALTH.closed, p.within('strip')).length, 1)
-    assert.equal(p.byHook(HEALTH_HOOK.retry, undefined, p.within('strip')).length, 1)
-  })
+  withdrawnRow(sdk, 'HEALTH-ST-02', 'strip recovery', 'strip stale → a fresh valid frame', WITHDRAWN.strip)
+  withdrawnRow(sdk, 'HEALTH-ST-03', 'initial closed', 'no frame ever, error with CLOSED → the strip card', WITHDRAWN.strip)
 
   // ======================================================================== the ask cards (depth)
   for (const lang of LANGS) {
@@ -158,18 +105,16 @@ export function registerStreamCases(sdk) {
     await p.deliver('asks', askFrame(cards))
     assert.deepEqual(noticeOf(p, p.within('asks')), [])
   })
-  t('HEALTH-ST-06', 'Reconnect reopens every stream', 'strip, asks and pairing all closed → one Reconnect press reopens every one of them (old ones closed), each stale until its frame', async (c) => {
+  // Re-baselined (MULTI-3 requirement D): the dock's streams are the ask cards' only (no strip, no
+  // pairing card); the shared Reconnect across the sidebar and the asks is TGT-SB-ST-06 "Reconnect reopens".
+  t('HEALTH-ST-06', 'Reconnect reopens the asks stream', 'asks closed → one Reconnect press closes the old EventSource and opens one new asks stream, stale until its frame', async (c) => {
     const p = await dockPage(c, sdk)
-    await p.deliver('strip', await stripFrame('en'))
     await p.deliver('asks', askFrame(askCards(1)))
-    await p.deliver('pairing', await pairingFrame('en'))
-    const old = ['strip', 'asks', 'pairing'].flatMap((k) => p.live(k))
-    for (const k of ['strip', 'asks', 'pairing']) await p.fail(k, true)
+    const old = p.live('asks')
+    await p.fail('asks', true)
     await p.press(p.byHook(HEALTH_HOOK.retry, undefined, p.within('asks'))[0])
     assert.ok(old.every((s) => s.closed), 'an old EventSource stayed open')
-    for (const k of ['strip', 'asks', 'pairing']) assert.equal(p.live(k).length, 1, k + ' not reopened')
-    assert.equal(p.root('strip')?.props[HEALTH_HOOK.stripStale], HEALTH.stale)
-    assert.equal(p.root('pairing')?.props[HEALTH_HOOK.pairingStale], HEALTH.stale)
+    assert.equal(p.live('asks').length, 1)
     assert.equal(p.root('asks')?.props[HEALTH_HOOK.asksStale], HEALTH.stale)
   })
   t('HEALTH-ST-07', 'remount after closed', 'a stream closed, then every card unmounted and mounted again → it reads stale (not closed) until a frame', async (c) => {

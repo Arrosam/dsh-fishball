@@ -39,10 +39,11 @@ export function brokenBoardCopy() {
   fs.writeFileSync(file, JSON.stringify({ ...pkg, engines: { ...pkg.engines, dsh: C.shelved.impossibleEngine } }))
   return dir
 }
-export async function boot(sdk, members, home, dirs = {}) {
+/** `options.child` (MULTI-1): `{targetUrl}` boots a hosted child (world.mjs FBW_CHILD); absent, standalone. */
+export async function boot(sdk, members, home, dirs = {}, options = {}) {
   fs.mkdirSync(path.join(C.temp, C.homesSuffix), { recursive: true })
   home ??= fs.mkdtempSync(path.join(C.temp, C.homesSuffix, C.homePrefix))
-  const child = spawn(process.execPath, [C.worker], { env: { ...process.env, HOME: home, DSH_HOME: home, FBW_SDK: sdk, FBW_MEMBERS: JSON.stringify(members), FBW_DIRS: JSON.stringify(dirs), FBTEST_DSH_RUNTIME: runtimeOf(sdk), FBTEST_CHROME: C.env.chrome, npm_config_userconfig: C.env.userconfig, [C.env.testHomes]: C.testHomes }, stdio: ['pipe', 'pipe', 'pipe', 'ipc'] })
+  const child = spawn(process.execPath, [C.worker], { env: { ...process.env, HOME: home, DSH_HOME: home, FBW_SDK: sdk, FBW_MEMBERS: JSON.stringify(members), FBW_DIRS: JSON.stringify(dirs), ...(options.child === undefined ? {} : { FBW_CHILD: JSON.stringify(options.child) }), ...(options.handoff === undefined ? {} : { [C.handoffEnv]: options.handoff }), ...(options.liveChild ? { FBW_CHILD_LIVE: '1' } : {}), FBTEST_DSH_RUNTIME: runtimeOf(sdk), FBTEST_CHROME: C.env.chrome, npm_config_userconfig: C.env.userconfig, [C.env.testHomes]: C.testHomes }, stdio: ['pipe', 'pipe', 'pipe', 'ipc'] })
   let output = C.empty; let exited = false; let ready = false; let next = C.first
   const pending = new Map()
   child.stdout.on('data', (d) => { output += d }); child.stderr.on('data', (d) => { output += d })
@@ -70,7 +71,7 @@ export async function request(h, route, body, headers = {}, cookie = true) {
   return { status: r.status, json, text, cache: r.headers.get('cache-control') }
 }
 /** One request over the listener's socket with an explicit Host (fetch() cannot set Host). */
-function raw(h, { method, route, authority, headers }) {
+function raw(h, { method, route, authority, headers, body = {} }) {
   const target = new URL(h.origin)
   return new Promise((resolve, reject) => {
     const req = http.request({ hostname: target.hostname, port: target.port, path: route, method, headers: { ...headers, host: authority } }, (res) => {
@@ -78,7 +79,7 @@ function raw(h, { method, route, authority, headers }) {
       res.setEncoding(C.encoding).on('data', (d) => { text += d }).on('end', () => { let json; try { json = JSON.parse(text) } catch {} resolve({ status: res.statusCode, headers: res.headers, json, text }) })
     })
     req.on('error', reject)
-    req.end(method === C.method.post ? JSON.stringify({}) : undefined)
+    req.end(method === C.method.post ? JSON.stringify(body) : undefined)
   })
 }
 /**
@@ -87,11 +88,11 @@ function raw(h, { method, route, authority, headers }) {
  * in first, as a browser opening that address would; DSH's own fence (dsh-client-connection
  * isTrustedApiRequest) still judges the Host/Origin pair before core.
  */
-export async function requestAs(h, route, { authority, origin }) {
+export async function requestAs(h, route, { authority, origin, body }) {
   h.cookies ??= {}
   if (h.cookies[authority] === undefined) {
     const login = await raw(h, { method: C.method.get, route: '/?token=' + encodeURIComponent(h.token), authority, headers: {} })
     h.cookies[authority] = [login.headers['set-cookie'] ?? []].flat().map((c) => c.split(';')[C.first]).join('; ')
   }
-  return raw(h, { method: C.method.post, route, authority, headers: { cookie: h.cookies[authority], 'content-type': C.json, ...(origin === undefined ? {} : { origin }) } })
+  return raw(h, { method: C.method.post, route, authority, body, headers: { cookie: h.cookies[authority], 'content-type': C.json, ...(origin === undefined ? {} : { origin }) } })
 }

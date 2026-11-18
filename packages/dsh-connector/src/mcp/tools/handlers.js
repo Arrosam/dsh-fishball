@@ -1,5 +1,5 @@
 /**
- * The 22 core tools' bodies (task C-TOOLS; design §3.2; K1 TOOLS). Each body gets arguments that
+ * The core tools' bodies (task C-TOOLS; design §3.2; K1 TOOLS). Each body gets arguments that
  * already passed K1's input schema and the payload rules (dispatch.js), and returns
  * `{ok: true, …fields}` or `{ok: false, code}`; dispatch.js builds the K1 envelope. A body never
  * builds prose: a refusal is a code. A domain port signals a refusal by returning `{ok: false,
@@ -79,14 +79,6 @@ export function createHandlers({ pairs, mailbox, managed, domain, now, logger },
     return offers.answer({ sessionId: root, requestId, offerId: args.offerId, principalKey: caller.principalKey }, commit)
   }
 
-  /**
-   * Fishball's decisions Q3, Q5 and R5 (2026-11-14): the main DSH surface of `question_ask` is not
-   * designed yet (W3 brief Q-25), so it files nothing; `question_answer_own` settles only cards
-   * `question_ask` filed, so it goes with it. Both answer after K1's schema and V2's payload rules
-   * (question counts and character limits) passed (dispatch.js).
-   */
-  const notYet = async () => refused(REFUSAL.unsupportedOperation)
-
   return Object.freeze({
     // Only managed sessions are related in V3 (Fishball's Q4): the caller's own, never another's.
     async [TOOL.sessionsList](args, { caller }) {
@@ -138,8 +130,6 @@ export function createHandlers({ pairs, mailbox, managed, domain, now, logger },
         await interactions.answerQuestion({ ...answer, sessionId, principalKey: caller.principalKey }), () => ({ accepted: true }),
       ))
     },
-    [TOOL.questionAsk]: notYet,
-    [TOOL.questionAnswerOwn]: notYet,
     // Only sessions the caller manages (the user, 2026-11-17: "Prompts can be listed and answered
     // only on sessions the agent manages").
     async [TOOL.promptsList](args, { caller }) {

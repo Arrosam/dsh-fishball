@@ -53,3 +53,9 @@ audit's dark "4.73:1" is the text against the fill (measured 4.68:1 before the f
 3:1 shape rule is what the dark badge failed before.
 RESHOOT fix 1 (2026-11-18): run against dev/v3-reshoot @ 881b14b2 (before the fix), the 4 light
 RESHOOT-ASKBADGE-DT-01 rows fail at 1.83:1 (#F59E0B on the warn band); the dark and ST rows pass.
+
+**Re-baselined (MULTI-3 requirement D):** the status card is gone, so UIFF-STRIP-DT-01 and the
+success-tone control row stay listed, withdrawn. UIFF-TOKENS-EP-01 "target list" replaces "status
+card": the sidebar target list, one row per public state with the connected row expanded, uses DSH
+tokens only in both themes (requirement G). The ask-card fixtures carry MULTI-0's `handle` and `source`.
+`page.mjs` `measure` takes an optional viewport, which the frame-layout rows of `../package` use.

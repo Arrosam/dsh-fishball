@@ -22,6 +22,8 @@ export const SUBJECT = Object.freeze({
   task: 'F-LINK-SAVE',
   entry: path.join(REPO, 'packages', 'core', 'src', 'link', 'index.js'),
   factory: 'createLinkCredentials',
+  /** MULTI-1 (relayed 2026-11-18): `credentialNames({targetId, endpointEpoch})` of src/link/credentials.js, re-exported by the link entry. */
+  names: 'credentialNames',
   members: Object.freeze(['credentials', 'connect', 'onChange', 'dispose']),
   connectMembers: Object.freeze(['status', 'onChange', 'begin', 'cancel']),
   /** `ConnectBegin.outcome` (connect.d.ts). */

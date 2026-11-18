@@ -157,7 +157,7 @@ export function forgetSession(root, sessionId) {
  * `fishballSession` is the session the Fishball agent runs in (decision 2026-11-14 4: a replaced
  * session); `seam` goes to subject.mjs (its optional fault and timing hooks).
  */
-export async function openWorld(sdk, root, { linkHooks, onRequest, otherSession = false, plugins = [], onOpen, seam, fishballSession = FIXTURE.fishballSession } = {}) {
+export async function openWorld(sdk, root, { linkHooks, onRequest, otherSession = false, plugins = [], onOpen, seam, fishballSession = FIXTURE.fishballSession, secondTarget = false } = {}) {
   const p = await sdkParts(sdk)
   const ctx = new p[DSH.cordis].Context()
   const logs = []
@@ -203,7 +203,9 @@ export async function openWorld(sdk, root, { linkHooks, onRequest, otherSession 
   const other = otherSession ? await sessionAgent(FIXTURE.otherSession) : undefined
 
   const link = new FakeLink(file('connector'), linkHooks)
-  const core = await makeSubject(sdk, { ctx, agent, link, seam })
+  // MULTI-1: a second target's own mailbox (its own durable file), polled as SOURCE.b.
+  const second = secondTarget ? new FakeLink(file('connectorB'), linkHooks) : undefined
+  const core = await makeSubject(sdk, { ctx, agent, link, second, seam })
 
   /** A plugin with its own fiber; its registrations are effects, so `off()` disposes them. */
   async function plugin({ pluginId, registrations, handler }) {
@@ -235,7 +237,7 @@ export async function openWorld(sdk, root, { linkHooks, onRequest, otherSession 
   const userMessage = (text, id) => freezeMessage({ id, role: 'user', content: [{ type: 'text', text }], source: { kind: 'user' } })
 
   const world = {
-    sdk, root, ctx, agent, other, link, core, logs, requests, file, sessionLog, userMessage, plugin, loaded,
+    sdk, root, ctx, agent, other, link, second, core, logs, requests, file, sessionLog, userMessage, plugin, loaded,
     /** Admissions (durable `user/message`) of the Fishball session that carry `marker`: its wakes. */
     async admissions(marker, sessionId) {
       return (await sessionLog(sessionId)).filter((e) => e.type === DSH.userMessage && json(e.data).includes(marker))

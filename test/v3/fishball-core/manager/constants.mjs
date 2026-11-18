@@ -8,6 +8,7 @@
  * GET reads, POST ensures; concurrent waiters join one activation) and the frozen core contracts
  * (packages/core/contracts/constants.js). No value comes from an implementation.
  */
+import { SEAM_TARGETS } from '../../../../packages/shared/ui-seam.js'
 import path from 'node:path'
 import os from 'node:os'
 import { FAKE, FAKE_MODELS } from '../../../support/constants.mjs'
@@ -57,8 +58,10 @@ export const BUDGET = Object.freeze({
 /** Core's routes (interface "Routes"; the session route is X1a's, unchanged). */
 export const ROUTE = Object.freeze({
   session: '/api/fishball/session',
-  connect: '/api/fishball/connect',
-  cancel: '/api/fishball/connect/cancel',
+  // MULTI-0: the K3a Connect routes are withdrawn; Connect is per target (SEAM_TARGETS.route).
+  connect: SEAM_TARGETS.route.connect,
+  cancel: SEAM_TARGETS.route.cancel,
+  targetIdField: SEAM_TARGETS.route.targetIdField,
 })
 /** The V2 reminder page API that is gone (DESIGN §20 "their V2 page API is gone"; inst-OQ-19). */
 export const RETIRED = Object.freeze({
@@ -70,7 +73,9 @@ export const HTTP = Object.freeze({ get: 'GET', post: 'POST', ok: 200, json: 'ap
 
 /** The manager's model-visible tools (R-FB-02 base set; interface "Manager scope tools"). */
 export const TOOLS = Object.freeze({
-  base: Object.freeze(['read', 'read_image', 'working_directory']),
+  // `ask_user_question` is DSH's own ask tool in core's preset (the user, 2026-11-18:
+  // "用DSH自带的提问工具").
+  base: Object.freeze(['read', 'read_image', 'working_directory', 'ask_user_question']),
   reminders: Object.freeze(['schedule_create', 'schedule_list', 'schedule_update', 'schedule_delete']),
   ask: 'ask_user',
   privateSkill: /^private_skill_/,
@@ -126,7 +131,7 @@ export const IDENTITY = Object.freeze({
 
 /** Connect inputs that reach an approval URL (R12 = B: an https CIMD URL with a path; a loopback http target). */
 export const CONNECT_INPUT = Object.freeze({
-  targetPath: Object.freeze(['target', 'url']),
+
   metadataPath: Object.freeze(['connect', 'clientMetadataUrl']),
   metadataUrl: 'https://agent.example/fishball-core.json',
   bindHost: '127.0.0.1',
