@@ -12,7 +12,7 @@ import * as K1 from '../../../../packages/dsh-connector/mcp-schema/index.js'
 import { C, FAKE_DSH, MULTI } from './constants.mjs'
 import { multiWorld } from './multi-world.mjs'
 import {
-  APPROVAL, CONNECT, ID_PATTERN, LINK, MCP, PARENT_NAMES, SEAM_TARGETS, TARGETS, allocateSuffix, askToolNameOf, connectorTools, credentialNamesOf, eventMessageId, resolvedName, toolNameOf,
+  APPROVAL, CONNECT, ID_PATTERN, readableOf, LINK, MCP, PARENT_NAMES, SEAM_TARGETS, TARGETS, allocateSuffix, askToolNameOf, connectorTools, credentialNamesOf, eventMessageId, resolvedName, toolNameOf,
 } from './targets-oracle.mjs'
 
 const T = { timeout: C.budget.boot + MULTI.budget.connectMs * 4 }
@@ -375,6 +375,26 @@ export function registerMultiCases(sdk) {
     await call
     const sessionsCalls = fa.callsOf(K1.TOOL.sessionsList)
     assert.deepEqual(sessionsCalls.map((c) => c.endpoint), [K1.PATHS.mcp], 'the call was re-sent or moved to the new endpoint')
+  })
+
+  row(sdk, 'MULTI-TOOL-EP-02', 'adversarial names stay data', 'a server name holding quotes, a newline, a fake closing marker tag and a role-looking line stays entirely inside the framed block of each description; the manager persona names the tool scheme by role (mcp__<dsh>__<tool>_<id>) and never a server name', async () => {
+    const w = await standalone()
+    const f = await w.fake({ name: MULTI.name.adversarial })
+    const a = await w.connect(f)
+    const tools = await w.tools()
+    for (const t of tools.filter((x) => x.name.startsWith(TARGETS.toolName.prefix + readableOf(a.view.name)))) {
+      const inner = TARGETS.text.toolSource(JSON.stringify(a.view.name))
+      const at = t.description.indexOf(inner)
+      assert.ok(at > 0, 'no framed source text: ' + t.description)
+      const marker = /^<untrusted-([0-9a-f-]{36})>$/.exec(t.description.slice(0, at).trim())?.[1]
+      assert.ok(marker, 'not opened by a random marker')
+      assert.equal(t.description.split('<untrusted-' + marker + '>').length, 2, 'the marker appears twice before the block')
+      const outside = t.description.slice(0, at) + t.description.slice(at + inner.length)
+      assert.equal(outside.includes(MULTI.name.adversarialNeedle), false, 'the server name leaks outside the framed block')
+    }
+    const system = await w.h.call('managerSystem')
+    assert.equal(system.includes(MULTI.name.adversarialNeedle), false, 'a server name in the persona')
+    assert.ok(system.includes(MULTI.personaScheme), 'the persona does not name the tool scheme by role: ' + MULTI.personaScheme)
   })
 
   // ============================================================== MULTI-EVT / MULTI-ASK (system)
