@@ -38,12 +38,13 @@ export const MULTI_EXPORTS = Object.freeze({
 })
 
 /**
- * "no tool … changes" (README; PLAN-MULTI §7 "Wire": existing Connector tool schemas and raw names
- * unchanged, no `dsh` field): TOOL_NAMES as at the freeze base e02ee05e, before MULTI-0.
+ * MULTI-0 changes no tools. The later explicit CONN-TOOLS decision withdraws question_ask and
+ * question_answer_own, so the closed oracle now names the retained 20 tools, independently of
+ * implementation exports. No target-selecting argument is added by either decision.
  */
 export const TOOL_NAMES_UNCHANGED = Object.freeze([
   'sessions_list', 'session_start', 'session_message', 'session_redirect', 'session_stop', 'session_read', 'session_release',
-  'approvals_list', 'approval_answer', 'question_answer', 'question_ask', 'question_answer_own', 'prompts_list', 'prompt_answer',
+  'approvals_list', 'approval_answer', 'question_answer', 'prompts_list', 'prompt_answer',
   'grants_list', 'grant_revoke', 'attachment_put', 'attachment_read', 'inbox_poll', 'inbox_ack', 'pair', 'set_name',
 ])
 /** D01: no MCP tool gains a target-selecting argument. */

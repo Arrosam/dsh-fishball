@@ -39,8 +39,8 @@ domain's operation codes, payload vocabularies and payload bounds are this modul
 
 `sessions_list`, `session_start`, `session_message`, `session_redirect`, `session_stop`,
 `session_read`, `session_release`, `approvals_list`, `approval_answer`, `question_answer`,
-`question_ask`, `question_answer_own`, `prompts_list`, `prompt_answer`, `grants_list`,
-`grant_revoke`, `attachment_put`, `attachment_read`, `inbox_poll`, `inbox_ack`, `pair`, `set_name`.
+`prompts_list`, `prompt_answer`, `grants_list`, `grant_revoke`, `attachment_put`, `attachment_read`,
+`inbox_poll`, `inbox_ack`, `pair`, `set_name`.
 No watch tools (R-WATCH-03), no attention tool (R-EXT-13). Core tools come before every contributed
 tool (R-EXT-12).
 
@@ -53,16 +53,13 @@ tool (R-EXT-12).
 - **Objects are closed:** an undeclared argument (`notifyWhenFinished` included) is
   `invalid-arguments` with `isError: true` [spec: tools § Security Considerations; TQ-12].
 - **Payloads are V2's** (contract 1.2 §4; bounds `PAYLOAD_LIMITS`), timer-free, with these V3 changes: no
-  `notifyWhenFinished` / `watchId` / `watchError`; `question_ask` takes no `sessionId` (the caller is
-  the principal, not a child session); `question_answer` names the `offerId` it answers, like
-  `approval_answer` (S3: authority is the live offer id and the pair, design §3.4).
+  `notifyWhenFinished` / `watchId` / `watchError`; `question_answer` names the `offerId` it answers,
+  like `approval_answer` (S3: authority is the live offer id and the pair, design §3.4).
 - **An `ask` event** (`ask_agent`) is answered with `approval_answer` on its `offer.offerId`, as
   V2's asked request was. *Withdrawn by C-WIRE-2:* there is no `ask_agent` (the user, 2026-11-17:
   "不给ask_agent工具"), so nothing produces an `ask`; the type and the `ask` decision stay frozen
   words. A permission offer refuses `approval_answer` with `ask` as `invalid-decision` (the user's
   answer, 2026-11-17: "Refuse it"), and its `choices` are `allow`, `grant`, `reject`, `escalate`.
-- **`question_ask`'s answer** arrives as a `settlement` event with `answers` (V2 sent it through the
-  inbox).
 
 ### Result envelope (R-CON-02, decided per spec)
 
@@ -474,6 +471,16 @@ the rows below are behaviour and internal-port contracts the frozen texts left o
 | MCP endpoint: one bearer check before the body | a `subscriptions/listen` is verified again, synchronously with its reservation; a revoked one is 401 `invalid_token` | F07 |
 | `approval_answer` reject: needed `risk` (`risk-required`) | needs a non-empty reason only, as §7a.3 and the contract say; one rule shared with `prompt_answer` | F08 |
 
+## CONN-TOOLS amendment (2026-11-18): remove connector-owned questions
+
+The user removes `question_ask` and `question_answer_own` and their exclusive own-card contracts.
+`question_answer` remains for forwarded managed-session DSH questions and plan reviews; shared
+question/answer validators and generic `settlement.answers` remain. The historical dotted
+`question.ask` / `question.answerOwn` design is superseded, not a compatibility surface. This
+amendment adds no Fishball arbitrary-question facility ([DESIGN §26](<../../../DESIGN.md#26-v3-conn-tools-remove-connector-owned-questions-2026-11-18>)).
+Authorization precedence is unchanged (R-OA-04/R-ID-06): removed-tool calls with pair-only tokens
+receive HTTP 403 `insufficient_scope` without effects; full-scope tokens receive unknown-tool -32602.
+
 ## MULTI-0 amendment (2026-11-18): server identity
 
 Additive only ([PLAN-MULTI](<../../../docs/planning/v3-multi-dsh.md>) D04–D08, §4.1, §4.3, Q02); no
@@ -497,7 +504,7 @@ tool, schema, OAuth, receipt or event changes.
 | What (case rows flagged `K`) | Task |
 | --- | --- |
 | which `notice` codes exist (EVT-EP-01 15) | C-WIRE, as a K1 amendment; C-ROUTE produces none (K1c-4) |
-| card fields of the ask card and of `question_ask` (PLAT-UC-07) | K3 |
+| card fields of the ask card (PLAT-UC-07) | K3 |
 | `dshConnectorHandover` codes, dropdown order (HAND rows 1-E1, 7a, 8, 144); release emits nothing (HAND-ST-01 row 5) is K1c-2; release by another principal is `forbidden` (HAND-ST-01 row 9) is K1c-1 | K3 / C-ROUTE |
 | `dshConnectorTokens`, hosted status codes (08-hosted) | K3 / I-HOST |
 | interceptor priority range (EVT-DT-02 7) and core's interception (EVT) | K3 / F-INTERCEPT |
