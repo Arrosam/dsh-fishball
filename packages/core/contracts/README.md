@@ -238,8 +238,8 @@ same in standalone and hosted mode, and no plugin injects a section into it.
 - **Offered preset:** `fishball`, the default and the only one.
 - **Policy:** sandbox `read-only`; `ctx.approval.config.policy` = `ask`, read directly; permission
   presets `[read-only]`, default `read-only`.
-- **Manager tools:** exactly `read`, `read_image` and `working_directory`, checked on resume
-  instead of the preset name (R-FB-13).
+- **Manager tools:** exactly `read`, `read_image` and `working_directory`, plus `ask_user_question`
+  (the user, 2026-11-18: DSH's own ask tool), checked on resume instead of the preset name (R-FB-13).
 - **Report (spelling PROPOSED):** `ok`, or `guards-overridden` with `row:<id>`, `policy:<key>`, `agent-presets`,
   `bundle-order` or `manager-tools`.
   - Checks run at app ready, `settings/document-updated` and `plugin-manager/changed`, never
