@@ -65,11 +65,15 @@ const storageDomain = Object.freeze({ defineDomain, domainTable })
  * open: dsh-storage-domain keeps an open domain's name reserved, and a leaked one would refuse the
  * next apply of this row (`already-open`) until the process restarts.
  */
-function ownedHandles(ctx) {
+function ownedHandles(ctx, drainTargets) {
   const handles = []
   let closed = false
-  const close = (handle) => { void handle.close().catch(() => {}) }
-  ctx.effect(() => () => { closed = true; for (const handle of handles.splice(0)) close(handle) })
+  const close = (handle) => handle.close().catch(() => {})
+  // Cordis runs independent disposers concurrently. Keep these tables open until target writes finish.
+  ctx.effect(() => async () => {
+    closed = true
+    try { await drainTargets() } finally { await Promise.all(handles.splice(0).map(close)) }
+  })
   /** Opens one handle (`open(ctx, storageDomain)` → `{close, …}`) and owns it. */
   return async (open) => {
     const handle = await open(ctx, storageDomain)
@@ -85,7 +89,8 @@ export async function apply(ctx, config) {
   const setting = (key) => valueAt(config, MAIN.setting[key])
 
   // 1. tables, and the generated id (identity.js)
-  const own = ownedHandles(ctx)
+  let targets
+  const own = ownedHandles(ctx, () => targets?.close())
   const [{ table: records }, { table: ledger }, { table: cards }, targetTables, generated] = await Promise.all([
     own(openRecords), own(openLedger), own(openAskCards), own(openTargets), own(openGeneratedId),
   ])
@@ -103,7 +108,6 @@ export async function apply(ctx, config) {
   // Intake waits for the ledger's recovery (K3 events.d.ts: recover() before intake), which runs at
   // app ready; polls that arrive earlier queue behind it, unacked.
   const recovery = Promise.withResolvers()
-  let targets
   const ports = Object.freeze({
     live: (source) => targets?.live(source) === true,
     ack: (receipts, source) => targets.ack(receipts, source),
@@ -133,7 +137,6 @@ export async function apply(ctx, config) {
     settings: { clientId, clientMetadataUrl: () => setting('metadataUrl'), name: () => setting('name') },
     logger: ctx.logger(TARGET_LOG.name),
   })
-  ctx.effect(() => () => { void targets.close() })
   // The parent's epoch follows the instance's setting before this row finishes applying (review
   // M3): DSH's boot awaits every row before app ready, and the instance probes the child's
   // credential only after app ready (dsh-instance child.js `attach` needs `childReadiness`), so the
