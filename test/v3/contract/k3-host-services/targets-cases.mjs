@@ -130,17 +130,21 @@ export function registerK3MultiCases(sdk) {
     member(members, BOUND.bridge.name)
     member(members, BOUND.attention.member, { method: false })
   })
-  /** The `{targetId: TargetId}` target parameter, the last one, required. */
+  /** Additive expected-epoch selector keeps targetId-only current-target callers valid. */
   const assertTargetParam = (found, params) => {
     const list = assertParams(found, { params })
+    assert.equal(list.at(-1).type.trim(), BOUND.selectorType)
     const target = core().m.members(list.at(-1).type)
-    assert.deepEqual([...target.keys()], [BOUND.targetField], `${found.name}'s last parameter is ${list.at(-1).type}`)
+    assert.deepEqual([...target.keys()], [BOUND.targetField, BOUND.epochField], `${found.name}'s last parameter is ${list.at(-1).type}`)
     assert.equal(target.get(BOUND.targetField).type.trim(), BOUND.targetIdType)
+    assert.equal(target.get(BOUND.targetField).optional, false)
+    assert.equal(target.get(BOUND.epochField).type.trim(), BOUND.epochType)
+    assert.equal(target.get(BOUND.epochField).optional, true)
   }
-  caseTest(sdk, 'K3-MULTI-DT-01', 'bridge', 'bridge(pluginId, operations, {targetId}): three required parameters, the last exactly {targetId: TargetId}', () => {
+  caseTest(sdk, 'K3-MULTI-DT-01', 'bridge', 'bridge(pluginId, operations, TargetSelector): three required parameters; targetId plus optional expected endpointEpoch', () => {
     assertTargetParam(member(core().m.members(BOUND.type), BOUND.bridge.name), BOUND.bridge.params)
   })
-  caseTest(sdk, 'K3-MULTI-DT-01', 'attention', 'attention.signal(pluginId, input, {targetId}): three required parameters, the last exactly {targetId: TargetId}', () => {
+  caseTest(sdk, 'K3-MULTI-DT-01', 'attention', 'attention.signal(pluginId, input, TargetSelector): three required parameters; targetId plus optional expected endpointEpoch', () => {
     const attention = core().m.members(member(core().m.members(BOUND.type), BOUND.attention.member, { method: false }).type)
     assertTargetParam(member(attention, BOUND.attention.method), BOUND.attention.params)
   })

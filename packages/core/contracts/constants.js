@@ -558,7 +558,12 @@ export const GUARDS = Object.freeze({
  *   and agent-id binding they carry today. No per-target pending-origin record (review S3): the
  *   reference's name holds the epoch, and every endpoint change makes a new epoch, so a value
  *   written for one endpoint is never read for another; the parent keeps its record because its
- *   reference name (`DSH_AGENT_TOKEN`) is fixed;
+ *   reference name (`DSH_AGENT_TOKEN`) is fixed. Fixed names do not waive endpoint isolation:
+ *   `bindingField` holds `TargetCredentialBinding` in every core-private saved/pending credential
+ *   payload, including both fixed parent records. The pending record also binds the non-secret
+ *   reference-value id. All of target id, endpoint epoch, canonical origin and agent id must match
+ *   before use, save or unset; a same-origin endpoint change retires the old binding too. A late
+ *   completion cannot save, unset or rebind another generation's credential (link.d.ts);
  * - `duplicate`: the Fishball-local display alias of an equal name (D07, Q03): `name + open + n +
  *   close`, n from `firstSuffix`, the lowest n whose complete result no other current target holds
  *   (a literal server name ending in ` (2)` counts). Persisted in the record; never renumbers;
@@ -580,9 +585,14 @@ export const GUARDS = Object.freeze({
  *     namespaced; raw names and arguments go to
  *     the connector unchanged;
  * - `text.toolSource` (PROPOSED wording, plan §4.4 "descriptions include plain-text resolved
- *   source names"): the prefix of every namespaced tool's description. `quotedName` is
- *   `JSON.stringify(name)` (or of the placeholder word when `name` is null), so the server-supplied
- *   name stays one delimited data token; the persona names the same tools (README examples).
+ *   source names"): the INNER untrusted text of every namespaced tool's source description, not
+ *   a safe standalone prefix. `quotedName` is `JSON.stringify(name)` (or of the placeholder word
+ *   when `name` is null). JSON encoding alone is not the required trust boundary: callers MUST
+ *   enclose the entire formatter result using the existing `src/bridge/constants.js` `TEXT`
+ *   `untrustedOpen(marker)` / `untrustedClose(marker)` with a fresh locally generated randomUUID
+ *   marker, before appending the trusted facade description. Never interpolate a server name
+ *   outside that block, even in persona guidance; the persona names the same tools by role
+ *   (README examples). Reuse the existing framing constants, do not define a second set here.
  */
 // The lowercase RFC 4648 base32 alphabet, as `identity.id`'s generator (src/identity/constants.js).
 const TARGET_ID_ALPHABET = 'abcdefghijklmnopqrstuvwxyz234567'
@@ -599,6 +609,7 @@ export const TARGETS = Object.freeze({
     encoding: 'base64url',
   }),
   credentials: Object.freeze({
+    bindingField: 'binding',
     tokenRefPrefix: 'FISHBALL_TARGET_TOKEN_',
     tokenRefSeparator: '__',
     refReplaced: '-',
