@@ -17,7 +17,8 @@
 import { randomBytes } from 'node:crypto'
 import path from 'node:path'
 import { REPO } from '../../../support/constants.mjs'
-import { CONNECT, GUARDS, HOSTED_IMPORT } from '../../../../packages/core/contracts/constants.js'
+import { CONNECT, GUARDS, HOSTED_IMPORT, TARGETS } from '../../../../packages/core/contracts/constants.js'
+import { SEAM_STATUS, SEAM_TARGETS } from '../../../../packages/shared/ui-seam.js'
 import { SDK } from '../../contract/package-boundaries/constants.mjs'
 
 export { CONNECT, HOSTED_IMPORT }
@@ -293,3 +294,74 @@ export const POLISH_CONNECT = Object.freeze({
   /** SPEC §7 (revised): the Connect button is primary while the state is needs-authorization or failed, outline otherwise. */
   primaryIn: Object.freeze([CONNECT.state.needsAuthorization, CONNECT.state.failed]), primary: 'primary', otherwise: 'outline',
 })
+
+/**
+ * MULTI-1: core's settings page as a list of targets (PLAN-MULTI §3.1 "Core settings supports
+ * add/remove/edit URL, per-target token entry, Connect/cancel/retry …, all actions address stable
+ * targetId"; SEAM_TARGETS.route). The markers are the ones the implementer relayed (2026-11-18); the
+ * page reads and acts only through SEAM_TARGETS' routes, document-relative.
+ */
+const SEAM_TARGETS_CONTROL = SEAM_STATUS.control
+const relative = (p) => p.replace(/^\//, '')
+export const MULTI_SET = Object.freeze({
+  snapshotVersion: SEAM_TARGETS.snapshotVersion,
+  route: SEAM_TARGETS.route,
+  http: SEAM_TARGETS.http,
+  refusal: SEAM_TARGETS.refusal,
+  /** The list route first (GET), then every POST route. */
+  relative: Object.freeze([SEAM_TARGETS.route.list, SEAM_TARGETS.route.connect, SEAM_TARGETS.route.cancel, SEAM_TARGETS.route.retry, SEAM_TARGETS.route.pairing, SEAM_TARGETS.route.add, SEAM_TARGETS.route.remove, SEAM_TARGETS.route.url].map(relative)),
+  rel: Object.freeze(Object.fromEntries(Object.entries(SEAM_TARGETS.route).filter(([, v]) => typeof v === 'string' && v.startsWith('/')).map(([k, v]) => [k, relative(v)]))),
+  mark: Object.freeze({
+    list: 'data-fishball-targets',
+    card: 'data-fishball-target',
+    begin: 'data-fishball-connect-begin',
+    cancel: 'data-fishball-target-cancel',
+    retry: 'data-fishball-target-retry',
+    remove: 'data-fishball-target-remove',
+    url: 'data-fishball-target-url',
+    addUrl: 'data-fishball-target-add-url',
+    add: 'data-fishball-target-add',
+    confirm: 'data-fishball-confirm',
+  }),
+  /** Fixture targets (test data shaped as targets.d.ts TargetView). */
+  view: (targetId, extra = {}) => Object.freeze({
+    targetId, endpointEpoch: 'e-' + 'a'.repeat(16), serverName: null, name: null, kind: SEAM_TARGETS.kind.remote, url: FIXTURE.targetUrl,
+    order: 1, duplicateSuffix: null, state: SEAM_TARGETS.state.notSet, connecting: false, link: Object.freeze({ state: 'target-unset', code: null }),
+    connect: Object.freeze({ state: CONNECT.state.needsAuthorization, code: null }), line: Object.freeze({ kind: CONNECT.state.needsAuthorization, code: null }), control: SEAM_TARGETS_CONTROL.connect,
+    pairing: Object.freeze({ state: 'unpaired', warning: null, choices: Object.freeze([]), nameIssue: null }),
+    identity: SEAM_TARGETS.identity.pending, contributedTools: null, removable: true, urlEditable: true, ...extra,
+  }),
+  /** Element words the rows look for (HTML tag names, input types, ARIA role of DSH's Modal). */
+  tag: Object.freeze({ button: 'button', input: 'input', password: 'password', dialog: 'dialog' }),
+  control: SEAM_TARGETS_CONTROL,
+  state: SEAM_TARGETS.state,
+  unavailableCode: SEAM_TARGETS.unavailableCode,
+  /** K3a URL refusals (core's LINK.code). */
+  code: Object.freeze({ insecure: 'target-insecure', invalid: 'target-invalid' }),
+  idA: 't-' + 'a'.repeat(16),
+  idB: 't-' + 'b'.repeat(16),
+  parentId: TARGETS.parentId,
+  newUrl: 'https://new.test/api/agent/mcp',
+  /** The withdrawn rows' reason (one decision for every row that asserted the scalar page). */
+  withdrawn: 'withdrawn by MULTI-0 (targets.d.ts, ui.d.ts; contracts README "Version moves"): the scalar target.url field, the one token field for DSH_AGENT_TOKEN, GET/POST /api/fishball/connect and registerSettingsRoutes/effectiveTarget are gone; successors MULTI-SET-* (per-target cards over SEAM_TARGETS routes)',
+})
+
+/**
+ * MULTI-1: the SET3 / UIPF-CORE rows whose oracle MULTI-0 withdrew (the scalar `target.url` field,
+ * the one `DSH_AGENT_TOKEN` token field of the page, the single Connect block over GET/POST
+ * `/api/fishball/connect`, `registerSettingsRoutes` / `registerConnectCancelRoute` /
+ * `effectiveTarget`, and the instance line beside a user URL). Listed by id and row part (`*` = every
+ * part); each is registered skipped with MULTI_SET.withdrawn and its successor below.
+ */
+export const WITHDRAWN_MULTI = Object.freeze({
+  'SET3-UC-01': Object.freeze(['main 3', 'A4']),
+  'SET3-UC-02': Object.freeze(['main 1', 'main 2-3', 'A2', 'E1']),
+  'SET3-EP-01': Object.freeze(['1 new', '2 padded', '3 blank', '4 empty', '5 never stored']),
+  'SET3-UC-03': Object.freeze(['*']), 'SET3-EP-02': Object.freeze(['*']), 'SET3-BVA-01': Object.freeze(['*']), 'SET3-DT-01': Object.freeze(['1', '2', '3', '4', '5']), 'SET3-ST-02': Object.freeze(['*']),
+  'SET3-UC-04': Object.freeze(['*']), 'SET3-EP-03': Object.freeze(['*']), 'SET3-EP-04': Object.freeze(['*']), 'SET3-ST-03': Object.freeze(['*']), 'SET3-BVA-03': Object.freeze(['presses']),
+  'SET3-UC-05': Object.freeze(['*']), 'SET3-EP-06': Object.freeze(['*']), 'SET3-BVA-02': Object.freeze(['*']), 'SET3-DT-05': Object.freeze(['*']), 'SET3-EP-09': Object.freeze(['*']), 'SET3-DT-07': Object.freeze(['*']), 'SET3-BVA-05': Object.freeze(['*']), 'SET3-ST-06': Object.freeze(['*']),
+  'SET3-UC-06': Object.freeze(['*']), 'SET3-EP-07': Object.freeze(['*']), 'SET3-UC-11': Object.freeze(['*']), 'SET3-DT-06': Object.freeze(['*']), 'SET3-BVA-04': Object.freeze(['*']), 'SET3-EP-08': Object.freeze(['*']), 'SET3-ST-05': Object.freeze(['*']),
+  'SET3-ST-01': Object.freeze(['3']),
+  'UIPF-CORE-DT-01': Object.freeze(['*']), 'UIPF-CORE-EP-01': Object.freeze(['connect heading en', 'connect heading zh', 'sections en', 'sections zh']),
+})
+export const isWithdrawnMulti = (id, row) => { const parts = WITHDRAWN_MULTI[id]; return parts !== undefined && (parts.includes('*') || parts.includes(String(row))) }
