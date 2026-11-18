@@ -1,42 +1,31 @@
 /**
- * The status strip's copy (task F-STATUS; R-FB-03, R-FB-04, R-FB-09, R-FB-10, R-BND-05, R-EXT-14;
- * design §6.3a). PROPOSED wording, reviewed with the pairing copy (W3 question P-3). Data only:
- * frozen strings and pure template formatters that interpolate names, codes and numbers only.
+ * The sidebar targets' copy (MULTI-3; first F-STATUS's strip copy: R-FB-03, R-FB-04, R-FB-09,
+ * R-FB-10, R-BND-05, R-EXT-14; design §6.3a). Data only: frozen strings and pure template formatters
+ * that interpolate names, codes and numbers only.
  *
- * `line` keys are the strip's line kinds: the link's states (`SEAM_STATUS.link`, core's
- * `LINK.state`), Connect's states (`SEAM_STATUS.connect`, core's `CONNECT.state`) and
- * `fishball-off`, computed from those constants so a rename cannot drift. `reason` keys are
- * `SEAM_STATUS.reason`. A code is shown verbatim after the word (`code`),
- * because the codes are the documented words a user can look up (K3 `LinkCode`,
- * `ConnectConfigurationCode`, the plugin manager's error codes). Moved with the strip from core
- * by F-UI; the words' keys come from `fishball-shared/ui-seam`, never from core.
- *
- * UI-POLISH-F reworded `tools` into a chip and added `card` (the card's heading, its state badges,
- * the tools chip's hint and the approval link's text); the line words are unchanged.
+ * `line` keys are the link's states (`SEAM_STATUS.link`), Connect's states (`SEAM_STATUS.connect`)
+ * and `fishball-off`, computed from those constants so a rename cannot drift; their words are the
+ * strip's, unchanged. A code is shown verbatim after the word (`code`): the codes are the documented
+ * words a user can look up. `state` keys are the four public states (`SEAM_TARGETS.state`),
+ * `placeholder` keys `SEAM_TARGETS.placeholder` (Q01: the user's "未设置/名字未知"), `identity` keys
+ * `SEAM_TARGETS.identity`. `words` are the sidebar's own labels.
  */
-import { SEAM_STATUS } from 'fishball-shared/ui-seam'
+import { SEAM_STATUS, SEAM_TARGETS } from 'fishball-shared/ui-seam'
 
 const { link: LS, connect: CS, reason: RS } = SEAM_STATUS
+const { state: TS, placeholder: PH, identity: ID } = SEAM_TARGETS
 const OFF = SEAM_STATUS.fishball.off
-
-/**
- * The status card's states (UI-POLISH-F): what the card's badge, dot and accent say. One state per
- * group of line kinds, mapped in `src/status/index.js` (`CARD_OF`); fishball-ui's own vocabulary, so
- * it lives here and not in the seam.
- */
-export const CARD = Object.freeze({
-  connected: 'connected', unset: 'unset', disconnected: 'disconnected', connecting: 'connecting',
-  attention: 'attention', failed: 'failed', off: 'off',
-})
 
 export const STATUS_TEXT = Object.freeze({
   en: Object.freeze({
+    title: 'DSH targets',
+    empty: 'No DSH target yet. Targets are added in Fishball settings.',
     line: Object.freeze({
-      [LS.connected]: 'Connected to the target DSH.',
-      [LS.unset]: 'No target is set.',
-      [LS.unreachable]: 'The target DSH cannot be reached.',
-      [LS.refused]: 'The target refused Fishball\'s credential.',
-      [CS.needsAuthorization]: 'Fishball is not connected to the target yet.',
+      [LS.connected]: 'Connected to this DSH.',
+      [LS.unset]: 'No target address is set.',
+      [LS.unreachable]: 'This DSH cannot be reached.',
+      [LS.refused]: 'This DSH refused Fishball\'s credential.',
+      [CS.needsAuthorization]: 'Fishball is not connected to this DSH yet.',
       [CS.authorizing]: 'Finish on the approval page.',
       [CS.needsConfiguration]: 'Connect needs configuration.',
       [CS.failed]: 'Connect failed.',
@@ -47,28 +36,33 @@ export const STATUS_TEXT = Object.freeze({
     set: (list) => `Plugins enabled but not loaded: ${list}.`,
     reason: Object.freeze({ [RS.skipped]: 'skipped', [RS.failed]: 'failed to start' }),
     member: (name, reason) => `${name} (${reason})`,
-    // UI-POLISH-F: a compact chip beside the card's heading; the sentence moved to `card.toolsHint`.
-    tools: (count) => (count === 1 ? '1 contributed tool' : `${count} contributed tools`),
+    tools: (count) => (count === 1 ? '1 contributed tool offered' : `${count} contributed tools offered`),
     separator: ', ',
     control: Object.freeze({ [SEAM_STATUS.control.connect]: 'Connect', [SEAM_STATUS.control.cancel]: 'Cancel' }),
-    card: Object.freeze({
-      title: 'Target DSH',
-      offTitle: 'Fishball',
-      toolsHint: 'Contributed tools offered to Fishball\'s model',
+    retry: 'Retry',
+    state: Object.freeze({ [TS.connected]: 'Connected', [TS.connecting]: 'Connecting', [TS.failed]: 'Failed', [TS.notSet]: 'Not set' }),
+    placeholder: Object.freeze({ [PH.unset]: 'Not set', [PH.unnamed]: 'Name unavailable' }),
+    identity: Object.freeze({
+      [ID.pending]: 'Live name: waiting for the first answer.',
+      [ID.live]: 'Live name: updates as this DSH renames.',
+      [ID.unsupported]: 'Live name: not offered by this DSH; read at each connection.',
+      [ID.stale]: 'Live name: the last refresh failed; showing the last known name.',
+    }),
+    words: Object.freeze({
+      address: 'Address',
       openApproval: 'Open the approval page',
-      badge: Object.freeze({
-        [CARD.connected]: 'Connected', [CARD.unset]: 'Not set', [CARD.disconnected]: 'Not connected', [CARD.connecting]: 'Connecting',
-        [CARD.attention]: 'Needs setup', [CARD.failed]: 'Failed', [CARD.off]: 'Off',
-      }),
+      settings: 'Fishball settings',
     }),
   }),
   zh: Object.freeze({
+    title: 'DSH 目标',
+    empty: '还没有 DSH 目标。可在 Fishball 设置中添加。',
     line: Object.freeze({
-      [LS.connected]: '已连接到目标 DSH。',
-      [LS.unset]: '尚未设置目标。',
-      [LS.unreachable]: '无法连接到目标 DSH。',
-      [LS.refused]: '目标拒绝了 Fishball 的凭据。',
-      [CS.needsAuthorization]: 'Fishball 尚未连接到目标。',
+      [LS.connected]: '已连接到此 DSH。',
+      [LS.unset]: '尚未设置目标地址。',
+      [LS.unreachable]: '无法连接到此 DSH。',
+      [LS.refused]: '此 DSH 拒绝了 Fishball 的凭据。',
+      [CS.needsAuthorization]: 'Fishball 尚未连接到此 DSH。',
       [CS.authorizing]: '请在授权页面上完成操作。',
       [CS.needsConfiguration]: '连接需要配置。',
       [CS.failed]: '连接失败。',
@@ -79,21 +73,25 @@ export const STATUS_TEXT = Object.freeze({
     set: (list) => `已启用但未加载的插件：${list}。`,
     reason: Object.freeze({ [RS.skipped]: '已跳过', [RS.failed]: '启动失败' }),
     member: (name, reason) => `${name}（${reason}）`,
-    tools: (count) => `${count} 个贡献工具`,
+    tools: (count) => `已提供 ${count} 个贡献工具`,
     separator: '、',
     control: Object.freeze({ [SEAM_STATUS.control.connect]: '连接', [SEAM_STATUS.control.cancel]: '取消' }),
-    card: Object.freeze({
-      title: '目标 DSH',
-      offTitle: 'Fishball',
-      toolsHint: '提供给 Fishball 模型的贡献工具',
+    retry: '重试',
+    state: Object.freeze({ [TS.connected]: '已连接', [TS.connecting]: '连接中', [TS.failed]: '失败', [TS.notSet]: '未设置' }),
+    placeholder: Object.freeze({ [PH.unset]: '未设置', [PH.unnamed]: '名字未知' }),
+    identity: Object.freeze({
+      [ID.pending]: '实时名称：等待首次应答。',
+      [ID.live]: '实时名称：此 DSH 改名时随之更新。',
+      [ID.unsupported]: '实时名称：此 DSH 不提供；每次连接时读取。',
+      [ID.stale]: '实时名称：上次刷新失败；显示最后已知的名称。',
+    }),
+    words: Object.freeze({
+      address: '地址',
       openApproval: '打开授权页面',
-      badge: Object.freeze({
-        [CARD.connected]: '已连接', [CARD.unset]: '未设置', [CARD.disconnected]: '未连接', [CARD.connecting]: '连接中',
-        [CARD.attention]: '需要配置', [CARD.failed]: '失败', [CARD.off]: '已关闭',
-      }),
+      settings: 'Fishball 设置',
     }),
   }),
 })
 
-/** The language a strip falls back to. */
+/** The language the view falls back to. */
 export const STATUS_DEFAULT_LANG = 'en'

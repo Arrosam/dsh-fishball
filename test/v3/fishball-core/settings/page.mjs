@@ -36,7 +36,7 @@ import { pathToFileURL } from 'node:url'
 import { createBrowserSandbox } from '../../../support/browser-sandbox.mjs'
 import { createReactShim, findAll, textOf } from '../../../support/rp-recommend.mjs'
 import { applyPlugins, moduleTable } from '../../contract/package-boundaries/client-graph.mjs'
-import { CLIENTS, CORDIS_ENTRY, CONNECT, CORE, DSH, FIBER, FIXTURE, HARNESS, HOSTED_IMPORT, MARK, ROUTE, STATUS_EVENT, SUBJECT, UI, runtimeOf } from './constants.mjs'
+import { CLIENTS, CORDIS_ENTRY, CONNECT, CORE, DSH, FIBER, FIXTURE, HARNESS, HOSTED_IMPORT, MARK, MULTI_SET, ROUTE, STATUS_EVENT, SUBJECT, UI, runtimeOf } from './constants.mjs'
 import { STAND_IN, primitivesFor } from './primitives.mjs'
 
 export const settle = async (rounds = HARNESS.settleRounds) => { for (let i = 0; i < rounds; i++) await new Promise((resolve) => setImmediate(resolve)) }
@@ -169,6 +169,15 @@ export function createWorld({
       get: () => ({ status: ROUTE.ok, json: { state: CONNECT.state.needsAuthorization, code: null } }),
       post: () => ({ status: ROUTE.ok, json: { outcome: 'authorized' } }),
     },
+    /**
+     * MULTI-1: core's owner-only target routes (SEAM_TARGETS.route), by document-relative path, served
+     * only when a case opts in by setting `world.targets` (a TargetsSnapshot, or a function answering
+     * one): then the list answers it and a POST answers `world.targetAnswers[path]` (a function of the
+     * parsed body, default {ok: true}). Left undefined, those requests go to `world.fetchOther` like any
+     * other, so a harness that scripts them itself (fishball-ui's) keeps its own answers.
+     */
+    targets: undefined,
+    targetAnswers: {},
   }
   const shim = createReactShim({ stale() { world.staleUpdates += 1 } })
   const { React } = shim
@@ -393,7 +402,14 @@ export async function loadPage(t, world) {
     const call = { url: url.href, method, credentials: option('credentials'), cache: option('cache'), body: body === undefined ? undefined : String(body) }
     world.fetches.push(call)
     const isRoute = url.href === new URL(ROUTE.relative, world.base).href
-    const handler = !isRoute ? (world.fetchOther ?? (() => ({ status: 404, text: '' }))) : method === ROUTE.post ? world.connect.post : world.connect.get
+    const targetRoute = world.targets === undefined ? undefined : MULTI_SET.relative.find((p) => url.href === new URL(p, world.base).href)
+    const targetHandler = () => {
+      if (targetRoute === MULTI_SET.relative[0] && method === ROUTE.get) return typeof world.targets === 'function' ? world.targets() : { status: ROUTE.ok, json: world.targets }
+      const answer = world.targetAnswers[targetRoute]
+      let parsed; try { parsed = JSON.parse(call.body ?? 'null') } catch { parsed = undefined }
+      return answer === undefined ? { status: ROUTE.ok, json: { ok: true } } : answer(parsed)
+    }
+    const handler = targetRoute !== undefined ? targetHandler : !isRoute ? (world.fetchOther ?? (() => ({ status: 404, text: '' }))) : method === ROUTE.post ? world.connect.post : world.connect.get
     const answer = await handler(call)
     if (answer === 'reject') throw new TypeError('fbtest network failure')
     return answer.json !== undefined ? asJson(answer.json, answer.status) : new Response(answer.text ?? '', { status: answer.status })
@@ -429,7 +445,7 @@ export async function loadPage(t, world) {
     react: world.React,
     'react-dom': { createPortal: (node) => node, createRoot: () => ({ render() {}, unmount() {} }) },
     'react-dom/client': { createRoot: () => ({ render() {}, unmount() {} }) },
-    '@deepseek-ai/dsh-client-ui-primitives': primitivesFor(world.sdk, world.React),
+    '@deepseek-ai/dsh-client-ui-primitives': primitivesFor(world.sdk, world.React, { modal: world.modal === true }),
     'react/jsx-runtime': jsxRuntime(world.React),
   }
   // Each graph entry's chunks load from its own package folder (DSH's package-local chunk route).

@@ -119,8 +119,10 @@
 
 - insert:
     # Core's own agent preset for the manager: `read` and `read_image` (tool-fs with no write or
-    # edit); `working_directory` is DSH's global tool (dsh-base). No persona row: core composes the
-    # manager's persona in code on create and on every resume (src/manager/persona.js).
+    # edit); `working_directory` is DSH's global tool (dsh-base); `ask_user_question` is DSH's
+    # ask-user plugin, so Fishball asks with the same inline question card as any DSH session
+    # (the user, 2026-11-18). No persona row: core composes the manager's persona in code on
+    # create and on every resume (src/manager/persona.js).
     - id: preset-fishball
       name: '@deepseek-ai/dsh-agent-preset'
       config:
@@ -130,6 +132,8 @@
           - id: tool-fs
             name: '@deepseek-ai/dsh-tool-fs'
             config: { read: true, readImage: true, write: false, edit: false }
+          - id: tool-ask-user
+            name: '@deepseek-ai/dsh-tool-ask-user'
     # Core's guard row: the check, the `guards-overridden` report (fishball-ui's UI guard rows
     # included when fishball-ui is installed) and the standalone self-reorder (src/guards/). The
     # Fishball page and the Recommended tab are fishball-ui's rows since F-UI.

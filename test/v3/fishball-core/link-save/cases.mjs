@@ -21,6 +21,7 @@ import { browser } from './fakes.mjs'
 import { linkSaveWorld, untilTrue } from './subject.mjs'
 import { registerImportFaultCases } from './import-fault.mjs'
 import { registerRfixLinkSaveCases } from './rfix.mjs'
+import { registerMultiLinkSaveCases } from './multi.mjs'
 
 const S = LINK.state
 const C = CONNECT.state
@@ -99,6 +100,7 @@ export function registerLinkSaveCases(sdk) {
   registerImportFaultCases(sdk)
   // R-FIX-CORE (F01, F10, F16): rfix.mjs.
   registerRfixLinkSaveCases(sdk)
+  registerMultiLinkSaveCases(sdk)
 
   // ================================================================ Use Case REM-UC-04 (first)
   caseTest(sdk, 'REM-UC-04', 'main (hosted) 1–3', 'the hosted import is used as client secret with identity.id; once accepted it is saved once and the reference is cleared', async (t) => {

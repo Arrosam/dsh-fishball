@@ -44,7 +44,7 @@ export interface IntendedPolicy {
 }
 
 /** The manager session's model tools, exactly; checked on resume instead of its preset name (R-FB-13). */
-export type ManagerTool = 'read' | 'read_image' | 'working_directory'
+export type ManagerTool = 'read' | 'read_image' | 'working_directory' | 'ask_user_question'
 
 /**
  * One overridden guard, as the report names it.

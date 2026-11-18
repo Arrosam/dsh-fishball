@@ -25,7 +25,7 @@ One scenario per SDK, two boots of one home under the repo's TEST_HOMES (os.tmpd
 | MGR-SET-ST-02 | ST across restart | POST then GET in B | the same id |
 | MGR-SET-EP-01 | EP | `agentPresets.presetForSession` (0.2.2-rc.1 only) | effective preset `fishball` (recorded, else the default) |
 | MGR-SET-EP-01b | EP | `agentPresets.defaultId` | `fishball` |
-| MGR-SET-EP-02 | EP | manager request tools minus core's own | exactly read, read_image, working_directory |
+| MGR-SET-EP-02 | EP | manager request tools minus core's own | exactly read, read_image, working_directory, ask_user_question (the user, 2026-11-18: "用DSH自带的提问工具") |
 | MGR-SET-EP-03 | EP | manager system prompt | has session_message, approval_answer; none of message_session, answer_approval, list_plugins, watch_session |
 | MGR-ID-EP-01 | BVA (first start) | profile/home `cordis.patch.yml` and DSH's settings document before vs after A's start | unchanged; no `identity.id` in the user layer |
 | MGR-ID-EP-02 | EP | Connect POST with a fake loopback target + CIMD URL | approval URL `agent_id` matches `^fb-[a-z2-7]{16}$`; still not in settings |
@@ -46,3 +46,10 @@ One scenario per SDK, two boots of one home under the repo's TEST_HOMES (os.tmpd
 ## Harness facts
 - Reminder results are read from the tool-role message the next model request carries. A one-shot that fired is "ended" if it is gone or listed with a status other than a scheduled one's (DSH's list keeps ended records).
 - Connect needs a target that passes the connector check, so [subject.mjs](subject.mjs) serves K1's RFC 9728/8414 metadata on loopback; nothing is ever authorized.
+
+## MULTI-1 re-baseline
+- MGR-ID rows: MULTI-0 withdrew `target.url` and `/api/fishball/connect{,/cancel}`. Boot A adds the
+  Connect target through `ui.targets.add(url)` and Connect runs on `SEAM_TARGETS.route.connect` /
+  `.cancel` with `{targetId}`; boot B uses the same target id (its record is durable, MULTI-1
+  requirement 1). The `agent_id` oracle is unchanged.
+- One manager, one reminder store with several targets: wire/ MULTI-SVC-ST-01.

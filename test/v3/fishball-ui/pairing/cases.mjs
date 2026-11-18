@@ -13,6 +13,8 @@ import { settle } from '../../fishball-core/settings/page.mjs'
 import { HEALTH, HEALTH_HOOK, NOTICE_TEXT } from '../stream/constants.mjs'
 import { CHOICE, FIXTURE, HOOK, NAME_CODE, REFUSAL, ROUTE, STATE, VIEW } from './constants.mjs'
 import { pairingPage } from './page.mjs'
+import { WITHDRAWN } from '../model-dialog/targets-constants.mjs'
+import { withdrawnRow } from '../model-dialog/withdrawn.mjs'
 import { coreView, deepFrozen, expectedView, fakeInstance, lastSeenText, nameIssueOf, plain, rowWorld, viewModule, warningOf } from './subject.mjs'
 
 const show = (v) => JSON.stringify(v)
@@ -140,7 +142,15 @@ export function registerPairingCases(sdk) {
   })
 
   // ======================================================================== the Node row (integration)
-  t('PAIR-INT-01', 'routes', 'the row registers GET /api/fishball/pairing and POST /api/fishball/pairing/choose on ctx.connection.fetch', async (c) => {
+  // Re-baselined (MULTI-3 requirement D, the lead 2026-11-18): the pairing dock card and its routes
+  // /api/fishball/pairing and /api/fishball/pairing/choose are removed; pairing is posted per target
+  // to SEAM_TARGETS.route.pairing from the sidebar details. The route rows stay listed, withdrawn.
+  const tRoute = (id, row, title) => withdrawnRow(sdk, id, row, title, WITHDRAWN.pairingRoute)
+  t('PAIR-INT-00', 'routes removed', `fishball-ui's row registers neither ${ROUTE.stream} nor ${ROUTE.choose}`, async (c) => {
+    const row = await rowWorld(c, sdk)
+    assert.deepEqual(row.routes.map((r) => r.path).filter((at) => at === ROUTE.stream || at === ROUTE.choose), [])
+  })
+  tRoute('PAIR-INT-01', 'routes', 'the row registers GET /api/fishball/pairing and POST /api/fishball/pairing/choose on ctx.connection.fetch', async (c) => {
     const w = await rowWorld(c, sdk)
     const stream = w.routes.find((r) => r.path === ROUTE.stream)
     const choose = w.routes.find((r) => r.path === ROUTE.choose)
@@ -149,7 +159,7 @@ export function registerPairingCases(sdk) {
     assert.ok(choose.methods.includes(ROUTE.post), show(choose.methods))
   })
   for (const lang of VIEW.langs) {
-    t('PAIR-INT-02', `first frame ${lang}`, `(${lang}) GET ?lang=${lang}&tz=<zone>: 200 text/event-stream, one frame at once = pairingView(core's view, ${lang}, zone)`, async (c) => {
+    tRoute('PAIR-INT-02', `first frame ${lang}`, `(${lang}) GET ?lang=${lang}&tz=<zone>: 200 text/event-stream, one frame at once = pairingView(core's view, ${lang}, zone)`, async (c) => {
       const { pairingView } = await viewModule(sdk)
       const w = await rowWorld(c, sdk)
       const core = fakeInstance({ view: coreView(STATE.warnMatch) })
@@ -162,7 +172,7 @@ export function registerPairingCases(sdk) {
       r.abort()
     })
   }
-  t('PAIR-INT-02', 'lang/tz other', 'GET with lang=fr and an invalid tz → the en frame, the default zone', async (c) => {
+  tRoute('PAIR-INT-02', 'lang/tz other', 'GET with lang=fr and an invalid tz → the en frame, the default zone', async (c) => {
     const { pairingView } = await viewModule(sdk)
     const w = await rowWorld(c, sdk)
     await w.provide(fakeInstance({ view: coreView(STATE.warnMatch) }))
@@ -171,7 +181,7 @@ export function registerPairingCases(sdk) {
     assert.deepEqual(r.frames[0], plain(pairingView(coreView(STATE.warnMatch), 'en', undefined)))
     r.abort()
   })
-  t('PAIR-ST-01', 'change', 'core view changes → one new frame per change; an identical consecutive view sends no frame', async (c) => {
+  tRoute('PAIR-ST-01', 'change', 'core view changes → one new frame per change; an identical consecutive view sends no frame', async (c) => {
     const { pairingView } = await viewModule(sdk)
     const w = await rowWorld(c, sdk)
     const core = fakeInstance({ view: coreView(STATE.unpaired) })
@@ -187,7 +197,7 @@ export function registerPairingCases(sdk) {
     assert.equal(await r.count(3), 3)
     r.abort()
   })
-  t('PAIR-ST-02', 'absent → provided → replaced → removed', 'no core: a frame with no lines; core provided: its frame; replaced: the new one\'s frame and the old listener dropped; removed: a frame with no lines', async (c) => {
+  tRoute('PAIR-ST-02', 'absent → provided → replaced → removed', 'no core: a frame with no lines; core provided: its frame; replaced: the new one\'s frame and the old listener dropped; removed: a frame with no lines', async (c) => {
     const w = await rowWorld(c, sdk)
     const r = await w.open('?lang=en&tz=' + encodeURIComponent(zone))
     await r.count(1)
@@ -212,7 +222,7 @@ export function registerPairingCases(sdk) {
     r.abort()
   })
   for (const [label, options] of [['apiVersion 2', { apiVersion: 2 }], ['no ui.pairing', { pairing: false }]]) {
-    t('PAIR-EP-06', label, `a fishballInstance with ${label} counts as absent: a frame with no lines; choose → 503 pairing-unavailable`, async (c) => {
+    tRoute('PAIR-EP-06', label, `a fishballInstance with ${label} counts as absent: a frame with no lines; choose → 503 pairing-unavailable`, async (c) => {
       const w = await rowWorld(c, sdk)
       const core = fakeInstance({ view: coreView(STATE.warnMatch), ...options })
       await w.provide(core)
@@ -225,7 +235,7 @@ export function registerPairingCases(sdk) {
       r.abort()
     })
   }
-  t('PAIR-ST-03', 'abort', 'a request abort closes that stream and drops its listener on core', async (c) => {
+  tRoute('PAIR-ST-03', 'abort', 'a request abort closes that stream and drops its listener on core', async (c) => {
     const w = await rowWorld(c, sdk)
     const core = fakeInstance({ view: coreView(STATE.warnMatch) })
     await w.provide(core)
@@ -236,7 +246,7 @@ export function registerPairingCases(sdk) {
     await new Promise((resolve) => setTimeout(resolve, 50))
     assert.equal(core.listeners.size, 0)
   })
-  t('PAIR-ST-03', 'disposal', 'disposing the row withdraws both routes, closes open streams and drops their listeners', async (c) => {
+  tRoute('PAIR-ST-03', 'disposal', 'disposing the row withdraws both routes, closes open streams and drops their listeners', async (c) => {
     const w = await rowWorld(c, sdk)
     const core = fakeInstance({ view: coreView(STATE.warnMatch) })
     await w.provide(core)
@@ -253,7 +263,7 @@ export function registerPairingCases(sdk) {
     ['not-offered', { ok: false, code: REFUSAL.notOffered }], ['not-saved', { ok: false, code: REFUSAL.notSaved }],
   ]
   for (const [label, result] of answers) {
-    t('PAIR-DT-03', `answer ${label}`, `POST {choice, confirmed: true} → choose(choice, {confirmed: true}) once; 200 with its result ${show(result)}`, async (c) => {
+    tRoute('PAIR-DT-03', `answer ${label}`, `POST {choice, confirmed: true} → choose(choice, {confirmed: true}) once; 200 with its result ${show(result)}`, async (c) => {
       const w = await rowWorld(c, sdk)
       const core = fakeInstance({ view: coreView(STATE.warnMatch), choose: () => result })
       await w.provide(core)
@@ -264,7 +274,7 @@ export function registerPairingCases(sdk) {
   }
   // EP over `confirmed`: only the boolean true counts as confirmed.
   for (const [label, confirmed] of [['false', false], ['absent', undefined], ['"true"', 'true'], ['1', 1], ['null', null]]) {
-    t('PAIR-EP-07', `confirmed ${label}`, `POST confirmed ${label} → choose(choice, {confirmed: false})`, async (c) => {
+    tRoute('PAIR-EP-07', `confirmed ${label}`, `POST confirmed ${label} → choose(choice, {confirmed: false})`, async (c) => {
       const w = await rowWorld(c, sdk)
       const core = fakeInstance({ view: coreView(STATE.warnMatch), choose: (_ch, o) => (o.confirmed ? { ok: true } : { ok: false, code: REFUSAL.notConfirmed }) })
       await w.provide(core)
@@ -276,7 +286,7 @@ export function registerPairingCases(sdk) {
   }
   // EP over bad bodies → 400 invalid-arguments, core not called.
   for (const [label, body] of [['not JSON', '{not json'], ['an array', '[]'], ['null', 'null'], ['a string', '"continue"'], ['choice missing', '{"confirmed":true}'], ['choice a number', '{"choice":1}'], ['choice null', '{"choice":null}'], ['empty body', '']]) {
-    t('PAIR-EP-08', label, `POST body ${label} → 400 {ok:false, code:'invalid-arguments'}; core's choose not called`, async (c) => {
+    tRoute('PAIR-EP-08', label, `POST body ${label} → 400 {ok:false, code:'invalid-arguments'}; core's choose not called`, async (c) => {
       const w = await rowWorld(c, sdk)
       const core = fakeInstance({ view: coreView(STATE.warnMatch) })
       await w.provide(core)
@@ -285,7 +295,7 @@ export function registerPairingCases(sdk) {
       assert.deepEqual(core.calls, [])
     })
   }
-  t('PAIR-EP-08', 'unknown choice string', 'POST {choice: "fbtest-other"} (a string) → passed to core, its refusal answered with 200', async (c) => {
+  tRoute('PAIR-EP-08', 'unknown choice string', 'POST {choice: "fbtest-other"} (a string) → passed to core, its refusal answered with 200', async (c) => {
     const w = await rowWorld(c, sdk)
     const core = fakeInstance({ view: coreView(STATE.warnMatch), choose: () => ({ ok: false, code: REFUSAL.notOffered }) })
     await w.provide(core)
@@ -294,22 +304,26 @@ export function registerPairingCases(sdk) {
     assert.deepEqual(core.calls, [['fbtest-other', { confirmed: false }]])
   })
   for (const [label, choose] of [['throws', () => { throw new Error('fbtest choose throws') }], ['rejects', () => Promise.reject(new Error('fbtest choose rejects'))]]) {
-    t('PAIR-DT-03', `choose ${label}`, `core's choose ${label} → 503 {ok:false, code:'pairing-unavailable'}`, async (c) => {
+    tRoute('PAIR-DT-03', `choose ${label}`, `core's choose ${label} → 503 {ok:false, code:'pairing-unavailable'}`, async (c) => {
       const w = await rowWorld(c, sdk)
       await w.provide(fakeInstance({ view: coreView(STATE.warnMatch), choose }))
       const answer = await w.choose({ choice: CHOICE.continue, confirmed: true })
       assert.deepEqual([answer.status, answer.json], [ROUTE.unavailable, ROUTE.noService])
     })
   }
-  t('PAIR-DT-03', 'no core', 'no fishballInstance at all → 503 pairing-unavailable', async (c) => {
+  tRoute('PAIR-DT-03', 'no core', 'no fishballInstance at all → 503 pairing-unavailable', async (c) => {
     const w = await rowWorld(c, sdk)
     const answer = await w.choose({ choice: CHOICE.newToken, confirmed: false })
     assert.deepEqual([answer.status, answer.json], [ROUTE.unavailable, ROUTE.noService])
   })
 
-  // ======================================================================== the drawn card (component)
+  // ======================================================================== the drawn card (withdrawn)
+  // Re-baselined (MULTI-3 requirement D): the pairing dock card is replaced by pairing inside the
+  // sidebar target details (model-dialog/targets-cases.mjs TGT-SB-ST-05, TGT-SB-DT-03); these rows
+  // stay listed, withdrawn, and their bodies no longer run.
+  const gone = (id, row, title) => withdrawnRow(sdk, id, row, title, WITHDRAWN.pairingCard)
   const frameOf = async (view, lang = 'en') => plain((await viewModule(sdk)).pairingView(view, lang, zone))
-  t('PAIR-UI-01', 'stream url', 'the card opens the pairing stream with lang (UI locale) and tz (the browser zone)', async (c) => {
+  gone('PAIR-UI-01', 'stream url', 'the card opens the pairing stream with lang (UI locale) and tz (the browser zone)', async (c) => {
     for (const [uiLang, lang] of [['en', 'en'], ['zh', 'zh'], ['zh-CN', 'zh'], ['fr', 'en']]) {
       const p = await pairingPage(c, sdk, { lang: uiLang })
       const url = new URL(p.stream().url, FIXTURE.base)
@@ -318,7 +332,7 @@ export function registerPairingCases(sdk) {
     }
   })
   for (const lang of VIEW.langs) {
-    t('PAIR-UI-02', `warn-match ${lang}`, `(${lang}) warn-match: root [state], one line per frame line, the confirm checkbox with the confirm text, continue and new-token-and-id buttons; continue disabled until ticked`, async (c) => {
+    gone('PAIR-UI-02', `warn-match ${lang}`, `(${lang}) warn-match: root [state], one line per frame line, the confirm checkbox with the confirm text, continue and new-token-and-id buttons; continue disabled until ticked`, async (c) => {
       const p = await pairingPage(c, sdk, { lang })
       const frame = await frameOf(coreView(STATE.warnMatch), lang)
       await p.show(frame)
@@ -339,7 +353,7 @@ export function registerPairingCases(sdk) {
     })
   }
   for (const [state, choices] of [[STATE.warnMismatch, [CHOICE.newToken]], [STATE.needToken, []], [STATE.needId, []], [STATE.idMismatch, []]]) {
-    t('PAIR-UI-03', state, `${state}: the line, no confirm checkbox, choices ${show(choices)}`, async (c) => {
+    gone('PAIR-UI-03', state, `${state}: the line, no confirm checkbox, choices ${show(choices)}`, async (c) => {
       const p = await pairingPage(c, sdk)
       await p.show(await frameOf(coreView(state)))
       assert.equal(p.root()?.props[HOOK.state], state)
@@ -349,14 +363,14 @@ export function registerPairingCases(sdk) {
     })
   }
   for (const [label, view] of [['unpaired', coreView(STATE.unpaired)], ['paired', coreView(STATE.paired)], ['core absent', undefined]]) {
-    t('PAIR-UI-04', label, `${label}: a frame with no lines draws nothing`, async (c) => {
+    gone('PAIR-UI-04', label, `${label}: a frame with no lines draws nothing`, async (c) => {
       const p = await pairingPage(c, sdk)
       await p.show(await frameOf(view))
       assert.equal(p.root(), undefined)
       assert.deepEqual(p.nodes().filter((n) => n.props[HOOK.root] !== undefined), [])
     })
   }
-  t('PAIR-UI-04', 'name issue only', 'paired with a name issue: a card with that one line kind', async (c) => {
+  gone('PAIR-UI-04', 'name issue only', 'paired with a name issue: a card with that one line kind', async (c) => {
     const p = await pairingPage(c, sdk)
     await p.show(await frameOf(coreView(STATE.paired, { nameIssue: nameIssueOf(NAME_CODE.taken) })))
     assert.equal(p.byHook(HOOK.line, NAME_CODE.taken).length, 1)
@@ -371,7 +385,7 @@ export function registerPairingCases(sdk) {
     ['new-token-and-id, non-JSON', CHOICE.newTokenAndId, false, () => ({ status: 200, text: '<html>' }), true],
   ]) {
     for (const lang of VIEW.langs) {
-      t('PAIR-DT-04', `${label} ${lang}`, `(${lang}) press ${choice}${tick ? ' (ticked)' : ''} → POST {choice, confirmed: ${tick}}; ${failed ? 'the failed alert with the frame\'s failed text' : 'no error'}`, async (c) => {
+      gone('PAIR-DT-04', `${label} ${lang}`, `(${lang}) press ${choice}${tick ? ' (ticked)' : ''} → POST {choice, confirmed: ${tick}}; ${failed ? 'the failed alert with the frame\'s failed text' : 'no error'}`, async (c) => {
         const p = await pairingPage(c, sdk, { lang, choose: answer })
         const frame = await frameOf(coreView(STATE.warnMatch), lang)
         await p.show(frame)
@@ -388,7 +402,7 @@ export function registerPairingCases(sdk) {
       })
     }
   }
-  t('PAIR-DT-04', 'mismatch new-token', 'warn-mismatch: new-token press posts {choice: new-token, confirmed: false}', async (c) => {
+  gone('PAIR-DT-04', 'mismatch new-token', 'warn-mismatch: new-token press posts {choice: new-token, confirmed: false}', async (c) => {
     const p = await pairingPage(c, sdk)
     await p.show(await frameOf(coreView(STATE.warnMismatch)))
     await p.press(p.choice(CHOICE.newToken))
@@ -397,7 +411,7 @@ export function registerPairingCases(sdk) {
   // The requirement's mechanism is the disabled button ("can never be sent (button disabled)"), and the
   // backend refusal (PAIR-EP-07): a browser fires no click on a disabled button, so this row checks the
   // button through tick / untick / a new frame, not a click the harness could force on it.
-  t('PAIR-ST-04', 'unticked continue', 'continue is disabled whenever the box is not ticked: before, after untick, after a new warning', async (c) => {
+  gone('PAIR-ST-04', 'unticked continue', 'continue is disabled whenever the box is not ticked: before, after untick, after a new warning', async (c) => {
     const p = await pairingPage(c, sdk)
     await p.show(await frameOf(coreView(STATE.warnMatch)))
     assert.equal(p.choice(CHOICE.continue).props.disabled, true, 'before')
@@ -406,7 +420,7 @@ export function registerPairingCases(sdk) {
     assert.equal(p.choice(CHOICE.continue).props.disabled, true, 'after untick')
     assert.deepEqual(p.posts, [])
   })
-  t('PAIR-ST-04', 'failed → ok clears', 'failed alert shown → a later ok answer shows no error', async (c) => {
+  gone('PAIR-ST-04', 'failed → ok clears', 'failed alert shown → a later ok answer shows no error', async (c) => {
     let answer = { status: 200, json: { ok: false, code: REFUSAL.notSaved } }
     const p = await pairingPage(c, sdk, { choose: () => answer })
     await p.show(await frameOf(coreView(STATE.warnMatch)))
@@ -416,7 +430,7 @@ export function registerPairingCases(sdk) {
     await p.press(p.choice(CHOICE.newTokenAndId))
     assert.deepEqual(p.byHook(HOOK.failed), [])
   })
-  t('PAIR-ST-05', 'new warning resets', 'ticked and failed → a new warn-match for another bound pair: the box unticked, continue disabled, the alert gone', async (c) => {
+  gone('PAIR-ST-05', 'new warning resets', 'ticked and failed → a new warn-match for another bound pair: the box unticked, continue disabled, the alert gone', async (c) => {
     const p = await pairingPage(c, sdk, { choose: () => ({ status: 200, json: { ok: false, code: REFUSAL.notSaved } }) })
     await p.show(await frameOf(coreView(STATE.warnMatch)))
     await p.tick(true)
@@ -427,7 +441,7 @@ export function registerPairingCases(sdk) {
     assert.equal(p.choice(CHOICE.continue).props.disabled, true)
     assert.deepEqual(p.byHook(HOOK.failed), [])
   })
-  t('PAIR-ST-05', 'same warning keeps', 'ticked → the same warning frame again: the box stays ticked', async (c) => {
+  gone('PAIR-ST-05', 'same warning keeps', 'ticked → the same warning frame again: the box stays ticked', async (c) => {
     const p = await pairingPage(c, sdk)
     const frame = await frameOf(coreView(STATE.warnMatch))
     await p.show(frame)
@@ -439,7 +453,7 @@ export function registerPairingCases(sdk) {
   // ======================================================================== F3 on the pairing card (component)
   for (const lang of VIEW.langs) {
     for (const [health, closed] of [[HEALTH.stale, false], [HEALTH.closed, true]]) {
-      t('PAIR-HEALTH-01', `${health} ${lang}`, `(${lang}) error with readyState ${closed ? 'CLOSED' : 'CONNECTING'} → the ${health} notice, the cached lines still readable, the checkbox and every choice disabled${closed ? ', a Reconnect button' : ''}`, async (c) => {
+      gone('PAIR-HEALTH-01', `${health} ${lang}`, `(${lang}) error with readyState ${closed ? 'CLOSED' : 'CONNECTING'} → the ${health} notice, the cached lines still readable, the checkbox and every choice disabled${closed ? ', a Reconnect button' : ''}`, async (c) => {
         const p = await pairingPage(c, sdk, { lang })
         const frame = await frameOf(coreView(STATE.warnMatch), lang)
         await p.show(frame)
@@ -459,7 +473,7 @@ export function registerPairingCases(sdk) {
       })
     }
   }
-  t('PAIR-HEALTH-02', 'fresh frame', 'stale → a fresh valid frame: no notice, choices enabled again (continue per its tick)', async (c) => {
+  gone('PAIR-HEALTH-02', 'fresh frame', 'stale → a fresh valid frame: no notice, choices enabled again (continue per its tick)', async (c) => {
     const p = await pairingPage(c, sdk)
     const frame = await frameOf(coreView(STATE.warnMatch))
     await p.show(frame)
@@ -471,7 +485,7 @@ export function registerPairingCases(sdk) {
     assert.notEqual(p.choice(CHOICE.newTokenAndId).props.disabled, true)
     assert.notEqual(p.confirmBox().props.disabled, true)
   })
-  t('PAIR-HEALTH-02', 'invalid frame', 'stale → an invalid frame (not JSON, no lines) does not clear the notice', async (c) => {
+  gone('PAIR-HEALTH-02', 'invalid frame', 'stale → an invalid frame (not JSON, no lines) does not clear the notice', async (c) => {
     const p = await pairingPage(c, sdk)
     await p.show(await frameOf(coreView(STATE.warnMatch)))
     p.stream().fail({ closed: false })
@@ -479,7 +493,7 @@ export function registerPairingCases(sdk) {
     for (const raw of ['{not json', JSON.stringify({ lines: 'x' }), 'null']) { p.stream().deliverRaw(raw); await settle() }
     assert.equal(p.byHook(HEALTH_HOOK.notice, HEALTH.stale).length, 1)
   })
-  t('PAIR-HEALTH-03', 'unmount', 'unmounting the card closes its EventSource', async (c) => {
+  gone('PAIR-HEALTH-03', 'unmount', 'unmounting the card closes its EventSource', async (c) => {
     const p = await pairingPage(c, sdk)
     const s = p.stream()
     await p.unmount()

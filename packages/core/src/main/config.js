@@ -4,7 +4,8 @@
  * running row without a restart: DSH's loader commits a volatile-only change into the running
  * fiber's references and emits `loader/volatile-update` (cordis-plugin-loader, both SDKs), and the
  * row reads each value live through `valueAt`. The nested shape is the one every design text uses
- * (`target.url`, `connect.clientMetadataUrl`, `identity.id`, `identity.name`, `model`).
+ * (`connect.clientMetadataUrl`, `identity.id`, `identity.name`, `model`). MULTI-1 removed
+ * `target.url`: the targets are core's own records (src/targets/), added on the settings page.
  *
  * `model`'s fields are optional in the schema: an absent `model` must parse (it means "this DSH's
  * default model"), and schemastery applies an object's required fields to an absent value too.
@@ -16,7 +17,6 @@ import Schema from '@deepseek-ai/schemastery'
 const text = () => Schema.string().volatile()
 
 export const Config = Schema.object({
-  target: Schema.object({ url: text() }),
   connect: Schema.object({ clientMetadataUrl: text() }),
   identity: Schema.object({ id: text(), name: text() }),
   model: Schema.object({ provider: Schema.string(), model: Schema.string(), reasoningEffort: Schema.string() }).volatile(),

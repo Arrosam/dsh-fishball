@@ -21,7 +21,8 @@ import { setTimeout as sleep } from 'node:timers/promises'
 import { caseTest } from '../../contract/package-boundaries/cases.mjs'
 import { CONNECT, FIXTURE, HARNESS, IDENTITY, K1, LINK, MCP, REDIRECT, RFIX, SUBJECT } from './constants.mjs'
 import { browser } from './fakes.mjs'
-import { linkSaveWorld, untilTrue } from './subject.mjs'
+import { PARENT_SOURCE, linkSaveWorld, untilTrue } from './subject.mjs'
+import { TARGETS } from '../wire/targets-oracle.mjs'
 
 const S = LINK.state
 const C = CONNECT.state
@@ -84,11 +85,13 @@ export function registerRfixLinkSaveCases(sdk) {
       assert.deepEqual(presentedTo(w, FIXTURE.host.first, token.secret), [], 'the value bound to A was sent to B')
     })
   }
-  caseTest(sdk, 'RFIX-F01-EP-01', 'record', `the binding is durable: record ${RFIX.pendingTokenOrigin} holds {v: ${RFIX.pendingVersion}, ref, origin: A}; ref is not the value and the value is nowhere in it`, async (t) => {
+  // MULTI-0 security amendment: the pending record's origin binding moved into
+  // TARGETS.credentials.bindingField as the full TargetCredentialBinding {targetId, endpointEpoch, origin, agentId}.
+  caseTest(sdk, 'RFIX-F01-EP-01', 'record', `the binding is durable: record ${RFIX.pendingTokenOrigin} holds {v: ${RFIX.pendingVersion}, ref, binding: {targetId: parent, endpointEpoch, origin: A, agentId: identity.id}}; ref is not the value and the value is nowhere in it`, async (t) => {
     const { w, token, aOrigin } = await pendingForA(t, sdk, { importFirst: false })
     const payload = await pendingBinding(w)
     assert.ok(payload !== undefined, `no ${RFIX.pendingTokenOrigin} record`)
-    assert.deepEqual({ v: payload.v, origin: payload.origin, refType: typeof payload.ref }, { v: RFIX.pendingVersion, origin: aOrigin, refType: 'string' })
+    assert.deepEqual({ v: payload.v, binding: payload[TARGETS.credentials.bindingField], refType: typeof payload.ref }, { v: RFIX.pendingVersion, binding: { ...PARENT_SOURCE, origin: aOrigin, agentId: FIXTURE.coreId }, refType: 'string' })
     assert.notEqual(payload.ref, token.secret)
     assert.equal(JSON.stringify(payload).includes(token.secret), false, 'the binding record holds the token value')
   })
@@ -126,7 +129,7 @@ export function registerRfixLinkSaveCases(sdk) {
     w.retarget(aOrigin + MCP.paths.mcp)
     // A is down, so "offered" is the link trying A (unreachable) rather than target-unset.
     await w.untilStatus(S.unreachable)
-    assert.equal((await pendingBinding(w))?.origin, aOrigin, 'the binding moved off A')
+    assert.equal((await pendingBinding(w))?.[TARGETS.credentials.bindingField]?.origin, aOrigin, 'the binding moved off A')
     assert.deepEqual(presentedTo(w, FIXTURE.host.first, token.secret), [])
   })
 
@@ -164,7 +167,10 @@ export function registerRfixLinkSaveCases(sdk) {
     await w.untilStatus(S.unset)
     await w.untilConnect(C.needsAuthorization)
   })
-  caseTest(sdk, 'RFIX-F10-DT-01', 'record id ≠ attempt id, full scope', 'a grant saved without agentId (full scope) and a paired record of another id → pairing id-mismatch: no pair, no new listen', async (t) => {
+  // MULTI-0 security amendment ("All four binding members must match before use"): a grant whose
+  // binding names another agentId is no credential at all, so the old "use it, then hold
+  // id-mismatch" outcome is withdrawn; the row now checks the grant is not used.
+  caseTest(sdk, 'RFIX-F10-DT-01', 'record id ≠ attempt id, full scope', 'a grant saved for another id and a paired record of that id → the grant is not used: no pair, no listen, not connected', async (t) => {
     const { w } = await connectedViaConnect(t, sdk)
     await w.untilView('paired')
     const [grant] = await w.grants()
@@ -180,7 +186,6 @@ export function registerRfixLinkSaveCases(sdk) {
     const pairs = w.f.callsOf(K1.TOOL.pair).length
     const listens = w.f.listens.length
     await w.start()
-    await w.untilView('idMismatch')
     await sleep(HARNESS.quietMs)
     assert.equal(w.f.callsOf(K1.TOOL.pair).length, pairs, 'pair was called for a mismatched record')
     assert.equal(w.f.listens.length, listens, 'the link listened while held id-mismatch')

@@ -13,15 +13,15 @@ its guard patch reaches every row); in a standalone DSH you install it yourself,
 
 ## Rows (`cordis.patch.yml`)
 
-- `fishball-core` (`fishball-core/main`, `src/main/`): the link to the target, Connect, the
-  interception service, the ask cards, status, the bridge façade over the connector's tools, and the
-  one manager session with its persona, reminders (`schedule_*`) and private Skills. It provides
-  `fishballInstance` (apiVersion 1) and `fishballStatus`.
+- `fishball-core` (`fishball-core/main`, `src/main/`): the target list (`src/targets/`: one link,
+  Connect, pairing and bridge façade per DSH target), the interception service, the ask cards,
+  status, and the one manager session with its persona, reminders (`schedule_*`) and private
+  Skills. It provides `fishballInstance` (apiVersion 2) and `fishballStatus`.
 - `fishball-core-session` (`src/session/route.js`): `GET|POST /api/fishball/session`, the manager
   session the Fishball page opens.
 - `fishball-core-guards` (`src/guards/`): the guard check, the `guards-overridden` report and, in a
   standalone DSH, the self-reorder to the end of `dsh.profile.bundles`.
-- `preset-fishball`: core's own agent preset (read and read_image only).
+- `preset-fishball`: core's own agent preset (read and read_image only, plus DSH's `ask_user_question`).
 - Guard rows: the session-creating service rows (`schedule`, `open-in-app`,
   `terminal-controller`), `dsh-instance` (no nested hosted Fishball), every DSH-shipped agent preset
   (switched off, never deleted), and the read-only sandbox, `ask` approval and read-only permission
@@ -37,14 +37,20 @@ Core's rows are not `required`: a failure is that row's alone, and the DSH still
 Core's own page on DSH's Plugins page (`client.js` with `client.settings.js`, in the
 `plugins.bundle.config` slot), the same in standalone and hosted mode:
 
-- **Target** (`target.url`): the connector's MCP endpoint, for example
-  `http://127.0.0.1:<port>/api/agent/mcp`. In a hosted child the URL the instance supplies wins.
+- **DSH targets**: every DSH Fishball works with, one MCP endpoint of a connector each, for example
+  `http://127.0.0.1:<port>/api/agent/mcp`. There is no count limit, and an endpoint already in the list is refused. Each
+  target shows its name (the DSH's advertised `<name>-DSH`, with ` (2)`, ` (3)` … for a later equal
+  name) and its state (connected, connecting, failed, not set). A name follows a rename at once. Per target:
+  its URL, its own write-only token field, **Connect** / Cancel / Retry and **Remove**. Removing a
+  target, or pointing it at another endpoint, asks first; its waiting cards are voided, its saved
+  token is deleted and its history stays read-only. Nothing is sent to the DSH. In a hosted child the DSH
+  it runs in comes first, with the URL the instance supplies; it cannot be removed or edited.
 - **Client metadata URL** (`connect.clientMetadataUrl`): the https URL of the Client ID Metadata
-  Document you host. **Connect** needs it.
+  Document you host, one for every target. **Connect** needs it.
 - **Fishball id** and **Name** (`identity.id`, `identity.name`). An unset id is generated and kept
   in core's own storage; the id is sent as `agent_id`.
-- **Token for connecting a DSH**: write-only, always shown. A pasted token, freshly generated on the
-  target connector's settings page, is saved in DSH's credential store and tried at the next
+- **Token** (per target): write-only. A pasted token, freshly generated on that target connector's
+  settings page, is saved in DSH's credential store under that target alone and tried at its next
   connection; it replaces a saved credential only once the target accepts it.
 - **Connect**: browser OAuth through the connector's approval page. A loopback target may be plain
   http; any other target must be https. From a browser on another machine, Fishball's page must be
@@ -52,6 +58,13 @@ Core's own page on DSH's Plugins page (`client.js` with `client.settings.js`, in
 - **Fishball's model** (`model`: provider, model, reasoning effort): the model the manager session
   uses. Unset means this DSH's default model; nothing blocks. Only this page and fishball-ui's model
   dialog write it. The instance's model sync copies providers and model lists only and never sets it.
+
+## Model tools
+
+Every tool of a target is offered to the manager as `mcp__<target>__<tool>_<id>` (at most 64
+characters), so two DSHs' `sessions_list` never collide. Each target has its own `ask_user` too. A tool's description
+names its target. A renamed target's tools are renamed together; an old name is never reused for
+another target. Reminder and private Skill tools are unprefixed and exist once.
 
 ## Without the other plugins
 

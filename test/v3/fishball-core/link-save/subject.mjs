@@ -27,6 +27,10 @@ import { canonicalTmp, cleanups, leakHits, logText, openHost, requireModule, swe
 import { identityModule } from '../identity/subject.mjs'
 import { CONNECT, EVENT, FIXTURE, HARNESS, HOSTED_IMPORT, IDENTITY, RELAYED, RFIX, SUBJECT } from './constants.mjs'
 import { startFakeConnector } from './fakes.mjs'
+import { TARGETS } from '../wire/targets-oracle.mjs'
+
+/** The parent target on one fixed endpoint epoch (test data in the frozen grammar). */
+export const PARENT_SOURCE = Object.freeze({ targetId: TARGETS.parentId, endpointEpoch: TARGETS.epoch.prefix + TARGETS.epoch.alphabet[0].repeat(TARGETS.epoch.randomChars) })
 
 const CREDENTIALS_PACKAGE = '@deepseek-ai/dsh-credentials'
 
@@ -49,7 +53,10 @@ export const untilTrue = (predicate, timeoutMs = HARNESS.settleMs) => until(pred
  * @param {import('node:test').TestContext} t
  */
 export async function linkSaveWorld(t, sdk, options = {}) {
+  // MULTI-1: `source` is the target this world's credentials belong to (default the parent on a
+  // fixed epoch); `w.source` may be replaced before a restart (a new epoch).
   const { name, host = FIXTURE.host.first, start = true, noSdk = false, logger } = options
+  let source = options.source ?? PARENT_SOURCE
   // An explicit `cimd: undefined` is the unset setting, so the default applies only when the key is absent.
   const cimd = Object.hasOwn(options, 'cimd') ? options.cimd : FIXTURE.cimd.valid
   const clock = { skewMs: 0 }
@@ -106,7 +113,10 @@ export async function linkSaveWorld(t, sdk, options = {}) {
       on: (event, fn) => host_.ctx.on(event, fn),
       logger: logger ?? ((loggerName) => host_.ctx.logger(loggerName)),
     }
+    // MULTI-1 seam (relayed 2026-11-18): `names` = credentialNames({targetId, endpointEpoch}). This
+    // world is the hosted parent (its reserved names, link.d.ts) on one fixed endpoint epoch.
     const made = mod[SUBJECT.factory](ctx, {
+      names: mod[SUBJECT.names](source),
       target: () => settings.get('target'),
       clientId: () => settings.get(IDENTITY.idKey),
       clientMetadataUrl: () => settings.get('cimd'),
@@ -117,7 +127,7 @@ export async function linkSaveWorld(t, sdk, options = {}) {
     for (const member of SUBJECT.connectMembers) assert.equal(typeof made.connect[member], 'function', `connect has no ${member}()`)
     const storage = await storageContext(sdk, root)
     const opened = await pairingMod.openRecords(storage.ctx, storage.helpers)
-    const records = pairingMod.createRecords(opened.table)
+    const records = pairingMod.createRecords(opened.table, source)
     const pairing = pairingMod.createPairing({
       records,
       name: () => settings.get(IDENTITY.nameKey),
@@ -157,6 +167,10 @@ export async function linkSaveWorld(t, sdk, options = {}) {
   const credentials = () => host_.ctx.credentials
   const w = {
     f, root, settings, events, mod,
+    get source() { return source },
+    set source(next) { source = next },
+    /** The current source's credential names, from core's own credentialNames (relayed seam). */
+    targetNames: () => mod[SUBJECT.names](source),
     get ctx() { return host_.ctx },
     get core() { return open?.made },
     get connect() { return open?.made.connect },
