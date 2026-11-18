@@ -16,7 +16,7 @@ import { REFUSAL, RESYNC_REASON, RISK, TOOL } from './constants.js'
 import { array, boolean, constant, frozen, integer, nullable, object, oneOfStrings, string } from './schema.js'
 import {
   approvalAnswer, delivery, descriptor, grantSummary, mailboxEvent, promptDecision, promptSummary, questionAnswerItem,
-  questionItem, readMessage, sessionSummary, time,
+  readMessage, sessionSummary, time,
 } from './shapes.js'
 
 const OK = Object.freeze({ success: true, refusal: false })
@@ -70,15 +70,6 @@ const DEFINITIONS = [
   tool(TOOL.questionAnswer, 'Answer a question or plan review by its current offer id; questionId is its approvalId.',
     object({ sessionId: string(), questionId: string(), offerId: string() },
       { answers: array(questionAnswerItem()), approve: boolean(), feedback: string(), toUser: boolean(), note: string() }),
-    success({ accepted: constant(true) })),
-  // PROPOSED: V2's question.ask named the instance's own child session as the card's author; an
-  // MCP principal has no session in the main DSH, so the argument is gone. Where the card is shown,
-  // and its fields, are K3's (the user-card freeze).
-  tool(TOOL.questionAsk, 'Ask the user your own questions as a card in the main DSH. The answer arrives as a settlement event.',
-    object({ questions: array(questionItem()) }),
-    success({ questionId: string() })),
-  tool(TOOL.questionAnswerOwn, 'Answer your own question card for the user, with the words the user gave you.',
-    object({ questionId: string(), answers: array(questionAnswerItem()) }),
     success({ accepted: constant(true) })),
   tool(TOOL.promptsList, 'List the permission prompts the user is being shown in sessions you manage.',
     object({}),

@@ -214,7 +214,6 @@ routing.
 | --- | --- |
 | Sessions | `sessions_list`, `session_start`, `session_message`, `session_redirect`, `session_stop`, `session_read`, `session_release` |
 | Requests | `approvals_list`, `approval_answer`, `question_answer`, `prompts_list`, `prompt_answer` |
-| Your own questions to the user | `question_ask`, `question_answer_own` |
 | Grants | `grants_list`, `grant_revoke` |
 | Attachments | `attachment_put`, `attachment_read` |
 | Events | `inbox_poll`, `inbox_ack` |

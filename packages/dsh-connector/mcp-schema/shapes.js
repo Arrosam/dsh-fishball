@@ -105,7 +105,7 @@ export const mailboxEvent = () => object(
  * Event payloads by type (R-EVS-02). Offers carry the descriptor the matching `approvals_list`
  * row has, so a client never needs a second read to decide. `turn-finished` says whether the
  * session still runs and whether anything is queued for it (R-EVS-02). A `settlement` carries
- * `answers` only for an answered question (its `question_ask` card included, see README).
+ * `answers` for an answered session question or plan review.
  */
 export const EVENT_PAYLOAD_SHAPES = Object.freeze({
   [EVENT_TYPE.permission]: descriptor,
