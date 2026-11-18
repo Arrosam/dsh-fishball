@@ -5,9 +5,9 @@
  * - the brand row's own button, whose subtree carries DSH's `[data-slot="sidebar.brand.mark"]`
  *   outlet (empty before the logo mounts, holding `[data-fishball-logo-mark]` after);
  * - the actual New Session button.
- * Both start with the sidebar's localized `session.new.label`; the brand part later overwrites the
- * brand button's label. The rows assert that only the actual New Session button is hidden, before
- * the logo mounts, after it mounts, and after the shell replaces both controls.
+ * Both start hidden with the localized `session.new.label`. The captured wide button stays visible
+ * even if DSH restores that label on the same node. A replacement has no capture and must stay
+ * hidden until owned; the separate New Session launcher stays hidden throughout.
  */
 import { LABEL, PAGE_MARK } from './constants.mjs'
 import { navPage } from '../package/nav-page.mjs'
@@ -94,9 +94,9 @@ export function shellDocument(lang) {
   brandRow.appendChild(brand)
   const newSession = new Node('button', { type: 'button', 'aria-label': LABEL.newSession[lang] })
   const other = new Node('button', { type: 'button', 'aria-label': 'Settings' })
-  // The two slot anchors the hide rule must respect, each on its own control (the requirement
-  // names either one as the exclusion): a mark-only and a name-only brand button.
-  const markOnly = new Node('button', { type: 'button', 'aria-label': LABEL.newSession[lang] })
+  // In both SDKs the collapsed rail's mark belongs to its Open sidebar toggle, not New session.
+  // Keep the synthetic partial name outlet too: an outlet alone does not prove click capture.
+  const markOnly = new Node('button', { type: 'button', 'aria-label': LABEL.railOpen[lang] })
   markOnly.appendChild(new Node('span', { 'data-slot': 'sidebar.brand.mark' }))
   const nameOnly = new Node('button', { type: 'button', 'aria-label': LABEL.newSession[lang] })
   nameOnly.appendChild(new Node('span', { 'data-slot': 'sidebar.brand.name' }))

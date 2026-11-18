@@ -200,12 +200,12 @@ export async function launchChromium() {
  * exists but cannot start rejects after every started part is cleaned up; callers skip with that
  * reason.
  */
-export async function startEnvironment() {
+export async function startEnvironment({ scripts = {} } = {}) {
   const binary = chromeBinary()
   if (!binary) return null
   const parts = { servers: [] }
   try {
-    const files = { [LITE_ENV.routes.harnessScript]: () => readFileSync(LITE_ENV.harness, 'utf8'), [LITE_ENV.routes.page]: () => readFileSync(LITE_ENV.pageClient, 'utf8') }
+    const files = { ...scripts, [LITE_ENV.routes.harnessScript]: () => readFileSync(LITE_ENV.harness, 'utf8'), [LITE_ENV.routes.page]: () => readFileSync(LITE_ENV.pageClient, 'utf8') }
     const child = await serve((req, res) => {
       const url = new URL(req.url, 'http://child.invalid')
       if (url.pathname === LITE_ENV.routes.harness) return send(res, 'text/html', HARNESS_HTML)
@@ -245,9 +245,9 @@ export async function startEnvironment() {
           for (const type of ['mousePressed', 'mouseReleased']) await devtools.send('Input.dispatchMouseEvent', { type, x, y, button, clickCount: 1 }, sessionId)
         },
         /** A trusted key press (keydown + keyup) delivered by the browser input pipeline. */
-        async press({ key, code, keyCode, modifiers = [] }) {
+        async press({ key, code, keyCode, modifiers = [], text }) {
           const mask = modifiers.reduce((bits, name) => bits | LITE_KEYS.modifierBits[name], 0)
-          for (const type of ['rawKeyDown', 'keyUp']) await devtools.send('Input.dispatchKeyEvent', { type, key, code, windowsVirtualKeyCode: keyCode, nativeVirtualKeyCode: keyCode, modifiers: mask }, sessionId)
+          for (const type of [text === undefined ? 'rawKeyDown' : 'keyDown', 'keyUp']) await devtools.send('Input.dispatchKeyEvent', { type, key, code, windowsVirtualKeyCode: keyCode, nativeVirtualKeyCode: keyCode, modifiers: mask, ...(type === 'keyDown' ? { text } : {}) }, sessionId)
         },
         close: () => devtools.send('Target.closeTarget', { targetId }).catch(() => {}),
       }

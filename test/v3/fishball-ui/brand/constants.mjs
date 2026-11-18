@@ -21,6 +21,7 @@ export const ROUTE = Object.freeze({ strip: 'api/fishball/strip', asks: 'api/fis
 
 /** The requirement's stable observation hooks. */
 export const HOOK = Object.freeze({
+  control: 'data-fishball-logo-control',
   mark: 'data-fishball-logo-mark',
   name: 'data-fishball-logo-name',
   badge: 'data-fishball-logo-badge',
@@ -55,6 +56,7 @@ export const PENDING_CARD_STATES = Object.freeze([CARD_STATE.open])
 export const LABEL = Object.freeze({
   brand: 'Fishball',
   newSession: Object.freeze({ en: 'New session', zh: '新建会话' }),
+  railOpen: Object.freeze({ en: 'Open sidebar', zh: '打开侧边栏' }),
   toggle: Object.freeze({ en: 'Collapse sidebar', zh: '收起侧边栏' }),
 })
 

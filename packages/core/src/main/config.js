@@ -27,7 +27,8 @@ export const Config = Schema.object({
   connect: Schema.object({ clientMetadataUrl: text() }),
   identity: Schema.object({ id: text(), name: text() }),
   model: Schema.object({ provider: Schema.string(), model: Schema.string(), reasoningEffort: Schema.string() }).volatile(),
-  [SEAM_BRAND.setting]: Schema.string().volatile(),
+  // An invalid stored value is presentation, not a reason to abort core's startup.
+  [SEAM_BRAND.setting]: Schema.string().loose().volatile(),
 })
 
 /** A volatile field arrives as a live reference (`.get()`); a plain value (a direct construction) reads the same. */

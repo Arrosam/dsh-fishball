@@ -65,6 +65,7 @@ window.__ModuleLoader__.load({
       key: Object.freeze({ enter: 'Enter', space: ' ' }),
       /** The shell's own `aria-label` on the brand button is overwritten by each re-render; restored on teardown. */
       labelAttribute: 'aria-label',
+      controlAttribute: 'data-fishball-logo-control', // fishball-page exposes the wide button only while captured.
       descriptionAttribute: 'aria-description',
       shortcutAttribute: 'aria-keyshortcuts',
       /** V1 had no title; a native title is the fallback where `aria-description` is not exposed. */
@@ -311,14 +312,14 @@ window.__ModuleLoader__.load({
             if (event.repeat) return
             open()
           }
-          button.setAttribute('data-fishball-logo-control', '')
           button.addEventListener('click', click, true)
           button.addEventListener('keydown', keydown, true)
+          button.setAttribute(BRAND.controlAttribute, '')
           return () => {
+            button.removeAttribute(BRAND.controlAttribute)
             watch.disconnect()
             button.removeEventListener('click', click, true)
             button.removeEventListener('keydown', keydown, true)
-            button.removeAttribute('data-fishball-logo-control')
             if (previous.label === null || previous.label === undefined) button.removeAttribute(BRAND.labelAttribute)
             else button.setAttribute(BRAND.labelAttribute, previous.label)
             if (previous.description === null || previous.description === undefined) button.removeAttribute(BRAND.descriptionAttribute)
@@ -373,9 +374,15 @@ window.__ModuleLoader__.load({
         const Name = makeName(kit, ctx, sources)
         ctx.effect(() => kit.mountStyle(C.id, css), BRAND.classPrefix + ': styles')
         ctx.effect(() => kit.whilePage(() => {
-          const disposeMark = ctx.slots.inject(BRAND.markSlot, () => ctx.slots.register({ name: BRAND.markSlot, priority: BRAND.priority }, Mark))
-          const disposeName = ctx.slots.inject(BRAND.nameSlot, () => ctx.slots.register({ name: BRAND.nameSlot, priority: BRAND.priority }, Name))
-          return () => { disposeName(); disposeMark() }
+          const inject = (name, Component) => ctx.slots.inject(name, () => ctx.slots.register({ name, priority: BRAND.priority }, Component))
+          const disposeMark = inject(BRAND.markSlot, Mark)
+          try {
+            const disposeName = inject(BRAND.nameSlot, Name)
+            return () => { try { disposeName() } finally { disposeMark() } }
+          } catch (error) {
+            disposeMark()
+            throw error
+          }
         }), BRAND.classPrefix + ': brand slots')
       }
       return Object.freeze({ name: 'fishball-ui: brand', inject: ['slots', 'locale', 'sessions', 'uiSession', 'uiWorkspace', 'layout'], apply })

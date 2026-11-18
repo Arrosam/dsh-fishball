@@ -39,6 +39,8 @@ const child = process.env.FBW_CHILD ? JSON.parse(process.env.FBW_CHILD) : undefi
 // FBW_CHILD_LIVE: the stand-in row lives in the profile's own patch (rewritten at every start),
 // so DSH's settings can change its value live (an overlay-owned row refuses settings writes).
 const profilePatch = path.join(profile, C.profilePatch)
+const corePatch = (config) => ({ id: C.core, name: C.main, config })
+if (process.env.FBW_CORE_CONFIG) fs.writeFileSync(profilePatch, JSON.stringify([corePatch(JSON.parse(process.env.FBW_CORE_CONFIG))]))
 if (child !== undefined && process.env.FBW_CHILD_LIVE) {
   // Written at every start, as the instance's launch overlay writes the child row's value at every
   // start (src/native-runtime/overlay.js). The profile's patch is a YAML array (DSH writes `[]`);
@@ -55,7 +57,14 @@ const { createUserMessage } = await host('dsh-llm')
 const instance = () => ctx.get('fishballInstance')
 const manager = () => ctx.agents.get(instance().manager.sessionId())
 const shape = (value, depth = C.first) => value == null ? null : typeof value === 'function' ? 'function' : typeof value !== 'object' || depth > 3 ? typeof value : Object.fromEntries(Object.keys(value).map((k) => [k, shape(value[k], depth + C.one)]))
+// DSH's config editor reconciles these same persisted profile patches after a file edit.
+async function replaceProfilePatch(entry, rowId) {
+  fs.writeFileSync(profilePatch, JSON.stringify([entry]))
+  const context = ctx.profileContext
+  await reconcileProfilePatches(ctx.root, readProfilePatches(C.dshName, context, loadProfileDirectory(C.dshName, context.dir, context.installAnchor)), C.dshName, [rowId])
+}
 const ops = {
+  async setCorePatch(config) { await replaceProfilePatch(corePatch(config), C.core); return true },
   async ready() {
     return Boolean(await until(() => instance() && ctx.get('fishballStatus'), C.budget.call, C.budget.poll))
   },
@@ -132,10 +141,7 @@ const ops = {
    * insert is rewritten and DSH reconciles the profile from disk (its configEditor), as a file edit would.
    */
   async setChildUrl({ url }) {
-    fs.writeFileSync(path.join(profile, C.profilePatch), JSON.stringify([{ insert: [{ id: C.childRow, name: C.childStandIn, config: { [C.childField]: url } }] }]))
-    // dsh-app-boot's public reconcile, as dsh-config-editor runs it after its own write (same arguments).
-    const context = ctx.profileContext
-    await reconcileProfilePatches(ctx.root, readProfilePatches(C.dshName, context, loadProfileDirectory(C.dshName, context.dir, context.installAnchor)), C.dshName, [C.childRow])
+    await replaceProfilePatch({ insert: [{ id: C.childRow, name: C.childStandIn, config: { [C.childField]: url } }] }, C.childRow)
     return Boolean(await until(() => ctx.settings.describe().find((r) => r.ns === C.childRow)?.value?.[C.childField] === url, C.budget.call, C.budget.poll))
   },
   /** The names and descriptions of the manager's model request tools (one turn). */
