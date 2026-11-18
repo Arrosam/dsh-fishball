@@ -45,6 +45,7 @@ export function createTargetRuntime(ctx, options) {
   const changed = () => emitIsolated(listeners, undefined)
   const source = () => Object.freeze({ targetId, endpointEpoch, ...names() })
   let disposed = false
+  let disposal
   const isRetired = () => disposed || options.isClosing()
 
   const credentialNamesOf = credentialNames({ targetId, endpointEpoch })
@@ -126,14 +127,17 @@ export function createTargetRuntime(ctx, options) {
     /** Calls `fn()` after any change of what this epoch's view shows. Returns its disposer. */
     onChange: (fn) => subscribe(listeners, fn),
     /** Stops everything of this epoch: no request, status or registration after it. */
-    async dispose() {
-      if (disposed) return
+    dispose() {
+      if (disposed) return disposal
       disposed = true
-      for (const dispose of disposers.splice(0)) { try { dispose() } catch { /* one disposer's fault never stops the rest */ } }
-      listeners.clear()
-      bridge.close()
-      await link.stop()
-      await credentials.dispose()
+      // Shutdown and a queued retirement can both need to wait for credential writes to settle.
+      disposal = (async () => {
+        for (const dispose of disposers.splice(0)) { try { dispose() } catch { /* one disposer's fault never stops the rest */ } }
+        listeners.clear()
+        bridge.close()
+        await Promise.all([link.stop(), credentials.dispose()])
+      })()
+      return disposal
     },
   })
 }

@@ -372,6 +372,7 @@ export function createTargets(ctx, { tables, identityRecords, asks, events, reco
    * `service.begin`, so no other plugin reading `fishballInstance.ui.targets` chooses a redirect URI.
    */
   async function beginVia(targetId, via) {
+    if (closed) return UNKNOWN
     const runtime = known(targetId) && runtimes.get(targetId)
     if (!runtime) return UNKNOWN
     return via === undefined ? runtime.connect.begin() : runtime.connect[BEGIN_VIA](via)
@@ -480,8 +481,10 @@ export function createTargets(ctx, { tables, identityRecords, asks, events, reco
     async close() {
       closed = true
       listeners.clear()
-      // serial() refuses new work once closed, so these tails cover every accepted lifecycle action.
-      await Promise.all([startup, ...lanes.values()])
+      // Stop links before draining writes: a held choice must not leave a retry timer running.
+      // A queued retirement can still await disposal of the same runtime before clearing credentials.
+      const stopping = [...runtimes.values()].map((runtime) => runtime.dispose())
+      await Promise.all([startup, ...lanes.values(), ...stopping])
       await Promise.all([...runtimes.keys()].map(stopRuntime))
     },
   })
