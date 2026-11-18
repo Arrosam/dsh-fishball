@@ -31,6 +31,9 @@ export const TOOLS_METHOD = Object.freeze({ list: 'tools/list', call: 'tools/cal
 /** The keys of K1's result envelope itself (envelope.js); a refusal's extra fields never carry them. */
 export const ENVELOPE_KEYS = Object.freeze(['ok', 'code', 'message'])
 
+/** Static recovery advice: never echo the supplied path, title or a host exception. */
+export const FOLDER_ADVICE = 'Set folder to a registered workspace ID or an absolute path to an existing directory. For workspace placement, use that workspace’s ID or its registered directory, not its display name.'
+
 /** The JSON-RPC -32602 message of an unknown tool. It names no tool: the client knows which it called. */
 export const UNKNOWN_TOOL = 'Unknown tool'
 
