@@ -27,6 +27,8 @@ const ACTION_MARKS = Object.values(M.mark)
 
 async function pageWith(t, sdk, targets, answers = {}) {
   const world = createWorld({ sdk, core: {} })
+  // MULTI-1 opt-ins (page.mjs, primitives.mjs): core's target routes and the faithful DSH Modal.
+  world.modal = true
   world.targets = { version: M.snapshotVersion, targets }
   Object.assign(world.targetAnswers, answers)
   const page = await loadPage(t, world)

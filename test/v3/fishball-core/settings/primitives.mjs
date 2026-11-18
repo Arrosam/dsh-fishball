@@ -101,7 +101,11 @@ export const STAND_IN = Object.freeze({
 })
 
 /** The primitives module for one SDK, rendering through `React` (the hook shim). */
-export function primitivesFor(sdk, React) {
+/**
+ * `options.modal` (MULTI-1): use the faithful Modal stand-in below. Off by default, so a harness that
+ * builds on the generic element (fishball-ui's model-dialog wraps `createElement` for it) is unchanged.
+ */
+export function primitivesFor(sdk, React, options = {}) {
   const h = React.createElement
   const { SettingsFormModel, settingsTextField } = realFormLogic(sdk)
   function SettingsForm({ state, labels, onSave, onDiscard, children }) {
@@ -136,7 +140,7 @@ export function primitivesFor(sdk, React) {
   function Button({ children, variant = DESIGN.defaultVariant, size, icon, ...rest }) {
     return h('button', { type: 'button', [STAND_IN.primitive]: 'Button', [STAND_IN.variant]: variant, ...rest }, icon ?? null, children)
   }
-  const design = designStandIns(React)
+  const design = designStandIns(React, options)
   return proxied({ SettingsFormModel, settingsTextField, SettingsForm, SettingsSecretField, SettingsValueField, Button, ...design.known }, h, design.icon)
 }
 
@@ -167,7 +171,7 @@ export const DESIGN = Object.freeze({
   iconPrefix: 'Icon',
   logos: Object.freeze(['FishLogo', 'BrandWordmark']),
 })
-function designStandIns(React) {
+function designStandIns(React, options = {}) {
   const h = React.createElement
   const svg = (name) => function Icon() { return h('svg', { [STAND_IN.primitive]: name, 'aria-hidden': DESIGN.hidden }) }
   function StateDot({ state }) {
@@ -224,7 +228,7 @@ function designStandIns(React) {
       footer ?? null,
       h('button', { type: 'button', [STAND_IN.modalClose]: true, 'aria-label': closeLabel, onClick: onClose }))
   }
-  return { known: { StateDot, Tag, Tooltip, Checkbox, Modal }, icon }
+  return { known: { StateDot, Tag, Tooltip, Checkbox, ...(options.modal ? { Modal } : {}) }, icon }
 }
 
 /** A primitives module: the `known` components, `special(name)` when it answers, and a generic element for every other export. */
