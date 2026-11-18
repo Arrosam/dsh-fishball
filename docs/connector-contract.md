@@ -185,6 +185,37 @@ exported, unchanged, because contract names are frozen (§2) and a 1.0 importer 
 It is unused: posting it does nothing, and the connector never reads it. It will be removed only in
 a major 2.
 
+### 1.5 Hosted Frame Readiness v1 (V3 only)
+
+This is a separate browser signal between V3's `fishball-ui` page plugin and `dsh-connector-ui`'s
+hosted frame. It is not part of the frozen connector 1.2 binding (§1.4), its transport or its
+`BROWSER_MESSAGE` export. No frozen name or value changes; no SDK or route changes.
+
+**Child → direct parent only.** Once the page plugin is installed in a framed document, it posts
+one structured message to `window.parent`, once per document. A top-level page sends nothing.
+The entire payload is `{type: 'fishball:frame-ready', version: 1}`: two keys, numeric version, no
+other fields. It contains no credentials, admission URL, ticket or user data. With `no-referrer`,
+the child cannot rely on `document.referrer`; in Chromium it uses `location.ancestorOrigins[0]`
+as the exact target origin when available. If an exact target is unavailable, only the identical
+non-secret marker may use `'*'` as the target; there is no data-bearing fallback.
+
+**Parent acceptance.** For each fresh iframe, the parent derives the expected child origin from
+its own successful admission. It reveals the frame only when `event.origin` equals that exact
+origin, `iframe.contentWindow` is non-null and equals `event.source` for the current frame, and
+`event.data` is an object with exactly the two keys and values above. A load event is not ready.
+The signal says only that the page plugin installed: it does not prove chat health, authenticate
+the child or grant authority. Admission and authentication still operate independently.
+
+| Event | What the user sees |
+| --- | --- |
+| Initial navigation or parent-initiated replacement | The fresh iframe is hidden from its first paint, unavailable to pointer, keyboard focus and assistive technology. The parent shows a waiting state. |
+| No accepted signal after 15000 ms | The frame stays hidden. The parent says “This frame hasn't confirmed that Fishball loaded.” and offers “Open Fishball again”. This is not an authentication diagnosis. A late valid signal from the still-current frame reveals it and clears recovery without a click. |
+| Open Fishball again | The parent gets a fresh admission and creates a new iframe with its own wait. Messages from the retired frame cannot reveal the replacement, even at the same origin. |
+
+This gate covers the initial navigation and fresh frames the parent creates. It does not monitor
+all later navigations within an already revealed iframe. The 15000 ms wait belongs to this UI
+feature, not to a transport handshake, an admission lifetime or a frozen contract limit.
+
 ## 2. Versions
 
 - The contract id is `fishball-connector`. This document is **1.2**: `CONNECTOR_CONTRACT =
