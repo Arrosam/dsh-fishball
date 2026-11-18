@@ -147,18 +147,12 @@ export function registerVisibilityCases(sdk) {
   })
   check('error before hide', 'a pending reconnect does not reopen the hidden page', async (t) => {
     const view = await browser(t, sdk, VIS.visible)
-    const [source] = view.live()
-    // Advance pending timeouts without specifying or sleeping for the product’s retry delay.
-    t.mock.timers.enable({ apis: ['setTimeout'] })
-    source.close()
-    source.deliver('error', {})
+    terminalError(t, view)
     await view.change(VIS.hidden)
     const before = view.sources().length
-    t.mock.timers.runAll()
-    await view.page.settle()
+    await runPending(t, view.page)
     assert.equal(view.sources().length, before, 'a reconnect opened a background snapshot source')
     assert.equal(view.live().length, EXPECT.none)
-    t.mock.timers.reset()
     await view.notify(FIXTURE.message)
     await view.change(VIS.visible)
     await view.expectMessage(FIXTURE.message)
