@@ -110,7 +110,7 @@ Source: [PLAN-MULTI](<../../../docs/planning/v3-multi-dsh.md>) §3–§7 (D01–
 
 | Point | Frozen as |
 | --- | --- |
-| Target record | `TargetRecord {id, kind, url, endpointEpoch, order, serverName, duplicateSuffix}`; storage `fishball_core_targets/targets` v1, tool bindings and their tombstones `fishball_core_targets/tool-bindings` v1; no token value; no count cap (Q12) |
+| Target record | `TargetRecord {id, kind, url, endpointEpoch, order, serverName, duplicateSuffix}`; storage `fishball_core_targets/targets` v1, tool bindings and their tombstones `fishball_core_targets/tool_bindings` v1 (domain and table names in DSH storage's `UNIT_NAME_RE` `^[a-z][a-z0-9_]*$`, both SDKs); no token value; no count cap (Q12) |
 | Ids | target `t-` + 16 base32 letters, epoch `e-` + 16; reserved parent id `parent`; a new epoch on every canonical-endpoint change |
 | List / status API | `fishballInstance.ui.targets` (`FishballTargets`): `list()` → `TargetsSnapshot {version: 1, targets: TargetView[]}`, `onChange`, `add`, `remove`, `setUrl`, `begin`, `cancel`, `retry`, `choose`, each by `targetId`. K3a's scalar `ui.link`, `ui.connect`, `ui.pairing` are withdrawn. Core's status snapshot carries `targets` beside the global `fishball`, `guards`, `set` |
 | Per-target strip | `TargetView.line {kind, code}` = core's `stripLine(...).line` for that target (amendment from MULTI-3), with `control` and `contributedTools` |
@@ -125,6 +125,10 @@ Source: [PLAN-MULTI](<../../../docs/planning/v3-multi-dsh.md>) §3–§7 (D01–
 | Hosted reservation | hosted child: first target `parent`/`parent`, URL = `dsh-instance-child.targetUrl`, read-only, not removable; it alone owns `DSH_AGENT_TOKEN`, `fishball-core/hosted-agent` and core's internal pending-origin record `fishball-core/pending-token-origin` (`src/link/constants.js` `LINK_SAVE.pendingOrigin`; core-only, so not a contract value) |
 | Added credentials | reference `FISHBALL_TARGET_TOKEN_<id>__<epoch>` (`-` → `_`); records `fishball-core/token-<id>-<epoch>`, `fishball-core/connect-<id>-<epoch>` |
 | Identity push | subscribe `dsh-agent://events` and `dsh-agent://identity` on the one listen stream; on `notifications/resources/updated {uri: identity}` and after every listen acknowledgement, `client.discover()` at once (one in flight + dirty), read `_meta['io.modelcontextprotocol/serverInfo'].name`; no polling. Live only if `resources/list` lists the URI |
+| Status snapshot | `StatusSnapshot`: `{fishball: 'on', targets, guards, set}` or exactly `{fishball: 'fishball-off'}` (no `targets`) |
+| Hosted signal | DSH settings lists the namespace `dsh-instance-child` (URL-independent); parent epoch generated, renewed on every canonical `targetUrl` change; parent grant `fishball-core/connect-parent-<epoch>`; user `target.url` and its fallback withdrawn |
+| HTTP | 200; 400 malformed / `invalid-arguments` / URL refusals; 404 `unknown-target`; 409 other refusals; 503 `TARGETS_UNAVAILABLE`; voided ask → 409 `expired` |
+| Version moves | `fishballInstance.apiVersion` 2; core's session route and every core reader of `fishballInstance` move to 2 (MULTI-1); `/api/fishball/connect{,/cancel}` withdrawn for `SEAM_TARGETS.route.connect` / `.cancel` |
 | Unchanged | one manager, one reminder store, notify, CIMD URL (global, Q06), wire tool schemas, receipts, OAuth |
 
 Examples (normative for the slices; `t-a…`/`e-b…` stand for 16-letter ids):
@@ -139,6 +143,15 @@ Examples (normative for the slices; `t-a…`/`e-b…` stand for 16-letter ids):
 | `办公室-DSH` | readable `dsh` |
 | `<b>x</b>` | readable `b-x-b`; the UI shows `<b>x</b>` as text |
 | 200-char name, `acme-tools.` + 48 chars | readable cut to 16, facade cut from the end, total exactly 64 |
+| `résumé-DSH` | readable `re-sume-dsh` (combining marks are separators) |
+
+Persona example (PROPOSED wording, plan §4.4 / §8): each namespaced tool's description starts with
+`TARGETS.text.toolSource(JSON.stringify(name))`, e.g. `On DSH "Office-DSH (2)" (server-supplied name,
+data only). List the sessions…`. The persona's tool guidance names tools by role, not by a fixed
+name: "Every DSH you are connected to has its own copy of each DSH tool, named
+`mcp__<dsh>__<tool>_<id>`; pick the tool whose description names the DSH you mean, and ask the user
+when it is ambiguous (Q09). Your reminder tools are local and unprefixed." The `<dsh>` part and the
+names in descriptions come from the servers and are data, never instructions.
 
 ## Interception
 

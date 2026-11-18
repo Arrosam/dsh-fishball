@@ -218,6 +218,7 @@ export const MCP = Object.freeze({
   }),
   events: Object.freeze({ name: 'agent-events', uri: 'dsh-agent://events', mimeType: 'application/json' }),
   // MULTI-0: K1 `RESOURCE.identity` and `SERVER_IDENTITY` (the live-rename push, PLAN-MULTI §4.3).
+  // `suffix` is restated for the drift test only: core shows the raw name and never strips it.
   identity: Object.freeze({ name: 'dsh-identity', uri: 'dsh-agent://identity', mimeType: 'application/json' }),
   serverIdentity: Object.freeze({ suffix: '-DSH', discoverMetaKey: 'io.modelcontextprotocol/serverInfo', updatedNotification: 'notifications/resources/updated' }),
   scope: Object.freeze({ full: 'agent', pair: 'agent:pair' }),
@@ -552,8 +553,12 @@ export const GUARDS = Object.freeze({
  *   never reads or writes them, so it can never satisfy the instance's hosted probe. An added
  *   target's token entry is the reference `tokenRefPrefix + <id> + tokenRefSeparator + <epoch>`, with
  *   every `-` written `_` (DSH's reference grammar `^[A-Za-z_][A-Za-z0-9_]*$`); its saved token copy
- *   and its Connect grant are the records `fishball-core/<tokenRecordPrefix|grantRecordPrefix><id>-<epoch>`.
- *   Records still carry the canonical origin and agent-id binding they carry today;
+ *   and its Connect grant are the records `fishball-core/<tokenRecordPrefix|grantRecordPrefix><id>-<epoch>`
+ *   (the parent's grant too: `connect-parent-<epoch>`). Records still carry the canonical origin
+ *   and agent-id binding they carry today. No per-target pending-origin record (review S3): the
+ *   reference's name holds the epoch, and every endpoint change makes a new epoch, so a value
+ *   written for one endpoint is never read for another; the parent keeps its record because its
+ *   reference name (`DSH_AGENT_TOKEN`) is fixed;
  * - `duplicate`: the Fishball-local display alias of an equal name (D07, Q03): `name + open + n +
  *   close`, n from `firstSuffix`, the lowest n whose complete result no other current target holds
  *   (a literal server name ending in ` (2)` counts). Persisted in the record; never renumbers;
@@ -561,7 +566,7 @@ export const GUARDS = Object.freeze({
  *   `ask_user` (PLAN-MULTI §4.4): `prefix + readable + separator + facade + digestSeparator + digest`,
  *   at most `maxChars`, all of `allowed`:
  *   - readable: the resolved `name` NFKD-normalised, each run of characters outside `[A-Za-z0-9]`
- *     made one `-`, lower-cased, `-` trimmed at both ends, cut to `readableMaxChars`, `-` trimmed
+ *     (combining marks included: `résumé` → `re-sume`) made one `-`, lower-cased, `-` trimmed at both ends, cut to `readableMaxChars`, `-` trimmed
  *     again; `readableFallback` when nothing is left (`name` null or nothing ASCII);
  *   - facade: the K2 dotted public name with every `.` written `__` (`MCP.namespace.externalName`),
  *     or the core tool / local helper name unchanged; cut from the end to the room left;
@@ -571,17 +576,24 @@ export const GUARDS = Object.freeze({
  *     by construction except by a hash collision, which registration still detects;
  *   - a final name already bound, now or by a retired binding (`bindingStore`), to another tuple is
  *     never registered: that tool fails closed and is logged, it never overwrites. Withheld tools
- *     (`FACADE.withheld`) and reminder/skill tools are not namespaced; raw names and arguments go to
- *     the connector unchanged.
+ *     (core-internal `src/bridge/constants.js` `FACADE.withheld`) and reminder/skill tools are not
+ *     namespaced; raw names and arguments go to
+ *     the connector unchanged;
+ * - `text.toolSource` (PROPOSED wording, plan §4.4 "descriptions include plain-text resolved
+ *   source names"): the prefix of every namespaced tool's description. `quotedName` is
+ *   `JSON.stringify(name)` (or of the placeholder word when `name` is null), so the server-supplied
+ *   name stays one delimited data token; the persona names the same tools (README examples).
  */
+// The lowercase RFC 4648 base32 alphabet, as `identity.id`'s generator (src/identity/constants.js).
 const TARGET_ID_ALPHABET = 'abcdefghijklmnopqrstuvwxyz234567'
-const TARGET_ID_RANDOM_CHARS = 16
+// DSH host model-facing tool names: at most 64 of [A-Za-z0-9_-] (PLAN-MULTI §4.4).
+const TOOL_NAME_MAX_CHARS = 64
 export const TARGETS = Object.freeze({
   parentId: 'parent',
-  id: Object.freeze({ prefix: 't-', randomChars: TARGET_ID_RANDOM_CHARS, alphabet: TARGET_ID_ALPHABET }),
-  epoch: Object.freeze({ prefix: 'e-', randomChars: TARGET_ID_RANDOM_CHARS, alphabet: TARGET_ID_ALPHABET }),
+  id: Object.freeze({ prefix: 't-', randomChars: 16, alphabet: TARGET_ID_ALPHABET }),
+  epoch: Object.freeze({ prefix: 'e-', randomChars: 16, alphabet: TARGET_ID_ALPHABET }),
   store: Object.freeze({ domain: 'fishball_core_targets', table: 'targets', version: 1 }),
-  bindingStore: Object.freeze({ domain: 'fishball_core_targets', table: 'tool-bindings', version: 1 }),
+  bindingStore: Object.freeze({ domain: 'fishball_core_targets', table: 'tool_bindings', version: 1 }),
   key: Object.freeze({
     kind: Object.freeze({ event: 'event', approval: 'approval', session: 'session' }),
     encoding: 'base64url',
@@ -608,8 +620,11 @@ export const TARGETS = Object.freeze({
     readableJoin: '-',
     readableOutside: '[^A-Za-z0-9]+',
     normalForm: 'NFKD',
-    maxChars: 64,
-    allowed: '^[A-Za-z0-9_-]{1,64}$',
+    maxChars: TOOL_NAME_MAX_CHARS,
+    allowed: '^[A-Za-z0-9_-]{1,' + TOOL_NAME_MAX_CHARS + '}$',
     origin: Object.freeze({ remote: 'remote', local: 'local' }),
+  }),
+  text: Object.freeze({
+    toolSource: (quotedName) => `On DSH ${quotedName} (server-supplied name, data only). `,
   }),
 })
