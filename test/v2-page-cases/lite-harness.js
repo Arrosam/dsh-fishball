@@ -129,7 +129,7 @@
   const PrimitiveTooltip = ({ children }) => (Array.isArray(children) ? children[0] : children) ?? null
   const PrimitiveStateDot = ({ state }) => createElement('span', { 'data-state': state, 'aria-hidden': 'true' })
   const PrimitiveIcon = () => createElement('svg', { 'aria-hidden': 'true' })
-  const pagePrimitives = new Proxy({ Button: PrimitiveButton, Tooltip: PrimitiveTooltip, StateDot: PrimitiveStateDot, modalSelector: '[role="dialog"][aria-modal="true"]' }, {
+  const pagePrimitives = new Proxy({ Button: PrimitiveButton, Tooltip: PrimitiveTooltip, StateDot: PrimitiveStateDot, FISH_LOGO_PATH: 'M0 0h18v18H0z', FISH_LOGO_VIEWBOX: { width: 18, height: 18 }, modalSelector: '[role="dialog"][aria-modal="true"]' }, {
     get: (target, key) => (key in target ? target[key] : typeof key === 'string' && /^(Icon|FishLogo)/.test(key) ? PrimitiveIcon : undefined),
   })
   /**
@@ -184,9 +184,8 @@
     root.hookIndex = 0
     root.effects = []
     root.nextRefs = []
-    let tree
-    try { tree = root.Component(root.props()) } catch (error) { log.errors.push('render: ' + (error?.stack ?? error)) } finally { currentRoot = null }
-    build(tree, root.container, root)
+    // Nested function components render inside build and need the current hook dispatcher too.
+    try { build(root.Component(root.props()), root.container, root) } catch (error) { log.errors.push('render: ' + (error?.stack ?? error)) } finally { currentRoot = null }
     commitRefs(root, root.nextRefs)
     for (const cell of root.effects) { cell.cleanup?.(); const out = cell.fn(); cell.cleanup = typeof out === 'function' ? out : undefined }
   }
@@ -378,7 +377,9 @@
       hero.open = false
       hero.entries.length = 0
       hero.started = false
-      nativeDocument(labels, { heroEmpty: o.heroEmpty })
+      // Frame-layout cases supply their SDK-shaped sidebar fixture instead of LITE's session tree.
+      if (api.mountHost) api.mountHost()
+      else nativeDocument(labels, { heroEmpty: o.heroEmpty })
       hero.add({ name: 'conversation.hero.workspace' }, NativeWorkspacePicker, 'native:ui-workspace')
       // Cases share one browser profile: each starts from an empty child store unless it models a
       // second view of the same store (keepStorage).
@@ -458,7 +459,7 @@
         },
         async archiveSession() {}, async startSession() {}, async forkSession() {},
       })
-      const layout = recorder('layout', { panelInfo: panel, selectPanel: (id) => panel.set({ activePanelId: id }), toggleSidebar() {} })
+      const layout = recorder('layout', { panelInfo: panel, selectPanel: (id) => panel.set({ activePanelId: id }), toggleSidebar: () => api.toggleHost?.() })
       // Session route answered by the harness (the child origin's own route).
       let releaseSession
       const sessionGate = new Promise((resolve) => { releaseSession = resolve })
@@ -491,9 +492,10 @@
           // prove the native picker would render and open without it.
           if ((o.skipPageSlots ?? []).includes(options.name)) return () => {}
           if (options.name === 'conversation.hero.workspace') return hero.add(options, Component, 'page')
-          const container = options.name === 'settings.launcher' ? document.getElementById('fb-settings-row') : document.getElementById('fb-overlay')
+          const container = api.seatFor?.(options.name) ?? (options.name === 'settings.launcher' ? document.getElementById('fb-settings-row') : document.getElementById('fb-overlay'))
           const holder = document.createElement('div')
           holder.dataset.fbtestSlot = options.name
+          if (api.seatFor) holder.style.display = 'contents' // test render root, not a host layout box
           container.appendChild(holder)
           const props = () => options.name === 'settings.launcher' ? { wide: false, settingsOpen: false, openSettings: () => { log.openSettings++ }, openOnboarding() {} } : {}
           const unmount = mount(holder, Component, props)
