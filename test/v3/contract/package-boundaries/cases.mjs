@@ -24,7 +24,7 @@ import {
 } from './constants.mjs'
 import { readTokens } from '../../fishball-core/package/static.mjs'
 import { manifestNames, npmTempRoot, observe, readManifest } from './packages.mjs'
-import { assertLibraryCopies } from '../../release/pack/release.mjs'
+import { assertLibraryCopies, releaseTest } from '../../release/pack/release.mjs'
 
 const NODE_MODULES_DIR = 'node_modules/'
 export const has = (pkg) => readManifest(pkg.dir) !== null
@@ -48,6 +48,9 @@ export function caseTest(sdk, id, row, title, fn, todo) {
   const name = caseName(sdk, id, row, title)
   if (todo !== undefined) test.todo(`${name} — TODO ${todo}`)
   else test(name, fn)
+}
+export function packedCase(sdk, id, row, title, fn) {
+  releaseTest(caseName(sdk, id, row, title), {}, fn)
 }
 /**
  * Run `fn` only at integration (`gate.env` set to `gate.on`): it boots a host DSH. Outside
@@ -252,7 +255,7 @@ function registerLibraryCases(sdk, lib) {
   // property is about shipped packages, and the working tree cannot carry a library copy in
   // packages/<importer>/node_modules without shadowing the library's source. Importers come from
   // the packed manifests; the check is REL-PACK's own (test/v3/release/pack, REL-DT-03).
-  caseTest(sdk, 'PLAT-EP-07', 5, `every importer's release tarball contains a real, byte-identical copy of ${lib.name}'s packed files`, () => {
+  packedCase(sdk, 'PLAT-EP-07', 5, `every importer's release tarball contains a real, byte-identical copy of ${lib.name}'s packed files`, () => {
     assertLibraryCopies(lib.name)
   })
 

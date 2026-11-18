@@ -50,7 +50,7 @@ import {
 import {
   assertFromOwnBundle, assertLibraryCopies, copyRelease, describeEntry, docProfile, dshAddChecked, fencedBlocks, filesUnder, flipByte,
   installAndCheck, installDocLines, installedDir, installProblems, isAddLine, isJunk, isLink, isolatedEnv, isRegular, offlineBlock,
-  onlineLineIndex, paragraphs, releaseDir, resolveIn, runTool, sdkSemver, sectionOf, sha256, show, tail, tarball, tarballPath, tarListing,
+  onlineLineIndex, paragraphs, releaseDir, releaseTest, resolveIn, runTool, sdkSemver, sectionOf, sha256, show, tail, tarball, tarballPath, tarListing,
   withCountingProxy, withScratch,
 } from './release.mjs'
 
@@ -59,8 +59,9 @@ import {
  * (Here, not in release.mjs: package-boundaries imports release.mjs, so release.mjs must not import it back.)
  */
 export function relCase(sdk, id, row, title, fn, timeout) {
-  test(caseName(sdk, id, row, title), timeout === undefined ? {} : { timeout }, fn)
+  releaseTest(caseName(sdk, id, row, title), timeout === undefined ? {} : { timeout }, fn)
 }
+const sourceCase = (sdk, id, row, title, fn) => test(caseName(sdk, id, row, title), fn)
 const json = (entry) => JSON.parse(entry.data.toString('utf8'))
 /** The banned `patterns` that `text` matches, each shown with the text it matched. */
 const textHits = (patterns, text) => patterns.map((re) => re.exec(text)).filter(Boolean).map((m) => show(m[0]))
@@ -175,17 +176,17 @@ export function registerPackCases(sdk) {
 
 /** REL-ORACLE: this suite's own oracles (no release needed), and the tarball parser against `tar -tzf`. */
 function registerOracle(sdk) {
-  relCase(sdk, CASE.oracle, 'junk', 'the junk rule flags each banned segment and name and none of its look-alikes (BVA)', () => {
+  sourceCase(sdk, CASE.oracle, 'junk', 'the junk rule flags each banned segment and name and none of its look-alikes (BVA)', () => {
     assert.deepEqual(JUNK.samples.junk.filter((s) => !isJunk(s)), [])
     assert.deepEqual(JUNK.samples.clean.filter(isJunk), [])
   })
   for (const [rule, { hit, clean }] of Object.entries(DOC_TEXT.samples)) {
-    relCase(sdk, CASE.oracle, 'doc text ' + rule, `the ${rule} text rule flags each banned form and none of its look-alikes (BVA)`, () => {
+    sourceCase(sdk, CASE.oracle, 'doc text ' + rule, `the ${rule} text rule flags each banned form and none of its look-alikes (BVA)`, () => {
       assert.deepEqual(hit.filter((t) => textHits(DOC_TEXT[rule], t).length === 0), [])
       assert.deepEqual(clean.filter((t) => textHits(DOC_TEXT[rule], t).length > 0), [])
     })
   }
-  relCase(sdk, CASE.oracle, 'sums', 'the SHA256SUMS line shape admits 64 hex + two spaces + a name and nothing at 63/65 hex, one or three spaces (BVA)', () => {
+  sourceCase(sdk, CASE.oracle, 'sums', 'the SHA256SUMS line shape admits 64 hex + two spaces + a name and nothing at 63/65 hex, one or three spaces (BVA)', () => {
     assert.deepEqual(RELEASE.sumSamples.valid.filter((s) => !RELEASE.sumLine.test(s)), [])
     assert.deepEqual(RELEASE.sumSamples.invalid.filter((s) => RELEASE.sumLine.test(s)), [])
   })
@@ -341,7 +342,7 @@ function registerCheck(sdk) {
     const r = await runCheck(scratch, process.env[RELEASE.env] === undefined ? undefined : dir)
     assert.equal(r.code, PACK_SCRIPT.okExit, tail(r.output))
   }), BUDGET.checkCaseMs)
-  relCase(sdk, CASE.check, 'absent', `${PACK_SCRIPT.check} ${PACK_SCRIPT.out} <a folder that does not exist> exits non-zero`, () => withScratch(async (scratch) => {
+  sourceCase(sdk, CASE.check, 'absent', `${PACK_SCRIPT.check} ${PACK_SCRIPT.out} <a folder that does not exist> exits non-zero`, () => withScratch(async (scratch) => {
     const r = await runCheck(scratch, path.join(scratch, PACK_SCRIPT.absentDir))
     assert.notEqual(r.code, PACK_SCRIPT.okExit, tail(r.output))
   }), BUDGET.checkCaseMs)
@@ -534,12 +535,12 @@ const publishedTarballs = (text) => text.split(RELEASE.lineBreak).map((l) => SHE
 function registerShelved(sdk) {
   const { board } = SHELVED
   // Oracle self-checks (EP): the doc rule and the publish-line rule on samples, no release needed.
-  relCase(sdk, CASE.oracle, 'shelved names', 'the shelved-board doc rule flags fishball-board and the word board, and none of dashboard, clipboard, onboarding, keyboard', () => {
+  sourceCase(sdk, CASE.oracle, 'shelved names', 'the shelved-board doc rule flags fishball-board and the word board, and none of dashboard, clipboard, onboarding, keyboard', () => {
     const hits = (t) => SHELVED_DOC.names.some((re) => re.test(t))
     assert.deepEqual(SHELVED_DOC.samples.hit.filter((t) => !hits(t)), [])
     assert.deepEqual(SHELVED_DOC.samples.clean.filter(hits), [])
   })
-  relCase(sdk, CASE.oracle, 'publish line', 'the publish-line rule reads the tarball of each npm publish line and of nothing else', () => {
+  sourceCase(sdk, CASE.oracle, 'publish line', 'the publish-line rule reads the tarball of each npm publish line and of nothing else', () => {
     assert.deepEqual(SHELVED_DOC.publishSamples.hit.filter((l) => publishedTarballs(l).length !== 1), [])
     assert.deepEqual(SHELVED_DOC.publishSamples.clean.filter((l) => publishedTarballs(l).length !== 0), [])
   })
