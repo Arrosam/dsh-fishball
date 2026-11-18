@@ -59,6 +59,47 @@ window.__ModuleLoader__.load({
     /** EventSource.CLOSED, the readyState after which it never retries (WHATWG HTML §9.2). */
     const SOURCE_CLOSED = 2
     const STREAM_CSS = Object.freeze({ notice: 'fb-ui-stream-notice' })
+    /**
+     * MULTI-0 `SEAM_TARGETS.http` (restated: a chunk imports no module): how core's target and
+     * answer routes answer. A press reads `{status, body}` (`kit.press`) and shows `refusalText`:
+     * 200 is success unless the body says `ok: false`; 400 a malformed request or refused URL;
+     * 404 an unknown target or ask handle; 409 any other refusal (a voided or closed card's
+     * `expired` included); 503 core absent (`TARGETS_UNAVAILABLE`); anything else, or no answer, a
+     * failed request. The code itself is never shown raw in the sentence, only after it.
+     */
+    const HTTP = Object.freeze({ ok: 200, badRequest: 400, notFound: 404, conflict: 409, unavailable: 503 })
+    const REFUSAL = Object.freeze({ badRequest: 'badRequest', notFound: 'notFound', conflict: 'conflict', expired: 'expired', unavailable: 'unavailable', failed: 'failed' })
+    /** K1's `expired`: the request was settled or withdrawn elsewhere (a voided card answers it too). */
+    const EXPIRED = 'expired'
+    const refusalWords = {
+      en: {
+        [REFUSAL.badRequest]: 'Fishball could not use that request.',
+        [REFUSAL.notFound]: 'That DSH is no longer in Fishball\'s list.',
+        [REFUSAL.conflict]: 'Fishball refused that.',
+        [REFUSAL.expired]: 'This request is no longer open.',
+        [REFUSAL.unavailable]: 'Fishball\'s core is not running, so nothing was done.',
+        [REFUSAL.failed]: 'That did not go through. Try again.',
+        code: (text, code) => `${text} (${code})`,
+      },
+      zh: {
+        [REFUSAL.badRequest]: 'Fishball 无法处理这个请求。',
+        [REFUSAL.notFound]: '这个 DSH 已不在 Fishball 的列表中。',
+        [REFUSAL.conflict]: 'Fishball 拒绝了此操作。',
+        [REFUSAL.expired]: '这个请求已经结束。',
+        [REFUSAL.unavailable]: 'Fishball 核心未运行，所以没有执行任何操作。',
+        [REFUSAL.failed]: '操作没有完成，请重试。',
+        code: (text, code) => `${text}（${code}）`,
+      },
+    }
+    /** The refusal kind of one answer `{status, body}` (`kit.press`), or null for a success. */
+    function refusalOf({ status, body }) {
+      if (status === HTTP.ok && body?.ok !== false) return null
+      if (status === HTTP.badRequest) return REFUSAL.badRequest
+      if (status === HTTP.notFound) return REFUSAL.notFound
+      if (status === HTTP.conflict) return body?.code === EXPIRED ? REFUSAL.expired : REFUSAL.conflict
+      if (status === HTTP.unavailable) return REFUSAL.unavailable
+      return status === HTTP.ok ? REFUSAL.conflict : REFUSAL.failed
+    }
     const streamText = {
       en: { stale: 'Reconnecting to Fishball… What is shown here may be out of date.', closed: 'The connection to Fishball was lost. What is shown here may be out of date.', retry: 'Reconnect', staleBadge: 'Out of date' },
       zh: { stale: '正在重新连接 Fishball… 此处显示的内容可能已过时。', closed: '与 Fishball 的连接已断开。此处显示的内容可能已过时。', retry: '重新连接', staleBadge: '已过时' },
@@ -194,7 +235,8 @@ window.__ModuleLoader__.load({
      * names it for a reader of the DOM. Since R-FIX-FUI also the live streams' lifecycle
      * (`liveStream`, `langStream`, `HEALTH`, `StreamNotice`, `staleText`) and `useLang`, so the
      * sidebar targets, the ask cards and the pairing card mark a lost stream the same way; since
-     * MULTI-3 `openCoreSettings`.
+     * MULTI-3 `openCoreSettings`, and `press` / `refusalText`, so every press on core's target and
+     * answer routes reads `SEAM_TARGETS.http` the same way.
      */
     const kit = Object.freeze({
       /** The shared class names (`CSS`); their sheet is mounted once by this row. */
@@ -204,6 +246,26 @@ window.__ModuleLoader__.load({
       langStream,
       useLang,
       StreamNotice,
+      /**
+       * One JSON POST to a page-relative core route: `{status, body}`, `status` 0 when no answer
+       * came (network, parse). Never throws.
+       */
+      async press(path, payload) {
+        try {
+          const response = await fetch(new URL(path, document.baseURI), { method: 'POST', credentials: 'same-origin', cache: 'no-store', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload) })
+          let body
+          try { body = await response.json() } catch { body = undefined }
+          return { status: response.status, body }
+        } catch { return { status: 0, body: undefined } }
+      },
+      /** What a press's answer says in `lang`: null on success, else a clear sentence with core's code after it. */
+      refusalText(answer, lang) {
+        const kind = refusalOf(answer)
+        if (kind === null) return null
+        const words = refusalWords[lang] ?? refusalWords[UI.lang.en]
+        const code = typeof answer.body?.code === 'string' ? answer.body.code : null
+        return code === null ? words[kind] : words.code(words[kind], code)
+      },
       /** Opens core's settings page (`UI.coreSettings`); `ctx` needs `layout`. */
       openCoreSettings(ctx) {
         const navigation = ctx.get(UI.coreSettings.navigation)

@@ -54,7 +54,6 @@ window.__ModuleLoader__.load({
         connect: 'api/fishball/targets/connect', cancel: 'api/fishball/targets/cancel', retry: 'api/fishball/targets/retry',
         pairing: 'api/fishball/targets/pairing', targetIdField: 'targetId',
       }),
-      press: Object.freeze({ method: 'POST', credentials: 'same-origin', cache: 'no-store', headers: Object.freeze({ 'content-type': 'application/json' }) }),
       // `SEAM_STATUS.control` and the `approval-url` ConnectBegin outcome (K3a connect.d.ts).
       action: Object.freeze({ connect: 'connect', cancel: 'cancel' }),
       approvalOutcome: 'approval-url',
@@ -93,9 +92,9 @@ window.__ModuleLoader__.load({
     // DSH's own sidebar geometry (dsh-client-ui-sidebar): 36px rows, md radius, the hover fill, the
     // tertiary section caption; DSH tokens only, so both themes follow.
     const css = [
-      `.${C.root}{display:flex;flex-direction:column;flex:1;min-height:0;padding:4px 0 8px}`,
+      `.${C.root}{display:flex;flex-direction:column;flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:4px 0 8px}`,
       `.${C.head}{display:flex;align-items:center;gap:8px;padding:8px 12px 6px;font:var(--dsw-font-xxs-strong-12);color:var(--dsw-alias-label-tertiary)}`,
-      `.${C.list}{display:flex;flex-direction:column;gap:2px;flex:1;min-height:0;overflow-y:auto;padding:0 8px 0 4px;margin:0;list-style:none}`,
+      `.${C.list}{display:flex;flex-direction:column;gap:2px;flex:none;padding:0 8px 0 4px;margin:0;list-style:none}`,
       `.${C.item}{border-radius:var(--dsw-radius-md);min-width:0}`,
       `.${C.item}[data-open]{background:var(--dsw-alias-interactive-bg-hover)}`,
       `.${C.row}{display:flex;align-items:center;gap:8px;width:100%;min-height:36px;box-sizing:border-box;padding:6px 8px;border:none;border-radius:var(--dsw-radius-md);background:none;color:var(--dsw-alias-label-primary);font:var(--dsw-font-s-14);text-align:left;cursor:pointer}`,
@@ -117,7 +116,8 @@ window.__ModuleLoader__.load({
       `.${C.error}{margin:0;color:var(--dsw-alias-state-error-primary)}`,
       `.${C.notice}{display:grid;gap:4px;margin:0 8px 6px 4px;padding:8px 10px;border-radius:var(--dsw-radius-md);background:var(--dsw-alias-state-warn-tertiary);font:var(--dsw-font-xxs-12);color:var(--dsw-alias-label-secondary)}`,
       `.${C.notice}>p{margin:0}`,
-      `.${C.empty}{margin:4px 12px;font:var(--dsw-font-xxs-12);color:var(--dsw-alias-label-secondary)}`,
+      `.${C.empty}{display:grid;justify-items:start;gap:8px;margin:2px 8px 0 4px;padding:10px 12px;border-radius:var(--dsw-radius-md);border:.5px dashed var(--dsw-alias-border-l3);font:var(--dsw-font-xxs-12);color:var(--dsw-alias-label-secondary)}`,
+      `.${C.empty}>p{margin:0}`,
       `.${C.root}>[data-fishball-stream-notice]{margin:0 8px 6px 4px;border-radius:var(--dsw-radius-md)}`,
       // The rail: one 36px cell per target, as DSH's own rail rows.
       `.${C.rail}{display:flex;flex-direction:column;align-items:center;gap:12px;overflow-y:auto;min-height:0;padding:4px 0}`,
@@ -125,7 +125,6 @@ window.__ModuleLoader__.load({
       `.${C.dot}:hover{background:var(--dsw-alias-interactive-bg-hover)}`,
       ...Object.entries(TARGETS_UI.tone).filter(([, tone]) => tone.ink !== null).map(([state, tone]) => inkRule(state, tone.ink)),
     ].join('')
-    const apiUrl = (path) => new URL(path, document.baseURI)
     /** The browser's own time zone, the one each pairing last-seen time is written in. */
     const timeZone = () => Intl.DateTimeFormat().resolvedOptions().timeZone
 
@@ -135,13 +134,8 @@ window.__ModuleLoader__.load({
       valid: (next) => next !== null && typeof next === 'object' && Array.isArray(next.targets) && Array.isArray(next.notices),
     })
 
-    /** One POST to core's target route `path` with `{targetId, ...fields}`; the parsed answer, or undefined. */
-    async function post(path, targetId, fields = {}) {
-      try {
-        const response = await fetch(apiUrl(path), { ...TARGETS_UI.press, body: JSON.stringify({ [TARGETS_UI.route.targetIdField]: targetId, ...fields }) })
-        return await response.json()
-      } catch { return undefined }
-    }
+    /** One press on core's target route `path` with `{targetId, ...fields}` (kit `press`: `{status, body}`). */
+    const post = (kit, path, targetId, fields = {}) => kit.press(path, { [TARGETS_UI.route.targetIdField]: targetId, ...fields })
     /** Connect's approval URL from its answer, web addresses only (defence in depth), else undefined. */
     function approvalUrlOf(answer) {
       if (answer?.outcome !== TARGETS_UI.approvalOutcome || typeof answer.url !== 'string' || !URL.canParse(answer.url)) return undefined
@@ -153,17 +147,19 @@ window.__ModuleLoader__.load({
     const shownName = (target) => target.name ?? target.placeholder
 
     /** One target's pairing: the warning lines, the box (Continue only once ticked, R-ID-07) and the choices. */
-    function Pairing({ targetId, view, locked: streamLocked }) {
+    function Pairing({ kit, lang, targetId, view, locked: streamLocked }) {
       const [ticked, setTicked] = React.useState(false)
       const [sending, setSending] = React.useState(false)
-      const [failed, setFailed] = React.useState(false)
+      const [failed, setFailed] = React.useState(null)
       const locked = sending || streamLocked
       const press = async (choice) => {
         setSending(true)
-        setFailed(false)
-        const answer = await post(TARGETS_UI.route.pairing, targetId, { choice, confirmed: ticked })
+        setFailed(null)
+        const answer = await post(kit, TARGETS_UI.route.pairing, targetId, { choice, confirmed: ticked })
         setSending(false)
-        setFailed(answer?.ok !== true)
+        // The pairing card's own sentence first (R-FIX-FUI), then why core refused it.
+        const why = kit.refusalText(answer, lang)
+        setFailed(why === null ? null : `${view.failed} ${why}`)
       }
       return h('div', { className: C.pairing, 'data-fishball-pairing': view.state },
         h('p', { className: C.label }, view.title),
@@ -176,12 +172,13 @@ window.__ModuleLoader__.load({
             disabled: locked || (entry.needsConfirm && !ticked), 'data-fishball-pairing-choice': entry.choice,
             onClick: () => void press(entry.choice),
           }, entry.label))),
-        failed ? h('p', { className: C.error, role: 'alert', 'data-fishball-pairing-failed': true }, view.failed) : null)
+        failed === null ? null : h('p', { className: C.error, role: 'alert', 'data-fishball-pairing-failed': true }, failed))
     }
 
     /** One target's inline details (Q08); `live` false locks every control (R-FIX-FUI). */
-    function Details({ ctx, kit, target, words, live, id }) {
+    function Details({ ctx, kit, lang, target, words, live, id }) {
       const [approvalUrl, setApprovalUrl] = React.useState(undefined)
+      const [refused, setRefused] = React.useState(null)
       const [sending, setSending] = React.useState(false)
       // Only the latest press opens its approval page or shows its link (R-FIX-FUI F5/F6).
       const latest = React.useRef(0)
@@ -189,10 +186,12 @@ window.__ModuleLoader__.load({
       const act = async (path) => {
         const press = ++latest.current
         setSending(true)
-        const answer = await post(path, target.targetId)
+        setRefused(null)
+        const answer = await post(kit, path, target.targetId)
         setSending(false)
         if (press !== latest.current) return
-        const url = approvalUrlOf(answer)
+        setRefused(kit.refusalText(answer, lang))
+        const url = approvalUrlOf(answer.body)
         if (url !== undefined) window.open(url, TARGETS_UI.open.target, TARGETS_UI.open.features)
         setApprovalUrl(url)
       }
@@ -202,7 +201,7 @@ window.__ModuleLoader__.load({
         lines.map((line) => h('p', { key: line.kind, className: C.line, 'data-fishball-target-line': line.kind }, line.text)),
         h('p', { className: C.label }, words.address),
         h('p', { className: C.url, 'data-fishball-target-line': TARGETS_UI.line.url }, target.url),
-        live && target.pairing.lines.length > 0 ? h(Pairing, { key: target.pairing.key, targetId: target.targetId, view: target.pairing, locked }) : null,
+        live && target.pairing.lines.length > 0 ? h(Pairing, { key: target.pairing.key, kit, lang, targetId: target.targetId, view: target.pairing, locked }) : null,
         h('div', { className: C.actions },
           control === null ? null : h(Button, {
             type: 'button', size: 'sm', variant: TARGETS_UI.buttonVariant[control.action], disabled: locked,
@@ -214,11 +213,12 @@ window.__ModuleLoader__.load({
           h(Button, { type: 'button', size: 'sm', variant: 'ghost', 'data-fishball-target-settings': true, onClick: () => kit.openCoreSettings(ctx) },
             h(IconSlidersTwoOutlineRegular, { size: TARGETS_UI.icon }), words.settings)),
         approvalUrl === undefined || control?.action !== TARGETS_UI.action.cancel ? null
-          : h('a', { className: C.link, href: approvalUrl, title: approvalUrl, target: TARGETS_UI.open.target, rel: TARGETS_UI.open.rel, 'data-fishball-target-approval': true }, words.openApproval))
+          : h('a', { className: C.link, href: approvalUrl, title: approvalUrl, target: TARGETS_UI.open.target, rel: TARGETS_UI.open.rel, 'data-fishball-target-approval': true }, words.openApproval),
+        refused === null ? null : h('p', { className: C.error, role: 'alert', 'data-fishball-target-refused': true }, refused))
     }
 
     /** One target: its row (name, dot, badge) and, while open, its details (Q08: inline, no modal). */
-    function Target({ ctx, kit, target, words, live, staleBadge, open, onToggle }) {
+    function Target({ ctx, kit, lang, target, words, live, staleBadge, open, onToggle }) {
       const tone = toneOf(target, live)
       const name = shownName(target)
       const detailsId = React.useId()
@@ -232,16 +232,30 @@ window.__ModuleLoader__.load({
           // Plain text children: React escapes them, so a markup-looking name is shown as it is (D06).
           h('span', { className: C.name, 'data-fishball-target-name': true, 'data-placeholder': target.name === null ? '' : undefined }, name),
           h(Tag, { tone: tone.tag, className: C.badge }, h('span', { 'data-fishball-target-badge': true }, live ? target.badge : staleBadge))),
-        open ? h(Details, { ctx, kit, target, words, live, id: detailsId }) : null)
+        open ? h(Details, { ctx, kit, lang, target, words, live, id: detailsId }) : null)
     }
 
-    function makeList(ctx, stream, kit) {
+    /**
+     * Which target's details are open: a view selection only (Q09), never sent anywhere. Held by
+     * the part, not the component, because DSH remounts the sidebar's content between its rail,
+     * its wide column and rc.1's drawer, and a rail dot opens its target in the wide list.
+     */
+    function selection() {
+      let current = null
+      const listeners = new Set()
+      return Object.freeze({
+        get: () => current,
+        set(next) { if (next === current) return; current = next; for (const listener of [...listeners]) listener() },
+        subscribe(listener) { listeners.add(listener); return () => listeners.delete(listener) },
+      })
+    }
+
+    function makeList(ctx, stream, kit, selected) {
       return function FishballTargets({ wide, expandSidebar }) {
         const lang = kit.useLang(ctx)
         React.useEffect(() => { stream.use(lang) }, [lang])
         const { frame: view, health } = React.useSyncExternalStore(stream.subscribe, stream.get)
-        // Which target's details are open: a view selection only (Q09), never sent anywhere.
-        const [openId, setOpenId] = React.useState(null)
+        const openId = React.useSyncExternalStore(selected.subscribe, selected.get)
         const live = health === kit.HEALTH.live
         const targets = view?.targets ?? []
         const staleBadge = kit.staleText(lang)
@@ -250,7 +264,7 @@ window.__ModuleLoader__.load({
           return h('div', { className: C.rail, 'data-fishball-targets': 'rail' },
             targets.map((target) => h(Tooltip, { key: target.targetId, ...TARGETS_UI.tooltip, label: `${shownName(target)} · ${live ? target.badge : staleBadge}` },
               h('button', { type: 'button', className: C.dot, 'aria-label': `${shownName(target)} · ${live ? target.badge : staleBadge}`, 'data-fishball-target': target.targetId,
-                onClick: () => { setOpenId(target.targetId); expandSidebar() } },
+                onClick: () => { selected.set(target.targetId); expandSidebar() } },
               h(StateDot, { state: toneOf(target, live).dot })))))
         }
         const title = view?.title ?? TARGETS_UI.title[lang] ?? TARGETS_UI.title.en
@@ -259,11 +273,15 @@ window.__ModuleLoader__.load({
           h(kit.StreamNotice, { health, lang }),
           view !== null && view.notices.length > 0 ? h('div', { className: C.notice, role: 'status', 'data-fishball-targets-notices': true },
             view.notices.map((line) => h('p', { key: line.kind, 'data-fishball-targets-notice': line.kind }, line.text))) : null,
-          view?.empty == null ? null : h('p', { className: C.empty, 'data-fishball-targets-empty': true }, view.empty),
+          // No target yet (standalone first run): say so and lead to where targets are added.
+          view?.empty == null ? null : h('div', { className: C.empty, 'data-fishball-targets-empty': true },
+            h('p', null, view.empty),
+            h(Button, { type: 'button', size: 'sm', variant: 'outline', 'data-fishball-target-settings': true, onClick: () => kit.openCoreSettings(ctx) },
+              h(IconSlidersTwoOutlineRegular, { size: TARGETS_UI.icon }), view.words.settings)),
           targets.length === 0 ? null : h('ul', { className: C.list },
             targets.map((target) => h(Target, {
-              key: target.targetId, ctx, kit, target, words: view.words, live, staleBadge,
-              open: openId === target.targetId, onToggle: () => setOpenId((current) => (current === target.targetId ? null : target.targetId)),
+              key: target.targetId, ctx, kit, lang, target, words: view.words, live, staleBadge,
+              open: openId === target.targetId, onToggle: () => selected.set(openId === target.targetId ? null : target.targetId),
             }))))
       }
     }
@@ -272,8 +290,9 @@ window.__ModuleLoader__.load({
     function stripPart(kit) {
       function apply(ctx) {
         const stream = targetsStream(kit)
+        const selected = selection()
         ctx.effect(() => kit.mountStyle(C.id, css), TARGETS_UI.name + ': styles')
-        ctx.effect(() => ctx.slots.inject(TARGETS_UI.slot, () => ctx.slots.register({ name: TARGETS_UI.slot, priority: TARGETS_UI.priority }, makeList(ctx, stream, kit))), TARGETS_UI.name + ': sidebar list')
+        ctx.effect(() => ctx.slots.inject(TARGETS_UI.slot, () => ctx.slots.register({ name: TARGETS_UI.slot, priority: TARGETS_UI.priority }, makeList(ctx, stream, kit, selected))), TARGETS_UI.name + ': sidebar list')
       }
       return Object.freeze({ name: TARGETS_UI.name, inject: ['slots', 'layout', 'locale'], apply })
     }

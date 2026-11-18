@@ -42,7 +42,6 @@ window.__ModuleLoader__.load({
       // (page-relative), and CARD_STATE.
       events: 'api/fishball/asks/events',
       answer: 'api/fishball/asks/answer',
-      jsonHeaders: Object.freeze({ 'content-type': 'application/json' }),
       state: Object.freeze({ open: 'open', answered: 'answered', closed: 'closed', voided: 'voided' }),
       /**
        * MULTI-0 (`SEAM_TARGETS.ask`, restated): the answer body names the card's opaque
@@ -99,7 +98,6 @@ window.__ModuleLoader__.load({
       'state.answered': 'answered',
       'state.closed': 'closed',
       'state.voided': 'Voided',
-      failed: 'The answer was refused.',
     }
     const zh = {
       waiting: 'Fishball 正在等你回答',
@@ -115,7 +113,6 @@ window.__ModuleLoader__.load({
       'state.answered': '已回答',
       'state.closed': '已关闭',
       'state.voided': '已作废',
-      failed: '回答被拒绝。',
     }
 
     // UI-POLISH-F: the layout of DSH's own approval card (dsh-client-ui-approval, both SDKs): a warn
@@ -166,25 +163,22 @@ window.__ModuleLoader__.load({
 
     function makeDock(ctx, stream, kit) {
       /** One card: the asking session, the question, and Allow / Reject with an optional reason. */
-      function AskCard({ card, t, stale, timeLocale }) {
+      function AskCard({ card, t, stale, lang }) {
         const [reason, setReason] = React.useState('')
         const [sending, setSending] = React.useState(false)
-        const [failed, setFailed] = React.useState(false)
+        const [failed, setFailed] = React.useState(null)
         const open = card.state === ASKS_UI.state.open
         // A card from a stream that is not live may be answered or closed already: no control acts
         // on it until a fresh frame (R-FIX-FUI). Core still refuses a late answer anyway.
         const locked = sending || stale
         const send = async (choice) => {
           setSending(true)
-          setFailed(false)
-          let ok = false
-          try {
-            const response = await fetch(apiUrl(ASKS_UI.answer), { method: 'POST', headers: ASKS_UI.jsonHeaders, body: JSON.stringify({ [ASKS_UI.handleField]: card.handle, choice, text: reason }) })
-            ok = (await response.json())?.ok === true
-          } catch { ok = false }
+          setFailed(null)
+          const answer = await kit.press(ASKS_UI.answer, { [ASKS_UI.handleField]: card.handle, choice, text: reason })
           setSending(false)
-          // A refusal that closed the card arrives on the stream; any other leaves it answerable.
-          if (!ok) setFailed(true)
+          // A refusal that closed the card arrives on the stream too; the sentence says why now
+          // (MULTI-0 `SEAM_TARGETS.http`: a voided or closed card answers `expired`).
+          setFailed(kit.refusalText(answer, lang))
         }
         // The DSH the card came from (MULTI-3; PLAN-MULTI §5): its name as plain text, untrusted data.
         const source = card.source?.name ?? t('dsh.unnamed')
@@ -193,7 +187,7 @@ window.__ModuleLoader__.load({
             h(Tag, { tone: open ? ASKS_UI.tone.open : ASKS_UI.tone.done, className: ASKS_UI.css.badge }, open ? t('waiting') : t('state.' + card.state)),
             h('span', { className: ASKS_UI.css.source, title: source, 'aria-label': t('dsh') + ': ' + source, 'data-fishball-ask-source': card.source?.targetId }, source),
             h('span', { className: ASKS_UI.css.from }, t('from') + ': ' + (card.sessionTitle ?? card.sessionId)),
-            h('span', { className: ASKS_UI.css.time }, new Date(card.askedAt).toLocaleString(timeLocale))),
+            h('span', { className: ASKS_UI.css.time }, new Date(card.askedAt).toLocaleString(ASKS_UI.timeLocale[lang]))),
           h('div', { className: ASKS_UI.css.body },
             h('p', { className: ASKS_UI.css.question }, card.question),
             // The user, 2026-11-17: "Show arguments and reason". Plain text children: React escapes them.
@@ -212,7 +206,7 @@ window.__ModuleLoader__.load({
                 key: choice, type: 'button', size: 'sm', variant: choice === card.choices[0] ? 'primary' : 'outline',
                 disabled: locked, 'data-fishball-ask-choice': choice, onClick: () => send(choice),
               }, t('choice.' + choice)))) : null,
-            failed && open ? h('p', { className: ASKS_UI.css.error, role: 'alert' }, t('failed')) : null))
+            failed !== null && open ? h('p', { className: ASKS_UI.css.error, role: 'alert' }, failed) : null))
       }
 
       // `t` is the slot's own locale prop (registered with `locale`), so a language switch re-renders
@@ -225,7 +219,7 @@ window.__ModuleLoader__.load({
         const stale = health !== kit.HEALTH.live
         return h('div', { className: [kit.css.dock, ASKS_UI.css.root].join(' '), 'data-fishball-asks': true, 'data-fishball-asks-stale': stale ? health : undefined },
           stale ? h('div', { className: kit.css.card }, h(kit.StreamNotice, { health, lang })) : null,
-          cards.map((card) => h(AskCard, { key: card.handle, card, t, stale, timeLocale: ASKS_UI.timeLocale[lang] })))
+          cards.map((card) => h(AskCard, { key: card.handle, card, t, stale, lang })))
       }
     }
 
