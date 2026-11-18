@@ -16,13 +16,8 @@ export const TARGET_LOG = Object.freeze({
   page: 'taking a polled page',
 })
 
-/** The target routes' HTTP words (SEAM_TARGETS.route; the ask routes use the same codes). */
+/** The target routes' own HTTP words (the statuses and the unavailable code are `SEAM_TARGETS.http`). */
 export const TARGET_HTTP = Object.freeze({
-  ok: 200,
-  badRequest: 400,
-  notFound: 404,
-  conflict: 409,
-  unavailable: 503,
   requestBody: 'buffered',
   headers: Object.freeze({ 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' }),
   /** The `ConnectBegin` members each outcome carries besides `outcome` (connect.d.ts); any other outcome is not answered. */
@@ -31,8 +26,6 @@ export const TARGET_HTTP = Object.freeze({
     'approval-url': Object.freeze(['url']),
     'needs-configuration': Object.freeze(['code']),
   }),
-  /** A Connect press that threw: answered 503 with this code only, never the error's text (it could name a credential detail). */
-  unavailableCode: 'CONNECT_UNAVAILABLE',
 })
 
 /** Programming errors (TypeError) of the collection's in-process members. */

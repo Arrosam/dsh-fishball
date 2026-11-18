@@ -34,8 +34,8 @@
  * - `finalName(facade, rawName)`: the target-qualified model name (`targets/names.js` `toolNameOf`);
  * - `admit(offered)`: whether the name may be registered (its binding is free or this tuple's own;
  *   a name bound, or once bound, to another tuple is refused and logged, never overwritten);
- * - `label()`: `{name, targetId}`: the target's resolved name, shown in each description as
- *   JSON-quoted untrusted data, and its trusted local id, which tells two equal names apart.
+ * - `label()`: `{name, targetId}`: the target's resolved name, shown first in each description as
+ *   JSON-quoted untrusted data (`TARGETS.text.toolSource`).
  * `locals` are target-bound local helpers offered with the remote tools under the same naming
  * (the target's `ask_user`, origin `local`): `{facade, build(modelName) → definition}`.
  * `rename()` re-derives every name after the target's name changed: the old set is withdrawn and the
@@ -46,7 +46,7 @@
  */
 import { randomUUID } from 'node:crypto'
 import { isDeepStrictEqual } from 'node:util'
-import { LINK } from '../../contracts/constants.js'
+import { LINK, TARGETS } from '../../contracts/constants.js'
 import { isEventType } from '../link/schema.js'
 import { CODE, FACADE, LOG, MISUSE, TEXT, TOOL_OUTPUT } from './constants.js'
 import { imageContent } from './image.js'
@@ -133,8 +133,11 @@ function raced(promise, signal) {
 /** A façade of one link with no namespace (a single-link caller): the façade names, all admitted, no label. */
 const BARE_NAMING = Object.freeze({ finalName: undefined, localName: (facade) => Object.freeze({ name: facade, valid: true }), admit: () => true, label: () => undefined })
 
-/** A description with the target header first (see the header), or as it is without a label. */
-const describe = (label, description) => (label === undefined ? description : TEXT.targetHeader(JSON.stringify(label.name), label.targetId) + description)
+/**
+ * A description with its target first (MULTI-0 `TARGETS.text.toolSource`: the server's name, JSON-quoted as
+ * one data token, or the placeholder word before any discovery), or as it is without a label.
+ */
+const describe = (label, description) => (label === undefined ? description : TARGETS.text.toolSource(JSON.stringify(label.name ?? FACADE.unnamed)) + description)
 
 /**
  * The Fishball branch's content for one event (Q-11): a header naming its type and, since

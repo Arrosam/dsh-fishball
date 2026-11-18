@@ -10,9 +10,11 @@
  *
  * Rules:
  * - standalone starts empty; a hosted child (DSH lists the instance's child settings namespace,
- *   `HOSTED_IMPORT.targetSetting.row`) always has the reserved parent first (`TARGETS.parentId`,
- *   epoch `parentId` too, order 0), whose URL is read live from that setting and which cannot be
- *   removed or re-pointed (`target-reserved`);
+ *   `HOSTED_IMPORT.targetSetting.row`, whatever its value) always has the reserved parent first
+ *   (`TARGETS.parentId`, order 0), whose URL is that setting's canonical value and which cannot be
+ *   removed or re-pointed (`target-reserved`). Its epoch is generated as any other and renewed when
+ *   the canonical value changes, retiring the old epoch as `setUrl` does but without confirmation:
+ *   the instance owns the value (`link.d.ts`). A blank or unusable value keeps it `not-set`;
  * - `add` refuses a URL the link would refuse (`target-invalid` for anything not usable, blank
  *   included; `target-insecure`) and a canonical MCP URL already in the list (`target-duplicate`,
  *   Q04; the parent's included). No count cap (Q12);
@@ -86,14 +88,13 @@ export function createTargets(ctx, { tables, identityRecords, asks, events, reco
   const records = new Map([...tables.targets.entries()].map(([id, record]) => [id, record]))
   let closed = false
   let snapshot
-  let instance = instanceUrl(ctx)
 
   const warn = (what) => (error) => logger?.warn(TARGET_LOG.failed, what, codeOf(error))
   const save = (record) => {
     records.set(record.id, Object.freeze(record))
     void tables.targets.put(record.id, records.get(record.id)).catch(warn(TARGET_LOG.save))
   }
-  const urlOf = (record) => (record.kind === KIND.parent ? instance : record.url)
+  const urlOf = (record) => record.url
   const namesOf = (record) => Object.freeze({ serverName: record.serverName, name: resolvedName(record.serverName, record.duplicateSuffix) })
   const ordered = () => [...records.values()].filter((record) => runtimes.has(record.id)).sort((a, b) => a.order - b.order)
 
@@ -168,15 +169,40 @@ export function createTargets(ctx, { tables, identityRecords, asks, events, reco
   }
 
   const nextOrder = () => [...records.values()].reduce((highest, record) => Math.max(highest, record.order + 1), 0)
-  const newRecord = (kind, url, id) => ({ id, kind, url, endpointEpoch: id === TARGETS.parentId ? TARGETS.parentId : generateToken(TARGETS.epoch), order: id === TARGETS.parentId ? 0 : nextOrder(), serverName: null, duplicateSuffix: null })
+  // The parent is always first (order 0); an added target follows every other.
+  const newRecord = (kind, url, id) => ({ id, kind, url, endpointEpoch: generateToken(TARGETS.epoch), order: kind === KIND.parent ? 0 : Math.max(nextOrder(), 1), serverName: null, duplicateSuffix: null })
 
-  /** The parent follows the profile: present in a hosted child, absent standalone (its record kept). */
+  /** The instance's value as the parent's URL: its canonical endpoint, or `''` when blank or unusable. */
+  const parentUrl = () => {
+    const endpoint = canonical(instanceUrl(ctx))
+    return endpoint.ok ? endpoint.href : ''
+  }
+
+  /**
+   * The parent follows the profile (the module header): present in a hosted child, absent
+   * standalone (its record kept, so its name allocation persists), and a new epoch for a new
+   * canonical value. Serialised, because a retirement awaits its runtime's stop.
+   */
+  let parentSync = Promise.resolve()
   function syncParent() {
-    const hosted = hostedIn(ctx)
-    if (hosted && !runtimes.has(TARGETS.parentId)) {
-      if (!records.has(TARGETS.parentId)) save(newRecord(KIND.parent, '', TARGETS.parentId))
-      startRuntime(records.get(TARGETS.parentId))
-    } else if (!hosted && runtimes.has(TARGETS.parentId)) void stopRuntime(TARGETS.parentId).then(refresh)
+    parentSync = parentSync.then(async () => {
+      if (closed) return
+      const hosted = hostedIn(ctx)
+      const url = parentUrl()
+      const stored = records.get(TARGETS.parentId)
+      if (!hosted) {
+        if (runtimes.has(TARGETS.parentId)) { await stopRuntime(TARGETS.parentId); refresh() }
+        return
+      }
+      if (stored === undefined) save({ ...newRecord(KIND.parent, url, TARGETS.parentId) })
+      else if (stored.url !== url) {
+        await retire(TARGETS.parentId)
+        save({ ...stored, url, endpointEpoch: generateToken(TARGETS.epoch), serverName: null, duplicateSuffix: null })
+      }
+      if (!runtimes.has(TARGETS.parentId)) startRuntime(records.get(TARGETS.parentId))
+      refresh()
+    }).catch(warn(TARGET_LOG.save))
+    return parentSync
   }
 
   /** A canonical endpoint some other current target already has (the parent's live URL included). */
@@ -310,14 +336,15 @@ export function createTargets(ctx, { tables, identityRecords, asks, events, reco
     }
   }
 
-  /** Core's settings changed: the link's, the pairing's and the instance's inputs (main/index.js). */
+  /**
+   * Core's settings changed (main/index.js): `link` (the client metadata URL or `identity.id`)
+   * reconnects every link, `name` asks every pairing to send it; the instance's setting is followed
+   * by `syncParent` (a new parent epoch, or the parent's appearance or removal).
+   */
   function settingsChanged({ link, name }) {
-    const nextInstance = instanceUrl(ctx)
-    const parentMoved = nextInstance !== instance
-    instance = nextInstance
-    syncParent()
+    void syncParent()
     for (const runtime of runtimes.values()) {
-      if (link || (parentMoved && runtime.targetId === TARGETS.parentId)) runtime.link.reconnect()
+      if (link) runtime.link.reconnect()
       if (name) void runtime.pairing.nameChanged()
     }
     refresh()
@@ -325,8 +352,8 @@ export function createTargets(ctx, { tables, identityRecords, asks, events, reco
 
   // Start: the records of this profile, then the parent if hosted.
   for (const record of [...records.values()].sort((a, b) => a.order - b.order)) if (record.kind === KIND.remote) startRuntime(record)
-  syncParent()
   refresh()
+  void syncParent()
 
   return Object.freeze({
     service,
@@ -337,9 +364,12 @@ export function createTargets(ctx, { tables, identityRecords, asks, events, reco
     live: (source) => runtimeOf(source) !== undefined,
     callTool,
     ack: (receipts, source) => callTool(source, MCP.tools.inboxAck, { receipts }),
+    /** Resolves once the parent follows the instance's current setting (a start or change in flight). */
+    settled: () => parentSync,
     async close() {
       closed = true
       listeners.clear()
+      await parentSync
       await Promise.all([...runtimes.keys()].map(stopRuntime))
     },
   })
