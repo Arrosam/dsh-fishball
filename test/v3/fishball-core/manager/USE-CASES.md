@@ -25,7 +25,7 @@ One scenario per SDK, two boots of one home under the repo's TEST_HOMES (os.tmpd
 | MGR-SET-ST-02 | ST across restart | POST then GET in B | the same id |
 | MGR-SET-EP-01 | EP | `agentPresets.presetForSession` (0.2.2-rc.1 only) | effective preset `fishball` (recorded, else the default) |
 | MGR-SET-EP-01b | EP | `agentPresets.defaultId` | `fishball` |
-| MGR-SET-EP-02 | EP | manager request tools minus core's own | exactly read, read_image, working_directory |
+| MGR-SET-EP-02 | EP | manager request tools minus core's own | exactly read, read_image, working_directory, ask_user_question (the user, 2026-11-18: "用DSH自带的提问工具") |
 | MGR-SET-EP-03 | EP | manager system prompt | has session_message, approval_answer; none of message_session, answer_approval, list_plugins, watch_session |
 | MGR-ID-EP-01 | BVA (first start) | profile/home `cordis.patch.yml` and DSH's settings document before vs after A's start | unchanged; no `identity.id` in the user layer |
 | MGR-ID-EP-02 | EP | Connect POST with a fake loopback target + CIMD URL | approval URL `agent_id` matches `^fb-[a-z2-7]{16}$`; still not in settings |
