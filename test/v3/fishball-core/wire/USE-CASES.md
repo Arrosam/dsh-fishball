@@ -24,3 +24,53 @@ Authority: fixed F-WIRE interface (2026-11-16), R-FB-01–14, R-REM-05, R-OA-14,
 - Core tool table representation is not frozen in prose, so the static row checks its serialized data for the required names. Runtime scope is checked separately.
 - Fake connector is optional; no real connector is installed. Full OAuth round-trip belongs to existing link-save coverage and E2E-CORE.
 - All test homes are under the repo's TEST_HOMES (os.tmpdir(); FBTEST_TEST_HOMES moves it), standalone profiles only. Both SDKs use the existing scripted host LLM. Browser binary points to a missing executable.
+
+## MULTI-1: multiple DSH targets (system rows, multi.mjs)
+
+Authority: PLAN-MULTI §3–§7, D01–D11, Q01–Q12; core contracts README "MULTI-0 amendment" (and its
+security amendment), targets.d.ts, ui.d.ts, ask-card.d.ts, events.d.ts, link.d.ts; SEAM_TARGETS;
+K1 MULTI-0 identity resource and push. Product code is opaque: core runs as an installed bundle in a
+real standalone DSH (world.mjs), or a hosted child stand-in (fixtures/child-row: a row with the
+published id `dsh-instance-child` and a volatile `targetUrl`, as the instance's own row). Targets are
+fake DSH MCP servers (fake-dsh.mjs). Expected values: targets-oracle.mjs (the freeze, restated).
+
+| Row | Technique | Oracle |
+| --- | --- | --- |
+| MULTI-TGT-EP-01 | EP (standalone first run) | `{version: 1, targets: []}`; GET `/api/fishball/targets` same; apiVersion 2; `ui.targets` members; scalar ui.link/connect/pairing and `/api/fishball/connect{,/cancel}` gone |
+| MULTI-TGT-EP-02 | EP (URL classes) | insecure → `target-insecure`; malformed / blank → `target-invalid`; https → `t-`+16 id, `e-`+16 epoch, canonical URL; equal canonical URL (variant too) → `target-duplicate` |
+| MULTI-TGT-DT-01 | DT (confirmed × known × endpoint change) | unconfirmed → `confirmation-required`, nothing changes; unknown id → `unknown-target`; same-endpoint edit keeps epoch, new endpoint replaces it; confirmed remove |
+| MULTI-TGT-BVA-01 | BVA (12 targets, Q12 no cap) + ST (restart) | all accepted, ascending order; graceful restart keeps id/url/epoch/order |
+| MULTI-TGT-EP-03 | EP (never discovered) | every TargetView field; name/serverName null; not-set; identity pending; removable/urlEditable true |
+| MULTI-HOST-EP-01 set / blank | EP (hosted URL set / blank) | first target `parent`/`parent`, URL from the setting or not-set; not removable / editable (`target-reserved`); parent URL duplicate; an added target never configures DSH_AGENT_TOKEN, hosted-agent, pending-token-origin |
+| MULTI-CRED-EP-01 | EP (same origin, two endpoints) | A's token saved only as `fishball-core/token-<id>-<epoch>`; refs differ; parent names untouched; no token in the snapshot |
+| MULTI-CRED-ST-01 | ST (connected → URL edit → removed) | retired epoch's token record and reference gone; removal deletes the rest; no remote call |
+| MULTI-CRED-EP-02 | EP (one CIMD) | one `connect.clientMetadataUrl` serves every target |
+| MULTI-NAME-EP-01 | EP (discovery field) | name = `_meta[serverInfo].name` (title and top-level serverInfo are decoys); identity live; listen subscribes to both URIs |
+| MULTI-NAME-EP-02 | EP (no identity resource) | identity unsupported; name still read |
+| MULTI-NAME-DT-01 | DT (D07/Q03 examples) | A null, B (2); A renames → B stays; C lowest free; literal `Office-DSH (2)` counts; restart keeps allocations |
+| MULTI-NAME-ST-01 | ST (rename into held name) | renamer gets (2); holder keeps its name |
+| MULTI-NAME-ST-02 | ST (burst of 5 pushes; quiet window) | rediscovery follows the push; ≤ 2 discoveries for the burst; no discovery without push (no polling) |
+| MULTI-NAME-ST-03 | ST (stream drop → reopen) | rediscovers after the new acknowledgement; picks up the changed name |
+| MULTI-NAME-ST-04 | ST (transient discover failure → push) | name kept, identity stale; recovers live |
+| MULTI-NAME-ST-05 | ST (auth refusal) | state failed; namespaced tools withdrawn |
+| MULTI-TOOL-EP-01 | EP (exposed / withheld / local) | per target the frozen name for every exposed K1 tool and ask_user; no withheld or bare name; reminders once; ≤ 64 `[A-Za-z0-9_-]`; description = random-marker untrusted block with `toolSource(JSON name)`, then the trusted text |
+| MULTI-TOOL-BVA-01 | BVA (README examples) | `办公室-DSH` → `dsh`; `<b>x</b>` → `b-x-b`; 200 chars → readable 16; raw name kept as display |
+| MULTI-TOOL-ST-01 | ST (rename) | old names withdrawn, new offered; a call reaches only its own target; a withdrawn name never reaches another target |
+| MULTI-TOOL-ST-02 | ST (URL edit during an in-flight call) | the call completes on the original endpoint only |
+| MULTI-EVT-SYS-01 | EP (same eventId on A and B) | two manager messages `fbe_<handle>`; acks per target |
+| MULTI-ASK-SYS-01 | EP (routes × unknown ids) | unknown handle 404; every target POST route with an unknown id 404 `unknown-target`; missing id 400/404; duplicate add 409; insecure add 400; unconfirmed remove 409 |
+| MULTI-SVC-DT-01 | DT (bridge/attention × live / epoch mismatch / removed) | only the named target; mismatch and removed fail closed with `unknown-target`, nothing sent |
+| MULTI-SVC-EP-01 | EP (status shape) | `{fishball, guards, set, targets}`; no scalar members; targets = list(); contributedTools 0 counted |
+| MULTI-SVC-ST-01 | ST (two targets) | one manager session; reminder tools once |
+
+Re-baselined WIRE-SYS rows (withdrawn oracles replaced): apiVersion 2 and `ui.targets` shape; the
+no-target status is an empty target list (no scalar `line`); Connect runs on the per-target route with
+an added target (the K3a routes answer non-200); "target settings" became "an added target appears in
+the status snapshot" (the `target.url` setting is withdrawn).
+
+### Ambiguities (not invented)
+- Same origin, two endpoints: K3a's connector check pins the protected resource to `/api/agent/mcp`,
+  so a second endpoint path on one origin cannot pass it; MULTI-CRED-EP-01 proves isolation with one
+  connected and one unconnected target instead.
+- The withdrawn K3a routes: "withdrawn" is checked as "not 200" (404 / 405 / 503 are all accepted).
+- A target POST route body without `targetId`: 400 (malformed) or 404 (missing id) are both read from SEAM_TARGETS.

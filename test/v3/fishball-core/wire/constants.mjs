@@ -3,7 +3,7 @@ import { FAKE, TEST_HOMES } from '../../../support/constants.mjs'
 import { SHELVED } from '../../release/pack/constants.mjs'
 export const C = Object.freeze({
   core: 'fishball-core', ui: 'fishball-ui', board: 'fishball-board', shared: 'fishball-shared',
-  sdk: ['0.2.1-rc.5', '0.2.2-rc.1'], apiVersion: 1,
+  sdk: ['0.2.1-rc.5', '0.2.2-rc.1'],
   repo: path.resolve(import.meta.dirname, '../../../..'),
   versionRoot: process.env.FBTEST_DSH_VERSIONS ?? '/Users/samuel/Library/Application Support/DSH/data/versions',
   worker: path.join(import.meta.dirname, 'world.mjs'), profile: 'fbwire',
@@ -21,7 +21,10 @@ export const C = Object.freeze({
   // board's own no-DSH-import rule stays SPLIT-DT-01 `Fishball→DSH fishball-board` (contract/split-shared).
   scanRoots: ['packages/core', 'packages/fishball-ui', 'packages/shared'],
   source: /\.(?:[cm]?js|tsx?)$/, imports: /(?:\bfrom\s*|\bimport\s*\(|\brequire\s*\(|\bimport\s*)['"]((?:dsh-agent-connector|dsh-connector)[^'"]*)['"]/g,
-  coreTools: ['ask_user', 'schedule_create', 'schedule_list', 'schedule_update', 'schedule_delete'],
+  // MULTI-0: ask_user is per target (mcp__<readable>__ask_user_<digest>), so with no target the
+  // manager's own core tools are the reminder tools; the bare `ask_user` is never offered.
+  coreTools: ['schedule_create', 'schedule_list', 'schedule_update', 'schedule_delete'],
+  bareAsk: 'ask_user',
   privateSkill: /^private_skill_/,
   coreToolTables: [{ module: '../manager/reminders.js', table: 'TOOL' }, { module: '../manager/skills.js', table: 'PRIVATE_SKILL_TOOL' }, { module: '../asks/constants.js', table: 'ASK_TOOL' }],
   baseTools: ['read', 'read_image', 'working_directory'], boardToolPrefix: 'board_', guardsOk: 'ok',
@@ -46,9 +49,8 @@ export const C = Object.freeze({
   }),
   members: ['manager', 'events', 'ui', 'bridge', 'attention'],
   managerMembers: ['sessionId', 'ensureSession', 'registerSetup', 'notify', 'userTexts'],
-  uiMembers: ['managerSessionId', 'link', 'connect', 'pairing', 'guards', 'asks'],
   modelSeam: { settingsNamespace: 'fishball-core', path: ['model'] },
-  routes: { connect: '/api/fishball/connect', cancel: '/api/fishball/connect/cancel', callback: '/api/fishball/connect/callback' },
+  routes: { callback: '/api/fishball/connect/callback' },
   status: { ok: 200, missing: 404 },
   connectStates: ['needs-configuration', 'needs-authorization', 'authorizing', 'authorized', 'failed'],
   configurationCodes: ['metadata-url-missing', 'metadata-url-not-https', 'metadata-url-root-path', 'not-a-connector'],
@@ -63,6 +65,10 @@ export const C = Object.freeze({
   persona: { present: ['session_message', 'approval_answer'], absent: ['message_session', 'answer_approval', 'list_plugins'] },
   opaqueSecret: 'opaque-test-secret-must-not-escape',
   turn: 'Wire acceptance probe; respond without tools.',
+  // MULTI-1 worker words: the hosted stand-in row (fixtures/child-row), the scripted call id prefix,
+  // and dsh-agent's durable inbox mutation (its `data.inserted` holds the queued messages).
+  childRow: 'dsh-instance-child', childStandIn: path.join(import.meta.dirname, 'fixtures', 'child-row', 'index.mjs'),
+  multiCallId: 'fbtest-multi-call-', inboxSpliced: 'agent/inbox/spliced',
   logLimit: 3000, first: 0, one: 1, empty: '', encoding: 'utf8',
   method: { get: 'GET', post: 'POST' }, json: 'application/json', noStore: 'no-store',
   skipDirs: ['node_modules', '.git'],
@@ -73,3 +79,70 @@ export const C = Object.freeze({
   insecureTodo: 'E2E-CORE: web-callback-insecure needs a non-loopback Host admitted by DSH (trustedHosts / TLS setup); a standalone DSH with default trustedHosts refuses every such pair with 403 before core',
 })
 export const runtimeOf = (sdk) => path.join(C.versionRoot, sdk, 'node_modules')
+
+/**
+ * MULTI-1 (PLAN-MULTI §3–§7; the MULTI-0 freeze). The fake target DSH's own words (fake-dsh.mjs):
+ * MCP 2026-07-28 method names (spec vocabulary), HTTP words, and fixture data. Product values are
+ * the frozen contracts' (targets-oracle.mjs), never restated here.
+ */
+export const FAKE_DSH = Object.freeze({
+  rpc: Object.freeze({
+    jsonrpc: '2.0', resultComplete: 'complete',
+    discover: 'server/discover', toolsList: 'tools/list', toolsCall: 'tools/call',
+    resourcesList: 'resources/list', resourcesRead: 'resources/read', listen: 'subscriptions/listen',
+    acknowledged: 'notifications/subscriptions/acknowledged', resourceUpdated: 'notifications/resources/updated',
+    subscriptionIdKey: 'io.modelcontextprotocol/subscriptionId',
+    parseError: -32700, methodNotFound: -32601, internalError: -32603,
+  }),
+  web: Object.freeze({ json: 'application/json', sse: 'text/event-stream', basic: 'Basic ', bearer: 'Bearer ', get: 'GET', post: 'POST', accepted: 202, wwwAuthenticate: 'www-authenticate' }),
+  oauth: Object.freeze({ clientId: 'client_id', clientSecret: 'client_secret', grantType: 'grant_type' }),
+  cacheable: Object.freeze({ ttlMs: 0, cacheScope: 'private' }),
+  bindHost: '::',
+  host: Object.freeze({ first: '127.0.0.1', other: 'localhost' }),
+  version: '0.0.0-fbtest',
+  generation: 'fbtest-gen-1',
+  cursor: 'fbtest-cursor',
+  entryPrefix: 'fbtest-multi-entry-',
+  /** Values a wrong reader would pick: the name is only `_meta[serverInfo].name` (PLAN-MULTI §4.1). */
+  decoy: Object.freeze({ title: 'FBTEST-TITLE-not-the-name', serverInfo: 'FBTEST-STALE-serverInfo' }),
+})
+
+/** The MULTI-1 system world's ops and fixtures (world.mjs worker; cases in multi.mjs). */
+export const MULTI = Object.freeze({
+  apiVersion: 2,
+  /** `ui` members since MULTI-0 (ui.d.ts): the scalar link / connect / pairing are withdrawn. */
+  uiMembers: Object.freeze(['managerSessionId', 'targets', 'guards', 'asks']),
+  withdrawnUiMembers: Object.freeze(['link', 'connect', 'pairing']),
+  targetsMembers: Object.freeze(['list', 'onChange', 'add', 'remove', 'setUrl', 'begin', 'cancel', 'retry', 'choose']),
+  statusMembers: Object.freeze(['fishball', 'guards', 'set', 'targets']),
+  withdrawnStatusMembers: Object.freeze(['link', 'connect', 'line', 'control', 'contributedTools']),
+  withdrawnRoutes: Object.freeze(['/api/fishball/connect', '/api/fishball/connect/cancel']),
+  /** Server names (test data): two equal names, a later rename, and a literal that looks like an alias. */
+  name: Object.freeze({ office: 'Office-DSH', lab: 'Lab-DSH', literal2: 'Office-DSH (2)', markup: '<b>x</b>' }),
+  /** URL partitions (test data): https remote, insecure http, malformed, a canonicalising variant. */
+  url: Object.freeze({
+    insecure: 'http://b.example/api/agent/mcp',
+    malformed: 'not a url',
+    blank: '',
+    remote: 'https://b.example/api/agent/mcp',
+    /** A syntactic variant that canonicalises to `remote` (upper-case scheme and host: WHATWG URL). */
+    remoteVariant: 'HTTPS://B.EXAMPLE/api/agent/mcp',
+    otherPath: '/api/agent/other/mcp',
+  }),
+  /** How many targets the no-cap BVA row adds (Q12: no cap; a count beyond any small limit). */
+  manyTargets: 12,
+  ask: 'ask_user',
+  reminderTools: Object.freeze(['schedule_create', 'schedule_list', 'schedule_update', 'schedule_delete']),
+  metadataUrl: 'https://agent.example/fishball-core.json',
+  /** `connect.clientMetadataUrl` → its settings path. */
+  pathDot: '.',
+  askAnswerRoute: '/api/fishball/asks/answer',
+  bridgePlugin: 'fbtest-multi-x12',
+  /** A pairing choice no warning offers (a route row needs a value; the target is unknown first). */
+  choice: 'fbtest-no-choice',
+  /** A value written to an added target's reference (never a parent token). */
+  otherToken: 'fbtest-added-target-token',
+  event: Object.freeze({ id: 'fbtest-multi-event-1', textPrefix: 'FBTEST-MULTI ', sequence: 1, digestFill: 'a' }),
+  budget: Object.freeze({ connectMs: 60000, quietMs: 1500, pollMs: 100 }),
+})
+
