@@ -29,6 +29,8 @@ export const SUBJECT = Object.freeze({
   model: 'STATUS_MODEL',
   texts: 'STATUS_TEXT',
   view: 'stripView',
+  /** MULTI-0 (targets.d.ts `TargetView.line`): core's pure per-target rule `stripLine(link, url, connect)` → {line, control}. */
+  line: 'stripLine',
 })
 
 /** STATUS_MODEL as the relayed contract spells it. */
@@ -46,7 +48,29 @@ export const MODEL = Object.freeze({
 })
 
 /** The snapshot's members (relayed contract), and the words of its `line`. */
-export const SNAPSHOT_KEYS = Object.freeze(['fishball', 'link', 'connect', 'line', 'control', 'guards', 'set', 'contributedTools'])
+/** MULTI-0 `StatusSnapshot`: the global parts and `targets`; the scalar link/connect/line/control/contributedTools are withdrawn. */
+export const SNAPSHOT_KEYS = Object.freeze(['fishball', 'guards', 'set', 'targets'])
+export const WITHDRAWN_KEYS = Object.freeze(['link', 'connect', 'line', 'control', 'contributedTools'])
+/** TargetsSnapshot fixtures (test data shaped as targets.d.ts; the status forwards them unchanged). */
+const view = (targetId, extra = {}) => Object.freeze({
+  targetId, endpointEpoch: 'e-' + 'a'.repeat(16), serverName: null, name: null, kind: 'remote', url: 'https://fishball-target.example.test/mcp',
+  order: 1, duplicateSuffix: null, state: 'not-set', connecting: false, link: Object.freeze({ state: 'target-unset', code: null }),
+  connect: null, line: Object.freeze({ kind: 'target-unset', code: null }), control: null,
+  pairing: Object.freeze({ state: 'unpaired', warning: null, choices: Object.freeze([]), nameIssue: null }),
+  identity: 'pending', contributedTools: null, removable: true, urlEditable: true, ...extra,
+})
+export const TARGETS_SNAPSHOT = Object.freeze({
+  empty: Object.freeze({ version: 1, targets: Object.freeze([]) }),
+  one: Object.freeze({ version: 1, targets: Object.freeze([view('t-' + 'a'.repeat(16))]) }),
+  two: Object.freeze({ version: 1, targets: Object.freeze([view('t-' + 'a'.repeat(16)), view('t-' + 'b'.repeat(16), { order: 2, contributedTools: 0 })]) }),
+  connected: Object.freeze({ version: 1, targets: Object.freeze([view('t-' + 'a'.repeat(16), { state: 'connected', link: Object.freeze({ state: 'connected', code: null }), line: Object.freeze({ kind: 'connected', code: null }), contributedTools: 3 })]) }),
+})
+/** Why rows that asserted fishball-ui's stripView output or a withdrawn scalar port no longer run here. */
+export const WITHDRAWN_ROW = Object.freeze({
+  strip: 'withdrawn from core by MULTI-0 / MULTI-3 (the lead, 2026-11-18): fishball-ui\'s stripView output is fishball-ui\'s (test/v3/fishball-ui); core rows assert only core\'s snapshot and stripLine',
+  target: 'withdrawn by MULTI-0: the status has no target() port (core\'s target.url setting is withdrawn); each TargetView carries its own url and line',
+  bridge: 'withdrawn by MULTI-0: the status has no bridge port; contributedTools is a TargetView field (MULTI-STATUS-EP-01 checks it is forwarded, zero included)',
+})
 export const LINE = Object.freeze({
   connected: TARGET_STATE.connected,
   authorizing: CONNECT.state.authorizing,
