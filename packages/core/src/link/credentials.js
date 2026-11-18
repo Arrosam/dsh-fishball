@@ -42,7 +42,7 @@
  * update event), or, for a value written while core was not running or no target was usable, at the
  * first attempt that finds it unbound (`LINK_SAVE.pendingOrigin`). A value bound elsewhere is not
  * this origin's credential, so a target changed before the first acceptance never receives it; a
- * new write of the reference (the same value included) binds it to the origin in force then.
+ * write of the reference cannot relabel an unchanged value from a retired epoch.
  *
  * Every credential carries a non-secret `ref` (`LINK_SAVE.credentialId`) that F-PAIR keys its
  * records and holds on (decided item 13): the same token is one credential whether it is still in
@@ -141,9 +141,15 @@ async function clearParentMaterial(credentials, names, retired) {
   const [pending, saved] = await Promise.all([credentials.readRecord(names.pending), credentials.readRecord(names.tokenRecord)])
   if (retired(pending?.payload)) {
     // Resolve immediately before unset: the instance may already have replaced the old handoff.
-    const value = await credentials.resolve(names.ref)
-    if (value?.value !== undefined && pending.payload.ref === tokenCredentialId(value.value)) await credentials.unset(names.ref)
-    await credentials.deleteRecord(names.pending)
+    const value = (await credentials.resolve(names.ref))?.value
+    let unchanged = false
+    if (value !== undefined && pending.payload.ref === tokenCredentialId(value)) {
+      await credentials.unset(names.ref)
+      // unset only clears writable storage. An ambient fallback with the same value still needs
+      // its retired binding, including across a restart, or it would look like a fresh handoff.
+      unchanged = (await credentials.resolve(names.ref))?.value === value
+    }
+    if (!unchanged) await credentials.deleteRecord(names.pending)
   }
   if (retired(saved?.payload)) await credentials.deleteRecord(names.tokenRecord)
 }
@@ -339,11 +345,16 @@ export function createLinkCredentials(ctx, { target, clientId, clientMetadataUrl
   }
 
   /**
-   * Binds the reference value with id `ref` to this epoch at `origin` (a new write: whatever it was
-   * bound to). An added target's reference names its one endpoint epoch, so it needs no record.
+   * A provider update can expose the same ambient value, not a new handoff. Never relabel that
+   * value's retired binding. An added target's reference names its epoch, so it needs no record.
    */
   const bind = (ref, origin) => (names.pending === undefined || fenced() ? Promise.resolve()
-    : ctx.credentials.modifyRecord(names.pending, async (current) => (fenced() || isBinding(pendingOf(current, ref), store.binding(origin)) ? undefined : pendingRecord(ref, store.binding(origin)))))
+    : ctx.credentials.modifyRecord(names.pending, async (current) => {
+      const existing = pendingOf(current, ref)
+      const expected = store.binding(origin)
+      if (fenced() || (existing !== undefined && (!ofEpoch(current.payload, names) || isBinding(existing, expected)))) return undefined
+      return pendingRecord(ref, expected)
+    }))
 
   /**
    * Whether the reference value with id `ref` is this epoch's at `origin` (all four binding members,
