@@ -75,7 +75,8 @@ export interface LinkStatus {
  *   the fixed reference or saved token. On every canonical endpoint change, same-origin included,
  *   durably retire the old binding and clear its writable token material before the new epoch can
  *   connect. Keep retired credential ids independently of the current pending binding, since an
- *   ambient value may survive unset or be exposed later. Cold restart must not adopt or relabel it.
+ *   ambient value may survive unset or be exposed later.
+ *   Cold restart must not adopt or relabel a retired/unmatched binding.
  *   A fresh first handoff may establish its pending binding only after that reconciliation;
  *   absence of a binding never permits reuse of saved/retired material as a fresh handoff.
  * - Each read/authorization attempt captures its binding and runtime generation. A late completion
