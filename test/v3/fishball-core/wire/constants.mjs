@@ -24,7 +24,9 @@ export const C = Object.freeze({
   coreTools: ['ask_user', 'schedule_create', 'schedule_list', 'schedule_update', 'schedule_delete'],
   privateSkill: /^private_skill_/,
   coreToolTables: [{ module: '../manager/reminders.js', table: 'TOOL' }, { module: '../manager/skills.js', table: 'PRIVATE_SKILL_TOOL' }, { module: '../asks/constants.js', table: 'ASK_TOOL' }],
-  baseTools: ['read', 'read_image', 'working_directory'], boardToolPrefix: 'board_', guardsOk: 'ok',
+  // `ask_user_question` is DSH's own ask tool in core's preset (the user, 2026-11-18:
+  // "用DSH自带的提问工具").
+  baseTools: ['read', 'read_image', 'working_directory', 'ask_user_question'], boardToolPrefix: 'board_', guardsOk: 'ok',
   /**
    * SHELVE-BOARD: fishball-board is shelved, not in 1.0.0-alpha.1. The user, 2026-11-18:
    * "fishball-board先从这次release中移除，我要改的地方太多了。先封存，留到下一批再说。所以不要预留在子实例的Fishball内。"
