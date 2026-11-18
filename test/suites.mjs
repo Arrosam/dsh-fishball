@@ -185,7 +185,7 @@ export const V3_SUITES = Object.freeze({
     [all(PACKAGE.dshConnectorUi), PACKAGE.dshInstance + '/client*.js', sub(PACKAGE.dshConnector, 'tools'), sub(PACKAGE.dshConnector, 'host-services')]),
   // The draw rows run embed-UI over the real UI backend (C-UI-BACKEND) and the real contribution
   // service (C-EXT), so a change in either reruns them.
-  'dsh-connector-ui.draw': suite('draw-only frontend: fish, window, hint, Retry link, marks, Hand over / Take back, light, notify prompt, tool declaration (U-DRAW)', v3('dsh-connector-ui/draw'),
+  'dsh-connector-ui.draw': suite('draw-only frontend: fish, window, hint, Retry link, marks, Hand over / Take back, light, notify prompt, tool declaration, visibility-scoped snapshot SSE (U-DRAW)', v3('dsh-connector-ui/draw'),
     [...CONNECTOR_UI_DRAW_TRIGGERS, ICON_SET_SUPPORT]),
   // The wire rows boot draw's world (draw/world.mjs and the test modules it imports), so they
   // rerun on everything draw reruns on, and on a change to those test modules.
