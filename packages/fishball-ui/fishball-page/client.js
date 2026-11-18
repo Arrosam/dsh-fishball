@@ -58,7 +58,7 @@ window.__ModuleLoader__.load({
         frame: ':has(>[data-shell-bottom])', drawer: '[data-sidebar-drawer]', collapsed: '[data-sidebar-collapsed]',
         sidebar: '[data-slot="sidebar"]>*', workspaces: ':has(>[data-slot="sidebar.workspaces"])',
         foot: ':has([data-slot="sidebar.settings"])', regions: ':has(>[data-slot="sidebar.footer.action"]),:has(>[data-slot="sidebar.settings"])',
-        leading: '[data-shell-leading]', handle: '[data-side="sidebar"]',
+        leading: '[data-shell-leading]', handle: '[data-side="sidebar"]', centre: ':has([data-slot="main"])',
       }),
       // Window focus re-reads the manager (GET only, never ensure); see refresh.
       reread: 'focus',
@@ -186,13 +186,16 @@ window.__ModuleLoader__.load({
         // centre's 400px minimum leaves under 300px), so these tracks are exact, not a guess; only the
         // sidebar's own track is given up, to the bar or the sheet above the conversation.
         `${frame}{grid-template-columns:0px minmax(0px,1fr) minmax(0px,0px)!important}`,
+        // rc.5's columns have no grid areas: with the sidebar out of flow the centre would auto-place
+        // into the zero first track, so it is pinned to the second, by the column holding the main slot.
+        `${frame}>${hook.centre}{grid-column:2;grid-row:1}`,
         `${root} ${hook.handle}{display:none}`,
         `${bar}{position:fixed;left:0;right:0;bottom:0;top:auto;height:${narrow.clearancePx}px;width:auto;z-index:${narrow.layer};box-sizing:border-box;border-right:none;border-top:.5px solid var(--dsw-alias-border-l3);background:var(--dsw-specific-sidebar-fill)}`,
-        `${sidebar}{flex-direction:row!important;align-items:center;gap:4px;width:100%!important;height:100%;padding:4px 8px!important;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;overscroll-behavior-x:contain}`,
+        `${sidebar}{flex-direction:row!important;align-items:center;gap:4px;width:100%!important;height:100%;padding:4px 0 4px 8px!important;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;overscroll-behavior-x:contain}`,
         `${sidebar}>*{display:flex;flex-direction:row!important;align-items:center!important;flex:none!important;gap:4px!important;height:auto!important;margin:0!important;padding:0!important}`,
         // The list lives in the sheet; the bar is navigation only.
         `${sidebar}>${hook.workspaces}{display:none!important}`,
-        `${sidebar}>${hook.foot}{position:sticky;right:0;margin-left:auto!important;padding-left:8px!important;background:var(--dsw-specific-sidebar-fill);box-shadow:-.5px 0 0 var(--dsw-alias-border-l3)}`,
+        `${sidebar}>${hook.foot}{position:sticky;right:0;margin-left:auto!important;padding:0 8px!important;align-self:stretch;background:var(--dsw-specific-sidebar-fill);box-shadow:-.5px 0 0 var(--dsw-alias-border-l3)}`,
         `${each(`${sidebar} `, hook.regions)}{display:flex!important;flex-direction:row;align-items:center;gap:4px;width:auto!important}`,
         // The rail's toggle shows the brand mark until hovered; in the bar it shows DSH's own
         // open-sidebar glyph, its sibling, so it is not taken for this page's Fishball button.
