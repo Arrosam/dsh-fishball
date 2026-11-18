@@ -204,7 +204,9 @@ window.__ModuleLoader__.load({
       return h('div', { className: C.details, id, 'data-fishball-target-details': target.targetId },
         lines.map((line) => h('p', { key: line.kind, className: C.line, 'data-fishball-target-line': line.kind }, line.text)),
         h('p', { className: C.label }, words.address),
-        h('p', { className: C.url, 'data-fishball-target-url': true }, target.url),
+        // Prefer a path boundary to splitting the last segment; wbr adds no character to copied text.
+        h('p', { className: C.url, title: target.url, 'data-fishball-target-url': true },
+          target.url.split(/(?<=[^/:])(?=\/)/u).map((part, index) => h(React.Fragment, { key: index }, index > 0 && h('wbr'), part))),
         target.pairing.lines.length > 0 ? h(Pairing, { key: target.pairing.key, kit, lang, presses, targetId: target.targetId, view: target.pairing, locked: !live }) : null,
         h('div', { className: C.actions },
           control === null ? null : h(Button, {
