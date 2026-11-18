@@ -1,10 +1,8 @@
 /**
  * MULTI-3 requirement F black-box rows (PLAN-MULTI §6.4): on Fishball's page at narrow width, DSH's
- * real sidebar is the bottom bar, restyled by fishball-page's CSS; elsewhere DSH is unchanged; on
- * rc.1 below 768px there is no bar and the native drawer opener stays. Measured in a real headless
- * Chromium (frame-layout.mjs) with DSH's own layout and sidebar sheets and fishball-page's rules as
- * its real client mounted them (nav-page.mjs). Rows skip where no Chromium exists, as the LITE and
- * contrast rows do.
+ * original sidebar is the bottom bar; elsewhere DSH is unchanged. rc.1 retains its native opener;
+ * opening the drawer replaces the narrow bar. Matrix and interaction rows run the real page client
+ * in Chromium on the SDK-shaped frame. Older stylesheet-only rows remain as independent controls.
  *
  * Techniques:
  * - Decision table MULTI-BAR-DT-01: SDK × Fishball page (mark) × width (BVA 390, 480 | 481, 1280) →
@@ -13,14 +11,15 @@
  * - EP MULTI-BAR-EP-01: panel entries (DSH's own and a third-party one) all in the bar with their
  *   own icons, and the Settings seat; the workspaces region not in the bar;
  * - BVA MULTI-BAR-BVA-02: many entries → the 44px row scrolls horizontally, no wrap;
- * - Decision table MULTI-DRAWER-DT-01: rc.1 below 768px, drawer closed / open → no bar, the opener
- *   visible; the open drawer shows the panels, Settings and the target list;
+ * - Decision table MULTI-DRAWER-DT-01: rc.1 at ≤480px, closed → bar + opener; open → drawer,
+ *   showing panels, Settings and targets. At 481..767px both states remain native;
  * - Control MULTI-BAR-CTRL-01: DSH alone (no Fishball rules) draws no bar at 390px.
  */
 import assert from 'node:assert/strict'
 import { after } from 'node:test'
 import { caseTest } from '../../contract/package-boundaries/cases.mjs'
-import { chromeBinary } from '../../../v2-page-cases/lite-browser.mjs'
+import { chromeBinary, keyFor } from '../../../v2-page-cases/lite-browser.mjs'
+import { liveFrame, frameProbeArg, stopFrameEnvironment } from './narrow-frame.mjs'
 import { HARNESS } from '../contrast/constants.mjs'
 import { measure, stopBrowser } from '../contrast/page.mjs'
 import { LAYOUT_PROBE, frameDocument } from './frame-layout.mjs'
@@ -28,10 +27,23 @@ import { navPage } from './nav-page.mjs'
 import { checkDesktopTargetAddress, checkLongTargetAddress } from './target-address.mjs'
 import { FRAME_LAYOUT as L } from './polish-constants.mjs'
 
+// Browser-side geometry oracle. Check inset edge midpoints (corners may be rounded) against the
+// actual hit target; viewport bounds alone miss a panel hidden behind the footer or a scroll clip.
+async function panelVisibility(index, budgetMs) {
+  const el = window.__fbOriginalRows[index], until = performance.now() + budgetMs
+  do {
+    const r = el.getBoundingClientRect(), cx = r.x + r.width / 2, cy = r.y + r.height / 2
+    const points = [[r.left + 1, cy], [r.right - 1, cy], [cx, r.top + 1], [cx, r.bottom - 1], [cx, cy]]
+    const obstruction = points.find(([x,y]) => !el.contains(document.elementFromPoint(x,y)))
+    if (r.width && r.height && r.left >= 0 && r.right <= innerWidth && r.top >= 0 && r.bottom <= innerHeight && !obstruction) return null
+    if (performance.now() >= until) return { rect: r.toJSON(), obstruction, hit: obstruction && document.elementFromPoint(...obstruction)?.tagName }
+    await new Promise(requestAnimationFrame)
+  } while (true)
+}
 const show = (v) => JSON.stringify(v)
 const near = (a, b) => Math.abs(a - b) <= L.epsilon
 const W = L.widths
-const PROBE_ARG = Object.freeze({ panelHook: L.panelHook, iconHook: L.iconHook, settingsHook: L.settingsHook, workspacesHook: L.workspacesHook, conversationHook: L.conversationHook })
+const matrixWidths = [W.minimum, W.narrow, W.edge, W.above, L.drawerBelow - 1, L.drawerBelow, L.autoCollapseBelow]
 const manyPanels = () => Array.from({ length: L.manyPanels }, (_x, i) => ({ id: `fbtest-panel-${i}`, label: `Fbtest Long Panel Label ${i}` }))
 /** The parts a "DSH unchanged" comparison reads (the conversation box is the page's own business). */
 const sidebarPicture = (r) => ({ column: r.column, rows: r.rows, icons: r.icons, settings: r.settings, workspaces: r.workspaces, opener: r.opener })
@@ -45,6 +57,7 @@ function browserRow(sdk, id, row, title, fn) {
 
 export function registerFrameLayoutCases(sdk) {
   after(stopBrowser)
+  after(stopFrameEnvironment)
   /** fishball-page's mounted rules, once per test context (its real client in nav-page.mjs). */
   const pageRules = async (t) => (await navPage(t, sdk)).styles()
   /** The DSH layout state each SDK is in at `width` with the sidebar left as DSH opens it. */
@@ -56,7 +69,7 @@ export function registerFrameLayoutCases(sdk) {
   const probe = async (t, { width, mark, rules = true, panels = L.panels, collapsed, drawer }) => {
     const state = layoutAt(width)
     const html = frameDocument(sdk, { panels, mark, collapsed: collapsed ?? state.collapsed, drawer: drawer ?? state.drawer, pageRules: rules ? await pageRules(t) : [] })
-    return measure(html, LAYOUT_PROBE, PROBE_ARG, { width, height: L.height })
+    return measure(html, LAYOUT_PROBE, frameProbeArg, { width, height: L.height })
   }
   const assertBar = (r, why) => {
     assert.ok(r.column, `${why}: no sidebar column`)
@@ -79,14 +92,31 @@ export function registerFrameLayoutCases(sdk) {
     await checkLongTargetAddress(t, sdk, await pageRules(t))
   })
 
-  // ---- MULTI-BAR-DT-01 / BVA-01: the bar exists exactly on Fishball's page in the narrow query (rc.5)
-  for (const width of [W.narrow, W.edge]) {
-    browserRow(sdk, 'MULTI-BAR-DT-01', `page ${width}px`, isRc1
-      ? `rc.1, Fishball's page, ${width}px (< 768: drawer) → no bar; the native drawer opener is visible`
-      : `Fishball's page, ${width}px → the sidebar column is a fixed ${L.barHeight}px bar at the bottom spanning the width`, async (t) => {
-      const r = await probe(t, { width, mark: true })
-      if (isRc1) { assertNoBar(r, `${width}px`); assert.equal(r.opener, true, 'the native drawer opener is hidden'); return }
-      assertBar(r, `${width}px`)
+  const assertContents = (r, panels) => {
+    assert.deepEqual(r.rows.map(b => b.id), panels.map(p => p.id))
+    assert.deepEqual(r.icons.filter(i => i.shown).map(i => i.id), panels.map(p => p.id))
+    for (const button of [...r.rows, r.toggle, r.footer, r.settings]) {
+      assert.ok(button.shown && button.y >= r.column.y - L.epsilon && button.y + button.h <= r.viewport.h + L.epsilon, `outside the row: ${show(button)}`)
+    }
+    assert.equal(r.workspaces, false, 'target list in bottom row')
+    assert.equal(new Set(r.rows.map(b => Math.round(b.y))).size, 1, 'panel buttons wrap')
+    assert.ok(r.rows.every((b, i) => !i || b.x > r.rows[i-1].x), 'panel order reversed')
+  }
+  const checkLayout = async (t, live, width, panels) => {
+    const r = await live.probe()
+    assert.equal(r.viewport.w, width)
+    if (width <= W.edge) { assertBar(r, width); assertContents(r, panels) }
+    else {
+      assertNoBar(r, width)
+      const plain = await probe(t, { width, panels, rules: false, mark: false })
+      for (const part of ['column','rows','icons','opener','toggle','workspaces']) assert.deepEqual(r[part], plain[part], `${width}px native ${part}`)
+    }
+    if (isRc1 && width < L.drawerBelow) assert.equal(r.opener, true, 'native drawer opener hidden')
+  }
+  const sets = { stock: L.panels.slice(0, -1), plugin: L.panels }
+  for (const width of matrixWidths) for (const [partition, panels] of Object.entries(sets)) {
+    browserRow(sdk, 'MULTI-BAR-DT-01', `page ${width}px ${partition}`, 'collapsed narrow row or native sidebar/drawer at the SDK width', async t => {
+      await checkLayout(t, await liveFrame(t, sdk, { width, panels }), width, panels)
     })
   }
   browserRow(sdk, 'MULTI-BAR-BVA-01', 'page 481px', `Fishball's page, 481px (just outside max-width: 480px) → DSH's sidebar exactly as without Fishball's rules`, async (t) => {
@@ -107,10 +137,11 @@ export function registerFrameLayoutCases(sdk) {
     })
   }
 
-  // ---- MULTI-BAR-EP-01: what the bar holds (rc.5; rc.1 has no bar at these widths)
-  if (!isRc1) {
+  // The closed rc.1 drawer is initially inert: geometry-only snapshots cannot answer these rows.
+  const activeBar = async (t, panels = L.panels) => (await liveFrame(t, sdk, { width: W.narrow, panels })).probe()
+  {
     browserRow(sdk, 'MULTI-BAR-EP-01', 'entries and settings', `the bar shows every panel entry (DSH's and a third-party one) with its own icon, inside the bar, and the Settings seat; the workspaces region is not shown`, async (t) => {
-      const r = await probe(t, { width: W.narrow, mark: true })
+      const r = await activeBar(t)
       assertBar(r, 'precondition')
       const top = r.column.y - L.epsilon
       for (const row of r.rows) {
@@ -122,7 +153,7 @@ export function registerFrameLayoutCases(sdk) {
       assert.equal(r.workspaces, false, 'the target list / workspaces region shows inside the bar')
     })
     browserRow(sdk, 'MULTI-BAR-EP-01', 'one row', 'the bar\'s entries sit in one row (one top edge), left to right in their order', async (t) => {
-      const r = await probe(t, { width: W.narrow, mark: true })
+      const r = await activeBar(t)
       const ys = new Set(r.rows.map((row) => Math.round(row.y)))
       assert.equal(ys.size, 1, `rows on ${ys.size} lines: ${show(r.rows)}`)
       assert.deepEqual(r.rows.map((row) => row.id), L.panels.map((p) => p.id))
@@ -130,17 +161,68 @@ export function registerFrameLayoutCases(sdk) {
     })
     // ---- MULTI-BAR-BVA-02: overflow scrolls horizontally, no wrap, no More
     browserRow(sdk, 'MULTI-BAR-BVA-02', `${L.manyPanels} entries`, `${L.manyPanels} long entries at 390px → the bar stays ${L.barHeight}px, one row, the entries scroll horizontally`, async (t) => {
-      const r = await probe(t, { width: W.narrow, mark: true, panels: manyPanels() })
+      const r = await activeBar(t, manyPanels())
       assertBar(r, 'many entries')
       assert.equal(new Set(r.rows.map((row) => Math.round(row.y))).size, 1, 'the entries wrapped')
       assert.equal(r.rowsOverflow, true, 'no horizontal scroller holds the entries')
       assert.ok(r.scrolledBy > 0, `scrolling did not move the entries (${r.scrolledBy})`)
     })
     browserRow(sdk, 'MULTI-BAR-BVA-02', 'one entry', 'one entry at 390px → the bar, the entry and Settings shown, nothing scrolls', async (t) => {
-      const r = await probe(t, { width: W.narrow, mark: true, panels: [L.panels[0]] })
+      const r = await activeBar(t, [L.panels[0]])
       assertBar(r, 'one entry')
       assert.ok(r.rows[0].shown && r.settings.shown)
       assert.equal(r.rowsOverflow, false)
+    })
+  }
+
+  browserRow(sdk, 'NARROW-RESIZE-01', 'same mounted page', 'resize across both breakpoints and return to the narrow original sidebar', async t => {
+    const widths = [W.edge, W.above, L.drawerBelow - 1, L.drawerBelow, L.autoCollapseBelow, W.minimum]
+    const live = await liveFrame(t, sdk, { width: widths[0] })
+    for (const width of widths) {
+      await live.resize(width)
+      await checkLayout(t, live, width, L.panels)
+    }
+  })
+  for (const width of isRc1 ? [W.narrow, W.above] : [W.narrow]) {
+    browserRow(sdk, 'NARROW-TOGGLE-01', `${width}px`, 'native open → expanded sidebar → native close restores the initial layout', async t => {
+      const live = await liveFrame(t, sdk, { width })
+      await checkLayout(t, live, width, L.panels)
+      await live.click(isRc1 ? '[data-sidebar-opener]' : '[data-fbtest-toggle]')
+      const opened = await live.probe()
+      assertNoBar(opened, 'opened')
+      assert.ok(opened.rows.every(b => b.shown) && opened.settings.shown && opened.workspaces, 'expanded sidebar contents unreachable')
+      if (!isRc1) assert.ok(near(width - opened.column.w, L.sheetGutter), 'expanded sheet gutter')
+      await live.click('[data-fbtest-toggle]')
+      await checkLayout(t, live, width, L.panels)
+    })
+  }
+  for (const key of ['Enter', 'Space']) {
+    browserRow(sdk, 'NARROW-KEY-01', key, 'Tab to all original nav actions; activate an initially offscreen plugin', async t => {
+      const panels = [...L.panels, ...manyPanels()]
+      const { tab } = await liveFrame(t, sdk, { width: W.minimum, panels })
+      const last = panels.at(-1).id
+      const visibility = (index, budget = L.focusScrollBudgetMs) => tab.evaluate(`(${panelVisibility})(${index},${budget})`)
+      assert.notEqual(await visibility(panels.length - 1, 0), null, 'precondition: last button is already fully in view')
+      const required = [...panels.map(p => p.id), 'toggle', 'footer', 'settings']
+      const focused = `(() => { const el = document.activeElement; if (__fbOriginalRows.includes(el)) return el.getAttribute('${L.panelHook}'); if (el.matches('[data-fbtest-toggle]')) return 'toggle'; for (const [name,key] of [['sidebar.settings','settings'],['sidebar.footer.action','footer']]) if (el.matches('[data-slot="'+name+'"] button')) return key; return null })()`
+      // A bounded walk, never a programmatic focus: inert, tabindex=-1 and clipped rows must fail.
+      for (const backwards of [false, true]) {
+        const visited = new Set(), direction = backwards ? 'Shift+Tab' : 'Tab'
+        for (let i = 0; i < 2 * required.length && visited.size < required.length; i++) {
+          await tab.press(keyFor('Tab', backwards ? ['shift'] : []))
+          const id = await tab.evaluate(focused)
+          if (!required.includes(id)) continue
+          visited.add(id)
+          const index = panels.findIndex(p => p.id === id)
+          if (index >= 0) assert.equal(await visibility(index), null, `${direction}: ${id} not fully visible and unobscured`)
+          if (id === last && !backwards) {
+            await tab.press({ ...keyFor(key), text: key === 'Enter' ? '\r' : ' ' })
+            const clicks = await tab.evaluate('__lite.log.timeline.filter(e => e.kind === "drift" && e.panel).map(e => e.panel)')
+            assert.deepEqual(clicks, [last], 'original plugin handler did not run exactly once')
+          }
+        }
+        assert.deepEqual(required.filter(id => !visited.has(id)), [], `actions missing from ${direction} path`)
+      }
     })
   }
 

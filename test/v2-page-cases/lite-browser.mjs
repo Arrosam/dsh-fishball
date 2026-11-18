@@ -235,6 +235,7 @@ export async function startEnvironment() {
       await devtools.send('Page.navigate', { url }, sessionId)
       return {
         sessionId,
+        resize: (width, height) => devtools.send('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 1, mobile: false }, sessionId),
         async evaluate(expression) {
           const result = await devtools.send('Runtime.evaluate', { expression, awaitPromise: true, returnByValue: true }, sessionId)
           if (result.exceptionDetails) throw new Error('page evaluation failed: ' + (result.exceptionDetails.exception?.description ?? result.exceptionDetails.text))
@@ -245,9 +246,10 @@ export async function startEnvironment() {
           for (const type of ['mousePressed', 'mouseReleased']) await devtools.send('Input.dispatchMouseEvent', { type, x, y, button, clickCount: 1 }, sessionId)
         },
         /** A trusted key press (keydown + keyup) delivered by the browser input pipeline. */
-        async press({ key, code, keyCode, modifiers = [] }) {
+        async press({ key, code, keyCode, modifiers = [], text }) {
           const mask = modifiers.reduce((bits, name) => bits | LITE_KEYS.modifierBits[name], 0)
-          for (const type of ['rawKeyDown', 'keyUp']) await devtools.send('Input.dispatchKeyEvent', { type, key, code, windowsVirtualKeyCode: keyCode, nativeVirtualKeyCode: keyCode, modifiers: mask }, sessionId)
+          // Native button activation needs the character-producing event, not just a raw shortcut.
+          for (const type of [text ? 'keyDown' : 'rawKeyDown', 'keyUp']) await devtools.send('Input.dispatchKeyEvent', { type, key, code, windowsVirtualKeyCode: keyCode, nativeVirtualKeyCode: keyCode, modifiers: mask, ...(type === 'keyDown' ? { text } : {}) }, sessionId)
         },
         close: () => devtools.send('Target.closeTarget', { targetId }).catch(() => {}),
       }

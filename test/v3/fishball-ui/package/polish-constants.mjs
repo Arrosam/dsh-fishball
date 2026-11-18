@@ -102,7 +102,8 @@ export const FRAME_LAYOUT = Object.freeze({
   railWidth: 56, wideWidth: 280,
   barHeight: 44,
   /** BVA around the narrow query (max-width: 480px), 390px (PLAN-MULTI §6.3), a mid width and a desktop. */
-  widths: Object.freeze({ narrow: 390, edge: 480, above: 481, mid: 600, desktop: 1280 }),
+  widths: Object.freeze({ minimum: 320, narrow: 390, edge: 480, above: 481, mid: 600, desktop: 1280 }),
+  focusScrollBudgetMs: 1500,
   height: 844,
   /** rc.1's layout is a drawer below this width (dsh-client-ui-layout AppFrame, rc.1 only). */
   drawerBelow: 768,
