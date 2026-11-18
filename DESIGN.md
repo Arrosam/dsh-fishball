@@ -24,8 +24,8 @@ list (working), and the strip view (core on/off). Working animates (fish wag / w
 motion is static. Two themes, Fishball's fish or Fishball's own whale drawing, default Fishball;
 core's settings page owns `brandStyle` (`SEAM_BRAND`), applied live through core's status and the
 strip stream. The rail mark stays inside DSH's collapse control (which keeps expand/collapse); the
-expanded brand row is Fishball's control. `fishball-page`'s rc.5 44px narrow bar has no brand row;
-its expanded sheet and rc.1's drawer show the brand row.
+expanded brand row is Fishball's control. `fishball-page`'s 44px narrow bar has no brand row on either SDK;
+rc.5's expanded sheet and rc.1's open drawer show the brand row.
 
 **V2 private Skills amendment (S1–S8, user rules; SK, 2026-11-10):** the only exception to §7's "never writes local files". Fishball keeps its own skills (lessons about the user's preferences and ways of working) in `<child DSH home>/skills/<name>/SKILL.md`, and writes them, new or updated, on its own or when asked, with no approval. Six manager-only tools (`private_skill_list/read/create/update/remove/reload`) and one native skill provider are registered through `fishballInstance.manager.registerSetup` in the manager's own agent scope, so no worker, preset or main DSH sees them; workers get skill text in Fishball's messages. The provider is the public native `FileSystemSkillProvider` over that single root, with the host watcher off and a confined reader that refuses links (and multiply linked files) before reading; writes go through a trusted storage service (name grammar first, native-format validation, serialized, complete publication by same-directory rename, typed `committed` outcomes including committed-but-refresh-failed). Ordinary write/edit/shell stay read-only, and the standard child skill provider no longer lists `<child home>/skills`. Refresh affects later loads and the next model catalog only; no slash-menu refresh is claimed. See [SK-SEAM](<docs/planning/v2-sk-seam.md>), [T-SK cases](<docs/test-design/private-skills.md>) and `packages/instance/src/slim/child/skills.js`.
 
@@ -2222,7 +2222,7 @@ The [multi-DSH plan](<docs/planning/v3-multi-dsh.md>) records the user's decisio
 | Point | Decision / amendment |
 |---|---|
 | Architecture | One Fishball manager connects to a list of ordinary DSH MCP servers. Reuse Connector tools, OAuth, pairing and mailbox wire; no MCP `dsh` argument, remote reminder subsystem or cross-side imports. Stable local target IDs plus durable endpoint epochs scope credentials, events, approvals and calls; URL changes cannot reuse old remote records after restart. |
-| Navigation | Narrow navigation is DSH's real sidebar restyled into a fixed 44px bottom bar on Fishball's page at ≤480px, with every panel and its own contributed icon, overflowing by horizontal scroll (no More menu, no tray, no icon mirroring). On 0.2.2 below 768px the native drawer opens the same sidebar instead. Q11 spike: no lawful owner-external icon rendering; user chose the restyle (2026-11-18). |
+| Navigation | Narrow navigation is DSH's real sidebar restyled into a fixed 44px bottom bar on Fishball's page at ≤480px, with every panel and its own contributed icon, overflowing by horizontal scroll (no More menu, no tray, no icon mirroring). On 0.2.2 the closed drawer is the bar at ≤480px; opening it restores the native modal sidebar. At 481–767px only the native drawer is used. Q11 spike: no lawful owner-external icon rendering; user chose the restyle (2026-11-18). |
 | Target UI | Show each target's name and connected / connecting / failed / not set in the sidebar; click to expand inline details in the sidebar, no modal (Q08). Q01 shows “Not set” / “Name unavailable” plus Connect before identity is available, with URL only in details. Q09 makes selection details-only: infer the target from context and ask when ambiguous, never set an implicit routing default. Remove the chat-top target status card, superseding §22's card placement. Keep the native sidebar owner, replace only its workspace-content occupant with target rows plus a fail-closed Empty fallback, and restore native drawer access without restoring workspace/session-management controls. |
 | Connector name | Standard MCP `serverInfo.name` is `<approval.dshName, else OS device name>-DSH`. Use `node:os.hostname()`, not a special lookup or listener URL; this supersedes §21's URL fallback. Name is returned via modern `server/discover` metadata, not legacy `initialize`; do not substitute `title`. |
 | Special characters | Preserve server-name characters. Render all names as plain text, never HTML; names remain untrusted data in model context too, separate from trusted local routing IDs. Derive a safe, nonreassignable target/endpoint-qualified internal key for model tool names under both MCP and DSH host constraints. |
@@ -2265,3 +2265,16 @@ The fixes for the fishball-ui review (`.runtime/reports/review-x-fishball-ui.md`
 The user removes `question_ask` and `question_answer_own`, including their exclusive own-card schemas and behaviour. The historical dotted `question.ask` / `question.answerOwn` architecture is superseded, not a compatibility requirement; the historical documents remain unchanged.
 
 `question_answer` still answers forwarded managed-session DSH questions and plan reviews. Shared question/answer validators, generic settlement `answers`, and `QUESTION_ANSWER` / `CARD_CLOSED` semantics for forwarded questions remain. Fishball's local `ask_user` files existing permission/legacy-ask offers only. For its own clarifications, Fishball's manager uses the native DSH `ask_user_question` tool from its guarded preset; this does not add a connector MCP tool or change where managed-session questions are answered.
+
+## 27. Hosted Frame Readiness v1
+
+For the initial hosted navigation and each parent-initiated replacement, `dsh-connector-ui` keeps
+its fresh iframe hidden and inaccessible from first paint. Loading a document is not enough: the
+child might have landed on a sign-in page instead of the Fishball page. The parent reveals it only
+on the [Hosted Frame Readiness v1 signal](<docs/connector-contract.md#15-hosted-frame-readiness-v1-v3-only>)
+from the exact admitted origin and current frame window. After 15000 ms the parent offers recovery.
+A late valid signal can still reveal that frame; “Open Fishball again” gets a fresh admission and iframe.
+
+The framed `fishball-ui` page sends one non-secret marker per document when its page plugin is
+installed. This gates presentation only, not later navigations within the same frame, chat health
+or authentication. It changes no SDK, route, frozen connector value or child lifecycle state (§19).

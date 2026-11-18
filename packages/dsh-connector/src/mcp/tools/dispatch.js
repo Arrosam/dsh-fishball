@@ -37,10 +37,10 @@
  * Nothing here starts a timer (R-CON-05).
  */
 import { ProtocolError, ProtocolErrorCode } from '@modelcontextprotocol/server'
-import { PAIR_ONLY, REFUSAL, SCOPE, TOOLS, okResult, refusalResult } from '../../../mcp-schema/index.js'
-import { RefusalError, diagnosticOf } from '../../errors.js'
+import { PAIR_ONLY, REFUSAL, SCOPE, TOOL, TOOLS, okResult, refusalResult } from '../../../mcp-schema/index.js'
+import { FolderRefusal, RefusalError, diagnosticOf } from '../../errors.js'
 import { validateValue } from '../../schema-value/index.js'
-import { ENVELOPE_KEYS, LOG, TOOLS_METHOD, UNKNOWN_TOOL } from './constants.js'
+import { ENVELOPE_KEYS, FOLDER_ADVICE, LOG, TOOLS_METHOD, UNKNOWN_TOOL } from './constants.js'
 import { payloadRefusal } from './payload-rules.js'
 
 /** The codes a refusal may carry: K1's vocabulary only (R-CON-02). */
@@ -92,14 +92,17 @@ export function createDispatch({ handlers, contributions, pairs, now, logger }) 
   /** Steps 3–6 for one core tool. */
   async function callCore(core, args, caller) {
     const { name, inputSchema } = core.definition
-    if (!validateValue(inputSchema, args).ok) return refusalResult(REFUSAL.invalidArguments)
     try {
-      const refused = payloadRefusal(name, args, now())
-      if (refused !== undefined) return refusalResult(refused)
+      const refused = validateValue(inputSchema, args).ok ? payloadRefusal(name, args, now()) : REFUSAL.invalidArguments
+      if (refused !== undefined) {
+        const badFolder = name === TOOL.sessionStart && (typeof args?.folder !== 'string' || args.folder.length === 0)
+        return refusalResult(refused, {}, badFolder ? FOLDER_ADVICE : undefined)
+      }
       return envelope(core, await handlers[name](args, { caller }))
     } catch (error) {
       const code = refusalCode(error)
-      return code === undefined ? failed(LOG.toolFailed, diagnosticOf(error)) : refusalResult(code)
+      if (code === undefined) return failed(LOG.toolFailed, diagnosticOf(error))
+      return refusalResult(code, {}, error instanceof FolderRefusal ? FOLDER_ADVICE : undefined)
     }
   }
 

@@ -15,7 +15,7 @@
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import { fakeChildCredentials, fakeLifecycle, fakeProviderSync } from '../host/fakes.mjs'
-import { childLink, hostedModule, locatorModule, recordFile, recordModule, scratch } from '../host/subject.mjs'
+import { childLink, fixtureScope, hostedModule, locatorModule, recordFile, recordModule, scratch } from '../host/subject.mjs'
 import { HOST_FIXTURE, RECORD_WRITES, RUNTIME, WAIT } from './constants.mjs'
 import { scriptedTokens } from './fakes.mjs'
 
@@ -82,7 +82,7 @@ export async function successionWorld(t, sdk, options = {}) {
     locator = createChildLocator({ lifecycle, origin: lifecycle.origin, ticket: async () => HOST_FIXTURE.blank, hosted, providerSync: fakeProviderSync() })
   }
   await open()
-  t.after(() => hosted.close?.())
+  fixtureScope(t).defer(() => hosted.close?.())
   const reopened = () => openHostedRecord(file)
   const world = {
     tokens, credentials, file, warnings, link, writes,

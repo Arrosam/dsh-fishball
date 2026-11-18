@@ -226,6 +226,13 @@ export const DSH_NAME = Object.freeze({
   }),
   oldHint: Object.freeze({ en: "Empty: it shows this DSH's address.", zh: '留空则显示此 DSH 的地址。' }),
   unsetOp: 'unset',
+  live: 'R1B-Live',
+  transportFailure: 'Settings service is offline',
+  unconfirmed: Object.freeze({
+    en: 'Could not confirm the change. Check the current value and try again if needed.',
+    zh: '无法确认更改是否生效。请检查当前值，必要时重试。',
+  }),
+  serviceReason: /offline|unavailable|disconnect|network|connection|unreachable/i,
   saved: 'Original name',
   padded: '  Office DSH  ',
   special: 'Lab/α <b>x</b>',

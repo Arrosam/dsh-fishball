@@ -146,7 +146,8 @@ requires react and the primitives).
 ## MULTI-3 requirement F: the restyled real sidebar (`nav-cases.mjs`, `frame-layout-cases.mjs`, `frame-layout.mjs`)
 
 Requirement F (lead, 2026-11-18) and PLAN-MULTI §6.4 (the user's decision: "那一排按钮实际上就是侧边栏，
-只是被重度修改了样式"; rc.1 below 768px uses the native drawer; overflow scrolls horizontally, no More).
+只是被重度修改了样式"; overflow scrolls horizontally, no More). NARROW-BAR supersedes the closed rc.1
+outcome at ≤480px; opening the drawer still replaces the bar.
 **Re-baselined:** fishball-page's own tray (`nav.fishball-page-navigation`, Fishball / Plugins) is
 removed. The UIPF-NAV rows of the Fishball and Plugins buttons stay listed, withdrawn. The Settings
 launcher (`button.fishball-settings-launcher`), the status (`[data-fishball-nav-status]`) and Retry
@@ -162,20 +163,23 @@ removed, and `src/status/index.js` exports `targetsView`, `TARGET_LINE` and `STA
 | MULTI-NAV-ST-01 no forced close 390 / 1280px | ST | Loading the page calls `layout.toggleSidebar()` zero times |
 | MULTI-NAV-DT-01 shortcut remaps | DT | The gate edits no `sidebar.left.toggle`; session.new, session.search, workspace.add, session.rename, session.fork and session.archive stay remapped |
 
-Frame-layout rows run in a real headless Chromium (the contrast rows' browser). They skip with no Chromium. The
-document uses DSH's own AppFrame and SidebarRoot sheets and class names, cut from each SDK's
-bundle, plus DSH's page stylesheets. It adds fishball-page's rules as its real client mounted them, and a
-frame written from both SDKs' render code (slot anchors, `data-sidebar-collapsed` /
-`data-sidebar-drawer`, the panel rows with their own icons, the workspaces region and the Settings
-seat). The layout state is DSH's own: collapsed below 1024px; on rc.1 a closed drawer below 768px.
+Frame-layout rows run in headless Chromium and skip if Chromium is absent. The frame fixture uses each SDK's
+AppFrame and SidebarRoot sheets and class names, slot anchors, panel buttons/icons and workspaces region.
+Matrix and interaction rows start the real page client in this fixture with slot contributions mounted at their
+original seats. The test host models native toggle, selection and resize callbacks (collapsed below 1024px;
+rc.1 drawer below 768px). This covers live behavior without assuming that the plugin uses only stylesheets;
+it is not a full DSH boot. Older stylesheet-only and no-Fishball controls remain independent comparisons.
 
 | Id | Technique | Expected outcome |
 | --- | --- | --- |
-| MULTI-BAR-DT-01 page 390 / 480px | DT, BVA | rc.5: the sidebar column is `position: fixed`, 44px high, at the bottom, full width. rc.1 (< 768px, drawer): no bar, the native drawer opener visible |
+| MULTI-BAR-DT-01 initial layout | DT, BVA | For each SDK × 320/390/480/481/767/768/1024px × stock only / stock plus plugin (28 rows): ≤480 the original sidebar is fixed, 44px high, full width at the bottom; rc.1 also retains the native opener. Beyond 480 the SDK layout is unchanged, including the closed rc.1 drawer and opener at 481..767. |
 | MULTI-BAR-BVA-01 page 481px | BVA | DSH's sidebar exactly as without Fishball's rules |
 | MULTI-BAR-DT-01 page 1280px; not the page 390 / 1280px | DT | DSH unchanged (same geometry as without Fishball's rules) |
-| MULTI-BAR-EP-01 entries and settings; one row (rc.5) | EP | Every entry, DSH's own and a third-party one, inside the bar with its own icon; the Settings seat in the bar; the workspaces region not shown; one row, in order |
-| MULTI-BAR-BVA-02 24 entries / one entry (rc.5) | BVA | 24 long entries: still 44px, one row, horizontal scroll moves them; one entry: no scroller |
-| MULTI-DRAWER-DT-01 open drawer; mid width (rc.1) | DT | Open drawer at 390px: no bar; panels with icons, Settings and the target list shown. 600px: DSH's drawer unchanged |
+| MULTI-BAR-EP-01 entries and settings; one row (both SDKs) | EP | Every entry, DSH's own and a third-party one, inside the bar with its own icon; the Settings seat in the bar; the workspaces region not shown; one row, in order |
+| MULTI-BAR-BVA-02 24 entries / one entry (both SDKs) | BVA | 24 long entries: still 44px, one row, horizontal scroll moves them; one entry: no scroller |
+| NARROW-KEY-01 (both SDKs) | EP, error guessing | At 320px use Tab and Shift+Tab to reach all original stock/plugin buttons, toggle, Fishball and Settings. On each panel focus, the **whole** button is visible and unobscured. Enter and Space activate the original offscreen plugin handler. |
+| NARROW-RESIZE-01 (both SDKs) | ST, BVA | Resize one mounted page 480→481→767→768→1024→320. The row disappears above 480, the native rc.1 drawer remains usable below 768, and the row and plugin actions return at 320. |
+| NARROW-TOGGLE-01 (both SDKs) | ST | At 390px open the native rc.1 drawer / expand the rc.5 sheet, then collapse via its toggle: the 44px row returns. At rc.1 481px open and close: no row in either state. |
+| MULTI-DRAWER-DT-01 drawer state; mid width (rc.1) | DT | At 390px the closed drawer leaves the bottom bar and native opener usable. Open: drawer replaces bar; panels with icons, Settings and target list shown. Close: bar returns. At 481..767 the native drawer has no bar in either state. |
 | MULTI-BAR-CTRL-01 | Control | The same frame without Fishball's rules has no bar |
 | SHOT-TARGET-URL-EP-01 | EP, ST | At 1440px with two Office-DSH names, expand the markup-named Night-Build target. Names remain literal text. The expanded address has its full URL as text and hover title; it may fit, ellipsize, or wrap without splitting the last `mcp` segment. |

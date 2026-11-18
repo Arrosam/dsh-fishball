@@ -94,7 +94,11 @@ window.__ModuleLoader__.load({
     const FRAME_UI = Object.freeze({
       read: Object.freeze({ method: 'GET', cache: 'no-store', credentials: 'same-origin' }),
       pollMs: 1000,
+      // Match dsh-instance's RUNTIME_LIMITS.requestTimeoutMs; this classic client can't import
+      // the optional instance. Include time queued behind the browser's same-origin streams.
+      requestTimeoutMs: 5000,
       loading: 'loading',
+      unknown: 'unknown',
       /** The instance's page the window frames: the hosted child's chat (its settings are the instance's own page). */
       page: Object.freeze({ chat: 'chat' }),
       /** DSH's pluginNavigation service, which opens a package's own settings page. */
@@ -199,6 +203,7 @@ window.__ModuleLoader__.load({
      * hammer a DSH whose connector is gone for good.
      */
     const STREAM = Object.freeze({ closed: 2, reopenMs: 2000 })
+    const VISIBILITY_EVENT = 'visibilitychange'
     const JSON_HEADERS = Object.freeze({ 'content-type': 'application/json' })
     /**
      * The fish mark's shared look, used by the shell's sheet and by the parts (kit.ROW_MARK): the
@@ -334,15 +339,18 @@ window.__ModuleLoader__.load({
     /** The header's fish beside the title (FishMark, the window's one brand mark). */
     const HEADER_MARK_PX = 18
     /** The window's state line: DSH's StateDot sizes, and the tones of each state's dot. */
-    const STATE_DOT = Object.freeze({ sizePx: 8, byState: Object.freeze({ ready: 'done', failed: 'error', stopped: 'idle', disabled: 'idle' }), pending: 'ongoing', pendingSizePx: 12 })
+    const STATE_DOT = Object.freeze({ sizePx: 8, byState: Object.freeze({ ready: 'done', failed: 'error', unknown: 'idle', stopped: 'idle', disabled: 'idle' }), pending: 'ongoing', pendingSizePx: 12 })
 
     const en = {
       ...PROPOSED_WORDING.en,
       ...DRAW_WORDING.en,
       viewTitle: 'Fishball', embedTitle: 'Fishball chat', embedRefresh: 'Refresh',
       embedState: 'State', embedCode: 'Code',
+      frameWaiting: 'Waiting for Fishball to load…',
+      frameNotLoaded: "Fishball didn't load", frameWaitReason: "This frame hasn't confirmed that Fishball loaded.", frameOpenAgain: 'Open Fishball again',
       // The child's lifecycle states the window shows (K3 child.d.ts); `ready` reads "running".
-      'frameState.loading': 'checking',
+      'frameState.loading': 'checking', 'frameState.unknown': 'status unknown',
+      statusUnreadable: 'Could not check Fishball’s status.',
       'frameState.disabled': 'disabled', 'frameState.waiting': 'waiting', 'frameState.starting': 'starting', 'frameState.ready': 'running',
       'frameState.stopping': 'stopping', 'frameState.stopped': 'stopped', 'frameState.failed': 'failed',
     }
@@ -351,7 +359,10 @@ window.__ModuleLoader__.load({
       ...DRAW_WORDING.zh,
       viewTitle: 'Fishball', embedTitle: 'Fishball 聊天', embedRefresh: '刷新',
       embedState: '状态', embedCode: '代码',
-      'frameState.loading': '检查中',
+      'frameState.loading': '检查中', 'frameState.unknown': '状态未知',
+      statusUnreadable: '无法检查 Fishball 的状态。',
+      frameWaiting: '正在等待 Fishball 加载…',
+      frameNotLoaded: 'Fishball 未能加载', frameWaitReason: '此页面尚未确认 Fishball 已加载。', frameOpenAgain: '重新打开 Fishball',
       'frameState.disabled': '已禁用', 'frameState.waiting': '等待中', 'frameState.starting': '启动中', 'frameState.ready': '运行中',
       'frameState.stopping': '停止中', 'frameState.stopped': '已停止', 'frameState.failed': '失败',
     }
@@ -386,7 +397,7 @@ window.__ModuleLoader__.load({
       `.${CLS.embedCode}{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;overflow-wrap:normal}`,
       // The header is a window-drag area on macOS Desktop, as DSH's own; its buttons are not.
       `.${CLS.embedActions}{display:flex;flex:none;align-items:center;gap:${DSH_SESSION_HEADER.gap};margin-inline-start:auto;-webkit-app-region:no-drag}`,
-      `.${CLS.embedFrame}{display:block;flex:1;width:100%;min-height:0;border:0;background:var(--dsw-alias-bg-base)}`,
+      `.${CLS.embedFrame}{display:block;flex:1;width:100%;min-height:0;border:0;background:var(--dsw-alias-bg-base)}.${CLS.embedFrame}[hidden]{display:none}`,
       // Not ready, failed or still checking: DSH's empty/error state (dsh-client-ui-schedule .empty), centred in the view.
       `.${CLS.embedError}{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:${DSH_EMPTY_STATE.gap};padding:${DSH_EMPTY_STATE.padding};text-align:center;color:var(--dsw-alias-label-tertiary);font-size:${DSH_EMPTY_STATE.font};line-height:1.6}`,
       `.${CLS.embedError}>*{max-width:${DSH_EMPTY_STATE.maxWidth}}`,
@@ -441,8 +452,9 @@ window.__ModuleLoader__.load({
     const apiUrl = (path) => new URL(path, document.baseURI).toString()
 
     /**
-     * One shared EventSource of server-sent snapshots at `path`, open while any component follows
-     * it. The latest snapshot is the only state, and it is the server's.
+     * One shared EventSource at `path` while the page is visible and has subscribers. Hidden tabs
+     * must release their HTTP/1.1 connection for host requests (DSH also streams per tab). Opening
+     * the route sends a whole current snapshot, so a resumed tab needs no replay or polling.
      *
      * EventSource retries a dropped connection by itself, but gives up for good when an answer is
      * not a 200 event stream, as while the connector row reloads and its routes are briefly gone.
@@ -456,34 +468,45 @@ window.__ModuleLoader__.load({
       let source
       let reopen
       const notify = () => { for (const listener of listeners) listener() }
+      const stop = () => {
+        const previous = source
+        source = undefined
+        previous?.close()
+        clearTimeout(reopen)
+        reopen = undefined
+        // A notice or owner can change while disconnected. Don't offer its old action on resume.
+        if (snapshot !== initial) { snapshot = initial; notify() }
+      }
       const open = () => {
-        if (source || reopen) return
-        source = new EventSource(apiUrl(path))
-        source.onmessage = (event) => {
+        if (document.hidden || !listeners.size || source || reopen !== undefined) return
+        const current = new EventSource(apiUrl(path))
+        source = current
+        current.onmessage = (event) => {
+          if (source !== current) return
           let next
           try { next = JSON.parse(event.data) } catch { return }
           snapshot = next
           notify()
         }
-        source.onerror = () => {
-          if (source?.readyState !== STREAM.closed) return
+        current.onerror = () => {
+          if (source !== current || current.readyState !== STREAM.closed) return
           source = undefined
           snapshot = initial
+          if (!document.hidden) reopen = setTimeout(() => { reopen = undefined; open() }, STREAM.reopenMs)
           notify()
-          reopen = setTimeout(() => { reopen = undefined; if (listeners.size > 0) open() }, STREAM.reopenMs)
         }
       }
+      const followVisibility = () => { if (document.hidden) stop(); else open() }
       return {
         subscribe(listener) {
+          if (!listeners.size) document.addEventListener?.(VISIBILITY_EVENT, followVisibility)
           listeners.add(listener)
           open()
           return () => {
             listeners.delete(listener)
             if (listeners.size > 0) return
-            source?.close()
-            source = undefined
-            clearTimeout(reopen)
-            reopen = undefined
+            document.removeEventListener?.(VISIBILITY_EVENT, followVisibility)
+            stop()
           }
         },
         get: () => snapshot,
@@ -517,9 +540,9 @@ window.__ModuleLoader__.load({
     }
 
     /** POST one command to the Host. @returns { ok, code, answer } (the Host's refusal code and the whole answer). */
-    async function send(path, body) {
+    async function send(path, body, signal) {
       try {
-        const response = await fetch(apiUrl(path), { method: 'POST', headers: JSON_HEADERS, body: JSON.stringify(body) })
+        const response = await fetch(apiUrl(path), { method: 'POST', headers: JSON_HEADERS, body: JSON.stringify(body), signal })
         if (response.ok) return { ok: true, code: null, answer: await response.json().catch(() => ({})) }
         const answer = await response.json().catch(() => ({}))
         return { ok: false, code: typeof answer.code === 'string' ? answer.code : null, answer }
@@ -620,32 +643,67 @@ window.__ModuleLoader__.load({
      * The child status route's answers the window follows: its status, or the refusal that the
      * locator went away after the page loaded (the window then shows the hint, Q-G3).
      */
-    const isChildAnswer = (value) => value.ok === true || value.code === CHILD_UI.instanceMissing
+    const isChildAnswer = (value) => (value.ok === true && typeof value.status?.state === 'string') || value.code === CHILD_UI.instanceMissing
 
     /** Whether two answers show the same thing, so a steady poll re-renders nothing. */
     const sameAnswer = (a, b) => JSON.stringify(a) === JSON.stringify(b)
 
     /**
-     * Re-reads `path` at once and then every FRAME_UI.pollMs while the caller is mounted and the
-     * tab is visible, one read at a time, keeping the last valid answer.
-     * @returns the latest valid answer; `initial` until the first.
+     * A frame request has one owner. Timeout settles that owner even if no reply arrives;
+     * unmount/supersession only cancels it. In either case no late reply may replace the next
+     * attempt, and a queued or body-pending fetch no longer occupies a connection.
      */
-    function usePoll(path, valid, initial) {
-      const [latest, setLatest] = React.useState(initial)
+    function frameRequest(read, settle) {
+      const controller = new AbortController()
+      const cancel = () => { clearTimeout(timer); controller.abort() }
+      const timer = setTimeout(() => { cancel(); settle(undefined) }, FRAME_UI.requestTimeoutMs)
+      void read(controller.signal).then((answer) => {
+        if (controller.signal.aborted) return
+        clearTimeout(timer)
+        settle(answer)
+      })
+      return cancel
+    }
+
+    /** Poll one read at a time. A failed first read isn't a lifecycle state; keep trying even
+     * after showing the error. A transient failure after a valid read needn't unmount a live chat. */
+    function useChildStatus(path, generation) {
+      const [latest, setLatest] = React.useState(undefined)
       React.useEffect(() => {
-        const abort = new AbortController()
-        let polling = false
+        let cancel
+        let timer
         const poll = () => {
-          if (polling || document.hidden) return
-          polling = true
-          void readJson(path, valid, abort.signal).then((next) => {
-            if (next !== undefined && !abort.signal.aborted) setLatest((previous) => (sameAnswer(previous, next) ? previous : next))
-          }).finally(() => { polling = false })
+          if (cancel || document.hidden) return
+          cancel = frameRequest((signal) => readJson(path, isChildAnswer, signal), (answer) => {
+            cancel = undefined
+            setLatest((previous) => {
+              // Keep the last answer only to preserve an admitted frame; never label it current
+              // after a failed probe. A subsequent successful poll clears the warning in place.
+              const next = { answer: answer ?? previous?.answer, unreadable: answer === undefined }
+              return sameAnswer(previous, next) ? previous : next
+            })
+          })
         }
-        poll()
-        const timer = setInterval(poll, FRAME_UI.pollMs)
-        return () => { clearInterval(timer); abort.abort() }
-      }, [])
+        const stop = () => {
+          clearInterval(timer)
+          timer = undefined
+          cancel?.()
+          cancel = undefined
+        }
+        const followVisibility = () => {
+          // A hidden pane should neither queue a new probe nor occupy a connection with an old one.
+          if (document.hidden) { stop(); return }
+          if (timer !== undefined) return
+          timer = setInterval(poll, FRAME_UI.pollMs)
+          poll()
+        }
+        document.addEventListener?.(VISIBILITY_EVENT, followVisibility)
+        followVisibility()
+        return () => {
+          document.removeEventListener?.(VISIBILITY_EVENT, followVisibility)
+          stop()
+        }
+      }, [path, generation])
       return latest
     }
 
@@ -680,19 +738,57 @@ window.__ModuleLoader__.load({
 
     /** DSH's own empty/error state, centred in the view (dsh-client-ui-schedule .empty). */
     const emptyState = (...children) => h('div', { className: CLS.embedError }, ...children)
-    /**
-     * The one framed page (the child view's), with one `allow` and one referrer policy (see
-     * EMBED_UI.iframeAllow, iframeReferrerPolicy). The shell registers exactly one view, so one
-     * such frame exists.
-     * @param key - the frame document's identity: a new key remounts it, which is a reload.
-     */
-    const framedPageFrame = (t, key, src) => h('iframe', { key, className: CLS.embedFrame, src, title: t('embedTitle'), allow: EMBED_UI.iframeAllow, referrerPolicy: EMBED_UI.iframeReferrerPolicy, 'data-fishball-embed-frame': true })
+    // Hosted Frame Readiness v1 (connector contract §1.5), separate from process readiness.
+    const FRAME_READY = Object.freeze({ type: 'fishball:frame-ready', version: 1 })
+    const FRAME_WAIT = Object.freeze({ event: 'message', timeoutMs: 15000, waiting: 'waiting', recovery: 'recovery', shown: 'shown' })
+    function isPageReady(data) {
+      return data !== null && typeof data === 'object' && !Array.isArray(data) && Reflect.ownKeys(data).length === Object.keys(FRAME_READY).length &&
+        Object.entries(FRAME_READY).every(([key, value]) => Object.hasOwn(data, key) && data[key] === value)
+    }
+
+    /** Mounted once per admission. A timeout changes the explanation, not the listener or frame. */
+    function AdmittedFrame({ t, src, onRetry }) {
+      const frame = React.useRef(null)
+      const [phase, setPhase] = React.useState(FRAME_WAIT.waiting)
+      React.useLayoutEffect(() => {
+        // Install before the browser can deliver a posted message, even on an already-warm child.
+        const expectedOrigin = new URL(src).origin
+        let expired = false
+        // Only this admitted frame owns the wait. Defer a hidden timeout's UI change until
+        // foregrounding; accepting even a late signal leaves no recovery to display.
+        const showRecovery = () => {
+          if (!document.hidden && expired) {
+            setPhase((current) => current === FRAME_WAIT.waiting ? FRAME_WAIT.recovery : current)
+          }
+        }
+        const timer = setTimeout(() => { expired = true; showRecovery() }, FRAME_WAIT.timeoutMs)
+        function onMessage(event) {
+          const source = frame.current?.contentWindow
+          if (!source || event.source !== source || event.origin !== expectedOrigin || !isPageReady(event.data)) return
+          clearTimeout(timer)
+          setPhase(FRAME_WAIT.shown)
+        }
+        window.addEventListener(FRAME_WAIT.event, onMessage)
+        document.addEventListener?.(VISIBILITY_EVENT, showRecovery)
+        return () => {
+          window.removeEventListener(FRAME_WAIT.event, onMessage)
+          document.removeEventListener?.(VISIBILITY_EVENT, showRecovery)
+          clearTimeout(timer)
+        }
+      }, [src])
+      return h(React.Fragment, null,
+        h('iframe', { ref: frame, hidden: phase !== FRAME_WAIT.shown, className: CLS.embedFrame, src, title: t('embedTitle'), allow: EMBED_UI.iframeAllow, referrerPolicy: EMBED_UI.iframeReferrerPolicy, 'data-fishball-embed-frame': true }),
+        phase === FRAME_WAIT.waiting ? loadingState(t, t('frameWaiting')) : phase === FRAME_WAIT.recovery ? emptyState(warningGlyph(),
+          h('p', { className: CLS.embedLead, role: 'alert' }, t('frameNotLoaded')),
+          h('p', null, t('frameWaitReason')),
+          h(Button, { type: 'button', size: 'sm', variant: 'ghost', onClick: onRetry }, t('frameOpenAgain'))) : null)
+    }
     /** The glyph that opens every not-framed state, in its round well; decorative, as the words say it. */
     const glyphWell = (glyph) => h('span', { className: CLS.embedGlyph, 'aria-hidden': true }, glyph)
     /** The view's "checking" state, before its first answer: DSH's spinner over the words. */
-    const loadingState = (t) => emptyState(
+    const loadingState = (t, label = t('frameState.' + FRAME_UI.loading)) => emptyState(
       glyphWell(h(StateDot, { state: STATE_DOT.pending, size: EMBED_UI.warningIconPx })),
-      h('p', { role: 'status' }, t('frameState.' + FRAME_UI.loading)))
+      h('p', { role: 'status' }, label))
     /** The warning glyph of a not-ready child or a refused admission. */
     const warningGlyph = () => glyphWell(h(IconWarningOutlineRegular, { size: EMBED_UI.warningIconPx }))
     /**
@@ -743,7 +839,7 @@ window.__ModuleLoader__.load({
      * - `state` (and `code`): the state tag; the hint has none, as there is no child to describe;
      * - `onRefresh`: Refresh, enabled by `canRefresh`.
      */
-    function FrameChrome({ t, page, state, code, canRefresh, onRefresh, body }) {
+    function FrameChrome({ t, page, state, code, canRefresh, onRefresh, statusWarning, body }) {
       return h('section', { className: CLS.embed, 'aria-label': t('viewTitle'), 'data-fishball-embed': true, 'data-fishball-embed-page': page },
         h('header', { className: CLS.embedBar, 'data-window-drag': true },
           h('span', { className: CLS.embedTitle },
@@ -752,6 +848,7 @@ window.__ModuleLoader__.load({
           state === undefined ? null : h(FrameState, { state, code, t }),
           h('div', { className: CLS.embedActions },
             onRefresh === undefined ? null : h(Button, { type: 'button', size: 'sm', variant: 'ghost', icon: h(IconRefreshOutlineRegular, { size: EMBED_UI.refreshIconPx }), disabled: !canRefresh, onClick: onRefresh }, t('embedRefresh')))),
+        statusWarning ? h('p', { role: 'alert' }, t('statusUnreadable')) : null,
         body)
     }
 
@@ -763,18 +860,19 @@ window.__ModuleLoader__.load({
      * component's state for that one frame document. `{refused}` carries the route's code.
      */
     function useAdmission(path, view, lang, ready, generation) {
+      // Filter during render: a passive effect is too late to prevent React from mounting a new
+      // frame with the previous single-use URL. Identity distinguishes even en → zh → en.
+      const request = React.useMemo(() => ({ view, lang }), [path, view, lang, ready, generation])
       const [admission, setAdmission] = React.useState(undefined)
       React.useEffect(() => {
-        setAdmission(undefined)
         if (!ready) return undefined
-        let live = true
-        void send(path, { view, lang }).then(({ ok, code, answer }) => {
-          if (!live) return
-          setAdmission(ok && typeof answer?.url === 'string' ? { url: answer.url } : { refused: code })
+        return frameRequest((signal) => send(path, request, signal), (result) => {
+          const answer = result?.ok && typeof result.answer?.url === 'string'
+            ? { url: result.answer.url } : { refused: result?.code ?? null }
+          setAdmission({ request, answer })
         })
-        return () => { live = false }
-      }, [view, lang, ready, generation])
-      return admission
+      }, [path, ready, request])
+      return admission?.request === request ? admission.answer : undefined
     }
 
     /**
@@ -798,24 +896,32 @@ window.__ModuleLoader__.load({
      * #77): the child's state and code outside the frame, and the frame's address from admit only.
      * A child that is not ready shows its state and the Retry link, no frame. A page opened under
      * any name but a loopback one gets `hostname-refused` and shows R-UI-02's text instead of a
-     * frame. Nothing crosses the iframe (no `message` listener).
+     * frame. Only an admitted page's fixed document-ready marker can reveal that frame.
      */
     function makeChildView(ctx, t, route) {
       const frameLang = frameLangStore(ctx.locale)
       return function FishballChildView() {
-        const status = usePoll(route.status, isChildAnswer, undefined)
         const page = FRAME_UI.page.chat
         const lang = useFrameLang(frameLang)
         const [generation, setGeneration] = React.useState(0)
-        const state = status?.status?.state ?? FRAME_UI.loading
-        const code = status?.status?.code ?? null
-        const ready = state === CHILD_UI.readyState
+        const [statusGeneration, setStatusGeneration] = React.useState(0)
+        const reopen = () => setGeneration((value) => value + 1)
+        const check = useChildStatus(route.status, statusGeneration)
+        const status = check?.answer
+        const state = check?.unreadable ? FRAME_UI.unknown : status?.status?.state ?? FRAME_UI.loading
+        const code = check?.unreadable ? null : status?.status?.code
+        const ready = status?.status?.state === CHILD_UI.readyState
         const admission = useAdmission(route.admit, page, lang, ready, generation)
+        const refresh = () => {
+          setStatusGeneration((value) => value + 1)
+          // With a status warning, Refresh retries the probe without retiring the current chat.
+          if (!check?.unreadable || !admission?.url) reopen()
+        }
         // A hostname refusal stays until the page is opened under another name; any other refusal
         // can be asked again with Refresh, as a framed page can be reloaded.
         const hostnameRefused = admission?.refused === CHILD_UI.hostnameRefused
-        if (status?.code === CHILD_UI.instanceMissing) return hintChrome(t)
-        const body = status === undefined
+        if (!check?.unreadable && status?.code === CHILD_UI.instanceMissing) return hintChrome(t)
+        const body = check?.unreadable && !ready ? null : status === undefined
           ? loadingState(t)
           : !ready
             ? emptyState(warningGlyph(), ...stateDetails(t, state, code), retryLink(ctx, t))
@@ -825,11 +931,11 @@ window.__ModuleLoader__.load({
                 ? emptyState(warningGlyph(), hostnameRefused
                   ? h('p', { role: 'alert', 'data-fishball-hostname-refused': true }, t('hostnameRefused'))
                   : h('p', { role: 'alert', 'data-fishball-admit-refused': admission.refused ?? '' }, t('admitFailed')))
-                : framedPageFrame(t, `${generation}:${admission.url}`, admission.url)
+                : h(AdmittedFrame, { key: generation, t, src: admission.url, onRetry: reopen })
         return h(FrameChrome, {
-          t, page, state, code,
-          canRefresh: admission !== undefined && !hostnameRefused,
-          onRefresh: () => setGeneration((value) => value + 1),
+          t, page, state, code, statusWarning: check?.unreadable,
+          canRefresh: !hostnameRefused && (check?.unreadable || (status !== undefined && (!ready || admission !== undefined))),
+          onRefresh: refresh,
           body,
         })
       }

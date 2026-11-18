@@ -107,11 +107,19 @@ export function pageServices(shim, lang) {
     const template = dicts?.[lang]?.[key] ?? dicts?.en?.[key] ?? key
     return params && typeof template === 'string' ? template.replace(/\{(\w+)\}/g, (m, name) => (name in params ? String(params[name]) : m)) : template
   }
+  let snapshot = { active: lang, revision: 0 }
+  const setLang = (next) => {
+    if (next === lang) return
+    lang = next
+    snapshot = { active: lang, revision: snapshot.revision + 1 }
+    for (const notify of [...listeners]) notify()
+    bump()
+  }
   const locale = {
     register(ns, dicts) { dictionaries.set(ns, dicts); bump(); return () => { if (dictionaries.get(ns) === dicts) dictionaries.delete(ns) } },
     bind: (ns) => (key, params) => translate(ns, key, params),
-    getSnapshot: () => ({ active: lang, revision: 0 }),
-    getLocale: () => ({ active: lang, revision: 0 }),
+    getSnapshot: () => snapshot,
+    getLocale: () => snapshot,
     subscribe: (fn) => { listeners.add(fn); return () => listeners.delete(fn) },
     resolveText: (text) => (typeof text === 'string' ? text : text?.[lang] ?? text?.en),
   }
@@ -121,7 +129,7 @@ export function pageServices(shim, lang) {
     selectPanel(id) { active = id; bump() },
     toggleSidebar() {},
   }
-  return { slots, locale, layout, entries }
+  return { slots, locale, layout, entries, setLang }
 }
 
 /**

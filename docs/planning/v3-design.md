@@ -470,7 +470,10 @@ fishballChild = {
     `tool.call.toolview` for `ask_fishball`, a slot S4 showed embed-UI can fill) and its approval
     request and resolution (a `conversation.chat.node` record). The principal's name comes from the
     existing `managed()`. No new service member, no connector read API;
-  - the frame: `src` comes from `admit`; when `lang` changes it asks for a new admission;
+  - the frame: `src` comes from `admit`; when `lang` changes it asks for a new admission. On initial
+    navigation and parent-initiated replacements the iframe stays hidden and inaccessible until the
+    current admitted frame signals [Hosted Frame Readiness v1](<../connector-contract.md#15-hosted-frame-readiness-v1-v3-only>).
+    “Open Fishball again” gets a fresh admission; it does not retry the instance lifecycle;
   - ~~status and Retry, outside the frame; the Plugins card with the model-sync trigger~~ — moved
     to the instance's own settings page (requirements 1.33 Q-D1, Q-D2); embed-UI's connector card
     (the limits) moves to the connector's own settings page;

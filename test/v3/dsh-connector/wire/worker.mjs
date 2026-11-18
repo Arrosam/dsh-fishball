@@ -265,6 +265,20 @@ const ops = {
   },
   /** A folder for sessions (session_start takes an absolute folder). */
   folder: ({ name = FIXTURE.folder }) => { const dir = path.join(home, 'work', name); fs.mkdirSync(dir, { recursive: true }); return fs.realpathSync(dir) },
+  /** Owner setup and observations through the same public DSH registry used by the workspace UI. */
+  async registerWorkspace({ name, title }) {
+    const { id, path, title: actualTitle } = await ctx.workspaceRegistry.create(ops.folder({ name }), title)
+    return { id, path, title: actualTitle }
+  },
+  async placementState() {
+    const sessions = await ctx.sessionPersistence.list()
+    const workspaces = await ctx.workspaceRegistry.list()
+    return {
+      sessions: sessions.map(({ header: { id, cwd } }) => ({ id, cwd })).sort((a, b) => a.id.localeCompare(b.id)),
+      groups: workspaces.map(({ id, sessionIds }) => ({ id, members: [...sessionIds].sort() })).sort((a, b) => a.id.localeCompare(b.id)),
+      turns: model.requests.length,
+    }
+  },
   /** A new ordinary session through DSH's own session controller (no turn). */
   async createSession({ name = FIXTURE.folder }) {
     const cwd = ops.folder({ name })

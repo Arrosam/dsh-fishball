@@ -78,6 +78,7 @@ export function createReactShim(observe) {
   let renders = 0
   let tree = []
   const treesByRoot = new Map()
+  const hostSlots = observe.commit && new WeakMap()
 
   function createElement(type, props, ...children) {
     const { key = null, ...rest } = props ?? {}
@@ -149,11 +150,13 @@ export function createReactShim(observe) {
     return stack && stack.length ? stack[stack.length - 1] : context.defaultValue
   }
 
-  function renderNode(node, at, visited) {
+  function renderNode(node, at, visited, keyedByParent = false) {
     if (node === null || node === undefined || typeof node === 'boolean') return []
     if (typeof node === 'string' || typeof node === 'number') return [String(node)]
-    if (Array.isArray(node)) return node.flatMap((child, i) => renderNode(child, at + '/' + (child?.key ?? i), visited))
+    if (Array.isArray(node)) return node.flatMap((child, i) => renderNode(child, at + '/' + (child?.key ?? i), visited, true))
     if (!node.$$rp) throw new Error('rendered a non-element object')
+    // A changed key replaces even a lone child (not just an element in an array).
+    if (!keyedByParent && node.key != null) at += '/key:' + JSON.stringify(node.key)
     const { type, props } = node
     if (type === Fragment) return renderNode(props.children, at + '/f', visited)
     if (type && type.$$provider) {
@@ -183,7 +186,9 @@ export function createReactShim(observe) {
       // A host element with a ref gets its element during render, before effects run, as React's
       // commit does; only harnesses that model elements (observe.hostRef) see it.
       if (rest.ref !== undefined && observe.hostRef) observe.hostRef(at + '/' + type, type, rest)
-      return [{ tag: type, props: rest, children: renderNode(children, at + '/' + type, visited) }]
+      const host = { tag: type, props: rest, children: renderNode(children, at + '/' + type, visited) }
+      hostSlots?.set(host, at + '/' + type)
+      return [host]
     }
     throw new Error('unsupported element type ' + String(type))
   }
@@ -203,6 +208,8 @@ export function createReactShim(observe) {
       next.push(...rendered)
     }
     tree = next
+    // A DOM commit can navigate an iframe before passive effects clear it on a later render.
+    observe.commit?.(tree, (host) => hostSlots.get(host))
     for (const inst of [...instances.values()]) if (!visited.has(inst.id)) unmount(inst)
     for (const inst of [...instances.values()]) for (const run of inst.pending.splice(0)) run()
   }
