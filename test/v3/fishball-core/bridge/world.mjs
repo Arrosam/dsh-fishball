@@ -19,6 +19,7 @@ import { until } from '../../../support/util.mjs'
 import { DSH, FIXTURE, TOOL, WAIT } from './constants.mjs'
 import { FakeLink } from './fakes.mjs'
 import { eventsModule, makeBridge } from './subject.mjs'
+import { SOURCE } from '../wire/targets-oracle.mjs'
 
 const json = (value) => JSON.stringify(value)
 
@@ -143,7 +144,8 @@ export async function worldFor(t, sdk, linkOptions, { events = false, gate, imag
     closers.push(() => ledger.close())
     const core = mod.createEvents({
       table: ledger.table,
-      link: { ack: (receipts) => link.callTool(TOOL.inboxAck, { receipts }) },
+      // MULTI-1 seam (relayed 2026-11-18): the world's one target is SOURCE.a.
+      link: { ack: (receipts) => link.callTool(TOOL.inboxAck, { receipts }), live: (s) => s?.targetId === SOURCE.a.targetId && s?.endpointEpoch === SOURCE.a.endpointEpoch },
       fishball: { activate: async () => agent, present: (event) => bridge.present(event) },
       logger,
     })
@@ -168,7 +170,7 @@ export async function worldFor(t, sdk, linkOptions, { events = false, gate, imag
     /** Hands one polled event to core and waits until Fishball (if woken) is idle again. */
     world.deliver = async (event) => {
       const from = requests.length
-      await core.intake(event)
+      await core.intake(event, SOURCE.a)
       await until(() => requests.length > from, WAIT.quietMs * 10, WAIT.pollMs)
       await agent.whenIdle()
     }
