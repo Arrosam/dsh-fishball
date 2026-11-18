@@ -159,7 +159,7 @@ export const FIXTURE = Object.freeze({
   modelText: 'fbtest ok',
   fault: 'fbtest: injected fault',
   logSuffix: '.jsonl',
-  files: Object.freeze({ connector: 'connector.json', model: 'model.jsonl', interceptor: 'interceptor.jsonl', window: 'window.json', created: 'created', domain: 'domain', sessions: 'sessions' }),
+  files: Object.freeze({ connector: 'connector.json', connectorB: 'connector-b.json', model: 'model.jsonl', interceptor: 'interceptor.jsonl', window: 'window.json', created: 'created', domain: 'domain', sessions: 'sessions' }),
   tempPrefix: 'fbtest-f-intercept-',
   /** The fake link's answer to an ack core sent for another target's source (MULTI-1 harness word). */
   misroutedAck: 'fbtest-misrouted-ack',

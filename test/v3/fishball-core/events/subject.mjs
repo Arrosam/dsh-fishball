@@ -63,26 +63,30 @@ function guardedTable(table, guard) {
 const presentDefault = (event) => [{ type: 'text', text: `${event.type} ${event.eventId}` }]
 
 /** Core's events service over one world: `{ intercept, start, close }`; `start` is the caller's. */
-export async function makeSubject(sdk, { ctx, agent, link, seam = {} }) {
+export async function makeSubject(sdk, { ctx, agent, link, second, seam = {} }) {
   const { events: mod, constants, storageDomain } = await modulesFor(sdk)
   const ledger = await mod.openLedger(ctx, storageDomain)
   let recovering = false
   // MULTI-1 seam (relayed 2026-11-18): every intake names its TargetSource and the ack goes back
-  // through that source's link. This world is one target (`seam.source`, default SOURCE.a); a
-  // receipt acked for any other source is recorded as misrouted and never reaches the fake mailbox.
+  // through that source's link. The world is one target (`seam.source`, default SOURCE.a), or two
+  // when `second` is given (SOURCE.b, its own mailbox). A receipt acked for a source no target of
+  // this world holds is recorded as misrouted and never reaches any fake mailbox.
   const source = seam.source ?? SOURCE.a
+  const targets = [{ source, link }, ...(second === undefined ? [] : [{ source: seam.secondSource ?? SOURCE.b, link: second }])]
   const misrouted = []
-  const sameSource = (s) => s?.targetId === source.targetId && s?.endpointEpoch === source.endpointEpoch
+  const same = (s, t) => s?.targetId === t.targetId && s?.endpointEpoch === t.endpointEpoch
+  const targetOf = (s) => targets.find((t) => same(s, t.source))
   const table = seam.ledgerWrite === undefined ? ledger.table : guardedTable(ledger.table, (op, args) => seam.ledgerWrite({ op, args, recovering, table: ledger.table }))
   const events = mod.createEvents({
     table,
     link: {
       ack: (receipts, ackSource) => {
-        if (sameSource(ackSource)) return link.callTool(TOOL.inboxAck, { receipts })
+        const target = targetOf(ackSource)
+        if (target !== undefined) return target.link.callTool(TOOL.inboxAck, { receipts })
         misrouted.push({ receipts, source: ackSource })
         return Promise.resolve({ ok: false, code: FIXTURE.misroutedAck })
       },
-      live: (s) => sameSource(s),
+      live: (s) => targetOf(s) !== undefined,
     },
     fishball: {
       activate: seam.activate === undefined ? async () => agent : async () => seam.activate({ agent, recovering }),
@@ -97,11 +101,13 @@ export async function makeSubject(sdk, { ctx, agent, link, seam = {} }) {
   let failure
   let stopped = false
   async function pollOnce() {
-    let more = true
-    while (more && !stopped) {
-      const page = await link.callTool(TOOL.inboxPoll, {})
-      for (const event of page.events ?? []) await events.intake(event, source)
-      more = page.hasMore === true
+    for (const target of targets) {
+      let more = true
+      while (more && !stopped) {
+        const page = await target.link.callTool(TOOL.inboxPoll, {})
+        for (const event of page.events ?? []) await events.intake(event, target.source)
+        more = page.hasMore === true
+      }
     }
   }
   const poll = () => { chain = chain.then(pollOnce).catch((error) => { failure ??= error }) }
@@ -109,13 +115,15 @@ export async function makeSubject(sdk, { ctx, agent, link, seam = {} }) {
 
   return {
     source,
+    sources: targets.map((t) => t.source),
     /** Acks core sent for another source than this world's (MULTI-1: must stay empty). */
     misrouted,
     intercept: (registration, onEvent) => events.service.intercept(registration, onEvent),
     async start() {
       recovering = true
       try { await events.recover() } finally { recovering = false }
-      unlisten = link.onResourceUpdated(poll)
+      const unlistens = targets.map((t) => t.link.onResourceUpdated(poll))
+      unlisten = () => { for (const off of unlistens) off() }
       poll()
       await chain
     },
