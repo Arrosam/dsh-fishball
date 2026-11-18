@@ -111,12 +111,11 @@ export function credentialNames({ targetId, endpointEpoch }) {
  * Deletes a retired target epoch's token material (MULTI-0 `FishballTargets.remove` / `setUrl`,
  * Q07; a parent epoch the instance re-pointed, security amendment): its Connect grant, its saved
  * token copy and its reference. An added target's are that epoch's alone. The parent's are fixed
- * names every parent epoch uses, so each goes only while it is bound to the retired epoch (the
- * MULTI-0 lead's decision on review M3, 2026-11-18): the saved copy and the pending record when
- * their binding names that epoch, and the reference value only when the pending record binds that
- * very value to it. An unbound value stays: it may be the instance's fresh handoff for the new
- * endpoint, which the new epoch binds at its first attempt, after this reconciliation. Local only:
- * nothing is revoked at the connector. The caller runs it after the epoch's credentials are disposed.
+ * names every parent epoch uses, so cleanup touches only the retired epoch's saved and pending
+ * bindings (MULTI-0 review M3), and unsets the reference only when that pending binding matches
+ * its current value. Retired credential ids remain as evidence; an unrelated handoff stays and
+ * can bind at the new epoch's first attempt. Local only: nothing is revoked at the connector.
+ * The caller runs this after the epoch's credentials are disposed.
  */
 export async function forgetCredentials(credentials, names) {
   await credentials.deleteRecord(names.grantKey())
@@ -139,19 +138,28 @@ export function clearStaleParentCredentials(credentials, endpointEpoch) {
 
 async function clearParentMaterial(credentials, names, retired) {
   const [pending, saved] = await Promise.all([credentials.readRecord(names.pending), credentials.readRecord(names.tokenRecord)])
-  if (retired(pending?.payload)) {
+  const stalePending = retired(activePending(pending)) ? pending.payload.ref : undefined
+  const staleSaved = retired(saved?.payload)
+  if (typeof stalePending === 'string') {
     // Resolve immediately before unset: the instance may already have replaced the old handoff.
     const value = (await credentials.resolve(names.ref))?.value
-    let unchanged = false
-    if (value !== undefined && pending.payload.ref === tokenCredentialId(value)) {
-      await credentials.unset(names.ref)
-      // unset only clears writable storage. An ambient fallback with the same value still needs
-      // its retired binding, including across a restart, or it would look like a fresh handoff.
-      unchanged = (await credentials.resolve(names.ref))?.value === value
-    }
-    if (!unchanged) await credentials.deleteRecord(names.pending)
+    if (value !== undefined && stalePending === tokenCredentialId(value)) await credentials.unset(names.ref)
   }
-  if (retired(saved?.payload)) await credentials.deleteRecord(names.tokenRecord)
+  if (stalePending !== undefined || staleSaved) {
+    // An ambient value can survive unset or be hidden by a new writable handoff. Keep its id
+    // even when not effective now. Replace the pending binding and retain evidence in one write.
+    await credentials.modifyRecord(names.pending, async (current) => {
+      const active = activePending(current)
+      const obsolete = retired(active)
+      const refs = new Set(retiredRefs(current))
+      for (const ref of [stalePending, obsolete ? active.ref : undefined]) {
+        if (typeof ref === 'string') refs.add(ref)
+      }
+      if (staleSaved && typeof saved.payload.token === 'string') refs.add(tokenCredentialId(saved.payload.token))
+      return pendingRecord(obsolete ? undefined : active, [...refs])
+    })
+  }
+  if (staleSaved) await credentials.deleteRecord(names.tokenRecord)
 }
 
 /** The link credential kinds (`LinkCredentials.kind`). */
@@ -186,13 +194,20 @@ const usableGrant = (grant, serverUrl, binding) => isGrantFor(grant, serverUrl) 
   && grant[LINK_SAVE.grantAgentIdField] === binding.agentId && isBinding(grant[BINDING], binding)
 
 /**
- * The parent's reference-value binding (`LINK_SAVE.pendingOrigin`, security amendment): `{v, ref,
- * binding}`, the value's non-secret id and the target epoch, origin and agent it was written for.
- * `pendingOf` answers `undefined` for no record of this value (another version, or another value's),
- * else its binding.
+ * The parent's pending record has an optional active `{ref, binding}` and separate retired ids.
+ * Keeping them in one record lets DSH's per-record lock protect both retirement and rebinding.
+ * `pendingOf` returns `undefined` for a fresh handoff, `null` for a blocked value, or its binding.
  */
-const pendingOf = (record, ref) => (record?.payload?.v === PENDING.version && record.payload.ref === ref ? record.payload[BINDING] ?? null : undefined)
-const pendingRecord = (ref, binding) => Object.freeze({ kind: PENDING.kind, payload: { v: PENDING.version, ref, [BINDING]: binding } })
+const activePending = (record) => (record?.payload?.v === PENDING.version && typeof record.payload.ref === 'string'
+  ? { ref: record.payload.ref, [BINDING]: record.payload[BINDING] } : undefined)
+const retiredRefs = (record) => (record?.payload?.v === PENDING.version && Array.isArray(record.payload.retiredRefs) ? record.payload.retiredRefs : [])
+const pendingOf = (record, ref) => {
+  if (retiredRefs(record).includes(ref)) return null
+  const active = activePending(record)
+  return active?.ref === ref ? active[BINDING] ?? null : undefined
+}
+const pendingRecord = (active, refs) => Object.freeze({ kind: PENDING.kind, payload: { v: PENDING.version, ...active, retiredRefs: refs } })
+const bindPending = (record, ref, binding) => pendingRecord({ ref, [BINDING]: binding }, retiredRefs(record))
 
 /**
  * The saved credentials in DSH's credential store (`ctx.credentials`), and one token manager per
@@ -352,8 +367,8 @@ export function createLinkCredentials(ctx, { target, clientId, clientMetadataUrl
     : ctx.credentials.modifyRecord(names.pending, async (current) => {
       const existing = pendingOf(current, ref)
       const expected = store.binding(origin)
-      if (fenced() || (existing !== undefined && (!ofEpoch(current.payload, names) || isBinding(existing, expected)))) return undefined
-      return pendingRecord(ref, expected)
+      if (fenced() || existing === null || (existing !== undefined && (!ofEpoch(current.payload, names) || isBinding(existing, expected)))) return undefined
+      return bindPending(current, ref, expected)
     }))
 
   /**
@@ -371,7 +386,7 @@ export function createLinkCredentials(ctx, { target, clientId, clientMetadataUrl
     const read = pendingOf(await ctx.credentials.readRecord(names.pending), ref)
     if (read !== undefined) return isBinding(read, expected)
     if (fenced()) return false
-    const record = await ctx.credentials.modifyRecord(names.pending, async (current) => (pendingOf(current, ref) === undefined && !fenced() ? pendingRecord(ref, expected) : undefined))
+    const record = await ctx.credentials.modifyRecord(names.pending, async (current) => (pendingOf(current, ref) === undefined && !fenced() ? bindPending(current, ref, expected) : undefined))
     return isBinding(pendingOf(record, ref), expected)
   }
 
