@@ -25,7 +25,7 @@ import { HARNESS } from '../contrast/constants.mjs'
 import { measure, stopBrowser } from '../contrast/page.mjs'
 import { LAYOUT_PROBE, frameDocument } from './frame-layout.mjs'
 import { navPage } from './nav-page.mjs'
-import { checkDesktopTargetAddress } from './target-address.mjs'
+import { checkDesktopTargetAddress, checkLongTargetAddress } from './target-address.mjs'
 import { FRAME_LAYOUT as L } from './polish-constants.mjs'
 
 const show = (v) => JSON.stringify(v)
@@ -73,6 +73,10 @@ export function registerFrameLayoutCases(sdk) {
 
   browserRow(sdk, 'SHOT-TARGET-URL-EP-01', 'desktop duplicate names', 'the expanded Night-Build address fits, ellipsizes, or wraps without an orphaned URL suffix', async (t) => {
     await checkDesktopTargetAddress(t, sdk, await pageRules(t))
+  })
+
+  browserRow(sdk, 'SHOT-TARGET-URL-EP-02', 'desktop overlong segment', 'the expanded address ellipsizes on one line and preserves the full URL as text and title', async (t) => {
+    await checkLongTargetAddress(t, sdk, await pageRules(t))
   })
 
   // ---- MULTI-BAR-DT-01 / BVA-01: the bar exists exactly on Fishball's page in the narrow query (rc.5)
