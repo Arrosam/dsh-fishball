@@ -82,3 +82,31 @@ page (through `ui.asks` or the two Fetch routes).
 Levels: integration (the module over a real dsh-storage-domain table and a fake link with K1 shapes)
 and system (the `ask_user` tool registered in a real DSH tool runtime, called by a scripted model in a
 real agent; the routes driven with real `Request` / `Response` objects).
+
+## MULTI-1 (PLAN-MULTI §5, Q07; ask-card.d.ts `handle`/`source`/`voided`; ui.d.ts; SEAM_TARGETS `ask`)
+
+Seam relayed 2026-11-18 (signatures only): `createAsks({targets: {callTool(source, name, args), live(source)}, table, logger})`
+→ `{service, take(page, source), toolFor(source, modelName), reconcile(source), voidWhere(pred), close}`.
+The F-ASKCARD rows above run with one target (`SOURCE.a`); every card oracle carries `handle` and
+`source`, every answer goes by handle (`answer(approvalId)` and the `{approvalId}` route body are
+withdrawn), and `ask_user` is the target's `mcp__<readable>__ask_user_<digest>`.
+
+Re-baselined rows: ASK-UC-02 E1 (unknown handle → 404 `unknown-target`, a raw `{approvalId}` body → 400);
+ASK-UC-06 main (the one-link subscription oracle is withdrawn; close() still stops the store);
+ASK-EP-01 definition (tool) (namespaced name); ASK-DT-03 (unknown handles); ASK-EP-07 "stored before
+F-FIX" is skipped (fresh install, no old-format reader: PLAN-MULTI §3.3, D09).
+
+| Row | Technique | Oracle |
+| --- | --- | --- |
+| MULTI-ASK-EP-01 1 | EP (equal approvalId on A and B) | two cards, two handles = base64url tuple; `source` each its own |
+| MULTI-ASK-EP-01 2 | EP (answer by A's handle) | one `approval_answer` on A only; B open, B's link untouched |
+| MULTI-ASK-EP-01 3 | EP (filing tool) | B's ask_user cannot file A's offer (unknown-offer) |
+| MULTI-ASK-EP-01 4 | EP (tool names) | each target's ask_user name is the frozen local-origin name; distinct |
+| MULTI-ASK-DT-01 1–3 | DT (open/answered × removed/retired) | open → voided, answered stays; B unaffected; nothing sent |
+| MULTI-ASK-ST-01 1 | ST (open → voided → answer → restart) | answer refused `expired`, nothing sent; still voided after restart |
+| MULTI-ASK-ROUTE-01 | EP (route body handle) | B's handle → 200 on B only; unknown handle → 404 `unknown-target` |
+| ASK-DT-03 unknown handle × 4 | EP (never seen / other target / other epoch / not a handle) | `unknown-target`, nothing sent |
+
+Ambiguities: (1) a handle of an ask polled on a live target but never filed: `unknown-target` or K1
+`expired` (both accepted); (2) `voidWhere(pred)`'s argument shape is not frozen (a source, or a card
+carrying `source`, are both accepted).

@@ -26,9 +26,11 @@ import {
 } from './constants.mjs'
 import { askEvent, expectedCard, frames, offerOf, reofferOf, replayOf, request, retirementOf, routesFor, settlementOf, turns, worldFor } from './world.mjs'
 import { registerRfixAskCases } from './rfix.mjs'
-import { asksModule, exported, legacyAsksModule } from './subject.mjs'
+import { asksModule, exported } from './subject.mjs'
+import { ID_PATTERN, SEAM_TARGETS, SOURCE, askHandle, askToolNameOf } from '../wire/targets-oracle.mjs'
 import { until } from '../../../support/util.mjs'
 import { cardPage } from './render.mjs'
+import { registerMultiAskCases } from './multi.mjs'
 
 const T = { timeout: WAIT.testMs }
 const json = (value) => JSON.stringify(value)
@@ -71,7 +73,9 @@ async function openCard(world, options) {
   return event
 }
 const approvalIdOf = (event) => event.payload.approvalId
-const answer = (world, event, choice, text) => world.service.answer(approvalIdOf(event), text === undefined ? { choice } : { choice, text })
+/** MULTI-0 (ui.d.ts): the service answers by the card's opaque handle, never a raw approvalId. */
+const handleOfEvent = (event, source = SOURCE.a) => askHandle(source, approvalIdOf(event))
+const answer = (world, event, choice, text) => world.service.answer(handleOfEvent(event), text === undefined ? { choice } : { choice, text })
 
 // ------------------------------------------------------------------------------------------------
 // Startup reconciliation (Fishball's decision 2026-11-16): an unfiled ask whose call ended is deleted.
@@ -565,19 +569,7 @@ function registerPermissionCases(sdk) {
       assert.deepEqual(w.link.sent().map((c) => c.args), [answerArgs(event, ANSWER.reject)])
     })
   }
-  row(sdk, ID.ep07, 'stored before F-FIX', 'a card stored by the pre-F-FIX module (no arguments, argumentsStatus or reason) lists with nulls after the upgrade and can still be answered', async (t) => {
-    const w = await worldFor(t, sdk, { module: await legacyAsksModule(t) })
-    const event = askEvent({ argumentsText: FIXTURE.argumentsText, argumentsStatus: ARGUMENTS_STATUS.complete })
-    const filed = await w.file(event)
-    assert.equal(filed?.ok, true, `the pre-F-FIX module did not file the ask: ${json(filed)}`)
-    w.mod = await asksModule(sdk)
-    await w.restart()
-    const card = w.card(approvalIdOf(event))
-    assert.ok(card, `no card after the upgrade; list ${json(w.service.list())}`)
-    assert.deepEqual(Object.keys(card).sort(), [...K3.fields].sort())
-    assert.deepEqual({ ...card, choices: [...card.choices] }, { ...expectedCard(event, K3.state.open), arguments: null, argumentsStatus: null, reason: null, choices: [...ANSWER.choices] })
-    assert.deepEqual(await answer(w, event, ANSWER.allow), ok)
-  })
+  test(caseName(sdk, ID.ep07, 'stored before F-FIX', 'a card stored by the pre-F-FIX module lists with nulls after the upgrade and can still be answered'), { skip: FIXTURE.withdrawnUpgrade }, () => {})
   // ASK-UI-01: the drawn card (F-FIX; the user, 2026-11-17: "Show arguments and reason"). Component
   // level, fishball-ui's real chunk in the scripted page (render.mjs). EP: complete / incomplete
   // arguments; markup in a value is shown as plain text, never interpreted.
@@ -635,6 +627,7 @@ function registerPermissionCases(sdk) {
 }
 
 export function registerAskCases(sdk) {
+  registerMultiAskCases(sdk)
   // R-FIX-CORE (F12): rfix.mjs.
   registerRfixAskCases(sdk)
   registerReconcileCases(sdk)
@@ -759,22 +752,24 @@ export function registerAskCases(sdk) {
     assert.ok(w.card(approvalIdOf(added)))
     await answer(w, existing, ANSWER.allow)
     const after = await stream.next()
-    assert.equal(after.cards.find((c) => c.approvalId === approvalIdOf(existing))?.state, K3.state.answered)
+    assert.equal(after.cards.find((c) => c.handle === handleOfEvent(existing))?.state, K3.state.answered)
   })
-  row(sdk, ID.uc02, 'main 3', 'POST answer {approvalId, choice, text} → 200 {ok:true}, committed as the service commits it', async (t) => {
+  row(sdk, ID.uc02, 'main 3', 'POST answer {handle, choice, text} → 200 {ok:true}, committed as the service commits it', async (t) => {
     const w = await worldFor(t, sdk)
     const event = await openCard(w)
     const { routes, dispose } = routesFor(w)
     t.after(dispose)
-    const response = await routes.get(ROUTE.answer).fetch(request(ROUTE.answer, ROUTE.post, { approvalId: approvalIdOf(event), choice: ANSWER.reject, text: FIXTURE.text }))
+    const response = await routes.get(ROUTE.answer).fetch(request(ROUTE.answer, ROUTE.post, { [SEAM_TARGETS.ask.handleField]: handleOfEvent(event), choice: ANSWER.reject, text: FIXTURE.text }))
     assert.equal(response.status, ROUTE.status.ok)
     assert.deepEqual(await response.json(), ok)
     assert.deepEqual(w.link.sent().map((c) => c.args), [answerArgs(event, ANSWER.reject, FIXTURE.text)])
     assertCard(w, event, K3.state.answered)
   })
   for (const [part, title, body, status, code] of [
-    ['E1 refused', 'a refusal (an unknown card) → 409 {ok:false, code: expired}', () => ({ approvalId: FIXTURE.unknownApproval, choice: ANSWER.allow }), ROUTE.status.conflict, CODE.expired],
-    ['E1 invalid', 'a choice that is not offered → 400 invalid-arguments', (e) => ({ approvalId: approvalIdOf(e), choice: ANSWER.allow.toUpperCase() }), ROUTE.status.badRequest, CODE.invalidArguments],
+    // MULTI-0 (SEAM_TARGETS ask): an unknown handle answers 404 unknown-target; a known handle whose card cannot be answered stays 409.
+    ['E1 unknown handle', 'a handle no card holds → 404 {ok:false, code: unknown-target}', () => ({ [SEAM_TARGETS.ask.handleField]: askHandle(SOURCE.a, FIXTURE.unknownApproval), choice: ANSWER.allow }), ROUTE.status.notFound, CODE.unknownTarget],
+    ['E1 invalid', 'a choice that is not offered → 400 invalid-arguments', (e) => ({ [SEAM_TARGETS.ask.handleField]: handleOfEvent(e), choice: ANSWER.allow.toUpperCase() }), ROUTE.status.badRequest, CODE.invalidArguments],
+    ['E1 raw approvalId', 'the withdrawn body {approvalId} (no handle) → 400, never answered by id', (e) => ({ approvalId: approvalIdOf(e), choice: ANSWER.allow }), ROUTE.status.badRequest, undefined],
     ['E1 unreadable', 'an unreadable body → 400', () => FIXTURE.unreadableBody, ROUTE.status.badRequest, undefined],
   ]) {
     row(sdk, ID.uc02, part, `POST answer: ${title}; nothing is sent and the card stays open`, async (t) => {
@@ -873,7 +868,7 @@ export function registerAskCases(sdk) {
     assert.deepEqual(seen.at(-1), structuredClone(w.service.list()), 'no call after filing')
     const closed = await openCard(w)
     await answer(w, answered, ANSWER.allow)
-    assert.equal(seen.at(-1).find((c) => c.approvalId === approvalIdOf(answered)).state, K3.state.answered, 'no call after answering')
+    assert.equal(seen.at(-1).find((c) => c.handle === handleOfEvent(answered)).state, K3.state.answered, 'no call after answering')
     await w.poll(settlementOf(approvalIdOf(closed)))
     assert.deepEqual(seen.at(-1), structuredClone(w.service.list()), 'no call after closing')
     dispose()
@@ -889,16 +884,16 @@ export function registerAskCases(sdk) {
     const event = await openCard(w)
     assert.equal(seen.length > 0, true, 'the second listener was not called')
     assert.deepEqual(await answer(w, event, ANSWER.allow), ok)
-    assert.equal(seen.at(-1).find((c) => c.approvalId === approvalIdOf(event)).state, K3.state.answered)
+    assert.equal(seen.at(-1).find((c) => c.handle === handleOfEvent(event)).state, K3.state.answered)
   })
 
   // ============================================================== ASK-UC-06: following the link
-  row(sdk, ID.uc06, 'main', 'createAsks follows the link once; close() stops it, and an ask polled afterwards is unknown', async (t) => {
+  // MULTI-1: createAsks no longer subscribes to one link (its "follows the link once" oracle is
+  // withdrawn with the scalar link); core hands each target's page to take(page, source). What
+  // remains of the row: after close(), an ask taken afterwards is unknown.
+  row(sdk, ID.uc06, 'main', 'close() stops the store: an ask taken afterwards is unknown', async (t) => {
     const w = await worldFor(t, sdk)
-    assert.equal(w.link.subscriptions, 1)
-    assert.equal(w.link.listeners, 1)
     await w.closeAsks()
-    assert.equal(w.link.listeners, 0, 'close() did not stop following the link')
     const event = askEvent()
     await w.poll(event)
     assert.deepEqual(await w.tool.execute({ [ASK_TOOL.arg]: offerOf(event) }), refused(CODE.unknownOffer))
@@ -912,9 +907,12 @@ export function registerAskCases(sdk) {
     assert.equal(constants.defaultReason, ANSWER.defaultReason)
     assert.deepEqual(Object.values(exported(mod, 'states')).sort(), Object.values(K3.state).sort())
   })
-  row(sdk, ID.ep01, 'definition (tool)', 'createAsks\' tool has name, description, parameters, output and execute', async (t) => {
+  // MULTI-0 (README "Tool names"): each target's local ask_user is registered as
+  // mcp__<readable>__ask_user_<digest12>, origin `local`; the bare `ask_user` is no longer model-facing.
+  row(sdk, ID.ep01, 'definition (tool)', 'toolFor(source)\'s tool is named mcp__<readable>__ask_user_<digest> (origin local) and has description, parameters, output and execute', async (t) => {
     const w = await worldFor(t, sdk)
-    assert.equal(w.tool.name, ASK_TOOL.name)
+    assert.equal(w.tool.name, askToolNameOf(SOURCE.a, ASK_TOOL.name))
+    assert.match(w.tool.name, ID_PATTERN.toolName)
     assert.equal(typeof w.tool.description, 'string')
     assert.equal(typeof w.tool.parameters, 'object')
     assert.equal(typeof w.tool.output, 'object')
@@ -981,7 +979,7 @@ export function registerAskCases(sdk) {
       const w = await worldFor(t, sdk)
       const event = await openCard(w)
       const before = w.service.list()
-      assert.deepEqual(await w.service.answer(approvalIdOf(event), value), refused(CODE.invalidArguments))
+      assert.deepEqual(await w.service.answer(handleOfEvent(event), value), refused(CODE.invalidArguments))
       assertUnchanged(w, before)
     })
   }
@@ -1075,13 +1073,34 @@ export function registerAskCases(sdk) {
       assert.deepEqual(w.service.list(), before)
     })
   }
-  row(sdk, ID.dt03, 'unknown approvalId', 'an answer for an approvalId with no card → expired; nothing is sent', async (t) => {
+  // MULTI-0 (ui.d.ts asks.answer): an unknown handle answers unknown-target. AMBIGUITY (reported):
+  // the handle of an ask that was polled on a live target but never filed names no card, yet its
+  // target and approval are known; the freeze does not say whether that is "unknown" (unknown-target)
+  // or a not-open request (K1 expired, as before MULTI-0). Both are accepted; nothing may be sent.
+  row(sdk, ID.dt03, 'polled, unfiled handle', 'an answer for the handle of an ask only polled, never filed → refused (unknown-target or expired: ambiguous); nothing is sent', async (t) => {
     const w = await worldFor(t, sdk)
     const polledOnly = askEvent()
     await w.poll(polledOnly)
-    assert.deepEqual(await answer(w, polledOnly, ANSWER.allow), refused(CODE.expired))
+    const answered = await answer(w, polledOnly, ANSWER.allow)
+    assert.equal(answered.ok, false)
+    assert.ok([CODE.unknownTarget, CODE.expired].includes(answered.code), json(answered))
     assertUnchanged(w, [])
   })
+  for (const [part, title, handle] of [
+    ['never seen', 'a handle of this target\'s tuple with an approvalId never polled', () => askHandle(SOURCE.a, FIXTURE.unknownApproval)],
+    ['another target', 'the handle of a filed card\'s approvalId under a target this world never had', (e) => askHandle(SOURCE.b, approvalIdOf(e))],
+    ['retired epoch', 'the handle of a filed card\'s approvalId under its target\'s other (never live) epoch', (e) => askHandle(SOURCE.aNext, approvalIdOf(e))],
+    ['not a handle', 'a string that decodes to no tuple', () => FIXTURE.notAHandle],
+  ]) {
+    row(sdk, ID.dt03, 'unknown handle ' + part, `answer(${title}) → unknown-target; nothing is sent; the filed card stays open`, async (t) => {
+      const w = await worldFor(t, sdk)
+      const event = await openCard(w)
+      const before = w.service.list()
+      assert.deepEqual(await w.service.answer(handle(event), { choice: ANSWER.allow }), refused(CODE.unknownTarget))
+      assertUnchanged(w, before)
+      assert.deepEqual(w.misrouted, [], 'a call went to a target the world does not hold')
+    })
+  }
 
   // ============================================================== ASK-ST-01: state transitions
   row(sdk, ID.st01, 'open → open (replay)', 'a replay of the ask event (same eventId) leaves the one open card as it was', async (t) => {
