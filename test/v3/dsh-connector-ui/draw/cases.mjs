@@ -46,7 +46,7 @@ const isMain = (entry) => entry.options.key === SLOT.mainKey
 export const mountFish = (page) => page.mount(SLOT.fish, fishProps(), isFish)
 export const mountMain = (page) => page.mount(SLOT.main, {}, isMain)
 export const mountOverlay = (page) => page.mount(SLOT.overlay)
-const mountHeader = (page, sessionId = S1) => page.mount(SLOT.header, sessionProps(sessionId))
+export const mountHeader = (page, sessionId = S1) => page.mount(SLOT.header, sessionProps(sessionId))
 const mountRowMark = (page, sessionId = S1) => page.mount(SLOT.rowLeading, sessionProps(sessionId))
 const mountRowMenu = (page, sessionId = S1) => page.mount(SLOT.rowMenu, sessionProps(sessionId))
 const one = (nodes, what) => { assert.equal(nodes.length, 1, what + ': ' + nodes.length); return nodes[0] }
