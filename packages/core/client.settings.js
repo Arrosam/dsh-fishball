@@ -107,6 +107,8 @@ window.__ModuleLoader__.load({
         reread: 'focus',
         unavailable: CONNECT_UNAVAILABLE,
       }),
+      /** The most references one `remote.credentials.describe` takes (dsh-api-settings-controller `MAX_DESCRIBE_REFS`, both SDKs). */
+      describeBatch: 64,
       /** DSH's remote event for a committed credential-reference change (dsh-credentials, both SDKs). */
       credentialChanged: 'credentials/reference-updated',
       css: Object.freeze({
@@ -384,10 +386,14 @@ window.__ModuleLoader__.load({
       const read = async () => {
         // Only the latest read publishes: an older answer arriving late would show a stale badge.
         const mine = ++sequence
-        const answer = refs.length === 0 ? undefined : await remoteResult(() => credentials.describe(refs))
+        // DSH's describe takes a bounded batch, and the list has no cap (Q12): one call per batch.
+        const batches = []
+        for (let at = 0; at < refs.length; at += PAGE.describeBatch) batches.push(refs.slice(at, at + PAGE.describeBatch))
+        const answers = await Promise.all(batches.map((batch) => remoteResult(() => credentials.describe(batch))))
         if (mine !== sequence) return
+        const views = Object.assign({}, ...answers.map((answer) => answer?.value ?? {}))
         state = Object.freeze(Object.fromEntries(refs.map((ref) => {
-          const view = answer?.value?.[ref]
+          const view = views[ref]
           return [ref, Object.freeze({ configured: view?.configured === true, writable: view?.writable !== false })]
         })))
         listeners.forEach((listener) => listener())
