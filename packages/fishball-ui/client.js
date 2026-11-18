@@ -322,8 +322,9 @@ window.__ModuleLoader__.load({
           else if (!on && dispose !== null) { const stop = dispose; dispose = null; stop() }
         }
         const observer = new MutationObserver(sync)
-        observer.observe(root, { attributes: true, attributeFilter: [kit.pageRoot] })
+        // A synchronous slot injection can throw. Do not subscribe until we can return its disposer.
         sync()
+        observer.observe(root, { attributes: true, attributeFilter: [kit.pageRoot] })
         return () => { observer.disconnect(); const stop = dispose; dispose = null; stop?.() }
       },
       /**

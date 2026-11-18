@@ -158,7 +158,7 @@ export function mutationObserverClass() {
  * @param options.mark - set `<html data-fishball-page>` before any script (default true).
  * @param options.reducedMotion - start with `(prefers-reduced-motion: reduce)` matching.
  */
-export async function brandPage(t, sdk, { lang = 'en', mark = true, reducedMotion = false, openFails = 0 } = {}) {
+export async function brandPage(t, sdk, { lang = 'en', mark = true, reducedMotion = false, openFails = 0, prepareWorld } = {}) {
   const sources = eventSourceClass()
   const shimOptions = {}
   const elementsByPath = new Map()
@@ -289,6 +289,7 @@ export async function brandPage(t, sdk, { lang = 'en', mark = true, reducedMotio
     return Boolean(m) && w.html.element.hasAttribute(m[1]) && (m[2] === undefined || w.html.element.getAttribute(m[1]) === m[2])
   })
 
+  prepareWorld?.(w)
   const page = await loadPage(t, w)
 
   let collapsed = false

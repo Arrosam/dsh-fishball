@@ -21,6 +21,8 @@ import { caseTest } from '../../contract/package-boundaries/cases.mjs'
 import { findAll, textOf } from '../../../support/rp-recommend.mjs'
 import { BADGE, CARD_STATE, FIXTURE, HOOK, LABEL, PRIORITY, SHELL, SLOT, STATE_DOT, STATUS, THEME, WORDMARK } from './constants.mjs'
 import { brandPage } from './page.mjs'
+import { registerFaults } from './faults.mjs'
+import { registerNative } from './native.mjs'
 import { hidePage } from './hide.mjs'
 import { hasChrome, measureMotion, measureWords, stopMotionBrowser } from './motion.mjs'
 
@@ -50,6 +52,8 @@ function isMagenta(value) {
 
 export function registerBrandCases(sdk) {
   const t = (id, row, title, fn, todo) => caseTest(sdk, id, row, title, fn, todo)
+  registerFaults(t, sdk)
+  registerNative(t, sdk)
   const status = (p) => p.byHook(HOOK.status)[0]
   const statusText = (p) => (status(p) ? p.text(status(p)) : undefined)
   const badge = (p) => p.byHook(HOOK.badge)[0]
@@ -415,27 +419,32 @@ export function registerBrandCases(sdk) {
 
   // ================================================================ the New Session button stays hidden
   for (const lang of ['en', 'zh']) {
-    t('BRAND-NS-01', lang, `(${lang}) fishball-page hides the actual New Session button (same initial aria-label) but never the brand row, before the logo mounts, after it mounts, and after the shell replaces both controls`, async (c) => {
+    t('BRAND-NS-01', lang, `(${lang}) hide both native New Session actions until the wide brand is owned, including after shell replacement`, async (c) => {
       const h = await hidePage(c, sdk, { lang })
-      assert.equal(h.hidden(h.brand), false, 'the brand row was hidden before the logo mounted')
+      assert.equal(h.hidden(h.brand), true, 'unowned wide button still exposes native New Session')
       assert.equal(h.hidden(h.newSession), true, 'the actual New Session button is not hidden')
       assert.equal(h.hidden(h.other), false, 'an unrelated control was hidden')
       h.mountLogo()
+      h.brand.setAttribute(HOOK.control, '')
       h.brand.setAttribute('aria-label', LABEL.brand)
       await h.flush()
       assert.equal(h.hidden(h.brand), false, 'the brand row was hidden after the logo mounted')
       assert.equal(h.hidden(h.newSession), true, 'the actual New Session button is not hidden after mount')
+      h.brand.setAttribute('aria-label', LABEL.newSession[lang])
+      await h.flush()
+      assert.equal(h.hidden(h.brand), false, 'restoring the native label must not hide the captured button')
+      assert.equal(h.hidden(h.newSession), true, 'the separate New Session launcher must remain hidden')
       const next = h.rerender()
       await h.flush()
-      assert.equal(h.hidden(next.brand), false, 'the brand row was hidden after a shell rerender')
+      assert.equal(h.hidden(next.brand), true, 'fresh shell button has its native label and no brand owner yet')
       assert.equal(h.hidden(next.newSession), true, 'the actual New Session button is not hidden after a rerender')
     })
   }
 
-  t('BRAND-NS-02', 'slot anchors', 'a button carrying only the brand mark slot or only the brand name slot is not the New Session button and is never hidden', async (c) => {
+  t('BRAND-NS-02', 'slot anchors', 'preserve the mark-only Open sidebar rail toggle, but a name outlet alone does not make a New Session action safe', async (c) => {
     const h = await hidePage(c, sdk, { lang: 'en' })
     assert.equal(h.hidden(h.markOnly), false, 'a mark-slot button was hidden')
-    assert.equal(h.hidden(h.nameOnly), false, 'a name-slot button was hidden')
+    assert.equal(h.hidden(h.nameOnly), true, 'partial brand without capture exposes New Session')
     assert.equal(h.hidden(h.newSession), true, 'the actual New Session button is not hidden')
   })
 
