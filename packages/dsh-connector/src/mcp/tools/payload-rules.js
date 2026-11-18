@@ -98,18 +98,6 @@ function questionAnswer(args) {
   if (has(args, 'note')) chars(args.note, PAYLOAD_LIMITS.noteChars)
 }
 
-function questions(items) {
-  if (items.length === 0 || items.length > PAYLOAD_LIMITS.questionsPerRequest) fail(REFUSAL.limitExceeded)
-  unique(items, (item) => item.id)
-  for (const item of items) {
-    nonEmpty(item.id)
-    chars(item.question, PAYLOAD_LIMITS.questionChars)
-    if (has(item, 'header')) label(item.header)
-    for (const option of item.options ?? []) label(option.label)
-    if (has(item, 'intent')) chars(item.intent.approve, PAYLOAD_LIMITS.labelChars)
-  }
-}
-
 /** A display name is never a path or a URL (V2 §6.5); the attachment store still sanitizes it. */
 const NAME_FORBIDDEN = Object.freeze(['\0', '/', '\\', '://'])
 
@@ -149,10 +137,6 @@ const RULES = Object.freeze({
   [TOOL.approvalsList]: (args) => nonEmpty(args.sessionId),
   [TOOL.approvalAnswer]: approvalAnswer,
   [TOOL.questionAnswer]: questionAnswer,
-  // Fishball's decision R5 (2026-11-14): the question counts and character limits apply before
-  // `unsupported-operation` (handlers.js).
-  [TOOL.questionAsk]: (args) => questions(args.questions),
-  [TOOL.questionAnswerOwn]: (args) => { nonEmpty(args.questionId); answerItems(args.answers) },
   [TOOL.promptAnswer]: (args) => { nonEmpty(args.sessionId); nonEmpty(args.promptId); requiredReason(args.reason) },
   [TOOL.grantRevoke]: (args) => { nonEmpty(args.grantId); requiredReason(args.reason) },
   [TOOL.attachmentPut]: attachmentPut,
