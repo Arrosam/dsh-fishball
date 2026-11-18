@@ -13,8 +13,8 @@
  * id, by prefix, beside another suite) and EP (shelved vs not shelved files in run-v3's run).
  *
  * Level: system, through the runners' command lines only (`--list` prints the selection and runs
- * nothing). The base-ref and run-v3 rows run on a scratch copy of the runners (test/run-affected.mjs,
- * test/run-v3.mjs, test/suites.mjs and the three support modules they import) in a fresh git repo, so
+ * nothing). The base-ref and run-v3 rows run on a scratch copy of the runners, the map and their
+ * local dependencies in a fresh git repo, so
  * the changed paths and the test files present are this file's choice; run-v3 there runs stand-in test
  * files that only report their own path. `--check` runs on the real checkout.
  */
@@ -44,9 +44,10 @@ const MAP = Object.freeze({
   fullPath: 'test/support/fbtest-shelve-change.mjs',
   unmappedPath: 'fbtest-shelve-unmapped.bin',
   shelvedOwnPath: 'test/v3/fishball-board/peers/fbtest-shelve-change.mjs',
-  /** What the scratch copy holds: the runners, the map and the support modules they import. */
+  /** What the scratch copy holds: the runners, the map and the local modules they import. */
   copied: Object.freeze(['test/run-affected.mjs', 'test/run-v3.mjs', 'test/suites.mjs',
-    'test/support/constants.mjs', 'test/support/suite-runner.mjs', 'test/support/contract-link.mjs']),
+    'test/support/constants.mjs', 'test/support/suite-runner.mjs', 'test/support/contract-link.mjs',
+    'test/v3/contract/suite-map/affected-cases.mjs']),
   runAffected: 'test/run-affected.mjs',
   runV3: 'test/run-v3.mjs',
   list: '--list', all: '--all', check: '--check', suite: (ids) => '--suite=' + ids.join(','),
