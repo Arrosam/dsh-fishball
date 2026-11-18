@@ -68,7 +68,7 @@ export const treeText = (tree) => JSON.stringify(tree)
  * @param options.answerState - R-FIX-CUI: `(n) => Promise<Response> | undefined` answers the n-th
  *   (1-based) GET state itself (a held, failed or changed read); undefined leaves it to the routes.
  */
-export async function openTokensPage(t, { sdk, world, routes, lang = FIXTURE.lang, settings = {}, answerState }) {
+export async function openTokensPage(t, { sdk, world, routes, lang = FIXTURE.lang, settings = {}, answerState, beforeSave }) {
   const errors = []
   const requests = []
   const clipboard = []
@@ -167,6 +167,8 @@ export async function openTokensPage(t, { sdk, world, routes, lang = FIXTURE.lan
     // plain data of this realm: deepStrictEqual compares prototypes, which is not what a case asserts.
     const plain = JSON.parse(JSON.stringify(ops))
     mutations.push({ ops: plain, expected, liveRevision: revision })
+    // A real host can be slow or offline before it checks the revision and persists.
+    if (beforeSave) await beforeSave()
     if (expected !== undefined && expected !== revision) return false
     let accepted = true
     for (const op of plain) {

@@ -258,6 +258,8 @@ window.__ModuleLoader__.load({
       saving: 'Saving…',
       discard: 'Discard',
       saveFailed: 'The settings were not saved.',
+      fieldRefused: 'DSH did not accept this change. Check the current value and try again.',
+      fieldUnconfirmed: 'Could not confirm the save: {reason}',
       changedElsewhere: 'This setting was changed elsewhere meanwhile. Leave the field or press Enter again to save your value over it, or press Esc to keep the new one.',
       stateFailed: 'The connector\'s status could not be read ({code}).',
       retry: 'Retry',
@@ -314,6 +316,8 @@ window.__ModuleLoader__.load({
       saving: '保存中…',
       discard: '放弃',
       saveFailed: '设置没有保存。',
+      fieldRefused: 'DSH 未接受此更改。请检查当前值后重试。',
+      fieldUnconfirmed: '无法确认保存结果：{reason}',
       changedElsewhere: '此设置已在别处被修改。再次离开此字段或按 Enter 将用你的值覆盖它，按 Esc 则保留新值。',
       stateFailed: '无法读取连接器的状态（{code}）。',
       retry: '重试',
@@ -480,20 +484,34 @@ window.__ModuleLoader__.load({
 
     /**
      * One single-field setting saved on its own (the approval port, the DSH name, each limit): the row's config form, fenced by the revision it was read at, as the list's Save.
-     * @returns `{busy, failed, save(ops)}`
+     * @returns `{busy, problem, save(ops)}`
      */
     function useFieldSave(form, snapshot) {
       const [busy, setBusy] = React.useState(false)
-      const [failed, setFailed] = React.useState(false)
+      const [problem, setProblem] = React.useState(null)
+      const saving = React.useRef(false)
       const save = async (ops) => {
+        // Enter and blur can reach the same draft before React disables the input. Sending both
+        // with the same revision would let a stale refusal overwrite the first write's success.
+        if (saving.current) return false
+        saving.current = true
         setBusy(true)
-        let accepted = false
-        try { accepted = await form.mutate(ops, snapshot.revision) } catch { accepted = false }
-        setBusy(false)
-        setFailed(!accepted)
-        return accepted
+        setProblem(null)
+        try {
+          const accepted = await form.mutate(ops, snapshot.revision)
+          // The form exposes no more specific reason for a refused or skipped write.
+          if (!accepted) setProblem({ key: 'fieldRefused' })
+          return accepted
+        } catch (error) {
+          const reason = error?.message || (typeof error === 'string' && error) || error?.code || ROUTE.unreadable
+          setProblem({ key: 'fieldUnconfirmed', values: { reason } })
+          return false
+        } finally {
+          saving.current = false
+          setBusy(false)
+        }
       }
-      return { busy, failed, save }
+      return { busy, problem, save }
     }
 
     /** The value at `path` in the row's settings value. */
@@ -510,12 +528,12 @@ window.__ModuleLoader__.load({
      * Enter then saves it over the newer value on purpose; Escape discards it at any time. A newer
      * change after that warning warns again (`warned` is the value the user was warned about).
      * @param saved - the field's live saved value
-     * @returns `{text, busy, failed, conflict, edit(text), discard(), commit(ops)}`: `conflict` is
+     * @returns `{text, busy, problem, conflict, edit(text), discard(), commit(ops)}`: `conflict` is
      *   `{value}` (the newer value warned about) or undefined; `text` is null
      *   without a draft; `commit(null)` means "nothing to save" (unchanged or invalid text) and drops the draft
      */
     function useScalarDraft(form, snapshot, saved) {
-      const { busy, failed, save } = useFieldSave(form, snapshot)
+      const { busy, problem, save } = useFieldSave(form, snapshot)
       const [draft, setDraft] = React.useState(null)
       const edit = (text) => setDraft((current) => (current === null ? { text, base: saved, warned: undefined } : { ...current, text }))
       const discard = () => setDraft(null)
@@ -532,7 +550,7 @@ window.__ModuleLoader__.load({
       // `conflict` is the value warned about (undefined: no warning), so a newer change elsewhere
       // after a warning shows a fresh alert, which a screen reader announces again.
       const conflict = changedElsewhere ? draft.warned : undefined
-      return { text: draft?.text ?? null, busy, failed, conflict, edit, discard, commit }
+      return { text: draft?.text ?? null, busy, problem, conflict, edit, discard, commit }
     }
 
     /** A scalar field's input events: change stages, blur and Enter commit, Escape discards (useScalarDraft). */
@@ -549,7 +567,7 @@ window.__ModuleLoader__.load({
     /** A scalar field's alerts: the conflict warning and a refused save. */
     const scalarErrors = (t, draft) => [
       draft.conflict === undefined ? null : h('span', { key: CONFLICT_KEY + JSON.stringify(draft.conflict.value), role: 'alert' }, t('changedElsewhere')),
-      draft.failed ? h('span', { key: 'failed', role: 'alert' }, t('saveFailed')) : null,
+      draft.problem === null ? null : h('span', { key: 'failed', role: 'alert' }, t(draft.problem.key, draft.problem.values)),
     ]
 
     /**
