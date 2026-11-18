@@ -178,3 +178,4 @@ seat). The layout state is DSH's own: collapsed below 1024px; on rc.1 a closed d
 | MULTI-BAR-BVA-02 24 entries / one entry (rc.5) | BVA | 24 long entries: still 44px, one row, horizontal scroll moves them; one entry: no scroller |
 | MULTI-DRAWER-DT-01 open drawer; mid width (rc.1) | DT | Open drawer at 390px: no bar; panels with icons, Settings and the target list shown. 600px: DSH's drawer unchanged |
 | MULTI-BAR-CTRL-01 | Control | The same frame without Fishball's rules has no bar |
+| SHOT-TARGET-URL-EP-01 | EP, ST | At 1440px with two Office-DSH names, expand the markup-named Night-Build target. Names remain literal text. The expanded address has its full URL as text and hover title; it may fit, ellipsize, or wrap without splitting the last `mcp` segment. |
