@@ -21,7 +21,7 @@ export const TARGETS_FILE = Object.freeze({
 /** The names index.d.ts exports from targets.d.ts (the K3 brief and index.d.ts's MULTI-0 note). */
 export const TARGETS_EXPORTS = Object.freeze([
   'TargetId', 'EndpointEpoch', 'TargetKind', 'TargetState', 'TargetIdentityState', 'TargetSource', 'TargetRecord', 'TargetView',
-  'TargetsSnapshot', 'TargetActionResult', 'FishballTargets', 'FishballTargetBound',
+  'TargetsSnapshot', 'TargetActionResult', 'FishballTargets', 'FishballTargetBound', 'SetStatus', 'StatusSnapshot',
 ])
 
 /** README "Target record" and "Provenance" rows; targets.d.ts TargetView. */
@@ -52,6 +52,27 @@ export const SNAPSHOT_VERSION = '1'
 export const TYPES = Object.freeze({
   snapshot: 'TargetsSnapshot', version: 'version', nullLeaf: 'null', interfaceKind: 'interface',
   noSecret: Object.freeze(['TargetRecord', 'TargetView', 'TargetSource']),
+})
+/**
+ * README "Status snapshot" and targets.d.ts: `StatusSnapshot` is `{fishball: 'on', targets:
+ * TargetsSnapshot, guards: GuardReport | null, set: SetStatus | null}` or exactly `{fishball:
+ * 'fishball-off'}` (no `targets`); `SetStatus` is `{status, missing[]}`, each missing `{name, reason, code}`.
+ */
+export const STATUS = Object.freeze({
+  type: 'StatusSnapshot',
+  discriminant: 'fishball',
+  branches: Object.freeze({
+    on: Object.freeze({ targets: Object.freeze(['TargetsSnapshot']), guards: Object.freeze(['GuardReport', 'null']), set: Object.freeze(['SetStatus', 'null']) }),
+    'fishball-off': Object.freeze({}),
+  }),
+  set: Object.freeze({
+    type: 'SetStatus',
+    members: Object.freeze(['status', 'missing']),
+    status: Object.freeze(['ok', 'plugin-set-incomplete']),
+    entry: Object.freeze({ name: Object.freeze(['string']), reason: Object.freeze(['skipped', 'failed']), code: Object.freeze(['string', 'null']) }),
+  }),
+  /** The K3a scalar members withdrawn from the snapshot (README "List / status API"). */
+  withdrawn: Object.freeze(['link', 'connect', 'line', 'control', 'contributedTools']),
 })
 /** No member reachable from a target is a token or credential (README "no token value"; §3.1). */
 export const SECRET_MEMBER = /token|secret|credential|grant|password|verifier|bearer/i

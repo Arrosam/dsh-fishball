@@ -1318,7 +1318,7 @@ reports generic child states only (`fishball-off` withdrawn, requirements 1.39, 
   - a client secret goes only to the target's token endpoint, pinned by `expectedIssuer`, and only
     over `https:` for a non-loopback target. MCP requests carry only the access token. Credentials
     are never forwarded on a redirect.
-- **No raw `mcp__…` tools reach the model.** Fishball's manager tools stay the X12 bridge façade
+- **No raw `mcp__…` tools reach the model.** *(Superseded for model-facing names by PLAN-MULTI §4.4 / MULTI-0: every exposed remote tool is now named `mcp__<dsh>__<tool>_<digest>` by core, still through the façade below; no stock MCP client is mounted. See `packages/core/contracts/README.md` §MULTI-0.)* Fishball's manager tools stay the X12 bridge façade
   (`bridge(pluginId, operations)`), under the local scope, the X19 send gate and the image gates.
   All contributed tools are re-exposed through the same façade, unfiltered (Q17, decided). The
   stock `dsh-mcp-client` is not mounted for the target.
