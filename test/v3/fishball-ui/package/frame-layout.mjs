@@ -57,8 +57,8 @@ export function frameDocument(sdk, { panels, collapsed, drawer = false, mark, pa
   const side = cssModule(sdk, L.sidebarPkg, L.sidebarModule).classes
   const slot = (key, inner = '') => `<div data-slot="${key}" style="display:contents">${inner}</div>`
   const rows = panels.map(({ id, label }) => `<button type="button" class="${side.panelRow}" aria-label="${esc(label)}" ${L.panelHook}="${esc(id)}"><span class="${side.panelGlyph}" aria-hidden="true">${slot(L.slot.panellist, `<svg ${L.iconHook}="${esc(id)}" width="18" height="18" viewBox="0 0 18 18"><rect width="18" height="18"/></svg>`)}</span></button>`).join('')
-  const root = `<div class="${side.root}${collapsed && !drawer ? ' ' + side.collapsed : ''}">`
-    + `<div class="${side.logoRow}"><button type="button" class="${side.iconButton} ${side.toggle}" data-sidebar-toggle aria-label="toggle"><span class="${side.railMark}" aria-hidden="true">${slot(L.slot.brandMark, '<svg width="24" height="24"></svg>')}</span><svg width="18" height="18"></svg></button></div>`
+  const root = `<div class="${side.root}${collapsed && !drawer ? ' ' + side.collapsed : ''}" data-fbtest-collapse-class="${side.collapsed}">`
+    + `<div class="${side.logoRow}"><button type="button" class="${side.iconButton} ${side.toggle}" data-fbtest-toggle${sdk === L.drawerSdk ? ' data-sidebar-toggle' : ''} aria-label="toggle"><span class="${side.railMark}" aria-hidden="true">${slot(L.slot.brandMark, '<svg width="24" height="24"></svg>')}</span><svg width="18" height="18"></svg></button></div>`
     + `<button type="button" class="${side.newSession}" ${L.newSessionHook} aria-label="New session"><span>+</span></button>`
     + `<nav class="${side.panelList}" aria-label="Global panels">${rows}</nav>`
     + `<div class="${side.regionArea}">${slot(L.slot.workspaces, workspaces)}</div>`
@@ -88,16 +88,26 @@ export function frameDocument(sdk, { panels, collapsed, drawer = false, mark, pa
 export const LAYOUT_PROBE = String(function probe(arg) {
   const box = (el) => { if (!el) return null; const r = el.getBoundingClientRect(); const s = getComputedStyle(el); return { x: r.x, y: r.y, w: r.width, h: r.height, display: s.display, visibility: s.visibility, position: s.position } }
   const shown = (el) => { if (!el) return false; const r = el.getBoundingClientRect(); const s = getComputedStyle(el); return r.width > 0 && r.height > 0 && s.visibility !== 'hidden' && s.display !== 'none' && !el.closest('[inert]') }
+  const seatButton = (key) => { const el = document.querySelector(`[data-slot="${key}"] button`); return { shown: shown(el), ...box(el) } }
   const col = document.querySelector('[data-slot="sidebar"]')?.parentElement
   const rows = [...document.querySelectorAll(`[${arg.panelHook}]`)]
   const scroller = (() => { for (let at = rows[0]?.parentElement; at && at !== document.body; at = at.parentElement) { const s = getComputedStyle(at); if (['auto', 'scroll'].includes(s.overflowX) && at.scrollWidth > at.clientWidth) return at } return null })()
-  const scrolled = (() => { if (!scroller) return null; const before = rows.at(-1).getBoundingClientRect().x; scroller.scrollLeft = scroller.scrollWidth; return before - rows.at(-1).getBoundingClientRect().x })()
+  const scrolled = (() => {
+    if (!scroller) return null
+    const start = scroller.scrollLeft, last = rows.at(-1), before = last.getBoundingClientRect().x
+    scroller.scrollLeft = scroller.scrollWidth
+    const delta = before - last.getBoundingClientRect().x
+    scroller.scrollLeft = start // observe overflow without perturbing later hit-testing / transitions
+    return delta
+  })()
   return {
     viewport: { w: innerWidth, h: innerHeight },
     column: box(col),
     rows: rows.map((r) => ({ id: r.getAttribute(arg.panelHook), shown: shown(r), ...box(r) })),
     icons: [...document.querySelectorAll(`[${arg.iconHook}]`)].map((i) => ({ id: i.getAttribute(arg.iconHook), shown: shown(i) })),
-    settings: { shown: shown(document.querySelector(`[${arg.settingsHook}]`)), ...box(document.querySelector(`[${arg.settingsHook}]`)) },
+    settings: seatButton('sidebar.settings'),
+    footer: seatButton('sidebar.footer.action'),
+    toggle: { shown: shown(col?.querySelector('[data-fbtest-toggle]')), ...box(col?.querySelector('[data-fbtest-toggle]')) },
     workspaces: shown(document.querySelector(`[${arg.workspacesHook}]`)),
     opener: shown(document.querySelector('[data-sidebar-opener]')),
     conversation: box(document.querySelector(`[${arg.conversationHook}]`)),
