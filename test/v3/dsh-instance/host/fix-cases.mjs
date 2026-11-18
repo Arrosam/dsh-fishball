@@ -191,6 +191,8 @@ export function registerFixInstanceCases(sdk) {
       w.setField(RFI.row.target, now)
       w.ctl.startGate.open()
       assert.ok(await w.until(() => w.status().state === K3.state.ready))
+      // Child readiness doesn't await the import; then watch for extra calls as before.
+      assert.ok(await w.until(() => w.ctl.credentials.calls.set.length >= imports), 'first-start import missing')
       await sleep(RFI.wait.quietMs)
       assert.equal(w.ctl.credentials.calls.set.length, imports, 'imports')
       assert.equal(w.tokens.calls.created.length, imports, 'createHosted calls')
