@@ -124,8 +124,8 @@ nothing** (no token, id of another pair, stack, path). Every refusal row checks 
 
 The V3 suites are laid out by package and module, `test/v3/<package>/<module>/` (2026-11-16, the
 user: split by the real plugin layout, so a change runs only its own tests). `test/v3/contract/`
-holds the cross-package rows: the K1–K3 freezes, package boundaries and R-EMBED. The V2 release
-files keep their paths, because the V2 selection names them; they are grouped by package instead.
+holds the cross-package rows: the K1–K3 freezes, package boundaries and R-EMBED. Legacy root and
+V2 files keep their paths and are grouped by package in an opt-in lane.
 
 [test/suites.mjs](<../../../test/suites.mjs>) is the one map from source paths to suites.
 
@@ -133,8 +133,32 @@ files keep their paths, because the V2 selection names them; they are grouped by
 | --- | --- |
 | `test/run-affected.sh <base-ref>` | the suites the working tree's changes against `<base-ref>` need |
 | `test/run-affected.sh --suite=dsh-connector.tokens` | one suite; a prefix such as `dsh-connector` runs a whole package |
-| `test/run-affected.sh --all`, `npm run test:v3`, `npm run test:v2` | everything |
-| `npm run test:map` | the map's self-check: every selected test file is owned by exactly one suite |
+| `npm run test:all` | all unshelved V3 suites |
+| `npm run test:all -- --lane=legacy` | pre-V3/root groups; use `npm run test:affected -- <base-ref> --lane=legacy` for just those affected |
+| `npm run test:release-check` | release, placement, and package-boundary checks with release artifacts required |
+| `npm run test:map` | ownership and representative selection checks |
 
-`--sdk=0.2.1-rc.5|0.2.2-rc.1` runs one SDK's V3 files; `--list` prints the selection. A changed
-path that no suite claims runs everything. Test support or a runner change also runs everything.
+`--sdk=0.2.1-rc.5|0.2.2-rc.1|both` selects files and their matching installed SDKs (`both` is the
+default). Set `FBTEST_DSH_VERSIONS` to the parent of the installed SDK directories if needed.
+`--list` prints the selection. An unmapped path, shared test support, or runner change selects all
+suites in the chosen lane. `--suite` explicitly selects the named suites, irrespective of the lane.
+
+The affected V3 runner defaults to `--parallel`: both SDK jobs can run together, with up to three
+concurrent files per SDK. Use `--serial` to run one SDK and one file at a time. The legacy and
+strict release runs (`--release-check` or `FBTEST_RELEASE_REQUIRED=1`) default to serial. The scheduler
+self-check exercises the normal and strict defaults independently, even in a strict outer run. Cases
+sharing a file's fixture still run in order. Each SDK job gets a private temporary HOME, cache, and
+test-homes directory. `FBTEST_TEST_HOMES`, if provided, is a parent directory, not a directory the
+runner clears; choose a location outside any Git checkout for native-child tests. Legacy files whose
+coverage depends on the active SDK run in both jobs when `--sdk=both`.
+
+When two SDK jobs run, `--test-reporter-destination=report.txt` writes `report.txt.0.2.1-rc.5`
+and `report.txt.0.2.2-rc.1`, in both parallel and serial modes. `stdout`, `stderr`, and `/dev/null`
+are unchanged, as is the destination in a single-job run. The connector wire checks compare an explicit
+approval port against the fixture's configured value; port `0` instead uses the advertised port verified
+by a loopback HTTP request.
+
+Ordinary runs report `release folder missing` as a skip on artifact-only rows. Source-only tests still
+run. An existing incomplete or invalid release still fails; use `--release-check` (also set by
+`npm run test:release-check`) to make missing artifacts fail too. Build the artifacts first with
+`npm run pack:v3`, or set `FBTEST_RELEASE_DIR` to an existing release.

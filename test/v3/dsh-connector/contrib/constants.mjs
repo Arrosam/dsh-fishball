@@ -139,8 +139,9 @@ export const FIXTURE = Object.freeze({
 /** Harness timing (not product values). */
 export const WAIT = Object.freeze({
   testMs: 60_000,
-  /** EXT-BVA-04 row 0d waits out the 30 s ceiling. */
+  /** EXT-BVA-04 row 0d keeps its outer test budget while advancing the 30 s timer. */
   ceilingTestMs: 90_000,
+  deadlineTickMs: 1,
   settleMs: 5_000,
   pollMs: 10,
 })

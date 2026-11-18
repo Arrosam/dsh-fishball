@@ -188,6 +188,12 @@ Connect states are `CONNECT.state`.
   2. `/a` is accepted.
 - **FLS-BVA-03 (R14):** a grant ten years old still refreshes, because there is no chain-age cap.
 
+## FLS-FIXTURE row 1: discovery stays on the fixture
+
+Both advertised names (`localhost`, `127.0.0.1`) reach this fake's protected-resource metadata. Observe
+its exact loopback listeners before requesting either name: another listener cannot shadow those
+bindings, and the test never needs to contact an unowned port or depend on a port collision.
+
 ## F-FIX security rows (audit `.runtime/reports/x-sec-audit.md` X-11, X-12, X-13)
 
 - **X-11 (design §6.3: credentials are never forwarded on a redirect):** EP over four steps

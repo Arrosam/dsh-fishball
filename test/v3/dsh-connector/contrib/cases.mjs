@@ -887,7 +887,7 @@ function registerBoundaries(sdk) {
   const callRow = (part, title, body, { definition, options } = {}) => row(sdk, ID.bva04, part, title, async (t) => {
     const world = await worldFor(t, sdk)
     const c = await world.add(FIXTURE.pkg.board, { definition })
-    await body(world, c)
+    await body(world, c, t)
   }, undefined, options)
   const argRow = (part, bytes, refused, definition) => callRow(part, `argument bytes ${bytes}${definition ? ' (declared ' + FIXTURE.declared.argumentBytes + ')' : ', no declared limit'} → ${refused ? 'limit-exceeded, execute not called' : 'runs'}`, async (w, c) => {
     const reply = await w.call(D, toolOf(c), argsOf(bytes))
@@ -913,7 +913,29 @@ function registerBoundaries(sdk) {
   resultRow(5, FIXTURE.declared.resultBytes + 1, true, declaredResult)
   const timeRow = (part, limitMs, late, definition, options) => callRow(part, late
     ? `still running at ${limitMs} ms → contributor-failed; call.signal.reason = timeout`
-    : `returns at ${limitMs - FIXTURE.earlyMs} ms (T − ε) → ok`, async (w, c) => {
+    : `returns at ${limitMs - FIXTURE.earlyMs} ms (T − ε) → ok`, async (w, c, t) => {
+    if (definition === undefined) {
+      // Virtualize only the default deadline pair; the declared deadline still runs in real time.
+      t.mock.timers.enable({ apis: ['setTimeout'] })
+      let held
+      try {
+        held = await heldCall(w, c)
+        t.mock.timers.tick(limitMs - (late ? WAIT.deadlineTickMs : FIXTURE.earlyMs))
+        assert.equal(held.call.signal.aborted, false)
+        if (late) {
+          t.mock.timers.tick(WAIT.deadlineTickMs)
+          assert.equal(held.call.signal.reason, ABORT_REASON.timeout)
+          await assertContained(sdk, await held.reply)
+        } else {
+          held.release(ok())
+          await assertOkResult(sdk, await held.reply)
+        }
+      } finally {
+        held?.release(ok())
+        t.mock.timers.reset()
+      }
+      return
+    }
     if (late) {
       const held = await heldCall(w, c)
       await assertContained(sdk, await held.reply)

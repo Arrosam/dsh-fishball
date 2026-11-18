@@ -5,4 +5,4 @@
  */
 import { rootSuiteFiles, runSuites } from './support/suite-runner.mjs'
 
-process.exit(runSuites(rootSuiteFiles(), process.argv.slice(2)))
+process.exitCode = await runSuites(rootSuiteFiles(), process.argv.slice(2))

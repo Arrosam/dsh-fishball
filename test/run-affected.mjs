@@ -5,27 +5,30 @@
  *     untracked files (the working tree against base);
  *   node test/run-affected.mjs --suite=<id>[,<id>…] [--sdk=<v>] [--list] [extra args]
  *     the named suites (ids as in test/suites.mjs, or a prefix such as `dsh-connector`);
- *   node test/run-affected.mjs --all [--sdk=<v>]   every suite but the shelved ones (V3 and the pre-V3 groups);
+ *   node test/run-affected.mjs --all [--sdk=<v>]   every unshelved V3 suite;
+ *   --lane=legacy                                select pre-V3 groups instead, for a base ref or --all;
+ *   --release-check                              fail selected artifact rows if the release folder is missing.
  *   node test/run-affected.mjs --check             the map's self-check (no test runs).
  *
  * A base ref and --all leave out the shelved suites (test/suites.mjs SHELVED_SUITES); --suite runs
  * whatever it names, a shelved suite included.
  *
- * --sdk picks the V3 per-SDK files: `0.2.1-rc.5`, `0.2.2-rc.1` or `both` (default). The SDK the
- * host suites boot is FBTEST_DSH_RUNTIME, as for test/run-v3.mjs; set it to match.
- * --list prints the selection and exits. REMOVE-V2c deleted the pre-V3 selection (test/v2-suites.mjs)
- * with its last case exclusions, so every selected file runs in one node --test run.
+ * --sdk chooses matching installed runtimes: `0.2.1-rc.5`, `0.2.2-rc.1` or `both` (default).
+ * Normal V3 runs overlap SDK jobs and files. --serial runs one file at a time.
+ * --list prints the selection and exits.
  */
 import { execFileSync } from 'node:child_process'
 import fs from 'node:fs'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { REPO } from './support/constants.mjs'
-import { rootSuiteFiles, runSuites } from './support/suite-runner.mjs'
-import { FULL, IGNORED, SDK_VERSIONS, SHELVED_SUITES, SUITES, V3_SUITES } from './suites.mjs'
+import { REPO, REQUIRED_RELEASE } from './support/constants.mjs'
+import { REPORT_DESTINATION, rootSuiteFiles, runSuiteJobs } from './support/suite-runner.mjs'
+import { FULL, IGNORED, SDK_VERSIONS, SHELVED_SUITES, SUITES, V3_SUITES, V2_GROUPS } from './suites.mjs'
+import { AFFECTED_CASES } from './v3/contract/suite-map/affected-cases.mjs'
 
-const ARG = Object.freeze({ suite: '--suite=', sdk: '--sdk=', list: '--list', all: '--all', check: '--check', separator: ',' })
+const ARG = Object.freeze({ suite: '--suite=', sdk: '--sdk=', list: '--list', all: '--all', check: '--check', lane: '--lane=', releaseCheck: '--release-check', separator: ',' })
 const SDKS = Object.freeze({ both: 'both', values: SDK_VERSIONS })
+const LANE = Object.freeze({ default: 'v3', legacy: 'legacy' })
 const SDK_FILE = /\/sdk-(\d+\.\d+\.\d+-[a-z]+\.\d+)\.test\.mjs$/
 const GIT = Object.freeze({ diff: ['diff', '--name-only'], untracked: ['ls-files', '--others', '--exclude-standard'], tracked: ['ls-files'] })
 const V3_DIR = 'test/v3/'
@@ -78,21 +81,36 @@ export function checkMap() {
     twice: [...owners].filter(([, ids]) => ids.length > 1).map(([f, ids]) => `${f}: ${ids.join(', ')}`),
     v3Unowned: v3.filter((f) => !v3Owned.has(f)),
     rootUnowned: rootSuiteFiles().filter((f) => !owners.has(f)),
+    selection: AFFECTED_CASES.flatMap(({ path: file, includes, excludes }) => {
+      const picked = selectSuites([file])
+      const actual = new Set(unshelved(picked.unmapped.length ? Object.keys(SUITES) : picked.ids))
+      return [
+        ...includes.filter((id) => !actual.has(id)).map((id) => `${file}: missing ${id}`),
+        ...excludes.filter((id) => !Object.hasOwn(SUITES, id) || actual.has(id)).map((id) => `${file}: invalid exclusion ${id}`),
+      ]
+    }),
   }
 }
 
 function parse(argv) {
-  const opts = { ids: null, base: null, sdk: SDKS.both, list: false, all: false, check: false, rest: [] }
-  for (const a of argv) {
-    if (a.startsWith(ARG.suite)) opts.ids = a.slice(ARG.suite.length).split(ARG.separator).filter(Boolean)
+  const opts = { ids: null, base: null, sdk: SDKS.both, list: false, all: false, check: false, lane: LANE.default, releaseCheck: false, rest: [] }
+  for (let i = 0; i < argv.length; i++) {
+    const a = argv[i]
+    if (a === REPORT_DESTINATION) {
+      opts.rest.push(...argv.slice(i, i + 2))
+      i++
+    } else if (a.startsWith(ARG.suite)) opts.ids = a.slice(ARG.suite.length).split(ARG.separator).filter(Boolean)
     else if (a.startsWith(ARG.sdk)) opts.sdk = a.slice(ARG.sdk.length)
     else if (a === ARG.list) opts.list = true
     else if (a === ARG.all) opts.all = true
+    else if (a.startsWith(ARG.lane)) opts.lane = a.slice(ARG.lane.length)
+    else if (a === ARG.releaseCheck) opts.releaseCheck = true
     else if (a === ARG.check) opts.check = true
     else if (!a.startsWith('-') && opts.base === null && opts.ids === null) opts.base = a
     else opts.rest.push(a)
   }
   if (opts.sdk !== SDKS.both && !SDKS.values.includes(opts.sdk)) throw new Error(`--sdk must be ${SDKS.both} or one of ${SDKS.values.join(', ')}`)
+  if (!Object.values(LANE).includes(opts.lane)) throw new Error(`--lane must be ${Object.values(LANE).join(" or ")}`)
   return opts
 }
 
@@ -110,32 +128,44 @@ function resolveIds(names) {
 /** `ids` without the shelved suites, sorted: what every default selection runs. */
 const unshelved = (ids) => ids.filter((id) => !SHELVED_SUITES.includes(id)).sort()
 
-function main(argv) {
+async function main(argv) {
   const opts = parse(argv)
   if (opts.check) {
     const report = checkMap()
     for (const [k, v] of Object.entries(report)) console.log(`${k}: ${v.length}${v.length ? '\n  ' + v.join('\n  ') : ''}`)
     return Object.values(report).some((v) => v.length) ? 1 : 0
   }
+  const laneSuites = opts.lane === LANE.legacy ? V2_GROUPS : V3_SUITES
+  const inLane = (ids) => unshelved(ids.filter((id) => Object.hasOwn(laneSuites, id)))
   let ids
-  if (opts.all) ids = unshelved(Object.keys(SUITES))
+  if (opts.all) ids = inLane(Object.keys(laneSuites))
   else if (opts.ids) ids = resolveIds(opts.ids)
   else if (opts.base) {
     const paths = changedPaths(opts.base)
     const picked = selectSuites(paths)
     console.log(`${paths.length} changed path(s) against ${opts.base}`)
-    for (const id of unshelved(picked.ids)) console.log(`  ${id}  (${picked.reasons[id]})`)
+    for (const id of inLane(picked.ids)) console.log(`  ${id}  (${picked.reasons[id]})`)
     const dropped = picked.ids.filter((id) => SHELVED_SUITES.includes(id))
     if (dropped.length) console.log(`shelved, not run: ${dropped.join(' ')}`)
     // A path no suite claims could be anything a test reads: run everything rather than guess.
-    if (picked.unmapped.length) { console.log(`unmapped, so every suite runs:\n  ${picked.unmapped.join('\n  ')}`); ids = unshelved(Object.keys(SUITES)) } else ids = unshelved(picked.ids)
+    if (picked.unmapped.length) { console.log(`unmapped, so every suite in the selected lane runs:\n  ${picked.unmapped.join('\n  ')}`); ids = inLane(Object.keys(laneSuites)) } else ids = inLane(picked.ids)
   } else throw new Error('give a base ref, --suite=<id>, --all or --check')
   const files = suiteFiles(ids, opts.sdk)
   console.log(`${ids.length} suite(s), ${files.length} file(s)`)
   if (opts.list) { for (const f of files) console.log('  ' + f); return 0 }
   if (files.length === 0) { console.log('nothing to run'); return 0 }
-  return runSuites(files, opts.rest)
+  if (opts.releaseCheck) process.env[REQUIRED_RELEASE.env] = REQUIRED_RELEASE.on
+  const sdks = opts.sdk === SDKS.both ? SDKS.values : [opts.sdk]
+  const legacy = new Set(Object.values(V2_GROUPS).flatMap(({ files }) => files))
+  const jobs = sdks.map((sdk, i) => ({ sdk, files: files.filter((file) => {
+    const version = file.match(SDK_FILE)?.[1]
+    // Legacy files without an SDK suffix can gate individual rows on the active SDK.
+    return version === undefined ? i === 0 || legacy.has(file) : version === sdk
+  }) })).filter((job) => job.files.length)
+  // The headless V3 batch passed the three-run gate; release and legacy keep their conservative default.
+  const defaultParallel = !opts.releaseCheck && process.env[REQUIRED_RELEASE.env] !== REQUIRED_RELEASE.on && !files.some((file) => legacy.has(file))
+  return runSuiteJobs(jobs, opts.rest, { defaultParallel })
 }
 
 // Imported (by a check or another script) it only exports; run as a script it runs.
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) process.exit(main(process.argv.slice(2)))
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) process.exitCode = await main(process.argv.slice(2))

@@ -24,7 +24,6 @@ import assert from 'node:assert/strict'
 import { createHash, randomBytes } from 'node:crypto'
 import fs from 'node:fs'
 import http from 'node:http'
-import os from 'node:os'
 import path from 'node:path'
 import { INSTANCE } from '../../../support/constants.mjs'
 import { importInstance } from '../../../private-skills/support/sdk.mjs'
@@ -228,7 +227,7 @@ export async function holdPort(t, port) {
   let open = true
   const release = async () => { if (open) { open = false; await closeServer(holder) } }
   t.after(release)
-  return { release }
+  return { port: holder.address().port, release }
 }
 
 /** What answers `GET /authorize` on `port` now: the body, or `null` when nothing listens. */
@@ -248,11 +247,11 @@ export function probe(port) {
  * Node-shaped: setTimeout / clearTimeout / setInterval / clearInterval) and every status reported
  * through `onStatus` kept. Closed by `t`'s cleanup.
  */
-export function approvalListener(t, w, port) {
+export function approvalListener(t, w, port, createServer) {
   const timers = fakeTimers()
   const statuses = []
   const logger = fakeLogger()
-  const l = w.mod[SUBJECT.listener]({ handler: w.handler, host: FIXTURE.loopback, port, timers, logger, onStatus: (s) => statuses.push(s) })
+  const l = w.mod[SUBJECT.listener]({ handler: w.handler, host: FIXTURE.loopback, port, createServer, timers, logger, onStatus: (s) => statuses.push(s) })
   for (const member of SUBJECT.listenerMembers) assert.equal(typeof l?.[member], 'function', `the approval listener has no ${member}()`)
   t.after(() => Promise.resolve(l.close()).catch(() => {}))
   return { l, timers, statuses, logger, start: () => Promise.resolve().then(() => l.start()).catch((error) => error) }
@@ -263,24 +262,38 @@ export async function waitFor(predicate, ms) {
   const until = Date.now() + ms
   while (Date.now() < until) {
     if (await predicate()) return true
-    await new Promise((resolve) => setTimeout(resolve, FIXTURE.lockPollMs))
+    await new Promise((resolve) => setTimeout(resolve, FIXTURE.listenerPollMs))
   }
   return predicate()
 }
 
-/**
- * Holds a cross-process lock for the rows that bind the frozen default port: both SDK files run at
- * once (test/run-v3.mjs), and only one of them may hold the port.
+/** Translate the socket, not the expectations: product code sees the requested logical port;
+ * the test dials the native address. Record bind arguments for assertions outside error handling.
  */
-export async function lockDefaultPort(t) {
-  const lock = path.join(os.tmpdir(), FIXTURE.defaultPortLock)
-  for (;;) {
-    try { fs.closeSync(fs.openSync(lock, 'wx')); break } catch (error) {
-      if (error.code !== 'EEXIST') throw error
-      await new Promise((resolve) => setTimeout(resolve, FIXTURE.lockPollMs))
-    }
+export function defaultApprovalSocket(backingPort = 0) {
+  const binds = []
+  let nativeAddress
+  return {
+    binds,
+    boundPort: () => nativeAddress().port,
+    createServer(handler) {
+      const server = http.createServer(handler)
+      const listen = server.listen.bind(server)
+      const address = server.address.bind(server)
+      nativeAddress = address
+      let logicalPort
+      server.listen = (port, host, ...rest) => {
+        binds.push({ port, host })
+        logicalPort = port
+        return listen(backingPort, FIXTURE.loopback, ...rest)
+      }
+      server.address = () => {
+        const bound = address()
+        return bound === null ? null : { ...bound, port: logicalPort }
+      }
+      return server
+    },
   }
-  t.after(() => fs.rmSync(lock, { force: true }))
 }
 
 export { LIFETIME }

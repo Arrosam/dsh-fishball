@@ -22,7 +22,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import test from 'node:test'
 import { setTimeout as sleep } from 'node:timers/promises'
-import { INPROC, eventually, openInproc } from './inproc.mjs'
+import { INPROC, eventually, openInproc, recurringClock } from './inproc.mjs'
 import { CREATE_BOUND_BYTES, RFIX, T, busyOn, codeOf, listOf, listedTitles, name, oneShot, storeText, userTurn } from './rfix.mjs'
 
 const MAX = INPROC.store.maxBytes
@@ -54,9 +54,6 @@ const RFIX2 = Object.freeze({
   markerOf: (title) => 'FBTEST-RFIX2-REMINDER-' + title,
   /** Every minute (its first occurrence is at most 60 s away); filling must end before it. */
   cron: Object.freeze({ expression: '* * * * *', time_zone: 'UTC' }),
-  minuteMs: 60_000,
-  cronLatestStartMs: 40_000,
-  cronStartSlackMs: 1000,
   cronFireMs: 90_000,
   cronTimeout: Object.freeze({ timeout: 180_000 }),
   /** A store "truly at 100%": one byte under the limit, so it loads but no pending record fits. */
@@ -203,19 +200,18 @@ function registerDelivery(sdk) {
     assert.equal(storeText(w).includes(marker), false, 'the delivered one-shot is still in the store file')
   })
   test(name(sdk, 'RFIX2-DELIVER-ST-01', 'recurring', `a recurring reminder (cron every minute) comes due in a store creates filled to exactly ${CREATE_BOUND_BYTES} bytes → delivered, lastDelivery recorded, moved on (the store passes 90%)`), RFIX2.cronTimeout, async (t) => {
-    // Filling must end before the next minute: start early in a minute.
-    const inMinute = Date.now() % RFIX2.minuteMs
-    if (inMinute > RFIX2.cronLatestStartMs) await sleep(RFIX2.minuteMs - inMinute + RFIX2.cronStartSlackMs)
     const w = await openInproc(t, sdk, { reminders: true })
+    const clock = await recurringClock(t, w)
     const title = RFIX2.dueTitle('cron')
     const marker = RFIX2.markerOf(title)
     accepted(await w.tool(RFIX.tool.create, { title, prompt: marker, cron: RFIX2.cron }), 'harness: the cron create')
     const before = listOf(await w.tool(RFIX.tool.list, {})).find((e) => e.title === title)
     await fillToBound(w)
     assert.equal((await w.admissions(marker)).length, 0, 'harness: the occurrence came due before the store was filled')
-    assert.ok(await eventually(async () => (await w.admissions(marker)).length === 1, RFIX2.cronFireMs), 'the recurring reminder was not delivered in a store at 90%')
+    clock.makeDue()
+    assert.ok(await clock.eventually(async () => (await w.admissions(marker)).length === 1, RFIX2.cronFireMs), 'the recurring reminder was not delivered in a store at 90%')
     const settled = async () => listOf(await w.tool(RFIX.tool.list, {})).find((e) => e.title === title)
-    assert.ok(await eventually(async () => (await settled())?.lastDelivery !== undefined), 'no lastDelivery recorded in a store at 90%')
+    assert.ok(await clock.eventually(async () => (await settled())?.lastDelivery !== undefined), 'no lastDelivery recorded in a store at 90%')
     const after = await settled()
     assert.ok(Date.parse(after.scheduledAt) > Date.parse(before.scheduledAt), `the next occurrence is not later: ${before.scheduledAt} → ${after.scheduledAt}`)
     assert.ok(fileBytes(w) > CREATE_BOUND_BYTES, `the settled store is not above ${CREATE_BOUND_BYTES} bytes (the bookkeeping used no space above 90%)`)

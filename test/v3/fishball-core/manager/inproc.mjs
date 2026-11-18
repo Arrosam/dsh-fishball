@@ -21,7 +21,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { INSTANCE, REPO } from '../../../support/constants.mjs'
 import { linkContractForSourceRun } from '../../../support/contract-link.mjs'
-import { until } from '../../../support/util.mjs'
+import { sleep, until } from '../../../support/util.mjs'
 import { importInstance, importSdk } from '../../../private-skills/support/sdk.mjs'
 
 /** DSH's own package and service names (installed SDK), and the fixture world (test data). */
@@ -233,3 +233,28 @@ export async function openInproc(t, sdk, options = {}) {
 
 /** Waits for `predicate` (a harness wait, not an oracle). */
 export const eventually = (predicate, timeoutMs = INPROC.wait.settleMs) => until(predicate, timeoutMs, INPROC.wait.pollMs)
+
+const CRON_CLOCK = Object.freeze({ minuteMs: 60_000, leadMs: 2_000, api: 'Date' })
+
+/** Keep real SDK timers; freeze the calendar while the test prepares the recurring occurrence. */
+export async function recurringClock(t, world) {
+  await world.activate()
+  const due = Math.ceil((Date.now() + CRON_CLOCK.leadMs) / CRON_CLOCK.minuteMs) * CRON_CLOCK.minuteMs
+  t.mock.timers.enable({ apis: [CRON_CLOCK.api], now: due - CRON_CLOCK.leadMs })
+  // Close the reminder before restoring Date so its next queued turn cannot jump clocks.
+  world.defer(async () => {
+    try { await world.close() } finally { t.mock.timers.reset() }
+  })
+  return {
+    // Jump just to the first occurrence, leaving the next cron boundary in the future.
+    makeDue: () => t.mock.timers.tick(CRON_CLOCK.leadMs),
+    async eventually(predicate, timeoutMs = INPROC.wait.settleMs) {
+      const deadline = performance.now() + timeoutMs
+      for (;;) {
+        const value = await predicate()
+        if (value || performance.now() >= deadline) return value
+        await sleep(INPROC.wait.pollMs)
+      }
+    },
+  }
+}

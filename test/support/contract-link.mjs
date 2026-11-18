@@ -28,14 +28,12 @@ function linkAtRoot(pkg) {
   const dir = path.join(REPO, 'node_modules')
   const target = path.join(dir, pkg.name)
   fs.mkdirSync(dir, { recursive: true })
-  let current = null
-  try { current = fs.readlinkSync(target) } catch { /* missing */ }
-  if (current === pkg.dir) return
-  fs.rmSync(target, { force: true })
   try {
     fs.symlinkSync(pkg.dir, target)
   } catch (error) {
-    // Concurrent workers can both find the link missing; the loser's EEXIST is fine if the winner's link is right.
-    if (error?.code !== 'EEXIST' || fs.readlinkSync(target) !== pkg.dir) throw error
+    if (error.code !== 'EEXIST') throw error
+    // npm can already have installed a relative workspace link. Do not remove another run's link.
+    const linked = path.resolve(dir, fs.readlinkSync(target))
+    if (linked !== pkg.dir && fs.realpathSync(target) !== fs.realpathSync(pkg.dir)) throw new Error(`unexpected source link: ${target}`, { cause: error })
   }
 }
