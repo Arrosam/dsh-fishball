@@ -5,21 +5,27 @@
  * design §5.4, §6.3, §6.3a). The same in hosted and standalone mode: only who fills the credential
  * reference differs (the instance's import, or the user's paste in core's write-only field).
  *
- * Two credentials, at most one saved per target origin (R9):
- * - a **token** (`client_credentials`, client id = `identity.id`): read from the reference
- *   `HOSTED_IMPORT.credentialRef`; once the target accepted it (the link's first successful
- *   connection with it), saved once into the record `HOSTED_IMPORT.savedRecord.key` (payload:
- *   `LINK_SAVE.hostedPayload`, the value per target origin), then the reference is unset;
+ * MULTI-1: one of these per target epoch, over that epoch's names (`credentialNames`; MULTI-0
+ * `TARGETS.credentials`): the parent's are the hosted import's fixed names, an added target's its
+ * own. Every saved, pending and grant payload carries its `TargetCredentialBinding` (target id,
+ * endpoint epoch, origin, agent id) and is used only while all four are current (security
+ * amendment); a disposed epoch's late completions change nothing.
+ *
+ * Two credentials, at most one saved per binding (R9):
+ * - a **token** (`client_credentials`, client id = `identity.id`): read from the epoch's
+ *   reference; once the target accepted it (the link's first successful connection with it), saved
+ *   once into the epoch's token record (payload: `LINK_SAVE.hostedPayload`, the value and its
+ *   binding), then the reference is unset;
  * - a **Connect grant** (authorization code + PKCE, `connect.js`): saved by the code exchange in
- *   the record `fishball-core/connect-<origin in hex>`; core never holds a token value for it.
+ *   the epoch's grant record `fishball-core/connect-<id>-<epoch>`; core never holds a token value for it.
  *
  * Which credential an attempt uses (first match):
- * 1. a value in the reference, for the target origin it was put there for only (R-FIX F01, below),
+ * 1. a value in the reference, for the binding it was put there for only (R-FIX F01, below),
  *    unless the target refused that same value while a saved credential exists (Q-LS1 = A: a new
  *    token is tried first and replaces the saved one only once accepted; a refused one is not sent
  *    again until the reference changes or core restarts);
- * 2. the saved token copy for the origin;
- * 3. the saved Connect grant for the origin, while it holds tokens (an `invalid_grant` drops them:
+ * 2. the saved token copy of this binding;
+ * 3. the saved Connect grant of this binding, while it holds tokens (an `invalid_grant` drops them:
  *    Connect is needed again, once, with no retry loop);
  * 4. nothing: the link reports `target-unset` and waits.
  * A saved credential the target refuses stays saved (R9: replaced only by a different accepted
@@ -183,6 +189,8 @@ function createSavedStore(credentials, { names, sdk, fetch, now, clientId, fence
       if (!managers.has(key)) managers.set(key, createTokenManager({ sdk: await sdk(), credentials, key, now, refreshLeadMs: LINK_SAVE.refreshLeadMs, fetchFn: fetch }))
       return managers.get(key)
     },
+    /** Resolves once no refresh of this epoch's grants is in flight (review m7: before its grant is deleted). */
+    settled: () => Promise.all([...managers.values()].map((manager) => manager.settled())),
     /** `{token, grant}` saved for `origin`: the token copy's value and the grant payload, each or `undefined`. */
     async read(origin) {
       const [hosted, grant] = await Promise.all([credentials.readRecord(HOSTED_KEY), credentials.readRecord(grantRecordKey(origin))])
@@ -258,9 +266,8 @@ function grantAuthProvider(manager, initial) {
  * @param {object} options
  * @param {() => unknown} options.target the target epoch's URL (MULTI-1: its target record's, or
  *   the instance's for the parent)
- * @param {{ref: string, tokenRecord: string, pending: string | undefined, grantKey: Function}} [options.names]
- *   the target epoch's credential names (`credentialNames`); a single-link caller that names none
- *   gets the parent's, under the epoch `TARGETS.parentId`
+ * @param {{ref: string, tokenRecord: string, pending: string | undefined, grantKey: Function}} options.names
+ *   the target epoch's credential names (`credentialNames`), required: a `TypeError` without them
  * @param {() => string} options.clientId `identity.id`
  * @param {() => unknown} options.clientMetadataUrl `connect.clientMetadataUrl`
  * @param {object} [options.sdk] the `@modelcontextprotocol/client` module; defaults to core's copy
@@ -272,7 +279,9 @@ function grantAuthProvider(manager, initial) {
  *   `credentials` is the link's option; `connect` is K3a's `FishballConnect`; `onChange(fn)` calls
  *   `fn` when the link should reconnect (a new value in the reference, or a Connect grant saved)
  */
-export function createLinkCredentials(ctx, { target, clientId, clientMetadataUrl, names = credentialNames({ targetId: TARGETS.parentId, endpointEpoch: TARGETS.parentId }), sdk, fetch = (...args) => globalThis.fetch(...args), now = Date.now, timers = globalThis }) {
+export function createLinkCredentials(ctx, { target, clientId, clientMetadataUrl, names, sdk, fetch = (...args) => globalThis.fetch(...args), now = Date.now, timers = globalThis }) {
+  // No default (review m10): a caller that names no target epoch must not get the parent's fixed names.
+  if (typeof names?.ref !== 'string' || typeof names.targetId !== 'string' || typeof names.endpointEpoch !== 'string') throw new TypeError(LINK_SAVE.text.names)
   const logger = ctx.logger?.(LINK_SAVE.logger)
   const warn = (what) => (error) => logger?.warn(LINK_SAVE.text.failed, what, codeOf(error))
   const reconnects = new Set()
@@ -430,11 +439,17 @@ export function createLinkCredentials(ctx, { target, clientId, clientMetadataUrl
     credentials: (usable) => credentialsFor(usable),
     connect: connect.control,
     onChange: (fn) => subscribe(reconnects, fn),
+    /**
+     * Stops this epoch's credentials: every late completion is fenced from now on. Resolves once a
+     * grant refresh in flight has settled, so a retirement that deletes the grant afterwards is not
+     * undone by that refresh's write (review m7).
+     */
     dispose() {
       disposed = true
       offReference?.()
       offRecord?.()
       connect.dispose()
+      return store.settled().catch(() => {})
     },
   })
 }

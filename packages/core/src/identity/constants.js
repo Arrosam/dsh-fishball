@@ -124,6 +124,8 @@ export const RECORDS = Object.freeze({
 export const MISUSE = Object.freeze({
   /** A `TypeError`: a stored record is malformed, so the records table does not open. */
   record: 'fishball-core identity: malformed paired record',
+  /** A `TypeError`: the records were opened without their target epoch (MULTI-1). */
+  scope: 'fishball-core identity: records need a target id and endpoint epoch',
   /** A `TypeError`: the link's credentials carry no credential id (`ref`, a string). */
   ref: 'fishball-core identity: credentials need a credential id',
   /** A `PairingFailed` (retried like any failure): `pair` answered nothing the decision table knows. */

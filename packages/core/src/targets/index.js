@@ -50,6 +50,8 @@ const refusal = (code) => Object.freeze({ ok: false, code })
 const UNKNOWN = refusal(REFUSAL.unknownTarget)
 // A durable write failed: nothing changed, the caller may try again (the routes' 503, SEAM_TARGETS.unavailableCode).
 const UNAVAILABLE = refusal(SEAM_TARGETS.unavailableCode)
+// The lane `add` runs in (`serial`). A Symbol, so it can never equal a target id.
+const ADD_LANE = Symbol('fishball-core targets: add')
 
 /** `SEAM_TARGETS.state`'s rule (its comment), first match wins; an unknown word is `failed`, never success. */
 function publicState(link, connect, connecting) {
@@ -66,9 +68,14 @@ function canonical(url) {
   return refusal(checked.status.code === LINK.code.insecure ? LINK.code.insecure : LINK.code.invalid)
 }
 
-/** Whether the profile serves the instance's child settings namespace: a hosted child (`link.d.ts`). */
-const hostedIn = (ctx) => ctx.settings.describe().some((entry) => entry.ns === HOSTED_IMPORT.targetSetting.row)
-const instanceUrl = (ctx) => ctx.settings.describe().find((entry) => entry.ns === HOSTED_IMPORT.targetSetting.row)?.value?.[HOSTED_IMPORT.targetSetting.field]
+/**
+ * The instance's child settings, read once: `{hosted, url}`. Hosted exactly when the profile serves
+ * that namespace (`link.d.ts`), whatever its value; `url` is its target value.
+ */
+function instanceOf(ctx) {
+  const entry = ctx.settings.describe().find((candidate) => candidate.ns === HOSTED_IMPORT.targetSetting.row)
+  return Object.freeze({ hosted: entry !== undefined, url: entry?.value?.[HOSTED_IMPORT.targetSetting.field] })
+}
 
 /**
  * @param {object} ctx core's main row context
@@ -86,7 +93,7 @@ export function createTargets(ctx, { tables, identityRecords, asks, events, reco
   const listeners = new Set()
   const runtimes = new Map()
   const mounts = new Set()
-  const bindings = createBindings(tables.bindings)
+  const bindings = createBindings(tables.bindings, { warn: (error) => logger?.warn(TARGET_LOG.failed, TARGET_LOG.saveBinding, codeOf(error)) })
   const records = new Map([...tables.targets.entries()].map(([id, record]) => [id, record]))
   let closed = false
   let snapshot
@@ -212,8 +219,8 @@ export function createTargets(ctx, { tables, identityRecords, asks, events, reco
   const newRecord = (kind, url, id) => ({ id, kind, url, endpointEpoch: generateToken(TARGETS.epoch), order: kind === KIND.parent ? 0 : Math.max(nextOrder(), 1), serverName: null, duplicateSuffix: null })
 
   /** The instance's value as the parent's URL: its canonical endpoint, or `''` when blank or unusable. */
-  const parentUrl = () => {
-    const endpoint = canonical(instanceUrl(ctx))
+  const parentUrl = (value) => {
+    const endpoint = canonical(value)
     return endpoint.ok ? endpoint.href : ''
   }
 
@@ -226,11 +233,16 @@ export function createTargets(ctx, { tables, identityRecords, asks, events, reco
   function syncParent() {
     parentSync = serial(TARGETS.parentId, async () => {
       if (closed) return
-      const hosted = hostedIn(ctx)
-      const url = parentUrl()
+      const instance = instanceOf(ctx)
+      const url = parentUrl(instance.url)
       const stored = records.get(TARGETS.parentId)
-      if (!hosted) {
-        if (runtimes.has(TARGETS.parentId)) { await stopRuntime(TARGETS.parentId); refresh() }
+      if (!instance.hosted) {
+        // No longer hosted: the parent leaves the list; its record stays (its name allocation), and
+        // its open cards are voided, since nothing can answer them now (review nit 14).
+        if (!runtimes.has(TARGETS.parentId)) return
+        await stopRuntime(TARGETS.parentId)
+        await asks.voidWhere(isEpoch({ targetId: stored.id, endpointEpoch: stored.endpointEpoch })).catch(warn(TARGET_LOG.void))
+        refresh()
         return
       }
       if (stored === undefined) await save(newRecord(KIND.parent, url, TARGETS.parentId))
@@ -241,6 +253,9 @@ export function createTargets(ctx, { tables, identityRecords, asks, events, reco
         await retire(old)
       }
       if (!runtimes.has(TARGETS.parentId)) startRuntime(records.get(TARGETS.parentId))
+      // The instance owns the parent's URL, so core cannot refuse a value an added target already
+      // has (Q04); both then dial one endpoint, each with its own credentials. Logged so it is seen.
+      if (url !== '' && ordered().some((record) => record.id !== TARGETS.parentId && record.url === url)) logger?.warn(TARGET_LOG.parentDuplicate)
       refresh()
     }).catch(warn(TARGET_LOG.save))
     return parentSync
@@ -260,12 +275,16 @@ export function createTargets(ctx, { tables, identityRecords, asks, events, reco
       if (!endpoint.ok) return endpoint
       if (taken(endpoint.href)) return refusal(REFUSAL.targetDuplicate)
       claimedUrls.add(endpoint.href)
-      try {
-        const record = await save(newRecord(KIND.remote, endpoint.href, generateToken(TARGETS.id)))
-        startRuntime(record)
-        refresh()
-        return Object.freeze({ ok: true, targetId: record.id })
-      } catch (error) { warn(TARGET_LOG.save)(error); return UNAVAILABLE } finally { claimedUrls.delete(endpoint.href) }
+      // Adds run one after another, so each new record's `order` follows every earlier one, and each
+      // answer comes only once its record is durable.
+      return serial(ADD_LANE, async () => {
+        try {
+          const record = await save(newRecord(KIND.remote, endpoint.href, generateToken(TARGETS.id)))
+          startRuntime(record)
+          refresh()
+          return Object.freeze({ ok: true, targetId: record.id })
+        } catch (error) { warn(TARGET_LOG.save)(error); return UNAVAILABLE }
+      }).finally(() => claimedUrls.delete(endpoint.href))
     },
     remove(targetId, { confirmed = false } = {}) {
       const record = known(targetId)

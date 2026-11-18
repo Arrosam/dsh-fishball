@@ -56,6 +56,7 @@ export { FACADE, MODEL_NAME, TEXT as FACADE_TEXT } from './constants.js'
 export { modelNameOf, offerOf } from './names.js'
 
 const ALLOW = Object.freeze({ ok: true })
+const EMPTY_OFFER = Object.freeze({ offered: Object.freeze([]), refused: Object.freeze([]) })
 
 /** X19 while no supervision feeds it: effective off, every send passes (U7, §2.5). */
 const OPEN_GATE = Object.freeze({ send: () => ALLOW })
@@ -113,37 +114,26 @@ function raced(promise, signal) {
   })
 }
 
-/**
- * @param {object} options
- * @param {object} options.link core's link (link.js `McpLink`), public API only
- * @param {object} [options.ctx] a Cordis context with DSH's `tools` service: the offer is mounted
- *   into `ctx.tools` at once (the same as `mount(ctx.tools)`) and withdrawn by `close()`. Which
- *   context (the manager's agent scope) is the wiring's choice (F-WIRE)
- * @param {{send(operation: string, sessionId: unknown): {ok: true} | {code: string, reason?: string}}} [options.gate]
- *   the X19 send gate, asked with the V2 send operation (`session.message`, `session.redirect`) and
- *   the target session id; default: off (all pass)
- * @param {(exec: object) => boolean | Promise<boolean>} [options.imagesSupported] a function, asked
- *   at each model call with DSH's tool execution, whether the calling agent's current model takes
- *   image input (the model can change between turns, so it is never a fixed value); default: an
- *   unknown model takes them (as images.js judges it)
- * @param {() => ({saveImages: Function} | undefined)} [options.attachments] DSH's attachment store,
- *   looked up per call (it may load later); without one an image is shown as unavailable
- * @param {{info: Function, warn: Function}} [options.logger] the background log
- */
 /** A façade of one link with no namespace (a single-link caller): the façade names, all admitted, no label. */
 const BARE_NAMING = Object.freeze({ finalName: undefined, localName: (facade) => Object.freeze({ name: facade, valid: true }), admit: () => true, label: () => undefined })
 
 /**
- * A description with its target first, or as it is without a label. The target's part is
- * `TARGETS.text.toolSource` over the server's JSON-quoted name (or the placeholder word before any
- * discovery), and it is untrusted data: it sits whole inside the random-marker block, with a fresh
- * local marker per description, before the trusted façade description (MULTI-0 security amendment;
- * JSON quoting alone is no trust boundary). No server-supplied text is outside the block.
+ * A description with its target first, or as it is without a label (MULTI-0 security amendment):
+ * - the server's name is untrusted data: `TARGETS.text.toolSource` over its JSON-quoted value sits
+ *   whole inside a random-marker block, with a fresh local marker per description;
+ * - before any discovery there is no server text at all, so no block: a trusted line names the
+ *   target by its state instead (`TEXT.unnamedTarget`), and no server can imitate it;
+ * - a trusted line gives the local target id, which tells two equal names apart and matches the
+ *   event header (`TEXT.eventSource`);
+ * then the trusted façade description.
  */
 function describe(label, description) {
   if (label === undefined) return description
   const marker = randomUUID()
-  return [TEXT.untrustedOpen(marker), TARGETS.text.toolSource(JSON.stringify(label.name ?? FACADE.unnamed)), TEXT.untrustedClose(marker), description].join(TEXT.lineEnd)
+  const source = label.name === null
+    ? [TEXT.unnamedTarget]
+    : [TEXT.untrustedOpen(marker), TARGETS.text.toolSource(JSON.stringify(label.name)), TEXT.untrustedClose(marker)]
+  return [...source, TEXT.targetId(label.targetId), description].join(TEXT.lineEnd)
 }
 
 /**
@@ -162,6 +152,25 @@ export function presentEvent(event) {
   return textBlock([...header, TEXT.untrustedOpen(marker), TEXT.eventFields + JSON.stringify(event), TEXT.untrustedClose(marker)].join(TEXT.lineEnd))
 }
 
+/**
+ * @param {object} options
+ * @param {object} options.link core's link (link.js `McpLink`), public API only
+ * @param {object} [options.ctx] a Cordis context with DSH's `tools` service: the offer is mounted
+ *   into `ctx.tools` at once (the same as `mount(ctx.tools)`) and withdrawn by `close()`. Which
+ *   context (the manager's agent scope) is the wiring's choice (F-WIRE)
+ * @param {{send(operation: string, sessionId: unknown): {ok: true} | {code: string, reason?: string}}} [options.gate]
+ *   the X19 send gate, asked with the V2 send operation (`session.message`, `session.redirect`) and
+ *   the target session id; default: off (all pass)
+ * @param {(exec: object) => boolean | Promise<boolean>} [options.imagesSupported] a function, asked
+ *   at each model call with DSH's tool execution, whether the calling agent's current model takes
+ *   image input (the model can change between turns, so it is never a fixed value); default: an
+ *   unknown model takes them (as images.js judges it)
+ * @param {() => ({saveImages: Function} | undefined)} [options.attachments] DSH's attachment store,
+ *   looked up per call (it may load later); without one an image is shown as unavailable
+ * @param {{info: Function, warn: Function}} [options.logger] the background log
+ * @param {object} [options.naming] the target epoch's naming (see the header); default none
+ * @param {readonly object[]} [options.locals] target-bound local helpers (see the header)
+ */
 export function createBridge({ link, ctx, gate = OPEN_GATE, imagesSupported = async () => true, attachments = () => undefined, logger, naming = BARE_NAMING, locals = [] }) {
   if (!isPortLink(link)) throw new TypeError(MISUSE.link)
   // Checked here so a wrong port fails at wiring time, not as a refused call at the model's turn.
@@ -175,6 +184,8 @@ export function createBridge({ link, ctx, gate = OPEN_GATE, imagesSupported = as
   const reported = new Set()
   let offer
   let closed = false
+  // The last atomic (re)registration failed: the target's tools are withdrawn until one succeeds.
+  let renameFailed = false
 
   const listed = (name) => link.tools().some((tool) => tool.name === name)
 
@@ -272,14 +283,21 @@ export function createBridge({ link, ctx, gate = OPEN_GATE, imagesSupported = as
       try { mount.disposers.push(mount.tools.register(definitionOf(entry))) }
       catch (error) {
         logger?.warn(LOG.registerFailed, logName(entry.modelName), codeOf(error))
-        // A rename registers all of its new names or none (see the header): no mixed set.
-        if (atomic) { withdraw(mount); return }
+        // A rename registers all of its new names or none (see the header): no mixed set. The
+        // target's tools stay unavailable, the failure shows in its view (`renameFailed`), and every
+        // later list or rename tries the whole set again, atomically, until one succeeds.
+        if (atomic) { withdraw(mount); renameFailed = true; return }
       }
     }
   }
 
-  /** The offer for `tools`: the namespaced names, minus any whose binding is another tuple's. */
+  /**
+   * The offer for `tools`: the namespaced names, minus any whose binding is another tuple's. Nothing
+   * while the target refuses the credential (PLAN-MULTI §4.3: an auth refusal tears the link down and
+   * withdraws its tools); the last list comes back on the next connect.
+   */
   function offerFor(tools) {
+    if (link.status()?.state === LINK.state.refused) return EMPTY_OFFER
     const computed = offerOf(tools, naming.finalName)
     const localEntries = locals.map((local) => {
       const final = naming.localName(local.facade)
@@ -293,7 +311,9 @@ export function createBridge({ link, ctx, gate = OPEN_GATE, imagesSupported = as
   }
 
   /** A new offer, logged, synced into every mount, then announced. */
-  function refresh(tools, atomic = false) {
+  function refresh(tools, rename = false) {
+    const atomic = rename || renameFailed
+    if (atomic) renameFailed = false
     offer = offerFor(tools)
     for (const { name, modelName, reason } of offer.refused) {
       const seen = JSON.stringify([name, modelName])
@@ -306,6 +326,14 @@ export function createBridge({ link, ctx, gate = OPEN_GATE, imagesSupported = as
   }
   refresh(link.tools())
   const offTools = link.onTools((tools) => { if (!closed) refresh(tools) })
+  // A refusal withdraws the offer, and its end restores it (`offerFor`); other status changes keep it.
+  let refused = link.status()?.state === LINK.state.refused
+  const offStatus = typeof link.onStatus === 'function' ? link.onStatus((status) => {
+    const now = status?.state === LINK.state.refused
+    if (closed || now === refused) return
+    refused = now
+    refresh(link.tools())
+  }) : () => {}
 
   /**
    * X12: a client limited to `operations` (K1 or contributed tool names). A name outside the list
@@ -357,6 +385,7 @@ export function createBridge({ link, ctx, gate = OPEN_GATE, imagesSupported = as
     mount,
     bridge,
     attention,
+    /** The Fishball branch's content of one event (`presentEvent`, the delivery list's port, Q-11). */
     present: presentEvent,
     /** How many contributed tools are on offer to the model now (R-EXT-14's status note). */
     contributedCount: () => offer.offered.filter((entry) => entry.contributed).length,
@@ -364,12 +393,12 @@ export function createBridge({ link, ctx, gate = OPEN_GATE, imagesSupported = as
     onChange(fn) { listeners.add(fn); return () => { listeners.delete(fn) } },
     /** The target's name changed: every model name is derived again, atomically (see the header). */
     rename() { if (!closed) refresh(link.tools(), true) },
-    /** The model names on offer now (for the persona's and the guards' reads). */
-    offered: () => offer.offered.map((entry) => entry.modelName),
+    /** Whether the last atomic registration failed, so the target's tools are not on offer (PLAN-MULTI §4.3). */
+    renameFailed: () => renameFailed,
     /** Withdraw every offered tool and stop following the link. */
     close() {
       closed = true
-      try { offTools() } catch (error) { logger?.warn(LOG.withdrawFailed, codeOf(error)) }
+      try { offTools(); offStatus() } catch (error) { logger?.warn(LOG.withdrawFailed, codeOf(error)) }
       for (const mount of mounts) withdraw(mount)
       mounts.clear()
       listeners.clear()

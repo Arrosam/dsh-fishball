@@ -42,19 +42,22 @@ export async function openTargets(ctx, { defineDomain, domainTable }) {
 }
 
 /**
- * The bindings over their table: `admit(name, tuple)` claims a free name for `tuple` (written
- * before registration, so a crash between the two leaves a reserved name, never a reusable one)
- * and answers whether the name is now `tuple`'s. The in-memory claim makes two claims of one name
- * in one turn exclusive (the table write is queued).
+ * The bindings over their table: `admit(name, tuple)` claims a free name for `tuple` and answers
+ * whether the name is now `tuple`'s. The claim takes effect in memory at once (two claims of one
+ * name in one turn are exclusive) and its record is queued; a failed write is logged. A name's
+ * digest covers the random target id and epoch, so two tuples meet only by a hash collision: the
+ * table exists to keep a retired name from ever being re-bound, across restarts.
+ * Known limit: one record per name ever registered, kept for good (a tombstone that expired could
+ * be re-bound); the count grows with targets, renames and contributed tools, not with time.
  */
-export function createBindings(table) {
+export function createBindings(table, { warn = () => {} } = {}) {
   const claimed = new Map([...table.entries()].map(([name, record]) => [name, record.tuple]))
   return Object.freeze({
     admit(name, tuple) {
       const held = claimed.get(name)
       if (held !== undefined) return held === tuple
       claimed.set(name, tuple)
-      void table.put(name, Object.freeze({ name, tuple })).catch(() => {})
+      void table.put(name, Object.freeze({ name, tuple })).catch(warn)
       return true
     },
   })

@@ -128,8 +128,8 @@ export function createTargetRuntime(ctx, options) {
       for (const dispose of disposers.splice(0)) { try { dispose() } catch { /* one disposer's fault never stops the rest */ } }
       listeners.clear()
       bridge.close()
-      credentials.dispose()
       await link.stop()
+      await credentials.dispose()
     },
   })
 }
