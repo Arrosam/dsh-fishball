@@ -9,6 +9,7 @@ import { linkContractForSourceRun } from './contract-link.mjs'
 const ROOT_SUITES = Object.freeze({ dir: 'test', suffix: '.test.mjs', ownRunnerPrefix: 'native-production-' })
 const RUN = Object.freeze({
   serial: '--serial', parallel: '--parallel', fileConcurrency: 3, concurrency: '--test-concurrency=',
+  isolationFlags: Object.freeze(['--test-isolation', '--experimental-test-isolation']), processIsolation: '--experimental-test-isolation=process',
   prefix: 'fbtest-run-', signals: ['SIGINT', 'SIGTERM'], cancelExit: 130, runtimeDir: '.runtime', homes: 'test-homes', home: 'home', tmp: 'tmp', cache: 'cache',
   config: 'config', data: 'data', state: 'state', modules: 'node_modules', noUserConfig: '/dev/null',
 })
@@ -62,12 +63,19 @@ async function runJob({ sdk, files }, args, concurrency, children) {
 }
 
 /** Keep each file's dependent rows sequential; parallel mode only overlaps files and SDK jobs. */
-export async function runSuiteJobs(jobs, args, { defaultConcurrency = 1 } = {}) {
+export async function runSuiteJobs(jobs, args, { defaultConcurrency = 1, defaultParallel = false } = {}) {
   const serial = args.includes(RUN.serial)
-  const parallel = args.includes(RUN.parallel)
-  if (serial && parallel) throw new Error('choose either --serial or --parallel')
-  if (serial && args.some((arg) => arg.startsWith(RUN.concurrency))) throw new Error('--serial cannot be combined with --test-concurrency')
+  const explicitParallel = args.includes(RUN.parallel)
+  if (serial && explicitParallel) throw new Error('choose either --serial or --parallel')
+  const parallel = explicitParallel || (defaultParallel && !serial)
+  const overridesConcurrency = args.some((arg) => arg === RUN.concurrency.slice(0, -1) || arg.startsWith(RUN.concurrency))
+  if ((serial || parallel) && overridesConcurrency) throw new Error('managed scheduling cannot be combined with --test-concurrency')
+  if (parallel && args.some((arg) => RUN.isolationFlags.some((flag) => arg === flag || arg.startsWith(flag + '=')))) {
+    throw new Error('parallel scheduling manages Node test process isolation')
+  }
   const nodeArgs = args.filter((arg) => arg !== RUN.serial && arg !== RUN.parallel)
+  // Explicit CLI isolation takes precedence over NODE_OPTIONS inherited from the caller.
+  if (parallel) nodeArgs.unshift(RUN.processIsolation)
   const children = new Set()
   let cancelled = false
   const cancel = (signal) => {

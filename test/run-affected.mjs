@@ -14,7 +14,7 @@
  * whatever it names, a shelved suite included.
  *
  * --sdk chooses matching installed runtimes: `0.2.1-rc.5`, `0.2.2-rc.1` or `both` (default).
- * --parallel overlaps SDK jobs and files. --serial (the default) runs one file at a time.
+ * Normal V3 runs overlap SDK jobs and files. --serial runs one file at a time.
  * --list prints the selection and exits.
  */
 import { execFileSync } from 'node:child_process'
@@ -158,7 +158,9 @@ async function main(argv) {
     // Legacy files without an SDK suffix can gate individual rows on the active SDK.
     return version === undefined ? i === 0 || legacy.has(file) : version === sdk
   }) })).filter((job) => job.files.length)
-  return runSuiteJobs(jobs, opts.rest)
+  // The headless V3 batch passed the three-run gate; release and legacy keep their conservative default.
+  const defaultParallel = !opts.releaseCheck && process.env[REQUIRED_RELEASE.env] !== REQUIRED_RELEASE.on && !files.some((file) => legacy.has(file))
+  return runSuiteJobs(jobs, opts.rest, { defaultParallel })
 }
 
 // Imported (by a check or another script) it only exports; run as a script it runs.
