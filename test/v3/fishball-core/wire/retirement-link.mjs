@@ -10,17 +10,19 @@ export const linkScope = new AsyncLocalStorage()
 
 export function createLink(options) {
   const { links, acceptAt } = linkScope.getStore()
-  const trace = { target: options.target, starts: [], probes: [], sends: [] }
+  const trace = { target: options.target, starts: [], probes: [], selections: [], sends: [] }
   links.push(trace)
   const attempt = async (href) => {
     const url = new URL(href)
     const credential = await options.credentials({ url, origin: url.origin })
     trace.probes.push(href)
     if (!credential) return
-    const { clientId, kind, ref } = credential
+    const { clientId, kind, ref, secret } = credential
+    const selection = { href, secret, ref }
+    trace.selections.push(selection)
     const key = { origin: url.origin, clientId, kind, ref }
     if (await options.gate.hold(key)) return
-    trace.sends.push({ href, secret: credential.secret, ref })
+    trace.sends.push(selection)
     // An accepted token exchange saves before pairing; other attempts leave pending material intact.
     const accepted = href === acceptAt
     if (accepted) await credential.accepted?.()
