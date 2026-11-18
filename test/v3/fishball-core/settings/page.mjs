@@ -170,11 +170,13 @@ export function createWorld({
       post: () => ({ status: ROUTE.ok, json: { outcome: 'authorized' } }),
     },
     /**
-     * MULTI-1: core's owner-only target routes (SEAM_TARGETS.route), by document-relative path. The
-     * list answers `world.targets` (a TargetsSnapshot); a POST answers `world.targetAnswers[path]`
-     * (a function of the parsed body, default {ok: true}). Every call is in `fetches` too.
+     * MULTI-1: core's owner-only target routes (SEAM_TARGETS.route), by document-relative path, served
+     * only when a case opts in by setting `world.targets` (a TargetsSnapshot, or a function answering
+     * one): then the list answers it and a POST answers `world.targetAnswers[path]` (a function of the
+     * parsed body, default {ok: true}). Left undefined, those requests go to `world.fetchOther` like any
+     * other, so a harness that scripts them itself (fishball-ui's) keeps its own answers.
      */
-    targets: { version: MULTI_SET.snapshotVersion, targets: [] },
+    targets: undefined,
     targetAnswers: {},
   }
   const shim = createReactShim({ stale() { world.staleUpdates += 1 } })
@@ -400,7 +402,7 @@ export async function loadPage(t, world) {
     const call = { url: url.href, method, credentials: option('credentials'), cache: option('cache'), body: body === undefined ? undefined : String(body) }
     world.fetches.push(call)
     const isRoute = url.href === new URL(ROUTE.relative, world.base).href
-    const targetRoute = MULTI_SET.relative.find((p) => url.href === new URL(p, world.base).href)
+    const targetRoute = world.targets === undefined ? undefined : MULTI_SET.relative.find((p) => url.href === new URL(p, world.base).href)
     const targetHandler = () => {
       if (targetRoute === MULTI_SET.relative[0] && method === ROUTE.get) return typeof world.targets === 'function' ? world.targets() : { status: ROUTE.ok, json: world.targets }
       const answer = world.targetAnswers[targetRoute]
@@ -443,7 +445,7 @@ export async function loadPage(t, world) {
     react: world.React,
     'react-dom': { createPortal: (node) => node, createRoot: () => ({ render() {}, unmount() {} }) },
     'react-dom/client': { createRoot: () => ({ render() {}, unmount() {} }) },
-    '@deepseek-ai/dsh-client-ui-primitives': primitivesFor(world.sdk, world.React),
+    '@deepseek-ai/dsh-client-ui-primitives': primitivesFor(world.sdk, world.React, { modal: world.modal === true }),
     'react/jsx-runtime': jsxRuntime(world.React),
   }
   // Each graph entry's chunks load from its own package folder (DSH's package-local chunk route).
