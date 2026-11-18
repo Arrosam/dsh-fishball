@@ -4,13 +4,14 @@
  * Techniques per row id: EP, BVA, DT, ST (named in each title's row id).
  */
 import assert from 'node:assert/strict'
-import { test } from 'node:test'
+import { after, test } from 'node:test'
 import { setTimeout as sleep } from 'node:timers/promises'
 import { caseName } from '../../contract/package-boundaries/cases.mjs'
 import { until } from '../../../support/util.mjs'
 import * as K1 from '../../../../packages/dsh-connector/mcp-schema/index.js'
 import { C, FAKE_DSH, MULTI } from './constants.mjs'
 import { multiWorld } from './multi-world.mjs'
+import { browser as connectBrowser, startFakeConnector } from '../link-save/fakes.mjs'
 import {
   APPROVAL, CONNECT, ID_PATTERN, readableOf, LINK, MCP, PARENT_NAMES, SEAM_TARGETS, TARGETS, allocateSuffix, askToolNameOf, connectorTools, credentialNamesOf, eventMessageId, resolvedName, toolNameOf,
 } from './targets-oracle.mjs'
@@ -25,6 +26,13 @@ const VIEW_FIELDS = Object.freeze(['targetId', 'endpointEpoch', 'serverName', 'n
 const exposed = () => connectorTools(K1.TOOLS).filter((t) => ![K1.TOOL.inboxPoll, K1.TOOL.inboxAck, K1.TOOL.pair, K1.TOOL.setName].includes(t.name))
 const sourceOf = (v) => ({ targetId: v.targetId, endpointEpoch: v.endpointEpoch, serverName: v.serverName, name: v.name })
 const quiet = () => sleep(MULTI.budget.quietMs)
+/** RFC 6749 `state` and ConnectBegin's outcome word (connect.d.ts). */
+const OAUTH_STATE = 'state'
+const CONNECT_OUTCOME = Object.freeze({ approvalUrl: 'approval-url' })
+/** A Connect-capable fake target (link-save's: approval page, code + PKCE); stopped after the file. */
+const connectFakes = []
+after(async () => { for (const f of connectFakes.splice(0)) await f.stop().catch(() => {}) })
+async function connectFake() { const f = await startFakeConnector(); connectFakes.push(f); return f }
 
 export function registerMultiCases(sdk) {
   const standalone = multiWorld(sdk)
@@ -106,6 +114,15 @@ export function registerMultiCases(sdk) {
     assert.equal(v.identity, SEAM_TARGETS.identity.pending)
     assert.equal(v.kind, SEAM_TARGETS.kind.remote)
     assert.equal(v.removable, true); assert.equal(v.urlEditable, true)
+  })
+
+  row(sdk, 'MULTI-TGT-EP-04', 'loopback alias is another endpoint', 'setUrl from http://127.0.0.1:P/… to http://localhost:P/… (two origins, R9) replaces the epoch', async () => {
+    const w = await standalone()
+    const fake = await w.fake({ name: MULTI.name.office })
+    const { targetId } = await w.act('add', fake.url(FAKE_DSH.host.first))
+    const before = (await w.view(targetId)).endpointEpoch
+    ok(await w.act('setUrl', targetId, fake.url(FAKE_DSH.host.other), { confirmed: true }))
+    assert.notEqual((await w.view(targetId)).endpointEpoch, before, 'a change of origin kept the endpoint epoch')
   })
 
   // ============================================================== MULTI-HOST: the reserved parent
@@ -396,6 +413,70 @@ export function registerMultiCases(sdk) {
     assert.equal(system.includes(MULTI.name.adversarialNeedle), false, 'a server name in the persona')
     assert.ok(system.includes(MULTI.personaScheme), 'the persona does not name the tool scheme by role: ' + MULTI.personaScheme)
   })
+
+  // ============================================================== MULTI-CONN: Connect per target (Q05)
+  /** Two Connect-capable targets (the link-save fake: approval page, code + PKCE), the CIMD URL set; both begun. */
+  async function twoAttempts(w) {
+    const fa = await connectFake(w); const fb = await connectFake(w)
+    await w.h.call('mutate', { path: CONNECT.setting.split(MULTI.pathDot), value: MULTI.metadataUrl })
+    const ta = await w.act('add', fa.url()); const tb = await w.act('add', fb.url())
+    for (const t of [ta, tb]) await w.until(t.targetId, (v) => v.connect?.state === CONNECT.state.needsAuthorization, 'needs authorization')
+    const ra = await w.act('begin', ta.targetId); const rb = await w.act('begin', tb.targetId)
+    for (const r of [ra, rb]) assert.equal(r?.outcome, CONNECT_OUTCOME.approvalUrl, JSON.stringify(r))
+    return { fa, fb, a: ta.targetId, b: tb.targetId, ra, rb }
+  }
+  const grantOf = async (w, targetId) => credentialNamesOf(await w.view(targetId)).grantRecord
+  row(sdk, 'MULTI-CONN-ST-01', 'concurrent', 'A and B begin Connect at once: two pending attempts with distinct state; a second begin on A answers the same URL; completing B first then A authorizes each with its own grant record (connect-<id>-<epoch>); neither overwrites the other', async () => {
+    const w = await standalone()
+    const { fa, fb, a, b, ra, rb } = await twoAttempts(w)
+    assert.notEqual(new URL(ra.url).searchParams.get(OAUTH_STATE), new URL(rb.url).searchParams.get(OAUTH_STATE))
+    assert.equal((await w.act('begin', a)).url, ra.url, 'a second begin started another attempt')
+    await connectBrowser.approve(rb.url, { token: fb.addEntry().secret })
+    await w.until(b, (v) => v.connect?.state === CONNECT.state.authorized, 'B authorized')
+    assert.equal((await w.view(a)).connect?.state, CONNECT.state.authorizing, 'B\'s completion touched A\'s attempt')
+    await connectBrowser.approve(ra.url, { token: fa.addEntry().secret })
+    await w.until(a, (v) => v.connect?.state === CONNECT.state.authorized, 'A authorized')
+    const keys = (await w.h.call('credRecords')).map((r) => r.key)
+    for (const t of [a, b]) assert.ok(keys.includes(await grantOf(w, t)), 'no grant record for ' + t + ': ' + JSON.stringify(keys))
+  })
+  for (const [part, act] of [
+    ['cancel', (w, t) => w.act('cancel', t)],
+    ['remove', (w, t) => w.act('remove', t, { confirmed: true })],
+    ['url edit', async (w, t) => w.act('setUrl', t, (await connectFake()).url(), { confirmed: true })],
+  ]) {
+    row(sdk, 'MULTI-CONN-DT-01', part, `A's pending attempt, then ${part}; the approval completed late → nothing is saved for A (no grant record), A not authorized by it; B's attempt is unaffected and completes`, async () => {
+      const w = await standalone()
+      const { fa, fb, a, b, ra, rb } = await twoAttempts(w)
+      const before = await grantOf(w, a)
+      ok(await act(w, a, fa))
+      await connectBrowser.approve(ra.url, { token: fa.addEntry().secret }).catch(() => undefined)
+      await quiet()
+      const keys = (await w.h.call('credRecords')).map((r) => r.key)
+      assert.equal(keys.includes(before), false, 'the late completion saved a grant for A')
+      const view = await w.view(a)
+      if (view !== undefined) assert.notEqual(view.connect?.state, CONNECT.state.authorized, 'A was authorized by a cancelled attempt')
+      await connectBrowser.approve(rb.url, { token: fb.addEntry().secret })
+      await w.until(b, (v) => v.connect?.state === CONNECT.state.authorized, 'B authorized')
+    })
+  }
+  row(sdk, 'MULTI-CONN-DT-01', 'url edit to another origin of the same listener', 'A\'s attempt pending on http://127.0.0.1:P; setUrl to http://localhost:P (another origin, so another endpoint) → a new epoch; the late completion of the old attempt saves no grant and does not authorize A', async () => {
+    const w = await standalone()
+    const fa = await connectFake()
+    await w.h.call('mutate', { path: CONNECT.setting.split(MULTI.pathDot), value: MULTI.metadataUrl })
+    const { targetId } = await w.act('add', fa.url(FAKE_DSH.host.first))
+    await w.until(targetId, (v) => v.connect?.state === CONNECT.state.needsAuthorization, 'needs authorization')
+    const begun = await w.act('begin', targetId)
+    const before = await w.view(targetId)
+    ok(await w.act('setUrl', targetId, fa.url(FAKE_DSH.host.other), { confirmed: true }))
+    const after = await w.view(targetId)
+    assert.notEqual(after.endpointEpoch, before.endpointEpoch, 'the origin changed but the epoch was kept')
+    await connectBrowser.approve(begun.url, { token: fa.addEntry().secret }).catch(() => undefined)
+    await quiet()
+    const keys = (await w.h.call('credRecords')).map((r) => r.key)
+    assert.equal(keys.some((k) => k.includes(targetId)), false, 'the retired attempt saved a grant: ' + JSON.stringify(keys))
+    assert.notEqual((await w.view(targetId)).connect?.state, CONNECT.state.authorized, 'a retired attempt authorized the new endpoint')
+  })
+  test(caseName(sdk, 'MULTI-CONN-ST-02', 'web callback', 'the web callback /api/fishball/connect/callback resolves each concurrent attempt by its own state'), { todo: MULTI.webCallbackTodo }, () => {})
 
   // ============================================================== MULTI-EVT / MULTI-ASK (system)
   row(sdk, 'MULTI-EVT-SYS-01', 'same eventId, two targets', 'A and B both deliver eventId X → the manager gets two messages fbe_<handle A>, fbe_<handle B>; each acked only on its own target', async () => {
