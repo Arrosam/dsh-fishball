@@ -65,6 +65,26 @@ export interface LinkStatus {
  * parent alone: an added target never reads, writes or unsets them (`TARGETS.credentials`), so the
  * instance's "the child holds a credential" probe answers for the parent only. The instance's wire
  * and these names are unchanged; the instance's own remote-target override is withdrawn.
+ *
+ * Independent-review security amendment (additive; supersedes the origin-only reader above):
+ * - Both fixed core-private saved/pending records carry `TargetCredentialBinding` under
+ *   `TARGETS.credentials.bindingField`: `{targetId, endpointEpoch, origin, agentId}`. Before any
+ *   use, all four must match the current parent; the pending record additionally binds the
+ *   reference value's non-secret credential id. An origin match alone is never sufficient.
+ * - On startup recover the durable parent epoch and reconcile the instance setting BEFORE reading
+ *   the fixed reference or saved token. On every canonical endpoint change, same-origin included,
+ *   durably retire the old binding and delete its token material and pending reference before the
+ *   new epoch can connect. Cold restart must not adopt or relabel a retired/unmatched binding.
+ *   A fresh first handoff may establish its pending binding only after that reconciliation;
+ *   absence of a binding never permits reuse of saved/retired material as a fresh handoff.
+ * - Each read/authorization attempt captures its binding and runtime generation. A late completion
+ *   after retirement cannot save, unset or rebind the fixed reference/records, including when the
+ *   new endpoint has the same origin. Saving/unsetting also checks the reference value still
+ *   belongs to that attempt; a newer parent handoff remains untouched.
+ * - Q-LS1 still applies within that binding: a new unrefused reference value is tried before the
+ *   saved copy, and replaces it only once accepted. Refusal does not save the new value.
+ * These are core-private binding/retirement obligations, not changes to the instance's published
+ * names, credential probe, or handoff wire. Fresh install only; no legacy payload fallback.
  */
 export interface HostedImportNames {
   /** DSH's reference grammar `^[A-Za-z_][A-Za-z0-9_]*$` (both SDKs). */

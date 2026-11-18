@@ -61,6 +61,22 @@ export interface TargetSource {
 }
 
 /**
+ * The mandatory non-secret binding of a credential to its target and endpoint (PLAN-MULTI §3.1,
+ * §3.3, §5). Core-private credential payloads carry this under `TARGETS.credentials.bindingField`.
+ * All four members must match before a credential is used or a captured completion changes it.
+ * The fixed hosted record/reference names are NOT an exception to endpoint-epoch isolation:
+ * the saved parent token and the pending-reference binding both carry this metadata. The pending
+ * record also identifies the reference value by its non-secret credential id, never by a token.
+ * This adds no field to the instance's handoff wire or the public target/status snapshots.
+ */
+export interface TargetCredentialBinding {
+  readonly targetId: TargetId
+  readonly endpointEpoch: EndpointEpoch
+  readonly origin: string
+  readonly agentId: string
+}
+
+/**
  * Core's durable record of one target (storage `TARGETS.store`, keyed by `id`). Core alone writes
  * it, through the actions below; it holds no token value. The reserved parent's record is kept
  * too (its allocation must persist), but its `url` is always read from the instance's child
@@ -173,17 +189,31 @@ export interface FishballTargets {
 }
 
 /**
+ * A local target selector. Source-derived event/history callers MUST pass that source's
+ * `endpointEpoch`, even when constructing a new handle after asynchronous work: `targetId` alone
+ * would capture a replacement endpoint and silently retarget old remote ids. Target-id-only
+ * selectors remain valid for callers deliberately addressing the current endpoint, not old data.
+ */
+export interface TargetSelector {
+  readonly targetId: TargetId
+  readonly endpointEpoch?: EndpointEpoch
+}
+
+/**
  * The target-bound feature seams (PLAN-MULTI §4.4, §5): X12 `bridge` and X8 `attention` gain an
  * explicit target, captured with its epoch when the handle is made. A call on a handle whose target
  * was removed or whose epoch retired answers `unknown-target` and sends nothing; it never follows a
- * new URL or name. Remote tool names and arguments are unchanged.
+ * new URL or name. An expected `target.endpointEpoch` mismatch also fails closed at handle
+ * creation/attention dispatch, with `supports` false and calls answering `unknown-target`; it must
+ * not silently capture the current epoch instead. Source-derived selectors include that expected
+ * epoch (above), closing the late-handle-creation race. Remote tool names and arguments are unchanged.
  */
 export interface FishballTargetBound {
-  bridge(pluginId: string, operations: readonly string[], target: { readonly targetId: TargetId }): {
+  bridge(pluginId: string, operations: readonly string[], target: TargetSelector): {
     supports(name: string): boolean
     call(name: string, args?: object): Promise<unknown>
   }
   readonly attention: {
-    signal(pluginId: string, input: { readonly important: boolean }, target: { readonly targetId: TargetId }): Promise<unknown>
+    signal(pluginId: string, input: { readonly important: boolean }, target: TargetSelector): Promise<unknown>
   }
 }

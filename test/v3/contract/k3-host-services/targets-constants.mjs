@@ -20,7 +20,7 @@ export const TARGETS_FILE = Object.freeze({
 
 /** The names index.d.ts exports from targets.d.ts (the K3 brief and index.d.ts's MULTI-0 note). */
 export const TARGETS_EXPORTS = Object.freeze([
-  'TargetId', 'EndpointEpoch', 'TargetKind', 'TargetState', 'TargetIdentityState', 'TargetSource', 'TargetRecord', 'TargetView',
+  'TargetId', 'EndpointEpoch', 'TargetKind', 'TargetState', 'TargetIdentityState', 'TargetSource', 'TargetCredentialBinding', 'TargetSelector', 'TargetRecord', 'TargetView',
   'TargetsSnapshot', 'TargetActionResult', 'FishballTargets', 'FishballTargetBound', 'SetStatus', 'StatusSnapshot',
 ])
 
@@ -86,6 +86,9 @@ export const BOUND = Object.freeze({
   attention: Object.freeze({ member: 'attention', method: 'signal', params: 3 }),
   targetField: 'targetId',
   targetIdType: 'TargetId',
+  selectorType: 'TargetSelector',
+  epochField: 'endpointEpoch',
+  epochType: 'EndpointEpoch',
 })
 
 /** README "Provenance" and "Ask handle": AskCard.handle, AskCard.source, state `voided`; InterceptedEvent.source. */
