@@ -340,6 +340,12 @@ export function createInterception({ ledger, registry, delivery, link, logger })
     service,
     intake,
     recover,
+    /**
+     * MULTI-1 (PLAN-MULTI §3.1, §5): a target epoch was retired. Its events still waiting for
+     * Fishball are dropped from the delivery list; their records stay in the ledger as read-only
+     * history (state `fishball`, never delivered, never acked). Sends nothing.
+     */
+    retire: (retired) => delivery.retire(retired),
     close() { closed = true; delivery.close() },
   })
 }

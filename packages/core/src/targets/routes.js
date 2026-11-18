@@ -27,6 +27,7 @@ const BAD_REQUEST = Object.freeze([MCP.refusal.invalidArguments, LINK.code.insec
 const statusOf = (result) => {
   if (result?.ok === true || result?.outcome !== undefined) return HTTP.ok
   if (result?.code === REFUSAL.unknownTarget) return HTTP.notFound
+  if (result?.code === SEAM_TARGETS.unavailableCode) return HTTP.unavailable
   return BAD_REQUEST.includes(result?.code) ? HTTP.badRequest : HTTP.conflict
 }
 const unavailable = () => json(HTTP.unavailable, { code: SEAM_TARGETS.unavailableCode })
@@ -37,6 +38,9 @@ const beginAnswer = (begin) => {
   return { outcome: begin.outcome, ...Object.fromEntries(members.map((key) => [key, begin[key]])) }
 }
 const confirmed = (body) => ({ confirmed: body[FIELD.confirmed] === true })
+/** The one POST that names no target, and the text field each POST requires. */
+const NO_ID = Object.freeze([ROUTE.add])
+const TEXT_FIELD = Object.freeze({ [ROUTE.add]: FIELD.url, [ROUTE.url]: FIELD.url, [ROUTE.pairing]: FIELD.choice })
 
 /**
  * @param {object} ctx core's main row context (`connection.fetch`, `logger`)
@@ -47,7 +51,7 @@ const confirmed = (body) => ({ confirmed: body[FIELD.confirmed] === true })
 export function registerTargetRoutes(ctx, targets, { callbackFor = () => undefined } = {}) {
   const logger = ctx.logger?.(TARGET_LOG.name)
   const { service } = targets
-  /** POST action → its call with the parsed body; every one names a `targetId` except `add`. */
+  /** POST action → its call with the parsed body; every one names a `targetId` except `add` (`NO_ID`). */
   const actions = Object.freeze({
     [ROUTE.connect]: (body, request) => targets.beginVia(body[ROUTE.targetIdField], callbackFor(request)).then(beginAnswer),
     [ROUTE.cancel]: (body) => service.cancel(body[ROUTE.targetIdField]),
@@ -67,7 +71,11 @@ export function registerTargetRoutes(ctx, targets, { callbackFor = () => undefin
   const post = (path) => guarded(async (request) => {
     let body
     try { body = await request.json() } catch { body = undefined }
-    if (body === null || typeof body !== 'object' || Array.isArray(body)) return json(HTTP.badRequest, { ok: false, code: MCP.refusal.invalidArguments })
+    // A malformed body or field is 400 (SEAM_TARGETS.http); a well-formed id that names no target is 404.
+    const malformed = body === null || typeof body !== 'object' || Array.isArray(body)
+      || (!NO_ID.includes(path) && typeof body[ROUTE.targetIdField] !== 'string')
+      || (TEXT_FIELD[path] !== undefined && typeof body[TEXT_FIELD[path]] !== 'string')
+    if (malformed) return json(HTTP.badRequest, { ok: false, code: MCP.refusal.invalidArguments })
     const result = await actions[path](body, request)
     if (result === undefined) return unavailable()
     return json(statusOf(result), result)

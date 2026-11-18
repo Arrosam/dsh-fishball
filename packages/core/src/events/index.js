@@ -37,6 +37,6 @@ export { DISPATCH } from './constants.js'
 export function createEvents({ table, link, fishball, logger, now = Date.now, delay }) {
   const ledger = createLedger(table, now)
   const registry = createRegistry({ logger })
-  const delivery = createDelivery({ ledger, fishball, logger, delay })
+  const delivery = createDelivery({ ledger, fishball, logger, delay, live: (source) => link.live(source) })
   return createInterception({ ledger, registry, delivery, link, logger })
 }

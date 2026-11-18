@@ -48,6 +48,8 @@ const REFUSAL = SEAM_TARGETS.refusal
 const OK = Object.freeze({ ok: true })
 const refusal = (code) => Object.freeze({ ok: false, code })
 const UNKNOWN = refusal(REFUSAL.unknownTarget)
+// A durable write failed: nothing changed, the caller may try again (the routes' 503, SEAM_TARGETS.unavailableCode).
+const UNAVAILABLE = refusal(SEAM_TARGETS.unavailableCode)
 
 /** `SEAM_TARGETS.state`'s rule (its comment), first match wins; an unknown word is `failed`, never success. */
 function publicState(link, connect, connecting) {
@@ -90,10 +92,19 @@ export function createTargets(ctx, { tables, identityRecords, asks, events, reco
   let snapshot
 
   const warn = (what) => (error) => logger?.warn(TARGET_LOG.failed, what, codeOf(error))
-  const save = (record) => {
-    records.set(record.id, Object.freeze(record))
-    void tables.targets.put(record.id, records.get(record.id)).catch(warn(TARGET_LOG.save))
+  /**
+   * Writes a record durably, then adopts it (PLAN-MULTI §3.1, review M2): a change that retires an
+   * epoch is durable before the retirement runs, so a crash or a refused write can never bring a
+   * retired epoch or a removed target back. Rejects when the write fails, adopting nothing.
+   */
+  async function save(record) {
+    const frozen = Object.freeze(record)
+    await tables.targets.put(frozen.id, frozen)
+    records.set(frozen.id, frozen)
+    return frozen
   }
+  /** The name allocation of a rename (not a lifecycle change): adopted at once, persisted behind it. */
+  const saveName = (record) => { void save(record).catch(warn(TARGET_LOG.save)) }
   const urlOf = (record) => record.url
   const namesOf = (record) => Object.freeze({ serverName: record.serverName, name: resolvedName(record.serverName, record.duplicateSuffix) })
   const ordered = () => [...records.values()].filter((record) => runtimes.has(record.id)).sort((a, b) => a.order - b.order)
@@ -130,7 +141,11 @@ export function createTargets(ctx, { tables, identityRecords, asks, events, reco
     // The other CURRENT targets' complete names (D07 "other current target"): a stored parent record
     // of a profile that is no longer hosted holds no name.
     const taken = new Set(ordered().filter((other) => other.id !== id && other.serverName !== null).map((other) => resolvedName(other.serverName, other.duplicateSuffix)))
-    save({ ...record, serverName, duplicateSuffix: allocateSuffix(serverName, taken) })
+    // Adopted in memory before the write lands, so the façade renames at once; a failed write is
+    // logged and the next discovery (any restart included) allocates again.
+    const next = Object.freeze({ ...record, serverName, duplicateSuffix: allocateSuffix(serverName, taken) })
+    records.set(id, next)
+    saveName(next)
     runtimes.get(id)?.bridge.rename()
     refresh()
   }
@@ -159,21 +174,38 @@ export function createTargets(ctx, { tables, identityRecords, asks, events, reco
     return runtime
   }
 
-  /** Retires one epoch (removal or endpoint change): its runtime, open cards and token material; nothing remote. */
+  /** Whether `source` is the epoch `old`. */
+  const isEpoch = (old) => (source) => source?.targetId === old.targetId && source.endpointEpoch === old.endpointEpoch
+
   /**
-   * Retires one stored epoch (removal or endpoint change): stops its runtime if one runs (its late
-   * completions are fenced by their own disposal), voids its open cards and deletes its token
-   * material; nothing remote. Also for an epoch with no runtime (a parent epoch the instance moved
-   * while core was down: a cold restart must not adopt its material, MULTI-0 security amendment).
+   * Retires one epoch `old = {targetId, endpointEpoch}` (removal or endpoint change), after the
+   * record change is durable (`save` / delete first, review M2): stops its runtime if it is the one
+   * running (its late completions are fenced by their own disposal), drops its events waiting for
+   * Fishball and voids its open cards (read-only history), and deletes its token material; nothing
+   * remote. Also for an epoch with no runtime (a parent epoch the instance moved while core was
+   * down: a cold restart must not adopt its material, MULTI-0 security amendment).
    */
-  async function retire(id) {
-    const record = records.get(id)
-    await stopRuntime(id)
-    if (record === undefined) return
-    const { endpointEpoch } = record
-    await asks.voidWhere((source) => source.targetId === id && source.endpointEpoch === endpointEpoch).catch(warn(TARGET_LOG.reconcile))
-    await forgetCredentials(ctx.credentials, credentialNames({ targetId: id, endpointEpoch })).catch(warn(TARGET_LOG.forget))
+  async function retire(old) {
+    if (runtimes.get(old.targetId)?.endpointEpoch === old.endpointEpoch) await stopRuntime(old.targetId)
+    events.retire(isEpoch(old))
+    await asks.voidWhere(isEpoch(old)).catch(warn(TARGET_LOG.void))
+    await forgetCredentials(ctx.credentials, credentialNames(old)).catch(warn(TARGET_LOG.forget))
   }
+
+  /**
+   * One target's lifecycle actions run one after another (remove, URL change, the parent's
+   * renewal), so a second action never sees a target half way through a retirement (review m8).
+   */
+  const lanes = new Map()
+  function serial(id, task) {
+    const run = (lanes.get(id) ?? Promise.resolve()).then(task)
+    const tail = run.then(() => undefined, () => undefined)
+    lanes.set(id, tail)
+    void tail.then(() => { if (lanes.get(id) === tail) lanes.delete(id) })
+    return run
+  }
+  /** The URLs actions in flight are moving targets to: an `add` of one of them is a duplicate too (Q04). */
+  const claimedUrls = new Set()
 
   const nextOrder = () => [...records.values()].reduce((highest, record) => Math.max(highest, record.order + 1), 0)
   // The parent is always first (order 0); an added target follows every other.
@@ -192,7 +224,7 @@ export function createTargets(ctx, { tables, identityRecords, asks, events, reco
    */
   let parentSync = Promise.resolve()
   function syncParent() {
-    parentSync = parentSync.then(async () => {
+    parentSync = serial(TARGETS.parentId, async () => {
       if (closed) return
       const hosted = hostedIn(ctx)
       const url = parentUrl()
@@ -201,10 +233,12 @@ export function createTargets(ctx, { tables, identityRecords, asks, events, reco
         if (runtimes.has(TARGETS.parentId)) { await stopRuntime(TARGETS.parentId); refresh() }
         return
       }
-      if (stored === undefined) save({ ...newRecord(KIND.parent, url, TARGETS.parentId) })
+      if (stored === undefined) await save(newRecord(KIND.parent, url, TARGETS.parentId))
       else if (stored.url !== url) {
-        await retire(TARGETS.parentId)
-        save({ ...stored, url, endpointEpoch: generateToken(TARGETS.epoch), serverName: null, duplicateSuffix: null })
+        const old = { targetId: stored.id, endpointEpoch: stored.endpointEpoch }
+        await stopRuntime(TARGETS.parentId)
+        await save({ ...stored, url, endpointEpoch: generateToken(TARGETS.epoch), serverName: null, duplicateSuffix: null })
+        await retire(old)
       }
       if (!runtimes.has(TARGETS.parentId)) startRuntime(records.get(TARGETS.parentId))
       refresh()
@@ -213,9 +247,10 @@ export function createTargets(ctx, { tables, identityRecords, asks, events, reco
   }
 
   /** A canonical endpoint some other current target already has (the parent's live URL included). */
-  const taken = (href, except) => ordered().some((record) => record.id !== except && canonical(urlOf(record)).href === href)
+  const taken = (href, except) => claimedUrls.has(href) || ordered().some((record) => record.id !== except && canonical(urlOf(record)).href === href)
 
-  const known = (id) => (typeof id === 'string' && runtimes.has(id) ? records.get(id) : undefined)
+  // Known: a current target, or one whose lifecycle action is in flight (`serial`).
+  const known = (id) => (typeof id === 'string' && (runtimes.has(id) || lanes.has(id)) ? records.get(id) : undefined)
 
   const service = Object.freeze({
     list: () => snapshot,
@@ -224,39 +259,60 @@ export function createTargets(ctx, { tables, identityRecords, asks, events, reco
       const endpoint = canonical(url)
       if (!endpoint.ok) return endpoint
       if (taken(endpoint.href)) return refusal(REFUSAL.targetDuplicate)
-      const record = newRecord(KIND.remote, endpoint.href, generateToken(TARGETS.id))
-      save(record)
-      startRuntime(record)
-      refresh()
-      return Object.freeze({ ok: true, targetId: record.id })
+      claimedUrls.add(endpoint.href)
+      try {
+        const record = await save(newRecord(KIND.remote, endpoint.href, generateToken(TARGETS.id)))
+        startRuntime(record)
+        refresh()
+        return Object.freeze({ ok: true, targetId: record.id })
+      } catch (error) { warn(TARGET_LOG.save)(error); return UNAVAILABLE } finally { claimedUrls.delete(endpoint.href) }
     },
-    async remove(targetId, { confirmed = false } = {}) {
+    remove(targetId, { confirmed = false } = {}) {
       const record = known(targetId)
-      if (record === undefined) return UNKNOWN
-      if (record.kind === KIND.parent) return refusal(REFUSAL.targetReserved)
-      if (confirmed !== true) return refusal(REFUSAL.confirmationRequired)
-      await retire(targetId)
-      records.delete(targetId)
-      await tables.targets.delete(targetId).catch(warn(TARGET_LOG.save))
-      refresh()
-      return OK
+      if (record === undefined) return Promise.resolve(UNKNOWN)
+      if (record.kind === KIND.parent) return Promise.resolve(refusal(REFUSAL.targetReserved))
+      if (confirmed !== true) return Promise.resolve(refusal(REFUSAL.confirmationRequired))
+      return serial(targetId, async () => {
+        const current = records.get(targetId)
+        if (current === undefined) return UNKNOWN
+        // Durable first (review M2): a failed delete changes nothing at all.
+        try { await tables.targets.delete(targetId) } catch (error) { warn(TARGET_LOG.save)(error); return UNAVAILABLE }
+        records.delete(targetId)
+        await retire({ targetId, endpointEpoch: current.endpointEpoch })
+        refresh()
+        return OK
+      })
     },
-    async setUrl(targetId, url, { confirmed = false } = {}) {
+    setUrl(targetId, url, { confirmed = false } = {}) {
       const record = known(targetId)
-      if (record === undefined) return UNKNOWN
-      if (record.kind === KIND.parent) return refusal(REFUSAL.targetReserved)
+      if (record === undefined) return Promise.resolve(UNKNOWN)
+      if (record.kind === KIND.parent) return Promise.resolve(refusal(REFUSAL.targetReserved))
       const endpoint = canonical(url)
-      if (!endpoint.ok) return endpoint
+      if (!endpoint.ok) return Promise.resolve(endpoint)
       // The same endpoint, however spelled: no new epoch, nothing retired (PLAN-MULTI §3.1).
-      if (endpoint.href === canonical(record.url).href) return OK
-      if (taken(endpoint.href, targetId)) return refusal(REFUSAL.targetDuplicate)
-      if (confirmed !== true) return refusal(REFUSAL.confirmationRequired)
-      await retire(targetId)
-      const next = { ...record, url: endpoint.href, endpointEpoch: generateToken(TARGETS.epoch), serverName: null, duplicateSuffix: null }
-      save(next)
-      startRuntime(next)
-      refresh()
-      return OK
+      if (endpoint.href === canonical(record.url).href) return Promise.resolve(OK)
+      if (taken(endpoint.href, targetId)) return Promise.resolve(refusal(REFUSAL.targetDuplicate))
+      if (confirmed !== true) return Promise.resolve(refusal(REFUSAL.confirmationRequired))
+      claimedUrls.add(endpoint.href)
+      return serial(targetId, async () => {
+        const current = records.get(targetId)
+        if (current === undefined) return UNKNOWN
+        const old = { targetId, endpointEpoch: current.endpointEpoch }
+        // Stop the old epoch, then make the new one durable, then retire the old one (review M2):
+        // a failed write restarts the old epoch as it was.
+        await stopRuntime(targetId)
+        let next
+        try { next = await save({ ...current, url: endpoint.href, endpointEpoch: generateToken(TARGETS.epoch), serverName: null, duplicateSuffix: null }) } catch (error) {
+          warn(TARGET_LOG.save)(error)
+          startRuntime(current)
+          refresh()
+          return UNAVAILABLE
+        }
+        await retire(old)
+        startRuntime(next)
+        refresh()
+        return OK
+      }).finally(() => claimedUrls.delete(endpoint.href))
     },
     begin: (targetId) => beginVia(targetId, undefined),
     async cancel(targetId) {
@@ -361,10 +417,22 @@ export function createTargets(ctx, { tables, identityRecords, asks, events, reco
     refresh()
   }
 
-  // Start: the records of this profile, then the parent if hosted.
+  // Start: the records of this profile, then the parent if hosted (its epoch reconciled with the
+  // instance's value before any of its credentials is read), then the sweep of retired epochs.
   for (const record of [...records.values()].sort((a, b) => a.order - b.order)) if (record.kind === KIND.remote) startRuntime(record)
   refresh()
-  void syncParent()
+  void syncParent().then(sweep)
+
+  /**
+   * Voids every open card of an epoch that is no current record's (review M2): a retirement whose
+   * voiding failed, or ended by a crash, is completed at the next start. Its events are never
+   * delivered anyway (delivery's `live` check). Sends nothing.
+   */
+  function sweep() {
+    if (closed) return undefined
+    const current = (source) => records.get(source?.targetId)?.endpointEpoch === source.endpointEpoch
+    return asks.voidWhere((source) => !current(source)).catch(warn(TARGET_LOG.void))
+  }
 
   return Object.freeze({
     service,

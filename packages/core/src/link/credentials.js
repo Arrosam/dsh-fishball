@@ -105,11 +105,12 @@ export function credentialNames({ targetId, endpointEpoch }) {
  * Deletes a retired target epoch's token material (MULTI-0 `FishballTargets.remove` / `setUrl`,
  * Q07; a parent epoch the instance re-pointed, security amendment): its Connect grant, its saved
  * token copy and its reference. An added target's are that epoch's alone. The parent's are fixed
- * names every parent epoch uses, so each goes only while it belongs to the retired epoch: the saved
- * copy and the pending binding when their binding names that epoch, the reference value unless the
- * pending record binds it to another epoch (an unbound value was written under the retired one, and
- * an absent binding never makes old material a fresh handoff). Local only: nothing is revoked at the
- * connector. The caller runs it after the epoch's credentials are disposed and settled.
+ * names every parent epoch uses, so each goes only while it is bound to the retired epoch (the
+ * MULTI-0 lead's decision on review M3, 2026-11-18): the saved copy and the pending record when
+ * their binding names that epoch, and the reference value only when the pending record binds that
+ * very value to it. An unbound value stays: it may be the instance's fresh handoff for the new
+ * endpoint, which the new epoch binds at its first attempt, after this reconciliation. Local only:
+ * nothing is revoked at the connector. The caller runs it after the epoch's credentials are disposed.
  */
 export async function forgetCredentials(credentials, names) {
   await credentials.deleteRecord(names.grantKey())
@@ -119,9 +120,9 @@ export async function forgetCredentials(credentials, names) {
     return
   }
   const [value, pending, saved] = await Promise.all([credentials.resolve(names.ref), credentials.readRecord(names.pending), credentials.readRecord(names.tokenRecord)])
-  const pendingForValue = value?.value !== undefined && pending?.payload?.ref === tokenCredentialId(value.value)
-  if (value?.value !== undefined && (!pendingForValue || ofEpoch(pending.payload, names))) await credentials.unset(names.ref)
-  if (ofEpoch(pending?.payload, names)) await credentials.deleteRecord(names.pending)
+  const pendingOfEpoch = ofEpoch(pending?.payload, names)
+  if (pendingOfEpoch && value?.value !== undefined && pending.payload.ref === tokenCredentialId(value.value)) await credentials.unset(names.ref)
+  if (pendingOfEpoch) await credentials.deleteRecord(names.pending)
   if (ofEpoch(saved?.payload, names)) await credentials.deleteRecord(names.tokenRecord)
 }
 
