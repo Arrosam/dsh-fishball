@@ -136,7 +136,7 @@ export async function openTokensPage(t, { sdk, world, routes, lang = FIXTURE.lan
   const served = []
   const configForms = {
     whileServed(namespaces, register) { served.push([...namespaces]); const dispose = register(); return () => { if (typeof dispose === 'function') dispose() } },
-    get: () => ({ getSnapshot: () => snapshot(), subscribe: () => () => {}, mutate, set: async () => false, dispose() {} }),
+    get: () => ({ getSnapshot: formSnapshot, subscribe: () => () => {}, mutate, set: async () => false, dispose() {} }),
   }
   const { Context } = await import(pathToFileURL(path.join(runtimeOf(sdk), BOOT.cordisEntry)).href)
   const root = new Context()
@@ -153,6 +153,8 @@ export async function openTokensPage(t, { sdk, world, routes, lang = FIXTURE.lan
   let revision = FIXTURE.revision
   const others = structuredClone(settings)
   const mutations = []
+  let recovery
+  function formSnapshot() { return recovery?.previous ?? snapshot() }
   function snapshot() {
     return { status: 'ready', value: { ...structuredClone(others), [CLIENT.tokensField]: world.doc.tokens }, base: undefined, user: undefined, revision, writable: true }
   }
@@ -179,8 +181,11 @@ export async function openTokensPage(t, { sdk, world, routes, lang = FIXTURE.lan
     }
     await world.settled()
     revision += 1
+    // Without a write reply the form keeps its previous snapshot until recovery reads the host.
+    const acknowledged = !recovery && accepted
+    if (recovery) { await recovery.reread; recovery = undefined }
     shim.rerender()
-    return accepted
+    return acknowledged
   }
   /** Another editor (another tab) saves `ops` at the live revision: the page re-renders with it. */
   async function external(ops) {
@@ -201,6 +206,8 @@ export async function openTokensPage(t, { sdk, world, routes, lang = FIXTURE.lan
     /** The page's window and the sandbox's own timers' cleanup (R-FIX-CUI: visibility, unmount). */
     window: page.window,
     stateReads: () => stateReads,
+    loseNextSaveReply(reread) { recovery = { previous: snapshot(), reread } },
+    formValue: () => formSnapshot().value,
     /** The host form's live value and revision (what a save changed). */
     value: () => snapshot().value,
     revision: () => revision,
@@ -211,7 +218,7 @@ export async function openTokensPage(t, { sdk, world, routes, lang = FIXTURE.lan
       const entry = pageApi.entry()
       assert.ok(entry, `no ${CLIENT.slot} entry with key ${CLIENT.slotKey}`)
       const key = 'page-' + ++mounted
-      shim.mount(key, () => React.createElement(entry.Component, { view, form: { state: snapshot(), mutate } }))
+      shim.mount(key, () => React.createElement(entry.Component, { view, form: { state: formSnapshot(), mutate } }))
       await settle()
       const tree = () => shim.treeOf(key)
       return {

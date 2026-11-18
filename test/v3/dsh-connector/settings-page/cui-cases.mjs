@@ -378,24 +378,38 @@ function dshNaming(sdk) {
       assert.equal(field.shown(), want ?? '', 'the field does not show the saved name exactly')
     })
   }
-  row(sdk, id, 'R1B slow save', 'Enter and then blur before persistence replies → saved name, no false refusal', async (t) => {
-    const first = held(), next = held()
-    let calls = 0
-    const { page, field } = await nameField(t, sdk, { state: pairedAs(FIXTURE.labelA), beforeSave: () => (++calls === 1 ? first : next).promise })
-    assert.equal(field.shown(), '')
-    const revision = page.revision()
-    await field.type(DSH_NAME.live)
-    await field.keyAndBlur(CUI.keys.enter)
-    assert.ok(page.mutations.length, 'Enter did not submit the edit')
-    first.release()
-    await page.until(() => valueAt(page.value(), P) === DSH_NAME.live)
-    await page.settle()
-    next.release()
-    await page.settle()
-    assert.equal(field.shown(), DSH_NAME.live)
-    assert.deepEqual(field.alerts(), [], 'the host accepted this save')
-    assert.deepEqual(page.mutations, [{ ops: setOf(P, DSH_NAME.live), expected: revision, liveRevision: revision }])
-  })
+  // Same committed edit and gesture; only delivery of the acknowledgement differs.
+  const replies = [
+    { part: 'R1B slow save', lang: FIXTURE.lang, alerts: [] },
+    ...POLISH.langs.map((lang) => ({ part: `R1B lost reply (${lang})`, lang, alerts: [DSH_NAME.unconfirmed[lang]] })),
+  ]
+  for (const { part, lang, alerts } of replies) {
+    row(sdk, id, part, `Enter then blur → one persisted edit; ${alerts.length ? 'lost reply leaves an unconfirmed-change alert' : 'intact reply leaves no alert'}`, async (t) => {
+      const first = held(), next = held()
+      let calls = 0
+      const { page, field } = await nameField(t, sdk, { lang, state: pairedAs(FIXTURE.labelA), beforeSave: () => (++calls === 1 ? first : next).promise })
+      assert.equal(field.shown(), '')
+      const revision = page.revision()
+      const reread = alerts.length ? held() : null
+      if (reread) page.loseNextSaveReply(reread.promise)
+      await field.type(DSH_NAME.live)
+      await field.keyAndBlur(CUI.keys.enter)
+      assert.ok(page.mutations.length, 'Enter did not submit the edit')
+      first.release()
+      await page.until(() => valueAt(page.value(), P) === DSH_NAME.live)
+      if (reread) {
+        assert.equal(valueAt(page.formValue(), P), undefined, 'the form received a success snapshot despite the lost reply')
+        reread.release()
+        await page.until(() => valueAt(page.formValue(), P) === DSH_NAME.live)
+      }
+      await page.settle()
+      next.release()
+      await page.settle()
+      assert.equal(field.shown(), DSH_NAME.live)
+      assert.deepEqual(field.alerts(), alerts)
+      assert.deepEqual(page.mutations, [{ ops: setOf(P, DSH_NAME.live), expected: revision, liveRevision: revision }])
+    })
+  }
   row(sdk, id, 'R1B stale save', 'host refuses a stale revision → name unchanged, draft retained; retry at the new revision clears the reason', async (t) => {
     const hold = held()
     const { page, field } = await nameField(t, sdk, { saved: S, state: pairedAs(FIXTURE.labelA), beforeSave: () => hold.promise })
@@ -409,7 +423,8 @@ function dshNaming(sdk) {
     assert.notEqual(current, revision)
     hold.release()
     await page.until(() => field.alerts().length > 0)
-    assert.match(field.alerts().join(' '), DSH_NAME.refusalReason)
+    assert.deepEqual(field.alerts(), [DSH_NAME.unconfirmed[FIXTURE.lang]])
+    assert.deepEqual(page.mutations, [{ ops, expected: revision, liveRevision: revision }], 'no retry before the owner presses Enter again')
     assert.equal(valueAt(page.value(), P), S)
     assert.equal(field.shown(), DSH_NAME.live)
     await field.key(CUI.keys.enter)
