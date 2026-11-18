@@ -3,6 +3,7 @@
  * BVA/ST: pause Continue at its durable write, retire by remove / shutdown / replacement, then release.
  * EP/DT: ambient A remains effective vs. writable B masks A; only B may bind to the replacement.
  * ST: B is accepted → save unsets B and exposes A → retry and restart still select B.
+ * ST: E1 observes A then B → renewal clears B and exposes A → E2 still refuses A across restart.
  */
 import assert from 'node:assert/strict'
 import { registerHooks } from 'node:module'
@@ -159,6 +160,44 @@ export function registerRetirementCases(sdk) {
     assert.equal((await w.credentials.resolve(PARENT_NAMES.tokenRef))?.value === w.secret, true, 'ambient A is still effective in DSH')
     assert.ok(!w.writes.some(([k, r]) => k === PARENT_NAMES.pendingRecord && r.payload.ref === ambientRef && parentBinding(r)?.endpointEpoch === after.endpointEpoch), 'the old token was rebound to E2')
     assert.ok(!links.some(l => l.sends.some(s => s.href === NEXT && s.secret === w.secret)), 'the replacement origin received the old token')
+  })
+
+  row('parent renewal clears the last writable token without reviving the earlier ambient token', async (t, links) => {
+    const durable = stores()
+    const w = await world(t, sdk, OLD, durable)
+    const id = TARGETS.parentId, before = w.view(id), [old] = links
+    const ref = PARENT_NAMES.tokenRef
+    await old.done
+    assert.ok(old.selections.some(s => s.href === OLD && s.secret === w.secret), 'E1 did not observe ambient A')
+
+    const writable = token()
+    w.refs.set(ref, writable)
+    const from = old.selections.length
+    assert.equal((await w.service.retry(id)).ok, true)
+    await old.done
+    assert.equal(w.view(id).endpointEpoch, before.endpointEpoch, 'B must be observed on E1')
+    assert.ok(old.selections.slice(from).some(s => s.href === OLD && s.secret === writable), 'E1 did not observe writable B')
+    assert.equal((await w.credentials.resolve(ref))?.value === writable, true, 'B must still mask A at renewal')
+
+    const { after } = await renewParent(w, links, before, old)
+    const check = async (phase, world, phaseLinks) => {
+      assert.equal((await world.credentials.resolve(ref))?.value === w.secret, true, `${phase}: clearing B did not expose A`)
+      assert.ok(!phaseLinks.some(l => l.sends.some(s => s.href === NEXT && s.secret === w.secret)), `${phase}: the replacement origin received ambient A`)
+      assert.ok(!phaseLinks.some(l => l.selections.some(s => s.href === NEXT && s.secret === w.secret)), `${phase}: E2 selected ambient A before the transport gate`)
+      // A is the only available input. Its binding must not be written even if transport is held.
+      // Check only the contract binding, not the pending record's presence, ref or metadata layout.
+      assert.ok(!world.writes.some(([, record]) => parentBinding(record)?.endpointEpoch === after.endpointEpoch), `${phase}: a parent credential was bound to E2`)
+    }
+    await t.test('replacement probe after B is cleared', async () => check('renewal', w, links))
+    await w.controller.close()
+
+    const beforeRestart = links.length
+    const again = await world(t, sdk, NEXT, durable)
+    const restarted = links.at(-1)
+    await restarted.done
+    assert.equal(again.view(id).endpointEpoch, after.endpointEpoch)
+    assert.ok(restarted.probes.includes(NEXT), 'E2 did not request credentials after restart')
+    await check('cold restart', again, links.slice(beforeRestart))
   })
 
   row('parent renewal saves a fresh writable token and keeps using it after unmask and restart', async (t, links) => {
