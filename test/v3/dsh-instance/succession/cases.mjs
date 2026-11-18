@@ -63,6 +63,12 @@ async function assertPending(w, expected, message) {
   assert.equal(await w.pendingOnDisk(), expected, message + ' (hosted.json reopened)')
 }
 
+/** A pair change doesn't await the retire acknowledgement or the ensuing record write. */
+async function untilRetireSettled(w, callCount) {
+  await until(async () => w.retired().length >= callCount && w.record.pending() === undefined &&
+    (await w.pendingOnDisk()) === undefined, 'the acknowledged retire to clear pending in memory and on disk')
+}
+
 export function registerSuccessionCases(sdk) {
   row(sdk, 'MULTI-2', 'host ST succession with extra credentials', 'reinstall provisions actual parent and retires its predecessor while extra target credentials remain isolated', async (t) => {
     const w = await successionWorld(t, sdk)
@@ -187,6 +193,7 @@ export function registerSuccessionCases(sdk) {
     await expectRetired(w.retired, [call, call])
     await assertPending(w, ENTRY.e1, 'after the second refusal')
     w.tokens.emit()
+    await untilRetireSettled(w, 3)
     await expectRetired(w.retired, [call, call, call])
     await assertPending(w, undefined, 'after ok')
     w.tokens.emit()
@@ -439,7 +446,7 @@ function recordWriteRows(sdk) {
   })
   for (const [part, title, trigger] of [
     ['2 (next start)', 'the next start', (w) => w.start()],
-    ['2 (pair change)', 'a pair change', (w) => { w.tokens.emit() }],
+    ['2 (pair change)', 'a pair change', async (w) => { w.tokens.emit(); await untilRetireSettled(w, 1) }],
   ]) {
     row(sdk, CASE.write, part, `writes recover → ${title} replays the add (E2, its pending succession) before retire(E1, E2); nothing new is created`, async (t) => {
       const w = await unrecorded(t)
@@ -561,6 +568,7 @@ function promptRows(sdk) {
     await w.start()
     w.tokens.answer(async () => { w.tokens.emit(); return OUTCOME.unpaired })
     await w.reinstall()
+    await untilRetireSettled(w, 2)
     await expectRetired(w.retired, [[ENTRY.e1, ENTRY.e2], [ENTRY.e1, ENTRY.e2]])
     await assertPending(w, undefined, 'after the second call answered ok')
   })

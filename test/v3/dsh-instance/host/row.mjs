@@ -20,6 +20,7 @@ import { importInstance } from '../../../private-skills/support/sdk.mjs'
 import { V3 } from '../../contract/package-boundaries/constants.mjs'
 import { FIXTURE, K3, RELAYED, RFI } from './constants.mjs'
 import { fakeChildCredentials, fakeTokens } from './fakes.mjs'
+import { fixtureScope } from './subject.mjs'
 
 const worlds = (globalThis[Symbol.for(RFI.worldsKey)] ??= new Map())
 const FAKE_RUNTIME = pathToFileURL(path.join(import.meta.dirname, 'fake-runtime.mjs')).href
@@ -85,7 +86,8 @@ export async function rowWorld(t, sdk, { home, enabled = true, targetUrl = FIXTU
     holdRecord: false, recordGate: gate(), recordHeld: gate(),
   }
   worlds.set(id, ctl)
-  t.after(() => worlds.delete(id))
+  const scope = fixtureScope(t)
+  scope.defer(() => worlds.delete(id))
   const url = new URL(pathToFileURL(path.join(V3.instance.dir, RELAYED.modules.host)))
   url.searchParams.set('fbsdk', sdk)
   url.searchParams.set(RFI.worldParam, id)
@@ -128,6 +130,12 @@ export async function rowWorld(t, sdk, { home, enabled = true, targetUrl = FIXTU
     async apply() {
       const c = makeCtx()
       contexts.push(c)
+      scope.defer(() => {
+        // An assertion may exit while a fake write or aborted start is blocked on the row.
+        ctl.recordGate.open()
+        ctl.cleanupGate.open()
+        return c.dispose()
+      })
       await host.apply(c.ctx, { [RFI.row.enabled]: fields[RFI.row.enabled].ref, [RFI.row.target]: fields[RFI.row.target].ref })
       return c
     },
@@ -145,6 +153,5 @@ export async function rowWorld(t, sdk, { home, enabled = true, targetUrl = FIXTU
       return true
     },
   }
-  t.after(async () => { for (const c of contexts) await c.dispose().catch(() => {}) })
   return world
 }

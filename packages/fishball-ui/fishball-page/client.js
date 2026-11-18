@@ -46,10 +46,8 @@ window.__ModuleLoader__.load({
        * 480px is the narrow breakpoint DSH's chat CSS uses (dsh-client-ui-chat, both SDKs); 44px is
        * DSH's 36px rail rows plus 4px padding each side. The row overflows by horizontal scroll (the
        * user: no More menu). `sheetGutterPx`: an expanded sidebar leaves this much of the
-       * conversation visible, as rc.1's drawer does (dsh-client-ui-layout `viewport - 48`). On 0.2.2
-       * the 480px query always meets its drawer (below 768px), so the bar is rc.5's; a Windows title
-       * bar (no drawer) hides the collapsed rail's panels in DSH's own CSS, so the bar is not applied
-       * there either (`hook.windows`).
+       * conversation visible, as rc.1's drawer does (dsh-client-ui-layout `viewport - 48`). Windows
+       * titlebar mode supplies caption controls instead of a collapsed rail on both SDKs.
        */
       hasSupport: 'selector(:has(a))',
       narrow: Object.freeze({ query: '(max-width: 480px)', clearancePx: 44, sheetGutterPx: 48, layer: 25 }),
@@ -62,11 +60,12 @@ window.__ModuleLoader__.load({
        * frame is the parent of its `data-shell-bottom` seat and carries `data-sidebar-collapsed` /
        * `data-sidebar-drawer` (dsh-client-ui-layout AppFrame); the sidebar's root is the one child of
        * its slot anchor; its regions are the parents of their slot anchors (dsh-client-ui-sidebar).
-       * rc.1's drawer (below 768px) is `inert` while closed, which CSS cannot lift, so the bar never
-       * applies to a drawer frame: there the native drawer opener stays and the drawer is the sidebar.
+       * rc.1 keeps rendering wide controls inside its closed, inert drawer. The bar borrows that
+       * column only while mountDrawerBar can make it interactive; the opener itself is untouched.
        */
       hook: Object.freeze({
         frame: ':has(>[data-shell-bottom])', drawer: '[data-sidebar-drawer]', collapsed: '[data-sidebar-collapsed]',
+        column: '>:has(>[data-slot="sidebar"])',
         sidebar: '[data-slot="sidebar"]>*', workspaces: ':has(>[data-slot="sidebar.workspaces"])',
         foot: ':has([data-slot="sidebar.settings"])', regions: ':has(>[data-slot="sidebar.footer.action"]),:has(>[data-slot="sidebar.settings"])',
         handle: '[data-side="sidebar"]', windows: '[data-windows-titlebar]', centre: ':has([data-slot="main"])', rightbar: '[data-rightbar-col]',
@@ -187,19 +186,23 @@ window.__ModuleLoader__.load({
 
     /**
      * The narrow bottom bar (PLAN-MULTI §6.4): DSH's real sidebar column, restyled. Scoped to this
-     * page, to `PAGE.narrow.query` and to a frame that is not rc.1's drawer, so DSH elsewhere and
+     * page and to `PAGE.narrow.query`, without touching the native open drawer, so DSH elsewhere and
      * every wider window look as DSH draws them. Collapsed (the native rail), the column is a fixed
      * 44px row on the bottom edge: the native toggle, every `sidebar.panellist` row with its own
      * icon and active state, and the foot (this page's Fishball entry, Settings) kept in view at the
-     * row's end while the panels scroll under it. Expanded (the native toggle), it is a sheet over
+     * row's end while the panels scroll between it and the toggle. Expanded, it is a sheet over
      * the conversation, leaving `sheetGutterPx` of it visible, with the target list.
      */
     function barRules(root) {
       const { hook, narrow } = PAGE
-      const frame = `${root}:not(${hook.windows}) ${hook.frame}:not(${hook.drawer})`
-      const column = `>:has(>[data-slot="sidebar"])`
-      const bar = `${frame}${hook.collapsed}${column}`
-      const sheet = `${frame}:not(${hook.collapsed})${column}`
+      const base = `${root}:not(${hook.windows}) ${hook.frame}`
+      const frame = `${base}:not(${hook.drawer})`
+      const closed = `${base}${hook.collapsed}`
+      const bar = `${closed}${hook.column}`
+      const rail = `${frame}${hook.collapsed}${hook.column} ${hook.sidebar}`
+      const sheet = `${frame}:not(${hook.collapsed})${hook.column}`
+      const drawer = `${closed}${hook.drawer}${hook.column}`
+      const drawerRoot = `${drawer} ${hook.sidebar}`
       const each = (prefix, list) => list.split(',').map((one) => `${prefix}${one}`).join(',')
       const sidebar = `${bar} ${hook.sidebar}`
       return [
@@ -216,15 +219,29 @@ window.__ModuleLoader__.load({
         `${bar}{position:fixed;left:0;right:0;bottom:0;top:auto;height:${narrow.clearancePx}px;width:auto;z-index:${narrow.layer};box-sizing:border-box;border-right:none;border-top:.5px solid var(--dsw-alias-border-l3);background:var(--dsw-specific-sidebar-fill)}`,
         `${sidebar}{flex-direction:row!important;align-items:center;gap:4px;width:100%!important;height:100%;padding:4px 0 4px 8px!important;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;overscroll-behavior-x:contain}`,
         `${sidebar}>*{display:flex;flex-direction:row!important;align-items:center!important;flex:none!important;gap:4px!important;height:auto!important;margin:0!important;padding:0!important}`,
+        // Keep focus scrolling native. If the entire row scrolls, Chromium considers a panel
+        // behind the sticky foot visible and won't scroll it into view on Tab. Use the actual
+        // panel nav as the scrollport, with the toggle and footer outside its clip.
+        `${sidebar}>nav{flex:0 1 auto!important;min-width:0;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;overscroll-behavior-x:contain}`,
+        `${sidebar}>nav>button{flex:none}`,
         // The list lives in the sheet; the bar is navigation only.
         `${sidebar}>${hook.workspaces}{display:none!important}`,
         `${sidebar}>${hook.foot}{position:sticky;right:0;margin-left:auto!important;padding:0 8px!important;align-self:stretch;background:var(--dsw-specific-sidebar-fill);box-shadow:-.5px 0 0 var(--dsw-alias-border-l3)}`,
         `${each(`${sidebar} `, hook.regions)}{display:flex!important;flex-direction:row;align-items:center;gap:4px;width:auto!important}`,
         // The rail's toggle shows the brand mark until hovered; in the bar it shows DSH's own
         // open-sidebar glyph, its sibling, so it is not taken for this page's Fishball button.
-        `${sidebar} span:has(>[data-slot="sidebar.brand.mark"]){display:none!important}`,
-        `${sidebar} span:has(>[data-slot="sidebar.brand.mark"])~svg{display:inline!important}`,
-        `${frame}${hook.collapsed} ${PAGE.main}>*{padding-bottom:${narrow.clearancePx}px;box-sizing:border-box}`,
+        `${rail} button>span:has(>[data-slot="sidebar.brand.mark"]){display:none!important}`,
+        `${rail} button>span:has(>[data-slot="sidebar.brand.mark"])~svg{display:inline!important}`,
+        `${closed} ${PAGE.main}>*{padding-bottom:${narrow.clearancePx}px;box-sizing:border-box}`,
+        // AppFrame supplies an inline drawer width and an off-screen transform. Only its CLOSED
+        // presentation changes; the open drawer still uses the host's geometry and modal layer.
+        `${drawer}{width:100%!important;visibility:visible;transform:none;transition:none}`,
+        // rc.1 keeps the wide brand (a button or a noninteractive span) beside the drawer toggle.
+        // Only the toggle belongs in the closed bar, even when Fishball owns the brand button.
+        `${drawerRoot} :is(button,span):has(${PAGE.brandName}){display:none!important}`,
+        `${drawerRoot} :is(nav>button,[data-sidebar-toggle]){width:36px;height:36px;justify-content:center;gap:0;border-inline:0;padding:0}`,
+        `${drawerRoot} nav>button>span[aria-hidden]+span{display:none}`,
+        `${drawerRoot} :is(nav>button>span[aria-hidden]>[data-slot="sidebar.panellist"],[data-sidebar-toggle])>svg{width:18px;height:18px}`,
         `${sheet}{position:fixed;top:0;bottom:0;left:0;width:calc(100vw - ${narrow.sheetGutterPx}px);z-index:${narrow.layer};box-shadow:var(--dsw-elevation-panel)}`,
         `${sheet} ${hook.sidebar}{width:100%!important}`,
       ].map((rule) => `@media ${narrow.query}{${rule}}`)
@@ -243,9 +260,8 @@ window.__ModuleLoader__.load({
       const root = `[${PAGE.root}]`
       const avatar = AVATAR.url(AVATAR.svg(FISH_LOGO_PATH, FISH_LOGO_VIEWBOX))
       const rules = [
-        // The hidden-control suppression (LABELS). The shell's leading seat is no longer hidden: on
-        // rc.1's drawer it holds the native drawer opener, the only way to the sidebar there (the
-        // user's choice, PLAN-MULTI §6.4); its New Session button is a LABELS launcher, still hidden.
+        // Keep rc.1's native drawer opener in the shell's leading seat, also when the bar is
+        // visible. Its New Session button is still a forbidden launcher (LABELS).
         `${root} [${PAGE.hidden}]{display:none!important}`,
         `${root} [data-conversation-header-leading],${root} [data-slot="conversation.session.header.lineage"],${root} [data-slot="conversation.hero.workspace"]{display:none!important}`,
         `${root}:not([${PAGE.ready}]) ${PAGE.main}{visibility:hidden!important;pointer-events:none!important}`,
@@ -336,12 +352,63 @@ window.__ModuleLoader__.load({
       }
     }
 
+    /** Borrow the closed drawer's interactivity and dialog role, never its state or modal handlers.
+     * React doesn't reapply an unchanged prop on resize/unload, so return it explicitly, but
+     * only if the column still belongs to a CLOSED drawer (never strand an open drawer inert).
+     */
+    function mountDrawerBar(media, active) {
+      const { hook } = PAGE
+      const closed = `${hook.frame}${hook.drawer}${hook.collapsed}${hook.column}`
+      const eligible = `[${PAGE.root}]:not(${hook.windows}) ${closed}`
+      let leased = null
+      let navigation = null
+      const restoreRole = () => {
+        // React removes the native role itself when leaving drawer mode.
+        if (navigation?.getAttribute('role') === 'navigation' && navigation.closest(hook.drawer)) navigation.setAttribute('role', 'dialog')
+        navigation = null
+      }
+      const restore = () => {
+        restoreRole()
+        if (leased?.matches(closed)) {
+          if (leased.contains(document.activeElement)) leased.parentElement.querySelector('[data-sidebar-opener]')?.focus({ preventScroll: true })
+          leased.inert = true
+        }
+        leased = null
+      }
+      const sync = () => {
+        const next = media.matches ? document.querySelector(eligible) : null
+        if (next !== leased) restore()
+        if (next?.inert) {
+          leased = next
+          next.inert = false
+        }
+        active.set(leased !== null)
+        const root = leased?.querySelector(hook.sidebar)
+        if (root !== navigation) restoreRole()
+        if (root?.getAttribute('role') === 'dialog') {
+          navigation = root
+          root.setAttribute('role', 'navigation')
+        }
+      }
+      // React can mount/replace the frame after the page plugin. Ignore ordinary chat content
+      // mutations as long as the leased column is connected; only layout attributes can end it.
+      const observer = new MutationObserver(records => {
+        if (!media.matches || (navigation?.isConnected && records.every(r => r.type === 'childList'))) return
+        sync()
+      })
+      observer.observe(document.body, { subtree: true, childList: true, attributes: true,
+        attributeFilter: ['data-sidebar-collapsed', 'data-sidebar-drawer', 'inert'] })
+      media.addEventListener('change', sync)
+      sync()
+      return () => { observer.disconnect(); media.removeEventListener('change', sync); restore() }
+    }
+
     /**
      * The narrow sheet (barRules: the expanded sidebar over the conversation on a narrow, non-drawer
      * frame): a press outside it (the conversation gutter) or Escape closes it through DSH's public
      * toggle, and focus moves into it when it opens. Nothing happens in any other layout.
      */
-    function mountSheet(ctx) {
+    function mountSheet(ctx, drawerBar) {
       const media = window.matchMedia(PAGE.narrow.query)
       // The same scope as barRules: without `:has()` support there is no sheet restyle to manage.
       if (!CSS.supports(PAGE.hasSupport)) return () => {}
@@ -381,6 +448,18 @@ window.__ModuleLoader__.load({
         // control (DSH's own sidebar toggle) instead of falling to <body>.
         requestAnimationFrame(() => column()?.querySelector(SHEET.focusable)?.focus())
       }
+      // Chromium leaves a partially visible panel clipped on Tab. Reveal only that button
+      // in its own scrollport, without moving the page or intercepting the host's keys.
+      const panel = `[${PAGE.root}]:not(${PAGE.hook.windows}) ${PAGE.hook.frame}${PAGE.hook.collapsed} ${PAGE.hook.sidebar}>nav>button`
+      const reveal = ({ target }) => {
+        if (!media.matches || !target.matches?.(panel)) return
+        const nav = target.parentElement
+        const box = target.getBoundingClientRect(), clip = nav.getBoundingClientRect()
+        if (box.left < clip.left) nav.scrollLeft += box.left - clip.left
+        else if (box.right > clip.right) nav.scrollLeft += box.right - clip.right
+      }
+      document.addEventListener('focusin', reveal)
+      const releaseDrawerBar = mountDrawerBar(media, drawerBar)
       let wasOpen = open()
       const observer = new MutationObserver(() => {
         const now = open()
@@ -394,6 +473,8 @@ window.__ModuleLoader__.load({
       document.addEventListener(SHEET.keydown, key)
       return () => {
         observer.disconnect()
+        releaseDrawerBar()
+        document.removeEventListener('focusin', reveal)
         document.removeEventListener(SHEET.pointerdown, pointer, true)
         document.removeEventListener(SHEET.click, click, true)
         document.removeEventListener(SHEET.keydown, key)
@@ -810,6 +891,20 @@ window.__ModuleLoader__.load({
     // replacement chat engine or unsupported readonlySettings prop. Beyond CSS presentation the
     // page adds only the shortcut gate, the frame guard, the manager selection, empty occupants of
     // the shadowed slots, its Settings launcher and one entry beside Settings in the sidebar's foot.
+    // Hosted Frame Readiness v1. These classic clients ship separately; the wire values are
+    // defined in the connector contract. Never include location, session state or credentials.
+    const FRAME_READY = Object.freeze({ type: 'fishball:frame-ready', version: 1 })
+    const announcement = Symbol.for(FRAME_READY.type)
+    function announceFrameReady() {
+      const parent = window.parent
+      if (!parent || parent === window || document[announcement]) return
+      // The frame sends no referrer. Where the browser withholds ancestorOrigins, only the
+      // identical public marker may use a wildcard, still sent solely to the immediate parent.
+      const origin = window.location.ancestorOrigins?.[0]
+      parent.postMessage(FRAME_READY, origin && origin !== 'null' ? origin : '*')
+      document[announcement] = true // plugin re-application must not announce this document twice
+    }
+
     function apply(ctx) {
       ctx.effect(() => mountAll(own => {
         // First, so it is released last: the native workspace browser never shows on this page,
@@ -830,7 +925,9 @@ window.__ModuleLoader__.load({
         own(session.dispose)
         own(mountRemovals(ctx))
         own(mountFrameGuard())
-        own(mountSheet(ctx))
+        const drawerBar = createCell(false)
+        own(drawerBar.clear)
+        own(mountSheet(ctx, drawerBar))
         // Stable across renders, so React subscribes once; LocaleRuntime methods need `this`.
         const locale = { subscribe: listener => ctx.locale.subscribe(listener), get: () => ctx.locale.getLocale() }
         /**
@@ -849,7 +946,9 @@ window.__ModuleLoader__.load({
          * The page's entry beside Settings (`sidebar.footer.action`): "Fishball", back to the
          * manager's conversation, and, while the page is not protected, its status and Retry.
          */
-        function FishballFooter({ wide }) {
+        function FishballFooter({ wide: ownerWide }) {
+          const bar = useCell(drawerBar)
+          const wide = ownerWide && !bar
           const text = useText(locale)
           // Every hook runs on every render (no short-circuit between them).
           const lookupFailed = useCell(session.lookupFailed)
@@ -876,7 +975,9 @@ window.__ModuleLoader__.load({
         // (client.entries.js) opens core's own settings page for it, and its "DSH settings" header
         // entry presses this button, so the launcher must stay on the page. `settingsShortcut` is the
         // native owner prop (settings-general, both SDKs) the native trigger shows in its tooltip.
-        function SettingsLauncher({ wide, openSettings, settingsOpen, settingsShortcut }) {
+        function SettingsLauncher({ wide: ownerWide, openSettings, settingsOpen, settingsShortcut }) {
+          const bar = useCell(drawerBar)
+          const wide = ownerWide && !bar
           const text = useText(locale)
           return h(PageControl, { wide, kind: NAV.settings, label: text.settings, Icon: IconSettingsOutlineRegular,
             shortcutKeys: settingsShortcut?.keys, className: PAGE.settingsButton, 'aria-keyshortcuts': settingsShortcut?.aria,
@@ -886,6 +987,7 @@ window.__ModuleLoader__.load({
         // PAGE.priority, through inject so the registration follows the slot's own lifetime.
         own(occupy(PAGE.settingsSlot, SettingsLauncher))
         own(ctx.slots.inject(PAGE.footer.name, () => ctx.slots.register({ name: PAGE.footer.name, id: PAGE.footer.id }, FishballFooter)))
+        announceFrameReady()
       }))
     }
 

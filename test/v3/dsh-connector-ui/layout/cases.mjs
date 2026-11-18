@@ -25,6 +25,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import { caseName } from '../../contract/package-boundaries/cases.mjs'
 import { SURFACE } from '../../dsh-connector/wire/constants.mjs'
+import { registerRenameRow } from './rename.mjs'
 import { CHROME, FIXTURE, HEADER, NAV, PX, SETTINGS, WIDTH, WINDOW } from './constants.mjs'
 import { apart, gap, measure, near, overlaps, sameLine, show } from './geometry.mjs'
 import { at, connectorWorld, failedInstanceWorld, noBrowser, openConnectorPage, openSession, openWindow, sessionIn } from './world.mjs'
@@ -434,6 +435,7 @@ function windowRows(sdk) {
 export function registerLayoutCases(sdk) {
   headerRows(sdk)
   settingsRows(sdk)
+  registerRenameRow(sdk, row)
   windowRows(sdk)
 }
 

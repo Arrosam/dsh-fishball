@@ -177,6 +177,18 @@ with the fish's top). One test per row; ids `UIPD-DRAW-*`.
 | UIPD-DRAW-CHROME | UC | the ready window's header: a decorative fish before "Fishball"; the ready tag's StateDot; Refresh keeps its word and has a refresh icon |
 | UIPD-DRAW-PLACE | ST / EP | fish visible → `data-fishball-notice-place=mark`, left = fish right + 8, top = fish top; fish hidden (width 0) → `corner`, left = bottom = 16; visible again → `mark`. No fish on the page → `corner`; the bubble stays a button in a `role=status` region with its hooks and aria-label |
 
+## UDRAW-VIS — host snapshot EventSource lifecycle (visibility-cases.mjs)
+
+| Row | Action and observable result |
+|---|---|
+| EP: visible / visibility unsupported | Mount the sidebar fish and notice overlay. Both render a live backend notice from one snapshot source. |
+| DT: initially hidden | Mount both components in the background: no source. Change the backend, reveal: the notice appears and there is one live source. |
+| ST / BVA: one → zero → one | Hide, change the notice, show; repeat with a second notice. Each hide releases the socket; each reveal restores the latest notice and one shared source. A retired source's late message/error cannot replace that state or duplicate the connection. |
+| ST: resumed, first snapshot delayed | Start with a notice and a managed session; replace the notice and take back the session while hidden. Before the held replacement frame arrives the old notice and Take back must not be actionable. Release it: new notice and Hand over are available. |
+| ST: terminal error, still visible | Let reconnect run without prescribing the retry interval: one replacement stream and a subsequent backend notice delivered live. |
+| ST: last unsubscribe → hidden → shown → remount | After a noninitial notice, unmount both consumers. Hidden changes and reveal do not open a source without a subscriber; the remounted overlay receives the latest notice. |
+| ST: error → hidden → retry comes due → visible | A transport failure just before hiding does not open another connection while hidden; on reveal the current notice and a single live source return. The retry interval and catch-up mechanism are not prescribed. |
+
 ## R-FIX-CUI (cui-cases.mjs)
 
 From the requirements relayed for R-FIX-CUI (2026-11-18; `.runtime/reports/review-x-dsh-connector-ui.md`

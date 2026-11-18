@@ -185,7 +185,7 @@ export const V3_SUITES = Object.freeze({
     [all(PACKAGE.dshConnectorUi), PACKAGE.dshInstance + '/client*.js', sub(PACKAGE.dshConnector, 'tools'), sub(PACKAGE.dshConnector, 'host-services')]),
   // The draw rows run embed-UI over the real UI backend (C-UI-BACKEND) and the real contribution
   // service (C-EXT), so a change in either reruns them.
-  'dsh-connector-ui.draw': suite('draw-only frontend: fish, window, hint, Retry link, marks, Hand over / Take back, light, notify prompt, tool declaration (U-DRAW)', v3('dsh-connector-ui/draw'),
+  'dsh-connector-ui.draw': suite('draw-only frontend: fish, window, hint, Retry link, marks, Hand over / Take back, light, notify prompt, tool declaration, visibility-scoped snapshot SSE (U-DRAW)', v3('dsh-connector-ui/draw'),
     [...CONNECTOR_UI_DRAW_TRIGGERS, ICON_SET_SUPPORT]),
   // The wire rows boot draw's world (draw/world.mjs and the test modules it imports), so they
   // rerun on everything draw reruns on, and on a change to those test modules.
@@ -197,6 +197,10 @@ export const V3_SUITES = Object.freeze({
   'dsh-connector-ui.layout': suite('narrow-width layout in a real browser: header Hand over / Take back, connector settings rows, window error code (UI-FIX-D)', v3('dsh-connector-ui/layout'),
     [all(PACKAGE.dshConnectorUi), CONNECTOR_RUNTIME, all(PACKAGE.dshConnectorShared), all(PACKAGE.fishballShared), all(PACKAGE.dshInstance),
       all(PACKAGE.fishballCore), all(PACKAGE.fishballUi), 'test/v3/dsh-connector/wire/**', 'test/v3/fishball-core/package/constants.mjs',
+      // Hosted rename: settings vocabulary, hosted child worker, and a second target for name collisions.
+      'test/v3/dsh-connector/settings-page/constants.mjs', 'test/v3/contract/embed/constants.mjs', 'test/v3/dsh-connector/tokens/constants.mjs',
+      'test/v3/fishball-core/wire/{multi-world,subject,world,constants,targets-oracle,fake-dsh}.mjs',
+      'test/v3/fishball-core/wire/fixtures/child-row/**', 'test/v3/fishball-core/identity/{fake-connector,constants}.mjs', 'test/v3/release/pack/constants.mjs',
       'test/v3/contract/package-boundaries/cases.mjs', 'test/v3/dsh-connector/pairs/subject.mjs']),
   // Reads the instance's whole placement and launch overlay, core's patch it places, and the F-GUARDS
   // vocabulary (whose split constants name fishball-ui's rows).
