@@ -274,7 +274,7 @@ const configForms = () => ({
  * The page's EventSource: a GET of the host route, read as server-sent events. Each `data:` frame
  * is one `message` event, as a browser's EventSource delivers it.
  */
-function eventSourceClass(world, page) {
+function eventSourceClass(world, page, beforeFrame) {
   return class PageEventSource {
     constructor(url) {
       this.url = new URL(String(url), page.baseURI).href
@@ -287,7 +287,10 @@ function eventSourceClass(world, page) {
     addEventListener(type, fn) { if (!this.listeners.has(type)) this.listeners.set(type, new Set()); this.listeners.get(type).add(fn) }
     removeEventListener(type, fn) { this.listeners.get(type)?.delete(fn) }
     emit(type, event) {
-      if (this.closed) return
+      if (!this.closed) this.deliver(type, event)
+    }
+    // A test can deliver a task from the old transport after close, without reopening its reader.
+    deliver(type, event) {
       this['on' + type]?.(event)
       for (const fn of [...(this.listeners.get(type) ?? [])]) fn(event)
     }
@@ -310,6 +313,7 @@ function eventSourceClass(world, page) {
             const frame = buffer.slice(0, at)
             buffer = buffer.slice(at + BACKEND.frame.end.length)
             const data = frame.split('\n').filter((line) => line.startsWith(BACKEND.frame.prefix.trim())).map((line) => line.slice(BACKEND.frame.prefix.trim().length).replace(/^ /, '')).join('\n')
+            if (beforeFrame) await beforeFrame(this.url)
             this.emit('message', { data })
           }
         }
@@ -327,8 +331,10 @@ function eventSourceClass(world, page) {
  * @param options.lang - the page language (TEXT.langs; default English).
  * @param options.holdChunks - R-FIX-CUI (UI-06): chunk files whose load waits until
  *   `releaseChunk(file)` (a chunk that arrives late; a permitted load order of the real entry).
+ * @param options.prepareBrowser - install the case's browser APIs before any client module loads.
+ * @param options.beforeFrame - optional transport delay before delivering a real backend SSE frame.
  */
-export async function openPage(t, world, { host = PAGE_HOST.loopback, failServices = false, withoutConfigForms = false, embed = true, lang = TEXT.langs[0], holdChunks = [] } = {}) {
+export async function openPage(t, world, { host = PAGE_HOST.loopback, failServices = false, withoutConfigForms = false, embed = true, lang = TEXT.langs[0], holdChunks = [], prepareBrowser, beforeFrame } = {}) {
   const baseURI = PAGE_HOST.scheme + host + ':' + PAGE_HOST.port + ROUTE.absolutePrefix
   const page = { baseURI, requests: [], chunks: [], streams: [], navigations: [], dictionaries: [], errors: [] }
   const pageFetch = async (input, init = {}) => {
@@ -342,9 +348,10 @@ export async function openPage(t, world, { host = PAGE_HOST.loopback, failServic
   const pageConsole = { ...console, error: (...args) => page.errors.push(args.map(String).join(' ')), warn() {}, log() {}, info() {}, debug() {} }
   const sandbox = createBrowserSandbox({ lang, baseURI, fetch: pageFetch, console: pageConsole })
   const frames = scriptedFrames(sandbox)
-  const PageEventSource = eventSourceClass(world, page)
+  const PageEventSource = eventSourceClass(world, page, beforeFrame)
   sandbox.sandbox.EventSource = PageEventSource
   sandbox.window.EventSource = PageEventSource
+  prepareBrowser?.(sandbox, frames)
 
   const shim = createReactShim({ stale() {} })
   const { React } = shim

@@ -198,7 +198,7 @@ window.__ModuleLoader__.load({
      * wait before a new stream. 2 s: soon enough to follow a connector reload, slow enough not to
      * hammer a DSH whose connector is gone for good.
      */
-    const STREAM = Object.freeze({ closed: 2, reopenMs: 2000 })
+    const STREAM = Object.freeze({ closed: 2, reopenMs: 2000, visibilityEvent: 'visibilitychange' })
     const JSON_HEADERS = Object.freeze({ 'content-type': 'application/json' })
     /**
      * The fish mark's shared look, used by the shell's sheet and by the parts (kit.ROW_MARK): the
@@ -441,8 +441,9 @@ window.__ModuleLoader__.load({
     const apiUrl = (path) => new URL(path, document.baseURI).toString()
 
     /**
-     * One shared EventSource of server-sent snapshots at `path`, open while any component follows
-     * it. The latest snapshot is the only state, and it is the server's.
+     * One shared EventSource at `path` while the page is visible and has subscribers. Hidden tabs
+     * must release their HTTP/1.1 connection for host requests (DSH also streams per tab). Opening
+     * the route sends a whole current snapshot, so a resumed tab needs no replay or polling.
      *
      * EventSource retries a dropped connection by itself, but gives up for good when an answer is
      * not a 200 event stream, as while the connector row reloads and its routes are briefly gone.
@@ -456,34 +457,45 @@ window.__ModuleLoader__.load({
       let source
       let reopen
       const notify = () => { for (const listener of listeners) listener() }
+      const stop = () => {
+        const previous = source
+        source = undefined
+        previous?.close()
+        clearTimeout(reopen)
+        reopen = undefined
+        // A notice or owner can change while disconnected. Don't offer its old action on resume.
+        if (snapshot !== initial) { snapshot = initial; notify() }
+      }
       const open = () => {
-        if (source || reopen) return
-        source = new EventSource(apiUrl(path))
-        source.onmessage = (event) => {
+        if (document.hidden || !listeners.size || source || reopen !== undefined) return
+        const current = new EventSource(apiUrl(path))
+        source = current
+        current.onmessage = (event) => {
+          if (source !== current) return
           let next
           try { next = JSON.parse(event.data) } catch { return }
           snapshot = next
           notify()
         }
-        source.onerror = () => {
-          if (source?.readyState !== STREAM.closed) return
+        current.onerror = () => {
+          if (source !== current || current.readyState !== STREAM.closed) return
           source = undefined
           snapshot = initial
+          reopen = setTimeout(() => { reopen = undefined; open() }, STREAM.reopenMs)
           notify()
-          reopen = setTimeout(() => { reopen = undefined; if (listeners.size > 0) open() }, STREAM.reopenMs)
         }
       }
+      const followVisibility = () => { if (document.hidden) stop(); else open() }
       return {
         subscribe(listener) {
+          if (!listeners.size) document.addEventListener?.(STREAM.visibilityEvent, followVisibility)
           listeners.add(listener)
           open()
           return () => {
             listeners.delete(listener)
             if (listeners.size > 0) return
-            source?.close()
-            source = undefined
-            clearTimeout(reopen)
-            reopen = undefined
+            document.removeEventListener?.(STREAM.visibilityEvent, followVisibility)
+            stop()
           }
         },
         get: () => snapshot,
