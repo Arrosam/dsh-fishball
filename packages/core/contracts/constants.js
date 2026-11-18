@@ -442,8 +442,11 @@ export const GUARDS = Object.freeze({
   triggers: Object.freeze(['settings/document-updated', 'plugin-manager/changed']),
   /** The IntendedPolicy key whose value is the manager's agent preset (core's patch sets it). */
   managerPresetKey: 'defaultAgentPreset',
-  /** ManagerTool: the manager's model tools, exactly (R-FB-13). */
-  managerTools: Object.freeze(['read', 'read_image', 'working_directory']),
+  /**
+   * ManagerTool: the manager's model tools, exactly (R-FB-13). `ask_user_question` is DSH's
+   * ask-user plugin in core's preset (the user, 2026-11-18: Fishball asks with DSH's own tool).
+   */
+  managerTools: Object.freeze(['read', 'read_image', 'working_directory', 'ask_user_question']),
   /**
    * Core's own model tools, by module (relative to `src/guards/`) and exported name table (user
    * decision 2026-11-14: core's tools are not the preset's and are left out of the R-FB-13 check).

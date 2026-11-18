@@ -21,7 +21,7 @@ its guard patch reaches every row); in a standalone DSH you install it yourself,
   session the Fishball page opens.
 - `fishball-core-guards` (`src/guards/`): the guard check, the `guards-overridden` report and, in a
   standalone DSH, the self-reorder to the end of `dsh.profile.bundles`.
-- `preset-fishball`: core's own agent preset (read and read_image only).
+- `preset-fishball`: core's own agent preset (read and read_image only, plus DSH's `ask_user_question`).
 - Guard rows: the session-creating service rows (`schedule`, `open-in-app`,
   `terminal-controller`), `dsh-instance` (no nested hosted Fishball), every DSH-shipped agent preset
   (switched off, never deleted), and the read-only sandbox, `ask` approval and read-only permission
