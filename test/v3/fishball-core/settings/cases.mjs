@@ -11,7 +11,14 @@
  * expected (the cases come first).
  */
 import assert from 'node:assert/strict'
-import { caseTest } from '../../contract/package-boundaries/cases.mjs'
+import { caseName, caseTest as baseCaseTest } from '../../contract/package-boundaries/cases.mjs'
+import test from 'node:test'
+import { MULTI_SET as MULTI_WITHDRAWN, isWithdrawnMulti } from './constants.mjs'
+
+/** MULTI-1: a row MULTI-0 withdrew (constants.mjs WITHDRAWN_MULTI) is registered skipped with its reason. */
+const caseTest = (sdk, id, row, title, fn, todo) => (isWithdrawnMulti(id, row)
+  ? test(caseName(sdk, id, row, title), { skip: MULTI_WITHDRAWN.withdrawn }, () => {})
+  : baseCaseTest(sdk, id, row, title, fn, todo))
 import {
   CLIENTS, CONNECT, CONNECT_ROUTE, CONTINUATION, CORE, DSH, ENTRY_ACTION, FIELD_ORDER, FIELDS, FIXTURE, HARNESS, HOSTED_IMPORT, INSTANCE_TARGET, LINK_SAVE, MARK, OPEN, OUTCOME,
   ROUTE, SUBJECT, TOKEN_FIELD, freshToken,
@@ -20,6 +27,7 @@ import { CODE_THROW, SECRET, THROWN, assertNoSecret, assertOneWarning } from '..
 import { createWorld, loadChunkAlone, loadPage, settle } from './page.mjs'
 import { registerModelCatalogCases } from './model-catalog.mjs'
 import { registerSettingsPolishCases } from './polish-cases.mjs'
+import { registerMultiSettingsCases } from './multi.mjs'
 import { registerConnectRaceCases } from './connect-cases.mjs'
 import { STAND_IN } from './primitives.mjs'
 import { instanceWith, routeWorld, targetRule } from './route.mjs'
@@ -90,6 +98,7 @@ function assertNeverExposed(page, value) {
 }
 
 export function registerSettingsCases(sdk) {
+  registerMultiSettingsCases(sdk)
   // ============================================================== SET3-UC-01: core's own settings page (req 1)
   caseTest(sdk, 'SET3-UC-01', 'main 1-2', "with the namespace served, one plugins.bundle.config entry keyed by the bundle name 'fishball-core'", async (t) => {
     const page = await pageOf(t, sdk, {}, null)

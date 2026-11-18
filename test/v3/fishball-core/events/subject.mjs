@@ -35,7 +35,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { INSTANCE } from '../../../support/constants.mjs'
 import { importInstance, importSdk } from '../../../private-skills/support/sdk.mjs'
-import { DSH, SUBJECT, TOOL } from './constants.mjs'
+import { DSH, FIXTURE, SOURCE, SUBJECT, TOOL } from './constants.mjs'
 
 /** The module's entry and its constants, bound to `sdk` (their `@deepseek-ai/*` imports resolve to that SDK). */
 async function modulesFor(sdk) {
@@ -63,14 +63,36 @@ function guardedTable(table, guard) {
 const presentDefault = (event) => [{ type: 'text', text: `${event.type} ${event.eventId}` }]
 
 /** Core's events service over one world: `{ intercept, start, close }`; `start` is the caller's. */
-export async function makeSubject(sdk, { ctx, agent, link, seam = {} }) {
+export async function makeSubject(sdk, { ctx, agent, link, second, seam = {} }) {
   const { events: mod, constants, storageDomain } = await modulesFor(sdk)
   const ledger = await mod.openLedger(ctx, storageDomain)
   let recovering = false
+  // MULTI-1 seam (relayed 2026-11-18): every intake names its TargetSource and the ack goes back
+  // through that source's link. The world is one target (`seam.source`, default SOURCE.a), or two
+  // when `second` is given (SOURCE.b, its own mailbox). A receipt acked for a source no target of
+  // this world holds is recorded as misrouted and never reaches any fake mailbox.
+  const source = seam.source ?? SOURCE.a
+  const targets = [{ source, link }, ...(second === undefined ? [] : [{ source: seam.secondSource ?? SOURCE.b, link: second }])]
+  const misrouted = []
+  const same = (s, t) => s?.targetId === t.targetId && s?.endpointEpoch === t.endpointEpoch
+  // MULTI-1: `seam.retired` lists sources whose endpoint epoch is retired in this process (removed or
+  // URL-changed while the DSH was down): their link is gone, so they are neither live nor polled, and an
+  // ack for them is misrouted.
+  const retired = seam.retired ?? []
+  const isRetired = (s) => retired.some((r) => same(s, r))
+  const targetOf = (s) => (isRetired(s) ? undefined : targets.find((t) => same(s, t.source)))
   const table = seam.ledgerWrite === undefined ? ledger.table : guardedTable(ledger.table, (op, args) => seam.ledgerWrite({ op, args, recovering, table: ledger.table }))
   const events = mod.createEvents({
     table,
-    link: { ack: (receipts) => link.callTool(TOOL.inboxAck, { receipts }) },
+    link: {
+      ack: (receipts, ackSource) => {
+        const target = targetOf(ackSource)
+        if (target !== undefined) return target.link.callTool(TOOL.inboxAck, { receipts })
+        misrouted.push({ receipts, source: ackSource })
+        return Promise.resolve({ ok: false, code: FIXTURE.misroutedAck })
+      },
+      live: (s) => targetOf(s) !== undefined,
+    },
     fishball: {
       activate: seam.activate === undefined ? async () => agent : async () => seam.activate({ agent, recovering }),
       present: seam.present === undefined ? presentDefault : (event) => seam.present(event, presentDefault),
@@ -84,22 +106,29 @@ export async function makeSubject(sdk, { ctx, agent, link, seam = {} }) {
   let failure
   let stopped = false
   async function pollOnce() {
-    let more = true
-    while (more && !stopped) {
-      const page = await link.callTool(TOOL.inboxPoll, {})
-      for (const event of page.events ?? []) await events.intake(event)
-      more = page.hasMore === true
+    for (const target of targets.filter((t) => !isRetired(t.source))) {
+      let more = true
+      while (more && !stopped) {
+        const page = await target.link.callTool(TOOL.inboxPoll, {})
+        for (const event of page.events ?? []) await events.intake(event, target.source)
+        more = page.hasMore === true
+      }
     }
   }
   const poll = () => { chain = chain.then(pollOnce).catch((error) => { failure ??= error }) }
   let unlisten
 
   return {
+    source,
+    sources: targets.map((t) => t.source),
+    /** Acks core sent for another source than this world's (MULTI-1: must stay empty). */
+    misrouted,
     intercept: (registration, onEvent) => events.service.intercept(registration, onEvent),
     async start() {
       recovering = true
       try { await events.recover() } finally { recovering = false }
-      unlisten = link.onResourceUpdated(poll)
+      const unlistens = targets.map((t) => t.link.onResourceUpdated(poll))
+      unlisten = () => { for (const off of unlistens) off() }
       poll()
       await chain
     },

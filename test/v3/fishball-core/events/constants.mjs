@@ -20,8 +20,9 @@ import { CONTRIBUTED_TYPE_PREFIX, EVENT_TYPE, LINK_REFUSAL, TOOL } from '../../.
 // reason, instead of failing this whole file at module link time (test-first).
 import * as EVENTS_CONSTANTS from '../../../../packages/core/contracts/constants.js'
 import { REPO } from '../../../support/constants.mjs'
+import { SOURCE, eventMessageId, keyOf } from '../wire/targets-oracle.mjs'
 
-export { CONTRIBUTED_TYPE_PREFIX, EVENT_TYPE, LINK_REFUSAL, TOOL }
+export { CONTRIBUTED_TYPE_PREFIX, EVENT_TYPE, LINK_REFUSAL, SOURCE, TOOL, keyOf }
 
 /** The F-INTERCEPT "Owns" folder. FBTEST_F_INTERCEPT_ENTRY moves the entry (another checkout). */
 export const SUBJECT = Object.freeze({
@@ -78,8 +79,12 @@ export const CORE = Object.freeze({
   get committing() { return coreValue('STATE').committing },
   /** Every acceptance-ledger state, to read a record's state without knowing its field (decision 4). */
   get states() { return Object.values(coreValue('STATE')) },
-  /** The id of the DSH inbox message core hands Fishball for `eventId` (decision 4, row 11e). */
-  messageId: (eventId) => coreValue('MESSAGE').idPrefix + eventId,
+  /**
+   * The id of the DSH inbox message core hands Fishball for `eventId` of `source` (decision 4, row
+   * 11e). MULTI-0 (`TARGETS.key`, README "Local keys") replaced `fbe_<eventId>` with `fbe_` +
+   * base64url of the event tuple, so two targets' equal ids never dedupe (wire/targets-oracle.mjs).
+   */
+  messageId: (eventId, source = SOURCE.a) => eventMessageId(source, eventId),
   /** `{domain, table}`: where the acceptance ledger lives in dsh-storage-domain, to read a record (row 11e). */
   get ledger() { return coreValue('LEDGER') },
 })
@@ -154,8 +159,10 @@ export const FIXTURE = Object.freeze({
   modelText: 'fbtest ok',
   fault: 'fbtest: injected fault',
   logSuffix: '.jsonl',
-  files: Object.freeze({ connector: 'connector.json', model: 'model.jsonl', interceptor: 'interceptor.jsonl', window: 'window.json', created: 'created', domain: 'domain', sessions: 'sessions' }),
+  files: Object.freeze({ connector: 'connector.json', connectorB: 'connector-b.json', retired: 'retired-cut.json', model: 'model.jsonl', interceptor: 'interceptor.jsonl', window: 'window.json', created: 'created', domain: 'domain', sessions: 'sessions' }),
   tempPrefix: 'fbtest-f-intercept-',
+  /** The fake link's answer to an ack core sent for another target's source (MULTI-1 harness word). */
+  misroutedAck: 'fbtest-misrouted-ack',
 })
 
 /** Harness waits only; never a product oracle. */

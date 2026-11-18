@@ -15,7 +15,14 @@
  * The behaviour rows (SET3-DT-02 / DT-03 presses, the missing-launcher alert) stay in cases.mjs.
  */
 import assert from 'node:assert/strict'
-import { caseTest } from '../../contract/package-boundaries/cases.mjs'
+import { caseName, caseTest as baseCaseTest } from '../../contract/package-boundaries/cases.mjs'
+import test from 'node:test'
+import { MULTI_SET as MULTI_WITHDRAWN, isWithdrawnMulti } from './constants.mjs'
+
+/** MULTI-1: a row MULTI-0 withdrew (constants.mjs WITHDRAWN_MULTI) is registered skipped with its reason. */
+const caseTest = (sdk, id, row, title, fn, todo) => (isWithdrawnMulti(id, row)
+  ? test(caseName(sdk, id, row, title), { skip: MULTI_WITHDRAWN.withdrawn }, () => {})
+  : baseCaseTest(sdk, id, row, title, fn, todo))
 import { CONNECT, DSH, HARNESS, MARK, POLISH_CONNECT, POLISH_ENTRIES, ROUTE } from './constants.mjs'
 import { createWorld, loadPage, settle } from './page.mjs'
 import { DESIGN, STAND_IN } from './primitives.mjs'

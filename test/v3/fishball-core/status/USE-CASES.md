@@ -202,3 +202,20 @@ Requirement: `.runtime/reports/ui-polish-f/SPEC.md` §2. `stripView` keeps `line
 | UIPF-CARD-DT-01 `<kind>` via status | DT (integration) | The real status's first line lands on its card state |
 | UIPF-CARD-BVA-01 tools 0 / 1 / 2, no bridge | BVA | en `0 contributed tools` / `1 contributed tool` / `2 contributed tools`, zh `N 个贡献工具`; no bridge → no line |
 | UIPF-CARD-EP-01 control labels | EP | Connect / 连接, Cancel / 取消 unchanged |
+
+## MULTI-1 re-baseline (MULTI-0 `StatusSnapshot`; the lead's instruction, 2026-11-18)
+
+Seam (relayed 2026-11-18): `createStatus(ctx, {targets: {list, onChange}, guards, notify})`; the
+snapshot is `{fishball, guards, set, targets}`. The scalar `link` / `target` / `connect` / `bridge`
+ports and the snapshot's scalar `link`, `connect`, `line`, `control`, `contributedTools` are
+withdrawn; each `TargetView` carries its own `line` = core's `stripLine(link, url, connect).line`
+(targets.d.ts). Core rows no longer assert fishball-ui's `stripView` output (fishball-ui's own suites do).
+
+| Row | Technique | Oracle |
+| --- | --- | --- |
+| F-STATUS-01 | EP (shape) | exactly `{fishball, guards, set, targets}`; no withdrawn member; targets `{version: 1, targets: []}` with an empty port |
+| MULTI-STATUS-EP-01 ×3 | EP (one / two with zero tools / connected) | `snapshot.targets` equals the port's `list()` |
+| MULTI-STATUS-ST-01 | ST (list change / equal list) | one emission per change, none for an equal list |
+| REM-DT-01, F-STATUS-DT-01, F-STATUS-EP-01, F-STATUS-ST-01 | DT / EP / ST | the same F-STATUS rule tables, now on the pure per-target `stripLine` |
+| set, guards, notice, close, fishball-off rows | unchanged | as before; close/ctx-disposed check the targets and guards ports' listeners |
+| Withdrawn (skipped, reason given) | — | UC-STATUS-01 A5 and main 4, F-STATUS-DT-01 "sends nothing" (no target port; successors named), F-STATUS-BVA-01 (contributedTools is a TargetView field), F-STATUS-STRIP and UIPF-CARD rows (fishball-ui's strip) |

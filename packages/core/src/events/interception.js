@@ -11,13 +11,21 @@
  * One record, one owner at a time. Each move is a compare-and-set on the ledger tagged with the
  * offer's `attempt`, so a handler whose attempt lost (disposed, fallen back, re-offered after a
  * restart) is fenced: its `accept`, `commit` and `release` all lose (S3 §4 items 1–3).
+ *
+ * MULTI-1 (PLAN-MULTI §5; MULTI-0 `events.d.ts`): one service for every target. A polled event
+ * arrives with its target's trusted `source` (`TargetSource`), which the record and the event a
+ * handler sees carry; the record is keyed by `(targetId, endpointEpoch, eventId)` (ledger.js
+ * `recordKeyOf`), so equal remote ids of two targets are two records. Every ack goes through the
+ * record's own target (`link.ack(receipts, source)`), never another's. A record of a removed target
+ * or retired epoch (`link.live(source)` false) takes no part in recovery or acking again: it stays
+ * as history, as a crash would leave it.
  */
 import { randomUUID } from 'node:crypto'
 // `LINK.disconnected` is core's own copy of the connector's word (K3a), not read from the link itself.
 import { INTERCEPT, LINK, REASON, STATE } from '../../contracts/constants.js'
 import { ACKABLE, DISPATCH, HOST, INTERCEPTOR_HELD, LOG, MISUSE, UNDECIDED } from './constants.js'
 import { codeOf } from './diagnostics.js'
-import { receiptOf } from './ledger.js'
+import { receiptOf, recordKeyOf } from './ledger.js'
 
 /** The event as handlers, filters and Fishball see it: one detached, frozen copy (K3 readonly). */
 const frozen = (value) => {
@@ -30,8 +38,10 @@ const snapshotOf = (event) => frozen(structuredClone(event))
  * @param options.ledger - the acceptance ledger (ledger.js `createLedger`).
  * @param options.registry - the registrations (registry.js `createRegistry`).
  * @param options.delivery - core's delivery list (delivery.js `createDelivery`).
- * @param options.link - core's MCP link as far as this module needs it:
- *   `ack(receipts): Promise<{ok: true} | {ok: false, code: string}>`, i.e. `inbox_ack` (K1).
+ * @param options.link - the targets' links as far as this module needs them:
+ *   `ack(receipts, source): Promise<{ok: true} | {ok: false, code: string}>`, i.e. `inbox_ack`
+ *   (K1) through the link of `source`'s target epoch, and `live(source): boolean`, whether that
+ *   target epoch is still current.
  * @param options.logger - `{info, warn}`: the background log (R-INT-09); never given a payload.
  */
 export function createInterception({ ledger, registry, delivery, link, logger }) {
@@ -55,19 +65,19 @@ export function createInterception({ ledger, registry, delivery, link, logger })
   function prune() {
     if (pruning) return
     pruning = true
-    void ledger.prune().catch((error) => logger?.warn(LOG.pruneFailed, codeOf(error))).finally(() => { pruning = false })
+    void ledger.prune((source) => link.live(source)).catch((error) => logger?.warn(LOG.pruneFailed, codeOf(error))).finally(() => { pruning = false })
   }
 
   /** Ack a record once it is a durable acceptance; a failure is logged and retried on replay. */
   async function ack(eventId) {
     if (closed) return
     const record = ledger.get(eventId)
-    if (record === undefined || record.acked || !ACKABLE.includes(record.state)) return
+    if (record === undefined || record.acked || !ACKABLE.includes(record.state) || !link.live(record.event.source)) return
     try {
-      const result = await link.ack([receiptOf(record)])
-      if (result?.ok !== true) { logger?.warn(LOG.ackFailed, eventId, codeOf(result)); return }
+      const result = await link.ack([receiptOf(record)], record.event.source)
+      if (result?.ok !== true) { logger?.warn(LOG.ackFailed, record.eventId, codeOf(result)); return }
       await ledger.move(eventId, (current) => !current.acked, () => ({ acked: true }))
-    } catch (error) { logger?.warn(LOG.ackFailed, eventId, codeOf(error)) }
+    } catch (error) { logger?.warn(LOG.ackFailed, record.eventId, codeOf(error)) }
   }
 
   /**
@@ -80,7 +90,7 @@ export function createInterception({ ledger, registry, delivery, link, logger })
       () => ({ state: STATE.fishball, reason }))
     if (!won) return false
     const record = ledger.get(eventId)
-    logger?.info(LOG.toFishball, eventId, record.event.type, reason)
+    logger?.info(LOG.toFishball, record.eventId, record.event.type, reason)
     delivery.add(record)
     void ack(eventId)
     return true
@@ -89,7 +99,7 @@ export function createInterception({ ledger, registry, delivery, link, logger })
   async function close(entry, eventId, attempt, reason) {
     const won = await ledger.move(eventId, (current) => current.attempt === attempt && INTERCEPTOR_HELD.includes(current.state),
       () => ({ state: STATE.closed, reason }))
-    if (won) logger?.info(LOG.closed, eventId, ledger.get(eventId).event.type, entry.pluginId, reason)
+    if (won) { const record = ledger.get(eventId); logger?.info(LOG.closed, record.eventId, record.event.type, entry.pluginId, reason) }
   }
 
   /**
@@ -97,8 +107,7 @@ export function createInterception({ ledger, registry, delivery, link, logger })
    * when the handler settles (core keeps it open until then, S2-Q1 B). Not awaited by intake: a
    * handler may decide for a long time without blocking the poll loop.
    */
-  async function offer(entry, event, attempt) {
-    const { eventId } = event
+  async function offer(entry, event, attempt, eventId) {
     entry.held.set(eventId, attempt)
     const owns = (current) => current.attempt === attempt
     // Every commit the handler starts, awaited or not, decides the record before it is settled.
@@ -120,7 +129,7 @@ export function createInterception({ ledger, registry, delivery, link, logger })
       if (owns(current) && (current.state === STATE.open || current.state === STATE.committing)) return { won: true, moved: false }
       const moved = await ledger.move(eventId, (record) => !settled && owns(record) && record.state === STATE.offered && registry.isLive(entry),
         () => ({ state: STATE.open }))
-      if (moved) logger?.info(LOG.accepted, eventId, event.type, entry.pluginId)
+      if (moved) logger?.info(LOG.accepted, event.eventId, event.type, entry.pluginId)
       return { won: moved, moved }
     }
     const ctl = Object.freeze({
@@ -142,12 +151,12 @@ export function createInterception({ ledger, registry, delivery, link, logger })
             won = !settled && await ledger.move(eventId, (current) => !settled && owns(current) && current.state === STATE.open,
               () => ({ state: STATE.committing }))
           } catch (error) {
-            logger?.warn(LOG.commitFenceFailed, eventId, codeOf(error))
+            logger?.warn(LOG.commitFenceFailed, event.eventId, codeOf(error))
             fenceFailed = true
             won = false
           }
           if (!won) return { ok: false, code: INTERCEPT.fenced }
-          logger?.info(LOG.committing, eventId, event.type, entry.pluginId)
+          logger?.info(LOG.committing, event.eventId, event.type, entry.pluginId)
           let result
           // K3: commit never rejects; a rejected send is an answer that never reached the
           // connector (K3 events.d.ts, as S3's prototype treated it).
@@ -163,7 +172,9 @@ export function createInterception({ ledger, registry, delivery, link, logger })
       },
       async release(released, options) {
         if (options?.toFishball !== true) throw new TypeError(MISUSE.release)
-        if (settled || released?.eventId !== eventId) return false
+        // The very event offered (its target too: two targets may share an eventId).
+        if (settled || released?.eventId !== event.eventId || released?.source?.targetId !== event.source.targetId
+          || released?.source?.endpointEpoch !== event.source.endpointEpoch) return false
         return toFishball(eventId, attempt, REASON.released)
       },
     })
@@ -193,54 +204,56 @@ export function createInterception({ ledger, registry, delivery, link, logger })
    */
   async function fallBack(eventId, attempt, reason, from) {
     try { return await toFishball(eventId, attempt, reason, from) } catch (error) {
-      logger?.warn(LOG.fallbackFailed, eventId, codeOf(error))
+      logger?.warn(LOG.fallbackFailed, ledger.get(eventId)?.eventId, codeOf(error))
       return false
     }
   }
 
   /** Re-check liveness after the durable write (S3 §4 item 1), then hand over or fall back. */
-  async function handOver(entry, event, attempt) {
+  async function handOver(entry, event, attempt, key) {
     // The offer runs detached; a ledger write that fails at its end is logged (never unhandled),
     // and the record is left for the next start's recovery, as a crash would leave it.
-    if (registry.isLive(entry)) { void offer(entry, event, attempt).catch((error) => logger?.warn(LOG.offerFailed, event.eventId, codeOf(error))); return }
+    if (registry.isLive(entry)) { void offer(entry, event, attempt, key).catch((error) => logger?.warn(LOG.offerFailed, event.eventId, codeOf(error))); return }
     // A record whose commit began (re-offered after a restart) cannot fall back; it closes.
-    if (!(await toFishball(event.eventId, attempt, REASON.pluginNotLive))) await close(entry, event.eventId, attempt, REASON.commitInterrupted)
+    if (!(await toFishball(key, attempt, REASON.pluginNotLive))) await close(entry, key, attempt, REASON.commitInterrupted)
   }
 
   /**
-   * One polled event (K1 `MailboxEvent`). Resolves once its receiver is decided and recorded;
-   * the interceptor's handler and the Fishball delivery continue after it.
+   * One polled event (K1 `MailboxEvent`) from the target epoch `source` (MULTI-1, a trusted
+   * `TargetSource` the caller assigns; a `source` member the connector sent is replaced). Resolves
+   * once its receiver is decided and recorded; the interceptor's handler and the Fishball delivery
+   * continue after it.
    * @returns {Promise<'interceptor'|'fishball'|'duplicate'|'closed'>} `closed`: after close(), the
    *   event was neither recorded nor acked, so the connector will offer it again.
    */
-  async function intake(polled) {
+  async function intake(polled, source) {
     await recovering
     // Not recorded and not acked: the caller must not treat it as handled (finding 12).
     if (closed) return DISPATCH.closed
     prune()
-    const known = ledger.get(polled.eventId)
-    if (known !== undefined) return replay(polled.eventId)
-    const event = snapshotOf(polled)
+    const key = recordKeyOf(source, polled.eventId)
+    if (ledger.get(key) !== undefined) return replay(key)
+    const event = snapshotOf({ ...polled, source })
     const chosen = registry.choose(event)
     const attempt = randomUUID()
     const fields = chosen === undefined
-      ? { state: STATE.fishball, reason: REASON.noMatch, attempt, event }
-      : { state: STATE.offered, plugin: chosen.pluginId, attempt, event }
-    if (!(await ledger.create(event.eventId, fields))) return replay(event.eventId)
+      ? { state: STATE.fishball, reason: REASON.noMatch, attempt, eventId: event.eventId, event }
+      : { state: STATE.offered, plugin: chosen.pluginId, attempt, eventId: event.eventId, event }
+    if (!(await ledger.create(key, fields))) return replay(key)
     if (chosen === undefined) {
       logger?.info(LOG.toFishball, event.eventId, event.type, REASON.noMatch)
-      delivery.add(ledger.get(event.eventId))
-      void ack(event.eventId)
+      delivery.add(ledger.get(key))
+      void ack(key)
       return DISPATCH.fishball
     }
-    await handOver(chosen, event, attempt)
-    return ledger.get(event.eventId).state === STATE.fishball ? DISPATCH.fishball : DISPATCH.interceptor
+    await handOver(chosen, event, attempt, key)
+    return ledger.get(key).state === STATE.fishball ? DISPATCH.fishball : DISPATCH.interceptor
   }
 
-  /** A known `eventId` again (lost ack, reconnect): dropped; only the ack is repeated (S2, S3). */
-  async function replay(eventId) {
-    logger?.info(LOG.replay, eventId)
-    await ack(eventId)
+  /** A known event again (lost ack, reconnect): dropped; only the ack is repeated (S2, S3). */
+  async function replay(key) {
+    logger?.info(LOG.replay, ledger.get(key)?.eventId)
+    await ack(key)
     return DISPATCH.duplicate
   }
 
@@ -251,7 +264,7 @@ export function createInterception({ ledger, registry, delivery, link, logger })
   function dispose(entry) {
     // The registration still goes (it is in memory); only the fallback needs the ledger.
     if (!registry.remove(entry) || closed) return
-    for (const [eventId, attempt] of entry.held) void fallBack(eventId, attempt, REASON.disposed, UNDECIDED)
+    for (const [key, attempt] of entry.held) void fallBack(key, attempt, REASON.disposed, UNDECIDED)
   }
 
   /**
@@ -284,20 +297,22 @@ export function createInterception({ ledger, registry, delivery, link, logger })
     delivery.hold()
     try {
       for (const record of ledger.inOrder([STATE.offered, STATE.open, STATE.committing])) {
-        if (record.state === STATE.offered) { await toFishball(record.eventId, record.attempt, REASON.restartBeforeAccept); continue }
+        // A removed target's or retired epoch's record is history (PLAN-MULTI §5): never re-offered.
+        if (!link.live(record.event.source)) continue
+        if (record.state === STATE.offered) { await toFishball(record.key, record.attempt, REASON.restartBeforeAccept); continue }
         const entry = registry.chooseFor(record.plugin, record.event)
         if (entry !== undefined) {
           const attempt = randomUUID()
-          const moved = await ledger.move(record.eventId, (current) => current.attempt === record.attempt, () => ({ attempt }))
-          if (moved) await handOver(entry, snapshotOf(record.event), attempt)
-        } else if (record.state === STATE.open) await toFishball(record.eventId, record.attempt, REASON.restartPluginOff)
-        else await close({ pluginId: record.plugin }, record.eventId, record.attempt, REASON.commitInterrupted)
+          const moved = await ledger.move(record.key, (current) => current.attempt === record.attempt, () => ({ attempt }))
+          if (moved) await handOver(entry, snapshotOf(record.event), attempt, record.key)
+        } else if (record.state === STATE.open) await toFishball(record.key, record.attempt, REASON.restartPluginOff)
+        else await close({ pluginId: record.plugin }, record.key, record.attempt, REASON.commitInterrupted)
       }
     } finally {
       // Releases the hold even when a move above failed, so delivery never stays blocked. The ack
       // sweep and retention need no agent, so they run even when delivery's recovery failed.
       try { await delivery.recover() } finally {
-        for (const record of ledger.inOrder(ACKABLE)) if (!record.acked) await ack(record.eventId)
+        for (const record of ledger.inOrder(ACKABLE)) if (!record.acked) await ack(record.key)
         prune()
       }
     }
@@ -325,6 +340,12 @@ export function createInterception({ ledger, registry, delivery, link, logger })
     service,
     intake,
     recover,
+    /**
+     * MULTI-1 (PLAN-MULTI §3.1, §5): a target epoch was retired. Its events still waiting for
+     * Fishball are dropped from the delivery list; their records stay in the ledger as read-only
+     * history (state `fishball`, never delivered, never acked). Sends nothing.
+     */
+    retire: (retired) => delivery.retire(retired),
     close() { closed = true; delivery.close() },
   })
 }

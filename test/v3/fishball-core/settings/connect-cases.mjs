@@ -1,9 +1,12 @@
 /**
  * R-FIX-FUI F5 (only the newest status read publishes; unmount stops follow-ups) and F6 (a press's
- * refusal notice lasts until the status changes) black-box rows on core's Connect control
- * (`[data-fishball-connect]`, packages/core/client.settings.js), in the F-SETTINGS scripted page.
- * Every Connect request is held by the case and answered by hand (`connectScript`), so the order in
- * which reads and presses settle is chosen by the case.
+ * refusal notice lasts until the status changes) black-box rows on core's Connect control, in the
+ * F-SETTINGS scripted page. MULTI-1 re-baseline: the control is per target since MULTI-0 (one card
+ * per TargetView, its Connect `[data-fishball-connect-begin]` posting `{targetId}` to
+ * SEAM_TARGETS.route.connect; the status is the card's TargetView from GET `api/fishball/targets`).
+ * Every list read and every Connect press is held by the case and answered by hand (`connectScript`),
+ * so the order in which reads and presses settle is chosen by the case. The rows run on card A, with a
+ * second card B listed beside it that must never be touched.
  *
  * Techniques:
  * - State transition CONNECT-ST-01…: the races of F5 (read vs newer read, read vs press, settle
@@ -14,23 +17,37 @@
 import assert from 'node:assert/strict'
 import { textOf } from '../../../support/rp-recommend.mjs'
 import { caseTest } from '../../contract/package-boundaries/cases.mjs'
-import { CONNECT, DSH, FIXTURE, MARK, OPEN, OUTCOME, ROUTE } from './constants.mjs'
+import { CONNECT, DSH, FIXTURE, MULTI_SET as M, OPEN, OUTCOME, ROUTE } from './constants.mjs'
 import { createWorld, loadPage, settle } from './page.mjs'
 
-const STORED = Object.freeze({ target: { url: FIXTURE.storedUrl }, connect: { clientMetadataUrl: FIXTURE.storedMetadataUrl }, identity: { id: FIXTURE.coreId, name: FIXTURE.storedName } })
-const status = (state, code = null) => ({ status: ROUTE.ok, json: { state, code } })
+const STORED = Object.freeze({ connect: { clientMetadataUrl: FIXTURE.storedMetadataUrl }, identity: { id: FIXTURE.coreId, name: FIXTURE.storedName } })
+/**
+ * The list answer whose card A carries Connect status (state, code). Its public state follows the
+ * SEAM_TARGETS.state rule for a link not connected unless authorized (a fixture choice): authorized
+ * → connected, authorizing → connecting, failed → failed, the two needs-* → not-set.
+ */
+const PUBLIC_OF = Object.freeze({
+  [CONNECT.state.authorized]: M.state.connected, [CONNECT.state.authorizing]: M.state.connecting, [CONNECT.state.failed]: M.state.failed,
+  [CONNECT.state.needsAuthorization]: M.state.notSet, [CONNECT.state.needsConfiguration]: M.state.notSet,
+})
+const status = (state, code = null) => ({
+  status: ROUTE.ok,
+  json: { version: M.snapshotVersion, targets: [M.view(M.idA, { state: PUBLIC_OF[state], connect: { state, code }, line: { kind: state, code } }), M.view(M.idB, { order: 2 })] },
+  state, code,
+})
 const S = CONNECT.state
 const C = CONNECT.configuration
 
-/** Holds every GET / POST of the Connect route until the case answers it. */
+/** Holds every GET of the target list and every POST of the connect route until the case answers it. */
 function connectScript(world) {
   const gets = []
   const posts = []
+  const bodies = []
   const held = (list) => () => new Promise((resolve) => { list.push(resolve) })
-  world.connect.get = held(gets)
-  world.connect.post = held(posts)
+  world.targets = held(gets)
+  world.targetAnswers[M.rel.connect] = (body) => { bodies.push(body); return held(posts)() }
   return {
-    gets, posts,
+    gets, posts, bodies,
     async get(i, answer) { gets[i](answer); await settle() },
     async post(i, answer) { posts[i](answer); await settle() },
   }
@@ -43,12 +60,13 @@ export function registerConnectRaceCases(sdk) {
     const script = connectScript(world)
     const page = await loadPage(c, world)
     await page.open(DSH.view.page)
-    const block = () => page.byAttr(MARK.connect)[0]
+    const block = () => page.byAttr(M.mark.card, M.idA)[0]
     return {
       world, script, page,
-      state: () => block()?.props[MARK.connectState],
+      /** Card A's shown public state (the relayed `data-fishball-target-state`). */
+      state: () => block()?.props[M.mark.state],
       alerts: () => (block() ? page.alerts([block()]) : []),
-      press: () => page.press(page.byAttr(MARK.connectBegin)[0]),
+      press: () => page.press(page.byAttr(M.mark.begin, undefined, [block()])[0]),
       focus: async () => { world.dispatchWindow(DSH.focus); await settle() },
     }
   }
@@ -60,9 +78,9 @@ export function registerConnectRaceCases(sdk) {
     await p.focus()
     assert.equal(p.script.gets.length, 2)
     await p.script.get(1, status(S.authorized))
-    assert.equal(p.state(), S.authorized)
+    assert.equal(p.state(), PUBLIC_OF[S.authorized])
     await p.script.get(0, status(S.needsConfiguration, C.metadataUrlMissing))
-    assert.equal(p.state(), S.authorized, 'an older read published')
+    assert.equal(p.state(), PUBLIC_OF[S.authorized], 'an older read published')
     assert.deepEqual(p.alerts(), [])
   })
   t('CONNECT-ST-01', 'newer read wins in order too', 'read 1 answers first, read 2 after: the state is read 2\'s', async (c) => {
@@ -70,18 +88,23 @@ export function registerConnectRaceCases(sdk) {
     await p.focus()
     await p.script.get(0, status(S.authorizing))
     await p.script.get(1, status(S.authorized))
-    assert.equal(p.state(), S.authorized)
+    assert.equal(p.state(), PUBLIC_OF[S.authorized])
   })
-  t('CONNECT-ST-02', 'read before a press', 'read 1 pending → Connect pressed (POST) → read 1 answers needs-authorization: ignored; the read after the press answers authorized: shown', async (c) => {
+  // MULTI-1: a card exists only once a list read answered, so "a read pending at the press" is a
+  // refocus read started after the first list; its late answer must not publish over the press's follow-up.
+  t('CONNECT-ST-02', 'read before a press', 'list answered → refocus read pending → Connect pressed (POST) → the older read answers failed: ignored; the read after the press answers authorized: shown', async (c) => {
     const p = await pageWith(c)
+    await p.script.get(0, status(S.needsAuthorization))
+    await p.focus()
+    assert.equal(p.script.gets.length, 2, 'precondition: the refocus read')
     await p.press()
     assert.equal(p.script.posts.length, 1)
-    await p.script.get(0, status(S.failed))
-    assert.notEqual(p.state(), S.failed, 'a read started before the press published')
+    await p.script.get(1, status(S.failed))
+    assert.notEqual(p.state(), PUBLIC_OF[S.failed], 'a read started before the press published')
     await p.script.post(0, { status: ROUTE.ok, json: { outcome: OUTCOME.authorized } })
-    assert.equal(p.script.gets.length, 2, 'no read after the press')
-    await p.script.get(1, status(S.authorized))
-    assert.equal(p.state(), S.authorized)
+    assert.equal(p.script.gets.length, 3, 'no read after the press')
+    await p.script.get(2, status(S.authorized))
+    assert.equal(p.state(), PUBLIC_OF[S.authorized])
   })
   t('CONNECT-ST-03', 'press settles after unmount', 'press pending → the page unmounts → the POST answers approval-url: no window.open, no follow-up GET, no state update', async (c) => {
     const p = await pageWith(c)
@@ -148,7 +171,7 @@ export function registerConnectRaceCases(sdk) {
   ]
   for (const lang of DSH.locales) {
     for (const [rule, press, first, later, finalState, codeChange] of rules) {
-      t('CONNECT-DT-01', `${rule} ${lang}`, `(${lang}) press refused → first status after it → ${later.map(([s, a]) => `${s.json.state}${s.json.code ? '/' + s.json.code : ''}: alert ${a ? 'shown' : 'gone'}`).join(' → ')}`, async (c) => {
+      t('CONNECT-DT-01', `${rule} ${lang}`, `(${lang}) press refused → first status after it → ${later.map(([s, a]) => `${s.state}${s.code ? '/' + s.code : ''}: alert ${a ? 'shown' : 'gone'}`).join(' → ')}`, async (c) => {
         const p = await pageWith(c, lang)
         await p.script.get(0, first)
         await p.press()
@@ -162,7 +185,8 @@ export function registerConnectRaceCases(sdk) {
           await p.script.get(2 + i, answer)
           assert.equal(p.alerts().length, shown ? 1 : 0, `after status ${i + 1}: alerts ${p.alerts().length}`)
         }
-        assert.equal(p.state(), finalState)
+        assert.equal(p.state(), PUBLIC_OF[finalState])
+        assert.ok(p.script.bodies.every((b) => b?.[M.route.targetIdField] === M.idA), 'a press for another target')
         // A different (state, code) with a code of its own (rule "another code"): the press's notice is
         // gone; the one alert left is the status's own code (the page's existing needs-configuration line).
         if (codeChange) assert.notEqual(textOf(p.alerts()[0]), pressText)

@@ -19,10 +19,13 @@
  *
  * The route is a raw DSH web-server route, outside DSH's connection authentication on purpose: the
  * browser arrives from the connector's page, cross-site, so DSH's `SameSite=Strict` login cookie is
- * not sent (dsh-client-connection). It accepts a callback only while one web-callback attempt is
- * pending and only with that attempt's `state` (told by `authorize` through `expect`), and hands its
- * parameters to that attempt alone; anything else is 404 and leaves the attempt pending, so no one
- * else can end it. `authorize` then checks `state` and `iss` again and redeems the code with the
+ * not sent (dsh-client-connection). It accepts a callback only with the `state` of a pending
+ * web-callback attempt (told by `authorize` through `expect`), and hands its parameters to that
+ * attempt alone; anything else is 404 and leaves every attempt pending, so no one else can end it.
+ * MULTI-1 (PLAN-MULTI §3.2, Q05): the pending attempts are a registry keyed by `state`, one entry
+ * per live attempt, so concurrent Connects of several targets never overwrite each other. The
+ * attempt is found from its own stored `state` only, never from a target named in the query; its
+ * entry goes at its `close()` (the attempt's end, cancel, removal or URL edit). `authorize` then checks `state` and `iss` again and redeems the code with the
  * attempt's PKCE verifier.
  */
 import { OAUTH_CLIENT } from './oauth-client.js'
@@ -36,25 +39,26 @@ const isLoopback = (hostname) => LINK.hosts.loopbackNames.includes(hostname)
 const urlOf = (text) => (typeof text === 'string' && URL.canParse(text) ? new URL(text) : undefined)
 
 /**
- * The web callback route and the one pending listener.
+ * The web callback route and its registry of pending listeners.
  * @param {{webServer: {register(route: object): () => void}}} ports DSH's web listener (dsh-host-webserver)
  * @returns {{callbackFor(request: Request): {callback?: Function, refused?: string} | undefined, dispose(): void}}
  *   `callbackFor` is the Connect route's choice for one press (see the module header):
  *   `undefined` for the loopback callback
  */
 export function createWebCallback({ webServer }) {
-  let pending
+  /** `state` → the listener of the pending attempt that sent it. */
+  const pending = new Map()
 
   /** A listener factory for `authorize` at `origin` (`oauth-client` listener contract). */
   const listenAt = (origin) => async () => {
     const received = Promise.withResolvers()
     const listener = { deliver: received.resolve, state: undefined }
-    pending = listener
+    const forget = () => { if (listener.state !== undefined && pending.get(listener.state) === listener) pending.delete(listener.state) }
     return {
       redirectUrl: new URL(CONNECT.callback.webPath, origin).href,
       received: received.promise,
-      expect: (state) => { listener.state = state },
-      close: async () => { if (pending === listener) pending = undefined },
+      expect: (state) => { forget(); listener.state = state; pending.set(state, listener) },
+      close: async () => forget(),
     }
   }
 
@@ -67,15 +71,16 @@ export function createWebCallback({ webServer }) {
     kind: WEB_CALLBACK.routeKind,
     path: CONNECT.callback.webPath,
     handler(req, res) {
-      const listener = pending
       const params = new URL(req.url, WEB_CALLBACK.base).searchParams
-      // The route is open to anyone who reaches the listener, so a request whose `state` is not the
-      // pending attempt's is answered 404 and changes nothing: nobody else can end the attempt.
-      if (req.method !== WEB_CALLBACK.method || listener?.state === undefined || params.get(OAUTH_CLIENT.param.state) !== listener.state) {
+      const state = params.get(OAUTH_CLIENT.param.state)
+      const listener = state === null ? undefined : pending.get(state)
+      // The route is open to anyone who reaches the listener, so a request whose `state` is no
+      // pending attempt's is answered 404 and changes nothing: nobody else can end an attempt.
+      if (req.method !== WEB_CALLBACK.method || listener === undefined) {
         return answer(res, OAUTH_CLIENT.callbackPage.notFound, WEB_CALLBACK.emptyBody)
       }
       // Only the first matching callback counts: a second one while the attempt finishes finds nothing.
-      pending = undefined
+      pending.delete(state)
       listener.deliver(params)
       return answer(res, OAUTH_CLIENT.callbackPage.status, OAUTH_CLIENT.callbackPage.body)
     },
@@ -92,7 +97,7 @@ export function createWebCallback({ webServer }) {
       return { refused: CONNECT.configuration.webCallbackInsecure }
     },
     dispose() {
-      pending = undefined
+      pending.clear()
       disposeRoute()
     },
   })

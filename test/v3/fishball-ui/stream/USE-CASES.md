@@ -20,7 +20,11 @@ own conversation in the F-SETTINGS scripted page, over one EventSource stand-in 
 | HEALTH-ST-04 | ST | Asks stale → valid frame re-enables |
 | HEALTH-EP-01 | EP | Not JSON / null / no cards array / an array do not count as fresh |
 | HEALTH-ST-05 | ST | Closed → Reconnect → stale → frame → live |
-| HEALTH-ST-06 | ST | One Reconnect reopens strip, asks and pairing; each stale until its frame |
+| HEALTH-ST-06 | ST | Re-baselined (MULTI-3 D): one Reconnect reopens the asks stream, stale until its frame (sidebar + asks: TGT-SB-ST-06) |
 | HEALTH-ST-07 | ST | Closed, unmount, remount → stale (not closed) |
 | HEALTH-ST-08 | ST | Unmount closes every EventSource |
 | TIME-DT-01 en / zh | DT (UI language × runtime default) | The time is `new Date(askedAt).toLocaleString('en' | 'zh-CN')`, never the realm's forced default |
+
+**Re-baselined (MULTI-3 requirement D):** the strip card is withdrawn, so HEALTH-DT-01 strip and
+HEALTH-ST-01 / 02 / 03 stay listed as skipped. The sidebar list's health rows are
+`../model-dialog` TGT-SB-ST-06. The ask-card fixtures carry MULTI-0's `handle` and `source`.

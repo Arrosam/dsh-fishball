@@ -3,8 +3,9 @@
  * authenticated exact-route channel, serving what fishball-ui draws from one of core's services.
  * Each frame is `frame(snapshot, url)`: the first at once, then one per change of the source's
  * snapshot, and one when the service itself arrives, is replaced or leaves (then
- * `frame(undefined, url)`). An identical frame is not sent twice. The status strip
- * (src/status/route.js) and the pairing card (src/pairing/route.js) are its two users; a browser
+ * `frame(undefined, url)`). An identical frame is not sent twice. The sidebar's DSH targets
+ * (src/status/route.js) are its user since MULTI-3 (the pairing card's route went with core's scalar
+ * `ui.pairing`; each target's pairing is drawn from that stream); a browser
  * press never goes through here.
  */
 export const VIEW_STREAM = Object.freeze({

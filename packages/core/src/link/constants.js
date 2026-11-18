@@ -25,10 +25,14 @@ export const LINK_MCP = Object.freeze({
   clientInfo: Object.freeze({ name: 'fishball-core', version: CORE_VERSION }),
   versionPin: MCP.protocolVersion,
   eventsUri: MCP.events.uri,
+  // MULTI-0: the identity resource the same listen stream also subscribes to, and where
+  // `server/discover` carries the server's name (PLAN-MULTI §4.3).
+  identityUri: MCP.identity.uri,
+  serverInfoKey: MCP.serverIdentity.discoverMetaKey,
   // `inbox_poll`'s page argument (K1 `inbox_poll({cursor?, limit?})`); no limit is sent, so each
   // page is the connector's default size.
   cursorArgument: 'cursor',
-  resourceUpdated: 'notifications/resources/updated',
+  resourceUpdated: MCP.serverIdentity.updatedNotification,
   toolsListChanged: 'notifications/tools/list_changed',
   // A client-credentials client cannot widen its scope by re-authorizing, so a 403
   // insufficient_scope is reported, not retried (the SDK's own advice for m2m clients).
@@ -48,11 +52,11 @@ export const LINK_MCP = Object.freeze({
  * Core's saved credential and Connect (task F-LINK-SAVE; requirements 1.29 R7, 1.30 R9, 1.31 R10,
  * 1.32 R12–R14; Q-LS1 = A; design §5.4, §6.3, §6.3a). The published names are K3a's
  * (`HOSTED_IMPORT`, `CONNECT`); these are the module's own.
- * - `hostedPayload`: the payload of `HOSTED_IMPORT.savedRecord` (K3a: "core's own format"): a
- *   version and the accepted token value per target origin (R9: "keyed by target origin");
- * - `grantRecordIdPrefix` / `originEncoding`: the id segment of Connect's grant record for one
- *   target origin (K3a leaves it to core): DSH's key grammar is `[a-z][a-z0-9-]*`, an origin holds
- *   `:` `/` `.` and upper case, so the origin's UTF-8 bytes go in lowercase hex (the adapter's way);
+ * - `hostedPayload`: the payload of a saved token copy (`HOSTED_IMPORT.savedRecord` for the parent,
+ *   K3a: "core's own format"; an added target's own record): a version, the accepted value and its
+ *   `TargetCredentialBinding` (MULTI-0 security amendment);
+ * - Connect's grant record is one per target epoch since MULTI-0 (`TARGETS.credentials`,
+ *   `credentials.js` `credentialNames`), no longer one per hex-encoded origin;
  * - `credentialId`: the non-secret id of one credential, which F-PAIR keys its records on
  *   (decided item 13): a token by a SHA-256 of its value under core's `domain` prefix (so it never
  *   equals the connector's own lookup digest), so the token in the reference and its saved copy are
@@ -68,17 +72,16 @@ export const LINK_MCP = Object.freeze({
 export const LINK_SAVE = Object.freeze({
   hostedPayload: Object.freeze({ version: 1 }),
   /**
-   * The origin a value in the credential reference was put there for (R-FIX F01; R-FB-03 "a changed
-   * target origin is a new first connection"): one record, `{v, ref, origin}`, the value's
-   * non-secret id (`credentialId`) and the target origin in force when core first saw it. The value
-   * is only ever sent to that origin; a new write of the reference binds it again. A record, not
-   * memory, so a restart between the write and the first connection keeps the binding.
+   * The parent epoch a value in the hosted reference was put there for (R-FIX F01; MULTI-0 security
+   * amendment): each `{ref, binding}` pairs a value's non-secret id (`credentialId`) with its
+   * `TargetCredentialBinding` (parent epoch, origin, agent id). Keep masked bindings until their
+   * epoch retires, and retired ids separately, so replacing an active binding cannot make a
+   * retired fallback usable again.
+   * The parent's alone: an added target's reference name holds its epoch.
    */
   pendingOrigin: Object.freeze({ key: CORE_RECORD_SCOPE + '/pending-token-origin', kind: 'grant', version: 1 }),
-  grantRecordIdPrefix: 'connect-',
   // The grant payload field holding the fishball id Connect passed as `agent_id` (R-FIX F10).
   grantAgentIdField: 'agentId',
-  originEncoding: 'hex',
   credentialId: Object.freeze({ tokenPrefix: 'token:', grantPrefix: 'grant:', domain: 'fishball-core credential id\n', digest: 'sha256', digestEncoding: 'hex' }),
   /** The `ConnectBegin` outcome with an approval URL (`connect.d.ts`), and DSH's `begin()` status word for a committed grant (dsh-authorization `AuthorizationStatus`). */
   approvalUrlOutcome: 'approval-url',
@@ -95,6 +98,8 @@ export const LINK_SAVE = Object.freeze({
     unset: 'clearing the imported token reference',
     read: 'reading the saved credential',
     forget: 'removing the replaced credential',
+    // A TypeError (programming error) of createLinkCredentials, never shown to a user.
+    names: 'fishball-core link: credentials need a target epoch\'s names (credentialNames)',
   }),
 })
 

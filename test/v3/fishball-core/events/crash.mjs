@@ -70,17 +70,17 @@ export const SCENARIO = Object.freeze({
 })
 
 /** Whether core's message for `event` waits in `agent`'s DSH inbox (either pending list). */
-const pendingIn = (agent, event) => [...agent.inbox.nextTurn, ...agent.inbox.nextStep].some((m) => m.id === CORE.messageId(event.eventId))
+export const pendingIn = (agent, event, source) => [...agent.inbox.nextTurn, ...agent.inbox.nextStep].some((m) => m.id === CORE.messageId(event.eventId, source))
 /**
  * The "pending" cut (row 11e): when the driver wakes for core's message (`agent/status` running is
  * emitted synchronously, before the turn opens and claims), a hook cancels that wake and keeps the
  * inbox, so the message stays pending and unclaimed and no turn opens. The cut phase then dies
  * (child()). Only the first such wake is cancelled.
  */
-function holdPending(world, event, all = false) {
+export function holdPending(world, event, all = false, source = undefined) {
   let done = false
   world.ctx.on(DSH.agentStatus, (payload) => {
-    if (done || payload.status !== DSH.running || !pendingIn(world.agent, event)) return
+    if (done || payload.status !== DSH.running || !pendingIn(world.agent, event, source)) return
     // `all` (F11): every such wake of the cut phase is cancelled, so no turn of it admits anything.
     done = !all
     world.agent.cancel(DSH.hookCancel, { keepInbox: true })
@@ -106,7 +106,7 @@ export function ledgerStates(world, event) {
 }
 
 /** SIGKILL now, with nothing more made durable. */
-async function kill() {
+export async function kill() {
   process.kill(process.pid, 'SIGKILL')
   await new Promise(() => {})
 }

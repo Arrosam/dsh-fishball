@@ -6,8 +6,8 @@
  */
 import { importSdk } from '../../../private-skills/support/sdk.mjs'
 import { until } from '../../../support/util.mjs'
-import { HOST, LINK_STATUS, TARGET, WAIT } from './constants.mjs'
-import { FakeAppReady, FakeBridge, FakeConnect, FakeGuards, FakeLink, FakeLoader, FakePluginManager, fakeNotify } from './fakes.mjs'
+import { HOST, TARGETS_SNAPSHOT, WAIT } from './constants.mjs'
+import { FakeAppReady, FakeGuards, FakeLoader, FakePluginManager, FakeTargets, fakeNotify } from './fakes.mjs'
 import { makeStatus, openStatus, statusModule } from './subject.mjs'
 
 const CORDIS = '@deepseek-ai/cordis'
@@ -19,12 +19,12 @@ const cordis = (sdk) => { if (!cordisOf.has(sdk)) cordisOf.set(sdk, importSdk(sd
 export const ABSENT = Symbol('absent')
 
 /**
+ * MULTI-1 (relayed seam 2026-11-18): `createStatus(ctx, {targets: {list, onChange}, guards, notify})`;
+ * the snapshot is `{fishball, guards, set, targets}`. The scalar link / target / connect / bridge
+ * ports are withdrawn: per-target words live in each TargetView (core's `stripLine`, pure).
  * @param {object} o
- *   link        a link status (default target-unset)
- *   target      the configured target URL (default a usable https URL)
- *   connect     a Connect status, or ABSENT (default ABSENT)
+ *   targets     a TargetsSnapshot (default {version: 1, targets: []}), or ABSENT
  *   guards      a guard report, undefined (port present, no report yet) or ABSENT (default ABSENT)
- *   bridge      a contributed count, or ABSENT (default ABSENT)
  *   notify      fakeNotify options ({outcomes, then}), or ABSENT (default present, every call accepted)
  *   ready       app ready already (default false)
  *   bundles     BundleInfo[] for the plugin manager, or ABSENT (no pluginManager service)
@@ -46,15 +46,11 @@ export async function worldFor(t, sdk, o = {}) {
   if (loader) ctx.provide(HOST.loader, loader)
 
   const present = (value) => value !== ABSENT
-  const link = new FakeLink(o.link ?? LINK_STATUS.unset)
-  const connect = present(o.connect ?? ABSENT) ? new FakeConnect(o.connect) : undefined
+  const targets = present(o.targets ?? null) ? new FakeTargets(o.targets ?? TARGETS_SNAPSHOT.empty) : undefined
   const guards = present('guards' in o ? o.guards : ABSENT) ? new FakeGuards(o.guards) : undefined
-  const bridge = present(o.bridge ?? ABSENT) ? new FakeBridge(o.bridge) : undefined
   const notice = present(o.notify ?? {}) ? fakeNotify(o.notify ?? {}) : undefined
-  let target = o.target ?? TARGET.usable.https
   const ports = {
-    link, target: () => target,
-    ...(connect ? { connect } : {}), ...(guards ? { guards } : {}), ...(bridge ? { bridge } : {}),
+    ...(targets ? { targets } : {}), ...(guards ? { guards } : {}),
     ...(notice ? { notify: notice.notify } : {}),
   }
 
@@ -74,7 +70,7 @@ export async function worldFor(t, sdk, o = {}) {
   t.after(() => { close(); ctx.fiber.dispose() })
 
   return {
-    ctx, status, ports, link, connect, guards, bridge, notice, appReady, pluginManager, loader, logs, emitted, fiber,
+    ctx, status, ports, targets, guards, notice, appReady, pluginManager, loader, logs, emitted, fiber,
     close,
     /** Another createStatus over the same ports in this process (an HMR recompose); closed after the test. */
     async recompose() {
@@ -83,7 +79,6 @@ export async function worldFor(t, sdk, o = {}) {
       return again
     },
     snapshot: () => status.snapshot(),
-    setTarget(value) { target = value; ctx.emit(HOST.settingsUpdated, HOST.settingsNamespace, HOST.settingsRevision) },
     ready() { appReady.fire() },
     changed() { ctx.emit(HOST.changed, { reason: HOST.changeReason }) },
     /** Waits until `predicate(snapshot)` holds; returns the last snapshot. */

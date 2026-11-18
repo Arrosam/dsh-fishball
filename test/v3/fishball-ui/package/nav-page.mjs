@@ -46,6 +46,15 @@ function htmlElement(lang) {
     hasAttribute: (n) => attributes.has(n), getAttribute: (n) => (attributes.has(n) ? attributes.get(n) : null),
     setAttribute: (n, v) => { attributes.set(n, String(v)) }, removeAttribute: (n) => { attributes.delete(n) },
     toggleAttribute: (n, force) => { const on = force ?? !attributes.has(n); if (on) attributes.set(n, ''); else attributes.delete(n); return on },
+    /** MULTI-3: attribute selectors only (`[a]`, `[a="v"]`, `:not([a])`, compound and comma lists), as `<html>` matches them. */
+    matches: (selector) => String(selector).split(',').some((part) => {
+      const one = part.trim()
+      const parts = [...one.matchAll(/(:not\()?\[([\w-]+)(?:="([^"]*)")?\]\)?/g)]
+      if (parts.length === 0 || parts.map((m) => m[0]).join('') !== one.replace(/^html/, '')) return false
+      return parts.every(([, not, name, value]) => { const hit = attributes.has(name) && (value === undefined || attributes.get(name) === value); return not ? !hit : hit })
+    }),
+    closest() { return null },
+    contains: () => false,
     addEventListener() {}, removeEventListener() {},
   }
 }
@@ -76,9 +85,15 @@ function realShortcuts(sdk, page) {
  * - `openFails` how many `uiWorkspace.openSession` calls reject first (the "unavailable" status);
  * - `holdConfig` the shortcut config stays `loading` (the "pending" status);
  * - `failEdits` every shortcut edit answers `write-failed` (the "failed" status);
- * - `launcher` the `settings.launcher` owner props over the defaults (`settingsOpen`, `settingsShortcut`).
+ * - `launcher` the `settings.launcher` owner props over the defaults (`settingsOpen`, `settingsShortcut`);
+ * - `width` (MULTI-3) the viewport width `window.matchMedia` answers `(max-width|min-width: Npx)` queries for.
+ *
+ * MULTI-3 observation points: `log.registrations` (every `slots.register` options: name, id, key,
+ * priority), `log.edits` (every shortcut edit operation), `log.toggles` (`layout.toggleSidebar`
+ * calls), `styles()` (the text of every style rule or sheet the page mounted, through
+ * `CSSStyleSheet` or a `<style>` element) and `html` (the `<html>` element's attributes).
  */
-export async function navPage(t, sdk, { lang = NAV_PAGE.langs[0], openFails = 0, holdConfig = false, failEdits = false, launcher = {} } = {}) {
+export async function navPage(t, sdk, { lang = NAV_PAGE.langs[0], openFails = 0, holdConfig = false, failEdits = false, launcher = {}, width = NAV_PAGE.wideWidth } = {}) {
   // Host refs: a host element with a ref gets a stable stand-in element (React's commit does the
   // same), so a component that portals into another's element (the Settings launcher into the
   // nav's seat) can find it. `createPortal(node, container)` renders an `fbtest-portal` host node
@@ -94,7 +109,7 @@ export async function navPage(t, sdk, { lang = NAV_PAGE.langs[0], openFails = 0,
   }
   const shim = createReactShim({ stale() {}, hostRef })
   const { React } = shim
-  const log = { opens: [], panels: [], openSettings: 0, fetches: [], errors: [] }
+  const log = { opens: [], panels: [], openSettings: 0, fetches: [], errors: [], registrations: [], edits: [], toggles: 0 }
   const page = createBrowserSandbox({
     lang, baseURI: NAV_PAGE.baseURI,
     fetch: async (input) => {
@@ -105,6 +120,30 @@ export async function navPage(t, sdk, { lang = NAV_PAGE.langs[0], openFails = 0,
     },
   })
   page.document.documentElement = htmlElement(lang)
+  // MULTI-3: document listeners (the narrow sheet's pointerdown / keydown) are recorded so a case can fire them.
+  const docListeners = []
+  page.document.addEventListener = (type, fn, options) => { docListeners.push({ type, fn, options }) }
+  page.document.removeEventListener = (type, fn) => { const at = docListeners.findIndex((l) => l.type === type && l.fn === fn); if (at >= 0) docListeners.splice(at, 1) }
+  page.document.activeElement = null
+  // MULTI-3: the page's own style rules (constructed sheets or <style> elements), and a viewport.
+  const sheets = []
+  page.sandbox.CSSStyleSheet = class { constructor() { this.cssRules = []; sheets.push(this) } replaceSync(text) { this.text = String(text) } replace(text) { this.text = String(text); return Promise.resolve(this) } insertRule(rule, at = this.cssRules.length) { this.cssRules.splice(at, 0, { cssText: String(rule) }); return at } deleteRule(at) { this.cssRules.splice(at, 1) } }
+  page.window.CSSStyleSheet = page.sandbox.CSSStyleSheet
+  const elementsMade = []
+  page.document.createElement = (tag) => { const el = { tagName: String(tag).toUpperCase(), textContent: '', dataset: {}, style: {}, removed: false, setAttribute(n, v) { el[n] = String(v) }, append() {}, appendChild() {}, remove() { el.removed = true } }; elementsMade.push(el); return el }
+  const media = (query) => {
+    const bound = NAV_PAGE.mediaWidth.exec(String(query))
+    const matches = bound ? (bound[1] === NAV_PAGE.maxWidth ? width <= Number(bound[2]) : width >= Number(bound[2])) : false
+    return { media: String(query), matches, onchange: null, addEventListener() {}, removeEventListener() {}, addListener() {}, removeListener() {}, dispatchEvent: () => true }
+  }
+  page.window.matchMedia = media
+  page.sandbox.matchMedia = media
+  // The browser's CSS namespace: CSS.supports answers as the Chromium the frame-layout rows measure
+  // in does (every selector and declaration DSH's web page relies on, :has() included).
+  const css = { supports: () => true, escape: (text) => String(text).replace(/[^\w-]/g, (c) => '\\' + c) }
+  page.sandbox.CSS = css
+  page.window.CSS = css
+  page.window.innerWidth = width
   page.sandbox.localStorage = memoryStorage()
   page.window.localStorage = page.sandbox.localStorage
   page.sandbox.crypto = globalThis.crypto
@@ -127,7 +166,7 @@ export async function navPage(t, sdk, { lang = NAV_PAGE.langs[0], openFails = 0,
     catalog: { getSnapshot: () => service.catalog.getSnapshot(), subscribe: counted((fn) => service.catalog.subscribe(fn)) },
     config: { getSnapshot: () => (held ? { ...service.config.getSnapshot(), status: NAV_PAGE.loading } : service.config.getSnapshot()), subscribe: counted((fn) => service.config.subscribe(fn)) },
     describeBinding: (binding) => service.describeBinding(binding),
-    edit: async (operation, revision) => (failEdits ? { status: NAV_PAGE.writeFailed, snapshot: service.config.getSnapshot() } : service.edit(operation, revision)),
+    edit: async (operation, revision) => (log.edits.push(structuredClone(operation)), failEdits ? { status: NAV_PAGE.writeFailed, snapshot: service.config.getSnapshot() } : service.edit(operation, revision)),
     register: (command) => service.register(command), registerFixed: (command) => service.registerFixed(command),
     observeFixedInput: (listener) => service.observeFixedInput(listener), recording: (active) => service.recording(active), closeWindow: () => service.closeWindow(),
   }
@@ -146,6 +185,7 @@ export async function navPage(t, sdk, { lang = NAV_PAGE.langs[0], openFails = 0,
   const slots = {
     register(options, Component) {
       const key = options.name + ':' + (options.id ?? mounted.length)
+      log.registrations.push({ name: options.name, id: options.id, key: options.key, priority: options.priority })
       mounted.push({ key, options })
       const props = () => (options.name === NAV_PAGE.slot.launcher ? launcherProps : {})
       shim.mount(key, () => React.createElement(Component, props()))
@@ -158,7 +198,7 @@ export async function navPage(t, sdk, { lang = NAV_PAGE.langs[0], openFails = 0,
   const ctx = {
     effect(fn) { const out = fn(); effects.push(out); return out },
     slots,
-    layout: { panelInfo: panel, selectPanel: (id) => { log.panels.push(id); panel.set({ activePanelId: id }) }, toggleSidebar() {} },
+    layout: { panelInfo: panel, selectPanel: (id) => { log.panels.push(id); panel.set({ activePanelId: id }) }, toggleSidebar() { log.toggles += 1 } },
     uiWorkspace: {
       async openSession(id) { log.opens.push(id); if (failures > 0) { failures -= 1; throw new Error('fbtest: injected openSession rejection') } show(id) },
       async archiveSession() {}, async startSession() {}, async forkSession() {},
@@ -206,6 +246,14 @@ export async function navPage(t, sdk, { lang = NAV_PAGE.langs[0], openFails = 0,
   const nav = () => nodes().find((n) => n.tag === NAV_PAGE.nav.tag && n.props.className?.split(' ').includes(NAV_PAGE.nav.className) && n.props['aria-label'] === NAV_PAGE.nav.label)
   return {
     shim, log, nodes, nav, settle, composed,
+    /** MULTI-3: every style rule text the page mounted and still holds. */
+    styles: () => [
+      ...sheets.flatMap((sheet) => [sheet.text ?? '', ...sheet.cssRules.map((r) => r.cssText)]),
+      ...elementsMade.filter((el) => el.tagName === NAV_PAGE.styleTag && !el.removed).map((el) => el.textContent),
+    ].filter(Boolean),
+    html: page.document.documentElement,
+    /** MULTI-3: the live document listeners by type. */
+    documentListeners: (type) => docListeners.filter((l) => l.type === type),
     /** Re-render the launcher with other owner props (DSH re-renders the slot so). */
     setLauncher: async (props) => { Object.assign(launcherProps, props); shim.rerender(); await settle() },
     /** The nav's subtree (empty when absent). */

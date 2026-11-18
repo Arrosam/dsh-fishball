@@ -16,13 +16,17 @@
  * the same process (HMR, a live plugin change) cannot notice twice, a failed notice may be retried,
  * and the next DSH start gets a new key (task brief: "one notice per DSH start"). Later changes
  * show in the strip only.
+ *
+ * MULTI-1 (MULTI-0 `SEAM_TARGETS.snapshotVersion`): the snapshot is the global `fishball`,
+ * `guards` and `set`, once per process, beside `targets: TargetsSnapshot`, the target collection's
+ * list (every target's link, Connect, line, control and contributed-tool count). The scalar link
+ * members are gone: there is no single target.
  */
 import { randomUUID } from 'node:crypto'
 import { GUARDS } from '../../contracts/constants.js'
 import { codeOf } from '../events/diagnostics.js'
 import { emitIsolated, subscribe } from '../link/index.js'
 import { STATUS_MODEL } from './constants.js'
-import { stripLine } from './line.js'
 import { checkSet } from './set.js'
 
 const { services: SERVICE, events: EVENT, text: TEXT } = STATUS_MODEL
@@ -45,14 +49,11 @@ const follow = (port, method, fn) => (typeof port?.[method] === 'function' ? por
 /**
  * @param {object} ctx the core row's Cordis context (`get`, `on`, optional `logger`)
  * @param {object} ports
- * @param {{status(): {state: string, code: string | null}, onStatus(fn: Function): Function}} ports.link
- * @param {() => unknown} ports.target the configured target URL
- * @param {{status(): {state: string, code: string | null}, onChange(fn: Function): Function}} [ports.connect]
+ * @param {{list(): object, onChange(fn: Function): Function}} ports.targets the target collection (`ui.targets`)
  * @param {{report(): object | undefined, onChange(fn: Function): Function}} [ports.guards]
- * @param {{contributedCount(): number, onChange(fn: Function): Function}} [ports.bridge]
  * @param {(input: {pluginId: string, dedupeKey: string, text: string}) => Promise<unknown>} [ports.notify]
  */
-export function createStatus(ctx, { link, target, connect, guards, bridge, notify }) {
+export function createStatus(ctx, { targets, guards, notify }) {
   const logger = ctx.logger?.(STATUS_MODEL.logger)
   const listeners = new Set()
   const noticeKey = startNoticeKey()
@@ -64,18 +65,11 @@ export function createStatus(ctx, { link, target, connect, guards, bridge, notif
   let currentJson
 
   function build() {
-    const linkStatus = link.status()
-    const connectStatus = connect === undefined ? null : connect.status()
-    const { line, control } = stripLine(linkStatus, target(), connectStatus)
     return Object.freeze({
       fishball: STATUS_MODEL.fishball.on,
-      link: linkStatus,
-      connect: connectStatus,
-      line,
-      control,
       guards: guards?.report() ?? null,
       set,
-      contributedTools: bridge === undefined ? null : bridge.contributedCount(),
+      targets: targets.list(),
     })
   }
 
@@ -119,13 +113,11 @@ export function createStatus(ctx, { link, target, connect, guards, bridge, notif
 
   let ready = false
   const disposers = [
-    follow(link, 'onStatus', refresh),
-    follow(connect, 'onChange', refresh),
+    follow(targets, 'onChange', refresh),
     follow(guards, 'onChange', refresh),
-    follow(bridge, 'onChange', refresh),
     // The set is DSH state that is partial before app ready (as the guards, S6 §3.5): read after it only.
     ctx.on(EVENT.pluginsChanged, () => { if (ready) void recheckSet() }),
-    // A settings change may change the target URL, which the line reads.
+    // A settings change may change the parent's URL (the instance's setting), which its line reads.
     ctx.on(EVENT.settingsUpdated, refresh),
   ]
   const appReady = ctx.get(SERVICE.appReady)
