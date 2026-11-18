@@ -52,7 +52,7 @@ const esc = (text) => String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').
  * The frame's HTML. `panels`: [{id, label}]; `collapsed` / `drawer` the layout's own attributes
  * (rc.1 sets `drawer` below 768px); `mark` whether `<html data-fishball-page>` is set.
  */
-export function frameDocument(sdk, { panels, collapsed, drawer = false, mark, pageRules }) {
+export function frameDocument(sdk, { panels, collapsed, drawer = false, mark, pageRules, workspaces = `<section ${L.workspacesHook}>targets</section>` }) {
   const frame = cssModule(sdk, L.layoutPkg, L.frameModule).classes
   const side = cssModule(sdk, L.sidebarPkg, L.sidebarModule).classes
   const slot = (key, inner = '') => `<div data-slot="${key}" style="display:contents">${inner}</div>`
@@ -61,7 +61,7 @@ export function frameDocument(sdk, { panels, collapsed, drawer = false, mark, pa
     + `<div class="${side.logoRow}"><button type="button" class="${side.iconButton} ${side.toggle}" data-sidebar-toggle aria-label="toggle"><span class="${side.railMark}" aria-hidden="true">${slot(L.slot.brandMark, '<svg width="24" height="24"></svg>')}</span><svg width="18" height="18"></svg></button></div>`
     + `<button type="button" class="${side.newSession}" ${L.newSessionHook} aria-label="New session"><span>+</span></button>`
     + `<nav class="${side.panelList}" aria-label="Global panels">${rows}</nav>`
-    + `<div class="${side.regionArea}">${slot(L.slot.workspaces, `<section ${L.workspacesHook}>targets</section>`)}</div>`
+    + `<div class="${side.regionArea}">${slot(L.slot.workspaces, workspaces)}</div>`
     + `<div class="${side.footArea}"><div class="${side.footerActions}">${slot(L.slot.footer, '')}</div><div class="${side.settingsArea}">${slot(L.slot.settings, `<button type="button" class="fishball-settings-launcher" ${L.settingsHook} aria-label="Settings">S</button>`)}</div></div>`
     + '</div>'
   const attrs = [collapsed ? 'data-sidebar-collapsed' : '', drawer ? 'data-sidebar-drawer' : ''].filter(Boolean).join(' ')

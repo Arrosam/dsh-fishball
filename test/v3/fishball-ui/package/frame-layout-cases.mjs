@@ -25,6 +25,7 @@ import { HARNESS } from '../contrast/constants.mjs'
 import { measure, stopBrowser } from '../contrast/page.mjs'
 import { LAYOUT_PROBE, frameDocument } from './frame-layout.mjs'
 import { navPage } from './nav-page.mjs'
+import { checkDesktopTargetAddress } from './target-address.mjs'
 import { FRAME_LAYOUT as L } from './polish-constants.mjs'
 
 const show = (v) => JSON.stringify(v)
@@ -69,6 +70,10 @@ export function registerFrameLayoutCases(sdk) {
     assert.ok(!bar, `${why}: a ${L.barHeight}px bottom bar (${show(r.column)})`)
   }
   const isRc1 = sdk === L.drawerSdk
+
+  browserRow(sdk, 'SHOT-TARGET-URL-EP-01', 'desktop duplicate names', 'the expanded Night-Build address fits, ellipsizes, or wraps without an orphaned URL suffix', async (t) => {
+    await checkDesktopTargetAddress(t, sdk, await pageRules(t))
+  })
 
   // ---- MULTI-BAR-DT-01 / BVA-01: the bar exists exactly on Fishball's page in the narrow query (rc.5)
   for (const width of [W.narrow, W.edge]) {
