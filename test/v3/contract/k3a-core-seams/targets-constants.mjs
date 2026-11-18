@@ -90,6 +90,8 @@ export const TOOL_BUDGET = Object.freeze({ minFacadeChars: 1, hex: /^[0-9a-f]+$/
 
 /** README "Added credentials": the reference and record spellings as `TARGETS.credentials` builds them. */
 export const CREDENTIAL_PARTS = Object.freeze({
+  /** Review amendment: mandatory core-private saved/pending credential payload metadata. */
+  bindingField: 'binding',
   tokenRefPrefix: 'FISHBALL_TARGET_TOKEN_',
   tokenRefSeparator: '__',
   refReplaced: '-',

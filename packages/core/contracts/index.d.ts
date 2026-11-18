@@ -33,6 +33,7 @@ export type { FishballUi, UiPairingView, UiResult, Dispose } from './ui.js'
 export type {
   TargetId, EndpointEpoch, TargetKind, TargetState, TargetIdentityState, TargetSource, TargetRecord, TargetView,
   TargetsSnapshot, TargetActionResult, FishballTargets, FishballTargetBound, SetStatus, StatusSnapshot,
+  TargetCredentialBinding, TargetSelector,
 } from './targets.js'
 
 import type { FishballInstanceEvents } from './events.js'
