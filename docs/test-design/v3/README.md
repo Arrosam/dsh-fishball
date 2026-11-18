@@ -138,9 +138,17 @@ V2 files keep their paths and are grouped by package in an opt-in lane.
 | `npm run test:release-check` | release, placement, and package-boundary checks with release artifacts required |
 | `npm run test:map` | ownership and representative selection checks |
 
-`--sdk=0.2.1-rc.5|0.2.2-rc.1` selects one SDK's V3 files; `--list` prints the selection. An unmapped
-path, shared test support, or runner change selects all suites in the chosen lane. `--suite` explicitly
-selects the named suites, irrespective of the lane.
+`--sdk=0.2.1-rc.5|0.2.2-rc.1|both` selects files and their matching installed SDKs (`both` is the
+default). Set `FBTEST_DSH_VERSIONS` to the parent of the installed SDK directories if needed.
+`--list` prints the selection. An unmapped path, shared test support, or runner change selects all
+suites in the chosen lane. `--suite` explicitly selects the named suites, irrespective of the lane.
+
+The affected runner defaults to `--serial` (one SDK and one file at a time). Try `--parallel` to
+run both SDK jobs with up to three concurrent files per SDK. Test cases that share a file's fixture
+still run in order. Each SDK job gets a private temporary HOME, cache, and test-homes directory.
+`FBTEST_TEST_HOMES`, if provided, is a parent directory, not a directory the runner clears; choose a
+location outside any Git checkout for native-child tests. Legacy files whose coverage depends on
+the active SDK run in both jobs when `--sdk=both`.
 
 Ordinary runs report `release folder missing` as a skip on artifact-only rows. Source-only tests still
 run. An existing incomplete or invalid release still fails; use `--release-check` (also set by

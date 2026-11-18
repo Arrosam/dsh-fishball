@@ -24,7 +24,8 @@ export const LITE_ENV = Object.freeze({
   harness: path.join(HERE, 'lite-harness.js'),
   shortcutsBundle: path.join('@deepseek-ai', 'dsh-client-shortcuts', 'lib', 'client.js'),
   routes: Object.freeze({ harness: '/', harnessScript: '/harness.js', page: '/page/client.js', sdkPrefix: '/sdk/', main: '/main' }),
-  chromeCache: path.join(os.homedir(), 'Library', 'Caches', 'ms-playwright'),
+  // Isolated runners replace HOME, not the location of the installed test browser.
+  chromeCache: path.join(os.userInfo().homedir, 'Library', 'Caches', 'ms-playwright'),
   chromeShell: Object.freeze(['chrome-headless-shell-mac-arm64', 'chrome-headless-shell']),
   tempPrefix: 'fbtest-lite-chrome-',
   startBudgetMs: 15000,

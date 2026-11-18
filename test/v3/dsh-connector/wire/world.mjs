@@ -26,6 +26,7 @@ import { BUDGET, DSH, ENV, FIXTURE, HOMES, HTTP, K1, SURFACE } from './constants
 
 const WORKER_FILE = path.join(import.meta.dirname, 'worker.mjs')
 const LOOPBACK = K1.HOSTS.loopbackNames[1]
+const EPHEMERAL = 0
 let homeCounter = 0
 
 /** A free loopback port (bound and released). */
@@ -38,11 +39,11 @@ export function freePort() {
 }
 
 /** A process-local listener that holds `port` until closed (R6: a clash). */
-export function holdPort(port) {
+export function holdPort(port = EPHEMERAL) {
   return new Promise((resolve, reject) => {
     const s = http.createServer((_q, r) => r.end('held'))
     s.once('error', reject)
-    s.listen(port, LOOPBACK, () => resolve({ close: () => new Promise((done) => { s.closeAllConnections?.(); s.close(() => done()) }) }))
+    s.listen(port, LOOPBACK, () => resolve({ port: s.address().port, close: () => new Promise((done) => { s.closeAllConnections?.(); s.close(() => done()) }) }))
   })
 }
 
@@ -161,8 +162,8 @@ after(async () => {
 })
 /**
  * One booted DSH per `(sdk, label)` in this process; `options.env` adds worker environment
- * (ENV.link, ENV.contributors), `options.rowConfig(approvalPort)` the connector row's starting config.
- * The approval port is a free one per home. Stopped and removed after the file.
+ * (ENV.link, ENV.contributors), `options.rowConfig()` the connector row's starting config.
+ * Default approval sockets bind port zero directly, avoiding a probe/release race.
  */
 export function scenario(sdk, label, options = {}) {
   const key = sdk + '/' + label
@@ -171,11 +172,10 @@ export function scenario(sdk, label, options = {}) {
       fs.mkdirSync(HOMES.root, { recursive: true })
       const home = path.join(fs.realpathSync(HOMES.root), `${FIXTURE.homeLabel}-${label}-${Date.now()}-${process.pid}-${++homeCounter}`)
       fs.mkdirSync(home, { recursive: true })
-      const approvalPort = await freePort()
-      const rowConfig = options.rowConfig?.(approvalPort) ?? { approval: { port: approvalPort } }
+      const rowConfig = options.rowConfig?.() ?? { approval: { port: EPHEMERAL } }
       const env = { [ENV.rowConfig]: JSON.stringify(rowConfig), ...(options.env ?? {}) }
       const dsh = await bootWorker(home, sdk, env)
-      return worldOf({ sdk, home, dsh, approvalPort, env })
+      return worldOf({ sdk, home, dsh, env })
     })())
   }
   return scenarios.get(key)
@@ -185,11 +185,11 @@ export function scenario(sdk, label, options = {}) {
 export const nonWebScenario = (sdk, label) => scenario(sdk, label, { env: { [ENV.noWebApp]: ENV.on } })
 
 /** The case-facing face of one booted DSH. */
-function worldOf({ sdk, home, dsh: first, approvalPort, env }) {
+function worldOf({ sdk, home, dsh: first, env }) {
   let dsh = first
   const hostOf = () => new URL(dsh.origin).host
   const w = {
-    sdk, home, approvalPort,
+    sdk, home,
     get dsh() { return dsh },
     get origin() { return dsh.origin },
     get port() { return dsh.port },

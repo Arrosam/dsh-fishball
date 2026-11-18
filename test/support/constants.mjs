@@ -8,6 +8,7 @@ import path from 'node:path'
 
 export const REPO = path.resolve(import.meta.dirname, '..', '..')
 export const NODE = '/opt/homebrew/bin/node'
+export const DSH_VERSIONS = process.env.FBTEST_DSH_VERSIONS ?? path.join(os.userInfo().homedir, 'Library', 'Application Support', 'DSH', 'data', 'versions')
 export const RUNTIME = process.env.FBTEST_DSH_RUNTIME ?? '/Users/samuel/Library/Application Support/DSH/data/versions/0.2.1-rc.2/node_modules'
 /**
  * Root of the throwaway DSH homes. FBTEST_TEST_HOMES moves it (e.g. under the OS temp dir, so a
