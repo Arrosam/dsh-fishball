@@ -487,8 +487,8 @@ tool, schema, OAuth, receipt or event changes.
   non-white-space character, else `node:os.hostname()`) + `-DSH`, appended once even if the base
   already ends with it; no title, version from the manifest. Carried at
   `result._meta['io.modelcontextprotocol/serverInfo']` ([spec]). No Host/Origin/URL-derived name.
-- **Push**: when the effective name changes, `notifications/resources/updated` with only
-  `{uri: 'dsh-agent://identity'}` to every authenticated listen stream subscribed to that URI; an
+- **Push**: when the effective name changes, `notifications/resources/updated` with
+  `{uri: 'dsh-agent://identity'}` and no param beyond the SDK's own `_meta` (its listen subscription id) to every authenticated listen stream subscribed to that URI; an
   unchanged name sends nothing; the events resource is not touched. A listen stream may subscribe
   to both URIs; `CONNECTED` still means the events URI.
 

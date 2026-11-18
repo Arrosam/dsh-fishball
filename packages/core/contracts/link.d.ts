@@ -44,11 +44,23 @@ export interface LinkStatus {
  * never writes a reference the user owns (R-FB-03).
  */
 /*
- * MULTI-0 (2026-11-18; PLAN-MULTI §3.3, D09): the hosted reservation. In a hosted child (the
- * instance's setting `targetSetting` is present) core's target list always begins with one
- * reserved target, id `TARGETS.parentId` (`parent`), kind `parent`, whose URL is that setting's
- * value, read-only and not removable (`target-reserved`); with the setting absent or blank it
- * stays `not-set`, never replaced by a user URL. Standalone has no reserved target. The names
+ * MULTI-0 (2026-11-18; PLAN-MULTI §3.3, D09): the hosted reservation.
+ * - Hosted signal (URL-independent, review S1): the child is hosted exactly when DSH's settings
+ *   service lists the namespace `targetSetting.row` (`dsh-instance-child`, the instance's
+ *   child-side row, which only a hosted child's profile holds), whatever its `targetUrl` value.
+ *   Standalone has no reserved target.
+ * - A hosted child's list always begins with one reserved target: id `TARGETS.parentId`
+ *   (`parent`), kind `parent`, URL = the canonical `targetSetting` value, read-only and
+ *   not removable (`target-reserved`). A blank or absent value keeps the parent `not-set`; it is never
+ *   replaced by a user URL, and Q01's placeholder shows.
+ * - The parent's `endpointEpoch` is generated like any other and replaced whenever the canonical
+ *   `targetUrl` changes (same rule as `setUrl`, without confirmation: the instance owns the value).
+ *   Its `TargetRecord.url` is the last canonical value core observed (`''` when none).
+ * - The parent may also use Connect (the instance's Retry notice lists it); its grant record is
+ *   the per-target one, `fishball-core/connect-parent-<epoch>` (`TARGETS.credentials`). The
+ *   origin-keyed `connect-<hex origin>` record is withdrawn (fresh install).
+ * - Core's user setting `target.url` and `settings/target.js`'s user fallback are withdrawn:
+ *   targets live in `TARGETS.store`, edited through `ui.targets`. The names
  * below (`credentialRef`, `savedRecord`, and core's own pending-origin record) belong to the
  * parent alone: an added target never reads, writes or unsets them (`TARGETS.credentials`), so the
  * instance's "the child holds a credential" probe answers for the parent only. The instance's wire

@@ -11,6 +11,7 @@
 import type { LinkStatus } from './link.js'
 import type { UiPairingView } from './ui.js'
 import type { ConnectBegin, ConnectStatus } from './connect.js'
+import type { GuardReport } from './guards.js'
 
 /**
  * A stable opaque local target id (`TARGETS.id`): `parent` for a hosted child's reserved parent,
@@ -84,7 +85,8 @@ export interface TargetRecord {
  * `url` is shown in details only (Q01). Nothing here carries a credential, token, code or grant.
  * - `state`: derived from `link`, `connect` and `connecting` by the rule of `SEAM_TARGETS.state`'s comment;
  * - `connecting`: a link attempt (connect, list, pair, listen) is in flight;
- * - `connect`: this target's Connect, or `null` for the parent while it uses the hosted import;
+ * - `connect`: this target's Connect status; the parent's reports `authorized` once the hosted
+ *   credential is saved (connect.d.ts). `null` only where core has no Connect control (none today);
  * - `line` (MULTI-0 amendment, MULTI-3's finding): this target's status line, exactly core's
  *   existing `stripLine(link, url, connect).line` for it (`kind` a `LINK.state` / `CONNECT.state`
  *   word, `code` its code or `null`), so fishball-ui draws it without re-deriving core's rule;
@@ -117,6 +119,27 @@ export interface TargetsSnapshot {
   readonly targets: readonly TargetView[]
 }
 
+/** `GuardReport` as `guards.d.ts` declares it, and the set check (`SEAM_STATUS.set`, `reason`). */
+export interface SetStatus {
+  readonly status: 'ok' | 'plugin-set-incomplete'
+  readonly missing: readonly { readonly name: string; readonly reason: 'skipped' | 'failed'; readonly code: string | null }[]
+}
+
+/**
+ * Core's status service snapshot (`UI_STATUS.service` `snapshot()`), as fishball-ui's strip route
+ * serves it (review S4). The global parts stay once per process; everything per target is in
+ * `targets`. K3a's scalar `link`, `connect`, `line`, `control` and `contributedTools` members are
+ * withdrawn. Without core, a reader sees exactly `{fishball: 'fishball-off'}`, with no `targets`.
+ */
+export type StatusSnapshot =
+  | {
+    readonly fishball: 'on'
+    readonly targets: TargetsSnapshot
+    readonly guards: GuardReport | null
+    readonly set: SetStatus | null
+  }
+  | { readonly fishball: 'fishball-off' }
+
 /** `SEAM_TARGETS.refusal`, or a K3a code the delegated part answers (Connect, pairing). */
 export type TargetActionResult = { readonly ok: true; readonly targetId?: TargetId } | { readonly ok: false; readonly code: string }
 
@@ -132,7 +155,8 @@ export type TargetActionResult = { readonly ok: true; readonly targetId?: Target
  *   Both void this target's pending ask cards, keep its history read-only, delete its retired token
  *   material, and send nothing remote (no allow/reject, no revocation);
  * - `begin` / `cancel`: this target's Connect (K3a `ConnectBegin`); one pending attempt per target,
- *   concurrent across targets (Q05);
+ *   concurrent across targets (Q05). The parent may begin too (link.d.ts), answering `authorized`
+ *   when its hosted credential is saved;
  * - `retry`: a new link attempt now (backoff reset), nothing else;
  * - `choose`: this target's pairing choice (K3a `ui.pairing.choose`).
  */

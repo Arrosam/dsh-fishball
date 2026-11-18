@@ -25,12 +25,13 @@ import { core, coreConstants, importFile, literalUnion, membersOf, sdkDir, sdkMi
 import path from 'node:path'
 import {
   CREDENTIALS, DISALLOWED, DUPLICATE_OPS, DUPLICATE_STEPS, FALLBACK_NAMES, FIXTURE, IDS, INSTANCE_COPY, KEYS, LITERAL_STEPS, LONG_EXAMPLE, MCP_MULTI, NAMES,
-  SEAM, SEAM_DECL, SEAM_UNIONS, STORAGE_NAMES, TARGETS_EXPECTED, TOOL_BUDGET, TOOL_EXAMPLES,
+  HOSTED_SIGNAL, PARENT_GRANT, README_ROWS, SEAM, SEAM_DECL, SEAM_UNIONS, STORAGE_NAMES, TARGETS_EXPECTED, TOOL_BUDGET, TOOL_EXAMPLES, TOOL_SOURCE,
 } from './targets-constants.mjs'
 import {
   duplicateAllocator, fixedChars, generatedId, handleOf, keyOf, messageIdOf, readableOf, recordIdOf, recordKeyOf, tokenRefOf, toolNameOf,
 } from './targets-rules.mjs'
 
+const sorted = (values) => [...values].sort()
 const distinct = (values, what) => assert.equal(new Set(values).size, values.length, `${what}: ${JSON.stringify(values)}`)
 const targets = async () => (await coreConstants())[NAMES.targetsExport]
 const seam = async () => (await uiSeam())[SEAM.exportName]
@@ -76,8 +77,13 @@ export function registerK3aTargetCases(sdk) {
   caseTest(sdk, 'K3a-MULTI-EP-01', 'TARGETS', 'core exports TARGETS, deeply frozen, exactly as the README freezes it', async () => {
     const c = await coreConstants()
     assert.ok(Object.hasOwn(c, NAMES.targetsExport), 'constants.js exports no ' + NAMES.targetsExport)
-    assert.deepEqual(unfrozen(c[NAMES.targetsExport], NAMES.targetsExport), [])
-    assert.deepEqual(c[NAMES.targetsExport], TARGETS_EXPECTED)
+    const { [NAMES.textKey]: text, ...data } = c[NAMES.targetsExport]
+    // unfrozen() flags functions, so the formatters are checked apart; the data copy is compared, the original checked frozen.
+    assert.ok(Object.isFrozen(c[NAMES.targetsExport]) && Object.isFrozen(text), 'TARGETS or TARGETS.text is not frozen')
+    assert.deepEqual(Object.keys(data).flatMap((k) => unfrozen(data[k], NAMES.targetsExport + '.' + k)), [])
+    assert.deepEqual(data, TARGETS_EXPECTED)
+    assert.deepEqual(sorted(Object.keys(text)), sorted(NAMES.formatters))
+    assert.deepEqual(NAMES.formatters.filter((f) => typeof text[f] !== NAMES.functionType), [])
   })
   caseTest(sdk, 'K3a-MULTI-EP-01', 'formats', 'id and epoch prefixes differ; the alphabet is 32 distinct lowercase segment characters', async () => {
     const T = await targets()
@@ -216,9 +222,51 @@ export function registerK3aTargetCases(sdk) {
     distinct([at(FIXTURE.a, remote), at(FIXTURE.b, remote), at(FIXTURE.aNewEpoch, remote), at(FIXTURE.a, local)], 'final names')
   })
 
+  caseTest(sdk, 'K3a-MULTI-EP-06', 'toolSource', `TARGETS.text.toolSource(JSON.stringify(${JSON.stringify(TOOL_SOURCE.example.name)})) is the README persona example exactly`, async () => {
+    const T = await targets()
+    assert.equal(T[NAMES.textKey].toolSource(JSON.stringify(TOOL_SOURCE.example.name)), TOOL_SOURCE.example.output)
+  })
+  caseTest(sdk, 'K3a-MULTI-EP-06', 'toolSource (adversarial)', 'an adversarial name stays one JSON token: the formatter output holds JSON.stringify(name) once, and it parses back to the name', async () => {
+    const T = await targets()
+    for (const name of TOOL_SOURCE.adversarial) {
+      const quoted = JSON.stringify(name)
+      const out = T[NAMES.textKey].toolSource(quoted)
+      assert.equal(out.split(quoted).length, 2, out)
+      assert.equal(JSON.parse(quoted), name)
+    }
+  })
+
   // ================================================================ duplicate names (README Examples; ST)
   caseTest(sdk, 'K3a-MULTI-ST-01', 'Office-DSH', 'A, B both Office-DSH → Office-DSH, Office-DSH (2); A renames: B stays; a third gets Office-DSH; removal renumbers nobody; renaming into a group is the later appearance', () => runAllocation(DUPLICATE_STEPS))
   caseTest(sdk, 'K3a-MULTI-ST-01', 'literal (2)', 'a literal Office-DSH (2) held with Office-DSH held → the next Office-DSH is Office-DSH (3)', () => runAllocation(LITERAL_STEPS))
+
+  // ================================================================ hosted signal and the parent's grant (link.d.ts, README "Hosted signal")
+  caseTest(sdk, 'K3a-MULTI-EP-07', 'parent grant', 'the parent\'s grant record is fishball-core/connect-parent-<epoch> by the per-target rule, a valid key, never a parent-owned hosted name', async () => {
+    const { T, epochs } = await sampleIds()
+    const { CONNECT } = await coreConstants()
+    for (const epoch of epochs) {
+      const key = recordKeyOf(CONNECT.grantRecordScope, CREDENTIALS.keySeparator, recordIdOf(T, T.credentials.grantRecordPrefix, T.parentId, epoch))
+      assert.equal(key, PARENT_GRANT(epoch))
+      assert.ok(IDS.keySegment.test(recordIdOf(T, T.credentials.grantRecordPrefix, T.parentId, epoch)), key)
+      assert.equal(CREDENTIALS.parentOwned.records.includes(key), false, key)
+    }
+  })
+  sdkCase(sdk, 'K3a-MULTI-DT-01', 'SDK parent grant', 'the SDK parses the parent\'s grant record keys with scope fishball-core', async (lib) => {
+    const { epochs } = await sampleIds()
+    for (const key of epochs.map(PARENT_GRANT)) assert.equal(lib.credentialKeyScope(lib.parseCredentialKey(key)), HOSTED.recordScope, key)
+  })
+  caseTest(sdk, 'K3a-MULTI-EP-07', 'hosted signal', 'link.d.ts states the URL-independent hosted signal (settings lists targetSetting.row), the renewed parent epoch, the parent grant and the withdrawn target.url', () => {
+    const text = core().texts.get(HOSTED_SIGNAL.file)
+    assert.ok(text, 'no ' + HOSTED_SIGNAL.file)
+    assert.deepEqual(HOSTED_SIGNAL.words.filter((w) => !w.test(text)).map(String), [])
+  })
+  for (const { row, words } of README_ROWS.rows) {
+    caseTest(sdk, 'K3a-MULTI-EP-08', `README ${row}`, `the core contracts README has one "${row}" row stating ${words.length} frozen points`, () => {
+      const lines = fs.readFileSync(path.join(core().dir, README_ROWS.file), 'utf8').split('\n').filter((l) => l.split(README_ROWS.cell)[1]?.trim() === row)
+      assert.equal(lines.length, 1, row + ' rows: ' + lines.length)
+      assert.deepEqual(words.filter((w) => !w.test(lines[0])).map(String), [])
+    })
+  }
 
   // ================================================================ storage unit names against DSH storage's grammar
   caseTest(sdk, 'K3a-MULTI-EP-09', 'storage names', 'every frozen store domain and table name matches the SDK\'s dsh-storage UNIT_NAME_RE (dsh-storage-domain refuses others at open)', async (t) => {
@@ -265,6 +313,19 @@ export function registerK3aTargetCases(sdk) {
     assert.notEqual(route.read, route.method)
     assert.equal(route.list.startsWith(SEAM.actionPrefix), false, 'the list route is under the action prefix')
     assert.deepEqual(SEAM.actions.filter((k) => route[k] === route.list), [])
+  })
+  caseTest(sdk, 'K3a-MULTI-EP-05', 'http', 'SEAM_TARGETS.http statuses are distinct; ok, badRequest, notFound and unavailable equal K1 HTTP_STATUS; unavailableCode is not a K1 refusal', async () => {
+    const [s, { pub }] = [await seam(), await both()]
+    distinct(Object.values(s.http), 'http statuses')
+    for (const [key, k1] of Object.entries(SEAM.k1Status)) assert.equal(s.http[key], pub.HTTP_STATUS[k1], key)
+    assert.equal(Object.values(pub.REFUSAL).includes(s.unavailableCode), false, s.unavailableCode)
+  })
+  caseTest(sdk, 'K3a-MULTI-EP-05', 'ask answers', 'the seam states the ask route\'s new answers: 404 unknown-target for an unknown handle, a voided card K1 expired (409)', async () => {
+    const [s, { pub }] = [await seam(), await both()]
+    const text = fs.readFileSync(SEAM.askAnswers.file, 'utf8')
+    assert.deepEqual(SEAM.askAnswers.words.filter((w) => !w.test(text)).map(String), [])
+    assert.equal(pub.REFUSAL[SEAM.voidedRefusal], SEAM.voidedRefusal, 'K1 REFUSAL.expired')
+    assert.equal(s.refusal.unknownTarget, SEAM.values.refusal.unknownTarget)
   })
   caseTest(sdk, 'K3a-MULTI-EP-05', 'words', 'state, kind, identity, placeholder, refusal and ask words are each distinct within their group', async () => {
     const s = await seam()
