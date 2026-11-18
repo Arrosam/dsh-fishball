@@ -2250,3 +2250,16 @@ The fixes for the fishball-ui review (`.runtime/reports/review-x-fishball-ui.md`
 The user removes `question_ask` and `question_answer_own`, including their exclusive own-card schemas and behaviour. The historical dotted `question.ask` / `question.answerOwn` architecture is superseded, not a compatibility requirement; the historical documents remain unchanged.
 
 `question_answer` still answers forwarded managed-session DSH questions and plan reviews. Shared question/answer validators, generic settlement `answers`, and `QUESTION_ANSWER` / `CARD_CLOSED` semantics for forwarded questions remain. Fishball's local `ask_user` files existing permission/legacy-ask offers only. For its own clarifications, Fishball's manager uses the native DSH `ask_user_question` tool from its guarded preset; this does not add a connector MCP tool or change where managed-session questions are answered.
+
+## 27. Hosted Frame Readiness v1
+
+For the initial hosted navigation and each parent-initiated replacement, `dsh-connector-ui` keeps
+its fresh iframe hidden and inaccessible from first paint. Loading a document is not enough: the
+child might have landed on a sign-in page instead of the Fishball page. The parent reveals it only
+on the [Hosted Frame Readiness v1 signal](<docs/connector-contract.md#15-hosted-frame-readiness-v1-v3-only>)
+from the exact admitted origin and current frame window. After 15000 ms the parent offers recovery.
+A late valid signal can still reveal that frame; “Open Fishball again” gets a fresh admission and iframe.
+
+The framed `fishball-ui` page sends one non-secret marker per document when its page plugin is
+installed. This gates presentation only, not later navigations within the same frame, chat health
+or authentication. It changes no SDK, route, frozen connector value or child lifecycle state (§19).
