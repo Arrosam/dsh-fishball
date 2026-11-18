@@ -30,7 +30,11 @@ export { CONNECT, HOSTED_IMPORT }
  * route alone): a press whose page origin picks a web callback calls `connect[BEGIN_VIA](via)`.
  */
 export { LINK_SAVE } from '../../../../packages/core/src/link/constants.js'
-export { CONNECT_ROUTE } from '../../../../packages/core/src/settings/constants.js'
+// MULTI-0 withdrew `/api/fishball/connect` and its module (`registerSettingsRoutes`); its log
+// vocabulary may be gone with it, so it is read through a namespace (a missing export fails only
+// the rows that use it). BEGIN_VIA stays link/connect.js's.
+import * as SETTINGS_CONSTANTS from '../../../../packages/core/src/settings/constants.js'
+export const CONNECT_ROUTE = SETTINGS_CONSTANTS.CONNECT_ROUTE
 export { BEGIN_VIA } from '../../../../packages/core/src/link/connect.js'
 
 /**
