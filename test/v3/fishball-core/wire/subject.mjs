@@ -43,7 +43,7 @@ export function brokenBoardCopy() {
 export async function boot(sdk, members, home, dirs = {}, options = {}) {
   fs.mkdirSync(path.join(C.temp, C.homesSuffix), { recursive: true })
   home ??= fs.mkdtempSync(path.join(C.temp, C.homesSuffix, C.homePrefix))
-  const child = spawn(process.execPath, [C.worker], { env: { ...process.env, HOME: home, DSH_HOME: home, FBW_SDK: sdk, FBW_MEMBERS: JSON.stringify(members), FBW_DIRS: JSON.stringify(dirs), ...(options.child === undefined ? {} : { FBW_CHILD: JSON.stringify(options.child) }), FBTEST_DSH_RUNTIME: runtimeOf(sdk), FBTEST_CHROME: C.env.chrome, npm_config_userconfig: C.env.userconfig, [C.env.testHomes]: C.testHomes }, stdio: ['pipe', 'pipe', 'pipe', 'ipc'] })
+  const child = spawn(process.execPath, [C.worker], { env: { ...process.env, HOME: home, DSH_HOME: home, FBW_SDK: sdk, FBW_MEMBERS: JSON.stringify(members), FBW_DIRS: JSON.stringify(dirs), ...(options.child === undefined ? {} : { FBW_CHILD: JSON.stringify(options.child) }), ...(options.handoff === undefined ? {} : { [C.handoffEnv]: options.handoff }), ...(options.liveChild ? { FBW_CHILD_LIVE: '1' } : {}), FBTEST_DSH_RUNTIME: runtimeOf(sdk), FBTEST_CHROME: C.env.chrome, npm_config_userconfig: C.env.userconfig, [C.env.testHomes]: C.testHomes }, stdio: ['pipe', 'pipe', 'pipe', 'ipc'] })
   let output = C.empty; let exited = false; let ready = false; let next = C.first
   const pending = new Map()
   child.stdout.on('data', (d) => { output += d }); child.stderr.on('data', (d) => { output += d })

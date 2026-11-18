@@ -67,8 +67,13 @@ export const C = Object.freeze({
   turn: 'Wire acceptance probe; respond without tools.',
   // MULTI-1 worker words: the hosted stand-in row (fixtures/child-row), the scripted call id prefix,
   // and dsh-agent's durable inbox mutation (its `data.inserted` holds the queued messages).
-  childRow: 'dsh-instance-child', childStandIn: path.join(import.meta.dirname, 'fixtures', 'child-row', 'index.mjs'),
+  profilePatch: 'cordis.patch.yml',
+  /** DSH's launcher name (dsh-app-boot's profile functions take it). */
+  dshName: 'dsh',
+  childRow: 'dsh-instance-child', childField: 'targetUrl', childStandIn: path.join(import.meta.dirname, 'fixtures', 'child-row', 'index.mjs'),
   multiCallId: 'fbtest-multi-call-', inboxSpliced: 'agent/inbox/spliced',
+  /** The env var through which the hosted stand-in row gets a handoff token to write (fixtures/child-row). */
+  handoffEnv: 'FBTEST_HANDOFF_TOKEN',
   logLimit: 3000, first: 0, one: 1, empty: '', encoding: 'utf8',
   method: { get: 'GET', post: 'POST' }, json: 'application/json', noStore: 'no-store',
   skipDirs: ['node_modules', '.git'],
@@ -157,3 +162,19 @@ export const MULTI = Object.freeze({
   webCallbackTodo: 'E2E-CORE: the web callback needs an https page Origin whose authority is the Host; a standalone DSH with default trustedHosts refuses such a pair before core (as WIRE "web-callback-insecure"). The state-keyed routing is checked through the loopback callbacks (MULTI-CONN-ST-01, DT-01)',
 })
 
+
+/** MULTI-1 lifecycle rows (lifecycle.mjs): fixture words and harness waits only. */
+export const LIFE = Object.freeze({
+  /** The hosted world's boot default; every row passes its own parent URL. */
+  placeholderUrl: 'https://parent.example/api/agent/mcp',
+  /** Three loopback names of one fake: three origins, so three endpoints (R9). */
+  host: Object.freeze({ first: '127.0.0.1', other: 'localhost', v6: '[::1]' }),
+  /** DSH's storage folder under the home (dsh-storage-json), core's target store among its files. */
+  storages: 'storages',
+  mode: Object.freeze({ readOnly: 0o444, readOnlyDir: 0o555, file: 0o644, dir: 0o755 }),
+  /** A connector tool the old parent must still answer while its new epoch cannot be saved. */
+  tool: 'sessions_list',
+  toolArgs: Object.freeze({ limit: 1 }),
+  /** How long after a close a leaked runtime would have sent something (its reconnect backoff starts at 1 s). */
+  afterCloseMs: 3000,
+})

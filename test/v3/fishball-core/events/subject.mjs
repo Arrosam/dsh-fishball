@@ -75,7 +75,12 @@ export async function makeSubject(sdk, { ctx, agent, link, second, seam = {} }) 
   const targets = [{ source, link }, ...(second === undefined ? [] : [{ source: seam.secondSource ?? SOURCE.b, link: second }])]
   const misrouted = []
   const same = (s, t) => s?.targetId === t.targetId && s?.endpointEpoch === t.endpointEpoch
-  const targetOf = (s) => targets.find((t) => same(s, t.source))
+  // MULTI-1: `seam.retired` lists sources whose endpoint epoch is retired in this process (removed or
+  // URL-changed while the DSH was down): their link is gone, so they are neither live nor polled, and an
+  // ack for them is misrouted.
+  const retired = seam.retired ?? []
+  const isRetired = (s) => retired.some((r) => same(s, r))
+  const targetOf = (s) => (isRetired(s) ? undefined : targets.find((t) => same(s, t.source)))
   const table = seam.ledgerWrite === undefined ? ledger.table : guardedTable(ledger.table, (op, args) => seam.ledgerWrite({ op, args, recovering, table: ledger.table }))
   const events = mod.createEvents({
     table,
@@ -101,7 +106,7 @@ export async function makeSubject(sdk, { ctx, agent, link, second, seam = {} }) 
   let failure
   let stopped = false
   async function pollOnce() {
-    for (const target of targets) {
+    for (const target of targets.filter((t) => !isRetired(t.source))) {
       let more = true
       while (more && !stopped) {
         const page = await target.link.callTool(TOOL.inboxPoll, {})

@@ -87,3 +87,26 @@ the status snapshot" (the `target.url` setting is withdrawn).
 - Not black-box testable: "a name bound to another tuple (including a retired one) is never
   registered" needs a 12-hex digest collision between two tuples; no fixture can construct one.
 | MULTI-ASK-SYS-02 | EP (equal approvalId on A and B) + ST (open → voided) | each target's namespaced ask_user files its own card (frozen handle, own source); answer A → only A's link; remove B → B's card voided, answer refused `expired`, nothing sent |
+
+## MULTI-1 lifecycle regressions (lifecycle.mjs; the lead's four requirements, 2026-11-18)
+Harness additions: the hosted stand-in row may live in the profile's own patch (`liveChild`),
+rewritten at every start as the instance's overlay is, and changed live (`setChildUrl`: the patch
+rewritten, then dsh-app-boot's public `reconcileProfilePatches`); a handoff token the stand-in
+writes to `DSH_AGENT_TOKEN` at its start (`handoff`); core off/on (`disableCoreAt`, `enableCore`),
+DSH shutdown (`shutdownAt`) and an add racing core's close (`addThenDisable`). The fake records
+when its listen streams close and the time of each request.
+
+| Row | Technique | Oracle |
+| --- | --- | --- |
+| MULTI-LIFE-CRED-DT-01 1 same URL | DT (URL same × saved copy) | epoch kept; hosted copy kept, bound to it, used |
+| … 2 changed URL, saved copy | DT (URL changed × saved copy) | new epoch; E1 copy deleted or rebound, never presented to the new endpoint; not connected on it |
+| … 3 changed URL, pending reference bound to E1 | DT (URL changed × pending bound to E1) | DSH_AGENT_TOKEN unset; E1 pending binding gone; value never presented |
+| … 4 changed URL, fresh unbound handoff | DT (URL changed × new unbound value) | stale copy never presented; new value used, saved bound to the new epoch |
+| … 5 unbound handoff before any connection | EP (first start) | the handoff is kept and used |
+| MULTI-LIFE-SAVE-ST-01 | ST (E1 → change with failing store → writable → change) | still listed on E1 with its URL, connected, answering calls; a later change gets a new epoch |
+| MULTI-LIFE-DRAIN-ST-01 ×2 | ST (connected → core off / DSH shutdown) | after it resolves: no request to any target, no open listen stream |
+| MULTI-LIFE-DRAIN-ST-02 | ST (add in flight → close) | no runtime for the added target after the close |
+| MULTI-LIFE-DRAIN-ST-03 | ST (off → on) | exactly one listen stream per target again |
+
+Fixture note: "saving the new epoch fails" is produced by making DSH's `storages` folder and files
+read-only (chmod) during the change; the rows restore the modes in `finally`.

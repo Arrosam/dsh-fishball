@@ -131,7 +131,9 @@ export async function startFakeDsh({ name, identity = true, tools = connectorToo
         const filter = message.params?.notifications ?? {}
         // A server without the identity resource honours only what it serves (the ack names what it took).
         const honoured = { ...filter, resourceSubscriptions: (filter.resourceSubscriptions ?? []).filter((u) => u !== K1.RESOURCE.identity.uri || state.identity) }
-        listens.push({ filter, honoured, id: message.id, res, at: Date.now() })
+        const listen = { filter, honoured, id: message.id, res, at: Date.now(), closed: false }
+        res.on('close', () => { listen.closed = true })
+        listens.push(listen)
         res.writeHead(K1.HTTP_STATUS.ok, { 'content-type': FAKE_DSH.web.sse, ...K1.TOKEN_RESPONSE_HEADERS })
         res.write(sse({ jsonrpc: RPC.jsonrpc, method: RPC.acknowledged, params: { notifications: honoured, _meta: { [RPC.subscriptionIdKey]: message.id } } }))
         return undefined
@@ -191,6 +193,10 @@ export async function startFakeDsh({ name, identity = true, tools = connectorToo
     enqueue(...events) { c.mailbox.push(...events); c.hintEvents() },
     /** Ends every open listen stream (the link reconnects and listens again). */
     dropStreams() { for (const l of listens) l.res.destroy() },
+    /** Requests received after `at` (ms epoch): what a runtime still running after a close would send. */
+    requestsAfter: (at) => requests.filter((r) => r.at > at),
+    /** Listen streams the client has not closed. */
+    openListens: () => listens.filter((l) => !l.closed),
     /** Every access token dies (an auth refusal on the next request). */
     revokeAll() { issued.clear(); state.refuseTokens = true; c.dropStreams() },
     /** The tool list changes and `tools/list_changed` would be sent; the link re-lists on reconnect. */
