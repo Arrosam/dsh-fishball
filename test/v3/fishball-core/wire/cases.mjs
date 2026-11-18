@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { test, after } from 'node:test'
 import { C, MULTI } from './constants.mjs'
 import { registerMultiCases } from './multi.mjs'
+import { registerLifecycleCases } from './lifecycle.mjs'
 import { SEAM_TARGETS } from './targets-oracle.mjs'
 import fs from 'node:fs'
 import path from 'node:path'
@@ -15,6 +16,7 @@ async function settledSet(h) {
 }
 export function registerWireCases(sdk) {
   registerMultiCases(sdk)
+  registerLifecycleCases(sdk)
   test(`${sdk} WIRE-EP-01 manifest exports and dependency boundary`, () => {
     const pkg = manifest()
     for (const key of C.exports) assert.ok(pkg.exports[key], key)

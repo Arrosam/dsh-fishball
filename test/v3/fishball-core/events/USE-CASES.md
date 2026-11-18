@@ -17,3 +17,4 @@ replaced `fbe_<eventId>`.
 | MULTI-EVT-DT-01 1–2 | DT (interceptor handles × two targets) | one registration covers both: two offers / two wakes; per-mailbox acks |
 | MULTI-EVT-DT-01 3 | DT (filter on source.targetId) | only B's copy intercepted; A's goes to Fishball once |
 | MULTI-EVT-ST-01 1 | ST (durable → ack → restart → equal id from B) | every ack after its tuple's record exists; B's copy not deduped after restart |
+| MULTI-EVT-RETIRED-ST-01 1–4 | ST (pending → SIGKILL → restart with A's epoch retired) + EP (retired / live source) | A's pending inbox copy removed; never admitted nor sent to a model; A's ledger record equal to before the crash; B's pending event delivered once; no ack to a retired link |

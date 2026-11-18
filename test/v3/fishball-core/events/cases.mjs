@@ -29,6 +29,7 @@ import { CORE, DSH, EVENT_TYPE, FIXTURE, K3, LATER, LINK_REFUSAL, PROCESS_EVENT,
 import { busyGate, contributedType, eventually, makeEvent, newRoot, openWorld, removeRoot, startBusy, worldFor } from './world.mjs'
 import { registerRfixEventCases } from './rfix.mjs'
 import { registerMultiEventCases } from './multi.mjs'
+import { registerRetiredRecoveryCases } from './retired.mjs'
 
 const T = { timeout: WAIT.testMs }
 const ID = Object.freeze({
@@ -136,6 +137,7 @@ export function registerInterceptCases(sdk) {
   // R-FIX-CORE (F11, F14): rfix.mjs.
   registerRfixEventCases(sdk)
   registerMultiEventCases(sdk)
+  registerRetiredRecoveryCases(sdk)
   // ===================================================================== EVT-UC-02 (Use Case)
   row(sdk, ID.uc02, 'main', 'a contributed:demo.ping is accepted by X, acked after accept, no Fishball turn, not in context, logged', async (t) => {
     const world = await worldFor(t, sdk)
