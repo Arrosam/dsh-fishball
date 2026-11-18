@@ -172,3 +172,10 @@ publishes after a newer one), ST-02 (a read started before a press is ignored), 
 no window.open, no GET, no state update), ST-04 (only the latest press opens its page and publishes its
 notice), CONNECT-DT-01 (press refusal × statuses after it, en and zh: the alert stays while (state,
 code) is unchanged, goes when it changes). Run against the pre-task chunk, 17 of the 20 rows fail.
+
+### MULTI-1 re-baseline of the R-FIX-FUI Connect rows (connect-cases.mjs)
+The CONNECT-ST/DT rows now run on card A of a two-card list (the card's Connect posts `{targetId: A}`;
+its status is A's TargetView from `GET api/fishball/targets`; B is never pressed). The shown state is
+the card's `data-fishball-target-state` (the public state of A's Connect status). CONNECT-ST-02's
+premise moved: a card exists only after the first list read, so "a read pending at the press" is a
+refocus read.
