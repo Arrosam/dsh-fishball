@@ -843,12 +843,18 @@ function decisionTables(sdk) {
     return answer !== null && answer.body !== STUB.holderMarker && w.gate.calls.length > before
   }
   const statusOf = (a) => read(a.l.status)
-  dt09('1', 'the default port, free → open, status ok, the page reachable', async (w, t) => {
-    const a = approvalListener(t, w, APPROVAL_LISTENER.defaultPort, defaultApprovalSocket())
+  const startDefault = async (w, t, socket) => {
+    const a = approvalListener(t, w, APPROVAL_LISTENER.defaultPort, socket.createServer)
     await a.start()
+    assert.deepEqual(socket.binds, [{ port: APPROVAL_LISTENER.defaultPort, host: FIXTURE.loopback }])
+    return a
+  }
+  dt09('1', 'the default port, free → open, status ok, the page reachable', async (w, t) => {
+    const socket = defaultApprovalSocket()
+    const a = await startDefault(w, t, socket)
     assert.equal(statusOf(a), SUBJECT.statusOk)
-    const port = read(a.l.port)
-    assert.ok(await served_(w, port))
+    assert.equal(read(a.l.port), APPROVAL_LISTENER.defaultPort)
+    assert.ok(await served_(w, socket.boundPort()))
   })
   dt09('2', 'a user-set free port P → open on P, status ok', async (w, t) => {
     const port = await freePort()
@@ -860,8 +866,7 @@ function decisionTables(sdk) {
   })
   dt09('3', 'the default port held by another process → not open, approval-port-in-use, one diagnostic; the page unreachable', async (w, t) => {
     const { port } = await holdPort(t, 0)
-    const a = approvalListener(t, w, APPROVAL_LISTENER.defaultPort, defaultApprovalSocket(port))
-    await a.start()
+    const a = await startDefault(w, t, defaultApprovalSocket(port))
     assert.equal(statusOf(a), CONNECTOR_STATUS.approvalPortInUse)
     assert.ok(a.statuses.includes(CONNECTOR_STATUS.approvalPortInUse), 'reported through onStatus')
     assert.equal(read(a.l.listening), false)

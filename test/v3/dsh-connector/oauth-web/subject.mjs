@@ -31,7 +31,7 @@ import { resolveRuntimePackages } from '../pairs/subject.mjs'
 import { base32 } from '../../contract/k1d-amendments/subject.mjs'
 import { Browser } from './browser.mjs'
 import {
-  APPROVAL_LISTENER, CLIENT_AUTH, DERIVED_AGENT_ID, FIXTURE, GRANT, HOSTS, LIFETIME, PARAM, PATHS, PKCE, RESPONSE_TYPE, STUB, SUBJECT, TOKEN_VALUE, documentFor, oauthUrls,
+  CLIENT_AUTH, DERIVED_AGENT_ID, FIXTURE, GRANT, HOSTS, LIFETIME, PARAM, PATHS, PKCE, RESPONSE_TYPE, STUB, SUBJECT, TOKEN_VALUE, documentFor, oauthUrls,
 } from './constants.mjs'
 import { fakeCimd, fakeClock, fakeGate, fakeLimiter, fakeLogger, fakeOAuthStore, fakePairs, fakeTimers, fakeTokens } from './fakes.mjs'
 
@@ -267,17 +267,32 @@ export async function waitFor(predicate, ms) {
   return predicate()
 }
 
-/** Verify the configured default at the socket seam, then bind only test-owned loopback ports. */
-export function defaultApprovalSocket(actualPort = 0) {
-  return (handler) => {
-    const server = http.createServer(handler)
-    const listen = server.listen.bind(server)
-    server.listen = (configured, host) => {
-      assert.equal(configured, APPROVAL_LISTENER.defaultPort)
-      assert.equal(host, FIXTURE.loopback)
-      return listen(actualPort, host)
-    }
-    return server
+/** Translate the socket, not the expectations: product code sees the requested logical port;
+ * the test dials the native address. Record bind arguments for assertions outside error handling.
+ */
+export function defaultApprovalSocket(backingPort = 0) {
+  const binds = []
+  let nativeAddress
+  return {
+    binds,
+    boundPort: () => nativeAddress().port,
+    createServer(handler) {
+      const server = http.createServer(handler)
+      const listen = server.listen.bind(server)
+      const address = server.address.bind(server)
+      nativeAddress = address
+      let logicalPort
+      server.listen = (port, host, ...rest) => {
+        binds.push({ port, host })
+        logicalPort = port
+        return listen(backingPort, FIXTURE.loopback, ...rest)
+      }
+      server.address = () => {
+        const bound = address()
+        return bound === null ? null : { ...bound, port: logicalPort }
+      }
+      return server
+    },
   }
 }
 
