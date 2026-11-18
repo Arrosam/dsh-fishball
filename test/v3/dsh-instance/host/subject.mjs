@@ -22,7 +22,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
 import { V3 } from '../../contract/package-boundaries/constants.mjs'
-import { canonicalTmp, requireModule } from '../../dsh-connector-adapter/oauth-client/subject.mjs'
+import { cleanups, requireModule, tempRoot } from '../../dsh-connector-adapter/oauth-client/subject.mjs'
 import { FIXTURE, HOSTNAME, IMPORT, K3, RELAYED } from './constants.mjs'
 import { fakeChildCredentials, fakeLifecycle, fakeProviderSync, fakeTokens, memoryRecord, memoryWire } from './fakes.mjs'
 
@@ -48,16 +48,15 @@ export async function settle(fn) {
 }
 export const tick = (ms = FIXTURE.settleMs) => new Promise((resolve) => setTimeout(resolve, ms))
 
-/** A scratch directory under the canonical temp dir, removed after the test (guarded). */
-export function scratch(t) {
-  const base = canonicalTmp()
-  const dir = fs.mkdtempSync(path.join(base, FIXTURE.tempPrefix))
-  t.after(() => {
-    assert.ok(path.dirname(dir) === base && path.basename(dir).startsWith(FIXTURE.tempPrefix), 'refusing to remove ' + dir)
-    fs.rmSync(dir, { recursive: true, force: true })
-  })
-  return dir
+// node:test runs after hooks in registration order. Share a LIFO scope so record owners
+// are drained before the guarded removal of the scratch directory they write to.
+const scopes = new WeakMap()
+export function fixtureScope(t) {
+  if (!scopes.has(t)) scopes.set(t, cleanups(t))
+  return scopes.get(t)
 }
+
+export const scratch = (t) => tempRoot(fixtureScope(t), FIXTURE.tempPrefix)
 
 /**
  * The hosted record file of a main home. Its folder `<mainHome>/fishball` exists in any host that
@@ -94,7 +93,7 @@ export async function childLink(t, sdk, { credentials, receiver: answers = true,
     wires.push(wire)
     return wire
   }
-  t.after(() => { for (const c of clients) c.close(); receiver?.close() })
+  fixtureScope(t).defer(() => { for (const c of clients) c.close(); receiver?.close() })
   return {
     connect,
     client: () => client,
