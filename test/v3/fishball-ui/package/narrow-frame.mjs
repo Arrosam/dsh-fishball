@@ -15,7 +15,7 @@ const hostState = (sdk, width) => ({ drawer: sdk === L.drawerSdk && width < L.dr
 export const frameProbeArg = Object.freeze({ panelHook: L.panelHook, iconHook: L.iconHook, settingsHook: L.settingsHook, workspacesHook: L.workspacesHook, conversationHook: L.conversationHook })
 
 // Browser-side: apply the host's own state changes without replacing the sidebar or its buttons.
-function mountFrame({ html, drawerTemplate, widths, drawerSdk, hooks, selectedSdk }) {
+function mountFrame({ html, drawerTemplate, railTemplate, widths, drawerSdk, hooks, selectedSdk }) {
   const host = new DOMParser().parseFromString(html, 'text/html')
   document.head.append(...host.head.querySelectorAll('style'))
   document.body.replaceChildren(...host.body.children)
@@ -25,6 +25,8 @@ function mountFrame({ html, drawerTemplate, widths, drawerSdk, hooks, selectedSd
   const root = sidebar.firstElementChild
   const frame = column.parentElement
   const drawerFragment = new DOMParser().parseFromString(drawerTemplate, 'text/html')
+  const railFragment = new DOMParser().parseFromString(railTemplate, 'text/html')
+  const toggle = root.querySelector('[data-fbtest-toggle]'), brandSelector = '[data-fbtest-wide-brand]'
   const actions = '[data-sidebar-opener], [data-fbtest-toggle], [data-sidebar-mask]'
   const toggleAttr = 'data-sidebar-collapsed'
   const drawerAttr = 'data-sidebar-drawer'
@@ -32,6 +34,15 @@ function mountFrame({ html, drawerTemplate, widths, drawerSdk, hooks, selectedSd
   const update = (nextDrawer, nextCollapsed) => {
     // DSH doesn't write unchanged values on a resize within the same native layout partition.
     if (nextDrawer === drawer && nextCollapsed === collapsed) return
+    if ((drawer || !collapsed) !== (nextDrawer || !nextCollapsed)) {
+      if (nextDrawer || !nextCollapsed) {
+        toggle.querySelector('[data-slot="sidebar.brand.mark"]').parentElement.remove()
+        toggle.before(drawerFragment.querySelector(brandSelector).cloneNode(true))
+      } else {
+        root.querySelector(brandSelector).remove()
+        toggle.prepend(railFragment.querySelector('[data-fbtest-toggle] [data-slot="sidebar.brand.mark"]').parentElement.cloneNode(true))
+      }
+    }
     drawer = nextDrawer; collapsed = nextCollapsed
     frame.toggleAttribute(drawerAttr, drawer); frame.toggleAttribute(toggleAttr, collapsed)
     column.inert = drawer && collapsed
@@ -68,7 +79,7 @@ export async function liveFrame(t, sdk, { width, panels = L.panels, collapsed = 
   const htmlFor = (state) => frameDocument(sdk, { panels, mark: false, pageRules: [], ...state })
   const html = htmlFor({ ...state, collapsed })
   await tab.resize(width, L.height)
-  const fixture = { html, drawerTemplate: state.drawer ? html : htmlFor({ drawer: true, collapsed: true }),
+  const fixture = { html, railTemplate: htmlFor({ drawer: false, collapsed: true }), drawerTemplate: state.drawer ? html : htmlFor({ drawer: true, collapsed: true }),
     widths: { rail: L.railWidth, wide: L.wideWidth, drawer: L.drawerBelow, collapse: L.autoCollapseBelow }, drawerSdk: L.drawerSdk, selectedSdk: sdk, hooks: frameProbeArg }
   await tab.evaluate(`window.__lite.mountHost = () => (${mountFrame})(${JSON.stringify(fixture)}); true`)
   const dicts = Object.fromEntries(['sidebar','chat','conversation'].map(k => [k, { en: {} }]))

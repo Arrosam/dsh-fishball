@@ -373,8 +373,21 @@ window.__ModuleLoader__.load({
         const Mark = makeMark(kit, ctx, sources)
         const Name = makeName(kit, ctx, sources)
         ctx.effect(() => kit.mountStyle(C.id, css), BRAND.classPrefix + ': styles')
-        ctx.effect(() => kit.whilePage(() => {
-          const inject = (name, Component) => ctx.slots.inject(name, () => ctx.slots.register({ name, priority: BRAND.priority }, Component))
+        ctx.effect(() => kit.whilePage((fail) => {
+          // inject may return a waiting controller. Catch at registration, before the SDK can
+          // retire just this slot and rethrow on a microtask, leaving the sibling live.
+          const inject = (name, Component) => {
+            let failed = false
+            const stop = ctx.slots.inject(name, () => {
+              if (failed) return
+              try { return ctx.slots.register({ name, priority: BRAND.priority }, Component) }
+              catch (error) { failed = true; fail(error) }
+            })
+            // The renderer records this declaration's effect *after* our callback returns. On a
+            // deferred failure let it finish before stopping this controller, or that effect leaks.
+            // The observer and the sibling still stop synchronously; no retry can register here.
+            return () => { if (failed) queueMicrotask(stop); else stop() }
+          }
           const disposeMark = inject(BRAND.markSlot, Mark)
           try {
             const disposeName = inject(BRAND.nameSlot, Name)
@@ -383,7 +396,7 @@ window.__ModuleLoader__.load({
             disposeMark()
             throw error
           }
-        }), BRAND.classPrefix + ': brand slots')
+        }, error => ctx.logger?.warn?.(BRAND.classPrefix, error)), BRAND.classPrefix + ': brand slots')
       }
       return Object.freeze({ name: 'fishball-ui: brand', inject: ['slots', 'locale', 'sessions', 'uiSession', 'uiWorkspace', 'layout'], apply })
     }
