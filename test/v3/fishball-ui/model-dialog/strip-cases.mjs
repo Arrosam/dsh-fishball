@@ -16,11 +16,12 @@
  *   the text `Open the approval page` / `打开授权页面` (not the raw URL).
  */
 import assert from 'node:assert/strict'
-import { caseTest } from '../../contract/package-boundaries/cases.mjs'
 import { STAND_IN } from '../../fishball-core/settings/primitives.mjs'
 import { UI_CARD } from '../../fishball-core/status/constants.mjs'
 import { STRIP_PAGE } from './constants.mjs'
 import { snapshotOf, stripPage } from './strip.mjs'
+import { WITHDRAWN } from './targets-constants.mjs'
+import { withdrawnRow } from './withdrawn.mjs'
 
 const show = (v) => JSON.stringify(v)
 const H = STRIP_PAGE.hook
@@ -32,7 +33,10 @@ const STRIP_KIND = Object.freeze({ connected: 'connected', needsAuthorization: '
 const textsOf = (node) => (typeof node === 'string' ? [node.trim()].filter(Boolean) : (node.children ?? []).flatMap(textsOf))
 
 export function registerStripCases(sdk) {
-  const t = (id, row, title, fn, todo) => caseTest(sdk, id, row, title, fn, todo)
+  // Re-baselined (MULTI-3, D03 / requirement D): there is no chat-top status card any more, so every
+  // row of the drawn strip is withdrawn and stays listed; the per-target status, controls, tools
+  // count and approval link are the sidebar's (targets-cases.mjs TGT-SB-*).
+  const t = (id, row, title) => withdrawnRow(sdk, id, row, title, WITHDRAWN.strip)
 
   for (const lang of STRIP_PAGE.langs) {
     for (const [kind, row] of KINDS) {

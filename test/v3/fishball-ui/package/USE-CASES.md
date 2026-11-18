@@ -142,3 +142,39 @@ requires react and the primitives).
 | NOCORE-DT-02 1–6 | DT (HMR × manifest × started) | With HMR the manifest decides, unreadable → startedBundles; without HMR startedBundles |
 | NOCORE-DT-03 | DT | Hosted child with both → '2026-09-28.1'; standalone or core only → undefined |
 | F7-EP-01 | static | guards.d.ts `GuardedRow` = core's guard rows (no presets) ∪ uiRows |
+
+## MULTI-3 requirement F: the restyled real sidebar (`nav-cases.mjs`, `frame-layout-cases.mjs`, `frame-layout.mjs`)
+
+Requirement F (lead, 2026-11-18) and PLAN-MULTI §6.4 (the user's decision: "那一排按钮实际上就是侧边栏，
+只是被重度修改了样式"; rc.1 below 768px uses the native drawer; overflow scrolls horizontally, no More).
+**Re-baselined:** fishball-page's own tray (`nav.fishball-page-navigation`, Fishball / Plugins) is
+removed. The UIPF-NAV rows of the Fishball and Plugins buttons stay listed, withdrawn. The Settings
+launcher (`button.fishball-settings-launcher`), the status (`[data-fishball-nav-status]`) and Retry
+(`[data-fishball-nav=retry]`) are looked up page-wide. The status reads its text or, as a small
+control, its accessible name. UI-UC-04 / UI-UC-06: four client parts, because `client.pairing.js` is
+removed, and `src/status/index.js` exports `targetsView`, `TARGET_LINE` and `STATUS_TEXT`.
+
+| Id | Technique | Expected outcome |
+| --- | --- | --- |
+| MULTI-NAV-EP-01 no tray | EP | No `nav.fishball-page-navigation`, no page-owned `nav`, no page Plugins button |
+| MULTI-NAV-EP-02 status visible 390 / 1280px | EP | The unavailable status and Retry are drawn, outside every hidden subtree |
+| MULTI-NAV-EP-03 empty shadow | EP (requirement A) | fishball-page registers `sidebar.workspaces` at -1 and draws no workspace / session control there |
+| MULTI-NAV-ST-01 no forced close 390 / 1280px | ST | Loading the page calls `layout.toggleSidebar()` zero times |
+| MULTI-NAV-DT-01 shortcut remaps | DT | The gate edits no `sidebar.left.toggle`; session.new, session.search, workspace.add, session.rename, session.fork and session.archive stay remapped |
+
+Frame-layout rows run in a real headless Chromium (the contrast rows' browser). They skip with no Chromium. The
+document uses DSH's own AppFrame and SidebarRoot sheets and class names, cut from each SDK's
+bundle, plus DSH's page stylesheets. It adds fishball-page's rules as its real client mounted them, and a
+frame written from both SDKs' render code (slot anchors, `data-sidebar-collapsed` /
+`data-sidebar-drawer`, the panel rows with their own icons, the workspaces region and the Settings
+seat). The layout state is DSH's own: collapsed below 1024px; on rc.1 a closed drawer below 768px.
+
+| Id | Technique | Expected outcome |
+| --- | --- | --- |
+| MULTI-BAR-DT-01 page 390 / 480px | DT, BVA | rc.5: the sidebar column is `position: fixed`, 44px high, at the bottom, full width. rc.1 (< 768px, drawer): no bar, the native drawer opener visible |
+| MULTI-BAR-BVA-01 page 481px | BVA | DSH's sidebar exactly as without Fishball's rules |
+| MULTI-BAR-DT-01 page 1280px; not the page 390 / 1280px | DT | DSH unchanged (same geometry as without Fishball's rules) |
+| MULTI-BAR-EP-01 entries and settings; one row (rc.5) | EP | Every entry, DSH's own and a third-party one, inside the bar with its own icon; the Settings seat in the bar; the workspaces region not shown; one row, in order |
+| MULTI-BAR-BVA-02 24 entries / one entry (rc.5) | BVA | 24 long entries: still 44px, one row, horizontal scroll moves them; one entry: no scroller |
+| MULTI-DRAWER-DT-01 open drawer; mid width (rc.1) | DT | Open drawer at 390px: no bar; panels with icons, Settings and the target list shown. 600px: DSH's drawer unchanged |
+| MULTI-BAR-CTRL-01 | Control | The same frame without Fishball's rules has no bar |

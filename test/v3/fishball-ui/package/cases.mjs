@@ -41,6 +41,7 @@ import {
 } from './subject.mjs'
 import { registerNavCases } from './nav-cases.mjs'
 import { registerNoCoreCases } from './no-core-cases.mjs'
+import { registerFrameLayoutCases } from './frame-layout-cases.mjs'
 
 const show = (v) => JSON.stringify(v)
 const CORE = V3.core.name
@@ -103,6 +104,8 @@ export function registerUiCases(sdk) {
   registerNavCases(sdk)
   // ================================================================ R-FIX-FUI F2: without core, fishball-ui changes nothing
   registerNoCoreCases(sdk)
+  // ================================================================ MULTI-3 requirement F: the restyled real sidebar
+  registerFrameLayoutCases(sdk)
 
   // ================================================================ UI-UC-06: the package
   t('UI-UC-06', 'main 1', 'fishball-ui exists in packages/fishball-ui and is a root workspace', () => {
@@ -451,6 +454,7 @@ export function registerUiCases(sdk) {
   // Re-baselined (F-WIRE lead, 2026-11-17): "client.js now loads FOUR parts: client.entries.js, client.asks.js,
   // client.strip.js (the status strip, stripPart) and client.model.js (the model dialog, modelPart)".
   // Re-baselined (R-FIX-FUI F1): five parts, client.pairing.js (pairingPart) after the strip and before the model dialog.
+  // Re-baselined (MULTI-3 requirement D): four parts again; the pairing dock card's chunk is removed.
   t('UI-UC-04', 'main 2', `its plugin loads ${CLIENT.partOrder.map((f) => './' + f).join(', ')} in that order and starts each part`, async (c) => {
     needUi()
     const r = await startClient(c, {})
