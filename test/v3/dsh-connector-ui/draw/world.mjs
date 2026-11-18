@@ -328,7 +328,7 @@ function eventSourceClass(world, page) {
  * @param options.holdChunks - R-FIX-CUI (UI-06): chunk files whose load waits until
  *   `releaseChunk(file)` (a chunk that arrives late; a permitted load order of the real entry).
  */
-export async function openPage(t, world, { host = PAGE_HOST.loopback, failServices = false, withoutConfigForms = false, embed = true, lang = TEXT.langs[0], holdChunks = [] } = {}) {
+export async function openPage(t, world, { host = PAGE_HOST.loopback, failServices = false, withoutConfigForms = false, embed = true, lang = TEXT.langs[0], holdChunks = [], prepare = () => {}, adaptReact = (react) => react } = {}) {
   const baseURI = PAGE_HOST.scheme + host + ':' + PAGE_HOST.port + ROUTE.absolutePrefix
   const page = { baseURI, requests: [], chunks: [], streams: [], navigations: [], dictionaries: [], errors: [] }
   const pageFetch = async (input, init = {}) => {
@@ -346,8 +346,9 @@ export async function openPage(t, world, { host = PAGE_HOST.loopback, failServic
   sandbox.sandbox.EventSource = PageEventSource
   sandbox.window.EventSource = PageEventSource
 
+  prepare(sandbox)
   const shim = createReactShim({ stale() {} })
-  const { React } = shim
+  const React = adaptReact(shim.React)
   const platform = { [DSH.react]: React, [DSH.reactDom]: { createPortal: (node) => node }, [DSH.primitives]: primitivesFor(React) }
   const graph = embed ? [{ id: EMBED.moduleId, rev: EMBED.rev }] : []
   const chunkLoads = new Set()
@@ -490,7 +491,7 @@ function scriptedFrames(sandbox) {
     runFrame() { const due = [...queued.values()]; queued.clear(); for (const fn of due) fn(performance.now()) },
     /** How many listeners of `type` the page holds on window. */
     listening: (type) => listeners.get(type)?.size ?? 0,
-    dispatch(type) { for (const fn of [...(listeners.get(type) ?? [])]) fn({ type }) },
+    dispatch(type, fields = {}) { for (const fn of [...(listeners.get(type) ?? [])]) fn({ ...fields, type }) },
   }
 }
 

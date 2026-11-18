@@ -93,7 +93,7 @@ function realShortcuts(sdk, page) {
  * calls), `styles()` (the text of every style rule or sheet the page mounted, through
  * `CSSStyleSheet` or a `<style>` element) and `html` (the `<html>` element's attributes).
  */
-export async function navPage(t, sdk, { lang = NAV_PAGE.langs[0], openFails = 0, holdConfig = false, failEdits = false, launcher = {}, width = NAV_PAGE.wideWidth } = {}) {
+export async function navPage(t, sdk, { lang = NAV_PAGE.langs[0], openFails = 0, holdConfig = false, failEdits = false, launcher = {}, width = NAV_PAGE.wideWidth, prepare = () => {} } = {}) {
   // Host refs: a host element with a ref gets a stable stand-in element (React's commit does the
   // same), so a component that portals into another's element (the Settings launcher into the
   // nav's seat) can find it. `createPortal(node, container)` renders an `fbtest-portal` host node
@@ -211,6 +211,7 @@ export async function navPage(t, sdk, { lang = NAV_PAGE.langs[0], openFails = 0,
     },
     shortcuts: face,
   }
+  prepare(page)
   const file = NAV_PAGE.pageClient
   page.run(fs.readFileSync(file, 'utf8'), file)
   const entry = page.registrations.find((r) => r.id === NAV_PAGE.pageModule)
@@ -221,7 +222,8 @@ export async function navPage(t, sdk, { lang = NAV_PAGE.langs[0], openFails = 0,
     if (name === NAV_PAGE.modules.primitives) return new Proxy(primitives, { get: (target, key) => (key === NAV_PAGE.modalSelectorKey ? NAV_PAGE.modalSelector : target[key]) })
     throw new Error('unexpected page require ' + name)
   })
-  try { (plugin.default ?? plugin).apply(ctx) } catch (error) { log.errors.push(String(error?.stack ?? error)) }
+  const install = () => (plugin.default ?? plugin).apply(ctx)
+  try { install() } catch (error) { log.errors.push(String(error?.stack ?? error)) }
   t.after(() => {
     for (const out of effects.reverse()) { try { if (typeof out === 'function') out(); else out?.dispose?.() } catch {} }
     for (const m of mounted) shim.unmountRoot(m.key)
@@ -245,7 +247,7 @@ export async function navPage(t, sdk, { lang = NAV_PAGE.langs[0], openFails = 0,
   const nodes = () => findAll(composed(), () => true)
   const nav = () => nodes().find((n) => n.tag === NAV_PAGE.nav.tag && n.props.className?.split(' ').includes(NAV_PAGE.nav.className) && n.props['aria-label'] === NAV_PAGE.nav.label)
   return {
-    shim, log, nodes, nav, settle, composed,
+    shim, log, nodes, nav, settle, composed, install,
     /** MULTI-3: every style rule text the page mounted and still holds. */
     styles: () => [
       ...sheets.flatMap((sheet) => [sheet.text ?? '', ...sheet.cssRules.map((r) => r.cssText)]),

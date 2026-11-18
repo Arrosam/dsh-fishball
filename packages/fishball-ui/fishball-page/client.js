@@ -786,6 +786,20 @@ window.__ModuleLoader__.load({
     // replacement chat engine or unsupported readonlySettings prop. Beyond CSS presentation the
     // page adds only the shortcut gate, the frame guard, the manager selection, empty occupants of
     // the shadowed slots, its Settings launcher and one entry beside Settings in the sidebar's foot.
+    // Hosted Frame Readiness v1. These classic clients ship separately; the wire values are
+    // defined in the connector contract. Never include location, session state or credentials.
+    const FRAME_READY = Object.freeze({ type: 'fishball:frame-ready', version: 1 })
+    const announcement = Symbol.for(FRAME_READY.type)
+    function announceFrameReady() {
+      const parent = window.parent
+      if (!parent || parent === window || document[announcement]) return
+      // The frame sends no referrer. Where the browser withholds ancestorOrigins, only the
+      // identical public marker may use a wildcard, still sent solely to the immediate parent.
+      const origin = window.location.ancestorOrigins?.[0]
+      parent.postMessage(FRAME_READY, origin && origin !== 'null' ? origin : '*')
+      document[announcement] = true // plugin re-application must not announce this document twice
+    }
+
     function apply(ctx) {
       ctx.effect(() => mountAll(own => {
         // First, so it is released last: the native workspace browser never shows on this page,
@@ -862,6 +876,7 @@ window.__ModuleLoader__.load({
         // PAGE.priority, through inject so the registration follows the slot's own lifetime.
         own(occupy(PAGE.settingsSlot, SettingsLauncher))
         own(ctx.slots.inject(PAGE.footer.name, () => ctx.slots.register({ name: PAGE.footer.name, id: PAGE.footer.id }, FishballFooter)))
+        announceFrameReady()
       }))
     }
 
