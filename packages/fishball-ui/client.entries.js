@@ -31,7 +31,7 @@ window.__ModuleLoader__.load({
       pluginsPanel: 'plugins',
       /**
        * No public service opens DSH's Settings: the single `settings.launcher` owner gets the only
-       * `openSettings` callback, and fishball-page portals it as this button. Pressing it is the
+       * `openSettings` callback, and fishball-page draws it as this button in DSH's sidebar settings seat. Pressing it is the
        * native open path, so the native modal and its sections stay native.
        */
       settingsLauncher: '.fishball-settings-launcher',
@@ -56,12 +56,12 @@ window.__ModuleLoader__.load({
     const en = {
       entryFishball: 'Fishball settings',
       entryDsh: 'DSH settings',
-      settingsUnavailable: 'DSH Settings cannot be opened from here right now; use the Settings button at the bottom left.',
+      settingsUnavailable: 'DSH Settings cannot be opened from here right now; use Settings in the sidebar.',
     }
     const zh = {
       entryFishball: 'Fishball 设置',
       entryDsh: 'DSH 设置',
-      settingsUnavailable: '现在无法从这里打开 DSH 设置；请使用左下角的“设置”按钮。',
+      settingsUnavailable: '现在无法从这里打开 DSH 设置；请使用侧边栏中的“设置”。',
     }
     // Inside the header actions bar: one line, no block margin, so the bar keeps its height.
     const css = `.${ENTRIES.css.headerError}{align-self:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:40ch;font-size:12px;color:var(--dsw-alias-state-error-primary)}`

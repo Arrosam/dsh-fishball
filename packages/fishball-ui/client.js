@@ -67,10 +67,15 @@ window.__ModuleLoader__.load({
      * failed request. The code itself is never shown raw in the sentence, only after it.
      */
     const HTTP = Object.freeze({ ok: 200, badRequest: 400, notFound: 404, conflict: 409, unavailable: 503 })
-    const REFUSAL = Object.freeze({ badRequest: 'badRequest', notFound: 'notFound', conflict: 'conflict', expired: 'expired', unavailable: 'unavailable', failed: 'failed' })
+    const REFUSAL = Object.freeze({ badRequest: 'badRequest', notFound: 'notFound', conflict: 'conflict', expired: 'expired', unavailable: 'unavailable', failed: 'failed', configuration: 'configuration' })
+    /**
+     * K3a `ConnectBegin`'s `needs-configuration` outcome: Connect answers it with 200 and no `ok`
+     * (review P2-5), so it is read as a refusal here, with its configuration code after the sentence.
+     */
+    const NEEDS_CONFIGURATION = 'needs-configuration'
     /** K1's `expired`: the request was settled or withdrawn elsewhere (a voided card answers it too). */
     const EXPIRED = 'expired'
-    const refusalWords = {
+    const refusalWords = Object.freeze({
       en: {
         [REFUSAL.badRequest]: 'Fishball could not use that request.',
         [REFUSAL.notFound]: 'That DSH is no longer in Fishball\'s list.',
@@ -78,7 +83,10 @@ window.__ModuleLoader__.load({
         [REFUSAL.expired]: 'This request is no longer open.',
         [REFUSAL.unavailable]: 'Fishball\'s core is not running, so nothing was done.',
         [REFUSAL.failed]: 'That did not go through. Try again.',
+        [REFUSAL.configuration]: 'Connect needs configuration in Fishball settings first.',
         code: (text, code) => `${text} (${code})`,
+        /** Two sentences as one line. */
+        join: (first, second) => `${first} ${second}`,
       },
       zh: {
         [REFUSAL.badRequest]: 'Fishball 无法处理这个请求。',
@@ -87,17 +95,58 @@ window.__ModuleLoader__.load({
         [REFUSAL.expired]: '这个请求已经结束。',
         [REFUSAL.unavailable]: 'Fishball 核心未运行，所以没有执行任何操作。',
         [REFUSAL.failed]: '操作没有完成，请重试。',
+        [REFUSAL.configuration]: '请先在 Fishball 设置中完成连接配置。',
         code: (text, code) => `${text}（${code}）`,
+        join: (first, second) => `${first}${second}`,
       },
-    }
+    })
     /** The refusal kind of one answer `{status, body}` (`kit.press`), or null for a success. */
     function refusalOf({ status, body }) {
+      if (status === HTTP.ok && body?.outcome === NEEDS_CONFIGURATION) return REFUSAL.configuration
       if (status === HTTP.ok && body?.ok !== false) return null
       if (status === HTTP.badRequest) return REFUSAL.badRequest
       if (status === HTTP.notFound) return REFUSAL.notFound
       if (status === HTTP.conflict) return body?.code === EXPIRED ? REFUSAL.expired : REFUSAL.conflict
       if (status === HTTP.unavailable) return REFUSAL.unavailable
       return status === HTTP.ok ? REFUSAL.conflict : REFUSAL.failed
+    }
+
+    /**
+     * Press state kept by a part, not a component (MULTI-3 review P2-4): DSH remounts the sidebar's
+     * content between its rail, wide column and drawer, and a row's details unmount when closed, so
+     * a component's own state would re-enable a control while its press is in flight. Keyed (a
+     * target id, an ask handle): `{sending, refused, ...}` per key, where `refused` is the last
+     * press's refusal text or null and the rest is what the caller's `settle` adds. Only the latest
+     * press of a key settles it (R-FIX-FUI F5/F6): `run` resolves an older press as `stale`, and
+     * its caller acts on nothing (no approval page is opened for it).
+     */
+    function pressStore() {
+      const idle = Object.freeze({ sending: false, refused: null })
+      const states = new Map()
+      const generation = new Map()
+      const listeners = new Set()
+      const set = (key, next) => { states.set(key, Object.freeze(next)); for (const listener of [...listeners]) listener() }
+      return Object.freeze({
+        get: (key) => states.get(key) ?? idle,
+        subscribe(listener) { listeners.add(listener); return () => listeners.delete(listener) },
+        /**
+         * Runs `send()` (a `kit.press` promise) for `key`: `{answer, stale}`. `settle(answer)` gives
+         * the key's next state (`{refused, ...}`) for the latest press only.
+         */
+        async run(key, send, settle) {
+          const press = (generation.get(key) ?? 0) + 1
+          generation.set(key, press)
+          set(key, { ...(states.get(key) ?? idle), sending: true, refused: null })
+          const answer = await send()
+          const stale = generation.get(key) !== press
+          if (!stale) set(key, { ...settle(answer), sending: false })
+          return { answer, stale }
+        },
+      })
+    }
+    /** One key's press state from a `pressStore`, followed live. */
+    function usePress(store, key) {
+      return React.useSyncExternalStore(store.subscribe, () => store.get(key))
     }
     const streamText = {
       en: { stale: 'Reconnecting to Fishball… What is shown here may be out of date.', closed: 'The connection to Fishball was lost. What is shown here may be out of date.', retry: 'Reconnect', staleBadge: 'Out of date' },
@@ -234,8 +283,9 @@ window.__ModuleLoader__.load({
      * names it for a reader of the DOM. Since R-FIX-FUI also the live streams' lifecycle
      * (`liveStream`, `langStream`, `HEALTH`, `StreamNotice`, `staleText`) and `useLang`, so the
      * sidebar targets and the ask cards mark a lost stream the same way; since
-     * MULTI-3 `openCoreSettings`, and `press` / `refusalText`, so every press on core's target and
-     * answer routes reads `SEAM_TARGETS.http` the same way.
+     * MULTI-3 `openCoreSettings`, and `press` / `refusalText` / `pressStore` / `usePress`, so every
+     * press on core's target and answer routes reads `SEAM_TARGETS.http` the same way and keeps its
+     * in-flight state across remounts.
      */
     const kit = Object.freeze({
       /** The shared class names (`CSS`); their sheet is mounted once by this row. */
@@ -245,6 +295,8 @@ window.__ModuleLoader__.load({
       langStream,
       useLang,
       StreamNotice,
+      pressStore,
+      usePress,
       /**
        * One JSON POST to a page-relative core route: `{status, body}`, `status` 0 when no answer
        * came (network, parse). Never throws.
@@ -257,6 +309,8 @@ window.__ModuleLoader__.load({
           return { status: response.status, body }
         } catch { return { status: 0, body: undefined } }
       },
+      /** `first` and `second` as one line in `lang` (en: a space between; zh: none). */
+      joinSentences: (lang, first, second) => (refusalWords[lang] ?? refusalWords[UI.lang.en]).join(first, second),
       /** What a press's answer says in `lang`: null on success, else a clear sentence with core's code after it. */
       refusalText(answer, lang) {
         const kind = refusalOf(answer)

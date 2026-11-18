@@ -39,10 +39,14 @@ window.__ModuleLoader__.load({
        * 480px is the narrow breakpoint DSH's chat CSS uses (dsh-client-ui-chat, both SDKs); 44px is
        * DSH's 36px rail rows plus 4px padding each side. The row overflows by horizontal scroll (the
        * user: no More menu). `sheetGutterPx`: an expanded sidebar leaves this much of the
-       * conversation visible, as rc.1's drawer does (dsh-client-ui-layout `viewport - 48`).
+       * conversation visible, as rc.1's drawer does (dsh-client-ui-layout `viewport - 48`). On 0.2.2
+       * the 480px query always meets its drawer (below 768px), so the bar is rc.5's; a Windows title
+       * bar (no drawer) hides the collapsed rail's panels in DSH's own CSS, so the bar is not applied
+       * there either (`hook.windows`).
        */
+      hasSupport: 'selector(:has(a))',
       narrow: Object.freeze({ query: '(max-width: 480px)', clearancePx: 44, sheetGutterPx: 48, layer: 25 }),
-      css: Object.freeze({ iconButton: 'fishball-page-icon-button', status: 'fishball-page-status', footer: 'fishball-page-footer', row: 'fishball-page-row' }),
+      css: Object.freeze({ iconButton: 'fishball-page-icon-button', rail: 'fishball-page-rail-button', status: 'fishball-page-status', footer: 'fishball-page-footer', row: 'fishball-page-row', hidden: 'fishball-page-visually-hidden' }),
       // The active-locale prefix that selects TEXT.zh; every other language reads TEXT.en.
       chinese: 'zh',
       main: '[data-slot="main.conversation"]',
@@ -58,7 +62,7 @@ window.__ModuleLoader__.load({
         frame: ':has(>[data-shell-bottom])', drawer: '[data-sidebar-drawer]', collapsed: '[data-sidebar-collapsed]',
         sidebar: '[data-slot="sidebar"]>*', workspaces: ':has(>[data-slot="sidebar.workspaces"])',
         foot: ':has([data-slot="sidebar.settings"])', regions: ':has(>[data-slot="sidebar.footer.action"]),:has(>[data-slot="sidebar.settings"])',
-        handle: '[data-side="sidebar"]', centre: ':has([data-slot="main"])',
+        handle: '[data-side="sidebar"]', windows: '[data-windows-titlebar]', centre: ':has([data-slot="main"])', rightbar: '[data-rightbar-col]',
       }),
       // Window focus re-reads the manager (GET only, never ensure); see refresh.
       reread: 'focus',
@@ -153,6 +157,16 @@ window.__ModuleLoader__.load({
       svg: (path, box) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${box.width} ${box.height}"><path d="${path}"/></svg>`,
       url: (svg) => `url("data:image/svg+xml,${encodeURIComponent(svg)}")`,
     })
+    /**
+     * The narrow sheet's dismissal and focus (the user, 2026-11-18, choice 8A): pointer/key events,
+     * the first focusable control inside the sheet, and the key that closes it. rc.1's drawer has its
+     * own mask, focus trap and Escape (dsh-client-ui-sidebar `useModalLayer`), so this applies only to
+     * the restyle's sheet (a non-drawer frame); DSH's centre column is never made inert.
+     */
+    const SHEET = Object.freeze({
+      pointerdown: 'pointerdown', keydown: 'keydown', escape: 'Escape',
+      focusable: 'button:not([disabled]),[href],[tabindex]:not([tabindex="-1"])',
+    })
     /** In-frame navigation policy; see mountFrameGuard. */
     const FRAME = Object.freeze({
       navigate: 'navigate', click: 'click', anchor: 'a[href],area[href]', blank: '_blank', frame: 'iframe',
@@ -175,7 +189,7 @@ window.__ModuleLoader__.load({
      */
     function barRules(root) {
       const { hook, narrow } = PAGE
-      const frame = `${root} ${hook.frame}:not(${hook.drawer})`
+      const frame = `${root}:not(${hook.windows}) ${hook.frame}:not(${hook.drawer})`
       const column = `>:has(>[data-slot="sidebar"])`
       const bar = `${frame}${hook.collapsed}${column}`
       const sheet = `${frame}:not(${hook.collapsed})${column}`
@@ -186,9 +200,11 @@ window.__ModuleLoader__.load({
         // centre's 400px minimum leaves under 300px), so these tracks are exact, not a guess; only the
         // sidebar's own track is given up, to the bar or the sheet above the conversation.
         `${frame}{grid-template-columns:0px minmax(0px,1fr) minmax(0px,0px)!important}`,
-        // rc.5's columns have no grid areas: with the sidebar out of flow the centre would auto-place
-        // into the zero first track, so it is pinned to the second, by the column holding the main slot.
+        // rc.5's columns have no grid areas: with the sidebar out of flow the centre and the rightbar
+        // would auto-place one track early (the centre into the zero first track, the rightbar's
+        // fullscreen panel off-screen), so both are pinned to their own tracks.
         `${frame}>${hook.centre}{grid-column:2;grid-row:1}`,
+        `${frame}>${hook.rightbar}{grid-column:3;grid-row:1}`,
         `${root} ${hook.handle}{display:none}`,
         `${bar}{position:fixed;left:0;right:0;bottom:0;top:auto;height:${narrow.clearancePx}px;width:auto;z-index:${narrow.layer};box-sizing:border-box;border-right:none;border-top:.5px solid var(--dsw-alias-border-l3);background:var(--dsw-specific-sidebar-fill)}`,
         `${sidebar}{flex-direction:row!important;align-items:center;gap:4px;width:100%!important;height:100%;padding:4px 0 4px 8px!important;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;overscroll-behavior-x:contain}`,
@@ -233,13 +249,18 @@ window.__ModuleLoader__.load({
         `.${PAGE.css.iconButton}[aria-expanded="true"]{background:var(--dsw-alias-interactive-bg-active);color:var(--dsw-alias-label-primary)}`,
         `.${PAGE.css.footer}{display:flex;align-items:center;gap:2px;flex-wrap:wrap;min-width:0}`,
         `.${PAGE.css.footer}:not([data-wide]){flex-direction:column}`,
-        `.${PAGE.css.footer}:not([data-wide]) .${PAGE.css.iconButton}{width:36px;height:36px;border-radius:var(--dsw-radius-md)}`,
+        // Every icon-only page control in the rail and the bar (Fishball, Retry, the Settings launcher in
+        // DSH's own settings seat) is 36px square, as DSH's own rail rows are.
+        `.${PAGE.css.rail}{width:36px;height:36px;border-radius:var(--dsw-radius-md)}`,
+        `.${PAGE.css.hidden}{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}`,
         `@media ${PAGE.narrow.query}{.${PAGE.css.footer}:not([data-wide]){flex-direction:row}}`,
         // A wide row: icon and name, as DSH's own panel rows and Settings trigger.
         `.${PAGE.css.row}{width:100%;justify-content:flex-start;gap:8px;height:36px;padding:0 8px;color:var(--dsw-alias-label-primary);font:var(--dsw-font-s-14)}`,
         `.${PAGE.css.status}{display:inline-flex;align-items:center;gap:6px;padding:0 4px;min-width:0;font:var(--dsw-font-xxs-12);color:var(--dsw-alias-label-secondary)}`,
         `.${PAGE.css.status}[${PAGE.statusKind}="unavailable"],.${PAGE.css.status}[${PAGE.statusKind}="failed"]{color:var(--dsw-alias-state-error-primary)}`,
-        ...barRules(root),
+        // The restyle needs `:has()`; a browser without it keeps DSH's own narrow layout rather than
+        // failing the whole page on an unparsable rule.
+        ...(CSS.supports(PAGE.hasSupport) ? barRules(root) : []),
         // Fishball's replies: DSH's fish mark and the name above an assistant bubble, the user's own
         // bubble left as DSH draws it, with its thin stroke.
         `${root} ${PAGE.main} [data-chat-flow-kind="assistant-step"][data-chat-group-part="response"]{position:relative;margin:6px 12% 6px 0;padding:20px 0 0 36px}`,
@@ -288,6 +309,50 @@ window.__ModuleLoader__.load({
         observer.disconnect()
         unsubscribe()
         for (const node of marked) node.removeAttribute(PAGE.hidden)
+      }
+    }
+
+    /**
+     * The narrow sheet (barRules: the expanded sidebar over the conversation on a narrow, non-drawer
+     * frame): a press outside it (the conversation gutter) or Escape closes it through DSH's public
+     * toggle, and focus moves into it when it opens. Nothing happens in any other layout.
+     */
+    function mountSheet(ctx) {
+      const media = window.matchMedia(PAGE.narrow.query)
+      // The same scope as barRules: without `:has()` support there is no sheet restyle to manage.
+      if (!CSS.supports(PAGE.hasSupport)) return () => {}
+      const frame = () => document.querySelector(PAGE.hook.frame)
+      const column = () => document.querySelector(PAGE.hook.sidebar)?.closest(`${PAGE.hook.frame}>*`) ?? null
+      const open = () => {
+        const f = frame()
+        return media.matches && !document.documentElement.matches(PAGE.hook.windows) && f !== null && !f.matches(PAGE.hook.drawer) && !f.matches(PAGE.hook.collapsed)
+      }
+      const close = () => { if (open()) ctx.layout.toggleSidebar() }
+      // Only the gutter (the layout frame outside the sheet) closes it: a press in a portalled
+      // surface the sheet opened (DSH's Settings dialog, a tooltip, a menu) lies outside the frame.
+      const pointer = (event) => { if (open() && frame()?.contains(event.target) && column()?.contains(event.target) === false) close() }
+      // Escape while focus is in the sheet (or nowhere), after DSH's own handlers: a dialog or menu
+      // that handles its Escape first marks it handled, and the sheet stays.
+      const key = (event) => {
+        const focus = document.activeElement
+        if (event.key !== SHEET.escape || event.defaultPrevented || !open() || !(focus === document.body || column()?.contains(focus))) return
+        event.preventDefault()
+        close()
+      }
+      let wasOpen = open()
+      const observer = new MutationObserver(() => {
+        const now = open()
+        // Opening moves focus to the sheet's first control, unless focus is already inside it.
+        if (now && !wasOpen && column()?.contains(document.activeElement) === false) column()?.querySelector(SHEET.focusable)?.focus()
+        wasOpen = now
+      })
+      observer.observe(document.body, { subtree: true, attributes: true, attributeFilter: ['data-sidebar-collapsed', 'data-sidebar-drawer'] })
+      document.addEventListener(SHEET.pointerdown, pointer, true)
+      document.addEventListener(SHEET.keydown, key)
+      return () => {
+        observer.disconnect()
+        document.removeEventListener(SHEET.pointerdown, pointer, true)
+        document.removeEventListener(SHEET.keydown, key)
       }
     }
 
@@ -721,6 +786,7 @@ window.__ModuleLoader__.load({
         own(session.dispose)
         own(mountRemovals(ctx))
         own(mountFrameGuard())
+        own(mountSheet(ctx))
         // Stable across renders, so React subscribes once; LocaleRuntime methods need `this`.
         const locale = { subscribe: listener => ctx.locale.subscribe(listener), get: () => ctx.locale.getLocale() }
         /**
@@ -730,7 +796,7 @@ window.__ModuleLoader__.load({
          */
         function PageControl({ wide, kind, label, Icon, shortcutKeys, className, ...props }) {
           const narrow = useNarrow()
-          const classes = [PAGE.css.iconButton, wide ? PAGE.css.row : null, className].filter(Boolean).join(' ')
+          const classes = [PAGE.css.iconButton, wide ? PAGE.css.row : PAGE.css.rail, className].filter(Boolean).join(' ')
           const button = h(Button, { ...PAGE.button, type: 'button', ...props, className: classes, [PAGE.navKind]: kind, 'aria-label': label },
             h(Icon, { size: wide ? PAGE.icon.wide : PAGE.icon.rail }), wide ? h('span', null, label) : null)
           return h(Tooltip, { ...(narrow ? PAGE.tooltip.bar : PAGE.tooltip.rail), label, shortcutKeys, disabled: wide }, button)
@@ -750,11 +816,11 @@ window.__ModuleLoader__.load({
           return h('div', { className: PAGE.css.footer, 'data-wide': wide ? '' : undefined },
             h(PageControl, { wide, kind: NAV.fishball, label: text.back, Icon: FishLogo, onClick: () => session.back() }),
             status === null ? null : h(React.Fragment, null,
-              // In the rail and the bar the status is its dot, named for assistive technology and in a tooltip.
-              h(Tooltip, { ...PAGE.tooltip.rail, label: status.text, disabled: wide },
-                h('span', { className: PAGE.css.status, role: 'status', tabIndex: wide ? undefined : 0, 'aria-label': status.text, [PAGE.statusKind]: status.kind },
-                  h(StateDot, { state: status.dot }), wide ? status.text : null)),
-              h(PageControl, { wide, kind: NAV.retry, label: text.retry, Icon: IconRefreshOutlineRegular, onClick: () => session.retry() })))
+              // In the rail and the bar the status is its dot, its text kept for assistive technology and
+              // shown on Retry's tooltip, the control beside it that acts on it.
+              h('span', { className: PAGE.css.status, role: 'status', [PAGE.statusKind]: status.kind },
+                h(StateDot, { state: status.dot }), h('span', { className: wide ? undefined : PAGE.css.hidden }, status.text)),
+              h(PageControl, { wide, kind: NAV.retry, label: wide ? text.retry : `${status.text} · ${text.retry}`, Icon: IconRefreshOutlineRegular, onClick: () => session.retry() })))
         }
         // Consume the native launcher owner callback instead of inventing a global settings API: the
         // launcher draws in DSH's own settings seat in the sidebar's foot (wide row, rail, rc.1

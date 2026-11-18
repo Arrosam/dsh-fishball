@@ -49,12 +49,9 @@ export const STATUS_TEXT = Object.freeze({
       [ID.stale]: 'Live name: the last refresh failed; showing the last known name.',
     }),
     words: Object.freeze({
-      details: 'Details',
       address: 'Address',
-      parent: 'This DSH',
       openApproval: 'Open the approval page',
       settings: 'Fishball settings',
-      off: 'Fishball',
     }),
   }),
   zh: Object.freeze({
@@ -89,12 +86,9 @@ export const STATUS_TEXT = Object.freeze({
       [ID.stale]: '实时名称：上次刷新失败；显示最后已知的名称。',
     }),
     words: Object.freeze({
-      details: '详情',
       address: '地址',
-      parent: '本 DSH',
       openApproval: '打开授权页面',
       settings: 'Fishball 设置',
-      off: 'Fishball',
     }),
   }),
 })

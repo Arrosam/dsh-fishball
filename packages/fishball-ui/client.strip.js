@@ -66,8 +66,8 @@ window.__ModuleLoader__.load({
       approvalOutcome: 'approval-url',
       webSchemes: Object.freeze(['https:', 'http:']),
       open: Object.freeze({ target: '_blank', features: 'noopener', rel: 'noopener noreferrer' }),
-      // `targetsView`'s line kinds (src/status/index.js TARGET_LINE) the details lay out apart.
-      line: Object.freeze({ url: 'url' }),
+      /** A rail dot's name: the target's shown name and its state, for the tooltip and assistive technology. */
+      railLabel: (name, badge) => `${name} · ${badge}`,
       css: Object.freeze({
         id: 'fishball-targets-style', root: 'fb-targets', head: 'fb-targets-head', list: 'fb-targets-list', item: 'fb-target',
         row: 'fb-target-row', name: 'fb-target-name', badge: 'fb-target-badge', chevron: 'fb-target-chevron', details: 'fb-target-details',
@@ -153,21 +153,18 @@ window.__ModuleLoader__.load({
     /** A target's shown name: the server's resolved name as text, or Q01's placeholder. */
     const shownName = (target) => target.name ?? target.placeholder
 
-    /** One target's pairing: the warning lines, the box (Continue only once ticked, R-ID-07) and the choices. */
-    function Pairing({ kit, lang, targetId, view, locked: streamLocked }) {
+    /**
+     * One target's pairing: the warning lines, the box (Continue only once ticked, R-ID-07) and the
+     * choices. Keyed by the warning (`pairingView` `key`), so a new warning starts unticked; its
+     * press state is the part's (`presses`, keyed by the target), so a remount keeps it locked.
+     */
+    function Pairing({ kit, lang, presses, targetId, view, locked: streamLocked }) {
       const [ticked, setTicked] = React.useState(false)
-      const [sending, setSending] = React.useState(false)
-      const [failed, setFailed] = React.useState(null)
+      const { sending, refused } = kit.usePress(presses.pairing, targetId)
       const locked = sending || streamLocked
-      const press = async (choice) => {
-        setSending(true)
-        setFailed(null)
-        const answer = await post(kit, TARGETS_UI.route.pairing, targetId, { choice, confirmed: ticked })
-        setSending(false)
-        // The pairing card's own sentence first (R-FIX-FUI), then why core refused it.
-        const why = kit.refusalText(answer, lang)
-        setFailed(why === null ? null : `${view.failed} ${why}`)
-      }
+      // The pairing's own sentence first (R-FIX-FUI), then why core refused it.
+      const press = (choice) => presses.pairing.run(targetId, () => post(kit, TARGETS_UI.route.pairing, targetId, { choice, confirmed: ticked }),
+        (answer) => { const why = kit.refusalText(answer, lang); return { refused: why === null ? null : kit.joinSentences(lang, view.failed, why) } })
       return h('div', { className: C.pairing, 'data-fishball-pairing': view.state },
         h('p', { className: C.label }, view.title),
         view.lines.map((line) => h('p', { key: line.kind, className: C.line, 'data-fishball-pairing-line': line.kind }, line.text)),
@@ -179,36 +176,30 @@ window.__ModuleLoader__.load({
             disabled: locked || (entry.needsConfirm && !ticked), 'data-fishball-pairing-choice': entry.choice,
             onClick: () => void press(entry.choice),
           }, entry.label))),
-        failed === null ? null : h('p', { className: C.error, role: 'alert', 'data-fishball-pairing-failed': true }, failed))
+        refused === null ? null : h('p', { className: C.error, role: 'alert', 'data-fishball-pairing-failed': true }, refused))
     }
 
-    /** One target's inline details (Q08); `live` false locks every control (R-FIX-FUI). */
-    function Details({ ctx, kit, lang, target, words, live, id }) {
-      const [approvalUrl, setApprovalUrl] = React.useState(undefined)
-      const [refused, setRefused] = React.useState(null)
-      const [sending, setSending] = React.useState(false)
-      // Only the latest press opens its approval page or shows its link (R-FIX-FUI F5/F6).
-      const latest = React.useRef(0)
+    /**
+     * One target's inline details (Q08). `live` false locks every control, and the pairing warning
+     * stays readable under the stream notice (R-FIX-FUI: what was asked stays readable).
+     */
+    function Details({ ctx, kit, lang, presses, target, words, live, id }) {
+      const { sending, refused, approvalUrl } = kit.usePress(presses.target, target.targetId)
       const locked = sending || !live
       const act = async (path) => {
-        const press = ++latest.current
-        setSending(true)
-        setRefused(null)
-        const answer = await post(kit, path, target.targetId)
-        setSending(false)
-        if (press !== latest.current) return
-        setRefused(kit.refusalText(answer, lang))
-        const url = approvalUrlOf(answer.body)
+        const { answer, stale } = await presses.target.run(target.targetId, () => post(kit, path, target.targetId),
+          (reply) => ({ refused: kit.refusalText(reply, lang), approvalUrl: approvalUrlOf(reply.body) }))
+        // Only the latest press opens its approval page (R-FIX-FUI F5/F6), also across a remount.
+        const url = stale ? undefined : approvalUrlOf(answer.body)
         if (url !== undefined) window.open(url, TARGETS_UI.open.target, TARGETS_UI.open.features)
-        setApprovalUrl(url)
       }
       const control = live ? target.control : null
-      const lines = live ? target.lines.filter((line) => line.kind !== TARGETS_UI.line.url) : []
+      const lines = live ? target.lines : []
       return h('div', { className: C.details, id, 'data-fishball-target-details': target.targetId },
         lines.map((line) => h('p', { key: line.kind, className: C.line, 'data-fishball-target-line': line.kind }, line.text)),
         h('p', { className: C.label }, words.address),
-        h('p', { className: C.url, 'data-fishball-target-line': TARGETS_UI.line.url }, target.url),
-        live && target.pairing.lines.length > 0 ? h(Pairing, { key: target.pairing.key, kit, lang, targetId: target.targetId, view: target.pairing, locked }) : null,
+        h('p', { className: C.url, 'data-fishball-target-url': true }, target.url),
+        target.pairing.lines.length > 0 ? h(Pairing, { key: target.pairing.key, kit, lang, presses, targetId: target.targetId, view: target.pairing, locked: !live }) : null,
         h('div', { className: C.actions },
           control === null ? null : h(Button, {
             type: 'button', size: 'sm', variant: TARGETS_UI.buttonVariant[control.action], disabled: locked,
@@ -217,15 +208,14 @@ window.__ModuleLoader__.load({
           live && target.retry !== null ? h(Button, {
             type: 'button', size: 'sm', variant: 'outline', disabled: locked, 'data-fishball-target-retry': true, onClick: () => void act(TARGETS_UI.route.retry),
           }, h(IconRefreshOutlineRegular, { size: TARGETS_UI.icon }), target.retry) : null,
-          h(Button, { type: 'button', size: 'sm', variant: 'ghost', 'data-fishball-target-settings': true, onClick: () => kit.openCoreSettings(ctx) },
-            h(IconSlidersTwoOutlineRegular, { size: TARGETS_UI.icon }), words.settings)),
-        approvalUrl === undefined || control?.action !== TARGETS_UI.action.cancel ? null
+          settingsButton(ctx, kit, words.settings, 'ghost')),
+        approvalUrl == null || control?.action !== TARGETS_UI.action.cancel ? null
           : h('a', { className: C.link, href: approvalUrl, title: approvalUrl, target: TARGETS_UI.open.target, rel: TARGETS_UI.open.rel, 'data-fishball-target-approval': true }, words.openApproval),
         refused === null ? null : h('p', { className: C.error, role: 'alert', 'data-fishball-target-refused': true }, refused))
     }
 
     /** One target: its row (name, dot, badge) and, while open, its details (Q08: inline, no modal). */
-    function Target({ ctx, kit, lang, target, words, live, staleBadge, open, onToggle }) {
+    function Target({ ctx, kit, lang, presses, target, words, live, staleBadge, open, onToggle }) {
       const tone = toneOf(target, live)
       const name = shownName(target)
       const detailsId = React.useId()
@@ -233,13 +223,13 @@ window.__ModuleLoader__.load({
         className: C.item, 'data-fishball-target': target.targetId, 'data-fishball-target-state': live ? target.state : undefined,
         'data-fishball-target-kind': target.kind, 'data-open': open ? '' : undefined,
       },
-        h('button', { type: 'button', className: C.row, 'aria-expanded': open, 'aria-controls': detailsId, title: name, onClick: onToggle },
+        h('button', { type: 'button', className: C.row, 'aria-expanded': open, 'aria-controls': open ? detailsId : undefined, title: name, onClick: onToggle },
           h('span', { className: C.chevron, 'aria-hidden': 'true' }, h(open ? IconChevronDownOutlineRegular : IconChevronRightOutlineRegular, { size: TARGETS_UI.icon })),
           h(StateDot, { state: tone.dot }),
           // Plain text children: React escapes them, so a markup-looking name is shown as it is (D06).
           h('span', { className: C.name, 'data-fishball-target-name': true, 'data-placeholder': target.name === null ? '' : undefined }, name),
           h(Tag, { tone: tone.tag, className: C.badge }, h('span', { 'data-fishball-target-badge': true }, live ? target.badge : staleBadge))),
-        open ? h(Details, { ctx, kit, lang, target, words, live, id: detailsId }) : null)
+        open ? h(Details, { ctx, kit, lang, presses, target, words, live, id: detailsId }) : null)
     }
 
     /**
@@ -257,7 +247,11 @@ window.__ModuleLoader__.load({
       })
     }
 
-    function makeList(ctx, stream, kit, selected) {
+    /** The settings entry, where targets are added, removed and edited (core's settings page). */
+    const settingsButton = (ctx, kit, label, variant) => h(Button, { type: 'button', size: 'sm', variant, 'data-fishball-target-settings': true, onClick: () => kit.openCoreSettings(ctx) },
+      h(IconSlidersTwoOutlineRegular, { size: TARGETS_UI.icon }), label)
+
+    function makeList(ctx, stream, kit, selected, presses) {
       return function FishballTargets({ wide, expandSidebar }) {
         const lang = kit.useLang(ctx)
         React.useEffect(() => { stream.use(lang) }, [lang])
@@ -267,12 +261,14 @@ window.__ModuleLoader__.load({
         const targets = view?.targets ?? []
         const staleBadge = kit.staleText(lang)
         if (!wide) {
-          // The rail: one dot per target; pressing one widens the sidebar onto that target.
+          // The rail: one dot per target; pressing one widens the sidebar onto that target. With no
+          // target, one dot for the list itself, so the rail still says where targets are.
+          const dot = (key, label, state, onClick) => h(Tooltip, { key, ...TARGETS_UI.tooltip, label },
+            h('button', { type: 'button', className: C.dot, 'aria-label': label, 'data-fishball-target': key, onClick }, h(StateDot, { state })))
           return h('div', { className: C.rail, 'data-fishball-targets': 'rail' },
-            targets.map((target) => h(Tooltip, { key: target.targetId, ...TARGETS_UI.tooltip, label: `${shownName(target)} · ${live ? target.badge : staleBadge}` },
-              h('button', { type: 'button', className: C.dot, 'aria-label': `${shownName(target)} · ${live ? target.badge : staleBadge}`, 'data-fishball-target': target.targetId,
-                onClick: () => { selected.set(target.targetId); expandSidebar() } },
-              h(StateDot, { state: toneOf(target, live).dot })))))
+            targets.length === 0 && view?.empty != null ? dot(undefined, view.empty, TARGETS_UI.tone['not-set'].dot, () => expandSidebar()) : null,
+            targets.map((target) => dot(target.targetId, TARGETS_UI.railLabel(shownName(target), live ? target.badge : staleBadge), toneOf(target, live).dot,
+              () => { selected.set(target.targetId); expandSidebar() })))
         }
         const title = view?.title ?? TARGETS_UI.title[lang] ?? TARGETS_UI.title.en
         return h('section', { className: C.root, 'data-fishball-targets': 'list', 'data-fishball-targets-stale': live ? undefined : health, 'aria-label': title },
@@ -283,11 +279,10 @@ window.__ModuleLoader__.load({
           // No target yet (standalone first run): say so and lead to where targets are added.
           view?.empty == null ? null : h('div', { className: C.empty, 'data-fishball-targets-empty': true },
             h('p', null, view.empty),
-            h(Button, { type: 'button', size: 'sm', variant: 'outline', 'data-fishball-target-settings': true, onClick: () => kit.openCoreSettings(ctx) },
-              h(IconSlidersTwoOutlineRegular, { size: TARGETS_UI.icon }), view.words.settings)),
+            settingsButton(ctx, kit, view.words.settings, 'outline')),
           targets.length === 0 ? null : h('ul', { className: C.list },
             targets.map((target) => h(Target, {
-              key: target.targetId, ctx, kit, lang, target, words: view.words, live, staleBadge,
+              key: target.targetId, ctx, kit, lang, presses, target, words: view.words, live, staleBadge,
               open: openId === target.targetId, onToggle: () => selected.set(openId === target.targetId ? null : target.targetId),
             }))))
       }
@@ -317,8 +312,10 @@ window.__ModuleLoader__.load({
       function apply(ctx) {
         const stream = targetsStream(kit)
         const selected = selection()
+        // Press state per target, held by the part so a remount keeps it (kit `pressStore`).
+        const presses = Object.freeze({ target: kit.pressStore(), pairing: kit.pressStore() })
         ctx.effect(() => kit.mountStyle(C.id, css), TARGETS_UI.name + ': styles')
-        const List = makeList(ctx, stream, kit, selected)
+        const List = makeList(ctx, stream, kit, selected, presses)
         ctx.effect(() => whilePage(() => ctx.slots.inject(TARGETS_UI.slot, () => ctx.slots.register({ name: TARGETS_UI.slot, priority: TARGETS_UI.priority }, List))), TARGETS_UI.name + ': sidebar list')
       }
       return Object.freeze({ name: TARGETS_UI.name, inject: ['slots', 'layout', 'locale'], apply })

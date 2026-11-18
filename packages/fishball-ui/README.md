@@ -17,7 +17,8 @@ core; in a standalone DSH you install it yourself, before core (see the
   browser is replaced by Fishball's DSH targets. In a narrow window (480px and below) that sidebar
   is restyled as a 44px bar along the bottom edge that scrolls sideways when it is full; on DSH
   0.2.2 below 768px DSH's own drawer opens it instead. In a hosted child, the main DSH's
-  `dsh-connector-ui` window shows this same page.
+  `dsh-connector-ui` window shows this same page. Fishball no longer remaps DSH's "toggle sidebar"
+  shortcut; to change it, re-bind it in DSH Settings › Shortcuts.
 - **The two settings entries** in the page's header, as icons with tooltips: "Fishball settings"
   (fishball-core's own settings page) and "DSH settings".
 - **The model dialog** (`client.model.js`): when the Fishball page opens and core's `model` is
