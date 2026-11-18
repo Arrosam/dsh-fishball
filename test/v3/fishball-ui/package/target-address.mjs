@@ -8,6 +8,7 @@ import { frameDocument } from './frame-layout.mjs'
 
 const NIGHT = Object.freeze({ name: '<b>Night-Build</b> 研发-DSH', url: 'https://night.example.com/mcp' })
 const DESKTOP = Object.freeze({ width: 1440, height: 900 })
+const LONG_ADDRESS = `https://example.test/${'W'.repeat(120)}`
 // Primitive icon stand-ins are empty SVGs without the SDK's sizing. At Chromium's default 300×150,
 // the settings icon alone widens the details grid beyond the sidebar and displaces the address.
 const ICON_SIZE = 'svg[data-primitive] { width: 1em; height: 1em }'
@@ -47,6 +48,12 @@ function inspectAddress({ selector, epsilon }) {
   }
 }
 
+function targetFrame(sdk, p, sheets, pageRules) {
+  const { tagClass } = frontendStyles(sdk)
+  return frameDocument(sdk, { panels: FRAME_LAYOUT.panels, mark: true, collapsed: false,
+    workspaces: p.tree().map(n => htmlOf(n, tagClass)).join(''), pageRules: [...themeSheets(sdk), ...pageRules, ...sheets.live(), ICON_SIZE] })
+}
+
 export async function checkDesktopTargetAddress(t, sdk, pageRules) {
   const sheets = sheetCollector()
   const p = await sidebarPage(t, sdk, { onDocument: sheets.onDocument })
@@ -57,9 +64,7 @@ export async function checkDesktopTargetAddress(t, sdk, pageRules) {
   for (const { name } of targets) assert.ok(p.textOf(p.row(name)).includes(name), `name not displayed as plain text: ${name}`)
   await p.toggle(NIGHT.name)
   assert.equal(String(p.row(NIGHT.name).props['aria-expanded']), 'true')
-  const { tagClass } = frontendStyles(sdk)
-  const html = frameDocument(sdk, { panels: FRAME_LAYOUT.panels, mark: true, collapsed: false,
-    workspaces: p.tree().map(n => htmlOf(n, tagClass)).join(''), pageRules: [...themeSheets(sdk), ...pageRules, ...sheets.live(), ICON_SIZE] })
+  const html = targetFrame(sdk, p, sheets, pageRules)
   const r = await measure(html, String(inspectAddress), { selector: `[${SIDEBAR.urlHook}]`, epsilon: FRAME_LAYOUT.epsilon }, DESKTOP)
   assert.ok(r, 'expanded target details show no address')
   assert.equal(r.text, NIGHT.url, 'expanded details must retain the full address')
@@ -67,4 +72,41 @@ export async function checkDesktopTargetAddress(t, sdk, pageRules) {
   assert.equal(r.title, NIGHT.url, 'hover must expose the full address')
   assert.ok(!r.clippedBelow, `the final address line is clipped vertically: ${JSON.stringify(r.finalLine)}`)
   assert.ok(!r.clipped || r.ellipsis, 'address is cut off without an ellipsis')
+}
+
+/** Measure the rendered text fragments: an ellipsis declaration alone cannot rule out wrapping. */
+function inspectLongAddress(selector) {
+  const el = document.querySelector(selector)
+  if (!el) return null
+  const range = document.createRange()
+  range.selectNodeContents(el)
+  const rects = [...range.getClientRects()].filter(rect => rect.width && rect.height)
+  const style = getComputedStyle(el)
+  return {
+    text: el.textContent, title: el.title,
+    visible: el.checkVisibility({ visibilityProperty: true, opacityProperty: true }) && el.clientWidth > 0,
+    oneLine: rects.length > 0 && Math.max(...rects.map(r => r.top)) < Math.min(...rects.map(r => r.bottom)),
+    textOverflow: style.textOverflow, overflowX: style.overflowX,
+    scrollWidth: el.scrollWidth, clientWidth: el.clientWidth,
+  }
+}
+
+export async function checkLongTargetAddress(t, sdk, pageRules) {
+  const sheets = sheetCollector()
+  const p = await sidebarPage(t, sdk, { onDocument: sheets.onDocument })
+  const target = targetView(0, { url: LONG_ADDRESS })
+  const { targetsView } = await viewModule(sdk)
+  await p.deliver(targetsView(snapshotOf([target]), 'en', FIXTURE.zones[0]))
+  await p.toggle(target.name)
+  assert.equal(String(p.row(target.name).props['aria-expanded']), 'true')
+
+  const html = targetFrame(sdk, p, sheets, pageRules)
+  const r = await measure(html, String(inspectLongAddress), `[${SIDEBAR.urlHook}]`, DESKTOP)
+  assert.ok(r?.visible, 'the expanded target must show the address box')
+  assert.equal(r.text, LONG_ADDRESS, 'truncation must preserve the full DOM text')
+  assert.equal(r.title, LONG_ADDRESS, 'hover must expose the full address')
+  assert.ok(r.oneLine, 'the address must occupy exactly one rendered line')
+  assert.equal(r.textOverflow, 'ellipsis')
+  assert.notEqual(r.overflowX, 'visible', 'the overflowing address must actually be clipped')
+  assert.ok(r.scrollWidth > r.clientWidth, `expected real overflow: scrollWidth ${r.scrollWidth}, clientWidth ${r.clientWidth}`)
 }
