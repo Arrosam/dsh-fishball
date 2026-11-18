@@ -154,12 +154,15 @@ export async function stopBrowser() {
 /**
  * Load `html` in a fresh tab and evaluate `expression` (a function's source applied to `arg`) in
  * it; the tab closes afterwards. Returns the JSON value it returns.
+ * MULTI-3: `viewport` `{width, height}` (CSS px) emulates that window size before the document
+ * loads, so the page's media queries see it (the narrow navigation rows).
  */
-export async function measure(html, expression, arg) {
+export async function measure(html, expression, arg, viewport) {
   const { devtools } = await chromium()
   const { targetId } = await devtools.send('Target.createTarget', { url: PAGE.blank })
   try {
     const { sessionId } = await devtools.send('Target.attachToTarget', { targetId, flatten: true })
+    if (viewport) await devtools.send('Emulation.setDeviceMetricsOverride', { width: viewport.width, height: viewport.height, deviceScaleFactor: 1, mobile: false }, sessionId)
     await devtools.send('Page.enable', {}, sessionId)
     const { frameTree } = await devtools.send('Page.getFrameTree', {}, sessionId)
     await devtools.send('Page.setDocumentContent', { frameId: frameTree.frame.id, html }, sessionId)
