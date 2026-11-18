@@ -119,7 +119,7 @@ window.__ModuleLoader__.load({
       `.${C.details}{display:grid;gap:6px;padding:2px 10px 10px 26px;font:var(--dsw-font-xxs-12);color:var(--dsw-alias-label-secondary)}`,
       `.${C.line}{margin:0;overflow-wrap:anywhere}`,
       `.${C.label}{margin:0;font:var(--dsw-font-xxs-strong-12);color:var(--dsw-alias-label-tertiary)}`,
-      `.${C.url}{margin:0;padding:4px 6px;border-radius:var(--dsw-radius-sm);background:var(--dsw-alias-bg-module-platform);font-family:var(--ds-font-family-code,monospace);overflow-wrap:anywhere}`,
+      `.${C.url}{margin:0;padding:4px 6px;border-radius:var(--dsw-radius-sm);background:var(--dsw-alias-bg-module-platform);font-family:var(--ds-font-family-code,monospace);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}`,
       `.${C.actions}{display:flex;align-items:center;flex-wrap:wrap;gap:6px;padding-top:2px}`,
       `.${C.link}{color:var(--dsw-alias-link);text-decoration:none}`,
       `.${C.link}:hover{text-decoration:underline}`,
@@ -204,7 +204,7 @@ window.__ModuleLoader__.load({
       return h('div', { className: C.details, id, 'data-fishball-target-details': target.targetId },
         lines.map((line) => h('p', { key: line.kind, className: C.line, 'data-fishball-target-line': line.kind }, line.text)),
         h('p', { className: C.label }, words.address),
-        h('p', { className: C.url, 'data-fishball-target-url': true }, target.url),
+        h('p', { className: C.url, title: target.url, 'data-fishball-target-url': true }, target.url),
         target.pairing.lines.length > 0 ? h(Pairing, { key: target.pairing.key, kit, lang, presses, targetId: target.targetId, view: target.pairing, locked: !live }) : null,
         h('div', { className: C.actions },
           control === null ? null : h(Button, {

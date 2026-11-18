@@ -101,7 +101,7 @@ const ATTR_NAME = Object.freeze({ className: 'class', htmlFor: 'for', tabIndex: 
 const kebab = (name) => name.replace(/[A-Z]/g, (c) => '-' + c.toLowerCase())
 
 /** One rendered host node as HTML; a Tag stand-in gets the real Tag's module class first. */
-function htmlOf(node, tagClass) {
+export function htmlOf(node, tagClass) {
   if (typeof node === 'string') return escapeText(node)
   const props = { ...node.props }
   if (props[STAND_IN.primitive] === HOOK.tagPrimitive) props.className = [tagClass, props.className].filter(Boolean).join(' ')
