@@ -149,7 +149,10 @@ export const MULTI = Object.freeze({
   choice: 'fbtest-no-choice',
   /** A value written to an added target's reference (never a parent token). */
   otherToken: 'fbtest-added-target-token',
-  event: Object.freeze({ id: 'fbtest-multi-event-1', textPrefix: 'FBTEST-MULTI ', sequence: 1, digestFill: 'a' }),
+  event: Object.freeze({ id: 'fbtest-multi-event-1', textPrefix: 'FBTEST-MULTI ', sequence: 1, digestFill: 'a', approvalId: 'fbtest-ap-1', offerEventId: 'fbtest-multi-offer-1', prompt: 'FBTEST-MULTI run the build', toolName: 'bash', session: 'fbtest-s1' }),
+  askArg: 'offer_id',
+  /** K1 REFUSAL.expired: a voided card answers as a closed one (SEAM_TARGETS ask). */
+  expired: 'expired',
   budget: Object.freeze({ connectMs: 60000, quietMs: 1500, pollMs: 100 }),
   webCallbackTodo: 'E2E-CORE: the web callback needs an https page Origin whose authority is the Host; a standalone DSH with default trustedHosts refuses such a pair before core (as WIRE "web-callback-insecure"). The state-keyed routing is checked through the loopback callbacks (MULTI-CONN-ST-01, DT-01)',
 })
