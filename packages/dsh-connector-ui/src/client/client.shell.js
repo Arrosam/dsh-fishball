@@ -94,7 +94,11 @@ window.__ModuleLoader__.load({
     const FRAME_UI = Object.freeze({
       read: Object.freeze({ method: 'GET', cache: 'no-store', credentials: 'same-origin' }),
       pollMs: 1000,
+      // Match dsh-instance's RUNTIME_LIMITS.requestTimeoutMs; this classic client can't import
+      // the optional instance. Include time queued behind the browser's same-origin streams.
+      requestTimeoutMs: 5000,
       loading: 'loading',
+      unknown: 'unknown',
       /** The instance's page the window frames: the hosted child's chat (its settings are the instance's own page). */
       page: Object.freeze({ chat: 'chat' }),
       /** DSH's pluginNavigation service, which opens a package's own settings page. */
@@ -198,7 +202,8 @@ window.__ModuleLoader__.load({
      * wait before a new stream. 2 s: soon enough to follow a connector reload, slow enough not to
      * hammer a DSH whose connector is gone for good.
      */
-    const STREAM = Object.freeze({ closed: 2, reopenMs: 2000, visibilityEvent: 'visibilitychange' })
+    const STREAM = Object.freeze({ closed: 2, reopenMs: 2000 })
+    const VISIBILITY_EVENT = 'visibilitychange'
     const JSON_HEADERS = Object.freeze({ 'content-type': 'application/json' })
     /**
      * The fish mark's shared look, used by the shell's sheet and by the parts (kit.ROW_MARK): the
@@ -334,7 +339,7 @@ window.__ModuleLoader__.load({
     /** The header's fish beside the title (FishMark, the window's one brand mark). */
     const HEADER_MARK_PX = 18
     /** The window's state line: DSH's StateDot sizes, and the tones of each state's dot. */
-    const STATE_DOT = Object.freeze({ sizePx: 8, byState: Object.freeze({ ready: 'done', failed: 'error', stopped: 'idle', disabled: 'idle' }), pending: 'ongoing', pendingSizePx: 12 })
+    const STATE_DOT = Object.freeze({ sizePx: 8, byState: Object.freeze({ ready: 'done', failed: 'error', unknown: 'idle', stopped: 'idle', disabled: 'idle' }), pending: 'ongoing', pendingSizePx: 12 })
 
     const en = {
       ...PROPOSED_WORDING.en,
@@ -342,7 +347,8 @@ window.__ModuleLoader__.load({
       viewTitle: 'Fishball', embedTitle: 'Fishball chat', embedRefresh: 'Refresh',
       embedState: 'State', embedCode: 'Code',
       // The child's lifecycle states the window shows (K3 child.d.ts); `ready` reads "running".
-      'frameState.loading': 'checking',
+      'frameState.loading': 'checking', 'frameState.unknown': 'status unknown',
+      statusUnreadable: 'Could not check Fishball’s status.',
       'frameState.disabled': 'disabled', 'frameState.waiting': 'waiting', 'frameState.starting': 'starting', 'frameState.ready': 'running',
       'frameState.stopping': 'stopping', 'frameState.stopped': 'stopped', 'frameState.failed': 'failed',
     }
@@ -351,7 +357,8 @@ window.__ModuleLoader__.load({
       ...DRAW_WORDING.zh,
       viewTitle: 'Fishball', embedTitle: 'Fishball 聊天', embedRefresh: '刷新',
       embedState: '状态', embedCode: '代码',
-      'frameState.loading': '检查中',
+      'frameState.loading': '检查中', 'frameState.unknown': '状态未知',
+      statusUnreadable: '无法检查 Fishball 的状态。',
       'frameState.disabled': '已禁用', 'frameState.waiting': '等待中', 'frameState.starting': '启动中', 'frameState.ready': '运行中',
       'frameState.stopping': '停止中', 'frameState.stopped': '已停止', 'frameState.failed': '失败',
     }
@@ -481,20 +488,20 @@ window.__ModuleLoader__.load({
           if (source !== current || current.readyState !== STREAM.closed) return
           source = undefined
           snapshot = initial
-          reopen = setTimeout(() => { reopen = undefined; open() }, STREAM.reopenMs)
+          if (!document.hidden) reopen = setTimeout(() => { reopen = undefined; open() }, STREAM.reopenMs)
           notify()
         }
       }
       const followVisibility = () => { if (document.hidden) stop(); else open() }
       return {
         subscribe(listener) {
-          if (!listeners.size) document.addEventListener?.(STREAM.visibilityEvent, followVisibility)
+          if (!listeners.size) document.addEventListener?.(VISIBILITY_EVENT, followVisibility)
           listeners.add(listener)
           open()
           return () => {
             listeners.delete(listener)
             if (listeners.size > 0) return
-            document.removeEventListener?.(STREAM.visibilityEvent, followVisibility)
+            document.removeEventListener?.(VISIBILITY_EVENT, followVisibility)
             stop()
           }
         },
@@ -529,9 +536,9 @@ window.__ModuleLoader__.load({
     }
 
     /** POST one command to the Host. @returns { ok, code, answer } (the Host's refusal code and the whole answer). */
-    async function send(path, body) {
+    async function send(path, body, signal) {
       try {
-        const response = await fetch(apiUrl(path), { method: 'POST', headers: JSON_HEADERS, body: JSON.stringify(body) })
+        const response = await fetch(apiUrl(path), { method: 'POST', headers: JSON_HEADERS, body: JSON.stringify(body), signal })
         if (response.ok) return { ok: true, code: null, answer: await response.json().catch(() => ({})) }
         const answer = await response.json().catch(() => ({}))
         return { ok: false, code: typeof answer.code === 'string' ? answer.code : null, answer }
@@ -632,32 +639,67 @@ window.__ModuleLoader__.load({
      * The child status route's answers the window follows: its status, or the refusal that the
      * locator went away after the page loaded (the window then shows the hint, Q-G3).
      */
-    const isChildAnswer = (value) => value.ok === true || value.code === CHILD_UI.instanceMissing
+    const isChildAnswer = (value) => (value.ok === true && typeof value.status?.state === 'string') || value.code === CHILD_UI.instanceMissing
 
     /** Whether two answers show the same thing, so a steady poll re-renders nothing. */
     const sameAnswer = (a, b) => JSON.stringify(a) === JSON.stringify(b)
 
     /**
-     * Re-reads `path` at once and then every FRAME_UI.pollMs while the caller is mounted and the
-     * tab is visible, one read at a time, keeping the last valid answer.
-     * @returns the latest valid answer; `initial` until the first.
+     * A frame request has one owner. Timeout settles that owner even if no reply arrives;
+     * unmount/supersession only cancels it. In either case no late reply may replace the next
+     * attempt, and a queued or body-pending fetch no longer occupies a connection.
      */
-    function usePoll(path, valid, initial) {
-      const [latest, setLatest] = React.useState(initial)
+    function frameRequest(read, settle) {
+      const controller = new AbortController()
+      const cancel = () => { clearTimeout(timer); controller.abort() }
+      const timer = setTimeout(() => { cancel(); settle(undefined) }, FRAME_UI.requestTimeoutMs)
+      void read(controller.signal).then((answer) => {
+        if (controller.signal.aborted) return
+        clearTimeout(timer)
+        settle(answer)
+      })
+      return cancel
+    }
+
+    /** Poll one read at a time. A failed first read isn't a lifecycle state; keep trying even
+     * after showing the error. A transient failure after a valid read needn't unmount a live chat. */
+    function useChildStatus(path, generation) {
+      const [latest, setLatest] = React.useState(undefined)
       React.useEffect(() => {
-        const abort = new AbortController()
-        let polling = false
+        let cancel
+        let timer
         const poll = () => {
-          if (polling || document.hidden) return
-          polling = true
-          void readJson(path, valid, abort.signal).then((next) => {
-            if (next !== undefined && !abort.signal.aborted) setLatest((previous) => (sameAnswer(previous, next) ? previous : next))
-          }).finally(() => { polling = false })
+          if (cancel || document.hidden) return
+          cancel = frameRequest((signal) => readJson(path, isChildAnswer, signal), (answer) => {
+            cancel = undefined
+            setLatest((previous) => {
+              // Keep the last answer only to preserve an admitted frame; never label it current
+              // after a failed probe. A subsequent successful poll clears the warning in place.
+              const next = { answer: answer ?? previous?.answer, unreadable: answer === undefined }
+              return sameAnswer(previous, next) ? previous : next
+            })
+          })
         }
-        poll()
-        const timer = setInterval(poll, FRAME_UI.pollMs)
-        return () => { clearInterval(timer); abort.abort() }
-      }, [])
+        const stop = () => {
+          clearInterval(timer)
+          timer = undefined
+          cancel?.()
+          cancel = undefined
+        }
+        const followVisibility = () => {
+          // A hidden pane should neither queue a new probe nor occupy a connection with an old one.
+          if (document.hidden) { stop(); return }
+          if (timer !== undefined) return
+          timer = setInterval(poll, FRAME_UI.pollMs)
+          poll()
+        }
+        document.addEventListener?.(VISIBILITY_EVENT, followVisibility)
+        followVisibility()
+        return () => {
+          document.removeEventListener?.(VISIBILITY_EVENT, followVisibility)
+          stop()
+        }
+      }, [path, generation])
       return latest
     }
 
@@ -755,7 +797,7 @@ window.__ModuleLoader__.load({
      * - `state` (and `code`): the state tag; the hint has none, as there is no child to describe;
      * - `onRefresh`: Refresh, enabled by `canRefresh`.
      */
-    function FrameChrome({ t, page, state, code, canRefresh, onRefresh, body }) {
+    function FrameChrome({ t, page, state, code, canRefresh, onRefresh, statusWarning, body }) {
       return h('section', { className: CLS.embed, 'aria-label': t('viewTitle'), 'data-fishball-embed': true, 'data-fishball-embed-page': page },
         h('header', { className: CLS.embedBar, 'data-window-drag': true },
           h('span', { className: CLS.embedTitle },
@@ -764,6 +806,7 @@ window.__ModuleLoader__.load({
           state === undefined ? null : h(FrameState, { state, code, t }),
           h('div', { className: CLS.embedActions },
             onRefresh === undefined ? null : h(Button, { type: 'button', size: 'sm', variant: 'ghost', icon: h(IconRefreshOutlineRegular, { size: EMBED_UI.refreshIconPx }), disabled: !canRefresh, onClick: onRefresh }, t('embedRefresh')))),
+        statusWarning ? h('p', { role: 'alert' }, t('statusUnreadable')) : null,
         body)
     }
 
@@ -775,18 +818,19 @@ window.__ModuleLoader__.load({
      * component's state for that one frame document. `{refused}` carries the route's code.
      */
     function useAdmission(path, view, lang, ready, generation) {
+      // Filter during render: a passive effect is too late to prevent React from mounting a new
+      // frame with the previous single-use URL. Identity distinguishes even en → zh → en.
+      const request = React.useMemo(() => ({ view, lang }), [path, view, lang, ready, generation])
       const [admission, setAdmission] = React.useState(undefined)
       React.useEffect(() => {
-        setAdmission(undefined)
         if (!ready) return undefined
-        let live = true
-        void send(path, { view, lang }).then(({ ok, code, answer }) => {
-          if (!live) return
-          setAdmission(ok && typeof answer?.url === 'string' ? { url: answer.url } : { refused: code })
+        return frameRequest((signal) => send(path, request, signal), (result) => {
+          const answer = result?.ok && typeof result.answer?.url === 'string'
+            ? { url: result.answer.url } : { refused: result?.code ?? null }
+          setAdmission({ request, answer })
         })
-        return () => { live = false }
-      }, [view, lang, ready, generation])
-      return admission
+      }, [path, ready, request])
+      return admission?.request === request ? admission.answer : undefined
     }
 
     /**
@@ -815,19 +859,21 @@ window.__ModuleLoader__.load({
     function makeChildView(ctx, t, route) {
       const frameLang = frameLangStore(ctx.locale)
       return function FishballChildView() {
-        const status = usePoll(route.status, isChildAnswer, undefined)
         const page = FRAME_UI.page.chat
         const lang = useFrameLang(frameLang)
         const [generation, setGeneration] = React.useState(0)
-        const state = status?.status?.state ?? FRAME_UI.loading
-        const code = status?.status?.code ?? null
-        const ready = state === CHILD_UI.readyState
+        const refresh = () => setGeneration((value) => value + 1)
+        const check = useChildStatus(route.status, generation)
+        const status = check?.answer
+        const state = check?.unreadable ? FRAME_UI.unknown : status?.status?.state ?? FRAME_UI.loading
+        const code = check?.unreadable ? null : status?.status?.code
+        const ready = status?.status?.state === CHILD_UI.readyState
         const admission = useAdmission(route.admit, page, lang, ready, generation)
         // A hostname refusal stays until the page is opened under another name; any other refusal
         // can be asked again with Refresh, as a framed page can be reloaded.
         const hostnameRefused = admission?.refused === CHILD_UI.hostnameRefused
-        if (status?.code === CHILD_UI.instanceMissing) return hintChrome(t)
-        const body = status === undefined
+        if (!check?.unreadable && status?.code === CHILD_UI.instanceMissing) return hintChrome(t)
+        const body = check?.unreadable && !ready ? null : status === undefined
           ? loadingState(t)
           : !ready
             ? emptyState(warningGlyph(), ...stateDetails(t, state, code), retryLink(ctx, t))
@@ -839,9 +885,9 @@ window.__ModuleLoader__.load({
                   : h('p', { role: 'alert', 'data-fishball-admit-refused': admission.refused ?? '' }, t('admitFailed')))
                 : framedPageFrame(t, `${generation}:${admission.url}`, admission.url)
         return h(FrameChrome, {
-          t, page, state, code,
-          canRefresh: admission !== undefined && !hostnameRefused,
-          onRefresh: () => setGeneration((value) => value + 1),
+          t, page, state, code, statusWarning: check?.unreadable,
+          canRefresh: !hostnameRefused && (check?.unreadable || (status !== undefined && (!ready || admission !== undefined))),
+          onRefresh: refresh,
           body,
         })
       }
