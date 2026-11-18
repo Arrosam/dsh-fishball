@@ -135,6 +135,7 @@ export function registerReviewCases(sdk) {
     test('S12 BVA: configured approval.port=0 advertises and serves its actual OS-bound positive port', T, async () => {
       const w = await scenario(sdk, DATA.scenario.port, { rowConfig: () => ({ [S.approval]: { [S.port]: EXPECT.portZero } }) })
       assert.equal((await w.settings()).value[S.approval][S.port], EXPECT.portZero)
+      let boundPort
       for (const hostname of K1.HOSTS.loopbackNames.slice(0, -1)) {
         const metadata = await w.raw(K1.HTTP_METHOD.get, SCHEMA_TEXT.authorizationServer, { hostHeader: `${hostname}:${w.port}` })
         assert.equal(metadata.status, K1.HTTP_STATUS.ok, metadata.text)
@@ -142,11 +143,15 @@ export function registerReviewCases(sdk) {
         assert.equal(endpoint.hostname, hostname)
         assert.equal(endpoint.pathname, K1.PATHS.authorize)
         assert.equal(endpoint.protocol, K1.HOSTS.loopbackScheme)
-        const port = Number(endpoint.port)
-        assert.ok(Number.isInteger(port) && port > EXPECT.portZero && port <= S.portMax, 'metadata advertises configured 0 instead of a real bound port')
+        const advertisedPort = Number(endpoint.port)
+        assert.ok(Number.isInteger(advertisedPort) && advertisedPort > EXPECT.portZero && advertisedPort <= S.portMax, 'metadata advertises configured 0 instead of a real bound port')
+        // The first hostname only supplies a candidate. A real /authorize response verifies it.
+        const port = boundPort ?? advertisedPort
         const page = await w.approval(K1.HTTP_METHOD.get, K1.PATHS.authorize, { port, hostHeader: endpoint.host })
         assert.equal(page.status, K1.HTTP_STATUS.badRequest, page.text)
         assert.equal(page.headers['cache-control'], K1.APPROVAL_LISTENER.headers['cache-control'])
+        boundPort = port
+        assert.equal(advertisedPort, boundPort, 'changing the loopback hostname changed the advertised port')
       }
       const explicitPort = await freePort()
       assert.equal((await w.call(OP.settingsUpdate, { patch: { [S.approval]: { [S.port]: explicitPort } } })).ok, true)

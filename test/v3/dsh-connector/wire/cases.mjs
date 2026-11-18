@@ -142,7 +142,20 @@ function noteOfBytes(bytes, unit = FIXTURE.pad) {
 const MAIN = 'main'
 const UI = 'ui'
 const CONTRIB = 'contrib'
-const main = (sdk) => scenario(sdk, MAIN)
+const mainFixtures = new Map()
+const approvalPortPatch = (port) => ({ [S.approval]: { [S.port]: port } })
+function mainFixture(sdk) {
+  if (!mainFixtures.has(sdk)) {
+    mainFixtures.set(sdk, (async () => {
+      // Keep the explicit settings input as the oracle; state and metadata are both product output.
+      const port = await freePort()
+      const w = await scenario(sdk, MAIN, { rowConfig: () => approvalPortPatch(port) })
+      return { w, port }
+    })())
+  }
+  return mainFixtures.get(sdk)
+}
+const main = async (sdk) => (await mainFixture(sdk)).w
 const withUi = (sdk) => scenario(sdk, UI, { env: { FBWIRE_LINK: JSON.stringify([{ name: PACKAGES.ui.name, dir: PACKAGES.ui.dir }]) } })
 const withContrib = (sdk) => scenario(sdk, CONTRIB, { env: { FBWIRE_CONTRIBUTORS: JSON.stringify([FIXTURE.contributorName]) } })
 
@@ -291,17 +304,21 @@ function settingsRows(sdk) {
   })
   // Re-baselined by C-WIRE-2: the designated entry edit became the DSH name edit (q5; decision list item 8).
   row(sdk, 'C-WIRE-R2', 'volatile (ST)', 'Mounted --edit a limit, the approval port, the DSH name and the tokens list--> Mounted: the row\'s fiber is the same (never remounted)', async () => {
-    const w = await main(sdk)
+    const { w, port } = await mainFixture(sdk)
     const before = (await w.call('row')).fiber
     const was = (await settingsValue(w))[S.maxMessageBytes]
-    assert.equal((await setLimit(w, S.maxMessageBytes, was + 1)).ok, true)
-    assert.equal((await w.call('settingsUpdate', { patch: { [S.approval]: { [S.port]: await freePort(), [S.dshName]: FIXTURE.name.a } } })).ok, true)
-    await createToken(w, FIXTURE.label.c)
-    assert.equal((await w.call('settingsMutate', { ops: [{ op: 'unset', path: [S.approval, S.dshName] }] })).ok, true)
-    assert.equal((await setLimit(w, S.maxMessageBytes, was)).ok, true)
-    await quiet()
-    const after = await w.call('row')
-    assert.deepEqual([after.active, after.fiber], [true, before], 'the row was remounted by a settings edit')
+    try {
+      assert.equal((await setLimit(w, S.maxMessageBytes, was + 1)).ok, true)
+      assert.equal((await w.call('settingsUpdate', { patch: { [S.approval]: { [S.port]: await freePort(), [S.dshName]: FIXTURE.name.a } } })).ok, true)
+      await createToken(w, FIXTURE.label.c)
+      assert.equal((await w.call('settingsMutate', { ops: [{ op: 'unset', path: [S.approval, S.dshName] }] })).ok, true)
+      assert.equal((await setLimit(w, S.maxMessageBytes, was)).ok, true)
+      await quiet()
+      const after = await w.call('row')
+      assert.deepEqual([after.active, after.fiber], [true, before], 'the row was remounted by a settings edit')
+    } finally {
+      assert.equal((await w.call('settingsUpdate', { patch: approvalPortPatch(port) })).ok, true)
+    }
   })
   // CFG / L rows of the gap report: the kept limits (BVA min 1, refusals, no upper bound).
   for (const field of Object.keys(S.limits)) {
@@ -434,15 +451,13 @@ function httpRows(sdk) {
     assert.equal(asm.json.token_endpoint, w.urls().tokenEndpoint)
   })
   row(sdk, 'C-WIRE-R6', 'authorization_endpoint (DSH port)', 'a request to DSH\'s own port: authorization_endpoint is <scheme>//<same host name>:<approval port>/authorize', async () => {
-    const w = await main(sdk)
+    const { w, port } = await mainFixture(sdk)
     const asm = (await w.raw('GET', ASM)).json
-    const port = (await stateOf(w)).approval.port
     assert.equal(asm.authorization_endpoint, `http://${new URL(w.origin).hostname}:${port}${PATHS.authorize}`)
   })
   row(sdk, 'C-WIRE-R6', 'authorization_endpoint (localhost)', 'the same under Host localhost:<DSH port>: the endpoint names localhost on the approval port', async () => {
-    const w = await main(sdk)
+    const { w, port } = await mainFixture(sdk)
     const asm = (await w.raw('GET', ASM, { hostHeader: `localhost:${w.port}` })).json
-    const port = (await stateOf(w)).approval.port
     assert.equal(asm?.authorization_endpoint, `http://localhost:${port}${PATHS.authorize}`)
   })
   row(sdk, 'C-WIRE-R6', 'authorization_endpoint (tunnel)', 'through another origin port (a trusted tunnel host): the request\'s own origin + /authorize', async () => {
@@ -459,8 +474,7 @@ function httpRows(sdk) {
     assert.match(String(res.headers['www-authenticate']), new RegExp(K1.oauthUrls(w.origin).protectedResourceMetadata.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')))
   })
   row(sdk, 'C-WIRE-R6', 'approval listener bound', 'the approval listener answers on approval.port of DSH\'s host: GET /authorize without parameters is the connector\'s page (an error page, not a socket error)', async () => {
-    const w = await main(sdk)
-    const port = (await stateOf(w)).approval.port
+    const { w, port } = await mainFixture(sdk)
     const page = await w.approval('GET', PATHS.authorize, { port })
     assert.ok(page.status >= HTTP.badRequest && page.status < 500, 'status ' + page.status)
     assert.equal(page.headers['cache-control'], APPROVAL_LISTENER.headers['cache-control'])

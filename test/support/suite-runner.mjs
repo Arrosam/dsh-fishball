@@ -7,6 +7,8 @@ import { DSH_VERSIONS, NODE, REPO } from './constants.mjs'
 import { linkContractForSourceRun } from './contract-link.mjs'
 
 const ROOT_SUITES = Object.freeze({ dir: 'test', suffix: '.test.mjs', ownRunnerPrefix: 'native-production-' })
+export const REPORT_DESTINATION = '--test-reporter-destination'
+const REPORT = Object.freeze({ inline: `${REPORT_DESTINATION}=`, shared: Object.freeze(['stdout', 'stderr', '/dev/null']), suffixSeparator: '.', endOfOptions: '--' })
 const RUN = Object.freeze({
   serial: '--serial', parallel: '--parallel', fileConcurrency: 3, concurrency: '--test-concurrency=',
   isolationFlags: Object.freeze(['--test-isolation', '--experimental-test-isolation']), processIsolation: '--experimental-test-isolation=process',
@@ -62,6 +64,23 @@ async function runJob({ sdk, files }, args, concurrency, children) {
   }
 }
 
+function sdkReporterArgs(args, sdk) {
+  const qualify = (destination) => destination && !REPORT.shared.includes(destination)
+    ? `${destination}${REPORT.suffixSeparator}${sdk}` : destination
+  const end = args.indexOf(REPORT.endOfOptions)
+  const optionCount = end === -1 ? args.length : end
+  const scoped = [...args]
+  for (let i = 0; i < optionCount; i++) {
+    const arg = args[i]
+    if (arg.startsWith(REPORT.inline)) scoped[i] = REPORT.inline + qualify(arg.slice(REPORT.inline.length))
+    else if (arg === REPORT_DESTINATION && i + 1 < optionCount) {
+      i++
+      scoped[i] = qualify(args[i])
+    }
+  }
+  return scoped
+}
+
 /** Keep each file's dependent rows sequential; parallel mode only overlaps files and SDK jobs. */
 export async function runSuiteJobs(jobs, args, { defaultConcurrency = 1, defaultParallel = false } = {}) {
   const serial = args.includes(RUN.serial)
@@ -94,7 +113,9 @@ export async function runSuiteJobs(jobs, args, { defaultConcurrency = 1, default
   linkContractForSourceRun()
   for (const signal of RUN.signals) process.on(signal, cancel)
   try {
-    const run = (job) => runJob(job, nodeArgs, parallel ? RUN.fileConcurrency : serial ? 1 : defaultConcurrency, children)
+    // Even serial SDK jobs would truncate each other's reports if they shared a file destination.
+    const run = (job) => runJob(job, jobs.length > 1 ? sdkReporterArgs(nodeArgs, job.sdk) : nodeArgs,
+      parallel ? RUN.fileConcurrency : serial ? 1 : defaultConcurrency, children)
     let status = 0
     if (parallel) {
       const results = await Promise.allSettled(jobs.map(run))
