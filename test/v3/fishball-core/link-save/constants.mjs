@@ -110,11 +110,12 @@ export const FIXTURE = Object.freeze({
   }),
   /** A reference the user owns (never written by core, link.d.ts), in DSH's reference grammar. */
   userRef: 'FBTEST_USER_TOKEN',
-  /** The two loopback names one dual-stack fake answers under: two different origins (R9). */
+  /** The two loopback names one fake answers under: two different origins (R9). */
   host: Object.freeze({ first: K1.HOSTS.loopbackNames[0], other: K1.HOSTS.loopbackNames[1] }),
-  /** Dual-stack wildcard for the fake's web listener; the approval listener stays on 127.0.0.1. */
-  bindHost: '::',
-  approvalHost: '127.0.0.1',
+  /** Own both addresses localhost can resolve to; never serve on a wildcard. */
+  ipv4Loopback: '127.0.0.1',
+  ipv6Loopback: '::1',
+  portPairAttempts: 8,
   /** A path the not-a-connector rows put in the metadata instead of the connector's own. */
   wrong: Object.freeze({ resourcePath: '/api/other/mcp', issuerPath: '/api/other/oauth', scope: 'read', otherOrigin: 'http://localhost:1' }),
   /** R14: a refresh far beyond any plausible chain cap (about ten years). */

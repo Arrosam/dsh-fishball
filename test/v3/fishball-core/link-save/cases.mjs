@@ -19,6 +19,7 @@ import { caseTest } from '../../contract/package-boundaries/cases.mjs'
 import { CONNECT, ENDPOINT, EVENT, FIXTURE, HARNESS, HOSTED_IMPORT, IDENTITY, K1, LINK, LINK_BACKOFF, MCP, OAUTH, PKCE_METHODS, REDIRECT, SUBJECT, WEB, mcpUrl } from './constants.mjs'
 import { browser } from './fakes.mjs'
 import { linkSaveWorld, untilTrue } from './subject.mjs'
+import { registerFixtureDiscoveryCase } from './fixture-discovery.mjs'
 import { registerImportFaultCases } from './import-fault.mjs'
 import { registerRfixLinkSaveCases } from './rfix.mjs'
 import { registerMultiLinkSaveCases } from './multi.mjs'
@@ -96,6 +97,7 @@ function assertNoLeak(w, everywhere = []) {
 }
 
 export function registerLinkSaveCases(sdk) {
+  registerFixtureDiscoveryCase(sdk)
   // E-FIX-3: Connect's own MCP client load logs its failure (import-fault.mjs).
   registerImportFaultCases(sdk)
   // R-FIX-CORE (F01, F10, F16): rfix.mjs.
