@@ -154,7 +154,9 @@ coverage depends on the active SDK run in both jobs when `--sdk=both`.
 
 When two SDK jobs run, `--test-reporter-destination=report.txt` writes `report.txt.0.2.1-rc.5`
 and `report.txt.0.2.2-rc.1`, in both parallel and serial modes. `stdout`, `stderr`, and `/dev/null`
-are unchanged, as is the destination in a single-job run. The connector wire checks compare an explicit
+are unchanged, as is the destination in a single-job run.
+Pass report destinations as runner CLI flags; a destination set only in `NODE_OPTIONS` is shared by both SDK jobs.
+The connector wire checks compare an explicit
 approval port against the fixture's configured value; port `0` instead uses the advertised port verified
 by a loopback HTTP request.
 
