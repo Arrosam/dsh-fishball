@@ -8,10 +8,10 @@
  * bridge, link-save, status, settings, wire, manager), so each rule is written once.
  */
 import { createHash } from 'node:crypto'
-import { CONNECT, HOSTED_IMPORT, MCP, MESSAGE, TARGETS } from '../../../../packages/core/contracts/constants.js'
+import { APPROVAL, CONNECT, HOSTED_IMPORT, LINK, MCP, MESSAGE, TARGETS } from '../../../../packages/core/contracts/constants.js'
 import { SEAM_TARGETS } from '../../../../packages/shared/ui-seam.js'
 
-export { CONNECT, HOSTED_IMPORT, MCP, MESSAGE, SEAM_TARGETS, TARGETS }
+export { APPROVAL, CONNECT, HOSTED_IMPORT, LINK, MCP, MESSAGE, SEAM_TARGETS, TARGETS }
 
 const KIND = TARGETS.key.kind
 const ID_LETTERS = `[${TARGETS.id.alphabet}]{${TARGETS.id.randomChars}}`

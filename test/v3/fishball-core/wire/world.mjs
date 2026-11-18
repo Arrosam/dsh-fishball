@@ -32,9 +32,13 @@ if (!fs.existsSync(profile)) {
   fs.writeFileSync(manifest, JSON.stringify(pkg))
 }
 const overlay = path.join(home, 'wire.overlay.yml')
+// MULTI-1: FBW_CHILD (JSON `{targetUrl}`) makes this a hosted child for core: a stand-in for the
+// instance's child-side row, inserted under its published id, so DSH's settings lists the namespace
+// `dsh-instance-child` with that value (link.d.ts "Hosted signal"). Absent: standalone.
+const child = process.env.FBW_CHILD ? JSON.parse(process.env.FBW_CHILD) : undefined
 fs.writeFileSync(overlay, JSON.stringify([
   { id: 'agent-default-model', config: { provider: FAKE.provider, model: FAKE.model } },
-  { insert: [{ id: 'fbtest-llm', name: FAKE_LLM_MODULE }] },
+  { insert: [{ id: 'fbtest-llm', name: FAKE_LLM_MODULE }, ...(child === undefined ? [] : [{ id: C.childRow, name: C.childStandIn, config: child }])] },
 ]))
 const { ctx, shutdown } = await runProfile({ environment: loadLayeredEnv('dsh'), profile: C.profile, patchFiles: [overlay], args: ['--no-open', '--port', '0'] })
 const { model } = await import(pathToFileURL(FAKE_LLM_MODULE).href)
@@ -69,6 +73,47 @@ const ops = {
   async mutate({ path: at, value, unset = false }) { await ctx.settings.mutate(C.core, [{ op: unset ? 'unset' : 'set', path: at, ...(unset ? {} : { value }) }]); return true },
   rows: ({ ids }) => ids.map((id) => { const e = [...ctx.loader.entries()].find((e) => e.options?.id === id); return { id, present: Boolean(e), disabled: Boolean(e?.disabled), name: e?.options?.name } }),
   async disableCore() { await ctx.pluginManager.setBundleEnabled(C.core, false); return true },
+  // ---- MULTI-1: public surfaces only (ui.targets, DSH's credential store, the manager's request tools).
+  targets: () => instance()?.ui.targets.list() ?? null,
+  async targetAction({ op, args }) { return instance().ui.targets[op](...args) },
+  async askCards() { return instance().ui.asks.list() },
+  async askAnswer({ handle, answer }) { return instance().ui.asks.answer(handle, answer) },
+  async bridgeCall({ pluginId, names, target, name, args }) {
+    const b = instance().bridge(pluginId, names, target)
+    const supports = b.supports(name)
+    let result
+    try { result = await b.call(name, args) } catch (e) { result = { thrown: String(e?.message ?? e) } }
+    return { supports, result }
+  },
+  async attention({ pluginId, input, target }) { try { return await instance().attention.signal(pluginId, input, target) } catch (e) { return { thrown: String(e?.message ?? e) } } },
+  async credSet({ ref, value }) { await ctx.credentials.set(ref, value); return true },
+  async credDescribe({ ref }) { return ctx.credentials.describe(ref) },
+  async credRecords() { return (await ctx.credentials.listRecords()).map((e) => ({ key: e.key, kind: e.kind })) },
+  async credRecord({ key }) { return ctx.credentials.readRecord(key) },
+  async mutateNs({ ns, path: at, value }) { await ctx.settings.mutate(ns, [{ op: 'set', path: at, value }]); return true },
+  /** The names and descriptions of the manager's model request tools (one turn). */
+  async managerTools() { const [first] = await ops.turn(); return first?.tools.map((t) => ({ name: t.name, description: t.description })) ?? [] },
+  /** The manager's system prompt of one turn. */
+  async managerSystem() { const [first] = await ops.turn(); return first?.system ?? '' },
+  /** The manager model calls `tool` with `args` once; answers the tool-role message the next request carries. */
+  async managerCall({ tool, args }) {
+    await instance().manager.ensureSession()
+    const a = manager(); const before = model.requests.length
+    model.queue(a.session.id, [{ tool, args, id: C.multiCallId + before }])
+    a.steer(createUserMessage({ content: [{ type: 'text', text: C.turn }], source: { kind: 'user' } }))
+    await until(() => model.requests.slice(before).filter((r) => r.sessionId === a.session.id).length >= 2, C.budget.call, C.budget.poll)
+    await a.whenIdle()
+    const reqs = model.requests.slice(before).filter((r) => r.sessionId === a.session.id)
+    return { offered: reqs[0]?.tools.map((t) => t.name) ?? [], result: reqs[1]?.last.filter((m) => m.role === 'tool').at(-1) ?? null }
+  },
+  /** The ids of the messages DSH queued into the manager's inbox (durable splices of its session log). */
+  async managerInboxIds() {
+    const a = manager(); await ctx.sessions.flush(a.session)
+    const reader = await ctx.sessionPersistence.open(a.session.id, 'read')
+    try { return (await reader.read()).events.filter((e) => e.type === C.inboxSpliced).flatMap((e) => (e.data?.inserted ?? []).map((m) => m.id)) } finally { await reader.close() }
+  },
+  /** The manager session's ids (one manager, MULTI-1 requirement 11). */
+  agents: () => ctx.agents.list().map((x) => x.session.id),
   async shutdown() { await shutdown.shutdown(C.first); return true },
 }
 process.on('message', async (msg) => {
