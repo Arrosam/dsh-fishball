@@ -11,6 +11,7 @@
  * The settings rows are F-WIRE's (W3 brief, F-PAIR notes), so the defaults they need are exported
  * here as `IDENTITY`.
  */
+import { SEAM_PAIRING } from 'fishball-shared/ui-seam'
 import { STATUS } from '../link/index.js'
 
 /**
@@ -42,16 +43,10 @@ export const IDENTITY = Object.freeze({
  * - needId: `pair` answered `id-taken`; held until `identity.id` changes, the token stays (row 13);
  * - idMismatch: a record exists but the token request returned the pair-only scope (R-ID-10,
  *   row 9): a new token is needed, and `pair` is never called.
+ * The words are fishball-shared's `SEAM_PAIRING.state` (R-FIX-FUI), so fishball-ui's pairing card
+ * draws the same ones without importing core.
  */
-export const PAIRING_STATE = Object.freeze({
-  unpaired: 'unpaired',
-  paired: 'paired',
-  warnMatch: 'warn-match',
-  warnMismatch: 'warn-mismatch',
-  needToken: 'need-token',
-  needId: 'need-id',
-  idMismatch: 'id-mismatch',
-})
+export const PAIRING_STATE = SEAM_PAIRING.state
 
 /** The states in which the link is held: the attempt ends before the next request. */
 export const HELD_STATES = Object.freeze([
@@ -65,15 +60,14 @@ export const HELD_STATES = Object.freeze([
  */
 export const HOLD_STATUS = STATUS.refused
 
-/** The warning's choices (R-ID-07), as `pairing.state().choices` lists them. */
-export const CHOICE = Object.freeze({
-  /** Continue with this pairing: only with `idMatches: true`, and only once the box is ticked. */
-  continue: 'continue',
-  /** Use a new token and a new id (`idMatches: true`): the id stays held by the bound entry. */
-  newTokenAndId: 'new-token-and-id',
-  /** Use a new token (`idMatches: false`). */
-  newToken: 'new-token',
-})
+/**
+ * The warning's choices (R-ID-07), as `pairing.state().choices` lists them; fishball-shared's
+ * `SEAM_PAIRING.choice` (R-FIX-FUI).
+ * - continue: Continue with this pairing, only with `idMatches: true`, and only once the box is ticked;
+ * - newTokenAndId: Use a new token and a new id (`idMatches: true`): the id stays held by the bound entry;
+ * - newToken: Use a new token (`idMatches: false`).
+ */
+export const CHOICE = SEAM_PAIRING.choice
 
 /** The choices of a state with no warning. */
 export const NO_CHOICES = Object.freeze([])

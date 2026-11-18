@@ -25,7 +25,9 @@ its guard patch reaches every row); in a standalone DSH you install it yourself,
 - Guard rows: the session-creating service rows (`schedule`, `open-in-app`,
   `terminal-controller`), `dsh-instance` (no nested hosted Fishball), every DSH-shipped agent preset
   (switched off, never deleted), and the read-only sandbox, `ask` approval and read-only permission
-  preset. The UI guard rows are fishball-ui's. The owner may override any guard; core then reports
+  preset. fishball-ui's UI guard rows (`ui-*`, `entry-customization`) and the hosted child's Preview
+  Notice acknowledgement are here too, but apply only while fishball-ui is in the profile; without
+  fishball-ui core leaves DSH's own UI as it is. The owner may override any guard; core then reports
   `guards-overridden` and changes nothing back.
 
 Core's rows are not `required`: a failure is that row's alone, and the DSH still boots.

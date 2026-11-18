@@ -165,3 +165,10 @@ field, the single Connect block over `/api/fishball/connect`, `registerSettingsR
 UIPF-CORE Connect-section rows. Kept unchanged: SET3-UC-01 main 1-2 / main 3 (namespace) / A1 / A3,
 SET3-UC-02 main 3 / A1 / E2, SET3-EP-01 6-7, SET3-DT-01 6, SET3-ST-01 1-2, the entries
 (UC-07/08, DT-02/03/04, EP-05, ST-04, BVA-03 entries), UC-09, UC-10 and the model catalog rows.
+## R-FIX-FUI F5 / F6 (`connect-cases.mjs`): the Connect control's races and press notices
+
+Every Connect GET / POST is held and answered by the case. CONNECT-ST-01 (an older read never
+publishes after a newer one), ST-02 (a read started before a press is ignored), ST-03 (after unmount:
+no window.open, no GET, no state update), ST-04 (only the latest press opens its page and publishes its
+notice), CONNECT-DT-01 (press refusal × statuses after it, en and zh: the alert stays while (state,
+code) is unchanged, goes when it changes). Run against the pre-task chunk, 17 of the 20 rows fail.

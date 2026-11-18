@@ -11,10 +11,12 @@
  * the session whose id the card stream names as the manager's. Every other session draws nothing.
  *
  * The state is the server half's (src/asks/): the stream route sends `{managerSessionId, cards}`
- * and the answer route commits once. A card shows the asking session, its question, the call's
+ * and the answer route commits once. A card shows the DSH it came from (MULTI-3: the target's
+ * resolved name, plain text), the asking session, its question, the call's
  * arguments and the session's reason when the request carries them (the user, 2026-11-17), and the
- * card's choices (Allow / Reject, or Reject alone for incomplete arguments) with an optional reason; an answered or closed card shows its state, with no control, and
- * the server refuses a late answer anyway.
+ * card's choices (Allow / Reject, or Reject alone for incomplete arguments) with an optional reason; an answered, closed or voided
+ * (its target removed, Q07) card shows its state, with no control, and the server refuses a late
+ * answer anyway. A card is keyed and answered by its opaque `handle` (MULTI-0), never its raw id.
  *
  * The words are the approval wording of the earlier Fishball page (en and zh), kept as they were;
  * the zh review is deferred by the user, so they are not reworded here.
@@ -40,9 +42,14 @@ window.__ModuleLoader__.load({
       // (page-relative), and CARD_STATE.
       events: 'api/fishball/asks/events',
       answer: 'api/fishball/asks/answer',
-      jsonHeaders: Object.freeze({ 'content-type': 'application/json' }),
-      state: Object.freeze({ open: 'open', answered: 'answered', closed: 'closed' }),
-      css: Object.freeze({ id: 'fishball-asks-style', root: 'fb-asks', card: 'fb-ask-card', meta: 'fb-ask-meta', from: 'fb-ask-from', time: 'fb-ask-time', body: 'fb-ask-body', badge: 'fb-ask-badge', question: 'fb-ask-question', detail: 'fb-ask-detail', label: 'fb-ask-label', args: 'fb-ask-args', row: 'fb-ask-row', reason: 'fb-ask-reason', error: 'fb-ask-error' }),
+      state: Object.freeze({ open: 'open', answered: 'answered', closed: 'closed', voided: 'voided' }),
+      /**
+       * MULTI-0 (`SEAM_TARGETS.ask`, restated): the answer body names the card's opaque
+       * target-qualified `handle`, never its raw `approvalId`, so two DSHs' equal ids are two cards
+       * answered each through its own target (PLAN-MULTI §5).
+       */
+      handleField: 'handle',
+      css: Object.freeze({ id: 'fishball-asks-style', root: 'fb-asks', card: 'fb-ask-card', meta: 'fb-ask-meta', source: 'fb-ask-source', hidden: 'fb-ask-visually-hidden', from: 'fb-ask-from', time: 'fb-ask-time', body: 'fb-ask-body', badge: 'fb-ask-badge', question: 'fb-ask-question', detail: 'fb-ask-detail', label: 'fb-ask-label', args: 'fb-ask-args', row: 'fb-ask-row', reason: 'fb-ask-reason', error: 'fb-ask-error' }),
       // K1's ARGUMENTS_STATUS word for whole arguments (core's AskCard.argumentsStatus, ask-card.d.ts).
       argumentsComplete: 'complete',
       // DSH's Tag tones: an open card sits in the approval card's warn band; a finished one is quiet.
@@ -70,11 +77,18 @@ window.__ModuleLoader__.load({
         lightScope: 'body:not([data-ds-dark-theme])',
         ink: 'color-mix(in srgb,var(--dsw-alias-state-warn-label) 50%,var(--dsw-alias-label-primary))',
       }),
+      /**
+       * R-FIX-FUI: the Intl locale a card's time is written in, per page language (kit `useLang`), as
+       * DSH's own schedule copy names one per language; the browser's time zone is kept.
+       */
+      timeLocale: Object.freeze({ en: 'en', zh: 'zh-CN' }),
     })
 
     const en = {
       waiting: 'Fishball is waiting for your answer',
       from: 'From',
+      dsh: 'DSH:',
+      'dsh.unnamed': 'Name unavailable',
       'choice.allow': 'Allow once',
       'choice.reject': 'Reject',
       reason: 'Reason',
@@ -83,11 +97,13 @@ window.__ModuleLoader__.load({
       'detail.incomplete': 'The arguments are incomplete, so this request can only be rejected.',
       'state.answered': 'answered',
       'state.closed': 'closed',
-      failed: 'The answer was refused.',
+      'state.voided': 'voided',
     }
     const zh = {
       waiting: 'Fishball 正在等你回答',
       from: '来自',
+      dsh: 'DSH：',
+      'dsh.unnamed': '名字未知',
       'choice.allow': '允许一次',
       'choice.reject': '拒绝',
       reason: '理由',
@@ -96,7 +112,7 @@ window.__ModuleLoader__.load({
       'detail.incomplete': '参数不完整，因此只能拒绝此请求。',
       'state.answered': '已回答',
       'state.closed': '已关闭',
-      failed: '回答被拒绝。',
+      'state.voided': '已作废',
     }
 
     // UI-POLISH-F: the layout of DSH's own approval card (dsh-client-ui-approval, both SDKs): a warn
@@ -113,6 +129,10 @@ window.__ModuleLoader__.load({
       `.${ASKS_UI.css.card}${openCard} .${ASKS_UI.css.meta}{background:var(--dsw-alias-state-warn-tertiary);color:var(--dsw-alias-label-secondary)}`,
       `${ASKS_UI.waitingInk.lightScope} .${ASKS_UI.css.card}${openCard} .${ASKS_UI.css.badge}{color:${ASKS_UI.waitingInk.ink}}`,
       `.${ASKS_UI.css.from}{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}`,
+      // A label read by assistive technology only ("DSH:" before the source name).
+      `.${ASKS_UI.css.hidden}{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}`,
+      // Which DSH asks (MULTI-3): its name as text, cut visually with the full name as the title.
+      `.${ASKS_UI.css.source}{min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;unicode-bidi:plaintext;font:var(--dsw-font-xxs-strong-12);color:var(--dsw-alias-label-primary)}`,
       `.${ASKS_UI.css.time}{margin-left:auto;white-space:nowrap}`,
       `.${ASKS_UI.css.body}{display:grid;gap:8px;padding:12px 16px 14px}`,
       `.${ASKS_UI.css.question}{margin:0;white-space:pre-wrap;font:var(--dsw-font-s-strong-14);color:var(--dsw-alias-label-primary)}`,
@@ -132,59 +152,40 @@ window.__ModuleLoader__.load({
 
     const apiUrl = (path) => new URL(path, document.baseURI).toString()
 
-    /** One shared stream for every mounted dock; reconnects by itself (EventSource). */
-    function cardStream() {
-      let snapshot = Object.freeze({ managerSessionId: null, cards: Object.freeze([]) })
-      const listeners = new Set()
-      let source
-      const open = () => {
-        source = new EventSource(apiUrl(ASKS_UI.events))
-        source.onmessage = (message) => {
-          let next
-          try { next = JSON.parse(message.data) } catch { return }
-          // A frame that is not the route's shape keeps the last good snapshot.
-          if (next === null || typeof next !== 'object' || !Array.isArray(next.cards)) return
-          snapshot = Object.freeze(next)
-          for (const listener of [...listeners]) listener()
-        }
-      }
-      return {
-        get: () => snapshot,
-        subscribe(listener) {
-          listeners.add(listener)
-          if (source === undefined) open()
-          return () => {
-            listeners.delete(listener)
-            if (listeners.size === 0 && source !== undefined) { source.close(); source = undefined }
-          }
-        },
-      }
-    }
+    /**
+     * One shared stream for every mounted dock (kit `liveStream`: EventSource retries by itself, and
+     * the kit marks the cached cards stale meanwhile, R-FIX-FUI). A frame that is not the route's
+     * shape keeps the last good snapshot.
+     */
+    const cardStream = (kit) => kit.liveStream({
+      url: () => apiUrl(ASKS_UI.events),
+      valid: (next) => next !== null && typeof next === 'object' && Array.isArray(next.cards),
+      initial: Object.freeze({ managerSessionId: null, cards: Object.freeze([]) }),
+    })
 
-    function makeDock(stream, kit) {
+    function makeDock(ctx, stream, kit, presses) {
       /** One card: the asking session, the question, and Allow / Reject with an optional reason. */
-      function AskCard({ card, t }) {
+      function AskCard({ card, t, stale, lang }) {
         const [reason, setReason] = React.useState('')
-        const [sending, setSending] = React.useState(false)
-        const [failed, setFailed] = React.useState(false)
+        // The press state is the part's, keyed by the card's handle (kit `pressStore`), so a remount
+        // of the dock keeps an in-flight answer locked.
+        const { sending, refused } = kit.usePress(presses, card.handle)
         const open = card.state === ASKS_UI.state.open
-        const send = async (choice) => {
-          setSending(true)
-          setFailed(false)
-          let ok = false
-          try {
-            const response = await fetch(apiUrl(ASKS_UI.answer), { method: 'POST', headers: ASKS_UI.jsonHeaders, body: JSON.stringify({ approvalId: card.approvalId, choice, text: reason }) })
-            ok = (await response.json())?.ok === true
-          } catch { ok = false }
-          setSending(false)
-          // A refusal that closed the card arrives on the stream; any other leaves it answerable.
-          if (!ok) setFailed(true)
-        }
-        return h('div', { className: [kit.css.card, ASKS_UI.css.card].join(' '), 'data-fishball-ask': card.approvalId, 'data-fishball-ask-state': card.state },
+        // A card from a stream that is not live may be answered or closed already: no control acts
+        // on it until a fresh frame (R-FIX-FUI). Core still refuses a late answer anyway.
+        const locked = sending || stale
+        // A refusal that closed the card arrives on the stream too; the sentence says why now
+        // (MULTI-0 `SEAM_TARGETS.http`: a voided or closed card answers `expired`).
+        const send = (choice) => presses.run(card.handle, () => kit.press(ASKS_UI.answer, { [ASKS_UI.handleField]: card.handle, choice, text: reason }),
+          (answer) => ({ refused: kit.refusalText(answer, lang) }))
+        // The DSH the card came from (MULTI-3; PLAN-MULTI §5): its name as plain text, untrusted data.
+        const source = card.source?.name ?? t('dsh.unnamed')
+        return h('div', { className: [kit.css.card, ASKS_UI.css.card].join(' '), 'data-fishball-ask': card.handle, 'data-fishball-ask-state': card.state },
           h('div', { className: ASKS_UI.css.meta },
             h(Tag, { tone: open ? ASKS_UI.tone.open : ASKS_UI.tone.done, className: ASKS_UI.css.badge }, open ? t('waiting') : t('state.' + card.state)),
+            h('span', { className: ASKS_UI.css.source, title: source, 'data-fishball-ask-source': card.source?.targetId }, h('span', { className: ASKS_UI.css.hidden }, t('dsh')), source),
             h('span', { className: ASKS_UI.css.from }, t('from') + ': ' + (card.sessionTitle ?? card.sessionId)),
-            h('span', { className: ASKS_UI.css.time }, new Date(card.askedAt).toLocaleString())),
+            h('span', { className: ASKS_UI.css.time }, new Date(card.askedAt).toLocaleString(ASKS_UI.timeLocale[lang]))),
           h('div', { className: ASKS_UI.css.body },
             h('p', { className: ASKS_UI.css.question }, card.question),
             // The user, 2026-11-17: "Show arguments and reason". Plain text children: React escapes them.
@@ -196,36 +197,40 @@ window.__ModuleLoader__.load({
               ? h('p', { className: ASKS_UI.css.detail, 'data-fishball-ask-incomplete': true }, t('detail.incomplete')) : null,
             open ? h('textarea', {
               className: ASKS_UI.css.reason, rows: ASKS_UI.reasonRows, value: reason, placeholder: t('reason'), 'aria-label': t('reason'),
-              disabled: sending, onChange: (event) => setReason(event.target.value),
+              disabled: locked, onChange: (event) => setReason(event.target.value),
             }) : null,
             open ? h('div', { className: ASKS_UI.css.row },
               card.choices.map((choice) => h(Button, {
                 key: choice, type: 'button', size: 'sm', variant: choice === card.choices[0] ? 'primary' : 'outline',
-                disabled: sending, 'data-fishball-ask-choice': choice, onClick: () => send(choice),
+                disabled: locked, 'data-fishball-ask-choice': choice, onClick: () => send(choice),
               }, t('choice.' + choice)))) : null,
-            failed && open ? h('p', { className: ASKS_UI.css.error, role: 'alert' }, t('failed')) : null))
+            refused !== null && open ? h('p', { className: ASKS_UI.css.error, role: 'alert' }, refused) : null))
       }
 
       // `t` is the slot's own locale prop (registered with `locale`), so a language switch re-renders
       // the dock, as DSH's goal and queue docks are drawn.
       return function FishballAsks({ sessionId, t }) {
-        const { managerSessionId, cards } = React.useSyncExternalStore(stream.subscribe, stream.get)
+        const lang = kit.useLang(ctx)
+        const { frame: { managerSessionId, cards }, health } = React.useSyncExternalStore(stream.subscribe, stream.get)
         // Only Fishball's own conversation shows its cards (Q-U2: never another session's view).
         if (sessionId === undefined || sessionId !== managerSessionId || cards.length === 0) return null
-        return h('div', { className: [kit.css.dock, ASKS_UI.css.root].join(' '), 'data-fishball-asks': true }, cards.map((card) => h(AskCard, { key: card.approvalId, card, t })))
+        const stale = health !== kit.HEALTH.live
+        return h('div', { className: [kit.css.dock, ASKS_UI.css.root].join(' '), 'data-fishball-asks': true, 'data-fishball-asks-stale': stale ? health : undefined },
+          stale ? h('div', { className: kit.css.card }, h(kit.StreamNotice, { health, lang })) : null,
+          cards.map((card) => h(AskCard, { key: card.handle, card, t, stale, lang })))
       }
     }
 
     /** The part as a client plugin over fishball-ui's kit (client.js `kit`). */
     function asksPart(kit) {
       function apply(ctx) {
-        const stream = cardStream()
+        const stream = cardStream(kit)
         ctx.effect(() => ctx.locale.register(ASKS_UI.locale, { en, zh }), 'fishball asks: dictionaries')
         ctx.effect(() => kit.mountStyle(ASKS_UI.css.id, css), 'fishball asks: styles')
         ctx.effect(() => ctx.slots.inject(ASKS_UI.slot, () => ctx.slots.register({
           name: ASKS_UI.slot, id: ASKS_UI.id, order: ASKS_UI.order, locale: ASKS_UI.locale,
           inject: (sessionId) => ({ sessionId }),
-        }, makeDock(stream, kit))), 'fishball asks: card dock')
+        }, makeDock(ctx, stream, kit, kit.pressStore()))), 'fishball asks: card dock')
       }
       return Object.freeze({ name: ASKS_UI.name, inject: ['slots', 'locale'], apply })
     }

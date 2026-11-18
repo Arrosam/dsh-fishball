@@ -8,6 +8,12 @@ import { page, firstFrame, routeStatus } from './subject.mjs'
 import { U } from './constants.mjs'
 import { registerModelPolishCases } from './polish-cases.mjs'
 import { registerStripCases } from './strip-cases.mjs'
+import { registerCatalogCases } from './catalog-cases.mjs'
+import { registerTargetsCases } from './targets-cases.mjs'
+import { FRAME, SEAM_TARGETS, WITHDRAWN } from './targets-constants.mjs'
+import { withdrawnRow } from './withdrawn.mjs'
+
+const STATES = Object.freeze(Object.values(SEAM_TARGETS.state))
 /** Press the dialog's dismiss control, then let a window focus pass (a reopen trigger it must ignore). */
 async function dismiss(p) {
   await p.press(p.buttons().find((n) => U.dismiss.test(textOf(n))))
@@ -22,6 +28,10 @@ export function registerModelDialogCases(sdk) {
   // UI-POLISH-F §4 (grouped choices, aria-labels) and §2 (the drawn status card).
   registerModelPolishCases(sdk)
   registerStripCases(sdk)
+  // R-FIX-FUI F4: the catalog is read on every opening.
+  registerCatalogCases(sdk)
+  // MULTI-3: the per-target frame, the sidebar target list, the ask card's source and handle.
+  registerTargetsCases(sdk)
   for (const lang of U.lang) {
     test(`${sdk} MODEL-EP-01 ${lang} unset model prompts with all catalog models`, async (t) => {
       const p = await page(t, sdk, { lang })
@@ -82,21 +92,31 @@ export function registerModelDialogCases(sdk) {
     const h = await get(); const rows = await h.call('rows', { ids: [U.row] })
     assert.ok(rows[U.first].present); assert.equal(rows[U.first].disabled, true)
   })
+  // Re-baselined (MULTI-3 requirement B): the strip route now serves targetsView's frame
+  // {on, title, empty, notices, targets, words}; a standalone DSH with no target is on with an empty list.
   for (const lang of U.lang) test(`${sdk} STRIP-SYS-01 ${lang} immediate SSE frame contract`, async () => {
     const h = await get(); const r = await firstFrame(h, lang)
-    assert.equal(r.status, U.success); assert.ok(r.contentType.includes(U.sse)); assert.ok(Array.isArray(r.frame.lines))
-    for (const l of r.frame.lines) { assert.equal(typeof l.kind, 'string'); assert.equal(typeof l.text, 'string'); assert.ok(l.text.length) }
-    assert.ok(r.frame.control === null || U.actions.includes(r.frame.control.action))
+    assert.equal(r.status, U.success); assert.ok(r.contentType.includes(U.sse))
+    assert.deepEqual(Object.keys(r.frame).sort(), [...FRAME.keys].sort())
+    assert.ok(Array.isArray(r.frame.targets) && Array.isArray(r.frame.notices))
+    for (const target of r.frame.targets) {
+      assert.ok(STATES.includes(target.state), target.state)
+      for (const l of target.lines) { assert.equal(typeof l.kind, 'string'); assert.equal(typeof l.text, 'string'); assert.ok(l.text.length) }
+      assert.ok(target.control === null || U.actions.includes(target.control.action))
+    }
+    if (r.frame.on && r.frame.targets.length === 0) assert.ok(typeof r.frame.empty === 'string' && r.frame.empty.length > 0, 'no empty text')
   })
-  test(`${sdk} STRIP-DT-01 controls use core Connect and cancel routes`, async () => {
+  // Withdrawn (MULTI-0 review S6): the K3a Connect routes this row called no longer exist.
+  withdrawnRow(sdk, 'STRIP-DT-01', 'K3a routes', 'controls use core Connect and cancel routes', WITHDRAWN.connectRoutes)
+  // MULTI-3 / MULTI-0 review fixes (SEAM_TARGETS.http): core's per-target Connect route in a real
+  // standalone DSH; with no target in the list any id is unknown → 404 unknown-target, and the K3a route is gone.
+  // Runs as a todo (reported, not gating) until MULTI-1's core serves the per-target routes on this branch.
+  test(`${sdk} STRIP-DT-02 target Connect route answers per SEAM_TARGETS.http`, { todo: WITHDRAWN.needsCore }, async () => {
     const h = await get()
-    const begin = await request(h, C.routes.connect, {})
-    assert.equal(begin.status, C.status.ok)
-    assert.equal(begin.json.outcome, 'needs-configuration')
-    assert.ok(C.configurationCodes.includes(begin.json.code))
-    const cancel = await request(h, C.routes.cancel, {})
-    assert.equal(cancel.status, C.status.ok)
-    assert.ok(C.connectStates.includes(cancel.json.state))
+    const unknown = await request(h, SEAM_TARGETS.route.connect, { [SEAM_TARGETS.route.targetIdField]: 't-fbtestunknownaaaa' })
+    assert.equal(unknown.status, SEAM_TARGETS.http.notFound, unknown.text)
+    assert.equal(unknown.json?.code, SEAM_TARGETS.refusal.unknownTarget)
+    assert.equal((await request(h, C.routes.connect, {})).status, C.status.missing, 'the withdrawn K3a Connect route still answers')
   })
   // DESIGN §20 "Live core on/off: fishball-ui's rows read core's selection in the profile manifest
   // while HMR runs"; requirements 1.41 Q-G2 = A: without core fishball-ui changes nothing and only
@@ -108,8 +128,9 @@ export function registerModelDialogCases(sdk) {
     await until(async () => { rows = await h.call('rows', { ids: [U.row, U.missingRow] }); return rows[U.first].disabled === false && rows[U.one].present && !rows[U.one].disabled }, C.budget.call, C.budget.poll)
     assert.equal(rows[U.first].disabled, false); assert.equal(rows[U.one].present, true); assert.equal(rows[U.one].disabled, false)
     assert.equal(await routeStatus(h, U.route.strip + U.lang[U.first]), C.status.missing)
-    assert.equal((await request(h, C.routes.connect)).status, C.status.missing)
-    assert.equal((await request(h, C.routes.connect, {})).status, C.status.missing)
+    // Re-baselined (MULTI-0 review S6): the Connect route is core's per-target one; without core it is not served (404) or answers 503 TARGETS_UNAVAILABLE.
+    const connect = await request(h, SEAM_TARGETS.route.connect, { [SEAM_TARGETS.route.targetIdField]: 't-fbtestunknownaaaa' })
+    assert.ok([C.status.missing, SEAM_TARGETS.http.unavailable].includes(connect.status), `${connect.status} ${connect.text}`)
   })
   test(`${sdk} MODEL browser page reload and real settings navigation`, { todo: U.todo }, () => {})
 }

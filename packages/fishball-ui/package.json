@@ -1,7 +1,7 @@
 {
   "name": "fishball-ui",
   "version": "1.0.0-alpha.1",
-  "description": "Fishball's UI plugin: every UI change inside a Fishball DSH (the Fishball page, the UI guard rows, the Recommended tab, the status strip, the pairing views, the ask cards, the model dialog and the two settings entries), drawn over fishball-core's backend.",
+  "description": "Fishball's UI plugin: every UI change inside a Fishball DSH (the Fishball page, the UI guard rows, the Recommended tab, the sidebar's DSH targets with their pairing views, the ask cards, the model dialog and the two settings entries), drawn over fishball-core's backend.",
   "icon": "./assets/fishball-ui-icon.svg",
   "license": "MIT",
   "repository": {
@@ -46,10 +46,6 @@
   "bundleDependencies": [
     "fishball-shared"
   ],
-  "//peerDependencies": "Host packages resolved from the running DSH installation, as for fishball-core: dsh-app-boot reads fishball-ui's own patch back (src/guards.js). '*' because engines.dsh is the real compatibility gate.",
-  "peerDependencies": {
-    "@deepseek-ai/dsh-app-boot": "*"
-  },
   "dsh": {
     "bundle": {
       "patch": "./cordis.patch.yml"
