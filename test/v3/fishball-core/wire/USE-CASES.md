@@ -74,3 +74,8 @@ the status snapshot" (the `target.url` setting is withdrawn).
   connected and one unconnected target instead.
 - The withdrawn K3a routes: "withdrawn" is checked as "not 200" (404 / 405 / 503 are all accepted).
 - A target POST route body without `targetId`: 400 (malformed) or 404 (missing id) are both read from SEAM_TARGETS.
+| MULTI-TOOL-EP-02 | EP (adversarial server name) | the name stays inside the random-marker block of every description; the persona names the scheme `mcp__<dsh>__<tool>_<id>` and no server name |
+
+- Not asserted (not in the freeze): the implementer's trusted `DSH target id <id>.` line and the
+  before-discovery wording of descriptions; only the frozen framing (`TARGETS.text.toolSource` inside
+  the `TEXT.untrustedOpen/Close` block, then the trusted description) is checked.
