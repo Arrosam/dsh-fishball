@@ -21,6 +21,7 @@ import { BUDGET, FILES, FIXTURE, HTTP, K1, K2, LATER, PACKAGES, SURFACE } from '
 import { pluginEntry, resolveConfig, revocationNoteText, settingsPageRoutes, uiRoutes } from './subject.mjs'
 import { freePort, holdPort, scenario, sdkClient } from './world.mjs'
 import { until } from '../../../support/util.mjs'
+import { okCall as wireSuccess, refusedCall as wireRefusal } from './review/steps.mjs'
 
 const T = { timeout: BUDGET.testMs }
 const { TOOL, REFUSAL, SCOPE, PATHS, RESOURCE, EVENT_TYPE, READ_ROLE, OAUTH_METADATA, GRANT, APPROVAL_LISTENER, CONNECTOR_STATUS, SETTINGS_REFUSAL, PAIR_ONLY, PROTOCOL, MAILBOX, OAUTH_ERROR } = K1
@@ -169,6 +170,7 @@ export function registerWireCases(sdk) {
   machineRows(sdk)
   isolationRows(sdk)
   sessionRows(sdk)
+  placementRows(sdk)
   readRows(sdk)
   uiRows(sdk)
   tokensServiceRows(sdk)
@@ -760,6 +762,83 @@ function isolationRows(sdk) {
     const w = await main(sdk)
     const p = await pairedPrincipal(t, w)
     await refused(p.client, TOOL.inboxAck, { receipts: [{ eventId: 'fbtest-unknown', payloadDigest: '0'.repeat(64) }] }, REFUSAL.unknownEvent)
+  })
+}
+
+// ============================================================ workspace placement through stock MCP
+function placementRows(sdk) {
+  const suite = 'workspace-placement'
+  const args = (message, folder) => ({ title: FIXTURE.title, message, attachments: [], ...(folder === undefined ? {} : { folder }) })
+  const register = (w, title) => w.call('registerWorkspace', { name: fresh(suite), title })
+  const folderHelp = (text) => {
+    assert.match(text ?? '', /workspace[\s_-]*(?:id|identifier)/i, 'does not explain the workspace ID form')
+    assert.match(text ?? '', /absolute(?:[\s-]+(?:existing|directory|filesystem|folder))*[\s-]+(?:path|director(?:y|ies)|folder)/i, 'does not explain the absolute path form')
+  }
+  row(sdk, suite, 'discovery', 'the published session_start guidance distinguishes workspace IDs and existing absolute directories from names', async (t) => {
+    const w = await scenario(sdk, suite)
+    const { client } = await pairedPrincipal(t, w)
+    const start = (await client.listTools()).tools.find(({ name }) => name === TOOL.sessionStart)
+    assert.ok(start?.inputSchema.required.includes('folder'), 'folder is not advertised as required')
+    assert.equal(start.inputSchema.properties.folder.type, 'string')
+    const guidance = [start.description, start.inputSchema.properties.folder.description].filter(Boolean).join(' ')
+    folderHelp(guidance)
+    const naming = /\b(?:(?:workspace|display)[\s-]+)*(?:names?|titles?)\b/i
+    const exclusion = /\b(?:not|never|reject\w*|unsupported|invalid|cannot|instead of|rather than)\b/i
+    assert.ok(guidance.split(/[.!?;]/).some((clause) => naming.test(clause) && exclusion.test(clause)), 'no warning that display names are not accepted')
+  })
+  row(sdk, suite, 'placement DT', 'ID and canonical path attach to the exact group; an explicitly requested unregistered directory stays ungrouped', async (t) => {
+    const w = await scenario(sdk, suite)
+    const { client } = await pairedPrincipal(t, w)
+    const title = fresh('Same display title')
+    const first = await register(w, title)
+    const second = await register(w, title)
+    assert.notEqual(first.id, second.id)
+    const alias = path.join(w.home, fresh('directory-alias'))
+    fs.symlinkSync(second.path, alias, 'dir')
+    const loose = await w.call('folder', { name: fresh('ungrouped') })
+    for (const [folder, cwd, group] of [[first.id, first.path, first.id], [second.path, second.path, second.id], [alias, second.path, second.id], [loose, loose, null]]) {
+      const before = await w.call('placementState')
+      const message = fresh(FIXTURE.message)
+      const s = await wireSuccess(client, TOOL.sessionStart, args(message, folder))
+      assert.equal(s.managed, true)
+      assert.equal(s.workspaceError, undefined)
+      await w.call('waitIdle', { sessionId: s.sessionId })
+      const after = await w.call('placementState')
+      const added = after.sessions.filter(({ id }) => !before.sessions.some((old) => old.id === id))
+      assert.deepEqual(added.map(({ id }) => id), [s.sessionId], 'not exactly one new persisted session')
+      assert.equal(fs.realpathSync(added[0].cwd), fs.realpathSync(cwd), 'wrong working directory')
+      assert.deepEqual(after.groups.filter(({ members }) => members.includes(s.sessionId)).map(({ id }) => id), group === null ? [] : [group], 'wrong workspace membership')
+      const seen = await w.call('session', { sessionId: s.sessionId })
+      assert.ok(seen.requests > 0 && seen.events.some((e) => e.type === 'user/message' && e.text.includes(message)), 'first message did not reach the new session')
+    }
+  })
+  row(sdk, suite, 'refusal EP/BVA', 'invalid form, unresolved selector and unusable location: explain accepted forms; never create, attach or send', async (t) => {
+    const w = await scenario(sdk, suite)
+    const { client } = await pairedPrincipal(t, w)
+    const named = await register(w, 'Default workspace')
+    const ordinary = await register(w, fresh('Ordinary title'))
+    const stale = await register(w, fresh('Stale title'))
+    // Remove only this disposable, empty fixture directory, never a user workspace.
+    assert.equal(path.dirname(stale.path), path.join(w.home, 'work'))
+    fs.rmdirSync(stale.path)
+    const missing = path.join(w.home, fresh('missing'))
+    const file = path.join(w.home, fresh('regular-file'))
+    fs.writeFileSync(file, '', { flag: 'wx' })
+    const { forbidden, invalidArguments, unknownSession } = REFUSAL
+    const privateId = fresh('private-unresolved-selector')
+    const privateValues = [privateId, ordinary.title, stale.id, stale.path, w.home, path.basename(missing), path.basename(file)]
+    for (const [folder, code] of [[undefined, invalidArguments], ['', invalidArguments], [false, invalidArguments], [null, invalidArguments],
+      ['x', forbidden], [privateId, forbidden], ['relative/directory', forbidden], [named.title, forbidden], [ordinary.title, forbidden],
+      [missing, unknownSession], [file, unknownSession], [stale.id, unknownSession]]) {
+      const before = await w.call('placementState')
+      const result = await wireRefusal(client, TOOL.sessionStart, args(fresh(FIXTURE.message), folder), code)
+      folderHelp(result.message)
+      // wireRefusal also checks that the sole text block decodes to this exact structured envelope.
+      for (const sentinel of privateValues) assert.ok(!JSON.stringify(result).includes(sentinel), 'refusal disclosed a private selector or host path')
+      assert.deepEqual(await w.call('placementState'), before, 'refusal created a session, changed group membership or sent a turn')
+      assert.equal(fs.existsSync(missing), false)
+      assert.equal(fs.existsSync(stale.path), false)
+    }
   })
 }
 

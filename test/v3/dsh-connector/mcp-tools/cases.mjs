@@ -154,6 +154,24 @@ function useCases(sdk) {
     assert.deepEqual(w.managed.managed(), [])
   })
 
+  // The host may discover an attach failure *after* creation. A retry would create a duplicate.
+  world(sdk, 'workspace-placement', 'partial attach ST', 'the existing session ID and attach warning survive tools/call; no second start', async (t) => {
+    const folders = []
+    const warning = 'workspace-attach-failed'
+    const domain = { sessions: { async start({ folder }, { onCreated }) {
+      folders.push(folder)
+      await onCreated(FIXTURE.s1)
+      return { sessionId: FIXTURE.s1, workspaceError: warning }
+    } } }
+    const w = await toolsWorld(t, sdk, { domain })
+    const p = await w.full(FIXTURE.idP, FIXTURE.nameP)
+    const client = await w.connect(p.token)
+    const result = assertSuccess(await client.callTool({ name: TOOL.sessionStart, arguments: startArgs() }))
+    assert.deepEqual([result.sessionId, result.managed, result.workspaceError], [FIXTURE.s1, true, warning])
+    assert.deepEqual(folders, [FIXTURE.folder])
+    assert.equal(w.managed.managerOf(result.sessionId), p.principalKey)
+  })
+
   // WATCH-UC-03 — A client calls a removed V2 watch tool.
   world(sdk, CASE.watchUc03, 'main', `tools/list contains none of ${REMOVED.watchTools.join(', ')}`, async (t) => {
     const w = await toolsWorld(t, sdk)
