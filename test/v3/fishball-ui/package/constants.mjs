@@ -28,7 +28,7 @@ export const UI_PACKAGE = Object.freeze({
   // Re-baselined (F-WIRE): client.js loads four parts; the strip and the model dialog are shipped too.
   // Re-baselined (R-FIX-FUI F1): the pairing card's chunk client.pairing.js is shipped too.
   // Re-baselined (MULTI-3 requirement D): the pairing dock card's chunk client.pairing.js is removed.
-  clientFiles: Object.freeze(['client.js', 'client.entries.js', 'client.asks.js', 'client.strip.js', 'client.model.js']),
+  clientFiles: Object.freeze(['client.js', 'client.entries.js', 'client.asks.js', 'client.strip.js', 'client.brand.js', 'client.model.js']),
 })
 
 /**
@@ -129,11 +129,13 @@ export const CLIENT = Object.freeze({
     // dialog, modelPart)". Their plugin names and style ids are not specified: `plugin: null` means
     // UI-UC-05 checks only that the plugin has a non-empty name.
     strip: Object.freeze({ file: 'client.strip.js', export: 'stripPart', plugin: null, style: null }),
+    // LOGO-BUTTON: the sidebar brand row's occupant, between the strip and the model dialog.
+    brand: Object.freeze({ file: 'client.brand.js', export: 'brandPart', plugin: null, style: null }),
     model: Object.freeze({ file: 'client.model.js', export: 'modelPart', plugin: null, style: null }),
     // Re-baselined (MULTI-3 requirement D): R-FIX-FUI F1's pairing card part (client.pairing.js) is removed.
   }),
-  /** R-FIX-FUI F1: the order client.js loads its parts in (the pairing card after the strip, before the model dialog). */
-  partOrder: Object.freeze(['client.entries.js', 'client.asks.js', 'client.strip.js', 'client.model.js']),
+  /** R-FIX-FUI F1 / LOGO-BUTTON: the order client.js loads its parts in (the brand part after the strip, before the model dialog). */
+  partOrder: Object.freeze(['client.entries.js', 'client.asks.js', 'client.strip.js', 'client.brand.js', 'client.model.js']),
   /** The kit member a part gets (`mountStyle(id, cssText) → dispose`). */
   kitStyle: 'mountStyle',
   /** Platform modules a chunk may require (the DSH page's served set). */

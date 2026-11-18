@@ -60,7 +60,7 @@ fake DSH MCP servers (fake-dsh.mjs). Expected values: targets-oracle.mjs (the fr
 | MULTI-EVT-SYS-01 | EP (same eventId on A and B) | two manager messages `fbe_<handle>`; acks per target |
 | MULTI-ASK-SYS-01 | EP (routes × unknown ids) | unknown handle 404; every target POST route with an unknown id 404 `unknown-target`; missing id 400/404; duplicate add 409; insecure add 400; unconfirmed remove 409 |
 | MULTI-SVC-DT-01 | DT (bridge/attention × live / epoch mismatch / removed) | only the named target; mismatch and removed fail closed with `unknown-target`, nothing sent |
-| MULTI-SVC-EP-01 | EP (status shape) | `{fishball, guards, set, targets}`; no scalar members; targets = list(); contributedTools 0 counted |
+| MULTI-SVC-EP-01 | EP (status shape) | `{fishball, guards, set, targets, brand: {style}}`; no scalar members; targets = list(); contributedTools 0 counted; absent stored logo theme → fishball |
 | MULTI-SVC-ST-01 | ST (two targets) | one manager session; reminder tools once |
 
 Re-baselined WIRE-SYS rows (withdrawn oracles replaced): apiVersion 2 and `ui.targets` shape; the

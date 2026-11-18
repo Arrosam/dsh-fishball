@@ -11,6 +11,13 @@ window.__ModuleLoader__.load({
       priority: -1,
       root: 'data-fishball-page', ready: 'data-fishball-session',
       hidden: 'data-fishball-hidden', label: 'aria-label',
+      /**
+       * LOGO-BUTTON: DSH's brand button starts with the same "New Session" aria-label as its real New
+       * Session button, and fishball-ui replaces it with "Fishball" once the logo mounts. The hide
+       * logic must never mark that button (the logo would disappear) even in the window before the
+       * replacement lands; the actual New Session button contains neither slot and stays hidden.
+       */
+      brandSlots: '[data-slot="sidebar.brand.mark"],[data-slot="sidebar.brand.name"]',
       settingsSlot: 'settings.launcher', settingsButton: 'fishball-settings-launcher',
       /**
        * MULTI-3 (PLAN-MULTI §6.4): "Fishball" (back to the manager's conversation) and the page's
@@ -290,7 +297,10 @@ window.__ModuleLoader__.load({
         for (const { selector, keys } of LABELS) {
           const labels = new Set(keys.map(text))
           for (const node of document.querySelectorAll(selector)) {
-            if (labels.has(node.getAttribute(PAGE.label))) next.add(node)
+            if (!labels.has(node.getAttribute(PAGE.label))) continue
+            // LOGO-BUTTON: the brand button is the logo's seat, not a New Session launcher; never hide it.
+            if (typeof node.querySelector === 'function' && node.querySelector(PAGE.brandSlots) !== null) continue
+            next.add(node)
           }
         }
         for (const node of marked) if (!next.has(node)) node.removeAttribute(PAGE.hidden)

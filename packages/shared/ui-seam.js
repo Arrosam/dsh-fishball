@@ -100,6 +100,21 @@ export const SEAM_STATUS = Object.freeze({
 })
 
 /**
+ * The sidebar logo's theme (LOGO-BUTTON): one choice, owned by core's settings page, drawn by
+ * fishball-ui's brand part. Both packages read the words and the default from here; core stores it
+ * in its own config as `setting`, fishball-ui receives it in the strip frame as `brandStyle`.
+ *
+ * The two artwork themes are Fishball's own (the DeepSeek theme uses Fishball's whale drawing, not
+ * DeepSeek's official artwork). An absent or unknown stored value means `default`; the settings
+ * control offers exactly the two values.
+ */
+export const SEAM_BRAND = Object.freeze({
+  setting: 'brandStyle',
+  default: 'fishball',
+  style: Object.freeze({ fishball: 'fishball', deepseek: 'deepseek' }),
+})
+
+/**
  * The multiple-target seam (MULTI-0 freeze, 2026-11-18; PLAN-MULTI §3, §5, §6.1, Q01–Q12; core's
  * `contracts/targets.d.ts`). Defined once here: core and fishball-ui both read it, and neither
  * imports the other.

@@ -83,6 +83,12 @@ window.__ModuleLoader__.load({
       connectState: Object.freeze({ needsConfiguration: 'needs-configuration', needsAuthorization: 'needs-authorization', authorizing: 'authorizing', authorized: 'authorized', failed: 'failed' }),
       configuration: Object.freeze(['metadata-url-missing', 'metadata-url-not-https', 'metadata-url-root-path', 'not-a-connector', 'web-callback-insecure']),
       model: 'model',
+      /** `SEAM_BRAND.setting`'s value, the sidebar logo's theme (LOGO-BUTTON; restated, keep in step). */
+      brand: Object.freeze({
+        field: 'brandStyle',
+        default: 'fishball',
+        style: Object.freeze({ fishball: 'fishball', deepseek: 'deepseek' }),
+      }),
     })
     /** The Connect control's own word for "no answer from the route" (not a `CONNECT.state`). */
     const CONNECT_UNAVAILABLE = 'unavailable'
@@ -198,6 +204,11 @@ window.__ModuleLoader__.load({
       modelNone: 'No model is configured in this DSH yet.',
       modelFailed: 'The models could not be read.',
       modelSaveFailed: 'The model was not saved.',
+      brandTitle: 'Sidebar logo',
+      brandHint: 'Fishball\'s fish and wordmark, or Fishball\'s whale and wordmark.',
+      brandFishball: 'Fishball',
+      brandDeepseek: 'DeepSeek',
+      brandSaveFailed: 'The logo choice was not saved.',
       unavailable: 'Fishball\'s settings are not available right now.',
       readOnly: 'This deployment stores settings read-only.',
       save: 'Save',
@@ -269,6 +280,11 @@ window.__ModuleLoader__.load({
       modelNone: '此 DSH 还没有配置模型。',
       modelFailed: '无法读取模型。',
       modelSaveFailed: '模型没有保存。',
+      brandTitle: '侧边栏标志',
+      brandHint: 'Fishball 的小鱼和字标，或 Fishball 的鲸鱼和字标。',
+      brandFishball: 'Fishball',
+      brandDeepseek: 'DeepSeek',
+      brandSaveFailed: '标志选择没有保存。',
       unavailable: 'Fishball 的设置现在不可用。',
       readOnly: '此部署以只读方式保存设置。',
       save: '保存',
@@ -698,6 +714,37 @@ window.__ModuleLoader__.load({
         saveFailed ? h('p', { className: PAGE.css.error, role: 'alert' }, t('modelSaveFailed')) : null)
     }
 
+    /**
+     * LOGO-BUTTON: the sidebar logo's theme, one native select with exactly the seam's two values,
+     * written at once to core's `brandStyle` field through DSH's own form (`configForms`), like the
+     * model control. Absent (or an unknown stored word) reads Fishball, so the control always shows
+     * one of its two options and a first save is a real choice. The strip stream carries the normalized
+     * value to the logo, so the art changes without a reload.
+     */
+    function BrandControl({ form, t }) {
+      const snapshot = React.useSyncExternalStore((listener) => form.subscribe(listener), () => form.getSnapshot())
+      const [saveFailed, setSaveFailed] = React.useState(false)
+      const id = React.useId()
+      const stored = snapshot.value?.[SHARED.brand.field]
+      const current = Object.values(SHARED.brand.style).includes(stored) ? stored : SHARED.brand.default
+      const pick = async (value) => {
+        let ok = false
+        try { ok = await form.set(SHARED.brand.field, value) } catch { ok = false }
+        setSaveFailed(!ok)
+      }
+      return h('section', { className: PAGE.css.card, 'data-fishball-brand': true, 'aria-label': t('brandTitle') },
+        h('div', { className: PAGE.css.head }, h('label', { className: PAGE.css.title, htmlFor: id }, t('brandTitle'))),
+        h('div', { className: PAGE.css.row },
+          h('select', {
+            id, className: PAGE.css.select, value: current, disabled: !snapshot.writable,
+            onChange: (event) => void pick(event.target.value), 'data-fishball-brand-style': true,
+          },
+          h('option', { value: SHARED.brand.style.fishball }, t('brandFishball')),
+          h('option', { value: SHARED.brand.style.deepseek }, t('brandDeepseek')))),
+        h('p', { className: PAGE.css.hint }, t('brandHint')),
+        saveFailed ? h('p', { className: PAGE.css.error, role: 'alert' }, t('brandSaveFailed')) : null)
+    }
+
     function makePage(ctx, t, section, token) {
       const subscribe = section.store.subscribe.bind(section.store)
       const getSnapshot = () => section.store.getSnapshot()
@@ -722,7 +769,8 @@ window.__ModuleLoader__.load({
             labels: { unavailable: t('unavailable'), readOnly: t('readOnly'), saveFailed: t('saveFailed'), save: t('save'), saving: t('saving') },
             state, onSave: section.actions.save, onDiscard: section.actions.discard,
           }, ...SHARED.settings.fields.map(fieldOf)),
-          h(ModelControl, { ctx, form: ctx.configForms.get(SHARED.settings.namespace), t }))
+          h(ModelControl, { ctx, form: ctx.configForms.get(SHARED.settings.namespace), t }),
+          h(BrandControl, { form: ctx.configForms.get(SHARED.settings.namespace), t }))
       }
     }
 

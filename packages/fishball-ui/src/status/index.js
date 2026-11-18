@@ -15,7 +15,7 @@
  *   R-EXT-14, the identity capability), the one control and the pairing view (`pairingView`).
  * There is no chat-top card any more (D03): the old `card` and the scalar `line`/`control` are gone.
  */
-import { SEAM_STATUS, SEAM_TARGETS } from 'fishball-shared/ui-seam'
+import { SEAM_BRAND, SEAM_STATUS, SEAM_TARGETS } from 'fishball-shared/ui-seam'
 import { pairingView } from '../pairing/index.js'
 import { STATUS_DEFAULT_LANG, STATUS_TEXT } from './text.js'
 
@@ -79,7 +79,8 @@ function targetView(target, text, lang, timeZone) {
  * @param {string} [lang] `en` or `zh`; any other value draws `en`
  * @param {string} [timeZone] the reader's IANA time zone (pairing last-seen times)
  * @returns {{on: boolean, title: string, empty: string | null, notices: ReadonlyArray<{kind: string, text: string}>,
- *   targets: ReadonlyArray<object>, words: object}} `words` holds the sidebar's own labels in `lang`
+ *   targets: ReadonlyArray<object>, words: object, brandStyle: string}} `words` holds the sidebar's own
+ *   labels in `lang`; `brandStyle` is `SEAM_BRAND`'s normalized logo theme for the brand part
  */
 export function targetsView(snapshot, lang = STATUS_DEFAULT_LANG, timeZone = undefined) {
   const text = STATUS_TEXT[lang] ?? STATUS_TEXT[STATUS_DEFAULT_LANG]
@@ -100,5 +101,9 @@ export function targetsView(snapshot, lang = STATUS_DEFAULT_LANG, timeZone = und
     notices: Object.freeze(notices),
     targets: Object.freeze(targets),
     words: text.words,
+    // LOGO-BUTTON: core's normalized logo theme (`SEAM_BRAND`), read by the brand part from this
+    // same strip stream. With Fishball off there is no core setting to report, so the view draws the
+    // default; an absent/unknown stored word does too, and the seam's words are the only accepted ones.
+    brandStyle: on && Object.values(SEAM_BRAND.style).includes(snapshot?.brand?.style) ? snapshot.brand.style : SEAM_BRAND.default,
   })
 }

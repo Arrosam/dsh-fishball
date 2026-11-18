@@ -45,13 +45,6 @@ window.__ModuleLoader__.load({
        * back, never the native browser, when it stops (PLAN-MULTI §6.1).
        */
       priority: -2,
-      /**
-       * fishball-page's mark on <html> while the Fishball page is open (fishball-page `PAGE.root`;
-       * restated: a chunk imports no module). The list takes the sidebar only on that page; elsewhere
-       * DSH's own workspace browser stays (PLAN-MULTI §6.1: the target list replaces it on Fishball's
-       * page, not in every DSH that has fishball-ui).
-       */
-      pageRoot: 'data-fishball-page',
       // fishball-ui's route (src/status/route.js STRIP_ROUTE) and core's target routes
       // (`SEAM_TARGETS.route`), page-relative; restated: a chunk imports no module.
       events: 'api/fishball/strip',
@@ -294,25 +287,6 @@ window.__ModuleLoader__.load({
       }
     }
 
-    /**
-     * Runs `effect()` while <html> carries the Fishball page's mark and disposes it when the mark
-     * goes, following it live (the page may mount after this part, and unmounts on its own).
-     * Returns the disposer of the whole watch.
-     */
-    function whilePage(effect) {
-      const root = document.documentElement
-      let dispose = null
-      const sync = () => {
-        const on = root.hasAttribute(TARGETS_UI.pageRoot)
-        if (on && dispose === null) dispose = effect()
-        else if (!on && dispose !== null) { dispose(); dispose = null }
-      }
-      const observer = new MutationObserver(sync)
-      observer.observe(root, { attributes: true, attributeFilter: [TARGETS_UI.pageRoot] })
-      sync()
-      return () => { observer.disconnect(); dispose?.(); dispose = null }
-    }
-
     /** The part as a client plugin over fishball-ui's kit (client.js `kit`). */
     function stripPart(kit) {
       function apply(ctx) {
@@ -322,7 +296,7 @@ window.__ModuleLoader__.load({
         const presses = Object.freeze({ target: kit.pressStore(), pairing: kit.pressStore() })
         ctx.effect(() => kit.mountStyle(C.id, css), TARGETS_UI.name + ': styles')
         const List = makeList(ctx, stream, kit, selected, presses)
-        ctx.effect(() => whilePage(() => ctx.slots.inject(TARGETS_UI.slot, () => ctx.slots.register({ name: TARGETS_UI.slot, priority: TARGETS_UI.priority }, List))), TARGETS_UI.name + ': sidebar list')
+        ctx.effect(() => kit.whilePage(() => ctx.slots.inject(TARGETS_UI.slot, () => ctx.slots.register({ name: TARGETS_UI.slot, priority: TARGETS_UI.priority }, List))), TARGETS_UI.name + ': sidebar list')
       }
       return Object.freeze({ name: TARGETS_UI.name, inject: ['slots', 'layout', 'locale'], apply })
     }

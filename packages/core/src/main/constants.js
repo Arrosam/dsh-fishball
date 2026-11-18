@@ -3,7 +3,7 @@
  * modules it composes is that module's own; these are the row's: its id, its inject list, the DSH
  * names it reads, and its log lines.
  */
-import { UI_INSTANCE } from 'fishball-shared/ui-seam'
+import { SEAM_BRAND, UI_INSTANCE } from 'fishball-shared/ui-seam'
 import { FISHBALL_MODEL } from '../../contracts/constants.js'
 import { SETTINGS } from '../settings/constants.js'
 
@@ -38,6 +38,8 @@ export const MAIN = Object.freeze({
     id: Object.freeze(['identity', 'id']),
     name: Object.freeze(['identity', 'name']),
     model: FISHBALL_MODEL.path,
+    /** LOGO-BUTTON: the sidebar logo's theme (`SEAM_BRAND.setting`, a top-level scalar field). */
+    brandStyle: Object.freeze([SEAM_BRAND.setting]),
   }),
   /** DSH events: a volatile config change of a row (cordis-plugin-loader) and a settings document change (dsh-settings). */
   event: Object.freeze({ volatileUpdate: 'loader/volatile-update', settingsUpdated: 'settings/document-updated' }),

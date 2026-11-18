@@ -31,6 +31,8 @@ export const ABSENT = Symbol('absent')
  *   entries     loader entries, or ABSENT (no loader service)
  *   plugin      create the status inside a Cordis plugin's apply, on that plugin's context, as a
  *               row does (default false: on the root context); `w.fiber` is that plugin's fiber
+ *   brand       LOGO-BUTTON: core's stored logo theme getter (`() => value`), or ABSENT to model a
+ *               stored field that is absent (the status reads the default)
  */
 export async function worldFor(t, sdk, o = {}) {
   const { Context } = await cordis(sdk)
@@ -49,9 +51,10 @@ export async function worldFor(t, sdk, o = {}) {
   const targets = present(o.targets ?? null) ? new FakeTargets(o.targets ?? TARGETS_SNAPSHOT.empty) : undefined
   const guards = present('guards' in o ? o.guards : ABSENT) ? new FakeGuards(o.guards) : undefined
   const notice = present(o.notify ?? {}) ? fakeNotify(o.notify ?? {}) : undefined
+  const brand = present('brand' in o ? o.brand : ABSENT) ? (typeof o.brand === 'function' ? o.brand : () => o.brand) : undefined
   const ports = {
     ...(targets ? { targets } : {}), ...(guards ? { guards } : {}),
-    ...(notice ? { notify: notice.notify } : {}),
+    ...(notice ? { notify: notice.notify } : {}), ...(brand ? { brand } : {}),
   }
 
   let status
