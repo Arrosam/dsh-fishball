@@ -7,11 +7,11 @@
 export const TARGET_LOG = Object.freeze({
   name: 'fishball-core-targets',
   failed: '%s failed (%s)',
-  load: 'reading the target records',
   save: 'saving a target record',
   forget: 'deleting a removed target\'s token material',
   binding: 'tool %s is not offered: its name is bound to another target or endpoint',
   reconcile: 'reconciling a target\'s ask cards',
+  void: 'voiding a retired target\'s ask cards',
   intake: 'taking a polled event',
   page: 'taking a polled page',
 })

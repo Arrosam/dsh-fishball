@@ -55,8 +55,12 @@ const realDelay = (ms) => new Promise((resolve) => { setTimeout(resolve, ms).unr
  *     framing; owned by the façade/wiring, not by this module).
  * @param options.logger - `{info, warn}` background log; never given payloads.
  * @param options.delay - `(ms) => Promise<void>`, the wait between presentation attempts.
+ * @param options.live - `(source) => boolean`, whether an event's target epoch is current (MULTI-1,
+ *   PLAN-MULTI §3.1, §5): a retired epoch's event is never handed to the model, not at recovery and
+ *   not from the list, because the only tools under its target id now reach the replacement
+ *   endpoint. It stays in the ledger as read-only history, in state `fishball`, undelivered.
  */
-export function createDelivery({ ledger, fishball, logger, delay = realDelay }) {
+export function createDelivery({ ledger, fishball, logger, delay = realDelay, live = () => true }) {
   /** eventIds accepted for Fishball, not yet handed to the agent, in arrival order. */
   const queue = []
   /**
@@ -232,6 +236,8 @@ export function createDelivery({ ledger, fishball, logger, delay = realDelay }) 
     if (closed || queue.length === 0) return
     handover.watch(agent)
     const eventId = queue[0]
+    // Retired while queued (retire() normally drops it first): history, never presented.
+    if (!live(ledger.get(eventId)?.event.source)) { untrack(messageIdOf(eventId)); again = true; return }
     if (!prepared.has(eventId)) {
       const record = ledger.get(eventId)
       const content = contentOf(record)
@@ -274,7 +280,7 @@ export function createDelivery({ ledger, fishball, logger, delay = realDelay }) 
       recovering = true
       const mine = []
       try {
-        for (const record of ledger.inOrder([STATE.fishball])) if (track(record.key)) { queue.push(record.key); mine.push(record.key) }
+        for (const record of ledger.inOrder([STATE.fishball])) if (live(record.event.source) && track(record.key)) { queue.push(record.key); mine.push(record.key) }
         if (queue.length === 0 || closed) return
         try {
           handover.watch(await fishball.activate())
@@ -286,6 +292,16 @@ export function createDelivery({ ledger, fishball, logger, delay = realDelay }) 
       } finally {
         recovering = false
         void drain()
+      }
+    },
+    /**
+     * Drops every queued or backing-off event of a retired target epoch (`retired(source)`), so none
+     * is handed over later; one already handed to DSH's inbox is left to its own outcome. Sends nothing.
+     */
+    retire(retired) {
+      for (const [messageId, eventId] of [...tracked]) {
+        const waiting = queue.includes(eventId) || backingOff.has(eventId) || prepared.has(eventId)
+        if (waiting && retired(ledger.get(eventId).event.source)) untrack(messageId)
       }
     },
     /** Hold hand-overs while the interception's own recovery moves records here. */

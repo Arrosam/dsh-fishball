@@ -134,6 +134,11 @@ export async function apply(ctx, config) {
     logger: ctx.logger(TARGET_LOG.name),
   })
   ctx.effect(() => () => { void targets.close() })
+  // The parent's epoch follows the instance's setting before this row finishes applying (review
+  // M3): DSH's boot awaits every row before app ready, and the instance probes the child's
+  // credential only after app ready (dsh-instance child.js `attach` needs `childReadiness`), so the
+  // probe never sees a parent record core is about to retire.
+  await targets.settled()
   // The guard row is its own row and may start after this one, be replaced or go away.
   const guards = followService(ctx, GUARDS.serviceName, { report: (report) => report.report() ?? null, onChange: 'onChange' })
   ctx.effect(() => () => guards.dispose())
@@ -181,7 +186,9 @@ export async function apply(ctx, config) {
   const ready = () => {
     service.markReady()
     // recover() never rejects (its failure is logged and its barrier settles), so intake always opens.
-    void events.recover().catch(warn(MAIN.text.recover)).finally(() => recovery.resolve())
+    // After the parent follows the instance (review m13): its open records are re-offered only
+    // while its epoch is live, so recovery must not run before its runtime exists.
+    void targets.settled().then(() => events.recover()).catch(warn(MAIN.text.recover)).finally(() => recovery.resolve())
     void service.resumePending().catch(warn(MAIN.text.resume))
   }
   // Every DSH launcher provides appReady (both SDKs); a bare Cordis host has no ready moment, so it
