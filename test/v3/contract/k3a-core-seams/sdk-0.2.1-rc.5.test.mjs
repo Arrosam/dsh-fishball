@@ -4,7 +4,9 @@
 import { registerK3aCases } from './cases.mjs'
 import { registerSettingsTargetCases } from './settings-target.mjs'
 import { registerK3aTargetCases } from './targets-cases.mjs'
+import { registerMultiSecurityCases } from './multi-security-cases.mjs'
 
 registerK3aCases('0.2.1-rc.5')
 registerSettingsTargetCases('0.2.1-rc.5')
 registerK3aTargetCases('0.2.1-rc.5')
+registerMultiSecurityCases('0.2.1-rc.5')
