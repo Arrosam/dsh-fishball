@@ -86,3 +86,4 @@ the status snapshot" (the `target.url` setting is withdrawn).
 
 - Not black-box testable: "a name bound to another tuple (including a retired one) is never
   registered" needs a 12-hex digest collision between two tuples; no fixture can construct one.
+| MULTI-ASK-SYS-02 | EP (equal approvalId on A and B) + ST (open → voided) | each target's namespaced ask_user files its own card (frozen handle, own source); answer A → only A's link; remove B → B's card voided, answer refused `expired`, nothing sent |

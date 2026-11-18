@@ -13,7 +13,7 @@ import { C, FAKE_DSH, MULTI } from './constants.mjs'
 import { multiWorld } from './multi-world.mjs'
 import { browser as connectBrowser, startFakeConnector } from '../link-save/fakes.mjs'
 import {
-  APPROVAL, CONNECT, ID_PATTERN, readableOf, LINK, MCP, PARENT_NAMES, SEAM_TARGETS, TARGETS, allocateSuffix, askToolNameOf, connectorTools, credentialNamesOf, eventMessageId, resolvedName, toolNameOf,
+  APPROVAL, CONNECT, ID_PATTERN, readableOf, LINK, MCP, PARENT_NAMES, SEAM_TARGETS, TARGETS, allocateSuffix, askHandle, askToolNameOf, connectorTools, credentialNamesOf, eventMessageId, resolvedName, toolNameOf,
 } from './targets-oracle.mjs'
 
 const T = { timeout: C.budget.boot + MULTI.budget.connectMs * 4 }
@@ -520,6 +520,38 @@ export function registerMultiCases(sdk) {
     assert.equal(unconfirmed.status, SEAM_TARGETS.http.conflict); assert.equal(unconfirmed.json?.code, R.confirmationRequired)
   })
 
+  row(sdk, 'MULTI-ASK-SYS-02', 'two targets, equal approvalId, then removal', 'A and B offer the same approvalId; each target\'s own mcp__…__ask_user files it → two cards (handles = base64url ["approval", id, epoch, approvalId], source each its own); answering A\'s sends approval_answer on A only; removing B voids B\'s card; answering it is refused expired and sends nothing', async () => {
+    const w = await standalone()
+    const fa = await w.fake({ name: MULTI.name.office })
+    const fb = await w.fake({ name: MULTI.name.lab })
+    const a = await w.connect(fa)
+    const b = await w.connect(fb)
+    await w.h.call('ensure')
+    const event = permissionEvent()
+    fa.enqueue(structuredClone(event)); fb.enqueue(structuredClone(event))
+    await quiet()
+    for (const t of [a, b]) {
+      const filed = await w.h.call('managerCall', { tool: askToolNameOf(sourceOf(await w.view(t.targetId)), MULTI.ask), args: { [MULTI.askArg]: event.offer.offerId } })
+      assert.equal(filed.result?.isError, false, 'ask_user failed on ' + t.targetId + ': ' + JSON.stringify(filed.result))
+    }
+    const cards = await w.h.call('askCards')
+    assert.equal(cards.length, 2, JSON.stringify(cards))
+    for (const t of [a, b]) {
+      const v = await w.view(t.targetId)
+      const card = cards.find((c) => c.handle === askHandle(v, event.payload.approvalId))
+      assert.ok(card, 'no card with ' + t.targetId + '\'s handle')
+      assert.deepEqual(card.source, sourceOf(v))
+    }
+    ok(await w.h.call('askAnswer', { handle: askHandle(await w.view(a.targetId), event.payload.approvalId), answer: { choice: APPROVAL.decision.reject } }))
+    assert.equal(fa.callsOf(K1.TOOL.approvalAnswer).length, 1); assert.equal(fb.callsOf(K1.TOOL.approvalAnswer).length, 0)
+    const bHandle = askHandle(await w.view(b.targetId), event.payload.approvalId)
+    ok(await w.act('remove', b.targetId, { confirmed: true }))
+    await quiet()
+    assert.equal((await w.h.call('askCards')).find((c) => c.handle === bHandle)?.state, SEAM_TARGETS.ask.voided)
+    refused(await w.h.call('askAnswer', { handle: bHandle, answer: { choice: APPROVAL.decision.allow } }), MULTI.expired)
+    assert.equal(fb.callsOf(K1.TOOL.approvalAnswer).length, 0, 'a voided card was answered remotely')
+  })
+
   // ============================================================== MULTI-SVC: target-bound seams, status
   row(sdk, 'MULTI-SVC-DT-01', 'bridge and attention', 'bridge(plugin, ops, {targetId}) calls reach only that target; a removed target → supports false and unknown-target with nothing sent; an endpointEpoch mismatch fails closed too; attention.signal of a removed target → unknown-target', async () => {
     const w = await standalone()
@@ -569,4 +601,11 @@ const unknownId = () => TARGETS.id.prefix + TARGETS.id.alphabet[0].repeat(TARGET
 function mailboxEvent(eventId) {
   const payload = { text: MULTI.event.textPrefix + eventId, images: [] }
   return { eventId, mailboxGeneration: FAKE_DSH.generation, sequence: MULTI.event.sequence, type: K1.EVENT_TYPE.message, at: Date.now(), sourceSessionId: null, correlationId: null, payload, payloadDigest: MULTI.event.digestFill.repeat(K1.WIRE.digestHexChars) }
+}
+
+/** One K1 permission offer event (MAILBOX_EVENT_SCHEMA, descriptor per K1 shapes); equal on two targets. */
+function permissionEvent() {
+  const offerId = K1.formatOfferId(MULTI.event.approvalId, K1.OFFER_ID.firstRevision)
+  const payload = { approvalId: MULTI.event.approvalId, offerId, kind: K1.APPROVAL_KIND.approval, prompt: MULTI.event.prompt, choices: [], title: MULTI.event.prompt, at: Date.now(), toolName: MULTI.event.toolName, callId: null, reason: MULTI.event.prompt, quotes: [] }
+  return { eventId: MULTI.event.offerEventId, mailboxGeneration: FAKE_DSH.generation, sequence: MULTI.event.sequence, type: K1.EVENT_TYPE.permission, at: Date.now(), sourceSessionId: MULTI.event.session, correlationId: offerId, offer: { offerId, revision: K1.OFFER_ID.firstRevision, decisionKind: K1.DECISION_KIND_OF[K1.EVENT_TYPE.permission] }, payload, payloadDigest: MULTI.event.digestFill.repeat(K1.WIRE.digestHexChars) }
 }
