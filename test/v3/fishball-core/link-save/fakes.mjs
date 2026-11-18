@@ -65,13 +65,14 @@ export function clientOf(headers, form) {
   return { clientId: form.get(OAUTH.clientId), secret: form.get(OAUTH.clientSecret) }
 }
 
-function serve(handler, port, host) {
+function serve(handler, host) {
+  let port
   const server = http.createServer((req, res) => { handler(req, res).catch(() => { try { res.destroy() } catch { /* gone */ } }) })
   const sockets = new Set()
   server.on('connection', (s) => { sockets.add(s); s.on('close', () => sockets.delete(s)) })
-  const listen = () => new Promise((resolve, reject) => {
+  const listen = (requestedPort = 0) => new Promise((resolve, reject) => {
     server.once('error', reject)
-    server.listen(port, host, () => { server.off('error', reject); port = server.address().port; resolve(port) })
+    server.listen(requestedPort, host, () => { server.off('error', reject); port = server.address().port; resolve(port) })
   })
   const close = () => new Promise((resolve) => {
     for (const s of sockets) s.destroy()
@@ -79,6 +80,23 @@ function serve(handler, port, host) {
     server.close(() => resolve())
   })
   return { listen, close, get port() { return port } }
+}
+
+/** On macOS a wildcard bind can share a port with an existing exact-address listener. Hold
+ * both loopback addresses before advertising localhost; retry only port allocation, never HTTP. */
+async function serveLoopbacks(handler) {
+  for (let attempt = 1; ; attempt++) {
+    const ipv4 = serve(handler, FIXTURE.ipv4Loopback)
+    const ipv6 = serve(handler, FIXTURE.ipv6Loopback)
+    const port = await ipv4.listen()
+    try {
+      await ipv6.listen(port)
+      return { port, close: () => Promise.all([ipv4.close(), ipv6.close()]) }
+    } catch (error) {
+      await ipv4.close()
+      if (error.code !== 'EADDRINUSE' || attempt >= FIXTURE.portPairAttempts) throw error
+    }
+  }
 }
 
 /**
@@ -334,14 +352,19 @@ export async function startFakeConnector() {
     return sendJson(res, K1.HTTP_STATUS.notFound, {})
   }
 
-  const web = serve(webHandler, 0, FIXTURE.bindHost)
-  const approval = serve(approvalHandler, 0, FIXTURE.approvalHost)
-  const trap = serve(trapHandler, 0, FIXTURE.approvalHost)
-  await web.listen()
-  await approval.listen()
-  await trap.listen()
-  const approvalOrigin = () => `${K1.HOSTS.loopbackScheme}//${FIXTURE.approvalHost}:${approval.port}`
-  const trapUrl = () => `${K1.HOSTS.loopbackScheme}//${FIXTURE.approvalHost}:${trap.port}${REDIRECT.trapPath}`
+  const web = await serveLoopbacks(webHandler)
+  const approval = serve(approvalHandler, FIXTURE.ipv4Loopback)
+  const trap = serve(trapHandler, FIXTURE.ipv4Loopback)
+  const stop = () => Promise.all([web.close(), approval.close(), trap.close()])
+  try {
+    await approval.listen()
+    await trap.listen()
+  } catch (error) {
+    await stop()
+    throw error
+  }
+  const approvalOrigin = () => `${K1.HOSTS.loopbackScheme}//${FIXTURE.ipv4Loopback}:${approval.port}`
+  const trapUrl = () => `${K1.HOSTS.loopbackScheme}//${FIXTURE.ipv4Loopback}:${trap.port}${REDIRECT.trapPath}`
 
   const tokenRequests = () => requests.filter((r) => r.listener === 'web' && r.path === MCP.paths.token)
   const grantOf = (r) => new URLSearchParams(r.body).get(OAUTH.grantType)
@@ -389,7 +412,7 @@ export async function startFakeConnector() {
     approvalOrigin: () => approvalOrigin(),
     callsOf: (name) => calls.filter((call) => call.name === name),
     eventListens: () => listens.filter((l) => (l.filter.resourceSubscriptions ?? []).includes(K1.CONNECTED.listenResource) && !l.res.destroyed),
-    stop: async () => { await web.close(); await approval.close(); await trap.close() },
+    stop,
   }
   return c
 }
