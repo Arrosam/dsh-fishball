@@ -482,23 +482,24 @@ function httpRows(sdk) {
     assert.equal(other.status, 404)
   })
   row(sdk, 'C-WIRE-R6', 'rebind (ST)', 'Bound(p1) --approval.port := p2--> Bound(p2): the listener answers on p2 at once, p1 is released; the metadata follows; state.approval reports it', async () => {
-    const w = await main(sdk)
-    const originalPortSetting = (await settingsValue(w))[S.approval][S.port]
-    const p1 = (await stateOf(w)).approval.port
+    const { w, port: p1 } = await mainFixture(sdk)
+    assert.equal((await settingsValue(w))[S.approval][S.port], p1)
+    const originalEndpointAnswers = async () => {
+      const page = await w.approval('GET', PATHS.authorize, { port: p1 }).catch(() => null)
+      return page && page.status >= HTTP.badRequest && page.status < 500 && page.headers['cache-control'] === APPROVAL_LISTENER.headers['cache-control']
+    }
+    assert.ok(await eventually(originalEndpointAnswers), 'the connector never answered on the original fixture port')
     const p2 = await freePort()
     try {
-      assert.equal((await w.call('settingsUpdate', { patch: { [S.approval]: { [S.port]: p2 } } })).ok, true)
+      assert.equal((await w.call('settingsUpdate', { patch: approvalPortPatch(p2) })).ok, true)
       assert.ok(await eventually(async () => (await w.approval('GET', '/fbtest-other', { port: p2 }).catch(() => ({}))).status === 404), 'nothing answers on the new port')
       const asm = (await w.raw('GET', ASM)).json
       assert.equal(new URL(asm.authorization_endpoint).port, String(p2))
       assert.deepEqual([(await stateOf(w)).approval.port, (await stateOf(w)).approval.status], [p2, SURFACE.approvalStatusOk])
-      await assert.rejects(w.approval('GET', '/fbtest-other', { port: p1 }), 'the old port still answers')
+      await assert.rejects(w.approval('GET', '/fbtest-other', { port: p1 }), { code: 'ECONNREFUSED' }, 'the old port was not released')
     } finally {
-      await w.call('settingsUpdate', { patch: { [S.approval]: { [S.port]: originalPortSetting } } })
-      await eventually(async () => {
-        const port = (await stateOf(w)).approval.port
-        return (await w.approval('GET', '/fbtest-other', { port }).catch(() => ({}))).status === 404
-      })
+      assert.equal((await w.call('settingsUpdate', { patch: approvalPortPatch(p1) })).ok, true)
+      assert.ok(await eventually(originalEndpointAnswers), 'the connector did not recover on the original fixture port')
     }
   })
   row(sdk, 'C-WIRE-R6', 'clash (DT)', `approval.port held by another listener → state.approval.status ${CONNECTOR_STATUS.approvalPortInUse}; the MCP endpoint and the token endpoint keep working; the metadata keeps authorization_endpoint`, async (t) => {
