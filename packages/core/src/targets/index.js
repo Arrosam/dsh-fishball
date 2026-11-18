@@ -163,7 +163,8 @@ export function createTargets(ctx, { tables, identityRecords, asks, events, reco
     const runtime = createTargetRuntime(ctx, {
       record, logger, asks, events, bindings, recovered, bridgeOptions, identityRecords,
       names: () => namesOf(records.get(record.id) ?? record),
-      url: () => urlOf(records.get(record.id) ?? record),
+      url: () => urlOf(record),
+      isClosing: () => closed,
       clientId: settings.clientId, clientMetadataUrl: settings.clientMetadataUrl, name: settings.name,
       onServerName: (serverName) => named(record.id, serverName),
     })
@@ -352,13 +353,16 @@ export function createTargets(ctx, { tables, identityRecords, asks, events, reco
     async retry(targetId) {
       const runtime = known(targetId) && runtimes.get(targetId)
       if (!runtime) return UNKNOWN
-      runtime.link.reconnect()
+      runtime.reconnect()
       return OK
     },
     async choose(targetId, choice, options) {
       const runtime = known(targetId) && runtimes.get(targetId)
       if (!runtime) return UNKNOWN
-      return runtime.pairing.choose(choice, options)
+      // The choice writes only this epoch's identity table keys. Drain it on close, but do not
+      // make retirement wait for it: dispose fences its continuation, even after a failed renewal
+      // restores the same epoch with a different runtime.
+      return serial(runtime, () => runtime.pairing.choose(choice, options))
     },
   })
 
@@ -439,7 +443,7 @@ export function createTargets(ctx, { tables, identityRecords, asks, events, reco
   function settingsChanged({ link, name }) {
     void syncParent()
     for (const runtime of runtimes.values()) {
-      if (link) runtime.link.reconnect()
+      if (link) runtime.reconnect()
       if (name) void runtime.pairing.nameChanged()
     }
     refresh()

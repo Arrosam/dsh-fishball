@@ -108,10 +108,11 @@ const ownPageBinding = (attempt, result) => attempt.kind === CREDENTIAL_KIND.gra
  * @param {{get: Function, put: Function, declined: Function, decline: Function}} options.records
  *   the identity records (`createRecords`)
  * @param {() => unknown} options.name the `identity.name` setting as stored (`requestedName` reads it)
+ * @param {() => boolean} [options.isRetired] whether this epoch can no longer act (including core shutdown)
  * @param {() => number} [options.now] epoch milliseconds, for the record's `pairedAt`
  * @param {(options: object) => object} [options.createLink] defaults to the link's own
  */
-export function createPairing({ records, name, now = Date.now, createLink: makeLink = createLink, ...linkOptions }) {
+export function createPairing({ records, name, now = Date.now, isRetired = () => false, createLink: makeLink = createLink, ...linkOptions }) {
   const listeners = new Set()
   let view = Object.freeze({ state: PAIRING_STATE.unpaired, warning: null, choices: NO_CHOICES, nameIssue: null })
   let holdKey
@@ -148,7 +149,7 @@ export function createPairing({ records, name, now = Date.now, createLink: makeL
 
   const stored = (attempt) => records.get(attempt.origin, attempt.ref)
   const isHeld = (attempt) => HELD_STATES.includes(view.state) && holdKey === pairKeyOf(attempt)
-  const isLatest = (attempt) => attempt === latest
+  const isLatest = (attempt) => !isRetired() && attempt === latest
 
   /** Writes a successful `pair`'s record, kept in `unwritten` until the write succeeds. */
   async function writePaired(attempt, record) {
@@ -275,7 +276,7 @@ export function createPairing({ records, name, now = Date.now, createLink: makeL
     }
     const next = answered(record, wanted, NAME_SOURCE.setName, ok ? result.name ?? null : record.name, refused)
     await records.put(next)
-    showName(next)
+    if (!isRetired()) showName(next)
   }
   const syncName = (forced) => {
     nameSync = nameSync.then(() => syncNameOnce(forced)).catch(() => {})
@@ -305,7 +306,7 @@ export function createPairing({ records, name, now = Date.now, createLink: makeL
      *   nothing (`not-offered`, `not-confirmed`, or `not-saved` when its record write failed)
      */
     async choose(choice, { confirmed = false } = {}) {
-      if (!view.choices.includes(choice)) return refusal(CHOICE_REFUSAL.notOffered)
+      if (isRetired() || !view.choices.includes(choice)) return refusal(CHOICE_REFUSAL.notOffered)
       const { attempt, bound } = warned
       const isContinue = choice === CHOICE.continue
       if (isContinue && confirmed !== true) return refusal(CHOICE_REFUSAL.notConfirmed)
@@ -316,8 +317,10 @@ export function createPairing({ records, name, now = Date.now, createLink: makeL
       } catch {
         return refusal(CHOICE_REFUSAL.notSaved)
       }
+      // The write belongs to this epoch, but retirement (or close) withdraws the live choice.
+      if (isRetired()) return refusal(CHOICE_REFUSAL.notOffered)
       enter(isContinue ? PAIRING_STATE.paired : PAIRING_STATE.needToken, attempt)
-      if (isContinue) link.reconnect()
+      if (isContinue && !isRetired()) link.reconnect()
       return OK
     },
   })

@@ -25,7 +25,8 @@ const ORIGIN = TARGETS.toolName.origin
  * @param {object} options
  * @param {{id: string, endpointEpoch: string}} options.record the target record at creation
  * @param {() => {serverName: string | null, name: string | null}} options.names the target's current names
- * @param {() => unknown} options.url the URL this epoch dials (the record's, or the instance's for the parent)
+ * @param {() => unknown} options.url the endpoint captured for this epoch
+ * @param {() => boolean} options.isClosing whether the collection has begun draining its writes
  * @param {() => string} options.clientId `identity.id`; `options.clientMetadataUrl`, `options.name` the settings
  * @param {object} options.identityRecords the identity records KvTable (scoped here)
  * @param {object} options.asks the ask cards (`take`, `toolFor`, `reconcile`, `drained`)
@@ -44,15 +45,17 @@ export function createTargetRuntime(ctx, options) {
   const changed = () => emitIsolated(listeners, undefined)
   const source = () => Object.freeze({ targetId, endpointEpoch, ...names() })
   let disposed = false
+  const isRetired = () => disposed || options.isClosing()
 
   const credentialNamesOf = credentialNames({ targetId, endpointEpoch })
   const credentials = createLinkCredentials(ctx, { target: url, clientId, clientMetadataUrl, names: credentialNamesOf })
   const pairing = createPairing({
     records: createRecords(identityRecords, { targetId, endpointEpoch }),
-    name, target: url, credentials: credentials.credentials, logger: ctx.logger?.(LINK_SAVE.logger),
+    isRetired, name, target: url, credentials: credentials.credentials, logger: ctx.logger?.(LINK_SAVE.logger),
   })
   const { link } = pairing
-  disposers.push(credentials.onChange(() => link.reconnect()))
+  const reconnect = () => { if (!isRetired()) link.reconnect() }
+  disposers.push(credentials.onChange(reconnect))
 
   /** The naming of this epoch's façade (bridge/index.js header): target-qualified, binding-checked. */
   const naming = Object.freeze({
@@ -118,7 +121,8 @@ export function createTargetRuntime(ctx, options) {
     source,
     /** Whether the bridge listed tools at least once on this epoch (`TargetView.contributedTools` is `null` before). */
     listed: () => listed,
-    start: () => link.start(),
+    start: () => { if (!isRetired()) link.start() },
+    reconnect,
     /** Calls `fn()` after any change of what this epoch's view shows. Returns its disposer. */
     onChange: (fn) => subscribe(listeners, fn),
     /** Stops everything of this epoch: no request, status or registration after it. */
