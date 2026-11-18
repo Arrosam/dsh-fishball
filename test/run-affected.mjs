@@ -22,7 +22,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { REPO, REQUIRED_RELEASE } from './support/constants.mjs'
-import { rootSuiteFiles, runSuiteJobs } from './support/suite-runner.mjs'
+import { REPORT_DESTINATION, rootSuiteFiles, runSuiteJobs } from './support/suite-runner.mjs'
 import { FULL, IGNORED, SDK_VERSIONS, SHELVED_SUITES, SUITES, V3_SUITES, V2_GROUPS } from './suites.mjs'
 import { AFFECTED_CASES } from './v3/contract/suite-map/affected-cases.mjs'
 
@@ -94,8 +94,12 @@ export function checkMap() {
 
 function parse(argv) {
   const opts = { ids: null, base: null, sdk: SDKS.both, list: false, all: false, check: false, lane: LANE.default, releaseCheck: false, rest: [] }
-  for (const a of argv) {
-    if (a.startsWith(ARG.suite)) opts.ids = a.slice(ARG.suite.length).split(ARG.separator).filter(Boolean)
+  for (let i = 0; i < argv.length; i++) {
+    const a = argv[i]
+    if (a === REPORT_DESTINATION) {
+      opts.rest.push(...argv.slice(i, i + 2))
+      i++
+    } else if (a.startsWith(ARG.suite)) opts.ids = a.slice(ARG.suite.length).split(ARG.separator).filter(Boolean)
     else if (a.startsWith(ARG.sdk)) opts.sdk = a.slice(ARG.sdk.length)
     else if (a === ARG.list) opts.list = true
     else if (a === ARG.all) opts.all = true

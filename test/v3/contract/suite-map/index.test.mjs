@@ -125,6 +125,12 @@ const SCHEDULER = Object.freeze({
   exit: 'exited',
 })
 
+const REPORTER = Object.freeze({
+  directory: (mode) => `scheduler-reports${mode}`,
+  basename: 'sdk-spec',
+  destination: (file) => `--test-reporter-destination=${file}`,
+})
+
 const isShelvedFile = (f) => f.startsWith(MAP.shelvedDir)
 const filesOf = (ids) => [...new Set(ids.flatMap((id) => SUITES[id].files))].sort()
 const laneIds = (legacy = false) => Object.keys(SUITES).filter((id) => !SHELVED_SUITES.includes(id) && Object.hasOwn(V2_GROUPS, id) === legacy)
@@ -159,15 +165,18 @@ function scratchRepo(t) {
   git('init', '-q')
   git('add', '-A')
   git('commit', '-q', '-m', 'fbtest base')
-  // Each scratch runner empties the test-homes root it owns, never the outer run's.
-  const homes = { FBTEST_TEST_HOMES: path.join(root, '.runtime', 'test-homes') }
+  // Scratch runs own their test homes and opt in to release mode independently of the outer run.
+  const defaults = {
+    FBTEST_TEST_HOMES: path.join(root, '.runtime', 'test-homes'),
+    [RELEASE_GATE.env]: RELEASE_GATE.off,
+  }
   return {
     root,
     write,
     change: (rel) => write(rel, '// fbtest change\n'),
     standIns: (files) => { for (const f of files) write(f, `import test from 'node:test'\ntest('FBTEST-RAN ${f}', () => {})\n`) },
-    affected: (args, env) => run(root, MAP.runAffected, args, { ...homes, ...env }),
-    v3: () => run(root, MAP.runV3, [], homes),
+    affected: (args, env) => run(root, MAP.runAffected, args, { ...defaults, ...env }),
+    v3: () => run(root, MAP.runV3, [], defaults),
   }
 }
 
@@ -365,8 +374,9 @@ export function observe(entry, started, exited, peers, waitForPeers) {
   const priorHomes = new Set()
   let runNumber = 0
   return {
-    run(mode) {
-      const parallel = mode !== s.serial
+    root: repo.root,
+    run({ mode, strict = false, args = [] } = {}) {
+      const parallel = mode !== s.serial && !strict
       const observed = path.join(repo.root, s.observationsDir(++runNumber))
       fs.mkdirSync(observed)
       for (const entry of entries) {
@@ -375,7 +385,8 @@ export function observe(entry, started, exited, peers, waitForPeers) {
         const observer = path.posix.relative(path.posix.dirname(entry), s.observer)
         repo.write(entry, `import { observe } from ${JSON.stringify(observer)}\nobserve(...${JSON.stringify(args)})\n`)
       }
-      const r = repo.affected([MAP.suite(s.suites), s.both, ...(mode ? [mode] : [])], {
+      const r = repo.affected([MAP.suite(s.suites), s.both, ...(mode ? [mode] : []), ...args], {
+        [RELEASE_GATE.env]: strict ? RELEASE_GATE.on : RELEASE_GATE.off,
         [s.env.homes]: anchor,
         [s.env.versions]: runtimes,
         [s.observationsEnv]: observed,
@@ -418,9 +429,34 @@ export function observe(entry, started, exited, peers, waitForPeers) {
 test('TEST-SPEED-SCHEDULER default V3 overlaps SDK jobs and --serial serializes SDK jobs and files, using fresh homes on each run', (t) => {
   const fixture = schedulerFixture(t)
   fixture.run()
-  fixture.run(SCHEDULER.serial)
+  fixture.run({ mode: SCHEDULER.serial })
+})
+
+test('TEST-SPEED-SCHEDULER strict release mode defaults to serial SDK jobs and files', (t) => {
+  schedulerFixture(t).run({ strict: true })
 })
 
 test('TEST-SPEED-SCHEDULER --parallel overlaps SDK jobs with bounded files and isolated environments', (t) => {
-  schedulerFixture(t).run(SCHEDULER.parallel)
+  schedulerFixture(t).run({ mode: SCHEDULER.parallel })
+})
+
+test('TEST-SPEED-SCHEDULER file reporter keeps a distinct report per SDK in serial and parallel', (t) => {
+  const fixture = schedulerFixture(t)
+  const sentinels = SCHEDULER.sdks.map(SCHEDULER.versionedEntry)
+  for (const mode of [SCHEDULER.serial, SCHEDULER.parallel]) {
+    // Fresh directories ensure a report from the first run can't satisfy the second run.
+    const dir = path.join(fixture.root, REPORTER.directory(mode))
+    fs.mkdirSync(dir)
+    fixture.run({ mode, args: [REPORTER.destination(path.join(dir, REPORTER.basename))] })
+    const reports = fs.readdirSync(dir, { recursive: true, withFileTypes: true })
+      .filter((file) => file.isFile() && file.name.includes(REPORTER.basename))
+    assert.equal(reports.length, sentinels.length, `${mode}: expected a separate file for each SDK`)
+    const reported = reports.map((file) => {
+      const contents = fs.readFileSync(path.join(file.parentPath, file.name), 'utf8')
+      const found = sentinels.filter((sentinel) => contents.includes(sentinel))
+      assert.equal(found.length, 1, `${mode}: ${file.name} must contain exactly one SDK sentinel:\n${contents}`)
+      return found[0]
+    })
+    assert.deepEqual(reported.sort(), [...sentinels].sort(), `${mode}: an SDK report was lost`)
+  }
 })

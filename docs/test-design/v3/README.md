@@ -145,11 +145,18 @@ suites in the chosen lane. `--suite` explicitly selects the named suites, irresp
 
 The affected V3 runner defaults to `--parallel`: both SDK jobs can run together, with up to three
 concurrent files per SDK. Use `--serial` to run one SDK and one file at a time. The legacy and
-strict release runs default to serial. Cases sharing a file's fixture still run in order. Each SDK
-job gets a private temporary HOME, cache, and test-homes directory.
-`FBTEST_TEST_HOMES`, if provided, is a parent directory, not a directory the runner clears; choose a
-location outside any Git checkout for native-child tests. Legacy files whose coverage depends on
-the active SDK run in both jobs when `--sdk=both`.
+strict release runs (`--release-check` or `FBTEST_RELEASE_REQUIRED=1`) default to serial. The scheduler
+self-check exercises the normal and strict defaults independently, even in a strict outer run. Cases
+sharing a file's fixture still run in order. Each SDK job gets a private temporary HOME, cache, and
+test-homes directory. `FBTEST_TEST_HOMES`, if provided, is a parent directory, not a directory the
+runner clears; choose a location outside any Git checkout for native-child tests. Legacy files whose
+coverage depends on the active SDK run in both jobs when `--sdk=both`.
+
+When two SDK jobs run, `--test-reporter-destination=report.txt` writes `report.txt.0.2.1-rc.5`
+and `report.txt.0.2.2-rc.1`, in both parallel and serial modes. `stdout`, `stderr`, and `/dev/null`
+are unchanged, as is the destination in a single-job run. The connector wire checks compare an explicit
+approval port against the fixture's configured value; port `0` instead uses the advertised port verified
+by a loopback HTTP request.
 
 Ordinary runs report `release folder missing` as a skip on artifact-only rows. Source-only tests still
 run. An existing incomplete or invalid release still fails; use `--release-check` (also set by
