@@ -54,6 +54,19 @@ import { checkTarget } from './target.js'
 
 const PENDING = LINK_SAVE.pendingOrigin
 const CRED = TARGETS.credentials
+const BINDING = CRED.bindingField
+
+/**
+ * The binding of a credential payload to one target epoch (MULTI-0 `TargetCredentialBinding`,
+ * security amendment): every core-private saved, pending and grant payload carries it under
+ * `TARGETS.credentials.bindingField`, and it is used only while all four members are the current
+ * ones. An origin match alone is never enough: the fixed parent names serve every parent epoch.
+ */
+const bindingOf = (names, origin, agentId) => Object.freeze({ targetId: names.targetId, endpointEpoch: names.endpointEpoch, origin, agentId })
+const isBinding = (binding, expected) => binding !== null && typeof binding === 'object'
+  && binding.targetId === expected.targetId && binding.endpointEpoch === expected.endpointEpoch && binding.origin === expected.origin && binding.agentId === expected.agentId
+/** Whether a payload's binding names this target epoch (whatever its origin or agent): another epoch's is never touched. */
+const ofEpoch = (payload, names) => payload?.[BINDING]?.targetId === names.targetId && payload[BINDING].endpointEpoch === names.endpointEpoch
 
 /** An added target's record key `fishball-core/<prefix><id>-<epoch>` (MULTI-0 `TARGETS.credentials`). */
 const targetRecordKey = (prefix, targetId, endpointEpoch) => `${CONNECT.grantRecordScope}/${prefix}${targetId}${CRED.recordSeparator}${endpointEpoch}`
@@ -69,15 +82,18 @@ const targetRecordKey = (prefix, targetId, endpointEpoch) => `${CONNECT.grantRec
  * - `tokenRecord`: the saved token copy, payload `LINK_SAVE.hostedPayload` (value by origin);
  * - `pending`: the reference value's origin binding record, or `undefined` for an added target,
  *   whose reference exists for its one epoch, so the value is bound to that endpoint by its name;
- * - `grantKey()`: Connect's grant record of this epoch.
+ * - `grantKey()`: Connect's grant record of this epoch;
+ * - `targetId`, `endpointEpoch`: the epoch every payload's binding names (`bindingOf`).
  * @param {{targetId: string, endpointEpoch: string}} target
  */
 export function credentialNames({ targetId, endpointEpoch }) {
   const grant = targetRecordKey(CRED.grantRecordPrefix, targetId, endpointEpoch)
   if (targetId === TARGETS.parentId) {
-    return Object.freeze({ ref: HOSTED_IMPORT.credentialRef, tokenRecord: HOSTED_IMPORT.savedRecord.key, pending: PENDING.key, grantKey: () => grant })
+    return Object.freeze({ targetId, endpointEpoch, ref: HOSTED_IMPORT.credentialRef, tokenRecord: HOSTED_IMPORT.savedRecord.key, pending: PENDING.key, grantKey: () => grant })
   }
   return Object.freeze({
+    targetId,
+    endpointEpoch,
     ref: (CRED.tokenRefPrefix + targetId + CRED.tokenRefSeparator + endpointEpoch).split(CRED.refReplaced).join(CRED.refReplacement),
     tokenRecord: targetRecordKey(CRED.tokenRecordPrefix, targetId, endpointEpoch),
     pending: undefined,
@@ -87,17 +103,26 @@ export function credentialNames({ targetId, endpointEpoch }) {
 
 /**
  * Deletes a retired target epoch's token material (MULTI-0 `FishballTargets.remove` / `setUrl`,
- * Q07; a parent epoch the instance re-pointed): its Connect grant, and for an added target also
- * its reference and token record, which are that epoch's alone. The parent's hosted import
- * (`DSH_AGENT_TOKEN`, `hosted-agent`) is the instance's handoff, kept by origin and shared by its
- * epochs (`link.d.ts`), so it stays: its origin binding keeps a value from reaching another origin.
- * Local only: nothing is revoked at the connector.
+ * Q07; a parent epoch the instance re-pointed, security amendment): its Connect grant, its saved
+ * token copy and its reference. An added target's are that epoch's alone. The parent's are fixed
+ * names every parent epoch uses, so each goes only while it belongs to the retired epoch: the saved
+ * copy and the pending binding when their binding names that epoch, the reference value unless the
+ * pending record binds it to another epoch (an unbound value was written under the retired one, and
+ * an absent binding never makes old material a fresh handoff). Local only: nothing is revoked at the
+ * connector. The caller runs it after the epoch's credentials are disposed and settled.
  */
 export async function forgetCredentials(credentials, names) {
   await credentials.deleteRecord(names.grantKey())
-  if (names.pending !== undefined) return
-  await credentials.unset(names.ref)
-  await credentials.deleteRecord(names.tokenRecord)
+  if (names.pending === undefined) {
+    await credentials.unset(names.ref)
+    await credentials.deleteRecord(names.tokenRecord)
+    return
+  }
+  const [value, pending, saved] = await Promise.all([credentials.resolve(names.ref), credentials.readRecord(names.pending), credentials.readRecord(names.tokenRecord)])
+  const pendingForValue = value?.value !== undefined && pending?.payload?.ref === tokenCredentialId(value.value)
+  if (value?.value !== undefined && (!pendingForValue || ofEpoch(pending.payload, names))) await credentials.unset(names.ref)
+  if (ofEpoch(pending?.payload, names)) await credentials.deleteRecord(names.pending)
+  if (ofEpoch(saved?.payload, names)) await credentials.deleteRecord(names.tokenRecord)
 }
 
 /** The link credential kinds (`LinkCredentials.kind`). */
@@ -112,42 +137,46 @@ export const tokenCredentialId = (value) => LINK_SAVE.credentialId.tokenPrefix
 const grantCredentialId = (grant) => LINK_SAVE.credentialId.grantPrefix + grant.grantId
 
 /**
- * The token copies of the hosted record by origin. A payload of another version reads as none; V3
- * is installed fresh (Q-M1), so only this version is ever written, and `dropToken` leaves another
- * version's record alone rather than deleting what it cannot read.
+ * A saved token copy: one accepted value and its binding (security amendment: the copy is the
+ * binding's, never "the origin's"). A payload of another version, or bound to anything but the
+ * current target epoch, origin and agent, reads as none; V3 is installed fresh (Q-M1), so only this
+ * version is ever written.
  */
 const isOwnVersion = (record) => record?.payload?.v === LINK_SAVE.hostedPayload.version
-const hostedTokens = (record) => (isOwnVersion(record) ? record.payload.tokens ?? {} : {})
+const savedToken = (record, binding) => (isOwnVersion(record) && isBinding(record.payload[BINDING], binding) ? record.payload.token : undefined)
 // The hosted record's kind serves every saved token copy (the parent's and an added target's).
-const hostedRecord = (tokens) => Object.freeze({ kind: HOSTED_IMPORT.savedRecord.kind, payload: { v: LINK_SAVE.hostedPayload.version, tokens } })
+const tokenRecordOf = (token, binding) => Object.freeze({ kind: HOSTED_IMPORT.savedRecord.kind, payload: { v: LINK_SAVE.hostedPayload.version, token, [BINDING]: binding } })
 /**
  * A grant the link can connect with for `serverUrl` as fishball id `clientId`: issued for that URL,
  * still holding tokens, and approved for that id (R-FIX F10). The approval page bound the entry to
  * the id Connect passed (`agentId`, R-OA-22); refreshing never changes it, so after a change of
  * `identity.id` the grant still acts as the old id, and only a new Connect gives the new one. A
- * grant saved before Connect recorded its id has no `agentId`; the pairing records' id check
- * (identity/pairing.js) holds it.
+ * grant without its `agentId` or its binding (security amendment) is not usable.
  */
-const usableGrant = (grant, serverUrl, clientId) => isGrantFor(grant, serverUrl) && grant.tokens !== undefined
-  && (grant[LINK_SAVE.grantAgentIdField] === undefined || grant[LINK_SAVE.grantAgentIdField] === clientId)
+const usableGrant = (grant, serverUrl, binding) => isGrantFor(grant, serverUrl) && grant.tokens !== undefined
+  && grant[LINK_SAVE.grantAgentIdField] === binding.agentId && isBinding(grant[BINDING], binding)
 
 /**
- * The reference value's binding (`LINK_SAVE.pendingOrigin`): its origin when it is bound to the
- * value with id `ref`, else `undefined` (no record, another version, or another value's record).
+ * The parent's reference-value binding (`LINK_SAVE.pendingOrigin`, security amendment): `{v, ref,
+ * binding}`, the value's non-secret id and the target epoch, origin and agent it was written for.
+ * `pendingOf` answers `undefined` for no record of this value (another version, or another value's),
+ * else its binding.
  */
-const boundOrigin = (record, ref) => (record?.payload?.v === PENDING.version && record.payload.ref === ref ? record.payload.origin : undefined)
-const bindingRecord = (ref, origin) => Object.freeze({ kind: PENDING.kind, payload: { v: PENDING.version, ref, origin } })
+const pendingOf = (record, ref) => (record?.payload?.v === PENDING.version && record.payload.ref === ref ? record.payload[BINDING] ?? null : undefined)
+const pendingRecord = (ref, binding) => Object.freeze({ kind: PENDING.kind, payload: { v: PENDING.version, ref, [BINDING]: binding } })
 
 /**
  * The saved credentials in DSH's credential store (`ctx.credentials`), and one token manager per
  * grant record, so a refresh is single-flight for the link and Connect alike.
  */
-function createSavedStore(credentials, { names, sdk, fetch, now, clientId }) {
+function createSavedStore(credentials, { names, sdk, fetch, now, clientId, fenced }) {
   const managers = new Map()
   const HOSTED_KEY = names.tokenRecord
   const grantRecordKey = names.grantKey
+  const binding = (origin) => bindingOf(names, origin, clientId())
   return Object.freeze({
     grantKey: grantRecordKey,
+    binding,
     async managerFor(origin) {
       const key = grantRecordKey(origin)
       if (!managers.has(key)) managers.set(key, createTokenManager({ sdk: await sdk(), credentials, key, now, refreshLeadMs: LINK_SAVE.refreshLeadMs, fetchFn: fetch }))
@@ -156,38 +185,32 @@ function createSavedStore(credentials, { names, sdk, fetch, now, clientId }) {
     /** `{token, grant}` saved for `origin`: the token copy's value and the grant payload, each or `undefined`. */
     async read(origin) {
       const [hosted, grant] = await Promise.all([credentials.readRecord(HOSTED_KEY), credentials.readRecord(grantRecordKey(origin))])
-      return { token: hostedTokens(hosted)[origin], grant: grant?.payload }
+      return { token: savedToken(hosted, binding(origin)), grant: grant?.payload, origin }
     },
     /** Whether `saved` (from `read`) holds a credential the link can use for `serverUrl`. */
-    hasSaved: (saved, serverUrl) => saved.token !== undefined || usableGrant(saved.grant, serverUrl, clientId()),
+    hasSaved: (saved, serverUrl) => saved.token !== undefined || usableGrant(saved.grant, serverUrl, binding(saved.origin)),
     /**
      * Saves the accepted token for `origin` (once) and removes the grant `replaced` (the one `read`
      * found for the attempt): one saved credential per origin. Only that grant goes: a grant another
      * core process committed meanwhile (CLI and Web share the store) is newer and stays. DSH has no
      * compare-and-delete, so a commit between the fresh read and the delete is the window left.
      */
-    async saveToken(origin, value, replaced) {
-      await credentials.modifyRecord(HOSTED_KEY, async (current) => {
-        const tokens = hostedTokens(current)
-        return tokens[origin] === value ? undefined : hostedRecord({ ...tokens, [origin]: value })
-      })
+    async saveToken(origin, value, replaced, bound) {
+      // `fenced()`: this epoch was retired meanwhile (the late completion of the amendment): nothing changes.
+      await credentials.modifyRecord(HOSTED_KEY, async (current) => (fenced() || savedToken(current, bound) === value ? undefined : tokenRecordOf(value, bound)))
+      if (fenced()) return
       const key = grantRecordKey(origin)
       if (replaced !== undefined && (await credentials.readRecord(key))?.payload?.grantId === replaced.grantId) await credentials.deleteRecord(key)
     },
     /**
-     * Removes `origin`'s token copy (a Connect grant replaced it). The last one deletes the record,
-     * so `describeRecord(savedRecord.key).configured` keeps meaning "the child holds a credential".
-     * `modifyRecord` cannot delete, so the delete is a second step, taken only while a fresh read
-     * still shows an empty record of this version (another process may have saved an origin since;
-     * the window between that read and the delete is the one left).
+     * Removes this binding's token copy (a Connect grant replaced it), so
+     * `describeRecord(savedRecord.key).configured` keeps meaning "the child holds a credential". A
+     * copy of another binding stays. DSH has no compare-and-delete, so a save between this read and
+     * the delete is the window left.
      */
     async dropToken(origin) {
-      await credentials.modifyRecord(HOSTED_KEY, async (current) => {
-        const { [origin]: dropped, ...rest } = hostedTokens(current)
-        return dropped === undefined ? undefined : hostedRecord(rest)
-      })
       const fresh = await credentials.readRecord(HOSTED_KEY)
-      if (isOwnVersion(fresh) && Object.keys(hostedTokens(fresh)).length === 0) await credentials.deleteRecord(HOSTED_KEY)
+      if (!fenced() && savedToken(fresh, binding(origin)) !== undefined) await credentials.deleteRecord(HOSTED_KEY)
     },
   })
 }
@@ -255,7 +278,11 @@ export function createLinkCredentials(ctx, { target, clientId, clientMetadataUrl
   let sdkModule = sdk
   // Connect's and the saved grants' MCP client; a failed import is logged as the link's (E-FIX-3).
   const loadSdk = async () => (sdkModule ??= await importMcpClient(logger))
-  const store = createSavedStore(ctx.credentials, { names, sdk: loadSdk, fetch, now, clientId })
+  // Disposed (the epoch was retired, removed or re-pointed): every late completion of an attempt of
+  // this epoch saves, unsets and binds nothing (security amendment: the generation fence).
+  let disposed = false
+  const fenced = () => disposed
+  const store = createSavedStore(ctx.credentials, { names, sdk: loadSdk, fetch, now, clientId, fenced })
   const REF = names.ref
   // Q-LS1 = A: the reference value the target refused while a saved credential existed (by id);
   // cleared when the reference changes. And the saved credential the target refused, by id.
@@ -264,9 +291,12 @@ export function createLinkCredentials(ctx, { target, clientId, clientMetadataUrl
 
   const connect = createConnect(ctx, {
     store, target, clientId, clientMetadataUrl, sdk: loadSdk, fetch, timers,
+    // A Connect grant names its binding (the origin the attempt began for, and its agent id).
+    bindingOf: (origin, agentId) => Object.freeze({ [BINDING]: bindingOf(names, origin, agentId) }),
     isRefused: (ref) => ref === refusedSaved,
     credentialIdOf: (saved) => (saved.token !== undefined ? tokenCredentialId(saved.token) : grantCredentialId(saved.grant)),
     onSaved: async (origin) => {
+      if (fenced()) return
       refusedSaved = undefined
       await store.dropToken(origin).catch(warn(LINK_SAVE.text.forget))
       emitIsolated(reconnects)
@@ -279,30 +309,33 @@ export function createLinkCredentials(ctx, { target, clientId, clientMetadataUrl
    * has no compare-and-unset, so a write between this read and the unset is the window left.
    */
   async function unsetIfSaved(value) {
-    if ((await ctx.credentials.resolve(REF))?.value === value) await ctx.credentials.unset(REF)
+    if (!fenced() && (await ctx.credentials.resolve(REF))?.value === value) await ctx.credentials.unset(REF)
   }
 
   /**
-   * Binds the reference value with id `ref` to `origin` (a new write: whatever it was bound to).
-   * An added target's reference names its one endpoint epoch, so it needs no binding record.
+   * Binds the reference value with id `ref` to this epoch at `origin` (a new write: whatever it was
+   * bound to). An added target's reference names its one endpoint epoch, so it needs no record.
    */
-  const bind = (ref, origin) => (names.pending === undefined ? Promise.resolve()
-    : ctx.credentials.modifyRecord(names.pending, async (current) => (boundOrigin(current, ref) === origin ? undefined : bindingRecord(ref, origin))))
+  const bind = (ref, origin) => (names.pending === undefined || fenced() ? Promise.resolve()
+    : ctx.credentials.modifyRecord(names.pending, async (current) => (fenced() || isBinding(pendingOf(current, ref), store.binding(origin)) ? undefined : pendingRecord(ref, store.binding(origin)))))
 
   /**
-   * The origin the reference value with id `ref` is for. An unbound value is bound to `origin`, the
-   * target this attempt dials (its first attempt); the write is conditional, so a binding another
-   * process made meanwhile wins.
+   * Whether the reference value with id `ref` is this epoch's at `origin` (all four binding members,
+   * security amendment). An unbound value is bound now, to the epoch this attempt dials (its first
+   * attempt); the write is conditional, so a binding another process made meanwhile wins. A value
+   * bound to anything else (another parent epoch, origin or agent id) is never sent.
    */
-  async function originOfReference(ref, origin) {
+  async function isOwnReference(ref, origin) {
     // An added target's reference is for its own epoch, whose endpoint never changes (a URL edit
-    // is a new epoch with a new reference), so its value is always for the origin dialled.
-    if (names.pending === undefined) return origin
+    // is a new epoch with a new reference), so its value is always for the epoch dialled.
+    if (names.pending === undefined) return true
+    const expected = store.binding(origin)
     // A plain read first: a bound value (every retry) takes no lock and needs no writable store.
-    const bound = boundOrigin(await ctx.credentials.readRecord(names.pending), ref)
-    if (bound !== undefined) return bound
-    const record = await ctx.credentials.modifyRecord(names.pending, async (current) => (boundOrigin(current, ref) === undefined ? bindingRecord(ref, origin) : undefined))
-    return boundOrigin(record, ref)
+    const read = pendingOf(await ctx.credentials.readRecord(names.pending), ref)
+    if (read !== undefined) return isBinding(read, expected)
+    if (fenced()) return false
+    const record = await ctx.credentials.modifyRecord(names.pending, async (current) => (pendingOf(current, ref) === undefined && !fenced() ? pendingRecord(ref, expected) : undefined))
+    return isBinding(pendingOf(record, ref), expected)
   }
 
   /**
@@ -314,19 +347,23 @@ export function createLinkCredentials(ctx, { target, clientId, clientMetadataUrl
    */
   const tokenCredentials = (origin, value, source) => {
     const ref = tokenCredentialId(value)
+    // The binding this attempt captured: a save after the epoch or the id changed is not this attempt's.
+    const bound = store.binding(origin)
     return Object.freeze({
-      kind: CREDENTIAL_KIND.token, clientId: clientId(), ref, secret: value,
+      kind: CREDENTIAL_KIND.token, clientId: bound.agentId, ref, secret: value,
       async accepted() {
+        if (fenced()) return
         if (refusedSaved === ref) refusedSaved = undefined
         if (source.fromReference) {
           // A failed save keeps the reference, so the next connection saves again.
-          try { await store.saveToken(origin, value, source.saved.grant) } catch (error) { warn(LINK_SAVE.text.save)(error); return connect.refresh() }
+          try { await store.saveToken(origin, value, source.saved.grant, bound) } catch (error) { warn(LINK_SAVE.text.save)(error); return connect.refresh() }
           refusedSaved = undefined
           await unsetIfSaved(value).catch(warn(LINK_SAVE.text.unset))
         }
         connect.refresh()
       },
       async refused() {
+        if (fenced()) return
         if (!source.fromReference) refusedSaved = ref
         else if (store.hasSaved(source.saved, source.serverUrl)) refusedReference = ref
         connect.refresh()
@@ -341,6 +378,7 @@ export function createLinkCredentials(ctx, { target, clientId, clientMetadataUrl
     return Object.freeze({
       kind: CREDENTIAL_KIND.grant, clientId: clientId(), ref, authProvider: auth.provider, scope: auth.scope,
       async refused() {
+        if (fenced()) return
         // A token refused after its refresh: the grant is dropped (Connect again, once, no loop).
         refusedSaved = ref
         await manager.dropTokens({ failedAccessToken: auth.accessToken() }).catch(warn(LINK_SAVE.text.forget))
@@ -358,11 +396,11 @@ export function createLinkCredentials(ctx, { target, clientId, clientMetadataUrl
     const [reference, saved] = await Promise.all([ctx.credentials.resolve(REF), store.read(origin)])
     const value = reference?.value
     if (value && !(store.hasSaved(saved, serverUrl) && tokenCredentialId(value) === refusedReference)
-      && await originOfReference(tokenCredentialId(value), origin) === origin) {
+      && await isOwnReference(tokenCredentialId(value), origin)) {
       return tokenCredentials(origin, value, { fromReference: true, saved, serverUrl })
     }
     if (saved.token !== undefined) return tokenCredentials(origin, saved.token, { fromReference: false })
-    if (usableGrant(saved.grant, serverUrl, clientId())) return grantCredentials(origin, saved.grant)
+    if (usableGrant(saved.grant, serverUrl, store.binding(origin))) return grantCredentials(origin, saved.grant)
     return null
   }
 
@@ -392,6 +430,7 @@ export function createLinkCredentials(ctx, { target, clientId, clientMetadataUrl
     connect: connect.control,
     onChange: (fn) => subscribe(reconnects, fn),
     dispose() {
+      disposed = true
       offReference?.()
       offRecord?.()
       connect.dispose()

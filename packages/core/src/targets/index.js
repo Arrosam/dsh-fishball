@@ -35,7 +35,7 @@ import { codeOf } from '../events/diagnostics.js'
 import { generateToken } from '../identity/identity.js'
 import { checkTarget, emitIsolated, subscribe } from '../link/index.js'
 import { BEGIN_VIA } from '../link/connect.js'
-import { forgetCredentials } from '../link/credentials.js'
+import { credentialNames, forgetCredentials } from '../link/credentials.js'
 import { stripLine } from '../status/line.js'
 import { TARGET_LOG } from './constants.js'
 import { allocateSuffix, resolvedName } from './names.js'
@@ -160,12 +160,19 @@ export function createTargets(ctx, { tables, identityRecords, asks, events, reco
   }
 
   /** Retires one epoch (removal or endpoint change): its runtime, open cards and token material; nothing remote. */
+  /**
+   * Retires one stored epoch (removal or endpoint change): stops its runtime if one runs (its late
+   * completions are fenced by their own disposal), voids its open cards and deletes its token
+   * material; nothing remote. Also for an epoch with no runtime (a parent epoch the instance moved
+   * while core was down: a cold restart must not adopt its material, MULTI-0 security amendment).
+   */
   async function retire(id) {
-    const runtime = await stopRuntime(id)
-    if (runtime === undefined) return
-    const { targetId, endpointEpoch } = runtime
-    await asks.voidWhere((source) => source.targetId === targetId && source.endpointEpoch === endpointEpoch).catch(warn(TARGET_LOG.reconcile))
-    await forgetCredentials(ctx.credentials, runtime.credentialNames).catch(warn(TARGET_LOG.forget))
+    const record = records.get(id)
+    await stopRuntime(id)
+    if (record === undefined) return
+    const { endpointEpoch } = record
+    await asks.voidWhere((source) => source.targetId === id && source.endpointEpoch === endpointEpoch).catch(warn(TARGET_LOG.reconcile))
+    await forgetCredentials(ctx.credentials, credentialNames({ targetId: id, endpointEpoch })).catch(warn(TARGET_LOG.forget))
   }
 
   const nextOrder = () => [...records.values()].reduce((highest, record) => Math.max(highest, record.order + 1), 0)
@@ -295,12 +302,16 @@ export function createTargets(ctx, { tables, identityRecords, asks, events, reco
   }
 
   /**
-   * X12 / X8 bound to one target epoch, captured at creation (MULTI-0 `FishballTargetBound`): a
-   * later call on a handle whose epoch is no longer current answers `unknown-target`, sending nothing.
+   * X12 / X8 bound to one target epoch, captured at creation (MULTI-0 `FishballTargetBound`,
+   * `TargetSelector`): the
+   * caller's expected `endpointEpoch` when it names one (a handle made from an event's or a card's
+   * `source`, so a late one is never retargeted to a newer endpoint), else the epoch current now. A
+   * call on a handle whose epoch is not current answers `unknown-target`, sending nothing.
    */
   function bound(target) {
     const runtime = runtimes.get(target?.targetId)
-    const epoch = runtime?.endpointEpoch
+    // `TargetSelector.endpointEpoch`: absent means "the current endpoint"; any other non-string never matches.
+    const epoch = target?.endpointEpoch === undefined ? runtime?.endpointEpoch : target.endpointEpoch
     return () => {
       const current = runtimes.get(target?.targetId)
       return current !== undefined && current.endpointEpoch === epoch ? current : undefined
