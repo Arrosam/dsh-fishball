@@ -57,12 +57,12 @@ const firstElement = (node) => (node.children ?? []).find((c) => typeof c !== 's
  * with GET state answering `state(world)` when given; `settings` and `answerState` go to
  * openTokensPage (R-FIX-CUI). Returns `{world, page, view}`.
  */
-export async function openPolished(t, sdk, { labels = [], state, lang, tokens, settings, answerState } = {}) {
+export async function openPolished(t, sdk, { labels = [], state, lang, tokens, settings, answerState, beforeSave } = {}) {
   const world = await worldFor(t, sdk, tokens === undefined ? {} : { tokens })
   for (const label of labels) await world.registry.create(label)
   const mod = await pageModule(sdk)
   const routes = mod[SUBJECT.routes]({ tokens: world.registry, logger: world.logger, ...(state === undefined ? {} : { state: () => state(world) }) })
-  const page = await openTokensPage(t, { sdk, world, routes, lang, settings, answerState })
+  const page = await openTokensPage(t, { sdk, world, routes, lang, settings, answerState, beforeSave })
   const view = await page.open()
   return { world, page, view }
 }

@@ -119,6 +119,9 @@ export async function launch() {
           async click(x, y) { for (const type of ['mousePressed', 'mouseReleased']) await devtools.send('Input.dispatchMouseEvent', { type, x, y, button: 'left', clickCount: 1 }, sessionId) },
           /** Types `text` into the focused field as a keyboard's text input does (trusted input events). */
           async type(text) { await devtools.send('Input.insertText', { text }, sessionId) },
+          async key(key, windowsVirtualKeyCode) {
+            for (const type of ['rawKeyDown', 'keyUp']) await devtools.send('Input.dispatchKeyEvent', { type, key, code: key, windowsVirtualKeyCode }, sessionId)
+          },
           async screenshot() { return Buffer.from((await devtools.send('Page.captureScreenshot', { format: 'png' }, sessionId)).data, 'base64') },
           close: () => devtools.send('Target.closeTarget', { targetId }).catch(() => {}),
         }
