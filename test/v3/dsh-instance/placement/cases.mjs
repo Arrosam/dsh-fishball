@@ -33,7 +33,7 @@ import { admitChild, bootGraph } from '../../fishball-core/package/page.mjs'
 import { withdrawnCase } from '../../fishball-core/settings/withdrawn.mjs'
 import { WITHDRAWN_BY, withdrawnRow } from '../host/withdrawn.mjs'
 import { corePatchFile } from '../../fishball-core/package/static.mjs'
-import { caseName, caseTest } from '../../contract/package-boundaries/cases.mjs'
+import { caseName, caseTest, packedCase } from '../../contract/package-boundaries/cases.mjs'
 import { V3 } from '../../contract/package-boundaries/constants.mjs'
 import { readManifest } from '../../contract/package-boundaries/packages.mjs'
 import { assertLibraryCopies, shelvedTraces } from '../../release/pack/release.mjs'
@@ -566,7 +566,7 @@ export function registerIPlaceCases(sdk) {
   // ============================================================== PLAT-EP-07 row 5 (REL-PACK), on the release tarballs.
   // The property is about shipped packages (the working tree cannot carry a library copy without
   // shadowing its source), so it reads `node scripts/pack-v3.mjs`'s output through REL-PACK's own check.
-  caseTest(sdk, 'PLAT-EP-07', 5, 'every importer\'s tarball carries a real copy of its side\'s library (P-1 mechanism B)', () => {
+  packedCase(sdk, 'PLAT-EP-07', 5, 'every importer\'s tarball carries a real copy of its side\'s library (P-1 mechanism B)', () => {
     for (const lib of [V3.dshShared, V3.shared]) assertLibraryCopies(lib.name)
   })
   caseTest(sdk, 'HOST-ST-01', 10, 'Running → uninstall → Removed, the export offered first', null, LATER.uninstall)

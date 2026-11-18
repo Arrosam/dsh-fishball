@@ -182,9 +182,7 @@ export const FIXTURE = Object.freeze({
   retryMarginMs: 2_000,
   /** AUTH-EP-08 row 6: how much slack the time bound may take. */
   timeoutMarginMs: 2_000,
-  /** Cross-process lock for the rows that bind the default port (both SDK files run at once). */
-  defaultPortLock: 'fbtest-c-oauth-web-default-port.lock',
-  lockPollMs: 100,
+  listenerPollMs: 100,
   pkceVerifierBytes: 32,
   /**
    * AUTH-BVA-11 (R-OA-23): refresh ages around the withdrawn 365-day cap (decided #18, reversed by

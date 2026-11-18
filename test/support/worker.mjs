@@ -117,7 +117,10 @@ function setBundleSelected(dir, names, selected) {
   fs.writeFileSync(file, JSON.stringify(pkg, null, 2))
 }
 const overlay = path.join(home, 'fbtest.overlay.yml')
+const connectorApproval = Object.freeze({ id: 'dsh-connector', config: { approval: { port: 0 } } })
 fs.writeFileSync(overlay, JSON.stringify([
+  // Avoid binding the machine's product default from an owned test profile.
+  ...(!process.env.FBTEST_PLUGIN_DIR ? [connectorApproval] : []),
   { id: 'agent-default-model', config: { provider: FAKE.provider, model: FAKE.model } },
   // P11: FBTEST_TITLE_MAX_BYTES raises DSH's title byte cap (80 in dsh-base), so a test can give a session a title
   // longer than the 200-byte author-name bound. The other two fields repeat dsh-base's values.

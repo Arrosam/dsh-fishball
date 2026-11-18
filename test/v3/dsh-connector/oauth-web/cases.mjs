@@ -36,7 +36,7 @@ import {
   REFRESH_RECORD_MEMBERS, REFUSAL, RELAYED, REQUEST_GATE, SCOPE, STUB, SUBJECT, TIME_UNIT, XSEC, oauthUrls,
 } from './constants.mjs'
 import {
-  approvalListener, authorizeParams, cimdFetcher, digest, documentOf, freePort, holdPort, lockDefaultPort, pkce, probe, read,
+  approvalListener, authorizeParams, cimdFetcher, defaultApprovalSocket, digest, documentOf, freePort, holdPort, pkce, probe, read,
   served, stalled, stubTransport, waitFor, webModule, webWorld,
 } from './subject.mjs'
 import { fakeClock } from './fakes.mjs'
@@ -843,13 +843,18 @@ function decisionTables(sdk) {
     return answer !== null && answer.body !== STUB.holderMarker && w.gate.calls.length > before
   }
   const statusOf = (a) => read(a.l.status)
-  dt09('1', 'the default port, free → open, status ok, the page reachable', async (w, t) => {
-    await lockDefaultPort(t)
-    const a = approvalListener(t, w, APPROVAL_LISTENER.defaultPort)
+  const startDefault = async (w, t, socket) => {
+    const a = approvalListener(t, w, APPROVAL_LISTENER.defaultPort, socket.createServer)
     await a.start()
+    assert.deepEqual(socket.binds, [{ port: APPROVAL_LISTENER.defaultPort, host: FIXTURE.loopback }])
+    return a
+  }
+  dt09('1', 'the default port, free → open, status ok, the page reachable', async (w, t) => {
+    const socket = defaultApprovalSocket()
+    const a = await startDefault(w, t, socket)
     assert.equal(statusOf(a), SUBJECT.statusOk)
     assert.equal(read(a.l.port), APPROVAL_LISTENER.defaultPort)
-    assert.ok(await served_(w, APPROVAL_LISTENER.defaultPort))
+    assert.ok(await served_(w, socket.boundPort()))
   })
   dt09('2', 'a user-set free port P → open on P, status ok', async (w, t) => {
     const port = await freePort()
@@ -860,15 +865,13 @@ function decisionTables(sdk) {
     assert.ok(await served_(w, port))
   })
   dt09('3', 'the default port held by another process → not open, approval-port-in-use, one diagnostic; the page unreachable', async (w, t) => {
-    await lockDefaultPort(t)
-    await holdPort(t, APPROVAL_LISTENER.defaultPort)
-    const a = approvalListener(t, w, APPROVAL_LISTENER.defaultPort)
-    await a.start()
+    const { port } = await holdPort(t, 0)
+    const a = await startDefault(w, t, defaultApprovalSocket(port))
     assert.equal(statusOf(a), CONNECTOR_STATUS.approvalPortInUse)
     assert.ok(a.statuses.includes(CONNECTOR_STATUS.approvalPortInUse), 'reported through onStatus')
     assert.equal(read(a.l.listening), false)
     assert.equal(a.logger.lines.filter((l) => l.level === 'warn' || l.level === 'error').length, 1, 'one diagnostic')
-    assert.equal((await probe(APPROVAL_LISTENER.defaultPort)).body, STUB.holderMarker)
+    assert.equal((await probe(port)).body, STUB.holderMarker)
   })
   todo(sdk, CASE.dt09, '3 (metadata)', 'the metadata keeps authorization_endpoint on the default port; MCP and machine exchange work; stock clients accept it', LATER.metadata)
   dt09('4', 'a clash, then the other process frees the port → bound again on the next retry (APPROVAL_LISTENER.retryMs), status ok', async (w, t) => {

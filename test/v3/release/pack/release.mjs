@@ -14,6 +14,8 @@ import fs from 'node:fs'
 import { mkdtemp, rm } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import net from 'node:net'
+import test from 'node:test'
+import { REQUIRED_RELEASE } from '../../../support/constants.mjs'
 import os from 'node:os'
 import path from 'node:path'
 import { gunzipSync } from 'node:zlib'
@@ -93,6 +95,26 @@ export function releaseDir() {
   assert.ok(fs.existsSync(RELEASE.dir) && fs.statSync(RELEASE.dir).isDirectory(), missing('the release folder'))
   return RELEASE.dir
 }
+const MISSING_RELEASE = Object.freeze({ errno: 'ENOENT', reason: 'release folder missing' })
+
+/** Optional source runs skip only absent artifacts; malformed or incomplete releases still fail. */
+export function releaseTest(name, options, fn) {
+  test(name, options, (t) => {
+    if (process.env[REQUIRED_RELEASE.env] !== REQUIRED_RELEASE.on) {
+      try {
+        // lstat distinguishes a dangling symlink from an absent path.
+        fs.lstatSync(RELEASE.dir)
+      } catch (error) {
+        if (error.code !== MISSING_RELEASE.errno) throw error
+        t.skip(MISSING_RELEASE.reason)
+        return
+      }
+    }
+    releaseDir()
+    return fn(t)
+  })
+}
+
 export function tarballPath(pkg, dir = releaseDir()) {
   const file = path.join(dir, pkg.tarball)
   assert.ok(fs.existsSync(file), missing(pkg.tarball))
