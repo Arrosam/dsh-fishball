@@ -64,12 +64,15 @@ export function registerK1MultiCases(sdk) {
     const methods = core[SDK_ORACLE.serverNotifications].options.map((o) => o.shape.method.value)
     assert.ok(methods.includes(mod[X.serverIdentity].updatedNotification), 'not a server notification: ' + methods.join(', '))
   })
-  caseTest(sdk, 'K1-MULTI-DT-01', 'params', 'the notification\'s required params are exactly {uri}, so {uri: RESOURCE.identity.uri} is a valid notification', async (mod) => {
-    const core = await mcpCore(sdk)
+  caseTest(sdk, 'K1-MULTI-DT-01', 'params', 'the notification\'s one required param is uri (the SDK\'s _meta stays optional): {uri: identity} parses with and without the SDK\'s subscription-id _meta', async (mod) => {
+    const [core, client] = [await mcpCore(sdk), await mcpClient(sdk)]
     const params = core[SDK_ORACLE.notificationSchema].shape.params.shape
     assert.deepEqual(Object.keys(params).filter((k) => !params[k].isOptional()), [SDK_ORACLE.uriParam])
-    const hint = { method: mod[X.serverIdentity].updatedNotification, params: { [SDK_ORACLE.uriParam]: mod[X.resource].identity.uri } }
-    assert.ok(core[SDK_ORACLE.notificationSchema].safeParse(hint).success, 'the identity hint is refused by the SDK schema')
+    const uri = { [SDK_ORACLE.uriParam]: mod[X.resource].identity.uri }
+    const stamped = { ...uri, [SDK_ORACLE.metaParam]: { [client[SDK_ORACLE.subscriptionMetaKey]]: SDK_ORACLE.subscriptionId } }
+    for (const p of [uri, stamped]) {
+      assert.ok(core[SDK_ORACLE.notificationSchema].safeParse({ method: mod[X.serverIdentity].updatedNotification, params: p }).success, 'refused: ' + JSON.stringify(p))
+    }
   })
   caseTest(sdk, 'K1-MULTI-DT-01', 'Implementation', 'ServerIdentity\'s members are exactly the SDK Implementation\'s required members (name, version)', async () => {
     const shape = (await mcpCore(sdk))[SDK_ORACLE.implementationSchema].shape

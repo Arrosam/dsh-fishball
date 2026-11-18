@@ -13,10 +13,10 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import { caseTest } from '../package-boundaries/cases.mjs'
 import { FOLDER, SERVICE } from './constants.mjs'
-import { assertParams, contracts, member, needDeclarations, serviceMembers, vocabulary } from './contracts.mjs'
-import { blankComments, syntaxErrors } from './declarations.mjs'
+import { assertParams, contracts, elementType, member, needDeclarations, serviceMembers, vocabulary } from './contracts.mjs'
+import { blankComments, splitTop, syntaxErrors } from './declarations.mjs'
 import {
-  BOUND, LINE, MEMBERS, NULLABLE, PROVENANCE, RESERVATION, SECRET_MEMBER, SNAPSHOT_VERSION, TARGETS_EXPORTS, TARGETS_FILE, TYPES, WITHDRAWN_REMOTE,
+  BOUND, LINE, MEMBERS, NULLABLE, PROVENANCE, RESERVATION, SECRET_MEMBER, SNAPSHOT_VERSION, STATUS, TARGETS_EXPORTS, TARGETS_FILE, TYPES, WITHDRAWN_REMOTE,
 } from './targets-constants.mjs'
 
 const core = () => contracts(FOLDER.coreContracts)
@@ -27,7 +27,17 @@ const text = (c, file) => {
   return c.texts.get(file)
 }
 const isNullable = (c, found) => c.m.leaves(found.type).some((l) => l.other === TYPES.nullLeaf || l.literal === TYPES.nullLeaf)
-/** The literals of a type, asserting it is a closed vocabulary. */
+/** A type text's union leaves as words: literal values and other type names. */
+const leafWords = (c, type) => c.m.leaves(type).map((l) => l.literal ?? l.other)
+/** The named members of a union type text, as written (aliases not expanded). */
+const typeNames = (type) => splitTop(type.replace(/^readonly\s+/, ''), '|').map((p) => p.text.trim())
+/** The object branches of a declared union alias, each as its member map. */
+function branches(c, name) {
+  const alias = (c.m.decls.get(name) ?? []).find((d) => d.kind === 'alias')
+  assert.ok(alias, `${name} is not a declared type alias`)
+  return splitTop(alias.raw, '|').map((p) => c.m.members(p.text))
+}
+/** The literal types of a closed vocabulary. */
 const closedLiterals = (c, type) => {
   const v = vocabulary(c, type)
   assert.equal(v.open, false, `${type} is an open type`)
@@ -72,6 +82,33 @@ export function registerK3MultiCases(sdk) {
       assert.deepEqual(sorted(leaves), sorted(nullable ? [type, TYPES.nullLeaf] : [type]), name)
       assert.equal(fields.get(name).optional, false, name + ' is optional')
     }
+  })
+  caseTest(sdk, 'K3-MULTI-EP-05', 'StatusSnapshot', `StatusSnapshot has exactly the branches fishball = ${Object.keys(STATUS.branches).join(' | ')}`, () => {
+    const found = branches(core(), STATUS.type).map((m) => leafWords(core(), m.get(STATUS.discriminant)?.type ?? ''))
+    assert.deepEqual(sorted(found.flat()), sorted(Object.keys(STATUS.branches)))
+    assert.ok(found.every((w) => w.length === 1), 'a branch has no single fishball literal: ' + JSON.stringify(found))
+  })
+  for (const [word, fields] of Object.entries(STATUS.branches)) {
+    caseTest(sdk, 'K3-MULTI-EP-05', `StatusSnapshot ${word}`, `the fishball: ${word} branch is exactly {fishball${Object.keys(fields).map((f) => ', ' + f + ': ' + fields[f].join(' | ')).join('')}}`, () => {
+      const branch = branches(core(), STATUS.type).find((m) => leafWords(core(), m.get(STATUS.discriminant)?.type ?? '').includes(word))
+      assert.ok(branch, 'no ' + word + ' branch')
+      assert.deepEqual(sorted(branch.keys()), sorted([STATUS.discriminant, ...Object.keys(fields)]))
+      for (const [f, words] of Object.entries(fields)) {
+        assert.deepEqual(sorted(typeNames(branch.get(f).type)), sorted(words), f)
+        assert.equal(branch.get(f).optional, false, f + ' is optional')
+      }
+    })
+  }
+  caseTest(sdk, 'K3-MULTI-EP-05', 'StatusSnapshot withdrawn', `no StatusSnapshot branch carries the withdrawn scalar ${STATUS.withdrawn.join(', ')}`, () => {
+    assert.deepEqual(branches(core(), STATUS.type).flatMap((m) => STATUS.withdrawn.filter((n) => m.has(n))), [])
+  })
+  caseTest(sdk, 'K3-MULTI-EP-05', 'SetStatus', `SetStatus is {status: ${STATUS.set.status.join(' | ')}, missing: {name, reason: ${STATUS.set.entry.reason.join(' | ')}, code: string | null}[]}`, () => {
+    const set = core().m.members(STATUS.set.type)
+    assert.deepEqual(sorted(set.keys()), sorted(STATUS.set.members))
+    assert.deepEqual(sorted(leafWords(core(), set.get(STATUS.set.members[0]).type)), sorted(STATUS.set.status))
+    const entry = core().m.members(elementType(set.get(STATUS.set.members[1]).type) ?? '')
+    assert.deepEqual(sorted(entry.keys()), sorted(Object.keys(STATUS.set.entry)))
+    for (const [f, words] of Object.entries(STATUS.set.entry)) assert.deepEqual(sorted(leafWords(core(), entry.get(f).type)), sorted(words), f)
   })
   caseTest(sdk, 'K3-MULTI-BVA-01', 'snapshot version', `TargetsSnapshot.version is the literal ${SNAPSHOT_VERSION}`, () => {
     assert.deepEqual(closedLiterals(core(), core().m.members(TYPES.snapshot).get(TYPES.version).type), [SNAPSHOT_VERSION])
