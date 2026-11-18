@@ -79,3 +79,10 @@ the status snapshot" (the `target.url` setting is withdrawn).
 - Not asserted (not in the freeze): the implementer's trusted `DSH target id <id>.` line and the
   before-discovery wording of descriptions; only the frozen framing (`TARGETS.text.toolSource` inside
   the `TEXT.untrustedOpen/Close` block, then the trusted description) is checked.
+| MULTI-TGT-EP-04 | EP (loopback alias) | `127.0.0.1:P` → `localhost:P` is another origin: a new epoch |
+| MULTI-CONN-ST-01 | ST (two attempts → B completes → A completes) | distinct `state`; a second begin answers the same URL; each authorized with its own `connect-<id>-<epoch>` grant; no overwrite |
+| MULTI-CONN-DT-01 cancel / remove / url edit / url edit to another origin | DT (what ends A's attempt) | the late completion saves no grant for A and does not authorize it; B's attempt completes |
+| MULTI-CONN-ST-02 web callback | todo E2E-CORE | the web callback needs an https Origin a default standalone DSH refuses; state routing is checked through the loopback callbacks |
+
+- Not black-box testable: "a name bound to another tuple (including a retired one) is never
+  registered" needs a 12-hex digest collision between two tuples; no fixture can construct one.

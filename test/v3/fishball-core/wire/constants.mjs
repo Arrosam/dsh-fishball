@@ -151,5 +151,6 @@ export const MULTI = Object.freeze({
   otherToken: 'fbtest-added-target-token',
   event: Object.freeze({ id: 'fbtest-multi-event-1', textPrefix: 'FBTEST-MULTI ', sequence: 1, digestFill: 'a' }),
   budget: Object.freeze({ connectMs: 60000, quietMs: 1500, pollMs: 100 }),
+  webCallbackTodo: 'E2E-CORE: the web callback needs an https page Origin whose authority is the Host; a standalone DSH with default trustedHosts refuses such a pair before core (as WIRE "web-callback-insecure"). The state-keyed routing is checked through the loopback callbacks (MULTI-CONN-ST-01, DT-01)',
 })
 
