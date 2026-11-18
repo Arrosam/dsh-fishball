@@ -35,7 +35,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { INSTANCE } from '../../../support/constants.mjs'
 import { importInstance, importSdk } from '../../../private-skills/support/sdk.mjs'
-import { DSH, SUBJECT, TOOL } from './constants.mjs'
+import { DSH, FIXTURE, SOURCE, SUBJECT, TOOL } from './constants.mjs'
 
 /** The module's entry and its constants, bound to `sdk` (their `@deepseek-ai/*` imports resolve to that SDK). */
 async function modulesFor(sdk) {
@@ -67,10 +67,23 @@ export async function makeSubject(sdk, { ctx, agent, link, seam = {} }) {
   const { events: mod, constants, storageDomain } = await modulesFor(sdk)
   const ledger = await mod.openLedger(ctx, storageDomain)
   let recovering = false
+  // MULTI-1 seam (relayed 2026-11-18): every intake names its TargetSource and the ack goes back
+  // through that source's link. This world is one target (`seam.source`, default SOURCE.a); a
+  // receipt acked for any other source is recorded as misrouted and never reaches the fake mailbox.
+  const source = seam.source ?? SOURCE.a
+  const misrouted = []
+  const sameSource = (s) => s?.targetId === source.targetId && s?.endpointEpoch === source.endpointEpoch
   const table = seam.ledgerWrite === undefined ? ledger.table : guardedTable(ledger.table, (op, args) => seam.ledgerWrite({ op, args, recovering, table: ledger.table }))
   const events = mod.createEvents({
     table,
-    link: { ack: (receipts) => link.callTool(TOOL.inboxAck, { receipts }) },
+    link: {
+      ack: (receipts, ackSource) => {
+        if (sameSource(ackSource)) return link.callTool(TOOL.inboxAck, { receipts })
+        misrouted.push({ receipts, source: ackSource })
+        return Promise.resolve({ ok: false, code: FIXTURE.misroutedAck })
+      },
+      live: (s) => sameSource(s),
+    },
     fishball: {
       activate: seam.activate === undefined ? async () => agent : async () => seam.activate({ agent, recovering }),
       present: seam.present === undefined ? presentDefault : (event) => seam.present(event, presentDefault),
@@ -87,7 +100,7 @@ export async function makeSubject(sdk, { ctx, agent, link, seam = {} }) {
     let more = true
     while (more && !stopped) {
       const page = await link.callTool(TOOL.inboxPoll, {})
-      for (const event of page.events ?? []) await events.intake(event)
+      for (const event of page.events ?? []) await events.intake(event, source)
       more = page.hasMore === true
     }
   }
@@ -95,6 +108,9 @@ export async function makeSubject(sdk, { ctx, agent, link, seam = {} }) {
   let unlisten
 
   return {
+    source,
+    /** Acks core sent for another source than this world's (MULTI-1: must stay empty). */
+    misrouted,
     intercept: (registration, onEvent) => events.service.intercept(registration, onEvent),
     async start() {
       recovering = true
