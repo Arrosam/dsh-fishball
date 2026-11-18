@@ -344,7 +344,7 @@ function eventSourceClass(world, page, timers, beforeFrame) {
  * @param options.prepareBrowser - install the case's browser APIs before any client module loads.
  * @param options.beforeFrame - optional transport delay before delivering a real backend SSE frame.
  */
-export async function openPage(t, world, { host = PAGE_HOST.loopback, failServices = false, withoutConfigForms = false, embed = true, lang = TEXT.langs[0], holdChunks = [], interceptFetch, hidden = false, timers, onCommit, prepareBrowser, beforeFrame } = {}) {
+export async function openPage(t, world, { host = PAGE_HOST.loopback, failServices = false, withoutConfigForms = false, embed = true, lang = TEXT.langs[0], holdChunks = [], interceptFetch, hidden = false, timers, onCommit, prepareBrowser, beforeFrame, prepare = () => {}, adaptReact } = {}) {
   const baseURI = PAGE_HOST.scheme + host + ':' + PAGE_HOST.port + ROUTE.absolutePrefix
   const page = { baseURI, requests: [], chunks: [], streams: [], navigations: [], dictionaries: [], errors: [] }
   const pageFetch = async (input, init = {}) => {
@@ -366,8 +366,9 @@ export async function openPage(t, world, { host = PAGE_HOST.loopback, failServic
   sandbox.window.EventSource = PageEventSource
   prepareBrowser?.(sandbox, frames)
 
+  prepare(sandbox)
   const shim = createReactShim({ stale() {}, commit: onCommit })
-  const { React } = shim
+  const React = adaptReact ? adaptReact(shim.React) : shim.React
   const platform = { [DSH.react]: React, [DSH.reactDom]: { createPortal: (node) => node }, [DSH.primitives]: primitivesFor(React) }
   const graph = embed ? [{ id: EMBED.moduleId, rev: EMBED.rev }] : []
   const chunkLoads = new Set()
@@ -527,7 +528,7 @@ function scriptedFrames(sandbox) {
     runFrame() { const due = [...queued.values()]; queued.clear(); for (const fn of due) fn(performance.now()) },
     /** How many listeners of `type` the page holds on window. */
     listening: (type) => listeners.get(type)?.size ?? 0,
-    dispatch(type) { for (const fn of [...(listeners.get(type) ?? [])]) fn({ type }) },
+    dispatch(type, fields = {}) { for (const fn of [...(listeners.get(type) ?? [])]) fn({ ...fields, type }) },
   }
 }
 

@@ -64,6 +64,33 @@ function assertIconButton(node, label, why) {
 }
 
 export function registerNavCases(sdk) {
+  for (const mode of ['known-parent', 'no-ancestor-origin', 'standalone']) {
+    caseTest(sdk, 'FRAME-READY', 'child/' + mode, 'the installed page sends only one nonsecret marker per loaded framed document to its direct parent', async (t) => {
+      const origin = 'http://localhost:4242'
+      const messages = []
+      const unexpected = []
+      for (const loaded of [1, 2]) {
+        const page = await navPage(t, sdk, { prepare({ sandbox, window, document }) {
+          document.referrer = ''
+          window.location.ancestorOrigins = mode === 'known-parent' ? [origin] : []
+          const parent = mode === 'standalone' ? window : { postMessage: (data, target) => messages.push([structuredClone(data), target?.targetOrigin ?? target]) }
+          // A nested embed has distinct direct-parent and top-level windows. Neither self nor top is a recipient.
+          window.postMessage = (...args) => unexpected.push(args)
+          const top = mode === 'standalone' ? window : { postMessage: window.postMessage }
+          for (const target of [sandbox, window]) Object.assign(target, { self: window, parent, top, location: window.location })
+        } })
+        assert.deepEqual(page.log.errors, [])
+        const expected = Array.from({ length: mode === 'standalone' ? 0 : loaded }, () => [{ type: 'fishball:frame-ready', version: 1 }, mode === 'known-parent' ? origin : '*'])
+        assert.deepEqual(messages, expected)
+        assert.deepEqual(unexpected, [])
+        page.install()
+        await page.settle()
+        assert.deepEqual(messages, expected, 'reapplying the page sent another marker')
+        assert.deepEqual(unexpected, [])
+      }
+    })
+  }
+
   const t = (id, row, title, fn, todo) => caseTest(sdk, id, row, title, fn, todo)
   const gone = (id, row, title) => withdrawnRow(sdk, id, row, title, WITHDRAWN.tray)
   const SETTINGS = NAV.order[0]
