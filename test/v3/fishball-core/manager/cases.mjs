@@ -22,7 +22,7 @@ import { registerRfix2ManagerCases } from './rfix2.mjs'
 const isCoreTool = (name) => TOOLS.reminders.includes(name) || name === TOOLS.ask || TOOLS.privateSkill.test(name)
 const set = (path, value) => ({ op: OP.set, path: [...path], value })
 const unset = (path) => ({ op: OP.unset, path: [...path] })
-const post = (h, route) => h.request(route, { method: HTTP.post, body: {} })
+const post = (h, route, body = {}) => h.request(route, { method: HTTP.post, body })
 
 /** The schedule entries ({id, title, status}) in a schedule_list result text: every object carrying both, at any depth. */
 function scheduleEntries(text) {
@@ -57,8 +57,10 @@ async function waitDelivery(h, sessionId, title, since) {
  * the loopback page, the approval URL read, the attempt cancelled so the next press starts anew.
  */
 async function connectAgentId(h) {
-  const begin = await post(h, ROUTE.connect)
-  await post(h, ROUTE.cancel)
+  // MULTI-0: Connect is per target ({targetId}); the boot added one target (connectTarget below).
+  const body = { [ROUTE.targetIdField]: h.connectTargetId }
+  const begin = await post(h, ROUTE.connect, body)
+  await post(h, ROUTE.cancel, body)
   const url = begin.json?.outcome === CONNECT_INPUT.approvalUrl ? new URL(begin.json.url) : null
   return { status: begin.status, body: begin.json ?? begin.text, agentId: url?.searchParams.get(MCP.oauth.agentIdParameter) ?? null }
 }
@@ -121,7 +123,10 @@ export function registerManagerCases(sdk) {
 
       // MGR-ID: the id Connect passes, with identity.id unset.
       target = await startFakeTarget()
-      await h.call('mutate', { ops: [set(CONNECT_INPUT.targetPath, target.url), set(CONNECT_INPUT.metadataPath, CONNECT_INPUT.metadataUrl)] })
+      // MULTI-0 withdrew `target.url`: the Connect target is added through ui.targets (a record that persists).
+      await h.call('mutate', { ops: [set(CONNECT_INPUT.metadataPath, CONNECT_INPUT.metadataUrl)] })
+      f.targetAdded = await h.call('addTarget', { url: target.url })
+      h.connectTargetId = f.targetAdded?.targetId
       f.settingsConfigured = await h.call('settings')
       f.connectA = await waitAgentId(h, (v) => v !== null)
 
@@ -144,6 +149,8 @@ export function registerManagerCases(sdk) {
     async (boot, f) => {
       await sleep(BUDGET.downtimeMs)
       const h = await boot()
+      // The target added in boot A is a durable record (MULTI-1 requirement 1): the same id after the restart.
+      h.connectTargetId = f.targetAdded?.targetId
       f.firstStartB = await h.call('firstStart')
       f.postB = await post(h, ROUTE.session)
       f.getB = await h.request(ROUTE.session)

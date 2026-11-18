@@ -21,6 +21,7 @@ import {
 } from '../../../../packages/dsh-connector/mcp-schema/index.js'
 import { PACKAGE } from '../../../suites.mjs'
 import { REPO } from '../../../support/constants.mjs'
+import { SEAM_TARGETS } from '../../../../packages/shared/ui-seam.js'
 
 export { APPROVAL_KIND, ARGUMENTS_STATUS, DECISION_KIND, DECISION_KIND_OF, EVENT_TYPE, OFFER_ID, RETIREMENT_REASON, SETTLED_BY, SETTLEMENT_OUTCOME, TOOL }
 
@@ -69,8 +70,9 @@ export const SUBJECT = Object.freeze({
  * 2026-11-17: "Show arguments and reason") adds `arguments`, `argumentsStatus` and `reason`.
  */
 export const K3 = Object.freeze({
-  fields: Object.freeze(['approvalId', 'offerId', 'sessionId', 'sessionTitle', 'question', 'arguments', 'argumentsStatus', 'reason', 'choices', 'askedAt', 'state']),
-  state: Object.freeze({ open: 'open', answered: 'answered', closed: 'closed' }),
+  // MULTI-0 adds `handle` and `source`, and the state `voided` (a removed / retired target, Q07).
+  fields: Object.freeze(['handle', 'source', 'approvalId', 'offerId', 'sessionId', 'sessionTitle', 'question', 'arguments', 'argumentsStatus', 'reason', 'choices', 'askedAt', 'state']),
+  state: Object.freeze({ open: 'open', answered: 'answered', closed: 'closed', voided: 'voided' }),
 })
 
 /** Q3 = A and the F-ASKCARD answer rule: the two choices and the answer object each one commits. */
@@ -93,6 +95,8 @@ export const CODE = Object.freeze({
   notManaged: REFUSAL.notManaged,
   forbidden: REFUSAL.forbidden,
   unknownOffer: 'unknown-offer',
+  /** ui.d.ts (MULTI-0): an unknown handle (`SEAM_TARGETS.refusal.unknownTarget`). */
+  unknownTarget: SEAM_TARGETS.refusal.unknownTarget,
   expired: REFUSAL.expired,
   alreadySettled: REFUSAL.alreadySettled,
   disconnected: LINK_REFUSAL.disconnected,
@@ -118,7 +122,7 @@ export const ROUTE = Object.freeze({
   framePrefix: 'data: ',
   frameEnd: '\n\n',
   lineEnd: '\n',
-  status: Object.freeze({ ok: 200, badRequest: 400, conflict: 409 }),
+  status: Object.freeze({ ok: 200, badRequest: 400, notFound: SEAM_TARGETS.http.notFound, conflict: 409 }),
 })
 
 /** The packages that load in the main DSH (R-UI-12: none of them shows or reaches the card). */
@@ -198,6 +202,12 @@ export const FIXTURE = Object.freeze({
   jsonType: 'application/json',
   injectedFault: 'fbtest: injected callTool fault',
   listenerFault: 'fbtest: listener throws',
+  /** Joins a source's id and epoch in the world's link map (harness key only). */
+  keyJoin: '|',
+  /** A string no target tuple encodes (base64url of non-JSON). */
+  notAHandle: 'bm90LWEtaGFuZGxl',
+  /** Why the pre-F-FIX upgrade row no longer runs (PLAN-MULTI §3.3 / contracts README: fresh install, no old-format reader). */
+  withdrawnUpgrade: 'withdrawn by MULTI-0 (PLAN-MULTI §3.3, D09: fresh install only, no migration or old-format reader): a card stored before MULTI-0 has no handle or source, and no supported path reads it',
   /** A user's reason, and the forms around it the BVA rows use. */
   text: 'FBTEST-WHY yes, staging is fine',
   hashAlgorithm: 'sha256',

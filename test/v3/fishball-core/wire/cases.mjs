@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict'
 import { test, after } from 'node:test'
-import { C } from './constants.mjs'
+import { C, MULTI } from './constants.mjs'
+import { registerMultiCases } from './multi.mjs'
+import { registerLifecycleCases } from './lifecycle.mjs'
+import { registerRetirementCases } from './retirement.mjs'
+import { SEAM_TARGETS } from './targets-oracle.mjs'
 import fs from 'node:fs'
 import path from 'node:path'
 import { boot, brokenBoardCopy, contracts, forbiddenImports, manifest, patches, request, requestAs } from './subject.mjs'
@@ -12,6 +16,9 @@ async function settledSet(h) {
   return s?.set
 }
 export function registerWireCases(sdk) {
+  registerMultiCases(sdk)
+  registerLifecycleCases(sdk)
+  registerRetirementCases(sdk)
   test(`${sdk} WIRE-EP-01 manifest exports and dependency boundary`, () => {
     const pkg = manifest()
     for (const key of C.exports) assert.ok(pkg.exports[key], key)
@@ -37,16 +44,19 @@ export function registerWireCases(sdk) {
     const prefix = `${sdk} WIRE-SYS ${members.join('+')}`
     test(`${prefix} apiVersion and complete public service shape`, async () => {
       const f = await (await get()).call('shape')
-      assert.equal(f.apiVersion, C.apiVersion)
+      // MULTI-0: apiVersion 2; ui.targets replaces the scalar ui.link / connect / pairing.
+      assert.equal(f.apiVersion, MULTI.apiVersion)
       for (const key of C.members) assert.ok(f.shape[key], key)
       for (const key of C.managerMembers) assert.equal(f.shape.manager[key], 'function', key)
-      for (const key of C.uiMembers) assert.ok(f.shape.ui[key], key)
+      for (const key of MULTI.uiMembers) assert.ok(f.shape.ui[key], key)
+      for (const key of MULTI.withdrawnUiMembers) assert.equal(f.shape.ui[key], undefined, 'withdrawn ui.' + key)
     })
-    test(`${prefix} no-target status is on with target-unset line`, async () => {
+    // MULTI-0 (StatusSnapshot): the scalar `line` moved into each TargetView; standalone has none.
+    test(`${prefix} no-target status is on with an empty target list`, async () => {
       const s = await (await get()).call('snapshot')
       assert.equal(s.fishball, 'on')
-      // F-STATUS's frozen view model: `line` is `{kind, code}` (test/v3/fishball-core/status).
-      assert.equal(s.line?.kind, 'target-unset', JSON.stringify(s))
+      assert.deepEqual(s.targets, { version: SEAM_TARGETS.snapshotVersion, targets: [] }, JSON.stringify(s))
+      for (const key of MULTI.withdrawnStatusMembers) assert.equal(Object.hasOwn(s, key), false, 'withdrawn status member ' + key)
     })
     // SHELVE-BOARD: core's set check has no board member, so the set is ok with the board absent or present.
     test(`${prefix} SHELVE set is ok, nothing missing, never naming fishball-board`, async () => {
@@ -69,6 +79,7 @@ export function registerWireCases(sdk) {
     test(`${prefix} manager tool scope and guards hold`, async () => {
       const h = await get(); await h.call('ensure'); const f = await h.call('tools')
       for (const name of C.coreTools) { assert.ok(f.local.includes(name), name); assert.equal(f.global.includes(name), false, name) }
+      assert.equal(f.local.includes(C.bareAsk), false, 'the bare ask_user is offered (MULTI-0: per target only)')
       assert.ok(f.local.some((n) => C.privateSkill.test(n)))
       assert.equal(f.global.some((n) => C.privateSkill.test(n)), false)
       const optional = members.includes(C.board) ? (n) => n.startsWith(C.boardToolPrefix) : () => false
@@ -85,10 +96,14 @@ export function registerWireCases(sdk) {
       if (!members.includes(C.board)) assert.equal(C.shelved.mention.exec(JSON.stringify(requests.map((r) => ({ system: r.system, tools: r.tools?.map((t) => t.name) }))))?.[0], undefined, 'a board mention')
       assert.equal(JSON.stringify(requests).includes(C.opaqueSecret), false)
     })
-    test(`${prefix} Connect GET, POST, cancel and callback without cookie`, async () => {
+    // MULTI-0 withdrew GET/POST /api/fishball/connect and /connect/cancel for the per-target
+    // SEAM_TARGETS.route.connect / .cancel ({targetId}); the loopback partitions are kept on them.
+    test(`${prefix} Connect per target: loopback pages, cancel and callback without cookie`, async () => {
       const h = await get()
-      const state = await request(h, C.routes.connect)
-      assert.equal(state.status, C.status.ok); assert.ok(C.connectStates.includes(state.json.state)); assert.ok(Object.hasOwn(state.json, 'code')); assert.ok(state.cache?.includes(C.noStore))
+      for (const route of MULTI.withdrawnRoutes) assert.notEqual((await request(h, route, {})).status, C.status.ok, route + ' still answers')
+      const added = await h.call('targetAction', { op: 'add', args: [C.target] })
+      assert.equal(added.ok, true, JSON.stringify(added))
+      const body = { [SEAM_TARGETS.route.targetIdField]: added.targetId }
       // Loopback pages ("Loopback Origin host (127.0.0.1, localhost, [::1]) → loopback callback"; "No
       // Origin with a loopback Host → loopback"), on the listener's port so DSH's fence admits them.
       // Without a target the loopback press refuses with a configuration code, never the insecure one.
@@ -96,15 +111,16 @@ export function registerWireCases(sdk) {
       for (const name of C.loopbackHosts) {
         const authority = name + ':' + port
         for (const origin of [C.scheme.http + authority, C.scheme.https + authority, undefined]) {
-          const begin = await requestAs(h, C.routes.connect, { authority, origin })
+          const begin = await requestAs(h, SEAM_TARGETS.route.connect, { authority, origin, body })
           const why = authority + ' ' + origin + ' ' + begin.text
           assert.equal(begin.status, C.status.ok, why); assert.equal(begin.json?.outcome, 'needs-configuration', why)
           assert.ok(C.configurationCodes.includes(begin.json.code), why); assert.notEqual(begin.json.code, C.insecureCode, why)
         }
       }
-      const cancel = await request(h, C.routes.cancel, {})
-      assert.equal(cancel.status, C.status.ok); assert.ok(C.connectStates.includes(cancel.json.state))
+      const cancel = await request(h, SEAM_TARGETS.route.cancel, body)
+      assert.equal(cancel.status, C.status.ok, cancel.text)
       assert.equal((await request(h, C.routes.callback, undefined, {}, false)).status, C.status.missing)
+      await h.call('targetAction', { op: 'remove', args: [added.targetId, { confirmed: true }] })
     })
     test(`${prefix} ST model unset/default → live set → unroutable/default`, async () => {
       const h = await get(); await h.call('ensure')
@@ -118,12 +134,16 @@ export function registerWireCases(sdk) {
       assert.equal(await waitModel(C.defaultModel), C.defaultModel)
       await h.call('mutate', { path: C.modelSeam.path, unset: true })
     })
-    test(`${prefix} ST target settings trigger reconnect/status change`, async () => {
+    // MULTI-0 withdrew the `target.url` setting: a target added through ui.targets moves the status.
+    test(`${prefix} ST an added target appears in the status snapshot and leaves on removal`, async () => {
       const h = await get()
-      await h.call('mutate', { path: ['target', 'url'], value: C.target })
-      let s; await until(async () => { s = await h.call('snapshot'); return s.line?.kind !== 'target-unset' }, C.budget.call, C.budget.poll)
-      assert.notEqual(s.line?.kind, 'target-unset', JSON.stringify(s))
-      await h.call('mutate', { path: ['target', 'url'], unset: true })
+      const added = await h.call('targetAction', { op: 'add', args: [C.target] })
+      assert.equal(added.ok, true, JSON.stringify(added))
+      let s; await until(async () => { s = await h.call('snapshot'); return s.targets?.targets.some((t) => t.targetId === added.targetId) }, C.budget.call, C.budget.poll)
+      assert.ok(s.targets.targets.some((t) => t.targetId === added.targetId), JSON.stringify(s))
+      await h.call('targetAction', { op: 'remove', args: [added.targetId, { confirmed: true }] })
+      await until(async () => { s = await h.call('snapshot'); return !s.targets?.targets.some((t) => t.targetId === added.targetId) }, C.budget.call, C.budget.poll)
+      assert.equal(s.targets.targets.some((t) => t.targetId === added.targetId), false)
     })
     test(`${prefix} restart resumes exactly the same manager; user settings unchanged`, async () => {
       const h = await get(); const old = await h.call('ensure'); const config = await h.call('config')

@@ -18,10 +18,11 @@ import path from 'node:path'
 import { importSdk } from '../../../private-skills/support/sdk.mjs'
 import { until } from '../../../support/util.mjs'
 import {
-  ANSWER, APPROVAL_KIND, ARGUMENTS_STATUS, ASK_TOOL, CONNECTOR_OK, DECISION_KIND, DECISION_KIND_OF, DSH, EVENT_TYPE, FIXTURE, OFFER_ID, RECONCILE, RETIREMENT_REASON, ROUTE,
+  ANSWER, APPROVAL_KIND, ARGUMENTS_STATUS, ASK_TOOL, CODE, CONNECTOR_OK, DECISION_KIND, DECISION_KIND_OF, DSH, EVENT_TYPE, FIXTURE, OFFER_ID, RECONCILE, RETIREMENT_REASON, ROUTE,
   SETTLED_BY, SETTLEMENT_OUTCOME, TOOL, WAIT,
 } from './constants.mjs'
 import { asksModule, exported } from './subject.mjs'
+import { SOURCE, askHandle, askToolNameOf } from '../wire/targets-oracle.mjs'
 
 const json = (value) => JSON.stringify(value)
 const digest = (payload) => createHash(FIXTURE.hashAlgorithm).update(json(payload)).digest(FIXTURE.hashEncoding)
@@ -92,10 +93,12 @@ export const offerOf = (event) => event.offer.offerId
  * empty or blank (the user, 2026-11-17: "Show arguments and reason"); Reject only when the
  * arguments are not complete.
  */
-export function expectedCard(event, state) {
+export function expectedCard(event, state, source = SOURCE.a) {
   const d = event.payload
   const status = d.argumentsStatus ?? null
   return {
+    // MULTI-0 (ask-card.d.ts): the opaque handle of the (approval, targetId, epoch, approvalId) tuple, and the trusted source.
+    handle: askHandle(source, d.approvalId), source: { ...source },
     approvalId: d.approvalId, offerId: d.offerId, sessionId: event.sourceSessionId,
     sessionTitle: d.title === FIXTURE.emptyTitle ? null : d.title, question: d.prompt,
     arguments: d.arguments ?? null, argumentsStatus: status,
@@ -261,7 +264,7 @@ function faultyTable(table, fault) {
  * Fishball agent. `restart()` closes everything and opens a new store over the same table.
  * `tableFault({op, args})` (R-FIX-CORE F12): a truthy answer makes that card-table write reject.
  */
-export async function worldFor(t, sdk, { agent = false, module, tableFault } = {}) {
+export async function worldFor(t, sdk, { agent = false, module, tableFault, sources = [SOURCE.a] } = {}) {
   const root = await newRoot()
   // `module`: another build of the module to open first (the pre-F-FIX one, subject.mjs); a case
   // sets `world.mod` before `restart()`, which then opens that build over the same table.
@@ -281,22 +284,46 @@ export async function worldFor(t, sdk, { agent = false, module, tableFault } = {
     closers = [...host.closers]
     const opened = await exported(world.mod, 'open')(host.ctx, await importSdk(sdk, DSH.storageDomain))
     closers.push(() => opened.close())
-    const link = new FakeLink()
+    // MULTI-1 seam (relayed 2026-11-18): one target port for every source; each source has its own
+    // fake link, and a call naming a source no target of this world holds is recorded as misrouted.
+    const links = new Map(sources.map((s) => [s.targetId + FIXTURE.keyJoin + s.endpointEpoch, new FakeLink()]))
+    const linkOf = (s) => links.get(s?.targetId + FIXTURE.keyJoin + s?.endpointEpoch)
+    const misrouted = []
+    const live = new Set(links.keys())
+    const targets = {
+      callTool: async (s, name, args) => {
+        const l = linkOf(s)
+        if (l === undefined || !live.has(s.targetId + FIXTURE.keyJoin + s.endpointEpoch)) { misrouted.push({ source: s, name, args: structuredClone(args) }); return { ok: false, code: CODE.disconnected } }
+        return l.callTool(name, args)
+      },
+      live: (s) => live.has(s?.targetId + FIXTURE.keyJoin + s?.endpointEpoch),
+    }
+    const link = linkOf(sources[0])
     const table = tableFault === undefined ? opened.table : faultyTable(opened.table, tableFault)
-    const asksOf = exported(world.mod, 'create')({ link, table, logger: host.ctx.logger(FIXTURE.loggerName) })
+    const asksOf = exported(world.mod, 'create')({ targets, table, logger: host.ctx.logger(FIXTURE.loggerName) })
     // A case may close the store itself (ASK-UC-06); cleanup then does not close it a second time.
     let asksClosed = false
     const closeAsks = async () => { if (!asksClosed) { asksClosed = true; await asksOf.close() } }
     closers.push(closeAsks)
     world.closeAsks = closeAsks
     // Called on the module's own object: the member may hold private state.
-    world.reconcile = () => {
+    world.reconcile = (s = sources[0]) => {
       assert.equal(typeof asksOf[RECONCILE.member], 'function', `createAsks() returned no ${RECONCILE.member}()`)
-      return asksOf[RECONCILE.member]()
+      return asksOf[RECONCILE.member](s)
     }
-    if (agent) closers.push(host.ctx.tools.register(asksOf.tool))
-    const { service, tool, close } = asksOf
-    Object.assign(world, { ctx: host.ctx, agent: host.agent, requests: host.requests, freezeMessage: host.freezeMessage, link, table: opened.table, service, tool, close })
+    // Each target's own local ask_user, under its frozen model-facing name (TARGETS.toolName, origin local).
+    const toolOf = (s) => asksOf.toolFor(s, askToolNameOf(s, ASK_TOOL.name))
+    const tools = new Map(sources.map((s) => [s, toolOf(s)]))
+    const tool = tools.get(sources[0])
+    if (agent) for (const t of tools.values()) closers.push(host.ctx.tools.register(t))
+    const { service, close } = asksOf
+    Object.assign(world, {
+      ctx: host.ctx, agent: host.agent, requests: host.requests, freezeMessage: host.freezeMessage, link, linkOf, table: opened.table, service, tool, tools, close, misrouted,
+      take: (page, s) => asksOf.take(page, s),
+      voidWhere: (pred) => asksOf.voidWhere(pred),
+      /** The target leaves (removed or retired): its link is gone and later calls for it are misrouted. */
+      retire: (s) => live.delete(s.targetId + FIXTURE.keyJoin + s.endpointEpoch),
+    })
   }
   await open()
 
@@ -308,23 +335,28 @@ export async function worldFor(t, sdk, { agent = false, module, tableFault } = {
      * Delivers one `inbox_poll` page, then waits until `list()` has not changed for WAIT.quietMs:
      * a store may write its table (a disk write) after the poll listener returns.
      */
-    async poll(...events) {
-      const results = await world.link.poll(...events)
+    async poll(...events) { return world.pollFrom(sources[0], ...events) },
+    /** Delivers one `inbox_poll` page of `source`'s link to core (`take(page, source)`), then waits quietly. */
+    async pollFrom(source, ...events) {
+      const page = { ok: true, events: structuredClone(events), nextCursor: String(events.at(-1)?.sequence ?? 0), hasMore: false }
+      const result = await world.take(page, source)
+      await turns()
       await quiet(() => json(world.service.list()))
-      return results
+      return [result]
     },
     /** Polls `events`, then files the first one's offer with the tool. */
     async file(event, ...more) {
       await world.poll(event, ...more)
       return world.tool.execute({ [ASK_TOOL.arg]: offerOf(event) })
     },
-    card: (approvalId) => world.service.list().find((c) => c.approvalId === approvalId),
+    /** The card of `approvalId` from `source` (default the world's first target). */
+    card: (approvalId, source = sources[0]) => world.service.list().find((c) => c.handle === askHandle(source, approvalId)),
     /**
      * One Fishball turn; the model calls `ask_user` with `args` when given, else answers in text.
      * Returns the tool result message DSH handed the model (undefined without a call).
      */
     async fishballTurn(args) {
-      if (args !== undefined) script.push({ name: ASK_TOOL.name, args })
+      if (args !== undefined) script.push({ name: world.tool.name, args })
       const from = world.requests.length
       const id = FIXTURE.userId + ++turn
       const content = [{ type: DSH.block.text, text: FIXTURE.userText }]

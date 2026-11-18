@@ -233,8 +233,6 @@ export const MCP = Object.freeze({
     approvalsList: 'approvals_list',
     approvalAnswer: 'approval_answer',
     questionAnswer: 'question_answer',
-    questionAsk: 'question_ask',
-    questionAnswerOwn: 'question_answer_own',
     promptsList: 'prompts_list',
     promptAnswer: 'prompt_answer',
     grantsList: 'grants_list',

@@ -44,6 +44,10 @@ import { mcpClient } from '../../contract/k1-mcp-schema/schema-module.mjs'
 import { resolveRuntimePackages, storageContext } from '../../dsh-connector/pairs/subject.mjs'
 import { FakePairs, startFakeConnector } from './fake-connector.mjs'
 import { HARNESS, IDENTITY, RELAYED, SETTING, SUBJECT, mcpUrl } from './constants.mjs'
+import { TARGETS } from '../wire/targets-oracle.mjs'
+
+/** The one target these pairing worlds play (the parent on a fixed epoch; test data in the frozen grammar). */
+const RECORDS_SOURCE = Object.freeze({ targetId: TARGETS.parentId, endpointEpoch: TARGETS.epoch.prefix + TARGETS.epoch.alphabet[0].repeat(TARGETS.epoch.randomChars) })
 
 const stacks = new WeakMap()
 /** Registers `fn` to run after the test, last registered first (the pairing stops before its fake). */
@@ -130,7 +134,8 @@ export async function pairingWorld(t, sdk, { entries, refs, settings = {}, store
     if (s.get(IDENTITY.idKey) === undefined) s.edit(IDENTITY.idKey, mod[SUBJECT.generateId]())
     const { ctx, helpers } = await storageContext(sdk, root)
     const opened = await mod[SUBJECT.openRecords](ctx, helpers)
-    const records = mod[SUBJECT.createRecords](opened.table)
+    // MULTI-1 seam (relayed 2026-11-18): records are scoped to one target and endpoint epoch.
+    const records = mod[SUBJECT.createRecords](opened.table, RECORDS_SOURCE)
     const pairing = mod[SUBJECT.factory]({
       records,
       name: () => s.get(IDENTITY.nameKey),

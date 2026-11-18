@@ -35,3 +35,10 @@ frames by the health-aware EventSource stand-in of `../stream/event-source.mjs`)
 | PAIR-DT-04 | DT (choice × answer × lang) | Posted `{choice, confirmed}`; non-ok / 503 / network / non-JSON → `[data-fishball-pairing-failed]` role=alert with `failed`; ok → none |
 | PAIR-ST-04/05 | ST | Continue stays disabled unticked; failed → ok clears; a new warning resets box and alert; the same warning keeps the tick |
 | PAIR-HEALTH-01/02/03 | ST/DT | Stale / closed: notice, lines readable, box and choices disabled, Reconnect on closed; a valid frame recovers, an invalid one does not; unmount closes |
+
+**Re-baselined (MULTI-3 requirement D; the lead, 2026-11-18):** the pairing dock card, its chunk
+and its routes `/api/fishball/pairing` and `/api/fishball/pairing/choose` are removed. Pairing is shown
+in each target's sidebar details and posted to `/api/fishball/targets/pairing` `{targetId, choice, confirmed}`.
+See `../model-dialog` TGT-SB-ST-05 and TGT-SB-DT-03. The PAIR-INT / ST-01–03 / EP-06–08 / DT-03 route rows and the
+PAIR-UI / DT-04 / ST-04 / ST-05 / HEALTH card rows stay listed, withdrawn. The pure `pairingView`
+rows (PAIR-DT-01 … PAIR-EP-05) are unchanged. New: PAIR-INT-00, fishball-ui's row registers neither route.

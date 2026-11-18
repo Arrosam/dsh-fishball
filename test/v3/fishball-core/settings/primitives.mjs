@@ -96,10 +96,16 @@ export const STAND_IN = Object.freeze({
   tooltipSide: 'data-fbtest-tooltip-side',
   portal: 'data-fbtest-portal',
   shortcut: 'data-fbtest-shortcut',
+  /** The Modal stand-in's close control. */
+  modalClose: 'data-fbtest-modal-close',
 })
 
 /** The primitives module for one SDK, rendering through `React` (the hook shim). */
-export function primitivesFor(sdk, React) {
+/**
+ * `options.modal` (MULTI-1): use the faithful Modal stand-in below. Off by default, so a harness that
+ * builds on the generic element (fishball-ui's model-dialog wraps `createElement` for it) is unchanged.
+ */
+export function primitivesFor(sdk, React, options = {}) {
   const h = React.createElement
   const { SettingsFormModel, settingsTextField } = realFormLogic(sdk)
   function SettingsForm({ state, labels, onSave, onDiscard, children }) {
@@ -134,7 +140,7 @@ export function primitivesFor(sdk, React) {
   function Button({ children, variant = DESIGN.defaultVariant, size, icon, ...rest }) {
     return h('button', { type: 'button', [STAND_IN.primitive]: 'Button', [STAND_IN.variant]: variant, ...rest }, icon ?? null, children)
   }
-  const design = designStandIns(React)
+  const design = designStandIns(React, options)
   return proxied({ SettingsFormModel, settingsTextField, SettingsForm, SettingsSecretField, SettingsValueField, Button, ...design.known }, h, design.icon)
 }
 
@@ -165,7 +171,7 @@ export const DESIGN = Object.freeze({
   iconPrefix: 'Icon',
   logos: Object.freeze(['FishLogo', 'BrandWordmark']),
 })
-function designStandIns(React) {
+function designStandIns(React, options = {}) {
   const h = React.createElement
   const svg = (name) => function Icon() { return h('svg', { [STAND_IN.primitive]: name, 'aria-hidden': DESIGN.hidden }) }
   function StateDot({ state }) {
@@ -206,7 +212,23 @@ function designStandIns(React) {
     if (!icons.has(name)) icons.set(name, svg(name))
     return icons.get(name)
   }
-  return { known: { StateDot, Tag, Tooltip, Checkbox }, icon }
+  /**
+   * MULTI-1: Modal `{open, onClose, title, closeLabel, description, children, footer}` as DSH's bundle
+   * renders it (dsh-web-frontend, both SDKs): nothing while closed; open, a `role="dialog"` with the
+   * title, description, children and footer (DSH portals it to document.body; here it stays inline,
+   * which a case cannot tell apart through the props it reads).
+   */
+  function Modal({ open, onClose, title, closeLabel, description, children, footer, ...rest }) {
+    if (!open) return null
+    const own = Object.fromEntries(Object.entries(rest).filter(([k]) => k.startsWith('data-')))
+    return h('div', { [STAND_IN.primitive]: 'Modal', role: 'dialog', ...own },
+      title ? h('h2', null, title) : null,
+      description ? h('p', null, description) : null,
+      children ?? null,
+      footer ?? null,
+      h('button', { type: 'button', [STAND_IN.modalClose]: true, 'aria-label': closeLabel, onClick: onClose }))
+  }
+  return { known: { StateDot, Tag, Tooltip, Checkbox, ...(options.modal ? { Modal } : {}) }, icon }
 }
 
 /** A primitives module: the `known` components, `special(name)` when it answers, and a generic element for every other export. */

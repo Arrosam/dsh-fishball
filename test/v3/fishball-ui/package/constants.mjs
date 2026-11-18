@@ -27,7 +27,8 @@ export const UI_PACKAGE = Object.freeze({
   /** The browser files it ships (interface item 8). */
   // Re-baselined (F-WIRE): client.js loads four parts; the strip and the model dialog are shipped too.
   // Re-baselined (R-FIX-FUI F1): the pairing card's chunk client.pairing.js is shipped too.
-  clientFiles: Object.freeze(['client.js', 'client.entries.js', 'client.asks.js', 'client.strip.js', 'client.pairing.js', 'client.model.js']),
+  // Re-baselined (MULTI-3 requirement D): the pairing dock card's chunk client.pairing.js is removed.
+  clientFiles: Object.freeze(['client.js', 'client.entries.js', 'client.asks.js', 'client.strip.js', 'client.model.js']),
 })
 
 /**
@@ -129,11 +130,10 @@ export const CLIENT = Object.freeze({
     // UI-UC-05 checks only that the plugin has a non-empty name.
     strip: Object.freeze({ file: 'client.strip.js', export: 'stripPart', plugin: null, style: null }),
     model: Object.freeze({ file: 'client.model.js', export: 'modelPart', plugin: null, style: null }),
-    // R-FIX-FUI F1: the pairing card, loaded after the strip and before the model dialog.
-    pairing: Object.freeze({ file: 'client.pairing.js', export: 'pairingPart', plugin: null, style: null }),
+    // Re-baselined (MULTI-3 requirement D): R-FIX-FUI F1's pairing card part (client.pairing.js) is removed.
   }),
   /** R-FIX-FUI F1: the order client.js loads its parts in (the pairing card after the strip, before the model dialog). */
-  partOrder: Object.freeze(['client.entries.js', 'client.asks.js', 'client.strip.js', 'client.pairing.js', 'client.model.js']),
+  partOrder: Object.freeze(['client.entries.js', 'client.asks.js', 'client.strip.js', 'client.model.js']),
   /** The kit member a part gets (`mountStyle(id, cssText) → dispose`). */
   kitStyle: 'mountStyle',
   /** Platform modules a chunk may require (the DSH page's served set). */
@@ -149,7 +149,8 @@ export const MOVED = Object.freeze({
   ref: 'e3cf8d5b',
   // R-FIX-FUI F1: the keys the pairing card added (its title, the refused-choice line, the Intl locale of its times).
   pairing: Object.freeze({ before: 'packages/core/ui/pairing/text.js', after: path.join('src', 'pairing', 'text.js'), export: 'PAIRING_TEXT', added: Object.freeze(['title', 'chooseFailed', 'locale']) }),
-  status: Object.freeze({ after: path.join('src', 'status', 'index.js'), exports: Object.freeze(['stripView', 'STATUS_TEXT', 'STRIP_KIND']) }),
+  // Re-baselined (MULTI-3 requirement B): the scalar strip view is replaced by the per-target frame.
+  status: Object.freeze({ after: path.join('src', 'status', 'index.js'), exports: Object.freeze(['targetsView', 'TARGET_LINE', 'STATUS_TEXT']) }),
   recommended: Object.freeze({ after: path.join('src', 'recommended.js'), exports: Object.freeze(['recommendedList']), prefix: 'RECOMMENDED_' }),
   /** Sample arguments for the pairing copy's formatters (fixtures). */
   args: Object.freeze(['fbtest-name', 'fbtest-when']),

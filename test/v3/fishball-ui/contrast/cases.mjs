@@ -7,9 +7,8 @@
  * - Decision table UIFF-ASK-DT-01: card type (permission, ask) × language (en, zh) × theme (light,
  *   dark) → the reason textarea shows the language's placeholder, and the placeholder's painted
  *   colour has at least WCAG.text (4.5:1) against the textarea's own painted fill;
- * - Decision table UIFF-STRIP-DT-01: language × theme, state connected → badge text at least 4.5:1
- *   against the badge's own painted fill; badge shape (fill or outline) at least WCAG.shape (3:1)
- *   against the heading row behind it;
+ * - UIFF-STRIP-DT-01 (withdrawn by MULTI-3: no status card; the sidebar target list replaces it and
+ *   is checked token-only in UIFF-TOKENS-EP-01);
  * - Decision table RESHOOT-ASKBADGE-DT-01 (RESHOOT fix 1): card type × language × theme, state
  *   open → the card's state badge reads the open words in a `warning` DSH Tag, its text at least
  *   WCAG.text against its own painted fill; dark: text and fill equal DSH's own warning Tag drawn
@@ -32,7 +31,9 @@ import { caseTest } from '../../contract/package-boundaries/cases.mjs'
 import { cardPage } from '../../fishball-core/asks/render.mjs'
 import { EVENT_TYPE, K3 } from '../../fishball-core/asks/constants.mjs'
 import { askEvent, expectedCard } from '../../fishball-core/asks/world.mjs'
-import { snapshotOf, stripPage } from '../model-dialog/strip.mjs'
+import { sidebarPage, snapshotOf as snapshotOfTargets, targetView, viewModule, withSource } from '../model-dialog/targets.mjs'
+import { FIXTURE as TARGET_FIXTURE, SEAM_TARGETS, WITHDRAWN } from '../model-dialog/targets-constants.mjs'
+import { withdrawnRow } from '../model-dialog/withdrawn.mjs'
 import { chromeBinary } from '../../../v2-page-cases/lite-browser.mjs'
 import { ASK_BADGE, COLOUR_PROPS, DSH_FILES, HARNESS, HOOK, NOT_LITERAL, PLACEHOLDER, THEME, WCAG } from './constants.mjs'
 import { PROBE, documentOf, dshSheetCount, holds, measure, sheetCollector, stopBrowser } from './page.mjs'
@@ -43,8 +44,6 @@ import { findAll, textOf } from '../../../support/rp-recommend.mjs'
 const json = (v) => JSON.stringify(v)
 const CARD_TYPES = Object.freeze([EVENT_TYPE.permission, EVENT_TYPE.ask])
 const LANGS = Object.freeze(Object.keys(PLACEHOLDER))
-/** The success tone's colour token (the DSH Tag's `success` tone colour, before UI-FIX-F). */
-const SUCCESS_TOKEN = 'var(--dsw-alias-state-success-primary)'
 const DEFAULT_PLACEHOLDER = `var(${DSH_FILES.defaultPlaceholderToken})`
 
 // ------------------------------------------------------------------------------- the two pages
@@ -53,21 +52,33 @@ const DEFAULT_PLACEHOLDER = `var(${DSH_FILES.defaultPlaceholderToken})`
 async function askDocument(t, sdk, type, lang) {
   const sheets = sheetCollector()
   const page = await cardPage(t, sdk, { lang, onDocument: sheets.onDocument })
-  await page.show([expectedCard(askEvent({ type }), K3.state.open)])
+  await page.show([withSource(expectedCard(askEvent({ type }), K3.state.open))])
   return { tree: page.world.shim.tree(), sheets: sheets.live() }
 }
 
-/** The status card in the connected state, drawn in `lang`: its tree and live sheets. */
-async function stripDocument(t, sdk, lang) {
+/**
+ * MULTI-3: the sidebar target list on Fishball's page (requirement G: DSH tokens only, light and
+ * dark), one target per public state, the connected one expanded: its tree and live sheets.
+ */
+async function sidebarDocument(t, sdk, lang) {
   const sheets = sheetCollector()
-  const page = await stripPage(t, sdk, { lang, onDocument: sheets.onDocument })
-  await page.show(snapshotOf(HOOK.connected))
-  assert.equal(page.root()?.props[HOOK.stripState], HOOK.connected, 'precondition: the card is in the connected state')
-  return { tree: page.tree(), sheets: sheets.live() }
+  const page = await sidebarPage(t, sdk, { lang, onDocument: sheets.onDocument })
+  const states = Object.values(SEAM_TARGETS.state)
+  const { targetsView } = await viewModule(sdk)
+  const frame = targetsView(snapshotOfTargets(states.map((state, i) => targetView(i, { state }))), lang, TARGET_FIXTURE.zones[0])
+  await page.deliver(frame)
+  await page.toggle(frame.targets[0].name)
+  assert.equal(page.rows().length, states.length, 'precondition: one row per state')
+  return { tree: page.world.shim.treeOf(TARGET_FIXTURE.mountKey + 'sidebar'), sheets: sheets.live() }
 }
 
 const ASK_TARGET = `${HOOK.askCard} ${HOOK.reason}`
-const STRIP_TARGET = `${HOOK.strip}[${HOOK.stripState}="${HOOK.connected}"] ${HOOK.badge}`
+/**
+ * The sidebar list's measured element: the expanded row's button and everything up to the body.
+ * page.mjs writes a `true` prop as a bare attribute and drops a `false` one, so only the open row
+ * carries `aria-expanded` in the written HTML.
+ */
+const SIDEBAR_TARGET = 'button[aria-expanded]'
 
 /** Draw, write the document for `theme`, and probe `arg` in Chromium. */
 async function probed(sdk, drawn, theme, arg) {
@@ -81,16 +92,6 @@ async function probed(sdk, drawn, theme, arg) {
 function placeholderPaint(result) {
   const fill = backdrop(result.layers)
   return { fill, ink: over(parseColour(result.placeholder.colour), fill, result.placeholder.opacity) }
-}
-
-/** The badge's painted text and fill, the heading row's painted fill, and the shape's best ratio. */
-function badgePaint(result) {
-  const fill = backdrop(result.toneLayers)
-  const row = backdrop(result.behindLayers)
-  const text = over(parseColour(result.text), backdrop(result.layers))
-  const shapes = [{ kind: 'fill', ratio: contrast(fill, row) }, ...result.outlines.map((o) => ({ kind: o.kind, ratio: contrast(over(parseColour(o.colour), fill), row) }))]
-  const best = shapes.reduce((a, b) => (b.ratio > a.ratio ? b : a))
-  return { fill, row, text, textRatio: contrast(text, fill), shapes, best }
 }
 
 // ------------------------------------------------------------- RESHOOT fix 1: the ask card's badge
@@ -112,7 +113,7 @@ const referenceTarget = (tone) => `[${ASK_BADGE.reference}="${tone}"]`
 async function badgeDocument(t, sdk, type, lang, state) {
   const sheets = sheetCollector()
   const page = await cardPage(t, sdk, { lang, onDocument: sheets.onDocument })
-  await page.show([expectedCard(askEvent({ type }), state)])
+  await page.show([withSource(expectedCard(askEvent({ type }), state))])
   const tree = page.world.shim.tree()
   const card = findAll(tree, (n) => n.props?.[ASK_BADGE.cardAttr] !== undefined)[0]
   assert.ok(card, 'precondition: the dock draws an ask card')
@@ -176,21 +177,10 @@ export function registerContrastCases(sdk) {
     }
   }
 
-  // ================================================== UIFF-STRIP-DT-01: the connected state badge
-  for (const lang of LANGS) {
-    for (const theme of THEME.all()) {
-      browserRow(sdk, 'UIFF-STRIP-DT-01', `connected ${lang} ${theme.id}`, `(${lang}, ${theme.id}) connected: the badge text has at least ${WCAG.text}:1 against the badge's own fill; the badge's fill or outline has at least ${WCAG.shape}:1 against the heading row behind it`, async (t) => {
-        const drawn = await stripDocument(t, sdk, lang)
-        assert.ok(holds(drawn.tree, (n) => n.props['data-primitive'] === HOOK.tagPrimitive), 'precondition: the card draws a DSH Tag')
-        const result = await probed(sdk, drawn, theme, { target: STRIP_TARGET, tone: HOOK.tag, behind: 'parent', root: HOOK.strip })
-        assert.ok(result.shownText.length > 0, 'precondition: the badge shows a word')
-        const paint = badgePaint(result)
-        t.diagnostic(`measured text ${shown(paint.textRatio)}:1, shape ${paint.best.kind} ${shown(paint.best.ratio)}:1 (all shapes ${json(paint.shapes.map((s) => [s.kind, shown(s.ratio)]))}; text ${result.text}, badge ${json(result.toneLayers)}, row ${json(result.behindLayers)}, outlines ${json(result.outlines)})`)
-        assert.ok(paint.textRatio >= WCAG.text, `badge text contrast ${shown(paint.textRatio)}:1 < ${WCAG.text}:1 (${theme.id}, SDK ${sdk}; text ${result.text} over ${json(result.toneLayers)})`)
-        assert.ok(paint.best.ratio >= WCAG.shape, `badge shape contrast ${shown(paint.best.ratio)}:1 < ${WCAG.shape}:1 against the heading row (${theme.id}, SDK ${sdk}; ${json(paint.shapes.map((s) => [s.kind, shown(s.ratio)]))})`)
-      })
-    }
-  }
+  // ================================================== UIFF-STRIP-DT-01 (withdrawn)
+  // Re-baselined (MULTI-3 requirement D): the status card is gone, so its badge rows are withdrawn;
+  // the sidebar list's colours are checked token-only below (UIFF-TOKENS-EP-01 target list).
+  for (const lang of LANGS) for (const theme of THEME.all()) withdrawnRow(sdk, 'UIFF-STRIP-DT-01', `connected ${lang} ${theme.id}`, `(${lang}, ${theme.id}) connected status badge contrast`, WITHDRAWN.strip)
 
   // ====================================== RESHOOT-ASKBADGE-DT-01: the open ask card's warning badge
   const WARN_TOKEN = `var(${ASK_BADGE.warnToken})`
@@ -233,7 +223,8 @@ export function registerContrastCases(sdk) {
   // ===================================================== UIFF-TOKENS-EP-01: DSH design tokens only
   const tokenRows = [
     ['ask card', (t) => askDocument(t, sdk, EVENT_TYPE.permission, LANGS[0]), { target: ASK_TARGET, root: HOOK.askCard }],
-    ['status card', (t) => stripDocument(t, sdk, LANGS[0]), { target: STRIP_TARGET, tone: HOOK.tag, behind: 'parent', root: HOOK.strip }],
+    // Re-baselined (MULTI-3): the status card is replaced by the sidebar target list.
+    ['target list', (t) => sidebarDocument(t, sdk, LANGS[0]), { target: SIDEBAR_TARGET, root: 'body' }],
     // RESHOOT fix 1: the open ask card's badge, its colours drawn from DSH tokens only.
     ['open ask badge', async (t) => (await badgeDocument(t, sdk, EVENT_TYPE.permission, LANGS[0], K3.state.open)).drawn, { target: BADGE_TARGET, tone: HOOK.tag, root: HOOK.askCard }],
   ]
@@ -259,13 +250,8 @@ export function registerContrastCases(sdk) {
       assert.ok(ratio < WCAG.text, `the default placeholder token measures ${shown(ratio)}:1, so the oracle cannot tell the audited defect apart`)
     })
   }
-  browserRow(sdk, 'UIFF-ORACLE-CTRL-01', 'success tone light', `(light) control: DSH's plain success colour as the badge text over the badge's own fill is below ${WCAG.text}:1`, async (t) => {
-    const result = await probed(sdk, await stripDocument(t, sdk, LANGS[0]), THEME.light, { target: STRIP_TARGET, tone: HOOK.tag, behind: 'parent', root: HOOK.strip, colours: [SUCCESS_TOKEN] })
-    const { fill } = badgePaint(result)
-    const ratio = contrast(over(parseColour(result.colours[SUCCESS_TOKEN]), fill), fill)
-    t.diagnostic(`control measured ${shown(ratio)}:1`)
-    assert.ok(ratio < WCAG.text, `the plain success colour measures ${shown(ratio)}:1, so the oracle cannot tell the audited defect apart`)
-  })
+  // Re-baselined (MULTI-3): the control of the withdrawn status-badge rows is withdrawn with them.
+  withdrawnRow(sdk, 'UIFF-ORACLE-CTRL-01', 'success tone light', '(light) control: DSH\'s plain success colour over the status badge fill', WITHDRAWN.strip)
 
   browserRow(sdk, 'UIFF-ORACLE-CTRL-01', 'warning Tag light', `(light) control: DSH's own ${ASK_BADGE.openTone} Tag on the page background, outside the card, measures below ${WCAG.text}:1`, async (t) => {
     const { drawn } = await badgeDocument(t, sdk, EVENT_TYPE.permission, LANGS[0], K3.state.open)

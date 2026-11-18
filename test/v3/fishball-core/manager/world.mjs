@@ -141,6 +141,8 @@ const ops = {
     return d === undefined ? null : { value: d.value, user: d.user }
   },
   async mutate({ ops: edits }) { await ctx.settings.mutate(WORLD.core, edits); return true },
+  /** MULTI-1: core's target collection (ui.targets), the public way to add the Connect target. */
+  async addTarget({ url }) { return instance().ui.targets.add(url) },
   async shutdown() {
     await Promise.race([shutdown.shutdown(0), new Promise((resolve) => setTimeout(resolve, BUDGET.stopMs))])
     return true

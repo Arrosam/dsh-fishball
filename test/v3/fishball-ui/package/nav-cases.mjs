@@ -12,14 +12,20 @@
  *   absent / two keys → the Settings tooltip shows none / them;
  * - State transition UIPF-NAV-ST-01: Tooltip hidden → shown (hover or focus) → hidden (leave or blur);
  *   UIPF-NAV-ST-02 pending → released: the status and Retry go;
- * - Use case UIPF-NAV-UC-01: each control does what it did (Settings opens DSH Settings, Fishball
- *   re-selects the manager, Plugins opens the Plugins panel, Retry retries).
+ * - Use case UIPF-NAV-UC-01: each control does what it did (Settings opens DSH Settings, Retry retries).
+ *
+ * Re-baselined (MULTI-3 requirement F, PLAN-MULTI §6.4): the tray and its Fishball / Plugins buttons
+ * are removed (those rows stay listed, withdrawn); the Settings launcher, the status and Retry are
+ * looked up page-wide. New: MULTI-NAV-EP-01 (no tray), MULTI-NAV-EP-02 (status visible at 390 / 1280px),
+ * MULTI-NAV-ST-01 (no forced drawer close), MULTI-NAV-DT-01 (sidebar.left.toggle no longer remapped).
  */
 import assert from 'node:assert/strict'
 import { caseTest } from '../../contract/package-boundaries/cases.mjs'
 import { STAND_IN } from '../../fishball-core/settings/primitives.mjs'
 import { navPage } from './nav-page.mjs'
 import { NAV, NAV_PAGE } from './polish-constants.mjs'
+import { WITHDRAWN } from '../model-dialog/targets-constants.mjs'
+import { withdrawnRow } from '../model-dialog/withdrawn.mjs'
 
 const show = (v) => JSON.stringify(v)
 const LANGS = NAV_PAGE.langs
@@ -32,11 +38,18 @@ const STATUSES = Object.freeze({
 const below = (node) => [node, ...(node.children ?? []).filter((c) => typeof c !== 'string').flatMap(below)]
 /** Every text node under `node`, trimmed, non-empty. */
 const texts = (node) => (typeof node === 'string' ? [node.trim()].filter(Boolean) : (node.children ?? []).flatMap(texts))
-/** The nav's direct and nested controls in document order, by their data-fishball-nav hook. */
-const controls = (page) => page.inNav().filter((n) => n.tag === 'button' && n.props[NAV.hook] !== undefined)
+/**
+ * Re-baselined (MULTI-3 requirement F): Fishball's own tray (nav.fishball-page-navigation with
+ * Fishball / Plugins) is removed; the Settings launcher, the status and Retry remain on the page,
+ * wherever they are drawn, so they are looked up page-wide by their hooks.
+ */
+const controls = (page) => page.nodes().filter((n) => n.tag === 'button' && n.props[NAV.hook] !== undefined)
 const control = (page, which) => controls(page).find((n) => n.props[NAV.hook] === which)
-/** The order of the nav's hooked items: buttons by their hook word, the status by 'status'. */
-const order = (page) => page.inNav().flatMap((n) => (n.tag === 'button' && n.props[NAV.hook] !== undefined ? [n.props[NAV.hook]] : n.props.role === NAV.statusRole ? ['status'] : []))
+const launcher = (page) => page.nodes().find((n) => n.tag === 'button' && String(n.props.className ?? '').split(' ').includes(NAV.launcherClass))
+/** The page's status items: the status by 'status', Retry by 'retry'. */
+const statusItems = (page) => page.nodes().flatMap((n) => (n.props[NAV.statusHook] !== undefined ? ['status'] : n.tag === 'button' && n.props[NAV.hook] === NAV.retry ? [NAV.retry] : []))
+/** The status's accessible text: its own text, else its aria-label (a small status control). */
+const statusText = (node) => texts(node).join(' ') || node.props['aria-label'] || ''
 const tooltips = (page) => page.nodes().filter((n) => n.props.role === 'tooltip')
 
 /** One control is an icon button: one svg aria-hidden, no text node, the aria-label, a Tooltip with the same label. */
@@ -52,51 +65,59 @@ function assertIconButton(node, label, why) {
 
 export function registerNavCases(sdk) {
   const t = (id, row, title, fn, todo) => caseTest(sdk, id, row, title, fn, todo)
+  const gone = (id, row, title) => withdrawnRow(sdk, id, row, title, WITHDRAWN.tray)
+  const SETTINGS = NAV.order[0]
 
-  // ---- UIPF-NAV-EP-01 and the order without a status
+  // ---- the withdrawn tray (Fishball / Plugins buttons, their order, tooltips and presses)
   for (const lang of LANGS) {
-    t('UIPF-NAV-EP-01', `order ${lang}`, `(${lang}) no status: the nav holds exactly settings, fishball, plugins in that order; no status, no Retry`, async (c) => {
+    gone('UIPF-NAV-EP-01', `order ${lang}`, `(${lang}) the nav holds settings, fishball, plugins`)
+    for (const which of ['fishball', 'plugins']) gone('UIPF-NAV-EP-01', `${which} ${lang}`, `(${lang}) ${which}: icon only`)
+  }
+  for (const enter of ['onMouseEnter', 'onFocus']) for (const which of ['fishball', 'plugins']) gone('UIPF-NAV-ST-01', `${which} ${enter}`, `${which}: tooltip on ${enter}`)
+  for (const row of ['fishball from plugins', 'fishball after drift', 'plugins']) gone('UIPF-NAV-UC-01', row, `pressing ${row}`)
+  // A Fishball button contributed to DSH's own sidebar.footer.action seat is not the tray, so it is not
+  // asserted either way here (the requirement removes the tray and its Plugins duplicate of the native row).
+  t('MULTI-NAV-EP-01', 'no tray', `no nav.${NAV.className}, no page-owned nav element and no Plugins button of the page (the real sidebar's Plugins row is the one)`, async (c) => {
+    const page = await navPage(c, sdk)
+    assert.equal(page.nav(), undefined, 'the tray is still drawn')
+    assert.deepEqual(page.nodes().filter((n) => n.tag === 'nav').map((n) => n.props.className), [])
+    assert.deepEqual(controls(page).filter((n) => n.props[NAV.hook] === 'plugins').map((n) => n.props[NAV.hook]), [])
+    assert.deepEqual(page.log.errors, [])
+  })
+
+  // ---- the Settings launcher stays reachable (button.fishball-settings-launcher)
+  for (const lang of LANGS) {
+    t('UIPF-NAV-EP-01', `settings ${lang}`, `(${lang}) the Settings launcher: icon only, aria-label ${show(NAV.labels[lang].settings)}, Tooltip label equals it`, async (c) => {
       const page = await navPage(c, sdk, { lang })
-      assert.ok(page.nav(), `no nav.${NAV.className}[aria-label="${NAV.label}"]`)
-      assert.deepEqual(order(page), [...NAV.order], 'nav order')
-      assert.deepEqual(page.log.errors, [])
+      assertIconButton(launcher(page), NAV.labels[lang].settings, 'settings')
     })
-    for (const which of NAV.order) {
-      t('UIPF-NAV-EP-01', `${which} ${lang}`, `(${lang}) ${which}: icon only, aria-label ${show(NAV.labels[lang][which])}, Tooltip label equals it`, async (c) => {
-        const page = await navPage(c, sdk, { lang })
-        assertIconButton(control(page, which), NAV.labels[lang][which], which)
-      })
-    }
     t('UIPF-NAV-EP-01', `retry ${lang}`, `(${lang}) retry (with a status): icon only, aria-label ${show(NAV.labels[lang].retry)}, Tooltip label equals it`, async (c) => {
       const page = await navPage(c, sdk, { lang, ...STATUSES.unavailable })
       assertIconButton(control(page, NAV.retry), NAV.labels[lang].retry, 'retry')
     })
   }
-  t('UIPF-NAV-EP-01', 'settings hooks', `the Settings launcher is button.${NAV.launcherClass} with aria-haspopup="${NAV.haspopup}" inside the nav`, async (c) => {
+  t('UIPF-NAV-EP-01', 'settings hooks', `the Settings launcher is button.${NAV.launcherClass} with aria-haspopup="${NAV.haspopup}"`, async (c) => {
     const page = await navPage(c, sdk)
-    const node = control(page, NAV.order[0])
-    assert.ok(node, 'no settings control in the nav')
-    assert.ok(String(node.props.className ?? '').split(' ').includes(NAV.launcherClass), `class ${show(node.props.className)}`)
+    const node = launcher(page)
+    assert.ok(node, `no button.${NAV.launcherClass}`)
     assert.equal(node.props['aria-haspopup'], NAV.haspopup)
   })
-
-  // ---- UIPF-NAV-BVA-01: aria-expanded follows settingsOpen; the shortcut keys
   for (const open of [false, true]) {
     t('UIPF-NAV-BVA-01', `settingsOpen ${open}`, `the launcher owner prop settingsOpen ${open} → aria-expanded "${open}"`, async (c) => {
       const page = await navPage(c, sdk, { launcher: { settingsOpen: open } })
-      assert.equal(String(control(page, NAV.order[0])?.props['aria-expanded']), String(open))
+      assert.equal(String(launcher(page)?.props['aria-expanded']), String(open))
     })
   }
   t('UIPF-NAV-BVA-01', 'settingsOpen false → true', 'aria-expanded follows a re-render from false to true', async (c) => {
     const page = await navPage(c, sdk)
-    assert.equal(String(control(page, NAV.order[0])?.props['aria-expanded']), 'false')
+    assert.equal(String(launcher(page)?.props['aria-expanded']), 'false')
     await page.setLauncher({ settingsOpen: true })
-    assert.equal(String(control(page, NAV.order[0])?.props['aria-expanded']), 'true')
+    assert.equal(String(launcher(page)?.props['aria-expanded']), 'true')
   })
   for (const [row, shortcut] of [['no shortcut', undefined], ['two keys', NAV.shortcut]]) {
     t('UIPF-NAV-BVA-01', `shortcut ${row}`, `the Settings tooltip on hover shows its label${shortcut ? ' and DSH\'s settings shortcut keys' : ' and no shortcut keys'}`, async (c) => {
       const page = await navPage(c, sdk, { launcher: shortcut ? { settingsShortcut: shortcut } : {} })
-      await page.fire(control(page, NAV.order[0]), 'onMouseEnter')
+      await page.fire(launcher(page), 'onMouseEnter')
       const [tip] = tooltips(page)
       assert.ok(tip, 'no tooltip on hover')
       assert.ok(texts(tip).includes(NAV.labels.en.settings), `tooltip text ${show(texts(tip))}`)
@@ -104,89 +125,97 @@ export function registerNavCases(sdk) {
       assert.deepEqual(keys, shortcut ? [shortcut.keys.join(' ')] : [], 'shortcut keys in the tooltip')
     })
   }
-
-  // ---- UIPF-NAV-ST-01: the tooltip shows on hover or focus, portalled, and goes again
   for (const [enter, leave] of [['onMouseEnter', 'onMouseLeave'], ['onFocus', 'onBlur']]) {
-    for (const which of NAV.order) {
-      t('UIPF-NAV-ST-01', `${which} ${enter}`, `${which}: no tooltip → ${enter}: one role="tooltip" with the label, portalled to document.body → ${leave}: none`, async (c) => {
-        const page = await navPage(c, sdk)
-        assert.deepEqual(tooltips(page), [], 'a tooltip before any hover or focus')
-        await page.fire(control(page, which), enter)
-        const shown = tooltips(page)
-        assert.equal(shown.length, 1, `${shown.length} tooltips`)
-        assert.ok(texts(shown[0]).includes(NAV.labels.en[which]), `tooltip text ${show(texts(shown[0]))}`)
-        assert.equal(shown[0].props[STAND_IN.portal], 'true', 'the Tooltip is not portalled (DSH Tooltip portal)')
-        await page.fire(control(page, which), leave)
-        assert.deepEqual(tooltips(page), [], 'the tooltip stayed')
-      })
-    }
+    t('UIPF-NAV-ST-01', `${SETTINGS} ${enter}`, `settings: no tooltip → ${enter}: one role="tooltip" with the label, portalled → ${leave}: none`, async (c) => {
+      const page = await navPage(c, sdk)
+      assert.deepEqual(tooltips(page), [], 'a tooltip before any hover or focus')
+      await page.fire(launcher(page), enter)
+      const shown = tooltips(page)
+      assert.equal(shown.length, 1, `${shown.length} tooltips`)
+      assert.ok(texts(shown[0]).includes(NAV.labels.en.settings))
+      assert.equal(shown[0].props[STAND_IN.portal], 'true', 'the Tooltip is not portalled (DSH Tooltip portal)')
+      await page.fire(launcher(page), leave)
+      assert.deepEqual(tooltips(page), [], 'the tooltip stayed')
+    })
   }
-
-  // ---- UIPF-NAV-DT-01: status × language
-  for (const [word, options] of Object.entries(STATUSES)) {
-    for (const lang of LANGS) {
-      t('UIPF-NAV-DT-01', `${word} ${lang}`, `(${lang}) ${word}: span[role=status][${NAV.statusHook}=${word}] reads ${show(NAV.status[word][lang])} after a StateDot ${NAV.status[word].dot}; order settings, fishball, plugins, status, retry`, async (c) => {
-        const page = await navPage(c, sdk, { lang, ...options })
-        const statuses = page.inNav().filter((n) => n.props.role === NAV.statusRole)
-        assert.equal(statuses.length, 1, `status nodes ${show(statuses.map((s) => texts(s)))}`)
-        const [status] = statuses
-        assert.equal(status.tag, 'span')
-        assert.equal(status.props[NAV.statusHook], word)
-        assert.equal(texts(status).join(' '), NAV.status[word][lang])
-        // "preceded by a DSH StateDot": its first element child, or the element right before it.
-        const inside = (status.children ?? []).find((n) => typeof n !== 'string')
-        const flat = page.inNav()
-        const before = flat[flat.indexOf(status) - 1]
-        const dot = [inside, before].find((n) => n?.props?.[STAND_IN.primitive] === 'StateDot')
-        assert.ok(dot, 'no StateDot before the status text')
-        assert.equal(dot.props['data-state'], NAV.status[word].dot)
-        if (NAV.status[word].dot === 'ongoing') assert.equal(dot.tag, 'svg', 'the pending dot is not the spinner svg')
-        assert.deepEqual(order(page), [...NAV.order, 'status', NAV.retry])
-      })
-    }
-  }
-  t('UIPF-NAV-ST-02', 'pending → protected', 'pending (config loading) → the config is read: the status and Retry go, the three icons stay', async (c) => {
-    const page = await navPage(c, sdk, STATUSES.pending)
-    assert.deepEqual(order(page), [...NAV.order, 'status', NAV.retry], 'pending')
-    await page.release()
-    assert.deepEqual(order(page), [...NAV.order], 'after the config is read')
-  })
-
-  // ---- UIPF-NAV-UC-01: clicking behaves as before
   t('UIPF-NAV-UC-01', 'settings', 'pressing Settings opens DSH Settings (the launcher owner prop openSettings, once)', async (c) => {
     const page = await navPage(c, sdk)
-    await page.press(control(page, 'settings'))
+    await page.press(launcher(page))
     assert.equal(page.log.openSettings, 1)
   })
-  // As LITE-UC-02 / LITE-ST-04 observe it: from the Plugins panel, or after the view drifted to
-  // another session, Fishball returns to the manager (and leaves the Plugins panel).
-  t('UIPF-NAV-UC-01', 'fishball from plugins', 'Plugins pressed, then Fishball: the Plugins panel is left and only the manager is opened', async (c) => {
+
+  // ---- the status and Retry stay visible and actionable (a small status control)
+  t('UIPF-NAV-EP-01', 'no status', 'no status: no status control and no Retry', async (c) => {
     const page = await navPage(c, sdk)
-    await page.press(control(page, 'plugins'))
-    await page.press(control(page, 'fishball'))
-    assert.notEqual(page.log.panels.at(-1), NAV.plugins, 'still on the Plugins panel: ' + show(page.log.panels))
-    assert.ok(page.log.opens.length >= 1 && page.log.opens.every((id) => id === NAV_PAGE.manager), show(page.log.opens))
+    assert.deepEqual(statusItems(page), [])
   })
-  t('UIPF-NAV-UC-01', 'fishball after drift', 'the view drifted to another session, then Fishball: the manager is opened again', async (c) => {
-    const page = await navPage(c, sdk)
-    page.drift(NAV_PAGE.other)
-    await page.settle()
-    const before = page.log.opens.length
-    await page.press(control(page, 'fishball'))
-    assert.equal(page.log.opens.length, before + 1, 'no openSession after the press: ' + show(page.log.opens))
-    assert.equal(page.log.opens.at(-1), NAV_PAGE.manager)
-  })
-  t('UIPF-NAV-UC-01', 'plugins', `pressing Plugins opens the Plugins panel (layout.selectPanel('${NAV.plugins}'))`, async (c) => {
-    const page = await navPage(c, sdk)
-    await page.press(control(page, 'plugins'))
-    assert.equal(page.log.panels.at(-1), NAV.plugins)
+  for (const [word, options] of Object.entries(STATUSES)) {
+    for (const lang of LANGS) {
+      t('UIPF-NAV-DT-01', `${word} ${lang}`, `(${lang}) ${word}: one [${NAV.statusHook}=${word}] reading ${show(NAV.status[word][lang])} (text or accessible name) with a StateDot ${NAV.status[word].dot}, then Retry`, async (c) => {
+        const page = await navPage(c, sdk, { lang, ...options })
+        const statuses = page.nodes().filter((n) => n.props[NAV.statusHook] !== undefined)
+        assert.equal(statuses.length, 1, `status nodes ${statuses.length}`)
+        const [status] = statuses
+        assert.equal(status.props[NAV.statusHook], word)
+        assert.equal(status.props.role, NAV.statusRole)
+        assert.equal(statusText(status), NAV.status[word][lang])
+        const inside = below(status).find((n) => n.props?.[STAND_IN.primitive] === 'StateDot')
+        const flat = page.nodes()
+        const before = flat[flat.indexOf(status) - 1]
+        const dot = [inside, before].find((n) => n?.props?.[STAND_IN.primitive] === 'StateDot')
+        assert.ok(dot, 'no StateDot with the status')
+        assert.equal(dot.props['data-state'], NAV.status[word].dot)
+        if (NAV.status[word].dot === 'ongoing') assert.equal(dot.tag, 'svg', 'the pending dot is not the spinner svg')
+        assert.deepEqual(statusItems(page), ['status', NAV.retry])
+      })
+    }
+  }
+  t('UIPF-NAV-ST-02', 'pending → protected', 'pending (config loading) → the config is read: the status and Retry go', async (c) => {
+    const page = await navPage(c, sdk, STATUSES.pending)
+    assert.deepEqual(statusItems(page), ['status', NAV.retry], 'pending')
+    await page.release()
+    assert.deepEqual(statusItems(page), [], 'after the config is read')
   })
   t('UIPF-NAV-UC-01', 'retry', 'unavailable → pressing Retry tries to open the manager again; once it opens, the status and Retry go', async (c) => {
     const page = await navPage(c, sdk, { openFails: 1 })
-    assert.deepEqual(order(page), [...NAV.order, 'status', NAV.retry], 'unavailable first')
+    assert.deepEqual(statusItems(page), ['status', NAV.retry], 'unavailable first')
     const before = page.log.opens.length
     await page.press(control(page, NAV.retry))
     assert.ok(page.log.opens.length > before, 'Retry did not open the manager again')
-    assert.deepEqual(order(page), [...NAV.order], 'after a successful Retry')
+    assert.deepEqual(statusItems(page), [], 'after a successful Retry')
+  })
+  for (const width of [NAV_PAGE.narrowWidth, NAV_PAGE.wideWidth]) {
+    t('MULTI-NAV-EP-02', `status visible ${width}px`, `${width}px: the unavailable status and Retry are drawn (not in a hidden subtree)`, async (c) => {
+      const page = await navPage(c, sdk, { width, ...STATUSES.unavailable })
+      assert.deepEqual(statusItems(page), ['status', NAV.retry])
+      const hidden = page.nodes().filter((n) => n.props.hidden === true || n.props[NAV_PAGE.hiddenHook] !== undefined || n.props['aria-hidden'] === 'true' || n.props['aria-hidden'] === true)
+      for (const item of [page.nodes().find((n) => n.props[NAV.statusHook] !== undefined), control(page, NAV.retry)]) {
+        assert.ok(!hidden.some((h) => below(h).includes(item)), 'the status or Retry is inside a hidden subtree')
+      }
+    })
+  }
+
+  // ---- requirement A: fishball-page keeps its fail-closed Empty occupant of sidebar.workspaces at -1
+  // (so with fishball-ui's target list unloaded, DSH's workspace browser still never shows).
+  t('MULTI-NAV-EP-03', 'empty shadow', `fishball-page registers ${NAV_PAGE.workspacesSlot} at priority ${NAV_PAGE.emptyShadowPriority}, below DSH's 0, and draws no workspace or session control there`, async (c) => {
+    const page = await navPage(c, sdk)
+    const mine = page.log.registrations.filter((r) => r.name === NAV_PAGE.workspacesSlot)
+    assert.deepEqual(mine.map((r) => r.priority), [NAV_PAGE.emptyShadowPriority])
+    const drawn = page.shim.treeOf(NAV_PAGE.workspacesSlot + ':0')
+    assert.deepEqual(below({ children: drawn }).filter((n) => n.tag === 'button' || n.props?.role === 'tree' || n.props?.role === 'treeitem').map((n) => n.tag), [])
+  })
+
+  // ---- requirement F: the page no longer forces the drawer closed nor remaps sidebar.left.toggle
+  for (const width of [NAV_PAGE.narrowWidth, NAV_PAGE.wideWidth]) {
+    t('MULTI-NAV-ST-01', `no forced close ${width}px`, `${width}px: loading the page calls layout.toggleSidebar() zero times`, async (c) => {
+      const page = await navPage(c, sdk, { width })
+      assert.equal(page.log.toggles, 0)
+    })
+  }
+  t('MULTI-NAV-DT-01', 'shortcut remaps', `the gate edits no ${NAV_PAGE.sidebarToggle} binding; the session / workspace shortcuts are still remapped (${NAV_PAGE.stillRemapped.join(', ')})`, async (c) => {
+    const page = await navPage(c, sdk)
+    const ids = page.log.edits.map((op) => op.id)
+    assert.equal(ids.includes(NAV_PAGE.sidebarToggle), false, show(page.log.edits))
+    for (const id of NAV_PAGE.stillRemapped) assert.ok(ids.includes(id), `${id} not remapped: ${show(ids)}`)
   })
 }
