@@ -34,6 +34,12 @@ export class FakeLink extends ValuePort {
   onStatus(fn) { return this.source.on(fn) }
 }
 
+/** MULTI-1: the target collection port `{list(), onChange(fn)}` (relayed seam; FishballTargets' read half). */
+export class FakeTargets extends ValuePort {
+  list() { return this.copy() }
+  onChange(fn) { return this.source.on(fn) }
+}
+
 /** Connect (connect.d.ts FishballConnect): `{status(), onChange(fn), begin(), cancel()}`; begin/cancel are recorded. */
 export class FakeConnect extends ValuePort {
   calls = []
