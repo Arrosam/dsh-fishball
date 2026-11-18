@@ -20,7 +20,7 @@ import path from 'node:path'
 import test from 'node:test'
 import { setTimeout as sleep } from 'node:timers/promises'
 import { pathToFileURL } from 'node:url'
-import { INPROC, coreModule, eventually, gate, openInproc } from './inproc.mjs'
+import { INPROC, coreModule, eventually, gate, openInproc, recurringClock } from './inproc.mjs'
 
 export const name = (sdk, id, row, text) => `${id} ${row} [SDK ${sdk}] ${text}`
 
@@ -399,15 +399,16 @@ function registerF08(sdk) {
   })
   test(name(sdk, 'RFIX-F08-ST-02', 'recurring', 'a recurring reminder (cron every minute) delivered and admitted → lastDelivery recorded, the next occurrence scheduled later, still listed'), { timeout: 180000 }, async (t) => {
     const w = await openInproc(t, sdk, { reminders: true })
+    const clock = await recurringClock(t, w)
     const title = RFIX.title('cron')
     const marker = 'FBTEST-RFIX-REMINDER-' + title
-    // Every minute: its first occurrence is at most 60 s away (every_seconds would wait a full 60 s).
     const r = await w.tool(RFIX.tool.create, { title, prompt: marker, cron: { expression: '* * * * *', time_zone: 'UTC' } })
     assert.equal(codeOf(r), undefined, r.text.slice(0, 200))
     const [before] = listOf(await w.tool(RFIX.tool.list, {}))
     assert.equal(before?.lastDelivery, undefined, 'lastDelivery before any delivery')
-    assert.ok(await eventually(async () => (await w.admissions(marker)).length === 1, 90000), 'the first occurrence was not admitted')
-    assert.ok(await eventually(async () => listOf(await w.tool(RFIX.tool.list, {}))[0]?.lastDelivery !== undefined), 'no lastDelivery after the admission')
+    clock.makeDue()
+    assert.ok(await clock.eventually(async () => (await w.admissions(marker)).length === 1, 90000), 'the first occurrence was not admitted')
+    assert.ok(await clock.eventually(async () => listOf(await w.tool(RFIX.tool.list, {}))[0]?.lastDelivery !== undefined), 'no lastDelivery after the admission')
     const [after] = listOf(await w.tool(RFIX.tool.list, {}))
     assert.equal(after.title, title, 'a recurring reminder is no longer listed')
     assert.ok(Date.parse(after.scheduledAt) > Date.parse(before.scheduledAt), `the next occurrence is not later: ${before.scheduledAt} → ${after.scheduledAt}`)

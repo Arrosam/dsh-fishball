@@ -86,7 +86,7 @@ const RELEASE_GATE = Object.freeze({
   off: '',
   directory: 'release-fixture',
   contents: 'not a tarball',
-  reason: /# SKIP release folder missing\s*$/m,
+  reason: /^﹣ REL-EP-01 .* # release folder missing$/m,
   testArgs: Object.freeze(['--test', '--test-reporter=spec']),
   smokePatterns: Object.freeze(['^REL-EP-01 ', '^REL-ORACLE junk ']),
   parserPattern: '^REL-ORACLE tar dsh-agent-connector ',
