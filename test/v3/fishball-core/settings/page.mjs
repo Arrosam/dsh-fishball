@@ -36,7 +36,7 @@ import { pathToFileURL } from 'node:url'
 import { createBrowserSandbox } from '../../../support/browser-sandbox.mjs'
 import { createReactShim, findAll, textOf } from '../../../support/rp-recommend.mjs'
 import { applyPlugins, moduleTable } from '../../contract/package-boundaries/client-graph.mjs'
-import { CLIENTS, CORDIS_ENTRY, CONNECT, CORE, DSH, FIBER, FIXTURE, HARNESS, HOSTED_IMPORT, MARK, ROUTE, STATUS_EVENT, SUBJECT, UI, runtimeOf } from './constants.mjs'
+import { CLIENTS, CORDIS_ENTRY, CONNECT, CORE, DSH, FIBER, FIXTURE, HARNESS, HOSTED_IMPORT, MARK, MULTI_SET, ROUTE, STATUS_EVENT, SUBJECT, UI, runtimeOf } from './constants.mjs'
 import { STAND_IN, primitivesFor } from './primitives.mjs'
 
 export const settle = async (rounds = HARNESS.settleRounds) => { for (let i = 0; i < rounds; i++) await new Promise((resolve) => setImmediate(resolve)) }
@@ -162,6 +162,13 @@ export function createWorld({
       get: () => ({ status: ROUTE.ok, json: { state: CONNECT.state.needsAuthorization, code: null } }),
       post: () => ({ status: ROUTE.ok, json: { outcome: 'authorized' } }),
     },
+    /**
+     * MULTI-1: core's owner-only target routes (SEAM_TARGETS.route), by document-relative path. The
+     * list answers `world.targets` (a TargetsSnapshot); a POST answers `world.targetAnswers[path]`
+     * (a function of the parsed body, default {ok: true}). Every call is in `fetches` too.
+     */
+    targets: { version: MULTI_SET.snapshotVersion, targets: [] },
+    targetAnswers: {},
   }
   const shim = createReactShim({ stale() {} })
   const { React } = shim
@@ -386,7 +393,14 @@ export async function loadPage(t, world) {
     const call = { url: url.href, method, credentials: option('credentials'), cache: option('cache'), body: body === undefined ? undefined : String(body) }
     world.fetches.push(call)
     const isRoute = url.href === new URL(ROUTE.relative, world.base).href
-    const handler = !isRoute ? () => ({ status: 404, text: '' }) : method === ROUTE.post ? world.connect.post : world.connect.get
+    const targetRoute = MULTI_SET.relative.find((p) => url.href === new URL(p, world.base).href)
+    const targetHandler = () => {
+      if (targetRoute === MULTI_SET.relative[0] && method === ROUTE.get) return typeof world.targets === 'function' ? world.targets() : { status: ROUTE.ok, json: world.targets }
+      const answer = world.targetAnswers[targetRoute]
+      let parsed; try { parsed = JSON.parse(call.body ?? 'null') } catch { parsed = undefined }
+      return answer === undefined ? { status: ROUTE.ok, json: { ok: true } } : answer(parsed)
+    }
+    const handler = targetRoute !== undefined ? targetHandler : !isRoute ? () => ({ status: 404, text: '' }) : method === ROUTE.post ? world.connect.post : world.connect.get
     const answer = await handler(call)
     if (answer === 'reject') throw new TypeError('fbtest network failure')
     return answer.json !== undefined ? asJson(answer.json, answer.status) : new Response(answer.text ?? '', { status: answer.status })
