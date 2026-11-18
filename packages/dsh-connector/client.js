@@ -258,7 +258,7 @@ window.__ModuleLoader__.load({
       saving: 'Saving…',
       discard: 'Discard',
       saveFailed: 'The settings were not saved.',
-      fieldRefused: 'DSH did not accept this change. Check the current value and try again.',
+      fieldRefused: 'Could not confirm the change. Check the current value and try again if needed.',
       fieldUnconfirmed: 'Could not confirm the save: {reason}',
       changedElsewhere: 'This setting was changed elsewhere meanwhile. Leave the field or press Enter again to save your value over it, or press Esc to keep the new one.',
       stateFailed: 'The connector\'s status could not be read ({code}).',
@@ -316,7 +316,7 @@ window.__ModuleLoader__.load({
       saving: '保存中…',
       discard: '放弃',
       saveFailed: '设置没有保存。',
-      fieldRefused: 'DSH 未接受此更改。请检查当前值后重试。',
+      fieldRefused: '无法确认更改是否生效。请检查当前值，必要时重试。',
       fieldUnconfirmed: '无法确认保存结果：{reason}',
       changedElsewhere: '此设置已在别处被修改。再次离开此字段或按 Enter 将用你的值覆盖它，按 Esc 则保留新值。',
       stateFailed: '无法读取连接器的状态（{code}）。',
@@ -499,7 +499,7 @@ window.__ModuleLoader__.load({
         setProblem(null)
         try {
           const accepted = await form.mutate(ops, snapshot.revision)
-          // The form exposes no more specific reason for a refused or skipped write.
+          // The form returns false for both a refusal and a lost reply, even if the change persisted.
           if (!accepted) setProblem({ key: 'fieldRefused' })
           return accepted
         } catch (error) {
@@ -544,7 +544,7 @@ window.__ModuleLoader__.load({
           setDraft({ ...draft, warned: { value: saved } })
           return
         }
-        // A refused save keeps the typed text, so the user sees what was not saved beside the error.
+        // Keep the draft on an unconfirmed save so the user can retry without retyping.
         void save(ops).then((accepted) => { if (accepted) discard() })
       }
       // `conflict` is the value warned about (undefined: no warning), so a newer change elsewhere
