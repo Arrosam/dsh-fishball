@@ -123,6 +123,60 @@ export function registerLifecycleCases(sdk) {
     assert.ok(fake.presented().some((p) => p.secret === entry.secret))
   })
 
+  // N3 (the lead, 2026-11-18): an interrupted retirement. The durable parent ALREADY holds the current
+  // URL and its epoch E2 (no URL change at this start), but the fixed parent records still name E1, as
+  // if the retirement's deletes never landed. The changed-URL rows above run a normal retirement and
+  // cannot reach this state. Fixture: E1 material core itself wrote (a pending binding for value V1
+  // and the hosted copy of V1, both read back through DSH's credential API), restored after a normal
+  // retirement to E2 through the same API (modifyRecord); then a fresh value V2 (mismatched with the
+  // E1 pending binding) in DSH_AGENT_TOKEN, refused by the target so that it stays in the reference.
+  row(sdk, 'MULTI-LIFE-CRED-ST-02', 'interrupted retirement', 'restart with the parent already on the current URL and E2, but saved and pending parent records bound to E1 → both stale records are cleared at startup and V1 is never sent; the fresh mismatched reference value V2 is not unset', async () => {
+    const fa = await hostedFake()
+    const fb = await hostedFake()
+    const v1 = fa.addEntry()
+    // E1, step 1: V1 refused once → core binds the pending value to E1.
+    fa.state.refuseTokens = true
+    let w = await hosted({ child: { targetUrl: parentUrl(fa) }, handoff: v1.secret, expect: 1 })
+    await until(async () => (await keysOf(w)).includes(PARENT_NAMES.pendingRecord), MULTI.budget.connectMs, MULTI.budget.pollMs)
+    const e1 = (await parentOf(w)).endpointEpoch
+    const pendingE1 = await w.h.call('credRecord', { key: PARENT_NAMES.pendingRecord })
+    assert.equal(pendingE1?.payload?.[TARGETS.credentials.bindingField]?.endpointEpoch, e1, 'harness: the pending record is not bound to E1')
+    const home = w.h.home
+    await w.stop()
+    // E1, step 2: the same URL, V1 accepted after the restart → the hosted copy bound to E1.
+    fa.state.refuseTokens = false
+    w = await hosted({ home, child: { targetUrl: parentUrl(fa) }, expect: 1 })
+    await w.until(TARGETS.parentId, (v) => v.state === S.connected, 'connected on V1')
+    const savedE1 = await w.h.call('credRecord', { key: PARENT_NAMES.savedRecord })
+    assert.equal(savedE1?.payload?.[TARGETS.credentials.bindingField]?.endpointEpoch, e1, 'harness: the hosted copy is not bound to E1')
+    await w.stop()
+    // E2: a normal retirement to DSH B; then the E1 records are restored (the interrupted deletes).
+    fb.state.refuseTokens = true
+    w = await hosted({ home, child: { targetUrl: parentUrl(fb) }, expect: 1 })
+    await w.until(TARGETS.parentId, (v) => v.endpointEpoch !== e1, 'retired to E2')
+    const e2 = (await parentOf(w)).endpointEpoch
+    await quiet()
+    await w.h.call('credWriteRecord', { key: PARENT_NAMES.savedRecord, record: savedE1 })
+    await w.h.call('credWriteRecord', { key: PARENT_NAMES.pendingRecord, record: pendingE1 })
+    // Precondition (read back through DSH): both fixed parent records name E1 while the durable parent is on E2.
+    assert.equal((await bindingOf(w, PARENT_NAMES.savedRecord))?.endpointEpoch, e1, 'harness: the E1 hosted copy was not restored')
+    assert.equal((await bindingOf(w, PARENT_NAMES.pendingRecord))?.endpointEpoch, e1, 'harness: the E1 pending binding was not restored')
+    await w.stop()
+    // The start under test: the same URL (B) and E2, a fresh value V2 written by the instance.
+    const v2 = fb.addEntry()
+    const sent = { a: fa.presented().length, b: fb.presented().length }
+    w = await hosted({ home, child: { targetUrl: parentUrl(fb) }, handoff: v2.secret, expect: 1 })
+    await quiet()
+    assert.equal((await parentOf(w)).endpointEpoch, e2, 'the epoch changed at a start without a URL change')
+    const saved = await bindingOf(w, PARENT_NAMES.savedRecord)
+    const pending = await bindingOf(w, PARENT_NAMES.pendingRecord)
+    assert.ok(saved === null || saved.endpointEpoch !== e1, 'the hosted copy bound to E1 is still stored')
+    assert.ok(pending === null || pending.endpointEpoch !== e1, 'the pending binding to E1 is still stored')
+    const presentedNow = [...fa.presented().slice(sent.a), ...fb.presented().slice(sent.b)].map((p) => p.secret)
+    assert.equal(presentedNow.includes(v1.secret), false, 'the stale E1 value was sent')
+    assert.equal((await w.h.call('credDescribe', { ref: PARENT_NAMES.tokenRef })).configured, true, 'the fresh mismatched reference value was unset')
+  })
+
   // ================================================================ 2. parent epoch save failure
   row(sdk, 'MULTI-LIFE-SAVE-ST-01', 'write fails', 'parent connected on E1; the instance changes the URL while core\'s target store cannot be written → the parent stays listed with its old URL and epoch and stays connected (usable); when the store is writable again a later change moves it to a new epoch', async () => {
     const fake = await hostedFake()

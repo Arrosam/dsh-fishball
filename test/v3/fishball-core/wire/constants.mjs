@@ -68,6 +68,8 @@ export const C = Object.freeze({
   // MULTI-1 worker words: the hosted stand-in row (fixtures/child-row), the scripted call id prefix,
   // and dsh-agent's durable inbox mutation (its `data.inserted` holds the queued messages).
   profilePatch: 'cordis.patch.yml',
+  /** DSH's credential-key separator ('<scope>/<id>'). */
+  keySeparator: '/',
   /** DSH's launcher name (dsh-app-boot's profile functions take it). */
   dshName: 'dsh',
   childRow: 'dsh-instance-child', childField: 'targetUrl', childStandIn: path.join(import.meta.dirname, 'fixtures', 'child-row', 'index.mjs'),

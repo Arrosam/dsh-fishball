@@ -115,6 +115,16 @@ const ops = {
   async credDescribe({ ref }) { return ctx.credentials.describe(ref) },
   async credRecords() { return (await ctx.credentials.listRecords()).map((e) => ({ key: e.key, kind: e.kind })) },
   async credRecord({ key }) { return ctx.credentials.readRecord(key) },
+  /**
+   * MULTI-1 fixture: writes one credential record `{kind, payload}` under `key` ('<scope>/<id>')
+   * through DSH's own credential API (modifyRecord, its one write path), e.g. persisted material of
+   * an earlier endpoint epoch.
+   */
+  async credWriteRecord({ key, record }) {
+    const { credentialKey } = await host('dsh-credentials')
+    await ctx.credentials.modifyRecord(credentialKey(...key.split(C.keySeparator)), async () => record)
+    return true
+  },
   async mutateNs({ ns, path: at, value }) { await ctx.settings.mutate(ns, [{ op: 'set', path: at, value }]); return true },
   /**
    * MULTI-1: the instance writes a new parent URL while the child runs. DSH's config editor refuses a
