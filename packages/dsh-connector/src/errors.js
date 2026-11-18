@@ -33,6 +33,9 @@ export class RefusalError extends Error {
   }
 }
 
+/** Marks a placement refusal so MCP can offer folder guidance without exposing thrown text. */
+export class FolderRefusal extends RefusalError {}
+
 /** Diagnostic used when an error has neither a code nor a class name. */
 const UNKNOWN_ERROR = 'Error'
 

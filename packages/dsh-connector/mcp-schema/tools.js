@@ -43,7 +43,7 @@ const DEFINITIONS = [
   tool(TOOL.sessionsList, 'List the main-DSH sessions you manage. Sessions nobody manages and sessions another principal manages are omitted.',
     object({ limit: integer() }, { workspaceId: string() }),
     success({ sessions: array(sessionSummary()) })),
-  tool(TOOL.sessionStart, 'Start a session in a workspace or an absolute folder and send its first message. You become its managing principal.',
+  tool(TOOL.sessionStart, 'Start a session and attempt to manage it and send its first message. Set folder to a registered workspace ID or an absolute path to an existing directory, not a display name. Use the workspace ID or its registered directory for workspace placement. An unregistered directory starts the session under Ungrouped.',
     object({ folder: string(), title: string(), message: string(), attachments: attachments() }, { model: string(), reasoningEffort: string() }),
     success({ sessionId: string(), managed: boolean() }, { titleError: string(), workspaceError: string() })),
   tool(TOOL.sessionMessage, 'Send a message to a session you manage. An unconfirmed delivery is never retried.',

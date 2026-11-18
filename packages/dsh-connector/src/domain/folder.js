@@ -9,7 +9,7 @@
 import { stat } from 'node:fs/promises'
 import { isAbsolute } from 'node:path'
 import { REFUSAL } from '../../mcp-schema/index.js'
-import { RefusalError } from '../errors.js'
+import { FolderRefusal } from '../errors.js'
 
 async function isDirectory(target) {
   try { return (await stat(target)).isDirectory() } catch { return false }
@@ -19,16 +19,16 @@ async function isDirectory(target) {
  * @param ctx - the row's context (`workspaceRegistry`)
  * @param {string} folder - session_start's `folder`
  * @returns {Promise<{workspaceId: string} | {cwd: string}>} DSH's create target
- * @throws RefusalError `forbidden` or `unknown-session`
+ * @throws FolderRefusal `forbidden` or `unknown-session`
  */
 export async function placeOf(ctx, folder) {
   const workspace = ctx.workspaceRegistry.list().find((entry) => entry.id === folder)
   if (workspace !== undefined) {
-    if (!(await isDirectory(workspace.path))) throw new RefusalError(REFUSAL.unknownSession)
+    if (!(await isDirectory(workspace.path))) throw new FolderRefusal(REFUSAL.unknownSession)
     return { workspaceId: workspace.id }
   }
-  if (!isAbsolute(folder)) throw new RefusalError(REFUSAL.forbidden)
-  if (!(await isDirectory(folder))) throw new RefusalError(REFUSAL.unknownSession)
+  if (!isAbsolute(folder)) throw new FolderRefusal(REFUSAL.forbidden)
+  if (!(await isDirectory(folder))) throw new FolderRefusal(REFUSAL.unknownSession)
   const registered = await ctx.workspaceRegistry.resolveByPath(folder)
   return registered === undefined ? { cwd: folder } : { workspaceId: registered.id }
 }
