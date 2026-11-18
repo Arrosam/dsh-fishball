@@ -19,7 +19,7 @@ const OFF = SEAM_STATUS.fishball.off
 export const STATUS_TEXT = Object.freeze({
   en: Object.freeze({
     title: 'DSH targets',
-    empty: 'No DSH target yet. Add one in Fishball settings.',
+    empty: 'No DSH target yet. Targets are added in Fishball settings.',
     line: Object.freeze({
       [LS.connected]: 'Connected to this DSH.',
       [LS.unset]: 'No target address is set.',
@@ -59,7 +59,7 @@ export const STATUS_TEXT = Object.freeze({
   }),
   zh: Object.freeze({
     title: 'DSH 目标',
-    empty: '还没有 DSH 目标。请在 Fishball 设置中添加。',
+    empty: '还没有 DSH 目标。可在 Fishball 设置中添加。',
     line: Object.freeze({
       [LS.connected]: '已连接到此 DSH。',
       [LS.unset]: '尚未设置目标地址。',
