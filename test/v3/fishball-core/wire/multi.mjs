@@ -12,7 +12,7 @@ import * as K1 from '../../../../packages/dsh-connector/mcp-schema/index.js'
 import { C, FAKE_DSH, MULTI } from './constants.mjs'
 import { multiWorld } from './multi-world.mjs'
 import {
-  APPROVAL, CONNECT, ID_PATTERN, LINK, MCP, PARENT_NAMES, SEAM_TARGETS, TARGETS, allocateSuffix, askToolNameOf, credentialNamesOf, eventMessageId, resolvedName, toolNameOf,
+  APPROVAL, CONNECT, ID_PATTERN, LINK, MCP, PARENT_NAMES, SEAM_TARGETS, TARGETS, allocateSuffix, askToolNameOf, connectorTools, credentialNamesOf, eventMessageId, resolvedName, toolNameOf,
 } from './targets-oracle.mjs'
 
 const T = { timeout: C.budget.boot + MULTI.budget.connectMs * 4 }
@@ -22,7 +22,7 @@ const refused = (r, code) => assert.deepEqual(r, { ok: false, code })
 const R = SEAM_TARGETS.refusal
 const S = SEAM_TARGETS.state
 const VIEW_FIELDS = Object.freeze(['targetId', 'endpointEpoch', 'serverName', 'name', 'kind', 'url', 'order', 'duplicateSuffix', 'state', 'connecting', 'link', 'connect', 'line', 'control', 'pairing', 'identity', 'contributedTools', 'removable', 'urlEditable'])
-const exposed = () => K1.TOOLS.filter((t) => ![K1.TOOL.inboxPoll, K1.TOOL.inboxAck, K1.TOOL.pair, K1.TOOL.setName].includes(t.name))
+const exposed = () => connectorTools(K1.TOOLS).filter((t) => ![K1.TOOL.inboxPoll, K1.TOOL.inboxAck, K1.TOOL.pair, K1.TOOL.setName].includes(t.name))
 const sourceOf = (v) => ({ targetId: v.targetId, endpointEpoch: v.endpointEpoch, serverName: v.serverName, name: v.name })
 const quiet = () => sleep(MULTI.budget.quietMs)
 
@@ -311,6 +311,8 @@ export function registerMultiCases(sdk) {
     }
     for (const n of names) assert.match(n, ID_PATTERN.toolName)
     for (const raw of K1.TOOLS.map((t) => t.name)) assert.equal(names.includes(raw), false, 'bare remote/withheld name ' + raw)
+    // CONN-TOOLS: the removed names are never offered in any form.
+    for (const removed of K1.TOOLS.map((t) => t.name).filter((n) => !Object.values(MCP.tools).includes(n))) assert.equal(names.some((n) => n.includes(removed)), false, 'removed tool offered: ' + removed)
     assert.equal(names.includes(MULTI.ask), false, 'bare ask_user')
     for (const r of MULTI.reminderTools) assert.equal(names.filter((n) => n === r).length, 1, r)
     // Framing (contracts README security amendment): toolSource(JSON.stringify(name)) inside a random-marker block before the trusted text.
@@ -333,7 +335,7 @@ export function registerMultiCases(sdk) {
       const f = await w.fake({ name: serverName })
       const t = await w.connect(f)
       const names = (await w.tools()).map((x) => x.name)
-      const expected = toolNameOf(sourceOf(t.view), K1.TOOL.questionAnswerOwn)
+      const expected = toolNameOf(sourceOf(t.view), K1.TOOL.sessionsList)
       assert.ok(expected.startsWith(TARGETS.toolName.prefix + readable + TARGETS.toolName.separator), 'fixture: ' + expected)
       assert.ok(names.includes(expected), expected + ' not offered')
       assert.equal(t.view.name, serverName, 'the display name is not the raw name (D06)')

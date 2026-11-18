@@ -18,6 +18,13 @@ const ID_LETTERS = `[${TARGETS.id.alphabet}]{${TARGETS.id.randomChars}}`
 const EPOCH_LETTERS = `[${TARGETS.epoch.alphabet}]{${TARGETS.epoch.randomChars}}`
 const escape = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
+/**
+ * The connector tools core knows (CONN-TOOLS, the user's decision relayed 2026-11-18: question_ask and
+ * question_answer_own are removed from dsh-connector; core's MCP.tools copy no longer has them). K1's
+ * definitions restricted to core's own copy of the names, so neither removed name is ever expected.
+ */
+export const connectorTools = (k1Tools) => k1Tools.filter((t) => Object.values(MCP.tools).includes(t.name))
+
 /** Generated id / epoch grammars (README "Ids"): prefix + 16 lowercase base32 letters. */
 export const ID_PATTERN = Object.freeze({
   target: new RegExp(`^${escape(TARGETS.id.prefix)}${ID_LETTERS}$`),
