@@ -110,3 +110,4 @@ when its listen streams close and the time of each request.
 
 Fixture note: "saving the new epoch fails" is produced by making DSH's `storages` folder and files
 read-only (chmod) during the change; the rows restore the modes in `finally`.
+| MULTI-LIFE-CRED-ST-02 interrupted retirement | ST (E1 material persisted → durable parent already on current URL / E2 → restart, no URL change) | precondition read back: saved and pending parent records bound to E1; after the start: epoch still E2, neither record bound to E1, V1 never sent, the fresh mismatched V2 in DSH_AGENT_TOKEN not unset. Fixture: E1 records core wrote, re-written after a normal retirement through DSH's `modifyRecord` |
