@@ -442,19 +442,30 @@ window.__ModuleLoader__.load({
     function useTargets() {
       const [snapshot, setSnapshot] = React.useState(undefined)
       const sequence = React.useRef(0)
+      const mounted = React.useRef(true)
       const read = React.useCallback(async () => {
         const mine = ++sequence.current
         const answer = await targetRequest(SHARED.targets.list)
-        if (mine !== sequence.current) return
+        // R-FIX-FUI's ownership rule: after unmount nothing settles, and only the latest read publishes.
+        if (!mounted.current || mine !== sequence.current) return
         setSnapshot(answer?.version === SHARED.targets.snapshotVersion && Array.isArray(answer.targets) ? answer : null)
       }, [])
+      /** An action began: every read started before it is stale, so its answer never publishes over the action's own follow-up read. */
+      const invalidate = React.useCallback(() => { ++sequence.current }, [])
       React.useEffect(() => {
+        mounted.current = true
         void read()
         window.addEventListener(PAGE.connect.reread, read)
-        return () => window.removeEventListener(PAGE.connect.reread, read)
+        return () => {
+          mounted.current = false
+          window.removeEventListener(PAGE.connect.reread, read)
+        }
       }, [read])
-      return [snapshot, read]
+      return [snapshot, read, invalidate]
     }
+
+    /** What a target's Connect status says, as one comparable value: a press's notice lasts while it stays the same. */
+    const statusKey = (connect) => JSON.stringify([connect?.state ?? CONNECT_UNAVAILABLE, connect?.code ?? null])
 
     /**
      * One Connect press's answer (`ConnectBegin`) as `{notice, approvalUrl}`: `notice` is the
@@ -508,7 +519,7 @@ window.__ModuleLoader__.load({
      * card and no approval page opens; of several Connect presses only the latest opens its page
      * and shows its notice.
      */
-    function TargetCard({ t, target, token, refresh, disabled }) {
+    function TargetCard({ t, target, token, refresh, invalidate, disabled }) {
       const mounted = React.useRef(true)
       const pressed = React.useRef(0)
       React.useEffect(() => { mounted.current = true; return () => { mounted.current = false } }, [])
@@ -522,6 +533,7 @@ window.__ModuleLoader__.load({
       const credential = token.get()[ref] ?? Object.freeze({ configured: false, writable: true })
       const name = target.name ?? t('name.unavailable')
       const act = async (path, body) => {
+        invalidate()
         const result = await targetRequest(path, { [SHARED.targets.targetIdField]: target.targetId, ...body })
         show((current) => ({ ...current, alert: refusalText(t, result) }))
         await refresh()
@@ -536,13 +548,24 @@ window.__ModuleLoader__.load({
         }
       }
       const begin = async () => {
+        invalidate()
         const mine = ++pressed.current
         const press = pressResult(await targetRequest(SHARED.targets.connect, { [SHARED.targets.targetIdField]: target.targetId }))
         if (!mounted.current || mine !== pressed.current) return
         if (press.approvalUrl !== undefined) window.open(press.approvalUrl, PAGE.connect.open.target, PAGE.connect.open.features)
-        setView((current) => ({ ...current, notice: undefined, approvalUrl: undefined, ...press }))
+        // The notice's basis is the status the follow-up read finds (`basis` unset until then).
+        setView((current) => ({ ...current, notice: undefined, approvalUrl: undefined, basis: undefined, ...press }))
         await refresh()
       }
+      // R-FIX-FUI review finding 6, per card: the first status after a press's notice is its basis;
+      // a later status that says something else (fixed, or authorized elsewhere) supersedes the
+      // refusal, so the notice goes; the same status keeps it.
+      const key = statusKey(target.connect)
+      React.useEffect(() => {
+        if (view.notice === undefined) return
+        if (view.basis === undefined) setView((current) => ({ ...current, basis: key }))
+        else if (view.basis !== key) setView((current) => ({ ...current, notice: undefined, basis: undefined }))
+      }, [key, view.notice, view.basis])
       const saveToken = async () => {
         const value = secret.trim()
         if (value === '') return
@@ -592,7 +615,7 @@ window.__ModuleLoader__.load({
 
     /** The target list (PLAN-MULTI §3.1): every target's card, in order, and Add. No count cap (Q12). */
     function TargetsSection({ t, token, disabled }) {
-      const [snapshot, refresh] = useTargets()
+      const [snapshot, refresh, invalidate] = useTargets()
       const [draft, setDraft] = React.useState('')
       const [alert, setAlert] = React.useState(null)
       const titleId = React.useId()
@@ -600,6 +623,7 @@ window.__ModuleLoader__.load({
       React.useEffect(() => { token.track(targets.map(tokenRefOf)) }, [snapshot])
       React.useSyncExternalStore(token.subscribe, token.get)
       const add = async () => {
+        invalidate()
         const result = await targetRequest(SHARED.targets.add, { [SHARED.targets.fields.url]: draft })
         setAlert(refusalText(t, result))
         if (result?.ok === true) setDraft('')
@@ -608,7 +632,7 @@ window.__ModuleLoader__.load({
       return h('section', { className: PAGE.css.list, 'data-fishball-targets': true, 'aria-labelledby': titleId },
         h('div', { className: PAGE.css.head }, h('h3', { id: titleId, className: PAGE.css.title }, t('targetsTitle'))),
         h('p', { className: PAGE.css.hint }, snapshot === null ? t('targetsUnavailable') : targets.length === 0 && snapshot !== undefined ? t('targetsEmpty') : t('targetsHint')),
-        targets.map((target) => h(TargetCard, { key: target.targetId + target.endpointEpoch, t, target, token, refresh, disabled })),
+        targets.map((target) => h(TargetCard, { key: target.targetId + target.endpointEpoch, t, target, token, refresh, invalidate, disabled })),
         h('div', { className: PAGE.css.row },
           h(Input, { 'aria-label': t('addLabel'), value: draft, disabled, onChange: (event) => setDraft(event.target.value), 'data-fishball-target-add-url': true }),
           h(Button, { type: 'button', size: 'sm', variant: PAGE.button.primary, disabled: disabled || draft.trim() === '', onClick: () => void add(), 'data-fishball-target-add': true }, t('add'))),
