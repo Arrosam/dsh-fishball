@@ -125,11 +125,27 @@ export async function forgetCredentials(credentials, names) {
     await credentials.deleteRecord(names.tokenRecord)
     return
   }
-  const [value, pending, saved] = await Promise.all([credentials.resolve(names.ref), credentials.readRecord(names.pending), credentials.readRecord(names.tokenRecord)])
-  const pendingOfEpoch = ofEpoch(pending?.payload, names)
-  if (pendingOfEpoch && value?.value !== undefined && pending.payload.ref === tokenCredentialId(value.value)) await credentials.unset(names.ref)
-  if (pendingOfEpoch) await credentials.deleteRecord(names.pending)
-  if (ofEpoch(saved?.payload, names)) await credentials.deleteRecord(names.tokenRecord)
+  await clearParentMaterial(credentials, names, (payload) => ofEpoch(payload, names))
+}
+
+/** After a crash only the new epoch may be known. Never infer ownership of an unbound handoff. */
+export function clearStaleParentCredentials(credentials, endpointEpoch) {
+  const names = credentialNames({ targetId: TARGETS.parentId, endpointEpoch })
+  return clearParentMaterial(credentials, names, (payload) => {
+    const binding = payload?.[BINDING]
+    return binding?.targetId === TARGETS.parentId && typeof binding.endpointEpoch === 'string' && binding.endpointEpoch !== endpointEpoch
+  })
+}
+
+async function clearParentMaterial(credentials, names, retired) {
+  const [pending, saved] = await Promise.all([credentials.readRecord(names.pending), credentials.readRecord(names.tokenRecord)])
+  if (retired(pending?.payload)) {
+    // Resolve immediately before unset: the instance may already have replaced the old handoff.
+    const value = await credentials.resolve(names.ref)
+    if (value?.value !== undefined && pending.payload.ref === tokenCredentialId(value.value)) await credentials.unset(names.ref)
+    await credentials.deleteRecord(names.pending)
+  }
+  if (retired(saved?.payload)) await credentials.deleteRecord(names.tokenRecord)
 }
 
 /** The link credential kinds (`LinkCredentials.kind`). */

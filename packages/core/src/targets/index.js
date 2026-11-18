@@ -35,7 +35,7 @@ import { codeOf } from '../events/diagnostics.js'
 import { generateToken } from '../identity/identity.js'
 import { checkTarget, emitIsolated, subscribe } from '../link/index.js'
 import { BEGIN_VIA } from '../link/connect.js'
-import { credentialNames, forgetCredentials } from '../link/credentials.js'
+import { clearStaleParentCredentials, credentialNames, forgetCredentials } from '../link/credentials.js'
 import { stripLine } from '../status/line.js'
 import { TARGET_LOG } from './constants.js'
 import { allocateSuffix, resolvedName } from './names.js'
@@ -158,6 +158,8 @@ export function createTargets(ctx, { tables, identityRecords, asks, events, reco
   }
 
   function startRuntime(record) {
+    // A durable write already in flight may finish after shutdown began.
+    if (closed) return
     const runtime = createTargetRuntime(ctx, {
       record, logger, asks, events, bindings, recovered, bridgeOptions, identityRecords,
       names: () => namesOf(records.get(record.id) ?? record),
@@ -205,6 +207,7 @@ export function createTargets(ctx, { tables, identityRecords, asks, events, reco
    */
   const lanes = new Map()
   function serial(id, task) {
+    if (closed) return Promise.resolve(UNAVAILABLE)
     const run = (lanes.get(id) ?? Promise.resolve()).then(task)
     const tail = run.then(() => undefined, () => undefined)
     lanes.set(id, tail)
@@ -217,6 +220,26 @@ export function createTargets(ctx, { tables, identityRecords, asks, events, reco
   const nextOrder = () => [...records.values()].reduce((highest, record) => Math.max(highest, record.order + 1), 0)
   // The parent is always first (order 0); an added target follows every other.
   const newRecord = (kind, url, id) => ({ id, kind, url, endpointEpoch: generateToken(TARGETS.epoch), order: kind === KIND.parent ? 0 : Math.max(nextOrder(), 1), serverName: null, duplicateSuffix: null })
+
+  async function startCurrent(record) {
+    if (closed) return
+    // Fixed hosted names can outlive a crash between making a new epoch durable and retirement.
+    if (record.kind === KIND.parent) await clearStaleParentCredentials(ctx.credentials, record.endpointEpoch)
+    startRuntime(record)
+  }
+
+  /** Only a durable replacement retires an epoch. Restore its runtime if the write fails. */
+  async function renew(current, url) {
+    await stopRuntime(current.id)
+    let next
+    try { next = await save({ ...current, url, endpointEpoch: generateToken(TARGETS.epoch), serverName: null, duplicateSuffix: null }) } catch (error) {
+      await startCurrent(current)
+      refresh()
+      throw error
+    }
+    await retire({ targetId: current.id, endpointEpoch: current.endpointEpoch })
+    return next
+  }
 
   /** The instance's value as the parent's URL: its canonical endpoint, or `''` when blank or unusable. */
   const parentUrl = (value) => {
@@ -245,14 +268,10 @@ export function createTargets(ctx, { tables, identityRecords, asks, events, reco
         refresh()
         return
       }
+      // If the very first save fails there is no prior epoch; settingsChanged retries this sync.
       if (stored === undefined) await save(newRecord(KIND.parent, url, TARGETS.parentId))
-      else if (stored.url !== url) {
-        const old = { targetId: stored.id, endpointEpoch: stored.endpointEpoch }
-        await stopRuntime(TARGETS.parentId)
-        await save({ ...stored, url, endpointEpoch: generateToken(TARGETS.epoch), serverName: null, duplicateSuffix: null })
-        await retire(old)
-      }
-      if (!runtimes.has(TARGETS.parentId)) startRuntime(records.get(TARGETS.parentId))
+      else if (stored.url !== url) await renew(stored, url)
+      if (!runtimes.has(TARGETS.parentId)) await startCurrent(records.get(TARGETS.parentId))
       // The instance owns the parent's URL, so core cannot refuse a value an added target already
       // has (Q04); both then dial one endpoint, each with its own credentials. Logged so it is seen.
       if (url !== '' && ordered().some((record) => record.id !== TARGETS.parentId && record.url === url)) logger?.warn(TARGET_LOG.parentDuplicate)
@@ -316,18 +335,8 @@ export function createTargets(ctx, { tables, identityRecords, asks, events, reco
       return serial(targetId, async () => {
         const current = records.get(targetId)
         if (current === undefined) return UNKNOWN
-        const old = { targetId, endpointEpoch: current.endpointEpoch }
-        // Stop the old epoch, then make the new one durable, then retire the old one (review M2):
-        // a failed write restarts the old epoch as it was.
-        await stopRuntime(targetId)
         let next
-        try { next = await save({ ...current, url: endpoint.href, endpointEpoch: generateToken(TARGETS.epoch), serverName: null, duplicateSuffix: null }) } catch (error) {
-          warn(TARGET_LOG.save)(error)
-          startRuntime(current)
-          refresh()
-          return UNAVAILABLE
-        }
-        await retire(old)
+        try { next = await renew(current, endpoint.href) } catch (error) { warn(TARGET_LOG.save)(error); return UNAVAILABLE }
         startRuntime(next)
         refresh()
         return OK
@@ -440,7 +449,7 @@ export function createTargets(ctx, { tables, identityRecords, asks, events, reco
   // instance's value before any of its credentials is read), then the sweep of retired epochs.
   for (const record of [...records.values()].sort((a, b) => a.order - b.order)) if (record.kind === KIND.remote) startRuntime(record)
   refresh()
-  void syncParent().then(sweep)
+  const startup = syncParent().then(sweep)
 
   /**
    * Voids every open card of an epoch that is no current record's (review M2): a retirement whose
@@ -467,7 +476,8 @@ export function createTargets(ctx, { tables, identityRecords, asks, events, reco
     async close() {
       closed = true
       listeners.clear()
-      await parentSync
+      // serial() refuses new work once closed, so these tails cover every accepted lifecycle action.
+      await Promise.all([startup, ...lanes.values()])
       await Promise.all([...runtimes.keys()].map(stopRuntime))
     },
   })

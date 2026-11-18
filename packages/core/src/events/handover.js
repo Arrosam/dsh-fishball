@@ -100,8 +100,15 @@ export function createHandover({ isMine, admitted, dropped, redeliver, idle, clo
     agent.ctx.on(HOST.agentStatus, ({ status }) => { if (status === HOST.idle && !closed()) idle() })
   }
 
+  // Removing our own stale copy is housekeeping, not a user discard or a new delivery.
+  function removeCopy(agent, messageId) {
+    removing.add(messageId)
+    try { agent.inbox.remove(messageId) } finally { removing.delete(messageId) }
+  }
+
   return Object.freeze({
     watch,
+    removeCopy,
     /**
      * Hands `message` to `agent` as its own next turn when the agent is truly idle (`runMaintenance`:
      * inside it the followup only latches the wake, and the maintenance release starts the turn that
@@ -112,8 +119,7 @@ export function createHandover({ isMine, admitted, dropped, redeliver, idle, clo
     handOver(agent, message) {
       watch(agent)
       return whenTrulyIdle(agent, async () => {
-        removing.add(message.id)
-        try { agent.inbox.remove(message.id) } finally { removing.delete(message.id) }
+        removeCopy(agent, message.id)
         agent.followup(message)
       }, () => { if (!closed()) idle() })
     },

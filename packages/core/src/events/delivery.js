@@ -280,10 +280,18 @@ export function createDelivery({ ledger, fishball, logger, delay = realDelay, li
       recovering = true
       const mine = []
       try {
-        for (const record of ledger.inOrder([STATE.fishball])) if (live(record.event.source) && track(record.key)) { queue.push(record.key); mine.push(record.key) }
-        if (queue.length === 0 || closed) return
+        const retired = []
+        for (const record of ledger.inOrder([STATE.fishball])) {
+          if (!live(record.event.source)) retired.push(messageIdOf(record.key))
+          else if (track(record.key)) { queue.push(record.key); mine.push(record.key) }
+        }
+        if (closed || (queue.length === 0 && retired.length === 0)) return
         try {
-          handover.watch(await fishball.activate())
+          const agent = await fishball.activate()
+          if (closed) return
+          // A restored inbox copy can join the next unrelated turn even if core never queues it.
+          for (const id of retired) handover.removeCopy(agent, id)
+          handover.watch(agent)
         } catch (error) {
           for (const eventId of mine) untrack(messageIdOf(eventId))
           throw error
