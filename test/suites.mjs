@@ -269,6 +269,9 @@ export const V3_SUITES = Object.freeze({
   // suite's thrown-value partitions and log oracle (log-privacy.mjs).
   'fishball-core.settings': suite("core's own settings page, token field, Connect, Fishball-page entries (F-SETTINGS)", v3('fishball-core/settings'),
     ['packages/core/client.settings.js', 'packages/core/client.js', sub(PACKAGE.fishballCore, 'src', 'settings'), sub(PACKAGE.fishballCore, 'contracts'),
+      // LOGO-BUTTON: the brandStyle setting and the snapshot brand the settings rows assert.
+      sub(PACKAGE.fishballCore, 'src', 'status'), sub(PACKAGE.fishballCore, 'src', 'main'), PACKAGE.fishballCore + '/client.js',
+      'test/v3/fishball-core/status/world.mjs', 'test/v3/fishball-core/status/subject.mjs', 'test/v3/fishball-core/status/fakes.mjs', 'test/v3/fishball-core/status/constants.mjs',
       top(PACKAGE.fishballUi), sub(PACKAGE.fishballUi, 'src'), all(PACKAGE.fishballShared), ...CORE_LINK, 'test/v3/fishball-core/link/log-privacy.mjs']),
   // Boots a real standalone DSH with core and fishball-ui installed as whole bundles (F-UI splits the
   // guard rows between their two patches; the instance's launch code is read for the LITE rows).
@@ -319,6 +322,16 @@ export const V3_SUITES = Object.freeze({
       'test/v3/fishball-core/settings/constants.mjs', 'test/v3/fishball-core/asks/world.mjs', 'test/v3/fishball-core/asks/constants.mjs', 'test/v3/fishball-core/asks/subject.mjs',
       'test/v3/fishball-core/status/subject.mjs', 'test/v3/fishball-core/status/constants.mjs', 'test/v3/fishball-ui/model-dialog/strip.mjs', 'test/v3/fishball-ui/model-dialog/constants.mjs',
       'test/v3/fishball-ui/pairing/**', 'test/v3/dsh-connector-adapter/oauth-client/subject.mjs', 'test/v3/fishball-core/package/constants.mjs']),
+  // LOGO-BUTTON: fishball-ui's brand part in DSH's sidebar slots, seen through a scripted shell;
+  // fishball-page's New Session hiding over a scripted shell document; the motion rows in Chromium.
+  'fishball-ui.brand': suite('the sidebar logo: Fishball mark/wordmark/status in the wide row and rail, state, theme, activation, New Session hiding, teardown (LOGO-BUTTON)', v3('fishball-ui/brand'),
+    ['packages/fishball-ui/client.js', 'packages/fishball-ui/client.brand.js', sub(PACKAGE.fishballUi, 'fishball-page'), sub(PACKAGE.fishballUi, 'src'),
+      all(PACKAGE.fishballShared), sub(PACKAGE.fishballCore, 'src', 'status'), sub(PACKAGE.fishballCore, 'src', 'main'), PACKAGE.fishballCore + '/client.js',
+      'test/v3/fishball-core/settings/page.mjs', 'test/v3/fishball-core/settings/primitives.mjs', 'test/v3/fishball-core/settings/constants.mjs',
+      'test/v3/fishball-core/status/subject.mjs', 'test/v3/fishball-core/status/constants.mjs', 'test/v3/fishball-core/status/world.mjs', 'test/v3/fishball-core/status/fakes.mjs',
+      'test/v3/fishball-ui/stream/**', 'test/v3/fishball-ui/package/nav-page.mjs', 'test/v3/fishball-ui/package/polish-constants.mjs',
+      'test/v3/fishball-ui/contrast/page.mjs', 'test/v3/fishball-ui/contrast/constants.mjs', 'test/v3/contract/package-boundaries/cases.mjs',
+      'test/v2-page-cases/lite-browser.mjs']),
   'fishball-board.peers': suite('board without core (FEAT-PEERS; fold-notify was removed, REMOVE-WD)', v3('fishball-board/peers'),
     [all(PACKAGE.fishballBoard), sub(PACKAGE.dshConnector, 'mcp-schema')]),
   // The contract suites read every file of the packages they bound, so any change there reruns them.

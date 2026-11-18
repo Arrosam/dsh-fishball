@@ -15,7 +15,7 @@ Page open (code review, F-WIRE): the Fishball page is open while `<html data-fis
 | MODEL-EP-02 | EP | Set core model → no dialog and no mutation |
 | MODEL-BVA-01 | BVA | Zero models → explanation and DSH Settings launcher button; no selection write |
 | MODEL-SYS-01 | Integration/system | Real standalone with core switches ui-model-selection off |
-| STRIP-SYS-01 | BVA/EP | First SSE frame arrives immediately, en/zh. Re-baselined (MULTI-3 B): the frame is targetsView's `{on, title, empty, notices, targets, words}`; every target's state is one of the four, its lines kind/text, its control null or connect/cancel; on with no target → a non-empty `empty` |
+| STRIP-SYS-01 | BVA/EP | First SSE frame arrives immediately, en/zh. Re-baselined (MULTI-3 B): the frame is targetsView's `{on, title, empty, notices, targets, words, brandStyle}` (brandStyle is the normalized logo theme: fishball/deepseek, default fishball); every target's state is one of the four, its lines kind/text, its control null or connect/cancel; on with no target → a non-empty `empty` |
 | STRIP-DT-01 | DT | Withdrawn (MULTI-0 review S6): the K3a `/api/fishball/connect` routes are gone |
 | STRIP-DT-02 | DT (todo until MULTI-1 lands) | Real DSH: POST `/api/fishball/targets/connect` with an unknown id → 404 `unknown-target`; the K3a Connect route → 404 |
 | MODEL-ST-03 | ST/system | HMR native disable of core → picker restored, core-missing row enabled; fishball-ui's rows follow core off (DESIGN §20 live core on/off, 1.41 Q-G2 = A), so the strip route answers 404 and the per-target Connect route 404 or 503 `TARGETS_UNAVAILABLE` (re-baselined: the K3a route is withdrawn) |
@@ -72,7 +72,8 @@ target routes are the page's fetch). Row buttons are the buttons carrying `aria-
 
 | Id | Technique | Expected outcome |
 | --- | --- | --- |
-| TGT-VIEW-EP-01 shape / order | EP | Frame keys exactly on, title, empty, notices, targets, words; target keys exactly targetId, kind, name, placeholder, state, badge, url, lines, control, retry, pairing; snapshot order kept |
+| TGT-VIEW-EP-03 brandStyle | EP | Frame `brandStyle` is fishball for absent/unknown, deepseek for the stored deepseek, and fishball when core is off |
+| TGT-VIEW-EP-01 shape / order | EP | Frame keys exactly on, title, empty, notices, targets, words, brandStyle; target keys exactly targetId, kind, name, placeholder, state, badge, url, lines, control, retry, pairing; snapshot order kept |
 | TGT-VIEW-DT-01 core absent / off / undefined × en/zh | DT | `{fishball: 'fishball-off'}` (no `targets`), off with targets, or undefined → on false, notices `[fishball-off]`, targets [], empty null |
 | TGT-VIEW-DT-02 guards × set | DT | ok/ok → none; overridden → `guards-overridden`; incomplete → `plugin-set-incomplete`; both → both, each with text |
 | TGT-VIEW-BVA-01 0 / 1 / 40 targets × lang | BVA | 0 → `empty` text ("No DSH target yet…" in en, a zh text in zh); 1 and 40 → that many views (no cap) |

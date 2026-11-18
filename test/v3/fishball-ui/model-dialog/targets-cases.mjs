@@ -36,6 +36,7 @@ export function registerTargetsCases(sdk) {
     const v = plain(targetsView(snapshotOf([targetView(0), targetView(1)]), 'en', zone))
     assert.deepEqual(Object.keys(v).sort(), [...FRAME.keys].sort())
     assert.equal(v.on, true)
+    assert.equal(v.brandStyle, 'fishball', 'an absent brand reads the default')
     assert.ok(Array.isArray(v.notices) && Array.isArray(v.targets))
     assert.equal(v.targets.length, 2)
     for (const target of v.targets) assert.deepEqual(Object.keys(target).sort(), [...FRAME.targetKeys].sort())
@@ -45,6 +46,25 @@ export function registerTargetsCases(sdk) {
     const list = [targetView(0), targetView(1, { kind: SEAM_TARGETS.kind.parent }), targetView(2)]
     const v = targetsView(snapshotOf(list), 'en', zone)
     assert.deepEqual(v.targets.map((x) => [x.targetId, x.kind, x.url]), list.map((x) => [x.targetId, x.kind, x.url]))
+  })
+  // LOGO-BUTTON: the same frame carries the normalized logo theme; absent/unknown reads fishball.
+  for (const [label, brand, expected] of [
+    ['absent', undefined, 'fishball'],
+    ['fishball', { style: 'fishball' }, 'fishball'],
+    ['deepseek', { style: 'deepseek' }, 'deepseek'],
+    ['unknown', { style: 'orca' }, 'fishball'],
+    ['another case', { style: 'DeepSeek' }, 'fishball'],
+  ]) {
+    t('TGT-VIEW-EP-03', label, `brandStyle ${label} → ${expected}`, async () => {
+      const { targetsView } = await viewModule(sdk)
+      const v = plain(targetsView(snapshotOf([targetView(0)], { brand }), 'en', zone))
+      assert.equal(v.brandStyle, expected)
+    })
+  }
+  t('TGT-VIEW-EP-03', 'off', 'core off with a stored deepseek theme → brandStyle fishball (off reads the default)', async () => {
+    const { targetsView } = await viewModule(sdk)
+    const v = plain(targetsView(snapshotOf([targetView(0)], { fishball: SEAM_STATUS.fishball.off, brand: { style: 'deepseek' } }), 'en', zone))
+    assert.equal(v.brandStyle, 'fishball')
   })
   // Requirement B + follow-up (1): no service (core absent) is exactly {fishball: 'fishball-off'}; fishball off.
   for (const [label, snapshot] of [['core absent', { fishball: SEAM_STATUS.fishball.off }], ['fishball off with targets', snapshotOf([targetView(0)], { fishball: SEAM_STATUS.fishball.off })], ['undefined snapshot', undefined]]) {
@@ -56,6 +76,7 @@ export function registerTargetsCases(sdk) {
         assert.deepEqual(v.notices.map((n) => n.kind), [FRAME.notice.off])
         assert.deepEqual(v.targets, [])
         assert.equal(v.empty, null)
+        assert.equal(v.brandStyle, 'fishball', 'off/absent reads the default')
       })
     }
   }

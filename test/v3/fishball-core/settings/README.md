@@ -179,3 +179,24 @@ its status is A's TargetView from `GET api/fishball/targets`; B is never pressed
 the card's `data-fishball-target-state` (the public state of A's Connect status). CONNECT-ST-02's
 premise moved: a card exists only after the first list read, so "a read pending at the press" is a
 refocus read.
+
+## LOGO-BUTTON (`brand.mjs`): the logo theme's setting and the status snapshot
+
+Requirement (relayed 2026-11-19): fishball-core owns the sidebar logo theme. Core's settings page
+gets one plain two-option control, `[data-fishball-brand-style]` (values `fishball` / `deepseek`,
+labels Fishball / DeepSeek in en and zh, default Fishball), reading the top-level string
+`brandStyle`. Choosing writes it through the config form's `form.set('brandStyle', value)`; a
+refused/rejected write is visible. Core's public status snapshot gains `brand: {style}` beside
+`fishball/guards/set/targets`; the style is always one of the two values and defaults to `fishball`
+for absent/unknown stored values, and a recompose after a stored change reads the new value.
+
+| Id | Technique | Case |
+| --- | --- | --- |
+| BRAND-SET-EP-01 en / zh | EP | One control with exactly the two options and labels; absent brandStyle → Fishball selected |
+| BRAND-SET-EP-02 absent / fishball / deepseek / unknown / another case / non-string | EP | The selected option follows the stored value; only the two public values are accepted, everything else Fishball |
+| BRAND-SET-UC-01 choose DeepSeek / choose Fishball | Use Case | One `form.set` write of that value (no extra fields); the page shows the stored value |
+| BRAND-SET-E1 refused / rejected | EP | A visible alert/save-failed line; the stored value is unchanged |
+| BRAND-STATUS-EP-01 | EP | No brand port → exactly `{style: 'fishball'}` |
+| BRAND-STATUS-EP-02 fishball / deepseek / undefined / null / empty / unknown / another case / number / object / array | EP | The normalized `brand.style` |
+| BRAND-STATUS-ST-01 | ST | A recompose after fishball → deepseek → fishball reads each new choice |
+| BRAND-STATUS-SHAPE-01 | BVA | Every snapshot is exactly `{fishball, guards, set, targets, brand}` with `brand.style` one of the two |
