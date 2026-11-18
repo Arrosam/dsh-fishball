@@ -86,10 +86,11 @@ export interface OAuthClient {
 export type CreateOAuthClient = (ctx: unknown, options: OAuthClientOptions) => OAuthClient
 
 /**
- * Core's Connect control for the configured target (standalone, or hosted with a remote target).
- * It is `OAuthClient`'s `status` / `onChange` / `begin` / `cancel`, bound to the current target
- * and core's `identity.id`; a hosted child with a same-DSH connector uses the hosted import instead
- * (`link.d.ts`), and Connect reports `authorized` once that credential is saved.
+ * Core's Connect control for one target. It is `OAuthClient`'s `status` / `onChange` / `begin` /
+ * `cancel`, bound to that target (and its endpoint epoch) and core's `identity.id`; the hosted
+ * parent uses the hosted import instead (`link.d.ts`), and Connect reports `authorized` once that
+ * credential is saved. MULTI-0: no longer a `FishballUi` member; `ui.targets` (`targets.d.ts`)
+ * exposes each target's Connect by `targetId`, one such control per target inside core.
  * Callback, completion, and `set_name` after it: F-LINK-SAVE (design §6.3a steps 4–5, R-NAME).
  */
 export type FishballConnect = Pick<OAuthClient, 'status' | 'onChange' | 'begin' | 'cancel'>

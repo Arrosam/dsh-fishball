@@ -11,6 +11,7 @@
 import type { LinkStatus } from './link.js'
 import type { UiPairingView } from './ui.js'
 import type { ConnectBegin, ConnectStatus } from './connect.js'
+import type { GuardReport } from './guards.js'
 
 /**
  * A stable opaque local target id (`TARGETS.id`): `parent` for a hosted child's reserved parent,
@@ -60,6 +61,22 @@ export interface TargetSource {
 }
 
 /**
+ * The mandatory non-secret binding of a credential to its target and endpoint (PLAN-MULTI §3.1,
+ * §3.3, §5). Core-private credential payloads carry this under `TARGETS.credentials.bindingField`.
+ * All four members must match before a credential is used or a captured completion changes it.
+ * The fixed hosted record/reference names are NOT an exception to endpoint-epoch isolation:
+ * the saved parent token and the pending-reference binding both carry this metadata. The pending
+ * record also identifies the reference value by its non-secret credential id, never by a token.
+ * This adds no field to the instance's handoff wire or the public target/status snapshots.
+ */
+export interface TargetCredentialBinding {
+  readonly targetId: TargetId
+  readonly endpointEpoch: EndpointEpoch
+  readonly origin: string
+  readonly agentId: string
+}
+
+/**
  * Core's durable record of one target (storage `TARGETS.store`, keyed by `id`). Core alone writes
  * it, through the actions below; it holds no token value. The reserved parent's record is kept
  * too (its allocation must persist), but its `url` is always read from the instance's child
@@ -84,7 +101,11 @@ export interface TargetRecord {
  * `url` is shown in details only (Q01). Nothing here carries a credential, token, code or grant.
  * - `state`: derived from `link`, `connect` and `connecting` by the rule of `SEAM_TARGETS.state`'s comment;
  * - `connecting`: a link attempt (connect, list, pair, listen) is in flight;
- * - `connect`: this target's Connect, or `null` for the parent while it uses the hosted import;
+ * - `connect`: this target's Connect status; the parent's reports `authorized` once the hosted
+ *   credential is saved (connect.d.ts). `null` only where core has no Connect control (none today);
+ * - `line` (MULTI-0 amendment, MULTI-3's finding): this target's status line, exactly core's
+ *   existing `stripLine(link, url, connect).line` for it (`kind` a `LINK.state` / `CONNECT.state`
+ *   word, `code` its code or `null`), so fishball-ui draws it without re-deriving core's rule;
  * - `control`: the one control (`SEAM_STATUS.control`), as the old strip's `control`;
  * - `contributedTools`: the contributed tools on offer from this target, zero included; `null`
  *   before the first list;
@@ -99,6 +120,7 @@ export interface TargetView extends TargetSource {
   readonly connecting: boolean
   readonly link: LinkStatus
   readonly connect: ConnectStatus | null
+  readonly line: { readonly kind: string; readonly code: string | null }
   readonly control: 'connect' | 'cancel' | null
   readonly pairing: UiPairingView
   readonly identity: TargetIdentityState
@@ -112,6 +134,27 @@ export interface TargetsSnapshot {
   readonly version: 1
   readonly targets: readonly TargetView[]
 }
+
+/** `GuardReport` as `guards.d.ts` declares it, and the set check (`SEAM_STATUS.set`, `reason`). */
+export interface SetStatus {
+  readonly status: 'ok' | 'plugin-set-incomplete'
+  readonly missing: readonly { readonly name: string; readonly reason: 'skipped' | 'failed'; readonly code: string | null }[]
+}
+
+/**
+ * Core's status service snapshot (`UI_STATUS.service` `snapshot()`), as fishball-ui's strip route
+ * serves it (review S4). The global parts stay once per process; everything per target is in
+ * `targets`. K3a's scalar `link`, `connect`, `line`, `control` and `contributedTools` members are
+ * withdrawn. Without core, a reader sees exactly `{fishball: 'fishball-off'}`, with no `targets`.
+ */
+export type StatusSnapshot =
+  | {
+    readonly fishball: 'on'
+    readonly targets: TargetsSnapshot
+    readonly guards: GuardReport | null
+    readonly set: SetStatus | null
+  }
+  | { readonly fishball: 'fishball-off' }
 
 /** `SEAM_TARGETS.refusal`, or a K3a code the delegated part answers (Connect, pairing). */
 export type TargetActionResult = { readonly ok: true; readonly targetId?: TargetId } | { readonly ok: false; readonly code: string }
@@ -128,7 +171,8 @@ export type TargetActionResult = { readonly ok: true; readonly targetId?: Target
  *   Both void this target's pending ask cards, keep its history read-only, delete its retired token
  *   material, and send nothing remote (no allow/reject, no revocation);
  * - `begin` / `cancel`: this target's Connect (K3a `ConnectBegin`); one pending attempt per target,
- *   concurrent across targets (Q05);
+ *   concurrent across targets (Q05). The parent may begin too (link.d.ts), answering `authorized`
+ *   when its hosted credential is saved;
  * - `retry`: a new link attempt now (backoff reset), nothing else;
  * - `choose`: this target's pairing choice (K3a `ui.pairing.choose`).
  */
@@ -145,17 +189,31 @@ export interface FishballTargets {
 }
 
 /**
+ * A local target selector. Source-derived event/history callers MUST pass that source's
+ * `endpointEpoch`, even when constructing a new handle after asynchronous work: `targetId` alone
+ * would capture a replacement endpoint and silently retarget old remote ids. Target-id-only
+ * selectors remain valid for callers deliberately addressing the current endpoint, not old data.
+ */
+export interface TargetSelector {
+  readonly targetId: TargetId
+  readonly endpointEpoch?: EndpointEpoch
+}
+
+/**
  * The target-bound feature seams (PLAN-MULTI §4.4, §5): X12 `bridge` and X8 `attention` gain an
  * explicit target, captured with its epoch when the handle is made. A call on a handle whose target
  * was removed or whose epoch retired answers `unknown-target` and sends nothing; it never follows a
- * new URL or name. Remote tool names and arguments are unchanged.
+ * new URL or name. An expected `target.endpointEpoch` mismatch also fails closed at handle
+ * creation/attention dispatch, with `supports` false and calls answering `unknown-target`; it must
+ * not silently capture the current epoch instead. Source-derived selectors include that expected
+ * epoch (above), closing the late-handle-creation race. Remote tool names and arguments are unchanged.
  */
 export interface FishballTargetBound {
-  bridge(pluginId: string, operations: readonly string[], target: { readonly targetId: TargetId }): {
+  bridge(pluginId: string, operations: readonly string[], target: TargetSelector): {
     supports(name: string): boolean
     call(name: string, args?: object): Promise<unknown>
   }
   readonly attention: {
-    signal(pluginId: string, input: { readonly important: boolean }, target: { readonly targetId: TargetId }): Promise<unknown>
+    signal(pluginId: string, input: { readonly important: boolean }, target: TargetSelector): Promise<unknown>
   }
 }
