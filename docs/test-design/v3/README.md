@@ -143,9 +143,10 @@ default). Set `FBTEST_DSH_VERSIONS` to the parent of the installed SDK directori
 `--list` prints the selection. An unmapped path, shared test support, or runner change selects all
 suites in the chosen lane. `--suite` explicitly selects the named suites, irrespective of the lane.
 
-The affected runner defaults to `--serial` (one SDK and one file at a time). Try `--parallel` to
-run both SDK jobs with up to three concurrent files per SDK. Test cases that share a file's fixture
-still run in order. Each SDK job gets a private temporary HOME, cache, and test-homes directory.
+The affected V3 runner defaults to `--parallel`: both SDK jobs can run together, with up to three
+concurrent files per SDK. Use `--serial` to run one SDK and one file at a time. The legacy and
+strict release runs default to serial. Cases sharing a file's fixture still run in order. Each SDK
+job gets a private temporary HOME, cache, and test-homes directory.
 `FBTEST_TEST_HOMES`, if provided, is a parent directory, not a directory the runner clears; choose a
 location outside any Git checkout for native-child tests. Legacy files whose coverage depends on
 the active SDK run in both jobs when `--sdk=both`.

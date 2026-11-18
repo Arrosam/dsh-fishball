@@ -366,7 +366,7 @@ export function observe(entry, started, exited, peers, waitForPeers) {
   let runNumber = 0
   return {
     run(mode) {
-      const parallel = mode === s.parallel
+      const parallel = mode !== s.serial
       const observed = path.join(repo.root, s.observationsDir(++runNumber))
       fs.mkdirSync(observed)
       for (const entry of entries) {
@@ -415,7 +415,7 @@ export function observe(entry, started, exited, peers, waitForPeers) {
   }
 }
 
-test('TEST-SPEED-SCHEDULER default and --serial serialize SDK jobs and files, using fresh homes on each run', (t) => {
+test('TEST-SPEED-SCHEDULER default V3 overlaps SDK jobs and --serial serializes SDK jobs and files, using fresh homes on each run', (t) => {
   const fixture = schedulerFixture(t)
   fixture.run()
   fixture.run(SCHEDULER.serial)
