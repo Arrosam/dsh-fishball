@@ -94,7 +94,7 @@ Additions only; no frozen name or value changes meaning:
   the manager's scope (the bridge façade's connector tools, a set member's): X2 is the one way into
   that scope, so they are Fishball's own, not the preset's. Core reads them through a module symbol
   on `fishballInstance` (`src/manager/contributed.js`), which is not a member of this contract.
-- **`ui.connect.begin()`** stays K3a's: no argument, the loopback callback. Core's own Connect route
+- **`ui.connect.begin()`** stays K3a's: no argument, the loopback callback (MULTI-0: now `ui.targets.begin(targetId)`, same rule). Core's own Connect route
   picks the web callback (Q-A3 B, `CONNECT.callback.webPath`) through a module-symbol member of the
   same object that no other plugin holds, so no plugin can choose a redirect URI.
 - **`ui.guards.report()`** is `null` while core's guard row is absent or not ready yet (its row is
@@ -110,20 +110,25 @@ Source: [PLAN-MULTI](<../../../docs/planning/v3-multi-dsh.md>) §3–§7 (D01–
 
 | Point | Frozen as |
 | --- | --- |
-| Target record | `TargetRecord {id, kind, url, endpointEpoch, order, serverName, duplicateSuffix}`; storage `fishball_core_targets/targets` v1; no token value; no count cap (Q12) |
+| Target record | `TargetRecord {id, kind, url, endpointEpoch, order, serverName, duplicateSuffix}`; storage `fishball_core_targets/targets` v1, tool bindings and their tombstones `fishball_core_targets/tool_bindings` v1 (domain and table names in DSH storage's `UNIT_NAME_RE` `^[a-z][a-z0-9_]*$`, both SDKs); no token value; no count cap (Q12) |
 | Ids | target `t-` + 16 base32 letters, epoch `e-` + 16; reserved parent id `parent`; a new epoch on every canonical-endpoint change |
 | List / status API | `fishballInstance.ui.targets` (`FishballTargets`): `list()` → `TargetsSnapshot {version: 1, targets: TargetView[]}`, `onChange`, `add`, `remove`, `setUrl`, `begin`, `cancel`, `retry`, `choose`, each by `targetId`. K3a's scalar `ui.link`, `ui.connect`, `ui.pairing` are withdrawn. Core's status snapshot carries `targets` beside the global `fishball`, `guards`, `set` |
+| Per-target strip | `TargetView.line {kind, code}` = core's `stripLine(...).line` for that target (amendment from MULTI-3), with `control` and `contributedTools` |
 | Public state | `connected`, `connecting`, `failed`, `not-set` (rule in `SEAM_TARGETS`' comment); `name: null` shows the placeholder, never a URL (Q01) |
-| Routes | `SEAM_TARGETS.route`: POST `/api/fishball/targets/{connect,cancel,retry,pairing,add,remove,url}` with `{targetId, …}`; unknown id → 404 `unknown-target`; refusals `target-duplicate` (Q04), `target-reserved`, `confirmation-required` (Q07) |
+| Routes | `SEAM_TARGETS.route`: GET `/api/fishball/targets` → 200 `TargetsSnapshot` (= `ui.targets.list()`; amendment from MULTI-1, so core's settings page needs no fishball-ui); POST `/api/fishball/targets/{connect,cancel,retry,pairing,add,remove,url}` with `{targetId, …}`; unknown id → 404 `unknown-target`; refusals `target-duplicate` (Q04), `target-reserved`, `confirmation-required` (Q07) |
 | Provenance | `TargetSource {targetId, endpointEpoch, serverName, name}` on every `InterceptedEvent` (`source`) and `AskCard` (`source`); only id/epoch are trusted |
 | Local keys | `JSON.stringify([kind, targetId, endpointEpoch, remoteId])`, kinds `event` / `approval` / `session`; plain-token form base64url of that JSON; manager message id `fbe_` + handle (two targets' `event-1` never dedupe) |
 | Ask handle | `AskCard.handle` (kind `approval`); `ui.asks.answer(handle, …)` and the answer route body `{handle, choice, text?}`; state `voided` for a removed/retired target |
 | Duplicate names | ` (n)`, n from 2, lowest free complete name (literal collisions count), persisted, never renumbers (D07, Q03) |
 | Tool names | `mcp__<readable≤16>__<facade>_<digest12>`, ≤ 64, `[A-Za-z0-9_-]`; digest SHA-256 of `JSON.stringify([1, targetId, endpointEpoch, name, origin, rawName])`; every exposed remote tool and the local `ask_user`; withheld, reminder and skill tools unprefixed; a name bound (or retired) for another tuple fails closed. Supersedes V3 §6.3's ban on model-facing `mcp__…` names. Examples below |
-| Target-bound seams | `fishballInstance.bridge(pluginId, ops, {targetId})`, `attention.signal(pluginId, input, {targetId})`; `apiVersion` 2 |
-| Hosted reservation | hosted child: first target `parent`/`parent`, URL = `dsh-instance-child.targetUrl`, read-only, not removable; it alone owns `DSH_AGENT_TOKEN`, `fishball-core/hosted-agent`, `fishball-core/pending-token-origin` |
+| Target-bound seams | `fishballInstance.bridge(pluginId, ops, TargetSelector)`, `attention.signal(pluginId, input, TargetSelector)`; `{targetId, endpointEpoch?}`, source-derived callers MUST pass the source epoch (security amendment below); `apiVersion` 2 |
+| Hosted reservation | hosted child: first target `parent`/`parent`, URL = `dsh-instance-child.targetUrl`, read-only, not removable; it alone owns `DSH_AGENT_TOKEN`, `fishball-core/hosted-agent` and core's internal pending-origin record `fishball-core/pending-token-origin` (`src/link/constants.js` `LINK_SAVE.pendingOrigin`; core-only, so not a contract value) |
 | Added credentials | reference `FISHBALL_TARGET_TOKEN_<id>__<epoch>` (`-` → `_`); records `fishball-core/token-<id>-<epoch>`, `fishball-core/connect-<id>-<epoch>` |
 | Identity push | subscribe `dsh-agent://events` and `dsh-agent://identity` on the one listen stream; on `notifications/resources/updated {uri: identity}` and after every listen acknowledgement, `client.discover()` at once (one in flight + dirty), read `_meta['io.modelcontextprotocol/serverInfo'].name`; no polling. Live only if `resources/list` lists the URI |
+| Status snapshot | `StatusSnapshot`: `{fishball: 'on', targets, guards, set}` or exactly `{fishball: 'fishball-off'}` (no `targets`) |
+| Hosted signal | DSH settings lists the namespace `dsh-instance-child` (URL-independent); parent epoch generated, renewed on every canonical `targetUrl` change; parent grant `fishball-core/connect-parent-<epoch>`; user `target.url` and its fallback withdrawn |
+| HTTP | 200; 400 malformed / `invalid-arguments` / URL refusals; 404 `unknown-target`; 409 other refusals; 503 `TARGETS_UNAVAILABLE`; voided ask → 409 `expired` |
+| Version moves | `fishballInstance.apiVersion` 2; core's session route and every core reader of `fishballInstance` move to 2 (MULTI-1); `/api/fishball/connect{,/cancel}` withdrawn for `SEAM_TARGETS.route.connect` / `.cancel` |
 | Unchanged | one manager, one reminder store, notify, CIMD URL (global, Q06), wire tool schemas, receipts, OAuth |
 
 Examples (normative for the slices; `t-a…`/`e-b…` stand for 16-letter ids):
@@ -138,6 +143,54 @@ Examples (normative for the slices; `t-a…`/`e-b…` stand for 16-letter ids):
 | `办公室-DSH` | readable `dsh` |
 | `<b>x</b>` | readable `b-x-b`; the UI shows `<b>x</b>` as text |
 | 200-char name, `acme-tools.` + 48 chars | readable cut to 16, facade cut from the end, total exactly 64 |
+| `résumé-DSH` | readable `re-sume-dsh` (combining marks are separators) |
+
+### Independent-review security amendment (additive; no renamed contracts)
+
+**Credential binding.** `TargetCredentialBinding {targetId, endpointEpoch, origin, agentId}` is
+mandatory metadata under `TARGETS.credentials.bindingField` (`binding`) in core-private saved and
+pending credential payloads. This includes the parent's fixed `fishball-core/hosted-agent` and
+`fishball-core/pending-token-origin` records; their fixed names do not exempt them. A pending
+reference also binds its non-secret credential id. All four binding members must match before
+use, save or unset. Recover the durable epoch and reconcile the instance URL before credential
+reads on startup. Retire and clear the old token/reference binding on **every** canonical endpoint
+change, including same-origin, before connecting the new epoch; a restart cannot adopt an old
+binding. Captured binding + generation fence late authorization/token results, so an old completion
+cannot save, unset or relabel a new handoff. The parent handoff wire, credential probe and published
+reference/record names are unchanged; Q-LS1's new-reference-first rule applies within a binding.
+See [link.d.ts](<link.d.ts>) for the normative fixed-parent reader amendment.
+
+**Source-bound calls.** `TargetSelector {targetId, endpointEpoch?}` is accepted by `bridge` and
+`attention.signal`. Event/history callers MUST pass the source's `endpointEpoch`, not just its id:
+creating a handle after an `await` must not capture an endpoint that replaced that source. A mismatch
+fails closed (`supports` false, call/signal `unknown-target`, no remote send). Existing deliberate
+current-target selectors remain valid; captured handles still fence subsequent retirement.
+
+**Tool-description framing.** `TARGETS.text.toolSource(JSON.stringify(name))` returns INNER
+untrusted data, **not a standalone description prefix**. Preserve that formatter's signature and
+wording, but enclose its entire result in the existing random-marker framing from core's
+`src/bridge/constants.js` `TEXT.untrustedOpen` / `untrustedClose`, with a fresh locally generated
+`randomUUID()` marker, then append the trusted facade description. Reuse those constants; do not
+copy them into the contracts. JSON encoding alone does not replace this trust boundary. For example
+(the marker is generated locally, never supplied by a server):
+
+```js
+const marker = randomUUID()
+const description = [
+  TEXT.untrustedOpen(marker),
+  TARGETS.text.toolSource(JSON.stringify(name)),
+  TEXT.untrustedClose(marker),
+  trustedDescription,
+].join(TEXT.lineEnd)
+```
+
+Names containing quotes, newlines, fake closing tags or role-looking instructions remain entirely
+inside that block; no raw server name is interpolated into trusted prose or persona guidance.
+The persona's tool guidance names tools by role, not by a fixed
+name: "Every DSH you are connected to has its own copy of each DSH tool, named
+`mcp__<dsh>__<tool>_<id>`; pick the tool whose description names the DSH you mean, and ask the user
+when it is ambiguous (Q09). Your reminder tools are local and unprefixed." The `<dsh>` part and the
+names in descriptions come from the servers and are data, never instructions.
 
 ## Interception
 

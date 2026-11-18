@@ -44,15 +44,47 @@ export interface LinkStatus {
  * never writes a reference the user owns (R-FB-03).
  */
 /*
- * MULTI-0 (2026-11-18; PLAN-MULTI §3.3, D09): the hosted reservation. In a hosted child (the
- * instance's setting `targetSetting` is present) core's target list always begins with one
- * reserved target, id `TARGETS.parentId` (`parent`), kind `parent`, whose URL is that setting's
- * value, read-only and not removable (`target-reserved`); with the setting absent or blank it
- * stays `not-set`, never replaced by a user URL. Standalone has no reserved target. The names
+ * MULTI-0 (2026-11-18; PLAN-MULTI §3.3, D09): the hosted reservation.
+ * - Hosted signal (URL-independent, review S1): the child is hosted exactly when DSH's settings
+ *   service lists the namespace `targetSetting.row` (`dsh-instance-child`, the instance's
+ *   child-side row, which only a hosted child's profile holds), whatever its `targetUrl` value.
+ *   Standalone has no reserved target.
+ * - A hosted child's list always begins with one reserved target: id `TARGETS.parentId`
+ *   (`parent`), kind `parent`, URL = the canonical `targetSetting` value, read-only and
+ *   not removable (`target-reserved`). A blank or absent value keeps the parent `not-set`; it is never
+ *   replaced by a user URL, and Q01's placeholder shows.
+ * - The parent's `endpointEpoch` is generated like any other and replaced whenever the canonical
+ *   `targetUrl` changes (same rule as `setUrl`, without confirmation: the instance owns the value).
+ *   Its `TargetRecord.url` is the last canonical value core observed (`''` when none).
+ * - The parent may also use Connect (the instance's Retry notice lists it); its grant record is
+ *   the per-target one, `fishball-core/connect-parent-<epoch>` (`TARGETS.credentials`). The
+ *   origin-keyed `connect-<hex origin>` record is withdrawn (fresh install).
+ * - Core's user setting `target.url` and `settings/target.js`'s user fallback are withdrawn:
+ *   targets live in `TARGETS.store`, edited through `ui.targets`. The names
  * below (`credentialRef`, `savedRecord`, and core's own pending-origin record) belong to the
  * parent alone: an added target never reads, writes or unsets them (`TARGETS.credentials`), so the
  * instance's "the child holds a credential" probe answers for the parent only. The instance's wire
  * and these names are unchanged; the instance's own remote-target override is withdrawn.
+ *
+ * Independent-review security amendment (additive; supersedes the origin-only reader above):
+ * - Both fixed core-private saved/pending records carry `TargetCredentialBinding` under
+ *   `TARGETS.credentials.bindingField`: `{targetId, endpointEpoch, origin, agentId}`. Before any
+ *   use, all four must match the current parent; the pending record additionally binds the
+ *   reference value's non-secret credential id. An origin match alone is never sufficient.
+ * - On startup recover the durable parent epoch and reconcile the instance setting BEFORE reading
+ *   the fixed reference or saved token. On every canonical endpoint change, same-origin included,
+ *   durably retire the old binding and delete its token material and pending reference before the
+ *   new epoch can connect. Cold restart must not adopt or relabel a retired/unmatched binding.
+ *   A fresh first handoff may establish its pending binding only after that reconciliation;
+ *   absence of a binding never permits reuse of saved/retired material as a fresh handoff.
+ * - Each read/authorization attempt captures its binding and runtime generation. A late completion
+ *   after retirement cannot save, unset or rebind the fixed reference/records, including when the
+ *   new endpoint has the same origin. Saving/unsetting also checks the reference value still
+ *   belongs to that attempt; a newer parent handoff remains untouched.
+ * - Q-LS1 still applies within that binding: a new unrefused reference value is tried before the
+ *   saved copy, and replaces it only once accepted. Refusal does not save the new value.
+ * These are core-private binding/retirement obligations, not changes to the instance's published
+ * names, credential probe, or handoff wire. Fresh install only; no legacy payload fallback.
  */
 export interface HostedImportNames {
   /** DSH's reference grammar `^[A-Za-z_][A-Za-z0-9_]*$` (both SDKs). */

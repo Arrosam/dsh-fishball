@@ -117,15 +117,28 @@ export const SEAM_STATUS = Object.freeze({
  * - `kind`: `parent` (a hosted child's reserved, non-removable, URL-read-only first target) or
  *   `remote` (added by the user, standalone and hosted alike);
  * - `identity`: the live-identity capability shown in details (`TargetIdentityState`);
- * - `placeholder`: what to show for `name === null` (Q01), by the copy key fishball-ui owns: no
- *   URL-derived name;
- * - `route`: core's owner-only routes (DSH's exact Fetch routes). Every POST body is JSON with
- *   `targetIdField` and the members named; a missing, unknown or removed id answers 404 with
- *   `refusal.unknownTarget`. `connect` answers K3a `ConnectBegin`; the rest `{ok: true}` or
+ * - `placeholder`: what to show for `name === null` (Q01), by the copy key fishball-ui owns, never a
+ *   URL-derived name: `unset` ("Not set") when the target has no URL (a parent whose instance
+ *   value is blank), `unnamed` ("Name unavailable") when it has one but no discovery answered yet;
+ * - `route`: core's owner-only routes (DSH's exact Fetch routes). Every POST (`method`) body is
+ *   JSON with `targetIdField` and the members named (`add` has `url` and no id). Answers (review
+ *   S5; the ask routes' convention), each with a JSON body `{ok: true, …}` or `{ok: false, code}`:
+ *   `http.ok`; `http.badRequest` for a malformed body or field (K1 `invalid-arguments`) and the URL
+ *   refusals `target-insecure` / `target-invalid`; `http.notFound` for a missing, unknown or
+ *   removed id (`refusal.unknownTarget`); `http.conflict` for every other refusal (`target-duplicate`,
+ *   `target-reserved`, `confirmation-required`, a delegated Connect/pairing code);
+ *   `http.unavailable` with `{code: unavailableCode}` and no detail when core's
+ *   `fishballInstance` is absent, not `apiVersion` 2, or threw. The K3a routes
+ *   `/api/fishball/connect` and `/api/fishball/connect/cancel` are withdrawn (review S6); `connect` answers K3a `ConnectBegin`; the rest `{ok: true}` or
  *   `{ok: false, code}`. The add/remove/url routes serve core's settings page;
+ * - `route.list` (MULTI-0 amendment, MULTI-1's finding, 2026-11-18): `read` (GET), owner-only like
+ *   the others, no body; 200 with the `TargetsSnapshot` JSON, exactly what `ui.targets.list()`
+ *   returns. Core serves it so its own settings page reads the list without fishball-ui (Q-G1);
  * - `ask`: the ask card's answer body now names an opaque target-qualified `handle`
  *   (`AskCard.handle`), never a raw `approvalId`; `voided` is the state of a card whose target was
- *   removed or whose endpoint retired (Q07): read-only, never answered;
+ *   removed or whose endpoint retired (Q07): read-only, never answered. The answer route keeps its
+ *   statuses (200, 400 `invalid-arguments`, 409 for a refusal) and adds 404 `unknown-target` for an
+ *   unknown handle; a `voided` card answers K1 `expired` (409), as a closed one does;
  * - `refusal`: the target actions' own codes (`TargetActionResult`); URL refusals stay K3a's
  *   `target-insecure` / `target-invalid`.
  */
@@ -137,6 +150,8 @@ export const SEAM_TARGETS = Object.freeze({
   identity: Object.freeze({ pending: 'pending', live: 'live', unsupported: 'unsupported', stale: 'stale' }),
   placeholder: Object.freeze({ unnamed: 'name-unavailable', unset: 'not-set' }),
   route: Object.freeze({
+    list: '/api/fishball/targets',
+    read: 'GET',
     connect: '/api/fishball/targets/connect',
     cancel: '/api/fishball/targets/cancel',
     retry: '/api/fishball/targets/retry',
@@ -148,6 +163,8 @@ export const SEAM_TARGETS = Object.freeze({
     targetIdField: 'targetId',
     fields: Object.freeze({ url: 'url', choice: 'choice', confirmed: 'confirmed' }),
   }),
+  http: Object.freeze({ ok: 200, badRequest: 400, notFound: 404, conflict: 409, unavailable: 503 }),
+  unavailableCode: 'TARGETS_UNAVAILABLE',
   ask: Object.freeze({ handleField: 'handle', voided: 'voided' }),
   refusal: Object.freeze({
     unknownTarget: 'unknown-target',

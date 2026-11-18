@@ -4,7 +4,7 @@
  * `constants.js` beside this file (K3 amendment 2026-11-14); the prose freeze is `README.md`.
  *
  * - `fishballInstance.events`: the interception service (`events.d.ts`). `fishballInstance` keeps
- *   its X1–X19 members and `apiVersion: 1` (design §1.2); K3 freezes only its `events` member.
+ *   its X1–X19 members; `apiVersion` is 2 since MULTI-0 (below; design §1.2 had 1); K3 freezes only its `events` member.
  * - `fishballSettingsSections` is withdrawn (F-SETTINGS; requirements 1.34 item 4, R-HOST-11): core's
  *   settings are its own plugin settings page, with no settings-section extension point.
  * - the ask card's fields (`ask-card.d.ts`) and the guard vocabulary (`guards.d.ts`).
@@ -32,7 +32,8 @@ export type {
 export type { FishballUi, UiPairingView, UiResult, Dispose } from './ui.js'
 export type {
   TargetId, EndpointEpoch, TargetKind, TargetState, TargetIdentityState, TargetSource, TargetRecord, TargetView,
-  TargetsSnapshot, TargetActionResult, FishballTargets, FishballTargetBound,
+  TargetsSnapshot, TargetActionResult, FishballTargets, FishballTargetBound, SetStatus, StatusSnapshot,
+  TargetCredentialBinding, TargetSelector,
 } from './targets.js'
 
 import type { FishballInstanceEvents } from './events.js'
