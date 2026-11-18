@@ -14,8 +14,12 @@
  */
 import path from 'node:path'
 import {
-  CONTRIBUTED_TYPE_PREFIX, EVENT_TYPE, LINK_REFUSAL, REFUSAL, TARGET_CODE, TARGET_STATE, TOOL, TOOLS,
+  CONTRIBUTED_TYPE_PREFIX, EVENT_TYPE, LINK_REFUSAL, REFUSAL, TARGET_CODE, TARGET_STATE, TOOL, TOOLS as K1_TOOLS,
 } from '../../../../packages/dsh-connector/mcp-schema/index.js'
+import { connectorTools } from '../wire/targets-oracle.mjs'
+
+/** The connector's core tools as core knows them (CONN-TOOLS: question_ask / question_answer_own removed). */
+const TOOLS = Object.freeze(connectorTools(K1_TOOLS))
 import * as K2_TOOLS from '../../../../packages/dsh-connector/tools/index.js'
 import { REPO } from '../../../support/constants.mjs'
 

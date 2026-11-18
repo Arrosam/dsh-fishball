@@ -22,6 +22,7 @@ import { randomBytes } from 'node:crypto'
 import * as K1 from '../../../../packages/dsh-connector/mcp-schema/index.js'
 import { FakePairs } from '../identity/fake-connector.mjs'
 import { FAKE_DSH } from './constants.mjs'
+import { connectorTools } from './targets-oracle.mjs'
 
 const RPC = FAKE_DSH.rpc
 const sse = (message) => `event: message\ndata: ${JSON.stringify(message)}\n\n`
@@ -41,7 +42,7 @@ export const newToken = () => K1.TOKEN_VALUE.generatedPrefix + randomBytes(K1.TO
  *   `onTool` a scripted tool result (a promise may hold the call); `extraPaths` more MCP endpoint
  *   paths on the same origin (two targets of one origin, PLAN-MULTI §3.1 "same-origin isolation").
  */
-export async function startFakeDsh({ name, identity = true, tools = K1.TOOLS, onTool, extraPaths = [] } = {}) {
+export async function startFakeDsh({ name, identity = true, tools = connectorTools(K1.TOOLS), onTool, extraPaths = [] } = {}) {
   const pairs = new FakePairs()
   const entries = new Map()
   const issued = new Map()
