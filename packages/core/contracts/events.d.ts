@@ -88,7 +88,8 @@ export interface InterceptControl {
   accept(): Promise<boolean>
 
   /**
-   * The fence around an answer sent through core's link (R-INT-04). Core moves the record from
+   * The fence around an answer sent through the link of the event's own target (`source`;
+   * MULTI-0), never another target's (R-INT-04). Core moves the record from
    * accepted to committing, then calls `send` once. From then on the event stays with this
    * interceptor whatever happens to the handler, except that an answer that never reached the
    * connector (`send` rejects, or resolves `{ok: false, code: 'disconnected'}`) falls back to
