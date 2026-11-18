@@ -73,10 +73,9 @@ export const LINK_SAVE = Object.freeze({
   hostedPayload: Object.freeze({ version: 1 }),
   /**
    * The parent epoch a value in the hosted reference was put there for (R-FIX F01; MULTI-0 security
-   * amendment): one record, `{v, ref, binding}`, the value's non-secret id (`credentialId`) and its
-   * `TargetCredentialBinding` (parent epoch, origin, agent id) in force when core first saw it. The
-   * value is only ever sent for that binding; a new write of the reference binds it again. A
-   * record, not memory, so a restart between the write and the first connection keeps the binding.
+   * amendment): the active `{ref, binding}` pairs the value's non-secret id (`credentialId`) with
+   * its `TargetCredentialBinding` (parent epoch, origin, agent id). The record also holds retired
+   * ids separately, so replacing the active binding cannot make a retired fallback usable again.
    * The parent's alone: an added target's reference name holds its epoch.
    */
   pendingOrigin: Object.freeze({ key: CORE_RECORD_SCOPE + '/pending-token-origin', kind: 'grant', version: 1 }),
