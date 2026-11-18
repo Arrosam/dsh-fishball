@@ -314,6 +314,7 @@ export const MULTI_SET = Object.freeze({
   mark: Object.freeze({
     list: 'data-fishball-targets',
     card: 'data-fishball-target',
+    state: 'data-fishball-target-state',
     begin: 'data-fishball-connect-begin',
     cancel: 'data-fishball-target-cancel',
     retry: 'data-fishball-target-retry',
