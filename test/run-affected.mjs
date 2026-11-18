@@ -5,7 +5,9 @@
  *     untracked files (the working tree against base);
  *   node test/run-affected.mjs --suite=<id>[,<id>…] [--sdk=<v>] [--list] [extra args]
  *     the named suites (ids as in test/suites.mjs, or a prefix such as `dsh-connector`);
- *   node test/run-affected.mjs --all [--sdk=<v>]   every suite but the shelved ones (V3 and the pre-V3 groups);
+ *   node test/run-affected.mjs --all [--sdk=<v>]   every unshelved V3 suite;
+ *   --lane=legacy                                select pre-V3 groups instead, for a base ref or --all;
+ *   --release-check                              fail selected artifact rows if the release folder is missing.
  *   node test/run-affected.mjs --check             the map's self-check (no test runs).
  *
  * A base ref and --all leave out the shelved suites (test/suites.mjs SHELVED_SUITES); --suite runs
@@ -20,13 +22,14 @@ import { execFileSync } from 'node:child_process'
 import fs from 'node:fs'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { REPO } from './support/constants.mjs'
+import { REPO, REQUIRED_RELEASE } from './support/constants.mjs'
 import { rootSuiteFiles, runSuites } from './support/suite-runner.mjs'
-import { FULL, IGNORED, SDK_VERSIONS, SHELVED_SUITES, SUITES, V3_SUITES } from './suites.mjs'
+import { FULL, IGNORED, SDK_VERSIONS, SHELVED_SUITES, SUITES, V3_SUITES, V2_GROUPS } from './suites.mjs'
 import { AFFECTED_CASES } from './v3/contract/suite-map/affected-cases.mjs'
 
-const ARG = Object.freeze({ suite: '--suite=', sdk: '--sdk=', list: '--list', all: '--all', check: '--check', separator: ',' })
+const ARG = Object.freeze({ suite: '--suite=', sdk: '--sdk=', list: '--list', all: '--all', check: '--check', lane: '--lane=', releaseCheck: '--release-check', separator: ',' })
 const SDKS = Object.freeze({ both: 'both', values: SDK_VERSIONS })
+const LANE = Object.freeze({ default: 'v3', legacy: 'legacy' })
 const SDK_FILE = /\/sdk-(\d+\.\d+\.\d+-[a-z]+\.\d+)\.test\.mjs$/
 const GIT = Object.freeze({ diff: ['diff', '--name-only'], untracked: ['ls-files', '--others', '--exclude-standard'], tracked: ['ls-files'] })
 const V3_DIR = 'test/v3/'
@@ -91,17 +94,20 @@ export function checkMap() {
 }
 
 function parse(argv) {
-  const opts = { ids: null, base: null, sdk: SDKS.both, list: false, all: false, check: false, rest: [] }
+  const opts = { ids: null, base: null, sdk: SDKS.both, list: false, all: false, check: false, lane: LANE.default, releaseCheck: false, rest: [] }
   for (const a of argv) {
     if (a.startsWith(ARG.suite)) opts.ids = a.slice(ARG.suite.length).split(ARG.separator).filter(Boolean)
     else if (a.startsWith(ARG.sdk)) opts.sdk = a.slice(ARG.sdk.length)
     else if (a === ARG.list) opts.list = true
     else if (a === ARG.all) opts.all = true
+    else if (a.startsWith(ARG.lane)) opts.lane = a.slice(ARG.lane.length)
+    else if (a === ARG.releaseCheck) opts.releaseCheck = true
     else if (a === ARG.check) opts.check = true
     else if (!a.startsWith('-') && opts.base === null && opts.ids === null) opts.base = a
     else opts.rest.push(a)
   }
   if (opts.sdk !== SDKS.both && !SDKS.values.includes(opts.sdk)) throw new Error(`--sdk must be ${SDKS.both} or one of ${SDKS.values.join(', ')}`)
+  if (!Object.values(LANE).includes(opts.lane)) throw new Error(`--lane must be ${Object.values(LANE).join(" or ")}`)
   return opts
 }
 
@@ -126,23 +132,26 @@ function main(argv) {
     for (const [k, v] of Object.entries(report)) console.log(`${k}: ${v.length}${v.length ? '\n  ' + v.join('\n  ') : ''}`)
     return Object.values(report).some((v) => v.length) ? 1 : 0
   }
+  const laneSuites = opts.lane === LANE.legacy ? V2_GROUPS : V3_SUITES
+  const inLane = (ids) => unshelved(ids.filter((id) => Object.hasOwn(laneSuites, id)))
   let ids
-  if (opts.all) ids = unshelved(Object.keys(SUITES))
+  if (opts.all) ids = inLane(Object.keys(laneSuites))
   else if (opts.ids) ids = resolveIds(opts.ids)
   else if (opts.base) {
     const paths = changedPaths(opts.base)
     const picked = selectSuites(paths)
     console.log(`${paths.length} changed path(s) against ${opts.base}`)
-    for (const id of unshelved(picked.ids)) console.log(`  ${id}  (${picked.reasons[id]})`)
+    for (const id of inLane(picked.ids)) console.log(`  ${id}  (${picked.reasons[id]})`)
     const dropped = picked.ids.filter((id) => SHELVED_SUITES.includes(id))
     if (dropped.length) console.log(`shelved, not run: ${dropped.join(' ')}`)
     // A path no suite claims could be anything a test reads: run everything rather than guess.
-    if (picked.unmapped.length) { console.log(`unmapped, so every suite runs:\n  ${picked.unmapped.join('\n  ')}`); ids = unshelved(Object.keys(SUITES)) } else ids = unshelved(picked.ids)
+    if (picked.unmapped.length) { console.log(`unmapped, so every suite in the selected lane runs:\n  ${picked.unmapped.join('\n  ')}`); ids = inLane(Object.keys(laneSuites)) } else ids = inLane(picked.ids)
   } else throw new Error('give a base ref, --suite=<id>, --all or --check')
   const files = suiteFiles(ids, opts.sdk)
   console.log(`${ids.length} suite(s), ${files.length} file(s)`)
   if (opts.list) { for (const f of files) console.log('  ' + f); return 0 }
   if (files.length === 0) { console.log('nothing to run'); return 0 }
+  if (opts.releaseCheck) process.env[REQUIRED_RELEASE.env] = REQUIRED_RELEASE.on
   return runSuites(files, opts.rest)
 }
 

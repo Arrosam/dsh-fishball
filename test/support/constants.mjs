@@ -16,6 +16,7 @@ export const RUNTIME = process.env.FBTEST_DSH_RUNTIME ?? '/Users/samuel/Library/
  * The default is process-isolated outside Git: native child preflight rejects Git ancestors.
  */
 export const TEST_HOMES = process.env.FBTEST_TEST_HOMES ?? path.join(os.tmpdir(), 'fbtest-' + process.pid, '.runtime', 'test-homes')
+export const REQUIRED_RELEASE = Object.freeze({ env: 'FBTEST_RELEASE_REQUIRED', on: '1' })
 export const SUPPORT = import.meta.dirname
 export const WORKER = path.join(SUPPORT, 'worker.mjs')
 
