@@ -274,8 +274,11 @@ const configForms = () => ({
  * The page's EventSource: a GET of the host route, read as server-sent events. Each `data:` frame
  * is one `message` event, as a browser's EventSource delivers it.
  */
-function eventSourceClass(world, page, beforeFrame) {
+function eventSourceClass(world, page, timers, beforeFrame) {
   return class PageEventSource {
+    static CONNECTING = 0
+    static OPEN = 1
+    static CLOSED = 2
     constructor(url) {
       this.url = new URL(String(url), page.baseURI).href
       this.readyState = 0
@@ -297,6 +300,7 @@ function eventSourceClass(world, page, beforeFrame) {
     async pump() {
       const response = await world.connection.dispatch('GET', this.url)
       page.requests.push({ method: 'GET', path: new URL(this.url).pathname, body: undefined, stream: true })
+      if (this.closed) { await response.body?.cancel(); return }
       if (response.status !== 200 || !response.body) { this.readyState = 2; this.emit('error', {}); return }
       this.readyState = 1
       this.emit('open', {})
@@ -318,9 +322,15 @@ function eventSourceClass(world, page, beforeFrame) {
           }
         }
       } catch { /* a cancelled read ends the stream */ }
-      if (!this.closed) { this.readyState = 2; this.emit('error', {}) }
+      if (!this.closed) {
+        // A lost SSE transport goes back to CONNECTING; native retry uses the same EventSource.
+        this.readyState = PageEventSource.CONNECTING
+        this.retry = timers.setTimeout(() => { if (!this.closed) this.pump() }, WAIT.quietMs)
+        this.emit('error', {})
+      }
     }
-    close() { this.closed = true; this.readyState = 2; this.reader?.cancel().catch(() => {}) }
+    loseConnection() { return this.reader.cancel() }
+    close() { this.closed = true; this.readyState = PageEventSource.CLOSED; timers.clearTimeout(this.retry); this.reader?.cancel().catch(() => {}) }
   }
 }
 
@@ -334,7 +344,7 @@ function eventSourceClass(world, page, beforeFrame) {
  * @param options.prepareBrowser - install the case's browser APIs before any client module loads.
  * @param options.beforeFrame - optional transport delay before delivering a real backend SSE frame.
  */
-export async function openPage(t, world, { host = PAGE_HOST.loopback, failServices = false, withoutConfigForms = false, embed = true, lang = TEXT.langs[0], holdChunks = [], prepareBrowser, beforeFrame } = {}) {
+export async function openPage(t, world, { host = PAGE_HOST.loopback, failServices = false, withoutConfigForms = false, embed = true, lang = TEXT.langs[0], holdChunks = [], interceptFetch, hidden = false, timers, onCommit, prepareBrowser, beforeFrame } = {}) {
   const baseURI = PAGE_HOST.scheme + host + ':' + PAGE_HOST.port + ROUTE.absolutePrefix
   const page = { baseURI, requests: [], chunks: [], streams: [], navigations: [], dictionaries: [], errors: [] }
   const pageFetch = async (input, init = {}) => {
@@ -343,17 +353,20 @@ export async function openPage(t, world, { host = PAGE_HOST.loopback, failServic
     const body = typeof init.body === 'string' ? init.body : undefined
     page.requests.push({ method, path: url.pathname, body })
     if (failServices && url.pathname === ROUTE.services) throw new TypeError('fbtest: network error')
-    return world.connection.dispatch(method, url.href, { body, headers: init.headers ?? {} })
+    const send = () => world.connection.dispatch(method, url.href, { body, headers: init.headers ?? {} })
+    return interceptFetch ? interceptFetch(url.pathname, init.signal ?? input?.signal, send) : send()
   }
   const pageConsole = { ...console, error: (...args) => page.errors.push(args.map(String).join(' ')), warn() {}, log() {}, info() {}, debug() {} }
   const sandbox = createBrowserSandbox({ lang, baseURI, fetch: pageFetch, console: pageConsole })
   const frames = scriptedFrames(sandbox)
-  const PageEventSource = eventSourceClass(world, page, beforeFrame)
+  const setHidden = prepareBrowser ? undefined : scriptedVisibility(sandbox.document, frames, hidden)
+  if (timers) for (const target of [sandbox.sandbox, sandbox.window]) Object.assign(target, timers)
+  const PageEventSource = eventSourceClass(world, page, sandbox.sandbox, beforeFrame)
   sandbox.sandbox.EventSource = PageEventSource
   sandbox.window.EventSource = PageEventSource
   prepareBrowser?.(sandbox, frames)
 
-  const shim = createReactShim({ stale() {} })
+  const shim = createReactShim({ stale() {}, commit: onCommit })
   const { React } = shim
   const platform = { [DSH.react]: React, [DSH.reactDom]: { createPortal: (node) => node }, [DSH.primitives]: primitivesFor(React) }
   const graph = embed ? [{ id: EMBED.moduleId, rev: EMBED.rev }] : []
@@ -419,9 +432,16 @@ export async function openPage(t, world, { host = PAGE_HOST.loopback, failServic
    * renderer memoizes the face for the registration's life, so it is built once per entry here.
    * `t` is the entry's locale seat (`options.locale`).
    */
+  // dsh-client-ui-renderer's localeSeat: same t on ordinary rerenders, new t on a host switch.
+  const localeSeats = new Map()
   const injectCache = new WeakMap()
   const hookName = (name) => 'use' + name[0].toUpperCase() + name.slice(1)
-  const selectorHook = (source) => (select = (v) => v) => select(React.useSyncExternalStore((fn) => source.subscribe(fn), () => source.getSnapshot()))
+  const selectorHook = (source) => {
+    // Match bindSnapshotSelector: rerendering an already mounted consumer does not resubscribe.
+    const subscribe = (fn) => source.subscribe(fn)
+    const snapshot = () => source.getSnapshot()
+    return (select = (v) => v) => select(React.useSyncExternalStore(subscribe, snapshot))
+  }
   function injectedProps(entry, sessionId) {
     const cacheKey = entry.options
     if (!injectCache.has(cacheKey)) injectCache.set(cacheKey, new Map())
@@ -431,16 +451,26 @@ export async function openPage(t, world, { host = PAGE_HOST.loopback, failServic
       const { hooks = {}, ...rest } = face
       perKey.set(sessionId, { ...rest, ...Object.fromEntries(Object.entries(hooks).map(([name, source]) => [hookName(name), selectorHook(source)])) })
     }
-    const t = entry.options.locale === undefined ? {} : { t: locale.bind(entry.options.locale) }
-    return { ...t, ...perKey.get(sessionId) }
+    const namespace = entry.options.locale
+    if (namespace === undefined) return perKey.get(sessionId)
+    if (!localeSeats.has(namespace)) localeSeats.set(namespace, locale.bind(namespace))
+    return { t: localeSeats.get(namespace), ...perKey.get(sessionId) }
   }
   const api = {
     ...page, shim, plugins, registrations,
     /** The page's document (a case may answer its queries, e.g. where the sidebar fish is on screen). */
     document: sandbox.document,
+    setHidden,
     live: () => registrations.filter((r) => !r.disposed),
     entries,
     settle: settleAll,
+    setLang(next) {
+      if (next === locale.getSnapshot().active) return
+      localeSeats.clear()
+      sandbox.document.documentElement.lang = next
+      services.setLang(next)
+      root.emit('locale/change', locale.getSnapshot())
+    },
     /**
      * Mount every entry of `slot` with `props` in one root; returns `{tree(), unmount()}`. `slot` may be
      * a list of slots (UI-FIX-D: DSH draws the session header's actions and utilities seats in one
@@ -498,6 +528,21 @@ function scriptedFrames(sandbox) {
     /** How many listeners of `type` the page holds on window. */
     listening: (type) => listeners.get(type)?.size ?? 0,
     dispatch(type) { for (const fn of [...(listeners.get(type) ?? [])]) fn({ type }) },
+  }
+}
+
+/** Model the Page Visibility API, including visibilitychange bubbling from document to window. */
+function scriptedVisibility(doc, frames, hidden) {
+  const events = new EventTarget()
+  doc.addEventListener = events.addEventListener.bind(events)
+  doc.removeEventListener = events.removeEventListener.bind(events)
+  doc.hidden = hidden
+  Object.defineProperty(doc, 'visibilityState', { get: () => doc.hidden ? 'hidden' : 'visible' })
+  return (next) => {
+    if (doc.hidden === next) return
+    doc.hidden = next
+    events.dispatchEvent(new Event('visibilitychange', { bubbles: true }))
+    frames.dispatch('visibilitychange')
   }
 }
 

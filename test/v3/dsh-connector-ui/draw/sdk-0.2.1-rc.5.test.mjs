@@ -3,8 +3,12 @@ import { registerUDrawCases } from './cases.mjs'
 import { registerUDrawPolishCases } from './polish-cases.mjs'
 import { registerIconDrawCases } from './icon-cases.mjs'
 import { registerCuiDrawCases } from './cui-cases.mjs'
+import { registerCheckingCases } from './checking-cases.mjs'
+import { registerStreamCases } from './stream-cases.mjs'
 import { registerVisibilityCases } from './visibility-cases.mjs'
 
+registerStreamCases('0.2.1-rc.5')
+registerCheckingCases('0.2.1-rc.5')
 registerUDrawCases('0.2.1-rc.5')
 registerUDrawPolishCases('0.2.1-rc.5')
 registerIconDrawCases('0.2.1-rc.5')
