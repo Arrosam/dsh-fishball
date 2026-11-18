@@ -197,6 +197,10 @@ export const V3_SUITES = Object.freeze({
   'dsh-connector-ui.layout': suite('narrow-width layout in a real browser: header Hand over / Take back, connector settings rows, window error code (UI-FIX-D)', v3('dsh-connector-ui/layout'),
     [all(PACKAGE.dshConnectorUi), CONNECTOR_RUNTIME, all(PACKAGE.dshConnectorShared), all(PACKAGE.fishballShared), all(PACKAGE.dshInstance),
       all(PACKAGE.fishballCore), all(PACKAGE.fishballUi), 'test/v3/dsh-connector/wire/**', 'test/v3/fishball-core/package/constants.mjs',
+      // Hosted rename: settings vocabulary, hosted child worker, and a second target for name collisions.
+      'test/v3/dsh-connector/settings-page/constants.mjs', 'test/v3/contract/embed/constants.mjs', 'test/v3/dsh-connector/tokens/constants.mjs',
+      'test/v3/fishball-core/wire/{multi-world,subject,world,constants,targets-oracle,fake-dsh}.mjs',
+      'test/v3/fishball-core/wire/fixtures/child-row/**', 'test/v3/fishball-core/identity/{fake-connector,constants}.mjs', 'test/v3/release/pack/constants.mjs',
       'test/v3/contract/package-boundaries/cases.mjs', 'test/v3/dsh-connector/pairs/subject.mjs']),
   // Reads the instance's whole placement and launch overlay, core's patch it places, and the F-GUARDS
   // vocabulary (whose split constants name fishball-ui's rows).

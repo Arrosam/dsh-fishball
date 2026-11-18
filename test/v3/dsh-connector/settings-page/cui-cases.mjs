@@ -54,6 +54,9 @@ function settingField(page, view, hook) {
     type: (value) => act((p) => p.onChange({ target: { value }, currentTarget: { value }, preventDefault() {} })),
     blur: () => act((p) => p.onBlur?.({ target: { value: p.value }, currentTarget: { value: p.value } })),
     key: (key) => act((p) => p.onKeyDown?.(event(key))),
+    // A focused input becoming disabled can blur synchronously in the Enter commit,
+    // before the host has delivered a new form revision or React has rendered new handlers.
+    keyAndBlur: (key) => act((p) => { p.onKeyDown(event(key)); p.onBlur({ target: { value: p.value }, currentTarget: { value: p.value } }) }),
   }
 }
 const sent = (page) => page.mutations.map((m) => m.ops)
@@ -320,11 +323,11 @@ function runtimeState(sdk) {
 // ------------------------------------------------------------------------------------------------ multi-DSH naming
 
 /** The page with the row's settings, its DSH name `saved` (undefined: none saved), in `lang`. */
-async function nameField(t, sdk, { saved, lang } = {}) {
+async function nameField(t, sdk, { saved, lang, beforeSave, state } = {}) {
   const settings = structuredClone(CUI.settings)
   if (saved === undefined) delete settings.approval.dshName
   else settings.approval.dshName = saved
-  const opened = await openSettings(t, sdk, { settings, lang })
+  const opened = await openSettings(t, sdk, { settings, lang, beforeSave, state })
   return { ...opened, field: settingField(opened.page, opened.view, CUI.field.dshName) }
 }
 const unsetOf = (path) => [{ op: DSH_NAME.unsetOp, path: [...path] }]
@@ -375,6 +378,53 @@ function dshNaming(sdk) {
       assert.equal(field.shown(), want ?? '', 'the field does not show the saved name exactly')
     })
   }
+  row(sdk, id, 'R1B slow save', 'Enter and then blur before persistence replies → saved name, no false refusal', async (t) => {
+    const first = held(), next = held()
+    let calls = 0
+    const { page, field } = await nameField(t, sdk, { state: pairedAs(FIXTURE.labelA), beforeSave: () => (++calls === 1 ? first : next).promise })
+    assert.equal(field.shown(), '')
+    const revision = page.revision()
+    await field.type(DSH_NAME.live)
+    await field.keyAndBlur(CUI.keys.enter)
+    assert.ok(page.mutations.length, 'Enter did not submit the edit')
+    first.release()
+    await page.until(() => valueAt(page.value(), P) === DSH_NAME.live)
+    await page.settle()
+    next.release()
+    await page.settle()
+    assert.equal(field.shown(), DSH_NAME.live)
+    assert.deepEqual(field.alerts(), [], 'the host accepted this save')
+    assert.deepEqual(page.mutations, [{ ops: setOf(P, DSH_NAME.live), expected: revision, liveRevision: revision }])
+  })
+  row(sdk, id, 'R1B stale save', 'host refuses a stale revision → name unchanged, draft retained; retry at the new revision clears the reason', async (t) => {
+    const hold = held()
+    const { page, field } = await nameField(t, sdk, { saved: S, state: pairedAs(FIXTURE.labelA), beforeSave: () => hold.promise })
+    const revision = page.revision(), ops = setOf(P, DSH_NAME.live)
+    await field.type(DSH_NAME.live)
+    await field.key(CUI.keys.enter)
+    assert.deepEqual(page.mutations, [{ ops, expected: revision, liveRevision: revision }])
+    // The other editor changes an unrelated setting, so this is a host refusal rather than a name-field conflict.
+    await page.external(setOf(CUI.path.otherLimit, CUI.other.otherLimit))
+    const current = page.revision()
+    assert.notEqual(current, revision)
+    hold.release()
+    await page.until(() => field.alerts().length > 0)
+    assert.match(field.alerts().join(' '), DSH_NAME.refusalReason)
+    assert.equal(valueAt(page.value(), P), S)
+    assert.equal(field.shown(), DSH_NAME.live)
+    await field.key(CUI.keys.enter)
+    await page.until(() => valueAt(page.value(), P) === DSH_NAME.live)
+    assert.deepEqual(page.mutations, [{ ops, expected: revision, liveRevision: revision }, { ops, expected: current, liveRevision: current }])
+    assert.deepEqual(field.alerts(), [])
+  })
+  row(sdk, id, 'R1B offline', 'transport rejects the save → meaningful reason, no persisted edit', async (t) => {
+    const { page, field } = await nameField(t, sdk, { state: pairedAs(FIXTURE.labelA), beforeSave: () => { throw new Error(DSH_NAME.transportFailure) } })
+    await field.type(DSH_NAME.live)
+    await field.key(CUI.keys.enter)
+    assert.ok(page.mutations.length, 'no save attempted')
+    assert.equal(valueAt(page.value(), P), undefined)
+    assert.match(field.alerts().join(' '), DSH_NAME.serviceReason, 'the owner needs a reason why the edit was not saved')
+  })
   row(sdk, id, 'EP Enter (padded)', `Enter saves ${JSON.stringify(DSH_NAME.padded)} verbatim, as blur does`, async (t) => {
     const { page, field } = await nameField(t, sdk, { saved: S })
     await field.type(DSH_NAME.padded)
