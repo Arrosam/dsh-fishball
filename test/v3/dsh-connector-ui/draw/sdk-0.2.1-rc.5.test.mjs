@@ -3,8 +3,10 @@ import { registerUDrawCases } from './cases.mjs'
 import { registerUDrawPolishCases } from './polish-cases.mjs'
 import { registerIconDrawCases } from './icon-cases.mjs'
 import { registerCuiDrawCases } from './cui-cases.mjs'
+import { registerVisibilityCases } from './visibility-cases.mjs'
 
 registerUDrawCases('0.2.1-rc.5')
 registerUDrawPolishCases('0.2.1-rc.5')
 registerIconDrawCases('0.2.1-rc.5')
 registerCuiDrawCases('0.2.1-rc.5')
+registerVisibilityCases('0.2.1-rc.5')
