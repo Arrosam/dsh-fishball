@@ -10,7 +10,9 @@
  *   word). Core shows no hint of a missing fishball-ui (Q-G1), so there is no value for that.
  * - `UI_STATUS`: the name of core's status service the strip reads (F-WIRE).
  * - `UI_GUARDS`: the service fishball-ui's row provides so core's guard check also reports the UI
- *   guard rows fishball-ui's patch holds (R-FB-09): `{rows}`, that patch's guard-row ids.
+ *   guard rows of core's patch (R-FB-09), which hold only beside fishball-ui (R-FIX-FUI).
+ * - `UI_INSTANCE`, `SEAM_PAIRING`: core's service and the pairing words fishball-ui's pairing card
+ *   draws (R-FIX-FUI).
  * - `SEAM_STATUS`: the words of core's status snapshot that fishball-ui's strip view draws.
  *   `fishball`, `set`, `reason` and `control` are defined here, once; core's `STATUS_MODEL` takes
  *   them from here. `link`, `connect` and `guards` restate core's K3 `LINK.state`, `CONNECT.state`
@@ -34,8 +36,44 @@ export const UI_STATUS = Object.freeze({
   service: 'fishballStatus',
 })
 
+/**
+ * fishball-ui's presence (R-FIX-FUI): its row provides this service, and core's guard check reports
+ * the UI guard rows of core's patch only while it is there. The rows themselves are core's patch's
+ * `uiRows`; the service carries nothing.
+ */
 export const UI_GUARDS = Object.freeze({
   service: 'fishballUiGuards',
+})
+
+/**
+ * Core's `fishballInstance` service and the `apiVersion` whose `ui` member (`UI_SEAM.member`)
+ * fishball-ui draws (K3 `index.d.ts`). fishball-ui reads the pairing from it (R-FIX-FUI); core's main
+ * row takes both values from here. Its own object, because `UI_SEAM` is K3a's frozen set.
+ */
+export const UI_INSTANCE = Object.freeze({
+  service: 'fishballInstance',
+  apiVersion: 1,
+})
+
+/**
+ * The words of core's `ui.pairing` view and choices that fishball-ui's pairing card draws (F-PAIR,
+ * AUTH-ST-03; R-ID-07). `state` and `choice` are defined here, once: core's identity constants
+ * (`PAIRING_STATE`, `CHOICE`) take them from here. `nameRefusal` restates core's K3 `MCP.refusal`
+ * name codes, a view's `nameIssue.code`, because that file is data-only and imports nothing (the K3
+ * freeze, as `SEAM_STATUS.link` below).
+ */
+export const SEAM_PAIRING = Object.freeze({
+  state: Object.freeze({
+    unpaired: 'unpaired',
+    paired: 'paired',
+    warnMatch: 'warn-match',
+    warnMismatch: 'warn-mismatch',
+    needToken: 'need-token',
+    needId: 'need-id',
+    idMismatch: 'id-mismatch',
+  }),
+  choice: Object.freeze({ continue: 'continue', newTokenAndId: 'new-token-and-id', newToken: 'new-token' }),
+  nameRefusal: Object.freeze({ nameTaken: 'name-taken', nameInvalid: 'name-invalid' }),
 })
 
 export const SEAM_STATUS = Object.freeze({

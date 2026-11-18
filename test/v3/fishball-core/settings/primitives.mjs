@@ -154,7 +154,10 @@ export function primitivesFor(sdk, React) {
  *   portals the bubble to document.body when `portal` is set; here the bubble stays inline and
  *   carries `data-fbtest-portal`. The stand-in stamps `data-fbtest-tooltip` (label) and
  *   `data-fbtest-tooltip-side` on the child, harness handles only;
- * - FishLogo and every `Icon*` export: one `<svg aria-hidden="true">`.
+ * - FishLogo and every `Icon*` export: one `<svg aria-hidden="true">`;
+ * - Checkbox `{checked, onChange, label, disabled, title, className}` (R-FIX-FUI): `<label title class>`
+ *   holding `<input type="checkbox" checked disabled>` whose change calls `onChange(event.target.checked)`,
+ *   and `<span>` with the label. DSH's Checkbox forwards no other prop, so a `data-*` hook given to it is lost.
  */
 export const DESIGN = Object.freeze({
   defaultVariant: 'ghost',
@@ -194,6 +197,11 @@ function designStandIns(React) {
         text ? h('span', null, text) : null,
         shortcutKeys?.length ? h('span', { [STAND_IN.shortcut]: true }, shortcutKeys.join(' ')) : null))
   }
+  function Checkbox({ checked, onChange, label, disabled = false, title, className }) {
+    return h('label', { [STAND_IN.primitive]: 'Checkbox', title, className },
+      h('input', { type: 'checkbox', checked, disabled, onChange: (event) => onChange?.(event.target.checked) }),
+      h('span', null, label))
+  }
   const icons = new Map()
   const icon = (name) => {
     if (!name.startsWith(DESIGN.iconPrefix) && !DESIGN.logos.includes(name)) return undefined
@@ -216,7 +224,7 @@ function designStandIns(React) {
       footer ?? null,
       h('button', { type: 'button', [STAND_IN.modalClose]: true, 'aria-label': closeLabel, onClick: onClose }))
   }
-  return { known: { StateDot, Tag, Tooltip, Modal }, icon }
+  return { known: { StateDot, Tag, Tooltip, Checkbox, Modal }, icon }
 }
 
 /** A primitives module: the `known` components, `special(name)` when it answers, and a generic element for every other export. */

@@ -175,8 +175,24 @@ export async function configWhen(sdk, config, profileContext) {
 /** A `profileContext` with the facts the decision reads (`startedBundles`, `overlays`). */
 export const profileContextOf = (startedBundles, overlays) => ({ startedBundles: Object.freeze([...startedBundles]), overlays: Object.freeze([...overlays]) })
 /**
- * fishball-ui's guard-row reader (src/guards.js `readUiGuardRows`, the requirement's public name),
- * imported bound to `sdk` (its `@deepseek-ai/*` imports, dsh-app-boot among them, resolve to that
- * SDK, as in a DSH process; the repository installs no DSH package itself).
+ * Re-baselined (R-FIX-FUI F2): fishball-ui's guard-row reader (src/guards.js) is gone; the UI guard
+ * rows are core's, read by core's `readIntendedGuards()` (src/guards/intended.js, the requirement's
+ * public name), imported bound to `sdk` (its `@deepseek-ai/*` imports, dsh-app-boot among them,
+ * resolve to that SDK, as in a DSH process; the repository installs no DSH package itself).
  */
-export const uiGuardReader = async (sdk) => (await importBound(sdk, path.join(UI_PACKAGE.dir, 'src', 'guards.js'))).readUiGuardRows
+export const coreIntendedReader = async (sdk) => (await importBound(sdk, path.join(V3.core.dir, 'src', 'guards', 'intended.js'))).readIntendedGuards
+
+/**
+ * R-FIX-FUI F2: any patch value (a `!!js` node, a plain value, or an object holding them) as DSH's
+ * Loader resolves it, by the SDK's own `interpolate`, against a real Cordis Context of that SDK that
+ * provides `profileContext` (when not null) and, when `hmr` is true, an `hmr` service (DSH's live
+ * reload row, present in a standalone DSH by default). The value is wrapped so a bare `!!js` node
+ * and a plain boolean resolve alike.
+ */
+export async function resolvedWith(sdk, value, profileContext, { hmr = false } = {}) {
+  const [{ Context }, { interpolate }] = await Promise.all([sdkModule(sdk, 'cordis'), sdkModule(sdk, 'cordis-plugin-loader')])
+  const ctx = new Context()
+  if (profileContext !== null) ctx.provide(CONDITION.service, Object.freeze({ ...profileContext }))
+  if (hmr) ctx.provide(CONDITION.hmr, Object.freeze({}))
+  try { return interpolate(ctx, { value }).value } finally { await ctx.fiber?.dispose?.() }
+}

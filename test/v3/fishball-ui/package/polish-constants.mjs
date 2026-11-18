@@ -67,4 +67,54 @@ export const NAV_PAGE = Object.freeze({
     ['sidebar.left.toggle', 'KeyB', ['primary', 'alt']],
   ].map(([id, code, modifiers]) => [id, { 'web:macos': { code, modifiers }, 'web:windows': { code, modifiers } }]))),
   settleRounds: 80,
+  /** MULTI-3: the viewport stand-in (`matchMedia` answers min/max-width queries for it). */
+  wideWidth: 1280,
+  /** 390px (PLAN-MULTI §6.3) is inside the narrow query (max-width: 480px). */
+  narrowWidth: 390,
+  /** fishball-page's hide hook (its own [data-fishball-hidden] rule). */
+  hiddenHook: 'data-fishball-hidden',
+  /** Requirement F: no longer remapped; the other session / workspace shortcuts stay remapped (LITE NATIVE). */
+  sidebarToggle: 'sidebar.left.toggle',
+  workspacesSlot: 'sidebar.workspaces',
+  emptyShadowPriority: -1,
+  stillRemapped: Object.freeze(['session.new', 'session.search', 'workspace.add', 'session.rename', 'session.fork', 'session.archive']),
+  mediaWidth: /\((max|min)-width:\s*(\d+)px\)/,
+  maxWidth: 'max',
+  styleTag: 'STYLE',
+})
+
+/**
+ * MULTI-3 requirement F (PLAN-MULTI §6.4): the frame-layout rows (frame-layout.mjs). DSH's own
+ * names (dsh-client-ui-layout AppFrame, dsh-client-ui-sidebar SidebarRoot, the slot keys, both SDKs);
+ * the bar's numbers are the requirement's (44px high, max-width 480px; rc.1 drawer below 768px).
+ * `data-fbtest-*` are this harness's own handles on the written frame.
+ */
+export const FRAME_LAYOUT = Object.freeze({
+  layoutPkg: 'dsh-client-ui-layout', frameModule: 'AppFrame',
+  sidebarPkg: 'dsh-client-ui-sidebar', sidebarModule: 'SidebarRoot',
+  slot: Object.freeze({
+    sidebar: 'sidebar', panellist: 'sidebar.panellist', workspaces: 'sidebar.workspaces', settings: 'sidebar.settings',
+    footer: 'sidebar.footer.action', brandMark: 'sidebar.brand.mark', main: 'main', conversation: 'main.conversation',
+  }),
+  panelHook: 'data-fbtest-panel', iconHook: 'data-fbtest-icon', settingsHook: 'data-fbtest-settings', workspacesHook: 'data-fbtest-workspaces',
+  conversationHook: 'data-fbtest-conversation', newSessionHook: 'data-fbtest-new-session',
+  /** DSH's column widths for the frame's grid (AppFrame: rail 56px; the default wide 280px). */
+  railWidth: 56, wideWidth: 280,
+  barHeight: 44,
+  /** BVA around the narrow query (max-width: 480px), 390px (PLAN-MULTI §6.3), a mid width and a desktop. */
+  widths: Object.freeze({ narrow: 390, edge: 480, above: 481, mid: 600, desktop: 1280 }),
+  height: 844,
+  /** rc.1's layout is a drawer below this width (dsh-client-ui-layout AppFrame, rc.1 only). */
+  drawerBelow: 768,
+  drawerSdk: '0.2.2-rc.1',
+  /** Both SDKs collapse the sidebar below this width (AppFrame SIDEBAR_AUTO_COLLAPSE). */
+  autoCollapseBelow: 1024,
+  /** Panels: DSH's own two and a third-party entry; many: enough long entries to overflow 390px. */
+  panels: Object.freeze([Object.freeze({ id: 'plugins', label: 'Plugins' }), Object.freeze({ id: 'schedules', label: 'Schedules' }), Object.freeze({ id: 'fbtest-third-party', label: 'Fbtest Third Party' })]),
+  manyPanels: 24,
+  /** Review amendment (g), user decision 8A: the expanded narrow sheet leaves a 48px gutter. */
+  sheetGutter: 48,
+  sheetBehaviourTodo: 'E2E-UI (a real DSH page: the sheet\'s close on a gutter pointerdown / Escape and its focus move run against DSH\'s live layout DOM; the frame-layout rows cover the geometry only)',
+  /** Geometry tolerance in CSS px (sub-pixel rounding). */
+  epsilon: 1,
 })

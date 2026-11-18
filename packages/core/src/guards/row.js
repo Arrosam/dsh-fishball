@@ -1,8 +1,8 @@
 /**
  * Core's guard row (design §5a.2): core's bundle patch inserts it (`cordis.patch.yml`) beside the
  * guard rows. It provides `fishballGuards` (index.js): the standalone self-reorder and the
- * `guards-overridden` report, which also covers the UI guard rows of fishball-ui's own patch when
- * fishball-ui is installed (R-FB-09, check.js). It is core's one path row, so DSH resolves its host
+ * `guards-overridden` report, which also covers fishball-ui's UI guard rows (in core's patch since
+ * R-FIX-FUI) while fishball-ui is installed (R-FB-09, check.js). It is core's one path row, so DSH resolves its host
  * imports through core's manifest (its peers) and serves core's own `./client` for it once; every
  * other core row is a package subpath (`fishball-core/...`), which is no client source.
  *

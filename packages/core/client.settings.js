@@ -457,17 +457,15 @@ window.__ModuleLoader__.load({
     }
 
     /**
-     * Acts on one Connect press's answer (`ConnectBegin`) and returns `{notice, approvalUrl}`:
-     * `notice` is the `needs-configuration` code, `unavailable` for any answer it cannot act on, or
-     * `undefined`; `approvalUrl` is the approval page it opened, also shown as a link.
+     * One Connect press's answer (`ConnectBegin`) as `{notice, approvalUrl}`: `notice` is the
+     * `needs-configuration` code, `unavailable` for any answer it cannot act on, or `undefined`;
+     * `approvalUrl` is the approval page to open, also shown as a link. Pure: the caller opens it,
+     * and only while its page is still mounted.
      */
     function pressResult(answer) {
-      const { outcome, open } = PAGE.connect
+      const { outcome } = PAGE.connect
       if (answer?.outcome === outcome.authorized) return {}
-      if (answer?.outcome === outcome.approvalUrl && typeof answer.url === 'string') {
-        window.open(answer.url, open.target, open.features)
-        return { approvalUrl: answer.url }
-      }
+      if (answer?.outcome === outcome.approvalUrl && typeof answer.url === 'string') return { approvalUrl: answer.url }
       return { notice: answer?.outcome === outcome.needsConfiguration && typeof answer.code === 'string' ? answer.code : PAGE.connect.unavailable }
     }
 
@@ -506,8 +504,15 @@ window.__ModuleLoader__.load({
      * One target's card: its name (server-supplied, drawn as text) or the Q01 placeholder, its state,
      * its URL (an input for an added target, plain text for the parent), its own token field, Connect /
      * Cancel / Retry and Remove. A URL change to another endpoint and a removal ask first (Q07).
+     * Async ownership (R-FIX-FUI's rule, review finding 5): after unmount nothing settles into the
+     * card and no approval page opens; of several Connect presses only the latest opens its page
+     * and shows its notice.
      */
     function TargetCard({ t, target, token, refresh, disabled }) {
+      const mounted = React.useRef(true)
+      const pressed = React.useRef(0)
+      React.useEffect(() => { mounted.current = true; return () => { mounted.current = false } }, [])
+      const show = (update) => { if (mounted.current) setView(update) }
       const [draft, setDraft] = React.useState(target.url)
       const [secret, setSecret] = React.useState('')
       const [view, setView] = React.useState({})
@@ -518,27 +523,31 @@ window.__ModuleLoader__.load({
       const name = target.name ?? t('name.unavailable')
       const act = async (path, body) => {
         const result = await targetRequest(path, { [SHARED.targets.targetIdField]: target.targetId, ...body })
-        setView((current) => ({ ...current, alert: refusalText(t, result) }))
+        show((current) => ({ ...current, alert: refusalText(t, result) }))
         await refresh()
         return result
       }
       const asking = async (path, body) => {
         const result = await act(path, body)
         // The one refusal that is a question, not an answer: ask, then send again confirmed.
-        if (result?.code === SHARED.targets.refusal.confirmationRequired) {
+        if (result?.code === SHARED.targets.refusal.confirmationRequired && mounted.current) {
           setView((current) => ({ ...current, alert: null }))
           setConfirm({ path, body })
         }
       }
       const begin = async () => {
+        const mine = ++pressed.current
         const press = pressResult(await targetRequest(SHARED.targets.connect, { [SHARED.targets.targetIdField]: target.targetId }))
-        setView((current) => ({ ...current, ...press }))
+        if (!mounted.current || mine !== pressed.current) return
+        if (press.approvalUrl !== undefined) window.open(press.approvalUrl, PAGE.connect.open.target, PAGE.connect.open.features)
+        setView((current) => ({ ...current, notice: undefined, approvalUrl: undefined, ...press }))
         await refresh()
       }
       const saveToken = async () => {
         const value = secret.trim()
         if (value === '') return
         const written = await token.write(ref, value)
+        if (!mounted.current) return
         if (written) setSecret('')
         setView((current) => ({ ...current, tokenFailed: !written }))
       }

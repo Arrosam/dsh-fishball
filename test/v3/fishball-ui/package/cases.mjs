@@ -33,13 +33,15 @@ import { BUDGET as G_BUDGET, REPORT } from '../guards/constants.mjs'
 import { bootEnv, isOk, scenario, waitReport } from '../guards/harness.mjs'
 import {
   CLIENT, CONDITION, CORDIS, CORE_CLIENT, CORE_MISSING, CORE_SPLIT, FIXTURE, FORBIDDEN, KEEP_ON, LATER, MOVED, NOTICE, NOTICE_STARTED, OVERLAYS, ROUTE, ROWS, SEAM, STARTED,
-  UI_PACKAGE, UI_PACKAGES, WAIT,
+  UI_PACKAGE, UI_PACKAGES, UI_STARTED, WAIT,
 } from './constants.mjs'
 import {
   CHUNK_FAILS, composedWith, configWhen, coreConstants, corePatch, disabledWhen, findRows, insertedOf, isExpression, loadChunk, loadClient, namesFile, needUi, profileContextOf,
-  rowFile, rowOps, seamModule, styleHead, uiGuardReader, uiManifest, uiPatch,
+  coreIntendedReader, rowFile, rowOps, seamModule, styleHead, uiManifest, uiPatch,
 } from './subject.mjs'
 import { registerNavCases } from './nav-cases.mjs'
+import { registerNoCoreCases } from './no-core-cases.mjs'
+import { registerFrameLayoutCases } from './frame-layout-cases.mjs'
 
 const show = (v) => JSON.stringify(v)
 const CORE = V3.core.name
@@ -54,10 +56,13 @@ const unfrozen = (value, at) => {
   if (value === null || typeof value !== 'object') return []
   return [...(Object.isFrozen(value) ? [] : [at]), ...Object.entries(value).flatMap(([k, v]) => unfrozen(v, `${at}.${k}`))]
 }
-/** The guard row op of fishball-ui's patch for `id` (a top-level `{id, disabled}` op). */
+/**
+ * The UI guard row op for `id`. Re-baselined (R-FIX-FUI F2, Q-G2 = A, the user 2026-11-18): the UI
+ * guard rows moved from fishball-ui's patch into core's, each a bare `{id, disabled: !!js}` op.
+ */
 async function uiGuardOp(sdk, id) {
-  const op = rowOps(await uiPatch(sdk)).find((r) => r.id === id)
-  assert.ok(op, `fishball-ui's patch has no row op for ${id}`)
+  const op = rowOps(await corePatch(sdk)).find((r) => r.id === id)
+  assert.ok(op, `core's patch has no row op for ${id}`)
   return op
 }
 async function uiInserted(sdk, id) {
@@ -97,6 +102,10 @@ export function registerUiCases(sdk) {
 
   // ================================================================ UI-POLISH-F §1: the Fishball page's icon navigation
   registerNavCases(sdk)
+  // ================================================================ R-FIX-FUI F2: without core, fishball-ui changes nothing
+  registerNoCoreCases(sdk)
+  // ================================================================ MULTI-3 requirement F: the restyled real sidebar
+  registerFrameLayoutCases(sdk)
 
   // ================================================================ UI-UC-06: the package
   t('UI-UC-06', 'main 1', 'fishball-ui exists in packages/fishball-ui and is a root workspace', () => {
@@ -172,12 +181,11 @@ export function registerUiCases(sdk) {
   // `ui-settings-general` config row `{id, config: {welcomeNoticeVersion}}` (no `disabled`); the
   // guard rows themselves are unchanged. So: the bare {id, disabled} ops are exactly the guard rows
   // in order, and the only other non-insert op is that config row.
-  t('UI-BVA-01', 'guards', `fishball-ui's patch has exactly the ${ROWS.guards.length} UI guard row ops (bare {id, disabled}), in order: ${ROWS.guards.join(', ')}; its only other non-insert op is the ${NOTICE.row} config row (E-FIX-3)`, async () => {
-    const ops = rowOps(await uiPatch(sdk))
-    const guards = ops.filter((op) => op.id !== NOTICE.row)
-    assert.deepEqual(guards.map((r) => r.id), [...ROWS.guards])
-    for (const op of guards) assert.deepEqual(Object.keys(op).sort(), ['disabled', 'id'], op.id + ' is not a bare {id, disabled} row')
-    assert.deepEqual(ops.filter((op) => op.id === NOTICE.row).map((op) => Object.keys(op).sort()), [['config', 'id']], 'the notice row op')
+  // Re-baselined (R-FIX-FUI F2, Q-G2 = A, the user 2026-11-18): fishball-ui's patch keeps only its
+  // insert rows; the UI guard rows and the Preview Notice row moved to core's patch, so fishball-ui's
+  // patch has no id-override row at all (a row op there would write its value even without core).
+  t('UI-BVA-01', 'no override row', "fishball-ui's patch has no id-override row op (no top-level {id, …} op): only its insert", async () => {
+    assert.deepEqual(rowOps(await uiPatch(sdk)).map((op) => op.id), [])
   })
   t('UI-BVA-01', 'inserted', `fishball-ui's patch inserts exactly ${ALL_INSERTED.join(', ')}`, async () => {
     assert.deepEqual(insertedOf(await uiPatch(sdk)).map((r) => r.id).sort(), [...ALL_INSERTED].sort())
@@ -201,19 +209,14 @@ export function registerUiCases(sdk) {
       assert.ok(own?.dsh?.client, folder + ' declares no dsh.client')
     })
   }
-  // Re-baselined (E-FIX-3, B7): the `ui-settings-general` config row carries no `disabled` (it sets a
-  // config value, EFIX3-UI-*); every `disabled` condition the patch does carry is still a !!js expression.
-  t('UI-DT-01', 'shape', 'every disabled condition in fishball-ui\'s patch is a !!js expression (decided at DSH start), not a fixed boolean; only the ui-settings-general config row has none', async () => {
+  // Re-baselined (R-FIX-FUI F2): only insert rows remain in fishball-ui's patch, each with a !!js condition.
+  t('UI-DT-01', 'shape', 'every disabled condition in fishball-ui\'s patch is a !!js expression (decided at DSH start), not a fixed boolean', async () => {
     const rows = [...rowOps(await uiPatch(sdk)), ...insertedOf(await uiPatch(sdk))]
     const fixed = []
-    for (const r of rows) {
-      if (r.id === NOTICE.row && !Object.hasOwn(r, 'disabled')) continue
-      if (!(await isExpression(sdk, r.disabled))) fixed.push(r.id + ': ' + show(r.disabled))
-    }
+    for (const r of rows) if (!(await isExpression(sdk, r.disabled))) fixed.push(r.id + ': ' + show(r.disabled))
     assert.deepEqual(fixed, [])
   })
   const kinds = [
-    ['UI guard rows', async () => Promise.all(ROWS.guards.map((id) => uiGuardOp(sdk, id))), { started: true, missing: false }],
     ['fishball-ui, fishball-page, fishball-recommend-plugins', async () => Promise.all(Object.keys(ROWS.withCore).map((id) => uiInserted(sdk, id))), { started: false, missing: true }],
     [ROWS.coreMissing.id, async () => [await uiInserted(sdk, ROWS.coreMissing.id)], { started: true, missing: false }],
   ]
@@ -229,13 +232,24 @@ export function registerUiCases(sdk) {
       })
     }
   }
-  // EP / BVA over startedBundles: only an exact fishball-core entry counts as "core started".
+  // EP / BVA over startedBundles: only an exact fishball-core entry counts as "core started" (fishball-ui's insert rows).
+  // Re-baselined (R-FIX-FUI F2): the guard rows are no longer fishball-ui's; UI-EP-03 below covers them.
   for (const [label, bundles, coreStarted] of STARTED) {
-    t('UI-EP-01', label, `startedBundles ${show(bundles)} → core ${coreStarted ? 'started' : 'not started'}: guard rows ${coreStarted ? 'off' : 'on'}, the page row ${coreStarted ? 'on' : 'off'}, core-missing ${coreStarted ? 'off' : 'on'}`, async () => {
-      const guard = await disabledWhen(sdk, await uiGuardOp(sdk, ROWS.guards[0]), bundles)
+    t('UI-EP-01', label, `startedBundles ${show(bundles)} → core ${coreStarted ? 'started' : 'not started'}: the page row ${coreStarted ? 'on' : 'off'}, core-missing ${coreStarted ? 'off' : 'on'}`, async () => {
       const page = await disabledWhen(sdk, await uiInserted(sdk, ROWS.self), bundles)
       const missing = await disabledWhen(sdk, await uiInserted(sdk, ROWS.coreMissing.id), bundles)
-      assert.deepEqual({ guard, page, missing }, { guard: coreStarted, page: !coreStarted, missing: coreStarted })
+      assert.deepEqual({ page, missing }, { page: !coreStarted, missing: coreStarted })
+    })
+  }
+  // R-FIX-FUI F2: core's UI guard rows are disabled exactly when fishball-ui is a started bundle (no HMR).
+  for (const [label, bundles, uiStarted] of UI_STARTED) {
+    t('UI-EP-03', label, `core's UI guard rows, startedBundles ${show(bundles)}, no HMR → ${uiStarted ? 'all disabled' : 'all enabled'}`, async () => {
+      const wrong = []
+      for (const id of ROWS.guards) {
+        const value = await disabledWhen(sdk, await uiGuardOp(sdk, id), bundles)
+        if (value !== uiStarted) wrong.push(id + ' → ' + value)
+      }
+      assert.deepEqual(wrong, [])
     })
   }
   t('UI-DT-01', 'composed', "composed with DSH's own layers, core's and fishball-ui's patches: every UI guard row exists in DSH and is the row fishball-ui disables (no row of fishball-ui's matches nothing)", async () => {
@@ -245,15 +259,15 @@ export function registerUiCases(sdk) {
   })
 
   // ================================================================ E-FIX-3 (B7): no DSH Preview Notice in a hosted child
-  /** The notice row op of fishball-ui's patch, as DSH's loadOverlayPatches parsed it. */
+  /** The notice row op, as DSH's loadOverlayPatches parsed it. Re-baselined (R-FIX-FUI F2): core's patch holds it now. */
   async function noticeOp() {
-    const ops = rowOps(await uiPatch(sdk)).filter((op) => op.id === NOTICE.row)
-    assert.equal(ops.length, 1, `fishball-ui's patch has ${ops.length} ${NOTICE.row} ops`)
+    const ops = rowOps(await corePatch(sdk)).filter((op) => op.id === NOTICE.row)
+    assert.equal(ops.length, 1, `core's patch has ${ops.length} ${NOTICE.row} ops`)
     return ops[0]
   }
   /** The resolved `welcomeNoticeVersion` of the notice row for one `profileContext` (null: none). */
   const resolvedVersion = async (profileContext) => (await configWhen(sdk, (await noticeOp()).config, profileContext))?.[NOTICE.field]
-  t('EFIX3-UI-SHAPE-01', 'row', `fishball-ui's patch has one op {id: ${NOTICE.row}, config: {${NOTICE.field}: …}}: only that config key, no disabled, no name`, async () => {
+  t('EFIX3-UI-SHAPE-01', 'row', `core's patch has one op {id: ${NOTICE.row}, config: {${NOTICE.field}: …}}: only that config key, no disabled, no name (moved from fishball-ui, R-FIX-FUI F2)`, async () => {
     const op = await noticeOp()
     assert.deepEqual(Object.keys(op).sort(), ['config', 'id'])
     assert.deepEqual(Object.keys(op.config ?? {}), [NOTICE.field])
@@ -268,14 +282,15 @@ export function registerUiCases(sdk) {
     assert.equal(rows.length, 1, `${NOTICE.row} rows in the composed list`)
     assert.ok(Object.hasOwn(rows[0].config ?? {}, NOTICE.field), show(rows[0]))
   })
-  // Decision table EFIX3-UI-DT-01 (the requirement's five rules).
+  // Decision table EFIX3-UI-DT-01 (the requirement's five rules). Re-baselined (R-FIX-FUI F2): the row
+  // is core's, so it applies only with core; its condition is fishball-ui in startedBundles AND the child row.
   const [hostedOverlay] = OVERLAYS.filter(([, , child]) => child)
   const [standaloneOverlay] = OVERLAYS.filter(([, overlays]) => overlays.length === 0)
   const noticeRules = [
-    ['rule 1', 'core started × child row inserted (hosted child)', profileContextOf(NOTICE_STARTED.withCore, hostedOverlay[1]), NOTICE.version],
-    ['rule 2', 'core started × no overlay (standalone DSH)', profileContextOf(NOTICE_STARTED.withCore, standaloneOverlay[1]), undefined],
-    ['rule 3', 'core not started × child row inserted', profileContextOf(NOTICE_STARTED.withoutCore, hostedOverlay[1]), undefined],
-    ['rule 4', 'core not started × no overlay', profileContextOf(NOTICE_STARTED.withoutCore, standaloneOverlay[1]), undefined],
+    ['rule 1', 'fishball-ui started (with core) × child row inserted (hosted child)', profileContextOf(NOTICE_STARTED.withUi, hostedOverlay[1]), NOTICE.version],
+    ['rule 2', 'fishball-ui started (with core) × no overlay (standalone DSH)', profileContextOf(NOTICE_STARTED.withUi, standaloneOverlay[1]), undefined],
+    ['rule 3', 'core alone (fishball-ui not started) × child row inserted', profileContextOf(NOTICE_STARTED.withoutUi, hostedOverlay[1]), undefined],
+    ['rule 4', 'core alone × no overlay', profileContextOf(NOTICE_STARTED.withoutUi, standaloneOverlay[1]), undefined],
     ['rule 5', 'no profileContext at all', null, undefined],
   ]
   for (const [rule, title, profileContext, expected] of noticeRules) {
@@ -285,33 +300,56 @@ export function registerUiCases(sdk) {
   }
   // EP over profileContext.overlays with core started: only an INSERTED row with exactly that id counts.
   for (const [label, overlays, child] of OVERLAYS) {
-    t('EFIX3-UI-EP-01', label, `core started, overlays ${label} → ${child ? NOTICE.version : 'undefined'}`, async () => {
-      assert.equal(await resolvedVersion(profileContextOf(NOTICE_STARTED.withCore, overlays)), child ? NOTICE.version : undefined)
+    t('EFIX3-UI-EP-01', label, `core and fishball-ui started, overlays ${label} → ${child ? NOTICE.version : 'undefined'}`, async () => {
+      assert.equal(await resolvedVersion(profileContextOf(NOTICE_STARTED.withUi, overlays)), child ? NOTICE.version : undefined)
     })
   }
-  // EP over startedBundles (UI-EP-01's partitions) with the hosted overlay: only an exact fishball-core counts.
-  for (const [label, bundles, coreStarted] of STARTED) {
-    t('EFIX3-UI-EP-02', label, `child row inserted, startedBundles ${show(bundles)} → ${coreStarted ? NOTICE.version : 'undefined'}`, async () => {
-      assert.equal(await resolvedVersion(profileContextOf(bundles, hostedOverlay[1])), coreStarted ? NOTICE.version : undefined)
+  // EP over startedBundles with the hosted overlay. Re-baselined (R-FIX-FUI F2): only an exact fishball-ui counts.
+  for (const [label, bundles, uiStarted] of UI_STARTED) {
+    t('EFIX3-UI-EP-02', label, `child row inserted, startedBundles ${show(bundles)} → ${uiStarted ? NOTICE.version : 'undefined'}`, async () => {
+      assert.equal(await resolvedVersion(profileContextOf(bundles, hostedOverlay[1])), uiStarted ? NOTICE.version : undefined)
     })
   }
-  t('EFIX3-UI-GUARD-01', 'guards unchanged', `readUiGuardRows() (fishball-ui src/guards.js) reads exactly the ${ROWS.guards.length} guard rows, in order; ${NOTICE.row} is not a guard row`, async () => {
-    const rows = (await uiGuardReader(sdk))()
-    assert.deepEqual([...rows], [...ROWS.guards])
+  // Re-baselined (R-FIX-FUI F2): fishball-ui's src/guards.js is gone; core's readIntendedGuards() returns
+  // {rows, uiRows, policy}: `rows` the {id, disabled: true} rows as before, `uiRows` the 8 UI ids in patch order.
+  t('EFIX3-UI-GUARD-01', 'uiRows', `core's readIntendedGuards().uiRows is exactly the ${ROWS.guards.length} UI guard ids, in patch order; ${NOTICE.row} is in neither list`, async () => {
+    const intended = (await coreIntendedReader(sdk))()
+    assert.deepEqual(Object.keys(intended).sort(), ['policy', 'rows', 'uiRows'])
+    assert.deepEqual([...intended.uiRows], [...ROWS.guards])
+    assert.equal([...intended.rows, ...intended.uiRows].includes(NOTICE.row), false)
+  })
+  t('EFIX3-UI-GUARD-01', 'rows', `core's readIntendedGuards().rows are its {id, disabled: true} rows as before (${CORE_SPLIT.guards.join(', ')} and the shipped presets), none of the UI rows`, async () => {
+    const intended = (await coreIntendedReader(sdk))()
+    const plain = rowOps(await corePatch(sdk)).filter((op) => Object.keys(op).length === 2 && op.disabled === true).map((op) => op.id)
+    assert.deepEqual([...intended.rows], plain)
+    for (const id of [...CORE_SPLIT.guards, ...CORE_SPLIT.shippedPresets]) assert.ok(intended.rows.includes(id), id)
+    assert.deepEqual(intended.rows.filter((id) => ROWS.guards.includes(id)), [])
+  })
+  t('EFIX3-UI-GUARD-01', 'gone', 'fishball-ui has no src/guards.js and no peer dependency on @deepseek-ai/dsh-app-boot', () => {
+    assert.equal(fs.existsSync(path.join(UI_PACKAGE.dir, 'src', 'guards.js')), false)
+    const m = uiManifest()
+    assert.equal(Object.hasOwn(m.peerDependencies ?? {}, '@deepseek-ai/dsh-app-boot'), false, show(m.peerDependencies))
   })
   t('EFIX3-UI-OWNER-01', 'owner layer', `the owner's profile layer setting ${NOTICE.row}.config.${NOTICE.field} still wins over fishball-ui's (composed by DSH after the bundle patches)`, async () => {
     const owner = [{ id: NOTICE.row, config: { [NOTICE.field]: NOTICE.ownerValue } }]
     const effective = await composedWith(sdk, await corePatch(sdk), await uiPatch(sdk), owner)
     const [row] = findRows(effective, NOTICE.row)
-    const resolved = await configWhen(sdk, row.config, profileContextOf(NOTICE_STARTED.withCore, hostedOverlay[1]))
+    const resolved = await configWhen(sdk, row.config, profileContextOf(NOTICE_STARTED.withUi, hostedOverlay[1]))
     assert.equal(resolved?.[NOTICE.field], NOTICE.ownerValue)
   })
 
   // ================================================================ UI-UC-08: core's patch after the split
-  t('UI-UC-08', 'main', `core's patch holds none of the ${ROWS.guards.length} UI guard rows nor the page / tab rows`, async () => {
+  // Re-baselined (R-FIX-FUI F2, Q-G2 = A, the user 2026-11-18): the UI guard rows and the notice row moved into core's patch.
+  t('UI-UC-08', 'main', `core's patch holds the ${ROWS.guards.length} UI guard rows as bare {id, disabled: !!js} ops, in order, and none of fishball-ui's page / tab / core-missing rows`, async () => {
     const patch = await corePatch(sdk)
+    const guards = rowOps(patch).filter((r) => ROWS.guards.includes(r.id))
+    assert.deepEqual(guards.map((r) => r.id), [...ROWS.guards])
+    for (const op of guards) {
+      assert.deepEqual(Object.keys(op).sort(), ['disabled', 'id'], op.id + ' is not a bare {id, disabled} row')
+      assert.equal(await isExpression(sdk, op.disabled), true, op.id + ' disabled is not !!js')
+    }
     const ids = [...rowOps(patch).map((r) => r.id), ...insertedOf(patch).map((r) => r.id)]
-    assert.deepEqual(ids.filter((id) => ROWS.guards.includes(id) || Object.keys(ROWS.withCore).includes(id) || id === ROWS.coreMissing.id), [])
+    assert.deepEqual(ids.filter((id) => Object.keys(ROWS.withCore).includes(id) || id === ROWS.coreMissing.id), [])
   })
   t('UI-UC-08', 'main', `core's patch keeps ${CORE_SPLIT.guards.join(', ')} and the four shipped presets disabled (plain true)`, async () => {
     const ops = rowOps(await corePatch(sdk))
@@ -374,11 +412,15 @@ export function registerUiCases(sdk) {
   })
 
   // ================================================================ moved unchanged (interface item 10)
-  t('UI-UC-06', 'moved', 'src/pairing/text.js: PAIRING_TEXT answers as core\'s ui/pairing/text.js did (every key, every formatter, en and zh)', async (c) => {
+  // Re-baselined (R-FIX-FUI F1): PAIRING_TEXT gained the card's `title`, `chooseFailed` and `locale`;
+  // every key core's copy had still answers as it did.
+  t('UI-UC-06', 'moved', 'src/pairing/text.js: PAIRING_TEXT answers as core\'s ui/pairing/text.js did for every key it had (every formatter, en and zh), and adds title, chooseFailed and locale', async (c) => {
     const now = (await import(pathToFileURL(path.join(UI_PACKAGE.dir, MOVED.pairing.after)).href))[MOVED.pairing.export]
     const before = (await import(pathToFileURL(baseFile(c, MOVED.pairing.before)).href))[MOVED.pairing.export]
-    const picture = (o) => Object.fromEntries(Object.entries(o).map(([lang, words]) => [lang, Object.fromEntries(Object.entries(words).map(([k, v]) => [k, typeof v === 'function' ? v(...MOVED.args) : v]))]))
-    assert.deepEqual(picture(now), picture(before))
+    const picture = (o, keysOf) => Object.fromEntries(Object.entries(o).map(([lang, words]) => [lang, Object.fromEntries(keysOf(lang).map((k) => [k, typeof words[k] === 'function' ? words[k](...MOVED.args) : words[k]]))]))
+    const oldKeys = (lang) => Object.keys(before[lang])
+    assert.deepEqual(picture(now, oldKeys), picture(before, oldKeys))
+    for (const lang of Object.keys(before)) assert.deepEqual(Object.keys(now[lang]).filter((k) => !oldKeys(lang).includes(k)).sort(), [...MOVED.pairing.added].sort(), lang)
   })
   t('UI-UC-06', 'moved', `src/status/index.js exports ${MOVED.status.exports.join(', ')}`, async () => {
     const mod = await import(pathToFileURL(path.join(UI_PACKAGE.dir, MOVED.status.after)).href)
@@ -394,7 +436,8 @@ export function registerUiCases(sdk) {
   const platform = () => { const shim = createReactShim({ stale() {} }); return { react: shim.React, 'react-dom': { createPortal: (n) => n }, 'react/jsx-runtime': { jsx: shim.React.createElement, jsxs: shim.React.createElement, Fragment: shim.React.Fragment }, '@deepseek-ai/dsh-client-ui-primitives': fakePrimitives(shim.React) } }
   t('UI-UC-04', 'main 1', `client.js registers exactly one module, id ${CLIENT.moduleId}, with no chunk`, () => {
     needUi()
-    const { registrations } = loadClient({ chunks: {} })
+    // Re-baselined (R-FIX-FUI F3): the entry's kit draws the shared stream notice, so its factory requires the page's react and primitives.
+    const { registrations } = loadClient({ chunks: {}, platform: platform() })
     assert.deepEqual(registrations.map((r) => [r.id, r.chunk]), [[CLIENT.moduleId, undefined]])
   })
   /** Apply fishball-ui's client in a Cordis root of `sdk`; chunk stand-ins record the kit and the started parts. */
@@ -404,16 +447,18 @@ export function registerUiCases(sdk) {
     const standIn = (file, exportName) => () => ({ [exportName]: (kit) => { kits.push({ file, kit }); return { name: FIXTURE.partName(file), apply() { started.push(file) } } } })
     const chunks = Object.fromEntries(Object.values(CLIENT.parts).map((p) => [p.file, how[p.file] === CHUNK_FAILS ? CHUNK_FAILS : standIn(p.file, p.export)]))
     let styles
-    const client = loadClient({ chunks, prepare: (page) => { styles = styleHead(page) } })
+    const client = loadClient({ chunks, platform: platform(), prepare: (page) => { styles = styleHead(page) } })
     const { failed } = await applyIn(c, client.exports)
     return { ...client, started, kits, failed, styles }
   }
   // Re-baselined (F-WIRE lead, 2026-11-17): "client.js now loads FOUR parts: client.entries.js, client.asks.js,
   // client.strip.js (the status strip, stripPart) and client.model.js (the model dialog, modelPart)".
-  t('UI-UC-04', 'main 2', `its plugin loads ${Object.values(CLIENT.parts).map((p) => './' + p.file).join(', ')} and starts each part`, async (c) => {
+  // Re-baselined (R-FIX-FUI F1): five parts, client.pairing.js (pairingPart) after the strip and before the model dialog.
+  // Re-baselined (MULTI-3 requirement D): four parts again; the pairing dock card's chunk is removed.
+  t('UI-UC-04', 'main 2', `its plugin loads ${CLIENT.partOrder.map((f) => './' + f).join(', ')} in that order and starts each part`, async (c) => {
     needUi()
     const r = await startClient(c, {})
-    assert.deepEqual([...r.loads].sort(), Object.values(CLIENT.parts).map((p) => './' + p.file).sort())
+    assert.deepEqual([...r.loads], CLIENT.partOrder.map((f) => './' + f))
     assert.deepEqual([...r.started].sort(), Object.values(CLIENT.parts).map((p) => p.file).sort())
     assert.deepEqual(r.failed, [])
   })
@@ -454,6 +499,7 @@ export function registerUiCases(sdk) {
     t('UI-UC-05', part.file, `${part.file} registers {id: fishball-ui, chunk: ${part.file}} and exports ${part.export}(kit) → a plugin ${part.plugin === null ? 'with a name' : `named "${part.plugin}"`} {inject, apply}`, () => {
       needUi()
       const { registrations, exports, required } = loadChunk(part.file, platform())
+      // R-FIX-FUI F3: a part may get the kit's shared stream members; this row checks the factory shape only.
       assert.deepEqual(registrations.map((r) => [r.id, r.chunk]), [[CLIENT.moduleId, part.file]])
       assert.equal(typeof exports?.[part.export], 'function', 'no ' + part.export)
       const plugin = exports[part.export]({ [CLIENT.kitStyle]: () => () => {} })
@@ -505,11 +551,11 @@ export function registerUiCases(sdk) {
     assert.ok(!state[ROWS.coreMissing.id]?.present || state[ROWS.coreMissing.id].disabled, show(state[ROWS.coreMissing.id]))
   })
   // Re-baselined (F-WIRE): eight ids, ui-model-selection last ("Hide it. Only core's settings choose the model").
-  t('UI-UC-01', 'main 3', `core + fishball-ui: ${CONDITION.service2}.rows is the ${ROWS.guards.length} guard ids, frozen, in patch order`, async () => {
+  // Re-baselined (R-FIX-FUI F2): fishballUiGuards is a presence marker (a frozen object) and no longer carries `rows`.
+  t('UI-UC-01', 'main 3', `core + fishball-ui: ${CONDITION.service2} is provided and carries no rows`, async () => {
     const f = await both()
     assert.ok(f.service.present, 'no ' + CONDITION.service2 + ' service')
-    assert.deepEqual(f.service.value.rows, [...ROWS.guards])
-    assert.equal(f.service.frozen.rows, true, 'rows is not frozen')
+    assert.equal(Object.hasOwn(f.service.value, 'rows'), false, show(f.service.value))
   })
   t('UI-UC-01', 'main 4', 'core + fishball-ui: the guard report is ok', async () => {
     const f = await both()
