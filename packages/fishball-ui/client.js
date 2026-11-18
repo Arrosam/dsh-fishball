@@ -11,8 +11,8 @@
  * - client.entries.js: the Fishball page's "Fishball settings" and "DSH settings" entries and the
  *   `view=settings` continuation;
  * - client.asks.js: the ask cards in Fishball's own conversation, over core's routes;
- * - client.strip.js: the status strip and its Connect / Cancel control (F-WIRE);
- * - client.pairing.js: the pairing card, core's pairing warning and its choices (R-FIX-FUI);
+ * - client.strip.js: Fishball's DSH targets in the sidebar, each with its details, Connect / Cancel,
+ *   Retry and pairing choices (MULTI-3; first the status strip, F-WIRE, and the pairing card, R-FIX-FUI);
  * - client.model.js: the dialog that asks for Fishball's model while it is unset (F-WIRE).
  *
  * A chunk that fails to load loses only its part, logged once; a chunk that arrives after this row
@@ -32,7 +32,6 @@ window.__ModuleLoader__.load({
         Object.freeze({ chunk: './client.entries.js', factory: 'entriesPart' }),
         Object.freeze({ chunk: './client.asks.js', factory: 'asksPart' }),
         Object.freeze({ chunk: './client.strip.js', factory: 'stripPart' }),
-        Object.freeze({ chunk: './client.pairing.js', factory: 'pairingPart' }),
         Object.freeze({ chunk: './client.model.js', factory: 'modelPart' }),
       ]),
       unavailable: 'fishball-ui: part unavailable',
@@ -234,7 +233,7 @@ window.__ModuleLoader__.load({
      * one style sheet to the document and returns its disposer, for a part's `ctx.effect`; the id
      * names it for a reader of the DOM. Since R-FIX-FUI also the live streams' lifecycle
      * (`liveStream`, `langStream`, `HEALTH`, `StreamNotice`, `staleText`) and `useLang`, so the
-     * sidebar targets, the ask cards and the pairing card mark a lost stream the same way; since
+     * sidebar targets and the ask cards mark a lost stream the same way; since
      * MULTI-3 `openCoreSettings`, and `press` / `refusalText`, so every press on core's target and
      * answer routes reads `SEAM_TARGETS.http` the same way.
      */

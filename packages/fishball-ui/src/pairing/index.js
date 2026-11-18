@@ -1,8 +1,9 @@
 /**
- * The pairing card's view model (R-FIX-FUI; F-PAIR; R-ID-07, R-ID-10, R-NAME-03, R-NAME-08; AUTH-ST-03,
- * NAME-DT-03). Pure: it turns core's pairing view (`fishballInstance.ui.pairing.state()`, K3a
- * `UiPairingView`) into the lines, the confirmation and the choices fishball-ui's pairing card
- * draws (client.pairing.js). It reads core's words from `fishball-shared/ui-seam`, never from core.
+ * A target's pairing view model (MULTI-3, drawn in that target's sidebar details; first R-FIX-FUI's
+ * pairing card; F-PAIR; R-ID-07, R-ID-10, R-NAME-03, R-NAME-08; AUTH-ST-03, NAME-DT-03). Pure: it
+ * turns one target's pairing view (`TargetView.pairing`, K3a `UiPairingView`) into the lines, the confirmation and the choices fishball-ui
+ * draws in the target's sidebar details (client.strip.js; src/status/index.js passes each target's
+ * `pairing`). It reads core's words from `fishball-shared/ui-seam`, never from core.
  *
  * - warn-match: the warning naming the bound pair and when it was last seen, the box "No other
  *   Fishball or agent uses this id with this token", and Continue / Use a new token and a new id;
