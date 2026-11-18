@@ -812,15 +812,18 @@ window.__ModuleLoader__.load({
           const selectFailed = useCell(session.selectFailed)
           const assigned = useCell(manager)
           const state = useCell(gate)
+          const narrow = useNarrow()
           const status = navStatus(text, { unavailable: lookupFailed || selectFailed || assigned === null, gate: state })
           return h('div', { className: PAGE.css.footer, 'data-wide': wide ? '' : undefined },
             h(PageControl, { wide, kind: NAV.fishball, label: text.back, Icon: FishLogo, onClick: () => session.back() }),
             status === null ? null : h(React.Fragment, null,
-              // In the rail and the bar the status is its dot, its text kept for assistive technology and
-              // shown on Retry's tooltip, the control beside it that acts on it.
-              h('span', { className: PAGE.css.status, role: 'status', [PAGE.statusKind]: status.kind },
-                h(StateDot, { state: status.dot }), h('span', { className: wide ? undefined : PAGE.css.hidden }, status.text)),
-              h(PageControl, { wide, kind: NAV.retry, label: wide ? text.retry : `${status.text} · ${text.retry}`, Icon: IconRefreshOutlineRegular, onClick: () => session.retry() })))
+              // In the rail and the bar the status is its dot: its text stays in the live region for
+              // assistive technology (visually hidden) and shows in DSH's Tooltip on hover. The region
+              // is not focusable; Retry beside it is the control.
+              h(Tooltip, { ...(narrow ? PAGE.tooltip.bar : PAGE.tooltip.rail), label: status.text, disabled: wide },
+                h('span', { className: PAGE.css.status, role: 'status', [PAGE.statusKind]: status.kind },
+                  h(StateDot, { state: status.dot }), h('span', { className: wide ? undefined : PAGE.css.hidden }, status.text))),
+              h(PageControl, { wide, kind: NAV.retry, label: text.retry, Icon: IconRefreshOutlineRegular, onClick: () => session.retry() })))
         }
         // Consume the native launcher owner callback instead of inventing a global settings API: the
         // launcher draws in DSH's own settings seat in the sidebar's foot (wide row, rail, rc.1
