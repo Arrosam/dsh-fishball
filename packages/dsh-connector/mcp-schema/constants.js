@@ -96,9 +96,11 @@ export const RESOURCE = Object.freeze({
  *   or length limit (MCP `Implementation.name`);
  * - `discoverMetaKey`: where `server/discover` carries it ([spec] `result._meta[...]`, not
  *   `result.serverInfo`);
- * - `updatedNotification`: the standard notification sent with only `{uri: RESOURCE.identity.uri}`
- *   to every authenticated listen stream subscribed to that URI, when the effective name changed;
- *   an unchanged name sends nothing.
+ * - `updatedNotification`: the standard notification sent with `{uri: RESOURCE.identity.uri}` and
+ *   no other param beyond the SDK's own `_meta` (it stamps
+ *   `io.modelcontextprotocol/subscriptionId` on every listen notification) to every authenticated
+ *   listen stream subscribed to that URI, when the effective name changed; an unchanged name sends
+ *   nothing.
  */
 export const SERVER_IDENTITY = Object.freeze({
   suffix: '-DSH',

@@ -55,9 +55,15 @@ export const SDK_ORACLE = Object.freeze({
   notificationSchema: 'ResourceUpdatedNotificationSchema',
   serverNotifications: 'ServerNotificationSchema',
   implementationSchema: 'ImplementationSchema',
-  /** The notification's one standard parameter (README: "with only `{uri: …}`"); `_meta` is MCP's optional envelope. */
+  /**
+   * The notification's one required parameter (README: `{uri}` "and no param beyond the SDK's own
+   * `_meta`", its listen subscription id, stamped by the SDK under the client's meta key below).
+   */
   uriParam: 'uri',
   metaParam: '_meta',
+  subscriptionMetaKey: 'SUBSCRIPTION_ID_META_KEY',
+  /** A fixture subscription id (test input). */
+  subscriptionId: 'fbtest-subscription',
 })
 
 /** README section and the words it must carry (exact frozen values and the rule's parts). */
@@ -66,7 +72,7 @@ export const MULTI_README = Object.freeze({
   words: Object.freeze([
     /`RESOURCE\.identity`/, /`dsh-identity`/, /`dsh-agent:\/\/identity`/, /`application\/json`/, /`SERVER_IDENTITY`/,
     /approval\.dshName/, /node:os\.hostname\(\)/, /`-DSH`/, /appended once/, /io\.modelcontextprotocol\/serverInfo/,
-    /notifications\/resources\/updated/, /no\s+tool, schema, OAuth, receipt or event changes/, /unchanged name sends nothing/,
+    /notifications\/resources\/updated/, /no param beyond the SDK's own `_meta`/, /no\s+tool, schema, OAuth, receipt or event changes/, /unchanged name sends nothing/,
     /No Host\/Origin\/URL-derived name/,
   ]),
 })
