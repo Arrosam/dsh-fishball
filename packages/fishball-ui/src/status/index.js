@@ -10,9 +10,9 @@
  * - `targets`: one row per target, in core's order (Q12: no cap). A row's `name` is the server's
  *   resolved name as plain text (D06), or `null` with `placeholder` (Q01: "Not set" / "Name
  *   unavailable", never a URL-derived name); its `state` is one of the four public states
- *   (`SEAM_TARGETS.state`; an unknown word reads `failed`, never success), with its badge and the
- *   details' lines (why, URL, the contributed-tool count with zero shown, R-EXT-14), the identity
- *   capability, the one control and the pairing view (`pairingView`).
+ *   (`SEAM_TARGETS.state`; an unknown word reads `failed`, never success), with its badge, `url`
+ *   (details only, Q01) and the details' lines (why, the contributed-tool count with zero shown,
+ *   R-EXT-14, the identity capability), the one control and the pairing view (`pairingView`).
  * There is no chat-top card any more (D03): the old `card` and the scalar `line`/`control` are gone.
  */
 import { SEAM_STATUS, SEAM_TARGETS } from 'fishball-shared/ui-seam'
@@ -27,7 +27,6 @@ export const TARGET_LINE = Object.freeze({
   set: SEAM_STATUS.set.incomplete,
   off: SEAM_STATUS.fishball.off,
   why: 'why',
-  url: 'url',
   tools: 'contributed-tools',
   identity: 'identity',
 })
@@ -51,7 +50,8 @@ function whyLine(target, text) {
 function targetView(target, text, lang, timeZone) {
   const state = stateOf(target.state)
   const named = typeof target.name === 'string' && target.name !== ''
-  const lines = [whyLine(target, text), entry(TARGET_LINE.url, target.url ?? '')]
+  const hasUrl = typeof target.url === 'string' && target.url !== ''
+  const lines = [whyLine(target, text)]
   if (Number.isInteger(target.contributedTools)) lines.push(entry(TARGET_LINE.tools, text.tools(target.contributedTools)))
   const identity = text.identity[target.identity]
   if (identity !== undefined) lines.push(entry(TARGET_LINE.identity, identity))
@@ -60,7 +60,10 @@ function targetView(target, text, lang, timeZone) {
     targetId: target.targetId,
     kind: target.kind,
     name: named ? target.name : null,
-    placeholder: named ? null : text.placeholder[state === SEAM_TARGETS.state.notSet ? SEAM_TARGETS.placeholder.unset : SEAM_TARGETS.placeholder.unnamed],
+    // Q01 by the seam's rule: no address yet reads "Not set"; an address no discovery has named yet
+    // reads "Name unavailable". The state does not choose it (a target needing authorization is
+    // `not-set` but has an address).
+    placeholder: named ? null : text.placeholder[hasUrl ? SEAM_TARGETS.placeholder.unnamed : SEAM_TARGETS.placeholder.unset],
     state,
     badge: text.state[state],
     url: target.url ?? '',
