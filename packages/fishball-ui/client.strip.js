@@ -68,6 +68,8 @@ window.__ModuleLoader__.load({
       open: Object.freeze({ target: '_blank', features: 'noopener', rel: 'noopener noreferrer' }),
       /** A rail dot's name: the target's shown name and its state, for the tooltip and assistive technology. */
       railLabel: (name, badge) => `${name} · ${badge}`,
+      /** A pairing press's key: the target and its current warning (`pairingView` `key`). */
+      pairingPressKey: (targetId, warningKey) => JSON.stringify([targetId, warningKey]),
       css: Object.freeze({
         id: 'fishball-targets-style', root: 'fb-targets', head: 'fb-targets-head', list: 'fb-targets-list', item: 'fb-target',
         row: 'fb-target-row', name: 'fb-target-name', badge: 'fb-target-badge', chevron: 'fb-target-chevron', details: 'fb-target-details',
@@ -87,6 +89,8 @@ window.__ModuleLoader__.load({
       }),
       staleTone: Object.freeze({ tag: 'outline', dot: 'idle', ink: null }),
       fallbackTone: 'failed',
+      /** `SEAM_TARGETS.state.connecting`: the one state in which an approval link belongs to a live attempt. */
+      connectingState: 'connecting',
       tooltip: Object.freeze({ side: 'right', portal: true }),
       // Connect is the details' call to action; Cancel only backs out of an attempt.
       buttonVariant: Object.freeze({ connect: 'primary', cancel: 'outline' }),
@@ -155,15 +159,17 @@ window.__ModuleLoader__.load({
 
     /**
      * One target's pairing: the warning lines, the box (Continue only once ticked, R-ID-07) and the
-     * choices. Keyed by the warning (`pairingView` `key`), so a new warning starts unticked; its
-     * press state is the part's (`presses`, keyed by the target), so a remount keeps it locked.
+     * choices. Keyed by the warning (`pairingView` `key`), so a new warning starts unticked and with
+     * no failure (R-FIX-FUI); its press state is the part's (`presses`, keyed by the target and that
+     * warning), so a remount keeps it locked.
      */
     function Pairing({ kit, lang, presses, targetId, view, locked: streamLocked }) {
       const [ticked, setTicked] = React.useState(false)
-      const { sending, refused } = kit.usePress(presses.pairing, targetId)
+      const pressKey = TARGETS_UI.pairingPressKey(targetId, view.key)
+      const { sending, refused } = kit.usePress(presses.pairing, pressKey)
       const locked = sending || streamLocked
       // The pairing's own sentence first (R-FIX-FUI), then why core refused it.
-      const press = (choice) => presses.pairing.run(targetId, () => post(kit, TARGETS_UI.route.pairing, targetId, { choice, confirmed: ticked }),
+      const press = (choice) => presses.pairing.run(pressKey, () => post(kit, TARGETS_UI.route.pairing, targetId, { choice, confirmed: ticked }),
         (answer) => { const why = kit.refusalText(answer, lang); return { refused: why === null ? null : kit.joinSentences(lang, view.failed, why) } })
       return h('div', { className: C.pairing, 'data-fishball-pairing': view.state },
         h('p', { className: C.label }, view.title),
@@ -209,7 +215,7 @@ window.__ModuleLoader__.load({
             type: 'button', size: 'sm', variant: 'outline', disabled: locked, 'data-fishball-target-retry': true, onClick: () => void act(TARGETS_UI.route.retry),
           }, h(IconRefreshOutlineRegular, { size: TARGETS_UI.icon }), target.retry) : null,
           settingsButton(ctx, kit, words.settings, 'ghost')),
-        approvalUrl == null || control?.action !== TARGETS_UI.action.cancel ? null
+        approvalUrl == null || control?.action !== TARGETS_UI.action.cancel || target.state !== TARGETS_UI.connectingState ? null
           : h('a', { className: C.link, href: approvalUrl, title: approvalUrl, target: TARGETS_UI.open.target, rel: TARGETS_UI.open.rel, 'data-fishball-target-approval': true }, words.openApproval),
         refused === null ? null : h('p', { className: C.error, role: 'alert', 'data-fishball-target-refused': true }, refused))
     }

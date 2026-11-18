@@ -164,7 +164,7 @@ window.__ModuleLoader__.load({
      * the restyle's sheet (a non-drawer frame); DSH's centre column is never made inert.
      */
     const SHEET = Object.freeze({
-      pointerdown: 'pointerdown', keydown: 'keydown', escape: 'Escape',
+      pointerdown: 'pointerdown', click: 'click', keydown: 'keydown', escape: 'Escape',
       focusable: 'button:not([disabled]),[href],[tabindex]:not([tabindex="-1"])',
     })
     /** In-frame navigation policy; see mountFrameGuard. */
@@ -330,7 +330,22 @@ window.__ModuleLoader__.load({
       const close = () => { if (open()) ctx.layout.toggleSidebar() }
       // Only the gutter (the layout frame outside the sheet) closes it: a press in a portalled
       // surface the sheet opened (DSH's Settings dialog, a tooltip, a menu) lies outside the frame.
-      const pointer = (event) => { if (open() && frame()?.contains(event.target) && column()?.contains(event.target) === false) close() }
+      // The press that closes the sheet is consumed: its click must not also act on the conversation
+      // control under the gutter.
+      let swallowClick = false
+      const pointer = (event) => {
+        // A press that ended without a click (a drag) must not swallow a later, unrelated click.
+        swallowClick = false
+        if (!open() || !frame()?.contains(event.target) || column()?.contains(event.target) !== false) return
+        swallowClick = true
+        close()
+      }
+      const click = (event) => {
+        if (!swallowClick) return
+        swallowClick = false
+        event.preventDefault()
+        event.stopPropagation()
+      }
       // Escape while focus is in the sheet (or nowhere), after DSH's own handlers: a dialog or menu
       // that handles its Escape first marks it handled, and the sheet stays.
       const key = (event) => {
@@ -338,6 +353,9 @@ window.__ModuleLoader__.load({
         if (event.key !== SHEET.escape || event.defaultPrevented || !open() || !(focus === document.body || column()?.contains(focus))) return
         event.preventDefault()
         close()
+        // The list collapses into the bar, where it is not shown: focus goes to the bar's first
+        // control (DSH's own sidebar toggle) instead of falling to <body>.
+        requestAnimationFrame(() => column()?.querySelector(SHEET.focusable)?.focus())
       }
       let wasOpen = open()
       const observer = new MutationObserver(() => {
@@ -348,10 +366,12 @@ window.__ModuleLoader__.load({
       })
       observer.observe(document.body, { subtree: true, attributes: true, attributeFilter: ['data-sidebar-collapsed', 'data-sidebar-drawer'] })
       document.addEventListener(SHEET.pointerdown, pointer, true)
+      document.addEventListener(SHEET.click, click, true)
       document.addEventListener(SHEET.keydown, key)
       return () => {
         observer.disconnect()
         document.removeEventListener(SHEET.pointerdown, pointer, true)
+        document.removeEventListener(SHEET.click, click, true)
         document.removeEventListener(SHEET.keydown, key)
       }
     }
