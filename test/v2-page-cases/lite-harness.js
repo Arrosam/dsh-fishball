@@ -184,8 +184,12 @@
     root.hookIndex = 0
     root.effects = []
     root.nextRefs = []
-    // Nested function components render inside build and need the current hook dispatcher too.
-    try { build(root.Component(root.props()), root.container, root) } catch (error) { log.errors.push('render: ' + (error?.stack ?? error)) } finally { currentRoot = null }
+    let tree
+    try {
+      try { tree = root.Component(root.props()) } catch (error) { log.errors.push('render: ' + (error?.stack ?? error)) }
+      // Nested components need the hook dispatcher too, but build failures must still escape.
+      build(tree, root.container, root)
+    } finally { currentRoot = null }
     commitRefs(root, root.nextRefs)
     for (const cell of root.effects) { cell.cleanup?.(); const out = cell.fn(); cell.cleanup = typeof out === 'function' ? out : undefined }
   }
