@@ -15,12 +15,17 @@ const isCoreTool = (name) => TOOL_NAMES.includes(name)
 /** The model-facing name of one listed tool (MODEL_NAME), before the uniqueness check. */
 export const modelNameOf = (name) => (isCoreTool(name) ? name : name.split(MODEL_NAME.dot).join(MODEL_NAME.separator))
 
-/** Why a listed tool cannot be offered under `modelName`, or `undefined` when it can. */
-function unusable(name, modelName, taken) {
+/**
+ * Why a listed tool cannot be offered under the façade name `modelName`, or `undefined` when it can.
+ * `namespaced`: the final name is target-qualified (MULTI-0 `TARGETS.toolName`), which cuts the façade
+ * to fit and carries the digest, so only the façade's grammar counts, not its length, and an `mcp__`
+ * façade is no longer a raw DSH MCP name.
+ */
+function unusable(name, modelName, namespaced) {
   if (!isCoreTool(name) && !name.includes(MODEL_NAME.dot)) return LOG.reason.notNamespaced
-  if (modelName.startsWith(MODEL_NAME.refusedPrefix)) return LOG.reason.mcpPrefix
-  if (modelName.length > MODEL_NAME.maxChars || !MODEL_NAME.allowed.test(modelName)) return LOG.reason.invalid
-  return taken.has(modelName) ? LOG.reason.duplicate : undefined
+  if (!namespaced && modelName.startsWith(MODEL_NAME.refusedPrefix)) return LOG.reason.mcpPrefix
+  if ((!namespaced && modelName.length > MODEL_NAME.maxChars) || !MODEL_NAME.allowed.test(modelName)) return LOG.reason.invalid
+  return undefined
 }
 
 /** The façade name as the final name (no namespace). */
@@ -52,7 +57,7 @@ export function offerOf(tools, finalName = BARE) {
     if (typeof name !== 'string' || FACADE.withheld.includes(name)) continue
     const facade = modelNameOf(name)
     const final = finalName(facade, name)
-    const reason = unusable(name, facade, new Set()) ?? (final.valid ? undefined : LOG.reason.invalid) ?? (taken.has(final.name) ? LOG.reason.duplicate : undefined)
+    const reason = unusable(name, facade, finalName !== BARE) ?? (final.valid ? undefined : LOG.reason.invalid) ?? (taken.has(final.name) ? LOG.reason.duplicate : undefined)
     if (reason !== undefined) { refused.push(Object.freeze({ name, modelName: final.name, reason })); continue }
     taken.add(final.name)
     offered.push(Object.freeze({ name, facade, modelName: final.name, tuple: final.tuple, tool, contributed: !isCoreTool(name) }))

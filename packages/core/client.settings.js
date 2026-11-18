@@ -8,12 +8,13 @@
  * One sub-plugin, the page, with only the services it needs: core's configuration on DSH's Plugins
  * page, in the `plugins.bundle.config` slot keyed by core's bundle name, so
  * `pluginNavigation.openBundle` lands on it directly. The same page in standalone and hosted mode
- * (Q-B2: "子实例内的界面和独立版本一样"). It holds the target URL, the write-only token field (always
- * shown, Q-B2), `connect.clientMetadataUrl` (R12 = B), the identity, and the Connect control
- * (design §6.3a step 1), and Fishball's model (F-WIRE; the user: "同步只是同步model list，至于fishball用
- * 什么还要在fishball内设置"; unset = this DSH's default model). Saving is DSH's own settings save of
- * core's row namespace; the token goes to DSH's credential store; Connect goes through core's one
- * route (`src/settings/`); the model is a field of the same namespace (`FISHBALL_MODEL.path`),
+ * (Q-B2: "子实例内的界面和独立版本一样"). It holds the target list (MULTI-1, below), each target with its
+ * own write-only token field (Q-B2) and Connect control (design §6.3a step 1),
+ * `connect.clientMetadataUrl` (R12 = B), the identity, and Fishball's model (F-WIRE; the user: "同步只是
+ * 同步model list，至于fishball用什么还要在fishball内设置"; unset = this DSH's default model). Saving is DSH's own
+ * settings save of core's row namespace; a token goes to DSH's credential store under its target's
+ * reference; the targets go through core's target routes (`SEAM_TARGETS.route`); the model is a field
+ * of the same namespace (`FISHBALL_MODEL.path`),
  * written at once when picked, from the catalog DSH's own model picker reads
  * (`remote.session.modelCatalog`, both SDKs).
  *
@@ -336,7 +337,7 @@ window.__ModuleLoader__.load({
 
     /**
      * Core's row form as DSH's `SettingsFormModel` reads it. The model addresses one top-level key
-     * per field (`path: [field]`), while core's settings nest (`target.url`, `connect.clientMetadataUrl`,
+     * per field (`path: [field]`), while core's settings nest (`connect.clientMetadataUrl`,
      * `identity.*`, as the Node side names them). So this view flattens each layer to dotted keys
      * and turns each operation's dotted key back into its nested path; everything else (revision
      * fencing, recovery, writability) is DSH's form unchanged.

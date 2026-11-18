@@ -8,12 +8,14 @@ export const TARGET_LOG = Object.freeze({
   name: 'fishball-core-targets',
   failed: '%s failed (%s)',
   save: 'saving a target record',
+  saveBinding: 'saving a tool-name binding',
   forget: 'deleting a removed target\'s token material',
   binding: 'tool %s is not offered: its name is bound to another target or endpoint',
   reconcile: 'reconciling a target\'s ask cards',
   void: 'voiding a retired target\'s ask cards',
   intake: 'taking a polled event',
   page: 'taking a polled page',
+  parentDuplicate: 'the instance points the parent at an endpoint an added target already has; both connect to it',
 })
 
 /** The target routes' own HTTP words (the statuses and the unavailable code are `SEAM_TARGETS.http`). */

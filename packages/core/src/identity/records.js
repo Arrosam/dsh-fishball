@@ -53,11 +53,13 @@ export async function openRecords(ctx, { defineDomain, domainTable }) {
  * The records over one KvTable (`get`, `put`; both SDKs), for one target epoch (MULTI-1, PLAN-MULTI
  * §3.1): the table key is a JSON array of (kind, target id, endpoint epoch, origin, reference), so
  * no separator can make two keys meet, and two targets on one origin never read each other's
- * pairing. Without a scope (a caller of one target) the scope parts are empty.
+ * pairing. The scope is required.
  * @param table - a KvTable, from `openRecords` or any object with the same `get` and `put`
- * @param {{targetId: string, endpointEpoch: string}} [scope] the target epoch the records are for
+ * @param {{targetId: string, endpointEpoch: string}} scope the target epoch the records are for
  */
-export function createRecords(table, { targetId = '', endpointEpoch = '' } = {}) {
+export function createRecords(table, { targetId, endpointEpoch } = {}) {
+  // No default scope (review m10): records without a target epoch would be shared by every target.
+  if (typeof targetId !== 'string' || typeof endpointEpoch !== 'string') throw new TypeError(MISUSE.scope)
   const keyOf = (kind, origin, ref) => JSON.stringify([kind, targetId, endpointEpoch, origin, ref])
   const { paired, declined } = RECORDS.kind
   return Object.freeze({

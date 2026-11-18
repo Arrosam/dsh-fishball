@@ -319,6 +319,9 @@ export class McpLink {
     this.#open = undefined
     this.#discovering = undefined
     this.#capability = undefined
+    // The capability is a fact of an open stream: unknown again until the next one is acknowledged.
+    // The last name is kept (a link down is no rename).
+    this.#setDetail({ identity: IDENTITY_STATE.pending })
     // Closing is best effort: the peer may already be gone.
     await subscription?.close().catch(() => {})
     await client?.close().catch(() => {})

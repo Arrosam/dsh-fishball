@@ -116,7 +116,8 @@ export const ASK_ROUTE = Object.freeze({
 export const ASK_HTTP = Object.freeze({
   ok: 200,
   badRequest: 400,
-  notFound: 404,
+  // An unknown card handle (MULTI-0 `SEAM_TARGETS.http`, the answer route's own status for it).
+  notFound: SEAM_TARGETS.http.notFound,
   conflict: 409,
   json: Object.freeze({ 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' }),
   eventStream: Object.freeze({ 'content-type': 'text/event-stream; charset=utf-8', 'cache-control': 'no-store', connection: 'keep-alive' }),

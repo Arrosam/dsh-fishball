@@ -129,7 +129,7 @@ export function createDelivery({ ledger, fishball, logger, delay = realDelay, li
       if (state === STATE.admitted) logger?.info(LOG.admitted, raw, type)
       else logger?.info(LOG.discarded, raw, type, reason)
       // A2 (2026-11-14): a failed write is logged, never rethrown into the flush; see the header.
-    }, (error) => logger?.warn(LOG.deliverFailed, eventId, codeOf(error)))
+    }, (error) => logger?.warn(LOG.deliverFailed, ledger.get(eventId)?.eventId, codeOf(error)))
     writes.add(write)
     void write.finally(() => writes.delete(write))
     return write
@@ -228,7 +228,7 @@ export function createDelivery({ ledger, fishball, logger, delay = realDelay, li
       agent = await fishball.activate()
     } catch (error) {
       // No retry timer (no requirement gives one): the next intake or idle edge drains again.
-      logger?.warn(LOG.deliverFailed, queue[0], codeOf(error))
+      logger?.warn(LOG.deliverFailed, ledger.get(queue[0])?.eventId, codeOf(error))
       return
     }
     // A close while activating: held events wait for the next owner's recovery rather than
@@ -253,7 +253,7 @@ export function createDelivery({ ledger, fishball, logger, delay = realDelay, li
     dequeue(eventId)
     prepared.delete(eventId)
     task.catch((error) => {
-      logger?.warn(LOG.deliverFailed, eventId, codeOf(error))
+      logger?.warn(LOG.deliverFailed, ledger.get(eventId)?.eventId, codeOf(error))
       if (tracked.has(message.id)) redeliver(eventId, message)
     })
     if (queue.length > 0) again = true

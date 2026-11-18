@@ -118,13 +118,16 @@ export function createLedger(table, now) {
       return won
     },
     /**
-     * Delete acked records that finished more than LEDGER.finishedRetentionMs ago. One `delete` per
+     * Delete acked records (or, MULTI-1, records of an epoch `live` says is retired) that finished
+     * more than LEDGER.finishedRetentionMs ago. One `delete` per
      * key: `KvTable.deleteMany` exists on 0.2.2-rc.1 only, `delete` on both SDKs.
      * @returns {Promise<number>} how many were deleted.
      */
-    async prune() {
+    async prune(live = () => true) {
       const cutoff = now() - LEDGER.finishedRetentionMs
-      const expired = records().filter((record) => record.acked && record.finishedAt !== undefined && record.finishedAt < cutoff)
+      // A retired epoch's finished record is never acked (its link is gone), and its replay can
+      // never come back through a current link, so it ages out by `finishedAt` alone (review m6).
+      const expired = records().filter((record) => (record.acked || !live(record.event.source)) && record.finishedAt !== undefined && record.finishedAt < cutoff)
       for (const record of expired) await table.delete(record.key)
       return expired.length
     },

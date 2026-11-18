@@ -40,7 +40,7 @@
  * Removing a target or retiring its epoch voids its open cards (`voidWhere`), sending nothing.
  */
 import { SEAM_TARGETS } from 'fishball-shared/ui-seam'
-import { LINK, MCP } from '../../contracts/constants.js'
+import { LINK, MCP, TARGETS } from '../../contracts/constants.js'
 import { tupleOfHandle } from '../targets/keys.js'
 import { emitIsolated, subscribe } from '../link/listeners.js'
 import { codeOf } from '../events/diagnostics.js'
@@ -191,7 +191,8 @@ export function createAsks({ targets, table, logger }) {
       const checked = answerOf(answer)
       if (typeof handle !== 'string' || checked === undefined) return Promise.resolve(refusal(REFUSAL.invalidArguments))
       const tuple = tupleOfHandle(handle)
-      const key = tuple === undefined ? undefined : cardKeyOf(tuple, tuple.remoteId)
+      // Only a card's own kind of handle names a card (an event or session handle never does).
+      const key = tuple?.kind === TARGETS.key.kind.approval ? cardKeyOf(tuple, tuple.remoteId) : undefined
       if (key === undefined || store.get(key) === undefined) return Promise.resolve(refusal(SEAM_TARGETS.refusal.unknownTarget))
       return serial(key, async () => {
         const record = store.get(key)

@@ -65,7 +65,7 @@ export function createInterception({ ledger, registry, delivery, link, logger })
   function prune() {
     if (pruning) return
     pruning = true
-    void ledger.prune().catch((error) => logger?.warn(LOG.pruneFailed, codeOf(error))).finally(() => { pruning = false })
+    void ledger.prune((source) => link.live(source)).catch((error) => logger?.warn(LOG.pruneFailed, codeOf(error))).finally(() => { pruning = false })
   }
 
   /** Ack a record once it is a durable acceptance; a failure is logged and retried on replay. */
