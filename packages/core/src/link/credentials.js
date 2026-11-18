@@ -55,30 +55,28 @@ import { checkTarget } from './target.js'
 const PENDING = LINK_SAVE.pendingOrigin
 const CRED = TARGETS.credentials
 
-/** Connect's grant record key for a target origin (see `LINK_SAVE.grantRecordIdPrefix`): the parent's only. */
-export const grantRecordKey = (origin) => `${CONNECT.grantRecordScope}/${LINK_SAVE.grantRecordIdPrefix}${Buffer.from(origin).toString(LINK_SAVE.originEncoding)}`
-
 /** An added target's record key `fishball-core/<prefix><id>-<epoch>` (MULTI-0 `TARGETS.credentials`). */
 const targetRecordKey = (prefix, targetId, endpointEpoch) => `${CONNECT.grantRecordScope}/${prefix}${targetId}${CRED.recordSeparator}${endpointEpoch}`
 
 /**
  * The credential names one target epoch reads and writes (MULTI-0 `TARGETS.credentials`,
  * `link.d.ts` hosted reservation): the reserved parent alone has the hosted import's reference and
- * record, the pending-origin binding and the origin-keyed grant record; an added target has its own
- * reference and two records keyed by its id and epoch, so it can never satisfy the instance's
- * hosted probe, and two targets on one origin never share a credential.
+ * record and the pending-origin binding; an added target has its own reference and token record
+ * keyed by its id and epoch, so it can never satisfy the instance's hosted probe, and two targets
+ * on one origin never share a credential. Every target, the parent included, keeps its Connect
+ * grant in its own epoch's record (`connect-<id>-<epoch>`).
  * - `ref`: the token entry reference (DSH's grammar `^[A-Za-z_][A-Za-z0-9_]*$`, every `-` written `_`);
  * - `tokenRecord`: the saved token copy, payload `LINK_SAVE.hostedPayload` (value by origin);
  * - `pending`: the reference value's origin binding record, or `undefined` for an added target,
  *   whose reference exists for its one epoch, so the value is bound to that endpoint by its name;
- * - `grantKey(origin)`: Connect's grant record.
+ * - `grantKey()`: Connect's grant record of this epoch.
  * @param {{targetId: string, endpointEpoch: string}} target
  */
 export function credentialNames({ targetId, endpointEpoch }) {
-  if (targetId === TARGETS.parentId) {
-    return Object.freeze({ ref: HOSTED_IMPORT.credentialRef, tokenRecord: HOSTED_IMPORT.savedRecord.key, pending: PENDING.key, grantKey: grantRecordKey })
-  }
   const grant = targetRecordKey(CRED.grantRecordPrefix, targetId, endpointEpoch)
+  if (targetId === TARGETS.parentId) {
+    return Object.freeze({ ref: HOSTED_IMPORT.credentialRef, tokenRecord: HOSTED_IMPORT.savedRecord.key, pending: PENDING.key, grantKey: () => grant })
+  }
   return Object.freeze({
     ref: (CRED.tokenRefPrefix + targetId + CRED.tokenRefSeparator + endpointEpoch).split(CRED.refReplaced).join(CRED.refReplacement),
     tokenRecord: targetRecordKey(CRED.tokenRecordPrefix, targetId, endpointEpoch),
@@ -88,14 +86,18 @@ export function credentialNames({ targetId, endpointEpoch }) {
 }
 
 /**
- * Deletes an added target epoch's token material (MULTI-0 `FishballTargets.remove` / `setUrl`,
- * Q07): its reference and both records. Local only: nothing is revoked at the connector. The
- * parent's names are never passed here (it is not removable).
+ * Deletes a retired target epoch's token material (MULTI-0 `FishballTargets.remove` / `setUrl`,
+ * Q07; a parent epoch the instance re-pointed): its Connect grant, and for an added target also
+ * its reference and token record, which are that epoch's alone. The parent's hosted import
+ * (`DSH_AGENT_TOKEN`, `hosted-agent`) is the instance's handoff, kept by origin and shared by its
+ * epochs (`link.d.ts`), so it stays: its origin binding keeps a value from reaching another origin.
+ * Local only: nothing is revoked at the connector.
  */
 export async function forgetCredentials(credentials, names) {
+  await credentials.deleteRecord(names.grantKey())
+  if (names.pending !== undefined) return
   await credentials.unset(names.ref)
   await credentials.deleteRecord(names.tokenRecord)
-  await credentials.deleteRecord(names.grantKey())
 }
 
 /** The link credential kinds (`LinkCredentials.kind`). */
@@ -233,7 +235,8 @@ function grantAuthProvider(manager, initial) {
  * @param {() => unknown} options.target the target epoch's URL (MULTI-1: its target record's, or
  *   the instance's for the parent)
  * @param {{ref: string, tokenRecord: string, pending: string | undefined, grantKey: Function}} [options.names]
- *   the target epoch's credential names (`credentialNames`); default the parent's
+ *   the target epoch's credential names (`credentialNames`); a single-link caller that names none
+ *   gets the parent's, under the epoch `TARGETS.parentId`
  * @param {() => string} options.clientId `identity.id`
  * @param {() => unknown} options.clientMetadataUrl `connect.clientMetadataUrl`
  * @param {object} [options.sdk] the `@modelcontextprotocol/client` module; defaults to core's copy
@@ -245,7 +248,7 @@ function grantAuthProvider(manager, initial) {
  *   `credentials` is the link's option; `connect` is K3a's `FishballConnect`; `onChange(fn)` calls
  *   `fn` when the link should reconnect (a new value in the reference, or a Connect grant saved)
  */
-export function createLinkCredentials(ctx, { target, clientId, clientMetadataUrl, names = credentialNames({ targetId: TARGETS.parentId }), sdk, fetch = (...args) => globalThis.fetch(...args), now = Date.now, timers = globalThis }) {
+export function createLinkCredentials(ctx, { target, clientId, clientMetadataUrl, names = credentialNames({ targetId: TARGETS.parentId, endpointEpoch: TARGETS.parentId }), sdk, fetch = (...args) => globalThis.fetch(...args), now = Date.now, timers = globalThis }) {
   const logger = ctx.logger?.(LINK_SAVE.logger)
   const warn = (what) => (error) => logger?.warn(LINK_SAVE.text.failed, what, codeOf(error))
   const reconnects = new Set()

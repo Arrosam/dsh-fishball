@@ -54,9 +54,8 @@ export const LINK_MCP = Object.freeze({
  * (`HOSTED_IMPORT`, `CONNECT`); these are the module's own.
  * - `hostedPayload`: the payload of `HOSTED_IMPORT.savedRecord` (K3a: "core's own format"): a
  *   version and the accepted token value per target origin (R9: "keyed by target origin");
- * - `grantRecordIdPrefix` / `originEncoding`: the id segment of Connect's grant record for one
- *   target origin (K3a leaves it to core): DSH's key grammar is `[a-z][a-z0-9-]*`, an origin holds
- *   `:` `/` `.` and upper case, so the origin's UTF-8 bytes go in lowercase hex (the adapter's way);
+ * - Connect's grant record is one per target epoch since MULTI-0 (`TARGETS.credentials`,
+ *   `credentials.js` `credentialNames`), no longer one per hex-encoded origin;
  * - `credentialId`: the non-secret id of one credential, which F-PAIR keys its records on
  *   (decided item 13): a token by a SHA-256 of its value under core's `domain` prefix (so it never
  *   equals the connector's own lookup digest), so the token in the reference and its saved copy are
@@ -79,10 +78,8 @@ export const LINK_SAVE = Object.freeze({
    * memory, so a restart between the write and the first connection keeps the binding.
    */
   pendingOrigin: Object.freeze({ key: CORE_RECORD_SCOPE + '/pending-token-origin', kind: 'grant', version: 1 }),
-  grantRecordIdPrefix: 'connect-',
   // The grant payload field holding the fishball id Connect passed as `agent_id` (R-FIX F10).
   grantAgentIdField: 'agentId',
-  originEncoding: 'hex',
   credentialId: Object.freeze({ tokenPrefix: 'token:', grantPrefix: 'grant:', domain: 'fishball-core credential id\n', digest: 'sha256', digestEncoding: 'hex' }),
   /** The `ConnectBegin` outcome with an approval URL (`connect.d.ts`), and DSH's `begin()` status word for a committed grant (dsh-authorization `AuthorizationStatus`). */
   approvalUrlOutcome: 'approval-url',

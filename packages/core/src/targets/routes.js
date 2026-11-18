@@ -5,26 +5,31 @@
  * - GET `list`: 200 `TargetsSnapshot`, the same value as `ui.targets.list()`;
  * - POST `connect`: 200 K3a `ConnectBegin`, exactly its outcome's members. The request's `Origin`
  *   and `Host` pick the callback (link/web-callback.js), as the old route did;
- * - POST `cancel`, `retry`, `pairing`, `add`, `remove`, `url`: 200 `{ok: true[, targetId]}`,
- *   409 for a refusal, 400 for a body that is not a JSON object;
- * - a missing, unknown or removed `targetId`: 404 `{ok: false, code: 'unknown-target'}`;
- * - a throw: 503 `{code}` with no error detail (its message could name a credential detail),
- *   logged by its code only.
+ * - POST `cancel`, `retry`, `pairing`, `add`, `remove`, `url`: `{ok: true[, targetId]}`, or a refusal;
+ * - statuses (`SEAM_TARGETS.http`): 400 for a body that is not a JSON object (`invalid-arguments`)
+ *   and the URL refusals `target-insecure` / `target-invalid`; 404 for a missing, unknown or
+ *   removed `targetId` (`unknown-target`); 409 for every other refusal;
+ * - a throw: 503 `{code: SEAM_TARGETS.unavailableCode}` with no error detail (its message could
+ *   name a credential detail), logged by its code only.
  */
 import { SEAM_TARGETS } from 'fishball-shared/ui-seam'
-import { MCP } from '../../contracts/constants.js'
+import { LINK, MCP } from '../../contracts/constants.js'
 import { codeOf } from '../events/diagnostics.js'
 import { TARGET_HTTP, TARGET_LOG } from './constants.js'
 
 const ROUTE = SEAM_TARGETS.route
 const FIELD = ROUTE.fields
 const REFUSAL = SEAM_TARGETS.refusal
+const HTTP = SEAM_TARGETS.http
 
 const json = (status, body) => new Response(JSON.stringify(body), { status, headers: TARGET_HTTP.headers })
+const BAD_REQUEST = Object.freeze([MCP.refusal.invalidArguments, LINK.code.insecure, LINK.code.invalid])
 const statusOf = (result) => {
-  if (result?.ok === true || result?.outcome !== undefined) return TARGET_HTTP.ok
-  return result?.code === REFUSAL.unknownTarget ? TARGET_HTTP.notFound : TARGET_HTTP.conflict
+  if (result?.ok === true || result?.outcome !== undefined) return HTTP.ok
+  if (result?.code === REFUSAL.unknownTarget) return HTTP.notFound
+  return BAD_REQUEST.includes(result?.code) ? HTTP.badRequest : HTTP.conflict
 }
+const unavailable = () => json(HTTP.unavailable, { code: SEAM_TARGETS.unavailableCode })
 /** Exactly the `ConnectBegin` members of a known outcome (connect.d.ts); a refusal passes as it is. */
 const beginAnswer = (begin) => {
   const members = TARGET_HTTP.beginMembers[begin?.outcome]
@@ -56,22 +61,22 @@ export function registerTargetRoutes(ctx, targets, { callbackFor = () => undefin
   const guarded = (act) => async (request) => {
     try { return await act(request) } catch (error) {
       logger?.warn(TARGET_LOG.failed, request.url, codeOf(error))
-      return json(TARGET_HTTP.unavailable, { code: TARGET_HTTP.unavailableCode })
+      return unavailable()
     }
   }
   const post = (path) => guarded(async (request) => {
     let body
     try { body = await request.json() } catch { body = undefined }
-    if (body === null || typeof body !== 'object' || Array.isArray(body)) return json(TARGET_HTTP.badRequest, { ok: false, code: MCP.refusal.invalidArguments })
+    if (body === null || typeof body !== 'object' || Array.isArray(body)) return json(HTTP.badRequest, { ok: false, code: MCP.refusal.invalidArguments })
     const result = await actions[path](body, request)
-    if (result === undefined) return json(TARGET_HTTP.unavailable, { code: TARGET_HTTP.unavailableCode })
+    if (result === undefined) return unavailable()
     return json(statusOf(result), result)
   })
 
   const disposers = []
   const dispose = async () => { await Promise.all(disposers.splice(0).map((withdraw) => withdraw?.())) }
   try {
-    disposers.push(ctx.connection.fetch.register({ path: ROUTE.list, methods: [ROUTE.read], requestBody: TARGET_HTTP.requestBody, fetch: guarded(async () => json(TARGET_HTTP.ok, service.list())) }))
+    disposers.push(ctx.connection.fetch.register({ path: ROUTE.list, methods: [ROUTE.read], requestBody: TARGET_HTTP.requestBody, fetch: guarded(async () => json(HTTP.ok, service.list())) }))
     for (const path of Object.keys(actions)) {
       disposers.push(ctx.connection.fetch.register({ path, methods: [ROUTE.method], requestBody: TARGET_HTTP.requestBody, fetch: post(path) }))
     }
