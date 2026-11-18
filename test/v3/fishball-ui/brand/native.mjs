@@ -64,6 +64,15 @@ const metadata = { slots: Object.values(SLOT), label: LABEL.newSession.en, manag
   ...ROUTE, brand: CLIENT.parts.brand.file, parts: Object.fromEntries(Object.values(CLIENT.parts).map(p => [p.file, p.export])) }
 const dicts = { sidebar: { en: { 'session.new.label': LABEL.newSession.en } }, chat: { en: { 'message.branch': 'Branch' } }, conversation: { en: { 'session.hierarchy': 'Hierarchy', 'hero.chooseWorkspace': 'Choose workspace' } } }
 const inputs = ['pointer', 'Enter', 'Space']
+// A queued event need not have an Element target. Use actual text/element descendants of the
+// wordmark (or its native fallback), not the button's own click(), which retargets to the button.
+function clickDescendant(slot, kind) {
+  const outlet = document.querySelector(`#brand-probe [data-slot="${slot}"]`)
+  const text = document.createTreeWalker(outlet, NodeFilter.SHOW_TEXT).nextNode()
+  const target = kind === 'Text' ? text : text.parentElement
+  target.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, button: 0 }))
+  return target.nodeType
+}
 async function activate(tab, id, how, prior) {
   const reach = await tab.evaluate(`__lite.reach(${JSON.stringify(id)})`)
   // Fail-closed controls can legitimately be hidden. Attempt a real click at the last visible
@@ -104,9 +113,10 @@ export function registerNative(t, sdk) {
     assert.equal(await tab.evaluate(`!!document.querySelector('[${HOOK.mark}]')`), state === 'ready', 'brand occupant matches phase')
     const prior = await tab.evaluate('brandProbe.beforeGuard')
     assert.ok(prior.hit && prior.visible && prior.focused, 'wide button reachable before page mounts')
-    const counts = [], actions = state === 'ready' ? inputs : [...inputs, 'queued click']
+    const counts = [], actions = [...inputs, ...(state === 'ready' ? [] : ['queued click']), 'Text', 'Element']
     for (const how of actions) {
       if (how === 'queued click') await tab.evaluate(`document.getElementById('brand-probe').click()`)
+      else if (how === 'Text' || how === 'Element') assert.equal(await tab.evaluate(`(${clickDescendant})(${JSON.stringify(SLOT.name)}, ${JSON.stringify(how)})`), how === 'Text' ? 3 : 1, how)
       else await activate(tab, 'brand-probe', how, state === 'ready' ? undefined : prior)
       counts.push(await tab.evaluate(`({ native: brandProbe.native, opens: [...brandProbe.opens], creates: __lite.log.calls.filter(c=>(c.service==='sessions' && c.method==='create') || (c.service==='uiWorkspace' && c.method==='startSession')).length })`))
     }

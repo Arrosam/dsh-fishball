@@ -173,6 +173,10 @@ window.__ModuleLoader__.load({
       pointerdown: 'pointerdown', click: 'click', keydown: 'keydown', escape: 'Escape',
       focusable: 'button:not([disabled]),[href],[tabindex]:not([tabindex="-1"])',
     })
+    const BRAND_ACTIVATION = Object.freeze({
+      pointerEvents: Object.freeze(['click', 'pointerdown', 'pointerup']),
+      keyEvents: Object.freeze(['keydown', 'keyup']), keys: Object.freeze(['Enter', ' ']),
+    })
     /** In-frame navigation policy; see mountFrameGuard. */
     const FRAME = Object.freeze({
       navigate: 'navigate', click: 'click', anchor: 'a[href],area[href]', blank: '_blank', frame: 'iframe',
@@ -338,14 +342,18 @@ window.__ModuleLoader__.load({
       // Even a synthetic click or a queued keyboard activation on a now-hidden button must not
       // bubble to DSH's startSession. The rail toggle has no name slot and is never intercepted.
       const blockUnownedBrand = (event) => {
-        const button = event.target?.closest?.(PAGE.buttonTag)
+        if (BRAND_ACTIVATION.keyEvents.includes(event.type) && !BRAND_ACTIVATION.keys.includes(event.key)) return
+        // React delegates Text-targeted events to the parent element; capture must do the same.
+        const target = event.target
+        const button = (target?.closest ? target : target?.parentElement)?.closest?.(PAGE.buttonTag)
         if (!button?.querySelector?.(PAGE.brandName) || button.hasAttribute(PAGE.brandControl)) return
         event.preventDefault()
         event.stopImmediatePropagation()
       }
-      document.addEventListener(SHEET.click, blockUnownedBrand, true)
+      const events = [...BRAND_ACTIVATION.pointerEvents, ...BRAND_ACTIVATION.keyEvents]
+      for (const type of events) document.addEventListener(type, blockUnownedBrand, true)
       return () => {
-        document.removeEventListener(SHEET.click, blockUnownedBrand, true)
+        for (const type of events) document.removeEventListener(type, blockUnownedBrand, true)
         observer.disconnect()
         unsubscribe()
         for (const node of marked) node.removeAttribute(PAGE.hidden)

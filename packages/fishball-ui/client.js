@@ -308,24 +308,29 @@ window.__ModuleLoader__.load({
        */
       pageRoot: 'data-fishball-page',
       /**
-       * Runs `effect()` while the page root mark is present and disposes it when the mark leaves;
-       * returns one disposer for both. The observer watches only that attribute on `<html>`, so it
-       * cannot react to its own effect (the effect does not write the attribute), and teardown leaves
-       * no observer behind.
+       * Runs `effect(fail)` for each visit. Leaving the page releases only the current visit;
+       * a failed setup (including a later slot declaration) or teardown also stops the watcher.
+       * Initial exceptions belong to the installing fiber; late ones have no caller to catch them.
        */
-      whilePage(effect) {
+      whilePage(effect, report = console.warn) {
         const root = document.documentElement
         let dispose = null
+        const leave = () => { const stop = dispose; dispose = null; stop?.() }
+        const stop = () => { observer.disconnect(); leave() }
+        const failed = (error) => { stop(); report(error) }
         const sync = () => {
-          const on = root.hasAttribute(kit.pageRoot)
-          if (on && dispose === null) dispose = effect()
-          else if (!on && dispose !== null) { const stop = dispose; dispose = null; stop() }
+          if (!root.hasAttribute(kit.pageRoot)) leave()
+          else if (dispose === null) dispose = effect((error) => {
+            if (dispose === null) throw error // Still installing: unwind the partial setup first.
+            failed(error)
+          })
         }
-        const observer = new MutationObserver(sync)
-        // A synchronous slot injection can throw. Do not subscribe until we can return its disposer.
+        const observer = new MutationObserver(() => {
+          try { sync() } catch (error) { failed(error) }
+        })
         sync()
         observer.observe(root, { attributes: true, attributeFilter: [kit.pageRoot] })
-        return () => { observer.disconnect(); const stop = dispose; dispose = null; stop?.() }
+        return stop
       },
       /**
        * One JSON POST to a page-relative core route: `{status, body}`, `status` 0 when no answer

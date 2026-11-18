@@ -41,7 +41,8 @@ Worktree `.agents/worktrees/dev-v3-logo-button`, branch `dev/v3-logo-button`. Or
   `SEAM_BRAND` (shared) and core's/page's restated copies.
 - On Fishball's page, the wide button (identified by the name slot) is hidden until the brand
   has installed both capture listeners. Teardown withdraws the exemption first. A page-owned
-  capture guard consumes clicks on an unowned wide button, including keyboard-generated clicks.
+  capture guard normalizes Text targets to their parent element and consumes pointer, click and
+  Enter/Space activation on an unowned wide button, including keyboard-generated clicks.
   The separate New Session launcher stays hidden; the mark-only rail toggle still expands.
 - The brand draws the tag itself: DSH's SDKs draw no such tag in the brand row, and V1 drew it; the
   text stays the shell's product name (`Deepseek Harness`).
@@ -87,8 +88,9 @@ logo's accessible control exists in the expanded brand row.
 
 - 1440: the expanded sidebar's top-left brand row, both SDKs.
 - 390: the sidebar is opened for the shot. rc.5 shows its expanded sheet; rc.1 shows its drawer;
-  both use the same wide brand row and the same control. rc.1's closed drawer row is rendered but
-  inert/off-screen, as designed.
+  both use the same wide brand row and the same control. At ≤480px, rc.1's closed drawer becomes
+  a 44px bar: panel actions remain reachable, but its still-mounted wide brand is hidden. See the
+  [480px closed-bar fixture capture](closed-bar-480-rc1.png); the open-state matrix is unchanged.
 - Rail (collapsed wide sidebar): the mark renders inside the shell's toggle; clicking it still
   collapses/expands. It does not open the manager (the toggle is not the brand control).
 - rc.5's 44px narrow bar (collapsed below 480px): `fishball-page`'s own bar restyle hides the rail

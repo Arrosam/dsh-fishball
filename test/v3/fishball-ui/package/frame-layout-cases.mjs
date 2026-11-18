@@ -196,6 +196,44 @@ export function registerFrameLayoutCases(sdk) {
       await checkLayout(t, live, width, L.panels)
     })
   }
+  browserRow(sdk, 'LOGO-FIX', '480px narrow bar', 'wide identity is unavailable in the closed bar; the open sidebar restores it to the Tab path', async t => {
+    const live = await liveFrame(t, sdk, { width: W.edge })
+    const selector = '[data-fbtest-wide-brand]'
+    const tabBudget = () => live.tab.evaluate(`2 * (document.querySelectorAll('button,a,input,[tabindex]').length + 1)`)
+    const assertClosed = async () => {
+      const r = await live.probe()
+      assertBar(r, W.edge)
+      assert.ok(r.toggle.shown, 'the distinct native toggle stays visible')
+      assert.equal(r.wideBrand.shown, false, 'wide brand must not be a bottom-bar action')
+      const present = await live.tab.evaluate(`!!document.querySelector('${selector} [data-slot="sidebar.brand.name"]')?.textContent`)
+      assert.equal(present, isRc1, 'rc.1 drawer retains the wide outlet; rc.5 rail unmounts it')
+      if (present) assert.equal(await live.tab.evaluate(`(() => { const el = document.querySelector('${selector}'); el.focus(); return document.activeElement === el })()`), false, 'hidden wide brand cannot take focus')
+      const budget = await tabBudget()
+      let sawToggle = false
+      for (let i = 0; i < budget; i++) {
+        await live.tab.press(keyFor('Tab'))
+        const focused = await live.tab.evaluate(`document.activeElement.matches('${selector}') ? 'brand' : document.activeElement.matches('[data-fbtest-toggle]') ? 'toggle' : 'other'`)
+        assert.notEqual(focused, 'brand', 'closed wide brand must not be a Tab stop')
+        sawToggle ||= focused === 'toggle'
+      }
+      assert.ok(sawToggle, 'trusted Tab traversed the closed bar')
+    }
+    await assertClosed()
+    await live.click(isRc1 ? '[data-sidebar-opener]' : '[data-fbtest-toggle]')
+    const opened = await live.probe()
+    assertNoBar(opened, 'opened at 480px')
+    assert.equal(opened.wideBrand.shown, true, 'opened wide brand restored')
+    // Start from current focus, use only native Tab, and verify the focus target is unobscured.
+    const budget = await tabBudget()
+    let reached = false
+    for (let i = 0; i < budget && !reached; i++) {
+      await live.tab.press(keyFor('Tab'))
+      reached = await live.tab.evaluate(`(() => { const el = document.activeElement; if (!el.matches('${selector}')) return false; const r = el.getBoundingClientRect(); return el.contains(document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2)) })()`)
+    }
+    assert.equal(reached, true, 'Tab reveals the visible, hittable open brand')
+    await live.click('[data-fbtest-toggle]')
+    await assertClosed()
+  })
   for (const key of ['Enter', 'Space']) {
     browserRow(sdk, 'NARROW-KEY-01', key, 'Tab to all original nav actions; activate an initially offscreen plugin', async t => {
       const panels = [...L.panels, ...manyPanels()]

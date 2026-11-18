@@ -28,6 +28,7 @@ import path from 'node:path'
 import { SDK } from '../../contract/package-boundaries/constants.mjs'
 import { frontendStyles } from '../contrast/page.mjs'
 import { FRAME_LAYOUT as L } from './polish-constants.mjs'
+import { HOOK, LABEL, SLOT, WORDMARK } from '../brand/constants.mjs'
 
 const bundle = (sdk, pkg) => fs.readFileSync(path.join(SDK.versionsDir, sdk, 'node_modules', '@deepseek-ai', pkg, 'lib', 'client.js'), 'utf8')
 const cache = new Map()
@@ -57,8 +58,13 @@ export function frameDocument(sdk, { panels, collapsed, drawer = false, mark, pa
   const side = cssModule(sdk, L.sidebarPkg, L.sidebarModule).classes
   const slot = (key, inner = '') => `<div data-slot="${key}" style="display:contents">${inner}</div>`
   const rows = panels.map(({ id, label }) => `<button type="button" class="${side.panelRow}" aria-label="${esc(label)}" ${L.panelHook}="${esc(id)}"><span class="${side.panelGlyph}" aria-hidden="true">${slot(L.slot.panellist, `<svg ${L.iconHook}="${esc(id)}" width="18" height="18" viewBox="0 0 18 18"><rect width="18" height="18"/></svg>`)}</span></button>`).join('')
+  // A drawer always renders wide identity, even while closed. A settled rc.5 rail instead
+  // unmounts the wide control; templates let the live host switch without replacing nav actions.
+  const wide = drawer || !collapsed
+  const brand = `<button type="button" data-fbtest-wide-brand ${HOOK.control} aria-label="${LABEL.brand}" class="${side.brand} ${side.wide}"><span class="${side.brandIdentity}" aria-hidden="true"><span class="${side.brandMark}">${slot(SLOT.mark, `<svg ${HOOK.mark} width="24" height="24"></svg>`)}</span><span class="${side.brandName}">${slot(SLOT.name, `<span ${HOOK.name}>${WORDMARK.text}</span>`)}</span></span></button>`
+  const railMark = `<span class="${side.railMark}" aria-hidden="true">${slot(L.slot.brandMark, '<svg width="24" height="24"></svg>')}</span>`
   const root = `<div class="${side.root}${collapsed && !drawer ? ' ' + side.collapsed : ''}" data-fbtest-collapse-class="${side.collapsed}">`
-    + `<div class="${side.logoRow}"><button type="button" class="${side.iconButton} ${side.toggle}" data-fbtest-toggle${sdk === L.drawerSdk ? ' data-sidebar-toggle' : ''} aria-label="toggle"><span class="${side.railMark}" aria-hidden="true">${slot(L.slot.brandMark, '<svg width="24" height="24"></svg>')}</span><svg width="18" height="18"></svg></button></div>`
+    + `<div class="${side.logoRow}">${wide ? brand : ''}<button type="button" class="${side.iconButton} ${side.toggle}" data-fbtest-toggle${sdk === L.drawerSdk ? ' data-sidebar-toggle' : ''} aria-label="toggle">${wide ? '' : railMark}<svg width="18" height="18"></svg></button></div>`
     + `<button type="button" class="${side.newSession}" ${L.newSessionHook} aria-label="New session"><span>+</span></button>`
     + `<nav class="${side.panelList}" aria-label="Global panels">${rows}</nav>`
     + `<div class="${side.regionArea}">${slot(L.slot.workspaces, workspaces)}</div>`
@@ -107,6 +113,7 @@ export const LAYOUT_PROBE = String(function probe(arg) {
     icons: [...document.querySelectorAll(`[${arg.iconHook}]`)].map((i) => ({ id: i.getAttribute(arg.iconHook), shown: shown(i) })),
     settings: seatButton('sidebar.settings'),
     footer: seatButton('sidebar.footer.action'),
+    wideBrand: { shown: shown(col?.querySelector('[data-fbtest-wide-brand]')), ...box(col?.querySelector('[data-fbtest-wide-brand]')) },
     toggle: { shown: shown(col?.querySelector('[data-fbtest-toggle]')), ...box(col?.querySelector('[data-fbtest-toggle]')) },
     workspaces: shown(document.querySelector(`[${arg.workspacesHook}]`)),
     opener: shown(document.querySelector('[data-sidebar-opener]')),
