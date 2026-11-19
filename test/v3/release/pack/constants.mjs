@@ -12,6 +12,7 @@
 import os from 'node:os'
 import path from 'node:path'
 import { REPO } from '../../../support/constants.mjs'
+import { MCP_PINS } from './mcp-pins.mjs'
 
 /** REL-PACK: the one shared release version of every package. */
 export const VERSION = '1.0.0-alpha.1'
@@ -170,10 +171,17 @@ export const BUNDLE = Object.freeze({
   copyDir: (name) => `node_modules/${name}/`,
 })
 
+/** These packages ship MCP dependencies independently of the SDK supplied by a DSH host. */
+export const PACKED_MCP_PINS = Object.freeze({
+  [PACKAGES.connector.name]: [MCP_PINS.server, MCP_PINS.node],
+  [PACKAGES.adapter.name]: [MCP_PINS.client],
+  [PACKAGES.core.name]: [MCP_PINS.client],
+})
+
 /** Requirement 4: fishball-core bundles its runtime dependency closure. */
 export const CORE_CLOSURE = Object.freeze({
   owner: PACKAGES.core,
-  mcpClient: Object.freeze({ name: '@modelcontextprotocol/client', version: '2.2.0' }),
+  mcpClient: MCP_PINS.client,
   /** The non-peer runtime field walked for every bundled package (optional ones are not stated). */
   walkFields: Object.freeze(['dependencies']),
   /** A bundled package folder: `.../node_modules/<name>` or `.../node_modules/@scope/<name>`. */

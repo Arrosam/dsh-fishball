@@ -3,7 +3,7 @@
  * R-CON-02, R-WATCH-03, R-EXT-12, R-OA-04).
  *
  * **Why this module answers both methods itself** rather than through `McpServer.registerTool`:
- * the SDK (2.2.0, both hosts) turns a failed input check into a prose-only `isError` result, and
+ * the high-level SDK turns a failed input check into a prose-only `isError` result, and
  * it stamps `type: "object"` beside the root `oneOf` of every advertised output schema. The first
  * breaks R-CON-02 ("never just prose": an undeclared argument must be `invalid-arguments` in
  * `structuredContent`); the second changes K1's frozen output schemas into one DSH's subset
@@ -40,6 +40,7 @@ import { ProtocolError, ProtocolErrorCode } from '@modelcontextprotocol/server'
 import { PAIR_ONLY, REFUSAL, SCOPE, TOOL, TOOLS, okResult, refusalResult } from '../../../mcp-schema/index.js'
 import { FolderRefusal, RefusalError, diagnosticOf } from '../../errors.js'
 import { validateValue } from '../../schema-value/index.js'
+import { exceedsToolInputLimit } from '../../schema-value/tool-input.js'
 import { ENVELOPE_KEYS, FOLDER_ADVICE, LOG, TOOLS_METHOD, UNKNOWN_TOOL } from './constants.js'
 import { payloadRefusal } from './payload-rules.js'
 
@@ -93,6 +94,7 @@ export function createDispatch({ handlers, contributions, pairs, now, logger }) 
   async function callCore(core, args, caller) {
     const { name, inputSchema } = core.definition
     try {
+      if (exceedsToolInputLimit(args)) return refusalResult(REFUSAL.limitExceeded)
       const refused = validateValue(inputSchema, args).ok ? payloadRefusal(name, args, now()) : REFUSAL.invalidArguments
       if (refused !== undefined) {
         const badFolder = name === TOOL.sessionStart && (typeof args?.folder !== 'string' || args.folder.length === 0)

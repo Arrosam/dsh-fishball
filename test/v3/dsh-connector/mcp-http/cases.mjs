@@ -25,7 +25,7 @@
 import assert from 'node:assert/strict'
 import { caseTest } from '../../contract/package-boundaries/cases.mjs'
 import {
-  APPROVAL_LISTENER, BEARER_CHALLENGE, DIAGNOSTIC_LEVELS, ENDPOINT_LIMITS, FIXTURE, GATE_SURFACE, HEADER, HOSTS, HTTP_METHOD,
+  APPROVAL_LISTENER, BEARER_CHALLENGE, BODY_CAP_BYTES, DIAGNOSTIC_LEVELS, ENDPOINT_LIMITS, FIXTURE, GATE_SURFACE, HEADER, HOSTS, HTTP_METHOD,
   HTTP_REFUSAL, HTTP_STATUS, LATER, OAUTH_ERROR, OAUTH_ERROR_STATUS, PATHS, PROTOCOL, RATE_LIMITS, REQUEST_GATE, RESOURCE,
   REVOCATION, RPC, SSE, TIME_UNIT, WAIT, bearerChallenge,
 } from './constants.mjs'
@@ -472,8 +472,8 @@ function boundaryValues(sdk) {
   // K1b-BVA-02 — admit on mcp (unit): the PLAT-BVA-02 boundaries at the gate.
   const k1b = (row, title, fn) => unit(sdk, CASE.k1bBva02, row, title, fn)
   k1b('PLAT-BVA-02 1', 'bodyBytes = limit − 1: pass', ({ gate }) => assert.equal(admit(gate, unitCaller(FIXTURE.idP), LIMIT - 1).pass, true))
-  k1b('PLAT-BVA-02 2', 'bodyBytes = limit: pass', ({ gate }) => assert.equal(admit(gate, unitCaller(FIXTURE.idP), LIMIT).pass, true))
-  k1b('PLAT-BVA-02 3', 'bodyBytes = limit + 1: 413, ENDPOINT_LIMITS\' body, no headers', ({ gate }) => assertCheck(admit(gate, unitCaller(FIXTURE.idP), LIMIT + 1), tooLarge))
+  k1b('PLAT-BVA-02 2', 'bodyBytes = 8 MiB: pass', ({ gate }) => assert.equal(admit(gate, unitCaller(FIXTURE.idP), BODY_CAP_BYTES).pass, true))
+  k1b('PLAT-BVA-02 3', 'bodyBytes = 8 MiB + 1: 413, ENDPOINT_LIMITS\' body, no headers', ({ gate }) => assertCheck(admit(gate, unitCaller(FIXTURE.idP), BODY_CAP_BYTES + 1), tooLarge))
   k1b('PLAT-BVA-02 4', `in-flight = max passes; one more: 429 with ${RATE_LIMITS.retryAfterHeader} ${IN_FLIGHT_RETRY_AFTER}`, ({ gate }) => {
     const caller = unitCaller(FIXTURE.idP)
     hold(gate, caller, MAX_IN_FLIGHT)

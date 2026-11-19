@@ -23,13 +23,14 @@ import path from 'node:path'
 import test from 'node:test'
 import {
   ABSENT_TOOL_WORDS, ABSENT_TOOLS, ADVICE, APPROVAL_PATHS, AUTH_CODES, CC_EXTENSION, CHAIN_CAP, CIMD_MAX_BYTES, CONNECTOR_MANIFEST, CORE_TOOLS,
-  DURATION_S, ERROR_STATUS, EVENT_TYPES, EVENTS_URI, FAILURE_LIMIT_MEANING, FAILURE_LIMITER, FIELDS, IDS, INSTANT, INTERFACES, LATER, MAX_QUEUED_DEFAULT, MCP, MEANING, METADATA,
+  DURATION_S, ERROR_STATUS, EVENT_TYPES, EVENTS_URI, FAILURE_LIMIT_MEANING, FAILURE_LIMITER, FIELDS, IDS, INSTANT, INTERFACES, LATER, MAX_QUEUED_DEFAULT, MEANING, METADATA,
   NAME_MAX_CHARS, NO_NOTIFY, OAUTH_ERRORS, OFFER_ID, PAIR_RESULT, PATHS, PORT_RANGE, PROTOCOL_VERSION, RECORDED, REFUSAL, SCHEMA_MODULE, SCOPE,
   SCOPE_HINT, SECONDS_EPSILON, STOCK_TOKEN_REQUESTS_PER_FAILED_CALL, TOKEN_STORE, TOOL_CODES, UNITS, WELL_KNOWN, ENTRY_OK, WITHDRAWN_TOKEN_CODES,
 } from './constants.mjs'
+import { MCP_PINS } from '../../release/pack/mcp-pins.mjs'
 import { model } from '../k3-host-services/declarations.mjs'
 import {
-  allPropertyNames, allText, exportedRegExps, exportedStrings, exportedStringsAndKeys, folderTexts, hasListEqualTo, leaves, mcpClient, mcpClientVersion, mcpCore, numbersAt,
+  allPropertyNames, allText, exportedRegExps, exportedStrings, exportedStringsAndKeys, folderTexts, hasListEqualTo, leaves, mcpClient, mcpCore, numbersAt,
   readManifest, rootPropertyNames, schemaModule, secondsAt, statusesFor, toolDefinitions, toolsModule, validatorFor, walk,
 } from './schema-module.mjs'
 
@@ -122,12 +123,9 @@ export function registerK1Cases(sdk) {
   caseTest(sdk, 'PLAT-EP-02', 'K1', `${SCHEMA_MODULE.specifier} resolves and loads on this SDK`, (mod) => {
     assert.ok(Object.keys(mod).length > 0, 'the module exports nothing')
   })
-  caseTest(sdk, 'PLAT-EP-02', 'K1', `the SDK pins: ${MCP.node} exactly ${MCP.nodePin}, ${MCP.server} exactly on the hosts' 2.2.x client line`, () => {
+  caseTest(sdk, 'PLAT-EP-02', 'K1', 'the connector declares the exact MCP server and Node adapter release pins', () => {
     const deps = readManifest(CONNECTOR_MANIFEST).dependencies ?? {}
-    assert.equal(deps[MCP.node], MCP.nodePin)
-    assert.match(deps[MCP.server] ?? '', MCP.exactVersion, 'the server SDK is not pinned to one exact version')
-    const [major, minor] = mcpClientVersion(sdk).split('.')
-    assert.deepEqual(deps[MCP.server].split('.').slice(0, 2), [major, minor], 'server line differs from this SDK\'s client ' + mcpClientVersion(sdk))
+    for (const { name, version } of [MCP_PINS.server, MCP_PINS.node]) assert.equal(deps[name], version, name)
   })
   caseTest(sdk, 'PLAT-UC-01', 'K1', `the served protocol revision is ${PROTOCOL_VERSION}, the same value K2 froze`, async (mod) => {
     assertExported(mod, [PROTOCOL_VERSION], 'protocol revision')

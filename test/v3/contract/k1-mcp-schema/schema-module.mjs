@@ -38,7 +38,6 @@ const sdkImport = (sdk, ...parts) => import(pathToFileURL(sdkFile(sdk, ...parts)
 /** One SDK's MCP client, core and ajv validator (2.2.0 on both hosts). */
 export const mcpClient = (sdk) => sdkImport(sdk, MCP.client, MCP.clientEntry)
 export const mcpCore = (sdk) => sdkImport(sdk, MCP.core, MCP.coreEntry)
-export const mcpClientVersion = (sdk) => JSON.parse(fs.readFileSync(sdkFile(sdk, MCP.client, MCP.manifest), 'utf8')).version
 /** A JSON Schema validator as this SDK's client uses it for tool schemas (its default engine). */
 export async function validatorFor(sdk) {
   const { AjvJsonSchemaValidator } = await sdkImport(sdk, MCP.client, MCP.ajvEntry)

@@ -130,7 +130,7 @@ const OPEN_GATE = Object.freeze({ hold: () => null, admit: async () => null, pai
  *   `undefined`, or neither a secret nor an `authProvider` is "no credential"
  * @property {PairingGate} [gate] the pairing gate; defaults to one that admits every attempt
  * @property {object} [sdk] the `@modelcontextprotocol/client` module; defaults to core's packaged
- *   copy (§9.1). A caller may pass another 2.2.x copy (both hosts' copies are byte-identical).
+ *   2.4.0 copy (§9.1). A caller may inject the 2.2.0 client shipped by either supported host.
  * @property {typeof fetch} [fetch] the network fetch; defaults to the global one
  * @property {{warn: Function}} [logger] the background log: warned once per failed import of the
  *   MCP client, with the error's code only

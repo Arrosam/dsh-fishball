@@ -4,7 +4,7 @@
  * Before `execute` (each refusal is the connector's code, and the contributor's code never runs):
  * 1. the name resolves to a visible registration, else `undefined` (the MCP layer answers
  *    JSON-RPC -32602 "unknown tool"; a quarantined tool is unknown too);
- * 2. the argument JSON fits min(declared, ceiling) bytes, else `limit-exceeded`;
+ * 2. the argument JSON fits the endpoint element limit and min(declared, ceiling) bytes, else `limit-exceeded`;
  * 3. the arguments are valid against `inputSchema`, else `invalid-arguments`;
  * 4. fewer than TOOL_LIMITS.contributorInFlightCalls calls of the contributor are running, else
  *    `queue-full`. There is no per-contributor call rate (K2).
@@ -24,6 +24,7 @@ import { redact } from 'dsh-connector-shared/redact'
 import { FAILURE_KIND, LOG, RESULT_FIELD, RESULT_KEYS } from './constants.js'
 import { byteLength, snapshotJson } from './json.js'
 import { validateValue } from '../schema-value/index.js'
+import { exceedsToolInputLimit } from '../schema-value/tool-input.js'
 
 /** Any lossless JSON object: what `data` must be before its own schema is checked (Fishball A). */
 const ANY_OBJECT = Object.freeze({ type: SCHEMA_SUBSET.root })
@@ -94,6 +95,7 @@ export function createCalls({ registry, logger }) {
    * check needs no snapshot.
    */
   function precheck(reg, args) {
+    if (exceedsToolInputLimit(args)) return refusalResult(CALL_CODE.limitExceeded)
     let text
     try { text = JSON.stringify(args) } catch { return refusalResult(CALL_CODE.invalidArguments) }
     if (text === undefined) return refusalResult(CALL_CODE.invalidArguments)
