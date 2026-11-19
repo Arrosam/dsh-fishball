@@ -93,6 +93,8 @@ window.__ModuleLoader__.load({
      */
     const FRAME_UI = Object.freeze({
       read: Object.freeze({ method: 'GET', cache: 'no-store', credentials: 'same-origin' }),
+      // Mirror the host's LOOPBACK names for recovery copy only; never choose an admission URL here.
+      plainHttp: 'http:', loopbackNames: Object.freeze(['127.0.0.1', 'localhost', '[::1]']),
       pollMs: 1000,
       // Match dsh-instance's RUNTIME_LIMITS.requestTimeoutMs; this classic client can't import
       // the optional instance. Include time queued behind the browser's same-origin streams.
@@ -347,6 +349,7 @@ window.__ModuleLoader__.load({
       viewTitle: 'Fishball', embedTitle: 'Fishball chat', embedRefresh: 'Refresh',
       embedState: 'State', embedCode: 'Code',
       frameWaiting: 'Waiting for Fishball to load…',
+      frameLoopbackReason: 'The embedded Fishball page requires a loopback address. On the machine running DSH, open http://127.0.0.1{port} or http://localhost{port}.',
       frameNotLoaded: "Fishball didn't load", frameWaitReason: "This frame hasn't confirmed that Fishball loaded.", frameOpenAgain: 'Open Fishball again',
       // The child's lifecycle states the window shows (K3 child.d.ts); `ready` reads "running".
       'frameState.loading': 'checking', 'frameState.unknown': 'status unknown',
@@ -362,6 +365,7 @@ window.__ModuleLoader__.load({
       'frameState.loading': '检查中', 'frameState.unknown': '状态未知',
       statusUnreadable: '无法检查 Fishball 的状态。',
       frameWaiting: '正在等待 Fishball 加载…',
+      frameLoopbackReason: '内嵌 Fishball 页面仅支持回环地址。请在运行 DSH 的机器上打开 http://127.0.0.1{port} 或 http://localhost{port}。',
       frameNotLoaded: 'Fishball 未能加载', frameWaitReason: '此页面尚未确认 Fishball 已加载。', frameOpenAgain: '重新打开 Fishball',
       'frameState.disabled': '已禁用', 'frameState.waiting': '等待中', 'frameState.starting': '启动中', 'frameState.ready': '运行中',
       'frameState.stopping': '停止中', 'frameState.stopped': '已停止', 'frameState.failed': '失败',
@@ -746,6 +750,12 @@ window.__ModuleLoader__.load({
         Object.entries(FRAME_READY).every(([key, value]) => Object.hasOwn(data, key) && data[key] === value)
     }
 
+    function frameWaitReason(t, page) {
+      // A LAN proxy can present a loopback Host upstream; only the browser knows the visible hostname.
+      return page?.protocol === FRAME_UI.plainHttp && !FRAME_UI.loopbackNames.includes(page.hostname)
+        ? t('frameLoopbackReason', { port: page.port ? `:${page.port}` : '' }) : t('frameWaitReason')
+    }
+
     /** Mounted once per admission. A timeout changes the explanation, not the listener or frame. */
     function AdmittedFrame({ t, src, onRetry }) {
       const frame = React.useRef(null)
@@ -780,7 +790,7 @@ window.__ModuleLoader__.load({
         h('iframe', { ref: frame, hidden: phase !== FRAME_WAIT.shown, className: CLS.embedFrame, src, title: t('embedTitle'), allow: EMBED_UI.iframeAllow, referrerPolicy: EMBED_UI.iframeReferrerPolicy, 'data-fishball-embed-frame': true }),
         phase === FRAME_WAIT.waiting ? loadingState(t, t('frameWaiting')) : phase === FRAME_WAIT.recovery ? emptyState(warningGlyph(),
           h('p', { className: CLS.embedLead, role: 'alert' }, t('frameNotLoaded')),
-          h('p', null, t('frameWaitReason')),
+          h('p', null, frameWaitReason(t, window.location)),
           h(Button, { type: 'button', size: 'sm', variant: 'ghost', onClick: onRetry }, t('frameOpenAgain'))) : null)
     }
     /** The glyph that opens every not-framed state, in its round well; decorative, as the words say it. */

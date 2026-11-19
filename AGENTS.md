@@ -10,6 +10,7 @@
 Follow the user's `general-coding-principle` skill for all code and test work. In short:
 - Read the relevant code, callers and DSH host APIs first. Reuse existing DSH services and components before writing new ones.
 - Never invent behaviour. When a requirement is missing or ambiguous, ask the user.
+- Error messages must state the known cause and what the user can do. If the cause is unknown, say what failed without guessing or exposing credentials.
 - No repeated code blocks. Share behaviour through functions, or through base classes for similar variants.
 - No bare numbers or strings in behaviour code. Put them in feature-owned constant objects or in the plugin's typed config.
 - Keep to SOLID and make surgical changes: the smallest complete change, with no unrelated refactors.

@@ -100,7 +100,7 @@ The DSH home must be a canonical real path (on macOS, \`/private/tmp\`, not \`/t
 instance reports \`INVALID_MAIN_HOME\` and does not start.
 
 Open Fishball with the fish in the sidebar, or with **Open Fishball** on the instance's settings page
-(**Plugins → ${name('instance')}**). Open DSH at \`127.0.0.1\` or \`localhost\`: the window refuses other host names.
+(**Plugins → ${name('instance')}**). If Fishball says it didn't load at a LAN address, open DSH on the machine running it using \`127.0.0.1\` or \`localhost\` and the same port. The hosted frame requires loopback, even if DSH itself opens over the LAN.
 With no model set, Fishball asks you to choose one.
 
 ## Standalone: a Fishball DSH of its own

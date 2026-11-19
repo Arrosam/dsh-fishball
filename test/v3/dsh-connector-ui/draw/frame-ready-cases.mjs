@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict'
 import { caseTest } from '../../contract/package-boundaries/cases.mjs'
+import { LOOPBACK } from '../shell/constants.mjs'
+import { PAGE_HOST } from './constants.mjs'
 import { mountMain } from './cases.mjs'
 import { byTag, hostWorld, openPage, press, textIn } from './world.mjs'
 
@@ -72,10 +74,27 @@ function pathTo(nodes, target) {
 }
 const concealed = (node) => node.props.hidden === true || node.props.style?.display === 'none' || node.props.style?.visibility === 'hidden'
 
-async function windowView(t, host) {
+const LAN_IPV4 = '192.168.1.42'
+const LAN_HOSTNAME = 'dsh-box.test'
+const NEUTRAL = "This frame hasn't confirmed that Fishball loaded."
+
+async function windowView(t, host, parentName = PAGE_HOST.loopback) {
   const timer = clock()
   const { adaptReact, source } = frameRefs()
-  const page = await openPage(t, host, { prepare: timer.install, adaptReact })
+  // A proxy can forward to a loopback upstream. Exercise an admitted frame without asking the
+  // admission endpoint to trust LAN hosts; only the browser sees the external parent URL.
+  const upstream = LOOPBACK.includes(parentName) ? host : { ...host, connection: {
+    dispatch(method, url, ...args) {
+      const target = new URL(url)
+      target.hostname = PAGE_HOST.loopback
+      return host.connection.dispatch(method, target.href, ...args)
+    },
+  } }
+  const page = await openPage(t, upstream, { host: parentName, adaptReact, prepare(browser) {
+    // Browser scripts may read the same page URL as location, window.location or document.location.
+    browser.sandbox.location = browser.document.location = browser.window.location
+    timer.install(browser)
+  } })
   const view = await mountMain(page)
   const frame = () => byTag(view.tree(), 'iframe')[0]
   assert.ok(await page.waitFor(frame), 'the host mounted no child frame')
@@ -110,22 +129,37 @@ export function registerFrameReadyCases(sdk) {
     assert.equal(w.hidden(), false, 'valid readiness left the frame hidden')
     assert.equal(w.source(), first, 'revealing replaced the frame')
   })
-  row('timeout', '14999 ms is still waiting; at 15000 ms the hidden frame has an explanation and an enabled native retry button', async (t, host) => {
-    const w = await windowView(t, host)
+  for (const [parent, localAdvice] of [
+    ...LOOPBACK.map((name) => [name, false]), [LAN_IPV4, true], [LAN_HOSTNAME, true],
+  ]) row(`timeout ${parent}`, `at the deadline, an admitted frame shows ${localAdvice ? 'DSH-machine guidance' : 'neutral recovery'} and an enabled retry`, async (t, host) => {
+    const w = await windowView(t, host, parent)
+    assert.equal(w.frame().props.src, host.child.admissions.at(-1)?.url, 'expected an admitted frame')
     await w.tick(DEADLINE - 1)
-    assert.ok(!textIn(w.view.tree()).includes(TIMEOUT), 'recovery shown before deadline')
+    const waiting = textIn(w.view.tree())
+    assert.ok(!waiting.includes(TIMEOUT) && !waiting.includes(PAGE_HOST.loopback), 'recovery shown before deadline')
     assert.ok(!w.again(), 'retry offered before deadline')
     await w.signal({ source: {} }) // Must not restart the deadline.
     await w.tick(1)
     assert.ok(w.hidden(), 'timed-out frame is visible')
     const text = textIn(w.view.tree())
     assert.ok(text.includes(TIMEOUT), 'missing timeout heading')
-    assert.ok(text.includes("This frame hasn't confirmed that Fishball loaded."), 'missing timeout explanation')
+    if (localAdvice) {
+      const advice = text.replace(AGAIN, '') // The retry button's “Open” isn't part of the instruction.
+      assert.match(advice, /\b(?:open|reopen|visit|browse|navigate|use)\b/i, 'give the user an action')
+      assert.ok(advice.includes(PAGE_HOST.loopback), 'name the numeric loopback address')
+      assert.match(advice, /\bDSH\b/i, 'name DSH, not just the child application')
+      assert.match(advice, /\b(?:machine|computer|device|server|host)\b/i, 'identify the machine running DSH')
+    } else {
+      assert.ok(text.includes(NEUTRAL), 'missing neutral timeout explanation')
+      assert.ok(!text.includes(PAGE_HOST.loopback), 'loopback user was told to change address')
+    }
+    assert.doesNotMatch(text, /\bhttps\b/i, 'timeout must not recommend HTTPS')
+    assert.doesNotMatch(text, /\bcookies?\b[^.!?]*(?:block|reject|fail|disabl)|(?:block|reject|fail|disabl)\w*[^.!?]*\bcookies?\b/i, 'timeout does not diagnose a cookie failure')
     assert.ok(w.again(), 'no accessible enabled retry button')
     assert.notEqual(String(w.again().props.tabIndex), '-1', 'retry cannot receive keyboard focus')
   })
-  row('late', 'late readiness clears recovery and reveals the original frame without another admission', async (t, host) => {
-    const w = await windowView(t, host)
+  row('late', 'late readiness clears LAN recovery and reveals the original frame without another admission', async (t, host) => {
+    const w = await windowView(t, host, LAN_IPV4)
     const original = w.source()
     const admissions = host.child.admissions.length
     await w.tick(DEADLINE)
@@ -139,7 +173,7 @@ export function registerFrameReadyCases(sdk) {
     const a = await windowView(t, host)
     await a.signal()
     const aFrame = a.source()
-    const b = await windowView(t, host)
+    const b = await windowView(t, host, LAN_HOSTNAME)
     const stale = b.source()
     await b.signal({ source: aFrame })
     assert.ok(b.hidden() && !a.hidden(), 'independent windows shared readiness')
