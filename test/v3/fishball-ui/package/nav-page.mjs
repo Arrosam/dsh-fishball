@@ -230,17 +230,24 @@ export async function navPage(t, sdk, { lang = NAV_PAGE.langs[0], openFails = 0,
   page.run(fs.readFileSync(file, 'utf8'), file)
   const entry = page.registrations.find((r) => r.id === NAV_PAGE.pageModule)
   const primitives = primitivesFor(sdk, React)
-  const plugin = entry.factory((name) => {
+  const loadPlugin = () => entry.factory((name) => {
     if (name === NAV_PAGE.modules.react) return React
     if (name === NAV_PAGE.modules.reactDom) return { createPortal: (node, container) => React.createElement(NAV_PAGE.portalTag, { [NAV_PAGE.portalContainer]: container }, node) }
     if (name === NAV_PAGE.modules.primitives) return new Proxy(primitives, { get: (target, key) => (key === NAV_PAGE.modalSelectorKey ? NAV_PAGE.modalSelector : target[key]) })
     throw new Error('unexpected page require ' + name)
   })
-  const install = () => (plugin.default ?? plugin).apply(ctx)
+  // A replacement page scope goes away; the document and native services prepared above stay live.
+  const nativeEffects = effects.length
+  let plugin = loadPlugin()
+  const install = () => (plugin.default ?? plugin).apply({ ...ctx })
+  const dispose = (from) => {
+    for (const out of effects.splice(from).reverse()) { if (typeof out === 'function') out(); else out?.dispose?.() }
+    for (const m of mounted.splice(0)) shim.unmountRoot(m.key)
+  }
+  const replace = async () => { dispose(nativeEffects); plugin = loadPlugin(); install(); await settle() }
   try { install() } catch (error) { log.errors.push(String(error?.stack ?? error)) }
   t.after(() => {
-    for (const out of effects.reverse()) { try { if (typeof out === 'function') out(); else out?.dispose?.() } catch {} }
-    for (const m of mounted) shim.unmountRoot(m.key)
+    dispose(0)
     shortcuts.dispose()
     page.clearTimers()
   })
@@ -261,7 +268,7 @@ export async function navPage(t, sdk, { lang = NAV_PAGE.langs[0], openFails = 0,
   const nodes = () => findAll(composed(), () => true)
   const nav = () => nodes().find((n) => n.tag === NAV_PAGE.nav.tag && n.props.className?.split(' ').includes(NAV_PAGE.nav.className) && n.props['aria-label'] === NAV_PAGE.nav.label)
   return {
-    shim, log, nodes, nav, settle, composed, install,
+    shim, log, nodes, nav, settle, composed, install, replace,
     /** MULTI-3: every style rule text the page mounted and still holds. */
     styles: () => [
       ...sheets.flatMap((sheet) => [sheet.text ?? '', ...sheet.cssRules.map((r) => r.cssText)]),

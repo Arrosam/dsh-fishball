@@ -81,7 +81,7 @@ window.__ModuleLoader__.load({
     const SETTINGS_VIEW = 'settings'
     const CONTINUATION = Object.freeze({
       view: Object.freeze({ name: 'view', settings: SETTINGS_VIEW, values: Object.freeze([SETTINGS_VIEW]) }),
-      lang: Object.freeze({ name: 'lang', values: Object.freeze(['zh', 'en']), settingsNamespace: 'locale' }),
+      lang: Object.freeze({ name: 'lang', values: Object.freeze(['zh', 'en']), settingsNamespace: 'locale', settled: Symbol.for('fishball:admission-language-settled') }),
       query: '?',
     })
     /**
@@ -502,22 +502,26 @@ window.__ModuleLoader__.load({
 
     /** Apply this admission once, not as a permanent override of the child's Settings. */
     function applyLanguage(ctx, lang, own) {
-      if (lang === null) return
+      if (lang === null || document[CONTINUATION.lang.settled]) return
       const apply = () => {
         const snapshot = ctx.locale.getLocale()
         if (snapshot.active !== lang && snapshot.locales.some(locale => locale.id === lang)) ctx.locale.setLocale(lang)
       }
+      const settle = () => {
+        apply()
+        // Only completion belongs to the document: a replacement mount must take over a pending read.
+        document[CONTINUATION.lang.settled] = true
+      }
       // DSH starts with the browser language, then adopts the saved child preference from this
       // form. A match before that first read (e.g. browser en, saved zh) is only provisional.
       const form = ctx.configForms.get(CONTINUATION.lang.settingsNamespace)
-      if (form.getSnapshot().value === undefined) {
-        const unsubscribe = form.subscribe(() => {
-          if (form.getSnapshot().value === undefined) return
-          unsubscribe()
-          apply()
-        })
-        own(unsubscribe)
-      }
+      if (form.getSnapshot().value !== undefined) return settle()
+      const unsubscribe = form.subscribe(() => {
+        if (form.getSnapshot().value === undefined) return
+        unsubscribe()
+        settle()
+      })
+      own(unsubscribe)
       apply()
     }
 
