@@ -1,0 +1,7 @@
+- insert:
+    - id: fishball-amenities
+      name: 'fishball-amenities'
+      config: {}
+    - id: fishball-board
+      name: ./board/index.js
+      config: {}

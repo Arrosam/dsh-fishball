@@ -30,8 +30,8 @@ export const RELEASE_DIR = path.join(REPO, '.runtime', 'release', VERSION)
  */
 export const PACKAGES = Object.freeze([
   Object.freeze({ key: 'fishballShared', folder: 'packages/shared', library: true }),
-  Object.freeze({ key: 'ui', folder: 'packages/fishball-ui' }),
   Object.freeze({ key: 'core', folder: 'packages/core' }),
+  Object.freeze({ key: 'amenities', folder: 'packages/fishball-amenities' }),
 ])
 
 export const HOSTED_SET = Object.freeze([])
@@ -39,7 +39,8 @@ export const HOSTED_SET = Object.freeze([])
 export const SET_CARRIER = null
 
 export const INSTALL_SETS = Object.freeze({
-  standalone: Object.freeze(['ui', 'core']),
+  standalone: Object.freeze(['core']),
+  amenities: Object.freeze(['amenities']),
 })
 
 /** The profile the documents and checks use, DSH's own Web template (dsh-app-boot PROFILE_TEMPLATES.web). */

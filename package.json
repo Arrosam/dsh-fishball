@@ -1,12 +1,12 @@
 {
   "name": "dsh-fishball",
   "private": true,
-  "description": "Fishball for DeepSeek Harness: Fishball agent plugins (fishball-core, fishball-ui, fishball-shared, and shelved fishball-board). The root is not a plugin package.",
+  "description": "Fishball for DeepSeek Harness: fishball-core (core + UI components), fishball-amenities (fishball-board component), and fishball-shared. The root is not a plugin package.",
   "license": "MIT",
   "type": "module",
   "workspaces": [
     "packages/core",
-    "packages/fishball-ui",
+    "packages/fishball-amenities",
     "packages/shared"
   ],
   "engines": {

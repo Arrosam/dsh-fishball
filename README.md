@@ -32,8 +32,8 @@ This repository holds the **Fishball-side** packages (installed in a Fishball DS
 
 | Package | What it does |
 | --- | --- |
-| [`fishball-core`](packages/core) | The backend: the one manager session and its preset, persona, reminders and private Skills; the MCP link to the target connector, Connect, interception, status, the ask cards, the guard rows; its own settings page (target, Connect, identity, token field, **Fishball's model**). |
-| [`fishball-ui`](packages/fishball-ui) | Every UI change inside a Fishball DSH: the Fishball page, the UI guard rows, the Recommended tab, the status strip, the pairing views, the ask cards and the model dialog. Without core it logs `fishball-core-missing` and changes nothing. |
+| [`fishball-core`](packages/core) | One plugin with 2 components: **`fishball-core`** (manager session, preset, persona, reminders, private Skills, MCP link, Connect, interception, status, ask cards, guard rows, bundle settings page) and **`fishball-ui`** (`./ui/`, Fishball page, Recommended tab, sidebar targets & pairing views, ask cards, brand row, model dialog). |
+| [`fishball-amenities`](packages/fishball-amenities) | Optional Fishball amenities bundle (currently **`fishball-board`** under `./board/`). Configure each amenity from its component settings. |
 | [`fishball-shared`](packages/shared) | A library inside the Fishball-side tarballs (today only the core/ui seam). Not a plugin. |
 
 ### Related repositories

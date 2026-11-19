@@ -1,12 +1,12 @@
 {
-  "name": "fishball-board",
+  "name": "fishball-amenities",
   "version": "1.0.0-alpha.1",
-  "description": "The Fishball instance's persistent work board.",
+  "description": "Optional Fishball amenity components (including fishball-board). Configure each amenity in its component settings.",
   "license": "MIT",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Arrosam/dsh-fishball.git",
-    "directory": "packages/board"
+    "directory": "packages/fishball-amenities"
   },
   "publishConfig": {
     "tag": "alpha"
@@ -15,13 +15,16 @@
   "main": "./index.js",
   "exports": {
     ".": "./index.js",
+    "./client": "./client.js",
     "./package.json": "./package.json"
   },
   "files": [
     "index.js",
-    "src/",
+    "client.js",
+    "board/",
     "cordis.patch.yml",
-    "README.md"
+    "README.md",
+    "LICENSE"
   ],
   "engines": {
     "node": ">=22.14",
@@ -33,6 +36,13 @@
   "dsh": {
     "bundle": {
       "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-client-locale",
+        "@deepseek-ai/dsh-client-ui-plugin-manager"
+      ]
     }
   }
 }
