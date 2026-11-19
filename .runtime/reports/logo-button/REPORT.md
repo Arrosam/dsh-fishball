@@ -89,14 +89,13 @@ logo's accessible control exists in the expanded brand row.
 - 1440: the expanded sidebar's top-left brand row, both SDKs.
 - 390: the sidebar is opened for the shot. rc.5 shows its expanded sheet; rc.1 shows its drawer;
   both use the same wide brand row and the same control. At ≤480px, rc.1's closed drawer becomes
-  a 44px bar: panel actions remain reachable, but its still-mounted wide brand is hidden. See the
-  [480px closed-bar fixture capture](closed-bar-480-rc1.png); the open-state matrix is unchanged.
+  a 44px bar. A fixture screenshot at 480px showed the toggle and panel actions with no wide
+  brand row; that screenshot was not kept. The open-state matrix is unchanged.
 - Rail (collapsed wide sidebar): the mark renders inside the shell's toggle; clicking it still
   collapses/expands. It does not open the manager (the toggle is not the brand control).
-- rc.5's 44px narrow bar (collapsed below 480px): `fishball-page`'s own bar restyle hides the rail
-  mark and shows DSH's open-sidebar glyph; there is no brand row in that 44px bar, so the logo
-  appears when the sidebar is expanded as the sheet. This is the page's existing narrow layout, not
-  a logo regression.
+- rc.5's 44px bar (≤480px): on collapse the host keeps its wide brand mounted for a 150 ms fade.
+  The bar hides that button immediately, so it takes no space or focus and the toggle stays at x=8.
+  The settled bar shows DSH's open-sidebar glyph; the expanded sheet still shows the brand.
 - On macOS Desktop the shell renders the brand row as a drag region/span, not a button (V1's known
   host boundary); the artwork still renders, but there is no Fishball button to capture there.
   Web is the tested target.

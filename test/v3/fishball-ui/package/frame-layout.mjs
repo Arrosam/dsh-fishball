@@ -63,7 +63,7 @@ export function frameDocument(sdk, { panels, collapsed, drawer = false, mark, pa
   const wide = drawer || !collapsed
   const brand = `<button type="button" data-fbtest-wide-brand ${HOOK.control} aria-label="${LABEL.brand}" class="${side.brand} ${side.wide}"><span class="${side.brandIdentity}" aria-hidden="true"><span class="${side.brandMark}">${slot(SLOT.mark, `<svg ${HOOK.mark} width="24" height="24"></svg>`)}</span><span class="${side.brandName}">${slot(SLOT.name, `<span ${HOOK.name}>${WORDMARK.text}</span>`)}</span></span></button>`
   const railMark = `<span class="${side.railMark}" aria-hidden="true">${slot(L.slot.brandMark, '<svg width="24" height="24"></svg>')}</span>`
-  const root = `<div class="${side.root}${collapsed && !drawer ? ' ' + side.collapsed : ''}" data-fbtest-collapse-class="${side.collapsed}">`
+  const root = `<div class="${side.root}${collapsed && !drawer ? ' ' + side.collapsed : ''}" data-fbtest-collapse-class="${side.collapsed}" data-fbtest-fade-class="${side.fading}">`
     + `<div class="${side.logoRow}">${wide ? brand : ''}<button type="button" class="${side.iconButton} ${side.toggle}" data-fbtest-toggle${sdk === L.drawerSdk ? ' data-sidebar-toggle' : ''} aria-label="toggle">${wide ? '' : railMark}<svg width="18" height="18"></svg></button></div>`
     + `<button type="button" class="${side.newSession}" ${L.newSessionHook} aria-label="New session"><span>+</span></button>`
     + `<nav class="${side.panelList}" aria-label="Global panels">${rows}</nav>`

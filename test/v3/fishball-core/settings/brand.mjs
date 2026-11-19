@@ -31,22 +31,19 @@ const BRAND = Object.freeze({
   default: 'fishball',
 })
 
-/** The setting's control and its two options, wherever the page draws them. */
+/** Enumerate the rendered controls/choices before comparing them: filtering by the expected
+ * values, or looking up only their labels, would silently discard duplicate or unknown radios. */
 function controlOf(page) {
-  const [control] = page.byAttr(BRAND.hook)
-  assert.ok(control, `no [${BRAND.hook}] control on core's settings page`)
-  const options = findAll([control], (n) => n.tag === 'option' || (n.tag === 'input' && n.props.type === 'radio') || n.props[BRAND.hook] !== undefined && n !== control)
-  return { control, options: options.filter((n) => BRAND.values.includes(String(n.props.value)) || BRAND.values.includes(String(n.props['data-value']))) }
+  const controls = page.byAttr(BRAND.hook)
+  assert.equal(controls.length, 1, `expected exactly one [${BRAND.hook}] control`)
+  return controls[0]
 }
 
-/** The option words: a select's `<option>` text, or a radio's label text. */
-function optionWords(page, control) {
-  const options = findAll([control], (n) => n.tag === 'option')
-  if (options.length) return options.map((n) => [String(n.props.value), textOf(n)])
-  return BRAND.values.map((value) => {
-    const input = findAll([control], (n) => n.tag === 'input' && String(n.props.value) === value)[0]
-    const label = input ? findAll([control], (n) => n.tag === 'label' && findAll([n], (x) => x === input).length > 0)[0] : undefined
-    return [value, label ? textOf(label) : undefined]
+const isRadio = (n) => n.tag === 'input' && n.props.type === 'radio'
+function optionWords(control) {
+  return findAll([control], (n) => n.tag === 'option' || isRadio(n)).map((choice) => {
+    const label = isRadio(choice) ? findAll([control], (n) => n.tag === 'label' && findAll([n], (x) => x === choice).length > 0)[0] : choice
+    return [String(choice.props.value), label ? textOf(label) : undefined]
   })
 }
 
@@ -84,8 +81,8 @@ export function registerBrandSettingCases(version) {
   for (const lang of DSH.locales) {
     t('BRAND-SET-EP-01', `control ${lang}`, `(${lang}) core's settings page has one [${BRAND.hook}] control with exactly the options ${BRAND.values.join(' / ')} labelled ${BRAND.labels.fishball} / ${BRAND.labels.deepseek}; with no stored brandStyle Fishball is selected`, async (c) => {
       const page = await open(c, { lang })
-      const { control } = controlOf(page)
-      assert.deepEqual(optionWords(page, control).map(([value, word]) => [value, word]), [[BRAND.values[0], BRAND.labels.fishball], [BRAND.values[1], BRAND.labels.deepseek]])
+      const control = controlOf(page)
+      assert.deepEqual(optionWords(control), BRAND.values.map((value) => [value, BRAND.labels[value]]))
       assert.equal(selectedOf(control), BRAND.default)
     })
   }
@@ -99,30 +96,30 @@ export function registerBrandSettingCases(version) {
   ]) {
     t('BRAND-SET-EP-02', label, `stored ${label} (${show(core.brandStyle)}) → the control shows ${expected}`, async (c) => {
       const page = await open(c, { core })
-      assert.equal(selectedOf(controlOf(page).control), expected)
+      assert.equal(selectedOf(controlOf(page)), expected)
     })
   }
   t('BRAND-SET-UC-01', 'choose DeepSeek', "choosing DeepSeek writes {op:'set', path:['brandStyle'], value:'deepseek'} through core's config form, and the page shows the stored value", async (c) => {
     const page = await open(c)
-    const { control } = controlOf(page)
+    const control = controlOf(page)
     await choose(page, control, 'deepseek')
     // Requirement: the write goes through the config form's `form.set(field, value)`.
     assert.deepEqual(page.world.mutations.map((m) => ({ ns: m.ns, ops: m.ops })), [{ ns: CORE.namespace, ops: [{ op: DSH.op.set, path: [BRAND.field], value: 'deepseek' }] }])
     assert.equal(page.world.coreValue()[BRAND.field], 'deepseek')
-    assert.equal(selectedOf(controlOf(page).control), 'deepseek')
+    assert.equal(selectedOf(controlOf(page)), 'deepseek')
   })
   t('BRAND-SET-UC-01', 'choose Fishball', 'choosing Fishball writes brandStyle fishball and the page shows it', async (c) => {
     const page = await open(c, { core: { brandStyle: 'deepseek' } })
-    const { control } = controlOf(page)
+    const control = controlOf(page)
     await choose(page, control, 'fishball')
     assert.deepEqual(page.world.mutations.map((m) => m.ops), [[{ op: DSH.op.set, path: [BRAND.field], value: 'fishball' }]])
-    assert.equal(selectedOf(controlOf(page).control), 'fishball')
+    assert.equal(selectedOf(controlOf(page)), 'fishball')
   })
   for (const [row, answer] of [['refused', false], ['rejected', 'reject']]) {
     t('BRAND-SET-E1', row, `the Host ${row} the write: a visible alert/save-failed line, and the stored value stays ${BRAND.default}`, async (c) => {
       const page = await open(c)
       page.world.mutateAnswer = answer
-      await choose(page, controlOf(page).control, 'deepseek')
+      await choose(page, controlOf(page), 'deepseek')
       const visible = [...page.alerts(), ...page.byAttr(STAND_IN.saveFailed)].filter((n) => textOf(n).trim() !== '')
       assert.ok(visible.length > 0, `${row}: no visible save failure`)
       assert.equal(page.world.coreValue()?.brandStyle, undefined)

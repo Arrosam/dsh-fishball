@@ -236,13 +236,13 @@ window.__ModuleLoader__.load({
         // open-sidebar glyph, its sibling, so it is not taken for this page's Fishball button.
         `${rail} button>span:has(>[data-slot="sidebar.brand.mark"]){display:none!important}`,
         `${rail} button>span:has(>[data-slot="sidebar.brand.mark"])~svg{display:inline!important}`,
+        // rc.1 retains the wide identity in its drawer; rc.5 retains it until the collapse fade ends.
+        // Hide it from layout and focus as soon as the bar closes. The mark-only toggle has no name slot.
+        `${sidebar} :is(button,span):has(${PAGE.brandName}){display:none!important}`,
         `${closed} ${PAGE.main}>*{padding-bottom:${narrow.clearancePx}px;box-sizing:border-box}`,
         // AppFrame supplies an inline drawer width and an off-screen transform. Only its CLOSED
         // presentation changes; the open drawer still uses the host's geometry and modal layer.
         `${drawer}{width:100%!important;visibility:visible;transform:none;transition:none}`,
-        // rc.1 keeps the wide brand (a button or a noninteractive span) beside the drawer toggle.
-        // Only the toggle belongs in the closed bar, even when Fishball owns the brand button.
-        `${drawerRoot} :is(button,span):has(${PAGE.brandName}){display:none!important}`,
         `${drawerRoot} :is(nav>button,[data-sidebar-toggle]){width:36px;height:36px;justify-content:center;gap:0;border-inline:0;padding:0}`,
         `${drawerRoot} nav>button>span[aria-hidden]+span{display:none}`,
         `${drawerRoot} :is(nav>button>span[aria-hidden]>[data-slot="sidebar.panellist"],[data-sidebar-toggle])>svg{width:18px;height:18px}`,
