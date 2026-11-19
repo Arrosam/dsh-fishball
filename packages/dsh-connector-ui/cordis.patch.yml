@@ -1,0 +1,8 @@
+# dsh-connector-ui's profile footprint: one host row (V3 R-EMBED, U-SHELL). DSH composes a
+# package's browser half only while a profile row names that package. The row's host half
+# (index.js) looks up the Fishball host services at runtime and serves the client's routes; it has
+# no settings of its own (R-UI-06). It edits no other row.
+- insert:
+    - id: dsh-connector-ui
+      name: 'dsh-connector-ui'
+      config: {}

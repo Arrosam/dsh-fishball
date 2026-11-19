@@ -1,0 +1,22 @@
+{
+  "name": "dsh-connector-monorepo",
+  "private": true,
+  "description": "DSH Connector for DeepSeek Harness: MCP connector backend, connector UI, cross-DSH adapter, and shared library.",
+  "license": "MIT",
+  "type": "module",
+  "workspaces": [
+    "packages/dsh-connector",
+    "packages/dsh-connector-ui",
+    "packages/dsh-connector-adapter",
+    "packages/dsh-connector-shared"
+  ],
+  "engines": {
+    "node": ">=22.14",
+    "dsh": ">=0.2.1-rc.5"
+  },
+  "scripts": {
+    "test:v3": "node test/run-v3.mjs",
+    "pack": "node scripts/pack.mjs",
+    "pack:check": "node scripts/pack.mjs --check"
+  }
+}
