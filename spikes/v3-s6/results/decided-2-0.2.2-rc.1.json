@@ -1,0 +1,59 @@
+{
+  "id": "decided-2",
+  "sdk": "0.2.2-rc.1",
+  "node": "v24.22.2",
+  "at": "2026-11-11T11:46:04.091Z",
+  "hmr": true,
+  "bundlesBefore": [
+    "@deepseek-ai/dsh-base",
+    "@deepseek-ai/dsh-web-app",
+    "fishball-core",
+    "fishball-board",
+    "fishball-instance",
+    "fishball-watchdog"
+  ],
+  "reorder": {
+    "at": "apply",
+    "before": [
+      "@deepseek-ai/dsh-base",
+      "@deepseek-ai/dsh-web-app",
+      "fishball-core",
+      "fishball-board",
+      "fishball-instance",
+      "fishball-watchdog"
+    ],
+    "after": [
+      "@deepseek-ai/dsh-base",
+      "@deepseek-ai/dsh-web-app",
+      "fishball-board",
+      "fishball-instance",
+      "fishball-watchdog",
+      "fishball-core"
+    ]
+  },
+  "bundlesAfter": [
+    "@deepseek-ai/dsh-base",
+    "@deepseek-ai/dsh-web-app",
+    "fishball-board",
+    "fishball-instance",
+    "fishball-watchdog",
+    "fishball-core"
+  ],
+  "rowsAtAppReady": {
+    "fishball-instance": "on:active"
+  },
+  "rowsAfterSettle": {
+    "fishball-instance": "off:idle",
+    "preset-standard": "off:idle",
+    "preset-ptc": "off:idle",
+    "preset-cordis": "off:idle",
+    "preset-minimal": "off:idle"
+  },
+  "instanceStarted": true,
+  "reportAfterSettle": [],
+  "checkTriggers": [
+    "settings/document-updated",
+    "app-ready"
+  ],
+  "conflictLines": []
+}

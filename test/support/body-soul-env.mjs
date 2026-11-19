@@ -6,8 +6,8 @@
  *   settings migration also imports `zod`, a package DSH ships in the same runtime but which is not
  *   under `@deepseek-ai/`, so one extra resolve hook maps that single name to the same runtime.
  * - Scratch directories are throwaway temp dirs (os.tmpdir()), removed after each test.
- * - The connector's `record.*` words live inside the closure of packages/connector/client.js (a
- *   browser bundle for DSH's module loader), so they are read from the source text.
+ * - The connector's `record.*` words live inside the closure of the moved connector UI
+ *   (packages/dsh-connector-ui/src/client/client.shell.js, the page dictionaries' part since U-SHELL's split), so they are read from the source text.
  */
 import fs from 'node:fs'
 import { mkdtemp, rm } from 'node:fs/promises'
@@ -15,13 +15,17 @@ import { createRequire } from 'node:module'
 import os from 'node:os'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { REPO } from './constants.mjs'
+import { EMBED_UI, REPO } from './constants.mjs'
 import { FIXTURE } from './provider-sync-official.mjs'
 import { resolveFromRuntime, resolveOfficialSDK } from './provider-sync-sdk.mjs'
 
 export const BODY_SOUL = Object.freeze({
-  instance: path.join(REPO, 'packages', 'instance'),
-  connector: path.join(REPO, 'packages', 'connector'),
+  instance: path.join(REPO, 'packages', 'dsh-instance'),
+  connector: path.join(REPO, 'packages', 'dsh-connector'),
+  /** V3 R-CORE: the slim child, slim ui, persona and fishball-ui page packages moved here. */
+  core: path.join(REPO, 'packages', 'core'),
+  /** V3 F-UI: the page, the Recommended tab and its data moved, unchanged, from core into fishball-ui. */
+  ui: path.join(REPO, 'packages', 'fishball-ui'),
   tempPrefix: 'fbtest-body-soul-',
   /** Runtime packages outside `@deepseek-ai/` that instance modules import. */
   runtimePackages: Object.freeze(['zod']),
@@ -35,13 +39,25 @@ function installHooks() {
   resolveFromRuntime((specifier) => BODY_SOUL.runtimePackages.includes(specifier))
 }
 
-/** Import a module of packages/instance by its path relative to that package. */
+/** Import a module of packages/dsh-instance by its path relative to that package. */
 export async function loadInstance(relative) {
   installHooks()
   return import(pathToFileURL(path.join(BODY_SOUL.instance, relative)).href)
 }
 
-/** Import a module of packages/connector by its path relative to that package. */
+/** Import a module of packages/core by its path relative to that package. */
+export async function loadCore(relative) {
+  installHooks()
+  return import(pathToFileURL(path.join(BODY_SOUL.core, relative)).href)
+}
+
+/** Import a module of packages/fishball-ui by its path relative to that package. */
+export async function loadUi(relative) {
+  installHooks()
+  return import(pathToFileURL(path.join(BODY_SOUL.ui, relative)).href)
+}
+
+/** Import a module of packages/dsh-connector by its path relative to that package. */
 export async function loadConnector(relative) {
   installHooks()
   return import(pathToFileURL(path.join(BODY_SOUL.connector, relative)).href)
@@ -64,15 +80,15 @@ export async function tempDir(t) {
 }
 
 /**
- * The page dictionary words of one package's browser bundle (`client.js`): its `const en = {`
+ * The page dictionary words of one browser bundle file: its `const en = {`
  * and `const zh = {` objects, keyed exactly as `t()` looks them up. Only single-quoted
  * `'key': '…'` pairs are read. `keep` narrows the result for a feature's own prefix.
  */
-function clientWords(packageDir, keep) {
-  const source = fs.readFileSync(path.join(packageDir, 'client.js'), 'utf8')
+function clientWords(file, keep) {
+  const source = fs.readFileSync(file, 'utf8')
   const enAt = source.indexOf('const en = {')
   const zhAt = source.indexOf('const zh = {')
-  if (enAt < 0 || zhAt < 0 || zhAt < enAt) throw new Error('client.js dictionaries not found in ' + packageDir)
+  if (enAt < 0 || zhAt < 0 || zhAt < enAt) throw new Error('dictionaries not found in ' + file)
   const zhEnd = source.indexOf('\n    }\n', zhAt)
   const pairs = (text) => {
     const words = {}
@@ -85,12 +101,17 @@ function clientWords(packageDir, keep) {
 
 /** The connector's `record.*` words per language (the same observation point as its page). */
 export function connectorRecordWords() {
-  return clientWords(BODY_SOUL.connector, (key) => key.startsWith('record.'))
+  return clientWords(EMBED_UI.connectorClient, (key) => key.startsWith('record.'))
 }
 
-/** The instance card's words per language (sync reasons, state and failure explanations). */
+/**
+ * The instance card's words per language (sync reasons, state and failure explanations). Since
+ * R-EMBED the V2 card is two files: the card chunk in embed-UI and the status line it shows, which
+ * stays the instance's (src/child-settings/client.status.js); their words are read together.
+ */
 export function instanceClientWords() {
-  return clientWords(BODY_SOUL.instance)
+  const parts = [EMBED_UI.instanceCard, EMBED_UI.statusLine].map((file) => clientWords(file))
+  return { en: Object.assign({}, ...parts.map((p) => p.en)), zh: Object.assign({}, ...parts.map((p) => p.zh)) }
 }
 
 /** CJK ideographs: the observable mark of the Chinese variant. */

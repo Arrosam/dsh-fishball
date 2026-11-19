@@ -20,6 +20,18 @@ current design again; §0.3 is kept as the record of the Option A spike. Where �
 disagree, §0 wins. The user's answers to §0.9 (same day) are folded in: U1, U2, U4, U5, U6 and U7
 are closed; U3 (theme) was closed later the same day with its proposed form ("可以").
 
+**V2 (2026-11-11): what this document no longer describes.** V2 replaced D28/D29's base-only
+child and its custom page with a DSH-native Web child under A-lite: the child runs DSH's own
+session page, slimmed by the child-only `fishball-page`, `fishball-settings` and Fishball
+Recommended rows ([final V2 scope](<planning/v2-final-scope.md>),
+[instance-extension-points §11](<plugins/instance-extension-points.md#L1303-L1558>),
+[v2-lite](<planning/v2-lite.md>), [v2-set](<planning/v2-set.md>)). Superseded for V2, and marked
+where each stands: §0.5's child profile, readiness, chat page, settings view, languages, theme,
+child routes and plugins in the child; §0.7's settings-view rows and "Admin routes"; §2.1–§2.3 (the
+base-only child); §3 (the bearer proxy); §9 (the settings page). Still current: §0.4 (contract),
+§0.6 (binding), §0.10 (release), §10 (model sync, started only from the main DSH). The superseded
+text stays as design history.
+
 ## 0. Connector and instance (revision 2026-11-06)
 
 ### 0.1 The user's decisions
@@ -266,6 +278,13 @@ Revised 2026-11-07 for D28–D30. The Option A child of the 2026-11-06 revision 
 dsh-web-app]`, DSH's session view in the iframe, a child UI plugin, an agent preset) is withdrawn.
 Its spike stays in §0.3 as a record.
 
+*Superseded in V2 (2026-11-11), from "Child profile" to "Plugins in the child" except "Child launch"
+and "The frame":* the child profile is `[dsh-base, dsh-web-app]` (`src/native-runtime/constants.js`
+`RUNTIME.profile.bundles`), readiness also requires the native Web capability, and the page is
+DSH's own session page under A-lite. The embed route hands the browser off to the child's own
+origin instead of proxying (§3). See [v2-lite](<planning/v2-lite.md>) and
+[instance-extension-points §11](<plugins/instance-extension-points.md#L1303-L1558>).
+
 **Child profile (unchanged from today).** Bundles `[dsh-base]` only. The launch overlay keeps
 today's rows (lifecycle, session tools, approvals, app, inbox, admin, provider-sync target,
 time-context, read-only sandbox, approval ask, `client-hmr` disabled; §2.3). The existing slim
@@ -438,6 +457,15 @@ stated for the user (§0.9).
 | Instance: the chat's model and reasoning effort | the child's own settings | the composer's own pickers (D20) |
 | Instance: runtime limits (startup, stop and request timeouts, frame and log sizes) | fixed constants of the instance (`RUNTIME_LIMITS`) | not exposed (D23) |
 
+*Superseded in V2 (2026-11-11), the rows for Restart, plugins and the chat's model:* the child's
+slim settings panel restarts through the settings relay (`src/slim/settings-relay.js`), not
+`admin.restart`. Plugins, plugin settings and the default model and effort are edited on the child
+DSH's own Settings and Plugins pages and the composer's native picker. The recommended list is the
+child-only Fishball Recommended tab on that Plugins page ([v2-set](<planning/v2-set.md>),
+[instance-extension-points §11.8–§11.9](<plugins/instance-extension-points.md#L1464-L1540>)). The
+model-sync row is unchanged: a sync starts only from the main DSH's "Model for Fishball" block,
+and the child has no sync entry point (§10).
+
 **What the main DSH exposes for the instance (D23, D26, D28), exactly:** the form field `enabled`,
 plus the status line, Retry and the sync button on the same card, which are not fields. The old
 `limits`, `controlLimits` and `providerSync` keys are no longer in its schema, and neither are
@@ -459,6 +487,13 @@ file (§9). The relay's status check accepts the instance's own `connector-missi
 codes (I1c). The view shows no connector limits
 and has no link of its own to them: the frame's **Connector settings** button opens DSH's form of
 `fishball-connector` (inst-OQ-05).
+
+*V2 status (2026-11-11):* the relay and its routes are still registered (`host.js`
+`createAdminRelay`, `registerAdminRoutes`). Their only browser caller is the custom settings page
+(`src/slim/ui/settings.js`), which V2 no longer serves, so they are retired with RETIRE once
+nothing calls them ([instance-extension-points §11.8](<plugins/instance-extension-points.md#L1464-L1487>)).
+The relay no longer adds a recommended list to `admin.plugins.get`: `ADMIN_RECOMMENDED` was removed
+as dead code.
 
 ### 0.8 Risks
 
@@ -544,8 +579,12 @@ the logs. The connector's data (its storage domains in the main profile) and eve
   directories of this user (the same `prepareLayout` checks as a start). The owner marker must name
   this home. Otherwise it refuses (`INVALID_MAIN_HOME`, `UNSAFE_DIRECTORY`, `UNOWNED_RUNTIME`,
   `UNSAFE_SECRET`) and deletes nothing;
-- the child must be stopped: when `active.json` names a child that is alive, or whose state is
-  unknown (no pid record, `ps` unreadable), it refuses with `CHILD_RUNNING` and deletes nothing.
+- the child must be stopped: when `active.json` names a child that is alive, it refuses with
+  `CHILD_RUNNING`; when the child's state is unknown, it refuses with `CHILD_STATE_UNKNOWN`
+  (E-FIX-1), with a message for each cause: `ps` cannot be run or is unreadable (run it where
+  `/bin/ps` works), or the launch record (pid record) is missing (stop DSH, check that no Fishball
+  child process is left, then delete the folder by hand: the user's rule "用户自己删那个文件夹").
+  In every case it deletes nothing.
   It sends no signal. Quitting DSH stops the child: the parent pipe closes, and the child exits by
   itself within `LIFETIME.childExitTimeoutMs`. A main DSH that still runs owns its child and could
   start it again into the tree being deleted;
@@ -589,6 +628,11 @@ unchanged and is not a separate target.
 Rejected alternatives are recorded where they were rejected (§3.2, §6.2, §13).
 
 ## 2. Architecture
+
+*Superseded in V2 (2026-11-11), §2.1–§2.3:* the child is no longer base-only. Its profile is
+`[dsh-base, dsh-web-app]`, and the launch overlay (`src/native-runtime/overlay.js`) keeps DSH's
+own Web rows and inserts Fishball's child rows ([v2-lite "Launch overlay"](<planning/v2-lite.md>)).
+§2.4's lifecycle rules still hold.
 
 ### 2.1 What the child runs
 
@@ -737,6 +781,12 @@ bridge's own check, so rc.3's stricter RPC does not break it; the moved profile 
 new 0.2.2 UI packages are not used by the slim path.
 
 ## 3. Embedded UI
+
+*Superseded in V2 (2026-11-11):* the production broker no longer proxies the child. A ready GET of
+`/fishball/embed/` answers 303 to the current child generation's own native authenticated URL, so
+the child page runs at its own browser origin (PG-ORIGIN; `src/slim/host/embed.js` header;
+[final V2 scope §4.3](<planning/v2-final-scope.md>)). The bearer proxy below stays in code only for
+a service without `nativeEmbedAccess`, which the built-in instance always provides.
 
 ### 3.1 Serving and ownership
 
@@ -1236,6 +1286,13 @@ copies are deleted, not restyled.
 
 ## 9. Settings page and admin
 
+*Superseded in V2 (2026-11-11):* the settings page is the child's slim `fishball-settings` panel.
+It shows status, Restart, the effective Read Only line, links to the child DSH's own Settings and
+Plugins pages, and a read-only note that model sync starts only from the main DSH
+([v2-set](<planning/v2-set.md>),
+[instance-extension-points §11.8](<plugins/instance-extension-points.md#L1464-L1487>)). The model,
+plugin and settings blocks below moved to DSH's native pages.
+
 The Plugins → Fishball → settings page is rebuilt around the isolated Fishball:
 
 - Status and restart, with the safe state/code the host already exposes.
@@ -1245,8 +1302,9 @@ The Plugins → Fishball → settings page is rebuilt around the isolated Fishba
   uninstall; everything targets the child's profile; nothing touches the main profile.
 - Settings: the child plugin config forms that the page can render; limits that belong to Fishball.
 - Provider sync: the Model block's **Refresh models** also syncs API-key providers from the main DSH (§10).
-  (Superseded by D26: the sync button is on the `fishball-instance` Plugins card in the main DSH,
-  and the instance's settings page has none.)
+  (Superseded by D26 and the user's decision of 2026-11-11: a sync starts only from the "Model for
+  Fishball" block on the `fishball-instance` Plugins card in the main DSH; the child has no sync
+  entry point.)
 - No legacy sections (intake, outbox, watches, approvals, hidden tools, main plugin catalog) —
   those concepts are either main-side or gone. The intake, outbox and watches blocks' leftover
   client code (renderers, strings and the unused watches/remove request) is removed; their
@@ -1264,8 +1322,10 @@ control channel and then to the child admin service. The child applies changes w
 
 **Flow (D26, second amendment of 2026-11-06).** There is no switch and no automatic sync. The
 "Model for Fishball" block of the `fishball-instance` Plugins card in the main DSH
-(`packages/instance/client.js`) has one button, **Check for new models**. It is the only place a sync
-starts; the instance's settings page in the iframe has no sync button.
+(`packages/instance/client.js`) has one button, **Check for new models**. Only the main DSH starts a sync
+(the user's decision of 2026-11-11). Neither the child's slim settings panel ([v2-set](<planning/v2-set.md>)) nor
+anything else in the child can start one. The panel shows only a read-only note pointing here; the
+settings relay has no sync op; the child registers no `models/*` route.
 
 1. **Fetch once.** A press posts `POST /api/fishball-instance/models/check` (no body), an owner-only
    Fetch route of the instance's main half. The host runs one preview
@@ -1402,12 +1462,20 @@ coordinator.
 | Main DSH shutting down | — | closed with the page | existing bounded child stop |
 
 No state ever falls back to legacy Fishball, and no error text includes a URL, token or path.
+One accepted exception (2026-11-11): a failed start's sanitised `detail` on the main card may show
+an absolute path outside the home folder, such as a workspace under `/Volumes` (inst-OQ-01).
 
 Diagnostics: the child's stderr goes to `<DSH_HOME>/fishball/runtime/child-stderr.log` (private,
 0600), next to the code-only `lifecycle.log`. Each file is capped at `RUNTIME_LIMITS.maxLogBytes`
 (64 KiB) and rotates once to `child-stderr.log.1`. Lines are redacted before they are written:
 Authorization/Bearer values, key/token/secret/password assignments and any long opaque run are
 replaced with `[redacted]` (`src/native-runtime/stderr-log.js`). stdout stays discarded.
+Redaction does not depend on how the OS splits the stream (R-FIX-INSTANCE F03): a credential
+object or list opened on one line stays masked on the following lines until it closes, and one that
+never closes masks the rest of the stream. When a line over the cap is cut and that leaves such a
+value's end unknown, the stream is sealed: one `[redacted: rest of stream]` line, then nothing more.
+Lines waiting to be written are bounded to one cap; when a burst outruns the disk, the oldest are
+dropped and a `[dropped]` line marks the gap (F04).
 
 ## 12. Legacy retirement
 
@@ -1691,7 +1759,9 @@ scope. `client.js` is a single DSH client module, so **at most one task per wave
 
 **T16 — Provider sync into the child `[host]` plus `[child]`**
 - Amended 2026-11-06 (`feat/slim-psync-redesign`): the page flow is now Refresh models → one-step
-  sync (§10); the preview/confirm routes and the pairing code are gone.
+  sync (§10); the preview/confirm routes and the pairing code are gone. (Superseded by D26 and
+  the user's decision of 2026-11-11: a sync starts only from the main DSH's "Model for Fishball"
+  block on the `fishball-instance` Plugins card; the child has no sync entry point, §10.)
 - Goal: preview and confirm of API-key providers into the child's own home, add-only.
 - Owns: `src/slim/child/provider-sync-target.js`, the target wiring in `src/provider-sync-service.js`
   (contract only; no behavior change to preview rules).
@@ -1878,14 +1948,16 @@ scope. `client.js` is a single DSH client module, so **at most one task per wave
      the old model-catalog validators, the unused `API.model`/`API.models` paths).
      `makeNativeSettings`, `makeModelSettings`, `makeChildPlugins`, `makeChildSettings`,
      `makeBrandStyle`, the question mode and the limits form remain. (`ProviderSyncSlot` also
-     remained here; the 2026-11-06 redesign removed it, and Refresh models now runs the sync, §10.)
+     remained here; the 2026-11-06 redesign removed it, and Refresh models ran the sync. Superseded
+     by D26: the sync starts only from the main DSH's "Model for Fishball" block, §10.)
   3. T08's deferred cleanup is complete: `src/tags.js` is deleted; the store no longer defines the
      `tags` table or its record schema; `src/approvals.js` and `src/questions.js` no longer write
      tag records (`TAG_KIND` and `QUESTION_TAG_ANSWER` removed); and the state feed no longer
      publishes `tags`. `answerWords` stays because the child's decision label still carries a
      question answer's words.
   4. `src/recommended.js` stays: `ADMIN_RECOMMENDED` (`src/slim/host/admin.js`) and the
-     recommended/welcome view read it.
+     recommended/welcome view read it. (V2, 2026-11-11: both readers were removed as dead code;
+     the child's Fishball Recommended tab reads `recommendedList()`.)
 - Deliberately not touched: the send/watch/hand-over entries and the accent-button CSS (T14), the
   persona and overlay (release prep), and the still-registered welcome card, model gate, managed
   banner and pile, which are live components rather than dead code. `src/native-web.js`'s status
@@ -2179,8 +2251,9 @@ K2 (A).
   button, shown only when the attached instance registered `ui.settings`; it opens that path
   framed in the Fishball view. (6) The fixed icon, the fish logo built from DSH's
   `FISH_LOGO_PATH` with a wrench badge, is on the sidebar row, the brand button and the Plugins
-  card. It keeps the unread count and, on managed session rows, the green and yellow dots, and it
-  uses the current text colour in light and dark. (7) Managed-row marks and Hand over keep their
+  card. *Superseded by ICON-SET (the user, 2026-11-18): the sidebar fish is plain, and the wrench
+  is on the connector's own icon only; see conn-OQ-37.* It keeps the unread count and, on managed
+  session rows, the green and yellow dots, and it uses the current text colour in light and dark. (7) Managed-row marks and Hand over keep their
   current behaviour.
 - T: P; EP (instance: none / attached without ui / `ui: {}` / chat only / settings only / both;
   status: none / valid / throws / out-of-vocabulary state / out-of-vocabulary code; retry:
@@ -2234,8 +2307,8 @@ A close by the connector itself shows `connection-interrupted` ("连接中断") 
   card and status route, never in `status()` (there is no attachment then). (5) The instance's
   Plugins card shows the state and the safe code (and the launch-failure detail when there is
   one), live within 1 s, and a Retry button while the state is `failed`. (6)
-  `GET /api/fishball-instance/status` (owner-only Fetch route) answers `{state, code, detail}`,
-  where `detail` is a bounded launch diagnostic string or `null`;
+  `GET /api/fishball-instance/status` (owner-only Fetch route) answers `{state, code, detail}`
+  (`detail` as in inst-OQ-01);
   `POST /api/fishball-instance/retry` retries and answers the new status. (7) The admin relay's
   `admin.status` answers `connector-missing` as itself, not as `failed`.
 - T: P; EP (attach outcome: accepted / `instance-busy` / `contract-version`; state shown: each
@@ -2450,7 +2523,7 @@ here is also an item of §18.6.
 | conn-OQ-34 | One item: Hand over posts the forward (`POST /api/fishball/send`), which publishes one `user` item (the user's note, possibly empty, and the session excerpt) and then marks the session managed without a second note (`src/messaging.js` `forward`, `ManagedRegistry.manage`). The `user` change note exists only for Take back. |
 | conn-OQ-35 | Closed, confirmed. |
 | conn-OQ-36 | The row id is `fishball-connector` (§0.2, with the one-time migration). DSH's Plugins page shows "Fishball connector" for it, and "Fishball instance" for `fishball-instance`. |
-| conn-OQ-37 | The icon is built from DSH's `FISH_LOGO_PATH` and `FISH_LOGO_VIEWBOX` (`dsh-client-ui-primitives`) plus a wrench badge at the bottom right, one SVG in `assets/connector-icon.svg` (the package `icon`) and the same drawing in the client. It is on the sidebar row, the brand button and the connector's Plugins card. The unread count stays on the brand and the row, and the green and yellow dots stay on managed session rows (§8.2). It uses `currentColor` with the magenta eye (`--fb-accent`), so light and dark need no second asset. |
+| conn-OQ-37 | **ICON-SET (the user, 2026-11-18) supersedes the placement below:** the sidebar row and managed-session marks draw the plain fish, and only the connector's own icon (its Plugins card and settings page) carries the wrench. Every package of the set has the same base (FishMark on the ink tile) with its own badge at the bottom right: a paper chip in an ink ring, holding a DSH-style glyph (dsh-connector a wrench, dsh-connector-ui a window, dsh-instance a server, dsh-connector-adapter a plug; the Fishball side's packages are a separate task). Before: the icon is built from DSH's `FISH_LOGO_PATH` and `FISH_LOGO_VIEWBOX` (`dsh-client-ui-primitives`) plus a wrench badge at the bottom right, one SVG in `assets/connector-icon.svg` (the package `icon`) and the same drawing in the client. It is on the sidebar row, the brand button and the connector's Plugins card. The unread count stays on the brand and the row, and the green and yellow dots stay on managed session rows (§8.2). It uses `currentColor` with the magenta eye (`--fb-accent`), so light and dark need no second asset. |
 | conn-OQ-38 | Closed, confirmed. |
 | conn-OQ-39 | Yes: the panel-list row is always shown; the brand button is a second way in. |
 | conn-OQ-40 | Confirmed: I6 shows no connector value and edits none (inst-OQ-05), and E2E-B5 is rewritten to change the limit in DSH's own form (§18.4). |
@@ -2484,7 +2557,7 @@ view. inst-OQ-19 is replaced: the custom chat's routes and the admin routes stay
 
 | Id | Decision |
 | --- | --- |
-| inst-OQ-01 | The connector's attach state and count: `fishballConnector.current()` (conn-OQ-08). The instance's own status and reason: its Plugins card in the main DSH (the `plugins.bundle.config` slot of `fishball-instance`, rendered by `packages/instance/client.js`), and `GET /api/fishball-instance/status` (owner-only Fetch route, `{state, code, detail}`, with a bounded launch diagnostic string or `null` in `detail`). The connector's Fishball view is not used when the connector is missing. |
+| inst-OQ-01 | The connector's attach state and count: `fishballConnector.current()` (conn-OQ-08). The instance's own status and reason: its Plugins card in the main DSH (the `plugins.bundle.config` slot of `fishball-instance`, rendered by `packages/instance/client.js`), and `GET /api/fishball-instance/status` (owner-only Fetch route, `{state, code, detail}`; `detail` is a failed start's specific code and sanitized first message line, at most 2,000 characters, else null: V2 e2e round 2, bug 2; the sanitizer is V1's `safeLaunchDetail`, which masks credentials and home directories but shows other absolute paths, such as a workspace under `/Volumes`; that is accepted, the user's decision of 2026-11-11). The connector's Fishball view is not used when the connector is missing. |
 | inst-OQ-02 | Yes: `connector-missing`, the child stopped. Enabling the connector again needs no main restart: the instance's optional `ctx.inject(['fishballConnector'])` sub-scope activates when the service appears, and the instance starts. |
 | inst-OQ-03 | `instance-busy` → status `failed`, code `NATIVE_INSTANCE_BUSY`; `contract-version` → `failed`, `NATIVE_CONTRACT_VERSION`. In both the instance stops its child (no attach means nothing can use it) and does not retry by itself; Retry on its card tries again. The two codes join the instance's status codes; they are instance codes, not contract codes. |
 | inst-OQ-04 | The main DSH exposes exactly `enabled`, `nodeExecutable` and `executableSearchPath` in the `fishball-instance` form (§0.7), because they are needed before the child exists. The same card has the "Model for Fishball" sync button (D26), an action and not a field; `providerSync` is gone. Runtime limits are fixed constants and are no longer settings. The Node default is SP2's order (§0.5). |

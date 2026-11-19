@@ -1,4 +1,4 @@
-# `fishball-connector` contract, version 1.1
+# `fishball-connector` contract, version 1.2
 
 Status: **frozen v1 (K1, 2026-11-06), corrected by K1b; minor 1.1 (K2, 2026-11-07) adds the
 framed page's `lang` parameter (§1.2, §11)**. Sources: `docs/slim-native-design.md`
@@ -14,6 +14,12 @@ Contents: 0 terms and decisions · 1 binding · 2 versions · 3 frames (envelope
 4 operations · 5 events · 6 vocabularies · 7 errors · 8 limits · 9 no-instance behaviour ·
 10 module index · 11 version history.
 
+**2026-11-09 V2 amendment (D1–D3):** contract 1.2 retains the public service, exports,
+operation names and envelope v2. The explicit `interaction.timerfree` negotiation below is a
+bounded exception to the old additive-minor rule, not an implicit version-based schema relaxation.
+Optional `attention.signal` is independent. These decisions supersede historical custom-2.0/MCP
+and producer-owned attention proposals for V2.
+
 ## 0. Terms and decisions
 
 - **Plugins.** There are two plugins, and no plugin is called "Fishball":
@@ -27,7 +33,7 @@ Contents: 0 terms and decisions · 1 binding · 2 versions · 3 frames (envelope
   that assistant, never a plugin: `ROLE.fishball`, `SETTLED_BY.fishball`, `is-fishball`, the
   main-session tools `message_fishball` and `ask_fishball`, and the record type
   `plugin:fishball/card-record`. They are frozen v1 names.
-- **Connector settings** (its limits and question mode only) are changed
+- **Connector settings** (its active limits only) are changed
   **only in DSH's own Plugins → settings form of `fishball-connector`**. This contract gives an
   instance no operation that reads or changes them, attached or not.
 - **Instance settings** live inside the instance's own DSH profile and are edited on the
@@ -179,13 +185,44 @@ exported, unchanged, because contract names are frozen (§2) and a 1.0 importer 
 It is unused: posting it does nothing, and the connector never reads it. It will be removed only in
 a major 2.
 
+### 1.5 Hosted Frame Readiness v1 (V3 only)
+
+This is a separate browser signal between V3's `fishball-ui` page plugin and `dsh-connector-ui`'s
+hosted frame. It is not part of the frozen connector 1.2 binding (§1.4), its transport or its
+`BROWSER_MESSAGE` export. No frozen name or value changes; no SDK or route changes.
+
+**Child → direct parent only.** Once the page plugin is installed in a framed document, it posts
+one structured message to `window.parent`, once per document. A top-level page sends nothing.
+The entire payload is `{type: 'fishball:frame-ready', version: 1}`: two keys, numeric version, no
+other fields. It contains no credentials, admission URL, ticket or user data. With `no-referrer`,
+the child cannot rely on `document.referrer`; in Chromium it uses `location.ancestorOrigins[0]`
+as the exact target origin when available. If an exact target is unavailable, only the identical
+non-secret marker may use `'*'` as the target; there is no data-bearing fallback.
+
+**Parent acceptance.** For each fresh iframe, the parent derives the expected child origin from
+its own successful admission. It reveals the frame only when `event.origin` equals that exact
+origin, `iframe.contentWindow` is non-null and equals `event.source` for the current frame, and
+`event.data` is an object with exactly the two keys and values above. A load event is not ready.
+The signal says only that the page plugin installed: it does not prove chat health, authenticate
+the child or grant authority. Admission and authentication still operate independently.
+
+| Event | What the user sees |
+| --- | --- |
+| Initial navigation or parent-initiated replacement | The fresh iframe is hidden from its first paint, unavailable to pointer, keyboard focus and assistive technology. The parent shows a waiting state. |
+| No accepted signal after 15000 ms | The frame stays hidden. The parent says “This frame hasn't confirmed that Fishball loaded.” and offers “Open Fishball again”. This is not an authentication diagnosis. A late valid signal from the still-current frame reveals it and clears recovery without a click. |
+| Open Fishball again | The parent gets a fresh admission and creates a new iframe with its own wait. Messages from the retired frame cannot reveal the replacement, even at the same origin. |
+
+This gate covers the initial navigation and fresh frames the parent creates. It does not monitor
+all later navigations within an already revealed iframe. The 15000 ms wait belongs to this UI
+feature, not to a transport handshake, an admission lifetime or a frozen contract limit.
+
 ## 2. Versions
 
-- The contract id is `fishball-connector`. This document is **1.1**: `CONNECTOR_CONTRACT =
-  {id: 'fishball-connector', major: 1, minor: 1}`.
+- The contract id is `fishball-connector`. This document is **1.2**: `CONNECTOR_CONTRACT =
+  {id: 'fishball-connector', major: 1, minor: 2}`.
 - **A different major is refused** (`contract-version`), lower or higher. A different id is refused
   the same way.
-- **A minor only adds.** A new minor may add operations, events or optional payload fields, and
+- **A minor normally only adds (the explicitly negotiated 1.2 exception is §3.2.1).** A new minor may add operations, events or optional payload fields, and
   each addition is advertised as a capability in the handshake (§3.2). It never removes or renames
   a name, changes a field's type, or makes an optional field required. So any minor of major 1 is
   accepted, lower, equal or higher.
@@ -276,9 +313,45 @@ it **requires**. Handshake failures are of two kinds:
   its building block.
 
 Before the handshake, any other request is answered `handshake-required`, and a second handshake
-on one channel is `conflict`. The connector's welcome lists only operations it serves; a request
+on one channel is `conflict`. The connector's welcome lists operations it serves and supported
+semantic capabilities; a request
 for a known operation outside the welcome is `unsupported-operation`, as is one for an unknown
 name (§3.1).
+
+### 3.2.1 Negotiated timer-free interactions (D1)
+
+`interaction.timerfree` is a semantic capability, not an operation. Both peers must advertise it;
+neither a minor number nor an attachment alone enables it. The built-in instance requires it in
+`requiredCapabilities`. An old connector refuses that requirement with `unsupported-capability`;
+the built-in reports that the connector must be upgraded and detaches its own attachment. It does
+not downgrade or leave itself occupying the connector.
+
+A new connector accepts legacy instances for ordinary controls, but never delegates approvals,
+questions or plan reviews without this marker.
+Those interactions remain with the source user. A new instance omitting the marker is likewise
+control-only. No timer-bearing fallback offer is emitted.
+
+For a negotiated channel, validators and envelope helpers receive explicit context
+`{interactionTimerfree: true}`. The approval descriptor used by `approval.list` and
+`approval.request` then **omits** `expiresAt`; a present value (including `null`) is invalid.
+Without that context the legacy descriptor still **requires** numeric `expiresAt`. This applies
+to request/response/event validation and encoding/decoding, not just rendering. Strict exact-key
+validation remains in both branches. Grant and attachment expiry fields are unchanged.
+
+Timer-free interactions have no countdown, timeout-based transfer or fabricated terminal result.
+Eligible managed questions and plan reviews go directly to Fishball, bypassing watchdog enrollment
+and without a refine prerequisite. The source user can still answer; first committed outcome wins,
+and explicit escalation and authority/liveness checks remain.
+
+### 3.2.2 Stored legacy settings (D2)
+
+`questionMode` and `approvalAnswerSeconds` remain accepted on config load and retain their stored
+values, but are deprecated and inert for V2 routing/deadlines. Their editor controls and instructions
+are removed, with no replacement switch or silent config rewrite. In particular, saved `user` no
+longer prevents eligible questions being offered to Fishball. Public constants/error vocabulary
+remain for import compatibility; an eligible answer is not refused merely for a saved `user` mode.
+The pre-split settings migration copies active declared fields only; inert legacy mode/timer values
+remain untouched in their original patch/store records rather than being copied to the new namespace.
 
 ### 3.3 Requests and replies
 
@@ -406,10 +479,9 @@ The transfer rules:
   `image/webp`, `image/gif`) and at most 4 MiB (`LIMITS.imageBytes`). Any other media type
   travels as a file inside the 8 MiB frame.
 - `name` is a display name with no NUL, no `/` or `\` and no `://`.
-- One `attachment.put` per image or file. A message carries up to 20 `hostRef`s in all
-  (`LIMITS.attachmentsPerMessage`), each unique and single-use; images and files count the same.
-  `LIMITS.transfersPerMessage` (1) is declared but **not enforced**: the connector does not cap
-  the number of files one message carries.
+- One `attachment.put` per image or file. A message carries at most **one file** (a non-image
+  transfer, `LIMITS.transfersPerMessage`) and up to 20 `hostRef`s in all
+  (`LIMITS.attachmentsPerMessage`), so up to 20 images.
 - A `hostRef` is single-use and expires 10 minutes after the put (`LIMITS.hostRefTtlMs`). An
   unknown, expired or consumed one is refused `expired` on the message that carries it (§4.1).
 
@@ -449,6 +521,32 @@ Some `system` items carry a marker in `text` (`inbox-markers.js`, §10):
 
 The bytes are fetched with `attachment.read`.
 
+### 4.6 Optional attention signal (instance → connector, D3)
+
+`attention.signal`, with envelope `sessionId: null`, accepts exactly `{important: boolean}` and
+returns exactly `{accepted: true}`. It is advertised only when served and is never required for
+attachment. Send only after the authenticated handshake advertises support. Missing/unserved
+support is `unsupported-operation`; a disconnected or retired channel is `disconnected`, never
+fabricated acceptance. Invalid payloads receive `invalid-envelope` as an ordinary operation refusal
+without closing the otherwise valid channel or changing the latch. Envelope/direction/auth rules
+remain unchanged.
+
+The request is stateless: no count, timestamp, unset/clear command, retained producer value or
+reconnect replay. A successful response acknowledges acceptance into the current connector's
+in-memory latch, not durable delivery. Existing same-request deduplication still applies.
+
+The connector alone owns `state.unread = {count, important}`. Initially `{count: 0, important: false}`;
+each valid signal sets count to 1 and latches importance (`oldImportant || important`) until reset.
+Opening the Fishball view posts `{}` once to `/api/fishball/connector/attention/read`, clearing both
+fields. Detach/channel loss also clears both, with stale-owner callbacks fenced out. Neither reset
+feeds back to the instance, and iframe reload/ordinary state updates do not repeatedly clear it.
+The sidebar fish reuses the existing green dot; only important attention enables its existing
+animation. There is no attention timer. The frame may show the same 0/1 latch, not a message count.
+
+The local X8 API is asynchronous `attention.signal(pluginId, {important})`; it sends intent, not
+producer unread state. Unsupported/disconnected calls report refusal; they cannot claim acceptance,
+register an unread owner, return an unset disposer or replay a saved signal on reconnect.
+
 ## 5. Events (connector → instance)
 
 | Event | Payload |
@@ -461,7 +559,8 @@ The bytes are fetched with `attachment.read`.
 
 ### 5.1 Approval descriptor
 
-The descriptor is used by `approval.list` and `approval.request`:
+The descriptor is used by `approval.list` and `approval.request`. The shape below is the legacy
+default; negotiated timer-free validation (§3.2.1) removes `expiresAt` entirely:
 
 `{approvalId, offerId, kind, prompt, choices[], expiresAt, title, at, toolName, callId, reason,
 quotes[], arguments?, argumentsStatus?, questions?}`
@@ -507,9 +606,7 @@ attached, or at a detach) is settled there and never offered again.
 | `INBOX_KIND` | `session`, `user`, `system`, `watch`, `approval`, `plugin` |
 | `MEDIA` / `IMAGE_TYPES` | `image/png`, `image/jpeg`, `image/webp`, `image/gif` |
 | `STATUS` (the `status()` state) | `disabled`, `waiting`, `starting`, `ready`, `stopping`, `stopped`, `failed` |
-| `STATUS_CODES` (the `status()` code) | `NATIVE_START_FAILED`, `NATIVE_STOP_FAILED`, `NATIVE_CHILD_EXITED`, `NATIVE_UNAVAILABLE`, `NATIVE_TIMEOUT` (reserved, unused), `NATIVE_DISABLED` |
-
-A start failure — a startup timeout included — reports `NATIVE_START_FAILED`, with these exceptions: a child that exits while starting reports `NATIVE_CHILD_EXITED`; the instance's own `INVALID_MAIN_HOME` (non-canonical DSH home) and attach-refusal codes `NATIVE_INSTANCE_BUSY` / `NATIVE_CONTRACT_VERSION` stay on the instance's row and are not `STATUS_CODES`, so an attachment's `status()` would show such an out-of-vocabulary code as `failed` with `NATIVE_UNAVAILABLE`. `NATIVE_TIMEOUT` is reserved and is not currently reported.
+| `STATUS_CODES` (the `status()` code) | `NATIVE_START_FAILED`, `NATIVE_STOP_FAILED`, `NATIVE_CHILD_EXITED`, `NATIVE_UNAVAILABLE`, `NATIVE_TIMEOUT`, `NATIVE_DISABLED` |
 
 ## 7. Errors
 
@@ -544,7 +641,7 @@ at the limit is accepted; one above it is refused (`limit-exceeded`, or the code
 | `imagesPerMessage` | 20 | `images[]` |
 | `attachmentsPerMessage` | 20 | `attachments[]` |
 | `chunkBytes` | 512 KiB | one decoded chunk |
-| `transfersPerMessage` | 1 | declared for a one-file-per-message rule but **not enforced**; images and files both count only toward `attachmentsPerMessage` (20) |
+| `transfersPerMessage` | 1 | files (non-image transfers) per message; images count only toward `attachmentsPerMessage` |
 | `hostRefTtlMs` | 600,000 ms | `hostRef` lifetime |
 | `reasonChars` | 500 | approval, prompt, grant-revoke and release `reason`; descriptor `reason`. Lower bound: 1 where the connector requires a reason (§4.1–§4.3) |
 | `questionChars` | 500 | `question` text, `answer.question` |
@@ -637,3 +734,5 @@ The sibling modules `card-record.js` (`CARD_RECORD`), `inbox-markers.js` (`QUEST
 | --- | --- | --- |
 | 1.0 | 2026-11-06 | K1: the frozen v1 contract, corrected by K1b. |
 | 1.1 | 2026-11-07 | K2 (design D30, U4): the connector frames `ui.chat` / `ui.settings` with a `lang` parameter (`zh` or `en`) from the main DSH's language, replacing a `lang` the path has and keeping its other parameters and fragment, and reloads the page when the language changes (§1.2). New export `UI_LANG`. No frame, operation, capability, descriptor or service change; 1.0 instances attach unchanged (§2). |
+
+| 1.2 | 2026-11-09 | D1 explicit `interaction.timerfree` semantic negotiation and strict context-dependent descriptors, legacy control-only fallback; D2 inert retained settings; D3 optional stateless `attention.signal` and connector-owned page-open/detach-reset latch. Envelope v2 and public service unchanged. |

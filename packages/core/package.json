@@ -1,0 +1,76 @@
+{
+  "name": "fishball-core",
+  "version": "1.0.0-alpha.1",
+  "description": "Fishball's core plugin, the backend: the Fishball manager session and its preset, persona, reminders and private Skills tools, the link, Connect, the interception service, status, the ask-card store, pairing, the guard rows (fishball-ui's UI guard rows only beside fishball-ui) and its own plugin settings page. Every other UI change inside Fishball is the fishball-ui plugin's.",
+  "icon": "./assets/fishball-core-icon.svg",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Arrosam/dsh-fishball.git",
+    "directory": "packages/core"
+  },
+  "publishConfig": {
+    "tag": "alpha"
+  },
+  "type": "module",
+  "//": "A DSH bundle of the Fishball plugin set (R-FB-01, design §1.2, §9.1). cordis.patch.yml carries the guard rows (since R-FIX-FUI also fishball-ui's UI guard rows and the hosted Preview Notice row, applied only while fishball-ui is in the profile), core's fishball preset, its guard row src/guards/row.js (F-GUARDS), its main row src/main/ (F-WIRE: link, Connect, interception, ask cards, status, the bridge façade and the one manager session) and the manager-session route; ./client is core's own settings page, with the chunk client.settings.js. Since F-UI (requirements 1.38 Q-N2, R-FB-14) the Fishball page, the Recommended tab, the strip and pairing views, the ask cards, the model dialog and the two settings entries are the separate fishball-ui plugin's; core runs normally without it and shows no hint of it (Q-G1). It never depends on dsh-instance or any DSH-side package (R-ARCH-10) or on fishball-ui.",
+  "//exports": "./main is core's main row and ./session-route the Fishball page's manager-session route row, each a package subpath (a path row inside this folder would be a second client source of the package; I-PLACE). ./contracts is K3's runtime constants (with K3a's own copy of the connector's MCP surface, MCP and LINK), for plugins that import them dynamically. There is no ./mcp-schema: F-OWN-SCHEMA removed the vendored copy of the connector's schema (design §1.0b row 1).",
+  "exports": {
+    "./client": "./client.js",
+    "./link": "./src/link/index.js",
+    "./contracts": "./contracts/constants.js",
+    "./main": "./src/main/index.js",
+    "./session-route": "./src/session/route.js",
+    "./package.json": "./package.json"
+  },
+  "//files": "contracts/constants.js is K3's one data-only runtime module (K3 amendment 2026-11-14); src/ imports it, so it ships, while the contract's .d.ts files are types only and do not. Core keeps no copy of the connector's files and generates nothing from it (F-OWN-SCHEMA, design §1.0b row 1): its link reads K3a's MCP and LINK in contracts/constants.js, checked against the connector by contract tests.",
+  "files": [
+    "assets/fishball-core-icon.svg",
+    "client.js",
+    "client.settings.js",
+    "contracts/constants.js",
+    "src/",
+    "cordis.patch.yml",
+    "LICENSE",
+    "THIRD_PARTY_NOTICES.md"
+  ],
+  "engines": {
+    "node": ">=22.14",
+    "dsh": ">=0.2.1-rc.5"
+  },
+  "//dependencies": "fishball-shared is the Fishball side's library (R-ARCH-08): core's seam with fishball-ui (./ui-seam), the one module two Fishball-side packages use; core's OAuth client copy and file helper are its own (src/link/oauth-client.js, src/manager/skills-store.js), as R-ARCH-08 strict puts a single-user module in its user (REMOVE-V2b); core shares no module with the instance (requirements 1.40); it is bundled, so the tarball carries it. @modelcontextprotocol/client is core's own MCP client for its link (F-LINK; design §5a.1, §6.3, §9.1), never the host's transitive copy: pinned at 2.4.0 alongside the adapter's client and the connector's server.",
+  "dependencies": {
+    "@modelcontextprotocol/client": "2.4.0",
+    "fishball-shared": "1.0.0-alpha.1"
+  },
+  "//bundleDependencies": "Both dependencies ship inside the tarball (REL-PACK item 2, Fishball decision B 2026-11-15): fishball-shared as the Fishball side's library, and @modelcontextprotocol/client with its whole runtime closure (core, cross-spawn, eventsource, jose, pkce-challenge, zod and theirs), which scripts/pack-v3.mjs resolves once and copies in without their tests. Without it an offline `pnpm add` in the hosted child failed with ERR_PNPM_NO_OFFLINE_META, and a standalone install needs no registry for core either. The bundled zod is the client's own dependency; core imports no zod itself, so no zod peer is declared.",
+  "bundleDependencies": [
+    "@modelcontextprotocol/client",
+    "fishball-shared"
+  ],
+  "//peerDependencies": "Host packages are resolved from the running DSH installation, as for any plugin; '*' because engines.dsh is the real compatibility gate. dsh-atomic-write (the plugin manager's profile-manifest lock), dsh-scope (an agent's parent scope) and dsh-app-boot are read by src/guards (F-GUARDS); dsh-storage-domain and schemastery by the main row (its tables and its settings schema); the others by the manager session, its persona, reminders and private Skills. No DSH-side package is a peer (R-ARCH-10; the dsh-connector peer went with the V2 child path, REMOVE-V2 / F-WIRE).",
+  "peerDependencies": {
+    "@deepseek-ai/dsh-agent": "*",
+    "@deepseek-ai/dsh-app-boot": "*",
+    "@deepseek-ai/dsh-atomic-write": "*",
+    "@deepseek-ai/dsh-llm": "*",
+    "@deepseek-ai/dsh-sandbox-policy": "*",
+    "@deepseek-ai/dsh-scope": "*",
+    "@deepseek-ai/dsh-session": "*",
+    "@deepseek-ai/dsh-skill": "*",
+    "@deepseek-ai/dsh-skill-filesystem": "*",
+    "@deepseek-ai/dsh-storage-domain": "*",
+    "@deepseek-ai/dsh-system-prompt": "*",
+    "@deepseek-ai/dsh-tools": "*",
+    "@deepseek-ai/dsh-user-approval": "*",
+    "@deepseek-ai/schemastery": "*"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web"
+    }
+  }
+}
