@@ -100,7 +100,9 @@ export const FRAME_LAYOUT = Object.freeze({
   conversationHook: 'data-fbtest-conversation', newSessionHook: 'data-fbtest-new-session',
   /** DSH's column widths for the frame's grid (AppFrame: rail 56px; the default wide 280px). */
   railWidth: 56, wideWidth: 280,
-  barHeight: 44,
+  barHeight: 44, barInset: 8,
+  /** rc.5 retains the same wide identity until its collapse timer settles. */
+  collapseSettleMs: 150,
   /** BVA around the narrow query (max-width: 480px), 390px (PLAN-MULTI §6.3), a mid width and a desktop. */
   widths: Object.freeze({ minimum: 320, narrow: 390, edge: 480, above: 481, mid: 600, desktop: 1280 }),
   focusScrollBudgetMs: 1500,

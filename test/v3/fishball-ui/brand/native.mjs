@@ -120,6 +120,7 @@ export function registerNative(t, sdk) {
       else await activate(tab, 'brand-probe', how, state === 'ready' ? undefined : prior)
       counts.push(await tab.evaluate(`({ native: brandProbe.native, opens: [...brandProbe.opens], creates: __lite.log.calls.filter(c=>(c.service==='sessions' && c.method==='create') || (c.service==='uiWorkspace' && c.method==='startSession')).length })`))
     }
+    assert.deepEqual(await tab.evaluate('__lite.log.errors'), [], `${state}: no uncaught browser errors`)
     assert.deepEqual(counts, actions.map((_, i) => ({ native: 0, creates: 0, opens: state === 'ready' ? Array(i + 1).fill(FIXTURE.manager) : [] })), 'each input has only the permitted session effect')
   })
 }

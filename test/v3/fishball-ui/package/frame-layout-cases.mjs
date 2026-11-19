@@ -20,6 +20,7 @@ import { after } from 'node:test'
 import { caseTest } from '../../contract/package-boundaries/cases.mjs'
 import { chromeBinary, keyFor } from '../../../v2-page-cases/lite-browser.mjs'
 import { liveFrame, frameProbeArg, stopFrameEnvironment } from './narrow-frame.mjs'
+import { HOOK } from '../brand/constants.mjs'
 import { HARNESS } from '../contrast/constants.mjs'
 import { measure, stopBrowser } from '../contrast/page.mjs'
 import { LAYOUT_PROBE, frameDocument } from './frame-layout.mjs'
@@ -196,10 +197,70 @@ export function registerFrameLayoutCases(sdk) {
       await checkLayout(t, live, width, L.panels)
     })
   }
+  const brandSelector = `[data-fbtest-wide-brand][${HOOK.control}]`
+  const tabBudget = (tab) => tab.evaluate(`2 * (document.querySelectorAll('button,a,input,[tabindex]').length + 1)`)
+  const assertNoBrowserErrors = async tab => assert.deepEqual(await tab.evaluate('__lite.log.errors'), [])
+  async function assertOpenBrand(live, opened) {
+    assert.equal(opened.wideBrand.shown, true, 'opened wide brand restored')
+    // Start from current focus, use only native Tab, and verify the focus target is unobscured.
+    const budget = await tabBudget(live.tab)
+    let reached = false
+    for (let i = 0; i < budget && !reached; i++) {
+      await live.tab.press(keyFor('Tab'))
+      reached = await live.tab.evaluate(`(() => { const el = document.activeElement; if (!el.matches('${brandSelector}')) return false; const r = el.getBoundingClientRect(); return el.contains(document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2)) })()`)
+    }
+    assert.equal(reached, true, 'Tab reveals the visible, hittable open brand')
+  }
+  browserRow(sdk, 'LOGO-FIX-3', 'wide sidebar', 'the owned wide brand is visible and on the native Tab path at desktop width', async t => {
+    const live = await liveFrame(t, sdk, { width: W.desktop })
+    const opened = await live.probe()
+    assertNoBar(opened, W.desktop)
+    await assertOpenBrand(live, opened)
+    await assertNoBrowserErrors(live.tab)
+  })
+  if (!isRc1) browserRow(sdk, 'LOGO-FIX-3', 'interrupt fade', 'reopening before settle preserves the original owned brand after the collapse deadline', async t => {
+    const live = await liveFrame(t, sdk, { width: W.edge, collapsed: false, collapseSettleMs: L.collapseSettleMs })
+    const state = await live.tab.evaluate(`(async () => {
+      const brand = document.querySelector('${brandSelector}'), root = brand.closest('[data-fbtest-fade-class]')
+      const toggle = root.querySelector('[data-fbtest-toggle]')
+      toggle.click()
+      const wasFading = root.classList.contains(root.dataset.fbtestFadeClass)
+      toggle.click()
+      await new Promise(resolve => setTimeout(resolve, ${L.collapseSettleMs}))
+      return { wasFading, stillFading: root.classList.contains(root.dataset.fbtestFadeClass),
+        sameBrand: document.querySelector('${brandSelector}') === brand }
+    })()`)
+    assert.deepEqual(state, { wasFading: true, stillFading: false, sameBrand: true })
+    await assertOpenBrand(live, await live.probe())
+    assert.deepEqual(await live.tab.evaluate(`__lite.log.calls.filter(c => (c.service === 'sessions' && c.method === 'create') || (c.service === 'uiWorkspace' && c.method === 'startSession'))`), [])
+    await assertNoBrowserErrors(live.tab)
+  })
+  if (!isRc1) browserRow(sdk, 'LOGO-FIX-3', 'retained collapse', '480px: the wide brand cannot steal space, focus or hits while the native root fades', async t => {
+    const live = await liveFrame(t, sdk, { width: W.edge, collapsed: false, collapseSettleMs: L.collapseSettleMs })
+    const opened = await live.probe()
+    assert.equal(opened.viewport.w, W.edge)
+    assert.equal(opened.wideBrand.shown, true)
+    // Observe in the same browser task as the toggle; no animation frame or CDP round trip
+    // can let native unmount masquerade as immediate suppression by the page.
+    const immediate = await live.tab.evaluate(`(() => {
+      const root = document.querySelector('[data-fbtest-fade-class]'), brand = root.querySelector('[${HOOK.control}]')
+      const toggle = root.querySelector('[data-fbtest-toggle]')
+      __lite.toggleHost()
+      const box = brand.getBoundingClientRect(), css = getComputedStyle(brand)
+      brand.focus()
+      return { retained: root.contains(brand), fading: root.classList.contains(root.dataset.fbtestFadeClass),
+        shown: box.width > 0 && box.height > 0 && css.visibility !== 'hidden' && css.display !== 'none',
+        focused: document.activeElement === brand, hit: brand.contains(document.elementFromPoint(box.x + box.width/2, box.y + box.height/2)),
+        width: box.width, toggleX: toggle.getBoundingClientRect().x }
+    })()`)
+    assert.deepEqual(immediate, { retained: true, fading: true, shown: false, focused: false, hit: false, width: 0, toggleX: L.barInset })
+    await live.tab.evaluate(`new Promise(resolve => setTimeout(resolve, ${L.collapseSettleMs}))`)
+    assert.equal(await live.tab.evaluate(`!!document.querySelector('[data-fbtest-wide-brand]')`), false, 'native rail finally unmounts the wide brand')
+    await assertNoBrowserErrors(live.tab)
+  })
   browserRow(sdk, 'LOGO-FIX', '480px narrow bar', 'wide identity is unavailable in the closed bar; the open sidebar restores it to the Tab path', async t => {
     const live = await liveFrame(t, sdk, { width: W.edge })
     const selector = '[data-fbtest-wide-brand]'
-    const tabBudget = () => live.tab.evaluate(`2 * (document.querySelectorAll('button,a,input,[tabindex]').length + 1)`)
     const assertClosed = async () => {
       const r = await live.probe()
       assertBar(r, W.edge)
@@ -208,7 +269,7 @@ export function registerFrameLayoutCases(sdk) {
       const present = await live.tab.evaluate(`!!document.querySelector('${selector} [data-slot="sidebar.brand.name"]')?.textContent`)
       assert.equal(present, isRc1, 'rc.1 drawer retains the wide outlet; rc.5 rail unmounts it')
       if (present) assert.equal(await live.tab.evaluate(`(() => { const el = document.querySelector('${selector}'); el.focus(); return document.activeElement === el })()`), false, 'hidden wide brand cannot take focus')
-      const budget = await tabBudget()
+      const budget = await tabBudget(live.tab)
       let sawToggle = false
       for (let i = 0; i < budget; i++) {
         await live.tab.press(keyFor('Tab'))
@@ -222,17 +283,10 @@ export function registerFrameLayoutCases(sdk) {
     await live.click(isRc1 ? '[data-sidebar-opener]' : '[data-fbtest-toggle]')
     const opened = await live.probe()
     assertNoBar(opened, 'opened at 480px')
-    assert.equal(opened.wideBrand.shown, true, 'opened wide brand restored')
-    // Start from current focus, use only native Tab, and verify the focus target is unobscured.
-    const budget = await tabBudget()
-    let reached = false
-    for (let i = 0; i < budget && !reached; i++) {
-      await live.tab.press(keyFor('Tab'))
-      reached = await live.tab.evaluate(`(() => { const el = document.activeElement; if (!el.matches('${selector}')) return false; const r = el.getBoundingClientRect(); return el.contains(document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2)) })()`)
-    }
-    assert.equal(reached, true, 'Tab reveals the visible, hittable open brand')
+    await assertOpenBrand(live, opened)
     await live.click('[data-fbtest-toggle]')
     await assertClosed()
+    await assertNoBrowserErrors(live.tab)
   })
   for (const key of ['Enter', 'Space']) {
     browserRow(sdk, 'NARROW-KEY-01', key, 'Tab to all original nav actions; activate an initially offscreen plugin', async t => {
