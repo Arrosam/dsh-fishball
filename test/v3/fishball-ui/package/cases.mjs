@@ -40,6 +40,7 @@ import {
   coreIntendedReader, rowFile, rowOps, seamModule, styleHead, uiManifest, uiPatch,
 } from './subject.mjs'
 import { registerNavCases } from './nav-cases.mjs'
+import { registerEmbedLocaleCases } from './embed-locale-cases.mjs'
 import { registerNoCoreCases } from './no-core-cases.mjs'
 import { registerFrameLayoutCases } from './frame-layout-cases.mjs'
 
@@ -102,6 +103,7 @@ export function registerUiCases(sdk) {
 
   // ================================================================ UI-POLISH-F §1: the Fishball page's icon navigation
   registerNavCases(sdk)
+  registerEmbedLocaleCases(sdk)
   // ================================================================ R-FIX-FUI F2: without core, fishball-ui changes nothing
   registerNoCoreCases(sdk)
   // ================================================================ MULTI-3 requirement F: the restyled real sidebar

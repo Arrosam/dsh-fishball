@@ -7,6 +7,7 @@ import { ADMIT, ATTR, CHILD, POLISH, ROUTE, TAG, WAIT } from './constants.mjs'
 import { byTag, press, textIn, withAttr } from './world.mjs'
 
 const { en, zh } = ADMIT.langs
+const LOCALE_BUDGET_MS = 2000 // R3B-07: follow the selection within a couple of seconds.
 const failed = CHILD.notReady.find((s) => s.state === 'failed')
 const checking = /checking|正在检查|检查中/i
 const problem = /fail|error|unavailable|cannot|could not|couldn.t|unable|timed?\s*out|timeout|network|refus|offline|retry|try again|失败|错误|无法|超时|重试|不可用|网络/i
@@ -45,14 +46,14 @@ const frames = (view) => byTag(view.tree(), TAG.iframe)
 const refresh = (view, lang) => byTag(view.tree(), TAG.button).find((b) => textIn(b) === POLISH.refresh[lang])
 const enabled = (button) => button && !button.props.disabled && !button.props.loading && button.props['aria-disabled'] !== 'true'
 const details = (view) => `${textIn(view.tree())}; frames=${JSON.stringify(frames(view).map((f) => f.props.src))}; Refresh disabled=${Object.values(POLISH.refresh).some((label) => byTag(view.tree(), TAG.button).some((b) => textIn(b) === label && !enabled(b)))}`
-async function ready({ page, view, w }, lang, freshAfter = 0) {
+async function ready({ page, view, w }, lang, freshAfter = 0, timeoutMs) {
   const matches = () => {
     const [frame] = frames(view)
     return frames(view).length === 1 && w.child.admissions.slice(freshAfter).some((a) => a.lang === lang && a.url === frame.props.src) &&
       withAttr(view.tree(), ATTR.embedState, CHILD.ready.state).some((s) => textIn(s).includes(POLISH.frameState[lang].ready)) &&
       enabled(refresh(view, lang)) && !checking.test(textIn(view.tree()))
   }
-  assert.ok(await page.waitFor(matches), `expected a usable ${lang} child frame; ${details(view)}`)
+  assert.ok(await page.waitFor(matches, timeoutMs), `expected a usable ${lang} child frame; ${details(view)}`)
 }
 
 /** Treat the first committed navigation as redemption. An unchanged mounted frame does not navigate. */
@@ -133,6 +134,20 @@ export function registerCheckingCases(sdk) {
     assert.deepEqual(history.navigations, [src], 'a background check navigated or remounted the open chat')
     assert.ok(history.commits.slice(commitsBefore).every((urls) => urls.length === 1 && urls[0] === src), 'a commit temporarily removed the active frame')
     assert.equal(p.w.child.admissions.length, issued, 'a background check minted another ticket for a usable chat')
+  })
+
+  test(caseName(sdk, 'R3B-07', 'document lag', 'mounted iframe follows the selected locale before document.lang updates, including after reveal'), async (t) => {
+    const p = await pane(t, sdk)
+    await ready(p, en)
+    for (const [next, hidden] of [[zh, false], [en, true]]) {
+      const before = p.w.child.admissions.length
+      p.page.setHidden(hidden)
+      p.page.setLang(next, { syncDocument: false })
+      if (hidden) { await p.page.settle(); p.page.setHidden(false) }
+      await ready(p, next, before, LOCALE_BUDGET_MS)
+      // Only now let the document catch up, so it is genuinely stale in both directions.
+      p.page.document.documentElement.lang = next
+    }
   })
 
   row(sdk, 'round trip', 'loaded Fishball follows en → zh → en with a fresh usable child each time', async (t) => {
