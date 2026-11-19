@@ -32,12 +32,6 @@ export const MCP = Object.freeze({
   clientEntry: path.join('dist', 'index.mjs'),
   coreEntry: path.join('dist', 'index.mjs'),
   ajvEntry: path.join('dist', 'validators', 'ajv.mjs'),
-  manifest: 'package.json',
-  server: '@modelcontextprotocol/server',
-  node: '@modelcontextprotocol/node',
-  /** K1 row: the Node adapter is pinned exactly to 2.1.0 (2.1.1+ need server 2.3.0+). */
-  nodePin: '2.1.0',
-  exactVersion: /^\d+\.\d+\.\d+$/,
 })
 
 /** R-OA-01, design §5.5 (D§5.5): paths on DSH's listener. */

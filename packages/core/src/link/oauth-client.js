@@ -2,7 +2,7 @@
  * The Fishball side's OAuth browser client (the S7c K2 token manager; design §6.3a; requirements
  * 1.31, 1.40; R-OA-13/14/16, R-OA-22). Core's Connect (F-LINK-SAVE) runs on it. One copy per side
  * (requirements 1.40: "duplicated, one copy per side"): the DSH side keeps its own in
- * `dsh-connector-shared/oauth-client` for the adapter, and nothing here is imported across the
+ * `dsh-connector-adapter/src/oauth-client.js`, and nothing here is imported across the
  * sides. This copy keeps only what core needs: no loopback proxy, no timer refresh (core's link
  * refreshes when a token is due or refused), plus `authorizationParameters` (core passes its
  * `agent_id`, R-OA-22) and `grantId` (the grant's own random, non-secret identity, so a later
@@ -14,9 +14,9 @@
  * id, the loopback callback, and one `grant` record in DSH's credential store. It knows no server
  * check; that is the caller's.
  *
- * It imports nothing but Node. The caller passes the MCP client SDK module
- * (`@modelcontextprotocol/client` 2.2.0, the line both hosts ship), so this module takes no package
- * edge. The protocol steps are the SDK's own primitives (`startAuthorization`, `exchangeAuthorization`,
+ * This helper imports only Node modules. Core passes its own bundled `@modelcontextprotocol/client`
+ * 2.4.0, not the host's 2.2.0. The protocol steps are the SDK's own primitives
+ * (`startAuthorization`, `exchangeAuthorization`,
  * `refreshAuthorization`, `validateAuthorizationResponseIssuer`, the two discovery reads). The SDK's
  * `auth()` orchestrator is NOT used: on an `invalid_grant` from the code exchange it runs the exchange
  * again with the same code, a second use the connector answers by revoking every token of that code

@@ -8,9 +8,9 @@
  * client id, the loopback callback, and one `grant` record in DSH's credential store. It knows no
  * server check, no proxy and no tool; those are the adapter's (packages/dsh-connector-adapter).
  *
- * It imports nothing. The caller passes the MCP client SDK module (`@modelcontextprotocol/client`
- * 2.2.0, the line both hosts ship), so this library takes no package edge and each user pins its
- * own SDK. The protocol steps are the SDK's own primitives (`startAuthorization`,
+ * This helper imports only Node modules. The adapter passes its own pinned
+ * `@modelcontextprotocol/client` 2.4.0, not the stock DSH client's 2.2.0.
+ * The protocol steps are the SDK's own primitives (`startAuthorization`,
  * `exchangeAuthorization`, `refreshAuthorization`, `validateAuthorizationResponseIssuer`, the two
  * discovery reads). The SDK's `auth()` orchestrator is NOT used: on an `invalid_grant` from the code
  * exchange it invalidates and runs the exchange again with the same code, a second use the

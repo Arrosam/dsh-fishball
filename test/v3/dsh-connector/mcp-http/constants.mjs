@@ -36,6 +36,9 @@ export const SUBJECT = Object.freeze({
   gateMethods: Object.freeze(['check', 'admit']),
 })
 
+/** Release requirement: the endpoint byte cap remains 8 MiB regardless of argument structure. */
+export const BODY_CAP_BYTES = 8 * 1024 * 1024
+
 /** The SDK's MCP client, under the installed SDK (`@modelcontextprotocol/client` 2.2.0 on both hosts). */
 export const SDK_CLIENT = Object.freeze({
   dir: path.join('node_modules', '@modelcontextprotocol', 'client'),

@@ -54,9 +54,12 @@ async function unknown(client, code, name, args) {
 }
 
 export function registerConnToolsBoundaryCases(sdk) {
-  row(sdk, 'CONN-TOOLS-EP-03', 'tools/list', 'full token advertises exactly the 20 retained tools; neither removed name is advertised', async (t) => {
-    const { client } = await pairedWorld(t, sdk)
-    assert.deepEqual(await toolNames(client), [...C.retained])
+  row(sdk, 'CONN-TOOLS-EP-03', 'tools/list', 'two independently authenticated clients each see exactly the 20 retained tools', async (t) => {
+    const w = await toolsWorld(t, sdk)
+    for (const [id, name] of [[FIXTURE.idP, FIXTURE.nameP], [FIXTURE.idQ, FIXTURE.nameQ]]) {
+      const { token } = await w.full(id, name)
+      assert.deepEqual(await toolNames(await w.connect(token)), C.retained, id)
+    }
   })
 
   for (const state of Object.values(STATE)) {

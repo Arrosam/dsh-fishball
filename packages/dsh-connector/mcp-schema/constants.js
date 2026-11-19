@@ -47,14 +47,13 @@ export const PROTOCOL = Object.freeze({
 })
 
 /**
- * The runtime SDK pins (R-CONN `368e848`). `@modelcontextprotocol/node` 2.1.1 and later need
- * server ^2.3.0, so 2.1.0 is the newest adapter that admits server 2.2.0, the line of both hosts'
- * client. A change of either pin is a K1 amendment and also a change of
+ * The connector's runtime SDK pins, independent of the hosts' clients. Node 2.1.2 requires
+ * server ^2.4.0. A change of either pin is a K1 amendment and also a change of
  * `packages/dsh-connector/package.json` (C-WIRE owns it after W1).
  */
 export const SDK_PINS = Object.freeze({
-  '@modelcontextprotocol/server': '2.2.0',
-  '@modelcontextprotocol/node': '2.1.0',
+  '@modelcontextprotocol/server': '2.4.0',
+  '@modelcontextprotocol/node': '2.1.2',
 })
 
 /** Routes. DSH's listener routes are `exact` (S1 F3: exact routes win over DSH's `/api` prefix). */
@@ -440,6 +439,9 @@ export const PAYLOAD_LIMITS = Object.freeze({
  */
 export const ENDPOINT_LIMITS = Object.freeze({
   bodyBytes: PAYLOAD_LIMITS.attachmentEnvelopeBytes,
+  // Counts nested keys and array items, not string bytes. Allows a full 32 × 32 question answer
+  // with its envelope and headroom for contributed tools, without unbounded schema diagnostics.
+  maxToolInputElements: 4096,
   inFlightPerPrincipal: 32,
   listenStreamsPerPrincipal: 8,
   requestsPerMinute: 600,
