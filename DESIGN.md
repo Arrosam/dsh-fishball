@@ -12,6 +12,21 @@ the V1/V2 decision history: V2 was never deployed, fold-notify, the hosted setti
 Watchdog are gone, and the V2 history documents it links to were deleted by the DOCS task (the
 user's choice, 2026-11-13); they remain in git history at `e5a8450c`.
 
+**LOGO-BUTTON amendment (user, 2026-11-19; verbatim decisions in the task brief).** Fishball's page
+(the hosted child DSH) gets Fishball's brand at the sidebar's top-left the way built-in V1 had it,
+accepting dependence on DSH's shell. `fishball-ui` fills DSH's `sidebar.brand.mark` and
+`sidebar.brand.name` at priority -1 and captures the enclosing shell button's activation: it opens
+or focuses the one manager session and never creates one or triggers New Session, which
+`fishball-page` keeps hidden on this page. The label and status description are restored after
+DSH's re-renders by a MutationObserver scoped to that button. State reuses the page's facts: the
+asks stream (connection, manager id, open approval/question cards with V1's 99+ badge), the session
+list (working), and the strip view (core on/off). Working animates (fish wag / whale swim); reduced
+motion is static. Two themes, Fishball's fish or Fishball's own whale drawing, default Fishball;
+core's settings page owns `brandStyle` (`SEAM_BRAND`), applied live through core's status and the
+strip stream. The rail mark stays inside DSH's collapse control (which keeps expand/collapse); the
+expanded brand row is Fishball's control. `fishball-page`'s 44px narrow bar has no brand row on either SDK;
+rc.5's expanded sheet and rc.1's open drawer show the brand row.
+
 **V2 private Skills amendment (S1–S8, user rules; SK, 2026-11-10):** the only exception to §7's "never writes local files". Fishball keeps its own skills (lessons about the user's preferences and ways of working) in `<child DSH home>/skills/<name>/SKILL.md`, and writes them, new or updated, on its own or when asked, with no approval. Six manager-only tools (`private_skill_list/read/create/update/remove/reload`) and one native skill provider are registered through `fishballInstance.manager.registerSetup` in the manager's own agent scope, so no worker, preset or main DSH sees them; workers get skill text in Fishball's messages. The provider is the public native `FileSystemSkillProvider` over that single root, with the host watcher off and a confined reader that refuses links (and multiply linked files) before reading; writes go through a trusted storage service (name grammar first, native-format validation, serialized, complete publication by same-directory rename, typed `committed` outcomes including committed-but-refresh-failed). Ordinary write/edit/shell stay read-only, and the standard child skill provider no longer lists `<child home>/skills`. Refresh affects later loads and the next model catalog only; no slash-menu refresh is claimed. See [SK-SEAM](<docs/planning/v2-sk-seam.md>), [T-SK cases](<docs/test-design/private-skills.md>) and `packages/instance/src/slim/child/skills.js`.
 
 **X0-C verification amendment (owner decision, 2026-11-09):** retain per-notification durable reservation and acceptance writes and the 10,000-key product retention policy. The owner chose “test a reasonable count with per-notification writes”; the three 9,999/10,000/10,001 throughput cases are superseded by independently authored cases that seed 9,998 committed entries then exercise 1/2/3 real durable notifications, rather than weakening receipt durability to meet the former throughput budget. Keep the repeated-history/notice-scan optimizations. See [verification and limitations](<docs/verification/v2-x0c-inject-scale.md>).

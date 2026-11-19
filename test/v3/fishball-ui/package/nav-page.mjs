@@ -86,14 +86,18 @@ function realShortcuts(sdk, page) {
  * - `holdConfig` the shortcut config stays `loading` (the "pending" status);
  * - `failEdits` every shortcut edit answers `write-failed` (the "failed" status);
  * - `launcher` the `settings.launcher` owner props over the defaults (`settingsOpen`, `settingsShortcut`);
- * - `width` (MULTI-3) the viewport width `window.matchMedia` answers `(max-width|min-width: Npx)` queries for.
+ * - `width` (MULTI-3) the viewport width `window.matchMedia` answers `(max-width|min-width: Npx)` queries for;
+ * - `shell` (LOGO-BUTTON) a scripted shell document: `{ body, querySelector, querySelectorAll, getElementsByName }`
+ *   the page queries instead of the empty default, so fishball-page's native-control hiding
+ *   (`mountRemovals`) sees the shell's buttons and its body observer works;
+ * - `translate` `(namespace, key) => word` for the page's locale seat (the default answers the key).
  *
  * MULTI-3 observation points: `log.registrations` (every `slots.register` options: name, id, key,
  * priority), `log.edits` (every shortcut edit operation), `log.toggles` (`layout.toggleSidebar`
  * calls), `styles()` (the text of every style rule or sheet the page mounted, through
  * `CSSStyleSheet` or a `<style>` element) and `html` (the `<html>` element's attributes).
  */
-export async function navPage(t, sdk, { lang = NAV_PAGE.langs[0], openFails = 0, holdConfig = false, failEdits = false, launcher = {}, width = NAV_PAGE.wideWidth, prepare = () => {} } = {}) {
+export async function navPage(t, sdk, { lang = NAV_PAGE.langs[0], openFails = 0, holdConfig = false, failEdits = false, launcher = {}, width = NAV_PAGE.wideWidth, shell, translate, prepare = () => {} } = {}) {
   // Host refs: a host element with a ref gets a stable stand-in element (React's commit does the
   // same), so a component that portals into another's element (the Settings launcher into the
   // nav's seat) can find it. `createPortal(node, container)` renders an `fbtest-portal` host node
@@ -120,6 +124,15 @@ export async function navPage(t, sdk, { lang = NAV_PAGE.langs[0], openFails = 0,
     },
   })
   page.document.documentElement = htmlElement(lang)
+  // LOGO-BUTTON: a scripted shell supplies the document queries the page's native-control hiding
+  // uses (the brand row and the New Session button carry the same initial aria-label).
+  if (shell) {
+    page.document.body = shell.body ?? page.document.body
+    if (shell.querySelector) page.document.querySelector = shell.querySelector
+    if (shell.querySelectorAll) page.document.querySelectorAll = shell.querySelectorAll
+    if (shell.getElementsByName) page.document.getElementsByName = shell.getElementsByName
+    if (shell.MutationObserver) { page.sandbox.MutationObserver = shell.MutationObserver; page.window.MutationObserver = shell.MutationObserver }
+  }
   // MULTI-3: document listeners (the narrow sheet's pointerdown / keydown) are recorded so a case can fire them.
   const docListeners = []
   page.document.addEventListener = (type, fn, options) => { docListeners.push({ type, fn, options }) }
@@ -206,7 +219,7 @@ export async function navPage(t, sdk, { lang = NAV_PAGE.langs[0], openFails = 0,
     uiSession: { adapter: { current } },
     sessions: { list, async archive() {}, async fork() {}, async create() {} },
     locale: {
-      bind: () => (key) => key, subscribe: () => () => {}, getSnapshot: () => ({ active: lang, revision: 0 }),
+      bind: (ns) => (key) => translate?.(ns, key) ?? key, subscribe: () => () => {}, getSnapshot: () => ({ active: lang, revision: 0 }),
       getLocale: () => ({ active: lang, revision: 0, locales: NAV_PAGE.langs.map((id) => ({ id })) }), setLocale() {}, register: () => () => {},
     },
     shortcuts: face,

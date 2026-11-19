@@ -573,13 +573,14 @@ export function registerMultiCases(sdk) {
     const signal = await w.h.call('attention', { pluginId: MULTI.bridgePlugin, input: { important: true }, target: { targetId: a.targetId } })
     assert.equal(signal?.code, R.unknownTarget)
   })
-  row(sdk, 'MULTI-SVC-EP-01', 'status snapshot', 'fishballStatus.snapshot() is {fishball, guards, set, targets: {version: 1, targets}} with no scalar link/connect/line/control/contributedTools; targets equals ui.targets.list(); contributedTools counts zero', async () => {
+  row(sdk, 'MULTI-SVC-EP-01', 'status snapshot', 'fishballStatus.snapshot() is {fishball, guards, set, targets: {version: 1, targets}, brand: {style}} with no scalar link/connect/line/control/contributedTools; targets equals ui.targets.list(); contributedTools counts zero; an absent stored logo theme is fishball', async () => {
     const w = await standalone()
     const fa = await w.fake({ name: MULTI.name.office })
     await w.connect(fa)
     let snap
     await until(async () => { snap = await w.h.call('snapshot'); return snap?.set != null }, MULTI.budget.connectMs, MULTI.budget.pollMs)
     assert.deepEqual(Object.keys(snap).sort(), [...MULTI.statusMembers].sort())
+    assert.deepEqual(snap.brand, { style: 'fishball' }, 'the normalized logo theme')
     for (const k of MULTI.withdrawnStatusMembers) assert.equal(Object.hasOwn(snap, k), false, k)
     assert.deepEqual(snap.targets, await w.list())
     assert.equal(snap.targets.targets[0].contributedTools, 0, 'zero contributed tools is not counted as 0')

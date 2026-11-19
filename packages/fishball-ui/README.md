@@ -19,6 +19,13 @@ core; in a standalone DSH you install it yourself, before core (see the
   0.2.2 below 768px DSH's own drawer opens it instead. In a hosted child, the main DSH's
   `dsh-connector-ui` window shows this same page. Fishball no longer remaps DSH's "toggle sidebar"
   shortcut; to change it, re-bind it in DSH Settings › Shortcuts.
+- **The sidebar logo** (`client.brand.js`): Fishball's fish (or Fishball's own whale in the
+  DeepSeek theme), the `FISHBALL` wordmark, the small `Deepseek Harness` tag, a status light and
+  V1's count badge in DSH's top-left brand row. It opens or focuses the manager session, never
+  creates one; it keeps its accessible name and status after DSH re-renders; the theme is core's
+  `brandStyle` setting, default Fishball. In DSH's collapsed rail the mark sits in the existing
+  expand button and leaves the toggle alone; at 390 the brand row is visible with the sidebar open
+  (rc.5's sheet or rc.1's drawer), while rc.5's 44px bar has no brand row.
 - **The two settings entries** in the page's header, as icons with tooltips: "Fishball settings"
   (fishball-core's own settings page) and "DSH settings".
 - **The model dialog** (`client.model.js`): when the Fishball page opens and core's `model` is

@@ -72,6 +72,18 @@ async function runAllocation(steps) {
 /** The parameter list of one `ui.targets` method (declared in targets.d.ts). */
 const targetsParams = (name) => member(membersOf(core(), SEAM_DECL.targetsType), name).params
 
+const contractsReadme = () => fs.readFileSync(path.join(core().dir, README_ROWS.file), 'utf8')
+function assertReadmeRow(text, { row, words, exactCell }) {
+  const lines = text.split('\n').filter((l) => l.split(README_ROWS.cell)[1]?.trim() === row)
+  assert.equal(lines.length, 1, row + ' rows: ' + lines.length)
+  if (exactCell !== undefined) {
+    // Split only at column boundaries: the type union's escaped pipe belongs to the cell.
+    assert.deepEqual(lines[0].split(/(?<!\\)\|/).map((cell) => cell.trim()), ['', row, exactCell, ''])
+  } else {
+    assert.deepEqual(words.filter((w) => !w.test(lines[0])).map(String), [])
+  }
+}
+
 export function registerK3aTargetCases(sdk) {
   // ================================================================ TARGETS: exact values
   caseTest(sdk, 'K3a-MULTI-EP-01', 'TARGETS', 'core exports TARGETS, deeply frozen, exactly as the README freezes it', async () => {
@@ -260,11 +272,22 @@ export function registerK3aTargetCases(sdk) {
     assert.ok(text, 'no ' + HOSTED_SIGNAL.file)
     assert.deepEqual(HOSTED_SIGNAL.words.filter((w) => !w.test(text)).map(String), [])
   })
-  for (const { row, words } of README_ROWS.rows) {
-    caseTest(sdk, 'K3a-MULTI-EP-08', `README ${row}`, `the core contracts README has one "${row}" row stating ${words.length} frozen points`, () => {
-      const lines = fs.readFileSync(path.join(core().dir, README_ROWS.file), 'utf8').split('\n').filter((l) => l.split(README_ROWS.cell)[1]?.trim() === row)
-      assert.equal(lines.length, 1, row + ' rows: ' + lines.length)
-      assert.deepEqual(words.filter((w) => !w.test(lines[0])).map(String), [])
+  for (const rule of README_ROWS.rows) {
+    caseTest(sdk, 'K3a-MULTI-EP-08', `README ${rule.row}`, `the core contracts README has one "${rule.row}" row stating its frozen contract`, () => assertReadmeRow(contractsReadme(), rule))
+  }
+  const status = README_ROWS.rows.find((rule) => rule.row === 'Status snapshot')
+  for (const [label, before, after] of [
+    ['albatross', "style: 'fishball'", "style: 'albatross'"],
+    ['wrong', "'deepseek'}}", "'wrong'}}"],
+    ['unrelated suffix', "{fishball: 'on', targets, guards, set, brand: {style: 'fishball'", 'unrelated'],
+    ['unescaped pipe', "'fishball' \\| 'deepseek'", "'fishball' | 'deepseek'"],
+  ]) {
+    caseTest(sdk, 'K3a-MULTI-EP-08', `README mutant ${label}`, 'the status contract rejects an in-memory mutation of the documented cell', () => {
+      const text = contractsReadme()
+      assertReadmeRow(text, status)
+      const mutant = text.replaceAll(before, after)
+      assert.notEqual(mutant, text, 'mutation did not apply')
+      assert.throws(() => assertReadmeRow(mutant, status), assert.AssertionError)
     })
   }
 

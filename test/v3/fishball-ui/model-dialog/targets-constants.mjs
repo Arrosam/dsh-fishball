@@ -25,7 +25,7 @@ export const SUBJECT = Object.freeze({
 
 /** Requirement B: the frame's shape and its words. */
 export const FRAME = Object.freeze({
-  keys: Object.freeze(['on', 'title', 'empty', 'notices', 'targets', 'words']),
+  keys: Object.freeze(['on', 'title', 'empty', 'notices', 'targets', 'words', 'brandStyle']),
   targetKeys: Object.freeze(['targetId', 'kind', 'name', 'placeholder', 'state', 'badge', 'url', 'lines', 'control', 'retry', 'pairing']),
   notice: Object.freeze({ off: SEAM_STATUS.fishball.off, guards: SEAM_STATUS.guards.overridden, set: SEAM_STATUS.set.incomplete }),
   /**

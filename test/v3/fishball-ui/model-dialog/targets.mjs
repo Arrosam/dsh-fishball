@@ -64,8 +64,8 @@ export function targetView(i, overrides = {}) {
 }
 
 /** Core's status snapshot with the targets beside the global members (SEAM_TARGETS' comment). */
-export const snapshotOf = (targets, { fishball = SEAM_STATUS.fishball.on, guards = null, set = null } = {}) => ({
-  fishball, guards, set, targets: { version: SEAM_TARGETS.snapshotVersion, targets },
+export const snapshotOf = (targets, { fishball = SEAM_STATUS.fishball.on, guards = null, set = null, brand } = {}) => ({
+  fishball, guards, set, targets: { version: SEAM_TARGETS.snapshotVersion, targets }, ...(brand === undefined ? {} : { brand }),
 })
 
 /** The test process's own zone: the scripted page's `Intl` is Node's. */

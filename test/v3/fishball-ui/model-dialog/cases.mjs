@@ -3,7 +3,7 @@ import { test, after } from 'node:test'
 import { textOf } from '../../../support/rp-recommend.mjs'
 import { until } from '../../../support/util.mjs'
 import { boot, request } from '../../fishball-core/wire/subject.mjs'
-import { C } from '../../fishball-core/wire/constants.mjs'
+import { C, MULTI } from '../../fishball-core/wire/constants.mjs'
 import { page, firstFrame, routeStatus } from './subject.mjs'
 import { U } from './constants.mjs'
 import { registerModelPolishCases } from './polish-cases.mjs'
@@ -93,7 +93,7 @@ export function registerModelDialogCases(sdk) {
     assert.ok(rows[U.first].present); assert.equal(rows[U.first].disabled, true)
   })
   // Re-baselined (MULTI-3 requirement B): the strip route now serves targetsView's frame
-  // {on, title, empty, notices, targets, words}; a standalone DSH with no target is on with an empty list.
+  // {on, title, empty, notices, targets, words, brandStyle}; a standalone DSH with no target is on with an empty list.
   for (const lang of U.lang) test(`${sdk} STRIP-SYS-01 ${lang} immediate SSE frame contract`, async () => {
     const h = await get(); const r = await firstFrame(h, lang)
     assert.equal(r.status, U.success); assert.ok(r.contentType.includes(U.sse))
@@ -116,7 +116,7 @@ export function registerModelDialogCases(sdk) {
     const unknown = await request(h, SEAM_TARGETS.route.connect, { [SEAM_TARGETS.route.targetIdField]: 't-fbtestunknownaaaa' })
     assert.equal(unknown.status, SEAM_TARGETS.http.notFound, unknown.text)
     assert.equal(unknown.json?.code, SEAM_TARGETS.refusal.unknownTarget)
-    assert.equal((await request(h, C.routes.connect, {})).status, C.status.missing, 'the withdrawn K3a Connect route still answers')
+    assert.equal((await request(h, MULTI.withdrawnRoutes[0], {})).status, C.status.missing, 'the withdrawn K3a Connect route still answers')
   })
   // DESIGN §20 "Live core on/off: fishball-ui's rows read core's selection in the profile manifest
   // while HMR runs"; requirements 1.41 Q-G2 = A: without core fishball-ui changes nothing and only

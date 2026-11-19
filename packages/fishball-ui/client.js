@@ -13,6 +13,7 @@
  * - client.asks.js: the ask cards in Fishball's own conversation, over core's routes;
  * - client.strip.js: Fishball's DSH targets in the sidebar, each with its details, Connect / Cancel,
  *   Retry and pairing choices (MULTI-3; first the status strip, F-WIRE, and the pairing card, R-FIX-FUI);
+ * - client.brand.js: Fishball's logo, wordmark and state in DSH's sidebar brand row (LOGO-BUTTON);
  * - client.model.js: the dialog that asks for Fishball's model while it is unset (F-WIRE).
  *
  * A chunk that fails to load loses only its part, logged once; a chunk that arrives after this row
@@ -32,6 +33,7 @@ window.__ModuleLoader__.load({
         Object.freeze({ chunk: './client.entries.js', factory: 'entriesPart' }),
         Object.freeze({ chunk: './client.asks.js', factory: 'asksPart' }),
         Object.freeze({ chunk: './client.strip.js', factory: 'stripPart' }),
+        Object.freeze({ chunk: './client.brand.js', factory: 'brandPart' }),
         Object.freeze({ chunk: './client.model.js', factory: 'modelPart' }),
       ]),
       unavailable: 'fishball-ui: part unavailable',
@@ -285,7 +287,8 @@ window.__ModuleLoader__.load({
      * sidebar targets and the ask cards mark a lost stream the same way; since
      * MULTI-3 `openCoreSettings`, and `press` / `refusalText` / `pressStore` / `usePress`, so every
      * press on core's target and answer routes reads `SEAM_TARGETS.http` the same way and keeps its
-     * in-flight state across remounts.
+     * in-flight state across remounts; since LOGO-BUTTON also `pageRoot` / `whilePage`, the sidebar
+     * changes of the targets list and the brand take effect only on Fishball's page.
      */
     const kit = Object.freeze({
       /** The shared class names (`CSS`); their sheet is mounted once by this row. */
@@ -297,6 +300,38 @@ window.__ModuleLoader__.load({
       StreamNotice,
       pressStore,
       usePress,
+      /**
+       * fishball-page's mark on `<html>` while Fishball's page is open (fishball-page `PAGE.root`;
+       * restated: a chunk imports no module). The sidebar changes of this row (the target list and
+       * LOGO-BUTTON's brand) take their effect only on that page, never in another DSH that merely
+       * has fishball-ui.
+       */
+      pageRoot: 'data-fishball-page',
+      /**
+       * Runs `effect(fail)` for each visit. Leaving the page releases only the current visit;
+       * a failed setup (including a later slot declaration) or teardown also stops the watcher.
+       * Initial exceptions belong to the installing fiber; late ones have no caller to catch them.
+       */
+      whilePage(effect, report = console.warn) {
+        const root = document.documentElement
+        let dispose = null
+        const leave = () => { const stop = dispose; dispose = null; stop?.() }
+        const stop = () => { observer.disconnect(); leave() }
+        const failed = (error) => { stop(); report(error) }
+        const sync = () => {
+          if (!root.hasAttribute(kit.pageRoot)) leave()
+          else if (dispose === null) dispose = effect((error) => {
+            if (dispose === null) throw error // Still installing: unwind the partial setup first.
+            failed(error)
+          })
+        }
+        const observer = new MutationObserver(() => {
+          try { sync() } catch (error) { failed(error) }
+        })
+        sync()
+        observer.observe(root, { attributes: true, attributeFilter: [kit.pageRoot] })
+        return stop
+      },
       /**
        * One JSON POST to a page-relative core route: `{status, body}`, `status` 0 when no answer
        * came (network, parse). Never throws.

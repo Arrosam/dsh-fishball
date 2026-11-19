@@ -48,8 +48,8 @@ export const MODEL = Object.freeze({
 })
 
 /** The snapshot's members (relayed contract), and the words of its `line`. */
-/** MULTI-0 `StatusSnapshot`: the global parts and `targets`; the scalar link/connect/line/control/contributedTools are withdrawn. */
-export const SNAPSHOT_KEYS = Object.freeze(['fishball', 'guards', 'set', 'targets'])
+/** MULTI-0 `StatusSnapshot`: the global parts, `targets`, and LOGO-BUTTON's normalized `brand`. */
+export const SNAPSHOT_KEYS = Object.freeze(['fishball', 'guards', 'set', 'targets', 'brand'])
 export const WITHDRAWN_KEYS = Object.freeze(['link', 'connect', 'line', 'control', 'contributedTools'])
 /** TargetsSnapshot fixtures (test data shaped as targets.d.ts; the status forwards them unchanged). */
 const view = (targetId, extra = {}) => Object.freeze({

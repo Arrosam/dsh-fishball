@@ -4,6 +4,7 @@ import { C, MULTI } from './constants.mjs'
 import { registerMultiCases } from './multi.mjs'
 import { registerLifecycleCases } from './lifecycle.mjs'
 import { registerRetirementCases } from './retirement.mjs'
+import { registerBrandConfigCases } from './brand-config.mjs'
 import { SEAM_TARGETS } from './targets-oracle.mjs'
 import fs from 'node:fs'
 import path from 'node:path'
@@ -19,6 +20,7 @@ export function registerWireCases(sdk) {
   registerMultiCases(sdk)
   registerLifecycleCases(sdk)
   registerRetirementCases(sdk)
+  registerBrandConfigCases(sdk)
   test(`${sdk} WIRE-EP-01 manifest exports and dependency boundary`, () => {
     const pkg = manifest()
     for (const key of C.exports) assert.ok(pkg.exports[key], key)

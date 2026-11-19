@@ -123,7 +123,7 @@ export const MULTI = Object.freeze({
   uiMembers: Object.freeze(['managerSessionId', 'targets', 'guards', 'asks']),
   withdrawnUiMembers: Object.freeze(['link', 'connect', 'pairing']),
   targetsMembers: Object.freeze(['list', 'onChange', 'add', 'remove', 'setUrl', 'begin', 'cancel', 'retry', 'choose']),
-  statusMembers: Object.freeze(['fishball', 'guards', 'set', 'targets']),
+  statusMembers: Object.freeze(['fishball', 'guards', 'set', 'targets', 'brand']),
   withdrawnStatusMembers: Object.freeze(['link', 'connect', 'line', 'control', 'contributedTools']),
   withdrawnRoutes: Object.freeze(['/api/fishball/connect', '/api/fishball/connect/cancel']),
   /** Server names (test data): two equal names, a later rename, and a literal that looks like an alias. */

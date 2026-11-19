@@ -34,6 +34,10 @@ const { services: SERVICE, events: EVENT, text: TEXT } = STATUS_MODEL
 /** What a reader sees without core's status service: Fishball is off in this DSH (R-FB-10). */
 const OFF = Object.freeze({ fishball: STATUS_MODEL.fishball.off })
 
+/** The logo themes the strip can draw (`SEAM_BRAND.style`); any other stored word is the default. */
+const BRAND_STYLES = Object.freeze(Object.values(STATUS_MODEL.brand.style))
+const brandStyleOf = (word) => (BRAND_STYLES.includes(word) ? word : STATUS_MODEL.brand.default)
+
 /** The status of a DSH by its `fishballStatus` service, or `fishball-off` when it has none. */
 export const statusOf = (service) => (typeof service?.snapshot === 'function' ? service.snapshot() : OFF)
 
@@ -52,8 +56,10 @@ const follow = (port, method, fn) => (typeof port?.[method] === 'function' ? por
  * @param {{list(): object, onChange(fn: Function): Function}} ports.targets the target collection (`ui.targets`)
  * @param {{report(): object | undefined, onChange(fn: Function): Function}} [ports.guards]
  * @param {(input: {pluginId: string, dedupeKey: string, text: string}) => Promise<unknown>} [ports.notify]
+ * @param {() => unknown} [ports.brand] LOGO-BUTTON: core's stored logo theme (config `brandStyle`);
+ *   absent, or an unknown word, reports `SEAM_BRAND.default`
  */
-export function createStatus(ctx, { targets, guards, notify }) {
+export function createStatus(ctx, { targets, guards, notify, brand }) {
   const logger = ctx.logger?.(STATUS_MODEL.logger)
   const listeners = new Set()
   const noticeKey = startNoticeKey()
@@ -70,6 +76,8 @@ export function createStatus(ctx, { targets, guards, notify }) {
       guards: guards?.report() ?? null,
       set,
       targets: targets.list(),
+      // Always one offered word, so the strip never has to guess from an old/hand-written value.
+      brand: Object.freeze({ style: brandStyleOf(brand?.()) }),
     })
   }
 
@@ -119,6 +127,9 @@ export function createStatus(ctx, { targets, guards, notify }) {
     ctx.on(EVENT.pluginsChanged, () => { if (ready) void recheckSet() }),
     // A settings change may change the parent's URL (the instance's setting), which its line reads.
     ctx.on(EVENT.settingsUpdated, refresh),
+    // LOGO-BUTTON: a saved volatile setting reaches the running row through the loader; the logo
+    // theme is in the snapshot, so the strip must be re-read then too.
+    ctx.on(EVENT.volatileUpdate, refresh),
   ]
   const appReady = ctx.get(SERVICE.appReady)
   if (typeof appReady?.onReady === 'function') disposers.push(appReady.onReady(() => { ready = true; void recheckSet() }))

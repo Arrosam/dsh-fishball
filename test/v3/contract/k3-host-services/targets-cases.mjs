@@ -102,6 +102,13 @@ export function registerK3MultiCases(sdk) {
   caseTest(sdk, 'K3-MULTI-EP-05', 'StatusSnapshot withdrawn', `no StatusSnapshot branch carries the withdrawn scalar ${STATUS.withdrawn.join(', ')}`, () => {
     assert.deepEqual(branches(core(), STATUS.type).flatMap((m) => STATUS.withdrawn.filter((n) => m.has(n))), [])
   })
+  caseTest(sdk, 'K3-MULTI-EP-05', 'BrandStatus', `BrandStatus is {style: ${STATUS.brand.styles.join(' | ')}}`, () => {
+    const brand = core().m.members(STATUS.brand.type)
+    assert.deepEqual(sorted(brand.keys()), [STATUS.brand.member])
+    assert.equal(brand.get(STATUS.brand.member).optional, false, STATUS.brand.member + ' is optional')
+    assert.equal(isNullable(core(), brand.get(STATUS.brand.member)), false, STATUS.brand.member + ' may be null')
+    assert.deepEqual(sorted(leafWords(core(), brand.get(STATUS.brand.member).type)), sorted(STATUS.brand.styles), 'style literals')
+  })
   caseTest(sdk, 'K3-MULTI-EP-05', 'SetStatus', `SetStatus is {status: ${STATUS.set.status.join(' | ')}, missing: {name, reason: ${STATUS.set.entry.reason.join(' | ')}, code: string | null}[]}`, () => {
     const set = core().m.members(STATUS.set.type)
     assert.deepEqual(sorted(set.keys()), sorted(STATUS.set.members))

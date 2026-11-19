@@ -13,6 +13,8 @@ Authority: fixed F-WIRE interface (2026-11-16), R-FB-01–14, R-REM-05, R-OA-14,
 | Connect | DT | Loopback Host 127.0.0.1/localhost/[::1] on the listener's port × Origin http / https / absent → configuration refusal, never `web-callback-insecure`; GET/cancel shapes and no-store; callback no cookie returns 404 without pending attempt. Insecure partitions: todo E2E-CORE (DSH's fence refuses them with default trustedHosts) |
 | Model | ST | Model of the manager's next request: unset → host default; routable → it, live; unroutable → default |
 | Target | ST | line.kind target-unset → another kind after settings.mutate |
+| BRAND-CONFIG-DT-01 | EP/DT, both SDKs | Cold start from an on-disk core row: exact `fishball` / `deepseek` survive; absent, null, empty, unknown, wrong case, number, array (even `["deepseek"]`), and object give `fishball` in the public status snapshot. |
+| BRAND-CONFIG-ST-01 | ST | From `deepseek`, reconcile each malformed value from disk in the same host: status stays available with `deepseek` or `fishball`. Valid edits through the same path must then select `fishball` and `deepseek`. |
 
 ## Deferred
 - E2E-CORE: cross-machine HTTPS callback completion and actual approval browser redirect. Includes matching Host web redirect_uri, callback state/issuer/PKCE success/error/replay and browser-cookie independence during an active attempt. No hosted child is launched.
@@ -60,7 +62,7 @@ fake DSH MCP servers (fake-dsh.mjs). Expected values: targets-oracle.mjs (the fr
 | MULTI-EVT-SYS-01 | EP (same eventId on A and B) | two manager messages `fbe_<handle>`; acks per target |
 | MULTI-ASK-SYS-01 | EP (routes × unknown ids) | unknown handle 404; every target POST route with an unknown id 404 `unknown-target`; missing id 400/404; duplicate add 409; insecure add 400; unconfirmed remove 409 |
 | MULTI-SVC-DT-01 | DT (bridge/attention × live / epoch mismatch / removed) | only the named target; mismatch and removed fail closed with `unknown-target`, nothing sent |
-| MULTI-SVC-EP-01 | EP (status shape) | `{fishball, guards, set, targets}`; no scalar members; targets = list(); contributedTools 0 counted |
+| MULTI-SVC-EP-01 | EP (status shape) | `{fishball, guards, set, targets, brand: {style}}`; no scalar members; targets = list(); contributedTools 0 counted; absent stored logo theme → fishball |
 | MULTI-SVC-ST-01 | ST (two targets) | one manager session; reminder tools once |
 
 Re-baselined WIRE-SYS rows (withdrawn oracles replaced): apiVersion 2 and `ui.targets` shape; the

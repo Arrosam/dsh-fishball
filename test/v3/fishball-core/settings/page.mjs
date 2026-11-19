@@ -113,7 +113,8 @@ function namespaceForm(world, ns) {
  * @param options.launcher - DSH's native Settings launcher is on the page (default true).
  * @param options.omit - service names this page does not provide.
  * @param options.activePanel - the layout's active panel at load (default null).
- * @param options.clients - CLIENTS.both (core and fishball-ui, the default) or CLIENTS.coreOnly.
+ * @param options.clients - CLIENTS.both (core and fishball-ui, the default), CLIENTS.coreOnly, or
+ *   CLIENTS.uiOnly (the LOGO-BUTTON page needs fishball-ui alone, so its styles are the only ones).
  * @param options.remoteSession - E-FIX-3 (B5). `undefined` (the default): the legacy scripted
  *   `remote` above. Otherwise the page's `remote` is modelled as DSH's own Remote service is under
  *   Cordis (dsh-api-gateway client, both SDKs): it carries the tracker Cordis's `Service`
@@ -126,10 +127,13 @@ function namespaceForm(world, ns) {
  *   readable without inject and hide the rule. `null`: the same Remote, no `remote.session`.
  * @param options.chunkFiles - E-FIX-3: `{<chunk file name>: <absolute path>}` loads that file in
  *   place of the package's own chunk (the base-commit copy of the mutating-test check).
+ * @param options.shimOptions - extra options for the React shim (the LOGO-BUTTON page supplies
+ *   `hostRef`, so a component that climbs from its slot root to the shell's own button sees one).
  */
 export function createWorld({
   sdk, lang = 'en', base = FIXTURE.base, hash = '', core = {}, coreUser, instanceTarget = null, configured = false,
   navigation = true, launcher = true, omit = [], activePanel = null, clients = CLIENTS.both, remoteSession, chunkFiles = {},
+  shimOptions = {},
 } = {}) {
   const world = {
     sdk, lang, base, clients, remoteSession, chunkFiles,
@@ -179,7 +183,7 @@ export function createWorld({
     targets: undefined,
     targetAnswers: {},
   }
-  const shim = createReactShim({ stale() { world.staleUpdates += 1 } })
+  const shim = createReactShim({ stale() { world.staleUpdates += 1 }, ...shimOptions })
   const { React } = shim
   world.shim = shim
   world.React = React
@@ -449,7 +453,9 @@ export async function loadPage(t, world) {
     'react/jsx-runtime': jsxRuntime(world.React),
   }
   // Each graph entry's chunks load from its own package folder (DSH's package-local chunk route).
-  const entries = [{ id: CORE.moduleId, file: SUBJECT.coreClient }, ...(world.clients === CLIENTS.both ? [{ id: UI.moduleId, file: SUBJECT.uiClient }] : [])]
+  const withCore = world.clients !== CLIENTS.uiOnly
+  const withUi = world.clients !== CLIENTS.coreOnly
+  const entries = [...(withCore ? [{ id: CORE.moduleId, file: SUBJECT.coreClient }] : []), ...(withUi ? [{ id: UI.moduleId, file: SUBJECT.uiClient }] : [])]
   const run = (file) => page.run(fs.readFileSync(file, 'utf8'), file, pathToFileURL(file).href)
   for (const e of entries) run(e.file)
   const graph = entries.map((e) => ({ id: e.id, rev: 'fbtest' }))
@@ -469,11 +475,15 @@ export async function loadPage(t, world) {
   }
   const plugins = applyPlugins(root, graph, table, world.errors)
   world.root = root
+  // LOGO-BUTTON: a page may need to unmount one graph entry's plugin as the shell would when a
+  // bundle goes away, so the applied fibers stay observable.
+  world.plugins = plugins
+  world.page = page
   t.after(async () => {
     for (const key of world.shim.roots()) world.shim.unmountRoot(key)
     page.clearTimers()
-    for (const p of plugins.reverse()) await p.fiber.dispose?.().catch?.(() => {})
-    for (const fiber of owned) await fiber.dispose?.().catch?.(() => {})
+    for (const p of plugins.reverse()) await Promise.resolve(p.fiber.dispose?.()).catch(() => {})
+    for (const fiber of owned) await Promise.resolve(fiber.dispose?.()).catch(() => {})
   })
   await settle()
   return pageHandle(world)

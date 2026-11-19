@@ -145,7 +145,9 @@ export interface SetStatus {
  * Core's status service snapshot (`UI_STATUS.service` `snapshot()`), as fishball-ui's strip route
  * serves it (review S4). The global parts stay once per process; everything per target is in
  * `targets`. K3a's scalar `link`, `connect`, `line`, `control` and `contributedTools` members are
- * withdrawn. Without core, a reader sees exactly `{fishball: 'fishball-off'}`, with no `targets`.
+ * withdrawn. LOGO-BUTTON adds `brand`, always one of the two seam themes (`SEAM_BRAND`), normalized
+ * from the stored `brandStyle`. Without core, a reader sees exactly `{fishball: 'fishball-off'}`,
+ * with no `targets` and no `brand`.
  */
 export type StatusSnapshot =
   | {
@@ -153,8 +155,14 @@ export type StatusSnapshot =
     readonly targets: TargetsSnapshot
     readonly guards: GuardReport | null
     readonly set: SetStatus | null
+    readonly brand: BrandStatus
   }
   | { readonly fishball: 'fishball-off' }
+
+/** The sidebar logo's theme (LOGO-BUTTON); the two words are `SEAM_BRAND.style`. */
+export interface BrandStatus {
+  readonly style: 'fishball' | 'deepseek'
+}
 
 /** `SEAM_TARGETS.refusal`, or a K3a code the delegated part answers (Connect, pairing). */
 export type TargetActionResult = { readonly ok: true; readonly targetId?: TargetId } | { readonly ok: false; readonly code: string }
