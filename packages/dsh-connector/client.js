@@ -53,7 +53,7 @@ window.__ModuleLoader__.load({
     const PAGE = Object.freeze({
       id: 'dsh-connector',
       packageName: PACKAGE_NAME,
-      slot: 'plugins.row.config',
+      slot: 'plugins.bundle.config',
       locale: 'dsh-connector-tokens',
       tokensField: 'tokens',
       pageView: 'page',
@@ -690,9 +690,13 @@ window.__ModuleLoader__.load({
      * refreshes `state`, so an accepted change, including the item `create` adds, re-renders it.
      * No form means DSH does not serve the row's settings to this client.
      */
-    function makePage(t) {
+    function makePage(t, configForm) {
       return function DshConnectorSettings(props) {
-        const form = props.form
+        const liveSnapshot = React.useSyncExternalStore(
+          configForm ? configForm.subscribe : () => () => {},
+          configForm ? configForm.getSnapshot : () => undefined,
+        )
+        const form = props.form ?? (configForm ? { state: liveSnapshot, mutate: configForm.mutate.bind(configForm) } : undefined)
         const snapshot = form?.state
         const saved = listOf(snapshot?.value)
         // The staged list and the revision it was staged from, which fences its Save: a list
@@ -794,12 +798,15 @@ window.__ModuleLoader__.load({
       ctx.effect(() => ctx.locale.register(PAGE.locale, { en, zh }), PAGE.effect.locale)
       // Registered only while DSH serves the row's settings, so a deployment without the row shows
       // no trace of the page (the Plugins page asks slot keys for a configure control).
-      ctx.effect(() => ctx.configForms.whileServed([PAGE.id], () =>
-        ctx.slots.inject(PAGE.slot, () => ctx.slots.register({
-          name: PAGE.slot,
-          key: `${PAGE.packageName}#${PAGE.id}`,
-          locale: PAGE.locale,
-        }, makePage(t)))), PAGE.effect.page)
+      ctx.effect(() => {
+        const configForm = ctx.configForms.get(PAGE.id)
+        return ctx.configForms.whileServed([PAGE.id], () =>
+          ctx.slots.inject(PAGE.slot, () => ctx.slots.register({
+            name: PAGE.slot,
+            key: PAGE.packageName,
+            locale: PAGE.locale,
+          }, makePage(t, configForm))))
+      }, PAGE.effect.page)
     }
 
     return { name: PAGE.id, inject: ['slots', 'locale', 'configForms'], apply }

@@ -28,13 +28,13 @@ function installMarkdown(packages) {
 
 Supported: DeepSeek Harness (DSH) ${SDKS.join(' and ')}.
 
-## Managed DSH (connector + connector UI)
+## Managed DSH (connector + connector UI components)
 
 ${installBlocks('managed', name)}
 
-## Adapter (use another DSH's connector)
+## Amenities (includes dsh-connector-adapter)
 
-${installBlocks('adapter', name)}
+${installBlocks('amenities', name)}
 `
 }
 

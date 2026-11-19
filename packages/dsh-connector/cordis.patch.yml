@@ -1,13 +1,7 @@
-# dsh-connector's profile footprint: one host row (design §0.2, §0.6).
-# - dsh-connector: the MCP endpoint and OAuth server that expose this DSH to any agent (src/wire/),
-#   with the session domain that routes permission requests, questions, plan reviews, prompts,
-#   grants and message_agent to each session's managing agent (src/domain/). Its only browser code
-#   is its own settings page (client.js, the Plugins page's plugins.row.config slot); every other UI
-#   is dsh-connector-ui's. Its id is also the settings namespace DSH's form and that page edit
-#   (src/config.js: the token list, the approval port, the DSH name and the limits). It works with
-#   no instance installed.
-# The built-in instance inserts its own row from its own package (packages/dsh-instance).
 - insert:
     - id: dsh-connector
       name: 'dsh-agent-connector'
+      config: {}
+    - id: dsh-connector-ui
+      name: ./ui/index.js
       config: {}

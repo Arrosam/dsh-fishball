@@ -1,0 +1,7 @@
+- insert:
+    - id: dsh-connector-amenities
+      name: 'dsh-connector-amenities'
+      config: {}
+    - id: dsh-connector-adapter
+      name: ./adapter/index.js
+      config: {}

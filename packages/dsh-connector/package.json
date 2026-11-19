@@ -36,7 +36,8 @@
     "locale/*.json",
     "cordis.patch.yml",
     "LICENSE",
-    "THIRD_PARTY_NOTICES.md"
+    "THIRD_PARTY_NOTICES.md",
+    "ui/"
   ],
   "//engines": "node >=22.14: C-EXT resolves a contributor's package with node:module findPackageJSON (22.14 / 23.2); DSH itself needs >=24.9.0 on both SDKs (Fishball 2026-11-14; REL-PACK aligns engines across packages). The connector requires dsh-web-app in the profile (the user, 2026-11-17, S1 = A): its MCP endpoint and OAuth routes are served on DSH's web server, and the row injects web-app services (connection, sessionController, workspaceRegistry), so without the web app the row stays pending in DSH's own missing-dependency state.",
   "engines": {
@@ -73,7 +74,12 @@
     },
     "//client": "One client entry whose only registration is the connector's own settings page in the Plugins page's plugins.row.config slot (design §5.9; C-WIRE mounts C-TOKENS-REVEAL's client.js).",
     "client": {
-      "platform": "web"
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-client-locale",
+        "@deepseek-ai/dsh-client-ui-settings",
+        "@deepseek-ai/dsh-client-ui-plugin-manager"
+      ]
     }
   }
 }

@@ -6,11 +6,10 @@ Split from `dsh-fishball@84078e5f`.
 
 ## Packages
 
-| Folder | npm Package | Role |
+| Folder | npm Package | Components & Role |
 | --- | --- | --- |
-| `packages/dsh-connector` | `dsh-agent-connector` | MCP backend (`/api/agent/mcp`), OAuth server (`/api/agent/oauth`), tokens, pairs, mailbox, routing, `message_agent`, handover & tool contribution services, settings page. |
-| `packages/dsh-connector-ui` | `dsh-connector-ui` | Host DSH frontend: sidebar indicator, agent window, notify prompt, managed session marks (**Hand over** / **Take back**), `notify` & `attention.*` tools. |
-| `packages/dsh-connector-adapter` | `dsh-connector-adapter` | Optional plugin letting any DSH connect to another DSH's connector through `dsh-mcp-client` with browser OAuth sign-in and a loopback proxy. |
+| `packages/dsh-connector` | `dsh-agent-connector` | One plugin with 2 components: **`dsh-connector`** (MCP `/api/agent/mcp`, OAuth `/api/agent/oauth`, tokens, pairs, mailbox, routing, bundle settings page) and **`dsh-connector-ui`** (`./ui/`, sidebar indicator, agent window, notify prompt, Hand over / Take back marks, `notify` & `attention.*` tools). |
+| `packages/dsh-connector-amenities` | `dsh-connector-amenities` | Optional connector amenities bundle (currently **`dsh-connector-adapter`** under `./adapter/`, letting any DSH connect to another DSH's connector via `dsh-mcp-client`). Configure each amenity from its component settings. |
 | `packages/dsh-connector-shared` | `dsh-connector-shared` | Internal library bundled into DSH-side tarballs (`redact`, `request-host`). Not a plugin. |
 
 ## Related repositories

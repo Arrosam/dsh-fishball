@@ -10,16 +10,15 @@ export const RELEASE_DIR = path.join(REPO, '.runtime', 'release', VERSION)
 export const PACKAGES = Object.freeze([
   Object.freeze({ key: 'dshShared', folder: 'packages/dsh-connector-shared', library: true }),
   Object.freeze({ key: 'connector', folder: 'packages/dsh-connector' }),
-  Object.freeze({ key: 'connectorUi', folder: 'packages/dsh-connector-ui' }),
-  Object.freeze({ key: 'adapter', folder: 'packages/dsh-connector-adapter' }),
+  Object.freeze({ key: 'amenities', folder: 'packages/dsh-connector-amenities' }),
 ])
 
 export const HOSTED_SET = Object.freeze([])
 export const SET_CARRIER = null
 
 export const INSTALL_SETS = Object.freeze({
-  managed: Object.freeze(['connector', 'connectorUi']),
-  adapter: Object.freeze(['adapter']),
+  managed: Object.freeze(['connector']),
+  amenities: Object.freeze(['amenities']),
 })
 
 export const PROFILE = 'web'
