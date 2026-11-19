@@ -465,10 +465,10 @@ export async function openPage(t, world, { host = PAGE_HOST.loopback, failServic
     live: () => registrations.filter((r) => !r.disposed),
     entries,
     settle: settleAll,
-    setLang(next) {
+    setLang(next, { syncDocument = true } = {}) {
       if (next === locale.getSnapshot().active) return
       localeSeats.clear()
-      sandbox.document.documentElement.lang = next
+      if (syncDocument) sandbox.document.documentElement.lang = next
       services.setLang(next)
       root.emit('locale/change', locale.getSnapshot())
     },

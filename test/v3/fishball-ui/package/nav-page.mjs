@@ -224,7 +224,8 @@ export async function navPage(t, sdk, { lang = NAV_PAGE.langs[0], openFails = 0,
     },
     shortcuts: face,
   }
-  prepare(page)
+  // Tests can supply startup services before fishball-page sees the child document.
+  prepare(page, ctx)
   const file = NAV_PAGE.pageClient
   page.run(fs.readFileSync(file, 'utf8'), file)
   const entry = page.registrations.find((r) => r.id === NAV_PAGE.pageModule)
