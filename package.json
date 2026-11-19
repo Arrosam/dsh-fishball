@@ -1,0 +1,19 @@
+{
+  "name": "dsh-fishball-instance",
+  "private": true,
+  "description": "Hosted Fishball bridge for DeepSeek Harness: runs a Fishball child DSH inside a host DSH and connects it to dsh-agent-connector.",
+  "license": "MIT",
+  "type": "module",
+  "workspaces": [
+    "packages/dsh-instance"
+  ],
+  "engines": {
+    "node": ">=22.14",
+    "dsh": ">=0.2.1-rc.5"
+  },
+  "scripts": {
+    "test:v3": "node test/run-v3.mjs",
+    "pack": "node scripts/pack.mjs",
+    "pack:check": "node scripts/pack.mjs --check"
+  }
+}

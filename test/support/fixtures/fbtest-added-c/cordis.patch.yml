@@ -1,0 +1,4 @@
+- insert:
+    - id: fbtest-added-c
+      name: 'fbtest-added-c'
+      config: {}

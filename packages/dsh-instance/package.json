@@ -1,0 +1,72 @@
+{
+  "name": "dsh-instance",
+  "version": "1.0.0-alpha.1",
+  "description": "The built-in Fishball instance: runs Fishball in its own private DSH profile attached to the main DSH. It places and launches the Fishball plugins in the child, sets up the hosted token once, and has its own plugin settings page; it imports no Fishball-side code.",
+  "icon": "./assets/instance-icon.svg",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Arrosam/dsh-fishball-instance.git",
+    "directory": "packages/dsh-instance"
+  },
+  "publishConfig": {
+    "tag": "alpha"
+  },
+  "type": "module",
+  "main": "./host.js",
+  "//locale": "The Plugins page card title (design §0.7): DSH reads meta.title from the exported ./locale/*.json without loading this package, and shows the package name when that file is absent.",
+  "//exports": "./client is the instance's own settings page (I-HOST; requirements 1.33 Q-D1 = B, R-ARCH-05), with its chunks client.status.js and client.models.js beside it. ./child-row is the child-side row the launch overlay inserts from the lifecycle snapshot (a path there, so this export is for readers and tests). The status-line export moved with the page: dsh-connector-ui draws no instance card any more.",
+  "exports": {
+    ".": "./host.js",
+    "./client": "./client.js",
+    "./child-row": "./child-row.js",
+    "./native-runtime": "./src/native-runtime/index.js",
+    "./locale/*.json": "./locale/*.json",
+    "./package.json": "./package.json"
+  },
+  "//files": "bundled/ holds the plugin set's sources in a packed instance (design §8.1); it is REL-PACK output, never committed (Q-22): in a checkout, placement reads the sibling workspace folders (src/native-runtime/placement.js).",
+  "files": [
+    "host.js",
+    "client.js",
+    "client.status.js",
+    "client.models.js",
+    "child-row.js",
+    "native-child.js",
+    "uninstall.js",
+    "src/",
+    "bundled/",
+    "assets/instance-icon.svg",
+    "locale/*.json",
+    "cordis.patch.yml",
+    "LICENSE",
+    "THIRD_PARTY_NOTICES.md"
+  ],
+  "engines": {
+    "node": ">=22.14",
+    "dsh": ">=0.2.1-rc.5"
+  },
+  "//peerDependencies": "Host packages are resolved from the running DSH installation (verified in spike S8). '*' because engines.dsh is the real compatibility gate. There is no dsh-connector peer (I-READY, design §1.0b; G5): the instance imports no connector module and looks the connector's services up at runtime (dshConnectorTokens).",
+  "peerDependencies": {
+    "@deepseek-ai/cosmokit": "*",
+    "@deepseek-ai/dsh-agent": "*",
+    "@deepseek-ai/dsh-app-boot": "*",
+    "@deepseek-ai/dsh-llm": "*",
+    "@deepseek-ai/dsh-llm-pi-ai": "*",
+    "@deepseek-ai/dsh-sandbox-policy": "*",
+    "@deepseek-ai/dsh-session": "*",
+    "@deepseek-ai/dsh-skill": "*",
+    "@deepseek-ai/dsh-skill-filesystem": "*",
+    "@deepseek-ai/dsh-system-prompt": "*",
+    "@deepseek-ai/dsh-tools": "*",
+    "@deepseek-ai/dsh-user-approval": "*",
+    "@deepseek-ai/schemastery": "*"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web"
+    }
+  }
+}

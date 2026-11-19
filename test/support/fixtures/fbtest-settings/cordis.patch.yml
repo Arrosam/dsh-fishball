@@ -1,0 +1,9 @@
+# P12: installed in the profile but not selected, so Fishball runs it only in its private tree.
+# The token is a secret the patch sets: it must never leave the Host (DESIGN §10d "Secrets").
+- insert:
+    - id: fbtest-settings
+      name: 'fbtest-settings'
+      config: { greeting: hello, token: fbtest-patch-secret-7f3a9c, auth: { key: fbtest-patch-secret-nested-2d81 }, accounts: [{ name: a1, secret: fbtest-patch-secret-list-90c4 }] }
+    - id: fbtest-settings-side
+      name: 'fbtest-settings/side'
+      config: {}

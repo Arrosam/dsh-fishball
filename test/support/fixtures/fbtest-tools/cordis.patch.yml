@@ -1,0 +1,4 @@
+- insert:
+    - id: fbtest-tools
+      name: 'fbtest-tools'
+      config: {}
