@@ -1,5 +1,0 @@
-# Only the child board row; placement in the child profile belongs to X0-B.
-- insert:
-    - id: fishball-board
-      name: 'fishball-board'
-      config: {}

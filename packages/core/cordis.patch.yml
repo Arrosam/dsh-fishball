@@ -85,7 +85,7 @@
 # starts sessions); entry-customization: More-menu rows that start sessions; ui-open-in-app: native
 # launches off the page; ui-sidebar-terminal: a shell outside read-only. They are browser rows with
 # an empty Node half and no service another row injects (checked in 0.2.1-rc.5 and 0.2.2-rc.1).
-- { id: ui-subagent, disabled: &with-ui !!js "((profile = ctx.get('profileContext')) => { try { return (ctx.get('hmr') === undefined ? profile?.startedBundles : JSON.parse(process.getBuiltinModule('node:fs').readFileSync(process.getBuiltinModule('node:path').join(profile.dir, 'package.json'), 'utf8')).dsh?.profile?.bundles)?.includes('fishball-ui') === true } catch { return profile?.startedBundles?.includes('fishball-ui') === true } })()" }
+- { id: ui-subagent, disabled: &with-ui true }
 - { id: ui-schedule, disabled: *with-ui }
 - { id: ui-permission, disabled: *with-ui }
 - { id: ui-agent-preset, disabled: *with-ui }
@@ -100,22 +100,9 @@
 
 # DSH's Preview Notice, in a hosted child only (E-FIX-3 B7; the user: the framed window is "完全一样"
 # as the standalone page, where the user met the notice already). Not a guard row (it has a config).
-# DSH's web welcome step (ui-settings-models) shows the notice until
-# `ui-settings-general.welcomeNoticeVersion`, the public setting it is acknowledged in
-# (dsh-client-ui-settings-general README), equals its copy version; so a hosted child starts with
-# it acknowledged. That copy version is DSH's `WELCOME_NOTICE_VERSION` (declared in
-# dsh-client-ui-settings-models `lib/types/onboarding-copy.d.ts`, no runtime export), the same in
-# 0.2.1-rc.5, 0.2.2-rc.1 and 0.2.2-rc.3. If DSH bumps it, the child shows the new notice once, as
-# DSH means a bump to. Elsewhere the value is undefined. This config replaces the row's whole config,
-# and `welcomeNoticeVersion` is the only key it has. The owner's profile layer applies after this
-# file, so an acknowledgement saved there still wins.
-# Hosted child: one of this process's `--patch` overlays (`profileContext.overlays`) inserts the
-# instance's child-side row `dsh-instance-child` (the name core reads its target by, K3a
-# `HOSTED_IMPORT.targetSetting`). The window is fishball-ui's page, so only with fishball-ui, as the
-# rows above; the child runs without HMR, so `startedBundles` is the test.
 - id: ui-settings-general
   config:
-    welcomeNoticeVersion: !!js "((profile = ctx.get('profileContext')) => profile?.startedBundles?.includes('fishball-ui') === true && profile.overlays?.some((patch) => patch.insert?.some((row) => row.id === 'dsh-instance-child')) === true ? '2026-09-28.1' : undefined)()"
+    welcomeNoticeVersion: !!js "((profile = ctx.get('profileContext')) => profile?.overlays?.some((patch) => patch.insert?.some((row) => row.id === 'dsh-instance-child')) === true ? '2026-09-28.1' : undefined)()"
 
 - insert:
     # Core's own agent preset for the manager: `read` and `read_image` (tool-fs with no write or
@@ -134,20 +121,18 @@
             config: { read: true, readImage: true, write: false, edit: false }
           - id: tool-ask-user
             name: '@deepseek-ai/dsh-tool-ask-user'
-    # Core's guard row: the check, the `guards-overridden` report (fishball-ui's UI guard rows
-    # included when fishball-ui is installed) and the standalone self-reorder (src/guards/). The
-    # Fishball page and the Recommended tab are fishball-ui's rows since F-UI.
+    # Core's guard row: the check, the `guards-overridden` report and the standalone self-reorder (src/guards/).
     - id: fishball-core-guards
       name: ./src/guards/row.js
     # Core's main row (src/main/, F-WIRE): the link, Connect, the interception service, the ask
     # cards, status, the bridge façade and the one manager session with its persona, reminders and
     # private Skills; it provides `fishballInstance` and `fishballStatus`. Its id is its settings
-    # namespace (core's own settings page edits it). A package subpath, never a path row: DSH's
-    # client modules count every path row inside core's folder as another client source of
-    # fishball-core and refuse the package (I-PLACE probe, both SDKs). Not `required` (decided
-    # 2026-11-15 for core's rows): a failure is this row's alone, and the DSH still boots.
+    # namespace (core's own settings page edits it).
     - { id: fishball-core, name: fishball-core/main }
-    # The Fishball page's manager-session route (src/session/route.js), core's own since I-HOST, so
-    # fishball-ui's page finds it in a hosted child and in a standalone DSH alike. Its one inject is
-    # `connection`.
+    # The Fishball page's manager-session route (src/session/route.js).
     - { id: fishball-core-session, name: fishball-core/session-route }
+    # Fishball UI component (sub-package under ./ui/): Fishball page, Recommended tab, sidebar
+    # targets, ask cards, brand row and model dialog. Toggleable independently as a component row.
+    - { id: fishball-ui, name: ./ui/index.js }
+    - { id: fishball-page, name: ./ui/fishball-page/index.js }
+    - { id: fishball-recommend-plugins, name: ./ui/fishball-recommend-plugins/index.js }
