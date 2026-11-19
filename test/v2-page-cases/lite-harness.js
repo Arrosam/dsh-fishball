@@ -480,6 +480,11 @@
         return realFetch(input, init)
       }
       const dictFor = (ns) => o.dicts[ns] ?? { en: {}, zh: {} }
+      // This harness starts with native settings loaded. Keep the form's accepted preference
+      // in sync with setLocale, independently of the log used by the hash-continuation oracle.
+      const formSnapshot = ({ active, revision }) => ({ status: 'ready', writable: true, value: { preference: active }, user: { preference: active }, base: {}, revision })
+      const localeForm = store(formSnapshot(localeStore.getSnapshot()))
+      disposers.push(localeStore.subscribe(() => localeForm.set(formSnapshot(localeStore.getSnapshot()))))
       const locale = recorder('locale', {
         bind: (ns) => (key) => dictFor(ns)[localeStore.getSnapshot().active]?.[key] ?? dictFor(ns).en?.[key] ?? key,
         subscribe: localeStore.subscribe,
@@ -513,7 +518,7 @@
       const pageEffects = []
       const ctx = {
         effect(fn) { const out = fn(); pageEffects.push(out); return out },
-        slots, layout, uiWorkspace, locale,
+        slots, layout, uiWorkspace, locale, configForms: { get: (ns) => ns === 'locale' ? localeForm : undefined },
         uiSession: { adapter: { current } },
         sessions: recorder('sessions', { list, async archive() {}, async fork() {}, async create() {} }),
         shortcuts: api.facade.shortcuts,

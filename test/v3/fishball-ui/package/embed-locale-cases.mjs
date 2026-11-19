@@ -13,12 +13,12 @@ const SDK_LOCALE = '@deepseek-ai/dsh-client-locale'
 const BUDGET_MS = 2000
 const [en, zh] = NAV_PAGE.langs
 
-/** The first settings read can return *after* the launcher mounts. A successful write queued
- * during loading is accepted after that first read; accepting it updates the form subscribers. */
+/** A native write may be requested before the first read. This schedule delivers the first
+ * read late, before pending write acknowledgements; neither the read nor a write is a UI oracle. */
 function settings(saved, loading) {
   const changes = new EventEmitter()
   let release
-  const firstRead = new Promise((resolve) => { release = resolve })
+  const writeAck = new Promise((resolve) => { release = resolve })
   let snapshot = { status: 'loading', writable: false }
   function publish(preference) {
     const value = { preference }
@@ -32,7 +32,7 @@ function settings(saved, loading) {
     form: {
       getSnapshot: () => snapshot,
       subscribe(fn) { changes.on('change', fn); return () => changes.off('change', fn) },
-      async set(field, value) { assert.equal(field, 'preference'); await firstRead; publish(value); return true },
+      async set(field, value) { assert.equal(field, 'preference'); await writeAck; publish(value); return true },
     },
   }
 }
@@ -66,25 +66,42 @@ async function openChild(t, sdk, hostLang, pref) {
       `expected child ${lang}/${expected}; got ${locale.getLocale().active}/${label()}`)
     assert.deepEqual(page.log.errors, [])
   }
-  return { displays, locale, settle: page.settle }
+  return { displays, locale, settle: page.settle, replace: page.replace }
 }
 
 export function registerEmbedLocaleCases(sdk) {
-  caseTest(sdk, 'R3B-07', 'late child', 'English landing survives late settings from a Chinese visit, without locking native Settings', async (t) => {
+  for (const [row, saved, late] of [['late child', zh, true], ['ready match', en, false]]) {
+    caseTest(sdk, 'R3B-07', row, 'after the English landing, native Chinese survives a replacement page on the same document', async (t) => {
+      const pref = settings(saved, late)
+      const child = await openChild(t, sdk, en, pref)
+      if (late) pref.loaded()
+      await child.settle()
+      await child.displays(en)
+      child.locale.setLocale(zh) // Native Language row's action, after startup is over.
+      await child.settle()
+      await child.displays(zh)
+      await child.replace()
+      await child.displays(zh)
+    })
+  }
+  caseTest(sdk, 'R3B-07', 'pending replacement', 'a replacement page mounted before the first settings read finishes the English handoff', async (t) => {
     const pref = settings(zh, true)
     const child = await openChild(t, sdk, en, pref)
+    await child.replace()
     pref.loaded()
     await child.settle()
     await child.displays(en)
-    child.locale.setLocale(zh) // Native Language row's action, after startup is over.
-    await child.settle()
-    await child.displays(zh)
   })
   caseTest(sdk, 'R3B-07', 'reload', 'each new child document shows the selected Chinese on an English browser', async (t) => {
     const pref = settings(en, false)
     for (const load of ['first visit', 'reload']) await t.test(load, async (c) => {
       const child = await openChild(c, sdk, zh, pref)
       await child.displays(zh)
+      if (load === 'first visit') {
+        child.locale.setLocale(en) // Reload must honor its own admission, not inherit the last UI.
+        await child.settle()
+        await child.displays(en)
+      }
     })
   })
 }
