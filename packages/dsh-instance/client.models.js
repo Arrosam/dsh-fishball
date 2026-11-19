@@ -35,7 +35,7 @@ window.__ModuleLoader__.load({
      */
     const PLUGIN = Object.freeze({
       id: 'dsh-instance',
-      slot: 'plugins.row.config',
+      slot: 'plugins.bundle.config',
     })
     /** The form's two views; `summary` is the row's one-liner, `page` the form and its Save. */
     const VIEW = Object.freeze({ summary: 'summary', page: 'page' })
@@ -501,7 +501,7 @@ window.__ModuleLoader__.load({
           const stopServing = ctx.configForms.whileServed([PLUGIN.id], () =>
             ctx.slots.inject(PLUGIN.slot, () => ctx.slots.register({
               name: PLUGIN.slot,
-              key: `${PLUGIN.id}#${PLUGIN.id}`,
+              key: PLUGIN.id,
               locale: shared.locale,
             }, Card)))
           return () => { stopServing(); section.dispose() }

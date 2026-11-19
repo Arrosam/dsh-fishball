@@ -179,10 +179,6 @@ export const PLACEMENT = Object.freeze({
    * reserves it in the child; add it back here and in `install.order` for its release.
    */
   bundles: Object.freeze([
-    // fishball-ui before core (I-HOST, the user's answer Q2 = A): fishball-ui's patch only inserts
-    // its own rows, so it holds in any order, while core's patch (which holds every guard row) needs
-    // core last: its guard check reports `bundle-order` otherwise.
-    Object.freeze({ name: 'fishball-ui', directory: 'fishball-ui' }),
     Object.freeze({ name: 'fishball-core', directory: 'core' }),
   ]),
   /**
@@ -223,7 +219,7 @@ export const PLACEMENT = Object.freeze({
    * as any DSH plugin install does; the offline fallback needs none of them.
    */
   install: Object.freeze({
-    order: Object.freeze(['fishball-ui', 'fishball-core']),
+    order: Object.freeze(['fishball-core']),
     operations: '@deepseek-ai/dsh-plugin-manager/operations',
     manager: '@deepseek-ai/dsh-plugin-manager',
     command: 'add',
