@@ -38,9 +38,9 @@
     "node": ">=22.14",
     "dsh": ">=0.2.1-rc.5"
   },
-  "//dependencies": "fishball-shared is the Fishball side's library (R-ARCH-08): core's seam with fishball-ui (./ui-seam), the one module two Fishball-side packages use; core's OAuth client copy and file helper are its own (src/link/oauth-client.js, src/manager/skills-store.js), as R-ARCH-08 strict puts a single-user module in its user (REMOVE-V2b); core shares no module with the instance (requirements 1.40); it is bundled, so the tarball carries it. @modelcontextprotocol/client is core's own MCP client for its link (F-LINK; design §5a.1, §6.3, §9.1), never the host's transitive copy: pinned exactly to 2.2.0, the line both hosts ship (0.2.1-rc.5 and 0.2.2-rc.1, dist byte-identical), as K1 pins the connector's server SDK to the same line.",
+  "//dependencies": "fishball-shared is the Fishball side's library (R-ARCH-08): core's seam with fishball-ui (./ui-seam), the one module two Fishball-side packages use; core's OAuth client copy and file helper are its own (src/link/oauth-client.js, src/manager/skills-store.js), as R-ARCH-08 strict puts a single-user module in its user (REMOVE-V2b); core shares no module with the instance (requirements 1.40); it is bundled, so the tarball carries it. @modelcontextprotocol/client is core's own MCP client for its link (F-LINK; design §5a.1, §6.3, §9.1), never the host's transitive copy: pinned at 2.4.0 alongside the adapter's client and the connector's server.",
   "dependencies": {
-    "@modelcontextprotocol/client": "2.2.0",
+    "@modelcontextprotocol/client": "2.4.0",
     "fishball-shared": "1.0.0-alpha.1"
   },
   "//bundleDependencies": "Both dependencies ship inside the tarball (REL-PACK item 2, Fishball decision B 2026-11-15): fishball-shared as the Fishball side's library, and @modelcontextprotocol/client with its whole runtime closure (core, cross-spawn, eventsource, jose, pkce-challenge, zod and theirs), which scripts/pack-v3.mjs resolves once and copies in without their tests. Without it an offline `pnpm add` in the hosted child failed with ERR_PNPM_NO_OFFLINE_META, and a standalone install needs no registry for core either. The bundled zod is the client's own dependency; core imports no zod itself, so no zod peer is declared.",

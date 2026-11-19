@@ -27,8 +27,13 @@ domain's operation codes, payload vocabularies and payload bounds are this modul
 - **Revision:** `2026-07-28` only (`PROTOCOL.version`, Q12). The SDK's
   `createMcpHandler(..., {legacy: 'reject'})` answers other revisions with -32022 and header
   mismatches with -32020 (S1). `Mcp-Session-Id` is ignored [spec: no protocol sessions].
-- **SDK pins (`SDK_PINS`):** `@modelcontextprotocol/server` 2.2.0, `@modelcontextprotocol/node`
-  2.1.0 (2.1.1+ needs server ^2.3.0).
+- **SDK pins (`SDK_PINS`):** the connector pins `@modelcontextprotocol/server` 2.4.0 and
+  `@modelcontextprotocol/node` 2.1.2 (server peer `^2.4.0`). Core and the adapter pin their own
+  `@modelcontextprotocol/client` 2.4.0. DSH 0.2.1-rc.5 and 0.2.2-rc.1 still ship client 2.2.0;
+  they interoperate over the same `2026-07-28` wire revision without a host upgrade.
+- **Per-request factory:** `createMcpHandler` uses the verified caller to build a fresh
+  `McpServer` with only that caller's tools and resources. Listen streams stay on the pair's own
+  handler; no server instance is shared across callers.
 - **`server/discover`** advertises `io.modelcontextprotocol/oauth-client-credentials` (R-OA-09) and
   `tools.listChanged: true`.
 - **Routes (`PATHS`):** `/api/agent/mcp`, issuer `/api/agent/oauth`, token
@@ -258,7 +263,8 @@ changes this object in the same change.
 | `RATE_LIMITS.tokenRequestsPerAddressPerWindow` | 150 token requests per address per minute, any client id, counted before the body is read | PROPOSED (K1 amendment after W2; was C-OAUTH's local value) |
 | `TOKEN_ENDPOINT_LIMITS.formBodyBytes` | 8 KiB token-request form; over it 400 `invalid_request` | PROPOSED (K1 amendment after W2; was C-OAUTH's `TOKEN_FORM.maxBodyBytes`) |
 | `FAILURE_LIMIT` | the one failure limit (K1a): per (address, client id; an MCP bearer by address alone), 1-min window: 10 refused credentials; plus 50 per address | key and 10: DECIDED (#19, #21: kept); 50: PROPOSED; one shared constant and `FailureLimiter`: PROPOSED (K1a) |
-| `ENDPOINT_LIMITS.bodyBytes` | 8 MiB | PROPOSED (V2's attachment frame) |
+| `ENDPOINT_LIMITS.bodyBytes` | 8 MiB for the whole MCP request body; larger bodies get HTTP 413 | PROPOSED (V2's attachment frame) |
+| `ENDPOINT_LIMITS.maxToolInputElements` | 4096 per `tools/call`: count every object key and array element in `arguments`, including nested ones. Above 4096 the tool returns `limit-exceeded`, even if the body fits in 8 MiB. | K1 amendment; applies to core and contributed tools |
 | `ENDPOINT_LIMITS.inFlightPerPrincipal` | 32 | PROPOSED |
 | `ENDPOINT_LIMITS.listenStreamsPerPrincipal` | 8 | PROPOSED |
 | `ENDPOINT_LIMITS` rate | 600 per minute, burst 120, per principal | PROPOSED |

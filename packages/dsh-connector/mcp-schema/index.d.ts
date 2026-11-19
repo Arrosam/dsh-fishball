@@ -797,7 +797,7 @@ export declare const DECISION_KIND: { readonly approval: "approval"; readonly qu
 export declare const DECISION_KIND_OF: { readonly permission: "approval"; readonly ask: "approval"; readonly question: "question"; readonly "plan-review": "question" }
 export declare const DELIVERY: { readonly delivered: "delivered"; readonly unconfirmed: "unconfirmed" }
 export declare const DERIVED_AGENT_ID: { readonly prefix: "cid-"; readonly chars: 16; readonly alphabet: "abcdefghijklmnopqrstuvwxyz234567"; readonly digestAlgorithm: "sha256" }
-export declare const ENDPOINT_LIMITS: { readonly bodyBytes: number; readonly inFlightPerPrincipal: number; readonly listenStreamsPerPrincipal: number; readonly requestsPerMinute: number; readonly requestBurst: number; readonly jsonRpcCode: number; readonly jsonRpcVersion: "2.0" }
+export declare const ENDPOINT_LIMITS: { readonly bodyBytes: number; readonly maxToolInputElements: number; readonly inFlightPerPrincipal: number; readonly listenStreamsPerPrincipal: number; readonly requestsPerMinute: number; readonly requestBurst: number; readonly jsonRpcCode: number; readonly jsonRpcVersion: "2.0" }
 export declare const ENTRY_STATUS: { readonly ok: "ok" }
 export declare const EVENT_TYPE: { readonly permission: "permission"; readonly question: "question"; readonly planReview: "plan-review"; readonly settlement: "settlement"; readonly retirement: "retirement"; readonly turnFinished: "turn-finished"; readonly state: "state"; readonly message: "message"; readonly ask: "ask"; readonly handover: "handover"; readonly takeback: "takeback"; readonly notice: "notice" }
 export declare const FAILURE_LIMIT: { readonly windowMs: number; readonly keyParts: readonly ["remoteAddress", "clientId"]; readonly perKeyPerWindow: number; readonly perAddressPerWindow: number }
@@ -889,7 +889,7 @@ export declare const RETIREMENT_REASON: { readonly withdrawn: "withdrawn"; reado
 export declare const REVOCATION_KIND: { readonly disabled: "disabled"; readonly deleted: "deleted" }
 export declare const RISK: { readonly low: "low"; readonly high: "high" }
 export declare const SCOPE: { readonly full: "agent"; readonly pair: "agent:pair" }
-export declare const SDK_PINS: { readonly "@modelcontextprotocol/server": "2.2.0"; readonly "@modelcontextprotocol/node": "2.1.0" }
+export declare const SDK_PINS: { readonly "@modelcontextprotocol/server": "2.4.0"; readonly "@modelcontextprotocol/node": "2.1.2" }
 export declare const SETTINGS_REFUSAL: { readonly tokenDuplicate: "token-duplicate" }
 export declare const SETTLED_BY: { readonly user: "user"; readonly principal: "principal" }
 export declare const READ_ROLE: { readonly user: "user"; readonly assistant: "assistant"; readonly principal: "principal"; readonly agent: "agent"; readonly context: "context" }

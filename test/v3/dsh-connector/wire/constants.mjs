@@ -174,6 +174,11 @@ export const ENV = Object.freeze({
   on: '1',
 })
 
+/** Inclusive structural limit per tools/call, independent of the HTTP body size limit. */
+export const MAX_ARGUMENT_ENTRIES = 4096
+/** MCP unknown tool: JSON-RPC Invalid params, not a tool execution result. */
+export const UNKNOWN_TOOL_CODE = -32602
+
 /** Fixture data: not product values. */
 export const FIXTURE = Object.freeze({
   homeLabel: 'v3-c-wire',
@@ -203,6 +208,8 @@ export const FIXTURE = Object.freeze({
   userText: 'fbtest wire user turn',
   contributorName: 'fbtest-wire-contrib',
   contributorEvent: 'pinged',
+  uiNotify: 'notify', // R-EXT-13: local tool contributed by the linked UI package.
+  unknownTool: 'fbtest_unlisted_tool',
   /** A tunnel name for DSH's --trusted-host (R6: a request through another origin port). */
   tunnelHost: 'wire-tunnel.example',
   tunnelPort: 8443,
