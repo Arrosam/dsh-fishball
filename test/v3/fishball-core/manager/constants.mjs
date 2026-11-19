@@ -13,7 +13,7 @@ import path from 'node:path'
 import os from 'node:os'
 import { FAKE, FAKE_MODELS } from '../../../support/constants.mjs'
 import { CONNECT, FISHBALL_MODEL, MCP } from '../../../../packages/core/contracts/constants.js'
-import * as K1 from '../../../../packages/dsh-connector/mcp-schema/index.js'
+import * as K1 from '../../../fixtures/dsh-connector-contract/mcp-schema/index.js'
 
 export { CONNECT, FISHBALL_MODEL, MCP, K1 }
 

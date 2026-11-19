@@ -12,7 +12,7 @@
  * The rest is fixture data and harness timing.
  */
 import path from 'node:path'
-import { HOSTS, OAUTH_ERROR, TARGET_CODE, TARGET_STATE } from '../../../../packages/dsh-connector/mcp-schema/index.js'
+import { HOSTS, OAUTH_ERROR, TARGET_CODE, TARGET_STATE } from '../../../fixtures/dsh-connector-contract/mcp-schema/index.js'
 import { CONNECT, GUARDS } from '../../../../packages/core/contracts/constants.js'
 import { REPO } from '../../../support/constants.mjs'
 import { SHELVED_BOARD, V3 } from '../../contract/package-boundaries/constants.mjs'

@@ -1,8 +1,0 @@
-# dsh-connector-adapter's profile footprint: one host row (design §5.5b). Its settings are
-# clientMetadataUrl (required, no default: the user hosts the Client ID Metadata Document) and
-# servers. The stock dsh-mcp-client rows it needs are mounted by the adapter itself, so the user's
-# configuration holds no client row and no `!!js`. It edits no other row.
-- insert:
-    - id: dsh-connector-adapter
-      name: 'dsh-connector-adapter'
-      config: {}

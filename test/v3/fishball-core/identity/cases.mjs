@@ -1,5 +1,5 @@
 import { OWN } from '../../contract/own-schema/constants.mjs'
-import { normaliseName } from '../../../../packages/dsh-connector/mcp-schema/index.js'
+import { normaliseName } from '../../../fixtures/dsh-connector-contract/mcp-schema/index.js'
 /**
  * F-PAIR black-box cases (v3-tasks.md row F-PAIR; .runtime/reports/v3-w3-briefs.md "F-PAIR test
  * brief"): AUTH-UC-05 (decisions; the page parts are E2E-CORE's), AUTH-DT-06, AUTH-ST-03 (the rows

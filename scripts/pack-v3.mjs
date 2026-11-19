@@ -145,9 +145,11 @@ function build(out) {
     }
     const tarballs = {}
     for (const key of HOSTED_SET) tarballs[key] = pack(stages[key], out, env)
-    const carrier = path.join(stages[SET_CARRIER.key], SET_CARRIER.folder)
-    fs.mkdirSync(carrier, { recursive: true })
-    for (const key of HOSTED_SET) fs.copyFileSync(tarballs[key], path.join(carrier, path.basename(tarballs[key])))
+    if (SET_CARRIER && HOSTED_SET.length) {
+      const carrier = path.join(stages[SET_CARRIER.key], SET_CARRIER.folder)
+      fs.mkdirSync(carrier, { recursive: true })
+      for (const key of HOSTED_SET) fs.copyFileSync(tarballs[key], path.join(carrier, path.basename(tarballs[key])))
+    }
     for (const key of Object.keys(packages)) tarballs[key] ??= pack(stages[key], out, env)
     writeSums(out)
     // The store: every declared third-party dependency of every package, as a DSH profile resolves
@@ -201,7 +203,7 @@ function check(out) {
     try { listing = tar(['-tvzf', path.join(out, name)]).toString('utf8') } catch { problems.push('unreadable ' + name); continue }
     for (const line of listing.split('\n').filter((row) => LAYOUT.linkEntry.test(row))) problems.push('link in ' + name + ': ' + line)
   }
-  if (present.includes(tarball(SET_CARRIER.key))) for (const key of HOSTED_SET) {
+  if (SET_CARRIER && present.includes(tarball(SET_CARRIER.key))) for (const key of HOSTED_SET) {
     const member = path.posix.join(LAYOUT.packageRoot, SET_CARRIER.folder, tarball(key))
     let bytes
     try { bytes = tar(['-xOzf', path.join(out, tarball(SET_CARRIER.key)), member]) } catch { problems.push('missing ' + member + ' in ' + tarball(SET_CARRIER.key)); continue }

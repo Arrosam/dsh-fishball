@@ -13,7 +13,7 @@
  * uninstall; uninstalling the board deletes its data. So nothing here names an export.
  */
 import path from 'node:path'
-import * as K1 from '../../../../packages/dsh-connector/mcp-schema/index.js'
+import * as K1 from '../../../fixtures/dsh-connector-contract/mcp-schema/index.js'
 import { REPO } from '../../../support/constants.mjs'
 
 export { K1 }

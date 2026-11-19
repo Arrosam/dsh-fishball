@@ -19,7 +19,7 @@
  */
 import http from 'node:http'
 import { randomBytes } from 'node:crypto'
-import * as K1 from '../../../../packages/dsh-connector/mcp-schema/index.js'
+import * as K1 from '../../../fixtures/dsh-connector-contract/mcp-schema/index.js'
 import { FakePairs } from '../identity/fake-connector.mjs'
 import { FAKE_DSH } from './constants.mjs'
 import { connectorTools } from './targets-oracle.mjs'

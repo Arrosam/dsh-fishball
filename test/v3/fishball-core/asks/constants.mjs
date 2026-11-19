@@ -15,10 +15,10 @@
  * DSH's own vocabulary is the installed SDK's. The rest is fixture data and harness timing.
  */
 import path from 'node:path'
-import { APPROVAL_KIND, APPROVAL_DECISION as DECISION, ARGUMENTS_STATUS, RISK } from '../../../../packages/dsh-connector/mcp-schema/index.js'
+import { APPROVAL_KIND, APPROVAL_DECISION as DECISION, ARGUMENTS_STATUS, RISK } from '../../../fixtures/dsh-connector-contract/mcp-schema/index.js'
 import {
   DECISION_KIND, DECISION_KIND_OF, EVENT_TYPE, LINK_REFUSAL, OFFER_ID, REFUSAL, RETIREMENT_REASON, SETTLED_BY, SETTLEMENT_OUTCOME, TOOL,
-} from '../../../../packages/dsh-connector/mcp-schema/index.js'
+} from '../../../fixtures/dsh-connector-contract/mcp-schema/index.js'
 import { PACKAGE } from '../../../suites.mjs'
 import { REPO } from '../../../support/constants.mjs'
 import { SEAM_TARGETS } from '../../../../packages/shared/ui-seam.js'
