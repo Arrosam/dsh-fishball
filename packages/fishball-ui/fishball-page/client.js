@@ -81,7 +81,7 @@ window.__ModuleLoader__.load({
     const SETTINGS_VIEW = 'settings'
     const CONTINUATION = Object.freeze({
       view: Object.freeze({ name: 'view', settings: SETTINGS_VIEW, values: Object.freeze([SETTINGS_VIEW]) }),
-      lang: Object.freeze({ name: 'lang', values: Object.freeze(['zh', 'en']) }),
+      lang: Object.freeze({ name: 'lang', values: Object.freeze(['zh', 'en']), settingsNamespace: 'locale', settled: Symbol.for('fishball:admission-language-settled') }),
       query: '?',
     })
     /**
@@ -500,15 +500,29 @@ window.__ModuleLoader__.load({
       return Object.freeze({ view: pick(CONTINUATION.view), lang: pick(CONTINUATION.lang) })
     }
 
-    /**
-     * The connector chose the frame's language (contract 1.1 UI_LANG). setLocale is the only
-     * native write entry and always persists, so it is called only when the language differs
-     * and is registered; it persists into the child's own home, never main's.
-     */
-    function applyLanguage(ctx, lang) {
-      const snapshot = ctx.locale.getLocale()
-      if (lang === null || snapshot.active === lang || !snapshot.locales.some(locale => locale.id === lang)) return
-      ctx.locale.setLocale(lang)
+    /** Apply this admission once, not as a permanent override of the child's Settings. */
+    function applyLanguage(ctx, lang, own) {
+      if (lang === null || document[CONTINUATION.lang.settled]) return
+      const apply = () => {
+        const snapshot = ctx.locale.getLocale()
+        if (snapshot.active !== lang && snapshot.locales.some(locale => locale.id === lang)) ctx.locale.setLocale(lang)
+      }
+      const settle = () => {
+        apply()
+        // Only completion belongs to the document: a replacement mount must take over a pending read.
+        document[CONTINUATION.lang.settled] = true
+      }
+      // DSH starts with the browser language, then adopts the saved child preference from this
+      // form. A match before that first read (e.g. browser en, saved zh) is only provisional.
+      const form = ctx.configForms.get(CONTINUATION.lang.settingsNamespace)
+      if (form.getSnapshot().value !== undefined) return settle()
+      const unsubscribe = form.subscribe(() => {
+        if (form.getSnapshot().value === undefined) return
+        unsubscribe()
+        settle()
+      })
+      own(unsubscribe)
+      apply()
     }
 
     // Producer contract (fishball-core src/session/route.js): document-relative, native cookie auth, no-store.
@@ -920,7 +934,7 @@ window.__ModuleLoader__.load({
         const occupy = (name, Component) => ctx.slots.inject(name, () => ctx.slots.register({ name, priority: PAGE.priority }, Component))
         for (const name of SHADOWED_SLOTS) own(occupy(name, Empty))
         const continuation = readContinuation()
-        applyLanguage(ctx, continuation.lang)
+        applyLanguage(ctx, continuation.lang, own)
         own(mountStyles())
         document.documentElement.setAttribute(PAGE.root, '')
         own(() => document.documentElement.removeAttribute(PAGE.root))
@@ -1001,7 +1015,7 @@ window.__ModuleLoader__.load({
 
     return {
       name: PAGE.name,
-      inject: ['slots', 'layout', 'uiWorkspace', 'uiSession', 'sessions', 'locale', 'shortcuts'],
+      inject: ['slots', 'layout', 'uiWorkspace', 'uiSession', 'sessions', 'locale', 'configForms', 'shortcuts'],
       apply,
       recordDefinition,
     }
