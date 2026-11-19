@@ -212,12 +212,14 @@ window.__ModuleLoader__.load({
       return function FishballAsks({ sessionId, t }) {
         const lang = kit.useLang(ctx)
         const { frame: { managerSessionId, cards }, health } = React.useSyncExternalStore(stream.subscribe, stream.get)
+        // Finished cards (`answered`, `closed`, `voided`) stay in core's history but dismiss from the composer dock.
+        const visible = cards.filter((card) => card.state === ASKS_UI.state.open)
         // Only Fishball's own conversation shows its cards (Q-U2: never another session's view).
-        if (sessionId === undefined || sessionId !== managerSessionId || cards.length === 0) return null
+        if (sessionId === undefined || sessionId !== managerSessionId || visible.length === 0) return null
         const stale = health !== kit.HEALTH.live
         return h('div', { className: [kit.css.dock, ASKS_UI.css.root].join(' '), 'data-fishball-asks': true, 'data-fishball-asks-stale': stale ? health : undefined },
           stale ? h('div', { className: kit.css.card }, h(kit.StreamNotice, { health, lang })) : null,
-          cards.map((card) => h(AskCard, { key: card.handle, card, t, stale, lang })))
+          visible.map((card) => h(AskCard, { key: card.handle, card, t, stale, lang })))
       }
     }
 
