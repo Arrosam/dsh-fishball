@@ -1,0 +1,38 @@
+{
+  "name": "fishball-board",
+  "version": "1.0.0-alpha.1",
+  "description": "The Fishball instance's persistent work board.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Arrosam/dsh-fishball.git",
+    "directory": "packages/board"
+  },
+  "publishConfig": {
+    "tag": "alpha"
+  },
+  "type": "module",
+  "main": "./index.js",
+  "exports": {
+    ".": "./index.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "index.js",
+    "src/",
+    "cordis.patch.yml",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=22.14",
+    "dsh": ">=0.2.1-rc.5"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/schemastery": "*"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  }
+}

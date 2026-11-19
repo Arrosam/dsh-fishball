@@ -101,7 +101,7 @@ const LAST_TEXT_CHARS = 4000
 /**
  * rev11b: a scripted tool argument whose value is exactly REQUEST_PLACEHOLDER is replaced with the newest
  * permission request id (apr_<hex>) that appears in the conversation so far, so a script can answer a
- * question (ask_fishball {request_id, reply}) whose request id is minted while the turn runs.
+ * question (ask_agent {request_id, reply}) whose request id is minted while the turn runs.
  */
 const REQUEST_ID = /apr_[0-9a-f]+/g
 function fillPlaceholders(script, options) {

@@ -1,8 +1,56 @@
 # dsh-fishball rebuild: always-on personal assistant on DSH
 
+**V3 is the current design (2026-11-17).** Fishball is now two sides that never import each other:
+the DSH side (`dsh-connector`, `dsh-connector-ui`, `dsh-instance`, `dsh-connector-adapter`,
+`dsh-connector-shared`) and the Fishball side (`fishball-core`, `fishball-ui`, `fishball-shared`),
+release `1.0.0-alpha.1`, a fresh install. `fishball-board` is **shelved, not in 1.0.0-alpha.1** (the
+user, 2026-11-18: "fishball-board先从这次release中移除…先封存，留到下一批再说。所以不要预留在子实例的Fishball内"):
+`packages/board` stays unchanged for a later release; the release is eight tarballs and the hosted
+child places only `fishball-ui` and `fishball-core` (v3-requirements 1.42). Read
+[v3-design.md](<docs/planning/v3-design.md>) §1.0 and §17–§20 below first. Everything above §17 is
+the V1/V2 decision history: V2 was never deployed, fold-notify, the hosted settings bundle and
+Watchdog are gone, and the V2 history documents it links to were deleted by the DOCS task (the
+user's choice, 2026-11-13); they remain in git history at `e5a8450c`.
+
+**LOGO-BUTTON amendment (user, 2026-11-19; verbatim decisions in the task brief).** Fishball's page
+(the hosted child DSH) gets Fishball's brand at the sidebar's top-left the way built-in V1 had it,
+accepting dependence on DSH's shell. `fishball-ui` fills DSH's `sidebar.brand.mark` and
+`sidebar.brand.name` at priority -1 and captures the enclosing shell button's activation: it opens
+or focuses the one manager session and never creates one or triggers New Session, which
+`fishball-page` keeps hidden on this page. The label and status description are restored after
+DSH's re-renders by a MutationObserver scoped to that button. State reuses the page's facts: the
+asks stream (connection, manager id, open approval/question cards with V1's 99+ badge), the session
+list (working), and the strip view (core on/off). Working animates (fish wag / whale swim); reduced
+motion is static. Two themes, Fishball's fish or Fishball's own whale drawing, default Fishball;
+core's settings page owns `brandStyle` (`SEAM_BRAND`), applied live through core's status and the
+strip stream. The rail mark stays inside DSH's collapse control (which keeps expand/collapse); the
+expanded brand row is Fishball's control. `fishball-page`'s 44px narrow bar has no brand row on either SDK;
+rc.5's expanded sheet and rc.1's open drawer show the brand row.
+
+**V2 private Skills amendment (S1–S8, user rules; SK, 2026-11-10):** the only exception to §7's "never writes local files". Fishball keeps its own skills (lessons about the user's preferences and ways of working) in `<child DSH home>/skills/<name>/SKILL.md`, and writes them, new or updated, on its own or when asked, with no approval. Six manager-only tools (`private_skill_list/read/create/update/remove/reload`) and one native skill provider are registered through `fishballInstance.manager.registerSetup` in the manager's own agent scope, so no worker, preset or main DSH sees them; workers get skill text in Fishball's messages. The provider is the public native `FileSystemSkillProvider` over that single root, with the host watcher off and a confined reader that refuses links (and multiply linked files) before reading; writes go through a trusted storage service (name grammar first, native-format validation, serialized, complete publication by same-directory rename, typed `committed` outcomes including committed-but-refresh-failed). Ordinary write/edit/shell stay read-only, and the standard child skill provider no longer lists `<child home>/skills`. Refresh affects later loads and the next model catalog only; no slash-menu refresh is claimed. See [SK-SEAM](<docs/planning/v2-sk-seam.md>), [T-SK cases](<docs/test-design/private-skills.md>) and `packages/instance/src/slim/child/skills.js`.
+
+**X0-C verification amendment (owner decision, 2026-11-09):** retain per-notification durable reservation and acceptance writes and the 10,000-key product retention policy. The owner chose “test a reasonable count with per-notification writes”; the three 9,999/10,000/10,001 throughput cases are superseded by independently authored cases that seed 9,998 committed entries then exercise 1/2/3 real durable notifications, rather than weakening receipt durability to meet the former throughput budget. Keep the repeated-history/notice-scan optimizations. See [verification and limitations](<docs/verification/v2-x0c-inject-scale.md>).
+
+**2026-11-09 V2 COMPAT amendment (D1–D3, approved):** retain the connector's public
+contract/export names and envelope v2; contract **1.2** negotiates `interaction.timerfree`
+explicitly, with `{interactionTimerfree: true}` validation context and no `expiresAt` in negotiated
+interaction descriptors. Default validation remains legacy. Legacy peers retain controls but receive
+no delegated interactions; the built-in requires timer-free support, reports an upgrade instruction
+and detaches from old connectors. Eligible questions/plans go directly to Fishball; source-user
+race and explicit escalation remain. Stored `questionMode`/`approvalAnswerSeconds` are kept inert,
+with controls/copy removed and no replacement switch. Optional `attention.signal({important})`
+is stateless: no counts, timestamps, unset or replay. Only the connector owns the unread 0/1 latch
+and accumulated important bit, reset on page open and detach, never fed back to the instance.
+Sidebar attention reuses the green dot and existing important animation, not timers. X8 is async
+`attention.signal(pluginId, {important})`, with truthful unsupported/disconnected refusal and no
+producer unread ownership. This supersedes contrary historical MCP/attention/timer proposals below;
+see [contract 1.2](<docs/connector-contract.md#321-negotiated-timer-free-interactions-d1>) and
+[extension points](<docs/plugins/instance-extension-points.md#3-v2-retained-connector-compatibility-d1d3>).
+
+
 **Status: approved 2026-10-24; revision 9 approved 2026-10-31; revision 10 approved 2026-10-31; revision 10a (Install for Fishball) decided and delivered 2026-10-31; revision 10b (private services) 2026-10-31; revision 10c (Fishball's own plugins) decided 2026-10-31 and delivered 2026-11-01; revision 11 (Fishball-managed sessions) requirements approved 2026-11-01, design folded in the same day, and delivered 2026-11-02 on `rebuild/managed-sessions`, then merged into `rebuild/assistant` with your OK and pushed the same day; revision 12 (recommended plugins and the one-time welcome card) designed 2026-11-02, your answers recorded and built the same day (§16).** P0 (archive and clean-up) is done and the P1 spikes have run. Host baseline: the installed official DSH Web **0.2.1-rc.2**.
 
-**2026-11-04 provider-sync amendment (owner-approved v1):** manual two-page pairing, metadata preview and explicit selected-provider/API-key-record transfer use a dedicated short-lived loopback capability channel and official settings/credential APIs. Existing target profiles/records are preserved, unsupported auth is refused, and partial/unknown outcomes are reported without rollback or automatic retry. No new session-tool authority or default-model change; see [approved design](<docs/model-provider-sync-design.md>). Development uses only disposable SDK fixtures; real sync requires separate approval. **2026-11-06 slim amendment:** in the slim build the pairing channel is removed; the Model block's **Refresh models** syncs API-key providers from the main DSH into the isolated Fishball in one step, with the same add-only rules (see [slim design §10](<docs/slim-native-design.md>)).
+**2026-11-04 provider-sync amendment (owner-approved v1):** manual two-page pairing, metadata preview and explicit selected-provider/API-key-record transfer use a dedicated short-lived loopback capability channel and official settings/credential APIs. Existing target profiles/records are preserved, unsupported auth is refused, and partial/unknown outcomes are reported without rollback or automatic retry. No new session-tool authority or default-model change; see [approved design](<docs/model-provider-sync-design.md>). Development uses only disposable SDK fixtures; real sync requires separate approval. **2026-11-06 slim amendment:** in the slim build the pairing channel is removed; the Model block's **Refresh models** syncs API-key providers from the main DSH into the isolated Fishball in one step, with the same add-only rules (see [slim design §10](<docs/slim-native-design.md>)). *Superseded by D26 and the user's decision of 2026-11-11:* a sync starts only from the main DSH's "Model for Fishball" block on the `fishball-instance` Plugins card (check, choose, add); the child has no sync entry point.
 
 **Native host-bound lifecycle amendment (owner request, 2026-11-04; manual verification pending):** install the separate `dsh-fishball/native-host` profile entry with `enabled: true`. Once main DSH is ready it starts the isolated child asynchronously; native failure must never replace or block legacy Fishball. The single `enabled` switch controls the feature. Disable/dispose and host shutdown stop the child, with bounded graceful shutdown and escalation restricted to the exact live child handle this host spawned. HMR uses stop-confirmed-before-restart, not detach-and-survive. Crash recovery authenticates ownership and must never start a second writer; uncertainty fails closed. The owner-only Fishball panel entry fetches a click-time capability URL and passes it straight to `window.open` (not a `target=_blank` form redirect, which the desktop shell turns into a GET), without putting a token into UI state, logs, or stored links. This supersedes the earlier detach-on-dispose design. Exact installation, shutdown boundaries and remaining gaps are recorded in [native manual handoff](<docs/native-manual-handoff.md>); this is not production acceptance.
 
@@ -35,6 +83,33 @@ The product's name in the UI is **Fishball**; "the assistant" below means the sa
 Evidence markers:
 - **[V]**: verified by reading the installed package files under `~/Library/Application Support/DSH/data/versions/0.2.1-rc.2/node_modules/@deepseek-ai/`. Paths below are relative to that directory.
 - **[I]**: inferred, not yet run. Every [I] that the design depends on is listed as a spike in §13 and must pass before the dependent phase is built.
+
+**One-way MCP direction (user-selected, not implemented):** connector hosts the MCP server;
+Fishball/external managers are plain clients controlling DSH. No agent callback MCP server is
+required. **2026-11-09 decisions, verbatim “1aA，1b能，1cB”:** use a custom authenticated
+first-party Fishball pushback/wake channel while MCP remains every client's control plane; external
+MCP agents **can** handle delegated approvals and questions; remove the old custom control endpoint
+and exports in a coordinated built-in upgrade, **no legacy migration path**. Durable poll tools and
+optional notification hints remain available. An idle client that never polls leaves delegated items
+waiting; **first committed outcome wins (OQ-14)**. The user's clarification, **“1b那条默认开启，设置也没有关闭的选项”**,
+sets external delegation **on by default, with no setting to turn it off**; the opt-in question is
+closed. No A/B choice remains from these decisions. See the
+[decisions, capability matrix and revised waves](<docs/plugins/connector-mcp-option.md>).
+The [custom contract 2.0 baseline](<docs/connector-contract-2.0.md>) is preserved but parked;
+protocol-dependent core/plugin tracks wait for MCP feasibility and schema freeze. The earlier
+bidirectional idea is rejected. Watchdog failure means effective off/Fishball fallback; questions/
+plan reviews always reach Fishball (OQ-04 = B). These [routing decisions](<docs/plugins/instance-extension-points.md>)
+remain local to the Fishball instance, not a callback-MCP topology.
+**W0 watchdog budget question 2 = A (2026-11-09):** freeze provider-independent UTF-8 byte
+accounting, upward rounding, aggregate config validation and the 64,000-token rollover boundary
+before WD-1; [canonical budget rule](<docs/plugins/instance-extension-points.md#28-deterministic-watchdog-token-budget-w0-question-2--a>).
+
+**2026-11-09 board-search acceptance clarification:** R1 counts query and board text field bounds
+in Unicode code points. R3 selects each card's newest matching snapshot by highest `updatedAt`,
+then highest archive line (also the result ordering). First search may use existing legacy migration
+or corrupt-board repair; healthy-board searches remain read-only. The single-session Fishball
+instance needs no additional caller-identity checks; existing guards stay. See the
+[archive-search contract](<docs/plugins/instance-extension-points.md#127-archive-search-contract-q-r--b>).
 
 ## 0. Summary
 
@@ -114,7 +189,7 @@ Revision 11 also amends rows 2 and 4: `message_fishball` exists in managed sessi
 
 **UI [V].**
 - **Transport:** authenticated `/api/*` routes through `ctx.connection.fetch.register`, plus a hand-written `window.__ModuleLoader__` client. This is the pattern your own `dsh-idle-compact` uses on rc.2, and it avoids the Typert code generator, which is not installed.
-- **UI seats:** `sidebar.panellist` with `main`, `sidebar.workspaces.session.menu.item`, `conversation.session.header.actions`, `plugins.bundle.config`.
+- **UI seats:** `sidebar.panellist` with `main`, `sidebar.workspaces.session.menu.item`, `conversation.session.header.actions`, `conversation.session.header.utilities`, `plugins.bundle.config`.
 - **Brand row:**
   - `sidebar.brand.mark` and `sidebar.brand.name` are single slots declared by `dsh-client-ui-sidebar`. `dsh-client-ui-brand-official` fills them with the DeepSeek art.
   - A single slot shows only one occupant, and one registered at runtime outranks the shipped one (`dsh-client-ui-renderer/lib/types/client/registry.d.ts:18-31`).
@@ -1189,7 +1264,7 @@ Drawing points in DSH's browser were checked by S37 (§13d), in light and dark o
 | Your pile | `conversation.input.dock` (full-width entries above the composer, as DSH's Todo and Queue docks), rendered only for Fishball's session, fed by the state stream; height capped and scrolling so the composer stays in view |
 | Allow once / Reject on the running `ask_fishball` row | `tool.call.toolview`, key `ask_fishball`. DSH has no view for that tool, so the keyed entry is the whole row: Fishball draws its title, arguments and state with DSH primitives (`Button`, `Tag`, `DisclosureRow`). Buttons while `phase === 'start'` and the snapshot holds a card for that `callId`; arguments from `block.argsRaw` (start) or `block.call.argsRaw` (result). DSH's Auto-review denial still shows DSH's generic row |
 | Every tag ("Asked Fishball" plus the decision, "Sent to you", "Answered by Fishball: …", "Allowed by Fishball's grant: …"; texts are constants of the client's wording) | `conversation.chat.turnTail`: shows the tag records whose `seq` lies between the turn's `start.seq` and `end.seq`, visible in folded turns (your answer, 2026-11-01). S37's question-row wrapper (`tool.call.toolview` key `ask_user_question`) is not used |
-| Hand over / Take back | `sidebar.workspaces.session.menu.item` and `conversation.session.header.actions`, beside Send to Fishball |
+| Hand over / Take back | `sidebar.workspaces.session.menu.item`; in the session header the control is in `conversation.session.header.utilities` (right-aligned, first of DSH's utilities; UI-FIX-D: in `header.actions` it was drawn over DSH's own header buttons at 390 px) and "Managed by" stays title-adjacent in `conversation.session.header.actions` |
 | Managed-session banner (item 30, rev11i) | `conversation.input.dock`, rendered only in a managed session's chat |
 | Managed-session sidebar icon (item 30, rev11i) | `sidebar.session.row.leading`, DSH's seat in the status light's place, rendered only while the session's primary status is idle (`showStatus = primaryStatus.state !== 'idle'`, else `SessionStatusDots`); DSH 0.2.1-rc.2 has no slot on the light itself |
 
@@ -1263,7 +1338,7 @@ The Host state and routes below need no spike.
 - **Reading:** a failed check returns to the dialog's first screen with the spec still in the field and the reason shown, as when you type it; the result screen has no "Open its page" when opened from the settings page, as from DSH's Add menu (DSH cannot open the Fishball tab from outside, S28).
 - While Fishball is not ready the install routes answer 409 `unavailable`, as today; the dialog says so.
 
-**The list** (`src/recommended.js`, data in code, read into the snapshot). Each entry: category, package name, the spec the dialog installs, and its source link. Checked on npm with `npm view` (metadata only) on 2026-11-02. Every entry was installed through Fishball's own install route in a throwaway sandbox and ran for Fishball alone (your answer Q-rec-recheck; `spikes/rev12-recheck.mjs`, §16 "Revision 12 sandbox re-check"). Two of P10's entries no longer do and are left out: OpenViking and `dsh-slack`; a third, `@zaofan/dsh-qqbot`, is left out by your answer Q-rec-qqbot (below).
+**The list** (`src/recommended.js`, data in code, read into the snapshot). Each entry: category, package name, the spec the dialog installs, and its source link, plus an optional `noteKey` naming a message key for a note under the entry; only `meow-memory` has one, `settings.recommendedNote.meowMemory` (board design §7, task B6; data only: the dictionaries, the note's drawing and which memory entries are offered belong to the recommend-plugins (RP) presentation, and the list, catalog precedence and states are unchanged). Checked on npm with `npm view` (metadata only) on 2026-11-02. Every entry was installed through Fishball's own install route in a throwaway sandbox and ran for Fishball alone (your answer Q-rec-recheck; `spikes/rev12-recheck.mjs`, §16 "Revision 12 sandbox re-check"). Two of P10's entries no longer do and are left out: OpenViking and `dsh-slack`; a third, `@zaofan/dsh-qqbot`, is left out by your answer Q-rec-qqbot (below).
 
 | Category | Package (spec) | Version checked on 2026-11-02 (P10's) | Note |
 |---|---|---|---|
@@ -1295,7 +1370,7 @@ The Host state and routes below need no spike.
 - It is a card in the page, never a message in the session log, so it adds nothing to Fishball's context.
 
 **Host API.** Same authentication, same-origin fence and boundary checks as §10.
-- Snapshot: `recommended: {highlighted: [category], categories: [{category, plugins: [{packageName, spec, source, plugin, state, blocked}]}]}`, where `state` is `install`, `installed`, `dsh-on` or `dsh-off` (the table above), `plugin` is the catalog key or null, and `blocked` the catalog's reason or null; `welcome: {show}`.
+- Snapshot: `recommended: {highlighted: [category], categories: [{category, plugins: [{packageName, spec, source, plugin, state, blocked, noteKey?}]}]}`, where `noteKey` is present only on an entry with a note, and `state` is `install`, `installed`, `dsh-on` or `dsh-off` (the table above), `plugin` is the catalog key or null, and `blocked` the catalog's reason or null; `welcome: {show}`.
 - `POST /api/fishball/welcome/seen` (`{}`): stores the notice and answers 200 with the state; a repeat answers the same and changes nothing; 400 `bad-body` for a body that is not a JSON object, as `read` (extra fields are ignored). It answers while Fishball is not live too, since the store does not need the session.
 - No new install route: the list uses `install/inspect`, `install` and `install/cancel` (§10d) and the plugin switch (§10).
 
@@ -2027,3 +2102,179 @@ Deliberately unbounded (your answers): active grants and grant lifetimes, questi
 | Layout and motion in `client.js` and the Messenger look (pixel sizes, `listMinRows`, the 2.2 s unread cycle, `refreshMinMs` 400 ms mirroring DSH's Refresh) | — | Presentation, not a bound on what is done or shown |
 
 *To ask:* nothing left from this list; your answers of 2026-11-01 are in the tables above and in §16 "Revision 11". Nothing is left open: Q-r11-own-card-detail was decided by the manager for you on 2026-11-02 (§16).
+
+## 17. V3 R-EMBED: where the main-DSH UI lives (2026-11-13)
+
+Decided by the user on 2026-11-13 while R-EMBED ran (V3 plan `docs/planning/v3-tasks.md`):
+
+| Point | Decision | Reason |
+|---|---|---|
+| Layout of `fishball-embed-ui`'s browser half | *(The instance card part is superseded by §19: `client.instance.js` moved to the instance's own settings page.)* Flat package-local chunks in `packages/embed-ui/src/client/`: `client.js` (the entry) loads `client.connector.js` (with `client.records.js`) and `client.instance.js`, each run as a sub-plugin of the row | DSH serves a package's `client.js` and only `client.<name>.js` files beside it (`CLIENT_CHUNK`, dsh-client-modules, the same in 0.2.1-rc.5 and 0.2.2-rc.1). Subfolders would need a build step, and this repository has none |
+| The status line | *(Superseded by §19: since I-HOST the status line is a chunk of the instance's own settings page, and the symlink is gone.)* One instance-owned file, `packages/instance/src/child-settings/client.status.js` (HOST-EP-03 row 2). The child loads it as a chunk of `fishball-hosted-settings`. Embed-UI loads it through a committed relative symlink, `packages/embed-ui/src/client/client.status.js` | A chunk must sit beside its own package's `client.js`. `npm pack` drops symlinks (checked with npm 11.19.1), so packing `fishball-embed-ui` must dereference this one file. **Owner (user decision 2026-11-13):** the release / DOCS packing task, not I-PLACE (which owns only the instance package) |
+| Embed-UI's host row | A placeholder row with an empty host half, so DSH composes the browser half. U-SHELL adds the host half | DSH composes a `dsh.client` only for a package that a profile row names |
+| Start timing | Each part starts once its chunk has arrived, one request after the entry runs, while the V2 bundles started with the page's own batch. So DSH's own brand can show briefly before Fishball's | It follows from the flat chunk layout. No case pins the first frame |
+| UI behaviour | Moved unchanged. The V3 decisions (sidebar entry only, no Allow once / Reject, inline records, the Hand over control) land in U-SHELL, U-MARKS and U-RECORDS | R-EMBED is a move, so its diff stays reviewable |
+
+## 18. V3 S7c: the connector adapter `fishball-connector-adapter` (2026-11-13)
+
+Decided by the user on 2026-11-13 after spike V3-S7c (`51e9ff1`, PASS on 0.2.1-rc.5 and 0.2.2-rc.1, no host patch). The full design is `docs/planning/v3-design.md` §5.5b; the requirement is R-OA-21 (requirements §1.25a); the build task is C-MCP-ADAPTER.
+
+| Point | Decision | Reason |
+|---|---|---|
+| What it is | A new standalone, Fishball-only plugin `fishball-connector-adapter` in `packages/connector-adapter/`, installed in a DSH that uses another DSH's connector. Not part of the connector, embed-UI or the Fishball set | DSH's `dsh-mcp-client` has no OAuth (S7b F1), and no existing plugin is reusable (S7c §3.3) |
+| Mechanism | c2: a loopback proxy on 127.0.0.1 with a per-start local bearer, plus a stock `dsh-mcp-client` the adapter mounts as a child row once a grant exists | The stock row cannot report a 401 (S7c F1), so only a proxy or an own client has a 401 path; c2 keeps DSH's own client and needs no `!!js` in the user's config |
+| Which servers | Fishball connectors only, recognized by the metadata they already serve: the `/api/fishball/mcp` resource, the `/api/fishball/oauth` issuer and the `fishball` scope. Any other server is refused before any authorization request | Q-S7C-1 = C, Q-S7C-5 = A; needs no connector change |
+| Client identity | CIMD only, hosted by the user: `clientMetadataUrl`, a required https setting with no default. Without it every server reports `needs-configuration` | Q-S7C-2 = C; a local plugin has no https origin of its own |
+| Sign-in | The agent tool `fishball_connector_sign_in` returns the approval URL in the chat (`authorized`, `approval-url` or `needs-configuration`). The connector token is typed only on the approval page | Q-S7C-3 = B; no DSH Web surface lists other plugins' sign-ins |
+| Tokens | The grant lives only in `ctx.credentials`; refresh is single-flight under the record lock; the connector persists refresh-token digests, so a connector restart needs no new sign-in | Q-S7C-4 = A (Q-S7B-3 A) |
+| Review fixes (R-FIX-ADAPTER, 2026-11-18) | A grant stored for another URL or record version under the same name is never refreshed, dropped or sent. Refresh flights are shared per failed token. A failed timer refresh (not `invalid_grant`) is retried after 30 s, doubling to at most 5 min, while the grant is live. An upstream redirect is answered 502, never relayed. 502/503/504, 520–530, a broken body or a failed 401 refresh mark the connector down until it answers again; the next new token then remounts the child. Responses keep backpressure | The user chose the backoff and the status set (Cloudflare's 52x; not ngrok's 404, which cannot be told from a real one); review `review-x-dsh-connector-adapter` F1–F8 |
+
+## 19. V3 I-HOST: the hosted child, its token and the instance's own page (2026-11-16)
+
+Decided with the user while I-HOST ran (answers Q1–Q7 and the model-sync clarification; requirements
+1.28 R1, 1.33 Q-D1/Q-B2, 1.39, 1.41 Q-G3/Q-G6/Q-G7):
+
+| Point | Decision | Reason |
+|---|---|---|
+| Plugin placement | I-PLACE's copying stays; the set is `fishball-board`, `fishball-ui`, `fishball-core`, appended in that order (core last). *Since SHELVE-BOARD (2026-11-18): `fishball-ui`, `fishball-core`; the board is shelved* | Q1 = A: install by package name or tarball waits for REL-PACK's tarballs. Q2 = A: fishball-ui's guard rows target DSH's base rows, so they hold in any order; core's check needs core last |
+| The Fishball page in a hosted child | fishball-core serves `GET/POST /api/fishball/session` itself (row `fishball-core-session`, `src/session/route.js`); the instance's native-web row no longer does | the route reads core's own `fishballInstance`, so it is Fishball-side code, and fishball-ui's page needs it in both modes |
+| The hosted token | At each authenticated wire the host asks the child, on `mcp-credential`, whether it holds a credential (`DSH_AGENT_TOKEN` set, or core's `fishball-core/hosted-agent` record). Only when absent, with this DSH's connector and no remote target, it calls `createHosted` once and imports the value into `DSH_AGENT_TOKEN`; probes, creates and imports run in one serial chain. The entry key is kept in `<home>/fishball/hosted.json`, with the instance's stable id, after the child stored it; that file sits beside the runtime tree so a reset or uninstall keeps the succession candidates. An unanswered import (bounded by the credential lock wait) is settled by probing again | R1, Q-G6; DSH answers presence alone; no value is ever on the host |
+| What the instance no longer reports | the pending "watchdog is down" notice (withdrawn with Watchdog, 1.37) and `fishball-off` (Q4); the uninstall board-archive export offer has no board export to offer (board dropped `board_export` and its uninstall export, W3 2026-11-15), so it is deferred until a board export exists | requirements 1.37, Q4; packages/board/src/store.js |
+| Reinstall succession (I-SUCCEED, 2026-11-17) | A first start that creates an entry under a **new child runtime folder** (its owner marker's `hostId`, kept as `runtime` in `hosted.json`) while `hosted.json` lists one records that earlier entry as `succession` (pending); the successor is always the newest entry. The same runtime (a Connect in the child replaced core's hosted copy) starts none (Q3 = A; follow-up B: the probe should also see core's Connect grants, a K3a change). A record write that fails is replayed before the next attempt. The instance calls K3 `retire(old, newest)` at every start, after a Reconnect and, while it answers `successor-unpaired`, at each K3 `dshConnectorTokens.onChange` (new: forwards K1 `PairStore.onChange`). `{ok: true}`, `unknown-entry` or `not-hosted` end it; `operation-failed` waits for the next start; a closed host row calls and writes nothing more | R-HOST-09, R-NAME-07; Q1 = C (the instance cannot see core's pairing since 1.39, so the connector signals pair changes); Q2 = retarget to the newest (a Reconnect or a second reinstall while pending) |
+| Retry, Reconnect | Retry never creates a token; after a deleted hosted entry it leaves the notice `hosted-entry-deleted`. Reconnect (always shown) creates one entry and imports it once; nothing is moved or deleted | R6 = B, R11, Q-B1 = B, Q-B3 = B |
+| Target status | answered from the host's own state: remote target → `target-unreachable`; last hosted entry enabled → `connected`, disabled or deleted → `token-refused`/`token-revoked`; none → `target-unset` | Q3 = A: since 1.39 the instance cannot read core's link |
+| `fishball-off`, `[::1]` | `fishball-off` withdrawn from the locator; `[::1]` answers `not-ready` | Q4 = A (R-FB-10 amended by 1.39); Q5 = A (the child listens on 127.0.0.1 only) |
+| The frame's admission | a single-use HMAC ticket (30 s, generation, audience, view, lang) redeemed by the child-side row `dsh-instance-child` into the child's own cookie (`connection.authorizeIndex`, spike V3-S4 F1). Both ends derive the key from the lifecycle secret, so no key or token is in an overlay | design §4.1 |
+| Child halves of admin and model sync | moved from core into `dsh-instance/src/child/`, mounted by `dsh-instance-child` (the admin half was then deleted by I-READY, below); fishball-shared's interim copies deleted | design §1.0b row 5; Q-G7. Model sync copies providers and model lists only: "同步只是同步model list，至于fishball用什么还要在fishball内设置"; the admin's live-session model hook into core is gone (Q6 = A) |
+| The instance's page | `dsh-instance`'s own `client.js` (status, Retry and its notice, Reconnect, Open Fishball in a new tab, model sync, `enabled`, `targetUrl`); dsh-connector-ui draws no instance card and has no model routes | Q-D1 = B, R-ARCH-05, Q7 = A |
+| Readiness (I-READY, 2026-11-16) | The child is `ready` when all of these hold: the base services `agents`, `sessions`, `tools`, `profileContext`, `appExit` and `appReady` are mounted; the child's `appReady` has fired; and the child-side row has registered its admission route and published `webServer.getOrigin()` (`nativeRuntime.publishWeb`). The health answer then carries `origin`, the child web's `http://127.0.0.1:<port>`, which the host checks and the locator uses. The capabilities are the six services plus `ticket-admission-v1` and `lifecycle-v1`. The wire's operations are `health`, `attach` and `stop`. `dsh-instance-child` is now `required` | F-WIRE: core offers the instance no readiness signal (R-ARCH-10; R-FB-10 as amended by 1.39: "the instance reports only generic child states"). V2 was never deployed ("第三版其实就是第一版"), so core's `fishballApp` server, its bearer probe, the native-web row's launch-token probe and every `dsh-connector/contract` import are gone. K3's `ChildState` and `LifecycleCode` are unchanged |
+| First-install model sync (I-READY, 2026-11-16) | When a newly created child first becomes ready, the instance runs its own model sync once: a Check, then Add with every missing provider (`src/host/initial-sync.js`). It never runs again after that; later syncs stay manual on the instance's page. It syncs lists only and never sets Fishball's model. The marker `initial-model-sync.json` sits in the runtime folder, so a reinstall syncs again. A refused check or add leaves no marker and is retried at the next start. It never affects the start | The user: "instance初次安装时同步一次". The marker location and the retry rule were decided by Fishball under that rule. It amends R-HOST-07 and K3 `ProviderSync`, which both say "started only from the instance's own settings page" (C-WIRE amends K3, the DOCS task R-HOST-07) |
+| V2 leftovers removed (I-READY) | The admin relay and both its halves, with the `admin` wire channel ("Delete it", 2026-11-16: no V3 page calls it); the settings relay and the `instance-settings` channel (R-HOST-11 withdrawn); the `control` channel; the embed broker, `native-web-access`, `fishball-native-web` and `/api/fishball/native/status`; the launch-settings migration with `storageDomain` (Q-M1); the `dsh-connector` peer and the child placement of `dsh-connector/contract`; `src/slim/` (the model-sync routes moved to `src/host/`) | remove-v2-followups D9–D13, D15 |
+
+
+## 20. V3 F-WIRE: core's main row and the Fishball-side wiring (2026-11-16)
+
+Decided with the user while F-WIRE ran (answers to the five product questions and the model rules of
+2026-11-16), and by Fishball's session where noted:
+
+| Point | Decision | Reason |
+|---|---|---|
+| Core's rows | One main row `fishball-core` (`fishball-core/main`, src/main/) composes the link, Connect, the interception service, the ask cards, status, the bridge façade and the one manager session; it provides `fishballInstance` (apiVersion 1) and `fishballStatus`. The V2 child rows (`fishball-native-session-tools`, `-approvals`, `-app`, `-inbox`) and `src/slim/**` are deleted, with core's `dsh-connector` peer | V2 was never deployed (the user's rule): no V2 path is kept; R-ARCH-10 |
+| Reminders | `schedule_create/list/update/delete` kept, unchanged, registered in the manager's scope only; their V2 page API is gone | the user's answer 1 |
+| Window style | No frame-only rule: the page in dsh-connector-ui's window is exactly the standalone page | the user's answer 2 |
+| Fishball's model | Core's own setting `model` ({provider, model, reasoningEffort?}); unset, unroutable or unreadable means this DSH's default model; nothing blocks. Only core's settings page and fishball-ui's model dialog write it; the composer's model picker (`ui-model-selection`) is a fishball-ui guard row | the user: "所有版本：先用DSH的默认模型"; answers 3 and 4 |
+| Model dialog | fishball-ui's `client.model.js`: on opening the Fishball page with `model` unset, a dialog lists DSH's model catalog and writes the choice; dismissed, it returns at the next page open; with no model it says so and opens DSH Settings | the user, 2026-11-16 ("fishball打开的时候…弹出要求选择模型的页面") |
+| Persona | V2 wording kept; tools renamed to their V3 names; sentences on features V3 lacks removed | the user's answer 5 |
+| Cross-machine Connect | A press from a page whose `Origin` is https and whose authority is the request's `Host` uses core's web callback `<origin>/api/fishball/connect/callback` (a raw web route, since the cross-site redirect carries no `SameSite=Strict` cookie; it serves only the one pending attempt, whose `state`, `iss` and PKCE are checked); a loopback origin uses the loopback callback; anything else is `web-callback-insecure` | Q-A3 = B; R-OA-14 and the user's rule that only loopback may use http |
+| Generated `identity.id` | Kept in core's storage domain `fishball_core_main`, not in the settings document; the user's `identity.id` wins when set | a settings save reconciles the profile at once, which would apply the moved bundle order in the first start (R-FB-12: from the next start with HMR off). Fishball's decision |
+| Live core on/off | fishball-ui's rows read core's selection in the profile manifest while HMR runs, else the started bundles | so switching core in a running DSH switches fishball-ui's rows. Fishball's decision |
+| Readiness of a hosted child | Core offers no readiness signal to the instance; I-READY gates on generic DSH signals | R-ARCH-10, R-FB-10 as amended by 1.39 |
+| Which credential the link tries first | A new value in `DSH_AGENT_TOKEN` (import, Reconnect, paste) before the saved copy; it replaces the saved copy only once accepted; a refused value is not resent until the reference changes or core restarts (`src/link/credentials.js`) | the user's Q-LS1 = A (2026-11-16); it amends K3a `link.d.ts`'s "a saved copy for the target origin wins" (the `.d.ts` comment still says so; recorded in `packages/core/contracts/README.md` and v3-design §5.4) |
+
+## 21. V3 C-WIRE-2: one broker, routed session → managing agent → user (2026-11-17)
+
+Decided by the user on 2026-11-16/17 while C-WIRE-2 ran (the task brief and the answers to its seven questions). This supersedes §7a's V2 broker (Fishball's pile, `ask_fishball`, `list_user_messages`, the pass and ticket machinery, the audit) and §16's `maxPendingApprovals`.
+
+| Point | Decision | Reason |
+|---|---|---|
+| Routing | A managed session's permission requests, questions and plan reviews become offers in its managing agent's mailbox, connected or not; an unmanaged session's go to the user as normal DSH. Managed questions also open the session's own card, and the first answer wins (q2) | The user: "When a session is managed by an agent, its user-interaction tools (`ask_user_question` and plan review, plus permission prompts) are forwarded to that agent. An unmanaged session's tools go to the user as normal DSH" |
+| No cap | A managed session's request always becomes an offer and waits; `maxPendingApprovals` is gone | "No cap on pending approvals. Requests from managed sessions wait in the queue indefinitely and are never refused for being too many" |
+| Managed-session tools | `message_agent` only, in managed sessions only; no `ask_agent`, no `list_user_messages` | "不给ask_agent工具"; "list_user_messages is deleted" |
+| `approval_answer` `ask` | refused `invalid-decision`; offers list allow, grant, reject, escalate | q1 "Refuse it" (nothing carries a question back without `ask_agent`) |
+| Designated agent | `routing.agentToken`, the no-recipient queue, the designated role in revocation and succession, and embed-UI's latch reset on its loss are removed. An event naming no managed session has no recipient: an offer is the user's, a contributor event `no-agent`, the rest dropped | q5 "Remove agentToken entirely"; "There is no 'designated agent' default for unmanaged sessions" |
+| Prompts already showing | listed and answered only on sessions the caller manages, without its own escalations; answering never takes over management | "Agent不能回答不归自己管的会话，只能操作自己管的会话"; q7 |
+| Grants | kept (exact and shell-prefix, every grant ends); never paused while the agent is disconnected; ended at Take back, release or revocation | q3 "Still covers" |
+| Audit | no approval or decision audit; `auditEntriesKept`, `rationaleChars` removed | q6 "Delete it" |
+| DSH name | optional `approval.dshName`; the approval page shows it, or DSH's listener origin when it is empty | the user, 2026-11-17 |
+| V2 removed | `./contract`, `attachInstance`, the `dshConnector` and `fishballSessionState` services, `src/slim/**`, the V2 row path and every `/api/fishball/*` route of the connector; its vocabularies and payload bounds moved unchanged into K1 (`mcp-schema`) | "第三版其实就是第一版" (V2 was never deployed); q4 |
+| R-ARCH-08 strict | dsh-connector-shared keeps `redact` and `request-host` (two DSH-side users each); `files` and `provider-sync*` moved into dsh-instance (`src/lib/`), `oauth-client` into dsh-connector-adapter | Fishball's decision, 2026-11-17 |
+
+## 22. V3 UI-POLISH-F: the Fishball side's look (2026-11-18)
+
+The user (verbatim): "侧边栏的按钮被收到了这里，这是可以的，但是我更乐意看到是按钮的图标，同时target的UI设计太丑了，让Opus用它自己的审美重新设计一遍，所有这个插件的UI都需要设计的美观". Visuals and markup only: no behaviour, route, settings key or contract name changed.
+
+| Point | Decision | Reason |
+|---|---|---|
+| Material | DSH's own primitives (`Button`, `Tooltip`, `Tag`, `StateDot`, `Modal`, the settings fields), its icons and its `--dsw-*` tokens only; no new dependency or hard-coded colour | Light and dark themes come from DSH; the brief |
+| Page navigation | A floating bar in DSH's menu material with three icon buttons (DSH's Settings gear, DSH's fish mark for Fishball, DSH's Plugins pinwheel); the name is the aria-label and DSH's Tooltip; Retry is the refresh icon beside the status | "我更乐意看到是按钮的图标" |
+| Status card | The strip is a card above the composer: a heading ("Target DSH") with the state's dot and badge, the contributed-tools chip and the one control; the other lines below. `stripView` adds `card` {state, title, badge, toolsHint, openApproval}; `card.state` is one of `CARD` (connected, unset, disconnected, connecting, attention, failed, off), from the link line's kind; an unknown kind is `failed` | "target的UI设计太丑了" |
+| Other parts | Ask cards take DSH's approval-card layout; the model dialog groups models under their provider; the header entries are icons; core's settings page puts the model and Connect in DSH settings cards. fishball-board is shelved from this release (the user), so it gets nothing | "所有这个插件的UI都需要设计的美观" |
+| Wording changed | strip `tools` (now a chip: "N contributed tools" / "N 个贡献工具"); new `card` words; the approval link reads "Open the approval page" / "打开授权页面" instead of the raw URL (still its `title`) | Needed by the design; listed for the user's zh review |
+| Package icons (ICON-SET) | fishball-core and fishball-ui get the shared fish base with their own badge, from ICON-SET's spec (copied, not imported): core a link (DSH's link glyph: the link to the target), fishball-ui a speech bubble with three dots (Fishball's conversation). Both are clearly apart from the DSH side's wrench, window, server and plug at 30 px. Nothing on the Fishball side draws the connector's wrench. fishball-board is shelved and gets none | The user: "只有connector插件的设置页的图标带有这个小扳手，然后每个插件的右下角都要有个各自的图标" |
+| Narrow window | Below 480 px (DSH's own chat breakpoint) the conversation is lifted by the page bar's height, so the bar never covers DSH's composer stats | Found in the 390 px screenshots |
+
+## 23. V3 R-FIX-CORE: core review fixes (2026-11-18)
+
+The user's answers to the three product questions of the core review (`.runtime/reports/review-x-fishball-core.md`), and the rules the fixes follow:
+
+| Point | Decision | Reason |
+|---|---|---|
+| Ended reminders | A reminder whose last occurrence was delivered (or dropped by a Stop) is removed from the store at once; ended reminders in an older store are dropped on load. A change that would outgrow the 4 MiB store is refused `schedule-store-full`; a create, or an update that grows the store, is refused already when its result would pass 90% of it. The rest is kept for delivery's bookkeeping, so a due reminder normally still fires in a store the tools have filled (the extreme cases are core's README known limits; a failure there is logged and retried); a store that cannot be read whole makes the tools `schedule-unavailable` and is never written over | the user, 2026-11-18: "响过立刻删" (F07); the 90% share is Fishball's numeric decision, and an update that does not grow the store is never refused for space, the user's (R-FIX-CORE-2) |
+| Reminder delivery | A due occurrence is recorded `pending` with a fixed message id, then handed to the manager under `runMaintenance` (true idle, its own turn), like Fishball events (`src/events/handover.js`). It is delivered when the session admits it. A user Stop of the claiming turn, or any removal of the queued message, drops it; owner teardown and a restart with it pending hand it over again | the user, 2026-11-18: "提醒保留在上下文，如果被停止了就丢掉"; teardown and crash keep the tool's "Delivery can repeat after a crash" (F08) |
+| Manager record without a log | When the record's session has no log (`SessionPersistenceNotFoundError`), core creates it under the same id | the user, 2026-11-18 (F05); as DSH's own restore-or-create |
+| Pending token origin | A value in `DSH_AGENT_TOKEN` is bound to the target origin in force when it is written (or at the first attempt), in the record `fishball-core/pending-token-origin`; it is never sent to another origin | R-FB-03 (F01) |
+| Connect grant id | A grant records the `agent_id` it was approved for (`agentId`); it is usable only while `identity.id` is that id. A paired record for another id holds the link `id-mismatch` | R-ID-10 (F10) |
+
+## 24. PLAN-MULTI: multiple DSH MCP targets (2026-11-18)
+
+The [multi-DSH plan](<docs/planning/v3-multi-dsh.md>) records the user's decisions, measured singleton coupling, both-SDK evidence, estimates and exclusive parallel task ownership. All 12 product questions were resolved on 2026-11-18; Q04 is Fishball's choice under the user's least-work instruction and Q06 is Fishball's provisional call, subject to change. **Planning only:** this authorizes no product implementation. Release remains `1.0.0-alpha.1`, may slip, and Board remains shelved.
+
+| Point | Decision / amendment |
+|---|---|
+| Architecture | One Fishball manager connects to a list of ordinary DSH MCP servers. Reuse Connector tools, OAuth, pairing and mailbox wire; no MCP `dsh` argument, remote reminder subsystem or cross-side imports. Stable local target IDs plus durable endpoint epochs scope credentials, events, approvals and calls; URL changes cannot reuse old remote records after restart. |
+| Navigation | Narrow navigation is DSH's real sidebar restyled into a fixed 44px bottom bar on Fishball's page at ≤480px, with every panel and its own contributed icon, overflowing by horizontal scroll (no More menu, no tray, no icon mirroring). On 0.2.2 the closed drawer is the bar at ≤480px; opening it restores the native modal sidebar. At 481–767px only the native drawer is used. Q11 spike: no lawful owner-external icon rendering; user chose the restyle (2026-11-18). |
+| Target UI | Show each target's name and connected / connecting / failed / not set in the sidebar; click to expand inline details in the sidebar, no modal (Q08). Q01 shows “Not set” / “Name unavailable” plus Connect before identity is available, with URL only in details. Q09 makes selection details-only: infer the target from context and ask when ambiguous, never set an implicit routing default. Remove the chat-top target status card, superseding §22's card placement. Keep the native sidebar owner, replace only its workspace-content occupant with target rows plus a fail-closed Empty fallback, and restore native drawer access without restoring workspace/session-management controls. |
+| Connector name | Standard MCP `serverInfo.name` is `<approval.dshName, else OS device name>-DSH`. Use `node:os.hostname()`, not a special lookup or listener URL; this supersedes §21's URL fallback. Name is returned via modern `server/discover` metadata, not legacy `initialize`; do not substitute `title`. |
+| Special characters | Preserve server-name characters. Render all names as plain text, never HTML; names remain untrusted data in model context too, separate from trusted local routing IDs. Derive a safe, nonreassignable target/endpoint-qualified internal key for model tool names under both MCP and DSH host constraints. |
+| Duplicate names | Fishball assigns later-appearing identities ` (2)`, then ` (3)`, etc.; existing targets never renumber. A rename into an occupied name is the later appearance. Q03 selects the lowest free suffix for future arrivals; existing allocations never renumber, and display reuse cannot reassign retired model tool bindings. Keep raw metadata separately; credentials/security remain keyed by stable target identity, endpoint epoch and origin. |
+| Connected rename | Q02 user: “即时推送，MCP有标准做法，就和现在的DSH向Fishball发出消息一样”. No polling. Use the existing listen stream and standard `notifications/resources/updated {uri}` for a real readable identity resource (planned `dsh-agent://identity`, content is standard Implementation data). This is an additive resource contract, not a new/custom notification or a nonexistent identity-change notification. Connector setting changes push; Fishball immediately calls `server/discover` and reads returned metadata, not stale `getServerVersion()`. Rediscover after subscription acknowledgement/reopen; coalesce hints, fence generations and preserve auth teardown. No metadata retry timer: transient failures may stay stale until next hint/reconnect. External OS hostname changes have no portable push hook in `os.hostname()`; report this technical limitation before implementation if immediate external OS rename is required, rather than inventing a watcher or polling fallback. |
+| Model-facing tools | Namespace every exposed remote tool by its server-derived local identity while preserving façade gates, withheld tools and raw wire names/arguments. This explicitly supersedes the single-link/no-model-facing-`mcp__…` rule in the [canonical V3 design](<docs/planning/v3-design.md#L1299-L1326>). Local reminder tools remain once and unprefixed. |
+| Hosted/fresh install | Actual parent is fixed first and non-removable/non-editable; extra targets are configured in Fishball. Remove the instance's previous remote override and its token-refusal branches, retaining child credential handoff/succession. Reserve hosted credential slots exclusively for the parent. No migration. |
+| Event/ask invariants | Local target-qualified ledger, manager message and card identities; original wire receipts and remote IDs unchanged. Keep durable-before-ack and §21's permission/question/plan-review broker behavior. Local reminders/notify stay as §23 specifies. |
+
+Updated planning estimate: **81–125 person-hours** — MULTI-0 **11–17h**, MULTI-1 **37–56h**, MULTI-2 **15–24h**, MULTI-3 **18–28h** (including the required **2–3h** icon spike). Relative to 74–114h, push/resource-contract work adds 5–8h and the icon spike adds 2–3h. Host/owner changes and platform-specific OS-name watchers are excluded and require report-back/re-estimation before building.
+
+### Resolved configuration and lifecycle choices
+
+- **Q04 — Duplicate endpoints:** user “哪个工作量小就怎么做”. Fishball chooses A, rejecting duplicate canonical MCP URLs within one profile because it is less work; same-origin distinct endpoints remain isolated.
+- **Q05 — Parallel Connect:** one pending authorization per target, concurrently across targets, with target/epoch/generation-bound callbacks.
+- **Q06 — Global CIMD URL:** the user asked what CIMD is (Client ID Metadata Document, the client metadata URL used for browser sign-in). Fishball chooses A, one global URL and no per-target overrides, as the least-work option consistent with Q04. **This is Fishball's call, subject to change**, not a direct user answer; validation and credential binding remain per target.
+- **Q07 — Removal/endpoint retirement:** confirm the destructive change, void pending local cards, retain labeled read-only history and delete the retired target token material. Do not implicitly answer/revoke remote requests.
+- **Q12 — No hard cap:** no new target-count limit; all targets remain reachable with scrolling/overflow and independent failure handling. Existing transport/tool/provider budgets still apply.
+
+The [original decision record](<docs/planning/v3-multi-dsh.md#11-settled-user-decisions-not-questions>) and [resolved Q01–Q12 record](<docs/planning/v3-multi-dsh.md#9-resolved-product-decisions-q01q12>) preserve the answers and attribution; **no open product questions remain**. Freeze the technical seams before the three implementation slices begin; Q11's host/owner-change report-back gate remains mandatory.
+
+## 25. V3 R-FIX-FUI: fishball-ui review fixes (2026-11-18)
+
+The fixes for the fishball-ui review (`.runtime/reports/review-x-fishball-ui.md`), the user's one product answer, and the rules they follow:
+
+| Point | Decision | Reason |
+|---|---|---|
+| Rows that change DSH's UI | fishball-ui's patch only inserts its own rows. The UI guard rows (`ui-*`, `entry-customization`) and the hosted child's Preview Notice acknowledgement are in **core's** patch, each conditional on `fishball-ui` being in the profile (live while HMR runs, else `startedBundles`). Core's check reports them only while fishball-ui's `fishballUiGuards` presence service is there. Accepted limit: with core but without fishball-ui these rows read DSH's stock values, so an earlier bundle's setting of one of them is not kept | the user, 2026-11-18 (option 1). The host's patch merge writes every override whatever its `!!js` value, so a row in fishball-ui's patch changed earlier composition without core (Q-G2 = A) |
+| Pairing warning | Each target's pairing warning is drawn in that target's sidebar details (MULTI-3; the R-FIX-FUI dock card and its `/api/fishball/pairing` routes are removed with core's scalar `ui.pairing`). Its choices post `SEAM_TARGETS.route.pairing` `{targetId, choice, confirmed}`; Continue is enabled only with its box ticked, and core still refuses it unconfirmed. Last-seen times are in the page's language and the browser's time zone. The pairing words (`SEAM_PAIRING`) are fishball-shared's | R-ID-07 (import/pasted-token path), R-NAME-03 |
+| A lost stream | The sidebar's DSH targets and the ask cards share one browser stream lifecycle (client.js kit): an `error` marks the cached view stale; CLOSED offers Reconnect, which reopens every stream of the row. Until a fresh valid frame: each target drops its cached state, lines and controls, its pairing warning staying readable; the ask cards keep their cached text readable under the notice; every control is disabled | a cached frame must not look authoritative or be acted on; what was asked stays readable, and core refuses a late answer anyway |
+| Pairing confirmation | The box resets with each new warning (`pairingView` `key`: state, bound pair, name refusal), also between two warnings of the same state | a tick confirms one pairing only (R-ID-07) |
+| Connect presses | Only the latest press opens its approval page or publishes its notice | a double press must not open a dead attempt |
+| Model dialog | Every opening reads DSH's catalog again; a failed read offers Try again | the catalog may change while the dialog is closed |
+| Core Connect control | Reads and presses are sequenced; only the latest read publishes, and nothing settles after unmount (no open, no read, no state). A press's notice stays until a later read's (state, code) differs from the first read after the press | review findings 5 and 6 |
+| Ask-card time | Formatted in the DSH UI language's locale (`en` / `zh-CN`), in the browser's time zone | as DSH's own schedule UI |
+| Same-side status words (finding 8) | Not changed: `SEAM_STATUS.link/connect/guards` still restate K3's frozen data-only file; equality coverage stays | K3 freeze; needs an approved contract change |
+
+## 26. V3 CONN-TOOLS and ASK-NATIVE (2026-11-18)
+
+The user removes `question_ask` and `question_answer_own`, including their exclusive own-card schemas and behaviour. The historical dotted `question.ask` / `question.answerOwn` architecture is superseded, not a compatibility requirement; the historical documents remain unchanged.
+
+`question_answer` still answers forwarded managed-session DSH questions and plan reviews. Shared question/answer validators, generic settlement `answers`, and `QUESTION_ANSWER` / `CARD_CLOSED` semantics for forwarded questions remain. Fishball's local `ask_user` files existing permission/legacy-ask offers only. For its own clarifications, Fishball's manager uses the native DSH `ask_user_question` tool from its guarded preset; this does not add a connector MCP tool or change where managed-session questions are answered.
+
+## 27. Hosted Frame Readiness v1
+
+For the initial hosted navigation and each parent-initiated replacement, `dsh-connector-ui` keeps
+its fresh iframe hidden and inaccessible from first paint. Loading a document is not enough: the
+child might have landed on a sign-in page instead of the Fishball page. The parent reveals it only
+on the [Hosted Frame Readiness v1 signal](<docs/connector-contract.md#15-hosted-frame-readiness-v1-v3-only>)
+from the exact admitted origin and current frame window. After 15000 ms the parent offers recovery.
+A late valid signal can still reveal that frame; “Open Fishball again” gets a fresh admission and iframe.
+
+The framed `fishball-ui` page sends one non-secret marker per document when its page plugin is
+installed. This gates presentation only, not later navigations within the same frame, chat health
+or authentication. It changes no SDK, route, frozen connector value or child lifecycle state (§19).

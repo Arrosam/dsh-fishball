@@ -1,0 +1,176 @@
+{
+  "id": "standalone-reboot",
+  "sdk": "0.2.2-rc.1",
+  "node": "v24.22.2",
+  "at": "2026-11-11T09:38:52.269Z",
+  "install": {},
+  "boots": [
+    {
+      "label": "reboot-with-preset-override",
+      "reportAtAppReady": {
+        "status": "guards-overridden",
+        "overridden": [
+          "fishball-instance",
+          "policy.defaultPreset",
+          "policy.presets"
+        ]
+      },
+      "policyAtAppReady": {
+        "sandbox": "read-only",
+        "approval": "ask",
+        "presets": [
+          "read-only",
+          "workspace-write"
+        ],
+        "defaultPreset": "workspace-write",
+        "agentPreset": "fishball"
+      },
+      "checkTriggers": [
+        "settings/document-updated",
+        "app-ready"
+      ],
+      "instanceStarted": true,
+      "boardStarted": true,
+      "preflightOrConflictLines": [],
+      "presetIds": [
+        "fishball"
+      ],
+      "session": {
+        "agentPreset": "fishball",
+        "sandbox": "workspace-write",
+        "permission": "workspace-write"
+      },
+      "modelTools": [
+        "read",
+        "read_image",
+        "working_directory"
+      ],
+      "sessionRequests": 2,
+      "sessionCreatingTools": [],
+      "clientGraphFishball": [
+        "fishball-core"
+      ],
+      "clientGraphGuardedUi": [],
+      "inventoryFishball": [
+        {
+          "entryId": "include:fishball-core",
+          "moduleName": "fishball-core",
+          "enabled": true,
+          "phase": "active"
+        },
+        {
+          "entryId": "include:fishball-ui",
+          "moduleName": "fishball-core/ui",
+          "enabled": true,
+          "phase": "active"
+        },
+        {
+          "entryId": "include:fishball-board",
+          "moduleName": "fishball-board",
+          "enabled": true,
+          "phase": "active"
+        },
+        {
+          "entryId": "include:fishball-instance",
+          "moduleName": "fishball-instance",
+          "enabled": true,
+          "phase": "active"
+        },
+        {
+          "entryId": "include:spike-llm",
+          "moduleName": "file://<worktree>/spikes/v3-s6/fake-llm.mjs",
+          "enabled": true,
+          "phase": "active"
+        }
+      ],
+      "pluginManager": {
+        "bundles": [
+          {
+            "name": "fishball-core",
+            "enabled": true,
+            "rows": [
+              "preset-fishball",
+              "fishball-core",
+              "fishball-ui"
+            ],
+            "overrides": [
+              "ui-subagent",
+              "ui-schedule",
+              "schedule",
+              "ui-permission",
+              "ui-agent-preset",
+              "entry-customization",
+              "ui-open-in-app",
+              "open-in-app",
+              "ui-sidebar-terminal",
+              "terminal-controller",
+              "fishball-instance",
+              "preset-standard",
+              "preset-ptc",
+              "preset-cordis",
+              "preset-minimal",
+              "sandbox-policy",
+              "approval",
+              "permission",
+              "agent-preset-registry"
+            ]
+          },
+          {
+            "name": "fishball-board",
+            "enabled": true,
+            "rows": [
+              "fishball-board"
+            ],
+            "overrides": []
+          },
+          {
+            "name": "fishball-instance",
+            "enabled": true,
+            "rows": [
+              "fishball-instance"
+            ],
+            "overrides": []
+          }
+        ],
+        "plugins": [
+          {
+            "entryId": "include:fishball-core",
+            "moduleName": "fishball-core",
+            "patchId": "fishball-core"
+          },
+          {
+            "entryId": "include:fishball-ui",
+            "moduleName": "fishball-core/ui",
+            "patchId": "fishball-ui"
+          },
+          {
+            "entryId": "include:fishball-board",
+            "moduleName": "fishball-board",
+            "patchId": "fishball-board"
+          },
+          {
+            "entryId": "include:fishball-instance",
+            "moduleName": "fishball-instance",
+            "patchId": "fishball-instance"
+          }
+        ]
+      },
+      "route": {
+        "status": 200,
+        "body": {
+          "highlighted": [],
+          "categories": [],
+          "source": "fishball-core/ui"
+        }
+      }
+    }
+  ],
+  "bundles": [
+    "@deepseek-ai/dsh-base",
+    "@deepseek-ai/dsh-web-app",
+    "fishball-core",
+    "fishball-board",
+    "fishball-instance"
+  ],
+  "home": "<worktree>/.runtime/v3-s6/standalone-0.2.2-rc.1-1794389810434"
+}

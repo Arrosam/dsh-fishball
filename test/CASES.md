@@ -2,6 +2,8 @@
 
 Run everything with `/opt/homebrew/bin/node test/run.mjs` (node:test, exits non-zero on failure).
 
+**Status (2026-11-17).** Much of this catalogue is history. A heading marked **gone** names a suite file that no longer exists (the commit that deleted it is given). Suites deleted in REMOVE-V2b (230547b9) are removed from this file with a one-line note. Withdrawn rows I2-C-P-01 and R4-EXIT-05 were removed from their test files in that commit too.
+
 ## How the suite works
 
 - Each test file boots the real installed DSH Web 0.2.1-rc.2 runtime in a child process ([support/worker.mjs](support/worker.mjs)), on a throwaway `DSH_HOME` under `.runtime/test-homes/`. stdin stays open, because DSH's launcher shuts down on stdin EOF. `run.mjs` deletes the test homes left by earlier runs.
@@ -21,7 +23,7 @@ Run everything with `/opt/homebrew/bin/node test/run.mjs` (node:test, exits non-
 
 Techniques: EP = equivalence partitioning, BVA = boundary value analysis, DT = decision table, ST = state transition.
 
-### [singleton.test.mjs](singleton.test.mjs): R-SINGLETON first start and restarts, package shape
+### `singleton.test.mjs`: R-SINGLETON first start and restarts, package shape — **gone** (suite deleted in 76e06ff9)
 
 | id | technique | requirement | expected result |
 |---|---|---|---|
@@ -44,7 +46,7 @@ Techniques: EP = equivalence partitioning, BVA = boundary value analysis, DT = d
 | SGL-15 | ST (stored blank session –start→ live) | a resumed session that never had a turn gets the setup turn | the stored id is resumed (no new session); one setup request; one notice; the setup turn ends `completed`; pinned (setup in A14) |
 | SGL-16 | ST (restart –turn→ completed) | the resumed agent is usable (inferred, A13) | a turn steered after a restart makes 1 model request and ends `completed` |
 
-### [lifecycle.test.mjs](lifecycle.test.mjs): R-SINGLETON recovery and archive (state transitions)
+### `lifecycle.test.mjs`: R-SINGLETON recovery and archive (state transitions) — **gone** (suite deleted in 76e06ff9)
 
 The test makes the stored session "gone" by moving its JSONL directory and projection-cache file out of `DSH_HOME`, and restores it by moving them back.
 
@@ -66,7 +68,7 @@ The test makes the stored session "gone" by moving its JSONL directory and proje
 | FAIL-04 ×3 | DT (retry × failed) | no lifecycle runs | 409 `{ok:false, code:'unavailable'}`; no session; still `failed`; store unchanged |
 | FAIL-05 ×3 | DT (adopt × failed) | same | same |
 
-### [http.test.mjs](http.test.mjs): R-HTTP
+### `http.test.mjs`: R-HTTP — **gone** (suite deleted in 76e06ff9)
 
 | id | technique | requirement | expected result |
 |---|---|---|---|
@@ -93,7 +95,7 @@ The test makes the stored session "gone" by moving its JSONL directory and proje
 | CFG-08 | EP | the defaults again (all 30 fields since rev11b) | accepted together |
 | CFG-09 | ST live –update→ live | no remount | same agent object; one agent/created and no agent/disposed for Fishball; status live |
 
-### [composition.test.mjs](composition.test.mjs): R-COMPOSITION and R-ISOLATION
+### `composition.test.mjs`: R-COMPOSITION and R-ISOLATION — **gone** (suite deleted in 76e06ff9)
 
 | id | technique | requirement | expected result |
 |---|---|---|---|
@@ -111,7 +113,7 @@ The test makes the stored session "gone" by moving its JSONL directory and proje
 | PTC-01 | EP (process booted with `DSH_TOOLS_MODE=ptc`, which the Web tools row reads) | Fishball's tools are presented natively | Fishball's request lists `demo_echo` and `bsk_inspect` and no hidden name; an ordinary session's request lists `run_code` |
 | PTC-02 | EP (same process) | native call works | Fishball's direct `demo_echo` call is not an error, and the fixture runs once |
 
-### [filewrite.test.mjs](filewrite.test.mjs): R-FILEWRITE
+### `filewrite.test.mjs`: R-FILEWRITE — **gone** (suite deleted in 76e06ff9)
 
 | id | technique | requirement | expected result |
 |---|---|---|---|
@@ -125,7 +127,7 @@ The test makes the stored session "gone" by moving its JSONL directory and proje
 
 ## P3 cases
 
-### [plugins-catalog.test.mjs](plugins-catalog.test.mjs): R1-R4, R13, R14
+### `plugins-catalog.test.mjs`: R1-R4, R13, R14 — **gone** (suite deleted in 76e06ff9)
 
 | id | technique | requirement | expected result |
 |---|---|---|---|
@@ -145,7 +147,7 @@ The test makes the stored session "gone" by moving its JSONL directory and proje
 | CAT-14 ×3 | DT (plugin with no unchecked tools) and ST off→on→off | ask-user, skills, shell | `{ok:true,on:true}` with no approval; not in the same turn's next request; in the next turn's request; changedBy fishball; off removes it again |
 | CAT-15 | ST (everything on) | R13 | state.hiddenTools is still the 18 names; no hidden name in Fishball's request; hidden fixture names stay `hidden`; a direct `subagent` call is refused |
 
-### [plugins-toggle.test.mjs](plugins-toggle.test.mjs): R5-R9, R14 (one host, ordered transitions)
+### `plugins-toggle.test.mjs`: R5-R9, R14 (one host, ordered transitions) — **gone** (suite deleted in 76e06ff9)
 
 | id | technique | requirement | expected result |
 |---|---|---|---|
@@ -166,7 +168,7 @@ The test makes the stored session "gone" by moving its JSONL directory and proje
 | LIM-03 | ST (limit lowered to 1 while 2 run) | lowering stops nothing | both still run, are on, and their tools are visible |
 | LIM-04 | BVA (running 1, limit 1) | at the limit again | turning the other back on is refused `limit-reached`; not mounted |
 
-### [plugins-http.test.mjs](plugins-http.test.mjs): R11
+### `plugins-http.test.mjs`: R11 — **gone** (suite deleted in 76e06ff9)
 
 | id | technique | requirement | expected result |
 |---|---|---|---|
@@ -184,7 +186,7 @@ The test makes the stored session "gone" by moving its JSONL directory and proje
 | PHT-11 ×5 | DT (remove body) | 400 / 409 | invalid JSON, array, `{}`, toolKey 1 → 400 bad-body; unknown key → 409 unknown; allowances unchanged |
 | PHT-12 | EP (no cookie) | behind auth | both routes are not 200; catalog unchanged |
 
-### [plugins-persist.test.mjs](plugins-persist.test.mjs): R10, R12
+### `plugins-persist.test.mjs`: R10, R12 — **gone** (suite deleted in 76e06ff9)
 
 | id | technique | requirement | expected result |
 |---|---|---|---|
@@ -196,7 +198,7 @@ The test makes the stored session "gone" by moving its JSONL directory and proje
 | ADD-03 | ST added→on (by add_plugin) | follows R6/R8 | its code runs; its tool in Fishball's next request only |
 | ADD-04 | ST (restart) | plugin statuses | the Fishball-installed plugin is still listed, on and running |
 
-### [plugins-review.test.mjs](plugins-review.test.mjs): post-review changes 1-13
+### `plugins-review.test.mjs`: post-review changes 1-13 — **gone** (suite deleted in 76e06ff9)
 
 Host A boots with extra flags. `FBTEST_REVIEW_BUNDLES=1` links the defective Fishball-only fixtures: `fbtest-broken` (its main file is missing), `fbtest-norows` (its patch inserts nothing), `fbtest-idinsert` (an entry with an id and an insert), `fbtest-dup` (two id-less rows naming one module), `fbtest-waits` (injects a service the worker provides on request) and `fbtest-leak` (provides a service of its own). `FBTEST_SPOOF_ROWS=1` adds host rows `fb-web--x` and `fbo-fbtest-only--x`, each registering one tool. `FBTEST_AGENT_SCOPE_TOOL=1` makes fbtest-tools register `agent_scope_echo` in every new agent's own scope. The approver can also throw, or answer from a queue.
 
@@ -222,7 +224,7 @@ Host A boots with extra flags. `FBTEST_REVIEW_BUNDLES=1` links the defective Fis
 | REV-17a | ST (bundle installed and enabled through `pluginManager.installBundle` while DSH runs) | 13 | GET state's catalog lists it (kind profile, on, with its tool) within 10 s, with no other action |
 | REV-17b | ST (same bundle) | 13 | list_plugins lists it; its tool is `unchecked` and hidden; an ordinary session has it; after Allow once it is visible |
 
-### [plugins-review2.test.mjs](plugins-review2.test.mjs): second review round (R1-R4; R5 = REV-01, R6 = REV-17a)
+### `plugins-review2.test.mjs`: second review round (R1-R4; R5 = REV-01, R6 = REV-17a) — **gone** (suite deleted in 76e06ff9)
 
 Host D boots with `FBTEST_REVIEW_BUNDLES=1` and with `FBTEST_AGENT_SCOPE_SHADOW=demo_echo,schedule_list`, so fbtest-tools also registers those two names in every new agent's own scope. New fixtures: `fbtest-throws` (its apply starts its effect, then throws), `fbtest-import-throws` (its module throws on import, recording `import` first) and `fbtest-leak-b` (a second service-providing plugin). The approver can now hold a question open until the test releases it (`APPROVER_HOLDS`), which keeps Fishball inside a turn.
 
@@ -243,7 +245,7 @@ REV-05 and REV-07 are tightened to the A31 answer: answer code `no-rows` / `row-
 
 **Harness additions.** The fake model now records each request's `model`, `maxTokens` and total message characters. It records each auxiliary call's purpose, `maxTokens` and final user message, and answers a `compaction` call with a summary text. One provider serves three models: `test-model` (window 128000, or `FBTEST_MODEL_WINDOW`, where `none` means no window), `test-model-b` (300000) and `test-model-nowin` (no window), each with `defaultMaxTokens` 4096. The worker can change a model's window and re-commit the adapter's routes, which publishes `llm/adapters-updated`. It can pick a model through `sessionController.selectModel` (the model picker's API), hold one conversation request open, and list a session's `compaction/*` events and auxiliary calls. Expected values come from the formulas in C2, C4 and C5 ([support/expect.mjs](support/expect.mjs)). `moveArtifacts` moved from lifecycle.test.mjs to support/expect.mjs so that P4 can reuse it.
 
-### [context-window.test.mjs](context-window.test.mjs): C1-C4, C6-C9 through the HTTP API
+### `context-window.test.mjs`: C1-C4, C6-C9 through the HTTP API — **gone** (suite deleted in 76e06ff9)
 
 | id | technique | req | expected result |
 |---|---|---|---|
@@ -268,7 +270,7 @@ REV-05 and REV-07 are tightened to the A31 answer: answer code `no-rows` / `row-
 | CTX-15 | ST (setting stored → recovery → adopt) | C9 | the new session's state is at defaults; its setup request and a later request carry 4096 |
 | CTX-17 | DT (failed store × save) | C3 | 409 `unavailable`; `contextWindow` is null while failed (A41) |
 
-### [context-compaction.test.mjs](context-compaction.test.mjs): C4, C5, C10-C14 in Fishball's session
+### `context-compaction.test.mjs`: C4, C5, C10-C14 in Fishball's session — **gone** (suite deleted in 76e06ff9)
 
 | id | technique | req | expected result |
 |---|---|---|---|
@@ -302,7 +304,7 @@ REV-05 and REV-07 are tightened to the A31 answer: answer code `no-rows` / `row-
 
 | id | technique | req | expected result |
 |---|---|---|---|
-| MSG-01 | EP (bare / standard preset) | M1 | message_fishball with exactly one required string property `message` |
+| MSG-01 | EP (bare / standard preset) | M1 | message_agent with exactly one required string property `message` |
 | MSG-02 | EP (Fishball / ordinary) | M14 | never in Fishball's requests; message_session and start_session only in Fishball's |
 | MSG-03 | EP (Fishball idle) | M1, M9 | `{ok:true, note:'Delivered to Fishball.'}`; one relay from the caller; the trusted header, then one block with session_id, session_title, session_folder and the JSON-quoted text; Fishball wakes and reads it; item `session/<id>` ends consumed; no text in the state |
 | MSG-04 | EP (hostile text) | M1 review | a fake closing tag and a fake forward stay inside the block; one closing tag; one session_id line; the marker differs per message |
@@ -339,7 +341,7 @@ REV-05 and REV-07 are tightened to the A31 answer: answer code `no-rows` / `row-
 | OUT-02 | ST (cold → resumed) | resumed with its own preset (fbtest-bare tool set) and runs |
 | OUT-03 ×7 | DT + BVA | `empty` ×2, `too-large` (65 bytes; 64 delivered), `is-fishball`, `unknown-session`, `archived`; none recorded |
 | OUT-04 | EP (recorded preset gone, so resume fails) | `delivery-failed`; outbox `failed` with errorCode |
-| OUT-05 | EP (absolute folder) | one new session there with DSH's default preset (`standard`); it has message_fishball and not Fishball's tools or persona; its first message is a relay from Fishball and it runs; no workspace registered; outbox `start` with folder |
+| OUT-05 | EP (absolute folder) | one new session there with DSH's default preset (`standard`); it has message_agent and not Fishball's tools or persona; its first message is a relay from Fishball and it runs; no workspace registered; outbox `start` with folder |
 | OUT-06 | EP (workspace id) | the session belongs to that workspace |
 | OUT-06b | EP (workspace id, folder deleted) | `no-folder`; the folder is not created; nothing recorded |
 | OUT-07 ×9 | DT (folder × message) | `no-folder` (missing (A51), '', a missing path that is never created, a file); `not-absolute` (relative; unknown non-path value, A52); `empty` ×2; `too-large`; nothing created or recorded |
@@ -393,11 +395,11 @@ Three hosts: A has DSH's session-title service, B checks the order of the checks
 | WAK-05 | ST (parked → Send to Fishball) | the forward wakes Fishball at once; the same turn reads the parked inputs |
 | DUR-01 | ST (accepted while running → restart) | delivered exactly once after the restart; consumed |
 | DUR-02 | ST (archived → message → restart → unarchive + retry) | note starts `Queued for Fishball`; `pending`, still `pending` after the restart; delivered once when live; consumed |
-| DUR-03 | EP | `storages/fishball_intake` has per-record files without message text |
+| DUR-03 | EP | `storages/dsh_connector_intake` has per-record files without message text |
 | DUR-04 | ST (restart) | nothing already read is delivered again |
 | ADO-01 | ST (accepted in the old inbox → session lost → adopt) | `discarded`; the new session never receives it |
 
-### [messaging-unchecked.test.mjs](messaging-unchecked.test.mjs): M12
+### `messaging-unchecked.test.mjs`: M12 — **gone** (suite deleted in 76e06ff9)
 
 | id | technique | expected result |
 |---|---|---|
@@ -456,7 +458,7 @@ Three hosts: A has DSH's session-title service, B checks the order of the checks
 | TOL-09 | ST (outbox entry pruned at auditEntriesKept 1) | W5 review | ok while kept, not-related after |
 | NTF-01/02 | EP (message_session / start_session + flag) | W6 | watch createdBy assistant; one notice |
 | NTF-03 | DT (flag × limit) | W6 | ok, watchError limit-reached, no watch, delivered |
-| NTF-04 | EP (message_fishball + flag) | W6 | watch on the caller, createdBy {agent, caller}; one notice |
+| NTF-04 | EP (message_agent + flag) | W6 | watch on the caller, createdBy {agent, caller}; one notice |
 | NTF-05 | EP (subagent) | W6 | watch on the root; createdBy.id = the child |
 | NTF-06 ×3 | EP (no flag) | W6 | no watch, no 'watch' key |
 | NTF-07/08 | EP (fast turn: first call fails) | W3 review | one notice, reason error |
@@ -534,10 +536,10 @@ Three hosts: A has DSH's session-title service, B checks the order of the checks
 ## P8 cases (ctx.fishball sources; X1-X10 and the review update)
 
 **Harness additions.** With `FBTEST_SOURCES=1` the profile links three source fixtures, and the overlay adds one host row:
-- [fbtest-source](support/fixtures/fbtest-source/index.js): enabled, with two rows on one module, `fbtest-source` (label src-a) and `fbtest-source-b` (src-b).
-- [fbtest-source-static](support/fixtures/fbtest-source-static/index.js): enabled, with a static `inject: ['fishball']`.
-- [fbtest-source-only](support/fixtures/fbtest-source-only/index.js): installed but off in the profile.
-- The overlay row `fbtest-source-row` ([source-row.mjs](support/fixtures/source-row.mjs)), named by an absolute path. No catalog plugin owns it.
+- `fbtest-source` (deleted in c5c5692e): enabled, with two rows on one module, `fbtest-source` (label src-a) and `fbtest-source-b` (src-b).
+- `fbtest-source-static` (deleted in c5c5692e): enabled, with a static `inject: ['fishball']`.
+- `fbtest-source-only` (deleted in c5c5692e): installed but off in the profile.
+- The overlay row `fbtest-source-row` (`source-row.mjs` (deleted in c5c5692e)), named by an absolute path. No catalog plugin owns it.
 
 Each row records apply and dispose. It captures the context in which it gets the `fishball` service, so the worker can call `registerSource` *as that row* and keep each source under a key.
 
@@ -547,7 +549,7 @@ New worker operations: `sourceRegister`, `sourcePublish`, `sourceState` (`enable
 
 New helpers: `sourcesNow`, `sourceIn`, `pluginNotices`, `register`, `publish`. `STATE_KEYS` has 14 keys (`sources`).
 
-### [sources-register.test.mjs](sources-register.test.mjs): X1-X3, X9, X10
+### `sources-register.test.mjs`: X1-X3, X9, X10 — **gone** (suite deleted in 76e06ff9)
 
 | id | technique | req | expected result |
 |---|---|---|---|
@@ -565,7 +567,7 @@ New helpers: `sourcesNow`, `sourceIn`, `pluginNotices`, `register`, `publish`. `
 | SRC-12 | EP | X9 | the client bundle has "Plugin sources" and "Plugin event" |
 | SRC-13 | EP (detached `registerSource`) | X10 (guide) | FISHBALL_UNKNOWN_PLUGIN |
 
-### [sources-publish.test.mjs](sources-publish.test.mjs): X4-X6
+### `sources-publish.test.mjs`: X4-X6 — **gone** (suite deleted in 76e06ff9)
 
 | id | technique | req | expected result |
 |---|---|---|---|
@@ -583,7 +585,7 @@ New helpers: `sourcesNow`, `sourceIn`, `pluginNotices`, `register`, `publish`. `
 | WKP-01 | BVA (cap reached) | X5 | parked: no request for 3 s; the next chat turn reads it |
 | DED-03 | ST (restart, register again) | X6 | `duplicate` with the same intakeId; still one notice |
 
-### [sources-enabled.test.mjs](sources-enabled.test.mjs): X2 (unload), X7
+### `sources-enabled.test.mjs`: X2 (unload), X7 — **gone** (suite deleted in 76e06ff9)
 
 | id | technique | req | expected result |
 |---|---|---|---|
@@ -602,7 +604,7 @@ New helpers: `sourcesNow`, `sourceIn`, `pluginNotices`, `register`, `publish`. `
 | ONL-04 | ST off → on | X2, X6 | the same id registers again; the earlier key is `duplicate` |
 | ENA-08 | ST starting → live (first request held 6 s) | X7 | while starting: enabled false and publish `disabled`; once live: enabled, onEnabled once |
 
-### [sources-example.test.mjs](sources-example.test.mjs): X8 (R5)
+### `sources-example.test.mjs`: X8 (R5) — **gone** (suite deleted in 76e06ff9)
 
 | id | technique | req | expected result |
 |---|---|---|---|
@@ -630,12 +632,12 @@ New helpers: `sourcesNow`, `sourceIn`, `pluginNotices`, `register`, `publish`. `
 ### Cases changed by P6
 
 - **HTP-01, HTP-04/05, PHT-01, PHT-04, SND-01**: 12 state keys (`watches`), from `STATE_KEYS`.
-- **MSG-01**: message_fishball has `message` (required string) and `notify_when_finished` (optional boolean).
+- **MSG-01**: message_agent has `message` (required string) and `notify_when_finished` (optional boolean).
 
 ### Cases changed by P5
 
 - **HTP-01, HTP-04/05, PHT-01, PHT-04**: 11 state keys (`intake`, `outbox`), from `STATE_KEYS` in constants.
-- **HTP-02, CAT-15**: hiddenTools also lists `message_fishball` (`STATE_HIDDEN_TOOLS`). The fixture-name list `HIDDEN_TOOLS` is unchanged, because fbtest-tools never registers message_fishball.
+- **HTP-02, CAT-15**: hiddenTools also lists `message_agent` (`STATE_HIDDEN_TOOLS`). The fixture-name list `HIDDEN_TOOLS` is unchanged, because fbtest-tools never registers message_agent.
 - **SGL-10, SGL-11, SGL-14, SGL-15**: count setup notices and turns. Exactly one `Fishball is set up` notice, in the first turn; at most one other Fishball notice (the unchecked-tools notice); model requests = 1 + other notices. A restart adds no setup notice and no second unchecked-tools notice. SGL-10 and SGL-15 read the log 1.5 s after live, because the notice can arrive just after.
 
 ### P3 cases changed by P4
@@ -708,7 +710,7 @@ New helpers: `sourcesNow`, `sourceIn`, `pluginNotices`, `register`, `publish`. `
 - **A49. A window accepted before the prompt is measured.** Per the update, only N < 4096 and zero caps are refused before any request has been measured. A window that fits the 4096 floor but not the real prompt (N 6000) is accepted early: 200, state effective 6000. Once the setup request has measured the prompt (about 3.4k tokens), the state shows `error: window-too-small`, effectiveWindow 128000, outputCap and threshold null, and requests carry 4096 with no smaller-window cap. The stored value is kept. PRE-02 accepts this end state, or a cap-consistent one. Whether a stored value that turns out too small should fall back to the full window this way needs confirming.
 - **A50. When the compaction runs.** Observed in every load: the session compacts in the first turn that *starts* at or above the threshold. The turn whose new message takes it across the threshold does not compact. C5 says "once its measured request size reaches the threshold", and the measured size between turns is the previous request's. The tests assert the observed rule and allow up to one load turn of slack. C15's boot-flip fake changes the window at two moments (adapter registration, right after the first lookup); whether a remount was actually in progress at that moment cannot be observed black-box.
 
-### [unread.test.mjs](unread.test.mjs): Unread replies from Fishball (R1-R8)
+### `unread.test.mjs`: Unread replies from Fishball (R1-R8) — **gone** (suite deleted in 76e06ff9)
 
 Replies are made by the scripted model in Fishball's own session (`drive`); `nReplies(n)` scripts n assistant messages (n-1 with text plus a tool call, then a closing text). Persistence cases edit `storages/fishball.json` while DSH is stopped. Fishball's setup turn already makes replies, so every case first reads (`resetUnread`) to start from 0, except UNR-02. "Stable" means the count is checked again 400 ms after it first matches.
 
@@ -720,7 +722,7 @@ Replies are made by the scripted model in Fishball's own session (`drive`); `nRe
 | UNR-04 ×10 | DT (content × delta) | R2, R3 | non-empty text (also " a ", text + tool call, blank block + text, two text blocks in one message): +1; tool call only, '', ' ', '\n\t  \n', blank text + tool call: +0 |
 | UNR-05 | EP (user message, turn events) | R3 | a non-empty user message and turn events with a blank answer add 0 |
 | UNR-06 | EP (other sessions) | R3 | replies in a bare session, a standard session and a subagent add 0 |
-| UNR-07 | EP (real flow) | R2 | another session's message_fishball wakes Fishball; its one reply adds 1 |
+| UNR-07 | EP (real flow) | R2 | another session's message_agent wakes Fishball; its one reply adds 1 |
 | UNR-10 | EP (body {}) | R4 | 200 `{ok:true,state}`, count 0 in the answer and in GET state |
 | UNR-11 ×2 | EP (other objects) | R4 | `{extra:1}` and `{count:5}` give 200 and 0 |
 | UNR-12 ×8 | DT (body kind) | R4 | malformed, empty, `[]`, `[{}]`, string, number, null, true: 400 `{ok:false,code:'bad-body'}`; count unchanged |
@@ -779,7 +781,7 @@ Defaults decision table (install × when the DSH plugin appeared × enabled in t
 
 **Harness additions.** The worker re-points the profile's `dsh-fishball` link on every boot (`FBTEST_PLUGIN_DIR`, default the repo root). One home can therefore boot the previous version (commit f368ad2, extracted with `git archive` under `.runtime/`; no worktree, branch or tag is touched) and then this one. `FBTEST_LINK` links more bundles on a later boot (installed while DSH was down). New worker operation `removeBundle` (DSH's plugin manager). New fixture [fbtest-notbundle](support/fixtures/fbtest-notbundle/package.json): a package with no bundle patch. Fishball's own folder is `<DSH_HOME>/profiles/.fishball-plugins` (implementer's answer). `inFishballFolder` checks its node_modules and package.json; `profileSnapshot` checks the profile's package.json, cordis.patch.yml and lockfile.
 
-### [plugins-status.test.mjs](plugins-status.test.mjs): statuses, actions, add and remove, the two new routes
+### `plugins-status.test.mjs`: statuses, actions, add and remove, the two new routes — **gone** (suite deleted in 76e06ff9)
 
 | id | technique | expected result |
 |---|---|---|
@@ -809,7 +811,7 @@ Defaults decision table (install × when the DSH plugin appeared × enabled in t
 | STA-24 | EP (no cookie) | neither new route answers 200 |
 | STA-25 | EP (store unreadable) | the install route answers 409 unavailable |
 
-### [plugins-defaults.test.mjs](plugins-defaults.test.mjs): defaults on a new install
+### `plugins-defaults.test.mjs`: defaults on a new install — **gone** (suite deleted in 76e06ff9)
 
 | id | technique | expected result |
 |---|---|---|
@@ -823,7 +825,7 @@ Defaults decision table (install × when the DSH plugin appeared × enabled in t
 | DEF-08 | DT (installed and enabled while down) | off |
 | DEF-09 | ST (on → removed → installed again) | off, changedBy null |
 
-### [plugins-upgrade.test.mjs](plugins-upgrade.test.mjs): defaults on an existing install
+### `plugins-upgrade.test.mjs`: defaults on an existing install — **gone** (suite deleted in 76e06ff9)
 
 | id | technique | expected result |
 |---|---|---|
@@ -861,14 +863,14 @@ Defaults decision table (install × when the DSH plugin appeared × enabled in t
 
 - **A51. start_session without `folder`.** M7 says "missing or empty folder → no-folder". The tool schema marks `folder` required, so DSH rejects the call before the tool runs ("invalid arguments: missing required property folder", a tool error). OUT-07 accepts either; an empty string gives `no-folder`.
 - **A52. A folder that is neither a workspace id nor an absolute path.** Observed `not-absolute`. Whether an unknown workspace id should be `no-folder` instead is not specified; OUT-07 accepts both.
-- **A53. Extra arguments to message_fishball.** A call with `senderSessionId`/`sessionId`/`session_id` next to `message` is accepted and attributed to the caller (MSG-05). Whether such calls should be refused is not specified.
+- **A53. Extra arguments to message_agent.** A call with `senderSessionId`/`sessionId`/`session_id` next to `message` is accepted and attributed to the caller (MSG-05). Whether such calls should be refused is not specified.
 - **A54. `unconfirmed`.** The `{ok:true, unconfirmed:true}` outcome and outbox status `unconfirmed` need a session flush that fails after delivery. Nothing public produces that, so OUT-08 only allows the status. start_session's is now driven with the host probe (SST-06/06b), which fails the first flush after the steer.
 - **A55. Not driven black-box: delivery retries and `failed` items.** "Three failed deliveries → `failed` with `delivery-failed`", "retried each time Fishball goes idle", a start_session whose session cannot be created at all (answers `delivery-failed`, not recorded), and caps counting "failed after the session was created" all need a fault inside steer, flush or create. The fixtures cannot inject one. message_session's `delivery-failed` is driven by a target whose recorded preset no longer exists (OUT-04). start_session's is driven by the host probe, which makes the steer into the new agent throw (SST-07, UNA-04); a session that cannot be created at all is still not driven.
 - **A144. What "unconfirmed" is.** The flush is DSH's `ctx.sessions.flush(session)`, which answers a boolean and rejects on a listener failure. SST-06 makes it reject, SST-06b makes it answer `false`; both are expected to give `unconfirmed: true`. Only the first flush after the steer fails, because failing every later one would also break the new session's own turn.
 - **A145. Missing and non-string titles.** The schema marks `title` as a required string, so DSH rejects a call without it (or with a number, null, array or object) before the tool runs, as for a missing folder (A51). ORD-02 accepts `no-title` or a tool error for those rows; an empty or whitespace-only or invisible-only string must give `no-title`.
 - **A146. Invisible titles (R2 update).** "Empty after DSH's `normalizeSessionTitle(title, Number.MAX_SAFE_INTEGER)`" is tested with the real function as a precondition of each ORD-02 row, and every expected kept title (SST-03d) is written out by hand. `title-invalid` can no longer come from DSH's real service through start_session, so SST-04 gets it from a stub that throws the real `SessionTitleInvalidError` class.
 - **A148. Rev11 start_session calls.** MGL-02 (start) and MGL-05 changed with the title fix: a started session is titled from the start, so its entry is no longer `null`, and the user's first message does not replace the title. UPM-00's start_session is made to the previous version (PRE_REV11A), which has no title argument, and passes none.
-- **A147. A started session's first message text.** The relay text of a start_session is the message verbatim (observed; no header), unlike message_fishball's relays. SST-02 asserts equality.
+- **A147. A started session's first message text.** The relay text of a start_session is the message verbatim (observed; no header), unlike message_agent's relays. SST-02 asserts equality.
 - **A56. The wake guard for stranded items.** DSH's turn-retirement gap cannot be triggered on purpose. WAK-04 covers parked items read by the next turn (consumed, never discarded), and DUR-02 covers pending items delivered once Fishball is live again.
 - **A57. GUI (M5).** Only the served client bundle is checked: it contains "Send to Fishball". The row menu, the header action, its visibility rules (live only, never in Fishball's own session) and the dialog are not exercised in a browser. Whether the bundle names the route path literally is a diagnostic only.
 - **A58. Wake-ups per process.** DESIGN §5b counts wake-ups per process, so a restart resets the count. This is not asserted. WAK-03 sets the cap to the current count + 1 at runtime instead of starting from a known zero, because the setup turn may or may not count the unchecked-tools notice.
@@ -878,7 +880,7 @@ Defaults decision table (install × when the DSH plugin appeared × enabled in t
 - **A62. Session titles.** The fake model titles every session "fbtest title", so tests assert only that `session_title` is a string.
 - **A63. Ordinary sessions after a restart.** DSH resumes only Fishball at boot. Restart cases reopen the sender through `sessionController.resolveAgent`, as opening it in the GUI does, before using it again.
 - **A64. ADO-01: adopt versus "never lost" (fixed during the round).** Steps: Fishball is held in a turn, an input is accepted (status `accepted`), DSH stops, Fishball's session artifacts are moved away, and DSH boots into recovery. The item is still `accepted` right before the adopt. After the A60 fix, the item was redelivered to the adopted session and ended `consumed`. The implementer found that the record did not store which session it was delivered to. Now it ends `discarded` and never reaches the new session, as M9 says; ADO-01 passes.
-- **A65. Empty message_fishball (fixed during the round).** In the first run, '' and whitespace answered `{ok:true}` and delivered an empty relay (reported). They now answer `empty`.
+- **A65. Empty message_agent (fixed during the round).** In the first run, '' and whitespace answered `{ok:true}` and delivered an empty relay (reported). They now answer `empty`.
 - **A67. W2 while Fishball is archived (finding).** W2 says "Fishball not running → 409 unavailable". With Fishball archived (`status: archived`) POST watches answers 200 and adds an active watch (WCH-15 fails). With the store unreadable it answers 409 unavailable (WCH-16 passes), and `state.watches` is null while failed. Either archived should count as "not running" for watches, or W2 should be narrowed to "core failed". Please decide.
 - **A68. read_session on an unknown id (finding).** W5 lists `unknown-session` for an unknown id. Observed: `not-related`, which the relatedness check gives before the existence check. The review note allows either for non-session strings (TOL-06b accepts both), but a well-formed unknown session id still gets `not-related` (TOL-06 fails). Please decide which code is intended.
 - **A69. "While Fishball was down".** Archiving Fishball stops its agent, but the `fishball` row keeps running and watching. So in DWT-06b the first settled turn end already counts, and it is reported when Fishball is live again (observed: turn 1 of 3). The review rule ("several turns while down → one notice for the LAST end") is tested where nothing of Fishball runs: DWT-06 boots DSH with the row off (`FBTEST_PLUGIN=off`) while the target runs three turns, and passes.
@@ -896,7 +898,7 @@ Defaults decision table (install × when the DSH plugin appeared × enabled in t
 - **A81. Timing tolerance.** Answer-time cases measure from the asking tool's call to the stand-in's question: at least n s − 150 ms, at most n s + 2.5 s (APR-08), and 1.85-4.5 s for 2 s while Fishball is busy (APR-09). "At once" for a bypass is under 1 s; for P12 under 5 s (observed about 50 ms).
 - **A82. A routed request while Fishball is held.** While Fishball is inside a held model request, the request message waits in its inbox and is not yet in its log, so RTE-02 proves routing by "pending and not at the stand-in", not by the message.
 - **A83. Not driven black-box.** P7b and P12 only with Fishball archived: `stopped`, `recovery` and a row unload while requests wait are not driven. The real browser prompt (DSH's gateway forwarder) is replaced by the stand-in. An escalate handed on at the exact moment of a cancel (P6 update, second half) is covered only as "cancelled while waiting at the stand-in" (APR-12, audit answer observed `withdrawn`). A turn started by "Fishball (message_session)" vs a session started by start_session whose later turn is the user's is not driven. Requests from ordinary sessions arise only from the fixture tool `fbtest_ask`, not from a real sandbox escalation.
-- **A84. Audit record files.** "Audit kept to auditEntriesKept" is checked on the per-record files under `storages/fishball_intake/approvals` (DESIGN §9). The state's `recent` follows the pruning (observed 2 after pruning to 2).
+- **A84. Audit record files.** "Audit kept to auditEntriesKept" is checked on the per-record files under `storages/dsh_connector_intake/approvals` (DESIGN §9). The state's `recent` follows the pruning (observed 2 after pruning to 2).
 - **A85. Bypassed or policy-never requests in the audit.** P8 says bypassed requests are not recorded; RTE-01..06 and APR-19 assert that the newest audit key is unchanged. A request that went to the stand-in after Fishball stopped (P12) is recorded with answer `timeout`, as the update says.
 - **A86. Harness fix: tool-result call ids.** The worker's `tool/result` summary read `message.callId`, but DSH's ToolResultMessage names the field `toolCallId`, so every summary's `callId` was null. Only the new P7 helper `resultOfCall` uses it. The worker now reads `toolCallId` and falls back to `callId`.
 - **A87. A host row's identity.** X3 says that a plain host row's bundle is "its module name". The overlay names the fixture row by an absolute file path. SRC-08 accepts either that path or its `file://` URL as the bundle part, followed by `/fbtest-source-row/<id>`. In the first probe (07:13) the identity was `file:///…/source-row.mjs/fbtest-source-row/q`. After the 07:21 change it was `file:/file:///…/source-row.mjs/q`, which lost the entry id; this was reported and fixed. Whether the bundle part should be the path as written in the patch or the loader's URL is not specified.
@@ -916,7 +918,7 @@ Defaults decision table (install × when the DSH plugin appeared × enabled in t
 
 | input | author |
 |---|---|
-| message_fishball from S (or from a subagent of S) | `{kind:'session', name: title(S), seed: S}` on the unchanged relay source |
+| message_agent from S (or from a subagent of S) | `{kind:'session', name: title(S), seed: S}` on the unchanged relay source |
 | Send to Fishball of S | `{kind:'user', name: title(S), seed: S}` |
 | install request (POST plugins/install) | `{kind:'user'}` |
 | watch notice for S | `{kind:'watch', name: title(S), seed: S}` |
@@ -926,7 +928,7 @@ Defaults decision table (install × when the DSH plugin appeared × enabled in t
 
 **Harness additions.** These are append-only. The worker's overlay raises DSH's title cap when `FBTEST_TITLE_MAX_BYTES` is set (`TITLE_ENV`, 1024 bytes; dsh-base sets 80), so titles longer than the 200-byte author bound can exist. New worker operations: `renameSession` (DSH's session-title service `rename`, a user title), `sessionTitle` (the title DSH reports, `''` when none) and `fishballRows` (dsh-fishball's row ids from DSH's plugin manager). New constants: `MESSENGER`, `LOOK_KEYS`, `AUTHOR_KIND`, `AUTHOR_KEYS`, `AUTHOR_NAME_MAX_BYTES`, `TITLE_ENV` and `PRE_MESSENGER` (commit e221d23, the last commit before P11's code, extracted with `git archive` as plugins-upgrade does). Every author case first checks that DSH reports the title it set. The new tests were also run against e221d23 (`FBTEST_PLUGIN_DIR`) and all 42 host cases failed there, so they tell the two versions apart.
 
-### [messenger-catalog.test.mjs](messenger-catalog.test.mjs): R1, R2 on a new install
+### `messenger-catalog.test.mjs`: R1, R2 on a new install — **gone** (suite deleted in 76e06ff9)
 
 | id | technique | expected result |
 |---|---|---|
@@ -945,7 +947,7 @@ Defaults decision table (install × when the DSH plugin appeared × enabled in t
 | LOK-05 | EP (store unreadable: core failed) | `look` is present and null in GET state and the first frame |
 | LOK-06 | ST starting → live (setup request held) | in every snapshot and frame: no catalog → look null; catalog → `{messenger: entry.on}`; live → `{messenger: true}` |
 
-### [messenger-upgrade.test.mjs](messenger-upgrade.test.mjs): R1 on an existing install
+### `messenger-upgrade.test.mjs`: R1 on an existing install — **gone** (suite deleted in 76e06ff9)
 
 | id | technique | expected result |
 |---|---|---|
@@ -955,7 +957,7 @@ Defaults decision table (install × when the DSH plugin appeared × enabled in t
 | UPL-03 | ST (restart) | still on |
 | UPL-04 | ST (user off → restart) | stays off; the default is not applied again |
 
-### [messenger-client.test.mjs](messenger-client.test.mjs): R3
+### `messenger-client.test.mjs`: R3 — **gone** (suite deleted in 100d05a7)
 
 | id | technique | expected result |
 |---|---|---|
@@ -967,11 +969,11 @@ Defaults decision table (install × when the DSH plugin appeared × enabled in t
 | MCJ-06 | EP | `files` lists `packages/messenger/`; `npm pack --dry-run` lists `packages/messenger/package.json` and `packages/messenger/client.js` |
 | MCJ-07 | EP | client.js calls `window.__ModuleLoader__.load({ … id: 'dsh-fishball-messenger' … })` |
 
-### [messenger-table.test.mjs](messenger-table.test.mjs): markdown tables stay inside Fishball's reply bubble and fit it when they can (follow-up fix to the Messenger look)
+### `messenger-table.test.mjs`: markdown tables stay inside Fishball's reply bubble and fit it when they can (follow-up fix to the Messenger look) — **gone** (suite deleted in 100d05a7)
 
 **Requirements.** R1: in Fishball's session with the look on, a table in a reply stays inside the bubble (the wrapper's edges do not pass the bubble's content edges). R2 (changed in the second round): a 4+ column table (`md-table-wide`) fits the bubble width when it can: its cells wrap, so every column shows without scrolling (table width at most the wrapper's, last cell's right edge at most the bubble's right content edge); a short wide table keeps its natural compact width and is not stretched; only a table that cannot fit even with wrapping (each cell has `min-width: 100px`, so for example eight columns) overflows the wrapper and scrolls sideways inside the bubble on hover or focus, DSH's hover rule (`overflow-x: scroll`) keeping that working. R3: tables with fewer columns (`_tableFill_*`) also stay inside. R4: other sessions (no `data-fishball-messenger` marker) keep DSH's stock layout. R5: rows that are not replies (for example `reasoning`) are not changed. R6: with the look off (the plugin disposed, its style element removed) DSH's stock behaviour returns.
 
-**How.** Node has no layout engine, so the cases run the module's browser file in a `vm` against a stub host ([support/messenger-style.mjs](support/messenger-style.mjs); the file is executed, its source is not read) and check the stylesheet it mounts: a small CSS parser, a selector-specificity calculator, the cascade winner of a property (`!important`, then specificity, then order), and a decision table that asks which rules a DOM context (marker, row part, wrapper class) selects. The real layout was measured separately in headless Chrome with DSH 0.2.1-rc.3's CSS (before and after each fix, chat-area widths 1200, 1000, 750, 749 and 700, with and without the marker and with the style removed, with a real hover and Tab focus); that fixture is not part of the suite. `FBTEST_MESSENGER_CLIENT=<path>` runs the cases against another copy of the file (the file from before any fix fails MTB-01, 02, 03 #1, 05, 06, 09, 10 and 11; the file after the first fix fails MTB-10 and 11, which is the R2 change). A first mutation check wrapped the file of the first round with eleven defects (unscoped rule, any row part, low specificity, `overflow-x: hidden`, a negative margin, a fixed width, a hashed class name, a fill wrapper widened, a dropped padding or max-width, a disposer that keeps the style); every one was caught. For R2 a second check wrapped the current file with ten table defects (width `100%`, `max-content` or `512px`, a `min-width`, `white-space: nowrap`, a zero-specificity table rule, a table rule without the marker or for every row part, a dropped table rule, `overflow-x: hidden` on the wrapper); every one is caught, and the equivalent spelling `width: fit-content` still passes.
+**How.** Node has no layout engine, so the cases run the module's browser file in a `vm` against a stub host (`support/messenger-style.mjs` (deleted in c5c5692e); the file is executed, its source is not read) and check the stylesheet it mounts: a small CSS parser, a selector-specificity calculator, the cascade winner of a property (`!important`, then specificity, then order), and a decision table that asks which rules a DOM context (marker, row part, wrapper class) selects. The real layout was measured separately in headless Chrome with DSH 0.2.1-rc.3's CSS (before and after each fix, chat-area widths 1200, 1000, 750, 749 and 700, with and without the marker and with the style removed, with a real hover and Tab focus); that fixture is not part of the suite. `FBTEST_MESSENGER_CLIENT=<path>` runs the cases against another copy of the file (the file from before any fix fails MTB-01, 02, 03 #1, 05, 06, 09, 10 and 11; the file after the first fix fails MTB-10 and 11, which is the R2 change). A first mutation check wrapped the file of the first round with eleven defects (unscoped rule, any row part, low specificity, `overflow-x: hidden`, a negative margin, a fixed width, a hashed class name, a fill wrapper widened, a dropped padding or max-width, a disposer that keeps the style); every one was caught. For R2 a second check wrapped the current file with ten table defects (width `100%`, `max-content` or `512px`, a `min-width`, `white-space: nowrap`, a zero-specificity table rule, a table rule without the marker or for every row part, a dropped table rule, `overflow-x: hidden` on the wrapper); every one is caught, and the equivalent spelling `width: fit-content` still passes.
 
 | id | technique | expected result |
 |---|---|---|
@@ -990,7 +992,7 @@ Defaults decision table (install × when the DSH plugin appeared × enabled in t
 | MTB-11 | EP (forbidden values) | a rule is about that table; none of them sets a `width` other than `auto`/`fit-content` (pinned `max-content`, stretched `100%`, fixed px), a `min-width` other than `0`/`auto`, or `white-space: nowrap`/`pre` (R2) |
 | MTB-12 ×4 | DT (marker × row part, wide wrapper) | no rule sets a width on the table without the marker, in a `reasoning` row, in another row part, or with neither (R2 R4 R5) |
 
-### [messenger-layout.test.mjs](messenger-layout.test.mjs): round avatars and the footer under the reply bubble (second follow-up fix to the Messenger look)
+### `messenger-layout.test.mjs`: round avatars and the footer under the reply bubble (second follow-up fix to the Messenger look) — **gone** (suite deleted in 100d05a7)
 
 **Requirements.** R7: DSH's theme turns `border-radius: 50%` into a rounded square (`@supports (corner-shape: superellipse(1.5)) { *, :before, :after { corner-shape: var(--dsw-corner-shape) } }`). Fishball's reply avatar (the reply row's `::before`) and the sender avatars (`.fbm-avatar`) compute `corner-shape: round` (Chrome serialises it `superellipse(1)`, the same shape) and look round; other elements keep the superellipse. R8: DSH's footer under a reply (copy button, time) is a separate chat row (`data-chat-flow-kind="turn-tail"`). In Fishball's session its content box starts at the reply bubble's left border edge, not under the avatar (the copy button box starts 6px further left because of DSH's -6px margin, which lines the icon up with that edge); in another session the footer is unchanged.
 
@@ -1007,11 +1009,11 @@ Defaults decision table (install × when the DSH plugin appeared × enabled in t
 | MLY-06 | EP | every rule that names the footer row has the conversation and the marker, and styles the row itself, not what is inside it (DSH's -6px margin on the copy button stays) (R8, R4) |
 | MLY-07 | ST (on, off, on, off, on) | each time the look is on the reply avatar, sender avatar and footer rules are mounted; each time it is off there is no style element (R6, R7, R8) |
 
-### [messenger-author.test.mjs](messenger-author.test.mjs): R4 (one host with source fixtures and the raised title cap)
+### `messenger-author.test.mjs`: R4 (one host with source fixtures and the raised title cap) — **gone** (suite deleted in 76e06ff9)
 
 | id | technique | expected result |
 |---|---|---|
-| AUT-01 | EP (message_fishball; title with quotes and markup) | source = `{agent-message, relay, senderSessionId: S, author: {session, title, S}}`; the name is the title verbatim; text and block unchanged |
+| AUT-01 | EP (message_agent; title with quotes and markup) | source = `{agent-message, relay, senderSessionId: S, author: {session, title, S}}`; the name is the title verbatim; text and block unchanged |
 | AUT-02 | EP (subagent of S) | author `{session, title(S), S}`, not the child |
 | AUT-03 | EP (Send to Fishball) | source = `{fishball-notice, notice, 'The user forwarded a session', author: {user, title(S), S}}` |
 | AUT-04 | EP (install route) | author exactly `{kind:'user'}` |
@@ -1025,7 +1027,7 @@ Defaults decision table (install × when the DSH plugin appeared × enabled in t
 | AUT-12 | EP (Send to Fishball, 250-byte title) | cut by the same rule |
 | AUT-13 | EP (sweep of Fishball's log) | every author has only kind/name/seed, a known kind and string values; a present name is non-empty and ≤ 200 bytes; every relay and every notice except the setup message has one |
 
-### [messenger-author-approvals.test.mjs](messenger-author-approvals.test.mjs): R4 for permission requests (scripted answerer after the broker)
+### `messenger-author-approvals.test.mjs`: R4 for permission requests (scripted answerer after the broker) — **gone** (suite deleted in 76e06ff9)
 
 | id | technique | expected result |
 |---|---|---|
@@ -1087,7 +1089,7 @@ R2 adds a top-level `look` and R4 adds `author` to every intake source, so exact
 - New helpers in [support/expect.mjs](support/expect.mjs): `Schema` (DSH's Schemastery), `expectedDsh`/`expectedRuns` (the decision tables), `detailOf`, `getIcon`, `saveSettings`, `userOf`, `valueOf`, `storedRecord`, `assertNoSecret` (five sentinels: the patch's top-level, nested, list and error secrets, and yours), `assertCutError`, `withoutSecrets`, `settingsAudit`, `privateApplies`, `untilApply`, `promptLine`, `quiet`.
 - The scripted approver can hold a `set_plugin_settings` prompt open, and `holdNext` then holds Fishball's next model request, so a test can look at the state after Allow once while Fishball's turn is still running.
 
-### [manager-catalog.test.mjs](manager-catalog.test.mjs): snapshot fields
+### `manager-catalog.test.mjs`: snapshot fields — **gone** (suite deleted in 76e06ff9)
 
 | id | technique | expected result |
 |---|---|---|
@@ -1101,7 +1103,7 @@ R2 adds a top-level `look` and R4 adds `author` to every intake source, so exact
 | MCAT-08 | EP (installed in Fishball only) | after add_plugin (Allow once): `dsh` none, `runs` fishball, packageName fbtest-added, version 0.0.1, settings default; off → nowhere |
 | MCAT-09 | EP | package.json, cordis.patch.yml and lockfile byte-identical |
 
-### [manager-detail.test.mjs](manager-detail.test.mjs): GET detail and GET icon
+### `manager-detail.test.mjs`: GET detail and GET icon — **gone** (suite deleted in 76e06ff9)
 
 | id | technique | expected result |
 |---|---|---|
@@ -1122,7 +1124,7 @@ R2 adds a top-level `look` and R4 adds `author` to every intake source, so exact
 | DET-15 | EP | profile files byte-identical |
 | DET-16 | EP (error with rejected secret data) | fbtest-settings-leak: `rows[].error` a non-empty message without "but got" or the secret; the whole answer carries neither |
 
-### [manager-settings-route.test.mjs](manager-settings-route.test.mjs): POST settings (one host, in order; fbtest-settings and fbtest-only on)
+### `manager-settings-route.test.mjs`: POST settings (one host, in order; fbtest-settings and fbtest-only on) — **gone** (suite deleted in 76e06ff9)
 
 | id | technique | expected result |
 |---|---|---|
@@ -1152,7 +1154,7 @@ R2 adds a top-level `look` and R4 adds `author` to every intake source, so exact
 | SET-19 | EP (no-change saves) | with {limit:7} stored: {limit:7}, a reset of an unset field, and both together: 200; no audit entry; the stored record identical, changedAt included (A128) |
 | SET-18 | EP (afterEach) | profile files byte-identical after every case |
 
-### [manager-settings-tools.test.mjs](manager-settings-tools.test.mjs): get_plugin_settings and set_plugin_settings (one host, in order; your secret set first)
+### `manager-settings-tools.test.mjs`: get_plugin_settings and set_plugin_settings (one host, in order; your secret set first) — **gone** (suite deleted in 76e06ff9)
 
 | id | technique | expected result |
 |---|---|---|
@@ -1176,7 +1178,7 @@ R2 adds a top-level `look` and R4 adds `author` to every intake source, so exact
 | SPS-12 | ST (re-check at save time) | {name:n} stored; Fishball proposes {size:5}; you reset all during the prompt; Allow once answers invalid [name]; nothing saved |
 | SPS-09 | EP (afterEach) | profile files byte-identical after every case |
 
-### [manager-stale.test.mjs](manager-stale.test.mjs): Q-manager-stale and restart (one home, in order)
+### `manager-stale.test.mjs`: Q-manager-stale and restart (one home, in order) — **gone** (suite deleted in 76e06ff9)
 
 | id | technique | expected result |
 |---|---|---|
@@ -1225,7 +1227,7 @@ The Fishball tab, the plugin page and settings form, the tag and switch on DSH's
 
 **Harness additions.** The worker records every `plugin-manager/install-state` and `install-log` event on the host bus (`installEvents` op, with the payload's `requestId`). New constants: `INSTALL_API`, `PACKAGE_ERRORS` (adds `cancelled` and `build-blocked`), `CANCEL_OUTCOMES`, `INSPECT_STATUS`, `INSPECT_PROBLEM`, `INSTALL_EVENTS` and `ADD_ACTION`. `API.removedPluginsInstall` and `API.unknownRoute` are used for the absence check.
 
-### [manager-install.test.mjs](manager-install.test.mjs): the install routes (one new-install host, in order)
+### `manager-install.test.mjs`: the install routes (one new-install host, in order) — **gone** (suite deleted in 76e06ff9)
 
 | id | technique | expected result |
 |---|---|---|
@@ -1266,7 +1268,7 @@ Requirement (as given to the test author): every catalog entry gains `blocked`: 
 
 **Harness additions.** Worker op `rootServices({names})`: whether each service resolves from DSH's root context. New fixtures: [fbtest-installed-edits](support/fixtures/fbtest-installed-edits/index.js) (self-contained; its patch edits the fbtest-tools row; installed for Fishball only by BLK-06) and [fbtest-installed-leak](support/fixtures/fbtest-installed-leak/index.js) (self-contained; provides `fbtestInstalledLeaked`; installed into the profile while DSH runs by BLK-08). New constants: `BLOCKED`, `DSH_BLOCKED_BUNDLES`, `INSTALLED_EDITS_BUNDLE`, `INSTALLED_LEAK_BUNDLE`, `CODE.leaksService`, and the `service` names of `REVIEW_BUNDLES.leak`/`leakB`. `expectedActions` drops `enable` for a blocked entry that is off, and `assertEntryContract` checks `blocked` is null or one of `BLOCKED`.
 
-### [plugins-blocked.test.mjs](plugins-blocked.test.mjs): one host with the defective fixtures (`FBTEST_REVIEW_BUNDLES=1`), in order
+### `plugins-blocked.test.mjs`: one host with the defective fixtures (`FBTEST_REVIEW_BUNDLES=1`), in order — **gone** (suite deleted in 76e06ff9)
 
 | id | technique | expected result |
 |---|---|---|
@@ -1295,17 +1297,17 @@ Requirement (as given to the test author): every catalog entry gains `blocked`: 
 ## Revision 10c cases (Fishball's own plugins; DESIGN §10d "Fishball's own plugins", Q-own-plugins, Q-own-plugins-open)
 
 **Requirement summary.** Every tool Fishball registers belongs to a catalog plugin. Four new built-ins (kind `builtin`, no rows) and the Messenger look form the first group, "Fishball". These five entries report `dsh: 'fishball'`, and every other built-in keeps `'builtin'`:
-- Session messages (`builtin:session-messages`): message_session, start_session, and message_fishball with status `other-sessions`.
+- Session messages (`builtin:session-messages`): message_session, start_session, and message_agent with status `other-sessions`.
 - Session watching (`builtin:session-watching`): watch_session, list_watches, unwatch_session, read_session.
 - Plugin management (`builtin:plugin-management`): the six plugin tools.
 - Permission requests (`builtin:permission-requests`): answer_approval.
 
 The rules:
-- **otherTools.** It no longer holds message_fishball.
+- **otherTools.** It no longer holds message_agent.
 - **Defaults.** Each of the five is on by default, on a fresh install and on an existing one.
 - **Applied state.** Each follows its applied state, which changes at the idle-phase apply. The snapshot's `features: {messages, watching, plugins, approvals}` follows the applied state too (coordinator's correction).
 - **Off removes the feature:**
-  - Session messages: its tools are masked, message_fishball is unregistered for every session, and `POST send` answers 409 `feature-off`.
+  - Session messages: its tools are masked, message_agent is unregistered for every session, and `POST send` answers 409 `feature-off`.
   - Session watching: its tools are masked and `POST watches` answers 409 `feature-off`. notify_when_finished still delivers the message but answers `watchError: 'feature-off'`. Existing watches stay active. A turn end while it is off sends no notice and is passed over. Remove still works.
   - Permission requests: requests go to DSH's normal prompt, waiting ones are released at once, and answer_approval is masked.
   - Plugin management: only its tools are masked.
@@ -1318,16 +1320,16 @@ The rules:
 
 **Harness additions.** New constants: `OWN_PLUGINS`, `FISHBALL_GROUP_KEYS`, `FEATURE_KEYS`, `FEATURE_OFF`, `OWN_ASK`, `PRE_OWN_PLUGINS` (commit 90a6a8c), `TOOL_STATUS.otherSessions` and `DSH_STATE.fishball`. `expectedDsh` returns `fishball` for the Fishball group.
 
-### [own-plugins.test.mjs](own-plugins.test.mjs): catalog and switches (one new-install host, in order)
+### `own-plugins.test.mjs`: catalog and switches (one new-install host, in order) — **gone** (suite deleted in 76e06ff9)
 
 | id | technique | expected result |
 |---|---|---|
 | OWN-01 ×5 | EP (each Fishball-group entry) | kind builtin, dsh fishball, status builtin, on, applied, [disable], changedBy null, its title, exactly its tools |
-| OWN-02 | EP | own tools visible; message_fishball (and since rev11b ask_fishball, list_user_messages) other-sessions |
+| OWN-02 | EP | own tools visible; message_agent (and since rev11b ask_agent, list_user_messages) other-sessions |
 | OWN-03 | EP | no own tool in otherTools (state and list_plugins); each under exactly one plugin |
 | OWN-04 | EP | the 7 DSH built-ins dsh builtin; exactly the 5 group keys dsh fishball |
 | OWN-05 | EP | features all true in GET state and the first SSE frame |
-| OWN-06 | EP (Fishball / managed session) | Fishball has its tools but none of the three for other sessions; a managed session has only message_fishball, ask_fishball and list_user_messages (rev11b) |
+| OWN-06 | EP (Fishball / managed session) | Fishball has its tools but none of the three for other sessions; a managed session has only message_agent, ask_agent and list_user_messages (rev11b) |
 | OWN-10 ×4 | DT (user × own × off/on, idle) | no prompt; off applied at once, features false, tools plugin-off and absent; on: visible (never unchecked), features true |
 | OWN-11 ×3×3 | DT (Fishball × messages/watching/approvals × off / on+Reject / on+Allow once) | off: no prompt, the same turn keeps the tools, the next request lacks them. Reject: one prompt with "Fishball asks to turn on" and the title shown on the tab (A135), `rejected`, stays off. Allow once: on, tools back, no unchecked |
 | OWN-12 | DT (on × unavailable) | `rejected`, stays off |
@@ -1338,33 +1340,33 @@ The rules:
 | OWN-17 | EP (Fishball × own plugin already on × on) | no prompt, ok, stays on |
 | OWN-18 | ST (your off arrives during Fishball's turn, before its set_plugin_enabled(on)) | the off holds: one prompt (Reject → `rejected`), or `ask-first` without a prompt; stays off |
 | OWN-19 ×6 | ST (race: your off POSTed while Fishball's set_plugin_enabled(on) of an on plugin runs; offsets 0–75 ms) | the off holds without an Allow once. The answer is ok without a prompt (your off came after the write), `rejected` after a prompt, or `ask-first` without a prompt; the plugin ends off (A142) |
-| OWN-20 | ST (user off while Fishball is held) | applied stays true; features.messages true and message_fishball registered until the turn ends; then both off; an ordinary request lacks it |
-| OWN-21 | ST (user on while held) | applied false; POST send 409 feature-off and message_fishball absent until the turn ends; then back, send 200 |
+| OWN-20 | ST (user off while Fishball is held) | applied stays true; features.messages true and message_agent registered until the turn ends; then both off; an ordinary request lacks it |
+| OWN-21 | ST (user on while held) | applied false; POST send 409 feature-off and message_agent absent until the turn ends; then back, send 200 |
 | OWN-30 | EP (invariant over every SSE frame) | `features[f] === entry.applied` |
 
-### [own-plugins-features.test.mjs](own-plugins-features.test.mjs): Session messages and Session watching off (one host, in order)
+### `own-plugins-features.test.mjs`: Session messages and Session watching off (one host, in order) — **gone** (suite deleted in 76e06ff9)
 
 | id | technique | expected result |
 |---|---|---|
-| OFM-01 | precondition | message_fishball global and in an ordinary request; send 200 |
-| OFM-02 | ST on→off | features.messages false; message_fishball leaves the global list and the ordinary request; message_session/start_session plugin-off and absent for Fishball |
+| OFM-01 | precondition | message_agent global and in an ordinary request; send 200 |
+| OFM-02 | ST on→off | features.messages false; message_agent leaves the global list and the ordinary request; message_session/start_session plugin-off and absent for Fishball |
 | OFM-03 | EP | POST send 409 feature-off; nothing delivered |
 | OFM-04 | EP (guard) | Fishball's message_session is a tool error; the target gets nothing |
-| OFM-05 | ST off→on | message_fishball back and works; send 200 |
-| OFM-06 | ST (an ordinary request made while on and held; the off applies; then it calls message_fishball) | `{ok:false, code:'feature-off'}`, or skipped as not reachable black-box when DSH refuses the unregistered tool itself; Fishball receives nothing |
+| OFM-05 | ST off→on | message_agent back and works; send 200 |
+| OFM-06 | ST (an ordinary request made while on and held; the off applies; then it calls message_agent) | `{ok:false, code:'feature-off'}`, or skipped as not reachable black-box when DSH refuses the unregistered tool itself; Fishball receives nothing |
 | OFP-01 | ST (Plugin management off; the user turns on fbtest-tools, which has unchecked tools) | no unchecked-tools notice |
 | OFP-02 | ST (Plugin management on; a fixture tool's schema changes) | unchanged: one new notice naming the tool |
 | OFW-08 | DT (Session watching off × Fishball archived) | POST watches 409 `feature-off`, not unavailable |
 | OFW-01 | ST on→off | features.watching false; 4 tools plugin-off and absent; watch_session call is a tool error |
 | OFW-02 | EP | POST watches 409 feature-off; watches unchanged |
-| OFW-03 ×3 | DT (message_session / start_session / message_fishball × flag × off) | ok:true, watchError feature-off, no `watch` key, delivered, no watch |
+| OFW-03 ×3 | DT (message_session / start_session / message_agent × flag × off) | ok:true, watchError feature-off, no `watch` key, delivered, no watch |
 | OFW-04 | ST (active watch, target finishes while off) | no notice; active, firedCount 0 |
 | OFW-05 | EP | POST watches/remove 200; closed |
 | OFW-06 | ST off→on | no late notice for the passed-over turn end; still active |
 | OFW-07 | ST (next turn end) | exactly one notice; closed |
 | OFU-01 | EP | the served client bundle mentions `features` (hiding the buttons is checked by hand in a browser) |
 
-### [own-plugins-approvals.test.mjs](own-plugins-approvals.test.mjs): Permission requests off (scripted answerer after the broker)
+### `own-plugins-approvals.test.mjs`: Permission requests off (scripted answerer after the broker) — **gone** (suite deleted in 76e06ff9)
 
 | id | technique | expected result |
 |---|---|---|
@@ -1378,33 +1380,33 @@ The rules:
 | OFA-08 | ST (Fishball archived while a request waits → unarchive, retry) | as before revision 10c: released to the normal prompt; no timed-out note (A141) |
 | OFA-06 | ST (pending; user off while Fishball is held) | until the turn ends: features.approvals true, the request waits, a new one is still routed (pending 2). After the apply: both go to the normal prompt, features false, pending 0 |
 
-### [own-plugins-upgrade.test.mjs](own-plugins-upgrade.test.mjs): existing install (old version 90a6a8c, Messenger look off there)
+### `own-plugins-upgrade.test.mjs`: existing install (old version 90a6a8c, Messenger look off there) — **gone** (suite deleted in 76e06ff9)
 
 | id | technique | expected result |
 |---|---|---|
 | UPO-00 | precondition | the old version has no own plugins and no features |
 | UPO-01 ×4 | DT (existing × no choice) | on, applied, dsh fishball, builtin, [disable], changedBy null |
 | UPO-02 | DT (existing × stored off) | the Messenger look stays off (changedBy user), dsh fishball |
-| UPO-03 | EP | features all true; message_fishball registered; no own tool in otherTools |
+| UPO-03 | EP | features all true; message_agent registered; no own tool in otherTools |
 | UPO-04 | ST (user off → restart) | stays off; features.watching false; POST watches 409 feature-off |
 | UPO-05 | ST (user on → restart) | on |
 
 ### Ambiguities (revision 10c)
 
-- **A134. message_fishball's status while Session messages is off.** It is not specified whether it reads `plugin-off` or stays `other-sessions`. Only Fishball's two tools are asserted `plugin-off`.
+- **A134. message_agent's status while Session messages is off.** It is not specified whether it reads `plugin-off` or stays `other-sessions`. Only Fishball's two tools are asserted `plugin-off`.
 - **A135. The prompt's wording and tool name.** The phrase "Fishball asks to turn on" and the title shown on the tab are asserted (review follow-up; the first build named the key). The prompt's toolName is logged (observed: `set_plugin_enabled`), not asserted.
 - **A136. Fishball asking to turn on a plugin that is already on.** Read from review M1 ("it was on when Fishball checked", so Fishball decided not to ask): no prompt and ok (OWN-17).
 - **A137. Unanswered outcomes.** "Only Allow once grants" is read as unavailable answering `rejected`, as `set_plugin_enabled` does for unchecked tools (TOG-02).
 - **A138. Removing an own plugin.** These are built-ins, so removal is refused as for every built-in (STA-04/05).
 - **A141. "When Fishball stops, the timed-out note behaviour is unchanged."** Observed with the same probe on 90a6a8c and on this version: after an archive while a request waits, then unarchive and retry, Fishball's next turn carries no timed-out note. OFA-08 encodes that baseline. OFA-07 checks the note on a real answer timeout.
 - **A142. The ask-first race (review M1).** The window between Fishball's check and its write cannot be hit on purpose from outside. OWN-18 checks the deterministic part: an off that arrives before the call. OWN-19 fires the off at six offsets and asserts the invariant for whichever order happened; it logs each answer. If no run lands in the window, `ask-first` is simply not observed, and the case still passes.
-- **A143. A message_fishball call after the off (OFM-06).** DESIGN lists it under Permission requests; the coordinator's follow-up places it under Session messages, as tested. If DSH refuses a tool that was unregistered after the request was made, Fishball's code never runs, and the case skips as not reachable.
+- **A143. A message_agent call after the off (OFM-06).** DESIGN lists it under Permission requests; the coordinator's follow-up places it under Session messages, as tested. If DSH refuses a tool that was unregistered after the request was made, Fishball's code never runs, and the case skips as not reachable.
 - **A139. Releasing at the apply (OFA-06).** The release is expected after the turn ends, within the case's 20 s waits. No exact bound is stated.
 
 ### Cases changed by revision 10c
 
 - **`STATE_KEYS`** gains `features` (18 keys). This affects HTP-01, PHT-01/04 and SND-01.
-- **`TOOL_STATUS`** gains `otherSessions`, so CAT-02 accepts message_fishball's status.
+- **`TOOL_STATUS`** gains `otherSessions`, so CAT-02 accepts message_agent's status.
 - **`DSH_STATE`** gains `fishball`, and **`expectedDsh`** returns it for the Fishball group. This affects MCAT-01/02.
 - **`CODE.askFirst`** (`ask-first`) is new (review M1).
 - **MCAT-04** expects `expectedDsh(p)` for built-ins instead of `builtin` for all of them.
@@ -1429,7 +1431,7 @@ Written black-box from DESIGN only. The sixteen fields and defaults are `LIMITS_
 | L10 | EP | parameters of every tool in Fishball's request | none names a limit field |
 | L11 | ST (live → updates → live) | after all of the above | same agent, not disposed, created once, status live |
 
-### [limits-context.test.mjs](limits-context.test.mjs): context-window fields (one host, fake window 128000)
+### `limits-context.test.mjs`: context-window fields (one host, fake window 128000) — **gone** (suite deleted in 76e06ff9)
 
 | id | technique | input | expected |
 |---|---|---|---|
@@ -1460,7 +1462,7 @@ Written black-box from DESIGN only. The sixteen fields and defaults are `LIMITS_
 | L58 | ST (the §14 example) | approvalsShown 5 → 1 → 20 with ≥ 6 entries | 5, 1, all |
 | L59 | ST (no restart) | after all | same agent, created once, not disposed, live |
 
-### [limits-manager.test.mjs](limits-manager.test.mjs): plugin-manager fields (one host, settings fixtures)
+### `limits-manager.test.mjs`: plugin-manager fields (one host, settings fixtures) — **gone** (suite deleted in 76e06ff9)
 
 | id | technique | input | expected |
 |---|---|---|---|
@@ -1468,13 +1470,7 @@ Written black-box from DESIGN only. The sixteen fields and defaults are `LIMITS_
 | L61 | ST | settingsPromptValueBytes 200 → 50 → 200, a 152-byte JSON value | whole, ≤ 50 bytes and a prefix, whole |
 | L62 | ST (no restart) | after all | same agent, not disposed, live |
 
-### [limits-source.test.mjs](limits-source.test.mjs): file checks (no host)
-
-| id | technique | input | expected |
-|---|---|---|---|
-| L40 ×20 | EP (one per old name) | `index.js`, `client.js`, `packages/*/client.js`, `src/**/*.js` as text | no `OBJ.field`, `OBJ?.field` or `OBJ['field']` for each "Today in code" name and the four `FISHBALL_PACKAGES` package bounds (bare `OUTBOX_SHOWN`). Checked to fail against the pre-phase commit (every name found there) |
-| L41 ×19 | EP (one per staying name) | same files | each constant §16 keeps (`maxTimerMs`, `HOUR_MS`, `idPattern`, `dshDefaults`, `minCapTokens`, the three `ctx.fishball` sizes, `nameBytes`, `maxSubagentDepth`, `resumeAttempts`, `resumeRetryMs`, `maxAttempts`, `modelInfoTimeoutMs`, `SEQ_DIGITS`, `DIGEST_HEX_CHARS`, `WORDS_PER_TOKEN`, `ROUNDING_GUARD`, `FIBER_ACTIVE`) is still named. Values are not read |
-| L42 ×3 | EP | `docs/plugin-author-guide.md` | a line names the dedupe key with 256 bytes, the description with 1,024 (or 1024) bytes, and the title with 200 bytes |
+*limits-source.test.mjs (L40–L42, file checks) was deleted in REMOVE-V2b (230547b9): it checked V2 constant names that are gone.*
 
 ### Addendum 2026-11-01: `replyCapShare` minimum 2 (user's decision)
 
@@ -1492,7 +1488,7 @@ Changed existing cases (now computed from each field's `min`; other fields' inpu
 
 ### Not automated (rev11-limits)
 
-- **Package operations follow DSH's plugin-manager values** (`outputBytes`, `idleTimeoutMs`, `lockWaitMs`, `inspectTimeoutMs`), and DSH's defaults apply when its manager cannot be read. DSH's plugin-manager row has no live (volatile) settings form, so the settings service cannot change it in a running host. Showing the effect would need slow pnpm installs that are made to time out or overflow on purpose. L40 checks that the four Fishball constants are gone. The behaviour needs a review or a manual check.
+- **Package operations follow DSH's plugin-manager values** (`outputBytes`, `idleTimeoutMs`, `lockWaitMs`, `inspectTimeoutMs`), and DSH's defaults apply when its manager cannot be read. DSH's plugin-manager row has no live (volatile) settings form, so the settings service cannot change it in a running host. Showing the effect would need slow pnpm installs that are made to time out or overflow on purpose. L40 checked that the four Fishball constants were gone (limits-source.test.mjs, deleted in 230547b9). The behaviour needs a review or a manual check.
 - **`pluginManagerStartMs` taking effect.** It is covered as a config field (L1-L8). Making the inherited plugin manager start slowly is not reachable from the support code.
 - **"Shown in the limits form on Fishball's settings page"** in the client. L1 checks the form DSH's settings service gives the page (`describe().schema`). Rendering is left to the visual pass.
 
@@ -1506,7 +1502,7 @@ Changed existing cases (now computed from each field's `min`; other fields' inpu
 
 ## Revision 11 rev11a cases (managed sessions; DESIGN §14 row rev11a, §5b, §5e, §7a.1, §9, §10d, §10e; §16 Q-r11-managed, Q-r11-upgrade, Q-r11-plugins-off, Q-r11-subagent-tools, Q-r11-nongoals, Q-r11-defaults; S34, S37)
 
-The user's amendment applies: in rev11a the per-agent registration holds `message_fishball` only (`ask_fishball` and `list_user_messages` come in rev11b and are not tested here), and the ways in built and tested are `start_session`, `message_session`, Hand over (`POST /api/fishball/managed {sessionId, managed:true}`) and Send to Fishball (`answer_prompt` is rev11e). "A permission request reaches Fishball" means a `[permission request apr_…]` notice in Fishball's session naming the session; "reaches its stock prompt" means the scripted answerer after the broker (`FBTEST_APPROVER_AFTER=1`) is asked within 1 s.
+The user's amendment applies: in rev11a the per-agent registration holds `message_agent` only (`ask_agent` and `list_user_messages` come in rev11b and are not tested here), and the ways in built and tested are `start_session`, `message_session`, Hand over (`POST /api/fishball/managed {sessionId, managed:true}`) and Send to Fishball (`answer_prompt` is rev11e). "A permission request reaches Fishball" means a `[permission request apr_…]` notice in Fishball's session naming the session; "reaches its stock prompt" means the scripted answerer after the broker (`FBTEST_APPROVER_AFTER=1`) is asked within 1 s.
 
 Support added: `MANAGED_*`, `RELEASE_TOOL`, `UNKNOWN_TOOL_TEXT`, `MANAGED_LABELS`, `PRE_REV11A`, `FISHBALL_WORD` (constants.mjs); `setManaged`, `managedNow`, `managedEntry`, `managedItems`, `makeManaged` (expect.mjs); worker ops `createKept` / `disposeKept` (a session whose agent handle the worker keeps, so it can be disposed and resumed). `STATE_KEYS` gains `managed`; `OWN_PLUGINS.messages.tools` gains `release_session` (§5e "Which Fishball plugin").
 
@@ -1515,15 +1511,15 @@ Support added: `MANAGED_*`, `RELEASE_TOOL`, `UNKNOWN_TOOL_TEXT`, `MANAGED_LABELS
 | id | technique | requirement | expected |
 |---|---|---|---|
 | MGD-01 | EP (first start, new install) | Q-r11-upgrade | snapshot `managed` is `[]` |
-| MGD-02 ×2 | EP (yours: bare / standard preset) | item 3 | no request has `message_fishball` or a tool named \*fishball\*; no "Fishball" in system text, tool schemas or messages (the standard preset's quote of this checkout's own AGENTS.md is left out: test environment) |
+| MGD-02 ×2 | EP (yours: bare / standard preset) | item 3 | no request has `message_agent` or a tool named \*fishball\*; no "Fishball" in system text, tool schemas or messages (the standard preset's quote of this checkout's own AGENTS.md is left out: test environment) |
 | MGD-03 | EP (yours; Fishball live; Permission requests on) | item 3, §7a.1 | stock prompt at once; no permission notice; zero Fishball model steps; no new intake item |
-| MGD-04 | ST yours –Hand over→ managed | items 2, 5; §10e | 200 `ok`; entry exactly `{sessionId, since, by:'hand-over'}`, since at the change; exactly one note (intake `fishball/managed/<id>`, kind `user`, consumed = Fishball woke) whose text names the folder and the user; next request has `message_fishball`; next permission request reaches Fishball |
+| MGD-04 | ST yours –Hand over→ managed | items 2, 5; §10e | 200 `ok`; entry exactly `{sessionId, since, by:'hand-over'}`, since at the change; exactly one note (intake `fishball/managed/<id>`, kind `user`, consumed = Fishball woke) whose text names the folder and the user; next request has `message_agent`; next permission request reaches Fishball |
 | MGD-05 | ST yours –Send to Fishball→ managed | item 2 | 200; entry by `send`; the forward arrives; no management note; tool; request to Fishball |
 | MGD-06 | ST yours –message_session→ managed | item 2, §5d | ok; entry by `message`; the request that reads the message already has the tool; no note; request to Fishball |
 | MGD-07 | ST none –start_session→ managed | item 2 | ok with `title`; entry by `start`; every request of the new session has the tool; no note; its request reaches Fishball. With the title fix the order is create → rename → managed → first message: the probe's rename time ≤ the entry's `since` ≤ the first steer's time |
 | MGD-08 | ST managed –Take back→ yours | items 4, 5 | 200; entry gone; one note (kind `user`) naming folder and user; next request lacks the tool and mentions no Fishball; request to the stock prompt, zero Fishball steps |
 | MGD-09 | ST managed –release_session→ yours | items 4, 5 | `{ok:true}`; entry gone; one note (kind `system`) naming the folder; tool gone; stock prompt |
-| MGD-10 ×2 | DT (message_fishball × yours / managed) | §5b, S34 | yours: tool error UNKNOWN_TOOL, no relay, no intake item; managed: `{ok:true, note:'Delivered to Fishball.'}`, one relay from it, intake item `session/<id>` |
+| MGD-10 ×2 | DT (message_agent × yours / managed) | §5b, S34 | yours: tool error UNKNOWN_TOOL, no relay, no intake item; managed: `{ok:true, note:'Delivered to Fishball.'}`, one relay from it, intake item `session/<id>` |
 | MGD-11 ×5 | DT (route × Fishball's own / unknown) | §10e, done-when | hand over / take back Fishball → 409 `is-fishball`; `message_session(Fishball)` → `is-fishball`; Fishball never listed, never has the tool; unknown id with managed true and false → 409 `unknown-session`, list unchanged |
 | MGD-12 ×8 | EP (bad body) | §10e "boundary checks" | invalid JSON, array, `{}`, no managed, no sessionId, managed `'true'`, sessionId `1`, sessionId `''` → 400 `bad-body`; nothing changes |
 | MGD-13 ×2 | EP (watch route; watch_session then read_session) | §5e Reading | none makes the session managed; no tool; requests still to the stock prompt |
@@ -1544,26 +1540,26 @@ Support added: `MANAGED_*`, `RELEASE_TOOL`, `UNKNOWN_TOOL_TEXT`, `MANAGED_LABELS
 | DUR-06 | ST (restart) | done-when "survives a restart", §9 | same entries (since and by); resumed managed sessions have the tool and their requests reach Fishball; a taken-back session and one that is yours do not |
 | DUR-07 | ST (Fishball's bundle off → on) | §5e "Ownership" | while off the managed session's tool is gone; back on it is still managed and has the tool again |
 
-### [managed-upgrade.test.mjs](managed-upgrade.test.mjs): existing install (old version a5aed26)
+### `managed-upgrade.test.mjs`: existing install (old version a5aed26) — **gone** (suite deleted in 76e06ff9)
 
 | id | technique | requirement | expected |
 |---|---|---|---|
 | UPM-00 | precondition | — | the old version has outbox entries for a messaged and a started session and no `managed` field |
 | UPM-01 | ST (first start of rev11a) | Q-r11-upgrade | `managed` is `[]` |
-| UPM-02 | EP | Q-r11-upgrade | the messaged, started and old `message_fishball` caller sessions have no tool and no entry |
+| UPM-02 | EP | Q-r11-upgrade | the messaged, started and old `message_agent` caller sessions have no tool and no entry |
 | UPM-03 | EP | item 3 | an outbox session's request reaches its stock prompt at once, zero Fishball steps |
 | UPM-04 | ST | item 2 | Hand over works after the upgrade (by `hand-over`, tool at the next request) |
 
 ### Older tests changed by rev11a
 
-rev11a deliberately changes two older behaviours: every other session's permission request went to Fishball (now managed sessions only), and `message_fishball` was a global tool in every session, subagents included (now per managed agent, never subagents). Cases about a session talking to Fishball now hand the session over first (`makeManaged`, the Hand over route, waiting until Fishball has read the note); no coverage was deleted.
+rev11a deliberately changes two older behaviours: every other session's permission request went to Fishball (now managed sessions only), and `message_agent` was a global tool in every session, subagents included (now per managed agent, never subagents). Cases about a session talking to Fishball now hand the session over first (`makeManaged`, the Hand over route, waiting until Fishball has read the note); no coverage was deleted.
 
 | file | change | why |
 |---|---|---|
 | support/constants.mjs | `STATE_KEYS` + `managed`; Session messages tools + `release_session` | §10e snapshot; §5e plugin |
-| messaging-inbound | `bare` and `std` handed over in setup; MSG-01 reads "managed session"; MSG-06 now: a subagent of a managed session has no `message_fishball`, nothing reaches Fishball | §5e, Q-r11-subagent-tools |
+| messaging-inbound | `bare` and `std` handed over in setup; MSG-01 reads "managed session"; MSG-06 now: a subagent of a managed session has no `message_agent`, nothing reaches Fishball | §5e, Q-r11-subagent-tools |
 | messaging-durable | each sender handed over | only managed sessions have the tool |
-| watches-fire | TOL-06 "messaged Fishball", NTF-04, NTF-06 (message_fishball), QFL sender handed over; NTF-05 now: the subagent has no tool, no watch on root or child | §5e "notify_when_finished from a subagent no longer exists" |
+| watches-fire | TOL-06 "messaged Fishball", NTF-04, NTF-06 (message_agent), QFL sender handed over; NTF-05 now: the subagent has no tool, no watch on root or child | §5e "notify_when_finished from a subagent no longer exists" |
 | watches-durable | QFL-01 sender handed over | as above |
 | approvals-broker | `fresh()` sessions, APR-16e and APR-17's sessions handed over | §7a.1 managed only |
 | approvals-routing, approvals-ptc, own-plugins-approvals, messenger-author-approvals | asking sessions handed over | §7a.1 |
@@ -1572,7 +1568,7 @@ rev11a deliberately changes two older behaviours: every other session's permissi
 | unread | UNR-07's sender handed over before the reset (the note's reply is cleared by it) | §5e |
 | own-plugins | `bare` handed over; OWN-06 reads "managed session"; OWN-20/21 check the managed session's next request instead of the global tool list | §5e: no global registration |
 | own-plugins-features | `bare` and ofw-03c handed over; OFM-01/02/05 read the managed session's request; OFM-06's precondition is `features.messages` false (the held session cannot be sampled) | as above |
-| own-plugins-upgrade | UPO-03: `message_fishball` is not global; it is still listed under Session messages as `other-sessions` | §5e, §10d |
+| own-plugins-upgrade | UPO-03: `message_agent` is not global; it is still listed under Session messages as `other-sessions` | §5e, §10d |
 
 ### Ambiguities (rev11a)
 
@@ -1581,14 +1577,14 @@ rev11a deliberately changes two older behaviours: every other session's permissi
 - **A-r11a-3. Route while Fishball is not live.** §10e says 409 `unavailable` "before Fishball is ready"; DUR-05 reads an archived Fishball as not ready (as the watches route does, §5c).
 - **A-r11a-4. Snapshot keys.** rev11a adds only `managed` to the snapshot; `pile`, `grants`, `questionMode` belong to later phases.
 - **A-r11a-5. Unspecified transitions** (hand over a managed session, take back or release a session that is yours, release refusal codes) are diagnostics only (MGD-17).
-- **A-r11a-6. Turning a plugin back on.** Not stated directly; DUR-03 and DUR-07 derive from "a managed session has `message_fishball`" that a still-managed session gets the tool back.
+- **A-r11a-6. Turning a plugin back on.** Not stated directly; DUR-03 and DUR-07 derive from "a managed session has `message_agent`" that a still-managed session gets the tool back.
 - **A-r11a-7. Session messages off and permission requests.** Routing depends on managed status, Fishball live and Permission requests (§7a.1), so DUR-02 expects a managed session's request still to reach Fishball while Session messages is off.
 - **A-r11a-8. "Nothing mentions Fishball"** is checked case-sensitively (`Fishball`), because the test homes sit under the lowercase `dsh-fishball` checkout path; the standard preset's quote of this repository's AGENTS.md is test environment, not product text.
 - **A-r11a-9. Agent re-creation by clear or compaction** is not exercised; resume (dispose + resume, and a restart) is.
 
 ## Revision 11 rev11b cases (asking Fishball first; DESIGN §14 row rev11b, §7a.1-§7a.6 (§7a.6: "To-you ticket" and "Before rev11c" only), §5e, §9 "Revision 11 additions", §16 Q-r11-list, Q-r11-quote-bound, Q-r11-rounds, Q-r11-direct-ask, Q-r11-direct-reply, Q-r11-release, Q-r11-audit-user, limits `userMessagesListed`, `userMessageExcerptChars`, `maxMessageBytes`; requirements items 6-13; S35)
 
-Before rev11c "to the user" is the stock prompt in the asking session: the scripted answerer after the broker (`FBTEST_APPROVER_AFTER=1`). "Reaches Fishball" means a `[permission request apr_…]` notice in Fishball's session; Fishball's fake model answers through a plan (`planApproval`), or only says "ok" so the request waits. The asking fixture tool `fbtest_ask` asks DSH for approval in its body and returns `outcome=<DSH outcome>`, so "the call runs" is its own output and "the stock prompt" is the scripted answerer's record. The ask_fishball code for "to the user" is provisional (`ASK_CODE.toUser`, one constant).
+Before rev11c "to the user" is the stock prompt in the asking session: the scripted answerer after the broker (`FBTEST_APPROVER_AFTER=1`). "Reaches Fishball" means a `[permission request apr_…]` notice in Fishball's session; Fishball's fake model answers through a plan (`planApproval`), or only says "ok" so the request waits. The asking fixture tool `fbtest_ask` asks DSH for approval in its body and returns `outcome=<DSH outcome>`, so "the call runs" is its own output and "the stock prompt" is the scripted answerer's record. The ask_agent code for "to the user" is provisional (`ASK_CODE.toUser`, one constant).
 
 Support added: rev11b constants (`ASK_FISHBALL`, `LIST_USER_MESSAGES`, `MANAGED_TOOLS`, `ASK_CODE`, `ASK_REFUSALS`, `DECISION`, `QUESTION_REQUIRED`, S35 wording `HINT_NEXT` / `HINT_ALLOWED` / `ALLOWED_TEXT` / `REJECTED_TEXT`, `DSH_REJECT_WORDS`, `ASK_OUTPUT`, `LIMITS_R11B`, `AUDIT_KIND`, `AUDIT_ANSWER`, `DECISION_ACTION`, `DECISIONS_TABLE`, `USER_RPC_SOURCE`, `REQUEST_PLACEHOLDER`; `RUBRIC` gains rules 4 and 5, `RUBRIC_REMOVED`, `REJECT_RULE`); helpers `step`, `askStep`, `callStep`, `resultById`, `stockSeen`, `approvalAudit`, `auditOf`, `storedRows`, `roundsOf`, `managedSession`, `blockArguments` (expect.mjs); worker op `userMessageLog` (DSH message ids and source kinds of a session's user messages); the fake model replaces a scripted argument equal to `REQUEST_PLACEHOLDER` with the newest `apr_…` id in the conversation (so a script can answer a question minted during the turn) and records each request's last 8 messages (`last`: role, source kind, text), so a context message after a tool result can be seen.
 
@@ -1596,8 +1592,8 @@ Support added: rev11b constants (`ASK_FISHBALL`, `LIST_USER_MESSAGES`, `MANAGED_
 
 | id | technique | requirement | expected |
 |---|---|---|---|
-| LUM-01 | EP (managed) | done-when "all three tools" | the next model request lists `message_fishball`, `ask_fishball`, `list_user_messages` |
-| LUM-02 ×2 | EP (yours: `ask_fishball` / `list_user_messages`) | done-when, §5e "Refusal is DSH's own" | not listed; calling it is DSH's UNKNOWN_TOOL error; no permission notice, zero Fishball steps |
+| LUM-01 | EP (managed) | done-when "all three tools" | the next model request lists `message_agent`, `ask_agent`, `list_user_messages` |
+| LUM-02 ×2 | EP (yours: `ask_agent` / `list_user_messages`) | done-when, §5e "Refusal is DSH's own" | not listed; calling it is DSH's UNKNOWN_TOOL error; no permission notice, zero Fishball steps |
 | LUM-03 | ST managed –Take back→ yours | §5e | none of the three at the next request |
 | LUM-04 | EP (Fishball's own session) | §5e | neither tool in Fishball's request |
 | LUM-05 | EP (sources: `user`, user-rpc form, relay from `message_session`, Fishball notice, runtime context, another session's) | item 6, §7a.2 | `{ok:true, messages:[{id, at, excerpt}]}` (exactly those keys): the user-typed messages of that session only, DSH message ids, ISO times, newest first, short texts whole |
@@ -1608,11 +1604,11 @@ Support added: rev11b constants (`ASK_FISHBALL`, `LIST_USER_MESSAGES`, `MANAGED_
 | LUM-10 | EP | done-when "config fields in the limits form" | form defaults 20 and 1000, settings value and state.limits |
 | LUM-11 ×4 | BVA (minimum 1) | §16 rules | 1 accepted (state.limits shows it); 0 refused, value unchanged |
 
-### [rev11b-ask.test.mjs](rev11b-ask.test.mjs): ask_fishball and Fishball's answers (one host, in order)
+### [rev11b-ask.test.mjs](rev11b-ask.test.mjs): ask_agent and Fishball's answers (one host, in order)
 
 | id | technique | requirement | expected |
 |---|---|---|---|
-| ASK-01 | EP (allow) | items 7-8, §7a.2 | `{ok:true, code:'allowed', request_id}`; one notice saying the session asked first (header names `ask_fishball`) with tool, arguments, why, `latest_user_message`, empty `quoted_user_messages`; audit kind `asked`, answer `allow`, no quotes |
+| ASK-01 | EP (allow) | items 7-8, §7a.2 | `{ok:true, code:'allowed', request_id}`; one notice saying the session asked first (header names `ask_agent`) with tool, arguments, why, `latest_user_message`, empty `quoted_user_messages`; audit kind `asked`, answer `allow`, no quotes |
 | ASK-02 | EP (reject + reason) | item 8, done-when | `{ok:false, code:'rejected', reason, request_id}`; audit `reject` |
 | ASK-03 ×7 | DT (answer_approval refusals) | §7a.3, done-when "as in P7" | allow+high → `allow-needs-low-risk`; allow `''` / `'   '` → `reason-required`; reject `''` → `reason-required`; ask with no / `''` question → `question-required`; unknown id → `expired`; each leaves the request pending and the agent waiting |
 | ASK-04 | DT (escalate, empty reason) | §7a.3 "None", §7a.6, Q-r11-audit-user | **Changed by rev11c** (see "Older tests changed by rev11c"): `{ok:true, requestId, decision:'escalate'}`; a card, the agent keeps waiting, no stock prompt; your Allow once → `allowed`, the identical call runs on the pass, `decisions` row `allow-once` by user, audit `escalate` then `pass` (outcome allowed-once) |
@@ -1621,7 +1617,7 @@ Support added: rev11b constants (`ASK_FISHBALL`, `LIST_USER_MESSAGES`, `MANAGED_
 | ASK-07 | ST (3 question rounds, then allow) | Q-r11-rounds, done-when | each round `question`, same request_id, Fishball's question; 4 notices of the same request, each with the thread so far in order (`from` fishball/agent alternating); the final allow covers the call (own output, no prompt, no further notice); audit `allow` then `pass` |
 | ASK-08 ×3 | EP (request_id unknown / settled / another session's) | contract `expired` | `{ok:false, code:'expired'}`, no request_id, nothing sent |
 | ASK-09 | EP (Permission requests off) | item 10 | at once; `unavailable` (or DSH's UNKNOWN_TOOL, A-r11b-3); nothing sent; the call then to the stock prompt |
-| ASK-10 | ST (Permission requests off while an ask_fishball and a direct call wait) | §7a.5, done-when | `unavailable`; the direct call shows its stock prompt |
+| ASK-10 | ST (Permission requests off while an ask_agent and a direct call wait) | §7a.5, done-when | `unavailable`; the direct call shows its stock prompt |
 | ASK-11 | ST (Fishball archived while waiting; asked while archived) | §7a.5 | `unavailable` both times, at once the second time, each with request_id; live again after recovery |
 | ASK-12 | ST (Take back while waiting) | §5e, done-when | `no-longer-managed` with request_id; audit `released` |
 | ASK-13 | BVA (`maxPendingApprovals` 1, 1 pending) | §7a.2, §7a.6 | `over-capacity` at once with request_id, nothing sent; the identical call to the stock prompt |
@@ -1642,9 +1638,9 @@ Support added: rev11b constants (`ASK_FISHBALL`, `LIST_USER_MESSAGES`, `MANAGED_
 | id | technique | requirement | expected |
 |---|---|---|---|
 | DIR-01 | EP (allow) | item 12, S35 | notice header says direct; `latest_user_message` = your last turn; result exactly output + `\n\nFishball approved this call once. …`, not an error; audit kind `direct`, `allow` |
-| DIR-02 | EP (reject) | done-when, S35 | error result exactly `Fishball rejected this call: <reason>\nNext time, call ask_fishball …`; no "the user rejected"; audit `reject` |
+| DIR-02 | EP (reject) | done-when, S35 | error result exactly `Fishball rejected this call: <reason>\nNext time, call ask_agent …`; no "the user rejected"; audit `reject` |
 | DIR-03 | ST (rejected → retried next turn) | item 13 | a new request to Fishball; allowed with the hint |
-| DIR-04 | ST (ask on a direct call → ask_fishball reply → allow) | Q-r11-direct-ask, Q-r11-direct-reply | error naming the request id, the question and `ask_fishball`; the reply continues the same request (2 rounds, thread [question, reply]); `allowed`, same id; the call made again runs on the pass |
+| DIR-04 | ST (ask on a direct call → ask_agent reply → allow) | Q-r11-direct-ask, Q-r11-direct-reply | error naming the request id, the question and `ask_agent`; the reply continues the same request (2 rounds, thread [question, reply]); `allowed`, same id; the call made again runs on the pass |
 | DIR-05 | EP (escalate) | done-when, Q-r11-audit-user | the stock prompt answers the call; one notice only; `decisions` `allow-once` by user, target the request id; audit `escalate` |
 | DIR-06 | BVA (`approvalAnswerSeconds` 1) | item 11 Reading "direct calls too" | the stock prompt after ≥ 1 s; `decisions` `reject`; audit `timeout` |
 
@@ -1666,12 +1662,12 @@ The size is calibrated per run: two requests with reasons of 100 and 600 bytes g
 |---|---|---|---|
 | PTC-01 | EP (inner call allowed) | §7a.4, S35 PTC | the plain value in the run_code result, no hint there; after it in the next request a message of source `fishball-notice` with the hint; the notice is in the session log |
 | PTC-02 | EP (inner call rejected) | S35 PTC | the program catches exactly the rejection text |
-| PTC-03 | EP (ask on an inner call) | §7a.4 | the caught error names the request id, the question and `ask_fishball` |
+| PTC-03 | EP (ask on an inner call) | §7a.4 | the caught error names the request id, the question and `ask_agent` |
 
 ### Not automated (rev11b)
 
 - The live-model scenarios of the done-when (Fishball rejects a dangerous call beyond your request; sends a dangerous call within it, or a harmless one beyond it, to you): prompt rules, not code. APR-24 checks the rule's line is in the prompt.
-- "An `ask_fishball` request that is already your card answers unavailable, its card leaves": automated by rev11c (LVE-03, LVE-04).
+- "An `ask_agent` request that is already your card answers unavailable, its card leaves": automated by rev11c (LVE-03, LVE-04).
 
 ### Older tests changed by rev11b
 
@@ -1679,14 +1675,14 @@ The size is calibrated per run: two requests with reasons of 100 and 600 bytes g
 |---|---|---|
 | config CFG-01, CFG-08 | the default table has 30 fields: `LIMITS_R11B` (`userMessagesListed` 20, `userMessageExcerptChars` 1000) added | §16 "Revision 11's new limits" |
 | http HTP-01 | `state.limits` keys include the two new fields | §16 |
-| own-plugins OWN-01/02/03/06/10/11 (constants `OWN_PLUGINS.approvals.tools`) | Permission requests now holds `answer_approval`, `ask_fishball`, `list_user_messages`; the two new tools are, like `message_fishball`, status `other-sessions` and never in Fishball's own requests (`MANAGED_TOOLS` replaces the single `message_fishball` exception) | §5e "Which Fishball plugin", §7a.2 |
+| own-plugins OWN-01/02/03/06/10/11 (constants `OWN_PLUGINS.approvals.tools`) | Permission requests now holds `answer_approval`, `ask_agent`, `list_user_messages`; the two new tools are, like `message_agent`, status `other-sessions` and never in Fishball's own requests (`MANAGED_TOOLS` replaces the single `message_agent` exception) | §5e "Which Fishball plugin", §7a.2 |
 | approvals-broker APR-24, constants `RUBRIC` | "You cannot reject" no longer expected (now `RUBRIC_REMOVED`, asserted absent); rules 4 and 5 phrases added; the new reject rule asserted by meaning | DESIGN §7a.7 last paragraph, Q-r11-reject, Q-r11-reject-rubric |
 
 ### Ambiguities (rev11b)
 
-- **A-r11b-1. Pass and ticket lifetime within a turn.** A to-you ticket "ends as a pass does" (used, or the turn ends), so the cases make the identical call in the same turn as the `ask_fishball` that minted it.
-- **A-r11b-2. Notice wording for the kind.** The contract says the notice states whether the session asked first or made a direct call; the tests read it as the header naming `ask_fishball` (asked) or containing "direct" (direct call).
-- **A-r11b-3. Permission requests off and the tool.** The tools belong to Permission requests and exist only while it runs, yet `ask_fishball` "answers unavailable" when it is off. ASK-09 accepts either `unavailable` or DSH's UNKNOWN_TOOL for a call made while it is off; ASK-10 (a call already waiting) requires `unavailable`.
+- **A-r11b-1. Pass and ticket lifetime within a turn.** A to-you ticket "ends as a pass does" (used, or the turn ends), so the cases make the identical call in the same turn as the `ask_agent` that minted it.
+- **A-r11b-2. Notice wording for the kind.** The contract says the notice states whether the session asked first or made a direct call; the tests read it as the header naming `ask_agent` (asked) or containing "direct" (direct call).
+- **A-r11b-3. Permission requests off and the tool.** The tools belong to Permission requests and exist only while it runs, yet `ask_agent` "answers unavailable" when it is off. ASK-09 accepts either `unavailable` or DSH's UNKNOWN_TOOL for a call made while it is off; ASK-10 (a call already waiting) requires `unavailable`.
 - **A-r11b-4. "The whole request message".** Measured as the UTF-8 bytes of the notice text in Fishball's log (QUO-03 requires that notice to be exactly `maxMessageBytes`).
 - **A-r11b-5. `escalate` "needs nothing extra".** `answer_approval`'s schema still requires `risk` and `reason` for every decision (P7); ASK-04 reads "nothing extra" as no code rule, so an escalate with an empty reason is accepted.
 - **A-r11b-6. "One audit row per request".** The implementation also records the follow-up call under the same request id (`pass` for a call on a pass, `to-user` for a call the ticket sends to your prompt), which is how the contract's answers `pass` and `to-user` appear. ASK-04, ASK-06 and ASK-07 expect exactly the decision row followed by that row; no row per question round.
@@ -1726,9 +1722,9 @@ Support added: `MANAGED_ENTRY_KEYS` gains `title`; `MANAGED_LIST_LABELS` (consta
 - **A-r11a-12. Labels.** The heading and by-tag wording come from the coordinator, not the requirements text; the "since" line's wording is not checked.
 
 
-## Revision 11 rev11c cases (your pile for `ask_fishball` requests; DESIGN §14 row rev11c, §7a.2 "to-user", §7a.3 "Tags", §7a.5, §7a.6, §9 "Session cards", "Tag records", §10e, §16 Q-r11-cap-own, Q-r11-release-pile, Q-r11-tag-*; requirements items 14-16, defaults "Card cap", "The user's Reject takes an optional note"; S37)
+## Revision 11 rev11c cases (your pile for `ask_agent` requests; DESIGN §14 row rev11c, §7a.2 "to-user", §7a.3 "Tags", §7a.5, §7a.6, §9 "Session cards", "Tag records", §10e, §16 Q-r11-cap-own, Q-r11-release-pile, Q-r11-tag-*; requirements items 14-16, defaults "Card cap", "The user's Reject takes an optional note"; S37)
 
-The builder's contract is the DESIGN text alone (no code was read). Black-box surfaces: the snapshot (`pile`, and the tag records wherever the Host publishes them), `POST /api/fishball/requests/answer` (the one route both the pile's buttons and the buttons on the running `ask_fishball` row call, S37), tool results, the audit and `decisions` tables, and the `tags` table of `storages/fishball.json`. A request becomes a card when Fishball escalates it (the fake model escalates from a plan) or when `approvalAnswerSeconds` passes. Cards for **direct calls** are rev11e: in rev11c a direct call sent to you shows the stock prompt only (PIL-07; rev11e flips it).
+The builder's contract is the DESIGN text alone (no code was read). Black-box surfaces: the snapshot (`pile`, and the tag records wherever the Host publishes them), `POST /api/fishball/requests/answer` (the one route both the pile's buttons and the buttons on the running `ask_agent` row call, S37), tool results, the audit and `decisions` tables, and the `tags` table of `storages/fishball.json`. A request becomes a card when Fishball escalates it (the fake model escalates from a plan) or when `approvalAnswerSeconds` passes. Cards for **direct calls** are rev11e: in rev11c a direct call sent to you shows the stock prompt only (PIL-07; rev11e flips it).
 
 Support added: `test/support/rev11c.mjs` (host boot/reboot, `escalated`, `waiting`, shared helpers); rev11c constants (`PILE_API`, `PILE_CODE`, `CLICK`, `CARD_KIND`, `CARD_KEYS`, `LIMITS_R11C`, `TAGS_TABLE`, `TAG_KIND`, `TAG_KEYS`, `TOO_MANY_WAITING`, `STATE_KEYS_OPTIONAL`; `STATE_KEYS` gains `pile`; `ASK_CODE.toUser` and `AUDIT_ANSWER.toUser` removed); helpers `pileNow`, `cardOf`, `untilCard`, `untilNoCard`, `answerCard`, `cardArguments`, `tagsOf`, `snapshotTags` (expect.mjs).
 
@@ -1737,7 +1733,7 @@ Support added: `test/support/rev11c.mjs` (host boot/reboot, `escalated`, `waitin
 | id | technique | requirement | expected |
 |---|---|---|---|
 | PIL-01 | EP (nothing waiting) | item 14, §10e snapshot | `state.pile` is `[]`; the first SSE frame carries `pile: []` |
-| PIL-02 | EP (3 managed sessions escalate) | item 14, done-when "three cards", §10e order | three cards, newest first, one per session; every card has `arguments`, `callId`, `kind: 'asked'`, `requestId`, `sessionId`, `since`, `toolName` (= the tool asked about), `why`; `callId` is the `ask_fishball` call's id (S37: the row buttons match on it); the three agents still run |
+| PIL-02 | EP (3 managed sessions escalate) | item 14, done-when "three cards", §10e order | three cards, newest first, one per session; every card has `arguments`, `callId`, `kind: 'asked'`, `requestId`, `sessionId`, `since`, `toolName` (= the tool asked about), `why`; `callId` is the `ask_agent` call's id (S37: the row buttons match on it); the three agents still run |
 | PIL-03 | EP (answer the middle one) | item 15, done-when | only that card leaves; the other two stay with their agents waiting; the answered agent gets `rejected` |
 | PIL-04 | EP (quote + one question round + escalate) | item 14 | the card shows the quoted message (id and full text), the thread `[question, reply]` in order, Fishball's reason as `note`; `callId` is the reply call's (the call that is waiting now) |
 | PIL-05 | BVA (`argumentExcerptBytes` 16 / default, 200-byte arguments) | §9 "arguments (excerpt)" | cut: text of at most 16 bytes + an ellipsis, a prefix of the real arguments; default: whole |
@@ -1772,11 +1768,11 @@ Support added: `test/support/rev11c.mjs` (host boot/reboot, `escalated`, `waitin
 | LVE-06 | BVA (cap 1 with one card; Fishball's own request) | Q-r11-cap-own | Fishball's tool returns `too-many-waiting` at once; DSH is not asked |
 | LVE-07 | ST (restart with two cards) | item 16 | pile empty after the restart; old ids 409 `expired`; the sessions stay managed |
 
-### [rev11c-tags.test.mjs](rev11c-tags.test.mjs): tag records (one host; restart and bound last)
+### `rev11c-tags.test.mjs`: tag records (one host; restart and bound last) — **gone** (suite deleted in 76e06ff9)
 
 | id | technique | requirement | expected |
 |---|---|---|---|
-| TAG-01 | EP (allow, `ask_fishball`) | §7a.3 Tags, §9 | one row in table `tags`: `sessionId`, `callId` (the ask call), integer `seq`, `answer` naming allow, `kind: 'approval'`, `at` |
+| TAG-01 | EP (allow, `ask_agent`) | §7a.3 Tags, §9 | one row in table `tags`: `sessionId`, `callId` (the ask call), integer `seq`, `answer` naming allow, `kind: 'approval'`, `at` |
 | TAG-02 | EP (reject) | §7a.3 | `answer` names reject |
 | TAG-03 | ST (ask, reply, allow) | §7a.3 "every decision" | one tag per decision on its own call; later call has the greater `seq` |
 | TAG-04 | EP (escalate) | §7a.3 "Sent to you"; your click | a `sent-to-you` tag; your own click adds none |
@@ -1789,9 +1785,9 @@ Support added: `test/support/rev11c.mjs` (host boot/reboot, `escalated`, `waitin
 
 ### Not automated (rev11c)
 
-- **The look of the pile and the row buttons** (item 14 layout, "Waiting for you (n)", scrolling at `pileMaxHeightVh`, the composer staying in view, light and dark; plain-text drawing of markup; Allow once / Reject on the running `ask_fishball` row in the session's own chat; answering there clears the pile and the reverse; the "Asked Fishball" and "Sent to you" tag texts in the turn tail, visible in a folded turn and in an old turn after a restart): browser rendering, checked by hand (`test/hand-checks/rev11c.md`). The route is exercised by the tests above.
+- **The look of the pile and the row buttons** (item 14 layout, "Waiting for you (n)", scrolling at `pileMaxHeightVh`, the composer staying in view, light and dark; plain-text drawing of markup; Allow once / Reject on the running `ask_agent` row in the session's own chat; answering there clears the pile and the reverse; the "Asked Fishball" and "Sent to you" tag texts in the turn tail, visible in a folded turn and in an old turn after a restart): browser rendering, checked by hand (`test/hand-checks/rev11c.md`). The route is exercised by the tests above.
 - A notice that cannot be delivered sending the request to the pile (§7a.6 Reading): no way to make delivery fail from outside.
-- The `ask_fishball` row's buttons "while the request is a card, not while Fishball decides" (hand check).
+- The `ask_agent` row's buttons "while the request is a card, not while Fishball decides" (hand check).
 - Fishball's own cards (rev11f): only the cap rule (LVE-06) is a rev11c item.
 
 ### Older tests changed by rev11c
@@ -1808,7 +1804,7 @@ Support added: `test/support/rev11c.mjs` (host boot/reboot, `escalated`, `waitin
 ### Ambiguities (rev11c)
 
 - **A-r11c-1. Where the tag records are published.** §9 says "published in the snapshot" without a key. The tests find them by shape anywhere in the snapshot (`snapshotTags`) and tolerate a `tags` key in the exact-key checks. Also: `answer` is checked by a regular expression on its JSON (allow / reject / ask|question), since the design gives its wording only for the client.
-- **A-r11c-2. Which `callId` a card carries after a question round.** Each `ask_fishball` reply is a new tool call; the card is taken to carry the id of the call that is waiting now (the running row with the buttons), PIL-04.
+- **A-r11c-2. Which `callId` a card carries after a question round.** Each `ask_agent` reply is a new tool call; the card is taken to carry the id of the call that is waiting now (the running row with the buttons), PIL-04.
 - **A-r11c-3. Card field names.** From §9 "Session cards": `requestId, kind, sessionId, toolName, arguments, quotes, why, thread, note, since` plus `callId` (S37). `arguments` may be a JSON string or an object; `quotes` entries are expected to hold the message id and full text; `thread` entries have `text` as in the notice; `note` is Fishball's escalate reason.
 - **A-r11c-4. Reject without a note.** The agent's `reason` is not asserted (it may be a default text).
 - **A-r11c-5. Fishball's own cap rule before rev11f.** LVE-06 asks for `too-many-waiting` from a Fishball tool that asks for approval, with a card from another session filling the cap; rev11f owns Fishball's cards but the rev11c row lists the rule.
@@ -1835,7 +1831,7 @@ Support added: `test/support/rev11d.mjs` (host with the shell fixtures asking in
 | GRT-09 ×5 | EP (run_code, fbtest_ask, terminal_open prefix refused; exact on run_code and terminal_open accepted) | Q-r11-prefix-tools, requirements "Prefix grants" | prefix refused, `ok:false`, request still pending (a reject works), no grant row; an exact grant on run_code is accepted and covers |
 | GRT-10 ×10 | DT (refused answers) | §7a.8 "an end time is required and must be in the future", `allow`'s rules | no end time; past (an hour, one second); not a time; no grant object; unknown kind; prefix kind with no or an empty prefix; a prefix that is not the start of the asking command; risk high; empty reason: `ok:false` with a code, no grant row, no `decisions` row, request still pending |
 | GRT-11 | BVA (end time a year out; three active) | Q-r11-grant-bounds | accepted; three active grants of one session at once |
-| GRT-12 | EP (via `ask_fishball`) | §7a.3 Reading | grant through an `ask_fishball` answer: allowed; later direct call covered; `ask_fishball` for another covered command answers `allowed` with no Fishball step |
+| GRT-12 | EP (via `ask_agent`) | §7a.3 Reading | grant through an `ask_agent` answer: allowed; later direct call covered; `ask_agent` for another covered command answers `allowed` with no Fishball step |
 
 ### [rev11d-end.test.mjs](rev11d-end.test.mjs): how grants end, pause and survive (one host, a session per case)
 
@@ -1951,7 +1947,7 @@ Black-box surfaces: Fishball's tool results (`add_plugin`, `remove_plugin`, `set
 
 Support added: `test/support/rev11f.mjs` (host, `ownTools`: call / click with scripted retries / withdraw, `ownRows`, `detailEntries`); constants `OWN_REQUEST`, `WITHDRAW_TOOL`, `OWN_STATUS`, `OWN_MORE`, `OWN_WITHDRAW_HINT`, `OWN_ASKING_TOOL` (demo_echo asks in its body through `FBTEST_ASKING_TOOLS`); `fishballTool` in `expect.mjs` now works with cards (below).
 
-### [own-requests-notices.test.mjs](own-requests-notices.test.mjs): decision/notice regression at the public component boundary
+### `own-requests-notices.test.mjs`: decision/notice regression at the public component boundary — **gone** (suite deleted in 76e06ff9)
 
 Added from the own-request double-notice acceptance criteria. Unlike the original system-only cases, this focused integration suite imports the exported OwnRequests component and calls only its public methods and session-event boundary. Memory tables and fake intake/agent ports provide controlled delivery failures; no production test hook or private-method access is added. The existing HTTP system cases below retain the real-host proof.
 
@@ -1964,7 +1960,7 @@ Added from the own-request double-notice acceptance criteria. Unlike the origina
 | R5 | Reject while offline; later catchUp | one rejection after recovery, no wake or pass; repeated catchUp is idempotent |
 | R6 | Unused approval; unrelated turn end / owning turn end | approved until its own turn ends, then expired; zero rejections and takePass fails |
 
-EP distinguishes decisions and delivery availability; the decision table covers all relevant combinations. BVA checks zero versus one versus duplicate notifications and first versus second pass use. State transitions and duplicate Allow/Reject cover approved, used, rejected and expired; each duplicate returns false without a second notice. Notification assertions are shared in [own-request-notices.mjs](support/own-request-notices.mjs).
+EP distinguishes decisions and delivery availability; the decision table covers all relevant combinations. BVA checks zero versus one versus duplicate notifications and first versus second pass use. State transitions and duplicate Allow/Reject cover approved, used, rejected and expired; each duplicate returns false without a second notice. Notification assertions are shared in `own-request-notices.mjs` (deleted in 76e06ff9).
 
 Run only the focused targets with HOME/DSH_HOME/DSH_AGENTS_HOME/TMPDIR isolated under this worktree:
 
@@ -1974,7 +1970,7 @@ Run only the focused targets with HOME/DSH_HOME/DSH_AGENTS_HOME/TMPDIR isolated 
 
 Do not run this command concurrently with another host suite using the shared installed runtime. The full runner clears this worktree's entire test-homes root; direct node --test does not. Initial verification: 8/8 component checks and 15/15 system checks passed on the existing rc.2 runtime, with no skipped tests.
 
-### [rev11f-request.test.mjs](rev11f-request.test.mjs): add_plugin and remove_plugin (one host, in order)
+### `rev11f-request.test.mjs`: add_plugin and remove_plugin (one host, in order) — **gone** (suite deleted in 76e06ff9)
 
 | id | technique | requirement | expected |
 |---|---|---|---|
@@ -1991,7 +1987,7 @@ Do not run this command concurrently with another host suite using the shared in
 | OWN-13 | BVA (`argumentExcerptBytes` 16 / default) | §9 `own_requests.arguments` | arguments on the card cut to 16 bytes + an ellipsis, a prefix of the real ones; whole at the default |
 | OWN-14 | EP (remove_plugin) | item 21 | a card, no stock prompt; the package stays until Allow; the retry removes it |
 
-### [rev11f-scope.test.mjs](rev11f-scope.test.mjs): every kind of Fishball request (settings fixtures; demo_echo asks in its body)
+### `rev11f-scope.test.mjs`: every kind of Fishball request (settings fixtures; demo_echo asks in its body) — **gone** (suite deleted in 76e06ff9)
 
 | id | technique | requirement | expected |
 |---|---|---|---|
@@ -2003,7 +1999,7 @@ Do not run this command concurrently with another host suite using the shared in
 | SCP-07 | ST (Reject) | item 22 | Fishball not woken; nothing saved |
 | SCP-06 | ST (Allow + retry) | item 22 | the retry saves (`ok:true`, `changed`); no second card; the stored values changed; audited |
 
-### [rev11f-detail.test.mjs](rev11f-detail.test.mjs): the bound on the detail list (Q-r11-own-card-detail)
+### `rev11f-detail.test.mjs`: the bound on the detail list (Q-r11-own-card-detail) — **gone** (suite deleted in 76e06ff9)
 
 | id | technique | expected |
 |---|---|---|
@@ -2015,7 +2011,7 @@ Do not run this command concurrently with another host suite using the shared in
 | DET-07 | BVA (first entry longer than the limit 20, more behind it) | first entry cut with "…" to fit, then "and n−1 more" (manager decision 2026-11-02) |
 | DET-06 | BVA (one over-long entry: E, E−1, 20) | whole at E; at E−1 and 20 one entry cut with "…" (a prefix, at most limit + the ellipsis); no "and N more" |
 
-### [rev11f-cap.test.mjs](rev11f-cap.test.mjs): own cards and `maxPendingApprovals` (Q-r11-cap-own)
+### `rev11f-cap.test.mjs`: own cards and `maxPendingApprovals` (Q-r11-cap-own) — **gone** (suite deleted in 76e06ff9)
 
 | id | technique | expected |
 |---|---|---|
@@ -2335,7 +2331,7 @@ Left to the hand check (the suite cannot see them): R1 (pile and grants title ro
 
 ## Revision 11 pile list (one-line rows, detail view, animations; P1-P9)
 
-Host-side cases in [rev11-pile-list.test.mjs](rev11-pile-list.test.mjs). PLL-01 and PLL-02 fail on the base until the builder's P3 lands. The layout, animation, focus and fallback-wording requirements are drawn only in the browser, so they are left to the hand check (`hand-checks/rev11-pile-list.md`).
+Host-side cases in `rev11-pile-list.test.mjs` (deleted in 76e06ff9). PLL-01 and PLL-02 fail on the base until the builder's P3 lands. The layout, animation, focus and fallback-wording requirements are drawn only in the browser, so they are left to the hand check (`hand-checks/rev11-pile-list.md`).
 
 | id | technique | requirement | expected result |
 |---|---|---|---|
@@ -2350,7 +2346,7 @@ Host-side cases in [rev11-pile-list.test.mjs](rev11-pile-list.test.mjs). PLL-01 
 | PLL-09 | ST | P6 | a card arriving while another waits joins at the top; the older card is unchanged |
 | PLL-10 | EP | P9 | markup in a note is kept verbatim |
 
-Left to the hand check (HC): PLL-HC-P1 rows (two lines, ellipsis, buttons per kind, newest first, count); PLL-HC-P2 fallback why line in English and Chinese and live replacement; PLL-HC-P4 detail (content, other rows and grants hidden, Back/outside/Escape, answer returns, focus); PLL-HC-P5 detail closes when the request leaves; PLL-HC-P6 arrival while detail open; PLL-HC-P7 scrolling, cap, opaque title, grants below; PLL-HC-P8 animations and reduced motion; PLL-HC-P9 `ask_fishball` row, plain-text drawing, Chinese, light and dark.
+Left to the hand check (HC): PLL-HC-P1 rows (two lines, ellipsis, buttons per kind, newest first, count); PLL-HC-P2 fallback why line in English and Chinese and live replacement; PLL-HC-P4 detail (content, other rows and grants hidden, Back/outside/Escape, answer returns, focus); PLL-HC-P5 detail closes when the request leaves; PLL-HC-P6 arrival while detail open; PLL-HC-P7 scrolling, cap, opaque title, grants below; PLL-HC-P8 animations and reduced motion; PLL-HC-P9 `ask_agent` row, plain-text drawing, Chinese, light and dark.
 
 ## Fix: Chinese punctuation stays outside bold text (persona rule; DESIGN §7 "Bold text and Chinese punctuation", §16 Q-bold-punct; requirements R-B1..R-B4; written from the requirements alone, no behaviour code read)
 
@@ -2400,7 +2396,7 @@ Checked by changing a copy of the persona (eight mutants, run through `FBTEST_PL
 - **A175. The persona has no list marker requirement.** The new line begins `- ` like its neighbours, but the requirement does not ask for it, so no case checks it.
 - **A176. What the renderer does (finding, PBR-03/04).** The asterisks stay visible when a letter or digit of any script follows the closing marker (Latin, capital, digit, accented, Cyrillic); a Chinese character, a space, the end of the line or an ASCII mark after it closes the bold text. All 15 Chinese marks tried (`，。！？；：、）」”…—（【》`) behave alike. The rule is therefore needed only before a letter or digit, but it is safe in every position. The same happens with an ASCII mark (`**still going:**dsh`, `**还在进行中:**dsh` keep their asterisks): the persona rule covers Chinese punctuation only, as the requirement says.
 
-### [rec-plugins.test.mjs](rec-plugins.test.mjs): revision 12, recommended plugins and the one-time welcome card (REC-nn, WEL-nn)
+### `rec-plugins.test.mjs`: revision 12, recommended plugins and the one-time welcome card (REC-nn, WEL-nn) — **gone** (suite deleted in 76e06ff9)
 
 Requirements: DESIGN §10f, §9 `notices`, §14 "Recommended plugins (revision 12)", §16 "Revision 12" (commit 282e595 of `claude/rec-plugins-build-d5cb13`), with the user's answers: the list is a section on Fishball's settings page; Install opens the "Install for Fishball" dialog (no new route); a DSH plugin off in Fishball offers Turn on for Fishball; `dsh-idle-compact` installs from npm; the card sits above the pile. Host side only. No case reaches npm: [fixtures/rec-*](support/fixtures) are stand-ins named like listed packages (`dsh-idle-compact`, `dsh-telegram-notify`, `smart-compaction`, and `meow-memory` whose patch edits another row, so it is blocked). The two DSH-profile stand-ins are linked by `FBTEST_LINK` (`REC_LINK_ENV`); the other two are installed for Fishball through `POST /api/fishball/install` from their local folder. `STATE_KEYS` gains `recommended` and `welcome`, so every test that compares the state's keys fails until the build.
 
@@ -2443,3 +2439,140 @@ Hand-check list (not tested here; checked in a sandbox DSH with the fake model, 
 - The welcome card above the "Waiting for you" pile: shows once, not after a reload or a restart, never in another session; × closes it; See recommended plugins opens the settings page with the section in view; hidden under a question panel.
 
 Persona baseline loader (final release run): `support/persona-bold.mjs` `loadBaseline()` now exports the baseline ref's `src/` and `package.json` with `git archive` into a fresh temp folder outside the repo (removed on exit), because the baseline `persona.js` imports `./constants.js` and a lone `data:` URL could not resolve it (PBD-10..15 and R-B2 failed for that reason only). No assertion and no baseline ref changed.
+
+*v2-page-cases/child-boot.test.mjs (CHILD-BOOT-01..06) and its support (child-boot-host.mjs, child-boot-nav.test.mjs, child-boot-support.mjs, the child-*-row fixtures and fbtest-slot-occupant) were deleted in REMOVE-V2b (230547b9): the child-web rows they booted are gone.*
+
+### Page boot unwinding and settings shared-card mounts (PB-nn, PBS-nn; review-opus/v2-page-boot F1/F2; written from the requirements alone, no product code read)
+
+Requirements R-A (fishball-page `apply`: one effect mounts stylesheet → `<html data-fishball-page>` → keydown capture + `shortcuts.catalog` → session part (`uiSession.adapter.current`, `sessions.list`, window `focus`, `api/fishball/session`) → body `MutationObserver` + `locale.subscribe` → `navigation` 'navigate' + document 'click' capture → `slots.inject('settings.launcher')`, `slots.inject('conversation.hero.workspace')`, `slots.register({name:'shell.overlay', id:'fishball-page.navigation'})`), R-A1–R-A3, and R-B (fishball-settings: `require.async('./client.instance.js')`, then `locale.register(shared.locale, shared.dictionaries)`, `shared.mountStyles()`, `shared.mountStyle('fishball-settings-style', css)`), R-B1, R-B2.
+
+Harness: `page-open-session-page.mjs` (deleted in 57039446) `loadPage` gained optional `hooks` (`beforeScript`, `beforeApply`; no existing case changed). PB wraps its fakes with recorders: each named part is a key with mount/dispose events on one clock; faults are thrown from inside a fake (a ctx service, a browser API, or an `unsubscribe`). Unsubscribes and slot disposers are idempotent, as DSH's are. "Rethrown asynchronously" is observed by replacing the sandbox `queueMicrotask` with a recorder that runs the task on the host microtask queue and keeps what it throws. PBS loads the settings client in node:vm with the `createReactShim` React of [rp-recommend.mjs](support/rp-recommend.mjs) and a controllable `require.async` thenable; "teardown" runs every effect's disposer in reverse, as the fiber does.
+
+#### `page-boot-unwind.test.mjs` (13 tests) — **gone** (suite deleted in 57039446)
+
+| id | technique | requirement | expected result |
+|---|---|---|---|
+| PB-BVA-01 | BVA (first part fails: stylesheet append) | R-A1 | effect and `apply` throw the setup sentinel (same object); nothing live when it throws |
+| PB-BVA-02 | BVA (first ctx service: `shortcuts.catalog.subscribe` throws) | R-A1 | same; stylesheet and attribute removed before the throw (the keydown listener too, if it was added first: order inside one part is not specified) |
+| PB-EP-03 | EP (browser API mid-setup: `MutationObserver.observe` throws) | R-A1 | same; parts 1–4 were mounted (precondition) and are all disposed before the throw |
+| PB-EP-04 | EP (DOM listener: document 'click' `addEventListener` throws) | R-A1 | same; parts 1–5 (incl. navigate listener, locale, observer) disposed before the throw |
+| PB-BVA-05 | BVA (penultimate: `slots.inject('conversation.hero.workspace')` throws) | R-A1 | same; `settings.launcher` injection also disposed |
+| PB-BVA-06 | BVA (last: `slots.register` shell.overlay throws, as the SDK does for a duplicate list id) | R-A1 | same; all eight earlier parts disposed before the throw |
+| PB-DT-07 | DT (setup fails at shell.overlay × early part's disposer throws: catalog unsubscribe) | R-A2 | effect throws the setup error, not the disposer's; every other part disposed at the throw; no synchronous rethrow; after settling, exactly that disposer error surfaced once from a queued microtask |
+| PB-DT-08 | DT (setup fails at shell.overlay × later part's disposer throws: locale unsubscribe) | R-A2 | as PB-DT-07 |
+| PB-ST-09 | ST mounted → disposed; BVA 0 throwing disposers | R-A, R-A3 | parts mount in R-A order; teardown disposes all in reverse mount order; disposer returns normally; nothing surfaced |
+| PB-DT-10 | DT/BVA 1 throwing (catalog) | R-A3 | every other part disposed, reverse order; disposer throws the catalog error; no further microtask error |
+| PB-DT-11 | DT/BVA 2 throwing (catalog, sessions.list) | R-A3 | disposer throws sessions.list's error (first met in reverse order); catalog's surfaces once from a queued microtask |
+| PB-DT-12 | DT/BVA 3 throwing (catalog, sessions.list, locale) | R-A3 | disposer throws locale's error; the other two surface once each from queued microtasks |
+| PB-EP-13 | EP (no `window.navigation`) | R-A ("when window.navigation exists") | setup succeeds with no navigate listener; teardown removes everything, no throw |
+
+#### `settings-shared-mount.test.mjs` (8 tests) — **gone** (suite deleted in 2bf3769c)
+
+| id | technique | requirement | expected result |
+|---|---|---|---|
+| PBS-BVA-01 | BVA (no throw) | R-B, R-B1 | nothing mounted while loading; on ready: locale.register → mountStyles → mountStyle in order; row teardown removes all three |
+| PBS-BVA-02 | BVA (1st mount throws: locale.register) | R-B1 | later mounts not attempted; nothing left after teardown |
+| PBS-BVA-03 | BVA (2nd mount throws: mountStyles) | R-B1 | the locale registration is removed by row teardown |
+| PBS-BVA-04 | BVA (3rd mount throws: mountStyle) | R-B1 | the locale registration and mountStyles' result are removed by row teardown |
+| PBS-ST-05 | ST ready → ready again (control) | R-B2 | a second ready notification mounts nothing twice |
+| PBS-ST-06 | ST loading → disposed → ready | R-B (disposer unsubscribes from the loader) | nothing mounted |
+| PBS-ST-07 | ST ready → disposed → ready | R-B | nothing mounted again after teardown |
+| PBS-EP-08 | EP (chunk load fails) | R-B | nothing mounted; teardown clean |
+
+Readings: R-A2/R-A3 promise only that every OTHER part is disposed when one part's disposer throws, so the throwing part itself (and its sibling keys, such as the session part's window `focus` listener next to a throwing `sessions.list` unsubscribe) is exempt from the "nothing live" check. Whether the listener's throw in R-B1 escapes the loader notification is not specified (review F2 "not fixed"), so PBS swallows it and does not assert it. The second ready call in PBS-ST-05/07 stands for "a later loader notification"; a real promise settles once.
+
+Fail before the fix (baseline fd4e99d, the new files run over its `git archive`): PB-DT-07/08 (the effect throws the disposer's error instead of the setup's), PB-DT-10/11/12 (the parts mounted before the throwing one stay live after teardown: the stylesheet and `<html data-fishball-page>`), PBS-BVA-03/04 (earlier mounts stay after teardown). All 21 pass on 8e7f842 (the review fix).
+
+### `v2-page-cases/set-main-only-sync.test.mjs`: model sync is main-only (SET-MAIN-ONLY MOS-nn, both SDKs) — **gone** (suite deleted in 57039446)
+
+The user's decision of 2026-11-11: "不允许子实例发起模型同步，只能主实例主动同步给子实例". Sources: [v2-set](../docs/planning/v2-set.md), [slim-native-design §10](../docs/slim-native-design.md). Seams: the child row `child-web/fishball-settings/index.js` on a fake ctx, the real settings relay over an in-memory link (`set-relay.mjs` (deleted in 230547b9)), the real main sync bridge/coordinator/child engine with planted fake keys ([body-soul-sync.mjs](support/body-soul-sync.mjs), which now also counts main inventory reads), the real admin relay, the panel's classic scripts in node:vm ([set-panel.mjs](support/set-panel.mjs)) and, for MOS-SYS-01, a real main DSH with its real child. In-process cases run for the SDK of `FBTEST_DSH_RUNTIME` and register a TODO for the other; run the file once per SDK.
+
+| id | technique | expected result |
+|---|---|---|
+| MOS-EP-01 | EP (child route set) | the child row registers exactly GET status, POST retry, POST restart; no `models/*` path |
+| MOS-EP-02 | EP (relay ops) | `SETTINGS_RELAY.op` is exactly `{status, retry, restart}`; codes unchanged |
+| MOS-DT-01 | DT (handlers present) | a server missing any of status/retry/restart throws; all three → created |
+| MOS-DT-02 | DT (extra handlers × frames) | passed `check`/`add` handlers are never called |
+| MOS-EP-03 | EP (former/look-alike ops: check, add, CHECK, Add, `check `, models/check, models/add × `{}`, extra key, valid-looking add) | exactly `{v:1,id,ok:false,error:{code:'invalid-request'}}`; no main inventory read, key read or child write; no key in replies or logs |
+| MOS-EP-04 | EP (other unknown op: bogus, '') | the same refusal; no handler runs |
+| MOS-BVA-01 | BVA (frame id) | no id / null / number → dropped; 1 char and `limits.idChars` chars → answered |
+| MOS-EP-05 | EP (client) | `request('check'/'add'/'Check', …)` → `invalid-request` locally, nothing sent; status sends one frame |
+| MOS-ST-01 | ST (refused → lifecycle) | after refused sync frames, status/retry/restart answer on the same wire |
+| MOS-ST-02 | ST (wire A → B) | a reply to a request from A never goes to B |
+| MOS-EP-06 | EP (unsolicited provider-sync frames: reply, request, sync-op, junk) | nothing starts on the main side; nothing is sent back; a later owner check works |
+| MOS-EP-07 | EP (unsolicited admin frames) | no restart, no status read, nothing sent; owner `admin.status` still answers |
+| MOS-UC-01 | Use Case (owner check → add on the main routes) | check lists only missing; OAuth not offered and not forceable (`invalid-selection`); conflict not offered; add reports added / skipped (key created meanwhile, kept) / failed (child write failure); key in credential-local, mode 0600; no key in answers, logs or recent temp files |
+| MOS-UC-02 | Use Case (child row → relay → real sync) | status and restart work; nothing reaches the main sync; only lifecycle ops on the wire |
+| MOS-UC-03 | Use Case (main card) | the instance client still carries `data-fishball-model-*` and posts the two main routes (source presence; the rendered card stays a browser case) |
+| MOS-EP-08 / 09 | EP (panel en / zh) | no `data-fishball-model-*`; one `[data-fishball-settings-model-sync-note]` with the exact words, no button or link |
+| MOS-ST-03 | ST (panel presses) | after Restart, Settings, Plugins and every button: no `models/*` request |
+| MOS-EP-10 | EP (panel order) | status, Restart, note, Read Only, Settings, Plugins; Retry while failed |
+| MOS-EP-11 | EP (shared export) | `exports.shared` keys are exactly locale, dictionaries, mountStyles, mountStyle, useInstanceStatus, InstanceStatus |
+| MOS-SYS-01 | System (real main + child) | the child's POST `models/check` and `models/add` → 404, its status → 200; the main's POST `models/check` → ok with `{checkId, missing, notOffered, present}` |
+
+#### SET cases changed by main-only sync (2026-11-11; changed on purpose; why)
+
+The user's decision "不允许子实例发起模型同步，只能主实例主动同步给子实例" supersedes SET 8e9a658's child sync. Main-card-only sync placement is the oracle again ([v2-origin-lite-set-cases §3](../docs/test-design/v2-origin-lite-set-cases.md), v2-page-cases §1 (deleted V2 document)).
+- `set.test.mjs` (deleted in 57039446): `checkPost`/`addPost` now post the main DSH's owner routes (`registerProviderSyncRoutes` over the real bridge), not child routes; the relay server gets status/retry/restart only. SET-UC-03, EP-03/04/06/10/13, BVA-01, DT-02..06, ST-01..04 keep their oracles on the main card. SET-DT-01 now loses the child's provider-sync wire and checks the child has no sync route. SET-ST-03 loses that wire after the child write committed (was: the relay wire). SET-EP-10/13 and ST-03 relay parts assert that `check`/`add` are refused `invalid-request` and use retry/restart for the time bound and disconnect. New SET-EP-14: every child-initiated attempt is refused and the main sync never runs.
+- `slim-022-install.test.mjs` (deleted in c5c5692e) INST-06: named as the main card's route (its path is the main origin's; unchanged behaviour).
+- `child-native-runtime-row.mjs` (deleted in 230547b9): comment names the three child routes.
+- [body-soul-i6-sync.test.mjs](body-soul-i6-sync.test.mjs), `child-boot.test.mjs` (deleted in 230547b9), [lite.test.mjs](v2-page-cases/lite.test.mjs): read, unchanged. I6 covers the main owner routes, which stay; CHILD-BOOT and LITE assert no sync behaviour.
+
+## SHELVE-BOARD (fishball-board shelved from 1.0.0-alpha.1; the user, 2026-11-18)
+
+The user's decision, the reason for every re-baselined row: "fishball-board先从这次release中移除，我要改的地方太多了。先封存，留到下一批再说。所以不要预留在子实例的Fishball内。"
+(take fishball-board out of this release; shelve it for the next batch; do not reserve it in the child
+instance's Fishball). Written from the requirements alone, no implementation read. `packages/board/**` and
+`test/v3/fishball-board/**` are unchanged; that suite is listed in `SHELVED_SUITES`.
+
+Re-baselined (was → now):
+
+| File | Case | Was | Now |
+| --- | --- | --- | --- |
+| test/v3/release/pack (constants, cases) | REL-EP-01, 04, 05, 08, 09, 12, 13, REL-DT-01/02, REL-SYS-03, REL-ORACLE tar (per package) | 9 packages | 8 (no fishball-board) |
+| same | REL-EP-03 tgz | "the nine package tarballs" | the eight |
+| same | REL-EP-07 set / per tarball | bundled/ ui, board, core | ui, core |
+| same | REL-SYS-01 set | the child's three tarballs | its two |
+| same | REL-SYS-02 set | ui, board, core, adapter | ui, core, adapter (core last of the Fishball set) |
+| same | REL-EP-10, REL-DT-05, REL-ST-02 (standalone) | ui, board, core | ui, core |
+| same | REL-DT-05, REL-ST-02 (hosted, managed, adapter) | other plugin fishball-board | fishball-ui (a release plugin with no third-party dependency, as the board was) |
+| test/v3/dsh-instance/placement-install | PINST-ST-01 first, disable ×, PINST-DT-01 stale ×, missing ×, PINST-UC-01 | board, ui, core / ui, board, core | ui, core |
+| test/v3/dsh-instance/host | PLACE Q2 (both rows) | ends board, ui, core | Fishball bundles exactly ui, core; PLACEMENT names no board |
+| same | HOST-UC-01 E1 | blocking plugin fishball-board | fishball-ui (a member the child holds) |
+| test/v3/dsh-instance/placement | SET, HOST-UC-08 main 1, PLAT-DT-01 rules 1–7, HOST-EP-03 row 7, PLAT-DT-04 rule 1 | board, ui, core; DT walk on the board | ui, core; DT walk on fishball-ui |
+| test/v3/contract/split-shared | SPLIT-UC-04 placement tree | copies instance, core, board, ui | instance, core, ui |
+| test/v3/fishball-core/wire | WIRE-SYS (USE-CASES.md), WIRE-EP-02 | board+UI+core composition on packages/board; scan included packages/board | "board" is the stand-in bundle `wire/fixtures/fishball-board` (core's suite reads nothing of the shelved package); the scan drops packages/board (SPLIT-DT-01 keeps the board's own no-DSH-import rule); plus the SHELVE rows |
+| test/v2-recommendation/checks.mjs | AC9 / TC-32 comments | placed set core, ui, board | core, ui |
+
+Added:
+
+| Case | Technique | Oracle |
+| --- | --- | --- |
+| REL-SHELVE count | BVA (8, not 9 or 7) | exactly 8 `<name>-1.0.0-alpha.1.tgz`, none fishball-board |
+| REL-SHELVE sums | BVA | SHA256SUMS exactly 8 lines, none names fishball-board |
+| REL-SHELVE bundled | BVA | dsh-instance's bundled/ exactly 2 tarballs; nothing of fishball-board in the tarball |
+| REL-SHELVE doc INSTALL.md / PUBLISH.md | EP | neither names fishball-board or the word board |
+| REL-SHELVE publish | BVA | PUBLISH.md has exactly 8 `npm publish` lines, one per release tarball |
+| REL-SHELVE install sets | DT | INSTALL.md's offline blocks: hosted, managed, standalone (ui then core), adapter |
+| REL-SHELVE check | ST | copied release valid → fishball-board tarball added (non-zero, "unexpected", names it) → removed (0) |
+| REL-ORACLE shelved names, publish line | EP | the doc and publish-line rules on samples (dashboard, clipboard, onboarding are not the board) |
+| PINST-SHELVE first; PINST-ST-01 skip, PINST-DT-01 stale × | ST (first placement → re-run → re-install) | no vendor tarball, node_modules copy, dependency, bundle, record entry or install spec of fishball-board |
+| PLACE SHELVE (I-HOST) | ST (first start → second start, composedProfile) | the same, from the repo checkout |
+| HOST-EP-03 SHELVE compose (I-PLACE, unit) | ST | first and second compose: no board copy, dependency, bundle or record entry; Fishball bundles exactly ui, core |
+| HOST-EP-03 SHELVE first / restart (I-PLACE, integration) | ST | a real child after the first start and after a restart: the same |
+| SHELVE-EP-01 code / data / manifest × core, ui; rule | EP | no token, shipped data line (patch, nested manifests) or manifest field (optional peers included) of core or fishball-ui names the board |
+| WIRE-SYS SHELVE set (core; ui+core; board+ui+core) | EP (board absent / present) | core's `set` is `{status: ok, missing: []}` |
+| WIRE-SYS SHELVE broken board | EP (present and broken: engines.dsh no SDK meets) | `set` ok, nothing missing |
+| WIRE-SYS persona (no board) | EP | the manager's prompt and tools never mention the board |
+| SHELVE-SUITES-00, DT-01 rules 1–8, EP-01, EP-02 (test/v3/contract/suite-map) | DT (mode × change), EP | `--all` and a base ref (board-only change, shelved suite's own change, FULL path, unmapped path) never select `fishball-board.peers`; `--suite` by id, prefix or beside another does; run-v3 runs every V3 file but the shelved ones; `--check` clean |
+
+Left alone (owned by UI-POLISH-F): test/v3/fishball-core/status (cases.mjs PLAT-DT-02 rules 1–6, F-STATUS-00,
+F-STATUS-BVA-02, F-STATUS-EP-02, F-STATUS-ST-02, the strip order rows; constants.mjs `MODEL.members`,
+`FIXTURE.boardRow/boardEntry`; USE-CASES.md PLAT-DT-02) still expect the board as the checked member.
+
+
+Pre-existing, not SHELVE-BOARD's (dsh-instance.placement with FBTEST_V3_INTEGRATION=1, SDK 0.2.1-rc.5, failing the
+same way at the base `ee67f533` with the board as the toggled feature): HOST-ST-01 row 3 and PLAT-DT-01 row 6 (an
+enabled incompatible member: the child comes up `ready`, not `failed`/PROFILE_INCOMPATIBLE), PLAT-DT-01 row 5 (a member
+deleted while on comes back off), HOST-EP-03 row 7 libraries (dsh-agent-connector, the contract-only connector, is not
+in the child's vendor/).

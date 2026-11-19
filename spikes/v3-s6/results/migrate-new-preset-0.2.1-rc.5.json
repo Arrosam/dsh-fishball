@@ -1,0 +1,38 @@
+{
+  "id": "migrate-new-preset",
+  "sdk": "0.2.1-rc.5",
+  "node": "v24.22.2",
+  "at": "2026-11-11T10:42:38.929Z",
+  "before": {
+    "sessionId": "session-aaff689a-2672-4774-918e-a1f583814fe9",
+    "agentPreset": "standard",
+    "home": "<worktree>/.runtime/v3-s6/migrate-0.2.1-rc.5-1794393618833"
+  },
+  "controller": {
+    "ok": false,
+    "result": {
+      "error": {
+        "code": "gateway/internal",
+        "details": {},
+        "isDSHRemoteError": true,
+        "name": "RemoteError"
+      }
+    }
+  },
+  "agentsResume": {
+    "ok": true,
+    "modelAnswered": false,
+    "status": "idle",
+    "tools": [],
+    "sandbox": "workspace-write",
+    "permission": "custom"
+  },
+  "loggedErrors": [],
+  "presetIds": [
+    "fishball"
+  ],
+  "variant": "new-preset",
+  "newSession": {
+    "agentPreset": "fishball"
+  }
+}

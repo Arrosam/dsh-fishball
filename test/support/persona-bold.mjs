@@ -1,6 +1,6 @@
 /**
  * Helpers for the persona-rule tests: the persona as data (current and baseline) and the rule line's parts.
- * Only data exports of src/persona.js are read; no behaviour of the plugin is called.
+ * Only data exports of packages/core/src/persona.js are read; no behaviour of the plugin is called.
  */
 import { execFileSync } from 'node:child_process'
 import fs from 'node:fs'

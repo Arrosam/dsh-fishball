@@ -2,20 +2,6 @@
 
 Status: black-box test cases written **before** development (TDD, §18 of the design).
 
-> **Release state (v0.1.0-alpha.0).** The released code is contract 1.1
-> (`CONNECTOR_CONTRACT.minor` is `1`, not `0`) and the connector row/service are fully
-> implemented. The cases below were written against the frozen contract at `bb0f756` (minor 0)
-> and the pre-split design; where a case contradicts the released code, the code and
-> `docs/connector-contract.md` 1.1 win. Notable drift: `minor` is `1`; the `ui` path's `token`
-> check folds ASCII case and also scans the fragment; `ask_fishball` with no instance answers
-> `unavailable` at once (never queued); a `user`-kind hand-over note is never refused by the
-> queue bound; the connector form no longer has hourly caps (`messagesPerHour`,
-> `sessionsPerHour`, `wakeupsPerHour`); the C2 migration leaves the old settings record in place;
-> the frame adds the 1.1 `lang` parameter; the limits form and question-mode renderer remain in
-> DSH's form; the bundle-patch row id is `fishball-connector`; the package has six top-level `exports`
-> entries; and `dsh.client` is an object with `platform` (`web`) and an `inject` list of eight
-> DSH client packages (it has no `exports` member).
-
 Sources, in order of precedence:
 1. The user's decisions U1–U4 below (2026-11-06).
 2. **The frozen contract** `docs/connector-contract.md` at `bb0f756` (branch `feat/k1-contract`),
@@ -35,7 +21,7 @@ state). I1–I9 and E1 are designed in another session.
 
 | # | Decision | Effect on this document |
 | --- | --- | --- |
-| U1 | **Branding.** The branding and sidebar-entry settings do not move into the connector row. The connector icon is fixed: the Fishball fish logo with a wrench badge. No plugin is named "Fishball"; there are only `fishball-connector` and `fishball-instance`. | No brand-icon or sidebar-entry setting anywhere (C2-EP-09, C2-EP-10). A fixed-icon check (C3-P-13, C3-EP-07). No plugin labelled "Fishball" (M1-P-11). Contract §0 still lists the brand icon and the sidebar entry as connector settings (OQ-42). |
+| U1 | **Branding.** The branding and sidebar-entry settings do not move into the connector row. The connector icon is fixed: the Fishball fish logo with a wrench badge. No plugin is named "Fishball"; there are only `fishball-connector` and `fishball-instance`. | No brand-icon or sidebar-entry setting anywhere (C2-EP-09, C2-EP-10). A fixed-icon check (C3-P-13, C3-EP-07). No plugin labelled "Fishball" (M1-P-11). Contract §0 still lists the brand icon and the sidebar entry as connector settings (OQ-42). *ICON-SET (the user, 2026-11-18) supersedes the wrench on the sidebar row and the brand button: they show the plain fish; only the connector's own icon (its Plugins card and settings page) has the wrench badge (slim design conn-OQ-37).* |
 | U2 | **Connector limits (option B).** They change only in DSH's own plugin settings form. An attached instance must not be able to change them. | Limits are tested only through DSH's form (C1-BVA, C2-P, C2-BVA). |
 | U3 | **Instance without connector:** `connector-missing`, and the connector is **not** installed automatically. | M1-EP-02, M1-EP-04, M1-EP-07. |
 | U4 | **K1 as frozen at `bb0f756`.** Contract v1 has **no settings operations at all**: no `settings.describe` and no `settings.update`. A malformed `id`, `name`, `status` or `retry`, or an unknown descriptor key, gives `instance-invalid`. A `ui` path with a `#fragment` is accepted. A `ui` path is at most 512 characters. An unknown optional capability is ignored, and an unknown required capability is refused. | Every settings-over-contract case is negative: the operation is unknown or refused (K1-EP-55..58, C2-EP-01..06). K1 follows the contract doc, including its fixed check order (contract §1.3), so the K1 decision table has exact outcomes. |
@@ -136,9 +122,9 @@ and `docs/connector-contract.md`. Source: contract §0–§11 at `bb0f756`.
 | --- | --- |
 | K1-R1 | The connector row provides the service `fishballConnector` (`CONNECTOR_SERVICE`) whether or not an instance exists. `attachInstance(descriptor)` accepts a well-formed descriptor and returns `{detach()}` (contract §1; design §18.2 K1 R1). |
 | K1-R2 | Descriptor fields (contract §1.1): `id` and `name` are non-empty strings; `status` and `retry`, if present, are functions; any other key is refused. Each violation gives `instance-invalid` (U4). |
-| K1-R3 | `contract` is exactly `{id, major, minor}`, with `id` `fishball-connector`, `major` `1`, and both `major` and `minor` whole numbers; otherwise `contract-version`. Any minor of major 1 is accepted. `negotiateContract` returns `{id, major:1, minor: min(instance minor, connector minor)}`. `CONNECTOR_CONTRACT` is `{id:'fishball-connector', major:1, minor:1}` (contract §1.1, §2). |
+| K1-R3 | `contract` is exactly `{id, major, minor}`, with `id` `fishball-connector`, `major` `1`, and both `major` and `minor` whole numbers; otherwise `contract-version`. Any minor of major 1 is accepted. `negotiateContract` returns `{id, major:1, minor: min(instance minor, connector minor)}`. `CONNECTOR_CONTRACT` is `{id:'fishball-connector', major:1, minor:0}` (contract §1.1, §2). |
 | K1-R4 | `transport` is an object with the four functions `send`, `onMessage`, `onClose`, `close` (`TRANSPORT_METHODS`); otherwise `transport-invalid` (contract §1.1). |
-| K1-R5 | `ui` holds exactly the optional keys `chat` and `settings`. Each value is a string of at most 512 code points (`LIMITS.uiPathChars`) that starts with exactly one `/`. It carries no scheme, resolves to the main origin (no `/\host`, and no host revealed after a tab or newline is dropped), and has no `token` parameter (any ASCII case) in its query or fragment. Any other fragment is accepted. A violation gives `ui-invalid` (contract §1.2, U4). |
+| K1-R5 | `ui` holds exactly the optional keys `chat` and `settings`. Each value is a string of at most 512 code points (`LIMITS.uiPathChars`) that starts with exactly one `/`. It carries no scheme, resolves to the main origin (no `/\host`, and no host revealed after a tab or newline is dropped), and has no `token` query parameter. A fragment is accepted. A violation gives `ui-invalid` (contract §1.2, U4). |
 | K1-R6 | The checks run in a fixed order, so one descriptor has one answer: (1) shape and keys → `instance-invalid`; (2) contract → `contract-version`; (3) transport → `transport-invalid`; (4) ui → `ui-invalid`; (5) `id`, `name`, `status`, `retry` → `instance-invalid`; (6) the connector already has an instance → `instance-busy`. A refusal throws a `ContractError` whose `code` is the refusal, and it has no side effect: no transport method is called, nothing is stored, and an attached instance stays attached (contract §1.3). |
 | K1-R7 | One instance at a time. `detach()` and the transport's `onClose` both return the connector to no-instance mode (contract §1.3, §9). |
 | K1-R8 | Handshake and capabilities (contract §2, §3.2): the instance opens with `handshake` `{capabilities, requiredCapabilities}`. The connector answers `{capabilities, hostInstanceId}`, where `hostInstanceId` is new for each connector object. An unknown optional capability is ignored; an unknown required one is refused `unsupported-capability`. Before the handshake, any other request gets `handshake-required`; a second handshake gets `conflict`; a request outside the welcome gets `unsupported-operation`. The connector never sends before the instance's handshake. |
@@ -156,8 +142,8 @@ and `docs/connector-contract.md`. Source: contract §0–§11 at `bb0f756`.
 | K1-P-01 | P | K1-R1 | H-BOOT, H-CONN, H-STUB, H-MANAGED; no instance | `stub.attach({id:'stub-a', name:'Stub A', contract:{id:'fishball-connector', major:1, minor:0}, transport:<the four functions>})`; handshake; `S1` calls `message_fishball('m1')` | `attach` returns an object whose `detach` is a function; nothing is thrown. `stub.received()` gets the handshake response and then an `inbox.push` with `m1`. | both |
 | K1-P-02 | P | K1-R1 | as K1-P-01 | Attach with every optional field: `ui:{chat:'/fbtest/chat/', settings:'/fbtest/settings/?view=settings'}`, `status:()=>({state:'ready', code:null})`, `retry:async()=>{}` | Accepted; a handle with `detach`. | both |
 | K1-P-03 | P | K1-R2..R5 | H-MOD | `validateAttachment` on the minimal descriptor of K1-P-01 and on the maximal one of K1-P-02 | Neither throws `[OQ-47]`. | static |
-| K1-P-04 | P | K1-R1, K1-R3, K1-R4, K1-R12 | H-MOD | Read the binding constants | `CONNECTOR_SERVICE` = `'fishballConnector'`; `CONNECTOR_CONTRACT` deep-equals `{id:'fishball-connector', major:1, minor:1}`; `TRANSPORT_METHODS` holds exactly `send`, `onMessage`, `onClose`, `close`; `ATTACH_ERROR` holds exactly `instance-busy`, `contract-version`, `ui-invalid`, `transport-invalid`, `instance-invalid`. | static |
-| K1-P-05 | P | K1-R3 | H-MOD | `negotiateContract({id:'fishball-connector', major:1, minor:0})`; then with `minor:3` | Both return `{id:'fishball-connector', major:1, minor:0}` for a `minor:0` instance and `{id:'fishball-connector', major:1, minor:1}` for `minor:3` (the minimum of 0 and 1, and of 3 and 1). | static |
+| K1-P-04 | P | K1-R1, K1-R3, K1-R4, K1-R12 | H-MOD | Read the binding constants | `CONNECTOR_SERVICE` = `'fishballConnector'`; `CONNECTOR_CONTRACT` deep-equals `{id:'fishball-connector', major:1, minor:0}`; `TRANSPORT_METHODS` holds exactly `send`, `onMessage`, `onClose`, `close`; `ATTACH_ERROR` holds exactly `instance-busy`, `contract-version`, `ui-invalid`, `transport-invalid`, `instance-invalid`. | static |
+| K1-P-05 | P | K1-R3 | H-MOD | `negotiateContract({id:'fishball-connector', major:1, minor:0})`; then with `minor:3` | Both return `{id:'fishball-connector', major:1, minor:0}` (the minimum of 0 and 0, and of 3 and 0). | static |
 | K1-P-06 | P | K1-R7 | K1-P-01 done (stub-a attached) | `stub.detach()`; then attach `id:'stub-b'` | The second attach is accepted (no `instance-busy`). | both |
 | K1-P-07 | P | K1-R7 | K1-P-01 done | `stub.fireClose()`; then attach `id:'stub-b'` | Accepted. | both |
 | K1-P-08 | P | K1-R8, K1-R11 | H-STUB attached | `handshake(['inbox.push'], [])` | One `response` frame with the same `requestId`. Its payload is exactly `{capabilities, hostInstanceId}`: `hostInstanceId` is a non-empty string, and `capabilities` is a list of unique names, each an instance → connector operation of contract §4, none starting with `settings.`. Then a `session.list` `{limit:10}` request gets a `response`. | both |
@@ -278,7 +264,7 @@ lower bound that can be built.
 | K1-BVA-13 | BVA | K1-R13 | `imagesPerMessage`: `inbox.push` `images[]` 0, 20, 21 | n/a | 0 valid | 20 valid | 21 invalid | static |
 | K1-BVA-14 | BVA | K1-R13 | `attachmentsPerMessage`: `session.message` `attachments[]` with 0, 20, 21 unique refs; and 2 equal refs | n/a | 0 valid | 20 valid | 21 invalid; 2 equal refs invalid (unique) | static |
 | K1-BVA-15 | BVA | K1-R13 | `chunkBytes`: one chunk decoding to 524 288, then 524 289 bytes | n/a | — | valid | invalid | static |
-| K1-BVA-16 | BVA | K1-R13 | `transfersPerMessage` = 1 is declared but not enforced: one message using the refs of 2 non-image transfers | n/a | — | accepted (only the 20-`hostRef` bound applies) | — | both |
+| K1-BVA-16 | BVA | K1-R13 | `transfersPerMessage` = 1: one message using the refs of 1, then 2 transfers | n/a | — | 1 accepted | 2 `[OQ-45]` | both |
 | K1-BVA-17 | BVA | K1-R13 | `hostRefTtlMs` 600 000: use a fresh `hostRef` in `session.message` at 590 s, and another at 610 s after its put (a slow case) | n/a | — | 590 s accepted | 610 s refused (code `[OQ-46]`); a reused ref is refused as well | both |
 | K1-BVA-18 | BVA | K1-R13 | `reasonChars` 500, on `approval.answer` `answer.reason`, `session.release` `reason`, `grant.revoke` `reason`, `prompt.answer` `reason` and the descriptor `reason`; also 500 × `😀` | n/a `[OQ-19]` | — | 500 valid; 500 astral valid | 501 invalid | static |
 | K1-BVA-19 | BVA | K1-R13 | `questionChars` 500: `answer.question` (with `ask`), `questions[].question` | n/a | — | 500 valid | 501 invalid | static |
@@ -496,14 +482,9 @@ Events:
 
 ### BVA — queue bound `maxQueuedInputs`
 
-The default is 200 and the minimum 1 (DESIGN.md §16: whole numbers ≥ 1; it counts open rows).
-The limit is set only in DSH's form (U2, contract §8). Inputs are `message_fishball` calls with
-no instance attached, unless a case says otherwise.
-
-> **Open rows are `pending` rows.** The intake lifecycle (`INTAKE_STATUS`) is `pending`,
-> `consumed`, `discarded`, `failed`; it has no `accepted` status. An admitted input is stored as
-> `pending` and counts toward the bound until it becomes `consumed`, `discarded` or `failed`. `accepted` is only the
-> admission result (`INTAKE_OUTCOME.accepted`, beside `duplicate`), never a stored row status.
+The default is 200 and the minimum 1 (DESIGN.md §16: whole numbers ≥ 1; it counts open rows,
+`pending` and `accepted`). The limit is set only in DSH's form (U2, contract §8). Inputs are
+`message_fishball` calls with no instance attached, unless a case says otherwise.
 
 | ID | T | R | Preconditions | Steps | Expected | Ver |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -651,7 +632,7 @@ with `getAttribute('src')`.
 | C3-R6 | No settings renderer is left in `client.js`, including any brand or sidebar control (design §18.2 C3; U1). |
 | C3-R7 | The opener shows the instance's `status()` — a `STATUS` state and a `STATUS_CODES` code, or `null` — and Retry calls `retry()` (contract §1, §1.1, §6; design §7). |
 | C3-R8 | The light and dark themes both work (design §18.2 C3 AC). |
-| C3-R9 | The connector icon is fixed: the Fishball fish logo with a wrench badge (U1; `[OQ-37]`). |
+| C3-R9 | The connector icon is fixed: the Fishball fish logo with a wrench badge (U1; `[OQ-37]`). *ICON-SET (the user, 2026-11-18) supersedes the wrench on the sidebar row and the brand button: they show the plain fish; only the connector's own icon (its Plugins card and settings page) has the wrench badge (slim design conn-OQ-37).* |
 
 ### P — positive
 
@@ -669,7 +650,7 @@ with `getAttribute('src')`.
 | C3-P-10 | P | C3-R5 | H-SESS; first with no instance, then attached | Hand over `S1`; let it go idle; Take back | Both instance states behave the same: one "Hand over to Fishball" action with the optional note dialog (design §8.3), the idle mark with its dots, and "Take back from Fishball" while managed. | both |
 | C3-P-11 | P | C3-R6 | repository at C3's commit | Static scan of `packages/connector/client.js` | None of design §15 T15's settings renderers remain (`makeNativeSettings`, `makeModelSettings`, `makeChildPlugins`, `makeChildSettings`, `makeBrandStyle`, the question-mode renderer, the limits form), nor a sidebar-entry switch, nor the paths `/api/fishball/native/admin/`, `/api/fishball/brand`, `/api/fishball/sidebar-entry`. | static |
 | C3-P-12 | P | C3-R8 | dark, then light | Repeat C3-P-07, C3-P-03 and C3-P-09 in each theme | Screenshots in both themes. Text, link and Retry are legible on DSH's surface colours (no white panel in dark, no dark panel in light). | both |
-| C3-P-13 | P | C3-R9, C3-R8 | no instance, then attached; light and dark | Screenshot the row's icon and the brand button's icon | Both show the fish logo with a wrench badge, the same in every instance state and theme `[OQ-37]`; no DeepSeek-icon variant. | both |
+| C3-P-13 | P | C3-R9, C3-R8 | no instance, then attached; light and dark | Screenshot the row's icon and the brand button's icon | Both show the fish logo with a wrench badge, the same in every instance state and theme `[OQ-37]`; no DeepSeek-icon variant. | both *ICON-SET (the user, 2026-11-18) supersedes the wrench on the sidebar row and the brand button: they show the plain fish; only the connector's own icon (its Plugins card and settings page) has the wrench badge (slim design conn-OQ-37).* |
 | C3-P-14 | P | C3-R4 | `ui.chat` and `ui.settings` | From the Plugins page, reach DSH's own form for the connector row; change `maxActiveWatches`; save | The form is reachable while attached `[OQ-24]`, and the value is stored (as C2-P-06). | both |
 | C3-P-15 | P | C3-R2 | `ui.chat:'/fbtest/chat/'` | Use "Open in a tab" | `[OQ-25]` If kept: a new tab on the main origin at exactly `ui.chat`. | both |
 
@@ -690,7 +671,7 @@ Partitions:
 | C3-EP-04 | EP | C3-R2, C3-R4 | `ui.chat` and `ui.settings` | as above | The view frames `ui.chat`. The entry opens `ui.settings` `[OQ-24]`. | both |
 | C3-EP-05 | EP | C3-R4 | `ui.settings` only | as above | View: `[OQ-23]`, with no iframe of `ui.settings` in the chat view. The entry opens `ui.settings`. | both |
 | C3-EP-06 | EP | C3-R3 | the stub's attach was refused (`ui.chat:'//evil.example/'`) | Open the view | The empty state, no iframe, and nothing requested from `evil.example`. | both |
-| C3-EP-07 | EP | C3-R9, C3-R1 | H-OLD (DeepSeek-icon preference and sidebar entry `brand`) | Boot the connector build; look at the sidebar and the brand button | The icon is the fish with the wrench badge; the panel-list row is shown `[OQ-39]`; the brand opens the view. | both |
+| C3-EP-07 | EP | C3-R9, C3-R1 | H-OLD (DeepSeek-icon preference and sidebar entry `brand`) | Boot the connector build; look at the sidebar and the brand button | The icon is the fish with the wrench badge; the panel-list row is shown `[OQ-39]`; the brand opens the view. | both *ICON-SET (the user, 2026-11-18) supersedes the wrench on the sidebar row and the brand button: they show the plain fish; only the connector's own icon (its Plugins card and settings page) has the wrench badge (slim design conn-OQ-37).* |
 | C3-EP-08 | EP | C3-R7 | `ui.chat`, one fresh view per value | `status()` returns, in turn, `{state:'disabled', code:'NATIVE_DISABLED'}`, `{state:'waiting', code:null}`, `{state:'starting', code:null}`, `{state:'stopping', code:null}`, `{state:'stopped', code:null}` and `{state:'failed', code:'NATIVE_START_FAILED'}`; then the stub has no `status` at all; then `status` throws, and returns `{state:'odd', code:'X'}` | Each non-ready state shows the state screen with the state and the code (if any), and no iframe (design §7). With no `status`: `[OQ-25]`. A throwing or out-of-vocabulary `status`: `[OQ-53]`. In every case the view shows no stack trace, URL or token. | both |
 
 ### ST — the view
@@ -818,7 +799,7 @@ Each entry is a gap or a conflict in design §0 / §18.2 at `3509859`, in the co
 | OQ-34 | Does a hand-over with a note give one inbox item (`user`), or two (`system` plus `user`), and in which order? | C1-P-06, C1-DT-04 |
 | OQ-35 | **Closed** (contract §0): the question mode is a connector setting, so it is edited only in DSH's form. | — |
 | OQ-36 | "No plugin is called Fishball": does the connector row keep the id `fishball` (design §0.2: the settings namespace and stored limits survive)? What label does DSH's Plugins page show for it? | M1-R2, M1-P-07, M1-P-11 |
-| OQ-37 | The fixed icon (the fish with a wrench badge): where does it appear (the sidebar row, the brand button, the Plugins card)? Is it built from DSH's `FISH_LOGO_PATH` plus a badge? Does it keep the unread count and Fishball's dots (design §7, §8.2)? Do light and dark differ? | C3-P-13, C3-EP-07 |
+| OQ-37 | The fixed icon (the fish with a wrench badge): where does it appear (the sidebar row, the brand button, the Plugins card)? Is it built from DSH's `FISH_LOGO_PATH` plus a badge? Does it keep the unread count and Fishball's dots (design §7, §8.2)? Do light and dark differ? | C3-P-13, C3-EP-07 *ICON-SET (the user, 2026-11-18) supersedes the wrench on the sidebar row and the brand button: they show the plain fish; only the connector's own icon (its Plugins card and settings page) has the wrench badge (slim design conn-OQ-37).* |
 | OQ-38 | **Closed** (U4): there is no `settings.describe`. | — |
 | OQ-39 | With the "Sidebar entry" switch gone, is the panel-list row always shown (design §7's default), with the brand as a second way in? | C3-R1, C2-EP-10, C3-EP-07 |
 | OQ-40 | The instance settings page (I6) and E1's `E2E-B5` ("change a connector limit in the instance settings page") assume settings over the contract. Under U2 and U4 neither is possible. Flagged for the I6/E1 session. | outside this scope |
@@ -826,7 +807,7 @@ Each entry is a gap or a conflict in design §0 / §18.2 at `3509859`, in the co
 | OQ-42 | **New. Conflict between contract §0 and U1.** Contract §0 at `bb0f756` lists the connector settings as "its limits, question mode, **brand icon and sidebar entry**", edited in DSH's form; U1 says the icon is fixed and no branding or sidebar setting exists. These cases follow U1. Should contract §0 be corrected? | C2-EP-09, C2-EP-10, C3-P-13, C3-EP-07 |
 | OQ-43 | **New.** Contract §3.2 lists "each required name is a §4 operation the receiver knows" as a handshake payload rule, which would make it a validation failure that closes the channel. It also says "if the connector cannot serve every required one, it answers `unsupported-capability`". Which applies to an unknown required name, and which to the other payload-rule breaks (required ⊄ capabilities, no `inbox.push`, duplicates)? | K1-EP-37, K1-EP-39, C2-EP-05 |
 | OQ-44 | **New.** A request for an operation name that does not exist in v1 (for example `settings.update`): is it an `error` frame `unsupported-operation` (contract §3.2, "outside the welcome") or an envelope validation failure that closes the channel (contract §3.1, `operation` must be a known name)? | K1-EP-56, K1-EP-57, C2-EP-01..03, C2-ST-01 |
-| OQ-45 | **Resolved** (contract §4.4, §8): `transfersPerMessage` is declared but not enforced — a message may carry several files; only the 20-`hostRef` `attachmentsPerMessage` bound applies. | K1-BVA-16 |
+| OQ-45 | **New.** `transfersPerMessage` is 1 (contract §4.4, §8), but `attachmentsPerMessage` allows 20 `hostRef`s, each from its own `attachment.put`. How can a message carry more than one attachment? | K1-BVA-14, K1-BVA-16 |
 | OQ-46 | **New.** Which code refuses an expired or already-consumed `hostRef`? Contract §7 lists none for it. | K1-BVA-17 |
 | OQ-47 | **New.** Contract §10 names `validateAttachment`, `negotiateContract`, `validateRequest`/`Response`/`Event`, `requireCapabilities`, `encodeEnvelope`, `decodeEnvelope` and `makeEnvelope`, but the doc gives no signatures or failure forms (throw vs result). The module-level cases need them; otherwise they move to the service level. | K1-P-03, K1-P-05, K1-P-11, K1-P-13, K1-EP-38, all `static` K1 cases |
 | OQ-48 | **New.** After a refused handshake, or a channel the connector closes because a frame failed validation: is the instance detached (no-instance mode, so a new attach is accepted), and does the connector call `transport.close()`? | K1-EP-37, K1-EP-43, K1-EP-51, C1-ST-11 |
