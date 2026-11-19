@@ -26,6 +26,7 @@ import {
 import { CODE_THROW, SECRET, THROWN, assertNoSecret, assertOneWarning } from '../link/log-privacy.mjs'
 import { createWorld, loadChunkAlone, loadPage, settle } from './page.mjs'
 import { registerModelCatalogCases } from './model-catalog.mjs'
+import { registerBrandSettingCases } from './brand.mjs'
 import { registerSettingsPolishCases } from './polish-cases.mjs'
 import { registerMultiSettingsCases } from './multi.mjs'
 import { registerConnectRaceCases } from './connect-cases.mjs'
@@ -99,6 +100,7 @@ function assertNeverExposed(page, value) {
 
 export function registerSettingsCases(sdk) {
   registerMultiSettingsCases(sdk)
+  registerBrandSettingCases(sdk)
   // ============================================================== SET3-UC-01: core's own settings page (req 1)
   caseTest(sdk, 'SET3-UC-01', 'main 1-2', "with the namespace served, one plugins.bundle.config entry keyed by the bundle name 'fishball-core'", async (t) => {
     const page = await pageOf(t, sdk, {}, null)

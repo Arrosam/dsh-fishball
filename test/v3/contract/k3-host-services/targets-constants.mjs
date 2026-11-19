@@ -21,7 +21,7 @@ export const TARGETS_FILE = Object.freeze({
 /** The names index.d.ts exports from targets.d.ts (the K3 brief and index.d.ts's MULTI-0 note). */
 export const TARGETS_EXPORTS = Object.freeze([
   'TargetId', 'EndpointEpoch', 'TargetKind', 'TargetState', 'TargetIdentityState', 'TargetSource', 'TargetCredentialBinding', 'TargetSelector', 'TargetRecord', 'TargetView',
-  'TargetsSnapshot', 'TargetActionResult', 'FishballTargets', 'FishballTargetBound', 'SetStatus', 'StatusSnapshot',
+  'TargetsSnapshot', 'TargetActionResult', 'FishballTargets', 'FishballTargetBound', 'SetStatus', 'StatusSnapshot', 'BrandStatus',
 ])
 
 /** README "Target record" and "Provenance" rows; targets.d.ts TargetView. */
@@ -55,14 +55,15 @@ export const TYPES = Object.freeze({
 })
 /**
  * README "Status snapshot" and targets.d.ts: `StatusSnapshot` is `{fishball: 'on', targets:
- * TargetsSnapshot, guards: GuardReport | null, set: SetStatus | null}` or exactly `{fishball:
- * 'fishball-off'}` (no `targets`); `SetStatus` is `{status, missing[]}`, each missing `{name, reason, code}`.
+ * TargetsSnapshot, guards: GuardReport | null, set: SetStatus | null, brand: BrandStatus}` or
+ * exactly `{fishball: 'fishball-off'}` (no `targets`, no `brand`); `SetStatus` is `{status,
+ * missing[]}`, each missing `{name, reason, code}`; `BrandStatus` is `{style: 'fishball' | 'deepseek'}`.
  */
 export const STATUS = Object.freeze({
   type: 'StatusSnapshot',
   discriminant: 'fishball',
   branches: Object.freeze({
-    on: Object.freeze({ targets: Object.freeze(['TargetsSnapshot']), guards: Object.freeze(['GuardReport', 'null']), set: Object.freeze(['SetStatus', 'null']) }),
+    on: Object.freeze({ targets: Object.freeze(['TargetsSnapshot']), guards: Object.freeze(['GuardReport', 'null']), set: Object.freeze(['SetStatus', 'null']), brand: Object.freeze(['BrandStatus']) }),
     'fishball-off': Object.freeze({}),
   }),
   set: Object.freeze({
@@ -71,6 +72,8 @@ export const STATUS = Object.freeze({
     status: Object.freeze(['ok', 'plugin-set-incomplete']),
     entry: Object.freeze({ name: Object.freeze(['string']), reason: Object.freeze(['skipped', 'failed']), code: Object.freeze(['string', 'null']) }),
   }),
+  /** LOGO-BUTTON: the normalized logo theme, always present on the on branch. */
+  brand: Object.freeze({ type: 'BrandStatus', member: 'style', styles: Object.freeze(['fishball', 'deepseek']) }),
   /** The K3a scalar members withdrawn from the snapshot (README "List / status API"). */
   withdrawn: Object.freeze(['link', 'connect', 'line', 'control', 'contributedTools']),
 })

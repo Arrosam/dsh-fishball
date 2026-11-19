@@ -206,14 +206,14 @@ Requirement: `.runtime/reports/ui-polish-f/SPEC.md` §2. `stripView` keeps `line
 ## MULTI-1 re-baseline (MULTI-0 `StatusSnapshot`; the lead's instruction, 2026-11-18)
 
 Seam (relayed 2026-11-18): `createStatus(ctx, {targets: {list, onChange}, guards, notify})`; the
-snapshot is `{fishball, guards, set, targets}`. The scalar `link` / `target` / `connect` / `bridge`
+snapshot is `{fishball, guards, set, targets, brand: {style}}` (LOGO-BUTTON adds the normalized logo theme). The scalar `link` / `target` / `connect` / `bridge`
 ports and the snapshot's scalar `link`, `connect`, `line`, `control`, `contributedTools` are
 withdrawn; each `TargetView` carries its own `line` = core's `stripLine(link, url, connect).line`
 (targets.d.ts). Core rows no longer assert fishball-ui's `stripView` output (fishball-ui's own suites do).
 
 | Row | Technique | Oracle |
 | --- | --- | --- |
-| F-STATUS-01 | EP (shape) | exactly `{fishball, guards, set, targets}`; no withdrawn member; targets `{version: 1, targets: []}` with an empty port |
+| F-STATUS-01 | EP (shape) | exactly `{fishball, guards, set, targets, brand}`; no withdrawn member; targets `{version: 1, targets: []}` with an empty port; absent stored logo theme → `brand.style: fishball` |
 | MULTI-STATUS-EP-01 ×3 | EP (one / two with zero tools / connected) | `snapshot.targets` equals the port's `list()` |
 | MULTI-STATUS-ST-01 | ST (list change / equal list) | one emission per change, none for an equal list |
 | REM-DT-01, F-STATUS-DT-01, F-STATUS-EP-01, F-STATUS-ST-01 | DT / EP / ST | the same F-STATUS rule tables, now on the pure per-target `stripLine` |

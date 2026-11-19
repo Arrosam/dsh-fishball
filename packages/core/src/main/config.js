@@ -11,8 +11,15 @@
  * default model"), and schemastery applies an object's required fields to an absent value too.
  * Whether a stored selection is complete and routable is the manager session's rule
  * (src/manager/session.js), which reads an incomplete one as unset.
+ *
+ * LOGO-BUTTON: `brandStyle` is the sidebar logo's theme, a plain top-level field because DSH's
+ * config form writes a scalar field by name (core's settings page's control uses
+ * `form.set(SEAM_BRAND.setting, …)`). Absent means `SEAM_BRAND.default`; the status snapshot
+ * normalizes an unknown stored word the same way, so an old or hand-written value cannot change the
+ * art outside the two offered choices.
  */
 import Schema from '@deepseek-ai/schemastery'
+import { SEAM_BRAND } from 'fishball-shared/ui-seam'
 
 const text = () => Schema.string().volatile()
 
@@ -20,6 +27,8 @@ export const Config = Schema.object({
   connect: Schema.object({ clientMetadataUrl: text() }),
   identity: Schema.object({ id: text(), name: text() }),
   model: Schema.object({ provider: Schema.string(), model: Schema.string(), reasoningEffort: Schema.string() }).volatile(),
+  // An invalid stored value is presentation, not a reason to abort core's startup.
+  [SEAM_BRAND.setting]: Schema.string().loose().volatile(),
 })
 
 /** A volatile field arrives as a live reference (`.get()`); a plain value (a direct construction) reads the same. */

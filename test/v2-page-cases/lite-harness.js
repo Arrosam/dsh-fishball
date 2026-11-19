@@ -375,7 +375,7 @@
   const api = {
     log,
     storageFaults,
-    async start(options) {
+    async start(options, prepareShell) {
       const o = { locale: 'en', commands: [], fixed: [], session: { sessionId: 'session-fishball-case' }, holdSession: false, faults: {}, ...options }
       const labels = { sessionNew: o.dicts.sidebar[o.locale]['session.new.label'], branch: o.dicts.chat[o.locale]['message.branch'], hierarchy: o.dicts.conversation[o.locale]['session.hierarchy'], chooseWorkspace: o.dicts.conversation[o.locale]['hero.chooseWorkspace'] }
       hero.open = false
@@ -518,12 +518,15 @@
         sessions: recorder('sessions', { list, async archive() {}, async fork() {}, async create() {} }),
         shortcuts: api.facade.shortcuts,
       }
-      const page = (await loadModule(H.pageScript)).factory((name) => {
+      const platform = (name) => {
         if (name === 'react') return React
         if (name === 'react-dom') return ReactDOM
         if (name === H.primitivesModule) return pagePrimitives
         throw new Error('unexpected page require ' + name)
-      })
+      }
+      // Optional scenario-specific native outlets and an independently lifecycled client.
+      prepareShell?.({ ctx, platform, mount, loadModule })
+      const page = (await loadModule(H.pageScript)).factory(platform)
       api.plugin = { name: page.name, inject: page.inject }
       page.apply(ctx)
       hero.started = true

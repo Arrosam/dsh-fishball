@@ -11,6 +11,13 @@ window.__ModuleLoader__.load({
       priority: -1,
       root: 'data-fishball-page', ready: 'data-fishball-session',
       hidden: 'data-fishball-hidden', label: 'aria-label',
+      /**
+       * Only the wide button contains the name slot; the mark alone also occurs in the rail toggle.
+       * The brand chunk sets this attribute only while it owns the button's activation listeners.
+       */
+      brandControl: 'data-fishball-logo-control',
+      brandName: '[data-slot="sidebar.brand.name"]',
+      buttonTag: 'button',
       settingsSlot: 'settings.launcher', settingsButton: 'fishball-settings-launcher',
       /**
        * MULTI-3 (PLAN-MULTI §6.4): "Fishball" (back to the manager's conversation) and the page's
@@ -166,6 +173,10 @@ window.__ModuleLoader__.load({
       pointerdown: 'pointerdown', click: 'click', keydown: 'keydown', escape: 'Escape',
       focusable: 'button:not([disabled]),[href],[tabindex]:not([tabindex="-1"])',
     })
+    const BRAND_ACTIVATION = Object.freeze({
+      pointerEvents: Object.freeze(['click', 'pointerdown', 'pointerup']),
+      keyEvents: Object.freeze(['keydown', 'keyup']), keys: Object.freeze(['Enter', ' ']),
+    })
     /** In-frame navigation policy; see mountFrameGuard. */
     const FRAME = Object.freeze({
       navigate: 'navigate', click: 'click', anchor: 'a[href],area[href]', blank: '_blank', frame: 'iframe',
@@ -225,6 +236,9 @@ window.__ModuleLoader__.load({
         // open-sidebar glyph, its sibling, so it is not taken for this page's Fishball button.
         `${rail} button>span:has(>[data-slot="sidebar.brand.mark"]){display:none!important}`,
         `${rail} button>span:has(>[data-slot="sidebar.brand.mark"])~svg{display:inline!important}`,
+        // rc.1 retains the wide identity in its drawer; rc.5 retains it until the collapse fade ends.
+        // Hide it from layout and focus as soon as the bar closes. The mark-only toggle has no name slot.
+        `${sidebar} :is(button,span):has(${PAGE.brandName}){display:none!important}`,
         `${closed} ${PAGE.main}>*{padding-bottom:${narrow.clearancePx}px;box-sizing:border-box}`,
         // AppFrame supplies an inline drawer width and an off-screen transform. Only its CLOSED
         // presentation changes; the open drawer still uses the host's geometry and modal layer.
@@ -273,7 +287,11 @@ window.__ModuleLoader__.load({
         `.${PAGE.css.status}[${PAGE.statusKind}="unavailable"],.${PAGE.css.status}[${PAGE.statusKind}="failed"]{color:var(--dsw-alias-state-error-primary)}`,
         // The restyle needs `:has()`; a browser without it keeps DSH's own narrow layout rather than
         // failing the whole page on an unparsable rule.
-        ...(CSS.supports(PAGE.hasSupport) ? barRules(root) : []),
+        ...(CSS.supports(PAGE.hasSupport) ? [
+          // Hide the unowned wide brand immediately, including replacement DOM before observers run.
+          `${root} ${PAGE.buttonTag}:has(${PAGE.brandName}):not([${PAGE.brandControl}]){display:none!important}`,
+          ...barRules(root),
+        ] : []),
         // Fishball's replies: DSH's fish mark and the name above an assistant bubble, the user's own
         // bubble left as DSH draws it, with its thin stroke.
         `${root} ${PAGE.main} [data-chat-flow-kind="assistant-step"][data-chat-group-part="response"]{position:relative;margin:6px 12% 6px 0;padding:20px 0 0 36px}`,
@@ -303,7 +321,10 @@ window.__ModuleLoader__.load({
         for (const { selector, keys } of LABELS) {
           const labels = new Set(keys.map(text))
           for (const node of document.querySelectorAll(selector)) {
-            if (labels.has(node.getAttribute(PAGE.label))) next.add(node)
+            if (!labels.has(node.getAttribute(PAGE.label))) continue
+            // DSH can rewrite the label even while the brand still owns the click.
+            if (node.hasAttribute(PAGE.brandControl)) continue
+            next.add(node)
           }
         }
         for (const node of marked) if (!next.has(node)) node.removeAttribute(PAGE.hidden)
@@ -315,10 +336,24 @@ window.__ModuleLoader__.load({
       }
       const observer = new MutationObserver(reconcile)
       observer.observe(document.body, { subtree: true, childList: true, characterData: true,
-        attributes: true, attributeFilter: [PAGE.label] })
+        attributes: true, attributeFilter: [PAGE.label, PAGE.brandControl] })
       const unsubscribe = ctx.locale.subscribe(reconcile)
       reconcile()
+      // Even a synthetic click or a queued keyboard activation on a now-hidden button must not
+      // bubble to DSH's startSession. The rail toggle has no name slot and is never intercepted.
+      const blockUnownedBrand = (event) => {
+        if (BRAND_ACTIVATION.keyEvents.includes(event.type) && !BRAND_ACTIVATION.keys.includes(event.key)) return
+        // React delegates Text-targeted events to the parent element; capture must do the same.
+        const target = event.target
+        const button = (target?.closest ? target : target?.parentElement)?.closest?.(PAGE.buttonTag)
+        if (!button?.querySelector?.(PAGE.brandName) || button.hasAttribute(PAGE.brandControl)) return
+        event.preventDefault()
+        event.stopImmediatePropagation()
+      }
+      const events = [...BRAND_ACTIVATION.pointerEvents, ...BRAND_ACTIVATION.keyEvents]
+      for (const type of events) document.addEventListener(type, blockUnownedBrand, true)
       return () => {
+        for (const type of events) document.removeEventListener(type, blockUnownedBrand, true)
         observer.disconnect()
         unsubscribe()
         for (const node of marked) node.removeAttribute(PAGE.hidden)

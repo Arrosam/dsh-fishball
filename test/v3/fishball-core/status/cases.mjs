@@ -86,7 +86,7 @@ export function registerStatusCases(sdk) {
   })
 
   // ---------------------------------------------------------------- MULTI-STATUS: the snapshot shape (MULTI-0 StatusSnapshot)
-  t('F-STATUS-01', 'snapshot', 'the snapshot is frozen, has exactly {fishball, guards, set, targets}, fishball on, no withdrawn scalar member, and null for absent guards / set before ready', async (c) => {
+  t('F-STATUS-01', 'snapshot', 'the snapshot is frozen, has exactly {fishball, guards, set, targets, brand}, fishball on, brand {style} fishball for an absent stored value, no withdrawn scalar member, and null for absent guards / set before ready', async (c) => {
     const w = await worldFor(c, sdk)
     const s = w.snapshot()
     assert.ok(Object.isFrozen(s), 'snapshot is not frozen')
@@ -95,6 +95,9 @@ export function registerStatusCases(sdk) {
     assert.equal(s.fishball, MODEL.fishball.on)
     assert.deepEqual(s.targets, TARGETS_SNAPSHOT.empty)
     assert.deepEqual({ guards: s.guards, set: s.set }, { guards: null, set: null })
+    // LOGO-BUTTON: the normalized logo theme is always present; an absent stored value is fishball.
+    assert.deepEqual(s.brand, { style: 'fishball' })
+    assert.ok(Object.isFrozen(s.brand), 'brand is not frozen')
   })
   for (const [part, snapshot] of [['one', TARGETS_SNAPSHOT.one], ['two, zero tools counted', TARGETS_SNAPSHOT.two], ['connected', TARGETS_SNAPSHOT.connected]]) {
     t('MULTI-STATUS-EP-01', part, `snapshot.targets is the targets port's list() exactly (${part})`, async (c) => {

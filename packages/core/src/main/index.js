@@ -145,7 +145,7 @@ export async function apply(ctx, config) {
   // The guard row is its own row and may start after this one, be replaced or go away.
   const guards = followService(ctx, GUARDS.serviceName, { report: (report) => report.report() ?? null, onChange: 'onChange' })
   ctx.effect(() => () => guards.dispose())
-  const status = createStatus(ctx, { targets: targets.service, guards, notify: (input) => service.manager.notify(input) })
+  const status = createStatus(ctx, { targets: targets.service, guards, notify: (input) => service.manager.notify(input), brand: () => setting('brandStyle') })
 
   // 5. Contributions. Each is one X2 registration: only the manager's scope receives it.
   const reminders = createReminders(ctx, { resolveAgent: (id, next) => session.resolveAgent(id, next) })
