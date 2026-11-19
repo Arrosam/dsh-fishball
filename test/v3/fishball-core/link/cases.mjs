@@ -21,7 +21,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { setTimeout as sleep } from 'node:timers/promises'
 import { caseTest } from '../../contract/package-boundaries/cases.mjs'
-import { SDK, V3 } from '../../contract/package-boundaries/constants.mjs'
+import { V3 } from '../../contract/package-boundaries/constants.mjs'
 import { readManifest } from '../../contract/package-boundaries/packages.mjs'
 import { specifiers } from '../../contract/k3-host-services/declarations.mjs'
 import {
@@ -273,13 +273,9 @@ export function registerFLinkCases(sdk) {
     assert.deepEqual(edges, [])
   })
 
-  caseTest(sdk, 'F-LINK', 'done 6', `core packages its own ${MCP_CLIENT}, pinned exactly to this SDK's client line (design §9.1, §9.2)`, async () => {
+  caseTest(sdk, 'F-LINK', 'done 6', `core packages its own ${MCP_CLIENT}, pinned exactly to ${CLIENT_PIN.version}`, () => {
     const manifest = readManifest(V3.core.dir)
-    const pin = manifest?.dependencies?.[MCP_CLIENT]
-    assert.ok(pin, `${MCP_CLIENT} is not a runtime dependency of ${V3.core.name}`)
-    assert.match(pin, CLIENT_PIN.exactVersion, `${MCP_CLIENT} is not pinned exactly: ${pin}`)
-    const host = JSON.parse(fs.readFileSync(path.join(SDK.versionsDir, sdk, CLIENT_PIN.nodeModules, MCP_CLIENT, CLIENT_PIN.manifest), 'utf8')).version
-    assert.equal(CLIENT_PIN.line(pin), CLIENT_PIN.line(host), `core pins ${pin}; DSH ${sdk} carries ${host}`)
+    assert.equal(manifest?.dependencies?.[MCP_CLIENT], CLIENT_PIN.version, `${V3.core.name} runtime dependency ${MCP_CLIENT}`)
     assert.equal(manifest?.peerDependencies?.[MCP_CLIENT], undefined, 'the client must be packaged, not a DSH peer')
   })
 

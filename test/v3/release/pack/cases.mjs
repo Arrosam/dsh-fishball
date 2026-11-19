@@ -45,7 +45,7 @@ import { NODE, REPO } from '../../../support/constants.mjs'
 import { caseName } from '../../contract/package-boundaries/cases.mjs'
 import {
   ALL, ALL_NAMES, BUDGET, CASE, CORE_CLOSURE, DOC_TEXT, DRY_RUN, DSH, INSTALL_DOC, INSTANCE_BUNDLED, ISOLATION, JUNK, LIBRARIES, MANIFEST,
-  NAMED_IMPORTERS, NPM_TOOL, OFFLINE, PACK_SCRIPT, RELEASE, RELEASE_COUNT, SETS, SHELVED, SHELVED_DOC, TARBALL, UI_PEERS, VERSION, isLibrary,
+  NAMED_IMPORTERS, NPM_TOOL, OFFLINE, PACKED_MCP_PINS, PACK_SCRIPT, RELEASE, RELEASE_COUNT, SETS, SHELVED, SHELVED_DOC, TARBALL, UI_PEERS, VERSION, isLibrary,
 } from './constants.mjs'
 import {
   assertFromOwnBundle, assertLibraryCopies, copyRelease, describeEntry, docProfile, dshAddChecked, fencedBlocks, filesUnder, flipByte,
@@ -82,6 +82,9 @@ export function manifestProblems(pkg, m) {
   expect(m.publishConfig?.tag === MANIFEST.publishTag, `publishConfig.tag ${show(m.publishConfig?.tag)}`)
   expect(m.private !== true, 'private: true')
   for (const f of MANIFEST.zodForbiddenFields) expect(!Object.hasOwn(m[f] ?? {}, MANIFEST.zod), `${MANIFEST.zod} in ${f}`)
+  for (const { name, version } of PACKED_MCP_PINS[pkg.name] ?? []) {
+    expect(m.dependencies?.[name] === version, `dependencies.${name} ${show(m.dependencies?.[name])}; expected ${version}`)
+  }
   const peers = m[MANIFEST.peerField] ?? {}
   if (Object.hasOwn(peers, MANIFEST.zod)) expect(peers[MANIFEST.zod] === MANIFEST.zodRange, `${MANIFEST.zod} peer range ${show(peers[MANIFEST.zod])}`)
   for (const [name, range] of Object.entries(peers)) if (name.startsWith(MANIFEST.hostScope)) expect(range === MANIFEST.hostPeerRange, `peer ${name} range ${show(range)}`)

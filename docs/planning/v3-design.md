@@ -252,9 +252,10 @@ What both DSH SDKs ship (read only, byte-identical client/core dist in both):
      `initialize` request gets a JSON-RPC error whose message names the supported revision, so a
      2025-era client can show the user why it can't connect;
   6. dispatch.
-- **Server SDK:** an explicitly packaged `@modelcontextprotocol/server` of the same 2.x line as
-  the hosts' client (2.2.0), with its Node HTTP adapter, configured **modern-only (2026-07-28)**.
-  Proving it on both hosts is spike **V3-S1** (§11).
+- **Server SDK:** the connector pins `@modelcontextprotocol/server` 2.4.0 and its Node HTTP
+  adapter 2.1.2. Both supported hosts still ship client 2.2.0: interoperability depends on the
+  **2026-07-28** wire revision, not identical package versions. The connector rejects legacy
+  requests and creates a fresh `McpServer` per admitted request from the verified caller's scope.
 - **Older clients must upgrade (Q12, decided).** The connector serves no 2025-11-25 or earlier
   client. The README and the connector's settings note say so, and the refusal above names the
   supported revision.
@@ -1342,12 +1343,12 @@ callback on a fresh OS port per attempt through DSH's `ctx.authorization`, the c
 no secret, and single-flight refresh under `credentials.modifyRecord`'s cross-process lock.
 
 **One copy per side (requirements 1.40).** The S7c **K2 token manager** is needed by the adapter
-(DSH side) and by core's Connect (Fishball side). Most of it is the SDK's own `auth()` and
-`OAuthClientProvider`; the rest (CIMD client id, `state`, `iss`, the loopback callback through
-`ctx.authorization`, single-flight refresh) is written twice: in `dsh-connector-shared/oauth-client`
-for the adapter and in `fishball-shared/oauth-client` for core. Each is tested on its own side. The rest of the adapter is not reused: core
-needs no loopback proxy and no stock child row, because its own link (§6.3) takes an
-`authProvider` from the same `@modelcontextprotocol/client` 2.2.0 it already pins. The
+(DSH side) and by core's Connect (Fishball side). Each uses its own pinned
+`@modelcontextprotocol/client` 2.4.0 for discovery, authorization, code exchange and refresh.
+The helpers manage the CIMD client id, `state`, `iss`, loopback callback through
+`ctx.authorization`, and single-flight refresh on their own side: `dsh-connector-adapter/src/oauth-client.js`
+and `core/src/link/oauth-client.js`. Core's link (§6.3) takes the resulting `authProvider` directly;
+core needs neither the adapter's loopback proxy nor its stock child row. The
 Fishball-connector check of §5.5b runs before Connect too, so core never sends an authorization
 request to a server that is not a Fishball connector.
 
@@ -1564,7 +1565,7 @@ released only inside the tarballs of the packages that depend on it (no registry
 | `ctx.credentials`: `resolve`, `describe`, `set`, `unset`, records; event `credentials/reference-updated` | `dsh-credentials/lib/types/index.d.ts` | **identical** type files | tokens (§5), standalone token resolution (§6.3) |
 | `role('credential-ref')` / `role('secret')` + `redactSecrets` | `dsh-settings`, `dsh-web-search-deepseek` | same | token entries use `credential-ref` |
 | Generic plugin form secret widget | none found in `dsh-client-ui-plugin-manager` / `dsh-client-ui-settings` | none found | §5.2 (Q5 decided) |
-| `@modelcontextprotocol/client` / `core` | 2.2.0 | 2.2.0, dist byte-identical | `fishball-core`'s link (packaged copy of the same line) |
+| `@modelcontextprotocol/client` / `core` | 2.2.0 | 2.2.0, dist byte-identical | Stock clients interoperate with the connector (§3.1); Fishball core and the adapter pin their own client 2.4.0 |
 | `dsh-mcp-client` | tools + list-changed only, `capabilities: {}`, static headers | same lines | not used for the target (§6.3) |
 | MCP server runtime | not installed | not installed | packaged by the connector |
 | Bundle patch rows `{id, disabled, config, insert}` (`cordis-plugin-include` `PatchOptions`); applied in bundle order, a patch on a row not yet inserted is skipped with a debug-level warning (S6) | present | present (`patch.d.ts`) | `fishball-core` guard rows (§5a.2) |

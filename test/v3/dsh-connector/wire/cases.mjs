@@ -17,7 +17,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import test from 'node:test'
 import { caseName } from '../../contract/package-boundaries/cases.mjs'
-import { BUDGET, FILES, FIXTURE, HTTP, K1, K2, LATER, PACKAGES, SURFACE } from './constants.mjs'
+import { BUDGET, FILES, FIXTURE, HTTP, K1, K2, LATER, MAX_ARGUMENT_ENTRIES, PACKAGES, SURFACE, UNKNOWN_TOOL_CODE } from './constants.mjs'
 import { pluginEntry, resolveConfig, revocationNoteText, settingsPageRoutes, uiRoutes } from './subject.mjs'
 import { freePort, holdPort, scenario, sdkClient } from './world.mjs'
 import { until } from '../../../support/util.mjs'
@@ -556,6 +556,23 @@ function httpRows(sdk) {
 
 // ============================================================ R8, R17, R9, AUTH-UC-09, R13
 function machineRows(sdk) {
+  row(sdk, 'MCP-ARGS-BVA', 'core and contributed', 'argument entries: the inclusive boundary reaches schema validation; one more returns limit-exceeded', async (t) => {
+    const w = await withUi(sdk)
+    const { client } = await pairedPrincipal(t, w)
+    const notify = K2.publicNameOf(K2.namespaceOf(PACKAGES.ui.name), FIXTURE.uiNotify)
+    const listed = await toolNames(client)
+    assert.ok(listed.includes(notify), `linked UI must contribute ${notify}; listed: ${listed.join(', ')}`)
+    // Two root/nested keys (sample, values) plus the primitive items; neither schema admits sample.
+    const argsOf = (entries) => ({ sample: { values: Array(entries - 2).fill(0) } })
+    const atLimit = argsOf(MAX_ARGUMENT_ENTRIES)
+    const overLimit = argsOf(MAX_ARGUMENT_ENTRIES + 1)
+    for (const name of [TOOL.setName, notify]) {
+      await wireRefusal(client, name, atLimit, REFUSAL.invalidArguments)
+      await wireRefusal(client, name, overLimit, REFUSAL.limitExceeded)
+    }
+    assert.ok(!listed.includes(FIXTURE.unknownTool), 'unknown-tool fixture must not be registered')
+    await assert.rejects(client.callTool({ name: FIXTURE.unknownTool, arguments: overLimit }, undefined, { timeout: BUDGET.rpcMs }), { code: UNKNOWN_TOOL_CODE })
+  })
   row(sdk, 'C-WIRE-R8', 'main (UC)', 'create → stock ClientCredentialsProvider (client_id = agent id) → pair-only tools/list → pair → the full core tool list', async (t) => {
     const w = await main(sdk)
     const made = await createToken(w, FIXTURE.label.a)

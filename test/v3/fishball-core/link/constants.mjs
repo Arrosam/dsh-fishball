@@ -14,6 +14,7 @@
 import { randomBytes } from 'node:crypto'
 import path from 'node:path'
 import { REPO } from '../../../support/constants.mjs'
+import { MCP_PINS } from '../../release/pack/mcp-pins.mjs'
 import * as K1 from '../../../../packages/dsh-connector/mcp-schema/index.js'
 
 export { K1 }
@@ -141,17 +142,7 @@ export const HARNESS = Object.freeze({
   bindHost: '::',
 })
 
-/**
- * Design §9.1 / §9.2: core packages its own MCP client, "a packaged copy of the same line" as both
- * hosts' 2.2.0. A line is major.minor; the pin is exact, as K1's SDK_PINS are.
- */
-export const CLIENT_PIN = Object.freeze({
-  name: '@modelcontextprotocol/client',
-  exactVersion: /^\d+\.\d+\.\d+$/,
-  line: (version) => version.split('.').slice(0, 2).join('.'),
-  nodeModules: 'node_modules',
-  manifest: 'package.json',
-})
+export const CLIENT_PIN = MCP_PINS.client
 
 // F-OWN-SCHEMA: generator fixtures withdrawn (design §1.0b row 1).
 

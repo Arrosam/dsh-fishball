@@ -203,7 +203,7 @@ export function createMcpEndpoint({ gate, verifier, failures, pairs, secure, rea
   /** One fresh McpServer per request (the SDK's per-request factory), built for the verified caller. */
   function factory({ authInfo }) {
     const caller = authInfo.extra.caller
-    const server = new McpServer(serverInfo(), { capabilities: CAPABILITIES })
+    const server = new McpServer(serverInfo(), { capabilities: CAPABILITIES, maxToolInputElements: ENDPOINT_LIMITS.maxToolInputElements })
     // R-OA-09: `server/discover` advertises the client-credentials extension, with empty settings.
     server.server.registerCapabilities({ extensions: { [PROTOCOL.clientCredentialsExtension]: {} } })
     if (caller.scope === SCOPE.full) {

@@ -7,9 +7,9 @@ It runs inside DeepSeek Harness and uses the host's installed packages as peer d
 ## Runtime dependencies
 
 The package manager installs these alongside the connector. None of their code is copied or bundled into this repository or its tarball:
-- `@modelcontextprotocol/server` 2.2.0, `@modelcontextprotocol/core` 2.2.0 and `@modelcontextprotocol/node` 2.1.0 (Copyright (c) 2024-2025 Model Context Protocol a Series of LF Projects, LLC). Their manifests declare MIT. Their LICENSE files describe the MCP project's move from MIT to Apache-2.0 and carry both texts.
-- Their own dependencies `zod` (MIT, Copyright (c) 2025 Colin McDonnell) and `@hono/node-server` (MIT, Copyright (c) 2022 - present, Yusuke Wada and Hono contributors).
-- `hono` (MIT, Copyright (c) 2021 - present, Yusuke Wada and Hono contributors), listed only to satisfy the Node adapter's peer dependency.
+- `@modelcontextprotocol/server` 2.4.0, `@modelcontextprotocol/core` 2.4.0 and `@modelcontextprotocol/node` 2.1.2 (Copyright (c) 2024-2025 Model Context Protocol a Series of LF Projects, LLC). Their manifests declare Apache-2.0. As their LICENSE files explain, earlier MIT contributions whose authors have not consented to relicensing remain under MIT.
+- `zod` (MIT, Copyright (c) 2025 Colin McDonnell), used by the MCP server and core.
+- `@hono/node-server` (MIT, Copyright (c) 2022 - present, Yusuke Wada and Hono contributors) and `hono` (MIT, Copyright (c) 2021 - present, Yusuke Wada and Hono contributors), both dependencies of the MCP Node adapter.
 
 ## FishMark
 

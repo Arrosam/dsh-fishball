@@ -85,6 +85,7 @@ const ICON_SET_SUPPORT = 'test/v3/contract/package-boundaries/icon-set.mjs'
 
 /** The release pack (REL-PACK): its script and helpers. */
 const RELEASE_SCRIPTS = 'scripts/**'
+const MCP_RELEASE_PINS = 'test/v3/release/pack/mcp-pins.mjs'
 
 /** Test support every suite may load, and the runners: a change there reruns every suite. */
 export const FULL = Object.freeze(['test/support/**', 'test/suites.mjs', 'test/run-*.mjs', 'test/run-*.sh', 'package.json'])
@@ -248,7 +249,7 @@ export const V3_SUITES = Object.freeze({
   'fishball-core.events': suite('interception, acceptance ledger, wake (F-INTERCEPT)', v3('fishball-core/events'),
     [sub(PACKAGE.fishballCore, 'src', 'events'), ...CORE_LINK, ...CONNECTOR_CONTRACTS]),
   'fishball-core.link': suite('MCP link (F-LINK)', v3('fishball-core/link'),
-    [...CORE_LINK, top(PACKAGE.fishballCore), ...CONNECTOR_CONTRACTS, ...CONNECTOR_CORE, CONNECTOR_MANIFEST, sub(PACKAGE.dshConnector, 'host-services')]),
+    [...CORE_LINK, top(PACKAGE.fishballCore), ...CONNECTOR_CONTRACTS, ...CONNECTOR_CORE, CONNECTOR_MANIFEST, MCP_RELEASE_PINS, sub(PACKAGE.dshConnector, 'host-services')]),
   // The card's browser half is fishball-ui's chunk since F-UI; its package.json ships it.
   // F-FIX: ASK-UI-01 draws the card with fishball-ui's client.js and client.asks.js in the F-SETTINGS scripted page.
   'fishball-core.asks': suite('ask cards: ask_user, the asks service and routes, the drawn card (F-ASKCARD, F-FIX)', v3('fishball-core/asks'),
@@ -340,7 +341,7 @@ export const V3_SUITES = Object.freeze({
     [all(PACKAGE.fishballBoard), sub(PACKAGE.dshConnector, 'mcp-schema')]),
   // The contract suites read every file of the packages they bound, so any change there reruns them.
   'contract.k1-mcp-schema': suite('K1 MCP schema freeze', v3('contract/k1-mcp-schema'),
-    [...CONNECTOR_CONTRACTS, sub(PACKAGE.dshConnector, 'mcp-schema'), `${PACKAGE.dshConnector}/src/**/*.@(js|cjs|mjs)`, CONNECTOR_MANIFEST, sub(PACKAGE.dshConnector, 'host-services')]),
+    [...CONNECTOR_CONTRACTS, sub(PACKAGE.dshConnector, 'mcp-schema'), `${PACKAGE.dshConnector}/src/**/*.@(js|cjs|mjs)`, CONNECTOR_MANIFEST, MCP_RELEASE_PINS, sub(PACKAGE.dshConnector, 'host-services')]),
   // K1d amends K1 and K3's tokens.d.ts; its retire rows drive the real mailbox module (c-mailbox's world).
   'contract.k1d-amendments': suite('K1d amendments: token reveal, page id, Mailbox.transfer, SettingsWriter, SessionNotes', v3('contract/k1d-amendments'),
     [...CONNECTOR_CONTRACTS, sub(PACKAGE.dshConnector, 'mcp-schema'), sub(PACKAGE.dshConnector, 'host-services'),
