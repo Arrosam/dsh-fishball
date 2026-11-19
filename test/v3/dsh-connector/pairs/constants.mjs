@@ -14,7 +14,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import {
   ID_REFUSAL, INSUFFICIENT_SCOPE_REASON, NAME_RULES, PAIR_ADVICE, PAIR_TIMING, REFUSAL, SCOPE, TIME_UNIT, nameKey, principalLabel,
-} from '../../../../packages/dsh-connector/mcp-schema/index.js'
+} from '../../../fixtures/dsh-connector-contract/mcp-schema/index.js'
 import { REPO } from '../../../support/constants.mjs'
 
 export { ID_REFUSAL, INSUFFICIENT_SCOPE_REASON, NAME_RULES, PAIR_ADVICE, PAIR_TIMING, REFUSAL, SCOPE, TIME_UNIT, nameKey, principalLabel }

@@ -11,7 +11,7 @@
  */
 import path from 'node:path'
 import { REPO } from '../../../support/constants.mjs'
-import * as K1 from '../../../../packages/dsh-connector/mcp-schema/index.js'
+import * as K1 from '../../../fixtures/dsh-connector-contract/mcp-schema/index.js'
 import { CONNECT, HOSTED_IMPORT, LINK, LINK_BACKOFF, MCP } from '../../../../packages/core/contracts/constants.js'
 import { IDENTITY, RELAYED } from '../identity/constants.mjs'
 

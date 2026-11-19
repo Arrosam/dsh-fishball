@@ -28,23 +28,20 @@ npm); its folder, plugin row id and settings stay `dsh-connector`.
 
 ## Packages
 
-**DSH side** (generic MCP; installed in the DSH whose sessions are exposed):
-
-| Package | What it does |
-| --- | --- |
-| [`dsh-connector`](packages/dsh-connector) | The backend. The MCP endpoint `/api/agent/mcp` and its own OAuth server (`/api/agent/oauth`, scope `agent`); token entries, pairs and names, the per-agent mailbox, routing, the `message_agent` tool in managed sessions, the hand-over service and the tool contribution service. Its own settings page: tokens (New token, revealed once), the approval-page port, the DSH name, the limits. It changes no other DSH UI. Needs `@deepseek-ai/dsh-web-app` in the profile. |
-| [`dsh-connector-ui`](packages/dsh-connector-ui) | The frontend. The sidebar fish and its light; the window that opens the hosted child's Fishball page; a hint when no child instance runs here; the notify prompt; the managed marks with **Hand over** / **Take back**. It declares the `notify` and `attention.*` tools, which the connector handles. It stores nothing. Without a connector it logs `connector-missing` and draws nothing. |
-| [`dsh-instance`](packages/dsh-instance) | The hosted child. Runs Fishball in its own private DSH profile under `<DSH_HOME>/fishball/runtime`, started after DSH is ready and stopped with it. Places the Fishball plugins in the child, gives the child a token from this DSH's connector once, and has its own settings page (status, Retry, Reconnect, Open Fishball, model sync, `enabled`, `targetUrl`). It imports no Fishball code. |
-| [`dsh-connector-adapter`](packages/dsh-connector-adapter) | Optional, for a DSH that uses **another** DSH's connector through DSH's own MCP client (`dsh-mcp-client`): browser sign-in, refreshed tokens and a loopback proxy. See [Use a connector from another DSH](#use-a-connector-from-another-dsh). |
-| [`dsh-connector-shared`](packages/dsh-connector-shared) | A library inside the DSH-side tarballs. Not a plugin. |
-
-**Fishball side** (installed in a Fishball DSH: the hosted child, or a DSH you set up yourself):
+This repository holds the **Fishball-side** packages (installed in a Fishball DSH: either a standalone DSH you set up yourself, or the hosted child managed by `dsh-fishball-instance`):
 
 | Package | What it does |
 | --- | --- |
 | [`fishball-core`](packages/core) | The backend: the one manager session and its preset, persona, reminders and private Skills; the MCP link to the target connector, Connect, interception, status, the ask cards, the guard rows; its own settings page (target, Connect, identity, token field, **Fishball's model**). |
 | [`fishball-ui`](packages/fishball-ui) | Every UI change inside a Fishball DSH: the Fishball page, the UI guard rows, the Recommended tab, the status strip, the pairing views, the ask cards and the model dialog. Without core it logs `fishball-core-missing` and changes nothing. |
 | [`fishball-shared`](packages/shared) | A library inside the Fishball-side tarballs (today only the core/ui seam). Not a plugin. |
+
+### Related repositories
+
+The DSH-side connector and hosted runner now live in their own repositories:
+
+- **`dsh-connector`** — Generic DSH MCP connector plugins (`dsh-agent-connector`, `dsh-connector-ui`, `dsh-connector-adapter`, `dsh-connector-shared`).
+- **`dsh-fishball-instance`** — Hosted Fishball bridge plugin (`dsh-instance`) that installs and runs a Fishball child inside a main DSH with `dsh-agent-connector`.
 
 Not in this release: fold-notify (its notify function is `dsh-connector-ui`'s `notify` tool), the
 hosted settings bundle, Watchdog (a separate future project), and `fishball-board`, Fishball's work

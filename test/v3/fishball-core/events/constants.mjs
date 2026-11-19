@@ -15,7 +15,7 @@
  */
 import fs from 'node:fs'
 import path from 'node:path'
-import { CONTRIBUTED_TYPE_PREFIX, EVENT_TYPE, LINK_REFUSAL, TOOL } from '../../../../packages/dsh-connector/mcp-schema/index.js'
+import { CONTRIBUTED_TYPE_PREFIX, EVENT_TYPE, LINK_REFUSAL, TOOL } from '../../../fixtures/dsh-connector-contract/mcp-schema/index.js'
 // A namespace import: a value the product has not exported yet fails the cases that use it, with a
 // reason, instead of failing this whole file at module link time (test-first).
 import * as EVENTS_CONSTANTS from '../../../../packages/core/contracts/constants.js'
