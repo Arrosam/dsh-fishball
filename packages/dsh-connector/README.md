@@ -223,8 +223,9 @@ The connector adds these to DSH's own session UI, with or without `dsh-connector
   than one agent, the header shows a **Handover to…** menu. A dialog takes an optional note.
 - **Managed by <agent>** beside a managed session's title, and **Take back** in its header and row
   menu.
-- The connector's icon in a managed session's sidebar row. It flips while the session runs, and
-  holds still when motion is reduced.
+- Fishball's V1 fish (body in the text colour, magenta eye; dsh-fishball v0.1.0's mark) in a
+  managed session's sidebar row. It flips while the session runs, and holds still when motion is
+  reduced.
 - An agent without a name shows as **ID:** and its id. A subagent's header acts on its root session.
 
 The words are in English and Chinese. Nothing shows while the connector row is not loaded.
@@ -234,9 +235,9 @@ Notes for maintainers (DESIGN.md §28, decided 2026-11-20):
   classes, slot entries `dsh-connector-hand-over`, `dsh-connector-hand-over-notice` and
   `dsh-connector-managed`, and the dictionary `dsh-connector-marks`.
 - DSH serves a package's images only from a built `./lib/assets/*` export, and this repository has
-  no build step. So `client.marks.js` draws `assets/connector-icon.svg` inline from restated
-  shapes. Change the SVG, `src/mcp/oauth-web/page-theme.js` `MARK_SHAPE` and `client.marks.js`
-  together.
+  no build step. So `client.marks.js` draws the row's fish inline (`FISH_MARK`, V1's FishMark
+  restated). The approval page's icon stays `assets/connector-icon.svg`, restated in
+  `src/mcp/oauth-web/page-theme.js` `MARK_SHAPE`: change those two together.
 - `client.js` exports `ui`, the one home of the browser helpers over the UI backend (the snapshot
   stream, the POST helper, the value store). `dsh-connector-ui` lists `dsh-agent-connector` in its
   `dsh.client.external` and loads this entry before its shell, so a page opens one stream for both
