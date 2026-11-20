@@ -99,6 +99,10 @@ test('DT: drift during a permission rejects the call, stops the turn and emits d
   const w = await world(t, { verdicts: [{ verdict: VERDICT.drifted, reason: 'it is rewriting the billing module' }] })
   await brief(w)
   assert.deepEqual(await permission(w), { verdict: VERDICT.reject, reason: 'it is rewriting the billing module' })
+  // The turn is stopped only after the request is answered (a stop would cancel the request itself).
+  assert.deepEqual(w.state.stops, [])
+  await new Promise((resolve) => setImmediate(resolve))
+  await new Promise((resolve) => setImmediate(resolve))
   assert.deepEqual(w.state.stops, [ROOT])
   assert.equal(w.state.events.length, 1)
   const e = w.state.events[0]
