@@ -103,6 +103,23 @@ window.__ModuleLoader__.load({
         }),
         eyeColor: '#EC0A6E',
       }),
+      /**
+       * V1's word logo and "Deepseek Harness" tag, restored exactly (V1 client.js WORDMARK and
+       * BRAND_TAG, last at aa8e1d57; the user, 2026-11-20: "not identical to what it looks like in
+       * V1"). The word keeps the shell's own name size (dsh-client-ui-sidebar .brandName, 18px) and
+       * is lifted so the tag can cover its bottom edge without hiding the letters. The tag is a flat
+       * sticker over the word's bottom-right corner: it takes no layout space, overhangs the shell's
+       * 24px brand box (releaseClip opens it), swaps the sidebar's label colours so it reads on light
+       * and dark themes, and spends the brand's one colour on its hard drop shadow. Both end on named
+       * Latin faces: a bare `sans-serif` follows <html lang> and turned PingFang in Chinese (6dd51bf7).
+       */
+      latinFont: 'Helvetica,Arial,sans-serif',
+      wordmark: Object.freeze({ family: '"Archivo","Helvetica Neue"', weight: 900, letterSpacing: '-0.5px', lineHeight: 1, lift: '-2px' }),
+      sticker: Object.freeze({
+        fontSize: '9px', lineHeight: '11px', fontWeight: 800, paddingX: '4px', radius: '1px', right: '-16px', bottom: '-9px',
+        fill: 'var(--dsw-alias-label-primary)', textColor: 'var(--dsw-alias-label-primary-inverted)',
+        ring: '0 0 0 1.5px var(--dsw-alias-label-primary-inverted)', shadowOffset: '2px 2px 0 1.5px',
+      }),
       text: Object.freeze({
         en: { idle: 'Connected', working: 'Working', offline: 'Offline', attention: 'Waiting for you ({count})' },
         zh: { idle: '已连接', working: '工作中', offline: '离线', attention: '等你处理（{count}）' },
@@ -126,10 +143,13 @@ window.__ModuleLoader__.load({
       // The light sits on the mark's corner, in a ring of the sidebar's ground so it separates on both themes.
       `.${C.light}{position:absolute;right:-2px;bottom:-2px;display:inline-flex;padding:1px;border-radius:999px;background:var(--dsw-specific-sidebar-fill,var(--dsw-alias-bg-layer-1))}`,
       `.${C.badge}{position:absolute;top:-6px;right:-8px;min-width:16px;height:16px;box-sizing:border-box;padding:0 4px;border-radius:8px;background:${BRAND.badgeFill};color:#fff;font:800 10px/16px sans-serif;text-align:center;box-shadow:0 0 0 2px var(--dsw-specific-sidebar-fill,var(--dsw-alias-bg-layer-1))}`,
-      `.${C.name}{position:relative;display:inline-flex;flex-direction:column;align-items:flex-start;min-width:0;line-height:1;pointer-events:none}`,
-      `.${C.word}{font-family:"Archivo","Helvetica Neue",sans-serif;font-weight:900;font-size:15px;letter-spacing:-.5px;line-height:16px;white-space:nowrap}`,
-      // The tag the user's screenshot shows under the word: a small magenta-outlined label, not the shell's.
-      `.${C.tag}{margin-top:2px;padding:0 3px;border:1px solid ${BRAND.mark.eyeColor};border-radius:2px;background:var(--dsw-specific-sidebar-fill,var(--dsw-alias-bg-layer-1));color:var(--dsw-alias-label-secondary);font:800 8px/10px "Archivo","Helvetica Neue",sans-serif;letter-spacing:.2px;white-space:nowrap;transform:rotate(-3deg)}`,
+      // V1's word logo (BRAND.wordmark): the shell's name size, lifted; the tag is placed against it.
+      // The face sits on the name, as in V1, so the tag inherits the word's tracking instead of the
+      // shell's wider .brandName letter-spacing; the tag then sets only its own font.
+      `.${C.name}{position:relative;display:inline-block;top:${BRAND.wordmark.lift};font-family:${BRAND.wordmark.family},${BRAND.latinFont};font-weight:${BRAND.wordmark.weight};letter-spacing:${BRAND.wordmark.letterSpacing};line-height:${BRAND.wordmark.lineHeight};pointer-events:none}`,
+      `.${C.word}{white-space:nowrap}`,
+      // V1's sticker (BRAND.sticker), overlaid on the corner so it cannot push the sidebar controls.
+      `.${C.tag}{position:absolute;right:${BRAND.sticker.right};bottom:${BRAND.sticker.bottom};padding:0 ${BRAND.sticker.paddingX};border-radius:${BRAND.sticker.radius};background:${BRAND.sticker.fill};color:${BRAND.sticker.textColor};font:${BRAND.sticker.fontWeight} ${BRAND.sticker.fontSize}/${BRAND.sticker.lineHeight} ${BRAND.latinFont};box-shadow:${BRAND.sticker.ring},${BRAND.sticker.shadowOffset} ${BRAND.mark.eyeColor};white-space:nowrap;pointer-events:none}`,
       `.${C.hidden}{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}`,
       keyframes(BRAND.animation.wag, BRAND.animation.wagKeyframes),
       keyframes(BRAND.animation.swim, BRAND.animation.swimKeyframes),
