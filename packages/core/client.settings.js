@@ -122,7 +122,7 @@ window.__ModuleLoader__.load({
         id: 'fishball-core-settings-style', root: 'fb-core-settings', row: 'fb-core-settings-row', hint: 'fb-core-settings-hint', error: 'fb-core-settings-error',
         card: 'fb-core-settings-card', head: 'fb-core-settings-head', title: 'fb-core-settings-title', status: 'fb-core-settings-status',
         select: 'fb-core-settings-select', link: 'fb-core-settings-link',
-        list: 'fb-core-settings-targets', name: 'fb-core-settings-name', url: 'fb-core-settings-url', actions: 'fb-core-settings-actions',
+        list: 'fb-core-settings-targets', add: 'fb-core-settings-add', group: 'fb-core-settings-group', name: 'fb-core-settings-name', url: 'fb-core-settings-url', actions: 'fb-core-settings-actions',
       }),
       /** A target's public state (SEAM_TARGETS.state) as DSH's StateDot, as the sidebar shows it. */
       targetDot: Object.freeze({ connected: 'done', connecting: 'ongoing', failed: 'error', 'not-set': 'idle' }),
@@ -155,15 +155,19 @@ window.__ModuleLoader__.load({
       'token.waiting': 'A token is waiting to be used',
       'token.none': 'No token waiting',
       targetsTitle: 'DSH targets',
-      targetsHint: 'The DSHs Fishball works with: one MCP URL of a DSH connector each.',
-      targetsEmpty: 'No target yet. Add the MCP URL of a DSH connector.',
+      targetsHint: 'Every DSH Fishball works with, one card each: its connection state, its token and Connect.',
+      targetsEmpty: 'No target yet. Add a DSH below.',
       targetsUnavailable: 'The targets are not available right now.',
       'name.unavailable': 'Name unavailable',
       'state.connected': 'Connected', 'state.connecting': 'Connecting', 'state.failed': 'Failed', 'state.not-set': 'Not set',
       parent: 'The DSH this Fishball runs in. Its URL comes from the instance.',
-      addLabel: 'New target URL',
+      addLabel: 'Add a DSH',
+      addHint: 'Paste the MCP URL of another DSH\'s Fishball connector. Then, on its new card, paste a token generated in that DSH and press Connect.',
+      addPlaceholder: 'https://<host>/api/agent/mcp',
       add: 'Add',
-      urlLabel: 'URL',
+      sharedTitle: 'Connection and identity',
+      sharedHint: 'Used for every DSH target above.',
+      urlLabel: 'MCP URL',
       saveUrl: 'Save URL',
       remove: 'Remove',
       retry: 'Retry',
@@ -231,15 +235,19 @@ window.__ModuleLoader__.load({
       'token.waiting': '有一个 token 等待使用',
       'token.none': '没有等待使用的 token',
       targetsTitle: 'DSH 目标',
-      targetsHint: 'Fishball 所连接的 DSH：每个是一个 DSH connector 的 MCP 地址。',
-      targetsEmpty: '还没有目标。请添加一个 DSH connector 的 MCP 地址。',
+      targetsHint: 'Fishball 所连接的每个 DSH 各占一张卡片：连接状态、token 和 Connect。',
+      targetsEmpty: '还没有目标。请在下方添加一个 DSH。',
       targetsUnavailable: '目标现在不可用。',
       'name.unavailable': '名称不可用',
       'state.connected': '已连接', 'state.connecting': '连接中', 'state.failed': '失败', 'state.not-set': '未设置',
       parent: '这个 Fishball 所在的 DSH。它的地址由 instance 提供。',
-      addLabel: '新目标地址',
+      addLabel: '添加 DSH',
+      addHint: '粘贴另一个 DSH 的 Fishball connector 的 MCP 地址。然后在它的新卡片上粘贴在该 DSH 中生成的 token，并按 Connect。',
+      addPlaceholder: 'https://<host>/api/agent/mcp',
       add: '添加',
-      urlLabel: '地址',
+      sharedTitle: '连接与身份',
+      sharedHint: '用于上面的所有 DSH 目标。',
+      urlLabel: 'MCP 地址',
       saveUrl: '保存地址',
       remove: '移除',
       retry: '重试',
@@ -311,6 +319,11 @@ window.__ModuleLoader__.load({
       `.${PAGE.css.select}:focus-visible{outline:var(--dsw-focus-ring-width) solid var(--dsw-focus-ring-color, var(--dsw-alias-state-business-primary));outline-offset:-1px}`,
       `.${PAGE.css.select}:disabled{color:var(--dsw-alias-label-tertiary)}`,
       `.${PAGE.css.list}{display:grid;gap:12px}`,
+      // Adding is not a target: a dashed outline instead of the cards' fill, so it reads as "a new card goes here".
+      `.${PAGE.css.add}{display:grid;gap:8px;padding:14px 16px;border-radius:var(--dsw-radius-xl);border:1px dashed var(--dsw-alias-border-l4)}`,
+      `.${PAGE.css.add} > .${PAGE.css.row}{flex-wrap:nowrap}`,
+      `.${PAGE.css.add} > .${PAGE.css.row} > :first-child{flex:1 1 auto;min-width:0}`,
+      `.${PAGE.css.group}{display:grid;gap:4px}`,
       // A server name can be any length or script: one line, cut visually, the full text in its title.
       `.${PAGE.css.name}{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}`,
       `.${PAGE.css.url}{margin:0;color:var(--dsw-alias-label-secondary);font:var(--dsw-font-xs-13);overflow-wrap:anywhere}`,
@@ -649,9 +662,23 @@ window.__ModuleLoader__.load({
         h('div', { className: PAGE.css.head }, h('h3', { id: titleId, className: PAGE.css.title }, t('targetsTitle'))),
         h('p', { className: PAGE.css.hint }, snapshot === null ? t('targetsUnavailable') : targets.length === 0 && snapshot !== undefined ? t('targetsEmpty') : t('targetsHint')),
         targets.map((target) => h(TargetCard, { key: target.targetId + target.endpointEpoch, t, target, token, refresh, invalidate, disabled })),
+        h(AddTarget, { t, draft, setDraft, disabled, alert, add }))
+    }
+
+    /**
+     * Adding a target: a labelled block of its own, below the cards, that says what to paste and
+     * what follows (the new card's token and Connect). A form, so Enter adds as the button does.
+     */
+    function AddTarget({ t, draft, setDraft, disabled, alert, add }) {
+      const id = React.useId()
+      const empty = draft.trim() === ''
+      const submit = (event) => { event?.preventDefault(); if (!disabled && !empty) void add() }
+      return h('form', { className: PAGE.css.add, onSubmit: submit, 'data-fishball-target-add-form': true },
+        h('label', { className: PAGE.css.title, htmlFor: id }, t('addLabel')),
+        h('p', { className: PAGE.css.hint, id: id + '-hint' }, t('addHint')),
         h('div', { className: PAGE.css.row },
-          h(Input, { 'aria-label': t('addLabel'), value: draft, disabled, onChange: (event) => setDraft(event.target.value), 'data-fishball-target-add-url': true }),
-          h(Button, { type: 'button', size: 'sm', variant: PAGE.button.primary, disabled: disabled || draft.trim() === '', onClick: () => void add(), 'data-fishball-target-add': true }, t('add'))),
+          h(Input, { id, 'aria-describedby': id + '-hint', placeholder: t('addPlaceholder'), value: draft, disabled, onChange: (event) => setDraft(event.target.value), 'data-fishball-target-add-url': true }),
+          h(Button, { type: 'submit', size: 'sm', variant: PAGE.button.primary, disabled: disabled || empty, onClick: submit, 'data-fishball-target-add': true }, t('add'))),
         alert === null ? null : h('p', { className: PAGE.css.error, role: 'alert' }, alert))
     }
 
@@ -765,6 +792,10 @@ window.__ModuleLoader__.load({
         }
         return h('div', { className: PAGE.css.root, 'data-fishball-core-settings': true },
           h(TargetsSection, { t, token, disabled: !state.writable }),
+          // The form's fields hold for every target; a heading keeps them from reading as part of the last card.
+          h('div', { className: PAGE.css.group },
+            h('h3', { className: PAGE.css.title }, t('sharedTitle')),
+            h('p', { className: PAGE.css.hint }, t('sharedHint'))),
           h(SettingsForm, {
             labels: { unavailable: t('unavailable'), readOnly: t('readOnly'), saveFailed: t('saveFailed'), save: t('save'), saving: t('saving') },
             state, onSave: section.actions.save, onDiscard: section.actions.discard,

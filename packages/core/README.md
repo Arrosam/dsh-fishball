@@ -55,6 +55,9 @@ Core's own page on DSH's Plugins page (`client.js` with `client.settings.js`, in
   target, or pointing it at another endpoint, asks first; its waiting cards are voided, its saved
   token is deleted and its history stays read-only. Nothing is sent to the DSH. In a hosted child the DSH
   it runs in comes first, with the URL the instance supplies; it cannot be removed or edited.
+  Below the cards, a labelled **Add a DSH** block takes another DSH's connector MCP URL (Enter or
+  **Add**) and says what comes next: that target's token and **Connect** on its new card. The
+  global fields below sit under their own **Connection and identity** heading.
 - **Client metadata URL** (`connect.clientMetadataUrl`): the https URL of the Client ID Metadata
   Document you host, one for every target. **Connect** needs it.
 - **Fishball id** and **Name** (`identity.id`, `identity.name`). An unset id is generated and kept
