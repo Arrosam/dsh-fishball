@@ -20,3 +20,13 @@ export const PRESENCE = Object.freeze([
   Object.freeze({ rule: 4, label: 'C, no UI backend', connector: true, embed: false, backend: false, marks: false }),
   Object.freeze({ rule: 5, label: 'C + U, no UI backend', connector: true, embed: true, backend: false, marks: false }),
 ])
+
+/**
+ * MARKS-MULTI rows (multi-cases.mjs): one DSH with several agents (several Fishball instances or
+ * other paired principals). Fixture data only; the words are MARKS.words / TEXT. `renamed` is the
+ * chosen agent's new name in a rename (or a swap) while the dialog is open.
+ */
+export const MULTI = Object.freeze({
+  id: 'MARKS-MULTI',
+  renamed: 'Indexer Prime',
+})

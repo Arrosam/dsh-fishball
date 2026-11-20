@@ -21,6 +21,7 @@
  * | MARKS-BVA-01 R5 | BVA (backend present / absent) | absent → no marks entry, no POST, no page error or warning, no error log line |
  * | MARKS-R6 entry missing | EP (load result) | connector entry fails → exactly one 'part unavailable' warn from embed-UI's row, nothing registered by either |
  * | MARKS-R6 one stream | BVA (packages per page: 1 / 2) | both packages mounted → exactly one snapshot stream |
+ * | MARKS-MULTI (multi-cases.mjs) | EP, BVA, DT, ST | several agents: each listed by its own key, label and light; the chosen one titles the dialog, is posted and named by the mark; the dialog across a rename, a swap, another going away, the chosen one going away |
  *
  * EP-05 / EP-06 changed on 2026-11-21 (the user: after "Hand over to Fishball" the mark goes back
  * to V1's fish, dsh-fishball tag v0.1.0 assets/icon.svg and client.js FISH_MARK), replacing

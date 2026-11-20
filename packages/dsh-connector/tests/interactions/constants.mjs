@@ -236,3 +236,24 @@ export const XSEC = Object.freeze({
   /** Own boots: one disables the connector row; one fills the shared hostRef table; one holds grant rows. */
   scenario: Object.freeze({ close: 'ix-close', attachments: 'ix-attachments', grants: 'ix-grants-x08' }),
 })
+
+/**
+ * IX-MULTI (multi-agent-cases.mjs): one DSH, several agents (several Fishball instances or other
+ * paired principals). Fixture names: two named, one unicode right-to-left name (Arabic letters, no
+ * bidi control: K1 refuses Cc/Cf), a rename target, and Fishball's default name, which every
+ * Fishball instance asks for when its owner set none (dsh-fishball identity: defaultName 'Fishball').
+ */
+export const MULTI_AGENT = Object.freeze({
+  id: 'IX-MULTI',
+  scenario: Object.freeze({ names: 'ix-multi-names', reorder: 'ix-multi-reorder', rename: 'ix-multi-rename', handOver: 'ix-multi-handover', fishball: 'ix-multi-fishball', freed: 'ix-multi-freed' }),
+  label: Object.freeze({ first: 'IX multi first', second: 'IX multi second', rtl: 'IX multi rtl', nameless: 'IX multi nameless', disabled: 'IX multi disabled', never: 'IX multi never pairs' }),
+  name: Object.freeze({ first: 'Fishball', second: 'Fishball Two', rtl: 'سمكة 🐟 بحر', disabled: 'Fishball Off', renamed: 'Fishball Second' }),
+  defaultName: 'Fishball',
+  /** The default name in another letter case: uniqueness is case-folded (R-NAME-02). */
+  folded: 'FISHBALL',
+  /** The UI backend's stream route and its frame (src/ui is not read: the C-UI-BACKEND suite's relayed surface). */
+  events: '/api/dsh-connector/ui/events',
+  frame: Object.freeze({ prefix: 'data: ', end: '\n\n' }),
+  /** K1 pair result words. */
+  nameTaken: 'name-taken',
+})
