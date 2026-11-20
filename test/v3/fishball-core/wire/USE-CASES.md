@@ -113,3 +113,27 @@ when its listen streams close and the time of each request.
 Fixture note: "saving the new epoch fails" is produced by making DSH's `storages` folder and files
 read-only (chmod) during the change; the rows restore the modes in `finally`.
 | MULTI-LIFE-CRED-ST-02 interrupted retirement | ST (E1 material persisted → durable parent already on current URL / E2 → restart, no URL change) | precondition read back: saved and pending parent records bound to E1; after the start: epoch still E2, neither record bound to E1, V1 never sent, the fresh mismatched V2 in DSH_AGENT_TOKEN not unset. Fixture: E1 records core wrote, re-written after a normal retirement through DSH's `modifyRecord` |
+
+## Running managed sessions of a target (running-sessions.mjs, running-sessions-link.mjs)
+
+Requirement: the lead's relay of the user's feature (2026-11-21): a target's view carries the
+Fishball-managed sessions that are RUNNING (`TargetView.runningSessions`), read with `sessions_list`
+on connect and after a polled session event, never on a timer. Level: unit on `targets/sessions.js`
+over a scripted link, and `createTargets` with the scripted link swapped in by a resolve hook
+(retirement.mjs's pattern); no network.
+
+| Row | Technique | Expected |
+| --- | --- | --- |
+| SESSIONS ST connect | ST (unknown → connected) | `null` before; one `sessions_list` `{limit: 100}` on connect; `null` until it answers |
+| SESSIONS EP page × trigger | EP (state, turn-finished, handover, takeback, retirement) | one more call each |
+| SESSIONS EP other pages | EP (every other K1 type, contributed, no events, refused / malformed pages) | no call |
+| SESSIONS EP not connected | EP | a trigger sends nothing |
+| SESSIONS ST coalescing | ST (5 triggers in flight) | one call in flight, exactly one follow-up, its answer kept; a later trigger reads again |
+| SESSIONS DT running × kept | DT | only `running: true` with a string id, as `{sessionId, title}`; a non-string title is `''`; markup kept verbatim |
+| SESSIONS ST stop and no change | ST | a stopped session leaves; an equal answer fires no change |
+| SESSIONS EP failure × kind | EP (refused, disconnected, thrown, no array, nothing) | last list kept; one warn; the code logged, never the error text |
+| SESSIONS ST leave connected | ST (connected → unreachable → connected) | `null` at once; the old connection's late answer dropped; the reconnect reads |
+| SESSIONS ST reconnect in flight | ST | the new connection is read again; its answer kept |
+| SESSIONS ST dispose | ST | no listener; a late answer changes nothing; no call |
+| SESSIONS ST TargetView | ST (integration) | `runningSessions` follows the read, emits a snapshot on a change and none on an equal answer, `null` after a drop |
+| SESSIONS ST removed target | ST (integration) | a late answer after remove emits nothing |

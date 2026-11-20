@@ -17,6 +17,7 @@ import { credentialNames } from '../link/credentials.js'
 import { ASK_TOOL } from '../asks/index.js'
 import { TARGET_LOG } from './constants.js'
 import { toolNameOf } from './names.js'
+import { createRunningSessions } from './sessions.js'
 
 const ORIGIN = TARGETS.toolName.origin
 
@@ -76,6 +77,12 @@ export function createTargetRuntime(ctx, options) {
   const bridge = createBridge({ link, naming, locals, called, ...bridgeOptions })
   disposers.push(bridge.onChange(changed))
 
+  // The sidebar's running managed sessions of this epoch (sessions.js): refreshed on connect and on
+  // a polled session event, fenced by this disposal. Subscribed before the view's own status
+  // listener, so a link that leaves `connected` has cleared its list before the view is rebuilt.
+  const sessions = createRunningSessions(link, { onChange: changed, logger })
+  disposers.push(sessions.dispose)
+
   let listed = false
   disposers.push(link.onTools(() => { listed = true }))
   disposers.push(link.onStatus(changed), link.onDetail(changed), pairing.onChange(changed), credentials.connect.onChange(changed))
@@ -124,6 +131,8 @@ export function createTargetRuntime(ctx, options) {
     source,
     /** Whether the bridge listed tools at least once on this epoch (`TargetView.contributedTools` is `null` before). */
     listed: () => listed,
+    /** This epoch's running managed sessions, `null` before the first answer on the current connection (`TargetView.runningSessions`). */
+    runningSessions: sessions.list,
     start: () => { if (!isRetired()) link.start() },
     reconnect,
     /** Calls `fn()` after any change of what this epoch's view shows. Returns its disposer. */

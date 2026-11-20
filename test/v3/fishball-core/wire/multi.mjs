@@ -22,7 +22,7 @@ const ok = (r) => assert.equal(r?.ok, true, JSON.stringify(r))
 const refused = (r, code) => assert.deepEqual(r, { ok: false, code })
 const R = SEAM_TARGETS.refusal
 const S = SEAM_TARGETS.state
-const VIEW_FIELDS = Object.freeze(['targetId', 'endpointEpoch', 'serverName', 'name', 'kind', 'url', 'order', 'duplicateSuffix', 'state', 'connecting', 'link', 'connect', 'line', 'control', 'pairing', 'identity', 'contributedTools', 'removable', 'urlEditable'])
+const VIEW_FIELDS = Object.freeze(['targetId', 'endpointEpoch', 'serverName', 'name', 'kind', 'url', 'order', 'duplicateSuffix', 'state', 'connecting', 'link', 'connect', 'line', 'control', 'pairing', 'identity', 'contributedTools', 'removable', 'urlEditable', 'runningSessions'])
 const exposed = () => connectorTools(K1.TOOLS).filter((t) => ![K1.TOOL.inboxPoll, K1.TOOL.inboxAck, K1.TOOL.pair, K1.TOOL.setName].includes(t.name))
 const sourceOf = (v) => ({ targetId: v.targetId, endpointEpoch: v.endpointEpoch, serverName: v.serverName, name: v.name })
 const quiet = () => sleep(MULTI.budget.quietMs)

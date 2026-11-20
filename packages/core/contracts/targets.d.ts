@@ -109,7 +109,14 @@ export interface TargetRecord {
  * - `control`: the one control (`SEAM_STATUS.control`), as the old strip's `control`;
  * - `contributedTools`: the contributed tools on offer from this target, zero included; `null`
  *   before the first list;
- * - `removable` / `urlEditable`: `false` for the parent (PLAN-MULTI §3.3), `true` otherwise.
+ * - `removable` / `urlEditable`: `false` for the parent (PLAN-MULTI §3.3), `true` otherwise;
+ * - `runningSessions` (additive, the sidebar's nested list): the sessions this Fishball manages on
+ *   this target (K1 `sessions_list`: its managed root sessions, started or handed over) that are
+ *   running, in the connector's order. Read on each `connected` and after a polled `state`,
+ *   `turn-finished`, `handover`, `takeback` or `retirement` event, never polled on a timer.
+ *   `null` (unknown) while not connected and before the first answer on the current connection; a
+ *   failed read keeps the last list. `title` is untrusted remote text (as `name`, D06), `''` when
+ *   the connector sent none.
  */
 export interface TargetView extends TargetSource {
   readonly kind: TargetKind
@@ -127,6 +134,13 @@ export interface TargetView extends TargetSource {
   readonly contributedTools: number | null
   readonly removable: boolean
   readonly urlEditable: boolean
+  readonly runningSessions: readonly RunningSession[] | null
+}
+
+/** One running managed session of a target (`TargetView.runningSessions`); `sessionId` is the remote id. */
+export interface RunningSession {
+  readonly sessionId: string
+  readonly title: string
 }
 
 /** The whole list, in ascending `order` (Q12: no count cap). An empty list is valid (standalone first run). */
