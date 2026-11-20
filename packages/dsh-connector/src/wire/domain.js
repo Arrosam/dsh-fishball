@@ -44,15 +44,16 @@ const refused = (code) => Object.freeze({ ok: false, code })
  * @param deps.storageDomain - `{defineDomain, domainTable}` of the running SDK
  * @param deps.readLimits - the connector's live limits (src/config.js)
  * @param deps.routing - the routing composition
+ * @param deps.stoppedByManager - the session source's mark for a stop the port makes for the manager
  * @param deps.logger - the row's logger
  * @returns `{sessions, interactions, attachments, models, workspaces, provide(ctx), close}`: `provide` serves `dshConnectorSessions`
  */
-export async function createSessionDomain(ctx, { storageDomain, readLimits, routing, logger }) {
+export async function createSessionDomain(ctx, { storageDomain, readLimits, routing, stoppedByManager, logger }) {
   const now = Date.now
   const warn = (error) => logger.warn(LOG.format, LOG.grantWriteFailed, diagnosticOf(error))
   const managerOf = (sessionId) => routing.managed.managerOf(sessionId)
   const titleOfSession = (sessionId) => titleOf(ctx, sessionId)
-  const port = createSessionPort(ctx, { senderId: DOMAIN.senderId, readLimits, now })
+  const port = createSessionPort(ctx, { senderId: DOMAIN.senderId, readLimits, now, stoppedByManager })
   // Every part is closed in reverse as soon as it exists, so a step that throws leaves nothing
   // open: no storage domain, and no listener routing into closed modules (as openV3's closers).
   const closers = []
@@ -128,7 +129,7 @@ export async function createSessionDomain(ctx, { storageDomain, readLimits, rout
       },
       message: ({ sessionId, message, attachments, admit }) => port.message({ sessionId, message, attachments, admit }),
       redirect: ({ sessionId, message, attachments, admit }) => port.redirect({ sessionId, message, attachments, admit }),
-      stop: (input) => port.stop(input),
+      stop: (input) => port.stop({ ...input, byManager: true }),
       async read(input) {
         const read = await port.read(input)
         return { messages: read.messages.map(neutral), truncated: read.truncated }

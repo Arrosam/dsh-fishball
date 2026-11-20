@@ -52,9 +52,10 @@ export function createHandlers({ pairs, mailbox, managed, domain, now, logger },
   }
   const managing = (body) => onSession(SESSION_ACCESS.manage, body)
   const reading = (body) => onSession(SESSION_ACCESS.read, body)
-  const delivery = (send) => managing(async (args, caller, root, admit) => ok({
-    status: (await send({ sessionId: args.sessionId, message: args.message, attachments: args.attachments, admit })).status,
-  }))
+  const delivery = (send) => managing(async (args, caller, root, admit) => {
+    const sent = await send({ sessionId: args.sessionId, message: args.message, attachments: args.attachments, admit })
+    return ok({ status: sent.status, running: sent.running === true })
+  })
 
   /** Makes the caller the new session's manager before its first message (R-ROUTE-01). */
   async function manageNew(sessionId, principalKey) {
@@ -102,7 +103,7 @@ export function createHandlers({ pairs, mailbox, managed, domain, now, logger },
       if (!hasVisibleCharacter(args.title)) return refused(REFUSAL.limitExceeded)
       let managedNow = false
       const started = await sessions.start(args, { onCreated: async (sessionId) => { managedNow = await manageNew(sessionId, caller.principalKey) } })
-      return ok(defined({ sessionId: started.sessionId, managed: managedNow, titleError: started.titleError, workspaceError: started.workspaceError }))
+      return ok(defined({ sessionId: started.sessionId, managed: managedNow, running: started.running === true, titleError: started.titleError, workspaceError: started.workspaceError }))
     },
     [TOOL.sessionMessage]: delivery((input) => sessions.message(input)),
     [TOOL.sessionRedirect]: delivery((input) => sessions.redirect(input)),

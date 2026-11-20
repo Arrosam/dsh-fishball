@@ -7,7 +7,7 @@
  */
 import {
   ANSWER_DECISIONS, APPROVAL_KIND, ARGUMENTS_STATUS, DECISION_KIND, DELIVERY, EVENT_TYPE, GRANT_KIND, IMAGE_TYPES, PLAN_REVIEW,
-  PROMPT_DECISIONS, READ_ROLE, RETIREMENT_REASON, RISK, SETTLED_BY, SETTLEMENT_OUTCOME,
+  PROMPT_DECISIONS, READ_ROLE, RETIREMENT_REASON, RISK, SETTLED_BY, SETTLEMENT_OUTCOME, TURN_OUTCOME,
 } from './constants.js'
 import { anyValue, array, boolean, constant, integer, nullable, object, oneOfStrings, string } from './schema.js'
 
@@ -129,8 +129,10 @@ export const mailboxEvent = () => object(
 
 /**
  * Event payloads by type (R-EVS-02). Offers carry the descriptor the matching `approvals_list`
- * row has, so a client never needs a second read to decide. `turn-finished` says whether the
- * session still runs and whether anything is queued for it (R-EVS-02). A `settlement` carries
+ * row has, so a client never needs a second read to decide. `turn-finished` (WAKE-REDUCE) is the
+ * session's standstill and its report in one: `completed` with the last assistant text (bounded,
+ * TURN_FINISHED), or `stopped` with why; a stop by the manager itself sends none. `state` keeps its
+ * frozen shape with no producer (folded into the session tools' `running`). A `settlement` carries
  * `answers` for an answered session question or plan review.
  */
 export const EVENT_PAYLOAD_SHAPES = Object.freeze({
@@ -143,7 +145,10 @@ export const EVENT_PAYLOAD_SHAPES = Object.freeze({
     { answers: array(questionAnswerItem()), delegate: object({ name: string(), toolName: string(), reason: string() }) },
   ),
   [EVENT_TYPE.retirement]: () => object({ retiredEventId: string(), reason: oneOfStrings(Object.values(RETIREMENT_REASON)) }),
-  [EVENT_TYPE.turnFinished]: () => object({ sessionId: sessionId(), running: boolean(), queued: boolean() }),
+  [EVENT_TYPE.turnFinished]: () => object(
+    { sessionId: sessionId(), outcome: oneOfStrings(Object.values(TURN_OUTCOME)) },
+    { finalMessage: object({ text: string(), truncated: boolean() }), stop: object({ kind: string(), message: string() }) },
+  ),
   [EVENT_TYPE.state]: () => object({ sessionId: sessionId(), running: boolean(), pendingInteraction: boolean() }),
   [EVENT_TYPE.message]: () => object({ text: string(), images: array(imageRef()) }),
   [EVENT_TYPE.handover]: () => object({ sessionId: sessionId(), note: string() }),

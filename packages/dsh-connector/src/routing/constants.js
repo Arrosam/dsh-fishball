@@ -79,7 +79,7 @@ export const LOG = Object.freeze({
   retireFailed: 'routing: retiring a live offer failed; the management change stands',
   followUpFailed: 'routing: the handover or takeback event of a stored change failed; the change stands',
   listenerFailed: 'routing: a change listener threw',
-  watchFailed: 'routing: producing a turn-finished or state event failed',
+  watchFailed: 'routing: producing a turn-finished event failed',
   moveUndoFailed: 'routing: moving managed sessions back after a failed succession step failed; they still name the successor',
   succeedUndoFailed: 'routing: undoing a failed succession step failed; managed state or events may still name the successor',
   reissueFailed: 'routing: retiring a re-issued offer\'s old event failed; it stays pending, and answers to it are refused expired',

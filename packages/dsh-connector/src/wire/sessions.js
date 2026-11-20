@@ -7,10 +7,11 @@
  * session controller), so no session rule is written twice.
  */
 import { createUserMessage, boundContextSummary } from '@deepseek-ai/dsh-llm'
-import { diagnosticOf } from '../errors.js'
-import { isSessionGone, rootSessionOf, storedRootOf } from '../session-info.js'
+import { TURN_FINISHED, TURN_OUTCOME } from '../../mcp-schema/index.js'
+import { isSessionGone, rootSessionOf, storedRootOf, textOfEvent } from '../session-info.js'
 import { RUNNING_AGENT } from '../domain/session-port.js'
-import { LOG, SESSION_EVENT, SYSTEM_NOTE } from './constants.js'
+import { byteLength, cutToBytes } from '../text.js'
+import { SESSION_EVENT, STANDSTILL, STOP_TEXT, SYSTEM_NOTE } from './constants.js'
 
 /**
  * Whether a session of this DSH has that id (TQ-14): a DSH not-found read is the only "no". A
@@ -21,31 +22,115 @@ export function sessionExistsIn(ctx) {
 }
 
 /**
- * Routing's `sessions` source. A subagent's turn or state counts as its root's (K1c keys are root
- * ids), as V2's watches judged it.
+ * `text` bounded to TURN_FINISHED.finalMessageBytes, the marker included when it is cut. Pure.
+ * @returns `{text, truncated}`
+ */
+export function boundedFinalMessage(text) {
+  if (byteLength(text) <= TURN_FINISHED.finalMessageBytes) return { text, truncated: false }
+  return { text: cutToBytes(text, TURN_FINISHED.finalMessageBytes, TURN_FINISHED.truncationMarker), truncated: true }
+}
+
+/** `stop.message` for a turn that ended with `reason` (a DSH TurnEndReason), not completed. */
+function stopMessageOf(reason) {
+  if (reason?.kind === STANDSTILL.error) return STOP_TEXT.error(reason.error)
+  if (reason?.kind === STANDSTILL.aborted) return STOP_TEXT.aborted(reason.reason)
+  return typeof STOP_TEXT[reason?.kind] === 'string' ? STOP_TEXT[reason.kind] : STOP_TEXT.other(String(reason?.kind))
+}
+
+/**
+ * Routing's `sessions` source. A subagent's turn counts as its root's (K1c keys are root ids).
  * - `rootOf(id)`: the root Hand over and Take back act on, stopped sessions included
  *   (session-info.js `storedRootOf`; review UI-01), or undefined for no such session;
- * - `onTurnFinished(fn(rootId, {running, queued}))`: after each `turn/end`; `running` is whether
- *   another turn has started already, `queued` whether input waits for the next turn;
- * - `onState(fn(rootId, {running, pendingInteraction}))`: on each agent status change.
- *   `pendingInteraction` is read from DSH's passive state where the SDK has it (0.2.2), false on
- *   0.2.1, as the V2 session port reads it (slim/host/session-port.js `activityOf`).
+ * - `onTurnFinished(fn(rootId, facts))` (WAKE-REDUCE, the user's decisions of 2026-11-21): once per
+ *   **standstill** of a root's tree, after the root's turn ended. A standstill is: no agent of the
+ *   tree (the root and every attached session whose root it is) running or holding queued input,
+ *   and no background job of the tree running or stopping. A turn end while anything still moves
+ *   emits nothing; the next quiet edge (an idle status, a job settling, a subagent ending, another
+ *   turn end) checks again. `facts` is `{outcome, finalMessage?}` for a completed last turn
+ *   (`boundedFinalMessage` of its last assistant text) or `{outcome: stopped, stop: {kind,
+ *   message}}` for any other end;
+ * - `stoppedByManager(rootId)`: the managing agent is stopping the root's turn itself
+ *   (session_stop, the cancel of session_redirect): the turn end that follows reports nothing,
+ *   because the manager asked for it and already has its own tool result.
+ * DESIGN: the pending standstill per root is in memory only. A row reload or a restart loses an
+ * unreported one, which is acceptable: no turn of a session survives a restart either.
  * Each subscription is a row event listener, so it ends with the row.
  */
-export function createSessionSource(ctx, logger) {
+export function createSessionSource(ctx) {
   const exists = sessionExistsIn(ctx)
-  const agentOf = (sessionId) => ctx.agents.get(sessionId)
-  const runningOf = (sessionId) => agentOf(sessionId)?.status === RUNNING_AGENT
-  const queuedOf = (sessionId) => (agentOf(sessionId)?.inbox?.nextTurn?.length ?? 0) > 0
+  /** root id → the last root turn's end not yet reported: `{reason, byManager}`. */
+  const pending = new Map()
+  /** Roots whose next turn end the manager caused (`stoppedByManager`). */
+  const managerStops = new Set()
 
-  async function pendingOf(sessionId) {
-    if (typeof ctx.sessionController.state !== 'function') return false
-    try {
-      const passive = await ctx.sessionController.state({ sessionId })
-      return Array.isArray(passive?.pendingInput) && passive.pendingInput.length > 0
-    } catch (error) {
-      logger.warn(LOG.format, LOG.sessionReadFailed, diagnosticOf(error))
-      return false
+  const rootOf = (sessionId) => rootSessionOf(ctx, sessionId)
+  const treeOf = (root) => ctx.agents.list().filter((agent) => agent.id === root || rootOf(agent.id) === root)
+  const moving = (agent) => agent.status === RUNNING_AGENT || agent.inbox?.hasPending === true
+  function jobsMoving(members) {
+    const jobs = ctx.get(STANDSTILL.jobsService)
+    if (typeof jobs?.list !== 'function') return false
+    return members.some((agent) => jobs.list(agent.id).some((job) => job.owner === agent.id && STANDSTILL.movingJob.includes(job.status)))
+  }
+  const standsStill = (root) => {
+    const members = treeOf(root)
+    return !members.some(moving) && !jobsMoving(members)
+  }
+
+  /** The root's last assistant text, or undefined; read from the live session. */
+  function finalTextOf(root) {
+    const events = ctx.sessions.get(root)?.snapshotEvents() ?? []
+    for (let index = events.length - 1; index >= 0; index--) {
+      if (events[index].type !== SESSION_EVENT.assistantMessage) continue
+      const text = textOfEvent(events[index])
+      if (text.length > 0) return text
+    }
+    return undefined
+  }
+
+  function factsOf(root, reason) {
+    if (STANDSTILL.completedKinds.includes(reason?.kind)) {
+      const text = finalTextOf(root)
+      return text === undefined ? { outcome: TURN_OUTCOME.completed } : { outcome: TURN_OUTCOME.completed, finalMessage: boundedFinalMessage(text) }
+    }
+    return { outcome: TURN_OUTCOME.stopped, stop: { kind: String(reason?.kind), message: stopMessageOf(reason) } }
+  }
+
+  const listeners = new Set()
+  /** Reports each root whose pending end now stands still; a manager's own stop is dropped there. */
+  function settle(roots = [...pending.keys()]) {
+    for (const root of roots) {
+      const end = pending.get(root)
+      if (end === undefined || !standsStill(root)) continue
+      pending.delete(root)
+      if (end.byManager) continue
+      const facts = factsOf(root, end.reason)
+      for (const listener of [...listeners]) listener(root, facts)
+    }
+  }
+  // DSH publishes `turn/end` and `subagent/end` while the agent still reads `running`; its status
+  // settles after the publication's own tasks, so a check runs on the next macrotask (both SDKs).
+  const later = (roots) => setImmediate(() => settle(roots))
+
+  function onTurnEnd(session, event) {
+    const root = rootOf(session.id)
+    // Only the root's own turn decides the outcome; a subagent's turn end is a quiet edge only.
+    if (session.id === root) {
+      const byManager = managerStops.delete(root)
+      pending.set(root, { reason: event.data?.reason, byManager })
+    }
+    later([root])
+  }
+
+  const disposers = []
+  function subscribe() {
+    disposers.push(ctx.on(SESSION_EVENT.sessionEvent, (session, event) => { if (event.type === SESSION_EVENT.turnEnd) onTurnEnd(session, event) }))
+    disposers.push(ctx.on(SESSION_EVENT.agentStatus, ({ agent }) => { if (agent !== undefined) later([rootOf(agent.id)]) }))
+    disposers.push(ctx.on(SESSION_EVENT.subagentEnd, (info) => later(info?.parentSessionId === undefined ? undefined : [rootOf(info.parentSessionId)])))
+    const jobs = ctx.get(STANDSTILL.jobsService)
+    if (typeof jobs?.events?.subscribe === 'function') {
+      disposers.push(jobs.events.subscribe(STANDSTILL.jobsFilter, (jobEvent) => {
+        if (jobEvent.type === STANDSTILL.jobSettled && jobEvent.job?.owner !== undefined) later([rootOf(jobEvent.job.owner)])
+      }))
     }
   }
 
@@ -53,23 +138,20 @@ export function createSessionSource(ctx, logger) {
     exists,
     rootOf: (sessionId) => storedRootOf(ctx, sessionId),
     onTurnFinished(listener) {
-      return ctx.on(SESSION_EVENT.sessionEvent, (session, event) => {
-        if (event.type !== SESSION_EVENT.turnEnd) return
-        // DSH publishes `turn/end` while the agent still reads `running`; its status settles to
-        // idle (or, with queued input, to the next turn) after the publication's own tasks, so
-        // the facts are read on the next macrotask (observed on both SDKs).
-        setImmediate(() => listener(rootSessionOf(ctx, session.id), { running: runningOf(session.id), queued: queuedOf(session.id) }))
-      })
+      if (disposers.length === 0) subscribe()
+      listeners.add(listener)
+      return () => {
+        listeners.delete(listener)
+        if (listeners.size > 0) return
+        for (const dispose of disposers.splice(0)) dispose?.()
+      }
     },
-    onState(listener) {
-      return ctx.on(SESSION_EVENT.agentStatus, ({ agent }) => {
-        // `running` is read after the pending read resolves, not from the event, so a slow read
-        // that resolves after a later status change reports the agent's status now, never a
-        // stale one (two reads may then report the same state; routing commits what it is told).
-        void pendingOf(agent.id).then((pendingInteraction) => {
-          listener(rootSessionOf(ctx, agent.id), { running: runningOf(agent.id), pendingInteraction })
-        })
-      })
+    /**
+     * Marks the root's next turn end as its manager's. Only a running root counts: a stop of an idle
+     * session ends no turn, and a stop aimed at a subagent's own session ends no root turn.
+     */
+    stoppedByManager(sessionId) {
+      if (rootOf(sessionId) === sessionId && ctx.agents.get(sessionId)?.status === RUNNING_AGENT) managerStops.add(sessionId)
     },
   })
 }

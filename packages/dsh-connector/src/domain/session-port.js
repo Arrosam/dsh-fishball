@@ -161,10 +161,12 @@ function messageOf(event, text, senderId) {
  * @param {() => {maxMessageBytes: number, readSessionMessages: number, readSessionBytes: number}} options.readLimits
  *   - the connector's live limits (src/config.js)
  * @param {() => number} [options.now] - the clock of the activity bump and hostRef expiry
+ * @param {(sessionId: string) => void} [options.stoppedByManager] - told right before the port cancels a
+ *   turn for the managing agent (stop, redirect), so that turn end reports no turn-finished
  * @returns the port (see the module comment)
  */
 export function createSessionPort(ctx, options) {
-  const { senderId, readLimits, now = Date.now } = options ?? {}
+  const { senderId, readLimits, now = Date.now, stoppedByManager = () => {} } = options ?? {}
   if (!ctx || typeof ctx.get !== 'function') throw new TypeError(MISUSE.context)
   if (typeof senderId !== 'string' || typeof readLimits !== 'function' || typeof now !== 'function') throw new TypeError(MISUSE.options)
   for (const service of DSH_SERVICES) {
@@ -288,7 +290,9 @@ export function createSessionPort(ctx, options) {
         logger?.warn(LIST_ACTIVITY.failed, agent.session.id, error?.code ?? REFUSAL.operationFailed)
       }
     }
-    return { status: flushed ? DELIVERY.delivered : DELIVERY.unconfirmed }
+    // WAKE-REDUCE: the session's activity right after the hand-over is the tool's own answer, so no
+    // separate `state` event reports it (a steer wakes an idle agent before it returns).
+    return { status: flushed ? DELIVERY.delivered : DELIVERY.unconfirmed, running: agent.status === RUNNING_AGENT }
   }
 
   /**
@@ -370,13 +374,15 @@ export function createSessionPort(ctx, options) {
     const named = nameSession(created.sessionId, title)
     if (selection !== undefined) await applySessionModel(ctx, created.sessionId, selection)
     await onCreated(created.sessionId)
+    let running = false
     try {
-      await deliverWith(created.sessionId, message, (agent, input) => agent.steer(input), attachments)
+      ({ running } = await deliverWith(created.sessionId, message, (agent, input) => agent.steer(input), attachments))
     } catch (error) {
       logger?.warn(LOG_LINE.firstDeliveryFailed, created.sessionId, error?.code ?? REFUSAL.operationFailed)
     }
     return {
       sessionId: created.sessionId,
+      running,
       ...(named.titleError === undefined ? {} : { titleError: named.titleError }),
       ...(created.workspaceError === undefined ? {} : { workspaceError: created.workspaceError }),
     }
@@ -447,20 +453,27 @@ export function createSessionPort(ctx, options) {
     message,
     async redirect({ sessionId, message, attachments, admit = ADMITTED }) {
       const delivered = await deliver(sessionId, message, async (agent, input) => {
-        // The Stop button's path, then the instruction as the next turn (src/messaging.js).
+        // The Stop button's path, then the instruction as the next turn (src/messaging.js). The
+        // cancelled turn is the manager's own stop: it reports no turn-finished (WAKE-REDUCE).
+        stoppedByManager(sessionId)
         await ctx.sessionController.cancel({ sessionId })
         admit()
         agent.followup(input)
       }, { hostRefs: attachments, via: SOURCE.via.redirect, admit })
       return delivered
     },
-    async stop({ sessionId, reason, admit = ADMITTED }) {
+    /** `byManager`: the managing agent's own session_stop (its turn end then reports no turn-finished). */
+    async stop({ sessionId, reason, admit = ADMITTED, byManager = false }) {
       // A loaded but idle agent still sits in ctx.agents, so its presence is not "something is
       // running"; the host's passive state (0.2.2) or the live agent's status (0.2.1) decides.
       // DSH's cancel is the Stop button, and an idle stop is a no-op.
       const { running } = await activityOf(sessionId)
       admit()
-      if (running) await ctx.sessionController.cancel({ sessionId })
+      if (!running) return
+      // The manager's own stop reports no turn-finished (WAKE-REDUCE, the user's decision); a
+      // plugin's stop (the watchdog's, dshConnectorSessions) is not the manager's and is reported.
+      if (byManager) stoppedByManager(sessionId)
+      await ctx.sessionController.cancel({ sessionId })
     },
     read,
     // attachment_read answers metadata plus chunks; the image port checks that this Session's log

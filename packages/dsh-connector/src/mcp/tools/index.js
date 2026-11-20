@@ -19,11 +19,12 @@
  *       headers too, so a stopped subagent's session is its root's (sessions.js `check`);
  *     - `describe(sessionId) → Promise<SessionSummary | undefined>`: undefined for no such (or an
  *       archived) session;
- *     - `start(args, {onCreated}) → Promise<{sessionId, titleError?, workspaceError?}>`: the start
+ *     - `start(args, {onCreated}) → Promise<{sessionId, running, titleError?, workspaceError?}>`: the start
  *       (folder resolution, title, model, first message) with no watch; it awaits
  *       `onCreated(sessionId)` once the session exists and before its first message, so the
  *       caller manages it before its first turn can produce an event (R-ROUTE-01);
- *     - `message`, `redirect({sessionId, message, attachments, admit}) → Promise<{status}>`;
+ *     - `message`, `redirect({sessionId, message, attachments, admit}) → Promise<{status, running}>`
+ *       (`running`: the session's activity right after the delivery, WAKE-REDUCE);
  *     - `stop({sessionId, reason?, admit})`. `admit()` throws a `RefusalError` once the caller no
  *       longer manages the session; the port calls it after each DSH await and right before its
  *       side effect (review F02);

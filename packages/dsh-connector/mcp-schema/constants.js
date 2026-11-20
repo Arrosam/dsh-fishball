@@ -682,6 +682,16 @@ export const EVENT_TYPE = Object.freeze({
   takeback: 'takeback',
   notice: 'notice',
 })
+/**
+ * `turn-finished` (WAKE-REDUCE, the user's decision 2026-11-21): emitted once a managed session's
+ * tree stands still (no running agent, subagent or background job, nothing queued).
+ * - `completed`: its last turn completed; `finalMessage` is the last assistant text, cut to
+ *   `finalMessageBytes` UTF-8 bytes including `truncationMarker` ("a few KB", the user);
+ * - `stopped`: it stopped for any reason but its manager's own stop; `stop` says why.
+ */
+export const TURN_OUTCOME = Object.freeze({ completed: 'completed', stopped: 'stopped' })
+export const TURN_FINISHED = Object.freeze({ finalMessageBytes: 4096, truncationMarker: '…[truncated]' })
+
 /** `contributed:<namespace>.<event>`; the prefix has one owner, K2. */
 export const CONTRIBUTED_TYPE_PREFIX = CONTRIBUTED_EVENT.typePrefix
 

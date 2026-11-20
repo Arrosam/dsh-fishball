@@ -18,8 +18,8 @@
  *   `onRevoked`, so a re-enable, an added or a removed entry reaches this module only through this
  *   port: **C-WIRE fires `settings.onChange` after `TokenRegistry.apply` has resolved**, so the K3
  *   listeners read the new entries. `maxQueuedInputs` is the mailbox's own bound (C-MAILBOX).
- * - `sessions`: `{exists(id), rootOf?(id), onTurnFinished(fn(id, {running, queued})), onState(fn(id, {running,
- *   pendingInteraction}))}` over root session ids (binding it to DSH is C-WIRE's). `rootOf(id)` →
+ * - `sessions`: `{exists(id), rootOf?(id), onTurnFinished(fn(id, facts))}` over root session ids
+ *   (binding it to DSH is C-WIRE's; `facts` is the turn-finished payload without its sessionId). `rootOf(id)` →
  *   `Promise<root id | undefined>` (undefined: no such session) is what Hand over and Take back act
  *   on (review UI-01). C-WIRE's source always has it; a source without it (the routing suites' fakes
  *   of sessions that have no subagents) makes each existing session its own root;
@@ -30,7 +30,7 @@
  * Every ledger change (offer commits, `settle`, `withdraw`) and every management change share the
  * managed chain (`managed.withState`), so none of them lands halfway through another (K1c-2).
  */
-import { DECISION_KIND_OF, EVENT_TYPE, OFFER_TYPES, REFUSAL, RETIREMENT_REASON, formatOfferId, parseOfferId } from '../../mcp-schema/index.js'
+import { DECISION_KIND_OF, EVENT_TYPE, OFFER_TYPES, REFUSAL, RETIREMENT_REASON, SETTLED_BY, formatOfferId, parseOfferId } from '../../mcp-schema/index.js'
 import { diagnosticOf } from '../errors.js'
 import { createHandover } from '../handover/index.js'
 import { isNonEmptyString } from '../mailbox/draft.js'
@@ -142,10 +142,11 @@ export async function openRouting(ctx, storageDomain, { mailbox, pairs, tokens, 
   disposers.push(mailbox.onAcked((principalKey, receipts) => ledger.markAcked(principalKey, receipts)))
 
   // Watch = manage (R-WATCH-01/02): produced for managed sessions only; the router drops the rest.
-  const watch = (type) => (sessionId, facts) => {
-    produce({ type, sessionId }, { sourceSessionId: sessionId, correlationId: null, payload: { sessionId, ...facts } }).catch(warn(LOG.watchFailed))
-  }
-  disposers.push(sessions.onTurnFinished(watch(EVENT_TYPE.turnFinished)), sessions.onState(watch(EVENT_TYPE.state)))
+  // WAKE-REDUCE (the user, 2026-11-21): no `state` event any more. "Running" is the session tools'
+  // own `running` result, "idle" is this `turn-finished`, and a pending interaction is its offer.
+  disposers.push(sessions.onTurnFinished((sessionId, facts) => {
+    produce({ type: EVENT_TYPE.turnFinished, sessionId }, { sourceSessionId: sessionId, correlationId: null, payload: { sessionId, ...facts } }).catch(warn(LOG.watchFailed))
+  }))
 
   /** An answerable draft's fields for `descriptor` (its offer id is the offer and the correlation id). */
   function answerable(type, sessionId, descriptor) {
@@ -258,7 +259,8 @@ export async function openRouting(ctx, storageDomain, { mailbox, pairs, tokens, 
 
     /**
      * An offer's outcome (C-TOOLS' first committed answer, or the user's): one `settlement`
-     * to the pair that held it (R-EVS-03 follow-up).
+     * to the pair that held it (R-EVS-03 follow-up), except for that pair's own answer (`by:
+     * principal`), which its tool result already reports (WAKE-REDUCE): the offer only leaves the ledger.
      *
      * Runs on the managed chain, as the offer's own commit and `withdraw` do. Off it, a settle that
      * arrives while its offer's commit is still queued or running there finds nothing live and
@@ -284,7 +286,11 @@ export async function openRouting(ctx, storageDomain, { mailbox, pairs, tokens, 
         const holder = ledger.holderOf(offerId)
         // The current revision's id: after a succession the user's card may still name an older one (E1a).
         const draft = checkedFields(EVENT_TYPE.settlement, { sourceSessionId: holder.sessionId, correlationId: holder.offerId, payload })
-        await produce({ type: EVENT_TYPE.settlement, sessionId: holder.sessionId, followsPrincipal: holder.principalKey }, draft)
+        // WAKE-REDUCE (the user, 2026-11-21): the principal's own answer is told by its tool result
+        // (approval_answer / question_answer), so no settlement event repeats it to that principal.
+        if (payload.by !== SETTLED_BY.principal) {
+          await produce({ type: EVENT_TYPE.settlement, sessionId: holder.sessionId, followsPrincipal: holder.principalKey }, draft)
+        }
         ledger.settle(offerId)
         return true
       })

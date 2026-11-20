@@ -194,6 +194,11 @@ routing.
 - **An agent sees and operates only the sessions it manages.** It manages a session that it started
   with `session_start`, or one you handed to it with **Hand over** (see below).
   `sessions_list` omits every other session, and every session tool refuses one it does not manage.
+- **The agent hears only what its own tool calls did not tell it.** When a managed session comes to a
+  standstill (no running turn, subagent or background job, nothing queued), the agent gets one
+  `turn-finished` with the session's final reply (cut to 4 KB) or the reason it stopped. Nothing is
+  sent when the agent stopped the session itself, and no event repeats the agent's own answer or the
+  session's running state (the tools return it).
 - **A managed session's questions, plan reviews and permission requests go to its agent.** The agent
   answers them with `question_answer` and `approval_answer`. They wait without a timer and without a
   cap, whether or not the agent is connected. A standing grant (`grant` answer) allows matching

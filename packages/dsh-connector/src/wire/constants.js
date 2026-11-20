@@ -21,6 +21,35 @@ export const SESSION_EVENT = Object.freeze({
   agentStatus: 'agent/status',
   /** An agent inbox boundary: the next turn (dsh-agent InboxTarget). */
   nextTurn: 'next-turn',
+  /** A published subagent settled (dsh-subagent; `{parentSessionId, …}`). */
+  subagentEnd: 'subagent/end',
+  /** The assistant message event a session's final output is read from. */
+  assistantMessage: 'assistant/message',
+})
+
+/**
+ * What a standstill (WAKE-REDUCE: turn-finished) waits for and how it reads a turn's end. DSH's
+ * `turn/end` reason kinds (dsh-session TurnEndReasonMap): `completed` and `max-tokens` end a
+ * turn that produced its output; every other kind is a stop. The background-job registry is the
+ * optional `jobs` service (dsh-jobs): a job `running` or `stopping` is still moving.
+ */
+export const STANDSTILL = Object.freeze({
+  jobsService: 'jobs',
+  jobsFilter: Object.freeze({ owners: 'all' }),
+  movingJob: Object.freeze(['running', 'stopping']),
+  jobSettled: 'settled',
+  completedKinds: Object.freeze(['completed', 'max-tokens']),
+  aborted: 'aborted',
+  error: 'error',
+})
+
+/** `stop.message` of a turn-finished `stopped` (English; data for the agent, never shown as UI). */
+export const STOP_TEXT = Object.freeze({
+  error: (error) => [error?.code, error?.message].filter((part) => typeof part === 'string' && part.length > 0).join(': ') || 'the turn failed',
+  aborted: (cause) => `the turn was cancelled (${cause?.kind ?? 'unknown'}${typeof cause?.reason === 'string' ? ': ' + cause.reason : ''})`,
+  blocked: 'a hook blocked the turn',
+  interrupted: 'the turn was cut off (DSH stopped while it ran)',
+  other: (kind) => `the turn ended: ${kind}`,
 })
 
 /**

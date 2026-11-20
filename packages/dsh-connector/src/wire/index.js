@@ -179,7 +179,7 @@ export async function openV3(ctx, { config, storageDomain, limits, volatileEvent
     // (C-WIRE-2: the routing queue that used to read it live is gone).
     const mailbox = withAckSignal(createMailbox({ tables: mailboxTables.tables, hints, maxQueuedInputs: () => limits().maxQueuedInputs, logger }), logger)
 
-    const sessions = createSessionSource(ctx, logger)
+    const sessions = createSessionSource(ctx)
     const presenceListeners = new Set()
     const presence = Object.freeze({
       isConnected: (principalKey) => endpoint?.presence.isConnected(principalKey) === true,
@@ -229,7 +229,7 @@ export async function openV3(ctx, { config, storageDomain, limits, volatileEvent
 
     // Step 4: HTTP.
     const contributions = createContributions({ mailbox, router: routing.router, sessionExists: sessionExistsIn(ctx), onToolsChanged: () => endpoint?.toolsChanged(), logger })
-    const domain = await createSessionDomain(ctx, { storageDomain, readLimits: limits, routing, logger })
+    const domain = await createSessionDomain(ctx, { storageDomain, readLimits: limits, routing, stoppedByManager: sessions.stoppedByManager, logger })
     closers.push(() => domain.close())
     const populate = createCoreTools({ pairs, mailbox, managed: routing.managed, domain, contributions, now: Date.now, logger })
     endpoint = createMcpEndpoint({

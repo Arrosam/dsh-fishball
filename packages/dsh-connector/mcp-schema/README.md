@@ -105,15 +105,15 @@ endpoint an invalid id is `invalid_client` (R-ID-02).
 ## Events
 
 - **Types (`EVENT_TYPE`):** `permission`, `question`, `plan-review`, `settlement`, `retirement`,
-  `turn-finished`, `state`, `message`, `ask` (no producer since C-WIRE-2), `handover`, `takeback`,
+  `turn-finished`, `state` (no producer since WAKE-REDUCE), `message`, `ask` (no producer since C-WIRE-2), `handover`, `takeback`,
   `notice`, and `contributed:<namespace>.<event>` (`isEventType`).
 - **Event shape (`MAILBOX_EVENT_SCHEMA`):** `{eventId, mailboxGeneration, sequence, type, at,
   sourceSessionId, correlationId, offer?, payload, payloadDigest}`; `offer = {offerId, revision,
   decisionKind}` on the answerable types (`ANSWERABLE_TYPES`).
 - **Payloads (`EVENT_PAYLOAD_SCHEMA`):** offers and `ask` carry the V2 descriptor; `settlement`
   `{approvalId, outcome, by, answers?}`; `retirement` `{retiredEventId, reason}`;
-  `turn-finished` `{sessionId, running, queued}`; `state` `{sessionId, running,
-  pendingInteraction}`; `message` `{text, images}`; `handover` / `takeback` `{sessionId, note}`;
+  `turn-finished` `{sessionId, outcome, finalMessage?, stop?}` (WAKE-REDUCE below); `state` `{sessionId, running,
+  pendingInteraction}` (frozen, no producer); `message` `{text, images}`; `handover` / `takeback` `{sessionId, note}`;
   `notice` `{code, text}` (no notice code is frozen yet: `NOTICE.codes` is empty, and each task that
   produces one adds it as a K1 amendment; C-ROUTE produces none, K1c-4); contributor events `{namespace, event, data, summary?}`
   (design §13.5a).
@@ -525,6 +525,30 @@ is `invalid-arguments`), read DSH at call time, keep no state and send no event.
   DSH cannot read is `feature-off`, as for `session_start`.
 - `sessions_list` is unchanged: it already gives each managed session's id, title, `workspaceId`,
   `running` and `pendingInteraction`; `workspaces_list` resolves that id to a title and path.
+
+## WAKE-REDUCE amendment (2026-11-21): fewer events, turn-finished carries the report
+
+The user's decisions (2026-11-21): every event a principal receives may wake its agent, so the
+connector sends only what no tool result already said. Fishball core batches what remains
+(quiet window, max batch, wake/silent classes: fishball-core's own settings).
+
+| Event | Before | Now | Why |
+| --- | --- | --- | --- |
+| `state` | on every agent status change of a managed session | **not produced** (type kept, no producer) | "running" is the `running` field of `session_start` / `session_message` / `session_redirect`; "idle" is `turn-finished`; `pendingInteraction` duplicates the offers (`permission` / `question` / `plan-review`) |
+| `settlement` `by: principal` | after the managing agent's own `approval_answer` / `question_answer` | **not produced** | the tool's result (`accepted`, `grantId`) is that outcome; `by: user` and `by: delegate` settlements are unchanged |
+| `turn-finished` | after every `turn/end`, `{sessionId, running, queued}` | once per standstill, `{sessionId, outcome, finalMessage?, stop?}` | it is the end signal and the report in one, so no `session_read` follows it; `running`/`queued` are always false at a standstill |
+
+- **Standstill:** the root session's agent, every subagent of its tree and every background job
+  (`ctx.jobs`, `running` / `stopping`) of the tree are idle, with nothing queued. A turn that ends
+  while anything still moves reports nothing; the next quiet edge checks again.
+- **`outcome: completed`** (last root turn `completed` or `max-tokens`): `finalMessage` is the root's
+  last assistant text, at most `TURN_FINISHED.finalMessageBytes` (4096) UTF-8 bytes including the
+  `TURN_FINISHED.truncationMarker` when cut (`truncated: true`).
+- **`outcome: stopped`**: any other end (an error, the user's Stop, a hook, an interruption, a
+  plugin's stop such as the watchdog's); `stop = {kind, message}` says why.
+- **The manager's own stop** (`session_stop`, the cancel of `session_redirect`) reports nothing.
+- `session_start.running`, `session_message.running`, `session_redirect.running` (required): whether
+  the session runs right after the delivery.
 
 ## Left to a task (not frozen here)
 
