@@ -327,8 +327,16 @@ globalThis.__ModuleLoader__?.load({
       function makeHandOverDialog(t) {
         return function ConnectorHandOverDialog() {
           const request = React.useSyncExternalStore(handOverRequest.subscribe, handOverRequest.get)
+          const { targets } = useSnapshot()
           if (request === null) return null
-          return h(HandOverForm, { key: request.sessionId + request.target.key, request, t })
+          // The agent chosen is its key, captured at open: the confirm posts that key. Its words come
+          // from the key's live row: names are unique per connector but not stable (set_name), so a
+          // name captured at open could, after a rename while the dialog is open, be another agent's
+          // by the time of the confirm, and the title would name an agent the confirm does not hand
+          // over to. A key no longer listed (disabled or removed) keeps its last words; the backend
+          // then answers `no-agent`, which the dialog shows.
+          const target = targets.find((row) => row.key === request.target.key) ?? request.target
+          return h(HandOverForm, { key: request.sessionId + request.target.key, request: { ...request, target }, t })
         }
       }
 

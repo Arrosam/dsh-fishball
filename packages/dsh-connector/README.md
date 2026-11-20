@@ -220,7 +220,12 @@ The connector adds these to DSH's own session UI, with or without `dsh-connector
 
 - **Hand over to <agent>** in a session's header and in its sidebar row menu, for every enabled,
   paired token entry, online or not, each with a green (online) or red (offline) light. With more
-  than one agent, the header shows a **Handover to…** menu. A dialog takes an optional note.
+  than one agent, the header shows a **Handover to…** menu. A dialog takes an optional note. The
+  dialog hands over to the agent you picked; if that agent renames itself while the dialog is open,
+  the title shows its new name.
+- Agent names are unique per connector, ignoring letter case. A second Fishball that asks for a
+  name already in use (such as the default "Fishball") still pairs, without a name, and shows as
+  **ID:** and its id until it gets a free name.
 - **Managed by <agent>** beside a managed session's title, and **Take back** in its header and row
   menu.
 - Fishball's V1 fish (body in the text colour, magenta eye; dsh-fishball v0.1.0's mark) in a
