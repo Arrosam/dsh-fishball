@@ -243,6 +243,8 @@ export const INSUFFICIENT_SCOPE_REASON = Object.freeze({ notPaired: 'not-paired'
 /** Core tool names (design §3.2, R-CON-02). No watch tools (R-WATCH-03); no attention tool (R-EXT-13). */
 export const TOOL = Object.freeze({
   sessionsList: 'sessions_list',
+  workspacesList: 'workspaces_list',
+  modelsList: 'models_list',
   sessionStart: 'session_start',
   sessionMessage: 'session_message',
   sessionRedirect: 'session_redirect',

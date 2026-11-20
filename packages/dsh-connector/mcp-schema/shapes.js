@@ -49,6 +49,32 @@ export const sessionSummary = () => object({
   sessionId: sessionId(), title: string(), workspaceId: nullable(string()), running: boolean(), pendingInteraction: boolean(),
 })
 
+/**
+ * One registered DSH workspace (workspaces_list, DISCOVERY-TOOLS): `workspaceId` is what
+ * session_start's `folder` takes; `path` is the registry's canonical absolute directory, and
+ * `available` is false while that directory is gone (session_start then refuses the id).
+ */
+export const workspaceSummary = () => object({ workspaceId: string(), title: string(), path: string(), available: boolean() })
+
+/** `<provider>/<model>`: the exact string session_start's `model` takes. */
+const modelRoute = () => string('provider/model, as session_start takes it')
+
+/**
+ * One model of DSH's live catalog (models_list, DISCOVERY-TOOLS). `reasoningEfforts` are the ids
+ * session_start's `reasoningEffort` accepts for this model, in catalog order (empty: none);
+ * `defaultReasoningEffort` is present only when the catalog names one.
+ */
+export const modelSummary = () => object(
+  { model: modelRoute(), provider: string(), providerName: string(), name: string(), reasoningEfforts: array(string()) },
+  { defaultReasoningEffort: string() },
+)
+
+/** The model a session starts on when session_start names none. */
+export const defaultModel = () => object({ model: modelRoute() }, { reasoningEffort: string() })
+
+/** A provider whose catalog could not be read now; its error text is never passed on. */
+export const unavailableProvider = () => object({ provider: string(), providerName: string() })
+
 export const readMessage = () => object({
   seq: integer(), role: oneOfStrings(Object.values(READ_ROLE)), author: string(), text: string(), images: array(imageRef()),
 })

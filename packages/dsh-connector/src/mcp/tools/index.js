@@ -38,6 +38,9 @@
  *       `answerPrompt({promptId, decision, risk?, reason}) → {ok, code?, promptId, decision, managed}`;
  *     - `listGrants() → GrantSummary[]`; `revokeGrant({grantId, reason, principalKey}) → {ok, code?}` (rejects when the revocation could not be stored);
  *   - `domain.attachments`: `put(args) → {hostRef, expiresAt}`, `read({sessionId, attachmentId})`;
+ *   - `domain.workspaces`: `list() → Promise<WorkspaceSummary[]>` (every registered workspace);
+ *   - `domain.models`: `list() → Promise<{models, defaultModel, unavailableProviders}>` (DSH's live
+ *     catalog; an unreadable catalog throws `RefusalError(feature-off)`) (DISCOVERY-TOOLS);
  * - `contributions` (optional): C-EXT's `{list, call}`; contributed tools follow the core tools;
  * - `now`: the injected clock (epoch ms); `logger`: `{warn}`.
  *

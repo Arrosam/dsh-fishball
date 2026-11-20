@@ -42,8 +42,8 @@ domain's operation codes, payload vocabularies and payload bounds are this modul
 
 ## Tools (`TOOLS`, in `tools/list` order)
 
-`sessions_list`, `session_start`, `session_message`, `session_redirect`, `session_stop`,
-`session_read`, `session_release`, `approvals_list`, `approval_answer`, `question_answer`,
+`sessions_list`, `workspaces_list`, `models_list`, `session_start`, `session_message`,
+`session_redirect`, `session_stop`, `session_read`, `session_release`, `approvals_list`, `approval_answer`, `question_answer`,
 `prompts_list`, `prompt_answer`, `grants_list`, `grant_revoke`, `attachment_put`, `attachment_read`,
 `inbox_poll`, `inbox_ack`, `pair`, `set_name`.
 No watch tools (R-WATCH-03), no attention tool (R-EXT-13). Core tools come before every contributed
@@ -506,6 +506,25 @@ tool, schema, OAuth, receipt or event changes.
   `{uri: 'dsh-agent://identity'}` and no param beyond the SDK's own `_meta` (its listen subscription id) to every authenticated listen stream subscribed to that URI; an
   unchanged name sends nothing; the events resource is not touched. A listen stream may subscribe
   to both URIs; `CONNECTED` still means the events URI.
+
+## DISCOVERY-TOOLS amendment (2026-11-21): workspaces_list and models_list
+
+Additive. Two full-scope core tools, after `sessions_list`, so an agent can find what
+`session_start` accepts instead of guessing. Both take no argument (closed empty input; any argument
+is `invalid-arguments`), read DSH at call time, keep no state and send no event.
+
+- **`workspaces_list`** → `{workspaces: [{workspaceId, title, path, available}]}`: every workspace of
+  DSH's registry, in its order. `path` is the registry's canonical absolute directory; `available`
+  is the same directory check `session_start`'s placement applies (false: that id is refused
+  `unknown-session`). Not scoped to managed sessions: a workspace is DSH's, not a session's.
+- **`models_list`** → `{models: [{model, provider, providerName, name, reasoningEfforts,
+  defaultReasoningEffort?}], defaultModel: {model, reasoningEffort?}, unavailableProviders:
+  [{provider, providerName}]}` from `sessionController.modelCatalog()`, the catalog `session_start`
+  validates against: `model` is the exact `provider/model` string, `reasoningEfforts` the ids its
+  `reasoningEffort` accepts (empty: none). A provider failure's message is not passed on. A catalog
+  DSH cannot read is `feature-off`, as for `session_start`.
+- `sessions_list` is unchanged: it already gives each managed session's id, title, `workspaceId`,
+  `running` and `pendingInteraction`; `workspaces_list` resolves that id to a title and path.
 
 ## Left to a task (not frozen here)
 

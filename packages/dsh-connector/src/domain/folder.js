@@ -11,7 +11,8 @@ import { isAbsolute } from 'node:path'
 import { REFUSAL } from '../../mcp-schema/index.js'
 import { FolderRefusal } from '../errors.js'
 
-async function isDirectory(target) {
+/** Whether `target` is an existing directory now; also workspaces_list's `available`, so both agree. */
+export async function isDirectory(target) {
   try { return (await stat(target)).isDirectory() } catch { return false }
 }
 

@@ -24,8 +24,11 @@ export class ModelChoiceError extends Error {
 
 /** No cached or hard-coded models/efforts: both consumers use the GUI's live host catalog. */
 export const modelCatalog = (ctx) => ctx.sessionController.modelCatalog()
-export const modelChoices = (catalog) => catalog.groups.flatMap((group) => group.models.map((model) =>
-  [group.id, model.id].join(MODEL_SELECTION.routeSeparator)))
+/** The `provider/model` string of one exact route: what session_start's `model` takes. */
+export const modelRoute = (provider, model) => [provider, model].join(MODEL_SELECTION.routeSeparator)
+export const modelChoices = (catalog) => catalog.groups.flatMap((group) => group.models.map((model) => modelRoute(group.id, model.id)))
+/** The reasoning effort ids one catalog model advertises, in catalog order; none without reasoning metadata. */
+export const reasoningEffortsOf = (model) => model.reasoning?.efforts.map((effort) => effort.id) ?? []
 
 /** Validate the same exact choice at both boundaries before adapter normalization can default it. */
 export async function validateModelChoice(ctx, selection, catalog) {
@@ -33,7 +36,7 @@ export async function validateModelChoice(ctx, selection, catalog) {
   const model = catalog.groups.find((group) => group.id === selection.provider)?.models.find((model) => model.id === selection.model)
   if (model === undefined) throw new ModelChoiceError(MODEL_ERROR.invalid, MODEL_TEXT.invalid,
     { availableModels, failures: catalog.failures }, API_CODE.unknown)
-  const availableReasoningEfforts = model.reasoning?.efforts.map((effort) => effort.id) ?? []
+  const availableReasoningEfforts = reasoningEffortsOf(model)
   if (selection.reasoningEffort !== undefined && !availableReasoningEfforts.includes(selection.reasoningEffort)) {
     throw new ModelChoiceError(MODEL_ERROR.effort, MODEL_TEXT.effort, { availableModels, availableReasoningEfforts })
   }

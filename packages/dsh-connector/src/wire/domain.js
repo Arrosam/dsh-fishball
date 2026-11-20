@@ -20,6 +20,7 @@ import { createPromptGate } from '../domain/prompt-gate.js'
 import { createPrompts } from '../domain/prompts.js'
 import { createQuestions } from '../domain/questions.js'
 import { placeOf } from '../domain/folder.js'
+import { createDiscovery } from '../domain/discovery.js'
 import { createSessionPort } from '../domain/session-port.js'
 import { createSessionTools } from '../domain/session-tools.js'
 import { createWording } from '../domain/wording.js'
@@ -44,7 +45,7 @@ const refused = (code) => Object.freeze({ ok: false, code })
  * @param deps.readLimits - the connector's live limits (src/config.js)
  * @param deps.routing - the routing composition
  * @param deps.logger - the row's logger
- * @returns `{sessions, interactions, attachments, provide(ctx), close}`: `provide` serves `dshConnectorSessions`
+ * @returns `{sessions, interactions, attachments, models, workspaces, provide(ctx), close}`: `provide` serves `dshConnectorSessions`
  */
 export async function createSessionDomain(ctx, { storageDomain, readLimits, routing, logger }) {
   const now = Date.now
@@ -168,6 +169,7 @@ export async function createSessionDomain(ctx, { storageDomain, readLimits, rout
     })
     const provide = (target) => target.effect(() => target.provide(SESSIONS_SERVICE.name, service), SESSIONS_SERVICE.label)
 
-    return Object.freeze({ sessions, interactions, attachments, provide, close })
+    const { models, workspaces } = createDiscovery(ctx)
+    return Object.freeze({ sessions, interactions, attachments, models, workspaces, provide, close })
   }
 }

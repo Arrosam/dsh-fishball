@@ -242,12 +242,20 @@ Notes for maintainers (DESIGN.md §28, decided 2026-11-20):
 
 | Group | Tools |
 | --- | --- |
-| Sessions | `sessions_list`, `session_start`, `session_message`, `session_redirect`, `session_stop`, `session_read`, `session_release` |
+| Sessions | `sessions_list`, `workspaces_list`, `models_list`, `session_start`, `session_message`, `session_redirect`, `session_stop`, `session_read`, `session_release` |
 | Requests | `approvals_list`, `approval_answer`, `question_answer`, `prompts_list`, `prompt_answer` |
 | Grants | `grants_list`, `grant_revoke` |
 | Attachments | `attachment_put`, `attachment_read` |
 | Events | `inbox_poll`, `inbox_ack` |
 | Identity | `pair`, `set_name` |
+
+`sessions_list` returns only the sessions the agent manages, each with its id, title, `workspaceId`
+(null when ungrouped) and whether it is running or waiting on a request. `workspaces_list` returns
+every registered workspace (`workspaceId`, title, absolute path, and whether the directory exists
+now), so an agent can pass a valid `folder` to `session_start` and name a session's workspace.
+`models_list` returns the models DSH's live catalog offers now, each with the exact
+`provider/model` string `session_start`'s `model` takes and the `reasoningEffort` values it
+accepts, plus the default model and any provider whose catalog could not be read.
 
 Other plugins in the same DSH can add tools and events through the contribution service. Their
 names are `<namespace>.<tool>`, and they are listed after the connector's own tools.

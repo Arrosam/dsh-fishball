@@ -32,7 +32,7 @@ const unwrapped = (result) => result.structuredContent
  * @returns {Readonly<Record<string, (args: object, call: {caller: object}) => Promise<object>>>}
  */
 export function createHandlers({ pairs, mailbox, managed, domain, now, logger }, access, offers) {
-  const { sessions, interactions, attachments } = domain
+  const { sessions, interactions, attachments, models, workspaces } = domain
 
   /**
    * Runs `body(args, caller, root, admit)` once the session table (sessions.js) allows it. `admit()`
@@ -94,6 +94,9 @@ export function createHandlers({ pairs, mailbox, managed, domain, now, logger },
       }
       return ok({ sessions: listed })
     },
+    // DISCOVERY-TOOLS: this DSH's choices for session_start, not a session's data, so no session table.
+    [TOOL.workspacesList]: async () => ok({ workspaces: await workspaces.list() }),
+    [TOOL.modelsList]: async () => ok(await models.list()),
     async [TOOL.sessionStart](args, { caller }) {
       // V2's rule (bridge.js): a title with no visible character is refused before anything is created.
       if (!hasVisibleCharacter(args.title)) return refused(REFUSAL.limitExceeded)
