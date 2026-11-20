@@ -3,6 +3,9 @@
   "version": "1.0.0-alpha.1",
   "private": true,
   "type": "module",
+  "scripts": {
+    "test": "node ../../../test/run-package.mjs"
+  },
   "main": "./index.js",
   "exports": {
     ".": "./index.js",

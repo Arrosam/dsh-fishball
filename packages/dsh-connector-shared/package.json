@@ -13,6 +13,9 @@
     "tag": "alpha"
   },
   "type": "module",
+  "scripts": {
+    "test": "node ../../test/run-package.mjs"
+  },
   "exports": {
     "./redact": "./redact.js",
     "./request-host": "./request-host.js",

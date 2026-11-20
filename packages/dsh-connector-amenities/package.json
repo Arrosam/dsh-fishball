@@ -12,6 +12,9 @@
     "tag": "alpha"
   },
   "type": "module",
+  "scripts": {
+    "test": "node ../../test/run-package.mjs"
+  },
   "main": "./index.js",
   "exports": {
     ".": "./index.js",

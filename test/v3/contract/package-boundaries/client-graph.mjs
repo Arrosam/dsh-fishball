@@ -4,7 +4,7 @@
  * `require.asset`), and the Cordis apply of every graph entry with its declared `inject` list.
  *
  * Shared by the R-CORE settings page (test/v3/fishball-core/package/page.mjs, a hosted child's page) and the R-EMBED
- * main page (test/v3/contract/embed/page.mjs, the host DSH's page). Both run the scripts unread in
+ * main page (packages/dsh-connector/ui/tests/contract/embed/page.mjs, the host DSH's page). Both run the scripts unread in
  * support/browser-sandbox.mjs; only what the page offers (`platform`, the root services) differs.
  */
 

@@ -9,8 +9,8 @@ import { linkModule } from '../../fishball-core/link/link-driver.mjs'
 import { identityModule } from '../../fishball-core/identity/subject.mjs'
 import { bridgeExport, makeBridge } from '../../fishball-core/bridge/subject.mjs'
 import { FakeLink } from '../../fishball-core/bridge/fakes.mjs'
-import { toolsWorld } from '../../dsh-connector/mcp-tools/subject.mjs'
-import { oauthWorld } from '../../dsh-connector/oauth/subject.mjs'
+import { toolsWorld } from '../../../../packages/dsh-connector/tests/mcp-tools/subject.mjs'
+import { oauthWorld } from '../../../../packages/dsh-connector/tests/oauth/subject.mjs'
 import { OWN } from './constants.mjs'
 
 const sorted = (xs) => [...xs].sort()

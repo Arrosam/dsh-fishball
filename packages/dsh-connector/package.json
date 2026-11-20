@@ -15,6 +15,9 @@
     "tag": "alpha"
   },
   "type": "module",
+  "scripts": {
+    "test": "node ../../test/run-package.mjs"
+  },
   "main": "./index.js",
   "//exports": "./mcp-schema (tool and event schemas, limits, vocabularies) and ./tools (contribution types, apiVersion, defineTool) are V3's data-and-types modules (design §9.1), frozen by the V3-K tasks K1 and K2. ./client is the connector's own settings page (design §5.9). C-WIRE-2 removed ./contract (the V2 contract) with the V2 broker; ./records moved to dsh-connector-ui with the UI (R-EMBED).",
   "//locale": "The Plugins page card title (design §0.7): DSH reads meta.title from the exported ./locale/*.json without loading this package, and shows the package name when that file is absent. The connector's browser code is client.js, served through dsh.client and ./client: its own settings page (R-ARCH-03 amended by 1.28, design §5.9) and the marks part with Hand over / Take back (client.marks.js, DESIGN.md §28); dsh-connector-ui owns the rest of the UI (the Fishball sidebar row, window, light and notify prompt).",
@@ -38,7 +41,8 @@
     "cordis.patch.yml",
     "LICENSE",
     "THIRD_PARTY_NOTICES.md",
-    "ui/"
+    "ui/",
+    "!ui/tests/"
   ],
   "//engines": "node >=22.14: C-EXT resolves a contributor's package with node:module findPackageJSON (22.14 / 23.2); DSH itself needs >=24.9.0 on both SDKs (Fishball 2026-11-14; REL-PACK aligns engines across packages). The connector requires dsh-web-app in the profile (the user, 2026-11-17, S1 = A): its MCP endpoint and OAuth routes are served on DSH's web server, and the row injects web-app services (connection, sessionController, workspaceRegistry), so without the web app the row stays pending in DSH's own missing-dependency state.",
   "engines": {

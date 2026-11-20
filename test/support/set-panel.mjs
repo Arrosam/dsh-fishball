@@ -1,6 +1,6 @@
 /**
  * Fake `@deepseek-ai/dsh-client-ui-primitives` for the offline settings pages (test/v3/fishball-core/package/page.mjs,
- * test/v3/contract/embed/page.mjs). The V2 SET panel harness that lived here (mountPanel) loaded the child's
+ * packages/dsh-connector/ui/tests/contract/embed/page.mjs). The V2 SET panel harness that lived here (mountPanel) loaded the child's
  * hosted settings sections, which left with fishball-hosted-settings (REMOVE-WD, design §1.0).
  */
 
