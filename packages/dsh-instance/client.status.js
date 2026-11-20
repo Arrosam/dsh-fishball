@@ -12,7 +12,7 @@ window.__ModuleLoader__.load({
   chunk: 'client.status.js',
   factory(require) {
     const React = require('react')
-    const { Button, StateDot, Tag } = require('@deepseek-ai/dsh-client-ui-primitives')
+    const { Button, Modal, StateDot, Tag } = require('@deepseek-ai/dsh-client-ui-primitives')
     const h = React.createElement
 
     /**
@@ -31,6 +31,14 @@ window.__ModuleLoader__.load({
     const STATUS_UI = Object.freeze({
       statusPath: 'api/dsh-instance/status',
       retryPath: 'api/dsh-instance/retry',
+      restartPath: 'api/dsh-instance/restart',
+      /**
+       * The states Restart shows in (the user, 2026-11-20: whenever the instance is on and the child
+       * is ready, failed or stopped), and those it shows disabled in (starting, stopping). It is also
+       * disabled while the status says a Fishball package operation runs (`busy`).
+       */
+      restartable: Object.freeze(['ready', 'failed', 'stopped']),
+      restartMoving: Object.freeze(['starting', 'stopping']),
       read: Object.freeze({ method: 'GET', cache: 'no-store', credentials: 'same-origin' }),
       post: Object.freeze({ method: 'POST', cache: 'no-store', credentials: 'same-origin', headers: Object.freeze({ 'content-type': 'application/json' }), body: '{}' }),
       pollMs: 1000,
@@ -95,6 +103,14 @@ window.__ModuleLoader__.load({
       'reason.INVALID_MAIN_HOME': 'The DSH home is not a canonical real path. Start DSH with a home that is its own real path, not one through a symlink such as /tmp (on macOS, /private/tmp rather than /tmp).',
       retry: 'Retry',
       retrying: 'Retrying…',
+      restart: 'Restart',
+      restarting: 'Restarting…',
+      restartTitle: 'Restart Fishball?',
+      restartDescription: 'Running work in Fishball stops and the Fishball window reloads.',
+      restartCancel: 'Cancel',
+      close: 'Close',
+      'restartRefused.instance-disabled': 'The instance is switched off, so there is nothing to restart.',
+      'restartRefused.busy': 'A Fishball plugin change is still running. Wait for it, then restart.',
       'notice.hosted-entry-deleted': 'The hosted token entry was deleted in the connector, so Retry created no token. To connect again, press Reconnect below, or generate a new token in the connector\'s settings and paste it into the token field in Fishball\'s settings, or use Connect there.',
     }
     const zh = {
@@ -112,6 +128,14 @@ window.__ModuleLoader__.load({
       'reason.INVALID_MAIN_HOME': 'DSH home 不是规范的真实路径。请让 DSH 使用它自身的真实路径，而不是经过 /tmp 之类符号链接的路径（macOS 上应使用 /private/tmp，而不是 /tmp）。',
       retry: '重试',
       retrying: '正在重试…',
+      restart: '重启',
+      restarting: '正在重启…',
+      restartTitle: '重启 Fishball？',
+      restartDescription: 'Fishball 中正在进行的工作会停止，Fishball 窗口会重新加载。',
+      restartCancel: '取消',
+      close: '关闭',
+      'restartRefused.instance-disabled': '实例已关闭，没有可重启的内容。',
+      'restartRefused.busy': 'Fishball 插件更改仍在进行。请等它结束后再重启。',
       'notice.hosted-entry-deleted': '连接器中的托管 token 条目已被删除，所以重试没有创建 token。要重新连接，请点击下方的“重新连接”；或在连接器设置中生成新 token，粘贴到 Fishball 设置的 token 输入框；或在那里使用 Connect。',
     }
 
@@ -149,8 +173,45 @@ window.__ModuleLoader__.load({
     }
 
     /**
+     * Restart (the user, 2026-11-20): beside Retry, it restarts Fishball after a confirmation in
+     * DSH's dialog. Shown while the instance is on and the child is ready, failed or stopped, and
+     * shown disabled while it starts or stops or a Fishball package operation runs.
+     */
+    function RestartAction({ t, status, setStatus }) {
+      const [confirming, setConfirming] = React.useState(false)
+      const [restarting, setRestarting] = React.useState(false)
+      const [refused, setRefused] = React.useState(null)
+      const state = status?.state
+      if (!STATUS_UI.restartable.includes(state) && !STATUS_UI.restartMoving.includes(state)) return null
+      const disabled = restarting || STATUS_UI.restartMoving.includes(state) || status?.busy === true
+      const restart = async () => {
+        setConfirming(false)
+        setRestarting(true)
+        const next = await statusRequest(STATUS_UI.restartPath, STATUS_UI.post)
+        setRestarting(false)
+        if (next !== undefined) setStatus(next)
+        setRefused(typeof next?.refused === 'string' ? next.refused : null)
+      }
+      const refusedKey = refused === null ? null : 'restartRefused.' + refused
+      return h(React.Fragment, null,
+        h(Button, { type: 'button', size: 'sm', variant: 'outline', disabled, 'aria-busy': restarting, 'data-fishball-instance-restart': true, onClick: () => setConfirming(true) },
+          restarting ? t('restarting') : t('restart')),
+        refusedKey !== null && Object.hasOwn(en, refusedKey) ? h('span', { className: CLS.hint, role: 'alert' }, t(refusedKey)) : null,
+        h(Modal, {
+          open: confirming,
+          onClose: () => setConfirming(false),
+          title: t('restartTitle'),
+          closeLabel: t('close'),
+          description: t('restartDescription'),
+          footer: h(React.Fragment, null,
+            h(Button, { type: 'button', variant: 'outline', onClick: () => setConfirming(false) }, t('restartCancel')),
+            h(Button, { type: 'button', variant: 'primary', 'data-fishball-instance-restart-confirm': true, onClick: () => void restart() }, t('restart'))),
+        }))
+    }
+
+    /**
      * The status line: DSH's Tag with the state, the safe code beside it, the reason (the
-     * state's or the code's own text), and Retry for `failed`.
+     * state's or the code's own text), Retry for `failed` and Restart (RestartAction).
      * @param t - a reader bound to {@link LOCALE}.
      * @param status - the polled status ({@link useInstanceStatus}), shared with the caller's other parts.
      */
@@ -179,9 +240,11 @@ window.__ModuleLoader__.load({
                 t('state.' + state))),
             code ? h('code', { className: CLS.code }, code) : null),
           // DSH's Button has no `secondary` variant (its variants: primary, ghost, outline, toolbar).
-          state === STATUS_UI.failed
-            ? h(Button, { type: 'button', size: 'sm', variant: 'primary', disabled: retrying, 'data-fishball-instance-retry': true, onClick: () => void retry() }, retrying ? t('retrying') : t('retry'))
-            : null),
+          h('div', { className: CLS.statusRow },
+            state === STATUS_UI.failed
+              ? h(Button, { type: 'button', size: 'sm', variant: 'primary', disabled: retrying, 'data-fishball-instance-retry': true, onClick: () => void retry() }, retrying ? t('retrying') : t('retry'))
+              : null,
+            h(RestartAction, { t, status, setStatus }))),
         reason ? h('p', { className: CLS.hint }, reason) : null,
         // A failed start's specific cause (host.js, already sanitized and bounded by the route).
         typeof status?.detail === 'string' && status.detail ? h('p', { className: CLS.hint, 'data-fishball-instance-detail': true }, status.detail) : null,

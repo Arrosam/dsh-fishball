@@ -57,12 +57,62 @@ never succeeded.
 
 ## Settings page
 
-DSH → Plugins → `dsh-instance` (`client.js`, `client.status.js`, `client.models.js`):
+DSH → Plugins → `dsh-instance` (`client.js`, `client.status.js`, `client.models.js`; the
+Fishball tab is `client.fishball.js`, below):
 
-- the child's status, its failed-start detail, **Retry** and its notice;
+- the child's status, its failed-start detail, **Retry** (when it failed) and its notice;
+- **Restart**: restarts Fishball after a confirmation ("Running work in Fishball stops and the
+  Fishball window reloads."). Shown while the instance is on and the child is ready, failed or
+  stopped; disabled while it starts or stops and while a Fishball plugin change runs. Route
+  `POST /api/dsh-instance/restart` (queued behind other starts and stops; refused with
+  `instance-disabled` while the instance is off and `busy` while a Fishball plugin change runs);
 - **Reconnect** and **Open Fishball** (a new tab; open DSH at `127.0.0.1` or `localhost`);
 - `enabled` (saving it off stops the child at once, on starts it; private data is kept);
 - **Model for Fishball**: model sync.
+
+## Plugins for Fishball
+
+Only this DSH runs pnpm on the child profile (design §28): a pnpm run inside the child used the
+child's private home and refused the store the set install had linked (`ERR_PNPM_UNEXPECTED_STORE`).
+The instance mounts DSH's own plugin manager for the child profile, on first use, in an isolated
+scope (`src/host/child-plugins.js`): DSH's inspect, install, cancel, registry fallbacks, progress
+and build-script approval run unchanged; it does not reload this DSH and is hidden from the
+browser gateway. After a change the child's bundle list is written (with a backup) and the child
+restarts; while the instance is switched off the list is still written and the answer (and the
+page) says it takes effect the next time Fishball starts. One change runs at a time, until the restart it queued has
+settled; the child's bundle list is written under DSH's profile lock.
+
+On DSH's Plugins page (`client.fishball.js`):
+
+- a **Fishball** tab: the child's own plugins (name, version, on/off) with **Uninstall**
+  (confirmed first), **Install for Fishball**, and the **Recommended** list (a copy of
+  fishball-core's `ui/src/recommended.js`, which a standalone Fishball shows; change both
+  together; each entry **Install**, or "Installed in Fishball");
+- **Install for Fishball** in DSH's Add plugin menu;
+- on each bundle's page: **Uninstall from Fishball** when Fishball has it; else **Use in
+  Fishball** for an official bundle DSH ships (added to the child's list, no pnpm run); else
+  **Install to Fishball** with the bundle's install source. Nothing for the bundles the
+  instance owns (the child's base bundles, fishball-core, dsh-instance), which the Host lists as
+  `protected`;
+- the install dialog: package field, check, confirmation (name, version, description, source),
+  progress with pnpm's output and **Cancel**, then the result (Fishball restarts) or the reason with
+  **Retry** (or **Allow these scripts and retry**).
+
+The child's base bundles, the Fishball set and dsh-instance are never listed or uninstalled.
+Routes (owner-only, same-origin): `GET /api/dsh-instance/plugins`, `POST …/plugins/inspect`
+`{spec}`, `…/install` `{spec, requestId, approvedBuilds?}`, `…/cancel` `{requestId}`,
+`…/uninstall` `{name}`, `…/use` `{name}`. Progress arrives as DSH's own
+`plugin-manager/install-state` and `install-log` events. Uninstall first runs `pnpm remove` for
+a package the child profile declares, then drops the plugin from the child's list, so a failed
+removal (`remove-failed`) changes nothing.
+
+Limits:
+- bundle detail images are not served for Fishball-only bundles: the child manager's
+  `connection` is isolated, because DSH's own manager already holds the exact detail-image route
+  `/api/plugin-manager/detail-file`;
+- the **Install for Fishball** button sits at the top of the Fishball tab, not in DSH's page
+  header (DSH hides its own header actions on a contributed tab and offers no header slot);
+- version exemptions are read from the child profile.
 
 ## Model sync
 

@@ -185,8 +185,12 @@ async function installedAt(profile, name, version) {
   return Boolean((await exists(file))?.isFile()) && (await json(file)).version === version
 }
 
-/** A module of the running DSH installation, resolved from its own anchor as bootPath is. */
-const hostModule = (installation, specifier) => import(pathToFileURL(createRequire(installation.installAnchor).resolve(specifier)).href)
+/**
+ * A module of the running DSH installation, resolved from its own anchor as bootPath is. Also the
+ * child plugin manager's way to DSH's plugin-manager modules (src/host/child-plugins.js).
+ * @param installation - anything with the installation's `installAnchor`.
+ */
+export const hostModule = (installation, specifier) => import(pathToFileURL(createRequire(installation.installAnchor).resolve(specifier)).href)
 
 /**
  * Install the packed set into the child profile with DSH's own plugin-manager operation

@@ -55,9 +55,10 @@ const isRecord = (value) => typeof value === 'object' && value !== null && !Arra
  * `request.url`: DSH's /api bridge rebuilds every Request on a fixed internal base
  * (`http://dsh.internal`, dsh-client-connection lib/index.js:46 on 0.2.1-rc.5 and 0.2.2-rc.1),
  * so the URL never carries the browser's authority. A missing connection service or any
- * rejection refuses the request.
+ * rejection refuses the request. The Fishball tab's routes apply the same rule
+ * (child-plugin-routes.js).
  */
-function sameOrigin(connection, request) {
+export function sameOrigin(connection, request) {
   const site = request.headers.get(SYNC_PAGE.siteHeader)
   if (site && !SYNC_PAGE.allowedSites.includes(site)) return false
   if (typeof connection?.requestRejection !== 'function') return false

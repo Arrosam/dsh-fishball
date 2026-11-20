@@ -12,7 +12,7 @@
 import path from 'node:path'
 import Schema from '@deepseek-ai/schemastery'
 import { createNativeRuntime, RUNTIME_LIMITS } from './src/native-runtime/index.js'
-import { LIFETIME, HOSTED, LOCATOR, LOOPBACK, CHILD_STATE, LIFECYCLE_CODE, PLACEMENT, REFUSAL, RUNTIME } from './src/native-runtime/constants.js'
+import { INSTANCE_PACKAGE, LIFETIME, HOSTED, LOCATOR, LOOPBACK, CHILD_STATE, LIFECYCLE_CODE, PLACEMENT, REFUSAL, RUNTIME } from './src/native-runtime/constants.js'
 import { fishballDirectory, pathsFor } from './src/native-runtime/files.js'
 import { createCredentialClient } from './src/native-runtime/credential.js'
 import { openHostedRecord } from './src/host/hosted-record.js'
@@ -20,13 +20,15 @@ import { childTargetUrl, createHostedToken, usableTokens } from './src/host/host
 import { createChildLocator } from './src/host/locator.js'
 import { registerInstanceRoutes } from './src/host/routes.js'
 import { registerProviderSyncRoutes } from './src/host/provider-sync-routes.js'
+import { CHILD_PLUGINS, createChildPlugins } from './src/host/child-plugins.js'
+import { registerChildPluginRoutes } from './src/host/child-plugin-routes.js'
 import { createChildProviderSync, CHILD_SYNC } from './src/provider-sync-service.js'
 import { createInitialSync } from './src/host/initial-sync.js'
 import { launchDetail, launchStatus } from './src/host/launch-detail.js'
 
 const PLUGIN = Object.freeze({
   // The row id is the plugin's name (design §0.2, D22); the service keeps its name for its callers.
-  name: 'dsh-instance', service: 'nativeFishballRuntime',
+  name: INSTANCE_PACKAGE, service: 'nativeFishballRuntime',
   // Every service this row's ctx reads as a property must be listed: Cordis's context proxy
   // throws `cannot get property "<name>" without inject` for any other (0.2.1-rc.5 and
   // 0.2.2-rc.1 alike); ctx.get() is the only unchecked read. Each one below has the same name
@@ -350,6 +352,15 @@ export async function apply(ctx, config) {
   function retry() {
     return follow(() => (state === PLUGIN.state.failed ? restart() : status()))
   }
+  /**
+   * Restart, for the settings page's Restart button and after a Fishball plugin change (design
+   * §28): queued like the switch, so it never races a start or stop. A switched-off instance runs
+   * nothing to restart: refused with REFUSAL.disabled, and a plugin change then applies at its next start.
+   * @returns {Promise<object>} the status once the restart has run, with `refused` when refused.
+   */
+  function requestRestart() {
+    return follow(() => (enabled ? restart() : { ...status(), refused: REFUSAL.disabled }))
+  }
   function shutdown() {
     if (disposal) return disposal
     closed = true
@@ -422,10 +433,18 @@ export async function apply(ctx, config) {
     providerSync: service.providerSync,
   })
   ctx.provide(LOCATOR.service, locator)
+  // The child's plugins, managed from here (design §28): DSH's plugin manager for the child
+  // profile, mounted on first use, and the Fishball tab's routes.
+  const childPlugins = createChildPlugins({ ctx, restart: requestRestart, enabled: () => enabled, warn: (format, ...values) => logger?.warn(format, ...values) })
+  registerChildPluginRoutes(ctx, childPlugins)
   registerInstanceRoutes(ctx, {
     status,
     notice: () => hostedNow?.notice() ?? null,
+    busy: () => childPlugins.busy(),
     retry: async () => { await locator.retry(); return status() },
+    // The page's Restart is refused while a Fishball plugin change (or the restart it queued) runs;
+    // that change's own restart goes straight to requestRestart, so it is never refused this way.
+    restart: () => (childPlugins.busy() ? { ...status(), refused: CHILD_PLUGINS.code.busy } : requestRestart()),
     reconnect: () => locator.reconnect(),
     open: async ({ hostname, lang }) => {
       try { return { ok: true, url: (await locator.admit({ view: LOOPBACK.openView, lang, hostname })).url } } catch (error) { return { ok: false, code: error?.code ?? REFUSAL.failed } }

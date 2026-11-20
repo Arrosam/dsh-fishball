@@ -5,6 +5,10 @@
  * Host/Origin fenced by DSH), JSON, no-store. None carries a token, a ticket or an origin, except
  * `open`'s one admission URL, which is never logged.
  * - GET status → `{state, code, detail, notice}`; POST retry → the same after the retry;
+ * - POST restart → the status after the restart, like retry; with `refused: <code>` beside it when
+ *   the restart was refused (`instance-disabled` while the instance is off, `busy` while a Fishball
+ *   plugin change or the restart it queued runs) — the settings page's Restart button (the user,
+ *   2026-11-20);
  * - POST reconnect → `{ok: true}` or `{ok: false, code}` (K3 `reconnect`);
  * - POST open `{lang}` → `{ok: true, url}`: one admission into the child's Fishball page (view
  *   `chat`) under the page's own loopback hostname (Q-G3; the user's answer Q7 = A: a new tab).
@@ -18,6 +22,7 @@ import { registerGetRoute, registerPostRoutes } from './fetch-routes.js'
 export const INSTANCE_ROUTE = Object.freeze({
   status: '/api/dsh-instance/status',
   retry: '/api/dsh-instance/retry',
+  restart: '/api/dsh-instance/restart',
   reconnect: '/api/dsh-instance/reconnect',
   open: '/api/dsh-instance/open',
   maxBodyBytes: 16384,
@@ -61,13 +66,23 @@ async function openBody(request) {
 
 /**
  * @param ctx - the host row's context (`connection`)
- * @param service - `{status(), notice(), retry(), reconnect(), open({hostname, lang})}`
+ * @param service - `{status(), notice(), busy(), retry(), restart(), reconnect(), open({hostname, lang})}`;
+ *   `busy()` tells whether a Fishball package operation runs; `restart()` resolves `{refused?: code}`.
  */
 export function registerInstanceRoutes(ctx, service) {
-  const current = () => ({ ...publicStatus(service.status()), notice: service.notice() })
+  // `busy` lets the page disable Restart while a Fishball install or uninstall runs.
+  const current = () => ({ ...publicStatus(service.status()), notice: service.notice(), busy: service.busy() })
   registerGetRoute(ctx, { path: R.status, fetch: () => json(current()) })
   registerPostRoutes(ctx, [
     { path: R.retry, fetch: async () => { try { await service.retry() } catch { /* the status says what happened */ } return json(current()) } },
+    {
+      path: R.restart,
+      fetch: async () => {
+        let refused
+        try { refused = (await service.restart())?.refused } catch { /* the status says what happened */ }
+        return json(refused === undefined ? current() : { ...current(), refused })
+      },
+    },
     { path: R.reconnect, fetch: async () => { try { return json(await service.reconnect()) } catch { return json({ ok: false, code: REFUSAL.failed }) } } },
     {
       path: R.open,

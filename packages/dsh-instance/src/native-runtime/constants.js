@@ -1,3 +1,6 @@
+/** dsh-instance's package name, which is also its row id (host.js PLUGIN.name, design §0.2, D22). */
+export const INSTANCE_PACKAGE = 'dsh-instance'
+
 export const RUNTIME = Object.freeze({
   format: 1,
   protocol: 'fishball-lifecycle/1',
@@ -181,6 +184,8 @@ export const PLACEMENT = Object.freeze({
   bundles: Object.freeze([
     Object.freeze({ name: 'fishball-core', directory: 'core' }),
   ]),
+  /** The set's former UI bundle, still held by children an earlier instance set up (CHILD_OWN_BUNDLES). */
+  retiredBundle: 'fishball-ui',
   /**
    * The library placed beside the bundles, never listed as a bundle (R-ARCH-08, one per side,
    * requirements 1.40): dsh-connector-shared, the instance's bundled dependency that its placed
@@ -278,7 +283,29 @@ export const REFUSAL = Object.freeze({
   unwritable: 'credentials-unwritable',
   failed: 'operation-failed',
   invalid: 'invalid-request',
+  // Restart (the settings page's Restart button) while the instance is switched off: nothing runs to restart.
+  disabled: 'instance-disabled',
 })
+
+/**
+ * The bundles of the child profile the instance itself owns, which the Fishball tab neither lists
+ * nor uninstalls (design §28; lead, 2026-11-20: one constant for them): the child's base bundles
+ * (RUNTIME.profile.bundles, restored by installation.js at every start), the placed Fishball set
+ * (PLACEMENT.bundles, re-placed at every start by placement.js) and dsh-instance itself. Removing
+ * any of them from the child's bundle list would be undone at the next start anyway. `fishball-ui`
+ * is no longer placed (it became fishball-core's own UI row), but earlier instances installed and
+ * selected it as a bundle, and existing children still hold it (the user's child, 2026-11-20); it
+ * stays protected so the tab neither lists that leftover nor offers to remove a part of Fishball.
+ * The Fishball
+ * tab reads the list from the Host (GET /api/dsh-instance/plugins `protected`), so the browser
+ * keeps no copy.
+ */
+export const CHILD_OWN_BUNDLES = Object.freeze([
+  ...RUNTIME.profile.bundles,
+  ...PLACEMENT.bundles.map((bundle) => bundle.name),
+  PLACEMENT.retiredBundle,
+  INSTANCE_PACKAGE,
+])
 
 /** HOSTED.retire's own word for a record with no successor (named once, used twice there). */
 const NO_SUCCESSOR = 'no-successor'
