@@ -131,8 +131,21 @@
     - { id: fishball-core, name: fishball-core/main }
     # The Fishball page's manager-session route (src/session/route.js).
     - { id: fishball-core-session, name: fishball-core/session-route }
-    # Fishball UI component (sub-package under ./ui/): Fishball page, Recommended tab, sidebar
-    # targets, ask cards, brand row and model dialog. Toggleable independently as a component row.
+    # Fishball UI component (sub-package under ./ui/): Fishball page, Recommended tab (standalone
+    # only), the instance-run child's Plugins page changes, sidebar targets, ask cards, brand row and
+    # model dialog. Toggleable independently as a component row.
     - { id: fishball-ui, name: ./ui/index.js }
     - { id: fishball-page, name: ./ui/fishball-page/index.js }
-    - { id: fishball-recommend-plugins, name: ./ui/fishball-recommend-plugins/index.js }
+    # Instance-run or standalone (DESIGN §28): the child is instance-run exactly while the instance's
+    # launch overlay inserts its child-side row `dsh-instance-child` (the Preview Notice row's test
+    # above, spelled again: YAML cannot share one expression between two rows, and these two differ
+    # by their negation). Only the main DSH installs into an instance-run child, so there the
+    # Recommended tab is off (its list moves to the instance's UI in the main DSH) and
+    # fishball-child-plugins hides DSH's own install entries with its notice; a standalone Fishball
+    # keeps the tab and DSH's Plugins page unchanged.
+    - id: fishball-recommend-plugins
+      name: ./ui/fishball-recommend-plugins/index.js
+      disabled: !!js "((profile = ctx.get('profileContext')) => profile?.overlays?.some((patch) => patch.insert?.some((row) => row.id === 'dsh-instance-child')) === true)()"
+    - id: fishball-child-plugins
+      name: ./ui/fishball-child-plugins/index.js
+      disabled: !!js "((profile = ctx.get('profileContext')) => profile?.overlays?.some((patch) => patch.insert?.some((row) => row.id === 'dsh-instance-child')) !== true)()"

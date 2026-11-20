@@ -30,6 +30,16 @@ its guard patch reaches every row); in a standalone DSH you install it yourself,
   fishball-ui core leaves DSH's own UI as it is. The owner may override any guard; core then reports
   `guards-overridden` and changes nothing back.
 
+- fishball-ui's sub-package rows (`./ui/`): `fishball-ui`, `fishball-page`, and one of two rows
+  by mode (DESIGN §28). The child is instance-run while the instance's launch overlay inserts its
+  row `dsh-instance-child`; only the main DSH installs plugins into it then. Standalone:
+  `fishball-recommend-plugins`, the **Fishball Recommended** tab on DSH's Plugins page.
+  Instance-run: `fishball-child-plugins`, which hides DSH's own install entries on the child's
+  Plugins page with a style rule (Add plugin and its menu, the Discover tab, every Uninstall and Update) and
+  shows "Plugins for this Fishball are installed from the main DSH: Plugins → Fishball tab." where
+  Add plugin was. Nothing is refused on the Host; the rule reads DSH's markup and words, so a later
+  DSH can bring a control back.
+
 Core's rows are not `required`: a failure is that row's alone, and the DSH still boots.
 
 ## Settings page

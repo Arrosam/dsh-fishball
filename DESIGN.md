@@ -2278,3 +2278,31 @@ A late valid signal can still reveal that frame; “Open Fishball again” gets 
 The framed `fishball-ui` page sends one non-secret marker per document when its page plugin is
 installed. This gates presentation only, not later navigations within the same frame, chat health
 or authentication. It changes no SDK, route, frozen connector value or child lifecycle state (§19).
+
+## 28. Plugins for an embedded Fishball are managed from the main DSH (2026-11-20)
+
+**Why.** A plugin installed inside the instance-run child ran pnpm under the child's private home, while the instance's set install had run pnpm in the main process under the user's home. pnpm links one `node_modules` from one store and refused the second (`ERR_PNPM_UNEXPECTED_STORE`). Rather than isolating the store (option A, dropped), the user moved every package operation on the child profile into the main DSH (the user, 2026-11-20).
+
+Decided by the user on 2026-11-20:
+
+| Point | Decision |
+|---|---|
+| Who runs pnpm on the child profile | Only the main DSH, through dsh-instance. The child never installs or uninstalls. |
+| The child's install entries | Hidden, not refused: DSH's Add plugin and its menu, the Discover tab, Uninstall, and the bundle page's Update buttons (they run pnpm in the child too; updating is uninstall and reinstall from the main DSH), by a style rule from fishball-core while the instance runs the child. "Just hide it would be enough to keep it away from normal user path." No Host-side refusal. A DSH markup change can bring a control back; that is accepted. |
+| The child's notice | At the top of the child's Plugins page, where Add plugin was: plugins for this Fishball are installed from the main DSH. |
+| The Recommended tab | Removed in an instance-run child, kept in a standalone Fishball. The list moves to the instance's UI in the main DSH. |
+| Where the main-DSH UI lives | dsh-instance, through DSH's own slots: a **Fishball** tab on the Plugins page (`plugins.tab`) listing the child's plugins with Uninstall, an **Install for Fishball** button at the top of the tab (DSH hides its header actions on a contributed tab and offers no header slot) and the Recommended list; an **Install for Fishball** item in DSH's Add plugin menu (`plugins.add.actions`); and on each main-DSH plugin page (`plugins.detail.actions`) a button for that plugin. |
+| The per-plugin button | A plugin the main profile installed: **Install to Fishball**, the same spec into the child. An official plugin the installation ships: **Use in Fishball**, which adds it to the child's bundle list with no pnpm run. A plugin already in Fishball: **Uninstall from Fishball**. |
+| The dialog | DSH does not export its install dialog, so the instance's dialog follows DSH's screens with DSH's components (as revision 10a did): package field, check, confirmation, progress with Cancel, result or Retry. |
+| After a successful install | The plugin is added to the child's bundle list and the child restarts. |
+| Embed UI | Unchanged, so it can later frame a remote Fishball; it gains no install feature and no slot. Only Hand over leaves it (below). |
+| Hand over | The marks part (Hand over / Take back, "Managed by …", the managed-row fish) moves from dsh-connector-ui to dsh-agent-connector, so every connector install has it. It reads "Hand over to <agent>" and uses the connector's icon, not the fish. |
+
+**Embedded or standalone.** fishball-core treats the child as instance-run while the instance's child-side row `dsh-instance-child` is present (it is inserted only by the instance's launch overlay).
+
+**Process.** The instance mounts DSH's Host `PluginManager` for the child profile in an isolated scope, as revision 10a's `FishballPluginManager` did (spike S31): inspect, install, cancel and remove run DSH's own process unchanged; `publishAndReload` does nothing (the child is not this process's profile); installs pass `enabled: false`, then the instance writes the child's bundle list (files.js `writeProfileBundles`) and restarts the child. Because the set install and these runs share the main process's environment, every pnpm run on the child profile uses one store.
+
+**Restart on the instance's settings page (the user, 2026-11-20).** The instance's own settings page gains **Restart** beside Retry: available while the instance is on and the child is ready, failed or stopped, disabled while it starts or stops. It asks first ("Restart Fishball? Running work in Fishball stops and the Fishball window reloads."), then runs the row's restart, queued behind other starts and stops. Retry for a failed child is unchanged.
+
+**Implementation decisions (2026-11-20).** The Fishball tab lists the child's bundles except the protected ones (the child's base bundles, the Fishball set and dsh-instance), which the instance re-adds at every start; uninstalling them is refused (`protected`). One package operation at a time (install, use or uninstall; `busy` otherwise). Uninstall first runs `pnpm remove` through DSH's package operation when the child declares the package, then drops the bundle from the child's list, so a failed removal changes nothing (`remove-failed`); DSH's `removeBundle` would reload the main profile. Restart is refused on the Host (and disabled on the page) while a Fishball package operation runs, and an operation counts as running until the child restart it queued has settled. The per-plugin button reads the main bundle's facts from DSH's own `listBundles`. Progress reuses DSH's own forwarded install events (`plugin-manager/install-state` and `install-log`), which the dialog filters by its own request id. The child manager's scope isolates `connection` as well as `pluginManager`, because DSH's manager registers the fixed detail-file Fetch route that DSH's own manager already holds.
+
