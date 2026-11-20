@@ -41,7 +41,7 @@ packages/
                                 identity/, session/, settings/, status/
   fishball-ui/                  Fishball side, plugin: every UI change in a Fishball DSH
     client.js client.{entries,asks,strip,model}.js
-    fishball-page/  fishball-recommend-plugins/   their own small packages
+    fishball-page/  fishball-recommend-plugins/  fishball-child-plugins/   their own small packages
   board/                        Fishball side, plugin `fishball-board`: shelved, not in 1.0.0-alpha.1
   shared/                       Fishball side, library `fishball-shared` (no `dsh` field): ui-seam
 ```

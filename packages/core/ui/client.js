@@ -1,8 +1,9 @@
 /**
  * fishball-ui's `dsh.client` entry (requirements 1.38 Q-N2; R-FB-14): the browser half of the
  * fishball-ui row. DSH serves it once for the package, because fishball-ui's patch mounts exactly
- * one path row whose module has no manifest of its own (`fishball-ui`, index.js); the page and the
- * Recommended tab are their own small packages (fishball-page/, fishball-recommend-plugins/).
+ * one path row whose module has no manifest of its own (`fishball-ui`, index.js); the page, the
+ * Recommended tab (standalone only) and the instance-run child's Plugins page changes are their own
+ * small packages (fishball-page/, fishball-recommend-plugins/, fishball-child-plugins/; DESIGN §28).
  *
  * The row is on only beside core (its patch's condition), so this runs only in a Fishball DSH and
  * never without core (Q-G2). It loads its parts, package-local chunks beside it (DSH serves only

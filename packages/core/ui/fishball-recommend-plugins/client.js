@@ -1,5 +1,6 @@
 /**
- * Fishball Recommended: a tab on the child's own native Plugins page (V2 RP, extension §11.9).
+ * Fishball Recommended: a tab on a standalone Fishball's native Plugins page (V2 RP, extension
+ * §11.9). Its row is off in an instance-run child (DESIGN §28; cordis.patch.yml).
  * Native modules serves classic script registrations, not raw ESM exports.
  *
  * Seams, all public in both 0.2.1-rc.5 and 0.2.2-rc.1:

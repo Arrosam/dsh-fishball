@@ -298,6 +298,15 @@ export const V3_SUITES = Object.freeze({
     [all(PACKAGE.fishballCore), all(PACKAGE.fishballUi), all(PACKAGE.fishballShared), 'test/v3/fishball-ui/guards/**']),
   // F-WIRE: core's manager in a real standalone DSH (core + shared only): reminders, the singleton,
   // the preset and persona, the generated identity and the model rule, with the scripted model.
+  // DESIGN.md §28: core's two mode rows composed by DSH, and fishball-child-plugins' browser half in the
+  // scripted page with DSH's real locale runtime and Plugins-page / Discover dictionaries, laid out in the
+  // contrast rows' headless Chromium; R1 composes through the F-UI suite's readers. installed.test.mjs runs the
+  // rows once more on the DSH installation the task names (constants.mjs INSTALLED_DSH).
+  'fishball-core.child-plugins': suite("instance-run vs standalone rows, the child's hidden install entries and notice (§28)",
+    [...v3('fishball-core/child-plugins'), 'test/v3/fishball-core/child-plugins/installed.test.mjs'],
+    [sub(PACKAGE.fishballCore, 'ui', 'fishball-child-plugins'), sub(PACKAGE.fishballCore, 'ui', 'fishball-recommend-plugins'), PACKAGE.fishballCore + '/cordis.patch.yml',
+      'test/v3/fishball-ui/package/subject.mjs', 'test/v3/fishball-ui/package/constants.mjs', 'test/v3/fishball-ui/contrast/**', 'test/v3/fishball-core/package/constants.mjs',
+      'test/v3/contract/package-boundaries/**', 'test/v3/dsh-connector-adapter/oauth-client/**', 'test/v2-page-cases/lite-browser.mjs', 'test/v3/fishball-core/settings/primitives.mjs']),
   'fishball-core.manager': suite("core's manager: reminders, singleton, preset and persona, generated identity, model (F-WIRE)", v3('fishball-core/manager'),
     [all(PACKAGE.fishballCore), all(PACKAGE.fishballShared), 'test/support/fixtures/fake-llm.mjs', 'test/support/host.mjs']),
   // F-WIRE: fishball-ui's model dialog, strip route and live core rows, in the browser sandbox and a real DSH.

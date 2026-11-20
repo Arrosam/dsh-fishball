@@ -1,6 +1,6 @@
 /**
  * Fishball's recommended plugins (DESIGN §10f, revision 12): a curated list. In V2 its only reader
- * is the child's Fishball Recommended tab (below); the older per-entry catalog state view
+ * is the Fishball Recommended tab (below); the older per-entry catalog state view
  * (recommendedView) and the admin relay's ADMIN_RECOMMENDED copy were removed as dead code.
  *
  * The list is data. Every entry was installed through Fishball's own install route in a
@@ -16,11 +16,11 @@
  *   through @michengai/dsh-im-connect).
  * Pet lists none (P10-S22).
  *
- * Install goes through the ordinary "Install for Fishball" dialog with the entry's spec, so the
- * list grants nothing: the dialog installs any spec you type, after your click (revision 10a).
- * In V2 the child's Fishball Recommended tab (fishball-recommend-plugins, fishball-ui's since F-UI)
- * reads the same list through recommendedList() and installs through DSH's own Plugins page dialog
- * instead.
+ * The list grants nothing: an entry is installed through DSH's own Plugins page install dialog,
+ * after your click, as any spec you type would be. Its reader is the Fishball Recommended tab
+ * (fishball-recommend-plugins, fishball-ui's since F-UI), which reads it through recommendedList()
+ * and is on only in a standalone Fishball (DESIGN §28: an instance-run child installs nothing
+ * itself; dsh-instance shows its own copy of the list in the main DSH).
  */
 
 /** Category keys, in display order (the highlighted ones first). The browser keeps the same keys. */
