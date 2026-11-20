@@ -14,7 +14,7 @@ const sorted = (items) => [...items].sort()
 const answerArgs = (rest) => ({ sessionId: F.sessionId, questionId: F.questionId, offerId: F.offerId, ...rest })
 
 export function registerConnToolsContractCases(sdk) {
-  caseTest(sdk, 'CONN-TOOLS-EP-01', 'public names', 'exactly the retained 20 tools are exported and withdrawn definitions are unavailable', (mod) => {
+  caseTest(sdk, 'CONN-TOOLS-EP-01', 'public names', 'exactly the 22 core tools (the retained 20 plus DISCOVERY-TOOLS\' two) are exported and withdrawn definitions are unavailable', (mod) => {
     assert.deepEqual(sorted(mod.TOOL_NAMES), sorted(C.retained))
     assert.deepEqual(sorted(mod.TOOLS.map((tool) => tool.name)), sorted(C.retained))
     assert.deepEqual(sorted(Object.values(mod.TOOL)), sorted(C.retained))

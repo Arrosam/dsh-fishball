@@ -54,7 +54,7 @@ async function unknown(client, code, name, args) {
 }
 
 export function registerConnToolsBoundaryCases(sdk) {
-  row(sdk, 'CONN-TOOLS-EP-03', 'tools/list', 'two independently authenticated clients each see exactly the 20 retained tools', async (t) => {
+  row(sdk, 'CONN-TOOLS-EP-03', 'tools/list', 'two independently authenticated clients each see exactly the 22 core tools (the retained 20 plus DISCOVERY-TOOLS\' two), in order', async (t) => {
     const w = await toolsWorld(t, sdk)
     for (const [id, name] of [[FIXTURE.idP, FIXTURE.nameP], [FIXTURE.idQ, FIXTURE.nameQ]]) {
       const { token } = await w.full(id, name)

@@ -109,8 +109,8 @@ export function registerK1MultiCases(sdk) {
     assert.deepEqual([X.serverIdentity, X.resource].filter((n) => !names.has(n)), [])
   })
 
-  // MULTI-0 changes no tools; the later explicit CONN-TOOLS decision removes two unsupported names.
-  caseTest(sdk, 'K1-MULTI-EP-04', 'tool names', 'TOOL_NAMES and TOOLS are exactly the retained set after the CONN-TOOLS decision (MULTI-0 itself adds no tools)', (mod) => {
+  // MULTI-0 changes no tools; CONN-TOOLS later removes two unsupported names, DISCOVERY-TOOLS adds two.
+  caseTest(sdk, 'K1-MULTI-EP-04', 'tool names', 'TOOL_NAMES and TOOLS are exactly the set after the CONN-TOOLS and DISCOVERY-TOOLS decisions (MULTI-0 itself adds no tools)', (mod) => {
     assert.deepEqual(sorted(mod.TOOL_NAMES), sorted(TOOL_NAMES_UNCHANGED))
     assert.deepEqual(sorted(mod.TOOLS.map((t) => t.name)), sorted(TOOL_NAMES_UNCHANGED))
   })

@@ -95,6 +95,40 @@ export const FIXTURE = Object.freeze({
   messagePayload: Object.freeze({ text: 'fbtest hello', images: Object.freeze([]) }),
 })
 
+/**
+ * DISCOVERY-TOOLS rows (discovery-cases.mjs): fixture answers of the fake domain port's
+ * `models.list()` / `workspaces.list()`, shaped as the requirement's success fields. Product words
+ * (tool names, refusal codes) stay K1's; everything here is fixture data.
+ */
+export const DISCOVERY = Object.freeze({
+  /** The closed, empty input schema both tools publish (the requirement, verbatim). */
+  emptyInput: Object.freeze({ type: 'object', properties: Object.freeze({}), additionalProperties: false }),
+  /** A model with reasoning metadata and a catalog default effort. */
+  effortModel: Object.freeze({
+    model: 'fbtest-provider/fbtest-effort-model', provider: 'fbtest-provider', providerName: 'Fbtest Provider', name: 'Fbtest Effort Model',
+    reasoningEfforts: Object.freeze(['low', 'medium', 'high']), defaultReasoningEffort: 'medium',
+  }),
+  /** A model without reasoning metadata: no efforts, no default. */
+  plainModel: Object.freeze({ model: 'fbtest-provider/fbtest-plain-model', provider: 'fbtest-provider', providerName: 'Fbtest Provider', name: 'Fbtest Plain Model', reasoningEfforts: Object.freeze([]) }),
+  /** A model of a second provider with efforts but no catalog default. */
+  noDefaultModel: Object.freeze({ model: 'fbtest-other/fbtest-nodefault', provider: 'fbtest-other', providerName: 'Fbtest Other', name: 'Fbtest No Default', reasoningEfforts: Object.freeze(['fast']) }),
+  defaultWithEffort: Object.freeze({ model: 'fbtest-provider/fbtest-effort-model', reasoningEffort: 'high' }),
+  defaultWithoutEffort: Object.freeze({ model: 'fbtest-provider/fbtest-plain-model' }),
+  unavailable: Object.freeze({ provider: 'fbtest-broken', providerName: 'Fbtest Broken' }),
+  /** Two registry rows with one title (allowed) and distinct ids, one of them gone from disk. */
+  workspaces: Object.freeze([
+    Object.freeze({ workspaceId: 'fbtest-ws-1', title: 'fbtest same title', path: '/fbtest/ws-one', available: true }),
+    Object.freeze({ workspaceId: 'fbtest-ws-2', title: 'fbtest same title', path: '/fbtest/ws-two', available: false }),
+  ]),
+  /** Undeclared arguments, one per partition: foreign word, another tool's argument, a would-be filter, falsy values. */
+  extraArguments: Object.freeze([
+    Object.freeze({ fbtestExtra: true }), Object.freeze({ limit: 1 }), Object.freeze({ workspaceId: 'fbtest-ws-1' }),
+    Object.freeze({ model: 'fbtest-provider/fbtest-plain-model' }), Object.freeze({ provider: null }), Object.freeze({ '': '' }),
+  ]),
+  /** Error text a failing port carries; it must never reach the caller. */
+  secret: 'fbtest-discovery-secret-failure-text',
+})
+
 /** Text that must never appear in a tool result (README common oracle: no stack, no path). */
 export const LEAK = Object.freeze({
   stackFrame: /\n\s+at\s/,

@@ -39,11 +39,12 @@ export const MULTI_EXPORTS = Object.freeze({
 
 /**
  * MULTI-0 changes no tools. The later explicit CONN-TOOLS decision withdraws question_ask and
- * question_answer_own, so the closed oracle now names the retained 20 tools, independently of
- * implementation exports. No target-selecting argument is added by either decision.
+ * question_answer_own, and the DISCOVERY-TOOLS decision adds workspaces_list and models_list, so
+ * the closed oracle now names those 22 tools, independently of implementation exports. No
+ * target-selecting argument is added by any of these decisions.
  */
 export const TOOL_NAMES_UNCHANGED = Object.freeze([
-  'sessions_list', 'session_start', 'session_message', 'session_redirect', 'session_stop', 'session_read', 'session_release',
+  'sessions_list', 'workspaces_list', 'models_list', 'session_start', 'session_message', 'session_redirect', 'session_stop', 'session_read', 'session_release',
   'approvals_list', 'approval_answer', 'question_answer', 'prompts_list', 'prompt_answer',
   'grants_list', 'grant_revoke', 'attachment_put', 'attachment_read', 'inbox_poll', 'inbox_ack', 'pair', 'set_name',
 ])

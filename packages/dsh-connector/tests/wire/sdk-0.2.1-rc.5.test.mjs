@@ -8,3 +8,6 @@ registerMultiNameCases('0.2.1-rc.5')
 
 import { registerMultiWireCases } from './multi-cases.mjs'
 registerMultiWireCases('0.2.1-rc.5')
+
+import { registerDiscoveryWireCases } from './discovery-cases.mjs'
+registerDiscoveryWireCases('0.2.1-rc.5')

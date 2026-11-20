@@ -101,9 +101,12 @@ export const EVENT_TYPES = Object.freeze([
   'message', 'ask', 'handover', 'takeback', 'notice',
 ])
 
-/** R-CON-02 with the names of design §3.2 (PLAT-EP-02, K: names D§3.2). */
+/**
+ * R-CON-02 with the names of design §3.2 (PLAT-EP-02, K: names D§3.2), in tools/list order. The
+ * DISCOVERY-TOOLS decision adds workspaces_list and models_list right after sessions_list (22 tools).
+ */
 export const CORE_TOOLS = Object.freeze([
-  'sessions_list', 'session_start', 'session_message', 'session_redirect', 'session_stop', 'session_read', 'session_release',
+  'sessions_list', 'workspaces_list', 'models_list', 'session_start', 'session_message', 'session_redirect', 'session_stop', 'session_read', 'session_release',
   'approvals_list', 'approval_answer', 'question_answer', 'prompts_list', 'prompt_answer', 'grants_list', 'grant_revoke',
   'attachment_put', 'attachment_read', 'inbox_poll', 'inbox_ack', 'pair', 'set_name',
 ])
