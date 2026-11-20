@@ -14,7 +14,10 @@
 > - **Judging:** a side session on the `watchdog` preset, one per supervised session.
 > - **Drift:** a contributed `drift` event, and the session's turn is stopped. The manager can still
 >   message the session.
-> - **Escalating to the user:** deferred; such requests pass to the manager.
+> - **No escalation to the user (final, 2026-11-21):** Watchdog never sends a request to the user.
+>   High-risk requests it does not reject stay with the manager (Fishball), like every other request
+>   it does not decide. This replaces the "other high risk → escalate to the user" row in §3 and U16's
+>   "other high-risk items go to the user" in §1.
 > - **Briefs:** persisted.
 
 Moved here from dsh-fishball's untracked `.runtime/reports/watchdog-project-notes.md` on 2026-11-20 (Watchdog is a DSH-side plugin, §4). Originally written 2026-11-16. Fishball V3 builds **none** of this. Watchdog is a DSH-side plugin: it depends on nothing of the Fishball side (requirements 1.39). The user's words
@@ -74,7 +77,8 @@ those files, marked withdrawn.
   a refine never moves it). No `check_now`.
 - **Decision table (as last revised, R-WD-09 per 1.35):** within the approvable scope → allow;
   beyond the purpose **and** dangerous → reject with a justification; other high risk → escalate
-  to the user's card with no time limit; anything else, or no scope → to Fishball. Questions and
+  to the user's card with no time limit *(superseded 2026-11-21: high risk stays with Fishball; there
+  is no escalation to the user)*; anything else, or no scope → to Fishball. Questions and
   plan reviews never reach it. Each allow answers one request; no standing grant ("no always
   allow").
 - **Fishball's tools:** `watchdog_brief({sessionId, purpose, scope?})`, `watchdog_refine`,

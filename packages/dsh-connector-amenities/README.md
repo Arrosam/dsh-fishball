@@ -18,10 +18,9 @@ Design: [watchdog-project-notes.md](../../docs/watchdog-project-notes.md). It ne
 - **Permission requests:** Watchdog decides each one before the manager sees it, through the connector's `dshConnectorSessions` delegate:
   - within the scope → allow (one call only);
   - beyond the purpose and dangerous → reject, with a reason;
-  - anything else → passed to the manager.
+  - anything else, including high-risk requests it does not reject → passed to the manager. Watchdog never escalates a request to the user.
   The manager receives a `settlement {by: "delegate"}` for every request Watchdog decided.
 - **Patrol:** each supervised session is checked every `minCheckIntervalSeconds` (default 1740). A patrol reads only messages newer than the last one judged, and does nothing if there are none.
 - **Drift:** if a patrol or a permission check finds the session drifting from its purpose, Watchdog stops the session's turn and emits `dsh-connector-amenities.drift` to the manager: an event of type `contributed:dsh-connector-amenities.drift` whose `payload.data` is `{sessionId, during, reason}`. On a drift found at a permission request, the request is rejected first and the turn is stopped right after. The manager can still message the session.
 - **Judging** runs in a side session on Watchdog's own read-only agent preset `watchdog`, one side session per supervised session.
 - **Persistence:** briefs are kept in `<DSH home>/dsh-connector-watchdog/briefs.json` and survive a restart.
-- **Not yet:** escalating high-risk requests to the user (these are passed to the manager for now).

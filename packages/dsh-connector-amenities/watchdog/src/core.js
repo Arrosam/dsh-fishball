@@ -6,7 +6,7 @@
  * - the permission delegate: Watchdog `claims` a session it holds an unpaused brief for, from the
  *   principal that still manages it; each request is judged against the purpose and the scope
  *   (allow → one call, reject only when beyond the purpose and dangerous, anything else → pass to
- *   the manager; escalation to the user is deferred, so high risk passes too);
+ *   the manager; there is no escalation to the user, so high risk passes too);
  * - the patrol: one timer per supervised session, `minCheckIntervalSeconds` apart, never moved by a
  *   refine. A patrol with no new messages since the watermark judges nothing (no tokens spent);
  * - drift, found by either: the session's turn is stopped (it still takes the manager's messages)
