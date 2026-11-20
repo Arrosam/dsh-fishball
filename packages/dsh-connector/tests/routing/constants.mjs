@@ -30,6 +30,8 @@ export {
 
 /** K1 settlement payload values (EVENT_PAYLOAD_SHAPES.settlement `{approvalId, outcome, by}`), for the settle rows. */
 export { SETTLED_BY, SETTLEMENT_OUTCOME } from '../../mcp-schema/index.js'
+/** K1 turn-finished vocabulary (EVENT_PAYLOAD_SHAPES['turn-finished'] `{sessionId, outcome, finalMessage?, stop?}`). */
+export { TURN_OUTCOME } from '../../mcp-schema/index.js'
 
 /** K1 `RetireOutcome` of `Mailbox.retire` (DECIDED #W3-1; types only), as C-MAILBOX's cases name it. */
 export { RETIRE_OUTCOME } from '../mailbox/constants.mjs'
@@ -188,6 +190,16 @@ export const SETTLE_FIXTURE = Object.freeze({
 
 /** A contributor event type of the fixture namespace (`contributed:<ns>.<event>`, K2 separator). */
 export const CONTRIBUTED = CONTRIBUTED_TYPE_PREFIX + FIXTURE.namespace + NAMESPACE.separator + FIXTURE.contributedEvent
+
+/**
+ * The facts a session source hands routing for one turn end (CONN-REPORT B, user-approved
+ * 2026-11-21: `onTurnFinished(fn(rootSessionId, {outcome, finalMessage?, stop?}))`; routing commits
+ * `{sessionId, ...facts}`). Fixture data: a completed turn with its final text, and a stopped one.
+ */
+export const TURN_FACTS = Object.freeze({
+  completed: Object.freeze({ outcome: 'completed', finalMessage: Object.freeze({ text: 'FBTEST-FINAL-MESSAGE', truncated: false }) }),
+  stopped: Object.freeze({ outcome: 'stopped', stop: Object.freeze({ kind: 'error', message: 'FBTEST_FAIL: fbtest provider failure' }) }),
+})
 
 /** Harness timing only. */
 export const WAIT = Object.freeze({

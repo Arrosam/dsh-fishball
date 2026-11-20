@@ -78,8 +78,6 @@ export const NOTE_RULE = Object.freeze({ latin: /[A-Za-z]/, cjk: /[\u3040-\u30FF
 
 /** Fixture data of the step-2 rows: not product values. */
 export const HANDLER_FIXTURE = Object.freeze({
-  /** The flags of the `state` event the AUTH-DT-04 world queues. */
-  state: Object.freeze({ running: true, pendingInteraction: false }),
   /** Sessions beyond the C-ROUTE fixture's three: Q's managed session, and one handed over to P. */
   sessions: Object.freeze({ s4: 'fbtest-s4', s5: 'fbtest-s5' }),
   /**

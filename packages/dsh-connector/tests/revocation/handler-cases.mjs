@@ -240,21 +240,22 @@ async function ucWorld(w) {
   }
 }
 /**
- * AUTH-DT-04 rules 5–6: queues P a `state`, a `handover` and a `takeback` (S5 handed over to P and
- * taken back), a `settlement` (an S2 offer settled) and a `retirement` (an S2 offer withdrawn).
+ * AUTH-DT-04 rules 5–6: queues P a `handover` and a `takeback` (S5 handed over to P and
+ * taken back), a `settlement` (an S2 offer settled by the user) and a `retirement` (an S2 offer withdrawn).
  * Returns those events and the settled offer's own event (K1: it stays pending).
+ * Re-baselined by CONN-REPORT A1/A3 (user-approved 2026-11-21): no `state` event is produced any
+ * more, and the settlement is the user's (a principal's is no longer produced).
  */
 async function queueEveryType(w, x) {
   w.session(X.s5)
   const one = async (act, type) => (await expectOne(w, act, x.p, type)).event
-  const state = await one(() => w.sessions.changeState(S.s1, HANDLER_FIXTURE.state), ET.state)
   const handover = await one(() => w.handover.handOver(X.s5, x.p, FIXTURE.note), ET.handover)
   const takeback = await one(() => w.handover.takeBack(X.s5, FIXTURE.note), ET.takeback)
   const settled = await offerTo(w, S.s2, ET.permission, x.p)
   const settlement = await one(() => w.routing.settle(settled.offer.offerId, settlementOf(settled.payload.approvalId)), ET.settlement)
   const withdrawn = await offerTo(w, S.s2, ET.question, x.p)
   const retirement = await one(() => w.routing.withdraw(withdrawn.offer.offerId), ET.retirement)
-  return [state, handover, takeback, settlement, retirement, settled]
+  return [handover, takeback, settlement, retirement, settled]
 }
 /** Q is untouched: S4 still Q's, Q's offer pending in Q's box, no note for S4, no card for Q's offer. */
 async function assertQUntouched(w, x) {
@@ -347,6 +348,7 @@ function useCases(sdk) {
     assert.equal(w.pairs.pairOf(x.e)?.principalKey, x.p)
     assert.deepEqual(await pendingOf(w, x.p), [], 'the expired hold kept events')
   })
+  // CONN-REPORT A3 (user-approved 2026-11-21): the in-flight answer is the user's (settlementOf), whose settlement is still produced.
   moduleRow(sdk, CASE.authUc06, 'E1', 'an approval answer in flight when the disable lands completes (settle true, its settlement kept); its offer is neither retired nor sent to the user', async (w) => {
     const x = await ucWorld(w)
     const answer = settlementOf(x.permission.payload.approvalId)
@@ -607,7 +609,7 @@ function decisionTables(sdk) {
       assertNotes(w, x.sessions)
       for (const s of x.sessions) await unwatched(w, s)
     })
-    dt('5–6', kind, `${kind}: queued message, turn-finished, state, handover, takeback, settlement and retirement are ${deleting ? 'dropped' : 'kept, pollable on re-enable with their eventIds'}`, async (w) => {
+    dt('5–6', kind, `${kind}: queued message, turn-finished, handover, takeback, settlement and retirement are ${deleting ? 'dropped' : 'kept, pollable on re-enable with their eventIds'}`, async (w) => {
       const x = await ucWorld(w)
       const queued = [...x.kept, ...await queueEveryType(w, x)]
       await revoke(w, kind)

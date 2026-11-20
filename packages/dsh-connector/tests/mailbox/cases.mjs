@@ -27,6 +27,7 @@ import {
   OFFER_ID, QUEUE, REFUSAL, RESOURCE, RESYNC_REASON, RETIRE_OUTCOME, RETIREMENT_REASON, SETTLED_BY, SETTLEMENT_OUTCOME, WAIT, WIRE, formatOfferId,
   payloadSchemaOf,
 } from './constants.mjs'
+import { TURN_OUTCOME } from '../../mcp-schema/index.js'
 import { worldFor } from './subject.mjs'
 
 const T = { timeout: WAIT.testMs }
@@ -57,7 +58,8 @@ const PAYLOAD = Object.freeze({
   [EVENT_TYPE.ask]: descriptor,
   [EVENT_TYPE.message]: (_t, marker) => ({ text: marker, images: [] }),
   [EVENT_TYPE.handover]: (_t, marker) => ({ sessionId: FIXTURE.s1, note: FIXTURE.note + ' ' + marker }),
-  [EVENT_TYPE.turnFinished]: () => ({ sessionId: FIXTURE.s1, running: false, queued: false }),
+  // Re-baselined by CONN-REPORT B (user-approved 2026-11-21): the turn-finished payload is {sessionId, outcome, finalMessage?, stop?}.
+  [EVENT_TYPE.turnFinished]: (_t, marker) => ({ sessionId: FIXTURE.s1, outcome: TURN_OUTCOME.completed, finalMessage: { text: marker, truncated: false } }),
   [EVENT_TYPE.settlement]: (_t, marker) => ({ approvalId: marker, outcome: SETTLEMENT_OUTCOME.allowed, by: SETTLED_BY.user }),
   [CONTRIBUTED]: (_t, marker) => ({ namespace: FIXTURE.namespace, event: FIXTURE.contributedEvent, data: { marker }, summary: marker }),
 })

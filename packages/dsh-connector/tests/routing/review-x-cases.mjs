@@ -22,12 +22,12 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
 import test from 'node:test'
-import { APPROVAL_DECISION, EVENT_TYPE, GRANT_KIND, REFUSAL, RISK, SETTLEMENT_OUTCOME, SETTLED_BY } from '../../mcp-schema/index.js'
+import { APPROVAL_DECISION, EVENT_TYPE, GRANT_KIND, REFUSAL, RISK } from '../../mcp-schema/index.js'
 import { INSTANCE } from '../../../../test/support/constants.mjs'
 import { importInstance } from '../../../../test/private-skills/support/sdk.mjs'
 import { caseName } from '../../../../test/v3/contract/package-boundaries/cases.mjs'
 import { resolveRuntimePackages } from '../pairs/subject.mjs'
-import { descriptor, pendingOf, quiet, settlementOf, until } from './cases.mjs'
+import { descriptor, pendingOf, principalSettlementOf, quiet, settlementOf, until } from './cases.mjs'
 import { FIXTURE, REVIEW_X as RX, WAIT } from './constants.mjs'
 import { mailboxPort } from './fakes.mjs'
 import { routeWorld } from './subject.mjs'
@@ -402,30 +402,49 @@ function f01Unit(sdk) {
 // ------------------------------------------------------------------------------------------------
 // F04 — a failed settlement commit
 
+// Re-baselined by CONN-REPORT A3 (user-approved 2026-11-21): "settlement events with by: 'principal' are NO LONGER
+// PRODUCED", so the principal's allow / grant commits no settlement and no settlement commit can fail it. F04's
+// finding (a failed settlement commit leaves the offer answerable) is kept on the settlement still produced: the
+// user's. The principal rows now show that a failing settlement commit cannot affect the principal's answer.
 function f04(sdk) {
-  row(sdk, 'RX-F04', 'ST (allow, settlement commit fails, then retry)', 'allow whose settlement commit rejects → failure; the offer stays live and the call waits; the same answer with the mailbox working → accepted, the call allowed once', async (t) => {
+  row(sdk, 'RX-F04', 'ST (user settlement commit fails, then retry)', 'a user settlement whose commit rejects → never success (rejects / false); the offer stays live; the same settlement with the mailbox working → true, one settlement to A; the offer is no longer live', async (t) => {
     const x = await domainWorld(t, sdk)
     await manage(x, S.s, x.A)
     const r = await asked(x, S.s, RX.command(1))
+    const s = settlementOf(r.approvalId)
     x.switches.failSettlement = true
-    assertFailed(await ended(answer(x, r, allow())), 'the allow whose settlement failed')
+    const end = await ended(x.w.routing.settle(r.offer.descriptor.offerId, s))
     x.switches.failSettlement = false
-    assert.ok(offerFor(x, S.s, r.command), 'the offer left the live offers after a failed settlement')
-    await quiet()
-    assert.equal(r.settled(), false, 'the permission call ended though nothing settled it')
-    assert.equal((await answer(x, r, allow()))?.ok, true, 'the retry of the same answer was refused')
-    assert.equal(await r.outcome, D.outcome.allowed)
+    assert.ok(end.error !== undefined || end.value === false, `the settle whose commit failed reported success: ${JSON.stringify(end.value)}`)
+    assert.ok(offerFor(x, S.s, r.command), 'the offer left the live offers after a failed settlement commit')
+    assert.deepEqual((await pendingOf(x.w, x.A)).filter((e) => e.type === EVENT_TYPE.settlement), [], 'a settlement was stored though its commit failed')
+    assert.equal(await x.w.routing.settle(r.offer.descriptor.offerId, s), true, 'the retry of the same settlement was refused')
+    await until(async () => (await pendingOf(x.w, x.A)).some((e) => e.type === EVENT_TYPE.settlement), 'the retried settlement')
+    assert.deepEqual((await pendingOf(x.w, x.A)).filter((e) => e.type === EVENT_TYPE.settlement).map((e) => e.payload), [s])
+    assert.equal(offerFor(x, S.s, r.command), undefined, 'the settled offer is still live')
   })
-  row(sdk, 'RX-F04', 'DT (grant, settlement commit fails)', 'grant whose settlement commit rejects → failure; no grant is listed and a later matching call is offered, not covered', async (t) => {
+  row(sdk, 'RX-F04', 'ST (principal allow while settlement commits fail)', 'every settlement commit rejects; the principal\'s allow → accepted (it commits none); the call allowed once; no settlement event', async (t) => {
     const x = await domainWorld(t, sdk)
     await manage(x, S.s, x.A)
-    const before = await listed(x)
     const r = await asked(x, S.s, RX.command(1))
     x.switches.failSettlement = true
-    assertFailed(await ended(answer(x, r, exactGrant())), 'the grant whose settlement failed')
+    assert.equal((await answer(x, r, allow()))?.ok, true, 'the principal\'s allow failed on a settlement it should not commit')
+    assert.equal(await r.outcome, D.outcome.allowed)
     x.switches.failSettlement = false
-    assert.deepEqual(await listed(x), before, 'a grant from the failed answer is listed')
-    assert.equal(await fateOf(x, S.s, r.command), 'offered', 'a grant from the failed answer covers a later call')
+    await quiet()
+    assert.deepEqual((await pendingOf(x.w, x.A)).filter((e) => e.type === EVENT_TYPE.settlement), [])
+  })
+  row(sdk, 'RX-F04', 'DT (principal grant while settlement commits fail)', 'every settlement commit rejects; the principal\'s grant → accepted; the grant is listed and covers a later matching call', async (t) => {
+    const x = await domainWorld(t, sdk)
+    await manage(x, S.s, x.A)
+    const r = await asked(x, S.s, RX.command(1))
+    x.switches.failSettlement = true
+    const reply = await answer(x, r, exactGrant())
+    x.switches.failSettlement = false
+    assert.equal(reply?.ok, true, `the principal's grant failed on a settlement it should not commit: ${JSON.stringify(reply)}`)
+    assert.equal(await r.outcome, D.outcome.allowed)
+    assert.ok((await listed(x)).includes(reply.grantId), 'the grant is not listed')
+    assert.equal(await fateOf(x, S.s, r.command), 'covered', 'the grant does not cover a later matching call')
   })
 }
 
@@ -494,15 +513,16 @@ function f05(sdk) {
 // F08 — the decision rules
 
 function f08(sdk) {
-  row(sdk, 'RX-F08', 'DT (reject + reason, no risk)', '{decision: reject, reason: "Do not run"} → accepted; the call is rejected; one settlement {rejected, principal} to A', async (t) => {
+  // Re-baselined by CONN-REPORT A3 (user-approved 2026-11-21): the principal's own reject commits no settlement; {accepted} is that outcome.
+  row(sdk, 'RX-F08', 'DT (reject + reason, no risk)', '{decision: reject, reason: "Do not run"} → accepted; the call is rejected; no settlement event (A3); the offer is no longer live', async (t) => {
     const x = await domainWorld(t, sdk)
     await manage(x, S.s, x.A)
     const r = await asked(x, S.s, RX.command(1))
     assert.equal((await answer(x, r, { decision: APPROVAL_DECISION.reject, reason: RX.reason }))?.ok, true)
     assert.equal(await r.outcome, D.outcome.rejected)
-    await until(async () => (await pendingOf(x.w, x.A)).some((e) => e.type === EVENT_TYPE.settlement), 'the settlement')
-    const settlements = (await pendingOf(x.w, x.A)).filter((e) => e.type === EVENT_TYPE.settlement && e.payload.approvalId === r.approvalId)
-    assert.deepEqual(settlements.map((e) => e.payload), [{ approvalId: r.approvalId, outcome: SETTLEMENT_OUTCOME.rejected, by: SETTLED_BY.principal }])
+    await quiet()
+    assert.deepEqual((await pendingOf(x.w, x.A)).filter((e) => e.type === EVENT_TYPE.settlement), [])
+    assert.equal(offerFor(x, S.s, r.command), undefined)
   })
   for (const [label, a, code] of [
     ['reject, no reason, no risk', { decision: APPROVAL_DECISION.reject }, REFUSAL.reasonRequired],
@@ -571,22 +591,25 @@ function f02Settle(sdk) {
   }
   row(sdk, 'RX-F02', 'DT (settle, another principal answers)', 'A holds the offer; settle naming B as the answering principal → false; nothing settled; the offer is still live, held by A', async (t) => {
     const { w, A, B, d } = await offered(t)
-    assert.equal(await w.routing.settle(d.offerId, settlementOf(d.approvalId), { principalKey: B }), false)
+    assert.equal(await w.routing.settle(d.offerId, principalSettlementOf(d.approvalId), { principalKey: B }), false)
     assert.deepEqual(w.routing.liveOffers(S.s).map((o) => [o.principalKey, o.descriptor.offerId]), [[A, d.offerId]])
     assert.deepEqual((await pendingOf(w, A)).filter((e) => e.type === EVENT_TYPE.settlement), [])
     assert.deepEqual((await pendingOf(w, B)).filter((e) => e.type === EVENT_TYPE.settlement), [])
   })
-  row(sdk, 'RX-F02', 'DT (settle, the holder answers)', 'settle naming A, the holder → true; one settlement in A\'s mailbox; the offer is no longer live', async (t) => {
+  // Re-baselined by CONN-REPORT A3 (user-approved 2026-11-21): the holder's own settlement (by principal) is no longer produced;
+  // the settle still succeeds for the holder and ends the offer.
+  row(sdk, 'RX-F02', 'DT (settle, the holder answers)', 'settle by principal naming A, the holder → true; no settlement event (A3); the offer is no longer live', async (t) => {
     const { w, A, d } = await offered(t)
-    assert.equal(await w.routing.settle(d.offerId, settlementOf(d.approvalId), { principalKey: A }), true)
-    assert.equal((await pendingOf(w, A)).filter((e) => e.type === EVENT_TYPE.settlement && e.payload.approvalId === d.approvalId).length, 1)
+    assert.equal(await w.routing.settle(d.offerId, principalSettlementOf(d.approvalId), { principalKey: A }), true)
+    await quiet()
+    assert.deepEqual((await pendingOf(w, A)).filter((e) => e.type === EVENT_TYPE.settlement), [])
     assert.deepEqual(w.routing.liveOffers(S.s), [])
   })
   row(sdk, 'RX-F02', 'DT (settle, the holder changed)', 'S taken back from A and handed to B while A\'s offer was live → A\'s settle no longer commits for A', async (t) => {
     const { w, A, B, d } = await offered(t)
     assert.deepEqual(await w.handover.takeBack(S.s), { ok: true })
     assert.deepEqual(await w.managed.manage(S.s, B), { ok: true })
-    assert.equal(await w.routing.settle(d.offerId, settlementOf(d.approvalId), { principalKey: A }), false)
+    assert.equal(await w.routing.settle(d.offerId, principalSettlementOf(d.approvalId), { principalKey: A }), false)
     assert.deepEqual((await pendingOf(w, A)).filter((e) => e.type === EVENT_TYPE.settlement), [])
   })
 }

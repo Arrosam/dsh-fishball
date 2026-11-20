@@ -38,7 +38,7 @@ import {
   CONNECTED, CONTRIBUTED, DECISION_KIND_OF, EVENT_TYPE, FALLBACK, FIXTURE, HANDOVER, LATER, MAILBOX, MANAGED_REFUSAL, OFFER_ID, OFFER_TYPES,
   PATHS, QUEUE, REFUSAL, RELAYED, REQUEST_GATE, RETIREMENT_REASON, REVOCATION, TOOL_NAMES, WAIT, formatOfferId, handoverCodes,
 } from './constants.mjs'
-import { MUTATION, RETIRE_OUTCOME, SETTLED_BY, SETTLEMENT_OUTCOME, SETTLE_FIXTURE } from './constants.mjs'
+import { MUTATION, RETIRE_OUTCOME, SETTLED_BY, SETTLEMENT_OUTCOME, SETTLE_FIXTURE, TURN_FACTS } from './constants.mjs'
 import { gatedMailboxPort, lateAckPort } from './fakes.mjs'
 import { cordisContext, routeWorld } from './subject.mjs'
 import { registerReviewXCases } from './review-x-cases.mjs'
@@ -185,17 +185,23 @@ async function takeBackOk(w, sessionId, key, note = FIXTURE.note) {
   assert.equal(w.managed.managerOf(sessionId), undefined)
   return event
 }
-/** One turn end of `sessionId`: exactly one `turn-finished {sessionId, running, queued}`, to `key`. */
-async function turnTo(w, sessionId, key, flags = { running: false, queued: false }) {
-  const { event } = await expectOne(w, () => w.sessions.finishTurn(sessionId, flags), key, ET.turnFinished)
-  assert.deepEqual(event.payload, { sessionId, ...flags })
+/**
+ * One turn end of `sessionId`: exactly one `turn-finished`, to `key`, whose payload is
+ * `{sessionId, ...facts}` (CONN-REPORT B, user-approved 2026-11-21: the report replaces the old
+ * `{running, queued}`).
+ */
+async function turnTo(w, sessionId, key, facts = TURN_FACTS.completed) {
+  const { event } = await expectOne(w, () => w.sessions.finishTurn(sessionId, facts), key, ET.turnFinished)
+  assert.deepEqual(event.payload, { sessionId, ...facts })
   return event
 }
-/** One state change of `sessionId`: exactly one `state {sessionId, running, pendingInteraction}`, to `key`. */
-async function stateTo(w, sessionId, key, flags = { running: true, pendingInteraction: false }) {
-  const { event } = await expectOne(w, () => w.sessions.changeState(sessionId, flags), key, ET.state)
-  assert.deepEqual(event.payload, { sessionId, ...flags })
-  return event
+/**
+ * A state change of `sessionId` produces nothing, for anyone, managed or not (CONN-REPORT A1,
+ * user-approved 2026-11-21: "state events are no longer produced for any session"). Replaces the
+ * withdrawn oracle "one state event to the manager".
+ */
+async function noState(w, sessionId, flags = { running: true, pendingInteraction: false }) {
+  await expectNone(w, () => w.sessions.changeState(sessionId, flags))
 }
 /** A turn end and a state change of `sessionId` produce nothing, for anyone (R-WATCH-02). */
 export async function unwatched(w, sessionId) {
@@ -287,13 +293,15 @@ export async function managedByP(w, { pConnected = true } = {}) {
 
 function useCases(sdk) {
   // WATCH-UC-01 — A principal automatically watches a session it starts (E1 is C-TOOLS').
-  worldRow(sdk, 'WATCH-UC-01', 'main 1-2', 'P starts S1 (ManagedState.manage, no watch argument); a turn ends with nothing queued → P gets one turn-finished {running: false, queued: false}', async (w) => {
+  // Re-baselined by CONN-REPORT B (user-approved 2026-11-21): the turn-finished payload is the report {sessionId, outcome, finalMessage?}.
+  worldRow(sdk, 'WATCH-UC-01', 'main 1-2', 'P starts S1 (ManagedState.manage, no watch argument); a turn ends completed → P gets one turn-finished {sessionId, outcome completed, finalMessage}', async (w) => {
     const { p } = await managedByP(w)
-    await turnTo(w, S.s1, p, { running: false, queued: false })
+    await turnTo(w, S.s1, p, TURN_FACTS.completed)
   })
-  worldRow(sdk, 'WATCH-UC-01', 'main 3', 'every change of S1\'s running or pending-interaction state gives P one state event', async (w) => {
-    const { p } = await managedByP(w)
-    for (const flags of [{ running: true, pendingInteraction: false }, { running: true, pendingInteraction: true }, { running: false, pendingInteraction: false }]) await stateTo(w, S.s1, p, flags)
+  // Re-baselined by CONN-REPORT A1 (user-approved 2026-11-21): "state events are no longer produced for any session".
+  worldRow(sdk, 'WATCH-UC-01', 'main 3', 'no change of S1\'s running or pending-interaction state gives anyone a state event (A1)', async (w) => {
+    await managedByP(w)
+    for (const flags of [{ running: true, pendingInteraction: false }, { running: true, pendingInteraction: true }, { running: false, pendingInteraction: false }]) await noState(w, S.s1, flags)
   })
   worldRow(sdk, 'WATCH-UC-01', 'A1', 'a turn that ends at once after P starts managing S1 is still reported to P', async (w) => {
     const p = w.principal(ID.p, { connected: true })
@@ -302,15 +310,17 @@ function useCases(sdk) {
     assert.equal(event.payload.sessionId, S.s1)
   })
   todoRow(sdk, 'WATCH-UC-01', 'A1 (DSH)', 'session_message on an idle S1 whose turn ends at once: the watermark is read before the message on a real DSH session', LATER.wire)
-  worldRow(sdk, 'WATCH-UC-01', 'A2', 'a turn ends while a message is queued → turn-finished with queued: true', async (w) => {
+  // Re-baselined by CONN-REPORT B2/B5 (user-approved 2026-11-21): "queued" left the payload (the source holds back a turn end
+  // while input is queued); a stopped turn's report {outcome stopped, stop {kind, message}} reaches P unchanged.
+  worldRow(sdk, 'WATCH-UC-01', 'A2', 'a turn that ended unexpectedly → turn-finished {outcome stopped, stop {kind, message}}, no finalMessage', async (w) => {
     const { p } = await managedByP(w)
-    await turnTo(w, S.s1, p, { running: true, queued: true })
+    await turnTo(w, S.s1, p, TURN_FACTS.stopped)
   })
-  worldRow(sdk, 'WATCH-UC-01', 'post', 'no other principal (D included) received any turn-finished / state of S1', async (w) => {
+  worldRow(sdk, 'WATCH-UC-01', 'post', 'no other principal (D included) received any turn-finished of S1; nobody gets a state event (A1)', async (w) => {
     const { p, d } = await managedByP(w)
     w.principal(ID.q, { connected: true })
     await turnTo(w, S.s1, p)
-    await stateTo(w, S.s1, p)
+    await noState(w, S.s1)
     assert.deepEqual((await pendingOf(w, d)).concat(await pendingOf(w, FIXTURE.principal(ID.q))), [])
   })
 
@@ -415,13 +425,16 @@ function equivalencePartitions(sdk) {
     const { event } = await expectRetirement(w, () => w.managed.release(S.s1, p), p, offer)
     assert.equal(event.payload.reason, RETIREMENT_REASON.released)
   })
-  worldRow(sdk, 'EVT-EP-01', '7', 'turn-finished of a managed session → M; the payload says running and queued', async (w) => {
+  // Re-baselined by CONN-REPORT B (user-approved 2026-11-21): the payload is the report, not {running, queued}.
+  worldRow(sdk, 'EVT-EP-01', '7', 'turn-finished of a managed session → M; the payload is {sessionId, outcome, finalMessage? / stop?} as the source reported it', async (w) => {
     const { p } = await managedByP(w)
-    await turnTo(w, S.s1, p, { running: false, queued: true })
+    await turnTo(w, S.s1, p, TURN_FACTS.completed)
+    await turnTo(w, S.s1, p, TURN_FACTS.stopped)
   })
-  worldRow(sdk, 'EVT-EP-01', '8', 'state of a managed session → M', async (w) => {
-    const { p } = await managedByP(w)
-    await stateTo(w, S.s1, p)
+  // Re-baselined by CONN-REPORT A1 (user-approved 2026-11-21): no state events for any session.
+  worldRow(sdk, 'EVT-EP-01', '8', 'state of a managed session → not produced at all (A1)', async (w) => {
+    await managedByP(w)
+    await noState(w, S.s1)
   })
   worldRow(sdk, 'EVT-EP-01', '9', 'turn-finished / state of an unmanaged session → not produced at all', async (w) => {
     w.principal(ID.d, { connected: true })
@@ -520,10 +533,11 @@ function equivalencePartitions(sdk) {
   })
 
   // WATCH-EP-01 — Who receives turn-finished / state.
-  worldRow(sdk, 'WATCH-EP-01', '1', 'started by P → P only', async (w) => {
+  // Rows 1–2 re-baselined by CONN-REPORT A1/B (user-approved 2026-11-21): turn-finished (the report) to the manager only; no state event at all.
+  worldRow(sdk, 'WATCH-EP-01', '1', 'started by P → turn-finished to P only; no state event', async (w) => {
     const { p } = await managedByP(w)
     await turnTo(w, S.s1, p)
-    await stateTo(w, S.s1, p)
+    await noState(w, S.s1)
   })
   worldRow(sdk, 'WATCH-EP-01', '2', 'handed over to D → D only', async (w) => {
     const d = w.principal(ID.d, { connected: true })
@@ -531,7 +545,7 @@ function equivalencePartitions(sdk) {
     w.session(S.s1)
     await handOverOk(w, S.s1, d)
     await turnTo(w, S.s1, d)
-    await stateTo(w, S.s1, d)
+    await noState(w, S.s1)
   })
   worldRow(sdk, 'WATCH-EP-01', '3', 'unmanaged → nobody (not produced)', async (w) => {
     w.principal(ID.d, { connected: true })
@@ -784,7 +798,8 @@ function decisionTables(sdk) {
     w.session(S.s3)
     await offerTo(w, S.s1, ET.permission, p)
     await turnTo(w, S.s1, p)
-    await stateTo(w, S.s1, p)
+    // CONN-REPORT A1 (user-approved 2026-11-21): a state change is no longer an event, so it adds no entry anywhere.
+    await noState(w, S.s1)
     await messageTo(w, S.s1, p)
     // C-WIRE-2 (q5): S2 is unmanaged, so its message produces nothing; no ask_agent exists ("不给ask_agent工具").
     await messageNotManaged(w, S.s2)
@@ -953,13 +968,14 @@ function decisionTables(sdk) {
 
 function stateTransitions(sdk) {
   // HAND-ST-01 — Management of one session (management = watch). States Unmanaged, Managed(P).
-  worldRow(sdk, 'HAND-ST-01', '1', '(none) → P session_start → Managed(P); nothing for the start itself; later turn-finished / state to P', async (w) => {
+  // Re-baselined by CONN-REPORT A1/B (user-approved 2026-11-21): later turn-finished (the report) to P; no state event at all.
+  worldRow(sdk, 'HAND-ST-01', '1', '(none) → P session_start → Managed(P); nothing for the start itself; later turn-finished to P, no state event', async (w) => {
     const p = w.principal(ID.p, { connected: true })
     w.session(S.s1)
     await expectNone(w, () => manage(w, S.s1, p))
     assert.equal(w.managed.managerOf(S.s1), p)
     await turnTo(w, S.s1, p)
-    await stateTo(w, S.s1, p)
+    await noState(w, S.s1)
   })
   for (const connected of [true, false]) {
     worldRow(sdk, 'HAND-ST-01', `2 (${connected ? 'online' : 'offline'})`, 'Unmanaged → Hand over to enabled, paired P → Managed(P); one handover to P (queued if offline)', async (w) => {
@@ -1159,8 +1175,16 @@ const gatedRow = (sdk, id, part, title, fn) => row(sdk, id, part, title, async (
   const w = await routeWorld(t, sdk, { port: gatedMailboxPort })
   try { await fn(w, t) } finally { w.mailbox.openAll() }
 })
-/** A K1 settlement payload (EVENT_PAYLOAD_SHAPES.settlement) for `approvalId`. */
-export const settlementOf = (approvalId, outcome = SETTLEMENT_OUTCOME.allowed, by = SETTLED_BY.principal) => ({ approvalId, outcome, by })
+/**
+ * A K1 settlement payload (EVENT_PAYLOAD_SHAPES.settlement) for `approvalId`. Re-baselined by
+ * CONN-REPORT A3 (user-approved 2026-11-21): a settlement by 'principal' is no longer produced (the
+ * tool's own result is that outcome), so the rows that check what settle COMMITS (its recipient,
+ * correlation id, payload copy, ordering on the chain) settle by 'user', which is still produced
+ * unchanged. The principal's own settle has its own rows (principalSettle below).
+ */
+export const settlementOf = (approvalId, outcome = SETTLEMENT_OUTCOME.allowed, by = SETTLED_BY.user) => ({ approvalId, outcome, by })
+/** The managing principal's own settlement (approval_answer / question_answer): CONN-REPORT A3 commits none of it. */
+export const principalSettlementOf = (approvalId, outcome = SETTLEMENT_OUTCOME.allowed) => settlementOf(approvalId, outcome, SETTLED_BY.principal)
 const UNKNOWN_OFFER = formatOfferId(MUTATION.unknownApproval, OFFER_ID.firstRevision)
 
 /** `settle` of a live offer: resolves true and commits exactly one `settlement` (correlationId = offerId, payload `want`) to `key`. */
@@ -1170,6 +1194,16 @@ export async function settledTo(w, act, key, offerId, want) {
   assert.equal(event.correlationId, offerId)
   assert.deepEqual(event.payload, want)
   return event
+}
+/**
+ * The holder's own settle (by 'principal') of a live offer (CONN-REPORT A3): resolves true, commits
+ * nothing in any mailbox, and the offer is no longer live (a second settle → false).
+ */
+export async function principalSettled(w, offerId, settlement, options) {
+  const { value } = await expectNone(w, () => w.routing.settle(offerId, settlement, options))
+  assert.equal(value, true, 'the principal\'s settle of a live offer did not return true')
+  assert.deepEqual(w.routing.liveOffers(S.s1).filter((o) => o.descriptor.offerId === offerId), [], 'the settled offer is still live')
+  await settleRefused(w, offerId, settlement)
 }
 /** `settle` of an offer that is not live: resolves false and commits nothing. */
 export async function settleRefused(w, offerId, settlement) {
@@ -1204,11 +1238,24 @@ export async function endsOf(w, offerId, eventId) {
 function settleTransitions(sdk) {
   // ROUTE-ST-03 — One offer in C-ROUTE's live-offer ledger under settle (RELAYED.offerLedger).
   // States: Queued (its commit in flight on the managed chain), Live, Settled, Withdrawn, Retired.
+  // Rows 1, 2, 7 (and ROUTE-DT-03, ROUTE-EP-03) re-baselined by CONN-REPORT A3 (user-approved 2026-11-21): their
+  // settlement is the user's (settlementOf's default), which is still committed; a principal's commits nothing (rows 1p, 1q).
   worldRow(sdk, 'ROUTE-ST-03', '1', 'Live → settle → Settled: true; one settlement to the pair that held it, correlationId = offerId, payload = the settlement', async (w) => {
     const { p } = await managedByP(w)
     const offer = await offerTo(w, S.s1, ET.permission, p)
     const s = settlementOf(offer.payload.approvalId)
     await settledTo(w, () => w.routing.settle(offer.offer.offerId, s), p, offer.offer.offerId, s)
+  })
+  // CONN-REPORT A3 (user-approved 2026-11-21): "settlement events with by: 'principal' are NO LONGER PRODUCED".
+  worldRow(sdk, 'ROUTE-ST-03', '1p', 'Live → settle by the principal → Settled: true; nothing committed anywhere; the offer is no longer live; a second settle → false', async (w) => {
+    const { p } = await managedByP(w)
+    const offer = await offerTo(w, S.s1, ET.permission, p)
+    await principalSettled(w, offer.offer.offerId, principalSettlementOf(offer.payload.approvalId))
+  })
+  worldRow(sdk, 'ROUTE-ST-03', '1q', 'Live question → settle by the principal (answered, with answers) → true; nothing committed; not live', async (w) => {
+    const { p } = await managedByP(w)
+    const offer = await offerTo(w, S.s1, ET.question, p)
+    await principalSettled(w, offer.offer.offerId, { ...principalSettlementOf(offer.payload.approvalId, SETTLEMENT_OUTCOME.answered), answers: [structuredClone(SETTLE_FIXTURE.answer)] })
   })
   worldRow(sdk, 'ROUTE-ST-03', '2', 'Settled → settle again → false; nothing committed', async (w) => {
     const { p } = await managedByP(w)
@@ -1316,6 +1363,7 @@ function settleTransitions(sdk) {
   // ROUTE-DT-03 — settle(A) racing a management change or a withdraw of A. Both are queued, in
   // call order, behind a held commit of another offer B of S1, so their order on the managed chain
   // is the call order. Rules: whichever runs first wins; exactly one of settlement / retirement of A.
+  // Re-baselined by CONN-REPORT A3 (user-approved 2026-11-21): the racing settle is the user's (a principal's commits nothing).
   const RACERS = Object.freeze({
     release: { end: (w, p) => w.managed.release(S.s1, p), value: () => ({ ok: true }), reason: RETIREMENT_REASON.released },
     revocation: { end: (w) => revokeEntry(w, ID.p, REVOCATION.disabled), value: () => undefined, reason: undefined },
@@ -1419,6 +1467,7 @@ function payloadPartitions(sdk) {
   // ROUTE-EP-03 — settle's settlement payload: taken as it was at the call; an uncopyable or
   // schema-invalid one is refused (TypeError) and leaves the offer live.
   // Rows 1, 3 and the bad-settlement rows re-baselined by C-WIRE-2 ("不给ask_agent工具"): a permission offer, not an ask.
+  // Re-baselined again by CONN-REPORT A3 (user-approved 2026-11-21): the settlement is the user's, which is still committed.
   worldRow(sdk, 'ROUTE-EP-03', '1', 'permission offer settled, then the settlement\'s top-level outcome changed before settle resolves → the committed payload is as at the call', async (w) => {
     const o = await liveOffer(w)
     const s = settlementOf(o.approvalId)
@@ -1440,7 +1489,8 @@ function payloadPartitions(sdk) {
     const want = structuredClone(s)
     const settled = w.routing.settle(draft.correlationId, s)
     s.outcome = SETTLEMENT_OUTCOME.rejected
-    s.by = SETTLED_BY.user
+    // CONN-REPORT A3: a by 'principal' copy taken late would commit nothing, so the row also catches a late read of `by`.
+    s.by = SETTLED_BY.principal
     gate.open()
     assert.equal(await settled, true)
     await until(async () => (await pendingOf(w, d)).some((e) => e.type === ET.settlement), 'the settlement in D\'s mailbox')

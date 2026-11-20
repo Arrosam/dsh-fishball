@@ -78,17 +78,17 @@ export function registerApprovalCases(sdk) {
   })
 
   // ------------------------------------------------------------------------- answers (decision table)
-  row(sdk, 'APR-04', 'DT (allow + low + reason + complete)', '{accepted: true}; the call runs allowed once; the stock prompt never shows; one settlement {allowed, by principal}', async (t) => {
+  // Re-baselined by CONN-REPORT A3 (user-approved 2026-11-21): "settlement events with by: 'principal' are NO LONGER
+  // PRODUCED: the tool's own result ({accepted: true, ...}) is that outcome".
+  row(sdk, 'APR-04', 'DT (allow + low + reason + complete)', '{accepted: true}; the call runs allowed once; the stock prompt never shows; no settlement event (A3)', async (t) => {
     const w = await w0()
     const p = await principal(t, w)
     const sid = await managed(w, p)
     const r = await asked(w, p, sid)
     assert.deepEqual(await answer(p, r, A.allow()), { ok: true, accepted: true })
     assert.equal((await decided(w, r.text)).outcome, IX.outcome.allowed)
-    const s = await settlement(p.client, r.d.approvalId)
-    assert.deepEqual(s.payload, { approvalId: r.d.approvalId, outcome: SETTLEMENT_OUTCOME.allowed, by: SETTLED_BY.principal })
     await quiet()
-    assert.equal(settlementsOf(await pending(p.client), r.d.approvalId).length, 1)
+    assert.deepEqual(settlementsOf(await pending(p.client), r.d.approvalId), [], 'the principal\'s own answer produced a settlement')
     assert.deepEqual(await stockFor(w, r.text), [])
     assert.equal(await isListed(p, r), false, 'a settled request is still listed')
   })
@@ -139,7 +139,8 @@ export function registerApprovalCases(sdk) {
   })
   // A reject with a reason is accepted whatever its risk, and with none (F08 re-baseline above).
   for (const [id, label, risked] of [['APR-05r / DIR-02', 'reject + risk + reason', true], ['APR-05r / RX-F08', 'reject + reason, no risk', false]]) {
-    row(sdk, id, `DT (${label})`, 'accepted; the call is rejected; the agent\'s result is blocked with "The managing agent rejected this call: <reason>"; settlement {rejected, principal}', async (t) => {
+    // Re-baselined by CONN-REPORT A3 (user-approved 2026-11-21): no settlement by principal; {accepted: true} is the outcome.
+    row(sdk, id, `DT (${label})`, 'accepted; the call is rejected; the agent\'s result is blocked with "The managing agent rejected this call: <reason>"; no settlement event (A3)', async (t) => {
       const w = await w0()
       const p = await principal(t, w)
       const sid = await managed(w, p)
@@ -151,7 +152,8 @@ export function registerApprovalCases(sdk) {
       const result = await resultOf(w, sid, r.id)
       assert.equal(result.isError, true)
       assert.ok(result.text.includes(RELAYED.rejected(why)), result.text)
-      assert.deepEqual((await settlement(p.client, r.d.approvalId)).payload, { approvalId: r.d.approvalId, outcome: SETTLEMENT_OUTCOME.rejected, by: SETTLED_BY.principal })
+      await quiet()
+      assert.deepEqual(settlementsOf(await pending(p.client), r.d.approvalId), [], 'the principal\'s own reject produced a settlement')
     })
   }
   row(sdk, 'DIR-01', 'EP (allow: the tool\'s own output)', 'an allowed call\'s result is the tool\'s own output, with nothing appended', async (t) => {

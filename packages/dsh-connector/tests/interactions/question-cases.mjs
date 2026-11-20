@@ -12,7 +12,7 @@ import {
 import { row, withdrawn } from './rows.mjs'
 import {
   batchOf, cardOf, cid, eventually, free, listed, managed, ofType, okCall, pending, planned, principal, qAnswer, questioned, quiet, resultOf, retirement,
-  session, settlement, step, tok, turn, world,
+  session, settlement, settlementsOf, step, tok, turn, world,
 } from './subject.mjs'
 
 const ASK = IX.preset.ask
@@ -68,7 +68,8 @@ export function registerQuestionCases(sdk) {
     assert.equal(r.card.state, IX.card.open)
     await free(w, sid)
   })
-  row(sdk, 'FLW-03 / FLW-04 / FLW-06', 'UC (the principal answers first)', '{accepted: true}; the call\'s result is exactly the batch; the card closes; settlement {answered, by principal, answers}; the stale card can no longer be answered', async (t) => {
+  // Re-baselined by CONN-REPORT A3 (user-approved 2026-11-21): the principal's own answer produces no settlement; {accepted: true} is the outcome.
+  row(sdk, 'FLW-03 / FLW-04 / FLW-06', 'UC (the principal answers first)', '{accepted: true}; the call\'s result is exactly the batch; the card closes; no settlement event (A3); the stale card can no longer be answered', async (t) => {
     const { w, p, sid } = await asking(t)
     const text = tok('f03')
     const r = await questioned(w, p, sid, { text, questions: FIXTURE.mixed(text) })
@@ -76,7 +77,8 @@ export function registerQuestionCases(sdk) {
     assert.deepEqual(await qAnswer(p, r, { answers }), accepted)
     assert.deepEqual(batchOf(await resultOf(w, sid, r.id)), answers)
     assert.notEqual((await cardOf(w, r)).state, IX.card.open)
-    assert.deepEqual((await settlement(p.client, r.d.approvalId)).payload, { approvalId: r.d.approvalId, outcome: SETTLEMENT_OUTCOME.answered, by: SETTLED_BY.principal, answers })
+    await quiet()
+    assert.deepEqual(settlementsOf(await pending(p.client), r.d.approvalId), [], 'the principal\'s own answer produced a settlement')
     assert.equal(await w.call('cardAnswer', { sessionId: sid, answers: FIXTURE.answer.red }), false, 'the closed card took an answer')
   })
   row(sdk, 'FLW-05', 'ST (the user answers in the card first)', `the principal's answer → ${REFUSAL.expired} or ${REFUSAL.alreadySettled}; settlement {answered, by user, answers}; the result is the user's batch`, async (t) => {
@@ -190,14 +192,17 @@ export function registerQuestionCases(sdk) {
     ['feedback', { feedback: 'add a restart test first' }, async (w, sid, res) => { assert.equal(res.isError, true); assert.ok(res.text.includes('add a restart test first'), res.text); assert.match(JSON.stringify(await w.call('planCommand', { sessionId: sid, off: true })), IX.dsh.planModeOff) }],
     ['approve: false, no feedback', { approve: false }, async (w, sid, res) => { assert.equal(res.isError, true); assert.match(res.text, IX.dsh.keepPlanning); assert.match(JSON.stringify(await w.call('planCommand', { sessionId: sid, off: true })), IX.dsh.planModeOff) }],
   ]) {
-    row(sdk, 'PLN-02 / PLN-03 / PLN-04', `DT (${label})`, `{accepted: true}; ${label === 'approve: true' ? 'plan approved, plan mode off' : 'keep planning, plan mode stays on'}; the card closes; settlement {answered, by principal}`, async (t) => {
+    // Re-baselined by CONN-REPORT A3 (user-approved 2026-11-21): no settlement by principal.
+    row(sdk, 'PLN-02 / PLN-03 / PLN-04', `DT (${label})`, `{accepted: true}; ${label === 'approve: true' ? 'plan approved, plan mode off' : 'keep planning, plan mode stays on'}; the card closes; no settlement event (A3)`, async (t) => {
       const { w, p, sid } = await planWorld(t)
       const r = await planned(w, p, sid)
       assert.deepEqual(await qAnswer(p, r, rest), accepted)
       const res = await resultOf(w, sid, r.id)
       assert.notEqual((await cardOf(w, r)).state, IX.card.open)
+      // The A3 oracle is checked before the plan-mode words, so a change in DSH's own wording cannot hide it.
+      await quiet()
+      assert.deepEqual(settlementsOf(await pending(p.client), r.d.approvalId), [], 'the principal\'s own answer produced a settlement')
       await check(w, sid, res)
-      assert.equal((await settlement(p.client, r.d.approvalId)).payload.by, SETTLED_BY.principal)
     })
   }
   for (const [label, n, ok] of [['= feedbackChars', L.feedbackChars, true], ['feedbackChars + 1', L.feedbackChars + 1, false]]) {

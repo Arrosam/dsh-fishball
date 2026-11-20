@@ -98,6 +98,7 @@ import { afterCommit, callStep, sameStep, writeStep } from './fakes.mjs'
 import { pollAll } from '../mailbox/cases.mjs'
 import { worldFor as mailboxWorld } from '../mailbox/subject.mjs'
 import { hostedModule, succeedWorld } from './subject.mjs'
+import { TURN_FACTS } from '../routing/constants.mjs'
 import { toolsOver } from './world.mjs'
 import { registerReviewXHostedCases } from './review-x-cases.mjs'
 
@@ -152,7 +153,8 @@ async function plainEvent(w, key, draft) {
   assert.equal(r?.ok, true, `harness: commit refused: ${JSON.stringify(r)}`)
   return r.eventId
 }
-const turnDraft = (sessionId) => ({ type: ET.turnFinished, sourceSessionId: sessionId, correlationId: null, payload: { sessionId, running: false, queued: false } })
+// Re-baselined by CONN-REPORT B (user-approved 2026-11-21): the turn-finished payload is the report {sessionId, outcome, finalMessage?, stop?}.
+const turnDraft = (sessionId) => ({ type: ET.turnFinished, sourceSessionId: sessionId, correlationId: null, payload: { sessionId, ...TURN_FACTS.completed } })
 const messageDraft = (sessionId, n) => ({ type: ET.message, sourceSessionId: sessionId, correlationId: null, payload: { text: FIXTURE.text(n), images: [] } })
 
 /**
@@ -540,7 +542,7 @@ function useCases(sdk) {
     const before = await stateOf(w)
     const { gate, retiring } = await pausedAtCommit(w, u)
     const from = w.seam.journal.length
-    w.sessions.finishTurn(S.s1, { running: false, queued: false })
+    w.sessions.finishTurn(S.s1)
     await until(() => w.seam.since(from).some(watchCommitTo(u.succ)), 'the turn-finished of S1 committed to En (its manager during the step)')
     await quiet()
     assert.deepEqual((await boxes(w))[u.succ], before.boxes[u.succ], 'En sees an event behind the barrier')
@@ -676,7 +678,7 @@ async function assertAgentExpired(t, sdk, w, u, held) {
 /** Later turn-finished of S1 and an offer of S2 go to the successor only (R-WATCH-04). */
 async function assertLaterEventsTo(w, u) {
   const before = new Set((await allPending(w)).map((x) => x.e.eventId))
-  w.sessions.finishTurn(S.s1, { running: false, queued: false })
+  w.sessions.finishTurn(S.s1)
   const later = await offerOf(w, S.s2, ET.planReview, u.succ)
   await until(async () => (await allPending(w)).filter((x) => !before.has(x.e.eventId)).length >= 2, 'the later turn and offer')
   await quiet()
@@ -877,7 +879,8 @@ function partitions(sdk) {
   })
 
   // WATCH-EP-01 row 6.
-  worldRow(sdk, CASE.watchEp01, '6', 'after Q24 succession P → P\': turn-finished / state of S1 go to P\' only', async (w) => {
+  // CONN-REPORT A1 (user-approved 2026-11-21): state is no longer produced, so only turn-finished is followed.
+  worldRow(sdk, CASE.watchEp01, '6', 'after Q24 succession P → P\': turn-finished of S1 goes to P\' only', async (w) => {
     const u = await navigatorWorld(w)
     assert.deepEqual(await w.service.retire(u.eo, u.en), OK)
     await assertLaterEventsTo(w, u)

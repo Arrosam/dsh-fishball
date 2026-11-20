@@ -6,7 +6,7 @@
  * Keys follow FIXTURE: entry `fbtest-entry-<id>`, principal `fbtest-principal-<id>` (the same
  * formulas packages/dsh-connector/tests/mcp-http uses, so the end-to-end world's listen streams and these keys agree).
  */
-import { ENTRY_STATUS, FIXTURE, REVOCATION } from './constants.mjs'
+import { ENTRY_STATUS, FIXTURE, REVOCATION, TURN_FACTS } from './constants.mjs'
 
 /** Calls every listener; one that throws does not stop the others (the K1c / K3 listener rule). */
 function fire(listeners, ...args) {
@@ -102,8 +102,13 @@ export class FakeSettings {
 }
 
 /**
- * The session source (Fishball 2026-11-14 #7): which sessions exist, and their turn ends and state
- * changes. Drivers: `add(id)`, `finishTurn(id, {running, queued})`, `changeState(id, {running, pendingInteraction})`.
+ * The session source (Fishball 2026-11-14 #7): which sessions exist, and their turn ends.
+ * Drivers: `add(id)`, `finishTurn(id, facts)`, `changeState(id, flags)`.
+ *
+ * CONN-REPORT (user-approved 2026-11-21): A1 "state events are no longer produced", so the port has
+ * no `onState`; `changeState` stays as a driver that fires the old shape to any `onState`
+ * subscriber, which routing must not be (the rows assert nothing is produced). B: a turn end hands
+ * `{outcome, finalMessage?, stop?}` (default TURN_FACTS.completed), replacing `{running, queued}`.
  *
  * R-FIX-CUI (UI-01; the port the dev session relayed 2026-11-18): `rootOf(id) → Promise<string |
  * undefined>`, the session's root (a subagent child belongs to its parent, up to the root), or
@@ -131,7 +136,7 @@ export class FakeSessions {
   }
   onTurnFinished(listener) { return subscribe(this.#turns, listener) }
   onState(listener) { return subscribe(this.#states, listener) }
-  finishTurn(id, { running = false, queued = false } = {}) { fire(this.#turns, id, { running, queued }) }
+  finishTurn(id, facts = TURN_FACTS.completed) { fire(this.#turns, id, structuredClone(facts)) }
   changeState(id, { running = false, pendingInteraction = false } = {}) { fire(this.#states, id, { running, pendingInteraction }) }
 }
 

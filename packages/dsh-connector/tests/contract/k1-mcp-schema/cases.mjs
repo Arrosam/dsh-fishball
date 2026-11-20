@@ -451,7 +451,8 @@ export function registerK1Cases(sdk) {
   caseTest(sdk, 'EVT-UC-01', 4, 'inbox_ack\'s input schema admits {receipts: [{eventId, payloadDigest}]} (D§3.4)', async (mod) => {
     assert.ok((await validatorFor(sdk))(toolDef(mod, mod.TOOL.inboxAck).inputSchema)(FIELDS.receipt))
   })
-  caseTest(sdk, 'WATCH-UC-01', 2, 'the turn-finished payload says running and queued (R-EVS-02), frozen by name', () => {
+  // Re-baselined by CONN-REPORT B (user-approved 2026-11-21): turn-finished is the report {sessionId, outcome, finalMessage?, stop?}.
+  caseTest(sdk, 'WATCH-UC-01', 2, 'the turn-finished payload names outcome, finalMessage (truncated) and stop (CONN-REPORT B), frozen by name', () => {
     const text = allText()
     assert.deepEqual(FIELDS.turnFinished.filter((f) => !text.includes(f)), [])
   })

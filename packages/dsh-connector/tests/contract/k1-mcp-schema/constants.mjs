@@ -212,7 +212,8 @@ export const FIELDS = Object.freeze({
   event: Object.freeze(['eventId', 'type', 'payloadDigest']),
   summary: Object.freeze(['pending', 'headSequence', 'mailboxGeneration']),
   poll: Object.freeze(['events', 'hasMore', 'resync', 'reason', 'headSequence']),
-  turnFinished: Object.freeze(['running', 'queued']),
+  /** CONN-REPORT B (user-approved 2026-11-21) replaced `{running, queued}` with the report. */
+  turnFinished: Object.freeze(['outcome', 'finalMessage', 'truncated', 'stop']),
   pollArgs: Object.freeze(['cursor', 'limit']),
   receipt: Object.freeze({ receipts: Object.freeze([Object.freeze({ eventId: 'e1', payloadDigest: 'd1' })]) }),
 })

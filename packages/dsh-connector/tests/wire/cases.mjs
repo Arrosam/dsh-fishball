@@ -1024,12 +1024,15 @@ function sessionRows(sdk) {
     await w.call('waitIdle', { sessionId: s.sessionId })
     await refused(p.client, TOOL.sessionMessage, { sessionId: s.sessionId, message: FIXTURE.message, attachments: [put.hostRef] }, REFUSAL.expired)
   })
-  row(sdk, 'WATCH-UC-01', 'turn-finished (DSH)', 'a managed session\'s turn end reaches its manager as one turn-finished event naming the session', async (t) => {
+  // CONN-REPORT A1/B (user-approved 2026-11-21): the turn end reaches the manager as the report {sessionId, outcome, ...}; no state event.
+  row(sdk, 'WATCH-UC-01', 'turn-finished (DSH)', 'a managed session\'s turn end reaches its manager as one turn-finished event naming the session, outcome completed; no state event', async (t) => {
     const w = await main(sdk)
     const p = await pairedPrincipal(t, w)
     const s = await startSession(w, p.client)
     const events = await pollUntil(p.client, (e) => e.some((x) => x.type === EVENT_TYPE.turnFinished && x.sourceSessionId === s.sessionId))
-    assert.ok(events.some((x) => x.type === EVENT_TYPE.turnFinished && x.sourceSessionId === s.sessionId))
+    const turns = events.filter((x) => x.type === EVENT_TYPE.turnFinished && x.sourceSessionId === s.sessionId)
+    assert.deepEqual(turns.map((x) => [x.payload.sessionId, x.payload.outcome]), [[s.sessionId, K1.TURN_OUTCOME.completed]])
+    assert.deepEqual(events.filter((x) => x.type === EVENT_TYPE.state), [])
   })
 }
 
