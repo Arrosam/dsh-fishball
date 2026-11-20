@@ -30,6 +30,7 @@ import { busyGate, contributedType, eventually, makeEvent, newRoot, openWorld, r
 import { registerRfixEventCases } from './rfix.mjs'
 import { registerMultiEventCases } from './multi.mjs'
 import { registerRetiredRecoveryCases } from './retired.mjs'
+import { registerBatchEventCases } from './batch.mjs'
 
 const T = { timeout: WAIT.testMs }
 const ID = Object.freeze({
@@ -39,6 +40,11 @@ const ID = Object.freeze({
 const CONTRIBUTED = contributedType()
 
 /** One test per case row, named as every V3 suite names them; `todo` names the owning task. */
+/** A row a later requirement withdrew: registered skipped with its reason, kept (never deleted silently). */
+function withdrawn(sdk, id, part, title) { test(caseName(sdk, id, part, title), { skip: WAKE_WITHDRAWN.queued }, () => {}) }
+const WAKE_WITHDRAWN = Object.freeze({
+  queued: 'withdrawn by WAKE-BATCH item 5 (2026-11-21): a user message while events wait is handled in the same turn as them; replaced by WAKE-EVT-DT-02 busy, user queued',
+})
 function row(sdk, id, part, title, fn, todo) {
   const name = caseName(sdk, id, part, title)
   if (todo !== undefined) test.todo(`${name} — TODO ${todo}`)
@@ -138,6 +144,8 @@ export function registerInterceptCases(sdk) {
   registerRfixEventCases(sdk)
   registerMultiEventCases(sdk)
   registerRetiredRecoveryCases(sdk)
+  // WAKE-BATCH: batch.mjs (README-style index in USE-CASES.md).
+  registerBatchEventCases(sdk)
   // ===================================================================== EVT-UC-02 (Use Case)
   row(sdk, ID.uc02, 'main', 'a contributed:demo.ping is accepted by X, acked after accept, no Fishball turn, not in context, logged', async (t) => {
     const world = await worldFor(t, sdk)
@@ -752,7 +760,10 @@ export function registerInterceptCases(sdk) {
     gate.release()
     await assertFishballOnce(world, event)
   })
-  st('11 (queued)', 'AcceptedBy(Fishball), agent busy with a user turn queued → admitted only once fully idle, after the queued turn', async (t) => {
+  // WAKE-BATCH item 5 withdraws this oracle: a user message while events are buffered is handled in
+  // the same turn and model step as them, so the event is no longer admitted after the user's turn.
+  // The replacement row is WAKE-EVT-DT-02 'busy, user queued' (batch.mjs).
+  withdrawn(sdk, ID.st02, '11 (queued)', 'AcceptedBy(Fishball), agent busy with a user turn queued → admitted only once fully idle, after the queued turn', async (t) => {
     const gate = busyGate()
     const world = await worldFor(t, sdk, { onRequest: gate.onRequest })
     await startBusy(world, gate)

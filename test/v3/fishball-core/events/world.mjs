@@ -38,21 +38,36 @@ export const removeRoot = (root) => rm(root, { recursive: true, force: true })
  * One K1 mailbox event (mcp-schema `mailboxEvent`). The marker is in its id and payload, so every
  * trace of it (an admission, a model request, a log record) can be found by text.
  */
-export function makeEvent(type, n, { sourceSessionId = FIXTURE.watchedSession, secret } = {}) {
+export function makeEvent(type, n, { sourceSessionId = FIXTURE.watchedSession, secret, payload: override } = {}) {
   const marker = FIXTURE.marker + n
   const text = marker + ' ' + type
   const answerable = ANSWERABLE_TYPES.includes(type)
   const offerId = answerable ? formatOfferId(marker.toLowerCase().replace(/[^a-z0-9]/g, ''), OFFER_ID.firstRevision) : undefined
+  const descriptor = () => ({
+    approvalId: marker, offerId, kind: DECISION_KIND_OF[type], prompt: text, choices: [], title: text, at: Date.now(),
+    toolName: FIXTURE.marker, callId: null, reason: text, quotes: [],
+  })
+  // K1 payload shapes (mcp-schema shapes.js EVENT_PAYLOAD_SHAPES); WAKE-BATCH added the types past
+  // message / notice / permission. turn-finished is the WAKE-BATCH shape (requirement 7), `payload` overrides it.
+  const session = sourceSessionId ?? FIXTURE.watchedSession
   const payloads = {
     [EVENT_TYPE.message]: () => ({ text, images: [] }),
     [EVENT_TYPE.notice]: () => ({ code: FIXTURE.marker.toLowerCase(), text }),
-    [EVENT_TYPE.permission]: () => ({
-      approvalId: marker, offerId, kind: DECISION_KIND_OF[type], prompt: text, choices: [], title: text, at: Date.now(),
-      toolName: FIXTURE.marker, callId: null, reason: text, quotes: [],
-    }),
+    [EVENT_TYPE.permission]: descriptor,
+    [EVENT_TYPE.question]: descriptor,
+    [EVENT_TYPE.planReview]: descriptor,
+    [EVENT_TYPE.ask]: descriptor,
+    [EVENT_TYPE.turnFinished]: () => ({ sessionId: session, outcome: FIXTURE.outcome.completed, finalMessage: { text, truncated: false } }),
+    [EVENT_TYPE.state]: () => ({ sessionId: session, running: false, pendingInteraction: false }),
+    [EVENT_TYPE.settlement]: () => ({ approvalId: marker, outcome: FIXTURE.settled.outcome, by: FIXTURE.settled.by }),
+    [EVENT_TYPE.retirement]: () => ({ retiredEventId: marker, reason: FIXTURE.retired }),
+    [EVENT_TYPE.handover]: () => ({ sessionId: session, note: text }),
+    [EVENT_TYPE.takeback]: () => ({ sessionId: session, note: text }),
   }
   const contributed = type.startsWith(CONTRIBUTED_TYPE_PREFIX)
-  const payload = contributed ? { namespace: FIXTURE.namespace, event: FIXTURE.contributedEvent, data: { text }, summary: text } : payloads[type]()
+  // A contributed type names its namespace and event (`contributed:<namespace>.<event>`, K2).
+  const [namespace, ...rest] = type.slice(CONTRIBUTED_TYPE_PREFIX.length).split('.')
+  const payload = override ?? (contributed ? { namespace, event: rest.join('.'), data: { text }, summary: text } : payloads[type]())
   if (secret !== undefined) payload.secretField = secret
   const event = {
     eventId: marker, mailboxGeneration: FIXTURE.generation, sequence: n, type, at: Date.now(),
@@ -82,6 +97,13 @@ class FakeLink {
   publish(event) {
     const state = this.#load()
     if (!state.events.some((e) => e.eventId === event.eventId)) state.events.push(event)
+    this.#save(state)
+    this.hint()
+  }
+  /** WAKE-BATCH: commit several events in order, then one listen hint (one poll sees them all). */
+  publishAll(events) {
+    const state = this.#load()
+    for (const event of events) if (!state.events.some((e) => e.eventId === event.eventId)) state.events.push(event)
     this.#save(state)
     this.hint()
   }
@@ -310,6 +332,36 @@ export function busyGate() {
 export async function startBusy(world, gate) {
   world.agent.followup(world.userMessage(FIXTURE.busyText, FIXTURE.busyId))
   await gate.reached
+}
+
+/**
+ * WAKE-BATCH: a fake clock for core's injected timers (seam `timers`, relayed 2026-11-21:
+ * `{setTimeout(fn, ms) → handle, clearTimeout(handle)}`). Time stands still until `advance(ms)`;
+ * a timer already due (a 0 ms one) fires on its own, as a real clock would fire it at once.
+ */
+export function fakeClock() {
+  let now = 0
+  let seq = 0
+  const pending = new Map()
+  const fire = () => {
+    const due = [...pending].filter(([, t]) => t.due <= now).sort((a, b) => a[1].due - b[1].due || a[0] - b[0])
+    for (const [id, t] of due) if (pending.delete(id)) t.fn()
+  }
+  return {
+    timers: Object.freeze({
+      setTimeout(fn, ms = 0) {
+        const id = ++seq
+        pending.set(id, { fn, due: now + Math.max(0, Number(ms) || 0) })
+        setImmediate(fire)
+        const handle = { id, unref: () => handle, ref: () => handle, hasRef: () => false }
+        return handle
+      },
+      clearTimeout(handle) { pending.delete(handle?.id ?? handle) },
+    }),
+    /** Timers set and neither fired nor cleared. */
+    pending: () => pending.size,
+    advance(ms) { now += ms; fire() },
+  }
 }
 
 /** Waits for `predicate` (a harness wait, not an oracle) and fails with `what`. */

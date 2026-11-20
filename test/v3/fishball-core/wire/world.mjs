@@ -165,6 +165,23 @@ const ops = {
     const reader = await ctx.sessionPersistence.open(a.session.id, 'read')
     try { return (await reader.read()).events.filter((e) => e.type === C.inboxSpliced).flatMap((e) => (e.data?.inserted ?? []).map((m) => m.id)) } finally { await reader.close() }
   },
+  /**
+   * WAKE-BATCH: the manager's durable user messages core put there (source kind fishball-event), each as
+   * {id, text, time}, and its turn starts (session log, public persistence).
+   */
+  async managerDeliveries() {
+    const a = manager(); await ctx.sessions.flush(a.session)
+    const reader = await ctx.sessionPersistence.open(a.session.id, 'read')
+    try {
+      const events = (await reader.read()).events
+      const text = (content) => (content ?? []).map((b) => b?.text ?? '').join('\n')
+      return {
+        // Core's own messages only (source kind relayed 2026-11-21); DSH's runtime-context block is another kind.
+        deliveries: events.filter((e) => e.type === 'user/message' && e.data?.source?.kind === 'fishball-event').map((e) => ({ id: e.data.id, text: text(e.data.content), time: e.time })),
+        turns: events.filter((e) => e.type === 'turn/start').length,
+      }
+    } finally { await reader.close() }
+  },
   /** The manager session's ids (one manager, MULTI-1 requirement 11). */
   agents: () => ctx.agents.list().map((x) => x.session.id),
   async shutdown() { await shutdown.shutdown(C.first); return true },

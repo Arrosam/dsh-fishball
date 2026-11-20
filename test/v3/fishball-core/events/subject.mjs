@@ -27,7 +27,12 @@
  * - `ledgerWrite({op, args, recovering, table})` runs before every ledger write (`put`, `update`,
  *   `delete`; `table` is the unguarded ledger table, for reads); a throw or rejection makes that
  *   write reject, and it may hold the write;
- * - `activate({agent, recovering})` replaces `fishball.activate`.
+ * - `activate({agent, recovering})` replaces `fishball.activate`;
+ * - WAKE-BATCH (seam relayed 2026-11-21): `batching()` → `{quietWindowSeconds, maxBatch, classes}`,
+ *   read live by core at each event; absent, the world passes the defaults with a 0 s window
+ *   (`WAKE_CONTRACT.immediate`, the lead's harness choice) so the pre-batching rows keep their
+ *   timing; `batching: null` passes nothing (the product default). `timers` is core's
+ *   `{setTimeout, clearTimeout}` (world.mjs fakeClock), passed only when given.
  * `recovering` is true while `start()` runs `recover()`.
  */
 import assert from 'node:assert/strict'
@@ -35,7 +40,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { INSTANCE } from '../../../support/constants.mjs'
 import { importInstance, importSdk } from '../../../private-skills/support/sdk.mjs'
-import { DSH, FIXTURE, SOURCE, SUBJECT, TOOL } from './constants.mjs'
+import { DSH, FIXTURE, SOURCE, SUBJECT, TOOL, WAKE_CONTRACT } from './constants.mjs'
 
 /** The module's entry and its constants, bound to `sdk` (their `@deepseek-ai/*` imports resolve to that SDK). */
 async function modulesFor(sdk) {
@@ -59,6 +64,13 @@ function guardedTable(table, guard) {
       return async (...args) => { await guard(prop, args); return value.apply(target, args) }
     },
   })
+}
+/** The `batching` option (see the header): the case's, the 0 s default, or none (`null`). */
+function batchingOf(seam) {
+  if (seam.batching === null) return {}
+  if (seam.batching !== undefined) return { batching: seam.batching }
+  const immediate = WAKE_CONTRACT.immediate
+  return immediate === undefined ? {} : { batching: () => immediate }
 }
 const presentDefault = (event) => [{ type: 'text', text: `${event.type} ${event.eventId}` }]
 
@@ -99,6 +111,8 @@ export async function makeSubject(sdk, { ctx, agent, link, second, seam = {} }) 
     },
     logger: ctx.logger(constants.LOG.name),
     ...(seam.delay === undefined ? {} : { delay: seam.delay }),
+    ...batchingOf(seam),
+    ...(seam.timers === undefined ? {} : { timers: seam.timers }),
   })
 
   // The stand-in poll loop: one poll at a time; a hint during a poll queues one more after it.

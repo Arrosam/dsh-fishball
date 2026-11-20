@@ -92,6 +92,11 @@ export const CORE = Object.freeze({
 /** DSH's own session-log vocabulary (installed SDK; observed through its public persistence). */
 export const DSH = Object.freeze({
   userMessage: 'user/message',
+  turnStart: 'turn/start',
+  /** dsh-llm's message source kind of the user's own message (core's messages carry another). */
+  userSource: 'user',
+  /** The source kind of core's event messages (MESSAGE.sourceKind at the base; relayed 2026-11-21 for batches). */
+  eventSource: 'fishball-event',
   turnEnd: 'turn/end',
   preStep: 'agent/pre-step',
   /** dsh-agent's live notice of an agent's status change (`idle` ⇄ `running`). */
@@ -163,6 +168,23 @@ export const FIXTURE = Object.freeze({
   tempPrefix: 'fbtest-f-intercept-',
   /** The fake link's answer to an ack core sent for another target's source (MULTI-1 harness word). */
   misroutedAck: 'fbtest-misrouted-ack',
+  /** WAKE-BATCH payload data (K1 vocabularies: SETTLEMENT_OUTCOME, SETTLED_BY, RETIREMENT_REASON; requirement 7's outcome words). */
+  outcome: Object.freeze({ completed: 'completed', stopped: 'stopped' }),
+  settled: Object.freeze({ outcome: 'allowed', by: 'user' }),
+  retired: 'withdrawn',
+})
+
+/**
+ * WAKE-BATCH (the user-approved design relayed 2026-11-21): core's `WAKE` contract value
+ * (`packages/core/contracts/constants.js`), read when a case runs so a missing export fails that case.
+ * `{class: {wake, silent}, defaults: {quietWindowSeconds, maxBatch, classes}, setting: {…}}`.
+ */
+export const WAKE_CONTRACT = Object.freeze({
+  get value() { return coreValue('WAKE') },
+  /** The warning a max-batch flush carries (`TEXT.batchLimit(n)`, contains n). */
+  batchLimit: (n) => coreValue('TEXT').batchLimit(n),
+  /** `createEvents`'s `batching` for the pre-batching suites: the defaults with a 0 s window. Undefined before WAKE exists. */
+  get immediate() { const wake = EVENTS_CONSTANTS.WAKE; return wake === undefined ? undefined : { ...wake.defaults, classes: { ...wake.defaults.classes }, quietWindowSeconds: 0 } },
 })
 
 /** Harness waits only; never a product oracle. */
@@ -170,6 +192,23 @@ export const WAIT = Object.freeze({
   settleMs: 20000, quietMs: 800, pollMs: 25, childMs: 90000, testMs: 180000,
   /** Event-loop turns (setImmediate) given to a settled handler's tail before an unhandled rejection is ruled out. */
   immediateTurns: 5,
+})
+
+/**
+ * WAKE-BATCH requirement values (the user-approved design, items 1–4), restated here as the
+ * oracle the product's `WAKE.defaults` must equal; the event-type words are K1's.
+ */
+export const WAKE_REQUIRED = Object.freeze({
+  quietWindowSeconds: 10,
+  maxBatch: 20,
+  /** Item 1: the watchdog's contributed drift event, a WAKE type by default. */
+  drift: CONTRIBUTED_TYPE_PREFIX + 'dsh-connector-amenities.drift',
+  wake: Object.freeze([EVENT_TYPE.permission, EVENT_TYPE.question, EVENT_TYPE.planReview, EVENT_TYPE.turnFinished, EVENT_TYPE.handover, EVENT_TYPE.takeback, EVENT_TYPE.message, EVENT_TYPE.notice, EVENT_TYPE.ask]),
+  silent: Object.freeze([EVENT_TYPE.state, EVENT_TYPE.settlement, EVENT_TYPE.retirement]),
+  /** Item 4: the settings' bounds (whole numbers). */
+  minQuietWindowSeconds: 0,
+  minMaxBatch: 1,
+  msPerSecond: 1000,
 })
 
 /** Node's process events a case listens to. */

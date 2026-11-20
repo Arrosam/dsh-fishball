@@ -245,7 +245,9 @@ export const V3_SUITES = Object.freeze({
   'fishball-core.package': suite('core package, slim child move (R-CORE; the settings-section point withdrawn, 1.34)', v3('fishball-core/package'),
     [all(PACKAGE.fishballCore), sub(PACKAGE.dshInstance, 'src', 'slim'), sub(PACKAGE.dshInstance, 'src', 'child'), PACKAGE.dshInstance + '/client*.js']),
   'fishball-core.bridge': suite('bridge façade, list_changed refresh, X8 attention (F-FACADE)', v3('fishball-core/bridge'),
-    [sub(PACKAGE.fishballCore, 'src', 'bridge'), sub(PACKAGE.fishballCore, 'src', 'events'), ...CORE_LINK, ...CONNECTOR_CONTRACTS]),
+    [sub(PACKAGE.fishballCore, 'src', 'bridge'), sub(PACKAGE.fishballCore, 'src', 'events'), ...CORE_LINK, ...CONNECTOR_CONTRACTS,
+      // WAKE-BATCH: its world passes the events suite's 0 s batching.
+      'test/v3/fishball-core/events/constants.mjs']),
   'fishball-core.events': suite('interception, acceptance ledger, wake (F-INTERCEPT)', v3('fishball-core/events'),
     [sub(PACKAGE.fishballCore, 'src', 'events'), ...CORE_LINK, ...CONNECTOR_CONTRACTS]),
   'fishball-core.link': suite('MCP link (F-LINK)', v3('fishball-core/link'),
@@ -277,7 +279,9 @@ export const V3_SUITES = Object.freeze({
       // LOGO-BUTTON: the brandStyle setting and the snapshot brand the settings rows assert.
       sub(PACKAGE.fishballCore, 'src', 'status'), sub(PACKAGE.fishballCore, 'src', 'main'), PACKAGE.fishballCore + '/client.js',
       'test/v3/fishball-core/status/world.mjs', 'test/v3/fishball-core/status/subject.mjs', 'test/v3/fishball-core/status/fakes.mjs', 'test/v3/fishball-core/status/constants.mjs',
-      top(PACKAGE.fishballUi), sub(PACKAGE.fishballUi, 'src'), all(PACKAGE.fishballShared), ...CORE_LINK, 'test/v3/fishball-core/link/log-privacy.mjs']),
+      top(PACKAGE.fishballUi), sub(PACKAGE.fishballUi, 'src'), all(PACKAGE.fishballShared), ...CORE_LINK, 'test/v3/fishball-core/link/log-privacy.mjs',
+      // WAKE-BATCH: wake.mjs reads the events suite's requirement constants and core's main Config.
+      'test/v3/fishball-core/events/constants.mjs', 'test/private-skills/support/**']),
   // Boots a real standalone DSH with core and fishball-ui installed as whole bundles (F-UI splits the
   // guard rows between their two patches; the instance's launch code is read for the LITE rows).
   'fishball-ui.guards': suite('guard rows, override report, self-reorder (F-GUARDS)', v3('fishball-ui/guards'),
@@ -295,7 +299,9 @@ export const V3_SUITES = Object.freeze({
   // (the guards worker), and scans the Fishball side for DSH-side imports. fishball-board is shelved
   // (the user, 2026-11-18); the board-present partitions use the suite's own stand-in fixture.
   'fishball-core.wire': suite("core's main row: fishballInstance, fishballStatus, the manager, model, Connect routes and web callback (F-WIRE)", v3('fishball-core/wire'),
-    [all(PACKAGE.fishballCore), all(PACKAGE.fishballUi), all(PACKAGE.fishballShared), 'test/v3/fishball-ui/guards/**']),
+    [all(PACKAGE.fishballCore), all(PACKAGE.fishballUi), all(PACKAGE.fishballShared), 'test/v3/fishball-ui/guards/**',
+      // WAKE-BATCH: wire/batch.mjs reads the manager suite's persona entry.
+      'test/v3/fishball-core/manager/constants.mjs']),
   // F-WIRE: core's manager in a real standalone DSH (core + shared only): reminders, the singleton,
   // the preset and persona, the generated identity and the model rule, with the scripted model.
   // DESIGN.md §28: core's two mode rows composed by DSH, and fishball-child-plugins' browser half in the

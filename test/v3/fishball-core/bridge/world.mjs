@@ -20,6 +20,7 @@ import { DSH, FIXTURE, TOOL, WAIT } from './constants.mjs'
 import { FakeLink } from './fakes.mjs'
 import { eventsModule, makeBridge } from './subject.mjs'
 import { SOURCE } from '../wire/targets-oracle.mjs'
+import { WAKE_CONTRACT } from '../events/constants.mjs'
 
 const json = (value) => JSON.stringify(value)
 
@@ -148,6 +149,9 @@ export async function worldFor(t, sdk, linkOptions, { events = false, gate, imag
       link: { ack: (receipts) => link.callTool(TOOL.inboxAck, { receipts }), live: (s) => s?.targetId === SOURCE.a.targetId && s?.endpointEpoch === SOURCE.a.endpointEpoch },
       fishball: { activate: async () => agent, present: (event) => bridge.present(event) },
       logger,
+      // WAKE-BATCH: the F-FACADE rows expect a wake per event at once; a 0 s quiet window keeps
+      // that timing (harness choice, as events/subject.mjs). Nothing passed before WAKE exists.
+      ...(WAKE_CONTRACT.immediate === undefined ? {} : { batching: () => WAKE_CONTRACT.immediate }),
     })
     closers.push(async () => { core.close() })
     await core.recover()
