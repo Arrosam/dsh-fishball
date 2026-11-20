@@ -21,7 +21,8 @@ export const SESSION_EVENT = Object.freeze({
   agentStatus: 'agent/status',
   /** An agent inbox boundary: the next turn (dsh-agent InboxTarget). */
   nextTurn: 'next-turn',
-  /** A published subagent settled (dsh-subagent; `{parentSessionId, …}`). */
+  /** A published subagent started / settled (dsh-subagent; `{runId, parentSessionId, …}`). */
+  subagentStart: 'subagent/start',
   subagentEnd: 'subagent/end',
   /** The assistant message event a session's final output is read from. */
   assistantMessage: 'assistant/message',

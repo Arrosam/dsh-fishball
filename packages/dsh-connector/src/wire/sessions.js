@@ -62,6 +62,17 @@ export function createSessionSource(ctx) {
   const pending = new Map()
   /** Roots whose next turn end the manager caused (`stoppedByManager`). */
   const managerStops = new Set()
+  /**
+   * runId → root id of each subagent run between `subagent/start` and `subagent/end`. A run counts
+   * as moving until its end even while its agent reads idle: DSH queues the child's result into
+   * its parent (the hand-back turn) only during the child's teardown, after the child's idle edge
+   * and before `subagent/end` (dsh-subagent `finishDisposal`), so the idle child alone would show
+   * a false standstill in between. The root is resolved from the child's own id (`info.id`, on
+   * every SDK; `parentSessionId` exists only from 0.2.2-rc.3) at the start, while the child is
+   * attached, and remembered, because the child may be detached by its end.
+   */
+  const liveRuns = new Map()
+  const runsOf = (root) => [...liveRuns.values()].filter((runRoot) => runRoot === root).length
 
   const rootOf = (sessionId) => rootSessionOf(ctx, sessionId)
   const treeOf = (root) => ctx.agents.list().filter((agent) => agent.id === root || rootOf(agent.id) === root)
@@ -73,7 +84,7 @@ export function createSessionSource(ctx) {
   }
   const standsStill = (root) => {
     const members = treeOf(root)
-    return !members.some(moving) && !jobsMoving(members)
+    return runsOf(root) === 0 && !members.some(moving) && !jobsMoving(members)
   }
 
   /** The root's last assistant text, or undefined; read from the live session. */
@@ -125,7 +136,15 @@ export function createSessionSource(ctx) {
   function subscribe() {
     disposers.push(ctx.on(SESSION_EVENT.sessionEvent, (session, event) => { if (event.type === SESSION_EVENT.turnEnd) onTurnEnd(session, event) }))
     disposers.push(ctx.on(SESSION_EVENT.agentStatus, ({ agent }) => { if (agent !== undefined) later([rootOf(agent.id)]) }))
-    disposers.push(ctx.on(SESSION_EVENT.subagentEnd, (info) => later(info?.parentSessionId === undefined ? undefined : [rootOf(info.parentSessionId)])))
+    const runRootOf = (info) => rootOf(info.parentSessionId ?? info.id)
+    disposers.push(ctx.on(SESSION_EVENT.subagentStart, (info) => {
+      if (info?.runId !== undefined && info.id !== undefined) liveRuns.set(info.runId, runRootOf(info))
+    }))
+    disposers.push(ctx.on(SESSION_EVENT.subagentEnd, (info) => {
+      const root = liveRuns.get(info?.runId) ?? (info?.id === undefined ? undefined : runRootOf(info))
+      liveRuns.delete(info?.runId)
+      later(root === undefined ? undefined : [root])
+    }))
     const jobs = ctx.get(STANDSTILL.jobsService)
     if (typeof jobs?.events?.subscribe === 'function') {
       disposers.push(jobs.events.subscribe(STANDSTILL.jobsFilter, (jobEvent) => {
