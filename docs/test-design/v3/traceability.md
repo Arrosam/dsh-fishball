@@ -272,16 +272,16 @@ by UIM-DT-01, AUTH-DT-01/02, HOST-DT-01 and EXT-DT-03.
 | NAME-DT-02 | [02-names.md](<02-names.md>) | integration | — |
 | NAME-DT-03 | [02-names.md](<02-names.md>) | unit (core), e2e (page) | — |
 | NAME-ST-01 | [02-names.md](<02-names.md>) | unit | — |
-| HAND-UC-01 | [03-handover.md](<03-handover.md>) | e2e (control), integration (service) | — |
-| HAND-UC-02 | [03-handover.md](<03-handover.md>) | e2e, integration | — |
-| HAND-UC-03 | [03-handover.md](<03-handover.md>) | e2e | — |
-| HAND-UC-04 | [03-handover.md](<03-handover.md>) | e2e | — |
-| HAND-EP-01 | [03-handover.md](<03-handover.md>) | integration | — |
-| HAND-EP-02 | [03-handover.md](<03-handover.md>) | unit (label builder with the locale files), e2e (rendering) | — |
-| HAND-ST-02 | [03-handover.md](<03-handover.md>) | integration (service + embed-UI host half), e2e (rendering) | — |
-| HAND-DT-01 | [03-handover.md](<03-handover.md>) | integration | K |
-| HAND-DT-02 | [03-handover.md](<03-handover.md>) | integration | K |
-| HAND-ST-01 | [03-handover.md](<03-handover.md>) | integration | — |
+| HAND-UC-01 | 03-handover.md (dsh-connector) | e2e (control), integration (service) | — |
+| HAND-UC-02 | 03-handover.md (dsh-connector) | e2e, integration | — |
+| HAND-UC-03 | 03-handover.md (dsh-connector) | e2e | — |
+| HAND-UC-04 | 03-handover.md (dsh-connector) | e2e | — |
+| HAND-EP-01 | 03-handover.md (dsh-connector) | integration | — |
+| HAND-EP-02 | 03-handover.md (dsh-connector) | unit (label builder with the locale files), e2e (rendering) | — |
+| HAND-ST-02 | 03-handover.md (dsh-connector) | integration (service + embed-UI host half), e2e (rendering) | — |
+| HAND-DT-01 | 03-handover.md (dsh-connector) | integration | K |
+| HAND-DT-02 | 03-handover.md (dsh-connector) | integration | K |
+| HAND-ST-01 | 03-handover.md (dsh-connector) | integration | — |
 | EVT-UC-01 | [04-events-interception.md](<04-events-interception.md>) | integration | — |
 | EVT-UC-02 | [04-events-interception.md](<04-events-interception.md>) | integration (core with a fake link and plugins) | P:S2 (E2 crash window, V3-S2) |
 | EVT-UC-03 | [04-events-interception.md](<04-events-interception.md>) | unit | — |
@@ -319,22 +319,22 @@ by UIM-DT-01, AUTH-DT-01/02, HOST-DT-01 and EXT-DT-03.
 | EXT-DT-02 | [07-contributors.md](<07-contributors.md>) | unit | — |
 | EXT-DT-03 | [07-contributors.md](<07-contributors.md>) | integration | P:S7 (E2p), remote-target harness (E6, E8; X-REMOTE) |
 | EXT-ST-01 | [07-contributors.md](<07-contributors.md>) | integration | — |
-| HOST-UC-01 | [08-hosted.md](<08-hosted.md>) | integration | — |
-| HOST-UC-02 | [08-hosted.md](<08-hosted.md>) | integration | — |
-| HOST-UC-03 | [08-hosted.md](<08-hosted.md>) | integration | — |
-| HOST-UC-04 | [08-hosted.md](<08-hosted.md>) | integration (C + I), e2e (Retry) | — |
-| HOST-UC-05 | [08-hosted.md](<08-hosted.md>) | integration | — |
-| HOST-UC-06 | [08-hosted.md](<08-hosted.md>) | integration | — |
-| HOST-UC-07 | [08-hosted.md](<08-hosted.md>) | e2e (card), integration (sync engine) | — |
-| HOST-UC-08 | [08-hosted.md](<08-hosted.md>) | integration (child DSH with a scripted settings page), e2e (panel and Plugins page) | TQ-R4 (decided B) |
-| HOST-EP-03 | [08-hosted.md](<08-hosted.md>) | unit (static import analysis), integration (rows 6–7, a started child) | TQ-R4 (decided B) |
-| HOST-EP-01 | [08-hosted.md](<08-hosted.md>) | unit (manifest/static) | — |
-| HOST-EP-02 | [08-hosted.md](<08-hosted.md>) | integration | — |
-| HOST-DT-01 | [08-hosted.md](<08-hosted.md>) | unit | — |
-| HOST-DT-02 | [08-hosted.md](<08-hosted.md>) | unit | — |
-| HOST-DT-03 | [08-hosted.md](<08-hosted.md>) | integration | TQ-R4 (decided B) |
-| HOST-ST-01 | [08-hosted.md](<08-hosted.md>) | integration | K (status codes) |
-| HOST-ST-02 | [08-hosted.md](<08-hosted.md>) | integration | — |
+| HOST-UC-01 | 08-hosted.md (dsh-fishball-instance) | integration | — |
+| HOST-UC-02 | 08-hosted.md (dsh-fishball-instance) | integration | — |
+| HOST-UC-03 | 08-hosted.md (dsh-fishball-instance) | integration | — |
+| HOST-UC-04 | 08-hosted.md (dsh-fishball-instance) | integration (C + I), e2e (Retry) | — |
+| HOST-UC-05 | 08-hosted.md (dsh-fishball-instance) | integration | — |
+| HOST-UC-06 | 08-hosted.md (dsh-fishball-instance) | integration | — |
+| HOST-UC-07 | 08-hosted.md (dsh-fishball-instance) | e2e (card), integration (sync engine) | — |
+| HOST-UC-08 | 08-hosted.md (dsh-fishball-instance) | integration (child DSH with a scripted settings page), e2e (panel and Plugins page) | TQ-R4 (decided B) |
+| HOST-EP-03 | 08-hosted.md (dsh-fishball-instance) | unit (static import analysis), integration (rows 6–7, a started child) | TQ-R4 (decided B) |
+| HOST-EP-01 | 08-hosted.md (dsh-fishball-instance) | unit (manifest/static) | — |
+| HOST-EP-02 | 08-hosted.md (dsh-fishball-instance) | integration | — |
+| HOST-DT-01 | 08-hosted.md (dsh-fishball-instance) | unit | — |
+| HOST-DT-02 | 08-hosted.md (dsh-fishball-instance) | unit | — |
+| HOST-DT-03 | 08-hosted.md (dsh-fishball-instance) | integration | TQ-R4 (decided B) |
+| HOST-ST-01 | 08-hosted.md (dsh-fishball-instance) | integration | K (status codes) |
+| HOST-ST-02 | 08-hosted.md (dsh-fishball-instance) | integration | — |
 | REM-UC-01 | [09-standalone-remote.md](<09-standalone-remote.md>) | integration (two DSHs), e2e (page) | P:S7 |
 | REM-UC-02 | [09-standalone-remote.md](<09-standalone-remote.md>) | integration | — |
 | REM-UC-03 | [09-standalone-remote.md](<09-standalone-remote.md>) | integration | — |
@@ -342,15 +342,15 @@ by UIM-DT-01, AUTH-DT-01/02, HOST-DT-01 and EXT-DT-03.
 | REM-EP-02 | [09-standalone-remote.md](<09-standalone-remote.md>) | integration | — |
 | REM-EP-03 | [09-standalone-remote.md](<09-standalone-remote.md>) | integration | K (allowlist setting) |
 | REM-DT-01 | [09-standalone-remote.md](<09-standalone-remote.md>) | unit | — |
-| UIM-UC-01 | [10-embed-ui-matrix.md](<10-embed-ui-matrix.md>) | e2e (E3–E5 also integration with a scripted browser) | — |
-| UIM-UC-02 | [10-embed-ui-matrix.md](<10-embed-ui-matrix.md>) | e2e | — |
-| UIM-UC-03 | [10-embed-ui-matrix.md](<10-embed-ui-matrix.md>) | e2e | — |
-| UIM-UC-04 | [10-embed-ui-matrix.md](<10-embed-ui-matrix.md>) | e2e | — |
-| UIM-UC-05 | [10-embed-ui-matrix.md](<10-embed-ui-matrix.md>) | e2e (both SDKs), integration (embed-UI client against scripted session events) | — |
-| UIM-EP-01 | [10-embed-ui-matrix.md](<10-embed-ui-matrix.md>) | integration | — |
-| UIM-EP-02 | [10-embed-ui-matrix.md](<10-embed-ui-matrix.md>) | integration (scripted browser against a real host and child), e2e | — |
-| UIM-DT-02 | [10-embed-ui-matrix.md](<10-embed-ui-matrix.md>) | unit (record builder fed scripted session events) | — |
-| UIM-DT-01 | [10-embed-ui-matrix.md](<10-embed-ui-matrix.md>) | integration (headless rows), e2e (UI columns) | — |
+| UIM-UC-01 | 10-embed-ui-matrix.md (dsh-connector) | e2e (E3–E5 also integration with a scripted browser) | — |
+| UIM-UC-02 | 10-embed-ui-matrix.md (dsh-connector) | e2e | — |
+| UIM-UC-03 | 10-embed-ui-matrix.md (dsh-connector) | e2e | — |
+| UIM-UC-04 | 10-embed-ui-matrix.md (dsh-connector) | e2e | — |
+| UIM-UC-05 | 10-embed-ui-matrix.md (dsh-connector) | e2e (both SDKs), integration (embed-UI client against scripted session events) | — |
+| UIM-EP-01 | 10-embed-ui-matrix.md (dsh-connector) | integration | — |
+| UIM-EP-02 | 10-embed-ui-matrix.md (dsh-connector) | integration (scripted browser against a real host and child), e2e | — |
+| UIM-DT-02 | 10-embed-ui-matrix.md (dsh-connector) | unit (record builder fed scripted session events) | — |
+| UIM-DT-01 | 10-embed-ui-matrix.md (dsh-connector) | integration (headless rows), e2e (UI columns) | — |
 | PLAT-UC-01 | [11-platform.md](<11-platform.md>) | integration | — |
 | PLAT-UC-02 | [11-platform.md](<11-platform.md>) | integration | — |
 | PLAT-UC-03 | [11-platform.md](<11-platform.md>) | integration | — |
