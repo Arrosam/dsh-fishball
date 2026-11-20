@@ -84,10 +84,15 @@ function primitives(React) {
  * @param options.status - the status route's answer `{state, code, busy?}` (mutable through api.world.status).
  * @param options.mainBundles - DSH's listBundles value (BundleInfo-like rows).
  * @param options.fishball - the Fishball list's bundles (GET ROUTE.list answer's `bundles`).
+ * @param options.respond - `(method, pathname, body) => value | Promise<value> | undefined`: a case's own
+ *   answer for one request, sent as JSON (a promise that never settles holds the request); undefined
+ *   falls through to the default answers below.
  */
-export async function openPage(t, sdk, { lang = 'en', status = { state: 'ready', code: null }, mainBundles = [], fishball = [] } = {}) {
+export async function openPage(t, sdk, { lang = 'en', status = { state: 'ready', code: null }, mainBundles = [], fishball = [], respond = () => undefined } = {}) {
   const world = { status: { detail: null, notice: null, busy: false, ...status }, mainBundles, fishball, requests: [], errors: [] }
   const answer = (method, pathname, body) => {
+    const scripted = respond(method, pathname, body)
+    if (scripted !== undefined) return Promise.resolve(scripted).then((value) => json(value))
     if (pathname === ROUTE.status && method === 'GET') return json(world.status)
     if (pathname === ROUTE.restart && method === 'POST') return json(world.status)
     if (pathname === ROUTE.list && method === 'GET') return json({ ok: true, bundles: world.fishball, protected: [...PROTECTED] })
@@ -103,6 +108,12 @@ export async function openPage(t, sdk, { lang = 'en', status = { state: 'ready',
   }
   const pageConsole = { ...console, error: (...a) => world.errors.push(a.map(String).join(' ')), warn() {}, log() {}, info() {}, debug() {} }
   const page = createBrowserSandbox({ lang, baseURI: PAGE.base, fetch: pageFetch, console: pageConsole })
+  // Page visibility (document.hidden + visibilitychange): the sandbox's listeners are no-ops, so keep them here to dispatch.
+  const listeners = []
+  for (const target of [page.document, page.window]) {
+    target.addEventListener = (type, fn) => { listeners.push({ target, type, fn }) }
+    target.removeEventListener = (type, fn) => { const at = listeners.findIndex((l) => l.target === target && l.type === type && l.fn === fn); if (at >= 0) listeners.splice(at, 1) }
+  }
   const shim = createReactShim({ stale() {} })
   const { React } = shim
   const platform = {
@@ -150,6 +161,15 @@ export async function openPage(t, sdk, { lang = 'en', status = { state: 'ready',
     settle: settleAll,
     /** Mount one slot entry under `key` with `props`. */
     async mount(key, Component, props) { shim.mount(key, () => React.createElement(Component, props)); await settleAll(); await sleep(PAGE.pollMs); await settleAll() },
+    /** Unmount the entry under `key`, as leaving the tab does. */
+    async unmount(key) { shim.unmountRoot(key); await settleAll() },
+    /** Show or hide the page (document.hidden), then dispatch visibilitychange as a browser does. */
+    async setHidden(hidden) {
+      page.document.hidden = hidden
+      page.document.visibilityState = hidden ? 'hidden' : 'visible'
+      for (const l of listeners.filter((x) => x.type === 'visibilitychange')) (typeof l.fn === 'function' ? l.fn : l.fn.handleEvent?.bind(l.fn))?.({ type: 'visibilitychange', target: l.target })
+      await settleAll()
+    },
     tree: (key) => shim.treeOf(key),
     find: (key, predicate) => findAll(shim.treeOf(key), predicate),
     byAttr: (key, name) => findAll(shim.treeOf(key), (n) => n.props[name] !== undefined && n.props[name] !== false),
@@ -176,6 +196,11 @@ export function settingsEntry(page) {
     if (entry) return entry
   }
   assert.fail('no settings entry keyed ' + PAGE.row + ' in ' + PAGE.configSlots.join(' / ') + '; errors: ' + page.world.errors.join('; '))
+}
+
+/** The plugins.tab entries the page registered (the Fishball tab is the one whose rendered root carries [data-fishball-tab]). */
+export function tabEntries(page) {
+  return page.services.entries.get(PAGE.tab.slot) ?? []
 }
 
 /** The per-plugin detail action entry (plugins.detail.actions). */

@@ -262,8 +262,10 @@ window.__ModuleLoader__.load({
     }
 
     /**
-     * What both pages use, unchanged since V2: the dictionaries under {@link LOCALE} (the caller
-     * registers them), the line's styles, the poll and the line itself.
+     * What both pages use: the dictionaries under {@link LOCALE} (the caller registers them), the
+     * line's styles, the poll and the line itself (unchanged since V2). RestartAction is shared too:
+     * the Fishball tab on DSH's Plugins page draws the same Restart (the user, 2026-11-20: restart
+     * Fishball easily after installing something), so both places keep one rule for when it shows.
      */
     const shared = Object.freeze({
       locale: LOCALE,
@@ -272,6 +274,7 @@ window.__ModuleLoader__.load({
       mountStyle,
       useInstanceStatus,
       InstanceStatus,
+      RestartAction,
     })
     /**
      * What only the main card adds: the line's classes, rules, layout tokens and neutral tone, so

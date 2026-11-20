@@ -3,8 +3,9 @@
  * the instance's client.js. Only the main DSH runs pnpm on the child profile, through the
  * instance's routes (src/host/child-plugin-routes.js). It contributes to DSH's own Plugins page:
  * - a **Fishball** tab (`plugins.tab`): the child's plugins, each with Uninstall (confirmed first),
- *   an "Install for Fishball" button at the top, and the Recommended list (moved here from
- *   fishball-ui's Recommended tab, DESIGN §10f; data in RECOMMENDED below);
+ *   Restart (the settings page's, shared) and an "Install for Fishball" button at the top, and
+ *   the Recommended list (moved here from fishball-ui's Recommended tab, DESIGN §10f; data in
+ *   RECOMMENDED below);
  * - an "Install for Fishball" item in DSH's Add plugin menu (`plugins.add.actions`);
  * - on each main-DSH bundle page (`plugins.detail.actions`): Uninstall from Fishball, Use in
  *   Fishball (an official bundle the installation ships) or Install to Fishball (its source spec);
@@ -320,7 +321,7 @@ window.__ModuleLoader__.load({
     const openDialog = (spec) => dialogRequest.set({ id: ++dialogs, ...(spec === undefined ? {} : { spec }) })
     const closeDialog = () => dialogRequest.set(null)
 
-    function makeComponents({ t, CLS, inventory, listen }) {
+    function makeComponents({ t, statusT, shared, CLS, inventory, listen }) {
       const useChild = () => useStore(inventory.child)
       const useMain = () => useStore(inventory.main)
       /** The child's bundle named `name`, or undefined. */
@@ -402,12 +403,23 @@ window.__ModuleLoader__.load({
           }))
       }
 
+      /**
+       * The settings page's Restart (client.status.js), beside Install for Fishball (the user,
+       * 2026-11-20: "so after user installed something, they can restart fishball easily"). It
+       * reads the instance's status itself while the tab is open: Restart's visibility and its
+       * disabled states follow that status, exactly as on the settings page.
+       */
+      function RestartButton() {
+        const [status, setStatus] = shared.useInstanceStatus()
+        return h(shared.RestartAction, { t: statusT, status, setStatus })
+      }
+
       /** The Fishball tab (`plugins.tab`). DSH hides its own Add button on a contributed tab, so the tab draws its own at its top. */
       function FishballTab() {
         const child = useChild()
         React.useEffect(() => { void inventory.refresh() }, [])
         return h('div', { className: OWN_CLS.tab, 'data-fishball-tab': true },
-          h('div', { className: OWN_CLS.head }, h('p', { className: CLS.hint }, t('intro')), h(InstallButton)),
+          h('div', { className: OWN_CLS.head }, h('p', { className: CLS.hint }, t('intro')), h('div', { className: CLS.statusRow }, h(RestartButton), h(InstallButton))),
           h('section', { className: OWN_CLS.list }, h('h3', null, t('installed')), h(ChildList, { child })),
           h(Recommended, { child }))
       }
@@ -586,13 +598,17 @@ window.__ModuleLoader__.load({
     /**
      * The feature as a client plugin of the instance's row (client.js starts it).
      * @param layout - client.status.js's `layout`: the line's classes and tokens, reused here.
-     * @param shared - client.status.js's `shared`: its style-sheet mount.
+     * @param shared - client.status.js's `shared`: its style-sheet mount, and the status poll,
+     *   Restart and their locale namespace for the tab's Restart.
      */
     module.exports.fishballPlugin = (shared, layout) => ({
       name: FEATURE.name,
       inject: ['slots', 'locale', 'remote'],
       apply(ctx) {
         const t = ctx.locale.bind(FEATURE.ns)
+        // Restart's words are the status line's, under its namespace; the settings page's plugin
+        // (client.models.js), started beside this one by client.js, registers that dictionary.
+        const statusT = ctx.locale.bind(shared.locale)
         ctx.effect(() => ctx.locale.register(FEATURE.ns, { en, zh }), FEATURE.name + ': dictionaries')
         ctx.effect(() => shared.mountStyle(FEATURE.name, ownCss(layout.style)), FEATURE.name + ': styles')
         const CLS = layout.classes
@@ -603,7 +619,7 @@ window.__ModuleLoader__.load({
           const offs = [listen(HOST_EVENT.changed, () => void inventory.refresh()), ctx.on(HOST_EVENT.reset, () => void inventory.refresh())]
           return () => { for (const off of offs) off() }
         }, FEATURE.name + ': refresh')
-        const parts = makeComponents({ t, CLS, inventory, listen })
+        const parts = makeComponents({ t, statusT, shared, CLS, inventory, listen })
         const S = FEATURE.slot
         ctx.effect(() => ctx.slots.inject(S.tab, () => ctx.slots.register({ name: S.tab, id: FEATURE.id.tab, label: () => t('tab'), locale: FEATURE.ns }, parts.FishballTab)), FEATURE.name + ': tab')
         ctx.effect(() => ctx.slots.inject(S.addActions, () => ctx.slots.register({ name: S.addActions, id: FEATURE.id.addAction, locale: FEATURE.ns }, parts.AddMenuItem)), FEATURE.name + ': add menu item')

@@ -4,7 +4,7 @@
  * browser code is its own plugin settings page"). It loads its two package-local chunks (DSH serves
  * a package's `client.<name>.js` siblings of its `client.js`, CLIENT_CHUNK, both SDKs) and starts
  * the page as its own sub-plugin:
- * - client.status.js: the status line, its Retry and Retry's notice;
+ * - client.status.js: the status line, its Retry, Retry's notice and Restart (also on the Fishball tab);
  * - client.models.js: the page (Reconnect, Open Fishball, model sync and the row's fields);
  * - client.fishball.js: plugins for the embedded Fishball on DSH's Plugins page (design §28): the
  *   Fishball tab, the Add plugin menu item, the per-plugin button and the install dialog. This

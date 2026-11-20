@@ -43,6 +43,7 @@
  * | CP-R10 after | R10 | EP | after child operations | DSH's own listBundles still the MAIN profile's; detail-file still answers S |
  * | CPB-RESTART ×7 | Restart | EP over states | ready/failed/stopped/starting/stopping/disabled; ready+busy | ready/failed/stopped enabled; starting/stopping disabled; disabled hidden; busy disabled |
  * | CPB-CONFIRM ×2 | Restart | EP (lang) | en / zh: press Restart | a confirmation first, nothing posted; en texts exactly as §28; zh translated; confirming posts restart once |
+ * | TR-* | Fishball tab Restart | see tab-restart-cases.mjs | |
  * | CPB-DETAIL ×10 | per-plugin button | Decision table | in Fishball × official shipped × has source × name in the list's `protected` | see the table in registerDetailCases |
  *
  * Expected outcomes come from the requirements; where §28 leaves a value open (e.g. the exact HTTP
@@ -60,6 +61,7 @@ import { caseName, caseTest } from '../../contract/package-boundaries/cases.mjs'
 import { runtimeOf } from '../../fishball-core/package/constants.mjs'
 import { APPLIED, BUDGET, CANCEL_OUTCOMES, CHILD, CODE, FIXTURE, HTTP, INTEGRATION, MAIN, PAGE, PROTECTED, ROUTE, STATE } from './constants.mjs'
 import { detailEntry, openPage, settingsEntry, wordsOf } from './page.mjs'
+import { registerTabRestartCases } from './tab-restart-cases.mjs'
 
 const show = (v) => JSON.stringify(v)
 const T = { timeout: BUDGET.testMs }
@@ -508,6 +510,7 @@ export function registerChildPluginPageCases(sdk) {
   }
 
   registerDetailCases(sdk)
+  registerTabRestartCases(sdk)
 }
 
 /**

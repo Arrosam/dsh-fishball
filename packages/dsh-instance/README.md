@@ -85,7 +85,8 @@ settled; the child's bundle list is written under DSH's profile lock.
 On DSH's Plugins page (`client.fishball.js`):
 
 - a **Fishball** tab: the child's own plugins (name, version, on/off) with **Uninstall**
-  (confirmed first), **Install for Fishball**, and the **Recommended** list (a copy of
+  (confirmed first), **Restart** (the settings page's, same rules and confirmation),
+  **Install for Fishball**, and the **Recommended** list (a copy of
   fishball-core's `ui/src/recommended.js`, which a standalone Fishball shows; change both
   together; each entry **Install**, or "Installed in Fishball");
 - **Install for Fishball** in DSH's Add plugin menu;
@@ -110,8 +111,8 @@ Limits:
 - bundle detail images are not served for Fishball-only bundles: the child manager's
   `connection` is isolated, because DSH's own manager already holds the exact detail-image route
   `/api/plugin-manager/detail-file`;
-- the **Install for Fishball** button sits at the top of the Fishball tab, not in DSH's page
-  header (DSH hides its own header actions on a contributed tab and offers no header slot);
+- the **Restart** and **Install for Fishball** buttons sit at the top of the Fishball tab, not in
+  DSH's page header (DSH hides its own header actions on a contributed tab and offers no header slot);
 - version exemptions are read from the child profile.
 
 ## Model sync

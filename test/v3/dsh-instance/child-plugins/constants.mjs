@@ -101,6 +101,31 @@ export const PAGE = Object.freeze({
   }),
   /** Per-state expectation (EP over the states; ready/failed/stopped enabled, starting/stopping disabled, off hidden). */
   restartByState: Object.freeze({ ready: 'enabled', failed: 'enabled', stopped: 'enabled', starting: 'disabled', stopping: 'disabled', disabled: 'hidden' }),
+  /**
+   * The Fishball tab's Restart (user 2026-11-20 "Add a restart fishball button in the plugin -> fishball
+   * tab"): the settings page's Restart, in the tab's top row beside Install for Fishball.
+   */
+  tab: Object.freeze({
+    slot: 'plugins.tab',
+    rootAttr: 'data-fishball-tab',
+    installAttr: 'data-fishball-install-open',
+    /** Words of the 'dsh-instance' locale namespace the Restart shows (the requirement names the keys). */
+    ns: 'dsh-instance',
+    key: Object.freeze({ restart: 'restart', restarting: 'restarting', title: 'restartTitle', body: 'restartDescription', cancel: 'restartCancel', refused: 'restartRefused.' }),
+    /** EP over the state: shown (enabled unless busy / in flight), disabled, hidden (any other, an unknown one included). */
+    shown: Object.freeze(['ready', 'failed', 'stopped']),
+    disabled: Object.freeze(['starting', 'stopping']),
+    hidden: Object.freeze(['disabled', 'waiting', 'unavailable', 'fbtest-unknown-state']),
+    /** Refusals with words; any other code shows none. */
+    refusals: Object.freeze(['instance-disabled', 'busy']),
+    otherRefusal: 'fbtest-other-refusal',
+    restartBody: '{}',
+    /** ~1 s poll: a window of 2.5 s sees at least two polls when visible and mounted, none when hidden or unmounted. */
+    pollWindowMs: 2500,
+    minPolls: 2,
+    transitionMs: 4000,
+    alertRole: 'alert',
+  }),
   /** The per-plugin button texts (README / §28). */
   button: Object.freeze({ uninstall: 'Uninstall from Fishball', use: 'Use in Fishball', install: 'Install to Fishball' }),
   settleRounds: 40,
