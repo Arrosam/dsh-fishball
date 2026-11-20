@@ -112,3 +112,24 @@ target routes are the page's fetch). Row buttons are the buttons carrying `aria-
 Withdrawn rows of earlier tasks are listed as skipped with their reason (`withdrawn.mjs`,
 `targets-constants.mjs` WITHDRAWN): the strip, the pairing card and its routes, the K3a Connect
 routes, the tray.
+
+## Running managed sessions under a target's row (`sessions-cases.mjs`)
+
+Requirement: the lead's relay of the user's feature (2026-11-21), "When Fishball starts sessions, the
+corresponding connected DSH target in the left sidebar should expand and show the Fishball-managed
+sessions that are currently RUNNING", with its design (core's `TargetView.runningSessions`, the
+frame's `sessions`, a nested list beside the details). Same levels as MULTI-3 above.
+
+| Row | Technique | Expected |
+| --- | --- | --- |
+| SES-VIEW-BVA-01 0 / 1 / 3 sessions | BVA | `sessions` = `[{sessionId, title}]` in core's order, as many as core sent |
+| SES-VIEW-EP-01 unknown | EP (null, absent, not an array) | `sessions` `[]` |
+| SES-VIEW-EP-02 state | EP (connecting, failed, not-set, unknown word) | `sessions` `[]` even with a known list |
+| SES-VIEW-EP-03 untitled × lang | EP | empty title → "Untitled session" / "未命名会话"; `words.sessions` "Running sessions" / "运行中的会话" |
+| SES-VIEW-EP-04 titles verbatim | EP (markup, RTL override, CJK) | each title the same string |
+| SES-SB-EP-01 shown × lang | EP | without a press: one `[data-fishball-target-sessions=<targetId>]` list inside that target's item, aria-label the heading; one `[data-fishball-target-session=<sessionId>]` per session with an `ongoing` dot and the title as one text node with a `title` attribute; no button, link or click handler; the row stays collapsed; a target without sessions shows none |
+| SES-SB-EP-02 markup title | EP | drawn as text: no `<b>`, no dangerouslySetInnerHTML |
+| SES-SB-DT-01 no list | DT (no session, unknown, not connected) | no list and no item |
+| SES-SB-ST-01 sessions end | ST (1 → 0) | the list goes |
+| SES-SB-ST-02 stream lost | ST (live → error → live) | hidden while not live, the row stays; shown again on a live frame |
+| SES-SB-ST-03 details unaffected | ST (closed → open → closed) | `aria-expanded` and `[data-fishball-target-details]` as before; the list stays in both states; no session is a row |

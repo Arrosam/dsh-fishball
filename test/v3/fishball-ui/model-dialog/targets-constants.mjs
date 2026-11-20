@@ -26,7 +26,8 @@ export const SUBJECT = Object.freeze({
 /** Requirement B: the frame's shape and its words. */
 export const FRAME = Object.freeze({
   keys: Object.freeze(['on', 'title', 'empty', 'notices', 'targets', 'words', 'brandStyle']),
-  targetKeys: Object.freeze(['targetId', 'kind', 'name', 'placeholder', 'state', 'badge', 'url', 'lines', 'control', 'retry', 'pairing']),
+  // `sessions`: the running managed sessions under the row (sessions-cases.mjs), additive.
+  targetKeys: Object.freeze(['targetId', 'kind', 'name', 'placeholder', 'state', 'badge', 'url', 'lines', 'control', 'retry', 'pairing', 'sessions']),
   notice: Object.freeze({ off: SEAM_STATUS.fishball.off, guards: SEAM_STATUS.guards.overridden, set: SEAM_STATUS.set.incomplete }),
   /**
    * The line kinds, in their order (`contributed-tools` only for an integer count, zero included).
