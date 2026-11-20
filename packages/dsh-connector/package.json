@@ -17,7 +17,7 @@
   "type": "module",
   "main": "./index.js",
   "//exports": "./mcp-schema (tool and event schemas, limits, vocabularies) and ./tools (contribution types, apiVersion, defineTool) are V3's data-and-types modules (design §9.1), frozen by the V3-K tasks K1 and K2. ./client is the connector's own settings page (design §5.9). C-WIRE-2 removed ./contract (the V2 contract) with the V2 broker; ./records moved to dsh-connector-ui with the UI (R-EMBED).",
-  "//locale": "The Plugins page card title (design §0.7): DSH reads meta.title from the exported ./locale/*.json without loading this package, and shows the package name when that file is absent. The connector's only browser code is its own settings page (R-ARCH-03 amended by 1.28, design §5.9): client.js, served through dsh.client and ./client; dsh-connector-ui owns every other UI.",
+  "//locale": "The Plugins page card title (design §0.7): DSH reads meta.title from the exported ./locale/*.json without loading this package, and shows the package name when that file is absent. The connector's browser code is client.js, served through dsh.client and ./client: its own settings page (R-ARCH-03 amended by 1.28, design §5.9) and the marks part with Hand over / Take back (client.marks.js, DESIGN.md §28); dsh-connector-ui owns the rest of the UI (the Fishball sidebar row, window, light and notify prompt).",
   "exports": {
     ".": "./index.js",
     "./client": "./client.js",
@@ -29,6 +29,7 @@
   "files": [
     "index.js",
     "client.js",
+    "client.marks.js",
     "src/",
     "mcp-schema/",
     "tools/",
@@ -72,13 +73,17 @@
     "bundle": {
       "patch": "./cordis.patch.yml"
     },
-    "//client": "One client entry whose only registration is the connector's own settings page in the Plugins page's plugins.row.config slot (design §5.9; C-WIRE mounts C-TOKENS-REVEAL's client.js).",
+    "//client": "One client entry (design §5.9; C-WIRE mounts C-TOKENS-REVEAL's client.js): the connector's own settings page in the Plugins page's plugins.row.config slot, the marks part (client.marks.js: Hand over / Take back, Managed by, the managed row mark; moved from dsh-connector-ui by DESIGN.md §28), and the browser helpers over the connector UI backend, exported as ui. inject covers the services both use: the renderer's slots, locale, the settings and plugin-manager pages, and the providers of the marks' slots (conversation header, workspace session rows and menu, layout's shell.overlay), as dsh-connector-ui's manifest listed them for the marks.",
     "client": {
       "platform": "web",
       "inject": [
+        "@deepseek-ai/dsh-client-ui-renderer",
         "@deepseek-ai/dsh-client-locale",
         "@deepseek-ai/dsh-client-ui-settings",
-        "@deepseek-ai/dsh-client-ui-plugin-manager"
+        "@deepseek-ai/dsh-client-ui-plugin-manager",
+        "@deepseek-ai/dsh-client-ui-conversation",
+        "@deepseek-ai/dsh-client-ui-workspace",
+        "@deepseek-ai/dsh-client-ui-layout"
       ]
     }
   }

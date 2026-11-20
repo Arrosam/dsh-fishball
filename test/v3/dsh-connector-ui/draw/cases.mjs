@@ -47,21 +47,21 @@ export const mountFish = (page) => page.mount(SLOT.fish, fishProps(), isFish)
 export const mountMain = (page) => page.mount(SLOT.main, {}, isMain)
 export const mountOverlay = (page) => page.mount(SLOT.overlay)
 export const mountHeader = (page, sessionId = S1) => page.mount(SLOT.header, sessionProps(sessionId))
-const mountRowMark = (page, sessionId = S1) => page.mount(SLOT.rowLeading, sessionProps(sessionId))
-const mountRowMenu = (page, sessionId = S1) => page.mount(SLOT.rowMenu, sessionProps(sessionId))
-const one = (nodes, what) => { assert.equal(nodes.length, 1, what + ': ' + nodes.length); return nodes[0] }
+export const mountRowMark = (page, sessionId = S1) => page.mount(SLOT.rowLeading, sessionProps(sessionId))
+export const mountRowMenu = (page, sessionId = S1) => page.mount(SLOT.rowMenu, sessionProps(sessionId))
+export const one = (nodes, what) => { assert.equal(nodes.length, 1, what + ': ' + nodes.length); return nodes[0] }
 const fishNode = (view) => withAttr(view.tree(), ATTR.fishLight)[0]
 export const noticeNode = (page) => withAttr(page.tree(), ATTR.notice)[0]
-const alerts = (page) => findRole(page.tree(), ATTR.alert)
-const findRole = (nodes, role) => withAttr(nodes, ATTR.role, role)
+export const alerts = (page) => findRole(page.tree(), ATTR.alert)
+export const findRole = (nodes, role) => withAttr(nodes, ATTR.role, role)
 export const handOverButtons = (view) => withAttr(view.tree(), ATTR.handOver)
-const manyButtons = (view) => withAttr(view.tree(), ATTR.handOverMany)
-const menuItems = (view) => withAttr(view.tree(), ATTR.menuItemId)
+export const manyButtons = (view) => withAttr(view.tree(), ATTR.handOverMany)
+export const menuItems = (view) => withAttr(view.tree(), ATTR.menuItemId)
 const confirmButton = (page) => withAttr(page.tree(), ATTR.confirm)[0]
 const noteField = (page) => byTag(page.tree(), TAG.textarea)[0]
 
 /** Opens the "Handover to…" menu (if closed) and returns its items. */
-async function openMenu(page, view) {
+export async function openMenu(page, view) {
   if (menuItems(view).length === 0) await press(page, one(manyButtons(view), 'Handover to… buttons'))
   return menuItems(view)
 }
@@ -72,9 +72,9 @@ export async function confirmNote(page, note) {
   await press(page, confirmButton(page))
 }
 /** The page's POSTs to one backend route, with their JSON bodies. */
-const bodiesOf = (page, key) => page.posts(routePathOf(key)).map((r) => JSON.parse(r.body))
+export const bodiesOf = (page, key) => page.posts(routePathOf(key)).map((r) => JSON.parse(r.body))
 /** Waits for one POST to a backend route (a harness wait). */
-const posted = (page, key, n = EXPECT.once) => page.waitFor(() => page.posts(routePathOf(key)).length >= n)
+export const posted = (page, key, n = EXPECT.once) => page.waitFor(() => page.posts(routePathOf(key)).length >= n)
 
 // --------------------------------------------------------------------------------------------- shared assertions
 
@@ -93,7 +93,9 @@ function assertDiagnostics(w, { errors, warns }) {
   assert.equal(w.diagnostics(DIAGNOSTIC.connectorMissing).length, errors, 'connector-missing at another level')
   assert.equal(w.diagnostics(DIAGNOSTIC.instanceMissing).length, warns, 'instance-missing at another level')
 }
-const assertNothingRegistered = (page) => assert.deepEqual(page.live().map((r) => r.slot), [], 'embed-UI registered without a connector')
+// Embed-UI's own registrations only: the connector's settings page (a Plugins card) and its marks part
+// (DESIGN.md §28) are the connector's; that the marks draw nothing without the backend is MARKS-DT-01 / MARKS-BVA-01.
+const assertNothingRegistered = (page) => assert.deepEqual(page.embedDrawn().map((r) => r.slot), [], 'embed-UI registered without a connector')
 const assertNoFrame = (view) => assert.deepEqual(byTag(view.tree(), TAG.iframe), [], 'an iframe was drawn')
 const assertNoFrameRetry = (page) => assert.deepEqual(withAttr(page.tree(), ATTR.frameRetry), [], 'a Retry button of embed-UI was drawn (#77)')
 /** The hint view (Q-G3): the exact text, no iframe, no state tag. */
@@ -124,7 +126,7 @@ async function assertFramed(page, view, w) {
   return frame
 }
 /** The single Hand over button's text equals `label`, and its light says `isOnline`. */
-function assertSingle(view, p, isOnline) {
+export function assertSingle(view, p, isOnline) {
   const button = one(handOverButtons(view), 'Hand over buttons')
   assert.equal(attrOf(button, ATTR.target), p.key)
   assert.equal(labelText(button), TEXT.handOverTo(labelOf(p)))
@@ -132,14 +134,14 @@ function assertSingle(view, p, isOnline) {
   return button
 }
 /** The visible label of a control without its light's text alternative. */
-const labelText = (node) => textIn(stripLight(node))
+export const labelText = (node) => textIn(stripLight(node))
 /** The node without its light (the element that itself carries [data-fishball-online]), whose text alternative is not the label. */
 const stripLight = (node) => ({ ...node, children: (node.children ?? []).filter((c) => typeof c === 'string' || c.props[ATTR.online] === undefined).map((c) => (typeof c === 'string' ? c : stripLight(c))) })
-const labelOf = (p) => (p.name === null ? TEXT.idLabel(p.id) : p.name)
-function assertLight(node, isOnline) {
+export const labelOf = (p) => (p.name === null ? TEXT.idLabel(p.id) : p.name)
+export function assertLight(node, isOnline) {
   assert.deepEqual(lightOf(node), { online: isOnline ? ATTR.yes : ATTR.no, label: isOnline ? TEXT.online : TEXT.offline }, 'light of ' + textIn(node))
 }
-const assertBold = (node, p) => assert.equal(hasBoldId(node), p.name === null, 'bold ID: prefix only for a nameless principal (' + JSON.stringify(p.name) + ')')
+export const assertBold = (node, p) => assert.equal(hasBoldId(node), p.name === null, 'bold ID: prefix only for a nameless principal (' + JSON.stringify(p.name) + ')')
 
 export function registerUDrawCases(sdk) {
   // ============================================================ Use cases
@@ -174,92 +176,7 @@ export function registerUDrawCases(sdk) {
     assert.equal(w.child.retries, EXPECT.none)
   })
 
-  draw(sdk, 'UDRAW-UC-02', 'main', 'one target: "Hand over to Navigator" → note dialog → POST handOver {sessionId, principalKey, note} → the session shows its mark and Take back, live', 'HAND-UC-01 A1, R-UI-10, R-UI-05', async (t) => {
-    const { w, page } = await world(t, sdk, { principals: [online(P.navigator)] })
-    await mountOverlay(page)
-    const header = await mountHeader(page)
-    const mark = await mountRowMark(page)
-    assert.ok(await page.waitFor(() => handOverButtons(header).length > 0), 'no Hand over button')
-    await press(page, assertSingle(header, P.navigator, true))
-    await confirmNote(page, P.note)
-    assert.ok(await posted(page, 'handOver'), 'handOver was not POSTed')
-    assert.deepEqual(bodiesOf(page, 'handOver'), [{ sessionId: S1, principalKey: P.navigator.key, note: P.note }])
-    assert.deepEqual(w.handover.calls.handOver, [[S1, P.navigator.key, P.note]])
-    assert.ok(await page.waitFor(() => withAttr(header.tree(), ATTR.takeBack).length > 0), 'no Take back after the hand over (no live refresh)')
-    assert.ok(textIn(one(withAttr(header.tree(), ATTR.managedBy), 'managed-by')).includes(P.navigator.name))
-    assert.equal(one(withAttr(mark.tree(), ATTR.managedRow, S1), 'row marks').props[ATTR.ariaLabel], TEXT.managedBy(P.navigator.name))
-    assert.deepEqual(handOverButtons(header), [], 'Hand over beside Take back')
-  })
-  draw(sdk, 'UDRAW-UC-02', 'A1', 'two targets: "Handover to…" menu, one item per target (id = key); picking ID: agent-x hands over to it', 'HAND-UC-01 main, R-UI-10, R-NAME-08', async (t) => {
-    const { w, page } = await world(t, sdk, { principals: [online(P.navigator), online(P.nameless)] })
-    await mountOverlay(page)
-    const header = await mountHeader(page)
-    assert.ok(await page.waitFor(() => manyButtons(header).length > 0), 'no Handover to… button')
-    assert.equal(labelText(manyButtons(header)[0]), TEXT.handoverMany)
-    const items = await openMenu(page, header)
-    assert.deepEqual(items.map((i) => i.props[ATTR.menuItemId]), [P.navigator.key, P.nameless.key])
-    await press(page, items[1])
-    await confirmNote(page)
-    assert.ok(await posted(page, 'handOver'))
-    assert.deepEqual(w.handover.calls.handOver.map((c) => c.slice(0, 2)), [[S1, P.nameless.key]])
-  })
-  draw(sdk, 'UDRAW-UC-02', 'A2', "the session row's menu offers one Hand over item per target with the same label, and it hands over", 'HAND-UC-01, R-UI-10', async (t) => {
-    const { w, page } = await world(t, sdk, { principals: [online(P.navigator), offline(P.nameless)] })
-    await mountOverlay(page)
-    const menu = await mountRowMenu(page)
-    assert.ok(await page.waitFor(() => findRole(menu.tree(), ATTR.menuitem).length >= EXPECT.twice), 'row menu items')
-    const items = findRole(menu.tree(), ATTR.menuitem)
-    assert.deepEqual(items.map(labelText), [TEXT.handOverTo(P.navigator.name), TEXT.handOverTo(TEXT.idLabel(P.nameless.id))])
-    await press(page, items[0])
-    await confirmNote(page)
-    assert.ok(await posted(page, 'handOver'))
-    assert.deepEqual(w.handover.calls.handOver.map((c) => c.slice(0, 2)), [[S1, P.navigator.key]])
-  })
-  for (const code of CODES.handOver) {
-    draw(sdk, 'UDRAW-EP-04', 'handOver ' + code, `the backend refuses handOver with ${code} → an alert with that code; the session stays unmanaged`, 'HAND-DT-01, R-UI-10', async (t) => {
-      const { w, page } = await world(t, sdk, { principals: [online(P.navigator)] })
-      w.handover.script.handOver = code === BACKEND.code.operationFailed ? { rejects: new Error(P.failure) } : { ok: false, code }
-      await mountOverlay(page)
-      const header = await mountHeader(page)
-      assert.ok(await page.waitFor(() => handOverButtons(header).length > 0))
-      await press(page, handOverButtons(header)[0])
-      await confirmNote(page)
-      assert.ok(await page.waitFor(() => withAttr(alerts(page), ATTR.refusal, code).length > 0), 'no alert ' + code + '; alerts: ' + JSON.stringify(alerts(page).map((a) => a.props)))
-      assert.deepEqual(withAttr(header.tree(), ATTR.takeBack), [], 'Take back after a refusal')
-    })
-  }
-
-  draw(sdk, 'UDRAW-UC-03', 'main', 'a managed session: managed-by label and Take back; one click POSTs takeBack {sessionId}; the Hand over control comes back, live', 'HAND-UC-02, R-UI-05, R-UI-10', async (t) => {
-    const { w, page } = await world(t, sdk, { principals: [online(P.navigator)], managed: [[S1, P.navigator]] })
-    const header = await mountHeader(page)
-    assert.ok(await page.waitFor(() => withAttr(header.tree(), ATTR.takeBack).length > 0), 'no Take back')
-    assert.ok(textIn(one(withAttr(header.tree(), ATTR.managedBy), 'managed-by')).includes(P.navigator.name))
-    const takeBack = one(withAttr(header.tree(), ATTR.takeBack), 'Take back buttons')
-    assert.equal(textIn(takeBack), TEXT.takeBack)
-    await press(page, takeBack)
-    assert.ok(await posted(page, 'takeBack'))
-    assert.deepEqual(bodiesOf(page, 'takeBack'), [{ sessionId: S1 }])
-    assert.deepEqual(w.handover.calls.takeBack, [[S1]])
-    assert.ok(await page.waitFor(() => handOverButtons(header).length > 0), 'Hand over did not come back')
-  })
-  draw(sdk, 'UDRAW-UC-03', 'A1', "the row menu offers Take back for a managed session, and no Hand over item", 'HAND-UC-02, R-UI-10', async (t) => {
-    const { page } = await world(t, sdk, { principals: [online(P.navigator)], managed: [[S1, P.navigator]] })
-    const menu = await mountRowMenu(page)
-    assert.ok(await page.waitFor(() => findRole(menu.tree(), ATTR.menuitem).length > 0))
-    assert.deepEqual(findRole(menu.tree(), ATTR.menuitem).map(textIn), [TEXT.takeBack])
-  })
-  for (const code of CODES.takeBack) {
-    draw(sdk, 'UDRAW-EP-04', 'takeBack ' + code, `the backend refuses takeBack with ${code} → an alert with that code`, 'HAND-DT-02', async (t) => {
-      const { w, page } = await world(t, sdk, { principals: [online(P.navigator)], managed: [[S1, P.navigator]] })
-      w.handover.script.takeBack = code === BACKEND.code.operationFailed ? { rejects: new Error(P.failure) } : { ok: false, code }
-      // A real page always mounts shell.overlay; an alert may be drawn there or beside the control.
-      await mountOverlay(page)
-      const header = await mountHeader(page)
-      assert.ok(await page.waitFor(() => withAttr(header.tree(), ATTR.takeBack).length > 0))
-      await press(page, withAttr(header.tree(), ATTR.takeBack)[0])
-      assert.ok(await page.waitFor(() => withAttr(alerts(page), ATTR.refusal, code).length > 0), 'no alert ' + code)
-    })
-  }
+  // UDRAW-UC-02, UDRAW-UC-03 and UDRAW-EP-04 moved to test/v3/dsh-connector/marks (DESIGN.md §28: the marks part is dsh-agent-connector's).
 
   draw(sdk, 'UDRAW-UC-04', 'main', 'an agent notifies → the bubble shows the message as text with count 1; the fish is lit', 'R-FN-01', async (t) => {
     const { w, page } = await world(t, sdk)
@@ -418,7 +335,8 @@ export function registerUDrawCases(sdk) {
       if (!r.drawn) { assertNothingRegistered(page); return }
       assert.ok(page.live().some((x) => x.slot === SLOT.fish && x.id === SLOT.fishId), 'no fish (sidebar.panellist id fishball)')
       assert.ok(page.live().some((x) => x.slot === SLOT.main && x.key === SLOT.mainKey), 'no main entry keyed fishball')
-      for (const slot of [SLOT.overlay, ...SLOT.connectorSeats]) assert.ok(page.live().some((x) => x.slot === slot), 'nothing in ' + slot)
+      // DESIGN.md §28: the marks seats are the connector's part (test/v3/dsh-connector/marks); embed-UI keeps the overlay.
+      assert.ok(page.embedDrawn().some((x) => x.slot === SLOT.overlay), 'nothing of embed-UI in ' + SLOT.overlay)
       const fish = await mountFish(page)
       assert.equal(withAttr(fish.tree(), ATTR.fishMark).filter((n) => n.tag === TAG.svg).length, EXPECT.once, 'the fish has no svg[data-fishball-mark]')
     })
@@ -432,74 +350,7 @@ export function registerUDrawCases(sdk) {
     })
   }
 
-  // ============================================================ EP-05 / BVA-01: the Hand over control and its labels
-  const LABEL_ROWS = [
-    { row: 'HAND-EP-02 row 2', p: P.navigator, on: true },
-    { row: 'HAND-EP-02 row 2a', p: P.navigator, on: false },
-    { row: 'HAND-EP-02 row 3', p: P.nameless, on: true },
-    { row: 'HAND-EP-02 row 3a', p: P.idNamed, on: true },
-    { row: 'HAND-EP-02 row 6 (named Fishball)', p: P.fishball, on: false },
-  ]
-  for (const r of LABEL_ROWS) {
-    draw(sdk, 'UDRAW-EP-05', r.row, `one target ${JSON.stringify(r.p.name)} (${r.on ? 'online' : 'offline'}) → "${TEXT.handOverTo(labelOf(r.p))}", bold ID: only when nameless, light ${r.on ? 'green' : 'red'}`, 'R-UI-10, R-NAME-08', async (t) => {
-      const { page } = await world(t, sdk, { principals: [[r.p, { online: r.on }]] })
-      const header = await mountHeader(page)
-      assert.ok(await page.waitFor(() => handOverButtons(header).length > 0), 'no Hand over button')
-      assertBold(assertSingle(header, r.p, r.on), r.p)
-    })
-  }
-  draw(sdk, 'UDRAW-EP-05', 'HAND-EP-02 row 4', 'two targets: the menu rows read "Navigator" (green) and bold "ID:" agent-x (red)', 'R-UI-10, R-NAME-08', async (t) => {
-    const { page } = await world(t, sdk, { principals: [online(P.navigator), offline(P.nameless)] })
-    const header = await mountHeader(page)
-    assert.ok(await page.waitFor(() => manyButtons(header).length > 0))
-    const items = await openMenu(page, header)
-    assert.deepEqual(items.map(labelText), [P.navigator.name, TEXT.idLabel(P.nameless.id)])
-    assertLight(items[0], true)
-    assertLight(items[1], false)
-    assertBold(items[0], P.navigator)
-    assertBold(items[1], P.nameless)
-  })
-  draw(sdk, 'UDRAW-EP-05', 'HAND-EP-02 row 6', 'no label reads "Hand over to Fishball" when no principal is named Fishball', 'R-UI-10', async (t) => {
-    const { page } = await world(t, sdk, { principals: [online(P.navigator), online(P.nameless)] })
-    const header = await mountHeader(page)
-    const menu = await mountRowMenu(page)
-    assert.ok(await page.waitFor(() => manyButtons(header).length > 0))
-    await openMenu(page, header)
-    assert.ok(!textIn(page.tree()).includes(TEXT.fishballLabel), 'a "Hand over to Fishball" label: ' + textIn(menu.tree()))
-  })
-  draw(sdk, 'UDRAW-EP-05', 'HAND-EP-02 row 8', 'a name with markup is shown as text in the button and the mark', 'R-UI-10, R-NAME-05', async (t) => {
-    const { page } = await world(t, sdk, { principals: [online(P.markup)], managed: [[FIXTURE.sessions.s2, P.markup]] })
-    const header = await mountHeader(page)
-    const mark = await mountRowMark(page, FIXTURE.sessions.s2)
-    assert.ok(await page.waitFor(() => handOverButtons(header).length > 0))
-    assert.equal(labelText(handOverButtons(header)[0]), TEXT.handOverTo(P.markup.name))
-    assert.equal(one(withAttr(mark.tree(), ATTR.managedRow, FIXTURE.sessions.s2), 'marks').props[ATTR.ariaLabel], TEXT.managedBy(P.markup.name))
-    assert.deepEqual([...subtreeOf({ children: header.tree() }), ...subtreeOf({ children: mark.tree() })].filter((n) => MARKUP_TAGS.includes(n.tag)).map((n) => n.tag), [], 'markup was interpreted')
-  })
-  for (const p of [P.navigator, P.nameless]) {
-    draw(sdk, 'UDRAW-EP-05', 'mark ' + (p.name === null ? 'nameless' : 'named'), `a session managed by ${labelOf(p)} → row mark "Managed by ${labelOf(p)}"; header label`, 'R-UI-05, R-NAME-05, R-NAME-08', async (t) => {
-      const { page } = await world(t, sdk, { principals: [online(p)], managed: [[S1, p]] })
-      const mark = await mountRowMark(page)
-      const header = await mountHeader(page)
-      assert.ok(await page.waitFor(() => withAttr(mark.tree(), ATTR.managedRow, S1).length > 0), 'no row mark')
-      assert.equal(withAttr(mark.tree(), ATTR.managedRow, S1)[0].props[ATTR.ariaLabel], TEXT.managedBy(labelOf(p)))
-      assert.ok(await page.waitFor(() => withAttr(header.tree(), ATTR.managedBy).length > 0))
-      assert.equal(textIn(withAttr(header.tree(), ATTR.managedBy)[0]).includes(labelOf(p)), true, 'header label')
-      assertBold(withAttr(header.tree(), ATTR.managedBy)[0], p)
-    })
-  }
-  for (const [count, principals] of [[0, []], [1, [online(P.navigator)]], [2, [online(P.navigator), offline(P.nameless)]], [3, [online(P.navigator), offline(P.nameless), online(P.idNamed)]]]) {
-    draw(sdk, 'UDRAW-BVA-01', count, `${count} target(s) → ${count === 0 ? 'no control' : count === 1 ? 'one button' : 'a dropdown of ' + count + ' in targets order'}; the row menu matches`, 'HAND-EP-02 rows 1, 2, 4, 5, R-UI-10', async (t) => {
-      const { page } = await world(t, sdk, { principals })
-      const header = await mountHeader(page)
-      const menu = await mountRowMenu(page)
-      await page.waitFor(() => handOverButtons(header).length + manyButtons(header).length > 0, count === 0 ? WAIT.quietMs : WAIT.settleMs)
-      assert.equal(handOverButtons(header).length, count === 1 ? 1 : 0, 'single buttons')
-      assert.equal(manyButtons(header).length, count >= 2 ? 1 : 0, 'Handover to… buttons')
-      if (count >= 2) assert.deepEqual((await openMenu(page, header)).map((i) => i.props[ATTR.menuItemId]), principals.map(([p]) => p.key))
-      assert.equal(findRole(menu.tree(), ATTR.menuitem).length, count, 'row menu items')
-    })
-  }
+  // UDRAW-EP-05 (labels, marks) and UDRAW-BVA-01 (target count) moved to test/v3/dsh-connector/marks (DESIGN.md §28).
 
   // ============================================================ EP-06: the page host
   draw(sdk, 'UDRAW-EP-06', 1, 'a page at localhost → the admission names localhost and the frame src is its url', 'UIM-EP-02 row 2, R-UI-02', async (t) => {
@@ -509,9 +360,11 @@ export function registerUDrawCases(sdk) {
   })
 
   // ============================================================ EP-07: withdrawn surfaces
-  draw(sdk, 'UDRAW-EP-07', 1, 'client.records.js no longer exists', 'Q-G4 = A, R-UI-13 withdrawn', () => {
+  draw(sdk, 'UDRAW-EP-07', 1, 'client.records.js no longer exists, nor client.marks.js', 'Q-G4 = A, R-UI-13 withdrawn, DESIGN.md §28', () => {
     assert.equal(fs.existsSync(path.join(EMBED.clientDir, EMBED.withdrawnChunk)), false)
     for (const file of [EMBED.clientEntry, ...EMBED.chunks]) assert.ok(fs.existsSync(path.join(EMBED.clientDir, file)), 'missing ' + file)
+    // DESIGN.md §28: the marks chunk left embed-UI for dsh-agent-connector.
+    assert.equal(fs.existsSync(path.join(EMBED.clientDir, EMBED.movedChunk)), false, EMBED.movedChunk + ' is still in embed-UI')
   })
   draw(sdk, 'UDRAW-EP-07', 2, 'no tool.call.toolview and no conversation.chat.node registration', 'Q-G4 = A, Q-U2', async (t) => {
     const { page } = await world(t, sdk, { principals: [online(P.navigator)], managed: [[S1, P.navigator]] })
@@ -567,18 +420,7 @@ export function registerUDrawCases(sdk) {
     await until(() => w.errors().length >= EXPECT.twice)
     assert.equal(w.errors().length, EXPECT.perActivation * EXPECT.twice, 'lines after a second activation')
   })
-  draw(sdk, 'UDRAW-BVA-04', 'empty note', 'confirming without a note hands over with an empty or omitted note', 'R-UI-10, K3 handOver note', async (t) => {
-    const { w, page } = await world(t, sdk, { principals: [online(P.navigator)] })
-    await mountOverlay(page)
-    const header = await mountHeader(page)
-    assert.ok(await page.waitFor(() => handOverButtons(header).length > 0))
-    await press(page, handOverButtons(header)[0])
-    await confirmNote(page)
-    assert.ok(await posted(page, 'handOver'))
-    const [call] = w.handover.calls.handOver
-    assert.deepEqual(call.slice(0, 2), [S1, P.navigator.key])
-    assert.ok(call[2] === undefined || call[2] === P.emptyNote, 'note ' + JSON.stringify(call[2]))
-  })
+  // UDRAW-BVA-04 (empty note) moved to test/v3/dsh-connector/marks (DESIGN.md §28).
   draw(sdk, 'UDRAW-BVA-05', '1 / re-render / remount', 'opened is POSTed once per mount: 1, still 1 after a live re-render, 2 after unmount and mount', '§13.6, R-FN-01', async (t) => {
     const { w, page } = await world(t, sdk)
     const view = await mountMain(page)
@@ -626,64 +468,7 @@ export function registerUDrawCases(sdk) {
     })
   }
 
-  // ============================================================ DT-03: the session controls
-  const CONTROL_RULES = [
-    { rule: 1, principals: [], managed: [], header: { single: 0, many: 0, takeBack: 0 }, menu: [] },
-    { rule: 2, principals: [online(P.navigator)], managed: [], header: { single: 1, many: 0, takeBack: 0 }, menu: [TEXT.handOverTo(P.navigator.name)] },
-    { rule: 3, principals: [online(P.navigator), online(P.nameless)], managed: [], header: { single: 0, many: 1, takeBack: 0 }, menu: [TEXT.handOverTo(P.navigator.name), TEXT.handOverTo(TEXT.idLabel(P.nameless.id))] },
-    { rule: 4, principals: [online(P.navigator), online(P.nameless)], managed: [[S1, P.navigator]], header: { single: 0, many: 0, takeBack: 1 }, menu: [TEXT.takeBack] },
-  ]
-  for (const r of CONTROL_RULES) {
-    draw(sdk, 'UDRAW-DT-03', 'rule ' + r.rule, `managed ${r.managed.length > 0}, ${r.principals.length} target(s) → header ${JSON.stringify(r.header)}, row menu ${JSON.stringify(r.menu)}`, 'R-UI-10, R-UI-05, HAND-EP-02', async (t) => {
-      const { page } = await world(t, sdk, { principals: r.principals, managed: r.managed })
-      const header = await mountHeader(page)
-      const menu = await mountRowMenu(page)
-      const shown = () => ({ single: handOverButtons(header).length, many: manyButtons(header).length, takeBack: withAttr(header.tree(), ATTR.takeBack).length })
-      await page.waitFor(() => JSON.stringify(shown()) === JSON.stringify(r.header), r.menu.length === 0 ? WAIT.quietMs : WAIT.settleMs)
-      assert.deepEqual(shown(), r.header)
-      assert.deepEqual(findRole(menu.tree(), ATTR.menuitem).map(labelText), r.menu)
-    })
-  }
-
-  // ============================================================ ST-01: one session's control
-  draw(sdk, 'UDRAW-ST-01', '#3', 'another tab hands the session over → the header turns to Take back with no reload', 'HAND-UC-01 E4, R-UI-10 live', async (t) => {
-    const { w, page } = await world(t, sdk, { principals: [online(P.navigator)] })
-    const header = await mountHeader(page)
-    assert.ok(await page.waitFor(() => handOverButtons(header).length > 0))
-    w.handover.set({ managed: [{ sessionId: S1, principal: P.navigator }] })
-    assert.ok(await page.waitFor(() => withAttr(header.tree(), ATTR.takeBack).length > 0), 'the header did not follow the backend')
-  })
-  draw(sdk, 'UDRAW-ST-01', '#4', 'the note dialog closed without confirming → no POST', 'R-UI-10', async (t) => {
-    const { w, page } = await world(t, sdk, { principals: [online(P.navigator)] })
-    await mountOverlay(page)
-    const header = await mountHeader(page)
-    assert.ok(await page.waitFor(() => handOverButtons(header).length > 0))
-    await press(page, handOverButtons(header)[0])
-    assert.ok(await page.waitFor(() => findRole(page.tree(), ATTR.dialog).length > 0), 'no dialog')
-    await press(page, withAttr(page.tree(), 'data-fbtest-modal-close')[0])
-    assert.deepEqual(page.posts(routePathOf('handOver')), [])
-    assert.deepEqual(w.handover.calls.handOver, [])
-  })
-
-  // ============================================================ ST-02: a target's light
-  draw(sdk, 'UDRAW-ST-02', '#1–#5', 'paired → listed red; listens → green; disconnects → red, stays; disabled → removed; renamed → new label; no reload', 'HAND-ST-02 #1, 2, 3, 5, 8, HAND-UC-03 A1–A3', async (t) => {
-    const { w, page } = await world(t, sdk, { principals: [online(P.navigator)] })
-    const header = await mountHeader(page)
-    assert.ok(await page.waitFor(() => handOverButtons(header).length > 0))
-    const itemOf = (key) => menuItems(header).find((i) => i.props[ATTR.menuItemId] === key)
-    const lightNow = async (key) => { await openMenu(page, header); return itemOf(key) && lightOf(itemOf(key))?.online }
-    w.handover.set({ principals: [row(P.navigator, { online: true }), row(P.indexer, { online: false })] })
-    assert.ok(await page.waitFor(() => manyButtons(header).length > 0), '#1 no dropdown after a pairing')
-    assert.equal(await lightNow(P.indexer.key), ATTR.no, '#1 the new row is not red')
-    w.handover.patch(P.indexer.key, { online: true })
-    assert.ok(await page.waitFor(async () => (await lightNow(P.indexer.key)) === ATTR.yes), '#2 not green')
-    w.handover.patch(P.indexer.key, { online: false })
-    assert.ok(await page.waitFor(async () => (await lightNow(P.indexer.key)) === ATTR.no), '#3 not red')
-    w.handover.patch(P.navigator.key, { name: P.renamed })
-    assert.ok(await page.waitFor(async () => { await openMenu(page, header); return labelText(itemOf(P.navigator.key)) === P.renamed }), '#5 the label did not follow the rename')
-    w.handover.patch(P.indexer.key, { enabled: false })
-    assert.ok(await page.waitFor(() => handOverButtons(header).length > 0 && manyButtons(header).length === 0), '#4 the disabled row stayed')
-  })
+  // UDRAW-DT-03, UDRAW-ST-01 #3/#4 and UDRAW-ST-02 moved to test/v3/dsh-connector/marks (DESIGN.md §28).
 
   // ============================================================ ST-03: the prompt
   draw(sdk, 'UDRAW-ST-03', '#1–#5', 'None → notify → Shown(1) → notify → Shown(2) → click → None → notify → Shown(1) → window opened → None', 'R-FN-01, UIB-ST-02', async (t) => {

@@ -355,12 +355,13 @@ export function registerUShellCases(sdk) {
     assertNoBrand(all.regs)
   })
   // Q-G4 = A: client.records.js is gone from the split.
-  caseTest(sdk, 'U-SHELL', 'split', 'the client is split into the flat parts client.shell.js, client.marks.js, client.attention.js beside client.js (no folders); client.records.js is gone (Q-G4)', () => {
+  caseTest(sdk, 'U-SHELL', 'split', 'the client is split into the flat parts client.shell.js, client.attention.js beside client.js (no folders); client.records.js and client.marks.js (DESIGN.md §28) are gone (Q-G4)', () => {
     const entries = fs.readdirSync(clientDir(), { withFileTypes: true })
     assert.deepEqual(entries.filter((e) => e.isDirectory()).map((e) => e.name), [], 'folders in ' + SPLIT.clientDir.join('/'))
     const names = entries.map((e) => e.name)
     for (const file of [SPLIT.entry, ...SPLIT.parts]) assert.ok(names.includes(file), 'missing ' + file)
     assert.ok(!names.includes(SPLIT.withdrawn), SPLIT.withdrawn + ' still exists')
+    assert.ok(!names.includes(SPLIT.moved), SPLIT.moved + ' is still embed-UI\'s (DESIGN.md §28)')
   })
   caseTest(sdk, 'U-SHELL', 'split', "every file beside embed-UI's client entry is a chunk DSH serves (client.<name>.js)", () => {
     assert.deepEqual(fs.readdirSync(clientDir()).filter((f) => f !== SPLIT.entry && !SPLIT.chunk.test(f)), [])

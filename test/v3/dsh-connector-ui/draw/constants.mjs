@@ -17,20 +17,72 @@ import { CHILD as SHELL_CHILD, LOOPBACK, REFUSAL_TEXT, ROUTE as SHELL_ROUTE, ROU
 
 export { BACKEND, K2, K3, LOOPBACK, REFUSAL_TEXT }
 
-/** The package under test: its host entry, its client folder and its loader identity. */
+/**
+ * The package under test: its host entry, its client folder and its loader identity. Since the
+ * connector + UI combine (df9d83d) embed-UI is the inner package packages/dsh-connector/ui (its
+ * package.json, name dsh-connector-ui), inserted by the connector's cordis.patch.yml as ./ui/index.js.
+ */
+const EMBED_DIR = path.join(REPO, 'packages', 'dsh-connector', 'ui')
 export const EMBED = Object.freeze({
   name: 'dsh-connector-ui',
-  hostEntry: path.join(REPO, 'packages', 'dsh-connector-ui', 'index.js'),
-  clientDir: path.join(REPO, 'packages', 'dsh-connector-ui', 'src', 'client'),
+  dir: EMBED_DIR,
+  hostEntry: path.join(EMBED_DIR, 'index.js'),
+  clientDir: path.join(EMBED_DIR, 'src', 'client'),
   clientEntry: 'client.js',
-  /** The relayed flat chunks; client.records.js is withdrawn (Q-G4 = A). */
+  /**
+   * The relayed flat chunks; client.records.js is withdrawn (Q-G4 = A). DESIGN.md §28 (2026-11-20):
+   * client.marks.js left embed-UI for dsh-agent-connector (CONNECTOR_CLIENT.chunks).
+   */
   // I-HOST: client.instance.js (the instance card) became the instance's own client.models.js.
-  chunks: Object.freeze(['client.shell.js', 'client.marks.js', 'client.attention.js']),
+  chunks: Object.freeze(['client.shell.js', 'client.attention.js']),
+  /** DESIGN.md §28: the marks chunk embed-UI no longer ships. */
+  movedChunk: 'client.marks.js',
   withdrawnChunk: 'client.records.js',
   /** The module id every file registers with `__ModuleLoader__.load`. */
   moduleId: 'dsh-connector-ui',
   /** The graph revision the fake module table hands the chunk loader (any value: no cache here). */
   rev: 'fbtest-draw',
+})
+
+/**
+ * dsh-agent-connector's browser entry (package.json exports ./client = client.js; dsh.client), which
+ * since DESIGN.md §28 carries the marks part as its chunk client.marks.js, and exports `ui`, the
+ * helpers over the UI backend. Embed-UI loads it first (its dsh.client.external), so one page holds
+ * both graph entries; the connector entry comes first in the graph.
+ */
+export const CONNECTOR_CLIENT = Object.freeze({
+  moduleId: 'dsh-agent-connector',
+  dir: path.join(REPO, 'packages', 'dsh-connector'),
+  entry: 'client.js',
+  chunks: Object.freeze(['client.marks.js']),
+})
+
+/**
+ * The marks part (DESIGN.md §28 "Hand over" row; the user's decisions of 2026-11-20, R1–R6): its
+ * slot entry ids, its locale namespace, its words (en / zh templates, `{name}` the principal
+ * label), its hook and class prefixes, the running row mark's flip class (lead's relay 2026-11-20),
+ * and embed-UI's one warning when the connector's browser entry cannot load.
+ */
+export const MARKS = Object.freeze({
+  ids: Object.freeze({ handOver: 'dsh-connector-hand-over', notice: 'dsh-connector-hand-over-notice', managed: 'dsh-connector-managed' }),
+  /** The ids embed-UI used before §28: no registration may carry them now (R2). */
+  oldIds: Object.freeze(['fishball-hand-over', 'fishball-managed']),
+  namespace: 'dsh-connector-marks',
+  words: Object.freeze({
+    en: Object.freeze({ handOverTo: 'Hand over to {name}', handOverMany: 'Handover to…', takeBack: 'Take back', managedBy: 'Managed by {name}' }),
+    zh: Object.freeze({ handOverTo: '交给 {name}', handOverMany: '交给…', takeBack: '收回', managedBy: '由 {name} 管理' }),
+  }),
+  fill: (template, name) => template.replace('{name}', name),
+  hookPrefix: 'data-dsh-connector-',
+  classPrefix: 'dshc-',
+  oldHookPrefix: 'data-fishball-',
+  oldClassPrefix: 'fb-',
+  flip: 'dshc-flip',
+  rowState: Object.freeze({ running: 'running', idle: 'idle' }),
+  /** R6: embed-UI's row logger line when the connector's browser entry fails to load. */
+  unavailable: 'part unavailable',
+  warnType: 'warn',
+  errorType: 'error',
 })
 
 /** K3 / C-UI-BACKEND / K2 service names and the one usable apiVersion (Q-U1, K3). */
@@ -141,9 +193,15 @@ export const SLOT = Object.freeze({
   headerActions: 'conversation.session.header.actions',
   headerUtilities: 'conversation.session.header.utilities',
   rowMenu: 'sidebar.workspaces.session.menu.item',
+  rowTrailing: 'sidebar.session.row.trailing',
+  /** The Plugins page's card seats: the connector's own settings page registers there whatever the backend. */
+  cards: Object.freeze(['plugins.bundle.config', 'plugins.row.config']),
   /** Q-G4 = A: embed-UI registers neither (no inline records). */
   withdrawn: Object.freeze(['tool.call.toolview', 'conversation.chat.node']),
-  /** The seats only the connector UI backend feeds (marks, Hand over, the prompt); UI-FIX-D adds header.utilities. */
+  /**
+   * The marks part's seats (UI-FIX-D adds header.utilities). DESIGN.md §28: dsh-agent-connector's
+   * browser half fills them, embed-UI no longer does (R1, R2).
+   */
   connectorSeats: Object.freeze(['sidebar.session.row.leading', 'conversation.session.header.actions', 'conversation.session.header.utilities', 'sidebar.workspaces.session.menu.item']),
   /** Session-scoped slots: the renderer hands the Session id to `inject(key)` (dsh-client-ui-conversation slot contract). */
   sessionScoped: Object.freeze(['conversation.session.header.actions', 'conversation.session.header.utilities']),
@@ -174,15 +232,17 @@ export const ATTR = Object.freeze({
   notice: 'data-fishball-notice',
   noticeCount: 'data-fishball-notice-count',
   noticeImportant: 'data-fishball-notice-important',
-  managedRow: 'data-fishball-managed-row',
-  managedBy: 'data-fishball-managed-by',
-  takeBack: 'data-fishball-take-back',
-  handOver: 'data-fishball-hand-over',
-  handOverMany: 'data-fishball-hand-over-many',
-  target: 'data-fishball-target',
-  online: 'data-fishball-online',
-  confirm: 'data-fishball-hand-over-confirm',
-  refusal: 'data-fishball-refusal',
+  // DESIGN.md §28 (2026-11-20, R4): the marks part is dsh-agent-connector's; its hooks are data-dsh-connector-*.
+  managedRow: 'data-dsh-connector-managed-row',
+  rowState: 'data-dsh-connector-row-state',
+  managedBy: 'data-dsh-connector-managed-by',
+  takeBack: 'data-dsh-connector-take-back',
+  handOver: 'data-dsh-connector-hand-over',
+  handOverMany: 'data-dsh-connector-hand-over-many',
+  target: 'data-dsh-connector-target',
+  online: 'data-dsh-connector-online',
+  confirm: 'data-dsh-connector-hand-over-confirm',
+  refusal: 'data-dsh-connector-refusal',
   role: 'role',
   alert: 'alert',
   menuitem: 'menuitem',
@@ -211,7 +271,8 @@ export const TEXT = Object.freeze({
   offline: 'offline',
   fishballLabel: 'Hand over to Fishball',
   /** The relayed dictionary's English templates (values; their keys are the package's own). */
-  dictionary: Object.freeze(['Hand over to {name}', 'Handover to…', 'Take back', 'Managed by {name}', 'online', 'offline', 'Retry', "No Fishball child instance is running here. Open your Fishball instance's own page."]),
+  // DESIGN.md §28: the Hand over words left the 'fishball' namespace with the marks part (MARKS.words).
+  dictionary: Object.freeze(['Retry', "No Fishball child instance is running here. Open your Fishball instance's own page."]),
   namespace: 'fishball',
   langs: Object.freeze(['en', 'zh']),
 })

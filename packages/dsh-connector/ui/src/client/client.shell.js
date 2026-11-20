@@ -12,20 +12,23 @@
  *    that is not ready shows its state and a Retry link to the instance's own settings page
  *    (decided #77). With no usable instance (none, or only an external agent connected) it shows
  *    the hint to open the Fishball instance's own page (Q-G3).
- * 4. The kit the other parts are built from (`exports.kit`): the connector UI backend's snapshot
- *    stream and its POST helper, the style sheet and dictionary, and the seats (SEAT) where the
- *    attention part draws the fish's light and clears it when the window opens. The marks with
- *    Hand over / Take back (client.marks.js) and the light with the notify prompt
- *    (client.attention.js) are parts of their own. There are no cards (Q-U2) and no inline
- *    records (Q-G4).
+ * 4. The kit the attention part is built from (`exports.kit`): the connector UI backend's
+ *    snapshot hook and its POST helper, the style sheet and dictionary, and the seats (SEAT) where
+ *    the attention part draws the fish's light and clears it when the window opens. The light with
+ *    the notify prompt (client.attention.js) is a part of its own. The marks with Hand over / Take
+ *    back moved to dsh-agent-connector (its client.marks.js; DESIGN.md §28). There are no cards
+ *    (Q-U2) and no inline records (Q-G4).
  *
  * The mark is FishMark from the owner's fishball app (THIRD_PARTY_NOTICES), drawn plain on every
  * surface here (ICON-SET, the user 2026-11-18): the wrench is dsh-connector's own badge and shows
- * only on that package's icon (its Plugins card and settings page), and this package's own icon
+ * only on that package's icon (its Plugins card, settings page and managed session rows), and this package's own icon
  * (assets/connector-ui-icon.svg, the fish with a window badge) is DSH's to draw from the manifest.
  *
  * State comes from the connector's UI backend (its `events` route, server-sent snapshots; 1.34:
- * "connector当后端，embed UI当前端").
+ * "connector当后端，embed UI当前端"), through the connector's own browser helpers: the snapshot
+ * stream, the POST helper and the value store have one home, dsh-agent-connector's client entry
+ * (its `ui` export, DESIGN.md §28), so this page opens one stream for both packages. client.js
+ * loads that entry before this chunk, so the plain `require` below finds it materialized.
  */
 window.__ModuleLoader__.load({
   // V3 R-EMBED: moved here from packages/dsh-connector/client.js (R-ARCH-04), then split by
@@ -38,9 +41,11 @@ window.__ModuleLoader__.load({
     const exports = module.exports
     const React = require('react')
     const { Button, IconRefreshOutlineRegular, IconWarningOutlineRegular, StateDot, Tag } = require('@deepseek-ai/dsh-client-ui-primitives')
+    // The connector's helpers over its UI backend (client.js loaded the entry before this chunk).
+    const { apiUrl, snapshotHook, send, valueStore, visibilityEvent: VISIBILITY_EVENT } = require('dsh-agent-connector').ui
     const h = React.createElement
 
-    /** The shell's sub-plugin name, beside the parts' `dsh-connector-ui: marks` and `: attention`. */
+    /** The shell's sub-plugin name, beside the attention part's `dsh-connector-ui: attention`. */
     const SHELL_NAME = 'dsh-connector-ui: shell'
     const NS = 'fishball'
     /** Client services read on demand (not injected: Fishball works without each of them). */
@@ -152,9 +157,9 @@ window.__ModuleLoader__.load({
       }),
     })
     /**
-     * U-DRAW's words. The English of `noInstance` is decided item #76; "Handover to…", "online" /
-     * "offline" and "Hand over to <name>" are R-UI-10's; "Managed by" is R-NAME-05's; the rest,
-     * and every Chinese text, is PROPOSED (the zh review stays deferred, #76).
+     * U-DRAW's words. The English of `noInstance` is decided item #76; the rest, and every Chinese
+     * text, is PROPOSED (the zh review stays deferred, #76). The Hand over words moved with the
+     * marks to dsh-agent-connector (DESIGN.md §28).
      */
     const DRAW_WORDING = Object.freeze({
       en: Object.freeze({
@@ -162,16 +167,6 @@ window.__ModuleLoader__.load({
         noInstance: 'No Fishball child instance is running here. Open your Fishball instance\'s own page.',
         notReady: 'Fishball isn\'t ready ({state}).',
         retryLink: 'Retry',
-        handOverTo: 'Hand over to {name}', handOverMany: 'Handover to…', takeBack: 'Take back', managedBy: 'Managed by {name}',
-        idPrefix: 'ID:', online: 'online', offline: 'offline',
-        handOverNoteLabel: 'Note (optional)', handOverConfirm: 'Hand over', handingOver: 'Handing over…', cancel: 'Cancel', close: 'Close',
-        takeBackTitle: 'Take back',
-        'refusal.unknown-session': 'This session could not be found.',
-        'refusal.conflict': 'This session is already managed.',
-        'refusal.no-agent': 'That agent can no longer take this session.',
-        'refusal.not-managed': 'This session is not managed.',
-        'refusal.invalid-request': 'That request was not accepted.',
-        refusalFailed: 'That did not work.',
         noticeLabel: 'Notice ({count} since you last looked): {message}. Click to dismiss.',
       }),
       zh: Object.freeze({
@@ -179,48 +174,16 @@ window.__ModuleLoader__.load({
         noInstance: '此处没有正在运行的 Fishball 子实例。请打开你的 Fishball 实例自己的页面。',
         notReady: 'Fishball 尚未就绪（{state}）。',
         retryLink: '重试',
-        handOverTo: '交给 {name}', handOverMany: '交给…', takeBack: '收回', managedBy: '由 {name} 管理',
-        idPrefix: 'ID:', online: '在线', offline: '离线',
-        handOverNoteLabel: '备注（可选）', handOverConfirm: '交接', handingOver: '交接中…', cancel: '取消', close: '关闭',
-        takeBackTitle: '收回',
-        'refusal.unknown-session': '找不到此会话。',
-        'refusal.conflict': '此会话已有人管理。',
-        'refusal.no-agent': '该代理已无法接管此会话。',
-        'refusal.not-managed': '此会话没有被管理。',
-        'refusal.invalid-request': '请求未被接受。',
-        refusalFailed: '操作未成功。',
         noticeLabel: '提示（自上次查看以来 {count} 条）：{message}。点击关闭。',
       }),
     })
     /**
-     * Stands for a `{name}` that is a node, not a string (withName): a character no dictionary or
-     * principal name holds.
-     */
-    const NAME_MARK = '\u0000'
-    /**
-     * The snapshot streams' reopen rule (eventStore): EventSource's `readyState` CLOSED, and the
-     * wait before a new stream. 2 s: soon enough to follow a connector reload, slow enough not to
-     * hammer a DSH whose connector is gone for good.
-     */
-    const STREAM = Object.freeze({ closed: 2, reopenMs: 2000 })
-    const VISIBILITY_EVENT = 'visibilitychange'
-    const JSON_HEADERS = Object.freeze({ 'content-type': 'application/json' })
-    /**
-     * The fish mark's shared look, used by the shell's sheet and by the parts (kit.ROW_MARK): the
-     * managed-row cell, the dot and the running flip. cellPx copies DSH's leading cell (the seat's
-     * contract in dsh-client-ui-workspace slots.d.ts, rc.2: "the 16px cell before the title"); the
-     * cell is not sized by its parent, so a percentage would collapse. Revisit if DSH resizes it.
-     * The dot sits at the mark's top-right and marks the fish's light; its green comes from DSH's
-     * state token, so light and dark themes both read.
+     * The fish mark's dot, used by the shell's sheet and by the attention part (kit.ROW_MARK). The
+     * dot sits at the mark's top-right and marks the fish's light; its green comes from DSH's state
+     * token, so light and dark themes both read.
      */
     const ROW_MARK = Object.freeze({
-      cellPx: 16,
       dot: Object.freeze({ sizePx: 7, topPx: -1, rightPx: -1, lit: 'lit' }),
-      /** The flipping fish while a row runs (design ⑥): a half-turn, a hold, then the other half. */
-      flipAnimation: 'fb-flip',
-      flipSeconds: 1.8,
-      flipOrigin: '50% 50%',
-      flip: Object.freeze([[0, 0], [45, 180], [55, 180], [100, 360]]),
     })
     /**
      * The shell's seats (U-SHELL's slot registry): places in the shell's own surfaces that a part
@@ -231,10 +194,6 @@ window.__ModuleLoader__.load({
      */
     const SEAT = Object.freeze({ mark: 'mark', pageOpened: 'pageOpened' })
     const SLOT = Object.freeze({
-      headerActions: 'conversation.session.header.actions',
-      /** DSH's right-aligned session utilities (open-in-app, the log export), laid out beside the title, never over it. */
-      headerUtilities: 'conversation.session.header.utilities',
-      sessionMenu: 'sidebar.workspaces.session.menu.item',
       overlay: 'shell.overlay',
       /**
        * DSH's central pane, keyed by panel id ("conversation" is the session), and the sidebar's
@@ -243,14 +202,6 @@ window.__ModuleLoader__.load({
        */
       main: 'main',
       panelList: 'sidebar.panellist',
-      /** DSH's 16px cell before a session row's title, mounted only while the row is idle (dsh-client-ui-workspace, rc.2). */
-      rowLeading: 'sidebar.session.row.leading',
-      /**
-       * DSH's resting area after a session row's time label, mounted in every state (0.2.2). While a
-       * row runs, the leading seat is replaced by DSH's spinner, so the Fishball running fish lives
-       * here. rc.3 has no such seat; slots.inject waits quietly and the fish simply does not mount.
-       */
-      rowTrailing: 'sidebar.session.row.trailing',
     })
     /**
      * The one Fishball accent (§8.5): the app's magenta. It is declared once here and exposed
@@ -294,7 +245,7 @@ window.__ModuleLoader__.load({
       wag: Object.freeze([[0, 0], [55, 0], [62, -14], [70, 12], [78, -9], [86, 5], [100, 0]]),
     })
     const STYLE_ID = 'fishball-style'
-    const CLS = Object.freeze({ field: 'fb-field', note: 'fb-note', code: 'fb-code', mark: 'fb-mark', markBox: 'fb-mark-box', wag: 'fb-wag', muted: 'fb-muted', managedRow: 'fb-managed-row', managedRowDot: 'fb-managed-row-dot', flip: 'fb-flip', embed: 'fb-embed', embedBar: 'fb-embed-bar', embedTitle: 'fb-embed-title', embedName: 'fb-embed-name', embedState: 'fb-embed-state', embedStateWords: 'fb-embed-state-words', embedCode: 'fb-embed-code', headerControl: 'fb-header-control', ellipsis: 'fb-ellipsis', embedActions: 'fb-embed-actions', embedFrame: 'fb-embed-frame', embedError: 'fb-embed-error', embedGlyph: 'fb-embed-glyph', embedDetails: 'fb-embed-details', embedLead: 'fb-embed-lead', link: 'fb-link', light: 'fb-light', principal: 'fb-principal', managedBy: 'fb-managed-by', refusal: 'fb-refusal', notice: 'fb-notice', noticeText: 'fb-notice-text', noticeCount: 'fb-notice-count' })
+    const CLS = Object.freeze({ code: 'fb-code', mark: 'fb-mark', markBox: 'fb-mark-box', wag: 'fb-wag', muted: 'fb-muted', managedRowDot: 'fb-managed-row-dot', embed: 'fb-embed', embedBar: 'fb-embed-bar', embedTitle: 'fb-embed-title', embedName: 'fb-embed-name', embedState: 'fb-embed-state', embedStateWords: 'fb-embed-state-words', embedCode: 'fb-embed-code', embedActions: 'fb-embed-actions', embedFrame: 'fb-embed-frame', embedError: 'fb-embed-error', embedGlyph: 'fb-embed-glyph', embedDetails: 'fb-embed-details', embedLead: 'fb-embed-lead', link: 'fb-link', notice: 'fb-notice', noticeText: 'fb-notice-text', noticeCount: 'fb-notice-count' })
     /**
      * The fish's prompt bubble (R-FN-01: "a bubble beside the sidebar fish"): it sits `gapPx` to
      * the right of the fish's mark, level with its top, and keeps to `maxWidthPx` wide and
@@ -317,25 +268,10 @@ window.__ModuleLoader__.load({
        */
       tailPx: 8, tailTopPx: 4,
     })
-    /** The gap between a principal's light and its label (R-UI-10). */
-    const PRINCIPAL_GAP_PX = 6
-    /**
-     * The session header's text beside DSH's own (UI-FIX-D, the 390 px retake):
-     * - `maxWidthPx`: the widest a one-line label grows before its ellipsis, DSH's own crumb cap
-     *   (ConversationRoot .crumb max-width, 0.2.1-rc.5 and 0.2.2-rc.1);
-     * - `narrowRowPx`: the title row's width (DSH makes it an inline-size container) at or below
-     *   which "Managed by <principal>" is dropped, DSH's own breakpoint for its agent-preset label
-     *   in the same row (dsh-client-ui-agent-preset `@container (width<=540px)`);
-     * - `controlShareCqi`: the share of that row a header control may take, in container-query
-     *   units, so on a 390 px header a long "Hand over to <name>" still leaves DSH's own utilities
-     *   and the sidebar toggle (all `flex:none`) inside the row: they take about two-thirds of it.
-     */
-    const HEADER_LABEL = Object.freeze({ maxWidthPx: 220, narrowRowPx: 540, controlShareCqi: 30 })
-    /**
-     * DSH's caption and body type and its tinted-box padding (the sizes its settings fields and
-     * Tag use), for the parts this sheet draws beyond DSH's own components.
-     */
-    const TYPE = Object.freeze({ caption: '12px/18px var(--dsw-font-family)', body: 'var(--dsw-font-xs-13)', boxPadding: '10px 12px', boxGapPx: 12, barPx: 3, detailGap: '4px 12px' })
+    /** The gap between the window's state dot and its words. */
+    const STATE_WORDS_GAP_PX = 6
+    /** DSH's caption type (the size its settings fields use), for the window's details line. */
+    const TYPE = Object.freeze({ caption: '12px/18px var(--dsw-font-family)', detailGap: '4px 12px' })
     /** The header's fish beside the title (FishMark, the window's one brand mark). */
     const HEADER_MARK_PX = 18
     /** The window's state line: DSH's StateDot sizes, and the tones of each state's dot. */
@@ -372,11 +308,8 @@ window.__ModuleLoader__.load({
       `.${CLS.markBox}{position:relative;display:inline-flex}`,
       `.${CLS.wag}{transform-origin:${UNREAD_BADGE.wagOrigin};animation:${UNREAD_BADGE.wagAnimation} ${UNREAD_BADGE.cycleSeconds}s ease-in-out infinite}`,
       `@keyframes ${UNREAD_BADGE.wagAnimation}{${UNREAD_BADGE.wag.map(([at, degrees]) => `${at}%{transform:rotate(${degrees}deg)}`).join('')}}`,
-      // The running fish's flip (design ⑥): a half-turn to the mirror, a short hold, then back.
-      `.${CLS.flip}{transform-origin:${ROW_MARK.flipOrigin};animation:${ROW_MARK.flipAnimation} ${ROW_MARK.flipSeconds}s ease-in-out infinite}`,
-      `@keyframes ${ROW_MARK.flipAnimation}{${ROW_MARK.flip.map(([at, degrees]) => `${at}%{transform:rotateY(${degrees}deg)}`).join('')}}`,
       // Motion is the only thing that stops: the light's dot and the prompt stay.
-      `@media (prefers-reduced-motion:reduce){.${CLS.wag},.${CLS.flip}{animation:none}}`,
+      `@media (prefers-reduced-motion:reduce){.${CLS.wag}{animation:none}}`,
       `.${CLS.code}{font-family:var(--ds-font-family-code);overflow-wrap:anywhere}`,
       `.${CLS.muted}{color:var(--dsw-alias-label-tertiary)}`,
       // The Fishball view (§7) fills DSH's main area as a session does: DSH's conversation root,
@@ -391,7 +324,7 @@ window.__ModuleLoader__.load({
       // The state tag and its safe code sit together, as one item of the header line.
       `.${CLS.embedState}{display:inline-flex;flex:0 1 auto;align-items:center;gap:${DSH_SESSION_HEADER.gap};min-width:0}`,
       `.${CLS.embedState}>:first-child{flex:none}`,
-      `.${CLS.embedStateWords}{display:inline-flex;align-items:center;gap:${PRINCIPAL_GAP_PX}px}`,
+      `.${CLS.embedStateWords}{display:inline-flex;align-items:center;gap:${STATE_WORDS_GAP_PX}px}`,
       // The header's code is one line that ends in an ellipsis (its `title` and the body's details
       // carry it whole): a code such as INVALID_MAIN_HOME broke into three lines at 390 px.
       `.${CLS.embedCode}{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;overflow-wrap:normal}`,
@@ -407,28 +340,8 @@ window.__ModuleLoader__.load({
       // The state's message reads first, in the primary colour; the safe details follow, smaller.
       `.${CLS.embedLead}{color:var(--dsw-alias-label-primary)}`,
       `.${CLS.embedDetails}{display:flex;flex-wrap:wrap;justify-content:center;gap:${TYPE.detailGap};font:${TYPE.caption}}`,
-      `.${CLS.field}{display:flex;flex-direction:column;gap:6px;margin-top:8px}`,
-      // DSH's input colours (dsh-client-ui-primitives SettingsValueField): --dsw-alias-border-primary is not defined in dialogs.
-      `.${CLS.note}{width:100%;box-sizing:border-box;padding:8px 12px;border:.5px solid var(--dsw-alias-border-l4);border-radius:var(--dsw-radius-md);background:var(--dsw-alias-bg-layer-3);color:var(--dsw-alias-label-primary);font:inherit;resize:vertical}`,
-      `.${CLS.managedRow}{position:relative;display:inline-flex;align-items:center;justify-content:center;width:${ROW_MARK.cellPx}px;height:${ROW_MARK.cellPx}px;color:var(--dsw-alias-label-primary)}`,
       // The fish's light (§13.6): DSH's own success token, so light and dark themes both read.
       `.${CLS.managedRowDot}{position:absolute;top:${ROW_MARK.dot.topPx}px;right:${ROW_MARK.dot.rightPx}px;box-sizing:border-box;width:${ROW_MARK.dot.sizePx}px;height:${ROW_MARK.dot.sizePx}px;border-radius:50%;background:var(--dsw-alias-state-success-primary);pointer-events:none}`,
-      // A principal's status light (R-UI-10): green online, red offline, DSH's state tokens; the
-      // element's text alternative carries the same, so colour is not the only signal.
-      `.${CLS.light}{display:inline-block;flex:none;width:${ROW_MARK.dot.sizePx}px;height:${ROW_MARK.dot.sizePx}px;border-radius:50%;background:var(--dsw-alias-state-error-primary)}`,
-      `.${CLS.light}[data-fishball-online="true"]{background:var(--dsw-alias-state-success-primary)}`,
-      `.${CLS.principal}{display:inline-flex;align-items:center;gap:${PRINCIPAL_GAP_PX}px;overflow-wrap:anywhere}`,
-      // "Managed by <principal>" beside the session title: DSH's caption size, as metadata, one line
-      // capped as DSH caps a crumb; a narrow title row drops it (HEADER_LABEL), as DSH drops its preset label.
-      `.${CLS.managedBy}{display:inline-block;max-width:${HEADER_LABEL.maxWidthPx}px;overflow:hidden;text-overflow:ellipsis;color:var(--dsw-alias-label-tertiary);font:${TYPE.caption};white-space:nowrap}`,
-      `@container (width<=${HEADER_LABEL.narrowRowPx}px){.${CLS.managedBy}{display:none}}`,
-      // A header control's label: one line, capped as DSH caps a crumb, ending in an ellipsis.
-      `.${CLS.headerControl}{max-width:min(${HEADER_LABEL.maxWidthPx}px, ${HEADER_LABEL.controlShareCqi}cqi);white-space:nowrap}`,
-      `.${CLS.headerControl} .${CLS.principal}{min-width:0;overflow-wrap:normal}`,
-      `.${CLS.ellipsis}{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}`,
-      // A hand-over refusal inside its dialog: DSH's danger tint (its Tag's danger tone) with an error
-      // bar at its start; the words keep the label colour, so they read at full contrast on the tint.
-      `.${CLS.refusal}{margin-top:${TYPE.boxGapPx}px;padding:${TYPE.boxPadding};border:.5px solid color-mix(in srgb, var(--dsw-alias-state-error-primary) 30%, transparent);border-radius:var(--dsw-radius-sm);background:color-mix(in srgb, var(--dsw-alias-state-error-primary) 8%, transparent);color:var(--dsw-alias-label-primary);font:${TYPE.body};border-inline-start:${TYPE.barPx}px solid var(--dsw-alias-state-error-primary)}`,
       // The Retry link (decided #77) reads as a link: DSH's accent label colour, underlined, no button chrome.
       `.${CLS.link}{padding:0;border:0;background:none;color:var(--dsw-alias-label-link,var(--fb-accent));font:inherit;text-decoration:underline;cursor:pointer}`,
       // The notify prompt (R-FN-01): DSH's menu material and radius, beside the fish (NOTICE_BUBBLE).
@@ -449,121 +362,16 @@ window.__ModuleLoader__.load({
       `:root{--fb-accent:${FISHBALL_ACCENT}}`,
     ].join('')
 
-    const apiUrl = (path) => new URL(path, document.baseURI).toString()
-
     /**
-     * One shared EventSource at `path` while the page is visible and has subscribers. Hidden tabs
-     * must release their HTTP/1.1 connection for host requests (DSH also streams per tab). Opening
-     * the route sends a whole current snapshot, so a resumed tab needs no replay or polling.
-     *
-     * EventSource retries a dropped connection by itself, but gives up for good when an answer is
-     * not a 200 event stream, as while the connector row reloads and its routes are briefly gone.
-     * Then the store shows `initial` (nothing it showed is still known to be true) and opens a new
-     * stream after STREAM.reopenMs while anyone still follows it, so the UI comes back live
-     * without a page reload (R-UI-05, R-UI-10).
+     * Fishball's fish: wags while anything is unread. The fish is plain everywhere it is drawn,
+     * where it keeps the unread pill and the green dot (the user's answer to D0). The managed
+     * session rows show the connector's own icon, drawn by dsh-agent-connector (DESIGN.md §28).
      */
-    function eventStore(path, initial) {
-      let snapshot = initial
-      const listeners = new Set()
-      let source
-      let reopen
-      const notify = () => { for (const listener of listeners) listener() }
-      const stop = () => {
-        const previous = source
-        source = undefined
-        previous?.close()
-        clearTimeout(reopen)
-        reopen = undefined
-        // A notice or owner can change while disconnected. Don't offer its old action on resume.
-        if (snapshot !== initial) { snapshot = initial; notify() }
-      }
-      const open = () => {
-        if (document.hidden || !listeners.size || source || reopen !== undefined) return
-        const current = new EventSource(apiUrl(path))
-        source = current
-        current.onmessage = (event) => {
-          if (source !== current) return
-          let next
-          try { next = JSON.parse(event.data) } catch { return }
-          snapshot = next
-          notify()
-        }
-        current.onerror = () => {
-          if (source !== current || current.readyState !== STREAM.closed) return
-          source = undefined
-          snapshot = initial
-          if (!document.hidden) reopen = setTimeout(() => { reopen = undefined; open() }, STREAM.reopenMs)
-          notify()
-        }
-      }
-      const followVisibility = () => { if (document.hidden) stop(); else open() }
-      return {
-        subscribe(listener) {
-          if (!listeners.size) document.addEventListener?.(VISIBILITY_EVENT, followVisibility)
-          listeners.add(listener)
-          open()
-          return () => {
-            listeners.delete(listener)
-            if (listeners.size > 0) return
-            document.removeEventListener?.(VISIBILITY_EVENT, followVisibility)
-            stop()
-          }
-        },
-        get: () => snapshot,
-      }
-    }
-    /**
-     * The connector UI backend's snapshot before its first frame (dsh-connector src/ui/state.js
-     * `snapshot()`): nothing managed, no target, the light off, no notice. Embed-UI keeps no state
-     * of its own (1.34): every part draws the backend's latest snapshot.
-     */
-    const EMPTY_UI = Object.freeze({
-      marks: Object.freeze([]), targets: Object.freeze([]),
-      attention: Object.freeze({ count: 0, important: false }), notice: null, light: Object.freeze({ on: false, important: false }),
-    })
-    const uiStores = new Map()
-    /**
-     * The one store of the backend's `events` route `path` (the host half's `services` answer,
-     * `ui.events`), shared by every part, so a page opens one stream however many parts draw.
-     */
-    function uiSnapshots(path) {
-      if (!uiStores.has(path)) uiStores.set(path, eventStore(path, EMPTY_UI))
-      return uiStores.get(path)
-    }
-    /**
-     * The hook a part draws the backend's snapshot with, followed live (R-UI-05, R-UI-10: no
-     * reload). @param ui - the host half's `ui` routes (availability).
-     */
-    const snapshotHook = (ui) => function useSnapshot() {
-      const store = uiSnapshots(ui.events)
-      return React.useSyncExternalStore(store.subscribe, store.get)
-    }
-
-    /** POST one command to the Host. @returns { ok, code, answer } (the Host's refusal code and the whole answer). */
-    async function send(path, body, signal) {
-      try {
-        const response = await fetch(apiUrl(path), { method: 'POST', headers: JSON_HEADERS, body: JSON.stringify(body), signal })
-        if (response.ok) return { ok: true, code: null, answer: await response.json().catch(() => ({})) }
-        const answer = await response.json().catch(() => ({}))
-        return { ok: false, code: typeof answer.code === 'string' ? answer.code : null, answer }
-      } catch {
-        return { ok: false, code: null, answer: null }
-      }
-    }
-
-    /**
-     * Fishball's fish: wags while anything is unread; flips while a row runs (the managed mark's
-     * running variant). A moving mark never wags, so the running state has one animation.
-     * The fish is plain everywhere it is drawn, the sidebar row and managed session rows included,
-     * where it keeps the unread pill and the green and yellow dots (the user's answer to D0). The
-     * wrench badge is dsh-connector's alone (ICON-SET): DSH draws it from that package's manifest
-     * icon on its Plugins card and settings page, never here.
-     */
-    function FishballIcon({ size, unread, moving, decorative = false }) {
-      const animation = moving ? CLS.flip : unread ? CLS.wag : null
+    function FishballIcon({ size, unread, decorative = false }) {
+      const animation = unread ? CLS.wag : null
       // `decorative`: a brand glyph in the window's chrome (its header, the hint's well). It carries
-      // no `data-fishball-mark`, which names the fish that stands for the light (the sidebar's and
-      // the managed rows'), so the hook keeps meaning exactly that fish.
+      // no `data-fishball-mark`, which names the fish that stands for the light (the sidebar's),
+      // so the hook keeps meaning exactly that fish.
       return h('svg', { width: size, height: size, viewBox: FISH_MARK.viewBox, className: [CLS.mark, animation].filter(Boolean).join(' '), 'aria-hidden': true, ...(decorative ? {} : { 'data-fishball-mark': true }) },
         h('path', { d: FISH_MARK.body, fill: FISH_MARK.bodyColor }),
         h('path', { d: FISH_MARK.eye, fill: FISH_MARK.eyeColor }))
@@ -571,32 +379,6 @@ window.__ModuleLoader__.load({
 
     /** The fish's light as a dot on its mark (§13.6): no timer, no animation of its own. */
     const attentionDot = (dot) => h('span', { className: CLS.managedRowDot, 'data-fishball-dot': dot, 'aria-hidden': true })
-
-    /**
-     * A principal as R-NAME-08 shows it: its name as plain text, or, for a nameless one, a bold
-     * `ID:` and its id. React escapes both, so markup in a name is shown, never run (HAND-EP-02
-     * row 8). `principalText` is the same as one string, for a text alternative.
-     */
-    const principalLabel = (t, principal) => (principal.name === null
-      ? h(React.Fragment, null, h('strong', null, t('idPrefix')), ' ', principal.id)
-      : principal.name)
-    const principalText = (t, principal) => (principal.name === null ? t('idPrefix') + ' ' + principal.id : principal.name)
-    /**
-     * A dictionary text with `node` in place of its `{name}` (R-UI-10's "Hand over to <name>", whose
-     * name may hold the bold prefix): the text is asked for with a marker and cut there, so every
-     * language keeps its own word order.
-     */
-    function withName(t, key, node) {
-      const [before, after = ''] = t(key, { name: NAME_MARK }).split(NAME_MARK)
-      return h(React.Fragment, null, before, node, after)
-    }
-    /** A principal's status light (R-UI-10): green or red, with its words as the text alternative. */
-    const principalLight = (t, online) => h('span', {
-      className: CLS.light, role: 'img', 'data-fishball-online': String(online),
-      'aria-label': t(online ? 'online' : 'offline'), title: t(online ? 'online' : 'offline'),
-    })
-    /** A principal with its light, as every Hand over control shows it. */
-    const principalWithLight = (t, principal, content) => h('span', { className: CLS.principal }, principalLight(t, principal.online), content)
 
     /**
      * The seat registry (SEAT). `register` returns its disposer, so a part fills a seat inside its
@@ -968,17 +750,6 @@ window.__ModuleLoader__.load({
      */
     const registerSidebarEntry = (ctx, Icon, t) => ctx.slots.inject(SLOT.panelList, () => ctx.slots.register({ name: SLOT.panelList, id: EMBED_UI.panelId, order: EMBED_UI.panelOrder, locale: NS, label: () => t('viewTitle') }, Icon))
 
-    /** One value components share and follow (dialog requests, the seats); set() notifies them. */
-    function valueStore(initial) {
-      let current = initial
-      const listeners = new Set()
-      return {
-        get: () => current,
-        set: (next) => { current = next; for (const listener of listeners) listener() },
-        subscribe: (listener) => { listeners.add(listener); return () => listeners.delete(listener) },
-      }
-    }
-
     function mountStyles() {
       const style = document.createElement('style')
       style.id = STYLE_ID
@@ -988,14 +759,14 @@ window.__ModuleLoader__.load({
     }
 
     /**
-     * What the parts share with the shell (client.marks.js, client.attention.js): the backend's one
-     * snapshot stream and the POST helper, one style sheet and dictionary, the principal's label
-     * and light, and the seats. A part is a factory of this kit and the host half's availability;
-     * client.js starts each result as a sub-plugin of the row.
+     * What the attention part shares with the shell (client.attention.js): the backend's snapshot
+     * hook and the POST helper (the connector's, passed on), one style sheet and dictionary, and
+     * the seats. A part is a factory of this kit and the host half's availability; client.js starts
+     * each result as a sub-plugin of the row.
      */
     exports.kit = Object.freeze({
       NS, SLOT, CLS, ROW_MARK, NOTICE_BUBBLE, SEAT, seats,
-      snapshotHook, send, valueStore, FishballIcon, attentionDot, principalLabel, principalText, withName, principalWithLight,
+      snapshotHook, send, FishballIcon, attentionDot,
     })
     /**
      * The shell as a client plugin for what is usable now (readAvailability).

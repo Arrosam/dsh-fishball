@@ -5,8 +5,9 @@ generic MCP endpoint with its own OAuth 2.1 authorization server. An agent with 
 sessions, message them, read them, and answer their permission requests, questions and plan
 reviews. Fishball is one such agent, but any standard MCP client can connect.
 
-The plugin changes nothing in DSH's own UI. Its only browser code is its own settings page. The
-sidebar entry, the marks on managed sessions and **Hand over** / **Take back** come from
+Its browser code is its own settings page and the hand-over marks (see
+[Hand over and Take back](#hand-over-and-take-back)), so every DSH with the connector shows them.
+The Fishball sidebar entry, its window, its light and the notify prompt come from
 [`dsh-connector-ui`](https://www.npmjs.com/package/dsh-connector-ui), which is optional.
 
 ## Requirements
@@ -191,7 +192,7 @@ routing.
 ## Session routing
 
 - **An agent sees and operates only the sessions it manages.** It manages a session that it started
-  with `session_start`, or one you handed to it with **Hand over** (from `dsh-connector-ui`).
+  with `session_start`, or one you handed to it with **Hand over** (see below).
   `sessions_list` omits every other session, and every session tool refuses one it does not manage.
 - **A managed session's questions, plan reviews and permission requests go to its agent.** The agent
   answers them with `question_answer` and `approval_answer`. They wait without a timer and without a
@@ -207,6 +208,35 @@ routing.
   when its token is switched off or deleted. Requests still waiting then go to you.
 - Inside a managed session, the model has the tool `message_agent` for writing to its agent.
 - Sessions nobody manages behave as plain DSH: their requests and questions go to you only.
+
+## Hand over and Take back
+
+The connector adds these to DSH's own session UI, with or without `dsh-connector-ui`:
+
+- **Hand over to <agent>** in a session's header and in its sidebar row menu, for every enabled,
+  paired token entry, online or not, each with a green (online) or red (offline) light. With more
+  than one agent, the header shows a **Handover to…** menu. A dialog takes an optional note.
+- **Managed by <agent>** beside a managed session's title, and **Take back** in its header and row
+  menu.
+- The connector's icon in a managed session's sidebar row. It flips while the session runs, and
+  holds still when motion is reduced.
+- An agent without a name shows as **ID:** and its id. A subagent's header acts on its root session.
+
+The words are in English and Chinese. Nothing shows while the connector row is not loaded.
+
+Notes for maintainers (DESIGN.md §28, decided 2026-11-20):
+- Its hooks, classes and ids are the connector's own: `data-dsh-connector-*` attributes, `dshc-*`
+  classes, slot entries `dsh-connector-hand-over`, `dsh-connector-hand-over-notice` and
+  `dsh-connector-managed`, and the dictionary `dsh-connector-marks`.
+- DSH serves a package's images only from a built `./lib/assets/*` export, and this repository has
+  no build step. So `client.marks.js` draws `assets/connector-icon.svg` inline from restated
+  shapes. Change the SVG, `src/mcp/oauth-web/page-theme.js` `MARK_SHAPE` and `client.marks.js`
+  together.
+- `client.js` exports `ui`, the one home of the browser helpers over the UI backend (the snapshot
+  stream, the POST helper, the value store). `dsh-connector-ui` lists `dsh-agent-connector` in its
+  `dsh.client.external` and loads this entry before its shell, so a page opens one stream for both
+  packages. If that load fails, `dsh-connector-ui` logs one warning and registers nothing, as it
+  does without a local connector.
 
 ## MCP tools
 

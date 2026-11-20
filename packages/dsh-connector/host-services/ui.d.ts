@@ -8,7 +8,10 @@
  * amendment.
  *
  * Every operation and all state behind what dsh-connector-ui draws are the connector's; embed-UI
- * holds none. There are no cards (Q-U2) and no inline records (Q-G4).
+ * holds none. There are no cards (Q-U2) and no inline records (Q-G4). The routes' marks, targets,
+ * handover and takeback are drawn by the connector's own marks part (client.marks.js, DESIGN.md
+ * §28), which reads them directly, with or without dsh-connector-ui; embed-UI draws the light and
+ * the notice.
  */
 import type { Dispose } from './index.js'
 
@@ -49,7 +52,7 @@ export interface UiSnapshot {
 }
 
 /**
- * The owner-only DSH Fetch routes embed-UI's browser half calls (DSH's `connection.fetch`:
+ * The owner-only DSH Fetch routes the connector's marks part and embed-UI's browser half call (DSH's `connection.fetch`:
  * owner-only, Host/Origin fenced). Each answers JSON, no-store:
  * - `state` (GET) → `{ok: true, state}`;
  * - `events` (GET) → server-sent events, one `UiSnapshot` at once and one per change. A reader that

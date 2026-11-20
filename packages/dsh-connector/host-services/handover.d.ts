@@ -1,7 +1,9 @@
 /**
  * `dshConnectorHandover`: the connector's hand-over service, with no UI and no token (task K3;
- * design §3.6; R-CON-11, R-ROUTE-05, R-UI-05, R-UI-10; Q-HO-1 decided C). Embed-UI's marks, Hand
- * over control and Take back button drive it in-process. Types only.
+ * design §3.6; R-CON-11, R-ROUTE-05, R-UI-05, R-UI-10; Q-HO-1 decided C). The connector's UI
+ * backend (src/ui/) drives it in-process for the connector's own marks part (client.marks.js:
+ * the marks, the Hand over control and Take back; moved from dsh-connector-ui by DESIGN.md §28).
+ * Types only.
  */
 import type { Dispose, Refusal } from './index.js'
 

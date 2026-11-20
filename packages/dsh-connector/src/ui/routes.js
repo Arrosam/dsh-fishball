@@ -1,7 +1,8 @@
 /**
  * The UI backend's owner-only DSH Fetch routes and its live-change stream (task C-UI-BACKEND;
- * requirements 1.34; R-UI-05, R-UI-10, R-FN-01; design §3.6, §13.6). Embed-UI's browser half
- * calls them; it never calls a host-only service itself and keeps no state of its own.
+ * requirements 1.34; R-UI-05, R-UI-10, R-FN-01; design §3.6, §13.6). Embed-UI's browser half and
+ * the connector's own marks part (client.marks.js, DESIGN.md §28) call them; neither calls a
+ * host-only service itself or keeps state of its own.
  *
  * DSH's `connection.fetch` is owner-only and applies its Host/Origin fence before a handler runs
  * (dsh-client-connection, both SDKs), so a handler validates only its body. Every answer is JSON

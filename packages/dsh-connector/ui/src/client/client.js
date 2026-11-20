@@ -4,8 +4,9 @@
  * parts and runs each as its own sub-plugin of this row, so each keeps its name, injects and effects:
  * - client.shell.js: the shell (the window or the no-instance hint, the sidebar fish, the
  *   style sheet and dictionary) and the kit the parts share;
- * - client.marks.js: the managed-session marks and Hand over / Take back (Q-G5 = A);
  * - client.attention.js: the fish's light and the notify prompt (R-FN-01, §13.6).
+ * The managed-session marks and Hand over / Take back moved to dsh-agent-connector's own client
+ * (its client.marks.js; DESIGN.md §28), so every connector install shows them without this package.
  * The instance's card moved to the instance's own settings page with I-HOST (requirements 1.33
  * Q-D1 = B, R-ARCH-05), so this package draws nothing of the instance but its window.
  * The parts draw the connector UI backend's snapshot and call its routes; they keep no state.
@@ -17,10 +18,16 @@
  * 2026-11-13; W3 brief F2, Q-7).
  *
  * Each part loads on its own: a chunk that fails to load loses only its part, logged once, never
- * the other. A part that arrives after this row stopped is not started. The marks and attention
- * parts need the shell's kit, so they start once the shell's chunk arrived; without it they are
- * logged as unavailable with it. Because the parts arrive as chunks after this entry
- * runs, they start one chunk request after it (DESIGN.md §17).
+ * the other. A part that arrives after this row stopped is not started. The attention part needs
+ * the shell's kit, so it starts once the shell's chunk arrived; without it, it is logged as
+ * unavailable with it. Because the parts arrive as chunks after this entry runs, they start one
+ * chunk request after it (DESIGN.md §17).
+ *
+ * The shell's helpers over the connector UI backend (the snapshot stream, the POST helper, the
+ * value store) have one home, dsh-agent-connector's client entry (its `ui` export), so this page
+ * opens one stream for both packages. That entry is loaded once, before any part, with
+ * `require.async` (it is this package's `dsh.client.external`); the shell then reads it with a
+ * plain `require`, which DSH's module system answers from its cache of materialized modules.
  */
 window.__ModuleLoader__.load({
   id: 'dsh-connector-ui',
@@ -38,13 +45,14 @@ window.__ModuleLoader__.load({
       /**
        * Each kit part: its chunk, the factory it exports, and when it runs (UIM-EP-01, design §4.2).
        * `needs` lists alternatives, each a set of availability flags that must all be set
-       * (src/host/services.js); any one alternative is enough. The marks and the light draw the
-       * connector UI backend, so they need it alone.
+       * (src/host/services.js); any one alternative is enough. The light draws the connector UI
+       * backend, so it needs it alone.
        */
       parts: Object.freeze([
-        Object.freeze({ chunk: './client.marks.js', factory: 'marksPart', needs: NEEDS_CONNECTOR }),
         Object.freeze({ chunk: './client.attention.js', factory: 'attentionPart', needs: NEEDS_CONNECTOR }),
       ]),
+      /** The connector's client entry, the one home of the shell's backend helpers (its `ui` export). */
+      connector: 'dsh-agent-connector',
       shellNeeds: NEEDS_CONNECTOR,
       /**
        * What the host half reports usable (src/host/constants.js ROUTE.services, page-relative; this
@@ -93,14 +101,21 @@ window.__ModuleLoader__.load({
      */
     function apply(ctx) {
       // The shell's chunk is asked for only once a wanted part needs it, then shared, so a DSH
-      // without a local connector requests no chunk at all (Q-U1).
+      // without a local connector requests no chunk at all (Q-U1). The connector's entry is loaded
+      // first: the shell's helpers live there. A failed load of it counts as no local connector
+      // (Q-U1, the lead 2026-11-20): the start below logs one 'part unavailable' and nothing
+      // registers, with no copy of the helpers here to fall back on.
       let shellChunk
-      const shell = () => (shellChunk ??= require.async(EMBED.shell))
+      const shell = () => (shellChunk ??= require.async(EMBED.connector).then(() => require.async(EMBED.shell)))
       const available = readAvailability()
       const when = (needs, load) => () => available.then((flags) => (wanted(flags, needs) ? load(flags) : undefined))
       start(ctx, EMBED.shell, when(EMBED.shellNeeds, (flags) => shell().then((module) => module.shellPlugin(flags))))
+      // A part needs the shell's kit. When the shell (or the connector's entry under it) failed to
+      // load, the shell's own start has already logged the one 'part unavailable', so the part
+      // starts nothing and logs nothing more (R6: one warning); a part's own chunk failure is still its own.
+      const kit = () => shell().then(({ kit: loaded }) => loaded, () => undefined)
       for (const part of EMBED.parts) {
-        start(ctx, part.chunk, when(part.needs, (flags) => Promise.all([shell(), require.async(part.chunk)]).then(([{ kit }, module]) => module[part.factory](kit, flags))))
+        start(ctx, part.chunk, when(part.needs, (flags) => kit().then((loaded) => (loaded === undefined ? undefined : require.async(part.chunk).then((module) => module[part.factory](loaded, flags))))))
       }
     }
 

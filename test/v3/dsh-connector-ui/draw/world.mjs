@@ -40,7 +40,7 @@ import { applyPlugins, moduleTable } from '../../contract/package-boundaries/cli
 import { pageServices } from '../../fishball-core/package/page.mjs'
 import { FakeHandover, recordingLogger, row } from '../../dsh-connector/ui/fakes.mjs'
 import { SUBJECT as BACKEND_SUBJECT } from '../../dsh-connector/ui/constants.mjs'
-import { ADMIT, ATTR, BACKEND, CHILD, DIAGNOSTIC, DSH, EMBED, FIXTURE, K2, PAGE_HOST, ROUTE, SERVICE, SLOT, TAG, TEXT, WAIT } from './constants.mjs'
+import { ADMIT, ATTR, BACKEND, CHILD, CONNECTOR_CLIENT, DIAGNOSTIC, DSH, EMBED, FIXTURE, K2, MARKS, PAGE_HOST, ROUTE, SERVICE, SLOT, TAG, TEXT, WAIT } from './constants.mjs'
 
 export { row }
 
@@ -343,8 +343,11 @@ function eventSourceClass(world, page, timers, beforeFrame) {
  *   `releaseChunk(file)` (a chunk that arrives late; a permitted load order of the real entry).
  * @param options.prepareBrowser - install the case's browser APIs before any client module loads.
  * @param options.beforeFrame - optional transport delay before delivering a real backend SSE frame.
+ * @param options.connector - DESIGN.md §28: load dsh-agent-connector's browser entry too (default
+ *   true; the marks part is its chunk). false is a page without the connector's client entry.
+ * @param options.failConnectorChunks - connector chunk files whose load rejects (a failed fetch).
  */
-export async function openPage(t, world, { host = PAGE_HOST.loopback, failServices = false, withoutConfigForms = false, embed = true, lang = TEXT.langs[0], holdChunks = [], interceptFetch, hidden = false, timers, onCommit, prepareBrowser, beforeFrame, prepare = () => {}, adaptReact } = {}) {
+export async function openPage(t, world, { host = PAGE_HOST.loopback, failServices = false, withoutConfigForms = false, embed = true, connector = true, failConnectorChunks = [], lang = TEXT.langs[0], holdChunks = [], interceptFetch, hidden = false, timers, onCommit, prepareBrowser, beforeFrame, prepare = () => {}, adaptReact } = {}) {
   const baseURI = PAGE_HOST.scheme + host + ':' + PAGE_HOST.port + ROUTE.absolutePrefix
   const page = { baseURI, requests: [], chunks: [], streams: [], navigations: [], dictionaries: [], errors: [] }
   const pageFetch = async (input, init = {}) => {
@@ -356,7 +359,8 @@ export async function openPage(t, world, { host = PAGE_HOST.loopback, failServic
     const send = () => world.connection.dispatch(method, url.href, { body, headers: init.headers ?? {} })
     return interceptFetch ? interceptFetch(url.pathname, init.signal ?? input?.signal, send) : send()
   }
-  const pageConsole = { ...console, error: (...args) => page.errors.push(args.map(String).join(' ')), warn() {}, log() {}, info() {}, debug() {} }
+  page.warnings = []
+  const pageConsole = { ...console, error: (...args) => page.errors.push(args.map(String).join(' ')), warn: (...args) => page.warnings.push(args.map(String).join(' ')), log() {}, info() {}, debug() {} }
   const sandbox = createBrowserSandbox({ lang, baseURI, fetch: pageFetch, console: pageConsole })
   const frames = scriptedFrames(sandbox)
   const setHidden = prepareBrowser ? undefined : scriptedVisibility(sandbox.document, frames, hidden)
@@ -370,30 +374,41 @@ export async function openPage(t, world, { host = PAGE_HOST.loopback, failServic
   const shim = createReactShim({ stale() {}, commit: onCommit })
   const React = adaptReact ? adaptReact(shim.React) : shim.React
   const platform = { [DSH.react]: React, [DSH.reactDom]: { createPortal: (node) => node }, [DSH.primitives]: primitivesFor(React) }
-  const graph = embed ? [{ id: EMBED.moduleId, rev: EMBED.rev }] : []
+  // DSH's graph lists the connector's entry before embed-UI's (embed-UI names it in dsh.client.external).
+  const graph = [...(connector ? [{ id: CONNECTOR_CLIENT.moduleId, rev: EMBED.rev }] : []), ...(embed ? [{ id: EMBED.moduleId, rev: EMBED.rev }] : [])]
   const chunkLoads = new Set()
-  const runFile = (file) => sandbox.run(fs.readFileSync(path.join(EMBED.clientDir, file), 'utf8'), path.join(EMBED.clientDir, file), new URL(file, baseURI).href)
+  const dirOf = (owner) => (owner === CONNECTOR_CLIENT.moduleId ? CONNECTOR_CLIENT.dir : EMBED.clientDir)
+  const runFile = (file, owner = EMBED.moduleId) => {
+    if (owner === CONNECTOR_CLIENT.moduleId && failConnectorChunks.includes(file)) throw new TypeError('fbtest: failed to fetch ' + file)
+    return sandbox.run(fs.readFileSync(path.join(dirOf(owner), file), 'utf8'), path.join(dirOf(owner), file), new URL(file, baseURI).href)
+  }
   const track = (load) => { chunkLoads.add(load); load.finally(() => chunkLoads.delete(load)).catch(() => {}) }
   // A held chunk's load is tracked only once released, so settling the page does not wait for it.
   const held = new Map()
-  const loadChunk = (_owner, file) => {
+  const loadChunk = (owner, file) => {
     page.chunks.push(file)
+    page.chunkOwners.push({ owner, file })
     if (holdChunks.includes(file)) {
       let release
       const gate = new Promise((resolve) => { release = resolve })
-      const load = gate.then(() => runFile(file))
+      const load = gate.then(() => runFile(file, owner))
       held.set(file, () => { track(load); release() })
       return load
     }
-    const load = Promise.resolve().then(() => runFile(file))
+    const load = Promise.resolve().then(() => runFile(file, owner))
     track(load)
     return load
   }
+  page.chunkOwners = []
+  if (connector) runFile(CONNECTOR_CLIENT.entry, CONNECTOR_CLIENT.moduleId)
   if (embed) runFile(EMBED.clientEntry)
   const table = moduleTable({ page: sandbox, platform, graph, loadChunk })
 
   const { Context } = await importSdk(world.sdk, DSH.cordis)
   const root = new Context()
+  // The page's own log records (DESIGN.md §28 R6: embed-UI's row logger warns 'part unavailable').
+  page.logs = []
+  root.logger.exporter({ levels: { default: DIAGNOSTIC.allLevels }, export: (m) => page.logs.push({ name: m.name, type: m.type, text: (m.args ?? []).map((a) => (typeof a === 'string' ? a : a instanceof Error ? a.message : JSON.stringify(a))).join(' ') }) })
   const services = pageServices(shim, lang)
   const locale = { ...services.locale, register(ns, dicts) { page.dictionaries.push({ ns, dicts }); return services.locale.register(ns, dicts) } }
   const registrations = []
@@ -459,6 +474,14 @@ export async function openPage(t, world, { host = PAGE_HOST.loopback, failServic
   }
   const api = {
     ...page, shim, plugins, registrations,
+    /** Live registrations other than the connector's own settings page (plugins.row.config, its card). */
+    drawn: () => registrations.filter((r) => !r.disposed && !SLOT.cards.includes(r.slot)),
+    /** Live registrations of the marks part (its three slot entry ids, DESIGN.md §28). */
+    marks: () => registrations.filter((r) => !r.disposed && Object.values(MARKS.ids).includes(r.id)),
+    /** Live registrations embed-UI made: neither the marks part's nor the connector's settings page. */
+    embedDrawn: () => registrations.filter((r) => !r.disposed && !SLOT.cards.includes(r.slot) && !Object.values(MARKS.ids).includes(r.id)),
+    /** Page log lines of `type` holding `needle` (the clients' ctx.logger). */
+    logsWith: (type, needle) => page.logs.filter((l) => l.type === type && l.text.includes(needle)),
     /** The page's document (a case may answer its queries, e.g. where the sidebar fish is on screen). */
     document: sandbox.document,
     setHidden,

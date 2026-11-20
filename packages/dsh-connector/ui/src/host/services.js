@@ -27,8 +27,10 @@ export const hasConnector = (ctx) => usable(ctx, SERVICE.ui) !== undefined
 
 /**
  * What the client may register (UIM-EP-01, design §4.2), one flag per service:
- * - connector: the connector's UI backend (the fish, its light, the notify prompt, the marks and
- *   Hand over / Take back, the window or the hint); `ui` carries its routes, page-relative;
+ * - connector: the connector's UI backend (the fish, its light, the notify prompt, the window or
+ *   the hint); `ui` carries its routes, page-relative. The marks and Hand over / Take back are not
+ *   gated here: they are dsh-agent-connector's own part (DESIGN.md §28), which reads the backend's
+ *   routes directly;
  * - page: `dshInstanceChild` (the window onto the hosted child's page and its status).
  * @param pageRelative - turns a route path into the form the browser resolves against DSH's page.
  */

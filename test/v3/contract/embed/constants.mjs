@@ -14,7 +14,8 @@ import { REPO } from '../../../support/constants.mjs'
 
 /** R-EMBED (1)–(2): the new package and where the moved client lives. */
 export const EMBED = Object.freeze({
-  workspace: 'packages/dsh-connector-ui',
+  // Since df9d83d embed-UI is the inner package packages/dsh-connector/ui (no root workspace of its own).
+  workspace: 'packages/dsh-connector/ui',
   clientExport: './client',
   platform: 'web',
   /**
@@ -31,7 +32,7 @@ export const EMBED = Object.freeze({
    */
   clientChunks: Object.freeze({
     shell: 'src/client/client.shell.js',
-    marks: 'src/client/client.marks.js',
+    // DESIGN.md §28 (2026-11-20): client.marks.js left embed-UI for dsh-agent-connector (CONNECTOR_CLIENT.marksChunk).
     attention: 'src/client/client.attention.js',
     // Q-G4 = A: client.records.js is removed (no inline records). I-HOST: client.instance.js left too (the instance's own page).
   }),
@@ -49,6 +50,8 @@ export const CONNECTOR_CLIENT = Object.freeze({
   slot: 'plugins.row.config',
   goneExports: Object.freeze(['./records']),
   goneFiles: Object.freeze(['client.records.js']),
+  /** DESIGN.md §28: the marks part is the connector's chunk beside its entry. */
+  marksChunk: 'client.marks.js',
 })
 
 /** The V2 main-DSH client manifests R-EMBED moves (their combined inject list, design §9.1). */
@@ -116,11 +119,17 @@ export const CARD_SLOTS = Object.freeze(['plugins.bundle.config', 'plugins.row.c
  */
 export const EXPECTED_UI = Object.freeze([
   Object.freeze({ slot: 'main', key: 'fishball' }),
-  Object.freeze({ slot: 'conversation.session.header.actions', id: 'fishball-hand-over' }),
-  // UI-FIX-D (2026-11-18): "Managed by" stays in header.actions; Hand over / Take back are in header.utilities.
-  Object.freeze({ slot: 'conversation.session.header.utilities', id: 'fishball-hand-over' }),
-  Object.freeze({ slot: 'sidebar.workspaces.session.menu.item', id: 'fishball-hand-over' }),
-  Object.freeze({ slot: 'sidebar.session.row.leading', id: 'fishball-managed' }),
+])
+/**
+ * DESIGN.md §28 (2026-11-20, R1, R4): the marks part's contributions, registered by dsh-agent-connector's
+ * browser half (no longer by embed-UI). UI-FIX-D: "Managed by" in header.actions, Hand over / Take back in header.utilities.
+ */
+export const EXPECTED_MARKS = Object.freeze([
+  Object.freeze({ slot: 'conversation.session.header.actions', id: 'dsh-connector-hand-over' }),
+  Object.freeze({ slot: 'conversation.session.header.utilities', id: 'dsh-connector-hand-over' }),
+  Object.freeze({ slot: 'sidebar.workspaces.session.menu.item', id: 'dsh-connector-hand-over' }),
+  Object.freeze({ slot: 'shell.overlay', id: 'dsh-connector-hand-over-notice' }),
+  Object.freeze({ slot: 'sidebar.session.row.leading', id: 'dsh-connector-managed' }),
 ])
 
 /** Words the instance must never use to reach into embed-UI's package (R-EMBED: "never reads a file inside"). */

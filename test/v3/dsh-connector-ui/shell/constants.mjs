@@ -129,7 +129,7 @@ export const HOST_TRICK = Object.freeze({ userinfo: 'fishball-tunnel.example@loc
  * absent in row 7); a row checks they equal the contracts. Only the exported data is read.
  */
 export const HOST_CONSTANTS = Object.freeze({
-  file: path.join(REPO, 'packages', 'dsh-connector-ui', 'src', 'host', 'constants.js'),
+  file: path.join(REPO, 'packages', 'dsh-connector', 'ui', 'src', 'host', 'constants.js'),
   tools: path.join(REPO, 'packages', 'dsh-connector', 'tools', 'constants.js'),
   // Requirements 1.34: the connector service embed-UI follows is C-UI-BACKEND's (its exported data only).
   ui: path.join(REPO, 'packages', 'dsh-connector', 'src', 'ui', 'constants.js'),
@@ -200,7 +200,9 @@ export const SPLIT = Object.freeze({
   clientDir: Object.freeze(['src', 'client']),
   entry: 'client.js',
   // Q-G4 = A: client.records.js is removed (no inline records).
-  parts: Object.freeze(['client.shell.js', 'client.marks.js', 'client.attention.js']),
+  // DESIGN.md §28 (2026-11-20): client.marks.js left embed-UI for dsh-agent-connector.
+  parts: Object.freeze(['client.shell.js', 'client.attention.js']),
+  moved: 'client.marks.js',
   withdrawn: 'client.records.js',
   /** dsh-client-modules CLIENT_CHUNK (0.2.1-rc.5 and 0.2.2-rc.1, brief F2). */
   chunk: /^client\.[A-Za-z0-9][A-Za-z0-9._-]*\.js$/,
@@ -229,7 +231,7 @@ export const BUDGET = Object.freeze({ readyMs: 60000, pollMs: 250, quietMs: 3000
 /** Owners of the rows U-SHELL cannot check (v3-tasks.md W4–W6, brief "Seam"). */
 export const LATER = Object.freeze({
   // U-DRAW now owns these rows (test/v3/dsh-connector-ui/draw, requirements 1.34).
-  marks: 'U-DRAW (managed marks, Hand over / Take back through the connector UI backend; test/v3/dsh-connector-ui/draw)',
+  marks: 'MARKS (DESIGN.md §28: managed marks, Hand over / Take back are dsh-agent-connector\'s part; test/v3/dsh-connector/marks)',
   attn: 'U-DRAW (the fish light and the contributed tools; test/v3/dsh-connector-ui/draw)',
   child: "X-MATRIX / E2E-UI (a real child: the page loads, cookie redemption, ticket replay; I-HOST's real locator)",
   e2e: 'E2E-UI (W6 browser flows: frame reload, the model-sync control on the Plugins page)',

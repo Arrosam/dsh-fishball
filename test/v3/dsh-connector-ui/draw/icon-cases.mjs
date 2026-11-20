@@ -12,8 +12,7 @@
  *   (still plain) → window opened → off, no dot (still plain);
  * - Decision table over the fish's light (rules: nothing, signal, signal(important), notify,
  *   notify(important)) × the drawing: every rule keeps exactly body + eye;
- * - EP over the managed-row seats: idle (the leading seat) and running (the trailing seat, a
- *   running Session in DSH's useSessionStatus) → plain fish; running adds the flip;
+ * (The managed-row rows moved to test/v3/dsh-connector/marks: DESIGN.md §28 gives them the connector's icon.)
  * - EP over every surface the page draws (fish, main, overlay, header, row seats, menu): no element
  *   carries the old wrench hook.
  * Rows that fail on the old design: its sidebar fish carried the wrench badge after the eye.
@@ -94,23 +93,7 @@ export function registerIconDrawCases(sdk) {
     })
   }
 
-  // ---------------------------------------------------------------- the managed-row marks
-  const ROWS = [
-    { part: 'idle (leading)', slot: SLOT.rowLeading, running: false, state: KEEP.idle, flip: false },
-    { part: 'running (trailing)', slot: TRAILING, running: true, state: KEEP.running, flip: true },
-  ]
-  for (const r of ROWS) {
-    draw(sdk, ID.rows, r.part, `a managed Session ${r.running ? 'running' : 'idle'} → its row mark [data-fishball-managed-row] draws the plain fish (body + eye, no wrench, no badge)${r.flip ? ' and flips' : ', not flipping'}`, async (t) => {
-      const { page } = await world(t, sdk, { principals: [[FIXTURE.navigator, { online: true }]], managed: [[S1, FIXTURE.navigator]] })
-      const view = await page.mount(r.slot, { ...sessionProps(S1), useSessionStatus: statusHook(S1, r.running) })
-      assert.ok(await page.waitFor(() => withAttr(view.tree(), ATTR.managedRow, S1).length > 0), 'no row mark in ' + r.slot)
-      const [mark] = withAttr(view.tree(), ATTR.managedRow, S1)
-      assert.equal(attrOf(mark, KEEP.rowState), r.state, 'row state')
-      const svg = assertPlainFish([mark], r.part)
-      assert.equal(classesOf(svg).includes(KEEP.flip), r.flip, 'flip: ' + classesOf(svg))
-      assert.deepEqual(byTag([mark], 'circle'), [], 'a badge circle on the row mark')
-    })
-  }
+  // ICON-DRAW-EP-01 (the managed-row marks) moved to test/v3/dsh-connector/marks: since DESIGN.md §28 they draw the connector's icon, not the fish.
 
   // ---------------------------------------------------------------- no surface carries the wrench hook
   draw(sdk, ID.hook, 'every surface', `no element of the fish, window, overlay, header, row seats or row menu carries ${WRENCH.attr}`, async (t) => {
@@ -121,7 +104,8 @@ export function registerIconDrawCases(sdk) {
     for (const slot of [SLOT.header, SLOT.rowLeading, SLOT.rowMenu, TRAILING]) await page.mount(slot, { ...sessionProps(S1), useSessionStatus: statusHook(S1, true) })
     const view = await mountMain(page)
     assert.ok(await page.waitFor(() => byTag(view.tree(), TAG.iframe).length > 0), 'no window frame')
-    assert.ok(withAttr(page.tree(), ATTR.fishMark).length >= 2, 'the fish and a row mark were not drawn')
+    assert.ok(withAttr(page.tree(), ATTR.fishMark).length >= 1, 'the sidebar fish was not drawn')
+    assert.ok(withAttr(page.tree(), ATTR.managedRow).length >= 1, 'no row mark was drawn')
     assert.deepEqual(withAttr(page.tree(), WRENCH.attr).map((n) => n.tag), [], 'an element carries the old wrench hook')
   })
 }

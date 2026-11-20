@@ -18,8 +18,9 @@ export const UI_SERVICE = Object.freeze({
 })
 
 /**
- * The owner-only DSH Fetch routes embed-UI's browser half calls (the connector is the backend,
- * embed-UI draws: requirements 1.34). DSH's `connection.fetch` is owner-only and applies its
+ * The owner-only DSH Fetch routes the browser calls (the connector is the backend: requirements
+ * 1.34): embed-UI's browser half, and the connector's own client.js / client.marks.js (DESIGN.md
+ * §28), which restates these paths page-relative in its UI_ROUTE: change both together. DSH's `connection.fetch` is owner-only and applies its
  * Host/Origin fence before a handler runs, so a handler checks only its body.
  * - state: the snapshot now; events: the snapshot as server-sent events, one at once and one per change;
  * - handOver / takeBack: the K3 hand-over operations (R-UI-05, R-UI-10, R-ROUTE-05);

@@ -46,10 +46,11 @@ export const WIDTH = Object.freeze({ all: Object.freeze([320, 390, 768, 1440]), 
 
 /** R1: the session header's hooks and words. */
 export const HEADER = Object.freeze({
-  takeBack: 'data-fishball-take-back',
-  managedBy: 'data-fishball-managed-by',
-  handOver: 'data-fishball-hand-over',
-  handOverMany: 'data-fishball-hand-over-many',
+  // DESIGN.md §28 (2026-11-20, R4): the header controls are dsh-agent-connector's marks part, data-dsh-connector-* hooks.
+  takeBack: 'data-dsh-connector-take-back',
+  managedBy: 'data-dsh-connector-managed-by',
+  handOver: 'data-dsh-connector-hand-over',
+  handOverMany: 'data-dsh-connector-hand-over-many',
   managedByPrefix: 'Managed by ',
   takeBackWords: 'Take back',
   handOverPrefix: 'Hand over to ',

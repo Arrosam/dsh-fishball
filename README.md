@@ -8,7 +8,7 @@ Split from `dsh-fishball@84078e5f`.
 
 | Folder | npm Package | Components & Role |
 | --- | --- | --- |
-| `packages/dsh-connector` | `dsh-agent-connector` | One plugin with 2 components: **`dsh-connector`** (MCP `/api/agent/mcp`, OAuth `/api/agent/oauth`, tokens, pairs, mailbox, routing, bundle settings page) and **`dsh-connector-ui`** (`./ui/`, sidebar indicator, agent window, notify prompt, Hand over / Take back marks, `notify` & `attention.*` tools). |
+| `packages/dsh-connector` | `dsh-agent-connector` | One plugin with 2 components: **`dsh-connector`** (MCP `/api/agent/mcp`, OAuth `/api/agent/oauth`, tokens, pairs, mailbox, routing, bundle settings page, Hand over / Take back marks) and **`dsh-connector-ui`** (`./ui/`, sidebar indicator, agent window, notify prompt, `notify` & `attention.*` tools). |
 | `packages/dsh-connector-amenities` | `dsh-connector-amenities` | Optional connector amenities bundle (currently **`dsh-connector-adapter`** under `./adapter/`, letting any DSH connect to another DSH's connector via `dsh-mcp-client`). Configure each amenity from its component settings. |
 | `packages/dsh-connector-shared` | `dsh-connector-shared` | Internal library bundled into DSH-side tarballs (`redact`, `request-host`). Not a plugin. |
 

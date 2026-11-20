@@ -4,12 +4,13 @@
  *
  * The user: "embed UI只是connector的附属，负责帮connector显示出和fishball交互的UI。所有的操作的功能
  * 实现都由connector完成，也就是connector当后端，embed UI当前端。" So every operation and all state
- * behind what `dsh-connector-ui` draws are here:
+ * behind what `dsh-connector-ui` and the connector's own marks part (client.marks.js, moved from
+ * dsh-connector-ui by DESIGN.md §28) draw are here:
  * - the managed marks and the Hand over / Take back operations, over K3 `dshConnectorHandover`;
  * - the Hand over targets and their online / offline lights (R-UI-10), from the same service;
  * - the attention latch (§13.6) and the notify prompt (R-FN-01), with the handlers of the tools
  *   embed-UI declares;
- * - the owner-only routes and the live-change stream embed-UI's browser half reads.
+ * - the owner-only routes and the live-change stream the marks part and embed-UI's browser half read.
  * There are no cards (Q-U2) and no inline records (Q-G4), so nothing here reads sessions.
  *
  * Composition only: C-WIRE (W4b) builds it with the routing module's hand-over service and calls

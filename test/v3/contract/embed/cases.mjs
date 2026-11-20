@@ -35,7 +35,7 @@ import { caseTest, dshInspect, integrationCase as gatedCase } from '../package-b
 import { DSH_FIELD, JS_FILE, NPM, SDK, V3 } from '../package-boundaries/constants.mjs'
 import { npmTempRoot, observe, readManifest } from '../package-boundaries/packages.mjs'
 import {
-  BASE, CARD_SLOTS, CHILD_COPY, CONNECTOR_CLIENT, GIT, CLIENT_LOADER_ERROR, EMBED, EMBED_WORDS, EXPECTED_UI, FIELD, FISHBALL_PREFIX, HOST_SLOTS,
+  BASE, CARD_SLOTS, CHILD_COPY, CONNECTOR_CLIENT, GIT, CLIENT_LOADER_ERROR, EMBED, EMBED_WORDS, EXPECTED_MARKS, EXPECTED_UI, FIELD, FISHBALL_PREFIX, HOST_SLOTS,
   INTEGRATION, LATER,
 } from './constants.mjs'
 import { hostGraph, openMainPage } from './page.mjs'
@@ -129,10 +129,18 @@ export function registerEmbedCases(sdk) {
   // ================================================================ R-EMBED (2): the moved client
   // Q-G4 = A: client.records.js is no longer one of the shipped parts.
   // I-HOST (QD1 = B): client.instance.js left embed-UI (it is the instance's client.models.js), so the shipped parts are the three U-SHELL ones.
-  caseTest(sdk, 'R-EMBED', '(2)', "embed-UI ships the moved client as flat chunks beside its entry: src/client/client.js and U-SHELL's parts client.shell.js, client.marks.js, client.attention.js", async () => {
+  // DESIGN.md §28 (2026-11-20, R2): client.marks.js left embed-UI; it is the connector's chunk now.
+  caseTest(sdk, 'R-EMBED', '(2)', "embed-UI ships the moved client as flat chunks beside its entry: src/client/client.js and U-SHELL's parts client.shell.js, client.attention.js; no client.marks.js (DESIGN.md §28)", async () => {
     needEmbed()
     const files = ownFiles(await unitOf(V3.embed.name))
     for (const file of [EMBED.clientEntry, ...Object.values(EMBED.clientChunks)]) assert.ok(files.includes(file), 'not shipped: ' + file)
+    assert.deepEqual(files.filter((f) => path.posix.basename(f) === CONNECTOR_CLIENT.marksChunk), [], 'embed-UI still ships ' + CONNECTOR_CLIENT.marksChunk)
+  })
+  caseTest(sdk, 'R-EMBED', '(2) marks', "the connector packs the marks part (client.marks.js beside client.js) and its shipped code names every marks slot (DESIGN.md §28, R1)", async () => {
+    const { packed } = await observe()
+    assert.ok(packed[V3.connector.name].includes(CONNECTOR_CLIENT.marksChunk), CONNECTOR_CLIENT.marksChunk + ' is not packed')
+    const strings = new Set([...(await unitTokens(V3.connector)).values()].flatMap((t) => t.strings))
+    assert.deepEqual(EXPECTED_MARKS.flatMap((e) => [e.slot, e.id]).filter((s) => !strings.has(s)), [], 'marks slots or ids missing from the connector')
   })
   caseTest(sdk, 'R-EMBED', '(2)', "the moved connector UI (U-SHELL's client parts) carries the V2 contributions' slots", async () => {
     needEmbed()
@@ -171,9 +179,11 @@ export function registerEmbedCases(sdk) {
     assert.ok(packed[V3.connector.name].includes(CONNECTOR_CLIENT.entry), 'client.js is not packed')
     assert.deepEqual(packed[V3.connector.name].filter((f) => CONNECTOR_CLIENT.goneFiles.includes(f)), [])
   })
-  caseTest(sdk, 'PLAT-EP-03', 1, `the connector's shipped code names no host-DSH slot but ${CONNECTOR_CLIENT.slot} (its settings page)`, async () => {
+  // DESIGN.md §28 (R1): the marks part is the connector's too, so its slots join the settings page's.
+  caseTest(sdk, 'PLAT-EP-03', 1, `the connector's shipped code names no host-DSH slot but ${CONNECTOR_CLIENT.slot} (its settings page) and the marks part's slots`, async () => {
+    const allowed = new Set([CONNECTOR_CLIENT.slot, ...EXPECTED_MARKS.map((e) => e.slot), 'sidebar.session.row.trailing'])
     const slots = []
-    for (const [file, t] of await unitTokens(V3.connector)) for (const s of t.strings) if (HOST_SLOTS.includes(s) && s !== CONNECTOR_CLIENT.slot) slots.push(file + ': ' + s)
+    for (const [file, t] of await unitTokens(V3.connector)) for (const s of t.strings) if (HOST_SLOTS.includes(s) && !allowed.has(s)) slots.push(file + ': ' + s)
     assert.deepEqual(slots, [])
   })
   // R-ARCH-05 amended by 1.33 / QD1 = B: the instance's only browser code is its own settings page, so these rows are withdrawn.
@@ -254,6 +264,11 @@ export function registerEmbedCases(sdk) {
     const missing = missingOf()
     assert.deepEqual(missing, [], 'contributions not registered by embed-UI; it registered ' + JSON.stringify(fromEmbed()))
     assert.equal(fromEmbed().some((r) => CARD_SLOTS.includes(r.slot)), false, 'embed-UI must have no Plugins card')
+    // DESIGN.md §28 (R1, R2): the marks come from the connector, never from embed-UI.
+    const fromConnector = () => page.registrations.filter((r) => r.owner === V3.connector.name)
+    await page.waitFor(() => EXPECTED_MARKS.every((e) => fromConnector().some((r) => r.slot === e.slot && r.id === e.id)))
+    assert.deepEqual(EXPECTED_MARKS.filter((e) => !fromConnector().some((r) => r.slot === e.slot && r.id === e.id)), [], 'marks not registered by the connector')
+    assert.deepEqual(fromEmbed().filter((r) => EXPECTED_MARKS.some((e) => e.slot === r.slot)).map((r) => r.slot + '#' + r.id), [], 'embed-UI still registers in the marks seats')
   })
   integrationCase(sdk, 'HOST-UC-08', 'post', 'C + I + U: the host shows no UI from the instance or the connector (no registration by another Fishball entry)', async (t) => {
     const { host } = await hostWith(sdk, SETS.full)
@@ -270,9 +285,14 @@ export function registerEmbedCases(sdk) {
     assert.deepEqual((await hostGraph(host)).map((e) => e.id).filter(FISHBALL_ENTRY), [])
     assert.equal(status?.state, STATE.ready, 'the hosted child is ready; status ' + JSON.stringify(status))
   })
-  integrationCase(sdk, 'PLAT-EP-03', 1, 'C + I alone: loading the connector adds no client entry, so no sidebar, slot or CSS (R-ARCH-03)', async () => {
+  // DESIGN.md §28 (R1): the connector's client entry (settings page and the marks part) shows with or without embed-UI.
+  integrationCase(sdk, 'PLAT-EP-03', 1, 'C + I alone: the connector\'s client entry is in the graph and registers the marks part; no Fishball sidebar entry', async (t) => {
     const { host } = await hostWith(sdk, SETS.noEmbed)
-    assert.equal((await hostGraph(host)).some((e) => e.id === V3.connector.name), false)
+    assert.equal((await hostGraph(host)).some((e) => e.id === V3.connector.name), true, 'no connector client entry')
+    const page = await openMainPage(t, { sdk, host })
+    await page.waitFor((regs) => EXPECTED_MARKS.every((e) => regs.some((r) => r.slot === e.slot && r.id === e.id)))
+    assert.deepEqual(EXPECTED_MARKS.filter((e) => !page.registrations.some((r) => r.owner === V3.connector.name && r.slot === e.slot && r.id === e.id)), [], 'marks without embed-UI')
+    assert.deepEqual(page.registrations.filter((r) => EXPECTED_UI.some((e) => e.slot === r.slot && e.key === r.key)), [], 'a Fishball window entry without embed-UI')
   })
 
   // ================================================================ later tasks

@@ -7,10 +7,10 @@ or a code here is a K3 amendment.
 
 | Service | Provider | Consumer (inject, optional) | Declared in |
 | --- | --- | --- | --- |
-| `dshConnectorHandover` | dsh-connector | dsh-connector-ui | [handover.d.ts](<handover.d.ts>) |
+| `dshConnectorHandover` | dsh-connector | the connector's own UI backend (`src/ui/`), for its marks part with Hand over / Take back (DESIGN.md §28; formerly dsh-connector-ui) | [handover.d.ts](<handover.d.ts>) |
 | `dshConnectorTokens` | dsh-connector | the instance's host row | [tokens.d.ts](<tokens.d.ts>) |
 | `dshInstanceChild` | the instance's host row | dsh-connector-ui | [child.d.ts](<child.d.ts>) |
-| `dshConnectorUi` | dsh-connector | dsh-connector-ui | [ui.d.ts](<ui.d.ts>) |
+| `dshConnectorUi` | dsh-connector | dsh-connector-ui (its routes are also read by the connector's own marks part, `client.marks.js`) | [ui.d.ts](<ui.d.ts>) |
 
 - Each is a Cordis service of the same process, with `apiVersion: 1`. A consumer looks it up at
   runtime (`ctx.get`); a trailing `?` in `inject` is not optional injection in Cordis. A consumer treats any other

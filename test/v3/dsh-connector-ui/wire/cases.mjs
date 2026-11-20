@@ -1,6 +1,6 @@
 /** Requirements-only black-box U-WIRE. DT: install combinations; EP: availability and
  * V2-only services; BVA: apiVersion immediately below/at/above 1; ST: managed → takeback
- * → unmanaged. Real Cordis/C-EXT/UI backend, scripted page, K3 child fake, no child launch. */
+ * → unmanaged moved to test/v3/dsh-connector/marks (DESIGN.md §28). Real Cordis/C-EXT/UI backend, scripted page, K3 child fake, no child launch. */
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { caseName } from '../../contract/package-boundaries/cases.mjs'
@@ -11,13 +11,14 @@ const relativeRoutes = () => Object.fromEntries(Object.entries(BACKEND.routes).m
 export function registerUWireCases(sdk) {
   for (const r of MATRIX) wire(sdk, 'UIM-DT-01', r.id, 'headless install matrix (Q-U1/Q-D4/Q-G3/Q-N3)', async (t) => {
     const w = await hostWorld(t, sdk, { ui: r.c, tools: r.c, embed: r.u, child: r.i ? {} : null, legacy: r.legacy })
-    const page = await openPage(t, w, { embed: r.u, withoutConfigForms: true })
+    // C installs dsh-agent-connector, whose browser entry the page then loads too (DESIGN.md §28).
+    const page = await openPage(t, w, { embed: r.u, connector: r.c, withoutConfigForms: true })
     assert.deepEqual(w.logs.filter((l) => l.type === WIRE.error && !l.text.includes(WIRE.missingPrefix)), [], 'loader error')
     assert.equal(w.errors().length, Number(r.u && !r.c))
     assert.equal(w.warns().length, Number(r.u && r.c && !r.i))
     assert.equal(page.live().filter((e) => e.slot === SLOT.fish && e.id === SLOT.fishId).length, Number(r.u && r.c))
     assert.equal(w.names().includes(w.publicName(TOOL.notify)), r.u && r.c, 'tools/list notify ownership')
-    if (!r.u) { assert.deepEqual(page.live(), []); return }
+    if (!r.u) { assert.deepEqual(page.embedDrawn(), []); return }
     const answer = await w.request('GET', ROUTE.services)
     assert.equal(answer.status, HTTP.ok)
     assert.deepEqual(Object.keys(answer.json).sort(), [...ROUTE.servicesKeys].sort())
@@ -29,7 +30,7 @@ export function registerUWireCases(sdk) {
     assert.equal(page.live().some((e) => e.slot === WIRE.configSlot), false)
     assert.deepEqual(page.errors, [])
     if (!r.c) { assert.deepEqual(page.live(), []); assert.deepEqual(page.chunks, []); return }
-    assert.deepEqual([...page.chunks].sort(), [...EMBED.chunks].sort())
+    assert.deepEqual(page.chunkOwners.filter((c) => c.owner === EMBED.moduleId).map((c) => c.file).sort(), [...EMBED.chunks].sort())
     const view = await page.mount(SLOT.main, {}, (e) => e.options.key === SLOT.mainKey)
     if (r.i) {
       assert.ok(await page.waitFor(() => byTag(view.tree(), TAG.iframe).length === EXPECT.once))
@@ -46,22 +47,6 @@ export function registerUWireCases(sdk) {
     assert.equal(answer.json.connector, apiVersion === WIRE.usableVersion)
     assert.equal(Object.hasOwn(answer.json, WIRE.legacyKey), false)
   })
-  wire(sdk, 'HAND-UC-02', 'main 3', 'mark disappears and S1 shows Hand over again through real takeback route', async (t) => {
-    const w = await hostWorld(t, sdk)
-    const p = FIXTURE.navigator
-    const sessionId = FIXTURE.sessions.s1
-    w.handover.set({ principals: [row(p, { online: true })], managed: [{ sessionId, principal: p }] })
-    const page = await openPage(t, w)
-    const header = await page.mount(SLOT.header, sessionProps(sessionId))
-    const mark = await page.mount(SLOT.rowLeading, sessionProps(sessionId))
-    assert.ok(await page.waitFor(() => withAttr(header.tree(), ATTR.takeBack).length === EXPECT.once))
-    assert.equal(withAttr(mark.tree(), ATTR.managedRow, sessionId).length, EXPECT.once)
-    await press(page, withAttr(header.tree(), ATTR.takeBack)[0])
-    assert.ok(await page.waitFor(() => withAttr(header.tree(), ATTR.handOver).length === EXPECT.once))
-    assert.deepEqual(withAttr(mark.tree(), ATTR.managedRow), [])
-    assert.deepEqual(withAttr(header.tree(), ATTR.takeBack), [])
-    assert.deepEqual(page.posts(BACKEND.routes.takeBack[1]).map((q) => JSON.parse(q.body)), [{ sessionId }])
-    assert.deepEqual(w.handover.calls.takeBack.map((args) => args[0]), [sessionId])
-  })
+  // HAND-UC-02 main 3 (Take back through the real route) moved to test/v3/dsh-connector/marks (DESIGN.md §28).
   test.todo(caseName(sdk, 'UIM-DT-01', 'C-WIRE', 'full real connector row supplies dshConnectorUi (C-WIRE; stand-in used above)'))
 }

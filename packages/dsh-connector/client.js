@@ -1,11 +1,15 @@
 /**
- * dsh-connector's browser half: its own plugin settings page, and nothing else (task
- * C-TOKENS-REVEAL; design §5.9; requirements 1.27, 1.28 R2; R-ARCH-03, R-CON-10, R-TOK-03, R-TOK-11).
- *
- * By the user's rule a plugin's own settings page is not "UI" ("不带UI的意思是不影响dsh本身的UI"), so
- * this entry registers exactly one thing: the Plugins page's `plugins.row.config` entry for the
- * connector's own row, `dsh-agent-connector#dsh-connector`, while DSH serves that row's settings. No
- * sidebar, no other slot, no style element; it works with dsh-connector-ui uninstalled.
+ * dsh-connector's browser half (task C-TOKENS-REVEAL; design §5.9, §28; requirements 1.27, 1.28 R2;
+ * R-ARCH-03, R-CON-10, R-TOK-03, R-TOK-11). It does three things, and works with dsh-connector-ui
+ * uninstalled:
+ * 1. its own plugin settings page: the Plugins page's `plugins.row.config` entry for the connector's
+ *    own row, `dsh-agent-connector#dsh-connector`, while DSH serves that row's settings (below);
+ * 2. the marks part (client.marks.js): Hand over / Take back, "Managed by <agent>" and the managed
+ *    row mark. It moved here from dsh-connector-ui (DESIGN.md §28, the user 2026-11-20: "every
+ *    connector install has it"), so every DSH with the connector shows it, with or without Embed UI;
+ * 3. the one home of the browser helpers over the connector UI backend (`UI_CLIENT`, exported as
+ *    `ui`): the snapshot stream, the POST helper and the value store. The marks part and
+ *    dsh-connector-ui's shell and attention part all draw from it, so a page opens one stream.
  *
  * The page shows the tokens list (label, switch, delete, reorder; one Save writes the list through
  * the row's DSH config form, so every list edit is an ordinary settings save the connector's sync
@@ -128,7 +132,8 @@ window.__ModuleLoader__.load({
      */
     const LIMIT_FIELDS = Object.freeze(['maxQueuedInputs', 'argumentExcerptBytes', 'maxMessageBytes', 'readSessionMessages', 'readSessionBytes'])
     /**
-     * Inline layout: the page adds no style sheet (R-ARCH-03), so every rule is an inline style and
+     * Inline layout: the settings page adds no style sheet (R-ARCH-03; only the marks part, a part of
+     * its own since DESIGN.md §28, mounts one), so every rule is an inline style and
      * every interactive state (focus, hover, disabled) comes from DSH's primitives. Colours, fonts and
      * radii are DSH's theme tokens (dsh-client-ui-theme), so light and dark both follow DSH. DSH has
      * no spacing tokens; the gaps copy its Plugins page (detailSections 32px, detailSection 12px) and
@@ -241,6 +246,8 @@ window.__ModuleLoader__.load({
     const DUPLICATE_ROW = '#'
     /** A step in the list for the reorder buttons. */
     const MOVE = Object.freeze({ up: -1, down: 1 })
+    /** The marks part's chunk (beside this file: DSH serves only client.<name>.js there), its effect label and its load-failure line. */
+    const MARKS = Object.freeze({ chunk: './client.marks.js', effect: 'dsh-connector: marks part', unavailable: 'dsh-connector: part unavailable' })
 
     const en = {
       summary: 'Tokens for agents that connect to this DSH.',
@@ -360,6 +367,149 @@ window.__ModuleLoader__.load({
     }
 
     const routeUrl = (path) => new URL(path, document.baseURI).toString()
+
+    /**
+     * The connector UI backend's routes, page-relative: src/ui/constants.js UI_ROUTE without the
+     * leading `/` (K3 host-services/ui.d.ts). A browser chunk cannot import that Node module, so they
+     * are written here once more: change both together. Embed UI reads the same paths from its host
+     * half's `services` answer; both resolve to one URL, so they share one store (uiSnapshots).
+     */
+    const UI_ROUTE = Object.freeze({
+      state: 'api/dsh-connector/ui/state',
+      events: 'api/dsh-connector/ui/events',
+      handOver: 'api/dsh-connector/ui/handover',
+      takeBack: 'api/dsh-connector/ui/takeback',
+      dismiss: 'api/dsh-connector/ui/notice/dismiss',
+      opened: 'api/dsh-connector/ui/opened',
+    })
+    /**
+     * The snapshot streams' reopen rule (eventStore): EventSource's `readyState` CLOSED, and the
+     * wait before a new stream. 2 s: soon enough to follow a connector reload, slow enough not to
+     * hammer a DSH whose connector is gone for good.
+     */
+    const STREAM = Object.freeze({ closed: 2, reopenMs: 2000 })
+    const VISIBILITY_EVENT = 'visibilitychange'
+    const JSON_HEADERS = Object.freeze({ 'content-type': 'application/json' })
+    /**
+     * The connector UI backend's snapshot before its first frame (src/ui/state.js `snapshot()`):
+     * nothing managed, no target, the light off, no notice. Without the backend's routes (the
+     * connector row not loaded) it stays this, so nothing is drawn and nothing is logged.
+     */
+    const EMPTY_UI = Object.freeze({
+      marks: Object.freeze([]), targets: Object.freeze([]),
+      attention: Object.freeze({ count: 0, important: false }), notice: null, light: Object.freeze({ on: false, important: false }),
+    })
+
+    /** One value components share and follow (dialog requests, seats); set() notifies them. */
+    function valueStore(initial) {
+      let current = initial
+      const listeners = new Set()
+      return {
+        get: () => current,
+        set: (next) => { current = next; for (const listener of listeners) listener() },
+        subscribe: (listener) => { listeners.add(listener); return () => listeners.delete(listener) },
+      }
+    }
+
+    /**
+     * One shared EventSource at `path` while the page is visible and has subscribers. Hidden tabs
+     * must release their HTTP/1.1 connection for host requests (DSH also streams per tab). Opening
+     * the route sends a whole current snapshot, so a resumed tab needs no replay or polling.
+     *
+     * EventSource retries a dropped connection by itself, but gives up for good when an answer is
+     * not a 200 event stream, as while the connector row reloads and its routes are briefly gone.
+     * Then the store shows `initial` (nothing it showed is still known to be true) and opens a new
+     * stream after STREAM.reopenMs while anyone still follows it, so the UI comes back live
+     * without a page reload (R-UI-05, R-UI-10).
+     */
+    function eventStore(path, initial) {
+      let snapshot = initial
+      const listeners = new Set()
+      let source
+      let reopen
+      const notify = () => { for (const listener of listeners) listener() }
+      const stop = () => {
+        const previous = source
+        source = undefined
+        previous?.close()
+        clearTimeout(reopen)
+        reopen = undefined
+        // A notice or owner can change while disconnected. Don't offer its old action on resume.
+        if (snapshot !== initial) { snapshot = initial; notify() }
+      }
+      const open = () => {
+        if (document.hidden || !listeners.size || source || reopen !== undefined) return
+        const current = new EventSource(routeUrl(path))
+        source = current
+        current.onmessage = (event) => {
+          if (source !== current) return
+          let next
+          try { next = JSON.parse(event.data) } catch { return }
+          snapshot = next
+          notify()
+        }
+        current.onerror = () => {
+          if (source !== current || current.readyState !== STREAM.closed) return
+          source = undefined
+          snapshot = initial
+          if (!document.hidden) reopen = setTimeout(() => { reopen = undefined; open() }, STREAM.reopenMs)
+          notify()
+        }
+      }
+      const followVisibility = () => { if (document.hidden) stop(); else open() }
+      return {
+        subscribe(listener) {
+          if (!listeners.size) document.addEventListener?.(VISIBILITY_EVENT, followVisibility)
+          listeners.add(listener)
+          open()
+          return () => {
+            listeners.delete(listener)
+            if (listeners.size > 0) return
+            document.removeEventListener?.(VISIBILITY_EVENT, followVisibility)
+            stop()
+          }
+        },
+        get: () => snapshot,
+      }
+    }
+    /**
+     * The one store of the backend's `events` route, keyed by its resolved URL and shared by every
+     * part of either package, so a page opens one stream however many parts draw.
+     */
+    const uiStores = new Map()
+    function uiSnapshots(path) {
+      const url = routeUrl(path)
+      if (!uiStores.has(url)) uiStores.set(url, eventStore(path, EMPTY_UI))
+      return uiStores.get(url)
+    }
+    /**
+     * The hook a part draws the backend's snapshot with, followed live (R-UI-05, R-UI-10: no
+     * reload). @param routes - the backend's page-relative routes (UI_ROUTE, or Embed UI's `ui`).
+     */
+    const snapshotHook = (routes) => function useSnapshot() {
+      const store = uiSnapshots(routes.events)
+      return React.useSyncExternalStore(store.subscribe, store.get)
+    }
+
+    /** POST one command to the Host. @returns { ok, code, answer } (the Host's refusal code and the whole answer). */
+    async function send(path, body, signal) {
+      try {
+        const response = await fetch(routeUrl(path), { method: 'POST', headers: JSON_HEADERS, body: JSON.stringify(body), signal })
+        if (response.ok) return { ok: true, code: null, answer: await response.json().catch(() => ({})) }
+        const answer = await response.json().catch(() => ({}))
+        return { ok: false, code: typeof answer.code === 'string' ? answer.code : null, answer }
+      } catch {
+        return { ok: false, code: null, answer: null }
+      }
+    }
+
+    /**
+     * The browser helpers over the connector UI backend, exported as `ui` on this entry. Their one
+     * home (DESIGN.md §28): this package's marks part and dsh-connector-ui's shell and attention
+     * part use them, so neither package keeps a copy. dsh-connector-ui reaches them through
+     * `require.async('dsh-agent-connector')` (its `dsh.client.external`).
+     */
+    const UI_CLIENT = Object.freeze({ routes: UI_ROUTE, apiUrl: routeUrl, snapshotHook, send, valueStore, visibilityEvent: VISIBILITY_EVENT })
     /** One call to the host half: its JSON answer, or `{ok: false, code}` when it cannot be read. */
     async function call(path, init) {
       try {
@@ -793,7 +943,22 @@ window.__ModuleLoader__.load({
       }
     }
 
+    /**
+     * The marks part (client.marks.js) as a sub-plugin while this row runs, as dsh-connector-ui
+     * starts its parts: the load is held by an effect, so a chunk that arrives after the row stopped
+     * starts nothing, and a chunk that fails to load loses only the marks, logged once.
+     */
+    function startMarks(ctx) {
+      ctx.effect(() => {
+        let live = true
+        require.async(MARKS.chunk).then((module) => { if (live) ctx.plugin(module.marksPart(UI_CLIENT)) })
+          .catch((error) => { ctx.logger?.warn?.(MARKS.unavailable, MARKS.chunk, error) })
+        return () => { live = false }
+      }, MARKS.effect)
+    }
+
     function apply(ctx) {
+      startMarks(ctx)
       const t = ctx.locale.bind(PAGE.locale)
       ctx.effect(() => ctx.locale.register(PAGE.locale, { en, zh }), PAGE.effect.locale)
       // Registered only while DSH serves the row's settings, so a deployment without the row shows
@@ -809,6 +974,8 @@ window.__ModuleLoader__.load({
       }, PAGE.effect.page)
     }
 
-    return { name: PAGE.id, inject: ['slots', 'locale', 'configForms'], apply }
+    // `ui` rides on the plugin object the Loader applies (it reads name, inject and apply only), so
+    // a consumer that loads this entry gets the same, already materialized helpers.
+    return { name: PAGE.id, inject: ['slots', 'locale', 'configForms'], apply, ui: UI_CLIENT }
   },
 })

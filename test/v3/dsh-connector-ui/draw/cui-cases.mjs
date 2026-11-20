@@ -25,7 +25,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { caseName } from '../../contract/package-boundaries/cases.mjs'
-import { confirmNote, handOverButtons, mountMain, mountOverlay, noticeNode, online, routePathOf, world } from './cases.mjs'
+import { mountMain, mountOverlay, noticeNode, online, routePathOf, world } from './cases.mjs'
 import { ATTR, CUI, EXPECT, FIXTURE, POLISH, SLOT, TOOL, WAIT } from './constants.mjs'
 import { placeOf, scriptFish } from './polish-cases.mjs'
 import { press, sessionProps, textIn, until, withAttr } from './world.mjs'
@@ -34,76 +34,7 @@ const draw = (sdk, id, part, title, fn) => test(caseName(sdk, id, part, title), 
 const S = CUI.sessions
 const P = FIXTURE
 
-// ------------------------------------------------------------------------------------------------ UI-01
-
-/** DSH's sessions store as `useSessions(selector)` reads it: R, its child C and C's child G. */
-const SESSIONS = Object.freeze({
-  byId: Object.freeze({
-    [S.root]: Object.freeze({ id: S.root }),
-    [S.child]: Object.freeze({ id: S.child, origin: CUI.subagentOrigin, parentId: S.root }),
-    [S.grandchild]: Object.freeze({ id: S.grandchild, origin: CUI.subagentOrigin, parentId: S.child }),
-  }),
-})
-const useSessions = (select = (state) => state) => select(SESSIONS)
-
-/** A world whose hand-over service knows R's tree; `managed` makes Navigator manage R. */
-async function treeWorld(t, sdk, { managed = false } = {}) {
-  const x = await world(t, sdk, { principals: [online(P.navigator)], managed: managed ? [[S.root, P.navigator]] : [] })
-  x.w.handover.parents = new Map([[S.child, S.root], [S.grandchild, S.child]])
-  await mountOverlay(x.page)
-  return x
-}
-/** The header of `sessionId`, with DSH's `useSessions` unless `withSessions` is false. */
-const headerOf = (page, sessionId, withSessions = true) => page.mount(SLOT.header, { ...sessionProps(sessionId), ...(withSessions ? { useSessions } : {}) })
-const takeBacks = (view) => withAttr(view.tree(), ATTR.takeBack)
-const managedBy = (view) => withAttr(view.tree(), ATTR.managedBy)
-const managedIds = (w) => w.handover.managed().map((m) => m.sessionId).sort()
-
-function marks(sdk) {
-  const id = CUI.id.ui01
-  for (const [part, sessionId] of [['child', S.child], ['grandchild', S.grandchild]]) {
-    draw(sdk, id, `DT (${part} header, root managed)`, `R managed by Navigator → the ${part}'s header says "Managed by Navigator" and offers Take back, no Hand over`, async (t) => {
-      const { page } = await treeWorld(t, sdk, { managed: true })
-      const header = await headerOf(page, sessionId)
-      assert.ok(await page.waitFor(() => takeBacks(header).length > 0), 'no Take back in the child\'s header while its root is managed')
-      assert.ok(managedBy(header).some((n) => textIn(n).includes(P.navigator.name)), 'no "Managed by Navigator"')
-      assert.deepEqual(handOverButtons(header), [], 'Hand over offered under a managed root')
-    })
-  }
-  draw(sdk, id, 'ST (child header: Take back)', 'R managed; Take back in the child\'s header → R is unmanaged, no child entry exists; the header offers Hand over again', async (t) => {
-    const { w, page } = await treeWorld(t, sdk, { managed: true })
-    const header = await headerOf(page, S.child)
-    assert.ok(await page.waitFor(() => takeBacks(header).length > 0), 'no Take back')
-    await press(page, takeBacks(header)[0])
-    assert.ok(await page.waitFor(() => page.posts(routePathOf('takeBack')).length > 0), 'Take back was not POSTed')
-    assert.ok(await page.waitFor(() => managedIds(w).length === 0), 'a session is still managed: ' + JSON.stringify(managedIds(w)))
-    assert.ok(await page.waitFor(() => handOverButtons(header).length > 0), 'the Hand over control did not come back')
-  })
-  draw(sdk, id, 'ST (child header: Hand over)', 'R unmanaged → the child\'s header offers "Hand over to Navigator"; Hand over → R is managed by Navigator (no child entry); the header then shows "Managed by Navigator" and Take back', async (t) => {
-    const { w, page } = await treeWorld(t, sdk)
-    const header = await headerOf(page, S.child)
-    assert.ok(await page.waitFor(() => handOverButtons(header).length > 0), 'no Hand over in the child\'s header')
-    await press(page, handOverButtons(header)[0])
-    await confirmNote(page, P.note)
-    assert.ok(await page.waitFor(() => managedIds(w).length > 0), 'nothing was handed over')
-    assert.deepEqual(managedIds(w), [S.root])
-    assert.ok(await page.waitFor(() => takeBacks(header).length > 0), 'the child\'s header does not follow its root\'s new manager')
-  })
-  draw(sdk, id, 'DT (child header, no useSessions)', 'without useSessions the session id itself is used: R managed → the child\'s header offers Hand over and no "Managed by"; R\'s own header shows Take back', async (t) => {
-    const { page } = await treeWorld(t, sdk, { managed: true })
-    const child = await headerOf(page, S.child, false)
-    const root = await headerOf(page, S.root, false)
-    assert.ok(await page.waitFor(() => takeBacks(root).length > 0), 'the root\'s header has no Take back')
-    assert.ok(await page.waitFor(() => handOverButtons(child).length > 0), 'the child\'s header has no Hand over without useSessions')
-    assert.deepEqual(managedBy(child), [])
-  })
-  draw(sdk, id, 'DT (root header)', 'R\'s own header with useSessions (R has no parent) → "Managed by Navigator" and Take back, as before', async (t) => {
-    const { page } = await treeWorld(t, sdk, { managed: true })
-    const header = await headerOf(page, S.root)
-    assert.ok(await page.waitFor(() => takeBacks(header).length > 0))
-    assert.ok(managedBy(header).some((n) => textIn(n).includes(P.navigator.name)))
-  })
-}
+// UI-01 (marks: a subagent header acts on its root) moved to test/v3/dsh-connector/marks (DESIGN.md §28).
 
 // ------------------------------------------------------------------------------------------------ UI-06
 
@@ -214,7 +145,6 @@ function followFish(sdk) {
 
 /** Every R-FIX-CUI row of the draw suite for `sdk`. */
 export function registerCuiDrawCases(sdk) {
-  marks(sdk)
   lateAttention(sdk)
   followFish(sdk)
 }

@@ -21,7 +21,7 @@ import { REPO } from '../../../support/constants.mjs'
 export { K1, K2 }
 
 const CONNECTOR_DIR = path.join(REPO, 'packages', 'dsh-connector')
-const UI_DIR = path.join(REPO, 'packages', 'dsh-connector-ui')
+const UI_DIR = path.join(REPO, 'packages', 'dsh-connector', 'ui')
 
 /** The packages a wire profile links (by folder; the instance is never linked, so no child starts). */
 export const PACKAGES = Object.freeze({

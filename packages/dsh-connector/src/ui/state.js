@@ -1,7 +1,8 @@
 /**
- * What embed-UI draws, owned here (requirements 1.34: "connector当后端，embed UI当前端"): the
+ * What embed-UI and the connector's own marks part (client.marks.js, DESIGN.md §28) draw, owned
+ * here (requirements 1.34: "connector当后端，embed UI当前端"): the
  * attention latch, the notify prompt, and the snapshot that joins them with the hand-over
- * service's marks and Hand over targets. Embed-UI keeps none of it.
+ * service's marks and Hand over targets. Neither browser part keeps any of it.
  *
  * - **Latch** (design §13.6, D3 behaviour, owner moved to the connector by R-EXT-13 amended 1.34):
  *   0/1 with importance; a signal sets it, the window's opening clears it once, and it resets when
