@@ -27,7 +27,7 @@ import { importInstance, importSdk } from '../../../private-skills/support/sdk.m
 import { HARNESS, SKILL_SDK } from '../../../private-skills/support/constants.mjs'
 import { REPO } from '../../../support/constants.mjs'
 import { until } from '../../../support/util.mjs'
-import { canonicalTmp, cleanups } from '../../dsh-connector-adapter/oauth-client/subject.mjs'
+import { canonicalTmp, cleanups } from '../../shared/dsh-host/subject.mjs'
 import { caseTest } from '../package-boundaries/cases.mjs'
 import { HOSTED } from './constants.mjs'
 import { ACTIVATION, CHILD_ROW_FILE, FAKE_SERVICES, NO_TARGET, PROFILE, SETTINGS_DSH as DSH, SETTLE, TARGETS, TRANSITION_TARGET } from './settings-target-constants.mjs'

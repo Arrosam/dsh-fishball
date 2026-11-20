@@ -15,7 +15,7 @@ import { createBrowserSandbox } from '../../../support/browser-sandbox.mjs'
 import { V3 } from '../../contract/package-boundaries/constants.mjs'
 import { readManifest } from '../../contract/package-boundaries/packages.mjs'
 import { runtimeOf } from '../../fishball-core/package/constants.mjs'
-import { importBound } from '../../dsh-connector-adapter/oauth-client/subject.mjs'
+import { importBound } from '../../shared/dsh-host/subject.mjs'
 import { CONDITION, CORE_SPLIT, FIXTURE, SEAM, UI_PACKAGE } from './constants.mjs'
 
 const SDK_SCOPE = '@deepseek-ai/'

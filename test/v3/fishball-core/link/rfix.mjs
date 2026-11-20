@@ -17,7 +17,7 @@
 import assert from 'node:assert/strict'
 import { setTimeout as sleep } from 'node:timers/promises'
 import { caseTest } from '../../contract/package-boundaries/cases.mjs'
-import { mcpClient } from '../../contract/k1-mcp-schema/schema-module.mjs'
+import { mcpClient } from '../../shared/connector-schema/schema-module.mjs'
 import { LINK } from '../../../../packages/core/contracts/constants.js'
 import { ANSWER, CODE, HARNESS, K1, LINK_BACKOFF, PRINCIPAL, RPC, STATE, TARGET, mcpUrl } from './constants.mjs'
 import { startFakeConnector } from './fake-connector.mjs'

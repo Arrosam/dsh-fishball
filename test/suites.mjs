@@ -106,7 +106,7 @@ export const V3_SUITES = Object.freeze({
   // oauth-client suite's in-process DSH host.
   'fishball-core.link-save': suite('saved credentials once on first acceptance, Connect (F-LINK-SAVE)', v3('fishball-core/link-save'),
     [sub(PACKAGE.fishballCore, 'src', 'identity'), ...CORE_LINK,
-      'test/v3/fishball-core/identity/**', 'test/v3/dsh-connector-adapter/oauth-client/subject.mjs', 'test/v3/dsh-connector/pairs/subject.mjs', ...CONNECTOR_CONTRACTS]),
+      'test/v3/fishball-core/identity/**', 'test/v3/shared/dsh-host/subject.mjs', 'test/v3/shared/connector-pairs/subject.mjs', ...CONNECTOR_CONTRACTS]),
   // The strip view is fishball-ui's src/status since F-UI (it reads fishball-shared's ui-seam); the line reads the link's target rule.
   'fishball-core.status': suite('status, strip view, set completeness, guards notice (F-STATUS)', v3('fishball-core/status'),
     [sub(PACKAGE.fishballCore, 'src', 'status'), sub(PACKAGE.fishballUi, 'src'), all(PACKAGE.fishballShared), ...CORE_LINK]),
@@ -130,7 +130,7 @@ export const V3_SUITES = Object.freeze({
     [all(PACKAGE.fishballUi), all(PACKAGE.fishballCore), all(PACKAGE.fishballShared), 'test/v3/fishball-ui/guards/**', 'test/v3/fishball-core/package/**',
       'test/v3/fishball-core/status/constants.mjs',
       // E-FIX-3: the guard-row reader is imported bound to the SDK through the oauth-client suite's importBound.
-      'test/v3/dsh-connector-adapter/oauth-client/subject.mjs',
+      'test/v3/shared/dsh-host/subject.mjs',
       // UI-POLISH-F: the navigation rows (nav-page.mjs) render through the F-SETTINGS primitive stand-ins and their constants.
       'test/v3/fishball-core/settings/primitives.mjs', 'test/v3/fishball-core/settings/constants.mjs']),
   // F-WIRE: core's main row, boots a real standalone DSH with core and fishball-ui as whole bundles
@@ -148,7 +148,7 @@ export const V3_SUITES = Object.freeze({
     [...v3('fishball-core/child-plugins'), 'test/v3/fishball-core/child-plugins/installed.test.mjs'],
     [sub(PACKAGE.fishballCore, 'ui', 'fishball-child-plugins'), sub(PACKAGE.fishballCore, 'ui', 'fishball-recommend-plugins'), PACKAGE.fishballCore + '/cordis.patch.yml',
       'test/v3/fishball-ui/package/subject.mjs', 'test/v3/fishball-ui/package/constants.mjs', 'test/v3/fishball-ui/contrast/**', 'test/v3/fishball-core/package/constants.mjs',
-      'test/v3/contract/package-boundaries/**', 'test/v3/dsh-connector-adapter/oauth-client/**', 'test/v2-page-cases/lite-browser.mjs', 'test/v3/fishball-core/settings/primitives.mjs']),
+      'test/v3/contract/package-boundaries/**', 'test/v3/shared/dsh-host/**', 'test/v2-page-cases/lite-browser.mjs', 'test/v3/fishball-core/settings/primitives.mjs']),
   'fishball-core.manager': suite("core's manager: reminders, singleton, preset and persona, generated identity, model (F-WIRE)", v3('fishball-core/manager'),
     [all(PACKAGE.fishballCore), all(PACKAGE.fishballShared), 'test/support/fixtures/fake-llm.mjs', 'test/support/host.mjs']),
   // F-WIRE: fishball-ui's model dialog, strip route and live core rows, in the browser sandbox and a real DSH.
@@ -170,14 +170,14 @@ export const V3_SUITES = Object.freeze({
   // fishball-ui's client in the F-SETTINGS scripted page, with the F3 stream stand-in.
   'fishball-ui.pairing': suite('the pairing warning: pairingView, the pairing stream and choose routes, the drawn card and its stream health (R-FIX-FUI F1)', v3('fishball-ui/pairing'),
     [all(PACKAGE.fishballUi), all(PACKAGE.fishballShared), 'test/v3/fishball-core/settings/page.mjs', 'test/v3/fishball-core/settings/primitives.mjs',
-      'test/v3/fishball-core/settings/constants.mjs', 'test/v3/fishball-ui/stream/**', 'test/v3/dsh-connector-adapter/oauth-client/subject.mjs', 'test/v3/fishball-core/package/constants.mjs']),
+      'test/v3/fishball-core/settings/constants.mjs', 'test/v3/fishball-ui/stream/**', 'test/v3/shared/dsh-host/subject.mjs', 'test/v3/fishball-core/package/constants.mjs']),
   // R-FIX-FUI F3 / F9: every fishball-ui dock (strip, ask cards, pairing card) over one health-aware
   // EventSource stand-in, frames from the real stripView / pairingView and the F-ASKCARD card shape.
   'fishball-ui.stream': suite('stream health of the strip, ask cards and pairing card; the ask card time in the DSH UI language (R-FIX-FUI F3, F9)', v3('fishball-ui/stream'),
     [all(PACKAGE.fishballUi), all(PACKAGE.fishballShared), 'test/v3/fishball-core/settings/page.mjs', 'test/v3/fishball-core/settings/primitives.mjs',
       'test/v3/fishball-core/settings/constants.mjs', 'test/v3/fishball-core/asks/world.mjs', 'test/v3/fishball-core/asks/constants.mjs', 'test/v3/fishball-core/asks/subject.mjs',
       'test/v3/fishball-core/status/subject.mjs', 'test/v3/fishball-core/status/constants.mjs', 'test/v3/fishball-ui/model-dialog/strip.mjs', 'test/v3/fishball-ui/model-dialog/constants.mjs',
-      'test/v3/fishball-ui/pairing/**', 'test/v3/dsh-connector-adapter/oauth-client/subject.mjs', 'test/v3/fishball-core/package/constants.mjs']),
+      'test/v3/fishball-ui/pairing/**', 'test/v3/shared/dsh-host/subject.mjs', 'test/v3/fishball-core/package/constants.mjs']),
   // LOGO-BUTTON: fishball-ui's brand part in DSH's sidebar slots, seen through a scripted shell;
   // fishball-page's New Session hiding over a scripted shell document; the motion rows in Chromium.
   'fishball-ui.brand': suite('the sidebar logo: Fishball mark/wordmark/status in the wide row and rail, state, theme, activation, New Session hiding, teardown (LOGO-BUTTON)', v3('fishball-ui/brand'),

@@ -28,7 +28,7 @@ import { INSTANCE } from '../../../support/constants.mjs'
 import { linkContractForSourceRun } from '../../../support/contract-link.mjs'
 import { until } from '../../../support/util.mjs'
 import { importInstance } from '../../../private-skills/support/sdk.mjs'
-import { mcpClient } from '../../contract/k1-mcp-schema/schema-module.mjs'
+import { mcpClient } from '../../shared/connector-schema/schema-module.mjs'
 import { HARNESS, LINK } from './constants.mjs'
 
 const stacks = new WeakMap()

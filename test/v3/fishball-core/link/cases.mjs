@@ -33,7 +33,7 @@ import { countClientImport, failClientImport } from './import-fault.mjs'
 import { defer, openLink, openRawLink, untilState, untilTrue } from './link-driver.mjs'
 import { CODE_THROW, THROWN, assertNoSecret, assertOneWarning, logRecorder } from './log-privacy.mjs'
 import { watchNetwork } from './net-probe.mjs'
-import { mcpClient } from '../../contract/k1-mcp-schema/schema-module.mjs'
+import { mcpClient } from '../../shared/connector-schema/schema-module.mjs'
 import { registerRfixLinkCases } from './rfix.mjs'
 
 const JS = /\.(?:c|m)?js$/

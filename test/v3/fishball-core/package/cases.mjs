@@ -24,7 +24,7 @@
  * `todo` and name it.
  */
 import assert from 'node:assert/strict'
-import { WITHDRAWN_BY, withdrawnRow } from '../../dsh-instance/host/withdrawn.mjs'
+import { WITHDRAWN_BY, withdrawnRow } from '../../shared/rows/withdrawn.mjs'
 import fs from 'node:fs'
 import path from 'node:path'
 import { caseTest, dshInspect } from '../../contract/package-boundaries/cases.mjs'

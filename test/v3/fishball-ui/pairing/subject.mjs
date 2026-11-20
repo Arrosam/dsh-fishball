@@ -14,7 +14,7 @@ import assert from 'node:assert/strict'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { runtimeOf } from '../../fishball-core/package/constants.mjs'
-import { importBound } from '../../dsh-connector-adapter/oauth-client/subject.mjs'
+import { importBound } from '../../shared/dsh-host/subject.mjs'
 import { FIXTURE, ROUTE, STATE, SUBJECT, VIEW, WAIT } from './constants.mjs'
 
 export async function viewModule(sdk) {

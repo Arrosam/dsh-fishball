@@ -19,7 +19,7 @@
  */
 import assert from 'node:assert/strict'
 import { findAll, textOf } from '../../../support/rp-recommend.mjs'
-import { importBound } from '../../dsh-connector-adapter/oauth-client/subject.mjs'
+import { importBound } from '../../shared/dsh-host/subject.mjs'
 import { createWorld, loadPage, settle } from '../../fishball-core/settings/page.mjs'
 import { coreView } from '../pairing/subject.mjs'
 import { STATE as PAIR_STATE } from '../pairing/constants.mjs'

@@ -24,7 +24,7 @@ import { normaliseName } from '../../../fixtures/dsh-connector-contract/mcp-sche
 import assert from 'node:assert/strict'
 import { setTimeout as sleep } from 'node:timers/promises'
 import { caseTest } from '../../contract/package-boundaries/cases.mjs'
-import { pairWorld } from '../../dsh-connector/pairs/subject.mjs'
+import { pairWorld } from '../../shared/connector-pairs/subject.mjs'
 import { CODE, CUSTOM_TOKEN_FIELD, FIXTURE, GENERATION_SAMPLE, HARNESS, IDENTITY, ID_ROWS, K1, LATER, NAME, RELAYED, SETTING, STATE, SUBJECT, WEB, mcpUrl, token } from './constants.mjs'
 import { FakePairs, startFakeConnector } from './fake-connector.mjs'
 import { checkId, defer, identityModule, pairingWorld, untilTrue } from './subject.mjs'
