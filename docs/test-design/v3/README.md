@@ -33,13 +33,13 @@ are open in [questions.md](<questions.md>).
 | --- | --- | --- |
 | 1 | OAuth client credentials, tokens, pairing | [01-auth-pairing.md](<01-auth-pairing.md>) |
 | 2 | Names | [02-names.md](<02-names.md>) |
-| 3 | Hand over / Take back | [03-handover.md](<03-handover.md>) |
+| 3 | Hand over / Take back | `03-handover.md` (in the dsh-connector repository) |
 | 4 | `fishball-events`, exactly-one delivery, interception | [04-events-interception.md](<04-events-interception.md>) |
 | 6 | Watching = managing | [06-watch.md](<06-watch.md>) |
 | 7 | Contributor tools and events | [07-contributors.md](<07-contributors.md>) |
-| 8 | Hosted launch, token per pairing, reinstall takeover | [08-hosted.md](<08-hosted.md>) |
+| 8 | Hosted launch, token per pairing, reinstall takeover | `08-hosted.md` (in the dsh-fishball-instance repository) |
 | 9 | Standalone Fishball and remote DSH | [09-standalone-remote.md](<09-standalone-remote.md>) |
-| 10 | Embed-UI and the install matrix | [10-embed-ui-matrix.md](<10-embed-ui-matrix.md>) |
+| 10 | Embed-UI and the install matrix | `10-embed-ui-matrix.md` (in the dsh-connector repository) |
 | 11 | Everything else (protocol, routing rest, plugin set, placement, board, migration, compatibility, security) | [11-platform.md](<11-platform.md>) |
 | — | Traceability: requirement → cases | [traceability.md](<traceability.md>) |
 | — | Gaps and contradictions found while writing the cases | [questions.md](<questions.md>) |
