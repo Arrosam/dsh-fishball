@@ -7,6 +7,9 @@
  *   manages → the user's stock prompt, unchanged DSH ("An unmanaged session's tools go to the user
  *   as normal DSH", the user, 2026-11-17);
  * - a standing grant covers the call → `allowed-once`, no offer (grants.js);
+ * - a delegate claims the session (delegates/, `dshConnectorSessions`) and answers allow or reject
+ *   → that one call is decided, no offer; the manager gets `settlement {by: delegate}`. A pass, or
+ *   any failure of the delegate, goes on to the next step unchanged;
  * - otherwise one `permission` offer to the manager's mailbox, connected or not, that waits with no
  *   timer and no cap (the user, 2026-11-17: "No cap on pending approvals. Requests from managed
  *   sessions wait in the queue indefinitely and are never refused for being too many"). The stock
@@ -35,6 +38,7 @@ import { diagnosticOf } from '../errors.js'
 import { rootSessionOf } from '../session-info.js'
 import { argumentsOf } from './call-log.js'
 import { checkGrant } from './grants.js'
+import { VERDICT } from '../delegates/index.js'
 import { APPROVAL, LOG, REQUEST_ID, SUMMARY } from './constants.js'
 import { mintId, refused, settleOrWithdraw, trimmed } from './support.js'
 
@@ -69,6 +73,7 @@ export function decisionRuleBroken(decision, risk, reason, argumentsStatus) {
  * @param deps.routing - `offer`, `settle`, `escalate`, `withdraw`
  * @param deps.managerOf - K1c `ManagedState.managerOf`
  * @param deps.grants - grants.js
+ * @param deps.delegates - delegates/index.js (`decide`)
  * @param deps.gate - prompt-gate.js
  * @param deps.wording - wording.js
  * @param deps.titleOf - `(sessionId) => Promise<string>`: the descriptor's `title`
@@ -76,7 +81,7 @@ export function decisionRuleBroken(decision, risk, reason, argumentsStatus) {
  * @param {() => number} deps.now - epoch ms
  * @param deps.logger - `{warn}`
  */
-export function createPermissions(ctx, { routing, managerOf, grants, gate, wording, titleOf, readLimits, now, logger }) {
+export function createPermissions(ctx, { routing, managerOf, grants, delegates, gate, wording, titleOf, readLimits, now, logger }) {
   const warn = (line) => (error) => logger.warn(LOG.format, line, diagnosticOf(error))
   /** approvalId → the live request: its call and how to end it. Memory only (module comment). */
   const live = new Map()
@@ -98,6 +103,25 @@ export function createPermissions(ctx, { routing, managerOf, grants, gate, wordi
   }
 
   /**
+   * The delegate step (module comment): a delegate's allow or reject decides the call, and its
+   * manager is told with `settlement {by: delegate}`. The call is decided even if that report
+   * fails (logged): the delegate's answer is the decision, the settlement only informs.
+   * @returns the call's DSH outcome, or undefined to go on to the offer
+   */
+  async function delegate(request, signal) {
+    // The title is read only when a delegate claims the session: the offer path reads its own.
+    const describe = async () => descriptorOf(request, await titleOf(request.sessionId))
+    const decided = await delegates.decide(request.sessionId, describe, signal)
+    if (signal?.aborted) return APPROVAL.outcome.cancelled
+    if (decided === undefined) return undefined
+    const decision = decided.verdict === VERDICT.allow ? APPROVAL_DECISION.allow : APPROVAL_DECISION.reject
+    const settlement = { approvalId: request.id, outcome: FINAL[decision].outcome, by: SETTLED_BY.delegate, delegate: { name: decided.name, toolName: request.toolName, reason: decided.reason } }
+    void routing.report(request.sessionId, settlement).catch(warn(LOG.settleFailed))
+    if (decision === APPROVAL_DECISION.reject) wording.reject(request.sessionId, request.callId, request.toolName, decided.reason)
+    return FINAL[decision].call
+  }
+
+  /**
    * The waterfall listener: see the module comment.
    * @param target - the scope target the waterfall runs for (S33's re-dispatch fallback)
    */
@@ -113,6 +137,8 @@ export function createPermissions(ctx, { routing, managerOf, grants, gate, wordi
     let resolve
     const answered = new Promise((settle) => { resolve = settle })
     const request = { ...call, id, offerId: formatOfferId(id, OFFER_ID.firstRevision), at: now(), reason: typeof req.reason === 'string' ? req.reason : '', resolve }
+    const delegated = await delegate(request, req.signal)
+    if (delegated !== undefined) return delegated
     live.set(id, request)
     const onAbort = () => {
       if (end(id, { cancelled: true })) void routing.withdraw(request.offerId).catch(warn(LOG.withdrawFailed))

@@ -1,7 +1,7 @@
 {
   "name": "dsh-connector-amenities",
   "version": "1.0.0-alpha.1",
-  "description": "Optional DSH Connector amenity components (including dsh-connector-adapter). Configure each amenity in its component settings.",
+  "description": "Optional DSH Connector amenity components (dsh-connector-adapter, dsh-connector-watchdog). Configure each amenity in its component settings.",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -25,6 +25,7 @@
     "index.js",
     "client.js",
     "adapter/",
+    "watchdog/",
     "cordis.patch.yml",
     "README.md",
     "LICENSE"
@@ -37,7 +38,9 @@
     "@modelcontextprotocol/client": "2.4.0"
   },
   "peerDependencies": {
+    "@deepseek-ai/dsh-atomic-write": "*",
     "@deepseek-ai/dsh-credentials": "*",
+    "@deepseek-ai/dsh-llm": "*",
     "@deepseek-ai/dsh-mcp-client": "*",
     "@deepseek-ai/dsh-timeout": "*",
     "@deepseek-ai/dsh-tools": "*",

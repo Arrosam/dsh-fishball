@@ -49,7 +49,29 @@ export async function ops({ ctx, model, agentOf, eventSummary, plain, createUser
     return { callId: m.toolCallId ?? m.callId ?? null, isError: Boolean(m.isError), text }
   })
 
+  /** A scripted dshConnectorSessions delegate (delegate-cases.mjs): verdicts by session id, every request seen. */
+  const delegate = (store.delegate ??= { verdicts: new Map(), seen: [], dispose: undefined })
+
   return {
+    /** Registers the scripted delegate `name` (once); `verdict` for `sessionId` (null: stop claiming it). */
+    delegateScript({ name, sessionId, verdict }) {
+      if (delegate.dispose === undefined) {
+        delegate.dispose = ctx.get(IX.delegate.service).delegates.register({
+          name,
+          claims: (id) => delegate.verdicts.has(id),
+          async decide(request) {
+            delegate.seen.push(JSON.parse(JSON.stringify(request)))
+            const v = delegate.verdicts.get(request.sessionId)
+            if (v === IX.delegate.throws) throw new Error(IX.delegate.throws)
+            return v
+          },
+        })
+      }
+      if (verdict === null) delegate.verdicts.delete(sessionId)
+      else delegate.verdicts.set(sessionId, verdict)
+      return true
+    },
+    delegateSeen: () => delegate.seen,
     registerErrors: () => store.registerErrors,
     /** A session in a fresh folder on `preset` (no turn). */
     async createIn({ name, preset }) {

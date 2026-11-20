@@ -15,6 +15,7 @@ import { READ_ROLE, parseOfferId } from '../../mcp-schema/index.js'
 import { SESSION_INFO } from '../constants.js'
 import { openGrantStore, createGrants } from '../domain/grants.js'
 import { createPermissions } from '../domain/permissions.js'
+import { SESSIONS_SERVICE, createDelegates } from '../delegates/index.js'
 import { createPromptGate } from '../domain/prompt-gate.js'
 import { createPrompts } from '../domain/prompts.js'
 import { createQuestions } from '../domain/questions.js'
@@ -43,7 +44,7 @@ const refused = (code) => Object.freeze({ ok: false, code })
  * @param deps.readLimits - the connector's live limits (src/config.js)
  * @param deps.routing - the routing composition
  * @param deps.logger - the row's logger
- * @returns `{sessions, interactions, attachments, close}`
+ * @returns `{sessions, interactions, attachments, provide(ctx), close}`: `provide` serves `dshConnectorSessions`
  */
 export async function createSessionDomain(ctx, { storageDomain, readLimits, routing, logger }) {
   const now = Date.now
@@ -74,7 +75,9 @@ export async function createSessionDomain(ctx, { storageDomain, readLimits, rout
     const wording = createWording(ctx)
     closers.push(() => wording.close())
     const gate = createPromptGate(ctx, now)
-    const permissions = createPermissions(ctx, { routing, managerOf, grants, gate, wording, titleOf: titleOfSession, readLimits, now, logger })
+    const delegates = createDelegates({ logger })
+    closers.push(() => delegates.close())
+    const permissions = createPermissions(ctx, { routing, managerOf, grants, delegates, gate, wording, titleOf: titleOfSession, readLimits, now, logger })
     closers.push(() => permissions.close())
     const questions = createQuestions(ctx, { routing, managerOf, titleOf: titleOfSession, now, logger })
     closers.push(() => questions.close())
@@ -150,6 +153,21 @@ export async function createSessionDomain(ctx, { storageDomain, readLimits, rout
       read: (args) => port.attachment.read(args),
     })
 
-    return Object.freeze({ sessions, interactions, attachments, close })
+    /**
+     * `dshConnectorSessions` (host-services/sessions.d.ts): what a main-DSH plugin needs to act for a
+     * session's manager. `stop` is the Stop button (the turn ends, messages still reach the session);
+     * `read` is `session_read`'s bounded read, neutral roles included.
+     */
+    const service = Object.freeze({
+      apiVersion: SESSIONS_SERVICE.apiVersion,
+      delegates: Object.freeze({ register: (definition) => delegates.register(definition) }),
+      rootOf: (sessionId) => rootSessionOf(ctx, sessionId),
+      managerOf: (sessionId) => managerOf(rootSessionOf(ctx, sessionId)),
+      read: ({ sessionId, maxMessages, maxBytes }) => sessions.read({ sessionId, maxMessages, maxBytes }),
+      stop: async ({ sessionId }) => { await port.stop({ sessionId }) },
+    })
+    const provide = (target) => target.effect(() => target.provide(SESSIONS_SERVICE.name, service), SESSIONS_SERVICE.label)
+
+    return Object.freeze({ sessions, interactions, attachments, provide, close })
   }
 }

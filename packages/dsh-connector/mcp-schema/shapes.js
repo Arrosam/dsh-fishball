@@ -114,7 +114,7 @@ export const EVENT_PAYLOAD_SHAPES = Object.freeze({
   [EVENT_TYPE.ask]: descriptor,
   [EVENT_TYPE.settlement]: () => object(
     { approvalId: string(), outcome: oneOfStrings(Object.values(SETTLEMENT_OUTCOME)), by: oneOfStrings(Object.values(SETTLED_BY)) },
-    { answers: array(questionAnswerItem()) },
+    { answers: array(questionAnswerItem()), delegate: object({ name: string(), toolName: string(), reason: string() }) },
   ),
   [EVENT_TYPE.retirement]: () => object({ retiredEventId: string(), reason: oneOfStrings(Object.values(RETIREMENT_REASON)) }),
   [EVENT_TYPE.turnFinished]: () => object({ sessionId: sessionId(), running: boolean(), queued: boolean() }),

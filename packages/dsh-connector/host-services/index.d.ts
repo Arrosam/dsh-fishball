@@ -36,11 +36,13 @@ export type {
   ProviderSyncCheckResult, ProviderSyncAddResult, ReconnectRefusalCode,
 } from './child.js'
 export type { DshConnectorUi, UiSnapshot, UiMark, UiTarget, UiAttention, UiNotice, UiRoutes } from './ui.js'
+export type { DshConnectorSessions, PermissionDelegate, DelegatedRequest, DelegatedDescriptor, DelegateVerdict, SessionReadMessage } from './sessions.js'
 
 import type { DshConnectorHandover } from './handover.js'
 import type { DshConnectorTokens } from './tokens.js'
 import type { DshInstanceChild } from './child.js'
 import type { DshConnectorUi } from './ui.js'
+import type { DshConnectorSessions } from './sessions.js'
 
 /**
  * The services as DSH declares its own: members of the cordis `Context`. A consumer must load and
@@ -58,5 +60,6 @@ declare module '@deepseek-ai/cordis' {
     dshConnectorTokens: DshConnectorTokens
     dshInstanceChild: DshInstanceChild
     dshConnectorUi: DshConnectorUi
+    dshConnectorSessions: DshConnectorSessions
   }
 }

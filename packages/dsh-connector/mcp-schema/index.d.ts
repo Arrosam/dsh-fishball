@@ -891,7 +891,7 @@ export declare const RISK: { readonly low: "low"; readonly high: "high" }
 export declare const SCOPE: { readonly full: "agent"; readonly pair: "agent:pair" }
 export declare const SDK_PINS: { readonly "@modelcontextprotocol/server": "2.4.0"; readonly "@modelcontextprotocol/node": "2.1.2" }
 export declare const SETTINGS_REFUSAL: { readonly tokenDuplicate: "token-duplicate" }
-export declare const SETTLED_BY: { readonly user: "user"; readonly principal: "principal" }
+export declare const SETTLED_BY: { readonly user: "user"; readonly principal: "principal"; readonly delegate: "delegate" }
 export declare const READ_ROLE: { readonly user: "user"; readonly assistant: "assistant"; readonly principal: "principal"; readonly agent: "agent"; readonly context: "context" }
 export declare const SETTLEMENT_OUTCOME: { readonly allowed: "allowed"; readonly rejected: "rejected"; readonly answered: "answered" }
 export declare const TARGET_CODE: { readonly unreachable: "TARGET_UNREACHABLE"; readonly refused: "TOKEN_REFUSED"; readonly incompatible: "TARGET_INCOMPATIBLE"; readonly revoked: "token-revoked"; readonly insecure: "target-insecure"; readonly invalid: "target-invalid" }

@@ -128,7 +128,9 @@ endpoint an invalid id is `invalid_client` (R-ID-02).
   design session's amendment.
 - **Settlement (`SETTLEMENT_OUTCOME`, `SETTLED_BY`, PROPOSED):** `allow` / `grant` → `allowed`,
   `reject` → `rejected`, an answered question or plan review → `answered`; `ask` and `escalate`
-  settle nothing (the user's later answer does). `by` is `user` or `principal`. An escalated offer
+  settle nothing (the user's later answer does). `by` is `user`, `principal` or `delegate` (a
+  main-DSH plugin registered through `dshConnectorSessions.delegates` decided it before any offer;
+  the settlement then carries `delegate: {name, toolName, reason}`; the user, 2026-11-20). An escalated offer
   (or a question sent `toUser`) is the user's: it leaves `approvals_list`, an agent's answer to it
   is refused, and the user's answer in the session is its settlement, to the same pair
   (C-WIRE-2). If its session leaves the pair's management first, it ends with no event.

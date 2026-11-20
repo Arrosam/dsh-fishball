@@ -17,7 +17,7 @@
  *    tool); HTTP: the one request gate with DSH's listener facts, the token endpoint with
  *    C-OAUTH-WEB's two grants registered, the MCP endpoint with C-TOOLS' and C-EXT's tools, the
  *    approval listener on DSH's host and the `approval.port` setting;
- * 5. the host services: dshConnectorHandover, dshConnectorTools, dshConnectorTokens, dshConnectorUi,
+ * 5. the host services: dshConnectorHandover, dshConnectorTools, dshConnectorSessions, dshConnectorTokens, dshConnectorUi,
  *    and the settings page's routes.
  * Every module's close and every provided service's disposer is one entry of `closers`, run last
  * opened first, when the row unloads or a later step fails: the services and routes leave before
@@ -272,6 +272,7 @@ export async function openV3(ctx, { config, storageDomain, limits, volatileEvent
     closers.push(() => ui.close())
     closers.push(routing.provide(ctx))
     closers.push(contributions.provide(ctx))
+    closers.push(domain.provide(ctx))
     closers.push(ui.provide(ctx))
     closers.push(ctx.effect(() => ctx.provide(HOSTED_SERVICE.name, hosted.service), LABEL.services))
     closers.push(...registerSettingsPage(ctx, {

@@ -291,6 +291,26 @@ export async function openRouting(ctx, storageDomain, { mailbox, pairs, tokens, 
     },
 
     /**
+     * A settlement with no offer behind it (`by: delegate`, delegates/index.js): a delegate decided a
+     * managed session's request before anything was offered, and its manager is told what was
+     * decided (the user, 2026-11-20: "yes send settlements"). On the managed chain, so it goes to
+     * the manager of that moment; a session nobody manages any more gets nothing.
+     * @returns whether a manager was told
+     * @throws (rejects) TypeError for a settlement that is not a valid K1 settlement
+     */
+    async report(sessionId, settlement) {
+      if (!isNonEmptyString(sessionId)) throw new TypeError(MISUSE.sessionId)
+      const payload = detachedPayload(settlement)
+      return managed.withState(async () => {
+        const manager = managed.state.managerOf(sessionId)
+        if (manager === undefined) return false
+        const draft = checkedFields(EVENT_TYPE.settlement, { sourceSessionId: sessionId, correlationId: null, payload })
+        const { committed } = await produce({ type: EVENT_TYPE.settlement, sessionId, followsPrincipal: manager }, draft)
+        return committed?.ok === true
+      })
+    },
+
+    /**
      * Whether the live request `offerId` names is held by `principalKey` now (read synchronously,
      * so a caller that decides in the same step cannot be overtaken by a succession; review F02).
      */

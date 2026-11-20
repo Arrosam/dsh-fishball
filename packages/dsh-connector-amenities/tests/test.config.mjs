@@ -1,2 +1,2 @@
-/** dsh-connector-amenities (dsh-connector-adapter)'s own suites (test/run-package.mjs reads this; `npm test` in the package runs them). */
+/** dsh-connector-amenities (dsh-connector-adapter, dsh-connector-watchdog)'s own suites (test/run-package.mjs reads this; `npm test` in the package runs them). */
 export default Object.freeze({ dir: 'tests', suffix: '.test.mjs' })

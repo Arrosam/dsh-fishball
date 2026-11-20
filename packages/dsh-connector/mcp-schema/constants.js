@@ -749,9 +749,12 @@ export const RESYNC_REASON = Object.freeze({ staleCursor: 'stale-cursor' })
  * a question or plan review answered → `answered`. `ask` (the thread continues) and `escalate`
  * (the request moves to the user, S3 §5.1) settle nothing, so they produce no settlement; the
  * user's later answer does. `by: principal` replaces V2's `fishball`, since any principal may answer.
+ * `by: delegate` (dshConnectorSessions delegates; the user, 2026-11-20: "yes send settlements"): a
+ * main-DSH plugin decided the request before any offer was made, so the manager never saw the offer;
+ * the settlement then carries `delegate` `{name, toolName, reason}` to say what was decided.
  */
 export const SETTLEMENT_OUTCOME = Object.freeze({ allowed: 'allowed', rejected: 'rejected', answered: 'answered' })
-export const SETTLED_BY = Object.freeze({ user: 'user', principal: 'principal' })
+export const SETTLED_BY = Object.freeze({ user: 'user', principal: 'principal', delegate: 'delegate' })
 
 /**
  * Who wrote one message `session_read` returns (K1 amendment at W4b, C-WIRE; requirements 1.41

@@ -87,6 +87,16 @@ managed}`). 2. P answers `prompt_answer` allow (low risk, reason, complete argum
 Q → `forbidden`; closed / answered / U clicked → `expired`. Post: answering never changes management;
 a prompt P escalated is U's and not listed (q7).
 
+### IX-UC-08 A delegate decides a managed session's permission request (`dshConnectorSessions`)
+Pre: P manages S; a main-DSH plugin D registered a delegate that claims S (the user, 2026-11-20: a
+generic connector hook for Watchdog). Main: 1. A's call asks DSH for approval. 2. After the grant
+check, D gets `{sessionId, descriptor}` (the K1 descriptor). 3. D answers allow + reason → the call
+runs once; no `permission` offer; P gets one `settlement {allowed, by: delegate, delegate: {name,
+toolName, reason}}` ("yes send settlements"). A1 reject + reason → the call is rejected with the
+managing-agent wording; `settlement {rejected, by: delegate}`. A2 pass, or D throws → P gets the
+offer as in IX-UC-02 and no delegate settlement. E1 an unmanaged session never reaches D (stock
+prompt). Rows: DLG-01…04 (delegate-cases.mjs).
+
 ## Derived cases
 
 Ids: the V2 gap-check ids where a row ports one (V3 wording), else `IX-*`. "→ refused" always means:
