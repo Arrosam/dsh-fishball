@@ -21,7 +21,7 @@
  *
  * The mark is FishMark from the owner's fishball app (THIRD_PARTY_NOTICES), drawn plain on every
  * surface here (ICON-SET, the user 2026-11-18): the wrench is dsh-connector's own badge and shows
- * only on that package's icon (its Plugins card, settings page and managed session rows), and this package's own icon
+ * only on that package's icon (its Plugins card and settings page; its managed session rows draw the plain fish, V1's mark), and this package's own icon
  * (assets/connector-ui-icon.svg, the fish with a window badge) is DSH's to draw from the manifest.
  *
  * State comes from the connector's UI backend (its `events` route, server-sent snapshots; 1.34:

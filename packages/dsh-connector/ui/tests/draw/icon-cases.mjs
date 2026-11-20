@@ -12,7 +12,7 @@
  *   (still plain) → window opened → off, no dot (still plain);
  * - Decision table over the fish's light (rules: nothing, signal, signal(important), notify,
  *   notify(important)) × the drawing: every rule keeps exactly body + eye;
- * (The managed-row rows moved to packages/dsh-connector/tests/marks: DESIGN.md §28 gives them the connector's icon.)
+ * (The managed-row rows moved to packages/dsh-connector/tests/marks, where they pin V1's fish since 2026-11-21.)
  * - EP over every surface the page draws (fish, main, overlay, header, row seats, menu): no element
  *   carries the old wrench hook.
  * Rows that fail on the old design: its sidebar fish carried the wrench badge after the eye.
@@ -93,7 +93,7 @@ export function registerIconDrawCases(sdk) {
     })
   }
 
-  // ICON-DRAW-EP-01 (the managed-row marks) moved to packages/dsh-connector/tests/marks: since DESIGN.md §28 they draw the connector's icon, not the fish.
+  // ICON-DRAW-EP-01 (the managed-row marks) moved to packages/dsh-connector/tests/marks (MARKS-EP-05/06), where they pin V1's fish.
 
   // ---------------------------------------------------------------- no surface carries the wrench hook
   draw(sdk, ID.hook, 'every surface', `no element of the fish, window, overlay, header, row seats or row menu carries ${WRENCH.attr}`, async (t) => {

@@ -17,14 +17,14 @@
  * | MARKS-EP-04 hooks | EP (surface) | header, row menu, row mark, note dialog: every hook is data-dsh-connector-*, every class of the part dshc-*; no data-fishball-* or fb-* |
  * | MARKS-EP-05 icon idle / running | EP (row state) | the row mark draws V1's fish (dsh-fishball v0.1.0 FISH_MARK: exactly body in currentColor + eye in #EC0A6E; no tile, no wrench); running → dshc-flip; idle → none |
  * | MARKS-EP-06 icon surfaces | EP (surface) | only the row seats draw the fish: header, row menu and overlay draw none, and no element carries data-fishball-mark |
- *
- * EP-05 / EP-06 changed on 2026-11-21 (the user: after "Hand over to Fishball" the mark goes back
- * to V1's fish, dsh-fishball tag v0.1.0 assets/icon.svg and client.js FISH_MARK), replacing
- * DESIGN.md §28's connector icon. The fish's values are V1's, restated in V1_FISH below.
  * | MARKS-ST-01 | State transition | Unmanaged –Hand over (no embed-UI)→ Managed: mark + Take back –Take back→ Unmanaged |
  * | MARKS-BVA-01 R5 | BVA (backend present / absent) | absent → no marks entry, no POST, no page error or warning, no error log line |
  * | MARKS-R6 entry missing | EP (load result) | connector entry fails → exactly one 'part unavailable' warn from embed-UI's row, nothing registered by either |
  * | MARKS-R6 one stream | BVA (packages per page: 1 / 2) | both packages mounted → exactly one snapshot stream |
+ *
+ * EP-05 / EP-06 changed on 2026-11-21 (the user: after "Hand over to Fishball" the mark goes back
+ * to V1's fish, dsh-fishball tag v0.1.0 assets/icon.svg and client.js FISH_MARK), replacing
+ * DESIGN.md §28's connector icon. The fish's values are V1's, restated in V1_FISH below.
  *
  * Level: integration, the U-DRAW world (../../dsh-connector-ui/draw/world.mjs).
  */
@@ -175,11 +175,11 @@ export function registerMarksCases(sdk) {
     const { page } = await fullWorld(t, sdk)
     const views = await mountAll(page)
     assert.ok(await page.waitFor(() => views.some((v) => withAttr(v.tree(), ATTR.managedRow).length > 0)), 'no row mark')
-    // mountAll: overlay, header, row menu, header (managed), then the two row seats.
-    const ROW_SEATS = 2
+    // A row seat's view is the one holding a managed row mark; every other surface must draw no fish.
+    const isRowSeat = (v) => withAttr(v.tree(), ATTR.managedRow).length > 0
     const fishIn = (list) => list.flatMap((v) => byTag(v.tree(), TAG.svg)).filter(isPlainFish)
-    assert.equal(fishIn(views.slice(0, -ROW_SEATS)).length, 0, 'a header, menu or overlay surface draws the fish')
-    assert.ok(fishIn(views.slice(-ROW_SEATS)).length > 0, 'no row seat draws the fish')
+    assert.equal(fishIn(views.filter((v) => !isRowSeat(v))).length, 0, 'a header, menu or overlay surface draws the fish')
+    assert.ok(fishIn(views.filter(isRowSeat)).length > 0, 'no row seat draws the fish')
     assert.deepEqual(views.flatMap((v) => withAttr(v.tree(), ATTR.fishMark)), [], 'a part element carries ' + ATTR.fishMark)
   })
 

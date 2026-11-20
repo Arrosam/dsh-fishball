@@ -6,7 +6,7 @@
  * rounded units, not a box). Every value here comes from those criteria, never from an implementation.
  *
  * Users: package-boundaries/icon-cases.mjs (manifests, assets, DSH's manifest reader),
- * dsh-connector-ui/draw/icon-cases.mjs (the sidebar fish and the managed-row marks) and
+ * dsh-connector-ui/draw/icon-cases.mjs (the sidebar fish), dsh-connector/tests/marks (the managed-row marks) and
  * dsh-connector/oauth-web/icon-cases.mjs (the approval page's inline icon).
  */
 import fs from 'node:fs'
