@@ -19,7 +19,7 @@ function installMarkdown(packages) {
 
 Supported: DeepSeek Harness (DSH) ${SDKS.join(' and ')}.
 
-Install alongside `dsh-agent-connector` (and optionally `dsh-connector-ui`):
+Install alongside \`dsh-agent-connector\` (its Embed UI ships inside it):
 
 ${fence([add([name + '@' + VERSION])])}
 
