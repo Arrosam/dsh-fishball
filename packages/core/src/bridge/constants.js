@@ -147,6 +147,7 @@ export const LOG = Object.freeze({
   registerFailed: 'tool %s could not be offered to the model (%s)',
   callFailed: 'tool %s failed after it was sent (%s)',
   checkFailed: 'tool %s failed before it was sent (%s)',
+  calledFailed: 'tool %s answered, but a listener of its answer failed (%s)',
   withdrawFailed: 'a tool of the façade could not be withdrawn (%s)',
   /**
    * Connector-supplied names are JSON-quoted and cut to MCP's longest tool name before they are

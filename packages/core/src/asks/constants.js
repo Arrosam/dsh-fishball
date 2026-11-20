@@ -42,6 +42,8 @@ export const ASKS = Object.freeze({
   eventTypes: Object.freeze([MCP.eventTypes.permission, MCP.eventTypes.ask]),
   /** The filing tool's one argument. */
   offerArgument: 'offer_id',
+  /** The K1 `approval_answer` arguments that name the answered request and offer (connector input schema). */
+  answerArguments: Object.freeze({ approvalId: 'approvalId', offerId: 'offerId' }),
   /**
    * Q3 = A (the user, 2026-11-15): the card offers exactly Allow and Reject, each with an optional
    * reason; free text goes into the reason. They are two final `approval_answer` decisions a

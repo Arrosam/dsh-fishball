@@ -60,8 +60,11 @@ function whenTrulyIdle(agent, job, retry) {
  * @param {() => void} owner.idle an agent the owner follows became idle
  * @param {() => boolean} owner.closed whether the owner stopped (then nothing is told)
  * @param {(session: object) => unknown} [owner.flush] an optional `session/flush` listener
+ * @param {(agent: object, payload: object, next: Function) => Promise<object>} [owner.preStep] an
+ *   optional `agent/pre-step` waterfall listener (the event delivery adds its batch to a step that
+ *   carries the user's message; WAKE rule 5). Not called once the owner stopped.
  */
-export function createHandover({ isMine, admitted, dropped, redeliver, idle, closed, flush }) {
+export function createHandover({ isMine, admitted, dropped, redeliver, idle, closed, flush, preStep }) {
   const watched = new WeakSet()
   // messageId → the agent whose turn claimed it and has not admitted it yet.
   const claimed = new Map()
@@ -97,6 +100,7 @@ export function createHandover({ isMine, admitted, dropped, redeliver, idle, clo
     })
     agent.ctx.on(HOST.sessionEvent, (session, event) => { if (!closed() && session === agent.session) observe(agent, event) })
     if (flush !== undefined) agent.ctx.on(HOST.sessionFlush, (session) => (session === agent.session ? flush(session) : undefined))
+    if (preStep !== undefined) agent.ctx.on(HOST.preStep, (payload, next) => (closed() ? next() : preStep(agent, payload, next)))
     agent.ctx.on(HOST.agentStatus, ({ status }) => { if (status === HOST.idle && !closed()) idle() })
   }
 
@@ -113,16 +117,22 @@ export function createHandover({ isMine, admitted, dropped, redeliver, idle, clo
      * Hands `message` to `agent` as its own next turn when the agent is truly idle (`runMaintenance`:
      * inside it the followup only latches the wake, and the maintenance release starts the turn that
      * claims it). A copy an earlier process left pending is removed first, as core's own removal, so
-     * one id is pending once. Returns the maintenance promise, or `undefined` when the agent was not
-     * idle: the owner's `idle` is told when it is again.
+     * one id is pending once; `stale` names every id such a copy may carry (the event delivery's
+     * batch: each of its records' own ids). Returns the maintenance promise, or `undefined` when the
+     * agent was not idle: the owner's `idle` is told when it is again.
      */
-    handOver(agent, message) {
+    handOver(agent, message, stale = [message.id]) {
       watch(agent)
       return whenTrulyIdle(agent, async () => {
-        removeCopy(agent, message.id)
+        for (const id of stale) removeCopy(agent, id)
         agent.followup(message)
       }, () => { if (!closed()) idle() })
     },
+    /**
+     * A message the owner put into one of `agent`'s steps itself (a pre-step listener), with no
+     * inbox claim: from now on it is decided as a claim is, by its admission or its turn's end.
+     */
+    claim: (agent, messageId) => { claimed.set(messageId, agent) },
     /** Forget a message's claim (the owner settled it another way). */
     forget: (messageId) => { claimed.delete(messageId) },
   })

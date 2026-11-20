@@ -4,7 +4,7 @@
  * names it reads, and its log lines.
  */
 import { SEAM_BRAND, UI_INSTANCE } from 'fishball-shared/ui-seam'
-import { FISHBALL_MODEL } from '../../contracts/constants.js'
+import { FISHBALL_MODEL, WAKE } from '../../contracts/constants.js'
 import { SETTINGS } from '../settings/constants.js'
 
 export const MAIN = Object.freeze({
@@ -40,6 +40,8 @@ export const MAIN = Object.freeze({
     model: FISHBALL_MODEL.path,
     /** LOGO-BUTTON: the sidebar logo's theme (`SEAM_BRAND.setting`, a top-level scalar field). */
     brandStyle: Object.freeze([SEAM_BRAND.setting]),
+    /** WAKE: the batching settings, as nested paths (`WAKE.setting`'s dotted names). */
+    wake: Object.freeze(Object.fromEntries(Object.entries(WAKE.setting).map(([key, dotted]) => [key, Object.freeze(dotted.split('.'))]))),
   }),
   /** DSH events: a volatile config change of a row (cordis-plugin-loader) and a settings document change (dsh-settings). */
   event: Object.freeze({ volatileUpdate: 'loader/volatile-update', settingsUpdated: 'settings/document-updated' }),

@@ -101,11 +101,66 @@ export const PRESENT_RETRY = Object.freeze({ attempts: 3, backoffMs: 1000, backo
 export const TEXT = Object.freeze({
   blockType: 'text',
   presentGivenUp: (eventId, type) => `Fishball notice: event ${eventId} (${type}) could not be shown to you and was given up.`,
+  /**
+   * WAKE: a batch cut at the max batch size (`n` wake events). Like the given-up notice it names
+   * no payload. PROPOSED wording (model-facing English, Q7).
+   */
+  batchLimit: (n) => `Fishball notice: this batch reached the limit of ${n} events, so it was delivered at once. More events may follow in the next batch.`,
+  /** WAKE: one silent event in the summary, by its id, type and the local id of its target. */
+  silentLine: (event) => `- ${event.type} event ${event.eventId} from DSH target id ${event.source.targetId}`,
+  /** WAKE: the summary of the silent events a batch carries, one `silentLine` each. */
+  silentSummary: (lines) => `Fishball notice: these events were recorded without waking you (no action is needed for them):\n${lines.join('\n')}`,
+})
+
+/**
+ * When an event on the Fishball branch wakes the Fishball agent (WAKE; the user's design,
+ * 2026-11-21). Every event type is `wake` (delivered as part of an agent turn) or `silent`
+ * (recorded; it never wakes Fishball by itself and rides along with the next delivery as a
+ * summary line). Wake events are batched: each one restarts the quiet window, and when the window
+ * passes with no new wake event, every buffered event goes to Fishball as one message. A buffer
+ * holding `maxBatch` wake events is delivered at once with the `TEXT.batchLimit` notice.
+ * - `class`: the two class words;
+ * - `defaults`: the settings' defaults; a type not in `classes` (another contributed event) is
+ *   `wake`. `state` stays listed although the connector no longer sends it (folded into tool
+ *   results), so an older connector's `state` events stay quiet;
+ * - `bounds`: the smallest valid window (0: deliver at the next idle) and max batch;
+ * - `setting`: the settings' dotted paths in core's row namespace (nested, as `identity.id`);
+ * - `msPerSecond`: the window's unit conversion.
+ */
+const WAKE_CLASS = Object.freeze({ wake: 'wake', silent: 'silent' })
+export const WAKE = Object.freeze({
+  class: WAKE_CLASS,
+  defaults: Object.freeze({
+    quietWindowSeconds: 10,
+    maxBatch: 20,
+    classes: Object.freeze({
+      permission: WAKE_CLASS.wake,
+      question: WAKE_CLASS.wake,
+      'plan-review': WAKE_CLASS.wake,
+      'turn-finished': WAKE_CLASS.wake,
+      handover: WAKE_CLASS.wake,
+      takeback: WAKE_CLASS.wake,
+      message: WAKE_CLASS.wake,
+      notice: WAKE_CLASS.wake,
+      ask: WAKE_CLASS.wake,
+      // The watchdog's drift event (dsh-connector-amenities), a contributed type.
+      'contributed:dsh-connector-amenities.drift': WAKE_CLASS.wake,
+      state: WAKE_CLASS.silent,
+      settlement: WAKE_CLASS.silent,
+      retirement: WAKE_CLASS.silent,
+    }),
+  }),
+  bounds: Object.freeze({ quietWindowSeconds: 0, maxBatch: 1 }),
+  setting: Object.freeze({ quietWindowSeconds: 'wake.quietWindowSeconds', maxBatch: 'wake.maxBatch', classes: 'wake.classes' }),
+  msPerSecond: 1000,
 })
 
 /**
  * The message an event becomes in Fishball's session. Its id is derived from the `eventId`, so the
- * live admission (`user/message` with that id) is recognised as this event's.
+ * live admission (`user/message` with that id) is recognised as this event's. Since WAKE the
+ * delivery list hands Fishball batches: one message for many events, whose id is its first
+ * event's (so a one-event batch keeps the id it always had); its source names every event it
+ * carries.
  */
 export const MESSAGE = Object.freeze({
   idPrefix: 'fbe_',
@@ -224,6 +279,9 @@ export const MCP = Object.freeze({
   scope: Object.freeze({ full: 'agent', pair: 'agent:pair' }),
   tools: Object.freeze({
     sessionsList: 'sessions_list',
+    // The connector's two listing tools for session_start's `folder` (a workspaceId) and `model`.
+    workspacesList: 'workspaces_list',
+    modelsList: 'models_list',
     sessionStart: 'session_start',
     sessionMessage: 'session_message',
     sessionRedirect: 'session_redirect',

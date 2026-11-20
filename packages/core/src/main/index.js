@@ -128,6 +128,8 @@ export async function apply(ctx, config) {
     link: ports,
     fishball: { activate: () => session.activate(), present: (event) => presentOf(event) },
     logger: ctx.logger(EVENTS_LOG.name),
+    // Read at each event (volatile fields), so a save applies to the next one (WAKE).
+    batching: () => Object.fromEntries(Object.entries(MAIN.setting.wake).map(([key, path]) => [key, valueAt(config, path)])),
   })
   ctx.effect(() => () => events.close())
   const asks = createAsks({ targets: ports, table: cards, logger })

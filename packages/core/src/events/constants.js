@@ -41,6 +41,14 @@ export const HOST = Object.freeze({
   sessionEvent: 'session/event',
   /** The awaited durability checkpoint DSH runs before every model request (checkpoint policy). */
   sessionFlush: 'session/flush',
+  /**
+   * The waterfall that decides a proposed step's messages, `({agent, messages, …}, next) →
+   * {kind: 'enter', messages} | {kind: 'reject'}` (dsh-agent, both SDKs); `enter` its entering kind.
+   */
+  preStep: 'agent/pre-step',
+  enter: 'enter',
+  /** The source kind of a message the user typed (DSH's session controller; dsh-llm `MessageSourceMap.user`). */
+  userSource: 'user',
   idle: 'idle',
   /** `turn/end` of a cancelled turn; its `reason.kind` is the cancel cause. */
   aborted: 'aborted',

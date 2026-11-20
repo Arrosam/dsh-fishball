@@ -170,8 +170,12 @@ export function presentEvent(event) {
  * @param {{info: Function, warn: Function}} [options.logger] the background log
  * @param {object} [options.naming] the target epoch's naming (see the header); default none
  * @param {readonly object[]} [options.locals] target-bound local helpers (see the header)
+ * @param {(name: string, args: object, result: object) => void} [options.called] told of every
+ *   call that reached the connector and answered, with the tool's raw name, its arguments and the
+ *   answer (the target collection closes the ask record of an accepted `approval_answer`). A
+ *   listener's failure is logged and never changes the answer.
  */
-export function createBridge({ link, ctx, gate = OPEN_GATE, imagesSupported = async () => true, attachments = () => undefined, logger, naming = BARE_NAMING, locals = [] }) {
+export function createBridge({ link, ctx, gate = OPEN_GATE, imagesSupported = async () => true, attachments = () => undefined, logger, naming = BARE_NAMING, locals = [], called }) {
   if (!isPortLink(link)) throw new TypeError(MISUSE.link)
   // Checked here so a wrong port fails at wiring time, not as a refused call at the model's turn.
   if (typeof gate?.send !== 'function') throw new TypeError(MISUSE.gate)
@@ -216,12 +220,15 @@ export function createBridge({ link, ctx, gate = OPEN_GATE, imagesSupported = as
       return refusal(CODE.failed, { message: TEXT.notSent })
     }
     if (refused !== undefined) return refused
+    let result
     try {
-      return (await raced(link.callTool(name, args), exec?.signal)) ?? TOOL_OUTPUT.absent
+      result = (await raced(link.callTool(name, args), exec?.signal)) ?? TOOL_OUTPUT.absent
     } catch (error) {
       logger?.warn(LOG.callFailed, logName(name), codeOf(error))
       return refusal(CODE.failed, { message: TEXT.maybeSent })
     }
+    try { called?.(name, args, result) } catch (error) { logger?.warn(LOG.calledFailed, logName(name), codeOf(error)) }
+    return result
   }
 
   /** The DSH tool definition of one offered tool (dsh-mcp-client's raw form, both SDKs). */

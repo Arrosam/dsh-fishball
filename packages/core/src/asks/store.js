@@ -27,6 +27,8 @@
  * - filing an offer id → filed (open, and still that offer only);
  * - the user's answer committed on an offer → answered (that offer only);
  * - `settlement` naming the approvalId, or `retirement` naming the record's eventId → closed (open only);
+ * - Fishball's own `approval_answer` on the offer accepted (the connector sends no settlement for
+ *   it, WAKE item 9) → an unfiled record closed, so deleted (index.js `answered`);
  * - a connector answer of `already-settled` / `expired` to an offer → closed (that offer only).
  * - the request's target removed, or its endpoint epoch retired (MULTI-1, Q07) → voided (open only):
  *   read-only history, never answered and nothing sent; an unfiled one is deleted.

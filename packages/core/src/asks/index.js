@@ -13,7 +13,8 @@
  *   `settlement` and `retirement`; a page is read whoever the event was dispatched to, so an interceptor or Fishball
  *   taking it changes nothing here), and returns `service` (the K3 `fishballInstance.ui.asks`),
  *   `toolFor(source, name)` (one target's filing tool, raw DSH definition; core's target collection
- *   registers it in the manager's scope), `reconcile(source)` (below), `voidWhere` and `close()`.
+ *   registers it in the manager's scope), `reconcile(source)` (below), `answered(source, args)`
+ *   (Fishball's own accepted `approval_answer`), `voidWhere` and `close()`.
  *   `take(page, source)` resolves once the page's cards are stored, with the ids of the page's events whose card could not be stored
  *   (R-FIX F12: the caller must not let those be acked, or the offer is gone for good).
  * - `openAskCards(ctx, storageDomain)`: the durable table.
@@ -283,6 +284,23 @@ export function createAsks({ targets, table, logger }) {
   })
 
   /**
+   * Fishball's own `approval_answer` through the target's façade was accepted (`ok`): the request
+   * is settled, and the connector sends no `settlement` for an answer its managing agent gave (its
+   * tool result is the outcome), so the request's record would stay open for ever. The open record
+   * still unfiled on that very offer is closed, and so deleted (store.js header), on the intake chain
+   * as every unfiled close. A filed card is the user's and keeps its own answer path (`commit`).
+   * Never rejects: a failed delete is logged, and the next start's reconciliation finds the record.
+   */
+  function answered(source, args) {
+    const approvalId = args?.[ASKS.answerArguments.approvalId]
+    const offerId = args?.[ASKS.answerArguments.offerId]
+    if (typeof approvalId !== 'string' || typeof offerId !== 'string') return intake
+    const run = intake.then(() => store.dropUnfiled(cardKeyOf(source, approvalId), offerId))
+    intake = run.catch((error) => logger?.warn(ASK_LOG.writeFailed, codeOf(error)))
+    return intake
+  }
+
+  /**
    * Voids the open cards of every target epoch `retired(source)` names (MULTI-1, Q07), after the
    * pages already polled are taken and on the intake chain, so a page of that epoch still in flight
    * cannot re-open one. Sends nothing remote.
@@ -298,6 +316,7 @@ export function createAsks({ targets, table, logger }) {
     take,
     toolFor,
     reconcile,
+    answered,
     voidWhere,
     /** Resolves once every page taken so far is stored. */
     drained: () => intake,

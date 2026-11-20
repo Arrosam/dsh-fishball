@@ -8,7 +8,7 @@
  * first taken by the ask cards and only then handed to the interception service event by event, with
  * this epoch's trusted `source`. A page waits for the ledger's recovery before any intake.
  */
-import { TARGETS } from '../../contracts/constants.js'
+import { MCP, TARGETS } from '../../contracts/constants.js'
 import { createBridge } from '../bridge/index.js'
 import { codeOf } from '../events/diagnostics.js'
 import { createPairing, createRecords } from '../identity/index.js'
@@ -29,7 +29,7 @@ const ORIGIN = TARGETS.toolName.origin
  * @param {() => boolean} options.isClosing whether the collection has begun draining its writes
  * @param {() => string} options.clientId `identity.id`; `options.clientMetadataUrl`, `options.name` the settings
  * @param {object} options.identityRecords the identity records KvTable (scoped here)
- * @param {object} options.asks the ask cards (`take`, `toolFor`, `reconcile`, `drained`)
+ * @param {object} options.asks the ask cards (`take`, `toolFor`, `reconcile`, `answered`, `drained`)
  * @param {object} options.events the interception (`intake`)
  * @param {{admit(name: string, tuple: string): boolean}} options.bindings the tool bindings
  * @param {Promise<void>} options.recovered settles once the ledger's recovery ran
@@ -71,7 +71,9 @@ export function createTargetRuntime(ctx, options) {
   })
   // This epoch's `ask_user`: files offers of this target epoch only (asks/index.js `toolFor`).
   const locals = Object.freeze([Object.freeze({ facade: ASK_TOOL.fileCard, build: (modelName) => asks.toolFor(source(), modelName) })])
-  const bridge = createBridge({ link, naming, locals, ...bridgeOptions })
+  // Fishball's own accepted answer settles its request; the connector sends no settlement for it (asks/index.js `answered`).
+  const called = (toolName, args, result) => { if (toolName === MCP.tools.approvalAnswer && result?.ok === true) void asks.answered(source(), args) }
+  const bridge = createBridge({ link, naming, locals, called, ...bridgeOptions })
   disposers.push(bridge.onChange(changed))
 
   let listed = false

@@ -16,7 +16,8 @@
  * reference; the targets go through core's target routes (`SEAM_TARGETS.route`); the model is a field
  * of the same namespace (`FISHBALL_MODEL.path`),
  * written at once when picked, from the catalog DSH's own model picker reads
- * (`remote.session.modelCatalog`, both SDKs).
+ * (`remote.session.modelCatalog`, both SDKs). WAKE: the batching of events to Fishball (the quiet
+ * window, the largest batch and each event type's class), fields of the same namespace under `wake`.
  *
  * The two entries on the Fishball page ("Fishball settings", which opens this page, and "DSH
  * settings") and the `view=settings` continuation are UI changes inside Fishball, so they are
@@ -83,6 +84,28 @@ window.__ModuleLoader__.load({
       connectState: Object.freeze({ needsConfiguration: 'needs-configuration', needsAuthorization: 'needs-authorization', authorizing: 'authorizing', authorized: 'authorized', failed: 'failed' }),
       configuration: Object.freeze(['metadata-url-missing', 'metadata-url-not-https', 'metadata-url-root-path', 'not-a-connector', 'web-callback-insecure']),
       model: 'model',
+      /**
+       * WAKE (`contracts/constants.js` `WAKE`; restated, keep in step): the batching settings under
+       * core's `wake` field, their bounds and defaults, and the event types whose class the user sets,
+       * in display order.
+       */
+      wake: Object.freeze({
+        field: 'wake',
+        window: 'quietWindowSeconds',
+        maxBatch: 'maxBatch',
+        classes: 'classes',
+        class: Object.freeze({ wake: 'wake', silent: 'silent' }),
+        bounds: Object.freeze({ quietWindowSeconds: 0, maxBatch: 1 }),
+        defaults: Object.freeze({
+          quietWindowSeconds: 10,
+          maxBatch: 20,
+          classes: Object.freeze({
+            permission: 'wake', question: 'wake', 'plan-review': 'wake', 'turn-finished': 'wake', handover: 'wake', takeback: 'wake',
+            message: 'wake', notice: 'wake', ask: 'wake', 'contributed:dsh-connector-amenities.drift': 'wake',
+            state: 'silent', settlement: 'silent', retirement: 'silent',
+          }),
+        }),
+      }),
       /** `SEAM_BRAND.setting`'s value, the sidebar logo's theme (LOGO-BUTTON; restated, keep in step). */
       brand: Object.freeze({
         field: 'brandStyle',
@@ -213,6 +236,18 @@ window.__ModuleLoader__.load({
       brandFishball: 'Fishball',
       brandDeepseek: 'DeepSeek',
       brandSaveFailed: 'The logo choice was not saved.',
+      wakeTitle: 'Waking Fishball',
+      wakeHint: 'Events are collected and given to Fishball together, so it is woken less often. A message you send is never delayed.',
+      'wake.quietWindowSeconds': 'Quiet window (seconds)',
+      'hint.wake.quietWindowSeconds': 'Fishball is woken once no new event has arrived for this long. 0 delivers at the next idle moment.',
+      'wake.maxBatch': 'Largest batch (events)',
+      'hint.wake.maxBatch': 'A batch this large is delivered at once, with a note that more may follow.',
+      'invalid.wake.quietWindowSeconds': 'Enter a whole number, 0 or more.',
+      'invalid.wake.maxBatch': 'Enter a whole number, 1 or more.',
+      wakeClassesTitle: 'Per event type',
+      'wake.class.wake': 'Wakes Fishball',
+      'wake.class.silent': 'Recorded quietly',
+      wakeSaveFailed: 'The change was not saved.',
       unavailable: 'Fishball\'s settings are not available right now.',
       readOnly: 'This deployment stores settings read-only.',
       save: 'Save',
@@ -293,6 +328,18 @@ window.__ModuleLoader__.load({
       brandFishball: 'Fishball',
       brandDeepseek: 'DeepSeek',
       brandSaveFailed: '标志选择没有保存。',
+      wakeTitle: '唤醒 Fishball',
+      wakeHint: '事件会先汇集，再一起交给 Fishball，减少唤醒次数。你发送的消息从不延迟。',
+      'wake.quietWindowSeconds': '静默时长（秒）',
+      'hint.wake.quietWindowSeconds': '在这段时间内没有新事件时才唤醒 Fishball。0 表示在下一次空闲时立即交付。',
+      'wake.maxBatch': '最大批量（事件数）',
+      'hint.wake.maxBatch': '达到这个数量的一批会立即交付，并提示可能还有后续事件。',
+      'invalid.wake.quietWindowSeconds': '请输入 0 或更大的整数。',
+      'invalid.wake.maxBatch': '请输入 1 或更大的整数。',
+      wakeClassesTitle: '按事件类型',
+      'wake.class.wake': '唤醒 Fishball',
+      'wake.class.silent': '仅记录',
+      wakeSaveFailed: '更改没有保存。',
       unavailable: 'Fishball 的设置现在不可用。',
       readOnly: '此部署以只读方式保存设置。',
       save: '保存',
@@ -772,6 +819,71 @@ window.__ModuleLoader__.load({
         saveFailed ? h('p', { className: PAGE.css.error, role: 'alert' }, t('brandSaveFailed')) : null)
     }
 
+    /**
+     * WAKE: the batching settings, written at once through DSH's own form like the brand control,
+     * never through the shared Save. Each value is a nested path under `wake`, so it is written with
+     * `mutate` (a dotted `set` field would be one top-level key). A number commits on each change
+     * once it is a whole number within its bound; otherwise an inline error shows and nothing is
+     * written. Each class select writes its type's class at once.
+     */
+    function WakeControl({ form, t }) {
+      const W = SHARED.wake
+      const snapshot = React.useSyncExternalStore((listener) => form.subscribe(listener), () => form.getSnapshot())
+      const [drafts, setDrafts] = React.useState({})
+      const [saveFailed, setSaveFailed] = React.useState(false)
+      const baseId = React.useId()
+      const stored = isObject(snapshot.value?.[W.field]) ? snapshot.value[W.field] : {}
+      const disabled = !snapshot.writable
+      const write = async (path, value) => {
+        let ok = false
+        try { ok = await form.mutate([{ op: 'set', path: [W.field, ...path], value }]) } catch { ok = false }
+        setSaveFailed(!ok)
+      }
+      const valid = (key, number) => Number.isSafeInteger(number) && number >= W.bounds[key]
+      const numberOf = (key) => {
+        const value = stored[key]
+        return valid(key, value) ? value : W.defaults[key]
+      }
+      const edit = (key, text) => {
+        setDrafts((current) => ({ ...current, [key]: text }))
+        const number = text.trim() === '' ? Number.NaN : Number(text)
+        if (valid(key, number)) void write([key], number)
+      }
+      const numberField = (key) => {
+        const text = drafts[key] ?? String(numberOf(key))
+        const number = text.trim() === '' ? Number.NaN : Number(text)
+        const invalid = !valid(key, number)
+        const id = baseId + '-' + key
+        return h('div', { key, className: PAGE.css.group },
+          h('label', { className: PAGE.css.title, htmlFor: id }, t('wake.' + key)),
+          h('input', {
+            id, type: 'number', min: W.bounds[key], step: 1, className: PAGE.css.select, value: text, disabled,
+            'aria-invalid': invalid, 'data-fishball-wake-setting': key, onChange: (event) => edit(key, event.target.value),
+          }),
+          h('p', { className: PAGE.css.hint }, t('hint.wake.' + key)),
+          invalid ? h('p', { className: PAGE.css.error, role: 'alert' }, t('invalid.wake.' + key)) : null)
+      }
+      const classes = isObject(stored[W.classes]) ? stored[W.classes] : {}
+      const classOf = (type) => (Object.values(W.class).includes(classes[type]) ? classes[type] : W.defaults.classes[type])
+      return h('section', { className: PAGE.css.card, 'data-fishball-wake': true, 'aria-label': t('wakeTitle') },
+        h('div', { className: PAGE.css.head }, h('h3', { className: PAGE.css.title }, t('wakeTitle'))),
+        h('p', { className: PAGE.css.hint }, t('wakeHint')),
+        numberField(W.window),
+        numberField(W.maxBatch),
+        h('h3', { className: PAGE.css.title }, t('wakeClassesTitle')),
+        Object.keys(W.defaults.classes).map((type) => {
+          const id = baseId + '-class-' + type
+          return h('div', { key: type, className: PAGE.css.row },
+            h('label', { htmlFor: id }, type),
+            h('select', {
+              id, className: PAGE.css.select, value: classOf(type), disabled, 'data-fishball-wake-class': type,
+              onChange: (event) => void write([W.classes, type], event.target.value),
+            },
+            Object.values(W.class).map((word) => h('option', { key: word, value: word }, t('wake.class.' + word)))))
+        }),
+        saveFailed ? h('p', { className: PAGE.css.error, role: 'alert' }, t('wakeSaveFailed')) : null)
+    }
+
     function makePage(ctx, t, section, token) {
       const subscribe = section.store.subscribe.bind(section.store)
       const getSnapshot = () => section.store.getSnapshot()
@@ -801,7 +913,8 @@ window.__ModuleLoader__.load({
             state, onSave: section.actions.save, onDiscard: section.actions.discard,
           }, ...SHARED.settings.fields.map(fieldOf)),
           h(ModelControl, { ctx, form: ctx.configForms.get(SHARED.settings.namespace), t }),
-          h(BrandControl, { form: ctx.configForms.get(SHARED.settings.namespace), t }))
+          h(BrandControl, { form: ctx.configForms.get(SHARED.settings.namespace), t }),
+          h(WakeControl, { form: ctx.configForms.get(SHARED.settings.namespace), t }))
       }
     }
 

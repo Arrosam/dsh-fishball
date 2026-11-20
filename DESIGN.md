@@ -2306,3 +2306,20 @@ Decided by the user on 2026-11-20:
 
 **Implementation decisions (2026-11-20).** The Fishball tab lists the child's bundles except the protected ones (the child's base bundles, the Fishball set and dsh-instance), which the instance re-adds at every start; uninstalling them is refused (`protected`). One package operation at a time (install, use or uninstall; `busy` otherwise). Uninstall first runs `pnpm remove` through DSH's package operation when the child declares the package, then drops the bundle from the child's list, so a failed removal changes nothing (`remove-failed`); DSH's `removeBundle` would reload the main profile. Restart is refused on the Host (and disabled on the page) while a Fishball package operation runs, and an operation counts as running until the child restart it queued has settled. The per-plugin button reads the main bundle's facts from DSH's own `listBundles`. Progress reuses DSH's own forwarded install events (`plugin-manager/install-state` and `install-log`), which the dialog filters by its own request id. The child manager's scope isolates `connection` as well as `pluginManager`, because DSH's manager registers the fixed detail-file Fetch route that DSH's own manager already holds.
 
+
+## 29. Waking Fishball in batches (2026-11-21)
+
+**Why.** Each Fishball turn re-reads its whole context, so handing every event over as its own turn cost tokens for each one. The user approved batching on 2026-11-21.
+
+| Point | Decision |
+|---|---|
+| Classes | Every event type is **wake** (delivered as part of a turn) or **silent** (recorded; it never wakes Fishball by itself and rides along with the next wake delivery as one summary line). Wake: permission, question, plan-review, turn-finished, handover, takeback, message, notice, ask and the watchdog's `contributed:dsh-connector-amenities.drift`. Silent: state, settlement, retirement. Any other type wakes. |
+| Quiet window | Wake events are buffered; each restarts a quiet window (default 10 s). When it passes with no new wake event, everything buffered (wake and silent) goes to Fishball as one message, one turn. Silent events never start or restart it. 0 delivers at the next idle. |
+| Max batch | A buffer of the max batch of wake events (default 20) is delivered at once, with a notice naming the limit and saying more may follow. |
+| Settings | `wake.quietWindowSeconds` (whole, ≥ 0), `wake.maxBatch` (whole, ≥ 1), `wake.classes` (type → class), volatile fields of core's row, on core's settings page. Read at each event: a save applies to the next one. |
+| The user's message | Never waits: the model step that carries it (`agent/pre-step`) takes every waiting event in front of it, so the events and the user's words are one step. Only a message whose source kind is the user's counts, not a plugin notice or the runtime context (the lead, 2026-11-21). |
+| Unchanged | The ledger's exactly-once accounting per record (one batch message settles every record it carries: admitted, discarded or redelivered together), recovery at startup (recovered records are due at once), retired epochs never presented, interceptors first, the ask cards see every polled event. |
+| turn-finished | Carries the session's final message, so the persona no longer sends Fishball to `session_read` for it. |
+| Connector changes | `workspaces_list` and `models_list` join core's tool copy after `sessions_list`; no `settlement` comes for Fishball's own answers, so a successful `approval_answer` through the façade closes (deletes) its open unfiled ask record; `state` events are no longer sent. |
+
+**Implementation.** `src/events/delivery.js` holds the open buffer, the sealed batches and the window timer (injectable, unref'd, cleared by `close()`); `src/events/wake.js` checks the settings. A batch message's id is its first record's own message id and its source lists every record (`{kind: 'fishball-event', events: [{key, eventId, type, targetId}]}`), so a copy an earlier process left pending is recognised and settled for every record at recovery.
