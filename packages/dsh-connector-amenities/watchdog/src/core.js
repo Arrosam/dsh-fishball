@@ -6,7 +6,7 @@
  * - the permission delegate: Watchdog `claims` a session it holds an unpaused brief for, from the
  *   principal that still manages it; each request is judged against the purpose and the scope
  *   (allow → one call, reject only when beyond the purpose and dangerous, anything else → pass to
- *   the manager; escalation to the user is deferred, so high risk passes too);
+ *   the manager; there is no escalation to the user, so high risk passes too);
  * - the patrol: one timer per supervised session, `minCheckIntervalSeconds` apart, never moved by a
  *   refine. A patrol with no new messages since the watermark judges nothing (no tokens spent);
  * - drift, found by either: the session's turn is stopped (it still takes the manager's messages)
@@ -21,6 +21,7 @@
  * @param deps.judge - judge.js `{judge(brief, prompt, signal) → Promise<{verdict, reason}>}`
  * @param deps.config - `{minCheckIntervalSeconds, readMaxMessages, readMaxBytes, checkTimeoutSeconds}`
  * @param deps.timers - `{setTimeout, clearTimeout}`; @param deps.now - epoch ms; @param deps.logger - `{warn}`
+ * @param deps.defer - runs a function after the current request is answered (setImmediate)
  */
 import { CODE, DRIFT_EVENT, DURING, JUDGE, LOG, TEXT, TOOL, VERDICT, WATCHDOG } from './constants.js'
 
@@ -31,7 +32,7 @@ const trimmed = (value) => (typeof value === 'string' ? value.trim() : '')
 const PASS = Object.freeze({ verdict: VERDICT.pass })
 const clip = (text, chars) => ([...text].length <= chars ? text : [...text].slice(0, chars - 1).join('') + '…')
 
-export function createWatchdog({ store, services, judge, config, timers = globalThis, now = Date.now, logger }) {
+export function createWatchdog({ store, services, judge, config, timers = globalThis, now = Date.now, logger, defer = setImmediate }) {
   const warn = (line, error) => logger.warn(LOG.format, WATCHDOG.name, line, error?.code ?? error?.name ?? String(error))
   /** sessionId → patrol timer. */
   const patrols = new Map()
@@ -90,7 +91,9 @@ export function createWatchdog({ store, services, judge, config, timers = global
       await store.update(brief.sessionId, { watermark: fresh.watermark })
       const reason = trimmed(answer?.reason)
       if (answer?.verdict === VERDICT.drifted && reason !== '') {
-        await drifted(brief, DURING.permission, reason)
+        // Stopped only once this request is answered: Stop aborts the request's own signal, and an
+        // aborted request is "cancelled" (no settlement, no reason for the agent), not this reject.
+        defer(() => { void drifted(brief, DURING.permission, reason) })
         return Object.freeze({ verdict: VERDICT.reject, reason })
       }
       if ((answer?.verdict === VERDICT.allow || answer?.verdict === VERDICT.reject) && reason !== '') return Object.freeze({ verdict: answer.verdict, reason })

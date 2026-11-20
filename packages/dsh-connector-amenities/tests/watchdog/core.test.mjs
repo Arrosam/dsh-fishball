@@ -2,8 +2,8 @@
  * dsh-connector-watchdog's behaviour (packages/dsh-connector-amenities/watchdog/src/core.js and
  * store.js) over fake connector services, a fake judge and fake timers; no DSH is booted. Sources:
  * docs/watchdog-project-notes.md §2–§3 and the user's decisions of 2026-11-20 (drift = event +
- * stop; Fishball may still message a stopped session; settlements are the connector's; escalation
- * deferred; briefs persist). Techniques: UC, EP, DT, ST.
+ * stop; Fishball may still message a stopped session; settlements are the connector's; no
+ * escalation to the user, 2026-11-21; briefs persist). Techniques: UC, EP, DT, ST.
  */
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
@@ -99,6 +99,10 @@ test('DT: drift during a permission rejects the call, stops the turn and emits d
   const w = await world(t, { verdicts: [{ verdict: VERDICT.drifted, reason: 'it is rewriting the billing module' }] })
   await brief(w)
   assert.deepEqual(await permission(w), { verdict: VERDICT.reject, reason: 'it is rewriting the billing module' })
+  // The turn is stopped only after the request is answered (a stop would cancel the request itself).
+  assert.deepEqual(w.state.stops, [])
+  await new Promise((resolve) => setImmediate(resolve))
+  await new Promise((resolve) => setImmediate(resolve))
   assert.deepEqual(w.state.stops, [ROOT])
   assert.equal(w.state.events.length, 1)
   const e = w.state.events[0]

@@ -70,8 +70,8 @@ export const TEXT = Object.freeze({
 })
 
 /**
- * The judge's instructions (notes §3 decision table, as last revised; escalation to the user is
- * deferred by the user's decision of 2026-11-20, so "other high risk" passes to the manager).
+ * The judge's instructions (notes §3 decision table, as last revised; the user's final decision of
+ * 2026-11-21: no escalation to the user, so "other high risk" passes to the manager).
  * Each judgement is one self-contained message, so a refine applies at the next one.
  */
 export const JUDGE = Object.freeze({
