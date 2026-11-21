@@ -9,8 +9,10 @@
  * fishball-page hides New Session and this logo is the way back to the one manager session.
  *
  * State (no new server state):
- * - `api/fishball/strip` (fishball-ui's status view): core on/off and the saved logo theme;
- * - `api/fishball/asks/events` (core's card stream): the one manager session id and the open cards;
+ * - `api/fishball/strip` (fishball-ui's status view, kit `stripStream`): core on/off and the saved
+ *   logo theme, in the page's language so it shares the sidebar targets' connection (kit `CONNECTIONS`);
+ * - `api/fishball/asks/events` (core's card stream, the ask dock's connection): the one manager
+ *   session id and the open cards;
  * - `ctx.sessions.list`: the manager's live `running` flag (working or idle).
  * A lost asks stream, core off, or no manager session yet is offline (the strip only carries
  * presentation, so its own health does not claim a disconnection). An open card is "needs
@@ -48,7 +50,7 @@ window.__ModuleLoader__.load({
       accessibleName: 'Fishball',
       theme: Object.freeze({ fishball: 'fishball', deepseek: 'deepseek', default: 'fishball' }),
       themes: Object.freeze(['fishball', 'deepseek']),
-      route: Object.freeze({ strip: 'api/fishball/strip', asks: 'api/fishball/asks/events' }),
+      route: Object.freeze({ asks: 'api/fishball/asks/events' }),
       state: Object.freeze({ idle: 'idle', working: 'working', offline: 'offline', attention: 'attention' }),
       card: Object.freeze({ open: 'open' }),
       /** The mark's status light, with DSH's own StateDot states (done / ongoing / warning / error). */
@@ -205,6 +207,8 @@ window.__ModuleLoader__.load({
      */
     function useBrandState(kit, ctx, sources) {
       const lang = kit.useLang(ctx)
+      // The strip view in the page's language: the URL the sidebar targets read, so one connection.
+      React.useEffect(() => { sources.strip.use(lang) }, [lang])
       const strip = React.useSyncExternalStore(sources.strip.subscribe, sources.strip.get)
       const asks = React.useSyncExternalStore(sources.asks.subscribe, sources.asks.get)
       const subscribe = React.useCallback((listener) => ctx.sessions.list.subscribe(listener), [])
@@ -379,9 +383,7 @@ window.__ModuleLoader__.load({
     function brandPart(kit) {
       function apply(ctx) {
         const sources = Object.freeze({
-          // Language is not needed for the theme or `on`; the strip route's own default is enough.
-          strip: kit.liveStream({
-            url: () => new URL(BRAND.route.strip, document.baseURI).toString(),
+          strip: kit.stripStream({
             valid: (next) => next !== null && typeof next === 'object' && typeof next.on === 'boolean',
             initial: Object.freeze({ on: null, brandStyle: BRAND.theme.default }),
           }),

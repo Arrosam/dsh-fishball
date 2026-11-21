@@ -118,6 +118,13 @@ window.__ModuleLoader__.load({
     /**
      * The board as the row streams it: `{board, lost}`, shared by every mounted tab. EventSource
      * retries by itself after an error; a valid frame clears `lost`.
+     *
+     * The source is open only while a tab is subscribed, and a tab subscribes only while it is shown
+     * (`TaskboardTab`). Each open EventSource holds one of the browser's 6 HTTP/1.1 connections to
+     * the DSH origin, shared by every tab of the profile, and DSH's own calls (sending a message,
+     * uploads, history) queue behind held connections: with this stream added to the Fishball page's
+     * others, every send stayed "sending" (the user, 2026-11-21). fishball-ui counts this tab's one
+     * stream in its budget (core ui/client.js `CONNECTIONS`); keep it at most one, and only while shown.
      */
     function createFeed() {
       // `lost`: an error while EventSource retries by itself; `closed`: it gave up (a non-200 answer).
@@ -232,11 +239,20 @@ window.__ModuleLoader__.load({
       memos: board.memos.map(({ id, text }) => ({ id, text })),
     })
 
+    /** No subscription: a hidden tab holds no connection (`createFeed`). */
+    const unsubscribed = () => () => {}
+
     function makeTab(ctx, feed) {
       const t = ctx.locale.bind(BOARD.locale)
-      return function TaskboardTab() {
+      // `useTabInfo` is the right sidebar's per-tab hook (its `sidebar.right.pane.tab` tabInfo, both
+      // SDKs): `tab.visible` is false while the tab is kept mounted but not shown (another tab is
+      // selected, the sidebar is collapsed, or another session is in front).
+      return function TaskboardTab({ useTabInfo }) {
         React.useSyncExternalStore((listener) => ctx.locale.subscribe(listener), () => ctx.locale.getSnapshot())
-        const { board, lost, closed } = React.useSyncExternalStore(feed.subscribe, feed.get)
+        // A host that passes no tab hook keeps the old rule: the mounted tab follows the board.
+        const visible = useTabInfo === undefined ? true : useTabInfo().tab.visible
+        const subscribe = React.useCallback((listener) => (visible ? feed.subscribe(listener) : unsubscribed()), [visible])
+        const { board, lost, closed } = React.useSyncExternalStore(subscribe, feed.get)
         const lostText = closed ? t('closed') : t('lost')
         const [draft, setDraft] = React.useState(undefined)
         const [busy, setBusy] = React.useState(false)

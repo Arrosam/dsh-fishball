@@ -53,11 +53,8 @@ window.__ModuleLoader__.load({
        * back, never the native browser, when it stops (PLAN-MULTI §6.1).
        */
       priority: -2,
-      // fishball-ui's route (src/status/route.js STRIP_ROUTE) and core's target routes
-      // (`SEAM_TARGETS.route`), page-relative; restated: a chunk imports no module.
-      events: 'api/fishball/strip',
-      langParameter: 'lang',
-      zoneParameter: 'tz',
+      // Core's target routes (`SEAM_TARGETS.route`), page-relative; restated: a chunk imports no
+      // module. The list's own view is fishball-ui's strip route, read through kit `stripStream`.
       route: Object.freeze({
         connect: 'api/fishball/targets/connect', cancel: 'api/fishball/targets/cancel', retry: 'api/fishball/targets/retry',
         pairing: 'api/fishball/targets/pairing', targetIdField: 'targetId',
@@ -144,12 +141,11 @@ window.__ModuleLoader__.load({
       `.${C.dot}:hover{background:var(--dsw-alias-interactive-bg-hover)}`,
       ...Object.entries(TARGETS_UI.tone).filter(([, tone]) => tone.ink !== null).map(([state, tone]) => inkRule(state, tone.ink)),
     ].join('')
-    /** The browser's own time zone, the one each pairing last-seen time is written in. */
-    const timeZone = () => Intl.DateTimeFormat().resolvedOptions().timeZone
-
-    /** One targets stream per language for every mounted list (kit `langStream`, R-FIX-FUI health). */
-    const targetsStream = (kit) => kit.langStream({
-      path: TARGETS_UI.events, langParameter: TARGETS_UI.langParameter, params: () => ({ [TARGETS_UI.zoneParameter]: timeZone() }),
+    /**
+     * One targets stream per language for every mounted list (kit `stripStream`, R-FIX-FUI health),
+     * on the connection the brand shares (kit `CONNECTIONS`).
+     */
+    const targetsStream = (kit) => kit.stripStream({
       valid: (next) => next !== null && typeof next === 'object' && Array.isArray(next.targets) && Array.isArray(next.notices),
     })
 

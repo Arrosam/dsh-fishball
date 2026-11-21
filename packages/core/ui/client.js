@@ -176,23 +176,106 @@ window.__ModuleLoader__.load({
     ].join('')
 
     /**
-     * Every live stream of this row, so one Reconnect reopens them all: a lost stream usually has one
-     * cause for all of them (DSH restarted, the owner's session ended), and a part whose stream stays
-     * closed would never show the next ask or pairing warning.
+     * The browser's connection budget. Chrome (and Firefox by default) opens at most 6 HTTP/1.1
+     * connections per host, shared by every tab of the profile, and a loopback DSH serves no HTTP/2.
+     * Each open EventSource holds one of them for as long as it is open, and DSH's own calls
+     * (session prompts, history pages, uploads) are ordinary fetches that queue behind them. With
+     * every slot held by a stream, a send stays "sending" until the page closes its streams (the
+     * user, 2026-11-21: messages to Fishball, with or without an image, never finished). So this row
+     * opens one EventSource per URL, shared by every part that reads it (`channelOf`), and its parts
+     * read at most `rowStreams` URLs at once: core's ask cards and fishball-ui's strip view. DSH's own
+     * `/plugins/events` stream and an open Task board tab (fishball-taskboard) take one slot each,
+     * which leaves at least two for DSH's requests. `rowStreams` is a budget, not a limit the row
+     * enforces: going over it is logged (`overBudget`) so a new stream is noticed before it starves
+     * the page.
      */
-    const streams = new Set()
-    const reopenAll = () => { for (const stream of streams) stream.reopen() }
+    const CONNECTIONS = Object.freeze({
+      perHost: 6,
+      rowStreams: 2,
+      overBudget: 'fishball-ui: more live streams open than its connection budget allows',
+    })
+
+    /** Every open channel of this row by its URL; a channel lives while one stream subscribes to it. */
+    const channels = new Map()
+    /** One budget check per burst: a language switch moves a channel to its new URL in two steps. */
+    let budgetCheck = false
+    function checkBudget() {
+      if (budgetCheck) return
+      budgetCheck = true
+      queueMicrotask(() => {
+        budgetCheck = false
+        if (channels.size > CONNECTIONS.rowStreams) console.warn(CONNECTIONS.overBudget, CONNECTIONS.rowStreams, [...channels.keys()])
+      })
+    }
 
     /**
-     * One live stream (R-FIX-FUI): an EventSource on `url()` shared by every mounted part that
-     * subscribes, opened at the first subscriber and closed after the last. `valid(frame)` says which
-     * parsed frames are the route's shape; any other keeps the last good one. `get()` is
-     * `{frame, health}`: the last valid frame (or `initial`) and its `HEALTH`. `reopen()` closes the
-     * source and opens a fresh one (Reconnect, or a changed `url()`).
+     * The one EventSource of `href`, shared by its members (`{message(data), health(word)}`): every
+     * member gets each message and each health change. A member that joins later is given the last
+     * message and the current health at once, because the routes send a frame only when it changes.
+     * Closed when its last member leaves.
+     */
+    function channelOf(href) {
+      const existing = channels.get(href)
+      if (existing !== undefined) return existing
+      const members = new Set()
+      let source
+      let data
+      let health = HEALTH.live
+      const tell = (next) => { health = next; for (const member of [...members]) member.health(next) }
+      const start = () => {
+        const current = new EventSource(href)
+        source = current
+        current.onmessage = (message) => {
+          data = message.data
+          health = HEALTH.live
+          for (const member of [...members]) member.message(message.data)
+        }
+        // An error on a source this channel already replaced or closed says nothing about the current one.
+        current.onerror = () => { if (source === current) tell(current.readyState === SOURCE_CLOSED ? HEALTH.closed : HEALTH.stale) }
+      }
+      const channel = Object.freeze({
+        join(member) {
+          members.add(member)
+          if (data !== undefined) member.message(data)
+          if (health !== HEALTH.live) member.health(health)
+        },
+        leave(member) {
+          members.delete(member)
+          if (members.size > 0) return
+          source.close()
+          channels.delete(href)
+        },
+        /** A fresh source (Reconnect): one that had given up is trying again, as EventSource's own retry is. */
+        restart() {
+          source.close()
+          start()
+          if (health === HEALTH.closed) tell(HEALTH.stale)
+        },
+      })
+      start()
+      channels.set(href, channel)
+      checkBudget()
+      return channel
+    }
+
+    /**
+     * Reconnect: every open channel of this row gets a fresh source, because a lost stream usually has
+     * one cause for all of them (DSH restarted, the owner's session ended), and a part whose stream
+     * stays closed would never show the next ask or pairing warning.
+     */
+    const reopenAll = () => { for (const channel of [...channels.values()]) channel.restart() }
+
+    /**
+     * One live stream (R-FIX-FUI): the shared channel of `url()` (`channelOf`), joined at the stream's
+     * first subscriber and left after its last, so two parts reading one route hold one connection.
+     * `valid(frame)` says which parsed frames are the route's shape; any other keeps the last good
+     * one. `get()` is `{frame, health}`: the last valid frame (or `initial`) and its `HEALTH`.
+     * `reopen()` gives the stream a fresh source: its channel's new one (Reconnect), or the channel of
+     * a changed `url()`.
      */
     function liveStream({ url, valid, initial = null }) {
       let snapshot = Object.freeze({ frame: initial, health: HEALTH.live })
-      let source
+      let channel
       const listeners = new Set()
       const publish = (next) => {
         snapshot = Object.freeze({ ...snapshot, ...next })
@@ -200,42 +283,35 @@ window.__ModuleLoader__.load({
       }
       // A source opened again after it gave up is trying, as EventSource's own retry is, until a frame.
       const retrying = () => { if (snapshot.health === HEALTH.closed) publish({ health: HEALTH.stale }) }
-      const open = () => {
-        const current = new EventSource(url())
-        source = current
-        current.onmessage = (message) => {
+      const member = Object.freeze({
+        message(data) {
           let next
-          try { next = JSON.parse(message.data) } catch { return }
+          try { next = JSON.parse(data) } catch { return }
           if (!valid(next)) return
           publish({ frame: Object.freeze(next), health: HEALTH.live })
-        }
-        // An error on a source this stream already replaced or closed says nothing about the current one.
-        current.onerror = () => {
-          if (source !== current) return
-          publish({ health: current.readyState === SOURCE_CLOSED ? HEALTH.closed : HEALTH.stale })
-        }
-      }
-      const close = () => { source?.close(); source = undefined }
-      const stream = Object.freeze({
+        },
+        health: (word) => publish({ health: word }),
+      })
+      const join = () => { channel = channelOf(String(url())); channel.join(member) }
+      const leave = () => { channel?.leave(member); channel = undefined }
+      return Object.freeze({
         get: () => snapshot,
         subscribe(listener) {
           listeners.add(listener)
-          if (source === undefined) { open(); retrying() }
+          if (channel === undefined) { join(); retrying() }
           return () => {
             listeners.delete(listener)
-            if (listeners.size === 0) close()
+            if (listeners.size === 0) leave()
           }
         },
         /** A fresh source, if any part is subscribed (Reconnect, or a changed `url()`). */
         reopen() {
-          if (source === undefined) return
-          close()
-          open()
+          if (channel === undefined) return
+          if (channels.get(String(url())) === channel) channel.restart()
+          else { leave(); join() }
           retrying()
         },
       })
-      streams.add(stream)
-      return stream
     }
 
     /**
@@ -243,7 +319,7 @@ window.__ModuleLoader__.load({
      * language as `langParameter` and `params()`'s extra query values. `use(wanted)` follows the
      * page's language; a change reopens the stream in it.
      */
-    function langStream({ path, langParameter, params = () => ({}), valid }) {
+    function langStream({ path, langParameter, params = () => ({}), valid, initial = null }) {
       let lang = UI.lang.en
       const url = () => {
         const next = new URL(path, document.baseURI)
@@ -251,7 +327,7 @@ window.__ModuleLoader__.load({
         for (const [name, value] of Object.entries(params())) next.searchParams.set(name, value)
         return next
       }
-      const stream = liveStream({ url, valid })
+      const stream = liveStream({ url, valid, initial })
       return Object.freeze({
         ...stream,
         use(wanted) {
@@ -261,6 +337,18 @@ window.__ModuleLoader__.load({
         },
       })
     }
+
+    /**
+     * fishball-ui's strip view (src/status/route.js STRIP_ROUTE, restated: a chunk imports no module),
+     * in the page's language and the browser's own time zone (each target's pairing last-seen time).
+     * The sidebar targets and the brand both read it, through one URL, so one connection
+     * (`CONNECTIONS`): each follows the page's language with `use(lang)`.
+     */
+    const STRIP = Object.freeze({ path: 'api/fishball/strip', langParameter: 'lang', zoneParameter: 'tz' })
+    const timeZone = () => Intl.DateTimeFormat().resolvedOptions().timeZone
+    const stripStream = ({ valid, initial = null }) => langStream({
+      path: STRIP.path, langParameter: STRIP.langParameter, params: () => ({ [STRIP.zoneParameter]: timeZone() }), valid, initial,
+    })
 
     /** The page's language, `zh` or `en`, followed live (DSH's locale service, as the parts read it). */
     function useLang(ctx) {
@@ -284,7 +372,8 @@ window.__ModuleLoader__.load({
      * What the parts share: `css`, the shared class names, and `mountStyle(id, cssText)`, which adds
      * one style sheet to the document and returns its disposer, for a part's `ctx.effect`; the id
      * names it for a reader of the DOM. Since R-FIX-FUI also the live streams' lifecycle
-     * (`liveStream`, `langStream`, `HEALTH`, `StreamNotice`, `staleText`) and `useLang`, so the
+     * (`liveStream`, `langStream`, `HEALTH`, `StreamNotice`, `staleText`) and `useLang`, and since the
+     * connection budget (`CONNECTIONS`) `stripStream`, so the
      * sidebar targets and the ask cards mark a lost stream the same way; since
      * MULTI-3 `openCoreSettings`, and `press` / `refusalText` / `pressStore` / `usePress`, so every
      * press on core's target and answer routes reads `SEAM_TARGETS.http` the same way and keeps its
@@ -297,6 +386,7 @@ window.__ModuleLoader__.load({
       HEALTH,
       liveStream,
       langStream,
+      stripStream,
       useLang,
       StreamNotice,
       pressStore,
