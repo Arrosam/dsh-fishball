@@ -64,18 +64,33 @@ export async function storageContext(sdk, root) {
 
 /**
  * A pair store in a fresh root, closed and removed by `t`'s cleanup:
- * `{store, power(entryKey, clientId), reopen(), snapshot()}`. `reopen()` closes the store and
- * opens the same files again (a connector restart); `store` then names the new one.
+ * `{store, power(entryKey, clientId), reopen(), snapshot(), seedStored(pairs)}`. `reopen()` closes
+ * the store and opens the same files again (a connector restart); `store` then names the new one.
+ * `seedStored(pairs)` closes the store, writes `pairs` as the registry record a connector before
+ * the 2026-11-21 decision left (FIXTURE.storedRecord: the durable layout, not a module read), and
+ * opens the store again.
  * @param {import('node:test').TestContext} t
+ * @param options.random - passed to `openPairStore` (the generated names' random source).
  */
-export async function pairWorld(t, sdk) {
+export async function pairWorld(t, sdk, { random } = {}) {
   const mod = await pairsModule(sdk)
   const root = await mkdtemp(path.join(os.tmpdir(), FIXTURE.tempPrefix))
   let open
   const start = async () => {
     const { ctx, helpers } = await storageContext(sdk, root)
-    const opened = await mod[SUBJECT.open](ctx, helpers, {})
+    const opened = await mod[SUBJECT.open](ctx, helpers, random === undefined ? {} : { random })
     return { ctx, ...opened }
+  }
+  /** Writes one registry record straight into the domain, as an earlier connector stored it. */
+  const writeRecord = async (pairs) => {
+    const { ctx, helpers } = await storageContext(sdk, root)
+    const layout = FIXTURE.storedRecord
+    const domain = await ctx.storageDomain.open(helpers.defineDomain({
+      name: layout.domain, version: layout.version, tables: { [layout.table]: helpers.domainTable({ parse: (value) => value }) },
+    }))
+    await domain.table(layout.table).put(layout.recordKey, { pairs })
+    await domain.close()
+    await ctx.fiber.dispose()
   }
   const stop = async () => {
     if (open === undefined) return
@@ -96,6 +111,7 @@ export async function pairWorld(t, sdk) {
     /** The live power of an access token of `clientId` on `entryKey` (R-ID-03: evaluated now). */
     power: (entryKey, clientId) => mod[SUBJECT.power](open.store.pairOf(entryKey), clientId),
     async reopen() { await stop(); open = await start() },
+    async seedStored(pairs) { await stop(); await writeRecord(pairs); open = await start() },
     /** Every pair as plain data, to show that a refusal changed nothing. */
     snapshot: () => JSON.parse(JSON.stringify(open.store.list())),
   }

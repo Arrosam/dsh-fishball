@@ -113,7 +113,8 @@ const DEFINITIONS = [
       refusalSchema({ bound: pairBound(), advice: string() }),
     ),
   },
-  tool(TOOL.setName, 'Set or clear (null) your display name. Names are unique per connector, compared without letter case.',
+  // The user's decision, 2026-11-21: a clear (null) gives a generated name, so no agent is shown as "ID: <id>".
+  tool(TOOL.setName, 'Set your display name, or pass null for a generated one. Names are unique per connector, compared without letter case.',
     object({ name: nullable(string()) }),
     success({ name: nullable(string()) })),
 ]

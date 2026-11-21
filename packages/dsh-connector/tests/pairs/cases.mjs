@@ -24,8 +24,8 @@
 import assert from 'node:assert/strict'
 import { caseTest } from '../../../../test/v3/contract/package-boundaries/cases.mjs'
 import {
-  FIXTURE, HOLDER, ID_CLASSES, ID_REFUSAL, INSUFFICIENT_SCOPE_REASON, LATER, NAME_CLASSES, NAME_RULES, NON_STRING_NAME, PAIR_ADVICE, PAIR_TIMING,
-  REFUSAL, SCOPE, SUBJECT, TIME_UNIT, UNIQUENESS, nameKey, pairStoreMembers, principalLabel,
+  FIXTURE, GENERATED, HOLDER, ID_CLASSES, ID_REFUSAL, INSUFFICIENT_SCOPE_REASON, LATER, NAME_CLASSES, NAME_RULES, NON_STRING_NAME, PAIR_ADVICE,
+  PAIR_TIMING, REFUSAL, SCOPE, SUBJECT, TIME_UNIT, UNIQUENESS, checkName, nameKey, pairStoreMembers, principalLabel,
 } from './constants.mjs'
 import { pairWorld } from './subject.mjs'
 
@@ -53,7 +53,29 @@ const NAME_MAX = NAME_RULES.maxChars
 /** K1 `PairResult` success: without a `name`, `nameAssigned` is absent (K1 README, NAME-DT-01 rule 1). */
 export const paired = (id, name, extra = {}) => ({ ok: true, paired: true, id, name, ...extra })
 const assigned = (id, name) => paired(id, name, { nameAssigned: true })
-export const nameRefused = (id, code) => paired(id, null, { nameAssigned: false, nameRefused: code })
+/** A name the connector generated (the user's decision, 2026-11-21): the readable form, and valid as stored (R-NAME-02). */
+export function assertGeneratedName(name) {
+  assert.match(name, GENERATED.form, `not a generated name: ${JSON.stringify(name)}`)
+  assert.deepEqual(checkName(name), { ok: true, name }, 'a generated name is not valid as stored')
+}
+/**
+ * `pair`'s success with a generated name (no name given, or a refused one): exactly the K1 shape
+ * with `extra`, `name` a generated name. Returns the name.
+ */
+export function assertPairedGenerated(result, id, extra = {}) {
+  assert.deepEqual(result, paired(id, result?.name, extra))
+  assertGeneratedName(result.name)
+  return result.name
+}
+/** `pair` with a refused name (R-NAME-06): still paired, the refusal reported, and the pair named by the generator. */
+export const assertNameRefused = (result, id, code) => assertPairedGenerated(result, id, { nameAssigned: false, nameRefused: code })
+/** A principal bound on the approval page with an empty name field: nameless until its first name call (R-OA-12 (3)). */
+export async function bindNameless(w, n, id) {
+  const bound = await w.store.bindFromPage(E(n), id, undefined, FIXTURE.client, at())
+  assert.equal(bound.ok, true, `harness: the page bind of entry ${n} failed: ${JSON.stringify(bound)}`)
+  assert.equal(bound.pair.name, null, 'harness: a page bind with an empty name field is nameless')
+  return w.store.pairOf(E(n))
+}
 /** K1 `already-paired` (R-ID-04): the bound pair's fields and the fixed advice text. */
 const alreadyPaired = (idMatches, pair) => ({
   ok: false, code: REFUSAL.alreadyPaired,
@@ -116,9 +138,9 @@ function useCases(sdk) {
     assert.deepEqual(w.power(E(1), ID.agentA), NOT_PAIRED)
   })
   todo(sdk, CASE.uc02, 'main step 4', 'server/discover and tools/list with the pair-only token list pair only', LATER.mcpEndpoint)
-  uc02('main step 5', 'pair({}) binds E1 to agent-a with no name (no default names)', async (w) => {
-    assert.deepEqual(await w.store.pair(E(1), ID.agentA, undefined, at()), paired(ID.agentA, null))
-    assert.deepEqual(labelOf(w.store.pairOf(E(1))), principalLabel(null, ID.agentA), 'shown as ID: agent-a')
+  uc02('main step 5', 'pair({}) binds E1 to agent-a with a generated name (2026-11-21), not shown as ID: agent-a', async (w) => {
+    const name = assertPairedGenerated(await w.store.pair(E(1), ID.agentA, undefined, at()), ID.agentA)
+    assert.deepEqual(labelOf(w.store.pairOf(E(1))), { name }, 'shown by its generated name')
   })
   uc02('main step 6', 'the same access token is full at once after pair (scope evaluated live)', async (w) => {
     await bind(w, 1, ID.agentA)
@@ -190,7 +212,7 @@ function useCases(sdk) {
   todo(sdk, CASE.uc04, 'A1 (endpoint)', 'id 999: token scope agent:pair; any other call 403 insufficient_scope (id-mismatch)', LATER.mcpEndpoint)
   uc04('A2', 'B switches to an unbound E2 and a new id: pairs normally', async (w) => {
     await boundE1(w)
-    assert.deepEqual(await w.store.pair(E(2), ID.n999, undefined, at()), paired(ID.n999, null))
+    assertPairedGenerated(await w.store.pair(E(2), ID.n999, undefined, at()), ID.n999)
     assert.equal(w.store.pairOf(E(1)).id, ID.n123, 'E1 untouched')
   })
   uc04('A3', 'B switches to E2 but keeps id 123: id-taken, E2 stays unpaired', async (w) => {
@@ -213,27 +235,30 @@ function useCases(sdk) {
   nameUc01('main', 'pair({name: "Bob"}) with a free name: named Bob, nameAssigned true', async (w) => {
     assert.deepEqual(await w.store.pair(E(1), ID.b, NAME.bob, at()), assigned(ID.b, NAME.bob))
   })
-  nameUc01('A1', 'pair({}): name null, no nameRefused; shown as ID: <id>', async (w) => {
-    assert.deepEqual(await w.store.pair(E(1), ID.b, undefined, at()), paired(ID.b, null))
-    assert.deepEqual(labelOf(w.store.pairOf(E(1))), principalLabel(null, ID.b))
+  nameUc01('A1', 'pair({}): a generated name, no nameRefused; shown by that name, not ID: <id>', async (w) => {
+    const name = assertPairedGenerated(await w.store.pair(E(1), ID.b, undefined, at()), ID.b)
+    assert.deepEqual(labelOf(w.store.pairOf(E(1))), { name })
+    assertUniqueNames(w)
   })
   row(sdk, CASE.nameUc01, 'A2', 'a Fishball DSH pairs with "Fishball" while no one holds it: named Fishball', async (w) => {
     assert.deepEqual(await w.store.pair(E(1), ID.b, NAME.fishball, at()), assigned(ID.b, NAME.fishball))
   })
-  nameUc01('E1', 'pair({name: "fishball"}) held case-insensitively: pairs, name null, nameRefused name-taken', async (w) => {
-    assert.deepEqual(await w.store.pair(E(1), ID.b, NAME.fishballLower, at()), nameRefused(ID.b, REFUSAL.nameTaken))
-    assert.equal(w.store.pairOf(E(1)).name, null)
+  nameUc01('E1', 'pair({name: "fishball"}) held case-insensitively: pairs with a generated name, nameRefused name-taken', async (w) => {
+    const name = assertNameRefused(await w.store.pair(E(1), ID.b, NAME.fishballLower, at()), ID.b, REFUSAL.nameTaken)
+    assert.equal(w.store.pairOf(E(1)).name, name)
+    assertUniqueNames(w)
   })
-  nameUc01('E2', 'pair({name: "   "}): pairs, name null, nameRefused name-invalid', async (w) => {
-    assert.deepEqual(await w.store.pair(E(1), ID.b, NAME.blank, at()), nameRefused(ID.b, REFUSAL.nameInvalid))
+  nameUc01('E2', 'pair({name: "   "}): pairs with a generated name, nameRefused name-invalid', async (w) => {
+    assertNameRefused(await w.store.pair(E(1), ID.b, NAME.blank, at()), ID.b, REFUSAL.nameInvalid)
   })
-  nameUc01('post', 'token and id are bound whatever the name outcome; no default name exists anywhere', async (w) => {
+  nameUc01('post', 'token and id are bound whatever the name outcome; every pair is named: the chosen names, and a distinct generated one for each other pair', async (w) => {
     await w.store.pair(E(1), ID.a, NAME.fishballLower, at())
     await w.store.pair(E(2), ID.b, NAME.blank, at())
     await w.store.pair(E(3), ID.x, undefined, at())
     for (const [n, id] of [[1, ID.a], [2, ID.b], [3, ID.x]]) assert.equal(w.store.pairOf(E(n))?.id, id, `entry ${n} bound`)
-    const names = w.store.list().map((p) => p.name).filter((name) => name !== null).sort()
-    assert.deepEqual(names, [NAME.fishball, NAME.ops].sort(), 'only the names principals chose exist')
+    for (const n of [1, 2, 3]) assertGeneratedName(w.store.pairOf(E(n)).name)
+    assert.equal(w.store.list().filter((p) => p.name === null).length, 0, 'a pair is nameless')
+    assertUniqueNames(w)
   })
 
   // NAME-UC-03: P(E2, b) named "Fishball-2".
@@ -254,8 +279,9 @@ function useCases(sdk) {
   })
   nameUc03('post', '"Fishball-2" is free for anyone after the rename; nobody was renamed to it', async (w) => {
     await bind(w, 3, ID.x)
+    const own = w.store.pairOf(E(3)).name
     await setName(w, 2, NAME.indexer)
-    assert.equal(w.store.pairOf(E(3)).name, null, 'nobody is renamed to the freed name')
+    assert.equal(w.store.pairOf(E(3)).name, own, 'nobody is renamed to the freed name')
     assert.deepEqual(await setName(w, 3, NAME.fishball2), { ok: true, name: NAME.fishball2 })
   })
 }
@@ -270,7 +296,7 @@ function equivalencePartitions(sdk) {
   for (const [n, cls, ids, valid] of ID_CLASSES) {
     row(sdk, CASE.ep03, `${n} (store)`, `${cls}: ${valid ? 'pair binds the id' : 'the page bind refuses id-invalid and binds nothing'}`, async (w) => {
       for (const [i, id] of ids.entries()) {
-        if (valid) assert.deepEqual(await w.store.pair(E(i), id, undefined, at()), paired(id, null))
+        if (valid) assertPairedGenerated(await w.store.pair(E(i), id, undefined, at()), id)
         else await assertRefused(w, () => w.store.bindFromPage(E(i), id, undefined, FIXTURE.client, at()), refusal(ID_REFUSAL.idInvalid))
       }
     })
@@ -281,13 +307,13 @@ function equivalencePartitions(sdk) {
     const bound = await bind(w, 1, ID.abc)
     assert.deepEqual(w.power(E(1), ID.ABC), ID_MISMATCH)
     await assertRefused(w, () => w.store.pair(E(1), ID.ABC, undefined, at()), alreadyPaired(false, bound))
-    assert.deepEqual(await w.store.pair(E(2), ID.ABC, undefined, at()), paired(ID.ABC, null), 'ids compare exactly (R-ID-13)')
+    assertPairedGenerated(await w.store.pair(E(2), ID.ABC, undefined, at()), ID.ABC)
   })
   row(sdk, CASE.ep03, '8', 'same id on two tokens: E2 pair x is id-taken and stays unpaired; then E2 pairs with y', async (w) => {
     await bind(w, 1, ID.x)
     await assertRefused(w, () => w.store.pair(E(2), ID.x, undefined, at()), refusal(REFUSAL.idTaken))
     assert.equal(w.store.pairOf(E(2)), undefined)
-    assert.deepEqual(await w.store.pair(E(2), ID.y, undefined, at()), paired(ID.y, null))
+    assertPairedGenerated(await w.store.pair(E(2), ID.y, undefined, at()), ID.y)
   })
   row(sdk, CASE.ep03, '9', 'same token + same id from two clients: one principal', async (w) => {
     const pair = await bind(w, 1, ID.x)
@@ -303,7 +329,7 @@ function equivalencePartitions(sdk) {
   todo(sdk, CASE.ep06, '2', 'tools/list with a pair-only token lists pair only', LATER.mcpEndpoint)
   row(sdk, CASE.ep06, '3', 'pair: an unbound entry pairs; an entry bound to another id answers already-paired, idMatches false', async (w) => {
     const other = await bind(w, 2, ID.b)
-    assert.deepEqual(await w.store.pair(E(1), ID.a, undefined, at()), paired(ID.a, null))
+    assertPairedGenerated(await w.store.pair(E(1), ID.a, undefined, at()), ID.a)
     await assertRefused(w, () => w.store.pair(E(2), ID.a, undefined, at()), alreadyPaired(false, other))
   })
   for (const [n, call] of [['4', 'sessions_list, session_start, approval_answer, set_name'], ['5', 'inbox_poll, inbox_ack'], ['6', 'subscriptions/listen'], ['7', 'resources/read dsh-agent://events'], ['8', 'a contributed tool call']]) {
@@ -329,11 +355,16 @@ function equivalencePartitions(sdk) {
     await assertRefused(w, () => setName(w, 1, NON_STRING_NAME), refusal(REFUSAL.nameInvalid))
   })
   // The case row lists `null` as invalid; R-NAME-02 (1.23, decided A) and NAME-ST-01 row 10 make
-  // `set_name({name: null})` the clear. The requirement is the authority, so `null` clears here.
-  row(sdk, CASE.nameEp01, '12 (null)', 'null is the clear of R-NAME-02, not a name: ok, the name is cleared', async (w) => {
+  // `set_name({name: null})` the clear. The requirement is the authority, so `null` clears here;
+  // since the user's decision of 2026-11-21 a cleared pair is not left nameless: it gets a generated name.
+  row(sdk, CASE.nameEp01, '12 (null)', 'null is the clear of R-NAME-02, not a name: ok, the chosen name is replaced by a generated one and freed', async (w) => {
     await bind(w, 1, ID.a, NAME.watcher)
-    assert.deepEqual(await setName(w, 1, null), { ok: true, name: null })
-    assert.equal(w.store.pairOf(E(1)).name, null)
+    const cleared = await setName(w, 1, null)
+    assert.deepEqual(cleared, { ok: true, name: cleared.name })
+    assertGeneratedName(cleared.name)
+    assert.equal(w.store.pairOf(E(1)).name, cleared.name)
+    await bind(w, 2, ID.b)
+    assert.deepEqual(await setName(w, 2, NAME.watcher), { ok: true, name: NAME.watcher }, 'the cleared name is free')
   })
   todo(sdk, CASE.nameEp01, '12 (schema)', 'set_name with a non-string, non-null name over MCP: invalid-arguments', LATER.wire)
 
@@ -384,10 +415,10 @@ function equivalencePartitions(sdk) {
   todo(sdk, CASE.nameEp04, '4', 'designated-Fishball setting: ID: agent-x', LATER.wire)
   todo(sdk, CASE.nameEp04, '5', 'connector notes: "managed by ID: agent-x"', LATER.routeNotes)
   todo(sdk, CASE.nameEp04, '6', 'call.principal.name given to contributors is null', LATER.contributor)
-  row(sdk, CASE.nameEp04, '7', 'two nameless principals never clash with each other', async (w) => {
-    assert.deepEqual(await w.store.pair(E(1), ID.x, undefined, at()), paired(ID.x, null))
-    assert.deepEqual(await w.store.pair(E(2), ID.y, undefined, at()), paired(ID.y, null))
-    assert.deepEqual(await setName(w, 1, null), { ok: true, name: null })
+  row(sdk, CASE.nameEp04, '7', 'two nameless principals never clash with each other (two page binds with no name)', async (w) => {
+    await bindNameless(w, 1, ID.x)
+    await bindNameless(w, 2, ID.other)
+    assert.deepEqual(w.store.list().map((p) => p.name), [null, null])
   })
   row(sdk, CASE.nameEp04, '8', 'a principal named "ID: agent-y" by hand: allowed, shown as plain text', async (w) => {
     const chosen = NAME_CLASSES.find(([n]) => n === '9c')[3]
@@ -397,7 +428,7 @@ function equivalencePartitions(sdk) {
   row(sdk, CASE.nameEp04, '9', 'the nameless principal agent-y: ID: prefix label, visibly different from row 8', async (w) => {
     const chosen = NAME_CLASSES.find(([n]) => n === '9c')[3]
     await bind(w, 1, ID.x, chosen)
-    await bind(w, 2, ID.agentA)
+    await bindNameless(w, 2, ID.agentA)
     assert.notDeepEqual(labelOf(w.store.pairOf(E(2))), labelOf(w.store.pairOf(E(1))))
     assert.deepEqual(labelOf(w.store.pairOf(E(2))), principalLabel(null, ID.agentA))
   })
@@ -456,20 +487,21 @@ function boundaryValues(sdk) {
   }
 
   // NAME-BVA-03: concurrent pairing and naming (one serial registry, S3).
-  row(sdk, CASE.nameBva03, '1', 'two unbound entries pair({name: "Fishball"}) at once: one gets it, the other pairs nameless with name-taken', async (w) => {
+  row(sdk, CASE.nameBva03, '1', 'two unbound entries pair({name: "Fishball"}) at once: one gets it, the other pairs with a generated name and name-taken', async (w) => {
     const results = await Promise.all([1, 2].map((n) => w.store.pair(E(n), ID.crowd(n), NAME.fishball, at())))
     const named = results.filter((r) => r.name === NAME.fishball)
     assert.equal(named.length, 1, JSON.stringify(results))
     assert.deepEqual(named[0], assigned(named[0].id, NAME.fishball))
     const other = results.find((r) => r !== named[0])
-    assert.deepEqual(other, nameRefused(other.id, REFUSAL.nameTaken))
+    assertNameRefused(other, other.id, REFUSAL.nameTaken)
     assertUniqueNames(w)
   })
-  row(sdk, CASE.nameBva03, '2', `${FIXTURE.crowd} at once, all pair({}): all pair, all nameless`, async (w) => {
+  row(sdk, CASE.nameBva03, '2', `${FIXTURE.crowd} at once, all pair({}): all pair, each with its own generated name`, async (w) => {
     const ns = Array.from({ length: FIXTURE.crowd }, (_, i) => i)
     const results = await Promise.all(ns.map((n) => w.store.pair(E(n), ID.crowd(n), undefined, at())))
-    assert.deepEqual(results, ns.map((n) => paired(ID.crowd(n), null)))
+    for (const [n, result] of results.entries()) assert.equal(assertPairedGenerated(result, ID.crowd(n)), w.store.pairOf(E(n)).name)
     assert.equal(w.store.list().length, FIXTURE.crowd)
+    assertUniqueNames(w)
   })
   row(sdk, CASE.nameBva03, '3', 'pair({name}) races set_name(name) of an existing principal: exactly one holds it, either branch may win', async (w) => {
     await bind(w, 0, ID.race(0))
@@ -477,7 +509,8 @@ function boundaryValues(sdk) {
       const name = NAME.race(round)
       const [pairResult, setResult] = await Promise.all([w.store.pair(E(round), ID.race(round), name, at()), setName(w, 0, name)])
       const pairWon = pairResult.name === name
-      assert.deepEqual(pairResult, pairWon ? assigned(ID.race(round), name) : nameRefused(ID.race(round), REFUSAL.nameTaken), `round ${round}`)
+      if (pairWon) assert.deepEqual(pairResult, assigned(ID.race(round), name), `round ${round}`)
+      else assertNameRefused(pairResult, ID.race(round), REFUSAL.nameTaken)
       assert.deepEqual(setResult, pairWon ? refusal(REFUSAL.nameTaken) : { ok: true, name }, `round ${round}`)
       assertUniqueNames(w)
     }
@@ -494,7 +527,7 @@ function decisionTables(sdk) {
   todo(sdk, CASE.dt02, '1', 'missing / expired / revoked / foreign-audience token: 401 + WWW-Authenticate', LATER.mcpEndpoint)
   dt02('2', 'pair-only, unbound, pair: pairs; the same token is full on the next request', async (w) => {
     assert.deepEqual(w.power(E(1), ID.a), NOT_PAIRED)
-    assert.deepEqual(await w.store.pair(E(1), ID.a, undefined, at()), paired(ID.a, null))
+    assertPairedGenerated(await w.store.pair(E(1), ID.a, undefined, at()), ID.a)
     assert.deepEqual(w.power(E(1), ID.a), FULL)
   })
   dt02('3', 'pair-only, unbound, another call: insufficient_scope (not-paired)', (w) => {
@@ -535,18 +568,22 @@ function decisionTables(sdk) {
   for (const n of ['3', '5', '7']) todo(sdk, CASE.dt02, `${n} (endpoint)`, 'the HTTP outcome of that power at the MCP endpoint', LATER.mcpEndpoint)
 
   // NAME-DT-01: pair({name?}); "held by another" = a principal holds "Fishball".
+  // Rules 1, 3, 4 since the user's decision of 2026-11-21: the pair is named by the generator.
+  const exactly = (expected) => (result) => assert.deepEqual(result, expected)
   const dt01 = [
-    ['1', 'no name', undefined, () => paired(ID.b, null)],
-    ['2', 'valid and free', NAME.bob, () => assigned(ID.b, NAME.bob)],
-    ['3', 'valid and held by another', NAME.fishballLower, () => nameRefused(ID.b, REFUSAL.nameTaken)],
-    ['4', 'invalid after normalisation', NAME.blank, () => nameRefused(ID.b, REFUSAL.nameInvalid)],
-    ['5', '"Fishball-2", no longer special, free', NAME.fishball2, () => assigned(ID.b, NAME.fishball2)],
+    ['1', 'no name', undefined, 'a generated name, nameAssigned absent', (result) => assertPairedGenerated(result, ID.b)],
+    ['2', 'valid and free', NAME.bob, JSON.stringify(assigned(ID.b, NAME.bob)), exactly(assigned(ID.b, NAME.bob))],
+    ['3', 'valid and held by another', NAME.fishballLower, 'a generated name, nameAssigned false, nameRefused name-taken', (result) => assertNameRefused(result, ID.b, REFUSAL.nameTaken)],
+    ['4', 'invalid after normalisation', NAME.blank, 'a generated name, nameAssigned false, nameRefused name-invalid', (result) => assertNameRefused(result, ID.b, REFUSAL.nameInvalid)],
+    ['5', '"Fishball-2", no longer special, free', NAME.fishball2, JSON.stringify(assigned(ID.b, NAME.fishball2)), exactly(assigned(ID.b, NAME.fishball2))],
   ]
-  for (const [n, title, name, expected] of dt01) {
-    row(sdk, CASE.nameDt01, n, `${title}: paired, ${JSON.stringify(expected())}`, async (w) => {
+  for (const [n, title, name, outcome, check] of dt01) {
+    row(sdk, CASE.nameDt01, n, `${title}: paired, ${outcome}`, async (w) => {
       await holders(w, [NAME.fishball])
-      assert.deepEqual(await w.store.pair(E(1), ID.b, name, at()), expected())
+      const result = await w.store.pair(E(1), ID.b, name, at())
+      check(result)
       assert.equal(w.store.pairOf(E(1)).id, ID.b, 'paired whatever the name outcome')
+      assert.equal(w.store.pairOf(E(1)).name, result.name, 'the stored name is the answered one')
     })
   }
 
@@ -585,7 +622,7 @@ function stateTransitions(sdk) {
   // AUTH-ST-01 rows 2–4, 11, 13, 14 (the rest is C-TOKENS'). X = a, Y = b.
   const st01 = (n, title, fn) => row(sdk, CASE.st01, n, title, fn)
   st01('2', 'Ready → pair with X → Bound(X), pairedAt set', async (w) => {
-    assert.deepEqual(await w.store.pair(E(1), ID.a, undefined, at(FIXTURE.t1Offset)), paired(ID.a, null))
+    assertPairedGenerated(await w.store.pair(E(1), ID.a, undefined, at(FIXTURE.t1Offset)), ID.a)
     const pair = w.store.pairOf(E(1))
     assert.equal(pair.id, ID.a)
     assert.equal(pair.pairedAt, at(FIXTURE.t1Offset))
@@ -609,28 +646,30 @@ function stateTransitions(sdk) {
     assert.equal(results.filter((r) => r.ok).length, 1, JSON.stringify(results))
     const bound = w.store.pairOf(E(1))
     assert.deepEqual(results.find((r) => !r.ok), alreadyPaired(false, bound))
-    assert.deepEqual(results.find((r) => r.ok), paired(bound.id, null))
+    assert.equal(assertPairedGenerated(results.find((r) => r.ok), bound.id), bound.name)
   })
 
   // NAME-ST-01 rows 1–7 (rows 8–9 are C-SUCCEED's).
   const nameSt = (n, title, fn) => row(sdk, CASE.nameSt01, n, title, fn)
-  nameSt('1', '(unpaired) → pair without a usable name → Nameless, shown as ID: <id>', async (w) => {
+  nameSt('1', '(unpaired) → pair without a usable name → Named(generated) (2026-11-21), not shown as ID: <id>', async (w) => {
     await holders(w, [NAME.ops])
     await w.store.pair(E(1), ID.a, NAME.ops, at())
-    assert.deepEqual(labelOf(w.store.pairOf(E(1))), principalLabel(null, ID.a))
+    const { name } = w.store.pairOf(E(1))
+    assertGeneratedName(name)
+    assert.deepEqual(labelOf(w.store.pairOf(E(1))), { name })
   })
   nameSt('2', '(unpaired) → pair with free name N → Named(N)', async (w) => {
     await w.store.pair(E(1), ID.a, NAME.bob, at())
     assert.equal(w.store.pairOf(E(1)).name, NAME.bob)
   })
-  nameSt('3', 'Nameless → another principal renames → Nameless (never named by others)', async (w) => {
-    await bind(w, 1, ID.a)
+  nameSt('3', 'Nameless (page bind, no name) → another principal renames → Nameless (never named by others)', async (w) => {
+    await bindNameless(w, 1, ID.a)
     await bind(w, 2, ID.b, NAME.bob)
     await setName(w, 2, NAME.watcher)
     assert.equal(w.store.pairOf(E(1)).name, null)
   })
-  nameSt('4', 'Nameless → set_name(N) free → Named(N); ID: <id> replaced by N', async (w) => {
-    await bind(w, 1, ID.a)
+  nameSt('4', 'Nameless (page bind, no name) → set_name(N) free → Named(N); ID: <id> replaced by N', async (w) => {
+    await bindNameless(w, 1, ID.a)
     assert.deepEqual(await setName(w, 1, NAME.bob), { ok: true, name: NAME.bob })
     assert.deepEqual(labelOf(w.store.pairOf(E(1))), { name: NAME.bob })
   })

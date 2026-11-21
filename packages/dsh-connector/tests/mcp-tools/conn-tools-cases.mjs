@@ -10,6 +10,7 @@ import assert from 'node:assert/strict'
 import { caseTest } from '../../../../test/v3/contract/package-boundaries/cases.mjs'
 import { CONN_FIXTURE as F, CONN_TOOLS as C } from '../contract/k1-mcp-schema/conn-tools-constants.mjs'
 import { assertRefusal, assertSuccess } from './cases.mjs'
+import { assertGeneratedName } from '../pairs/cases.mjs'
 import { SCOPE_HINT } from '../contract/k1-mcp-schema/constants.mjs'
 import { sdkClient } from '../mcp-http/subject.mjs'
 import { EVENT_TYPE, FIXTURE, MAILBOX, PAIR_ONLY, REFUSAL, SCOPE, TOOL } from './constants.mjs'
@@ -116,8 +117,9 @@ export function registerConnToolsBoundaryCases(sdk) {
     assertRefusal(await client.callTool({ name: C.answer, arguments: { ...args, answers: [{ id: 'choice', selected: false }] } }), REFUSAL.invalidArguments)
     assert.equal(await snapshot(env), before)
     assert.equal(w.managed.managerOf(FIXTURE.s1), q.principalKey)
-    assertSuccess(await client.callTool({ name: TOOL.setName, arguments: { name: null } }))
-    assert.equal(w.pairs.byPrincipal(env.p.principalKey).name, null)
+    const cleared = assertSuccess(await client.callTool({ name: TOOL.setName, arguments: { name: null } }))
+    assertGeneratedName(cleared.name)
+    assert.equal(w.pairs.byPrincipal(env.p.principalKey).name, cleared.name)
     assert.deepEqual(w.domainCalls, [])
   })
 

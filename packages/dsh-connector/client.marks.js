@@ -241,6 +241,9 @@ globalThis.__ModuleLoader__?.load({
     /**
      * An agent as R-NAME-08 shows it: its name as plain text, or, for a nameless one, a bold `ID:`
      * and its id. React escapes both, so markup in a name is shown, never run (HAND-EP-02 row 8).
+     * Since the user's decision of 2026-11-21 the connector's pair store gives every pair a generated
+     * name when it has none, so the `ID:` form is the fallback (a page-bound pair before its agent's
+     * first name call, other principals); it stays.
      * `principalText` is the same as one string, for a text alternative.
      */
     const principalLabel = (t, principal) => (principal.name === null
