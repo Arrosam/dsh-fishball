@@ -12,6 +12,7 @@
  * It depends on nothing of the Fishball side.
  */
 import path from 'node:path'
+import { runWithSettings } from 'dsh-connector-shared/live-settings'
 import { Config } from './src/config.js'
 import { createWatchdog } from './src/core.js'
 import { createJudge } from './src/judge.js'
@@ -26,7 +27,18 @@ export { Config }
 const PROFILE_CONTEXT = 'profileContext'
 const usable = (service) => service?.apiVersion === WATCHDOG.service.apiVersion
 
+/**
+ * The row's settings are volatile (src/config.js): `runWithSettings` runs the body below with their
+ * plain values and runs it again after a live change, so the timers and bounds are re-read as when
+ * a settings change remounted the row. The briefs persist in the store, so a re-run re-arms them.
+ * `async`, as before: Cordis awaits an async apply, and runs a plain function as a constructor,
+ * discarding its result (cordis isConstructor).
+ */
 export async function apply(ctx, config) {
+  await runWithSettings(ctx, config, applyWith)
+}
+
+async function applyWith(ctx, config) {
   const logger = ctx.logger(WATCHDOG.name)
   const home = ctx.get(PROFILE_CONTEXT)?.home ?? process.env.DSH_HOME
   const store = await openBriefStore({ dir: path.join(home, STORE.directory), logger })

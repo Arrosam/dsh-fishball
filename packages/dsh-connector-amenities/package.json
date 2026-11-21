@@ -35,13 +35,15 @@
   "dependencies": {
     "@modelcontextprotocol/client": "2.4.0",
     "dsh-connector-adapter": "1.0.0-alpha.1",
-    "dsh-connector-watchdog": "1.0.0-alpha.1"
+    "dsh-connector-watchdog": "1.0.0-alpha.1",
+    "dsh-connector-shared": "1.0.0-alpha.1"
   },
   "peerDependencies": {
     "@deepseek-ai/dsh-client-locale": "*",
     "@deepseek-ai/dsh-client-ui-plugin-manager": "*",
     "@deepseek-ai/dsh-agent-preset": "*",
-    "@deepseek-ai/dsh-tool-fs": "*"
+    "@deepseek-ai/dsh-tool-fs": "*",
+    "@deepseek-ai/dsh-client-ui-settings": "*"
   },
   "dsh": {
     "bundle": {
@@ -51,15 +53,17 @@
       "platform": "web",
       "inject": [
         "@deepseek-ai/dsh-client-locale",
+        "@deepseek-ai/dsh-client-ui-settings",
         "@deepseek-ai/dsh-client-ui-plugin-manager"
       ]
     }
   },
-  "//dependencies": "The amenities, each its own package and bundle (independently installable). DSH makes only a profile's direct dependencies bundles, so this umbrella inserts its members' rows in its own patch (as DSH's dsh-cua-bundle does); they resolve through these dependencies. Only this package has browser code (dsh.client): its settings-page hint.",
-  "//bundleDependencies": "The two amenities are bundled, as dsh-agent-connector bundles dsh-connector-shared, so the umbrella tarball carries them and an install (online or offline) fetches neither from a registry; the adapter's one third-party dependency (@modelcontextprotocol/client, pinned as the adapter pins it) is bundled beside them with its closure, where the bundled adapter resolves it. Each amenity is still its own package, released and installable on its own.",
+  "//dependencies": "The amenities, each its own package and bundle (independently installable). DSH makes only a profile's direct dependencies bundles, so this umbrella inserts its members' rows in its own patch (as DSH's dsh-cua-bundle does); they resolve through these dependencies. Only this package has browser code (dsh.client): its settings-page hint and the settings pages of its members' rows with settings (dsh-connector-adapter, dsh-connector-watchdog), registered while DSH serves each row's settings (ctx.configForms, from dsh-client-ui-settings).",
+  "//bundleDependencies": "The two amenities are bundled, as dsh-agent-connector bundles dsh-connector-shared, so the umbrella tarball carries them and an install (online or offline) fetches neither from a registry; the adapter's one third-party dependency (@modelcontextprotocol/client, pinned as the adapter pins it) is bundled beside them with its closure, where the bundled adapter resolves it. Each amenity is still its own package, released and installable on its own. dsh-connector-shared is the members' bundled library (its ./live-settings), carried beside them so the bundled members resolve it, as fishball-amenities carries fishball-shared.",
   "bundleDependencies": [
     "@modelcontextprotocol/client",
     "dsh-connector-adapter",
-    "dsh-connector-watchdog"
+    "dsh-connector-watchdog",
+    "dsh-connector-shared"
   ]
 }

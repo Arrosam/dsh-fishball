@@ -1,8 +1,8 @@
 # dsh-connector-amenities
 
 An umbrella that installs the optional DSH Connector amenities together. Each amenity is its own
-package and DSH bundle, installable on its own; this package only depends on them and shows a hint
-on its settings page.
+package and DSH bundle, installable on its own; this package depends on them and carries their
+settings pages.
 
 | Package | Role |
 | --- | --- |
@@ -15,7 +15,26 @@ bundles, so an umbrella carries its members' rows, as DSH's own `dsh-cua-bundle`
 an amenity on its own instead and its own patch is used. Do not install the umbrella together with
 an amenity as a direct dependency: both would insert the same rows.
 
-Installed through the umbrella, the amenities show as its components on its plugin page; configure
-each from its component settings there. Installed alone, each is its own entry in the Plugins list.
+Installed through the umbrella, the amenities show as its components on its plugin page. Open
+`dsh-connector-adapter` or `dsh-connector-watchdog` there (the arrow beside its name) to configure
+it. A saved change applies at once: the amenity re-applies itself with the new values, without a
+DSH restart, and the value is kept in the profile's `cordis.patch.yml`. `preset-watchdog` is
+DSH's agent preset row and has no settings.
 
-Only this umbrella has browser code (`client.js`, its settings-page hint); the amenities have none.
+- **dsh-connector-watchdog:** the patrol interval and the judgement's read and time bounds, each a
+  whole number within its range.
+- **dsh-connector-adapter:** the client metadata URL, and the connectors to sign in to: a list of
+  a server name and its MCP URL (Add, Remove, then Save the list). The list is checked before it
+  is saved: each server name once, and each URL https, or http on this computer only (`localhost`,
+  `127.0.0.1`, `[::1]`).
+
+Known limits:
+- The pages are this umbrella's (`client.js`); the amenities have no browser code. Installed alone,
+  without the umbrella, an amenity has no settings page: edit its row's `config` in the profile's
+  `cordis.patch.yml` instead.
+- A change the page cannot check but the amenity refuses when it applies it (for example a
+  connector list the adapter cannot start with) fails the amenity's row, as it did before the
+  pages existed. A failed row has no settings page, so fix that value in `cordis.patch.yml`.
+
+Only this umbrella has browser code (`client.js`: the settings-page hint and its amenities'
+settings pages); the amenities have none.
