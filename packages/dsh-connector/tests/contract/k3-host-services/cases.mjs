@@ -21,7 +21,7 @@
  * members by the names the requirement gives them.
  */
 import assert from 'node:assert/strict'
-import { withdrawnCase } from '../../../../../test/v3/fishball-core/settings/withdrawn.mjs'
+import { withdrawnCase } from '../../../../../test/support/withdrawn.mjs'
 import { caseTest } from '../../../../../test/v3/contract/package-boundaries/cases.mjs'
 import { SET_SIDE, V3 } from '../../../../../test/v3/contract/package-boundaries/constants.mjs'
 import {

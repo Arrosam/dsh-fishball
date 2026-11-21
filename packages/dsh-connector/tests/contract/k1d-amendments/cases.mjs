@@ -1,4 +1,3 @@
-import { assertNoGeneratedSchema } from '../../../../../test/v3/contract/own-schema/absence.mjs'
 /**
  * K1d black-box cases: the W4 contract gate (W4 briefs G3) that amends K1 (`dsh-agent-connector/mcp-schema`)
  * and K3's `host-services/tokens.d.ts` before C-REVOKE and C-SUCCEED start.
@@ -414,7 +413,8 @@ function nameCases(sdk) {
 
 // F-OWN-SCHEMA (design §1.0b row 1): no byte-equality/generator oracle remains.
 function vendorCases(sdk) {
-  caseTest(sdk, ID.vendor, 1, 'core carries no generated schema or generator', assertNoGeneratedSchema)
+  // The check itself now lives with fishball-core in the dsh-fishball repository (repo split 6b7c53bf).
+  caseTest(sdk, ID.vendor, 1, 'core carries no generated schema or generator', null, 'moved with fishball-core to the dsh-fishball repository (repo split 6b7c53bf)')
 }
 
 // ================================================================================================

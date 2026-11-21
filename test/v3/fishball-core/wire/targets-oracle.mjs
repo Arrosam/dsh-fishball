@@ -8,8 +8,8 @@
  * bridge, link-save, status, settings, wire, manager), so each rule is written once.
  */
 import { createHash } from 'node:crypto'
-import { APPROVAL, CONNECT, HOSTED_IMPORT, LINK, MCP, MESSAGE, TARGETS } from '../../../../packages/core/contracts/constants.js'
-import { SEAM_TARGETS } from '../../../../packages/shared/ui-seam.js'
+import { APPROVAL, CONNECT, HOSTED_IMPORT, LINK, MCP, MESSAGE, TARGETS } from '../../../fixtures/fishball-core/contracts/constants.js'
+import { SEAM_TARGETS } from '../../../fixtures/fishball-shared/ui-seam.js'
 
 export { APPROVAL, CONNECT, HOSTED_IMPORT, LINK, MCP, MESSAGE, SEAM_TARGETS, TARGETS }
 

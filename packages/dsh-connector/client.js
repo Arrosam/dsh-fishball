@@ -2,8 +2,8 @@
  * dsh-connector's browser half (task C-TOKENS-REVEAL; design §5.9, §28; requirements 1.27, 1.28 R2;
  * R-ARCH-03, R-CON-10, R-TOK-03, R-TOK-11). It does three things, and works with dsh-connector-ui
  * uninstalled:
- * 1. its own plugin settings page: the Plugins page's `plugins.row.config` entry for the connector's
- *    own row, `dsh-agent-connector#dsh-connector`, while DSH serves that row's settings (below);
+ * 1. its own plugin settings page: the Plugins page's `plugins.bundle.config` entry for the connector's
+ *    own bundle, keyed `dsh-agent-connector`, while DSH serves that bundle's settings (below);
  * 2. the marks part (client.marks.js): Hand over / Take back, "Managed by <agent>" and the managed
  *    row mark. It moved here from dsh-connector-ui (DESIGN.md §28, the user 2026-11-20: "every
  *    connector install has it"), so every DSH with the connector shows it, with or without Embed UI;
@@ -49,7 +49,8 @@ window.__ModuleLoader__.load({
     const h = React.createElement
 
     /**
-     * The row's identity (design §5.9): the slot key is `<package>#<row id>`, DSH's rowConfigKey
+     * The bundle's identity (design §5.9, re-baselined by df9d83d): the settings page fills
+     * `plugins.bundle.config`, whose key is the bundle's package name
      * (dsh-client-ui-plugin-manager). The row id is the settings namespace DSH serves and stays
      * `dsh-connector`; the package is `dsh-agent-connector` since the npm rename (the user,
      * 2026-11-17). `tokensField` is the settings list.

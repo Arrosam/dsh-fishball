@@ -56,9 +56,9 @@ export const SURFACE = Object.freeze({
   engines: '>=0.2.1-rc.5',
   clientPlatform: 'web',
   clientEntry: 'client.js',
-  /** design §5.9: the settings page's only slot and its `<package>#<row id>` key. */
-  slot: 'plugins.row.config',
-  slotKey: 'dsh-agent-connector#dsh-connector',
+  /** design §5.9 + df9d83d: the settings page's only slot, keyed by its bundle's package name. */
+  slot: 'plugins.bundle.config',
+  slotKey: 'dsh-agent-connector',
   settings: Object.freeze({
     tokens: 'tokens',
     /** Withdrawn by C-WIRE-2 (the user's q5, "Remove agentToken entirely"): named only to assert they are gone. */

@@ -1,4 +1,3 @@
-import { assertNoGeneratedSchema } from '../../../../../test/v3/contract/own-schema/absence.mjs'
 /**
  * K1c black-box rows: the managed-state seam frozen in `dsh-agent-connector/mcp-schema` (spec and
  * oracles: k1c-constants.mjs). Written from Fishball's K1c spec, the README and index.d.ts only; no
@@ -242,5 +241,6 @@ export function registerK1cCases(sdk) {
   // Spec 5: core's vendored copy (withdrawn with the copy)
   // ======================================================================================
   // F-OWN-SCHEMA (design §1.0b row 1) withdraws both vendored-export rows.
-  caseTest(sdk, 'K1c-EP-10', 1, 'core carries no generated schema', assertNoGeneratedSchema)
+  // The check itself now lives with fishball-core in the dsh-fishball repository (repo split 6b7c53bf).
+  caseTest(sdk, 'K1c-EP-10', 1, 'core carries no generated schema', null, 'moved with fishball-core to the dsh-fishball repository (repo split 6b7c53bf)')
 }

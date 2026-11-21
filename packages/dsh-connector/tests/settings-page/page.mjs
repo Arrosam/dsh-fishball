@@ -114,11 +114,17 @@ export async function openTokensPage(t, { sdk, world, routes, lang = FIXTURE.lan
   const { React } = shim
   const required = []
   const modules = { [CLIENT.requires[0]]: React, [CLIENT.requires[1]]: primitives(React) }
-  const plugin = definition.factory((spec) => {
+  // client.js loads its marks chunk with require.async (DESIGN.md §28). These rows test the settings
+  // page only, and the marks part needs services this page does not provide, so the chunk is a stub
+  // that registers nothing: the page must still be the only registration and locale namespace.
+  const marksStub = async () => ({ marksPart: () => ({ name: 'dsh-connector-marks-stub', inject: [], apply() {} }) })
+  const require = (spec) => {
     required.push(spec)
     if (!(spec in modules)) throw new Error('client.js required ' + JSON.stringify(spec))
     return modules[spec]
-  })
+  }
+  require.async = marksStub
+  const plugin = definition.factory(require)
 
   const services = pageServices(shim, lang)
   const registrations = []

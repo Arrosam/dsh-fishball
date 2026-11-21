@@ -30,9 +30,9 @@ const pkg = (name, folder) => Object.freeze({ name, folder: 'packages/' + folder
  */
 export const PACKAGES = Object.freeze({
   connector: pkg('dsh-agent-connector', 'dsh-connector'),
-  connectorUi: pkg('dsh-connector-ui', 'dsh-connector-ui'),
+  connectorUi: pkg('dsh-connector-ui', path.join('dsh-connector', 'ui')),
   instance: pkg('dsh-instance', 'dsh-instance'),
-  adapter: pkg('dsh-connector-adapter', 'dsh-connector-adapter'),
+  adapter: pkg('dsh-connector-adapter', path.join('dsh-connector-amenities', 'adapter')),
   dshShared: pkg('dsh-connector-shared', 'dsh-connector-shared'),
   core: pkg('fishball-core', 'core'),
   ui: pkg('fishball-ui', 'fishball-ui'),

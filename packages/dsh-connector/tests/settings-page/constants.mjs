@@ -3,7 +3,7 @@
  * own plugin settings page (R-ARCH-03, R-CON-10, R-TOK-03, R-TOK-11; design §5.9, §1.0c) and its
  * owner-only JSON routes. The paths, the body bound, the refusal code, the slot key, the locale
  * namespace and the data attributes are the surface the dev session relayed (2026-11-16); the slot
- * name and its `<package>#<row id>` key form are DSH's (`dsh-client-ui-plugin-manager`
+ * name and its bundle-config key form are DSH's (`dsh-client-ui-plugin-manager`
  * slot-contract.d.ts, the same on both SDKs).
  */
 import path from 'node:path'
@@ -59,19 +59,19 @@ export const HTTP = Object.freeze({
 
 /** The client module (relayed) and DSH's slot (slot-contract.d.ts). */
 export const CLIENT = Object.freeze({
-  /** The client module registers under the npm name (dsh-agent-connector since 2026-11-17); its plugin keeps the row id's name (the plugin key is unchanged). */
+  /** The client module registers under the npm name (dsh-agent-connector since 2026-11-17); its plugin keeps the row id's name (the plugin key is unchanged). Since df9d83d the page fills the bundle's slot, keyed by the package name. */
   moduleId: 'dsh-agent-connector',
   pluginName: 'dsh-connector',
   inject: Object.freeze(['slots', 'locale', 'configForms']),
   requires: Object.freeze(['react', '@deepseek-ai/dsh-client-ui-primitives']),
-  slot: 'plugins.row.config',
-  /** DSH's rowConfigKey `<package>#<row id>`: the package renamed, the row id kept. */
-  slotKey: 'dsh-agent-connector#dsh-connector',
+  slot: 'plugins.bundle.config',
+  /** DSH's bundle-config key (slot-contract.d.ts): a bundle's own configuration, keyed by its package name (df9d83d). */
+  slotKey: 'dsh-agent-connector',
   servedNamespace: 'dsh-connector',
   localeNamespace: 'dsh-connector-tokens',
   locales: Object.freeze(['en', 'zh']),
   /** Every other host-DSH slot the repo's contract suites know of: the page names none of them. */
-  otherSlots: Object.freeze(HOST_SLOTS.filter((s) => s !== 'plugins.row.config')),
+  otherSlots: Object.freeze(HOST_SLOTS.filter((s) => s !== 'plugins.bundle.config')),
   view: Object.freeze({ page: 'page', summary: 'summary' }),
   tokensField: 'tokens',
   setOp: 'set',

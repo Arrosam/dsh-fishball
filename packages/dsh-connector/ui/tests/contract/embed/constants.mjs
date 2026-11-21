@@ -16,6 +16,8 @@ import { REPO } from '../../../../../../test/support/constants.mjs'
 export const EMBED = Object.freeze({
   // Since df9d83d embed-UI is the inner package packages/dsh-connector/ui (no root workspace of its own).
   workspace: 'packages/dsh-connector/ui',
+  /** The root workspace that carries it (the connector package). */
+  workspaceRoot: 'packages/dsh-connector',
   clientExport: './client',
   platform: 'web',
   /**
@@ -40,14 +42,14 @@ export const EMBED = Object.freeze({
 
 /**
  * The connector's own settings page (design §5.9; requirements 1.28 R2, R-ARCH-03 amended): its only
- * browser code is `client.js`, which registers only the Plugins page's `plugins.row.config` slot.
+ * browser code is `client.js`, which registers only the Plugins page's `plugins.bundle.config` slot.
  * PLAT-EP-03 rows 1 and 3 were repointed to it at C-WIRE-2; the V2 records part stays gone.
  */
 export const CONNECTOR_CLIENT = Object.freeze({
   platform: 'web',
   exportKey: './client',
   entry: 'client.js',
-  slot: 'plugins.row.config',
+  slot: 'plugins.bundle.config',
   goneExports: Object.freeze(['./records']),
   goneFiles: Object.freeze(['client.records.js']),
   /** DESIGN.md §28: the marks part is the connector's chunk beside its entry. */

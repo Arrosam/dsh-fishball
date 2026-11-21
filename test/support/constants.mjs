@@ -59,9 +59,9 @@ export const CORE = { name: 'fishball-core', dir: path.join(REPO, 'packages', 'c
  */
 export const EMBED_UI = Object.freeze({
   name: 'dsh-connector-ui',
-  dir: path.join(REPO, 'packages', 'dsh-connector-ui'),
+  dir: path.join(REPO, 'packages', 'dsh-connector', 'ui'),
   clientDir: Object.freeze(['src', 'client']),
-  connectorClient: path.join(REPO, 'packages', 'dsh-connector-ui', 'src', 'client', 'client.shell.js'),
+  connectorClient: path.join(REPO, 'packages', 'dsh-connector', 'ui', 'src', 'client', 'client.shell.js'),
   // I-HOST (QD1 = B): the card's model block is the instance's own settings page chunk now.
   instanceCard: path.join(REPO, 'packages', 'dsh-instance', 'client.models.js'),
   statusLine: path.join(REPO, 'packages', 'dsh-instance', 'client.status.js'),
