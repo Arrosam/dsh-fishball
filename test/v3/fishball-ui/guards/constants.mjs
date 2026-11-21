@@ -90,9 +90,8 @@ export const REPORT = Object.freeze({
 if (!REPORT.ok || !REPORT.overridden) throw new Error('K3 GuardReport statuses not readable: ' + reportRaw)
 
 /**
- * F-UI (requirements 1.38 Q-N2, R-FB-14): fishball-ui is its own bundle now, and the guard rows that
- * are only UI are its patch's; core keeps the rest (F-UI interface items 2 and 5). The UI rows apply
- * exactly when core is among the bundles this DSH started with.
+ * 117cb2a2: fishball-ui is core's ./ui/ component, and its UI-only guard rows live in core's patch
+ * (since R-FIX-FUI). The UI rows apply exactly when core is among the bundles this DSH started with.
  */
 export const UI_COMPONENT = V3.ui.name
 export const SPLIT = Object.freeze({

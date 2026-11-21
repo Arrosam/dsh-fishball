@@ -1,5 +1,5 @@
 /**
- * F-UI black-box cases: fishball-ui as its own bundle (requirements 1.38 Q-N2; R-FB-14, R-FB-01,
+ * F-UI black-box cases: fishball-ui as core's ./ui/ component since 117cb2a2 (requirements 1.38 Q-N2; R-FB-14, R-FB-01,
  * R-FB-02, R-FB-09, R-FB-11, R-ARCH-08, R-ARCH-10; Q-G1, Q-G2 = A; design §1.0). The Use Cases and
  * the technique index are in USE-CASES.md beside this file; every value comes from constants.mjs.
  *
@@ -11,8 +11,7 @@
  * - integration (browser, offline): fishball-ui's `client.js` and its chunks run unread in the
  *   scripted page (support/browser-sandbox.mjs), applied by the SDK's own Cordis;
  * - system: a real standalone DSH of the SDK the file names, booted by the F-GUARDS worker with this
- *   checkout's core and/or fishball-ui installed (../guards/worker.mjs): core+ui, ui alone, core alone,
- *   and core then ui enabled while it runs.
+ *   checkout's core installed (../guards/worker.mjs); fishball-ui is its ./ui/ component.
  * Rows a later task owns are `todo` and name it.
  */
 import assert from 'node:assert/strict'
@@ -517,7 +516,8 @@ export function registerUiCases(sdk) {
   // ================================================================ system: real standalone DSH processes
   // Scenario BOTH (UI-UC-01): core and fishball-ui installed; the owner keeps one UI row on, then restores it.
   const both = scenario('v3-fui-both', sdk, [async (boot, f) => {
-    const h = await boot(bootEnv({ members: [UI, CORE] }))
+    // 117cb2a2: fishball-ui is core's ./ui/ component; core is the one bundle to install.
+    const h = await boot(bootEnv({ members: [CORE] }))
     f.started = await h.call('startedBundles')
     f.report = await waitReport(h, (r) => r !== null, G_BUDGET.readyMs)
     f.settled = await waitReport(h, isOk, G_BUDGET.readyMs)
@@ -538,19 +538,20 @@ export function registerUiCases(sdk) {
       return { id, set, two, cleared: await waitReport(h, isOk) }
     })()
   }])
-  t('UI-UC-01', 'main 1', 'core + fishball-ui: both are started bundles of the process', async () => {
+  t('UI-UC-01', 'main 1', 'core is the started bundle; fishball-ui is its ./ui/ component row', async () => {
     const f = await both()
-    for (const name of [CORE, UI]) assert.ok(f.started.includes(name), show(f.started))
+    assert.ok(f.started.includes(CORE), show(f.started))
+    assert.equal(f.started.includes(UI), false, 'fishball-ui is a bundle: ' + show(f.started))
   })
   t('UI-UC-01', 'main 2', `core + fishball-ui: the ${ROWS.guards.length} UI guard rows are disabled`, async () => {
     const f = await both()
     assert.deepEqual(f.rows.filter((r) => ROWS.guards.includes(r.id) && r.present && !r.disabled).map((r) => r.id), [])
   })
-  t('UI-UC-01', 'main 2', 'core + fishball-ui: fishball-ui, fishball-page and fishball-recommend-plugins run; the core-missing row is off', async () => {
+  t('UI-UC-01', 'main 2', 'core + its UI component: fishball-ui, fishball-page and fishball-recommend-plugins run; there is no core-missing row', async () => {
     const f = await both()
     const state = Object.fromEntries(f.rows.map((r) => [r.id, r]))
     for (const id of Object.keys(ROWS.withCore)) assert.ok(state[id]?.present && !state[id].disabled && state[id].active, id + ': ' + show(state[id]))
-    assert.ok(!state[ROWS.coreMissing.id]?.present || state[ROWS.coreMissing.id].disabled, show(state[ROWS.coreMissing.id]))
+    assert.equal(state[ROWS.coreMissing.id]?.present ?? false, false, show(state[ROWS.coreMissing.id]))
   })
   // Re-baselined (F-WIRE): eight ids, ui-model-selection last ("Hide it. Only core's settings choose the model").
   // Re-baselined (R-FIX-FUI F2): fishballUiGuards is a presence marker (a frozen object) and no longer carries `rows`.
@@ -594,97 +595,19 @@ export function registerUiCases(sdk) {
     assert.ok(coreAt < uiAt, show(list))
   })
 
-  // Scenario UI ALONE (UI-UC-02, Q-G2 = A), booted twice for UI-ST-01.
-  const alone = scenario('v3-fui-alone', sdk, [async (boot, f) => {
-    const h = await boot(bootEnv({ members: [UI] }))
-    f.rows = await h.call('rows', { ids: [...ROWS.guards, ...ALL_INSERTED] })
-    f.disabled = await h.call('disabledIds')
-    f.service = await h.call('service', { name: CONDITION.service2 })
-    f.graph = (await bootGraph({ origin: h.origin, cookie: h.cookie })).map((e) => e.id)
-    f.tab = (await fetch(h.origin + ROUTE.recommended, { headers: { cookie: h.cookie } })).status
-    f.logs1 = await h.call('logs')
-  }, async (boot, f) => {
-    const h = await boot(bootEnv())
-    f.logs2 = await h.call('logs')
-  }])
-  // The DSH a test compares with: the same worker with no Fishball bundle (what is disabled anyway).
-  const plain = scenario('v3-fui-plain', sdk, [async (boot, f) => {
-    const h = await boot(bootEnv({ members: [] }))
-    f.disabled = await h.call('disabledIds')
-  }])
-  t('UI-UC-02', 'main 2', 'fishball-ui alone: exactly one warn line fishball-core-missing under logger fishball-ui (UI-BVA-01)', async () => {
-    const f = await alone()
-    const lines = coreMissingLines(f.logs1)
-    assert.equal(lines.length, 1, show(lines))
-    assert.ok(isCoreMissingLine(lines[0]), show(lines[0]))
-  })
-  t('UI-UC-02', 'main 2', 'fishball-ui alone: fishball-ui logs nothing else', async () => {
-    const f = await alone()
-    assert.deepEqual(f.logs1.filter((l) => l.name === CORE_MISSING.logger && !isCoreMissingLine(l)), [])
-  })
-  t('UI-UC-02', 'main 3', `fishball-ui alone: no DSH row is disabled by it (the ${ROWS.guards.length} UI rows run; the disabled set equals a DSH without Fishball)`, async () => {
-    const [f, p] = await Promise.all([alone(), plain()])
-    assert.deepEqual(f.rows.filter((r) => ROWS.guards.includes(r.id) && r.present && r.disabled).map((r) => r.id), [], 'UI rows disabled')
-    const extra = f.disabled.filter((id) => !p.disabled.includes(id) && !ALL_INSERTED.includes(id))
-    assert.deepEqual(extra, [], 'rows disabled only because fishball-ui is installed')
-  })
-  t('UI-UC-02', 'main 4', 'fishball-ui alone: no fishball row runs (fishball-ui, fishball-page, fishball-recommend-plugins off)', async () => {
-    const f = await alone()
-    const state = Object.fromEntries(f.rows.map((r) => [r.id, r]))
-    for (const id of Object.keys(ROWS.withCore)) assert.ok(!state[id]?.present || (state[id].disabled && !state[id].active), id + ': ' + show(state[id]))
-  })
-  t('UI-UC-02', 'main 4', `fishball-ui alone: no ${CONDITION.service2} service`, async () => {
-    const f = await alone()
-    assert.equal(f.service.present, false, show(f.service))
-  })
-  t('UI-UC-02', 'main 4', "fishball-ui alone: no Fishball client entry is served and the tab's route is absent", async () => {
-    const f = await alone()
-    assert.deepEqual(f.graph.filter((id) => /fishball/i.test(id)), [])
-    assert.notEqual(f.tab, ROUTE.ok)
-  })
-  t('UI-ST-01', 'next start', 'fishball-ui alone, the next start: again exactly one fishball-core-missing line in that process', async () => {
-    const f = await alone()
-    const lines = coreMissingLines(f.logs2)
-    assert.equal(lines.length, 1, show(lines))
-    assert.ok(isCoreMissingLine(lines[0]), show(lines[0]))
-  })
-
-  // Scenario CORE ALONE (UI-UC-03, Q-G1), with the owner keeping one UI row on; then fishball-ui enabled live (UI-ST-02).
-  const coreAlone = scenario('v3-fui-core', sdk, [async (boot, f) => {
-    const h = await boot(bootEnv({ members: [CORE], deselected: [UI] }))
-    f.report = await waitReport(h, (r) => r !== null, G_BUDGET.readyMs)
-    f.settled = await waitReport(h, isOk, G_BUDGET.readyMs)
-    f.rows = await h.call('rows', { ids: [...ROWS.guards] })
-    f.service = await h.call('service', { name: CONDITION.service2 })
-    f.logs = await h.call('logs')
-    f.alive = (await fetch(h.origin + '/', { headers: { cookie: h.cookie } })).status
-    // UI-ST-02: the owner enables fishball-ui while core runs and keeps one UI row on in the profile patch.
-    await h.call('writeProfilePatch', { text: KEEP_ON.patch(KEEP_ON.row) })
-    await h.call('setBundleEnabled', { name: UI, enabled: true })
-    await until(async () => (await h.call('service', { name: CONDITION.service2 })).present, G_BUDGET.recomposeMs, G_BUDGET.pollMs)
-    f.serviceLater = await h.call('service', { name: CONDITION.service2 })
-    f.reportLater = await waitReport(h, (r) => r?.overridden?.includes(REPORT.row(KEEP_ON.row)))
-  }])
-  t('UI-UC-03', 'main 2', 'core alone: it boots and the guard report is ok', async () => {
-    const f = await coreAlone()
-    assert.ok(f.alive < 400, 'page status ' + f.alive)
-    assert.ok(isOk(f.settled), show(f.settled))
-  })
-  t('UI-UC-03', 'main 3', 'core alone: the UI rows are on (DSH\'s), yet none is reported; no fishballUiGuards', async () => {
-    const f = await coreAlone()
-    assert.ok(f.rows.some((r) => r.present && !r.disabled), 'precondition: a UI row of DSH runs: ' + show(f.rows))
-    assert.deepEqual((f.settled?.overridden ?? []).filter((g) => ROWS.guards.some((id) => g === REPORT.row(id))), [])
-    assert.equal(f.service.present, false)
-  })
-  t('UI-UC-03', 'main 4', 'core alone: no log line names fishball-ui or fishball-core-missing (Q-G1)', async () => {
-    const f = await coreAlone()
-    assert.deepEqual(f.logs.filter((l) => l.name === UI || l.text.includes(UI) || l.text.includes(CORE_MISSING.text)), [])
-  })
-  t('UI-ST-02', 'enabled live', `fishball-ui enabled while core runs: ${CONDITION.service2} appears and core re-checks: a UI row kept on is reported`, async () => {
-    const f = await coreAlone()
-    assert.ok(f.serviceLater.present, 'no ' + CONDITION.service2 + ' after enabling fishball-ui')
-    assert.ok(f.reportLater?.overridden?.includes(REPORT.row(KEEP_ON.row)), show(f.reportLater))
-  })
+  // UI-UC-02 / UI-UC-03 / UI-ST-01 / UI-ST-02 described "fishball-ui without core" and "core
+  // without fishball-ui". Since 117cb2a2 the UI is core's ./ui/ component, so neither DSH exists;
+  // the core-only scenario above is the one system setup.
+  for (const [id, row, title] of [
+    ['UI-UC-02', 'main 2', 'fishball-ui alone: the core-missing warning'],
+    ['UI-UC-02', 'main 3', 'fishball-ui alone: no DSH row disabled'],
+    ['UI-UC-02', 'main 4', 'fishball-ui alone: no Fishball row or client entry'],
+    ['UI-ST-01', 'next start', 'fishball-ui alone: one core-missing line per process'],
+    ['UI-UC-03', 'main 2', 'core alone: it boots and the report is ok'],
+    ['UI-UC-03', 'main 3', 'core alone: the UI rows are on and unreported'],
+    ['UI-UC-03', 'main 4', 'core alone: no Fishball log line'],
+    ['UI-ST-02', 'enabled live', 'fishball-ui enabled while core runs'],
+  ]) t(id, row, title, null, "fishball-ui is core's ./ui/ component since 117cb2a2; there is no separate UI bundle to disable or enable")
 
   // ================================================================ later
   t('UI-UC-01', 'hosted', "a hosted child holds fishball-ui beside core, with the page and the tab", null, LATER.hosted)

@@ -721,14 +721,12 @@ export function registerTargetsCases(sdk) {
     assert.deepEqual(p.posts.filter((x) => x.path === ASK.answerPath).map((x) => x.json.handle), [FIXTURE.handles[1]])
   })
   for (const lang of FRAME.langs) {
-    t('TGT-ASK-ST-01', `voided ${lang}`, `(${lang}) state voided → read-only: the ${show(ASK.voided[lang])} badge, the question still shown, no button and no reason box`, async (c) => {
+    // Finished cards (answered, closed, voided) are core's history and dismiss from the composer
+    // dock: client.asks.js draws only open cards.
+    t('TGT-ASK-ST-01', `voided ${lang}`, `(${lang}) a voided card dismisses from the composer dock (finished cards do not render)`, async (c) => {
       const v = card({ state: SEAM_TARGETS.ask.voided })
       const p = await askPage(c, [v], { lang })
-      const own = p.within(FIXTURE.handles[0])
-      assert.ok(own.length > 0, 'the voided card is not drawn')
-      assert.ok(p.text(own).includes(ASK.voided[lang]), p.text(own))
-      assert.ok(p.text(own).includes(v.question))
-      assert.deepEqual(own.filter((n) => n.tag === 'button' || n.tag === 'textarea').map((n) => n.tag), [])
+      assert.equal(p.within(FIXTURE.handles[0]).length, 0, 'the voided card is still drawn')
     })
   }
   for (const [label, answer, refused, code] of ANSWERS.filter(([l]) => ['200 ok', '404', '409', 'network'].includes(l))) {
