@@ -246,7 +246,7 @@ export const V3_SUITES = Object.freeze({
     [all(PACKAGE.fishballBoard), sub(PACKAGE.dshConnector, 'mcp-schema')]),
   // The heartbeat row over a fake core, bound to each SDK (and 0.2.2-rc.3, the installed DSH); it
   // reuses the board suite's row loader and the package-boundaries case names.
-  'fishball-amenities.heartbeat': suite('heartbeat amenity: config gate, timer, consecutive limit, restart, heartbeat_focus', [...v3('fishball-amenities/heartbeat'), 'test/v3/fishball-amenities/heartbeat/sdk-0.2.2-rc.3.test.mjs'],
+  'fishball-amenities.heartbeat': suite('heartbeat amenity: config gate, timer, consecutive limit, restart, heartbeat_focus, compaction on cooling', [...v3('fishball-amenities/heartbeat'), 'test/v3/fishball-amenities/heartbeat/sdk-0.2.2-rc.3.test.mjs'],
     [all(PACKAGE.fishballHeartbeat), INSTANCE_FOLLOWER, all(PACKAGE.fishballAmenities), 'test/v3/fishball-amenities/heartbeat/**',
       'test/v3/fishball-board/peers/subject.mjs', 'test/v3/contract/package-boundaries/cases.mjs', 'test/private-skills/support/sdk.mjs',
       'test/support/amenity-settings.mjs', PACKAGE.fishballBoard + '/src/config.js']),

@@ -20,6 +20,13 @@
  * - time is node:test MockTimers on setTimeout and Date (the lead's refinement: the row's timer is
  *   plain setTimeout). Real time only passes in `settle`/`until`, which spin on setImmediate
  *   (not mocked) so the row's fs work and promise chains can finish.
+ * - DSH's compaction seam (compact-cases.mjs): a `tokenMeter` whose `measure(session)` answers the
+ *   case's `totalTokens` (or is absent, or throws), DSH's preset registry `agentPresets` whose
+ *   `serviceFor(agent, 'compaction')` answers a preset-scoped engine, and a host-plane `compaction`
+ *   engine; each present only when the case says so. Every `compactNow(agent, signal)` call is
+ *   recorded with the engine it reached; a successful one appends DSH's standalone
+ *   `compaction/start` … `compaction/end` pair (turn null) as the real engine does. `live.whenIdle()`
+ *   resolves at once unless the case holds it (`w.holdIdle()` … `w.releaseIdle()`).
  * Everything observed is public: notify calls (tagged with the fake core's generation, so a
  * replaced core's calls are told apart), the manager scope's tools, the global registry, log
  * records and files under the home. A tool call runs `definition.execute(args, exec)` directly and
@@ -33,7 +40,7 @@ import path from 'node:path'
 import { performance } from 'node:perf_hooks'
 import { importSdk } from '../../../private-skills/support/sdk.mjs'
 import { rowModule } from '../../fishball-board/peers/subject.mjs'
-import { DSH, FIXTURE, HEARTBEAT, SOURCE, TIME, WAIT } from './constants.mjs'
+import { COMPACT, DSH, FIXTURE, HEARTBEAT, SOURCE, TIME, WAIT } from './constants.mjs'
 
 const SERVICE = DSH.services
 const EVENT = DSH.event
@@ -76,6 +83,74 @@ const lastTurnStart = (session) => Math.max(0, ...session.snapshotEvents().filte
 
 /** The service names a row's `inject` declares (a list, or cordis' object form). */
 const injectNames = (inject) => (inject === undefined ? [] : Array.isArray(inject) ? inject : Object.keys(inject))
+/** Services a case decides to provide or leave out: load() never stubs them. */
+const CASE_SERVICES = new Set(Object.values(COMPACT.services))
+
+/** A TokenMeasurement-shaped answer (dsh-token-meter types) whose totalTokens is the case's value. */
+const measurement = (session, tokens) => ({
+  logRevision: session.snapshotEvents().length,
+  baseline: { kind: COMPACT.baselineKind, tokens },
+  surfaceDeltaTokens: 0,
+  totalTokens: tokens,
+  surfaceTokens: tokens,
+  nodes: [],
+})
+
+/** The compaction failure a throwing engine raises (dsh-compaction ManualCompactionError's shape). */
+const compactionError = () => Object.assign(new Error(FIXTURE.compactionMessage), { name: COMPACT.errorName, code: COMPACT.errorCode })
+
+/**
+ * The fake meter, preset registry and engines of one world. `meter` {mode, tokens}; `compaction`
+ * {preset, host, registry, result}: an engine in the preset group (read through serviceFor), one
+ * on the host plane, whether the preset registry exists at all, and what compactNow does.
+ */
+function compactionSeam(ctx, { meter = {}, compaction = {} }) {
+  const { mode: meterMode = COMPACT.meter.present } = meter
+  const { preset = true, host = false, registry = true } = compaction
+  const seam = { tokens: meter.tokens ?? 0, result: compaction.result ?? COMPACT.result.compacted, measures: [], serviceForCalls: [], calls: [] }
+  let compactionSeq = 0
+  if (meterMode !== COMPACT.meter.absent) {
+    ctx.provide(COMPACT.services.tokenMeter, {
+      measure(session) {
+        seam.measures.push({ session, at: Date.now() })
+        if (meterMode === COMPACT.meter.throws) throw Object.assign(new Error(FIXTURE.meterMessage), { code: FIXTURE.meterCode })
+        return measurement(session, seam.tokens)
+      },
+    })
+  }
+  /** One successful idle compaction: DSH's standalone marker pair in the agent's log, and its result. */
+  function compacted(agent) {
+    const compactionId = COMPACT.idPrefix + ++compactionSeq
+    const start = agent.session.append(COMPACT.event.start, { compactionId, turn: null })
+    const end = agent.session.append(COMPACT.event.end, { compactionId, turn: null })
+    return { compactionId, startSeq: start.seq, summarySeq: start.seq, endSeq: end.seq, summary: [], shadowedRange: { start: 0, end: 0 }, shadowedSeqs: [0], shadowedTokenCount: FIXTURE.shadowedTokens }
+  }
+  const engine = (provider) => ({
+    // Not async: the `throws` result must throw synchronously, as a broken engine might.
+    compactNow(agent, signal) {
+      seam.calls.push({ provider, agent, signal, abortedAtCall: signal?.aborted, at: Date.now() })
+      switch (seam.result) {
+        case COMPACT.result.throws: throw compactionError()
+        case COMPACT.result.reject: return Promise.reject(compactionError())
+        case COMPACT.result.nothing: return Promise.resolve(null)
+        // Pending until the caller aborts; then rejected with the abort reason, as DSH's engine does.
+        case COMPACT.result.hang: return new Promise((resolve, reject) => signal.addEventListener('abort', () => reject(signal.reason), { once: true }))
+        default: return Promise.resolve(compacted(agent))
+      }
+    },
+  })
+  const presetEngine = preset ? engine(COMPACT.provider.preset) : undefined
+  if (registry) {
+    ctx.provide(COMPACT.services.agentPresets, {
+      serviceFor(agent, name) {
+        seam.serviceForCalls.push({ agent, name })
+        return name === COMPACT.services.compaction ? presetEngine : undefined
+      },
+    })
+  }
+  if (host) ctx.provide(COMPACT.services.compaction, engine(COMPACT.provider.host))
+  return seam
+}
 
 /**
  * One lab per test: the fake clock, one home and every world opened over it, closed and removed by
@@ -127,6 +202,8 @@ async function openWorld(sdk, [{ Context }, { Loader }, { SessionStore, appendPl
   const { core = HEARTBEAT.apiVersion, appReady = false, managerLive = true, notify = NOTIFY_MODE.queued, autoTurn = false, seedFrom } = options
   const ctx = new Context()
   const logs = []
+  // An idle gate: while held, live.whenIdle() stays pending (the agent is not idle yet).
+  let idleGate
   ctx.logger.exporter({ levels: { default: DSH.allLevels }, export: (m) => logs.push({ name: m.name, type: m.type, text: m.args.map((a) => (typeof a === 'string' ? a : json(a))).join(' ') }) })
   await ctx.plugin(SessionStore)
   await ctx.plugin(Loader)
@@ -134,6 +211,7 @@ async function openWorld(sdk, [{ Context }, { Loader }, { SessionStore, appendPl
   const global = recordingRegistry()
   ctx.provide(SERVICE.tools, global)
   ctx.provide(SERVICE.profileContext, { name: FIXTURE.profileName, dir: home, home, cwd: home })
+  const seam = compactionSeam(ctx, options)
 
   const readyListeners = new Set()
   let isReady = false
@@ -171,7 +249,7 @@ async function openWorld(sdk, [{ Context }, { Loader }, { SessionStore, appendPl
   }
   function createManager() {
     const session = seedFrom ? ctx.sessions.create(seedFrom.id, { seed: seedFrom.events }) : ctx.sessions.create()
-    manager.live = { id: session.id, session }
+    manager.live = { id: session.id, session, ctx: agentBase, whenIdle: () => idleGate?.promise ?? Promise.resolve() }
   }
   if (managerLive) createManager()
 
@@ -247,7 +325,14 @@ async function openWorld(sdk, [{ Context }, { Loader }, { SessionStore, appendPl
   const statuses = []
   ctx.on('internal/status', (fiber) => { statuses.push({ fiber, state: fiber.state }) })
   const w = {
-    sdk, ctx, logs, global, notices, scopeTools, manager,
+    sdk, ctx, logs, global, notices, scopeTools, manager, seam,
+    /** compactNow calls, in order: {provider, agent, signal, abortedAtCall, at}. */
+    get compactions() { return seam.calls },
+    get measures() { return seam.measures },
+    setTokens(tokens) { seam.tokens = tokens },
+    setCompactionResult(result) { seam.result = result },
+    holdIdle() { let resolve; idleGate = { promise: new Promise((r) => { resolve = r }), resolve: () => resolve() } },
+    async releaseIdle() { const gate = idleGate; idleGate = undefined; gate?.resolve(); await settle() },
     get session() { return manager.live?.session },
     get generation() { return generation },
     get live() { return manager.live },
@@ -255,7 +340,7 @@ async function openWorld(sdk, [{ Context }, { Loader }, { SessionStore, appendPl
     async load(config = {}) {
       const mod = await rowModule(sdk, ROW)
       for (const name of injectNames(mod.inject)) {
-        if (!name.startsWith(OWN_SERVICE_PREFIX) && ctx.get(name) === undefined) ctx.provide(name, {})
+        if (!name.startsWith(OWN_SERVICE_PREFIX) && !CASE_SERVICES.has(name) && ctx.get(name) === undefined) ctx.provide(name, {})
       }
       loader.builtins[ROW.name] = mod
       rowId = await loader.create({ name: DSH.builtinPrefix + ROW.name, config }).catch(() => undefined)
@@ -334,6 +419,8 @@ async function openWorld(sdk, [{ Context }, { Loader }, { SessionStore, appendPl
     foreignAgent() { const session = ctx.sessions.create(); return { id: session.id, session } },
     linesWith: (needle) => logs.filter((l) => l.text.includes(needle)),
     warnings: () => logs.filter((l) => l.type === DSH.warn),
+    /** Warning and error lines: what "logged as a failure" may be. */
+    problems: () => logs.filter((l) => DSH.problemLevels.includes(l.type)),
     files: () => fs.readdirSync(home, { recursive: true }).sort(),
     async close() {
       if (w.closed) return

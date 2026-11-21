@@ -43,7 +43,7 @@ function applyWith(ctx, config) {
       // X2 disposal removes the tool and, through agentCtx.effect, the timer.
       agentCtx.tools.register(createFocusTool({ store: focus, sessionId: live.session.id }))
       startHeartbeat({
-        agentCtx, session: live.session, config, logger, now: Date.now,
+        agentCtx, agent: live, config, logger, now: Date.now,
         notify: (input) => manager.notify(input),
         readFocus: () => focus.read(),
       })
