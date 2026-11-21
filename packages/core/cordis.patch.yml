@@ -121,6 +121,21 @@
             config: { read: true, readImage: true, write: false, edit: false }
           - id: tool-ask-user
             name: '@deepseek-ai/dsh-tool-ask-user'
+          # DSH's compaction engine, for fishball-heartbeat's one compaction when it lets the cache
+          # cool (DESIGN §30). Placed as DSH's own presets place it (an isolated group, so it serves
+          # this preset's agents only and fishball-heartbeat reads it through agentPresets.serviceFor),
+          # but with `auto: false`: no pre-step pressure, model-switch or overflow listener is
+          # registered (dsh-compaction-basic's constructor, both SDKs), so Fishball's turns run as
+          # before and only an explicit compactNow compacts. No command-compact: /compact stays as it is.
+          - id: compaction
+            name: cordis:group
+            group: true
+            isolate:
+              compaction: true
+            config:
+              - id: compaction-basic
+                name: '@deepseek-ai/dsh-compaction-basic'
+                config: { auto: false }
     # Core's guard row: the check, the `guards-overridden` report and the standalone self-reorder (src/guards/).
     - id: fishball-core-guards
       name: ./src/guards/row.js
