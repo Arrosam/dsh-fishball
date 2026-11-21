@@ -262,6 +262,11 @@ Notes for maintainers (DESIGN.md §28, decided 2026-11-20):
 | Events | `inbox_poll`, `inbox_ack` |
 | Identity | `pair`, `set_name` |
 
+`session_stop` (and the cancel part of `session_redirect`) stops the whole session: its running
+turn, its running subagents and its running background jobs (`src/domain/tree-stop.js`), so the
+session comes to a standstill and DSH's sidebar no longer shows it busy. A manager's stop still
+reports no `turn-finished`; the settlement notices of the stopped work wake nothing.
+
 `sessions_list` returns only the sessions the agent manages, each with its id, title, `workspaceId`
 (null when ungrouped) and whether it is running or waiting on a request. `workspaces_list` returns
 every registered workspace (`workspaceId`, title, absolute path, and whether the directory exists

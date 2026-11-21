@@ -547,6 +547,13 @@ connector sends only what no tool result already said. Fishball core batches wha
 - **`outcome: stopped`**: any other end (an error, the user's Stop, a hook, an interruption, a
   plugin's stop such as the watchdog's); `stop = {kind, message}` says why.
 - **The manager's own stop** (`session_stop`, the cancel of `session_redirect`) reports nothing.
+  Since the user's decision of 2026-11-21 it stops the whole session tree: the root's running turn,
+  every running subagent (cancelled as DSH cancels a subagent with its parent) and every running
+  background job of the tree (killed), so the session truly stands still. That standstill, the
+  short no-op turns the stopped work's own settlement notices would start, and a root turn end that
+  was still held behind the running tree all report nothing; the next real turn reports as usual.
+  A plugin's stop (`dshConnectorSessions.stop`, e.g. the watchdog's) keeps DSH's Stop-button
+  meaning (the root's turn only) and is reported.
 - `session_start.running`, `session_message.running`, `session_redirect.running` (required): whether
   the session runs right after the delivery.
 

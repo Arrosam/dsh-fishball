@@ -38,6 +38,7 @@ import { headerOf, isSessionGone, isSubagentHeader, senderOf, textOfEvent } from
 import { prepareSessionModel, applySessionModel } from '../session-model.js'
 import { byteLength, cutToBytes } from '../text.js'
 import { createImagePort } from './images.js'
+import { stopTree } from './tree-stop.js'
 
 /** The main-DSH services every operation needs; a missing one is a wiring error, not a refusal. */
 const DSH_SERVICES = Object.freeze(['sessions', 'sessionController', 'agents', 'workspaceRegistry'])
@@ -454,25 +455,39 @@ export function createSessionPort(ctx, options) {
     async redirect({ sessionId, message, attachments, admit = ADMITTED }) {
       const delivered = await deliver(sessionId, message, async (agent, input) => {
         // The Stop button's path, then the instruction as the next turn (src/messaging.js). The
-        // cancelled turn is the manager's own stop: it reports no turn-finished (WAKE-REDUCE).
+        // cancelled turn is the manager's own stop: it reports no turn-finished (WAKE-REDUCE). Its
+        // subagents and background jobs stop with it (tree-stop.js, the user's decision of
+        // 2026-11-21), so the redirected turn starts from a standstill.
         stoppedByManager(sessionId)
+        stopTree(ctx, sessionId, logger, stoppedByManager)
         await ctx.sessionController.cancel({ sessionId })
         admit()
         agent.followup(input)
       }, { hostRefs: attachments, via: SOURCE.via.redirect, admit })
       return delivered
     },
-    /** `byManager`: the managing agent's own session_stop (its turn end then reports no turn-finished). */
+    /**
+     * `byManager`: the managing agent's own session_stop (its turn end then reports no
+     * turn-finished). The manager's stop is a stop of the whole tree (the user's decision of
+     * 2026-11-21): the root's turn, every subagent and every background job of the tree
+     * (tree-stop.js), so the session truly stands still, also when the root's own turn had already
+     * ended while its subagents ran. A plugin's stop (the watchdog's, dshConnectorSessions) keeps
+     * DSH's Stop-button meaning: the root's running turn only.
+     */
     async stop({ sessionId, reason, admit = ADMITTED, byManager = false }) {
       // A loaded but idle agent still sits in ctx.agents, so its presence is not "something is
       // running"; the host's passive state (0.2.2) or the live agent's status (0.2.1) decides.
       // DSH's cancel is the Stop button, and an idle stop is a no-op.
       const { running } = await activityOf(sessionId)
       admit()
+      // The manager's own stop reports no turn-finished (WAKE-REDUCE, the user's decision), also
+      // for a turn end held behind the tree it stops; a plugin's stop (the watchdog's,
+      // dshConnectorSessions) is not the manager's and is reported.
+      if (byManager) {
+        stoppedByManager(sessionId)
+        stopTree(ctx, sessionId, logger, stoppedByManager)
+      }
       if (!running) return
-      // The manager's own stop reports no turn-finished (WAKE-REDUCE, the user's decision); a
-      // plugin's stop (the watchdog's, dshConnectorSessions) is not the manager's and is reported.
-      if (byManager) stoppedByManager(sessionId)
       await ctx.sessionController.cancel({ sessionId })
     },
     read,

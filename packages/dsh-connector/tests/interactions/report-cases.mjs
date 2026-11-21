@@ -167,6 +167,49 @@ export function registerReportSystemCases(sdk) {
     assert.equal(all.at(-1).payload.outcome, O.completed)
   })
 
+  // The user's decision of 2026-11-21: the manager's stop stops the whole tree (subagents and jobs), so the
+  // session truly stands still; a manager stop still emits no turn-finished.
+  for (const rootRunning of [false, true]) {
+    row(sdk, 'CONN-TREE-STOP-UC-01', rootRunning ? 'root running' : 'root idle, subagent running', `session_stop while ${rootRunning ? 'the root\'s turn and its subagent run' : 'only its subagent runs (the root\'s turn already ended)'} → {stopped: true}; the subagent stops, the whole tree goes idle and stays idle; no turn-finished`, async (t) => {
+      const w = await w0()
+      const p = await principal(t, w)
+      const sid = await managed(w, p, IX.dsh.standardPreset)
+      await w.call('askInNewAgents', { on: true })
+      t.after(() => w.call('askInNewAgents', { on: false }))
+      const marker = tok('tsub')
+      const text = tok('tstop')
+      await w.call('queueMarker', { marker, except: sid, script: [step(IX.fixture.askTool, { text }, cid('tsub')), [{ text: 'sub done' }]] })
+      await free(w, sid)
+      const before = (await turnsOf(p, sid)).length
+      // The root spawns the subagent, then (rootRunning) its next model request is held, so its turn stays open.
+      await w.call('driveStart', { sessionId: sid, text: tok('u'), script: [step(IX.dsh.subagentTool, { description: tok('d'), prompt: marker }, cid('tspawn')), [{ text: 'root done' }]] })
+      await waitEvents(p.client, (e) => ofType(e, ET.permission).find((x) => x.payload.reason === IX.fixture.reason(text)), 'the subagent\'s permission request')
+      const child = (await w.call('markerState', { marker })).sessions[0]
+      assert.equal(await w.call('status', { sessionId: child }), 'running', 'the subagent is not running before the stop')
+      assert.ok(await w.call('idle', { sessionId: sid }), 'the root\'s turn did not end')
+      // rootRunning: the user speaks to the root again and its model request is held, so the root's turn is open too.
+      if (rootRunning) {
+        await w.call('holdNext', { sessionId: sid })
+        await w.call('driveStart', { sessionId: sid, text: tok('u2'), script: [[{ text: 'root again' }]] })
+        assert.ok(await eventually(() => w.call('isHeld', { sessionId: sid })), 'the root\'s turn is not held open')
+      }
+      assert.equal((await okCall(p.client, TOOL.sessionStop, { sessionId: sid })).stopped, true)
+      if (rootRunning) await release(w, sid)
+      assert.ok(await eventually(async () => (await w.call('status', { sessionId: child })) !== 'running'), 'the subagent still runs after session_stop')
+      assert.ok(await w.call('idle', { sessionId: sid }), 'the root is not idle after session_stop')
+      await quiet(); await quiet()
+      assert.equal(await w.call('status', { sessionId: sid }), 'idle', 'the stopped root runs again')
+      assert.notEqual(await w.call('status', { sessionId: child }), 'running', 'the subagent runs again')
+      assert.equal((await turnsOf(p, sid)).length, before, 'the manager\'s tree stop produced a turn-finished: ' + JSON.stringify((await turnsOf(p, sid)).slice(before).map((e) => e.payload)))
+      // The stop's notice is history now: the next real turn reports as usual.
+      await w.call('driveStart', { sessionId: sid, text: tok('after'), script: [[{ text: 'after stop' }]] })
+      await w.call('idle', { sessionId: sid })
+      const all = await turnsAfter(p, sid, before + 1)
+      assert.equal(all.length, before + 1)
+      assert.equal(all.at(-1).payload.outcome, O.completed)
+    })
+  }
+
   // B2: a subagent of the tree still runs.
   row(sdk, 'CONN-REPORT-ST-04', 'ST (pending subagent)', 'the root\'s turn ends while its subagent waits on a permission request → no turn-finished; P allows, the subagent finishes and the tree settles → exactly one turn-finished, for the root, completed', async (t) => {
     const w = await w0()

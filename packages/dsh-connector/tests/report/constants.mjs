@@ -17,6 +17,8 @@ export const SUBJECT = Object.freeze({
   entry: path.join(REPO, 'packages', 'dsh-connector', 'src', 'wire', 'sessions.js'),
   factory: 'createSessionSource',
   members: Object.freeze(['onTurnFinished', 'stoppedByManager']),
+  /** The manager's tree stop (the user's decision of 2026-11-21): stopTree(ctx, root, logger). */
+  treeStop: path.join(REPO, 'packages', 'dsh-connector', 'src', 'domain', 'tree-stop.js'),
 })
 
 /** DSH's words (dsh-session TurnEndReason, AgentCancelCause; dsh-jobs; dsh-subagent headers; DSH events). */
