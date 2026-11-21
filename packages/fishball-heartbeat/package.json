@@ -1,7 +1,7 @@
 {
   "name": "fishball-heartbeat",
   "version": "1.0.0-alpha.1",
-  "description": "Keeps Fishball's prompt cache warm while it is idle with useful heartbeat turns; off until both of its settings are set. Needs fishball-core in the same DSH.",
+  "description": "Keeps Fishball's prompt cache warm while it is idle with useful heartbeat turns; off until both of its timer settings are set; when it stops, it compacts a long context once. Needs fishball-core in the same DSH.",
   "license": "MIT",
   "repository": {
     "type": "git",

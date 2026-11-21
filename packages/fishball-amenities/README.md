@@ -7,7 +7,7 @@ settings page.
 | Package | What it is |
 |---|---|
 | [`fishball-board`](../fishball-board/README.md) | Fishball's session-linked work board (shelved, not offered in 1.0.0-alpha.1). |
-| [`fishball-heartbeat`](../fishball-heartbeat/README.md) | Keeps Fishball's prompt cache warm while it is idle with useful heartbeat turns; off until both of its settings are set. |
+| [`fishball-heartbeat`](../fishball-heartbeat/README.md) | Keeps Fishball's prompt cache warm while it is idle with useful heartbeat turns; off until both of its timer settings are set; when it stops, it compacts a long context once. |
 | [`fishball-taskboard`](../fishball-taskboard/README.md) | Fishball's own task board and memo pad, which the user views and edits in the right sidebar's **Task board** tab. |
 
 Installing `fishball-amenities` installs all three and loads them: its dependencies bring the
