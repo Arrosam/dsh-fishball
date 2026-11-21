@@ -204,10 +204,10 @@ window.__ModuleLoader__.load({
     /**
      * The page stream's one EventSource and its topics' readers. A reader (`member`) is
      * `{frame(value), health(word)}`: it gets each frame of its topic, the topic's last frame at once
-     * when it joins (a topic sends only on change), and every loss of the connection (`stale`,
-     * `closed`). It is never told `live`: a reader is live again only on a frame of its own topic that
-     * it accepts, as each view was on its own stream, so a malformed frame never clears a notice; a
-     * fresh connection sends every topic's frame at once, so each view hears again at once. The source
+     * when it joins (a topic sends only on change), and every health change of the connection: a
+     * well-formed `{topic, frame}` of any topic makes the connection live again for every reader. A
+     * reader may refuse a frame of its own topic by returning `false` from `frame`: it is then not
+     * told `live` for that frame, so a malformed frame never clears that view's own notice. The source
      * opens with the first reader and closes after the last. `use(lang)` follows the page's language
      * (the strip is drawn in it); `restart()` is Reconnect. A source opened again (Reconnect, a
      * language change, or the first reader after the last left) that had given up reads `stale`
@@ -245,9 +245,12 @@ window.__ModuleLoader__.load({
           const entry = membersOf(topic)
           entry.frame = value[PAGE_STREAM.field.frame]
           entry.known = true
-          // The connection answers again; each reader judges its own frame (see above).
+          // The connection answers again: live for every reader, except one of this topic that refused
+          // the frame (see above).
+          const was = health
           health = HEALTH.live
-          for (const member of [...entry.members]) member.frame(entry.frame)
+          for (const member of [...entry.members]) if (member.frame(entry.frame) !== false && was !== HEALTH.live) member.health(HEALTH.live)
+          if (was !== HEALTH.live) for (const [name, other] of [...topics]) if (name !== topic) for (const member of [...other.members]) member.health(HEALTH.live)
         }
         // An error on a source this stream already replaced or closed says nothing about the current one.
         current.onerror = () => { if (source === current) tell(current.readyState === SOURCE_CLOSED ? HEALTH.closed : HEALTH.stale) }
@@ -302,7 +305,12 @@ window.__ModuleLoader__.load({
         for (const listener of [...listeners]) listener()
       }
       const member = Object.freeze({
-        frame(value) { if (valid(value)) publish({ frame: Object.freeze(value), health: HEALTH.live }) },
+        /** A frame that is not the topic's shape is refused (`false`): the view keeps its last good frame and its health. */
+        frame(value) {
+          if (!valid(value)) return false
+          publish({ frame: Object.freeze(value), health: HEALTH.live })
+          return true
+        },
         health: (word) => publish({ health: word }),
       })
       return Object.freeze({
