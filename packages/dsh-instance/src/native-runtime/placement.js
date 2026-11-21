@@ -1,4 +1,4 @@
-import { mkdir, lstat, readdir, readFile, rename, rm } from 'node:fs/promises'
+import { mkdir, lstat, readdir, readFile, realpath, rename, rm } from 'node:fs/promises'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { createRequire } from 'node:module'
 import path from 'node:path'
@@ -151,10 +151,14 @@ async function replaceSlot(parent, name, populate) {
  * sits in a node_modules whose siblings are unrelated packages (npm has a `core` package).
  */
 async function memberSource(bundle) {
+  // The siblings are the checkout's, so they are found from the instance's real folder: a profile
+  // that links the checkout (`link:`) loads this module through the link's path, whose `..` is
+  // the profile's node_modules, not the checkout's packages folder (seen 2026-11-20).
+  const instanceRoot = await realpath(INSTANCE_ROOT)
   const candidates = [
     ...(process.env.FISHBALL_REPO ? [path.join(process.env.FISHBALL_REPO, 'packages', bundle.directory)] : []),
-    path.join(INSTANCE_ROOT, PLACEMENT.parent, bundle.directory),
-    path.join(INSTANCE_ROOT, '..', '..', '..', 'dsh-fishball', 'packages', bundle.directory),
+    path.join(instanceRoot, PLACEMENT.parent, bundle.directory),
+    path.join(instanceRoot, '..', '..', '..', 'dsh-fishball', 'packages', bundle.directory),
   ]
   for (const root of candidates) {
     const file = path.join(root, PLACEMENT.manifest)
