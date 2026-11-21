@@ -40,20 +40,29 @@ export function registerStreamCases(sdk) {
     assert.equal(requests(page), 1, 'removing sibling subscribers replaced the shared stream')
   })
 
-  row(sdk, 'last unmount', 'last unmount closes the stream; visibility alone cannot reopen an idle page', async (t) => {
+  // Re-baselined by entries by window (the user via lead, 2026-11-21): the sidebar entries follow the
+  // snapshot live even with no Fishball view mounted, so a visible page holds exactly one stream
+  // (shared, never two), none while hidden, and one again when shown.
+  row(sdk, 'last unmount', 'last unmount keeps the one shared stream on a visible page; hidden → none; shown → exactly one again; a remount adds none', async (t) => {
     const clock = fakeTimers()
     const { page } = await world(t, sdk, { page: { timers: clock } })
     const fish = await mountFish(page)
     await open(page)
-    await fish.unmount()
-    assert.equal(live(page).length, 0, 'held the connector stream with no mounted subscribers')
     const before = requests(page)
-    page.setHidden(true); page.setHidden(false)
+    await fish.unmount()
     await passDeadlines(clock, page)
-    assert.equal(requests(page), before, 'visibility or pending timer reconnected an idle page')
-    await mountFish(page)
+    assert.equal(live(page).length, 1, 'a visible page dropped the stream its sidebar entries follow')
+    assert.equal(requests(page), before, 'unmounting replaced the stream')
+    page.setHidden(true)
+    await page.settle()
+    assert.equal(live(page).length, 0, 'a hidden page kept its stream')
+    page.setHidden(false)
     await open(page)
-    assert.equal(requests(page), before + 1, 'new first mount did not restore exactly one stream')
+    assert.equal(requests(page), before + 1, 'showing the page did not reopen exactly one stream')
+    await mountFish(page)
+    await passDeadlines(clock, page)
+    assert.equal(live(page).length, 1, 'a remount opened another stream')
+    assert.equal(requests(page), before + 1, 'a remount opened another stream')
   })
 
   row(sdk, 'hidden mount', 'an initially hidden page with mounted subscribers waits until visible', async (t) => {

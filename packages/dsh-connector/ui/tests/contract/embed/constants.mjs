@@ -119,9 +119,18 @@ export const CARD_SLOTS = Object.freeze(['plugins.bundle.config', 'plugins.row.c
  * state; the row's trailing seat exists only on 0.2.2) and the surfaces U-SHELL drops (brand,
  * ask_agent row) are not listed. V2 never deployed (U-WIRE): embed-UI has no Plugins card.
  */
-export const EXPECTED_UI = Object.freeze([
-  Object.freeze({ slot: 'main', key: 'fishball' }),
+// Entries by window (the user, 2026-11-21): the window (main, key 'fishball') is no longer registered
+// at apply time; like the sidebar fish it follows the state (one per window, key `fishball:<key>`), so
+// it is a conditional seat and leaves this list. WINDOW_UI names both conditional seats.
+export const EXPECTED_UI = Object.freeze([])
+/** The window seats embed-UI fills while an agent has a window here: sidebar.panellist id and main key `fishball:<key>`. */
+export const WINDOW_UI = Object.freeze([
+  Object.freeze({ slot: 'sidebar.panellist', idPrefix: 'fishball:' }),
+  Object.freeze({ slot: 'main', keyPrefix: 'fishball:' }),
 ])
+/** Whether a registration matches an EXPECTED_UI / WINDOW_UI row (exact id / key, or a prefix). */
+export const matchesExpected = (e, r) => r.slot === e.slot && (e.id === undefined || r.id === e.id) && (e.key === undefined || r.key === e.key)
+  && (e.keyPrefix === undefined || String(r.key ?? '').startsWith(e.keyPrefix)) && (e.idPrefix === undefined || String(r.id ?? '').startsWith(e.idPrefix))
 /**
  * DESIGN.md §28 (2026-11-20, R1, R4): the marks part's contributions, registered by dsh-agent-connector's
  * browser half (no longer by embed-UI). UI-FIX-D: "Managed by" in header.actions, Hand over / Take back in header.utilities.

@@ -22,10 +22,11 @@ import test from 'node:test'
 import { until } from '../../../../test/support/util.mjs'
 import { caseName } from '../../../../test/v3/contract/package-boundaries/cases.mjs'
 import { DECIDED, EXPECT, FIXTURE, K2, K3, SURFACE, WAIT } from './constants.mjs'
-import { FakeCtx, captureRegister, requestOf, row as principalRow, sseReader } from './fakes.mjs'
+import { FakeCtx, FakePairStore, captureRegister, requestOf, row as principalRow, sseReader, windowSource } from './fakes.mjs'
 import { unitBackend } from './subject.mjs'
 import { contribWorld, routedBackend } from './world.mjs'
 import { registerCuiBackendCases } from './cui-cases.mjs'
+import { registerWindowCases } from './window-cases.mjs'
 
 const T = { timeout: WAIT.testMs }
 const TR = { timeout: WAIT.routeTestMs }
@@ -65,8 +66,8 @@ const quiet = () => new Promise((resolve) => setTimeout(resolve, WAIT.quietMs))
  * The backend is provided on a FakeCtx and contributed to a capturing register before the case
  * sets any principal row, so it follows the hand-over service from the first change on.
  */
-export async function unit(t, sdk, { contribute = true } = {}) {
-  const u = await unitBackend(t, sdk)
+export async function unit(t, sdk, { contribute = true, pairs } = {}) {
+  const u = await unitBackend(t, sdk, { pairs })
   const ctx = new FakeCtx()
   u.backend.provide(ctx)
   t.after(() => ctx.dispose())
@@ -146,6 +147,7 @@ export function registerCUiBackendCases(sdk) {
   contribution(sdk)
   routed(sdk)
   registerCuiBackendCases(sdk)
+  registerWindowCases(sdk)
 }
 
 function useCases(sdk) {
@@ -443,7 +445,8 @@ function partitions(sdk) {
     const { mod, backend } = await unitBackend(t, sdk)
     const { service } = backend
     assert.ok(Object.isFrozen(service), 'the service is not frozen')
-    assertKeys(service, ['apiVersion', 'contribute', 'routes'])
+    // Contract A (2026-11-21, entries by window): the service gains offerWindows.
+    assertKeys(service, ['apiVersion', 'contribute', 'offerWindows', 'routes'])
     assert.equal(service.apiVersion, SURFACE.apiVersion)
     assert.equal(service.routes, mod.UI_ROUTE)
     assert.ok(Object.isFrozen(mod.UI_ROUTE), 'UI_ROUTE is not frozen')
@@ -488,17 +491,21 @@ function partitions(sdk) {
     assert.deepEqual(signal.required, ['important'])
     assert.deepEqual(Object.keys(w.tools.byName(TOOL.state).inputSchema.properties ?? {}), [])
   })
-  row(sdk, 'UIB-EP-06', '4', 'no card and no inline-record surface (Q-U2, Q-G4): only the six routes and the five snapshot parts', async (t) => {
+  row(sdk, 'UIB-EP-06', '4', 'no card and no inline-record surface (Q-U2, Q-G4): only the six routes and the six snapshot parts (windows added by contract A, 2026-11-21)', async (t) => {
     const w = await unit(t, sdk)
     assert.deepEqual(Object.keys(w.backend.service.routes).sort(), Object.keys(SURFACE.routes).sort())
     assertKeys(w.snapshot(), SURFACE.snapshotKeys)
   })
-  row(sdk, 'UIB-EP-06', '5', 'the snapshot shape: marks, targets, attention, notice, light with their keys', async (t) => {
-    const w = await unit(t, sdk)
-    w.handover.set({ principals: [principalRow(P)], managed: [{ sessionId: S.s1, principal: P }] })
+  // Contract A (2026-11-21): the snapshot gains windows, {key, name, id} each.
+  row(sdk, 'UIB-EP-06', '5', 'the snapshot shape: marks, targets, attention, notice, light, windows with their keys', async (t) => {
+    const pairs = new FakePairStore()
+    const w = await unit(t, sdk, { pairs })
+    t.after(w.backend.service.offerWindows(windowSource([pairs.bind(P)]).source))
+    w.handover.set({ principals: [principalRow(P, { online: true })], managed: [{ sessionId: S.s1, principal: P }] })
     await w.notify({ message: FIXTURE.message })
     const s = w.snapshot()
     assertKeys(s, SURFACE.snapshotKeys)
+    assertKeys(s.windows[0], SURFACE.windowKeys)
     assertKeys(s.marks[0], ['principal', 'sessionId'])
     assertKeys(s.marks[0].principal, SURFACE.refKeys)
     assertKeys(s.targets[0], SURFACE.targetKeys)

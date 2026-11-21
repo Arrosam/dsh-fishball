@@ -7,6 +7,7 @@ import { registerCuiDrawCases } from './cui-cases.mjs'
 import { registerCheckingCases } from './checking-cases.mjs'
 import { registerStreamCases } from './stream-cases.mjs'
 import { registerVisibilityCases } from './visibility-cases.mjs'
+import { registerWindowDrawCases } from './window-cases.mjs'
 
 registerStreamCases('0.2.1-rc.5')
 registerCheckingCases('0.2.1-rc.5')
@@ -16,3 +17,4 @@ registerUDrawPolishCases('0.2.1-rc.5')
 registerIconDrawCases('0.2.1-rc.5')
 registerCuiDrawCases('0.2.1-rc.5')
 registerVisibilityCases('0.2.1-rc.5')
+registerWindowDrawCases('0.2.1-rc.5')

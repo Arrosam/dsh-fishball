@@ -36,7 +36,7 @@ import { DSH_FIELD, JS_FILE, NPM, SDK, V3 } from '../../../../../../test/v3/cont
 import { npmTempRoot, observe, readManifest } from '../../../../../../test/v3/contract/package-boundaries/packages.mjs'
 import {
   BASE, CARD_SLOTS, CHILD_COPY, CONNECTOR_CLIENT, GIT, CLIENT_LOADER_ERROR, EMBED, EMBED_WORDS, EXPECTED_MARKS, EXPECTED_UI, FIELD, FISHBALL_PREFIX, HOST_SLOTS,
-  INTEGRATION, LATER,
+  INTEGRATION, LATER, WINDOW_UI, matchesExpected,
 } from './constants.mjs'
 import { hostGraph, openMainPage } from './page.mjs'
 
@@ -148,7 +148,7 @@ export function registerEmbedCases(sdk) {
     needEmbed()
     const tokens = await unitTokens(V3.embed)
     const connector = new Set(Object.values(EMBED.clientChunks).flatMap((file) => tokens.get(file)?.strings ?? []))
-    assert.deepEqual(EXPECTED_UI.map((e) => e.slot).filter((slot) => !connector.has(slot)), [], 'slots missing from the moved connector UI')
+    assert.deepEqual([...EXPECTED_UI, ...WINDOW_UI].map((e) => e.slot).filter((slot) => !connector.has(slot)), [], 'slots missing from the moved connector UI')
   })
   withdrawnRow(sdk, 'R-EMBED', '(2)', 'the moved instance card (client.instance.js) names a Plugins card slot', WITHDRAWN_BY.page)
   withdrawnRow(sdk, 'R-EMBED', '(2)', 'the instance exports its status-line module from src/child-settings/ (its one owner)', WITHDRAWN_BY.page)
@@ -265,7 +265,7 @@ export function registerEmbedCases(sdk) {
     // bundle (or package-local chunk) made it. The moved parts may keep their V2 plugin names
     // inside embed-UI (a pure move); no design section ties the slots to embed-UI's own name.
     const fromEmbed = () => page.registrations.filter((r) => r.owner === V3.embed.name)
-    const missingOf = () => EXPECTED_UI.filter((e) => !fromEmbed().some((r) => r.slot === e.slot && (e.id === undefined || r.id === e.id) && (e.key === undefined || r.key === e.key)))
+    const missingOf = () => EXPECTED_UI.filter((e) => !fromEmbed().some((r) => matchesExpected(e, r)))
     await page.waitFor(() => missingOf().length === 0)
     assert.deepEqual(page.failed(), [], 'failed plugins')
     assert.deepEqual(page.errors, [], 'page errors')
@@ -300,7 +300,7 @@ export function registerEmbedCases(sdk) {
     const page = await openMainPage(t, { sdk, host })
     await page.waitFor((regs) => EXPECTED_MARKS.every((e) => regs.some((r) => r.slot === e.slot && r.id === e.id)))
     assert.deepEqual(EXPECTED_MARKS.filter((e) => !page.registrations.some((r) => r.owner === V3.connector.name && r.slot === e.slot && r.id === e.id)), [], 'marks without embed-UI')
-    assert.deepEqual(page.registrations.filter((r) => EXPECTED_UI.some((e) => e.slot === r.slot && e.key === r.key)), [], 'a Fishball window entry without embed-UI')
+    assert.deepEqual(page.registrations.filter((r) => WINDOW_UI.some((e) => matchesExpected(e, r))), [], 'a Fishball window entry without embed-UI')
   })
 
   // ================================================================ later tasks

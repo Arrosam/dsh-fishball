@@ -211,5 +211,15 @@ export interface DshInstanceChild {
 
   targetStatus(): TargetStatus
 
+  /**
+   * The connector token entry key of the hosted entry the child holds now (the newest one the
+   * instance recorded), or `null` before any is recorded or while the record is unread. Non-secret.
+   * dsh-connector-ui offers it to the connector's UI backend as the one agent whose window this
+   * DSH can open (`DshConnectorUi.offerWindows`), so its sidebar entry names that agent. A new
+   * recorded entry is announced by `onChange`. Added 2026-11-21; an older locator lacks it, and
+   * then no agent has a window here.
+   */
+  agentEntry(): string | null
+
   readonly providerSync: ProviderSync
 }

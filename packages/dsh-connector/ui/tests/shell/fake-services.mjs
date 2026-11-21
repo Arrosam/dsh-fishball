@@ -21,6 +21,8 @@ const record = (entry) => fs.appendFileSync(process.env[FAKE.recordEnv], JSON.st
 const hostServiceError = (code) => Object.assign(new Error(code), { code })
 
 export const name = FAKE.name
+// The fake UI backend serves its state and events routes (contract A, entries by window).
+export const inject = ['connection']
 
 function provideChild(ctx, config) {
   let status = { ...config.status }
@@ -45,6 +47,8 @@ function provideChild(ctx, config) {
       if (status.state === CHILD.failed) { status = { state: CHILD.ready, code: null }; notify() }
     },
     targetStatus: () => ({ ...config.targetStatus }),
+    // Contract C (2026-11-21): the entry key of the hosted agent the child holds.
+    agentEntry: () => FAKE.window.entry,
     providerSync: {
       status: () => ({ state: 'inactive' }),
       async check() { record({ kind: FAKE.kind.sync, member: 'check' }); return { ok: false, error: { code: FAKE.syncRefused } } },
@@ -59,10 +63,32 @@ function provideChild(ctx, config) {
  * `contribute(register)`, which declares the three tools through the caller's `register`. Its
  * routes are not served here (U-SHELL rows read no snapshot; U-DRAW runs the real backend).
  */
+/**
+ * Contract A (2026-11-21, entries by window): `offerWindows(source)` keeps the offered sources, and
+ * the state / events routes answer a snapshot whose `windows` hold FAKE.window while any source
+ * claims its entry. The events route answers one frame and ends (the page's transport buffers
+ * whole bodies); the browser half keeps its entries until the next frame decides.
+ */
 function provideUi(ctx) {
+  const sources = new Set()
+  const snapshot = () => ({
+    marks: [], targets: [], attention: { count: 0, important: false }, notice: null, light: { on: false, important: false },
+    windows: [...sources].some((s) => [...s.entries()].includes(FAKE.window.entry)) ? [{ key: FAKE.window.key, name: FAKE.window.name, id: FAKE.window.id }] : [],
+  })
+  const json = (body) => new Response(JSON.stringify(body), { headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' } })
+  const answers = {
+    state: () => json({ ok: true, state: snapshot() }),
+    events: () => new Response('data: ' + JSON.stringify(snapshot()) + '\n\n', { headers: { 'content-type': 'text/event-stream', 'cache-control': 'no-store' } }),
+  }
+  for (const [key, answer] of Object.entries(answers)) ctx.effect(() => ctx.connection.fetch.register({ path: FAKE.uiRoutes[key], methods: ['GET'], fetch: async () => answer() }))
   ctx.provide(SERVICE.ui, {
     apiVersion: 1,
     routes: Object.freeze({ ...FAKE.uiRoutes }),
+    offerWindows(source) {
+      record({ kind: FAKE.kind.offer, entries: [...source.entries()] })
+      sources.add(source)
+      return () => { sources.delete(source) }
+    },
     contribute(register) {
       record({ kind: FAKE.kind.contribute })
       const disposers = FAKE.uiTools.map((name) => register({ name, description: name, inputSchema: { type: 'object', properties: {}, additionalProperties: false }, execute: async () => ({ ok: true, data: {} }) }))

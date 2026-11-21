@@ -17,7 +17,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { caseName } from '../../../../../test/v3/contract/package-boundaries/cases.mjs'
-import { assertHint, assertNotReady, mountMain, mountOverlay, noticeNode, world } from './cases.mjs'
+import { assertHint, assertNotReady, mountMain, mountOverlay, noticeNode, openThenLoseInstance, world } from './cases.mjs'
 import { ATTR, CHILD, FIXTURE, POLISH, TAG, TEXT, TOOL, WAIT } from './constants.mjs'
 import { attrOf, byTag, subtreeOf, textIn, withAttr } from './world.mjs'
 
@@ -44,11 +44,11 @@ export const placeOf = (page) => { const n = noticeNode(page); return { place: a
 
 export function registerUDrawPolishCases(sdk) {
   // ---------------------------------------------------------------- the no-instance view
+  // Entries by window (2026-11-21): the hint view is no longer an entry; it shows in the open window when the locator vanishes.
   for (const lang of TEXT.langs) {
-    draw(sdk, POLISH.id.hint, lang, `no instance (${lang}) → "${POLISH.noInstanceTitle[lang]}" above the hint [data-fishball-no-instance]; a decorative fish glyph, no data-fishball-mark in the window`, async (t) => {
-      const { page } = await world(t, sdk, { host: { child: null }, page: { lang } })
-      const view = await mountMain(page)
-      assert.ok(await page.waitFor(() => withAttr(view.tree(), ATTR.noInstance).length > 0), 'no hint')
+    draw(sdk, POLISH.id.hint, lang, `the instance goes while the window is open (${lang}) → "${POLISH.noInstanceTitle[lang]}" above the hint [data-fishball-no-instance]; a decorative fish glyph, no data-fishball-mark in the window`, async (t) => {
+      const { w, page } = await world(t, sdk, { page: { lang } })
+      const view = await openThenLoseInstance(page, w)
       if (lang === TEXT.langs[0]) assertHint(view)
       const hint = withAttr(view.tree(), ATTR.noInstance)[0]
       assert.equal(textIn(hint), POLISH.noInstance[lang])

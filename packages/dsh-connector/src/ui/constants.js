@@ -114,5 +114,6 @@ export const LOG = Object.freeze({
 export const MISUSE = Object.freeze({
   register: 'dsh-connector ui: contribute(register) needs a function',
   provideTwice: 'dsh-connector ui: provide() called twice; create one backend per connector activation',
-  closed: 'dsh-connector ui: contribute() after close(); the backend has ended',
+  closed: 'dsh-connector ui: contribute() or offerWindows() after close(); the backend has ended',
+  windowSource: 'dsh-connector ui: offerWindows(source) needs {entries(), onChange(listener)}',
 })

@@ -100,12 +100,13 @@ async function shellOf(t, sdk, scenario) {
   assert.deepEqual(page.failed(), [], 'failed client plugins (R-ARCH-02)')
   return { setup, page, regs: page.embed() }
 }
-// Q-G3: with a connector but no usable instance the Fishball page is the hint, never a frame.
-const HINT_TEXT = "No Fishball child instance is running here. Open your Fishball instance's own page."
-async function assertHintPage(page) {
-  const opened = await openFishball(page, { done: (text) => text.includes(HINT_TEXT) })
-  assert.equal(opened.iframe(), null, 'a frame without a usable instance')
-  assert.ok(opened.text().includes(HINT_TEXT), 'no hint; the page shows ' + JSON.stringify(opened.text()))
+// Re-baselined by entries by window (the user, 2026-11-21): with a connector but no usable instance no
+// agent has a window here, so embed-UI registers no sidebar entry and no Fishball page (the old hint
+// page is no longer an entry; no hint entry either).
+async function assertNoWindowEntries(page) {
+  await until(() => false, BUDGET.quietMs, BUDGET.pollMs)
+  assert.deepEqual(bySlot(page.embed(), SLOT.entry).map((r) => r.id), [], 'a sidebar entry without a window here')
+  assert.deepEqual(pageEntries(page).map((r) => r.key), [], 'a Fishball page without a window here')
 }
 /** Q-U1: without a local connector embed-UI draws nothing and contributes nothing. */
 const assertNothingDrawn = (setup, regs) => {
@@ -142,6 +143,17 @@ export function registerUShellCases(sdk) {
   integrationCase(sdk, 'UIM-UC-01', 'main 1', 'C + I + U: the sidebar shows the Fishball entry, from embed-UI', async (t) => {
     const { regs } = await shellOf(t, sdk, SCENARIO.all)
     assertOneEntry(regs)
+  })
+  // Entries by window (2026-11-21): the one entry is the hosted agent's: id fishball:<key>, order -10, its label.
+  integrationCase(sdk, 'UIM-UC-01', 'main 1 (window)', 'C + I + U: embed-UI offered the locator\'s agentEntry; the one entry is fishball:<key> at order -10 labelled with the agent\'s name capitalised', async (t) => {
+    const { setup, page, regs } = await shellOf(t, sdk, SCENARIO.all)
+    assertOneEntry(regs)
+    const [entry] = bySlot(regs, SLOT.entry)
+    assert.equal(entry.id, SLOT.pageKeyPrefix + FAKE.window.key)
+    assert.equal(entry.options.order, -10)
+    assert.equal(typeof entry.options.label === 'function' ? entry.options.label() : entry.options.label, FAKE.window.label)
+    assert.deepEqual(pageEntries(page).map((r) => r.key), [entry.id], 'the window is not keyed as its entry')
+    assert.ok(recordsOf(setup, FAKE.kind.offer).some((r) => r.entries.includes(FAKE.window.entry)), 'embed-UI did not offer the locator\'s agentEntry')
   })
   integrationCase(sdk, 'UIM-UC-01', 'main 2', "opening the entry asks the locator for one admission and frames the child at the child's own origin", async (t) => {
     const { setup, asked, target } = await assertFramedUnder(t, sdk, PAGE_NAME.ipv4)
@@ -233,9 +245,10 @@ export function registerUShellCases(sdk) {
     assert.deepEqual(hits, [])
   })
   // Q-G4 = A: the former records rows (main 2 record row, main 3 answer, A1 records in C + U) are withdrawn; the row above covers their absence.
-  integrationCase(sdk, 'UIM-UC-04', 'A1', 'C + U (no instance): the sidebar entry is still the one fish entry; the brand is unchanged', async (t) => {
-    const { regs } = await shellOf(t, sdk, SCENARIO.connector)
-    assertOneEntry(regs)
+  // Re-baselined by entries by window (2026-11-21): no instance → no window here → no sidebar entry.
+  integrationCase(sdk, 'UIM-UC-04', 'A1', 'C + U (no instance): no sidebar entry (no agent has a window here); the brand is unchanged', async (t) => {
+    const { page, regs } = await shellOf(t, sdk, SCENARIO.connector)
+    await assertNoWindowEntries(page)
     assertNoBrand(regs)
   })
   integrationCase(sdk, 'UIM-UC-04', 'A2', 'without embed-UI: no Fishball package registers anything in the host page, so S1 shows DSH\'s generic tool-call row', async (t) => {
@@ -267,10 +280,10 @@ export function registerUShellCases(sdk) {
     assertNothingDrawn(setup, regs)
     assertConnectorMissing(setup, 1)
   })
-  // Q-G3 (requirements 1.41): with the connector but no instance the Fishball page is the hint, not absent.
-  integrationCase(sdk, 'UIM-EP-01', 3, 'connector services, no dshInstanceChild → the Fishball page is the hint, no frame; one instance-missing line (Q-G3)', async (t) => {
+  // Re-baselined by entries by window (2026-11-21; was Q-G3's hint page): no instance → no entry and no Fishball page.
+  integrationCase(sdk, 'UIM-EP-01', 3, 'connector services, no dshInstanceChild → no sidebar entry and no Fishball page; one instance-missing line', async (t) => {
     const { setup, page } = await shellOf(t, sdk, SCENARIO.connector)
-    await assertHintPage(page)
+    await assertNoWindowEntries(page)
     assertDiagnostics(setup, 1)
   })
   // Requirements 1.34: marks, Hand over, the fish light and the tools are covered by U-DRAW against the real UI backend.
@@ -288,17 +301,17 @@ export function registerUShellCases(sdk) {
     assertConnectorMissing(setup, 0)
   })
   caseTest(sdk, 'UIM-EP-01', 4, 'all services → marks, Hand over, fish light and the contributed tools too', null, LATER.marks)
-  // Q-G3: an older locator with the connector is "no instance": the hint.
-  integrationCase(sdk, 'UIM-EP-01', 5, 'an older locator (apiVersion 2) is treated as absent: the hint, no frame, exactly one instance-missing line (K, Q-G3)', async (t) => {
+  // Re-baselined by entries by window (2026-11-21): an older locator is "no instance": no entry, no page.
+  integrationCase(sdk, 'UIM-EP-01', 5, 'an older locator (apiVersion 2) is treated as absent: no entry, no Fishball page, exactly one instance-missing line (K)', async (t) => {
     const { setup, page } = await shellOf(t, sdk, SCENARIO.older)
-    await assertHintPage(page)
+    await assertNoWindowEntries(page)
     assert.deepEqual(recordsOf(setup, FAKE.kind.admit), [], 'the older locator was asked for an admission')
     assertDiagnostics(setup, 1)
   })
-  // Q-G3: as #3, the hint instead of no page.
-  integrationCase(sdk, 'UIM-EP-01', 6, 'the instance row disabled (no dshInstanceChild) with the connector services → as #3: the hint, one instance-missing line', async (t) => {
+  // Re-baselined by entries by window (2026-11-21): as #3, no entry and no page.
+  integrationCase(sdk, 'UIM-EP-01', 6, 'the instance row disabled (no dshInstanceChild) with the connector services → as #3: no entry, no Fishball page, one instance-missing line', async (t) => {
     const { setup, page } = await shellOf(t, sdk, SCENARIO.disabled)
-    await assertHintPage(page)
+    await assertNoWindowEntries(page)
     assertDiagnostics(setup, 1)
   })
   caseTest(sdk, 'UIM-EP-01', 6, 'the instance disabled → marks, Hand over, fish light and the tools, as #3', null, LATER.marks)

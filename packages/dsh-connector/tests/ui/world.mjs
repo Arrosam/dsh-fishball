@@ -141,7 +141,8 @@ async function openContribWorld(sdk, root) {
 export async function routedBackend(t, sdk) {
   const mod = await uiModule(sdk)
   const w = await routeWorld(t, sdk)
-  const backend = createBackend(mod, { handover: w.handover, logger: recordingLogger() })
+  // Contract A (2026-11-21): the backend reads the same K1 pair store the hand-over service does.
+  const backend = createBackend(mod, { handover: w.handover, pairs: w.pairs, logger: recordingLogger() })
   const ctx = new FakeCtx()
   backend.provide(ctx)
   t.after(() => { backend.close(); ctx.dispose() })

@@ -29,6 +29,27 @@ export interface UiTarget {
   readonly online: boolean
 }
 
+/**
+ * One agent with a window here (the user, 2026-11-21: by capability, not identity): an enabled,
+ * paired and online principal whose token entry an offered `WindowSource` names, in
+ * `principals()` order. dsh-connector-ui draws one sidebar entry per row.
+ */
+export interface UiWindow {
+  readonly key: string
+  readonly name: string | null
+  readonly id: string
+}
+
+/**
+ * What a row that can open agents' windows in this DSH offers (`offerWindows`): the connector
+ * token entry keys whose agent it can open now, and a change signal. `entries` is read at every
+ * snapshot; `onChange` returns its disposer.
+ */
+export interface WindowSource {
+  entries(): Iterable<string>
+  onChange(listener: () => void): Dispose
+}
+
 /** The attention latch (§13.6, D3): count 0 or 1, with importance; no timer. */
 export interface UiAttention {
   readonly count: 0 | 1
@@ -46,6 +67,7 @@ export interface UiNotice {
 export interface UiSnapshot {
   readonly marks: readonly UiMark[]
   readonly targets: readonly UiTarget[]
+  readonly windows: readonly UiWindow[]
   readonly attention: UiAttention
   readonly notice: UiNotice | null
   readonly light: { readonly on: boolean; readonly important: boolean }
@@ -83,4 +105,10 @@ export interface DshConnectorUi {
    * register that throws part-way disposes what it registered and rethrows.
    */
   contribute(register: (definition: object) => Dispose): Dispose
+  /**
+   * Offers a window source; its entries are united with every other offered source's. Returns an
+   * idempotent disposer. Offering, a source's change and its disposal each publish a snapshot.
+   * Throws TypeError for a value that is not a `WindowSource`, and Error after the backend closed.
+   */
+  offerWindows(source: WindowSource): Dispose
 }

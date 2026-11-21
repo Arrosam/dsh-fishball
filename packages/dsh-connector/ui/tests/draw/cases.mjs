@@ -16,7 +16,7 @@ import test from 'node:test'
 import { caseName } from '../../../../../test/v3/contract/package-boundaries/cases.mjs'
 import {
   ATTR, BACKEND, CHILD, CODES, DECIDED, DIAGNOSTIC, EMBED, EXPECT, FIXTURE, HTTP, MARKUP_TAGS, PAGE_HOST, REFUSAL, ROUTE, SERVICE,
-  SLOT, TAG, TEXT, TOOL, UI_KEYS, WAIT,
+  SLOT, TAG, TEXT, TOOL, UI_KEYS, WAIT, WINDOW,
 } from './constants.mjs'
 import { attrOf, byTag, fishProps, hasBoldId, hostWorld, lightOf, openPage, press, row, sessionProps, subtreeOf, textIn, type, until, withAttr } from './world.mjs'
 
@@ -29,10 +29,16 @@ const relative = (absolute) => absolute.slice(ROUTE.absolutePrefix.length)
 
 // --------------------------------------------------------------------------------------------- worlds
 
-/** Host + page; `principals` are fixture principals (`{online}` per row via `over`), `managed` maps session → principal. */
-export async function world(t, sdk, { host: hostOptions = {}, page: pageOptions = {}, principals = [], managed = [] } = {}) {
+/**
+ * Host + page; `principals` are fixture principals (`{online}` per row via `over`), `managed` maps session → principal.
+ * Entries by window (2026-11-21): without `principals` the world's default hosted Fishball agent
+ * has the one window; given `principals` replace it, and the first of them is paired under the
+ * hosted entry the child holds, so it is the agent with a window here (by capability, not name).
+ */
+export async function world(t, sdk, { host: hostOptions = {}, page: pageOptions = {}, principals, managed = [] } = {}) {
   const w = await hostWorld(t, sdk, hostOptions)
-  if (principals.length || managed.length) w.handover.set({ principals: principals.map(([p, over]) => row(p, over)), managed: managed.map(([sessionId, p]) => ({ sessionId, principal: p })) })
+  if (principals?.length) w.pairs.bind(principals[0][0], FIXTURE.hostedEntry)
+  if (principals !== undefined || managed.length) w.handover.set({ ...(principals === undefined ? {} : { principals: principals.map(([p, over]) => row(p, over)) }), managed: managed.map(([sessionId, p]) => ({ sessionId, principal: p })) })
   const page = await openPage(t, w, pageOptions)
   return { w, page }
 }
@@ -41,10 +47,18 @@ const offline = (p) => [p, { online: false }]
 
 // --------------------------------------------------------------------------------------------- page readers
 
-const isFish = (entry) => entry.options.id === SLOT.fishId
-const isMain = (entry) => entry.options.key === SLOT.mainKey
-export const mountFish = (page) => page.mount(SLOT.fish, fishProps(), isFish)
-export const mountMain = (page) => page.mount(SLOT.main, {}, isMain)
+// Entries by window (2026-11-21): embed-UI's sidebar entries are `fishball:<key>`, one per window,
+// ordered by `order`; the window of entry i is the main entry with the same key.
+const isFish = (entry) => String(entry.options.id ?? '').startsWith(WINDOW.idPrefix)
+const isMain = (entry) => String(entry.options.key ?? '').startsWith(WINDOW.idPrefix)
+/** Embed-UI's sidebar entries in row order (DSH sorts by `order`; ties keep registration order). */
+export const fishEntries = (page) => page.entries(SLOT.fish).filter(isFish).map((e, i) => [e, i]).sort(([a, i], [b, j]) => (a.options.order - b.options.order) || (i - j)).map(([e]) => e)
+/** The window main entries, in the order of their sidebar entries. */
+export const mainEntries = (page) => fishEntries(page).map((f) => page.entries(SLOT.main).find((m) => isMain(m) && m.options.key === f.options.id)).filter(Boolean)
+/** Mounts the `index`-th sidebar entry (the first by default: the one that carries the attention light). */
+export const mountFish = (page, index = 0) => { const entry = fishEntries(page)[index]; return page.mount(SLOT.fish, fishProps(), (e) => e === entry) }
+/** Mounts the window of the `index`-th entry. */
+export const mountMain = (page, index = 0) => { const entry = mainEntries(page)[index]; return page.mount(SLOT.main, {}, (e) => e === entry) }
 export const mountOverlay = (page) => page.mount(SLOT.overlay)
 export const mountHeader = (page, sessionId = S1) => page.mount(SLOT.header, sessionProps(sessionId))
 export const mountRowMark = (page, sessionId = S1) => page.mount(SLOT.rowLeading, sessionProps(sessionId))
@@ -105,6 +119,18 @@ export function assertHint(view) {
   assertNoFrame(view)
   assert.deepEqual(withAttr(view.tree(), ATTR.embedState), [], 'a state tag beside the hint')
 }
+/**
+ * Entries by window (2026-11-21): with no instance no window entry exists, so the hint is reached as
+ * the user does now: the window is open (framed) and then the locator vanishes (the instance row is
+ * switched off); the open window shows the hint. Returns the mounted view.
+ */
+export async function openThenLoseInstance(page, w) {
+  const view = await mountMain(page)
+  await assertFramed(page, view, w)
+  await w.setInstance(true)
+  assert.ok(await page.waitFor(() => withAttr(view.tree(), ATTR.noInstance).length > 0), 'no hint after the locator vanished')
+  return view
+}
 /** The not-ready view (#77): state (+ code) tag, a Retry link to the instance's page, no frame, no hint. */
 export async function assertNotReady(page, view, w, status) {
   assert.ok(await page.waitFor(() => withAttr(view.tree(), ATTR.embedState, status.state).length > 0), 'no state tag ' + status.state)
@@ -119,7 +145,7 @@ export async function assertNotReady(page, view, w, status) {
   assert.equal(w.child.retries, EXPECT.none, 'embed-UI retried the child itself')
 }
 /** The ready view: the iframe src is exactly the last one-time url the locator minted (R-UI-02). */
-async function assertFramed(page, view, w) {
+export async function assertFramed(page, view, w) {
   assert.ok(await page.waitFor(() => byTag(view.tree(), TAG.iframe).length > 0), 'no iframe; the view shows ' + JSON.stringify(textIn(view.tree())))
   const frame = one(withAttr(view.tree(), ATTR.frame), 'frames')
   assert.equal(frame.props.src, w.child.admissions.at(-1).url, 'the frame src is not the admit url')
@@ -147,7 +173,8 @@ export function registerUDrawCases(sdk) {
   // ============================================================ Use cases
   draw(sdk, 'UDRAW-UC-01', 'main', 'C + I + U: the window frames the one-time admit url and POSTs opened once', 'UIM-UC-01, R-UI-02, Q-G3, §13.6', async (t) => {
     const { w, page } = await world(t, sdk)
-    assert.equal(page.live().filter((r) => r.slot === SLOT.fish && r.id === SLOT.fishId).length, EXPECT.once, 'fish entries')
+    // Entries by window (2026-11-21): one window-capable agent (the hosted Fishball) → one entry.
+    assert.equal(fishEntries(page).length, EXPECT.once, 'fish entries')
     const view = await mountMain(page)
     assert.equal(withAttr(view.tree(), ATTR.embed).filter((n) => n.tag === TAG.section).length, EXPECT.once, 'section[data-fishball-embed]')
     await assertFramed(page, view, w)
@@ -280,16 +307,17 @@ export function registerUDrawCases(sdk) {
     assertNothingRegistered(page)
   })
 
-  draw(sdk, 'UDRAW-UC-08', 'main', 'C + U, no instance: one instance-missing warning; fish, marks seats, the prompt and the hint view; the tools contributed', 'UIM-UC-02, R-UI-01, R-UI-08 amended, QD4, Q-G3', async (t) => {
+  // Re-baselined by entries by window (the user, 2026-11-21): with no instance no agent has a window
+  // here, so there is no sidebar entry and no main entry (the hint is no longer an entry; no hint entry).
+  draw(sdk, 'UDRAW-UC-08', 'main', 'C + U, no instance: one instance-missing warning; no sidebar.panellist and no main entry (no window here, no hint entry); the marks seats and the prompt; the tools contributed', 'UIM-UC-02, R-UI-01, QD4, entries by window 2026-11-21', async (t) => {
     const { w, page } = await world(t, sdk, { host: { child: null }, principals: [online(P.navigator)] })
     assertDiagnostics(w, { errors: EXPECT.none, warns: EXPECT.once })
     const services = await servicesOf(w)
     assert.deepEqual([services.connector, services.page], [true, false])
-    for (const slot of [SLOT.fish, SLOT.main, SLOT.overlay, ...SLOT.connectorSeats]) assert.ok(page.live().some((r) => r.slot === slot), 'nothing in ' + slot)
-    const view = await mountMain(page)
-    assert.ok(await page.waitFor(() => withAttr(view.tree(), ATTR.noInstance).length > 0), 'no hint')
-    assertHint(view)
-    assert.ok(await posted(page, 'opened'), 'opening the hint view did not POST opened')
+    for (const slot of [SLOT.overlay, ...SLOT.connectorSeats]) assert.ok(page.live().some((r) => r.slot === slot), 'nothing in ' + slot)
+    await page.settle()
+    assert.deepEqual(page.embedDrawn().filter((r) => r.slot === SLOT.fish || r.slot === SLOT.main).map((r) => r.slot + '#' + (r.id ?? r.key)), [], 'an entry without any window here')
+    assert.deepEqual(w.backend.snapshot().windows, [], 'a window without an instance')
     assert.ok(Object.values(TOOL).map(w.publicName).every((n) => w.names().includes(n)), 'tools not contributed without the instance')
     const header = await mountHeader(page)
     assert.ok(await page.waitFor(() => handOverButtons(header).length > 0), 'no Hand over without the instance')
@@ -322,19 +350,25 @@ export function registerUDrawCases(sdk) {
   }
 
   // ============================================================ EP-02: what the browser half registers
+  // Row 2 re-baselined by entries by window (2026-11-21): no instance → no window → no fish and no main entry.
   const PAGE_ROWS = [
     { row: 1, label: 'full', host: {}, drawn: true },
-    { row: 2, label: 'no instance', host: { child: null }, drawn: true },
+    { row: 2, label: 'no instance', host: { child: null }, drawn: 'overlay only' },
     { row: 3, label: 'no connector', host: { ui: false, tools: false, child: null }, drawn: false },
     { row: 4, label: 'instance only', host: { ui: false, tools: false }, drawn: false },
     { row: 5, label: 'the services read fails', host: {}, page: { failServices: true }, drawn: false },
   ]
   for (const r of PAGE_ROWS) {
-    draw(sdk, 'UDRAW-EP-02', r.row, `${r.label} → ${r.drawn ? 'fish, main, overlay and the marks seats' : 'nothing registered'}`, 'UIM-EP-01, Q-U1, R-UI-08, QD4', async (t) => {
+    draw(sdk, 'UDRAW-EP-02', r.row, `${r.label} → ${r.drawn === true ? 'fish, main, overlay and the marks seats' : r.drawn ? 'the overlay, no fish and no main entry' : 'nothing registered'}`, 'UIM-EP-01, Q-U1, R-UI-08, QD4, entries by window 2026-11-21', async (t) => {
       const { page } = await world(t, sdk, { host: r.host, page: r.page })
       if (!r.drawn) { assertNothingRegistered(page); return }
-      assert.ok(page.live().some((x) => x.slot === SLOT.fish && x.id === SLOT.fishId), 'no fish (sidebar.panellist id fishball)')
-      assert.ok(page.live().some((x) => x.slot === SLOT.main && x.key === SLOT.mainKey), 'no main entry keyed fishball')
+      if (r.drawn !== true) {
+        assert.ok(page.embedDrawn().some((x) => x.slot === SLOT.overlay), 'nothing of embed-UI in ' + SLOT.overlay)
+        assert.deepEqual(page.embedDrawn().filter((x) => x.slot === SLOT.fish || x.slot === SLOT.main).map((x) => x.id ?? x.key), [], 'an entry without a window')
+        return
+      }
+      assert.ok(page.live().some((x) => x.slot === SLOT.fish && x.id === WINDOW.id(P.fishball.key)), 'no fish (sidebar.panellist id fishball:<key>)')
+      assert.ok(page.live().some((x) => x.slot === SLOT.main && x.key === WINDOW.id(P.fishball.key)), 'no main entry keyed fishball:<key>')
       // DESIGN.md §28: the marks seats are the connector's part (packages/dsh-connector/tests/marks); embed-UI keeps the overlay.
       assert.ok(page.embedDrawn().some((x) => x.slot === SLOT.overlay), 'nothing of embed-UI in ' + SLOT.overlay)
       const fish = await mountFish(page)
@@ -455,8 +489,10 @@ export function registerUDrawCases(sdk) {
   }
 
   // ============================================================ DT-02: the main view
+  // Rule 1 re-baselined by entries by window (2026-11-21): without an instance there is no window to
+  // open; the open window shows the hint when the locator vanishes while it is open.
   const VIEW_RULES = [
-    { rule: 1, label: 'no instance → hint', host: { child: null }, check: (page, view) => page.waitFor(() => withAttr(view.tree(), ATTR.noInstance).length > 0).then(() => assertHint(view)) },
+    { rule: 1, label: 'the window open, then the instance goes → hint', host: {}, check: async (page, view, w) => { await view.unmount(); assertHint(await openThenLoseInstance(page, w)) } },
     { rule: 2, label: 'instance, child not ready → state tag and Retry link', host: { child: { status: CHILD.notReady[0] } }, check: (page, view, w) => assertNotReady(page, view, w, CHILD.notReady[0]) },
     { rule: 3, label: 'instance, child ready, loopback → iframe', host: {}, check: async (page, view, w) => { await assertFramed(page, view, w); assert.deepEqual(withAttr(view.tree(), ATTR.noInstance), []); assert.deepEqual(withAttr(view.tree(), ATTR.retryLink), []) } },
     { rule: 4, label: 'instance, child ready, not loopback → refused', host: {}, page: { host: PAGE_HOST.tunnel }, check: async (page, view) => { assert.ok(await page.waitFor(() => withAttr(view.tree(), ATTR.hostnameRefused).length > 0)); assertNoFrame(view) } },

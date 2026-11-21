@@ -7,8 +7,10 @@ reviews. Fishball is one such agent, but any standard MCP client can connect.
 
 Its browser code is its own settings page and the hand-over marks (see
 [Hand over and Take back](#hand-over-and-take-back)), so every DSH with the connector shows them.
-The Fishball sidebar entry, its window, its light and the notify prompt come from
-[`dsh-connector-ui`](https://www.npmjs.com/package/dsh-connector-ui), which is optional.
+The Fishball sidebar entries, their windows, the light and the notify prompt come from
+[`dsh-connector-ui`](https://www.npmjs.com/package/dsh-connector-ui), which is optional. It
+shows one entry, named after the agent, for each connected agent whose window this DSH can open
+(today the Fishball that `dsh-instance` hosts here), and none while there is no such agent.
 
 ## Requirements
 

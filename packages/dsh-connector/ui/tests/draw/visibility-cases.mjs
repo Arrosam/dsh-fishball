@@ -129,21 +129,26 @@ export function registerVisibilityCases(sdk) {
     await view.notify(FIXTURE.message2)
     await view.expectMessage(FIXTURE.message2)
   })
-  check('unsubscribed', 'hide/show with no consumers stays disconnected; remount receives authoritative state', async (t) => {
+  // Re-baselined by entries by window (the user via lead, 2026-11-21): the shell follows the snapshot
+  // for the sidebar entries while the page is visible, with no view mounted too.
+  check('unsubscribed', 'no view mounted: a visible page keeps one source; hidden → none; shown → exactly one new source; a remount receives the current state and adds none', async (t) => {
     const view = await browser(t, sdk, VIS.visible)
     await view.notify(FIXTURE.message)
     await view.expectMessage(FIXTURE.message)
     await view.fish.unmount()
     await view.overlay.unmount()
-    assert.equal(view.live().length, EXPECT.none, 'last subscriber left its snapshot source live')
+    assert.equal(view.live().length, EXPECT.once, 'a visible page dropped the source its sidebar entries follow')
     const before = view.sources().length
     await view.change(VIS.hidden)
+    assert.equal(view.live().length, EXPECT.none, 'a hidden page kept a source')
     await view.notify(FIXTURE.message2)
     await view.change(VIS.visible)
-    assert.equal(view.sources().length, before, 'a source opened without a subscriber')
+    assert.ok(await view.page.waitFor(() => view.live().length === EXPECT.once), 'showing the page did not reopen one source')
+    assert.equal(view.sources().length, before + EXPECT.once, 'showing the page opened more than one source')
     await mountOverlay(view.page)
     await view.expectMessage(FIXTURE.message2)
     assert.equal(view.live().length, EXPECT.once)
+    assert.equal(view.sources().length, before + EXPECT.once, 'a remount opened another source')
   })
   check('error before hide', 'a pending reconnect does not reopen the hidden page', async (t) => {
     const view = await browser(t, sdk, VIS.visible)
