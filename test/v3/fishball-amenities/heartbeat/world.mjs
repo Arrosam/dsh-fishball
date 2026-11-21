@@ -242,6 +242,10 @@ async function openWorld(sdk, [{ Context }, { Loader }, { SessionStore, appendPl
 
   let rowId
   let callSeq = 0
+  // Every fiber state change (cordis 'internal/status'): a remount of the row shows as states of its
+  // fiber, a live settings re-apply (R3) shows none.
+  const statuses = []
+  ctx.on('internal/status', (fiber) => { statuses.push({ fiber, state: fiber.state }) })
   const w = {
     sdk, ctx, logs, global, notices, scopeTools, manager,
     get session() { return manager.live?.session },
@@ -271,6 +275,10 @@ async function openWorld(sdk, [{ Context }, { Loader }, { SessionStore, appendPl
       await settle()
     },
     active: () => loader.resolve(rowId)?.fiber?.state === DSH.fiberActive,
+    /** The row's fiber, and the states it passed through since `from` (an index into the log). */
+    fiber: () => loader.resolve(rowId)?.fiber,
+    statusMark: () => statuses.length,
+    rowStatuses: (from = 0) => statuses.slice(from).filter((s) => s.fiber === loader.resolve(rowId)?.fiber).map((s) => s.state),
     /** One whole turn on the manager (or `session`); `sources` from TURN (null = no step). */
     async turn(sources, { reason, session = manager.live.session } = {}) { return (await openTurn(sources, session)).end(reason) },
     /** Opens a turn left open; `await .end(reason)` closes it. */

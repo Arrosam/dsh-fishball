@@ -1,8 +1,8 @@
 # fishball-amenities
 
 An umbrella that installs the optional Fishball amenities together. Each amenity is its own package
-and DSH bundle, installable on its own; this package only depends on them and shows a hint on its
-settings page.
+and DSH bundle, installable on its own; this package depends on them and carries their settings
+pages.
 
 | Package | What it is |
 |---|---|
@@ -16,8 +16,16 @@ bundles, so an umbrella carries its members' rows, as DSH's own `dsh-cua-bundle`
 amenity on its own instead and its own patch is used. Do not install the umbrella together with an
 amenity as a direct dependency: both would insert the same rows.
 
-Installed through the umbrella, the amenities show as its components on its plugin page; configure
-each from its component settings there. Installed alone, each is its own entry in the Plugins list.
+Installed through the umbrella, the amenities show as its components on its plugin page. Open
+`fishball-heartbeat` there (the arrow beside its name) to set its two settings. A saved change
+applies at once: the heartbeat re-applies itself with the new values, without a DSH restart, and
+the values are kept in the profile's `cordis.patch.yml`. `fishball-board` and
+`fishball-taskboard` have no settings page: the taskboard has no settings, and the board's settings
+(`inject`, `contextCards`, `doneWindowHours`) are read by nothing yet, so they are not offered.
 
-Only this umbrella (`client.js`, its settings-page hint) and `fishball-taskboard` (its Task board
-tab) have browser code, so only they declare `dsh.client`.
+Known limit: the pages are this umbrella's (`client.js`); the amenities have no browser code.
+Installed alone, without the umbrella, `fishball-heartbeat` has no settings page: edit its row's
+`config` in the profile's `cordis.patch.yml` instead.
+
+Only this umbrella (`client.js`: the settings-page hint and the heartbeat's settings page) and
+`fishball-taskboard` (its Task board tab) have browser code, so only they declare `dsh.client`.

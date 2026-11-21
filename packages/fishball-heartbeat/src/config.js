@@ -8,6 +8,10 @@ const MAX_TIMER_SECONDS = Math.floor((2 ** 31 - 1) / TIME.millisecondsPerSecond)
  * The user's two settings. Neither has a default: the heartbeat is off until the user sets both
  * (the user's requirement), so an unset field is the off state, not a value to invent. They live
  * only in this row's config, which Fishball's tools cannot write.
+ *
+ * Each is `.volatile()`: DSH's settings service serves and writes only volatile fields, so this is
+ * what puts them on the row's settings page. index.js reads a plain snapshot at apply and re-applies
+ * on a live change (src/live-settings.js), so `enabled` and the timer still see numbers.
  */
 const SETTINGS = Object.freeze({
   intervalSeconds: Object.freeze({
@@ -23,8 +27,8 @@ const SETTINGS = Object.freeze({
 
 export const Config = Schema.object({
   intervalSeconds: Schema.natural().min(SETTINGS.intervalSeconds.min).max(SETTINGS.intervalSeconds.max)
-    .description(SETTINGS.intervalSeconds.description),
-  maxConsecutive: Schema.natural().min(SETTINGS.maxConsecutive.min).description(SETTINGS.maxConsecutive.description),
+    .description(SETTINGS.intervalSeconds.description).volatile(),
+  maxConsecutive: Schema.natural().min(SETTINGS.maxConsecutive.min).description(SETTINGS.maxConsecutive.description).volatile(),
 })
 
 /** Both settings present (the schema has already bounded them). */

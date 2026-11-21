@@ -3,6 +3,7 @@ import { Config, enabled } from './src/config.js'
 import { HOST, LOG, NAMESPACE } from './src/constants.js'
 import { createFocusStore } from './src/focus.js'
 import { startHeartbeat } from './src/heartbeat.js'
+import { runWithSettings } from './src/live-settings.js'
 import { createFocusTool } from './src/tool.js'
 
 export { Config }
@@ -16,7 +17,16 @@ export const inject = []
  * one implementation of "bind to a compatible fishballInstance, report its absence once" for the
  * Fishball amenities (extension points §1).
  */
-export function apply(ctx, config) {
+/**
+ * The row's settings are volatile (src/config.js): `runWithSettings` runs the body below with their
+ * plain values and runs it again after a live change, which the comment in the body relies on.
+ * `async` so Cordis awaits it (it runs a plain function as a constructor, cordis isConstructor).
+ */
+export async function apply(ctx, config) {
+  await runWithSettings(ctx, config, applyWith)
+}
+
+function applyWith(ctx, config) {
   const logger = ctx.logger(NAMESPACE)
   // One store per row, shared by every manager setup so its writes queue in one place. Opened on
   // the first attach, never at row load: a row without core has no use for the profile home.
@@ -25,7 +35,7 @@ export function apply(ctx, config) {
   const on = enabled(config)
   const binding = followInstance(ctx, HOST, (instance) => {
     // Off until the user sets both settings: no tool, no timer, nothing sent. A settings change
-    // re-applies the row (DSH's loader reloads a row on a non-volatile config change).
+    // re-applies this body (runWithSettings, on the Loader's volatile update).
     if (!on) return () => {}
     const { manager } = instance
     return manager.registerSetup(NAMESPACE, (agentCtx, live) => {

@@ -248,7 +248,19 @@ export const V3_SUITES = Object.freeze({
   // reuses the board suite's row loader and the package-boundaries case names.
   'fishball-amenities.heartbeat': suite('heartbeat amenity: config gate, timer, consecutive limit, restart, heartbeat_focus', [...v3('fishball-amenities/heartbeat'), 'test/v3/fishball-amenities/heartbeat/sdk-0.2.2-rc.3.test.mjs'],
     [all(PACKAGE.fishballHeartbeat), INSTANCE_FOLLOWER, all(PACKAGE.fishballAmenities), 'test/v3/fishball-amenities/heartbeat/**',
-      'test/v3/fishball-board/peers/subject.mjs', 'test/v3/contract/package-boundaries/cases.mjs', 'test/private-skills/support/sdk.mjs']),
+      'test/v3/fishball-board/peers/subject.mjs', 'test/v3/contract/package-boundaries/cases.mjs', 'test/private-skills/support/sdk.mjs',
+      'test/support/amenity-settings.mjs', PACKAGE.fishballBoard + '/src/config.js']),
+  // R1 (the amenities' settings pages, 2026-11-22): fishball-heartbeat's live-settings helper on a
+  // real Loader of each SDK (and 0.2.2-rc.3).
+  'fishball-amenities.live-settings': suite('live settings helper: settingsSnapshot, runWithSettings re-run on loader/volatile-update', [...v3('fishball-amenities/live-settings'), 'test/v3/fishball-amenities/live-settings/sdk-0.2.2-rc.3.test.mjs'],
+    [PACKAGE.fishballHeartbeat + '/src/live-settings.js', 'test/v3/contract/package-boundaries/cases.mjs']),
+  // R4/R5: the umbrella's client pages in a scripted Plugins page (browser sandbox, React shim, DSH's
+  // own settings-form primitives from the 0.2.2-rc.3 frontend), the Host serving fishball-heartbeat's
+  // real Config through DSH's dsh-settings.
+  'fishball-amenities.settings-page': suite("umbrella settings pages: configure entries while served, heartbeat form, labels, save, manifests", [...v3('fishball-amenities/settings-page'), 'test/v3/fishball-amenities/settings-page/sdk-0.2.2-rc.3.test.mjs'],
+    [PACKAGE.fishballAmenities + '/client.js', PACKAGE.fishballAmenities + '/package.json', PACKAGE.fishballHeartbeat + '/src/**', PACKAGE.fishballHeartbeat + '/package.json',
+      'test/support/amenity-settings.mjs', 'test/support/browser-sandbox.mjs', 'test/support/rp-recommend.mjs', 'test/v3/fishball-core/package/page.mjs',
+      'test/v3/contract/package-boundaries/cases.mjs', 'test/private-skills/support/sdk.mjs']),
   // The taskboard row over the SDK's real storage stack with fake host services; it reuses the
   // amenities' instance follower (fishball-shared/instance-follower) and is installed through its own
   // package's patch and manifest, or the umbrella's. Its world imports the private-skills SDK binder

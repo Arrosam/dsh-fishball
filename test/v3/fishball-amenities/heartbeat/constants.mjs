@@ -63,6 +63,26 @@ export const HEARTBEAT = Object.freeze({
   notice: Object.freeze({ pluginId: PLUGIN_ID, wake: true }),
 })
 
+/**
+ * R2/R3 of the amenities' settings pages (the lead, 2026-11-22): the heartbeat's two settings are
+ * volatile and keep their type, bounds and descriptions (the text before this change, git HEAD); a
+ * live change re-applies the row without remounting it. fishball-board's fields stay non-volatile.
+ */
+export const LIVE = Object.freeze({
+  fields: Object.freeze([
+    Object.freeze({ name: 'intervalSeconds', type: 'number', step: 1, min: 1, max: 2_147_483, absent: Object.freeze(['default']), description: 'Seconds without any Fishball turn before a heartbeat turn is sent. Set it below your model\'s cache lifetime. Leave empty to turn heartbeats off.' }),
+    Object.freeze({ name: 'maxConsecutive', type: 'number', step: 1, min: 1, absent: Object.freeze(['default', 'max']), description: 'Heartbeat turns allowed in a row with no other turn between them; after that the cache is left to cool until the next real turn. Leave empty to turn heartbeats off.' }),
+  ]),
+  /** Another branch adds this field; the rows tolerate it but never require it. */
+  optionalField: 'compactThresholdTokens',
+  config: path.join(REPO, 'packages', 'fishball-heartbeat', 'src', 'config.js'),
+  board: Object.freeze({
+    name: 'fishball-board',
+    config: path.join(REPO, 'packages', 'fishball-board', 'src', 'config.js'),
+    fields: Object.freeze(['inject', 'contextCards', 'doneWindowHours']),
+  }),
+})
+
 /** user/message sources (decision-table conditions). */
 export const SOURCE = Object.freeze({
   user: Object.freeze({ kind: 'user' }),
