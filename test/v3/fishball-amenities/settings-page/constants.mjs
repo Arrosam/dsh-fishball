@@ -51,18 +51,22 @@ export const PAGE = Object.freeze({
   testMs: 60_000,
 })
 
-/** The one configurable row's form (R2, R4): two number fields, no list. */
+/**
+ * The one configurable row's form (R2, R4): three number fields, no list. compactThresholdTokens
+ * came with feat/heartbeat-compact (merged 2026-11-22); it has a default, so it has no max here.
+ */
 export const FORMS = Object.freeze([
   Object.freeze({
     row: 'fishball-heartbeat',
-    order: Object.freeze(['intervalSeconds', 'maxConsecutive']),
+    order: Object.freeze(['intervalSeconds', 'maxConsecutive', 'compactThresholdTokens']),
     settings: Object.freeze([
       Object.freeze({ name: 'intervalSeconds', kind: 'number', min: 1, max: 2_147_483 }),
       Object.freeze({ name: 'maxConsecutive', kind: 'number', min: 1 }),
+      Object.freeze({ name: 'compactThresholdTokens', kind: 'number', min: 0 }),
     ]),
     lists: Object.freeze([]),
-    /** Labelled in the dictionary although the field lands on another branch. */
-    labelledExtra: Object.freeze(['compactThresholdTokens']),
+    /** Labelled in the dictionary; no field beyond the served three. */
+    labelledExtra: Object.freeze([]),
   }),
 ])
 
