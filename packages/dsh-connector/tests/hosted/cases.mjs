@@ -24,7 +24,8 @@
  *   Pre: Eo = createHosted(I), paired as fb-old named "Navigator", designated, manages S1 and S2,
  *   holds live permission O1 (S1) and live question O2 (S2), pending events e1 (turn-finished S1) and
  *   e2 (message to Eo), none acked; Q (user-made, named) manages S3 with its own offer; S4 is En's.
- *   Main: 1. En = createHosted(I) pairs fb-new with "Navigator" → nameless, name-taken;
+ *   Main: 1. En = createHosted(I) pairs fb-new with "Navigator" → name-taken, and (the user's
+ *   decision, 2026-11-21) a generated name instead of none;
  *   2.–3. retire(Eo, En) → {ok: true}; in one step: S1, S2 managed by En (never unmanaged in between);
  *   designated = En; En named "Navigator", Eo's pair gone; O1, O2 re-issued as <request>.r2 to En
  *   (same type, session, descriptor otherwise) and their old events retired `reissued`; e1, e2 in
@@ -36,7 +37,7 @@
  *   E1a: the user's answer (routing.settle / withdraw with any revision) during or after the step is
  *     never refused.
  *   E2: a write fails at any step before the commit → {ok: false, operation-failed}; Eo keeps
- *     sessions, role, name, offers, events; En nameless; nothing half-moved (the `succeededBy` mark
+ *     sessions, role, name, offers, events; En keeps its generated name; nothing half-moved (the `succeededBy` mark
  *     undone, so a later resume() deletes nothing); a retry succeeds. A compensation that fails is
  *     logged and never replaces operation-failed.
  *   E2a (rollback after the barrier): a watch event of a moved session produced during the step
@@ -101,6 +102,7 @@ import { hostedModule, succeedWorld } from './subject.mjs'
 import { TURN_FACTS } from '../routing/constants.mjs'
 import { toolsOver } from './world.mjs'
 import { registerReviewXHostedCases } from './review-x-cases.mjs'
+import { assertGeneratedName } from '../pairs/cases.mjs'
 
 const T = { timeout: WAIT.testMs }
 const { ids: ID, names: NAME, sessions: S } = FIXTURE
@@ -425,12 +427,12 @@ async function retryUntil(w, done) {
 function useCases(sdk) {
   const uc = (part, title, fn) => worldRow(sdk, CASE.uc03, part, title, fn)
 
-  uc('main 1', 'En (a new hosted entry for the same instance) pairs with the name Eo holds → paired nameless, nameRefused name-taken', async (w) => {
+  uc('main 1', 'En (a new hosted entry for the same instance) pairs with the name Eo holds → paired with a generated name, nameRefused name-taken', async (w) => {
     await oldEntry(w)
     const { paired, en } = await successor(w)
-    assert.equal(paired.name, null)
+    assertGeneratedName(paired.name)
     assert.equal(paired.nameRefused, REFUSAL.nameTaken)
-    assert.equal(w.pairs.pairOf(en).name, null)
+    assert.equal(w.pairs.pairOf(en).name, paired.name)
   })
   uc('main 2-3', 'retire(Eo, En) → {ok: true}: S1, S2 to En, the role, the name, O1/O2 re-issued r2, e1/e2 kept, Eo deleted', async (w) => {
     const u = await navigatorWorld(w)
@@ -502,12 +504,12 @@ function useCases(sdk) {
     assert.equal(await w.routing.withdraw(u.held[0].descriptor.offerId), true)
     assert.deepEqual(w.routing.liveOffers(S.s1), [])
   })
-  uc('E2', 'the pair step fails (injected storage failure) → operation-failed; nothing moved: Eo keeps sessions, role, name; En nameless', async (w) => {
+  uc('E2', 'the pair step fails (injected storage failure) → operation-failed; nothing moved: Eo keeps sessions, role, name; En keeps its generated name', async (w) => {
     const u = await navigatorWorld(w)
     const before = await stateOf(w)
     assert.deepEqual(await retireFailing(w, u, writeStep(DOMAIN.pairs)), refused(CODE.operationFailed))
     assert.deepEqual(await stateOf(w), before)
-    assert.equal(w.pairs.pairOf(u.en).name, null)
+    assert.equal(w.pairs.pairOf(u.en).name, u.paired.name)
     assert.equal(w.pairs.pairOf(u.eo).name, NAME.navigator)
     assert.deepEqual(w.notes.calls, [])
   })
@@ -1044,9 +1046,15 @@ function decisionTables(sdk) {
   })
   moveRow('1', 'old named, successor nameless → the successor takes the old name', {}, (w, u) => assert.equal(w.pairs.pairOf(u.en).name, NAME.navigator))
   moveRow('2', 'old named, successor named (its own name) → the successor\'s own name is replaced by the old one', { successorName: NAME.successorOwn }, (w, u) => assert.equal(w.pairs.pairOf(u.en).name, NAME.navigator))
-  moveRow('3', 'old nameless, successor named → the successor becomes nameless; the note names it ID: <id>', { oldName: null, successorName: NAME.successorOwn }, (w, u) => {
-    assert.equal(w.pairs.pairOf(u.en).name, null)
-    assertNotes(w, u, labelOf(null, ID.new))
+  // Since the user's decision of 2026-11-21 an old pair that paired without a name holds a generated
+  // one, so the successor takes that name (no pair is nameless, and none shows ID: <id>).
+  worldRow(sdk, CASE.stepDt, '3', 'old paired without a name (so a generated one), successor named → the successor takes the old generated name; the note names it', async (w) => {
+    const u = await navigatorWorld(w, { oldName: null, successorName: NAME.successorOwn })
+    const oldName = w.pairs.pairOf(u.eo).name
+    assertGeneratedName(oldName)
+    assert.deepEqual(await w.service.retire(u.eo, u.en), OK)
+    assert.equal(w.pairs.pairOf(u.en).name, oldName)
+    assertNotes(w, u, labelOf(oldName, ID.new))
   })
   withdrawnRow(sdk, CASE.stepDt, '4', 'old not designated (another entry is) → the designated role is not touched', WITHDRAWN.designated)
 
@@ -1178,13 +1186,13 @@ function decisionTables(sdk) {
 
 function transitions(sdk) {
   // HOST-ST-02 — the hosted principal across reinstall.
-  worldRow(sdk, CASE.st02, '1', 'Old(Eo) active → reinstall (createHosted + pair) → Old(Eo) + New(En) provisional: both entries enabled, En nameless, Eo unchanged', async (w) => {
+  worldRow(sdk, CASE.st02, '1', 'Old(Eo) active → reinstall (createHosted + pair) → Old(Eo) + New(En) provisional: both entries enabled, En with a generated name, Eo unchanged', async (w) => {
     const { eo } = await oldEntry(w)
     const oldPair = w.pairs.pairOf(eo)
     const { en } = await successor(w)
     assert.deepEqual([w.service.entryState(eo), w.service.entryState(en)], [K3.states.enabled, K3.states.enabled])
     assert.deepEqual(w.pairs.pairOf(eo), oldPair)
-    assert.equal(w.pairs.pairOf(en).name, null)
+    assertGeneratedName(w.pairs.pairOf(en).name)
   })
   worldRow(sdk, CASE.st02, '2', 'Old + New provisional → succession ok → New(En) only, with Eo\'s sessions, role and name', async (w) => {
     const u = await navigatorWorld(w)
@@ -1222,15 +1230,17 @@ function transitions(sdk) {
     assert.ok(holders.length > 0, 'no step was sampled')
     assert.deepEqual([...new Set(holders)], [1], 'at some instant "Navigator" was held by more or fewer than one pair')
   })
-  worldRow(sdk, CASE.nameSt01, '8 (old nameless)', 'Nameless (successor) → retire succeeds with a nameless old principal → Nameless (shown ID: <id>)', async (w) => {
+  worldRow(sdk, CASE.nameSt01, '8 (old paired without a name)', 'Named(generated) (successor) → retire succeeds with an old principal that paired without a name → Named(the old one\'s generated name), never ID: <id>', async (w) => {
     const u = await navigatorWorld(w, { oldName: null })
+    const oldName = w.pairs.pairOf(u.eo).name
+    assertGeneratedName(oldName)
     assert.deepEqual(await w.service.retire(u.eo, u.en), OK)
-    assert.equal(w.pairs.pairOf(u.en).name, null)
+    assert.equal(w.pairs.pairOf(u.en).name, oldName)
   })
-  worldRow(sdk, CASE.nameSt01, '9', 'Nameless (successor) → retire fails (injected) → Nameless; the old principal keeps its name', async (w) => {
+  worldRow(sdk, CASE.nameSt01, '9', 'Named(generated) (successor) → retire fails (injected) → unchanged; the old principal keeps its name', async (w) => {
     const u = await navigatorWorld(w)
     assert.deepEqual(await retireFailing(w, u, writeStep(DOMAIN.pairs)), refused(CODE.operationFailed))
-    assert.equal(w.pairs.pairOf(u.en).name, null)
+    assert.equal(w.pairs.pairOf(u.en).name, u.paired.name)
     assert.equal(w.pairs.pairOf(u.eo).name, NAME.navigator)
   })
   worldRow(sdk, CASE.nameSt01, '9 (refused)', 'Nameless (successor) → retire refused (successor-unpaired) → the old principal keeps its name', async (w) => {

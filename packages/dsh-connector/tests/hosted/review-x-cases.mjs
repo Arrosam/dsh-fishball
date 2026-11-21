@@ -31,14 +31,14 @@ const { ids: ID, names: NAME, sessions: S } = FIXTURE
 const OK = Object.freeze({ ok: true })
 const row = (sdk, part, title, fn) => test(caseName(sdk, RX.id, part, title), T, async (t) => fn(await succeedWorld(t, sdk), t))
 
-/** Eo (hosted, fb-old, "Navigator") managing S1 and S2, and En (hosted, fb-new, nameless: name-taken). */
+/** Eo (hosted, fb-old, "Navigator") managing S1 and S2, and En (hosted, fb-new, name-taken: a generated name since 2026-11-21). */
 async function pairOfEntries(w) {
   const eo = await w.hostedEntry()
   const old = (await w.pair(eo, ID.old, NAME.navigator)).key
   for (const s of [S.s1, S.s2]) { w.session(s); await w.manage(s, old) }
   const en = await w.hostedEntry()
   const succ = (await w.pair(en, ID.new, NAME.navigator)).key
-  assert.equal(w.pairs.pairOf(en).name, null, 'harness: the successor took the name before the succession')
+  assert.notEqual(w.pairs.pairOf(en).name, NAME.navigator, 'harness: the successor took the name before the succession')
   return { eo, en, old, succ }
 }
 const removals = (w, entryKey) => w.writer.of(CALL.removeToken).filter((c) => c.entryKey === entryKey).length

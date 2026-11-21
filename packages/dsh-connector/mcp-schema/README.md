@@ -101,6 +101,19 @@ endpoint an invalid id is `invalid_client` (R-ID-02).
   absent (NAME-DT-01 rule 1).
 - `set_name({name})` with a string or `null` (clear) → `{ok: true, name}` or `name-taken` /
   `name-invalid`. A non-string, non-null `name` is `invalid-arguments` (schema).
+- **Generated names (K1 amendment; the user's decision, 2026-11-21, superseding R-NAME-04's "the
+  connector never assigns a name"):** a pair the connector would leave nameless gets a readable
+  generated name, "<Adjective> <Noun>" with a " 2", " 3", … suffix only when random draws keep
+  colliding, unique among the connector's pairs under `nameKey`. The connector assigns it in
+  `PairStore` (`src/pairs/store.js`): `pair` without a usable name answers the generated name
+  (`name` is a string; `nameAssigned: false` and `nameRefused` still report a refused name);
+  `set_name(null)` answers a fresh generated name in place of the cleared one; a refused `set_name`
+  keeps a held name, and names a still nameless pair with a generated one while answering the
+  refusal. The approval page's bind with an empty name field still binds nameless, so a page-bound
+  pair reads `ID: <id>` until its agent's first name call. Pairs stored nameless before the decision
+  are named when the store opens (except a page-bound one that has made no request yet). `name`
+  stays `string | null` in the schemas and types, for those cases and for `already-paired`'s
+  `bound.name`; `principalLabel` (R-NAME-08) stays the fallback for a nameless principal.
 
 ## Events
 
@@ -400,7 +413,7 @@ Each `K`-flagged case row whose answer is a behaviour rather than a value, keyed
 | EVT-ST-01 row 8 | A second ack of an acked event is a no-op success while its receipt is remembered (`MAILBOX.ackedReceiptMs`, 1 day, DECIDED #36: kept), counted in `acked` as 0 (PROPOSED). |
 | AUTH-ST-05 rows 10–12c | Withdrawn by K1d (R-OA-23): no chain ends by age, so there is no renewal, no `chainsOf` and no `renewFromPage`. Re-entering a bound token with the same id on the page is a reconnect (`PairStore.reconnectFromPage`, R-OA-22). |
 | EVT-UC-01 E2 | A stale cursor names an older `mailboxGeneration`, which only lost or reset mailbox storage starts (DECIDED #W2-1); it gets `{resync: {reason: 'stale-cursor', headSequence}}`, never a silent skip. |
-| NAME-ST-01 rows 8–9 | `PairStore.succeed(old, successor)`: in one registry write the old pair is removed and the successor takes its name or its lack of one; `successor-unpaired` and any failure change nothing (R-NAME-07). An unpaired old entry succeeds with nothing changed (DECIDED #W2-2). |
+| NAME-ST-01 rows 8–9 | `PairStore.succeed(old, successor)`: in one registry write the old pair is removed and the successor takes its name (a nameless old pair moves none since the 2026-11-21 generated-names decision: the successor keeps its own); `successor-unpaired` and any failure change nothing (R-NAME-07). An unpaired old entry succeeds with nothing changed (DECIDED #W2-2). |
 | EVT-ST-01 row 5 | An offer settled by the user keeps its own event pending until acked; the `settlement` that follows is the signal; the offer event is not retired (PROPOSED). |
 | EVT-BVA-01 rows 5–6 | `inbox_poll` `limit` must be 1–`MAILBOX.pageMax` (100); 0 and 101 are `limit-exceeded`, never clamped (V2 contract §8: a value outside a limit is `limit-exceeded`). |
 | EVT-BVA-02 rows 1–4 | `maxQueuedInputs` = 200 (`QUEUE.maxQueuedInputs`); past it only `QUEUE.refusedTypes` and contributor events are `queue-full`. |

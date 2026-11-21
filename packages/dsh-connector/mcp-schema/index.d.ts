@@ -194,11 +194,17 @@ export interface Pair {
   readonly redirectUri?: string
 }
 
+/**
+ * `pair`'s answer. Since the user's decision of 2026-11-21 (README "Generated names") a success's
+ * `name` is the requested name or, without a usable one, a generated name (with `nameAssigned:
+ * false` and `nameRefused` when one was refused); `null` remains in the type for pairs stored before.
+ */
 export type PairResult =
   | { ok: true; paired: true; id: string; name: string | null; nameAssigned?: boolean; nameRefused?: 'name-taken' | 'name-invalid' }
   | { ok: false; code: 'already-paired'; bound: { idMatches: boolean; boundId: string; name: string | null; pairedAt: EpochMs; lastSeenAt: EpochMs | null }; advice: string }
   | { ok: false; code: 'id-taken' }
 
+/** `set_name`'s answer; `set_name(null)` answers a generated name since 2026-11-21 (README "Generated names"). */
 export type SetNameResult = { ok: true; name: string | null } | { ok: false; code: 'name-taken' | 'name-invalid' }
 
 /**
@@ -220,6 +226,7 @@ export interface PairStore {
   /**
    * `pair` (R-ID-03/04/13, R-NAME-06): already-paired before id-taken; a name never fails it. For a
    * machine client `id` is its OAuth client id (R-ID-01); the MCP tool's input is unchanged (K1d).
+   * Without a usable name the pair gets a generated name (README "Generated names", 2026-11-21).
    */
   pair(entryKey: EntryKey, id: string, name: string | undefined, now: EpochMs): Promise<PairResult>
   /**
@@ -242,7 +249,11 @@ export interface PairStore {
    */
   reconnectFromPage(entryKey: EntryKey, id: string, client: { clientIdUrl: string; redirectUri: string }):
     Promise<{ ok: true; pair: Pair } | { ok: false; code: 'already-paired' }>
-  /** `set_name`; `null` clears (R-NAME-02). */
+  /**
+   * `set_name`; `null` clears (R-NAME-02), which since 2026-11-21 replaces the name with a generated
+   * one; a refused name keeps a held name and names a nameless pair with a generated one (README
+   * "Generated names").
+   */
   setName(principalKey: PrincipalKey, name: string | null): Promise<SetNameResult>
   /** Records an authenticated request; writes at most once per PAIR_TIMING.lastSeenWriteIntervalMs. */
   seen(principalKey: PrincipalKey, now: EpochMs): void
@@ -251,8 +262,10 @@ export interface PairStore {
   /**
    * Reinstall succession's pair step (R-HOST-09, R-NAME-07; K1 amendment after W2, for C-SUCCEED's
    * `retire`). In one atomic registry write: the old entry's pair is removed (its id and name are
-   * freed, as `remove`) and the successor's pair takes the old one's name, or its lack of one
-   * (`null`), replacing the successor's own. So the name is never held twice and never refused.
+   * freed, as `remove`) and the successor's pair takes the old one's name, replacing the successor's
+   * own; a nameless old pair (one bound on the page that never named itself) moves no name, and the
+   * successor keeps its own (2026-11-21: no pair is left nameless by the connector). So the name is
+   * never held twice and never refused.
    * - The successor's entry is unpaired: `successor-unpaired`, nothing changes.
    * - The old entry is unpaired: `{ok: true, pair}` with the successor's unchanged pair, and
    *   nothing changes (it has no principal, so there is no name to move; Fishball 2026-11-14).

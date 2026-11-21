@@ -76,8 +76,12 @@ export const idHeldByOther = (registry, id, entryKey) => registry.pairs.some((pa
  */
 export function nameHeldByOther(registry, name, entryKey) {
   const key = nameKey(name)
-  return registry.pairs.some((pair) => pair.entryKey !== entryKey && pair.name !== null && nameKey(pair.name) === key)
+  return namesHeldByOthers(registry, entryKey).some((held) => nameKey(held) === key)
 }
+
+/** The names every principal but `entryKey`'s holds (nameless ones hold none): what a generated name must avoid. */
+export const namesHeldByOthers = (registry, entryKey) =>
+  registry.pairs.filter((pair) => pair.entryKey !== entryKey && pair.name !== null).map((pair) => pair.name)
 
 /** The registry with the pair of `entryKey` replaced by `changes` applied to it. */
 export const withPairChanged = (registry, entryKey, changes) =>
@@ -90,7 +94,10 @@ export const withPairRemoved = (registry, entryKey) => ({ pairs: registry.pairs.
 /**
  * Succession (R-NAME-07): the next record with the old pair removed and the successor's pair holding
  * the old one's name. Only this result is checked and written, once; the old pair's removal comes
- * first, so the name is never on two pairs even within the computation.
+ * first, so the name is never on two pairs even within the computation. A nameless old pair (one
+ * still awaiting its first name call) moves no name: the successor keeps its own, since no pair is
+ * left nameless by the connector (the user's decision, 2026-11-21).
  */
+export const succeededName = (old, successor) => old.name ?? successor.name
 export const withSuccession = (registry, old, successor) =>
-  withPairChanged(withPairRemoved(registry, old.entryKey), successor.entryKey, { name: old.name })
+  withPairChanged(withPairRemoved(registry, old.entryKey), successor.entryKey, { name: succeededName(old, successor) })

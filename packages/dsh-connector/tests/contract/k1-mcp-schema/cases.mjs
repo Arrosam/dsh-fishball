@@ -196,6 +196,10 @@ export function registerK1Cases(sdk) {
     const check = await pairOutput(sdk, mod)
     for (const result of PAIR_RESULT.refused) assert.ok(check(result), result.nameRefused)
   })
+  caseTest(sdk, 'NAME-DT-01', '1, 3–4 (generated)', 'pair\'s output schema admits a generated name with or without nameAssigned: false + nameRefused (the user\'s decision, 2026-11-21)', async (mod) => {
+    const check = await pairOutput(sdk, mod)
+    for (const result of PAIR_RESULT.generated) assert.ok(check(result), JSON.stringify(result))
+  })
   caseTest(sdk, 'NAME-DT-01', 1, 'pair\'s output schema has the R-NAME-06 fields (nameAssigned, nameRefused); "absent" for rule 1 is K', async (mod) => {
     const names = rootPropertyNames(toolDef(mod, mod.TOOL.pair).outputSchema)
     for (const f of ['ok', 'paired', 'id', 'name', 'nameAssigned', 'nameRefused', 'code', 'bound', 'advice']) assert.ok(names.has(f), f)

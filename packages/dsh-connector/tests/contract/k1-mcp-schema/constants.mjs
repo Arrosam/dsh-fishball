@@ -132,8 +132,16 @@ export const PAIR_RESULT = Object.freeze({
   nameless: Object.freeze({ ok: true, paired: true, id: 'agent-a', name: null }),
   /** AUTH-UC-02 A1, NAME-DT-01 rule 2. */
   named: Object.freeze({ ok: true, paired: true, id: 'agent-a', name: 'Agent A', nameAssigned: true }),
-  /** NAME-DT-01 rules 3 and 4. */
+  /** NAME-DT-01 rules 3 and 4 (a pair stored before the 2026-11-21 decision answered `name: null`). */
   refused: Object.freeze(['name-taken', 'name-invalid'].map((nameRefused) => Object.freeze({ ok: true, paired: true, id: 'agent-a', name: null, nameAssigned: false, nameRefused }))),
+  /**
+   * The user's decision, 2026-11-21: without a usable name the connector answers a generated name,
+   * still reporting the refusal: no name given, then rules 3 and 4.
+   */
+  generated: Object.freeze([
+    Object.freeze({ ok: true, paired: true, id: 'agent-a', name: 'Amber Otter' }),
+    ...['name-taken', 'name-invalid'].map((nameRefused) => Object.freeze({ ok: true, paired: true, id: 'agent-a', name: 'Amber Otter', nameAssigned: false, nameRefused })),
+  ]),
   /** R-ID-04 / AUTH-UC-04 step 2, without its timestamps (their JSON type is K1's; cases.mjs tries both forms). */
   alreadyPaired: Object.freeze({ ok: false, code: 'already-paired', message: 'already paired', bound: Object.freeze({ idMatches: true, boundId: '123', name: 'Fishball' }) }),
   /** R-ID-13 (with the envelope's message, design §3.2). */

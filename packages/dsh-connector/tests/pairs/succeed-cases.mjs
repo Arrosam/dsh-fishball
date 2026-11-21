@@ -11,7 +11,7 @@
  * changes" is the pair snapshot and no onChange notification.
  */
 import assert from 'node:assert/strict'
-import { assertUniqueNames, at, bind, changes, nameRefused, paired, row, setName } from './cases.mjs'
+import { assertGeneratedName, assertNameRefused, assertPairedGenerated, assertUniqueNames, at, bind, bindNameless, changes, row, setName } from './cases.mjs'
 import { FIXTURE, REFUSAL, SUCCEED, principalLabel, succeedRefusal } from './constants.mjs'
 
 const E = FIXTURE.entry
@@ -26,10 +26,13 @@ const FOURTH = 4
 const successorAfter = (before, name) => ({ ...before, name })
 /** `succeed` on the entries `oldN` → `newN`. */
 const succeed = (w, oldN = OLD, newN = NEW) => w.store.succeed(E(oldN), E(newN))
-/** HOST-UC-03's precondition: Eo named "Navigator"; En paired with the same name, so nameless. */
+/**
+ * HOST-UC-03's precondition: Eo named "Navigator"; En paired with the same name, so refused and
+ * named by the generator (the user's decision, 2026-11-21; before it, nameless).
+ */
 async function navigatorWorld(w) {
   const old = await bind(w, OLD, SUCCEED.oldId, SUCCEED.navigator)
-  assert.deepEqual(await w.store.pair(E(NEW), SUCCEED.newId, SUCCEED.navigator, at()), nameRefused(SUCCEED.newId, REFUSAL.nameTaken), 'harness: En pairs nameless')
+  assertNameRefused(await w.store.pair(E(NEW), SUCCEED.newId, SUCCEED.navigator, at()), SUCCEED.newId, REFUSAL.nameTaken)
   return { old, successor: w.store.pairOf(E(NEW)) }
 }
 /** The old pair is gone as `remove` leaves it: no pair, no principal, id and name free. */
@@ -52,9 +55,9 @@ async function assertNoChange(w, call, expected) {
 
 function useCase(sdk) {
   const uc = (part, title, fn) => row(sdk, CASE.hostUc03, part, title, fn)
-  uc('main step 1 (name)', 'En pairs with the name Eo holds: paired nameless, nameRefused name-taken', async (w) => {
+  uc('main step 1 (name)', 'En pairs with the name Eo holds: paired with a generated name, nameRefused name-taken', async (w) => {
     const { successor } = await navigatorWorld(w)
-    assert.equal(successor.name, null)
+    assertGeneratedName(successor.name)
   })
   uc('main step 3 (name)', 'succeed(Eo, En): one step; En is named "Navigator", Eo is gone; the name was never on two pairs', async (w) => {
     const { old, successor } = await navigatorWorld(w)
@@ -100,13 +103,13 @@ function decisionTable(sdk) {
     if (result.pair !== undefined) assert.deepEqual(result.pair, w.store.pairOf(E(NEW)))
     assert.equal(w.store.pairOf(E(NEW)).name, SUCCEED.successorOwnName)
   })
-  dt('2 (successor nameless)', 'old never paired, successor nameless → ok; the successor stays nameless', async (w) => {
-    await bind(w, NEW, SUCCEED.newId)
+  dt('2 (successor nameless)', 'old never paired, successor nameless (page bind, no name) → ok; the successor stays nameless', async (w) => {
+    await bindNameless(w, NEW, SUCCEED.newId)
     const result = await assertNoChange(w, () => succeed(w))
     assert.equal(result?.ok, true, JSON.stringify(result))
     assert.equal(w.store.pairOf(E(NEW)).name, null)
   })
-  dt('3', 'both paired, old named, successor nameless → ok, pair = successor named with the old name; own id, key, pairedAt', async (w) => {
+  dt('3', 'both paired, old named, successor with a generated name → ok, pair = successor named with the old name; own id, key, pairedAt', async (w) => {
     const old = await bind(w, OLD, SUCCEED.oldId, SUCCEED.navigator, at(FIXTURE.t1Offset))
     const successor = await bind(w, NEW, SUCCEED.newId, undefined, at(FIXTURE.t2Offset))
     assert.deepEqual(await succeed(w), { ok: true, pair: successorAfter(successor, SUCCEED.navigator) })
@@ -119,18 +122,20 @@ function decisionTable(sdk) {
     await bind(w, THIRD, SUCCEED.thirdId)
     assert.deepEqual(await setName(w, THIRD, SUCCEED.successorOwnName), { ok: true, name: SUCCEED.successorOwnName }, 'the successor\'s former name is not free')
   })
-  dt('5', 'both paired, old nameless, successor named → the successor becomes nameless (the lack of a name moves too)', async (w) => {
-    const old = await bind(w, OLD, SUCCEED.oldId)
+  // Since the user's decision of 2026-11-21 a lack of a name no longer moves: the connector leaves no
+  // pair nameless, so a nameless old pair (one still awaiting its first name call) leaves the
+  // successor's own name in place.
+  dt('5', 'both paired, old nameless (page bind, no name), successor named → the successor keeps its own name', async (w) => {
+    const old = await bindNameless(w, OLD, SUCCEED.oldId)
     const successor = await bind(w, NEW, SUCCEED.newId, SUCCEED.successorOwnName)
-    assert.deepEqual(await succeed(w), { ok: true, pair: successorAfter(successor, null) })
-    assert.equal(w.store.pairOf(E(NEW)).name, null)
+    assert.deepEqual(await succeed(w), { ok: true, pair: successorAfter(successor, SUCCEED.successorOwnName) })
     await assertOldGone(w, old)
     await bind(w, THIRD, SUCCEED.thirdId)
-    assert.deepEqual(await setName(w, THIRD, SUCCEED.successorOwnName), { ok: true, name: SUCCEED.successorOwnName })
+    assert.deepEqual(await setName(w, THIRD, SUCCEED.successorOwnName), { ok: false, code: REFUSAL.nameTaken }, 'the successor still holds its name')
   })
-  dt('6', 'both paired, both nameless → ok, the successor stays nameless; the old pair is gone', async (w) => {
-    const old = await bind(w, OLD, SUCCEED.oldId)
-    const successor = await bind(w, NEW, SUCCEED.newId)
+  dt('6', 'both paired, both nameless (page binds, no name) → ok, the successor stays nameless; the old pair is gone', async (w) => {
+    const old = await bindNameless(w, OLD, SUCCEED.oldId)
+    const successor = await bindNameless(w, NEW, SUCCEED.newId)
     assert.deepEqual(await succeed(w), { ok: true, pair: successorAfter(successor, null) })
     await assertOldGone(w, old)
   })
@@ -158,22 +163,22 @@ function decisionTable(sdk) {
     await bind(w, OLD, SUCCEED.oldId, SUCCEED.navigator)
     await bind(w, NEW, SUCCEED.newId)
     await succeed(w)
-    assert.deepEqual(await w.store.pair(E(THIRD), SUCCEED.oldId, undefined, at()), paired(SUCCEED.oldId, null))
+    assertPairedGenerated(await w.store.pair(E(THIRD), SUCCEED.oldId, undefined, at()), SUCCEED.oldId)
   })
-  dt('after (name held)', 'after succeed the moved name is held by the successor: a third principal\'s set_name of it (any case) → name-taken; pair with it → nameless', async (w) => {
+  dt('after (name held)', 'after succeed the moved name is held by the successor: a third principal\'s set_name of it (any case) → name-taken; pair with it → a generated name, name-taken', async (w) => {
     await bind(w, OLD, SUCCEED.oldId, SUCCEED.navigator)
     await bind(w, NEW, SUCCEED.newId)
     await succeed(w)
     await bind(w, THIRD, SUCCEED.thirdId)
     assert.deepEqual(await setName(w, THIRD, SUCCEED.navigatorLower), { ok: false, code: REFUSAL.nameTaken })
-    assert.deepEqual(await w.store.pair(E(FOURTH), SUCCEED.oldId, SUCCEED.navigator, at()), nameRefused(SUCCEED.oldId, REFUSAL.nameTaken))
+    assertNameRefused(await w.store.pair(E(FOURTH), SUCCEED.oldId, SUCCEED.navigator, at()), SUCCEED.oldId, REFUSAL.nameTaken)
     assertUniqueNames(w)
   })
 }
 
 function stateTransitions(sdk) {
   const st = (n, title, fn) => row(sdk, CASE.nameSt01, n, title, fn)
-  st('8', 'Nameless (successor) → retire succeeds → the old principal\'s state (Named(old)), moved in the same step', async (w) => {
+  st('8', 'Named(generated) (successor) → retire succeeds → the old principal\'s state (Named(old)), moved in the same step', async (w) => {
     const { successor } = await navigatorWorld(w)
     const notified = changes(w)
     await succeed(w)
@@ -181,11 +186,12 @@ function stateTransitions(sdk) {
     notified.off()
     assert.deepEqual(w.store.pairOf(E(NEW)), successorAfter(successor, SUCCEED.navigator))
   })
-  st('8 (old nameless)', 'Nameless (successor) → retire succeeds with a nameless old principal → Nameless', async (w) => {
-    await bind(w, OLD, SUCCEED.oldId)
-    await bind(w, NEW, SUCCEED.newId)
+  st('8 (old nameless)', 'Named(generated) (successor) → retire succeeds with a nameless old principal (page bind) → the successor keeps its generated name, never ID: <id>', async (w) => {
+    await bindNameless(w, OLD, SUCCEED.oldId)
+    const { name } = await bind(w, NEW, SUCCEED.newId)
+    assertGeneratedName(name)
     await succeed(w)
-    assert.deepEqual(principalLabel(w.store.pairOf(E(NEW)).name, SUCCEED.newId), principalLabel(null, SUCCEED.newId))
+    assert.deepEqual(principalLabel(w.store.pairOf(E(NEW)).name, SUCCEED.newId), { name })
   })
   st('9', 'Nameless (successor) → retire fails (successor-unpaired) → nothing moves: the old principal keeps its name', async (w) => {
     const old = await bind(w, OLD, SUCCEED.oldId, SUCCEED.navigator)
