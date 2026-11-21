@@ -8,9 +8,11 @@ import { HOST, LOG, reasonOf } from './constants.js'
  *
  * Everything is DSH's own: the length is `tokenMeter.measure(session).totalTokens`, the request
  * size DSH's compaction compares its own threshold against; the compaction is the engine's
- * `compactNow`, the idle, below-threshold compaction DSH's `/compact` command runs. compactNow
- * claims the agent's true idle (runMaintenance) and refuses `busy` otherwise, so this first waits
- * for the agent to finish the turn whose end started the cooling.
+ * `compactNow`, the idle, below-threshold compaction DSH's `/compact` command runs. The length is
+ * read at the cooling point (the turn that started it has appended its last event), so a context at
+ * or below the threshold, or a missing service, never waits. compactNow claims the agent's true
+ * idle (runMaintenance) and refuses `busy` otherwise, so it then waits for the agent to finish
+ * that turn.
  *
  * The caller owns "once per cooling": `cooling.current()` says whether this cooling still stands
  * (no turn started since, no compaction yet), `cooling.claim()` records the attempt, called right
@@ -47,12 +49,13 @@ export function createCompactor({ agentCtx, agent, thresholdTokens, logger, sign
 
   return async function compactOnce(cooling) {
     try {
-      await agent.whenIdle()
-      if (signal.aborted || !cooling.current()) return
+      if (!cooling.current()) return
       const tokens = measure()
       if (tokens === undefined || tokens <= thresholdTokens) return
       const compaction = engine()
       if (compaction === undefined) return unavailable(HOST.compaction)
+      await agent.whenIdle()
+      if (signal.aborted || !cooling.current()) return
       cooling.claim()
       const result = await compaction.compactNow(agent, signal)
       if (result === null) logger.info(LOG.nothingToCompact, tokens, thresholdTokens)
