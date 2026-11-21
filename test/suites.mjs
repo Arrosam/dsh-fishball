@@ -354,6 +354,12 @@ export const V3_SUITES = Object.freeze({
       'test/v2-page-cases/lite-browser.mjs']),
   'fishball-board.peers': suite('board without core (FEAT-PEERS; fold-notify was removed, REMOVE-WD)', v3('fishball-board/peers'),
     [all(PACKAGE.fishballBoard), sub(PACKAGE.dshConnector, 'mcp-schema')]),
+  // The taskboard row over the SDK's real storage stack with fake host services; it reuses the
+  // board's instance follower (board/src/instance.js) and is installed through the bundle's patch
+  // and manifest. Its world imports the private-skills SDK binder and the package-boundaries caseName.
+  'fishball-taskboard': suite("Fishball's task board and memo pad: tools, routes, wake notice, compaction reminder, persistence (fishball-taskboard)", v3('fishball-taskboard'),
+    ['packages/fishball-amenities/taskboard/**', 'packages/fishball-amenities/board/src/instance.js', 'packages/fishball-amenities/cordis.patch.yml',
+      'packages/fishball-amenities/package.json', 'test/v3/fishball-taskboard/**', 'test/private-skills/support/**', 'test/v3/contract/package-boundaries/cases.mjs']),
   // The contract suites read every file of the packages they bound, so any change there reruns them.
   'contract.k1-mcp-schema': suite('K1 MCP schema freeze', v3('contract/k1-mcp-schema'),
     [...CONNECTOR_CONTRACTS, sub(PACKAGE.dshConnector, 'mcp-schema'), `${PACKAGE.dshConnector}/src/**/*.@(js|cjs|mjs)`, CONNECTOR_MANIFEST, MCP_RELEASE_PINS, sub(PACKAGE.dshConnector, 'host-services')]),
