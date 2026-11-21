@@ -14,7 +14,7 @@ import { MODEL } from '../../fishball-core/status/constants.mjs'
 export const UI_PACKAGE = Object.freeze({
   name: V3.ui.name,
   dir: V3.ui.dir,
-  workspace: 'packages/fishball-ui',
+  workspace: 'packages/core/ui',
   patch: './cordis.patch.yml',
   patchFile: 'cordis.patch.yml',
   platform: 'web',

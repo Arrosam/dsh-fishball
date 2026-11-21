@@ -1,7 +1,7 @@
 import path from 'node:path'
 export const U = Object.freeze({
   id: 'fishball-ui', core: 'fishball-core', row: 'ui-model-selection', missingRow: 'fishball-ui-core-missing',
-  client: path.resolve(import.meta.dirname, '../../../../packages/fishball-ui/client.js'),
+  client: path.resolve(import.meta.dirname, '../../../../packages/core/ui/client.js'),
   base: 'http://127.0.0.1:19191/', lang: ['en', 'zh'], revision: 'wire-test',
   catalog: { default: { provider: 'fishball-test', model: 'test-model' }, routableProviders: ['fishball-test'], groups: [{ id: 'fishball-test', name: 'Test Provider', models: [{ id: 'test-model', name: 'Wire Model Alpha' }, { id: 'test-model-b', name: 'Wire Model Beta' }] }], failures: [] },
   route: { strip: '/api/fishball/strip?lang=' },

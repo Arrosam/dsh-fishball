@@ -24,7 +24,8 @@ import { pathToFileURL } from 'node:url'
 import { REPO, REQUIRED_RELEASE } from './support/constants.mjs'
 import { REPORT_DESTINATION, rootSuiteFiles, runSuiteJobs } from './support/suite-runner.mjs'
 import { FULL, IGNORED, SDK_VERSIONS, SHELVED_SUITES, SUITES, V3_SUITES, V2_GROUPS } from './suites.mjs'
-import { AFFECTED_CASES } from './v3/contract/suite-map/affected-cases.mjs'
+// The affected-case decision table lived in test/v3/contract/suite-map, which the connector split
+// (6b7c53bf) removed with the suites it described; the map self-check no longer reads one.
 
 const ARG = Object.freeze({ suite: '--suite=', sdk: '--sdk=', list: '--list', all: '--all', check: '--check', lane: '--lane=', releaseCheck: '--release-check', separator: ',' })
 const SDKS = Object.freeze({ both: 'both', values: SDK_VERSIONS })
@@ -81,14 +82,6 @@ export function checkMap() {
     twice: [...owners].filter(([, ids]) => ids.length > 1).map(([f, ids]) => `${f}: ${ids.join(', ')}`),
     v3Unowned: v3.filter((f) => !v3Owned.has(f)),
     rootUnowned: rootSuiteFiles().filter((f) => !owners.has(f)),
-    selection: AFFECTED_CASES.flatMap(({ path: file, includes, excludes }) => {
-      const picked = selectSuites([file])
-      const actual = new Set(unshelved(picked.unmapped.length ? Object.keys(SUITES) : picked.ids))
-      return [
-        ...includes.filter((id) => !actual.has(id)).map((id) => `${file}: missing ${id}`),
-        ...excludes.filter((id) => !Object.hasOwn(SUITES, id) || actual.has(id)).map((id) => `${file}: invalid exclusion ${id}`),
-      ]
-    }),
   }
 }
 

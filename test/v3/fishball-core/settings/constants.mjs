@@ -45,7 +45,7 @@ export { BEGIN_VIA } from '../../../../packages/core/src/link/connect.js'
  */
 export const SUBJECT = Object.freeze({
   coreClient: path.join(REPO, 'packages', 'core', 'client.js'),
-  uiClient: path.join(REPO, 'packages', 'fishball-ui', 'client.js'),
+  uiClient: path.join(REPO, 'packages', 'core', 'ui', 'client.js'),
   entriesChunkName: 'client.entries.js',
   /** The entries' locale namespace (F-UI interface item 8). */
   entriesLocale: 'fishball-ui-entries',

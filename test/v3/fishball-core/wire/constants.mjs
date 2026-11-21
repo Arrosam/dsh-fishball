@@ -19,7 +19,7 @@ export const C = Object.freeze({
   main: 'fishball-core/main', forbiddenDependency: /^(?:dsh-agent-connector|dsh-connector)(?:$|[-/])/,
   // SHELVE-BOARD: packages/board left this scan (core's suite no longer reads the shelved package); the
   // board's own no-DSH-import rule stays SPLIT-DT-01 `Fishball→DSH fishball-board` (contract/split-shared).
-  scanRoots: ['packages/core', 'packages/fishball-ui', 'packages/shared'],
+  scanRoots: ['packages/core', 'packages/shared'],
   source: /\.(?:[cm]?js|tsx?)$/, imports: /(?:\bfrom\s*|\bimport\s*\(|\brequire\s*\(|\bimport\s*)['"]((?:dsh-agent-connector|dsh-connector)[^'"]*)['"]/g,
   // MULTI-0: ask_user is per target (mcp__<readable>__ask_user_<digest>), so with no target the
   // manager's own core tools are the reminder tools; the bare `ask_user` is never offered.

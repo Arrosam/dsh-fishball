@@ -36,7 +36,7 @@ export const CARDABLE = Object.freeze({
 
 const CORE_DIR = path.join(REPO, 'packages', 'core')
 /** F-UI: the card's browser half is fishball-ui's (R-FB-14); the Node half stays core's. */
-const UI_DIR = path.join(REPO, 'packages', 'fishball-ui')
+const UI_DIR = path.join(REPO, 'packages', 'core', 'ui')
 /** The F-ASKCARD "Owns" files. FBTEST_F_ASKCARD_ENTRY moves the entry (another checkout). */
 export const SUBJECT = Object.freeze({
   entry: process.env.FBTEST_F_ASKCARD_ENTRY ?? path.join(CORE_DIR, 'src', 'asks', 'index.js'),
