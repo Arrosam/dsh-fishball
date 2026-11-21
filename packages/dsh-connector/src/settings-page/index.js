@@ -1,7 +1,7 @@
 /**
  * `src/settings-page`: the host half of the connector's own plugin settings page (task
  * C-TOKENS-REVEAL; design §5.9; R-ARCH-03, R-CON-10, R-TOK-03, R-TOK-11). The browser half is the
- * package's client.js (the Plugins page's `plugins.row.config` entry for `dsh-agent-connector#dsh-connector`).
+ * package's client.js (the Plugins page's `plugins.bundle.config` entry, keyed by the package name `dsh-agent-connector`).
  * - `routes({tokens, state?, logger})`: the page's routes as `{path, methods, fetch}`;
  * - `registerSettingsPage(ctx, {tokens, state?, logger})`: registers them for the row's life; with
  *   `state`, also the read-only state route (C-WIRE).

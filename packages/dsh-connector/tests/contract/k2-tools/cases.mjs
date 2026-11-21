@@ -1,4 +1,3 @@
-import { assertNoGeneratedSchema } from '../../../../../test/v3/contract/own-schema/absence.mjs'
 /**
  * K2 black-box cases: the freeze of `dsh-agent-connector/tools` (v3-tasks.md row K2). K2 "resolves
  * the K flags in EXT", so the cases are the K-flagged EXT cases of 07-contributors.md (`fb1cbd2`):
@@ -306,8 +305,9 @@ export function registerExternalNameCases(sdk) {
     assert.ok(readme.includes(A.readmeExports), 'the README has no exported-names section')
     assert.ok(readme.slice(readme.indexOf(A.readmeExports)).includes(A.name), `the README's exported names do not list ${A.name}`)
   })
-  // F-OWN-SCHEMA (design §1.0b row 1): core no longer vendors K2.
-  rule(4, 'core carries no generated schema', assertNoGeneratedSchema)
+  // F-OWN-SCHEMA (design §1.0b row 1): core no longer vendors K2. The check itself now lives with
+  // fishball-core in the dsh-fishball repository (repo split 6b7c53bf), so the row is a TODO here.
+  caseTest(sdk, A.id, 4, 'core carries no generated schema', null, 'moved with fishball-core to the dsh-fishball repository (repo split 6b7c53bf)')
   rule(5, 'a public name with 0, 1 or n dots in its local name maps to a model tool name ([A-Za-z0-9_-]) with each `.` replaced', (mod) => {
     for (const local of A.locals) {
       const publicName = mod.publicNameOf(SHORT_NAMESPACE, local)

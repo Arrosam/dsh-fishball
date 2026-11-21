@@ -18,11 +18,18 @@ import { REPO } from '../../../../../test/support/constants.mjs'
  * root (a checkout of another branch, or a design-shaped sample used to check these oracles).
  */
 const ROOT = process.env.FBTEST_K3_ROOT ?? path.join(REPO, 'packages')
+/**
+ * fishball-core moved to the dsh-fishball repository (repo split 6b7c53bf), so this repository reads
+ * its frozen K3 contracts from the copied fixture; FBTEST_K3_ROOT still names another checkout.
+ */
+const CORE_CONTRACTS = process.env.FBTEST_K3_ROOT
+  ? path.join(ROOT, 'core', 'contracts')
+  : path.join(REPO, 'test', 'fixtures', 'fishball-core', 'contracts')
 export const FOLDER = Object.freeze({
   /** Host-only services of a main / host DSH (connector-side folder). */
   hostServices: path.join(ROOT, 'dsh-connector', 'host-services'),
   /** Fishball-side contracts of fishball-core (interception, settings sections, ask card). */
-  coreContracts: path.join(ROOT, 'core', 'contracts'),
+  coreContracts: CORE_CONTRACTS,
 })
 /** Declaration files carry the types; other files may only be docs or empty stubs ("types only"). */
 export const FILES = Object.freeze({

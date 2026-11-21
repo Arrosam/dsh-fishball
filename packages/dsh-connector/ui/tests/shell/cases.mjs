@@ -51,7 +51,8 @@ const FISHBALL_OWNER = (owner) => owner.startsWith('fishball-')
 async function embedTokens() {
   const unit = await unitOf(V3.embed.name)
   assert.ok(unit, V3.embed.name + ' is not packed')
-  return tokensOf(fs.realpathSync(V3.embed.dir), ownFiles(unit).filter((f) => JS_FILE.test(f)))
+  // Not shipped code: the cases' own texts name the slots they forbid (see embed/cases.mjs unitTokens).
+  return tokensOf(fs.realpathSync(V3.embed.dir), ownFiles(unit).filter((f) => JS_FILE.test(f) && !f.split('/').includes('tests')))
 }
 
 /** Lines of the host's log that carry the diagnostic. */

@@ -28,7 +28,7 @@ import { promisify } from 'node:util'
 import { REPO, TEST_HOMES } from '../../../../../../test/support/constants.mjs'
 import { bootHost, newHome, until } from '../../../../../../test/support/host.mjs'
 import { BUDGET, ROUTE, STATE, runtimeOf } from '../../../../../../test/v3/fishball-core/package/constants.mjs'
-import { withdrawnCase } from '../../../../../../test/v3/fishball-core/settings/withdrawn.mjs'
+import { withdrawnCase } from '../../../../../../test/support/withdrawn.mjs'
 import { WITHDRAWN_BY, withdrawnRow } from '../../../../../../test/v3/dsh-instance/host/withdrawn.mjs'
 import { describeRef, has, ownFiles, tokensOf, unitOf } from '../../../../../../test/v3/fishball-core/package/static.mjs'
 import { caseTest, dshInspect, integrationCase as gatedCase } from '../../../../../../test/v3/contract/package-boundaries/cases.mjs'
@@ -61,7 +61,9 @@ async function baseInjects() {
 async function unitTokens(pkg) {
   const unit = await unitOf(pkg.name)
   assert.ok(unit, pkg.name + ' is not packed')
-  return tokensOf(fs.realpathSync(pkg.dir), ownFiles(unit).filter((f) => JS_FILE.test(f)))
+  // A package's own tests/ folder is not shipped code: since the packages moved under their parent
+  // (df9d83d) the nested package packs its tests too, and the forbidden words occur in the cases.
+  return tokensOf(fs.realpathSync(pkg.dir), ownFiles(unit).filter((f) => JS_FILE.test(f) && !f.split('/').includes('tests')))
 }
 
 /** Run `fn` only at integration: it boots a host DSH and launches a child (see INTEGRATION). */
@@ -104,10 +106,10 @@ export function registerEmbedCases(sdk) {
   })
 
   // ================================================================ R-EMBED (1): the minimal package
-  caseTest(sdk, 'R-EMBED', '(1)', 'dsh-connector-ui exists in packages/dsh-connector-ui (lowercase name, S4-Q3) and is a root workspace', () => {
+  caseTest(sdk, 'R-EMBED', '(1)', `dsh-connector-ui exists in ${EMBED.workspace} (lowercase name, S4-Q3) inside the connector's root workspace`, () => {
     const manifest = needEmbed()
     assert.equal(manifest.name, V3.embed.name)
-    assert.ok(readManifest(REPO).workspaces?.includes(EMBED.workspace), 'root workspaces lack ' + EMBED.workspace)
+    assert.ok(readManifest(REPO).workspaces?.includes(EMBED.workspaceRoot), 'root workspaces lack ' + EMBED.workspaceRoot)
   })
   caseTest(sdk, 'R-EMBED', '(1)', 'the embed-UI manifest has a version, engines.dsh and a web dsh.client entry with a ./client export', () => {
     const manifest = needEmbed()
@@ -116,10 +118,10 @@ export function registerEmbedCases(sdk) {
     assert.equal(manifest[DSH_FIELD]?.client?.platform, EMBED.platform, 'no dsh.client with platform web')
     assert.ok(exportKeys(manifest).includes(EMBED.clientExport), 'no ' + EMBED.clientExport + ' export')
   })
-  caseTest(sdk, 'R-EMBED', '(1)', 'dsh-instance is an optional peer of embed-UI, and every Fishball peer it names is optional', () => {
+  caseTest(sdk, 'R-EMBED', '(1)', "embed-UI declares no dsh-instance peer (the instance split into the dsh-fishball-instance repository, 6b7c53bf), and every Fishball peer it names is optional", () => {
     const manifest = needEmbed()
     const peers = Object.keys(manifest[FIELD.peers] ?? {})
-    assert.ok(peers.includes(V3.instance.name), 'dsh-instance is not a peer')
+    assert.ok(!peers.includes(V3.instance.name), 'dsh-instance is still a peer')
     const required = peers.filter((p) => p.startsWith(FISHBALL_PREFIX) && manifest[FIELD.peersMeta]?.[p]?.optional !== true)
     assert.deepEqual(required, [], 'Fishball peers not marked optional in ' + FIELD.peersMeta)
   })
@@ -156,7 +158,7 @@ export function registerEmbedCases(sdk) {
     const { units } = await observe()
     const own = units.get(V3.embed.name).digests
     const copies = []
-    for (const name of [V3.instance.name, V3.connector.name]) {
+    for (const name of [V3.connector.name]) {
       const other = new Map([...units.get(name).digests].map(([f, d]) => [d, f]))
       for (const [f, d] of own) if (other.has(d)) copies.push(`embed-ui/${f} = ${name}/${other.get(d)}`)
     }
@@ -165,7 +167,7 @@ export function registerEmbedCases(sdk) {
 
   // ================================================================ R-EMBED (3) = PLAT-EP-03 row 1, HOST-EP-03 row 5
   // Repointed at C-WIRE-2: by design §5.9 (requirements 1.28 R2, R-ARCH-03 amended) the connector has its
-  // own settings page, client.js registering only plugins.row.config. The rows now say that is its only
+  // own settings page, client.js registering only plugins.bundle.config. The rows now say that is its only
   // client registration, and that the V2 records part (./records, client.records.js) stays gone.
   caseTest(sdk, 'PLAT-EP-03', 1, "the connector manifest's only dsh.client is its settings page (platform web, ./client = client.js); no ./records export", () => {
     const manifest = manifestOf(V3.connector)
@@ -194,15 +196,17 @@ export function registerEmbedCases(sdk) {
   // The host side's library is dsh-connector-shared since SPLIT-SHARED (requirements 1.40); fishball-shared is the Fishball side's.
   // I-HOST (QD1 = B): the instance declares dsh.client for its own settings page; the row's partition is the connector and the library.
   // C-WIRE-2: the connector's own settings page (design §5.9) declares dsh.client too; only the library has none.
-  caseTest(sdk, 'PLAT-EP-03', 3, 'of the host-side packages, only dsh-connector-shared declares no dsh.client (embed-UI, the instance\'s and the connector\'s own settings pages do)', () => {
+  caseTest(sdk, 'PLAT-EP-03', 3, "of the host-side packages, only dsh-connector-shared declares no dsh.client (embed-UI and the connector's own settings page do)", () => {
     needEmbed()
-    const withClient = [V3.connector, V3.instance, V3.dshShared, V3.embed].filter((p) => readManifest(p.dir)?.[DSH_FIELD]?.client !== undefined).map((p) => p.name)
-    assert.deepEqual(withClient.sort(), [V3.connector.name, V3.embed.name, V3.instance.name].sort())
+    const withClient = [V3.connector, V3.dshShared, V3.embed].filter((p) => readManifest(p.dir)?.[DSH_FIELD]?.client !== undefined).map((p) => p.name)
+    assert.deepEqual(withClient.sort(), [V3.connector.name, V3.embed.name].sort())
   })
   withdrawnRow(sdk, 'PLAT-EP-03', 3, "the instance's own shipped code (not its status-line chunk) registers no browser module and names no host-DSH slot", WITHDRAWN_BY.page)
 
   // ================================================================ PLAT-EP-03 row 5: each remains a native DSH bundle
-  for (const pkg of [V3.connector, V3.instance, V3.embed]) {
+  // Since df9d83d embed-UI is a component inside the connector's bundle (packages/dsh-connector/ui,
+  // served by the connector's patch), not a bundle of its own; the connector is inspected here.
+  for (const pkg of [V3.connector]) {
     caseTest(sdk, 'PLAT-EP-03', 5, `DSH's own bundle inspection accepts ${pkg.name} as a bundle`, async () => {
       manifestOf(pkg)
       const answer = await dshInspect(sdk, pkg.dir)
@@ -213,7 +217,10 @@ export function registerEmbedCases(sdk) {
   }
 
   // ================================================================ R-EMBED (4): the child copy and the instance's reach
-  caseTest(sdk, 'R-EMBED', '(4)', "the instance's code names no embed-UI package or folder (it never reads a file inside embed-UI)", async () => {
+  caseTest(sdk, 'R-EMBED', '(4)', "the instance's code names no embed-UI package or folder (it never reads a file inside embed-UI)", async (t) => {
+    // dsh-instance split into the dsh-fishball-instance repository (6b7c53bf): the row can only run
+    // in a checkout that still carries the instance.
+    if (!fs.existsSync(V3.instance.dir)) { t.skip('dsh-instance is not in this repository (split 6b7c53bf)'); return }
     const { units } = await observe()
     const refs = units.get(V3.instance.name).refs.filter((r) => r.target === V3.embed.name).map(describeRef)
     const strings = []
@@ -221,6 +228,7 @@ export function registerEmbedCases(sdk) {
     assert.deepEqual([...refs, ...strings], [])
   })
   caseTest(sdk, 'R-EMBED', '(4)', "the instance's child-code copy carries no main client: no Plugins card slot, no copy of the V2 instance client.js or of an embed-UI file", async (t) => {
+    if (!fs.existsSync(V3.instance.dir)) { t.skip('dsh-instance is not in this repository (split 6b7c53bf)'); return }
     const { copyChildCode } = await import(pathToFileURL(path.join(V3.instance.dir, ...CHILD_COPY.module)).href)
     const root = await mkdtemp(path.join(npmTempRoot(), CHILD_COPY.tempPrefix))
     t.after(async () => {

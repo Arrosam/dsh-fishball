@@ -3,6 +3,18 @@
   "version": "1.0.0-alpha.1",
   "private": true,
   "type": "module",
+  "files": [
+    "index.js",
+    "src/",
+    "locale/*.json",
+    "assets/connector-ui-icon.svg",
+    "LICENSE",
+    "THIRD_PARTY_NOTICES.md"
+  ],
+  "engines": {
+    "node": ">=22.14",
+    "dsh": ">=0.2.1-rc.5"
+  },
   "scripts": {
     "test": "node ../../../test/run-package.mjs"
   },
