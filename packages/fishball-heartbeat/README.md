@@ -2,7 +2,7 @@
 
 Keeps Fishball's prompt cache warm while it is idle, and gives each warming turn useful work.
 
-- **Off until you set both settings** (component settings of `fishball-heartbeat`; Fishball cannot change either):
+- **Off until you set both settings** (Fishball cannot change either). Installed through the [`fishball-amenities`](../fishball-amenities/README.md) umbrella, set them on the heartbeat's component page there; a saved change applies at once. Installed alone it has no settings page: set them in its row's `config` in the profile's `cordis.patch.yml`.
   - `intervalSeconds`: seconds with no Fishball turn before a heartbeat turn is sent. Set it below your model's cache lifetime (for example 240 for a 5-minute cache).
   - `maxConsecutive`: heartbeat turns allowed in a row with no other turn between them. After that no heartbeat is sent and the cache cools until a real turn.
 - **Timer.** Every Fishball turn resets it, heartbeat turns included: it starts when a turn ends and is cleared when a turn starts, so a heartbeat never arrives during a turn.

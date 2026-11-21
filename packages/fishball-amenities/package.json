@@ -43,7 +43,7 @@
     "fishball-taskboard",
     "fishball-shared"
   ],
-  "//dsh": "Only this umbrella and fishball-taskboard have browser code, so only they declare dsh.client: the umbrella's is its settings-page hint (client.js).",
+  "//dsh": "Only this umbrella and fishball-taskboard have browser code, so only they declare dsh.client: the umbrella's (client.js) is its settings-page hint and the settings page of each member row with settings (fishball-heartbeat), registered while DSH serves that row's settings (ctx.configForms, from dsh-client-ui-settings).",
   "dsh": {
     "bundle": {
       "patch": "./cordis.patch.yml"
@@ -52,6 +52,7 @@
       "platform": "web",
       "inject": [
         "@deepseek-ai/dsh-client-locale",
+        "@deepseek-ai/dsh-client-ui-settings",
         "@deepseek-ai/dsh-client-ui-plugin-manager"
       ]
     }
