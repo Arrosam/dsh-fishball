@@ -202,7 +202,7 @@ export const WAKE_REQUIRED = Object.freeze({
   quietWindowSeconds: 10,
   maxBatch: 20,
   /** Item 1: the watchdog's contributed drift event, a WAKE type by default. */
-  drift: CONTRIBUTED_TYPE_PREFIX + 'dsh-connector-amenities.drift',
+  drift: CONTRIBUTED_TYPE_PREFIX + 'dsh-connector-watchdog.drift',
   wake: Object.freeze([EVENT_TYPE.permission, EVENT_TYPE.question, EVENT_TYPE.planReview, EVENT_TYPE.turnFinished, EVENT_TYPE.handover, EVENT_TYPE.takeback, EVENT_TYPE.message, EVENT_TYPE.notice, EVENT_TYPE.ask]),
   silent: Object.freeze([EVENT_TYPE.state, EVENT_TYPE.settlement, EVENT_TYPE.retirement]),
   /** Item 4: the settings' bounds (whole numbers). */

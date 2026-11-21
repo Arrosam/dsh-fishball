@@ -143,8 +143,8 @@ export const WAKE = Object.freeze({
       message: WAKE_CLASS.wake,
       notice: WAKE_CLASS.wake,
       ask: WAKE_CLASS.wake,
-      // The watchdog's drift event (dsh-connector-amenities), a contributed type.
-      'contributed:dsh-connector-amenities.drift': WAKE_CLASS.wake,
+      // The watchdog's drift event (dsh-connector-watchdog), a contributed type.
+      'contributed:dsh-connector-watchdog.drift': WAKE_CLASS.wake,
       state: WAKE_CLASS.silent,
       settlement: WAKE_CLASS.silent,
       retirement: WAKE_CLASS.silent,

@@ -101,7 +101,7 @@ window.__ModuleLoader__.load({
           maxBatch: 20,
           classes: Object.freeze({
             permission: 'wake', question: 'wake', 'plan-review': 'wake', 'turn-finished': 'wake', handover: 'wake', takeback: 'wake',
-            message: 'wake', notice: 'wake', ask: 'wake', 'contributed:dsh-connector-amenities.drift': 'wake',
+            message: 'wake', notice: 'wake', ask: 'wake', 'contributed:dsh-connector-watchdog.drift': 'wake',
             state: 'silent', settlement: 'silent', retirement: 'silent',
           }),
         }),
