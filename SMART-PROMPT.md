@@ -2,7 +2,8 @@
 
 ## Project
 - Goal: a general, always-on personal-assistant agent named **Fishball**, built on DSH, that manages the user's daily life and work.
-- The project is a from-scratch rebuild. The user rejected the earlier direction and wants the current code deleted. The design/architecture plan lives in `DESIGN.md` (numbered sections, e.g. §4 plugins, §7 capabilities, §7a permissions, §10 button, §16 safety limits).
+- The project is a from-scratch rebuild. The user rejected the earlier direction and wants the current code deleted. The design/architecture plan lives in `DESIGN.md` (numbered sections, e.g. §4 plugins, §7 capabilities, §7a permissions, §10 button, §16 safety limits, §28).
+- Code is split across repos/plugins: `dsh-fishball` (the Fishball plugin) and `dsh-connector`.
 - Fishball is a standard DSH plugin. It installs into the profile the user chooses and has no profile of its own. Its session folder is `~/.dsh/fishball/assistant`.
 - Once installed, it replaces the DeepSeek Harness logo/brand button in the DSH sidebar with a Fishball icon. Clicking the icon opens the Fishball session.
 - Fishball does not fully adopt DSH's global profile. It enables, disables and adds plugins for itself only, never for the whole DSH process. Adding a plugin needs the user's approval through DSH's normal permission escalation request.
@@ -18,6 +19,9 @@
 ## Vocabulary
 - DSH: DeepSeek Harness, the host platform/runtime the agent runs on. It has a global profile, plugins, sessions and hooks.
 - Fishball: the name of the assistant agent/plugin and of its session.
+- "V1": the earlier Fishball version, which the user uses as the visual reference (e.g. for the logo/icon).
+- "connector-fishball plugins": `dsh-connector` and `dsh-fishball`.
+- `dsh-agent-connector` and `dsh-connector` are the same plugin.
 - "session": a DSH agent session.
 - "steer" / "steer message": a message that is injected into Fishball's running session.
 - "hook": DSH's mechanism for receiving events or messages, such as when a session finishes. Plugins can add hooks.
@@ -28,3 +32,4 @@
 - For big changes, the user wants a design/architecture plan to review before any implementation or code deletion.
 - The user answers the agent's open questions by quoting each question with the answer after it.
 - When an agent's questions are unclear, the user asks for plain-language explanations.
+- The user tests changes by having the plugins updated in their local DSH install.
