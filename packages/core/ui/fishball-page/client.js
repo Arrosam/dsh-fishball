@@ -154,14 +154,33 @@ window.__ModuleLoader__.load({
       pending: Object.freeze({ kind: 'pending', dot: 'ongoing' }),
     })
     /**
-     * The reply's avatar: DSH's own fish mark (primitives FISH_LOGO_PATH / FISH_LOGO_VIEWBOX) as a CSS
-     * mask, painted in a theme token, so it follows light and dark. A data: URL, which DSH's CSP
-     * admits for images (img-src data:, both SDKs); the mark is a pseudo-element because the reply
-     * rows are native and the page only styles them.
+     * The reply's avatar follows the sidebar logo's theme (core's `brandStyle`, LOGO-BUTTON; the user,
+     * 2026-11-21): the Fishball theme draws Fishball's fish, V1's FISH_MARK (tag v0.1.0
+     * assets/icon.svg), its body in the label colour and its eye the one magenta, as the sidebar mark
+     * does; the DeepSeek theme draws DSH's own mark (primitives FISH_LOGO_PATH / FISH_LOGO_VIEWBOX) in
+     * a theme token, as before. Both are CSS masks over data: URLs, which DSH's CSP admits for images
+     * (img-src data:, both SDKs); the mark is a pseudo-element because the reply rows are native and
+     * the page only styles them. The eye is a background layer under the body's mask: it lies inside
+     * the body, so the mask keeps it whole.
+     * `brand` restates core's setting (fishball-shared `SEAM_BRAND`): this classic module imports
+     * nothing of core. The theme is read through DSH's own config form, as core's settings page
+     * writes it, so a saved choice reaches the page without a reload; absent or unknown is Fishball.
      */
     const AVATAR = Object.freeze({
-      svg: (path, box) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${box.width} ${box.height}"><path d="${path}"/></svg>`,
+      svg: (path, box, fill = '') => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${box.width} ${box.height}"><path d="${path}"${fill && ` fill="${fill}"`}/></svg>`,
       url: (svg) => `url("data:image/svg+xml,${encodeURIComponent(svg)}")`,
+      fish: Object.freeze({
+        box: Object.freeze({ width: 24, height: 24 }),
+        body: 'M7.4 16.6 L7.4 9.9 L11.3 5.6 L18.4 5.6 L18.4 12.7 L14.1 16.6 Z M7.4 16.6 L2.6 21.4 L7.4 21.4 Z',
+        eye: 'M14.6 7.4 h2 v2 h-2 Z',
+        eyeColor: '#EC0A6E',
+        bodyColor: 'var(--dsw-alias-label-primary)',
+      }),
+      deepseekColor: 'var(--dsw-alias-state-business-primary)',
+      brand: Object.freeze({
+        namespace: 'fishball-core', field: 'brandStyle', attribute: 'data-fishball-brand',
+        style: Object.freeze({ fishball: 'fishball', deepseek: 'deepseek' }), default: 'fishball',
+      }),
     })
     /**
      * The narrow sheet's dismissal and focus (the user, 2026-11-18, choice 8A): pointer/key events,
@@ -262,7 +281,13 @@ window.__ModuleLoader__.load({
       }
       const sheet = new CSSStyleSheet()
       const root = `[${PAGE.root}]`
-      const avatar = AVATAR.url(AVATAR.svg(FISH_LOGO_PATH, FISH_LOGO_VIEWBOX))
+      const avatarOf = `${PAGE.main} [data-chat-flow-kind="assistant-step"][data-chat-group-part="response"]::before`
+      const deepseek = `[${AVATAR.brand.attribute}="${AVATAR.brand.style.deepseek}"]`
+      const { fish } = AVATAR
+      const fishBody = AVATAR.url(AVATAR.svg(fish.body, fish.box))
+      const fishEye = AVATAR.url(AVATAR.svg(fish.eye, fish.box, fish.eyeColor))
+      const deepseekMark = AVATAR.url(AVATAR.svg(FISH_LOGO_PATH, FISH_LOGO_VIEWBOX))
+      const masked = (url) => `-webkit-mask:${url} center/contain no-repeat;mask:${url} center/contain no-repeat`
       const rules = [
         // Keep rc.1's native drawer opener in the shell's leading seat, also when the bar is
         // visible. Its New Session button is still a forbidden launcher (LABELS).
@@ -292,12 +317,15 @@ window.__ModuleLoader__.load({
           `${root} ${PAGE.buttonTag}:has(${PAGE.brandName}):not([${PAGE.brandControl}]){display:none!important}`,
           ...barRules(root),
         ] : []),
-        // Fishball's replies: DSH's fish mark and the name above an assistant bubble, the user's own
-        // bubble left as DSH draws it, with its thin stroke.
+        // Fishball's replies: the theme's mark (AVATAR) and the name above an assistant bubble, the
+        // user's own bubble left as DSH draws it, with its thin stroke.
         `${root} ${PAGE.main} [data-chat-flow-kind="assistant-step"][data-chat-group-part="response"]{position:relative;margin:6px 12% 6px 0;padding:20px 0 0 36px}`,
         `${root} ${PAGE.main} [data-chat-flow-kind="assistant-step"][data-chat-group-part="response"]::after{content:"Fishball";position:absolute;top:0;left:36px;font:var(--dsw-font-xxs-strong-12);color:var(--dsw-alias-label-tertiary)}`,
         `${root} ${PAGE.main} [data-chat-flow-kind="user"] [class$="_bubble"]{background:var(--dsw-specific-bubble);box-shadow:inset 0 0 0 .5px var(--dsw-alias-border-l2)}`,
-        `${root} ${PAGE.main} [data-chat-flow-kind="assistant-step"][data-chat-group-part="response"]::before{content:"";position:absolute;left:2px;top:22px;width:24px;height:24px;background:var(--dsw-alias-state-business-primary);-webkit-mask:${avatar} center/contain no-repeat;mask:${avatar} center/contain no-repeat}`,
+        `${root} ${avatarOf}{content:"";position:absolute;left:2px;top:22px;width:24px;height:24px}`,
+        // Fishball's fish unless the theme is DeepSeek, so the fish also shows before the form is read.
+        `${root}:not(${deepseek}) ${avatarOf}{background:${fishEye} center/contain no-repeat ${fish.bodyColor};${masked(fishBody)}}`,
+        `${root}${deepseek} ${avatarOf}{background:${AVATAR.deepseekColor};${masked(deepseekMark)}}`,
         `${root} ${PAGE.main} [data-chat-flow-kind="assistant-step"][data-chat-group-part="response"]>[data-slot="conversation.chat.node"]>*{padding:8px 14px;border-radius:var(--dsw-radius-xs) var(--dsw-radius-xl) var(--dsw-radius-xl) var(--dsw-radius-xl);background:var(--dsw-alias-bg-module-platform);box-shadow:inset 0 0 0 .5px var(--dsw-alias-border-l2);min-width:0}`,
         `${root} ${PAGE.main} .md-table-wide{width:auto;max-width:100%;margin-left:0;padding-left:0}`,
       ]
@@ -486,6 +514,26 @@ window.__ModuleLoader__.load({
         document.removeEventListener(SHEET.pointerdown, pointer, true)
         document.removeEventListener(SHEET.click, click, true)
         document.removeEventListener(SHEET.keydown, key)
+      }
+    }
+
+    /**
+     * Marks <html> with the logo theme the reply avatar follows (AVATAR.brand), read from core's config
+     * form and followed live. A form that is missing, or a namespace the Host does not serve, reads
+     * the default, so a DSH without core's row still shows Fishball's fish.
+     */
+    function mountBrand(ctx) {
+      const { brand } = AVATAR
+      const form = ctx.configForms?.get?.(brand.namespace)
+      const sync = () => {
+        const stored = form?.getSnapshot?.()?.value?.[brand.field]
+        document.documentElement.setAttribute(brand.attribute, Object.values(brand.style).includes(stored) ? stored : brand.default)
+      }
+      sync()
+      const unsubscribe = typeof form?.subscribe === 'function' ? form.subscribe(sync) : () => {}
+      return () => {
+        unsubscribe()
+        document.documentElement.removeAttribute(brand.attribute)
       }
     }
 
@@ -936,6 +984,7 @@ window.__ModuleLoader__.load({
         const continuation = readContinuation()
         applyLanguage(ctx, continuation.lang, own)
         own(mountStyles())
+        own(mountBrand(ctx))
         document.documentElement.setAttribute(PAGE.root, '')
         own(() => document.documentElement.removeAttribute(PAGE.root))
         const manager = createCell(null)

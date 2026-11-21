@@ -84,5 +84,41 @@ export const FIXTURE = Object.freeze({
   magenta: /^(#ff00ff|#f0f|magenta|rgb\(\s*255\s*,\s*0\s*,\s*255\s*\)|rgba\(\s*255\s*,\s*0\s*,\s*255\s*,\s*1\s*\))$/i,
 })
 
+/**
+ * GENTLE-TOOLS avatar (the lead's relayed requirement A, 2026-11-21, and its refinement): Fishball's
+ * reply rows on its page get an avatar drawn by the row's ::before as a CSS mask. Every value is the
+ * requirement's: the row hooks, core's settings namespace and field, the two themes, the Fishball fish
+ * (tag v0.1.0 assets/icon.svg: viewBox 0 0 24 24, the body and the eye paths, the eye #EC0A6E), the two
+ * DSH tokens and the page's <html data-fishball-brand> attribute. `dshPath` / `dshViewBox` are fixture
+ * values handed to the page as the primitives' FISH_LOGO_PATH / FISH_LOGO_VIEWBOX, so the DeepSeek mask
+ * is observably the export's.
+ */
+export const AVATAR = Object.freeze({
+  namespace: 'fishball-core',
+  field: 'brandStyle',
+  /** Marks "no brandStyle field in the section" (not a stored value). */
+  absent: Symbol('absent brandStyle'),
+  brandAttr: 'data-fishball-brand',
+  pageAttr: PAGE_MARK,
+  row: Object.freeze({ conversation: 'main.conversation', kind: 'assistant-step', part: 'response', otherPart: 'reasoning' }),
+  fish: Object.freeze({
+    viewBox: '0 0 24 24',
+    body: 'M7.4 16.6 L7.4 9.9 L11.3 5.6 L18.4 5.6 L18.4 12.7 L14.1 16.6 Z M7.4 16.6 L2.6 21.4 L7.4 21.4 Z',
+    eye: 'M14.6 7.4 h2 v2 h-2 Z',
+    eyeFill: /fills*=s*["']#EC0A6E["']/i,
+  }),
+  dshPath: 'M1.5 2.5 L16.5 2.5 L16.5 15.5 L1.5 15.5 Z',
+  dshViewBox: Object.freeze({ width: 18, height: 18 }),
+  /** The two DSH tokens, each given a distinct colour in the laid-out document. */
+  labelToken: '--dsw-alias-label-primary',
+  businessToken: '--dsw-alias-state-business-primary',
+  tokens: Object.freeze([['--dsw-alias-label-primary', 'rgb(11, 22, 33)'], ['--dsw-alias-state-business-primary', 'rgb(44, 55, 66)']]),
+  /** The reply's name label (::after), which stays. */
+  name: 'Fishball',
+  /** Stored values that read as the Fishball theme besides 'fishball' (EP: other case, unknown, empty, non-string). */
+  readAsFishball: Object.freeze([['DeepSeek (other case)', 'DeepSeek'], ['unknown', 'orca'], ['empty', ''], ['null', null], ['number', 7], ['boolean', true], ['object', Object.freeze({ style: 'deepseek' })]]),
+  form: Object.freeze({ ready: 'ready', revision: 3 }),
+})
+
 /** DSH's StateDot primitive's stand-in marker (`data-primitive`). */
 export const STATE_DOT = 'StateDot'
