@@ -221,6 +221,12 @@ export const V3_SUITES = Object.freeze({
   'fishball-amenities.heartbeat': suite('heartbeat amenity: config gate, timer, consecutive limit, restart, heartbeat_focus', [...v3('fishball-amenities/heartbeat'), 'test/v3/fishball-amenities/heartbeat/sdk-0.2.2-rc.3.test.mjs'],
     ['packages/fishball-amenities/heartbeat/**', 'packages/fishball-amenities/board/src/instance.js', 'packages/fishball-amenities/*', 'test/v3/fishball-amenities/heartbeat/**',
       'test/v3/fishball-board/peers/subject.mjs', 'test/v3/contract/package-boundaries/cases.mjs', 'test/private-skills/support/sdk.mjs']),
+  // The taskboard row over the SDK's real storage stack with fake host services; it reuses the
+  // board's instance follower (board/src/instance.js) and is installed through the bundle's patch
+  // and manifest. Its world imports the private-skills SDK binder and the package-boundaries caseName.
+  'fishball-taskboard': suite("Fishball's task board and memo pad: tools, routes, wake notice, compaction reminder, persistence (fishball-taskboard)", v3('fishball-taskboard'),
+    ['packages/fishball-amenities/taskboard/**', 'packages/fishball-amenities/board/src/instance.js', 'packages/fishball-amenities/cordis.patch.yml',
+      'packages/fishball-amenities/package.json', 'test/v3/fishball-taskboard/**', 'test/private-skills/support/**', 'test/v3/contract/package-boundaries/cases.mjs']),
   // K3a reads core's contracts and patch against the connector's published schema and tools, the
   // fishball-ui seam's values in fishball-shared (moved there by F-UI), and scans the DSH-side
   // package folders for imports of core.

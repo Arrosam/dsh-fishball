@@ -1,7 +1,7 @@
 {
   "name": "fishball-amenities",
   "version": "1.0.0-alpha.1",
-  "description": "Optional Fishball amenity components (fishball-board, fishball-heartbeat). Configure each amenity in its component settings.",
+  "description": "Optional Fishball amenity components (fishball-board, fishball-heartbeat, fishball-taskboard). Configure each amenity in its component settings.",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -23,6 +23,7 @@
     "client.js",
     "board/",
     "heartbeat/",
+    "taskboard/",
     "cordis.patch.yml",
     "README.md",
     "LICENSE"
@@ -32,6 +33,9 @@
     "dsh": ">=0.2.1-rc.5"
   },
   "peerDependencies": {
+    "@deepseek-ai/dsh-llm": "*",
+    "@deepseek-ai/dsh-storage-domain": "*",
+    "@deepseek-ai/dsh-tools": "*",
     "@deepseek-ai/schemastery": "*"
   },
   "dsh": {

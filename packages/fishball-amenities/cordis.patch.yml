@@ -9,3 +9,8 @@
     - id: fishball-heartbeat
       name: ./heartbeat/index.js
       config: {}
+    # Fishball's own task board and memo pad (docs/plugins/fishball-taskboard.md): its own sub-package,
+    # so its browser half (taskboard/client.js) is its own dsh.client package.
+    - id: fishball-taskboard
+      name: ./taskboard/index.js
+      config: {}

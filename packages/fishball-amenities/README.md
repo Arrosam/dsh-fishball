@@ -1,6 +1,12 @@
 # fishball-amenities
 
-Optional Fishball amenity components: `fishball-board` and `fishball-heartbeat`. Configure each amenity from its component settings under **Plugins → Fishball Amenities → Components**.
+Optional Fishball amenity components. Configure each amenity from its component settings under **Plugins → Fishball Amenities → Components**.
+
+| Component | Folder | What it is |
+|---|---|---|
+| `fishball-board` | `board/` | Fishball's session-linked work board (shelved, not in 1.0.0-alpha.1). |
+| `fishball-heartbeat` | `heartbeat/` | Keeps Fishball's prompt cache warm while it is idle with useful heartbeat turns; off until both settings are set (below). |
+| `fishball-taskboard` | `taskboard/` | Fishball's own task board and memo pad: tasks with subtasks, status and progress, not linked to sessions; the user views and edits it in the right sidebar's **Task board** tab, and each save wakes Fishball with what changed. See [the design](../../docs/plugins/fishball-taskboard.md). |
 
 ## fishball-heartbeat
 
