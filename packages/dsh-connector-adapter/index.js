@@ -10,7 +10,8 @@
  *
  * It depends on no other DSH-side plugin and on nothing of the Fishball side (design §1.0): its
  * OAuth browser client is its own src/oauth-client.js (moved out of dsh-connector-shared by C-WIRE-2:
- * R-ARCH-08 strict, the adapter is its only DSH-side user), so it shares no code at all.
+ * R-ARCH-08 strict, the adapter is its only DSH-side user). From dsh-connector-shared it uses only
+ * ./live-settings, which dsh-connector-watchdog uses too.
  */
 import * as defaultSdk from '@modelcontextprotocol/client'
 import * as defaultMcpClient from '@deepseek-ai/dsh-mcp-client'
@@ -23,17 +24,23 @@ import { ADAPTER, CONFIG_ERROR, REASON, SERVER_ID, SERVER_NAME_PATTERN, TEXT } f
 import { startProxy } from './src/proxy.js'
 import { createServer } from './src/server.js'
 import { signInTool } from './src/sign-in-tool.js'
+import { runWithSettings } from 'dsh-connector-shared/live-settings'
 
 export const name = ADAPTER.name
 export const inject = ['credentials', 'authorization', 'tools']
 
-/** `clientMetadataUrl` is required with no default (Q-S7C-2 = C); its absence is a state, not a config error. */
+/**
+ * `clientMetadataUrl` is required with no default (Q-S7C-2 = C); its absence is a state, not a config error.
+ * Both fields are `.volatile()`: DSH's settings service serves and writes only volatile fields, so
+ * this is what puts them on the row's settings page. apply reads a plain snapshot and re-applies on a
+ * live change (dsh-connector-shared/live-settings), so the servers are rebuilt as on a remount.
+ */
 export const Config = Schema.object({
-  clientMetadataUrl: Schema.string().description(TEXT.configClientMetadataUrl),
+  clientMetadataUrl: Schema.string().description(TEXT.configClientMetadataUrl).volatile(),
   servers: Schema.array(Schema.object({
     serverName: Schema.string().pattern(SERVER_NAME_PATTERN).required().description(TEXT.configServerName),
     url: Schema.string().required().description(TEXT.configUrl),
-  })).default([]).description(TEXT.configServers),
+  })).default([]).description(TEXT.configServers).volatile(),
 })
 
 const CONFIG_REASON = Object.freeze({
@@ -73,7 +80,7 @@ function serverSpecs(config) {
  *   the stock client module (defaults: the pinned dependency and the host's dsh-mcp-client).
  */
 export function createAdapterPlugin({ now = Date.now, timers = globalThis, fetch: fetchFn = globalThis.fetch, sdk = defaultSdk, mcpClient = defaultMcpClient } = {}) {
-  async function apply(ctx, config) {
+  async function applyWith(ctx, config) {
     const configProblem = CONFIG_REASON[clientMetadataUrlProblem(config.clientMetadataUrl)]
     const specs = serverSpecs(config)
     const servers = new Map()
@@ -99,6 +106,9 @@ export function createAdapterPlugin({ now = Date.now, timers = globalThis, fetch
     ctx.provide(ADAPTER.service, Object.freeze({
       status: () => ({ servers: [...servers.values()].map((server) => server.status()) }),
     }))
+  }
+  async function apply(ctx, config) {
+    await runWithSettings(ctx, config, applyWith)
   }
   return Object.freeze({ name, inject, Config, apply })
 }

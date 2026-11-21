@@ -3,6 +3,10 @@
  * 60–86400; one timer per supervised session, a refine never moves it). The read and judgement
  * bounds are the withdrawn Fishball design's rows (fishball-watchdog src/config.js: readMaxMessages,
  * readMaxBytes, checkTimeoutSeconds), kept as they were.
+ *
+ * Every field is `.volatile()`: DSH's settings service serves and writes only volatile fields, so
+ * this is what puts them on the row's settings page. index.js reads a plain snapshot at apply and
+ * re-applies on a live change (dsh-connector-shared/live-settings), so the core still sees numbers.
  */
 import Schema from '@deepseek-ai/schemastery'
 
@@ -14,5 +18,5 @@ export const LIMITS = Object.freeze([
 ].map(([field, defaultValue, min, max, description]) => Object.freeze({ field, defaultValue, min, max, description })))
 
 export const Config = Schema.object(Object.fromEntries(LIMITS.map(({ field, defaultValue, min, max, description }) => [
-  field, Schema.natural().min(min).max(max).default(defaultValue).description(description),
+  field, Schema.natural().min(min).max(max).default(defaultValue).description(description).volatile(),
 ])))
