@@ -2,6 +2,7 @@
   "name": "dsh-connector-watchdog",
   "version": "1.0.0-alpha.1",
   "description": "Supervises a session for the agent that manages it, and answers its permission requests within the approvable scope (needs dsh-agent-connector).",
+  "icon": "./assets/watchdog-icon.svg",
   "license": "MIT",
   "publishConfig": {
     "tag": "alpha"
@@ -25,6 +26,7 @@
     "./package.json": "./package.json"
   },
   "files": [
+    "assets/watchdog-icon.svg",
     "index.js",
     "src/",
     "cordis.patch.yml",

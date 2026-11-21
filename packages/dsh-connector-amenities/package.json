@@ -2,6 +2,7 @@
   "name": "dsh-connector-amenities",
   "version": "1.0.0-alpha.1",
   "description": "Installs the optional DSH Connector amenities together: dsh-connector-adapter and dsh-connector-watchdog, each its own package.",
+  "icon": "./assets/connector-amenities-icon.svg",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -22,6 +23,7 @@
     "./package.json": "./package.json"
   },
   "files": [
+    "assets/connector-amenities-icon.svg",
     "index.js",
     "client.js",
     "cordis.patch.yml",
