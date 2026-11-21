@@ -2323,3 +2323,18 @@ Decided by the user on 2026-11-20:
 | Connector changes | `workspaces_list` and `models_list` join core's tool copy after `sessions_list`; no `settlement` comes for Fishball's own answers, so a successful `approval_answer` through the façade closes (deletes) its open unfiled ask record; `state` events are no longer sent. |
 
 **Implementation.** `src/events/delivery.js` holds the open buffer, the sealed batches and the window timer (injectable, unref'd, cleared by `close()`); `src/events/wake.js` checks the settings. A batch message's id is its first record's own message id and its source lists every record (`{kind: 'fishball-event', events: [{key, eventId, type, targetId}]}`), so a copy an earlier process left pending is recognised and settled for every record at recovery.
+
+
+## 30. `fishball-taskboard`: Fishball's own task board and memo pad (2026-11-21)
+
+The user's request: Fishball gets tools to create tasks, break goals into subtasks, update status and progress, and read the board; tasks are not linked to sessions; the user can view and edit the board in the UI at any time, and a save wakes Fishball with what the user changed; the data persists; after every compaction, if the board has unfinished tasks, one short reminder line is injected. The full contract is [docs/plugins/fishball-taskboard.md](<docs/plugins/fishball-taskboard.md>).
+
+| Point | Decision |
+|---|---|
+| Package | A component of `fishball-amenities` (`taskboard/`, its own sub-package for its browser half), a sibling of `fishball-board`, not built on it: the board is session-linked, read-only for the user and shelved with a frozen contract; the taskboard needs none of that. It reuses the board's `followInstance` / `reportCoreMissing`. |
+| Storage | One record in DSH's storage domain `fishball_taskboard` (one atomic write per change). |
+| Tools | `taskboard_read`, `taskboard_add` (with nested `subtasks` and `parentId`), `taskboard_update`, `taskboard_memo`; manager-only through X2 and checked against X1. |
+| UI | A right-sidebar tab "Task board" (page type of `sidebarRightTabs`), opened from a conversation header action and the sidebar guide; a draft is saved as one POST of the whole board, refused `stale` if Fishball changed it meanwhile. |
+| Wake | A changing save calls `manager.notify({wake: true})`: X10 queues it as its own turn at once. It is not a link event, so §29's quiet window and batching never hold it. |
+| Reminder | On a successful `compaction/end` of the manager's session, one `agent.inject` line if any task is unfinished. |
+| PENDING | Memo form (list), statuses (todo, in_progress, blocked, done, dropped), who deletes (only the user), limits: provisional recommended values, asked 2026-11-21. |
