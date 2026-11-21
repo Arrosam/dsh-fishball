@@ -114,16 +114,19 @@ export function registerQuestionCases(sdk) {
       await free(w, sid)
     })
   }
-  row(sdk, 'FLW-12', 'ST (toUser with a note)', '{accepted: true}; the question leaves the principal (unlisted; a later answer is refused) and stays in its card; the user\'s answer → settlement {by user, answers}', async (t) => {
+  // Re-baselined by the managed-request lifecycle fix (R1, relayed by the lead 2026-11-21): toUser does not
+  // settle the question, so it stays listed (was: unlisted) and the user's answer still settles it. The
+  // principal's own later answer being accepted is lifecycle-cases.mjs LIF-R1; here the user answers first.
+  row(sdk, 'FLW-12', 'ST (toUser with a note)', '{accepted: true}; the question stays listed with the same offerId (R1) and stays in its card; the user\'s answer → settlement {by user, answers}; a later answer is refused', async (t) => {
     const { w, p, sid } = await asking(t)
     const r = await questioned(w, p, sid)
     assert.deepEqual(await qAnswer(p, r, { toUser: true, note: tok('note') }), accepted)
-    assert.equal((await listed(p, sid)).some((x) => x.approvalId === r.d.approvalId), false)
+    assert.equal((await listed(p, sid)).find((x) => x.approvalId === r.d.approvalId)?.offerId, r.offer.offerId, 'toUser unlisted the question or changed its offer')
     assert.equal((await cardOf(w, r)).state, IX.card.open)
-    assert.equal((await qAnswer(p, r, { answers: FIXTURE.answer.blue })).ok, false)
     assert.equal(await w.call('cardAnswer', { sessionId: sid, answers: FIXTURE.answer.red }), true)
     const s = await settlement(p.client, r.d.approvalId)
     assert.deepEqual([s.payload.by, s.payload.answers], [SETTLED_BY.user, FIXTURE.answer.red])
+    assert.equal((await qAnswer(p, r, { answers: FIXTURE.answer.blue })).ok, false, 'a late answer after the user\'s was accepted')
   })
   row(sdk, 'FLW-12', `DT (toUser with answers)`, `→ ${REFUSAL.badAnswer}; still open`, async (t) => {
     const { w, p, sid } = await asking(t)

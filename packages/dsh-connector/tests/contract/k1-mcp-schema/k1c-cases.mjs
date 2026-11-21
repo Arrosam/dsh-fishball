@@ -107,20 +107,25 @@ export function registerK1cCases(sdk) {
   }
 
   // ======================================================================================
-  // Spec 2: NOTICE.codes stays empty
+  // Spec 2: NOTICE.codes — superseded by R9 (the managed-request lifecycle fix, 2026-11-21):
+  // exactly one frozen code, questionCallEnded (was: 0 keys).
   // ======================================================================================
-  caseTest(sdk, 'K1c-BVA-01', 1, `${NOTICE_SHAPE.name}.codes is a frozen plain object with 0 keys (no notice code frozen)`, (mod) => {
-    const codes = exported(mod, NOTICE_SHAPE.name).codes
+  const codeCount = Object.keys(NOTICE_SHAPE.codes).length
+  caseTest(sdk, 'K1c-BVA-01', 1, `${NOTICE_SHAPE.name}.codes is a frozen plain object with exactly ${codeCount} key (${Object.keys(NOTICE_SHAPE.codes)}), each a string matching codeGrammar (R9 supersedes 0 keys)`, (mod) => {
+    const notice = exported(mod, NOTICE_SHAPE.name)
+    const codes = notice.codes
     assert.ok(isObject(codes) && !Array.isArray(codes), 'codes is not a plain object')
     assert.ok(Object.isFrozen(codes), 'codes is not frozen')
-    assert.equal(Reflect.ownKeys(codes).length, 0, `codes has ${String(Reflect.ownKeys(codes).map(String))}`)
+    assert.equal(Reflect.ownKeys(codes).length, codeCount, `codes has ${String(Reflect.ownKeys(codes).map(String))}`)
+    assert.deepEqual({ ...codes }, NOTICE_SHAPE.codes)
+    for (const value of Object.values(codes)) assert.match(value, notice.codeGrammar)
   })
-  caseTest(sdk, 'K1c-EP-02', 1, `${NOTICE_SHAPE.name} keeps exactly {${NOTICE_SHAPE.fields}}, codeGrammar a RegExp; index.d.ts types codes as an empty record`, (mod) => {
+  caseTest(sdk, 'K1c-EP-02', 1, `${NOTICE_SHAPE.name} keeps exactly {${NOTICE_SHAPE.fields}}, codeGrammar a RegExp; index.d.ts types codes as exactly its literal (R9 supersedes the empty record)`, (mod) => {
     const notice = exported(mod, NOTICE_SHAPE.name)
     assert.deepEqual(sorted(Object.keys(notice)), sorted(NOTICE_SHAPE.fields))
     assert.ok(notice.codeGrammar instanceof RegExp, 'codeGrammar is not a RegExp')
     const { code, m } = declarations()
-    assert.match(memberType(m, declaredConstType(code, NOTICE_SHAPE.name), 'codes') ?? '', NOTICE_SHAPE.emptyCodesType)
+    assert.match(squash(memberType(m, declaredConstType(code, NOTICE_SHAPE.name), 'codes') ?? ''), NOTICE_SHAPE.codesType(NOTICE_SHAPE.codes))
   })
 
   // ======================================================================================

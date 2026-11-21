@@ -222,11 +222,14 @@ export async function assertOffered(w, p, sid, tool, text, args) {
 
 // ------------------------------------------------------------------------------------------------ questions
 
-/** Starts a turn whose model calls ask_user_question; returns the `question` event for it and the open card. */
-export async function questioned(w, p, sid, { text = tok('q'), questions = FIXTURE.single(text), extra = {}, id = cid('q') } = {}) {
+/**
+ * Starts a turn whose model calls ask_user_question; returns the `question` event for it and the open card.
+ * `asks(args, id)` is the model step that asks (default: ask_user_question called directly).
+ */
+export async function questioned(w, p, sid, { text = tok('q'), questions = FIXTURE.single(text), extra = {}, id = cid('q'), asks = (args, callId) => step(IX.dsh.askTool, args, callId) } = {}) {
   await free(w, sid)
   const before = (await w.call('cards', { sessionId: sid })).length
-  await w.call('driveStart', { sessionId: sid, text: tok('user'), script: [step(IX.dsh.askTool, { questions, ...extra }, id), [{ text: 'done' }]] })
+  await w.call('driveStart', { sessionId: sid, text: tok('user'), script: [asks({ questions, ...extra }, id), [{ text: 'done' }]] })
   const event = await waitEvents(p.client, (e) => ofType(e, EVENT_TYPE.question).find((x) => JSON.stringify(x.payload.questions ?? []).includes(text)), 'a question event for ' + text)
   let card
   assert.ok(await eventually(async () => { card = (await w.call('cards', { sessionId: sid })).slice(before).at(-1); return card }), 'the session\'s own card did not open (q2)')
