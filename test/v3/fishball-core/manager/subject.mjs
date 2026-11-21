@@ -15,10 +15,10 @@ import { newHome } from '../../../support/host.mjs'
 import { until } from '../../../support/util.mjs'
 import { BUDGET, CONNECT_INPUT, HTTP, K1, MCP, WORLD, runtimeOf } from './constants.mjs'
 
-/** Start one DSH process on `home`. */
-export async function bootWorld(home, sdk) {
+/** Start one DSH process on `home`; `env` adds variables (a world extension, FBTEST_WORLD_EXTENSION). */
+export async function bootWorld(home, sdk, { env = {} } = {}) {
   const child = spawn(NODE, [WORLD.file], {
-    env: { PATH: process.env.PATH ?? '/usr/bin:/bin', HOME: process.env.HOME ?? '', DSH_HOME: home, DSH_TELEMETRY_DISABLED: '1', NO_COLOR: '1', FBTEST_DSH_RUNTIME: runtimeOf(sdk), FBTEST_CHROME: process.env.FBTEST_CHROME ?? path.join(TEST_HOMES, 'missing-chrome'), npm_config_userconfig: process.env.npm_config_userconfig ?? '/dev/null' },
+    env: { PATH: process.env.PATH ?? '/usr/bin:/bin', HOME: process.env.HOME ?? '', DSH_HOME: home, DSH_TELEMETRY_DISABLED: '1', NO_COLOR: '1', FBTEST_DSH_RUNTIME: runtimeOf(sdk), FBTEST_CHROME: process.env.FBTEST_CHROME ?? path.join(TEST_HOMES, 'missing-chrome'), npm_config_userconfig: process.env.npm_config_userconfig ?? '/dev/null', ...env },
     // stdin stays an open pipe: DSH's launcher shuts down on stdin EOF.
     stdio: ['pipe', 'pipe', 'pipe', 'ipc'],
   })
@@ -91,7 +91,7 @@ export async function bootWorld(home, sdk) {
  * failing step is kept as `facts.error` and every later fact stays absent, so each case reports
  * the step's error instead of a misleading assertion.
  */
-export function scenario(label, sdk, steps) {
+export function scenario(label, sdk, steps, { env } = {}) {
   let run
   let home
   after(async () => {
@@ -104,7 +104,7 @@ export function scenario(label, sdk, steps) {
       const collected = {}
       for (const step of steps) {
         const live = []
-        const boot = async () => { const h = await bootWorld(home, sdk); live.push(h); return h }
+        const boot = async () => { const h = await bootWorld(home, sdk, { env }); live.push(h); return h }
         try { await step(boot, collected) } catch (error) { collected.error ??= error; break } finally { for (const h of live) await h.stop().catch(() => {}) }
       }
       return collected

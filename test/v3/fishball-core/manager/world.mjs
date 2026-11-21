@@ -33,9 +33,18 @@ const manifestFile = path.join(profileDir, 'package.json')
 const cwd = path.join(home, WORLD.workDir)
 fs.mkdirSync(cwd, { recursive: true })
 
+/**
+ * A suite may extend this world (FBTEST_WORLD_EXTENSION, a module path): its `install(install)` adds
+ * packages on the first start, its `ops({ctx, instance, model})` adds world ops. Used by
+ * fishball-ui.connections (fishball-taskboard installed, fishballInstance.page driven).
+ */
+const extension = process.env.FBTEST_WORLD_EXTENSION ? await import(pathToFileURL(process.env.FBTEST_WORLD_EXTENSION).href) : null
+// Before DSH boots, so DSH's model catalogue already reads what the extension changes on the scripted model.
+extension?.prepare?.({ model })
+
 /** Install one package as DSH's native add does: a dependency, its node_modules link, and (selected) a bundle. */
-function install(name, selected) {
-  const target = path.join(REPO, 'packages', WORLD.folders[name])
+function install(name, selected, folder = WORLD.folders[name]) {
+  const target = path.join(REPO, 'packages', folder)
   const pkg = JSON.parse(fs.readFileSync(manifestFile, 'utf8'))
   pkg.dependencies = { ...pkg.dependencies, [name]: 'link:' + target }
   if (selected) pkg.dsh.profile.bundles.push(name)
@@ -51,6 +60,7 @@ if (firstStart) {
   initializeProfileFromDefault(WORLD.profile, 'web', home)
   install(WORLD.shared, false)
   install(WORLD.core, true)
+  extension?.install?.(install)
 }
 
 /** The files a settings save could write, read before DSH (and core) start. */
@@ -192,6 +202,8 @@ const ops = {
     return true
   },
 }
+
+Object.assign(ops, extension?.ops?.({ ctx, instance, model }) ?? {})
 
 process.on('message', async (msg) => {
   if (msg?.type !== WORLD.call) return

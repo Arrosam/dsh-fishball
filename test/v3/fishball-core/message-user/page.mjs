@@ -119,8 +119,11 @@ const chromium = () => (browser ??= launchChromium().then((started) => {
   return started
 }))
 
-/** One tab on the world's DSH web origin, logged in as its owner. */
-export async function openDsh(h, route = PAGE.root) {
+/**
+ * One tab on the world's DSH web origin, logged in as its owner. `onEvent` sees this tab's DevTools
+ * protocol events from before the first navigation (fishball-ui.connections counts EventSources).
+ */
+export async function openDsh(h, route = PAGE.root, { onEvent } = {}) {
   const { devtools } = await chromium()
   const { targetId } = await devtools.send('Target.createTarget', { url: PAGE.blank })
   const { sessionId } = await devtools.send('Target.attachToTarget', { targetId, flatten: true })
@@ -129,7 +132,9 @@ export async function openDsh(h, route = PAGE.root) {
   // PAGING / STREAM rows: uncaught page exceptions, with their script URL (a page that "keeps working" throws none).
   const exceptions = []
   const offEvents = devtools.onEvent((event) => {
-    if (event.sessionId !== sessionId || event.method !== 'Runtime.exceptionThrown') return
+    if (event.sessionId !== sessionId) return
+    onEvent?.(event)
+    if (event.method !== 'Runtime.exceptionThrown') return
     const d = event.params.exceptionDetails
     exceptions.push({ text: String(d.exception?.description ?? d.text).slice(0, 400), url: d.url ?? d.stackTrace?.callFrames?.[0]?.url ?? null })
   })
@@ -175,6 +180,8 @@ export async function openDsh(h, route = PAGE.root) {
       return 'covered by ' + at?.cover
     },
     exceptions: () => [...exceptions],
+    /** The raw DevTools channel of this tab, and a page evaluation (fishball-ui.connections drives DSH's composer). */
+    devtools, sessionId, evaluate,
     viewport: () => evaluate(VIEWPORT, PAGE.selectors),
     gaps: () => evaluate(GAPS, PAGE.selectors),
     /** Trusted wheel input on the scrollport until it is at the top (or the step budget runs out). */

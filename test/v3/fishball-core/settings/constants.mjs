@@ -75,7 +75,7 @@ export const CORE = Object.freeze({
 /** fishball-ui's browser module id (F-UI interface item 8); the entries are its part since F-UI. */
 export const UI = Object.freeze({ moduleId: 'fishball-ui' })
 /** Which clients a scripted page loads: both (a Fishball DSH with fishball-ui), or core's alone. */
-export const CLIENTS = Object.freeze({ both: 'both', coreOnly: 'core-only', uiOnly: 'ui-only' })
+export const CLIENTS = Object.freeze({ both: 'both', coreOnly: 'core-only', uiOnly: 'ui-only', none: 'none' })
 /** The header-action ids and orders of the two entries (F-UI interface item 8, unchanged from F-SETTINGS). */
 export const ENTRY_ACTION = Object.freeze({
   fishball: Object.freeze({ id: 'fishball-core-settings', order: 90 }),
