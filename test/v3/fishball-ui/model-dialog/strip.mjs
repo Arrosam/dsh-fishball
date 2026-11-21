@@ -3,13 +3,15 @@
  * fishball-ui's real client and its strip part run unread in the F-SETTINGS scripted page
  * (../../fishball-core/settings/page.mjs); the strip's server-sent stream is a stand-in that
  * delivers frames built by the real pure view `stripView(snapshot, lang)` (fishball-ui
- * src/status/index.js), as the strip route sends them (STRIP-SYS-01: `{lines, control, …}`).
+ * src/status/index.js), as the strip route sends them (STRIP-SYS-01: `{lines, control, …}`), on the
+ * page's one connection (STRIP_PAGE.route) under STRIP_PAGE.topic (the image-loop fix).
  * Connect / Cancel post to core's routes through the page's fetch (the world's `connect` answers).
  */
 import assert from 'node:assert/strict'
 import { findAll, textOf } from '../../../support/rp-recommend.mjs'
 import { stripView } from '../../fishball-core/status/subject.mjs'
 import { createWorld, loadPage, settle } from '../../fishball-core/settings/page.mjs'
+import { isPageStream, pageMessage } from '../stream/event-source.mjs'
 import { STRIP_PAGE } from './constants.mjs'
 
 class FakeEventSource {
@@ -48,10 +50,10 @@ export async function stripPage(t, sdk, { lang = STRIP_PAGE.langs[0], onDocument
   return {
     world: w, page, tree, nodes,
     async show(snapshot) {
-      const streams = opened.filter((s) => s.url.includes(STRIP_PAGE.route) && !s.closed)
+      const streams = opened.filter((s) => isPageStream(s, w.base) && !s.closed)
       assert.ok(streams.length > 0, `the strip opened no ${STRIP_PAGE.route} stream: ${JSON.stringify(opened.map((s) => s.url))}`)
       const frame = await stripView(sdk, snapshot, lang)
-      for (const s of streams) s.deliver(frame)
+      for (const s of streams) s.deliver(pageMessage(STRIP_PAGE.topic, frame))
       await settle()
       return frame
     },

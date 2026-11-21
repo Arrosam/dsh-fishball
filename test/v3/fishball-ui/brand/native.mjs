@@ -23,9 +23,10 @@ function prepare({ ctx, platform, mount, loadModule }, spec) {
     const { eventSourceClass } = await import('/fixture/events.mjs')
     const sources = eventSourceClass()
     window.EventSource = sources.EventSource
+    // Both views arrive on the page's one connection (spec.page), each frame under its topic.
     probe.deliver = () => {
-      for (const s of sources.live(spec.asks)) s.deliver({ managerSessionId: spec.manager, cards: [] })
-      for (const s of sources.live(spec.strip)) s.deliver({ on: true })
+      for (const s of sources.live(spec.page)) s.deliver({ topic: spec.asks, frame: { managerSessionId: spec.manager, cards: [] } })
+      for (const s of sources.live(spec.page)) s.deliver({ topic: spec.strip, frame: { on: true } })
     }
     const entry = (await loadModule('/ui-entry.js')).factory(require)
     await (entry.default ?? entry).apply(scope)
@@ -35,6 +36,9 @@ function prepare({ ctx, platform, mount, loadModule }, spec) {
   ctx.slots.register = () => () => {}
   const effects = []
   const scope = { ...ctx, effect(fn) { const out = fn(); effects.push(out); return out },
+    // Cordis' service seam: since the image-loop fix fishball-ui's client provides the page connection as a
+    // browser service (fishballPageStream) that its parts reach; the fixture keeps it on the one scope.
+    provide(name, value) { if (value !== undefined) scope[name] = value }, set(name, value) { scope[name] = value; return () => { delete scope[name] } }, get(name) { return scope[name] },
     // Model an active sidebar while the manager isn't the current view on each activation.
     uiSession: { adapter: { current: { getSnapshot: () => ({ key: null }), subscribe: () => () => {} } } },
     uiWorkspace: { ...ctx.uiWorkspace, openSession(id) { probe.opens.push(id); return Promise.resolve() } },

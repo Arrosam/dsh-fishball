@@ -9,8 +9,9 @@
  *   (../../fishball-core/settings/page.mjs) with `<html data-fishball-page>` set, as fishball-page
  *   sets it. The winner of DSH's single slot `sidebar.workspaces` is mounted the way DSH's slot
  *   election picks it (the lowest priority among the entries), with the sidebar's owner props
- *   (`SidebarSectionOwnerProps`: wide, expandSidebar). The strip stream is the health-aware
- *   EventSource stand-in (../stream/event-source.mjs); the target routes are the page's fetch.
+ *   (`SidebarSectionOwnerProps`: wide, expandSidebar). The page's one connection is the health-aware
+ *   EventSource stand-in (../stream/event-source.mjs), carrying the sidebar's frames under
+ *   SIDEBAR.streamTopic and the ask cards' under ASK.eventsTopic; the target routes are the page's fetch.
  *
  * Observation is what a user meets: row buttons are the buttons carrying `aria-expanded`
  * (requirement C); one target's item is the largest subtree around its row button that holds no
@@ -23,8 +24,8 @@ import { importBound } from '../../dsh-connector-adapter/oauth-client/subject.mj
 import { createWorld, loadPage, settle } from '../../fishball-core/settings/page.mjs'
 import { coreView } from '../pairing/subject.mjs'
 import { STATE as PAIR_STATE } from '../pairing/constants.mjs'
-import { eventSourceClass } from '../stream/event-source.mjs'
-import { FIXTURE, SEAM_STATUS, SEAM_TARGETS, SIDEBAR, SUBJECT } from './targets-constants.mjs'
+import { eventSourceClass, isPageStream, topicView } from '../stream/event-source.mjs'
+import { ASK, FIXTURE, SEAM_STATUS, SEAM_TARGETS, SIDEBAR, SUBJECT } from './targets-constants.mjs'
 
 export async function viewModule(sdk) {
   const view = await importBound(sdk, SUBJECT.view)
@@ -113,7 +114,10 @@ export async function sidebarPage(t, sdk, { lang = 'en', mark = true, navigation
   const tree = () => keys.flatMap((k) => w.shim.treeOf(k))
   const nodes = () => findAll(tree(), () => true)
   const sidebarNodes = () => findAll(w.shim.treeOf(FIXTURE.mountKey + 'sidebar'), () => true)
-  const streams = () => sources.live(SIDEBAR.streamPath.slice(1)).filter((s) => new URL(s.url, w.base).pathname === SIDEBAR.streamPath)
+  /** One view of every open page connection: the sidebar's (streams) and the ask cards' (askStreams). */
+  const viewOf = (topic) => () => sources.opened.filter((s) => !s.closed && isPageStream(s, w.base)).map((s) => topicView(s, topic))
+  const streams = viewOf(SIDEBAR.streamTopic)
+  const askStreams = viewOf(ASK.eventsTopic)
   const rows = () => sidebarNodes().filter(isRow)
   const row = (label) => {
     // A row shows the label as one of its own text nodes (or names it): "Office-DSH-1" is not "Office-DSH-12".
@@ -135,7 +139,7 @@ export async function sidebarPage(t, sdk, { lang = 'en', mark = true, navigation
   }
   const text = (among) => among.filter((n) => typeof n !== 'string').map((n) => (n.children ?? []).filter((c) => typeof c === 'string').join('')).join(' ')
   const handle = {
-    world: w, sources, posts, nodes, sidebarNodes, rows, row, item, tree, streams, winner, sidebarEntries,
+    world: w, sources, posts, nodes, sidebarNodes, rows, row, item, tree, streams, askStreams, winner, sidebarEntries,
     async deliver(frame) { const live = streams(); assert.ok(live.length > 0, `no ${SIDEBAR.streamPath} stream: ${JSON.stringify(sources.opened.map((s) => s.url))}`); for (const s of live) s.deliver(frame); await settle() },
     async fail(closed) { for (const s of streams()) s.fail({ closed }); await settle() },
     async toggle(label) { await page.press(row(label)) },

@@ -2,7 +2,8 @@
  * The drawn ask card (F-FIX card detail; the user, 2026-11-17: "Show arguments and reason"), at the
  * component level: fishball-ui's real `client.js` and its `client.asks.js` part, run unread in the
  * F-SETTINGS scripted page (../settings/page.mjs), with the card stream fed by a stand-in
- * `EventSource` that delivers the frames the events route sends (`{managerSessionId, cards}`).
+ * `EventSource` that delivers the frames the events route sends (`{managerSessionId, cards}`), on the
+ * page's one connection (RENDER.eventsPath) under RENDER.topic since the image-loop fix.
  *
  * Observation is what a user sees: the text of the rendered tree, each element's own text nodes
  * (so markup in a value is seen as text, not as elements), and the buttons with their labels.
@@ -11,6 +12,7 @@
 import assert from 'node:assert/strict'
 import { findAll, textOf } from '../../../support/rp-recommend.mjs'
 import { createWorld, loadPage, settle } from '../settings/page.mjs'
+import { isPageStream, pageMessage } from '../../fishball-ui/stream/event-source.mjs'
 import { RENDER } from './constants.mjs'
 
 /** A server-sent stream the page opens; `deliver(frame)` sends one `message` event. */
@@ -52,9 +54,9 @@ export async function cardPage(t, sdk, { lang, onDocument } = {}) {
   return {
     world: w,
     async show(cards) {
-      const streams = opened.filter((s) => s.url.endsWith(RENDER.eventsPath) && !s.closed)
+      const streams = opened.filter((s) => isPageStream(s, w.base) && !s.closed)
       assert.ok(streams.length > 0, `the page opened no ${RENDER.eventsPath} stream: ${JSON.stringify(opened.map((s) => s.url))}`)
-      for (const s of streams) s.deliver({ managerSessionId: RENDER.managerSession, cards })
+      for (const s of streams) s.deliver(pageMessage(RENDER.topic, { managerSessionId: RENDER.managerSession, cards }))
       await settle()
     },
     text: () => tree().map(textOf).join(RENDER.join),
