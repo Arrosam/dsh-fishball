@@ -117,27 +117,39 @@ function isCoreTool(name, core, contributed, inherited) {
   return (core.has(name) || contributed.has(name)) && !inherited.has(name)
 }
 
+/** No live manager, or no tools service: nothing to check, nothing extra and nothing missing. */
+const NO_MANAGER_TOOLS = Object.freeze({ overridden: Object.freeze([]), extra: Object.freeze([]), missing: Object.freeze([]) })
+
+/** The names among `names` that `keep` says to report, sorted and unique. */
+const namesWhere = (names, keep) => Object.freeze([...new Set(names)].filter(keep).sort())
+
 /**
  * `manager-tools` when a live manager session's model tools, core's own left out, are not exactly
  * `GUARDS.managerTools` (R-FB-13: checked by its tools, because 0.2.1-rc.5 cannot report a
  * session's preset). Any other tool counts, wherever it is registered: DSH also registers
  * session-creating tools in an agent's own scope (rc.5 `dsh-tool-subagent` standing mode). No live
  * manager: nothing to check.
+ * `extra` is the names any live manager has beyond those defaults, for the status's informational
+ * notice (the user, 2026-11-21); `missing` is the defaults some live manager lacks, which stay a
+ * real override in the guards notice. Both sorted and unique; either can be set beside the other.
  */
-async function overriddenManagerTools(ctx, managerPreset) {
+async function managerToolsState(ctx, managerPreset) {
   const tools = ctx.get(services.tools)
   const agents = managerAgents(ctx, managerPreset)
-  if (agents.length === 0 || typeof tools?.schemas !== 'function') return []
+  if (agents.length === 0 || typeof tools?.schemas !== 'function') return NO_MANAGER_TOOLS
   const core = await loadCoreToolNames()
   const instance = ctx.get(services.instance)
   const contributedOf = instance?.[CONTRIBUTED_TOOLS]
-  const exact = (agent) => {
+  const modelTools = (agent) => {
     const inherited = toolNames(tools, scopeParentOf(agent))
     const contributed = new Set(typeof contributedOf === 'function' ? contributedOf.call(instance, agent) : [])
-    const model = [...toolNames(tools, agent)].filter((name) => !isCoreTool(name, core, contributed, inherited))
-    return sameSet(model, GUARDS.managerTools)
+    return [...toolNames(tools, agent)].filter((name) => !isCoreTool(name, core, contributed, inherited))
   }
-  return agents.every(exact) ? [] : [code.managerTools]
+  const models = agents.map(modelTools)
+  const extra = namesWhere(models.flat(), (name) => !GUARDS.managerTools.includes(name))
+  const missing = namesWhere(GUARDS.managerTools, (name) => models.some((model) => !model.includes(name)))
+  const exact = models.every((model) => sameSet(model, GUARDS.managerTools))
+  return Object.freeze({ overridden: Object.freeze(exact ? [] : [code.managerTools]), extra, missing })
 }
 
 /**
@@ -148,12 +160,18 @@ async function overriddenManagerTools(ctx, managerPreset) {
  */
 export async function checkGuards(ctx, intended) {
   const managerPreset = intendedValue(intended, GUARDS.managerPresetKey)
+  const managerTools = await managerToolsState(ctx, managerPreset)
   const overridden = Object.freeze([
     ...overriddenRows(ctx, guardedRows(ctx, intended)),
     ...overriddenPolicy(ctx, intended),
     ...await overriddenPresets(ctx, managerPreset),
     ...overriddenOrder(ctx),
-    ...await overriddenManagerTools(ctx, managerPreset),
+    ...managerTools.overridden,
   ])
-  return Object.freeze({ status: overridden.length === 0 ? GUARDS.status.ok : GUARDS.status.overridden, overridden })
+  return Object.freeze({
+    status: overridden.length === 0 ? GUARDS.status.ok : GUARDS.status.overridden,
+    overridden,
+    extraManagerTools: managerTools.extra,
+    missingManagerTools: managerTools.missing,
+  })
 }

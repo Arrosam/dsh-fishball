@@ -111,7 +111,44 @@ const ops = {
   },
   managerId: () => instance()?.manager?.sessionId() ?? null,
   guards: () => instance()?.ui?.guards?.report() ?? null,
-  turn: ({ sessionId }) => turn(sessionId),
+  // MSG-USER (message-user suite): an optional fake-llm script per model request, as `turn` takes it.
+  turn: ({ sessionId, scripts }) => turn(sessionId, scripts),
+  /**
+   * MSG-USER: a turn left running. With `holdAt` n, the turn's n-th model request waits (fake-llm
+   * `holdNth`) until `release`; `held` answers whether it is waiting now.
+   */
+  async startTurn({ sessionId, scripts = [], holdAt = 0 }) {
+    const agent = await agentOf(sessionId)
+    await until(() => agent.status === WORLD.idle, BUDGET.turnMs, BUDGET.pollMs)
+    if (holdAt > 0) (model.holdNth ??= new Map()).set(sessionId, { at: holdAt, seen: 0 })
+    if (scripts.length) model.queue(sessionId, ...scripts)
+    agent.steer(createUserMessage({ content: [{ type: 'text', text: WORLD.turnText }], source: { kind: WORLD.roles.user } }))
+    return true
+  },
+  release({ sessionId }) {
+    const waiting = model.holds?.get(sessionId)
+    model.holds?.delete(sessionId)
+    if (typeof waiting === 'function') waiting()
+    return typeof waiting === 'function'
+  },
+  /** MSG-USER: one tool as the newest model request of the session offered it (name, description, parameters), or null. */
+  toolSpec({ sessionId, name }) {
+    const request = model.requests.filter((r) => r.sessionId === sessionId && r.tools.some((t) => t.name === name)).at(-1)
+    return request?.tools.find((t) => t.name === name) ?? null
+  },
+  held: ({ sessionId }) => typeof model.holds?.get(sessionId) === 'function',
+  /** MSG-USER: the user's stop of the live turn (DSH's own cancel reason), then idle; a held request is let go after the stop. */
+  async stopTurn({ sessionId }) {
+    const agent = await agentOf(sessionId)
+    agent.cancel({ kind: WORLD.roles.user })
+    ops.release({ sessionId })
+    await until(() => agent.status === WORLD.idle, BUDGET.turnMs, BUDGET.pollMs)
+    return true
+  },
+  async idle({ sessionId }) {
+    const agent = await agentOf(sessionId)
+    return Boolean(await until(() => agent.status === WORLD.idle, BUDGET.turnMs, BUDGET.pollMs))
+  },
   /**
    * The model calls one tool in a manager turn; answers the tool-role message the next request
    * carries (its text tail and error flag), or null when no request followed the call.
@@ -140,7 +177,14 @@ const ops = {
     const d = ctx.settings.describe().find((row) => row.ns === WORLD.core)
     return d === undefined ? null : { value: d.value, user: d.user }
   },
-  async mutate({ ops: edits }) { await ctx.settings.mutate(WORLD.core, edits); return true },
+  async mutate({ ops: edits, ns = WORLD.core }) { await ctx.settings.mutate(ns, edits); return true },
+  /** MSG-USER: the owner's native Plugins switch on one row (DSH's own plugin manager), as the guards worker does. */
+  async setRowEnabled({ id, enabled }) {
+    const row = (await ctx.pluginManager.listPlugins()).find((item) => item.patchId === id)
+    if (!row) throw new Error('no manageable plugin row ' + id)
+    await ctx.pluginManager.setPluginEnabled(row.entryId, enabled)
+    return true
+  },
   /** MULTI-1: core's target collection (ui.targets), the public way to add the Connect target. */
   async addTarget({ url }) { return instance().ui.targets.add(url) },
   async shutdown() {

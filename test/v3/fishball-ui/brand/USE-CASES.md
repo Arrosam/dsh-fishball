@@ -152,3 +152,36 @@ description is exactly the status text.
    a reduced-motion preference and none with `(prefers-reduced-motion: reduce)`, not a class name.
 4. "The eye is magenta" is asserted as a magenta-family paint; the drawing uses a pink-magenta
    (`#EC0A6E`), not the pure `#ff00ff` word.
+
+## BRAND-AVATAR — Fishball's reply avatar on its page (GENTLE-TOOLS, the lead's relayed requirement A, 2026-11-21)
+
+fishball-page styles each Fishball reply row (`[data-slot="main.conversation"] [data-chat-flow-kind="assistant-step"][data-chat-group-part="response"]`
+under `<html data-fishball-page>`): its `::before` draws an avatar as a CSS mask (a `data:` SVG URL). The
+theme is core's `brandStyle` in `configForms.get('fishball-core')` (`.value.brandStyle`, followed by
+`subscribe()`): `deepseek`, or `fishball` for anything else (absent, unknown, other case, non-string). The
+page exposes it as `<html data-fishball-page-brand="fishball|deepseek">` while mounted (removed on teardown).
+Review fix (the user, 2026-11-21): renamed from `data-fishball-brand`, which core's settings section uses as
+its own hook; `<html>` never carries `data-fishball-brand` and the page never touches an element that does.
+
+- **Fishball:** the mask is the fish body (tag v0.1.0 `assets/icon.svg`, viewBox `0 0 24 24`) painted in
+  `var(--dsw-alias-label-primary)`, with a `background-image` SVG holding the eye path filled `#EC0A6E`.
+- **DeepSeek:** exactly as before: background `var(--dsw-alias-state-business-primary)`, the primitives'
+  `FISH_LOGO_PATH` as the mask, no `background-image`.
+- The name label `::after` ("Fishball") and the row box do not change; rows that are not Fishball replies
+  in `main.conversation` get nothing.
+
+Level: fishball-page's real client in navPage (package/nav-page.mjs, now with a `primitives` option for
+`FISH_LOGO_PATH` / `FISH_LOGO_VIEWBOX`, fixture values, and `unmount()`), a ConfigForm stand-in
+(avatar.mjs). The drawing is the page's own style rules computed in headless Chromium (motion.mjs
+`evaluateHtml`), with the two DSH tokens given distinct colours. Cases: `avatar-cases.mjs`.
+
+| Id | Technique | Checks |
+| --- | --- | --- |
+| AVATAR-EP-01 ×11 | EP | absent, fishball, deepseek, DeepSeek, unknown, empty, null, number, boolean, object, no value yet → the `data-fishball-page-brand` word |
+| AVATAR-EP-04 ×2 | EP | a settings-section-like `[data-fishball-brand]` element in the same document, stored fishball / deepseek, a live change and teardown: `<html>` never carries or is written `data-fishball-brand`; the section's hook value is unchanged and never written |
+| AVATAR-EP-02 ×5 (browser) | EP | absent / fishball / other case / non-string → fish body mask, label colour, #EC0A6E eye layer; deepseek → FISH_LOGO_PATH mask, business colour, no background-image |
+| AVATAR-EP-03 unchanged (browser) | EP | ::after "Fishball", its box and the row box the same in both themes; other rows get no mask and no label |
+| AVATAR-EP-05 expanded reply plain (browser) | EP (MSG-USER re-baseline) | the avatar rows now draw on `[data-chat-flow-kind="fishball-message"]` (row > conversation.chat.node > div[data-fishball-message]); an expanded `assistant-step` / `response` reply has no mask, no label and the same content box as an unstyled reply; the message row has a bubble |
+| AVATAR-ST-01 ×3 | ST | a form notification fishball ⇄ deepseek flips the attribute live, both directions, no slot re-registration; deepseek → unknown reads fishball |
+| AVATAR-ST-02 ×2 (browser) | ST | the drawn avatar follows the live change and back |
+| AVATAR-ST-03 teardown | ST | unmounting removes the attribute and the form subscription; a later change writes nothing |

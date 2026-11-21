@@ -137,17 +137,29 @@ export function chunksFor(steps) {
     if (step.fail !== undefined) { finish = { kind: 'error', failure: { message: 'fbtest model failure', code: step.fail } }; continue }
     if (step.finish === 'max-tokens') finish = { kind: 'max-tokens' }
     if (step.text !== undefined) {
-      out.push({ type: 'block-start', index, blockType: 'text' }, { type: 'text-delta', index, text: step.text }, { type: 'block-end', index, block: { type: 'text', text: step.text } })
+      // MSG-USER: `deltas` n streams the text as n text-delta chunks (a long streamed reply); the
+      // stream waits `delayMs` before each (see FakeAdapter.stream).
+      const parts = step.deltas > 1 ? splitText(step.text, step.deltas) : [step.text]
+      out.push({ type: 'block-start', index, blockType: 'text' }, ...parts.map((text) => ({ type: 'text-delta', index, text, ...(step.delayMs ? { fbtestDelayMs: step.delayMs } : {}) })), { type: 'block-end', index, block: { type: 'text', text: step.text } })
     } else {
       toolCalls = true
       const id = step.id ?? 'call_' + Math.random().toString(36).slice(2, 10)
-      const args = JSON.stringify(step.args ?? {})
+      // MSG-USER: `rawArgs` sends the arguments text as given (an unparsable call).
+      const args = step.rawArgs ?? JSON.stringify(step.args ?? {})
       out.push({ type: 'block-start', index, blockType: 'tool-call' }, { type: 'tool-call-delta', index, id, name: step.tool, argumentsDelta: args }, { type: 'block-end', index, block: { type: 'tool-call', id, name: step.tool, arguments: args } })
     }
     index++
   }
   out.push({ type: 'usage', usage: { inputTokens: 10, outputTokens: 5 } }, { type: 'finish', reason: finish ?? { kind: toolCalls ? 'tool-calls' : 'stop' } })
   return out
+}
+
+/** MSG-USER: `text` cut into `n` consecutive pieces (the last takes the remainder). */
+function splitText(text, n) {
+  const size = Math.max(1, Math.ceil(text.length / n))
+  const parts = []
+  for (let at = 0; at < text.length; at += size) parts.push(text.slice(at, at + size))
+  return parts
 }
 
 export const name = 'fbtest-llm'
@@ -235,6 +247,9 @@ class FakeAdapter extends LlmAdapter {
       // P4 C12: with compactionFails a summary call answers no text, which DSH's summarizer rejects.
       script = options.purpose === 'compaction' ? (model.compactionFails ? [] : [{ text: 'fbtest summary' }]) : [{ text: 'fbtest title' }]
     } else {
+      // MSG-USER: `holdNth` (sessionId -> {at}) holds that session's at-th conversation request from now on.
+      const nth = model.holdNth?.get(options.sessionId)
+      if (nth && ++nth.seen === nth.at) { model.holdNth.delete(options.sessionId); (model.holds ??= new Map()).set(options.sessionId, null) }
       // P4: a test can hold one conversation request open (a turn in progress) until it releases it.
       if (model.holds?.has(options.sessionId) && model.holds.get(options.sessionId) === null) {
         await new Promise((resolve) => model.holds.set(options.sessionId, resolve))
@@ -242,7 +257,13 @@ class FakeAdapter extends LlmAdapter {
       model.requests.push(digest(options))
       script = fillPlaceholders(model.respond(options), options)
     }
-    for (const chunk of chunksFor(script)) yield chunk
+    for (const chunk of chunksFor(script)) {
+      if (chunk.fbtestDelayMs) {
+        const { fbtestDelayMs: delayMs, ...plain } = chunk
+        await new Promise((resolve) => setTimeout(resolve, delayMs))
+        yield plain
+      } else yield chunk
+    }
   }
 }
 

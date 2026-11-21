@@ -1233,6 +1233,11 @@ sets status `guards-overridden` with the list of overridden guards; a later chec
 restored clears it. It also adds one line to
 the Fishball page's status strip and one notice to Fishball's manager context, so Fishball
 knows its guarantees are weaker. Core keeps running and changes nothing back.
+Extra tools on the manager (`manager-tools` with names beyond the defaults, the report's
+`extraManagerTools`) are not announced as an override (the user, 2026-11-21): the manager gets one
+gentle notice that it now has tools beyond its defaults, naming them, and each name is announced
+once, ever (recorded in `<DSH home>/fishball/manager-tools.json`); a later added tool gets one new
+notice. A missing default tool stays in the guards notice.
 
 **Spike V3-S6 (`86800d2` + round 2 `7c2230e`, PASS on both SDKs):** preflight and plugin manager
 accept a bundle patch that disables another bundle's rows; the public API for the override report

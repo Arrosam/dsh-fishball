@@ -4,7 +4,7 @@ window.__ModuleLoader__.load({
   factory(require) {
     const React = require('react')
     const h = React.createElement
-    const { Button, Tooltip, StateDot, FishLogo, FISH_LOGO_PATH, FISH_LOGO_VIEWBOX, IconSettingsOutlineRegular, IconRefreshOutlineRegular } = require('@deepseek-ai/dsh-client-ui-primitives')
+    const { Button, Tooltip, StateDot, FishLogo, FISH_LOGO_PATH, FISH_LOGO_VIEWBOX, IconSettingsOutlineRegular, IconRefreshOutlineRegular, MarkdownText } = require('@deepseek-ai/dsh-client-ui-primitives')
     const PAGE = Object.freeze({
       name: 'fishball-page', route: 'api/fishball/session', read: 'GET', ensure: 'POST',
       requestFailed: 'FISHBALL_SESSION_REQUEST_FAILED', invalidSession: 'FISHBALL_SESSION_INVALID',
@@ -154,14 +154,96 @@ window.__ModuleLoader__.load({
       pending: Object.freeze({ kind: 'pending', dot: 'ongoing' }),
     })
     /**
-     * The reply's avatar: DSH's own fish mark (primitives FISH_LOGO_PATH / FISH_LOGO_VIEWBOX) as a CSS
-     * mask, painted in a theme token, so it follows light and dark. A data: URL, which DSH's CSP
-     * admits for images (img-src data:, both SDKs); the mark is a pseudo-element because the reply
-     * rows are native and the page only styles them.
+     * Fishball's messages to the user (the user, 2026-11-21): on this page only what Fishball sends
+     * with core's `message_user` tool is in view; its other output is folded (REPLY_FOLD).
+     * - Each dispatched call (`tool/call`, so never a half-streamed argument) becomes a chat Node of its
+     *   own `kind`, drawn by this page's `conversation.chat.node` renderer as Fishball's bubble. The
+     *   Node stands at the Turn's `groupTree` position `turn` (dsh-client-ui-chat group-tree.d.ts,
+     *   both SDKs: "stays in its Turn outside the Turn's process disclosure"), so DSH's own fold never
+     *   hides it, while the call's ordinary tool row stays in the fold with the rest of the process.
+     * - `tool` and `argument` restate core's tool (fishball-core src/manager/message-tools.js,
+     *   message-user.js): this classic module imports nothing of core. A blank message is not drawn,
+     *   the same rule core reports to the model as not shown.
+     * - `labels`: the chat namespace keys DSH's own assistant row passes to MarkdownText for its code
+     *   and footnote chrome (ui-chat `markdownLabels`, private there, the same keys on both SDKs).
+     */
+    const MESSAGE = Object.freeze({
+      tool: 'message_user', argument: 'message',
+      kind: 'fishball-message', target: 'chat', groupTree: 'turn', visibility: 'visible',
+      event: 'tool/call', role: 'start', slot: 'conversation.chat.node', locale: 'chat',
+      bubble: 'data-fishball-message',
+      // After the call's own tool row: on a reloaded page that row also anchors at the `tool/call` seq
+      // (no streamed delta is left), and a tie leaves the order to the engine. DSH places its own
+      // synthetic rows the same way (ui-chat CHAT_SYNTHETIC_SEQ_OFFSETS, at most ±0.9).
+      anchorOffset: 0.01,
+      labels: Object.freeze({ copy: 'copy', copied: 'copied', code: 'codeBlock.title', wrap: 'codeBlock.wrap', unwrap: 'codeBlock.unwrap', footnotes: 'markdown.footnotes' }),
+    })
+    /** The seat DSH draws around one message Node (ChatNodeSeat's `data-chat-flow-kind`, both SDKs). */
+    const MESSAGE_ROW = `[data-chat-flow-kind="${MESSAGE.kind}"]`
+    /**
+     * Fishball's ordinary text replies, folded by default (the user: "collapse all other assistant
+     * output, expandable on click"). The expansion is DSH's own whole-Turn control (TurnProcessNodeView,
+     * `button[data-turn-process="<turn>"]`, both SDKs), not a new disclosure: a Turn's reply seats
+     * (`data-chat-turn`) show while its control is open (`data-open`) or disabled. DSH disables it
+     * when it has nothing to fold or keeps the Turn open (stopped, failed, verbose details): there is
+     * no click that could reveal the replies then, so they are not hidden. A running Turn has no
+     * control yet, so its replies stay folded. Reasoning and tool rows keep DSH's own folding.
+     * `reply` is the response half of an assistant step (ChatNodeSeat `data-chat-group-part`).
+     *
+     * A folded seat gets the `hidden` attribute, as DSH folds its own process rows (ui-chat
+     * useSearchableHidden, both SDKs): DSH's flow gaps, paging anchor, reading position and scroll
+     * anchoring all check only for the attribute's presence and skip `[hidden]` rows, so a folded reply
+     * leaves no gap and is never an anchor. React does not own the attribute (ChatNodeSeat renders no
+     * `hidden` prop). DSH's own fold writes it only for its process members (`dshHidden` marks those),
+     * as `until-found`, which keeps the seat's own box rendered (content-visibility hides only its
+     * content). So the page writes the plain value (`hiddenValue`, display none) on every reply it
+     * folds, also over DSH's `until-found`; on unfolding it gives a seat DSH still folds its
+     * `until-found` back (`dshHiddenValue`), removes only a `hidden` it set itself (`folded`), and
+     * puts its own back when DSH's fold lifts it from a reply the page still folds.
+     */
+    const REPLY_FOLD = Object.freeze({
+      flowKind: 'data-chat-flow-kind', groupPart: 'data-chat-group-part',
+      assistant: 'assistant-step', response: 'response',
+      turnOf: 'data-chat-turn',
+      control: 'button[data-turn-process]', controlTurn: 'data-turn-process', open: 'data-open', disabled: 'disabled',
+      hidden: 'hidden', hiddenValue: '', dshHidden: 'data-turn-process-hidden', dshHiddenValue: 'until-found',
+      folded: 'data-fishball-folded',
+    })
+    /** A reply seat, and any chat seat: the rows whose arrival or change can change the fold. */
+    const REPLY_SEAT = `[${REPLY_FOLD.flowKind}="${REPLY_FOLD.assistant}"][${REPLY_FOLD.groupPart}="${REPLY_FOLD.response}"]`
+    const FOLD_RELEVANT = `[${REPLY_FOLD.flowKind}],${REPLY_FOLD.control}`
+    /** The attributes whose change can change the fold: the control's state, a seat's turn and part, and `hidden`. */
+    const FOLD_WATCHED = Object.freeze([REPLY_FOLD.open, REPLY_FOLD.disabled, REPLY_FOLD.turnOf, REPLY_FOLD.groupPart, REPLY_FOLD.hidden])
+    /**
+     * The reply's avatar follows the sidebar logo's theme (core's `brandStyle`, LOGO-BUTTON; the user,
+     * 2026-11-21): the Fishball theme draws Fishball's fish, V1's FISH_MARK (tag v0.1.0
+     * assets/icon.svg), its body in the label colour and its eye the one magenta, as the sidebar mark
+     * does; the DeepSeek theme draws DSH's own mark (primitives FISH_LOGO_PATH / FISH_LOGO_VIEWBOX) in
+     * a theme token, as before. Both are CSS masks over data: URLs, which DSH's CSP admits for images
+     * (img-src data:, both SDKs); the mark is a pseudo-element because the reply rows are native and
+     * the page only styles them. The eye is a background layer under the body's mask: it lies inside
+     * the body, so the mask keeps it whole.
+     * `fish` restates fishball-ui's brand mark (client.brand.js BRAND.mark) and `brand` core's setting
+     * (fishball-shared `SEAM_BRAND`): this classic module is its own package, loads no chunk of
+     * fishball-ui and imports nothing of core. The theme is read through DSH's own config form, as core's settings page
+     * writes it, so a saved choice reaches the page without a reload; absent or unknown is Fishball.
      */
     const AVATAR = Object.freeze({
-      svg: (path, box) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${box.width} ${box.height}"><path d="${path}"/></svg>`,
+      svg: (path, box, fill = '') => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${box.width} ${box.height}"><path d="${path}"${fill && ` fill="${fill}"`}/></svg>`,
       url: (svg) => `url("data:image/svg+xml,${encodeURIComponent(svg)}")`,
+      fish: Object.freeze({
+        box: Object.freeze({ width: 24, height: 24 }),
+        body: 'M7.4 16.6 L7.4 9.9 L11.3 5.6 L18.4 5.6 L18.4 12.7 L14.1 16.6 Z M7.4 16.6 L2.6 21.4 L7.4 21.4 Z',
+        eye: 'M14.6 7.4 h2 v2 h-2 Z',
+        eyeColor: '#EC0A6E',
+        bodyColor: 'var(--dsw-alias-label-primary)',
+      }),
+      deepseekColor: 'var(--dsw-alias-state-business-primary)',
+      brand: Object.freeze({
+        // Not `data-fishball-brand`: core's settings section uses that hook, in the same document.
+        namespace: 'fishball-core', field: 'brandStyle', attribute: 'data-fishball-page-brand',
+        style: Object.freeze({ fishball: 'fishball', deepseek: 'deepseek' }), default: 'fishball',
+      }),
     })
     /**
      * The narrow sheet's dismissal and focus (the user, 2026-11-18, choice 8A): pointer/key events,
@@ -262,7 +344,14 @@ window.__ModuleLoader__.load({
       }
       const sheet = new CSSStyleSheet()
       const root = `[${PAGE.root}]`
-      const avatar = AVATAR.url(AVATAR.svg(FISH_LOGO_PATH, FISH_LOGO_VIEWBOX))
+      const message = `${PAGE.main} ${MESSAGE_ROW}`
+      const avatarOf = `${message}::before`
+      const deepseek = `[${AVATAR.brand.attribute}="${AVATAR.brand.style.deepseek}"]`
+      const { fish } = AVATAR
+      const fishBody = AVATAR.url(AVATAR.svg(fish.body, fish.box))
+      const fishEye = AVATAR.url(AVATAR.svg(fish.eye, fish.box, fish.eyeColor))
+      const deepseekMark = AVATAR.url(AVATAR.svg(FISH_LOGO_PATH, FISH_LOGO_VIEWBOX))
+      const masked = (url) => `-webkit-mask:${url} center/contain no-repeat;mask:${url} center/contain no-repeat`
       const rules = [
         // Keep rc.1's native drawer opener in the shell's leading seat, also when the bar is
         // visible. Its New Session button is still a forbidden launcher (LABELS).
@@ -292,13 +381,17 @@ window.__ModuleLoader__.load({
           `${root} ${PAGE.buttonTag}:has(${PAGE.brandName}):not([${PAGE.brandControl}]){display:none!important}`,
           ...barRules(root),
         ] : []),
-        // Fishball's replies: DSH's fish mark and the name above an assistant bubble, the user's own
-        // bubble left as DSH draws it, with its thin stroke.
-        `${root} ${PAGE.main} [data-chat-flow-kind="assistant-step"][data-chat-group-part="response"]{position:relative;margin:6px 12% 6px 0;padding:20px 0 0 36px}`,
-        `${root} ${PAGE.main} [data-chat-flow-kind="assistant-step"][data-chat-group-part="response"]::after{content:"Fishball";position:absolute;top:0;left:36px;font:var(--dsw-font-xxs-strong-12);color:var(--dsw-alias-label-tertiary)}`,
+        // Fishball's messages (MESSAGE): the theme's mark (AVATAR) and the name above Fishball's bubble,
+        // the user's own bubble left as DSH draws it, with its thin stroke. A folded reply that the user
+        // expands keeps DSH's plain look, so only a message reads as Fishball speaking.
+        `${root} ${message}{position:relative;margin:6px 12% 6px 0;padding:20px 0 0 36px}`,
+        `${root} ${message}::after{content:"Fishball";position:absolute;top:0;left:36px;font:var(--dsw-font-xxs-strong-12);color:var(--dsw-alias-label-tertiary)}`,
         `${root} ${PAGE.main} [data-chat-flow-kind="user"] [class$="_bubble"]{background:var(--dsw-specific-bubble);box-shadow:inset 0 0 0 .5px var(--dsw-alias-border-l2)}`,
-        `${root} ${PAGE.main} [data-chat-flow-kind="assistant-step"][data-chat-group-part="response"]::before{content:"";position:absolute;left:2px;top:22px;width:24px;height:24px;background:var(--dsw-alias-state-business-primary);-webkit-mask:${avatar} center/contain no-repeat;mask:${avatar} center/contain no-repeat}`,
-        `${root} ${PAGE.main} [data-chat-flow-kind="assistant-step"][data-chat-group-part="response"]>[data-slot="conversation.chat.node"]>*{padding:8px 14px;border-radius:var(--dsw-radius-xs) var(--dsw-radius-xl) var(--dsw-radius-xl) var(--dsw-radius-xl);background:var(--dsw-alias-bg-module-platform);box-shadow:inset 0 0 0 .5px var(--dsw-alias-border-l2);min-width:0}`,
+        `${root} ${avatarOf}{content:"";position:absolute;left:2px;top:22px;width:24px;height:24px}`,
+        // Fishball's fish unless the theme is DeepSeek, so the fish also shows before the form is read.
+        `${root}:not(${deepseek}) ${avatarOf}{background:${fishEye} center/contain no-repeat ${fish.bodyColor};${masked(fishBody)}}`,
+        `${root}${deepseek} ${avatarOf}{background:${AVATAR.deepseekColor};${masked(deepseekMark)}}`,
+        `${root} ${message}>[data-slot="conversation.chat.node"]>*{padding:8px 14px;border-radius:var(--dsw-radius-xs) var(--dsw-radius-xl) var(--dsw-radius-xl) var(--dsw-radius-xl);background:var(--dsw-alias-bg-module-platform);box-shadow:inset 0 0 0 .5px var(--dsw-alias-border-l2);min-width:0}`,
         `${root} ${PAGE.main} .md-table-wide{width:auto;max-width:100%;margin-left:0;padding-left:0}`,
       ]
       for (const rule of rules) sheet.insertRule(rule, sheet.cssRules.length)
@@ -486,6 +579,126 @@ window.__ModuleLoader__.load({
         document.removeEventListener(SHEET.pointerdown, pointer, true)
         document.removeEventListener(SHEET.click, click, true)
         document.removeEventListener(SHEET.keydown, key)
+      }
+    }
+
+    /**
+     * Marks <html> with the logo theme the reply avatar follows (AVATAR.brand), read from core's config
+     * form and followed live. A form that is missing, or a namespace the Host does not serve, reads
+     * the default, so a DSH without core's row still shows Fishball's fish.
+     */
+    function mountBrand(ctx) {
+      const { brand } = AVATAR
+      const form = ctx.configForms?.get?.(brand.namespace)
+      const sync = () => {
+        const stored = form?.getSnapshot?.()?.value?.[brand.field]
+        document.documentElement.setAttribute(brand.attribute, Object.values(brand.style).includes(stored) ? stored : brand.default)
+      }
+      sync()
+      const unsubscribe = typeof form?.subscribe === 'function' ? form.subscribe(sync) : () => {}
+      return () => {
+        unsubscribe()
+        document.documentElement.removeAttribute(brand.attribute)
+      }
+    }
+
+    /** The message of one `message_user` call's raw argument JSON, as sent; null when it is blank after trimming or unreadable. */
+    function messageOf(rawArguments) {
+      let args
+      try { args = JSON.parse(rawArguments) } catch { return null }
+      const text = args?.[MESSAGE.argument]
+      return typeof text === 'string' && text.trim() !== '' ? text : null
+    }
+
+    /**
+     * The Conversation Definition that turns each `message_user` call into a message Node (MESSAGE).
+     * It matches only `tool/call`, beside DSH's own tool Definition (no exclusive claim), so the
+     * call's ordinary tool row is unchanged. A Node is rebuilt only when its text or Location changes.
+     */
+    function messageDefinition() {
+      return {
+        kind: MESSAGE.kind,
+        target: MESSAGE.target,
+        match: { [MESSAGE.event]: (event) => event.data?.name === MESSAGE.tool ? { id: String(event.data.callId), role: MESSAGE.role } : null },
+        start: (_context, match) => messageOf(match.event.data.arguments),
+        update: (context) => context.state,
+        buildViewNode(context) {
+          const text = context.state
+          if (text === null || text === undefined || context.start === undefined) return null
+          const location = context.start.location
+          const current = context.current.get(MESSAGE.target)
+          if (current?.data.text === text && current.location === location) return current
+          return {
+            key: context.key, kind: MESSAGE.kind, id: context.id, target: MESSAGE.target,
+            anchorSeq: context.start.event.seq + MESSAGE.anchorOffset, location, visibility: MESSAGE.visibility, groupTree: MESSAGE.groupTree,
+            data: Object.freeze({ text }),
+          }
+        },
+      }
+    }
+
+    /** One message Node: Fishball's bubble around DSH's own Markdown, with the chat's labels. */
+    function MessageNodeView({ node, t }) {
+      const labels = React.useMemo(() => {
+        const L = MESSAGE.labels
+        return { code: { copyLabel: t(L.copy), copiedLabel: t(L.copied), toolbarLabels: { codeLabel: t(L.code), wrapLabel: t(L.wrap), unwrapLabel: t(L.unwrap) } }, footnotes: t(L.footnotes) }
+      }, [t])
+      return h('div', { [MESSAGE.bubble]: '' }, h(MarkdownText, { text: node.data.text, labels }))
+    }
+
+    /** Fold one reply seat (REPLY_FOLD): DSH's own `hidden`, with the page's mark saying it set it. */
+    function fold(seat) {
+      if (!seat.hasAttribute(REPLY_FOLD.folded)) seat.setAttribute(REPLY_FOLD.folded, '')
+      if (seat.getAttribute(REPLY_FOLD.hidden) !== REPLY_FOLD.hiddenValue) seat.setAttribute(REPLY_FOLD.hidden, REPLY_FOLD.hiddenValue)
+    }
+    /** Unfold one seat: drop the mark, and give `hidden` back to DSH's own fold when it still folds the seat. */
+    function unfold(seat) {
+      seat.removeAttribute(REPLY_FOLD.folded)
+      if (seat.hasAttribute(REPLY_FOLD.dshHidden)) seat.setAttribute(REPLY_FOLD.hidden, REPLY_FOLD.dshHiddenValue)
+      else seat.removeAttribute(REPLY_FOLD.hidden)
+    }
+    /** Whether an added or removed node is, or holds, a chat seat or a Turn control. */
+    const holdsFoldRow = (node) => node.nodeType === Node.ELEMENT_NODE && (node.matches(FOLD_RELEVANT) || node.querySelector(FOLD_RELEVANT) !== null)
+    /** Whether one observed change can change the fold; every other change in the page is ignored. */
+    function foldRecord(record) {
+      if (record.type === 'attributes') return record.target.matches(FOLD_RELEVANT)
+      return [...record.addedNodes].some(holdsFoldRow) || [...record.removedNodes].some(holdsFoldRow)
+    }
+
+    /**
+     * Fold Fishball's ordinary replies (REPLY_FOLD): each reply seat whose Turn's control is neither
+     * open nor disabled is folded. Synchronous in the observer, which runs before the next paint, so
+     * a new reply never flashes. The observer watches the body, not the conversation element, because
+     * DSH replaces that element when the main view changes; only changes to seats and Turn controls
+     * (FOLD_RELEVANT, FOLD_WATCHED) run it. Its own writes are a no-op the second time: a seat that
+     * is already folded with the plain value is not written again, so marking cannot loop.
+     */
+    function mountReplyFold() {
+      const marked = new Set()
+      function reconcile() {
+        const scope = document.querySelector(PAGE.main)
+        const shown = new Set()
+        const next = new Set()
+        if (scope !== null) {
+          for (const control of scope.querySelectorAll(REPLY_FOLD.control)) {
+            if (control.hasAttribute(REPLY_FOLD.open) || control.disabled) shown.add(control.getAttribute(REPLY_FOLD.controlTurn))
+          }
+          for (const reply of scope.querySelectorAll(REPLY_SEAT)) {
+            if (!shown.has(reply.getAttribute(REPLY_FOLD.turnOf))) next.add(reply)
+          }
+        }
+        for (const seat of marked) if (!next.has(seat)) unfold(seat)
+        // Every folded seat, not only new ones: DSH's fold can lift `hidden` from a reply still folded.
+        for (const seat of next) fold(seat)
+        marked.clear()
+        for (const seat of next) marked.add(seat)
+      }
+      const observer = new MutationObserver((records) => { if (records.some(foldRecord)) reconcile() })
+      observer.observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: FOLD_WATCHED })
+      reconcile()
+      return () => {
+        observer.disconnect()
+        for (const seat of marked) unfold(seat)
       }
     }
 
@@ -936,6 +1149,13 @@ window.__ModuleLoader__.load({
         const continuation = readContinuation()
         applyLanguage(ctx, continuation.lang, own)
         own(mountStyles())
+        own(mountBrand(ctx))
+        // Fishball's messages and the folded replies (MESSAGE, REPLY_FOLD). `uiConversation` is a
+        // required inject (cordis starts the page only once DSH's conversation service exists, both
+        // SDKs), so the messages can always be drawn when replies are folded.
+        own(ctx.uiConversation.events.register(messageDefinition()))
+        own(ctx.slots.inject(MESSAGE.slot, () => ctx.slots.register({ name: MESSAGE.slot, key: MESSAGE.kind, locale: MESSAGE.locale }, MessageNodeView)))
+        own(mountReplyFold())
         document.documentElement.setAttribute(PAGE.root, '')
         own(() => document.documentElement.removeAttribute(PAGE.root))
         const manager = createCell(null)
@@ -1015,7 +1235,7 @@ window.__ModuleLoader__.load({
 
     return {
       name: PAGE.name,
-      inject: ['slots', 'layout', 'uiWorkspace', 'uiSession', 'sessions', 'locale', 'configForms', 'shortcuts'],
+      inject: ['slots', 'layout', 'uiWorkspace', 'uiSession', 'uiConversation', 'sessions', 'locale', 'configForms', 'shortcuts'],
       apply,
       recordDefinition,
     }

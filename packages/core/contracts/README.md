@@ -241,7 +241,9 @@ same in standalone and hosted mode, and no plugin injects a section into it.
 - **Manager tools:** exactly `read`, `read_image` and `working_directory`, plus `ask_user_question`
   (the user, 2026-11-18: DSH's own ask tool), checked on resume instead of the preset name (R-FB-13).
 - **Report (spelling PROPOSED):** `ok`, or `guards-overridden` with `row:<id>`, `policy:<key>`, `agent-presets`,
-  `bundle-order` or `manager-tools`.
+  `bundle-order` or `manager-tools`, with `extraManagerTools` (the manager's tool names beyond the
+  defaults, which core's status announces once per new name, gently; the user, 2026-11-21) and
+  `missingManagerTools` (defaults a manager lacks, which keep `manager-tools` in the guards notice).
   - Checks run at app ready, `settings/document-updated` and `plugin-manager/changed`, never
     before app ready.
 - **Reorder:** `moved`, `unchanged` or `failed` (PROPOSED), once per DSH. Core never moves itself

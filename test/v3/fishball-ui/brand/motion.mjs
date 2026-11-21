@@ -32,8 +32,10 @@ const PROBE = String(function probe() {
   return { animated }
 })
 
-async function evaluate(mark, styleText, expression, reduced) {
-  const html = `<!doctype html><html><head><meta charset="utf-8"><style>${styleText}</style></head><body>${htmlOf(mark, '')}</body></html>`
+const evaluate = (mark, styleText, expression, reduced) =>
+  evaluateHtml(`<!doctype html><html><head><meta charset="utf-8"><style>${styleText}</style></head><body>${htmlOf(mark, '')}</body></html>`, expression, reduced)
+/** Run `expression` (a function's source) in a whole document `html` with the media preference emulated; shared with avatar.mjs. */
+export async function evaluateHtml(html, expression, reduced = false) {
   const { devtools } = await chromium()
   const { targetId } = await devtools.send('Target.createTarget', { url: PAGE.blank })
   try {

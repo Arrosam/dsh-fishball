@@ -89,7 +89,8 @@ export const ASK_TEXT = Object.freeze({
  * The tool in the raw form `ctx.tools.register` takes (JSON Schema, as the bridge façade registers
  * its tools), so it needs no `defineTool` and no dsh-tools import here. A raw definition gets no
  * argument validation from DSH, so `execute` checks `offer_id` itself; any other argument is
- * ignored. The output schema is empty (any JSON: a card or a refusal), as the façade's TOOL_OUTPUT.
+ * ignored. The output schema is empty (any JSON: a card or a refusal), as the façade's TOOL_OUTPUT;
+ * the result renders as core's other JSON tools do (src/tool-output.js).
  */
 export const ASK_TOOL_DEFINITION = Object.freeze({
   parameters: Object.freeze({
@@ -99,8 +100,6 @@ export const ASK_TOOL_DEFINITION = Object.freeze({
     additionalProperties: false,
   }),
   schema: Object.freeze({}),
-  blockType: 'text',
-  jsonIndent: 2,
 })
 
 /**

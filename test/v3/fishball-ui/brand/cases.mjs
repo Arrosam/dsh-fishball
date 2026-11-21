@@ -24,6 +24,7 @@ import { brandPage } from './page.mjs'
 import { registerFaults } from './faults.mjs'
 import { registerNative } from './native.mjs'
 import { hidePage } from './hide.mjs'
+import { registerAvatar } from './avatar-cases.mjs'
 import { hasChrome, measureMotion, measureWords, stopMotionBrowser } from './motion.mjs'
 
 const show = (v) => JSON.stringify(v)
@@ -54,6 +55,7 @@ export function registerBrandCases(sdk) {
   const t = (id, row, title, fn, todo) => caseTest(sdk, id, row, title, fn, todo)
   registerFaults(t, sdk)
   registerNative(t, sdk)
+  registerAvatar(t, sdk)
   const status = (p) => p.byHook(HOOK.status)[0]
   const statusText = (p) => (status(p) ? p.text(status(p)) : undefined)
   const badge = (p) => p.byHook(HOOK.badge)[0]

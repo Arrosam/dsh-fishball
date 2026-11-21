@@ -68,10 +68,15 @@ export type GuardCheckTrigger = 'app-ready' | 'settings/document-updated' | 'plu
 /**
  * Core's guard status. `overridden` is empty exactly when `status` is `ok`. A later check that
  * finds every guard held clears it. Core keeps running and changes nothing back (R-FB-09).
+ * The user, 2026-11-21: `extraManagerTools` is the tool names a live manager session has beyond
+ * `ManagerTool`, Fishball's own left out; `missingManagerTools` the `ManagerTool` names some live
+ * manager lacks. Both sorted and unique, `[]` when none, non-empty only beside `manager-tools`, and
+ * both can be set at once. Core's status announces each new extra name once (persisted), gently;
+ * `manager-tools` stays in the guards notice only while a default is missing.
  */
 export type GuardReport =
-  | { readonly status: 'ok'; readonly overridden: readonly [] }
-  | { readonly status: 'guards-overridden'; readonly overridden: readonly OverriddenGuard[] }
+  | { readonly status: 'ok'; readonly overridden: readonly []; readonly extraManagerTools: readonly []; readonly missingManagerTools: readonly [] }
+  | { readonly status: 'guards-overridden'; readonly overridden: readonly OverriddenGuard[]; readonly extraManagerTools: readonly string[]; readonly missingManagerTools: readonly ManagerTool[] }
 
 /**
  * The outcome of core's one standalone reorder at its first start in a DSH (R-FB-12): `moved`

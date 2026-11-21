@@ -7,7 +7,7 @@
  *   wrapped in the public `ctx.shortcuts` face so a case can hold the config (pending) or make an
  *   edit fail (failed);
  * - recording fakes with the public SDK shapes for `slots`, `layout`, `uiWorkspace`, `uiSession`,
- *   `sessions` and `locale` (the LITE harness's, test/v2-page-cases/lite-harness.js), and the
+ *   `sessions`, `locale` and (MSG-USER) `uiConversation.events.register` (`log.conversationDefinitions`) (the LITE harness's, test/v2-page-cases/lite-harness.js), and the
  *   `api/fishball/session` route;
  * - React = the hook shim (support/rp-recommend.mjs) and DSH's primitives through the F-SETTINGS
  *   stand-ins (../../fishball-core/settings/primitives.mjs: Button, Tooltip, StateDot, icons).
@@ -90,14 +90,17 @@ function realShortcuts(sdk, page) {
  * - `shell` (LOGO-BUTTON) a scripted shell document: `{ body, querySelector, querySelectorAll, getElementsByName }`
  *   the page queries instead of the empty default, so fishball-page's native-control hiding
  *   (`mountRemovals`) sees the shell's buttons and its body observer works;
- * - `translate` `(namespace, key) => word` for the page's locale seat (the default answers the key).
+ * - `translate` `(namespace, key) => word` for the page's locale seat (the default answers the key);
+ * - `primitives` (GENTLE-TOOLS avatar) extra exports of the primitives module over the stand-ins
+ *   (e.g. FISH_LOGO_PATH / FISH_LOGO_VIEWBOX, which the stand-ins do not carry);
+ * - `prepare(page, ctx)` runs before the page client loads (startup services such as configForms).
  *
  * MULTI-3 observation points: `log.registrations` (every `slots.register` options: name, id, key,
  * priority), `log.edits` (every shortcut edit operation), `log.toggles` (`layout.toggleSidebar`
  * calls), `styles()` (the text of every style rule or sheet the page mounted, through
  * `CSSStyleSheet` or a `<style>` element) and `html` (the `<html>` element's attributes).
  */
-export async function navPage(t, sdk, { lang = NAV_PAGE.langs[0], openFails = 0, holdConfig = false, failEdits = false, launcher = {}, width = NAV_PAGE.wideWidth, shell, translate, prepare = () => {} } = {}) {
+export async function navPage(t, sdk, { lang = NAV_PAGE.langs[0], openFails = 0, holdConfig = false, failEdits = false, launcher = {}, width = NAV_PAGE.wideWidth, shell, translate, primitives: extraPrimitives = {}, prepare = () => {} } = {}) {
   // Host refs: a host element with a ref gets a stable stand-in element (React's commit does the
   // same), so a component that portals into another's element (the Settings launcher into the
   // nav's seat) can find it. `createPortal(node, container)` renders an `fbtest-portal` host node
@@ -113,7 +116,7 @@ export async function navPage(t, sdk, { lang = NAV_PAGE.langs[0], openFails = 0,
   }
   const shim = createReactShim({ stale() {}, hostRef })
   const { React } = shim
-  const log = { opens: [], panels: [], openSettings: 0, fetches: [], errors: [], registrations: [], edits: [], toggles: 0 }
+  const log = { opens: [], panels: [], openSettings: 0, fetches: [], errors: [], registrations: [], edits: [], toggles: 0, conversationDefinitions: [] }
   const page = createBrowserSandbox({
     lang, baseURI: NAV_PAGE.baseURI,
     fetch: async (input) => {
@@ -132,6 +135,8 @@ export async function navPage(t, sdk, { lang = NAV_PAGE.langs[0], openFails = 0,
     if (shell.querySelectorAll) page.document.querySelectorAll = shell.querySelectorAll
     if (shell.getElementsByName) page.document.getElementsByName = shell.getElementsByName
     if (shell.MutationObserver) { page.sandbox.MutationObserver = shell.MutationObserver; page.window.MutationObserver = shell.MutationObserver }
+    // The shell's element class is the page's global Node (a browser always has one).
+    if (shell.Node) { page.sandbox.Node = shell.Node; page.window.Node = shell.Node }
   }
   // MULTI-3: document listeners (the narrow sheet's pointerdown / keydown) are recorded so a case can fire them.
   const docListeners = []
@@ -199,6 +204,10 @@ export async function navPage(t, sdk, { lang = NAV_PAGE.langs[0], openFails = 0,
     register(options, Component) {
       const key = options.name + ':' + (options.id ?? mounted.length)
       log.registrations.push({ name: options.name, id: options.id, key: options.key, priority: options.priority })
+      // MSG-USER: a chat node renderer (DSH's conversation.chat.node, keyed by node kind) is drawn by DSH
+      // only for an existing node of that kind, always with {node}; this page has no conversation, so
+      // it is recorded and never drawn.
+      if (options.name === NAV_PAGE.slot.chatNode) return () => {}
       mounted.push({ key, options })
       const props = () => (options.name === NAV_PAGE.slot.launcher ? launcherProps : {})
       shim.mount(key, () => React.createElement(Component, props()))
@@ -217,6 +226,17 @@ export async function navPage(t, sdk, { lang = NAV_PAGE.langs[0], openFails = 0,
       async archiveSession() {}, async startSession() {}, async forkSession() {},
     },
     uiSession: { adapter: { current } },
+    // MSG-USER: DSH's dsh-client-ui-conversation service (a real DSH starts the page only once it exists).
+    // events.register(definition) records the Conversation Node Definition and returns its disposer.
+    uiConversation: {
+      events: {
+        register(definition) {
+          const entry = { kind: definition?.kind, target: definition?.target, disposed: false }
+          log.conversationDefinitions.push(entry)
+          return () => { entry.disposed = true }
+        },
+      },
+    },
     sessions: { list, async archive() {}, async fork() {}, async create() {} },
     locale: {
       bind: (ns) => (key) => translate?.(ns, key) ?? key, subscribe: () => () => {}, getSnapshot: () => ({ active: lang, revision: 0 }),
@@ -233,7 +253,7 @@ export async function navPage(t, sdk, { lang = NAV_PAGE.langs[0], openFails = 0,
   const loadPlugin = () => entry.factory((name) => {
     if (name === NAV_PAGE.modules.react) return React
     if (name === NAV_PAGE.modules.reactDom) return { createPortal: (node, container) => React.createElement(NAV_PAGE.portalTag, { [NAV_PAGE.portalContainer]: container }, node) }
-    if (name === NAV_PAGE.modules.primitives) return new Proxy(primitives, { get: (target, key) => (key === NAV_PAGE.modalSelectorKey ? NAV_PAGE.modalSelector : target[key]) })
+    if (name === NAV_PAGE.modules.primitives) return new Proxy(primitives, { get: (target, key) => (key === NAV_PAGE.modalSelectorKey ? NAV_PAGE.modalSelector : Object.hasOwn(extraPrimitives, key) ? extraPrimitives[key] : target[key]) })
     throw new Error('unexpected page require ' + name)
   })
   // A replacement page scope goes away; the document and native services prepared above stay live.
@@ -269,6 +289,8 @@ export async function navPage(t, sdk, { lang = NAV_PAGE.langs[0], openFails = 0,
   const nav = () => nodes().find((n) => n.tag === NAV_PAGE.nav.tag && n.props.className?.split(' ').includes(NAV_PAGE.nav.className) && n.props['aria-label'] === NAV_PAGE.nav.label)
   return {
     shim, log, nodes, nav, settle, composed, install, replace,
+    /** GENTLE-TOOLS avatar: tear the page scope down now (as DSH unmounting the page), keeping the native services. */
+    unmount: async () => { dispose(nativeEffects); await settle() },
     /** MULTI-3: every style rule text the page mounted and still holds. */
     styles: () => [
       ...sheets.flatMap((sheet) => [sheet.text ?? '', ...sheet.cssRules.map((r) => r.cssText)]),

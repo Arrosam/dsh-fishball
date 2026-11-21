@@ -34,6 +34,13 @@ const X19_OPERATION = Object.freeze({ sessionMessage: 'session.message', session
 /** K2's embed-UI alias namespace, keyed on its package name (design §13.3). */
 const EMBED_UI_NAMESPACE = NAMESPACE.aliases['dsh-connector-ui']
 
+/**
+ * The local names of embed-UI's contributed tools core names (dsh-connector `src/ui/constants.js`
+ * `UI_TOOL`): the attention tool X8 calls (§13.6) and the notify tool the persona tells Fishball
+ * to use when it is offered (DESIGN §32). Embed-UI registers them under its namespace.
+ */
+const EMBED_UI_TOOL = Object.freeze({ attention: 'attention.signal', notify: 'notify' })
+
 export const FACADE = Object.freeze({
   /** The link's public members the façade uses (O4: nothing else of `src/link/`). */
   linkMembers: Object.freeze(['status', 'tools', 'onTools', 'callTool']),
@@ -57,7 +64,9 @@ export const FACADE = Object.freeze({
   /** The argument of a send tool naming its target session (K1 `session_message` input). */
   sessionArgument: 'sessionId',
   /** embed-UI's contributed attention tool (design §13.6), as the link lists it. */
-  attentionTool: EMBED_UI_NAMESPACE + NAMESPACE.separator + 'attention.signal',
+  attentionTool: EMBED_UI_NAMESPACE + NAMESPACE.separator + EMBED_UI_TOOL.attention,
+  /** embed-UI's contributed notify tool (DESIGN §32), as the link lists it; the façade offers it as any contributed tool. */
+  notifyTool: EMBED_UI_NAMESPACE + NAMESPACE.separator + EMBED_UI_TOOL.notify,
   /** X8's one input key (§3.1: exactly `{important: boolean}`). */
   attentionKeys: Object.freeze(['important']),
 

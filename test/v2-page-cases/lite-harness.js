@@ -501,6 +501,8 @@
           // prove the native picker would render and open without it.
           if ((o.skipPageSlots ?? []).includes(options.name)) return () => {}
           if (options.name === 'conversation.hero.workspace') return hero.add(options, Component, 'page')
+          // MSG-USER: a chat node renderer is drawn by DSH only for an existing node (with {node}); no conversation here.
+          if (options.name === 'conversation.chat.node') return () => {}
           const container = api.seatFor?.(options.name) ?? (options.name === 'settings.launcher' ? document.getElementById('fb-settings-row') : document.getElementById('fb-overlay'))
           const holder = document.createElement('div')
           holder.dataset.fbtestSlot = options.name
@@ -520,6 +522,8 @@
         effect(fn) { const out = fn(); pageEffects.push(out); return out },
         slots, layout, uiWorkspace, locale, configForms: { get: (ns) => ns === 'locale' ? localeForm : undefined },
         uiSession: { adapter: { current } },
+        // MSG-USER: DSH's dsh-client-ui-conversation service, recorded no-op (the page now requires it).
+        uiConversation: { events: { register(definition) { (api.conversationDefinitions ??= []).push(definition?.kind); return () => {} } } },
         sessions: recorder('sessions', { list, async archive() {}, async fork() {}, async create() {} }),
         shortcuts: api.facade.shortcuts,
       }

@@ -513,6 +513,7 @@ export const GUARDS = Object.freeze({
     Object.freeze({ module: '../manager/reminders.js', table: 'TOOL' }),
     Object.freeze({ module: '../manager/skills.js', table: 'PRIVATE_SKILL_TOOL' }),
     Object.freeze({ module: '../asks/constants.js', table: 'ASK_TOOL' }),
+    Object.freeze({ module: '../manager/message-tools.js', table: 'MESSAGE_TOOL' }),
   ]),
   /** ReorderOutcome. */
   reorder: Object.freeze({ moved: 'moved', unchanged: 'unchanged', failed: 'failed' }),

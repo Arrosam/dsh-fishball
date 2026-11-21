@@ -15,8 +15,8 @@ its guard patch reaches every row); in a standalone DSH you install it yourself,
 
 - `fishball-core` (`fishball-core/main`, `src/main/`): the target list (`src/targets/`: one link,
   Connect, pairing and bridge façade per DSH target), the interception service, the ask cards,
-  status, and the one manager session with its persona, reminders (`schedule_*`) and private
-  Skills. It provides `fishballInstance` (apiVersion 2) and `fishballStatus`.
+  status, and the one manager session with its persona, reminders (`schedule_*`), `message_user`
+  (its one way to speak to the user on the Fishball page) and private Skills. It provides `fishballInstance` (apiVersion 2) and `fishballStatus`.
 - `fishball-core-session` (`src/session/route.js`): `GET|POST /api/fishball/session`, the manager
   session the Fishball page opens.
 - `fishball-core-guards` (`src/guards/`): the guard check, the `guards-overridden` report and, in a

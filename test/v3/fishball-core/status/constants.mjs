@@ -46,6 +46,11 @@ export const MODEL = Object.freeze({
   serviceName: 'fishballStatus',
   notice: Object.freeze({ pluginId: V3.core.name, guardsKeyPrefix: 'fishball-status:guards:' }),
 })
+/**
+ * GENTLE-TOOLS: STATUS_MODEL.notice also has `toolsKeyPrefix`; its spelling was not relayed, so
+ * F-STATUS-00 checks it is a non-empty string other than the guards prefix, and the members above exactly.
+ */
+export const TOOLS_KEY_PREFIX = 'toolsKeyPrefix'
 
 /** The snapshot's members (relayed contract), and the words of its `line`. */
 /** MULTI-0 `StatusSnapshot`: the global parts, `targets`, and LOGO-BUTTON's normalized `brand`. */
@@ -89,13 +94,52 @@ export const STRIP = Object.freeze({
 export const LANG = Object.freeze({ en: 'en', zh: 'zh', unknown: 'fbtest-xx' })
 
 /** Guard report words (K3 guards.d.ts via core's GUARDS) and fixture lists of overridden guards. */
+// GENTLE-TOOLS (the user, 2026-11-21): K3 GuardReport gained `extraManagerTools` (sorted, unique; [] when
+// none, also with status ok), so every fixture report carries it; `overridden(list)` alone gives [].
+// Review fix (the user, 2026-11-21): it gained `missingManagerTools` too (the default manager tools some
+// live manager lacks; sorted, unique, [] when none, always [] when ok); every fixture carries it, [] unless given.
 export const GUARD = Object.freeze({
-  ok: Object.freeze({ status: GUARDS.status.ok, overridden: Object.freeze([]) }),
-  overridden: (list) => Object.freeze({ status: GUARDS.status.overridden, overridden: Object.freeze([...list]) }),
+  ok: Object.freeze({ status: GUARDS.status.ok, overridden: Object.freeze([]), extraManagerTools: Object.freeze([]), missingManagerTools: Object.freeze([]) }),
+  overridden: (list, extras = [], missing = []) => Object.freeze({
+    status: GUARDS.status.overridden, overridden: Object.freeze([...list]), extraManagerTools: Object.freeze([...extras]), missingManagerTools: Object.freeze([...missing]),
+  }),
   first: Object.freeze([GUARDS.code.rowPrefix + V3.instance.name, GUARDS.code.bundleOrder]),
   second: Object.freeze([GUARDS.code.managerTools]),
   /** The notice's list separator (relayed: "overridden guards joined by ', '"). */
   separator: ', ',
+})
+
+/**
+ * GENTLE-TOOLS (the lead's relayed requirement, 2026-11-21): the once-only notice about the manager's
+ * extra tools. Spellings are the requirement's: the record file, its one-line JSON, the list separator,
+ * the manager-tools guard code (K3) and the words the gentle text must not use. Tool names are
+ * fixture data (sorted as written: alpha < beta < gamma).
+ */
+export const TOOLS = Object.freeze({
+  names: Object.freeze({ a: 'fbtest_tool_alpha', b: 'fbtest_tool_beta', c: 'fbtest_tool_gamma' }),
+  code: GUARDS.code.managerTools,
+  /** K3 `ManagerTool`, the defaults `missingManagerTools` names (GUARDS.managerTools: read, read_image, working_directory, ask_user_question). */
+  defaults: GUARDS.managerTools,
+  /** A guard code beside manager-tools in a refresh that keeps the same extras (K3 `bundle-order`). */
+  other: GUARDS.code.bundleOrder,
+  /** `<profileContext.home>/fishball/manager-tools.json`: one JSON line {"announced": [sorted]} + "\n". */
+  record: Object.freeze({ dir: 'fishball', file: 'manager-tools.json', key: 'announced', eol: '\n' }),
+  separator: ', ',
+  /** The notice is informational: never "guards are overridden", never "guarantees weaker". */
+  harsh: Object.freeze([/overridden/i, /weaker/i, /guarantee/i]),
+  profileName: 'fbtest-profile',
+  homePrefix: 'fbtest-status-tools-',
+  /** Malformed record contents (EP): each counts as nothing announced. */
+  malformed: Object.freeze({
+    'not JSON': '{oops',
+    'empty file': '',
+    'announced not a list': '{"announced":"fbtest_tool_alpha"}\n',
+    'no announced member': '{}\n',
+    'a JSON list': '["fbtest_tool_alpha"]\n',
+    'JSON null': 'null\n',
+  }),
+  /** Harness wait for "nothing more happens" around file I/O (no product oracle). */
+  quietMs: 150,
 })
 
 /** Link statuses (K1 TargetStatus, REM-DT-01). */
@@ -152,6 +196,8 @@ export const HOST = Object.freeze({
   loader: 'loader',
   changed: 'plugin-manager/changed',
   settingsUpdated: 'settings/document-updated',
+  /** dsh-app-boot's profile-context service ({home, name}; types/profile-context.d.ts, both SDKs). */
+  profileContext: 'profileContext',
   /** PluginChange.reason and a settings namespace/revision (event arguments, fixture values). */
   changeReason: 'bundle',
   settingsNamespace: 'fishball-core',

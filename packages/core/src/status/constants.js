@@ -33,7 +33,7 @@ export const STATUS_MODEL = Object.freeze({
   /** The Cordis service core's main row provides with `createStatus`'s object (the seam's name, read by fishball-ui's strip). */
   serviceName: UI_STATUS.service,
   /** The DSH services and events the status reads (none injected: a missing one is "nothing to read"). */
-  services: Object.freeze({ appReady: GUARDS.services.appReady, pluginManager: 'pluginManager', loader: GUARDS.services.loader }),
+  services: Object.freeze({ appReady: GUARDS.services.appReady, pluginManager: 'pluginManager', loader: GUARDS.services.loader, profileContext: GUARDS.services.profileContext }),
   // The DSH events the status reacts to, named one by one because it reacts to each differently
   // (a set check after one, a re-read of the target after the other). `volatileUpdate` is the
   // loader's live settings commit (cordis-plugin-loader, both SDKs): LOGO-BUTTON's brandStyle is
@@ -41,14 +41,32 @@ export const STATUS_MODEL = Object.freeze({
   events: Object.freeze({ pluginsChanged: 'plugin-manager/changed', settingsUpdated: 'settings/document-updated', volatileUpdate: 'loader/volatile-update' }),
   /** cordis `FiberState.FAILED` (both SDKs: cordis/lib/types/fiber.d.ts, a const enum, so not importable). */
   fiberFailed: 3,
-  /** The manager notice of an overridden guard (design §5a.2): once per DSH start. */
-  notice: Object.freeze({ pluginId: 'fishball-core', guardsKeyPrefix: 'fishball-status:guards:' }),
+  /**
+   * The manager notices: an overridden guard (design §5a.2), once per DSH start; the manager's extra
+   * tools (the user, 2026-11-21), once per new name, ever (`toolsRecord`).
+   */
+  notice: Object.freeze({ pluginId: 'fishball-core', guardsKeyPrefix: 'fishball-status:guards:', toolsKeyPrefix: 'fishball-status:manager-tools:' }),
+  /**
+   * The extra manager tools already announced, beside the manager's own record
+   * (`<DSH home>/fishball/chat.json`, src/manager/session.js): one JSON line `{announced: [names]}`,
+   * names sorted. The key hash is the digest of the announced set that a notice completes.
+   */
+  toolsRecord: Object.freeze({
+    directory: Object.freeze(['fishball']), file: 'manager-tools.json', member: 'announced',
+    mode: 0o600, directoryMode: 0o700, lineEnd: '\n', encoding: 'utf8', notFound: GUARDS.notFound,
+    keyHash: 'sha256', keyEncoding: 'hex',
+  }),
   /** The `Symbol.for` name that holds this process's (this DSH start's) notice key on `globalThis`. */
   startSymbol: 'fishball-core.status.start',
   logger: 'fishball-status',
   text: Object.freeze({
     guardsNotice: (list) => `Fishball notice: some of Fishball's guards are overridden in this DSH (${list}). Its guarantees are weaker until the owner restores them.`,
     noticeFailed: 'the guards-overridden notice could not be given to the manager (%s)',
+    // Informational, not a warning (the user, 2026-11-21: "gentle"): the tools were added on purpose.
+    toolsNotice: (list) => `Fishball notice: the manager now has tools available beyond its defaults: ${list}. This is for information; nothing needs to be done.`,
+    toolsNoticeFailed: 'the extra manager tools notice could not be given to the manager (%s)',
+    toolsRecordUnreadable: 'the record of announced manager tools could not be read (%s); every extra tool counts as new',
+    toolsRecordFailed: 'the record of announced manager tools could not be written (%s)',
     setFailed: 'the plugin set check failed (%s)',
   }),
 })

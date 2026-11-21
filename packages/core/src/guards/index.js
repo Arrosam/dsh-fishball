@@ -14,6 +14,12 @@ import { readIntendedGuards } from './intended.js'
 import { checkGuards } from './check.js'
 import { reason, reorderOnce } from './reorder.js'
 
+/** The GuardReport's ordered name lists, each compared for a change. */
+const REPORT_LISTS = Object.freeze(['overridden', 'extraManagerTools', 'missingManagerTools'])
+
+/** Whether two ordered name lists differ. */
+const differ = (left, right) => left.length !== right.length || left.some((name, index) => name !== right[index])
+
 /**
  * @param {object} ctx - the guard row's Cordis context (row.js).
  * @returns {{report(): object|undefined, reorder(): Promise<string>, onChange(listener: Function): () => void}}
@@ -36,8 +42,9 @@ export function createGuards(ctx) {
   ctx.effect(() => () => { disposed = true })
 
   function publish(report) {
+    // The manager's tool names count as a change too: the status announces each new extra one (status.js).
     const changed = current === undefined || current.status !== report.status ||
-      current.overridden.length !== report.overridden.length || current.overridden.some((guard, index) => guard !== report.overridden[index])
+      REPORT_LISTS.some((member) => differ(current[member], report[member]))
     current = report
     if (!changed) return
     if (report.status !== GUARDS.status.ok) logger.warn(GUARDS.text.report, report.status, report.overridden.join(GUARDS.text.reportSeparator))

@@ -79,6 +79,8 @@ export const TOOLS = Object.freeze({
   reminders: Object.freeze(['schedule_create', 'schedule_list', 'schedule_update', 'schedule_delete']),
   ask: 'ask_user',
   privateSkill: /^private_skill_/,
+  /** MSG-USER (2026-11-21): core's manager-only `message_user` (MESSAGE_TOOL.send), one of core's own tools. */
+  message: 'message_user',
 })
 
 /** The persona (the user's answer 5: V3 tool names; V2-only features removed). */

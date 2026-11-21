@@ -45,6 +45,7 @@ import { LINK, MCP, TARGETS } from '../../contracts/constants.js'
 import { tupleOfHandle } from '../targets/keys.js'
 import { emitIsolated, subscribe } from '../link/listeners.js'
 import { codeOf } from '../events/diagnostics.js'
+import { renderJson } from '../tool-output.js'
 import { ASKS, ASK_CODE, ASK_LOG, ASK_MISUSE, ASK_TOOL_DEFINITION, ASK_TEXT, CARD_STATE } from './constants.js'
 import { cardKeyOf, cardOf, createCardStore, recordOf } from './store.js'
 
@@ -273,7 +274,7 @@ export function createAsks({ targets, table, logger }) {
     parameters: ASK_TOOL_DEFINITION.parameters,
     output: {
       schema: ASK_TOOL_DEFINITION.schema,
-      render: (_args, value) => [{ type: ASK_TOOL_DEFINITION.blockType, text: JSON.stringify(value, null, ASK_TOOL_DEFINITION.jsonIndent) }],
+      render: renderJson,
     },
     execute: async (args) => {
       try { return await fileCard(source, args) } catch (error) {

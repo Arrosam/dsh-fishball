@@ -15,7 +15,7 @@
  *    façade and poll pipeline per target epoch (PLAN-MULTI D01), the web callback (Q-A3 B) shared
  *    by state; and status (F-STATUS) over it;
  * 5. the manager-scope contributions: every target's façade tools and `ask_user` (namespaced,
- *    PLAN-MULTI §4.4), the reminder tools and the private Skills, registered through X2 so they reach
+ *    PLAN-MULTI §4.4), the reminder tools, `message_user` and the private Skills, registered through X2 so they reach
  *    only the manager;
  * 6. the routes (the target routes, the web callback, the ask cards); the session route is its own row.
  *
@@ -38,6 +38,7 @@ import { LOG as EVENTS_LOG } from '../events/constants.js'
 import { createEvents, openLedger } from '../events/index.js'
 import { acceptId, openRecords } from '../identity/index.js'
 import { createWebCallback } from '../link/web-callback.js'
+import { registerMessageTools } from '../manager/message-user.js'
 import { createReminders } from '../manager/reminders.js'
 import { CONTRIBUTED_TOOLS } from '../manager/contributed.js'
 import { createManagerService } from '../manager/service.js'
@@ -157,6 +158,8 @@ export async function apply(ctx, config) {
   // effect of that fiber. Each target's `ask_user` comes with its façade (targets/runtime.js).
   ctx.effect(() => service.manager.registerSetup(MAIN.setupId.bridge, (agentCtx) => { agentCtx.effect(() => targets.mount(agentCtx.tools)) }))
   ctx.effect(() => service.manager.registerSetup(MAIN.setupId.reminders, (agentCtx) => { reminders.registerTools(agentCtx.tools) }))
+  // message_user: the manager's one way to speak to the user on the Fishball page (manager/message-user.js).
+  ctx.effect(() => service.manager.registerSetup(MAIN.setupId.message, (agentCtx) => { registerMessageTools(agentCtx.tools) }))
   ctx.effect(() => attachPrivateSkills(ctx, service.manager))
 
   // 6. routes. Without DSH's web listener there is no web callback; Connect then uses the loopback one.

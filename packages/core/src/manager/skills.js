@@ -28,6 +28,7 @@
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import { FileSystemSkillProvider } from '@deepseek-ai/dsh-skill-filesystem'
 import { createSkillStore, assertSkillName, SkillError, SKILL_ERROR, FS_SERVICE } from './skills-store.js'
+import { renderJson } from '../tool-output.js'
 
 /** Composition names: the registerSetup plugin id, the provider name in the manager's skill layer, services. */
 export const PRIVATE_SKILLS = Object.freeze({
@@ -98,7 +99,7 @@ const TEXT = Object.freeze({
 const STRING = Object.freeze({ type: 'string' })
 const JSON_OUTPUT = Object.freeze({
   schema: { type: 'json' },
-  render: (_args, value) => [{ type: 'text', text: JSON.stringify(value, null, 2) }],
+  render: renderJson,
 })
 
 const failure = (code, extra = {}) => ({ ok: false, code, committed: false, ...extra })
