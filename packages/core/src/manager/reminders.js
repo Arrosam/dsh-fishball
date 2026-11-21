@@ -42,6 +42,7 @@ import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
 import { freezeMessage } from '@deepseek-ai/dsh-llm'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import { createHandover } from '../events/handover.js'
+import { renderJson } from '../tool-output.js'
 import { TOOL } from './reminder-tools.js'
 import {
   advance,
@@ -185,7 +186,7 @@ const STRING = Object.freeze({ type: 'string' })
 const NUMBER = Object.freeze({ type: 'number' })
 const OUTPUT = Object.freeze({
   schema: { type: 'json' },
-  render: (_args, value) => [{ type: 'text', text: JSON.stringify(value, null, 2) }],
+  render: renderJson,
 })
 
 /** Model-facing copy, taken from the schedule tool so the persona's habits keep working. */

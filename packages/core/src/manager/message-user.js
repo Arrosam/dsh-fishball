@@ -9,9 +9,8 @@
  * globally, so no other agent gets it.
  */
 import { defineTool } from '@deepseek-ai/dsh-tools'
+import { renderJson } from '../tool-output.js'
 import { MESSAGE_TOOL } from './message-tools.js'
-
-export { MESSAGE_TOOL } from './message-tools.js'
 
 /**
  * The tool's argument, its model-facing words and its result values. The model reads the result,
@@ -23,8 +22,6 @@ const MESSAGE = Object.freeze({
   description: 'Send a message to the user. This is the only way the user sees what you say: your ordinary replies, reasoning and other tool calls are hidden from them. The message is shown in this chat as your message, rendered as Markdown. Put everything the user needs in it, in their language.',
   argumentDescription: 'The whole message for the user, as Markdown. It must not be blank.',
   emptyCode: 'message-empty',
-  jsonIndent: 2,
-  blockType: 'text',
 })
 
 const RESULT = Object.freeze({
@@ -38,10 +35,7 @@ function messageToolDefinition() {
     name: MESSAGE_TOOL.send,
     description: MESSAGE.description,
     parameters: { [MESSAGE.argument]: { type: 'string', required: true, description: MESSAGE.argumentDescription } },
-    output: {
-      schema: { type: 'json' },
-      render: (_args, value) => [{ type: MESSAGE.blockType, text: JSON.stringify(value, null, MESSAGE.jsonIndent) }],
-    },
+    output: { schema: { type: 'json' }, render: renderJson },
     async execute(args) {
       return args[MESSAGE.argument].trim() === '' ? RESULT.empty : RESULT.shown
     },
