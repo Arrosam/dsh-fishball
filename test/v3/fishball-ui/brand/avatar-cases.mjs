@@ -86,13 +86,32 @@ export function registerAvatar(t, sdk) {
       const p = await avatarPage(c, sdk, { style: theme })
       const m = await p.measure()
       assert.equal(m.reply.after.content, '"' + AVATAR.name + '"', theme + ': the name label')
-      for (const role of ['other-part', 'outside']) {
+      // MSG-USER: the expanded assistant reply is no longer a Fishball message; rows outside main.conversation never were.
+      for (const role of ['expanded', 'other-part', 'outside', 'plain']) {
         assert.equal(m[role].before.mask, 'none', theme + ': ' + role + ' row has an avatar mask')
         assert.equal(m[role].after.content, 'none', theme + ': ' + role + ' row has the name label')
       }
       seen[theme] = { after: m.reply.after, row: m.reply.row, box: m.reply.before.box }
     }
     assert.deepEqual(seen[THEME.deepseek], seen[THEME.fishball], 'the theme changed more than the avatar drawing')
+  })
+
+  // ------------------------------------------------------------------ MSG-USER: the look moved to the message row (browser)
+  // The lead (2026-11-21): the avatar, label and bubble belong to [data-chat-flow-kind="fishball-message"];
+  // expanded hidden replies get a plain look so they do not read as messages to the user. 'plain' is the
+  // same assistant reply outside main.conversation, which no Fishball rule reaches: DSH's own look.
+  browserRow('AVATAR-EP-05', 'expanded reply plain', 'in both themes an expanded assistant-step reply has no avatar, no "Fishball" label and no bubble (its content box is the unstyled one), while the message row has a bubble', async (c) => {
+    for (const theme of [THEME.fishball, THEME.deepseek]) {
+      const p = await avatarPage(c, sdk, { style: theme })
+      const m = await p.measure()
+      assert.equal(m.expanded.before.mask, 'none', theme + ': the expanded reply has an avatar mask')
+      assert.equal(m.expanded.before.backgroundImage, 'none', theme + ': the expanded reply has an avatar layer')
+      assert.ok(['none', 'normal'].includes(m.expanded.before.content), theme + ': the expanded reply draws a ::before: ' + m.expanded.before.content)
+      assert.ok(['none', 'normal'].includes(m.expanded.after.content), theme + ': the expanded reply has the name label: ' + m.expanded.after.content)
+      assert.deepEqual(m.expanded.bubble, m.plain.bubble, theme + ': the expanded reply\'s content is styled as a bubble')
+      assert.equal(m.expanded.row, m.plain.row, theme + ': the expanded reply\'s row box was changed')
+      assert.notDeepEqual(m.reply.bubble, m.plain.bubble, theme + ': the message row has no bubble look: ' + show(m.reply.bubble))
+    }
   })
 
   // ------------------------------------------------------------------ state transitions: a live change of the setting

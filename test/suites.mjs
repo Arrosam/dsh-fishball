@@ -315,6 +315,11 @@ export const V3_SUITES = Object.freeze({
       'test/v3/contract/package-boundaries/**', 'test/v3/dsh-connector-adapter/oauth-client/**', 'test/v2-page-cases/lite-browser.mjs', 'test/v3/fishball-core/settings/primitives.mjs']),
   'fishball-core.manager': suite("core's manager: reminders, singleton, preset and persona, generated identity, model (F-WIRE)", v3('fishball-core/manager'),
     [all(PACKAGE.fishballCore), all(PACKAGE.fishballShared), 'test/support/fixtures/fake-llm.mjs', 'test/support/host.mjs']),
+  // MSG-USER: core's manager-only message_user, its persona, and fishball-page's message rows and hidden
+  // replies in DSH's real web UI (the manager suite's world, boots core with its ui/ rows; LITE's Chromium).
+  'fishball-core.message-user': suite("message_user, its persona, the Fishball page's message rows and folded replies (MSG-USER)", v3('fishball-core/message-user'),
+    [all(PACKAGE.fishballCore), all(PACKAGE.fishballShared), 'test/v3/fishball-core/manager/{world,subject,constants}.mjs', 'test/support/fixtures/fake-llm.mjs',
+      'test/support/host.mjs', 'test/v2-page-cases/lite-browser.mjs']),
   // F-WIRE: fishball-ui's model dialog, strip route and live core rows, in the browser sandbox and a real DSH.
   'fishball-ui.model-dialog': suite('fishball-ui model dialog, status strip route, live core on/off, composer picker guard (F-WIRE)', v3('fishball-ui/model-dialog'),
     [all(PACKAGE.fishballUi), all(PACKAGE.fishballCore), all(PACKAGE.fishballShared), 'test/v3/fishball-core/wire/**', 'test/v3/fishball-core/settings/**', 'test/v3/fishball-ui/guards/**',

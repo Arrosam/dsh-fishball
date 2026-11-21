@@ -1,10 +1,13 @@
 /**
  * GENTLE-TOOLS avatar rows' harness: fishball-page's real client (navPage, the UI-POLISH-F scripted page)
  * with core's settings form for the logo theme, then the page's own style rules laid out in a headless
- * Chromium (motion.mjs evaluateHtml) over a minimal conversation: Fishball's reply row as DSH marks it
- * (data-slot main.conversation > data-chat-flow-kind assistant-step, data-chat-group-part response),
- * and two rows the rules must not reach (a non-response part, and a response row outside
- * main.conversation). The <html> attributes are the ones the page set on the scripted <html>.
+ * Chromium (motion.mjs evaluateHtml) over a minimal conversation inside data-slot main.conversation.
+ * MSG-USER re-baseline: 'reply' is Fishball's message row (data-chat-flow-kind fishball-message >
+ * conversation.chat.node > div[data-fishball-message], the bubble > the Markdown block); 'expanded' is an
+ * assistant reply DSH shows (assistant-step / response, not folded), which must keep DSH's plain look;
+ * 'other-part' is a reasoning step. Outside main.conversation, 'outside' (a message row) and 'plain' (an
+ * assistant reply) are rows the rules must not reach; 'plain' is the unstyled baseline. The <html>
+ * attributes are the ones the page set on the scripted <html>.
  *
  * The configForms face is DSH's ConfigForm (dsh-client-ui-settings config-form-types.d.ts, both SDKs):
  * get(entryId) -> {getSnapshot(), subscribe(fn) -> dispose}; the snapshot's value is core's section.
@@ -86,18 +89,22 @@ export async function avatarPage(t, sdk, { style = AVATAR.absent, forms = true, 
 }
 
 const escapeAttr = (v) => String(v).replace(/&/g, '&amp;').replace(/"/g, '&quot;')
-const row = (role, part) => '<div data-fbtest-row="' + role + '" data-chat-flow-kind="' + AVATAR.row.kind + '" data-chat-group-part="' + part + '"><div data-slot="conversation.chat.node"><div>fbtest reply</div></div></div>'
+/** One chat row as DSH marks it: kind, an optional group part, the node slot, and its content (the message row's bubble carries its hook). */
+const row = (role, kind, part) => '<div data-fbtest-row="' + role + '" data-chat-flow-kind="' + kind + '"' + (part ? ' data-chat-group-part="' + part + '"' : '') + ' data-chat-turn="1">' +
+  '<div data-slot="' + AVATAR.row.node + '" style="display:contents"><div data-fbtest-bubble' + (kind === AVATAR.row.kind ? ' ' + AVATAR.row.bubble : '') + '><div><p>fbtest reply</p></div></div></div></div>'
+const message = (role) => row(role, AVATAR.row.kind)
+const reply = (role) => row(role, AVATAR.row.reply, AVATAR.row.part)
 function documentOf(attrs, styles) {
   const html = attrs.map(([n, v]) => ' ' + n + '="' + escapeAttr(v) + '"').join('')
   // Distinct colours for the two DSH tokens the requirement names, so the painted colour is observable.
   const tokens = ':root{' + AVATAR.tokens.map(([name, colour]) => name + ':' + colour).join(';') + '}'
   return '<!doctype html><html' + html + '><head><meta charset="utf-8"><style>' + tokens + '</style>' +
     styles.map((s) => '<style>' + s + '</style>').join('') + '</head><body>' +
-    '<div data-slot="' + AVATAR.row.conversation + '">' + row('reply', AVATAR.row.part) + row('other-part', AVATAR.row.otherPart) + '</div>' +
-    '<div>' + row('outside', AVATAR.row.part) + '</div></body></html>'
+    '<div data-slot="' + AVATAR.row.conversation + '">' + message('reply') + reply('expanded') + row('other-part', AVATAR.row.reply, AVATAR.row.otherPart) + '</div>' +
+    '<div>' + message('outside') + reply('plain') + '</div></body></html>'
 }
 
-/** Every row's ::before and ::after, and the row's own box, by data-fbtest-row. */
+/** Every row's ::before and ::after, the row's own box and its content box (the bubble seat), by data-fbtest-row. */
 const PROBE = String(function probe() {
   const decode = (value) => {
     const m = /url\("?(data:[^")]*)"?\)/.exec(value || '')
@@ -112,12 +119,15 @@ const PROBE = String(function probe() {
     const before = getComputedStyle(el, '::before')
     const after = getComputedStyle(el, '::after')
     const own = getComputedStyle(el)
+    const seat = el.querySelector('[data-fbtest-bubble]')
+    const inner = seat ? getComputedStyle(seat) : null
     const mask = [before.maskImage, before.webkitMaskImage].find((v) => v && v !== 'none') || 'none'
     out[el.dataset.fbtestRow] = {
       before: { content: before.content, mask, maskSvg: decode(mask), backgroundImage: before.backgroundImage, backgroundSvg: decode(before.backgroundImage), backgroundColor: before.backgroundColor,
         box: [before.position, before.left, before.top, before.width, before.height].join(' ') },
       after: { content: after.content, box: [after.position, after.top, after.left, after.color, after.font].join(' ') },
       row: [own.position, own.margin, own.padding].join(' '),
+      bubble: inner && { backgroundColor: inner.backgroundColor, borderRadius: inner.borderRadius, padding: inner.padding, border: inner.borderTopWidth + ' ' + inner.borderTopStyle, boxShadow: inner.boxShadow },
     }
   }
   const probeColour = (colour) => { const d = document.createElement('div'); d.style.color = colour; document.body.append(d); const c = getComputedStyle(d).color; d.remove(); return c }

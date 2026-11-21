@@ -19,7 +19,7 @@ import { scenario, startFakeTarget } from './subject.mjs'
 import { registerRfixManagerCases } from './rfix.mjs'
 import { registerRfix2ManagerCases } from './rfix2.mjs'
 
-const isCoreTool = (name) => TOOLS.reminders.includes(name) || name === TOOLS.ask || TOOLS.privateSkill.test(name)
+const isCoreTool = (name) => TOOLS.reminders.includes(name) || name === TOOLS.ask || name === TOOLS.message || TOOLS.privateSkill.test(name)
 const set = (path, value) => ({ op: OP.set, path: [...path], value })
 const unset = (path) => ({ op: OP.unset, path: [...path] })
 const post = (h, route, body = {}) => h.request(route, { method: HTTP.post, body })
@@ -200,7 +200,7 @@ export function registerManagerCases(sdk) {
     const tools = f.managerTurn[0]?.tools ?? []
     for (const tool of TOOLS.reminders) assert.ok(tools.includes(tool), `${tool} missing from the manager's tools: ${tools.join(', ')}`)
   })
-  test(name('MGR-REM-EP-02', 'an ordinary new session sees none of core\'s tools (reminders, ask_user, private skills)'), async () => {
+  test(name('MGR-REM-EP-02', 'an ordinary new session sees none of core\'s tools (reminders, ask_user, message_user, private skills)'), async () => {
     const f = await read('ordinary')
     assert.notEqual(f.ordinary.sessionId, f.managerA, 'the new session is the manager')
     const tools = f.ordinary.requests[0]?.tools

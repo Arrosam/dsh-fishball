@@ -181,6 +181,7 @@ Level: fishball-page's real client in navPage (package/nav-page.mjs, now with a 
 | AVATAR-EP-04 ×2 | EP | a settings-section-like `[data-fishball-brand]` element in the same document, stored fishball / deepseek, a live change and teardown: `<html>` never carries or is written `data-fishball-brand`; the section's hook value is unchanged and never written |
 | AVATAR-EP-02 ×5 (browser) | EP | absent / fishball / other case / non-string → fish body mask, label colour, #EC0A6E eye layer; deepseek → FISH_LOGO_PATH mask, business colour, no background-image |
 | AVATAR-EP-03 unchanged (browser) | EP | ::after "Fishball", its box and the row box the same in both themes; other rows get no mask and no label |
+| AVATAR-EP-05 expanded reply plain (browser) | EP (MSG-USER re-baseline) | the avatar rows now draw on `[data-chat-flow-kind="fishball-message"]` (row > conversation.chat.node > div[data-fishball-message]); an expanded `assistant-step` / `response` reply has no mask, no label and the same content box as an unstyled reply; the message row has a bubble |
 | AVATAR-ST-01 ×3 | ST | a form notification fishball ⇄ deepseek flips the attribute live, both directions, no slot re-registration; deepseek → unknown reads fishball |
 | AVATAR-ST-02 ×2 (browser) | ST | the drawn avatar follows the live change and back |
 | AVATAR-ST-03 teardown | ST | unmounting removes the attribute and the form subscription; a later change writes nothing |

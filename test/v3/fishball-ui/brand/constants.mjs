@@ -108,7 +108,17 @@ export const AVATAR = Object.freeze({
   /** A settings-section-like element in the same document (fixture tag and hook value). */
   settingsSection: Object.freeze({ tag: 'section', value: 'fbtest-settings-section' }),
   pageAttr: PAGE_MARK,
-  row: Object.freeze({ conversation: 'main.conversation', kind: 'assistant-step', part: 'response', otherPart: 'reasoning' }),
+  /**
+   * MSG-USER re-baseline (the lead, 2026-11-21): the avatar, the "Fishball" label and the bubble are on
+   * Fishball's message row, `[data-chat-flow-kind="fishball-message"]` (row > conversation.chat.node >
+   * div[data-fishball-message], the bubble > the Markdown block); an expanded assistant reply
+   * (`assistant-step` / `response`) keeps DSH's plain look.
+   */
+  row: Object.freeze({
+    conversation: 'main.conversation', node: 'conversation.chat.node',
+    kind: 'fishball-message', bubble: 'data-fishball-message',
+    reply: 'assistant-step', part: 'response', otherPart: 'reasoning',
+  }),
   fish: Object.freeze({
     viewBox: '0 0 24 24',
     body: 'M7.4 16.6 L7.4 9.9 L11.3 5.6 L18.4 5.6 L18.4 12.7 L14.1 16.6 Z M7.4 16.6 L2.6 21.4 L7.4 21.4 Z',
