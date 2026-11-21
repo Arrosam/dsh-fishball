@@ -2335,8 +2335,10 @@ Decided by the user: off until the user sets an interval and a maximum of consec
 **Implementation decisions (Fishball, 2026-11-21).**
 - Settings: `intervalSeconds` (1 … 2147483, the setTimeout limit) and `maxConsecutive` (≥ 1), no defaults; either unset means off: no tool, no timer.
 - The timer is armed at each `turn/end` for the interval after that event's time and cleared at `turn/start`.
-- A heartbeat turn is a turn that admitted the heartbeat notice and no user-typed message; any other turn that entered a step is real. A turn that entered no step sent no request and changes neither the count nor the anchor.
-- Restart and resume rebuild the count and the anchor from the session log; an overdue heartbeat is not caught up (the cache is presumed cold).
-- A failed send is logged and not retried; the next turn re-arms it.
+- A heartbeat turn is a turn that admitted the heartbeat notice and no work message (the user's, a core event batch `fishball-event`, a reminder `schedule`, another plugin's `fishball-notice`); any other turn that entered a step is real. A turn that entered no step sent no request and changes neither the count nor the anchor.
+- With wake batching (§29) each batch is one turn and resets like any real turn; events in the quiet window are not a turn. A heartbeat claimed with a batch in one turn makes that turn real.
+- Each manager setup (when core opens the session after a restart, a resume, or a row reload) rebuilds the count and the anchor from the session log; an overdue heartbeat is not caught up (the cache is presumed cold), and a timer firing more than 5 s late (machine sleep) is dropped by the same rule. The delay is capped at the interval (a wall clock set back).
+- A failed send is logged and not retried; the next turn re-arms it. Known race: core's `notify` cannot be withdrawn, so a turn started between the timer and core's followup is followed by the heartbeat.
+- `heartbeat_focus` declares `focus` as an untyped, optional `json` field (as the board does) so that every malformed call gets the tool's own `invalid-input`; dsh-tools still refuses non-object arguments itself.
 - One dedupe key per idle gap: session id plus the seq of the `turn/end` that opened it.
 - The focus is `<home>/fishball-heartbeat/focus.json`, ≤ 2000 code points, written by rename; an empty focus clears it.

@@ -22,9 +22,11 @@ function parse(args) {
  * `invalid-input` or `focus-unavailable` (the store failed; nothing is reported as saved). It
  * never throws.
  *
- * The field is declared `json`, as the board's are: DSH's registry would otherwise refuse a
- * malformed call with its own error before execute, and every malformed call should get this
- * tool's one typed refusal.
+ * The field is declared `json` and not required, as the board's are: dsh-tools' defineTool
+ * validates arguments against the schema before execute and throws its own ToolArgsError, so a
+ * typed or required field would answer a malformed call with DSH's error instead of this tool's
+ * one refusal. The description says it is a string. Arguments that are not an object at all are
+ * still refused by defineTool itself, before this tool runs.
  *
  * @param {{store: {write(focus: string): Promise<void>}, sessionId: string}} options - the row's
  *   focus store and the manager session id of the scope this tool is registered into.
@@ -33,10 +35,10 @@ export function createFocusTool({ store, sessionId }) {
   return defineTool({
     name: TOOL.name,
     description: TEXT.toolDescription,
-    parameters: { focus: { type: 'json', required: true, description: TEXT.focusField } },
+    parameters: { focus: { type: TOOL.jsonType, description: TEXT.focusField } },
     output: {
-      schema: { type: 'json' },
-      render: (_args, value) => [{ type: 'text', text: value.ok ? TEXT.saved(value.focus) : JSON.stringify(value) }],
+      schema: { type: TOOL.jsonType },
+      render: (_args, value) => [{ type: TOOL.textBlock, text: value.ok ? TEXT.saved(value.focus) : JSON.stringify(value) }],
     },
     async execute(args, exec) {
       // The tool is registered only in the manager's scope (X2); this is the second check.

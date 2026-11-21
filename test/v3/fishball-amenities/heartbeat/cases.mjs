@@ -1,18 +1,22 @@
 /**
  * fishball-heartbeat black-box cases, written from the requirements alone (the user's words, the
- * lead's derived row contract and the lead's refinement of 2026-11-21); no file under
- * packages/fishball-amenities/heartbeat/ was read.
+ * lead's derived row contract and the lead's two refinements of 2026-11-21, the second after core's
+ * event batching, 165b734c); no file under packages/fishball-amenities/heartbeat/ was read.
  *
  * Techniques (ids are this suite's own):
  * - EP: HB-EP-01 config partitions (unset / one set / both set / invalid values), HB-EP-02 the core
  *   seam (absent, apiVersion 1, apiVersion 2, appReady, late, removed, re-provided), HB-EP-03 the
- *   tool's callers and argument shapes, HB-EP-04 which session's events count;
+ *   tool's callers and argument shapes, HB-EP-04 which session's events count, HB-EP-05 core's
+ *   event batches (a delivered batch turn is work; events not yet delivered change nothing);
  * - BVA: HB-BVA-01 intervalSeconds 0/1/max/max+1 (+ non-integer), HB-BVA-02 maxConsecutive 0/1/2,
  *   HB-BVA-03 focus length 2000/2001 code points (ASCII and astral, trimmed first), HB-BVA-04 the
  *   restart edge (elapsed interval-1 ms / exactly interval / +1 ms; "remaining <= 0 is overdue:
- *   nothing sent", the lead's refinement 3), HB-BVA-05 the firing edge (interval-1 ms / interval);
- * - DT: HB-DT-01 turn classification (heartbeat notice × user message × step entered × other
- *   sources × end reason);
+ *   nothing sent", the lead's refinement 3), HB-BVA-05 the firing edge (interval-1 ms / interval),
+ *   HB-BVA-06 a late timer (fired 5000 ms after due: sent; 5001 ms: dropped with a warning),
+ *   HB-BVA-07 the delay cap (a last turn end in the future after the clock was set back: the timer
+ *   still fires exactly one interval after arming);
+ * - DT: HB-DT-01 turn classification (heartbeat notice × work message — user, fishball-event,
+ *   schedule, another plugin's notice — × step entered × context-only sources × end reason);
  * - ST: HB-ST-01 idle → armed → fired → heartbeat turn → … → limit → cool → real turn → armed, and
  *   HB-ST-02 the restart reconstruction of count and anchor;
  * - integration: HB-INT-* (focus persistence, notify rejection, disposal, dedupe keys, text).
@@ -38,8 +42,8 @@ import { NOTIFY_MODE, labFor } from './world.mjs'
 
 const T = { timeout: WAIT.testMs }
 const ID = Object.freeze({
-  ep01: 'HB-EP-01', ep02: 'HB-EP-02', ep03: 'HB-EP-03', ep04: 'HB-EP-04',
-  bva01: 'HB-BVA-01', bva02: 'HB-BVA-02', bva03: 'HB-BVA-03', bva04: 'HB-BVA-04', bva05: 'HB-BVA-05',
+  ep01: 'HB-EP-01', ep02: 'HB-EP-02', ep03: 'HB-EP-03', ep04: 'HB-EP-04', ep05: 'HB-EP-05',
+  bva01: 'HB-BVA-01', bva02: 'HB-BVA-02', bva03: 'HB-BVA-03', bva04: 'HB-BVA-04', bva05: 'HB-BVA-05', bva06: 'HB-BVA-06', bva07: 'HB-BVA-07',
   dt01: 'HB-DT-01', st01: 'HB-ST-01', st02: 'HB-ST-02', uc01: 'HB-UC-01', int: 'HB-INT',
 })
 const CFG = HEARTBEAT.config
@@ -56,6 +60,8 @@ const config = (maxConsecutive, intervalSeconds = TIME.intervalSeconds) => ({ [C
 /** A max no case reaches, so only the timer is under test. */
 const ROOMY = 1000
 const show = (value) => JSON.stringify(value)
+/** The word the focus description must carry ("… a string …"). */
+const STRING_WORD = /\bstring\b/i
 
 // ------------------------------------------------------------------------------------------------
 // Helpers
@@ -124,28 +130,49 @@ async function nextText(lab, w) {
   return notice.text
 }
 
-/** A world whose manager log was written by an earlier world over the same home (a restart). */
+/**
+ * A world whose manager log was written by an earlier world over the same home (a restart).
+ * `elapsedMs` moves the wall clock between the two (negative: the clock was set back); no timer of
+ * the closed world matters, so the clock is set, not ticked.
+ */
 async function restarted(lab, earlier, elapsedMs, cfg, options = {}) {
   const seed = earlier.snapshot()
   await earlier.close()
-  await lab.tick(elapsedMs)
+  lab.setTime(lab.now() + elapsedMs)
   const later = await lab.open({ ...options, seedFrom: seed })
   await later.load(cfg)
   return later
 }
 
 /**
- * Checks a tool's declared parameters: one required string `focus` and nothing else. A definition
- * may carry DSH's compiled JSON Schema (`{type: 'object', properties, required}`, what defineTool
- * returns) or the per-property spec (`{focus: {type, required: true}}`); both are accepted.
+ * Checks a tool's declared parameters (refinement 2, item 2): one optional, untyped `focus` whose
+ * description says it is a string, and nothing else. Untyped and optional so that every bad value
+ * reaches the tool, which answers invalid-input itself instead of defineTool throwing. A
+ * definition may carry DSH's compiled JSON Schema (`{type: 'object', properties, required}`, what
+ * defineTool returns) or the per-property spec (`{focus: {…}}`); both are read.
  */
 function assertFocusParameters(parameters) {
   const compiled = parameters?.type === 'object' && typeof parameters.properties === 'object'
   const props = compiled ? parameters.properties : parameters
   assert.deepEqual(Object.keys(props ?? {}), [HEARTBEAT.argument], 'the only parameter is focus: ' + show(parameters))
-  assert.equal(props[HEARTBEAT.argument].type, 'string', 'focus is a string')
-  const required = compiled ? parameters.required?.includes(HEARTBEAT.argument) : props[HEARTBEAT.argument].required === true
-  assert.ok(required, 'focus is required: ' + show(parameters))
+  const focus = props[HEARTBEAT.argument]
+  assert.equal(focus.type, undefined, 'focus is untyped: ' + show(focus))
+  const required = compiled ? parameters.required?.includes(HEARTBEAT.argument) : focus.required === true
+  assert.ok(!required, 'focus is optional: ' + show(parameters))
+  assert.match(String(focus.description ?? ''), STRING_WORD, 'the description says focus is a string: ' + show(focus))
+}
+
+/**
+ * One call with non-object arguments: either dsh-tools' defineTool throws its ToolArgsError before
+ * the tool runs (accepted, refinement 2 item 2) or the tool returns invalid-input. Anything else fails.
+ */
+async function nonObjectRefused(w, args) {
+  try {
+    return await w.call(args)
+  } catch (error) {
+    assert.equal(error?.code, HEARTBEAT.argsErrorCode, 'only defineTool\'s argument error may be thrown: ' + error)
+    return { ok: false, code: CODE.invalidInput }
+  }
 }
 
 export function registerHeartbeatCases(sdk) {
@@ -261,6 +288,54 @@ export function registerHeartbeatCases(sdk) {
   })
 
   // ============================================================================================
+  // HB-BVA-06: a late timer. Date jumps past the due time while no timer runs, then the timer runs:
+  // fired at most lateToleranceMs after (turn end + interval) it is sent; later it is dropped with
+  // a warning (the cache is presumed cold) and the next turn end re-arms.
+
+  for (const p of [
+    { part: 1, lateMs: HEARTBEAT.lateToleranceMs, sent: true },
+    { part: 2, lateMs: HEARTBEAT.lateToleranceMs + EDGE_MS, sent: false },
+  ]) {
+    row(sdk, ID.bva06, p.part, `a timer firing ${p.lateMs} ms after due: ${p.sent ? 'sent' : 'not sent, a warning logged, the next turn re-arms'}`, async (t) => {
+      const { lab, w } = await loaded(t, sdk, config(ROOMY))
+      await w.turn(TURN.real)
+      await lab.tick(INTERVAL_MS - EDGE_MS)
+      assert.deepEqual(w.notices, [], 'not due yet')
+      const warnings = w.warnings().length
+      await lab.jump(p.lateMs + EDGE_MS)
+      if (p.sent) {
+        assert.equal(w.notices.length, 1, 'sent within the tolerance')
+        assertNoticeShape(w.notices[0])
+        return
+      }
+      assert.deepEqual(w.notices, [], 'dropped past the tolerance')
+      assert.ok(w.warnings().length > warnings, 'a warning was logged: ' + show(w.logs.slice(-5)))
+      await assertSilent(lab, w, 'no retry for the dropped gap')
+      await assertEnabled(lab, w, INTERVAL_MS, 'the next turn end re-arms')
+    })
+  }
+
+  // ============================================================================================
+  // HB-BVA-07: the delay cap. The armed delay is min(turn end + interval - now, interval): after
+  // the clock was set back, the last turn end lies in the future, and the timer still fires
+  // exactly one interval after arming (not later, and not at the far-future due time).
+
+  for (const p of [
+    { part: 1, label: '1 ms', backMs: EDGE_MS },
+    { part: 2, label: 'half an interval', backMs: HALF_MS },
+    { part: 3, label: 'ten intervals', backMs: SILENCE_MS },
+  ]) {
+    row(sdk, ID.bva07, p.part, `restart with the clock set back ${p.label} behind the last turn end: fires exactly one interval after arming`, async (t) => {
+      const lab = await labFor(t, sdk)
+      const earlier = await lab.open()
+      await earlier.load(config(ROOMY))
+      await earlier.turn(TURN.real)
+      const w = await restarted(lab, earlier, -p.backMs, config(ROOMY))
+      await assertFiresAfter(lab, w, INTERVAL_MS, 'capped at the interval')
+    })
+  }
+
+  // ============================================================================================
   // HB-DT-01: turn classification. Observed with maxConsecutive 1: a real turn ends at T, the
   // turn under test X ends at T + interval/2. Real X → the next heartbeat is interval after X;
   // heartbeat X → count 1 = max, nothing; neutral X (no step) → the anchor stays T, fires at
@@ -273,12 +348,17 @@ export function registerHeartbeatCases(sdk) {
     { part: 3, label: 'the user\'s message only', sources: TURN.real, outcome: OUTCOME.real },
     { part: 4, label: 'a step with neither message', sources: TURN.stepOnly, outcome: OUTCOME.real },
     { part: 5, label: 'another plugin\'s fishball-notice only', sources: TURN.otherPlugin, outcome: OUTCOME.real },
-    { part: 6, label: 'another source kind only', sources: TURN.otherKind, outcome: OUTCOME.real },
-    { part: 7, label: 'heartbeat notice plus another plugin\'s notice, no user message', sources: TURN.heartbeatAndOther, outcome: OUTCOME.heartbeat },
+    { part: 6, label: 'a runtime-context message only (no heartbeat notice)', sources: TURN.runtimeContext, outcome: OUTCOME.real },
+    { part: 7, label: 'heartbeat notice plus another plugin\'s notice, no user message', sources: TURN.heartbeatAndOther, outcome: OUTCOME.real },
     { part: 8, label: 'no step entered (empty turn)', sources: TURN.empty, outcome: OUTCOME.neutral },
     { part: 9, label: 'the user\'s message, turn aborted', sources: TURN.real, reason: DSH.endReason.aborted, outcome: OUTCOME.real },
     { part: 10, label: 'heartbeat notice, turn ended in error', sources: TURN.heartbeat, reason: DSH.endReason.error, outcome: OUTCOME.heartbeat },
     { part: 11, label: 'heartbeat notice, turn aborted', sources: TURN.heartbeat, reason: DSH.endReason.aborted, outcome: OUTCOME.heartbeat },
+    { part: 14, label: 'a fishball-event batch only', sources: TURN.fishballEvent, outcome: OUTCOME.real },
+    { part: 15, label: 'a schedule reminder only', sources: TURN.schedule, outcome: OUTCOME.real },
+    { part: 16, label: 'heartbeat notice plus a fishball-event batch', sources: TURN.heartbeatAndEvent, outcome: OUTCOME.real },
+    { part: 17, label: 'heartbeat notice plus a schedule reminder', sources: TURN.heartbeatAndSchedule, outcome: OUTCOME.real },
+    { part: 18, label: 'heartbeat notice between runtime-context and time-context messages', sources: TURN.heartbeatAndContexts, outcome: OUTCOME.heartbeat },
   ]
   for (const d of decisions) {
     row(sdk, ID.dt01, d.part, `${d.label} → ${d.outcome} turn`, async (t) => {
@@ -328,6 +408,36 @@ export function registerHeartbeatCases(sdk) {
     await assertFiresAfter(lab, w, INTERVAL_MS, 'heartbeat 1 of 1')
     await w.turn(TURN.real, { session: w.otherSession() })
     await assertSilent(lab, w, 'the manager is still at its limit')
+  })
+
+  // ============================================================================================
+  // HB-EP-05: core's event batches. A delivered batch is one stepped turn admitting a
+  // fishball-event message: work, so it resets the timer and the count as a user turn does.
+  // Events core holds but has not delivered leave a non-turn record at most: nothing changes.
+
+  row(sdk, ID.ep05, 1, 'a fishball-event batch turn resets the count at the limit: heartbeats resume', async (t) => {
+    const { lab, w } = await loaded(t, sdk, config(LIMIT.maxMin), { autoTurn: true })
+    await w.turn(TURN.real)
+    await assertFiresAfter(lab, w, INTERVAL_MS, 'heartbeat 1 of 1')
+    await assertSilent(lab, w, 'at the limit')
+    await w.turn(TURN.fishballEvent)
+    await assertFiresAfter(lab, w, INTERVAL_MS, 'the batch turn reset the count')
+  })
+  row(sdk, ID.ep05, 2, 'a fishball-event batch turn inside the interval moves the anchor to its own end', async (t) => {
+    const { lab, w } = await loaded(t, sdk, config(ROOMY))
+    await w.turn(TURN.real)
+    await lab.tick(HALF_MS)
+    await w.turn(TURN.fishballEvent)
+    await assertFiresAfter(lab, w, INTERVAL_MS, 'anchored at the batch turn')
+  })
+  row(sdk, ID.ep05, 3, 'events not yet delivered (a log record, no turn) neither reset the timer nor the count', async (t) => {
+    const { lab, w } = await loaded(t, sdk, config(LIMIT.maxMin), { autoTurn: true })
+    await w.turn(TURN.real)
+    await lab.tick(HALF_MS)
+    await w.pendingRecord(FIXTURE.pendingRecord)
+    await assertFiresAfter(lab, w, HALF_MS, 'the anchor is still the real turn')
+    await w.pendingRecord(FIXTURE.pendingRecord)
+    await assertSilent(lab, w, 'still at the limit')
   })
 
   // ============================================================================================
@@ -396,6 +506,8 @@ export function registerHeartbeatCases(sdk) {
     { part: 3, label: 'heartbeat, heartbeat, real (max 2)', turns: [TURN.heartbeat, TURN.heartbeat, TURN.real], fires: true },
     { part: 4, label: 'real, heartbeat, heartbeat, empty (max 2)', turns: [TURN.real, TURN.heartbeat, TURN.heartbeat, TURN.empty], fires: false },
     { part: 5, label: 'real, heartbeat, the user\'s message with a heartbeat notice (max 2)', turns: [TURN.real, TURN.heartbeat, TURN.mixed], fires: true },
+    { part: 9, label: 'heartbeat, heartbeat, fishball-event batch (max 2)', turns: [TURN.heartbeat, TURN.heartbeat, TURN.fishballEvent], fires: true },
+    { part: 10, label: 'real, heartbeat, heartbeat with another plugin\'s notice (max 2)', turns: [TURN.real, TURN.heartbeat, TURN.heartbeatAndOther], fires: true },
   ]
   for (const h of histories) {
     row(sdk, ID.st02, h.part, `restart inside the interval after ${h.label}: ${h.fires ? 'one more heartbeat' : 'no heartbeat (count at the limit)'}`, async (t) => {
@@ -523,7 +635,7 @@ export function registerHeartbeatCases(sdk) {
   // ============================================================================================
   // HB-EP-03 / HB-BVA-03: the heartbeat_focus tool.
 
-  row(sdk, ID.ep03, 1, 'heartbeat_focus declares one required string parameter, focus, and nothing for the interval or limit', async (t) => {
+  row(sdk, ID.ep03, 1, 'heartbeat_focus declares one optional untyped parameter, focus (described as a string), and nothing for the interval or limit', async (t) => {
     const { w } = await loaded(t, sdk, config(ROOMY))
     const definition = w.tool()
     assert.ok(definition, 'registered in the manager scope')
@@ -547,6 +659,14 @@ export function registerHeartbeatCases(sdk) {
       assert.deepEqual(result, { ok: false, code: CODE.invalidInput }, show(result))
       const text = await nextText(lab, w)
       assert.ok(text.includes(FIXTURE.focus), 'the earlier focus stands: ' + show(text))
+    })
+  }
+  for (const [index, shape] of FIXTURE.nonObjectArgs.entries()) {
+    row(sdk, ID.ep03, 20 + index, `${shape.label} are refused (defineTool's ToolArgsError or invalid-input); the focus is unchanged`, async (t) => {
+      const { lab, w } = await loaded(t, sdk, config(ROOMY))
+      await setFocus(w, FIXTURE.focus)
+      assert.deepEqual(await nonObjectRefused(w, shape.args), { ok: false, code: CODE.invalidInput })
+      assert.ok((await nextText(lab, w)).includes(FIXTURE.focus), 'the earlier focus stands')
     })
   }
   const after = 3 + FIXTURE.invalidArgs.length

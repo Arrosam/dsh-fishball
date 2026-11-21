@@ -100,8 +100,13 @@ export async function labFor(t, sdk, { now = TIME.epochMs } = {}) {
     home,
     /** Moves the fake clock forward (fires due timers), then lets the row's async work run. */
     async tick(ms) { t.mock.timers.tick(ms); await settle() },
-    /** Puts the fake clock at an absolute time without firing timers (a process restarted then). */
+    /** Puts the fake clock at an absolute time without firing timers (a process restarted then, or the clock set back). */
     setTime: (ms) => t.mock.timers.setTime(ms),
+    /**
+     * A late timer: Date jumps `ms` ahead while no timer runs (a suspended or overloaded process),
+     * then the due timers run at once, with Date already past their due time.
+     */
+    async jump(ms) { t.mock.timers.setTime(Date.now() + ms); t.mock.timers.tick(0); await settle() },
     now: () => Date.now(),
     settle, until,
     async open(options = {}) {
@@ -118,7 +123,7 @@ export async function labFor(t, sdk, { now = TIME.epochMs } = {}) {
  * `w.startManager()`), `notify` (NOTIFY_MODE), `autoTurn` (run the heartbeat turn after a queued
  * notice), `seedFrom` (`w.snapshot()` of an earlier world: this manager resumes that session, same id and log).
  */
-async function openWorld(sdk, [{ Context }, { Loader }, { SessionStore }, { createUserMessage }], home, options) {
+async function openWorld(sdk, [{ Context }, { Loader }, { SessionStore, appendPluginRecord }, { createUserMessage }], home, options) {
   const { core = HEARTBEAT.apiVersion, appReady = false, managerLive = true, notify = NOTIFY_MODE.queued, autoTurn = false, seedFrom } = options
   const ctx = new Context()
   const logs = []
@@ -271,6 +276,8 @@ async function openWorld(sdk, [{ Context }, { Loader }, { SessionStore }, { crea
     /** Opens a turn left open; `await .end(reason)` closes it. */
     beginTurn: (sources, session = manager.live.session) => openTurn(sources, session),
     otherSession: () => ctx.sessions.create(),
+    /** A non-turn record in the manager log (an event core holds and has not delivered in a turn). */
+    async pendingRecord(type) { appendPluginRecord(manager.live.session, type, { fbtest: true }); await settle() },
     /** X2 create: the manager comes up after the row registered its setup. */
     async startManager() {
       createManager()

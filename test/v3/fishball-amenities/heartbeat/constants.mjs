@@ -1,8 +1,11 @@
 /**
  * Oracle values of the fishball-heartbeat cases, taken only from the requirements the lead relayed
- * (the user's words plus the derived row contract, and the lead's refinement of 2026-11-21: a turn
- * that entered no step is neutral; plain setTimeout; remaining <= 0 is overdue). No file under
- * packages/fishball-amenities/heartbeat/ was read.
+ * (the user's words plus the derived row contract) and the lead's two refinements of 2026-11-21:
+ * (1) a turn that entered no step is neutral; plain setTimeout; remaining <= 0 is overdue;
+ * (2) after core's event batching (165b734c): work messages (user, fishball-event, schedule, another
+ * plugin's notice) make a turn real; focus is an optional untyped field; a timer firing more than
+ * 5000 ms late is dropped with a warning; the armed delay is capped at the interval.
+ * No file under packages/fishball-amenities/heartbeat/ was read.
  */
 import path from 'node:path'
 import { REPO } from '../../../support/constants.mjs'
@@ -51,6 +54,10 @@ export const HEARTBEAT = Object.freeze({
   config: Object.freeze({ interval: 'intervalSeconds', max: 'maxConsecutive' }),
   /** intervalSeconds 1 … 2147483 (setTimeout's limit in seconds); maxConsecutive >= 1. */
   limit: Object.freeze({ intervalMin: 1, intervalMax: 2_147_483, maxMin: 1, focusCodePoints: 2000 }),
+  /** A heartbeat whose timer fires more than this after (turn end + interval) is dropped (refinement 2, item 3). */
+  lateToleranceMs: 5000,
+  /** dsh-tools' defineTool refusal of non-object arguments, thrown before execute runs (refinement 2, item 2). */
+  argsErrorCode: 'INVALID_ARGS',
   notice: Object.freeze({ pluginId: PLUGIN_ID, wake: true }),
 })
 
@@ -60,8 +67,13 @@ export const SOURCE = Object.freeze({
   heartbeat: Object.freeze({ kind: 'fishball-notice', form: 'plugin', pluginId: PLUGIN_ID }),
   /** Another plugin's notice: not a heartbeat. */
   otherPlugin: Object.freeze({ kind: 'fishball-notice', form: 'plugin', pluginId: 'fbtest-other-plugin' }),
-  /** Some other producer's user/message (an injected context). */
-  otherKind: Object.freeze({ kind: 'fbtest-other-kind' }),
+  /** core's event batch (one Fishball turn per batch; packages/core/contracts FISHBALL_EVENT sourceKind). */
+  fishballEvent: Object.freeze({ kind: 'fishball-event', events: Object.freeze([Object.freeze({ key: 'fbtest-key-1', eventId: 'fbtest-event-1', type: 'fbtest.event', targetId: 'fbtest-target' })]) }),
+  /** core's reminders. */
+  schedule: Object.freeze({ kind: 'schedule' }),
+  /** Injected contexts: they decide nothing. */
+  runtimeContext: Object.freeze({ kind: 'runtime-context' }),
+  timeContext: Object.freeze({ kind: 'time-context' }),
 })
 
 /** Turn shapes: the sources a turn admits inside its step; `empty` enters no step (neutral). */
@@ -70,8 +82,13 @@ export const TURN = Object.freeze({
   heartbeat: Object.freeze([SOURCE.heartbeat]),
   mixed: Object.freeze([SOURCE.heartbeat, SOURCE.user]),
   otherPlugin: Object.freeze([SOURCE.otherPlugin]),
-  otherKind: Object.freeze([SOURCE.otherKind]),
+  fishballEvent: Object.freeze([SOURCE.fishballEvent]),
+  schedule: Object.freeze([SOURCE.schedule]),
+  runtimeContext: Object.freeze([SOURCE.runtimeContext]),
   heartbeatAndOther: Object.freeze([SOURCE.heartbeat, SOURCE.otherPlugin]),
+  heartbeatAndEvent: Object.freeze([SOURCE.heartbeat, SOURCE.fishballEvent]),
+  heartbeatAndSchedule: Object.freeze([SOURCE.heartbeat, SOURCE.schedule]),
+  heartbeatAndContexts: Object.freeze([SOURCE.runtimeContext, SOURCE.heartbeat, SOURCE.timeContext]),
   /** A step with no user/message at all: "neither", so real. */
   stepOnly: Object.freeze([]),
   empty: null,
@@ -100,7 +117,7 @@ export const FIXTURE = Object.freeze({
   /** One astral code point (two UTF-16 units): lengths count code points. */
   astral: '\u{1F41F}',
   ascii: 'x',
-  /** Hostile or out-of-contract argument shapes (all invalid-input). */
+  /** Object arguments the tool itself must refuse with a returned invalid-input. */
   invalidArgs: Object.freeze([
     Object.freeze({ label: 'no focus', args: Object.freeze({}) }),
     Object.freeze({ label: 'numeric focus', args: Object.freeze({ focus: 5 }) }),
@@ -109,8 +126,15 @@ export const FIXTURE = Object.freeze({
     Object.freeze({ label: 'extra intervalSeconds', args: Object.freeze({ focus: 'a', intervalSeconds: 1 }) }),
     Object.freeze({ label: 'extra maxConsecutive', args: Object.freeze({ focus: 'a', maxConsecutive: 99 }) }),
     Object.freeze({ label: 'extra unknown key', args: Object.freeze({ focus: 'a', fbtest: true }) }),
-    Object.freeze({ label: 'null arguments', args: null }),
   ]),
+  /** Non-object arguments: defineTool may throw ToolArgsError before the tool runs (accepted), or the tool returns invalid-input. */
+  nonObjectArgs: Object.freeze([
+    Object.freeze({ label: 'null arguments', args: null }),
+    Object.freeze({ label: 'array arguments', args: Object.freeze(['a']) }),
+    Object.freeze({ label: 'string arguments', args: 'a' }),
+  ]),
+  /** A non-turn record in the manager log: an event core holds but has not delivered yet. */
+  pendingRecord: 'plugin:fbtest/event-pending',
 })
 
 export const WAIT = Object.freeze({
