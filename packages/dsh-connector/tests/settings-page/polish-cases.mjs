@@ -82,20 +82,41 @@ export const stateWith = (entries, approval = { status: 'ok', port: POLISH.appro
 /** A state route row of entry `item` (C-WIRE state shape). */
 export const entryRow = (item, over) => ({ key: item.key, label: item.label, enabled: item.enabled, paired: false, id: null, name: null, connected: false, lastSeenAt: null, ...over })
 
+/** The high-risk switch (HIGH-RISK-APPROVAL): the Switch inside the requests.allowHighRisk row. */
+const highRiskSwitch = (view) => findAll([view.one(POLISH.attr.setting, POLISH.highRisk.field)], (n) => n.props[CLIENT.primitiveAttr] === 'Switch')[0]
+
 export function registerPolishSettingsCases(sdk) {
+  // ---------------------------------------------------------------- HIGH-RISK-APPROVAL: the owner's switch
+  for (const [label, settings, shown] of [['unset (the default)', undefined, true], ['saved off', false, false], ['saved on', true, true]]) {
+    row(sdk, POLISH.highRisk.id, `EP (${label})`, `the switch shows ${shown ? 'on' : 'off'}`, async (t) => {
+      const { view } = await openPolished(t, sdk, settings === undefined ? {} : { settings: { requests: { allowHighRisk: settings } } })
+      assert.equal(highRiskSwitch(view).props.checked, shown)
+    })
+  }
+  row(sdk, POLISH.highRisk.id, 'ST (on → off → on)', 'each toggle saves exactly set requests.allowHighRisk to the new value, at the live revision; the switch follows', async (t) => {
+    const { page, view } = await openPolished(t, sdk)
+    for (const next of [false, true]) {
+      highRiskSwitch(view).props.onChange(next)
+      await page.until(() => highRiskSwitch(view).props.checked === next)
+      assert.deepEqual(page.mutations.at(-1).ops, [{ op: CLIENT.setOp, path: ['requests', 'allowHighRisk'], value: next }])
+      assert.equal(page.mutations.at(-1).expected, page.mutations.at(-1).liveRevision)
+    }
+  })
+
   // ---------------------------------------------------------------- sections (EP over the language)
   for (const lang of POLISH.langs) {
-    row(sdk, ID.sections, lang, `three h3 sections in order: ${POLISH.headings[lang].join(', ')}; tokens in the first, the port and DSH name in the second, the limits in the third`, async (t) => {
+    row(sdk, ID.sections, lang, `four h3 sections in order: ${POLISH.headings[lang].join(', ')}; tokens in the first, the port and DSH name in the second, the limits in the third, the high-risk switch in the fourth`, async (t) => {
       const { view } = await openPolished(t, sdk, { labels: [FIXTURE.labelA], lang })
       const tree = view.tree()
       assert.deepEqual(headingsOf(tree).map(text), [...POLISH.headings[lang]])
-      const [tokens, approval, limits] = headingsOf(tree).map((h) => sectionOf(tree, h))
-      assert.ok(tokens && approval && limits, 'a heading outside a section')
+      const [tokens, approval, limits, requests] = headingsOf(tree).map((h) => sectionOf(tree, h))
+      assert.ok(tokens && approval && limits && requests, 'a heading outside a section')
       for (const node of [view.one(CLIENT.attr.newLabel), view.one(CLIENT.attr.newToken), ...rowsOf(view)]) assert.equal(sectionOf(tree, node), tokens, 'a token part outside the Tokens section')
       const settings = findAll(tree, (n) => n.props[POLISH.attr.setting] !== undefined)
       assert.deepEqual(settings.filter((n) => sectionOf(tree, n) === approval).map((n) => n.props[POLISH.attr.setting]), ['approval.port', 'approval.dshName'])
       assert.equal(settings.filter((n) => sectionOf(tree, n) === limits).length, 5, 'limit rows')
       assert.ok(limits.props['data-dsh-connector-limits'] !== undefined, 'the limits hook is not on the Safety limits section')
+      assert.deepEqual(settings.filter((n) => sectionOf(tree, n) === requests).map((n) => n.props[POLISH.attr.setting]), ['requests.allowHighRisk'])
     })
   }
 
@@ -217,9 +238,11 @@ export function registerPolishSettingsCases(sdk) {
     assert.equal(newLabel.props[POLISH.ariaLabel], newLabel.props.placeholder)
     const [labelField] = findAll(rowsOf(view), (n) => isPrimitive(n, POLISH.input))
     assert.equal(labelField?.props.value, FIXTURE.labelA)
+    // Re-baselined by HIGH-RISK-APPROVAL: the one boolean setting (requests.allowHighRisk) is DSH's Switch, the others Input.
     for (const setting of findAll(view.tree(), (n) => n.props[POLISH.attr.setting] !== undefined)) {
       assert.equal(setting.tag, 'label', 'a setting row is not a <label>')
-      assert.equal(findAll([setting], (n) => isPrimitive(n, POLISH.input)).length, 1, setting.props[POLISH.attr.setting] + ': inputs')
+      const control = setting.props[POLISH.attr.setting] === POLISH.highRisk.field ? 'Switch' : POLISH.input
+      assert.equal(findAll([setting], (n) => isPrimitive(n, control)).length, 1, setting.props[POLISH.attr.setting] + ': controls')
     }
     assert.match(view.one(CLIENT.attr.newToken).props.icon?.type?.displayName ?? '', POLISH.icon.plus)
   })

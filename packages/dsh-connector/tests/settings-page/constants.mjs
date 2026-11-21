@@ -129,9 +129,12 @@ export const POLISH = Object.freeze({
   langs: Object.freeze(['en', 'zh']),
   headingTag: 'h3',
   headings: Object.freeze({
-    en: Object.freeze(['Tokens', 'Approval page', 'Safety limits']),
-    zh: Object.freeze(['Token', '授权页面', '安全限制']),
+    // Re-baselined by HIGH-RISK-APPROVAL (the user, 2026-11-21): a fourth section holds the high-risk switch.
+    en: Object.freeze(['Tokens', 'Approval page', 'Safety limits', 'Permission requests']),
+    zh: Object.freeze(['Token', '授权页面', '安全限制', '权限请求']),
   }),
+  /** HIGH-RISK-APPROVAL: the switch row's id and its setting hook. */
+  highRisk: Object.freeze({ id: 'UIPD-SET-HIGH-RISK', field: 'requests.allowHighRisk' }),
   buttons: Object.freeze({
     en: Object.freeze({ up: 'Move up', down: 'Move down', remove: 'Delete' }),
     zh: Object.freeze({ up: '上移', down: '下移', remove: '删除' }),

@@ -255,6 +255,14 @@ export const REVIEW_X = Object.freeze({
   command: (n) => `fbtest-rx-command-${n}`,
   reason: 'Do not run',
   allowReason: 'fbtest allow reason',
+  /** HIGH-RISK-APPROVAL rows: the manager's reason (sent with padding, recorded trimmed), the log line's fixed words, a secret shape. */
+  highRisk: Object.freeze({
+    reason: 'fbtest high risk: the task needs this deploy',
+    padding: '  \n',
+    logMarker: 'high-risk call allowed by its manager',
+    secret: 'abcdef0123456789abcdef0123456789abcdef0123456789',
+    secretReason: 'fbtest high risk: uses token=abcdef0123456789abcdef0123456789abcdef0123456789',
+  }),
   dshReason: 'fbtest rx permission',
   grantMs: 3600 * 1000,
   injected: 'fbtest rx injected storage failure',

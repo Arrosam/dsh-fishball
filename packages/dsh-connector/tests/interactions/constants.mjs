@@ -42,7 +42,7 @@ export const RELAYED = Object.freeze({
   /** The kept limits and their defaults (Config({}) as relayed): top-level fields of the row's settings. */
   kept: Object.freeze({ maxQueuedInputs: 200, maxMessageBytes: 65536, argumentExcerptBytes: 8192, readSessionMessages: 12, readSessionBytes: 12288 }),
   /** The settings field names (keys of `kept`, plus the approval group's DSH name). */
-  setting: Object.freeze({ maxQueuedInputs: 'maxQueuedInputs', maxMessageBytes: 'maxMessageBytes', argumentExcerptBytes: 'argumentExcerptBytes', approval: 'approval', dshName: 'dshName', tokens: 'tokens' }),
+  setting: Object.freeze({ maxQueuedInputs: 'maxQueuedInputs', maxMessageBytes: 'maxMessageBytes', argumentExcerptBytes: 'argumentExcerptBytes', approval: 'approval', dshName: 'dshName', tokens: 'tokens', requests: 'requests', allowHighRisk: 'allowHighRisk' }),
   /** The settings fields the user removed (decision list item 9). */
   removed: Object.freeze(['maxPendingApprovals', 'maxActiveWatches', 'watchesShown', 'auditEntriesKept', 'rationaleChars', 'requestUserMessageBytes',
     'forwardExcerptBytes', 'userMessagesListed', 'userMessageExcerptChars', 'questionMode']),

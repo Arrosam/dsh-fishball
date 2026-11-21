@@ -178,14 +178,14 @@ export function registerLifecycleCases(sdk) {
   })
 
   // ------------------------------------------------------------------------- R2: escalate
-  row(sdk, L.id.escalate, 'ST (Offered → escalate → escalate again → allow with risk high → allow)', `{accepted: true}; the stock prompt shows; still listed under the same offerId; a second escalate is refused; ${REFUSAL.allowNeedsLowRisk} still applies; the valid allow is accepted, the call runs with the tool's own output and the prompt closes`, async (t) => {
+  row(sdk, L.id.escalate, 'ST (Offered → escalate → escalate again → allow with risk high and no reason → allow)', `{accepted: true}; the stock prompt shows; still listed under the same offerId; a second escalate is refused; ${REFUSAL.reasonRequired} still applies (re-baselined by HIGH-RISK-APPROVAL: a high-risk allow needs a reason, not low risk); the valid allow is accepted, the call runs with the tool's own output and the prompt closes`, async (t) => {
     const { w, p, r } = await asking(t, 'permission')
     assert.deepEqual(await KINDS.permission.handOff(w, p, r), accepted)
     await assertStillOffered(p, r)
     assert.equal((await w.call('calls')).find((c) => c.text === r.text).outcome, null, 'escalate decided the call')
     assertRefused(await answer(p, r, A.escalate()))
     await assertStillOffered(p, r)
-    assertRefused(await answer(p, r, { ...A.allow(), risk: RISK.high }), [REFUSAL.allowNeedsLowRisk])
+    assertRefused(await answer(p, r, { ...A.allow(' '), risk: RISK.high }), [REFUSAL.reasonRequired])
     await KINDS.permission.byPrincipal(w, p, r)
     assert.equal((await resultOf(w, r.sid, r.id)).text, IX.fixture.outcomeText(IX.outcome.allowed))
     assert.ok(await promptClosed(w, r.text), 'the stock prompt stayed open after the principal decided')

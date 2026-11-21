@@ -10,7 +10,7 @@ import { APPROVAL_DECISION, ARGUMENTS_STATUS, DECISION_TEXT, FIXTURE, IX, PAYLOA
 import { row, withdrawn } from './rows.mjs'
 import {
   A, answer, asked, call, cid, decided, free, handOver, managed, managedOf, okCall, permissionsFor, principal, quiet, refusedCall, resultOf, session,
-  setLimit, step, titleOf, tok, untilStock, userClicks, world,
+  setHighRisk, setLimit, step, titleOf, tok, untilStock, userClicks, world,
 } from './subject.mjs'
 
 const SET = RELAYED.setting
@@ -92,6 +92,21 @@ export function registerPromptCases(sdk) {
     assert.deepEqual(await promptsOf(p, sid), [])
     assert.ok((await managedOf(w)).some((m) => m.sessionId === sid && m.principal.key === p.principalKey))
   })
+  row(sdk, 'APRP-HR-01', 'DT (allow + high + reason, the default setting)', '{promptId, decision: allow, managed: true}; the prompt closes; the call runs allowed once', async (t) => {
+    const { w, p, sid, s, entry } = await heldPrompt(t, sdk)
+    assert.deepEqual(await promptAnswer(p, entry, { ...allow(), risk: RISK.high }), { ok: true, promptId: entry.promptId, decision: APPROVAL_DECISION.allow, managed: true })
+    assert.equal((await decided(w, s.text)).outcome, IX.outcome.allowed)
+    assert.deepEqual(await promptsOf(p, sid), [])
+  })
+  row(sdk, 'APRP-HR-02', `DT (allow + high + reason, ${SET.allowHighRisk} off)`, `→ ${REFUSAL.allowNeedsLowRisk}; the prompt still shows and is listed`, async (t) => {
+    const { w, p, sid, s, entry } = await heldPrompt(t, sdk)
+    await setHighRisk(t, w, false)
+    const reply = await promptAnswer(p, entry, { ...allow(), risk: RISK.high })
+    assert.deepEqual([reply.ok, reply.code], [false, REFUSAL.allowNeedsLowRisk], JSON.stringify(reply))
+    assert.equal((await promptsOf(p, sid)).length, 1)
+    assert.equal((await w.call('calls')).find((c) => c.text === s.text).outcome, null)
+    await free(w, sid)
+  })
   row(sdk, 'APRP-02', 'DT (reject + reason)', '{promptId, decision: reject, managed: true}; the call is rejected and the agent sees the reason, not "the user rejected"', async (t) => {
     const { w, p, s, entry } = await heldPrompt(t, sdk)
     const why = tok('why')
@@ -106,7 +121,8 @@ export function registerPromptCases(sdk) {
     ['reason whitespace', allow('   '), REFUSAL.reasonRequired],
     ['reject with reason \'\'', reject(''), REFUSAL.reasonRequired],
     ['allow with no risk', { decision: APPROVAL_DECISION.allow, reason: FIXTURE.reason }, REFUSAL.riskRequired],
-    ['allow with risk high', { ...allow(), risk: RISK.high }, REFUSAL.allowNeedsLowRisk],
+    // Re-baselined by HIGH-RISK-APPROVAL: allow + high + reason is accepted (APRP-HR below); without a reason it is not.
+    ['allow with risk high and reason whitespace', { ...allow('   '), risk: RISK.high }, REFUSAL.reasonRequired],
     [`reason ${PAYLOAD_LIMITS.reasonChars + 1}`, allow('r'.repeat(PAYLOAD_LIMITS.reasonChars + 1)), REFUSAL.limitExceeded],
     ['decision escalate (schema: allow or reject only)', { decision: APPROVAL_DECISION.escalate, reason: FIXTURE.reason }, REFUSAL.invalidArguments],
   ]) {

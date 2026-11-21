@@ -22,7 +22,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
 import test from 'node:test'
-import { APPROVAL_DECISION, EVENT_TYPE, GRANT_KIND, REFUSAL, RISK } from '../../mcp-schema/index.js'
+import { APPROVAL_DECISION, EVENT_TYPE, GRANT_KIND, REFUSAL, RISK, SETTLED_BY, SETTLEMENT_OUTCOME } from '../../mcp-schema/index.js'
 import { INSTANCE } from '../../../../test/support/constants.mjs'
 import { importInstance } from '../../../../test/private-skills/support/sdk.mjs'
 import { caseName } from '../../../../test/v3/contract/package-boundaries/cases.mjs'
@@ -136,12 +136,23 @@ function stubServices(ctx) {
  * One world for `t`: A (and B) paired, sessions S and T, the session domain composed over the real
  * routing. Returns `{w, d, seam, switches, A, B, call(...)}`.
  */
-async function domainWorld(t, sdk) {
+async function domainWorld(t, sdk, { highRisk } = {}) {
   const mod = await moduleOf(sdk, RX.domainEntry, [RX.domainFactory])
-  const switches = { failSettlement: false, failStage: false }
+  const switches = { failSettlement: false, failStage: false, highRiskAllowed: highRisk ?? true }
   let seam
   const w = await routeWorld(t, sdk, { port: reviewPort(switches), prepare: (ctx) => { seam = storageSeam(ctx); stubServices(ctx) } })
-  const d = await mod[RX.domainFactory](w.ctx, { storageDomain: w.helpers, readLimits: () => RX.readLimits, routing: w.routing, logger: w.logger })
+  // Every settlement the domain hands routing (HIGH-RISK-APPROVAL: a principal's carries risk and reason).
+  const settlements = []
+  const routing = new Proxy(w.routing, {
+    get(target, key) {
+      if (key === 'settle') return (offerId, settlement, options) => { settlements.push(settlement); return target.settle(offerId, settlement, options) }
+      const value = target[key]
+      return typeof value === 'function' ? value.bind(target) : value
+    },
+  })
+  // Without `highRisk` the domain is built as before, so its own default (on) is what is tested.
+  const highRiskAllowed = highRisk === undefined ? {} : { highRiskAllowed: () => switches.highRiskAllowed }
+  const d = await mod[RX.domainFactory](w.ctx, { storageDomain: w.helpers, readLimits: () => RX.readLimits, routing, ...highRiskAllowed, logger: w.logger })
   w.beforeClose(() => d.close())
   // Registered after the domain, so it runs first: every call still waiting is aborted before the domain closes.
   const calls = []
@@ -169,7 +180,7 @@ async function domainWorld(t, sdk) {
     calls.push(c)
     return c
   }
-  return { w, d, seam, switches, A, B, call }
+  return { w, d, seam, switches, settlements, A, B, call }
 }
 
 /** The live offer of `sessionId` whose arguments carry `command`, or undefined. */
@@ -529,7 +540,8 @@ function f08(sdk) {
     ['reject, blank reason, no risk', { decision: APPROVAL_DECISION.reject, reason: ' \t ' }, REFUSAL.reasonRequired],
     ['allow, no risk', { decision: APPROVAL_DECISION.allow, reason: RX.allowReason }, REFUSAL.riskRequired],
     ['grant, no risk', (() => { const { risk, ...g } = exactGrant(); void risk; return g })(), REFUSAL.riskRequired],
-    ['allow, risk high', { ...allow(), risk: RISK.high }, REFUSAL.allowNeedsLowRisk],
+    // Re-baselined by HIGH-RISK-APPROVAL (the user, 2026-11-21): a high-risk allow is accepted (rows HR-*); a high-risk grant never is.
+    ['grant, risk high', { ...exactGrant(), risk: RISK.high }, REFUSAL.grantNeedsLowRisk],
     ['allow, blank reason', { ...allow(), reason: '   ' }, REFUSAL.reasonRequired],
   ]) {
     row(sdk, 'RX-F08', `DT (${label})`, `→ ${code}; the offer stays live and the call waits`, async (t) => {
@@ -544,10 +556,11 @@ function f08(sdk) {
   // prompt_answer keeps its rules: a prompt shows for a session nobody manages (the user's stock prompt).
   for (const [label, a, want] of [
     ['allow, no risk', { decision: APPROVAL_DECISION.allow, reason: RX.allowReason }, { code: REFUSAL.riskRequired }],
-    ['allow, risk high', { decision: APPROVAL_DECISION.allow, risk: RISK.high, reason: RX.allowReason }, { code: REFUSAL.allowNeedsLowRisk }],
+    // Re-baselined by HIGH-RISK-APPROVAL: accepted by default (HR-* rows cover the setting).
+    ['allow, risk high', { decision: APPROVAL_DECISION.allow, risk: RISK.high, reason: RX.allowReason }, { outcome: D.outcome.allowed }],
     ['reject, no risk', { decision: APPROVAL_DECISION.reject, reason: RX.reason }, { outcome: D.outcome.rejected }],
   ]) {
-    row(sdk, 'RX-F08', `DT (prompt_answer: ${label})`, want.code ? `→ ${want.code}; the prompt still shows` : 'accepted; the call is rejected', async (t) => {
+    row(sdk, 'RX-F08', `DT (prompt_answer: ${label})`, want.code ? `→ ${want.code}; the prompt still shows` : `accepted; the call is ${want.outcome}`, async (t) => {
       const x = await domainWorld(t, sdk)
       const c = x.call(S.t, RX.command(1))
       let prompt
@@ -615,7 +628,139 @@ function f02Settle(sdk) {
 }
 
 /** Every R-FIX-CONNECTOR review row of the routing suite for `sdk`. */
+// ------------------------------------------------------------------------------------------------
+// HIGH-RISK-APPROVAL (the user, 2026-11-21): a manager may allow a high-risk request, with a reason
+// that is recorded; a grant stays low risk; the owner's switch restores the strict rule.
+
+/** The domain's info lines recording a high-risk allow (permissions.js auditHighRisk). */
+const highRiskLines = (x) => x.w.logger.lines.filter((line) => line.level === 'info' && line.text.includes(RX.highRisk.logMarker))
+const allowHigh = (reason = RX.highRisk.reason) => ({ decision: APPROVAL_DECISION.allow, risk: RISK.high, reason })
+
+function highRisk(sdk) {
+  row(sdk, 'HR-01', 'DT (allow + high + reason, setting at its default)', 'accepted; the call runs allowed once; the settlement records {allowed, principal, risk high, reason}; one info line names the session, tool, request, manager and reason', async (t) => {
+    const x = await domainWorld(t, sdk)
+    await manage(x, S.s, x.A)
+    const r = await asked(x, S.s, RX.command(1))
+    assert.deepEqual(await answer(x, r, allowHigh(RX.highRisk.reason + RX.highRisk.padding)), { ok: true })
+    assert.equal(await r.outcome, D.outcome.allowed)
+    assert.deepEqual(x.settlements, [{ approvalId: r.approvalId, outcome: SETTLEMENT_OUTCOME.allowed, by: SETTLED_BY.principal, risk: RISK.high, reason: RX.highRisk.reason }])
+    const lines = highRiskLines(x)
+    assert.equal(lines.length, 1, JSON.stringify(x.w.logger.lines))
+    for (const part of [S.s, RX.shellTool, r.approvalId, x.A, RX.highRisk.reason]) assert.ok(lines[0].text.includes(part), `the record lacks ${part}: ${lines[0].text}`)
+    assert.equal(offerFor(x, S.s, r.command), undefined)
+  })
+  for (const [label, a] of [['no reason', { decision: APPROVAL_DECISION.allow, risk: RISK.high }], ['blank reason', allowHigh(' \n\t ')], ['empty reason', allowHigh('')]]) {
+    row(sdk, 'HR-02', `DT (allow + high, ${label})`, `→ ${REFUSAL.reasonRequired}; the offer stays live; nothing recorded; a later high-risk allow with a reason is accepted`, async (t) => {
+      const x = await domainWorld(t, sdk)
+      await manage(x, S.s, x.A)
+      const r = await asked(x, S.s, RX.command(1))
+      assert.deepEqual(await answer(x, r, a), { ok: false, code: REFUSAL.reasonRequired })
+      assert.ok(offerFor(x, S.s, r.command), 'a refused answer ended the offer')
+      assert.equal(r.settled(), false)
+      assert.deepEqual([x.settlements, highRiskLines(x)], [[], []])
+      assert.deepEqual(await answer(x, r, allowHigh()), { ok: true })
+      assert.equal(await r.outcome, D.outcome.allowed)
+    })
+  }
+  for (const [label, spec] of [['exact', (command) => ({ kind: GRANT_KIND.exact, expiresAt: Date.now() + RX.grantMs })], ['prefix', (command) => ({ kind: GRANT_KIND.prefix, prefix: command, expiresAt: Date.now() + RX.grantMs })]]) {
+    row(sdk, 'HR-03', `DT (grant ${label} + high + reason)`, `→ ${REFUSAL.grantNeedsLowRisk} whatever the setting; no grant is listed; the offer stays live; the same call then allowed at high risk is not covered later`, async (t) => {
+      const x = await domainWorld(t, sdk, { highRisk: true })
+      await manage(x, S.s, x.A)
+      const r = await asked(x, S.s, RX.command(1))
+      const grant = { decision: APPROVAL_DECISION.grant, risk: RISK.high, reason: RX.highRisk.reason, grant: spec(r.command) }
+      assert.deepEqual(await answer(x, r, grant), { ok: false, code: REFUSAL.grantNeedsLowRisk })
+      x.switches.highRiskAllowed = false
+      assert.deepEqual(await answer(x, r, grant), { ok: false, code: REFUSAL.grantNeedsLowRisk })
+      assert.deepEqual(await listed(x), [])
+      assert.ok(offerFor(x, S.s, r.command), 'a refused grant ended the offer')
+      x.switches.highRiskAllowed = true
+      assert.deepEqual(await answer(x, r, allowHigh()), { ok: true })
+      assert.equal(await r.outcome, D.outcome.allowed)
+      assert.equal(await fateOf(x, S.s, r.command), 'offered', 'a high-risk allow left a standing grant behind')
+    })
+  }
+  row(sdk, 'HR-03', 'DT (grant + low + reason)', 'accepted as before; the settlement records risk low and the reason; no high-risk record', async (t) => {
+    const x = await domainWorld(t, sdk)
+    await manage(x, S.s, x.A)
+    const { grantId } = await grantFor(x, S.s, RX.command(1))
+    assert.deepEqual(await listed(x), [grantId])
+    assert.deepEqual(x.settlements.map((s) => [s.by, s.risk, s.reason]), [[SETTLED_BY.principal, RISK.low, RX.allowReason]])
+    assert.deepEqual(highRiskLines(x), [])
+  })
+  row(sdk, 'HR-04', 'ST (setting off → allow + high → setting on → allow + high)', `off: ${REFUSAL.allowNeedsLowRisk} (the earlier strict rule), the offer stays live, nothing recorded; low risk still allowed; on again (read live, no restart): accepted and recorded`, async (t) => {
+    const x = await domainWorld(t, sdk, { highRisk: false })
+    await manage(x, S.s, x.A)
+    const r = await asked(x, S.s, RX.command(1))
+    assert.deepEqual(await answer(x, r, allowHigh()), { ok: false, code: REFUSAL.allowNeedsLowRisk })
+    assert.ok(offerFor(x, S.s, r.command), 'a refused answer ended the offer')
+    assert.deepEqual(highRiskLines(x), [])
+    const low = await asked(x, S.s, RX.command(2))
+    assert.deepEqual(await answer(x, low, allow()), { ok: true })
+    assert.equal(await low.outcome, D.outcome.allowed)
+    x.switches.highRiskAllowed = true
+    assert.deepEqual(await answer(x, r, allowHigh()), { ok: true })
+    assert.equal(await r.outcome, D.outcome.allowed)
+    assert.equal(highRiskLines(x).length, 1)
+  })
+  row(sdk, 'HR-05', 'ST (Offered → escalate → allow + high + reason)', 'escalate leaves the request open; the high-risk allow closes the stock prompt and decides the call; settlement and record as HR-01; a second answer is refused (first answer wins)', async (t) => {
+    const x = await domainWorld(t, sdk)
+    await manage(x, S.s, x.A)
+    const r = await asked(x, S.s, RX.command(1))
+    assert.deepEqual(await answer(x, r, { decision: APPROVAL_DECISION.escalate }), { ok: true })
+    // The escalate's own step reaches the stock prompt asynchronously; until then the answer asks for a retry.
+    let reply
+    await until(async () => { reply = await answer(x, r, allowHigh()); return reply.code !== REFUSAL.operationFailed }, 'the escalated prompt to show')
+    assert.deepEqual(reply, { ok: true })
+    assert.equal(await r.outcome, D.outcome.allowed)
+    await until(() => x.settlements.length === 1, 'the escalated request\'s settlement')
+    assert.deepEqual([x.settlements[0].by, x.settlements[0].risk, x.settlements[0].reason], [SETTLED_BY.principal, RISK.high, RX.highRisk.reason])
+    assert.equal(highRiskLines(x).length, 1)
+    assert.equal((await answer(x, r, allow())).ok, false, 'a second answer was accepted')
+  })
+  row(sdk, 'HR-06', 'EP (allow + low; reject + high)', 'accepted; each settlement records its risk and reason; neither writes a high-risk record', async (t) => {
+    const x = await domainWorld(t, sdk)
+    await manage(x, S.s, x.A)
+    const a = await asked(x, S.s, RX.command(1))
+    assert.deepEqual(await answer(x, a, allow()), { ok: true })
+    const b = await asked(x, S.s, RX.command(2))
+    assert.deepEqual(await answer(x, b, { decision: APPROVAL_DECISION.reject, risk: RISK.high, reason: RX.reason }), { ok: true })
+    assert.deepEqual(await Promise.all([a.outcome, b.outcome]), [D.outcome.allowed, D.outcome.rejected])
+    assert.deepEqual(x.settlements.map((s) => [s.outcome, s.risk, s.reason]), [[SETTLEMENT_OUTCOME.allowed, RISK.low, RX.allowReason], [SETTLEMENT_OUTCOME.rejected, RISK.high, RX.reason]])
+    assert.deepEqual(highRiskLines(x), [])
+  })
+  row(sdk, 'HR-07', 'EP (a secret shape in the reason)', 'the record masks it; the settlement keeps the reason as given', async (t) => {
+    const x = await domainWorld(t, sdk)
+    await manage(x, S.s, x.A)
+    const r = await asked(x, S.s, RX.command(1))
+    assert.deepEqual(await answer(x, r, allowHigh(RX.highRisk.secretReason)), { ok: true })
+    const [line] = highRiskLines(x)
+    assert.equal(line.text.includes(RX.highRisk.secret), false, line.text)
+    assert.equal(x.settlements[0].reason, RX.highRisk.secretReason)
+  })
+  for (const [label, on, want] of [['setting on', true, 'accepted'], ['setting off', false, REFUSAL.allowNeedsLowRisk]]) {
+    row(sdk, 'HR-08', `DT (prompt_answer: allow + high + reason, ${label})`, on ? 'accepted; the call runs; one record names the prompt and the answering manager' : `→ ${want}; the prompt still shows; nothing recorded`, async (t) => {
+      const x = await domainWorld(t, sdk, { highRisk: on })
+      const c = x.call(S.t, RX.command(1))
+      let prompt
+      await until(async () => { prompt = (await x.d.interactions.listPrompts()).find((p) => p.sessionId === S.t); return prompt }, 'the stock prompt to show')
+      const reply = await x.d.interactions.answerPrompt({ promptId: prompt.promptId, ...allowHigh(), principalKey: x.A })
+      if (!on) {
+        assert.deepEqual(reply, { ok: false, code: want })
+        assert.ok((await x.d.interactions.listPrompts()).some((p) => p.promptId === prompt.promptId), 'a refused prompt answer closed the prompt')
+        assert.deepEqual(highRiskLines(x), [])
+        return
+      }
+      assert.equal(reply?.ok, true, JSON.stringify(reply))
+      assert.equal(await c.outcome, D.outcome.allowed)
+      const lines = highRiskLines(x)
+      assert.equal(lines.length, 1)
+      for (const part of [S.t, prompt.promptId, x.A, RX.highRisk.reason]) assert.ok(lines[0].text.includes(part), `the record lacks ${part}: ${lines[0].text}`)
+    })
+  }
+}
+
 export function registerReviewXCases(sdk) {
+  highRisk(sdk)
   f01Domain(sdk)
   f01Unit(sdk)
   f04(sdk)

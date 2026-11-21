@@ -12,7 +12,7 @@ import {
 import { row, withdrawn } from './rows.mjs'
 import {
   A, answer, asked, bytes, call, cid, decided, eventually, free, handOver, isListed, listed, managed, ofType, okCall, pending, permissionsFor, principal,
-  quiet, reconnect, refusedCall, resultOf, retirement, session, setEnabled, setLimit, settlement, settlementsOf, step, stockFor, takeBack, tok, turn,
+  quiet, reconnect, refusedCall, resultOf, retirement, session, setEnabled, setHighRisk, setLimit, settlement, settlementsOf, step, stockFor, takeBack, tok, turn,
   titleOf, untilStock, userClicks, world,
 } from './subject.mjs'
 
@@ -93,8 +93,10 @@ export function registerApprovalCases(sdk) {
     assert.equal(await isListed(p, r), false, 'a settled request is still listed')
   })
   const reason501 = 'r'.repeat(PAYLOAD_LIMITS.reasonChars + 1)
+  // Re-baselined by HIGH-RISK-APPROVAL (the user, 2026-11-21): allow + high + reason is accepted (APR-HR rows below).
   for (const [label, a, code] of [
-    ['risk high', { ...A.allow(), risk: RISK.high }, REFUSAL.allowNeedsLowRisk],
+    ['risk high, no reason', { decision: APPROVAL_DECISION.allow, risk: RISK.high }, REFUSAL.reasonRequired],
+    ['risk high, reason whitespace', { ...A.allow(' \n\t '), risk: RISK.high }, REFUSAL.reasonRequired],
     ['no risk', { decision: APPROVAL_DECISION.allow, reason: FIXTURE.reason }, REFUSAL.riskRequired],
     ['no reason', { decision: APPROVAL_DECISION.allow, risk: RISK.low }, REFUSAL.reasonRequired],
     ['reason \'\'', A.allow(''), REFUSAL.reasonRequired],
@@ -119,6 +121,29 @@ export function registerApprovalCases(sdk) {
       await assertLaterAllow(w, p, r)
     })
   }
+  row(sdk, 'APR-HR-01', 'DT (allow + high + reason, the default setting)', '{accepted: true}; the call runs allowed once with the tool\'s own output; the stock prompt never shows; no settlement event (A3)', async (t) => {
+    const w = await w0()
+    const p = await principal(t, w)
+    const sid = await managed(w, p)
+    const r = await asked(w, p, sid)
+    assert.deepEqual(await answer(p, r, { ...A.allow(), risk: RISK.high }), { ok: true, accepted: true })
+    assert.equal((await decided(w, r.text)).outcome, IX.outcome.allowed)
+    assert.equal((await resultOf(w, sid, r.id)).text, IX.fixture.outcomeText(IX.outcome.allowed))
+    await quiet()
+    assert.deepEqual(settlementsOf(await pending(p.client), r.d.approvalId), [])
+    assert.deepEqual(await stockFor(w, r.text), [])
+  })
+  row(sdk, 'APR-HR-02', `ST (${SET.allowHighRisk} off → allow + high → on)`, `off: ${REFUSAL.allowNeedsLowRisk}, still listed and waiting; switched on live (no remount): the same allow is accepted`, async (t) => {
+    const w = await w0()
+    const p = await principal(t, w)
+    const sid = await managed(w, p)
+    await setHighRisk(t, w, false)
+    const r = await asked(w, p, sid)
+    await assertRefusedAnswer(w, p, r, { ...A.allow(), risk: RISK.high }, REFUSAL.allowNeedsLowRisk)
+    await setHighRisk(t, w, true)
+    assert.deepEqual(await answer(p, r, { ...A.allow(), risk: RISK.high }), { ok: true, accepted: true })
+    assert.equal((await decided(w, r.text)).outcome, IX.outcome.allowed)
+  })
   row(sdk, 'APR-05', `BVA (reason ${PAYLOAD_LIMITS.reasonChars} characters, astral)`, 'accepted', async (t) => {
     const w = await w0()
     const p = await principal(t, w)

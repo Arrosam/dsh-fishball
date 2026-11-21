@@ -263,6 +263,27 @@ export async function setLimit(t, w, field, value) {
   const r = await w.call('settingsUpdate', { patch: { [field]: value } })
   assert.equal(r.ok, true, `${field} = ${value}: ${JSON.stringify(r)}`)
 }
+/** Rows that already registered their `requests.allowHighRisk` restore (setHighRisk). */
+const highRiskRestored = new WeakSet()
+/**
+ * The owner's `requests.allowHighRisk` (HIGH-RISK-APPROVAL) set to `on` through DSH's settings
+ * service. The value from before the row's first call is put back after the row, once and checked:
+ * the interactions world is shared, so a value left behind would leak into later rows.
+ */
+export async function setHighRisk(t, w, on) {
+  const { requests, allowHighRisk } = RELAYED.setting
+  if (!highRiskRestored.has(t)) {
+    highRiskRestored.add(t)
+    // Unset reads as the default, true (src/settings HIGH_RISK); a patch of undefined would keep the last value.
+    const was = (await settingsValue(w))[requests]?.[allowHighRisk] ?? true
+    t.after(async () => {
+      const back = await w.call('settingsMutate', { ops: [{ op: 'set', path: [requests, allowHighRisk], value: was }] })
+      assert.equal(back.ok, true, `restoring ${requests}.${allowHighRisk}: ${JSON.stringify(back)}`)
+    })
+  }
+  const r = await w.call('settingsUpdate', { patch: { [requests]: { [allowHighRisk]: on } } })
+  assert.equal(r.ok, true, `${requests}.${allowHighRisk} = ${on}: ${JSON.stringify(r)}`)
+}
 /** The user switches `p`'s entry off (or on) in the tokens list. */
 export async function setEnabled(w, p, enabled) {
   const r = await saveTokens(w, (await tokensOf(w)).map((i) => (i.key === p.entryKey ? { ...i, enabled } : i)))

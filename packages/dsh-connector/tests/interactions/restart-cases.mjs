@@ -55,10 +55,12 @@ export function registerRestartCases(sdk) {
   })
 
   // ------------------------------------------------------------------------- settings (the user's decisions)
-  row(sdk, 'IX-SET-01', 'EP (the kept limits and their defaults)', `the row's settings hold exactly tokens, approval, ${Object.keys(RELAYED.kept).join(', ')}; the limits at their defaults`, async () => {
+  // Re-baselined by HIGH-RISK-APPROVAL (the user, 2026-11-21): requests {allowHighRisk: true} joins them.
+  row(sdk, 'IX-SET-01', 'EP (the kept limits and their defaults)', `the row's settings hold exactly tokens, approval, requests {allowHighRisk: true}, ${Object.keys(RELAYED.kept).join(', ')}; the limits at their defaults`, async () => {
     const w = await world(sdk)
     const v = await value(w)
-    assert.deepEqual(Object.keys(v).sort(), [SET.tokens, SET.approval, ...Object.keys(RELAYED.kept)].sort())
+    assert.deepEqual(Object.keys(v).sort(), [SET.tokens, SET.approval, SET.requests, ...Object.keys(RELAYED.kept)].sort())
+    assert.deepEqual(v[SET.requests], { [SET.allowHighRisk]: true })
     for (const [k, d] of Object.entries(RELAYED.kept)) assert.equal(v[k], d, k)
   })
   row(sdk, 'IX-SET-02', 'EP (removed fields)', `none of ${RELAYED.removed.join(', ')} is a setting; no routing.agentToken (${DECISION_TEXT.q5})`, async () => {

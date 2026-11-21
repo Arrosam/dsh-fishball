@@ -68,6 +68,9 @@ export const SURFACE = Object.freeze({
     port: 'port',
     /** C-WIRE-2 (decision list item 8): approval.dshName, optional, no default. */
     dshName: 'dshName',
+    /** HIGH-RISK-APPROVAL (the user, 2026-11-21): requests.allowHighRisk, a boolean, true by default. */
+    requests: 'requests',
+    allowHighRisk: 'allowHighRisk',
     maxQueuedInputs: 'maxQueuedInputs',
     maxMessageBytes: 'maxMessageBytes',
     /**

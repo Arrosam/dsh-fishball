@@ -216,14 +216,23 @@ function staticRows(sdk) {
     assert.ok(entry.inject !== undefined, 'no inject')
   })
   // Re-baselined by C-WIRE-2 (q5: no routing object; item 8: approval.dshName optional, unset; item 9: the removed fields).
-  row(sdk, 'C-WIRE-R2', 'schema', 'Config resolves {} to exactly tokens [], approval {port: APPROVAL_LISTENER.defaultPort, dshName: undefined}, and the kept limits at their defaults; no routing, no removed field', async () => {
+  // Re-baselined by HIGH-RISK-APPROVAL (the user, 2026-11-21): requests {allowHighRisk: true} joins the fields.
+  row(sdk, 'C-WIRE-R2', 'schema', 'Config resolves {} to exactly tokens [], approval {port: APPROVAL_LISTENER.defaultPort, dshName: undefined}, requests {allowHighRisk: true}, and the kept limits at their defaults; no routing, no removed field', async () => {
     const value = await resolveConfig(sdk, {})
     assert.deepEqual(value[S.tokens], [])
     // Unset optional dshName resolves to a present key with value undefined (Schemastery; relayed 2026-11-17).
     assert.deepEqual(value[S.approval], { [S.port]: APPROVAL_LISTENER.defaultPort, [S.dshName]: undefined })
     for (const [k, d] of Object.entries(S.limits)) assert.equal(value[k], d, 'default of ' + k)
-    assert.deepEqual(Object.keys(value).sort(), [S.tokens, S.approval, ...Object.keys(S.limits)].sort())
+    assert.deepEqual(value[S.requests], { [S.allowHighRisk]: true })
+    assert.deepEqual(Object.keys(value).sort(), [S.tokens, S.approval, S.requests, ...Object.keys(S.limits)].sort())
   })
+  for (const [label, given, ok] of [['true', true, true], ['false', false, true], ['a string', 'off', false], ['a number', 0, false]]) {
+    row(sdk, 'C-WIRE-HR', `requests.allowHighRisk EP (${label})`, `requests.allowHighRisk ${JSON.stringify(given)} is ${ok ? 'accepted' : 'refused'} by the schema (HIGH-RISK-APPROVAL)`, async () => {
+      const input = { [S.requests]: { [S.allowHighRisk]: given } }
+      if (ok) assert.equal((await resolveConfig(sdk, input))[S.requests][S.allowHighRisk], given)
+      else await assert.rejects(resolveConfig(sdk, input))
+    })
+  }
   for (const [label, name, ok] of [['a name', FIXTURE.name.a, true], ['\'\'', '', true], ['a number', 1, false]]) {
     row(sdk, 'C-WIRE-R2', `dshName EP (${label})`, `approval.dshName ${JSON.stringify(name)} is ${ok ? 'accepted' : 'refused'} by the schema (decision list item 8)`, async () => {
       const input = { [S.approval]: { [S.port]: APPROVAL_LISTENER.defaultPort, [S.dshName]: name } }
