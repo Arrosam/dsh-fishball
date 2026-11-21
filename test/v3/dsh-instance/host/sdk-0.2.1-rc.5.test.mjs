@@ -9,3 +9,5 @@ registerFixInstanceCases('0.2.1-rc.5')
 
 import { registerMultiHostCases } from './multi-cases.mjs'
 registerMultiHostCases('0.2.1-rc.5')
+import { registerAgentEntryCases } from './agent-entry-cases.mjs'
+registerAgentEntryCases('0.2.1-rc.5')

@@ -81,7 +81,8 @@ export const ROUTE = Object.freeze({
 export const K3 = Object.freeze({
   service: 'dshInstanceChild',
   apiVersion: 1,
-  members: Object.freeze(['apiVersion', 'status', 'onChange', 'origin', 'admit', 'retry', 'reconnect', 'targetStatus', 'providerSync']),
+  // Contract C (2026-11-21, entries by window): the locator gains agentEntry().
+  members: Object.freeze(['apiVersion', 'status', 'onChange', 'origin', 'admit', 'retry', 'reconnect', 'targetStatus', 'agentEntry', 'providerSync']),
   state: Object.freeze({ starting: 'starting', ready: 'ready', failed: 'failed', stopped: 'stopped' }),
   code: Object.freeze({ incompatible: 'PROFILE_INCOMPATIBLE', exited: 'NATIVE_CHILD_EXITED', unreachable: 'TARGET_UNREACHABLE', revoked: 'token-revoked' }),
   /** Withdrawn by Q4 (R-FB-10 amended by 1.39). */
