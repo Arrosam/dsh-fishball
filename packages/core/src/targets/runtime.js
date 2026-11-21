@@ -36,9 +36,10 @@ const ORIGIN = TARGETS.toolName.origin
  * @param {Promise<void>} options.recovered settles once the ledger's recovery ran
  * @param {object} options.bridgeOptions the façade's shared options (logger, attachments, imagesSupported)
  * @param {(serverName: string) => void} options.onServerName the link discovered a (new) server name
+ * @param {object} [options.watch] whether a Fishball page watches (targets/index.js `deps.watch`)
  */
 export function createTargetRuntime(ctx, options) {
-  const { record, names, url, clientId, clientMetadataUrl, name, identityRecords, asks, events, bindings, recovered, bridgeOptions, onServerName, logger } = options
+  const { record, names, url, clientId, clientMetadataUrl, name, identityRecords, asks, events, bindings, recovered, bridgeOptions, onServerName, watch, logger } = options
   const targetId = record.id
   const endpointEpoch = record.endpointEpoch
   const listeners = new Set()
@@ -73,10 +74,11 @@ export function createTargetRuntime(ctx, options) {
   // This epoch's `ask_user`: files offers of this target epoch only (asks/index.js `toolFor`).
   const locals = Object.freeze([Object.freeze({ facade: ASK_TOOL.fileCard, build: (modelName) => asks.toolFor(source(), modelName) })])
   // The sidebar's running managed sessions of this epoch (sessions.js): refreshed on connect, on a
-  // polled session event and after Fishball's own session calls, fenced by this disposal. Subscribed
+  // polled session event, after Fishball's own session calls and, while a page watches, on an
+  // interval; fenced by this disposal. Subscribed
   // before the view's own status listener, so a link that leaves `connected` has cleared its list
   // before the view is rebuilt.
-  const sessions = createRunningSessions(link, { onChange: changed, logger })
+  const sessions = createRunningSessions(link, { onChange: changed, watch, logger })
   disposers.push(sessions.dispose)
 
   // Fishball's own accepted answer settles its request; the connector sends no settlement for it (asks/index.js `answered`).

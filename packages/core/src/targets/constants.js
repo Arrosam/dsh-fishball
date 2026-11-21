@@ -42,6 +42,14 @@ export const TARGET_SESSIONS = Object.freeze({
   refreshOn: Object.freeze([MCP.eventTypes.state, MCP.eventTypes.turnFinished, MCP.eventTypes.handover, MCP.eventTypes.takeback, MCP.eventTypes.retirement]),
   refreshAfter: Object.freeze([MCP.tools.sessionStart, MCP.tools.sessionMessage, MCP.tools.sessionRedirect, MCP.tools.sessionStop, MCP.tools.sessionRelease]),
   unexpected: 'unexpected-answer',
+  /**
+   * How often a target's running sessions are read while a Fishball page watches (sessions.js). The
+   * connector sends no event when a session starts running, so this bounds how long a session that
+   * started by itself stays missing from the sidebar. 15 s: the implementer's choice (the user asked
+   * for a modest interval and gave no number), one `sessions_list` per target every 15 s, only while
+   * a page is open.
+   */
+  watchIntervalMs: 15000,
 })
 
 /** The target routes' own HTTP words (the statuses and the unavailable code are `SEAM_TARGETS.http`). */

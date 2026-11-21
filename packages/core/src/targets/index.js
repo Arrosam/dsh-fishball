@@ -87,9 +87,11 @@ function instanceOf(ctx) {
  * @param {Promise<void>} deps.recovered settles once the ledger's recovery ran
  * @param {object} deps.settings `{clientId, clientMetadataUrl, name}` live reads of core's settings
  * @param {object} deps.bridgeOptions the façade options every target shares
+ * @param {{watching(): boolean, onWatch(fn: (watching: boolean) => void): () => void}} [deps.watch] whether a
+ *   Fishball page watches (core's page stream): each target's running sessions poll only then
  * @param {{warn: Function}} [deps.logger]
  */
-export function createTargets(ctx, { tables, identityRecords, asks, events, recovered, settings, bridgeOptions, logger }) {
+export function createTargets(ctx, { tables, identityRecords, asks, events, recovered, settings, bridgeOptions, watch, logger }) {
   const listeners = new Set()
   const runtimes = new Map()
   const mounts = new Set()
@@ -162,7 +164,7 @@ export function createTargets(ctx, { tables, identityRecords, asks, events, reco
     // A durable write already in flight may finish after shutdown began.
     if (closed) return
     const runtime = createTargetRuntime(ctx, {
-      record, logger, asks, events, bindings, recovered, bridgeOptions, identityRecords,
+      record, logger, asks, events, bindings, recovered, bridgeOptions, identityRecords, watch,
       names: () => namesOf(records.get(record.id) ?? record),
       url: () => urlOf(record),
       isClosing: () => closed,

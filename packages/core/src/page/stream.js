@@ -10,6 +10,9 @@
  * each open stream; `onChange` says when it may have changed. A topic registered while streams are
  * open is sent to them at once; one withdrawn sends nothing more (a reader keeps its last frame, as
  * after any stream that stops talking).
+ *
+ * `watching()` / `onWatch(fn)` say whether any Fishball page holds the stream open: a view that is
+ * only worth refreshing while someone looks at it (the targets' running sessions) polls only then.
  */
 import { SEAM_PAGE_STREAM } from 'fishball-shared/ui-seam'
 
@@ -28,18 +31,27 @@ export const PAGE_STREAM = Object.freeze({
   }),
   /** Background log line (printf format): a provider that threw; its topic is skipped for that push. */
   log: 'page stream topic %s failed (%s)',
+  /** The log line's subject for a watcher that threw. */
+  watchTopic: '(watcher)',
 })
 
 /**
  * @param {object} ctx core's main row context (`connection`)
  * @param {{warn: Function}} [logger]
- * @returns {{register(topic: string, provider: {frame: Function, onChange: Function}): () => void, dispose(): Promise<void>}}
+ * @returns {{register(topic: string, provider: {frame: Function, onChange: Function}): () => void,
+ *   watching(): boolean, onWatch(fn: (watching: boolean) => void): () => void, dispose(): Promise<void>}}
  */
 export function createPageStream(ctx, logger) {
   /** topic → provider */
   const topics = new Map()
   /** every open stream: `{push(topic), drop(topic)}` */
   const streams = new Set()
+  const watchers = new Set()
+  /** Tells the watchers when the first stream opens or the last one closes. */
+  const watched = (before) => {
+    const now = streams.size > 0
+    if (now !== before) for (const fn of [...watchers]) { try { fn(now) } catch (error) { logger?.warn(PAGE_STREAM.log, PAGE_STREAM.watchTopic, error?.code ?? error?.name) } }
+  }
 
   function register(topic, provider) {
     if (typeof topic !== 'string' || topic === '') throw new TypeError(PAGE_STREAM.misuse.topic)
@@ -83,11 +95,14 @@ export function createPageStream(ctx, logger) {
         let stream
         close = () => {
           if (!streams.delete(stream)) return
+          watched(true)
           request.signal?.removeEventListener(PAGE_STREAM.abort, close)
           try { controller.close() } catch { /* already closed by the reader */ }
         }
         stream = Object.freeze({ push, drop: (topic) => sent.delete(topic), close: () => close() })
+        const before = streams.size > 0
         streams.add(stream)
+        watched(before)
         request.signal?.addEventListener(PAGE_STREAM.abort, close)
         for (const topic of [...topics.keys()]) push(topic)
       },
@@ -99,6 +114,8 @@ export function createPageStream(ctx, logger) {
   const withdraw = ctx.connection.fetch.register({ path: PAGE_STREAM.route, methods: [PAGE_STREAM.get], requestBody: PAGE_STREAM.requestBody, fetch: events })
   return Object.freeze({
     register,
+    watching: () => streams.size > 0,
+    onWatch(fn) { watchers.add(fn); return () => watchers.delete(fn) },
     async dispose() {
       for (const stream of [...streams]) stream.close()
       await withdraw?.()

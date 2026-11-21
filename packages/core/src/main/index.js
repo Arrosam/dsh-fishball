@@ -136,8 +136,12 @@ export async function apply(ctx, config) {
   ctx.effect(() => () => events.close())
   const asks = createAsks({ targets: ports, table: cards, logger })
   ctx.effect(() => () => asks.close())
+  // The page's one live connection (SEAM_PAGE_STREAM), before the targets: their running sessions
+  // poll only while a page watches it (targets/sessions.js).
+  const page = createPageStream(ctx, logger)
+  ctx.effect(() => () => page.dispose())
   targets = createTargets(ctx, {
-    tables: targetTables, identityRecords: records, asks, events, recovered: recovery.promise, bridgeOptions,
+    tables: targetTables, identityRecords: records, asks, events, recovered: recovery.promise, bridgeOptions, watch: page,
     settings: { clientId, clientMetadataUrl: () => setting('metadataUrl'), name: () => setting('name') },
     logger: ctx.logger(TARGET_LOG.name),
   })
@@ -171,10 +175,8 @@ export async function apply(ctx, config) {
   ctx.effect(() => registerAskRoutes(ctx, {
     service: asks.service, managerSessionId: () => session.sessionId(), onManagerChange: (fn) => session.onChange(() => fn()),
   }))
-  // The page's one live connection (SEAM_PAGE_STREAM): the ask cards are its first topic, the same
-  // frame as the ask route's; fishball-ui and the amenities add theirs through `page.register`.
-  const page = createPageStream(ctx, logger)
-  ctx.effect(() => () => page.dispose())
+  // The ask cards are the page stream's first topic, the same frame as the ask route's; fishball-ui
+  // and the amenities add theirs through `page.register`.
   ctx.effect(() => page.register(SEAM_PAGE_STREAM.topic.asks, {
     frame: () => ({ managerSessionId: session.sessionId() ?? null, cards: asks.service.list() }),
     onChange: (fn) => {

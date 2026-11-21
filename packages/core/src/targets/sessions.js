@@ -3,12 +3,16 @@
  * Fishball manages on that DSH (connector `sessions_list`: exactly the caller's managed root
  * sessions, those it started and those the user handed over) that are running now.
  *
- * Refreshed, never polled (core has no timer by design): once each time the link becomes
- * `connected`, after any polled mailbox page holding an event that can change the answer
- * (`TARGET_SESSIONS.refreshOn`: the connector pushes them for managed sessions only), and after
- * Fishball's own answered call of a tool that starts, steers or ends a session's run
- * (`TARGET_SESSIONS.refreshAfter`, `called`): since WAKE-REDUCE the connector sends no event when a
- * session starts running, only `turn-finished` when it stops. One call in
+ * Refreshed once each time the link becomes `connected`, after any polled mailbox page holding an
+ * event that can change the answer (`TARGET_SESSIONS.refreshOn`: the connector pushes them for
+ * managed sessions only), and after Fishball's own answered call of a tool that starts, steers or
+ * ends a session's run (`TARGET_SESSIONS.refreshAfter`, `called`). Since WAKE-REDUCE the connector
+ * sends no event when a session starts running, only `turn-finished` when it stops, so a session
+ * that starts by itself (the user typing in it, a queued message whose turn starts after
+ * `session_message` answered, which also makes the `called` read early) was never shown. So the list
+ * is also polled every `TARGET_SESSIONS.watchIntervalMs`, but only while a Fishball page watches
+ * (core's page stream, `watch`): the list is drawn only there, and an unwatched Fishball sends no
+ * `sessions_list` at all. A page that starts watching gets one refresh at once. One call in
  * flight; a trigger meanwhile asks for exactly one more after it, so the last answer read is never
  * older than the last trigger. The list is `null` (unknown) off a connection, cleared the moment
  * the link leaves `connected`; a result of an earlier connection, or one after `dispose`, is dropped.
@@ -27,6 +31,9 @@ const REFRESH_AFTER = new Set(TARGET_SESSIONS.refreshAfter)
 const ARGS = Object.freeze({ [TARGET_SESSIONS.limitArgument]: TARGET_SESSIONS.listLimit })
 const LIST = MCP.tools.sessionsList
 
+/** The global interval; its handle is unref'd where it is armed, so it never keeps a stopping process alive. */
+const GLOBAL_TIMERS = Object.freeze({ setInterval: (fn, ms) => setInterval(fn, ms), clearInterval: (handle) => clearInterval(handle) })
+
 /** The running sessions of a `sessions_list` success, or `undefined` for any other answer. */
 function runningOf(result) {
   if (result?.ok !== true || !Array.isArray(result.sessions)) return undefined
@@ -37,10 +44,12 @@ function runningOf(result) {
 
 /**
  * @param {{status(): {state: string}, onStatus: Function, onPoll: Function, callTool: Function}} link this epoch's link
- * @param {{onChange: () => void, logger?: {warn: Function}}} options `onChange` after every change of `list()`
+ * @param {{onChange: () => void, watch?: {watching(): boolean, onWatch: Function}, timers?: {setInterval: Function, clearInterval: Function}, logger?: {warn: Function}}} options
+ *   `onChange` after every change of `list()`; `watch` whether a page watches (absent: never polled);
+ *   `timers` the interval (default the global ones, unref'd)
  * @returns {{list(): ReadonlyArray<{sessionId: string, title: string}> | null, called(toolName: string): void, dispose(): void}}
  */
-export function createRunningSessions(link, { onChange, logger }) {
+export function createRunningSessions(link, { onChange, watch, timers = GLOBAL_TIMERS, logger }) {
   let sessions = null
   let disposed = false
   // Bumped on every entry into and exit from `connected`: an answer is taken only on its own connection.
@@ -77,7 +86,21 @@ export function createRunningSessions(link, { onChange, logger }) {
     })()
   }
 
+  // The watch poll: armed while a page watches, stopped when none does or on dispose.
+  let poll
+  const stopPolling = () => { if (poll !== undefined) timers.clearInterval(poll); poll = undefined }
+  function follow(watching) {
+    if (disposed) return
+    if (!watching) { stopPolling(); return }
+    if (poll === undefined) {
+      poll = timers.setInterval(() => { if (connected()) refresh() }, TARGET_SESSIONS.watchIntervalMs)
+      poll?.unref?.()
+    }
+    if (connected()) refresh()
+  }
+
   const disposers = [
+    ...(watch === undefined ? [] : [watch.onWatch(follow), stopPolling]),
     link.onStatus(() => {
       if (disposed) return
       connection += 1
@@ -88,6 +111,8 @@ export function createRunningSessions(link, { onChange, logger }) {
       if (page?.ok === true && Array.isArray(page.events) && page.events.some((event) => REFRESH_ON.has(event?.type))) refresh()
     }),
   ]
+
+  if (watch?.watching()) follow(true)
 
   return Object.freeze({
     list: () => sessions,
