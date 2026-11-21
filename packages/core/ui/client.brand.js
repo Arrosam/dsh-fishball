@@ -15,7 +15,8 @@
  * A lost asks stream, core off, or no manager session yet is offline (the strip only carries
  * presentation, so its own health does not claim a disconnection). An open card is "needs
  * attention": the V1 count pill, 99+. Working is what animates: the fish wags, the whale swims
- * (Fishball's own drawing, never DeepSeek's official orca). `prefers-reduced-motion` keeps the still
+ * (the DeepSeek theme is DSH's own whale mark beside Fishball's wordmark, its accent DeepSeek blue,
+ * so the button still reads as Fishball). `prefers-reduced-motion` keeps the still
  * state. The wide button's accessible name is "Fishball"; the status is its description and a
  * visually hidden text node. The rail renders only the mark, inside the shell's collapse/expand
  * button: that button keeps its own label and click, so the rail still expands, and only the
@@ -30,7 +31,7 @@ window.__ModuleLoader__.load({
   chunk: 'client.brand.js',
   factory(require) {
     const React = require('react')
-    const { StateDot } = require('@deepseek-ai/dsh-client-ui-primitives')
+    const { StateDot, FishLogo } = require('@deepseek-ai/dsh-client-ui-primitives')
     const h = React.createElement
 
     /**
@@ -57,8 +58,18 @@ window.__ModuleLoader__.load({
       badgeSuffix: '+',
       /** The attention copy's one placeholder (`text.attention`). */
       countPlaceholder: '{count}',
-      /** The pill's fill: the fish's magenta darkened to reach 4.5:1 with its white count (V1's #EC0A6E is 4.36:1). */
-      badgeFill: '#D40063',
+      /**
+       * Each theme's one accent colour (the fish's eye, the tag's hard shadow) and its count pill's
+       * fill. The pill is the accent darkened to reach 4.5:1 with its white count: V1's magenta
+       * #EC0A6E is 4.36:1 and DeepSeek's brand blue #4D6BFE is 4.33:1.
+       */
+      accent: Object.freeze({
+        fishball: Object.freeze({ color: '#EC0A6E', badge: '#D40063' }),
+        deepseek: Object.freeze({ color: '#4D6BFE', badge: '#4161F5' }),
+      }),
+      /** The custom properties the theme classes set, so one tag/badge rule serves both themes. */
+      accentVar: '--fb-brand-accent',
+      badgeVar: '--fb-brand-badge-fill',
       size: 24,
       motionQuery: '(prefers-reduced-motion: no-preference)',
       reducedMotionQuery: '(prefers-reduced-motion:reduce)',
@@ -75,7 +86,7 @@ window.__ModuleLoader__.load({
       css: Object.freeze({
         id: 'fishball-brand-style', mark: 'fb-brand-mark', art: 'fb-brand-art', wag: 'fb-brand-wag', swim: 'fb-brand-swim',
         light: 'fb-brand-light', badge: 'fb-brand-badge', name: 'fb-brand-name', word: 'fb-brand-word', tag: 'fb-brand-tag',
-        hidden: 'fb-brand-hidden',
+        hidden: 'fb-brand-hidden', theme: 'fb-brand-theme-',
       }),
       classPrefix: 'fb-brand',
       animation: Object.freeze({
@@ -83,25 +94,11 @@ window.__ModuleLoader__.load({
         wagKeyframes: Object.freeze([[0, 'none'], [55, 'none'], [62, 'rotate(-14deg)'], [70, 'rotate(12deg)'], [78, 'rotate(-9deg)'], [86, 'rotate(5deg)'], [100, 'none']]),
         swimKeyframes: Object.freeze([[0, 'none'], [55, 'none'], [64, 'rotate(-5deg) translate(-.4px,-1px)'], [74, 'rotate(4deg) translate(.3px,.4px)'], [86, 'rotate(-2deg)'], [100, 'none']]),
       }),
-      mark: Object.freeze({
+      /** V1's FishMark (the owner's app): body and eye on a 24-unit grid. */
+      fish: Object.freeze({
         viewBox: '0 0 24 24',
-        /** V1's FishMark (the owner's app): body and eye on a 24-unit grid. */
-        fish: Object.freeze({
-          body: 'M7.4 16.6 L7.4 9.9 L11.3 5.6 L18.4 5.6 L18.4 12.7 L14.1 16.6 Z M7.4 16.6 L2.6 21.4 L7.4 21.4 Z',
-          eye: 'M14.6 7.4 h2 v2 h-2 Z',
-        }),
-        /**
-         * Fishball's own whale drawing (LOGO-BUTTON), in the fish's visual language: closed angular
-         * polygons on the same grid, the same square eye and the one magenta accent. Not DeepSeek's
-         * official orca path or its SMIL shapes.
-         */
-        whale: Object.freeze({
-          body: 'M4.2 13.8 L6.6 7.2 L11.8 5.2 L18.6 6.0 L21.4 10.2 L18.2 14.6 L11.0 16.0 Z',
-          tail: 'M4.2 13.8 L1.2 17.4 L1.2 11.6 Z',
-          spout: 'M10.6 5.2 L9.8 1.8 L11.4 1.8 L12.2 5.0 Z',
-          eye: 'M15.8 8.4 h1.8 v1.8 h-1.8 Z',
-        }),
-        eyeColor: '#EC0A6E',
+        body: 'M7.4 16.6 L7.4 9.9 L11.3 5.6 L18.4 5.6 L18.4 12.7 L14.1 16.6 Z M7.4 16.6 L2.6 21.4 L7.4 21.4 Z',
+        eye: 'M14.6 7.4 h2 v2 h-2 Z',
       }),
       /**
        * V1's word logo and "Deepseek Harness" tag, restored exactly (V1 client.js WORDMARK and
@@ -142,29 +139,33 @@ window.__ModuleLoader__.load({
       `.${C.art}.${C.swim}{animation:${BRAND.animation.swim} ${BRAND.animation.seconds}s ease-in-out infinite}`,
       // The light sits on the mark's corner, in a ring of the sidebar's ground so it separates on both themes.
       `.${C.light}{position:absolute;right:-2px;bottom:-2px;display:inline-flex;padding:1px;border-radius:999px;background:var(--dsw-specific-sidebar-fill,var(--dsw-alias-bg-layer-1))}`,
-      `.${C.badge}{position:absolute;top:-6px;right:-8px;min-width:16px;height:16px;box-sizing:border-box;padding:0 4px;border-radius:8px;background:${BRAND.badgeFill};color:#fff;font:800 10px/16px sans-serif;text-align:center;box-shadow:0 0 0 2px var(--dsw-specific-sidebar-fill,var(--dsw-alias-bg-layer-1))}`,
+      // Each theme class sets the accent variables; the tag and the pill read them.
+      ...BRAND.themes.map((theme) => `.${C.theme}${theme}{${BRAND.accentVar}:${BRAND.accent[theme].color};${BRAND.badgeVar}:${BRAND.accent[theme].badge}}`),
+      `.${C.badge}{position:absolute;top:-6px;right:-8px;min-width:16px;height:16px;box-sizing:border-box;padding:0 4px;border-radius:8px;background:var(${BRAND.badgeVar});color:#fff;font:800 10px/16px sans-serif;text-align:center;box-shadow:0 0 0 2px var(--dsw-specific-sidebar-fill,var(--dsw-alias-bg-layer-1))}`,
       // V1's word logo (BRAND.wordmark): the shell's name size, lifted; the tag is placed against it.
       // The face sits on the name, as in V1, so the tag inherits the word's tracking instead of the
       // shell's wider .brandName letter-spacing; the tag then sets only its own font.
       `.${C.name}{position:relative;display:inline-block;top:${BRAND.wordmark.lift};font-family:${BRAND.wordmark.family},${BRAND.latinFont};font-weight:${BRAND.wordmark.weight};letter-spacing:${BRAND.wordmark.letterSpacing};line-height:${BRAND.wordmark.lineHeight};pointer-events:none}`,
       `.${C.word}{white-space:nowrap}`,
       // V1's sticker (BRAND.sticker), overlaid on the corner so it cannot push the sidebar controls.
-      `.${C.tag}{position:absolute;right:${BRAND.sticker.right};bottom:${BRAND.sticker.bottom};padding:0 ${BRAND.sticker.paddingX};border-radius:${BRAND.sticker.radius};background:${BRAND.sticker.fill};color:${BRAND.sticker.textColor};font:${BRAND.sticker.fontWeight} ${BRAND.sticker.fontSize}/${BRAND.sticker.lineHeight} ${BRAND.latinFont};box-shadow:${BRAND.sticker.ring},${BRAND.sticker.shadowOffset} ${BRAND.mark.eyeColor};white-space:nowrap;pointer-events:none}`,
+      `.${C.tag}{position:absolute;right:${BRAND.sticker.right};bottom:${BRAND.sticker.bottom};padding:0 ${BRAND.sticker.paddingX};border-radius:${BRAND.sticker.radius};background:${BRAND.sticker.fill};color:${BRAND.sticker.textColor};font:${BRAND.sticker.fontWeight} ${BRAND.sticker.fontSize}/${BRAND.sticker.lineHeight} ${BRAND.latinFont};box-shadow:${BRAND.sticker.ring},${BRAND.sticker.shadowOffset} var(${BRAND.accentVar});white-space:nowrap;pointer-events:none}`,
       `.${C.hidden}{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}`,
       keyframes(BRAND.animation.wag, BRAND.animation.wagKeyframes),
       keyframes(BRAND.animation.swim, BRAND.animation.swimKeyframes),
       `@media ${BRAND.reducedMotionQuery}{.${C.art}.${C.wag},.${C.art}.${C.swim}{animation:none}}`,
     ].join('')
 
-    /** The fish (Fishball theme) or Fishball's whale (DeepSeek theme); the eye is the one accent. */
+    /**
+     * The fish (Fishball theme), its eye the magenta accent; or DeepSeek's whale (DeepSeek theme):
+     * DSH's own `FishLogo`, the mark DSH's official brand plugin puts in this slot, in the sidebar's
+     * label colour as DSH draws it. The name stays Fishball's wordmark in both themes (the user,
+     * 2026-11-20), so the button still reads as Fishball; only the accent turns DeepSeek blue.
+     */
     function Art({ theme, size }) {
-      const whale = theme === BRAND.theme.deepseek
-      const shape = whale ? BRAND.mark.whale : BRAND.mark.fish
-      return h('svg', { width: size, height: size, viewBox: BRAND.mark.viewBox, 'aria-hidden': 'true', focusable: 'false' },
-        h('path', { d: shape.body, fill: 'currentColor' }),
-        whale ? h('path', { d: shape.tail, fill: 'currentColor' }) : null,
-        whale ? h('path', { d: shape.spout, fill: 'currentColor' }) : null,
-        h('path', { d: shape.eye, fill: BRAND.mark.eyeColor }))
+      if (theme === BRAND.theme.deepseek) return h(FishLogo, { size })
+      return h('svg', { width: size, height: size, viewBox: BRAND.fish.viewBox, 'aria-hidden': 'true', focusable: 'false' },
+        h('path', { d: BRAND.fish.body, fill: 'currentColor' }),
+        h('path', { d: BRAND.fish.eye, fill: BRAND.accent.fishball.color }))
     }
 
     /**
@@ -240,7 +241,7 @@ window.__ModuleLoader__.load({
         const animated = mark.working && motion
         const art = [C.art, animated ? (mark.theme === BRAND.theme.deepseek ? C.swim : C.wag) : null].filter(Boolean).join(' ')
         return h('span', {
-          className: C.mark, ref,
+          className: `${C.mark} ${C.theme}${mark.theme}`, ref,
           'data-fishball-logo-mark': true, 'data-fishball-logo-state': mark.state, 'data-fishball-logo-theme': mark.theme,
         },
         h('span', { className: art }, h(Art, { theme: mark.theme, size: size ?? BRAND.size })),
@@ -367,7 +368,7 @@ window.__ModuleLoader__.load({
             if (ok) pendingOpen.current = null
           })
         }, [mark.listed, mark.managerId])
-        return h('span', { ref, className: C.name, 'data-fishball-logo-name': true, 'data-fishball-logo-state': mark.state },
+        return h('span', { ref, className: `${C.name} ${C.theme}${mark.theme}`, 'data-fishball-logo-name': true, 'data-fishball-logo-state': mark.state },
           h('span', { className: C.word, 'data-fishball-logo-word': true }, BRAND.name),
           h('span', { className: C.tag, 'data-fishball-logo-tag': true }, BRAND.tag),
           h('span', { className: C.hidden, 'data-fishball-logo-status': mark.state }, mark.status))

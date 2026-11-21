@@ -24,7 +24,9 @@ or focuses the one manager session and never creates one or triggers New Session
 DSH's re-renders by a MutationObserver scoped to that button. State reuses the page's facts: the
 asks stream (connection, manager id, open approval/question cards with V1's 99+ badge), the session
 list (working), and the strip view (core on/off). Working animates (fish wag / whale swim); reduced
-motion is static. Two themes, Fishball's fish or Fishball's own whale drawing, default Fishball;
+motion is static. Two themes, Fishball's fish or DSH's own whale mark (`FishLogo`), default Fishball;
+both keep the FISHBALL wordmark and tag; the DeepSeek theme's accent (tag shadow, count pill) is
+DeepSeek blue instead of magenta (user, 2026-11-20);
 core's settings page owns `brandStyle` (`SEAM_BRAND`), applied live through core's status and the
 strip stream. The rail mark stays inside DSH's collapse control (which keeps expand/collapse); the
 expanded brand row is Fishball's control. `fishball-page`'s 44px narrow bar has no brand row on either SDK;
