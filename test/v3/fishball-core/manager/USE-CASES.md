@@ -27,6 +27,16 @@ One scenario per SDK, two boots of one home under the repo's TEST_HOMES (os.tmpd
 | MGR-SET-EP-01b | EP | `agentPresets.defaultId` | `fishball` |
 | MGR-SET-EP-02 | EP | manager request tools minus core's own | exactly read, read_image, working_directory, ask_user_question (the user, 2026-11-18: "用DSH自带的提问工具") |
 | MGR-SET-EP-03 | EP | manager system prompt | has session_message, approval_answer; none of message_session, answer_approval, list_plugins, watch_session |
+| WD-PERSONA-EP-01 / 01b | EP | core's contract `WATCHDOG`, `MCP.tools.sessionStart` | frozen; tools exactly `{sessionStart: watchdog_session_start, brief: watchdog_brief}`; `session_start` |
+| WD-PERSONA-EP-02 | EP | `PERSONA_ROLE` | one sentence names watchdog_session_start, then session_start after "instead of", conditional on a DSH offering Watchdog |
+| WD-PERSONA-EP-03 / 04 | EP | that line | "same arguments", "purpose", "approvable scope"; Watchdog supervises from the "first request" |
+| WD-PERSONA-EP-05 | EP | `PERSONA_ROLE` | watchdog_brief named with "only … running … after the brief" |
+| WD-PERSONA-EP-06 | EP (source of the names) | persona.js in a temp copy whose contract `WATCHDOG.tools` names are swapped | the swapped names appear, the real ones do not (no literals) |
+| WD-PERSONA-DT-01 / 02 | DT (Watchdog offered / not) | `PERSONA_ROLE` | every Watchdog-tool line carries the condition; session_start guidance stays in Watchdog-free lines and nothing forbids session_start |
+| WD-PERSONA-EP-07 | EP | session_start lines | placement (workspaceId as folder, verified ID or absolute path, workspaceError), model from models_list, hand-over still there |
+| WD-PERSONA-ST-01 | ST (before → after) | persona of the parent of the commit that brought WATCHDOG into persona.js vs now | every earlier line kept in order; the only new line is the Watchdog one (skipped if the clone lacks that history) |
+| WD-PERSONA-EP-08 / 09 | EP (style) | `PERSONA_ROLE` | one bold rule line, still last; no CR, no trailing newline; the Watchdog line has balanced `**` and no Chinese mark before a closing `**` |
+| WD-PERSONA-SYS-01 | EP (system) | the manager's model request in boot A | carries the Watchdog line, both Watchdog tools and session_start |
 | MGR-ID-EP-01 | BVA (first start) | profile/home `cordis.patch.yml` and DSH's settings document before vs after A's start | unchanged; no `identity.id` in the user layer |
 | MGR-ID-EP-02 | EP | Connect POST with a fake loopback target + CIMD URL | approval URL `agent_id` matches `^fb-[a-z2-7]{16}$`; still not in settings |
 | MGR-ID-ST-01 | ST across restart | Connect in B | the same id |
