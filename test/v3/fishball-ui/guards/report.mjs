@@ -17,11 +17,13 @@ export function isReport(value) {
   return (value.status === REPORT.ok) === (value.overridden.length === 0)
 }
 
-// GENTLE-TOOLS (2026-11-21): K3 GuardReport gained `extraManagerTools`; it is carried through when the
-// report has it (string array), so a case can read it; isReport's shape test is unchanged.
+// GENTLE-TOOLS (2026-11-21): K3 GuardReport gained `extraManagerTools` and (review fix, the same day)
+// `missingManagerTools`; each is carried through when the report has it (string array), so a case can
+// read it; isReport's shape test is unchanged.
+const TOOL_LISTS = Object.freeze(['extraManagerTools', 'missingManagerTools'])
 const plain = (report) => ({
   status: report.status, overridden: [...report.overridden].map(String),
-  ...(Array.isArray(report.extraManagerTools) ? { extraManagerTools: [...report.extraManagerTools].map(String) } : {}),
+  ...Object.fromEntries(TOOL_LISTS.filter((key) => Array.isArray(report[key])).map((key) => [key, [...report[key]].map(String)])),
 })
 
 const withTimeout = (promise) => Promise.race([promise, new Promise((resolve) => setTimeout(() => resolve(undefined), FINDER.callMs))])

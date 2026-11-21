@@ -96,9 +96,13 @@ export const LANG = Object.freeze({ en: 'en', zh: 'zh', unknown: 'fbtest-xx' })
 /** Guard report words (K3 guards.d.ts via core's GUARDS) and fixture lists of overridden guards. */
 // GENTLE-TOOLS (the user, 2026-11-21): K3 GuardReport gained `extraManagerTools` (sorted, unique; [] when
 // none, also with status ok), so every fixture report carries it; `overridden(list)` alone gives [].
+// Review fix (the user, 2026-11-21): it gained `missingManagerTools` too (the default manager tools some
+// live manager lacks; sorted, unique, [] when none, always [] when ok); every fixture carries it, [] unless given.
 export const GUARD = Object.freeze({
-  ok: Object.freeze({ status: GUARDS.status.ok, overridden: Object.freeze([]), extraManagerTools: Object.freeze([]) }),
-  overridden: (list, extras = []) => Object.freeze({ status: GUARDS.status.overridden, overridden: Object.freeze([...list]), extraManagerTools: Object.freeze([...extras]) }),
+  ok: Object.freeze({ status: GUARDS.status.ok, overridden: Object.freeze([]), extraManagerTools: Object.freeze([]), missingManagerTools: Object.freeze([]) }),
+  overridden: (list, extras = [], missing = []) => Object.freeze({
+    status: GUARDS.status.overridden, overridden: Object.freeze([...list]), extraManagerTools: Object.freeze([...extras]), missingManagerTools: Object.freeze([...missing]),
+  }),
   first: Object.freeze([GUARDS.code.rowPrefix + V3.instance.name, GUARDS.code.bundleOrder]),
   second: Object.freeze([GUARDS.code.managerTools]),
   /** The notice's list separator (relayed: "overridden guards joined by ', '"). */
@@ -114,6 +118,8 @@ export const GUARD = Object.freeze({
 export const TOOLS = Object.freeze({
   names: Object.freeze({ a: 'fbtest_tool_alpha', b: 'fbtest_tool_beta', c: 'fbtest_tool_gamma' }),
   code: GUARDS.code.managerTools,
+  /** K3 `ManagerTool`, the defaults `missingManagerTools` names (GUARDS.managerTools: read, read_image, working_directory, ask_user_question). */
+  defaults: GUARDS.managerTools,
   /** A guard code beside manager-tools in a refresh that keeps the same extras (K3 `bundle-order`). */
   other: GUARDS.code.bundleOrder,
   /** `<profileContext.home>/fishball/manager-tools.json`: one JSON line {"announced": [sorted]} + "\n". */

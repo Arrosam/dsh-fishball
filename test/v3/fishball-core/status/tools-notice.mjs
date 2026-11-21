@@ -6,9 +6,16 @@
  * refinement: 'manager-tools' leaves the guards notice only when the report names extra tools).
  *
  * Techniques: EP (record contents, profile context present / without home / absent), BVA (extras
- * 0 / 1 / 3; a subset, the same set, one more), a decision table (overridden codes x extras -> guards
- * notice / tools notice) and state transitions (the announced set across refreshes, restarts,
- * rejection and an in-flight notice).
+ * 0 / 1 / 3; missing defaults 0 / 1 / all 4; a subset, the same set, one more), a decision table
+ * (overridden codes x extras x missing defaults -> guards notice / tools notice) and state transitions
+ * (the announced set across refreshes, restarts, rejection, an in-flight notice and a new name that
+ * arrives while one is in flight).
+ *
+ * Review fixes (the user, 2026-11-21): K3 GuardReport gained `missingManagerTools` (the defaults some
+ * live manager lacks); 'manager-tools' leaves the guards notice only when extraManagerTools is non-empty
+ * AND missingManagerTools is empty or absent; a new extra name that arrives while a tools notice is in
+ * flight is announced once that notice settles (accepted, rejected or nothing new), without another
+ * report, never two in flight, nothing after close().
  *
  * Level: unit, on the F-STATUS world (world.mjs: a real Cordis Context of the SDK, the fake ports), with
  * a throwaway home under the OS temp dir as profileContext.home. Only the exported STATUS_MODEL and the
@@ -60,8 +67,17 @@ async function untilRecord(home, list) {
   assert.equal(readRecord(home), recordText(list), 'the record file')
 }
 
-/** A report naming 'manager-tools' (after 'others') with these extra tools. */
-const toolsReport = (extras, others = []) => GUARD.overridden([...others, TOOLS.code], extras)
+/** A report naming 'manager-tools' (after 'others') with these extra tools (and these missing defaults). */
+const toolsReport = (extras, others = [], missing = []) => GUARD.overridden([...others, TOOLS.code], extras, missing)
+/** Marks a decision-table row whose report has no `missingManagerTools` member at all (the "absent" partition). */
+const NO_FIELD = Symbol('no missingManagerTools member')
+/** The report for one decision-table row. */
+function rowReport(overridden, extras, missing) {
+  if (overridden.length === 0) return GUARD.ok
+  if (missing !== NO_FIELD) return GUARD.overridden(overridden, extras, missing)
+  const { missingManagerTools: _absent, ...rest } = GUARD.overridden(overridden, extras)
+  return Object.freeze(rest)
+}
 
 /** The surface this file reads: STATUS_MODEL's prefixes and texts. */
 async function modelOf(sdk) {
@@ -313,22 +329,36 @@ export function registerToolsNoticeCases(t, sdk) {
   }
 
   // ------------------------------------------------------------------ rule 5: the guards notice beside the tools notice (decision table)
+  // Review fix (the user, 2026-11-21): 'manager-tools' leaves the guards notice only when extras are
+  // non-empty AND missingManagerTools is empty or absent; a missing default keeps it there, and the
+  // extras still get their one gentle tools notice. Missing: BVA none / one / all four defaults, and
+  // the absent member (NO_FIELD). Rows 1-6 are the GENTLE-TOOLS rows with missing [].
   const other = GUARD.first
-  // [rule, overridden, extras?, the guards notice's list (null: none), a tools notice?]
+  const defaults = [...TOOLS.defaults].sort()
+  const oneMissing = [defaults[0]]
+  // [rule, overridden, extras?, missingManagerTools (NO_FIELD: no member), the guards notice's list (null: none), a tools notice?]
   const table = [
-    ['1 ok', [], false, null, false],
-    ['2 only manager-tools, extras', [TOOLS.code], true, null, true],
-    ['3 only manager-tools, no extras', [TOOLS.code], false, [TOOLS.code], false],
-    ['4 other codes, no manager-tools', [...other], false, [...other], false],
-    ['5 other codes and manager-tools, extras', [...other, TOOLS.code], true, [...other], true],
-    ['6 other codes and manager-tools, no extras', [...other, TOOLS.code], false, [...other, TOOLS.code], false],
+    ['1 ok', [], false, [], null, false],
+    ['2 extras only (manager-tools alone)', [TOOLS.code], true, [], null, true],
+    ['3 neither (manager-tools alone)', [TOOLS.code], false, [], [TOOLS.code], false],
+    ['4 manager-tools absent, other codes', [...other], false, [], [...other], false],
+    ['5 extras only, other codes', [...other, TOOLS.code], true, [], [...other], true],
+    ['6 neither, other codes', [...other, TOOLS.code], false, [], [...other, TOOLS.code], false],
+    ['7 missing only (one)', [TOOLS.code], false, oneMissing, [TOOLS.code], false],
+    ['8 missing only (all four), other codes', [...other, TOOLS.code], false, defaults, [...other, TOOLS.code], false],
+    ['9 both (one missing)', [TOOLS.code], true, oneMissing, [TOOLS.code], true],
+    ['10 both (all four missing), other codes', [...other, TOOLS.code], true, defaults, [...other, TOOLS.code], true],
+    ['11 extras, missing member absent', [TOOLS.code], true, NO_FIELD, null, true],
+    ['12 extras, missing member absent, other codes', [...other, TOOLS.code], true, NO_FIELD, [...other], true],
+    ['13 manager-tools absent, other codes, missing member absent', [...other], false, NO_FIELD, [...other], false],
   ]
-  for (const [rule, overridden, withExtras, guardsList, toolsNotice] of table) {
-    t('TOOLS-DT-01', rule, 'overridden ' + show(overridden) + ', extras ' + (withExtras ? 'some' : 'none') + ': guards notice ' + (guardsList ? show(guardsList) : 'none') + ', tools notice ' + (toolsNotice ? 'one' : 'none') + '; each at most once; the snapshot carries the report exactly', async (c) => {
+  for (const [rule, overridden, withExtras, missing, guardsList, toolsNotice] of table) {
+    const missingLabel = missing === NO_FIELD ? 'absent' : show(missing)
+    t('TOOLS-DT-01', rule, 'overridden ' + show(overridden) + ', extras ' + (withExtras ? 'some' : 'none') + ', missing ' + missingLabel + ': guards notice ' + (guardsList ? show(guardsList) : 'none') + ', tools notice ' + (toolsNotice ? 'one' : 'none') + '; each at most once; the snapshot carries the report exactly', async (c) => {
       const home = homeOf(c)
       const n = namesOf()
       const extras = withExtras ? [n.a, n.b] : []
-      const report = overridden.length === 0 ? GUARD.ok : GUARD.overridden(overridden, extras)
+      const report = rowReport(overridden, extras, missing)
       const s = await toolsWorld(c, sdk, { profile: profileOf(home) })
       s.w.guards.set(report)
       await until(() => (!guardsList || s.guards().length > 0) && (!toolsNotice || s.tools().length > 0), WAIT.untilMs, WAIT.pollMs)
@@ -355,11 +385,119 @@ export function registerToolsNoticeCases(t, sdk) {
     })
   }
 
+  // ------------------------------------------------------------------ rule 3 (review fix): a new name while a tools notice is in flight
+  /**
+   * A status whose every tools notice is held until the case settles it, so "in flight" is exact.
+   * settleNext(outcome) settles the oldest unsettled tools notice; inFlight() counts the unsettled ones.
+   */
+  async function heldWorld(c, home) {
+    const m = await modelOf(sdk)
+    const s = await toolsWorld(c, sdk, { profile: profileOf(home), notify: { decide: (notice) => (m.isTools(notice) ? NOTIFY.hold : NOTIFY.accept) } })
+    let settled = 0
+    const heldTools = () => s.w.notice.held.filter((h) => m.isTools(h.notice))
+    return {
+      ...s,
+      inFlight: () => heldTools().length - settled,
+      async settleNext(outcome) {
+        const h = heldTools()[settled]
+        assert.ok(h, 'no tools notice in flight to settle')
+        settled += 1
+        if (outcome === NOTIFY.reject) h.reject(); else h.accept()
+        await settle()
+      },
+    }
+  }
+  /** Waits until the tools notices number 'count', then lets the rest settle; asserts exactly 'count'. */
+  async function untilTools(s, count, why) {
+    await until(() => s.tools().length >= count, WAIT.untilMs, WAIT.pollMs)
+    await quiet()
+    assert.equal(s.tools().length, count, why + ': ' + show(s.tools()))
+  }
+
+  for (const outcome of [NOTIFY.accept, NOTIFY.reject]) {
+    t('TOOLS-ST-05', 'new name in flight, first ' + outcome + 'ed', 'a report with a new name while the "a" notice is in flight gives no second one then; once the first is ' + outcome + 'ed, exactly one more notice listing all current extras (a, b), with no further report; never two in flight', async (c) => {
+      const home = homeOf(c)
+      const n = namesOf()
+      const s = await heldWorld(c, home)
+      await s.report(toolsReport([n.a]), 1)
+      s.assertToolsNotice(s.tools()[0], [n.a], 'the first notice')
+      await s.report(toolsReport([n.a, n.b]))
+      assert.equal(s.tools().length, 1, 'a second notice while the first is in flight')
+      assert.equal(s.inFlight(), 1)
+      await s.settleNext(outcome)
+      await untilTools(s, 2, 'after the first settled, without a further report')
+      s.assertToolsNotice(s.tools()[1], [n.a, n.b], 'the follow-up lists all current extras')
+      // An accepted first notice holds its key at the manager, so the follow-up needs another one.
+      if (outcome === NOTIFY.accept) assert.notEqual(s.tools()[1].dedupeKey, s.tools()[0].dedupeKey, 'the follow-up reuses the accepted dedupe key (the manager would drop it)')
+      assert.equal(s.inFlight(), 1, 'two tools notices in flight')
+      await s.settleNext(NOTIFY.accept)
+      await untilRecord(home, [n.a, n.b])
+      await quiet()
+      assert.equal(s.tools().length, 2, 'a third notice with nothing new: ' + show(s.tools()))
+    })
+  }
+
+  t('TOOLS-ST-05', 'new name in flight, two refreshes', 'two reports while the first notice is in flight (a, b then a, b, c) give, after it settles, exactly one more notice listing the latest extras', async (c) => {
+    const home = homeOf(c)
+    const n = namesOf()
+    const s = await heldWorld(c, home)
+    await s.report(toolsReport([n.a]), 1)
+    await s.report(toolsReport([n.a, n.b]))
+    await s.report(toolsReport([n.a, n.b, n.c], [TOOLS.other]))
+    assert.equal(s.tools().length, 1, 'a second notice while the first is in flight')
+    await s.settleNext(NOTIFY.accept)
+    await untilTools(s, 2, 'after the first settled')
+    s.assertToolsNotice(s.tools()[1], [n.a, n.b, n.c], 'the follow-up lists all current extras')
+    await s.settleNext(NOTIFY.accept)
+    await untilRecord(home, [n.a, n.b, n.c])
+    await quiet()
+    assert.equal(s.tools().length, 2, 'a third notice: ' + show(s.tools()))
+  })
+
+  t('TOOLS-ST-05', 'first finds nothing new', 'a recorded "a" report followed at once (same tick) by "a, b": the first refresh finds nothing new, and exactly one notice lists a, b; the record becomes a, b', async (c) => {
+    const home = homeOf(c)
+    const n = namesOf()
+    seedRecord(home, recordText([n.a]))
+    const s = await toolsWorld(c, sdk, { profile: profileOf(home) })
+    s.w.guards.set(toolsReport([n.a]))
+    s.w.guards.set(toolsReport([n.a, n.b]))
+    await untilTools(s, 1, 'one notice for the new name')
+    s.assertToolsNotice(s.tools()[0], [n.a, n.b], 'the notice lists all current extras')
+    await untilRecord(home, [n.a, n.b])
+  })
+
+  t('TOOLS-ST-05', 'first finds nothing new, at start', 'a status created over a recorded "a" report, then at once "a, b": exactly one notice listing a, b', async (c) => {
+    const home = homeOf(c)
+    const n = namesOf()
+    seedRecord(home, recordText([n.a]))
+    const s = await toolsWorld(c, sdk, { profile: profileOf(home), guards: toolsReport([n.a]) })
+    s.w.guards.set(toolsReport([n.a, n.b]))
+    await untilTools(s, 1, 'one notice for the new name')
+    s.assertToolsNotice(s.tools()[0], [n.a, n.b], 'the notice lists all current extras')
+    await untilRecord(home, [n.a, n.b])
+  })
+
+  for (const outcome of [NOTIFY.accept, NOTIFY.reject]) {
+    t('TOOLS-ST-05', 'closed in flight, first ' + outcome + 'ed', 'close() while the first notice is in flight with a new name pending: once the first is ' + outcome + 'ed, no further notice', async (c) => {
+      const home = homeOf(c)
+      const n = namesOf()
+      const s = await heldWorld(c, home)
+      await s.report(toolsReport([n.a]), 1)
+      await s.report(toolsReport([n.a, n.b]))
+      s.w.close()
+      await s.settleNext(outcome)
+      await quiet()
+      assert.equal(s.tools().length, 1, 'a notice after close(): ' + show(s.tools()))
+      assert.deepEqual(s.w.notice.calls.filter((x) => !s.m.isTools(x)), [], 'another notice after close()')
+    })
+  }
+
   // ------------------------------------------------------------------ rule 6: the snapshot
-  t('TOOLS-EP-04', 'snapshot', "the snapshot's guards equals the report as given, extraManagerTools included, across extras / ok / no-extras reports", async (c) => {
+  t('TOOLS-EP-04', 'snapshot', "the snapshot's guards equals the report as given, extraManagerTools and missingManagerTools included, across extras / ok / no-extras / missing reports", async (c) => {
     const n = namesOf()
     const s = await toolsWorld(c, sdk, { profile: profileOf(homeOf(c)) })
-    for (const report of [toolsReport([n.a, n.b]), GUARD.ok, toolsReport([]), toolsReport([n.c], [TOOLS.other])]) {
+    const missing = [...TOOLS.defaults].sort().slice(0, 2)
+    for (const report of [toolsReport([n.a, n.b]), GUARD.ok, toolsReport([]), toolsReport([n.c], [TOOLS.other]), toolsReport([], [], missing), toolsReport([n.a], [TOOLS.other], missing)]) {
       await s.report(report)
       assert.deepEqual(s.w.snapshot().guards, report)
     }

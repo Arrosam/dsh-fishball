@@ -253,26 +253,39 @@ Cases: `tools-notice.mjs` (registered from cases.mjs, so on both SDKs).
 | TOOLS-ST-03 rejected / always rejected | ST | nothing recorded on reject; no retry on ok; one retry per refresh that sees the name; no repeat once accepted |
 | TOOLS-ST-04 in flight | ST | a held notify: no second notice, no record until it resolves |
 | TOOLS-EP-03 ×2 | EP | no profileContext / no home: memory only, no file |
-| TOOLS-DT-01 rules 1–6 | DT | overridden codes × extras → guards notice list / tools notice (below), each once; snapshot = report |
-| TOOLS-EP-04 snapshot | EP | `snapshot().guards` deep-equals the report, extraManagerTools included |
+| TOOLS-DT-01 rules 1–13 | DT | overridden codes × extras × missingManagerTools → guards notice list / tools notice (below), each once; snapshot = report |
+| TOOLS-ST-05 ×7 | ST | a new name arriving while a tools notice is in flight: after the first is accepted / rejected, exactly one more notice listing all current extras with no further report (also after two refreshes: the latest extras); the first refresh finds nothing new (recorded name, then a new one at once; also at start); close() in flight (accepted / rejected): nothing more |
+| TOOLS-EP-04 snapshot | EP | `snapshot().guards` deep-equals the report, extraManagerTools and missingManagerTools included |
 
 ### TOOLS-DT-01
 
-| Rule | overridden | extras | guards notice | tools notice |
-| --- | --- | --- | --- | --- |
-| 1 | none (ok) | [] | none | none |
-| 2 | only manager-tools | some | **none** | one |
-| 3 | only manager-tools | [] | `manager-tools` (as before) | none |
-| 4 | other codes | [] | the other codes | none |
-| 5 | other codes + manager-tools | some | the other codes only | one |
-| 6 | other codes + manager-tools | [] | the other codes + `manager-tools` | none |
+Review fix (the user, 2026-11-21): K3 `GuardReport` gains `missingManagerTools` (the defaults
+`GUARDS.managerTools` some live manager lacks; sorted, unique, `[]` when none, always `[]` when ok).
+`manager-tools` leaves the guards notice only when extras are non-empty AND missing is empty or absent;
+a missing default keeps it there, and the extras still get one tools notice.
+
+| Rule | overridden | extras | missing | guards notice | tools notice |
+| --- | --- | --- | --- | --- | --- |
+| 1 | none (ok) | [] | [] | none | none |
+| 2 extras only | only manager-tools | some | [] | **none** | one |
+| 3 neither | only manager-tools | [] | [] | `manager-tools` (as before) | none |
+| 4 manager-tools absent | other codes | [] | [] | the other codes | none |
+| 5 extras only | other codes + manager-tools | some | [] | the other codes only | one |
+| 6 neither | other codes + manager-tools | [] | [] | the other codes + `manager-tools` | none |
+| 7 missing only | only manager-tools | [] | one | `manager-tools` | none |
+| 8 missing only | other codes + manager-tools | [] | all four | the other codes + `manager-tools` | none |
+| 9 both | only manager-tools | some | one | `manager-tools` | one |
+| 10 both | other codes + manager-tools | some | all four | the other codes + `manager-tools` | one |
+| 11 missing absent | only manager-tools | some | (no member) | none | one |
+| 12 missing absent | other codes + manager-tools | some | (no member) | the other codes only | one |
+| 13 manager-tools absent | other codes | [] | (no member) | the other codes | none |
 
 ### Re-baselined by GENTLE-TOOLS
 
 | Id | Before | Now |
 | --- | --- | --- |
 | F-STATUS-00 surface | `STATUS_MODEL.notice` deep-equals `{pluginId, guardsKeyPrefix}` | the same without the new `toolsKeyPrefix`, which is checked as a non-empty string other than the guards prefix |
-| GUARD fixtures (constants.mjs) | reports `{status, overridden}` | also `extraManagerTools` (`[]` unless given), as K3 now shapes every report |
+| GUARD fixtures (constants.mjs) | reports `{status, overridden}` | also `extraManagerTools` and `missingManagerTools` (`[]` unless given), as K3 now shapes every report |
 
 The other F-STATUS guards-notice rows are unchanged: their reports carry `extraManagerTools: []`, so
 `manager-tools` (GUARD.second) stays in the guards notice by rule 3.
