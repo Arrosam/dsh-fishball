@@ -14,12 +14,16 @@
  *   job running or stopping → held; settled → exactly one; a new turn → a new one).
  * - ST  CONN-REPORT-ST-02: manager stop (marked stop → none; the next turn → one; a mark while idle
  *   does not swallow a later user Stop).
+ * - DT  CONN-TREE-STOP-DT-01 (the user's decision of 2026-11-21: the manager's session_stop and the
+ *   cancel of session_redirect stop the session's subagents and background jobs too, so it truly
+ *   stands still; a manager stop still reports no turn-finished): which members are cancelled and
+ *   which jobs killed, over the same fake DSH; ST-01 the tree then reaches its standstill unreported.
  */
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { caseName } from '../../../../test/v3/contract/package-boundaries/cases.mjs'
 import { DSH, FIXTURE as F, TURN_FINISHED as L, TURN_OUTCOME as O, WAIT } from './constants.mjs'
-import { reportWorld, settle } from './subject.mjs'
+import { reportWorld, settle, treeStopModule } from './subject.mjs'
 
 const T = Object.freeze({ timeout: WAIT.testMs })
 const row = (sdk, id, part, title, fn, options) => test(caseName(sdk, id, part, title), T, async (t) => fn(await reportWorld(t, sdk, options), t))
@@ -396,6 +400,85 @@ export function registerReportCases(sdk) {
     w.dsh.end(F.child, DSH.reason.aborted(DSH.cause.parent()))
     w.dsh.subagentEnds(F.child, F.root)
     await none(w, 'the manager\'s stop was reported once the tree settled')
+  })
+
+  // ---------------------------------------------------------------------------- the manager's tree stop
+  // The user (2026-11-21): "Fishball's stop (session_stop, and the cancel part of session_redirect) must also stop
+  // all of that session's subagents and background jobs, so the session truly comes to a standstill ... a manager
+  // stop still emits no turn-finished." DSH's own cause for a subagent stopped with its parent is {kind: 'parent'}.
+  const PARENT = DSH.cause.parent()
+  const stopRow = (part, title, fn, options) => row(sdk, 'CONN-TREE-STOP-DT-01', part, title, async (w) => fn(w, (await treeStopModule(sdk)).stopTree), options)
+  stopRow('1 running subagents at every depth', 'a running child and grandchild → both cancelled {kind: parent}; the root is left to the caller; idle members untouched', async (w, stopTree) => {
+    w.dsh.add(F.root); w.dsh.child(F.child, F.root); w.dsh.child(F.grandchild, F.child)
+    w.dsh.start(F.root); w.dsh.start(F.child); w.dsh.start(F.grandchild)
+    const done = stopTree(w.dsh.ctx, F.root)
+    assert.deepEqual(w.dsh.cancels.map(([id, cause]) => [id, cause]).sort(), [[F.child, PARENT], [F.grandchild, PARENT]].sort())
+    assert.equal(done.subagents, 2)
+  })
+  stopRow('2 idle subagent', 'an idle subagent is not cancelled (nothing runs)', async (w, stopTree) => {
+    w.dsh.add(F.root); w.dsh.child(F.child, F.root)
+    stopTree(w.dsh.ctx, F.root)
+    assert.deepEqual(w.dsh.cancels, [])
+  })
+  stopRow('3 another tree', 'a running agent and job of another root are untouched', async (w, stopTree) => {
+    w.dsh.add(F.root); w.dsh.add(F.other); w.dsh.start(F.other); w.dsh.job(F.job(70), F.other)
+    stopTree(w.dsh.ctx, F.root)
+    assert.deepEqual([w.dsh.cancels, w.dsh.kills], [[], []])
+  })
+  stopRow('4 jobs of the tree', 'running jobs of the root and of a subagent are killed, each with its owner as caller and a reason; a stopping or settled job is not', async (w, stopTree) => {
+    w.dsh.add(F.root); w.dsh.child(F.child, F.root)
+    w.dsh.job(F.job(71), F.root); w.dsh.job(F.job(72), F.child)
+    w.dsh.job(F.job(73), F.root); w.dsh.stopping(F.job(73))
+    w.dsh.job(F.job(74), F.root); w.dsh.jobSettles(F.job(74))
+    const done = stopTree(w.dsh.ctx, F.root)
+    assert.deepEqual(w.dsh.kills.map(([id, caller]) => [id, caller]).sort(), [[F.job(71), F.root], [F.job(72), F.child]].sort())
+    assert.ok(w.dsh.kills.every(([, , reason]) => typeof reason === 'string' && reason.length > 0), 'a kill without a reason')
+    assert.equal(done.jobs, 2)
+  })
+  stopRow('5 one failure', 'a member whose cancel throws does not stop the rest; the failure is logged with a code only', async (w, stopTree) => {
+    w.dsh.add(F.root); w.dsh.child(F.child, F.root); w.dsh.child(F.grandchild, F.root)
+    w.dsh.start(F.child); w.dsh.start(F.grandchild)
+    w.dsh.agent(F.child).cancel = () => { throw Object.assign(new Error('secret text'), { code: 'FBTEST_CANCEL' }) }
+    w.dsh.job(F.job(75), F.root)
+    const warned = []
+    stopTree(w.dsh.ctx, F.root, { warn: (...args) => warned.push(args) })
+    assert.deepEqual(w.dsh.cancels.map(([id]) => id), [F.grandchild])
+    assert.deepEqual(w.dsh.kills.map(([id]) => id), [F.job(75)])
+    assert.equal(warned.length, 1)
+    assert.ok(warned[0].includes('FBTEST_CANCEL') && !warned[0].some((x) => String(x).includes('secret text')), JSON.stringify(warned))
+  })
+  stopRow('6 no jobs service', 'a DSH without the jobs service: subagents still stop, nothing throws', async (w, stopTree) => {
+    w.dsh.add(F.root); w.dsh.child(F.child, F.root); w.dsh.start(F.child)
+    assert.deepEqual(stopTree(w.dsh.ctx, F.root), { subagents: 1, jobs: 0 })
+  }, { jobs: false })
+  row(sdk, 'CONN-TREE-STOP-ST-01', 'manager stop of the tree', 'stoppedByManager + tree stop while the root, a subagent and a job run; the root ends aborted, the subagent ends (parent), the job settles killed → the tree stands still and no turn-finished is reported', async (w) => {
+    const { stopTree } = await treeStopModule(sdk)
+    w.dsh.add(F.root); w.dsh.child(F.child, F.root)
+    w.dsh.start(F.root); w.dsh.start(F.child); w.dsh.job(F.job(76), F.child)
+    w.source.stoppedByManager(F.root)
+    stopTree(w.dsh.ctx, F.root)
+    w.dsh.end(F.root, DSH.reason.aborted(DSH.cause.user()))
+    w.dsh.end(F.child, DSH.reason.aborted(PARENT))
+    w.dsh.subagentEnds(F.child, F.root)
+    w.dsh.jobSettles(F.job(76), DSH.jobs.killed)
+    await none(w, 'the manager\'s tree stop was reported')
+    assert.deepEqual(w.dsh.cancels.map(([id]) => id), [F.child])
+    assert.deepEqual(w.dsh.kills.map(([id]) => id), [F.job(76)])
+  })
+
+  row(sdk, 'CONN-TREE-STOP-ST-01', 'root turn already held', 'the root\'s turn ended while its subagent runs (report held); the manager then stops the tree; the subagent ends → no turn-finished (the standstill is the manager\'s)', async (w) => {
+    const { stopTree } = await treeStopModule(sdk)
+    w.dsh.add(F.root); w.dsh.child(F.child, F.root)
+    w.dsh.start(F.child)
+    w.dsh.turn(F.root, F.text(77))
+    await none(w, 'reported while the subagent runs')
+    w.source.stoppedByManager(F.root)
+    stopTree(w.dsh.ctx, F.root, undefined, w.source.stoppedByManager)
+    w.dsh.end(F.child, DSH.reason.aborted(PARENT))
+    w.dsh.subagentEnds(F.child, F.root)
+    await none(w, 'the held turn was reported after the manager\'s tree stop')
+    w.dsh.turn(F.root, F.text(78))
+    await one(w, completed(F.text(78)))
   })
 
   // ---------------------------------------------------------------------------- the listener interface

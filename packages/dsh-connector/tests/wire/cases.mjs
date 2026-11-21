@@ -641,7 +641,8 @@ function machineRows(sdk) {
     assert.deepEqual([r2.paired, r2.id, r2.name, r2.connected, r2.enabled], [true, e2.id, e2.paired.name, true, true])
     assert.equal(typeof r2.lastSeenAt, 'number')
     const r3 = json.entries.find((e) => e.key === e3.entryKey)
-    assert.deepEqual([r3.paired, r3.id, r3.name, r3.enabled, r3.connected], [true, e3.id, null, false, false], 'a nameless disabled entry')
+    // e3 paired without a name: since the user's decision of 2026-11-21 it holds a generated name.
+    assert.deepEqual([r3.paired, r3.id, r3.name, r3.enabled, r3.connected], [true, e3.id, e3.paired.name, false, false], 'a disabled entry paired without a name')
     assert.deepEqual(Object.keys(json.approval).sort(), [...SURFACE.approvalKeys])
   })
   row(sdk, 'AUTH-UC-09', 'post (no secret)', 'no token value or digest anywhere in the state answer', async (t) => {

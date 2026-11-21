@@ -208,3 +208,21 @@ subagent child, so the session tools answer `unknown-session` (the dev session's
 base behaviour). A LIVE child under a cold root cannot be produced through the public tools or this
 harness (a restart leaves every session cold; the kept sessions have no subagent tool), so that
 child's permission routing under a cold root is not checked; the DT routing row checks it under a live root.
+
+## IX-MULTI (multi-agent-cases.mjs): one DSH, several agents
+
+The lead's request (2026-11-21): with several Fishball instances (or other paired principals) on one
+DSH, the Hand over UI names each agent correctly. Each row boots its own DSH, so the targets are that
+row's agents only. Agents are stock MCP clients that `pair({name})` and `set_name`; the names are read
+where the browser reads them (the UI backend's state route and event stream) and from
+`dshConnectorHandover.principals()`; the Hand over goes through the owner's UI route. The browser half
+over several targets is MARKS-MULTI (packages/dsh-connector/tests/marks/multi-cases.mjs).
+
+| Row | Technique | Partition / transition | Expected |
+| --- | --- | --- | --- |
+| IX-MULTI EP (names) | EP, BVA | "Fishball", "Fishball Two" (listening), an Arabic-script name with an emoji, one paired without a name (so a generated one), one paired then disabled, one never paired | principals() in settings order with each pair's own {key, name, id}; disabled: paired, enabled false; never paired: entry key, null name/id; state and stream targets = the four enabled and paired, 1:1 by id, lights online only for the listening one |
+| IX-MULTI ST (reorder) | ST | the first entry moved last in the settings list | targets reorder; every key keeps its name |
+| IX-MULTI ST (rename) | ST | set_name on the 2nd | state, stream and principals() show the new name on the 2nd's key only |
+| IX-MULTI UC (hand over to the 2nd) | UC | POST ui/handover with the 2nd target's key | answer principal, answer state mark, state mark and stream mark name the 2nd; one handover event for the 2nd, none for the others |
+| IX-MULTI DT (default name ×3) | DT | three instances ask for "Fishball" (the 3rd as "FISHBALL") | 1st "Fishball" (nameAssigned); 2nd and 3rd pair with `nameAssigned: false, nameRefused: 'name-taken'` and two distinct generated names (the user's decision, 2026-11-21: no "ID: <id>"); principals(), targets and the hand-over mark read "Fishball" and those names |
+| IX-MULTI ST (default name freed) | ST | the 2nd asks for "Fishball": held → 1st disabled → 1st deleted | name-taken, still name-taken (a disabled pair keeps its name), then ok once the delete's revocation removed the pair; the only target is the 2nd, "Fishball" |

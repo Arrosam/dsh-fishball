@@ -171,6 +171,8 @@ Types (`index.d.ts`): `DshConnectorTools`, `ContributedTool`, `ContributedCall`,
 
 Two type deviations from design §13.2:
 - `ContributedPrincipal.name` is `string | null`, because a principal may have no name
-  (R-NAME-04, decided after §13.2).
+  (R-NAME-04, decided after §13.2). Since the user's decision of 2026-11-21 the connector gives a
+  pair without a usable name a generated one, so `null` remains only for a page-bound pair before
+  its agent's first name call.
 - `execute` returns a Promise, as in the design; C-EXT still contains a synchronous return or
   throw.

@@ -56,10 +56,10 @@ const DEFINITIONS = [
   tool(TOOL.sessionMessage, 'Send a message to a session you manage. An unconfirmed delivery is never retried.',
     object({ sessionId: string(), message: string(), attachments: attachments() }),
     success({ status: delivery(), running: boolean() })),
-  tool(TOOL.sessionRedirect, 'Cancel the running turn of a session you manage and send a new message.',
+  tool(TOOL.sessionRedirect, 'Cancel the running turn of a session you manage, with its subagents and background jobs, and send a new message.',
     object({ sessionId: string(), message: string(), attachments: attachments() }),
     success({ status: delivery(), running: boolean() })),
-  tool(TOOL.sessionStop, 'Stop the running turn of a session you manage.',
+  tool(TOOL.sessionStop, 'Stop a session you manage: its running turn, its subagents and its background jobs.',
     object({ sessionId: string() }, { reason: string() }),
     success({ stopped: constant(true) })),
   tool(TOOL.sessionRead, 'Read the latest messages of a session you manage, within the given bounds.',
@@ -113,7 +113,8 @@ const DEFINITIONS = [
       refusalSchema({ bound: pairBound(), advice: string() }),
     ),
   },
-  tool(TOOL.setName, 'Set or clear (null) your display name. Names are unique per connector, compared without letter case.',
+  // The user's decision, 2026-11-21: a clear (null) gives a generated name, so no agent is shown as "ID: <id>".
+  tool(TOOL.setName, 'Set your display name, or pass null for a generated one. Names are unique per connector, compared without letter case.',
     object({ name: nullable(string()) }),
     success({ name: nullable(string()) })),
 ]

@@ -12,6 +12,7 @@ import { registerXsecInteractionCases } from './xsec-cases.mjs'
 import { registerCuiInteractionCases } from './cui-cases.mjs'
 import { registerDelegateCases } from './delegate-cases.mjs'
 import { registerReportSystemCases } from './report-cases.mjs'
+import { registerMultiAgentCases } from './multi-agent-cases.mjs'
 
 export function registerInteractionCases(sdk) {
   registerMessagingCases(sdk)
@@ -24,4 +25,5 @@ export function registerInteractionCases(sdk) {
   registerCuiInteractionCases(sdk)
   registerDelegateCases(sdk)
   registerReportSystemCases(sdk)
+  registerMultiAgentCases(sdk)
 }

@@ -20,6 +20,33 @@ export const PAIRS = Object.freeze({
   recordKey: 'registry',
 })
 
+/**
+ * Generated names (the user's decision, 2026-11-21, superseding R-NAME-04's "the connector never
+ * assigns a name"): a pair the connector would otherwise leave nameless, shown as `ID: <id>`, gets a
+ * readable name "<Adjective> <Noun>" (`./names.js`). The words are short, friendly, ASCII and
+ * capitalised, so every name is already R-NAME-02-normal (no whitespace run, no control character,
+ * NFC) and far below NAME_RULES.maxChars even with a suffix; no word is a prefix of "ID:".
+ * - `randomTries`: random draws before falling back. With 32 × 32 = 1024 base names and the handful
+ *   of agents one DSH pairs, all of them colliding is practically never the case; the bound only
+ *   keeps the generator total;
+ * - `firstSuffix`: the fallback appends " 2", " 3", … to the last draw until a name is free (" 2"
+ *   reads as "the second one"; there is no " 1"). Among `held + 1` suffixes one is always free, so
+ *   the fallback ends.
+ */
+export const GENERATED_NAME = Object.freeze({
+  adjectives: Object.freeze([
+    'Amber', 'Azure', 'Brave', 'Bright', 'Calm', 'Clever', 'Coral', 'Crisp', 'Daring', 'Eager', 'Gentle', 'Golden', 'Happy', 'Jolly', 'Keen', 'Kind',
+    'Lively', 'Lucky', 'Merry', 'Mighty', 'Nimble', 'Noble', 'Plucky', 'Quick', 'Quiet', 'Rapid', 'Silver', 'Sunny', 'Swift', 'Tidy', 'Vivid', 'Witty',
+  ]),
+  nouns: Object.freeze([
+    'Badger', 'Beaver', 'Crane', 'Dolphin', 'Falcon', 'Ferret', 'Finch', 'Fox', 'Gecko', 'Hare', 'Heron', 'Koala', 'Lynx', 'Marten', 'Narwhal', 'Otter',
+    'Owl', 'Panda', 'Pelican', 'Puffin', 'Quokka', 'Raven', 'Robin', 'Seal', 'Sparrow', 'Squirrel', 'Swan', 'Tiger', 'Turtle', 'Walrus', 'Wombat', 'Wren',
+  ]),
+  separator: ' ',
+  randomTries: 16,
+  firstSuffix: 2,
+})
+
 /** Programming-error messages (contract misuse, never shown to a client). */
 export const MISUSE = Object.freeze({
   record: 'fishball pair registry: stored record does not match its shape',
@@ -36,4 +63,5 @@ export const LOG = Object.freeze({
   format: '%s (%s)',
   seenFailed: 'pair store: recording lastSeenAt failed',
   listenerFailed: 'pair store: a change listener threw',
+  backfillFailed: 'pair store: naming the nameless pairs at open failed',
 })

@@ -5,6 +5,35 @@
  * live limits are the connector's settings (src/config.js).
  */
 
+/**
+ * The manager's tree stop (tree-stop.js; the user's decision of 2026-11-21): DSH's words for a
+ * running agent and job (dsh-agent AgentStatus, dsh-jobs JobStatus), the cancel cause DSH itself
+ * gives a subagent stopped with its parent (dsh-subagent `cancel({kind: 'parent'})`), the jobs
+ * service and its kill answer, the kill reason recorded in the job's terminal detail, and the log
+ * line (`what`, id, code; never text).
+ */
+export const TREE_STOP = Object.freeze({
+  runningAgent: 'running',
+  runningJob: 'running',
+  cause: Object.freeze({ kind: 'parent' }),
+  jobsService: 'jobs',
+  killRequested: 'requested',
+  killReason: 'stopped by the session\'s manager',
+  /**
+   * The hold on the stopped work's own notices (tree-stop.js `holdNotices`): DSH's step waterfall
+   * (dsh-agent `agent/pre-step`, its `enter` decision, a turn's first step), the notice sources of a
+   * settled subagent (dsh-subagent) and of a settled job (dsh-tool-jobs), and the hold's bound: a
+   * subagent's teardown and a job's kill settle within seconds on both SDKs; one minute is ample
+   * and still ends a hold whose notice never came.
+   */
+  preStep: 'agent/pre-step',
+  enter: 'enter',
+  firstStep: 1,
+  noticeKinds: Object.freeze(['subagent-settled', 'tool-jobs']),
+  holdMs: 60000,
+  log: Object.freeze({ failed: 'tree stop: %s %s failed (%s)', subagent: 'cancelling subagent', job: 'killing job', unknown: 'unknown' }),
+})
+
 /** DSH's approval service (dsh-user-approval, both SDKs): the answerer waterfall and its outcomes. */
 export const APPROVAL = Object.freeze({
   waterfall: 'approval/request',

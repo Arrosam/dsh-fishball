@@ -51,7 +51,11 @@ function stopMessageOf(reason) {
  *   message}}` for any other end;
  * - `stoppedByManager(rootId)`: the managing agent is stopping the root's turn itself
  *   (session_stop, the cancel of session_redirect): the turn end that follows reports nothing,
- *   because the manager asked for it and already has its own tool result.
+ *   because the manager asked for it and already has its own tool result. Since the manager's
+ *   stop stops the whole tree (domain/tree-stop.js, the user's decision of 2026-11-21), it also
+ *   covers a root turn end already held behind running subagents or jobs: the standstill the stop
+ *   brings about is the manager's, not a report. The tree stop marks again each notice-only turn
+ *   of the stopped work it swallows on the root, so those report nothing either.
  * DESIGN: the pending standstill per root is in memory only. A row reload or a restart loses an
  * unreported one, which is acceptable: no turn of a session survives a restart either.
  * Each subscription is a row event listener, so it ends with the row.
@@ -166,11 +170,15 @@ export function createSessionSource(ctx) {
       }
     },
     /**
-     * Marks the root's next turn end as its manager's. Only a running root counts: a stop of an idle
+     * Marks the root's next turn end as its manager's, and a root turn end still held behind its
+     * running tree (see above). Only a running root's next turn end counts: a stop of an idle
      * session ends no turn, and a stop aimed at a subagent's own session ends no root turn.
      */
     stoppedByManager(sessionId) {
-      if (rootOf(sessionId) === sessionId && ctx.agents.get(sessionId)?.status === RUNNING_AGENT) managerStops.add(sessionId)
+      if (rootOf(sessionId) !== sessionId) return
+      const held = pending.get(sessionId)
+      if (held !== undefined) held.byManager = true
+      if (ctx.agents.get(sessionId)?.status === RUNNING_AGENT) managerStops.add(sessionId)
     },
   })
 }

@@ -28,7 +28,9 @@ export type JsonSchemaObject = JsonSchemaNode & { type: 'object' }
 /**
  * The calling principal: an opaque, stable key and its current name. Design §13.2 types `name`
  * as `string`; it is `string | null` here because a principal may have no name (R-NAME-04,
- * Q-NAME-1 decided B, made after §13.2 was drafted).
+ * Q-NAME-1 decided B, made after §13.2 was drafted). Since the user's decision of 2026-11-21 the
+ * connector names a pair without a usable name with a generated name (mcp-schema README
+ * "Generated names"); `null` remains for a page-bound pair before its agent's first name call.
  */
 export interface ContributedPrincipal {
   readonly key: string

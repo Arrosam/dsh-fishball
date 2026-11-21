@@ -6,7 +6,10 @@
  * - ctx.sessions.get(id) → {id, header, snapshotEvents()}: a subagent's header is
  *   {origin: 'subagent', parentSession}, followed to the root;
  * - ctx.agents.get(id) / ctx.agents.list() → {id, status, inbox: {nextTurn, nextStep, hasPending}, session};
- * - ctx.get('jobs') (optional) → {list(owner) → [{id, status, owner}], events.subscribe(filter, fn) → disposer}.
+ * - ctx.get('jobs') (optional) → {list(owner) → [{id, status, owner}], events.subscribe(filter, fn) → disposer,
+ *   kill(id, caller, reason) → 'requested' | 'already-finished'} (dsh-jobs JobRegistry);
+ * - agent.cancel(cause, options) (dsh-agent Agent): recorded in `cancels`; it changes no state (the
+ *   test fires DSH's own edges after it, as DSH would).
  * The fake fires each DSH edge in DSH's order and keeps the state a listener reads at that moment.
  */
 import assert from 'node:assert/strict'
@@ -18,6 +21,18 @@ import { resolveRuntimePackages } from '../pairs/subject.mjs'
 import { DSH, SUBJECT, WAIT } from './constants.mjs'
 
 const loaded = new Map()
+const loadedStop = new Map()
+/** The tree stop (src/domain/tree-stop.js `stopTree`), loaded as the session source is. */
+export function treeStopModule(sdk) {
+  if (!loadedStop.has(sdk)) {
+    loadedStop.set(sdk, (async () => {
+      assert.ok(fs.existsSync(SUBJECT.treeStop), SUBJECT.treeStop + ' does not exist')
+      resolveRuntimePackages()
+      return importInstance(sdk, path.relative(INSTANCE.dir, SUBJECT.treeStop))
+    })())
+  }
+  return loadedStop.get(sdk)
+}
 export function sourceModule(sdk) {
   if (!loaded.has(sdk)) {
     loaded.set(sdk, (async () => {
@@ -41,6 +56,9 @@ export class FakeDsh {
   agentsById = new Map()
   jobsById = new Map()
   subscriptions = { live: 0 }
+  /** Every agent.cancel(cause, options) and jobs.kill(id, caller, reason), in order. */
+  cancels = []
+  kills = []
   #turn = 0
   constructor({ jobs = true } = {}) {
     const self = this
@@ -53,6 +71,14 @@ export class FakeDsh {
     }
     this.jobService = {
       list: (owner) => [...self.jobsById.values()].filter((j) => owner === undefined || j.owner === owner).map((j) => ({ ...j })),
+      kill: (id, caller, reason) => {
+        const job = self.jobsById.get(id)
+        if (job === undefined || job.owner !== caller) throw Object.assign(new Error('foreign job'), { code: 'FBTEST_FOREIGN' })
+        self.kills.push([id, caller, reason])
+        if (job.status !== DSH.jobs.running && job.status !== DSH.jobs.stopping) return 'already-finished'
+        job.status = DSH.jobs.stopping
+        return 'requested'
+      },
       events: {
         subscribe: (_filter, fn) => {
           self.#jobListeners.add(fn)
@@ -78,7 +104,8 @@ export class FakeDsh {
     const events = []
     const session = { id, header, snapshotEvents: () => events.map((e) => structuredClone(e)), events }
     this.sessionsById.set(id, session)
-    this.agentsById.set(id, { id, status: DSH.status.idle, inbox: { nextTurn: [], nextStep: [], hasPending: false }, session })
+    const cancels = this.cancels
+    this.agentsById.set(id, { id, status: DSH.status.idle, inbox: { nextTurn: [], nextStep: [], hasPending: false }, session, cancel(cause, options) { cancels.push([id, cause, options]) } })
     return id
   }
   child(id, parent) { return this.add(id, DSH.subagentHeader(parent)) }

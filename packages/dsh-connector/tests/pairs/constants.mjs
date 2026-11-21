@@ -13,11 +13,29 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import {
-  ID_REFUSAL, INSUFFICIENT_SCOPE_REASON, NAME_RULES, PAIR_ADVICE, PAIR_TIMING, REFUSAL, SCOPE, TIME_UNIT, nameKey, principalLabel,
+  ID_REFUSAL, INSUFFICIENT_SCOPE_REASON, NAME_RULES, PAIR_ADVICE, PAIR_TIMING, REFUSAL, SCOPE, TIME_UNIT, checkName, nameKey, principalLabel,
 } from '../../mcp-schema/index.js'
 import { REPO } from '../../../../test/support/constants.mjs'
 
-export { ID_REFUSAL, INSUFFICIENT_SCOPE_REASON, NAME_RULES, PAIR_ADVICE, PAIR_TIMING, REFUSAL, SCOPE, TIME_UNIT, nameKey, principalLabel }
+export { ID_REFUSAL, INSUFFICIENT_SCOPE_REASON, NAME_RULES, PAIR_ADVICE, PAIR_TIMING, REFUSAL, SCOPE, TIME_UNIT, checkName, nameKey, principalLabel }
+
+/**
+ * Generated names (the user's decision, 2026-11-21: a pair without a usable name gets a name from a
+ * random name generator, readable and unique among the pairs of this DSH, instead of `ID: <id>`).
+ * The oracle is the decision's, not the word lists: two capitalised ASCII words, optionally a
+ * numeric suffix from 2 (the generator's fallback once random draws keep colliding).
+ * `exhaustion`: how many folded collisions the fallback rows stack on one base name.
+ */
+export const GENERATED = Object.freeze({
+  form: Object.freeze(/^[A-Z][a-z]+ [A-Z][a-z]+(?: (?:[2-9]|[1-9][0-9]+))?$/),
+  suffixFrom: 2,
+  separator: ' ',
+  exhaustion: 5,
+  /** A random source that always draws the first word: every draw collides with the first one. */
+  firstWord: () => 0,
+  /** Draws for the "many at once" rows (more than the 10 of NAME-BVA-03 row 2). */
+  many: 40,
+})
 
 /**
  * The C-PAIR entry and the two exports the cases use, as Fishball relayed C-PAIR's surface
@@ -30,6 +48,8 @@ export const SUBJECT = Object.freeze({
   entry: process.env.FBTEST_C_PAIR_ENTRY ?? path.join(REPO, 'packages', 'dsh-connector', 'src', 'pairs', 'index.js'),
   open: 'openPairStore',
   power: 'powerOf',
+  /** The pure readable-name generator (the user's decision, 2026-11-21). */
+  generate: 'generateName',
   /** C-PAGE-ID (K1d-4): the page's two PairStore members, and the one K1d withdrew with the chain cap. */
   pageMembers: Object.freeze(['bindFromPage', 'reconnectFromPage']),
   withdrawnMember: 'renewFromPage',
@@ -98,6 +118,11 @@ export const FIXTURE = Object.freeze({
   client: Object.freeze({ clientIdUrl: 'https://agent.example/cimd.json', redirectUri: 'http://127.0.0.1:7777/cb' }),
   /** C-PAGE-ID (AUTH-UC-16 A1): the same agent coming back from another client id URL and redirect. */
   otherClient: Object.freeze({ clientIdUrl: 'https://other.example/cimd.json', redirectUri: 'http://127.0.0.1:7777/cb2' }),
+  /**
+   * The registry record's durable layout (design §5.8, spike V3-S3: one record of one storage
+   * domain), as a connector before the 2026-11-21 decision wrote it; the backfill rows seed it.
+   */
+  storedRecord: Object.freeze({ domain: 'dsh_connector_pairs', version: 1, table: 'registry', recordKey: 'registry' }),
   /** NAME-BVA-03 row 2: "10 at once". */
   crowd: 10,
   /** NAME-BVA-03 row 3: rounds of the pair / set_name race (either branch may win). */

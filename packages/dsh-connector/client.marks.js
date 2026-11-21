@@ -15,8 +15,9 @@
  *   connector's order; R-UI-10): none → no control; one → "Hand over to <agent>"; more → the
  *   "Handover to…" dropdown. Each carries its green / red light with its words.
  * - An agent is its name, or a bold `ID:` and its id when it has none (R-NAME-08).
- * The wording and look are the connector's, not Fishball's (§28): the managed row shows the
- * connector's icon (assets/connector-icon.svg), and every hook, class and id is dsh-connector's.
+ * The wording is the connector's, not Fishball's (§28), and every hook, class and id is
+ * dsh-connector's. The managed row shows V1's fish (FISH_MARK; the user, 2026-11-21: after Hand
+ * over the mark goes back to dsh-fishball v0.1.0's fish, not the connector's wrench icon).
  *
  * A package-local chunk beside client.js (DSH serves only flat client.<name>.js chunks, the
  * CLIENT_CHUNK rule of dsh-client-modules on 0.2.1-rc.5 and 0.2.2; no build step). It exports one
@@ -92,20 +93,20 @@ globalThis.__ModuleLoader__?.load({
       flip: Object.freeze([[0, 0], [45, 180], [55, 180], [100, 360]]),
     })
     /**
-     * The connector's icon, drawn inline: DSH serves a package's images only from a built
-     * `./lib/assets/*` export and this repository has no build step, so the browser cannot load
-     * assets/connector-icon.svg. These are that file's shapes and colours, restated: change
-     * assets/connector-icon.svg, src/mcp/oauth-web/page-theme.js MARK_SHAPE and this together.
+     * The managed row's fish: V1's FishMark (dsh-fishball tag v0.1.0, client.js FISH_MARK, and
+     * assets/icon.svg's shapes; FishMark from the owner's fishball app, Surfaces.kt), drawn inline
+     * because DSH serves a package's images only from a built `./lib/assets/*` export and this
+     * repository has no build step. As in V1's sidebar, the body takes the text colour (CLS.managedRow
+     * sets it), so it reads on light and dark themes, and the eye keeps the app's magenta. No tile
+     * and no wrench badge: the wrench is the connector's settings icon (assets/connector-icon.svg),
+     * not the mark of a managed session.
      */
-    const CONNECTOR_ICON = Object.freeze({
+    const FISH_MARK = Object.freeze({
       viewBox: '0 0 24 24',
-      tileSize: 24, tileRadius: 5,
       body: 'M7.4 16.6 L7.4 9.9 L11.3 5.6 L18.4 5.6 L18.4 12.7 L14.1 16.6 Z M7.4 16.6 L2.6 21.4 L7.4 21.4 Z',
       eye: 'M14.6 7.4 h2 v2 h-2 Z',
-      badgeCentre: 17.6, ringRadius: 6.2, chipRadius: 5,
-      glyphTransform: 'translate(14.08 14.08) scale(0.44)', glyphStroke: 2.4, glyphCap: 'round', glyphJoin: 'round',
-      wrench: Object.freeze(['M14.24 6.24A3.5 3.5 0 1 1 9.76 1.76', 'M9.53 6.47L3 13']),
-      colors: Object.freeze({ tile: '#101010', paper: '#F2F2EE', accent: '#EC0A6E' }),
+      bodyColor: 'currentColor',
+      eyeColor: '#EC0A6E',
     })
     /**
      * A session's root as DSH's own header breadcrumb follows it (dsh-client-ui-conversation
@@ -197,7 +198,8 @@ globalThis.__ModuleLoader__?.load({
       `.${CLS.field}{display:flex;flex-direction:column;gap:6px;margin-top:8px}`,
       // DSH's input colours (dsh-client-ui-primitives SettingsValueField): --dsw-alias-border-primary is not defined in dialogs.
       `.${CLS.note}{width:100%;box-sizing:border-box;padding:8px 12px;border:.5px solid var(--dsw-alias-border-l4);border-radius:var(--dsw-radius-md);background:var(--dsw-alias-bg-layer-3);color:var(--dsw-alias-label-primary);font:inherit;resize:vertical}`,
-      `.${CLS.managedRow}{position:relative;display:inline-flex;align-items:center;justify-content:center;width:${MANAGED_ROW.cellPx}px;height:${MANAGED_ROW.cellPx}px}`,
+      // V1's row mark colour: the fish's body is currentColor, DSH's primary label (FISH_MARK).
+      `.${CLS.managedRow}{position:relative;display:inline-flex;align-items:center;justify-content:center;width:${MANAGED_ROW.cellPx}px;height:${MANAGED_ROW.cellPx}px;color:var(--dsw-alias-label-primary)}`,
       // The running icon's flip (design ⑥): a half-turn to the mirror, a short hold, then back.
       `.${CLS.flip}{transform-origin:${MANAGED_ROW.flipOrigin};animation:${MANAGED_ROW.flipAnimation} ${MANAGED_ROW.flipSeconds}s ease-in-out infinite}`,
       `@keyframes ${MANAGED_ROW.flipAnimation}{${MANAGED_ROW.flip.map(([at, degrees]) => `${at}%{transform:rotateY(${degrees}deg)}`).join('')}}`,
@@ -229,22 +231,19 @@ globalThis.__ModuleLoader__?.load({
       return () => style.remove()
     }
 
-    /** The connector's icon (CONNECTOR_ICON); it flips while its row runs. Decorative: its cell carries the words. */
-    function ConnectorIcon({ size, moving }) {
-      const icon = CONNECTOR_ICON
-      return h('svg', { width: size, height: size, viewBox: icon.viewBox, className: moving ? CLS.flip : undefined, 'aria-hidden': true },
-        h('rect', { width: icon.tileSize, height: icon.tileSize, rx: icon.tileRadius, fill: icon.colors.tile }),
-        h('path', { d: icon.body, fill: icon.colors.paper }),
-        h('path', { d: icon.eye, fill: icon.colors.accent }),
-        h('circle', { cx: icon.badgeCentre, cy: icon.badgeCentre, r: icon.ringRadius, fill: icon.colors.tile }),
-        h('circle', { cx: icon.badgeCentre, cy: icon.badgeCentre, r: icon.chipRadius, fill: icon.colors.paper }),
-        h('g', { transform: icon.glyphTransform, stroke: icon.colors.tile, strokeWidth: icon.glyphStroke, strokeLinecap: icon.glyphCap, strokeLinejoin: icon.glyphJoin },
-          ...icon.wrench.map((d) => h('path', { key: d, d }))))
+    /** V1's fish (FISH_MARK); it flips while its row runs. Decorative: its cell carries the words. */
+    function FishMark({ size, moving }) {
+      return h('svg', { width: size, height: size, viewBox: FISH_MARK.viewBox, className: moving ? CLS.flip : undefined, 'aria-hidden': true },
+        h('path', { d: FISH_MARK.body, fill: FISH_MARK.bodyColor }),
+        h('path', { d: FISH_MARK.eye, fill: FISH_MARK.eyeColor }))
     }
 
     /**
      * An agent as R-NAME-08 shows it: its name as plain text, or, for a nameless one, a bold `ID:`
      * and its id. React escapes both, so markup in a name is shown, never run (HAND-EP-02 row 8).
+     * Since the user's decision of 2026-11-21 the connector's pair store gives every pair a generated
+     * name when it has none, so the `ID:` form is the fallback (a page-bound pair before its agent's
+     * first name call, other principals); it stays.
      * `principalText` is the same as one string, for a text alternative.
      */
     const principalLabel = (t, principal) => (principal.name === null
@@ -331,8 +330,16 @@ globalThis.__ModuleLoader__?.load({
       function makeHandOverDialog(t) {
         return function ConnectorHandOverDialog() {
           const request = React.useSyncExternalStore(handOverRequest.subscribe, handOverRequest.get)
+          const { targets } = useSnapshot()
           if (request === null) return null
-          return h(HandOverForm, { key: request.sessionId + request.target.key, request, t })
+          // The agent chosen is its key, captured at open: the confirm posts that key. Its words come
+          // from the key's live row: names are unique per connector but not stable (set_name), so a
+          // name captured at open could, after a rename while the dialog is open, be another agent's
+          // by the time of the confirm, and the title would name an agent the confirm does not hand
+          // over to. A key no longer listed (disabled or removed) keeps its last words; the backend
+          // then answers `no-agent`, which the dialog shows.
+          const target = targets.find((row) => row.key === request.target.key) ?? request.target
+          return h(HandOverForm, { key: request.sessionId + request.target.key, request: { ...request, target }, t })
         }
       }
 
@@ -473,7 +480,7 @@ globalThis.__ModuleLoader__?.load({
       }
 
       /**
-       * One managed row's mark: the connector's icon and "Managed by <agent>" as its text
+       * One managed row's mark: V1's fish and "Managed by <agent>" as its text
        * alternative. It is still while idle and flips while the row runs; the label carries the
        * state, so reduced motion loses no information.
        */
@@ -483,39 +490,75 @@ globalThis.__ModuleLoader__?.load({
           className: CLS.managedRow, role: 'img', 'aria-label': label, title: label,
           [DATA.managedRow]: mark.sessionId,
           [DATA.rowState]: running ? MANAGED_ROW.state.running : MANAGED_ROW.state.idle,
-        }, h(ConnectorIcon, { size: MANAGED_ROW.iconPx, moving: running }))
+        }, h(FishMark, { size: MANAGED_ROW.iconPx, moving: running }))
       }
 
       /**
-       * The idle mark in a DSH session row's leading cell. DSH mounts this seat only while the row
-       * is idle; its own spinner takes the cell otherwise, so the running variant below uses the
-       * trailing seat.
+       * The sessions whose row's leading seat is mounted now (a count per id: one session may be
+       * drawn by more than one list). DSH mounts that seat only while the row's primary state is
+       * idle (dsh-client-ui-workspace Rows.tsx `showStatus`); in every other state (running,
+       * subagents running, a pending interaction, a finished turn not yet viewed) its own dot takes
+       * the cell. The trailing seat draws the mark exactly while this seat is not mounted, so a
+       * managed row always shows one fish without restating DSH's status rule here (the user's bug
+       * of 2026-11-21: a managed session whose own turn had ended while its subagents still ran
+       * showed DSH's subagent dot and no fish, because the trailing mark waited for `running`).
+       */
+      const leading = (() => {
+        const counts = new Map()
+        const changes = valueStore(0)
+        const changed = () => changes.set(changes.get() + 1)
+        return Object.freeze({
+          subscribe: changes.subscribe,
+          version: changes.get,
+          has: (sessionId) => counts.has(sessionId),
+          /** Records `sessionId`'s leading seat as mounted; returns its unmount. */
+          mount(sessionId) {
+            counts.set(sessionId, (counts.get(sessionId) ?? 0) + 1)
+            changed()
+            return () => {
+              const left = counts.get(sessionId) - 1
+              if (left > 0) counts.set(sessionId, left)
+              else counts.delete(sessionId)
+              changed()
+            }
+          },
+        })
+      })()
+
+      /**
+       * The idle mark in a DSH session row's leading cell (mounted only while the row is idle, see
+       * `leading`). Its mount is recorded in a layout effect, so the trailing seat drops its own
+       * mark before the browser paints and a row never shows two.
        */
       function makeRowMark(t) {
         return function ConnectorManagedRowMark({ sessionId }) {
+          React.useLayoutEffect(() => leading.mount(sessionId), [sessionId])
           const mark = markOf(useSnapshot(), sessionId)
           return mark === undefined ? null : h(ManagedMark, { t, mark, running: false })
         }
       }
 
       /**
-       * The running mark in a DSH session row's trailing seat (0.2.2's always-mounted seat). An idle
-       * row renders nothing here, so it never shows two marks. 0.2.1-rc.5 has no trailing seat:
-       * slots.inject waits for the declaration and this entry never mounts (no error).
+       * The mark in a DSH session row's trailing seat (0.2.2's always-mounted seat), drawn while the
+       * row's leading seat is not mounted (`leading`): it flips while DSH reads the session running
+       * and holds still otherwise (subagents running, a pending interaction, a finished turn).
+       * 0.2.1-rc.5 has no trailing seat: slots.inject waits for the declaration and this entry never
+       * mounts (no error).
        */
       function makeRowRunningMark(t) {
         return function ConnectorManagedRowRunningMark({ sessionId, useSessionStatus }) {
           const mark = markOf(useSnapshot(), sessionId)
-          // A child owns the hook, so an unmanaged row never subscribes to DSH's status source.
-          return mark === undefined ? null : h(RowRunningMark, { t, mark, useSessionStatus })
+          // A child owns the hooks, so an unmanaged row never subscribes to DSH's status source.
+          return mark === undefined ? null : h(RowTrailingMark, { t, mark, useSessionStatus })
         }
       }
 
-      /** The running half of the trailing entry: hooks are unconditional, the null return is not. */
-      function RowRunningMark({ t, mark, useSessionStatus }) {
+      /** The trailing entry's managed half: hooks are unconditional, the null return is not. */
+      function RowTrailingMark({ t, mark, useSessionStatus }) {
+        React.useSyncExternalStore(leading.subscribe, leading.version)
         // A selector keeps this mark from re-rendering on every other row's status change.
         const running = useSessionStatus((statuses) => statuses.get(mark.sessionId)?.running === true)
-        return running ? h(ManagedMark, { t, mark, running: true }) : null
+        return leading.has(mark.sessionId) ? null : h(ManagedMark, { t, mark, running })
       }
 
       return {

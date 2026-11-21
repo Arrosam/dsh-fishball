@@ -33,6 +33,7 @@ import {
 } from './constants.mjs'
 import { protocolCodes, toolsWorld } from './subject.mjs'
 import { registerReviewXToolsCases } from './review-x-cases.mjs'
+import { assertGeneratedName } from '../pairs/cases.mjs'
 
 const CASE = Object.freeze({
   platUc02: 'PLAT-UC-02', watchUc01: 'WATCH-UC-01', watchUc03: 'WATCH-UC-03',
@@ -333,11 +334,12 @@ function partitions(sdk) {
   todo(sdk, CASE.platEp02, 5, `refusals ${REFUSAL.expired} (a hostRef) and ${REFUSAL.queueFull} through the session tools`, LATER.domain)
 
   // Row 6 — any success.
-  world(sdk, CASE.platEp02, 6, 'success set_name: isError false, structuredContent {ok: true, name} and the same JSON as text', async (t) => {
+  // set_name(null) answers a generated name since the user's decision of 2026-11-21 (no pair is left nameless).
+  world(sdk, CASE.platEp02, 6, 'success set_name: isError false, structuredContent {ok: true, name} and the same JSON as text; null → a generated name', async (t) => {
     const { w, pc, p } = await twoPrincipals(t, sdk)
     const s = assertSuccess(await pc.callTool({ name: TOOL.setName, arguments: { name: null } }))
-    assert.equal(s.name, null)
-    assert.equal(w.pairs.byPrincipal(p.principalKey).name, null)
+    assertGeneratedName(s.name)
+    assert.equal(w.pairs.byPrincipal(p.principalKey).name, s.name)
   })
   world(sdk, CASE.platEp02, 6, 'success pair (pair-only AT, unbound entry): {ok: true, paired: true, id, name}', async (t) => {
     const w = await toolsWorld(t, sdk)
