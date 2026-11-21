@@ -20,10 +20,16 @@ export const WD = Object.freeze({
     refine: 'dsh-connector-watchdog.watchdog_refine',
     pause: 'dsh-connector-watchdog.watchdog_pause',
     resume: 'dsh-connector-watchdog.watchdog_resume',
+    sessionStart: 'dsh-connector-watchdog.watchdog_session_start',
   }),
+  /** watchdog_session_start's own parameters beside session_start's (the user, 2026-11-21). */
+  startOwn: Object.freeze(['purpose', 'scope']),
+  /** The codes watchdog_session_start declares; any other refusal is a K2 SHARED_CODE or operation-failed. */
+  startDeclared: Object.freeze(['forbidden', 'conflict', 'not-briefed', 'empty-purpose', 'nothing-to-refine', 'invalid-decision', 'feature-off', 'too-large']),
+  startRefused: (code) => `session_start refused: ${code}`,
   driftType: 'contributed:dsh-connector-watchdog.drift',
   delegate: 'watchdog',
-  code: Object.freeze({ forbidden: 'forbidden', conflict: 'conflict', notBriefed: 'not-briefed', emptyPurpose: 'empty-purpose' }),
+  code: Object.freeze({ forbidden: 'forbidden', conflict: 'conflict', notBriefed: 'not-briefed', emptyPurpose: 'empty-purpose', operationFailed: 'operation-failed' }),
   during: Object.freeze({ permission: 'permission' }),
   /** The judge's answers the scripted model gives the side session (one per judgement). */
   answer: Object.freeze({

@@ -54,18 +54,21 @@ function fakeTimers() {
   }
 }
 
-async function world(t, { manager = P, messages = [], verdicts = [], config = CONFIG } = {}) {
+async function world(t, { manager = P, messages = [], verdicts = [], config = CONFIG, start } = {}) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'wd-core-'))
   t.after(() => fs.rmSync(dir, { recursive: true, force: true }))
   const logs = []
   const logger = { warn: (...args) => logs.push(args) }
-  const state = { manager, messages: [...messages], stops: [], events: [], prompts: [], verdicts: [...verdicts] }
+  const state = { manager, messages: [...messages], stops: [], events: [], prompts: [], verdicts: [...verdicts], starts: [] }
+  const self = {}
   const sessions = {
     rootOf: (id) => (id === CHILD ? ROOT : id),
     managerOf: (id) => (id === ROOT ? state.manager : undefined),
     read: async ({ maxMessages }) => ({ messages: state.messages.slice(-maxMessages), truncated: state.messages.length > maxMessages }),
     // Every stop is recorded with its input: each stop names its cause (requirement D4).
     stop: async (input) => { state.stops.push({ ...input }) },
+    // dshConnectorSessions.start (requirement H): only when a case scripts one; the default world has none.
+    ...(start ? { start: (input) => start(input, self) } : {}),
   }
   const emit = async (event) => { state.events.push(event); return { ok: true, eventId: 'e' + state.events.length } }
   const judge = {
@@ -83,7 +86,7 @@ async function world(t, { manager = P, messages = [], verdicts = [], config = CO
   let connected = true
   const wd = createWatchdog({ store, services: () => (connected ? { sessions, emit } : undefined), judge, config, timers, now: () => 1, logger })
   t.after(() => wd.close())
-  return { wd, store, state, timers, logs, dir, disconnect: () => { connected = false } }
+  return Object.assign(self, { wd, store, state, timers, logs, dir, disconnect: () => { connected = false } })
 }
 const brief = (w, args = {}, who = P) => w.wd.call(TOOL.brief, { sessionId: ROOT, purpose: 'Fix the login bug', ...args }, who)
 const permission = (w, sessionId = ROOT, descriptor = DESCRIPTOR, options = {}) => w.wd.delegate.decide({ sessionId, descriptor }, options)
@@ -351,3 +354,111 @@ test('EP: parseVerdict → undefined for no object, invalid JSON, no verdict or 
     assert.equal(parseVerdict(text), undefined, JSON.stringify(text))
   }
 })
+
+// ------------------------------------------------------------------------------------------------ watchdog_session_start (requirement H)
+
+const START_ARGS = Object.freeze({ folder: '/work/login', title: 'Login fix', message: 'Fix the login bug', attachments: [] })
+/** watchdog_session_start as `who` calls it. */
+const startCall = (w, args = {}, who = P) => w.wd.call(TOOL.sessionStart, { ...START_ARGS, purpose: 'Fix the login bug', ...args }, who)
+/**
+ * A scripted dshConnectorSessions.start: records its input, makes `manager` manage ROOT (as the
+ * connector does before afterManaged), awaits afterManaged(ROOT, managed) and records what Watchdog
+ * had set up at that moment, then answers `answer`.
+ */
+const startsWith = ({ managed = true, manager = (k) => k, answer = {} } = {}) => async (input, w) => {
+  w.state.starts.push({ principalKey: input.principalKey, args: { ...input.args }, afterManaged: typeof input.afterManaged })
+  if (managed) w.state.manager = manager(input.principalKey)
+  await input.afterManaged?.(ROOT, managed)
+  w.state.duringStart = { claims: w.wd.delegate.claims(ROOT), brief: w.store.get(ROOT) ? { ...w.store.get(ROOT) } : undefined, timers: w.timers.pending.size }
+  return { ok: true, sessionId: ROOT, managed, running: true, ...answer }
+}
+/** A scripted start that refuses with `code` before anything is created (afterManaged is never called). */
+const refusesWith = (code) => async (input, w) => { w.state.starts.push({ principalKey: input.principalKey, args: { ...input.args } }); return { ok: false, code } }
+
+test('EP: TOOL.sessionStart is watchdog_session_start; watchdog_brief\'s description points to it', () => {
+  assert.equal(TOOL.sessionStart, 'watchdog_session_start')
+  assert.ok(TEXT.brief.includes('watchdog_session_start'), 'TEXT.brief does not mention watchdog_session_start')
+})
+
+test('UC: watchdog_session_start → start(principalKey, args without purpose and scope); briefed inside afterManaged (brief stored, patrol armed, delegate claims) → {ok, data: start\'s fields + supervised: true}', async (t) => {
+  const w = await world(t, { manager: undefined, start: startsWith(), verdicts: [{ verdict: VERDICT.allow, reason: 'in scope' }] })
+  const r = await startCall(w, { scope: 'running the test suite', model: 'fake/fbtest', reasoningEffort: 'high' })
+  assert.deepEqual(w.state.starts, [{ principalKey: P, args: { ...START_ARGS, model: 'fake/fbtest', reasoningEffort: 'high' }, afterManaged: 'function' }])
+  assert.deepEqual(r, { ok: true, data: { sessionId: ROOT, managed: true, running: true, supervised: true } })
+  // Inside afterManaged (before the first message): the brief already holds.
+  assert.equal(w.state.duringStart.claims, true, 'the delegate did not claim the session inside afterManaged')
+  assert.deepEqual([w.state.duringStart.brief?.purpose, w.state.duringStart.brief?.scope, w.state.duringStart.brief?.principalKey], ['Fix the login bug', 'running the test suite', P])
+  assert.deepEqual(w.timers.delays(), [CONFIG.minCheckIntervalSeconds * 1000], 'the patrol was not armed')
+  // The very first request is judged against that brief.
+  assert.deepEqual(await permission(w), { verdict: VERDICT.allow, reason: 'in scope' })
+  assert.ok(w.state.prompts[0].includes('running the test suite'))
+})
+
+test('EP: the start\'s optional fields pass through (titleError, workspaceError); no scope → the brief\'s scope is ""; purpose is trimmed as watchdog_brief trims it', async (t) => {
+  const w = await world(t, { manager: undefined, start: startsWith({ answer: { titleError: 'title-failed', workspaceError: 'workspace-failed' } }) })
+  const r = await startCall(w, { purpose: '  Fix the login bug  ' })
+  assert.deepEqual(r, { ok: true, data: { sessionId: ROOT, managed: true, running: true, titleError: 'title-failed', workspaceError: 'workspace-failed', supervised: true } })
+  assert.deepEqual(w.state.starts[0].args, START_ARGS, 'purpose or scope reached session_start')
+  assert.deepEqual([w.store.get(ROOT).purpose, w.store.get(ROOT).scope], ['Fix the login bug', ''])
+})
+
+test('ST: a session started by watchdog_session_start is briefed exactly as by watchdog_brief — a second brief → conflict; refine, pause, resume work for the same principal', async (t) => {
+  const w = await world(t, { manager: undefined, start: startsWith() })
+  assert.equal((await startCall(w, { scope: 'tests' })).data.supervised, true)
+  assert.deepEqual(await brief(w), { ok: false, code: CODE.conflict })
+  assert.equal((await w.wd.call(TOOL.refine, { sessionId: ROOT, scope: 'read-only' }, P)).data.scope, 'read-only')
+  assert.equal((await w.wd.call(TOOL.pause, { sessionId: ROOT }, P)).data.paused, true)
+  assert.equal(w.wd.delegate.claims(ROOT), false)
+  assert.equal((await w.wd.call(TOOL.resume, { sessionId: ROOT }, P)).data.paused, false)
+  assert.equal(w.wd.delegate.claims(ROOT), true)
+})
+
+// DT over purpose × connector services → refused before session_start is called.
+test('DT: an empty or whitespace purpose → empty-purpose and sessions.start is NOT called', async (t) => {
+  const w = await world(t, { manager: undefined, start: startsWith() })
+  for (const purpose of ['', ' ', '\t\n  ']) assert.deepEqual(await startCall(w, { purpose }), { ok: false, code: CODE.emptyPurpose }, JSON.stringify(purpose))
+  assert.deepEqual(w.state.starts, [])
+  assert.equal(w.wd.delegate.claims(ROOT), false)
+})
+
+test('DT: no connector services, or a dshConnectorSessions without start → forbidden; nothing briefed', async (t) => {
+  const without = await world(t)
+  assert.deepEqual(await startCall(without), { ok: false, code: CODE.forbidden }, 'sessions without start')
+  assert.equal(without.store.get(ROOT), undefined)
+  const offline = await world(t, { manager: undefined, start: startsWith() })
+  offline.disconnect()
+  assert.deepEqual(await startCall(offline), { ok: false, code: CODE.forbidden }, 'no connector services')
+  assert.deepEqual(offline.state.starts, [])
+})
+
+test('DT: afterManaged(sessionId, managed: false) → nothing briefed; answer {ok, data: {managed: false, supervised: false}}', async (t) => {
+  const w = await world(t, { manager: undefined, start: startsWith({ managed: false }) })
+  const r = await startCall(w, { scope: 'tests' })
+  assert.deepEqual(r, { ok: true, data: { sessionId: ROOT, managed: false, running: true, supervised: false } })
+  assert.equal(w.store.get(ROOT), undefined, 'an unmanaged session was briefed')
+  assert.equal(w.wd.delegate.claims(ROOT), false)
+  assert.equal(w.timers.pending.size, 0, 'a patrol was armed for an unmanaged session')
+})
+
+test('DT: managed but by another principal when afterManaged runs → the brief does not take effect: supervised false, nothing claimed', async (t) => {
+  const w = await world(t, { manager: undefined, start: startsWith({ manager: () => Q }) })
+  const r = await startCall(w)
+  assert.equal(r.ok, true, JSON.stringify(r))
+  assert.equal(r.data.supervised, false)
+  assert.equal(w.wd.delegate.claims(ROOT), false)
+})
+
+// DT over session_start's refusal code → watchdog_session_start's refusal (the code kept, its message names it).
+const START_REFUSALS = Object.freeze(['invalid-arguments', 'limit-exceeded', 'unknown-session', 'forbidden', 'invalid-decision', 'operation-failed'])
+test('DT: session_start refuses → {ok: false, code: start\'s code, message: "session_start refused: <code>"}; nothing briefed', async (t) => {
+  for (const code of START_REFUSALS) {
+    const w = await world(t, { manager: undefined, start: refusesWith(code) })
+    const r = await startCall(w, { scope: 'tests' })
+    assert.deepEqual(r, { ok: false, code, message: 'session_start refused: ' + code }, code)
+    assert.equal(r.message, TEXT.startRefused(code), code)
+    assert.equal(w.state.starts.length, 1, code + ': start was not called once')
+    assert.equal(w.store.get(ROOT), undefined, code + ': briefed after a refusal')
+    assert.equal(w.timers.pending.size, 0, code)
+  }
+})
+

@@ -34,7 +34,7 @@ export function overlayRows() {
 }
 
 /** The worker ops this suite adds; `deps` are the worker's own helpers (wire/worker.mjs). */
-export async function ops({ ctx, model, agentOf, eventSummary, plain, createUserMessage, until, budget }) {
+export async function ops({ ctx, model, agentOf, eventSummary, errorInfo, plain, createUserMessage, until, budget }) {
   const { setSandboxMode } = await hostPkg(IX.dsh.sandboxPolicyPackage)
   // The bundle's state (fixture-bundle/index.js keeps it on globalThis: DSH loads it through another URL).
   const store = (globalThis.__fbixFixtures ??= { calls: [], registerErrors: [], stock: [], cards: [], stockMode: IX.stock.hold })
@@ -74,6 +74,49 @@ export async function ops({ ctx, model, agentOf, eventSummary, plain, createUser
       return true
     },
     delegateSeen: () => delegate.seen,
+    /**
+     * dshConnectorSessions.start (start-cases.mjs) for `principalKey` with `args`. `after`: 'none' passes
+     * no afterManaged; 'record' a recording one; 'throws' / 'rejects' one that records, then throws
+     * synchronously / rejects with IX.start.thrown. The recording one waits IX.start.holdMs before it
+     * returns, so a first message sent beside it (not after it) would show in the second snapshot.
+     * Answers the start's result (or how it threw) and every afterManaged call with what it saw.
+     */
+    async serviceStart({ principalKey, args, after = IX.start.mode.record }) {
+      const service = ctx.get(IX.delegate.service)
+      const calls = []
+      const snapshot = (sessionId) => {
+        const agent = ctx.agents.get(sessionId)
+        const events = agent ? agent.session.snapshotEvents() : []
+        return {
+          manager: service.managerOf(sessionId) ?? null,
+          status: agent?.status ?? null,
+          userMessages: events.filter((e) => e.type === IX.dsh.userMessage).length,
+          requests: model.requests.filter((r) => r.sessionId === sessionId).length,
+        }
+      }
+      const afterManaged = async (sessionId, managed) => {
+        const call = { sessionId, managed, at: snapshot(sessionId) }
+        calls.push(call)
+        if (after === IX.start.mode.throws) throw new Error(IX.start.thrown)
+        await new Promise((resolve) => setTimeout(resolve, IX.start.holdMs))
+        call.later = snapshot(sessionId)
+        if (after === IX.start.mode.rejects) throw new Error(IX.start.thrown)
+      }
+      // 'throws' must throw synchronously, not as a rejected promise.
+      const throwsNow = (sessionId, managed) => { calls.push({ sessionId, managed, at: snapshot(sessionId) }); throw new Error(IX.start.thrown) }
+      const input = { principalKey, args, ...(after === IX.start.mode.none ? {} : { afterManaged: after === IX.start.mode.throws ? throwsNow : afterManaged }) }
+      try {
+        return { value: plain(await service.start(input)), calls }
+      } catch (e) {
+        return { threw: errorInfo(e), calls }
+      }
+    },
+    /** dshConnectorSessions.startInput as JSON, and whether it (and its nested objects) is frozen. */
+    startInput() {
+      const s = ctx.get(IX.delegate.service).startInput
+      const deepFrozen = (o) => o === null || typeof o !== 'object' || (Object.isFrozen(o) && Object.values(o).every(deepFrozen))
+      return { schema: plain(s), frozen: Object.isFrozen(s), deepFrozen: deepFrozen(s), type: typeof s }
+    },
     registerErrors: () => store.registerErrors,
     /** A session in a fresh folder on `preset` (no turn). */
     async createIn({ name, preset }) {

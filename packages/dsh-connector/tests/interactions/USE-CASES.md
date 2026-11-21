@@ -101,6 +101,19 @@ offer has no `delegate`. E1 an unmanaged session never reaches D (stock prompt).
 (delegate-cases.mjs). A plugin's `stop({sessionId, reason})` reports `(hook: <reason>)` in the
 manager's turn-finished, without a reason `(user)`: CONN-STOP-DT-01 (report-cases.mjs).
 
+### IX-UC-09 A plugin starts a session for a principal (`dshConnectorSessions.start`)
+Pre: P is paired; a main-DSH plugin D holds `dshConnectorSessions` (the user, 2026-11-21: close
+Watchdog's window at session creation). Main: 1. D calls `start({principalKey: P, args, afterManaged})`
+with session_start's arguments. 2. The session is created and managed by P (`managerOf` = P). 3.
+`afterManaged(sessionId, true)` is awaited: the session has no user message and no model request
+yet. 4. The first message is delivered and a turn runs. 5. D gets `{ok, sessionId, managed: true,
+running}`. A1 no afterManaged → the same start. A2 afterManaged throws or rejects → logged; the answer
+and the first message are unchanged. E1 schema violation or empty folder → `invalid-arguments`;
+invisible/empty title or too many attachments → `limit-exceeded`; missing folder → `unknown-session`;
+relative folder → `forbidden`; unknown model → `invalid-decision`; nothing created, afterManaged never
+called. `startInput` deep-equals K1 session_start's inputSchema and is frozen; the core session_start
+answers as before. Rows: SRV-START-01…06 (start-cases.mjs).
+
 ## Derived cases
 
 Ids: the V2 gap-check ids where a row ports one (V3 wording), else `IX-*`. "→ refused" always means:

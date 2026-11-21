@@ -112,6 +112,15 @@ export const IX = Object.freeze({
     /** The offer's delegate outcome words and the invalid-answer reason (the user, 2026-11-21). */
     outcome: Object.freeze({ passed: 'passed', failed: 'failed' }), invalidVerdict: 'invalid-verdict',
   }),
+  /** extension.mjs serviceStart: dshConnectorSessions.start with a scripted afterManaged (start-cases.mjs). */
+  start: Object.freeze({
+    mode: Object.freeze({ none: 'none', record: 'record', throws: 'throws', rejects: 'rejects' }),
+    thrown: 'fbix-after-managed-throws',
+    holdMs: 400,
+    /** A failure is "logged": a warn or error line, not DSH's own client-module warning every boot of this harness writes. */
+    logTypes: Object.freeze(['warn', 'error']),
+    bootNoiseLogger: 'client-module-registry',
+  }),
   /** DSH approval outcomes (dsh-user-approval). */
   outcome: Object.freeze({ allowed: 'allowed-once', rejected: 'rejected', cancelled: 'cancelled', unavailable: 'unavailable', notAsked: 'not-asked' }),
   policy: Object.freeze({ ask: 'ask', never: 'never' }),

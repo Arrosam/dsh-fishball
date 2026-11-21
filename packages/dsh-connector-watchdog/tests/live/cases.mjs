@@ -14,11 +14,12 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
 import { row } from '../../../dsh-connector/tests/interactions/rows.mjs'
-import { EVENT_TYPE, IX, SETTLED_BY, SETTLEMENT_OUTCOME, TOOL } from '../../../dsh-connector/tests/interactions/constants.mjs'
+import { EVENT_TYPE, IX, K1, REFUSAL, SETTLED_BY, SETTLEMENT_OUTCOME, TOOL } from '../../../dsh-connector/tests/interactions/constants.mjs'
 import {
   argsFor, call, cid, decided, eventually, free, handOver, managed, ofType, okCall, pending, principal, quiet, reconnect, resultsOf, session, step, stockFor,
   takeBack, tok, waitEvents, world,
 } from '../../../dsh-connector/tests/interactions/subject.mjs'
+import { SHARED_CODES } from '../../../dsh-connector/tools/index.js'
 import { WD } from './constants.mjs'
 
 const wdWorld = (sdk, label = WD.scenario.main) => world(sdk, label, WD.env)
@@ -47,16 +48,112 @@ async function asks(w, sid) {
   await w.call('driveStart', { sessionId: sid, text: tok('user'), script: [step(IX.fixture.askTool, argsFor(IX.fixture.askTool, text), id), [{ text: 'done' }]] })
   return { text, id }
 }
+/** watchdog_session_start's arguments in `folder`: session_start's, plus a purpose (and scope) carrying `judgeMarker`. */
+const startArgsIn = (folder, { message = tok('first'), judgeMarker = tok('wdj') } = {}) => ({
+  folder, title: 'WD start ' + tok('t'), message, attachments: [], purpose: WD.purpose(judgeMarker), scope: WD.scope,
+})
+/**
+ * Arguments for a session whose FIRST turn's first model step is one asking fixture call (the new
+ * session's id is not known in advance, so its first message carries a marker the scripted model
+ * answers by), and the judge's answer queued for the side session (recognised by the purpose's
+ * marker). The judge's marker is queued first, so a side-session request that also quotes the
+ * session's first message still takes the judge's answer.
+ */
+async function startedFirstAsking(w, p, { judge }) {
+  const folder = await w.call('folder', { name: tok('wdstart') })
+  const judgeMarker = tok('wdj')
+  const sessionMarker = tok('wds')
+  const text = tok('wd')
+  await w.call('queueMarker', { marker: judgeMarker, script: [judge] })
+  await w.call('queueMarker', { marker: sessionMarker, script: [step(IX.fixture.askTool, argsFor(IX.fixture.askTool, text), cid('wd')), [{ text: 'done' }]] })
+  return { args: startArgsIn(folder, { message: 'Begin. ' + sessionMarker, judgeMarker }), text, judgeMarker }
+}
+const judgeLeft = async (w, marker) => (await w.call('markerState', { marker }))?.left ?? 0
 const watchdogSettlement = (p, sid) => waitEvents(p.client, (e) => ofType(e, EVENT_TYPE.settlement).find((s) => s.sourceSessionId === sid && s.payload.by === SETTLED_BY.delegate), 'a Watchdog settlement')
 const offerFor = (p, text) => waitEvents(p.client, (e) => ofType(e, EVENT_TYPE.permission).find((x) => x.payload.reason === IX.fixture.reason(text)), 'a permission offer')
 
 export function registerWatchdogLiveCases(sdk) {
-  row(sdk, 'WD-L01', 'UC (installed)', 'the bundle loads dsh-connector-watchdog and preset-watchdog; a paired principal sees the four tools', async (t) => {
+  row(sdk, 'WD-L01', 'UC (installed)', 'the bundle loads dsh-connector-watchdog and preset-watchdog; a paired principal sees the five tools (watchdog_session_start included: this connector offers dshConnectorSessions.start); watchdog_brief\'s description mentions watchdog_session_start', async (t) => {
     const w = await wdWorld(sdk)
     for (const id of [WD.row, WD.presetRow]) assert.equal((await w.call('row', { id })).active, true, id)
     const p = await principal(t, w)
-    const names = (await p.client.listTools()).tools.map((x) => x.name)
+    const tools = (await p.client.listTools()).tools
+    const names = tools.map((x) => x.name)
+    assert.equal(Object.values(WD.tool).length, 5, 'harness: five Watchdog tools')
     for (const name of Object.values(WD.tool)) assert.ok(names.includes(name), name)
+    assert.deepEqual(names.filter((n) => n.startsWith(WD.row + '.')).sort(), Object.values(WD.tool).sort(), 'Watchdog contributes other tools than the five')
+    assert.ok(tools.find((x) => x.name === WD.tool.brief).description.includes('watchdog_session_start'), 'watchdog_brief does not point to watchdog_session_start')
+  })
+
+  row(sdk, 'WD-L10', 'EP (watchdog_session_start input schema)', 'its inputSchema has session_start\'s properties plus purpose and scope (strings); required = session_start\'s required plus purpose; closed (additionalProperties false)', async (t) => {
+    const w = await wdWorld(sdk)
+    const p = await principal(t, w)
+    const listed = (await p.client.listTools()).tools.find((x) => x.name === WD.tool.sessionStart)
+    assert.ok(listed, 'watchdog_session_start is not listed')
+    const core = K1.toolDefinition(TOOL.sessionStart).inputSchema
+    const schema = listed.inputSchema
+    assert.deepEqual(Object.keys(schema.properties).sort(), [...Object.keys(core.properties), ...WD.startOwn].sort())
+    for (const [k, v] of Object.entries(core.properties)) assert.equal(schema.properties[k].type, v.type, k)
+    for (const k of WD.startOwn) assert.equal(schema.properties[k].type, 'string', k)
+    assert.deepEqual([...schema.required].sort(), [...core.required, 'purpose'].sort())
+    assert.equal(schema.additionalProperties, false)
+  })
+
+  row(sdk, 'WD-L11', 'ST (the gap closed: watchdog_session_start → first request)', 'watchdog_session_start → {ok, sessionId, managed: true, running, supervised: true}; the session\'s first turn\'s first asking call is decided by Watchdog (judge allow): the call runs, settlement {allowed, by delegate, delegate.name watchdog}, no permission offer to the manager', async (t) => {
+    const w = await wdWorld(sdk)
+    const p = await principal(t, w)
+    const s = await startedFirstAsking(w, p, { judge: WD.answer.allow('the first request is in scope') })
+    const r = await wd(p, WD.tool.sessionStart, s.args)
+    assert.deepEqual([r.ok, typeof r.sessionId, r.managed, typeof r.running, r.supervised], [true, 'string', true, 'boolean', true], JSON.stringify(r))
+    assert.equal((await decided(w, s.text, r.sessionId)).outcome, IX.outcome.allowed)
+    const settled = await watchdogSettlement(p, r.sessionId)
+    assert.deepEqual([settled.payload.outcome, settled.payload.delegate?.name, settled.payload.delegate?.toolName], [SETTLEMENT_OUTCOME.allowed, WD.delegate, IX.fixture.askTool])
+    await quiet()
+    assert.deepEqual(ofType(await pending(p.client), EVENT_TYPE.permission).filter((e) => e.payload.reason === IX.fixture.reason(s.text)), [], 'the first request was offered to the manager')
+    assert.equal(await judgeLeft(w, s.judgeMarker), 0, 'the judge was not asked')
+    await free(w, r.sessionId)
+  })
+
+  row(sdk, 'WD-L12', 'ST (contrast: session_start, then watchdog_brief — the known window)', 'a session started with session_start asks before any brief: its first request is a normal offer to the manager with no delegate field; a watchdog_brief afterwards succeeds but the waiting request stays with the manager (the judge is not asked for it)', async (t) => {
+    const w = await wdWorld(sdk)
+    const p = await principal(t, w)
+    const s = await startedFirstAsking(w, p, { judge: WD.answer.allow('should not be asked') })
+    const { purpose, scope, ...coreArgs } = s.args
+    const started = await okCall(p.client, TOOL.sessionStart, coreArgs)
+    // Deterministic order: the brief is sent only once the first request already reached the manager.
+    const offer = await offerFor(p, s.text)
+    assert.equal(offer.sourceSessionId, started.sessionId)
+    assert.equal('delegate' in offer.payload, false, 'a request asked before the brief carries a delegate: ' + JSON.stringify(offer.payload))
+    const b = await wd(p, WD.tool.brief, { sessionId: started.sessionId, purpose, scope })
+    assert.equal(b.ok, true, JSON.stringify(b))
+    await quiet()
+    assert.equal(await judgeLeft(w, s.judgeMarker), 1, 'the judge was asked for a request made before the brief')
+    assert.equal(ofType(await pending(p.client), EVENT_TYPE.settlement).filter((x) => x.sourceSessionId === started.sessionId && x.payload.by === SETTLED_BY.delegate).length, 0)
+    await free(w, started.sessionId)
+  })
+
+  // DT over session_start's refusal → watchdog_session_start's refusal over MCP (a declared or K2 shared code is kept, any other → operation-failed).
+  const START_REFUSALS = [
+    ['an empty purpose (Watchdog\'s own check, before any start)', () => ({ purpose: ' ' }), WD.code.emptyPurpose, null],
+    ['an unknown model → invalid-decision (declared)', () => ({ model: 'fbtest-no-such-model' }), REFUSAL.invalidDecision, REFUSAL.invalidDecision],
+    ['a relative folder → forbidden (shared)', () => ({ folder: 'relative/fbwd-folder' }), REFUSAL.forbidden, REFUSAL.forbidden],
+    ['a missing absolute folder → unknown-session (shared)', (f) => ({ folder: f + '-fbwd-missing' }), REFUSAL.unknownSession, REFUSAL.unknownSession],
+    ['an invisible title → limit-exceeded (shared)', () => ({ title: '\u200b' }), REFUSAL.limitExceeded, REFUSAL.limitExceeded],
+    ['an empty folder → invalid-arguments, not answerable → operation-failed', () => ({ folder: '' }), WD.code.operationFailed, REFUSAL.invalidArguments],
+  ]
+  row(sdk, 'WD-L13', 'DT (watchdog_session_start refusals over MCP)', 'empty purpose → empty-purpose; a start refusal keeps a declared or shared code and its message "session_start refused: <code>"; invalid-arguments (a K2 call code) → operation-failed with the K1 code in its message; nothing is created; every code is declared, shared or operation-failed', async (t) => {
+    const w = await wdWorld(sdk)
+    const p = await principal(t, w)
+    const folder = await w.call('folder', { name: tok('wdstart') })
+    for (const [label, extra, code, k1] of START_REFUSALS) {
+      // k1: the K1 code session_start refused with (null: Watchdog refused before any start).
+      const before = await w.call('sessionIds')
+      const r = await wd(p, WD.tool.sessionStart, { ...startArgsIn(folder), ...extra(folder) })
+      assert.deepEqual([r.ok, r.code], [false, code], label + ': ' + JSON.stringify(r))
+      assert.ok(WD.startDeclared.includes(r.code) || SHARED_CODES.includes(r.code), label + ': ' + r.code + ' is neither declared nor shared')
+      if (k1 !== null) assert.equal(r.message, WD.startRefused(k1), label)
+      assert.deepEqual(await w.call('sessionIds'), before, label + ': a session was created')
+    }
   })
 
   row(sdk, 'WD-L02', 'EP (brief: who, what)', 'only the manager may brief; an empty purpose and a second brief are refused; a later manager replaces an earlier manager\'s brief', async (t) => {

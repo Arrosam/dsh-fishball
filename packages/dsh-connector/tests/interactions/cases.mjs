@@ -14,6 +14,7 @@ import { registerDelegateCases } from './delegate-cases.mjs'
 import { registerReportSystemCases } from './report-cases.mjs'
 import { registerMultiAgentCases } from './multi-agent-cases.mjs'
 import { registerLifecycleCases } from './lifecycle-cases.mjs'
+import { registerStartCases } from './start-cases.mjs'
 
 export function registerInteractionCases(sdk) {
   registerMessagingCases(sdk)
@@ -28,4 +29,5 @@ export function registerInteractionCases(sdk) {
   registerReportSystemCases(sdk)
   registerMultiAgentCases(sdk)
   registerLifecycleCases(sdk)
+  registerStartCases(sdk)
 }
