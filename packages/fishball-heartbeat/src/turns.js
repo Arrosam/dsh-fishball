@@ -18,9 +18,15 @@ import { NAMESPACE, SESSION } from './constants.js'
  * anchor of the last turn that did. Anchoring the timer on it would push the next heartbeat past
  * the cache lifetime the user's interval is set against.
  *
- * State: { open, stepped, heartbeat, work, consecutive, lastEnd: {seq, time} | undefined }.
+ * `compacted`: an idle compaction was attempted since the last real turn ended: a compaction/start
+ * outside any turn (the heartbeat's own compactNow, or the user's /compact), or the heartbeat's
+ * own attempt that wrote none (heartbeat.js sets it then). It makes a cooling's compaction happen
+ * once, a restart included, since the log records the attempt. Only a real turn clears it. A
+ * compaction inside a turn is that turn's business (DSH's pressure trigger) and decides nothing.
+ *
+ * State: { open, stepped, heartbeat, work, consecutive, compacted, lastEnd: {seq, time} | undefined }.
  */
-export const initialTurns = () => ({ open: false, stepped: false, heartbeat: false, work: false, consecutive: 0, lastEnd: undefined })
+export const initialTurns = () => ({ open: false, stepped: false, heartbeat: false, work: false, consecutive: 0, compacted: false, lastEnd: undefined })
 
 const isHeartbeatNotice = source => source?.kind === SESSION.noticeSource && source.pluginId === NAMESPACE
 const isWork = source => SESSION.workSources.includes(source?.kind) || source?.kind === SESSION.noticeSource
@@ -46,8 +52,13 @@ export function foldTurn(state, event) {
       // The count rises when a heartbeat turn ENDS, not when one is sent: only the log's record
       // is rebuilt at restart, and a send that never became a turn warmed nothing.
       const heartbeat = state.heartbeat && !state.work
-      return { ...closed, consecutive: heartbeat ? state.consecutive + 1 : 0, lastEnd: { seq: event.seq, time: event.time } }
+      return {
+        ...closed, consecutive: heartbeat ? state.consecutive + 1 : 0, compacted: heartbeat && state.compacted,
+        lastEnd: { seq: event.seq, time: event.time },
+      }
     }
+    case SESSION.compactionStart:
+      return state.open || state.compacted ? state : { ...state, compacted: true }
     default:
       return state
   }

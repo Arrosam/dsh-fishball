@@ -8,6 +8,13 @@ export const NAMESPACE = 'fishball-heartbeat'
 export const HOST = Object.freeze({
   service: 'fishballInstance', profile: 'profileContext', apiVersion: 2, serviceEvent: 'internal/service',
   appReady: 'appReady',
+  /**
+   * DSH's context measure and compaction (dsh-token-meter, dsh-compaction). The token meter stays on
+   * the host plane (dsh-web-app's patch); the compaction service lives inside the manager's agent
+   * preset as an isolated group, so it is read through the preset registry (`serviceFor`), with a
+   * host-plane one as the fallback, the order DSH's own session controller reads scoped services in.
+   */
+  tokenMeter: 'tokenMeter', compaction: 'compaction', agentPresets: 'agentPresets',
 })
 
 /** DSH session vocabulary this amenity folds (dsh-session SessionEventMap, both SDKs). */
@@ -17,6 +24,8 @@ export const SESSION = Object.freeze({
   turnEnd: 'turn/end',
   stepStart: 'step/start',
   userMessage: 'user/message',
+  /** dsh-compaction's lock marker, first event of every compaction attempt that got past selection. */
+  compactionStart: 'compaction/start',
   /** fishball-core's plugin notice source (manager/service.js noticeSource); pluginId names its sender. */
   noticeSource: 'fishball-notice',
   /**
@@ -82,7 +91,15 @@ export const LOG = Object.freeze({
   lateDropped: 'heartbeat dropped: its timer fired %d ms late (the machine slept?); the next turn re-arms it',
   notifyFailed: 'heartbeat could not be sent (%s); the next turn re-arms it',
   focusUnreadable: 'heartbeat focus could not be read (%s); this heartbeat carries none',
+  compactionUnavailable: 'heartbeats stopped but Fishball\'s context cannot be compacted: no %s service',
+  measureFailed: 'heartbeats stopped but Fishball\'s context could not be measured (%s); it is not compacted',
+  compacted: 'heartbeats stopped with %d context tokens (over %d): compacted %d history items (~%d tokens)',
+  nothingToCompact: 'heartbeats stopped with %d context tokens (over %d), but nothing could be compacted',
+  compactionFailed: 'compaction when heartbeats stopped failed (%s); not retried until the next cooling',
 })
+
+/** The short reason a log line names for an error: its code, else its name. */
+export const reasonOf = error => error?.code ?? error?.name
 
 /** dedupeKey of one idle gap: the manager session and the seq of the turn/end that opened it. */
 export const dedupeKey = (sessionId, turnEndSeq) => `${NAMESPACE}:${sessionId}:${turnEndSeq}`
