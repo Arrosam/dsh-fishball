@@ -18,6 +18,7 @@ const TEXT = Object.freeze({
   parentId: 'Optional: the id of an existing task to add these under; omit for the top level.',
   update: "Update one task's title, note, status or progress. Give the id and at least one field. Status and progress are independent; you cannot delete a task (set dropped), only the user can.",
   id: 'The task id (t_…).',
+  required: 'Required. ',
   title: `1–${LIMITS.titleChars.max} characters.`,
   note: `Up to ${LIMITS.noteChars.max} characters; replaces the note.`,
   status: statuses + '.',
@@ -28,9 +29,11 @@ const TEXT = Object.freeze({
   memoDelete: 'true: delete the memo with this id.',
 })
 
-// The registry rejects schema violations before execute with its own error, not this tool's typed
-// refusal (board/src/board.js, same reason), so each field is documented as `json` and checked by
-// the board rules, which refuse `invalid-input` with the field that failed.
+// defineTool rejects schema violations (a missing `required` property included) before execute with
+// its own ToolArgsError, not this tool's typed refusal (board/src/board.js, same reason). So no field
+// is marked required and each is typed `json`: the board rules check them and refuse
+// `invalid-input` with the field that failed. Arguments that are not a JSON object at all are still
+// refused by defineTool itself (both SDKs); the doc says so.
 const FIELD = (description) => ({ type: 'json', description })
 const JSON_OUTPUT = Object.freeze({ type: 'json' })
 const render = (_args, value) => [{ type: 'text', text: JSON.stringify(value) }]
@@ -58,9 +61,9 @@ export function createTools({ store, sessionId, now = Date.now }) {
       if (Object.keys(args).length) throw refusal(CODE.invalidInput, Object.keys(args)[0])
       return { ok: true, ...viewOf(store.read()) }
     })),
-    tool(TOOL.add, TEXT.add, { tasks: { ...FIELD(TEXT.tasks), required: true }, parentId: FIELD(TEXT.parentId) }, changing(addTasks)),
+    tool(TOOL.add, TEXT.add, { tasks: FIELD(TEXT.required + TEXT.tasks), parentId: FIELD(TEXT.parentId) }, changing(addTasks)),
     tool(TOOL.update, TEXT.update, {
-      id: { ...FIELD(TEXT.id), required: true }, title: FIELD(TEXT.title), note: FIELD(TEXT.note), status: FIELD(TEXT.status), progress: FIELD(TEXT.progress),
+      id: FIELD(TEXT.required + TEXT.id), title: FIELD(TEXT.title), note: FIELD(TEXT.note), status: FIELD(TEXT.status), progress: FIELD(TEXT.progress),
     }, changing(updateTask)),
     tool(TOOL.memo, TEXT.memo, { id: FIELD(TEXT.memoId), text: FIELD(TEXT.memoText), delete: FIELD(TEXT.memoDelete) }, changing(changeMemo)),
   ]

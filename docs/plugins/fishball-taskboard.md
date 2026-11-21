@@ -69,7 +69,10 @@ existing board unreadable:
 Registered only in the manager's scope (X2 `manager.registerSetup('fishball-taskboard', …)`), and
 checked again at run time: the caller's `exec.agent.session.id` must be `manager.sessionId()`,
 else `{ok: false, code: 'not-manager'}`. A refusal is always the returned value
-`{ok: false, code, field?}`; the tools never throw.
+`{ok: false, code, field?}`; the tools never throw. One exception is DSH's: arguments that are not
+a JSON object at all are refused by DSH's own tool registry (`ToolArgsError`) before the tool runs.
+No field is marked required in the schema (each description says "Required."), so a missing
+`tasks` or `id` gets the typed `invalid-input` refusal with that field.
 
 | Tool | Parameters | Success value |
 |---|---|---|
@@ -166,7 +169,8 @@ runs on the next microtask, with the count read then, because dsh-session refuse
 it is still publishing `compaction/end`:
 
 ```
-Reminder: your task board still has <n> unfinished task(s); call taskboard_read to see them.
+Reminder: your task board still has 1 unfinished task; call taskboard_read to see them.
+Reminder: your task board still has 3 unfinished tasks; call taskboard_read to see them.
 ```
 
 User role, source `{kind: 'fishball-notice', form: 'plugin', pluginId: 'fishball-taskboard'}`.
