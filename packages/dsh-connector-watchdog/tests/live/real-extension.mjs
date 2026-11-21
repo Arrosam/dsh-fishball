@@ -6,7 +6,7 @@
  *   keeps the scripted fake model;
  * - `assistantTexts({sessionId})`: the side session's assistant replies, to report the verdicts.
  */
-import { bundles, overlayRows, ops as baseOps } from '../../../../dsh-connector/tests/interactions/extension.mjs'
+import { bundles, overlayRows, ops as baseOps } from '../../../dsh-connector/tests/interactions/extension.mjs'
 
 export { bundles, overlayRows }
 const PI_AI_ROW = 'llm-pi-ai'

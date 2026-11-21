@@ -3,24 +3,25 @@
  * relayed from its contract (watchdog/src/constants.js, the connector's K2 naming), never imported.
  */
 import path from 'node:path'
-import { ENV } from '../../../../dsh-connector/tests/wire/constants.mjs'
+import { ENV } from '../../../dsh-connector/tests/wire/constants.mjs'
 
-const BUNDLE = Object.freeze({ name: 'dsh-connector-amenities', dir: path.resolve(import.meta.dirname, '..', '..', '..') })
+/** The real dsh-connector-watchdog package, linked on its own (it is its own bundle). */
+const BUNDLE = Object.freeze({ name: 'dsh-connector-watchdog', dir: path.resolve(import.meta.dirname, '..', '..') })
 
 export const WD = Object.freeze({
-  /** The booted DSH links the real amenities bundle (its preset-watchdog and dsh-connector-watchdog rows). */
+  /** The booted DSH links the real watchdog bundle (its preset-watchdog and dsh-connector-watchdog rows). */
   env: Object.freeze({ [ENV.link]: JSON.stringify([BUNDLE]) }),
   scenario: Object.freeze({ main: 'wd-main', restart: 'wd-restart' }),
   row: 'dsh-connector-watchdog',
   presetRow: 'preset-watchdog',
   /** Public names: `<namespace>.<local>` with the bundle's namespace (K2). */
   tool: Object.freeze({
-    brief: 'dsh-connector-amenities.watchdog_brief',
-    refine: 'dsh-connector-amenities.watchdog_refine',
-    pause: 'dsh-connector-amenities.watchdog_pause',
-    resume: 'dsh-connector-amenities.watchdog_resume',
+    brief: 'dsh-connector-watchdog.watchdog_brief',
+    refine: 'dsh-connector-watchdog.watchdog_refine',
+    pause: 'dsh-connector-watchdog.watchdog_pause',
+    resume: 'dsh-connector-watchdog.watchdog_resume',
   }),
-  driftType: 'contributed:dsh-connector-amenities.drift',
+  driftType: 'contributed:dsh-connector-watchdog.drift',
   delegate: 'watchdog',
   code: Object.freeze({ forbidden: 'forbidden', conflict: 'conflict', notBriefed: 'not-briefed', emptyPurpose: 'empty-purpose' }),
   during: Object.freeze({ permission: 'permission' }),

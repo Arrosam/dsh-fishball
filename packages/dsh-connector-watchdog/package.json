@@ -1,0 +1,46 @@
+{
+  "name": "dsh-connector-watchdog",
+  "version": "1.0.0-alpha.1",
+  "description": "Supervises a session for the agent that manages it, and answers its permission requests within the approvable scope (needs dsh-agent-connector).",
+  "license": "MIT",
+  "publishConfig": {
+    "tag": "alpha"
+  },
+  "type": "module",
+  "engines": {
+    "node": ">=22.14",
+    "dsh": ">=0.2.1-rc.5"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Arrosam/dsh-connector.git",
+    "directory": "packages/dsh-connector-watchdog"
+  },
+  "scripts": {
+    "test": "node ../../test/run-package.mjs"
+  },
+  "main": "./index.js",
+  "exports": {
+    ".": "./index.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "index.js",
+    "src/",
+    "cordis.patch.yml",
+    "README.md",
+    "LICENSE"
+  ],
+  "peerDependencies": {
+    "@deepseek-ai/dsh-agent-preset": "*",
+    "@deepseek-ai/dsh-atomic-write": "*",
+    "@deepseek-ai/dsh-llm": "*",
+    "@deepseek-ai/dsh-tool-fs": "*",
+    "@deepseek-ai/schemastery": "*"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  }
+}

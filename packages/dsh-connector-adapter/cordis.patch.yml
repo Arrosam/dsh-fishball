@@ -1,0 +1,4 @@
+- insert:
+    - id: dsh-connector-adapter
+      name: 'dsh-connector-adapter'
+      config: {}

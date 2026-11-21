@@ -5,7 +5,7 @@
  * request is exactly the one written below. The API key is read from the user's DSH credentials
  * file and passed to the test DSH's environment; it is never printed.
  *
- * Run: node --test packages/dsh-connector-amenities/tests/watchdog/live/real-model.manual.mjs
+ * Run: node --test packages/dsh-connector-watchdog/tests/live/real-model.manual.mjs
  * Each row records what the judge decided and why; it asserts only that the judge answered and the
  * connector acted on that answer (a real model's choice is reported, not fixed).
  */
@@ -14,11 +14,11 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { test } from 'node:test'
-import { until } from '../../../../../test/support/util.mjs'
-import { EVENT_TYPE, IX, SETTLED_BY, SETTLEMENT_OUTCOME } from '../../../../dsh-connector/tests/interactions/constants.mjs'
-import { call, cid, free, managed, ofType, pending, principal, tok } from '../../../../dsh-connector/tests/interactions/subject.mjs'
-import { scenario } from '../../../../dsh-connector/tests/wire/world.mjs'
-import { ENV } from '../../../../dsh-connector/tests/wire/constants.mjs'
+import { until } from '../../../../test/support/util.mjs'
+import { EVENT_TYPE, IX, SETTLED_BY, SETTLEMENT_OUTCOME } from '../../../dsh-connector/tests/interactions/constants.mjs'
+import { call, cid, free, managed, ofType, pending, principal, tok } from '../../../dsh-connector/tests/interactions/subject.mjs'
+import { scenario } from '../../../dsh-connector/tests/wire/world.mjs'
+import { ENV } from '../../../dsh-connector/tests/wire/constants.mjs'
 import { WD } from './constants.mjs'
 
 const SDK = '0.2.2-rc.1'

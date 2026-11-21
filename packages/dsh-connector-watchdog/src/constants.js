@@ -39,7 +39,7 @@ export const VERDICT = Object.freeze({ allow: 'allow', reject: 'reject', pass: '
 /** Why a drift was found, in the `drift` event. */
 export const DURING = Object.freeze({ patrol: 'patrol', permission: 'permission' })
 
-/** The contributed event (public name `dsh-connector-amenities.drift`). */
+/** The contributed event (public name `dsh-connector-watchdog.drift`). */
 export const DRIFT_EVENT = Object.freeze({ name: 'drift', summaryChars: 280 })
 
 export const TOOL = Object.freeze({

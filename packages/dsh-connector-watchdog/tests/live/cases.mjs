@@ -1,5 +1,5 @@
 /**
- * WD-LIVE: the real dsh-connector-watchdog on a real DSH (the amenities bundle linked beside
+ * WD-LIVE: the real dsh-connector-watchdog on a real DSH (the dsh-connector-watchdog bundle linked beside
  * dsh-agent-connector), driven only as Fishball and the session's model reach it: Watchdog's
  * contributed MCP tools, the connector's events, and DSH's own session turns. The judge's side
  * session answers from the scripted fake model; its requests are recognised by a marker in the
@@ -11,12 +11,12 @@
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
-import { row } from '../../../../dsh-connector/tests/interactions/rows.mjs'
-import { EVENT_TYPE, IX, SETTLED_BY, SETTLEMENT_OUTCOME, TOOL } from '../../../../dsh-connector/tests/interactions/constants.mjs'
+import { row } from '../../../dsh-connector/tests/interactions/rows.mjs'
+import { EVENT_TYPE, IX, SETTLED_BY, SETTLEMENT_OUTCOME, TOOL } from '../../../dsh-connector/tests/interactions/constants.mjs'
 import {
   argsFor, call, cid, decided, eventually, free, handOver, managed, ofType, okCall, pending, principal, quiet, reconnect, resultsOf, session, step, stockFor,
   takeBack, tok, waitEvents, world,
-} from '../../../../dsh-connector/tests/interactions/subject.mjs'
+} from '../../../dsh-connector/tests/interactions/subject.mjs'
 import { WD } from './constants.mjs'
 
 const wdWorld = (sdk, label = WD.scenario.main) => world(sdk, label, WD.env)

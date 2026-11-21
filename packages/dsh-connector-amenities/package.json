@@ -1,7 +1,7 @@
 {
   "name": "dsh-connector-amenities",
   "version": "1.0.0-alpha.1",
-  "description": "Optional DSH Connector amenity components (dsh-connector-adapter, dsh-connector-watchdog). Configure each amenity in its component settings.",
+  "description": "Installs the optional DSH Connector amenities together: dsh-connector-adapter and dsh-connector-watchdog, each its own package.",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -24,8 +24,6 @@
   "files": [
     "index.js",
     "client.js",
-    "adapter/",
-    "watchdog/",
     "cordis.patch.yml",
     "README.md",
     "LICENSE"
@@ -35,16 +33,15 @@
     "dsh": ">=0.2.1-rc.5"
   },
   "dependencies": {
-    "@modelcontextprotocol/client": "2.4.0"
+    "@modelcontextprotocol/client": "2.4.0",
+    "dsh-connector-adapter": "1.0.0-alpha.1",
+    "dsh-connector-watchdog": "1.0.0-alpha.1"
   },
   "peerDependencies": {
-    "@deepseek-ai/dsh-atomic-write": "*",
-    "@deepseek-ai/dsh-credentials": "*",
-    "@deepseek-ai/dsh-llm": "*",
-    "@deepseek-ai/dsh-mcp-client": "*",
-    "@deepseek-ai/dsh-timeout": "*",
-    "@deepseek-ai/dsh-tools": "*",
-    "@deepseek-ai/schemastery": "*"
+    "@deepseek-ai/dsh-client-locale": "*",
+    "@deepseek-ai/dsh-client-ui-plugin-manager": "*",
+    "@deepseek-ai/dsh-agent-preset": "*",
+    "@deepseek-ai/dsh-tool-fs": "*"
   },
   "dsh": {
     "bundle": {
@@ -57,5 +54,12 @@
         "@deepseek-ai/dsh-client-ui-plugin-manager"
       ]
     }
-  }
+  },
+  "//dependencies": "The amenities, each its own package and bundle (independently installable). DSH makes only a profile's direct dependencies bundles, so this umbrella inserts its members' rows in its own patch (as DSH's dsh-cua-bundle does); they resolve through these dependencies. Only this package has browser code (dsh.client): its settings-page hint.",
+  "//bundleDependencies": "The two amenities are bundled, as dsh-agent-connector bundles dsh-connector-shared, so the umbrella tarball carries them and an install (online or offline) fetches neither from a registry; the adapter's one third-party dependency (@modelcontextprotocol/client, pinned as the adapter pins it) is bundled beside them with its closure, where the bundled adapter resolves it. Each amenity is still its own package, released and installable on its own.",
+  "bundleDependencies": [
+    "@modelcontextprotocol/client",
+    "dsh-connector-adapter",
+    "dsh-connector-watchdog"
+  ]
 }

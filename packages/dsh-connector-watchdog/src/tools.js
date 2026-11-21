@@ -1,7 +1,7 @@
 /**
  * The ContributedTool definitions of Fishball's four tools (dsh-agent-connector ./tools contract,
  * K2). They are registered through `dshConnectorTools.register` from this row's context, so their
- * public names carry this package's namespace: `dsh-connector-amenities.watchdog_brief` etc.
+ * public names carry this package's namespace: `dsh-connector-watchdog.watchdog_brief` etc.
  */
 import { CODE, TEXT, TOOL } from './constants.js'
 

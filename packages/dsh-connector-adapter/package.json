@@ -1,0 +1,52 @@
+{
+  "name": "dsh-connector-adapter",
+  "version": "1.0.0-alpha.1",
+  "description": "Lets a DSH sign in to another DSH's dsh-agent-connector through DSH's stock MCP client, with normal OAuth.",
+  "license": "MIT",
+  "publishConfig": {
+    "tag": "alpha"
+  },
+  "type": "module",
+  "engines": {
+    "node": ">=22.14",
+    "dsh": ">=0.2.1-rc.5"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Arrosam/dsh-connector.git",
+    "directory": "packages/dsh-connector-adapter"
+  },
+  "scripts": {
+    "test": "node ../../test/run-package.mjs"
+  },
+  "main": "./index.js",
+  "exports": {
+    ".": "./index.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "index.js",
+    "src/",
+    "assets/",
+    "locale/*.json",
+    "cordis.patch.yml",
+    "README.md",
+    "LICENSE",
+    "THIRD_PARTY_NOTICES.md"
+  ],
+  "dependencies": {
+    "@modelcontextprotocol/client": "2.4.0"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/dsh-credentials": "*",
+    "@deepseek-ai/dsh-mcp-client": "*",
+    "@deepseek-ai/dsh-timeout": "*",
+    "@deepseek-ai/dsh-tools": "*",
+    "@deepseek-ai/schemastery": "*"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  }
+}

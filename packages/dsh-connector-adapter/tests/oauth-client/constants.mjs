@@ -12,8 +12,8 @@
  */
 import os from 'node:os'
 import path from 'node:path'
-import { REPO } from '../../../../../test/support/constants.mjs'
-import * as K1 from '../../../../dsh-connector/mcp-schema/index.js'
+import { REPO } from '../../../../test/support/constants.mjs'
+import * as K1 from '../../../dsh-connector/mcp-schema/index.js'
 
 export { K1 }
 

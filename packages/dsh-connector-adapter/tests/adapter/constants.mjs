@@ -5,7 +5,7 @@
  * the adapter's relayed contract (test brief "Relayed interface"). Nothing comes from the code.
  */
 import path from 'node:path'
-import { REPO } from '../../../../../test/support/constants.mjs'
+import { REPO } from '../../../../test/support/constants.mjs'
 
 export { DSH, FIXTURE, K, K1, MARK, OAUTH, RPC, SDK, WAIT, WEB } from '../oauth-client/constants.mjs'
 

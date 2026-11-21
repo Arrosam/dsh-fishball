@@ -1,8 +1,9 @@
 # dsh-fishball-watchdog: handoff notes for a separate future project
 
-> **Status (2026-11-20):** being implemented as the `dsh-connector-watchdog` component of
-> `dsh-connector-amenities` (`packages/dsh-connector-amenities/watchdog/`). Decisions made since these
-> notes:
+> **Status (2026-11-21):** implemented as its own package, `dsh-connector-watchdog`
+> (`packages/dsh-connector-watchdog/`), also installed by the `dsh-connector-amenities` umbrella. Its
+> tools and event are namespaced `dsh-connector-watchdog.*` (the drift event is
+> `contributed:dsh-connector-watchdog.drift`). Decisions made since these notes:
 > - **Name:** `dsh-connector-watchdog`.
 > - **Interception (§4):** a generic connector feature, `dshConnectorSessions`
 >   (`packages/dsh-connector/host-services/sessions.d.ts`). Its permission delegates decide a managed

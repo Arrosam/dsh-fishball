@@ -1,12 +1,15 @@
+# The umbrella's own row (its settings-page hint, client.js), and the rows of the amenities it
+# depends on, each its own package (dsh-connector-adapter, dsh-connector-watchdog). DSH makes only a
+# profile's direct dependencies bundles, so an umbrella brings its members' rows in its own patch
+# (as DSH's own dsh-cua-bundle does); each member installed alone uses its own patch instead.
+# The watchdog rows repeat dsh-connector-watchdog's cordis.patch.yml: change both together.
 - insert:
     - id: dsh-connector-amenities
       name: 'dsh-connector-amenities'
       config: {}
     - id: dsh-connector-adapter
-      name: ./adapter/index.js
+      name: 'dsh-connector-adapter'
       config: {}
-    # Watchdog's own agent preset for its side sessions (watchdog notes 1.24, U8). Read-only tools
-    # only: it judges and never acts on a session (the withdrawn fishball-watchdog's user decision P-4).
     - id: preset-watchdog
       name: '@deepseek-ai/dsh-agent-preset'
       config:
@@ -19,5 +22,5 @@
             name: '@deepseek-ai/dsh-tool-fs'
             config: { read: true, readImage: true, write: false, edit: false }
     - id: dsh-connector-watchdog
-      name: ./watchdog/index.js
+      name: 'dsh-connector-watchdog'
       config: {}
