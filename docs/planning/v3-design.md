@@ -41,7 +41,7 @@ and "dsh的connector侧的插件间可以share一个包，fishball侧的插件�
 | Fishball | `fishball-board` | a Fishball DSH | board tools and archive. **Shelved, not in 1.0.0-alpha.1** (requirements 1.42): kept in `packages/board`, unchanged; nothing in this release packs, places or names it |
 | Fishball | `fishball-shared` | inside the Fishball-side tarballs that use it | modules more than one Fishball-side package uses |
 
-**Not in V3:** `fishball-fold-notify` (its function is embed-UI's `notify` tool), `fishball-hosted-settings`, Watchdog (a separate project, `.runtime/reports/watchdog-project-notes.md`).
+**Not in V3:** `fishball-fold-notify` (its function is embed-UI's `notify` tool), `fishball-hosted-settings`, Watchdog (a separate project, `docs/watchdog-project-notes.md` in the dsh-connector repository).
 **Shelved, not in 1.0.0-alpha.1:** `fishball-board` (the user, 2026-11-18; requirements 1.42). The release is eight tarballs; the hosted child places and installs `fishball-ui` and `fishball-core` only, and reserves nothing for the board; core's set check has no member. Where this document names the board below, it describes the shelved package.
 **Release:** every package starts at `1.0.0-alpha.1`; V3 is installed from zero and handles no earlier version (requirements 1.38 Q-M1).
 
@@ -1470,7 +1470,7 @@ listen hint / reconnect ─► inbox_poll ─► acceptance ledger (durable, Fis
 ## 7. Watchdog — withdrawn from Fishball V3 (requirements 1.37)
 
 Watchdog is a separate project, `dsh-fishball-watchdog`. Its design notes are in
-`.runtime/reports/watchdog-project-notes.md`. Nothing in this design serves it: no supervision
+`docs/watchdog-project-notes.md` in the dsh-connector repository. Nothing in this design serves it: no supervision
 service, no interception registration, no preset, no notice, no contract member. Without it,
 every permission request of a managed session reaches that session's Fishball (§3.5), which
 answers or escalates it to the user's card (R-CON-05, R-FB-11).

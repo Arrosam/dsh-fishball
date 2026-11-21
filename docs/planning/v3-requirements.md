@@ -852,7 +852,7 @@ What it means (now R-ARCH-01, R-ARCH-08, R-ARCH-09, §3.10 R-WD withdrawn, R-INT
    session's permission requests go to its Fishball, and on to the user (R-ROUTE-01, R-CON-05).
 2. **`dsh-fishball-watchdog` is a separate future project.** Everything the user said about it
    (1.7, 1.13–1.15, 1.24, 1.34–1.36, U16) is kept in one handoff note,
-   `.runtime/reports/watchdog-project-notes.md`. Fishball V3 builds none of it. It can integrate
+   `docs/watchdog-project-notes.md` in the dsh-connector repository. Fishball V3 builds none of it. It can integrate
    later only through Fishball's existing generic extension points, such as connector tool
    contribution (R-EXT); Fishball adds nothing for it.
 3. **Projects are independent, and may share a package.** Neither Fishball V3 nor
@@ -1264,23 +1264,23 @@ These hold in **both** hosted and standalone mode.
 
 | ID | Requirement |
 | --- | --- |
-| R-WD-00 | *Withdrawn from Fishball V3 (1.37: "把watchdog对fishball的影响全部摘除，当作一个独立项目开发").* The rule moves to the separate project's handoff note, `.runtime/reports/watchdog-project-notes.md`. The ID stays reserved. |
-| R-WD-01 | *Withdrawn from Fishball V3 (1.37: "把watchdog对fishball的影响全部摘除，当作一个独立项目开发").* The rule moves to the separate project's handoff note, `.runtime/reports/watchdog-project-notes.md`. The ID stays reserved. |
-| R-WD-02 | *Withdrawn from Fishball V3 (1.37: "把watchdog对fishball的影响全部摘除，当作一个独立项目开发").* The rule moves to the separate project's handoff note, `.runtime/reports/watchdog-project-notes.md`. The ID stays reserved. |
-| R-WD-03 | *Withdrawn from Fishball V3 (1.37: "把watchdog对fishball的影响全部摘除，当作一个独立项目开发").* The rule moves to the separate project's handoff note, `.runtime/reports/watchdog-project-notes.md`. The ID stays reserved. |
-| R-WD-04 | *Withdrawn from Fishball V3 (1.37: "把watchdog对fishball的影响全部摘除，当作一个独立项目开发").* The rule moves to the separate project's handoff note, `.runtime/reports/watchdog-project-notes.md`. The ID stays reserved. |
-| R-WD-05 | *Withdrawn from Fishball V3 (1.37: "把watchdog对fishball的影响全部摘除，当作一个独立项目开发").* The rule moves to the separate project's handoff note, `.runtime/reports/watchdog-project-notes.md`. The ID stays reserved. |
-| R-WD-06 | *Withdrawn from Fishball V3 (1.37: "把watchdog对fishball的影响全部摘除，当作一个独立项目开发").* The rule moves to the separate project's handoff note, `.runtime/reports/watchdog-project-notes.md`. The ID stays reserved. |
-| R-WD-07 | *Withdrawn from Fishball V3 (1.37: "把watchdog对fishball的影响全部摘除，当作一个独立项目开发").* The rule moves to the separate project's handoff note, `.runtime/reports/watchdog-project-notes.md`. The ID stays reserved. |
-| R-WD-08 | *Withdrawn from Fishball V3 (1.37: "把watchdog对fishball的影响全部摘除，当作一个独立项目开发").* The rule moves to the separate project's handoff note, `.runtime/reports/watchdog-project-notes.md`. The ID stays reserved. |
-| R-WD-09 | *Withdrawn from Fishball V3 (1.37: "把watchdog对fishball的影响全部摘除，当作一个独立项目开发").* The rule moves to the separate project's handoff note, `.runtime/reports/watchdog-project-notes.md`. The ID stays reserved. |
-| R-WD-10 | *Withdrawn from Fishball V3 (1.37: "把watchdog对fishball的影响全部摘除，当作一个独立项目开发").* The rule moves to the separate project's handoff note, `.runtime/reports/watchdog-project-notes.md`. The ID stays reserved. |
-| R-WD-11 | *Withdrawn from Fishball V3 (1.37: "把watchdog对fishball的影响全部摘除，当作一个独立项目开发").* The rule moves to the separate project's handoff note, `.runtime/reports/watchdog-project-notes.md`. The ID stays reserved. |
-| R-WD-12 | *Withdrawn from Fishball V3 (1.37: "把watchdog对fishball的影响全部摘除，当作一个独立项目开发").* The rule moves to the separate project's handoff note, `.runtime/reports/watchdog-project-notes.md`. The ID stays reserved. |
-| R-WD-13 | *Withdrawn from Fishball V3 (1.37: "把watchdog对fishball的影响全部摘除，当作一个独立项目开发").* The rule moves to the separate project's handoff note, `.runtime/reports/watchdog-project-notes.md`. The ID stays reserved. |
-| R-WD-14 | *Withdrawn from Fishball V3 (1.37: "把watchdog对fishball的影响全部摘除，当作一个独立项目开发").* The rule moves to the separate project's handoff note, `.runtime/reports/watchdog-project-notes.md`. The ID stays reserved. |
-| R-WD-15 | *Withdrawn from Fishball V3 (1.37: "把watchdog对fishball的影响全部摘除，当作一个独立项目开发").* The rule moves to the separate project's handoff note, `.runtime/reports/watchdog-project-notes.md`. The ID stays reserved. |
-| R-WD-16 | *Withdrawn from Fishball V3 (1.37: "把watchdog对fishball的影响全部摘除，当作一个独立项目开发").* The rule moves to the separate project's handoff note, `.runtime/reports/watchdog-project-notes.md`. The ID stays reserved. |
+| R-WD-00 | *Withdrawn from Fishball V3 (1.37: "把watchdog对fishball的影响全部摘除，当作一个独立项目开发").* The rule moves to the separate project's handoff note, `docs/watchdog-project-notes.md` in the dsh-connector repository. The ID stays reserved. |
+| R-WD-01 | *Withdrawn from Fishball V3 (1.37: "把watchdog对fishball的影响全部摘除，当作一个独立项目开发").* The rule moves to the separate project's handoff note, `docs/watchdog-project-notes.md` in the dsh-connector repository. The ID stays reserved. |
+| R-WD-02 | *Withdrawn from Fishball V3 (1.37: "把watchdog对fishball的影响全部摘除，当作一个独立项目开发").* The rule moves to the separate project's handoff note, `docs/watchdog-project-notes.md` in the dsh-connector repository. The ID stays reserved. |
+| R-WD-03 | *Withdrawn from Fishball V3 (1.37: "把watchdog对fishball的影响全部摘除，当作一个独立项目开发").* The rule moves to the separate project's handoff note, `docs/watchdog-project-notes.md` in the dsh-connector repository. The ID stays reserved. |
+| R-WD-04 | *Withdrawn from Fishball V3 (1.37: "把watchdog对fishball的影响全部摘除，当作一个独立项目开发").* The rule moves to the separate project's handoff note, `docs/watchdog-project-notes.md` in the dsh-connector repository. The ID stays reserved. |
+| R-WD-05 | *Withdrawn from Fishball V3 (1.37: "把watchdog对fishball的影响全部摘除，当作一个独立项目开发").* The rule moves to the separate project's handoff note, `docs/watchdog-project-notes.md` in the dsh-connector repository. The ID stays reserved. |
+| R-WD-06 | *Withdrawn from Fishball V3 (1.37: "把watchdog对fishball的影响全部摘除，当作一个独立项目开发").* The rule moves to the separate project's handoff note, `docs/watchdog-project-notes.md` in the dsh-connector repository. The ID stays reserved. |
+| R-WD-07 | *Withdrawn from Fishball V3 (1.37: "把watchdog对fishball的影响全部摘除，当作一个独立项目开发").* The rule moves to the separate project's handoff note, `docs/watchdog-project-notes.md` in the dsh-connector repository. The ID stays reserved. |
+| R-WD-08 | *Withdrawn from Fishball V3 (1.37: "把watchdog对fishball的影响全部摘除，当作一个独立项目开发").* The rule moves to the separate project's handoff note, `docs/watchdog-project-notes.md` in the dsh-connector repository. The ID stays reserved. |
+| R-WD-09 | *Withdrawn from Fishball V3 (1.37: "把watchdog对fishball的影响全部摘除，当作一个独立项目开发").* The rule moves to the separate project's handoff note, `docs/watchdog-project-notes.md` in the dsh-connector repository. The ID stays reserved. |
+| R-WD-10 | *Withdrawn from Fishball V3 (1.37: "把watchdog对fishball的影响全部摘除，当作一个独立项目开发").* The rule moves to the separate project's handoff note, `docs/watchdog-project-notes.md` in the dsh-connector repository. The ID stays reserved. |
+| R-WD-11 | *Withdrawn from Fishball V3 (1.37: "把watchdog对fishball的影响全部摘除，当作一个独立项目开发").* The rule moves to the separate project's handoff note, `docs/watchdog-project-notes.md` in the dsh-connector repository. The ID stays reserved. |
+| R-WD-12 | *Withdrawn from Fishball V3 (1.37: "把watchdog对fishball的影响全部摘除，当作一个独立项目开发").* The rule moves to the separate project's handoff note, `docs/watchdog-project-notes.md` in the dsh-connector repository. The ID stays reserved. |
+| R-WD-13 | *Withdrawn from Fishball V3 (1.37: "把watchdog对fishball的影响全部摘除，当作一个独立项目开发").* The rule moves to the separate project's handoff note, `docs/watchdog-project-notes.md` in the dsh-connector repository. The ID stays reserved. |
+| R-WD-14 | *Withdrawn from Fishball V3 (1.37: "把watchdog对fishball的影响全部摘除，当作一个独立项目开发").* The rule moves to the separate project's handoff note, `docs/watchdog-project-notes.md` in the dsh-connector repository. The ID stays reserved. |
+| R-WD-15 | *Withdrawn from Fishball V3 (1.37: "把watchdog对fishball的影响全部摘除，当作一个独立项目开发").* The rule moves to the separate project's handoff note, `docs/watchdog-project-notes.md` in the dsh-connector repository. The ID stays reserved. |
+| R-WD-16 | *Withdrawn from Fishball V3 (1.37: "把watchdog对fishball的影响全部摘除，当作一个独立项目开发").* The rule moves to the separate project's handoff note, `docs/watchdog-project-notes.md` in the dsh-connector repository. The ID stays reserved. |
 
 ### 3.11 Placement, board and notify (R-BND, R-BRD, R-FN; fold-notify removed by 1.34)
 
