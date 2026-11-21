@@ -18,7 +18,7 @@ Page open (code review, F-WIRE): the Fishball page is open while `<html data-fis
 | STRIP-SYS-01 | BVA/EP | First SSE frame arrives immediately, en/zh. Re-baselined (MULTI-3 B): the frame is targetsView's `{on, title, empty, notices, targets, words, brandStyle}` (brandStyle is the normalized logo theme: fishball/deepseek, default fishball); every target's state is one of the four, its lines kind/text, its control null or connect/cancel; on with no target → a non-empty `empty` |
 | STRIP-DT-01 | DT | Withdrawn (MULTI-0 review S6): the K3a `/api/fishball/connect` routes are gone |
 | STRIP-DT-02 | DT (todo until MULTI-1 lands) | Real DSH: POST `/api/fishball/targets/connect` with an unknown id → 404 `unknown-target`; the K3a Connect route → 404 |
-| MODEL-ST-03 | ST/system | HMR native disable of core → picker restored, core-missing row enabled; fishball-ui's rows follow core off (DESIGN §20 live core on/off, 1.41 Q-G2 = A), so the strip route answers 404 and the per-target Connect route 404 or 503 `TARGETS_UNAVAILABLE` (re-baselined: the K3a route is withdrawn) |
+| MODEL-ST-03 | ST/system | HMR native disable of core → the core UI component rows go with it (117cb2a2); no core-missing row remains; the composer picker is restored, the strip route answers 404 and the per-target Connect route 404 or 503 `TARGETS_UNAVAILABLE` (re-baselined: the K3a route is withdrawn) |
 
 Deferred E2E-CORE: real browser reload, focus/accessibility, Settings navigation. Scripted page recreation is executable now; no actual browser starts. HMR system row is executable, not todo, because the reusable standalone worker supports native live bundle changes.
 

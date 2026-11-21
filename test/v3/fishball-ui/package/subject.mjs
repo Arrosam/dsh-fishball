@@ -32,7 +32,12 @@ export async function patchOf(sdk, dir, file) {
   const { loadOverlayPatches } = await sdkModule(sdk, 'dsh-app-boot')
   return loadOverlayPatches(LABEL, path.join(dir, file))
 }
-export const uiPatch = (sdk) => { needUi(); return patchOf(sdk, UI_PACKAGE.dir, UI_PACKAGE.patchFile) }
+/**
+ * No patch: 117cb2a2 made fishball-ui core's ./ui/ component, and its rows (the page, the tab, the
+ * UI guard rows and the notice) live in core's cordis.patch.yml. Kept as [] so the composition rows
+ * read naturally.
+ */
+export const uiPatch = () => []
 export const corePatch = (sdk) => patchOf(sdk, V3.core.dir, UI_PACKAGE.patchFile)
 
 /** The top-level row ops of a patch list (no insert), and every inserted row. */

@@ -14,7 +14,7 @@ import { MODEL } from '../../fishball-core/status/constants.mjs'
 export const UI_PACKAGE = Object.freeze({
   name: V3.ui.name,
   dir: V3.ui.dir,
-  workspace: 'packages/fishball-ui',
+  workspace: 'packages/core/ui',
   patch: './cordis.patch.yml',
   patchFile: 'cordis.patch.yml',
   platform: 'web',
@@ -67,8 +67,8 @@ export const CORE_SPLIT = Object.freeze({
   shippedPresets: Object.freeze(['preset-standard', 'preset-ptc', 'preset-cordis', 'preset-minimal']),
   ownPreset: 'preset-fishball',
   guardsRow: Object.freeze({ id: 'fishball-core-guards', tail: path.join('src', 'guards', 'row.js'), service: 'fishballGuards' }),
-  /** Files and folders core no longer has. */
-  gone: Object.freeze(['ui', 'client.asks.js', path.join('src', 'recommended.js')]),
+  /** Files and folders core no longer has (the UI lives in core's own ui/ folder since 117cb2a2). */
+  gone: Object.freeze(['client.asks.js', path.join('src', 'recommended.js')]),
   /** Core's constants: the guards plugin name, and the export that moved to fishball-shared. */
   pluginName: 'fishball-core-guards',
   movedExport: 'UI_SEAM',

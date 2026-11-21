@@ -25,7 +25,7 @@ export const BODY_SOUL = Object.freeze({
   /** V3 R-CORE: the slim child, slim ui, persona and fishball-ui page packages moved here. */
   core: path.join(REPO, 'packages', 'core'),
   /** V3 F-UI: the page, the Recommended tab and its data moved, unchanged, from core into fishball-ui. */
-  ui: path.join(REPO, 'packages', 'fishball-ui'),
+  ui: path.join(REPO, 'packages', 'core', 'ui'),
   tempPrefix: 'fbtest-body-soul-',
   /** Runtime packages outside `@deepseek-ai/` that instance modules import. */
   runtimePackages: Object.freeze(['zod']),

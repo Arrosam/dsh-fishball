@@ -21,13 +21,13 @@ export const V3 = Object.freeze({
   dshShared: pkg('dsh-connector-shared', 'dsh-connector-shared'),
   core: pkg('fishball-core', 'core'),
   /** Fishball's UI plugin, split out of core (requirements 1.38 Q-N2, R-FB-14; task F-UI). */
-  ui: pkg('fishball-ui', 'fishball-ui'),
+  ui: pkg('fishball-ui', path.join('core', 'ui')),
   instance: pkg('dsh-instance', 'dsh-instance'),
   /** npm name dsh-agent-connector (the user, 2026-11-17); the folder stays packages/dsh-connector. */
   connector: pkg('dsh-agent-connector', 'dsh-connector'),
   // S4-Q3 decided B (questions.md at b1295de): all lowercase, as npm and DSH's plugin manager require.
   embed: pkg('dsh-connector-ui', 'dsh-connector-ui'),
-  board: pkg('fishball-board', 'board'),
+  board: pkg('fishball-board', path.join('fishball-amenities', 'board')),
   /** The optional DSH-side MCP-client adapter (R-OA-21 renamed by 1.41; design §1.0, §5.5b; C-MCP-ADAPTER creates it). */
   adapter: pkg('dsh-connector-adapter', 'dsh-connector-adapter'),
 })
@@ -165,7 +165,7 @@ export const WORKER = Object.freeze({
 /** Owners of the rows R-SHARED cannot check yet (v3-tasks.md). */
 export const LATER = Object.freeze({
   core: 'R-CORE (creates packages/core, W1 step 2)',
-  ui: 'F-UI (creates packages/fishball-ui)',
+  ui: 'F-UI (creates packages/core/ui)',
   embed: 'R-EMBED (creates packages/dsh-connector-ui, W1 step 3)',
   featurePeers: 'FEAT-PEERS (the feature plugin drops the dsh-instance peer for the optional fishballInstance? inject)',
   pluginsPage: 'X-MATRIX (no Plugins page of a started DSH lists either library)',

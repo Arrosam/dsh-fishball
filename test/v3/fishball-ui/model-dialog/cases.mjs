@@ -86,7 +86,7 @@ export function registerModelDialogCases(sdk) {
     })
   }
   let live; let run
-  const get = () => run ??= boot(sdk, [C.ui, C.core]).then((h) => { live = h; return h })
+  const get = () => run ??= boot(sdk, [C.core]).then((h) => { live = h; return h })
   after(async () => live?.stop())
   test(`${sdk} MODEL-SYS-01 composer picker off with core`, async () => {
     const h = await get(); const rows = await h.call('rows', { ids: [U.row] })
@@ -118,15 +118,15 @@ export function registerModelDialogCases(sdk) {
     assert.equal(unknown.json?.code, SEAM_TARGETS.refusal.unknownTarget)
     assert.equal((await request(h, MULTI.withdrawnRoutes[0], {})).status, C.status.missing, 'the withdrawn K3a Connect route still answers')
   })
-  // DESIGN §20 "Live core on/off: fishball-ui's rows read core's selection in the profile manifest
-  // while HMR runs"; requirements 1.41 Q-G2 = A: without core fishball-ui changes nothing and only
-  // logs fishball-core-missing. So fishball-ui's own rows go off with core: no strip route, and no
-  // core Connect route either (both 404); the composer picker is back and the missing row is on.
-  test(`${sdk} MODEL-ST-03 HMR disable core restores picker, activates missing row, serves neither strip nor Connect`, async () => {
+  // DESIGN §20 "Live core on/off"; 117cb2a2: fishball-ui is core's ./ui/ component, so disabling
+  // core removes its UI rows with it. The composer picker returns to DSH's own (enabled), there is
+  // no fishball-ui-core-missing row any more, and neither the strip nor the Connect route is served.
+  test(`${sdk} MODEL-ST-03 HMR disable core removes core and its UI component rows; picker restored, no strip or Connect`, async () => {
     const h = await get(); await h.call('disableCore')
     let rows
-    await until(async () => { rows = await h.call('rows', { ids: [U.row, U.missingRow] }); return rows[U.first].disabled === false && rows[U.one].present && !rows[U.one].disabled }, C.budget.call, C.budget.poll)
-    assert.equal(rows[U.first].disabled, false); assert.equal(rows[U.one].present, true); assert.equal(rows[U.one].disabled, false)
+    await until(async () => { rows = await h.call('rows', { ids: [U.row, U.missingRow] }); return rows[U.first].disabled === false }, C.budget.call, C.budget.poll)
+    assert.equal(rows[U.first].disabled, false)
+    assert.equal(rows[U.one].present, false, 'the old core-missing row is still inserted')
     assert.equal(await routeStatus(h, U.route.strip + U.lang[U.first]), C.status.missing)
     // Re-baselined (MULTI-0 review S6): the Connect route is core's per-target one; without core it is not served (404) or answers 503 TARGETS_UNAVAILABLE.
     const connect = await request(h, SEAM_TARGETS.route.connect, { [SEAM_TARGETS.route.targetIdField]: 't-fbtestunknownaaaa' })

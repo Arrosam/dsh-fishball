@@ -56,7 +56,7 @@ export const RP_CHECK = freezeData({
      */
     owner: 'fishball-recommend-plugins',
     ownerPackage: 'fishball-ui',
-    ownerDir: path.join(REPO, 'packages', 'fishball-ui'),
+    ownerDir: path.join(REPO, 'packages', 'core', 'ui'),
     placedDir: path.join('node_modules', 'fishball-ui'),
     rowNameTail: path.join('node_modules', 'fishball-ui', 'fishball-recommend-plugins', 'index.js'),
     installAnchor: path.join('@deepseek-ai', 'dsh', 'package.json'),

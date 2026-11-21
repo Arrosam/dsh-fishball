@@ -19,7 +19,7 @@ if (!fs.existsSync(profile)) {
   const pkg = JSON.parse(fs.readFileSync(manifest, C.encoding))
   const members = JSON.parse(process.env.FBW_MEMBERS)
   // SHELVE-BOARD: fishball-board is the suite's stand-in bundle, never the shelved packages/board.
-  const folders = { [C.core]: path.join(C.repo, 'packages', 'core'), [C.ui]: path.join(C.repo, 'packages', 'fishball-ui'), [C.board]: C.shelved.standIn, [C.shared]: path.join(C.repo, 'packages', 'shared') }
+  const folders = { [C.core]: path.join(C.repo, 'packages', 'core'), [C.ui]: path.join(C.repo, 'packages', 'core', 'ui'), [C.board]: C.shelved.standIn, [C.shared]: path.join(C.repo, 'packages', 'shared') }
   // A member may come from another folder (the broken stand-in copy).
   const dirs = JSON.parse(process.env.FBW_DIRS ?? '{}')
   for (const name of [...members, C.shared]) {

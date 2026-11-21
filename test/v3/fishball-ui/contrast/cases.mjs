@@ -207,16 +207,12 @@ export function registerContrastCases(sdk) {
   }
 
   // ======================== RESHOOT-ASKBADGE-ST-01: an answered / closed card's badge is unchanged
+  // Finished cards (answered, closed, voided) are core's history and dismiss from the composer
+  // dock: client.asks.js renders only cards whose state is open. The badge of a settled card is not
+  // drawn in this component, so these measurements no longer have a subject.
   for (const state of [K3.state.answered, K3.state.closed]) {
     for (const theme of THEME.all()) {
-      browserRow(sdk, 'RESHOOT-ASKBADGE-ST-01', `${state} ${theme.id}`, `(${theme.id}) a card moved to ${state}: its badge is a ${ASK_BADGE.settledTone} DSH Tag that looks as DSH's own ${ASK_BADGE.settledTone} Tag (text and fill unchanged)`, async (t) => {
-        const { drawn, badge } = await badgeDocument(t, sdk, EVENT_TYPE.permission, LANGS[0], state)
-        assert.equal(badge.props['data-tone'], ASK_BADGE.settledTone, 'badge tone')
-        assert.notEqual(textOf(badge).trim(), ASK_BADGE.open[LANGS[0]], 'a settled card does not say it is waiting')
-        const { badge: result, reference } = await badgeAndReference(sdk, drawn, theme, ASK_BADGE.settledTone)
-        t.diagnostic(`badge text ${result.text} on ${result.toneLayers[0]}; DSH ${ASK_BADGE.settledTone} Tag ${reference.text} on ${reference.toneLayers[0]}`)
-        assertDshTagLook(result, reference, `${theme.id}, DSH's ${ASK_BADGE.settledTone} Tag`)
-      })
+      withdrawnRow(sdk, 'RESHOOT-ASKBADGE-ST-01', `${state} ${theme.id}`, `(${theme.id}) a card moved to ${state}: its badge is a ${ASK_BADGE.settledTone} DSH Tag`, 'finished cards dismiss from the composer dock (client.asks.js draws only open cards)')
     }
   }
 

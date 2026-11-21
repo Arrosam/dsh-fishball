@@ -16,8 +16,8 @@
  * app-ready boundary: nothing before it, a report at it).
  *
  * Level: integration. Each scenario is one throwaway standalone DSH home on the SDK the file names,
- * booted once or more (worker.mjs), with this checkout's `packages/core`, `packages/fishball-ui`
- * (F-UI: the UI-only guard rows are its patch's, applied when core is started) and generated stand-in
+ * booted once or more (worker.mjs), with this checkout's `packages/core` (its `./ui/` component
+ * included; 117cb2a2 folded fishball-ui into core) and generated stand-in
  * bundles. Every guard value is K3's (constants.mjs reads guards.d.ts). Flows a later task owns are
  * `todo` and name it.
  */
@@ -70,7 +70,7 @@ async function disabledWithCore(sdk, row) {
   const [{ Context }, { evaluate, isJsExpr }] = await Promise.all(['cordis', 'cordis-plugin-loader'].map((n) => import(pathToFileURL(path.join(runtimeOf(sdk), SDK_SCOPE + n, 'lib', 'index.js')).href)))
   if (!isJsExpr(row.disabled)) return row.disabled === true
   const ctx = new Context()
-  ctx.provide('profileContext', { startedBundles: [CORE, UI] })
+  ctx.provide('profileContext', { startedBundles: [CORE] })
   return Boolean(evaluate(ctx, row.disabled.__jsExpr))
 }
 
@@ -112,7 +112,7 @@ export function registerGuardCases(sdk) {
   // ============================================================================================
   const native = scenario('v3-fg-native', sdk, [
     async (boot, f) => {
-      const h = await boot(bootEnv({ members: [FIXTURE.probe.name, CORE, UI, INSTANCE, FIXTURE.other] }))
+      const h = await boot(bootEnv({ members: [FIXTURE.probe.name, CORE, INSTANCE, FIXTURE.other] }))
       f.home = h.home
       f.pid1 = h.pid
       f.readyAt1 = await h.call('readyAt')
@@ -210,12 +210,13 @@ export function registerGuardCases(sdk) {
     assert.equal(f.resumed.sandbox, GUARDS.policy.sandbox)
     assert.equal(f.report2?.overridden?.includes(REPORT.managerTools), false, show(f.report2))
   })
-  // F-UI (requirements 1.38 Q-N2, R-FB-14): fishball-ui is its own bundle beside core (it replaced
-  // "no separate fishball-ui bundle", which held while the UI shipped inside core).
-  caseTest(sdk, 'PLAT-UC-04', 'main', 'the plugin list holds fishball-core and fishball-ui, each once', async () => {
+  // Since 117cb2a2 fishball-ui is core's ./ui/ component, inserted by core's own patch; it is no
+  // longer a profile bundle of its own.
+  caseTest(sdk, 'PLAT-UC-04', 'main', 'the plugin list holds fishball-core once; fishball-ui is core\'s component row, not a bundle', async () => {
     const f = await native()
     const names = f.bundleList1.map((b) => b.name)
-    for (const name of [CORE, UI]) assert.equal(names.filter((n) => n === name).length, 1, name + ': ' + show(names))
+    assert.equal(names.filter((n) => n === CORE).length, 1, CORE + ': ' + show(names))
+    assert.equal(names.filter((n) => n === UI).length, 0, 'fishball-ui is a bundle: ' + show(names))
   })
   // V3 rule (design e1e5577 §9.1 and §5a.2; Fishball decisions 2026-11-15, I-PLACE; F-UI): DSH serves
   // a client only for a path row (its nearest manifest) or a bare package name. So core's and
@@ -233,14 +234,17 @@ export function registerGuardCases(sdk) {
       assert.ok(own?.dsh?.client, `fishball-ui/${folder}/package.json declares no dsh.client`)
     }
   })
-  caseTest(sdk, 'PLAT-UC-04', 'main', "core's and fishball-ui's patches (read by the SDK's patch loader) together switch every guard row off when core is started", async () => {
+  caseTest(sdk, 'PLAT-UC-04', 'main', "core's patch (read by the SDK's patch loader) switches every guard row off when core is started", async () => {
     assert.notEqual(corePatch(), null, 'packages/core/cordis.patch.yml is missing')
-    const rows = [...await patchRows(sdk, V3.core.dir), ...await patchRows(sdk, V3.ui.dir)].filter((r) => r?.id !== undefined && !Array.isArray(r.insert))
+    // Since R-FIX-FUI fishball-ui has no patch of its own; its UI guard rows live in core's patch,
+    // conditional on fishball-ui (packages/core/cordis.patch.yml).
+    const rows = [...await patchRows(sdk, V3.core.dir)].filter((r) => r?.id !== undefined && !Array.isArray(r.insert))
     const off = new Set()
     for (const r of rows) if (await disabledWithCore(sdk, r)) off.add(r.id)
     assert.deepEqual(ALL_GUARD_ROWS.filter((id) => !off.has(id)), [], 'guard rows neither patch switches off')
   })
-  caseTest(sdk, 'PLAT-UC-04', 'main', "the guards are defined once: the instance's launch code no longer holds the guard rows (the LITE rows moved out)", async () => {
+  caseTest(sdk, 'PLAT-UC-04', 'main', "the guards are defined once: the instance's launch code no longer holds the guard rows (the LITE rows moved out)", async (t) => {
+    if (!fs.existsSync(V3.instance.dir)) { t.skip('dsh-instance is not in this repository (split 6b7c53bf)'); return }
     const files = ownFiles(await unitOf(V3.instance.name)).filter((f) => JS.test(f) && f.startsWith(INSTANCE_LAUNCH))
     assert.ok(files.length > 0, 'no shipped instance file under ' + INSTANCE_LAUNCH)
     const tokens = await tokensOf(fs.realpathSync(V3.instance.dir), files)
@@ -368,7 +372,7 @@ export function registerGuardCases(sdk) {
   // F-UI: core's own guards go with core at once; fishball-ui's UI rows follow the bundles the
   // process STARTED with (interface item 2), so they are on again from the next start.
   const coreOff = scenario('v3-fg-core-off', sdk, [async (boot, f) => {
-    const h = await boot(bootEnv({ members: [INSTANCE, CORE, UI] }))
+    const h = await boot(bootEnv({ members: [INSTANCE, CORE] }))
     f.before = await h.call('rows', { ids: [INSTANCE] })
     await h.call('setBundleEnabled', { name: CORE, enabled: false })
     await until(async () => (await h.call('rows', { ids: [SPLIT.coreRows[0]] }))[0].disabled === false, BUDGET.recomposeMs, BUDGET.pollMs)
@@ -419,7 +423,7 @@ export function registerGuardCases(sdk) {
   // ============================================================================================
   const nohmr = scenario('v3-fg-nohmr', sdk, [
     async (boot, f) => {
-      const h = await boot(bootEnv({ members: [CORE, UI, INSTANCE], hmr: false }))
+      const h = await boot(bootEnv({ members: [CORE, INSTANCE], hmr: false }))
       f.pid1 = h.pid
       f.bundles1 = await h.call('bundles')
       await new Promise((resolve) => setTimeout(resolve, BUDGET.settleMs))
@@ -470,7 +474,7 @@ export function registerGuardCases(sdk) {
   // ============================================================================================
   const last = scenario('v3-fg-last', sdk, [
     async (boot, f) => {
-      const h = await boot(bootEnv({ members: [FIXTURE.other, UI, CORE], deselected: [FIXTURE.deselected] }))
+      const h = await boot(bootEnv({ members: [FIXTURE.other, CORE], deselected: [FIXTURE.deselected] }))
       f.home = h.home
       f.bundles0 = JSON.parse(fs.readFileSync(path.join(h.home, 'profiles', PROFILE, 'package.json'), 'utf8')).dsh.profile.bundles
       f.report1 = await waitReport(h, (r) => r !== null, BUDGET.readyMs)
@@ -546,7 +550,7 @@ export function registerGuardCases(sdk) {
   // ============================================================================================
   const shaped = scenario('v3-fg-shaped', sdk, [
     async (boot, f) => {
-      const h = await boot(bootEnv({ members: [INSTANCE, FIXTURE.other, UI, CORE], hmr: false }))
+      const h = await boot(bootEnv({ members: [INSTANCE, FIXTURE.other, CORE], hmr: false }))
       f.report = await waitReport(h, (r) => r !== null, BUDGET.readyMs)
       await new Promise((resolve) => setTimeout(resolve, BUDGET.settleMs))
       f.history = await h.call('history')
@@ -570,7 +574,7 @@ export function registerGuardCases(sdk) {
   // ============================================================================================
   const preset = scenario('v3-fg-preset', sdk, [
     async (boot, f) => {
-      const h = await boot(bootEnv({ members: [FIXTURE.extraPreset.name, UI, CORE] }))
+      const h = await boot(bootEnv({ members: [FIXTURE.extraPreset.name, CORE] }))
       f.report = await waitReport(h, (r) => r?.status === REPORT.overridden, BUDGET.readyMs)
       f.presets = await h.call('presets')
       f.bundles = await h.call('bundles')

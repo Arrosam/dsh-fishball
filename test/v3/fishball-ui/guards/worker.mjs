@@ -11,7 +11,7 @@
  * - FBG_ADD: installed and appended at this boot when the profile lacks them (installed while down);
  * - FBG_HMR=off: boot with DSH's `hmr` row disabled (as a hosted child's launch overlay sets it).
  *
- * Black box: core and fishball-ui are used only as installed bundles; core's report is found by its
+ * Black box: core is the installed bundle (fishball-ui is its ./ui/ component); core's report is found by its
  * K3 shape (report.mjs) and every other fact is read through DSH's own public services. The one
  * instrumentation is of DSH's logger (LOG below), so a line written while DSH boots is not missed.
  */
@@ -74,7 +74,6 @@ const standinEntry = (row) => `import { standin } from ${JSON.stringify(pathToFi
 /** The installable members a test can name. */
 const MEMBERS = {
   [V3.core.name]: () => V3.core.dir,
-  [V3.ui.name]: () => V3.ui.dir,
   [FIXTURE.instance]: () => fixtureBundle(FIXTURE.instance, [{ id: FIXTURE.instance, name: FIXTURE.instance, config: {} }], standinEntry(FIXTURE.instance)),
   [FIXTURE.other]: () => fixtureBundle(FIXTURE.other, [{ id: FIXTURE.other, name: FIXTURE.other, config: {} }], standinEntry(FIXTURE.other)),
   [FIXTURE.deselected]: () => fixtureBundle(FIXTURE.deselected, [{ id: FIXTURE.deselected, name: FIXTURE.deselected, config: {} }], standinEntry(FIXTURE.deselected)),

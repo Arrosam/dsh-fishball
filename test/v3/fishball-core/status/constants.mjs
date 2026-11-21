@@ -23,7 +23,7 @@ export { CONNECT, OAUTH_ERROR, TARGET_CODE, TARGET_STATE }
 export const SUBJECT = Object.freeze({
   core: path.join(REPO, 'packages', 'core', 'src', 'status', 'index.js'),
   /** F-UI moved the strip view, unchanged, into fishball-ui (src/status/). */
-  ui: path.join(REPO, 'packages', 'fishball-ui', 'src', 'status', 'index.js'),
+  ui: path.join(REPO, 'packages', 'core', 'ui', 'src', 'status', 'index.js'),
   factory: 'createStatus',
   reader: 'statusOf',
   model: 'STATUS_MODEL',

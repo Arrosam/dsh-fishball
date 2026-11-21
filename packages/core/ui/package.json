@@ -3,6 +3,21 @@
   "version": "1.0.0-alpha.1",
   "private": true,
   "type": "module",
+  "files": [
+    "index.js",
+    "client.js",
+    "client.asks.js",
+    "client.brand.js",
+    "client.entries.js",
+    "client.model.js",
+    "client.strip.js",
+    "fishball-page/",
+    "fishball-recommend-plugins/",
+    "fishball-child-plugins/",
+    "src/",
+    "assets/fishball-ui-icon.svg",
+    "LICENSE"
+  ],
   "main": "./index.js",
   "exports": {
     ".": "./index.js",

@@ -33,7 +33,8 @@
     "cordis.patch.yml",
     "LICENSE",
     "THIRD_PARTY_NOTICES.md",
-    "ui/"
+    "ui/",
+    "!ui/tests/"
   ],
   "engines": {
     "node": ">=22.14",

@@ -4,7 +4,7 @@
  * - A headless Chromium (FBTEST_CHROME, else the local Playwright headless shell) is driven over
  *   the DevTools protocol on loopback only. No network, profile or credential is used.
  * - Two throwaway loopback HTTP origins: the "child" origin serves the harness page, the product
- *   page client (packages/fishball-ui/fishball-page/client.js since F-UI, executed unread) and the selected SDK's real
+ *   page client (packages/core/ui/fishball-page/client.js since F-UI, executed unread) and the selected SDK's real
  *   dsh-client-shortcuts browser bundle; the "main" origin only holds main-DSH storage sentinels.
  *   Distinct ports are distinct browser origins, so localStorage is really partitioned.
  * - Each case opens a fresh tab, so page state never leaks between cases.
@@ -20,7 +20,7 @@ const HERE = path.dirname(fileURLToPath(import.meta.url))
 const REPO = path.resolve(HERE, '..', '..')
 
 export const LITE_ENV = Object.freeze({
-  pageClient: path.join(REPO, 'packages', 'fishball-ui', 'fishball-page', 'client.js'),
+  pageClient: path.join(REPO, 'packages', 'core', 'ui', 'fishball-page', 'client.js'),
   harness: path.join(HERE, 'lite-harness.js'),
   shortcutsBundle: path.join('@deepseek-ai', 'dsh-client-shortcuts', 'lib', 'client.js'),
   routes: Object.freeze({ harness: '/', harnessScript: '/harness.js', page: '/page/client.js', sdkPrefix: '/sdk/', main: '/main' }),
@@ -58,11 +58,17 @@ export function keyFor(code, modifiers = []) {
   return { ...base, code, modifiers }
 }
 
-/** DSH versions root: FBTEST_DSH_RUNTIME is `<versions>/<sdk>/node_modules`. */
+/**
+ * DSH versions root: FBTEST_DSH_RUNTIME is `<versions>/<sdk>/node_modules`. Direct runs (outside
+ * the suite runner, which always sets it) fall back to the installed versions folder, so the
+ * harness does not hand the browser a 404 for its SDK bundle.
+ */
 export function sdkRuntime(sdk) {
   const selected = process.env.FBTEST_DSH_RUNTIME
-  if (!selected) return null
-  const runtime = path.join(path.dirname(path.dirname(selected)), sdk, 'node_modules')
+  const versions = selected
+    ? path.dirname(path.dirname(selected))
+    : process.env.FBTEST_DSH_VERSIONS ?? path.join(os.userInfo().homedir, 'Library', 'Application Support', 'DSH', 'data', 'versions')
+  const runtime = path.join(versions, sdk, 'node_modules')
   return existsSync(path.join(runtime, LITE_ENV.shortcutsBundle)) ? runtime : null
 }
 
