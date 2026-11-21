@@ -6,8 +6,8 @@
  * user's answer q7: "an escalated prompt is the user's"). Answering one never changes who manages
  * the session ("Answering never takes over management").
  */
-import { APPROVAL_DECISION, REFUSAL } from '../../mcp-schema/index.js'
-import { decisionRuleBroken } from './permissions.js'
+import { APPROVAL_DECISION, REFUSAL, RISK } from '../../mcp-schema/index.js'
+import { auditHighRisk, decisionRuleBroken } from './permissions.js'
 import { APPROVAL } from './constants.js'
 import { refused } from './support.js'
 
@@ -18,8 +18,10 @@ const OUTCOME = Object.freeze({ [APPROVAL_DECISION.allow]: APPROVAL.outcome.allo
  * @param deps.gate - prompt-gate.js
  * @param deps.wording - wording.js
  * @param deps.titleOf - `(sessionId) => Promise<string>`
+ * @param {() => boolean} deps.highRiskAllowed - the owner's `allowHighRisk` now (permissions.js rules)
+ * @param deps.logger - `{info}`: a high-risk allow's record (permissions.js `auditHighRisk`)
  */
-export function createPrompts({ gate, wording, titleOf }) {
+export function createPrompts({ gate, wording, titleOf, highRiskAllowed, logger }) {
   const open = () => gate.list().filter((prompt) => !prompt.escalated)
   return Object.freeze({
     /** K1 `promptSummary` rows of every open prompt; the core tools keep the caller's. */
@@ -29,20 +31,25 @@ export function createPrompts({ gate, wording, titleOf }) {
     }))),
 
     /**
-     * Allow or reject one open prompt (allow's rules: low risk, a reason, complete arguments; the
-     * payload rules required the reason). The prompt closes, and the session continues.
+     * Allow or reject one open prompt (approval_answer's rules, decisionRuleBroken: a risk, a reason,
+     * complete arguments; high risk while the owner allows it; the payload rules required the
+     * reason). The prompt closes, and the session continues. A high-risk allow that won is recorded
+     * as approval_answer's is; `principalKey` names the manager in that record.
      * @returns `{ok: true, promptId, decision, managed: true}` or `{ok: false, code}`
      */
-    answer({ promptId, decision, risk, reason }) {
+    answer({ promptId, decision, risk, reason, principalKey }) {
       const prompt = open().find((entry) => entry.promptId === promptId)
       if (prompt === undefined) return refused(REFUSAL.expired)
-      const broken = decisionRuleBroken(decision, risk, reason, prompt.args.status)
+      const broken = decisionRuleBroken(decision, risk, reason, prompt.args.status, highRiskAllowed())
       if (broken !== undefined) return refused(broken)
       // Lost the race (the user clicked, or the call was cancelled, a moment ago): already answered.
       if (!prompt.answer(OUTCOME[decision])) return refused(REFUSAL.expired)
       // Marked only once this answer won, before the call's result exists: `answer` resolves the
       // gate's promise, and DSH runs the tool and its post-execute only after that resolves.
       if (decision === APPROVAL_DECISION.reject) wording.reject(prompt.sessionId, prompt.callId, prompt.toolName, reason.trim())
+      if (decision === APPROVAL_DECISION.allow && risk === RISK.high) {
+        auditHighRisk(logger, { sessionId: prompt.sessionId, toolName: prompt.toolName, requestId: promptId, principalKey, reason: reason.trim() })
+      }
       return Object.freeze({ ok: true, promptId, decision, managed: true })
     },
   })

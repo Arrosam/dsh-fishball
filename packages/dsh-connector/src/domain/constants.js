@@ -181,7 +181,10 @@ export const ANSWER_RULE = Object.freeze({
   nothing: 'nothing',
 })
 
-/** Log lines: `logger.warn(LOG.format, line, code)`; never an argument, a reason or a session's text. */
+/**
+ * Log lines: `logger.warn(LOG.format, line, code)`; never an argument, a reason or a session's text,
+ * except `highRiskAllowed`, whose manager's reason is the record of a high-risk approval.
+ */
 export const LOG = Object.freeze({
   format: '%s (%s)',
   offerFailed: 'domain: a request could not be offered; it goes to the user',
@@ -196,4 +199,6 @@ export const LOG = Object.freeze({
   toolsFailed: 'domain: a managed session\'s tool could not be applied',
   toolsRemovalFailed: 'domain: a managed session\'s tool could not be removed',
   closeFailed: 'domain: a part did not close cleanly',
+  /** `logger.info(highRiskAllowed, sessionId, toolName, requestId, principalKey, reason)` (permissions.js `auditHighRisk`). */
+  highRiskAllowed: 'domain: high-risk call allowed by its manager: session %s, tool %s, request %s, manager %s, reason: %s',
 })

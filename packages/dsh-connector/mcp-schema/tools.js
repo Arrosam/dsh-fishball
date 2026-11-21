@@ -12,10 +12,10 @@
  * The order of TOOLS is the `tools/list` order of the core tools, ahead of every contributed
  * tool (R-EXT-12).
  */
-import { REFUSAL, RESYNC_REASON, RISK, TOOL } from './constants.js'
+import { APPROVAL_FIELD_TEXT, APPROVAL_TOOL_TEXT, REFUSAL, RESYNC_REASON, TOOL } from './constants.js'
 import { array, boolean, constant, frozen, integer, nullable, object, oneOfStrings, string } from './schema.js'
 import {
-  approvalAnswer, defaultModel, delivery, descriptor, grantSummary, mailboxEvent, modelSummary, promptDecision, promptSummary,
+  approvalAnswer, riskField, defaultModel, delivery, descriptor, grantSummary, mailboxEvent, modelSummary, promptDecision, promptSummary,
   questionAnswerItem, readMessage, sessionSummary, time, unavailableProvider, workspaceSummary,
 } from './shapes.js'
 
@@ -71,7 +71,7 @@ const DEFINITIONS = [
   tool(TOOL.approvalsList, 'List the live permission requests, questions and plan reviews of a session you manage.',
     object({ sessionId: string() }),
     success({ approvals: array(descriptor()) })),
-  tool(TOOL.approvalAnswer, 'Answer a permission request by its current offer id.',
+  tool(TOOL.approvalAnswer, APPROVAL_TOOL_TEXT.approvalAnswer,
     object({ sessionId: string(), approvalId: string(), offerId: string(), answer: approvalAnswer() }),
     success({ accepted: constant(true) }, { grantId: string(), expiresAt: time() })),
   tool(TOOL.questionAnswer, 'Answer a question or plan review by its current offer id; questionId is its approvalId.',
@@ -81,8 +81,8 @@ const DEFINITIONS = [
   tool(TOOL.promptsList, 'List the permission prompts the user is being shown in sessions you manage.',
     object({}),
     success({ prompts: array(promptSummary()) })),
-  tool(TOOL.promptAnswer, 'Allow or reject a permission prompt the user is being shown, with a reason.',
-    object({ sessionId: string(), promptId: string(), decision: promptDecision(), reason: string() }, { risk: oneOfStrings(Object.values(RISK)) }),
+  tool(TOOL.promptAnswer, APPROVAL_TOOL_TEXT.promptAnswer,
+    object({ sessionId: string(), promptId: string(), decision: promptDecision(), reason: string(APPROVAL_FIELD_TEXT.reason) }, { risk: riskField() }),
     success({ promptId: string(), decision: promptDecision(), managed: boolean() })),
   tool(TOOL.grantsList, 'List your standing grants.',
     object({}),

@@ -85,6 +85,7 @@ K2's shared words (`limit-exceeded`, `forbidden`, `unknown-session`, `expired`, 
 `rate-limited`); V2's operation codes, unchanged (`not-referenced`, `too-large`,
 `images-unsupported`, `not-managed`, `feature-off`, `session-not-live`, `invalid-decision`,
 `risk-required`, `reason-required`, `allow-needs-low-risk`, `arguments-incomplete`,
+`grant-needs-low-risk` (new, HIGH-RISK-APPROVAL),
 `question-required`, `mode-user`, `bad-answer`, `already-settled`, `grant-invalid`,
 `prefix-not-shell-tool`, `prefix-empty`, `prefix-not-in-call`, `expires-at-required`,
 `expires-at-invalid`, `expires-at-past`, `unknown`, `ended`); new: `already-paired`, `id-taken`,
@@ -124,7 +125,8 @@ endpoint an invalid id is `invalid_client` (R-ID-02).
   sourceSessionId, correlationId, offer?, payload, payloadDigest}`; `offer = {offerId, revision,
   decisionKind}` on the answerable types (`ANSWERABLE_TYPES`).
 - **Payloads (`EVENT_PAYLOAD_SCHEMA`):** offers and `ask` carry the V2 descriptor; `settlement`
-  `{approvalId, outcome, by, answers?}`; `retirement` `{retiredEventId, reason}`;
+  `{approvalId, outcome, by, answers?, delegate?, risk?, reason?}` (`risk` and `reason`: a principal's
+  allow, grant or reject, HIGH-RISK-APPROVAL below); `retirement` `{retiredEventId, reason}`;
   `turn-finished` `{sessionId, outcome, finalMessage?, stop?}` (WAKE-REDUCE below); `state` `{sessionId, running,
   pendingInteraction}` (frozen, no producer); `message` `{text, images}`; `handover` / `takeback` `{sessionId, note}`;
   `notice` `{code, text}` (`NOTICE.codes`: each task that produces one adds it as a K1 amendment;
@@ -146,9 +148,35 @@ endpoint an invalid id is `invalid_client` (R-ID-02).
   settle nothing (the user's later answer does). `by` is `user`, `principal` or `delegate` (a
   main-DSH plugin registered through `dshConnectorSessions.delegates` decided it before any offer;
   the settlement then carries `delegate: {name, toolName, reason}`; the user, 2026-11-20). An escalated offer
-  (or a question sent `toUser`) is the user's: it leaves `approvals_list`, an agent's answer to it
-  is refused, and the user's answer in the session is its settlement, to the same pair
-  (C-WIRE-2). If its session leaves the pair's management first, it ends with no event.
+  (or a question sent `toUser`) stays open and listed (the managed-request lifecycle fix, 2026-11-21:
+  "Fishball can always answer while the request is open"): the first answer wins, the user's in the
+  session (its settlement goes to the same pair) or the principal's own. If its session leaves the
+  pair's management first, it ends with no event.
+
+### High-risk approvals (HIGH-RISK-APPROVAL; the user, 2026-11-21)
+
+The user: "a manager must be able to approve high-risk requests too"; deciding when is the
+manager's responsibility, not a hard block in the connector. One rule set (`decisionRuleBroken`)
+serves `approval_answer` and `prompt_answer`:
+
+| Answer | Rule | Refusal |
+| --- | --- | --- |
+| `allow` / `grant` without `risk` | a risk is named | `risk-required` |
+| `allow` / `grant` / `reject` with an empty or blank `reason` | a reason is given; for a high-risk allow it is the record of why | `reason-required` |
+| `grant` with `risk: high` | a standing grant stays low risk, whatever the setting: it covers later calls nobody has seen, and a prefix grant covers longer commands too | `grant-needs-low-risk` (new) |
+| `allow` with `risk: high` while the owner's `requests.allowHighRisk` is off | the earlier strict rule | `allow-needs-low-risk` |
+| `allow` with `risk: high` and a reason, setting on (default) | accepted: one call | — |
+
+- **Setting:** `requests.allowHighRisk`, a boolean, default `true`, volatile (read at each answer,
+  no remount), on the connector's settings page as **Agents may allow high-risk requests**.
+- **Record:** a principal's settlement (`allow`, `grant`, `reject`) carries the `risk` it named and
+  its trimmed `reason` (optional schema fields; `by: principal` settlements are still not sent to the
+  principal itself, WAKE-REDUCE A3). A decided high-risk allow also writes one `info` line to DSH's
+  log (`LOG.highRiskAllowed`: session, tool, request or prompt id, principal key, reason with secret
+  shapes masked by `dsh-connector-shared/redact`). That line is the one place a reason reaches the
+  log. V3 keeps no audit store (q6), so the log line is the durable record.
+- **Unchanged:** delegates (`by: delegate`, a one-call allow or reject with a reason), escalate and
+  `toUser` leaving the request open, the first answer winning, a refused answer leaving the offer live.
 
 ### Managed state (`ManagedState`, `MANAGED_REFUSAL`; task K1c)
 
@@ -493,6 +521,7 @@ the rows below are behaviour and internal-port contracts the frozen texts left o
 | approval page: a code is minted after the bind's await | only while the entry still stands at the generation the token matched; otherwise the form shows again (`CodeRecord` unchanged) | F06 |
 | MCP endpoint: one bearer check before the body | a `subscriptions/listen` is verified again, synchronously with its reservation; a revoked one is 401 `invalid_token` | F07 |
 | `approval_answer` reject: needed `risk` (`risk-required`) | needs a non-empty reason only, as §7a.3 and the contract say; one rule shared with `prompt_answer` | F08 |
+| `approval_answer` / `prompt_answer` allow with `risk: high` → `allow-needs-low-risk` | accepted with a reason while `requests.allowHighRisk` is on (default); a high-risk `grant` → `grant-needs-low-risk`; settlements carry `risk` and `reason` | HIGH-RISK-APPROVAL (the user, 2026-11-21) |
 
 ## CONN-TOOLS amendment (2026-11-18): remove connector-owned questions
 

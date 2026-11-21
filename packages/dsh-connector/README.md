@@ -209,8 +209,19 @@ routing.
   you answer first, the agent receives your answer as the outcome.
 - **A permission request waits for the agent.** Your own prompt shows when the agent escalates the
   request, or when the session leaves the agent's management.
-- **An escalated request belongs to you.** It leaves the agent's lists, and the agent can no longer
-  answer it. Your answer settles it, and the agent receives that outcome.
+- **An agent may allow a high-risk request.** Deciding when that is right is the agent's
+  responsibility. Each `allow`, `grant` and `reject` names a non-empty `reason`, and `allow` and
+  `grant` also name a `risk` (`low` or `high`). A high-risk allow covers that one call only, and
+  DSH's log gets one line for it with the session, the tool, the request, the agent and its reason
+  (a secret-looking value in the reason is masked there). A standing grant is always low risk
+  (`grant-needs-low-risk`): it covers later calls nobody has seen, and a prefix grant covers longer
+  commands too. **Agents may allow high-risk requests** (`requests.allowHighRisk`, on by default) on
+  the connector's settings page switches this off: a high-risk allow is then refused
+  (`allow-needs-low-risk`) and the agent can only escalate it to you. The same rules apply to
+  `prompt_answer`.
+- **An escalated request stays open.** It stays in the agent's list, and the first answer counts:
+  your click in the session, or the agent's own later `approval_answer`, which closes your prompt.
+  If you answer, the agent receives that outcome.
 - A session's management ends with `session_release` (the agent's own), **Take back** (yours), or
   when its token is switched off or deleted. Requests still waiting then go to you.
 - Inside a managed session, the model has the tool `message_agent` for writing to its agent.

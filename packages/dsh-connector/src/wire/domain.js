@@ -27,6 +27,7 @@ import { createWording } from '../domain/wording.js'
 import { rootSessionOf, storedRootOf, titleOf } from '../session-info.js'
 import { DOMAIN } from './constants.js'
 import { LOG } from '../domain/constants.js'
+import { HIGH_RISK } from '../settings/constants.js'
 import { diagnosticOf } from '../errors.js'
 
 /** The port's role words → K1 READ_ROLE: only the connector's own sender is renamed. */
@@ -45,10 +46,12 @@ const refused = (code) => Object.freeze({ ok: false, code })
  * @param deps.readLimits - the connector's live limits (src/config.js)
  * @param deps.routing - the routing composition
  * @param deps.stoppedByManager - the session source's mark for a stop the port makes for the manager
+ * @param deps.highRiskAllowed - `() => boolean`: the owner's live `requests.allowHighRisk`
+ *   (settings); without it, that setting's default
  * @param deps.logger - the row's logger
  * @returns `{sessions, interactions, attachments, models, workspaces, provide(ctx), close}`: `provide` serves `dshConnectorSessions`
  */
-export async function createSessionDomain(ctx, { storageDomain, readLimits, routing, stoppedByManager, logger }) {
+export async function createSessionDomain(ctx, { storageDomain, readLimits, routing, stoppedByManager, highRiskAllowed = () => HIGH_RISK.allowedByDefault, logger }) {
   const now = Date.now
   const warn = (error) => logger.warn(LOG.format, LOG.grantWriteFailed, diagnosticOf(error))
   const managerOf = (sessionId) => routing.managed.managerOf(sessionId)
@@ -79,13 +82,13 @@ export async function createSessionDomain(ctx, { storageDomain, readLimits, rout
     const gate = createPromptGate(ctx, now)
     const delegates = createDelegates({ logger })
     closers.push(() => delegates.close())
-    const permissions = createPermissions(ctx, { routing, managerOf, grants, delegates, gate, wording, titleOf: titleOfSession, readLimits, now, logger })
+    const permissions = createPermissions(ctx, { routing, managerOf, grants, delegates, gate, wording, titleOf: titleOfSession, readLimits, highRiskAllowed, now, logger })
     closers.push(() => permissions.close())
     // An ended question's late answer reaches its session as the connector's own message (questions.js).
     const deliver = (sessionId, message) => port.message({ sessionId, message })
     const questions = createQuestions(ctx, { routing, managerOf, deliver, titleOf: titleOfSession, now, logger })
     closers.push(() => questions.close())
-    const prompts = createPrompts({ gate, wording, titleOf: titleOfSession })
+    const prompts = createPrompts({ gate, wording, titleOf: titleOfSession, highRiskAllowed, logger })
     const tools = createSessionTools(ctx, { routing, managed: routing.managed, readLimits, logger })
     closers.push(() => tools.close())
 

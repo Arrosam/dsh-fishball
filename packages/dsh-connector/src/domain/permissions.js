@@ -16,10 +16,13 @@
  *   prompt is not shown meanwhile.
  *
  * The manager's answer (`approval_answer`, by the offer the core tools checked, offers.js):
- * - allow / grant (low risk, a reason, complete arguments; grant with a spec that fits the call)
- *   → the call runs; `settlement {allowed, principal}`;
+ * - allow (low or high risk, a reason, complete arguments) / grant (the same, low risk only, with a
+ *   spec that fits the call) → the call runs; `settlement {allowed, principal, risk, reason}`. A
+ *   high-risk allow is the manager's call to make (the user, 2026-11-21: "a manager must be able to
+ *   approve high-risk requests too"), unless the owner switched it off (`requests.allowHighRisk`);
+ *   each one is logged with its reason (`auditHighRisk`);
  * - reject (a reason) → the call is rejected and the session's agent reads the reason (the one
- *   post-execute rewrite, wording.js); `settlement {rejected, principal}`;
+ *   post-execute rewrite, wording.js); `settlement {rejected, principal, risk?, reason}`;
  * - escalate → the offer settles nothing yet (K1 SETTLEMENT_OUTCOME: escalate settles nothing):
  *   routing marks it escalated and the stock prompt shows. The first answer wins: the user's click
  *   there (`settlement {by: user}` to the same pair), or the manager's own later `approval_answer`,
@@ -36,6 +39,7 @@
  * waiting call to the user's stock prompt, as V2's broker did on unload (`close`).
  */
 import { ANSWER_DECISIONS, APPROVAL_DECISION, ARGUMENTS_STATUS, APPROVAL_KIND, EVENT_TYPE, OFFER_ID, REFUSAL, RISK, SETTLED_BY, SETTLEMENT_OUTCOME, formatOfferId } from '../../mcp-schema/index.js'
+import { redact } from 'dsh-connector-shared/redact'
 import { RefusalError, diagnosticOf } from '../errors.js'
 import { rootSessionOf } from '../session-info.js'
 import { argumentsOf } from './call-log.js'
@@ -57,17 +61,35 @@ const USER_OUTCOME = Object.freeze({ [APPROVAL.outcome.allowedOnce]: SETTLEMENT_
  * The §7a.3 decision rules of a final answer, shared by `approval_answer` (allow, grant, reject)
  * and `prompt_answer` (allow, reject), so the two paths cannot drift (review F08):
  * - reject: a non-empty reason only; `risk` is not asked for;
- * - allow and grant: a risk (`risk-required`), low (`allow-needs-low-risk`), a non-empty reason,
- *   complete arguments.
+ * - allow and grant: a risk (`risk-required`), a non-empty reason (`reason-required`: for a
+ *   high-risk allow it is the record of why), complete arguments;
+ * - high risk (HIGH-RISK-APPROVAL, the user, 2026-11-21): an allow is accepted while the owner's
+ *   `requests.allowHighRisk` is on (else `allow-needs-low-risk`, the earlier strict rule). A grant
+ *   never is (`grant-needs-low-risk`): it covers later calls nobody has seen, and a prefix grant
+ *   even a longer command (`npm test && git push`, grants.js), so a high-risk call is allowed one
+ *   call at a time, each with its own reason.
+ * @param highRiskAllowed - the owner's `requests.allowHighRisk` now
  * @returns the broken rule's code, or undefined.
  */
-export function decisionRuleBroken(decision, risk, reason, argumentsStatus) {
+export function decisionRuleBroken(decision, risk, reason, argumentsStatus, highRiskAllowed) {
   if (decision !== APPROVAL_DECISION.reject && risk === undefined) return REFUSAL.riskRequired
   if (trimmed(reason).length === 0) return REFUSAL.reasonRequired
   if (decision === APPROVAL_DECISION.reject) return undefined
-  if (risk !== RISK.low) return REFUSAL.allowNeedsLowRisk
+  if (risk !== RISK.low && decision === APPROVAL_DECISION.grant) return REFUSAL.grantNeedsLowRisk
+  if (risk !== RISK.low && !highRiskAllowed) return REFUSAL.allowNeedsLowRisk
   if (argumentsStatus !== ARGUMENTS_STATUS.complete) return REFUSAL.argumentsIncomplete
   return undefined
+}
+
+/**
+ * The record of a manager's high-risk allow (HIGH-RISK-APPROVAL): one info line in DSH's log with
+ * the session, the tool, the request, the manager and the manager's reason, so the owner can see
+ * afterwards what was allowed at high risk and why. The reason is the one text a log line carries
+ * (LOG's rule otherwise), masked for secret shapes like a contributed tool's refusal (redact) and
+ * already bounded by PAYLOAD_LIMITS.reasonChars. Only an answer that decided the call is recorded.
+ */
+export function auditHighRisk(logger, { sessionId, toolName, requestId, principalKey, reason }) {
+  logger.info(LOG.highRiskAllowed, sessionId, toolName, requestId, principalKey, redact(reason))
 }
 
 /**
@@ -80,10 +102,11 @@ export function decisionRuleBroken(decision, risk, reason, argumentsStatus) {
  * @param deps.wording - wording.js
  * @param deps.titleOf - `(sessionId) => Promise<string>`: the descriptor's `title`
  * @param deps.readLimits - the connector's live limits (`argumentExcerptBytes`)
+ * @param {() => boolean} deps.highRiskAllowed - the owner's `requests.allowHighRisk` now
  * @param {() => number} deps.now - epoch ms
- * @param deps.logger - `{warn}`
+ * @param deps.logger - `{info, warn}`
  */
-export function createPermissions(ctx, { routing, managerOf, grants, delegates, gate, wording, titleOf, readLimits, now, logger }) {
+export function createPermissions(ctx, { routing, managerOf, grants, delegates, gate, wording, titleOf, readLimits, highRiskAllowed, now, logger }) {
   const warn = (line) => (error) => logger.warn(LOG.format, line, diagnosticOf(error))
   /** approvalId → the live request: its call and how to end it. Memory only (module comment). */
   const live = new Map()
@@ -93,6 +116,14 @@ export function createPermissions(ctx, { routing, managerOf, grants, delegates, 
     approvalId: request.id, offerId: request.offerId, kind: APPROVAL_KIND.approval, prompt: SUMMARY.permission(request.toolName),
     choices: [...ANSWER_DECISIONS], title, at: request.at, toolName: request.toolName, callId: request.callId ?? null,
     reason: request.reason, quotes: [], arguments: request.args.text, argumentsStatus: request.args.status,
+  })
+
+  /**
+   * The principal's settlement of a final decision, with the risk it named and its reason
+   * (HIGH-RISK-APPROVAL: the record of what was approved at which risk, and why).
+   */
+  const principalSettlement = (request, decision, risk, reason) => ({
+    approvalId: request.id, outcome: FINAL[decision].outcome, by: SETTLED_BY.principal, ...(risk === undefined ? {} : { risk }), reason,
   })
 
   /** Settles a live offer with `answer` once; @returns whether it was still live. */
@@ -193,9 +224,8 @@ export function createPermissions(ctx, { routing, managerOf, grants, delegates, 
    * @returns whether the settlement was committed
    * @throws (rejects) the mailbox's storage error
    */
-  async function settle(request, decision, reason, principalKey) {
-    const outcome = { approvalId: request.id, outcome: FINAL[decision].outcome, by: SETTLED_BY.principal }
-    const committed = await routing.settle(request.offerId, outcome, { principalKey })
+  async function settle(request, decision, risk, reason, principalKey) {
+    const committed = await routing.settle(request.offerId, principalSettlement(request, decision, risk, reason), { principalKey })
     if (!committed) return false
     if (decision === APPROVAL_DECISION.reject) wording.reject(request.sessionId, request.callId, request.toolName, reason)
     end(request.id, { call: FINAL[decision].call })
@@ -213,7 +243,7 @@ export function createPermissions(ctx, { routing, managerOf, grants, delegates, 
    * @throws RefusalError(operation-failed) when the prompt is not showing (yet: the escalate's own
    *   step has not reached `gate.show`), so the request is still live and a retry can decide it
    */
-  async function answerEscalated(request, decision, reason, principalKey) {
+  async function answerEscalated(request, decision, risk, reason, principalKey) {
     if (!routing.holds(request.offerId, principalKey)) return false
     const prompt = gate.list().find((entry) => entry.approvalId === request.id)
     if (prompt === undefined) throw new RefusalError(REFUSAL.operationFailed)
@@ -221,8 +251,7 @@ export function createPermissions(ctx, { routing, managerOf, grants, delegates, 
     request.principalAnswered = true
     // Marked before the call's result exists: DSH runs the tool only after the prompt resolves.
     if (decision === APPROVAL_DECISION.reject) wording.reject(request.sessionId, request.callId, request.toolName, reason)
-    const outcome = { approvalId: request.id, outcome: FINAL[decision].outcome, by: SETTLED_BY.principal }
-    await settleOrWithdraw(routing, request.offerId, outcome, warn(LOG.withdrawFailed)).catch(warn(LOG.settleFailed))
+    await settleOrWithdraw(routing, request.offerId, principalSettlement(request, decision, risk, reason), warn(LOG.withdrawFailed)).catch(warn(LOG.settleFailed))
     return true
   }
 
@@ -248,7 +277,7 @@ export function createPermissions(ctx, { routing, managerOf, grants, delegates, 
         request.resolve({ escalated: true })
         return Object.freeze({ ok: true })
       }
-      const broken = decisionRuleBroken(decision, risk, reason, request.args.status)
+      const broken = decisionRuleBroken(decision, risk, reason, request.args.status, highRiskAllowed())
       if (broken !== undefined) return refused(broken)
       let grant
       if (decision === APPROVAL_DECISION.grant) {
@@ -265,7 +294,7 @@ export function createPermissions(ctx, { routing, managerOf, grants, delegates, 
       const discard = () => (grant === undefined ? undefined : grants.discard(grant.grantId))
       let committed
       try {
-        committed = await (request.escalated ? answerEscalated : settle)(request, decision, trimmed(reason), principalKey)
+        committed = await (request.escalated ? answerEscalated : settle)(request, decision, risk, trimmed(reason), principalKey)
       } catch (error) {
         await discard()
         if (error instanceof RefusalError) return refused(error.code)
@@ -276,6 +305,9 @@ export function createPermissions(ctx, { routing, managerOf, grants, delegates, 
         return refused(REFUSAL.expired)
       }
       if (grant !== undefined) await grants.activate(grant.grantId)
+      if (risk === RISK.high && decision === APPROVAL_DECISION.allow) {
+        auditHighRisk(logger, { sessionId: request.sessionId, toolName: request.toolName, requestId: request.id, principalKey, reason: trimmed(reason) })
+      }
       return Object.freeze({ ok: true, ...(grant ?? {}) })
     },
 

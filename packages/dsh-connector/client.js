@@ -23,8 +23,9 @@
  *
  * C-WIRE mounts it (the package's `dsh.client`) and adds, on the same page, the read-only pair state
  * of each entry (R-ID-12), the approval port with the approval listener's status (R-OA-20), the
- * DSH name the approval page shows (C-WIRE-2; the user, 2026-11-17), and the connector's limits, which moved here
- * from dsh-connector-ui's card (decided item 55). Every edit is a save of the row's settings
+ * DSH name the approval page shows (C-WIRE-2; the user, 2026-11-17), the connector's limits, which moved here
+ * from dsh-connector-ui's card (decided item 55), and whether agents may allow high-risk requests
+ * (HIGH-RISK-APPROVAL, the user, 2026-11-21). Every edit is a save of the row's settings
  * through DSH's form, as the token list's. The strings are this file's dictionaries: DSH's client loads no JSON, and the package's
  * locale/*.json hold only the Plugins page's `meta` text.
  */
@@ -89,7 +90,12 @@ window.__ModuleLoader__.load({
      * The other V3 settings, by their path in the row's config (src/settings/constants.js SETTING;
      * a browser chunk cannot import it, so the paths are written here once more: change both together).
      */
-    const SETTING_PATH = Object.freeze({ approvalPort: Object.freeze(['approval', 'port']), dshName: Object.freeze(['approval', 'dshName']) })
+    const SETTING_PATH = Object.freeze({
+      approvalPort: Object.freeze(['approval', 'port']), dshName: Object.freeze(['approval', 'dshName']),
+      allowHighRisk: Object.freeze(['requests', 'allowHighRisk']),
+    })
+    /** `requests.allowHighRisk`'s default (src/settings/constants.js HIGH_RISK): an unset value shows as on. */
+    const HIGH_RISK_DEFAULT = true
     /** The `approval.port` bounds (src/settings/constants.js PORT_RANGE). */
     const PORT_RANGE = Object.freeze({ min: 0, max: 65535 })
     /** The approval listener's healthy status (mcp/oauth-web LISTENER_STATUS.ok); any other is shown as its code. */
@@ -109,6 +115,7 @@ window.__ModuleLoader__.load({
       connected: 'data-dsh-connector-connected',
       approval: 'data-dsh-connector-approval',
       limits: 'data-dsh-connector-limits',
+      requests: 'data-dsh-connector-requests',
       setting: 'data-dsh-connector-setting',
     })
     /** Stands for a `{name}` that is a node (withName): a character no dictionary or name holds. */
@@ -301,6 +308,9 @@ window.__ModuleLoader__.load({
       approvalOk: 'listening on port {port}',
       'approval.approval-port-in-use': 'the port is in use; it is tried again every 30 seconds. Choose another port or free this one.',
       limits: 'Safety limits',
+      requests: 'Permission requests',
+      allowHighRisk: 'Agents may allow high-risk requests',
+      allowHighRiskHint: 'On: a managing agent may allow a high-risk permission request, one call at a time and with a reason, which DSH\'s log records. Off: it can only escalate such a request to you. Standing grants are always low risk only.',
       invalid: 'Enter a whole number.',
       'field.maxQueuedInputs': 'Events queued for an agent and not yet taken',
       'field.argumentExcerptBytes': 'Bytes of a request\'s call the managing agent sees',
@@ -359,6 +369,9 @@ window.__ModuleLoader__.load({
       approvalOk: '正在监听端口 {port}',
       'approval.approval-port-in-use': '端口被占用；每 30 秒重试一次。请换一个端口或释放此端口。',
       limits: '安全限制',
+      requests: '权限请求',
+      allowHighRisk: 'Agent 可批准高风险请求',
+      allowHighRiskHint: '开启：管理 agent 可批准高风险权限请求，每次只批准一个调用并须给出理由，理由记录在 DSH 日志中。关闭：此类请求只能升级给你。长期授权始终只限低风险。',
       invalid: '请输入整数。',
       'field.maxQueuedInputs': '为 agent 排队、尚未取走的事件',
       'field.argumentExcerptBytes': '管理 agent 可见的请求调用字节数',
@@ -800,6 +813,25 @@ window.__ModuleLoader__.load({
     }
 
     /**
+     * Whether a managing agent may allow a high-risk permission request (HIGH-RISK-APPROVAL; the
+     * user, 2026-11-21): one switch saved at once, through the row's config form as every field.
+     */
+    function HighRisk({ t, form, snapshot, disabled }) {
+      const saved = valueAt(snapshot.value, SETTING_PATH.allowHighRisk)
+      const on = typeof saved === 'boolean' ? saved : HIGH_RISK_DEFAULT
+      const { busy, problem, save } = useFieldSave(form, snapshot)
+      return section(t('requests'), undefined, { [DATA.requests]: true },
+        card([h(SettingRow, {
+          key: 'allowHighRisk',
+          data: SETTING_PATH.allowHighRisk.join('.'),
+          title: t('allowHighRisk'),
+          hint: h('p', { style: STYLE.hint }, t('allowHighRiskHint')),
+          control: h(Switch, { checked: on, label: t('allowHighRisk'), disabled: disabled || busy, onChange: (next) => void save([{ op: OP_SET, path: SETTING_PATH.allowHighRisk, value: next }]) }),
+          errors: [problem === null ? null : h('span', { key: 'failed', role: 'alert' }, t(problem.key, problem.values))],
+        })]))
+    }
+
+    /**
      * The connector's read-only state (the state route: pair rows, the approval listener), read
      * while `active` at once and every STATE_POLL_MS while the document is visible (review UI-04).
      * A poll is skipped while one is in flight, so a slow host is not asked twice; `read()` (Retry,
@@ -916,7 +948,7 @@ window.__ModuleLoader__.load({
         }
         // No page heading: the Plugins page draws the row's title above its configuration. The page
         // is DSH's section rhythm: Tokens (the list and New token in one card, Save under it), the
-        // approval page (its port and the DSH name it shows) and the limits.
+        // approval page (its port and the DSH name it shows), the limits and the permission requests.
         const newLabelEmpty = newLabel.trim() === ''
         return h('div', { style: STYLE.page, [DATA.root]: true },
           h(StateFailure, { t, state: runtime.state, retry: readState }),
@@ -946,6 +978,7 @@ window.__ModuleLoader__.load({
               h(DshName, { key: 'name', t, form, snapshot, disabled }),
             ])),
           h(Limits, { t, form, snapshot, disabled }),
+          h(HighRisk, { t, form, snapshot, disabled }),
           revealed === null ? null : h(Reveal, { t, value: revealed, onClose: () => setRevealed(null) }))
       }
     }

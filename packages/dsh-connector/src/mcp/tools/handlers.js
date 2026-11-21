@@ -148,7 +148,7 @@ export function createHandlers({ pairs, mailbox, managed, domain, now, logger },
       if (prompt === undefined) return refused(REFUSAL.expired)
       if (prompt.sessionId !== root) return refused(REFUSAL.forbidden)
       // No await between `admit` and the answer: the prompts port answers synchronously.
-      const result = await interactions.answerPrompt(defined({ promptId: args.promptId, decision: args.decision, risk: args.risk, reason: args.reason }))
+      const result = await interactions.answerPrompt(defined({ promptId: args.promptId, decision: args.decision, risk: args.risk, reason: args.reason, principalKey: caller.principalKey }))
       return passed(result, (answer) => ({ promptId: answer.promptId, decision: answer.decision, managed: answer.managed === true }))
     }),
     async [TOOL.grantsList](args, { caller }) {

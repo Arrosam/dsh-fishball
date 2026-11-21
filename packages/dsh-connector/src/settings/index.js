@@ -5,7 +5,7 @@
  * - `SETTINGS_SCHEMA` (schema.js): the V3 fields of the row's Config.
  * - `createSettings({ctx, config, namespace, limits, volatileEvent, logger})` →
  *   `{read, onChange, writer, restoreTokens, bind, start, follow, drain}`:
- *   - `read()`: the live `{maxQueuedInputs, maxMessageBytes, approvalPort, dshName?}`;
+ *   - `read()`: the live `{maxQueuedInputs, maxMessageBytes, approvalPort, dshName?, allowHighRisk}`;
  *   - `onChange(fn) → dispose`: fires after every applied change, **after `TokenRegistry.apply`
  *     of it has resolved** (the routing contract, routing/index.js: a re-enable, an added or a
  *     removed entry reaches routing and revocation only through this port);
@@ -34,9 +34,9 @@ import { APPROVAL_LISTENER } from '../../mcp-schema/index.js'
 import { diagnosticOf } from '../errors.js'
 import { serialChain } from '../serial.js'
 import { SYNC_REASON } from '../tokens/index.js'
-import { HMR_TRANSACTION_FIELD, LOG, MISUSE, PATH_OP, SETTING, SETTINGS_SERVICE } from './constants.js'
+import { HIGH_RISK, HMR_TRANSACTION_FIELD, LOG, MISUSE, PATH_OP, SETTING, SETTINGS_SERVICE } from './constants.js'
 
-export { SETTING } from './constants.js'
+export { HIGH_RISK, SETTING } from './constants.js'
 export { SETTINGS_SCHEMA } from './schema.js'
 
 /** A volatile field arrives as a live reference (`.get()`); a plain value (direct construction in tests) reads the same. */
@@ -46,6 +46,9 @@ function liveAt(config, path) {
 }
 
 const sameJson = (a, b) => JSON.stringify(a) === JSON.stringify(b)
+
+/** `requests.allowHighRisk` as read: a boolean as set, anything else (unset) the default. */
+const highRiskSetting = (value) => (typeof value === 'boolean' ? value : HIGH_RISK.allowedByDefault)
 
 /**
  * @param {object} deps
@@ -70,6 +73,7 @@ export function createSettings({ ctx, config, namespace, limits, volatileEvent, 
     maxMessageBytes: limits().maxMessageBytes,
     approvalPort: liveAt(config, SETTING.approvalPort) ?? APPROVAL_LISTENER.defaultPort,
     dshName: liveAt(config, SETTING.dshName),
+    allowHighRisk: highRiskSetting(liveAt(config, SETTING.allowHighRisk)),
   })
 
   function fire() {

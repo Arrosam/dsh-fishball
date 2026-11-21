@@ -6,7 +6,7 @@
  * checks against PAYLOAD_LIMITS and the connector settings, with the codes contract 1.2 names.
  */
 import {
-  ANSWER_DECISIONS, APPROVAL_KIND, ARGUMENTS_STATUS, DECISION_KIND, DELIVERY, EVENT_TYPE, GRANT_KIND, IMAGE_TYPES, PLAN_REVIEW,
+  ANSWER_DECISIONS, APPROVAL_FIELD_TEXT, APPROVAL_KIND, ARGUMENTS_STATUS, DECISION_KIND, DELIVERY, EVENT_TYPE, GRANT_KIND, IMAGE_TYPES, PLAN_REVIEW,
   PROMPT_DECISIONS, READ_ROLE, RETIREMENT_REASON, RISK, SETTLED_BY, SETTLEMENT_OUTCOME, TURN_OUTCOME,
 } from './constants.js'
 import { anyValue, array, boolean, constant, integer, nullable, object, oneOfStrings, string } from './schema.js'
@@ -88,10 +88,13 @@ export const grantSpec = () => object(
  * `approval_answer`'s answer. The decisions a principal may send are APPROVAL_DECISION without
  * `ask`, and there is no `question` field (X-SEC X-02; the user's answer, 2026-11-17: an `ask` is
  * refused; there is no ask_agent to carry it back): a schema-level `invalid-arguments`.
+ * `risk` and `reason` carry what a connected agent must supply (HIGH-RISK-APPROVAL): annotations
+ * only, inside DSH's schema subset.
  */
+export const riskField = () => oneOfStrings(Object.values(RISK), APPROVAL_FIELD_TEXT.risk)
 export const approvalAnswer = () => object(
   { decision: oneOfStrings(ANSWER_DECISIONS) },
-  { risk: oneOfStrings(Object.values(RISK)), reason: string(), grant: grantSpec() },
+  { risk: riskField(), reason: string(APPROVAL_FIELD_TEXT.reason), grant: grantSpec() },
 )
 
 export const promptSummary = () => object({
@@ -133,7 +136,7 @@ export const mailboxEvent = () => object(
  * session's standstill and its report in one: `completed` with the last assistant text (bounded,
  * TURN_FINISHED), or `stopped` with why; a stop by the manager itself sends none. `state` keeps its
  * frozen shape with no producer (folded into the session tools' `running`). A `settlement` carries
- * `answers` for an answered session question or plan review.
+ * `answers` for an answered session question or plan review, and a principal's `risk` and `reason`.
  */
 export const EVENT_PAYLOAD_SHAPES = Object.freeze({
   [EVENT_TYPE.permission]: descriptor,
@@ -142,7 +145,11 @@ export const EVENT_PAYLOAD_SHAPES = Object.freeze({
   [EVENT_TYPE.ask]: descriptor,
   [EVENT_TYPE.settlement]: () => object(
     { approvalId: string(), outcome: oneOfStrings(Object.values(SETTLEMENT_OUTCOME)), by: oneOfStrings(Object.values(SETTLED_BY)) },
-    { answers: array(questionAnswerItem()), delegate: object({ name: string(), toolName: string(), reason: string() }) },
+    {
+      answers: array(questionAnswerItem()), delegate: object({ name: string(), toolName: string(), reason: string() }),
+      // HIGH-RISK-APPROVAL: a principal's allow, grant or reject records the risk it named and its reason.
+      risk: oneOfStrings(Object.values(RISK)), reason: string(),
+    },
   ),
   [EVENT_TYPE.retirement]: () => object({ retiredEventId: string(), reason: oneOfStrings(Object.values(RETIREMENT_REASON)) }),
   [EVENT_TYPE.turnFinished]: () => object(

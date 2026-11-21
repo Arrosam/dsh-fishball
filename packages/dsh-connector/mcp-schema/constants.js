@@ -382,6 +382,19 @@ export const GRANT_KIND = Object.freeze({ exact: 'exact', prefix: 'prefix' })
 export const PROMPT_DECISIONS = Object.freeze([APPROVAL_DECISION.allow, APPROVAL_DECISION.reject])
 /** `approval_answer`'s accepted decisions and a permission offer's `choices`: every decision but `ask` (X-02). */
 export const ANSWER_DECISIONS = Object.freeze(Object.values(APPROVAL_DECISION).filter((decision) => decision !== APPROVAL_DECISION.ask))
+/**
+ * What a connected agent reads about answering a permission request (HIGH-RISK-APPROVAL, the user,
+ * 2026-11-21: a manager may allow a high-risk request; when that is right is the manager's call).
+ * Model-facing: the tool descriptions and the `risk` / `reason` annotations.
+ */
+export const APPROVAL_TOOL_TEXT = Object.freeze({
+  approvalAnswer: 'Answer a permission request by its current offer id. allow, grant and reject need a non-empty reason; allow and grant also need risk and the call\'s complete arguments. You may allow a high-risk request (risk "high") when you judge it right: the reason is recorded in DSH\'s log, and the owner can switch high-risk allows off (allow-needs-low-risk). A grant must be low risk (grant-needs-low-risk). escalate hands the request to the user and leaves it open; the first answer wins.',
+  promptAnswer: 'Allow or reject a permission prompt the user is being shown, with a reason. allow also needs risk; a high-risk allow follows approval_answer\'s rules (recorded with its reason; refused with allow-needs-low-risk when the owner switched it off).',
+})
+export const APPROVAL_FIELD_TEXT = Object.freeze({
+  risk: 'Your assessment of the call: low or high. Required for allow and grant. high is accepted for allow (not grant) unless the owner switched it off.',
+  reason: 'Why you decided this; required for allow, grant and reject. For a high-risk allow it is the record of why.',
+})
 export const APPROVAL_KIND = Object.freeze({ approval: 'approval', question: 'question' })
 export const PLAN_REVIEW = 'plan-review'
 export const ARGUMENTS_STATUS = Object.freeze({ complete: 'complete', truncated: 'truncated', unavailable: 'unavailable' })
@@ -878,6 +891,8 @@ export const REFUSAL = Object.freeze({
   riskRequired: 'risk-required',
   reasonRequired: 'reason-required',
   allowNeedsLowRisk: 'allow-needs-low-risk',
+  // HIGH-RISK-APPROVAL (the user, 2026-11-21): a standing grant stays low risk only; a high-risk call is allowed one at a time.
+  grantNeedsLowRisk: 'grant-needs-low-risk',
   argumentsIncomplete: 'arguments-incomplete',
   questionRequired: 'question-required',
   modeUser: 'mode-user',
