@@ -11,7 +11,7 @@
  *   routing, which reports them (`onLeft`): each waiting call goes to the user in its session. A
  *   session nobody manages any more has its grants ended (§5e), on every managed-state change.
  */
-import { READ_ROLE, parseOfferId } from '../../mcp-schema/index.js'
+import { READ_ROLE, REFUSAL, TOOL, TOOLS, parseOfferId } from '../../mcp-schema/index.js'
 import { SESSION_INFO } from '../constants.js'
 import { openGrantStore, createGrants } from '../domain/grants.js'
 import { createPermissions } from '../domain/permissions.js'
@@ -27,7 +27,10 @@ import { createWording } from '../domain/wording.js'
 import { rootSessionOf, storedRootOf, titleOf } from '../session-info.js'
 import { DOMAIN } from './constants.js'
 import { LOG } from '../domain/constants.js'
-import { diagnosticOf } from '../errors.js'
+import { RefusalError, diagnosticOf } from '../errors.js'
+import { validateValue } from '../schema-value/index.js'
+import { payloadRefusal } from '../mcp/tools/payload-rules.js'
+import { startManaged } from '../mcp/tools/start.js'
 
 /** The port's role words → K1 READ_ROLE: only the connector's own sender is renamed. */
 const ROLE_OF = Object.freeze({ [SESSION_INFO.roles.fishball]: READ_ROLE.principal })
@@ -38,6 +41,9 @@ function neutral(message) {
 }
 
 const refused = (code) => Object.freeze({ ok: false, code })
+
+/** session_start's K1 input schema: what `dshConnectorSessions.start` takes as `args` (frozen). */
+const START_INPUT = TOOLS.find((definition) => definition.name === TOOL.sessionStart).inputSchema
 
 /**
  * @param ctx - the connector row's context
@@ -161,8 +167,23 @@ export async function createSessionDomain(ctx, { storageDomain, readLimits, rout
      * `dshConnectorSessions` (host-services/sessions.d.ts): what a main-DSH plugin needs to act for a
      * session's manager. `stop` is the Stop button (the turn ends, messages still reach the session),
      * with the plugin's `reason` recorded as the turn's cause when given;
-     * `read` is `session_read`'s bounded read, neutral roles included.
+     * `read` is `session_read`'s bounded read, neutral roles included. `start` is `session_start`
+     * for a principal a plugin acts for (start.js): the same checks (K1 schema, payload rules), the
+     * same start, and the plugin's `afterManaged` runs once the session is managed and before its
+     * first message (the user, 2026-11-21: Watchdog briefs a session as it is created).
      */
+    async function start({ principalKey, args, afterManaged }) {
+      if (!validateValue(START_INPUT, args).ok) return refused(REFUSAL.invalidArguments)
+      const code = payloadRefusal(TOOL.sessionStart, args, now())
+      if (code !== undefined) return refused(code)
+      try {
+        return Object.freeze(await startManaged({ sessions, managed: routing.managed, logger }, args, principalKey, afterManaged))
+      } catch (error) {
+        if (error instanceof RefusalError) return refused(error.code)
+        logger.warn(LOG.format, LOG.pluginStartFailed, diagnosticOf(error))
+        return refused(REFUSAL.operationFailed)
+      }
+    }
     const service = Object.freeze({
       apiVersion: SESSIONS_SERVICE.apiVersion,
       delegates: Object.freeze({ register: (definition) => delegates.register(definition) }),
@@ -170,6 +191,8 @@ export async function createSessionDomain(ctx, { storageDomain, readLimits, rout
       managerOf: (sessionId) => managerOf(rootSessionOf(ctx, sessionId)),
       read: ({ sessionId, maxMessages, maxBytes }) => sessions.read({ sessionId, maxMessages, maxBytes }),
       stop: async ({ sessionId, reason }) => { await port.stop({ sessionId, reason }) },
+      startInput: START_INPUT,
+      start,
     })
     const provide = (target) => target.effect(() => target.provide(SESSIONS_SERVICE.name, service), SESSIONS_SERVICE.label)
 

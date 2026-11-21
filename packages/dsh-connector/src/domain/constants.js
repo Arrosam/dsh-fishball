@@ -210,4 +210,5 @@ export const LOG = Object.freeze({
   toolsFailed: 'domain: a managed session\'s tool could not be applied',
   toolsRemovalFailed: 'domain: a managed session\'s tool could not be removed',
   closeFailed: 'domain: a part did not close cleanly',
+  pluginStartFailed: 'domain: a plugin\'s session start failed unexpectedly; answered operation-failed',
 })

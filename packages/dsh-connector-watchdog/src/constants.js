@@ -47,6 +47,7 @@ export const TOOL = Object.freeze({
   refine: 'watchdog_refine',
   pause: 'watchdog_pause',
   resume: 'watchdog_resume',
+  sessionStart: 'watchdog_session_start',
 })
 
 /** Domain refusal codes (K2 NAME_GRAMMAR.code); `forbidden` and `conflict` are K2 shared codes. */
@@ -58,8 +59,24 @@ export const CODE = Object.freeze({
   nothingToRefine: 'nothing-to-refine',
 })
 
+/**
+ * session_start's own refusals (K1 REFUSAL) that watchdog_session_start declares, so they reach the
+ * manager as they are. A contributed tool answers only its declared codes and K2's SHARED_CODES
+ * (forbidden, unknown-session, expired, limit-exceeded, …), and may not declare a K2 CALL_CODE such
+ * as invalid-arguments: the connector answers any other code operation-failed, and the K1 code
+ * stays in the message (TEXT.startRefused).
+ */
+export const START_CODE = Object.freeze({
+  invalidDecision: 'invalid-decision',
+  featureOff: 'feature-off',
+  tooLarge: 'too-large',
+})
+
 export const TEXT = Object.freeze({
-  brief: 'Assign Watchdog to a session you manage. Watchdog supervises it against its purpose on a patrol timer and at each permission request, and answers permission requests that fall within the approvable scope for you (each allow covers one call). Requests outside the scope, high-risk ones and questions still come to you. When the session drifts from its purpose, Watchdog stops its turn and sends you a drift event; you can still message the session. Briefing a session you already briefed answers "conflict": use watchdog_refine.',
+  sessionStart: 'Start a session exactly as session_start does (same folder, title, message, attachments, model and reasoningEffort), and assign Watchdog to it in the same step, before its first message is sent, so Watchdog supervises it from its very first request. purpose and scope are watchdog_brief\'s. The answer is session_start\'s, plus supervised: whether the brief took effect (it needs the session to be managed by you). Use it instead of session_start followed by watchdog_brief: a request the session makes before a later brief always comes to you.',
+  /** A start refusal's message: its K1 code, which the connector replaces with operation-failed when this tool may not answer it (K2). */
+  startRefused: (code) => `session_start refused: ${code}`,
+  brief: 'Assign Watchdog to a session you manage. Watchdog supervises it against its purpose on a patrol timer and at each permission request, and answers permission requests that fall within the approvable scope for you (each allow covers one call). Requests outside the scope, high-risk ones and questions still come to you. When the session drifts from its purpose, Watchdog stops its turn and sends you a drift event; you can still message the session. Briefing a session you already briefed answers "conflict": use watchdog_refine. A session already running before its brief may have asked for permissions that still come to you; to supervise a new session from its first request, start it with watchdog_session_start instead.',
   refine: 'Change the purpose and/or the approvable scope of a session you briefed. An empty scope removes it (every request then comes to you). The patrol timer is not moved.',
   pause: 'Stop the session\'s current turn, then pause Watchdog\'s supervision of it: no patrol and no permission answers until watchdog_resume.',
   resume: 'Resume Watchdog\'s supervision of a paused session; the patrol timer starts again from now.',

@@ -2,7 +2,8 @@
  * Watchdog's behaviour, over injected ports so the cases can drive it without a DSH (notes §2–§3;
  * the user's decisions of 2026-11-20):
  * - Fishball's four tools (`watchdog_brief`, `_refine`, `_pause`, `_resume`) are data operations
- *   that start no run. Only the session's current manager may use them;
+ *   that start no run. Only the session's current manager may use them. `watchdog_session_start`
+ *   starts a session through the connector and briefs it before its first message;
  * - the permission delegate: Watchdog `claims` a session it holds an unpaused brief for, from the
  *   principal that still manages it; each request is judged against the purpose and the scope
  *   (allow → one call, reject only when beyond the purpose and dangerous, anything else → pass to
@@ -237,7 +238,28 @@ export function createWatchdog({ store, services, judge, config, timers = global
     return ok(view(updated))
   }
 
-  const handlers = Object.freeze({ [TOOL.brief]: brief, [TOOL.refine]: refine, [TOOL.pause]: pause, [TOOL.resume]: resume })
+  /**
+   * `watchdog_session_start` (the user, 2026-11-21: close the gap when the session is created): the
+   * connector's own start for the caller (`dshConnectorSessions.start`), whose `afterManaged` runs
+   * this package's `brief` once the session is the caller's and before its first message. So the
+   * delegate claims the session before its first turn can ask anything; a later watchdog_brief
+   * cannot, since the session already runs. An empty purpose is refused before anything starts.
+   */
+  async function sessionStart({ purpose, scope, ...startArgs }, principalKey) {
+    if (trimmed(purpose) === '') return refused(CODE.emptyPurpose)
+    const sessions = services()?.sessions
+    if (typeof sessions?.start !== 'function') return refused(CODE.forbidden)
+    let supervised = false
+    const afterManaged = async (sessionId, managed) => {
+      if (managed) supervised = (await brief({ sessionId, purpose, scope }, principalKey)).ok === true
+    }
+    const started = await sessions.start({ principalKey, args: startArgs, afterManaged })
+    if (started.ok !== true) return Object.freeze({ ok: false, code: started.code, message: TEXT.startRefused(started.code) })
+    const { ok: _ok, ...fields } = started
+    return ok({ ...fields, supervised })
+  }
+
+  const handlers = Object.freeze({ [TOOL.brief]: brief, [TOOL.refine]: refine, [TOOL.pause]: pause, [TOOL.resume]: resume, [TOOL.sessionStart]: sessionStart })
 
   return Object.freeze({
     /** Arms a patrol for every unpaused stored brief (a restart keeps supervising). */

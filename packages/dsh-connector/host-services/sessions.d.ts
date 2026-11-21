@@ -67,6 +67,21 @@ export interface SessionReadMessage {
   readonly text: string
 }
 
+/** session_start's arguments (K1 `TOOLS` session_start `inputSchema`; `startInput` is that schema). */
+export interface SessionStartArgs {
+  readonly folder: string
+  readonly title: string
+  readonly message: string
+  readonly attachments: readonly string[]
+  readonly model?: string
+  readonly reasoningEffort?: string
+}
+
+/** session_start's answer: its K1 success fields, or a K1 refusal code. */
+export type SessionStartResult =
+  | { readonly ok: true; readonly sessionId: string; readonly managed: boolean; readonly running: boolean; readonly titleError?: string; readonly workspaceError?: string }
+  | { readonly ok: false; readonly code: string }
+
 export interface DshConnectorSessions {
   readonly apiVersion: 1
   readonly delegates: {
@@ -86,4 +101,19 @@ export interface DshConnectorSessions {
    * 'the turn was cancelled (hook: <reason>)'}` and tells this plugin's stop from the user's.
    */
   stop(input: { sessionId: string; reason?: string }): Promise<void>
+  /** session_start's K1 input schema, for a plugin tool that takes the same arguments. Frozen. */
+  readonly startInput: Readonly<Record<string, unknown>>
+  /**
+   * `session_start` for `principalKey` (the principal a contributed tool's call came from): the
+   * same schema check, payload rules and start, and the new session is managed by that principal.
+   * `afterManaged(sessionId, managed)` is awaited after the session is managed and before its first
+   * message is sent, so whatever the plugin sets up there (a delegate's claim, Watchdog's brief)
+   * holds from the session's first turn (the user, 2026-11-21). A throw from it is logged and the
+   * start still answers. Refusals are K1 codes (`invalid-arguments`, `limit-exceeded`, …).
+   */
+  start(input: {
+    principalKey: string
+    args: SessionStartArgs
+    afterManaged?: (sessionId: string, managed: boolean) => Promise<void>
+  }): Promise<SessionStartResult>
 }

@@ -53,7 +53,9 @@ export async function apply(ctx, config) {
     scope.effect(() => {
       const disposers = []
       try {
-        for (const definition of watchdogTools(watchdog.call)) disposers.push(scope[WATCHDOG.service.tools].register(definition))
+        // watchdog_session_start only when this connector offers a plugin start (dshConnectorSessions.start).
+        const startInput = typeof sessions.start === 'function' ? sessions.startInput : undefined
+        for (const definition of watchdogTools(watchdog.call, startInput)) disposers.push(scope[WATCHDOG.service.tools].register(definition))
       } catch (error) {
         logger.warn(LOG.format, WATCHDOG.name, LOG.toolsRefused, error?.code ?? error?.message)
       }

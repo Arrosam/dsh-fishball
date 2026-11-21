@@ -9,10 +9,10 @@
  * C-WIRE binds. Who manages a session is K1c's `ManagedState` only.
  */
 import { APPROVAL_DECISION, REFUSAL, TOOL } from '../../../mcp-schema/index.js'
-import { hasVisibleCharacter } from '../../text.js'
 import { inboxAckTool, inboxPollTool } from '../../mailbox/index.js'
-import { AUTHORITY, LOG, SESSION_ACCESS } from './constants.js'
-import { RefusalError, diagnosticOf } from '../../errors.js'
+import { AUTHORITY, SESSION_ACCESS } from './constants.js'
+import { RefusalError } from '../../errors.js'
+import { startManaged } from './start.js'
 
 const refused = (code) => ({ ok: false, code })
 /** `grant_revoke` of a held grant whose session is not the caller's (sessions.js table, rows 1 and 3). */
@@ -57,16 +57,6 @@ export function createHandlers({ pairs, mailbox, managed, domain, now, logger },
     return ok({ status: sent.status, running: sent.running === true })
   })
 
-  /** Makes the caller the new session's manager before its first message (R-ROUTE-01). */
-  async function manageNew(sessionId, principalKey) {
-    try {
-      return (await managed.manage(sessionId, principalKey)).ok === true
-    } catch (error) {
-      // As V2's start: a session whose management could not be stored still starts, unmanaged.
-      logger.warn(LOG.format, LOG.manageFailed, diagnosticOf(error))
-      return false
-    }
-  }
 
   /**
    * The answer tools (offers.js). Row 1 of the session table applies first: a session another
@@ -98,13 +88,8 @@ export function createHandlers({ pairs, mailbox, managed, domain, now, logger },
     // DISCOVERY-TOOLS: this DSH's choices for session_start, not a session's data, so no session table.
     [TOOL.workspacesList]: async () => ok({ workspaces: await workspaces.list() }),
     [TOOL.modelsList]: async () => ok(await models.list()),
-    async [TOOL.sessionStart](args, { caller }) {
-      // V2's rule (bridge.js): a title with no visible character is refused before anything is created.
-      if (!hasVisibleCharacter(args.title)) return refused(REFUSAL.limitExceeded)
-      let managedNow = false
-      const started = await sessions.start(args, { onCreated: async (sessionId) => { managedNow = await manageNew(sessionId, caller.principalKey) } })
-      return ok(defined({ sessionId: started.sessionId, managed: managedNow, running: started.running === true, titleError: started.titleError, workspaceError: started.workspaceError }))
-    },
+    // The start and its manage are start.js's, shared with dshConnectorSessions.start.
+    [TOOL.sessionStart]: (args, { caller }) => startManaged({ sessions, managed, logger }, args, caller.principalKey),
     [TOOL.sessionMessage]: delivery((input) => sessions.message(input)),
     [TOOL.sessionRedirect]: delivery((input) => sessions.redirect(input)),
     [TOOL.sessionStop]: managing(async (args, caller, root, admit) => {
