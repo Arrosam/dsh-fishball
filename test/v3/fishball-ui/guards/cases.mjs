@@ -233,14 +233,17 @@ export function registerGuardCases(sdk) {
       assert.ok(own?.dsh?.client, `fishball-ui/${folder}/package.json declares no dsh.client`)
     }
   })
-  caseTest(sdk, 'PLAT-UC-04', 'main', "core's and fishball-ui's patches (read by the SDK's patch loader) together switch every guard row off when core is started", async () => {
+  caseTest(sdk, 'PLAT-UC-04', 'main', "core's patch (read by the SDK's patch loader) switches every guard row off when core is started", async () => {
     assert.notEqual(corePatch(), null, 'packages/core/cordis.patch.yml is missing')
-    const rows = [...await patchRows(sdk, V3.core.dir), ...await patchRows(sdk, V3.ui.dir)].filter((r) => r?.id !== undefined && !Array.isArray(r.insert))
+    // Since R-FIX-FUI fishball-ui has no patch of its own; its UI guard rows live in core's patch,
+    // conditional on fishball-ui (packages/core/cordis.patch.yml).
+    const rows = [...await patchRows(sdk, V3.core.dir)].filter((r) => r?.id !== undefined && !Array.isArray(r.insert))
     const off = new Set()
     for (const r of rows) if (await disabledWithCore(sdk, r)) off.add(r.id)
     assert.deepEqual(ALL_GUARD_ROWS.filter((id) => !off.has(id)), [], 'guard rows neither patch switches off')
   })
-  caseTest(sdk, 'PLAT-UC-04', 'main', "the guards are defined once: the instance's launch code no longer holds the guard rows (the LITE rows moved out)", async () => {
+  caseTest(sdk, 'PLAT-UC-04', 'main', "the guards are defined once: the instance's launch code no longer holds the guard rows (the LITE rows moved out)", async (t) => {
+    if (!fs.existsSync(V3.instance.dir)) { t.skip('dsh-instance is not in this repository (split 6b7c53bf)'); return }
     const files = ownFiles(await unitOf(V3.instance.name)).filter((f) => JS.test(f) && f.startsWith(INSTANCE_LAUNCH))
     assert.ok(files.length > 0, 'no shipped instance file under ' + INSTANCE_LAUNCH)
     const tokens = await tokensOf(fs.realpathSync(V3.instance.dir), files)
