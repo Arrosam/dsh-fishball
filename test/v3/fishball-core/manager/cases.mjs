@@ -18,6 +18,7 @@ import {
 import { scenario, startFakeTarget } from './subject.mjs'
 import { registerRfixManagerCases } from './rfix.mjs'
 import { registerRfix2ManagerCases } from './rfix2.mjs'
+import { registerWatchdogPersonaCases } from './watchdog-persona.mjs'
 
 const isCoreTool = (name) => TOOLS.reminders.includes(name) || name === TOOLS.ask || name === TOOLS.message || TOOLS.privateSkill.test(name)
 const set = (path, value) => ({ op: OP.set, path: [...path], value })
@@ -331,6 +332,8 @@ export function registerManagerCases(sdk) {
   test(name('MGR-SET-EP-04 5', 'the persona no longer speaks of "an ask event" as the card source'), async () => {
     assert.equal((await persona()).match(PERSONA_FIX.askEvent)?.[0] ?? null, null)
   })
+  // WD-PERSONA (the user's decision, 2026-11-22): Watchdog's session start, watchdog-persona.mjs.
+  registerWatchdogPersonaCases(sdk, { read, name })
 
   // ------------------------------------------------------------------ MGR-ID: generated identity (R-ID-10, DESIGN §20)
   test(name('MGR-ID-EP-01', 'the first start writes no settings document and saves no identity.id into settings'), async () => {

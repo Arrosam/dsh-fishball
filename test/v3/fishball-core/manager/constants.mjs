@@ -12,10 +12,10 @@ import { SEAM_TARGETS } from '../../../../packages/shared/ui-seam.js'
 import path from 'node:path'
 import os from 'node:os'
 import { FAKE, FAKE_MODELS } from '../../../support/constants.mjs'
-import { CONNECT, FISHBALL_MODEL, MCP } from '../../../../packages/core/contracts/constants.js'
+import { CONNECT, FISHBALL_MODEL, MCP, WATCHDOG } from '../../../../packages/core/contracts/constants.js'
 import * as K1 from '../../../fixtures/dsh-connector-contract/mcp-schema/index.js'
 
-export { CONNECT, FISHBALL_MODEL, MCP, K1 }
+export { CONNECT, FISHBALL_MODEL, MCP, WATCHDOG, K1 }
 
 /** The SDKs (R-COMPAT-01); FBTEST_DSH_VERSIONS moves their parent folder. */
 export const SDK = Object.freeze({
@@ -108,6 +108,54 @@ export const PERSONA_FIX = Object.freeze({
   reject: /\breject\b/i,
   /** The retired wording of the ask card's source (an `ask` event filed as a card). */
   askEvent: /\ban [`'"]?ask[`'"]? event\b/i,
+})
+
+/**
+ * WD-PERSONA rows (the user's decision, 2026-11-22): when a DSH offers Watchdog (the
+ * dsh-connector-watchdog amenity's tools), a session Fishball wants supervised is started with
+ * Watchdog's watchdog_session_start instead of the connector's session_start; it takes the same
+ * arguments plus the session's purpose and approvable scope, and Watchdog supervises the session
+ * from its first request; watchdog_brief only covers what a running session asks after the brief.
+ * The words come from that decision; the patterns only find them in prose.
+ */
+export const PERSONA_WATCHDOG = Object.freeze({
+  /** The contract's tool table as the requirement names it: exactly these two tools. */
+  tools: Object.freeze({ sessionStart: 'watchdog_session_start', brief: 'watchdog_brief' }),
+  watchdog: /\bWatchdog\b/,
+  /** "when/if/where a DSH offers (has, provides, lists) Watchdog", or "Watchdog is offered/available". */
+  conditional: /\b(?:when|if|where|whenever)\b[^.:;]{0,80}\b(?:offers?|has|provides?|lists?|exposes?)\b[^.:;]{0,40}\bWatchdog\b|\bWatchdog\b[^.:;]{0,40}\bis (?:offered|available|present|listed)\b/i,
+  insteadOf: /\binstead of\b|\brather than\b|\bnot\b/i,
+  sameArguments: /\bsame arguments\b/i,
+  purpose: /\bpurpose\b/i,
+  approvableScope: /\bapprovable scope\b|\bscope\b[^.]{0,40}\bapprov/i,
+  supervises: /\bsupervis/i,
+  firstRequest: /\bfirst request\b/i,
+  only: /\bonly\b/i,
+  afterBrief: /\bafter (?:the|its|being) brief(?:ed)?\b/i,
+  running: /\brunning\b/i,
+  /**
+   * "Unchanged" is read against the persona just before the change: the parent of the first
+   * commit that brought WATCHDOG into persona.js (a clone without that history skips the row).
+   */
+  baseline: Object.freeze({
+    file: 'packages/core/src/persona.js',
+    marker: 'WATCHDOG',
+    folders: Object.freeze(['packages/core', 'packages/shared']),
+    /** The bare import persona.js reaches through its imports (packages/shared's package name). */
+    sharedPackage: 'fishball-shared',
+    sharedFolder: 'packages/shared',
+    tmpPrefix: 'fbtest-wd-persona-baseline-',
+    tar: 'baseline.tar',
+    nodeModules: 'node_modules',
+  }),
+  /** The contract file a copy's WATCHDOG names are swapped in (EP-06), and stand-in names that are no real tool's. */
+  contractFile: 'packages/core/contracts/constants.js',
+  swapped: Object.freeze({ sessionStart: 'fbtest_wd_swapped_start', brief: 'fbtest_wd_swapped_brief' }),
+  /** The connector tool Watchdog's start replaces (K1's name). */
+  connectorStart: 'session_start',
+  /** A sentence that would forbid session_start outright, or make Watchdog's start unconditional. */
+  forbidsStart: (start, watchdogStart) => new RegExp(`\\b(?:never|do not|don't|must not)\\b[^.]{0,40}\\b(?:use|call)\\b[^.]{0,20}\\b${start}\\b|\\balways\\b[^.]{0,40}\\b${watchdogStart}\\b`, 'i'),
+  skipNoBaseline: 'WD-PERSONA: the commit that brought WATCHDOG into persona.js is not in this clone, so the persona before the change cannot be read',
 })
 
 export const PRESET = Object.freeze({ fishball: 'fishball' })
