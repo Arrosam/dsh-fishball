@@ -93,9 +93,13 @@ generic connector hook for Watchdog). Main: 1. A's call asks DSH for approval. 2
 check, D gets `{sessionId, descriptor}` (the K1 descriptor). 3. D answers allow + reason → the call
 runs once; no `permission` offer; P gets one `settlement {allowed, by: delegate, delegate: {name,
 toolName, reason}}` ("yes send settlements"). A1 reject + reason → the call is rejected with the
-managing-agent wording; `settlement {rejected, by: delegate}`. A2 pass, or D throws → P gets the
-offer as in IX-UC-02 and no delegate settlement. E1 an unmanaged session never reaches D (stock
-prompt). Rows: DLG-01…04 (delegate-cases.mjs).
+managing-agent wording; `settlement {rejected, by: delegate}`. A2 pass, or D throws or answers
+something invalid → P gets the offer as in IX-UC-02, carrying `delegate {name, outcome: passed |
+failed, reason?}` (pass: its trimmed reason if any; throw: the error's code, else its name; invalid:
+`invalid-verdict`; the user, 2026-11-21), and no delegate settlement. A3 no delegate claims S → the
+offer has no `delegate`. E1 an unmanaged session never reaches D (stock prompt). Rows: DLG-01…05
+(delegate-cases.mjs). A plugin's `stop({sessionId, reason})` reports `(hook: <reason>)` in the
+manager's turn-finished, without a reason `(user)`: CONN-STOP-DT-01 (report-cases.mjs).
 
 ## Derived cases
 

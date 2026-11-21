@@ -6,7 +6,9 @@
  * brief's purpose (the side session's id is minted by Watchdog). Gap check against
  * docs/watchdog-project-notes.md §2–§3: the core cases (tests/watchdog/core.test.mjs) run over
  * fakes; these rows prove the same rules through the connector's delegate → grant → offer path.
- * Patrol timing (60 s minimum) stays in the core cases. Techniques: UC, EP, DT, ST.
+ * Patrol timing (60 s minimum) stays in the core cases. 2026-11-21 (after the live test): an
+ * undecided request's offer carries delegate {watchdog, passed | failed, reason}; a drift stop is
+ * reported to the manager with the hook cause. Techniques: UC, EP, DT, ST.
  */
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
@@ -107,22 +109,31 @@ export function registerWatchdogLiveCases(sdk) {
     assert.ok(result?.text.includes('deletes the home folder'), JSON.stringify(result))
   })
 
-  row(sdk, 'WD-L05', 'DT (pass, nonsense → the manager)', 'a pass and an unreadable answer each leave the request to the manager as a normal offer, with no Watchdog settlement', async (t) => {
+  // DT over the judge's answer → the offer's delegate (the user, 2026-11-21: a failure is told from a judged pass).
+  const OFFERED = [
+    ['a judged pass', WD.answer.pass(), { name: WD.delegate, outcome: WD.outcome.passed, reason: WD.passReason }],
+    ['an unreadable answer', WD.answer.nonsense(), { name: WD.delegate, outcome: WD.outcome.failed, reason: WD.failure.unreadable }],
+    ['an unknown verdict', WD.answer.unknown(), { name: WD.delegate, outcome: WD.outcome.failed, reason: WD.failure.unreadable }],
+    ['allow with an empty reason', WD.answer.allow(''), { name: WD.delegate, outcome: WD.outcome.failed, reason: WD.failure.unreadable }],
+  ]
+  row(sdk, 'WD-L05', 'DT (pass / unreadable → the manager, with delegate {outcome})', 'a judged pass → the offer carries delegate {watchdog, passed, its reason}; an unreadable answer, an unknown verdict or a reasonless allow → delegate {watchdog, failed, judge-unreadable}; no Watchdog settlement; no stop', async (t) => {
     const w = await wdWorld(sdk)
     const p = await principal(t, w)
-    for (const answer of [WD.answer.pass(), WD.answer.nonsense()]) {
+    for (const [label, answer, expected] of OFFERED) {
       const b = await briefed(w, p)
       await judgeWill(w, b, answer)
       const r = await asks(w, b.sid)
-      await offerFor(p, r.text)
+      const offer = await offerFor(p, r.text)
+      assert.deepEqual(offer.payload.delegate, expected, label)
       await quiet()
-      assert.equal(ofType(await pending(p.client), EVENT_TYPE.settlement).filter((s) => s.sourceSessionId === b.sid).length, 0)
-      assert.equal((await judged(w, b)).left, 0, 'the judge was not asked')
+      assert.equal(ofType(await pending(p.client), EVENT_TYPE.settlement).filter((s) => s.sourceSessionId === b.sid).length, 0, label)
+      assert.equal((await judged(w, b)).left, 0, label + ': the judge was not asked')
+      assert.equal(await w.call('status', { sessionId: b.sid }), IX.dsh.running, label + ': the turn does not wait on the offer')
       await free(w, b.sid)
     }
   })
 
-  row(sdk, 'WD-L06', 'UC + ST (drift at a request)', 'the call is rejected, the turn is stopped, the manager gets the drift event {sessionId, during: permission, reason}; the manager can still message the session', async (t) => {
+  row(sdk, 'WD-L06', 'UC + ST (drift at a request)', 'the call is rejected, the turn is stopped, the manager gets the drift event {sessionId, during: permission, reason} and a turn-finished {stopped, stop {aborted, "the turn was cancelled (hook: Watchdog stopped the session (permission): <reason>)"}}; the manager can still message the session', async (t) => {
     const w = await wdWorld(sdk)
     const p = await principal(t, w)
     const b = await briefed(w, p)
@@ -133,6 +144,11 @@ export function registerWatchdogLiveCases(sdk) {
     assert.deepEqual(drift.payload.data, { sessionId: b.sid, during: WD.during.permission, reason: 'it is rewriting the website instead' })
     assert.ok(drift.payload.summary.includes('it is rewriting the website instead'), drift.payload.summary)
     assert.ok(await w.call('idle', { sessionId: b.sid }), 'the drifted turn was not stopped')
+    // The stop names Watchdog's cause, not the user's (the user, 2026-11-21).
+    const finished = await waitEvents(p.client, (e) => ofType(e, EVENT_TYPE.turnFinished).find((x) => x.sourceSessionId === b.sid && x.payload.outcome === WD.turn.stopped), 'a stopped turn-finished')
+    assert.equal(finished.payload.stop?.kind, WD.turn.aborted, JSON.stringify(finished.payload))
+    assert.ok(finished.payload.stop.message.startsWith(WD.turn.driftStopPrefix), JSON.stringify(finished.payload.stop))
+    assert.equal(finished.payload.stop.message, WD.turn.driftStop('it is rewriting the website instead'))
     const sent = await call(p.client, TOOL.sessionMessage, { sessionId: b.sid, message: tok('back on track'), attachments: [] })
     assert.equal(sent.ok, true, JSON.stringify(sent))
     await free(w, b.sid)

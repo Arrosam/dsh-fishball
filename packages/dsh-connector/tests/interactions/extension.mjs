@@ -53,7 +53,7 @@ export async function ops({ ctx, model, agentOf, eventSummary, plain, createUser
   const delegate = (store.delegate ??= { verdicts: new Map(), seen: [], dispose: undefined })
 
   return {
-    /** Registers the scripted delegate `name` (once); `verdict` for `sessionId` (null: stop claiming it). */
+    /** Registers the scripted delegate `name` (once); `verdict` for `sessionId` (null: stop claiming it; IX.delegate.throws or {throwCode}: it throws). */
     delegateScript({ name, sessionId, verdict }) {
       if (delegate.dispose === undefined) {
         delegate.dispose = ctx.get(IX.delegate.service).delegates.register({
@@ -63,6 +63,8 @@ export async function ops({ ctx, model, agentOf, eventSummary, plain, createUser
             delegate.seen.push(JSON.parse(JSON.stringify(request)))
             const v = delegate.verdicts.get(request.sessionId)
             if (v === IX.delegate.throws) throw new Error(IX.delegate.throws)
+            // {throwCode}: the delegate throws an error carrying that `code` (DLG-03's failed rows).
+            if (typeof v?.throwCode === 'string') throw Object.assign(new Error(IX.delegate.throws), { code: v.throwCode })
             return v
           },
         })

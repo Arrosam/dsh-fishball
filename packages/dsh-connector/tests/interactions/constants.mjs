@@ -107,7 +107,11 @@ export const IX = Object.freeze({
   /** The fixture bundle (package name = row id) and its folder beside this file. */
   fixtureRow: Object.freeze({ name: 'fbix-tools', dir: 'fixture-bundle' }),
   /** The scripted delegate of delegate-cases.mjs (extension.mjs `delegateScript`). */
-  delegate: Object.freeze({ service: 'dshConnectorSessions', name: 'fbix-delegate', throws: 'fbix-delegate-throws' }),
+  delegate: Object.freeze({
+    service: 'dshConnectorSessions', name: 'fbix-delegate', throws: 'fbix-delegate-throws',
+    /** The offer's delegate outcome words and the invalid-answer reason (the user, 2026-11-21). */
+    outcome: Object.freeze({ passed: 'passed', failed: 'failed' }), invalidVerdict: 'invalid-verdict',
+  }),
   /** DSH approval outcomes (dsh-user-approval). */
   outcome: Object.freeze({ allowed: 'allowed-once', rejected: 'rejected', cancelled: 'cancelled', unavailable: 'unavailable', notAsked: 'not-asked' }),
   policy: Object.freeze({ ask: 'ask', never: 'never' }),
