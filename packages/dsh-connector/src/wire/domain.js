@@ -81,7 +81,9 @@ export async function createSessionDomain(ctx, { storageDomain, readLimits, rout
     closers.push(() => delegates.close())
     const permissions = createPermissions(ctx, { routing, managerOf, grants, delegates, gate, wording, titleOf: titleOfSession, readLimits, now, logger })
     closers.push(() => permissions.close())
-    const questions = createQuestions(ctx, { routing, managerOf, titleOf: titleOfSession, now, logger })
+    // An ended question's late answer reaches its session as the connector's own message (questions.js).
+    const deliver = (sessionId, message) => port.message({ sessionId, message })
+    const questions = createQuestions(ctx, { routing, managerOf, deliver, titleOf: titleOfSession, now, logger })
     closers.push(() => questions.close())
     const prompts = createPrompts({ gate, wording, titleOf: titleOfSession })
     const tools = createSessionTools(ctx, { routing, managed: routing.managed, readLimits, logger })

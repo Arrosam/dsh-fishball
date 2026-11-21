@@ -74,10 +74,10 @@ export function createHandlers({ pairs, mailbox, managed, domain, now, logger },
    * every offer of it (Fishball 2026-11-14). The offer, and the domain's commit, then use the
    * root the domain keys its requests by (a subagent asks for the session the user sees).
    */
-  async function answered(args, caller, requestId, commit) {
+  async function answered(args, caller, requestId, commit, settles = true) {
     const { relation, root } = access.relationOf(args.sessionId, caller.principalKey)
     if (relation === AUTHORITY.other) return refused(REFUSAL.forbidden)
-    return offers.answer({ sessionId: root, requestId, offerId: args.offerId, principalKey: caller.principalKey }, commit)
+    return offers.answer({ sessionId: root, requestId, offerId: args.offerId, principalKey: caller.principalKey, settles }, commit)
   }
 
   return Object.freeze({
@@ -127,12 +127,12 @@ export function createHandlers({ pairs, mailbox, managed, domain, now, logger },
     [TOOL.approvalAnswer]: (args, { caller }) => (args.answer.decision === APPROVAL_DECISION.ask ? refused(REFUSAL.invalidDecision) : answered(args, caller, args.approvalId, async (sessionId) => passed(
       await interactions.answerApproval({ sessionId, approvalId: args.approvalId, answer: args.answer, principalKey: caller.principalKey }),
       (result) => defined({ accepted: true, grantId: result.grantId, expiresAt: result.grantId === undefined ? undefined : result.expiresAt }),
-    ))),
+    ), args.answer.decision !== APPROVAL_DECISION.escalate)),
     [TOOL.questionAnswer]: (args, { caller }) => {
       const { offerId, ...answer } = args
       return answered(args, caller, args.questionId, async (sessionId) => passed(
         await interactions.answerQuestion({ ...answer, sessionId, principalKey: caller.principalKey }), () => ({ accepted: true }),
-      ))
+      ), args.toUser !== true)
     },
     // Only sessions the caller manages (the user, 2026-11-17: "Prompts can be listed and answered
     // only on sessions the agent manages").

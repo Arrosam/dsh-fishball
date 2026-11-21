@@ -27,13 +27,12 @@
  * nobody polls. A disable keeps them on, because the held box is pollable again on re-enable.
  * Only offers (K1 OFFER_TYPES) are recorded: C-WIRE-2 removed `ask_agent`, the producer of `ask`.
  *
- * Escalated (C-WIRE-2): a principal's `escalate` moves the request to the user. K1 says escalate
- * settles nothing, so the record stays until the user's answer settles it (to the same pair, as
- * every settlement) or its call ends (withdrawn). It is no longer the agent's: `liveOffers` leaves
- * it out, so `approvals_list` omits it and an answer to it is refused. When its session leaves the
- * pair's management (release, Take back, revocation) it is dropped with no event: the agent knew
- * it was the user's, and a later settlement would reach a pair that no longer manages the session.
- * A succession moves it with the rest, but does not re-issue it (`moveHolder` `requests`).
+ * Escalated (C-WIRE-2): a principal's `escalate` (or a question's `toUser`) also shows the request
+ * to the user. K1 says escalate settles nothing, so the record stays until the first answer settles
+ * it (the user's, to the same pair as every settlement, or the principal's) or its call ends
+ * (withdrawn). It stays the agent's too (the user, 2026-11-21: "Fishball can always answer while
+ * the request is open"): `liveOffers` lists it, its answer is accepted, a session leaving
+ * management retires it as any other offer, and a succession re-issues it.
  *
  * One record per **request** (C-SUCCEED; R-HOST-09, Q-S3-1: one settlement record per request,
  * offer id `<requestId>.r<revision>`). A succession re-issues a live offer as revision n+1 to the
@@ -109,13 +108,13 @@ export function createOfferLedger({ mailbox, produce, onRetireFailed }) {
     /**
      * The live offers of `sessionId` with their holders and current descriptors (C-TOOLS'
      * `interactions.liveOffers` port, which C-WIRE binds to this: `approvals_list` and the answer
-     * check read the current `offerId` from here). Escalated ones are the user's and are left out.
+     * check read the current `offerId` from here). Escalated ones are listed too (module comment).
      */
     liveOffers: (sessionId) => Object.freeze([...live.values()]
-      .filter((record) => record.sessionId === sessionId && record.escalated !== true)
+      .filter((record) => record.sessionId === sessionId)
       .map((record) => Object.freeze({ principalKey: record.principalKey, descriptor: Object.freeze(structuredClone(record.draft.payload)) }))),
 
-    /** A principal escalated the offer to the user (module comment). @returns whether it was live and the agent's */
+    /** A principal escalated the offer to the user (module comment). @returns whether it was live and not escalated yet */
     escalate(offerId) {
       const record = recordOf(offerId)
       if (record === undefined || record.escalated === true) return false
@@ -147,8 +146,7 @@ export function createOfferLedger({ mailbox, produce, onRetireFailed }) {
     moveHolder(from, to) {
       const records = [...live.values()].filter((record) => record.principalKey === from)
       for (const record of records) record.principalKey = to
-      // Only the agent's offers are re-issued; an escalated one is the user's (module comment).
-      const requests = Object.freeze(records.filter((record) => record.escalated !== true).map((record) => requestOf(record.offerId)))
+      const requests = Object.freeze(records.map((record) => requestOf(record.offerId)))
       return Object.freeze({ requests, undo: () => { for (const record of records) if (record.principalKey === to) record.principalKey = from } })
     },
 
@@ -180,9 +178,7 @@ export function createOfferLedger({ mailbox, produce, onRetireFailed }) {
      *   failed retire leaves its event as it was: on a disable it is pollable again on re-enable.
      */
     async retireSession(sessionId, principalKey, reason, { freshRetirements } = {}) {
-      const held = [...live.values()].filter((record) => record.sessionId === sessionId && record.principalKey === principalKey)
-      for (const record of held) if (record.escalated === true) live.delete(requestOf(record.offerId))
-      const offers = held.filter((record) => record.escalated !== true)
+      const offers = [...live.values()].filter((record) => record.sessionId === sessionId && record.principalKey === principalKey)
       for (const record of offers) {
         try { await retireOne(record, reason, freshRetirements) } catch (error) { onRetireFailed(error) }
       }

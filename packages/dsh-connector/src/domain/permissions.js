@@ -21,8 +21,10 @@
  * - reject (a reason) → the call is rejected and the session's agent reads the reason (the one
  *   post-execute rewrite, wording.js); `settlement {rejected, principal}`;
  * - escalate → the offer settles nothing yet (K1 SETTLEMENT_OUTCOME: escalate settles nothing):
- *   routing marks it escalated (no longer listed or answerable by the agent) and the stock prompt
- *   shows; the user's answer there is the call's, with `settlement {by: user}` to the same pair;
+ *   routing marks it escalated and the stock prompt shows. The first answer wins: the user's click
+ *   there (`settlement {by: user}` to the same pair), or the manager's own later `approval_answer`,
+ *   which closes the prompt (the user, 2026-11-21: "Fishball can always answer while the request is
+ *   open"; "Yes, Fishball can answer it too");
  * - ask → `invalid-decision`: there is no `ask_agent` to carry the question back (the user's answer,
  *   2026-11-17: "Refuse it").
  * A refused answer leaves the offer live and answerable. The call's own abort (Stop, the turn
@@ -34,7 +36,7 @@
  * waiting call to the user's stock prompt, as V2's broker did on unload (`close`).
  */
 import { ANSWER_DECISIONS, APPROVAL_DECISION, ARGUMENTS_STATUS, APPROVAL_KIND, EVENT_TYPE, OFFER_ID, REFUSAL, RISK, SETTLED_BY, SETTLEMENT_OUTCOME, formatOfferId } from '../../mcp-schema/index.js'
-import { diagnosticOf } from '../errors.js'
+import { RefusalError, diagnosticOf } from '../errors.js'
 import { rootSessionOf } from '../session-info.js'
 import { argumentsOf } from './call-log.js'
 import { checkGrant } from './grants.js'
@@ -70,7 +72,7 @@ export function decisionRuleBroken(decision, risk, reason, argumentsStatus) {
 
 /**
  * @param ctx - the row's context (`on`, `sessions` through rootSessionOf)
- * @param deps.routing - `offer`, `settle`, `escalate`, `withdraw`
+ * @param deps.routing - `offer`, `settle`, `escalate`, `withdraw`, `holds`, `report`
  * @param deps.managerOf - K1c `ManagedState.managerOf`
  * @param deps.grants - grants.js
  * @param deps.delegates - delegates/index.js (`decide`)
@@ -136,7 +138,9 @@ export function createPermissions(ctx, { routing, managerOf, grants, delegates, 
     const id = mintId(REQUEST_ID.permission)
     let resolve
     const answered = new Promise((settle) => { resolve = settle })
-    const request = { ...call, id, offerId: formatOfferId(id, OFFER_ID.firstRevision), at: now(), reason: typeof req.reason === 'string' ? req.reason : '', resolve }
+    // escalated: its manager escalated it and the stock prompt shows; principalAnswered: the
+    // manager's own answer closed that prompt (answerEscalated).
+    const request = { ...call, id, offerId: formatOfferId(id, OFFER_ID.firstRevision), at: now(), reason: typeof req.reason === 'string' ? req.reason : '', resolve, escalated: false, principalAnswered: false }
     const delegated = await delegate(request, req.signal)
     if (delegated !== undefined) return delegated
     live.set(id, request)
@@ -161,9 +165,12 @@ export function createPermissions(ctx, { routing, managerOf, grants, delegates, 
     req.signal?.removeEventListener('abort', onAbort)
     if (result.cancelled) return APPROVAL.outcome.cancelled
     if (result.call !== undefined) return result.call
-    // Escalated, released or revoked: the user's stock prompt answers the call.
-    const outcome = await gate.show(via, { ...call, escalated: result.escalated === true })
-    if (result.escalated) {
+    // Escalated, released or revoked: the user's stock prompt answers the call. An escalated request
+    // stays live meanwhile, so its manager can still answer it (`answerEscalated`).
+    const outcome = await gate.show(via, { ...call, escalated: result.escalated === true, approvalId: id })
+    live.delete(id)
+    // The manager's answer closed the prompt: its own settlement is the request's.
+    if (result.escalated && !request.principalAnswered) {
       // The user's click settles the escalated offer for its pair; a cancelled prompt withdraws it.
       const settled = USER_OUTCOME[outcome] === undefined
         ? routing.withdraw(request.offerId)
@@ -195,6 +202,30 @@ export function createPermissions(ctx, { routing, managerOf, grants, delegates, 
     return true
   }
 
+  /**
+   * The manager's answer to an escalated request, whose call waits on the user's stock prompt: the
+   * prompt is closed with the decision first (the first answer wins there, so a click a moment ago
+   * makes this `false`), then the settlement is committed. The holder is checked in the same step
+   * as the prompt's answer (review F02). The call already has its outcome, so a settlement that
+   * cannot be stored is logged and the offer withdrawn (`settleOrWithdraw`), as for a question.
+   * `route` reads `principalAnswered` only after the prompt's promise resolves, a microtask later.
+   * @returns whether this answer decided the call
+   * @throws RefusalError(operation-failed) when the prompt is not showing (yet: the escalate's own
+   *   step has not reached `gate.show`), so the request is still live and a retry can decide it
+   */
+  async function answerEscalated(request, decision, reason, principalKey) {
+    if (!routing.holds(request.offerId, principalKey)) return false
+    const prompt = gate.list().find((entry) => entry.approvalId === request.id)
+    if (prompt === undefined) throw new RefusalError(REFUSAL.operationFailed)
+    if (!prompt.answer(FINAL[decision].call)) return false
+    request.principalAnswered = true
+    // Marked before the call's result exists: DSH runs the tool only after the prompt resolves.
+    if (decision === APPROVAL_DECISION.reject) wording.reject(request.sessionId, request.callId, request.toolName, reason)
+    const outcome = { approvalId: request.id, outcome: FINAL[decision].outcome, by: SETTLED_BY.principal }
+    await settleOrWithdraw(routing, request.offerId, outcome, warn(LOG.withdrawFailed)).catch(warn(LOG.settleFailed))
+    return true
+  }
+
   const dispose = ctx.on(APPROVAL.waterfall, function (req, next) { return route(this, req, next) }, { prepend: true })
 
   return Object.freeze({
@@ -212,7 +243,9 @@ export function createPermissions(ctx, { routing, managerOf, grants, delegates, 
       if (decision === APPROVAL_DECISION.escalate) {
         // Escalate settles nothing (K1); the user's answer on the stock prompt does.
         if (!(await routing.escalate(request.offerId, { principalKey }))) return refused(REFUSAL.expired)
-        end(approvalId, { escalated: true })
+        // Resolved, not ended: the request stays live while the prompt shows (route).
+        request.escalated = true
+        request.resolve({ escalated: true })
         return Object.freeze({ ok: true })
       }
       const broken = decisionRuleBroken(decision, risk, reason, request.args.status)
@@ -232,9 +265,10 @@ export function createPermissions(ctx, { routing, managerOf, grants, delegates, 
       const discard = () => (grant === undefined ? undefined : grants.discard(grant.grantId))
       let committed
       try {
-        committed = await settle(request, decision, trimmed(reason), principalKey)
+        committed = await (request.escalated ? answerEscalated : settle)(request, decision, trimmed(reason), principalKey)
       } catch (error) {
         await discard()
+        if (error instanceof RefusalError) return refused(error.code)
         throw error
       }
       if (!committed) {

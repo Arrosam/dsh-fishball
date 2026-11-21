@@ -934,7 +934,17 @@ export const ID_REFUSAL = Object.freeze({ idInvalid: 'id-invalid' })
  * note is a `system` note in the session). A
  * notice C-WIRE produces is still its own K1 amendment.
  */
-export const NOTICE = Object.freeze({ codeGrammar: NAME_GRAMMAR.code, codes: Object.freeze({}) })
+export const NOTICE = Object.freeze({
+  codeGrammar: NAME_GRAMMAR.code,
+  codes: Object.freeze({
+    // A managed session's ask_user_question call ended before an answer while its turn went on (e.g.
+    // its run_code program reached its deadline; a cancelled turn withdraws the question instead).
+    // The question stays open with its manager, and an answer to it is delivered into the session as
+    // a message (the user, 2026-11-21: "Keep it open, send the answer later"). Correlation id: the
+    // question's current offer id.
+    questionCallEnded: 'question-call-ended',
+  }),
+})
 
 /**
  * Wire conventions of every result and event:

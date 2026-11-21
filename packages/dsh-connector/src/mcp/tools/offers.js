@@ -12,6 +12,9 @@
  *   `risk-required`, leaves the offer live and answerable);
  * - not live, and this connector settled that `offerId` for the caller → `already-settled`;
  *   for another principal → `forbidden`; anything else not live → `expired`.
+ * An accepted answer that settles nothing (`toUser`, `escalate`: the request goes on waiting with
+ * the user) is never remembered as settled, so the principal can still answer it while it is open
+ * (the user, 2026-11-21: "Fishball can always answer while the request is open").
  *
  * **First commit wins (OQ-14).** The domain settles a request once. On top of that, answers to
  * one request through these tools run one after another, so of two principal answers the second
@@ -62,12 +65,13 @@ export function createOfferDesk({ interactions }) {
 
   /**
    * One principal answer.
-   * @param {{sessionId: string, requestId: string, offerId: string, principalKey: string}} answer
+   * @param {{sessionId: string, requestId: string, offerId: string, principalKey: string, settles?: boolean}} answer
+   *   `settles: false` for an answer that hands the request on without deciding it (toUser, escalate)
    * @param {(sessionId: string) => Promise<{ok: boolean, code?: string}>} commit the domain's answer for the
    *   offer's root session, run only when allowed
    * @returns the domain's result, or `{ok: false, code}`
    */
-  function answer({ sessionId, requestId, offerId, principalKey }, commit) {
+  function answer({ sessionId, requestId, offerId, principalKey, settles = true }, commit) {
     // An offer id names its request: one naming another request never answers this one.
     if (parseOfferId(offerId)?.requestId !== requestId) return Promise.resolve(refused(REFUSAL.expired))
     return serial(requestId, async () => {
@@ -79,7 +83,7 @@ export function createOfferDesk({ interactions }) {
       if (live.principalKey !== principalKey) return refused(REFUSAL.forbidden)
       if (live.descriptor.offerId !== offerId) return refused(REFUSAL.expired)
       const result = await commit(sessionId)
-      if (result?.ok === true) settled.set(offerId, principalKey)
+      if (result?.ok === true && settles) settled.set(offerId, principalKey)
       return result
     })
   }

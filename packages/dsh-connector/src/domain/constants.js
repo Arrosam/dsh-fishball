@@ -4,6 +4,7 @@
  * its log lines. Every MCP word is K1's (`../../mcp-schema`) and is imported where it is used; the
  * live limits are the connector's settings (src/config.js).
  */
+import { TOOL } from '../../mcp-schema/index.js'
 
 /** DSH's approval service (dsh-user-approval, both SDKs): the answerer waterfall and its outcomes. */
 export const APPROVAL = Object.freeze({
@@ -25,6 +26,13 @@ export const QUESTION = Object.freeze({
   aborted: 'ASK_ABORTED',
   /** The service that holds a timed question's foreground wait (attachWait, S36). */
   service: 'userQuestions',
+  /**
+   * A cancelled turn (Stop, session_stop, session_redirect) aborts its calls with the turn's cause,
+   * an object with a string `kind` (dsh-agent-loop `cancel(cause)`; wire/constants.js reads the same
+   * field). Any other abort of a question's call, such as a `run_code` program ending at its
+   * deadline (its nested calls abort with a string), ends the call but not the turn.
+   */
+  turnCauseKind: 'kind',
 })
 
 /** Session log facts read to find a call's arguments and a question's call id (spikes S11, S36). */
@@ -113,12 +121,28 @@ export const WORDING = Object.freeze({
 })
 
 /**
+ * The `kind` of a late answer's message. A different word from DSH's own `answer_to_pending_question`
+ * (a timed call's pending reply), because this call did not return `pending`: it failed, and the
+ * session's agent must not look for a pending call to match it to.
+ */
+const QUESTION_TEXT_KIND = Object.freeze({ lateAnswer: 'answer_to_ended_question' })
+
+/**
  * A question answered by the managing agent closes the session's own card with this rejection, as
  * DSH's gateway forwards it (S36 Q2).
  */
 export const QUESTION_TEXT = Object.freeze({
   answeredElsewhere: 'answered by the managing agent',
   aborted: 'aborted before the question was answered',
+  /** The `question-call-ended` notice's text to the manager (mcp-schema NOTICE.codes). */
+  callEnded: (toolName, cause) => `The session's ${toolName} call ended before anyone answered it (${cause}). The question stays open: answer it with ${TOOL.questionAnswer} and the answer is delivered into the session as a message.`,
+  /** What the cause of an ended call reads as when DSH gave no text for it. */
+  unknownCause: 'no reason given',
+  /**
+   * The message a question's late answer reaches its session as. JSON, as DSH's own
+   * `answer_to_pending_question` reply, so the session's agent reads which call and questions it answers.
+   */
+  lateAnswer: (toolName, callId, questions, answers) => JSON.stringify({ kind: QUESTION_TEXT_KIND.lateAnswer, tool: toolName, callId: callId ?? null, questions, answers }),
 })
 
 /** Why a question batch was refused (`bad-answer`); domain words only, never shown as the code. */
@@ -137,6 +161,8 @@ export const LOG = Object.freeze({
   grantWriteFailed: 'domain: a grant could not be written',
   grantExpiryFailed: 'domain: a grant expiry failed',
   holdFailed: 'domain: a timed question\'s wait could not be held',
+  noticeFailed: 'domain: the manager could not be told that a question\'s call ended',
+  lateAnswerFailed: 'domain: an ended question\'s answer could not be delivered into its session',
   frozenRequest: 'domain: a request could not be routed: its signal cannot be replaced',
   toolsFailed: 'domain: a managed session\'s tool could not be applied',
   toolsRemovalFailed: 'domain: a managed session\'s tool could not be removed',
