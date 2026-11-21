@@ -15,8 +15,8 @@
 import { REFUSAL, RESYNC_REASON, RISK, TOOL } from './constants.js'
 import { array, boolean, constant, frozen, integer, nullable, object, oneOfStrings, string } from './schema.js'
 import {
-  approvalAnswer, delivery, descriptor, grantSummary, mailboxEvent, promptDecision, promptSummary, questionAnswerItem,
-  readMessage, sessionSummary, time,
+  approvalAnswer, defaultModel, delivery, descriptor, grantSummary, mailboxEvent, modelSummary, promptDecision, promptSummary,
+  questionAnswerItem, readMessage, sessionSummary, time, unavailableProvider, workspaceSummary,
 } from './shapes.js'
 
 const OK = Object.freeze({ success: true, refusal: false })
@@ -43,15 +43,22 @@ const DEFINITIONS = [
   tool(TOOL.sessionsList, 'List the main-DSH sessions you manage. Sessions nobody manages and sessions another principal manages are omitted.',
     object({ limit: integer() }, { workspaceId: string() }),
     success({ sessions: array(sessionSummary()) })),
-  tool(TOOL.sessionStart, 'Start a session and attempt to manage it and send its first message. Set folder to a registered workspace ID or an absolute path to an existing directory, not a display name. Use the workspace ID or its registered directory for workspace placement. An unregistered directory starts the session under Ungrouped.',
+  // DISCOVERY-TOOLS: what session_start's folder, model and reasoningEffort accept, read live from DSH.
+  tool(TOOL.workspacesList, 'List the workspaces registered in this DSH: their workspaceId (pass it as session_start\'s folder), title, absolute path, and whether that directory exists now.',
+    object({}),
+    success({ workspaces: array(workspaceSummary()) })),
+  tool(TOOL.modelsList, 'List the models this DSH can start a session on now. Pass a model\'s exact model string (provider/model) as session_start\'s model, and optionally one of its reasoningEfforts as reasoningEffort.',
+    object({}),
+    success({ models: array(modelSummary()), defaultModel: defaultModel(), unavailableProviders: array(unavailableProvider()) })),
+  tool(TOOL.sessionStart, 'Start a session and attempt to manage it and send its first message. Set folder to a registered workspace ID or an absolute path to an existing directory, not a display name. Use the workspace ID or its registered directory for workspace placement. An unregistered directory starts the session under Ungrouped. workspaces_list and models_list list the accepted folder, model and reasoningEffort values.',
     object({ folder: string(), title: string(), message: string(), attachments: attachments() }, { model: string(), reasoningEffort: string() }),
-    success({ sessionId: string(), managed: boolean() }, { titleError: string(), workspaceError: string() })),
+    success({ sessionId: string(), managed: boolean(), running: boolean() }, { titleError: string(), workspaceError: string() })),
   tool(TOOL.sessionMessage, 'Send a message to a session you manage. An unconfirmed delivery is never retried.',
     object({ sessionId: string(), message: string(), attachments: attachments() }),
-    success({ status: delivery() })),
+    success({ status: delivery(), running: boolean() })),
   tool(TOOL.sessionRedirect, 'Cancel the running turn of a session you manage and send a new message.',
     object({ sessionId: string(), message: string(), attachments: attachments() }),
-    success({ status: delivery() })),
+    success({ status: delivery(), running: boolean() })),
   tool(TOOL.sessionStop, 'Stop the running turn of a session you manage.',
     object({ sessionId: string() }, { reason: string() }),
     success({ stopped: constant(true) })),

@@ -243,6 +243,8 @@ export const INSUFFICIENT_SCOPE_REASON = Object.freeze({ notPaired: 'not-paired'
 /** Core tool names (design §3.2, R-CON-02). No watch tools (R-WATCH-03); no attention tool (R-EXT-13). */
 export const TOOL = Object.freeze({
   sessionsList: 'sessions_list',
+  workspacesList: 'workspaces_list',
+  modelsList: 'models_list',
   sessionStart: 'session_start',
   sessionMessage: 'session_message',
   sessionRedirect: 'session_redirect',
@@ -680,6 +682,16 @@ export const EVENT_TYPE = Object.freeze({
   takeback: 'takeback',
   notice: 'notice',
 })
+/**
+ * `turn-finished` (WAKE-REDUCE, the user's decision 2026-11-21): emitted once a managed session's
+ * tree stands still (no running agent, subagent or background job, nothing queued).
+ * - `completed`: its last turn completed; `finalMessage` is the last assistant text, cut to
+ *   `finalMessageBytes` UTF-8 bytes including `truncationMarker` ("a few KB", the user);
+ * - `stopped`: it stopped for any reason but its manager's own stop; `stop` says why.
+ */
+export const TURN_OUTCOME = Object.freeze({ completed: 'completed', stopped: 'stopped' })
+export const TURN_FINISHED = Object.freeze({ finalMessageBytes: 4096, truncationMarker: '…[truncated]' })
+
 /** `contributed:<namespace>.<event>`; the prefix has one owner, K2. */
 export const CONTRIBUTED_TYPE_PREFIX = CONTRIBUTED_EVENT.typePrefix
 
@@ -749,9 +761,12 @@ export const RESYNC_REASON = Object.freeze({ staleCursor: 'stale-cursor' })
  * a question or plan review answered → `answered`. `ask` (the thread continues) and `escalate`
  * (the request moves to the user, S3 §5.1) settle nothing, so they produce no settlement; the
  * user's later answer does. `by: principal` replaces V2's `fishball`, since any principal may answer.
+ * `by: delegate` (dshConnectorSessions delegates; the user, 2026-11-20: "yes send settlements"): a
+ * main-DSH plugin decided the request before any offer was made, so the manager never saw the offer;
+ * the settlement then carries `delegate` `{name, toolName, reason}` to say what was decided.
  */
 export const SETTLEMENT_OUTCOME = Object.freeze({ allowed: 'allowed', rejected: 'rejected', answered: 'answered' })
-export const SETTLED_BY = Object.freeze({ user: 'user', principal: 'principal' })
+export const SETTLED_BY = Object.freeze({ user: 'user', principal: 'principal', delegate: 'delegate' })
 
 /**
  * Who wrote one message `session_read` returns (K1 amendment at W4b, C-WIRE; requirements 1.41

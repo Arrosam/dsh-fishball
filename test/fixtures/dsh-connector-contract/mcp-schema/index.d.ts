@@ -799,6 +799,8 @@ export declare const DELIVERY: { readonly delivered: "delivered"; readonly uncon
 export declare const DERIVED_AGENT_ID: { readonly prefix: "cid-"; readonly chars: 16; readonly alphabet: "abcdefghijklmnopqrstuvwxyz234567"; readonly digestAlgorithm: "sha256" }
 export declare const ENDPOINT_LIMITS: { readonly bodyBytes: number; readonly maxToolInputElements: number; readonly inFlightPerPrincipal: number; readonly listenStreamsPerPrincipal: number; readonly requestsPerMinute: number; readonly requestBurst: number; readonly jsonRpcCode: number; readonly jsonRpcVersion: "2.0" }
 export declare const ENTRY_STATUS: { readonly ok: "ok" }
+export declare const TURN_OUTCOME: { readonly completed: "completed"; readonly stopped: "stopped" }
+export declare const TURN_FINISHED: { readonly finalMessageBytes: 4096; readonly truncationMarker: "…[truncated]" }
 export declare const EVENT_TYPE: { readonly permission: "permission"; readonly question: "question"; readonly planReview: "plan-review"; readonly settlement: "settlement"; readonly retirement: "retirement"; readonly turnFinished: "turn-finished"; readonly state: "state"; readonly message: "message"; readonly ask: "ask"; readonly handover: "handover"; readonly takeback: "takeback"; readonly notice: "notice" }
 export declare const FAILURE_LIMIT: { readonly windowMs: number; readonly keyParts: readonly ["remoteAddress", "clientId"]; readonly perKeyPerWindow: number; readonly perAddressPerWindow: number }
 export declare const GATE_SURFACE: { readonly mcp: "mcp"; readonly token: "token"; readonly approval: "approval" }
@@ -891,7 +893,7 @@ export declare const RISK: { readonly low: "low"; readonly high: "high" }
 export declare const SCOPE: { readonly full: "agent"; readonly pair: "agent:pair" }
 export declare const SDK_PINS: { readonly "@modelcontextprotocol/server": "2.4.0"; readonly "@modelcontextprotocol/node": "2.1.2" }
 export declare const SETTINGS_REFUSAL: { readonly tokenDuplicate: "token-duplicate" }
-export declare const SETTLED_BY: { readonly user: "user"; readonly principal: "principal" }
+export declare const SETTLED_BY: { readonly user: "user"; readonly principal: "principal"; readonly delegate: "delegate" }
 export declare const READ_ROLE: { readonly user: "user"; readonly assistant: "assistant"; readonly principal: "principal"; readonly agent: "agent"; readonly context: "context" }
 export declare const SETTLEMENT_OUTCOME: { readonly allowed: "allowed"; readonly rejected: "rejected"; readonly answered: "answered" }
 export declare const TARGET_CODE: { readonly unreachable: "TARGET_UNREACHABLE"; readonly refused: "TOKEN_REFUSED"; readonly incompatible: "TARGET_INCOMPATIBLE"; readonly revoked: "token-revoked"; readonly insecure: "target-insecure"; readonly invalid: "target-invalid" }
@@ -901,7 +903,7 @@ export declare const TOKEN_ENDPOINT_LIMITS: { readonly formBodyBytes: number }
 export declare const TOKEN_RESPONSE_HEADERS: { readonly "cache-control": "no-store"; readonly pragma: "no-cache" }
 export declare const TOKEN_TYPE: "Bearer"
 export declare const TOKEN_VALUE: { readonly generatedPrefix: "dsht_"; readonly generatedBytes: 32; readonly opaqueBytes: 32; readonly digestAlgorithm: "sha256" }
-export declare const TOOL: { readonly sessionsList: "sessions_list"; readonly sessionStart: "session_start"; readonly sessionMessage: "session_message"; readonly sessionRedirect: "session_redirect"; readonly sessionStop: "session_stop"; readonly sessionRead: "session_read"; readonly sessionRelease: "session_release"; readonly approvalsList: "approvals_list"; readonly approvalAnswer: "approval_answer"; readonly questionAnswer: "question_answer"; readonly promptsList: "prompts_list"; readonly promptAnswer: "prompt_answer"; readonly grantsList: "grants_list"; readonly grantRevoke: "grant_revoke"; readonly attachmentPut: "attachment_put"; readonly attachmentRead: "attachment_read"; readonly inboxPoll: "inbox_poll"; readonly inboxAck: "inbox_ack"; readonly pair: "pair"; readonly setName: "set_name" }
+export declare const TOOL: { readonly sessionsList: "sessions_list"; readonly workspacesList: "workspaces_list"; readonly modelsList: "models_list"; readonly sessionStart: "session_start"; readonly sessionMessage: "session_message"; readonly sessionRedirect: "session_redirect"; readonly sessionStop: "session_stop"; readonly sessionRead: "session_read"; readonly sessionRelease: "session_release"; readonly approvalsList: "approvals_list"; readonly approvalAnswer: "approval_answer"; readonly questionAnswer: "question_answer"; readonly promptsList: "prompts_list"; readonly promptAnswer: "prompt_answer"; readonly grantsList: "grants_list"; readonly grantRevoke: "grant_revoke"; readonly attachmentPut: "attachment_put"; readonly attachmentRead: "attachment_read"; readonly inboxPoll: "inbox_poll"; readonly inboxAck: "inbox_ack"; readonly pair: "pair"; readonly setName: "set_name" }
 export declare const WIRE: { readonly digestHexChars: 64; readonly digestPattern: RegExp }
 
 /** A core tool's definition as `tools/list` lists it. */

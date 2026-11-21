@@ -42,8 +42,8 @@ domain's operation codes, payload vocabularies and payload bounds are this modul
 
 ## Tools (`TOOLS`, in `tools/list` order)
 
-`sessions_list`, `session_start`, `session_message`, `session_redirect`, `session_stop`,
-`session_read`, `session_release`, `approvals_list`, `approval_answer`, `question_answer`,
+`sessions_list`, `workspaces_list`, `models_list`, `session_start`, `session_message`,
+`session_redirect`, `session_stop`, `session_read`, `session_release`, `approvals_list`, `approval_answer`, `question_answer`,
 `prompts_list`, `prompt_answer`, `grants_list`, `grant_revoke`, `attachment_put`, `attachment_read`,
 `inbox_poll`, `inbox_ack`, `pair`, `set_name`.
 No watch tools (R-WATCH-03), no attention tool (R-EXT-13). Core tools come before every contributed
@@ -105,15 +105,15 @@ endpoint an invalid id is `invalid_client` (R-ID-02).
 ## Events
 
 - **Types (`EVENT_TYPE`):** `permission`, `question`, `plan-review`, `settlement`, `retirement`,
-  `turn-finished`, `state`, `message`, `ask` (no producer since C-WIRE-2), `handover`, `takeback`,
+  `turn-finished`, `state` (no producer since WAKE-REDUCE), `message`, `ask` (no producer since C-WIRE-2), `handover`, `takeback`,
   `notice`, and `contributed:<namespace>.<event>` (`isEventType`).
 - **Event shape (`MAILBOX_EVENT_SCHEMA`):** `{eventId, mailboxGeneration, sequence, type, at,
   sourceSessionId, correlationId, offer?, payload, payloadDigest}`; `offer = {offerId, revision,
   decisionKind}` on the answerable types (`ANSWERABLE_TYPES`).
 - **Payloads (`EVENT_PAYLOAD_SCHEMA`):** offers and `ask` carry the V2 descriptor; `settlement`
   `{approvalId, outcome, by, answers?}`; `retirement` `{retiredEventId, reason}`;
-  `turn-finished` `{sessionId, running, queued}`; `state` `{sessionId, running,
-  pendingInteraction}`; `message` `{text, images}`; `handover` / `takeback` `{sessionId, note}`;
+  `turn-finished` `{sessionId, outcome, finalMessage?, stop?}` (WAKE-REDUCE below); `state` `{sessionId, running,
+  pendingInteraction}` (frozen, no producer); `message` `{text, images}`; `handover` / `takeback` `{sessionId, note}`;
   `notice` `{code, text}` (no notice code is frozen yet: `NOTICE.codes` is empty, and each task that
   produces one adds it as a K1 amendment; C-ROUTE produces none, K1c-4); contributor events `{namespace, event, data, summary?}`
   (design §13.5a).
@@ -128,7 +128,9 @@ endpoint an invalid id is `invalid_client` (R-ID-02).
   design session's amendment.
 - **Settlement (`SETTLEMENT_OUTCOME`, `SETTLED_BY`, PROPOSED):** `allow` / `grant` → `allowed`,
   `reject` → `rejected`, an answered question or plan review → `answered`; `ask` and `escalate`
-  settle nothing (the user's later answer does). `by` is `user` or `principal`. An escalated offer
+  settle nothing (the user's later answer does). `by` is `user`, `principal` or `delegate` (a
+  main-DSH plugin registered through `dshConnectorSessions.delegates` decided it before any offer;
+  the settlement then carries `delegate: {name, toolName, reason}`; the user, 2026-11-20). An escalated offer
   (or a question sent `toUser`) is the user's: it leaves `approvals_list`, an agent's answer to it
   is refused, and the user's answer in the session is its settlement, to the same pair
   (C-WIRE-2). If its session leaves the pair's management first, it ends with no event.
@@ -504,6 +506,49 @@ tool, schema, OAuth, receipt or event changes.
   `{uri: 'dsh-agent://identity'}` and no param beyond the SDK's own `_meta` (its listen subscription id) to every authenticated listen stream subscribed to that URI; an
   unchanged name sends nothing; the events resource is not touched. A listen stream may subscribe
   to both URIs; `CONNECTED` still means the events URI.
+
+## DISCOVERY-TOOLS amendment (2026-11-21): workspaces_list and models_list
+
+Additive. Two full-scope core tools, after `sessions_list`, so an agent can find what
+`session_start` accepts instead of guessing. Both take no argument (closed empty input; any argument
+is `invalid-arguments`), read DSH at call time, keep no state and send no event.
+
+- **`workspaces_list`** → `{workspaces: [{workspaceId, title, path, available}]}`: every workspace of
+  DSH's registry, in its order. `path` is the registry's canonical absolute directory; `available`
+  is the same directory check `session_start`'s placement applies (false: that id is refused
+  `unknown-session`). Not scoped to managed sessions: a workspace is DSH's, not a session's.
+- **`models_list`** → `{models: [{model, provider, providerName, name, reasoningEfforts,
+  defaultReasoningEffort?}], defaultModel: {model, reasoningEffort?}, unavailableProviders:
+  [{provider, providerName}]}` from `sessionController.modelCatalog()`, the catalog `session_start`
+  validates against: `model` is the exact `provider/model` string, `reasoningEfforts` the ids its
+  `reasoningEffort` accepts (empty: none). A provider failure's message is not passed on. A catalog
+  DSH cannot read is `feature-off`, as for `session_start`.
+- `sessions_list` is unchanged: it already gives each managed session's id, title, `workspaceId`,
+  `running` and `pendingInteraction`; `workspaces_list` resolves that id to a title and path.
+
+## WAKE-REDUCE amendment (2026-11-21): fewer events, turn-finished carries the report
+
+The user's decisions (2026-11-21): every event a principal receives may wake its agent, so the
+connector sends only what no tool result already said. Fishball core batches what remains
+(quiet window, max batch, wake/silent classes: fishball-core's own settings).
+
+| Event | Before | Now | Why |
+| --- | --- | --- | --- |
+| `state` | on every agent status change of a managed session | **not produced** (type kept, no producer) | "running" is the `running` field of `session_start` / `session_message` / `session_redirect`; "idle" is `turn-finished`; `pendingInteraction` duplicates the offers (`permission` / `question` / `plan-review`) |
+| `settlement` `by: principal` | after the managing agent's own `approval_answer` / `question_answer` | **not produced** | the tool's result (`accepted`, `grantId`) is that outcome; `by: user` and `by: delegate` settlements are unchanged |
+| `turn-finished` | after every `turn/end`, `{sessionId, running, queued}` | once per standstill, `{sessionId, outcome, finalMessage?, stop?}` | it is the end signal and the report in one, so no `session_read` follows it; `running`/`queued` are always false at a standstill |
+
+- **Standstill:** the root session's agent, every subagent of its tree and every background job
+  (`ctx.jobs`, `running` / `stopping`) of the tree are idle, with nothing queued. A turn that ends
+  while anything still moves reports nothing; the next quiet edge checks again.
+- **`outcome: completed`** (last root turn `completed` or `max-tokens`): `finalMessage` is the root's
+  last assistant text, at most `TURN_FINISHED.finalMessageBytes` (4096) UTF-8 bytes including the
+  `TURN_FINISHED.truncationMarker` when cut (`truncated: true`).
+- **`outcome: stopped`**: any other end (an error, the user's Stop, a hook, an interruption, a
+  plugin's stop such as the watchdog's); `stop = {kind, message}` says why.
+- **The manager's own stop** (`session_stop`, the cancel of `session_redirect`) reports nothing.
+- `session_start.running`, `session_message.running`, `session_redirect.running` (required): whether
+  the session runs right after the delivery.
 
 ## Left to a task (not frozen here)
 

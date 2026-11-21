@@ -7,7 +7,7 @@
  */
 import {
   ANSWER_DECISIONS, APPROVAL_KIND, ARGUMENTS_STATUS, DECISION_KIND, DELIVERY, EVENT_TYPE, GRANT_KIND, IMAGE_TYPES, PLAN_REVIEW,
-  PROMPT_DECISIONS, READ_ROLE, RETIREMENT_REASON, RISK, SETTLED_BY, SETTLEMENT_OUTCOME,
+  PROMPT_DECISIONS, READ_ROLE, RETIREMENT_REASON, RISK, SETTLED_BY, SETTLEMENT_OUTCOME, TURN_OUTCOME,
 } from './constants.js'
 import { anyValue, array, boolean, constant, integer, nullable, object, oneOfStrings, string } from './schema.js'
 
@@ -48,6 +48,32 @@ export const descriptor = () => object(
 export const sessionSummary = () => object({
   sessionId: sessionId(), title: string(), workspaceId: nullable(string()), running: boolean(), pendingInteraction: boolean(),
 })
+
+/**
+ * One registered DSH workspace (workspaces_list, DISCOVERY-TOOLS): `workspaceId` is what
+ * session_start's `folder` takes; `path` is the registry's canonical absolute directory, and
+ * `available` is false while that directory is gone (session_start then refuses the id).
+ */
+export const workspaceSummary = () => object({ workspaceId: string(), title: string(), path: string(), available: boolean() })
+
+/** `<provider>/<model>`: the exact string session_start's `model` takes. */
+const modelRoute = () => string('provider/model, as session_start takes it')
+
+/**
+ * One model of DSH's live catalog (models_list, DISCOVERY-TOOLS). `reasoningEfforts` are the ids
+ * session_start's `reasoningEffort` accepts for this model, in catalog order (empty: none);
+ * `defaultReasoningEffort` is present only when the catalog names one.
+ */
+export const modelSummary = () => object(
+  { model: modelRoute(), provider: string(), providerName: string(), name: string(), reasoningEfforts: array(string()) },
+  { defaultReasoningEffort: string() },
+)
+
+/** The model a session starts on when session_start names none. */
+export const defaultModel = () => object({ model: modelRoute() }, { reasoningEffort: string() })
+
+/** A provider whose catalog could not be read now; its error text is never passed on. */
+export const unavailableProvider = () => object({ provider: string(), providerName: string() })
 
 export const readMessage = () => object({
   seq: integer(), role: oneOfStrings(Object.values(READ_ROLE)), author: string(), text: string(), images: array(imageRef()),
@@ -103,8 +129,10 @@ export const mailboxEvent = () => object(
 
 /**
  * Event payloads by type (R-EVS-02). Offers carry the descriptor the matching `approvals_list`
- * row has, so a client never needs a second read to decide. `turn-finished` says whether the
- * session still runs and whether anything is queued for it (R-EVS-02). A `settlement` carries
+ * row has, so a client never needs a second read to decide. `turn-finished` (WAKE-REDUCE) is the
+ * session's standstill and its report in one: `completed` with the last assistant text (bounded,
+ * TURN_FINISHED), or `stopped` with why; a stop by the manager itself sends none. `state` keeps its
+ * frozen shape with no producer (folded into the session tools' `running`). A `settlement` carries
  * `answers` for an answered session question or plan review.
  */
 export const EVENT_PAYLOAD_SHAPES = Object.freeze({
@@ -114,10 +142,13 @@ export const EVENT_PAYLOAD_SHAPES = Object.freeze({
   [EVENT_TYPE.ask]: descriptor,
   [EVENT_TYPE.settlement]: () => object(
     { approvalId: string(), outcome: oneOfStrings(Object.values(SETTLEMENT_OUTCOME)), by: oneOfStrings(Object.values(SETTLED_BY)) },
-    { answers: array(questionAnswerItem()) },
+    { answers: array(questionAnswerItem()), delegate: object({ name: string(), toolName: string(), reason: string() }) },
   ),
   [EVENT_TYPE.retirement]: () => object({ retiredEventId: string(), reason: oneOfStrings(Object.values(RETIREMENT_REASON)) }),
-  [EVENT_TYPE.turnFinished]: () => object({ sessionId: sessionId(), running: boolean(), queued: boolean() }),
+  [EVENT_TYPE.turnFinished]: () => object(
+    { sessionId: sessionId(), outcome: oneOfStrings(Object.values(TURN_OUTCOME)) },
+    { finalMessage: object({ text: string(), truncated: boolean() }), stop: object({ kind: string(), message: string() }) },
+  ),
   [EVENT_TYPE.state]: () => object({ sessionId: sessionId(), running: boolean(), pendingInteraction: boolean() }),
   [EVENT_TYPE.message]: () => object({ text: string(), images: array(imageRef()) }),
   [EVENT_TYPE.handover]: () => object({ sessionId: sessionId(), note: string() }),
