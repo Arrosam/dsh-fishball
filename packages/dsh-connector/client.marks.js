@@ -491,35 +491,71 @@ globalThis.__ModuleLoader__?.load({
       }
 
       /**
-       * The idle mark in a DSH session row's leading cell. DSH mounts this seat only while the row
-       * is idle; its own spinner takes the cell otherwise, so the running variant below uses the
-       * trailing seat.
+       * The sessions whose row's leading seat is mounted now (a count per id: one session may be
+       * drawn by more than one list). DSH mounts that seat only while the row's primary state is
+       * idle (dsh-client-ui-workspace Rows.tsx `showStatus`); in every other state (running,
+       * subagents running, a pending interaction, a finished turn not yet viewed) its own dot takes
+       * the cell. The trailing seat draws the mark exactly while this seat is not mounted, so a
+       * managed row always shows one fish without restating DSH's status rule here (the user's bug
+       * of 2026-11-21: a managed session whose own turn had ended while its subagents still ran
+       * showed DSH's subagent dot and no fish, because the trailing mark waited for `running`).
+       */
+      const leading = (() => {
+        const counts = new Map()
+        const changes = valueStore(0)
+        const changed = () => changes.set(changes.get() + 1)
+        return Object.freeze({
+          subscribe: changes.subscribe,
+          version: changes.get,
+          has: (sessionId) => counts.has(sessionId),
+          /** Records `sessionId`'s leading seat as mounted; returns its unmount. */
+          mount(sessionId) {
+            counts.set(sessionId, (counts.get(sessionId) ?? 0) + 1)
+            changed()
+            return () => {
+              const left = counts.get(sessionId) - 1
+              if (left > 0) counts.set(sessionId, left)
+              else counts.delete(sessionId)
+              changed()
+            }
+          },
+        })
+      })()
+
+      /**
+       * The idle mark in a DSH session row's leading cell (mounted only while the row is idle, see
+       * `leading`). Its mount is recorded in a layout effect, so the trailing seat drops its own
+       * mark before the browser paints and a row never shows two.
        */
       function makeRowMark(t) {
         return function ConnectorManagedRowMark({ sessionId }) {
+          React.useLayoutEffect(() => leading.mount(sessionId), [sessionId])
           const mark = markOf(useSnapshot(), sessionId)
           return mark === undefined ? null : h(ManagedMark, { t, mark, running: false })
         }
       }
 
       /**
-       * The running mark in a DSH session row's trailing seat (0.2.2's always-mounted seat). An idle
-       * row renders nothing here, so it never shows two marks. 0.2.1-rc.5 has no trailing seat:
-       * slots.inject waits for the declaration and this entry never mounts (no error).
+       * The mark in a DSH session row's trailing seat (0.2.2's always-mounted seat), drawn while the
+       * row's leading seat is not mounted (`leading`): it flips while DSH reads the session running
+       * and holds still otherwise (subagents running, a pending interaction, a finished turn).
+       * 0.2.1-rc.5 has no trailing seat: slots.inject waits for the declaration and this entry never
+       * mounts (no error).
        */
       function makeRowRunningMark(t) {
         return function ConnectorManagedRowRunningMark({ sessionId, useSessionStatus }) {
           const mark = markOf(useSnapshot(), sessionId)
-          // A child owns the hook, so an unmanaged row never subscribes to DSH's status source.
-          return mark === undefined ? null : h(RowRunningMark, { t, mark, useSessionStatus })
+          // A child owns the hooks, so an unmanaged row never subscribes to DSH's status source.
+          return mark === undefined ? null : h(RowTrailingMark, { t, mark, useSessionStatus })
         }
       }
 
-      /** The running half of the trailing entry: hooks are unconditional, the null return is not. */
-      function RowRunningMark({ t, mark, useSessionStatus }) {
+      /** The trailing entry's managed half: hooks are unconditional, the null return is not. */
+      function RowTrailingMark({ t, mark, useSessionStatus }) {
+        React.useSyncExternalStore(leading.subscribe, leading.version)
         // A selector keeps this mark from re-rendering on every other row's status change.
         const running = useSessionStatus((statuses) => statuses.get(mark.sessionId)?.running === true)
-        return running ? h(ManagedMark, { t, mark, running: true }) : null
+        return leading.has(mark.sessionId) ? null : h(ManagedMark, { t, mark, running })
       }
 
       return {

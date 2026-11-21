@@ -17,6 +17,7 @@
  * | MARKS-EP-04 hooks | EP (surface) | header, row menu, row mark, note dialog: every hook is data-dsh-connector-*, every class of the part dshc-*; no data-fishball-* or fb-* |
  * | MARKS-EP-05 icon idle / running | EP (row state) | the row mark draws V1's fish (dsh-fishball v0.1.0 FISH_MARK: exactly body in currentColor + eye in #EC0A6E; no tile, no wrench); running → dshc-flip; idle → none |
  * | MARKS-EP-06 icon surfaces | EP (surface) | only the row seats draw the fish: header, row menu and overlay draw none, and no element carries data-fishball-mark |
+ * | MARKS-DT-02 row states | Decision table (DSH row state → leading seat mounted × running) + ST | idle → one still fish in the leading seat; running → one flipping fish in the trailing seat; subagents running / pending / unviewed → one still fish in the trailing seat; idle → busy → idle moves it, never two or none |
  * | MARKS-ST-01 | State transition | Unmanaged –Hand over (no embed-UI)→ Managed: mark + Take back –Take back→ Unmanaged |
  * | MARKS-BVA-01 R5 | BVA (backend present / absent) | absent → no marks entry, no POST, no page error or warning, no error log line |
  * | MARKS-R6 entry missing | EP (load result) | connector entry fails → exactly one 'part unavailable' warn from embed-UI's row, nothing registered by either |
@@ -57,6 +58,13 @@ async function mountAll(page) {
     await page.mount(SLOT.rowLeading, sessionProps(S2)), await page.mount(SLOT.rowTrailing, status(S2)),
   ]
 }
+/** DSH row states as its seats see them (MARKS-DT-02): is the leading seat mounted, does DSH read the session running. */
+const ROW_STATES = Object.freeze([
+  Object.freeze({ label: 'idle', leading: true, running: false }),
+  Object.freeze({ label: 'running', leading: false, running: true }),
+  Object.freeze({ label: 'subagents running, own turn ended', leading: false, running: false }),
+  Object.freeze({ label: 'pending interaction or finished turn unviewed', leading: false, running: false }),
+])
 const fullWorld = (t, sdk, page = {}) => world(t, sdk, { principals: [online(P.navigator), [P.nameless, { online: false }]], managed: [[P.sessions.s2, P.navigator]], page })
 /** V1's fish colours (dsh-fishball v0.1.0 client.js FISH_MARK): the body takes the text colour, the eye is magenta. */
 const V1_FISH = Object.freeze({ viewBox: '0 0 24 24', bodyFill: 'currentColor', eyeFill: '#EC0A6E' })
@@ -182,6 +190,39 @@ export function registerMarksCases(sdk) {
     assert.equal(fishIn(views.filter((v) => !isRowSeat(v))).length, 0, 'a header, menu or overlay surface draws the fish')
     assert.ok(fishIn(views.filter(isRowSeat)).length > 0, 'no row seat draws the fish')
     assert.deepEqual(views.flatMap((v) => withAttr(v.tree(), ATTR.fishMark)), [], 'a part element carries ' + ATTR.fishMark)
+  })
+
+  // ---------------------------------------------------------------- DT-02: one fish per managed row, whatever DSH's row state
+  // DSH's seat rule (dsh-client-ui-workspace slots.d.ts / Rows.tsx): the leading seat is mounted only
+  // while the row's primary state is idle; any other state (running, subagents running, a pending
+  // interaction, a finished turn not yet viewed) puts DSH's own dot there. The trailing seat is
+  // mounted in every state. The user's bug (2026-11-21): a managed session whose own turn had ended
+  // while its subagents still ran showed no fish at all.
+  for (const r of ROW_STATES) {
+    row(sdk, 'MARKS-DT-02', r.label, `a managed row ${r.label} (leading seat ${r.leading ? 'mounted' : 'replaced by DSH\'s dot'}, session running: ${r.running}) → exactly one fish, ${r.leading ? 'in the leading seat' : 'in the trailing seat'}, flipping: ${r.running}`, async (t) => {
+      const { page } = await world(t, sdk, { principals: [online(P.navigator)], managed: [[S1, P.navigator]] })
+      const props = { ...sessionProps(S1), useSessionStatus: statusHook(S1, r.running) }
+      const trailing = await page.mount(SLOT.rowTrailing, props)
+      const lead = r.leading ? await page.mount(SLOT.rowLeading, props) : undefined
+      const marks = () => [lead, trailing].filter(Boolean).flatMap((v) => withAttr(v.tree(), ATTR.managedRow, S1))
+      assert.ok(await page.waitFor(() => marks().length > 0), 'no fish on the managed row')
+      assert.equal(marks().length, 1, 'fish on the row: ' + marks().length)
+      const holder = r.leading ? lead : trailing
+      assert.equal(withAttr(holder.tree(), ATTR.managedRow, S1).length, 1, 'the fish is not in the ' + (r.leading ? 'leading' : 'trailing') + ' seat')
+      assert.equal(subtreeOf(marks()[0]).some((n) => classesOf(n).includes(MARKS.flip)), r.running, 'flip class ' + MARKS.flip)
+    })
+  }
+  row(sdk, 'MARKS-DT-02', 'idle → busy → idle', 'the row turns busy (DSH unmounts the leading seat) and idle again → the one fish moves to the trailing seat and back; never two, never none', async (t) => {
+    const { page } = await world(t, sdk, { principals: [online(P.navigator)], managed: [[S1, P.navigator]] })
+    const props = { ...sessionProps(S1), useSessionStatus: statusHook(S1, false) }
+    const trailing = await page.mount(SLOT.rowTrailing, props)
+    const count = (v) => withAttr(v.tree(), ATTR.managedRow, S1).length
+    let lead = await page.mount(SLOT.rowLeading, props)
+    assert.ok(await page.waitFor(() => count(lead) === 1 && count(trailing) === 0), 'idle: not one fish in the leading seat')
+    await lead.unmount()
+    assert.ok(await page.waitFor(() => count(trailing) === 1), 'busy: no fish in the trailing seat')
+    lead = await page.mount(SLOT.rowLeading, props)
+    assert.ok(await page.waitFor(() => count(lead) === 1 && count(trailing) === 0), 'idle again: not one fish in the leading seat')
   })
 
   // ---------------------------------------------------------------- ST-01: without embed-UI

@@ -229,8 +229,10 @@ The connector adds these to DSH's own session UI, with or without `dsh-connector
 - **Managed by <agent>** beside a managed session's title, and **Take back** in its header and row
   menu.
 - Fishball's V1 fish (body in the text colour, magenta eye; dsh-fishball v0.1.0's mark) in a
-  managed session's sidebar row. It flips while the session runs, and holds still when motion is
-  reduced.
+  managed session's sidebar row, in every row state: in the leading cell while the row is idle,
+  after the time label while DSH's own dot takes that cell (running, subagents running, waiting
+  for an answer, a finished turn not yet viewed). It flips while the session runs, and holds still
+  when motion is reduced.
 - An agent without a name shows as **ID:** and its id. A subagent's header acts on its root session.
 
 The words are in English and Chinese. Nothing shows while the connector row is not loaded.
