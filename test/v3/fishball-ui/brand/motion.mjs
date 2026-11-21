@@ -4,7 +4,7 @@
  * tree cannot tell a running animation from a class name, so one headless Chromium resolves the
  * computed `animation-name` under both media values (the contrast suite's browser).
  */
-import { htmlOf } from '../contrast/page.mjs'
+import { documentOf, htmlOf } from '../contrast/page.mjs'
 import { chromeBinary, launchChromium } from '../../../v2-page-cases/lite-browser.mjs'
 
 const PAGE = Object.freeze({ blank: 'about:blank' })
@@ -65,3 +65,21 @@ const TEXT_PROBE = String(function probe() {
   return { word: style(word), tag: style(tag) }
 })
 export const measureWords = (mark, styleText) => evaluate(mark, styleText, TEXT_PROBE, false)
+
+/** The theme's accent in the drawn brand row: the tag's text shadow, the count pill's fill and text colour. */
+const ACCENT_PROBE = String(function probe() {
+  const tag = [...document.querySelectorAll('[data-fishball-logo-name] *')].find((el) => el.textContent.trim() === 'Deepseek Harness')
+  const pill = document.querySelector('[data-fishball-logo-badge]')
+  if (!tag || !pill) return { missing: { tag: !tag, pill: !pill } }
+  const own = getComputedStyle(pill)
+  // "The tag shadow" does not say text or box shadow: both are read, the first one drawn counts.
+  const tagStyle = getComputedStyle(tag)
+  const shadow = [tagStyle.boxShadow, tagStyle.textShadow].find((value) => value && value !== 'none') ?? 'none'
+  return { shadow, fill: own.backgroundColor, text: own.color }
+})
+/**
+ * Run the accent probe over the whole brand button (mark and name occupants, as DSH's row holds them)
+ * in the contrast suite's full document: DSH's page styles and theme sheets (light or dark), then the
+ * brand's own sheets, so DSH tokens the brand paints with resolve as on a real page.
+ */
+export const measureAccent = (sdk, button, styleText, theme) => evaluateHtml(documentOf(sdk, { tree: [button], sheets: [styleText], theme }), ACCENT_PROBE)

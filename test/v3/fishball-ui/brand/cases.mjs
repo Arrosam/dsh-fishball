@@ -19,13 +19,15 @@ import assert from 'node:assert/strict'
 import { after } from 'node:test'
 import { caseTest } from '../../contract/package-boundaries/cases.mjs'
 import { findAll, textOf } from '../../../support/rp-recommend.mjs'
-import { BADGE, CARD_STATE, FIXTURE, HOOK, LABEL, PRIORITY, SHELL, SLOT, STATE_DOT, STATUS, THEME, WORDMARK } from './constants.mjs'
+import { ACCENT, BADGE, CARD_STATE, DSH_MARK, FIXTURE, HOOK, LABEL, PRIORITY, SHELL, SLOT, STATE_DOT, STATUS, THEME, WORDMARK } from './constants.mjs'
 import { brandPage } from './page.mjs'
 import { registerFaults } from './faults.mjs'
 import { registerNative } from './native.mjs'
 import { hidePage } from './hide.mjs'
 import { registerAvatar } from './avatar-cases.mjs'
-import { hasChrome, measureMotion, measureWords, stopMotionBrowser } from './motion.mjs'
+import { hasChrome, measureAccent, measureMotion, measureWords, stopMotionBrowser } from './motion.mjs'
+import { THEME as DSH_THEME, WCAG } from '../contrast/constants.mjs'
+import { contrast, parseColour, shown } from '../contrast/wcag.mjs'
 
 const show = (v) => JSON.stringify(v)
 const cards = (n, state = CARD_STATE.open) => Array.from({ length: n }, () => ({ state }))
@@ -78,6 +80,13 @@ export function registerBrandCases(sdk) {
   }
   const art = (p) => (p.markRoot() ? p.art(p.markRoot()) : [])
   const svgSizes = (p) => findAll(p.markRoot() ? [p.markRoot()] : [], (n) => n.tag === 'svg').map((n) => [String(n.props.width), String(n.props.height)])
+  /** DSH's FishLogo elements drawn in the mark (the primitives stand-in's marker). */
+  const dshMarks = (p) => findAll(p.markRoot() ? [p.markRoot()] : [], (n) => n.props['data-primitive'] === DSH_MARK.primitive)
+  /** The mark is 24px: Fishball's own 24×24 svg, or DSH's FishLogo given the mark's size (as the official brand plugin passes it). */
+  const assertMarkSize = (p, theme) => {
+    if (theme === THEME.fishball) assert.ok(svgSizes(p).some(([w, h]) => w === '24' && h === '24'), `no 24px icon: ${show(svgSizes(p))}`)
+    else assert.deepEqual(dshMarks(p).map((n) => String(n.props[DSH_MARK.sizeHandle])), [String(FIXTURE.ownerSize)], `DSH's FishLogo is not drawn once at size ${FIXTURE.ownerSize}`)
+  }
 
   /** Both streams live, core on, a manager frame and a sessions snapshot. */
   async function connected(p, { theme = THEME.fishball, running = false, cardCount = 0, cardState = CARD_STATE.open, manager = FIXTURE.manager } = {}) {
@@ -112,7 +121,7 @@ export function registerBrandCases(sdk) {
       assert.ok(all.indexOf(wordmark[0]) < all.indexOf(tag[0]), 'the tag is not beneath the wordmark')
       assert.equal(p.text(wordmark[0]).trim(), WORDMARK.text)
       assert.equal(p.text(tag[0]).trim(), WORDMARK.tag)
-      assert.ok(svgSizes(p).some(([w, h]) => w === '24' && h === '24'), `no 24px icon: ${show(svgSizes(p))}`)
+      assertMarkSize(p, theme)
       assert.ok(status(p), 'no status text node')
       assert.equal(findAll([p.nameRoot()], (n) => n.props[HOOK.status] !== undefined).length > 0, true, 'the status text is not in the brand name occupant')
       assert.ok(p.stateDot(p.markRoot()), 'no status light')
@@ -120,17 +129,28 @@ export function registerBrandCases(sdk) {
       assert.equal(descOf(p), statusText(p), 'description is not the status')
     })
   }
-  for (const theme of THEMES) {
-    t('BRAND-EP-02', `art ${theme}`, `the ${theme} theme draws Fishball's own ${theme === THEME.fishball ? 'fish' : 'whale'} in the same visual language, with a magenta eye`, async (c) => {
-      const p = await brandPage(c, sdk)
-      await connected(p, { theme })
-      const drawing = p.descendants(p.markRoot()).filter((n) => ['path', 'circle', 'ellipse', 'rect', 'polygon', 'polyline'].includes(n.tag))
-      assert.ok(drawing.length > 0, 'no drawing in the mark')
-      const paints = drawing.flatMap((n) => [n.props.fill, n.props.stroke]).filter((v) => v !== undefined)
-      assert.ok(paints.some(isMagenta), `no magenta eye among ${show(paints)}`)
-    })
-  }
-  t('BRAND-EP-03', 'two drawings', 'the two themes draw different art (Fishball\'s fish vs its own whale, not one reused drawing)', async (c) => {
+  const SHAPES = ['path', 'circle', 'ellipse', 'rect', 'polygon', 'polyline']
+  const paintsOf = (nodes) => nodes.flatMap((n) => [n.props.fill, n.props.stroke]).filter((v) => v !== undefined)
+  t('BRAND-EP-02', `art ${THEME.fishball}`, 'the fishball theme draws V1\'s fish (Fishball\'s own drawing, not DSH\'s FishLogo), with a magenta eye', async (c) => {
+    const p = await brandPage(c, sdk)
+    await connected(p, { theme: THEME.fishball })
+    const drawing = p.descendants(p.markRoot()).filter((n) => SHAPES.includes(n.tag))
+    assert.ok(drawing.length > 0, 'no drawing in the mark')
+    assert.deepEqual(dshMarks(p), [], 'the fishball theme draws DSH\'s FishLogo')
+    assert.ok(paintsOf(drawing).some(isMagenta), `no magenta eye among ${show(paintsOf(drawing))}`)
+  })
+  t('BRAND-EP-02', `art ${THEME.deepseek}`, 'the deepseek theme renders DSH\'s own FishLogo primitive (the mark DSH\'s official brand plugin slots), not a Fishball-drawn whale: no drawing of Fishball\'s own beside it and no magenta eye', async (c) => {
+    const p = await brandPage(c, sdk)
+    await connected(p, { theme: THEME.deepseek })
+    const logos = dshMarks(p)
+    assert.equal(logos.length, 1, `DSH's FishLogo is not rendered once in the mark: ${logos.length}`)
+    const inLogo = new Set(p.descendants(logos[0]))
+    const own = p.descendants(p.markRoot()).filter((n) => (SHAPES.includes(n.tag) || n.tag === 'svg') && !inLogo.has(n) && n.props['data-primitive'] === undefined)
+    assert.deepEqual(own.map((n) => n.tag), [], 'the mark draws Fishball\'s own art beside FishLogo')
+    const paints = paintsOf(p.descendants(p.markRoot()))
+    assert.equal(paints.some(isMagenta), false, `a magenta eye among ${show(paints)}`)
+  })
+  t('BRAND-EP-03', 'two drawings', 'the two themes draw different art (Fishball\'s fish vs DSH\'s FishLogo, not one reused drawing)', async (c) => {
     const fish = await brandPage(c, sdk)
     await connected(fish, { theme: THEME.fishball })
     const whale = await brandPage(c, sdk)
@@ -508,6 +528,35 @@ export function registerBrandCases(sdk) {
       assert.ok(words.tag.size < words.word.size, `tag size ${words.tag.size} is not smaller than the wordmark ${words.word.size}`)
     }
   })
+
+  // ================================================================ the theme's accent (browser)
+  const COLOURS = /rgba?\([^)]*\)/g
+  /** Every colour a computed shadow list paints, as rgb channels (a translucent layer keeps its accent's channels). */
+  const shadowColours = (text) => (String(text).match(COLOURS) ?? []).map((c) => { const { r, g, b } = parseColour(c); return [r, g, b] })
+  const sameChannels = (a, b) => a.every((v, i) => Math.abs(v - b[i]) < 1e-6)
+  const accentRow = (dshTheme) => browserRow('BRAND-EP-10', `accent ${dshTheme.id}`, `(DSH ${dshTheme.id}) the accent: fishball keeps magenta (a magenta tag shadow, count pill ${ACCENT.fishballPill}); deepseek is DeepSeek blue (a tag shadow in ${ACCENT.deepseek}, no magenta) with a darkened blue count pill whose fill reaches ${WCAG.text}:1 against its white text`, async (c) => {
+    const drawn = {}
+    for (const theme of THEMES) {
+      const p = await brandPage(c, sdk)
+      await connected(p, { theme, cardCount: ACCENT.cards })
+      drawn[theme] = await measureAccent(sdk, p.brandButton(), p.styleText(), dshTheme)
+      assert.equal(drawn[theme].missing, undefined, `${theme}: no tag or count pill drawn: ${show(drawn[theme].missing)}`)
+    }
+    const { fishball, deepseek } = drawn
+    const magentaIn = (shadow) => shadowColours(shadow).some(([r, g, b]) => isMagenta(`rgb(${r * 255}, ${g * 255}, ${b * 255})`))
+    assert.ok(magentaIn(fishball.shadow), `fishball tag shadow has no magenta: ${show(fishball.shadow)}`)
+    assert.equal(fishball.fill, ACCENT.fishballPill, 'the fishball count pill changed')
+    const blue = shadowColours(ACCENT.deepseek)[0]
+    assert.ok(shadowColours(deepseek.shadow).some((c) => sameChannels(c, blue)), `deepseek tag shadow is not DeepSeek blue: ${show(deepseek.shadow)}`)
+    assert.equal(magentaIn(deepseek.shadow), false, `deepseek tag shadow is still magenta: ${show(deepseek.shadow)}`)
+    assert.equal(deepseek.text, ACCENT.pillText, 'the deepseek count pill text is not white')
+    const fill = parseColour(deepseek.fill)
+    assert.equal(fill.a, 1, `the deepseek count pill fill is not opaque: ${deepseek.fill}`)
+    assert.ok(fill.b > fill.r && fill.b > fill.g, `the deepseek count pill is not blue: ${deepseek.fill}`)
+    const ratio = contrast(fill, parseColour(deepseek.text))
+    assert.ok(ratio >= WCAG.text, `deepseek count pill ${deepseek.fill} under ${deepseek.text}: ${shown(ratio)}:1 < ${WCAG.text}:1`)
+  })
+  for (const dshTheme of DSH_THEME.all()) accentRow(dshTheme)
 
   // ================================================================ the working animation and reduced motion
   if (sdk === '0.2.2-rc.1') {

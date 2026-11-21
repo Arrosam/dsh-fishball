@@ -140,3 +140,34 @@ export const AVATAR = Object.freeze({
 
 /** DSH's StateDot primitive's stand-in marker (`data-primitive`). */
 export const STATE_DOT = 'StateDot'
+
+/**
+ * The DeepSeek theme's mark (the user, 2026-11-20; DESIGN.md LOGO-BUTTON): DSH's own whale, the
+ * primitives' `FishLogo` element at the mark's size, the same mark DSH's official brand plugin
+ * (dsh-client-ui-brand-official `OfficialBrandMark({size})` → `<FishLogo size>`) puts in
+ * `sidebar.brand.mark`, not a Fishball-drawn whale. `viewBox` and `defaultSize` are DSH's own
+ * (dsh-web-frontend bundle, both SDKs: `FISH_LOGO_VIEWBOX` = 23.16 × 17.04, `size = 24`); `path` is a
+ * fixture outline the page's FishLogo stand-in draws; `sizeHandle` is the stand-in's record of the
+ * `size` the caller passed (a harness handle, never a product marker).
+ */
+export const DSH_MARK = Object.freeze({
+  primitive: 'FishLogo',
+  /** The stand-in's function name for every Icon and logo export (fishball-core/settings/primitives.mjs). */
+  standIn: 'Icon',
+  defaultSize: 24,
+  viewBox: Object.freeze({ width: 23.16, height: 17.04 }),
+  path: 'M1 8.5 L11.6 1 L22.2 8.5 L11.6 16 Z',
+  sizeHandle: 'data-fbtest-fishlogo-size',
+})
+
+/**
+ * The themes' accent (the user, 2026-11-20): the tag's text shadow and the count pill. Fishball's is
+ * magenta with the pill at #D40063 (unchanged); DeepSeek's is DeepSeek blue #4D6BFE, and its pill is a
+ * darkened blue whose fill reaches WCAG 1.4.3's 4.5:1 against the pill's white text.
+ */
+export const ACCENT = Object.freeze({
+  deepseek: 'rgb(77, 107, 254)',
+  fishballPill: 'rgb(212, 0, 99)',
+  pillText: 'rgb(255, 255, 255)',
+  cards: 1,
+})

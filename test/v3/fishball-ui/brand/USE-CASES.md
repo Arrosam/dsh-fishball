@@ -14,7 +14,7 @@ skipped where no Chromium exists). The settings and status rows are `fishball-co
 
 | UC | Use case | Actor | Main flow | Alternatives / exceptions |
 | --- | --- | --- | --- | --- |
-| BRAND-UC-01 | See Fishball's brand on the Fishball page | Visitor | 1. The Fishball page is open (the page root mark). 2. The wide brand row shows a 24px mark, the wordmark FISHBALL and the small tag Deepseek Harness beneath, with a status text and light. 3. The mark theme follows the strip frame's `brandStyle`: Fishball's fish, or Fishball's own whale. (BRAND-EP-01/02/03/08/09) | A1 no page root: both slots unregister and the shell is unchanged. A2 unknown/absent `brandStyle`: Fishball. A3 the shell's own fallback is replaced at priority -1. |
+| BRAND-UC-01 | See Fishball's brand on the Fishball page | Visitor | 1. The Fishball page is open (the page root mark). 2. The wide brand row shows a 24px mark, the wordmark FISHBALL and the small tag Deepseek Harness beneath, with a status text and light. 3. The mark theme follows the strip frame's `brandStyle`: Fishball's fish (V1's, magenta eye `#EC0A6E`), or DSH's own whale mark, the primitives' `FishLogo` at the mark's size (the mark DSH's official brand plugin puts in `sidebar.brand.mark`). Both keep the wordmark and tag. 4. The accent (tag shadow, count pill) is magenta for Fishball and DeepSeek blue `#4D6BFE` for DeepSeek, whose pill is a darkened blue at 4.5:1 or more under its white text (user, 2026-11-20). (BRAND-EP-01/02/03/08/09/10) | A1 no page root: both slots unregister and the shell is unchanged. A2 unknown/absent `brandStyle`: Fishball. A3 the shell's own fallback is replaced at priority -1. |
 | BRAND-UC-02 | See the state | Visitor | 1. The asks frame names the manager and its cards; the sessions list says whether it runs; the strip frame says core is on. 2. Connected-idle: Connected. Working: Working and the fish wags / whale swims. Needs attention: Waiting for you (n), badge n. Offline: Offline, error-like light. (BRAND-DT-01, BRAND-BVA-01, BRAND-ST-01…06) | A1 the asks stream not live, core off, or no manager: Offline. A2 the strip stream alone stale/closed: still connected (the asks stream is the link). A3 reduced-motion preference: static. |
 | BRAND-UC-03 | Open the one manager session | Visitor | 1. Mouse click, Enter or Space on the wide brand button. 2. `uiWorkspace.openSession(managerId)` opens/focuses the one manager session; the shell's own New Session handler does not run. (BRAND-DT-03…06) | A1 no manager id known: nothing happens, no new session. E1 the rail toggle keeps its own name/click and is never hijacked. A2 no ensure POST is ever sent by the logo. |
 | BRAND-UC-04 | Keep the shell's accessible names correct | Visitor | 1. The shell's brand button initially carries the sidebar's localized `session.new.label`. 2. The brand occupant makes the accessible name exactly Fishball and keeps it after every shell rerender; the status goes in the description, not the name. (BRAND-ST-08/09, BRAND-DT-01) | A1 teardown restores the previous label and description. |
@@ -27,7 +27,8 @@ skipped where no Chromium exists). The settings and status rows are `fishball-co
 | Partition | Classes | Rows |
 | --- | --- | --- |
 | Logo theme | `fishball` (default) / `deepseek` | BRAND-EP-01, BRAND-EP-02, BRAND-DT-01, BRAND-DT-02 |
-| Art | Fishball's fish / Fishball's own whale (not the official orca) | BRAND-EP-02, BRAND-EP-03 |
+| Art | Fishball's fish (own drawing, magenta eye, no FishLogo) / DSH's `FishLogo` primitive (once, no Fishball drawing beside it, no magenta) — the user's change of 2026-11-20 replaced Fishball's own whale | BRAND-EP-02, BRAND-EP-03 |
+| Accent | fishball: magenta tag shadow, pill `#D40063` / deepseek: tag shadow in `#4D6BFE`, no magenta, opaque blue pill at >= 4.5:1 under white text; × DSH light / dark | BRAND-EP-10 |
 | Wordmark typography | bold (>= 700) and larger than the tag / the tag small | BRAND-EP-09 |
 | Shell attributes | `title` = status text / absent; `aria-keyshortcuts` removed while mounted / restored | BRAND-ST-09, BRAND-TEAR-01/02 |
 | ask-card state | `open` (pending) / `answered`, `closed`, `voided` (not pending) | BRAND-EP-07, BRAND-BVA-01 |
@@ -51,7 +52,8 @@ skipped where no Chromium exists). The settings and status rows are `fishball-co
 | | 1 | badge "1"; Waiting for you (1); attention |
 | | 99 | badge "99"; Waiting for you (99); attention |
 | | 100 | badge "99+"; Waiting for you (99+); attention |
-| Brand icon | 24px | the mark's svg is 24×24 in the wide row and the rail (BRAND-EP-01, BRAND-EP-06) |
+| Brand icon | 24px | fishball: the mark's svg is 24×24 in the wide row and the rail (BRAND-EP-01, BRAND-EP-06); deepseek: `FishLogo` is given `size` 24 in the wide row (BRAND-EP-01) |
+| DeepSeek pill contrast | 4.5:1 (WCAG 1.4.3) | the pill fill against its white text is at least 4.5:1; the plain `#4D6BFE` would be 4.33:1 and fails, so the fill must be a darkened blue (BRAND-EP-10) |
 | Label overwrites | 0, 1, 2, 3 rerenders | label stays Fishball each time; no observer loop (BRAND-ST-08) |
 | Priority | -1 against the shell's 0 | fishball-ui's two slots are -1 (BRAND-EP-04) |
 | Empty manager id | `''` | no manager → Offline (BRAND-ST-05; see "Ambiguities") |
@@ -81,7 +83,7 @@ description is exactly the status text.
 | Frame value | Theme |
 | --- | --- |
 | `fishball` | fish |
-| `deepseek` | whale |
+| `deepseek` | DSH's `FishLogo` |
 | any other string / `''` / `null` / a number | fish (default) |
 | absent | fish (default) |
 
@@ -132,7 +134,7 @@ description is exactly the status text.
 | BRAND-ST-05 | connected | asks frame with an empty-string manager id | offline (reported ambiguity) |
 | BRAND-ST-06 | idle | sessions running true | working |
 | | working | sessions running false | idle |
-| BRAND-ST-07 | fishball | strip frame brandStyle deepseek | deepseek art (same streams) |
+| BRAND-ST-07 | fishball | strip frame brandStyle deepseek | DSH's FishLogo (same streams) |
 | | deepseek | strip frame brandStyle fishball | fish art |
 | BRAND-ST-08 | mounted | shell overwrites the label with its New Session word | label Fishball (the scoped MutationObserver restores it) |
 | BRAND-ST-09 | mounted | status changes | the shell button's title is the new status text; aria-keyshortcuts stays removed |
@@ -152,6 +154,17 @@ description is exactly the status text.
    a reduced-motion preference and none with `(prefers-reduced-motion: reduce)`, not a class name.
 4. "The eye is magenta" is asserted as a magenta-family paint; the drawing uses a pink-magenta
    (`#EC0A6E`), not the pure `#ff00ff` word.
+5. FishLogo observation (2026-11-20 change): the settings page's primitives stand-in draws a bare
+   `<svg data-primitive="FishLogo">` and drops `size`. `page.mjs` (`withFishLogo`) keeps that stand-in
+   and marker, draws DSH's own FishLogo geometry over it (both SDKs' bundle: `width = size`,
+   `height = size·17.04/23.16`, viewBox `0 0 23.16 17.04`, default size 24, one `currentColor` path; the
+   path itself is a fixture), and records the passed `size` in `data-fbtest-fishlogo-size`, so BRAND-EP-01
+   asserts `size` 24 was passed rather than relying on the default.
+6. "Tag shadow" does not say text-shadow or box-shadow, nor which layer: BRAND-EP-10 reads the tag's
+   box-shadow, or its text-shadow when there is no box-shadow, and asks that any layer be the accent (the
+   drawn shadow is a background-coloured ring then the accent copy). The darkened pill blue has no given
+   value: the row asks for an opaque fill whose blue channel leads, at 4.5:1 or more against the pill's text
+   colour, which must be white.
 
 ## BRAND-AVATAR — Fishball's reply avatar on its page (GENTLE-TOOLS, the lead's relayed requirement A, 2026-11-21)
 

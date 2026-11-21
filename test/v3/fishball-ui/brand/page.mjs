@@ -23,7 +23,7 @@ import { createReactShim, findAll, textOf, walk } from '../../../support/rp-reco
 import { createWorld, loadPage, settle } from '../../fishball-core/settings/page.mjs'
 import { CLIENTS } from '../../fishball-core/settings/constants.mjs'
 import { eventSourceClass } from '../stream/event-source.mjs'
-import { FIXTURE, LABEL, PAGE_MARK, ROUTE, SHELL, SLOT, STATE_DOT } from './constants.mjs'
+import { DSH_MARK, FIXTURE, LABEL, PAGE_MARK, ROUTE, SHELL, SLOT, STATE_DOT } from './constants.mjs'
 
 const h = (React) => React.createElement
 
@@ -35,6 +35,33 @@ export function snapshotStore(initial) {
     getSnapshot: () => value,
     subscribe: (fn) => { listeners.add(fn); return () => listeners.delete(fn) },
     set(next) { value = next; for (const fn of [...listeners]) fn() },
+  }
+}
+
+/**
+ * DSH's FishLogo as both SDKs draw it (dsh-web-frontend bundle, the function behind the primitives'
+ * `FishLogo` export): `{size = 24, className}` → `<svg width={size} height={size·17.04/23.16}
+ * viewBox="0 0 23.16 17.04" fill="none" aria-hidden><path fill="currentColor"/></svg>`. The settings
+ * page's stand-in draws a bare `<svg data-primitive="FishLogo">` and drops `size`, so a case could not
+ * tell the mark's size; this keeps that stand-in (and its marker), draws DSH's geometry over it, and
+ * records the `size` the caller passed (`DSH_MARK.sizeHandle`). It wraps the page's `createElement`
+ * before the page loads, because the primitives module binds it then (as model-dialog's Modal does).
+ */
+function withFishLogo(React) {
+  const create = React.createElement
+  const drawn = new WeakMap()
+  const { width, height } = DSH_MARK.viewBox
+  const sized = (Icon) => function SizedIcon(props) {
+    const out = Icon(props)
+    if (out?.props?.['data-primitive'] !== DSH_MARK.primitive) return out
+    const size = props?.size ?? DSH_MARK.defaultSize
+    return create('svg', { ...out.props, width: size, height: (size * height) / width, viewBox: `0 0 ${width} ${height}`, fill: 'none', className: props?.className, [DSH_MARK.sizeHandle]: props?.size },
+      create('path', { d: DSH_MARK.path, fill: 'currentColor' }))
+  }
+  React.createElement = function createElement(type, props, ...children) {
+    if (typeof type !== 'function' || type.name !== DSH_MARK.standIn) return create(type, props, ...children)
+    if (!drawn.has(type)) drawn.set(type, sized(type))
+    return create(drawn.get(type), props, ...children)
   }
 }
 
@@ -289,6 +316,7 @@ export async function brandPage(t, sdk, { lang = 'en', mark = true, reducedMotio
     return Boolean(m) && w.html.element.hasAttribute(m[1]) && (m[2] === undefined || w.html.element.getAttribute(m[1]) === m[2])
   })
 
+  withFishLogo(w.React)
   prepareWorld?.(w)
   const page = await loadPage(t, w)
 
