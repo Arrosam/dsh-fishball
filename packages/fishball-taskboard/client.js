@@ -141,7 +141,12 @@ window.__ModuleLoader__.load({
       const set = (next) => { state = { ...state, ...next }; listeners.forEach((listener) => listener()) }
       // A frame that is not a board keeps the last good one (both sources), so the tab never draws a broken board.
       const isBoard = (value) => value !== null && typeof value === 'object' && Array.isArray(value.tasks) && Array.isArray(value.memos)
-      const take = (board) => { if (isBoard(board)) set({ board, lost: false, closed: false }) }
+      // `false` refuses the frame on the page connection, so its health does not clear the tab's notice.
+      const take = (board) => {
+        if (!isBoard(board)) return false
+        set({ board, lost: false, closed: false })
+        return true
+      }
       /** The row's own route: the standalone fallback. */
       function ownSource() {
         const source = new EventSource(url(BOARD.route.events), { withCredentials: true })
