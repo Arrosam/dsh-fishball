@@ -39,7 +39,8 @@ const PROBE = Object.freeze({
   point: Object.freeze({ tool: 'tool', setup: 'setup', batcher: 'batcher', claim: 'claim', attention: 'attention' }),
   service: Object.freeze({ tools: 'tools', instance: 'fishballInstance' }),
   plugins: Object.freeze([
-    Object.freeze({ id: 'B1', entry: '../board/index.js' }),
+    // loadInstance resolves from packages/dsh-instance; the board is its own package since the amenities split.
+    Object.freeze({ id: 'B1', entry: '../fishball-board/index.js' }),
   ]),
 })
 

@@ -1,7 +1,7 @@
 {
   "name": "fishball-board",
   "version": "1.0.0-alpha.1",
-  "description": "Fishball's session-linked work board (shelved: not offered in 1.0.0-alpha.1). Needs fishball-core in the same DSH; without it the row loads and stays idle.",
+  "description": "Fishball's session-linked work board, one of the Fishball amenities. Needs fishball-core in the same DSH; without it the row loads and stays idle.",
   "license": "MIT",
   "repository": {
     "type": "git",

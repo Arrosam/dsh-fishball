@@ -1,6 +1,6 @@
 # Package layout (V3)
 
-The repository holds nine packages (one, `fishball-board`, shelved: not in 1.0.0-alpha.1) in two sides that never import each other (requirements
+This repository holds the Fishball side's packages (core, the three amenities and their umbrella, and fishball-shared); the two sides that never import each other (requirements
 R-ARCH-10; design §1.0). The root `package.json` is private and not a plugin; it only lists the
 workspaces. Install, uninstall and the supported DSH versions are in the [README](<../README.md>).
 
@@ -42,7 +42,7 @@ packages/
   fishball-ui/                  Fishball side, plugin: every UI change in a Fishball DSH
     client.js client.{entries,asks,strip,model}.js
     fishball-page/  fishball-recommend-plugins/  fishball-child-plugins/   their own small packages
-  fishball-board/               Fishball side, plugin `fishball-board`: shelved, not in 1.0.0-alpha.1
+  fishball-board/               Fishball side, plugin `fishball-board`: the session-linked work board
   fishball-heartbeat/           Fishball side, plugin `fishball-heartbeat`: cache-warming heartbeat turns
   fishball-taskboard/           Fishball side, plugin `fishball-taskboard`: task board and memo pad (its own client.js)
   fishball-amenities/           Fishball side, umbrella: depends on and bundles the three amenities and
@@ -63,7 +63,7 @@ packages/
 - **Chunks, not folders, for browser code.** DSH serves a package's `client.js` and only
   `client.<name>.js` files beside it, so browser parts are flat chunks.
 - **The instance carries the Fishball plugins as data.** In a packed `dsh-instance`, `bundled/`
-  holds `fishball-ui` and `core` (`fishball-board` is shelved, not in 1.0.0-alpha.1), each exactly its package's `files` plus `package.json`
+  holds `core` (the amenities are installed by the user, not placed), each exactly its package's `files` plus `package.json`
   and its own bundled libraries. In a checkout, placement reads the sibling workspace folders. The
   host DSH never resolves or loads them.
 

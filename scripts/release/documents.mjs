@@ -42,6 +42,10 @@ ${installBlocks('amenities', name)}
 
 Install an amenity either through the umbrella or on its own, not both: each would insert the same rows.
 
+${name('board')}:
+
+${installBlocks('board', name)}
+
 ${name('heartbeat')}:
 
 ${installBlocks('heartbeat', name)}

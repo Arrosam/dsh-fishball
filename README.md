@@ -33,7 +33,7 @@ This repository holds the **Fishball-side** packages (installed in a Fishball DS
 | Package | What it does |
 | --- | --- |
 | [`fishball-core`](packages/core) | One plugin with 2 components: **`fishball-core`** (manager session, preset, persona, reminders, private Skills, MCP link, Connect, interception, status, ask cards, guard rows, bundle settings page) and **`fishball-ui`** (`./ui/`, Fishball page, Recommended tab (standalone only), the instance-run child's Plugins page notice, sidebar targets & pairing views, ask cards, brand row, model dialog). |
-| [`fishball-board`](packages/fishball-board) | Optional amenity, shelved: Fishball's session-linked work board. Its own bundle. |
+| [`fishball-board`](packages/fishball-board) | Optional amenity: Fishball's session-linked work board. Its own bundle. |
 | [`fishball-heartbeat`](packages/fishball-heartbeat) | Optional amenity: keeps Fishball's prompt cache warm with useful heartbeat turns while it is idle. Its own bundle. |
 | [`fishball-taskboard`](packages/fishball-taskboard) | Optional amenity: Fishball's task board and memo pad, with the right sidebar's **Task board** tab. Its own bundle. |
 | [`fishball-amenities`](packages/fishball-amenities) | Umbrella: depends on the three amenities so one install brings them all; carries only its settings-page hint. |
@@ -47,9 +47,9 @@ The DSH-side connector and hosted runner now live in their own repositories:
 - **`dsh-fishball-instance`** — Hosted Fishball bridge plugin (`dsh-instance`) that installs and runs a Fishball child inside a main DSH with `dsh-agent-connector`.
 
 Not in this release: fold-notify (its notify function is `dsh-connector-ui`'s `notify` tool), the
-hosted settings bundle, Watchdog (a separate future project), and `fishball-board`, Fishball's work
-board: shelved, not in 1.0.0-alpha.1. Its code stays in [`packages/board`](packages/board) for a later
-release; nothing in this release installs or places it. The repository root is not a
+hosted settings bundle and Watchdog (a separate future project). The amenities (`fishball-board`,
+`fishball-heartbeat`, `fishball-taskboard`) ship in this release through the `fishball-amenities`
+umbrella (the user, 2026-11-21); the hosted child places only `fishball-core`. The repository root is not a
 plugin. See [docs/package-layout.md](<docs/package-layout.md>).
 
 ## Supported DSH versions

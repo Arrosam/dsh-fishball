@@ -13,7 +13,7 @@ import { REPO } from './constants.mjs'
 linkContractForSourceRun()
 
 export const PACKAGE = Object.freeze({
-  board: { name: 'fishball-board', dir: 'packages/board', task: 'B1' },
+  board: { name: 'fishball-board', dir: 'packages/fishball-board', task: 'B1' },
 })
 
 /** Read one designed file of a package, failing with the task id when the package is absent. */

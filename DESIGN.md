@@ -6,7 +6,10 @@ the DSH side (`dsh-connector`, `dsh-connector-ui`, `dsh-instance`, `dsh-connecto
 release `1.0.0-alpha.1`, a fresh install. `fishball-board` is **shelved, not in 1.0.0-alpha.1** (the
 user, 2026-11-18: "fishball-board先从这次release中移除…先封存，留到下一批再说。所以不要预留在子实例的Fishball内"):
 `packages/board` stays unchanged for a later release; the release is eight tarballs and the hosted
-child places only `fishball-ui` and `fishball-core` (v3-requirements 1.42). Read
+child places only `fishball-ui` and `fishball-core` (v3-requirements 1.42). *Superseded for the release
+by §33 (the user, 2026-11-21): the board ships again, with fishball-heartbeat and fishball-taskboard,
+inside the `fishball-amenities` umbrella; core and fishball-ui still name it nowhere, and the hosted child
+still places only fishball-core.* Read
 [v3-design.md](<docs/planning/v3-design.md>) §1.0 and §17–§20 below first. Everything above §17 is
 the V1/V2 decision history: V2 was never deployed, fold-notify, the hosted settings bundle and
 Watchdog are gone, and the V2 history documents it links to were deleted by the DOCS task (the
@@ -2379,4 +2382,4 @@ The user's request: Fishball gets tools to create tasks, break goals into subtas
 | Umbrella | `fishball-amenities` depends on and bundles the three members (and `fishball-shared`), and its own patch inserts their rows by package name, because DSH makes only a profile's direct dependencies bundles (as DSH's `dsh-cua-bundle` carries its members' rows). Installing the umbrella and a member as direct dependencies together would insert the same rows twice. |
 | Browser code | `dsh.client` only on `fishball-taskboard` (its Task board tab) and the umbrella (its settings-page hint). Board and heartbeat have none. |
 | Shared helper | `followInstance` / `reportCoreMissing` (was the board's `src/instance.js`, imported by the other two by relative path) moved unchanged to `fishball-shared/instance-follower`, which now has three users; each member lists `fishball-shared` in `dependencies` and `bundleDependencies`. |
-| Release | The three members are released packages before the umbrella; INSTALL.md gains "all together" and "one on its own". fishball-board's release status (shelved but shipped inside the umbrella since the amenities merge) is the user's to decide. |
+| Release | Decided by the user (2026-11-21): all three amenities ship in the release, together with Fishball, through the umbrella; each is also released on its own, before the umbrella. Every component is separate code: no component imports another component or any core module; their one shared module is the generic `fishball-shared/instance-follower`. The shelving rule that core and fishball-ui name the board nowhere (SHELVE-BOARD) still holds. Known limit: fishball-board binds `fishballInstance` apiVersion 1 (its frozen contract) while core is at 2 (MULTI-0), so beside today's core it loads, logs `fishball-core-missing` once and stays idle. |
