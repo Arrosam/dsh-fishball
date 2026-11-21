@@ -2,6 +2,7 @@
   "name": "fishball-amenities",
   "version": "1.0.0-alpha.1",
   "description": "Installs the optional Fishball amenities together: fishball-board, fishball-heartbeat and fishball-taskboard, each its own package.",
+  "icon": "./assets/fishball-amenities-icon.svg",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -19,6 +20,7 @@
     "./package.json": "./package.json"
   },
   "files": [
+    "assets/fishball-amenities-icon.svg",
     "index.js",
     "client.js",
     "cordis.patch.yml",

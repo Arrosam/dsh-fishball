@@ -2,6 +2,7 @@
   "name": "fishball-heartbeat",
   "version": "1.0.0-alpha.1",
   "description": "Keeps Fishball's prompt cache warm while it is idle with useful heartbeat turns; off until both of its settings are set. Needs fishball-core in the same DSH.",
+  "icon": "./assets/fishball-heartbeat-icon.svg",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -18,6 +19,7 @@
     "./package.json": "./package.json"
   },
   "files": [
+    "assets/fishball-heartbeat-icon.svg",
     "index.js",
     "src/",
     "cordis.patch.yml",

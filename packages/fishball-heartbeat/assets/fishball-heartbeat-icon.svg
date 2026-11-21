@@ -1,0 +1,17 @@
+<svg width="36" height="36" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- fishball-heartbeat's package icon (ICON-SET): the badge is a pulse line (drawn for this repository on DSH's 16-unit grid; DSH's set has no heartbeat or pulse): the heartbeat turns that keep Fishball's cache warm while it is idle.
+       ICON-SET shared look (copied, not imported: the Fishball side imports nothing of the DSH side):
+       FishMark from Arrosam/fishball (Surfaces.kt, f4a887d, MIT, same author) on an ink tile, and a
+       paper badge in an ink ring at the bottom right, in front of the fish. The colours are the
+       launcher's palette and live only in these assets: ink #101010, paper #F2F2EE, accent #EC0A6E.
+       The tile carries its own background, so one asset reads on DSH's light and dark themes (the
+       Plugins page shows it as an <img>, which currentColor and theme CSS never reach). -->
+  <rect width="24" height="24" rx="5" fill="#101010"/>
+  <path d="M7.4 16.6 L7.4 9.9 L11.3 5.6 L18.4 5.6 L18.4 12.7 L14.1 16.6 Z M7.4 16.6 L2.6 21.4 L7.4 21.4 Z" fill="#F2F2EE"/>
+  <path d="M14.6 7.4 h2 v2 h-2 Z" fill="#EC0A6E"/>
+  <circle cx="17.6" cy="17.6" r="6.2" fill="#101010"/>
+  <circle cx="17.6" cy="17.6" r="5" fill="#F2F2EE"/>
+  <g transform="translate(14.08 14.08) scale(0.44)" stroke="#101010" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <path d="M1.5 8H4.25L6 3L9.5 13L11.25 8H14.5"/>
+  </g>
+</svg>
