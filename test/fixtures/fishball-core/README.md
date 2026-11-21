@@ -10,5 +10,5 @@ the copy the connector's K3 freeze was written against.
   built from frozen data; dsh-fishball's newer `constants.js` (WAKE, 2026-11-21) adds a helper that
   calls `join`, so the connector's frozen reader correctly refuses it. Refresh this fixture from the
   dsh-fishball commit the connector is built against, then re-run `tests/contract/k3-host-services`.
-- `test/v3/contract/own-schema` and the K1/K2 "core carries no generated schema" rows are TODO in
-  this repository: the fishball-core checks now live with fishball-core.
+- `test/v3/contract/own-schema` moved to the dsh-fishball repository with fishball-core; the
+  K1/K2 "core carries no generated schema" rows are TODO here because that check lives there now.

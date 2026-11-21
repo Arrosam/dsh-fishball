@@ -9,7 +9,7 @@
  * has no implementation in K1c (C-ROUTE builds it), so no row drives its behaviour.
  *
  * Vendor byte equality was F-LINK's row "done 7"; F-OWN-SCHEMA removed the copy and its generator,
- * and test/v3/contract/own-schema/ checks their absence.
+ * and dsh-fishball's test/v3/contract/own-schema/ checks their absence.
  */
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
