@@ -1,11 +1,13 @@
 {
   "name": "dsh-connector-monorepo",
   "private": true,
-  "description": "DSH Connector for DeepSeek Harness: dsh-agent-connector (connector + UI components), dsh-connector-amenities (adapter component), and dsh-connector-shared.",
+  "description": "DSH Connector for DeepSeek Harness: dsh-agent-connector (connector + UI components), the amenities dsh-connector-adapter and dsh-connector-watchdog (and their umbrella dsh-connector-amenities), and dsh-connector-shared.",
   "license": "MIT",
   "type": "module",
   "workspaces": [
     "packages/dsh-connector",
+    "packages/dsh-connector-adapter",
+    "packages/dsh-connector-watchdog",
     "packages/dsh-connector-amenities",
     "packages/dsh-connector-shared"
   ],

@@ -10,7 +10,7 @@
  * - the patrol: one timer per supervised session, `minCheckIntervalSeconds` apart, never moved by a
  *   refine. A patrol with no new messages since the watermark judges nothing (no tokens spent);
  * - drift, found by either: the session's turn is stopped (it still takes the manager's messages)
- *   and the manager gets `dsh-connector-amenities.drift` (the user: "Emit a contributed event to
+ *   and the manager gets `dsh-connector-watchdog.drift` (the user: "Emit a contributed event to
  *   Fishball and suspend the session").
  * No failure design (notes §2.6): a judgement that throws, times out or answers nonsense is a pass,
  * and a failed patrol is logged and tried again at the next tick.

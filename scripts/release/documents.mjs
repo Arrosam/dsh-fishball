@@ -32,9 +32,19 @@ Supported: DeepSeek Harness (DSH) ${SDKS.join(' and ')}.
 
 ${installBlocks('managed', name)}
 
-## Amenities (includes dsh-connector-adapter)
+## Amenities, all together (the dsh-connector-amenities umbrella: the adapter and the watchdog)
 
 ${installBlocks('amenities', name)}
+
+## One amenity on its own
+
+dsh-connector-adapter:
+
+${installBlocks('adapter', name)}
+
+dsh-connector-watchdog (needs the managed DSH's dsh-agent-connector):
+
+${installBlocks('watchdog', name)}
 `
 }
 

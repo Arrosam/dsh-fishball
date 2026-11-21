@@ -1,5 +1,5 @@
 /**
- * dsh-connector-watchdog's behaviour (packages/dsh-connector-amenities/watchdog/src/core.js and
+ * dsh-connector-watchdog's behaviour (packages/dsh-connector-watchdog/src/core.js and
  * store.js) over fake connector services, a fake judge and fake timers; no DSH is booted. Sources:
  * docs/watchdog-project-notes.md §2–§3 and the user's decisions of 2026-11-20 (drift = event +
  * stop; Fishball may still message a stopped session; settlements are the connector's; no
@@ -11,9 +11,9 @@ import os from 'node:os'
 import path from 'node:path'
 import { test } from 'node:test'
 import { pathToFileURL } from 'node:url'
-import { REPO } from '../../../../test/support/constants.mjs'
+import { REPO } from '../../../test/support/constants.mjs'
 
-const SRC = path.join(REPO, 'packages', 'dsh-connector-amenities', 'watchdog', 'src')
+const SRC = path.join(REPO, 'packages', 'dsh-connector-watchdog', 'src')
 const load = (file) => import(pathToFileURL(path.join(SRC, file)).href)
 const { createWatchdog } = await load('core.js')
 const { openBriefStore } = await load('store.js')

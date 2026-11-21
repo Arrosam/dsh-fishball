@@ -1,0 +1,17 @@
+- insert:
+    # Watchdog's own agent preset for its side sessions (watchdog notes 1.24, U8). Read-only tools
+    # only: it judges and never acts on a session (the withdrawn fishball-watchdog's user decision P-4).
+    - id: preset-watchdog
+      name: '@deepseek-ai/dsh-agent-preset'
+      config:
+        id: watchdog
+        name: Watchdog
+        description: Supervises a managed session for its manager (dsh-connector-watchdog).
+        order: 90
+        plugins:
+          - id: tool-fs
+            name: '@deepseek-ai/dsh-tool-fs'
+            config: { read: true, readImage: true, write: false, edit: false }
+    - id: dsh-connector-watchdog
+      name: 'dsh-connector-watchdog'
+      config: {}
