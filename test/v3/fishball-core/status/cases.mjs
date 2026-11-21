@@ -21,8 +21,9 @@ import { caseName, caseTest } from '../../contract/package-boundaries/cases.mjs'
 import { watchNetwork } from '../link/net-probe.mjs'
 import {
   BOARD, CONNECT_STATUS, FIXTURE, GUARD, HOST, LATER, LINE, LINK_STATUS, MODEL, NEVER_REPORTED, PROBE, SECRET,
-  SNAPSHOT_KEYS, SUBJECT, TARGET, TARGETS_SNAPSHOT, WAIT, WITHDRAWN_KEYS, WITHDRAWN_ROW,
+  SNAPSHOT_KEYS, SUBJECT, TARGET, TARGETS_SNAPSHOT, TOOLS_KEY_PREFIX, WAIT, WITHDRAWN_KEYS, WITHDRAWN_ROW,
 } from './constants.mjs'
+import { registerToolsNoticeCases } from './tools-notice.mjs'
 import { NOTIFY, NO_FIBER, bundle, entry, initializingEntry, loadingEntry } from './fakes.mjs'
 import { statusModule, statusOf } from './subject.mjs'
 import { ABSENT, settle, worldFor } from './world.mjs'
@@ -79,7 +80,12 @@ export function registerStatusCases(sdk) {
     const mod = await statusModule(sdk)
     const model = mod[SUBJECT.model]
     assert.ok(Object.isFrozen(model), 'STATUS_MODEL is not frozen')
-    for (const [key, value] of Object.entries(MODEL)) assert.deepEqual(model[key], value, `STATUS_MODEL.${key}`)
+    // GENTLE-TOOLS re-baseline (2026-11-21): STATUS_MODEL.notice gained toolsKeyPrefix (spelling not relayed),
+    // so notice is compared without it, and the prefix is checked on its own.
+    const { [TOOLS_KEY_PREFIX]: toolsPrefix, ...notice } = model.notice ?? {}
+    for (const [key, value] of Object.entries(MODEL)) assert.deepEqual(key === 'notice' ? notice : model[key], value, `STATUS_MODEL.${key}`)
+    assert.equal(typeof toolsPrefix, 'string', 'STATUS_MODEL.notice.toolsKeyPrefix is not a string')
+    assert.ok(toolsPrefix.length > 0 && toolsPrefix !== MODEL.notice.guardsKeyPrefix, `toolsKeyPrefix ${toolsPrefix}`)
     const text = model.text.guardsNotice(GUARD.first.join(GUARD.separator))
     for (const guard of GUARD.first) assert.ok(text.includes(guard), `guardsNotice does not name ${guard}: ${text}`)
     assert.equal(typeof mod[SUBJECT.line], 'function', 'no stripLine export')
@@ -572,4 +578,7 @@ export function registerStatusCases(sdk) {
   t('UC-STATUS-01', 'A1 press', 'pressing Connect calls connect.begin(); pressing cancel calls connect.cancel()', () => {}, LATER.press)
   t('PLAT-DT-02', 'integration', 'rules 1–5 in a real standalone DSH, read through the fishballStatus service', () => {}, LATER.wire)
   t('UC-STATUS-01', 'hosted', 'core in a hosted child: target status and set as the child sees them', () => {}, LATER.hosted)
+
+  // ---------------------------------------------------------------- GENTLE-TOOLS: the once-only extra-tools notice
+  registerToolsNoticeCases(t, sdk)
 }

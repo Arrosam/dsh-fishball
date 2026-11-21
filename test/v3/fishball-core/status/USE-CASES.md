@@ -219,3 +219,61 @@ withdrawn; each `TargetView` carries its own `line` = core's `stripLine(link, ur
 | REM-DT-01, F-STATUS-DT-01, F-STATUS-EP-01, F-STATUS-ST-01 | DT / EP / ST | the same F-STATUS rule tables, now on the pure per-target `stripLine` |
 | set, guards, notice, close, fishball-off rows | unchanged | as before; close/ctx-disposed check the targets and guards ports' listeners |
 | Withdrawn (skipped, reason given) | — | UC-STATUS-01 A5 and main 4, F-STATUS-DT-01 "sends nothing" (no target port; successors named), F-STATUS-BVA-01 (contributedTools is a TargetView field), F-STATUS-STRIP and UIPF-CARD rows (fishball-ui's strip) |
+
+## UC-STATUS-07 — The manager's extra tools, announced once (GENTLE-TOOLS, the lead's relayed requirement B, 2026-11-21)
+
+K3 `GuardReport` gains `extraManagerTools` (sorted, unique; `[]` with none, also when `ok`). The
+status reads `ctx.get('profileContext')` (`{home, name}`) and keeps what it announced in
+`<home>/fishball/manager-tools.json`, one JSON line `{"announced": [sorted]}` + `\n`, written after
+notify resolves (the union of what was announced and the current extras). Refinement (the lead, same
+day): `manager-tools` leaves the guards notice only when the report names extras.
+
+1. A report names a tool not announced before → ONE notice `{pluginId: fishball-core, dedupeKey:
+   <STATUS_MODEL.notice.toolsKeyPrefix>…, text: toolsNotice(ALL current extras joined by ', ')}`. The text
+   names them and is gentle: no "overridden", no "weaker" / "guarantees".
+2. Then the record is written. The same set, a subset, or a re-added announced name → no notice; a new
+   name → one more notice listing all current extras (another dedupe key).
+- **A1 (restart):** a new status over the same home honours the record (also a record from another process).
+- **A2 (no profileContext, or no home):** memory only, per status instance; nothing is written.
+- **E1:** a malformed or unreadable record counts as nothing announced; no throw (a warning may be logged).
+- **E2:** notify rejects → nothing recorded; retried at the next refresh that still sees an unannounced
+  name (not on a report without it, never in a loop). While one is in flight, no second notice.
+
+Cases: `tools-notice.mjs` (registered from cases.mjs, so on both SDKs).
+
+| Id | Technique | Checks |
+| --- | --- | --- |
+| TOOLS-00 text | EP | toolsNotice names 1 and 3 tools, is gentle, differs from guardsNotice |
+| TOOLS-UC-01 main one / three | UC, BVA 1 / 3 | one notice with the exact pluginId, prefix and text; the record's exact bytes; no repeat |
+| TOOLS-BVA-01 zero | BVA 0 | ok and manager-tools with `[]`: no tools notice, no record |
+| TOOLS-ST-01 announced set | ST | a → a → a,b → b → ok → a → a,b,c: notices only at the new names, the record is the union each step, distinct keys |
+| TOOLS-ST-02 restart / at start | ST | a new status over the same home: same set / subset no notice, one new tool one notice; a known report at creation no notice |
+| TOOLS-EP-01 seeded / another home | EP | a pre-written record is honoured; another home's record is not |
+| TOOLS-EP-02 ×6 malformed, unreadable | EP | not JSON, empty, announced not a list, no member, a JSON list, null, a directory: one notice, no throw, rewritten |
+| TOOLS-ST-03 rejected / always rejected | ST | nothing recorded on reject; no retry on ok; one retry per refresh that sees the name; no repeat once accepted |
+| TOOLS-ST-04 in flight | ST | a held notify: no second notice, no record until it resolves |
+| TOOLS-EP-03 ×2 | EP | no profileContext / no home: memory only, no file |
+| TOOLS-DT-01 rules 1–6 | DT | overridden codes × extras → guards notice list / tools notice (below), each once; snapshot = report |
+| TOOLS-EP-04 snapshot | EP | `snapshot().guards` deep-equals the report, extraManagerTools included |
+
+### TOOLS-DT-01
+
+| Rule | overridden | extras | guards notice | tools notice |
+| --- | --- | --- | --- | --- |
+| 1 | none (ok) | [] | none | none |
+| 2 | only manager-tools | some | **none** | one |
+| 3 | only manager-tools | [] | `manager-tools` (as before) | none |
+| 4 | other codes | [] | the other codes | none |
+| 5 | other codes + manager-tools | some | the other codes only | one |
+| 6 | other codes + manager-tools | [] | the other codes + `manager-tools` | none |
+
+### Re-baselined by GENTLE-TOOLS
+
+| Id | Before | Now |
+| --- | --- | --- |
+| F-STATUS-00 surface | `STATUS_MODEL.notice` deep-equals `{pluginId, guardsKeyPrefix}` | the same without the new `toolsKeyPrefix`, which is checked as a non-empty string other than the guards prefix |
+| GUARD fixtures (constants.mjs) | reports `{status, overridden}` | also `extraManagerTools` (`[]` unless given), as K3 now shapes every report |
+
+The other F-STATUS guards-notice rows are unchanged: their reports carry `extraManagerTools: []`, so
+`manager-tools` (GUARD.second) stays in the guards notice by rule 3.
+

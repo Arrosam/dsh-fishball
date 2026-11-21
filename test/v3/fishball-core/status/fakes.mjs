@@ -62,20 +62,26 @@ export class FakeBridge extends ValuePort {
   onChange(fn) { return this.source.on(fn) }
 }
 
-/** How one notify call settles. */
-export const NOTIFY = Object.freeze({ accept: 'accept', reject: 'reject' })
+/** How one notify call settles. `hold` leaves it pending until the case settles it (`held`). */
+export const NOTIFY = Object.freeze({ accept: 'accept', reject: 'reject', hold: 'hold' })
 /**
  * Fishball's manager notice: records every call. `outcomes` says how each call in turn settles
- * (NOTIFY.accept resolves, NOTIFY.reject rejects); calls past the list settle as `then`.
+ * (NOTIFY.accept resolves, NOTIFY.reject rejects, NOTIFY.hold stays pending); calls past the list
+ * settle as `then`. `decide(notice, index)`, when given, picks each outcome instead (so a case can
+ * hold or reject one kind of notice only). A held call is in `held` as {notice, accept(), reject()}.
  */
-export function fakeNotify({ outcomes = [], then = NOTIFY.accept } = {}) {
+export function fakeNotify({ outcomes = [], then = NOTIFY.accept, decide } = {}) {
   const calls = []
+  const held = []
   const notify = (notice) => {
-    const outcome = outcomes[calls.length] ?? then
+    const outcome = decide ? decide(notice, calls.length) : (outcomes[calls.length] ?? then)
     calls.push(structuredClone(notice))
+    if (outcome === NOTIFY.hold) {
+      return new Promise((resolve, reject) => { held.push({ notice: calls.at(-1), accept: () => resolve(), reject: () => reject(new Error(NOTIFY_FAILED)) }) })
+    }
     return outcome === NOTIFY.reject ? Promise.reject(new Error(NOTIFY_FAILED)) : Promise.resolve()
   }
-  return { notify, calls }
+  return { notify, calls, held }
 }
 const NOTIFY_FAILED = 'fbtest notify refused'
 const FIBER_FAILED = 'fbtest row failed to start'

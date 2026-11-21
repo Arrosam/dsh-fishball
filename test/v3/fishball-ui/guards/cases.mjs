@@ -532,6 +532,20 @@ export function registerGuardCases(sdk) {
     assert.notDeepEqual([...f.resumed3.tools].sort(), [...GUARDS.managerTools].sort(), 'precondition: the owner changed the tools')
     assert.ok(f.report3?.overridden?.includes(REPORT.managerTools), show(f.report3))
   })
+  // GENTLE-TOOLS (the lead's relayed requirement B, 2026-11-21): the report's extraManagerTools is the
+  // sorted, unique names the live manager has beyond the manager tools (Fishball core's own excluded;
+  // PLAT-UC-04 main shows a guarded manager has exactly the manager tools, so none of core's is among them).
+  caseTest(sdk, 'PLAT-UC-04', 'A1 extras', 'R-FB-13: the manager-tools report names the owner-added tools in extraManagerTools (sorted, unique, the defaults left out)', async () => {
+    const f = await last()
+    const expected = [...new Set(f.resumed3.tools)].filter((name) => !GUARDS.managerTools.includes(name)).sort()
+    assert.ok(expected.length > 0, 'precondition: the owner added tools: ' + show(f.resumed3.tools))
+    assert.deepEqual(f.report3?.extraManagerTools, expected, show(f.report3))
+  })
+  caseTest(sdk, 'PLAT-UC-04', 'main extras', 'an ok report carries extraManagerTools []', async () => {
+    const f = await last()
+    assert.ok(isOk(f.report1), 'precondition: ' + show(f.report1))
+    assert.deepEqual(f.report1.extraManagerTools, [], show(f.report1))
+  })
   withdrawnCase(sdk, 'HOST-UC-08', 'A3', 'standalone: the same core package shows the generic settings only (Read Only line, DSH links, no hosted section, no error)')
   // Re-pointed: the slim panel is removed (1.34 item 4); a standalone core page carries none of it and nothing fails.
   caseTest(sdk, 'HOST-UC-08', 'A3', 'standalone: no slim settings panel entry remains, and no Fishball plugin fails', async () => {

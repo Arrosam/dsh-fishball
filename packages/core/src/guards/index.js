@@ -35,9 +35,13 @@ export function createGuards(ctx) {
   // publish from its stale context.
   ctx.effect(() => () => { disposed = true })
 
+  /** Whether two ordered name lists differ. */
+  const differ = (left, right) => left.length !== right.length || left.some((name, index) => name !== right[index])
+
   function publish(report) {
+    // The extra tool names count as a change too: the status announces each new one (status.js).
     const changed = current === undefined || current.status !== report.status ||
-      current.overridden.length !== report.overridden.length || current.overridden.some((guard, index) => guard !== report.overridden[index])
+      differ(current.overridden, report.overridden) || differ(current.extraManagerTools, report.extraManagerTools)
     current = report
     if (!changed) return
     if (report.status !== GUARDS.status.ok) logger.warn(GUARDS.text.report, report.status, report.overridden.join(GUARDS.text.reportSeparator))

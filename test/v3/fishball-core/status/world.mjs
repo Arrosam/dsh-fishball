@@ -33,6 +33,8 @@ export const ABSENT = Symbol('absent')
  *               row does (default false: on the root context); `w.fiber` is that plugin's fiber
  *   brand       LOGO-BUTTON: core's stored logo theme getter (`() => value`), or ABSENT to model a
  *               stored field that is absent (the status reads the default)
+ *   profile     GENTLE-TOOLS: DSH's `profileContext` service value ({home, name}), or ABSENT (default:
+ *               no profileContext service, so the tools notice is remembered in memory only)
  */
 export async function worldFor(t, sdk, o = {}) {
   const { Context } = await cordis(sdk)
@@ -46,6 +48,7 @@ export async function worldFor(t, sdk, o = {}) {
   ctx.provide(HOST.appReady, appReady)
   if (pluginManager) ctx.provide(HOST.pluginManager, pluginManager)
   if (loader) ctx.provide(HOST.loader, loader)
+  if ((o.profile ?? ABSENT) !== ABSENT) ctx.provide(HOST.profileContext, o.profile)
 
   const present = (value) => value !== ABSENT
   const targets = present(o.targets ?? null) ? new FakeTargets(o.targets ?? TARGETS_SNAPSHOT.empty) : undefined

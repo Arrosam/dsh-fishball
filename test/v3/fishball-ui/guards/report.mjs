@@ -17,7 +17,12 @@ export function isReport(value) {
   return (value.status === REPORT.ok) === (value.overridden.length === 0)
 }
 
-const plain = (report) => ({ status: report.status, overridden: [...report.overridden].map(String) })
+// GENTLE-TOOLS (2026-11-21): K3 GuardReport gained `extraManagerTools`; it is carried through when the
+// report has it (string array), so a case can read it; isReport's shape test is unchanged.
+const plain = (report) => ({
+  status: report.status, overridden: [...report.overridden].map(String),
+  ...(Array.isArray(report.extraManagerTools) ? { extraManagerTools: [...report.extraManagerTools].map(String) } : {}),
+})
 
 const withTimeout = (promise) => Promise.race([promise, new Promise((resolve) => setTimeout(() => resolve(undefined), FINDER.callMs))])
 
