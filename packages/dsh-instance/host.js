@@ -198,11 +198,16 @@ export async function apply(ctx, config) {
       changed: () => changed(),
       warn: (format, value) => logger?.warn(format, value),
     })
+    // The locator's `agentEntry` reads the record from now on: announce it (K3 `onChange`), so
+    // dsh-connector-ui re-reads which agent has a window here.
+    changed()
     return hostedNow
   }, (error) => { logger?.warn(PLUGIN.hostedRecordFailed, error?.code ?? PLUGIN.code.failed); return undefined })
   const hostedProxy = Object.freeze({
     reconnect: async () => (await hostedReady)?.reconnect() ?? { ok: false, code: REFUSAL.notReady },
     targetStatus: () => hostedNow?.targetStatus() ?? HOSTED.target.unset,
+    // Before the record is read the child's entry is unknown, so no agent has a window yet.
+    agentEntry: () => hostedNow?.agentEntry() ?? null,
     retryNotice: () => hostedNow?.retryNotice() ?? false,
   })
   const status = () => launchStatus({ enabled, state, code, detail })

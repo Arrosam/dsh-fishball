@@ -258,6 +258,11 @@ export function createHostedToken({ tokens, record, credentials, instanceId, run
       if (state === undefined) return STATUS.unset
       return state === ENTRY.enabled ? STATUS.connected : STATUS.revoked
     },
+    /**
+     * The entry the child holds now: the newest recorded one (a key is recorded only after the
+     * child stored its value), or null before the first. Non-secret (K3 `agentEntry`).
+     */
+    agentEntry: () => record.entries().at(-1) ?? null,
     /** Retry's token rule: a deleted entry gets the notice and no token (R6 = B). */
     retryNotice() {
       if (entryState() !== ENTRY.deleted) return false
