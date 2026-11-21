@@ -91,6 +91,10 @@ export const PAGE = Object.freeze({
     controlAttr: 'data-turn-process',
     open: 'data-open',
     pageMark: 'data-fishball-page',
+    /** PAGING: DSH's chat scrollport, the two row kinds the gap rows read, and DSH's "Load earlier" label (en chat.loadOlder; "Loading…" while busy). */
+    scroller: '[data-conversation-scroll]',
+    messageKind: 'fishball-message', replyKind: 'assistant-step', response: 'response',
+    loadOlder: Object.freeze(['Load earlier']),
     brandAttr: 'data-fishball-brand',
   }),
   kinds: Object.freeze({ message: 'fishball-message', reply: 'assistant-step', tool: 'tool-call' }),
@@ -100,6 +104,8 @@ export const PAGE = Object.freeze({
   noContent: Object.freeze(['none', 'normal']),
   transparent: 'rgba(0, 0, 0, 0)',
   pageRow: 'fishball-page',
+  /** Trusted wheel input toward the top: steps, pixels per step, pause between steps. */
+  wheel: Object.freeze({ steps: 80, delta: 800, pauseMs: 50 }),
   /** DSH's chat settings namespace and its work-details field (dsh-client-ui-chat CHAT_SETTINGS_NAMESPACE / TRANSCRIPT_VIEW_FIELD). */
   chat: Object.freeze({ ns: 'ui-chat', field: 'transcriptView', verbose: 'verbose' }),
 })
@@ -134,3 +140,45 @@ export const TURNS = Object.freeze({
 })
 
 export const BUDGET = Object.freeze({ heldMs: 30000, pollMs: 100 })
+
+/**
+ * PAGING / STREAM rows (the lead, 2026-11-21: folded replies must not break DSH's chat scrolling or paging).
+ * DSH opens a session with a Turn-aligned window of at least 50 messages and two Turns and pages older
+ * history in the same shape (dsh-api-session-controller HISTORY_PAGE_OPTIONS, both SDKs); each scripted turn
+ * here is four messages (the user's, a reply with a message_user call, its result, a final reply), so
+ * 40 turns need at least one older page. Tolerances are layout rounding, not product values.
+ */
+export const PAGING = Object.freeze({
+  turns: 40,
+  message: (i) => 'fbtest-page msg-' + String(i).padStart(2, '0'),
+  pre: (i) => 'fbtest-page pre ' + String(i).padStart(2, '0'),
+  final: (i) => 'fbtest-page final ' + String(i).padStart(2, '0'),
+  callPrefix: 'call_fbpage_',
+  /** Older pages read at most (the window has grown by then far past 40 turns' worth). */
+  maxPages: 6,
+  /** How long the anchor is watched after an older page arrives. */
+  settleMs: 2000,
+  sampleMs: 100,
+  arriveMs: 20000,
+  /** The anchor row may move by layout rounding only (CSS pixels). */
+  anchorTolerancePx: 2,
+  /** A hidden seat's box and the gap it may add (CSS pixels). */
+  gapTolerancePx: 0.5,
+})
+
+/** A long streamed reply: many text deltas while the turn runs (fake-llm `deltas` / `delayMs`). */
+export const STREAM = Object.freeze({
+  words: 400,
+  deltas: 400,
+  delayMs: 10,
+  start: 'fbtest-stream START',
+  end: 'fbtest-stream END',
+  before: 'fbtest-stream message before',
+  after: 'fbtest-stream message after',
+  final: 'fbtest-stream final reply',
+  callPrefix: 'call_fbstream_',
+  sampleMs: 200,
+  budgetMs: 30000,
+  /** Uncaught page exceptions that name Fishball's code (DSH's own are not this suite's subject). */
+  ours: /fishball/i,
+})

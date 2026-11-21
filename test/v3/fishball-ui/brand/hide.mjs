@@ -12,9 +12,17 @@
 import { LABEL, PAGE_MARK } from './constants.mjs'
 import { navPage } from '../package/nav-page.mjs'
 
-/** One fake shell element with attributes, children and body-observer notifications. */
+/**
+ * One fake shell element with attributes, children and body-observer notifications. It is also the
+ * page's global `Node` (navPage's `shell.Node`): as in a browser, `node instanceof Node` holds for every
+ * shell element and `nodeType` is `Node.ELEMENT_NODE`.
+ */
 export class Node {
+  static ELEMENT_NODE = 1
+  static TEXT_NODE = 3
+  static DOCUMENT_NODE = 9
   constructor(tag, props = {}) {
+    this.nodeType = Node.ELEMENT_NODE
     this.tagName = String(tag).toUpperCase()
     this.attributes = new Map()
     this.children = []
@@ -56,8 +64,12 @@ function matches(node, selector) {
 }
 
 const observerState = new WeakMap()
-/** Notify a body observer for a change anywhere below it (microtask, as the browser reports it). */
-function notify(node, record) {
+/**
+ * Notify a body observer for a change anywhere below it (microtask, as the browser reports it). A
+ * browser's childList record always carries both node lists (possibly empty), so they are filled in.
+ */
+function notify(node, given) {
+  const record = given.type === 'childList' ? { addedNodes: [], removedNodes: [], ...given } : given
   for (let at = node; at; at = at.parent) {
     const observers = observerState.get(at)
     if (!observers) continue
@@ -112,6 +124,7 @@ export function shellDocument(lang) {
     querySelector: (selector) => descendants(body).find((n) => matches(n, selector)) ?? null,
     getElementsByName: () => [],
     MutationObserver: bodyObserverClass(),
+    Node,
     /** The logo occupant mounts inside the shell's brand mark slot. */
     mountLogo() { const mark = new Node('span', { 'data-fishball-logo-mark': '' }); markSlot.appendChild(mark); return mark },
     /** The shell re-renders as a browser replaces both controls; both carry the initial label. */

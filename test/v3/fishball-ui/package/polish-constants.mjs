@@ -56,7 +56,7 @@ export const NAV_PAGE = Object.freeze({
   loading: 'loading',
   writeFailed: 'write-failed',
   regions: Object.freeze(['page', 'editable']),
-  slot: Object.freeze({ launcher: 'settings.launcher', overlay: 'shell.overlay' }),
+  slot: Object.freeze({ launcher: 'settings.launcher', overlay: 'shell.overlay', chatNode: 'conversation.chat.node' }),
   portalTag: 'fbtest-portal',
   portalContainer: 'data-fbtest-container',
   nav: Object.freeze({ tag: 'nav', className: 'fishball-page-navigation', label: 'fishball-page' }),

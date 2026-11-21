@@ -137,7 +137,10 @@ export function chunksFor(steps) {
     if (step.fail !== undefined) { finish = { kind: 'error', failure: { message: 'fbtest model failure', code: step.fail } }; continue }
     if (step.finish === 'max-tokens') finish = { kind: 'max-tokens' }
     if (step.text !== undefined) {
-      out.push({ type: 'block-start', index, blockType: 'text' }, { type: 'text-delta', index, text: step.text }, { type: 'block-end', index, block: { type: 'text', text: step.text } })
+      // MSG-USER: `deltas` n streams the text as n text-delta chunks (a long streamed reply); the
+      // stream waits `delayMs` before each (see FakeAdapter.stream).
+      const parts = step.deltas > 1 ? splitText(step.text, step.deltas) : [step.text]
+      out.push({ type: 'block-start', index, blockType: 'text' }, ...parts.map((text) => ({ type: 'text-delta', index, text, ...(step.delayMs ? { fbtestDelayMs: step.delayMs } : {}) })), { type: 'block-end', index, block: { type: 'text', text: step.text } })
     } else {
       toolCalls = true
       const id = step.id ?? 'call_' + Math.random().toString(36).slice(2, 10)
@@ -149,6 +152,14 @@ export function chunksFor(steps) {
   }
   out.push({ type: 'usage', usage: { inputTokens: 10, outputTokens: 5 } }, { type: 'finish', reason: finish ?? { kind: toolCalls ? 'tool-calls' : 'stop' } })
   return out
+}
+
+/** MSG-USER: `text` cut into `n` consecutive pieces (the last takes the remainder). */
+function splitText(text, n) {
+  const size = Math.max(1, Math.ceil(text.length / n))
+  const parts = []
+  for (let at = 0; at < text.length; at += size) parts.push(text.slice(at, at + size))
+  return parts
 }
 
 export const name = 'fbtest-llm'
@@ -246,7 +257,13 @@ class FakeAdapter extends LlmAdapter {
       model.requests.push(digest(options))
       script = fillPlaceholders(model.respond(options), options)
     }
-    for (const chunk of chunksFor(script)) yield chunk
+    for (const chunk of chunksFor(script)) {
+      if (chunk.fbtestDelayMs) {
+        const { fbtestDelayMs: delayMs, ...plain } = chunk
+        await new Promise((resolve) => setTimeout(resolve, delayMs))
+        yield plain
+      } else yield chunk
+    }
   }
 }
 

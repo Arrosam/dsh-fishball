@@ -40,12 +40,32 @@ Before the page opens, Fishball's `model` is set to a routable scripted model: w
 | MSG-PAGE-ST-07 | ST reload | rows rebuilt from the stored session in call order; replies hidden |
 | MSG-PAGE-ST-08 / 09 | ST unload / reload of the `fishball-page` row (DSH's Plugins switch) | off: no page mark, no message rows, no `data-fishball-folded`, DSH's control opens and shows replies as DSH does; on again: rows return |
 
+## PAGING and STREAM (the lead, 2026-11-21: folded replies must not break DSH's chat scrolling or paging)
+
+[paging.mjs](paging.mjs), on a home of its own. 40 manager turns, each a hidden reply with a `message_user` call and a
+hidden final reply (4 messages a turn), so DSH's Turn-aligned window (≥ 50 messages and 2 Turns a page,
+`HISTORY_PAGE_OPTIONS`, both SDKs) opens on the newest part only. Input is trusted: wheel steps on DSH's
+scrollport `[data-conversation-scroll]`, and a click on DSH's own "Load earlier" control. That control is how DSH pages
+(reaching the top by wheel loads nothing by itself, on both SDKs).
+
+| Id | Technique | Checks |
+| --- | --- | --- |
+| MSG-PAGING-EP-00 | precondition | the first window holds fewer than 40 messages; "Load earlier" is offered; wheel input reaches the top |
+| MSG-PAGING-ST-01 | ST: newest window → each older page → all loaded | after every page the message rows are the newest contiguous run in call order, all visible; at the end all 40 and no "Load earlier" |
+| MSG-PAGING-ST-02 | ST, BVA ±2px | the topmost message row fully on screen before the click keeps its offset in the scrollport (sampled every 100 ms until 2 s after the page arrived) |
+| MSG-PAGING-EP-01 | EP, ±0.5px | every hidden reply seat has a 0×0 box, and the gap between the visible rows around it equals the gap with every hidden seat taken out of the document (measured in one task) |
+| MSG-PAGING-EP-02 | EP | no uncaught page exception names Fishball's code while scrolling and paging |
+| MSG-STREAM-ST-01 | ST running (400 text deltas, 10 ms apart) | the streamed reply grows while sampled and is never visible and never has height; the message before it is drawn and visible throughout; at the end both messages are visible |
+| MSG-STREAM-ST-02 | ST running → completed → opened | replies hidden behind a closed enabled control; both messages visible; a trusted click opens it and the streamed reply shows complete |
+| MSG-STREAM-EP-01 | EP | no uncaught page exception names Fishball's code during the stream |
+
 ## Todo rows
 - MSG-PAGE-EP-04 "outside the Fishball page nothing changes" for another session in the **same** DSH: no public
   route was found that shows a non-manager session there (`/session/<id>`, `?session=`, `#/session/`, `/s/` all
   left the chat empty). ST-08 covers "unloading removes all of it".
 
 ## Harness additions (test-only)
+- fake-llm: a text step's `deltas` / `delayMs` streams it as that many text-delta chunks, spaced in time.
 - fake-llm: a step's `rawArgs` sends the tool-call arguments text as given (unparsable call); `model.holdNth`
   holds a session's n-th conversation request (a running turn).
 - manager world: `turn` takes `scripts`; `startTurn` / `held` / `release` / `stopTurn` (DSH's user cancel) / `idle`;

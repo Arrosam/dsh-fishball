@@ -18,6 +18,7 @@ import { scenario } from '../manager/subject.mjs'
 import { FISHBALL_MODEL, MODEL } from '../manager/constants.mjs'
 import { BUDGET, PAGE, PERSONA, RESULT_ROWS, TOOL, TURNS } from './constants.mjs'
 import { openDsh, stopBrowser } from './page.mjs'
+import { registerPagingCases } from './paging.mjs'
 
 const show = (v) => JSON.stringify(v)
 const call = (n, args) => ({ tool: TOOL.name, args, id: TOOL.callPrefix + n })
@@ -358,5 +359,7 @@ export function registerMessageUserCases(sdk) {
     const f = await read('reloadedOn', 'completedTurn')
     assert.deepEqual(messages(f.reloadedOn, f.completedTurn).map((r) => r.text), TURNS.completed.shown.map((m) => m.text))
   })
+  // The lead (2026-11-21): folded replies must not break DSH's chat scrolling or paging; a long stream (paging.mjs).
+  registerPagingCases(sdk, browser)
   test(name('MSG-PAGE-EP-04', 'outside the Fishball page (another session in the same DSH) nothing changes'), { todo: 'no public way found to show a non-manager session in the Fishball page\'s DSH from a test; the unload rows (ST-08) cover "nothing left"' }, () => {})
 }
