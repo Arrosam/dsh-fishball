@@ -372,6 +372,18 @@ export const MCP = Object.freeze({
  * connector's `approval_answer` refuses it (the user, 2026-11-17: "Refuse it"; X-SEC X-02), so core
  * neither sends nor offers it (F-FIX).
  */
+/**
+ * dsh-connector-watchdog's contributed tools the persona names (their local names; the model sees
+ * each with the connector's MCP prefix and `MCP.namespace.externalName`). The amenity is optional:
+ * the persona tells Fishball to use them only when a DSH offers them.
+ * `sessionStart` starts a session already briefed, so Watchdog supervises it from its first request;
+ * `brief` covers only what a running session asks after the brief (the gap the user's 2026-11-22
+ * decision closes at creation).
+ */
+export const WATCHDOG = Object.freeze({
+  tools: Object.freeze({ sessionStart: 'watchdog_session_start', brief: 'watchdog_brief' }),
+})
+
 export const APPROVAL = Object.freeze({
   decision: Object.freeze({ allow: 'allow', grant: 'grant', reject: 'reject', escalate: 'escalate' }),
   risk: Object.freeze({ low: 'low', high: 'high' }),
