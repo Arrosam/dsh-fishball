@@ -2323,3 +2323,14 @@ Decided by the user on 2026-11-20:
 | Connector changes | `workspaces_list` and `models_list` join core's tool copy after `sessions_list`; no `settlement` comes for Fishball's own answers, so a successful `approval_answer` through the façade closes (deletes) its open unfiled ask record; `state` events are no longer sent. |
 
 **Implementation.** `src/events/delivery.js` holds the open buffer, the sealed batches and the window timer (injectable, unref'd, cleared by `close()`); `src/events/wake.js` checks the settings. A batch message's id is its first record's own message id and its source lists every record (`{kind: 'fishball-event', events: [{key, eventId, type, targetId}]}`), so a copy an earlier process left pending is recognised and settled for every record at recovery.
+
+## 30. Fishball speaks only through `message_user` (2026-11-21)
+
+**Why.** The user decided that Fishball's assistant output is collapsed by default and that only messages explicitly sent to the user are shown, through a dedicated tool. The prompt tells Fishball that the user sees only what it surfaces, that anything needing the user's attention or action must be sent proactively, that routine events are never sent, and that what it sends is batched.
+
+| Point | Decision |
+|---|---|
+| Tool | Core's `message_user` (`src/manager/message-tools.js` `MESSAGE_TOOL`, `message-user.js`), in the manager's scope only, through X2 (setup `fishball-core-message-user`), and listed in `GUARDS.coreTools`. One required `message` (Markdown). Returns `{shown: true}`, or `{shown: false, code: 'message-empty'}` when blank after trimming. Nothing is stored: the recorded call is the message. |
+| Notify | The persona names embed-UI's `notify` (dsh-connector `UI_TOOL.notify`, model base name `embed-ui__notify`) as offered only when the target DSH runs embed-UI (Q-N3). Core adds no notify tool of its own. |
+| Drawing | fishball-page registers a Conversation Definition on `tool/call` for `message_user`, and a `conversation.chat.node` renderer for its kind `fishball-message`, at group-tree position `turn`, so DSH's turn fold never hides it. The call's own tool row stays in the fold. Fishball's bubble, name and avatar (§22, and the avatar theme) move from assistant replies to this row. |
+| Folding | On the Fishball page, assistant reply rows are hidden unless their Turn's own DSH control (`button[data-turn-process]`) is open or disabled. Expanding that control shows the folded process and the replies, in DSH's plain look. No new disclosure. |

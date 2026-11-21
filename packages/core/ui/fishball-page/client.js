@@ -4,7 +4,7 @@ window.__ModuleLoader__.load({
   factory(require) {
     const React = require('react')
     const h = React.createElement
-    const { Button, Tooltip, StateDot, FishLogo, FISH_LOGO_PATH, FISH_LOGO_VIEWBOX, IconSettingsOutlineRegular, IconRefreshOutlineRegular } = require('@deepseek-ai/dsh-client-ui-primitives')
+    const { Button, Tooltip, StateDot, FishLogo, FISH_LOGO_PATH, FISH_LOGO_VIEWBOX, IconSettingsOutlineRegular, IconRefreshOutlineRegular, MarkdownText } = require('@deepseek-ai/dsh-client-ui-primitives')
     const PAGE = Object.freeze({
       name: 'fishball-page', route: 'api/fishball/session', read: 'GET', ensure: 'POST',
       requestFailed: 'FISHBALL_SESSION_REQUEST_FAILED', invalidSession: 'FISHBALL_SESSION_INVALID',
@@ -154,6 +154,50 @@ window.__ModuleLoader__.load({
       pending: Object.freeze({ kind: 'pending', dot: 'ongoing' }),
     })
     /**
+     * Fishball's messages to the user (the user, 2026-11-21): on this page only what Fishball sends
+     * with core's `message_user` tool is in view; its other output is folded (REPLY_FOLD).
+     * - Each dispatched call (`tool/call`, so never a half-streamed argument) becomes a chat Node of its
+     *   own `kind`, drawn by this page's `conversation.chat.node` renderer as Fishball's bubble. The
+     *   Node stands at the Turn's `groupTree` position `turn` (dsh-client-ui-chat group-tree.d.ts,
+     *   both SDKs: "stays in its Turn outside the Turn's process disclosure"), so DSH's own fold never
+     *   hides it, while the call's ordinary tool row stays in the fold with the rest of the process.
+     * - `tool` and `argument` restate core's tool (fishball-core src/manager/message-tools.js,
+     *   message-user.js): this classic module imports nothing of core. A blank message is not drawn,
+     *   the same rule core reports to the model as not shown.
+     * - `labels`: the chat namespace keys DSH's own assistant row passes to MarkdownText for its code
+     *   and footnote chrome (ui-chat `markdownLabels`, private there, the same keys on both SDKs).
+     */
+    const MESSAGE = Object.freeze({
+      tool: 'message_user', argument: 'message',
+      kind: 'fishball-message', target: 'chat', groupTree: 'turn', visibility: 'visible',
+      event: 'tool/call', role: 'start', slot: 'conversation.chat.node', locale: 'chat',
+      bubble: 'data-fishball-message',
+      // After the call's own tool row: on a reloaded page that row also anchors at the `tool/call` seq
+      // (no streamed delta is left), and a tie leaves the order to the engine. DSH places its own
+      // synthetic rows the same way (ui-chat CHAT_SYNTHETIC_SEQ_OFFSETS, at most ±0.9).
+      anchorOffset: 0.01,
+      labels: Object.freeze({ copy: 'copy', copied: 'copied', code: 'codeBlock.title', wrap: 'codeBlock.wrap', unwrap: 'codeBlock.unwrap', footnotes: 'markdown.footnotes' }),
+    })
+    /** The seat DSH draws around one message Node (ChatNodeSeat's `data-chat-flow-kind`, both SDKs). */
+    const MESSAGE_ROW = `[data-chat-flow-kind="${MESSAGE.kind}"]`
+    /**
+     * Fishball's ordinary text replies, folded by default (the user: "collapse all other assistant
+     * output, expandable on click"). The expansion is DSH's own whole-Turn control (TurnProcessNodeView,
+     * `button[data-turn-process="<turn>"]`, both SDKs), not a new disclosure: a Turn's reply seats
+     * (`data-chat-turn`) show while its control is open (`data-open`) or disabled. DSH disables it
+     * when it has nothing to fold or keeps the Turn open (stopped, failed, verbose details): there is
+     * no click that could reveal the replies then, so they are not hidden. A running Turn has no
+     * control yet, so its replies stay folded. Reasoning and tool rows keep DSH's own folding.
+     * `reply` is the response half of an assistant step (ChatNodeSeat `data-chat-group-part`).
+     */
+    const REPLY_FOLD = Object.freeze({
+      reply: '[data-chat-flow-kind="assistant-step"][data-chat-group-part="response"]',
+      turnOf: 'data-chat-turn',
+      control: 'button[data-turn-process]', controlTurn: 'data-turn-process', open: 'data-open',
+      folded: 'data-fishball-folded',
+      watched: Object.freeze(['data-open', 'disabled', 'data-chat-turn', 'data-chat-group-part']),
+    })
+    /**
      * The reply's avatar follows the sidebar logo's theme (core's `brandStyle`, LOGO-BUTTON; the user,
      * 2026-11-21): the Fishball theme draws Fishball's fish, V1's FISH_MARK (tag v0.1.0
      * assets/icon.svg), its body in the label colour and its eye the one magenta, as the sidebar mark
@@ -281,7 +325,8 @@ window.__ModuleLoader__.load({
       }
       const sheet = new CSSStyleSheet()
       const root = `[${PAGE.root}]`
-      const avatarOf = `${PAGE.main} [data-chat-flow-kind="assistant-step"][data-chat-group-part="response"]::before`
+      const message = `${PAGE.main} ${MESSAGE_ROW}`
+      const avatarOf = `${message}::before`
       const deepseek = `[${AVATAR.brand.attribute}="${AVATAR.brand.style.deepseek}"]`
       const { fish } = AVATAR
       const fishBody = AVATAR.url(AVATAR.svg(fish.body, fish.box))
@@ -317,16 +362,18 @@ window.__ModuleLoader__.load({
           `${root} ${PAGE.buttonTag}:has(${PAGE.brandName}):not([${PAGE.brandControl}]){display:none!important}`,
           ...barRules(root),
         ] : []),
-        // Fishball's replies: the theme's mark (AVATAR) and the name above an assistant bubble, the
-        // user's own bubble left as DSH draws it, with its thin stroke.
-        `${root} ${PAGE.main} [data-chat-flow-kind="assistant-step"][data-chat-group-part="response"]{position:relative;margin:6px 12% 6px 0;padding:20px 0 0 36px}`,
-        `${root} ${PAGE.main} [data-chat-flow-kind="assistant-step"][data-chat-group-part="response"]::after{content:"Fishball";position:absolute;top:0;left:36px;font:var(--dsw-font-xxs-strong-12);color:var(--dsw-alias-label-tertiary)}`,
+        // Fishball's messages (MESSAGE): the theme's mark (AVATAR) and the name above Fishball's bubble,
+        // the user's own bubble left as DSH draws it, with its thin stroke. A folded reply that the user
+        // expands keeps DSH's plain look, so only a message reads as Fishball speaking.
+        `${root} ${message}{position:relative;margin:6px 12% 6px 0;padding:20px 0 0 36px}`,
+        `${root} ${message}::after{content:"Fishball";position:absolute;top:0;left:36px;font:var(--dsw-font-xxs-strong-12);color:var(--dsw-alias-label-tertiary)}`,
         `${root} ${PAGE.main} [data-chat-flow-kind="user"] [class$="_bubble"]{background:var(--dsw-specific-bubble);box-shadow:inset 0 0 0 .5px var(--dsw-alias-border-l2)}`,
         `${root} ${avatarOf}{content:"";position:absolute;left:2px;top:22px;width:24px;height:24px}`,
         // Fishball's fish unless the theme is DeepSeek, so the fish also shows before the form is read.
         `${root}:not(${deepseek}) ${avatarOf}{background:${fishEye} center/contain no-repeat ${fish.bodyColor};${masked(fishBody)}}`,
         `${root}${deepseek} ${avatarOf}{background:${AVATAR.deepseekColor};${masked(deepseekMark)}}`,
-        `${root} ${PAGE.main} [data-chat-flow-kind="assistant-step"][data-chat-group-part="response"]>[data-slot="conversation.chat.node"]>*{padding:8px 14px;border-radius:var(--dsw-radius-xs) var(--dsw-radius-xl) var(--dsw-radius-xl) var(--dsw-radius-xl);background:var(--dsw-alias-bg-module-platform);box-shadow:inset 0 0 0 .5px var(--dsw-alias-border-l2);min-width:0}`,
+        `${root} ${message}>[data-slot="conversation.chat.node"]>*{padding:8px 14px;border-radius:var(--dsw-radius-xs) var(--dsw-radius-xl) var(--dsw-radius-xl) var(--dsw-radius-xl);background:var(--dsw-alias-bg-module-platform);box-shadow:inset 0 0 0 .5px var(--dsw-alias-border-l2);min-width:0}`,
+        `${root} ${PAGE.main} [${REPLY_FOLD.folded}]{display:none!important}`,
         `${root} ${PAGE.main} .md-table-wide{width:auto;max-width:100%;margin-left:0;padding-left:0}`,
       ]
       for (const rule of rules) sheet.insertRule(rule, sheet.cssRules.length)
@@ -534,6 +581,85 @@ window.__ModuleLoader__.load({
       return () => {
         unsubscribe()
         document.documentElement.removeAttribute(brand.attribute)
+      }
+    }
+
+    /** The trimmed message of one `message_user` call's raw argument JSON; null when there is nothing to draw. */
+    function messageOf(rawArguments) {
+      let args
+      try { args = JSON.parse(rawArguments) } catch { return null }
+      const text = args?.[MESSAGE.argument]
+      return typeof text === 'string' && text.trim() !== '' ? text : null
+    }
+
+    /**
+     * The Conversation Definition that turns each `message_user` call into a message Node (MESSAGE).
+     * It matches only `tool/call`, beside DSH's own tool Definition (no exclusive claim), so the
+     * call's ordinary tool row is unchanged. A Node is rebuilt only when its text or Location changes.
+     */
+    function messageDefinition() {
+      return {
+        kind: MESSAGE.kind,
+        target: MESSAGE.target,
+        match: { [MESSAGE.event]: (event) => event.data?.name === MESSAGE.tool ? { id: String(event.data.callId), role: MESSAGE.role } : null },
+        start: (_context, match) => messageOf(match.event.data.arguments),
+        update: (context) => context.state,
+        buildViewNode(context) {
+          const text = context.state
+          if (text === null || text === undefined || context.start === undefined) return null
+          const location = context.start.location
+          const current = context.current.get(MESSAGE.target)
+          if (current?.data.text === text && current.location === location) return current
+          return {
+            key: context.key, kind: MESSAGE.kind, id: context.id, target: MESSAGE.target,
+            anchorSeq: context.start.event.seq + MESSAGE.anchorOffset, location, visibility: MESSAGE.visibility, groupTree: MESSAGE.groupTree,
+            data: Object.freeze({ text }),
+          }
+        },
+      }
+    }
+
+    /** One message Node: Fishball's bubble around DSH's own Markdown, with the chat's labels. */
+    function MessageNodeView({ node, t }) {
+      const labels = React.useMemo(() => {
+        const L = MESSAGE.labels
+        return { code: { copyLabel: t(L.copy), copiedLabel: t(L.copied), toolbarLabels: { codeLabel: t(L.code), wrapLabel: t(L.wrap), unwrapLabel: t(L.unwrap) } }, footnotes: t(L.footnotes) }
+      }, [t])
+      return h('div', { [MESSAGE.bubble]: '' }, h(MarkdownText, { text: node.data.text, labels }))
+    }
+
+    /**
+     * Fold Fishball's ordinary replies (REPLY_FOLD) by marking each reply seat whose Turn's control is
+     * neither open nor disabled. Synchronous in the observer, which runs before the next paint, so a
+     * new reply never flashes; the mark is the page's own attribute, which React leaves alone and the
+     * observer does not watch, so marking cannot loop.
+     */
+    function mountReplyFold() {
+      const main = () => document.querySelector(PAGE.main)
+      const marked = new Set()
+      function reconcile() {
+        const scope = main()
+        const shown = new Set()
+        const next = new Set()
+        if (scope !== null) {
+          for (const control of scope.querySelectorAll(REPLY_FOLD.control)) {
+            if (control.hasAttribute(REPLY_FOLD.open) || control.disabled) shown.add(control.getAttribute(REPLY_FOLD.controlTurn))
+          }
+          for (const reply of scope.querySelectorAll(REPLY_FOLD.reply)) {
+            if (!shown.has(reply.getAttribute(REPLY_FOLD.turnOf))) next.add(reply)
+          }
+        }
+        for (const node of marked) if (!next.has(node)) node.removeAttribute(REPLY_FOLD.folded)
+        for (const node of next) if (!marked.has(node)) node.setAttribute(REPLY_FOLD.folded, '')
+        marked.clear()
+        for (const node of next) marked.add(node)
+      }
+      const observer = new MutationObserver(reconcile)
+      observer.observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: REPLY_FOLD.watched })
+      reconcile()
+      return () => {
+        observer.disconnect()
+        for (const node of marked) node.removeAttribute(REPLY_FOLD.folded)
       }
     }
 
@@ -985,6 +1111,15 @@ window.__ModuleLoader__.load({
         applyLanguage(ctx, continuation.lang, own)
         own(mountStyles())
         own(mountBrand(ctx))
+        // Fishball's messages and the folded replies (MESSAGE, REPLY_FOLD). Replies are folded only
+        // where the messages can be drawn: without DSH's conversation events (both SDKs serve them; a
+        // host without them is not a DSH chat) nothing is hidden, so nothing Fishball says is lost,
+        // and the rest of the page still mounts, as with a missing config form (mountBrand).
+        if (typeof ctx.uiConversation?.events?.register === 'function') {
+          own(ctx.uiConversation.events.register(messageDefinition()))
+          own(ctx.slots.inject(MESSAGE.slot, () => ctx.slots.register({ name: MESSAGE.slot, key: MESSAGE.kind, locale: MESSAGE.locale }, MessageNodeView)))
+          own(mountReplyFold())
+        }
         document.documentElement.setAttribute(PAGE.root, '')
         own(() => document.documentElement.removeAttribute(PAGE.root))
         const manager = createCell(null)
@@ -1064,7 +1199,7 @@ window.__ModuleLoader__.load({
 
     return {
       name: PAGE.name,
-      inject: ['slots', 'layout', 'uiWorkspace', 'uiSession', 'sessions', 'locale', 'configForms', 'shortcuts'],
+      inject: ['slots', 'layout', 'uiWorkspace', 'uiSession', 'uiConversation', 'sessions', 'locale', 'configForms', 'shortcuts'],
       apply,
       recordDefinition,
     }
