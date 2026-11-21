@@ -204,10 +204,14 @@ window.__ModuleLoader__.load({
     /**
      * The page stream's one EventSource and its topics' readers. A reader (`member`) is
      * `{frame(value), health(word)}`: it gets each frame of its topic, the topic's last frame at once
-     * when it joins (a topic sends only on change), and every health change of the connection, which
-     * is the one health of every topic. The source opens with the first reader and closes after the
-     * last. `use(lang)` follows the page's language (the strip is drawn in it); `restart()` is
-     * Reconnect: a fresh source, and one that had given up reads `stale` until its next frame.
+     * when it joins (a topic sends only on change), and every loss of the connection (`stale`,
+     * `closed`). It is never told `live`: a reader is live again only on a frame of its own topic that
+     * it accepts, as each view was on its own stream, so a malformed frame never clears a notice; a
+     * fresh connection sends every topic's frame at once, so each view hears again at once. The source
+     * opens with the first reader and closes after the last. `use(lang)` follows the page's language
+     * (the strip is drawn in it); `restart()` is Reconnect. A source opened again (Reconnect, a
+     * language change, or the first reader after the last left) that had given up reads `stale`
+     * until its next frame, as EventSource's own retry does.
      */
     function pageStream() {
       const topics = new Map()
@@ -241,24 +245,29 @@ window.__ModuleLoader__.load({
           const entry = membersOf(topic)
           entry.frame = value[PAGE_STREAM.field.frame]
           entry.known = true
-          if (health !== HEALTH.live) tell(HEALTH.live)
+          // The connection answers again; each reader judges its own frame (see above).
+          health = HEALTH.live
           for (const member of [...entry.members]) member.frame(entry.frame)
         }
         // An error on a source this stream already replaced or closed says nothing about the current one.
         current.onerror = () => { if (source === current) tell(current.readyState === SOURCE_CLOSED ? HEALTH.closed : HEALTH.stale) }
       }
       const close = () => { source?.close(); source = undefined }
+      /** A fresh source: one that had given up is trying again, so it reads `stale` until a frame. */
+      const reopen = () => {
+        open()
+        if (health === HEALTH.closed) tell(HEALTH.stale)
+      }
       const restart = () => {
         if (source === undefined) return
         close()
-        open()
-        if (health === HEALTH.closed) tell(HEALTH.stale)
+        reopen()
       }
       return Object.freeze({
         subscribe(topic, member) {
           const entry = membersOf(topic)
           entry.members.add(member)
-          if (source === undefined) open()
+          if (source === undefined) reopen()
           if (entry.known) member.frame(entry.frame)
           if (health !== HEALTH.live) member.health(health)
           return () => {
