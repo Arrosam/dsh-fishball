@@ -2,7 +2,7 @@ import { LOG, NAMESPACE } from './src/constants.js'
 import { createBoardStore } from './src/store.js'
 import { createBoardTools } from './src/board.js'
 import { registerBoardSearch } from './src/search.js'
-import { followInstance, reportCoreMissing } from './src/instance.js'
+import { followInstance, reportCoreMissing } from 'fishball-shared/instance-follower'
 
 export { Config } from './src/config.js'
 export const name = NAMESPACE

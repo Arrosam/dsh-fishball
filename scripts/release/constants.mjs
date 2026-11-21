@@ -21,16 +21,23 @@ export const REGISTRY = 'https://registry.npmjs.org'
 export const RELEASE_DIR = path.join(REPO, '.runtime', 'release', VERSION)
 
 /**
- * The eight packages, by key, in publish order: every package after the ones it depends on, so a
+ * The packages, by key, in publish order: every package after the ones it depends on, so a
  * registry install of any of them never names an unpublished version. A library is a bundled
  * dependency, but publishing it first also keeps it installable on its own. `library` marks the two
  * libraries, which are not DSH plugins (R-ARCH-08: no `dsh` field) and carry no engines.dsh.
- * fishball-board (packages/board) is not one of them: it is shelved, not in this release (SHELVE-BOARD,
- * the user, 2026-11-18). Its folder stays in the repo unchanged; add it back here for its release.
+ * fishball-board is shelved (SHELVE-BOARD, the user, 2026-11-18): fishball-core and fishball-ui name it
+ * nowhere. Since the amenities merge it shipped inside fishball-amenities (its board/ folder and patch
+ * row), so the split makes it its own package, bundled by the umbrella. As every package here it gets
+ * a PUBLISH.md line; whether the shelved board is published on its own is the user's decision
+ * (asked in the amenities split report, 2026-11-21).
  */
 export const PACKAGES = Object.freeze([
   Object.freeze({ key: 'fishballShared', folder: 'packages/shared', library: true }),
   Object.freeze({ key: 'core', folder: 'packages/core' }),
+  // The amenities, each its own package (the user, 2026-11-21), before the umbrella that bundles them.
+  Object.freeze({ key: 'board', folder: 'packages/fishball-board' }),
+  Object.freeze({ key: 'heartbeat', folder: 'packages/fishball-heartbeat' }),
+  Object.freeze({ key: 'taskboard', folder: 'packages/fishball-taskboard' }),
   Object.freeze({ key: 'amenities', folder: 'packages/fishball-amenities' }),
 ])
 
@@ -40,7 +47,12 @@ export const SET_CARRIER = null
 
 export const INSTALL_SETS = Object.freeze({
   standalone: Object.freeze(['core']),
+  // The umbrella bundles its amenities, so its one tarball installs them all (as before the split).
+  // heartbeat and taskboard can also be installed alone; the shelved board gets no install line of
+  // its own (SHELVE-BOARD).
   amenities: Object.freeze(['amenities']),
+  heartbeat: Object.freeze(['heartbeat']),
+  taskboard: Object.freeze(['taskboard']),
 })
 
 /** The profile the documents and checks use, DSH's own Web template (dsh-app-boot PROFILE_TEMPLATES.web). */

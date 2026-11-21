@@ -4,8 +4,10 @@ window.__ModuleLoader__.load({
     const React = require('react')
     const h = React.createElement
     const LOCALE = 'fishball-amenities'
-    const en = { hint: 'Configure each Fishball amenity in its component settings below (open a component under Components and click Configure).' }
-    const zh = { hint: '请在下方“组件”列表中点击对应组件进入组件设置进行配置。' }
+    // Each amenity is its own package (fishball-board, fishball-heartbeat, fishball-taskboard); installed
+    // through this umbrella, they show as its components below, each with its own settings.
+    const en = { hint: 'This installs the Fishball amenities, fishball-board, fishball-heartbeat and fishball-taskboard (each also installable on its own). Configure each in its component settings below.' }
+    const zh = { hint: '此插件一并安装 Fishball 的附加组件 fishball-board、fishball-heartbeat 与 fishball-taskboard（三者也可单独安装）。请在下方各组件的组件设置中分别配置。' }
 
     function apply(ctx) {
       const t = ctx.locale.bind(LOCALE)

@@ -34,6 +34,22 @@ Install \`fishball-ui\` and \`fishball-core\` (core last):
 
 ${installBlocks('standalone', name)}
 
+## Amenities, all together (the fishball-amenities umbrella)
+
+${installBlocks('amenities', name)}
+
+## One amenity on its own
+
+Install an amenity either through the umbrella or on its own, not both: each would insert the same rows.
+
+${name('heartbeat')}:
+
+${installBlocks('heartbeat', name)}
+
+${name('taskboard')}:
+
+${installBlocks('taskboard', name)}
+
 For the DSH-side connector plugins, see the \`dsh-connector\` repository. For running Fishball as a hosted child inside your main DSH, see the \`dsh-fishball-instance\` repository.
 `
 }

@@ -2,7 +2,7 @@
  * In-process worlds for the fishball-heartbeat cases, built from the installed SDK's real cordis,
  * cordis-plugin-loader, dsh-session and dsh-llm (read only), as the board suite's world does: no DSH
  * process is launched.
- * - the row is packages/fishball-amenities/heartbeat/index.js imported bound to the SDK under test
+ * - the row is packages/fishball-heartbeat/index.js imported bound to the SDK under test
  *   (the board suite's rowModule) and mounted as one loader row, so a config change is a real
  *   cordis reload of the row;
  * - the root context carries DSH's services the row may read: `tools` (a recording GLOBAL

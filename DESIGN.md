@@ -2330,7 +2330,7 @@ Decided by the user on 2026-11-20:
 
 Decided by the user: off until the user sets an interval and a maximum of consecutive heartbeats, which Fishball cannot change; every Fishball turn resets the timer, heartbeat turns included; heartbeats sent with no real turn between them are counted and stop at the limit, a real turn resets the count; Fishball's one tool edits only the next heartbeat's focus; every heartbeat tells Fishball to update that focus at the end of the turn from the current state.
 
-**Where.** A row of fishball-amenities (`./heartbeat/index.js`, id `fishball-heartbeat`), bound to `fishballInstance` (apiVersion 2) the way the board row is (`followInstance`, `reportCoreMissing`): X2 `registerSetup` for the tool and the per-manager timer, X10 `manager.notify({wake: true})` for the turn. No core change.
+**Where.** A row of fishball-amenities (`./heartbeat/index.js`, id `fishball-heartbeat`; its own package `fishball-heartbeat` since §33), bound to `fishballInstance` (apiVersion 2) the way the board row is (`followInstance`, `reportCoreMissing`): X2 `registerSetup` for the tool and the per-manager timer, X10 `manager.notify({wake: true})` for the turn. No core change.
 
 **Implementation decisions (Fishball, 2026-11-21).**
 - Settings: `intervalSeconds` (1 … 2147483, the setTimeout limit) and `maxConsecutive` (≥ 1), no defaults; either unset means off: no tool, no timer.
@@ -2349,7 +2349,7 @@ The user's request: Fishball gets tools to create tasks, break goals into subtas
 
 | Point | Decision |
 |---|---|
-| Package | A component of `fishball-amenities` (`taskboard/`, its own sub-package for its browser half), a sibling of `fishball-board`, not built on it: the board is session-linked, read-only for the user and shelved with a frozen contract; the taskboard needs none of that. It reuses the board's `followInstance` / `reportCoreMissing`. |
+| Package | A component of `fishball-amenities` (`taskboard/`, its own sub-package for its browser half; its own package `fishball-taskboard` since §33), a sibling of `fishball-board`, not built on it: the board is session-linked, read-only for the user and shelved with a frozen contract; the taskboard needs none of that. It reuses the board's `followInstance` / `reportCoreMissing`. |
 | Storage | One record in DSH's storage domain `fishball_taskboard` (one atomic write per change). |
 | Tools | `taskboard_read`, `taskboard_add` (with nested `subtasks` and `parentId`), `taskboard_update`, `taskboard_memo`; manager-only through X2 and checked against X1. |
 | UI | A right-sidebar tab "Task board" (page type of `sidebarRightTabs`), opened from a conversation header action and the sidebar guide; a draft is saved as one POST of the whole board, refused `stale` if Fishball changed it meanwhile. |
@@ -2368,3 +2368,15 @@ The user's request: Fishball gets tools to create tasks, break goals into subtas
 | Drawing | fishball-page registers a Conversation Definition on `tool/call` for `message_user`, and a `conversation.chat.node` renderer for its kind `fishball-message`, at group-tree position `turn`, so DSH's turn fold never hides it. The call's own tool row stays in the fold. Fishball's bubble, name and avatar (§22, and the avatar theme) move from assistant replies to this row. |
 | Refused calls | The row is drawn from the dispatched call (`tool/call`), not from its result, so a `message_user` call whose turn is stopped before the tool answers, or that the runtime refuses after dispatch, is still drawn. A blank message is never drawn. |
 | Folding | On the Fishball page, assistant reply rows are hidden unless their Turn's own DSH control (`button[data-turn-process]`) is open or disabled. Expanding that control shows the folded process and the replies, in DSH's plain look. No new disclosure. A folded seat gets DSH's own `hidden` attribute, which DSH's flow gaps, paging and scroll anchoring skip. |
+
+## 33. Every amenity is its own package; `fishball-amenities` is an umbrella (2026-11-21)
+
+**Why.** The user decided that every amenities component is an independent package with its own package.json, name and version, installable on its own, and that `fishball-amenities` only pulls them in so they install together. Only a package with browser code declares `dsh.client`, so no package resolves from two loader sources. dsh-connector made the same split for `dsh-connector-amenities` (its d85037d).
+
+| Point | Decision |
+|---|---|
+| Packages | `packages/fishball-board`, `packages/fishball-heartbeat`, `packages/fishball-taskboard` (were `board/`, `heartbeat/`, `taskboard/` inside `fishball-amenities`), each a DSH bundle with its own `cordis.patch.yml` inserting its own row by package name. Row ids, tools, settings namespaces, storage and routes are unchanged. |
+| Umbrella | `fishball-amenities` depends on and bundles the three members (and `fishball-shared`), and its own patch inserts their rows by package name, because DSH makes only a profile's direct dependencies bundles (as DSH's `dsh-cua-bundle` carries its members' rows). Installing the umbrella and a member as direct dependencies together would insert the same rows twice. |
+| Browser code | `dsh.client` only on `fishball-taskboard` (its Task board tab) and the umbrella (its settings-page hint). Board and heartbeat have none. |
+| Shared helper | `followInstance` / `reportCoreMissing` (was the board's `src/instance.js`, imported by the other two by relative path) moved unchanged to `fishball-shared/instance-follower`, which now has three users; each member lists `fishball-shared` in `dependencies` and `bundleDependencies`. |
+| Release | The three members are released packages before the umbrella; INSTALL.md gains "all together" and "one on its own". fishball-board's release status (shelved but shipped inside the umbrella since the amenities merge) is the user's to decide. |

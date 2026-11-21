@@ -42,10 +42,13 @@ packages/
   fishball-ui/                  Fishball side, plugin: every UI change in a Fishball DSH
     client.js client.{entries,asks,strip,model}.js
     fishball-page/  fishball-recommend-plugins/  fishball-child-plugins/   their own small packages
-  board/                        Fishball side, plugin `fishball-board`: shelved, not in 1.0.0-alpha.1
-  fishball-amenities/taskboard/ Fishball side, component `fishball-taskboard` of the fishball-amenities bundle
-                                (beside its board/): Fishball's task board and memo pad
-  shared/                       Fishball side, library `fishball-shared` (no `dsh` field): ui-seam
+  fishball-board/               Fishball side, plugin `fishball-board`: shelved, not in 1.0.0-alpha.1
+  fishball-heartbeat/           Fishball side, plugin `fishball-heartbeat`: cache-warming heartbeat turns
+  fishball-taskboard/           Fishball side, plugin `fishball-taskboard`: task board and memo pad (its own client.js)
+  fishball-amenities/           Fishball side, umbrella: depends on and bundles the three amenities and
+                                inserts their rows; its own client.js is its settings-page hint
+  shared/                       Fishball side, library `fishball-shared` (no `dsh` field): ui-seam,
+                                instance-follower
 ```
 
 ## Rules

@@ -1,4 +1,11 @@
 /**
+ * fishball-shared's instance follower: the one implementation of "bind to a compatible
+ * fishballInstance, report its absence once" (extension points §1). It lives in the library because
+ * fishball-board, fishball-heartbeat and fishball-taskboard each use it and are separate packages since
+ * the amenities split (the user, 2026-11-21); it imports nothing, so each member bundles it.
+ */
+
+/**
  * Keep one contribution bound to the live, compatible `fishballInstance` (extension points §1).
  *
  * A missing service or another `apiVersion` is an "older instance": nothing is attached. The

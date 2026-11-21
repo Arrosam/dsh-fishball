@@ -1,16 +1,21 @@
+# The umbrella's own row (its settings-page hint, client.js), and the rows of the amenities it depends
+# on, each its own package (fishball-board, fishball-heartbeat, fishball-taskboard). DSH makes only a
+# profile's direct dependencies bundles, so an umbrella brings its members' rows in its own patch (as
+# DSH's own dsh-cua-bundle does); each member installed alone uses its own patch instead. Each row here
+# repeats its member's own cordis.patch.yml: change both together. Rows name packages, never ./paths,
+# so each member's browser half (only fishball-taskboard has one) resolves from its own package.
 - insert:
     - id: fishball-amenities
       name: 'fishball-amenities'
       config: {}
     - id: fishball-board
-      name: ./board/index.js
+      name: 'fishball-board'
       config: {}
     # Inert until the user sets both intervalSeconds and maxConsecutive in its component settings.
     - id: fishball-heartbeat
-      name: ./heartbeat/index.js
+      name: 'fishball-heartbeat'
       config: {}
-    # Fishball's own task board and memo pad (docs/plugins/fishball-taskboard.md): its own sub-package,
-    # so its browser half (taskboard/client.js) is its own dsh.client package.
+    # Fishball's own task board and memo pad (docs/plugins/fishball-taskboard.md).
     - id: fishball-taskboard
-      name: ./taskboard/index.js
+      name: 'fishball-taskboard'
       config: {}

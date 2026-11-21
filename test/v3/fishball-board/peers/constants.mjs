@@ -35,7 +35,8 @@ export const DSH = Object.freeze({
 
 /** The feature plugins under test, each as its loader row (the package's own entry). */
 export const PLUGIN = Object.freeze({
-  board: Object.freeze({ name: 'fishball-board', entry: path.join(REPO, 'packages', 'board', 'index.js') }),
+  /** Its own package since the amenities split (the user, 2026-11-21). */
+  board: Object.freeze({ name: 'fishball-board', entry: path.join(REPO, 'packages', 'fishball-board', 'index.js') }),
 })
 
 /** R-FB-06: the one line a feature plugin logs without fishball-core. */

@@ -29,7 +29,12 @@ export const PACKAGE = Object.freeze({
   fishballCore: 'packages/core',
   fishballUi: 'packages/core/ui',
   fishballShared: 'packages/shared',
-  fishballBoard: 'packages/fishball-amenities/board',
+  // The amenities split (the user, 2026-11-21): each amenity is its own package; fishball-amenities
+  // is the umbrella that depends on and bundles them and inserts their rows.
+  fishballBoard: 'packages/fishball-board',
+  fishballHeartbeat: 'packages/fishball-heartbeat',
+  fishballTaskboard: 'packages/fishball-taskboard',
+  fishballAmenities: 'packages/fishball-amenities',
 })
 
 const all = (pkg) => pkg + '/**'
@@ -80,6 +85,11 @@ const CONNECTOR_BOOT = Object.freeze([
   sub(PACKAGE.dshConnector, 'host-services'), sub(PACKAGE.dshConnector, 'locale'), sub(PACKAGE.dshConnector, 'assets'),
 ])
 
+/** The amenities' fishballInstance follower, fishball-shared's module since the amenities split (was board/src/instance.js). */
+const INSTANCE_FOLLOWER = `${PACKAGE.fishballShared}/instance-follower.js`
+/** The amenity packages and their umbrella (the amenities split, 2026-11-21). */
+const AMENITY_PACKAGES = Object.freeze([PACKAGE.fishballBoard, PACKAGE.fishballHeartbeat, PACKAGE.fishballTaskboard, PACKAGE.fishballAmenities])
+
 /** The ICON-SET rows' shared reader and vocabulary (package-boundaries), which the draw and oauth-web icon rows import too. */
 const ICON_SET_SUPPORT = 'test/v3/contract/package-boundaries/icon-set.mjs'
 
@@ -102,7 +112,7 @@ const suite = (description, files, triggers) => Object.freeze({ description, fil
 export const V3_SUITES = Object.freeze({
   // F-OWN-SCHEMA's fishball-core half (moved from dsh-connector with fishball-core, split 6b7c53bf).
   'contract.own-schema': suite('core-owned MCP surface and no generated connector schema (F-OWN-SCHEMA)', v3('contract/own-schema'),
-    [sub(PACKAGE.fishballCore, 'contracts'), sub(PACKAGE.fishballCore, 'src'), top(PACKAGE.fishballCore), all(PACKAGE.fishballShared), all(PACKAGE.fishballBoard),
+    [sub(PACKAGE.fishballCore, 'contracts'), sub(PACKAGE.fishballCore, 'src'), top(PACKAGE.fishballCore), all(PACKAGE.fishballShared), ...AMENITY_PACKAGES.map(all),
       'test/v3/contract/own-schema/**']),
   'fishball-core.package': suite('core package, slim child move (R-CORE; the settings-section point withdrawn, 1.34)', v3('fishball-core/package'),
     [all(PACKAGE.fishballCore), sub(PACKAGE.dshInstance, 'src', 'slim'), sub(PACKAGE.dshInstance, 'src', 'child'), PACKAGE.dshInstance + '/client*.js']),
@@ -224,14 +234,21 @@ export const V3_SUITES = Object.freeze({
   // The heartbeat row over a fake core, bound to each SDK (and 0.2.2-rc.3, the installed DSH); it
   // reuses the board suite's row loader and the package-boundaries case names.
   'fishball-amenities.heartbeat': suite('heartbeat amenity: config gate, timer, consecutive limit, restart, heartbeat_focus', [...v3('fishball-amenities/heartbeat'), 'test/v3/fishball-amenities/heartbeat/sdk-0.2.2-rc.3.test.mjs'],
-    ['packages/fishball-amenities/heartbeat/**', 'packages/fishball-amenities/board/src/instance.js', 'packages/fishball-amenities/*', 'test/v3/fishball-amenities/heartbeat/**',
+    [all(PACKAGE.fishballHeartbeat), INSTANCE_FOLLOWER, all(PACKAGE.fishballAmenities), 'test/v3/fishball-amenities/heartbeat/**',
       'test/v3/fishball-board/peers/subject.mjs', 'test/v3/contract/package-boundaries/cases.mjs', 'test/private-skills/support/sdk.mjs']),
   // The taskboard row over the SDK's real storage stack with fake host services; it reuses the
-  // board's instance follower (board/src/instance.js) and is installed through the bundle's patch
-  // and manifest. Its world imports the private-skills SDK binder and the package-boundaries caseName.
+  // amenities' instance follower (fishball-shared/instance-follower) and is installed through its own
+  // package's patch and manifest, or the umbrella's. Its world imports the private-skills SDK binder
+  // and the package-boundaries caseName.
   'fishball-taskboard': suite("Fishball's task board and memo pad: tools, routes, wake notice, compaction reminder, persistence (fishball-taskboard)", v3('fishball-taskboard'),
-    ['packages/fishball-amenities/taskboard/**', 'packages/fishball-amenities/board/src/instance.js', 'packages/fishball-amenities/cordis.patch.yml',
-      'packages/fishball-amenities/package.json', 'test/v3/fishball-taskboard/**', 'test/private-skills/support/**', 'test/v3/contract/package-boundaries/cases.mjs']),
+    [all(PACKAGE.fishballTaskboard), INSTANCE_FOLLOWER, all(PACKAGE.fishballAmenities), 'test/v3/fishball-taskboard/**', 'test/private-skills/support/**', 'test/v3/contract/package-boundaries/cases.mjs']),
+  // The amenities split (the user, 2026-11-21): each amenity its own package, the umbrella inserting
+  // their rows, dsh.client only where there is browser code, read from manifests, patches (DSH's own
+  // reader and bundle inspection) and import specifiers. It reuses the package-boundaries helpers
+  // (caseName, dshInspect, the specifier worker) and core's package-suite patch reader.
+  'fishball-amenities.packages': suite('amenities split: each amenity its own package and bundle, the umbrella inserting their rows, dsh.client only with browser code', v3('fishball-amenities/packages'),
+    [...AMENITY_PACKAGES.map(all), all(PACKAGE.fishballShared), 'package.json', 'test/v3/contract/package-boundaries/**', 'test/v3/release/pack/**',
+      'test/v3/fishball-core/package/constants.mjs', 'test/v3/fishball-core/package/static.mjs', 'test/v3/fishball-core/package/tokens-worker.mjs']),
   // K3a reads core's contracts and patch against the connector's published schema and tools, the
   // fishball-ui seam's values in fishball-shared (moved there by F-UI), and scans the DSH-side
   // package folders for imports of core.

@@ -1,7 +1,7 @@
 {
   "name": "fishball-amenities",
   "version": "1.0.0-alpha.1",
-  "description": "Optional Fishball amenity components (fishball-board, fishball-heartbeat, fishball-taskboard). Configure each amenity in its component settings.",
+  "description": "Installs the optional Fishball amenities together: fishball-board, fishball-heartbeat and fishball-taskboard, each its own package.",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -21,9 +21,6 @@
   "files": [
     "index.js",
     "client.js",
-    "board/",
-    "heartbeat/",
-    "taskboard/",
     "cordis.patch.yml",
     "README.md",
     "LICENSE"
@@ -32,12 +29,21 @@
     "node": ">=22.14",
     "dsh": ">=0.2.1-rc.5"
   },
-  "peerDependencies": {
-    "@deepseek-ai/dsh-llm": "*",
-    "@deepseek-ai/dsh-storage-domain": "*",
-    "@deepseek-ai/dsh-tools": "*",
-    "@deepseek-ai/schemastery": "*"
+  "//dependencies": "The amenities, each its own package and DSH bundle (independently installable). DSH makes only a profile's direct dependencies bundles, so this umbrella inserts its members' rows in its own patch (as DSH's dsh-cua-bundle does); they resolve through these dependencies. fishball-shared is the members' bundled library, carried beside them so the bundled members resolve it.",
+  "dependencies": {
+    "fishball-board": "1.0.0-alpha.1",
+    "fishball-heartbeat": "1.0.0-alpha.1",
+    "fishball-taskboard": "1.0.0-alpha.1",
+    "fishball-shared": "1.0.0-alpha.1"
   },
+  "//bundleDependencies": "The members are bundled, as dsh-connector-amenities bundles its amenities, so the umbrella tarball carries them and an install (online or offline) fetches none of them from a registry. Each member is still its own package, released and installable on its own.",
+  "bundleDependencies": [
+    "fishball-board",
+    "fishball-heartbeat",
+    "fishball-taskboard",
+    "fishball-shared"
+  ],
+  "//dsh": "Only this umbrella and fishball-taskboard have browser code, so only they declare dsh.client: the umbrella's is its settings-page hint (client.js).",
   "dsh": {
     "bundle": {
       "patch": "./cordis.patch.yml"

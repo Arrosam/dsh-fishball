@@ -5,7 +5,8 @@
  * (2) after core's event batching (165b734c): work messages (user, fishball-event, schedule, another
  * plugin's notice) make a turn real; focus is an optional untyped field; a timer firing more than
  * 5000 ms late is dropped with a warning; the armed delay is capped at the interval.
- * No file under packages/fishball-amenities/heartbeat/ was read.
+ * No file under packages/fishball-heartbeat/ (packages/fishball-amenities/heartbeat/ before the
+ * amenities split, 2026-11-21) was read.
  */
 import path from 'node:path'
 import { REPO } from '../../../support/constants.mjs'
@@ -41,7 +42,8 @@ const PLUGIN_ID = 'fishball-heartbeat'
 /** The row's public contract. */
 export const HEARTBEAT = Object.freeze({
   name: PLUGIN_ID,
-  entry: path.join(REPO, 'packages', 'fishball-amenities', 'heartbeat', 'index.js'),
+  /** Its own package since the amenities split (the user, 2026-11-21). */
+  entry: path.join(REPO, 'packages', 'fishball-heartbeat', 'index.js'),
   /** fishballInstance.apiVersion the row attaches to; any other reads as missing. */
   apiVersion: 2,
   olderApiVersion: 1,

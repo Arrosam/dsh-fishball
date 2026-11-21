@@ -5,7 +5,7 @@
  * manager its tools and the compaction reminder through X2. Its browser half is client.js.
  */
 import { defineDomain } from '@deepseek-ai/dsh-storage-domain'
-import { followInstance, reportCoreMissing } from '../board/src/instance.js'
+import { followInstance, reportCoreMissing } from 'fishball-shared/instance-follower'
 import { HOST, LOG, NAMESPACE } from './src/constants.js'
 import { openStore } from './src/store.js'
 import { createTools } from './src/tools.js'
@@ -14,7 +14,7 @@ import { createReminder } from './src/reminder.js'
 
 export const name = NAMESPACE
 // `storage` + `storageDomain` for the board's table (as fishball-core's main row), `connection` for
-// the routes. `fishballInstance` is looked up, never injected (R-FB-06; board/index.js).
+// the routes. `fishballInstance` is looked up, never injected (R-FB-06; as fishball-board's row).
 export const inject = ['storage', 'storageDomain', 'connection']
 
 export async function apply(ctx) {

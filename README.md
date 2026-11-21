@@ -33,8 +33,11 @@ This repository holds the **Fishball-side** packages (installed in a Fishball DS
 | Package | What it does |
 | --- | --- |
 | [`fishball-core`](packages/core) | One plugin with 2 components: **`fishball-core`** (manager session, preset, persona, reminders, private Skills, MCP link, Connect, interception, status, ask cards, guard rows, bundle settings page) and **`fishball-ui`** (`./ui/`, Fishball page, Recommended tab (standalone only), the instance-run child's Plugins page notice, sidebar targets & pairing views, ask cards, brand row, model dialog). |
-| [`fishball-amenities`](packages/fishball-amenities) | Optional Fishball amenities bundle: **`fishball-board`** under `./board/` (shelved) and **`fishball-taskboard`** under `./taskboard/` (Fishball's task board and memo pad). Configure each amenity from its component settings. |
-| [`fishball-shared`](packages/shared) | A library inside the Fishball-side tarballs (today only the core/ui seam). Not a plugin. |
+| [`fishball-board`](packages/fishball-board) | Optional amenity, shelved: Fishball's session-linked work board. Its own bundle. |
+| [`fishball-heartbeat`](packages/fishball-heartbeat) | Optional amenity: keeps Fishball's prompt cache warm with useful heartbeat turns while it is idle. Its own bundle. |
+| [`fishball-taskboard`](packages/fishball-taskboard) | Optional amenity: Fishball's task board and memo pad, with the right sidebar's **Task board** tab. Its own bundle. |
+| [`fishball-amenities`](packages/fishball-amenities) | Umbrella: depends on the three amenities so one install brings them all; carries only its settings-page hint. |
+| [`fishball-shared`](packages/shared) | A library inside the Fishball-side tarballs (the core/ui seam and the amenities' instance follower). Not a plugin. |
 
 ### Related repositories
 
