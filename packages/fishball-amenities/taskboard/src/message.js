@@ -46,12 +46,12 @@ function taskLines(before, after) {
   const now = byId(after.tasks)
   const titleOf = (id, board) => (id === null ? undefined : quote(board.get(id).title))
   const lines = []
-  // A deleted parent reports its deleted subtasks in its own line, so they are not listed again.
-  const reported = new Set()
+  // A deleted task reports the subtasks deleted with it, so a line is written only for the top of each
+  // deleted branch: a task whose old parent is kept or which was top level. Board order alone cannot
+  // tell, because a save may list a subtask before its parent.
   for (const task of before.tasks) {
-    if (now.has(task.id) || reported.has(task.id)) continue
+    if (now.has(task.id) || (task.parentId !== null && !now.has(task.parentId))) continue
     const gone = descendantsOf(before.tasks, task.id).filter((id) => !now.has(id))
-    gone.forEach((id) => reported.add(id))
     lines.push(TEXT.deletedTask(quote(task.title), gone.length))
   }
   for (const task of after.tasks) {
@@ -89,4 +89,3 @@ export function describeUserEdit(before, after) {
   const shown = changes.length > MESSAGE.maxLines ? [...changes.slice(0, MESSAGE.maxLines), TEXT.more(changes.length - MESSAGE.maxLines)] : changes
   return [TEXT.heading(after.revision), ...shown, TEXT.closing].join('\n')
 }
-

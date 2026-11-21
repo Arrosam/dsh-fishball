@@ -23,20 +23,21 @@ window.__ModuleLoader__.load({
       open: Object.freeze(['todo', 'in_progress', 'blocked']),
       progress: Object.freeze({ min: 0, max: 100 }),
       id: Object.freeze({ task: 't_', memo: 'm_' }),
-      stale: 'stale',
+      code: Object.freeze({ stale: 'stale', invalid: 'invalid-input', limit: 'limit-reached' }),
       http: Object.freeze({ ok: 200 }),
+      /** A save error's field path names a draft item by its array index (`tasks[3].title`, routes §4). */
+      itemField: /^(tasks|memos)\[(\d+)\]/,
       header: Object.freeze({ slot: 'conversation.session.header.actions', id: 'fishball-taskboard', order: 92 }),
       guide: Object.freeze({ id: 'board', order: 60 }),
       tooltip: Object.freeze({ side: 'bottom', align: 'end', portal: true }),
       button: Object.freeze({ type: 'button', size: 'sm', variant: 'ghost' }),
       icon: 16,
       indentPx: 16,
-      chinese: 'zh',
       styleId: 'fishball-taskboard-style',
       css: Object.freeze({
         root: 'fb-tb', bar: 'fb-tb-bar', heading: 'fb-tb-heading', list: 'fb-tb-list', row: 'fb-tb-row', closed: 'fb-tb-closed',
         title: 'fb-tb-title', meta: 'fb-tb-meta', note: 'fb-tb-note', meter: 'fb-tb-meter', fill: 'fb-tb-fill',
-        notice: 'fb-tb-notice', error: 'fb-tb-error', field: 'fb-tb-field', area: 'fb-tb-area', number: 'fb-tb-number', empty: 'fb-tb-empty',
+        notice: 'fb-tb-notice', error: 'fb-tb-error', field: 'fb-tb-field', area: 'fb-tb-area', number: 'fb-tb-number', empty: 'fb-tb-empty', select: 'fb-tb-select', invalid: 'fb-tb-invalid',
       }),
     })
 
@@ -53,9 +54,11 @@ window.__ModuleLoader__.load({
       'status.todo': 'To do', 'status.in_progress': 'In progress', 'status.blocked': 'Blocked', 'status.done': 'Done', 'status.dropped': 'Dropped',
       loading: 'Loading…',
       lost: 'The board cannot be reached right now; retrying.',
-      changedMeanwhile: 'Fishball changed the board while you were editing. Reload to see it (your draft is dropped), or keep editing and save later.',
+      changedMeanwhile: 'The board changed while you were editing (Fishball or another window). Reload to see it (your draft is dropped).',
+      closed: 'The board cannot be reached. Reopen this tab to try again.',
       stale: 'Not saved: the board changed meanwhile. Your draft is kept; Reload to start again from the current board.',
-      invalid: 'Not saved: {field} is not valid.',
+      invalid: 'Not saved: {field} has a value that is not valid (marked below).',
+      untitled: 'an untitled item',
       limit: 'Not saved: the board would be over its limit ({field}).',
       failed: 'Not saved: the board could not be written. Try again.',
       saved: 'Saved; Fishball was told what changed.',
@@ -75,9 +78,11 @@ window.__ModuleLoader__.load({
       'status.todo': '待办', 'status.in_progress': '进行中', 'status.blocked': '受阻', 'status.done': '已完成', 'status.dropped': '已放弃',
       loading: '正在载入…',
       lost: '暂时无法连接任务板，正在重试。',
-      changedMeanwhile: '你编辑期间 Fishball 修改了任务板。可重新载入查看（会丢弃草稿），或继续编辑稍后保存。',
+      changedMeanwhile: '你编辑期间任务板已被修改（Fishball 或另一个窗口）。可重新载入查看（会丢弃草稿）。',
+      closed: '无法连接任务板。请重新打开此标签页重试。',
       stale: '未保存：任务板期间已被修改。草稿已保留；重新载入可从当前任务板重新开始。',
-      invalid: '未保存：{field} 无效。',
+      invalid: '未保存：{field} 有无效的值（已在下方标出）。',
+      untitled: '一个无标题的条目',
       limit: '未保存：任务板会超出上限（{field}）。',
       failed: '未保存：无法写入任务板，请重试。',
       saved: '已保存，并已告知 Fishball 改了什么。',
@@ -102,6 +107,8 @@ window.__ModuleLoader__.load({
       `.${BOARD.css.field}{display:flex;gap:6px;align-items:center;flex-wrap:wrap}`,
       `.${BOARD.css.area}{width:100%;box-sizing:border-box;min-height:48px;resize:vertical;font:inherit;color:inherit;background:transparent;border:1px solid var(--dsw-alias-border-l3);border-radius:var(--dsw-radius-sm);padding:4px 6px}`,
       `.${BOARD.css.number}{width:64px}`,
+      `.${BOARD.css.select}{font:inherit;color:inherit;background:transparent;border:1px solid var(--dsw-alias-border-l3);border-radius:var(--dsw-radius-sm);padding:2px 4px}`,
+      `.${BOARD.css.invalid}{outline:1px solid var(--dsw-alias-state-error-primary);outline-offset:1px}`,
       `.${BOARD.css.empty}{margin:0;color:var(--dsw-alias-label-tertiary)}`,
     ].join('')
 
@@ -113,7 +120,8 @@ window.__ModuleLoader__.load({
      * retries by itself after an error; a valid frame clears `lost`.
      */
     function createFeed() {
-      let state = { board: undefined, lost: false }
+      // `lost`: an error while EventSource retries by itself; `closed`: it gave up (a non-200 answer).
+      let state = { board: undefined, lost: false, closed: false }
       const listeners = new Set()
       let source
       const set = (next) => { state = { ...state, ...next }; listeners.forEach((listener) => listener()) }
@@ -123,12 +131,12 @@ window.__ModuleLoader__.load({
           listeners.add(listener)
           if (!source) {
             source = new EventSource(url(BOARD.route.events), { withCredentials: true })
-            source.onmessage = (event) => { try { set({ board: JSON.parse(event.data), lost: false }) } catch { set({ lost: true }) } }
-            source.onerror = () => set({ lost: true })
+            source.onmessage = (event) => { try { set({ board: JSON.parse(event.data), lost: false, closed: false }) } catch { set({ lost: true }) } }
+            source.onerror = () => set({ lost: true, closed: source?.readyState === EventSource.CLOSED })
           }
           return () => {
             listeners.delete(listener)
-            if (listeners.size === 0) { source?.close(); source = undefined }
+            if (listeners.size === 0) { source?.close(); source = undefined; state = { ...state, closed: false } }
           }
         },
       }
@@ -144,12 +152,23 @@ window.__ModuleLoader__.load({
       } catch { return { status: 0, body: null } }
     }
 
-    /** The outcome line of a save, from the route's answer (§4). */
-    function outcomeOf(t, { status, body }) {
+    /**
+     * The draft item a refused field names (`tasks[3].title` → the fourth draft task), so the error
+     * shows its title and marks its row: rows are drawn in tree order, not the draft's array order.
+     */
+    function itemOf(draft, field) {
+      const match = BOARD.itemField.exec(field ?? '')
+      return match ? draft[match[1]][Number(match[2])] : undefined
+    }
+
+    /** The outcome line of a save, from the route's answer (§4); `itemId` marks the refused row. */
+    function outcomeOf(t, { status, body }, draft) {
       if (status === BOARD.http.ok && body?.ok) return { text: !body.changed ? t('unchanged') : body.notified ? t('saved') : t('savedUntold'), done: true }
-      if (body?.code === BOARD.stale) return { text: t('stale'), error: true }
-      if (body?.code === 'invalid-input') return { text: t('invalid', { field: body.field ?? '' }), error: true }
-      if (body?.code === 'limit-reached') return { text: t('limit', { field: body.field ?? '' }), error: true }
+      if (body?.code === BOARD.code.stale) return { text: t('stale'), error: true }
+      const item = itemOf(draft, body?.field)
+      const field = item ? (item.title ?? item.text) || t('untitled') : body?.field ?? ''
+      if (body?.code === BOARD.code.invalid) return { text: t('invalid', { field }), error: true, itemId: item?.id }
+      if (body?.code === BOARD.code.limit) return { text: t('limit', { field }), error: true, itemId: item?.id }
       return { text: t('failed'), error: true }
     }
 
@@ -177,18 +196,20 @@ window.__ModuleLoader__.load({
         h('span', { className: BOARD.css.title }, task.title),
         h('span', { className: BOARD.css.meta },
           statusText(t, task.status),
-          h('span', { className: BOARD.css.meter, role: 'progressbar', 'aria-valuemin': BOARD.progress.min, 'aria-valuemax': BOARD.progress.max, 'aria-valuenow': task.progress },
+          h('span', { className: BOARD.css.meter, role: 'progressbar', 'aria-label': t('taskProgress'), 'aria-valuemin': BOARD.progress.min, 'aria-valuemax': BOARD.progress.max, 'aria-valuenow': task.progress },
             h('span', { className: BOARD.css.fill, style: { width: task.progress + '%' } })),
           task.progress + '%'),
         task.note ? h('p', { className: BOARD.css.note }, task.note) : null)
     }
 
-    function TaskEdit({ task, depth, t, edit, add, remove }) {
+    const rowClass = (invalid) => BOARD.css.row + (invalid ? ' ' + BOARD.css.invalid : '')
+
+    function TaskEdit({ task, depth, t, edit, add, remove, invalid }) {
       const set = (name) => (event) => edit(task.id, name, event.target.value)
-      return h('li', { className: BOARD.css.row, style: { marginInlineStart: depth * BOARD.indentPx }, 'data-fishball-task': task.id },
+      return h('li', { className: rowClass(invalid), 'aria-invalid': invalid || undefined, style: { marginInlineStart: depth * BOARD.indentPx }, 'data-fishball-task': task.id },
         h(Input, { 'aria-label': t('taskTitle'), value: task.title, onChange: set('title') }),
         h('div', { className: BOARD.css.field },
-          h('select', { 'aria-label': t('taskStatus'), value: task.status, onChange: set('status') },
+          h('select', { className: BOARD.css.select, 'aria-label': t('taskStatus'), value: task.status, onChange: set('status') },
             BOARD.statuses.map((status) => h('option', { key: status, value: status }, statusText(t, status)))),
           h(Input, { className: BOARD.css.number, type: 'number', min: BOARD.progress.min, max: BOARD.progress.max, step: 1, 'aria-label': t('taskProgress'), value: String(task.progress),
             onChange: (event) => edit(task.id, 'progress', event.target.value === '' ? event.target.value : Number(event.target.value)) }),
@@ -197,9 +218,9 @@ window.__ModuleLoader__.load({
         h('textarea', { className: BOARD.css.area, 'aria-label': t('taskNote'), value: task.note, onChange: set('note') }))
     }
 
-    function MemoRow({ memo, editing, t, edit, remove }) {
+    function MemoRow({ memo, editing, t, edit, remove, invalid }) {
       if (!editing) return h('li', { className: BOARD.css.row, 'data-fishball-memo': memo.id }, h('p', { className: BOARD.css.note }, memo.text))
-      return h('li', { className: BOARD.css.row, 'data-fishball-memo': memo.id },
+      return h('li', { className: rowClass(invalid), 'aria-invalid': invalid || undefined, 'data-fishball-memo': memo.id },
         h('textarea', { className: BOARD.css.area, 'aria-label': t('memoText'), value: memo.text, onChange: (event) => edit(memo.id, event.target.value) }),
         h('div', { className: BOARD.css.field }, iconButton(t('deleteMemo'), IconTrashOutlineRegular, () => remove(memo.id))))
     }
@@ -215,11 +236,12 @@ window.__ModuleLoader__.load({
       const t = ctx.locale.bind(BOARD.locale)
       return function TaskboardTab() {
         React.useSyncExternalStore((listener) => ctx.locale.subscribe(listener), () => ctx.locale.getSnapshot())
-        const { board, lost } = React.useSyncExternalStore(feed.subscribe, feed.get)
+        const { board, lost, closed } = React.useSyncExternalStore(feed.subscribe, feed.get)
+        const lostText = closed ? t('closed') : t('lost')
         const [draft, setDraft] = React.useState(undefined)
         const [busy, setBusy] = React.useState(false)
         const [outcome, setOutcome] = React.useState(undefined)
-        if (board === undefined) return h('div', { className: BOARD.css.root }, h('p', { className: BOARD.css.notice, role: 'status' }, lost ? t('lost') : t('loading')))
+        if (board === undefined) return h('div', { className: BOARD.css.root }, h('p', { className: BOARD.css.notice, role: 'status' }, lost ? lostText : t('loading')))
         const editing = draft !== undefined
         const shown = editing ? draft : board
         const change = (next) => { setDraft(next); setOutcome(undefined) }
@@ -231,7 +253,7 @@ window.__ModuleLoader__.load({
         const removeMemo = (id) => change({ ...draft, memos: draft.memos.filter((memo) => memo.id !== id) })
         const submit = async () => {
           setBusy(true)
-          const result = outcomeOf(t, await save(draft))
+          const result = outcomeOf(t, await save(draft), draft)
           setBusy(false)
           setOutcome(result)
           if (result.done) setDraft(undefined)
@@ -245,19 +267,19 @@ window.__ModuleLoader__.load({
               ? [h(Button, { key: 'save', ...BOARD.button, variant: 'primary', disabled: busy, onClick: submit }, t('save')),
                 h(Button, { key: 'cancel', ...BOARD.button, disabled: busy, onClick: () => change(undefined) }, t('cancel'))]
               : h(Button, { ...BOARD.button, onClick: () => change(draftOf(board)) }, t('edit'))),
-          lost ? h('p', { className: BOARD.css.notice, role: 'status' }, t('lost')) : null,
+          lost ? h('p', { className: BOARD.css.notice, role: 'status' }, lostText) : null,
           editing && board.revision !== draft.baseRevision
             ? h('p', { className: BOARD.css.notice, role: 'status' }, t('changedMeanwhile'), ' ', h(Button, { ...BOARD.button, onClick: () => change(undefined) }, t('reload')))
             : null,
           outcome ? h('p', { className: outcome.error ? BOARD.css.error : BOARD.css.notice, role: outcome.error ? 'alert' : 'status' }, outcome.text) : null,
           rows.length === 0 ? h('p', { className: BOARD.css.empty }, t('empty')) : h('ul', { className: BOARD.css.list },
             rows.map(({ task, depth }) => (editing
-              ? h(TaskEdit, { key: task.id, task, depth, t, edit: editTask, add: addTask, remove: removeTask })
+              ? h(TaskEdit, { key: task.id, task, depth, t, edit: editTask, add: addTask, remove: removeTask, invalid: outcome?.itemId === task.id })
               : h(TaskView, { key: task.id, task, depth, t })))),
           editing ? h('div', null, h(Button, { ...BOARD.button, onClick: () => addTask(null) }, h(IconPlusOutlineRegular, { size: BOARD.icon }), ' ', t('addTask'))) : null,
           h('div', { className: BOARD.css.bar }, h('h2', { className: BOARD.css.heading }, t('memos'))),
           shown.memos.length === 0 ? h('p', { className: BOARD.css.empty }, t('empty')) : h('ul', { className: BOARD.css.list },
-            shown.memos.map((memo) => h(MemoRow, { key: memo.id, memo, editing, t, edit: editMemo, remove: removeMemo }))),
+            shown.memos.map((memo) => h(MemoRow, { key: memo.id, memo, editing, t, edit: editMemo, remove: removeMemo, invalid: outcome?.itemId === memo.id }))),
           editing ? h('div', null, h(Button, { ...BOARD.button, onClick: addMemo }, h(IconPlusOutlineRegular, { size: BOARD.icon }), ' ', t('addMemo'))) : null)
       }
     }
@@ -281,9 +303,11 @@ window.__ModuleLoader__.load({
         document.head.appendChild(style)
         return () => style.remove()
       }, BOARD.name + ': styles')
-      // A page type: opened by kind, one per pane, recognising no resource address (as ui-schedule's task tab).
+      // A page type: opened by kind, one per pane, recognising no resource address (as ui-schedule's task
+      // tab). `keepMounted`: the draft lives in the body's state, so hiding the column, switching
+      // sessions or docking must not unmount it, or the user's typing would be lost (§4).
       ctx.effect(() => ctx.sidebarRightTabs.register({
-        id: BOARD.name, kind: BOARD.kind, title: () => t('title'),
+        id: BOARD.name, kind: BOARD.kind, keepMounted: true, title: () => t('title'),
         guide: [{ id: BOARD.guide.id, order: BOARD.guide.order, title: () => t('title'), description: () => t('guideDescription'), icon: IconChecklistOutlineRegular }],
       }), BOARD.name + ': tab type')
       ctx.effect(() => ctx.slots.inject('sidebar.right.pane.tab', () => ctx.slots.register({ name: 'sidebar.right.pane.tab', key: BOARD.name, locale: BOARD.locale }, makeTab(ctx, feed))), BOARD.name + ': tab body')

@@ -43,7 +43,8 @@ packages/
     client.js client.{entries,asks,strip,model}.js
     fishball-page/  fishball-recommend-plugins/  fishball-child-plugins/   their own small packages
   board/                        Fishball side, plugin `fishball-board`: shelved, not in 1.0.0-alpha.1
-  fishball-amenities/taskboard/ Fishball side, component `fishball-taskboard` of the amenities bundle: task board and memo pad
+  fishball-amenities/taskboard/ Fishball side, component `fishball-taskboard` of the fishball-amenities bundle
+                                (beside its board/): Fishball's task board and memo pad
   shared/                       Fishball side, library `fishball-shared` (no `dsh` field): ui-seam
 ```
 

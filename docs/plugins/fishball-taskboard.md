@@ -50,7 +50,9 @@ Memo = { id: 'm_<uuid>', text, createdAt, updatedAt }
 - A new task is `todo`, progress 0, note `''`, unless the caller gives them.
 
 **Limits** (**PENDING (limits)**), in Unicode code points after trimming; every check refuses,
-nothing is clamped or cut:
+nothing is clamped or cut. The limits bound writes only: loading checks the stored board's
+structure (types, unique ids, existing parents, no cycle), so a later, smaller limit never makes an
+existing board unreadable:
 
 | Field | Bound |
 |---|---|
@@ -93,9 +95,10 @@ A **right sidebar tab** "Task board" (kind `fishball-taskboard`), opened from a 
 action in the conversation header and from the right sidebar's guide page.
 
 The tab follows the board live (SSE) and shows the task tree (status, title, progress bar, note;
-done and dropped dimmed), the memos, and the unfinished count. **Edit** opens a draft: every field is
+done and dropped dimmed), the memos, and the unfinished count. The tab stays mounted while hidden (`keepMounted`), so a draft
+survives hiding the column, switching sessions or docking. **Edit** opens a draft: every field is
 editable; the user can add tasks, add a subtask under any task, delete a task (with its subtasks),
-and add, edit or delete memos. **Save** commits the draft, **Cancel** drops it. While a draft is open,
+and add, edit or delete memos. **Save** commits the draft, **Cancel** drops it; a refused save names the item and marks its row. While a draft is open,
 Fishball's changes are not mixed into it: a banner says the board changed meanwhile, and a save is
 refused as stale with the draft kept, so nothing typed is lost; **Reload** drops the draft.
 
@@ -148,14 +151,19 @@ one, if Fishball is busy). It is not one of the link events core's delivery list
 user's save is never held for the quiet window or merged into an event batch; and its source kind
 is `fishball-notice`, not `user`, so the delivery list's pre-step rule does not pull waiting events
 into it either. The notice is durable (core's notify-keys ledger), so a restart before acceptance
-delivers it then. If `notify` refuses (core missing, closed), the save still stands and the route
+delivers it then. **Known gap (core's, not the taskboard's):** while Fishball is running a turn the
+notice waits in DSH's inbox as a followup; if the user then presses Stop, DSH clears the inbox and
+core, which already counted the notice accepted, does not deliver it again (the limit
+`core/src/events/delivery.js` describes for queued followups). The board keeps the change. If `notify` refuses (core missing, closed), the save still stands and the route
 answers `notified: false`; the tab then says Fishball was not told.
 
 ## 6. The compaction reminder
 
 The row's X2 setup listens to `session/event` of the manager's live session. On `compaction/end`
 without `error` (a successful compaction), if the board has unfinished tasks, it queues one message
-with `agent.inject` (context for the next model step; it never wakes Fishball by itself):
+with `agent.inject` (context for the next model step; it never wakes Fishball by itself). The inject
+runs on the next microtask, with the count read then, because dsh-session refuses an append while
+it is still publishing `compaction/end`:
 
 ```
 Reminder: your task board still has <n> unfinished task(s); call taskboard_read to see them.

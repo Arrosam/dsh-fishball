@@ -4,7 +4,7 @@
  * always see and edit the board), and, while a compatible `fishballInstance` is bound, gives the
  * manager its tools and the compaction reminder through X2. Its browser half is client.js.
  */
-import { defineDomain, domainTable } from '@deepseek-ai/dsh-storage-domain'
+import { defineDomain } from '@deepseek-ai/dsh-storage-domain'
 import { followInstance, reportCoreMissing } from '../board/src/instance.js'
 import { HOST, LOG, NAMESPACE } from './src/constants.js'
 import { openStore } from './src/store.js'
@@ -19,7 +19,7 @@ export const inject = ['storage', 'storageDomain', 'connection']
 
 export async function apply(ctx) {
   const now = Date.now
-  const store = await openStore(ctx, { defineDomain, domainTable })
+  const store = await openStore(ctx, { defineDomain })
   ctx.effect(() => () => store.close())
   ctx.effect(() => registerRoutes(ctx, store, now))
   const reminder = createReminder(ctx, store)

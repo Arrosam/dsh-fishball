@@ -25,11 +25,16 @@ export function createReminder(ctx, store) {
   ctx.effect(() => ctx.on(HOST.sessionEvent, (session, event) => {
     // A failed compaction keeps the old context, so nothing was forgotten (`error`, dsh-compaction).
     if (event?.type !== HOST.compactionEnd || event.data?.error !== undefined) return
-    const count = unfinishedCount(store.read())
-    if (count === 0) return
     for (const live of agents) {
       if (live.session !== session) continue
-      live.inject(createUserMessage({ content: [{ type: HOST.textBlock, text: TEXT.reminder(count) }], source: HOST.noticeSource }))
+      // `inject` appends to this session, which is still publishing `compaction/end`: dsh-session
+      // refuses a reentrant append (and only logs it), so the injection waits for the microtask
+      // boundary, as core's held notices do (core manager/service.js `offTurn`).
+      queueMicrotask(() => {
+        if (!agents.has(live)) return
+        const count = unfinishedCount(store.read())
+        if (count > 0) live.inject(createUserMessage({ content: [{ type: HOST.textBlock, text: TEXT.reminder(count) }], source: HOST.noticeSource }))
+      })
     }
   }))
   return Object.freeze({

@@ -17,6 +17,7 @@ const FIELD = Object.freeze({
   addItem: Object.freeze(['title', 'note', 'status', 'progress', 'subtasks']),
   addArgs: Object.freeze(['tasks', 'parentId']),
   update: Object.freeze(['title', 'note', 'status', 'progress']),
+  updateArgs: Object.freeze(['id', 'title', 'note', 'status', 'progress']),
   memoArgs: Object.freeze(['id', 'text', 'delete']),
   save: Object.freeze(['baseRevision', 'tasks', 'memos']),
   /** The fields a user save may change; the server owns the two times. */
@@ -61,6 +62,15 @@ const TASK_FIELD = Object.freeze({
 
 export const isUnfinished = (task) => OPEN_STATUSES.includes(task.status)
 export const unfinishedCount = (board) => board.tasks.filter(isUnfinished).length
+/** What Fishball's read and the UI's routes show: the document plus its unfinished count (§3, §4). */
+export const viewOf = (board) => ({ revision: board.revision, unfinished: unfinishedCount(board), tasks: board.tasks, memos: board.memos })
+/** A refusal as the tools and routes answer it; anything uncoded is a storage failure. */
+export function refusalValue(error) {
+  const code = Object.values(CODE).includes(error?.code) ? error.code : CODE.unavailable
+  return { ok: false, code, ...(error?.field === undefined ? {} : { field: error.field }) }
+}
+/** The path of one list item in a refusal's `field` (`tasks[0]`), the form the doc names. */
+const itemPath = (field, index) => field + '[' + index + ']'
 
 /** The depth of `id` (top level 1) in `tasks`; a parent cycle or a missing parent refuses at `field`. */
 function depthOf(tasks, id, field) {
@@ -88,27 +98,33 @@ export function descendantsOf(tasks, id) {
   return found
 }
 
+const isTime = (value) => Number.isSafeInteger(value)
+/** One stored item's shape: exactly `keys`, a unique string id, the two times, and `fields`' types. */
+function assertItem(item, keys, ids, fields) {
+  if (!isRecord(item) || typeof item.id !== 'string' || ids.has(item.id) || !isTime(item.createdAt) || !isTime(item.updatedAt) ||
+      Object.keys(item).length !== keys.length || !keys.every((key) => Object.hasOwn(item, key)) || !fields(item)) refuse(CODE.unavailable)
+  ids.add(item.id)
+}
+
 /**
  * Storage's read check (the domain calls it when it opens): a stored board that is not one this
- * module could have written fails the open loudly instead of being trusted.
+ * module could have written fails the open loudly instead of being trusted. It checks structure
+ * only (types, unique ids, parents that exist, no cycle), never the LIMITS: those bound writes, and a
+ * later, smaller limit must not make an existing board unreadable, which would take the user's
+ * routes down with it.
  */
 export function assertDocument(value) {
-  if (!isRecord(value) || !Number.isSafeInteger(value.revision) || value.revision < STORE.emptyRevision ||
+  if (!isRecord(value) || !isTime(value.revision) || value.revision < STORE.emptyRevision ||
       !Array.isArray(value.tasks) || !Array.isArray(value.memos)) refuse(CODE.unavailable)
-  try {
-    onlyKeys(value, FIELD.document)
-    for (const task of value.tasks) {
-      if (!isRecord(task) || typeof task.id !== 'string' || !(task.parentId === null || typeof task.parentId === 'string') ||
-          !Number.isSafeInteger(task.createdAt) || !Number.isSafeInteger(task.updatedAt)) refuse(CODE.unavailable)
-      for (const [name, check] of Object.entries(TASK_FIELD)) check(task[name], name)
-    }
-    for (const task of value.tasks) if (depthOf(value.tasks, task.id) > LIMITS.depth) refuse(CODE.unavailable)
-    for (const memo of value.memos) {
-      if (!isRecord(memo) || typeof memo.id !== 'string' || !Number.isSafeInteger(memo.createdAt) || !Number.isSafeInteger(memo.updatedAt)) refuse(CODE.unavailable)
-      text(memo.text, LIMITS.memoChars)
-    }
-    checkCounts(value)
-  } catch { refuse(CODE.unavailable) }
+  try { onlyKeys(value, FIELD.document) } catch { refuse(CODE.unavailable) }
+  const taskIds = new Set()
+  for (const task of value.tasks) {
+    assertItem(task, FIELD.task, taskIds, (item) => (item.parentId === null || typeof item.parentId === 'string') &&
+      typeof item.title === 'string' && typeof item.note === 'string' && Object.values(STATUS).includes(item.status) && Number.isInteger(item.progress))
+  }
+  try { for (const task of value.tasks) depthOf(value.tasks, task.id) } catch { refuse(CODE.unavailable) }
+  const memoIds = new Set()
+  for (const memo of value.memos) assertItem(memo, FIELD.memo, memoIds, (item) => typeof item.text === 'string')
   return value
 }
 
@@ -130,11 +146,13 @@ export function addTasks(board, args, at, newId) {
   const build = (items, parent, depth, field) => {
     if (!Array.isArray(items) || items.length === 0) refuse(CODE.invalidInput, field)
     items.forEach((item, index) => {
-      const at_ = field + '[' + index + ']'
+      const at_ = itemPath(field, index)
       if (!isRecord(item)) refuse(CODE.invalidInput, at_)
       onlyKeys(item, FIELD.addItem, at_)
       if (depth > LIMITS.depth) refuse(CODE.limitReached, 'depth')
-      const fields = { ...TASK_DEFAULTS, ...item }
+      // An explicit `undefined` (a field the model left empty) reads as omitted, not as a value.
+      const given = Object.fromEntries(Object.entries(item).filter(([, value]) => value !== undefined))
+      const fields = { ...TASK_DEFAULTS, ...given }
       const task = { id: newId(ID.task), parentId: parent, createdAt: at, updatedAt: at }
       for (const [name, check] of Object.entries(TASK_FIELD)) task[name] = check(fields[name], at_ + '.' + name)
       added.push(task)
@@ -150,7 +168,7 @@ export function addTasks(board, args, at, newId) {
 /** taskboard_update: one task's title / note / status / progress. Restating every value is a no-op. */
 export function updateTask(board, args, at) {
   if (!isRecord(args)) refuse(CODE.invalidInput)
-  onlyKeys(args, ['id', ...FIELD.update])
+  onlyKeys(args, FIELD.updateArgs)
   if (typeof args.id !== 'string') refuse(CODE.invalidInput, 'id')
   const names = FIELD.update.filter((name) => Object.hasOwn(args, name))
   if (names.length === 0) refuse(CODE.invalidInput, FIELD.update.join('|'))
@@ -198,7 +216,7 @@ function savedItems(items, previous, { field, keys, prefix, check, editable }, a
   const before = new Map(previous.map((item) => [item.id, item]))
   const ids = new Set()
   return items.map((item, index) => {
-    const at_ = field + '[' + index + ']'
+    const at_ = itemPath(field, index)
     if (!isRecord(item)) refuse(CODE.invalidInput, at_)
     onlyKeys(item, keys, at_)
     const old = before.get(item.id)
@@ -238,8 +256,9 @@ export function saveBoard(board, body, at) {
   const tasks = savedItems(body.tasks, board.tasks, TASK_LIST, at)
   const memos = savedItems(body.memos, board.memos, MEMO_LIST, at)
   tasks.forEach((task, index) => {
-    if (task.parentId === task.id || (task.parentId !== null && !tasks.some((other) => other.id === task.parentId))) refuse(CODE.invalidInput, 'tasks[' + index + '].parentId')
-    if (depthOf(tasks, task.id, 'tasks[' + index + '].parentId') > LIMITS.depth) refuse(CODE.limitReached, 'depth')
+    const parentField = itemPath(TASK_LIST.field, index) + '.parentId'
+    if (task.parentId === task.id || (task.parentId !== null && !tasks.some((other) => other.id === task.parentId))) refuse(CODE.invalidInput, parentField)
+    if (depthOf(tasks, task.id, parentField) > LIMITS.depth) refuse(CODE.limitReached, 'depth')
   })
   const next = { revision: board.revision, tasks, memos }
   checkCounts(next)

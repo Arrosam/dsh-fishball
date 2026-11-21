@@ -45,12 +45,10 @@ export const CODE = Object.freeze({
   stale: 'stale',
 })
 
-/** The storage domain: one table, one record (the whole board), so each change is one atomic write. */
+/** The storage domain: its global value is the whole board, so each change is one atomic write. */
 export const STORE = Object.freeze({
   domain: 'fishball_taskboard',
   version: 1,
-  table: 'board',
-  key: 'current',
   emptyRevision: 0,
 })
 

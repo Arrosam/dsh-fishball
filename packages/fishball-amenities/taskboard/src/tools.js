@@ -8,7 +8,7 @@
 import { randomUUID } from 'node:crypto'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import { CODE, LIMITS, OPEN_STATUSES, STATUS, TOOL } from './constants.js'
-import { addTasks, changeMemo, refusal, unfinishedCount, updateTask } from './board.js'
+import { addTasks, changeMemo, refusal, refusalValue, updateTask, viewOf } from './board.js'
 
 const statuses = Object.values(STATUS).join(' | ')
 const TEXT = Object.freeze({
@@ -16,7 +16,7 @@ const TEXT = Object.freeze({
   add: `Add tasks to your task board. To break a goal into subtasks, pass the goal's id as parentId and the subtasks as tasks; each item may hold its own subtasks (at most ${LIMITS.depth} levels in all). One invalid item refuses the whole call and adds nothing.`,
   tasks: `1 or more items {title, note?, status?, progress?, subtasks?}: title 1–${LIMITS.titleChars.max} characters, note up to ${LIMITS.noteChars.max}, status ${statuses} (default todo), progress a whole number ${LIMITS.progress.min}–${LIMITS.progress.max} (default ${LIMITS.progress.min}).`,
   parentId: 'Optional: the id of an existing task to add these under; omit for the top level.',
-  update: `Update one task's title, note, status or progress. Give the id and at least one field. Status and progress are independent; you cannot delete a task (set dropped), only the user can.`,
+  update: "Update one task's title, note, status or progress. Give the id and at least one field. Status and progress are independent; you cannot delete a task (set dropped), only the user can.",
   id: 'The task id (t_…).',
   title: `1–${LIMITS.titleChars.max} characters.`,
   note: `Up to ${LIMITS.noteChars.max} characters; replaces the note.`,
@@ -36,11 +36,6 @@ const JSON_OUTPUT = Object.freeze({ type: 'json' })
 const render = (_args, value) => [{ type: 'text', text: JSON.stringify(value) }]
 const newId = (prefix) => prefix + randomUUID()
 
-function failure(error) {
-  if (Object.values(CODE).includes(error?.code)) return { ok: false, code: error.code, ...(error.field === undefined ? {} : { field: error.field }) }
-  return { ok: false, code: CODE.unavailable }
-}
-
 /**
  * @param {{store: object, sessionId: () => string | undefined, now?: () => number}} options
  *   `store` the row's one store (store.js); `sessionId` X1; `now` epoch milliseconds.
@@ -50,7 +45,7 @@ export function createTools({ store, sessionId, now = Date.now }) {
   const guarded = (work) => async (args, exec) => {
     const manager = sessionId()
     if (typeof manager !== 'string' || manager === '' || String(exec?.agent?.session?.id) !== manager) return { ok: false, code: CODE.notManager }
-    try { return await work(args ?? {}) } catch (error) { return failure(error) }
+    try { return await work(args ?? {}) } catch (error) { return refusalValue(error) }
   }
   /** One change through the store; the value is `{ok, revision, ...result}`. */
   const changing = (rule) => guarded(async (args) => {
@@ -61,8 +56,7 @@ export function createTools({ store, sessionId, now = Date.now }) {
   return [
     tool(TOOL.read, TEXT.read, {}, guarded(async (args) => {
       if (Object.keys(args).length) throw refusal(CODE.invalidInput, Object.keys(args)[0])
-      const board = store.read()
-      return { ok: true, revision: board.revision, unfinished: unfinishedCount(board), tasks: board.tasks, memos: board.memos }
+      return { ok: true, ...viewOf(store.read()) }
     })),
     tool(TOOL.add, TEXT.add, { tasks: { ...FIELD(TEXT.tasks), required: true }, parentId: FIELD(TEXT.parentId) }, changing(addTasks)),
     tool(TOOL.update, TEXT.update, {

@@ -8,7 +8,7 @@
  */
 import { randomUUID } from 'node:crypto'
 import { CODE, HOST, LOG, NAMESPACE, ROUTE } from './constants.js'
-import { saveBoard, unfinishedCount } from './board.js'
+import { refusalValue, saveBoard, viewOf } from './board.js'
 import { describeUserEdit } from './message.js'
 
 const STATUS_OF = Object.freeze({
@@ -18,8 +18,11 @@ const STATUS_OF = Object.freeze({
 })
 
 const json = (status, value) => new Response(JSON.stringify(value), { status, headers: ROUTE.json })
-/** What the UI reads: the document plus its unfinished count. */
-export const viewOf = (board) => ({ revision: board.revision, unfinished: unfinishedCount(board), tasks: board.tasks, memos: board.memos })
+/** A refusal's answer; a read that throws (a quarantined or closed domain) is `board-unavailable`, 503. */
+const refused = (error, extra) => {
+  const value = { ...refusalValue(error), ...extra }
+  return json(STATUS_OF[value.code] ?? ROUTE.status.unavailable, value)
+}
 
 /** Core's manager, read per call: core may arrive, be replaced or leave while this row runs. */
 function managerOf(ctx) {
@@ -53,7 +56,9 @@ export function registerRoutes(ctx, store, now = Date.now) {
   const streams = new Set()
 
   async function board(request) {
-    if (request.method === ROUTE.get) return json(ROUTE.status.ok, viewOf(store.read()))
+    if (request.method === ROUTE.get) {
+      try { return json(ROUTE.status.ok, viewOf(store.read())) } catch (error) { return refused(error) }
+    }
     let body
     try { body = await request.json() } catch { return json(ROUTE.status.badRequest, { ok: false, code: CODE.invalidInput }) }
     try {
@@ -61,9 +66,8 @@ export function registerRoutes(ctx, store, now = Date.now) {
       const changed = after !== before
       return json(ROUTE.status.ok, { ok: true, revision: after.revision, changed, notified: changed && await wakeFishball(ctx, before, after) })
     } catch (error) {
-      const code = Object.values(CODE).includes(error?.code) ? error.code : CODE.unavailable
-      const value = { ok: false, code, ...(error?.field === undefined ? {} : { field: error.field }), ...(code === CODE.stale ? { revision: store.read().revision } : {}) }
-      return json(STATUS_OF[code] ?? ROUTE.status.unavailable, value)
+      // `stale` names the current revision, so the UI knows the draft's base is behind.
+      return refused(error, error?.code === CODE.stale ? { revision: store.read().revision } : {})
     }
   }
 
@@ -74,6 +78,8 @@ export function registerRoutes(ctx, store, now = Date.now) {
       start(controller) {
         // A stream the browser already closed throws on enqueue; close it so it never breaks a commit.
         const push = (current) => { try { controller.enqueue(encoder.encode(ROUTE.frame(JSON.stringify(viewOf(current))))) } catch { close() } }
+        // The first frame reads the store, which throws once the domain is quarantined or closed.
+        const first = () => { try { return store.read() } catch { return undefined } }
         const off = store.onChange(push)
         close = () => {
           if (!streams.delete(close)) return
@@ -83,19 +89,30 @@ export function registerRoutes(ctx, store, now = Date.now) {
         }
         streams.add(close)
         request.signal?.addEventListener(ROUTE.abort, close)
-        push(store.read())
+        const current = first()
+        if (current === undefined) close()
+        else push(current)
       },
       cancel: () => close(),
     })
     return new Response(body, { status: ROUTE.status.ok, headers: ROUTE.eventStream })
   }
 
-  const withdraw = [
-    ctx.connection.fetch.register({ path: ROUTE.board, methods: [ROUTE.get, ROUTE.post], requestBody: ROUTE.requestBody, fetch: board }),
-    ctx.connection.fetch.register({ path: ROUTE.events, methods: [ROUTE.get], requestBody: ROUTE.requestBody, fetch: events }),
-  ]
-  return () => {
+  const disposers = []
+  const dispose = async () => {
     for (const close of [...streams]) close()
-    return Promise.all(withdraw.map((dispose) => dispose?.()))
+    await Promise.all(disposers.splice(0).map((withdraw) => withdraw?.()))
   }
+  try {
+    for (const route of [
+      { path: ROUTE.board, methods: [ROUTE.get, ROUTE.post], fetch: board },
+      { path: ROUTE.events, methods: [ROUTE.get], fetch: events },
+    ]) disposers.push(ctx.connection.fetch.register({ ...route, requestBody: ROUTE.requestBody }))
+  } catch (error) {
+    // A path another row claimed: withdraw what was registered, so no half-registered pair remains
+    // (core asks/routes.js does the same).
+    void dispose().catch(() => {})
+    throw error
+  }
+  return dispose
 }
