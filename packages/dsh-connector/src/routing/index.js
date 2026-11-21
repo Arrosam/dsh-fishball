@@ -317,17 +317,39 @@ export async function openRouting(ctx, storageDomain, { mailbox, pairs, tokens, 
     },
 
     /**
+     * A `notice` about one live offer of `sessionId` to its holder (R-EVS-02; K1 NOTICE.codes), e.g.
+     * a managed session's question whose call ended while the question stays open (domain/questions.js).
+     * On the managed chain, as `report` is, so a succession never sends it to the old holder; its
+     * correlation id is the offer's current revision (after a succession `r<n+1>`).
+     * @param offerId - any revision of the offer the notice is about
+     * @returns whether the holder's mailbox stored it (`false`: the offer is no longer live, or the
+     *   mailbox refused it, e.g. `queue-full`)
+     * @throws TypeError (rejects) for a bad session id or a payload that is not a K1 notice
+     */
+    notice(sessionId, offerId, code, text) {
+      return managed.withState(async () => {
+        if (!isNonEmptyString(sessionId)) throw new TypeError(MISUSE.sessionId)
+        const holder = ledger.holderOf(offerId)
+        if (holder === undefined || holder.sessionId !== sessionId) return false
+        const draft = checkedFields(EVENT_TYPE.notice, { sourceSessionId: sessionId, correlationId: holder.offerId, payload: { code, text } })
+        const { committed } = await produce({ type: EVENT_TYPE.notice, sessionId }, draft)
+        return committed?.ok === true
+      })
+    },
+
+    /**
      * Whether the live request `offerId` names is held by `principalKey` now (read synchronously,
      * so a caller that decides in the same step cannot be overtaken by a succession; review F02).
      */
     holds: (offerId, principalKey) => principalKey !== undefined && heldBy(offerId, principalKey),
 
     /**
-     * A principal's `escalate` (C-WIRE-2): the offer is the user's from now on and settles nothing
-     * yet (K1); its later `settle` (the user's answer) or `withdraw` still goes to the same pair.
+     * A principal's `escalate` (C-WIRE-2): the offer is shown to the user too and settles nothing
+     * yet (K1); its later `settle` (the user's answer or the principal's) or `withdraw` still goes
+     * to the same pair, and the principal still holds it (offers.js).
      * On the managed chain, as `settle` is, so it never lands between a release and its retirements.
      * @param options.principalKey - the escalating principal: the offer must still be its (review F02)
-     * @returns whether the offer was live and the agent's
+     * @returns whether the offer was live, held by `principalKey`, and not escalated yet
      */
     escalate: (offerId, { principalKey } = {}) => managed.withState(async () => heldBy(offerId, principalKey) && ledger.escalate(offerId)),
 

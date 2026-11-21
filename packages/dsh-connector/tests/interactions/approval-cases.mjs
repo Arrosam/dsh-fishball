@@ -206,20 +206,25 @@ export function registerApprovalCases(sdk) {
   })
 
   // ------------------------------------------------------------------------- escalate (state transitions)
+  // Re-baselined by the managed-request lifecycle fix (R2, relayed by the lead 2026-11-21): an escalate does
+  // not settle the request, so it stays in approvals_list (was: it left it) and the principal's answer is
+  // refused only once the user's click has settled it (was: already-settled at once). The
+  // principal's own later answer deciding the call is lifecycle-cases.mjs LIF-R2.
   for (const [outcome, settled] of [[IX.outcome.allowed, SETTLEMENT_OUTCOME.allowed], [IX.outcome.rejected, SETTLEMENT_OUTCOME.rejected]]) {
-    row(sdk, 'APR-07 / DCD-04 / DCD-05', `ST (Offered → escalate → stock prompt → user ${outcome})`, `{accepted: true} (risk and reason optional); the stock prompt shows; the offer leaves approvals_list; a later answer → ${REFUSAL.alreadySettled}; the user's click decides; settlement {${settled}, by user}`, async (t) => {
+    row(sdk, 'APR-07 / DCD-04 / DCD-05', `ST (Offered → escalate → stock prompt → user ${outcome})`, `{accepted: true} (risk and reason optional); the stock prompt shows; the offer stays in approvals_list (R2); the user's click decides; settlement {${settled}, by user}; a later answer → ${REFUSAL.expired} or ${REFUSAL.alreadySettled}`, async (t) => {
       const w = await w0()
       const p = await principal(t, w)
       const sid = await managed(w, p)
       const r = await asked(w, p, sid)
       assert.deepEqual(await answer(p, r, A.escalate()), { ok: true, accepted: true })
       assert.equal((await untilStock(w, r.text)).length, 1)
-      assert.equal(await isListed(p, r), false)
-      const late = await answer(p, r, A.allow())
-      assert.deepEqual([late.ok, late.code], [false, REFUSAL.alreadySettled])
+      assert.equal(await isListed(p, r), true, 'escalate unlisted the request')
       await userClicks(w, r.text, outcome)
       assert.equal((await decided(w, r.text)).outcome, outcome)
       assert.deepEqual((await settlement(p.client, r.d.approvalId)).payload, { approvalId: r.d.approvalId, outcome: settled, by: SETTLED_BY.user })
+      const late = await answer(p, r, A.allow())
+      assert.equal(late.ok, false, 'a late answer after the user\'s click was accepted')
+      assert.ok([REFUSAL.expired, REFUSAL.alreadySettled].includes(late.code), late.code)
     })
   }
   row(sdk, 'REG-01', 'DT (escalate with risk and an empty reason)', 'escalate with risk high and reason \'\' → {accepted: true}', async (t) => {

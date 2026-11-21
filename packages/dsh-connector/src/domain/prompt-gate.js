@@ -51,8 +51,9 @@ export function createPromptGate(ctx, now) {
     /**
      * Shows the stock prompt and resolves with its outcome (a DSH approval outcome).
      * @param via - `{target, req, next}` of the waterfall step
-     * @param prompt - `{sessionId, toolName, callId, args, escalated}`: what `prompts_list` shows;
-     *   `escalated` hides it from the agent that escalated it
+     * @param prompt - `{sessionId, toolName, callId, args, escalated, approvalId?}`: what `prompts_list`
+     *   shows; `escalated` hides it from the agent that escalated it, and `approvalId` names the
+     *   escalated request, whose manager answers it through `approval_answer` (permissions.js)
      */
     show({ target, req, next }, prompt) {
       const asker = req.signal

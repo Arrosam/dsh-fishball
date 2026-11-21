@@ -13,6 +13,7 @@ import { registerCuiInteractionCases } from './cui-cases.mjs'
 import { registerDelegateCases } from './delegate-cases.mjs'
 import { registerReportSystemCases } from './report-cases.mjs'
 import { registerMultiAgentCases } from './multi-agent-cases.mjs'
+import { registerLifecycleCases } from './lifecycle-cases.mjs'
 
 export function registerInteractionCases(sdk) {
   registerMessagingCases(sdk)
@@ -26,4 +27,5 @@ export function registerInteractionCases(sdk) {
   registerDelegateCases(sdk)
   registerReportSystemCases(sdk)
   registerMultiAgentCases(sdk)
+  registerLifecycleCases(sdk)
 }

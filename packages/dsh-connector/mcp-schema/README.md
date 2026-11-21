@@ -127,8 +127,10 @@ endpoint an invalid id is `invalid_client` (R-ID-02).
   `{approvalId, outcome, by, answers?}`; `retirement` `{retiredEventId, reason}`;
   `turn-finished` `{sessionId, outcome, finalMessage?, stop?}` (WAKE-REDUCE below); `state` `{sessionId, running,
   pendingInteraction}` (frozen, no producer); `message` `{text, images}`; `handover` / `takeback` `{sessionId, note}`;
-  `notice` `{code, text}` (no notice code is frozen yet: `NOTICE.codes` is empty, and each task that
-  produces one adds it as a K1 amendment; C-ROUTE produces none, K1c-4); contributor events `{namespace, event, data, summary?}`
+  `notice` `{code, text}` (`NOTICE.codes`: each task that produces one adds it as a K1 amendment;
+  C-ROUTE produces none, K1c-4; `question-call-ended`, the managed-request fix of 2026-11-21:
+  a managed session's question call ended but its turn went on, and the question stays open with its
+  manager, correlation id its offer id); contributor events `{namespace, event, data, summary?}`
   (design §13.5a).
 - **Offer ids (`OFFER_ID`):** `<requestId>.r<revision>`, revision from 1 (Q-S3-1).
 - **Resource:** `agent-events`, `dsh-agent://events`, `application/json`; `resources/read`
@@ -629,7 +631,7 @@ constants migration, 2026-11-14).
 | K1c-1 | `ManagedState` (`managerOf`, `managed`, `manage`, `release`, `onChange`) and `MANAGED_REFUSAL`: root session ids as keys; `unknown-session` stays the caller's (C-TOOLS); Hand over and Take back stay K3's; durable, serial (first wins), visible to `managerOf` once a change resolves, a throwing listener does not stop the others | decided by Fishball, not the user (2026-11-14) |
 | K1c-2 | W3 Q-16: `session_release` commits no event of its own (no release event); its only events are the retirements of its live offers (`released`, to the releasing pair), which C-ROUTE's `release` performs; the offers then go to the user | decided by Fishball, not the user (2026-11-14) |
 | K1c-3 | W3 Q-17: the no-recipient `message` queue: held while no paired entry is designated; durable, bounded by `maxQueuedInputs` with `queue-full`, flushed in order once a paired entry is designated (connected or not); what does not fit stays queued in order; while it is not empty a new message joins its end; never dropped once accepted | decided by Fishball, not the user (2026-11-14); **withdrawn** by the user's q5 (2026-11-17, C-WIRE-2) |
-| K1c-4 | No `notice` code is frozen: `NOTICE.codes` stays empty, and C-ROUTE produces none | decided by Fishball, not the user (2026-11-14) |
+| K1c-4 | No `notice` code is frozen: `NOTICE.codes` stays empty, and C-ROUTE produces none | decided by Fishball, not the user (2026-11-14); **amended** 2026-11-21 by the user's decision "Keep it open, send the answer later": `NOTICE.codes.questionCallEnded` (`question-call-ended`), produced by the question domain; C-ROUTE still produces none |
 | K1d-1 | `Mailbox.transfer(from, to) → {moved}`: every pending event (held ones included) moves in order with its `eventId` and payload digest, renumbered in the new box; nothing committed; misuse is a synchronous `TypeError`. PROPOSED details: moved events follow the destination's own, `maxQueuedInputs` never refuses one, the destination's streams get the hint when `moved > 0` | decided by Fishball, not the user (2026-11-16; W4 briefs G3) |
 | K1d-2 | `Mailbox.retire` misuse (bad principal key, event id or reason) stays a synchronous `TypeError` before the call is queued | decided by Fishball (open-questions decided item 45, 2026-11-16) |
 | K1d-3 | `SettingsWriter` (`addToken`, `removeToken`, `setDesignated`) and `SessionNotes.system`: connector-internal ports C-WIRE binds; a write resolves after the save and the registry's sync. PROPOSED details: writes run in call order; `removeToken` of an absent key is a no-op; `system` rejects for an unknown session | decided by Fishball, not the user (2026-11-16; W4 briefs G3) |

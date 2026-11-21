@@ -205,6 +205,32 @@ export const FIXTURE = Object.freeze({
   ]),
 })
 
+/**
+ * The managed-request lifecycle fix (lifecycle-cases.mjs; requirements R1…R9 relayed by the lead,
+ * 2026-11-21): a toUser / escalate hands the request to the user without settling it; an asking call
+ * ended by its own run_code program (its deadline, or the program ending with the ask unawaited)
+ * keeps the question open and the principal's answer is delivered into the session as a message;
+ * the user's own Stop or dismissal still withdraws it.
+ */
+export const LIFECYCLE = Object.freeze({
+  /** K1 NOTICE.codes.questionCallEnded, and the notice's text naming the question as still open. */
+  noticeCode: K1.NOTICE.codes.questionCallEnded,
+  noticeOpen: /open/i,
+  /** The kind of the JSON message an answer to an ended question is delivered as. */
+  endedAnswerKind: 'answer_to_ended_question',
+  /** The run_code deadline of the R4 rows: long enough for the question event, short for the suite. */
+  deadlineMs: 4000,
+  /** How long the R4 "finishes with the ask unawaited" program waits before it ends. */
+  unawaitedMs: 3000,
+  /** The scripted delegate's verdict that leaves a request to the manager (R8). */
+  delegatePass: 'pass',
+  noRunCode: 'run_code is not offered on this SDK (harness: DSH 0.2.2 ignores DSH_TOOLS_MODE)',
+  id: Object.freeze({
+    toUser: 'LIF-R1', userAfterToUser: 'LIF-R3', escalate: 'LIF-R2', silence: 'LIF-R7', ended: 'LIF-R6',
+    callEnded: 'LIF-R4', userEnds: 'LIF-R5', delegate: 'LIF-R8',
+  }),
+})
+
 /** Harness timing only. */
 export const BUDGET = Object.freeze({ ...WIRE_BUDGET, eventMs: 30000, quietMs: 2000 })
 

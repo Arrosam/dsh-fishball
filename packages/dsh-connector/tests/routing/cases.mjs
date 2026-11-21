@@ -1303,11 +1303,14 @@ function settleTransitions(sdk) {
   withdrawnRow(sdk, 'ROUTE-ST-03', '8', 'Queued ask (its commit in flight) → settle → true after the commit; the waiting ask_agent resolves', RELAYED.noAsk)
 
   // ROUTE-ST-05 — escalate (C-WIRE-2, RELAYED.escalate): Live → Escalated (with the user) → Settled by the user.
-  worldRow(sdk, 'ROUTE-ST-05', '1', 'Live → escalate → true; nothing committed; the offer leaves the live offers; a second escalate → false', async (w) => {
+  // Rows 1 and 3 re-baselined by the managed-request lifecycle fix (R2 / R6, relayed by the lead 2026-11-21):
+  // an escalate does not settle the offer, so it stays live under the same offerId (was: it left the
+  // live offers), and an end of management retires it like any live offer (was: dropped with no retirement).
+  worldRow(sdk, 'ROUTE-ST-05', '1', 'Live → escalate → true; nothing committed; the offer stays live under the same offerId (R2); a second escalate → false', async (w) => {
     const o = await liveOffer(w)
     const { value } = await expectNone(w, () => w.routing.escalate(o.offerId))
     assert.equal(value, true)
-    assert.deepEqual(w.routing.liveOffers(S.s1).filter((x) => x.descriptor.offerId === o.offerId), [], 'the escalated offer is still live')
+    assert.equal(w.routing.liveOffers(S.s1).filter((x) => x.descriptor.offerId === o.offerId).length, 1, 'the escalated offer is no longer live')
     assert.equal(await w.routing.escalate(o.offerId), false)
   })
   worldRow(sdk, 'ROUTE-ST-05', '2', 'Escalated → the user answers (settle by user) → one settlement to the same pair', async (w) => {
@@ -1316,11 +1319,10 @@ function settleTransitions(sdk) {
     const s = settlementOf(o.approvalId, SETTLEMENT_OUTCOME.allowed, SETTLED_BY.user)
     await settledTo(w, () => w.routing.settle(o.offerId, s), o.p, o.offerId, s)
   })
-  worldRow(sdk, 'ROUTE-ST-05', '3', 'Escalated → release → the escalated offer is dropped with no retirement; a later settle → false', async (w) => {
+  worldRow(sdk, 'ROUTE-ST-05', '3', `Escalated → release → one retirement (${RETIREMENT_REASON.released}) of the escalated offer to P, nothing else (R6); a later settle → false`, async (w) => {
     const o = await liveOffer(w)
     assert.equal(await w.routing.escalate(o.offerId), true)
-    const { value } = await expectNone(w, () => w.managed.release(S.s1, o.p))
-    assert.deepEqual(value, { ok: true })
+    await expectRetirement(w, () => w.managed.release(S.s1, o.p), o.p, o.event)
     await settleRefused(w, o.offerId, settlementOf(o.approvalId, SETTLEMENT_OUTCOME.allowed, SETTLED_BY.user))
   })
   worldRow(sdk, 'ROUTE-ST-05', '4', 'no such offer → escalate → false; nothing committed', async (w) => {
