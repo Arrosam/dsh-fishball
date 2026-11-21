@@ -53,7 +53,11 @@ async function treeFiles(root, directory) {
  */
 export async function shippedFiles(root, manifest) {
   const files = [PLACEMENT.manifest]
-  for (const entry of manifest.files ?? []) {
+  const entries = manifest.files ?? []
+  const excluded = entries.filter((entry) => entry.startsWith(PLACEMENT.negation))
+    .map((entry) => path.normalize(entry.slice(PLACEMENT.negation.length).replace(/\/+$/, '')))
+  for (const entry of entries) {
+    if (entry.startsWith(PLACEMENT.negation)) continue
     const relative = entry.replace(/\/+$/, '')
     const parent = path.join(root, path.dirname(relative))
     const base = path.basename(relative)
@@ -66,7 +70,8 @@ export async function shippedFiles(root, manifest) {
       files.push(...await treeFiles(root, file))
     }
   }
-  return [...new Set(files)]
+  const kept = files.filter((file) => !excluded.some((prefix) => file === prefix || file.startsWith(prefix + path.sep)))
+  return [...new Set(kept)]
 }
 
 /** A `files` wildcard segment as a whole-name pattern. */

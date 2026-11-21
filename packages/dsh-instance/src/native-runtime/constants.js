@@ -248,6 +248,9 @@ export const PLACEMENT = Object.freeze({
   retiredInfix: '.previous-',
   // A `files` entry may hold `*` within its last path segment only (as the libraries' `*.js`).
   wildcard: '*',
+  // A `files` entry starting with `!` excludes that path (file or folder), as npm pack does
+  // (fishball-core's `!ui/tests/`, e07228ff); it is never a source the package must hold.
+  negation: '!',
   wildcardPattern: '[^/]*',
   regexSpecial: /[.+?^${}()|[\]\\]/g,
   regexEscape: '\\$&',
