@@ -249,6 +249,13 @@ export const V3_SUITES = Object.freeze({
   'fishball-amenities.packages': suite('amenities split: each amenity its own package and bundle, the umbrella inserting their rows, dsh.client only with browser code', v3('fishball-amenities/packages'),
     [...AMENITY_PACKAGES.map(all), all(PACKAGE.fishballShared), 'package.json', 'test/v3/contract/package-boundaries/**', 'test/v3/release/pack/**',
       'test/v3/fishball-core/package/constants.mjs', 'test/v3/fishball-core/package/static.mjs', 'test/v3/fishball-core/package/tokens-worker.mjs']),
+  // Each amenity package's plugin icon (2026-11-21): manifests, the npm pack listing, DSH's own
+  // readPluginMeta of each SDK (and 0.2.2-rc.3, the installed DSH), the SVGs, and the icons drawn in
+  // the LITE rows' Chromium. fishball-core's and fishball-ui's icons are the family reference and the
+  // distinctness peer; it reuses the package-boundaries case names and constants.
+  'fishball-amenities.icons': suite('amenities plugin icons: declared, shipped, read by DSH, valid self-contained SVG, visible on light and dark, distinct', [...v3('fishball-amenities/icons'), 'test/v3/fishball-amenities/icons/sdk-0.2.2-rc.3.test.mjs'],
+    [...AMENITY_PACKAGES.map(all), all(PACKAGE.fishballShared), sub(PACKAGE.fishballCore, 'assets'), PACKAGE.fishballCore + '/package.json', sub(PACKAGE.fishballUi, 'assets'), PACKAGE.fishballUi + '/package.json',
+      'test/v3/contract/package-boundaries/cases.mjs', 'test/v3/contract/package-boundaries/constants.mjs', 'test/v3/release/pack/constants.mjs', 'test/v2-page-cases/lite-browser.mjs']),
   // K3a reads core's contracts and patch against the connector's published schema and tools, the
   // fishball-ui seam's values in fishball-shared (moved there by F-UI), and scans the DSH-side
   // package folders for imports of core.
