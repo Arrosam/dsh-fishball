@@ -67,7 +67,19 @@ export const TEXT = Object.freeze({
   purpose: 'What the session is for: its goal and constraints. Watchdog judges drift against it.',
   scope: 'Optional: a plain description of the permission requests Watchdog may approve for you.',
   drift: (during, reason) => `Watchdog stopped the session (${during}): ${reason}`,
+  /** The cause a watchdog_pause stop records (the manager's turn-finished names it, not the user). */
+  paused: 'Watchdog paused its supervision at the manager\'s request',
 })
+
+/**
+ * Why a judgement failed (the user, 2026-11-21, after the live test: "a failure must be
+ * distinguishable from a judged pass"). The delegate throws an error with this `code`; the
+ * connector then offers the request to the manager with `delegate {outcome: failed, reason: code}`.
+ * - timeout: `checkTimeoutSeconds` elapsed; noAnswer: the side turn ended with no assistant text;
+ * - unreadable: the answer is no verdict object, an unknown verdict, or one without its reason;
+ * - failed: anything else threw (the side session could not be created or resolved, …).
+ */
+export const JUDGE_FAILURE = Object.freeze({ timeout: 'judge-timeout', noAnswer: 'judge-no-answer', unreadable: 'judge-unreadable', failed: 'judge-failed' })
 
 /**
  * The judge's instructions (notes §3 decision table, as last revised; the user's final decision of
@@ -86,6 +98,7 @@ export const JUDGE = Object.freeze({
     'Decide this one permission request with these rules, in order:',
     '1. If the session as a whole has drifted from its purpose, answer {"verdict":"drifted","reason":"..."}.',
     '2. If the request is clearly within the approvable scope and consistent with the purpose, answer {"verdict":"allow","reason":"..."}.',
+    '   Judge what the call does (its command and arguments). A request for a wider sandbox (such as sandbox_permissions "danger-full-access") does not by itself put a call outside the scope or make it dangerous: when the scope covers the command, even with such an escalation, allow it.',
     '3. If the request is beyond the purpose AND dangerous, answer {"verdict":"reject","reason":"..."}; the reason is shown to the session\'s agent.',
     '4. Anything else (another high-risk request, any doubt, no scope), answer {"verdict":"pass","reason":"..."}: the manager decides.',
   ].join('\n'),
@@ -98,7 +111,7 @@ export const LOG = Object.freeze({
   storeWriteFailed: 'the briefs file could not be written',
   servicesMissing: 'dsh-agent-connector\'s dshConnectorSessions or dshConnectorTools is not available; Watchdog is idle',
   toolsRefused: 'the connector refused the Watchdog tools',
-  judgeFailed: 'a judgement failed; the request goes to the manager',
+  judgeFailed: 'a judgement failed; the request goes to the manager as failed',
   patrolFailed: 'a patrol failed',
   stopFailed: 'a drifted session could not be stopped',
   emitRefused: 'the drift event was refused',

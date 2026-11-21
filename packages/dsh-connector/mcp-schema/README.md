@@ -123,7 +123,10 @@ endpoint an invalid id is `invalid_client` (R-ID-02).
 - **Event shape (`MAILBOX_EVENT_SCHEMA`):** `{eventId, mailboxGeneration, sequence, type, at,
   sourceSessionId, correlationId, offer?, payload, payloadDigest}`; `offer = {offerId, revision,
   decisionKind}` on the answerable types (`ANSWERABLE_TYPES`).
-- **Payloads (`EVENT_PAYLOAD_SCHEMA`):** offers and `ask` carry the V2 descriptor; `settlement`
+- **Payloads (`EVENT_PAYLOAD_SCHEMA`):** offers and `ask` carry the V2 descriptor (a permission a
+  `dshConnectorSessions` delegate claimed but did not decide adds `delegate: {name, outcome, reason?}`,
+  `DELEGATE_OUTCOME` `passed` (its reason, when it gave one) or `failed` (reason: the failure's code),
+  so a judged pass is told apart from a failed delegate; the user, 2026-11-21); `settlement`
   `{approvalId, outcome, by, answers?}`; `retirement` `{retiredEventId, reason}`;
   `turn-finished` `{sessionId, outcome, finalMessage?, stop?}` (WAKE-REDUCE below); `state` `{sessionId, running,
   pendingInteraction}` (frozen, no producer); `message` `{text, images}`; `handover` / `takeback` `{sessionId, note}`;

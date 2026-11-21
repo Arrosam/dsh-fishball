@@ -159,7 +159,8 @@ export async function createSessionDomain(ctx, { storageDomain, readLimits, rout
 
     /**
      * `dshConnectorSessions` (host-services/sessions.d.ts): what a main-DSH plugin needs to act for a
-     * session's manager. `stop` is the Stop button (the turn ends, messages still reach the session);
+     * session's manager. `stop` is the Stop button (the turn ends, messages still reach the session),
+     * with the plugin's `reason` recorded as the turn's cause when given;
      * `read` is `session_read`'s bounded read, neutral roles included.
      */
     const service = Object.freeze({
@@ -168,7 +169,7 @@ export async function createSessionDomain(ctx, { storageDomain, readLimits, rout
       rootOf: (sessionId) => rootSessionOf(ctx, sessionId),
       managerOf: (sessionId) => managerOf(rootSessionOf(ctx, sessionId)),
       read: ({ sessionId, maxMessages, maxBytes }) => sessions.read({ sessionId, maxMessages, maxBytes }),
-      stop: async ({ sessionId }) => { await port.stop({ sessionId }) },
+      stop: async ({ sessionId, reason }) => { await port.stop({ sessionId, reason }) },
     })
     const provide = (target) => target.effect(() => target.provide(SESSIONS_SERVICE.name, service), SESSIONS_SERVICE.label)
 

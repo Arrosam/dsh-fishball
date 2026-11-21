@@ -9,8 +9,11 @@ export const SESSIONS_SERVICE = Object.freeze({
   label: 'dsh-connector: dshConnectorSessions',
 })
 
-/** What a delegate's `decide` may answer. `pass` hands the request on to the manager unchanged. */
+/** What a delegate's `decide` may answer. `pass` hands the request on to the manager. */
 export const VERDICT = Object.freeze({ allow: 'allow', reject: 'reject', pass: 'pass' })
+
+/** The failure reason of a delegate that answered no valid verdict (a throw reports its own code). */
+export const INVALID_VERDICT = 'invalid-verdict'
 
 /** A delegate's name: shown to the manager in the settlement's `delegate.name`. */
 export const DELEGATE_NAME = Object.freeze(/^[a-z][a-z0-9-]{0,47}$/)
