@@ -17,6 +17,7 @@ import { credentialNames } from '../link/credentials.js'
 import { ASK_TOOL } from '../asks/index.js'
 import { TARGET_LOG } from './constants.js'
 import { toolNameOf } from './names.js'
+import { createRunningSessions } from './sessions.js'
 
 const ORIGIN = TARGETS.toolName.origin
 
@@ -71,8 +72,18 @@ export function createTargetRuntime(ctx, options) {
   })
   // This epoch's `ask_user`: files offers of this target epoch only (asks/index.js `toolFor`).
   const locals = Object.freeze([Object.freeze({ facade: ASK_TOOL.fileCard, build: (modelName) => asks.toolFor(source(), modelName) })])
+  // The sidebar's running managed sessions of this epoch (sessions.js): refreshed on connect, on a
+  // polled session event and after Fishball's own session calls, fenced by this disposal. Subscribed
+  // before the view's own status listener, so a link that leaves `connected` has cleared its list
+  // before the view is rebuilt.
+  const sessions = createRunningSessions(link, { onChange: changed, logger })
+  disposers.push(sessions.dispose)
+
   // Fishball's own accepted answer settles its request; the connector sends no settlement for it (asks/index.js `answered`).
-  const called = (toolName, args, result) => { if (toolName === MCP.tools.approvalAnswer && result?.ok === true) void asks.answered(source(), args) }
+  const called = (toolName, args, result) => {
+    if (toolName === MCP.tools.approvalAnswer && result?.ok === true) void asks.answered(source(), args)
+    sessions.called(toolName)
+  }
   const bridge = createBridge({ link, naming, locals, called, ...bridgeOptions })
   disposers.push(bridge.onChange(changed))
 
@@ -124,6 +135,8 @@ export function createTargetRuntime(ctx, options) {
     source,
     /** Whether the bridge listed tools at least once on this epoch (`TargetView.contributedTools` is `null` before). */
     listed: () => listed,
+    /** This epoch's running managed sessions, `null` before the first answer on the current connection (`TargetView.runningSessions`). */
+    runningSessions: sessions.list,
     start: () => { if (!isRetired()) link.start() },
     reconnect,
     /** Calls `fn()` after any change of what this epoch's view shows. Returns its disposer. */

@@ -9,6 +9,9 @@
  * words a user can look up. `state` keys are the four public states (`SEAM_TARGETS.state`),
  * `placeholder` keys `SEAM_TARGETS.placeholder` (Q01: the user's "未设置/名字未知"), `identity` keys
  * `SEAM_TARGETS.identity`. `words` are the sidebar's own labels.
+ *
+ * `words.sessions` (the heading of a target's running managed sessions) and `untitledSession` (a
+ * session the connector sent no title for): PROPOSED wording, en and zh, for the user's review.
  */
 import { SEAM_STATUS, SEAM_TARGETS } from 'fishball-shared/ui-seam'
 
@@ -52,7 +55,9 @@ export const STATUS_TEXT = Object.freeze({
       address: 'Address',
       openApproval: 'Open the approval page',
       settings: 'Fishball settings',
+      sessions: 'Running sessions',
     }),
+    untitledSession: 'Untitled session',
   }),
   zh: Object.freeze({
     title: 'DSH 目标',
@@ -89,7 +94,9 @@ export const STATUS_TEXT = Object.freeze({
       address: '地址',
       openApproval: '打开授权页面',
       settings: 'Fishball 设置',
+      sessions: '运行中的会话',
     }),
+    untitledSession: '未命名会话',
   }),
 })
 

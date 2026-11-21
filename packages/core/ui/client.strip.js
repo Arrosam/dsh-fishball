@@ -19,6 +19,14 @@
  * `SEAM_TARGETS.route`). Connect opens the approval page in a new tab with no link back to this
  * page, and also shows it as a link (a browser may block an open after an await unnoticed).
  *
+ * Under a target's row, without a press and whatever its details show, its running managed sessions
+ * (`targetsView` `sessions`: the sessions this Fishball started or was handed on that DSH, while
+ * they run): each a running dot and its title as plain text (D06). The list is named by its
+ * heading for assistive technology only, as DSH's sidebar nests sessions under a workspace without
+ * a caption. The items are not controls: the session lives on the remote DSH, so there is nothing
+ * here to open. The list goes once no session runs, and while the stream is not live (it would be
+ * a stale claim that something runs).
+ *
  * In the rail (collapsed sidebar) the list is one dot per target, which expands the sidebar to that
  * target. A lost stream (kit HEALTH) keeps the rows readable, drops the cached states and controls,
  * and shows the kit's notice with Reconnect.
@@ -68,7 +76,10 @@ window.__ModuleLoader__.load({
         row: 'fb-target-row', name: 'fb-target-name', badge: 'fb-target-badge', chevron: 'fb-target-chevron', details: 'fb-target-details',
         line: 'fb-target-line', label: 'fb-target-label', url: 'fb-target-url', actions: 'fb-target-actions', link: 'fb-target-link',
         notice: 'fb-targets-notice', empty: 'fb-targets-empty', rail: 'fb-targets-rail', dot: 'fb-targets-dot', pairing: 'fb-target-pairing', error: 'fb-target-error',
+        sessions: 'fb-target-sessions', session: 'fb-target-session', sessionTitle: 'fb-target-session-title',
       }),
+      /** A running session's StateDot: DSH's in-progress look, as a connecting target's. */
+      sessionDot: 'ongoing',
       /**
        * Each public state's look (`SEAM_TARGETS.state`): DSH's Tag tone and StateDot state, and the
        * badge ink where DSH's Tag tone alone is too faint (UI-FIX-F). An unknown state draws failed,
@@ -116,6 +127,10 @@ window.__ModuleLoader__.load({
       `.${C.actions}{display:flex;align-items:center;flex-wrap:wrap;gap:6px;padding-top:2px}`,
       `.${C.link}{color:var(--dsw-alias-link);text-decoration:none}`,
       `.${C.link}:hover{text-decoration:underline}`,
+      // A target's running sessions: indented under its row as the details are, one quiet line each.
+      `.${C.sessions}{display:grid;gap:2px;margin:0;padding:0 10px 6px 26px;list-style:none}`,
+      `.${C.session}{display:flex;align-items:center;gap:8px;min-width:0;min-height:24px;font:var(--dsw-font-xs-13);color:var(--dsw-alias-label-secondary)}`,
+      `.${C.sessionTitle}{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;unicode-bidi:plaintext}`,
       `.${C.pairing}{display:grid;gap:6px;padding:8px;border-radius:var(--dsw-radius-sm);background:var(--dsw-alias-state-warn-tertiary);color:var(--dsw-alias-label-secondary)}`,
       `.${C.error}{margin:0;color:var(--dsw-alias-state-error-primary)}`,
       `.${C.notice}{display:grid;gap:4px;margin:0 8px 6px 4px;padding:8px 10px;border-radius:var(--dsw-radius-md);background:var(--dsw-alias-state-warn-tertiary);font:var(--dsw-font-xxs-12);color:var(--dsw-alias-label-secondary)}`,
@@ -213,7 +228,19 @@ window.__ModuleLoader__.load({
         refused === null ? null : h('p', { className: C.error, role: 'alert', 'data-fishball-target-refused': true }, refused))
     }
 
-    /** One target: its row (name, dot, badge) and, while open, its details (Q08: inline, no modal). */
+    /** A target's running managed sessions under its row (the module header): text only, no control. */
+    function Sessions({ target, words }) {
+      return h('ul', { className: C.sessions, 'aria-label': words.sessions, 'data-fishball-target-sessions': target.targetId },
+        target.sessions.map((session) => h('li', { key: session.sessionId, className: C.session, 'data-fishball-target-session': session.sessionId },
+          h(StateDot, { state: TARGETS_UI.sessionDot }),
+          // Plain text children: React escapes them, so a markup-looking title is shown as it is (D06).
+          h('span', { className: C.sessionTitle, title: session.title }, session.title))))
+    }
+
+    /**
+     * One target: its row (name, dot, badge), its running sessions while the stream is live, and,
+     * while open, its details (Q08: inline, no modal).
+     */
     function Target({ ctx, kit, lang, presses, target, words, live, staleBadge, open, onToggle }) {
       const tone = toneOf(target, live)
       const name = shownName(target)
@@ -228,6 +255,7 @@ window.__ModuleLoader__.load({
           // Plain text children: React escapes them, so a markup-looking name is shown as it is (D06).
           h('span', { className: C.name, 'data-fishball-target-name': true, 'data-placeholder': target.name === null ? '' : undefined }, name),
           h(Tag, { tone: tone.tag, className: C.badge }, h('span', { 'data-fishball-target-badge': true }, live ? target.badge : staleBadge))),
+        live && target.sessions?.length > 0 ? h(Sessions, { target, words }) : null,
         open ? h(Details, { ctx, kit, lang, presses, target, words, live, id: detailsId }) : null)
     }
 

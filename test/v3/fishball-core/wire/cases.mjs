@@ -4,6 +4,7 @@ import { C, MULTI } from './constants.mjs'
 import { registerMultiCases } from './multi.mjs'
 import { registerLifecycleCases } from './lifecycle.mjs'
 import { registerRetirementCases } from './retirement.mjs'
+import { registerRunningSessionsCases } from './running-sessions.mjs'
 import { registerBrandConfigCases } from './brand-config.mjs'
 import { registerWakeSystemCases } from './batch.mjs'
 import { SEAM_TARGETS } from './targets-oracle.mjs'
@@ -21,6 +22,7 @@ export function registerWireCases(sdk) {
   registerMultiCases(sdk)
   registerLifecycleCases(sdk)
   registerRetirementCases(sdk)
+  registerRunningSessionsCases(sdk)
   registerBrandConfigCases(sdk)
   registerWakeSystemCases(sdk)
   test(`${sdk} WIRE-EP-01 manifest exports and dependency boundary`, () => {

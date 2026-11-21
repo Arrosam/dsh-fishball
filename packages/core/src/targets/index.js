@@ -129,6 +129,7 @@ export function createTargets(ctx, { tables, identityRecords, asks, events, reco
       state: publicState(link, connect, detail.connecting), connecting: detail.connecting, link, connect,
       line: strip.line, control: strip.control, pairing: runtime.pairing.state(), identity: detail.identity,
       contributedTools: runtime.listed() ? runtime.bridge.contributedCount() : null, removable: editable, urlEditable: editable,
+      runningSessions: runtime.runningSessions(),
     })
   }
 

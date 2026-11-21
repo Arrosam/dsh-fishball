@@ -12,7 +12,8 @@
  *   unavailable", never a URL-derived name); its `state` is one of the four public states
  *   (`SEAM_TARGETS.state`; an unknown word reads `failed`, never success), with its badge, `url`
  *   (details only, Q01) and the details' lines (why, the contributed-tool count with zero shown,
- *   R-EXT-14, the identity capability), the one control and the pairing view (`pairingView`).
+ *   R-EXT-14, the identity capability), the one control and the pairing view (`pairingView`), and
+ *   `sessions`: its running managed sessions (`sessionsOf`), drawn under the row without a press.
  * There is no chat-top card any more (D03): the old `card` and the scalar `line`/`control` are gone.
  */
 import { SEAM_BRAND, SEAM_STATUS, SEAM_TARGETS } from 'fishball-shared/ui-seam'
@@ -47,6 +48,19 @@ function whyLine(target, text) {
   return entry(TARGET_LINE.why, line.code == null ? word : text.code(word, line.code))
 }
 
+/**
+ * A target's running managed sessions (`TargetView.runningSessions`) as the sidebar's nested list:
+ * `{sessionId, title}`, the title as plain text (untrusted, D06) or the untitled word. Empty when
+ * the list is unknown (`null`) or the target is not connected, so a stale list is never drawn.
+ */
+function sessionsOf(target, state, text) {
+  if (state !== SEAM_TARGETS.state.connected || !Array.isArray(target.runningSessions)) return Object.freeze([])
+  return Object.freeze(target.runningSessions.map((session) => Object.freeze({
+    sessionId: session.sessionId,
+    title: typeof session.title === 'string' && session.title !== '' ? session.title : text.untitledSession,
+  })))
+}
+
 function targetView(target, text, lang, timeZone) {
   const state = stateOf(target.state)
   const named = typeof target.name === 'string' && target.name !== ''
@@ -71,6 +85,7 @@ function targetView(target, text, lang, timeZone) {
     control,
     retry: state === SEAM_TARGETS.state.failed ? text.retry : null,
     pairing: pairingView(target.pairing, lang, timeZone),
+    sessions: sessionsOf(target, state, text),
   })
 }
 

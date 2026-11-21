@@ -10,6 +10,7 @@ import { registerModelPolishCases } from './polish-cases.mjs'
 import { registerStripCases } from './strip-cases.mjs'
 import { registerCatalogCases } from './catalog-cases.mjs'
 import { registerTargetsCases } from './targets-cases.mjs'
+import { registerSessionsCases } from './sessions-cases.mjs'
 import { FRAME, SEAM_TARGETS, WITHDRAWN } from './targets-constants.mjs'
 import { withdrawnRow } from './withdrawn.mjs'
 
@@ -32,6 +33,8 @@ export function registerModelDialogCases(sdk) {
   registerCatalogCases(sdk)
   // MULTI-3: the per-target frame, the sidebar target list, the ask card's source and handle.
   registerTargetsCases(sdk)
+  // The running managed sessions under each target's row.
+  registerSessionsCases(sdk)
   for (const lang of U.lang) {
     test(`${sdk} MODEL-EP-01 ${lang} unset model prompts with all catalog models`, async (t) => {
       const p = await page(t, sdk, { lang })
