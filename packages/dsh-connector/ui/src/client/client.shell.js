@@ -1,17 +1,19 @@
 /**
  * dsh-connector-ui, the shell part (U-SHELL, U-DRAW, U-WIRE):
- * 1. The one Fishball entry (R-UI-11): the fish row in DSH's sidebar panel list. DSH's own brand
- *    mark and name are not overridden (no sidebar.brand.* slot): a brand override would change
- *    the host UI for every user of that DSH.
+ * 1. The Fishball entries (R-UI-11; the user, 2026-11-21): one fish row in DSH's sidebar panel
+ *    list per connected agent with a window this DSH can open (the backend snapshot's `windows`:
+ *    by capability, not identity), labelled with that agent's name, first letter capitalised, and
+ *    none while there is no such agent. DSH's own brand mark and name are not overridden (no
+ *    sidebar.brand.* slot): a brand override would change the host UI for every user of that DSH.
  * 2. No settings card (R-UI-06, 1.33 Q-D2): the connector's limits are on the connector's own
  *    settings page, and Fishball's two settings entries are fishball-ui's, inside the framed page
  *    (1.34; the user, U-WIRE: the window adds none of its own).
  * 3. The window (U-DRAW; requirements 1.38 Q-U2, 1.41 Q-G3; R-UI-02): DSH's main area, the
- *    `main` slot where a session's conversation shows, opened by the Fishball row in the sidebar's
- *    panel list. It opens only the hosted child's page, through the instance's admission. A child
- *    that is not ready shows its state and a Retry link to the instance's own settings page
- *    (decided #77). With no usable instance (none, or only an external agent connected) it shows
- *    the hint to open the Fishball instance's own page (Q-G3).
+ *    `main` slot where a session's conversation shows, one per entry, opened by its row and titled
+ *    with the row's label. It opens only the hosted child's page, through the instance's admission.
+ *    A child that is not ready shows its state and a Retry link to the instance's own settings page
+ *    (decided #77). An agent with no window here has no entry (the user, 2026-11-21, replacing
+ *    Q-G3's hint entry); a window whose instance goes while it is open shows the hint.
  * 4. The kit the attention part is built from (`exports.kit`): the connector UI backend's
  *    snapshot hook and its POST helper, the style sheet and dictionary, and the seats (SEAT) where
  *    the attention part draws the fish's light and clears it when the window opens. The light with
@@ -42,7 +44,7 @@ window.__ModuleLoader__.load({
     const React = require('react')
     const { Button, IconRefreshOutlineRegular, IconWarningOutlineRegular, StateDot, Tag } = require('@deepseek-ai/dsh-client-ui-primitives')
     // The connector's helpers over its UI backend (client.js loaded the entry before this chunk).
-    const { apiUrl, snapshotHook, send, valueStore, visibilityEvent: VISIBILITY_EVENT } = require('dsh-agent-connector').ui
+    const { apiUrl, snapshotHook, snapshotStore, send, valueStore, visibilityEvent: VISIBILITY_EVENT } = require('dsh-agent-connector').ui
     const h = React.createElement
 
     /** The shell's sub-plugin name, beside the attention part's `dsh-connector-ui: attention`. */
@@ -51,11 +53,13 @@ window.__ModuleLoader__.load({
     /** Client services read on demand (not injected: Fishball works without each of them). */
     const SERVICE = Object.freeze({ layout: 'layout' })
     /**
-     * The Fishball window (R-UI-02) and its chrome.
-     * `panelId` is one key shared by the `main` occupant and its `sidebar.panellist` row, as DSH's
-     * Plugins ("plugins") and Tasks ("schedules") panels do. `panelOrder` puts the row first, before
-     * Plugins (0) and Tasks (10): Fishball is the conversation you open most, so it sits where a
-     * pinned session would. `pluginsPanelId` is DSH's own Plugins panel, which the Retry link
+     * The Fishball windows (R-UI-02) and their chrome.
+     * `panelIdPrefix` and the agent's principal key make one id shared by a `main` occupant and its
+     * `sidebar.panellist` row, as DSH's Plugins ("plugins") and Tasks ("schedules") panels share
+     * theirs; the principal key is opaque and never a token. `panelOrder` puts the first row first,
+     * before Plugins (0) and Tasks (10): Fishball is the conversation you open most, so it sits where
+     * a pinned session would; each later row is `panelOrderStep` further down, so the rows keep the
+     * snapshot's order (the connector's settings order) and stay above Plugins. `pluginsPanelId` is DSH's own Plugins panel, which the Retry link
      * opens when DSH has no plugin navigation service. `warningIconPx` is the glyph of DSH's own empty/error state
      * (dsh-client-ui-schedule's list error, 24px). `stateTone` maps the frame's state to DSH's Tag
      * tones (the ones its plugin page uses). DSH's Tag styles `danger`, not `error`, on
@@ -63,7 +67,7 @@ window.__ModuleLoader__.load({
      * The frame's address is only ever admit's one-time URL (CHILD_UI).
      */
     const EMBED_UI = Object.freeze({
-      panelId: 'fishball', panelOrder: -10, pluginsPanelId: 'plugins', warningIconPx: 24, refreshIconPx: 14,
+      panelIdPrefix: 'fishball:', panelOrder: -10, panelOrderStep: 0.01, pluginsPanelId: 'plugins', warningIconPx: 24, refreshIconPx: 14,
       stateTone: Object.freeze({ ready: 'info', failed: 'danger' }), neutralTone: 'neutral',
       /**
        * Clipboard write only, for every origin the frame lands on: admit's one-time URL at the
@@ -167,6 +171,8 @@ window.__ModuleLoader__.load({
         noInstance: 'No Fishball child instance is running here. Open your Fishball instance\'s own page.',
         notReady: 'Fishball isn\'t ready ({state}).',
         retryLink: 'Retry',
+        // R-NAME-08: a nameless agent is named by its id after this prefix (as the connector's marks do).
+        idPrefix: 'ID:',
         noticeLabel: 'Notice ({count} since you last looked): {message}. Click to dismiss.',
       }),
       zh: Object.freeze({
@@ -174,6 +180,7 @@ window.__ModuleLoader__.load({
         noInstance: '此处没有正在运行的 Fishball 子实例。请打开你的 Fishball 实例自己的页面。',
         notReady: 'Fishball 尚未就绪（{state}）。',
         retryLink: '重试',
+        idPrefix: 'ID:',
         noticeLabel: '提示（自上次查看以来 {count} 条）：{message}。点击关闭。',
       }),
     })
@@ -189,7 +196,8 @@ window.__ModuleLoader__.load({
      * The shell's seats (U-SHELL's slot registry): places in the shell's own surfaces that a part
      * fills (`seats.register(seat, value)`), so the shell draws them without knowing the part, and a
      * part that never loads leaves the shell's fallback. One value per seat; the latest wins.
-     * - mark: the sidebar mark component `({size})` the sidebar row draws;
+     * - mark: the sidebar mark component `({size})` the first Fishball row draws (the light is one per
+     *   connector, so one fish carries it; the other rows draw the plain fish);
      * - pageOpened: a function the window calls once each time it mounts.
      */
     const SEAT = Object.freeze({ mark: 'mark', pageOpened: 'pageOpened' })
@@ -280,7 +288,7 @@ window.__ModuleLoader__.load({
     const en = {
       ...PROPOSED_WORDING.en,
       ...DRAW_WORDING.en,
-      viewTitle: 'Fishball', embedTitle: 'Fishball chat', embedRefresh: 'Refresh',
+      embedTitle: 'Fishball chat', embedRefresh: 'Refresh',
       embedState: 'State', embedCode: 'Code',
       frameWaiting: 'Waiting for Fishball to load…',
       frameNotLoaded: "Fishball didn't load", frameWaitReason: "This frame hasn't confirmed that Fishball loaded.", frameOpenAgain: 'Open Fishball again',
@@ -293,7 +301,7 @@ window.__ModuleLoader__.load({
     const zh = {
       ...PROPOSED_WORDING.zh,
       ...DRAW_WORDING.zh,
-      viewTitle: 'Fishball', embedTitle: 'Fishball 聊天', embedRefresh: '刷新',
+      embedTitle: 'Fishball 聊天', embedRefresh: '刷新',
       embedState: '状态', embedCode: '代码',
       'frameState.loading': '检查中', 'frameState.unknown': '状态未知',
       statusUnreadable: '无法检查 Fishball 的状态。',
@@ -401,7 +409,7 @@ window.__ModuleLoader__.load({
 
     /** The sidebar mark before (or without) the attention part: Fishball's icon alone, with no latch (R-UI-09). */
     const PlainMark = ({ size }) => h(FishballIcon, { size, unread: false })
-    /** The sidebar row's mark: the attention part's seat, else `Plain`. */
+    /** The first sidebar row's mark: the attention part's seat, else `Plain`. */
     function makeMark(Plain) {
       return function Mark(props) {
         return h(seats.use(SEAT.mark) ?? Plain, props)
@@ -617,16 +625,18 @@ window.__ModuleLoader__.load({
      * The window's chrome: DSH's session header with the title, then the body. Every view draws
      * it, so the header cannot drift between them. It has no settings button: Fishball settings
      * and DSH settings are fishball-ui's entries inside the framed page (the user, U-WIRE).
+     * `title` is the label of the sidebar entry that opened it (the user, 2026-11-21: the same
+     * label), so the header names the agent whose window this is.
      * Optional parts:
      * - `state` (and `code`): the state tag; the hint has none, as there is no child to describe;
      * - `onRefresh`: Refresh, enabled by `canRefresh`.
      */
-    function FrameChrome({ t, page, state, code, canRefresh, onRefresh, statusWarning, body }) {
-      return h('section', { className: CLS.embed, 'aria-label': t('viewTitle'), 'data-fishball-embed': true, 'data-fishball-embed-page': page },
+    function FrameChrome({ t, title, page, state, code, canRefresh, onRefresh, statusWarning, body }) {
+      return h('section', { className: CLS.embed, 'aria-label': title, 'data-fishball-embed': true, 'data-fishball-embed-page': page },
         h('header', { className: CLS.embedBar, 'data-window-drag': true },
           h('span', { className: CLS.embedTitle },
             h(FishballIcon, { size: HEADER_MARK_PX, unread: false, decorative: true }),
-            h('span', { className: CLS.embedName }, t('viewTitle'))),
+            h('span', { className: CLS.embedName }, title)),
           state === undefined ? null : h(FrameState, { state, code, t }),
           h('div', { className: CLS.embedActions },
             onRefresh === undefined ? null : h(Button, { type: 'button', size: 'sm', variant: 'ghost', icon: h(IconRefreshOutlineRegular, { size: EMBED_UI.refreshIconPx }), disabled: !canRefresh, onClick: onRefresh }, t('embedRefresh')))),
@@ -680,9 +690,10 @@ window.__ModuleLoader__.load({
      * any name but a loopback one gets `hostname-refused` and shows R-UI-02's text instead of a
      * frame. Only an admitted page's fixed document-ready marker can reveal that frame.
      */
-    function makeChildView(ctx, t, route) {
+    function makeChildView(ctx, t, route, useTitle) {
       const frameLang = frameLangStore(ctx.locale)
       return function FishballChildView() {
+        const title = useTitle()
         const page = FRAME_UI.page.chat
         const lang = useFrameLang(frameLang)
         const [generation, setGeneration] = React.useState(0)
@@ -702,7 +713,7 @@ window.__ModuleLoader__.load({
         // A hostname refusal stays until the page is opened under another name; any other refusal
         // can be asked again with Refresh, as a framed page can be reloaded.
         const hostnameRefused = admission?.refused === CHILD_UI.hostnameRefused
-        if (!check?.unreadable && status?.code === CHILD_UI.instanceMissing) return hintChrome(t)
+        if (!check?.unreadable && status?.code === CHILD_UI.instanceMissing) return hintChrome(t, title)
         const body = check?.unreadable && !ready ? null : status === undefined
           ? loadingState(t)
           : !ready
@@ -715,7 +726,7 @@ window.__ModuleLoader__.load({
                   : h('p', { role: 'alert', 'data-fishball-admit-refused': admission.refused ?? '' }, t('admitFailed')))
                 : h(AdmittedFrame, { key: generation, t, src: admission.url, onRetry: reopen })
         return h(FrameChrome, {
-          t, page, state, code, statusWarning: check?.unreadable,
+          t, title, page, state, code, statusWarning: check?.unreadable,
           canRefresh: !hostnameRefused && (check?.unreadable || (status !== undefined && (!ready || admission !== undefined))),
           onRefresh: refresh,
           body,
@@ -728,15 +739,15 @@ window.__ModuleLoader__.load({
      * 需要转去外部实例的页面"; R-UI-08 amended by 1.41): the hint, and no frame, state or Retry. An
      * external agent connected to this connector has its own page, which embed-UI cannot know.
      */
-    function makeHintView(t) {
+    function makeHintView(t, useTitle) {
       return function FishballHintView() {
         useWindowOpened()
-        return hintChrome(t)
+        return hintChrome(t, useTitle())
       }
     }
     /** The hint inside the window's chrome: no frame, no state, no Retry. */
-    const hintChrome = (t) => h(FrameChrome, {
-      t, page: FRAME_UI.page.chat,
+    const hintChrome = (t, title) => h(FrameChrome, {
+      t, title, page: FRAME_UI.page.chat,
       body: emptyState(
         glyphWell(h(FishballIcon, { size: EMBED_UI.warningIconPx, unread: false, decorative: true })),
         h('p', { className: CLS.embedLead }, t('noInstanceTitle')),
@@ -744,11 +755,76 @@ window.__ModuleLoader__.load({
     })
 
     /**
-     * The Fishball row in DSH's sidebar panel list: embed-UI's one Fishball entry (R-UI-11). DSH draws the row, its label and its selected highlight (`aria-current`
-     * while the view is open, cleared when you open a session), exactly as for Plugins and Tasks;
-     * the icon is the fish mark (the attention part's latch in it, when that part runs).
+     * An agent's entry label (the user, 2026-11-21): its name with the first letter capitalised
+     * ("fishball2" reads "Fishball2"), the rest as the agent chose it. The first code point, not
+     * the first UTF-16 unit, so a name that starts outside the BMP is not split; the locale-free
+     * upper case, so the label does not change with DSH's display language. A nameless agent reads
+     * "ID: <id>", as the connector's marks name it (R-NAME-08), with nothing capitalised.
      */
-    const registerSidebarEntry = (ctx, Icon, t) => ctx.slots.inject(SLOT.panelList, () => ctx.slots.register({ name: SLOT.panelList, id: EMBED_UI.panelId, order: EMBED_UI.panelOrder, locale: NS, label: () => t('viewTitle') }, Icon))
+    function windowLabel(t, row) {
+      if (row.name === null) return t('idPrefix') + ' ' + row.id
+      const [first = '', ...rest] = row.name
+      return first.toUpperCase() + rest.join('')
+    }
+
+    /**
+     * The Fishball entries (R-UI-11; the user, 2026-11-21): one row in DSH's sidebar panel list and
+     * one `main` view per agent in the backend snapshot's `windows`, followed live. DSH draws each
+     * row, its label and its selected highlight (`aria-current` while its view is open), exactly as
+     * for Plugins and Tasks. The first row's icon is `FirstMark` (the attention part's light, when
+     * that part runs: the light is one per connector, so it sits on one fish); the others draw
+     * `Plain`.
+     *
+     * A row is registered again when its place or label changes (DSH reads a row's order and label
+     * when the slot changes); its view stays registered while its agent is listed, so an open
+     * window survives a rename or a reorder, and goes when the agent goes (DSH then closes it).
+     * A snapshot without `windows` is the store's unknown state (a hidden tab or a dropped stream,
+     * dsh-agent-connector's eventStore), so the entries stay as they were until a real frame.
+     * @param View - `(useTitle) => Component`, the window for one entry.
+     * @returns the disposer of every entry and the subscription.
+     */
+    function followWindows(ctx, t, store, { View, FirstMark, Plain }) {
+      /** id → {row: {order, label, Icon}, disposeRow, disposeView, title: valueStore} */
+      const entries = new Map()
+      const sameRow = (a, b) => a.order === b.order && a.label === b.label && a.Icon === b.Icon
+      const registerRow = (id, row) => ctx.slots.register({ name: SLOT.panelList, id, order: row.order, locale: NS, label: () => row.label }, row.Icon)
+      function reconcile() {
+        const windows = store.get()?.windows
+        if (!Array.isArray(windows)) return
+        const wanted = new Map(windows.map((agent, index) => [EMBED_UI.panelIdPrefix + agent.key, {
+          order: EMBED_UI.panelOrder + index * EMBED_UI.panelOrderStep,
+          label: windowLabel(t, agent),
+          Icon: index === 0 ? FirstMark : Plain,
+        }]))
+        for (const [id, entry] of [...entries]) {
+          if (wanted.has(id)) continue
+          entry.disposeRow()
+          entry.disposeView()
+          entries.delete(id)
+        }
+        for (const [id, row] of wanted) {
+          const entry = entries.get(id)
+          if (entry === undefined) {
+            const title = valueStore(row.label)
+            const useTitle = () => React.useSyncExternalStore(title.subscribe, title.get)
+            const disposeView = ctx.slots.register({ name: SLOT.main, key: id, locale: NS }, View(useTitle))
+            entries.set(id, { row, title, disposeView, disposeRow: registerRow(id, row) })
+          } else if (!sameRow(entry.row, row)) {
+            entry.disposeRow()
+            entry.row = row
+            entry.title.set(row.label)
+            entry.disposeRow = registerRow(id, row)
+          }
+        }
+      }
+      const unsubscribe = store.subscribe(reconcile)
+      reconcile()
+      return () => {
+        unsubscribe()
+        for (const entry of entries.values()) { entry.disposeRow(); entry.disposeView() }
+        entries.clear()
+      }
+    }
 
     function mountStyles() {
       const style = document.createElement('style')
@@ -778,15 +854,15 @@ window.__ModuleLoader__.load({
       const t = ctx.locale.bind(NS)
       ctx.effect(() => ctx.locale.register(NS, { en, zh }), 'fishball: dictionaries')
       ctx.effect(mountStyles, 'fishball: styles')
-      // The Fishball view in DSH's main area, as Plugins and Tasks register theirs (§7). The key is
-      // registered for the plugin's life, as theirs are.
-      // The window and its sidebar fish by availability (UIM-EP-01): the hosted child's window, or
-      // the hint without one (Q-G3, QD4). client.js starts the shell only with the connector's
-      // backend (Q-U1).
-      const View = available.page ? makeChildView(ctx, t, available.routes) : makeHintView(t)
-      const Mark = makeMark(PlainMark)
-      ctx.effect(() => ctx.slots.inject(SLOT.main, () => ctx.slots.register({ name: SLOT.main, key: EMBED_UI.panelId, locale: NS }, View)), 'fishball: main view')
-      ctx.effect(() => registerSidebarEntry(ctx, Mark, t), 'fishball: sidebar row')
+      // One Fishball view in DSH's main area and one sidebar row per agent with a window here
+      // (followWindows), as Plugins and Tasks register theirs (§7). The window by availability
+      // (UIM-EP-01): the hosted child's window, or the hint if this page loaded without a locator.
+      // client.js starts the shell only with the connector's backend (Q-U1).
+      const View = (useTitle) => (available.page ? makeChildView(ctx, t, available.routes, useTitle) : makeHintView(t, useTitle))
+      const parts = { View, FirstMark: makeMark(PlainMark), Plain: PlainMark }
+      const store = snapshotStore(available.ui)
+      // Both slots must be declared before an entry registers, so the follower runs inside both.
+      ctx.effect(() => ctx.slots.inject(SLOT.main, () => ctx.slots.inject(SLOT.panelList, () => followWindows(ctx, t, store, parts))), 'fishball: sidebar rows and windows')
     }
     return module.exports
   },

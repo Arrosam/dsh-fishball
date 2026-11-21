@@ -10,6 +10,8 @@
  *   warning without a usable locator (src/host/services.js).
  * - Declares the notify and attention tools through the connector's UI backend and contribution
  *   service; their handlers and state are the connector's (R-EXT-13 amended by 1.34).
+ * - Offers the connector's UI backend the hosted child's agent as the one whose window this DSH
+ *   can open (src/host/services.js `offerWindows`), which decides the sidebar entries.
  * - Registers its own owner-only Fetch routes for availability, the child's status and admission
  *   (src/host/routes.js), which re-serve the locator to embed-UI's web client.
  * It holds no state and stores nothing (R-UI-06).
@@ -18,7 +20,7 @@
  * without it, and it is a dsh-base row on both SDKs, so it never gates this row in practice.
  */
 import { ROW } from './src/host/constants.js'
-import { contributeTools, reportMissing } from './src/host/services.js'
+import { contributeTools, offerWindows, reportMissing } from './src/host/services.js'
 import { registerRoutes } from './src/host/routes.js'
 
 export const name = ROW.name
@@ -29,4 +31,5 @@ export function apply(ctx) {
   registerRoutes(ctx, logger)
   reportMissing(ctx, logger)
   contributeTools(ctx, logger)
+  offerWindows(ctx)
 }

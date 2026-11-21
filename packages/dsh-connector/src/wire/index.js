@@ -268,7 +268,7 @@ export async function openV3(ctx, { config, storageDomain, limits, volatileEvent
     }
 
     // Step 5: the host services and the owner-only pages.
-    const ui = createUiBackend({ handover: routing.handover, maxNoteBytes: () => limits().maxMessageBytes, logger })
+    const ui = createUiBackend({ handover: routing.handover, pairs, maxNoteBytes: () => limits().maxMessageBytes, logger })
     closers.push(() => ui.close())
     closers.push(routing.provide(ctx))
     closers.push(contributions.provide(ctx))

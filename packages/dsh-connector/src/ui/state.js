@@ -13,7 +13,9 @@
  *   user last clicked the prompt or opened the window. A newer notice replaces the text.
  * - **Snapshot**: `marks` is `managed()` as it is, so names always match it; `targets` is what the
  *   Hand over control lists (R-UI-10: enabled and paired, online or not, in `principals()` order);
- *   `light` is the fish's light, on for a set latch or a pending notice.
+ *   `light` is the fish's light, on for a set latch or a pending notice; `windows` is who gets a
+ *   sidebar entry of their own (windows.js): an enabled, paired and online principal whose token
+ *   entry a window source names, in `principals()` order, so the entries keep the settings order.
  * Nothing here is stored: the latch and the notice are in memory, as V2's latch was (D3).
  */
 import { LATCH } from './constants.js'
@@ -25,9 +27,13 @@ const CLEARED = Object.freeze({ count: LATCH.clear, important: false })
 /**
  * @param {object} deps
  * @param deps.handover - K3 `DshConnectorHandover` (`managed`, `principals`)
+ * @param deps.pairs - K1 `PairStore` (`byPrincipal`): a principal's token entry, which window sources
+ *   name. Optional: a backend built without one (a world that draws marks only) resolves no entry,
+ *   so it lists no window and keeps every other field as before.
+ * @param deps.windows - the window offers (windows.js `claims`)
  * @param deps.changed - called after every change of the latch or the notice
  */
-export function createUiState({ handover, changed }) {
+export function createUiState({ handover, pairs, windows, changed }) {
   let latch = CLEARED
   let notice = null
   /** Applies a change. It publishes only if something changed, so a no-op sends no frame. */
@@ -60,9 +66,12 @@ export function createUiState({ handover, changed }) {
     reset: clearAll,
     snapshot() {
       const marks = freezeAll(handover.managed().map(({ sessionId, principal }) => ({ sessionId, principal: Object.freeze({ key: principal.key, name: principal.name, id: principal.id }) })))
-      const targets = freezeAll(handover.principals().filter((row) => row.enabled && row.paired).map(({ key, name, id, online }) => ({ key, name, id, online })))
+      const listed = handover.principals().filter((row) => row.enabled && row.paired)
+      const targets = freezeAll(listed.map(({ key, name, id, online }) => ({ key, name, id, online })))
+      const hasWindow = (row) => row.online && windows.claims(pairs?.byPrincipal(row.key)?.entryKey)
+      const windowRows = freezeAll(listed.filter(hasWindow).map(({ key, name, id }) => ({ key, name, id })))
       const light = Object.freeze({ on: latch.count === LATCH.set || notice !== null, important: latch.important || notice?.important === true })
-      return Object.freeze({ marks, targets, attention: attention(), notice, light })
+      return Object.freeze({ marks, targets, windows: windowRows, attention: attention(), notice, light })
     },
   })
 }

@@ -18,17 +18,20 @@
  * `ctx.get` and calls `contribute` with its own `dshConnectorTools.register`; that is the C-EXT
  * mechanism, so the tools carry embed-UI's namespace and leave with it (Q-N3 = A).
  *
- * `createUiBackend({handover, maxNoteBytes, logger})` → `{service, provide(ctx), snapshot(), close()}`
+ * `createUiBackend({handover, pairs, maxNoteBytes, logger})` → `{service, provide(ctx), snapshot(), close()}`
  * (`maxNoteBytes()`: the Hand over / Take back note bound, the connector's live `maxMessageBytes`):
- * - `service` (frozen; what embed-UI may use): `apiVersion`, `routes` (UI_ROUTE) and
- *   `contribute(register) → dispose`. `register` is the caller's bound
+ * - `service` (frozen; what embed-UI may use): `apiVersion`, `routes` (UI_ROUTE),
+ *   `offerWindows(source) → dispose` (windows.js: the token entries whose agent has a window this
+ *   DSH can open, which the snapshot's `windows` lists) and `contribute(register) → dispose`.
+ *   `register` is the caller's bound
  *   `dshConnectorTools.register`; it is called once per tool. A throw part-way disposes the
  *   registrations made and rethrows. The dispose is idempotent and resets the latch and the notice,
  *   because what embed-UI showed does not outlive its contribution (§13.6: reset on unload).
  * - `provide(ctx)`: follows the hand-over service and serves the routes and the service, for the
  *   context's life; once per backend. Its end closes the backend.
- * - `close()`: ends the streams, stops following the hand-over service and ends every
- *   contribution; a later `contribute` throws. Idempotent.
+ * - `close()`: ends the streams, stops following the hand-over service, ends every
+ *   contribution and withdraws every window source; a later `contribute` or `offerWindows`
+ *   throws. Idempotent.
  */
 import { diagnosticOf } from '../errors.js'
 import { LIMITS } from '../config.js'
@@ -40,6 +43,7 @@ const defaultNoteBytes = () => LIMITS.find((limit) => limit.field === MESSAGE_BY
 import { createStreams, registerUiRoute, uiRoutes } from './routes.js'
 import { createUiState } from './state.js'
 import { uiTools } from './tools.js'
+import { createWindowOffers } from './windows.js'
 
 export { NOTIFY, UI_CODE, UI_ROUTE, UI_SERVICE, UI_TOOL } from './constants.js'
 
@@ -58,14 +62,17 @@ function disposeAll(disposers) {
 /**
  * @param {object} deps
  * @param deps.handover - K3 `DshConnectorHandover` (the routing module's `handover`)
+ * @param deps.pairs - K1 `PairStore`: `byPrincipal`, the token entry behind a principal key; without
+ *   it no window is listed (state.js)
  * @param deps.maxNoteBytes - `() => number`, the live note bound in UTF-8 bytes; by default the
  *   connector's `maxMessageBytes` default (config.js LIMITS), so a backend built without the
  *   setting bounds a note as the row's default does. C-WIRE always passes the live setting.
  * @param deps.logger - `{warn}`
  */
-export function createUiBackend({ handover, maxNoteBytes = defaultNoteBytes, logger }) {
+export function createUiBackend({ handover, pairs, maxNoteBytes = defaultNoteBytes, logger }) {
   const streams = createStreams(() => state.snapshot(), logger)
-  const state = createUiState({ handover, changed: () => streams.publish() })
+  const windows = createWindowOffers({ changed: () => streams.publish() })
+  const state = createUiState({ handover, pairs, windows, changed: () => streams.publish() })
   const contributions = new Set()
   let unfollow
   let provided = false
@@ -96,7 +103,7 @@ export function createUiBackend({ handover, maxNoteBytes = defaultNoteBytes, log
     return end
   }
 
-  const service = Object.freeze({ apiVersion: UI_SERVICE.apiVersion, routes: UI_ROUTE, contribute })
+  const service = Object.freeze({ apiVersion: UI_SERVICE.apiVersion, routes: UI_ROUTE, contribute, offerWindows: windows.offer })
 
   function close() {
     if (closed) return
@@ -106,6 +113,7 @@ export function createUiBackend({ handover, maxNoteBytes = defaultNoteBytes, log
       // Its registrations are disposed either way; the failure is only reported.
       try { end() } catch (error) { logger.warn(LOG.format, LOG.endFailed, diagnosticOf(error)) }
     }
+    windows.close()
     streams.close()
   }
 

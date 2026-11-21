@@ -120,4 +120,5 @@ export const LOG = Object.freeze({
 export const LABEL = Object.freeze({
   ready: 'dsh-connector-ui: connector and instance check',
   tools: 'dsh-connector-ui: notify and attention tools',
+  windows: 'dsh-connector-ui: the hosted agent\'s window',
 })

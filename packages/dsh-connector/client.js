@@ -490,6 +490,12 @@ window.__ModuleLoader__.load({
       const store = uiSnapshots(routes.events)
       return React.useSyncExternalStore(store.subscribe, store.get)
     }
+    /**
+     * The same shared store outside React (`{subscribe, get}`), for a part that registers slot
+     * entries from the snapshot (dsh-connector-ui's one sidebar entry per agent window). While the
+     * stream is closed or dropped, `get` answers the empty state, which has no `windows`.
+     */
+    const snapshotStore = (routes) => uiSnapshots(routes.events)
 
     /** POST one command to the Host. @returns { ok, code, answer } (the Host's refusal code and the whole answer). */
     async function send(path, body, signal) {
@@ -509,7 +515,7 @@ window.__ModuleLoader__.load({
      * part use them, so neither package keeps a copy. dsh-connector-ui reaches them through
      * `require.async('dsh-agent-connector')` (its `dsh.client.external`).
      */
-    const UI_CLIENT = Object.freeze({ routes: UI_ROUTE, apiUrl: routeUrl, snapshotHook, send, valueStore, visibilityEvent: VISIBILITY_EVENT })
+    const UI_CLIENT = Object.freeze({ routes: UI_ROUTE, apiUrl: routeUrl, snapshotHook, snapshotStore, send, valueStore, visibilityEvent: VISIBILITY_EVENT })
     /** One call to the host half: its JSON answer, or `{ok: false, code}` when it cannot be read. */
     async function call(path, init) {
       try {

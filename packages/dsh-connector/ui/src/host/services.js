@@ -65,6 +65,28 @@ export function reportMissing(ctx, logger) {
 }
 
 /**
+ * Offers the connector's UI backend the one agent whose window this DSH can open (the user,
+ * 2026-11-21: an entry by capability, not identity): the hosted child, whose page the window frames
+ * through the locator. Its token entry is the locator's `agentEntry()`, so the backend lists that
+ * agent while it is online, and dsh-connector-ui draws its sidebar entry. Any other agent, a
+ * Fishball connected from elsewhere included, has no window this DSH can open and is not named.
+ * The offer lives in a sub-scope of both services, so it goes when either goes; an older locator
+ * without `agentEntry` names nothing.
+ */
+export function offerWindows(ctx) {
+  ctx.inject([SERVICE.ui, SERVICE.child], (scope) => {
+    const ui = scope[SERVICE.ui]
+    const child = scope[SERVICE.child]
+    if (!isUsable(ui) || !isUsable(child) || typeof ui.offerWindows !== 'function') return
+    const entries = () => {
+      const entry = typeof child.agentEntry === 'function' ? child.agentEntry() : null
+      return typeof entry === 'string' && entry !== '' ? [entry] : []
+    }
+    scope.effect(() => ui.offerWindows({ entries, onChange: (listener) => child.onChange(listener) }), LABEL.windows)
+  })
+}
+
+/**
  * @param logger - the row's logger.
  * Declares embed-UI's notify and attention tools (R-FN-01, R-EXT-13 amended by 1.34, design §13.6):
  * while both the UI backend and the contribution service are there, the backend's `contribute`
