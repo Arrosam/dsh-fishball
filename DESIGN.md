@@ -2323,3 +2323,20 @@ Decided by the user on 2026-11-20:
 | Connector changes | `workspaces_list` and `models_list` join core's tool copy after `sessions_list`; no `settlement` comes for Fishball's own answers, so a successful `approval_answer` through the façade closes (deletes) its open unfiled ask record; `state` events are no longer sent. |
 
 **Implementation.** `src/events/delivery.js` holds the open buffer, the sealed batches and the window timer (injectable, unref'd, cleared by `close()`); `src/events/wake.js` checks the settings. A batch message's id is its first record's own message id and its source lists every record (`{kind: 'fishball-event', events: [{key, eventId, type, targetId}]}`), so a copy an earlier process left pending is recognised and settled for every record at recovery.
+
+## 30. fishball-heartbeat: keep Fishball's cache warm with useful turns (2026-11-21)
+
+**Why.** Fishball's provider prompt cache expires while it is idle, and the next real turn then pays a cold write over its whole context. A heartbeat turn re-reads the cached prefix before it expires and gives Fishball something worth doing in that turn (the user, 2026-11-21). Unlike dsh-cache-retainer's invisible replay, a heartbeat is a real turn in Fishball's session.
+
+Decided by the user: off until the user sets an interval and a maximum of consecutive heartbeats, which Fishball cannot change; every Fishball turn resets the timer, heartbeat turns included; heartbeats sent with no real turn between them are counted and stop at the limit, a real turn resets the count; Fishball's one tool edits only the next heartbeat's focus; every heartbeat tells Fishball to update that focus at the end of the turn from the current state.
+
+**Where.** A row of fishball-amenities (`./heartbeat/index.js`, id `fishball-heartbeat`), bound to `fishballInstance` (apiVersion 2) the way the board row is (`followInstance`, `reportCoreMissing`): X2 `registerSetup` for the tool and the per-manager timer, X10 `manager.notify({wake: true})` for the turn. No core change.
+
+**Implementation decisions (Fishball, 2026-11-21).**
+- Settings: `intervalSeconds` (1 … 2147483, the setTimeout limit) and `maxConsecutive` (≥ 1), no defaults; either unset means off: no tool, no timer.
+- The timer is armed at each `turn/end` for the interval after that event's time and cleared at `turn/start`.
+- A heartbeat turn is a turn that admitted the heartbeat notice and no user-typed message; any other turn that entered a step is real. A turn that entered no step sent no request and changes neither the count nor the anchor.
+- Restart and resume rebuild the count and the anchor from the session log; an overdue heartbeat is not caught up (the cache is presumed cold).
+- A failed send is logged and not retried; the next turn re-arms it.
+- One dedupe key per idle gap: session id plus the seq of the `turn/end` that opened it.
+- The focus is `<home>/fishball-heartbeat/focus.json`, ≤ 2000 code points, written by rename; an empty focus clears it.

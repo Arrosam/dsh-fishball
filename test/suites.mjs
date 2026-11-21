@@ -354,6 +354,11 @@ export const V3_SUITES = Object.freeze({
       'test/v2-page-cases/lite-browser.mjs']),
   'fishball-board.peers': suite('board without core (FEAT-PEERS; fold-notify was removed, REMOVE-WD)', v3('fishball-board/peers'),
     [all(PACKAGE.fishballBoard), sub(PACKAGE.dshConnector, 'mcp-schema')]),
+  // The heartbeat row over a fake core, bound to each SDK (and 0.2.2-rc.3, the installed DSH); it
+  // reuses the board suite's row loader and the package-boundaries case names.
+  'fishball-amenities.heartbeat': suite('heartbeat amenity: config gate, timer, consecutive limit, restart, heartbeat_focus', [...v3('fishball-amenities/heartbeat'), 'test/v3/fishball-amenities/heartbeat/sdk-0.2.2-rc.3.test.mjs'],
+    ['packages/fishball-amenities/heartbeat/**', 'packages/fishball-amenities/board/src/instance.js', 'packages/fishball-amenities/*', 'test/v3/fishball-amenities/heartbeat/**',
+      'test/v3/fishball-board/peers/subject.mjs', 'test/v3/contract/package-boundaries/cases.mjs', 'test/private-skills/support/sdk.mjs']),
   // The contract suites read every file of the packages they bound, so any change there reruns them.
   'contract.k1-mcp-schema': suite('K1 MCP schema freeze', v3('contract/k1-mcp-schema'),
     [...CONNECTOR_CONTRACTS, sub(PACKAGE.dshConnector, 'mcp-schema'), `${PACKAGE.dshConnector}/src/**/*.@(js|cjs|mjs)`, CONNECTOR_MANIFEST, MCP_RELEASE_PINS, sub(PACKAGE.dshConnector, 'host-services')]),

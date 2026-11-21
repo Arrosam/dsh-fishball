@@ -5,3 +5,7 @@
     - id: fishball-board
       name: ./board/index.js
       config: {}
+    # Inert until the user sets both intervalSeconds and maxConsecutive in its component settings.
+    - id: fishball-heartbeat
+      name: ./heartbeat/index.js
+      config: {}
