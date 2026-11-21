@@ -10,7 +10,7 @@ or a code here is a K3 amendment.
 | `dshConnectorHandover` | dsh-connector | the connector's own UI backend (`src/ui/`), for its marks part with Hand over / Take back (DESIGN.md §28; formerly dsh-connector-ui) | [handover.d.ts](<handover.d.ts>) |
 | `dshConnectorTokens` | dsh-connector | the instance's host row | [tokens.d.ts](<tokens.d.ts>) |
 | `dshInstanceChild` | the instance's host row | dsh-connector-ui | [child.d.ts](<child.d.ts>) |
-| `dshConnectorSessions` | dsh-connector | dsh-connector-watchdog (dsh-connector-amenities): permission delegates, bounded reads and Stop for managed sessions | [sessions.d.ts](<sessions.d.ts>) |
+| `dshConnectorSessions` | dsh-connector | dsh-connector-watchdog (dsh-connector-amenities): permission delegates, bounded reads, Stop (with an optional reason, recorded as DSH's `hook` cancel cause) and `start` (`session_start` for a principal, with an `afterManaged` step before the first message) for managed sessions | [sessions.d.ts](<sessions.d.ts>) |
 | `dshConnectorUi` | dsh-connector | dsh-connector-ui (its routes are also read by the connector's own marks part, `client.marks.js`) | [ui.d.ts](<ui.d.ts>) |
 
 - Each is a Cordis service of the same process, with `apiVersion: 1`. A consumer looks it up at

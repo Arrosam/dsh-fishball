@@ -767,6 +767,13 @@ export const RESYNC_REASON = Object.freeze({ staleCursor: 'stale-cursor' })
  */
 export const SETTLEMENT_OUTCOME = Object.freeze({ allowed: 'allowed', rejected: 'rejected', answered: 'answered' })
 export const SETTLED_BY = Object.freeze({ user: 'user', principal: 'principal', delegate: 'delegate' })
+/**
+ * A permission offer's optional `delegate` `{name, outcome, reason?}` (the user, 2026-11-21, after
+ * the Watchdog live test): a delegate claimed the request and did not decide it, so the manager can
+ * tell a judged `passed` (its reason, when it gave one) from a `failed` delegate (a throw or an
+ * invalid answer; reason = the failure's code). No field: no delegate claimed the request.
+ */
+export const DELEGATE_OUTCOME = Object.freeze({ passed: 'passed', failed: 'failed' })
 
 /**
  * Who wrote one message `session_read` returns (K1 amendment at W4b, C-WIRE; requirements 1.41

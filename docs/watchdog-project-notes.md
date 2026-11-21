@@ -20,6 +20,14 @@
 >   it does not decide. This replaces the "other high risk → escalate to the user" row in §3 and U16's
 >   "other high-risk items go to the user" in §1.
 > - **Briefs:** persisted.
+> - **Live test (2026-11-21):**
+>   - **Pass vs failure:** a request Watchdog passes on carries `delegate {name, outcome: passed | failed, reason?}`, so the manager can tell a judged pass from a failed judgement (`judge-timeout`, `judge-no-answer`, `judge-unreadable`, `judge-failed`).
+>   - **Stop attribution:** Watchdog's stop is recorded with DSH's `hook` cancel cause and its drift reason. turn-finished then reads "cancelled (hook: Watchdog stopped the session …)", not "(user)".
+>   - **The window before a brief:** a session started with `session_start` and briefed afterwards can ask before the brief exists. Such a request goes to the manager, and Watchdog never re-judges a request that is already waiting.
+>   - **Closing the window:** the user decided to close it at creation instead.
+>     - `watchdog_session_start` takes `session_start`'s arguments plus `purpose` and `scope`. It runs the connector's own start, `dshConnectorSessions.start({principalKey, args, afterManaged})`, which shares `session_start`'s code path and checks. Its `afterManaged` step briefs the session after the session is managed and before its first message is sent, so the delegate claims the session before its first turn.
+>     - `watchdog_brief` still covers only requests made after the brief.
+>     - Overriding the core `session_start` tool was rejected: the connector's contribution surface lets an amenity add namespaced tools only, never change a core tool.
 
 Moved here from dsh-fishball's untracked `.runtime/reports/watchdog-project-notes.md` on 2026-11-20 (Watchdog is a DSH-side plugin, §4). Originally written 2026-11-16. Fishball V3 builds **none** of this. Watchdog is a DSH-side plugin: it depends on nothing of the Fishball side (requirements 1.39). The user's words
 are quoted verbatim. Everything here was taken out of Fishball V3's requirements (R-WD-*, R-INT-07,

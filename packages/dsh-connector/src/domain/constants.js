@@ -35,6 +35,20 @@ export const TREE_STOP = Object.freeze({
   log: Object.freeze({ failed: 'tree stop: %s %s failed (%s)', subagent: 'cancelling subagent', job: 'killing job', unknown: 'unknown' }),
 })
 
+/**
+ * A plugin's Stop with a reason (`dshConnectorSessions.stop`, e.g. Watchdog's drift stop; the user,
+ * 2026-11-21: "Watchdog's stop must be distinguishable"). DSH's own cancel (sessionController.cancel,
+ * the Stop button) always records `{kind: 'user'}` (dsh-api-session-controller commands.ts), so the
+ * turn-finished read "cancelled (user)". DSH's AgentCancelCause has a `hook` kind with a reason for a
+ * plugin's own cancel (dsh-session types.ts; dsh-deepseek-account uses it), which `turn/end` records
+ * with its reason on every supported SDK (dsh-agent-loop `abortedCancelCause`). `keepInbox` keeps
+ * the Stop button's meaning: queued input stays for the next turn.
+ */
+export const PLUGIN_STOP = Object.freeze({
+  cause: (reason) => Object.freeze({ kind: 'hook', reason }),
+  options: Object.freeze({ keepInbox: true }),
+})
+
 /** DSH's approval service (dsh-user-approval, both SDKs): the answerer waterfall and its outcomes. */
 export const APPROVAL = Object.freeze({
   waterfall: 'approval/request',
@@ -196,4 +210,5 @@ export const LOG = Object.freeze({
   toolsFailed: 'domain: a managed session\'s tool could not be applied',
   toolsRemovalFailed: 'domain: a managed session\'s tool could not be removed',
   closeFailed: 'domain: a part did not close cleanly',
+  pluginStartFailed: 'domain: a plugin\'s session start failed unexpectedly; answered operation-failed',
 })

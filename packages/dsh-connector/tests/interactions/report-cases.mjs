@@ -10,7 +10,8 @@
  *   tests/report CONN-REPORT-ST-01 rows 8–12: this fixture model starts no DSH job cheaply.)
  * A3 (no principal settlement) is the re-baselined APR-04 / APR-05r / FLW-03 / PLN-02 rows; user
  * and delegate settlements still arrive in APR-07, FLW-05, FLW-12, PLN-07 and DLG-01.
- * Techniques: UC (the cycle), EP (each way a turn ends), ST (held → settled; stopped → next turn).
+ * - CONN-STOP: dshConnectorSessions.stop with / without a reason → hook / user cause in stop.message.
+ * Techniques: UC (the cycle), EP (each way a turn ends), DT (stop reason), ST (held → settled; stopped → next turn).
  */
 import assert from 'node:assert/strict'
 import { A, answer, cid, eventually, free, managed, ofType, okCall, pending, principal, quiet, step, tok, waitEvents, world } from './subject.mjs'
@@ -23,6 +24,8 @@ const { TURN_OUTCOME: O } = K1
 const KIND = Object.freeze({ error: 'error', aborted: 'aborted', user: 'user', assistant: 'assistant/message' })
 /** The fake model's failure (support fake-llm `{fail: code}`: a code DSH's retry does not retry, message 'fbtest model failure'). */
 const FAIL = Object.freeze({ code: 'FBTEST_NO_RETRY', message: 'fbtest model failure' })
+/** The requirement's words for a cancelled turn's stop.message (sessions.d.ts, the user 2026-11-21). */
+const STOP = Object.freeze({ reason: 'fbtest plugin stop: off purpose', hook: (reason) => `the turn was cancelled (hook: ${reason})`, user: 'the turn was cancelled (user)' })
 
 const turnsOf = async (p, sid) => ofType(await pending(p.client), ET.turnFinished).filter((e) => e.sourceSessionId === sid)
 const statesOf = async (p, sid) => ofType(await pending(p.client), ET.state).filter((e) => e.sourceSessionId === sid || e.payload?.sessionId === sid)
@@ -125,6 +128,36 @@ export function registerReportSystemCases(sdk) {
     assert.equal(all.length, before + 1)
     assertStopped(all.at(-1), sid, KIND.aborted, [KIND.user])
   })
+
+  // The plugin-facing Stop (dshConnectorSessions.stop, the user 2026-11-21): a non-empty reason cancels
+  // with DSH's {kind: 'hook', reason} cause, so the manager can tell a plugin's stop from the user's.
+  // DT over reason: non-empty → hook; absent, empty or whitespace-only → user (the implementer's
+  // stated rule for '' / whitespace, 2026-11-21).
+  for (const [label, input, message] of [
+    ['a reason', { reason: STOP.reason }, STOP.hook(STOP.reason)],
+    ['no reason', {}, STOP.user],
+    ['an empty reason', { reason: '' }, STOP.user],
+    ['a whitespace-only reason', { reason: '   ' }, STOP.user],
+  ]) {
+    row(sdk, 'CONN-STOP-DT-01', `DT (dshConnectorSessions.stop with ${label})`, `a plugin stops a running managed turn → one turn-finished {outcome stopped, stop {kind aborted, message ${JSON.stringify(message)}}}`, async (t) => {
+      const w = await w0()
+      const p = await principal(t, w)
+      const sid = await managed(w, p)
+      await heldTurn(w, sid)
+      const before = (await turnsOf(p, sid)).length
+      const r = await w.service(IX.delegate.service, 'stop', { sessionId: sid, ...input })
+      assert.ok(!r.threw && !r.absent, JSON.stringify(r))
+      await release(w, sid)
+      await w.call('idle', { sessionId: sid })
+      const all = await turnsAfter(p, sid, before + 1)
+      assert.equal(all.length, before + 1)
+      assertStopped(all.at(-1), sid, KIND.aborted, [])
+      assert.equal(all.at(-1).payload.stop.message, message)
+      // The session still takes messages after a plugin's stop (sessions.d.ts).
+      assert.equal((await okCall(p.client, TOOL.sessionMessage, { sessionId: sid, message: tok('after'), attachments: [] })).ok, true)
+      await free(w, sid)
+    })
+  }
 
   // B4: the manager's own stop.
   row(sdk, 'CONN-REPORT-ST-03', 'ST (session_stop)', 'session_stop of a running turn → {stopped: true}; that turn end produces no turn-finished at all', async (t) => {

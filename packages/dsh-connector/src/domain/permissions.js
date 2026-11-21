@@ -9,7 +9,8 @@
  * - a standing grant covers the call → `allowed-once`, no offer (grants.js);
  * - a delegate claims the session (delegates/, `dshConnectorSessions`) and answers allow or reject
  *   → that one call is decided, no offer; the manager gets `settlement {by: delegate}`. A pass, or
- *   any failure of the delegate, goes on to the next step unchanged;
+ *   any failure of the delegate, goes on to the next step, whose offer carries `delegate {name,
+ *   outcome: passed | failed, reason?}` so the manager tells a judged pass from a failure;
  * - otherwise one `permission` offer to the manager's mailbox, connected or not, that waits with no
  *   timer and no cap (the user, 2026-11-17: "No cap on pending approvals. Requests from managed
  *   sessions wait in the queue indefinitely and are never refused for being too many"). The stock
@@ -88,11 +89,16 @@ export function createPermissions(ctx, { routing, managerOf, grants, delegates, 
   /** approvalId → the live request: its call and how to end it. Memory only (module comment). */
   const live = new Map()
 
-  /** The descriptor one offer carries (K1 `descriptor`, timer-free). */
+  /**
+   * The descriptor one offer carries (K1 `descriptor`, timer-free). `request.delegated`, once a
+   * delegate passed or failed it, is the offer's `delegate`; the delegate itself is asked with the
+   * descriptor before that, so it never sees the field.
+   */
   const descriptorOf = (request, title) => Object.freeze({
     approvalId: request.id, offerId: request.offerId, kind: APPROVAL_KIND.approval, prompt: SUMMARY.permission(request.toolName),
     choices: [...ANSWER_DECISIONS], title, at: request.at, toolName: request.toolName, callId: request.callId ?? null,
     reason: request.reason, quotes: [], arguments: request.args.text, argumentsStatus: request.args.status,
+    ...(request.delegated === undefined ? {} : { delegate: request.delegated }),
   })
 
   /** Settles a live offer with `answer` once; @returns whether it was still live. */
@@ -108,7 +114,8 @@ export function createPermissions(ctx, { routing, managerOf, grants, delegates, 
    * The delegate step (module comment): a delegate's allow or reject decides the call, and its
    * manager is told with `settlement {by: delegate}`. The call is decided even if that report
    * fails (logged): the delegate's answer is the decision, the settlement only informs.
-   * @returns the call's DSH outcome, or undefined to go on to the offer
+   * @returns the call's DSH outcome, or undefined to go on to the offer (a delegate's pass or
+   *   failure is then kept on `request.delegated` for the offer)
    */
   async function delegate(request, signal) {
     // The title is read only when a delegate claims the session: the offer path reads its own.
@@ -116,6 +123,10 @@ export function createPermissions(ctx, { routing, managerOf, grants, delegates, 
     const decided = await delegates.decide(request.sessionId, describe, signal)
     if (signal?.aborted) return APPROVAL.outcome.cancelled
     if (decided === undefined) return undefined
+    if (decided.outcome !== undefined) {
+      request.delegated = decided
+      return undefined
+    }
     const decision = decided.verdict === VERDICT.allow ? APPROVAL_DECISION.allow : APPROVAL_DECISION.reject
     const settlement = { approvalId: request.id, outcome: FINAL[decision].outcome, by: SETTLED_BY.delegate, delegate: { name: decided.name, toolName: request.toolName, reason: decided.reason } }
     void routing.report(request.sessionId, settlement).catch(warn(LOG.settleFailed))

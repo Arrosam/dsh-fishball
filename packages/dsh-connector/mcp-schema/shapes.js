@@ -6,7 +6,7 @@
  * checks against PAYLOAD_LIMITS and the connector settings, with the codes contract 1.2 names.
  */
 import {
-  ANSWER_DECISIONS, APPROVAL_KIND, ARGUMENTS_STATUS, DECISION_KIND, DELIVERY, EVENT_TYPE, GRANT_KIND, IMAGE_TYPES, PLAN_REVIEW,
+  ANSWER_DECISIONS, APPROVAL_KIND, ARGUMENTS_STATUS, DECISION_KIND, DELEGATE_OUTCOME, DELIVERY, EVENT_TYPE, GRANT_KIND, IMAGE_TYPES, PLAN_REVIEW,
   PROMPT_DECISIONS, READ_ROLE, RETIREMENT_REASON, RISK, SETTLED_BY, SETTLEMENT_OUTCOME, TURN_OUTCOME,
 } from './constants.js'
 import { anyValue, array, boolean, constant, integer, nullable, object, oneOfStrings, string } from './schema.js'
@@ -34,7 +34,8 @@ export const questionAnswerItem = () => object({ id: string(), selected: array(s
 
 /**
  * The live request a principal decides (contract 1.2 §5.1, timer-free). `offerId` is
- * `<approvalId>.r<revision>` (OFFER_ID); a `question` kind carries `questions`.
+ * `<approvalId>.r<revision>` (OFFER_ID); a `question` kind carries `questions`. A permission a
+ * delegate claimed but did not decide carries `delegate` (DELEGATE_OUTCOME).
  */
 export const descriptor = () => object(
   {
@@ -42,7 +43,10 @@ export const descriptor = () => object(
     choices: array(string()), title: string(), at: time(), toolName: string(), callId: nullable(string()),
     reason: string(), quotes: array(string()),
   },
-  { arguments: string(), argumentsStatus: oneOfStrings(Object.values(ARGUMENTS_STATUS)), questions: array(questionItem()) },
+  {
+    arguments: string(), argumentsStatus: oneOfStrings(Object.values(ARGUMENTS_STATUS)), questions: array(questionItem()),
+    delegate: object({ name: string(), outcome: oneOfStrings(Object.values(DELEGATE_OUTCOME)) }, { reason: string() }),
+  },
 )
 
 export const sessionSummary = () => object({

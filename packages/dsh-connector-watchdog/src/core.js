@@ -2,7 +2,8 @@
  * Watchdog's behaviour, over injected ports so the cases can drive it without a DSH (notes §2–§3;
  * the user's decisions of 2026-11-20):
  * - Fishball's four tools (`watchdog_brief`, `_refine`, `_pause`, `_resume`) are data operations
- *   that start no run. Only the session's current manager may use them;
+ *   that start no run. Only the session's current manager may use them. `watchdog_session_start`
+ *   starts a session through the connector and briefs it before its first message;
  * - the permission delegate: Watchdog `claims` a session it holds an unpaused brief for, from the
  *   principal that still manages it; each request is judged against the purpose and the scope
  *   (allow → one call, reject only when beyond the purpose and dangerous, anything else → pass to
@@ -12,18 +13,24 @@
  * - drift, found by either: the session's turn is stopped (it still takes the manager's messages)
  *   and the manager gets `dsh-connector-watchdog.drift` (the user: "Emit a contributed event to
  *   Fishball and suspend the session").
- * No failure design (notes §2.6): a judgement that throws, times out or answers nonsense is a pass,
- * and a failed patrol is logged and tried again at the next tick.
+ * No failure design (notes §2.6): a judgement that throws, times out or answers nonsense still leaves
+ * the request to the manager, but as a failure, not a judged pass (the user, 2026-11-21, after the
+ * live test): `decide` rejects with a JUDGE_FAILURE code, which the connector reports in the offer
+ * (`delegate {outcome: failed, reason: code}`). A failed patrol is logged and tried again at the
+ * next tick. Each stop names its cause (`sessions.stop`'s reason), so the manager's turn-finished
+ * reads Watchdog's drift reason rather than "cancelled (user)".
  *
  * @param deps.store - store.js
  * @param deps.services - `() => {sessions, emit} | undefined`: the connector's `dshConnectorSessions`
  *   and the bound `dshConnectorTools.emit`, while both are there
- * @param deps.judge - judge.js `{judge(brief, prompt, signal) → Promise<{verdict, reason}>}`
+ * @param deps.judge - judge.js `{judge(brief, prompt, signal) → Promise<{verdict, reason} | undefined>}`
+ *   (undefined: an unreadable answer)
  * @param deps.config - `{minCheckIntervalSeconds, readMaxMessages, readMaxBytes, checkTimeoutSeconds}`
  * @param deps.timers - `{setTimeout, clearTimeout}`; @param deps.now - epoch ms; @param deps.logger - `{warn}`
  * @param deps.defer - runs a function after the current request is answered (setImmediate)
  */
-import { CODE, DRIFT_EVENT, DURING, JUDGE, LOG, TEXT, TOOL, VERDICT, WATCHDOG } from './constants.js'
+import { CODE, DRIFT_EVENT, DURING, JUDGE, JUDGE_FAILURE, LOG, TEXT, TOOL, VERDICT, WATCHDOG } from './constants.js'
+import { isJudgeFailure, judgeFailure } from './verdict.js'
 
 const MS_PER_SECOND = 1000
 const ok = (data) => Object.freeze({ ok: true, data })
@@ -31,6 +38,17 @@ const refused = (code) => Object.freeze({ ok: false, code })
 const trimmed = (value) => (typeof value === 'string' ? value.trim() : '')
 const PASS = Object.freeze({ verdict: VERDICT.pass })
 const clip = (text, chars) => ([...text].length <= chars ? text : [...text].slice(0, chars - 1).join('') + '…')
+/** The verdicts each judgement may answer, and those that need a reason (JUDGE's rules). */
+const PERMISSION_VERDICTS = Object.freeze([VERDICT.allow, VERDICT.reject, VERDICT.pass, VERDICT.drifted])
+const PATROL_VERDICTS = Object.freeze([VERDICT.ok, VERDICT.drifted])
+const REASONED = Object.freeze([VERDICT.allow, VERDICT.reject, VERDICT.drifted])
+
+/** `answer` as `{verdict, reason}` if it is one of `allowed` with the reason it needs; else the unreadable failure. */
+function readable(answer, allowed) {
+  const reason = trimmed(answer?.reason)
+  if (!allowed.includes(answer?.verdict) || (REASONED.includes(answer.verdict) && reason === '')) throw judgeFailure(JUDGE_FAILURE.unreadable)
+  return { verdict: answer.verdict, reason }
+}
 
 export function createWatchdog({ store, services, judge, config, timers = globalThis, now = Date.now, logger, defer = setImmediate }) {
   const warn = (line, error) => logger.warn(LOG.format, WATCHDOG.name, line, error?.code ?? error?.name ?? String(error))
@@ -61,27 +79,45 @@ export function createWatchdog({ store, services, judge, config, timers = global
     return { count: fresh.length, watermark, section: JUDGE.messages(text) + (cut ? '\n' + JUDGE.truncated : '') }
   }
 
-  /** One judgement under `checkTimeoutSeconds`, joined with the caller's signal. */
+  /**
+   * One judgement under `checkTimeoutSeconds`, joined with the caller's signal. Rejects with the
+   * caller's abort when the call ended, else with a JUDGE_FAILURE (timeout; the judge's own failure
+   * code; `failed` for anything else).
+   */
   async function judged(brief, rules, section, extra, signal) {
     const timeout = AbortSignal.timeout(config.checkTimeoutSeconds * MS_PER_SECOND)
     const joined = signal === undefined ? timeout : AbortSignal.any([signal, timeout])
     const prompt = [JUDGE.intro, JUDGE.purpose(brief.purpose), JUDGE.scope(brief.scope), section, ...(extra === undefined ? [] : [extra]), rules].join('\n\n')
-    return judge.judge(brief, prompt, joined)
+    try {
+      return await judge.judge(brief, prompt, joined)
+    } catch (error) {
+      if (signal?.aborted) throw signal.reason
+      if (timeout.aborted) throw judgeFailure(JUDGE_FAILURE.timeout, error)
+      throw isJudgeFailure(error) ? error : judgeFailure(JUDGE_FAILURE.failed, error)
+    }
   }
 
-  /** Drift: stop the turn and tell the manager. Each step is logged on failure; neither undoes the other. */
+  /**
+   * Drift: stop the turn and tell the manager. Each step is logged on failure; neither undoes the
+   * other. The stop's reason is the drift text, so the manager's turn-finished names Watchdog.
+   */
   async function drifted(brief, during, reason) {
     const { sessions, emit } = services() ?? {}
-    try { await sessions?.stop({ sessionId: brief.sessionId }) } catch (error) { warn(LOG.stopFailed, error) }
+    const text = TEXT.drift(during, reason)
+    try { await sessions?.stop({ sessionId: brief.sessionId, reason: text }) } catch (error) { warn(LOG.stopFailed, error) }
     const sent = await emit?.({
       event: DRIFT_EVENT.name, sessionId: brief.sessionId,
       payload: { sessionId: brief.sessionId, during, reason },
-      summary: clip(TEXT.drift(during, reason), DRIFT_EVENT.summaryChars),
+      summary: clip(text, DRIFT_EVENT.summaryChars),
     }).catch((error) => ({ ok: false, code: error?.code ?? error?.name }))
     if (sent?.ok !== true) warn(LOG.emitRefused, sent?.code ?? 'no-service')
   }
 
-  /** The delegate's `decide` (host-services/sessions.d.ts): see the module comment. */
+  /**
+   * The delegate's `decide` (host-services/sessions.d.ts): see the module comment. A judged pass
+   * keeps its reason for the manager; a failed judgement rejects with its JUDGE_FAILURE (the caller's
+   * own abort rejects as that abort).
+   */
   async function decide(request, { signal } = {}) {
     const brief = activeBrief(request.sessionId)
     if (brief === undefined) return PASS
@@ -89,18 +125,19 @@ export function createWatchdog({ store, services, judge, config, timers = global
       const fresh = await newMessages(brief)
       const answer = await judged(brief, JUDGE.permissionRules, fresh.section, JUDGE.permission(request.descriptor), signal)
       await store.update(brief.sessionId, { watermark: fresh.watermark })
-      const reason = trimmed(answer?.reason)
-      if (answer?.verdict === VERDICT.drifted && reason !== '') {
+      const { verdict, reason } = readable(answer, PERMISSION_VERDICTS)
+      if (verdict === VERDICT.drifted) {
         // Stopped only once this request is answered: Stop aborts the request's own signal, and an
         // aborted request is "cancelled" (no settlement, no reason for the agent), not this reject.
         defer(() => { void drifted(brief, DURING.permission, reason) })
         return Object.freeze({ verdict: VERDICT.reject, reason })
       }
-      if ((answer?.verdict === VERDICT.allow || answer?.verdict === VERDICT.reject) && reason !== '') return Object.freeze({ verdict: answer.verdict, reason })
-      return PASS
+      return verdict === VERDICT.pass && reason === '' ? PASS : Object.freeze({ verdict, reason })
     } catch (error) {
-      warn(LOG.judgeFailed, error)
-      return PASS
+      if (signal?.aborted) throw signal.reason
+      const failure = isJudgeFailure(error) ? error : judgeFailure(JUDGE_FAILURE.failed, error)
+      warn(LOG.judgeFailed, failure)
+      throw failure
     }
   }
 
@@ -129,8 +166,8 @@ export function createWatchdog({ store, services, judge, config, timers = global
       if (fresh.count === 0) return
       const answer = await judged(brief, JUDGE.patrolRules, fresh.section, undefined, undefined)
       await store.update(sessionId, { watermark: fresh.watermark })
-      const reason = trimmed(answer?.reason)
-      if (answer?.verdict === VERDICT.drifted && reason !== '') await drifted(brief, DURING.patrol, reason)
+      const { verdict, reason } = readable(answer, PATROL_VERDICTS)
+      if (verdict === VERDICT.drifted) await drifted(brief, DURING.patrol, reason)
     } catch (error) {
       warn(LOG.patrolFailed, error)
     } finally {
@@ -188,7 +225,7 @@ export function createWatchdog({ store, services, judge, config, timers = global
   async function pause({ sessionId }, principalKey) {
     const own = ownBrief(sessionId, principalKey)
     if (own.refusal !== undefined) return own.refusal
-    await services().sessions.stop({ sessionId: own.brief.sessionId })
+    await services().sessions.stop({ sessionId: own.brief.sessionId, reason: TEXT.paused })
     disarm(own.brief.sessionId)
     return ok(view(await store.update(own.brief.sessionId, { paused: true })))
   }
@@ -201,7 +238,28 @@ export function createWatchdog({ store, services, judge, config, timers = global
     return ok(view(updated))
   }
 
-  const handlers = Object.freeze({ [TOOL.brief]: brief, [TOOL.refine]: refine, [TOOL.pause]: pause, [TOOL.resume]: resume })
+  /**
+   * `watchdog_session_start` (the user, 2026-11-21: close the gap when the session is created): the
+   * connector's own start for the caller (`dshConnectorSessions.start`), whose `afterManaged` runs
+   * this package's `brief` once the session is the caller's and before its first message. So the
+   * delegate claims the session before its first turn can ask anything; a later watchdog_brief
+   * cannot, since the session already runs. An empty purpose is refused before anything starts.
+   */
+  async function sessionStart({ purpose, scope, ...startArgs }, principalKey) {
+    if (trimmed(purpose) === '') return refused(CODE.emptyPurpose)
+    const sessions = services()?.sessions
+    if (typeof sessions?.start !== 'function') return refused(CODE.forbidden)
+    let supervised = false
+    const afterManaged = async (sessionId, managed) => {
+      if (managed) supervised = (await brief({ sessionId, purpose, scope }, principalKey)).ok === true
+    }
+    const started = await sessions.start({ principalKey, args: startArgs, afterManaged })
+    if (started.ok !== true) return Object.freeze({ ok: false, code: started.code, message: TEXT.startRefused(started.code) })
+    const { ok: _ok, ...fields } = started
+    return ok({ ...fields, supervised })
+  }
+
+  const handlers = Object.freeze({ [TOOL.brief]: brief, [TOOL.refine]: refine, [TOOL.pause]: pause, [TOOL.resume]: resume, [TOOL.sessionStart]: sessionStart })
 
   return Object.freeze({
     /** Arms a patrol for every unpaused stored brief (a restart keeps supervising). */

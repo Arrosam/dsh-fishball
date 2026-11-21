@@ -8,13 +8,14 @@
  *   kept in the brief, so a restart resumes the same conversation.
  * - Judgements of one side session run one after another (a chain per session); the caller's signal
  *   (Stop, `checkTimeoutSeconds`) stops the side turn.
- * - Anything that is not one JSON object with a string `verdict` reads as `{verdict: 'pass'}`.
+ * - A side turn with no assistant text rejects with JUDGE_FAILURE.noAnswer; an answer that is not
+ *   one JSON object with a string `verdict` resolves undefined (core.js reads it as unreadable).
  */
 import { mkdir } from 'node:fs/promises'
 import path from 'node:path'
 import { createUserMessage } from '@deepseek-ai/dsh-llm'
-import { SIDE, STORE, WATCHDOG } from './constants.js'
-import { PASS, parseVerdict } from './verdict.js'
+import { JUDGE_FAILURE, SIDE, STORE, WATCHDOG } from './constants.js'
+import { judgeFailure, parseVerdict } from './verdict.js'
 
 const textOf = (event) => (event.data?.message?.content ?? []).filter((block) => block?.type === SIDE.textBlock).map((block) => block.text).join('')
 
@@ -65,7 +66,8 @@ export function createJudge(ctx, { home, store }) {
     agent.steer(createUserMessage({ content: [{ type: SIDE.textBlock, text: prompt }], source: { kind: SIDE.userSource } }))
     await ended
     const answer = agent.session.snapshotEvents().slice(before).filter((event) => event.type === SIDE.assistantEvent).map(textOf).filter((t) => t !== '').at(-1)
-    return answer === undefined ? PASS : parseVerdict(answer)
+    if (answer === undefined) throw judgeFailure(JUDGE_FAILURE.noAnswer)
+    return parseVerdict(answer)
   }
 
   return Object.freeze({

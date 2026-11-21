@@ -43,6 +43,7 @@ export const LOG = Object.freeze({
   toolFailed: 'core tools: a tool call failed unexpectedly; answered operation-failed',
   outputInvalid: 'core tools: a domain answer did not fit the tool\'s output schema; answered operation-failed',
   manageFailed: 'core tools: making a started session managed failed; it starts unmanaged',
+  afterManagedFailed: 'core tools: a plugin\'s step after a managed start failed; the session still starts',
   // The diagnostic is the code itself: a domain constant, never client data.
   unknownCode: 'core tools: a domain refusal carried a code outside K1\'s vocabulary; answered operation-failed',
   contributedFailed: 'core tools: the contributed-tool pipeline threw; answered operation-failed',

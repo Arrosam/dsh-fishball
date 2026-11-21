@@ -93,9 +93,26 @@ generic connector hook for Watchdog). Main: 1. A's call asks DSH for approval. 2
 check, D gets `{sessionId, descriptor}` (the K1 descriptor). 3. D answers allow + reason → the call
 runs once; no `permission` offer; P gets one `settlement {allowed, by: delegate, delegate: {name,
 toolName, reason}}` ("yes send settlements"). A1 reject + reason → the call is rejected with the
-managing-agent wording; `settlement {rejected, by: delegate}`. A2 pass, or D throws → P gets the
-offer as in IX-UC-02 and no delegate settlement. E1 an unmanaged session never reaches D (stock
-prompt). Rows: DLG-01…04 (delegate-cases.mjs).
+managing-agent wording; `settlement {rejected, by: delegate}`. A2 pass, or D throws or answers
+something invalid → P gets the offer as in IX-UC-02, carrying `delegate {name, outcome: passed |
+failed, reason?}` (pass: its trimmed reason if any; throw: the error's code, else its name; invalid:
+`invalid-verdict`; the user, 2026-11-21), and no delegate settlement. A3 no delegate claims S → the
+offer has no `delegate`. E1 an unmanaged session never reaches D (stock prompt). Rows: DLG-01…05
+(delegate-cases.mjs). A plugin's `stop({sessionId, reason})` reports `(hook: <reason>)` in the
+manager's turn-finished, without a reason `(user)`: CONN-STOP-DT-01 (report-cases.mjs).
+
+### IX-UC-09 A plugin starts a session for a principal (`dshConnectorSessions.start`)
+Pre: P is paired; a main-DSH plugin D holds `dshConnectorSessions` (the user, 2026-11-21: close
+Watchdog's window at session creation). Main: 1. D calls `start({principalKey: P, args, afterManaged})`
+with session_start's arguments. 2. The session is created and managed by P (`managerOf` = P). 3.
+`afterManaged(sessionId, true)` is awaited: the session has no user message and no model request
+yet. 4. The first message is delivered and a turn runs. 5. D gets `{ok, sessionId, managed: true,
+running}`. A1 no afterManaged → the same start. A2 afterManaged throws or rejects → logged; the answer
+and the first message are unchanged. E1 schema violation or empty folder → `invalid-arguments`;
+invisible/empty title or too many attachments → `limit-exceeded`; missing folder → `unknown-session`;
+relative folder → `forbidden`; unknown model → `invalid-decision`; nothing created, afterManaged never
+called. `startInput` deep-equals K1 session_start's inputSchema and is frozen; the core session_start
+answers as before. Rows: SRV-START-01…06 (start-cases.mjs).
 
 ## Derived cases
 

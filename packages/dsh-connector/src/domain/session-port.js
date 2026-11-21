@@ -39,6 +39,8 @@ import { prepareSessionModel, applySessionModel } from '../session-model.js'
 import { byteLength, cutToBytes } from '../text.js'
 import { createImagePort } from './images.js'
 import { stopTree } from './tree-stop.js'
+import { PLUGIN_STOP } from './constants.js'
+import { trimmed } from './support.js'
 
 /** The main-DSH services every operation needs; a missing one is a wiring error, not a refusal. */
 const DSH_SERVICES = Object.freeze(['sessions', 'sessionController', 'agents', 'workspaceRegistry'])
@@ -472,7 +474,10 @@ export function createSessionPort(ctx, options) {
      * 2026-11-21): the root's turn, every subagent and every background job of the tree
      * (tree-stop.js), so the session truly stands still, also when the root's own turn had already
      * ended while its subagents ran. A plugin's stop (the watchdog's, dshConnectorSessions) keeps
-     * DSH's Stop-button meaning: the root's running turn only.
+     * DSH's Stop-button meaning: the root's running turn only. Given a non-empty `reason`, a plugin's
+     * stop cancels with DSH's `hook` cause carrying it (PLUGIN_STOP), so the reported turn-finished
+     * names the plugin's reason instead of the user. The manager's own `reason` is not recorded:
+     * its stop reports nothing.
      */
     async stop({ sessionId, reason, admit = ADMITTED, byManager = false }) {
       // A loaded but idle agent still sits in ctx.agents, so its presence is not "something is
@@ -488,7 +493,11 @@ export function createSessionPort(ctx, options) {
         stopTree(ctx, sessionId, logger, stoppedByManager)
       }
       if (!running) return
-      await ctx.sessionController.cancel({ sessionId })
+      const pluginReason = byManager ? '' : trimmed(reason)
+      const agent = pluginReason === '' ? undefined : ctx.agents.get(sessionId)
+      // No live agent to cancel with the reason: DSH's own cancel answers (its not-found error).
+      if (agent === undefined) await ctx.sessionController.cancel({ sessionId })
+      else agent.cancel(PLUGIN_STOP.cause(pluginReason), PLUGIN_STOP.options)
     },
     read,
     // attachment_read answers metadata plus chunks; the image port checks that this Session's log
