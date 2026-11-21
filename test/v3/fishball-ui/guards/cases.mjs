@@ -546,6 +546,19 @@ export function registerGuardCases(sdk) {
     assert.ok(isOk(f.report1), 'precondition: ' + show(f.report1))
     assert.deepEqual(f.report1.extraManagerTools, [], show(f.report1))
   })
+  // Review fix (the user, 2026-11-21): the report's missingManagerTools is the sorted, unique manager
+  // tools (GUARDS.managerTools) some live manager lacks; [] on an ok report. Same scenario as A1 extras.
+  caseTest(sdk, 'PLAT-UC-04', 'A1 missing', 'R-FB-13: the manager-tools report names in missingManagerTools exactly the manager tools the resumed manager lacks (sorted, unique)', async () => {
+    const f = await last()
+    assert.ok(f.resumed3.resumed, 'precondition: ' + show(f.resumed3))
+    const expected = [...GUARDS.managerTools].filter((name) => !f.resumed3.tools.includes(name)).sort()
+    assert.deepEqual(f.report3?.missingManagerTools, expected, 'resumed tools ' + show(f.resumed3.tools) + ', report ' + show(f.report3))
+  })
+  caseTest(sdk, 'PLAT-UC-04', 'main missing', 'an ok report carries missingManagerTools []', async () => {
+    const f = await last()
+    assert.ok(isOk(f.report1), 'precondition: ' + show(f.report1))
+    assert.deepEqual(f.report1.missingManagerTools, [], show(f.report1))
+  })
   withdrawnCase(sdk, 'HOST-UC-08', 'A3', 'standalone: the same core package shows the generic settings only (Read Only line, DSH links, no hosted section, no error)')
   // Re-pointed: the slim panel is removed (1.34 item 4); a standalone core page carries none of it and nothing fails.
   caseTest(sdk, 'HOST-UC-08', 'A3', 'standalone: no slim settings panel entry remains, and no Fishball plugin fails', async () => {

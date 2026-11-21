@@ -159,7 +159,9 @@ fishball-page styles each Fishball reply row (`[data-slot="main.conversation"] [
 under `<html data-fishball-page>`): its `::before` draws an avatar as a CSS mask (a `data:` SVG URL). The
 theme is core's `brandStyle` in `configForms.get('fishball-core')` (`.value.brandStyle`, followed by
 `subscribe()`): `deepseek`, or `fishball` for anything else (absent, unknown, other case, non-string). The
-page exposes it as `<html data-fishball-brand="fishball|deepseek">` while mounted (removed on teardown).
+page exposes it as `<html data-fishball-page-brand="fishball|deepseek">` while mounted (removed on teardown).
+Review fix (the user, 2026-11-21): renamed from `data-fishball-brand`, which core's settings section uses as
+its own hook; `<html>` never carries `data-fishball-brand` and the page never touches an element that does.
 
 - **Fishball:** the mask is the fish body (tag v0.1.0 `assets/icon.svg`, viewBox `0 0 24 24`) painted in
   `var(--dsw-alias-label-primary)`, with a `background-image` SVG holding the eye path filled `#EC0A6E`.
@@ -175,7 +177,8 @@ Level: fishball-page's real client in navPage (package/nav-page.mjs, now with a 
 
 | Id | Technique | Checks |
 | --- | --- | --- |
-| AVATAR-EP-01 ×11 | EP | absent, fishball, deepseek, DeepSeek, unknown, empty, null, number, boolean, object, no value yet → the `data-fishball-brand` word |
+| AVATAR-EP-01 ×11 | EP | absent, fishball, deepseek, DeepSeek, unknown, empty, null, number, boolean, object, no value yet → the `data-fishball-page-brand` word |
+| AVATAR-EP-04 ×2 | EP | a settings-section-like `[data-fishball-brand]` element in the same document, stored fishball / deepseek, a live change and teardown: `<html>` never carries or is written `data-fishball-brand`; the section's hook value is unchanged and never written |
 | AVATAR-EP-02 ×5 (browser) | EP | absent / fishball / other case / non-string → fish body mask, label colour, #EC0A6E eye layer; deepseek → FISH_LOGO_PATH mask, business colour, no background-image |
 | AVATAR-EP-03 unchanged (browser) | EP | ::after "Fishball", its box and the row box the same in both themes; other rows get no mask and no label |
 | AVATAR-ST-01 ×3 | ST | a form notification fishball ⇄ deepseek flips the attribute live, both directions, no slot re-registration; deepseek → unknown reads fishball |

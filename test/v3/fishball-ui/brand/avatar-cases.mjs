@@ -10,6 +10,10 @@
  * changes" rows (the name label, the rows the rules must not reach). The drawing is measured in a
  * headless Chromium (skipped where none exists, as the contrast and motion rows are); the theme
  * attribute rows need no browser.
+ *
+ * Review fix (the user, 2026-11-21): the <html> theme attribute is data-fishball-page-brand (renamed from
+ * data-fishball-brand, which core's settings section uses as its own hook); AVATAR-EP-04 pins that the
+ * page leaves that hook alone.
  */
 import assert from 'node:assert/strict'
 import { AVATAR, THEME } from './constants.mjs'
@@ -56,7 +60,7 @@ export function registerAvatar(t, sdk) {
     ...AVATAR.readAsFishball.map(([label, value]) => [label, value, THEME.fishball]),
   ]
   for (const [label, style, theme] of partitions) {
-    t('AVATAR-EP-01', label, 'stored brandStyle ' + label + ' -> <html data-fishball-brand="' + theme + '"> while the page is mounted', async (c) => {
+    t('AVATAR-EP-01', label, 'stored brandStyle ' + label + ' -> <html data-fishball-page-brand="' + theme + '"> while the page is mounted', async (c) => {
       const p = await avatarPage(c, sdk, { style })
       assert.equal(p.page.html.hasAttribute(AVATAR.pageAttr), true, 'precondition: the page root mark')
       assert.equal(p.brand(), theme)
@@ -93,7 +97,7 @@ export function registerAvatar(t, sdk) {
 
   // ------------------------------------------------------------------ state transitions: a live change of the setting
   for (const [from, to] of [[THEME.fishball, THEME.deepseek], [THEME.deepseek, THEME.fishball]]) {
-    t('AVATAR-ST-01', from + ' -> ' + to, 'a form notification ' + from + ' -> ' + to + ' -> ' + from + ' flips <html data-fishball-brand> live, without reinstalling the page', async (c) => {
+    t('AVATAR-ST-01', from + ' -> ' + to, 'a form notification ' + from + ' -> ' + to + ' -> ' + from + ' flips <html data-fishball-page-brand> live, without reinstalling the page', async (c) => {
       const p = await avatarPage(c, sdk, { style: from })
       const registrations = p.page.log.registrations.length
       assert.equal(p.brand(), from)
@@ -118,8 +122,32 @@ export function registerAvatar(t, sdk) {
     assert.equal(p.brand(), THEME.fishball)
   })
 
+  // ------------------------------------------------------------------ EP: core's settings hook is not the page's (review fix)
+  for (const theme of [THEME.fishball, THEME.deepseek]) {
+    t('AVATAR-EP-04', 'settings hook ' + theme, 'with a settings-section-like [data-fishball-brand] element in the same document (stored ' + theme + ', a live change and back, then teardown): <html> carries data-fishball-page-brand and never data-fishball-brand, and the section keeps its hook value untouched', async (c) => {
+      const other = theme === THEME.deepseek ? THEME.fishball : THEME.deepseek
+      const p = await avatarPage(c, sdk, { style: theme, section: true })
+      const hook = () => p.section.element.getAttribute(AVATAR.settingsHook)
+      const assertUntouched = (why) => {
+        assert.equal(p.page.html.hasAttribute(AVATAR.settingsHook), false, why + ': <html> carries ' + AVATAR.settingsHook)
+        assert.equal(p.htmlWrites().includes(AVATAR.settingsHook), false, why + ': the page wrote ' + AVATAR.settingsHook + ' on <html>: ' + show(p.htmlWrites()))
+        assert.equal(hook(), AVATAR.settingsSection.value, why + ': the section hook changed')
+        assert.deepEqual([...p.section.writes], [], why + ': the page wrote on the settings section: ' + show([...p.section.writes]))
+      }
+      assert.equal(p.brand(), theme, 'the page theme attribute')
+      assertUntouched('mounted')
+      await p.restyle(other)
+      assert.equal(p.brand(), other, 'no live change')
+      assertUntouched('after a live change')
+      await p.restyle(theme)
+      await p.page.unmount()
+      assert.equal(p.page.html.hasAttribute(AVATAR.brandAttr), false, 'the theme attribute stayed after teardown')
+      assertUntouched('after teardown')
+    })
+  }
+
   // ------------------------------------------------------------------ teardown
-  t('AVATAR-ST-03', 'teardown', 'unmounting the page removes <html data-fishball-brand>, stops following the form (no listener left), and a later change writes nothing', async (c) => {
+  t('AVATAR-ST-03', 'teardown', 'unmounting the page removes <html data-fishball-page-brand>, stops following the form (no listener left), and a later change writes nothing', async (c) => {
     const p = await avatarPage(c, sdk, { style: THEME.deepseek })
     assert.equal(p.brand(), THEME.deepseek, 'precondition')
     await p.page.unmount()

@@ -1,7 +1,8 @@
 /**
  * Core's status (task F-STATUS; design §5a.2, §6.3a step 1, §8.2; R-FB-03, R-FB-04, R-FB-09,
  * R-FB-10, R-BND-05, R-EXT-14; requirements 1.37 and 1.41 Q-G1). It reads what other modules own;
- * its own state is only the last set check, the last snapshot and whether it noticed:
+ * its own state is only the last set check, the last snapshot, whether it noticed, and the extra
+ * manager tools it announced:
  * - the link's `{state, code}` (F-LINK, `token-revoked` decided by F-PAIR's gate);
  * - Connect's state (F-LINK-SAVE, K3a `FishballConnect`), for the strip's Connect control;
  * - the guard report (F-GUARDS), plus the one manager notice of design §5a.2;
@@ -59,11 +60,12 @@ const startNoticeKey = () => (globalThis[Symbol.for(STATUS_MODEL.startSymbol)] ?
 const RECORD = STATUS_MODEL.toolsRecord
 
 /**
- * The guard codes the guards notice names. `manager-tools` is left to the tools notice when the
- * report names extra tools (the user, 2026-11-21: added tools are informational, not an override);
- * a missing default tool (no extra name) keeps it in the guards notice, as before.
+ * The guard codes the guards notice names. `manager-tools` made only of extra tools is left to the
+ * tools notice (the user, 2026-11-21: added tools are informational, not an override); while a
+ * default tool is missing (`missingManagerTools`) it stays in the guards notice, as before.
  */
-const guardsNoticeList = (report) => (report.extraManagerTools?.length > 0
+const onlyExtraTools = (report) => (report.extraManagerTools?.length ?? 0) > 0 && (report.missingManagerTools?.length ?? 0) === 0
+const guardsNoticeList = (report) => (onlyExtraTools(report)
   ? report.overridden.filter((guard) => guard !== GUARDS.code.managerTools)
   : report.overridden)
 
@@ -73,7 +75,7 @@ function toolsRecordPath(ctx) {
   return typeof home === 'string' && path.isAbsolute(home) ? path.join(home, ...RECORD.directory, RECORD.file) : undefined
 }
 
-/** The names a well-formed record holds; anything else is nothing announced. */
+/** The names a well-formed record holds; throws on anything else (createAnnounced reads that as nothing announced). */
 function announcedIn(text) {
   const names = JSON.parse(text)?.[RECORD.member]
   if (!Array.isArray(names) || !names.every((name) => typeof name === 'string')) throw new TypeError(RECORD.member)
@@ -136,6 +138,9 @@ export function createStatus(ctx, { targets, guards, notify, brand }) {
   const announced = createAnnounced(ctx, logger)
   let noticed = false
   let announcing = false
+  // A refresh that arrived while a tools notice was in flight: looked at again when it settles,
+  // because the guards only signal a changed report, so a dropped one may not come back soon.
+  let missed = false
   let closed = false
   let set = null
   let setGeneration = 0
@@ -168,28 +173,29 @@ export function createStatus(ctx, { targets, guards, notify, brand }) {
 
   /**
    * The tools notice: when the report names an extra manager tool not announced before, one notice
-   * listing every current extra tool. One at a time; once it is accepted the set is recorded and the
-   * latest report is looked at again, for a name that arrived meanwhile. A failed notice records
-   * nothing and is retried at the next refresh that still sees an unannounced name.
+   * listing every current extra tool. One at a time; once it is accepted the set is recorded. A
+   * refresh dropped meanwhile is looked at again when it settles, with the latest report. A failed
+   * notice records nothing and is retried at the next refresh that still sees an unannounced name.
    */
   async function maybeAnnounce(report) {
     const extra = report?.extraManagerTools ?? []
-    if (announcing || notify === undefined || extra.length === 0) return
+    if (notify === undefined || extra.length === 0) return
+    if (announcing) { missed = true; return }
     announcing = true
-    let accepted = false
+    missed = false
     try {
       await announced.loaded
       if (closed || announced.fresh(extra).length === 0) return
       const all = announced.with(extra)
       await notify({ pluginId: STATUS_MODEL.notice.pluginId, dedupeKey: toolsNoticeKey(all), text: TEXT.toolsNotice(extra.join(GUARDS.text.reportSeparator)) })
       await announced.save(all)
-      accepted = true
     } catch (error) {
       logger?.warn(TEXT.toolsNoticeFailed, codeOf(error))
     } finally {
       announcing = false
+      // In `finally`, so the early "nothing new" return looks again too.
+      if (missed && !closed) void maybeAnnounce(guards?.report())
     }
-    if (accepted && !closed) void maybeAnnounce(guards?.report())
   }
 
   /** Rebuilds the snapshot and emits it when it differs from the last one. */

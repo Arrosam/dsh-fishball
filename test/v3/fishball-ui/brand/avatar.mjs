@@ -13,6 +13,7 @@
 import { navPage } from '../package/nav-page.mjs'
 import { evaluateHtml } from './motion.mjs'
 import { AVATAR } from './constants.mjs'
+import { Node } from './hide.mjs'
 
 /** A served ConfigForm whose value a case can change (every listener is told, as DSH does). */
 function coreForm(value) {
@@ -28,27 +29,54 @@ function coreForm(value) {
 /** The section for one stored brandStyle; AVATAR.absent leaves the field out. */
 export const sectionOf = (style) => (style === AVATAR.absent ? {} : { [AVATAR.field]: style })
 
+/** Wraps an element's attribute writers so every written name is recorded in 'names'. */
+function recordWrites(element, names) {
+  for (const method of ['setAttribute', 'removeAttribute', 'toggleAttribute']) {
+    const own = element[method]?.bind(element)
+    if (own) element[method] = (name, ...rest) => { names.add(name); return own(name, ...rest) }
+  }
+}
+
+/**
+ * A settings-section-like element carrying core's settings hook (AVATAR.settingsHook), put in the
+ * document the page queries: document.querySelector / querySelectorAll answer it for any simple
+ * selector it matches (hide.mjs's Node), so a page that looked the hook up would find it.
+ */
+function settingsSection(sandbox) {
+  const body = new Node('div')
+  const section = new Node(AVATAR.settingsSection.tag, { [AVATAR.settingsHook]: AVATAR.settingsSection.value })
+  body.appendChild(section)
+  const writes = new Set()
+  recordWrites(section, writes)
+  const doc = sandbox.document
+  const [ownAll, ownOne] = [doc.querySelectorAll.bind(doc), doc.querySelector.bind(doc)]
+  doc.querySelectorAll = (selector) => [...ownAll(selector), ...body.querySelectorAll(selector)]
+  doc.querySelector = (selector) => ownOne(selector) ?? body.querySelector(selector)
+  return { element: section, writes }
+}
+
 /**
  * One Fishball page. Options: 'style' the stored brandStyle (AVATAR.absent: no field), 'forms' false
- * for a client without configForms, 'value' false for a served form with no value yet.
+ * for a client without configForms, 'value' false for a served form with no value yet, 'section' true
+ * to put a settings-section-like [data-fishball-brand] element in the same document (`p.section`).
  */
-export async function avatarPage(t, sdk, { style = AVATAR.absent, forms = true, value = true } = {}) {
+export async function avatarPage(t, sdk, { style = AVATAR.absent, forms = true, value = true, section: withSection = false } = {}) {
   const form = coreForm(value ? sectionOf(style) : undefined)
   const names = new Set()
+  let section = null
   const page = await navPage(t, sdk, {
     primitives: { FISH_LOGO_PATH: AVATAR.dshPath, FISH_LOGO_VIEWBOX: AVATAR.dshViewBox },
     prepare(sandbox, ctx) {
-      const html = sandbox.document.documentElement
-      for (const method of ['setAttribute', 'removeAttribute', 'toggleAttribute']) {
-        const own = html[method]
-        html[method] = (name, ...rest) => { names.add(name); return own(name, ...rest) }
-      }
+      recordWrites(sandbox.document.documentElement, names)
+      if (withSection) section = settingsSection(sandbox)
       if (forms) ctx.configForms = { get: (entryId) => (entryId === AVATAR.namespace ? form.face : undefined) }
     },
   })
   const htmlAttrs = () => [...names].filter((n) => page.html.hasAttribute(n)).map((n) => [n, page.html.getAttribute(n)])
   return {
-    page, form,
+    page, form, section,
+    /** Every attribute name the page ever wrote on <html>. */
+    htmlWrites: () => [...names],
     brand: () => page.html.getAttribute(AVATAR.brandAttr),
     /** Changes the stored theme live (a form notification), then lets the page react. */
     async restyle(next) { form.set(sectionOf(next)); await page.settle() },

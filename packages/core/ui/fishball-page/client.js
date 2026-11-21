@@ -206,8 +206,9 @@ window.__ModuleLoader__.load({
      * (img-src data:, both SDKs); the mark is a pseudo-element because the reply rows are native and
      * the page only styles them. The eye is a background layer under the body's mask: it lies inside
      * the body, so the mask keeps it whole.
-     * `brand` restates core's setting (fishball-shared `SEAM_BRAND`): this classic module imports
-     * nothing of core. The theme is read through DSH's own config form, as core's settings page
+     * `fish` restates fishball-ui's brand mark (client.brand.js BRAND.mark) and `brand` core's setting
+     * (fishball-shared `SEAM_BRAND`): this classic module is its own package, loads no chunk of
+     * fishball-ui and imports nothing of core. The theme is read through DSH's own config form, as core's settings page
      * writes it, so a saved choice reaches the page without a reload; absent or unknown is Fishball.
      */
     const AVATAR = Object.freeze({
@@ -222,7 +223,8 @@ window.__ModuleLoader__.load({
       }),
       deepseekColor: 'var(--dsw-alias-state-business-primary)',
       brand: Object.freeze({
-        namespace: 'fishball-core', field: 'brandStyle', attribute: 'data-fishball-brand',
+        // Not `data-fishball-brand`: core's settings section uses that hook, in the same document.
+        namespace: 'fishball-core', field: 'brandStyle', attribute: 'data-fishball-page-brand',
         style: Object.freeze({ fishball: 'fishball', deepseek: 'deepseek' }), default: 'fishball',
       }),
     })

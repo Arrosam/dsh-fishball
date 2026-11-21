@@ -89,16 +89,24 @@ export const FIXTURE = Object.freeze({
  * reply rows on its page get an avatar drawn by the row's ::before as a CSS mask. Every value is the
  * requirement's: the row hooks, core's settings namespace and field, the two themes, the Fishball fish
  * (tag v0.1.0 assets/icon.svg: viewBox 0 0 24 24, the body and the eye paths, the eye #EC0A6E), the two
- * DSH tokens and the page's <html data-fishball-brand> attribute. `dshPath` / `dshViewBox` are fixture
+ * DSH tokens and the page's <html data-fishball-page-brand> attribute. `dshPath` / `dshViewBox` are fixture
  * values handed to the page as the primitives' FISH_LOGO_PATH / FISH_LOGO_VIEWBOX, so the DeepSeek mask
  * is observably the export's.
+ *
+ * Review fix (the user, 2026-11-21): the <html> theme attribute was renamed from data-fishball-brand to
+ * data-fishball-page-brand, because core's settings section uses data-fishball-brand as its own hook
+ * (`settingsHook`); the page must leave that hook, and any element carrying it, alone.
  */
 export const AVATAR = Object.freeze({
   namespace: 'fishball-core',
   field: 'brandStyle',
   /** Marks "no brandStyle field in the section" (not a stored value). */
   absent: Symbol('absent brandStyle'),
-  brandAttr: 'data-fishball-brand',
+  brandAttr: 'data-fishball-page-brand',
+  /** Core's settings section's own hook (the old <html> name): never on <html>, never touched by the page. */
+  settingsHook: 'data-fishball-brand',
+  /** A settings-section-like element in the same document (fixture tag and hook value). */
+  settingsSection: Object.freeze({ tag: 'section', value: 'fbtest-settings-section' }),
   pageAttr: PAGE_MARK,
   row: Object.freeze({ conversation: 'main.conversation', kind: 'assistant-step', part: 'response', otherPart: 'reasoning' }),
   fish: Object.freeze({

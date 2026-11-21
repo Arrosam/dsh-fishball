@@ -117,8 +117,11 @@ function isCoreTool(name, core, contributed, inherited) {
   return (core.has(name) || contributed.has(name)) && !inherited.has(name)
 }
 
-/** No live manager, or no tools service: nothing to check and nothing extra. */
-const NO_MANAGER_TOOLS = Object.freeze({ overridden: Object.freeze([]), extra: Object.freeze([]) })
+/** No live manager, or no tools service: nothing to check, nothing extra and nothing missing. */
+const NO_MANAGER_TOOLS = Object.freeze({ overridden: Object.freeze([]), extra: Object.freeze([]), missing: Object.freeze([]) })
+
+/** The names among `names` that `keep` says to report, sorted and unique. */
+const namesWhere = (names, keep) => Object.freeze([...new Set(names)].filter(keep).sort())
 
 /**
  * `manager-tools` when a live manager session's model tools, core's own left out, are not exactly
@@ -126,8 +129,9 @@ const NO_MANAGER_TOOLS = Object.freeze({ overridden: Object.freeze([]), extra: O
  * session's preset). Any other tool counts, wherever it is registered: DSH also registers
  * session-creating tools in an agent's own scope (rc.5 `dsh-tool-subagent` standing mode). No live
  * manager: nothing to check.
- * `extra` is the names any live manager has beyond those defaults, sorted and unique, for the
- * status's informational notice (the user, 2026-11-21); a missing default adds the code, not a name.
+ * `extra` is the names any live manager has beyond those defaults, for the status's informational
+ * notice (the user, 2026-11-21); `missing` is the defaults some live manager lacks, which stay a
+ * real override in the guards notice. Both sorted and unique; either can be set beside the other.
  */
 async function managerToolsState(ctx, managerPreset) {
   const tools = ctx.get(services.tools)
@@ -142,9 +146,10 @@ async function managerToolsState(ctx, managerPreset) {
     return [...toolNames(tools, agent)].filter((name) => !isCoreTool(name, core, contributed, inherited))
   }
   const models = agents.map(modelTools)
-  const extra = [...new Set(models.flat())].filter((name) => !GUARDS.managerTools.includes(name)).sort()
+  const extra = namesWhere(models.flat(), (name) => !GUARDS.managerTools.includes(name))
+  const missing = namesWhere(GUARDS.managerTools, (name) => models.some((model) => !model.includes(name)))
   const exact = models.every((model) => sameSet(model, GUARDS.managerTools))
-  return Object.freeze({ overridden: Object.freeze(exact ? [] : [code.managerTools]), extra: Object.freeze(extra) })
+  return Object.freeze({ overridden: Object.freeze(exact ? [] : [code.managerTools]), extra, missing })
 }
 
 /**
@@ -167,5 +172,6 @@ export async function checkGuards(ctx, intended) {
     status: overridden.length === 0 ? GUARDS.status.ok : GUARDS.status.overridden,
     overridden,
     extraManagerTools: managerTools.extra,
+    missingManagerTools: managerTools.missing,
   })
 }
