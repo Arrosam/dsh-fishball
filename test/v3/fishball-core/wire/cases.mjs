@@ -5,6 +5,7 @@ import { registerMultiCases } from './multi.mjs'
 import { registerLifecycleCases } from './lifecycle.mjs'
 import { registerRetirementCases } from './retirement.mjs'
 import { registerRunningSessionsCases } from './running-sessions.mjs'
+import { registerRunningSessionsWatchCases } from './running-sessions-watch.mjs'
 import { registerBrandConfigCases } from './brand-config.mjs'
 import { registerWakeSystemCases } from './batch.mjs'
 import { SEAM_TARGETS } from './targets-oracle.mjs'
@@ -23,6 +24,7 @@ export function registerWireCases(sdk) {
   registerLifecycleCases(sdk)
   registerRetirementCases(sdk)
   registerRunningSessionsCases(sdk)
+  registerRunningSessionsWatchCases(sdk)
   registerBrandConfigCases(sdk)
   registerWakeSystemCases(sdk)
   test(`${sdk} WIRE-EP-01 manifest exports and dependency boundary`, () => {

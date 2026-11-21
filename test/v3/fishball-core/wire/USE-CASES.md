@@ -137,3 +137,20 @@ over a scripted link, and `createTargets` with the scripted link swapped in by a
 | SESSIONS ST dispose | ST | no listener; a late answer changes nothing; no call |
 | SESSIONS ST TargetView | ST (integration) | `runningSessions` follows the read, emits a snapshot on a change and none on an equal answer, `null` after a drop |
 | SESSIONS ST removed target | ST (integration) | a late answer after remove emits nothing |
+
+## SESSIONS-WATCH: re-read while a Fishball page watches ([running-sessions-watch.mjs](running-sessions-watch.mjs))
+
+Requirements S1–S8 (the image-loop branch, relayed by the lead 2026-11-22). Interval `TARGET_SESSIONS.watchIntervalMs` = 15000 ms.
+
+| Row | Technique | Expected |
+| --- | --- | --- |
+| BVA interval | BVA | the constant is 15000; the armed interval uses it; createTargets with the mock clock: 14999 ms no read, 15000 ms one read per connected target |
+| ST S1/S2 | ST | a session that starts / stops by itself enters / leaves the list after one interval, onChange each time; an unchanged answer fires none |
+| ST S3 | ST | watching false → true reads at once; true → false → true reads again, one live interval; watching at creation reads only once connected |
+| EP/ST S4 | EP (no watch / idle / watching), ST | no timer and no read without a page; the last page leaving clears the interval and reads stop |
+| DT/ST S6 | DT (watching × connected) | never connected or dropped: no read, list `null`; reconnect reads once and the interval resumes |
+| ST/EP S7 | ST, EP | ticks during a call in flight make exactly one more call; refreshOn pages and session calls still read; a failed interval read keeps the list, logs a code only |
+| ST dispose | ST | the interval cleared, the watch listener removed, nothing reads |
+| EP unref | EP | the default timer is unref'd (no active Timeout) |
+| page stream as watch | ST, BVA (1 / 3 streams) | watching()/onWatch follow the first open and the last close (abort or cancel) only; dispose tells false once; S5 one interval and one read per interval however many streams; S8 still one GET route |
+| SYS S1–S4 | system | real DSH (core + fishball-ui), fake target, page stream read from Node: no read without a stream; one at once on open; a self-started session in `ui.targets.list()` and the strip topic within one interval; gone within one interval; reads stop after the stream closes |
