@@ -29,7 +29,7 @@ export const PACKAGE = Object.freeze({
   fishballCore: 'packages/core',
   fishballUi: 'packages/core/ui',
   fishballShared: 'packages/shared',
-  fishballBoard: 'packages/board',
+  fishballBoard: 'packages/fishball-amenities/board',
 })
 
 const all = (pkg) => pkg + '/**'
@@ -100,6 +100,10 @@ const suite = (description, files, triggers) => Object.freeze({ description, fil
  * cross-package contract and boundary rows (test/v3/contract/*). Ids are `<package>.<module>`.
  */
 export const V3_SUITES = Object.freeze({
+  // F-OWN-SCHEMA's fishball-core half (moved from dsh-connector with fishball-core, split 6b7c53bf).
+  'contract.own-schema': suite('core-owned MCP surface and no generated connector schema (F-OWN-SCHEMA)', v3('contract/own-schema'),
+    [sub(PACKAGE.fishballCore, 'contracts'), sub(PACKAGE.fishballCore, 'src'), top(PACKAGE.fishballCore), all(PACKAGE.fishballShared), all(PACKAGE.fishballBoard),
+      'test/v3/contract/own-schema/**']),
   'fishball-core.package': suite('core package, slim child move (R-CORE; the settings-section point withdrawn, 1.34)', v3('fishball-core/package'),
     [all(PACKAGE.fishballCore), sub(PACKAGE.dshInstance, 'src', 'slim'), sub(PACKAGE.dshInstance, 'src', 'child'), PACKAGE.dshInstance + '/client*.js']),
   'fishball-core.bridge': suite('bridge façade, list_changed refresh, X8 attention (F-FACADE)', v3('fishball-core/bridge'),

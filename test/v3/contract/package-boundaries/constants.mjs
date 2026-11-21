@@ -27,7 +27,7 @@ export const V3 = Object.freeze({
   connector: pkg('dsh-agent-connector', 'dsh-connector'),
   // S4-Q3 decided B (questions.md at b1295de): all lowercase, as npm and DSH's plugin manager require.
   embed: pkg('dsh-connector-ui', 'dsh-connector-ui'),
-  board: pkg('fishball-board', 'board'),
+  board: pkg('fishball-board', path.join('fishball-amenities', 'board')),
   /** The optional DSH-side MCP-client adapter (R-OA-21 renamed by 1.41; design §1.0, §5.5b; C-MCP-ADAPTER creates it). */
   adapter: pkg('dsh-connector-adapter', 'dsh-connector-adapter'),
 })
