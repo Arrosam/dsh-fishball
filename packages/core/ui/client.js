@@ -176,179 +176,141 @@ window.__ModuleLoader__.load({
     ].join('')
 
     /**
-     * The browser's connection budget. Chrome (and Firefox by default) opens at most 6 HTTP/1.1
-     * connections per host, shared by every tab of the profile, and a loopback DSH serves no HTTP/2.
-     * Each open EventSource holds one of them for as long as it is open, and DSH's own calls
-     * (session prompts, history pages, uploads) are ordinary fetches that queue behind them. With
-     * every slot held by a stream, a send stays "sending" until the page closes its streams (the
-     * user, 2026-11-21: messages to Fishball, with or without an image, never finished). So this row
-     * opens one EventSource per URL, shared by every part that reads it (`channelOf`), and its parts
-     * read at most `rowStreams` URLs at once: core's ask cards and fishball-ui's strip view. DSH's own
-     * `/plugins/events` stream and an open Task board tab (fishball-taskboard) take one slot each,
-     * which leaves at least two for DSH's requests. `rowStreams` is a budget, not a limit the row
-     * enforces: going over it is logged (`overBudget`) so a new stream is noticed before it starves
-     * the page.
+     * The Fishball page's one live connection (fishball-shared `SEAM_PAGE_STREAM`, restated: a chunk
+     * imports no module). A browser opens at most `perHost` HTTP/1.1 connections per host (Chrome,
+     * Firefox by default), shared by every tab of the profile, and a loopback DSH serves no HTTP/2.
+     * Each open EventSource holds one, and DSH's own calls (sending a message, uploads, history pages)
+     * are ordinary fetches that queue behind them: with one stream per panel the page held all 6
+     * (DSH's `/plugins/events`, the strip twice, the ask cards twice, the task board) and every send
+     * stayed "sending" until the user left the page (2026-11-21). So every live view of the page,
+     * this row's parts and the amenities alike, is a topic of core's one page stream: the page holds
+     * `perPage` Fishball connection beside DSH's own, whatever it draws, and a new panel or amenity
+     * is a new topic, never a new connection. The stream always carries every topic (its URL names
+     * none), so a panel that mounts never reopens it; only the page's language does (`use`).
      */
-    const CONNECTIONS = Object.freeze({
+    const PAGE_STREAM = Object.freeze({
       perHost: 6,
-      rowStreams: 2,
-      overBudget: 'fishball-ui: more live streams open than its connection budget allows',
+      perPage: 1,
+      route: 'api/fishball/page/events',
+      langParameter: 'lang',
+      zoneParameter: 'tz',
+      field: Object.freeze({ topic: 'topic', frame: 'frame' }),
+      topic: Object.freeze({ asks: 'asks', strip: 'strip' }),
+      /** The browser service this row provides, so an amenity reads its topic without a connection of its own. */
+      client: 'fishballPageStream',
     })
-
-    /** Every open channel of this row by its URL; a channel lives while one stream subscribes to it. */
-    const channels = new Map()
-    /** One budget check per burst: a language switch moves a channel to its new URL in two steps. */
-    let budgetCheck = false
-    function checkBudget() {
-      if (budgetCheck) return
-      budgetCheck = true
-      queueMicrotask(() => {
-        budgetCheck = false
-        if (channels.size > CONNECTIONS.rowStreams) console.warn(CONNECTIONS.overBudget, CONNECTIONS.rowStreams, [...channels.keys()])
-      })
-    }
+    const timeZone = () => Intl.DateTimeFormat().resolvedOptions().timeZone
 
     /**
-     * The one EventSource of `href`, shared by its members (`{message(data), health(word)}`): every
-     * member gets each message and each health change. A member that joins later is given the last
-     * message and the current health at once, because the routes send a frame only when it changes.
-     * Closed when its last member leaves.
+     * The page stream's one EventSource and its topics' readers. A reader (`member`) is
+     * `{frame(value), health(word)}`: it gets each frame of its topic, the topic's last frame at once
+     * when it joins (a topic sends only on change), and every health change of the connection, which
+     * is the one health of every topic. The source opens with the first reader and closes after the
+     * last. `use(lang)` follows the page's language (the strip is drawn in it); `restart()` is
+     * Reconnect: a fresh source, and one that had given up reads `stale` until its next frame.
      */
-    function channelOf(href) {
-      const existing = channels.get(href)
-      if (existing !== undefined) return existing
-      const members = new Set()
+    function pageStream() {
+      const topics = new Map()
       let source
-      let data
       let health = HEALTH.live
-      const tell = (next) => { health = next; for (const member of [...members]) member.health(next) }
-      const start = () => {
-        const current = new EventSource(href)
+      let lang = UI.lang.en
+      const membersOf = (topic) => {
+        let entry = topics.get(topic)
+        if (entry === undefined) { entry = { members: new Set(), frame: undefined, known: false }; topics.set(topic, entry) }
+        return entry
+      }
+      const readers = () => [...topics.values()].reduce((count, entry) => count + entry.members.size, 0)
+      const tell = (next) => {
+        health = next
+        for (const entry of [...topics.values()]) for (const member of [...entry.members]) member.health(next)
+      }
+      const url = () => {
+        const next = new URL(PAGE_STREAM.route, document.baseURI)
+        next.searchParams.set(PAGE_STREAM.langParameter, lang)
+        next.searchParams.set(PAGE_STREAM.zoneParameter, timeZone())
+        return next
+      }
+      const open = () => {
+        const current = new EventSource(url())
         source = current
         current.onmessage = (message) => {
-          data = message.data
-          health = HEALTH.live
-          for (const member of [...members]) member.message(message.data)
+          let value
+          try { value = JSON.parse(message.data) } catch { return }
+          const topic = value?.[PAGE_STREAM.field.topic]
+          if (typeof topic !== 'string') return
+          const entry = membersOf(topic)
+          entry.frame = value[PAGE_STREAM.field.frame]
+          entry.known = true
+          if (health !== HEALTH.live) tell(HEALTH.live)
+          for (const member of [...entry.members]) member.frame(entry.frame)
         }
-        // An error on a source this channel already replaced or closed says nothing about the current one.
+        // An error on a source this stream already replaced or closed says nothing about the current one.
         current.onerror = () => { if (source === current) tell(current.readyState === SOURCE_CLOSED ? HEALTH.closed : HEALTH.stale) }
       }
-      const channel = Object.freeze({
-        join(member) {
-          members.add(member)
-          if (data !== undefined) member.message(data)
+      const close = () => { source?.close(); source = undefined }
+      const restart = () => {
+        if (source === undefined) return
+        close()
+        open()
+        if (health === HEALTH.closed) tell(HEALTH.stale)
+      }
+      return Object.freeze({
+        subscribe(topic, member) {
+          const entry = membersOf(topic)
+          entry.members.add(member)
+          if (source === undefined) open()
+          if (entry.known) member.frame(entry.frame)
           if (health !== HEALTH.live) member.health(health)
+          return () => {
+            entry.members.delete(member)
+            if (readers() === 0) close()
+          }
         },
-        leave(member) {
-          members.delete(member)
-          if (members.size > 0) return
-          source.close()
-          channels.delete(href)
+        use(next) {
+          if (next === lang) return
+          lang = next
+          restart()
         },
-        /** A fresh source (Reconnect): one that had given up is trying again, as EventSource's own retry is. */
-        restart() {
-          source.close()
-          start()
-          if (health === HEALTH.closed) tell(HEALTH.stale)
-        },
+        restart,
       })
-      start()
-      channels.set(href, channel)
-      checkBudget()
-      return channel
     }
+    const page = pageStream()
+
+    /** Reconnect: the page stream gets a fresh source, so every view on it is current again. */
+    const reopenAll = () => page.restart()
 
     /**
-     * Reconnect: every open channel of this row gets a fresh source, because a lost stream usually has
-     * one cause for all of them (DSH restarted, the owner's session ended), and a part whose stream
-     * stays closed would never show the next ask or pairing warning.
+     * One part's view of a topic (R-FIX-FUI health): `valid(frame)` says which frames are the topic's
+     * shape; any other keeps the last good one. `get()` is `{frame, health}`: the last valid frame (or
+     * `initial`) and the page stream's `HEALTH`. `use(lang)` draws the stream in the page's language.
      */
-    const reopenAll = () => { for (const channel of [...channels.values()]) channel.restart() }
-
-    /**
-     * One live stream (R-FIX-FUI): the shared channel of `url()` (`channelOf`), joined at the stream's
-     * first subscriber and left after its last, so two parts reading one route hold one connection.
-     * `valid(frame)` says which parsed frames are the route's shape; any other keeps the last good
-     * one. `get()` is `{frame, health}`: the last valid frame (or `initial`) and its `HEALTH`.
-     * `reopen()` gives the stream a fresh source: its channel's new one (Reconnect), or the channel of
-     * a changed `url()`.
-     */
-    function liveStream({ url, valid, initial = null }) {
+    function topicStream({ topic, valid, initial = null }) {
       let snapshot = Object.freeze({ frame: initial, health: HEALTH.live })
-      let channel
+      let leave
       const listeners = new Set()
       const publish = (next) => {
         snapshot = Object.freeze({ ...snapshot, ...next })
         for (const listener of [...listeners]) listener()
       }
-      // A source opened again after it gave up is trying, as EventSource's own retry is, until a frame.
-      const retrying = () => { if (snapshot.health === HEALTH.closed) publish({ health: HEALTH.stale }) }
       const member = Object.freeze({
-        message(data) {
-          let next
-          try { next = JSON.parse(data) } catch { return }
-          if (!valid(next)) return
-          publish({ frame: Object.freeze(next), health: HEALTH.live })
-        },
+        frame(value) { if (valid(value)) publish({ frame: Object.freeze(value), health: HEALTH.live }) },
         health: (word) => publish({ health: word }),
       })
-      const join = () => { channel = channelOf(String(url())); channel.join(member) }
-      const leave = () => { channel?.leave(member); channel = undefined }
       return Object.freeze({
         get: () => snapshot,
         subscribe(listener) {
           listeners.add(listener)
-          if (channel === undefined) { join(); retrying() }
+          leave ??= page.subscribe(topic, member)
           return () => {
             listeners.delete(listener)
-            if (listeners.size === 0) leave()
+            if (listeners.size > 0) return
+            leave?.()
+            leave = undefined
           }
         },
-        /** A fresh source, if any part is subscribed (Reconnect, or a changed `url()`). */
-        reopen() {
-          if (channel === undefined) return
-          if (channels.get(String(url())) === channel) channel.restart()
-          else { leave(); join() }
-          retrying()
-        },
+        use: (lang) => page.use(lang),
       })
     }
-
-    /**
-     * A live stream of a fishball-ui route drawn in the page's language: `url` is `path` with the
-     * language as `langParameter` and `params()`'s extra query values. `use(wanted)` follows the
-     * page's language; a change reopens the stream in it.
-     */
-    function langStream({ path, langParameter, params = () => ({}), valid, initial = null }) {
-      let lang = UI.lang.en
-      const url = () => {
-        const next = new URL(path, document.baseURI)
-        next.searchParams.set(langParameter, lang)
-        for (const [name, value] of Object.entries(params())) next.searchParams.set(name, value)
-        return next
-      }
-      const stream = liveStream({ url, valid, initial })
-      return Object.freeze({
-        ...stream,
-        use(wanted) {
-          if (wanted === lang) return
-          lang = wanted
-          stream.reopen()
-        },
-      })
-    }
-
-    /**
-     * fishball-ui's strip view (src/status/route.js STRIP_ROUTE, restated: a chunk imports no module),
-     * in the page's language and the browser's own time zone (each target's pairing last-seen time).
-     * The sidebar targets and the brand both read it, through one URL, so one connection
-     * (`CONNECTIONS`): each follows the page's language with `use(lang)`.
-     */
-    const STRIP = Object.freeze({ path: 'api/fishball/strip', langParameter: 'lang', zoneParameter: 'tz' })
-    const timeZone = () => Intl.DateTimeFormat().resolvedOptions().timeZone
-    const stripStream = ({ valid, initial = null }) => langStream({
-      path: STRIP.path, langParameter: STRIP.langParameter, params: () => ({ [STRIP.zoneParameter]: timeZone() }), valid, initial,
-    })
 
     /** The page's language, `zh` or `en`, followed live (DSH's locale service, as the parts read it). */
     function useLang(ctx) {
@@ -372,8 +334,8 @@ window.__ModuleLoader__.load({
      * What the parts share: `css`, the shared class names, and `mountStyle(id, cssText)`, which adds
      * one style sheet to the document and returns its disposer, for a part's `ctx.effect`; the id
      * names it for a reader of the DOM. Since R-FIX-FUI also the live streams' lifecycle
-     * (`liveStream`, `langStream`, `HEALTH`, `StreamNotice`, `staleText`) and `useLang`, and since the
-     * connection budget (`CONNECTIONS`) `stripStream`, so the
+     * (`HEALTH`, `StreamNotice`, `staleText`) and `useLang`, and since the one page stream
+     * (`PAGE_STREAM`) `topic` / `topicStream`, so the
      * sidebar targets and the ask cards mark a lost stream the same way; since
      * MULTI-3 `openCoreSettings`, and `press` / `refusalText` / `pressStore` / `usePress`, so every
      * press on core's target and answer routes reads `SEAM_TARGETS.http` the same way and keeps its
@@ -384,9 +346,8 @@ window.__ModuleLoader__.load({
       /** The shared class names (`CSS`); their sheet is mounted once by this row. */
       css: CSS,
       HEALTH,
-      liveStream,
-      langStream,
-      stripStream,
+      topic: PAGE_STREAM.topic,
+      topicStream,
       useLang,
       StreamNotice,
       pressStore,
@@ -474,6 +435,8 @@ window.__ModuleLoader__.load({
 
     function apply(ctx) {
       ctx.effect(() => kit.mountStyle(UI.base, baseCss), UI.name + ': base styles')
+      // The amenities' way onto the page stream (PAGE_STREAM.client): a topic, never a connection.
+      ctx.provide(PAGE_STREAM.client, Object.freeze({ subscribe: page.subscribe }))
       for (const part of UI.parts) start(ctx, part)
     }
 

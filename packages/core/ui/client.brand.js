@@ -9,10 +9,10 @@
  * fishball-page hides New Session and this logo is the way back to the one manager session.
  *
  * State (no new server state):
- * - `api/fishball/strip` (fishball-ui's status view, kit `stripStream`): core on/off and the saved
- *   logo theme, in the page's language so it shares the sidebar targets' connection (kit `CONNECTIONS`);
- * - `api/fishball/asks/events` (core's card stream, the ask dock's connection): the one manager
- *   session id and the open cards;
+ * - the page stream's `strip` topic (fishball-ui's status view, kit `topicStream`): core on/off and
+ *   the saved logo theme;
+ * - its `asks` topic (core's cards): the one manager session id and the open cards;
+ *   both on the page's one connection, which the sidebar targets and the ask dock read too;
  * - `ctx.sessions.list`: the manager's live `running` flag (working or idle).
  * A lost asks stream, core off, or no manager session yet is offline (the strip only carries
  * presentation, so its own health does not claim a disconnection). An open card is "needs
@@ -50,7 +50,6 @@ window.__ModuleLoader__.load({
       accessibleName: 'Fishball',
       theme: Object.freeze({ fishball: 'fishball', deepseek: 'deepseek', default: 'fishball' }),
       themes: Object.freeze(['fishball', 'deepseek']),
-      route: Object.freeze({ asks: 'api/fishball/asks/events' }),
       state: Object.freeze({ idle: 'idle', working: 'working', offline: 'offline', attention: 'attention' }),
       card: Object.freeze({ open: 'open' }),
       /** The mark's status light, with DSH's own StateDot states (done / ongoing / warning / error). */
@@ -207,7 +206,7 @@ window.__ModuleLoader__.load({
      */
     function useBrandState(kit, ctx, sources) {
       const lang = kit.useLang(ctx)
-      // The strip view in the page's language: the URL the sidebar targets read, so one connection.
+      // The page stream in the page's language (the strip view is drawn in it).
       React.useEffect(() => { sources.strip.use(lang) }, [lang])
       const strip = React.useSyncExternalStore(sources.strip.subscribe, sources.strip.get)
       const asks = React.useSyncExternalStore(sources.asks.subscribe, sources.asks.get)
@@ -383,12 +382,13 @@ window.__ModuleLoader__.load({
     function brandPart(kit) {
       function apply(ctx) {
         const sources = Object.freeze({
-          strip: kit.stripStream({
+          strip: kit.topicStream({
+            topic: kit.topic.strip,
             valid: (next) => next !== null && typeof next === 'object' && typeof next.on === 'boolean',
             initial: Object.freeze({ on: null, brandStyle: BRAND.theme.default }),
           }),
-          asks: kit.liveStream({
-            url: () => new URL(BRAND.route.asks, document.baseURI).toString(),
+          asks: kit.topicStream({
+            topic: kit.topic.asks,
             valid: (next) => next !== null && typeof next === 'object' && Array.isArray(next.cards),
             initial: Object.freeze({ managerSessionId: null, cards: Object.freeze([]) }),
           }),
