@@ -24,6 +24,8 @@ export const DSH = Object.freeze({
   /** cordis FiberState.ACTIVE. */
   fiberActive: 2,
   warn: 'warn',
+  /** Logger types a failure may be logged at. */
+  problemLevels: Object.freeze(['warn', 'error']),
   services: Object.freeze({ tools: 'tools', profileContext: 'profileContext', instance: 'fishballInstance', appReady: 'appReady' }),
   event: Object.freeze({ turnStart: 'turn/start', stepStart: 'step/start', stepEnd: 'step/end', userMessage: 'user/message', turnEnd: 'turn/end' }),
   /** Surface placement every user/message append needs (dsh-session SurfaceIntent). */
@@ -137,6 +139,33 @@ export const FIXTURE = Object.freeze({
   ]),
   /** A non-turn record in the manager log: an event core holds but has not delivered yet. */
   pendingRecord: 'plugin:fbtest/event-pending',
+  meterMessage: 'fbtest token meter failure',
+  meterCode: 'FBTEST_METER',
+  compactionMessage: 'fbtest compaction failure',
+  shadowedTokens: 100,
+})
+
+/**
+ * Compaction on cooling (the user's requirement of 2026-11-21, relayed by the lead): when the
+ * heartbeat gives up warming the cache it measures Fishball's context (tokenMeter.measure(session)
+ * .totalTokens) and, strictly above compactThresholdTokens (a natural number, default 256000, row
+ * config only), compacts it once per cooling through compactNow(agent, signal) of the engine read
+ * as agentPresets.serviceFor(agent, 'compaction'), else the host-plane 'compaction' service.
+ */
+export const COMPACT = Object.freeze({
+  config: 'compactThresholdTokens',
+  defaultThreshold: 256_000,
+  services: Object.freeze({ tokenMeter: 'tokenMeter', compaction: 'compaction', agentPresets: 'agentPresets' }),
+  meter: Object.freeze({ present: 'present', absent: 'absent', throws: 'throws' }),
+  /** What the fake compactNow does: commit a compaction, find nothing, reject, throw at once, or wait for abort. */
+  result: Object.freeze({ compacted: 'compacted', nothing: 'nothing', reject: 'reject', throws: 'throws', hang: 'hang' }),
+  provider: Object.freeze({ preset: 'preset', host: 'host' }),
+  /** dsh-compaction ManualCompactionError and one of its codes. */
+  errorName: 'ManualCompactionError',
+  errorCode: 'summary',
+  baselineKind: 'estimated',
+  event: Object.freeze({ start: 'compaction/start', end: 'compaction/end' }),
+  idPrefix: 'fbtest-compaction-',
 })
 
 export const WAIT = Object.freeze({
