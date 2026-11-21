@@ -8,6 +8,8 @@
  * - `data-fishball-logo-state` and `data-fishball-logo-theme` on the mark;
  * - `data-fishball-brand-style` on the settings control (fishball-core.settings rows).
  */
+import { PAGE_STREAM } from '../stream/event-source.mjs'
+
 export const SLOT = Object.freeze({ mark: 'sidebar.brand.mark', name: 'sidebar.brand.name' })
 
 /** The V1 mechanism: a priority below the shell's own 0. */
@@ -16,8 +18,12 @@ export const PRIORITY = -1
 /** DSH's page root mark while the Fishball page is open (fishball-page's public root mark). */
 export const PAGE_MARK = 'data-fishball-page'
 
-/** The two Fishball streams the brand reads its state from. */
-export const ROUTE = Object.freeze({ strip: 'api/fishball/strip', asks: 'api/fishball/asks/events' })
+/**
+ * The two Fishball views the brand reads its state from. Since the image-loop fix both arrive on the
+ * page's ONE connection (../stream/event-source.mjs PAGE_STREAM), each under its topic, with the
+ * frame its old route sent (strip: /api/fishball/strip?lang&tz; asks: /api/fishball/asks/events).
+ */
+export const ROUTE = Object.freeze({ page: PAGE_STREAM.relative, path: PAGE_STREAM.path, strip: PAGE_STREAM.topic.strip, asks: PAGE_STREAM.topic.asks })
 
 /** The requirement's stable observation hooks. */
 export const HOOK = Object.freeze({

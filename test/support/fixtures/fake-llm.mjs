@@ -177,7 +177,8 @@ model.windows ??= {
   [FAKE_MODELS.nowin]: undefined,
 }
 const info = (id = FAKE.model) => ({
-  provider: FAKE.provider, id, name: 'fbtest model ' + id, inputModalities: ['text'],
+  // A world may make the scripted models image-capable (model.inputModalities; fishball-ui.connections).
+  provider: FAKE.provider, id, name: 'fbtest model ' + id, inputModalities: model.inputModalities ?? ['text'],
   ...(model.windows[id] === undefined ? {} : { context: { contextWindow: model.windows[id] } }),
   defaultMaxTokens: FAKE_WINDOW.defaultMaxTokens,
 })

@@ -1,4 +1,5 @@
 import path from 'node:path'
+import { PAGE_STREAM } from '../stream/event-source.mjs'
 export const U = Object.freeze({
   id: 'fishball-ui', core: 'fishball-core', row: 'ui-model-selection', missingRow: 'fishball-ui-core-missing',
   client: path.resolve(import.meta.dirname, '../../../../packages/core/ui/client.js'),
@@ -35,11 +36,13 @@ export const POLISH_MODEL = Object.freeze({
 
 /**
  * UI-POLISH-F §2: the drawn status card's page (strip.mjs). The strip is a `conversation.input.dock`
- * entry of fishball-ui (`fishball-strip`) that follows `/api/fishball/strip?lang=` (U.route.strip);
- * the hooks are SPEC §2's (unchanged, plus `data-fishball-strip-state` and `-badge`).
+ * entry of fishball-ui (`fishball-strip`) that followed `/api/fishball/strip?lang=` (U.route.strip);
+ * since the image-loop fix (2026-11-22) that frame arrives on the page's one connection
+ * (`route`, /api/fishball/page/events) under the topic `topic` ('strip').
+ * The hooks are SPEC §2's (unchanged, plus `data-fishball-strip-state` and `-badge`).
  */
 export const STRIP_PAGE = Object.freeze({
-  slot: 'conversation.input.dock', entryId: 'fishball-strip', route: '/api/fishball/strip', messageEvent: 'message',
+  slot: 'conversation.input.dock', entryId: 'fishball-strip', route: PAGE_STREAM.path, topic: PAGE_STREAM.topic.strip, messageEvent: 'message',
   mountKey: 'fbtest-strip', managerSession: 'fbtest-fishball', on: 'on', langs: Object.freeze(['en', 'zh']),
   hook: Object.freeze({
     root: 'data-fishball-strip', state: 'data-fishball-strip-state', badge: 'data-fishball-strip-badge', line: 'data-fishball-strip-line',

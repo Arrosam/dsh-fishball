@@ -128,7 +128,9 @@ export const V3_SUITES = Object.freeze({
   // F-FIX: ASK-UI-01 draws the card with fishball-ui's client.js and client.asks.js in the F-SETTINGS scripted page.
   'fishball-core.asks': suite('ask cards: ask_user, the asks service and routes, the drawn card (F-ASKCARD, F-FIX)', v3('fishball-core/asks'),
     [sub(PACKAGE.fishballCore, 'src', 'asks'), PACKAGE.fishballUi + '/client.asks.js', PACKAGE.fishballUi + '/client.js', PACKAGE.fishballUi + '/package.json', ...CORE_LINK,
-      'test/v3/fishball-core/settings/page.mjs', 'test/v3/fishball-core/settings/primitives.mjs', 'test/v3/fishball-core/settings/constants.mjs']),
+      'test/v3/fishball-core/settings/page.mjs', 'test/v3/fishball-core/settings/primitives.mjs', 'test/v3/fishball-core/settings/constants.mjs',
+      // The image-loop fix: the drawn card reads its frames from the page connection's stand-in.
+      'test/v3/fishball-ui/stream/event-source.mjs']),
   'fishball-core.identity': suite('identity, pairing decisions, token-revoked (F-PAIR)', v3('fishball-core/identity'),
     [sub(PACKAGE.fishballCore, 'src', 'identity'), ...CORE_LINK, sub(PACKAGE.dshConnector, 'src', 'pairs'), ...CONNECTOR_CORE, ...CONNECTOR_CONTRACTS,
       // Its name rows read the own-schema suite's constants.
@@ -196,7 +198,9 @@ export const V3_SUITES = Object.freeze({
   'fishball-ui.model-dialog': suite('fishball-ui model dialog, status strip route, live core on/off, composer picker guard (F-WIRE)', v3('fishball-ui/model-dialog'),
     [all(PACKAGE.fishballUi), all(PACKAGE.fishballCore), all(PACKAGE.fishballShared), 'test/v3/fishball-core/wire/**', 'test/v3/fishball-core/settings/**', 'test/v3/fishball-ui/guards/**',
       // UI-POLISH-F: the drawn status card rows build their frames with the F-STATUS strip view binding and its card constants.
-      'test/v3/fishball-core/status/subject.mjs', 'test/v3/fishball-core/status/constants.mjs']),
+      'test/v3/fishball-core/status/subject.mjs', 'test/v3/fishball-core/status/constants.mjs',
+      // The sidebar, ask-card and strip pages read their frames from the page connection's stand-in.
+      'test/v3/fishball-ui/stream/event-source.mjs']),
   // UI-FIX-F: the drawn ask and status cards (fishball-ui's client and parts, with core's client, in the
   // F-SETTINGS scripted page through the ask-card and strip harnesses; frames from fishball-ui's
   // stripView over fishball-shared's ui-seam) laid out in the LITE rows' headless Chromium with DSH's
@@ -229,6 +233,15 @@ export const V3_SUITES = Object.freeze({
       'test/v3/fishball-ui/stream/**', 'test/v3/fishball-ui/package/nav-page.mjs', 'test/v3/fishball-ui/package/polish-constants.mjs',
       'test/v3/fishball-ui/contrast/page.mjs', 'test/v3/fishball-ui/contrast/constants.mjs', 'test/v3/contract/package-boundaries/cases.mjs',
       'test/v2-page-cases/lite-browser.mjs']),
+  // The image-loop fix (2026-11-22): the Fishball page's ONE live connection. Component rows run
+  // fishball-ui's client and fishball-taskboard's browser half in the F-SETTINGS scripted page over the
+  // brand shell; system rows boot the manager world (core, fishball-ui and fishball-taskboard installed
+  // as bundles) and read DSH's real page in LITE's Chromium.
+  'fishball-ui.connections': suite("the Fishball page's one live connection: one carrier, constant count, Host topics, taskboard on the carrier, sends complete", v3('fishball-ui/connections'),
+    [all(PACKAGE.fishballUi), sub(PACKAGE.fishballCore, 'src', 'page'), sub(PACKAGE.fishballCore, 'src', 'main'), `${PACKAGE.fishballShared}/ui-seam.js`, all(PACKAGE.fishballTaskboard),
+      'test/v3/fishball-core/settings/{page,primitives,constants}.mjs', 'test/v3/fishball-ui/brand/{page,constants}.mjs', 'test/v3/fishball-ui/stream/event-source.mjs',
+      'test/v3/fishball-ui/model-dialog/{targets,targets-constants}.mjs', 'test/v3/fishball-core/manager/{world,subject,constants}.mjs',
+      'test/v3/fishball-core/message-user/{page,constants}.mjs', 'test/support/fixtures/fake-llm.mjs', 'test/v2-page-cases/lite-browser.mjs']),
   'fishball-board.peers': suite('board without core (FEAT-PEERS; fold-notify was removed, REMOVE-WD)', v3('fishball-board/peers'),
     [all(PACKAGE.fishballBoard), sub(PACKAGE.dshConnector, 'mcp-schema')]),
   // The heartbeat row over a fake core, bound to each SDK (and 0.2.2-rc.3, the installed DSH); it

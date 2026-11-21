@@ -19,7 +19,7 @@ import assert from 'node:assert/strict'
 import { after } from 'node:test'
 import { caseTest } from '../../contract/package-boundaries/cases.mjs'
 import { findAll, textOf } from '../../../support/rp-recommend.mjs'
-import { ACCENT, BADGE, CARD_STATE, DSH_MARK, FIXTURE, HOOK, LABEL, PRIORITY, SHELL, SLOT, STATE_DOT, STATUS, THEME, WORDMARK } from './constants.mjs'
+import { ACCENT, BADGE, CARD_STATE, DSH_MARK, FIXTURE, HOOK, LABEL, PRIORITY, ROUTE, SHELL, SLOT, STATE_DOT, STATUS, THEME, WORDMARK } from './constants.mjs'
 import { brandPage } from './page.mjs'
 import { registerFaults } from './faults.mjs'
 import { registerNative } from './native.mjs'
@@ -164,12 +164,14 @@ export function registerBrandCases(sdk) {
       assert.deepEqual(priorities, [PRIORITY], `${slot}: ${show(priorities)}`)
     }
   })
-  t('BRAND-EP-05', 'no ensure', 'the logo sends no request of its own: no POST (no ensure), only the two server-sent streams', async (c) => {
+  // Re-baselined (the image-loop fix, 2026-11-22): the two views arrive on the page's one connection,
+  // so the one source opened is it (it was /api/fishball/asks/events and /api/fishball/strip).
+  t('BRAND-EP-05', 'no ensure', 'the logo sends no request of its own: no POST (no ensure), only the one page connection (server-sent)', async (c) => {
     const p = await brandPage(c, sdk)
     await connected(p, { cardCount: 1 })
     await p.click(p.button())
     assert.deepEqual(p.world.fetches.filter((f) => String(f.method).toUpperCase() === 'POST').map((f) => f.url), [], 'the logo posted')
-    assert.deepEqual(p.sources.opened.map((s) => new URL(s.url, p.world.base).pathname).sort(), ['/api/fishball/asks/events', '/api/fishball/strip'])
+    assert.deepEqual(p.sources.opened.map((s) => new URL(s.url, p.world.base).pathname), [ROUTE.path])
   })
 
   // ================================================================ EP-02: the collapsed rail
@@ -242,19 +244,35 @@ export function registerBrandCases(sdk) {
   }
 
   // ================================================================ ST-01: stream health and core on/off
-  t('BRAND-ST-01', 'asks is the connection', 'connected → asks stale (error, CONNECTING) → offline → a fresh asks frame → connected; a stale or closed strip alone leaves it connected', async (c) => {
-    const p = await brandPage(c, sdk)
-    await connected(p, {})
-    assert.equal(stateOf(p), STATUS.connected.state)
-    await p.fail('asks', false)
-    assert.equal(stateOf(p), STATUS.offline.state)
-    await p.deliver('asks', { managerSessionId: FIXTURE.manager, cards: [] })
-    assert.equal(stateOf(p), STATUS.connected.state)
-    await p.fail('strip', false)
-    assert.equal(stateOf(p), STATUS.connected.state, 'a reconnecting strip made the session unreachable')
-    await p.fail('strip', true)
-    assert.equal(stateOf(p), STATUS.connected.state, 'a closed strip made the session unreachable')
-  })
+  // Re-baselined (the image-loop fix; the lead's decision of 2026-11-22): both views arrive on the
+  // page's ONE connection, so a stale or closed strip STREAM alone no longer exists. The row keeps its
+  // intent where a strip-only fault still exists, the strip TOPIC: while the connection is live, a strip
+  // frame that is not a strip frame, or no strip frame at all (Host side: its frame() threw and the topic
+  // was skipped), leaves the brand connected with its last good strip (the theme it drew). The
+  // connection's own health is BRAND-ST-10.
+  for (const [label, raw] of [['skipped', undefined], ['null', 'null'], ['an array', '[]'], ['a string', '"fbtest-not-a-strip"'], ['a number', '7']]) {
+    t('BRAND-ST-01', `strip topic ${label}`, `the page connection live, the strip topic ${raw === undefined ? 'skipped (no strip frame; an asks frame still arrives)' : `sends a frame that is ${label}`} → the brand stays connected and keeps its last good strip (theme ${THEME.deepseek})`, async (c) => {
+      const p = await brandPage(c, sdk)
+      await connected(p, { theme: THEME.deepseek })
+      assert.equal(stateOf(p), STATUS.connected.state, 'precondition: connected')
+      if (raw === undefined) await p.deliver('asks', { managerSessionId: FIXTURE.manager, cards: [] })
+      else await p.deliverRaw('strip', raw)
+      assert.equal(stateOf(p), STATUS.connected.state, 'a strip-only fault made the session unreachable')
+      assert.equal(themeOf(p), THEME.deepseek, 'the last good strip was not kept')
+    })
+  }
+  // Added with the rewrite above (the lead, 2026-11-22): the brand follows the one connection's health.
+  for (const [word, closed] of [['stale', false], ['closed', true]]) {
+    t('BRAND-ST-10', `connection ${word}`, `connected → the one page connection errors ${closed ? 'with CLOSED' : 'while retrying (CONNECTING)'} → offline (error light); a fresh asks frame → connected`, async (c) => {
+      const p = await brandPage(c, sdk)
+      await connected(p, {})
+      await p.failConnection(closed)
+      assert.equal(stateOf(p), STATUS.offline.state)
+      assert.equal(dotOf(p), STATUS.offline.dot)
+      await p.deliver('asks', { managerSessionId: FIXTURE.manager, cards: [] })
+      assert.equal(stateOf(p), STATUS.connected.state)
+    })
+  }
   t('BRAND-ST-02', 'asks closed', 'connected → asks error with CLOSED → offline (the status light turns error-like); a frame reconnects it', async (c) => {
     const p = await brandPage(c, sdk)
     await connected(p, {})

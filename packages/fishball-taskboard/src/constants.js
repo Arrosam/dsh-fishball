@@ -81,6 +81,12 @@ export const ROUTE = Object.freeze({
 export const HOST = Object.freeze({
   service: 'fishballInstance',
   apiVersion: 2,
+  /**
+   * Core's page stream (fishball-shared `SEAM_PAGE_STREAM`, restated: this row reads core only
+   * through the instance): its member, and the board's topic, which the browser half restates.
+   */
+  pageMember: 'page',
+  pageTopic: 'fishball-taskboard',
   serviceEvent: 'internal/service',
   appReady: 'appReady',
   sessionEvent: 'session/event',

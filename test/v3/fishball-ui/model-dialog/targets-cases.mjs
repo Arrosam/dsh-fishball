@@ -268,11 +268,15 @@ export function registerTargetsCases(sdk) {
     await p.setMark(false)
     assert.deepEqual(p.rows().map((r) => p.textOf(r)), [], 'a target row outside the Fishball page')
   })
+  // Re-baselined (the image-loop fix, 2026-11-22): the sidebar's frames arrive on the page's one
+  // connection, so the one source the page opens is /api/fishball/page/events?lang&tz (it was
+  // /api/fishball/strip?lang&tz).
   for (const lang of FRAME.langs) {
-    t('TGT-SB-EP-02', `stream url ${lang}`, `(${lang}) the sidebar opens ${SIDEBAR.streamPath}?lang=${lang}&tz=<the browser zone>`, async (c) => {
+    t('TGT-SB-EP-02', `stream url ${lang}`, `(${lang}) the sidebar opens one source, ${SIDEBAR.streamPath}?lang=${lang}&tz=<the browser zone>`, async (c) => {
       const p = await sidebarPage(c, sdk, { lang })
+      const open = p.sources.opened.filter((x) => !x.closed)
+      assert.deepEqual(open.map((x) => new URL(x.url, p.world.base).pathname), [SIDEBAR.streamPath], show(open.map((x) => x.url)))
       const [s] = p.streams()
-      assert.ok(s, show(p.sources.opened.map((x) => x.url)))
       const url = new URL(s.url, p.world.base)
       assert.equal(url.searchParams.get('lang'), lang)
       assert.equal(url.searchParams.get('tz'), browserZone())
@@ -652,7 +656,7 @@ export function registerTargetsCases(sdk) {
     await p.press(retry)
     assert.ok(old.every((s) => s.closed))
     assert.equal(p.streams().length, 1)
-    assert.equal(p.sources.live(ASK.eventsPath.slice(1)).length, 1)
+    assert.equal(p.askStreams().length, 1)
   })
 
   // ====================================================================== the dock (requirement D)
@@ -662,7 +666,8 @@ export function registerTargetsCases(sdk) {
   })
   t('TGT-DOCK-EP-01', 'no pairing card', `no dock entry draws [${DOCK_GONE.pairingHook}] or opens the pairing stream`, async (c) => {
     const p = await sidebarPage(c, sdk, { dock: true })
-    for (const s of p.sources.opened.filter((x) => !x.closed)) s.deliver({ state: PAIR_STATE.warnMatch, title: 'x', lines: [{ kind: 'warn-match', text: 'fbtest' }], confirm: 'x', choices: [], failed: 'x' })
+    // A pairing frame as every open view's frame (the sidebar's and the ask cards', both on the page connection).
+    for (const s of [...p.streams(), ...p.askStreams()]) s.deliver({ state: PAIR_STATE.warnMatch, title: 'x', lines: [{ kind: 'warn-match', text: 'fbtest' }], confirm: 'x', choices: [], failed: 'x' })
     await p.settle()
     assert.deepEqual(p.byHook(DOCK_GONE.pairingHook).map((n) => n.tag), [])
     assert.deepEqual(p.sources.opened.filter((s) => new URL(s.url, p.world.base).pathname.endsWith('/' + DOCK_GONE.pairingStream)).map((s) => s.url), [])
@@ -676,7 +681,7 @@ export function registerTargetsCases(sdk) {
   const askPage = async (c, cards, { lang = 'en', answer } = {}) => {
     const p = await sidebarPage(c, sdk, { lang, dock: true })
     p.world.fetchOther = async (call) => { const at = new URL(call.url).pathname; p.posts.push({ ...call, path: at, json: JSON.parse(call.body ?? 'null') }); return answer ? answer(call) : { status: 200, json: { ok: true } } }
-    for (const s of p.sources.live(ASK.eventsPath.slice(1))) s.deliver({ managerSessionId: FIXTURE.managerSession, cards })
+    for (const s of p.askStreams()) s.deliver({ managerSessionId: FIXTURE.managerSession, cards })
     await p.settle()
     const cardsDrawn = () => p.nodes().filter((n) => n.props[ASK.hook] !== undefined && n.props[ASK.hook] !== false)
     return { ...p, cardsDrawn, within: (handle) => { const root = cardsDrawn().find((n) => n.props[ASK.hook] === handle); return root ? [root, ...p.nodes().filter((n) => isBelow(root, n))] : [] } }

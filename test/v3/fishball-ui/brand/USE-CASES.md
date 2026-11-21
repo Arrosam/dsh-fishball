@@ -32,7 +32,8 @@ skipped where no Chromium exists). The settings and status rows are `fishball-co
 | Wordmark typography | bold (>= 700) and larger than the tag / the tag small | BRAND-EP-09 |
 | Shell attributes | `title` = status text / absent; `aria-keyshortcuts` removed while mounted / restored | BRAND-ST-09, BRAND-TEAR-01/02 |
 | ask-card state | `open` (pending) / `answered`, `closed`, `voided` (not pending) | BRAND-EP-07, BRAND-BVA-01 |
-| streams | asks live / asks stale (CONNECTING) / asks closed / strip live / strip stale / strip closed | BRAND-ST-01, BRAND-ST-02 |
+| page connection (one, since the image-loop fix) | live / stale (CONNECTING) / closed | BRAND-ST-10, BRAND-ST-02 |
+| strip topic on a live connection | a strip frame / skipped (no strip frame) / a frame that is null, an array, a string, a number | BRAND-ST-01 |
 | core | strip `on:true` / `on:false` | BRAND-ST-03 |
 | manager id | a session id / absent / empty | BRAND-ST-04, BRAND-ST-05 |
 | sessions list | running true / running false / no entry | BRAND-ST-06 |
@@ -74,8 +75,10 @@ run for both themes; the theme only changes the art, never the state.
 | 5 | yes | false | known | any | any | `offline` | Offline | error |
 | 6 | yes | true | absent | any | any | `offline` | Offline | error |
 
-The strip stream's health alone does not decide: a stale/closed strip with a live asks stream stays
-in the row its other facts give (BRAND-ST-01). The accessible name is always exactly "Fishball"; the
+"asks live" is the one page connection being live (both views arrive on it since the image-loop fix).
+A fault confined to the strip topic alone does not decide: while the connection is live, a skipped strip
+topic or a strip frame that is not a strip frame leaves the brand in the row its other facts give, with
+its last good strip (BRAND-ST-01). The accessible name is always exactly "Fishball"; the
 description is exactly the status text.
 
 ### BRAND-DT-02: `brandStyle` in the strip frame
@@ -123,10 +126,10 @@ description is exactly the status text.
 
 | Row | From | Event | To |
 | --- | --- | --- | --- |
-| BRAND-ST-01 | connected | asks error with CONNECTING | offline |
+| BRAND-ST-01 | connected (connection live) | the strip topic skipped, or a strip frame that is null / an array / a string / a number | connected, the last good strip kept (its theme) |
+| BRAND-ST-10 | connected | the one connection errors with CONNECTING / CLOSED | offline (error light) |
 | | offline | valid asks frame | connected |
-| | connected | strip error (CONNECTING or CLOSED) | connected (strip health is presentation, not the link) |
-| BRAND-ST-02 | connected | asks error with CLOSED | offline (error light) |
+| BRAND-ST-02 | connected | asks error with CLOSED (the one connection's) | offline (error light) |
 | | offline | valid asks frame | connected |
 | BRAND-ST-03 | connected | strip `on:false` | offline |
 | | offline | strip `on:true` | connected |
@@ -165,6 +168,16 @@ description is exactly the status text.
    drawn shadow is a background-coloured ring then the accent copy). The darkened pill blue has no given
    value: the row asks for an opaque fill whose blue channel leads, at 4.5:1 or more against the pill's text
    colour, which must be white.
+7. The image-loop fix (2026-11-22; the user's confirmed design "everything over one connection"): the
+   strip and asks views arrive on the page's ONE connection (`/api/fishball/page/events?lang&tz`, messages
+   `{topic, frame}`), whose health is every view's. BRAND-ST-01's old step "a stale or closed strip stream
+   alone leaves the brand connected" describes a state that no longer exists. On the lead's decision of
+   2026-11-22 the row keeps its intent, "a problem confined to the strip does not make the brand look
+   disconnected", at the level where a strip-only fault still exists, the strip topic: on a live
+   connection a skipped strip topic (the Host's provider threw; no strip frame arrives) or a strip frame
+   that is not a strip frame leaves the brand connected with its last good strip. BRAND-ST-10 is added:
+   the brand follows the one connection's stale/closed health. BRAND-EP-05 now expects one source, the
+   page connection, where it expected `/api/fishball/asks/events` and `/api/fishball/strip`.
 
 ## BRAND-AVATAR — Fishball's reply avatar on its page (GENTLE-TOOLS, the lead's relayed requirement A, 2026-11-21)
 

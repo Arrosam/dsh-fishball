@@ -34,20 +34,24 @@ const E = MCP.eventTypes
 const TRIGGERS = Object.freeze([E.state, E.turnFinished, E.handover, E.takeback, E.retirement])
 const OTHERS = Object.freeze([E.message, E.permission, E.question, E.planReview, E.settlement, E.ask, E.notice, 'contributed:fbtest-x'])
 const LIMIT = 100
-const ROW_MS = 5000
-const settle = async () => { for (let i = 0; i < 5; i++) await tick() }
-const session = (id, running, title = 'Session ' + id) => ({ sessionId: id, title, workspaceId: null, running, pendingInteraction: false })
-const listed = (...sessions) => ({ ok: true, sessions })
+export const ROW_MS = 5000
+export const settle = async () => { for (let i = 0; i < 5; i++) await tick() }
+export const session = (id, running, title = 'Session ' + id) => ({ sessionId: id, title, workspaceId: null, running, pendingInteraction: false })
+export const listed = (...sessions) => ({ ok: true, sessions })
 
 async function sessionsModule() { return import(new URL('src/targets/sessions.js', CORE)) }
 
-/** One running-sessions read over a scripted link; `changes` counts onChange, `warns` the logged args. */
-async function unit() {
+/**
+ * One running-sessions read over a scripted link; `changes` counts onChange, `warns` the logged args.
+ * `options` adds `watch` / `timers` (running-sessions-watch.mjs); `before(s)` scripts the link before creation.
+ */
+export async function unit(options = {}, before = () => {}) {
   const { createRunningSessions } = await sessionsModule()
   const s = scriptedLink()
+  before(s)
   const changes = { n: 0 }
   const warns = []
-  const read = createRunningSessions(s.link, { onChange: () => { changes.n += 1 }, logger: { warn: (...args) => warns.push(args) } })
+  const read = createRunningSessions(s.link, { onChange: () => { changes.n += 1 }, logger: { warn: (...args) => warns.push(args) }, ...options })
   return { s, read, changes, warns }
 }
 
@@ -65,8 +69,8 @@ async function targetsSubject(sdk) {
   finally { hook.deregister() }
 }
 
-/** One collection over the scripted links, with a remote target added; `links` gets each new link. */
-async function targetsWorld(t, sdk, links) {
+/** One collection over the scripted links, with a remote target added; `links` gets each new link; `deps` adds createTargets deps (`watch`). */
+export async function targetsWorld(t, sdk, links, deps = {}) {
   const createTargets = await targetsSubject(sdk)
   const table = () => { const rows = new Map(); return { entries: () => rows.entries(), get: (k) => rows.get(k), put: async (k, v) => rows.set(k, v), delete: async (k) => rows.delete(k) } }
   const credentials = { async resolve() {}, async unset() {}, async readRecord() {}, async deleteRecord() {}, async modifyRecord() {} }
@@ -75,6 +79,7 @@ async function targetsWorld(t, sdk, links) {
     asks: { take: async () => [], drained: async () => {}, reconcile: async () => {}, voidWhere: async () => {} },
     events: { intake: async () => {}, retire() {} }, recovered: Promise.resolve(),
     settings: { clientId: () => FIXTURE.coreId, clientMetadataUrl: () => MULTI.metadataUrl, name: () => FIXTURE.boundName },
+    ...deps,
   })
   t.after(() => controller.close())
   await controller.settled()

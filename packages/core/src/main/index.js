@@ -27,7 +27,7 @@
  * target reconnects the parent; a change of `model` is applied to the live manager.
  */
 import { defineDomain, domainTable } from '@deepseek-ai/dsh-storage-domain'
-import { SEAM_TARGETS, UI_SEAM } from 'fishball-shared/ui-seam'
+import { SEAM_PAGE_STREAM, SEAM_TARGETS, UI_SEAM } from 'fishball-shared/ui-seam'
 import { GUARDS } from '../../contracts/constants.js'
 import { createAsks, openAskCards, registerAskRoutes } from '../asks/index.js'
 import { LOG as BRIDGE_LOG } from '../bridge/constants.js'
@@ -44,6 +44,7 @@ import { CONTRIBUTED_TOOLS } from '../manager/contributed.js'
 import { createManagerService } from '../manager/service.js'
 import { createManagerSession } from '../manager/session.js'
 import { attachPrivateSkills } from '../manager/skills.js'
+import { createPageStream } from '../page/stream.js'
 import { STATUS_MODEL, createStatus } from '../status/index.js'
 import { TARGET_LOG } from '../targets/constants.js'
 import { createTargets } from '../targets/index.js'
@@ -135,8 +136,12 @@ export async function apply(ctx, config) {
   ctx.effect(() => () => events.close())
   const asks = createAsks({ targets: ports, table: cards, logger })
   ctx.effect(() => () => asks.close())
+  // The page's one live connection (SEAM_PAGE_STREAM), before the targets: their running sessions
+  // poll only while a page watches it (targets/sessions.js).
+  const page = createPageStream(ctx, logger)
+  ctx.effect(() => () => page.dispose())
   targets = createTargets(ctx, {
-    tables: targetTables, identityRecords: records, asks, events, recovered: recovery.promise, bridgeOptions,
+    tables: targetTables, identityRecords: records, asks, events, recovered: recovery.promise, bridgeOptions, watch: page,
     settings: { clientId, clientMetadataUrl: () => setting('metadataUrl'), name: () => setting('name') },
     logger: ctx.logger(TARGET_LOG.name),
   })
@@ -170,6 +175,16 @@ export async function apply(ctx, config) {
   ctx.effect(() => registerAskRoutes(ctx, {
     service: asks.service, managerSessionId: () => session.sessionId(), onManagerChange: (fn) => session.onChange(() => fn()),
   }))
+  // The ask cards are the page stream's first topic, the same frame as the ask route's; fishball-ui
+  // and the amenities add theirs through `page.register`.
+  ctx.effect(() => page.register(SEAM_PAGE_STREAM.topic.asks, {
+    frame: () => ({ managerSessionId: session.sessionId() ?? null, cards: asks.service.list() }),
+    onChange: (fn) => {
+      const offCards = asks.service.onChange(fn)
+      const offManager = session.onChange(() => fn())
+      return () => { offCards(); offManager() }
+    },
+  }))
 
   // The two services (K3 index.d.ts, MULTI-0 apiVersion 2; F-STATUS).
   ctx.provide(MAIN.service, Object.freeze({
@@ -180,6 +195,8 @@ export async function apply(ctx, config) {
     events: events.service,
     bridge: targets.targetBound.bridge,
     attention: targets.targetBound.attention,
+    // Additive in apiVersion 2: the page stream's topic registry (SEAM_PAGE_STREAM.member).
+    [SEAM_PAGE_STREAM.member]: Object.freeze({ register: page.register }),
     [UI_SEAM.member]: Object.freeze({
       managerSessionId: () => session.sessionId(),
       [SEAM_TARGETS.member]: targets.service,

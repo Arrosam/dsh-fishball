@@ -2,12 +2,15 @@
  * fishball-taskboard's row (docs/plugins/fishball-taskboard.md): Fishball's own task board and memo
  * pad. It opens the board's store, serves the UI's routes (they work without core: the user can
  * always see and edit the board), and, while a compatible `fishballInstance` is bound, gives the
- * manager its tools and the compaction reminder through X2. Its browser half is client.js.
+ * manager its tools and the compaction reminder through X2, and puts the board on core's page stream
+ * as its topic (`HOST.pageTopic`), so the Task board tab opens no connection of its own beside core.
+ * Its browser half is client.js.
  */
 import { defineDomain } from '@deepseek-ai/dsh-storage-domain'
 import { followInstance, reportCoreMissing } from 'fishball-shared/instance-follower'
 import { HOST, LOG, NAMESPACE } from './src/constants.js'
 import { openStore } from './src/store.js'
+import { viewOf } from './src/board.js'
 import { createTools } from './src/tools.js'
 import { registerRoutes } from './src/routes.js'
 import { createReminder } from './src/reminder.js'
@@ -25,11 +28,15 @@ export async function apply(ctx) {
   const reminder = createReminder(ctx, store)
   const binding = followInstance(ctx, HOST, (instance) => {
     const sessionId = () => instance.manager.sessionId()
-    return instance.manager.registerSetup(NAMESPACE, (agentCtx, live) => {
+    const disposeSetup = instance.manager.registerSetup(NAMESPACE, (agentCtx, live) => {
       // X2 disposal removes the tools with the fiber; the reminder stops following this agent then too.
       for (const tool of createTools({ store, sessionId, now })) agentCtx.tools.register(tool)
       agentCtx.effect(() => reminder.watch(live))
     })
+    // The board on core's one page stream (fishball-shared SEAM_PAGE_STREAM): the same view as the
+    // GET board route; a read that throws (a quarantined domain) skips that frame.
+    const disposeTopic = instance[HOST.pageMember]?.register(HOST.pageTopic, { frame: () => viewOf(store.read()), onChange: (fn) => store.onChange(() => fn()) })
+    return () => { disposeTopic?.(); disposeSetup?.() }
   })
   reportCoreMissing(ctx, HOST, binding, () => ctx.logger(NAMESPACE).warn(LOG.coreMissing))
 }

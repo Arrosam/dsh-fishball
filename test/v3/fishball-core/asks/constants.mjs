@@ -15,6 +15,7 @@
  * DSH's own vocabulary is the installed SDK's. The rest is fixture data and harness timing.
  */
 import path from 'node:path'
+import { PAGE_STREAM } from '../../fishball-ui/stream/event-source.mjs'
 import { APPROVAL_KIND, APPROVAL_DECISION as DECISION, ARGUMENTS_STATUS, RISK } from '../../../fixtures/dsh-connector-contract/mcp-schema/index.js'
 import {
   DECISION_KIND, DECISION_KIND_OF, EVENT_TYPE, LINK_REFUSAL, OFFER_ID, REFUSAL, RETIREMENT_REASON, SETTLED_BY, SETTLEMENT_OUTCOME, TOOL,
@@ -256,13 +257,15 @@ export const DETAIL_REASON_ROWS = Object.freeze([
 
 /**
  * ASK-UI-01 (the drawn card, render.mjs): DSH's slot the card dock sits in (dsh-web-app's
- * conversation input dock, both SDKs), the events route the page follows (ROUTE.events), and the
- * words a user reads (en): the two answer buttons and the requirement's "a note that the arguments
- * are incomplete".
+ * conversation input dock, both SDKs), the events route's frames (ROUTE.events), which since the
+ * image-loop fix (2026-11-22) the page reads from its one connection, /api/fishball/page/events,
+ * under the topic 'asks', and the words a user reads (en): the two answer buttons and the
+ * requirement's "a note that the arguments are incomplete".
  */
 export const RENDER = Object.freeze({
   slot: 'conversation.input.dock',
-  eventsPath: '/api/fishball/asks/events',
+  eventsPath: PAGE_STREAM.path,
+  topic: PAGE_STREAM.topic.asks,
   managerSession: 'fbtest-fishball',
   messageEvent: 'message',
   mountKey: 'fbtest-ask-dock-',

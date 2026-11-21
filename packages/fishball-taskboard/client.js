@@ -19,6 +19,13 @@ window.__ModuleLoader__.load({
       locale: 'fishball-taskboard',
       kind: 'fishball-taskboard',
       route: Object.freeze({ board: 'api/fishball-taskboard/board', events: 'api/fishball-taskboard/events' }),
+      /**
+       * Core's page stream (fishball-shared `SEAM_PAGE_STREAM`, restated: a chunk imports no module):
+       * the browser service fishball-ui provides, and the board's topic on it (the row's
+       * `HOST.pageTopic`).
+       */
+      pageStream: Object.freeze({ client: 'fishballPageStream', topic: 'fishball-taskboard' }),
+      health: Object.freeze({ live: 'live', closed: 'closed' }),
       statuses: Object.freeze(['todo', 'in_progress', 'blocked', 'done', 'dropped']),
       open: Object.freeze(['todo', 'in_progress', 'blocked']),
       progress: Object.freeze({ min: 0, max: 100 }),
@@ -116,27 +123,51 @@ window.__ModuleLoader__.load({
     const randomId = (prefix) => prefix + crypto.randomUUID()
 
     /**
-     * The board as the row streams it: `{board, lost}`, shared by every mounted tab. EventSource
-     * retries by itself after an error; a valid frame clears `lost`.
+     * The board as the row streams it: `{board, lost, closed}`, shared by every mounted tab.
+     *
+     * On the Fishball page the board is a topic of core's one page stream (`BOARD.pageStream`), read
+     * through fishball-ui's `fishballPageStream` service: a browser holds at most 6 HTTP/1.1
+     * connections per host, shared by every tab, and DSH's own calls (sending a message, uploads)
+     * queue behind open streams, so an amenity adds a topic, never a connection (the user,
+     * 2026-11-21). `lost` follows that stream's health. Only where the service is absent (no
+     * fishball-ui or core: a standalone install) the tab opens the row's own route, where EventSource
+     * retries by itself after an error and a valid frame clears `lost`; `closed`: it gave up.
+     * Either way the source is held only while a tab is mounted.
      */
-    function createFeed() {
-      // `lost`: an error while EventSource retries by itself; `closed`: it gave up (a non-200 answer).
+    function createFeed(ctx) {
       let state = { board: undefined, lost: false, closed: false }
       const listeners = new Set()
-      let source
+      let leave
       const set = (next) => { state = { ...state, ...next }; listeners.forEach((listener) => listener()) }
+      // A frame that is not a board keeps the last good one (both sources), so the tab never draws a broken board.
+      const isBoard = (value) => value !== null && typeof value === 'object' && Array.isArray(value.tasks) && Array.isArray(value.memos)
+      const take = (board) => { if (isBoard(board)) set({ board, lost: false, closed: false }) }
+      /** The row's own route: the standalone fallback. */
+      function ownSource() {
+        const source = new EventSource(url(BOARD.route.events), { withCredentials: true })
+        source.onmessage = (event) => { try { take(JSON.parse(event.data)) } catch { set({ lost: true }) } }
+        source.onerror = () => set({ lost: true, closed: source.readyState === EventSource.CLOSED })
+        return () => source.close()
+      }
+      function open() {
+        const shared = ctx.get(BOARD.pageStream.client)
+        if (typeof shared?.subscribe !== 'function') return ownSource()
+        return shared.subscribe(BOARD.pageStream.topic, {
+          frame: take,
+          health: (word) => set({ lost: word !== BOARD.health.live, closed: word === BOARD.health.closed }),
+        })
+      }
       return {
         get: () => state,
         subscribe(listener) {
           listeners.add(listener)
-          if (!source) {
-            source = new EventSource(url(BOARD.route.events), { withCredentials: true })
-            source.onmessage = (event) => { try { set({ board: JSON.parse(event.data), lost: false, closed: false }) } catch { set({ lost: true }) } }
-            source.onerror = () => set({ lost: true, closed: source?.readyState === EventSource.CLOSED })
-          }
+          leave ??= open()
           return () => {
             listeners.delete(listener)
-            if (listeners.size === 0) { source?.close(); source = undefined; state = { ...state, closed: false } }
+            if (listeners.size > 0) return
+            leave?.()
+            leave = undefined
+            state = { ...state, closed: false }
           }
         },
       }
@@ -294,7 +325,7 @@ window.__ModuleLoader__.load({
 
     function apply(ctx) {
       const t = ctx.locale.bind(BOARD.locale)
-      const feed = createFeed()
+      const feed = createFeed(ctx)
       ctx.effect(() => ctx.locale.register(BOARD.locale, { en, zh }), BOARD.name + ': dictionaries')
       ctx.effect(() => {
         const style = document.createElement('style')

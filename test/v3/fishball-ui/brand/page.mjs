@@ -16,13 +16,14 @@
  * handler sits on the sidebar container (as React's delegated handler does): a click reaches it
  * only if the brand's capture handler does not stop it.
  *
- * Streams are one health-aware EventSource stand-in per route (`../stream/event-source.mjs`); the
+ * Streams are the health-aware EventSource stand-in (`../stream/event-source.mjs`): the page's one
+ * connection (ROUTE.path), which carries both views as `{topic, frame}` and whose health is both's; the
  * sessions list is the public `{byId}` snapshot store; `uiWorkspace.openSession` records calls.
  */
 import { createReactShim, findAll, textOf, walk } from '../../../support/rp-recommend.mjs'
 import { createWorld, loadPage, settle } from '../../fishball-core/settings/page.mjs'
 import { CLIENTS } from '../../fishball-core/settings/constants.mjs'
-import { eventSourceClass } from '../stream/event-source.mjs'
+import { eventSourceClass, isPageStream, topicView } from '../stream/event-source.mjs'
 import { DSH_MARK, FIXTURE, LABEL, PAGE_MARK, ROUTE, SHELL, SLOT, STATE_DOT } from './constants.mjs'
 
 const h = (React) => React.createElement
@@ -397,10 +398,14 @@ export async function brandPage(t, sdk, { lang = 'en', mark = true, reducedMotio
     brandButton: () => ancestorButton(markRoot()),
     newSessionButton: () => root('data-fishball-new-session') ?? nodes().find((n) => n.props['data-fishball-new-session'] !== undefined),
     text: (node) => textOf(node),
-    /** Every live source of one route. */
-    live: (kind) => sources.opened.filter((s) => !s.closed && new URL(s.url, w.base).pathname.endsWith('/' + ROUTE[kind])),
-    all: (kind) => sources.opened.filter((s) => new URL(s.url, w.base).pathname.endsWith('/' + ROUTE[kind])),
+    /** One view (strip / asks) of every live page connection: its frames go under the view's topic; failing it fails the connection. */
+    live: (kind) => handle.all(kind).filter((v) => !v.closed),
+    all: (kind) => sources.opened.filter((s) => isPageStream(s, w.base)).map((s) => topicView(s, ROUTE[kind])),
     async deliver(kind, frame) { for (const s of handle.live(kind)) s.deliver(frame); await settle() },
+    /** Raw JSON text as one view's frame (a frame that is not the view's shape), on every live page connection. */
+    async deliverRaw(kind, text) { for (const s of handle.live(kind)) s.deliverRaw(text); await settle() },
+    /** The one page connection errors (CLOSED when `closed`, else CONNECTING): every view's health. */
+    async failConnection(closed) { for (const s of sources.opened.filter((x) => !x.closed && isPageStream(x, w.base))) s.fail({ closed }); await settle() },
     async fail(kind, closed) { for (const s of handle.live(kind)) s.fail({ closed }); await settle() },
     /** Manager id in the sessions list, as a fresh snapshot store value (running or not). */
     async setRunning(running) { sessions.set({ byId: { [FIXTURE.manager]: { id: FIXTURE.manager, running, blank: false } } }); await settle() },
@@ -427,6 +432,8 @@ export async function brandPage(t, sdk, { lang = 'en', mark = true, reducedMotio
       await settle()
     },
     async unmountPage() { w.shim.unmountRoot(FIXTURE.mountKey); await settle() },
+    /** The shell mounted again after unmountPage (fishball-ui.connections mounts and unmounts its readers). */
+    async remountShell() { mountShell(); await settle() },
     /** A browser event: capture listeners see it first; stopImmediatePropagation ends the path. */
     event(type, props = {}) {
       const event = {

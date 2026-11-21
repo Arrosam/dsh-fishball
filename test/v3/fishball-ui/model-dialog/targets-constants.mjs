@@ -12,6 +12,7 @@ import path from 'node:path'
 import { SEAM_STATUS, SEAM_TARGETS } from '../../../../packages/shared/ui-seam.js'
 import { V3 } from '../../contract/package-boundaries/constants.mjs'
 import { UI_CARD } from '../../fishball-core/status/constants.mjs'
+import { PAGE_STREAM } from '../stream/event-source.mjs'
 
 export { SEAM_STATUS, SEAM_TARGETS }
 
@@ -62,7 +63,12 @@ export const SIDEBAR = Object.freeze({
   dshPriority: 0,
   emptyShadowPriority: -1,
   pageMark: 'data-fishball-page',
-  streamPath: '/api/fishball/strip',
+  /**
+   * The image-loop fix (2026-11-22): the sidebar's frames (what /api/fishball/strip?lang&tz sent) arrive
+   * on the page's ONE connection, /api/fishball/page/events?lang&tz, under the topic 'strip'.
+   */
+  streamPath: PAGE_STREAM.path,
+  streamTopic: PAGE_STREAM.topic.strip,
   route: SEAM_TARGETS.route,
   routePath: Object.freeze({
     connect: SEAM_TARGETS.route.connect, cancel: SEAM_TARGETS.route.cancel, retry: SEAM_TARGETS.route.retry, pairing: SEAM_TARGETS.route.pairing,
@@ -90,7 +96,9 @@ export const SIDEBAR = Object.freeze({
 export const ASK = Object.freeze({
   slot: 'conversation.input.dock',
   answerPath: '/api/fishball/asks/answer',
-  eventsPath: '/api/fishball/asks/events',
+  /** The image-loop fix: the cards (what /api/fishball/asks/events sent) arrive on the same page connection, topic 'asks'. */
+  eventsPath: PAGE_STREAM.path,
+  eventsTopic: PAGE_STREAM.topic.asks,
   hook: 'data-fishball-ask',
   choiceHook: 'data-fishball-ask-choice',
   bodyKeys: Object.freeze(['handle', 'choice', 'text']),

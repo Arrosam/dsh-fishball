@@ -114,7 +114,8 @@ function namespaceForm(world, ns) {
  * @param options.omit - service names this page does not provide.
  * @param options.activePanel - the layout's active panel at load (default null).
  * @param options.clients - CLIENTS.both (core and fishball-ui, the default), CLIENTS.coreOnly, or
- *   CLIENTS.uiOnly (the LOGO-BUTTON page needs fishball-ui alone, so its styles are the only ones).
+ *   CLIENTS.uiOnly (the LOGO-BUTTON page needs fishball-ui alone, so its styles are the only ones), or
+ *   CLIENTS.none (only `world.extraClients`).
  * @param options.remoteSession - E-FIX-3 (B5). `undefined` (the default): the legacy scripted
  *   `remote` above. Otherwise the page's `remote` is modelled as DSH's own Remote service is under
  *   Cordis (dsh-api-gateway client, both SDKs): it carries the tracker Cordis's `Service`
@@ -272,6 +273,16 @@ export function createWorld({
     if (typeof template !== 'string') return key
     return params ? template.replace(/\{(\w+)\}/g, (m, name) => (name in params ? String(params[name]) : m)) : template
   }
+  let localeRevision = 0
+  /** The user switches DSH's UI language: the locale snapshot changes and its subscribers are told (fishball-ui.connections). */
+  world.setLang = (next) => {
+    lang = next
+    world.lang = next
+    localeRevision += 1
+    if (world.html) world.html.element.lang = next
+    for (const fn of [...listeners]) fn()
+    shim.rerender()
+  }
   const locale = {
     register(ns, dicts) {
       world.localeRegistrations.push({ ns, dicts })
@@ -280,8 +291,8 @@ export function createWorld({
       return idempotent(() => { if (dictionaries.get(ns) === dicts) dictionaries.delete(ns) })
     },
     bind: (ns) => (key, params) => translate(ns, key, params),
-    getSnapshot: () => ({ active: lang, revision: 0 }),
-    getLocale: () => ({ active: lang, revision: 0, locales: DSH.locales.map((id) => ({ id })) }),
+    getSnapshot: () => ({ active: lang, revision: localeRevision }),
+    getLocale: () => ({ active: lang, revision: localeRevision, locales: DSH.locales.map((id) => ({ id })) }),
     subscribe: (fn) => { listeners.add(fn); return () => listeners.delete(fn) },
     resolveText: (text) => (typeof text === 'string' ? text : text?.[lang] ?? text?.en),
   }
@@ -453,9 +464,12 @@ export async function loadPage(t, world) {
     'react/jsx-runtime': jsxRuntime(world.React),
   }
   // Each graph entry's chunks load from its own package folder (DSH's package-local chunk route).
-  const withCore = world.clients !== CLIENTS.uiOnly
-  const withUi = world.clients !== CLIENTS.coreOnly
-  const entries = [...(withCore ? [{ id: CORE.moduleId, file: SUBJECT.coreClient }] : []), ...(withUi ? [{ id: UI.moduleId, file: SUBJECT.uiClient }] : [])]
+  // CLIENTS.none: neither Fishball client, only `world.extraClients` (an amenity's browser half alone).
+  const withCore = world.clients !== CLIENTS.uiOnly && world.clients !== CLIENTS.none
+  const withUi = world.clients !== CLIENTS.coreOnly && world.clients !== CLIENTS.none
+  // `world.extraClients` ([{id, file}]): other packages' browser halves on the same page, applied after
+  // these to the same Cordis root (fishball-ui.connections loads fishball-taskboard's client beside them).
+  const entries = [...(withCore ? [{ id: CORE.moduleId, file: SUBJECT.coreClient }] : []), ...(withUi ? [{ id: UI.moduleId, file: SUBJECT.uiClient }] : []), ...(world.extraClients ?? [])]
   const run = (file) => page.run(fs.readFileSync(file, 'utf8'), file, pathToFileURL(file).href)
   for (const e of entries) run(e.file)
   const graph = entries.map((e) => ({ id: e.id, rev: 'fbtest' }))

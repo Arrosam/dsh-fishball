@@ -8,6 +8,43 @@
  * as a browser calls them. `close()` marks it closed. Every source made is kept in `opened`.
  */
 export const SOURCE_STATE = Object.freeze({ connecting: 0, open: 1, closed: 2 })
+
+/**
+ * The image-loop fix (relayed by the lead, 2026-11-22): every live view of the Fishball page arrives
+ * on ONE EventSource, `api/fishball/page/events?lang=<en|zh>&tz=<IANA zone>`, as default messages
+ * `{topic, frame}` whose frame is exactly what the view's old route sent. Its health is every view's.
+ * The topics are the requirement's names; a view's old route is no longer opened by the page.
+ */
+export const PAGE_STREAM = Object.freeze({
+  relative: 'api/fishball/page/events',
+  path: '/api/fishball/page/events',
+  param: Object.freeze({ lang: 'lang', tz: 'tz' }),
+  topic: Object.freeze({ strip: 'strip', asks: 'asks', taskboard: 'fishball-taskboard' }),
+})
+
+/** One wire message of the page connection: a view's own frame under its topic. */
+export const pageMessage = (topic, frame) => ({ topic, frame })
+
+/** Whether a source is the page connection (its path, whatever its query). */
+export const isPageStream = (source, base) => new URL(source.url, base).pathname === PAGE_STREAM.path
+
+/**
+ * One view of the page connection as the per-view harnesses used to see their own route's source:
+ * `deliver(frame)` sends the view's frame under its topic; `deliverRaw(text)` puts the text where the
+ * frame goes, so text that is not JSON makes the whole message unreadable, as it made the old frame;
+ * `fail`, `url`, `closed` and `readyState` are the one connection's (its health is every view's).
+ */
+export function topicView(source, topic) {
+  return {
+    source,
+    get url() { return source.url },
+    get closed() { return source.closed },
+    get readyState() { return source.readyState },
+    deliver: (frame) => source.deliver(pageMessage(topic, frame)),
+    deliverRaw: (text) => source.deliverRaw('{"topic":' + JSON.stringify(topic) + ',"frame":' + text + '}'),
+    fail: (options) => source.fail(options),
+  }
+}
 const EVENT = Object.freeze({ message: 'message', error: 'error', open: 'open' })
 
 export function eventSourceClass() {

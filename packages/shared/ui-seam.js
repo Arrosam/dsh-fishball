@@ -20,6 +20,8 @@
  *   fishball-ui tests check that both copies are equal.
  * - `SEAM_TARGETS` (MULTI-0, 2026-11-18): the multiple-target list fishball-ui draws in the
  *   sidebar and the owner-only routes it acts through (core's `contracts/targets.d.ts`).
+ * - `SEAM_PAGE_STREAM`: the Fishball page's one live connection, which carries every topic
+ *   (core's own, fishball-ui's and the amenities').
  */
 export const UI_SEAM = Object.freeze({
   member: 'ui',
@@ -187,4 +189,46 @@ export const SEAM_TARGETS = Object.freeze({
     targetReserved: 'target-reserved',
     confirmationRequired: 'confirmation-required',
   }),
+})
+
+/**
+ * The Fishball page's one live connection (the user, 2026-11-21: "合并数据流，全部都走一个链接").
+ *
+ * Why one: a browser opens at most 6 HTTP/1.1 connections per host (Chrome, Firefox by default),
+ * shared by every tab of the profile, and a loopback DSH serves no HTTP/2. Each open EventSource
+ * holds one for as long as it is open, and DSH's own calls (sending a message, uploads, history
+ * pages) are ordinary fetches that queue behind them. With one stream per panel the page reached 6
+ * (DSH's `/plugins/events`, the strip twice, the ask cards twice, the task board) and every send
+ * stayed "sending" until the user left the page. So every live view of the page is a topic of one
+ * stream, and adding a panel or an amenity adds a topic, never a connection: the page holds
+ * `perPage` Fishball connections whatever it draws, beside DSH's own.
+ *
+ * A DSH stream Remote on DSH's WebSocket would not count against the limit at all, but a plugin can
+ * contribute one only with the strict descriptors `dsh-typert-generator` writes at build time
+ * (`ctx.remote.$mount` refuses a contribution without strict codecs, both SDKs), and the Fishball
+ * packages ship plain JS with no build step.
+ *
+ * - `route`: core's owner-only SSE route (`connection.fetch`). Its query carries the reader's
+ *   `lang` and IANA time zone `tz`, which a topic may use (`frame(url)`); it never names topics:
+ *   the stream always carries every registered topic, so mounting a panel never reopens it;
+ * - each SSE message is `{[field.topic]: <name>, [field.frame]: <the topic's own frame>}`: every
+ *   topic's frame when the stream opens, then one per change; an unchanged frame is not sent again;
+ * - `member`: `fishballInstance.page` (`apiVersion`, core's MULTI-0 version; the member is additive): `register(topic, provider)`
+ *   returns its dispose; `provider` is `{frame(url), onChange(fn) => dispose}`. A topic name is
+ *   registered once; an amenity registers its topics while it is bound to the instance;
+ * - `topic`: the built-in topics;
+ * - `client`: the browser service fishball-ui provides, `{subscribe(topic, {frame, health}) =>
+ *   unsubscribe}`; an amenity's browser half reads its topic through it, and falls back to its own
+ *   route only where the service is absent (no fishball-ui), so a standalone install keeps working.
+ */
+export const SEAM_PAGE_STREAM = Object.freeze({
+  perPage: 1,
+  route: '/api/fishball/page/events',
+  apiVersion: 2,
+  langParameter: 'lang',
+  zoneParameter: 'tz',
+  field: Object.freeze({ topic: 'topic', frame: 'frame' }),
+  member: 'page',
+  topic: Object.freeze({ asks: 'asks', strip: 'strip' }),
+  client: 'fishballPageStream',
 })

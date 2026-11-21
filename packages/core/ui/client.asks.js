@@ -37,10 +37,9 @@ window.__ModuleLoader__.load({
       // Before DSH's own docks in this slot (todo 0, goal 10, queue 20, both SDKs), so an open card
       // is the first thing above the composer.
       order: -10,
-      // Core's published routes and card states, restated because fishball-ui imports nothing of
-      // core (Q-G2): core's src/asks/constants.js ASK_ROUTE paths without their leading `/`
-      // (page-relative), and CARD_STATE.
-      events: 'api/fishball/asks/events',
+      // Core's published answer route and card states, restated because fishball-ui imports nothing
+      // of core (Q-G2): core's src/asks/constants.js ASK_ROUTE path without its leading `/`
+      // (page-relative), and CARD_STATE. The cards arrive on the page stream's `asks` topic.
       answer: 'api/fishball/asks/answer',
       state: Object.freeze({ open: 'open', answered: 'answered', closed: 'closed', voided: 'voided' }),
       /**
@@ -150,15 +149,13 @@ window.__ModuleLoader__.load({
       `.${ASKS_UI.css.error}{margin:0;color:var(--dsw-alias-state-error-primary)}`,
     ].join('')
 
-    const apiUrl = (path) => new URL(path, document.baseURI).toString()
-
     /**
-     * One shared stream for every mounted dock (kit `liveStream`: EventSource retries by itself, and
-     * the kit marks the cached cards stale meanwhile, R-FIX-FUI). A frame that is not the route's
-     * shape keeps the last good snapshot.
+     * Core's `asks` topic of the page stream (kit `topicStream`, the page's one connection: EventSource
+     * retries by itself, and the kit marks the cached cards stale meanwhile, R-FIX-FUI), shared by
+     * every mounted dock. A frame that is not the topic's shape keeps the last good snapshot.
      */
-    const cardStream = (kit) => kit.liveStream({
-      url: () => apiUrl(ASKS_UI.events),
+    const cardStream = (kit) => kit.topicStream({
+      topic: kit.topic.asks,
       valid: (next) => next !== null && typeof next === 'object' && Array.isArray(next.cards),
       initial: Object.freeze({ managerSessionId: null, cards: Object.freeze([]) }),
     })
