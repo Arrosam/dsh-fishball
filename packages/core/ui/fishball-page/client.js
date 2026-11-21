@@ -189,14 +189,31 @@ window.__ModuleLoader__.load({
      * no click that could reveal the replies then, so they are not hidden. A running Turn has no
      * control yet, so its replies stay folded. Reasoning and tool rows keep DSH's own folding.
      * `reply` is the response half of an assistant step (ChatNodeSeat `data-chat-group-part`).
+     *
+     * A folded seat gets the `hidden` attribute, as DSH folds its own process rows (ui-chat
+     * useSearchableHidden, both SDKs): DSH's flow gaps, paging anchor, reading position and scroll
+     * anchoring all check only for the attribute's presence and skip `[hidden]` rows, so a folded reply
+     * leaves no gap and is never an anchor. React does not own the attribute (ChatNodeSeat renders no
+     * `hidden` prop). DSH's own fold writes it only for its process members (`dshHidden` marks those),
+     * as `until-found`, which keeps the seat's own box rendered (content-visibility hides only its
+     * content). So the page writes the plain value (`hiddenValue`, display none) on every reply it
+     * folds, also over DSH's `until-found`; on unfolding it gives a seat DSH still folds its
+     * `until-found` back (`dshHiddenValue`), removes only a `hidden` it set itself (`folded`), and
+     * puts its own back when DSH's fold lifts it from a reply the page still folds.
      */
     const REPLY_FOLD = Object.freeze({
-      reply: '[data-chat-flow-kind="assistant-step"][data-chat-group-part="response"]',
+      flowKind: 'data-chat-flow-kind', groupPart: 'data-chat-group-part',
+      assistant: 'assistant-step', response: 'response',
       turnOf: 'data-chat-turn',
-      control: 'button[data-turn-process]', controlTurn: 'data-turn-process', open: 'data-open',
+      control: 'button[data-turn-process]', controlTurn: 'data-turn-process', open: 'data-open', disabled: 'disabled',
+      hidden: 'hidden', hiddenValue: '', dshHidden: 'data-turn-process-hidden', dshHiddenValue: 'until-found',
       folded: 'data-fishball-folded',
-      watched: Object.freeze(['data-open', 'disabled', 'data-chat-turn', 'data-chat-group-part']),
     })
+    /** A reply seat, and any chat seat: the rows whose arrival or change can change the fold. */
+    const REPLY_SEAT = `[${REPLY_FOLD.flowKind}="${REPLY_FOLD.assistant}"][${REPLY_FOLD.groupPart}="${REPLY_FOLD.response}"]`
+    const FOLD_RELEVANT = `[${REPLY_FOLD.flowKind}],${REPLY_FOLD.control}`
+    /** The attributes whose change can change the fold: the control's state, a seat's turn and part, and `hidden`. */
+    const FOLD_WATCHED = Object.freeze([REPLY_FOLD.open, REPLY_FOLD.disabled, REPLY_FOLD.turnOf, REPLY_FOLD.groupPart, REPLY_FOLD.hidden])
     /**
      * The reply's avatar follows the sidebar logo's theme (core's `brandStyle`, LOGO-BUTTON; the user,
      * 2026-11-21): the Fishball theme draws Fishball's fish, V1's FISH_MARK (tag v0.1.0
@@ -375,7 +392,6 @@ window.__ModuleLoader__.load({
         `${root}:not(${deepseek}) ${avatarOf}{background:${fishEye} center/contain no-repeat ${fish.bodyColor};${masked(fishBody)}}`,
         `${root}${deepseek} ${avatarOf}{background:${AVATAR.deepseekColor};${masked(deepseekMark)}}`,
         `${root} ${message}>[data-slot="conversation.chat.node"]>*{padding:8px 14px;border-radius:var(--dsw-radius-xs) var(--dsw-radius-xl) var(--dsw-radius-xl) var(--dsw-radius-xl);background:var(--dsw-alias-bg-module-platform);box-shadow:inset 0 0 0 .5px var(--dsw-alias-border-l2);min-width:0}`,
-        `${root} ${PAGE.main} [${REPLY_FOLD.folded}]{display:none!important}`,
         `${root} ${PAGE.main} .md-table-wide{width:auto;max-width:100%;margin-left:0;padding-left:0}`,
       ]
       for (const rule of rules) sheet.insertRule(rule, sheet.cssRules.length)
@@ -586,7 +602,7 @@ window.__ModuleLoader__.load({
       }
     }
 
-    /** The trimmed message of one `message_user` call's raw argument JSON; null when there is nothing to draw. */
+    /** The message of one `message_user` call's raw argument JSON, as sent; null when it is blank after trimming or unreadable. */
     function messageOf(rawArguments) {
       let args
       try { args = JSON.parse(rawArguments) } catch { return null }
@@ -630,38 +646,59 @@ window.__ModuleLoader__.load({
       return h('div', { [MESSAGE.bubble]: '' }, h(MarkdownText, { text: node.data.text, labels }))
     }
 
+    /** Fold one reply seat (REPLY_FOLD): DSH's own `hidden`, with the page's mark saying it set it. */
+    function fold(seat) {
+      if (!seat.hasAttribute(REPLY_FOLD.folded)) seat.setAttribute(REPLY_FOLD.folded, '')
+      if (seat.getAttribute(REPLY_FOLD.hidden) !== REPLY_FOLD.hiddenValue) seat.setAttribute(REPLY_FOLD.hidden, REPLY_FOLD.hiddenValue)
+    }
+    /** Unfold one seat: drop the mark, and give `hidden` back to DSH's own fold when it still folds the seat. */
+    function unfold(seat) {
+      seat.removeAttribute(REPLY_FOLD.folded)
+      if (seat.hasAttribute(REPLY_FOLD.dshHidden)) seat.setAttribute(REPLY_FOLD.hidden, REPLY_FOLD.dshHiddenValue)
+      else seat.removeAttribute(REPLY_FOLD.hidden)
+    }
+    /** Whether an added or removed node is, or holds, a chat seat or a Turn control. */
+    const holdsFoldRow = (node) => node.nodeType === Node.ELEMENT_NODE && (node.matches(FOLD_RELEVANT) || node.querySelector(FOLD_RELEVANT) !== null)
+    /** Whether one observed change can change the fold; every other change in the page is ignored. */
+    function foldRecord(record) {
+      if (record.type === 'attributes') return record.target.matches(FOLD_RELEVANT)
+      return [...record.addedNodes].some(holdsFoldRow) || [...record.removedNodes].some(holdsFoldRow)
+    }
+
     /**
-     * Fold Fishball's ordinary replies (REPLY_FOLD) by marking each reply seat whose Turn's control is
-     * neither open nor disabled. Synchronous in the observer, which runs before the next paint, so a
-     * new reply never flashes; the mark is the page's own attribute, which React leaves alone and the
-     * observer does not watch, so marking cannot loop.
+     * Fold Fishball's ordinary replies (REPLY_FOLD): each reply seat whose Turn's control is neither
+     * open nor disabled is folded. Synchronous in the observer, which runs before the next paint, so
+     * a new reply never flashes. The observer watches the body, not the conversation element, because
+     * DSH replaces that element when the main view changes; only changes to seats and Turn controls
+     * (FOLD_RELEVANT, FOLD_WATCHED) run it. Its own writes are a no-op the second time: a seat that
+     * is already folded with the plain value is not written again, so marking cannot loop.
      */
     function mountReplyFold() {
-      const main = () => document.querySelector(PAGE.main)
       const marked = new Set()
       function reconcile() {
-        const scope = main()
+        const scope = document.querySelector(PAGE.main)
         const shown = new Set()
         const next = new Set()
         if (scope !== null) {
           for (const control of scope.querySelectorAll(REPLY_FOLD.control)) {
             if (control.hasAttribute(REPLY_FOLD.open) || control.disabled) shown.add(control.getAttribute(REPLY_FOLD.controlTurn))
           }
-          for (const reply of scope.querySelectorAll(REPLY_FOLD.reply)) {
+          for (const reply of scope.querySelectorAll(REPLY_SEAT)) {
             if (!shown.has(reply.getAttribute(REPLY_FOLD.turnOf))) next.add(reply)
           }
         }
-        for (const node of marked) if (!next.has(node)) node.removeAttribute(REPLY_FOLD.folded)
-        for (const node of next) if (!marked.has(node)) node.setAttribute(REPLY_FOLD.folded, '')
+        for (const seat of marked) if (!next.has(seat)) unfold(seat)
+        // Every folded seat, not only new ones: DSH's fold can lift `hidden` from a reply still folded.
+        for (const seat of next) fold(seat)
         marked.clear()
-        for (const node of next) marked.add(node)
+        for (const seat of next) marked.add(seat)
       }
-      const observer = new MutationObserver(reconcile)
-      observer.observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: REPLY_FOLD.watched })
+      const observer = new MutationObserver((records) => { if (records.some(foldRecord)) reconcile() })
+      observer.observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: FOLD_WATCHED })
       reconcile()
       return () => {
         observer.disconnect()
-        for (const node of marked) node.removeAttribute(REPLY_FOLD.folded)
+        for (const seat of marked) unfold(seat)
       }
     }
 
@@ -1113,14 +1150,12 @@ window.__ModuleLoader__.load({
         applyLanguage(ctx, continuation.lang, own)
         own(mountStyles())
         own(mountBrand(ctx))
-        // Fishball's messages and the folded replies (MESSAGE, REPLY_FOLD). `uiConversation` is injected
-        // (both SDKs' web clients serve it); a scripted host without its events still mounts the rest
-        // of the page, and then nothing is folded, so nothing Fishball says can be hidden unseen.
-        if (typeof ctx.uiConversation?.events?.register === 'function') {
-          own(ctx.uiConversation.events.register(messageDefinition()))
-          own(ctx.slots.inject(MESSAGE.slot, () => ctx.slots.register({ name: MESSAGE.slot, key: MESSAGE.kind, locale: MESSAGE.locale }, MessageNodeView)))
-          own(mountReplyFold())
-        }
+        // Fishball's messages and the folded replies (MESSAGE, REPLY_FOLD). `uiConversation` is a
+        // required inject (cordis starts the page only once DSH's conversation service exists, both
+        // SDKs), so the messages can always be drawn when replies are folded.
+        own(ctx.uiConversation.events.register(messageDefinition()))
+        own(ctx.slots.inject(MESSAGE.slot, () => ctx.slots.register({ name: MESSAGE.slot, key: MESSAGE.kind, locale: MESSAGE.locale }, MessageNodeView)))
+        own(mountReplyFold())
         document.documentElement.setAttribute(PAGE.root, '')
         own(() => document.documentElement.removeAttribute(PAGE.root))
         const manager = createCell(null)
