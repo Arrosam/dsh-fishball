@@ -1,4 +1,4 @@
-import { followInstance, reportCoreMissing } from '../board/src/instance.js'
+import { followInstance, reportCoreMissing } from 'fishball-shared/instance-follower'
 import { Config, enabled } from './src/config.js'
 import { HOST, LOG, NAMESPACE } from './src/constants.js'
 import { createFocusStore } from './src/focus.js'
@@ -12,9 +12,9 @@ export const name = NAMESPACE
 export const inject = []
 
 /**
- * The followInstance/reportCoreMissing pair is imported from the board row, not copied: it is the
- * one implementation of "bind to a compatible fishballInstance, report its absence once" in this
- * package (extension points §1).
+ * The followInstance/reportCoreMissing pair is fishball-shared's instance-follower, not copied: it is the
+ * one implementation of "bind to a compatible fishballInstance, report its absence once" for the
+ * Fishball amenities (extension points §1).
  */
 export function apply(ctx, config) {
   const logger = ctx.logger(NAMESPACE)

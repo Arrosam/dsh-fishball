@@ -1,0 +1,48 @@
+{
+  "name": "fishball-board",
+  "version": "1.0.0-alpha.1",
+  "description": "Fishball's session-linked work board, one of the Fishball amenities. Needs fishball-core in the same DSH; without it the row loads and stays idle.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Arrosam/dsh-fishball.git",
+    "directory": "packages/fishball-board"
+  },
+  "publishConfig": {
+    "tag": "alpha"
+  },
+  "type": "module",
+  "main": "./index.js",
+  "exports": {
+    ".": "./index.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "index.js",
+    "src/",
+    "cordis.patch.yml",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=22.14",
+    "dsh": ">=0.2.1-rc.5"
+  },
+  "//dependencies": "fishball-shared carries instance-follower, the one binding to fishballInstance that every Fishball amenity uses (it was board/src/instance.js inside fishball-amenities before the split). It is bundled, as fishball-core bundles it, so the tarball installs with no registry fetch for it.",
+  "dependencies": {
+    "fishball-shared": "1.0.0-alpha.1"
+  },
+  "bundleDependencies": [
+    "fishball-shared"
+  ],
+  "peerDependencies": {
+    "@deepseek-ai/dsh-tools": "*",
+    "@deepseek-ai/schemastery": "*"
+  },
+  "//dsh": "No dsh.client: this package has no browser code (only a package with browser code declares one, so no package resolves from two loader sources).",
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  }
+}

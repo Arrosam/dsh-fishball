@@ -8,10 +8,17 @@ import { REPO } from '../../../support/constants.mjs'
  */
 export const OWN = Object.freeze({
   core: path.join(REPO, 'packages/core'),
-  /** The Fishball-side packages that must not import a DSH-side package; board is a component, no manifest. */
+  /**
+   * The Fishball-side packages that must not import a DSH-side package. Since the amenities split
+   * (the user, 2026-11-21) every amenity is its own package with its own manifest, and
+   * fishball-amenities is their umbrella.
+   */
   packages: Object.freeze([
     Object.freeze({ dir: 'core', manifest: true }),
-    Object.freeze({ dir: 'fishball-amenities/board', manifest: false }),
+    Object.freeze({ dir: 'fishball-board', manifest: true }),
+    Object.freeze({ dir: 'fishball-heartbeat', manifest: true }),
+    Object.freeze({ dir: 'fishball-taskboard', manifest: true }),
+    Object.freeze({ dir: 'fishball-amenities', manifest: true }),
     Object.freeze({ dir: 'shared', manifest: true }),
   ]),
   source: /\.(?:[cm]?js|tsx?|vue)$/,

@@ -1,0 +1,7 @@
+# fishball-heartbeat's own row, used when this package is installed on its own (the fishball-amenities
+# umbrella's patch inserts the same row: change both together). Inert until the user sets both
+# intervalSeconds and maxConsecutive in its settings.
+- insert:
+    - id: fishball-heartbeat
+      name: 'fishball-heartbeat'
+      config: {}

@@ -10,7 +10,8 @@
  * - DSH: the installed SDKs' own vocabulary.
  * The four PENDING choices of DOC §2/§3 are each one constant here (PENDING below names them), and a
  * case that depends on one says "provisional" in its title.
- * No file under packages/fishball-amenities/taskboard/ other than package.json was read.
+ * No file under packages/fishball-taskboard/ (packages/fishball-amenities/taskboard/ before the
+ * amenities split, 2026-11-21) other than package.json and cordis.patch.yml was read.
  */
 import { randomUUID } from 'node:crypto'
 import path from 'node:path'
@@ -46,16 +47,18 @@ export const DSH = Object.freeze({
   sdkManifest: 'package.json',
 })
 
-const AMENITIES = path.join(REPO, 'packages', 'fishball-amenities')
-/** SURFACE: the row module, its patch row and its sub-package. */
+/** Its own package since the amenities split (the user, 2026-11-21). */
+const PACKAGE_DIR = path.join(REPO, 'packages', 'fishball-taskboard')
+/** SURFACE: the row module, its own package's patch row and manifest. */
 export const SUBJECT = Object.freeze({
   name: 'fishball-taskboard',
-  entry: path.join(AMENITIES, 'taskboard', 'index.js'),
+  entry: path.join(PACKAGE_DIR, 'index.js'),
   /** The lead's correction (2026-11-21): storage, storageDomain and connection, as core's main row. */
   inject: Object.freeze(['connection', 'storage', 'storageDomain']),
-  patch: path.join(AMENITIES, 'cordis.patch.yml'),
-  patchRow: Object.freeze({ id: 'fishball-taskboard', name: './taskboard/index.js' }),
-  manifest: path.join(AMENITIES, 'taskboard', 'package.json'),
+  patch: path.join(PACKAGE_DIR, 'cordis.patch.yml'),
+  /** The row names the package, never a ./path (the amenities split). */
+  patchRow: Object.freeze({ id: 'fishball-taskboard', name: 'fishball-taskboard' }),
+  manifest: path.join(PACKAGE_DIR, 'package.json'),
   manifestName: 'fishball-taskboard',
   clientPlatform: 'web',
   clientExport: './client',

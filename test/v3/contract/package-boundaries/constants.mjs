@@ -27,7 +27,11 @@ export const V3 = Object.freeze({
   connector: pkg('dsh-agent-connector', 'dsh-connector'),
   // S4-Q3 decided B (questions.md at b1295de): all lowercase, as npm and DSH's plugin manager require.
   embed: pkg('dsh-connector-ui', 'dsh-connector-ui'),
-  board: pkg('fishball-board', path.join('fishball-amenities', 'board')),
+  /** The amenities split (the user, 2026-11-21): each amenity its own package and DSH bundle, fishball-amenities their umbrella. */
+  board: pkg('fishball-board', 'fishball-board'),
+  heartbeat: pkg('fishball-heartbeat', 'fishball-heartbeat'),
+  taskboard: pkg('fishball-taskboard', 'fishball-taskboard'),
+  amenities: pkg('fishball-amenities', 'fishball-amenities'),
   /** The optional DSH-side MCP-client adapter (R-OA-21 renamed by 1.41; design §1.0, §5.5b; C-MCP-ADAPTER creates it). */
   adapter: pkg('dsh-connector-adapter', 'dsh-connector-adapter'),
 })
@@ -39,18 +43,19 @@ export const LIBRARY_NAMES = Object.freeze(LIBRARIES.map((p) => p.name))
 /**
  * The two sides with no dependency between them (design §1.0, requirements 1.34–1.41). Each side's
  * library is its last member. `dsh-connector-adapter` joined with C-MCP-ADAPTER; `fishball-ui` is a
- * Fishball-side package since F-UI (R-FB-14).
+ * Fishball-side package since F-UI (R-FB-14); the amenities and their umbrella since the amenities
+ * split (2026-11-21).
  */
 export const SIDES = Object.freeze({
   dsh: Object.freeze({ id: 'DSH', packages: Object.freeze([V3.connector, V3.embed, V3.instance, V3.adapter, V3.dshShared]), library: V3.dshShared }),
-  fishball: Object.freeze({ id: 'Fishball', packages: Object.freeze([V3.core, V3.ui, V3.board, V3.shared]), library: V3.shared }),
+  fishball: Object.freeze({ id: 'Fishball', packages: Object.freeze([V3.core, V3.ui, V3.board, V3.heartbeat, V3.taskboard, V3.amenities, V3.shared]), library: V3.shared }),
 })
 /** The side a package name belongs to (undefined for a name of neither side). */
 export const sideOf = (name) => Object.values(SIDES).find((side) => side.packages.some((p) => p.name === name))
-/** R-BND-01: the plugin set, board, core and fishball-ui (design §1.0, F-UI; row 7c: the connector imports none of them). */
-export const SET_SIDE = Object.freeze([V3.core.name, V3.ui.name, V3.board.name])
-/** Design §9.1: the feature plugin finds core only through the optional `fishballInstance?` inject. */
-export const FEATURES = Object.freeze([V3.board.name])
+/** The feature plugins (the amenities): design §9.1, each finds core only through the optional `fishballInstance?` inject. */
+export const FEATURES = Object.freeze([V3.board.name, V3.heartbeat.name, V3.taskboard.name])
+/** R-BND-01: the plugin set, core, fishball-ui, the amenities and their umbrella (design §1.0, F-UI; row 7c: the connector imports none of them). */
+export const SET_SIDE = Object.freeze([V3.core.name, V3.ui.name, ...FEATURES, V3.amenities.name])
 /**
  * SHELVE-BOARD: fishball-board is shelved, not in 1.0.0-alpha.1 (the user, 2026-11-18:
  * "fishball-board先从这次release中移除，我要改的地方太多了。先封存，留到下一批再说。所以不要预留在子实例的Fishball内。").
@@ -101,7 +106,8 @@ export const MIN_LIBRARY_USERS = 2
 /**
  * REMOVE-V2b: fishball-shared's single-user modules, moved into their one user, fishball-core
  * (`files` for its private Skills store, `oauth-client` for its link / Connect). fishball-shared
- * then holds only `ui-seam` (core and fishball-ui).
+ * then held only `ui-seam` (core and fishball-ui); the amenities split (2026-11-21) adds
+ * `instance-follower` (fishball-board, fishball-heartbeat, fishball-taskboard).
  */
 export const MOVED_INTO_CORE = Object.freeze(['files', 'oauth-client'].map((module) => Object.freeze({ module, file: module + '.js', specifier: V3.shared.name + '/' + module })))
 

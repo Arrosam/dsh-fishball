@@ -1,0 +1,59 @@
+{
+  "name": "fishball-taskboard",
+  "version": "1.0.0-alpha.1",
+  "description": "Fishball's own task board and memo pad: tasks with subtasks, status and progress, editable by the user in the right sidebar's Task board tab. Its tools need fishball-core in the same DSH.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Arrosam/dsh-fishball.git",
+    "directory": "packages/fishball-taskboard"
+  },
+  "publishConfig": {
+    "tag": "alpha"
+  },
+  "type": "module",
+  "main": "./index.js",
+  "exports": {
+    ".": "./index.js",
+    "./client": "./client.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "index.js",
+    "client.js",
+    "src/",
+    "cordis.patch.yml",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=22.14",
+    "dsh": ">=0.2.1-rc.5"
+  },
+  "//dependencies": "fishball-shared carries instance-follower, the one binding to fishballInstance that every Fishball amenity uses (it was board/src/instance.js inside fishball-amenities before the split). It is bundled, as fishball-core bundles it, so the tarball installs with no registry fetch for it.",
+  "dependencies": {
+    "fishball-shared": "1.0.0-alpha.1"
+  },
+  "bundleDependencies": [
+    "fishball-shared"
+  ],
+  "peerDependencies": {
+    "@deepseek-ai/dsh-llm": "*",
+    "@deepseek-ai/dsh-storage-domain": "*",
+    "@deepseek-ai/dsh-tools": "*"
+  },
+  "//dsh": "The only Fishball amenity with browser code (client.js, the Task board tab), so the only member with dsh.client.",
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-client-locale",
+        "@deepseek-ai/dsh-client-ui-conversation",
+        "@deepseek-ai/dsh-client-ui-sidebar-right"
+      ]
+    }
+  }
+}

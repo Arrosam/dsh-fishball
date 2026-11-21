@@ -1,7 +1,7 @@
 /**
  * fishball-taskboard black-box cases (USE-CASES.md), written from the user's requirements, the
  * design document docs/plugins/fishball-taskboard.md and the lead's answers Q1-Q24 (2026-11-21).
- * No file under packages/fishball-amenities/taskboard/ other than package.json was read.
+ * No file under packages/fishball-taskboard/ other than package.json and cordis.patch.yml was read.
  *
  * Level: integration and system, in-process (world.mjs): the real row on a loader of the SDK under
  * test, over the SDK's real storage stack (dsh-storage, dsh-storage-json, dsh-storage-domain) in a
@@ -135,7 +135,7 @@ export function registerTaskboardCases(sdk) {
     const inject = Array.isArray(mod.inject) ? mod.inject : Object.keys(mod.inject ?? {})
     assert.deepEqual([...inject].sort(), SUBJECT.inject)
   })
-  row(sdk, 'TB-EP-12', 2, 'cordis.patch.yml has the row fishball-taskboard with name ./taskboard/index.js; the sub-package is fishball-taskboard, dsh.client web, exports ./client', () => {
+  row(sdk, 'TB-EP-12', 2, 'its own cordis.patch.yml has the row fishball-taskboard named by the package fishball-taskboard; the package is fishball-taskboard, dsh.client web, exports ./client', () => {
     const yaml = createRequire(path.join(SKILL_SDK.versionsDir, sdk, DSH.sdkManifest))(DSH.yaml)
     const rows = yaml.parse(fs.readFileSync(SUBJECT.patch, SUBJECT.encoding)).flatMap((op) => Object.values(op).flat())
     const found = rows.filter((r) => r?.id === SUBJECT.patchRow.id)

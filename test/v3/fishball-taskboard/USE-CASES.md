@@ -3,8 +3,9 @@
 Written from the user's requirements (relayed by the lead, 2026-11-21), the design document
 [docs/plugins/fishball-taskboard.md](../../../docs/plugins/fishball-taskboard.md) and the lead's answers Q1–Q24
 (folded into the document). Only the public surface was used: the row module's exports, its patch
-row and sub-package manifest, the tools, the routes, the notify / inject calls and the log line. No
-file of `packages/fishball-amenities/taskboard/` other than `package.json` was read.
+row and package manifest, the tools, the routes, the notify / inject calls and the log line. No
+file of `packages/fishball-taskboard/` (`packages/fishball-amenities/taskboard/` before the amenities
+split, 2026-11-21) other than `package.json` and `cordis.patch.yml` was read.
 
 **Level.** Integration and system, in-process ([world.mjs](world.mjs)): the real row mounted as a loader
 row of the SDK under test, over the SDK's real `dsh-storage` + `dsh-storage-json` + `dsh-storage-domain`
@@ -47,7 +48,7 @@ are DOC §3's one exception to "the tools never throw": DSH's own registry rejec
 | TB-EP-07 (21) | POST bodies: unparsable JSON (no field), `baseRevision` missing / string / fraction, lists not arrays, unknown keys (top / item), missing `note` / `parentId`, progress "50" / 101, bad status, blank title, malformed / duplicate new id, dangling parent, cycle, bad memo id / blank / missing text → 400 with the path, unchanged, no notify |
 | TB-EP-08 (5) | core: apiVersion 2 / absent / apiVersion 1; absent + appReady (line at ready, not at load); present + appReady (no line) |
 | TB-EP-09 (1) | storage write fails → tool `board-unavailable`, POST 503 |
-| TB-EP-12 (2) | surface: `name`, `inject` (storage, storageDomain, connection), `apply`; patch row and sub-package manifest |
+| TB-EP-12 (2) | surface: `name`, `inject` (storage, storageDomain, connection), `apply`; its own package's patch row (named by the package) and manifest |
 
 ## Boundary Value Analysis (TB-BVA, 46; limits provisional)
 

@@ -1,0 +1,7 @@
+# fishball-taskboard's own row (docs/plugins/fishball-taskboard.md), used when this package is
+# installed on its own (the fishball-amenities umbrella's patch inserts the same row: change both
+# together). The row names the package, so its browser half is this package's own dsh.client.
+- insert:
+    - id: fishball-taskboard
+      name: 'fishball-taskboard'
+      config: {}

@@ -1,0 +1,6 @@
+# fishball-board's own row, used when this package is installed on its own. Installed through the
+# fishball-amenities umbrella, the umbrella's patch inserts the same row instead: change both together.
+- insert:
+    - id: fishball-board
+      name: 'fishball-board'
+      config: {}

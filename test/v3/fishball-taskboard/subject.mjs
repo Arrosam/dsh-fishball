@@ -1,6 +1,6 @@
 /**
- * The one place that binds the fishball-taskboard cases to the row (packages/fishball-amenities/
- * taskboard/index.js). The surface, as the lead named it (2026-11-21):
+ * The one place that binds the fishball-taskboard cases to the row (packages/fishball-taskboard/
+ * index.js). The surface, as the lead named it (2026-11-21):
  * - the row module exports name 'fishball-taskboard', inject ['storage', 'storageDomain',
  *   'connection'] and apply(ctx); it is imported bound to the SDK under test (its @deepseek-ai/*
  *   imports resolve to that SDK) and mounted as one loader row;

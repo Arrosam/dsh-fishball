@@ -1,7 +1,7 @@
 /**
  * fishball-heartbeat black-box cases, written from the requirements alone (the user's words, the
  * lead's derived row contract and the lead's two refinements of 2026-11-21, the second after core's
- * event batching, 165b734c); no file under packages/fishball-amenities/heartbeat/ was read.
+ * event batching, 165b734c); no file under packages/fishball-heartbeat/ was read.
  *
  * Techniques (ids are this suite's own):
  * - EP: HB-EP-01 config partitions (unset / one set / both set / invalid values), HB-EP-02 the core
