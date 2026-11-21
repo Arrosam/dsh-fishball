@@ -108,7 +108,9 @@ window.__ModuleLoader__.load({
       `.${BOARD.css.meta}{display:flex;gap:8px;align-items:center;font:var(--dsw-font-xxs-12);color:var(--dsw-alias-label-secondary)}`,
       `.${BOARD.css.note}{margin:0;white-space:pre-wrap;overflow-wrap:anywhere;font:var(--dsw-font-xxs-12);color:var(--dsw-alias-label-secondary)}`,
       `.${BOARD.css.meter}{flex:1;height:4px;border-radius:var(--dsw-radius-sm);background:var(--dsw-alias-border-l2);overflow:hidden}`,
-      `.${BOARD.css.fill}{height:100%;background:var(--dsw-alias-state-business-primary)}`,
+      // The fill is a <span>: without display:block it is an inline box, whose width and height are
+      // ignored, so it rendered 0x0 at every progress value (the empty bar the user saw).
+      `.${BOARD.css.fill}{display:block;height:100%;background:var(--dsw-alias-state-business-primary)}`,
       `.${BOARD.css.notice}{margin:0;font:var(--dsw-font-xxs-12);color:var(--dsw-alias-label-secondary)}`,
       `.${BOARD.css.error}{margin:0;font:var(--dsw-font-xxs-12);color:var(--dsw-alias-state-error-primary)}`,
       `.${BOARD.css.field}{display:flex;gap:6px;align-items:center;flex-wrap:wrap}`,
