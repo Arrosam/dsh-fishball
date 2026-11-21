@@ -1113,10 +1113,9 @@ window.__ModuleLoader__.load({
         applyLanguage(ctx, continuation.lang, own)
         own(mountStyles())
         own(mountBrand(ctx))
-        // Fishball's messages and the folded replies (MESSAGE, REPLY_FOLD). Replies are folded only
-        // where the messages can be drawn: without DSH's conversation events (both SDKs serve them; a
-        // host without them is not a DSH chat) nothing is hidden, so nothing Fishball says is lost,
-        // and the rest of the page still mounts, as with a missing config form (mountBrand).
+        // Fishball's messages and the folded replies (MESSAGE, REPLY_FOLD). `uiConversation` is injected
+        // (both SDKs' web clients serve it); a scripted host without its events still mounts the rest
+        // of the page, and then nothing is folded, so nothing Fishball says can be hidden unseen.
         if (typeof ctx.uiConversation?.events?.register === 'function') {
           own(ctx.uiConversation.events.register(messageDefinition()))
           own(ctx.slots.inject(MESSAGE.slot, () => ctx.slots.register({ name: MESSAGE.slot, key: MESSAGE.kind, locale: MESSAGE.locale }, MessageNodeView)))
