@@ -1,4 +1,4 @@
-export { ATTR, BACKEND, EMBED, EXPECT, FIXTURE, HTTP, ROUTE, SERVICE, SLOT, TAG, TEXT, TOOL, WAIT } from '../draw/constants.mjs'
+export { ATTR, BACKEND, EMBED, EXPECT, FIXTURE, HTTP, ROUTE, SERVICE, SLOT, TAG, TEXT, TOOL, WAIT, WINDOW } from '../draw/constants.mjs'
 // Decision table: C = real UI backend stand-in, U = embed row, I = K3 fake child.
 export const MATRIX = Object.freeze([
   { id: 'none', c: false, u: false, i: false },

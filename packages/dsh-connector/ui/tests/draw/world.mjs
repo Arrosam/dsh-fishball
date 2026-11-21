@@ -38,9 +38,9 @@ import { createReactShim, findAll, textOf } from '../../../../../test/support/rp
 import { fakePrimitives } from '../../../../../test/support/set-panel.mjs'
 import { applyPlugins, moduleTable } from '../../../../../test/v3/contract/package-boundaries/client-graph.mjs'
 import { pageServices } from '../../../../../test/v3/fishball-core/package/page.mjs'
-import { FakeHandover, recordingLogger, row } from '../../../tests/ui/fakes.mjs'
+import { FakeHandover, FakePairStore, recordingLogger, row, windowSource } from '../../../tests/ui/fakes.mjs'
 import { SUBJECT as BACKEND_SUBJECT } from '../../../tests/ui/constants.mjs'
-import { ADMIT, ATTR, BACKEND, CHILD, CONNECTOR_CLIENT, DIAGNOSTIC, DSH, EMBED, FIXTURE, K2, MARKS, PAGE_HOST, ROUTE, SERVICE, SLOT, TAG, TEXT, WAIT } from './constants.mjs'
+import { ADMIT, ATTR, BACKEND, CHILD, CONNECTOR_CLIENT, DIAGNOSTIC, DSH, EMBED, FIXTURE, K2, MARKS, PAGE_HOST, ROUTE, SERVICE, SLOT, TAG, TEXT, WAIT, WINDOW } from './constants.mjs'
 
 export { row }
 
@@ -93,15 +93,24 @@ function createConnection() {
   return { service: { fetch: fetchFace }, routes: live, paths: () => live().map((r) => r.path), dispatch }
 }
 
-/** K3 `dshInstanceChild` (child.d.ts): the rules the cases lean on, and a record of every call. */
-function createChild({ apiVersion = SERVICE.apiVersion, status = CHILD.ready } = {}) {
+/**
+ * K3 `dshInstanceChild` (child.d.ts): the rules the cases lean on, and a record of every call.
+ * Contract C (2026-11-21): `agentEntry()` answers the hosted entry key the child holds now
+ * (`agentEntry` option; FIXTURE.hostedEntry by default; null = none recorded yet);
+ * `agentEntry: 'absent'` is an older locator without the member. `setAgentEntry` notifies.
+ */
+function createChild({ apiVersion = SERVICE.apiVersion, status = CHILD.ready, agentEntry = FIXTURE.hostedEntry } = {}) {
   const listeners = new Set()
+  const notify = () => { for (const fn of [...listeners]) { try { fn() } catch { /* a listener's failure is its own */ } } }
   const child = {
     status: { ...status },
+    entry: agentEntry,
     admissions: [],
     retries: 0,
     /** Changes the state and notifies, as the locator does on a lifecycle change. */
-    set(next) { child.status = { ...next }; for (const fn of [...listeners]) { try { fn() } catch { /* a listener's failure is its own */ } } },
+    set(next) { child.status = { ...next }; notify() },
+    /** A newer hosted entry recorded (or none): announced through onChange, as the locator does. */
+    setAgentEntry(next) { child.entry = next; notify() },
   }
   const refusal = (code) => Object.assign(new Error(code), { code })
   child.service = {
@@ -120,6 +129,7 @@ function createChild({ apiVersion = SERVICE.apiVersion, status = CHILD.ready } =
     targetStatus: () => ({ ...CHILD.connectedTarget }),
     providerSync: { status: () => ({ state: 'inactive' }), check: async () => ({ ok: false, error: { code: 'fbtest-off' } }), add: async () => ({ ok: false, error: { code: 'fbtest-off' } }) },
   }
+  if (agentEntry !== WINDOW.absent) child.service.agentEntry = () => child.entry
   return child
 }
 
@@ -144,6 +154,8 @@ function createAppReady() {
  * @param options.appReady - `'none'` (no service: diagnostics at once) or `'pending'`.
  * @param options.embedFirst - load embed-UI's row before the connector row (UDRAW-ST-04 #5).
  * @param options.embed - false leaves embed-UI uninstalled (U-WIRE matrix).
+ * @param options.windowAgent - false: no default hosted Fishball principal (see below).
+ * @param options.child.agentEntry - the entry key the fake locator answers (null, or 'absent' for an older locator).
  */
 export async function hostWorld(t, sdk, options = {}) {
   const { ui = true, tools = true, uiApiVersion, child: childOptions = {}, legacy = false, appReady = 'none', embedFirst = false } = options
@@ -162,9 +174,25 @@ export async function hostWorld(t, sdk, options = {}) {
   if (appReady === 'pending') ctx.provide(SERVICE.appReady, ready.service)
   const handover = new FakeHandover()
   const child = childOptions === null ? null : createChild(childOptions)
+  // Contract A (2026-11-21): the UI backend reads the K1 pair store. By default the world holds the
+  // hosted Fishball agent, online and paired under the entry the child holds (agentEntry), so the
+  // page shows one window entry, as a host with its own hosted Fishball does. `windowAgent: false`
+  // starts with no principal; a case's own principals replace the default (draw/cases.mjs world).
+  const pairs = new FakePairStore()
+  if (options.windowAgent !== false) {
+    pairs.bind(FIXTURE.fishball, FIXTURE.hostedEntry)
+    handover.set({ principals: [row(FIXTURE.fishball, { online: true })] })
+  }
 
   const world = {
-    sdk, ctx, loader, logs, connection, handover, child, ready,
+    sdk, ctx, loader, logs, connection, handover, child, ready, pairs,
+    /** Offers one more window source straight to the backend (an agent with a window here other than the hosted one). */
+    offerWindows(entries) {
+      const s = windowSource(entries)
+      s.dispose = world.backend.service.offerWindows(s.source)
+      t.after(() => s.dispose())
+      return s
+    },
     backend: undefined,
     registry: undefined,
     embedId: undefined,
@@ -190,6 +218,8 @@ export async function hostWorld(t, sdk, options = {}) {
     },
     async setEmbed(disabled) { await loader.update(world.embedId, { disabled: disabled ? true : null }); await loader.await() },
     async setConnector(disabled) { await loader.update(world.connectorId, { disabled: disabled ? true : null }); await loader.await() },
+    /** The instance row switched off (no dshInstanceChild) or on again. */
+    async setInstance(disabled) { await loader.update(world.instanceId, { disabled: disabled ? true : null }); await loader.await() },
     async close() { await ctx.fiber.dispose() },
   }
   t.after(() => world.close())
@@ -208,7 +238,7 @@ export async function hostWorld(t, sdk, options = {}) {
         world.registry = contributions
       }
       if (ui) {
-        const backend = uiModule[BACKEND_SUBJECT.factory]({ handover, logger: recordingLogger() })
+        const backend = uiModule[BACKEND_SUBJECT.factory]({ handover, pairs, logger: recordingLogger() })
         // An apiVersion other than 1 is provided as a copy of the service with that version, over
         // the same routes: the partition is "a UI backend of another version" (Q-U1, K3).
         const provide = (name, value) => cctx.provide(name, uiApiVersion === undefined ? value : { ...value, apiVersion: uiApiVersion })
@@ -223,7 +253,7 @@ export async function hostWorld(t, sdk, options = {}) {
 
   const connectorRow = async () => { if (ui || tools) world.connectorId = await loader.create({ name: FIXTURE.builtinPrefix + 'connector' }) }
   const embedRow = async () => { if (options.embed !== false) world.embedId = await loader.create({ name: embedUrl(sdk) }) }
-  if (child) await loader.create({ name: FIXTURE.builtinPrefix + 'instance', ...(childOptions?.disabled ? { disabled: true } : {}) })
+  if (child) world.instanceId = await loader.create({ name: FIXTURE.builtinPrefix + 'instance', ...(childOptions?.disabled ? { disabled: true } : {}) })
   if (legacy) await loader.create({ name: FIXTURE.builtinPrefix + 'legacy' })
   await loader.await()
   for (const step of embedFirst ? [embedRow, connectorRow] : [connectorRow, embedRow]) { await step(); await loader.await() }

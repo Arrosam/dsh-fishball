@@ -21,7 +21,7 @@ import { findAll, textOf } from '../../../../../test/support/rp-recommend.mjs'
 import { runtimeOf } from '../../../../../test/v3/fishball-core/package/constants.mjs'
 import { openMainPage } from '../contract/embed/page.mjs'
 import { V3 } from '../../../../../test/v3/contract/package-boundaries/constants.mjs'
-import { BUDGET, FAKE, HOST, INTEGRATION, LISTEN_IP, PAGE_NAME, SCENARIO, SERVICE, SLOT } from './constants.mjs'
+import { BUDGET, FAKE, HOST, HTTP_OK, INTEGRATION, LISTEN_IP, PAGE_NAME, SCENARIO, SERVICE, SLOT } from './constants.mjs'
 
 const settle = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
@@ -176,13 +176,53 @@ function storageRecorder() {
 }
 
 /**
+ * The page's EventSource (entries by window, 2026-11-21: the browser half follows the backend's
+ * snapshot to draw its sidebar entries). One GET of the events route with the owner's cookie over
+ * the page's transport; each `data:` frame of the answer is one `message`. The fake backend ends
+ * its answer after one frame; the source then stays open and quiet, as a live stream between frames.
+ */
+function eventSourceFor(host) {
+  return class PageEventSource {
+    static CONNECTING = 0
+    static OPEN = 1
+    static CLOSED = 2
+    constructor(url) {
+      this.url = new URL(String(url), host.origin + '/').href
+      this.readyState = PageEventSource.CONNECTING
+      this.listeners = new Map()
+      this.read()
+    }
+    addEventListener(type, fn) { if (!this.listeners.has(type)) this.listeners.set(type, new Set()); this.listeners.get(type).add(fn) }
+    removeEventListener(type, fn) { this.listeners.get(type)?.delete(fn) }
+    emit(type, event) {
+      if (this.readyState === PageEventSource.CLOSED) return
+      this['on' + type]?.(event)
+      for (const fn of [...(this.listeners.get(type) ?? [])]) fn(event)
+    }
+    async read() {
+      const response = await host.send(this.url, { headers: { cookie: host.cookie, origin: host.origin, 'sec-fetch-site': 'same-origin' } }).catch(() => undefined)
+      if (!response || response.status !== HTTP_OK) { this.emit('error', {}); return }
+      this.readyState = PageEventSource.OPEN
+      this.emit('open', {})
+      for (const frame of (await response.text()).split('\n\n')) {
+        const data = frame.split('\n').filter((l) => l.startsWith('data:')).map((l) => l.slice('data:'.length).replace(/^ /, '')).join('\n')
+        if (data) this.emit('message', { data })
+      }
+    }
+    close() { this.readyState = PageEventSource.CLOSED }
+  }
+}
+
+/**
  * Open the scripted main page of `setup`'s host under `name` (PAGE_NAME). Returns R-EMBED's page
  * plus `embed()` (embed-UI's registrations), `storage` (its writes) and the page `origin`.
  */
 export async function openPage(t, sdk, setup, name = PAGE_NAME.ipv4, options = {}) {
   const host = await loginAs(setup, name)
   const storage = storageRecorder()
-  const page = await openMainPage(t, { sdk, host, prepare: storage.prepare, ...options })
+  const EventSource = eventSourceFor(host)
+  const prepare = (sandbox) => { storage.prepare(sandbox); sandbox.sandbox.EventSource = EventSource; sandbox.window.EventSource = EventSource }
+  const page = await openMainPage(t, { sdk, host, prepare, ...options })
   const embed = () => page.registrations.filter((r) => r.owner === V3.embed.name && !r.disposed)
   // The parts are package-local chunks loaded after their fetches: wait for embed-UI's first
   // registration (none comes in some partitions), then a quiet period for the rest.
@@ -192,7 +232,8 @@ export async function openPage(t, sdk, setup, name = PAGE_NAME.ipv4, options = {
 }
 
 export const bySlot = (regs, slot) => regs.filter((r) => r.slot === slot)
-export const pageEntries = (page) => page.embed().filter((r) => r.slot === SLOT.main && r.key === SLOT.pageKey)
+// Entries by window (2026-11-21): the window main entries are keyed `fishball:<principalKey>`.
+export const pageEntries = (page) => page.embed().filter((r) => r.slot === SLOT.main && String(r.key ?? '').startsWith(SLOT.pageKeyPrefix))
 const iframes = (tree) => findAll(tree, (n) => n.tag === 'iframe')
 const pressables = (tree) => findAll(tree, (n) => typeof n.props.onClick === 'function')
 
@@ -215,7 +256,7 @@ export async function openFishball(page, { done = () => false } = {}) {
     if (target) await press(target)
   }
   const main = page.entries(SLOT.main).find((e) => pageEntries(page).some((r) => r.options === e.options))
-  if (!main) throw new Error('embed-UI registered no Fishball page (main, key fishball)')
+  if (!main) throw new Error('embed-UI registered no Fishball page (main, key fishball:<key>)')
   const view = await page.mount(main)
   const text = () => textOf({ children: view.tree() })
   await until(() => iframes(view.tree()).length > 0 || done(text()), BUDGET.readyMs, BUDGET.pollMs)

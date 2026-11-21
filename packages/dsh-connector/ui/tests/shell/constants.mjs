@@ -60,9 +60,12 @@ export const SLOT = Object.freeze({
   entry: 'sidebar.panellist',
   /** DSH's own brand: never used by embed-UI (R-UI-11). */
   brand: Object.freeze(['sidebar.brand.mark', 'sidebar.brand.name']),
-  /** The Fishball page: the `main` entry keyed `fishball` (frame view, status, Retry; S4 §2.2). */
+  /**
+   * The Fishball page: the `main` entry keyed as its sidebar entry. Entries by window (2026-11-21):
+   * one per window, id / key `fishball:<principalKey>` (was the one fixed key `fishball`).
+   */
   main: 'main',
-  pageKey: 'fishball',
+  pageKeyPrefix: 'fishball:',
   /** Seats of managed marks and Hand over / Take back (S4 §2.2): absent without the connector's UI backend (requirements 1.34). */
   // UI-FIX-D (2026-11-18): Hand over / Take back sit in the header's utilities seat beside "Managed by" in header.actions.
   marks: Object.freeze(['conversation.session.header.actions', 'conversation.session.header.utilities', 'sidebar.workspaces.session.menu.item', 'sidebar.session.row.leading', 'sidebar.session.row.trailing']),
@@ -156,7 +159,9 @@ export const FAKE = Object.freeze({
   uiRoutes: Object.freeze({ state: '/api/dsh-connector/ui/state', events: '/api/dsh-connector/ui/events', handOver: '/api/dsh-connector/ui/handover', takeBack: '/api/dsh-connector/ui/takeback', dismiss: '/api/dsh-connector/ui/notice/dismiss', opened: '/api/dsh-connector/ui/opened' }),
   uiTools: Object.freeze(['notify', 'attention.signal', 'attention.state']),
   // Requirements 1.34: the UI backend's contribution replaces the hand-over service's calls.
-  kind: Object.freeze({ started: 'started', log: 'log', admit: 'admit', retry: 'retry', sync: 'sync', register: 'register', contribute: 'contribute' }),
+  kind: Object.freeze({ started: 'started', log: 'log', admit: 'admit', retry: 'retry', sync: 'sync', register: 'register', contribute: 'contribute', offer: 'offer' }),
+  /** Entries by window (2026-11-21): the hosted agent the fake locator's agentEntry names and the fake backend's window of it. */
+  window: Object.freeze({ entry: 'fbtest-u-shell-entry-hosted', key: 'fbtest-u-shell-pk-hosted', name: 'fishball', id: 'fishball-hosted', label: 'Fishball' }),
 })
 
 /** A ready local child with a connected target (UIM-DT-01 row 7 / 8). */

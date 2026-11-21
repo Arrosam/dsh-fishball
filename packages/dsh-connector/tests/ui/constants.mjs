@@ -58,7 +58,9 @@ export const SURFACE = Object.freeze({
   /** An SSE frame: `data: <JSON Snapshot>\n\n`. */
   frame: Object.freeze({ prefix: 'data: ', end: '\n\n' }),
   /** Snapshot keys and their nested keys. */
-  snapshotKeys: Object.freeze(['attention', 'light', 'marks', 'notice', 'targets']),
+  // Contract A (2026-11-21, entries by window): the snapshot gains `windows`.
+  snapshotKeys: Object.freeze(['attention', 'light', 'marks', 'notice', 'targets', 'windows']),
+  windowKeys: Object.freeze(['id', 'key', 'name']),
   targetKeys: Object.freeze(['id', 'key', 'name', 'online']),
   refKeys: Object.freeze(['id', 'key', 'name']),
   noticeKeys: Object.freeze(['count', 'important', 'message']),
@@ -91,6 +93,10 @@ export const FIXTURE = Object.freeze({
   renamed: 'Indexer',
   unknownKey: 'fbtest-ui-no-such-principal',
   caller: Object.freeze({ key: 'fbtest-ui-caller', name: 'Caller' }),
+  /** The token entry key a fixture principal is paired under (FakePairStore; fixture data). */
+  entryOf: (principalKey) => 'fbtest-ui-entry-of-' + principalKey,
+  /** An entry key no principal is paired under. */
+  strayEntry: 'fbtest-ui-entry-nobody',
   message: 'Build 42 finished',
   message2: 'Build 43 failed',
   markup: '<b>bold</b> **not markdown** <script>x</script>',

@@ -85,6 +85,44 @@ export class FakeHandover {
   }
 }
 
+/**
+ * K1 `PairStore` as the UI backend reads it (contract A, 2026-11-21: only `byPrincipal(principalKey)`
+ * → `{entryKey, principalKey, id, name, ...} | undefined`). Drivers: `bind(p, entryKey?)` pairs a
+ * fixture principal under its entry key (`FakePairStore.entryOf(p.key)` by default), `rename`,
+ * `unbind`. Every read is recorded.
+ */
+export class FakePairStore {
+  static entryOf = (principalKey) => FIXTURE.entryOf(principalKey)
+  #pairs = new Map()
+  reads = []
+  bind(p, entryKey = FakePairStore.entryOf(p.key)) {
+    this.#pairs.set(p.key, Object.freeze({ entryKey, principalKey: p.key, id: p.id, name: p.name }))
+    return entryKey
+  }
+  rename(principalKey, name) { const pair = this.#pairs.get(principalKey); if (pair) this.#pairs.set(principalKey, Object.freeze({ ...pair, name })) }
+  unbind(principalKey) { this.#pairs.delete(principalKey) }
+  byPrincipal(principalKey) { this.reads.push(principalKey); return this.#pairs.get(principalKey) }
+}
+
+/**
+ * A window source as `offerWindows` takes it (contract A): `{entries(), onChange(listener) → dispose}`.
+ * Drivers: `set(entries)` replaces the claimed entry keys and fires every listener; `listening()`.
+ * `iterable: 'set'` answers a Set instead of an array (entries() is any Iterable).
+ */
+export function windowSource(entries = [], { iterable = 'array' } = {}) {
+  let list = [...entries]
+  const listeners = new Set()
+  const source = {
+    entries: () => (iterable === 'set' ? new Set(list) : [...list]),
+    onChange(listener) { listeners.add(listener); return () => { listeners.delete(listener) } },
+  }
+  return {
+    source,
+    set(next) { list = [...next]; for (const fn of [...listeners]) fn() },
+    listening: () => listeners.size,
+  }
+}
+
 /** The connector row's context, Cordis-like: effects run at once and their disposers on `dispose()`. */
 export class FakeCtx {
   effects = []

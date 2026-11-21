@@ -4,7 +4,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { caseName } from '../../../../../test/v3/contract/package-boundaries/cases.mjs'
-import { ATTR, BACKEND, EMBED, EXPECT, FIXTURE, HTTP, MATRIX, ROUTE, SLOT, TAG, TEXT, TOOL, WAIT, WIRE } from './constants.mjs'
+import { ATTR, BACKEND, EMBED, EXPECT, FIXTURE, HTTP, MATRIX, ROUTE, SLOT, TAG, TEXT, TOOL, WAIT, WINDOW, WIRE } from './constants.mjs'
 import { hostWorld, openPage, byTag, withAttr, textIn, press, row, sessionProps } from './subject.mjs'
 const wire = (sdk, id, part, title, fn) => test(caseName(sdk, id, part, title), { timeout: WAIT.testMs }, fn)
 const relativeRoutes = () => Object.fromEntries(Object.entries(BACKEND.routes).map(([key, route]) => [key, route[1].slice(ROUTE.absolutePrefix.length)]))
@@ -16,7 +16,10 @@ export function registerUWireCases(sdk) {
     assert.deepEqual(w.logs.filter((l) => l.type === WIRE.error && !l.text.includes(WIRE.missingPrefix)), [], 'loader error')
     assert.equal(w.errors().length, Number(r.u && !r.c))
     assert.equal(w.warns().length, Number(r.u && r.c && !r.i))
-    assert.equal(page.live().filter((e) => e.slot === SLOT.fish && e.id === SLOT.fishId).length, Number(r.u && r.c))
+    // Entries by window (2026-11-21): a sidebar entry needs an agent with a window here, i.e. the instance's hosted agent (I).
+    await page.waitFor(() => page.live().filter((e) => e.slot === SLOT.fish).length === Number(r.u && r.c && r.i))
+    assert.equal(page.live().filter((e) => e.slot === SLOT.fish && e.id === WINDOW.id(FIXTURE.fishball.key)).length, Number(r.u && r.c && r.i))
+    assert.equal(page.live().filter((e) => e.slot === SLOT.fish).length, Number(r.u && r.c && r.i), 'sidebar entries')
     assert.equal(w.names().includes(w.publicName(TOOL.notify)), r.u && r.c, 'tools/list notify ownership')
     if (!r.u) { assert.deepEqual(page.embedDrawn(), []); return }
     const answer = await w.request('GET', ROUTE.services)
@@ -31,14 +34,11 @@ export function registerUWireCases(sdk) {
     assert.deepEqual(page.errors, [])
     if (!r.c) { assert.deepEqual(page.live(), []); assert.deepEqual(page.chunks, []); return }
     assert.deepEqual(page.chunkOwners.filter((c) => c.owner === EMBED.moduleId).map((c) => c.file).sort(), [...EMBED.chunks].sort())
-    const view = await page.mount(SLOT.main, {}, (e) => e.options.key === SLOT.mainKey)
-    if (r.i) {
-      assert.ok(await page.waitFor(() => byTag(view.tree(), TAG.iframe).length === EXPECT.once))
-      assert.equal(byTag(view.tree(), TAG.iframe)[0].props.src, w.child.admissions.at(-1).url)
-    } else {
-      assert.equal(withAttr(view.tree(), ATTR.noInstance).length, EXPECT.once)
-      assert.ok(textIn(view.tree()).includes(TEXT.hint))
-    }
+    // Entries by window (2026-11-21): without I there is no window, so no main entry (the hint is no entry).
+    if (!r.i) { assert.deepEqual(page.live().filter((e) => e.slot === SLOT.main).map((e) => e.key), [], 'a main entry without a window'); return }
+    const view = await page.mount(SLOT.main, {}, (e) => e.options.key === WINDOW.id(FIXTURE.fishball.key))
+    assert.ok(await page.waitFor(() => byTag(view.tree(), TAG.iframe).length === EXPECT.once))
+    assert.equal(byTag(view.tree(), TAG.iframe)[0].props.src, w.child.admissions.at(-1).url)
     assert.deepEqual(byTag(view.tree(), TAG.button).filter((n) => WIRE.settings.test(textIn(n) + (n.props[ATTR.ariaLabel] ?? ''))), [], 'embed window header settings button')
   })
   for (const apiVersion of WIRE.versions) wire(sdk, 'UWIRE-BVA-01', apiVersion, 'only apiVersion 1 is a usable UI backend', async (t) => {

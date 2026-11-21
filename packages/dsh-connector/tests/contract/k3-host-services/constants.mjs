@@ -171,7 +171,8 @@ export const TOKENS = Object.freeze({
 
 /** Design §4.1 and §6.1 (HOST, UIM): `dshInstanceChild`. */
 export const CHILD = Object.freeze({
-  members: Object.freeze(['apiVersion', 'status', 'onChange', 'origin', 'admit', 'retry', 'targetStatus', 'providerSync']),
+  // Contract C (2026-11-21, entries by window): agentEntry() → the hosted entry key the child holds, or null.
+  members: Object.freeze(['apiVersion', 'status', 'onChange', 'origin', 'admit', 'retry', 'targetStatus', 'agentEntry', 'providerSync']),
   origin: Object.freeze({ params: 1 }),
   admit: Object.freeze({ params: 1, fields: Object.freeze(['view', 'lang', 'hostname']) }),
   retry: Object.freeze({ params: 0 }),

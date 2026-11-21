@@ -4,7 +4,8 @@
  * SURFACE), not read from the implementation:
  *
  *   import { createUiBackend, UI_ROUTE, UI_SERVICE, NOTIFY, UI_TOOL, UI_CODE } from '…/src/ui/index.js'
- *   createUiBackend({handover, logger}) → {service, provide(ctx), snapshot(), close()}
+ *   createUiBackend({handover, pairs, maxNoteBytes, logger}) → {service, provide(ctx), snapshot(), close()}
+ *   (contract A, 2026-11-21: `pairs` is the K1 PairStore, only byPrincipal read; service.offerWindows)
  *
  * The module is imported bound to one SDK (its `@deepseek-ai/*` imports resolve to that SDK's
  * installed packages), as every V3 connector suite does. If the surface changes, only this file
@@ -35,11 +36,12 @@ export function createBackend(mod, ports) {
 }
 
 /** A backend over a fresh FakeHandover and logger; closed by `t`. */
-export async function unitBackend(t, sdk) {
+export async function unitBackend(t, sdk, { pairs } = {}) {
   const mod = await uiModule(sdk)
   const handover = new FakeHandover()
   const logger = recordingLogger()
-  const backend = createBackend(mod, { handover, logger })
+  // Contract A (2026-11-21): createUiBackend takes the K1 pair store; rows that need windows pass one.
+  const backend = createBackend(mod, { handover, logger, ...(pairs === undefined ? {} : { pairs }) })
   t.after(() => backend.close())
   return { mod, handover, logger, backend }
 }

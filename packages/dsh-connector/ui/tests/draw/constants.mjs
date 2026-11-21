@@ -209,6 +209,37 @@ export const SLOT = Object.freeze({
   fishSize: 16,
 })
 
+/**
+ * Entries by window (the user's requirement and contract D, 2026-11-21): one sidebar.panellist
+ * entry per window of the backend snapshot, id `fishball:<principalKey>`, order -10 + i * 0.01
+ * (i = 0-based snapshot index; above Plugins at 0 and Tasks at 10), and a main entry with the same
+ * key. The label is the agent's name with only its first character capitalised, or `ID: <id>` for
+ * a nameless agent. `absent` is the draw world's switch for an older locator without agentEntry.
+ */
+export const WINDOW = Object.freeze({
+  idPrefix: 'fishball:',
+  id: (key) => 'fishball:' + key,
+  order: (i) => -10 + i * 0.01,
+  /** Plugins' and Tasks' own orders: every Fishball entry sorts before both. */
+  plugins: 0,
+  tasks: 10,
+  absent: 'absent',
+  /** [row, name, label] — EP / BVA of the label rule. */
+  labels: Object.freeze([
+    Object.freeze(['lower', 'fishball2', 'Fishball2']),
+    Object.freeze(['capitalised', 'Fishball', 'Fishball']),
+    Object.freeze(['non-ASCII', 'élan', 'Élan']),
+    Object.freeze(['one character', 'x', 'X']),
+    Object.freeze(['rest kept', 'mIXED caSe', 'MIXED caSe']),
+    Object.freeze(['digit first', '2fish', '2fish']),
+  ]),
+  /** The nameless label is not capitalised: "ID: <id>" with the id as it is. */
+  namelessId: 'agent-lower-x',
+  /** Fixture agents of the window rows (key, id): not product values. */
+  agent: (n, name) => Object.freeze({ key: 'fbtest-draw-pk-w' + n, name, id: 'agent-w' + n }),
+  otherEntry: 'fbtest-draw-entry-other',
+})
+
 /** The client services the browser half uses (relayed). */
 export const CLIENT_SERVICE = Object.freeze(['slots', 'locale', 'configForms', 'pluginNavigation', 'layout'])
 
@@ -295,6 +326,8 @@ export const FIXTURE = Object.freeze({
   idNamed: principal('fbtest-draw-pk-y', 'ID: agent-y', 'agent-y'),
   markup: principal('fbtest-draw-pk-m', '<b>x</b><script>fbtest()</script>', 'agent-m'),
   fishball: principal('fbtest-draw-pk-f', 'Fishball', 'fishball-f'),
+  /** The connector token entry the fake locator's hosted child holds (contract C, agentEntry). */
+  hostedEntry: 'fbtest-draw-entry-hosted',
   indexer: principal('fbtest-draw-pk-i', 'Indexer', 'agent-i'),
   renamed: 'Cartographer',
   sessions: Object.freeze({ s1: 'fbtest-draw-s1', s2: 'fbtest-draw-s2' }),
