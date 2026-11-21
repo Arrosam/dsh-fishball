@@ -2313,7 +2313,7 @@ Decided by the user on 2026-11-20:
 
 | Point | Decision |
 |---|---|
-| Classes | Every event type is **wake** (delivered as part of a turn) or **silent** (recorded; it never wakes Fishball by itself and rides along with the next wake delivery as one summary line). Wake: permission, question, plan-review, turn-finished, handover, takeback, message, notice, ask and the watchdog's `contributed:dsh-connector-amenities.drift`. Silent: state, settlement, retirement. Any other type wakes. |
+| Classes | Every event type is **wake** (delivered as part of a turn) or **silent** (recorded; it never wakes Fishball by itself and rides along with the next wake delivery as one summary line). Wake: permission, question, plan-review, turn-finished, handover, takeback, message, notice, ask and the watchdog's `contributed:dsh-connector-watchdog.drift`. Silent: state, settlement, retirement. Any other type wakes. |
 | Quiet window | Wake events are buffered; each restarts a quiet window (default 10 s). When it passes with no new wake event, everything buffered (wake and silent) goes to Fishball as one message, one turn. Silent events never start or restart it. 0 delivers at the next idle. |
 | Max batch | A buffer of the max batch of wake events (default 20) is delivered at once, with a notice naming the limit and saying more may follow. |
 | Settings | `wake.quietWindowSeconds` (whole, ≥ 0), `wake.maxBatch` (whole, ≥ 1), `wake.classes` (type → class), volatile fields of core's row, on core's settings page. Read at each event: a save applies to the next one. |
