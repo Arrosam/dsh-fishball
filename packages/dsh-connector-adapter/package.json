@@ -2,6 +2,7 @@
   "name": "dsh-connector-adapter",
   "version": "1.0.0-alpha.1",
   "description": "Lets a DSH sign in to another DSH's dsh-agent-connector through DSH's stock MCP client, with normal OAuth.",
+  "icon": "./assets/adapter-icon.svg",
   "license": "MIT",
   "publishConfig": {
     "tag": "alpha"
