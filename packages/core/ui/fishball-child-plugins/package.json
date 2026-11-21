@@ -3,6 +3,10 @@
   "version": "1.0.0-alpha.1",
   "private": true,
   "type": "module",
+  "files": [
+    "index.js",
+    "client.js"
+  ],
   "exports": {
     ".": "./index.js",
     "./client": "./client.js",
