@@ -4,8 +4,11 @@
  * sessions, those it started and those the user handed over) that are running now.
  *
  * Refreshed, never polled (core has no timer by design): once each time the link becomes
- * `connected`, and after any polled mailbox page holding an event that can change the answer
- * (`TARGET_SESSIONS.refreshOn`: the connector pushes them for managed sessions only). One call in
+ * `connected`, after any polled mailbox page holding an event that can change the answer
+ * (`TARGET_SESSIONS.refreshOn`: the connector pushes them for managed sessions only), and after
+ * Fishball's own answered call of a tool that starts, steers or ends a session's run
+ * (`TARGET_SESSIONS.refreshAfter`, `called`): since WAKE-REDUCE the connector sends no event when a
+ * session starts running, only `turn-finished` when it stops. One call in
  * flight; a trigger meanwhile asks for exactly one more after it, so the last answer read is never
  * older than the last trigger. The list is `null` (unknown) off a connection, cleared the moment
  * the link leaves `connected`; a result of an earlier connection, or one after `dispose`, is dropped.
@@ -20,6 +23,7 @@ import { codeOf } from '../events/diagnostics.js'
 import { TARGET_LOG, TARGET_SESSIONS } from './constants.js'
 
 const REFRESH_ON = new Set(TARGET_SESSIONS.refreshOn)
+const REFRESH_AFTER = new Set(TARGET_SESSIONS.refreshAfter)
 const ARGS = Object.freeze({ [TARGET_SESSIONS.limitArgument]: TARGET_SESSIONS.listLimit })
 const LIST = MCP.tools.sessionsList
 
@@ -34,7 +38,7 @@ function runningOf(result) {
 /**
  * @param {{status(): {state: string}, onStatus: Function, onPoll: Function, callTool: Function}} link this epoch's link
  * @param {{onChange: () => void, logger?: {warn: Function}}} options `onChange` after every change of `list()`
- * @returns {{list(): ReadonlyArray<{sessionId: string, title: string}> | null, dispose(): void}}
+ * @returns {{list(): ReadonlyArray<{sessionId: string, title: string}> | null, called(toolName: string): void, dispose(): void}}
  */
 export function createRunningSessions(link, { onChange, logger }) {
   let sessions = null
@@ -87,6 +91,8 @@ export function createRunningSessions(link, { onChange, logger }) {
 
   return Object.freeze({
     list: () => sessions,
+    /** The bridge answered Fishball's own call of `toolName` (its `called` hook). */
+    called(toolName) { if (REFRESH_AFTER.has(toolName)) refresh() },
     dispose() {
       disposed = true
       for (const dispose of disposers.splice(0)) dispose()

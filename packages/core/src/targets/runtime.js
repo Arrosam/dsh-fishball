@@ -72,16 +72,20 @@ export function createTargetRuntime(ctx, options) {
   })
   // This epoch's `ask_user`: files offers of this target epoch only (asks/index.js `toolFor`).
   const locals = Object.freeze([Object.freeze({ facade: ASK_TOOL.fileCard, build: (modelName) => asks.toolFor(source(), modelName) })])
-  // Fishball's own accepted answer settles its request; the connector sends no settlement for it (asks/index.js `answered`).
-  const called = (toolName, args, result) => { if (toolName === MCP.tools.approvalAnswer && result?.ok === true) void asks.answered(source(), args) }
-  const bridge = createBridge({ link, naming, locals, called, ...bridgeOptions })
-  disposers.push(bridge.onChange(changed))
-
-  // The sidebar's running managed sessions of this epoch (sessions.js): refreshed on connect and on
-  // a polled session event, fenced by this disposal. Subscribed before the view's own status
-  // listener, so a link that leaves `connected` has cleared its list before the view is rebuilt.
+  // The sidebar's running managed sessions of this epoch (sessions.js): refreshed on connect, on a
+  // polled session event and after Fishball's own session calls, fenced by this disposal. Subscribed
+  // before the view's own status listener, so a link that leaves `connected` has cleared its list
+  // before the view is rebuilt.
   const sessions = createRunningSessions(link, { onChange: changed, logger })
   disposers.push(sessions.dispose)
+
+  // Fishball's own accepted answer settles its request; the connector sends no settlement for it (asks/index.js `answered`).
+  const called = (toolName, args, result) => {
+    if (toolName === MCP.tools.approvalAnswer && result?.ok === true) void asks.answered(source(), args)
+    sessions.called(toolName)
+  }
+  const bridge = createBridge({ link, naming, locals, called, ...bridgeOptions })
+  disposers.push(bridge.onChange(changed))
 
   let listed = false
   disposers.push(link.onTools(() => { listed = true }))

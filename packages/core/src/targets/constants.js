@@ -29,13 +29,18 @@ export const TARGET_LOG = Object.freeze({
  *   list is the caller's managed root sessions only, so a manager holding more is not expected;
  * - `refreshOn`: the mailbox event types the connector pushes for a managed session whose running
  *   state or management may have changed (agent status, a finished turn, handover, take-back,
- *   retirement); a polled page holding one of them asks for a new list;
+ *   retirement); a polled page holding one of them asks for a new list. `state` stays for a
+ *   connector before WAKE-REDUCE (dsh-connector 44a414c, 2026-11-21), which no longer produces it;
+ * - `refreshAfter`: the connector tools whose answer reports a session as running (WAKE-REDUCE:
+ *   "running" is now told by these tools' results, not by an event), so the bridge's answer to
+ *   Fishball's own call asks for a new list;
  * - `unexpected`: the code logged for an answer that is neither a success with `sessions` nor a refusal.
  */
 export const TARGET_SESSIONS = Object.freeze({
   limitArgument: 'limit',
   listLimit: 100,
   refreshOn: Object.freeze([MCP.eventTypes.state, MCP.eventTypes.turnFinished, MCP.eventTypes.handover, MCP.eventTypes.takeback, MCP.eventTypes.retirement]),
+  refreshAfter: Object.freeze([MCP.tools.sessionStart, MCP.tools.sessionMessage, MCP.tools.sessionRedirect, MCP.tools.sessionStop, MCP.tools.sessionRelease]),
   unexpected: 'unexpected-answer',
 })
 

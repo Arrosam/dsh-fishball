@@ -3,8 +3,10 @@
  * the lead relayed the user's feature (2026-11-21): when Fishball starts sessions, the target's
  * view lists its Fishball-managed sessions that are RUNNING. Rules under test:
  * - read with `sessions_list` `{limit: 100}` (the connector's maximum) when the link becomes
- *   `connected`, and after a polled page holding a `state`, `turn-finished`, `handover`, `takeback`
- *   or `retirement` event; no other page and no timer reads it;
+ *   `connected`, after a polled page holding a `state`, `turn-finished`, `handover`, `takeback`
+ *   or `retirement` event, and after Fishball's own answered session_start / session_message /
+ *   session_redirect / session_stop / session_release call (WAKE-REDUCE: no `state` event any
+ *   more, the tools' results tell "running"); no other page, call or timer reads it;
  * - one call in flight; any number of triggers meanwhile make exactly one more call after it;
  * - only `running: true` sessions, as `{sessionId, title}`; `null` before the first answer on a
  *   connection and again the moment the link leaves `connected`; an answer of an earlier connection
@@ -116,6 +118,31 @@ export function registerRunningSessionsCases(sdk) {
     s.page()
     for (const page of [{ ok: false, code: 'fbtest' }, { ok: true }, { ok: true, events: 'x' }, { ok: true, events: [null] }, null, undefined]) s.pageRaw(page)
     assert.equal(s.calls.length, 1)
+  })
+  // WAKE-REDUCE (dsh-connector 44a414c): the connector no longer sends `state`, so Fishball's own
+  // answered session calls are what tell core a session may have started running.
+  for (const tool of [MCP.tools.sessionStart, MCP.tools.sessionMessage, MCP.tools.sessionRedirect, MCP.tools.sessionStop, MCP.tools.sessionRelease]) {
+    row(`EP an answered ${tool} call reads again`, async () => {
+      const { s, read } = await unit()
+      s.connect(); s.answer(0, listed()); await settle()
+      read.called(tool)
+      assert.equal(s.calls.length, 2, tool + ' did not ask for a new list')
+    })
+  }
+  row('EP an answered call of any other tool reads nothing', async () => {
+    const { s, read } = await unit()
+    s.connect(); s.answer(0, listed()); await settle()
+    for (const tool of [MCP.tools.sessionsList, MCP.tools.sessionRead, MCP.tools.approvalAnswer, MCP.tools.inboxPoll, 'fbtest-x.tool']) read.called(tool)
+    assert.equal(s.calls.length, 1)
+  })
+  row('EP an answered session call while not connected, or after dispose, reads nothing', async () => {
+    const { s, read } = await unit()
+    read.called(MCP.tools.sessionStart)
+    assert.equal(s.calls.length, 0, 'read while not connected')
+    s.connect(); s.answer(0, listed()); await settle()
+    read.dispose()
+    read.called(MCP.tools.sessionStart)
+    assert.equal(s.calls.length, 1, 'read after dispose')
   })
   row('EP a trigger while not connected reads nothing', async () => {
     const { s } = await unit()
