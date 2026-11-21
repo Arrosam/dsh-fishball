@@ -267,6 +267,14 @@ export const V3_SUITES = Object.freeze({
   // and the package-boundaries caseName.
   'fishball-taskboard': suite("Fishball's task board and memo pad: tools, routes, wake notice, compaction reminder, persistence (fishball-taskboard)", v3('fishball-taskboard'),
     [all(PACKAGE.fishballTaskboard), INSTANCE_FOLLOWER, all(PACKAGE.fishballAmenities), 'test/v3/fishball-taskboard/**', 'test/private-skills/support/**', 'test/v3/contract/package-boundaries/cases.mjs']),
+  // The Task board tab redesign (2026-11-22): fishball-taskboard's browser half alone in the F-SETTINGS
+  // scripted page through fishball-ui.connections' boardOnlyPage, and laid out in the contrast rows'
+  // headless Chromium with DSH's real theme and page styles (their page, constants and wcag helpers).
+  'fishball-taskboard.view': suite('the Task board tab: progress fill, summary, condensed and completed rows, collapse, notes, memos, narrow width, edit mode (B1, V1–V12, E1–E2)', v3('fishball-taskboard-view'),
+    [PACKAGE.fishballTaskboard + '/client.js', PACKAGE.fishballTaskboard + '/package.json', 'test/v3/fishball-taskboard-view/**',
+      'test/v3/fishball-ui/connections/{page,constants}.mjs', 'test/v3/fishball-ui/brand/{page,constants}.mjs', 'test/v3/fishball-ui/stream/event-source.mjs',
+      'test/v3/fishball-core/settings/{page,primitives,constants}.mjs', 'test/v3/fishball-ui/contrast/{page,constants,wcag}.mjs',
+      'test/v3/contract/package-boundaries/cases.mjs', 'test/v2-page-cases/lite-browser.mjs']),
   // The amenities split (the user, 2026-11-21): each amenity its own package, the umbrella inserting
   // their rows, dsh.client only where there is browser code, read from manifests, patches (DSH's own
   // reader and bundle inspection) and import specifiers. It reuses the package-boundaries helpers

@@ -148,13 +148,18 @@ export async function fishballPage(t, sdk, { lang = 'en', taskboard = true, read
   return handle
 }
 
-/** A page with fishball-taskboard's browser half alone (no Fishball client: R6's standalone fallback). */
-export async function boardOnlyPage(t, sdk, { lang = 'en' } = {}) {
+/**
+ * A page with fishball-taskboard's browser half alone (no Fishball client: R6's standalone fallback).
+ * `prepareWorld(world)` (optional) adjusts the world before any script runs (fishball-taskboard.view
+ * sets `onDocument` to collect the sheets the tab mounts, and its own `fetchOther`).
+ */
+export async function boardOnlyPage(t, sdk, { lang = 'en', prepareWorld } = {}) {
   const sources = eventSourceClass()
   const w = createWorld({ sdk, lang, clients: CLIENTS.none })
   w.EventSource = sources.EventSource
   rightSidebar(w)
   w.fetchOther = () => ({ status: 404, text: '' })
+  prepareWorld?.(w)
   await loadPage(t, w)
   return common(w, sources)
 }
