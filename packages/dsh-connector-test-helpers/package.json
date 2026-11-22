@@ -6,21 +6,7 @@
   "license": "MIT",
   "type": "module",
   "exports": {
-    "./sdk": "./src/sdk.mjs",
-    "./cases": "./src/cases.mjs",
-    "./wait": "./src/wait.mjs",
-    "./repo": "./src/repo.mjs",
-    "./page/browser-sandbox": "./src/page/browser-sandbox.mjs",
-    "./page/client-graph": "./src/page/client-graph.mjs",
-    "./page/react-shim": "./src/page/react-shim.mjs",
-    "./page/primitives": "./src/page/primitives.mjs",
-    "./page/services": "./src/page/services.mjs",
-    "./page/chrome": "./src/page/chrome.mjs",
-    "./static/packages": "./src/static/packages.mjs",
-    "./static/tokens": "./src/static/tokens.mjs",
-    "./dsh/fake-llm": "./src/dsh/fake-llm.mjs",
-    "./dsh/settings-schema": "./src/dsh/settings-schema.mjs",
-    "./runner": "./src/runner/run.mjs",
+    "./*": "./src/*.mjs",
     "./package.json": "./package.json"
   },
   "scripts": {
