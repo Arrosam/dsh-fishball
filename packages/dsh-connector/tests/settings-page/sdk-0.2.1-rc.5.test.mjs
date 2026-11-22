@@ -2,6 +2,7 @@
 import { registerSettingsPageCases } from './cases.mjs'
 import { registerPolishSettingsCases } from './polish-cases.mjs'
 import { registerCuiSettingsCases } from './cui-cases.mjs'
+import { registerHostFormCases } from './host-form-cases.mjs'
 
 registerSettingsPageCases('0.2.1-rc.5')
 registerPolishSettingsCases('0.2.1-rc.5')
@@ -9,3 +10,4 @@ registerCuiSettingsCases('0.2.1-rc.5')
 
 import { registerMultiSettingsCases } from './multi-cases.mjs'
 registerMultiSettingsCases('0.2.1-rc.5')
+registerHostFormCases('0.2.1-rc.5')

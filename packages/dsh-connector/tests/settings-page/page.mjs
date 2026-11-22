@@ -68,7 +68,7 @@ export const treeText = (tree) => JSON.stringify(tree)
  * @param options.answerState - R-FIX-CUI: `(n) => Promise<Response> | undefined` answers the n-th
  *   (1-based) GET state itself (a held, failed or changed read); undefined leaves it to the routes.
  */
-export async function openTokensPage(t, { sdk, world, routes, lang = FIXTURE.lang, settings = {}, answerState, beforeSave }) {
+export async function openTokensPage(t, { sdk, world, routes, lang = FIXTURE.lang, settings = {}, answerState, beforeSave, dshForms = false }) {
   const errors = []
   const requests = []
   const clipboard = []
@@ -140,9 +140,23 @@ export async function openTokensPage(t, { sdk, world, routes, lang = FIXTURE.lan
   const dictionaries = []
   const locale = { ...services.locale, register(ns, dicts) { dictionaries.push({ ns, dicts }); return services.locale.register(ns, dicts) } }
   const served = []
+  /**
+   * `dshForms`: `configForms.get` answers a form object shaped as DSH's own ConfigFormController
+   * (dsh-client-ui-settings): class methods that read their own fields through `this`, so a page that
+   * calls them detached from the object fails as it does in a real DSH. Otherwise a plain object of
+   * closures.
+   */
+  class HostForm {
+    #listeners = new Set()
+    getSnapshot() { return formSnapshot() }
+    subscribe(listener) { this.#listeners.add(listener); return () => this.#listeners.delete(listener) }
+    mutate(ops, expected) { return mutate(ops, expected) }
+    set() { return Promise.resolve(false) }
+    dispose() {}
+  }
   const configForms = {
     whileServed(namespaces, register) { served.push([...namespaces]); const dispose = register(); return () => { if (typeof dispose === 'function') dispose() } },
-    get: () => ({ getSnapshot: formSnapshot, subscribe: () => () => {}, mutate, set: async () => false, dispose() {} }),
+    get: () => (dshForms ? new HostForm() : { getSnapshot: formSnapshot, subscribe: () => () => {}, mutate, set: async () => false, dispose() {} }),
   }
   const { Context } = await import(pathToFileURL(path.join(runtimeOf(sdk), BOOT.cordisEntry)).href)
   const root = new Context()
@@ -219,12 +233,16 @@ export async function openTokensPage(t, { sdk, world, routes, lang = FIXTURE.lan
     revision: () => revision,
     /** The page entry of the slot key (CLIENT.slotKey). */
     entry: () => registrations.find((r) => !r.disposed && r.options.name === CLIENT.slot && r.options.key === CLIENT.slotKey),
-    /** Renders the page entry in a new root, as the Plugins page opens it; returns its tree reader. */
-    async open(view = CLIENT.view.page) {
+    /**
+     * Renders the page entry in a new root, as the Plugins page opens it; returns its tree reader.
+     * `ownerForm: false` renders it as DSH's plugin manager does for a bundle page: props `{view}`
+     * only, so the page must use its own `configForms` form.
+     */
+    async open(view = CLIENT.view.page, { ownerForm = true } = {}) {
       const entry = pageApi.entry()
       assert.ok(entry, `no ${CLIENT.slot} entry with key ${CLIENT.slotKey}`)
       const key = 'page-' + ++mounted
-      shim.mount(key, () => React.createElement(entry.Component, { view, form: { state: formSnapshot(), mutate } }))
+      shim.mount(key, () => React.createElement(entry.Component, ownerForm ? { view, form: { state: formSnapshot(), mutate } } : { view }))
       await settle()
       const tree = () => shim.treeOf(key)
       return {

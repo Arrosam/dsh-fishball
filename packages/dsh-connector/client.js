@@ -849,9 +849,10 @@ window.__ModuleLoader__.load({
      */
     function makePage(t, configForm) {
       return function DshConnectorSettings(props) {
+        // DSH's form is a ConfigFormController: its methods read `this`, so they are called on it, never detached.
         const liveSnapshot = React.useSyncExternalStore(
-          configForm ? configForm.subscribe : () => () => {},
-          configForm ? configForm.getSnapshot : () => undefined,
+          configForm ? (listener) => configForm.subscribe(listener) : () => () => {},
+          configForm ? () => configForm.getSnapshot() : () => undefined,
         )
         const form = props.form ?? (configForm ? { state: liveSnapshot, mutate: configForm.mutate.bind(configForm) } : undefined)
         const snapshot = form?.state
