@@ -30,7 +30,9 @@ export function heartbeatText({ position, limit, idleSeconds, focus }) {
  * cooling: the attempt is recorded in the turn state (`compacted`), which only a real turn clears,
  * so a later cooling point before that turn (a heartbeat turn that still ran, a restart) does not
  * compact again. A turn that starts first supersedes the cooling (the generation moves on). The
- * compaction appends no turn, so it changes neither the count nor the anchor.
+ * compaction appends no turn, so it changes neither the count nor the anchor; nor does what it
+ * makes other plugins queue (fishball-taskboard's compaction reminder), which turns.js keeps
+ * from counting as work when a later turn admits it (the user's requirement, 2026-11-22).
  *
  * Wake batching (core, DESIGN §29): connector events reach Fishball as one turn per batch, after a
  * quiet window, or inside the step of the user's own message. Each such turn is still a turn here
