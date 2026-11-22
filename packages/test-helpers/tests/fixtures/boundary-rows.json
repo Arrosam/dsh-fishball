@@ -71,5 +71,23 @@
   "ok": false,
   "why": "a nested package's files",
   "pkg": "fishball-core"
+ },
+ {
+  "row": 13,
+  "spec": "const p = /import\\{[^}]*\\}from\"\\.\\/vendor-[^\"]*\"/",
+  "ok": true,
+  "why": "an import-shaped regex literal"
+ },
+ {
+  "row": 14,
+  "spec": "const s = \"import x from '../../../core/src/main/index.js'\"",
+  "ok": true,
+  "why": "an import-shaped string"
+ },
+ {
+  "row": 15,
+  "spec": "export { x } from '../../../core/src/main/index.js'",
+  "ok": false,
+  "why": "a re-export from another package's internals"
  }
 ]

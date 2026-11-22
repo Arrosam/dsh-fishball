@@ -29,6 +29,42 @@ const RULE = Object.freeze({
   packagesWord: 'packages',
 })
 
+/**
+ * `code` with the body of every string, template and regex literal blanked to spaces (same length,
+ * so line numbers hold), except a quoted string in specifier position (directly after `from`,
+ * `import` or `import(`). A small scanner, not a parser: a `/` starts a regex where an expression may
+ * begin (after an operator, a bracket, a keyword or the start of the text), otherwise it is division.
+ */
+function blankLiterals(code) {
+  const out = code.split('')
+  const before = (i) => code.slice(Math.max(0, i - LOOKBEHIND), i)
+  let i = 0
+  while (i < code.length) {
+    const c = code[i]
+    const regex = c === '/' && code[i + 1] !== '/' && code[i + 1] !== '*' && REGEX_BEFORE.test(before(i))
+    if (!QUOTES.includes(c) && !regex) { i++; continue }
+    const keep = !regex && c !== '`' && SPECIFIER_BEFORE.test(before(i))
+    let j = i + 1
+    let inClass = false
+    while (j < code.length) {
+      if (code[j] === '\\') { j += 2; continue }
+      if (regex && code[j] === '[') inClass = true
+      else if (regex && code[j] === ']') inClass = false
+      else if (code[j] === c && !inClass) break
+      else if (code[j] === '\n' && c !== '`') break
+      j++
+    }
+    if (!keep) for (let k = i + 1; k < Math.min(j, code.length); k++) if (out[k] !== '\n') out[k] = ' '
+    i = j + 1
+  }
+  return out.join('')
+}
+const QUOTES = Object.freeze(["'", '"', '`'])
+/** Characters looked back over to decide a literal's position. */
+const LOOKBEHIND = 12
+const SPECIFIER_BEFORE = /(?:\bfrom|\bimport|\bimport\s*\()\s*$/
+const REGEX_BEFORE = /(?:^|[=(,:;!&|?{}[+\-*%<>~^]|\breturn|\btypeof|\bcase|\bdo|\belse|\bin|\bof)\s*$/
+
 const bareName = (specifier) => (specifier.startsWith('@') ? specifier.split('/').slice(0, 2).join('/') : specifier.split('/')[0])
 const insideOwn = (pkg, abs) => (abs === pkg.abs || abs.startsWith(pkg.abs + path.sep)) && !pkg.excludes.some((x) => abs === x || abs.startsWith(x + path.sep))
 const folderOf = (rel) => [...packages().values()].find((p) => p.dir === rel)
@@ -44,9 +80,11 @@ export function checkFile(pkg, file) {
   const raw = fs.readFileSync(file, 'utf8')
   const code = raw.replace(RULE.blockComment, (m) => m.replace(/[^\n]/g, ' ')).replace(RULE.lineComment, '')
   const lineAt = (index) => code.slice(0, index).split('\n').length
+  // Import positions are read with literal bodies blanked, so an import-shaped string or regex is no import.
+  const statements = blankLiterals(code)
   const report = (index, text, why) => problems.push({ file: path.relative(REPO, file), line: lineAt(index), text, why })
   const allowed = new Set([RULE.helpers, ...pkg.uses, pkg.name])
-  for (const m of code.matchAll(RULE.specifier)) {
+  for (const m of statements.matchAll(RULE.specifier)) {
     const spec = m[2]
     if (spec.startsWith(RULE.nodeScheme)) continue
     if (spec.startsWith('.') || spec.startsWith('/')) {
