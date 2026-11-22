@@ -6,6 +6,8 @@
   "description": "Shared test tools for the Fishball packages: the current DSH and the release matrix, the SDK-bound importer, case names, waits, the isolated test runner and the import-boundary check. Never shipped; no package under test imports it.",
   "license": "MIT",
   "exports": {
+    "./connector-contract/mcp-schema": "./connector-contract/mcp-schema/index.js",
+    "./connector-contract/tools": "./connector-contract/tools/index.js",
     "./*": "./*.mjs",
     "./package.json": "./package.json"
   },

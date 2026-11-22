@@ -1,0 +1,2 @@
+# One row of this fixture bundle (JSON is YAML).
+[{ "insert": [{ "id": "fbtest-world-row", "name": "fbtest-world-bundle", "config": {} }] }]
