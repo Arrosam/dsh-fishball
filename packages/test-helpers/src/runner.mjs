@@ -25,10 +25,18 @@ export function testFiles(dir) {
  * manifest name, as a workspace install would, so a test imports `@dsh-instance/test-helpers/<part>`
  * by name. Nothing is installed or downloaded; an existing link to the same folder is kept.
  */
-export function linkWorkspaces() {
+/** The workspace folders the root manifest names (a trailing `/*` names every folder under it). */
+export function workspaceDirs() {
   const manifest = JSON.parse(fs.readFileSync(path.join(REPO, 'package.json'), 'utf8'))
-  for (const folder of manifest.workspaces ?? []) {
-    const dir = path.join(REPO, folder)
+  return (manifest.workspaces ?? []).flatMap((entry) => {
+    if (!entry.endsWith('/*')) return [path.join(REPO, entry)]
+    const parent = path.join(REPO, entry.slice(0, -2))
+    return fs.existsSync(parent) ? fs.readdirSync(parent).sort().map((name) => path.join(parent, name)) : []
+  }).filter((dir) => fs.existsSync(path.join(dir, 'package.json')))
+}
+
+export function linkWorkspaces() {
+  for (const dir of workspaceDirs()) {
     const own = path.join(dir, 'package.json')
     if (!fs.existsSync(own)) continue
     const name = JSON.parse(fs.readFileSync(own, 'utf8')).name

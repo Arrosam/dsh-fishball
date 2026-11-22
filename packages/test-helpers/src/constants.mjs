@@ -30,6 +30,8 @@ export const SHIM = Object.freeze({ renderGuard: 200 })
 export const PAGE = Object.freeze({
   platform: Object.freeze({ react: 'react', reactDom: 'react-dom', reactDomClient: 'react-dom/client', primitives: '@deepseek-ai/dsh-client-ui-primitives' }),
   settleRounds: 60,
+  /** How often `until` re-checks its condition (never a deadline). */
+  pollMs: 15,
 })
 
 /** Scratch folders: prefix of every temp root a helper makes. */

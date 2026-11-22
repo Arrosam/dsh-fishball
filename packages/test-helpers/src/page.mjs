@@ -161,10 +161,9 @@ export async function openPage(t, { sdk, packageDir, id, entry = 'client.js', la
       node.props.onClick?.({ preventDefault() {}, stopPropagation() {}, currentTarget: node, target: node })
       await settleAll()
     },
-    /** Wait (re-settling) until `predicate` holds; returns its last value. */
-    async until(predicate, ms = 1500, pollMs = 15) {
-      const end = Date.now() + ms
-      for (;;) { await settleAll(); const v = predicate(); if (v || Date.now() >= end) return v; await new Promise((r) => setTimeout(r, pollMs)) }
+    /** Wait (re-settling) until `predicate` holds, with no deadline; returns its value. */
+    async until(predicate, pollMs = PAGE.pollMs) {
+      for (;;) { await settleAll(); const v = predicate(); if (v) return v; await new Promise((r) => setTimeout(r, pollMs)) }
     },
   }
 }
