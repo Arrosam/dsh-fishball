@@ -1,0 +1,10 @@
+{
+  "name": "@dsh-instance/integration-fishball-core",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "The instance's composed hosted-child profile with the real fishball-core patch of the sibling dsh-fishball checkout (guards, launch overlay postconditions, core's patch rows), and placement's shipped-file list over the real fishball-core.",
+  "scripts": {
+    "test": "node ../../scripts/test-package.mjs"
+  }
+}

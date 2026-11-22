@@ -1,0 +1,10 @@
+{
+  "name": "@dsh-instance/integration-connector",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "The instance against the real dsh-agent-connector of the sibling dsh-connector checkout: the connector's published K3 host-services declarations against the instance's real locator, and reinstall succession over the connector's real hosted service in a real host DSH with a hosted child.",
+  "scripts": {
+    "test": "node ../../scripts/test-package.mjs"
+  }
+}
