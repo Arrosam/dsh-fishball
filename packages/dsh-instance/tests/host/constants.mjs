@@ -3,12 +3,15 @@
  * token", "Settings page"), the JSDoc contracts of the exports under test (src/host/*.js,
  * src/native-runtime/ticket.js, credential.js, constants.js comments) and the K3 / K3a contracts they
  * restate (dshInstanceChild, dshConnectorTokens, HOSTED_IMPORT). Fixture values are recognisable
- * plants, never real secrets.
+ * plants, never real secrets. What other areas share is in ../support/constants.mjs.
  */
+import { EXTRA_CREDENTIALS, HOSTED_IMPORT, HOSTED_RECORD, MODULE as SHARED_MODULE, ROW_CONFIG, TOKENS } from '../support/constants.mjs'
+
+export { EXTRA_CREDENTIALS }
 
 /** The package modules the area reaches, relative to the package root. */
 export const MODULE = Object.freeze({
-  host: 'host.js',
+  ...SHARED_MODULE,
   childRow: 'child-row.js',
   locator: 'src/host/locator.js',
   hosted: 'src/host/hosted.js',
@@ -18,23 +21,18 @@ export const MODULE = Object.freeze({
   syncHost: 'src/lib/provider-sync-host.js',
   syncTarget: 'src/child/provider-sync-target.js',
   ticket: 'src/native-runtime/ticket.js',
-  credential: 'src/native-runtime/credential.js',
-  constants: 'src/native-runtime/constants.js',
-  runtime: 'src/native-runtime/index.js',
   files: 'src/native-runtime/files.js',
 })
 
 /** K3a HOSTED_IMPORT names (README "The hosted token"). */
 export const IMPORT = Object.freeze({
-  credentialRef: 'DSH_AGENT_TOKEN',
-  savedRecord: 'fishball-core/hosted-agent',
+  ...HOSTED_IMPORT,
   childRow: 'dsh-instance-child',
   targetField: 'targetUrl',
-  ops: Object.freeze({ probe: 'probe', import: 'import' }),
 })
 
 /** <DSH_HOME>/fishball/hosted.json (README), private, {format: 1, instanceId, entries, runtime?}. */
-export const RECORD = Object.freeze({ dir: 'fishball', file: 'hosted.json', mode: 0o600, format: 1, damaged: 'INVALID_HOSTED_RECORD' })
+export const RECORD = Object.freeze({ ...HOSTED_RECORD, mode: 0o600, format: 1, damaged: 'INVALID_HOSTED_RECORD' })
 
 /** K3 dshInstanceChild (child.d.ts as I-HOST amended it; locator.js JSDoc). */
 export const K3 = Object.freeze({
@@ -46,10 +44,10 @@ export const K3 = Object.freeze({
   withdrawnCode: 'fishball-off',
   views: Object.freeze(['chat', 'settings']),
   langs: Object.freeze(['zh', 'en']),
-  entry: Object.freeze({ enabled: 'enabled', disabled: 'disabled', deleted: 'deleted' }),
+  entry: TOKENS.entry,
   refusal: Object.freeze({ notReady: 'not-ready', hostname: 'hostname-refused', connectorMissing: 'connector-missing', failed: 'operation-failed', unwritable: 'credentials-unwritable', invalid: 'invalid-request' }),
-  tokensService: 'dshConnectorTokens',
-  tokensApiVersion: 1,
+  tokensService: TOKENS.service,
+  tokensApiVersion: TOKENS.apiVersion,
 })
 
 /** K3 TargetStatus answers (hosted.js targetStatus, constants.js HOSTED.target). */
@@ -101,16 +99,11 @@ export const CONNECTOR_MCP = '/api/agent/mcp'
 
 /** The host row (host.js): its config field, the loader's volatile event, its warn for an unreadable record. */
 export const ROW = Object.freeze({
-  enabled: 'enabled',
+  ...ROW_CONFIG,
   extraTarget: 'targetUrl',
-  volatileUpdate: 'loader/volatile-update',
   recordWarn: 'hosted record unreadable (%s)',
-  warnLevel: 'warn',
-  interrupted: 'START_INTERRUPTED',
   invalidHome: 'INVALID_MAIN_HOME',
   unsafeDirectory: 'UNSAFE_DIRECTORY',
-  worldParam: 'fbrow',
-  worldsKey: 'dshi-test.host.row-worlds',
 })
 
 /** R-ARCH-05: services that read or write sessions, approvals, questions or prompts. */
@@ -147,9 +140,3 @@ export const FIXTURE = Object.freeze({
   detail: 'fbtest detail',
   bundle: 'fishball-ui',
 })
-
-/** MULTI-2: additional targets' credentials (MULTI-0 TARGETS names), which the reserved parent never reads or replaces. */
-export const EXTRA_CREDENTIALS = Object.freeze([
-  Object.freeze({ ref: 'FISHBALL_TARGET_TOKEN_t_abcdefghijklmnop__e_abcdefghijklmnop', tokenRecord: 'fishball-core/token-t-abcdefghijklmnop-e-abcdefghijklmnop', grantRecord: 'fishball-core/connect-t-abcdefghijklmnop-e-abcdefghijklmnop', value: 'multi-extra-a', origin: 'https://remote-a.example' }),
-  Object.freeze({ ref: 'FISHBALL_TARGET_TOKEN_t_bcdefghijklmnopq__e_bcdefghijklmnopq', tokenRecord: 'fishball-core/token-t-bcdefghijklmnopq-e-bcdefghijklmnopq', grantRecord: 'fishball-core/connect-t-bcdefghijklmnopq-e-bcdefghijklmnopq', value: 'multi-extra-b', origin: 'https://remote-b.example' }),
-])

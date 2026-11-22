@@ -13,10 +13,11 @@
  */
 import assert from 'node:assert/strict'
 import { caseTest, eachSdk } from '@dsh-instance/test-helpers/cases'
+import { show } from '@dsh-instance/test-helpers/json'
 import { wordsOf } from '@dsh-instance/test-helpers/page'
 import { findAll } from '@dsh-instance/test-helpers/react-shim'
 import { DETAIL, ROUTE } from './constants.mjs'
-import { requestsTo, scriptedInstance, show } from './fakes.mjs'
+import { requestsTo, scriptedInstance } from './fakes.mjs'
 import { openDetail } from './open.mjs'
 
 const ROWS = Object.freeze([

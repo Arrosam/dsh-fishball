@@ -1,25 +1,27 @@
 /**
  * Vocabulary of the reinstall-succession cases (README "The hosted token", "Reinstall"; hosted.js and
  * hosted-record.js JSDoc; the K3 contract dsh-connector host-services/tokens.d.ts, whose
- * `RetireRefusalCode` is restated here because a test never imports another package).
+ * `RetireRefusalCode` is restated here because a test never imports another package). What other
+ * areas share is in ../support/constants.mjs.
  */
+import { HOSTED_RECORD, TOKENS } from '../support/constants.mjs'
 
 /** K3 tokens.d.ts: `RetireRefusalCode = 'unknown-entry' | 'not-hosted' | 'successor-unpaired' | 'operation-failed'`. */
 export const RETIRE = Object.freeze({
   unknownEntry: 'unknown-entry',
   notHosted: 'not-hosted',
   successorUnpaired: 'successor-unpaired',
-  operationFailed: 'operation-failed',
+  operationFailed: TOKENS.operationFailed,
 })
 
 /** What a scripted `retire` answers; `reject` makes the call reject (treated like operation-failed). */
 export const OUTCOME = Object.freeze({
-  ok: Object.freeze({ ok: true }),
+  ok: TOKENS.ok,
   unpaired: Object.freeze({ ok: false, code: RETIRE.successorUnpaired }),
   failed: Object.freeze({ ok: false, code: RETIRE.operationFailed }),
   unknown: Object.freeze({ ok: false, code: RETIRE.unknownEntry }),
   notHosted: Object.freeze({ ok: false, code: RETIRE.notHosted }),
-  reject: 'reject',
+  reject: TOKENS.reject,
 })
 
 export const FIXTURE = Object.freeze({
@@ -33,19 +35,17 @@ export const FIXTURE = Object.freeze({
   /** The credential client's own bounds are product parameters; the largest timer delay, so none fires in a case. */
   clientTimeoutMs: 2 ** 31 - 1,
   writeFailure: 'dshi hosted.json write failed',
+  /** The ready child's own web port (its origin while ready). */
+  childPort: 43129,
 })
 
 /** The hosted record's file and fields (hosted-record.js: `<mainHome>/fishball/hosted.json`, `{format, instanceId, entries, runtime?, succession?}`). */
-export const RECORD = Object.freeze({ dirs: Object.freeze(['fishball']), file: 'hosted.json', entries: 'entries', runtime: 'runtime' })
-
-/** The child credential names (README "The hosted token"; constants.js HOSTED). */
-export const IMPORT = Object.freeze({ credentialRef: 'DSH_AGENT_TOKEN', savedRecord: 'fishball-core/hosted-agent', op: 'import' })
+export const RECORD = Object.freeze({ dirs: Object.freeze([HOSTED_RECORD.dir]), file: HOSTED_RECORD.file, entries: 'entries', runtime: 'runtime' })
 
 /** K3 child.d.ts entry states and refusals used here. */
 export const K3 = Object.freeze({
-  apiVersion: 1,
-  entry: Object.freeze({ enabled: 'enabled', deleted: 'deleted' }),
-  ready: Object.freeze({ state: 'ready', code: null }),
+  apiVersion: TOKENS.apiVersion,
+  entry: TOKENS.entry,
   unwritable: 'credentials-unwritable',
 })
 
@@ -60,8 +60,3 @@ export const RUNTIME = Object.freeze({
   next: (n) => 'dshi-runtime-' + n,
 })
 
-/** Additional targets' credentials inside Fishball (README: they cannot satisfy the hosted probe). */
-export const EXTRA_CREDENTIALS = Object.freeze([
-  Object.freeze({ ref: 'FISHBALL_TARGET_TOKEN_t_abcdefghijklmnop__e_abcdefghijklmnop', tokenRecord: 'fishball-core/token-t-abcdefghijklmnop-e-abcdefghijklmnop', grantRecord: 'fishball-core/connect-t-abcdefghijklmnop-e-abcdefghijklmnop', value: 'multi-extra-a', origin: 'https://remote-a.example' }),
-  Object.freeze({ ref: 'FISHBALL_TARGET_TOKEN_t_bcdefghijklmnopq__e_bcdefghijklmnopq', tokenRecord: 'fishball-core/token-t-bcdefghijklmnopq-e-bcdefghijklmnopq', grantRecord: 'fishball-core/connect-t-bcdefghijklmnopq-e-bcdefghijklmnopq', value: 'multi-extra-b', origin: 'https://remote-b.example' }),
-])

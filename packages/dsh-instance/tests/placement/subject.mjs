@@ -14,7 +14,6 @@ import { tempRoot } from '@dsh-instance/test-helpers/scratch'
 import { importInstance } from '../support/instance.mjs'
 import { CHILD, FAKE_REPO, MANIFEST, PLACEMENT_FROM, PLACEMENT_MODULE, RUNTIME_MODULE, SET, SHIPPED_PRESETS } from './constants.mjs'
 
-export const show = (value) => JSON.stringify(value)
 /** A POSIX fixture path in the platform's separator. */
 export const native = (posix) => posix.split('/').join(path.sep)
 const readJson = (file) => (fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, 'utf8')) : null)

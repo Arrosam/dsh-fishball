@@ -25,10 +25,9 @@ import { configForm, pageServices, settle } from '@dsh-instance/test-helpers/pag
 import { primitivesFor } from '@dsh-instance/test-helpers/primitives'
 import { createReactShim, findAll } from '@dsh-instance/test-helpers/react-shim'
 import { cordisOf } from '@dsh-instance/test-helpers/sdk'
+import { turn } from '@dsh-instance/test-helpers/wait'
 import { PACKAGE_DIR } from '../support/instance.mjs'
 import { PAGE_UI } from './constants.mjs'
-
-const nextTurn = () => new Promise((resolve) => setImmediate(resolve))
 
 /**
  * A page clock: the page's setTimeout/setInterval run only when `tick` moves it. After each timer
@@ -172,7 +171,7 @@ export async function openInstancePage(t, { sdk, lang = 'en', respond, mainBundl
     },
     /** Settle until `predicate` holds; no deadline, so a condition that never comes shows as a hang. */
     async until(predicate) {
-      for (;;) { await settleAll(); const value = predicate(); if (value) return value; await nextTurn() }
+      for (;;) { await settleAll(); const value = predicate(); if (value) return value; await turn() }
     },
   }
   return api

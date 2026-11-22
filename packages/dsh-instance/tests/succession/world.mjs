@@ -1,5 +1,6 @@
 /**
- * One instance's hosted-token logic on one SDK, over its real parts and the fakes of fakes.mjs:
+ * One instance's hosted-token logic on one SDK, over its real parts and the shared fakes
+ * (../support/fakes.mjs):
  * the real hosted record on disk (src/host/hosted-record.js) under a scratch main home, the real
  * hosted-token rules (src/host/hosted.js createHostedToken), the real credential client and receiver
  * (src/native-runtime/credential.js) over an in-memory wire, and the real locator
@@ -11,10 +12,11 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
 import { cleanups, tempRoot } from '@dsh-instance/test-helpers/scratch'
+import { settled } from '@dsh-instance/test-helpers/wait'
+import { credentialLink } from '../support/credential-link.mjs'
+import { fakeChildCredentials, fakeLifecycle, fakeTokens } from '../support/fakes.mjs'
 import { importInstance } from '../support/instance.mjs'
-import { FIXTURE, IMPORT, RECORD, RUNTIME } from './constants.mjs'
-import { fakeChildCredentials, fakeLifecycle, fakeTokens, memoryWire } from './fakes.mjs'
-import { settled, until } from './settle.mjs'
+import { FIXTURE, RECORD, RUNTIME } from './constants.mjs'
 
 /** The record's write members (hosted-record.js: add, settle). */
 const WRITES = Object.freeze(['add', 'settle'])
@@ -33,8 +35,6 @@ function guarded(record, state, writes) {
   return out
 }
 
-const parse = (text) => { try { return JSON.parse(text) } catch { return undefined } }
-
 /**
  * Options: `tokens` (fakeTokens options; false = no connector), `runtime` (what runtimeId()
  * answers; default RUNTIME.r1; pass undefined for "unknown").
@@ -43,43 +43,32 @@ export async function successionWorld(t, sdk, options = {}) {
   const { createHostedToken } = await importInstance(sdk, 'src/host/hosted.js')
   const { openHostedRecord } = await importInstance(sdk, 'src/host/hosted-record.js')
   const { createChildLocator } = await importInstance(sdk, 'src/host/locator.js')
-  const { createCredentialClient, createCredentialReceiver } = await importInstance(sdk, 'src/native-runtime/credential.js')
   const scope = cleanups(t)
   const home = tempRoot(scope, FIXTURE.tempPrefix)
   const dir = path.join(home, ...RECORD.dirs)
   fs.mkdirSync(dir, { mode: 0o700 })
   const file = path.join(dir, RECORD.file)
-  const tokens = options.tokens === false ? undefined : fakeTokens(options.tokens)
+  const tokens = options.tokens === false ? undefined : fakeTokens({ fixture: FIXTURE, ...options.tokens })
   const credentials = fakeChildCredentials()
-  const lifecycle = fakeLifecycle()
+  const lifecycle = fakeLifecycle({ port: FIXTURE.childPort })
   const warnings = []
   const writes = []
-  const wires = []
   const state = { broken: false }
   let runtime = 'runtime' in options ? options.runtime : RUNTIME.r1
   let runtimes = 1
-  let client
-  let receiver
+  // A new authenticated wire (a start): the old ends close, the receiver answers on the new one.
+  const link = await credentialLink(sdk, credentials, { timeoutMs: FIXTURE.clientTimeoutMs })
+  const { wires, connect, imports } = link
   let record
   let hosted
   let locator
-  /** A new authenticated wire (a start): the old ends close, the receiver answers on the new one. */
-  function connect() {
-    client?.close()
-    receiver?.close()
-    const wire = memoryWire()
-    receiver = createCredentialReceiver({ credentials })
-    receiver.attach(wire.child)
-    client = createCredentialClient(wire.host, { timeoutMs: FIXTURE.clientTimeoutMs, importTimeoutMs: FIXTURE.clientTimeoutMs })
-    wires.push(wire)
-  }
   /** A host-row start: the record reopened from its file and new hosted-token logic over it. */
   async function open() {
     record = await openHostedRecord(file)
     hosted = createHostedToken({
-      tokens: () => tokens?.service,
+      tokens: () => tokens,
       record: guarded(record, state, writes),
-      credentials: () => client,
+      credentials: () => link.client,
       instanceId: () => FIXTURE.instanceId,
       runtimeId: () => runtime,
       changed: () => {},
@@ -89,7 +78,7 @@ export async function successionWorld(t, sdk, options = {}) {
   }
   await open()
   // Close the logic (and wait for its steps) before the scratch home is removed.
-  scope.defer(async () => { client?.close(); receiver?.close(); await hosted.close() })
+  scope.defer(async () => { link.close(); await hosted.close() })
   const reopened = () => openHostedRecord(file)
   const w = {
     tokens, credentials, file, warnings, writes, wires,
@@ -124,7 +113,7 @@ export async function successionWorld(t, sdk, options = {}) {
     retired: () => tokens.calls.retired,
     created: () => tokens.calls.created.length,
     /** The import frames the host sent, parsed. */
-    imports: () => wires.flatMap((wire) => wire.frames.toChild).map(parse).filter((frame) => frame?.op === IMPORT.op),
+    imports,
   }
   return w
 }
@@ -143,5 +132,3 @@ export async function assertPending(w, expected, message) {
   assert.equal(w.record.pending(), expected, message + ' (the live record)')
   assert.equal(await w.pendingOnDisk(), expected, message + ' (hosted.json reopened)')
 }
-
-export { settled, until }

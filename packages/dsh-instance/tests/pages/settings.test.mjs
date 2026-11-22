@@ -18,11 +18,12 @@
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import { caseTest, eachSdk } from '@dsh-instance/test-helpers/cases'
+import { show } from '@dsh-instance/test-helpers/json'
 import { wordsOf } from '@dsh-instance/test-helpers/page'
 import { findAll } from '@dsh-instance/test-helpers/react-shim'
 import { packageFile } from '../support/instance.mjs'
 import { CHECK, CREDENTIAL_REF, HEADINGS, HOOK, PAGE_UI, ROUTE, SLOT, STAND, STATE, WORDS } from './constants.mjs'
-import { requestsTo, scriptedInstance, show, statusOf } from './fakes.mjs'
+import { requestsTo, scriptedInstance, statusOf } from './fakes.mjs'
 import { openSettings } from './open.mjs'
 import { openInstancePage } from './page.mjs'
 

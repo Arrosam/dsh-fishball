@@ -11,9 +11,11 @@
  */
 import assert from 'node:assert/strict'
 import { caseTest, eachSdk } from '@dsh-instance/test-helpers/cases'
+import { parseJson as parseFrame, textOf } from '@dsh-instance/test-helpers/json'
 import { leakHits } from '@dsh-instance/test-helpers/scratch'
+import { settle, until } from '@dsh-instance/test-helpers/wait'
+import { extraCredentialsOf, plantedExtraCredentials, seedExtraCredentials } from '../support/fakes.mjs'
 import { FIXTURE, IMPORT, K3, NOTICE, RECORD, TARGET } from './constants.mjs'
-import { extraCredentialsOf, parseFrame, plantedExtraCredentials, seedExtraCredentials, settle, textOf, until } from './fakes.mjs'
 import { hostedWorld, recordFile } from './worlds.mjs'
 import fs from 'node:fs'
 

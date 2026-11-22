@@ -5,7 +5,7 @@ Requirements of `src/native-runtime/stderr-log.js` `captureChildStderr(stream, {
 F03 and F04). Expected outputs come from these rules only. The rows are data in [rows.mjs](<rows.mjs>);
 [stderr-log.test.mjs](<stderr-log.test.mjs>) drives the capture with a synthetic `PassThrough` (no child
 process) into a scratch folder. After each chunk, and after `end()`, a row waits until no file request
-is in flight (settle.mjs, no deadline) and then checks the log (`child-stderr.log.1` then
+is in flight (`settled` of `@dsh-instance/test-helpers/wait`, no deadline) and then checks the log (`child-stderr.log.1` then
 `child-stderr.log`) exactly; at the end every planted secret, and U+FFFD, is absent from both files.
 
 | # | Rule |

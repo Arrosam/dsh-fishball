@@ -24,9 +24,11 @@
 import assert from 'node:assert/strict'
 import { caseTest, eachSdk } from '@dsh-instance/test-helpers/cases'
 import { wordsOf } from '@dsh-instance/test-helpers/page'
+import { show } from '@dsh-instance/test-helpers/json'
 import { findAll } from '@dsh-instance/test-helpers/react-shim'
+import { gate } from '@dsh-instance/test-helpers/wait'
 import { HOOK, PAGE_UI, POLL, RESTART, ROUTE, STATE } from './constants.mjs'
-import { alerts, confirmButton, deferred, expectedRestart, openDialogs, requestsTo, restartButton, restartView, scriptedInstance, show, statusOf } from './fakes.mjs'
+import { alerts, confirmButton, expectedRestart, openDialogs, requestsTo, restartButton, restartView, scriptedInstance, statusOf } from './fakes.mjs'
 import { openSettings, openTab } from './open.mjs'
 
 const statusReads = (page) => requestsTo(page, 'GET', ROUTE.status).length
@@ -160,7 +162,7 @@ eachSdk((sdk) => {
   for (const lang of PAGE_UI.langs) {
     caseTest(sdk, 'TR-FLOW', lang, `${lang}: click → confirm dialog (nothing posted) → Cancel (nothing) → click → confirm → "Restarting…" disabled until answered → Restart`, async (t) => {
       const held = []
-      const world = scriptedInstance({ handlers: { ['POST ' + ROUTE.restart]: () => { const d = deferred(); held.push(d); return d.promise } } })
+      const world = scriptedInstance({ handlers: { ['POST ' + ROUTE.restart]: () => { const d = gate(); held.push(d); return d.promise } } })
       const { page, tree } = await openTab(t, sdk, { lang, world })
       const words = page.services.locale.bind(PAGE_UI.id)
       await page.until(() => restartView(tree()) === 'enabled')
@@ -190,7 +192,7 @@ eachSdk((sdk) => {
       await page.press(restartButton(tree()))
       assert.deepEqual(openDialogs(tree()), [], 'a disabled Restart opened the dialog')
       assert.equal(restartPosts(page).length, 1, 'a second restart was posted while one was in flight')
-      held[0].resolve(statusOf(STATE.ready, { busy: false }))
+      held[0].open(statusOf(STATE.ready, { busy: false }))
       await page.until(() => restartView(tree()) === 'enabled')
       assert.equal(wordsOf(restartButton(tree())), lang === 'en' ? RESTART.en.restart : words('restart'))
       assert.deepEqual(alerts(tree()).map(wordsOf), [], 'an alert after a plain answer')

@@ -13,10 +13,18 @@
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
+import { callRoute, nodeResponse } from '@dsh-instance/test-helpers/routes'
 import { cleanups, tempRoot } from '@dsh-instance/test-helpers/scratch'
+import { credentialLink } from '../support/credential-link.mjs'
+import { fakeChildCredentials, fakeLifecycle, fakeTokens } from '../support/fakes.mjs'
 import { importInstance } from '../support/instance.mjs'
-import { FIXTURE, HOSTNAME, IMPORT, MODULE, RECORD, TICKET } from './constants.mjs'
-import { fakeChildCredentials, fakeLifecycle, fakeProviderSync, fakeTokens, memoryRecord, memoryWire, parseFrame } from './fakes.mjs'
+import { FIXTURE, HOSTNAME, K3, MODULE, RECORD, TICKET } from './constants.mjs'
+import { fakeProviderSync, memoryRecord } from './fakes.mjs'
+
+/** The origin the settings page sends its requests from. */
+export const ROUTE_ORIGIN = `http://${HOSTNAME.ipv4}:${FIXTURE.port}`
+/** The area's connector: no onChange member (its cases drive the record, not pair changes). */
+const connector = (apiVersion = K3.tokensApiVersion) => fakeTokens({ fixture: FIXTURE, apiVersion, onChange: false })
 
 /** One package module bound to `sdk`. */
 export const load = (sdk, key) => importInstance(sdk, MODULE[key])
@@ -52,13 +60,10 @@ export function recordFile(mainHome) {
 
 /** The real credential client and receiver on one in-memory wire; `receiver: false` never answers. */
 export async function credentialPair(t, sdk, { credentials = fakeChildCredentials(), receiver = true, timeoutMs = FIXTURE.timeoutMs } = {}) {
-  const { createCredentialClient, createCredentialReceiver } = await load(sdk, 'credential')
-  const wire = memoryWire()
-  const r = receiver ? createCredentialReceiver({ credentials }) : undefined
-  r?.attach(wire.child)
-  const client = createCredentialClient(wire.host, { timeoutMs, importTimeoutMs: timeoutMs })
-  scopeOf(t).defer(() => { client.close(); r?.close() })
-  return { client, wire, credentials, receiver: r }
+  const link = await credentialLink(sdk, credentials, { receiver, timeoutMs })
+  const wire = link.connect()
+  scopeOf(t).defer(link.close)
+  return { client: link.client, wire, credentials, receiver: link.receiver }
 }
 
 /**
@@ -72,10 +77,9 @@ export async function credentialPair(t, sdk, { credentials = fakeChildCredential
 export async function hostedWorld(t, sdk, options = {}) {
   const { createHostedToken } = await load(sdk, 'hosted')
   const { createChildLocator } = await load(sdk, 'locator')
-  const { createCredentialClient, createCredentialReceiver } = await load(sdk, 'credential')
   const { admissionKey, mintTicket } = await load(sdk, 'ticket')
   const order = []
-  const tokens = options.tokens === false ? undefined : fakeTokens(typeof options.tokens === 'number' ? { apiVersion: options.tokens } : {})
+  const tokens = options.tokens === false ? undefined : connector(typeof options.tokens === 'number' ? options.tokens : undefined)
   const credentials = fakeChildCredentials(options.credentials)
   const set = credentials.set.bind(credentials)
   credentials.set = async (name, value) => { order.push('child-set'); return set(name, value) }
@@ -94,29 +98,18 @@ export async function hostedWorld(t, sdk, options = {}) {
     pending: () => record.pending(),
     settle: (old) => record.settle(old),
   }
-  const lifecycle = fakeLifecycle(options.lifecycle)
+  const lifecycle = fakeLifecycle({ initial: options.lifecycle, port: FIXTURE.port })
   const providerSync = fakeProviderSync()
-  const wires = []
-  let client
-  let receiver
-  /** A new authenticated wire (a start, a restart or a reconnect of the link); the previous ends close. */
-  function connect() {
-    client?.close()
-    receiver?.close()
-    const wire = memoryWire()
-    receiver = options.receiver === false ? undefined : createCredentialReceiver({ credentials })
-    receiver?.attach(wire.child)
-    client = createCredentialClient(wire.host, { timeoutMs: FIXTURE.timeoutMs, importTimeoutMs: FIXTURE.timeoutMs })
-    wires.push(wire)
-    return wire
-  }
-  scopeOf(t).defer(() => { client?.close(); receiver?.close() })
+  // A new authenticated wire (a start, a restart or a reconnect of the link); the previous ends close.
+  const link = await credentialLink(sdk, credentials, { receiver: options.receiver !== false, timeoutMs: FIXTURE.timeoutMs })
+  const { wires, connect, imports } = link
+  scopeOf(t).defer(link.close)
   connect()
   let changes = 0
   const hosted = createHostedToken({
     tokens: () => tokens,
     record: recorded,
-    credentials: () => client,
+    credentials: () => link.client,
     instanceId: () => FIXTURE.instanceId,
     // MULTI-2: no remote override exists; an extra dependency of that name must change nothing.
     remoteTarget: () => options.remote ?? FIXTURE.blank,
@@ -128,7 +121,6 @@ export async function hostedWorld(t, sdk, options = {}) {
   const key = admissionKey(FIXTURE.secret)
   const ticket = options.ticket ?? (async (claims) => { issued.push(claims); return mintTicket(key, { generation: FIXTURE.generation, ...claims }) })
   const locator = createChildLocator({ lifecycle, origin: lifecycle.origin, ticket, hosted, providerSync })
-  const imports = () => wires.flatMap((w) => w.frames.toChild).map(parseFrame).filter((f) => f?.op === IMPORT.ops.import)
   return {
     tokens, credentials, record, lifecycle, providerSync, hosted, locator, order, issued, mainHome, wires, connect, imports,
     get wire() { return wires.at(-1) },
@@ -150,28 +142,11 @@ export async function hostedWorld(t, sdk, options = {}) {
   }
 }
 
-/**
- * One request to a route a row registered on DSH's Fetch registry (`{path, fetch}`), as the page
- * sends it: `{body, host}` → `{status, json, headers, text}`.
- */
-export async function callRoute(routes, method, routePath, { body, host = HOSTNAME.ipv4 + ':' + FIXTURE.port } = {}) {
-    const route = routes.find((r) => r.path === routePath)
-    assert.ok(route, 'no route registered at ' + routePath + '; registered: ' + routes.map((r) => r.path).join(', '))
-    const request = new Request(`http://${HOSTNAME.ipv4}:${FIXTURE.port}${routePath}`, {
-      method,
-      headers: { host, 'content-type': 'application/json', 'sec-fetch-site': 'same-origin' },
-      ...(body === undefined ? {} : { body: typeof body === 'string' ? body : JSON.stringify(body) }),
-    })
-    const response = await route.fetch(request)
-    const text = await response.text()
-    return { status: response.status, json: parseFrame(text), headers: response.headers, text }
-}
-
 /** routes.js over a fake Fetch registry. */
 export async function routesWorld(sdk, service, ctx) {
   const { registerInstanceRoutes } = await load(sdk, 'routes')
   registerInstanceRoutes(ctx.ctx, service)
-  return { call: (...args) => callRoute(ctx.routes, ...args), routes: ctx.routes }
+  return { call: (method, routePath, options) => callRoute(ctx.routes, method, routePath, { origin: ROUTE_ORIGIN, ...options }), routes: ctx.routes }
 }
 
 /**
@@ -216,22 +191,3 @@ export async function admissionWorld(sdk, { now = () => FIXTURE.t0, cookie = FIX
   return { get, routes }
 }
 
-/** A Node ServerResponse stand-in that records the answer. */
-function nodeResponse() {
-  const headers = {}
-  let status
-  let body = ''
-  let resolve
-  const done = new Promise((r) => { resolve = r })
-  const res = {
-    statusCode: 200,
-    setHeader(name, value) { headers[String(name).toLowerCase()] = value },
-    getHeader(name) { return headers[String(name).toLowerCase()] },
-    writeHead(code, extra = {}) { status = code; for (const [k, v] of Object.entries(extra ?? {})) headers[k.toLowerCase()] = v; return res },
-    write(chunk) { body += String(chunk) },
-    end(chunk) { if (chunk !== undefined) body += String(chunk); resolve() },
-    done,
-    result: () => ({ status: status ?? res.statusCode, headers, body }),
-  }
-  return res
-}

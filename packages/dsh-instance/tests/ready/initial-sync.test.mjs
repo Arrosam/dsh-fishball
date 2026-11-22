@@ -18,8 +18,8 @@ import { caseTest, eachSdk } from '@dsh-instance/test-helpers/cases'
 import { cleanups, tempRoot } from '@dsh-instance/test-helpers/scratch'
 import { INITSYNC as C } from './constants.mjs'
 import { initialSyncOf } from './subject.mjs'
-import { rowWorld, gate } from './row.mjs'
-import { until } from './wait.mjs'
+import { gate, until } from '@dsh-instance/test-helpers/wait'
+import { rowWorld } from './row.mjs'
 
 /**
  * One sync world: a scratch runtime folder, a scripted model sync (`check`, `add`; the defaults

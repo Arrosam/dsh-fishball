@@ -3,6 +3,16 @@
  * "Model sync", "The child": the child web listens on 127.0.0.1 with an OS port) and the JSDoc of
  * loopbackOrigin / childReadiness / readyHealth / createInitialSync, never from their bodies.
  */
+import { ROW_CONFIG } from '../support/constants.mjs'
+
+/** The host row the first-install sync case applies (host.js; its fake context's answers). */
+export const ROW = Object.freeze({
+  ...ROW_CONFIG,
+  childOrigin: 'http://127.0.0.1:43129',
+  webOrigin: 'http://127.0.0.1:43000',
+  ticket: 'ticket',
+})
+
 export const READY = Object.freeze({
   origin: 'http://127.0.0.1:43129',
   unsafe: 'UNSAFE_CHILD_ORIGIN',

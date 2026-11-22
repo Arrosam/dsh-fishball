@@ -72,8 +72,15 @@ export async function bootHost(home, { sdk, links = [], env = {} }) {
   let ready = false
   child.stdout.setEncoding('utf8').on('data', (d) => { output += d })
   child.stderr.setEncoding('utf8').on('data', (d) => { output += d })
-  const exit = new Promise((resolve) => child.on('exit', (code, signal) => { exited = { code, signal }; resolve(exited) }))
   const pending = new Map()
+  // A worker that exits (DSH can end the process inside its own shutdown, before the reply is sent)
+  // fails every call still waiting, so nothing awaits a reply that can no longer come.
+  const exit = new Promise((resolve) => child.on('exit', (code, signal) => {
+    exited = { code, signal }
+    for (const p of pending.values()) p.reject(new Error('host exited ' + JSON.stringify(exited)))
+    pending.clear()
+    resolve(exited)
+  }))
   let nextId = 0
   child.on('message', (msg) => {
     if (msg?.type === 'ready') ready = true
@@ -117,7 +124,8 @@ export async function bootHost(home, { sdk, links = [], env = {} }) {
     /** Shut DSH down as its own shutdown does, and wait for the process to exit. */
     async stop() {
       if (exited) return
-      try { await handle.call('shutdown') } catch { child.kill('SIGKILL') }
+      // The shutdown reply may never come: the process can exit first. The exit is what is awaited.
+      await Promise.race([handle.call('shutdown').catch(() => {}), exit])
       await exit
       child.stdin.destroy()
     },

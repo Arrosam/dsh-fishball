@@ -10,8 +10,8 @@
  */
 import assert from 'node:assert/strict'
 import { caseTest, eachSdk } from '@dsh-instance/test-helpers/cases'
+import { textOf } from '@dsh-instance/test-helpers/json'
 import { ADMIT, FIXTURE, HOSTNAME, K3, TICKET } from './constants.mjs'
-import { textOf } from './fakes.mjs'
 import { admissionWorld, load } from './worlds.mjs'
 
 const audience = (hostname = HOSTNAME.ipv4, port = FIXTURE.port) => `${hostname}:${port}`

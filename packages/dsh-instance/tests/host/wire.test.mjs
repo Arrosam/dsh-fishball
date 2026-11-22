@@ -10,8 +10,10 @@
  */
 import assert from 'node:assert/strict'
 import { caseTest, eachSdk } from '@dsh-instance/test-helpers/cases'
+import { parseJson as parseFrame, textOf } from '@dsh-instance/test-helpers/json'
+import { drain, settle, until } from '@dsh-instance/test-helpers/wait'
+import { extraCredentialsOf, fakeChildCredentials, plantedExtraCredentials, seedExtraCredentials } from '../support/fakes.mjs'
 import { CHANNEL_UNAVAILABLE, EXTRA_CREDENTIALS, FIXTURE, IMPORT, K3 } from './constants.mjs'
-import { drain, extraCredentialsOf, fakeChildCredentials, parseFrame, plantedExtraCredentials, seedExtraCredentials, settle, textOf, until } from './fakes.mjs'
 import { credentialPair } from './worlds.mjs'
 
 eachSdk((sdk) => {

@@ -14,13 +14,13 @@ import { execFileSync } from 'node:child_process'
 import fs from 'node:fs'
 import path from 'node:path'
 import { caseTest, eachSdk } from '@dsh-instance/test-helpers/cases'
+import { show } from '@dsh-instance/test-helpers/json'
 import { importInstance, PACKAGE_DIR, packageFile } from '../support/instance.mjs'
 import {
   ABSENT, CHILD_ROW, CONNECTOR_SIDE, DEPENDENCY_FIELDS, FISHBALL_SIDE, GONE, INSTANCE, MANIFEST, NPM_PACK, PACK_OUTPUT, PAGE, PRESENT, SCAN, SECRET_LIKE,
   PACKAGE_NAME, SESSION_ROUTE, SPECIFIERS, SYNC_TARGET,
 } from './constants.mjs'
 
-const show = (value) => JSON.stringify(value)
 const manifest = () => JSON.parse(fs.readFileSync(packageFile(MANIFEST), 'utf8'))
 const posix = (file) => file.split(path.sep).join('/')
 /** The package a bare specifier names (`@scope/name/sub` → `@scope/name`, `name/sub` → `name`). */

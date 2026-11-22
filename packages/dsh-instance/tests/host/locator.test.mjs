@@ -7,8 +7,8 @@
  */
 import assert from 'node:assert/strict'
 import { caseTest, eachSdk } from '@dsh-instance/test-helpers/cases'
+import { drain, settle } from '@dsh-instance/test-helpers/wait'
 import { FIXTURE, HOSTNAME, K3, TICKET } from './constants.mjs'
-import { drain, settle } from './fakes.mjs'
 import { hostedWorld, load, recordFile } from './worlds.mjs'
 
 const entry = (n) => FIXTURE.entryPrefix + n

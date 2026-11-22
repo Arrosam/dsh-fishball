@@ -18,6 +18,10 @@ Tests import only this package and the package they test, never another package'
 | `primitives` | `primitivesFor(sdk, React, options?)` (DSH's own `SettingsFormModel` cut from the SDK's web bundle, plus faithful stand-ins of DSH's design primitives), `fakePrimitives(React)` (generic elements), `STAND_IN` handles, `snapshotStore`. |
 | `page` | `openPage(t, {sdk, packageDir, id, entry, lang, base, primitives, respond, services})`: a scripted DSH page running the package's client scripts unread; `pageServices`, `configForm`, `json`, `wordsOf`, `settle`. |
 | `browser-sandbox`, `client-graph` | The node:vm page and DSH's browser module table the page is built on. |
+| `wait` | Waits with no deadline: `gate()` (`{promise, open(value)}`), `hold()` (a step held until `open()`: `reached`, `enter()`, `wait(value)`), `turn()`, `until(cond, step?)`, `drain(turns?)`, `settled()` (quiet: no file request in flight for several turns), `untilQuiet(cond)`, `settle(fn)` → `{value}` \| `{error}`. |
+| `json` | `show(value)`, `showClipped(text)`, `textOf(value)` (a deep text, Buffers as hex, for leak sweeps), `parseJson(text)` (undefined when not JSON). |
+| `routes` | DSH's route registries without a server: `fetchRegistry()` (`connection.fetch.register`), `callRoute(routes, method, path, {origin, body, host})` → `{status, json, headers, text}`, `nodeResponse()` (a Node ServerResponse stand-in for a `webServer` route). |
+| `swap` | `swapWorlds(tag, {root, replace})` → `{open(state), close(id), importIn(id, file, params)}`: load a module graph under a world tag with some modules (files or builtins) answered by fakes; `worldOf(tag, import.meta.url)` in a fake finds its world's state. Runs before the SDK binding hook. |
 | `runner` | `runPackage(dir, args)`, `testFiles(dir)`, `linkWorkspaces()`, `cancelOnSignal`. Used by `scripts/test-package.mjs` and `scripts/test-release.mjs`. |
 
 ## Running

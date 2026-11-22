@@ -16,11 +16,12 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
 import { caseTest, eachSdk } from '@dsh-instance/test-helpers/cases'
+import { show } from '@dsh-instance/test-helpers/json'
 import { cleanups, modeOf } from '@dsh-instance/test-helpers/scratch'
 import { packageFile } from '../support/instance.mjs'
 import { CHILD, CODE, FAKE_REPO, MANIFEST, SET } from './constants.mjs'
 import {
-  composeWorld, fishballBundles, placedCopy, placementRecord, placementRecordFile, profileBundles, profileManifest, deleteCopies, setProfileBundles, show, tracesOf,
+  composeWorld, fishballBundles, placedCopy, placementRecord, placementRecordFile, profileBundles, profileManifest, deleteCopies, setProfileBundles, tracesOf,
 } from './subject.mjs'
 
 const enabled = (mainHome) => profileBundles(mainHome).includes(SET.core)

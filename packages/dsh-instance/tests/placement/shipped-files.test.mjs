@@ -20,7 +20,8 @@ import path from 'node:path'
 import { caseTest, eachSdk } from '@dsh-instance/test-helpers/cases'
 import { cleanups, tempRoot } from '@dsh-instance/test-helpers/scratch'
 import { EXCLUSIONS, EXTRA, FAKE_REPO, FIXTURE_NAME, KINDS, MANIFEST, ORDERS, REFUSALS, TREE } from './constants.mjs'
-import { fakeFishball, native, placementModule, show, writeFile } from './subject.mjs'
+import { show } from '@dsh-instance/test-helpers/json'
+import { fakeFishball, native, placementModule, writeFile } from './subject.mjs'
 
 /** A fresh fixture package (TREE plus a package.json listing `files`); resolves to [root, manifest]. */
 function fixture(t, files) {

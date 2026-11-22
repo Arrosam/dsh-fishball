@@ -16,7 +16,8 @@ import path from 'node:path'
 import { caseTest, eachSdk } from '@dsh-instance/test-helpers/cases'
 import { cleanups } from '@dsh-instance/test-helpers/scratch'
 import { CHILD, GUARDED_ROWS, OVERLAY, POLICY_ROWS, SET, SHIPPED_PRESETS } from './constants.mjs'
-import { composeWorld, effectiveRows, findRows, insertedOf, show, touchedOf } from './subject.mjs'
+import { show } from '@dsh-instance/test-helpers/json'
+import { composeWorld, effectiveRows, findRows, insertedOf, touchedOf } from './subject.mjs'
 
 const { instructions, skills } = OVERLAY.isolation
 const isIsolation = (id) => id === instructions.id || id === skills.id || OVERLAY.presetRow.test(id)

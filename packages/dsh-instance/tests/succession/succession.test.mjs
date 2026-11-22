@@ -19,15 +19,16 @@
 import assert from 'node:assert/strict'
 import { caseTest, eachSdk } from '@dsh-instance/test-helpers/cases'
 import { leakHits } from '@dsh-instance/test-helpers/scratch'
+import { hold, settled, untilQuiet } from '@dsh-instance/test-helpers/wait'
+import { extraCredentialsKept, seedExtraCredentials } from '../support/fakes.mjs'
 import { ENTRY, FIXTURE, K3, OUTCOME, RECORD, RETIRE, RUNTIME } from './constants.mjs'
-import { extraCredentialsKept, gate, seedExtraCredentials } from './fakes.mjs'
-import { assertPending, reinstalled, settled, successionWorld, until } from './world.mjs'
+import { assertPending, reinstalled, successionWorld } from './world.mjs'
 
 const E12 = [ENTRY.e1, ENTRY.e2]
 
 /** `n` entries the instance created earlier, as past starts recorded them (no runtime recorded). */
 async function seed(w, n) {
-  for (let i = 0; i < n; i++) await w.record.add((await w.tokens.service.createHosted(FIXTURE.instanceId)).entryKey)
+  for (let i = 0; i < n; i++) await w.record.add((await w.tokens.createHosted(FIXTURE.instanceId)).entryKey)
 }
 
 eachSdk((sdk) => {
@@ -269,7 +270,7 @@ eachSdk((sdk) => {
     await w.start()
     w.tokens.answer(async () => { w.tokens.emit(); return OUTCOME.unpaired })
     await w.reinstall()
-    await until(async () => (await w.pendingOnDisk()) === undefined)
+    await untilQuiet(async () => (await w.pendingOnDisk()) === undefined)
     assert.deepEqual(w.retired(), [E12, E12])
     await assertPending(w, undefined, 'after the second call answered ok')
   })
@@ -439,7 +440,7 @@ eachSdk((sdk) => {
   caseTest(sdk, 'ISUCC-ST-03', 1, 'close() while retire is in flight → when it answers ok, nothing more is written to hosted.json and no retire follows', async (t) => {
     const w = await successionWorld(t, sdk)
     await w.start()
-    const held = gate()
+    const held = hold()
     w.tokens.answer(held.wait(OUTCOME.ok))
     const reinstall = w.reinstall()
     await held.reached
@@ -454,7 +455,7 @@ eachSdk((sdk) => {
   })
   caseTest(sdk, 'ISUCC-ST-03', 2, 'close() with a pair-change retry queued behind an in-flight retire → the queued step calls no retire and writes nothing', async (t) => {
     const w = await reinstalled(t, sdk, [OUTCOME.unpaired])
-    const held = gate()
+    const held = hold()
     w.tokens.answer(held.wait(OUTCOME.unpaired))
     w.tokens.emit()
     await held.reached

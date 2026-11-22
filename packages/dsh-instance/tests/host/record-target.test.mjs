@@ -14,10 +14,11 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
 import { caseTest, eachSdk } from '@dsh-instance/test-helpers/cases'
+import { textOf } from '@dsh-instance/test-helpers/json'
 import { modeOf } from '@dsh-instance/test-helpers/scratch'
+import { settle } from '@dsh-instance/test-helpers/wait'
 import { packageFile } from '../support/instance.mjs'
 import { CONNECTOR_MCP, FIXTURE, HEX64, IMPORT, K3, MODULE, RECORD, ROW, SECRET_LIKE, SESSION_LIKE, SYNC } from './constants.mjs'
-import { settle, textOf } from './fakes.mjs'
 import { homeOf, load, recordFile, scratch } from './worlds.mjs'
 
 const tree = (dir) => fs.readdirSync(dir, { recursive: true }).map(String).sort()

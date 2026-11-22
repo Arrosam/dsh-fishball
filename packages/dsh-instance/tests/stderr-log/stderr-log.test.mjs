@@ -15,12 +15,12 @@ import v8 from 'node:v8'
 import vm from 'node:vm'
 import { caseTest, eachSdk } from '@dsh-instance/test-helpers/cases'
 import { cleanups, tempRoot } from '@dsh-instance/test-helpers/scratch'
+import { showClipped as show } from '@dsh-instance/test-helpers/json'
+import { settled, untilQuiet as until } from '@dsh-instance/test-helpers/wait'
 import { importInstance } from '../support/instance.mjs'
 import { CAP, CONTINUED, F03, F04, LOG, MASK, OVERSIZE } from './constants.mjs'
 import { STDERR_ROWS, line } from './rows.mjs'
-import { settled, until } from './settle.mjs'
 
-const show = (v) => JSON.stringify(v.length > 200 ? v.slice(0, 80) + '…(' + v.length + ' chars)…' + v.slice(-80) : v)
 const readOr = (file) => { try { return fs.readFileSync(file, 'utf8') } catch (error) { if (error.code === 'ENOENT') return null; throw error } }
 /** Both files' text, the rotated one first (null for a file that does not exist). */
 const files = (root) => ({ rotated: readOr(path.join(root, LOG.rotated)), current: readOr(path.join(root, LOG.file)) })

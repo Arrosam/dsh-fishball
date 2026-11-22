@@ -12,9 +12,6 @@ import { json } from '@dsh-instance/test-helpers/page'
 import { findAll } from '@dsh-instance/test-helpers/react-shim'
 import { CHECK, PROTECTED, RESTART, ROUTE, STATE } from './constants.mjs'
 
-export const show = (value) => JSON.stringify(value)
-export const deferred = () => { let resolve; const promise = new Promise((r) => { resolve = r }); return { promise, resolve } }
-
 /** A status answer. */
 export const statusOf = (state, extra = {}) => ({ state, code: state === STATE.failed ? 'NATIVE_CHILD_EXITED' : null, detail: null, notice: null, ...extra })
 

@@ -11,8 +11,10 @@
  */
 import assert from 'node:assert/strict'
 import { caseTest, eachSdk } from '@dsh-instance/test-helpers/cases'
+import { drain, hold, settle } from '@dsh-instance/test-helpers/wait'
+import { fakeTokens } from '../support/fakes.mjs'
 import { FIXTURE, K3, NOTICE } from './constants.mjs'
-import { ANSWER, drain, fakeTokens, gate, memoryRecord, scriptedClient, settle } from './fakes.mjs'
+import { ANSWER, memoryRecord, scriptedClient } from './fakes.mjs'
 import { load, scopeOf } from './worlds.mjs'
 
 const entry = (n) => FIXTURE.entryPrefix + n
@@ -20,7 +22,7 @@ const entry = (n) => FIXTURE.entryPrefix + n
 /** The real rules over a fake connector, a replaceable scripted client and an in-memory record. */
 async function tokenWorld(t, sdk, { client = scriptedClient(), record = memoryRecord() } = {}) {
   const { createHostedToken } = await load(sdk, 'hosted')
-  const tokens = fakeTokens()
+  const tokens = fakeTokens({ fixture: FIXTURE, onChange: false })
   let current = client
   const hosted = createHostedToken({ tokens: () => tokens, record, credentials: () => current, instanceId: () => FIXTURE.instanceId, runtimeId: () => FIXTURE.runtimeId, changed: () => {} })
   scopeOf(t).defer(() => hosted.close())
@@ -29,20 +31,18 @@ async function tokenWorld(t, sdk, { client = scriptedClient(), record = memoryRe
 /** createHosted that waits on a gate; `reached` resolves when a call arrives. */
 function holdCreate(tokens) {
   const create = tokens.createHosted.bind(tokens)
-  const held = gate()
-  const reached = gate()
-  tokens.createHosted = async (id) => { reached.open(); await held.promise; return create(id) }
-  return { reached: reached.promise, open: held.open }
+  const held = hold()
+  tokens.createHosted = async (id) => { await held.enter(); return create(id) }
+  return { reached: held.reached, open: held.open }
 }
 /** A record whose add waits on a gate; `done` lists the keys whose add finished. */
 function heldRecord() {
   const record = memoryRecord()
   const add = record.add.bind(record)
-  const held = gate()
-  const reached = gate()
+  const held = hold()
   const done = []
-  record.add = async (key, options) => { reached.open(); await held.promise; await add(key, options); done.push(key) }
-  return { record, done, reached: reached.promise, open: held.open }
+  record.add = async (key, options) => { await held.enter(); await add(key, options); done.push(key) }
+  return { record, done, reached: held.reached, open: held.open }
 }
 
 eachSdk((sdk) => {
