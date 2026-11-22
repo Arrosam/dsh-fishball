@@ -1,4 +1,0 @@
-- insert:
-    - id: dsh-telegram-notify
-      name: 'dsh-telegram-notify'
-      config: {}
