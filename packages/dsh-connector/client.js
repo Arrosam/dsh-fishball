@@ -247,8 +247,9 @@ window.__ModuleLoader__.load({
     const DUPLICATE_ROW = '#'
     /** A step in the list for the reorder buttons. */
     const MOVE = Object.freeze({ up: -1, down: 1 })
-    /** The marks part's chunk (beside this file: DSH serves only client.<name>.js there), its effect label and its load-failure line. */
+    /** The marks and bundled-amenities chunks (beside this file: DSH serves only flat client.<name>.js chunks). */
     const MARKS = Object.freeze({ chunk: './client.marks.js', effect: 'dsh-connector: marks part', unavailable: 'dsh-connector: part unavailable' })
+    const AMENITIES = Object.freeze({ chunk: './client.amenities.js', effect: 'dsh-connector: amenities part', unavailable: 'dsh-connector: part unavailable' })
 
     const en = {
       summary: 'Tokens for agents that connect to this DSH.',
@@ -951,21 +952,21 @@ window.__ModuleLoader__.load({
     }
 
     /**
-     * The marks part (client.marks.js) as a sub-plugin while this row runs, as dsh-connector-ui
-     * starts its parts: the load is held by an effect, so a chunk that arrives after the row stopped
-     * starts nothing, and a chunk that fails to load loses only the marks, logged once.
+     * Mount a package-local browser chunk (`client.<name>.js`) as a sub-plugin while this row runs:
+     * held by an effect so a late load starts nothing, and a load failure loses only that part.
      */
-    function startMarks(ctx) {
+    function startPart(ctx, spec, makePlugin) {
       ctx.effect(() => {
         let live = true
-        require.async(MARKS.chunk).then((module) => { if (live) ctx.plugin(module.marksPart(UI_CLIENT)) })
-          .catch((error) => { ctx.logger?.warn?.(MARKS.unavailable, MARKS.chunk, error) })
+        require.async(spec.chunk).then((module) => { if (live) ctx.plugin(makePlugin(module)) })
+          .catch((error) => { ctx.logger?.warn?.(spec.unavailable, spec.chunk, error) })
         return () => { live = false }
-      }, MARKS.effect)
+      }, spec.effect)
     }
 
     function apply(ctx) {
-      startMarks(ctx)
+      startPart(ctx, MARKS, (module) => module.marksPart(UI_CLIENT))
+      startPart(ctx, AMENITIES, (module) => module.amenitiesPart(PACKAGE_NAME))
       const t = ctx.locale.bind(PAGE.locale)
       ctx.effect(() => ctx.locale.register(PAGE.locale, { en, zh }), PAGE.effect.locale)
       // Registered only while DSH serves the row's settings, so a deployment without the row shows

@@ -33,6 +33,7 @@
     "index.js",
     "client.js",
     "client.marks.js",
+    "client.amenities.js",
     "src/",
     "mcp-schema/",
     "tools/",
@@ -49,25 +50,37 @@
     "node": ">=22.14",
     "dsh": ">=0.2.1-rc.5"
   },
-  "//dependencies": "Fishball owns the MCP server: both supported hosts provide a client, not a server. Node 2.1.2 requires server ^2.4.0; pin the pair exactly (K1 SDK_PINS). The HTTP endpoint uses toNodeHandler, not serveStatic. hono satisfies the HTTP adapter stack in DSH's hoisted pnpm profiles with autoInstallPeers disabled.",
+  "//dependencies": "Fishball owns the MCP server: both supported hosts provide a client, not a server. Node 2.1.2 requires server ^2.4.0; pin the pair exactly (K1 SDK_PINS). The HTTP endpoint uses toNodeHandler, not serveStatic. hono satisfies the HTTP adapter stack in DSH's hoisted pnpm profiles with autoInstallPeers disabled. dsh-connector-adapter, dsh-connector-watchdog and @modelcontextprotocol/client ship bundled with dsh-agent-connector so installing the connector bundle brings the amenities along (the user, 2026-11-23).",
   "dependencies": {
+    "@modelcontextprotocol/client": "2.4.0",
     "@modelcontextprotocol/node": "2.1.2",
     "@modelcontextprotocol/server": "2.4.0",
+    "dsh-connector-adapter": "1.0.0-alpha.1",
     "dsh-connector-shared": "1.0.0-alpha.1",
+    "dsh-connector-watchdog": "1.0.0-alpha.1",
     "hono": "^4.11.4"
   },
-  "//bundleDependencies": "dsh-connector-shared (R-ARCH-08, the DSH side's library) is bundled, as in the instance, so the tarball carries it and an install fetches nothing from a registry. The connector uses its ./redact, the secret-shape scrub a contributed tool's refusal message passes (design §13.5; C-EXT, decided by Fishball 2026-11-14).",
+  "//bundleDependencies": "dsh-connector-shared (R-ARCH-08, the DSH side's library), the two amenities (dsh-connector-adapter, dsh-connector-watchdog) and the adapter's @modelcontextprotocol/client closure are bundled so the tarball carries them and an install (online or offline) fetches none of them from a registry.",
   "bundleDependencies": [
-    "dsh-connector-shared"
+    "@modelcontextprotocol/client",
+    "dsh-connector-adapter",
+    "dsh-connector-shared",
+    "dsh-connector-watchdog"
   ],
   "//peerDependencies": "Host packages are resolved from the running DSH installation (verified in spike S8). '*' because engines.dsh is the real compatibility gate.",
   "peerDependencies": {
     "@deepseek-ai/dsh-agent": "*",
+    "@deepseek-ai/dsh-agent-preset": "*",
+    "@deepseek-ai/dsh-atomic-write": "*",
+    "@deepseek-ai/dsh-credentials": "*",
     "@deepseek-ai/dsh-llm": "*",
+    "@deepseek-ai/dsh-mcp-client": "*",
     "@deepseek-ai/dsh-scope": "*",
     "@deepseek-ai/dsh-session": "*",
     "@deepseek-ai/dsh-session-title": "*",
     "@deepseek-ai/dsh-storage-domain": "*",
+    "@deepseek-ai/dsh-timeout": "*",
+    "@deepseek-ai/dsh-tool-fs": "*",
     "@deepseek-ai/dsh-tools": "*",
     "@deepseek-ai/schemastery": "*",
     "yaml": "*",
