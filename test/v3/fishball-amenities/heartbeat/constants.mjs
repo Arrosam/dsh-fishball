@@ -27,7 +27,9 @@ export const DSH = Object.freeze({
   /** Logger types a failure may be logged at. */
   problemLevels: Object.freeze(['warn', 'error']),
   services: Object.freeze({ tools: 'tools', profileContext: 'profileContext', instance: 'fishballInstance', appReady: 'appReady' }),
-  event: Object.freeze({ turnStart: 'turn/start', stepStart: 'step/start', stepEnd: 'step/end', userMessage: 'user/message', turnEnd: 'turn/end' }),
+  event: Object.freeze({ turnStart: 'turn/start', stepStart: 'step/start', stepEnd: 'step/end', userMessage: 'user/message', turnEnd: 'turn/end', inboxSpliced: 'agent/inbox/spliced' }),
+  /** dsh-agent-loop's pending-input lists: inject/steer splice into next-step, followup into next-turn. */
+  inbox: Object.freeze({ nextStep: 'next-step', nextTurn: 'next-turn' }),
   /** Surface placement every user/message append needs (dsh-session SurfaceIntent). */
   surface: Object.freeze({ surfaceOp: 'append' }),
   textBlock: 'text',
@@ -95,6 +97,10 @@ export const SOURCE = Object.freeze({
   fishballEvent: Object.freeze({ kind: 'fishball-event', events: Object.freeze([Object.freeze({ key: 'fbtest-key-1', eventId: 'fbtest-event-1', type: 'fbtest.event', targetId: 'fbtest-target' })]) }),
   /** core's reminders. */
   schedule: Object.freeze({ kind: 'schedule' }),
+  /** fishball-taskboard's reminder, which it injects right after every compaction/end (the incident of 2026-11-22). */
+  taskboard: Object.freeze({ kind: 'fishball-notice', form: 'plugin', pluginId: 'fishball-taskboard' }),
+  /** meow-memory's own turn (its 'dream'): no work kind, so a step admitting only it is real (HB-DT-01 parts 4/6). */
+  meowDream: Object.freeze({ kind: 'plugin:meow-memory' }),
   /** Injected contexts: they decide nothing. */
   runtimeContext: Object.freeze({ kind: 'runtime-context' }),
   timeContext: Object.freeze({ kind: 'time-context' }),
@@ -163,6 +169,14 @@ export const FIXTURE = Object.freeze({
   meterCode: 'FBTEST_METER',
   compactionMessage: 'fbtest compaction failure',
   shadowedTokens: 100,
+  /** The compaction/summary and checkpoint message the fake engine writes, as dsh-compaction-basic does. */
+  compactionProvider: 'fbtest-provider',
+  compactionModel: 'fbtest-model',
+  checkpointText: 'fbtest compaction summary',
+  /** The command id /compact records on its compaction (sourceCommandId). */
+  commandId: 'fbtest-command-compact',
+  /** Suffix of a compactionId no start in the log carries. */
+  otherCompactionId: 'unmatched',
 })
 
 /**
@@ -184,7 +198,9 @@ export const COMPACT = Object.freeze({
   errorName: 'ManualCompactionError',
   errorCode: 'summary',
   baselineKind: 'estimated',
-  event: Object.freeze({ start: 'compaction/start', end: 'compaction/end' }),
+  event: Object.freeze({ start: 'compaction/start', summary: 'compaction/summary', end: 'compaction/end' }),
+  /** dsh-compaction's checkpoint message source kind (COMPACT_CHECKPOINT_MARKER). */
+  checkpointKind: 'compact-checkpoint',
   idPrefix: 'fbtest-compaction-',
 })
 

@@ -27,12 +27,23 @@
  *   recorded with the engine it reached; a successful one appends DSH's standalone
  *   `compaction/start` … `compaction/end` pair (turn null) as the real engine does. `live.whenIdle()`
  *   resolves at once unless the case holds it (`w.holdIdle()` … `w.releaseIdle()`).
+ *   A successful compaction writes dsh-compaction-basic's whole record: compaction/start, /summary,
+ *   the compact-checkpoint user/message, compaction/end (`appendCompaction`; `w.compactionRecord`
+ *   writes the same outside the heartbeat, e.g. the user's /compact with a sourceCommandId).
+ * - DSH's pending input (caused-cases.mjs): `w.inject(sources, target)` logs agent/inbox/spliced as
+ *   agent.inject (next-step) or followup (next-turn) does (all sources in one splice), `w.reinject`
+ *   splices messages that already exist; `w.afterCompaction(sources)` injects on the
+ *   microtask after each compaction/end, as fishball-taskboard does. Every stepped turn first claims
+ *   what is pending (the whole next-step list, then one next-turn message: a claim splice after
+ *   turn/start) and admits it before its own sources, as dsh-agent-loop's preStep does. Pending input
+ *   is folded from the log, so a resumed world claims what the earlier one left.
  * Everything observed is public: notify calls (tagged with the fake core's generation, so a
  * replaced core's calls are told apart), the manager scope's tools, the global registry, log
  * records and files under the home. A tool call runs `definition.execute(args, exec)` directly and
  * a throw fails the case: the contract says every refusal is a returned `{ok: false, code}`.
  */
 import assert from 'node:assert/strict'
+import { randomUUID } from 'node:crypto'
 import fs from 'node:fs'
 import { mkdtemp, realpath, rm } from 'node:fs/promises'
 import os from 'node:os'
@@ -81,6 +92,51 @@ function recordingRegistry() {
 /** The highest turn number opened in `session`'s log (0 for none): a resumed log continues it. */
 const lastTurnStart = (session) => Math.max(0, ...session.snapshotEvents().filter((e) => e.type === DSH.event.turnStart).map((e) => e.data.turn))
 
+/** The pending-input lists folded from `session`'s agent/inbox/spliced records (dsh-agent-loop's inbox fold). */
+function pendingOf(session) {
+  const pending = { [DSH.inbox.nextStep]: [], [DSH.inbox.nextTurn]: [] }
+  for (const e of session.snapshotEvents()) {
+    if (e.type === EVENT.inboxSpliced) pending[e.data.target] = pending[e.data.target].toSpliced(e.data.start, e.data.removedCount ?? 0, ...e.data.inserted)
+  }
+  return pending
+}
+
+/** How much of each list one step claims (dsh-agent-loop Inbox.claim: all of next-step, then one queued turn). */
+const CLAIM = Object.freeze([[DSH.inbox.nextStep, Infinity], [DSH.inbox.nextTurn, 1]])
+
+/** Logs one step's claim of the pending input (a removing splice per list) and returns the claimed messages in admission order. */
+function claim(session) {
+  const pending = pendingOf(session)
+  const claimed = []
+  for (const [target, most] of CLAIM) {
+    const taken = pending[target].slice(0, most)
+    if (taken.length === 0) continue
+    session.append(EVENT.inboxSpliced, { target, start: 0, removedCount: taken.length, inserted: [] })
+    claimed.push(...taken)
+  }
+  return claimed
+}
+
+/** A fresh compaction identity (DSH uses a UUID: worlds resuming one log never repeat one). */
+const newCompactionId = () => COMPACT.idPrefix + randomUUID()
+
+/**
+ * DSH's compaction records in dsh-compaction-basic's order: compaction/start, compaction/summary,
+ * the compact-checkpoint user/message, compaction/end. `sourceCommandId` is the /compact command's;
+ * `turn` null is an idle compaction, a number one inside that open turn; `endCompactionId` (a test
+ * value only) closes with another compaction's id, so the end matches no start.
+ */
+function appendCompaction(session, createUserMessage, { compactionId = newCompactionId(), sourceCommandId, turn = null, endCompactionId = compactionId } = {}) {
+  const command = sourceCommandId === undefined ? {} : { sourceCommandId }
+  const lifecycle = { compactionId, ...command, turn }
+  const start = session.append(COMPACT.event.start, lifecycle)
+  const summary = session.append(COMPACT.event.summary, { compactionId, ...command, summary: [], shadowedRange: { start: 0, end: 0 }, shadowedSeqs: [], shadowedTokenCount: FIXTURE.shadowedTokens, provider: FIXTURE.compactionProvider, model: FIXTURE.compactionModel })
+  const checkpoint = createUserMessage({ content: [{ type: DSH.textBlock, text: FIXTURE.checkpointText }], source: { kind: COMPACT.checkpointKind, compactionId, ...command } })
+  session.append(EVENT.userMessage, checkpoint, DSH.surface)
+  const end = session.append(COMPACT.event.end, { ...lifecycle, compactionId: endCompactionId })
+  return { compactionId, start, summary, end }
+}
+
 /** The service names a row's `inject` declares (a list, or cordis' object form). */
 const injectNames = (inject) => (inject === undefined ? [] : Array.isArray(inject) ? inject : Object.keys(inject))
 /** Services a case decides to provide or leave out: load() never stubs them. */
@@ -104,11 +160,10 @@ const compactionError = () => Object.assign(new Error(FIXTURE.compactionMessage)
  * {preset, host, registry, result}: an engine in the preset group (read through serviceFor), one
  * on the host plane, whether the preset registry exists at all, and what compactNow does.
  */
-function compactionSeam(ctx, { meter = {}, compaction = {} }) {
+function compactionSeam(ctx, { meter = {}, compaction = {} }, createUserMessage) {
   const { mode: meterMode = COMPACT.meter.present } = meter
   const { preset = true, host = false, registry = true } = compaction
   const seam = { tokens: meter.tokens ?? 0, result: compaction.result ?? COMPACT.result.compacted, measures: [], serviceForCalls: [], calls: [] }
-  let compactionSeq = 0
   if (meterMode !== COMPACT.meter.absent) {
     ctx.provide(COMPACT.services.tokenMeter, {
       measure(session) {
@@ -118,12 +173,10 @@ function compactionSeam(ctx, { meter = {}, compaction = {} }) {
       },
     })
   }
-  /** One successful idle compaction: DSH's standalone marker pair in the agent's log, and its result. */
+  /** One successful idle compaction: DSH's standalone records (turn null) in the agent's log, and its result. */
   function compacted(agent) {
-    const compactionId = COMPACT.idPrefix + ++compactionSeq
-    const start = agent.session.append(COMPACT.event.start, { compactionId, turn: null })
-    const end = agent.session.append(COMPACT.event.end, { compactionId, turn: null })
-    return { compactionId, startSeq: start.seq, summarySeq: start.seq, endSeq: end.seq, summary: [], shadowedRange: { start: 0, end: 0 }, shadowedSeqs: [0], shadowedTokenCount: FIXTURE.shadowedTokens }
+    const { compactionId, start, summary, end } = appendCompaction(agent.session, createUserMessage)
+    return { compactionId, startSeq: start.seq, summarySeq: summary.seq, endSeq: end.seq, summary: [], shadowedRange: { start: 0, end: 0 }, shadowedSeqs: [0], shadowedTokenCount: FIXTURE.shadowedTokens }
   }
   const engine = (provider) => ({
     // Not async: the `throws` result must throw synchronously, as a broken engine might.
@@ -211,7 +264,7 @@ async function openWorld(sdk, [{ Context }, { Loader }, { SessionStore, appendPl
   const global = recordingRegistry()
   ctx.provide(SERVICE.tools, global)
   ctx.provide(SERVICE.profileContext, { name: FIXTURE.profileName, dir: home, home, cwd: home })
-  const seam = compactionSeam(ctx, options)
+  const seam = compactionSeam(ctx, options, createUserMessage)
 
   const readyListeners = new Set()
   let isReady = false
@@ -253,16 +306,37 @@ async function openWorld(sdk, [{ Context }, { Loader }, { SessionStore, appendPl
   }
   if (managerLive) createManager()
 
-  /** Appends one turn's opening events: turn/start, and unless `sources` is null (empty turn) step/start and its user/messages. */
+  /** One user-role message from `source` (a heartbeat carries the last notice's text). */
+  const messageFrom = (source) => {
+    const text = source === SOURCE.heartbeat ? (notices.at(-1)?.text ?? HEARTBEAT.name) : FIXTURE.ascii
+    return createUserMessage({ content: [{ type: DSH.textBlock, text }], source: { ...source } })
+  }
+  /** Logs one agent/inbox/spliced appending `inserted` to `target`'s pending list; returns them. */
+  function splice(inserted, target, session) {
+    session.append(EVENT.inboxSpliced, { target, start: pendingOf(session)[target].length, inserted })
+    return inserted
+  }
+  /** One splice of one new message per source. */
+  const inject = (sources, target, session) => splice(sources.map(messageFrom), target, session)
+  // fishball-taskboard's reaction: on the microtask after a manager compaction/end, inject its reminder.
+  let compactionReaction
+  ctx.on('session/event', (session, event) => {
+    if (compactionReaction === undefined || session !== manager.live?.session || event.type !== COMPACT.event.end) return
+    const { sources, target } = compactionReaction
+    Promise.resolve().then(() => inject(sources, target, session))
+  })
+
+  /**
+   * Appends one turn's opening events: turn/start, and unless `sources` is null (empty turn) the
+   * claim of pending input, step/start, the claimed messages and then `sources`' user/messages.
+   */
   function beginTurn(sources, session) {
     const turn = lastTurnStart(session) + 1
     session.append(EVENT.turnStart, { turn })
     if (sources !== null) {
+      const claimed = claim(session)
       session.append(EVENT.stepStart, { turn, step: 1 })
-      for (const source of sources) {
-        const text = source === SOURCE.heartbeat ? (notices.at(-1)?.text ?? HEARTBEAT.name) : FIXTURE.ascii
-        session.append(EVENT.userMessage, createUserMessage({ content: [{ type: DSH.textBlock, text }], source: { ...source } }), DSH.surface)
-      }
+      for (const message of [...claimed, ...sources.map(messageFrom)]) session.append(EVENT.userMessage, message, DSH.surface)
     }
     return {
       end(reason = DSH.endReason.completed) {
@@ -369,6 +443,24 @@ async function openWorld(sdk, [{ Context }, { Loader }, { SessionStore, appendPl
     /** Opens a turn left open; `await .end(reason)` closes it. */
     beginTurn: (sources, session = manager.live.session) => openTurn(sources, session),
     otherSession: () => ctx.sessions.create(),
+    /** agent.inject (next-step, the default) or followup (next-turn) of one message per source; returns the messages. */
+    async inject(sources, target = DSH.inbox.nextStep) { const inserted = inject(sources, target, manager.live.session); await settle(); return inserted },
+    /** One splice of messages that already exist (the same ids again, e.g. ones an earlier turn admitted). */
+    async reinject(messages, target = DSH.inbox.nextStep) { splice(messages, target, manager.live.session); await settle() },
+    /** From now on, inject one message per source into `target` on the microtask after each manager compaction/end (fishball-taskboard). */
+    afterCompaction(sources, target = DSH.inbox.nextStep) { compactionReaction = { sources, target } },
+    /** The manager's pending input, folded from its log. */
+    pending: () => pendingOf(manager.live.session),
+    /**
+     * DSH's compaction records written by someone other than the heartbeat: `sourceCommandId` for the
+     * user's /compact, `inTurn` for one inside the manager's open turn (turn = that turn's number).
+     */
+    async compactionRecord({ sourceCommandId, inTurn = false, endCompactionId } = {}) {
+      const session = manager.live.session
+      const record = appendCompaction(session, createUserMessage, { sourceCommandId, turn: inTurn ? lastTurnStart(session) : null, endCompactionId })
+      await settle()
+      return record
+    },
     /** A non-turn record in the manager log (an event core holds and has not delivered in a turn). */
     async pendingRecord(type) { appendPluginRecord(manager.live.session, type, { fbtest: true }); await settle() },
     /** X2 create: the manager comes up after the row registered its setup. */
