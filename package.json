@@ -5,14 +5,16 @@
   "license": "MIT",
   "type": "module",
   "workspaces": [
-    "packages/dsh-instance"
+    "packages/dsh-instance",
+    "packages/test-helpers"
   ],
   "engines": {
     "node": ">=22.14",
     "dsh": ">=0.2.1-rc.5"
   },
   "scripts": {
-    "test:v3": "node test/run-v3.mjs",
+    "test": "node scripts/test-package.mjs",
+    "test:release": "node scripts/test-release.mjs",
     "pack": "node scripts/pack.mjs",
     "pack:check": "node scripts/pack.mjs --check"
   }
