@@ -1,5 +1,8 @@
 # DSH Fishball Instance
 
+> **Looking to install Fishball or connect an agent via MCP?**
+> This repository holds the underlying `dsh-instance` package for **advanced users and developers**. For the one-click embedded bundle (`dsh-fishball-bundle`), standalone setup, and MCP integration guide, see **[`dsh-fishball-bundle`](https://github.com/Arrosam/dsh-fishball-bundle)**.
+
 Bridge plugin (`dsh-instance`) that installs and runs a hosted Fishball child DSH inside your main DeepSeek Harness (DSH), connecting it to `dsh-agent-connector`.
 
 Split from `dsh-fishball@84078e5f`.
@@ -18,21 +21,25 @@ Split from `dsh-fishball@84078e5f`.
 
 ## Install
 
-`dsh-instance` runs alongside `dsh-agent-connector` in the same DSH profile (`web` below; replace with your profile name). **Quit DSH before installing.** If upgrading from an earlier pre-V3 preview (`dsh-fishball`, `fishball-connector`, `fishball-instance`, `fishball-embed-ui`, `dsh-fishball-*`), remove those packages and delete `<DSH_HOME>/fishball/` first.
+For a single-command install including the connector, amenities, and instance, install [`dsh-fishball-bundle`](https://github.com/Arrosam/dsh-fishball-bundle) instead (do not install `dsh-instance` alongside `dsh-fishball-bundle`).
 
-`dsh-agent-connector` already bundles `dsh-connector-ui`, `dsh-connector-adapter`, and `dsh-connector-watchdog`; `dsh-instance` automatically installs both `fishball-core` (with `fishball-ui`) and `fishball-amenities` (`fishball-board`, `fishball-heartbeat`, `fishball-taskboard`) into its child DSH.
+When installing components manually, `dsh-instance` runs alongside `dsh-agent-connector` in the same DSH profile (`web` below; replace with your profile name). **Quit DSH before installing.** If upgrading from an earlier pre-V3 preview (`dsh-fishball`, `fishball-connector`, `fishball-instance`, `fishball-embed-ui`, `dsh-fishball-*`), remove those packages and delete `<DSH_HOME>/fishball/` first.
+
+`dsh-agent-connector` includes `dsh-connector` and `dsh-connector-ui` (you may optionally add `dsh-connector-amenities` for `dsh-connector-adapter` and `dsh-connector-watchdog`); `dsh-instance` automatically installs both `fishball-core` (with `fishball-ui`) and `fishball-amenities` (`fishball-board`, `fishball-heartbeat`, `fishball-taskboard`) into its child DSH.
 
 ### Option A — Standard DSH install (from npm under `alpha`, via DSH Plugins page or CLI)
 
-In DSH's Plugins page (**Plugins → Add plugin**), install `dsh-agent-connector@1.0.0-alpha.1` and `dsh-instance@1.0.0-alpha.1`, or run:
+In DSH's Plugins page (**Plugins → Add plugin**), install `dsh-agent-connector@1.0.0-alpha.2` and `dsh-instance@1.0.0-alpha.1` (plus optionally `dsh-connector-amenities@1.0.0-alpha.1`), or run:
 
 ```bash
-dsh plugin --profile web add dsh-agent-connector@1.0.0-alpha.1 dsh-instance@1.0.0-alpha.1
+dsh plugin --profile web add dsh-agent-connector@1.0.0-alpha.2 dsh-instance@1.0.0-alpha.1
+# Optional: adapter + watchdog amenities
+dsh plugin --profile web add dsh-connector-amenities@1.0.0-alpha.1
 ```
 
 pnpm may print missing-peer warnings for DSH's own `@deepseek-ai/*` packages; DSH provides them at runtime, so that warning is expected.
 
-### Option B — From GitHub source (pack & install offline when `1.0.0-alpha.1` is not on npm)
+### Option B — From GitHub source (pack & install offline when needed)
 
 1. Clone all three repositories side by side and pack in order (`dsh-fishball` first so `dsh-instance` automatically embeds `fishball-amenities-1.0.0-alpha.1.tgz` and `fishball-core-1.0.0-alpha.1.tgz` into `bundled/`):
 
@@ -46,12 +53,12 @@ pnpm may print missing-peer warnings for DSH's own `@deepseek-ai/*` packages; DS
    (cd dsh-fishball-instance && npm run pack)
    ```
 
-2. Install `dsh-agent-connector` and `dsh-instance` from their generated `.runtime/release/1.0.0-alpha.1/` folders:
+2. Install `dsh-agent-connector` and `dsh-instance` from their generated `.runtime/release/` folders:
 
    ```bash
    (cd dsh-connector/.runtime/release/1.0.0-alpha.1 &&
      DSH_CONNECTOR_STORE="$(node "$PWD/offline-store.mjs" "$PWD/pnpm-store" "$(dsh plugin --profile web root --silent)" "$(dsh plugin --profile web store path --silent)")" &&
-     dsh plugin --profile web add "$PWD/dsh-agent-connector-1.0.0-alpha.1.tgz" --offline --store-dir="$DSH_CONNECTOR_STORE" --cache-dir="$PWD/pnpm-cache" --registry=https://registry.npmjs.org)
+     dsh plugin --profile web add "$PWD/dsh-agent-connector-1.0.0-alpha.2.tgz" --offline --store-dir="$DSH_CONNECTOR_STORE" --cache-dir="$PWD/pnpm-cache" --registry=https://registry.npmjs.org)
 
    (cd dsh-fishball-instance/.runtime/release/1.0.0-alpha.1 &&
      FISHBALL_INSTANCE_STORE="$(node "$PWD/offline-store.mjs" "$PWD/pnpm-store" "$(dsh plugin --profile web root --silent)" "$(dsh plugin --profile web store path --silent)")" &&
@@ -82,7 +89,8 @@ What it removes: `<DSH_HOME>/fishball/runtime` (the child's profile, session, se
 
 ## Related repositories
 
-- [`dsh-connector`](https://github.com/Arrosam/dsh-connector) — Generic DSH MCP connector (`dsh-agent-connector`, which bundles `dsh-connector`, `dsh-connector-ui`, `dsh-connector-adapter`, and `dsh-connector-watchdog`).
+- [`dsh-fishball-bundle`](https://github.com/Arrosam/dsh-fishball-bundle) — All-in-one embedded Fishball bundle & main user-facing project page.
+- [`dsh-connector`](https://github.com/Arrosam/dsh-connector) — Generic DSH MCP connector (`dsh-agent-connector` carrying `dsh-connector` and `dsh-connector-ui`, plus optional `dsh-connector-amenities` / `dsh-connector-adapter` / `dsh-connector-watchdog`).
 - [`dsh-fishball`](https://github.com/Arrosam/dsh-fishball) — Fishball agent plugins (`fishball-core` [includes `fishball-ui`], `fishball-amenities` bundling `fishball-board`, `fishball-heartbeat`, `fishball-taskboard`, and `fishball-shared`).
 
 ## Scripts
