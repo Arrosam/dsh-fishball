@@ -16,20 +16,24 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { ENV, RUN, SUITES } from '../constants.mjs'
+import { workspaceDirs } from './links.mjs'
 
 /**
  * Sorted absolute paths of one package's suite files: `*.test.mjs` inside a `tests/` folder. A
- * sub-folder with its own package.json is a nested package (packages/dsh-connector/ui): its suites
- * are its own, not this package's.
+ * sub-folder that is itself a workspace package is a separate package: its suites are its own. A
+ * sub-folder with a package.json that is not a workspace is a component shipped inside this package
+ * (packages/dsh-connector/ui is inside the dsh-agent-connector tarball): its suites are this
+ * package's.
  */
-export function suiteFiles(dir) {
+export function suiteFiles(dir, workspaces = workspaceDirs()) {
+  const separate = new Set(workspaces.map((w) => path.resolve(w)))
   const found = []
   const walk = (folder, inTests) => {
     for (const entry of fs.readdirSync(folder, { withFileTypes: true })) {
       if (entry.name === 'node_modules' || entry.name.startsWith('.')) continue
       const full = path.join(folder, entry.name)
       if (entry.isDirectory()) {
-        if (fs.existsSync(path.join(full, SUITES.manifest))) continue
+        if (separate.has(path.resolve(full))) continue
         walk(full, inTests || entry.name === SUITES.dir)
       } else if (inTests && entry.name.endsWith(SUITES.suffix)) found.push(full)
     }
@@ -37,6 +41,8 @@ export function suiteFiles(dir) {
   walk(dir, false)
   return found.sort()
 }
+
+const NAMES_REPORTER = path.join(import.meta.dirname, 'names-reporter.mjs')
 
 /** A throwaway environment: HOME, TMPDIR and the XDG folders inside one fresh directory. */
 function isolatedEnv(base) {
@@ -68,7 +74,13 @@ export async function runPackage(dir, args = [], { stdio = 'inherit', label = pa
   for (const signal of RUN.signals) process.on(signal, cancel)
   try {
     const hasReporter = args.some((a) => a.startsWith('--test-reporter'))
-    const nodeArgs = ['--test', '--test-concurrency=' + RUN.fileConcurrency, ...(hasReporter ? [] : ['--test-reporter=spec']), ...args, ...files]
+    // DSH_TEST_NAMES=<file>: also write one JSON line per finished case (names-reporter.mjs), the
+    // record the behaviour inventory is checked against.
+    const names = process.env[ENV.names]
+    const reporters = hasReporter ? [] : names
+      ? ['--test-reporter=spec', '--test-reporter-destination=stdout', '--test-reporter=' + NAMES_REPORTER, '--test-reporter-destination=' + path.resolve(names)]
+      : ['--test-reporter=spec']
+    const nodeArgs = ['--test', '--test-concurrency=' + RUN.fileConcurrency, ...reporters, ...args, ...files]
     const child = spawn(process.execPath, nodeArgs, { cwd: dir, stdio, env: isolatedEnv(base), detached: process.platform !== 'win32' })
     children.add(child)
     return await new Promise((resolve) => {

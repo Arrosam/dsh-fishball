@@ -8,9 +8,13 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { REPO } from '../repo.mjs'
 
+/** Every workspace folder of the root manifest; an entry ending in /* names each folder inside it. */
 export function workspaceDirs() {
   const manifest = JSON.parse(fs.readFileSync(path.join(REPO, 'package.json'), 'utf8'))
-  return (manifest.workspaces ?? []).map((w) => path.join(REPO, w)).filter((dir) => fs.existsSync(path.join(dir, 'package.json')))
+  const expand = (w) => (w.endsWith('/*')
+    ? (fs.existsSync(path.join(REPO, w.slice(0, -2))) ? fs.readdirSync(path.join(REPO, w.slice(0, -2))).map((n) => path.join(REPO, w.slice(0, -2), n)) : [])
+    : [path.join(REPO, w)])
+  return (manifest.workspaces ?? []).flatMap(expand).filter((dir) => fs.existsSync(path.join(dir, 'package.json')))
 }
 
 export function linkWorkspaces() {

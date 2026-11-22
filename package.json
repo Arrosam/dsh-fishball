@@ -10,7 +10,8 @@
     "packages/dsh-connector-watchdog",
     "packages/dsh-connector-amenities",
     "packages/dsh-connector-shared",
-    "packages/dsh-connector-test-helpers"
+    "packages/dsh-connector-test-helpers",
+    "integration/*"
   ],
   "engines": {
     "node": ">=22.14",

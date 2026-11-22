@@ -29,12 +29,26 @@ test('HLP-EP-01 discovery: only *.test.mjs files inside a tests/ folder are suit
   assert.deepEqual(rel(root, suiteFiles(root)), ['src/tests/e.test.mjs', 'tests/a.test.mjs', 'tests/sub/b.test.mjs'])
 })
 
-test('HLP-EP-02 regression: a nested package folder (its own package.json) keeps its suites; the parent does not run them', (t) => {
-  // Failed on the first version of suiteFiles, which walked into ui/tests from the parent package.
-  const root = tree({ 'package.json': '{}', 'tests/own.test.mjs': '', 'ui/package.json': '{}', 'ui/tests/nested.test.mjs': '' })
+test('HLP-EP-02 a nested workspace package keeps its suites: the parent package does not run them', (t) => {
+  const root = tree({ 'package.json': '{}', 'tests/own.test.mjs': '', 'inner/package.json': '{}', 'inner/tests/nested.test.mjs': '' })
   t.after(() => fs.rmSync(root, { recursive: true, force: true }))
-  assert.deepEqual(rel(root, suiteFiles(root)), ['tests/own.test.mjs'])
-  assert.deepEqual(rel(path.join(root, 'ui'), suiteFiles(path.join(root, 'ui'))), ['tests/nested.test.mjs'])
+  const workspaces = [path.join(root, 'inner')]
+  assert.deepEqual(rel(root, suiteFiles(root, workspaces)), ['tests/own.test.mjs'])
+  assert.deepEqual(rel(path.join(root, 'inner'), suiteFiles(path.join(root, 'inner'), workspaces)), ['tests/nested.test.mjs'])
+})
+
+test('HLP-EP-08 a nested component that is not a workspace (shipped inside its parent) is tested with its parent', (t) => {
+  const root = tree({ 'package.json': '{}', 'tests/own.test.mjs': '', 'ui/package.json': '{}', 'ui/tests/component.test.mjs': '' })
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }))
+  assert.deepEqual(rel(root, suiteFiles(root, [])), ['tests/own.test.mjs', 'ui/tests/component.test.mjs'])
+})
+
+test('HLP-EP-09 the connector package runs the suites of its ui component; no other product package runs another package\'s suites', () => {
+  const connector = suiteFiles(path.join(REPO, 'packages', 'dsh-connector'))
+  assert.ok(connector.some((f) => f.includes(path.join('dsh-connector', 'ui', 'tests'))), 'the ui component suites are the connector package\'s')
+  for (const dir of fs.readdirSync(path.join(REPO, 'packages')).map((n) => path.join(REPO, 'packages', n)).filter((d) => fs.existsSync(path.join(d, 'package.json')))) {
+    for (const file of suiteFiles(dir)) assert.ok(file.startsWith(dir + path.sep), file + ' runs outside ' + dir)
+  }
 })
 
 test('HLP-EP-03 discovery: node_modules and dot folders are never searched', (t) => {

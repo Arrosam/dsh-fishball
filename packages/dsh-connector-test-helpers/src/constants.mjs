@@ -17,6 +17,8 @@ export const ENV = Object.freeze({
   homes: 'DSH_TEST_HOMES',
   /** Chromium binary for the browser cases (otherwise the Playwright cache is searched). */
   chrome: 'DSH_TEST_CHROME',
+  /** A file: the runner also writes one JSON line per finished case there (names-reporter.mjs). */
+  names: 'DSH_TEST_NAMES',
 })
 
 /**
