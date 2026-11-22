@@ -2,8 +2,9 @@
  * fishball-taskboard's row (docs/plugins/fishball-taskboard.md): Fishball's own task board and memo
  * pad. It opens the board's store, serves the UI's routes (they work without core: the user can
  * always see and edit the board), and, while a compatible `fishballInstance` is bound, gives the
- * manager its tools and the compaction reminder through X2, and puts the board on core's page stream
- * as its topic (`HOST.pageTopic`), so the Task board tab opens no connection of its own beside core.
+ * manager its tools, its prompt guide and the compaction reminder through X2, and puts the board on
+ * core's page stream as its topic (`HOST.pageTopic`), so the Task board tab opens no connection of
+ * its own beside core.
  * Its browser half is client.js.
  */
 import { defineDomain } from '@deepseek-ai/dsh-storage-domain'
@@ -14,6 +15,7 @@ import { viewOf } from './src/board.js'
 import { createTools } from './src/tools.js'
 import { registerRoutes } from './src/routes.js'
 import { createReminder } from './src/reminder.js'
+import { registerGuide } from './src/guide.js'
 
 export const name = NAMESPACE
 // `storage` + `storageDomain` for the board's table (as fishball-core's main row), `connection` for
@@ -29,8 +31,10 @@ export async function apply(ctx) {
   const binding = followInstance(ctx, HOST, (instance) => {
     const sessionId = () => instance.manager.sessionId()
     const disposeSetup = instance.manager.registerSetup(NAMESPACE, (agentCtx, live) => {
-      // X2 disposal removes the tools with the fiber; the reminder stops following this agent then too.
+      // X2 disposal removes the tools and the guide with the fiber; the reminder stops following
+      // this agent then too.
       for (const tool of createTools({ store, sessionId, now })) agentCtx.tools.register(tool)
+      registerGuide(agentCtx)
       agentCtx.effect(() => reminder.watch(live))
     })
     // The board on core's one page stream (fishball-shared SEAM_PAGE_STREAM): the same view as the

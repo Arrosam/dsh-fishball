@@ -94,6 +94,23 @@ No field is marked required in the schema (each description says "Required."), s
   `memos` for `limit-reached`, and `title|note|status|progress` for an update naming no field.
 - Titles, notes and memo texts are stored trimmed.
 
+## 3a. The prompt guide
+
+The same X2 setup registers one section in the manager's system prompt (name
+`fishball-taskboard`, order `DEPLOYMENT_PERSONA_PREFIX` + 2: right after the persona and core's
+private-skills section). The user asked for it (2026-11-22) because Fishball often forgot to keep
+the board current. Its text:
+
+```
+**Task board.** Keep your task board up to date.
+- When the user gives you a new task, add it with taskboard_add right away. Break multi-part work into subtasks.
+- Whenever a task or subtask makes progress or finishes, update its status and progress with taskboard_update right away, in the same turn.
+- When a session you manage finishes work, update the matching task before or together with reporting to the user.
+- Never leave finished work in todo or in_progress.
+```
+
+Without core there is no manager setup, so there is no section either (§7).
+
 ## 4. The UI
 
 A **right sidebar tab** "Task board" (kind `fishball-taskboard`), opened from a checklist header
