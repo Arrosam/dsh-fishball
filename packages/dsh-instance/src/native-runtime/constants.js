@@ -177,11 +177,12 @@ export const PLACEMENT = Object.freeze({
    * fishball-core last, so its guard patch reaches every row the others insert (R-FB-12).
    * `directory` names a set member's sibling workspace folder `../<directory>` in a checkout; a
    * packed instance ships it as `bundled/<tarball(name, version)>` instead (REL-PACK output, never
-   * committed; Q-22). The set is fishball-ui and core. fishball-board is shelved, not in 1.0.0-alpha.1
-   * (SHELVE-BOARD, the user, 2026-11-18: "不要预留在子实例的Fishball内"), so nothing places, installs or
-   * reserves it in the child; add it back here and in `install.order` for its release.
+   * committed; Q-22). The hosted set is `fishball-amenities` (umbrella bundling `fishball-board`,
+   * `fishball-heartbeat`, `fishball-taskboard`) and `fishball-core` (which includes `fishball-ui`),
+   * installed together on child setup (the user, 2026-11-23).
    */
   bundles: Object.freeze([
+    Object.freeze({ name: 'fishball-amenities', directory: 'fishball-amenities' }),
     Object.freeze({ name: 'fishball-core', directory: 'core' }),
   ]),
   /** The set's former UI bundle, still held by children an earlier instance set up (CHILD_OWN_BUNDLES). */
@@ -224,7 +225,7 @@ export const PLACEMENT = Object.freeze({
    * as any DSH plugin install does; the offline fallback needs none of them.
    */
   install: Object.freeze({
-    order: Object.freeze(['fishball-core']),
+    order: Object.freeze(['fishball-amenities', 'fishball-core']),
     operations: '@deepseek-ai/dsh-plugin-manager/operations',
     manager: '@deepseek-ai/dsh-plugin-manager',
     command: 'add',

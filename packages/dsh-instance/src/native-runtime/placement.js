@@ -263,12 +263,30 @@ async function libraryPackage(name, root) {
 const packageRoot = (anchor, name) => path.dirname(createRequire(anchor).resolve(name + '/' + PLACEMENT.manifest))
 
 /**
+ * Locate a bundled workspace package for a checkout member: through Node resolution first, then
+ * as a sibling folder beside `memberRoot` (for workspace members such as `fishball-board`,
+ * `fishball-heartbeat`, and `fishball-taskboard` beside `packages/fishball-amenities` when not
+ * hoisted into `node_modules`).
+ */
+async function resolveBundledRoot(anchor, memberRoot, name) {
+  try { return packageRoot(anchor, name) } catch (error) {
+    if (error?.code !== PLACEMENT.unresolved) throw error
+  }
+  const sibling = path.join(path.dirname(memberRoot), name)
+  const file = path.join(sibling, PLACEMENT.manifest)
+  if ((await exists(file))?.isFile() && (await json(file)).name === name) return sibling
+  fail(PLACEMENT.code.missing, name)
+}
+
+/**
  * A placed bundle's own libraries: the names in its `bundleDependencies`, each resolved from the
- * bundle's folder, as the bundle's modules resolve it (fishball-core's fishball-shared). They come
+ * bundle's folder, as the bundle's modules resolve it (fishball-core's fishball-shared, or
+ * fishball-amenities's bundled amenity packages and fishball-shared). They come
  * from the bundle's dependency graph, never the instance's, because the instance depends on no
  * Fishball-side package (requirements 1.40, design §1.0b row 5); they are copied as files only.
- * Resolution walks up past the bundle's folder, so a copy found there must be the exact version the
- * bundle pins; a missing or different one refuses the start like a missing member.
+ * Resolution walks up past the bundle's folder (with sibling workspace fallback in a checkout), so
+ * a copy found there must be the exact version the bundle pins; a missing or different one refuses
+ * the start like a missing member.
  * Only the set's own libraries are copied: a bundled dependency pinned at the member's own version,
  * because the libraries move with the set's version (R-ARCH-08 rule 6). A third-party bundle (core's
  * @modelcontextprotocol/client, REL-PACK item 2) ships inside the packed tarball only, which the
@@ -278,11 +296,7 @@ async function bundledLibraries(member) {
   const anchor = path.join(member.root, PLACEMENT.manifest)
   const own = (member.manifest[PLACEMENT.bundledField] ?? []).filter((name) => member.manifest.dependencies?.[name] === member.manifest.version)
   return Promise.all(own.map(async (name) => {
-    let library
-    try { library = await libraryPackage(name, packageRoot(anchor, name)) } catch (error) {
-      if (error?.code === PLACEMENT.unresolved) fail(PLACEMENT.code.missing, name)
-      throw error
-    }
+    const library = await libraryPackage(name, await resolveBundledRoot(anchor, member.root, name))
     if (library.manifest.version !== member.manifest.dependencies?.[name]) fail(PLACEMENT.code.missing, name)
     return library
   }))
