@@ -32,5 +32,4 @@ The instance against the **real** `dsh-agent-connector` of the sibling `dsh-conn
 node scripts/test-package.mjs integration/connector
 ```
 
-There is one host per SDK for the succession file, and its two cases run in order. A full run takes
-about 50 s.
+There is one host per SDK for the succession file, and its two cases run in order.

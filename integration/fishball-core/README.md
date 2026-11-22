@@ -34,5 +34,3 @@ without launching anything: layout, placement of fishball-core from the sibling 
 ```bash
 node scripts/test-package.mjs integration/fishball-core
 ```
-
-About 30 s.

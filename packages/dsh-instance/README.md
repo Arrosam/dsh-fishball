@@ -6,7 +6,8 @@ plugins in the child, gives the child a token from this DSH's connector once, sy
 and has its own settings page. It imports no Fishball-side code and has no `dsh-connector` peer: it
 looks the connector's services up at runtime (`dshConnectorTokens`).
 
-Version `1.0.0-alpha.1`. Install and uninstall are in the [root README](<../../README.md>).
+Version `1.0.0-alpha.1`. Install and uninstall are in the [root README](<../../README.md>);
+the repository's documents are indexed there too.
 
 ## The child
 
@@ -18,11 +19,14 @@ Version `1.0.0-alpha.1`. Install and uninstall are in the [root README](<../../R
   instance rows (the lifecycle row and the child-side row `dsh-instance-child`, whose config holds
   the target URL) and the isolation of the child's instructions and skills from yours. No guard row
   and no token: the guards are fishball-core's own patch.
-- **Placement:** at every start, before the profile loads, `fishball-ui` and
-  `fishball-core` are copied into `<profile>/vendor/<name>` and `<profile>/node_modules/<name>` and
-  appended to the profile's bundles in that order, core last (`fishball-board` is shelved, not in
-  1.0.0-alpha.1, and is never placed). Sources: `bundled/<dir>` in a packed
-  instance, else the sibling workspace folders of a source checkout. The record
+- **Placement:** at every start, before the profile loads, `fishball-core` (which carries the
+  Fishball UI since fishball-ui was merged into it) is copied into `<profile>/vendor/fishball-core`
+  and `<profile>/node_modules/fishball-core` and appended to the profile's bundles, last.
+  `fishball-ui` and `fishball-board` are never placed; a `fishball-ui` an earlier instance placed is
+  still treated as the child's own. Sources: the bundled tarball in a packed instance, else
+  `$FISHBALL_REPO/packages/core` or the sibling `dsh-fishball` checkout's `packages/core`. Only the
+  files its manifest's `files` list ships are copied, read as npm pack reads them: an entry
+  starting with `!` excludes that path. The record
   `fishball-placement.json` keeps your switches: a plugin is on at its first placement, a later
   disable survives, and one deleted while off comes back off. An enabled plugin the child cannot
   load fails the start with `PROFILE_INCOMPATIBLE`, naming it.
@@ -142,3 +146,25 @@ DSH has no uninstall hook, so the package ships `uninstall.js`, run with DSH qui
 the package. It removes `<DSH_HOME>/fishball/runtime` and nothing else. See the root README for the
 command and its refusal codes (`CHILD_RUNNING`, `CHILD_STATE_UNKNOWN`, `UNSAFE_DIRECTORY`, `UNOWNED_RUNTIME`,
 `INVALID_MAIN_HOME`).
+
+## Testing
+
+`npm test` in this folder runs this package's own tests (`tests/`, about 10 s): 1312 cases, each once
+on DSH 0.2.1-rc.5 and once on 0.2.2-rc.1. Pass a path to run one area:
+`node ../../scripts/test-package.mjs . tests/placement`.
+
+| Area | What it covers |
+| --- | --- |
+| `tests/host` | the hosted token (first start, restarts, Retry, Reconnect, disable and delete), the locator, the admission ticket and route, the credential wire, the status and Open routes, the hosted record, the host row itself |
+| `tests/succession` | reinstall succession: pending in `hosted.json`, retire retried at starts and on connector changes, Reconnect retargets |
+| `tests/placement` | `shippedFiles` (the `!` exclusions), placement through `composedProfile` into a scratch home, the launch overlay |
+| `tests/manifest` | the package's manifest, shipped files and imports (no Fishball-side package) |
+| `tests/ready` | readiness of the child, the first model sync, the published surface |
+| `tests/pages` | the settings page, Restart, the Fishball tab and the per-bundle buttons, on a scripted DSH page |
+| `tests/stderr-log` | the child's stderr log: line buffering through redaction, one rotation, the cut |
+| `tests/uninstall` | `uninstall.js` and `runtime.uninstall()`: removes only a tree proven dead and this home's |
+
+Fakes shared by several areas are in `tests/support/`; generic tools are
+[@dsh-instance/test-helpers](<../test-helpers/README.md>). Behaviour that needs a real host DSH, the
+real connector, the real fishball-core or a packed release is in the integration packages, run
+before a release. How tests are written: [docs/testing/writing-tests.md](<../../docs/testing/writing-tests.md>).

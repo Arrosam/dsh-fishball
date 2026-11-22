@@ -33,5 +33,3 @@ It runs with dead proxies and registry and no user npm config, because the pack 
 ```bash
 node scripts/test-package.mjs integration/release
 ```
-
-About 25 s.
