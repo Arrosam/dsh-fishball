@@ -1,29 +1,7 @@
-# The connector's rows: the MCP server, its Embed UI component, and the bundled amenities
-# (dsh-connector-adapter, preset-watchdog, dsh-connector-watchdog) so installing dsh-agent-connector
-# brings the whole DSH-side set in one bundle (the user, 2026-11-23).
-# The watchdog rows repeat dsh-connector-watchdog's and dsh-connector-amenities's cordis.patch.yml:
-# change them together.
 - insert:
     - id: dsh-connector
       name: 'dsh-agent-connector'
       config: {}
     - id: dsh-connector-ui
       name: ./ui/index.js
-      config: {}
-    - id: dsh-connector-adapter
-      name: 'dsh-connector-adapter'
-      config: {}
-    - id: preset-watchdog
-      name: '@deepseek-ai/dsh-agent-preset'
-      config:
-        id: watchdog
-        name: Watchdog
-        description: Supervises a managed session for its manager (dsh-connector-watchdog).
-        order: 90
-        plugins:
-          - id: tool-fs
-            name: '@deepseek-ai/dsh-tool-fs'
-            config: { read: true, readImage: true, write: false, edit: false }
-    - id: dsh-connector-watchdog
-      name: 'dsh-connector-watchdog'
       config: {}
