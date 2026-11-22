@@ -99,8 +99,25 @@ No field is marked required in the schema (each description says "Required."), s
 A **right sidebar tab** "Task board" (kind `fishball-taskboard`), opened from a checklist header
 action in the conversation header and from the right sidebar's guide page.
 
-The tab follows the board live (SSE) and shows the task tree (status, title, progress bar, note;
-done and dropped dimmed), the memos, and the unfinished count. The tab stays mounted while hidden (`keepMounted`), so a draft
+The tab follows the board live (SSE) and shows the task tree, the memos and the unfinished count.
+The view (redesign, the user, 2026-11-22):
+- **Summary.** A count chip for each status present, and an overall bar: done tasks out of every
+  task that is not dropped, at every depth.
+- **Open tasks** (todo, in progress, blocked) are full rows: title, status chip, slim bar with its
+  percentage, and a muted note. A note over 120 code points, or with a line break, is clamped
+  behind Show more. The bar is the Fishball accent: magenta #EC0A6E, or DSH's accent under the
+  DeepSeek brand. A blocked task's bar is DSH's warning colour.
+- **Closed tasks never show a bar.** A closed task whose whole subtree is closed is *condensed*
+  ("condensing, not folding") into one line with its title and status. Done glows green; dropped
+  is grey. Its subtasks fold into it, and clicking the line reveals its note and direct children.
+  A closed parent with an open subtask stays a full row (no bar), with its subtasks listed.
+- **Completed group.** Top-level condensed tasks sit in a "Completed (n)" group, collapsed by default.
+- **Subtasks** hang off their parent on a connector line and can be collapsed.
+- **View state.** The open or closed state of each disclosure is view state only: never saved,
+  and reset when the tab remounts.
+- **Memos** are accent-edged cards.
+
+Edit mode lists every task flat in tree order, unchanged. The tab stays mounted while hidden (`keepMounted`), so a draft
 survives hiding the column, switching sessions or docking. **Edit** opens a draft: every field is
 editable; the user can add tasks, add a subtask under any task, delete a task (with its subtasks),
 and add, edit or delete memos. **Save** commits the draft, **Cancel** drops it; a refused save names the item and marks its row. While a draft is open,
