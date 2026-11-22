@@ -2,10 +2,12 @@
 /**
  * Day-to-day tests: one package's own tests on the current DSH (docs/testing/README.md).
  *
- *   node scripts/test.mjs <package> [--list] [--serial] [--against=<git-ref>] [-- <node --test args>]
+ *   node scripts/test.mjs <package> [--file=<entry>]… [--list] [--serial] [--against=<git-ref>] [-- <node --test args>]
  *
  * <package> is a package name (fishball-core, fishball-ui, fishball-heartbeat, …) or its folder.
  * The independence rule is checked first; a violation stops the run.
+ * --file=<entry> runs only that entry file of the package (its name, e.g. `link` or `link.test.mjs`,
+ * or a path under tests/); repeat it for several. Without it every entry file of the package runs.
  * --against=<ref> runs this package's tests (as they are now) on the package code at <ref>, in a
  * throwaway git worktree: the regression technique, a new case shown to fail on the old code.
  * There is deliberately no "all packages" mode: the release run is scripts/test-release.mjs.
@@ -20,13 +22,13 @@ import { DSH_VERSION } from '../packages/test-helpers/dsh.mjs'
 import { REPO, packageByName, packageOf, packages, testFiles } from '../packages/test-helpers/packages.mjs'
 import { linkWorkspaces, runFiles } from '../packages/test-helpers/runner.mjs'
 
-const CLI = Object.freeze({ separator: '--', worktreePrefix: 'fbtest-against-', helpers: 'packages/test-helpers', tests: 'tests', modules: 'node_modules' })
+const CLI = Object.freeze({ testSuffix: '.test.mjs', separator: '--', worktreePrefix: 'fbtest-against-', helpers: 'packages/test-helpers', tests: 'tests', modules: 'node_modules' })
 
 function parse(argv) {
   const end = argv.indexOf(CLI.separator)
   const own = end === -1 ? argv : argv.slice(0, end)
   const rest = end === -1 ? [] : argv.slice(end + 1)
-  const { values, positionals } = parseArgs({ args: own, allowPositionals: true, options: { list: { type: 'boolean' }, serial: { type: 'boolean' }, against: { type: 'string' } } })
+  const { values, positionals } = parseArgs({ args: own, allowPositionals: true, options: { list: { type: 'boolean' }, serial: { type: 'boolean' }, against: { type: 'string' }, file: { type: 'string', multiple: true } } })
   if (positionals.length !== 1) throw new Error('name one package: node scripts/test.mjs <package>; known: ' + [...packages().keys()].join(' '))
   return { ...values, target: positionals[0], rest }
 }
@@ -36,6 +38,14 @@ function resolvePackage(target) {
   const byFolder = packageOf(path.resolve(REPO, target))
   if (byFolder && byFolder.abs === path.resolve(REPO, target)) return byFolder
   return packageByName(target)
+}
+
+/** The entry files `wanted` names (by base name with or without the suffix, or by path); all when none. */
+function pickFiles(files, wanted) {
+  if (!wanted?.length) return files
+  const name = (w) => (w.endsWith(CLI.testSuffix) ? w : w + CLI.testSuffix)
+  const picked = wanted.map((w) => { const hit = files.filter((f) => f.endsWith('/' + name(w))); if (hit.length !== 1) throw new Error(`--file=${w} matches ${hit.length} entry files; entries: ${files.map((f) => path.basename(f)).join(' ')}`); return hit[0] })
+  return [...new Set(picked)]
 }
 
 /** A detached worktree of `ref` holding today's tests of `pkg` and today's helpers; removed by the caller. */
@@ -78,7 +88,7 @@ function linkCheckoutModules(dir) {
 async function main(argv) {
   const opts = parse(argv)
   const pkg = resolvePackage(opts.target)
-  const files = testFiles(pkg)
+  const files = pickFiles(testFiles(pkg), opts.file)
   console.log(`${pkg.name} (${pkg.dir}): ${files.length} test file(s) on DSH ${DSH_VERSION}`)
   const problems = checkPackage(pkg)
   if (problems.length) { console.error(`${pkg.name}'s tests break the independence rule (docs/testing/README.md):\n${formatProblems(problems)}`); return 1 }

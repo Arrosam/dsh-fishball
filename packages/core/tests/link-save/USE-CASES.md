@@ -6,10 +6,14 @@ R9, R10, R12 = B, R14, the user's answer Q-LS1 = A of 2026-11-16), the frozen K3
 (`packages/core/contracts/link.d.ts`, `connect.d.ts`, `constants.js`), and F-PAIR's relayed words.
 The implementation was not read.
 
-The cases run on each SDK (0.2.1-rc.5, 0.2.2-rc.1), using that SDK's real `dsh-credentials-local`
-(in a temp root) and real `dsh-authorization`. F-PAIR's real pairing and records sit on top, in
-real DSH storage. The other side is the fake connector in [fakes.mjs](fakes.mjs), which is built
-from K1's own builders. Every title is `<case id> <row> [SDK <v>] …`.
+The cases run once, on the current DSH, using its real `dsh-credentials-local` (in a temp root) and
+real `dsh-authorization` (fishball-test-helpers/dsh-host `openHost`). F-PAIR's real pairing and
+records sit on top, in real DSH storage (../identity/storage.mjs). The other side is
+fishball-test-helpers/fake-connector `startConnectFake` (K1's own builders; its pair registry is
+`RetirablePairs`, a FakePairs following K1's rules) and its scripted owner `approvalBrowser`. The old
+suite reused the connector's real pair store (C-PAIR, test/v3/dsh-connector/pairs); that store left
+with the connector (6b7c53bf), so FakePairs stands in. Every title is `<case id> <row> [DSH <v>] …`
+(fishball-test-helpers/cases). Run: `node scripts/test.mjs fishball-core`.
 
 ## Actors
 
@@ -228,8 +232,9 @@ secret, URL query or error message). A successful load logs nothing. A supplied 
 imported.
 
 The world (subject.mjs) gains `noSdk` (core gets no `sdk` option) and `logger` (a recorder). The
-fault and the secret-free oracle are the link suite's (`../link/import-fault.mjs`,
-`../link/log-privacy.mjs`). "One per failed load attempt" is checked as: the import warnings equal
+fault and the secret-free oracle are the link area's (`../link/import-fault.mjs`,
+`../link/log-privacy.mjs`). Regression: these rows fail on the code before E-FIX-3 (8583edf0) and
+pass after it (see .runtime/port/port-core-link-failures.md). "One per failed load attempt" is checked as: the import warnings equal
 the loads the hook refused, and there is at least one per `begin()`.
 
 | Id | Technique | Case |
