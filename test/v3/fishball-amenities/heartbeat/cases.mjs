@@ -67,7 +67,7 @@ const STRING_WORD = /\bstring\b/i
 // Helpers
 
 /** A lab and one world with the row loaded under `cfg`; `options` are world options. */
-async function loaded(t, sdk, cfg, options = {}) {
+export async function loaded(t, sdk, cfg, options = {}) {
   const lab = await labFor(t, sdk)
   const w = await lab.open(options)
   await w.load(cfg)
@@ -75,7 +75,7 @@ async function loaded(t, sdk, cfg, options = {}) {
 }
 
 /** Asserts exactly one heartbeat arrives `ms` from now (none at ms - 1); returns it. */
-async function assertFiresAfter(lab, w, ms, label) {
+export async function assertFiresAfter(lab, w, ms, label) {
   const before = w.notices.length
   if (ms > EDGE_MS) await lab.tick(ms - EDGE_MS)
   assert.equal(w.notices.length, before, `${label}: no heartbeat before ${ms} ms: ${show(w.notices.slice(before))}`)
@@ -85,7 +85,7 @@ async function assertFiresAfter(lab, w, ms, label) {
 }
 
 /** Asserts no heartbeat over `ms` of fake time. */
-async function assertSilent(lab, w, label, ms = SILENCE_MS) {
+export async function assertSilent(lab, w, label, ms = SILENCE_MS) {
   const before = w.notices.length
   await lab.tick(ms)
   assert.equal(w.notices.length, before, `${label}: no heartbeat: ${show(w.notices.slice(before))}`)
@@ -135,7 +135,7 @@ async function nextText(lab, w) {
  * `elapsedMs` moves the wall clock between the two (negative: the clock was set back); no timer of
  * the closed world matters, so the clock is set, not ticked.
  */
-async function restarted(lab, earlier, elapsedMs, cfg, options = {}) {
+export async function restarted(lab, earlier, elapsedMs, cfg, options = {}) {
   const seed = earlier.snapshot()
   await earlier.close()
   lab.setTime(lab.now() + elapsedMs)

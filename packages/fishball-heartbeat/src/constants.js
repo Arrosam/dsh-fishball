@@ -17,6 +17,9 @@ export const HOST = Object.freeze({
   tokenMeter: 'tokenMeter', compaction: 'compaction', agentPresets: 'agentPresets',
 })
 
+/** dsh-llm MessageSourceMap.user: the user's own words, always work, never a compaction's consequence. */
+const USER_SOURCE = 'user'
+
 /** DSH session vocabulary this amenity folds (dsh-session SessionEventMap, both SDKs). */
 export const SESSION = Object.freeze({
   event: 'session/event',
@@ -26,6 +29,16 @@ export const SESSION = Object.freeze({
   userMessage: 'user/message',
   /** dsh-compaction's lock marker, first event of every compaction attempt that got past selection. */
   compactionStart: 'compaction/start',
+  /** Its closing marker (also written, with `error`, when the attempt failed). */
+  compactionEnd: 'compaction/end',
+  userSource: USER_SOURCE,
+  /**
+   * dsh-agent-loop's record of an inbox change (`{target, inserted}`), and the target `agent.inject`
+   * (and steer) write to. Core's notify wakes through followup, which writes the other target
+   * (`next-turn`), and admits held notices only after a turn started.
+   */
+  inboxSpliced: 'agent/inbox/spliced',
+  inboxNextStep: 'next-step',
   /** fishball-core's plugin notice source (manager/service.js noticeSource); pluginId names its sender. */
   noticeSource: 'fishball-notice',
   /**
@@ -35,7 +48,7 @@ export const SESSION = Object.freeze({
    * whole batch) and core's reminders (manager/reminders.js DELIVERY.source). Another plugin's
    * notice is work too (see turns.js). Ambient DSH context (runtime, time) is none of these.
    */
-  workSources: Object.freeze(['user', 'fishball-event', 'schedule']),
+  workSources: Object.freeze([USER_SOURCE, 'fishball-event', 'schedule']),
 })
 
 export const TIME = Object.freeze({
