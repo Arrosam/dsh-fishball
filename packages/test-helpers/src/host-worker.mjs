@@ -44,8 +44,12 @@ for (const entry of links) link(entry)
 // The connector's approval prompt server binds a fixed port by default; an owned test profile takes any.
 // It goes into the profile's own patch, not a command-line overlay: DSH refuses every settings write
 // to a namespace an overlay overrides, and the connector writes its own settings (createHosted adds a token).
+// Only on a fresh profile (no patch yet, or the empty list a new profile holds): from then on DSH
+// keeps its saved settings in that file, and a later boot of the same home must not wipe them.
 const profilePatch = path.join(profileDir, 'cordis.patch.yml')
-if (links.some((l) => l.name === 'dsh-agent-connector')) fs.writeFileSync(profilePatch, JSON.stringify([{ id: 'dsh-connector', config: { approval: { port: 0 } } }]))
+const FRESH_PATCH = new Set(['', '[]'])
+const freshPatch = !fs.existsSync(profilePatch) || FRESH_PATCH.has(fs.readFileSync(profilePatch, 'utf8').trim())
+if (freshPatch && links.some((l) => l.name === 'dsh-agent-connector')) fs.writeFileSync(profilePatch, JSON.stringify([{ id: 'dsh-connector', config: { approval: { port: 0 } } }]))
 const overlay = path.join(home, 'dshi.overlay.yml')
 fs.writeFileSync(overlay, '[]')
 const { ctx, shutdown } = await runProfile({ environment: loadLayeredEnv('dsh'), profile, patchFiles: [overlay], args: ['--no-open', '--port', '0'] })
