@@ -10,7 +10,9 @@
     "packages/fishball-heartbeat",
     "packages/fishball-taskboard",
     "packages/fishball-amenities",
-    "packages/shared"
+    "packages/shared",
+    "packages/test-helpers",
+    "packages/integration-*"
   ],
   "engines": {
     "node": ">=22.14",

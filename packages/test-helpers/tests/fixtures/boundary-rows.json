@@ -1,0 +1,75 @@
+[
+ {
+  "row": 1,
+  "spec": "import fs from 'node:fs'",
+  "ok": true,
+  "why": "node: module"
+ },
+ {
+  "row": 2,
+  "spec": "import { caseName } from 'fishball-test-helpers/cases'",
+  "ok": true,
+  "why": "the helpers package"
+ },
+ {
+  "row": 3,
+  "spec": "import { followInstance } from 'fishball-shared/instance-follower'",
+  "ok": true,
+  "why": "a dependency, by name"
+ },
+ {
+  "row": 4,
+  "spec": "import x from '@deepseek-ai/dsh-tools'",
+  "ok": true,
+  "why": "a peer, by name"
+ },
+ {
+  "row": 5,
+  "spec": "import x from '../src/board.js'",
+  "ok": true,
+  "why": "its own code"
+ },
+ {
+  "row": 6,
+  "spec": "import x from '../../../core/src/main/index.js'",
+  "ok": false,
+  "why": "another package's internals"
+ },
+ {
+  "row": 7,
+  "spec": "import x from 'fishball-core/main'",
+  "ok": false,
+  "why": "a package it does not depend on"
+ },
+ {
+  "row": 8,
+  "spec": "const p = path.join(REPO, 'packages', 'core')",
+  "ok": false,
+  "why": "a path built into packages/"
+ },
+ {
+  "row": 9,
+  "spec": "const p = 'packages/core/src/main/index.js'",
+  "ok": false,
+  "why": "a literal naming another package's folder"
+ },
+ {
+  "row": 10,
+  "spec": "const p = 'packages/fishball-taskboard/client.js'",
+  "ok": true,
+  "why": "its own folder named"
+ },
+ {
+  "row": 11,
+  "spec": "// import x from '../../../core/src/main/index.js'",
+  "ok": true,
+  "why": "a comment"
+ },
+ {
+  "row": 12,
+  "spec": "import x from '../../../ui/client.js'",
+  "ok": false,
+  "why": "a nested package's files",
+  "pkg": "fishball-core"
+ }
+]
