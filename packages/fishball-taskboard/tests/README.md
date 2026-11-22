@@ -9,7 +9,7 @@ node scripts/test.mjs fishball-taskboard
 | entry | area | what it covers |
 |---|---|---|
 | `taskboard.test.mjs` | [taskboard/](<taskboard/USE-CASES.md>) | the row: tools, routes, wake notice, compaction reminder, persistence, the package surface |
-| (view) | `view/` | the Task board tab (browser half): see the section **view** below |
+| `view.test.mjs` | [view/](<view/USE-CASES.md>) | the Task board tab (browser half): see the section **view** below |
 
 ## taskboard
 
@@ -54,6 +54,32 @@ TB-UC-01…05 · TB-EP-01…09, TB-EP-12 · TB-BVA-01…12 · TB-DT-01…05 · T
 
 ## view
 
-<!-- To be filled by the agent porting test/v3/fishball-taskboard-view into tests/view/. -->
+Ported from `test/v3/fishball-taskboard-view` (2026-11-22, the test restructure): 27 ids, 112 cases. The
+cases, their derivation and the oracle sources are in [view/USE-CASES.md](<view/USE-CASES.md>); the oracle values
+(the view requirements B1, V1–V12, E1–E2 relayed by the lead on 2026-11-22, the lead's V6 and title-hook
+refinements, the package's routes) are in [view/constants.mjs](<view/constants.mjs>).
 
-*(Reserved for the Task board tab's suite, `tests/view/`: written by its own port.)*
+**Techniques.** Boundary values (TBV-B1, V1, V7, V9, V12), equivalence partitions (V1, V2, V6, V8, V9, V11),
+decision tables (TBV-FORM-DT-01 status × subtree × depth × parent → form; V2 colour; V4; V10; E2 save outcomes),
+state transitions (V6, V7, V8, V9, E1, E2) and use cases (E1, E2).
+
+**How it is observed** ([view/page.mjs](<view/page.mjs>)). Scripted: `client.js` alone in
+`fishball-test-helpers/scripted-page` on the current DSH's Cordis, the right sidebar's services recorded, an
+`fishball-test-helpers/event-source` stand-in for the tab's own `/api/fishball-taskboard/events` stream (no
+fishball-ui, so no page carrier), the save route answered by the case. What is asserted: the rendered tree's
+public markup (`data-fishball-*`, roles, aria), its text and the page's recorded requests. Rendered: the
+same tree in `fishball-test-helpers/browser` `documentOf` (DSH's page styles and theme sheets, then the tab's
+own sheets) measured in a headless Chromium, light and dark; skipped only where no Chromium exists.
+
+**Regression.** TBV-B1-BVA-01 covers 746a18e0 (the bar fill laid out 0×0): `--against=746a18e0^` fails 8/10,
+`--against=746a18e0` passes 10/10.
+
+**Not here.** The board on fishball-ui's page carrier (`fishballPageStream`) and the row's page-stream topic
+registration need a second package: integration rows.
+
+### Case-id index
+
+TBV-B1-BVA-01 · TBV-V1-EP-01, V1-BVA-01, V1-BVA-02 · TBV-FORM-DT-01 · TBV-V2-EP-01, V2-DT-01 · TBV-V4-DT-01 ·
+TBV-V6-EP-01, V6-ST-01, V6-ST-02 · TBV-V7-BVA-01, V7-ST-01 · TBV-V8-EP-01, V8-ST-01, V8-ST-02 · TBV-V9-BVA-01,
+V9-ST-01, V9-ST-02, V9-EP-02 · TBV-V10-DT-01 · TBV-V11-EP-01 · TBV-V12-BVA-01 · TBV-E1-UC-01, E1-ST-01 ·
+TBV-E2-UC-01, E2-DT-01, E2-ST-01 (rows per id in [view/USE-CASES.md](<view/USE-CASES.md>)).
