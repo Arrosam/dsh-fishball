@@ -6,13 +6,7 @@
   "description": "Shared test tools for the Fishball packages: the current DSH and the release matrix, the SDK-bound importer, case names, waits, the isolated test runner and the import-boundary check. Never shipped; no package under test imports it.",
   "license": "MIT",
   "exports": {
-    "./dsh": "./dsh.mjs",
-    "./bind": "./bind.mjs",
-    "./cases": "./cases.mjs",
-    "./wait": "./wait.mjs",
-    "./runner": "./runner.mjs",
-    "./boundaries": "./boundaries.mjs",
-    "./packages": "./packages.mjs",
+    "./*": "./*.mjs",
     "./package.json": "./package.json"
   },
   "scripts": {

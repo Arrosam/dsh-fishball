@@ -56,8 +56,21 @@ export const RELEASE_MATRIX = Object.freeze([...new Set([...SUPPORTED, ...(launc
 export const runtimeOf = (version) => path.join(VERSIONS_DIR, version, LAYOUT.modules)
 /** The folder of one installed DSH package (`@deepseek-ai/<name>`). */
 export const dshPackageDir = (name, version = currentVersion()) => path.join(runtimeOf(version), LAYOUT.scope, name)
-/** Import one installed DSH package's public entry (`lib/index.js`), or another file of it. */
-export const importDsh = (name, file = LAYOUT.entry, version = currentVersion()) => import(pathToFileURL(path.join(dshPackageDir(name, version), file)).href)
+/**
+ * Import one installed DSH package by its own manifest's ESM entry (as Node would resolve the bare
+ * name from inside that DSH), or a named file of it. Most DSH packages use `lib/index.js`; some
+ * (schemastery) name another entry, so the manifest decides.
+ */
+export async function importDsh(name, file, version = currentVersion()) {
+  const dir = dshPackageDir(name, version)
+  return import(pathToFileURL(path.join(dir, file ?? entryOf(dir))).href)
+}
+function entryOf(dir) {
+  const manifest = JSON.parse(fs.readFileSync(path.join(dir, LAYOUT.manifest), 'utf8'))
+  const root = manifest.exports?.['.'] ?? manifest.exports
+  const pick = (target) => (typeof target === 'string' ? target : target?.import ?? target?.default ?? (target?.node ? pick(target.node) : undefined))
+  return pick(root) ?? manifest.module ?? manifest.main ?? LAYOUT.entry
+}
 
 /** The current version, read once per process (case names carry it). */
 export const DSH_VERSION = currentVersion()

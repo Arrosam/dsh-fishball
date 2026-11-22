@@ -43,6 +43,18 @@ function install() {
   })
 }
 
+/**
+ * A plugin row module (`{name, apply, Config?, inject?}`) bound to the current DSH, as DSH's loader
+ * would load it; fails the case when the file is missing or exports no apply().
+ */
+export async function rowModule(file) {
+  const fs = await import('node:fs')
+  if (!fs.existsSync(file)) throw new Error(file + ' does not exist')
+  const mod = await importBound(file)
+  if (typeof mod.apply !== 'function') throw new Error(file + ' exports no apply()')
+  return mod
+}
+
 /** Import `file` (an absolute path inside the repository) bound to the current DSH. */
 export function importBound(file, version = DSH_VERSION) {
   if (!path.isAbsolute(file)) throw new Error('importBound needs an absolute path: ' + file)
