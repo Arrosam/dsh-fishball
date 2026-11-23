@@ -35,11 +35,19 @@ export const PAGE = Object.freeze({
   status: Object.freeze({ ready: 'ready', loading: 'loading', unavailable: 'unavailable' }),
   op: Object.freeze({ set: 'set', unset: 'unset' }),
   /** The implementer's DOM hooks. */
-  attr: Object.freeze({ root: 'data-amenities-settings', setting: 'data-amenities-setting', list: 'data-amenities-list', item: 'data-amenities-list-item' }),
+  attr: Object.freeze({
+    root: 'data-amenities-settings',
+    setting: 'data-amenities-setting',
+    list: 'data-amenities-list',
+    item: 'data-amenities-list-item',
+    model: 'data-amenities-model',
+    modelSelect: 'data-amenities-model-select',
+  }),
   /** The implementer's dictionary keys (namespace = the umbrella id). */
   key: Object.freeze({
     hint: 'hint', summary: (rowId) => 'summary.' + rowId, unavailable: 'unavailable', readOnly: 'readOnly', save: 'save', saving: 'saving',
     saveFailed: 'saveFailed', invalid: 'invalid', unique: 'invalid.unique', url: 'invalid.url', add: 'add', remove: 'remove', discard: 'discard',
+    modelDisabled: 'modelDisabled', modelLoading: 'modelLoading', modelNone: 'modelNone', modelFailed: 'modelFailed', modelSaveFailed: 'modelSaveFailed',
     field: (name) => 'field.' + name, item: (list, name) => 'field.' + list + '.' + name,
   }),
   /** The first revision the scripted Host serves (non-zero, so an omitted revision shows). */
@@ -94,7 +102,8 @@ export const FORMS = Object.freeze([
   }),
   Object.freeze({
     row: 'dsh-connector-watchdog',
-    order: Object.freeze(['minCheckIntervalSeconds', 'readMaxMessages', 'readMaxBytes', 'checkTimeoutSeconds']),
+    order: Object.freeze(['model', 'minCheckIntervalSeconds', 'readMaxMessages', 'readMaxBytes', 'checkTimeoutSeconds']),
+    models: Object.freeze(['model']),
     settings: Object.freeze([
       Object.freeze({ name: 'minCheckIntervalSeconds', kind: 'number', min: 60, max: 86_400 }),
       Object.freeze({ name: 'readMaxMessages', kind: 'number', min: 1, max: 100 }),
@@ -104,6 +113,35 @@ export const FORMS = Object.freeze([
     lists: Object.freeze([]),
   }),
 ])
+
+/** Fake DSH model catalog for model-selector cases. */
+export const CATALOG = Object.freeze({
+  default: Object.freeze({
+    groups: Object.freeze([
+      Object.freeze({
+        id: 'cheap',
+        name: 'Cheap',
+        models: Object.freeze([
+          Object.freeze({ id: 'mini', name: 'Mini' }),
+          Object.freeze({
+            id: 'mini-reason',
+            name: 'Mini Reason',
+            reasoning: Object.freeze({
+              efforts: Object.freeze([
+                Object.freeze({ id: 'low', name: 'Low' }),
+                Object.freeze({ id: 'high', name: 'High' }),
+              ]),
+            }),
+          }),
+        ]),
+      }),
+    ]),
+  }),
+  empty: Object.freeze({ groups: Object.freeze([]) }),
+  plainSelection: Object.freeze({ provider: 'cheap', model: 'mini' }),
+  effortSelection: Object.freeze({ provider: 'cheap', model: 'mini-reason', reasoningEffort: 'low' }),
+  staleSelection: Object.freeze({ provider: 'removed', model: 'old-mini', reasoningEffort: 'medium' }),
+})
 
 /** R5: the members and the umbrella bundle the DSH side's library. */
 export const MANIFESTS = Object.freeze([

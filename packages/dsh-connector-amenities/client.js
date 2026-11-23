@@ -27,12 +27,24 @@ window.__ModuleLoader__.load({
     /**
      * The page is built from the schema DSH serves for the namespace (dsh-settings: only the row's
      * `.volatile()` fields, serialized schemastery), so a field a member adds shows with no code
-     * here beyond its label. Kinds: a number or a string is one staged text field of DSH's own
-     * settings form (Save writes them together); an array of objects is a list editor with its own
-     * Save, writing the whole list at once, as the connector's token list does. No member serves
-     * another kind (a boolean would need a switch; none is served today), so none is drawn.
+     * here beyond its label. Kinds: a `{provider, model, reasoningEffort?}` object is a model
+     * selector over DSH's live model catalog (saved immediately on pick); a number or a string is
+     * one staged text field of DSH's own settings form (Save writes them together); an array of
+     * objects is a list editor with its own Save, writing the whole list at once, as the
+     * connector's token list does.
      */
     const SCHEMA = Object.freeze({ number: 'number', string: 'string', array: 'array', object: 'object' })
+    const MODEL = Object.freeze({
+      unset: '',
+      effortless: null,
+      catalog: Object.freeze({ loading: 'loading', ready: 'ready', failed: 'failed' }),
+      /** DSH's remote session face (`dsh-api-session-controller`, all supported SDKs), looked up via `ctx.get`. */
+      remoteSession: 'remote.session',
+      providerField: 'provider',
+      modelField: 'model',
+      effortField: 'reasoningEffort',
+      routeSeparator: ' / ',
+    })
     const OP_SET = 'set'
     /** ConfigFormSnapshot.status while the namespace is not served to this client. */
     const UNAVAILABLE = 'unavailable'
@@ -45,6 +57,17 @@ window.__ModuleLoader__.load({
       page: Object.freeze({ display: 'grid', gap: '24px' }),
       hintLine: Object.freeze({ margin: 0, fontSize: '13px', opacity: 0.78 }),
       list: Object.freeze({ display: 'grid', gap: '8px' }),
+      select: Object.freeze({
+        boxSizing: 'border-box',
+        width: '100%',
+        height: '34px',
+        padding: '0 12px',
+        border: '.5px solid var(--dsw-alias-border-l4)',
+        borderRadius: 'var(--dsw-radius-md)',
+        background: 'var(--dsw-alias-bg-layer-3)',
+        font: 'var(--dsw-font-xs-13)',
+        color: 'var(--dsw-alias-label-primary)',
+      }),
       title: Object.freeze({ margin: 0, fontSize: '13px', fontWeight: 500 }),
       caption: Object.freeze({ margin: 0, fontSize: '12px', lineHeight: '18px', color: 'var(--dsw-alias-label-tertiary)' }),
       error: Object.freeze({ margin: 0, fontSize: '12px', lineHeight: '18px', color: 'var(--dsw-alias-state-error-primary)' }),
@@ -78,10 +101,17 @@ window.__ModuleLoader__.load({
       'field.servers': 'Connectors to sign in to',
       'field.servers.serverName': 'Server name',
       'field.servers.url': 'MCP URL',
+      'field.model': 'Watchdog model',
       'field.minCheckIntervalSeconds': 'Patrol interval (seconds)',
       'field.readMaxMessages': 'Messages read per judgement',
       'field.readMaxBytes': 'Bytes read per judgement',
       'field.checkTimeoutSeconds': 'Judgement time limit (seconds)',
+      modelDisabled: 'Disabled (no model selected)',
+      modelEffort: '{model} · {effort}',
+      modelLoading: 'Loading available models…',
+      modelNone: 'No model is configured in this DSH yet.',
+      modelFailed: 'Available models could not be read.',
+      modelSaveFailed: 'The model was not saved.',
       unavailable: 'This component is not loaded, so it cannot be configured right now.',
       readOnly: 'This deployment stores settings read-only.',
       save: 'Save',
@@ -104,10 +134,17 @@ window.__ModuleLoader__.load({
       'field.servers': '要登录的 connector',
       'field.servers.serverName': '服务器名称',
       'field.servers.url': 'MCP 地址',
+      'field.model': 'Watchdog 模型',
       'field.minCheckIntervalSeconds': '巡查间隔（秒）',
       'field.readMaxMessages': '每次判断读取的消息数',
       'field.readMaxBytes': '每次判断读取的字节数',
       'field.checkTimeoutSeconds': '判断时限（秒）',
+      modelDisabled: '未配置（停用 Watchdog）',
+      modelEffort: '{model} · {effort}',
+      modelLoading: '正在读取可用模型…',
+      modelNone: '此 DSH 还没有配置模型。',
+      modelFailed: '无法读取可用模型。',
+      modelSaveFailed: '模型没有保存。',
       unavailable: '该组件当前未加载，暂时无法配置。',
       readOnly: '本部署的设置为只读。',
       save: '保存',
@@ -130,7 +167,34 @@ window.__ModuleLoader__.load({
     }
     const hintOf = (node) => (typeof node.meta?.description === 'string' ? node.meta.description : undefined)
     const isList = (node) => node.type === SCHEMA.array && node.inner?.type === SCHEMA.object
+    const isModelField = (node) => node.type === SCHEMA.object
+      && node.dict?.[MODEL.providerField]?.type === SCHEMA.string
+      && node.dict?.[MODEL.modelField]?.type === SCHEMA.string
     const storeHook = (source) => [(listener) => source.subscribe(listener), () => source.getSnapshot()]
+    const storedModel = (value) => {
+      if (value === null || typeof value !== 'object') return undefined
+      const provider = typeof value[MODEL.providerField] === 'string' ? value[MODEL.providerField].trim() : ''
+      const model = typeof value[MODEL.modelField] === 'string' ? value[MODEL.modelField].trim() : ''
+      if (provider === '' || model === '') return undefined
+      const effort = typeof value[MODEL.effortField] === 'string' ? value[MODEL.effortField].trim() : ''
+      return effort === '' ? { [MODEL.providerField]: provider, [MODEL.modelField]: model }
+        : { [MODEL.providerField]: provider, [MODEL.modelField]: model, [MODEL.effortField]: effort }
+    }
+    const modelChoiceValue = (selection) => (selection === undefined ? MODEL.unset
+      : JSON.stringify([selection[MODEL.providerField], selection[MODEL.modelField], selection[MODEL.effortField] ?? MODEL.effortless]))
+    const fallbackModelLabel = (selection, t) => {
+      const base = selection[MODEL.providerField] + MODEL.routeSeparator + selection[MODEL.modelField]
+      return selection[MODEL.effortField] === undefined ? base : t('modelEffort', { model: base, effort: selection[MODEL.effortField] })
+    }
+    function modelChoices(catalog, t) {
+      return (catalog?.groups ?? []).flatMap((group) => (group.models ?? []).flatMap((entry) => {
+        const base = { [MODEL.providerField]: group.id, [MODEL.modelField]: entry.id }
+        const label = group.name + MODEL.routeSeparator + entry.name
+        const efforts = entry.reasoning?.efforts ?? []
+        const of = (selection, text) => ({ value: modelChoiceValue(selection), label: text, selection })
+        return efforts.length === 0 ? [of(base, label)] : efforts.map((effort) => of({ ...base, [MODEL.effortField]: effort.id }, t('modelEffort', { model: label, effort: effort.name })))
+      }))
+    }
     const parseUrl = (text) => { try { return new URL(text) } catch { return undefined } }
     const allowedUrl = (rule, text) => {
       const url = parseUrl(text)
@@ -175,7 +239,72 @@ window.__ModuleLoader__.load({
       const specs = values.map(([field, node]) => checked((node.type === SCHEMA.number ? settingsNumberField : settingsTextField)(field), node))
       const model = new SettingsFormModel(scope, specs)
       const store = model.bind(() => ({ ...model.shell(), fields: Object.fromEntries(values.map(([field]) => [field, model.field(field)])) }))
-      return { scope, model, store, actions: model.actions(), values, lists: fields.filter(([, node]) => isList(node)) }
+      return {
+        scope, model, store, actions: model.actions(),
+        models: fields.filter(([, node]) => isModelField(node)),
+        values,
+        lists: fields.filter(([, node]) => isList(node)),
+      }
+    }
+
+    /**
+     * A dedicated model selector (Watchdog's `model` field): a native select over DSH's live model
+     * catalog (`remote.session.modelCatalog`), defaulting to unset (disabled). Selecting a model
+     * writes `{provider, model, reasoningEffort?}` immediately; choosing the empty option unsets it.
+     */
+    function ModelField({ ctx, t, scope, field, node, disabled }) {
+      const snapshot = React.useSyncExternalStore(...storeHook(scope))
+      const [catalog, setCatalog] = React.useState({ status: MODEL.catalog.loading })
+      const [busy, setBusy] = React.useState(false)
+      const [failed, setFailed] = React.useState(false)
+      const mounted = React.useRef(true)
+      const id = React.useId()
+      React.useEffect(() => {
+        mounted.current = true
+        let live = true
+        // Looked up by name instead of injected: if remote.session is unavailable, the settings
+        // page still opens with the catalog-failed note instead of hiding the row's other settings.
+        Promise.resolve().then(() => ctx.get(MODEL.remoteSession).modelCatalog()).then((answer) => {
+          if (live) setCatalog(answer?.ok === true ? { status: MODEL.catalog.ready, value: answer.value } : { status: MODEL.catalog.failed })
+        }, () => { if (live) setCatalog({ status: MODEL.catalog.failed }) })
+        return () => { live = false; mounted.current = false }
+      }, [])
+      const choices = catalog.status === MODEL.catalog.ready ? modelChoices(catalog.value, t) : []
+      const saved = storedModel(snapshot.value?.[field])
+      const current = modelChoiceValue(saved)
+      const pick = async (value) => {
+        if (busy) return
+        const choice = choices.find((entry) => entry.value === value)
+        if (value !== MODEL.unset && choice === undefined) return
+        setBusy(true)
+        setFailed(false)
+        let accepted = false
+        try { accepted = await (choice === undefined ? scope.unset(field) : scope.set(field, choice.selection)) } catch { accepted = false }
+        if (!mounted.current) return
+        setBusy(false)
+        setFailed(!accepted)
+      }
+      const off = disabled || busy
+      const hint = hintOf(node)
+      const note = catalog.status === MODEL.catalog.loading ? t('modelLoading')
+        : catalog.status === MODEL.catalog.failed ? t('modelFailed')
+        : choices.length === 0 ? t('modelNone')
+        : null
+      return h('section', { style: STYLE.list, 'data-amenities-model': field },
+        h('label', { style: STYLE.title, htmlFor: id }, labelOf(t, [field])),
+        h('select', {
+          id, style: STYLE.select, value: current, disabled: off, 'data-amenities-model-select': field,
+          onChange: (event) => void pick(event.target.value),
+        },
+          h('option', { value: MODEL.unset }, t('modelDisabled')),
+          // A saved model missing from the current catalog stays shown so the select never pretends it is unset.
+          saved !== undefined && !choices.some((entry) => entry.value === current)
+            ? h('option', { value: current }, fallbackModelLabel(saved, t))
+            : null,
+          choices.map((entry) => h('option', { key: entry.value, value: entry.value }, entry.label))),
+        hint === undefined ? null : h('p', { style: STYLE.caption }, hint),
+        note === null ? null : h('p', { style: STYLE.caption, role: 'status' }, note),
+        failed ? h('p', { style: STYLE.error, role: 'alert' }, t('modelSaveFailed')) : null)
     }
 
     /**
@@ -262,7 +391,13 @@ window.__ModuleLoader__.load({
       const state = React.useSyncExternalStore(...storeHook(form.store))
       const disabled = !state.writable || state.saving
       const labels = Object.fromEntries(FORM_WORDS.map((word) => [word, t(word)]))
+      const available = state.available && form.scope.getSnapshot().status !== UNAVAILABLE
       return h('div', { style: STYLE.page, 'data-amenities-settings': true },
+        // Model fields sit above the form so Watchdog's enable/model choice is the first control;
+        // DSH's form shows the unavailable line itself when the namespace is unavailable.
+        available
+          ? form.models.map(([field, node]) => h(ModelField, { key: field, ctx, t, scope: form.scope, field, node, disabled: !state.writable }))
+          : null,
         h(SettingsForm, { labels, state, onSave: form.actions.save, onDiscard: form.actions.discard },
           ...form.values.map(([field, node]) => h('div', { key: field, 'data-amenities-setting': field },
             h(SettingsValueField, {
@@ -270,8 +405,7 @@ window.__ModuleLoader__.load({
               ...state.fields[field], overriddenLabel: t('overridden'), resetLabel: t('reset'), invalidLabel: t('invalid'), disabled,
               onEdit: (text) => form.actions.edit(field, text), onReset: () => form.actions.resetField(field),
             })))),
-        // DSH's form shows the unavailable line itself; a list has no controls then either.
-        state.available && form.scope.getSnapshot().status !== UNAVAILABLE
+        available
           ? form.lists.map(([field, node]) => h(ListField, { key: field, ctx, t, scope: form.scope, field, node, disabled: !state.writable }))
           : null)
     }
