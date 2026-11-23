@@ -11,7 +11,13 @@ const BUNDLE = Object.freeze({ name: 'dsh-connector-watchdog', dir: path.resolve
 export const WD = Object.freeze({
   /** The booted DSH links the real watchdog bundle (its preset-watchdog and dsh-connector-watchdog rows). */
   env: Object.freeze({ [ENV.link]: JSON.stringify([BUNDLE]) }),
-  scenario: Object.freeze({ main: 'wd-main', restart: 'wd-restart' }),
+  scenario: Object.freeze({ main: 'wd-main', restart: 'wd-restart', defaultOff: 'wd-default-off', unroutable: 'wd-unroutable' }),
+  model: Object.freeze({
+    /** Distinct from DSH's default fake model (`fishball-test/test-model`) to prove dedicated routing. */
+    dedicated: Object.freeze({ provider: 'fishball-test', model: 'test-model-b' }),
+    dshDefault: Object.freeze({ provider: 'fishball-test', model: 'test-model' }),
+    removed: Object.freeze({ provider: 'fishball-test', model: 'fbtest-removed-model' }),
+  }),
   row: 'dsh-connector-watchdog',
   presetRow: 'preset-watchdog',
   /** Public names: `<namespace>.<local>` with the bundle's namespace (K2). */

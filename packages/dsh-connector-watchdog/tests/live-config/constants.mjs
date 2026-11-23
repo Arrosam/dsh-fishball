@@ -21,13 +21,23 @@ export const WATCHDOG = Object.freeze({
   store: Object.freeze({ dir: 'dsh-connector-watchdog', file: 'briefs.json', version: 1 }),
 })
 
-/** R2: the fields, in order, as they were before (type natural = number step 1). */
+/** Watchdog's dedicated model setting: volatile object, unset by default (disables Watchdog). */
+export const MODEL_FIELD = Object.freeze({
+  name: 'model',
+  type: 'object',
+  description: 'Model used for Watchdog judgements. Watchdog is disabled while unset.',
+  subfields: Object.freeze(['provider', 'model', 'reasoningEffort']),
+})
+
+/** R2: the numeric limit fields, in order (type natural = number step 1). */
 export const FIELDS = Object.freeze([
   Object.freeze({ name: 'minCheckIntervalSeconds', type: 'number', step: 1, default: 1740, min: 60, max: 86_400, description: 'Seconds between two patrol checks of one supervised session.' }),
   Object.freeze({ name: 'readMaxMessages', type: 'number', step: 1, default: 8, min: 1, max: 100, description: 'Most new messages one judgement reads; the connector\'s caps still apply.' }),
   Object.freeze({ name: 'readMaxBytes', type: 'number', step: 1, default: 8192, min: 1024, max: 1_048_576, description: 'Most UTF-8 bytes of new messages one judgement reads.' }),
   Object.freeze({ name: 'checkTimeoutSeconds', type: 'number', step: 1, default: 120, min: 30, max: 900, description: 'How long one judgement may take; a late one passes the request to the manager.' }),
 ])
+
+export const ALL_FIELDS = Object.freeze([MODEL_FIELD.name, ...FIELDS.map((f) => f.name)])
 
 export const SDK = Object.freeze({ versions: Object.freeze(['0.2.1-rc.5', '0.2.2-rc.1', '0.2.2-rc.3']), cordis: '@deepseek-ai/cordis', loader: '@deepseek-ai/cordis-plugin-loader', builtinPrefix: 'cordis:', fiberActive: 2 })
 
@@ -42,6 +52,10 @@ export const FIXTURE = Object.freeze({
   /** Intervals in seconds used by the rows (inside 60..86400). */
   interval: Object.freeze({ first: 600, second: 900, short: 120 }),
   reads: Object.freeze({ messages: 20, bytes: 4096 }),
+  model: Object.freeze({
+    first: Object.freeze({ provider: 'fbtest-cheap', model: 'mini' }),
+    second: Object.freeze({ provider: 'fbtest-cheap', model: 'mini-fast', reasoningEffort: 'low' }),
+  }),
 })
 
 export const TIME = Object.freeze({ secondMs: 1000, edgeMs: 1, epochMs: Date.UTC(2026, 10, 22) })

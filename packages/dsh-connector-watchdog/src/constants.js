@@ -11,7 +11,7 @@ export const WATCHDOG = Object.freeze({
   /** The delegate name the manager sees in `settlement.delegate.name`. */
   delegate: 'watchdog',
   /** Services looked up at runtime: a consumer must load without them (host-services README). */
-  service: Object.freeze({ sessions: 'dshConnectorSessions', tools: 'dshConnectorTools', apiVersion: 1 }),
+  service: Object.freeze({ sessions: 'dshConnectorSessions', tools: 'dshConnectorTools', llm: 'llm', apiVersion: 1 }),
   effect: Object.freeze({
     services: 'dsh-connector-watchdog: connector services',
     tools: 'dsh-connector-watchdog: tools',
@@ -31,7 +31,16 @@ export const STORE = Object.freeze({
 })
 
 /** The side sessions' folder, under the same directory (one side session per supervised session, U8). */
-export const SIDE = Object.freeze({ directory: 'side', textBlock: 'text', userSource: 'dsh-connector-watchdog', assistantEvent: 'assistant/message', sessionEvent: 'session/event', turnEnd: 'turn/end' })
+export const SIDE = Object.freeze({
+  directory: 'side',
+  textBlock: 'text',
+  userSource: 'dsh-connector-watchdog',
+  assistantEvent: 'assistant/message',
+  sessionEvent: 'session/event',
+  turnEnd: 'turn/end',
+  modelSelectionEvent: 'model/selection',
+  requestHeaderEvent: 'request/header',
+})
 
 /** What the judge may answer. A permission judgement: allow | reject | pass | drifted; a patrol: ok | drifted. */
 export const VERDICT = Object.freeze({ allow: 'allow', reject: 'reject', pass: 'pass', drifted: 'drifted', ok: 'ok' })
@@ -124,6 +133,8 @@ export const JUDGE = Object.freeze({
 
 export const LOG = Object.freeze({
   format: '%s: %s (%s)',
+  modelUnset: 'no model is configured; Watchdog is disabled',
+  modelUnavailable: 'the configured Watchdog model is not routable; refusing to fall back to the default model',
   storeUnreadable: 'the briefs file could not be read; starting with no briefs',
   storeWriteFailed: 'the briefs file could not be written',
   servicesMissing: 'dsh-agent-connector\'s dshConnectorSessions or dshConnectorTools is not available; Watchdog is idle',

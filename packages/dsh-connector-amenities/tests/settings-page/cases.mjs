@@ -14,7 +14,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import test from 'node:test'
 import { caseName } from '../../../../test/v3/contract/package-boundaries/cases.mjs'
-import { FORMS, MANIFESTS, PAGE, UMBRELLA } from './constants.mjs'
+import { CATALOG, FORMS, MANIFESTS, PAGE, UMBRELLA } from './constants.mjs'
 import { click, openUmbrellaPage, servedFields, textOf, type } from './page.mjs'
 
 const row = (sdk, id, part, title, fn) => test(caseName(sdk, id, part, title), { timeout: PAGE.testMs }, fn)
@@ -40,15 +40,17 @@ const lastMutation = (p, rowId) => p.host(rowId).mutations.at(-1)
 async function edit(p, node, text) { type(node, text); await p.settle() }
 async function press(p, node) { click(node); await p.settle() }
 
+const isModelNode = (node) => node.type === 'object' && node.dict?.provider?.type === 'string' && node.dict?.model?.type === 'string'
+
 /**
- * The controls a served schema gives (R4 as the requirement owner corrected it on 2026-11-22): the
- * number/string fields inside DSH's SettingsForm in schema order, then the array-of-objects (list)
- * fields after that form, in schema order (SettingsForm draws its one Save after its children, and a
- * list has its own Save).
+ * The controls a served schema gives: model selectors first, then number/string fields inside
+ * DSH's SettingsForm in schema order, then array-of-objects (list) fields after that form.
  */
 function expectedControls(fields) {
-  const control = (f) => ({ kind: f.node.type === 'array' ? 'list' : 'setting', name: f.name })
-  return [...fields.filter((f) => f.node.type !== 'array'), ...fields.filter((f) => f.node.type === 'array')].map(control)
+  const models = fields.filter((f) => isModelNode(f.node)).map((f) => ({ kind: 'model', name: f.name }))
+  const scalars = fields.filter((f) => !isModelNode(f.node) && f.node.type !== 'array').map((f) => ({ kind: 'setting', name: f.name }))
+  const listsOf = fields.filter((f) => f.node.type === 'array').map((f) => ({ kind: 'list', name: f.name }))
+  return [...models, ...scalars, ...listsOf]
 }
 
 /** Opens one row's page with a starting user layer. */
@@ -163,7 +165,7 @@ export function registerUmbrellaPageCases(sdk) {
         for (const { name, node } of fields) {
           const expected = p.text(PAGE.key.field(name), lang)
           assert.ok(expected?.length > 0, 'the dictionary labels ' + name + ' in ' + lang)
-          const control = node.type === 'array' ? v.list(name) : v.setting(name)
+          const control = isModelNode(node) ? v.model(name) : node.type === 'array' ? v.list(name) : v.setting(name)
           assert.ok(control, 'a control for ' + name)
           const shown = textOf(control)
           if (node.type !== 'array') assert.equal(findLabel(control), expected, name + ' label')
@@ -274,6 +276,7 @@ export function registerUmbrellaPageCases(sdk) {
       assert.ok(v.inputs().length > 0, 'controls while ready')
       await p.setStatus(form.row, PAGE.status.unavailable)
       assert.equal(v.inputs().length, 0, 'no control: ' + v.text())
+      assert.equal(v.selects().length, 0, 'no select control: ' + v.text())
       assert.ok(v.text().includes(p.text(PAGE.key.unavailable)), 'the unavailable message: ' + show(v.text()))
     })
     row(sdk, 'PG-ST-03', form.row, `${form.row}: writable false disables every control`, async (t) => {
@@ -282,6 +285,7 @@ export function registerUmbrellaPageCases(sdk) {
       const inputs = v.inputs()
       assert.ok(inputs.length > 0)
       for (const input of inputs) assert.equal(input.props.disabled, true, 'disabled: ' + show(input.props))
+      for (const select of v.selects()) assert.equal(select.props.disabled, true, 'select disabled: ' + show(select.props))
       for (const b of v.buttons()) assert.equal(b.props.disabled, true, 'button disabled: ' + textOf(b))
     })
   }
@@ -417,6 +421,82 @@ export function registerUmbrellaPageCases(sdk) {
       assert.equal(v.items(L).length, list.start.length + 1, 'the draft is kept')
     })
   }
+
+  // ============================================================================================
+  // PG-MD-*: dedicated model selector (dsh-connector-watchdog)
+
+  const WD_ROW = 'dsh-connector-watchdog'
+  const MODEL_FIELD = 'model'
+  const choiceVal = (sel) => JSON.stringify([sel.provider, sel.model, sel.reasoningEffort ?? null])
+
+  row(sdk, 'PG-MD-EP-01', 'options', 'model selector defaults to disabled (empty) and lists plain + per-effort catalog models in en and zh', async (t) => {
+    for (const lang of [PAGE.lang.en, PAGE.lang.zh]) {
+      const { p, v } = await opened(t, sdk, WD_ROW, { lang })
+      const select = v.select(MODEL_FIELD)
+      assert.ok(select, 'model select rendered')
+      assert.equal(select.props.value, '', 'unset by default')
+      const opts = v.options(select)
+      assert.equal(opts.length, 4, 'disabled + mini + low + high: ' + show(opts.map((o) => textOf(o))))
+      assert.equal(opts[0].props.value, '')
+      assert.equal(textOf(opts[0]), p.text(PAGE.key.modelDisabled, lang))
+      assert.equal(opts[1].props.value, choiceVal(CATALOG.plainSelection))
+      assert.equal(textOf(opts[1]), 'Cheap / Mini')
+      assert.equal(opts[2].props.value, choiceVal(CATALOG.effortSelection))
+      assert.equal(textOf(opts[2]), 'Cheap / Mini Reason · Low')
+    }
+  })
+
+  row(sdk, 'PG-MD-UC-01', 'pick-plain', 'picking a plain model writes {provider, model} immediately', async (t) => {
+    const { p, v } = await opened(t, sdk, WD_ROW)
+    await edit(p, v.select(MODEL_FIELD), choiceVal(CATALOG.plainSelection))
+    assert.deepEqual(lastMutation(p, WD_ROW)?.ops, [{ op: PAGE.op.set, path: [MODEL_FIELD], value: CATALOG.plainSelection }])
+    assert.deepEqual(p.host(WD_ROW).user[MODEL_FIELD], CATALOG.plainSelection)
+    assert.equal(v.select(MODEL_FIELD).props.value, choiceVal(CATALOG.plainSelection))
+  })
+
+  row(sdk, 'PG-MD-UC-02', 'pick-effort', 'picking a reasoning-effort model writes {provider, model, reasoningEffort} immediately', async (t) => {
+    const { p, v } = await opened(t, sdk, WD_ROW)
+    await edit(p, v.select(MODEL_FIELD), choiceVal(CATALOG.effortSelection))
+    assert.deepEqual(lastMutation(p, WD_ROW)?.ops, [{ op: PAGE.op.set, path: [MODEL_FIELD], value: CATALOG.effortSelection }])
+    assert.deepEqual(p.host(WD_ROW).user[MODEL_FIELD], CATALOG.effortSelection)
+  })
+
+  row(sdk, 'PG-MD-UC-03', 'clear', 'picking the disabled option unsets model immediately', async (t) => {
+    const { p, v } = await opened(t, sdk, WD_ROW, { users: { [WD_ROW]: { [MODEL_FIELD]: CATALOG.plainSelection } } })
+    assert.equal(v.select(MODEL_FIELD).props.value, choiceVal(CATALOG.plainSelection))
+    await edit(p, v.select(MODEL_FIELD), '')
+    assert.deepEqual(lastMutation(p, WD_ROW)?.ops, [{ op: PAGE.op.unset, path: [MODEL_FIELD] }])
+    assert.equal(Object.hasOwn(p.host(WD_ROW).user, MODEL_FIELD), false)
+    assert.equal(v.select(MODEL_FIELD).props.value, '')
+  })
+
+  row(sdk, 'PG-MD-DT-01', 'stale-saved', 'a saved model missing from the catalog stays selected with a readable fallback label and can still be cleared', async (t) => {
+    const { p, v } = await opened(t, sdk, WD_ROW, { users: { [WD_ROW]: { [MODEL_FIELD]: CATALOG.staleSelection } } })
+    const select = v.select(MODEL_FIELD)
+    const staleVal = choiceVal(CATALOG.staleSelection)
+    assert.equal(select.props.value, staleVal)
+    const staleOpt = v.options(select).find((o) => o.props.value === staleVal)
+    assert.ok(staleOpt, 'fallback option kept')
+    assert.equal(textOf(staleOpt), 'removed / old-mini · medium')
+    await edit(p, select, '')
+    assert.deepEqual(lastMutation(p, WD_ROW)?.ops, [{ op: PAGE.op.unset, path: [MODEL_FIELD] }])
+  })
+
+  row(sdk, 'PG-MD-ST-01', 'catalog-states', 'missing/failed/empty catalog shows status note without breaking other settings; refused save shows alert', async (t) => {
+    for (const [label, remoteSession, key] of [
+      ['absent remote.session', null, PAGE.key.modelFailed],
+      ['rejected modelCatalog', { modelCatalog: async () => { throw new Error('boom') } }, PAGE.key.modelFailed],
+      ['empty catalog', { modelCatalog: async () => ({ ok: true, value: CATALOG.empty }) }, PAGE.key.modelNone],
+    ]) {
+      const { p, v } = await opened(t, sdk, WD_ROW, { remoteSession })
+      assert.ok(v.statuses().some((s) => textOf(s).includes(p.text(key))), label + ': status note shown')
+      assert.ok(v.inputs().length > 0, label + ': scalar settings still rendered')
+    }
+    const { p, v } = await opened(t, sdk, WD_ROW)
+    p.refuseNext(WD_ROW)
+    await edit(p, v.select(MODEL_FIELD), choiceVal(CATALOG.plainSelection))
+    assert.ok(v.alerts().some((a) => textOf(a).includes(p.text(PAGE.key.modelSaveFailed))), 'refused save shows alert')
+  })
 
   // ============================================================================================
   // PG-MF-*: manifests (R5)

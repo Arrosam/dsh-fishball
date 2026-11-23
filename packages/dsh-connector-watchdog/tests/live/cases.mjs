@@ -24,6 +24,30 @@ import { WD } from './constants.mjs'
 
 const wdWorld = (sdk, label = WD.scenario.main) => world(sdk, label, WD.env)
 
+/**
+ * Sets or clears `dsh-connector-watchdog`'s `model` setting through DSH's real settings service
+ * (the same path the Settings page writes) and waits for Watchdog's live re-apply to settle.
+ */
+async function setWatchdogModel(w, p, model) {
+  const op = model === undefined ? { op: 'unset', path: ['model'] } : { op: 'set', path: ['model'], value: model }
+  const res = await w.call('call', { service: 'settings', method: 'mutate', args: [WD.row, [op]] })
+  assert.equal(res.threw, undefined, 'settings.mutate threw: ' + JSON.stringify(res))
+  const want = model !== undefined
+  const settled = await eventually(async () => {
+    const names = (await p.client.listTools()).tools.map((x) => x.name)
+    return names.includes(WD.tool.brief) === want
+  })
+  assert.ok(settled, 'Watchdog did not ' + (want ? 'enable' : 'disable') + ' after model change')
+}
+
+/** Boots a Watchdog world, pairs a principal, and configures Watchdog's dedicated model (enabled). */
+async function enabledWd(t, sdk, { label = WD.scenario.main, model = WD.model.dedicated } = {}) {
+  const w = await wdWorld(sdk, label)
+  const p = await principal(t, w)
+  await setWatchdogModel(w, p, model)
+  return { w, p }
+}
+
 /** Watchdog's tool as `p` calls it (its structured K2 result). */
 const wd = (p, tool, args) => call(p.client, tool, args)
 
@@ -73,10 +97,25 @@ const watchdogSettlement = (p, sid) => waitEvents(p.client, (e) => ofType(e, EVE
 const offerFor = (p, text) => waitEvents(p.client, (e) => ofType(e, EVENT_TYPE.permission).find((x) => x.payload.reason === IX.fixture.reason(text)), 'a permission offer')
 
 export function registerWatchdogLiveCases(sdk) {
-  row(sdk, 'WD-L01', 'UC (installed)', 'the bundle loads dsh-connector-watchdog and preset-watchdog; a paired principal sees the five tools (watchdog_session_start included: this connector offers dshConnectorSessions.start); watchdog_brief\'s description mentions watchdog_session_start', async (t) => {
-    const w = await wdWorld(sdk)
+  row(sdk, 'WD-L00', 'UC (disabled by default without model)', 'with default empty config (no model configured), the row and preset are active so settings remain editable, but no Watchdog tools are listed and Watchdog does not intercept requests', async (t) => {
+    const w = await wdWorld(sdk, WD.scenario.defaultOff)
     for (const id of [WD.row, WD.presetRow]) assert.equal((await w.call('row', { id })).active, true, id)
     const p = await principal(t, w)
+    const names = (await p.client.listTools()).tools.map((x) => x.name)
+    assert.deepEqual(names.filter((n) => n.startsWith(WD.row + '.')), [], 'no Watchdog tools listed while disabled')
+    // Configuring a model live enables Watchdog immediately.
+    await setWatchdogModel(w, p, WD.model.dedicated)
+    const afterNames = (await p.client.listTools()).tools.map((x) => x.name)
+    assert.deepEqual(afterNames.filter((n) => n.startsWith(WD.row + '.')).sort(), Object.values(WD.tool).sort(), 'tools appear after model is configured')
+    // Clearing the model disables Watchdog again.
+    await setWatchdogModel(w, p, undefined)
+    const clearedNames = (await p.client.listTools()).tools.map((x) => x.name)
+    assert.deepEqual(clearedNames.filter((n) => n.startsWith(WD.row + '.')), [], 'tools disappear after model is cleared')
+  })
+
+  row(sdk, 'WD-L01', 'UC (installed)', 'the bundle loads dsh-connector-watchdog and preset-watchdog; once a model is configured, a paired principal sees the five tools (watchdog_session_start included: this connector offers dshConnectorSessions.start); watchdog_brief\'s description mentions watchdog_session_start', async (t) => {
+    const { w, p } = await enabledWd(t, sdk)
+    for (const id of [WD.row, WD.presetRow]) assert.equal((await w.call('row', { id })).active, true, id)
     const tools = (await p.client.listTools()).tools
     const names = tools.map((x) => x.name)
     assert.equal(Object.values(WD.tool).length, 5, 'harness: five Watchdog tools')
@@ -86,8 +125,7 @@ export function registerWatchdogLiveCases(sdk) {
   })
 
   row(sdk, 'WD-L10', 'EP (watchdog_session_start input schema)', 'its inputSchema has session_start\'s properties plus purpose and scope (strings); required = session_start\'s required plus purpose; closed (additionalProperties false)', async (t) => {
-    const w = await wdWorld(sdk)
-    const p = await principal(t, w)
+    const { p } = await enabledWd(t, sdk)
     const listed = (await p.client.listTools()).tools.find((x) => x.name === WD.tool.sessionStart)
     assert.ok(listed, 'watchdog_session_start is not listed')
     const core = K1.toolDefinition(TOOL.sessionStart).inputSchema
@@ -100,8 +138,7 @@ export function registerWatchdogLiveCases(sdk) {
   })
 
   row(sdk, 'WD-L11', 'ST (the gap closed: watchdog_session_start → first request)', 'watchdog_session_start → {ok, sessionId, managed: true, running, supervised: true}; the session\'s first turn\'s first asking call is decided by Watchdog (judge allow): the call runs, settlement {allowed, by delegate, delegate.name watchdog}, no permission offer to the manager', async (t) => {
-    const w = await wdWorld(sdk)
-    const p = await principal(t, w)
+    const { w, p } = await enabledWd(t, sdk)
     const s = await startedFirstAsking(w, p, { judge: WD.answer.allow('the first request is in scope') })
     const r = await wd(p, WD.tool.sessionStart, s.args)
     assert.deepEqual([r.ok, typeof r.sessionId, r.managed, typeof r.running, r.supervised], [true, 'string', true, 'boolean', true], JSON.stringify(r))
@@ -115,8 +152,7 @@ export function registerWatchdogLiveCases(sdk) {
   })
 
   row(sdk, 'WD-L12', 'ST (contrast: session_start, then watchdog_brief — the known window)', 'a session started with session_start asks before any brief: its first request is a normal offer to the manager with no delegate field; a watchdog_brief afterwards succeeds but the waiting request stays with the manager (the judge is not asked for it)', async (t) => {
-    const w = await wdWorld(sdk)
-    const p = await principal(t, w)
+    const { w, p } = await enabledWd(t, sdk)
     const s = await startedFirstAsking(w, p, { judge: WD.answer.allow('should not be asked') })
     const { purpose, scope, ...coreArgs } = s.args
     const started = await okCall(p.client, TOOL.sessionStart, coreArgs)
@@ -142,8 +178,7 @@ export function registerWatchdogLiveCases(sdk) {
     ['an empty folder → invalid-arguments, not answerable → operation-failed', () => ({ folder: '' }), WD.code.operationFailed, REFUSAL.invalidArguments],
   ]
   row(sdk, 'WD-L13', 'DT (watchdog_session_start refusals over MCP)', 'empty purpose → empty-purpose; a start refusal keeps a declared or shared code and its message "session_start refused: <code>"; invalid-arguments (a K2 call code) → operation-failed with the K1 code in its message; nothing is created; every code is declared, shared or operation-failed', async (t) => {
-    const w = await wdWorld(sdk)
-    const p = await principal(t, w)
+    const { w, p } = await enabledWd(t, sdk)
     const folder = await w.call('folder', { name: tok('wdstart') })
     for (const [label, extra, code, k1] of START_REFUSALS) {
       // k1: the K1 code session_start refused with (null: Watchdog refused before any start).
@@ -157,8 +192,7 @@ export function registerWatchdogLiveCases(sdk) {
   })
 
   row(sdk, 'WD-L02', 'EP (brief: who, what)', 'only the manager may brief; an empty purpose and a second brief are refused; a later manager replaces an earlier manager\'s brief', async (t) => {
-    const w = await wdWorld(sdk)
-    const p = await principal(t, w)
+    const { w, p } = await enabledWd(t, sdk)
     const q = await principal(t, w, 'WD principal Q')
     const sid = await managed(w, p)
     assert.equal((await wd(q, WD.tool.brief, { sessionId: sid, purpose: 'x' })).code, WD.code.forbidden)
@@ -174,9 +208,8 @@ export function registerWatchdogLiveCases(sdk) {
     assert.equal((await wd(q, WD.tool.brief, { sessionId: sid, purpose: 'Q\'s purpose' })).ok, true)
   })
 
-  row(sdk, 'WD-L03', 'UC + EP (allow within the scope)', 'the call runs with no offer; the manager gets settlement {allowed, by delegate, delegate {name: watchdog}}; the side session judged on the purpose, the scope and the request; the brief is persisted', async (t) => {
-    const w = await wdWorld(sdk)
-    const p = await principal(t, w)
+  row(sdk, 'WD-L03', 'UC + EP (allow within the scope on dedicated model)', 'the call runs with no offer; the manager gets settlement {allowed, by delegate, delegate {name: watchdog}}; the side session judged on Watchdog\'s dedicated model (without changing DSH\'s default model); the brief is persisted', async (t) => {
+    const { w, p } = await enabledWd(t, sdk)
     const b = await briefed(w, p)
     await judgeWill(w, b, WD.answer.allow('within the scope'))
     const r = await asks(w, b.sid)
@@ -186,7 +219,11 @@ export function registerWatchdogLiveCases(sdk) {
     assert.deepEqual(ofType(await pending(p.client), EVENT_TYPE.permission).filter((e) => e.payload.reason === IX.fixture.reason(r.text)), [])
     const [side] = (await judged(w, b)).sessions
     assert.ok(side && side !== b.sid, 'no side session judged')
-    const prompt = (await w.call('requests', { sessionId: side })).at(-1).texts
+    const lastReq = (await w.call('requests', { sessionId: side })).at(-1)
+    assert.equal(lastReq.model, WD.model.dedicated.model, 'side session used Watchdog\'s configured model, not DSH\'s default')
+    const defaultSel = (await w.call('call', { service: 'agentDefaultModel', method: 'currentSelection', args: [] })).value
+    assert.equal(defaultSel?.model, WD.model.dshDefault.model, 'Watchdog never overwrote DSH\'s global default model')
+    const prompt = lastReq.texts
     for (const part of [WD.purpose(b.marker), WD.scope, IX.fixture.askTool, IX.fixture.reason(r.text)]) assert.ok(prompt.includes(part), 'the judgement lacks ' + part)
     await free(w, b.sid)
     const stored = await eventually(() => findBriefs(w.home).some((x) => x.sessionId === b.sid && x.sideSessionId === side))
@@ -194,8 +231,7 @@ export function registerWatchdogLiveCases(sdk) {
   })
 
   row(sdk, 'WD-L04', 'EP (reject: beyond the purpose and dangerous)', 'the call is rejected; the agent reads the reason; settlement {rejected, by delegate}', async (t) => {
-    const w = await wdWorld(sdk)
-    const p = await principal(t, w)
+    const { w, p } = await enabledWd(t, sdk)
     const b = await briefed(w, p)
     await judgeWill(w, b, WD.answer.reject('deletes the home folder'))
     const r = await asks(w, b.sid)
@@ -214,8 +250,7 @@ export function registerWatchdogLiveCases(sdk) {
     ['allow with an empty reason', WD.answer.allow(''), { name: WD.delegate, outcome: WD.outcome.failed, reason: WD.failure.unreadable }],
   ]
   row(sdk, 'WD-L05', 'DT (pass / unreadable → the manager, with delegate {outcome})', 'a judged pass → the offer carries delegate {watchdog, passed, its reason}; an unreadable answer, an unknown verdict or a reasonless allow → delegate {watchdog, failed, judge-unreadable}; no Watchdog settlement; no stop', async (t) => {
-    const w = await wdWorld(sdk)
-    const p = await principal(t, w)
+    const { w, p } = await enabledWd(t, sdk)
     for (const [label, answer, expected] of OFFERED) {
       const b = await briefed(w, p)
       await judgeWill(w, b, answer)
@@ -231,8 +266,7 @@ export function registerWatchdogLiveCases(sdk) {
   })
 
   row(sdk, 'WD-L06', 'UC + ST (drift at a request)', 'the call is rejected, the turn is stopped, the manager gets the drift event {sessionId, during: permission, reason} and a turn-finished {stopped, stop {aborted, "the turn was cancelled (hook: Watchdog stopped the session (permission): <reason>)"}}; the manager can still message the session', async (t) => {
-    const w = await wdWorld(sdk)
-    const p = await principal(t, w)
+    const { w, p } = await enabledWd(t, sdk)
     const b = await briefed(w, p)
     await judgeWill(w, b, WD.answer.drifted('it is rewriting the website instead'))
     const r = await asks(w, b.sid)
@@ -252,8 +286,7 @@ export function registerWatchdogLiveCases(sdk) {
   })
 
   row(sdk, 'WD-L07', 'ST (pause → resume)', 'a paused brief judges nothing (the request is offered to the manager); after resume the judge decides again', async (t) => {
-    const w = await wdWorld(sdk)
-    const p = await principal(t, w)
+    const { w, p } = await enabledWd(t, sdk)
     const b = await briefed(w, p)
     assert.equal((await wd(p, WD.tool.pause, { sessionId: b.sid })).paused, true)
     const r1 = await asks(w, b.sid)
@@ -268,8 +301,7 @@ export function registerWatchdogLiveCases(sdk) {
   })
 
   row(sdk, 'WD-L08', 'DT (unmanaged)', 'after Take back the brief no longer speaks: the user sees the stock prompt; the judge is not asked', async (t) => {
-    const w = await wdWorld(sdk)
-    const p = await principal(t, w)
+    const { w, p } = await enabledWd(t, sdk)
     const b = await briefed(w, p)
     await takeBack(w, b.sid)
     await judgeWill(w, b, WD.answer.allow('x'))
@@ -279,9 +311,8 @@ export function registerWatchdogLiveCases(sdk) {
     await free(w, b.sid)
   })
 
-  row(sdk, 'WD-L09', 'ST (restart)', 'a brief survives a DSH restart: Watchdog still decides for the same manager', async (t) => {
-    const w = await wdWorld(sdk, WD.scenario.restart)
-    const p = await principal(t, w)
+  row(sdk, 'WD-L09', 'ST (restart)', 'a brief and Watchdog\'s configured model survive a DSH restart: Watchdog still decides on the configured model for the same manager', async (t) => {
+    const { w, p } = await enabledWd(t, sdk, { label: WD.scenario.restart })
     const b = await briefed(w, p)
     await w.restart()
     const again = await reconnect(t, w, p)
@@ -290,7 +321,43 @@ export function registerWatchdogLiveCases(sdk) {
     const r = await asks(w, b.sid)
     assert.equal((await decided(w, r.text, b.sid)).outcome, IX.outcome.allowed)
     assert.equal((await watchdogSettlement(again, b.sid)).payload.delegate.name, WD.delegate)
+    const [side] = (await judged(w, b)).sessions
+    assert.equal((await w.call('requests', { sessionId: side })).at(-1).model, WD.model.dedicated.model)
     assert.equal((await wd(again, WD.tool.brief, { sessionId: b.sid, purpose: 'x' })).code, WD.code.conflict)
+    await free(w, b.sid)
+  })
+
+  row(sdk, 'WD-L14', 'ST (live model switch on existing side session)', 'switching Watchdog\'s model live switches subsequent judgements on the same side session to the new model', async (t) => {
+    const { w, p } = await enabledWd(t, sdk)
+    const b = await briefed(w, p)
+    await judgeWill(w, b, WD.answer.allow('first model'), WD.answer.allow('second model'))
+    const r1 = await asks(w, b.sid)
+    assert.equal((await decided(w, r1.text, b.sid)).outcome, IX.outcome.allowed)
+    const [side] = (await judged(w, b)).sessions
+    assert.equal((await w.call('requests', { sessionId: side })).at(-1).model, WD.model.dedicated.model)
+    await free(w, b.sid)
+
+    await setWatchdogModel(w, p, WD.model.dshDefault)
+    await quiet()
+    try {
+      const r2 = await asks(w, b.sid)
+      assert.equal((await decided(w, r2.text, b.sid)).outcome, IX.outcome.allowed)
+      assert.equal((await w.call('requests', { sessionId: side })).at(-1).model, WD.model.dshDefault.model)
+      await free(w, b.sid)
+    } finally {
+      await setWatchdogModel(w, p, WD.model.dedicated)
+      await quiet()
+    }
+  })
+
+  row(sdk, 'WD-L15', 'DT (unroutable configured model never falls back to DSH default)', 'when Watchdog\'s configured model is missing/unroutable, the judgement fails as judge-failed (passed to the manager) and no side-session request hits DSH\'s default model', async (t) => {
+    const { w, p } = await enabledWd(t, sdk, { label: WD.scenario.unroutable, model: WD.model.removed })
+    const b = await briefed(w, p)
+    await judgeWill(w, b, WD.answer.allow('must never run on fallback'))
+    const r = await asks(w, b.sid)
+    const offer = await offerFor(p, r.text)
+    assert.deepEqual(offer.payload.delegate, { name: WD.delegate, outcome: WD.outcome.failed, reason: WD.failure.failed })
+    assert.deepEqual((await judged(w, b)).sessions, [], 'no side session called DSH\'s default model')
     await free(w, b.sid)
   })
 }

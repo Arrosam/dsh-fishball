@@ -26,7 +26,14 @@ export const caseTest = (sdk, id, row, title, fn) => test(caseName(sdk, id, row,
 export const rowModule = (sdk) => importInstance(sdk, path.relative(INSTANCE.dir, WATCHDOG.entry))
 
 const spin = () => new Promise((resolve) => setImmediate(resolve))
-async function settle() { for (let i = 0; i < WAIT.settleRounds; i++) await spin() }
+async function settle(ctx) {
+  for (let i = 0; i < WAIT.settleRounds; i++) await spin()
+  if (ctx?.registry) {
+    const fibers = [...ctx.registry.values()].flatMap((rt) => [...(rt.fibers ?? [])])
+    await Promise.allSettled(fibers.map((f) => f.await?.()))
+    for (let i = 0; i < WAIT.settleRounds; i++) await spin()
+  }
+}
 
 /** A stored brief in briefs.json's relayed shape. */
 export const storedBrief = (sessionId, { paused = false } = {}) => ({
@@ -74,7 +81,7 @@ export async function watchdogWorld(t, sdk, { config = {}, briefs } = {}) {
   ctx.loader.builtins[WATCHDOG.name] = mod
   const id = await ctx.loader.create({ name: SDK.builtinPrefix + WATCHDOG.name, config })
   await ctx.loader.await().catch(() => {})
-  await settle()
+  await settle(ctx)
   t.after(async () => {
     await ctx.fiber.dispose()
     const target = await realpath(home)
@@ -88,15 +95,15 @@ export async function watchdogWorld(t, sdk, { config = {}, briefs } = {}) {
     async configure(next) {
       await ctx.loader.update(id, { config: next }).catch(() => {})
       await ctx.loader.await().catch(() => {})
-      await settle()
+      await settle(ctx)
     },
-    async tick(ms) { t.mock.timers.tick(ms); await settle() },
+    async tick(ms) { t.mock.timers.tick(ms); await settle(ctx) },
     /** One of Watchdog's tools as the connector would run it for the fixture principal. */
     async call(name, args) {
       const def = tools.get(name)
       assert.ok(def, 'no tool ' + name + ' registered: ' + [...tools.keys()])
       const result = await def.execute(args, { principal: FIXTURE.principal, protocolVersion: FIXTURE.protocolVersion, signal: new AbortController().signal })
-      await settle()
+      await settle(ctx)
       return result
     },
     /** The patrols (reads) of one session since `from` (an index into reads). */
