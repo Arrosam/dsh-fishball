@@ -79,9 +79,9 @@ export async function applyNativeChild(ctx, config) {
     } else if (core.has(entry.name) && core.get(entry.name) !== physical) fail('CHILD_RESOLUTION_MISMATCH')
   }
   const secret = await readPrivate(path.join(paths.root, RUNTIME.secret))
-  // T16's provider-sync target and the hosted token's probe and one import (credential.js), each
-  // on its own payload channel of the host's attached wire.
-  const channels = Object.freeze({ providerSync: new ChannelPublisher(), credential: new ChannelPublisher() })
+  // T16's provider-sync target, the hosted token's channel (credential.js) and onboarding's
+  // child-model channel (child-model.js), each on its own payload channel of the host's attached wire.
+  const channels = Object.freeze({ providerSync: new ChannelPublisher(), credential: new ChannelPublisher(), childModel: new ChannelPublisher() })
   // The host's one attached connection (operation `attach`).
   let current
   // The readiness signals (childReadiness): appReady fired, and the web published by the child-side row.
@@ -109,6 +109,8 @@ export async function applyNativeChild(ctx, config) {
     onProviderSyncTransport: (listener) => channels.providerSync.subscribe(listener),
     /** The `mcp-credential` transport of the current authenticated connection; same rules as above. */
     onCredentialTransport: (listener) => channels.credential.subscribe(listener),
+    /** The `child-model` transport of the current authenticated connection; same rules as above. */
+    onChildModelTransport: (listener) => channels.childModel.subscribe(listener),
     /** Redeems one admission ticket for this generation (design §4.1; ticket.js createTicketRedeemer). */
     redeemTicket: (ticket, audience) => tickets.redeem(ticket, audience),
     /**
@@ -159,6 +161,7 @@ export async function applyNativeChild(ctx, config) {
           // publishing here, before the reply lets the host send one, is enough.
           channels.providerSync.publish(wire, wire.providerSyncTransport())
           channels.credential.publish(wire, wire.credentialTransport())
+          channels.childModel.publish(wire, wire.childModelTransport())
           payload = metadata
         } else if (message.operation === RUNTIME.operation.stop) {
           stopped = true

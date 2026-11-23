@@ -36,6 +36,10 @@ export const RUNTIME = Object.freeze({
   active: 'active.json',
   pid: 'pid.json',
   endpoint: 'endpoint.json',
+  // The main process that wrote a launch record (index.js launch). A record whose child never
+  // announced itself can only be retired once this process is provably gone, so an interrupted
+  // launch no longer blocks every later start (index.js retireInterrupted, 2026-11-23).
+  writerPid: 'writerPid',
   log: 'lifecycle.log',
   // The only shape a log line's `reason` may have: an error code identifier (files.js lifecycleLog).
   logReason: /^[A-Z][A-Z0-9_]{0,63}$/,
@@ -397,6 +401,40 @@ export const INITIAL_SYNC = Object.freeze({
   format: 1,
   failedLog: 'initial model sync failed (%s)',
   itemFailedLog: 'initial model sync: some providers were not added (%s)',
+})
+
+/**
+ * The `child-model` channel of the lifecycle wire: lets the main host's onboarding wizard read
+ * the child's model catalog and `fishball-core`'s `model` selection, and save a chosen model,
+ * through generic DSH services in `child-row.js` (no Fishball code imported).
+ */
+export const CHILD_MODEL = Object.freeze({
+  channel: 'child-model',
+  settingsNamespace: 'fishball-core',
+  path: Object.freeze(['model']),
+  mutateOp: 'set',
+  catalogService: 'sessionController',
+  op: Object.freeze({ read: 'read', set: 'set' }),
+  code: Object.freeze({
+    unavailable: 'CHILD_MODEL_CHANNEL_UNAVAILABLE',
+    notReady: REFUSAL.notReady,
+    namespaceMissing: 'namespace-missing',
+    invalidModel: 'invalid-model',
+    writeFailed: 'write-failed',
+  }),
+})
+
+/**
+ * First-run onboarding completion marker under `<home>/fishball/runtime`, so `uninstall.js`
+ * removes it along with the runtime tree and a reinstall starts onboarding fresh.
+ */
+export const ONBOARDING = Object.freeze({
+  file: 'onboarding.json',
+  format: 1,
+  outcome: Object.freeze({ completed: 'completed', skipped: 'skipped', preconfigured: 'preconfigured' }),
+  /** Outcomes accepted by `complete()` and `POST /api/dsh-instance/onboarding/complete`. */
+  completeOutcomes: Object.freeze(['completed', 'skipped']),
+  writeFailedLog: 'onboarding marker write failed (%s)',
 })
 
 /**

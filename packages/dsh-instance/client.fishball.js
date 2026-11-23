@@ -321,6 +321,19 @@ window.__ModuleLoader__.load({
     const openDialog = (spec) => dialogRequest.set({ id: ++dialogs, ...(spec === undefined ? {} : { spec }) })
     const closeDialog = () => dialogRequest.set(null)
 
+    /**
+     * One shared child-plugin inventory per loaded page, so the Plugins → Fishball tab and the
+     * first-run onboarding wizard stay in sync when a memory plugin is installed through the
+     * shared install dialog. The underlying `remote` reference updates on reload/HMR.
+     */
+    let sharedInventory
+    let currentRemote
+    function getInventory(remote) {
+      currentRemote = remote
+      sharedInventory ??= createInventory({ pluginManager: { listBundles: () => currentRemote.pluginManager.listBundles() } })
+      return sharedInventory
+    }
+
     function makeComponents({ t, statusT, shared, CLS, inventory, listen }) {
       const useChild = () => useStore(inventory.child)
       const useMain = () => useStore(inventory.main)
@@ -613,7 +626,7 @@ window.__ModuleLoader__.load({
         ctx.effect(() => shared.mountStyle(FEATURE.name, ownCss(layout.style)), FEATURE.name + ': styles')
         const CLS = layout.classes
         const listen = (name, listener) => ctx.remote.$on(name, listener)
-        const inventory = createInventory(ctx.remote)
+        const inventory = getInventory(ctx.remote)
         // DSH's Plugins page reads its list again on these; so do the Fishball lists.
         ctx.effect(() => {
           const offs = [listen(HOST_EVENT.changed, () => void inventory.refresh()), ctx.on(HOST_EVENT.reset, () => void inventory.refresh())]
@@ -627,6 +640,16 @@ window.__ModuleLoader__.load({
         // The dialog lives in the shell overlay, so it outlives the menu and the page that opened it.
         ctx.effect(() => ctx.slots.inject(S.overlay, () => ctx.slots.register({ name: S.overlay, id: FEATURE.id.dialog, locale: FEATURE.ns }, parts.InstallDialog)), FEATURE.name + ': install dialog')
       },
+    })
+    /** Shared helpers for `client.onboarding.js`: avoids duplicating the curated plugin list, inventory and install dialog. */
+    module.exports.fishballKit = Object.freeze({
+      recommended: RECOMMENDED,
+      category: CATEGORY,
+      openDialog,
+      getInventory,
+      useStore,
+      link: LINK,
+      locale: FEATURE.ns,
     })
     return module.exports
   },

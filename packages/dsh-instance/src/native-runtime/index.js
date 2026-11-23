@@ -44,7 +44,7 @@ class NativeRuntime {
     this.host = dependencies.host ?? process
     this.limits = runtimeLimits(options.limits)
     // The attached wire's payload channels (wire.js), offered to the host row's parts.
-    this.channels = Object.freeze({ providerSync: new ChannelPublisher(), credential: new ChannelPublisher() })
+    this.channels = Object.freeze({ providerSync: new ChannelPublisher(), credential: new ChannelPublisher(), childModel: new ChannelPublisher() })
     this.pending = Promise.resolve()
     this.warnings = []
     this.paths = pathsFor(options.mainHome)
@@ -58,6 +58,8 @@ class NativeRuntime {
   onProviderSyncTransport(listener) { return this.channels.providerSync.subscribe(listener) }
   /** The `mcp-credential` transport of the attached wire; same authentication as every channel. */
   onCredentialTransport(listener) { return this.channels.credential.subscribe(listener) }
+  /** The `child-model` transport of the attached wire; same authentication as every channel. */
+  onChildModelTransport(listener) { return this.channels.childModel.subscribe(listener) }
   /**
    * The ready child's own web origin (`http://127.0.0.1:<port>`), from the attached generation's
    * health answer, or undefined. It is not a secret: the port alone admits nobody.
@@ -227,11 +229,13 @@ class NativeRuntime {
       const metadata = await wire.request(RUNTIME.operation.attach)
       const providerSync = wire.providerSyncTransport()
       const credential = wire.credentialTransport()
+      const childModel = wire.childModelTransport()
       this.attached = { wire, metadata, origin: status.origin }
       wire.once('closed', () => { if (this.attached?.wire === wire) this.dropAttached() })
       const channelMetadata = { instanceId: metadata.instanceId }
       this.channels.providerSync.publish(wire, providerSync, channelMetadata)
       this.channels.credential.publish(wire, credential, channelMetadata)
+      this.channels.childModel.publish(wire, childModel, channelMetadata)
     } catch (error) { wire.close(); throw error }
   }
   /**

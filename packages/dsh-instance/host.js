@@ -13,8 +13,9 @@ import path from 'node:path'
 import Schema from '@deepseek-ai/schemastery'
 import { createNativeRuntime, RUNTIME_LIMITS } from './src/native-runtime/index.js'
 import { INSTANCE_PACKAGE, LIFETIME, HOSTED, LOCATOR, LOOPBACK, CHILD_STATE, LIFECYCLE_CODE, PLACEMENT, REFUSAL, RUNTIME } from './src/native-runtime/constants.js'
-import { fishballDirectory, pathsFor } from './src/native-runtime/files.js'
+import { existingLayout, fishballDirectory, pathsFor, privateDirectory } from './src/native-runtime/files.js'
 import { createCredentialClient } from './src/native-runtime/credential.js'
+import { createChildModelClient } from './src/native-runtime/child-model.js'
 import { openHostedRecord } from './src/host/hosted-record.js'
 import { childTargetUrl, createHostedToken, usableTokens } from './src/host/hosted.js'
 import { createChildLocator } from './src/host/locator.js'
@@ -24,6 +25,8 @@ import { CHILD_PLUGINS, createChildPlugins } from './src/host/child-plugins.js'
 import { registerChildPluginRoutes } from './src/host/child-plugin-routes.js'
 import { createChildProviderSync, CHILD_SYNC } from './src/provider-sync-service.js'
 import { createInitialSync } from './src/host/initial-sync.js'
+import { createOnboarding } from './src/host/onboarding.js'
+import { registerOnboardingRoutes } from './src/host/onboarding-routes.js'
 import { launchDetail, launchStatus } from './src/host/launch-detail.js'
 
 const PLUGIN = Object.freeze({
@@ -155,6 +158,10 @@ export async function apply(ctx, config) {
   /** The current wire's hosted-token channel (credential.js), or undefined. */
   let credentialClient
   let unsubscribeCredential = () => {}
+  /** The current wire's onboarding child-model channel (child-model.js), or undefined. */
+  let childModelClient
+  let unsubscribeChildModel = () => {}
+  let unsubscribeChildModelClose = () => {}
   /** Listeners of the locator's onChange (K3: status, origin or target status changed). */
   const changeListeners = new Set()
   const changed = () => { for (const listener of [...changeListeners]) { try { listener() } catch { /* one listener never stops the others */ } } }
@@ -268,6 +275,15 @@ export async function apply(ctx, config) {
       changed()
       void hostedReady.then((hosted) => hosted?.firstStart()).catch(() => {})
     })
+    unsubscribeChildModel = owner.onChildModelTransport((transport) => {
+      if (closed) return
+      unsubscribeChildModelClose()
+      childModelClient?.close()
+      // Model catalog reads can touch provider verification; give them the full runtime request bound.
+      const next = createChildModelClient(transport, { timeoutMs: RUNTIME_LIMITS.requestTimeoutMs })
+      childModelClient = next
+      unsubscribeChildModelClose = transport.onClose(() => { if (childModelClient === next) childModelClient = undefined })
+    })
   } catch (error) { failStart(error, PLUGIN.code.failed) }
 
   /** The state of an instance with no child: off, or stopped. */
@@ -372,6 +388,11 @@ export async function apply(ctx, config) {
     cancelReady()
     unsubscribeCredential()
     credentialClient?.close()
+    unsubscribeChildModel()
+    unsubscribeChildModelClose()
+    unsubscribeChildModelClose = () => {}
+    childModelClient?.close()
+    childModelClient = undefined
     // Its steps still running end here (the credential channel just closed, so none waits long);
     // the successor opens the record only after this disposal (below).
     const hostedDrained = hostedNow?.close()
@@ -458,6 +479,23 @@ export async function apply(ctx, config) {
   // The model-sync routes (models/check, models/add) sit beside the page's routes, on the same
   // owner-only Fetch registry, with their own same-origin fence (§10).
   registerProviderSyncRoutes(ctx, service)
+  // First-run onboarding routes (state, Fishball model selection, completion marker).
+  // The runtime root is resolved through the layout proofs (F08) so an aliased mainHome or symlink
+  // runtime folder is refused before onboarding.json is read or written.
+  const onboarding = createOnboarding({
+    childModel: () => (state === PLUGIN.state.ready ? childModelClient : undefined),
+    root: async (create = false) => {
+      const existing = await existingLayout(key)
+      if (existing) return existing.root
+      if (!create) return undefined
+      await fishballDirectory(key)
+      const root = pathsFor(key).root
+      await privateDirectory(root)
+      return root
+    },
+    warn: (format, value) => logger?.warn(format, value),
+  })
+  registerOnboardingRoutes(ctx, onboarding)
   // R-HOST-02: the child starts after the main DSH's app ready signal.
   cancelReady = ctx.appReady.onReady(() => {
     appReady = true
