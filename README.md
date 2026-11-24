@@ -16,13 +16,11 @@
 </p>
 
 <p>
-  <a href="https://www.npmjs.com/package/dsh-fishball-bundle"><img alt="npm alpha" src="https://img.shields.io/npm/v/dsh-fishball-bundle/alpha?label=npm%20alpha&color=22d3ee&labelColor=0c1219"></a>
-  <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/license-MIT-5eead4?labelColor=0c1219"></a>
-  <img alt="DSH" src="https://img.shields.io/badge/DSH-0.2.1--rc.5%20%7C%200.2.2--rc.1-a78bfa?labelColor=0c1219">
-  <br>
-  <img alt="Protocol" src="https://img.shields.io/badge/protocol-MCP%20%2B%20OAuth%202.1-38bdf8?labelColor=0c1219">
-  <img alt="Node" src="https://img.shields.io/badge/node-%E2%89%A5%2024.9-3c873a?logo=nodedotjs&logoColor=white&labelColor=0c1219">
-  <a href="https://github.com/Arrosam/dsh-fishball-bundle/stargazers"><img alt="Stars" src="https://img.shields.io/github/stars/Arrosam/dsh-fishball-bundle?color=eab308&labelColor=0c1219"></a>
+  <code>npm alpha: 1.0.0-alpha.3</code> ·
+  <a href="LICENSE"><code>MIT</code></a> ·
+  <code>DSH 0.2.1-rc.5 / 0.2.2-rc.1</code> ·
+  <code>MCP + OAuth 2.1</code> ·
+  <code>Node >= 24.9</code>
 </p>
 
 </div>
