@@ -136,8 +136,8 @@ window.__ModuleLoader__.load({
       heroViewBox: '1.6 4.6 17.8 17.8',
       body: 'M7.4 16.6 L7.4 9.9 L11.3 5.6 L18.4 5.6 L18.4 12.7 L14.1 16.6 Z M7.4 16.6 L2.6 21.4 L7.4 21.4 Z',
       eye: 'M14.6 7.4 h2 v2 h-2 Z',
-      // Sharp 45°/90° geometric `^` chevron with flat horizontal feet matching the fish body's crisp corners.
-      smileEye: 'M15.0 7.0 L17.2 9.2 L16.0 9.2 L15.0 8.2 L14.0 9.2 L12.8 9.2 Z',
+      // Two 90°-joined rectangles rotated 45° (`^` with every corner an exact right angle).
+      smileEye: 'M15.0 6.9 L17.0 8.9 L16.4 9.5 L15.0 8.1 L13.6 9.5 L13.0 8.9 Z',
       accent: '#EC0A6E',
     })
 
