@@ -9,6 +9,7 @@
  * - POST plugins/inspect   `{spec}` → `{ok, inspection}` (DSH's PluginSpecInspection)
  * - POST plugins/install   `{spec, requestId, approvedBuilds?}` → `{ok, name, version}`
  * - POST plugins/cancel    `{requestId}` → `{ok, outcome}`
+ * - POST plugins/toggle    `{name, enabled}` → `{ok, name, enabled, applied}`
  * - POST plugins/uninstall `{name}` → `{ok, name}`
  * - POST plugins/use       `{name}` → `{ok, name}`
  * Progress is not served here: DSH forwards its own `plugin-manager/install-state` and
@@ -25,6 +26,7 @@ export const CHILD_PLUGIN_ROUTE = Object.freeze({
   inspect: '/api/dsh-instance/plugins/inspect',
   install: '/api/dsh-instance/plugins/install',
   cancel: '/api/dsh-instance/plugins/cancel',
+  toggle: '/api/dsh-instance/plugins/toggle',
   uninstall: '/api/dsh-instance/plugins/uninstall',
   use: '/api/dsh-instance/plugins/use',
   // A spec, a name or a request id is short; this bounds what a page can make the Host parse.
@@ -46,6 +48,9 @@ const BODY = Object.freeze({
     : undefined),
   requestId: (body) => (isText(body.requestId) ? body.requestId : undefined),
   name: (body) => (isText(body.name) ? body.name.trim() : undefined),
+  toggle: (body) => (Object.keys(body).length === 2 && isText(body.name) && typeof body.enabled === 'boolean'
+    ? { name: body.name.trim(), enabled: body.enabled }
+    : undefined),
 })
 
 /** One POST: read the body with `read`, 400 when it does not take it, else `run(argument)`. */
@@ -64,12 +69,14 @@ const post = (connection, parse, run) => sameOriginJsonPost(connection, sameOrig
  */
 export function registerChildPluginRoutes(ctx, plugins) {
   const connection = ctx.connection
-  registerGetRoute(ctx, { path: R.list, fetch: sameOriginJsonHandler(connection, sameOrigin, REFUSAL.failed, () => plugins.list()) })
-  return registerPostRoutes(ctx, [
+  const dropGet = registerGetRoute(ctx, { path: R.list, fetch: sameOriginJsonHandler(connection, sameOrigin, REFUSAL.failed, () => plugins.list()) })
+  const dropPost = registerPostRoutes(ctx, [
     { path: R.inspect, fetch: post(connection, BODY.spec, (spec) => plugins.inspect(spec)) },
     { path: R.install, fetch: post(connection, BODY.install, (input) => plugins.install(input)) },
     { path: R.cancel, fetch: post(connection, BODY.requestId, (requestId) => plugins.cancel(requestId)) },
+    { path: R.toggle, fetch: post(connection, BODY.toggle, ({ name, enabled }) => plugins.setEnabled(name, enabled)) },
     { path: R.uninstall, fetch: post(connection, BODY.name, (name) => plugins.uninstall(name)) },
     { path: R.use, fetch: post(connection, BODY.name, (name) => plugins.use(name)) },
   ], R.label)
+  return () => { dropGet?.(); dropPost?.() }
 }

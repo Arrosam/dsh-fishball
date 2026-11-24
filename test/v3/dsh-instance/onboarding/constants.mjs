@@ -69,7 +69,10 @@ export const MEMORY_PLUGINS = Object.freeze([
   'meow-memory',
   '@a9i5k4/dsh-auto-memory',
   '@zilliz/memsearch-dsh',
+  'billion-context',
 ])
+
+export const BILLION_CONTEXT = 'billion-context'
 
 export const UI_ATTR = Object.freeze({
   root: 'data-fishball-onboarding',
@@ -84,6 +87,7 @@ export const UI_ATTR = Object.freeze({
   watchdogSelect: 'data-onboarding-watchdog-select',
   watchdogSaved: 'data-onboarding-watchdog-saved',
   memoryItem: 'data-onboarding-memory-item',
+  memoryPkg: 'data-onboarding-memory-pkg',
   memoryInstall: 'data-onboarding-memory-install',
   welcome: 'data-onboarding-welcome',
   start: 'data-onboarding-start',
@@ -100,6 +104,8 @@ export const UI_STEP = Object.freeze({
 export const WATCHDOG_STATE = Object.freeze({
   ready: 'ready',
   missing: 'missing',
+  disabled: 'disabled',
+  error: 'error',
   unsupported: 'unsupported',
 })
 

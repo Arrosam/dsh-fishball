@@ -15,9 +15,11 @@
  *   1. Fishball model: one-click sync of main DSH providers into Fishball (`models/check` +
  *      `models/add`), then pick the model Fishball uses (`POST onboarding/model`);
  *   2. Watchdog model: inline model selector writing `dsh-connector-watchdog`'s `model` field
- *      via `configForms` when loaded, or a friendly note when unavailable;
- *   3. Memory plugins: shows curated memory-category recommended plugins (`fishballKit`) with
- *      live installed state and the shared Fishball install dialog;
+ *      via `configForms` when ready, or distinct status callouts when not installed, disabled,
+ *      in error, or on an older schema;
+ *   3. Memory & long-context plugins: shows recommended plugins (`meow-memory`,
+ *      `@a9i5k4/dsh-auto-memory`, `@zilliz/memsearch-dsh`, `billion-context`) with concise plugin
+ *      descriptions, live installed state, and the shared Fishball install dialog;
  *   4. Warm welcome: recaps what was configured and starts Fishball (`POST onboarding/complete`).
  */
 window.__ModuleLoader__.load({
@@ -27,7 +29,7 @@ window.__ModuleLoader__.load({
     const module = { exports: {} }
     const React = require('react')
     const {
-      Button, StateDot, Tag, IconChevronRightOutlineRegular, IconRefreshOutlineRegular,
+      Button, StateDot, Tag, IconChevronDownOutlineRegular, IconChevronRightOutlineRegular, IconRefreshOutlineRegular,
     } = require('@deepseek-ai/dsh-client-ui-primitives')
     const h = React.createElement
 
@@ -45,6 +47,26 @@ window.__ModuleLoader__.load({
       pluginsPanelId: 'plugins',
       layoutService: 'layout',
     })
+
+    const WATCHDOG_PLUGIN = Object.freeze({
+      standalone: 'dsh-connector-watchdog',
+      umbrella: 'dsh-connector-amenities',
+      rowId: 'dsh-connector-watchdog',
+      phaseFailed: 'failed',
+      phasePending: 'pending',
+      phaseLoading: 'loading',
+      missingAvailability: 'missing',
+      changedEvent: 'plugin-manager/changed',
+      resetEvent: 'connection/reset',
+    })
+
+    const NPM_PAGE = 'https://www.npmjs.com/package/'
+    const RECOMMENDED_PLUGINS = Object.freeze([
+      Object.freeze({ packageName: 'meow-memory', spec: 'meow-memory', source: NPM_PAGE + 'meow-memory', descKey: 'memory.desc.meowMemory' }),
+      Object.freeze({ packageName: '@a9i5k4/dsh-auto-memory', spec: '@a9i5k4/dsh-auto-memory', source: NPM_PAGE + '@a9i5k4/dsh-auto-memory', descKey: 'memory.desc.autoMemory' }),
+      Object.freeze({ packageName: '@zilliz/memsearch-dsh', spec: '@zilliz/memsearch-dsh', source: NPM_PAGE + '@zilliz/memsearch-dsh', descKey: 'memory.desc.memsearch' }),
+      Object.freeze({ packageName: 'billion-context', spec: 'billion-context', source: NPM_PAGE + 'billion-context', descKey: 'memory.desc.billionContext' }),
+    ])
 
     const API = Object.freeze({
       state: 'api/dsh-instance/onboarding/state',
@@ -69,7 +91,14 @@ window.__ModuleLoader__.load({
     })
     const STEPS = Object.freeze([STEP.fishballModel, STEP.watchdog, STEP.memory, STEP.welcome])
     const STEP_STATE = Object.freeze({ done: 'done', current: 'current', upcoming: 'upcoming' })
-    const WATCHDOG_STATE = Object.freeze({ loading: 'loading', missing: 'missing', unsupported: 'unsupported', ready: 'ready' })
+    const WATCHDOG_STATE = Object.freeze({
+      loading: 'loading',
+      missing: 'missing',
+      disabled: 'disabled',
+      error: 'error',
+      unsupported: 'unsupported',
+      ready: 'ready',
+    })
     const SEP = Object.freeze({ reason: ' — ', list: ', ' })
 
     const MODEL = Object.freeze({
@@ -132,6 +161,7 @@ window.__ModuleLoader__.load({
       tagRow: 'fb-onb-tag-row',
       error: 'fb-onb-error',
       callout: 'fb-onb-callout',
+      calloutError: 'fb-onb-callout-error',
       groups: 'fb-onb-groups',
       group: 'fb-onb-group',
       groupTitle: 'fb-onb-group-title',
@@ -140,7 +170,9 @@ window.__ModuleLoader__.load({
       modelChoiceSelected: 'fb-onb-model-choice-selected',
       modelName: 'fb-onb-model-name',
       modelMeta: 'fb-onb-model-meta',
+      selectWrap: 'fb-onb-select-wrap',
       select: 'fb-onb-select',
+      selectIcon: 'fb-onb-select-icon',
       pluginList: 'fb-onb-plugin-list',
       pluginRow: 'fb-onb-plugin-row',
       pluginMain: 'fb-onb-plugin-main',
@@ -170,6 +202,8 @@ window.__ModuleLoader__.load({
       cardPadding: '24px',
       listMaxHeight: 'min(280px, 40vh)',
       selectHeight: '36px',
+      selectLineHeight: '20px',
+      selectPadY: '7px',
       welcomeBadgePx: '72px',
     })
 
@@ -200,7 +234,9 @@ window.__ModuleLoader__.load({
       `.${CLS.status}{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:0;font-size:12px;line-height:1.5;color:var(--dsw-alias-label-secondary)}`,
       `.${CLS.tagRow}{display:inline-flex;align-items:center;gap:6px;color:inherit}`,
       `.${CLS.error}{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:0;font-size:12px;line-height:1.5;color:var(--dsw-alias-state-error-primary)}`,
-      `.${CLS.callout}{display:grid;gap:6px;padding:12px 14px;border-radius:var(--dsw-radius-md);background:var(--dsw-alias-bg-module-platform);color:var(--dsw-alias-label-secondary);font-size:12px;line-height:1.6}`,
+      `.${CLS.callout}{display:grid;gap:8px;padding:12px 14px;border-radius:var(--dsw-radius-md);background:var(--dsw-alias-bg-module-platform);color:var(--dsw-alias-label-secondary);font-size:12px;line-height:1.6}`,
+      `.${CLS.callout} .${CLS.hint}{overflow-wrap:anywhere}`,
+      `.${CLS.calloutError}{background:color-mix(in srgb, var(--dsw-alias-state-error-primary) 8%, var(--dsw-alias-bg-module-platform));border:.5px solid color-mix(in srgb, var(--dsw-alias-state-error-primary) 28%, transparent)}`,
       `.${CLS.groups}{display:grid;gap:12px;max-height:${CSS_TOKENS.listMaxHeight};overflow-y:auto;padding:2px}`,
       `.${CLS.group}{display:grid;gap:4px}`,
       `.${CLS.groupTitle}{margin:0;padding:0 4px;font:var(--dsw-font-xxs-strong-12);color:var(--dsw-alias-label-tertiary)}`,
@@ -209,7 +245,16 @@ window.__ModuleLoader__.load({
       `.${CLS.modelChoiceSelected}{background:color-mix(in srgb, var(--fb-accent,${FISH_MARK.accent}) 10%, transparent);box-shadow:inset 0 0 0 .5px color-mix(in srgb, var(--fb-accent,${FISH_MARK.accent}) 45%, transparent)}`,
       `.${CLS.modelName}{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:start}`,
       `.${CLS.modelMeta}{display:inline-flex;align-items:center;gap:6px;margin-inline-start:auto;flex-shrink:0}`,
-      `.${CLS.select}{box-sizing:border-box;width:100%;height:${CSS_TOKENS.selectHeight};padding:0 12px;border:.5px solid var(--dsw-alias-border-l4,var(--dsw-alias-border-l3));border-radius:var(--dsw-radius-md);background:var(--dsw-alias-bg-layer-3,var(--dsw-alias-bg-base));font:var(--dsw-font-xs-13);color:var(--dsw-alias-label-primary)}`,
+      `.${CLS.selectWrap}{position:relative;display:flex;align-items:center;width:100%}`,
+      // Keep native `<select>` inline-block layout (avoid `display:block`, which lets Chromium's
+      // shadow-DOM picker arrow wrap) and hide `::picker-icon` so only our custom chevron renders.
+      // Symmetric vertical padding (`7px` + `20px` line-height + `7px` + `1px` border) centers text cleanly.
+      `.${CLS.select}{appearance:none;-webkit-appearance:none;box-sizing:border-box;width:100%;min-height:${CSS_TOKENS.selectHeight};line-height:${CSS_TOKENS.selectLineHeight};padding-block:${CSS_TOKENS.selectPadY};padding-inline:12px 36px;margin:0;border:.5px solid var(--dsw-alias-border-l4,var(--dsw-alias-border-l3));border-radius:var(--dsw-radius-md);background:var(--dsw-alias-bg-layer-3,var(--dsw-alias-bg-base));font-family:var(--dsw-font-family);font-size:13px;color:var(--dsw-alias-label-primary);cursor:pointer}`,
+      `.${CLS.select}::picker-icon{display:none}`,
+      `.${CLS.select}::-ms-expand{display:none}`,
+      `.${CLS.select}:focus-visible{outline:var(--dsw-focus-ring-width,2px) solid var(--dsw-focus-ring-color,var(--dsw-alias-state-business-primary));outline-offset:1px}`,
+      `.${CLS.select}:disabled{opacity:.55;cursor:not-allowed}`,
+      `.${CLS.selectIcon}{position:absolute;inset-inline-end:12px;top:50%;transform:translateY(-50%);pointer-events:none;display:inline-flex;align-items:center;justify-content:center;color:var(--dsw-alias-label-tertiary)}`,
       `.${CLS.pluginList}{display:grid;border:.5px solid var(--dsw-alias-border-l3);border-radius:var(--dsw-radius-md);background:var(--dsw-alias-bg-base);overflow:hidden}`,
       `.${CLS.pluginRow}{display:flex;align-items:center;gap:12px;padding:12px 14px}`,
       `.${CLS.pluginRow}+.${CLS.pluginRow}{border-top:.5px solid var(--dsw-alias-border-l2)}`,
@@ -242,7 +287,7 @@ window.__ModuleLoader__.load({
       skipStep: 'Skip for now',
       'step.fishball-model': 'Fishball Model',
       'step.watchdog': 'Watchdog',
-      'step.memory': 'Memory Plugin',
+      'step.memory': 'Memory & Context',
       'step.welcome': 'Welcome',
       'model.title': 'Set up Fishball\'s model',
       'model.lead': 'Fishball runs in its own private DSH instance. Sync your model providers from this DSH to Fishball, then pick the model Fishball should use.',
@@ -274,17 +319,25 @@ window.__ModuleLoader__.load({
       'watchdog.failed': 'Could not read available models from this DSH.',
       'watchdog.saved': 'Watchdog model saved.',
       'watchdog.saveFailed': 'Could not save the Watchdog model. Please try again.',
-      'watchdog.missing': 'Watchdog (dsh-connector-watchdog) is not installed or active in this DSH yet.',
+      'watchdog.missing': 'Watchdog (dsh-connector-watchdog) is not installed in this DSH.',
       'watchdog.missingHint': 'You can continue without it now, or install dsh-connector-amenities from Plugins whenever you want Watchdog supervision.',
+      'watchdog.notEnabled': 'Watchdog is installed, but currently disabled.',
+      'watchdog.notEnabledHint': 'Enable dsh-connector-amenities / dsh-connector-watchdog in Plugins to configure its model, or skip this step for now.',
+      'watchdog.error': 'Watchdog encountered a loading error and is currently unavailable.',
+      'watchdog.errorHint': 'Check Watchdog\'s status in Plugins to resolve the issue, or skip this step and configure it later.',
       'watchdog.schemaOld': 'The currently loaded Watchdog version does not expose a dedicated model setting yet. You can skip this step and configure it once updated.',
       'watchdog.openPlugins': 'Open Plugins',
-      'memory.title': 'Add a memory plugin (recommended)',
-      'memory.lead': 'Fishball does not ship with built-in long-term memory. Installing one memory plugin lets Fishball remember your preferences, project conventions, and past context across sessions.',
+      'memory.title': 'Add a memory or context plugin (recommended)',
+      'memory.lead': 'Fishball has no built-in long-term memory. Installing a memory or long-context plugin helps Fishball remember your preferences, project context, and long-running work.',
       'memory.installed': 'Installed',
       'memory.install': 'Install',
       'memory.source': 'Source',
-      'memory.readyNote': 'Nice! Fishball has a memory plugin installed ({names}).',
-      'memory.skipNote': 'Installing a plugin restarts Fishball automatically in the background. You can also skip this step and install one later in Plugins → Fishball.',
+      'memory.desc.meowMemory': 'Lightweight 7-layer SQLite cross-session memory with BM25 retrieval for preferences, rules, and lessons.',
+      'memory.desc.autoMemory': 'Local-first automatic memory with per-turn consolidation, smart recall, and cross-tool memory import.',
+      'memory.desc.memsearch': 'Persistent memory backed by human-readable Markdown files and Milvus hybrid vector + BM25 search.',
+      'memory.desc.billionContext': 'Model-driven context compression for ultra-long sessions that lowers window overflow risk and token usage.',
+      'memory.readyNote': 'Nice! Fishball has recommended plugin(s) installed ({names}).',
+      'memory.skipNote': 'Installing a plugin restarts Fishball automatically in the background. You can also skip this step and install plugins later in Plugins → Fishball.',
       'memory.loading': 'Checking installed Fishball plugins…',
       'memory.loadFailed': 'Could not check installed Fishball plugins right now.',
       'welcome.title': 'Welcome to Fishball',
@@ -293,7 +346,7 @@ window.__ModuleLoader__.load({
       'welcome.starting': 'Opening Fishball…',
       'welcome.summaryFishball': 'Fishball model',
       'welcome.summaryWatchdog': 'Watchdog model',
-      'welcome.summaryMemory': 'Memory plugin',
+      'welcome.summaryMemory': 'Memory & context plugin',
       'welcome.notSet': 'Not configured yet (can be set later)',
       'welcome.notInstalled': 'None installed yet (optional)',
     }
@@ -307,7 +360,7 @@ window.__ModuleLoader__.load({
       skipStep: '暂不配置',
       'step.fishball-model': 'Fishball 模型',
       'step.watchdog': 'Watchdog 模型',
-      'step.memory': '记忆插件',
+      'step.memory': '记忆与上下文',
       'step.welcome': '开始使用',
       'model.title': '配置 Fishball 模型',
       'model.lead': 'Fishball 运行在独立的私有 DSH 子实例中。先一键把当前 DSH 的模型提供商同步过去，再选择 Fishball 要使用的模型。',
@@ -339,17 +392,25 @@ window.__ModuleLoader__.load({
       'watchdog.failed': '无法读取当前 DSH 的可用模型。',
       'watchdog.saved': 'Watchdog 模型已保存。',
       'watchdog.saveFailed': '未能保存 Watchdog 模型，请重试。',
-      'watchdog.missing': '当前 DSH 尚未安装或启用 Watchdog（dsh-connector-watchdog）。',
+      'watchdog.missing': '当前 DSH 尚未安装 Watchdog（dsh-connector-watchdog）。',
       'watchdog.missingHint': '你可以先跳过此步，之后需要自动巡查与权限审批时，在插件页安装 dsh-connector-amenities 即可。',
+      'watchdog.notEnabled': 'Watchdog 已安装，但当前未启用。',
+      'watchdog.notEnabledHint': '请在插件页启用 dsh-connector-amenities / dsh-connector-watchdog 后再配置模型，也可以先跳过此步。',
+      'watchdog.error': 'Watchdog 插件加载出错，当前不可用。',
+      'watchdog.errorHint': '请前往插件页查看并修复 Watchdog 错误，也可以先跳过此步稍后再配置。',
       'watchdog.schemaOld': '当前加载的 Watchdog 版本尚未包含独立模型配置项。你可以先跳过此步，更新后再来配置。',
       'watchdog.openPlugins': '打开插件页',
-      'memory.title': '推荐配置一个记忆插件',
-      'memory.lead': 'Fishball 本身不内置长期记忆。建议安装一个记忆类插件，让 Fishball 在跨会话协作中记住你的偏好、项目背景与重要约定。',
+      'memory.title': '推荐配置记忆或上下文插件',
+      'memory.lead': 'Fishball 本身不内置长期记忆。建议安装一个记忆或长上下文插件，帮助 Fishball 在跨会话与超长任务中记住偏好与项目背景。',
       'memory.installed': '已安装',
       'memory.install': '安装',
       'memory.source': '来源',
-      'memory.readyNote': '太棒了！已为 Fishball 安装记忆插件（{names}）。',
-      'memory.skipNote': '安装插件后 Fishball 会在后台自动重启加载。你也可以先跳过，随时在“插件 → Fishball”中安装。',
+      'memory.desc.meowMemory': '轻量跨会话长期记忆插件，基于七层 SQLite 存储与 BM25 检索，自动沉淀偏好、规则与经验。',
+      'memory.desc.autoMemory': '本地优先的自动记忆插件，支持每轮自动整理与召回上下文，并可导入其他工具的历史记忆。',
+      'memory.desc.memsearch': '基于可读 Markdown 文件与 Milvus 向量 + BM25 混合检索的持久化记忆插件。',
+      'memory.desc.billionContext': '长对话主动上下文压缩插件，降低上下文溢出风险与 token 消耗，支撑超长会话运行。',
+      'memory.readyNote': '太棒了！已为 Fishball 安装推荐插件（{names}）。',
+      'memory.skipNote': '安装插件后 Fishball 会在后台自动重启加载。你也可以先跳过，随时在“插件 → Fishball”中管理插件。',
       'memory.loading': '正在检查 Fishball 已安装的插件…',
       'memory.loadFailed': '暂时无法读取 Fishball 已安装的插件列表。',
       'welcome.title': '欢迎来到 Fishball',
@@ -358,7 +419,7 @@ window.__ModuleLoader__.load({
       'welcome.starting': '正在进入 Fishball…',
       'welcome.summaryFishball': 'Fishball 模型',
       'welcome.summaryWatchdog': 'Watchdog 模型',
-      'welcome.summaryMemory': '记忆插件',
+      'welcome.summaryMemory': '记忆与上下文插件',
       'welcome.notSet': '暂未配置（进入后可随时设置）',
       'welcome.notInstalled': '暂未安装（可选）',
     }
@@ -477,8 +538,50 @@ window.__ModuleLoader__.load({
       return React.useSyncExternalStore(subscribe, getSnapshot)
     }
 
-    /** Subscribes to Watchdog's served status & live `model` selection in the main DSH. */
-    function useWatchdogModel(ctx) {
+    /**
+     * Classifies why Watchdog is absent from `configForms.describe()` using DSH's plugin manager
+     * inventory (`listBundles` + `listPlugins`): distinguishes `error`, `loading`, `disabled`, and `missing`.
+     */
+    function diagnoseAbsentWatchdog(bundles, plugins) {
+      const row = plugins.find((entry) => entry?.moduleName === WATCHDOG_PLUGIN.standalone || entry?.entryId === WATCHDOG_PLUGIN.rowId)
+      const matchingBundles = bundles.filter((entry) => {
+        if (!entry) return false
+        if (entry.name === WATCHDOG_PLUGIN.standalone) return true
+        const hasWatchdogRow = Array.isArray(entry.rows) && entry.rows.some((r) => r?.rowId === WATCHDOG_PLUGIN.rowId || r?.moduleName === WATCHDOG_PLUGIN.standalone)
+        if (hasWatchdogRow) return true
+        // Match the umbrella bundle by name only when its rows are absent/empty (e.g. load failure
+        // or disabled bundle whose rows were not expanded), avoiding false positives on older
+        // umbrella versions whose non-empty rows do not include Watchdog.
+        return entry.name === WATCHDOG_PLUGIN.umbrella && (!Array.isArray(entry.rows) || entry.rows.length === 0)
+      })
+      if (row?.fiberPhase === WATCHDOG_PLUGIN.phaseFailed) {
+        return { state: WATCHDOG_STATE.error, diagnostic: typeof row.diagnostic === 'string' && row.diagnostic.trim() !== '' ? row.diagnostic.trim() : null }
+      }
+      const erroredBundle = matchingBundles.find((entry) => entry.error !== undefined && entry.error !== null)
+      if (erroredBundle !== undefined) {
+        const detail = typeof erroredBundle.error.diagnostic === 'string' && erroredBundle.error.diagnostic.trim() !== ''
+          ? erroredBundle.error.diagnostic.trim()
+          : typeof erroredBundle.error.code === 'string' ? erroredBundle.error.code : null
+        return { state: WATCHDOG_STATE.error, diagnostic: detail }
+      }
+      if (row?.fiberPhase === WATCHDOG_PLUGIN.phasePending || row?.fiberPhase === WATCHDOG_PLUGIN.phaseLoading) {
+        return { state: WATCHDOG_STATE.loading, diagnostic: null }
+      }
+      const installedBundles = matchingBundles.filter(
+        (entry) => entry.installed !== false && !(entry.availability === WATCHDOG_PLUGIN.missingAvailability && !entry.installed),
+      )
+      if (row !== undefined && row.enabled === false) return { state: WATCHDOG_STATE.disabled, diagnostic: null }
+      if (installedBundles.length > 0 && installedBundles.every((entry) => entry.enabled === false)) {
+        return { state: WATCHDOG_STATE.disabled, diagnostic: null }
+      }
+      if (row?.enabled === true || installedBundles.some((entry) => entry.enabled === true && entry.availability !== WATCHDOG_PLUGIN.missingAvailability)) {
+        return { state: WATCHDOG_STATE.error, diagnostic: null }
+      }
+      return { state: WATCHDOG_STATE.missing, diagnostic: null }
+    }
+
+    /** Subscribes to Watchdog's served status, plugin-manager health & live `model` selection. */
+    function useWatchdogModel(ctx, active) {
       const describe = React.useMemo(
         () => (typeof ctx.configForms?.describe === 'function' ? ctx.configForms.describe() : null),
         [ctx.configForms],
@@ -489,6 +592,36 @@ window.__ModuleLoader__.load({
         [ctx.configForms],
       )
       const snapshot = useExternalStore(scope)
+      const [pmInfo, setPmInfo] = React.useState({ loaded: false, bundles: [], plugins: [] })
+
+      React.useEffect(() => {
+        if (!active) return undefined
+        let live = true
+        let seq = 0
+        const pm = ctx.remote?.pluginManager
+        const hasPm = typeof pm?.listBundles === 'function' || typeof pm?.listPlugins === 'function'
+        if (!hasPm) {
+          setPmInfo({ loaded: true, bundles: [], plugins: [] })
+          return undefined
+        }
+        const read = () => {
+          const ticket = ++seq
+          const readBundles = typeof pm?.listBundles === 'function'
+            ? Promise.resolve().then(() => pm.listBundles()).then((res) => (res?.ok && Array.isArray(res.value) ? res.value : []), () => [])
+            : Promise.resolve([])
+          const readPlugins = typeof pm?.listPlugins === 'function'
+            ? Promise.resolve().then(() => pm.listPlugins()).then((res) => (res?.ok && Array.isArray(res.value) ? res.value : []), () => [])
+            : Promise.resolve([])
+          void Promise.all([readBundles, readPlugins]).then(([bundles, plugins]) => {
+            if (live && ticket === seq) setPmInfo({ loaded: true, bundles, plugins })
+          })
+        }
+        read()
+        const offChanged = typeof ctx.remote?.$on === 'function' ? ctx.remote.$on(WATCHDOG_PLUGIN.changedEvent, read) : undefined
+        const offReset = typeof ctx.on === 'function' ? ctx.on(WATCHDOG_PLUGIN.resetEvent, read) : undefined
+        return () => { live = false; offChanged?.(); offReset?.() }
+      }, [ctx, active])
+
       const describeLoading = describe !== null && mirrored?.view === undefined && snapshot?.status !== MODEL.configReady
       const served = Array.isArray(mirrored?.view?.namespaces)
         ? mirrored.view.namespaces.find((entry) => entry.ns === FEATURE.watchdogNs)
@@ -497,15 +630,24 @@ window.__ModuleLoader__.load({
       const supportsModel = served !== undefined ? hasWatchdogModelField(ctx, served) : available
       const saved = normalizeSelection(snapshot?.value?.[FEATURE.watchdogField])
       const writable = snapshot?.writable !== false && snapshot?.status !== MODEL.configUnavailable
-      const state = describeLoading ? WATCHDOG_STATE.loading
-        : !available ? WATCHDOG_STATE.missing
-          : !supportsModel ? WATCHDOG_STATE.unsupported
-            : WATCHDOG_STATE.ready
-      return { state, saved, scope, writable }
+
+      let state
+      let diagnostic = null
+      if (describeLoading || (active && !available && !pmInfo.loaded)) {
+        state = WATCHDOG_STATE.loading
+      } else if (!available) {
+        const diagnosed = diagnoseAbsentWatchdog(pmInfo.bundles, pmInfo.plugins)
+        state = diagnosed.state
+        diagnostic = diagnosed.diagnostic
+      } else if (!supportsModel) {
+        state = WATCHDOG_STATE.unsupported
+      } else {
+        state = WATCHDOG_STATE.ready
+      }
+      return { state, diagnostic, saved, scope, writable }
     }
 
-    function makeOnboardingGate({ ctx, t, statusT, fishballT, shared, syncKit, fishballKit }) {
-      const memoryItems = fishballKit.recommended.filter((item) => item.category === fishballKit.category.memory)
+    function makeOnboardingGate({ ctx, t, statusT, shared, syncKit, fishballKit }) {
       const inventory = fishballKit.getInventory(ctx.remote)
       // Once this browser session knows onboarding is finished, subsequent portal opens yield to
       // the frame synchronously with zero loading flash and zero background polling.
@@ -692,46 +834,65 @@ window.__ModuleLoader__.load({
           else ctx.get?.(FEATURE.layoutService)?.selectPanel?.(FEATURE.pluginsPanelId)
         }
 
+        const renderUnavailableCallout = (state, dot, leadKey, hintKey, isError = false, diagnostic = null) => h(
+          'div',
+          { className: [CLS.callout, isError ? CLS.calloutError : ''].filter(Boolean).join(' '), 'data-onboarding-watchdog-state': state },
+          h('p', { className: isError ? CLS.error : CLS.status, role: isError ? 'alert' : 'status' },
+            h(StateDot, { state: dot, size: ICON_PX.dot }),
+            t(leadKey)),
+          diagnostic ? h('p', { className: CLS.hint }, diagnostic) : null,
+          hintKey ? h('p', { className: CLS.hint }, t(hintKey)) : null,
+          h('div', null, h(Button, { type: 'button', size: 'sm', variant: 'outline', onClick: openPlugins }, t('watchdog.openPlugins'))),
+        )
+
+        let body
+        if (watchdog.state === WATCHDOG_STATE.loading) {
+          body = h('p', { className: CLS.status, role: 'status', 'data-onboarding-watchdog-state': WATCHDOG_STATE.loading },
+            h(StateDot, { state: STATE_DOT.ongoing, size: ICON_PX.dot }), t('watchdog.checking'))
+        } else if (watchdog.state === WATCHDOG_STATE.missing) {
+          body = renderUnavailableCallout(WATCHDOG_STATE.missing, STATE_DOT.idle, 'watchdog.missing', 'watchdog.missingHint')
+        } else if (watchdog.state === WATCHDOG_STATE.disabled) {
+          body = renderUnavailableCallout(WATCHDOG_STATE.disabled, STATE_DOT.idle, 'watchdog.notEnabled', 'watchdog.notEnabledHint')
+        } else if (watchdog.state === WATCHDOG_STATE.error) {
+          body = renderUnavailableCallout(WATCHDOG_STATE.error, STATE_DOT.error, 'watchdog.error', 'watchdog.errorHint', true, watchdog.diagnostic)
+        } else if (watchdog.state === WATCHDOG_STATE.unsupported) {
+          body = h('div', { className: CLS.callout, 'data-onboarding-watchdog-state': WATCHDOG_STATE.unsupported },
+            h('p', { className: CLS.status }, h(StateDot, { state: STATE_DOT.idle, size: ICON_PX.dot }), t('watchdog.schemaOld')))
+        } else {
+          body = h('section', { className: CLS.section, 'data-onboarding-watchdog-state': WATCHDOG_STATE.ready },
+            h('label', { className: CLS.sectionTitle, htmlFor: selectId }, t('watchdog.label')),
+            h('div', { className: CLS.selectWrap },
+              h('select', {
+                id: selectId,
+                className: CLS.select,
+                value: currentValue,
+                disabled: !watchdog.writable || busy,
+                'data-onboarding-watchdog-select': true,
+                onChange: (event) => void handlePick(event.target.value),
+              },
+                h('option', { value: MODEL.unset }, t('watchdog.disabled')),
+                watchdog.saved !== null && !choices.some((entry) => entry.key === currentValue)
+                  ? h('option', { value: currentValue }, formatSelectionLabel(watchdog.saved, mainCatalog.value, t))
+                  : null,
+                choices.map((choice) => h('option', { key: choice.key, value: choice.key }, choice.label))),
+              h('span', { className: CLS.selectIcon, 'aria-hidden': true }, h(IconChevronDownOutlineRegular, { size: ICON_PX.button }))),
+            mainCatalog.status === MODEL.catalog.loading ? h('p', { className: CLS.hint, role: 'status' }, t('watchdog.loading'))
+              : mainCatalog.status === MODEL.catalog.failed ? h('p', { className: CLS.error, role: 'alert' }, t('watchdog.failed'))
+                : choices.length === 0 ? h('p', { className: CLS.hint }, t('watchdog.none'))
+                  : null,
+            h('p', { className: CLS.hint }, t('watchdog.tip')),
+            feedback === STATE_DOT.done ? h('p', { className: CLS.status, role: 'status', 'data-onboarding-watchdog-saved': true }, h(StateDot, { state: STATE_DOT.done, size: ICON_PX.dot }), t('watchdog.saved')) : null,
+            feedback === STATE_DOT.error ? h('p', { className: CLS.error, role: 'alert' }, h(StateDot, { state: STATE_DOT.error, size: ICON_PX.dot }), t('watchdog.saveFailed')) : null)
+        }
+
         return h(React.Fragment, null,
           h('div', { className: CLS.pageHead },
             h('h2', { className: CLS.heading }, t('watchdog.title')),
             h('p', { className: CLS.lead }, t('watchdog.lead'))),
-          watchdog.state === WATCHDOG_STATE.loading
-            ? h('p', { className: CLS.status, role: 'status', 'data-onboarding-watchdog-state': WATCHDOG_STATE.loading },
-              h(StateDot, { state: STATE_DOT.ongoing, size: ICON_PX.dot }), t('watchdog.checking'))
-            : watchdog.state === WATCHDOG_STATE.missing
-              ? h('div', { className: CLS.callout, 'data-onboarding-watchdog-state': WATCHDOG_STATE.missing },
-                h('p', { className: CLS.status }, h(StateDot, { state: STATE_DOT.idle, size: ICON_PX.dot }), t('watchdog.missing')),
-                h('p', { className: CLS.hint }, t('watchdog.missingHint')),
-                h('div', null, h(Button, { type: 'button', size: 'sm', variant: 'outline', onClick: openPlugins }, t('watchdog.openPlugins'))))
-              : watchdog.state === WATCHDOG_STATE.unsupported
-                ? h('div', { className: CLS.callout, 'data-onboarding-watchdog-state': WATCHDOG_STATE.unsupported },
-                  h('p', { className: CLS.status }, h(StateDot, { state: STATE_DOT.idle, size: ICON_PX.dot }), t('watchdog.schemaOld')))
-                : h('section', { className: CLS.section, 'data-onboarding-watchdog-state': WATCHDOG_STATE.ready },
-                  h('label', { className: CLS.sectionTitle, htmlFor: selectId }, t('watchdog.label')),
-                  h('select', {
-                    id: selectId,
-                    className: CLS.select,
-                    value: currentValue,
-                    disabled: !watchdog.writable || busy,
-                    'data-onboarding-watchdog-select': true,
-                    onChange: (event) => void handlePick(event.target.value),
-                  },
-                    h('option', { value: MODEL.unset }, t('watchdog.disabled')),
-                    watchdog.saved !== null && !choices.some((entry) => entry.key === currentValue)
-                      ? h('option', { value: currentValue }, formatSelectionLabel(watchdog.saved, mainCatalog.value, t))
-                      : null,
-                    choices.map((choice) => h('option', { key: choice.key, value: choice.key }, choice.label))),
-                  mainCatalog.status === MODEL.catalog.loading ? h('p', { className: CLS.hint, role: 'status' }, t('watchdog.loading'))
-                    : mainCatalog.status === MODEL.catalog.failed ? h('p', { className: CLS.error, role: 'alert' }, t('watchdog.failed'))
-                      : choices.length === 0 ? h('p', { className: CLS.hint }, t('watchdog.none'))
-                        : null,
-                  h('p', { className: CLS.hint }, t('watchdog.tip')),
-                  feedback === STATE_DOT.done ? h('p', { className: CLS.status, role: 'status', 'data-onboarding-watchdog-saved': true }, h(StateDot, { state: STATE_DOT.done, size: ICON_PX.dot }), t('watchdog.saved')) : null,
-                  feedback === STATE_DOT.error ? h('p', { className: CLS.error, role: 'alert' }, h(StateDot, { state: STATE_DOT.error, size: ICON_PX.dot }), t('watchdog.saveFailed')) : null))
+          body)
       }
 
-      /** Page 3: Recommended memory plugins with live install state and shared install dialog. */
+      /** Page 3: Recommended memory & long-context plugins with concise descriptions & shared install dialog. */
       function MemoryStep({ childPlugins, installedMemoryNames }) {
         React.useEffect(() => { void inventory.refresh() }, [])
         const installedSet = new Set(installedMemoryNames)
@@ -748,12 +909,12 @@ window.__ModuleLoader__.load({
             ? h('p', { className: CLS.error, role: 'alert' }, h(StateDot, { state: STATE_DOT.error, size: ICON_PX.dot }), t('memory.loadFailed'))
             : null,
           h('div', { className: CLS.pluginList, 'data-onboarding-memory-list': true },
-            memoryItems.map((item) => {
+            RECOMMENDED_PLUGINS.map((item) => {
               const present = installedSet.has(item.packageName)
               return h('div', { key: item.packageName, className: CLS.pluginRow, 'data-onboarding-memory-item': item.packageName },
                 h('div', { className: CLS.pluginMain },
                   h('span', { className: CLS.pluginName }, item.packageName),
-                  item.noteKey ? h('span', { className: CLS.hint }, fishballT(item.noteKey)) : null,
+                  h('span', { className: CLS.hint }, t(item.descKey)),
                   h('a', { href: item.source, target: fishballKit.link.target, rel: fishballKit.link.rel, className: CLS.link }, t('memory.source'))),
                 h('div', { className: CLS.pluginActions },
                   loading ? null
@@ -797,10 +958,9 @@ window.__ModuleLoader__.load({
       function OnboardingFlow({ title, renderFrame, onDone }) {
         useExternalStore(ctx.locale)
         const [instanceStatus] = shared.useInstanceStatus()
-        const watchdog = useWatchdogModel(ctx)
-        const childPlugins = fishballKit.useStore(inventory.child)
-
         const [gate, setGate] = React.useState({ status: GATE.loading, model: null, catalog: null, childReady: false })
+        const watchdog = useWatchdogModel(ctx, gate.status === GATE.active)
+        const childPlugins = fishballKit.useStore(inventory.child)
         const activeRef = React.useRef(false)
         const mountedRef = React.useRef(true)
         const finishingRef = React.useRef(false)
@@ -909,7 +1069,7 @@ window.__ModuleLoader__.load({
         const instanceIsReady = instanceStatus === undefined || instanceStatus.state === READY_STATE
         const childReady = gate.childReady && instanceIsReady
         const canRefresh = childReady || instanceStatus?.state === READY_STATE
-        const installedMemoryNames = memoryItems
+        const installedMemoryNames = RECOMMENDED_PLUGINS
           .filter((item) => childPlugins.bundles.some((bundle) => bundle.name === item.packageName))
           .map((item) => item.packageName)
 
@@ -1003,10 +1163,9 @@ window.__ModuleLoader__.load({
       apply(ctx) {
         const t = ctx.locale.bind(FEATURE.ns)
         const statusT = ctx.locale.bind(shared.locale)
-        const fishballT = ctx.locale.bind(fishballKit.locale)
         ctx.effect(() => ctx.locale.register(FEATURE.ns, { en, zh }), FEATURE.name + ': dictionaries')
         ctx.effect(() => shared.mountStyle(FEATURE.styleId, css), FEATURE.name + ': styles')
-        const Gate = makeOnboardingGate({ ctx, t, statusT, fishballT, shared, syncKit, fishballKit })
+        const Gate = makeOnboardingGate({ ctx, t, statusT, shared, syncKit, fishballKit })
         ctx.inject([FEATURE.portalService], (scope) => {
           const portal = scope[FEATURE.portalService]
           if (portal?.apiVersion !== FEATURE.portalVersion || typeof portal.registerGate !== 'function') return

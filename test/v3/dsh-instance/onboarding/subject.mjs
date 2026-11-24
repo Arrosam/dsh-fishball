@@ -272,18 +272,24 @@ export async function openOnboardingPage(t, sdk, {
   instanceStatus = { state: 'ready', code: null, detail: null, notice: null, busy: false },
   watchdogMode = WATCHDOG_STATE.ready,
   watchdogInitialModel = undefined,
+  mainBundles = [],
+  mainPlugins = [],
+  pluginManagerMode = 'full',
   hostCatalog = FIXTURE.catalog,
   installedFishballBundles = [],
   missingProviders = FIXTURE.missingProviders,
   syncedCatalog = FIXTURE.syncedCatalog,
   respond = () => undefined,
 } = {}) {
+  let currentWatchdogMode = watchdogMode
   const world = {
     state: structuredClone(onboardingState),
     failState,
     status: { ...instanceStatus },
     hostCatalog: structuredClone(hostCatalog),
     installedFishballBundles: structuredClone(installedFishballBundles),
+    mainBundles: structuredClone(mainBundles),
+    mainPlugins: structuredClone(mainPlugins),
     requests: [],
     errors: [],
     watchdogCalls: { set: [], unset: [], mutate: [] },
@@ -418,9 +424,10 @@ export async function openOnboardingPage(t, sdk, {
   // Model configForms matching `@deepseek-ai/dsh-client-ui-settings` SDK contract
   const formListeners = new Map()
   const notifyForm = (ns) => { for (const fn of [...(formListeners.get(ns) ?? [])]) fn() }
-  const watchdogSchema = watchdogMode === WATCHDOG_STATE.ready
+  const isWatchdogServed = () => currentWatchdogMode === WATCHDOG_STATE.ready || currentWatchdogMode === WATCHDOG_STATE.unsupported
+  const watchdogSchemaOf = () => (currentWatchdogMode === WATCHDOG_STATE.ready
     ? { type: 'object', dict: { model: { type: 'object', dict: { provider: { type: 'string' }, model: { type: 'string' }, reasoningEffort: { type: 'string' } } } } }
-    : { type: 'object', dict: { enabled: { type: 'boolean' } } }
+    : { type: 'object', dict: { enabled: { type: 'boolean' } } })
 
   const makeNamespaces = () => {
     const list = [{
@@ -432,12 +439,12 @@ export async function openOnboardingPage(t, sdk, {
       secrets: [],
       revision: 1,
     }]
-    if (watchdogMode !== WATCHDOG_STATE.missing) {
+    if (isWatchdogServed()) {
       list.push({
         ns: WATCHDOG_NS,
         autoGenerate: false,
-        schema: watchdogSchema,
-        value: watchdogMode === WATCHDOG_STATE.ready
+        schema: watchdogSchemaOf(),
+        value: currentWatchdogMode === WATCHDOG_STATE.ready
           ? (world.watchdogModel ? { model: world.watchdogModel } : {})
           : { enabled: true },
         applies: 'live',
@@ -454,13 +461,18 @@ export async function openOnboardingPage(t, sdk, {
     error: null,
   }
   const describeListeners = new Set()
+  const formRefreshers = new Map()
+  const whileServedSubscriptions = []
   const refreshDescribe = () => {
     describeSnapshot = {
       status: 'ready',
       view: { writable: true, hasDocument: true, namespaces: makeNamespaces() },
       error: null,
     }
+    for (const refresh of formRefreshers.values()) refresh()
     for (const fn of [...describeListeners]) fn()
+    const served = new Set(makeNamespaces().map((n) => n.ns))
+    for (const sub of whileServedSubscriptions) sub.sync(served)
   }
 
   const formCache = new Map()
@@ -468,12 +480,12 @@ export async function openOnboardingPage(t, sdk, {
     if (formCache.has(ns)) return formCache.get(ns)
     const getSnap = () => {
       if (ns === WATCHDOG_NS) {
-        if (watchdogMode === WATCHDOG_STATE.missing) {
+        if (!isWatchdogServed()) {
           return { status: 'unavailable', value: undefined, base: undefined, user: undefined, revision: undefined, writable: false }
         }
         return {
           status: 'ready',
-          value: watchdogMode === WATCHDOG_STATE.ready
+          value: currentWatchdogMode === WATCHDOG_STATE.ready
             ? (world.watchdogModel ? { model: world.watchdogModel } : {})
             : { enabled: true },
           base: {},
@@ -485,6 +497,7 @@ export async function openOnboardingPage(t, sdk, {
       return { status: 'ready', value: { enabled: true }, base: { enabled: true }, user: {}, revision: 1, writable: true }
     }
     let cachedSnap = getSnap()
+    formRefreshers.set(ns, () => { cachedSnap = getSnap(); notifyForm(ns) })
     const form = {
       getSnapshot: () => cachedSnap,
       subscribe(fn) {
@@ -534,19 +547,54 @@ export async function openOnboardingPage(t, sdk, {
     }),
     whileServed(namespaces, register) {
       const wanted = [namespaces].flat()
-      const served = new Set(makeNamespaces().map((n) => n.ns))
-      const matched = wanted.filter((n) => served.has(n))
-      if (matched.length === 0) return () => {}
-      const dispose = register(new Set(matched))
-      return () => { if (typeof dispose === 'function') dispose() }
+      let dispose = null
+      let active = false
+      const sub = {
+        sync(served) {
+          const matched = wanted.filter((n) => served.has(n))
+          if (matched.length > 0 && !active) {
+            active = true
+            dispose = register(new Set(matched))
+          } else if (matched.length === 0 && active) {
+            active = false
+            const prev = dispose
+            dispose = null
+            if (typeof prev === 'function') prev()
+          }
+        },
+      }
+      whileServedSubscriptions.push(sub)
+      sub.sync(new Set(makeNamespaces().map((n) => n.ns)))
+      return () => {
+        const idx = whileServedSubscriptions.indexOf(sub)
+        if (idx >= 0) whileServedSubscriptions.splice(idx, 1)
+        if (active && typeof dispose === 'function') dispose()
+        active = false
+        dispose = null
+      }
     },
   }
 
+  const remoteListeners = new Map()
+  const emitRemote = (event, payload) => {
+    for (const fn of [...(remoteListeners.get(event) ?? [])]) fn(payload)
+  }
+  const pluginManagerFace = pluginManagerMode === 'full'
+    ? {
+        listBundles: async () => ({ ok: true, value: structuredClone(world.mainBundles) }),
+        listPlugins: async () => ({ ok: true, value: structuredClone(world.mainPlugins) }),
+      }
+    : pluginManagerMode === 'no-list'
+      ? {}
+      : undefined
+
   const remote = {
-    $on: () => () => {},
-    pluginManager: {
-      listBundles: async () => ({ ok: true, value: [] }),
+    $on: (event, fn) => {
+      if (!remoteListeners.has(event)) remoteListeners.set(event, new Set())
+      remoteListeners.get(event).add(fn)
+      return () => remoteListeners.get(event)?.delete(fn)
     },
+    ...(pluginManagerFace !== undefined ? { pluginManager: pluginManagerFace } : {}),
     session: {
       modelCatalog: async () => ({
         ok: true,
@@ -579,6 +627,7 @@ export async function openOnboardingPage(t, sdk, {
   root.provide('configForms', configForms)
   root.provide('remote', remote)
   root.provide('remote.session', remote.session)
+  if (pluginManagerFace !== undefined) root.provide('remote.pluginManager', pluginManagerFace)
   root.provide(PORTAL.serviceName, portal)
 
   const plugins = applyPlugins(root, graph, table, world.errors)
@@ -633,6 +682,17 @@ export async function openOnboardingPage(t, sdk, {
     get gate() { return activeGate },
     settle: settleAll,
     until: waitUntil,
+    emitRemote,
+    async updateWatchdog({ mode, mainBundles: nextBundles, mainPlugins: nextPlugins } = {}) {
+      if (mode !== undefined) currentWatchdogMode = mode
+      if (nextBundles !== undefined) world.mainBundles = structuredClone(nextBundles)
+      if (nextPlugins !== undefined) world.mainPlugins = structuredClone(nextPlugins)
+      refreshDescribe()
+      emitRemote('plugin-manager/changed', {})
+      emitRemote('config-forms/changed', {})
+      root.emit('config-forms/changed')
+      await settleAll()
+    },
     async mountGate({ title = FIXTURE.windowTitle } = {}) {
       assert.ok(activeGate, 'client.onboarding.js did not register a Gate in dshConnectorUiPortal')
       const renderFrame = () => React.createElement('div', { [UI_ATTR.testFrame]: 'mounted' }, 'CHILD_FRAME')
