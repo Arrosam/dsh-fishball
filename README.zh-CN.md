@@ -37,10 +37,10 @@
 
 安装前请先**退出 DSH**。如果之前安装过旧的预览版包（`dsh-fishball`、`fishball-connector`、`fishball-instance`、`fishball-embed-ui`、`dsh-fishball-*`）或单独安装过 `dsh-agent-connector` / `dsh-connector-amenities` / `dsh-instance`，请先卸载它们（若从旧预览版升级，请一并删除 `<DSH_HOME>/fishball/`）。
 
-在 DSH 界面中进入 **Plugins（插件）→ 添加插件 → `dsh-fishball-bundle@1.0.0-alpha.1`**，或在终端执行（如使用非 `web` profile 请替换 `--profile` 参数）：
+在 DSH 界面中进入 **Plugins（插件）→ 添加插件 → `dsh-fishball-bundle@1.0.0-alpha.2`**，或在终端执行（如使用非 `web` profile 请替换 `--profile` 参数）：
 
 ```bash
-dsh plugin --profile web add dsh-fishball-bundle@1.0.0-alpha.1
+dsh plugin --profile web add dsh-fishball-bundle@1.0.0-alpha.2
 ```
 
 *（安装过程中 pnpm 可能会提示 `@deepseek-ai/*` 为 missing peer dependencies，这些包由 DSH 在运行时提供，属于正常现象，忽略即可。）*
@@ -81,7 +81,7 @@ dsh plugin --profile web add dsh-fishball-bundle@1.0.0-alpha.1
 在需要暴露会话的 DSH 上安装（先退出 DSH）：
 
 ```bash
-dsh plugin --profile web add dsh-agent-connector@1.0.0-alpha.2
+dsh plugin --profile web add dsh-agent-connector@1.0.0-alpha.3
 # 可选：同时安装 adapter 与 watchdog 附加组件
 dsh plugin --profile web add dsh-connector-amenities@1.0.0-alpha.1
 ```

@@ -1,6 +1,6 @@
 {
   "name": "dsh-fishball-bundle",
-  "version": "1.0.0-alpha.1",
+  "version": "1.0.0-alpha.2",
   "description": "All-in-one Fishball embedded edition for DeepSeek Harness (DSH): bundles dsh-agent-connector, dsh-connector-adapter, dsh-connector-watchdog, and dsh-instance in one install.",
   "icon": "./assets/fishball-icon.svg",
   "license": "MIT",
@@ -36,10 +36,10 @@
     "dsh": ">=0.2.1-rc.5"
   },
   "dependencies": {
-    "dsh-agent-connector": "1.0.0-alpha.2",
+    "dsh-agent-connector": "1.0.0-alpha.3",
     "dsh-connector-adapter": "1.0.0-alpha.1",
-    "dsh-connector-watchdog": "1.0.0-alpha.1",
-    "dsh-instance": "1.0.0-alpha.1"
+    "dsh-connector-watchdog": "1.0.0-alpha.2",
+    "dsh-instance": "1.0.0-alpha.2"
   },
   "peerDependencies": {
     "@deepseek-ai/cosmokit": "*",

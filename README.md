@@ -37,10 +37,10 @@ This repository is the **main entry point for general users**:
 
 Quit DSH before installing. If you previously installed pre-V3 preview packages (`dsh-fishball`, `fishball-connector`, `fishball-instance`, `fishball-embed-ui`, `dsh-fishball-*`) or older separate packages (`dsh-agent-connector`, `dsh-connector-amenities`, `dsh-instance`), remove them first (and delete `<DSH_HOME>/fishball/` if upgrading from pre-V3).
 
-Install via DSH's UI (**Plugins → Add plugin → `dsh-fishball-bundle@1.0.0-alpha.1`**) or run from your terminal (replace `web` with your DSH profile name if different):
+Install via DSH's UI (**Plugins → Add plugin → `dsh-fishball-bundle@1.0.0-alpha.2`**) or run from your terminal (replace `web` with your DSH profile name if different):
 
 ```bash
-dsh plugin --profile web add dsh-fishball-bundle@1.0.0-alpha.1
+dsh plugin --profile web add dsh-fishball-bundle@1.0.0-alpha.2
 ```
 
 *(pnpm may print missing-peer warnings for `@deepseek-ai/*` packages; DSH provides those at runtime, so the warning is expected.)*
@@ -81,7 +81,7 @@ If you prefer running Fishball in its **own separate DSH instance** (on the same
 On the DSH whose sessions you want to manage (quit DSH first):
 
 ```bash
-dsh plugin --profile web add dsh-agent-connector@1.0.0-alpha.2
+dsh plugin --profile web add dsh-agent-connector@1.0.0-alpha.3
 # Optional: install adapter + watchdog amenities as well
 dsh plugin --profile web add dsh-connector-amenities@1.0.0-alpha.1
 ```
