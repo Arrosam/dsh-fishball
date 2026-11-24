@@ -124,7 +124,7 @@ window.__ModuleLoader__.load({
 
     const STATE_DOT = Object.freeze({ ongoing: 'ongoing', done: 'done', error: 'error', idle: 'idle' })
     const TONE = Object.freeze({ info: 'info', outline: 'outline' })
-    const ICON_PX = Object.freeze({ header: 18, button: 14, welcome: 34, dot: 8, spinner: 18 })
+    const ICON_PX = Object.freeze({ header: 18, button: 14, welcome: 156, dot: 8, spinner: 18 })
 
     /** Stable singleton snapshot for `useSyncExternalStore` fallbacks (Object.is-identical across renders). */
     const EMPTY_SNAPSHOT = Object.freeze({})
@@ -132,8 +132,12 @@ window.__ModuleLoader__.load({
 
     const FISH_MARK = Object.freeze({
       viewBox: '0 0 24 24',
+      // Tightly centered around the fish body (`x: 2.6..18.4`, `y: 5.6..21.4`) for the welcome hero.
+      heroViewBox: '1.6 4.6 17.8 17.8',
       body: 'M7.4 16.6 L7.4 9.9 L11.3 5.6 L18.4 5.6 L18.4 12.7 L14.1 16.6 Z M7.4 16.6 L2.6 21.4 L7.4 21.4 Z',
       eye: 'M14.6 7.4 h2 v2 h-2 Z',
+      smileEye: 'M13.7 9.1 L15.3 7.5 L16.9 9.1',
+      smileStrokeWidth: 0.95,
       accent: '#EC0A6E',
     })
 
@@ -204,7 +208,6 @@ window.__ModuleLoader__.load({
       selectHeight: '36px',
       selectLineHeight: '20px',
       selectPadY: '7px',
-      welcomeBadgePx: '72px',
     })
 
     const css = [
@@ -263,7 +266,7 @@ window.__ModuleLoader__.load({
       `.${CLS.pluginActions}{display:flex;align-items:center;gap:8px;flex-shrink:0}`,
       `.${CLS.link}{color:var(--dsw-alias-link,var(--fb-accent,${FISH_MARK.accent}));font-size:12px;text-decoration:none;justify-self:start}`,
       `.${CLS.welcome}{display:grid;justify-items:center;text-align:center;gap:14px;padding:12px 4px 4px}`,
-      `.${CLS.welcomeBadge}{display:inline-flex;align-items:center;justify-content:center;width:${CSS_TOKENS.welcomeBadgePx};height:${CSS_TOKENS.welcomeBadgePx};border-radius:50%;background:radial-gradient(circle at 30% 30%, color-mix(in srgb, var(--fb-accent,${FISH_MARK.accent}) 22%, transparent), color-mix(in srgb, var(--fb-accent,${FISH_MARK.accent}) 8%, var(--dsw-alias-bg-module-platform)));box-shadow:0 0 0 1px color-mix(in srgb, var(--fb-accent,${FISH_MARK.accent}) 28%, transparent);color:var(--dsw-alias-label-primary)}`,
+      `.${CLS.welcomeBadge}{display:inline-flex;align-items:center;justify-content:center;padding:16px 0 8px;color:var(--dsw-alias-label-primary)}`,
       `.${CLS.welcomeTitle}{margin:0;font-size:20px;line-height:28px;font-weight:600;color:var(--dsw-alias-label-primary)}`,
       `.${CLS.welcomeText}{margin:0;max-width:460px;font-size:13px;line-height:1.7;color:var(--dsw-alias-label-secondary)}`,
       `.${CLS.summary}{width:100%;display:grid;border:.5px solid var(--dsw-alias-border-l3);border-radius:var(--dsw-radius-md);background:var(--dsw-alias-bg-base);text-align:start;overflow:hidden}`,
@@ -424,10 +427,19 @@ window.__ModuleLoader__.load({
       'welcome.notInstalled': '暂未安装（可选）',
     }
 
-    function FishMark({ size }) {
-      return h('svg', { width: size, height: size, viewBox: FISH_MARK.viewBox, 'aria-hidden': true },
+    function FishMark({ size, smiling = false }) {
+      return h('svg', { width: size, height: size, viewBox: smiling ? FISH_MARK.heroViewBox : FISH_MARK.viewBox, 'aria-hidden': true },
         h('path', { d: FISH_MARK.body, fill: 'currentColor' }),
-        h('path', { d: FISH_MARK.eye, fill: FISH_MARK.accent }))
+        smiling
+          ? h('path', {
+            d: FISH_MARK.smileEye,
+            fill: 'none',
+            stroke: FISH_MARK.accent,
+            strokeWidth: FISH_MARK.smileStrokeWidth,
+            strokeLinecap: 'round',
+            strokeLinejoin: 'round',
+          })
+          : h('path', { d: FISH_MARK.eye, fill: FISH_MARK.accent }))
     }
 
     /** Shared portal header drawn for both the preparing screen and the active wizard. */
@@ -935,7 +947,7 @@ window.__ModuleLoader__.load({
       /** Page 4: Warm welcome screen with concise setup summary and Start CTA. */
       function WelcomeStep({ fishballLabel, watchdogLabel, installedMemoryNames }) {
         return h('div', { className: CLS.welcome, 'data-onboarding-welcome': true },
-          h('div', { className: CLS.welcomeBadge, 'aria-hidden': true }, h(FishMark, { size: ICON_PX.welcome })),
+          h('div', { className: CLS.welcomeBadge, 'aria-hidden': true }, h(FishMark, { size: ICON_PX.welcome, smiling: true })),
           h('h2', { className: CLS.welcomeTitle }, t('welcome.title')),
           h('p', { className: CLS.welcomeText }, t('welcome.body')),
           h('div', { className: CLS.summary },
