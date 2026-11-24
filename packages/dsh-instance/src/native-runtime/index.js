@@ -4,7 +4,7 @@ import { spawn as nodeSpawn } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
 import { setTimeout as delay } from 'node:timers/promises'
 import { RUNTIME, RUNTIME_LIMITS, READY_CAPABILITIES, LIFETIME, UNINSTALL, NativeRuntimeError, fail, runtimeLimits, loopbackOrigin } from './constants.js'
-import { pathsFor, prepareLayout, existingLayout, removeRuntime, exists, jsonPrivate, writePrivate, privateDirectory, launchPath, removeLaunch, lifecycleLog, validId } from './files.js'
+import { pathsFor, prepareLayout, existingLayout, removeRuntime, exists, jsonPrivate, writePrivate, privateDirectory, launchPath, removeLaunch, removeInterruptedLaunch, lifecycleLog, validId } from './files.js'
 import { resolveInstallation, isolatedEnvironment, childExecArgv, initializeProfile, copyChildCode, runProbe } from './installation.js'
 import { connectWire, ChannelPublisher } from './wire.js'
 import { admissionKey, mintTicket } from './ticket.js'
@@ -180,6 +180,8 @@ class NativeRuntime {
     if (info.instanceId !== record.instanceId || info.hostId !== this.hostId || !Number.isSafeInteger(info.pid) || info.pid <= 0) fail('INVALID_PID_RECORD')
     return info.pid
   }
+  /** The main process that writes this record: the injected host when it names one, else this process. */
+  writerPid() { return Number.isSafeInteger(this.host.pid) ? this.host.pid : process.pid }
   async alive(pid) {
     if (!pid) return undefined
     try {
@@ -188,6 +190,16 @@ class NativeRuntime {
       if (result.code === 1 && !result.output.trim()) return false
     } catch { /* Unknown is not dead. */ }
     return undefined
+  }
+  /**
+   * Whether the main process named by `record` is provably gone. Only `false` (the probe answered
+   * "dead") is proof; unknown keeps the old, safe refusal — an unowned live child must never be
+   * taken over. A record without the field (written before it existed) is always unknown.
+   */
+  async writerGone(record) {
+    const pid = record[RUNTIME.writerPid]
+    if (!Number.isSafeInteger(pid) || pid <= 0) return undefined
+    return (await this.alive(pid)) === false
   }
   async connect(record) {
     const directory = launchPath(this.paths, record.instanceId)
@@ -280,7 +292,11 @@ class NativeRuntime {
     const env = isolatedEnvironment(this.paths, this.host)
     const executable = this.host.execPath
     if (signal?.aborted) fail('START_INTERRUPTED')
-    record = { format: RUNTIME.format, hostId: this.hostId, instanceId: randomUUID(), installAnchor: this.installation.installAnchor, installRoot: this.installation.installRoot, version: this.installation.version }
+    // writerPid travels with the record: active.json is written before the profile is initialized
+    // and the child is spawned, and an app update can kill this process in that window. Without the
+    // writer's identity such a record can never be proved dead, and every later start refused it
+    // (OWNERSHIP_UNCERTAIN, 2026-11-23; see removeInterruptedLaunch in files.js).
+    record = { format: RUNTIME.format, hostId: this.hostId, instanceId: randomUUID(), [RUNTIME.writerPid]: this.writerPid(), installAnchor: this.installation.installAnchor, installRoot: this.installation.installRoot, version: this.installation.version }
     try { await writePrivate(path.join(this.paths.root, RUNTIME.active), record, true) } catch (error) { if (error.code === 'EEXIST') fail('OWNERSHIP_BUSY'); throw error }
     const directory = launchPath(this.paths, record.instanceId)
     try {
@@ -349,7 +365,17 @@ class NativeRuntime {
    */
   async retirePredecessor(record) {
     const pid = await this.pid(record)
-    if (!pid) fail('OWNERSHIP_UNCERTAIN', 'An interrupted launch has no process identity; refusing automatic takeover.')
+    if (!pid) {
+      // An interrupted launch: pid.json is written right after the spawn, so its absence means the
+      // child never announced itself. Retire the record only when the main that wrote it is provably
+      // dead (nothing can then be mid-launch); otherwise keep refusing, as the live-child rule asks.
+      if (await this.writerGone(record) === true) {
+        await removeInterruptedLaunch(this.paths, record)
+        await this.log('RECOVER')
+        return
+      }
+      fail('OWNERSHIP_UNCERTAIN', 'An interrupted launch has no process identity; refusing automatic takeover.')
+    }
     if (await this.alive(pid) !== false) {
       try { await this.query(record, RUNTIME.operation.stop) } catch { /* already closing its endpoint: wait below */ }
       try { await this.waitDead(record, Math.max(this.limits.stopTimeoutMs, LIFETIME.childExitTimeoutMs)) } catch {
@@ -400,6 +426,15 @@ class NativeRuntime {
     const record = await this.active()
     this.dropAttached()
     if (!record) return this.stopped()
+    // The stop path (Retry/restart) meets the same interrupted launch: clearing the proved-dead
+    // record is the repair its Retry needs, instead of a CHILD_UNREACHABLE that leaves the row
+    // failed for good (2026-11-23).
+    if (!await this.pid(record) && await this.writerGone(record) === true) {
+      await removeInterruptedLaunch(this.paths, record)
+      this.child = undefined
+      await this.log('RECOVER')
+      return this.stopped()
+    }
     try { await this.query(record, RUNTIME.operation.stop) } catch {
       if (this.owns(record, this.childIdentity?.pid)) {
         await this.stopOwned(record)

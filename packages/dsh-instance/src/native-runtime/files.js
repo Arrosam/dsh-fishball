@@ -195,6 +195,18 @@ export async function removeLaunch(paths, record) {
   await rm(retired, { recursive: true })
 }
 /**
+ * Retire the record of an interrupted launch: `active.json` and the launch directory are written
+ * before the profile is initialized and the child spawned, so a process killed in that window leaves
+ * only the record — sometimes not even the directory. `removeLaunch` covers a full launch; this
+ * covers the half-written one, with the same ownership proof on whatever it removes (2026-11-23).
+ */
+export async function removeInterruptedLaunch(paths, record) {
+  if (await exists(launchPath(paths, record.instanceId))) return removeLaunch(paths, record)
+  const active = await jsonPrivate(path.join(paths.root, RUNTIME.active))
+  if (active.instanceId !== record.instanceId || active.hostId !== record.hostId) fail('OWNERSHIP_CHANGED')
+  await unlink(path.join(paths.root, RUNTIME.active))
+}
+/**
  * Delete the runtime root and everything in it (uninstall, design §0.10). The caller has already
  * proved the tree is this home's (existingLayout, then prepareLayout's owner marker) and that its
  * child is dead. The root is first renamed beside itself, as removeLaunch retires a launch: the rename

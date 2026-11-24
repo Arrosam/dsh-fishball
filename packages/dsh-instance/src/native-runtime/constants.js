@@ -40,7 +40,7 @@ export const RUNTIME = Object.freeze({
   endpoint: 'endpoint.json',
   // The main process that wrote a launch record (index.js launch). A record whose child never
   // announced itself can only be retired once this process is provably gone, so an interrupted
-  // launch no longer blocks every later start (index.js retireInterrupted, 2026-11-23).
+  // launch no longer blocks every later start (files.js removeInterruptedLaunch, 2026-11-23).
   writerPid: 'writerPid',
   log: 'lifecycle.log',
   // The only shape a log line's `reason` may have: an error code identifier (files.js lifecycleLog).
