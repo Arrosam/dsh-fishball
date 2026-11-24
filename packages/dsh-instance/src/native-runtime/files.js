@@ -4,23 +4,66 @@ import path from 'node:path'
 import { randomUUID, randomBytes } from 'node:crypto'
 import { RUNTIME, RUNTIME_LIMITS, fail } from './constants.js'
 
+/** Syscall error codes that mean an opened path is a link or not a directory, so it fails as UNSAFE_DIRECTORY. */
+const DIRECTORY_OPEN_REFUSALS = Object.freeze(['ELOOP', 'ENOTDIR'])
+const failUnsafeDirectory = () => fail('UNSAFE_DIRECTORY', 'Attached directories must be owned private directories.')
+
 export async function exists(file) {
   try { return await lstat(file) } catch (error) { if (error.code === 'ENOENT') return undefined; throw error }
 }
 /** A real directory (not a link to one), owned by this user and closed to everyone else. */
 function assertPrivate(info) {
-  if (!info.isDirectory() || info.isSymbolicLink() || (info.mode & 0o077) || info.uid !== process.getuid()) fail('UNSAFE_DIRECTORY', 'Attached directories must be owned private directories.')
+  if (!info.isDirectory() || info.isSymbolicLink() || (info.mode & RUNTIME.groupOtherMask) || info.uid !== process.getuid()) failUnsafeDirectory()
+}
+/** A real user-owned directory that neither group nor others can write to (safe to tighten to `0700`). */
+function assertTightenable(info) {
+  if (!info.isDirectory() || info.isSymbolicLink() || info.uid !== process.getuid() || (info.mode & RUNTIME.groupOtherWriteMask)) failUnsafeDirectory()
 }
 export async function privateDirectory(directory) {
   try { await mkdir(directory, { mode: RUNTIME.privateDirectoryMode }) } catch (error) { if (error.code !== 'EEXIST') throw error }
   assertPrivate(await lstat(directory))
   return directory
 }
+/**
+ * Ensure an existing `<home>/fishball` directory is private (`0700`) without weakening security:
+ * refuses non-directories, symlinks, foreign-owned directories and group/world-writable directories
+ * (`mode & 0o022`), and tightens a user-owned, non-group/world-writable copy (such as a `0755`
+ * folder left behind by an earlier pre-V3 install) via `fchmod` on an `O_NOFOLLOW | O_DIRECTORY`
+ * handle so a path race cannot redirect the chmod.
+ */
+async function tightenPrivateDirectory(directory, initialInfo) {
+  // Check ownership and write bits before `open` so foreign-owned `0700` or unreadable `0022`
+  // directories fail deterministically with UNSAFE_DIRECTORY rather than raw EACCES.
+  assertTightenable(initialInfo)
+  let handle
+  try {
+    handle = await open(directory, constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_DIRECTORY)
+  } catch (error) {
+    if (DIRECTORY_OPEN_REFUSALS.includes(error?.code)) failUnsafeDirectory()
+    throw error
+  }
+  try {
+    const info = await handle.stat()
+    assertTightenable(info)
+    if (info.mode & RUNTIME.groupOtherMask) {
+      // Mask with `0o700` rather than forcing `0o700`: clears group/other/special bits without
+      // granting write permission on a read-only directory.
+      await handle.chmod(info.mode & RUNTIME.privateDirectoryMode)
+      assertPrivate(await handle.stat())
+    }
+  } finally { await handle.close() }
+}
+/** Create `<home>/fishball` privately when absent, or safely tighten an existing user-owned copy. */
+async function ensureParentDirectory(parent, parentInfo) {
+  if (!parentInfo) await privateDirectory(parent)
+  else await tightenPrivateDirectory(parent, parentInfo)
+  return parent
+}
 export async function readPrivate(file, limit = RUNTIME_LIMITS.maxMetadataBytes) {
   const handle = await open(file, constants.O_RDONLY | constants.O_NOFOLLOW)
   try {
     const info = await handle.stat()
-    if (!info.isFile() || info.uid !== process.getuid() || (info.mode & 0o077) || info.size > limit) fail('UNSAFE_METADATA', 'Invalid private lifecycle metadata.')
+    if (!info.isFile() || info.uid !== process.getuid() || (info.mode & RUNTIME.groupOtherMask) || info.size > limit) fail('UNSAFE_METADATA', 'Invalid private lifecycle metadata.')
     return await handle.readFile('utf8')
   } finally { await handle.close() }
 }
@@ -75,14 +118,25 @@ async function homeLayout(mainHome) {
 }
 /**
  * `<home>/fishball`, proven as homeLayout proves it: a canonical main home, and that folder, when it
- * exists, a real directory of its own path. Creates nothing. The host's hosted record lives there
- * (src/host/hosted-record.js), so it is read or created only through the same proof the runtime
- * layout uses (R-FIX-INSTANCE F08).
+ * exists, a real directory of its own path. Creates nothing (R-FIX-INSTANCE F08). Callers that write
+ * inside `<home>/fishball` (such as `host.js` for `hosted.json` and `prepareLayout`) use
+ * `ensureFishballDirectory` / `ensureParentDirectory` so the folder is guaranteed private (`0700`).
  * @returns {Promise<string>}
  * @throws INVALID_MAIN_HOME or UNSAFE_DIRECTORY
  */
 export async function fishballDirectory(mainHome) {
   return (await homeLayout(mainHome)).parent
+}
+/**
+ * `<home>/fishball`, proven canonical and ensured private (`0700`): creates it when missing, or
+ * tightens an existing user-owned non-group/world-writable copy (such as a `0755` directory from
+ * an earlier release) so `prepareLayout` and `openHostedRecord` apply the same rule.
+ * @returns {Promise<string>}
+ * @throws INVALID_MAIN_HOME or UNSAFE_DIRECTORY
+ */
+export async function ensureFishballDirectory(mainHome) {
+  const { parent, parentInfo } = await homeLayout(mainHome)
+  return ensureParentDirectory(parent, parentInfo)
 }
 /**
  * The runtime layout when its root already exists, or undefined when it does not; it creates
@@ -99,7 +153,7 @@ export async function existingLayout(mainHome) {
 }
 export async function prepareLayout(mainHome) {
   const { paths, parent, parentInfo } = await homeLayout(mainHome)
-  if (!parentInfo) await privateDirectory(parent)
+  await ensureParentDirectory(parent, parentInfo)
   const rootInfo = await exists(paths.root)
   if (!rootInfo) {
     await privateDirectory(paths.root)

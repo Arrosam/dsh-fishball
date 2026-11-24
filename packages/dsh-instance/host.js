@@ -13,7 +13,7 @@ import path from 'node:path'
 import Schema from '@deepseek-ai/schemastery'
 import { createNativeRuntime, RUNTIME_LIMITS } from './src/native-runtime/index.js'
 import { INSTANCE_PACKAGE, LIFETIME, HOSTED, LOCATOR, LOOPBACK, CHILD_STATE, LIFECYCLE_CODE, PLACEMENT, REFUSAL, RUNTIME } from './src/native-runtime/constants.js'
-import { existingLayout, fishballDirectory, pathsFor, privateDirectory } from './src/native-runtime/files.js'
+import { ensureFishballDirectory, existingLayout, pathsFor, privateDirectory } from './src/native-runtime/files.js'
 import { createCredentialClient } from './src/native-runtime/credential.js'
 import { createChildModelClient } from './src/native-runtime/child-model.js'
 import { openHostedRecord } from './src/host/hosted-record.js'
@@ -98,10 +98,13 @@ export const Config = Schema.object({
 const unavailable = code => Object.assign(new Error(code), { code })
 /**
  * The hosted record, beside the runtime folder under the main home (hosted-record.js says why).
- * Only through the runtime layout's own proof of that folder (fishballDirectory): an aliased main
- * home is refused before anything is read or created there (R-FIX-INSTANCE F08).
+ * Only through the runtime layout's own proof of that folder (ensureFishballDirectory): an aliased
+ * main home is refused before anything is read or created there (R-FIX-INSTANCE F08), and an
+ * existing user-owned non-group/world-writable `<home>/fishball` (e.g. a `0755` leftover from a
+ * pre-V3 release) is safely tightened to `0700` so `openHostedRecord` never fails while the child
+ * boots cleanly.
  */
-const hostedRecordFile = async (home) => path.join(await fishballDirectory(home), HOSTED.record.file)
+const hostedRecordFile = async (home) => path.join(await ensureFishballDirectory(home), HOSTED.record.file)
 /**
  * The card's detail for a failed start: the specific code, then the failure's own first message
  * line when it has one beyond the code. Only the message text is handed on (never the error
@@ -184,6 +187,7 @@ export async function apply(ctx, config) {
    * that resolves; before it, Reconnect answers not-ready and the target status reads target-unset.
    */
   let hostedNow
+  let hostedFailed = false
   const key = ctx.profileContext.home
   const predecessor = registry.get(key)
   // Start teardown immediately, before the new module can queue startup.
@@ -209,7 +213,14 @@ export async function apply(ctx, config) {
     // dsh-connector-ui re-reads which agent has a window here.
     changed()
     return hostedNow
-  }, (error) => { logger?.warn(PLUGIN.hostedRecordFailed, error?.code ?? PLUGIN.code.failed); return undefined })
+  }, (error) => {
+    logger?.warn(PLUGIN.hostedRecordFailed, error?.code ?? PLUGIN.code.failed)
+    if (!closed) {
+      hostedFailed = true
+      changed()
+    }
+    return undefined
+  })
   const hostedProxy = Object.freeze({
     reconnect: async () => (await hostedReady)?.reconnect() ?? { ok: false, code: REFUSAL.notReady },
     targetStatus: () => hostedNow?.targetStatus() ?? HOSTED.target.unset,
@@ -465,7 +476,9 @@ export async function apply(ctx, config) {
   registerChildPluginRoutes(ctx, childPlugins)
   registerInstanceRoutes(ctx, {
     status,
-    notice: () => hostedNow?.notice() ?? null,
+    // Surface an unreadable hosted record whenever the instance itself is not already failed
+    // (otherwise the instance reports "running" while never pairing or appearing in the sidebar).
+    notice: () => hostedNow?.notice() ?? (hostedFailed && state !== PLUGIN.state.failed ? HOSTED.notice.recordUnreadable : null),
     busy: () => childPlugins.busy(),
     retry: async () => { await locator.retry(); return status() },
     // The page's Restart is refused while a Fishball plugin change (or the restart it queued) runs;
@@ -488,7 +501,7 @@ export async function apply(ctx, config) {
       const existing = await existingLayout(key)
       if (existing) return existing.root
       if (!create) return undefined
-      await fishballDirectory(key)
+      await ensureFishballDirectory(key)
       const root = pathsFor(key).root
       await privateDirectory(root)
       return root

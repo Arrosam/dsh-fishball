@@ -27,6 +27,8 @@ export const RUNTIME = Object.freeze({
   socketPathBytes: 100,
   privateDirectoryMode: 0o700,
   privateFileMode: 0o600,
+  groupOtherMask: 0o077,
+  groupOtherWriteMask: 0o022,
   secretBytes: 32,
   marker: 'owner.json',
   // Uninstall renames the runtime root to `runtime.removing-<uuid>` beside it before deleting it
@@ -335,7 +337,8 @@ const NO_SUCCESSOR = 'no-successor'
  * - `record`: the host's non-secret list of the hosted entry keys it created, newest last, with
  *   the instance's stable id and the old entry of an unfinished succession (host/hosted-record.js);
  * - `retire`: the reinstall succession's K3 answers and log lines (I-SUCCEED);
- * - `notice`: the instance's one notice, after Retry found the hosted entry deleted (R6 = B);
+ * - `notice`: the instance's status-page notices — `entryDeleted` after Retry found the hosted entry
+ *   deleted (R6 = B), and `recordUnreadable` when `hosted.json` could not be opened or created;
  * - `reconnect`: its refusals (K3 `ReconnectRefusalCode`).
  */
 export const HOSTED = Object.freeze({
@@ -352,7 +355,10 @@ export const HOSTED = Object.freeze({
   /** DSH's credential document lock wait (dsh-credentials-local DOCUMENT_LOCK_WAIT_MS, 0.2.1-rc.5 and 0.2.2-rc.1). */
   credentialLockWaitMs: 30000,
   record: Object.freeze({ file: 'hosted.json', format: 1 }),
-  notice: Object.freeze({ entryDeleted: 'hosted-entry-deleted' }),
+  notice: Object.freeze({
+    entryDeleted: 'hosted-entry-deleted',
+    recordUnreadable: 'hosted-record-unreadable',
+  }),
   /** Logged (code only, never a value) when the record could not keep a key the child stored. */
   recordWriteFailed: 'hosted record not written (%s); the child holds the token',
   /** The host's own connector endpoint the child links to (K1 `PATHS.mcp`, restated: the instance does not import the connector). */
