@@ -121,8 +121,9 @@ function bounded(promise, milliseconds) {
     timer = setTimeout(() => reject(unavailable(PLUGIN.code.timeout)), milliseconds)
   })]).finally(() => clearTimeout(timer))
 }
-// Symbol.for survives ESM/HMR module replacement. A failed stop remains a barrier:
-// a successor must never silently take over an uncertain live child.
+// Symbol.for survives ESM/HMR module replacement. A failed stop stays a barrier for automatic
+// startup so a successor never silently takes over an uncertain live child; explicit stop/retry/
+// restart or a later HMR shutdown re-verifies the predecessor instead of poisoning the process.
 const registry = globalThis[Symbol.for(LIFETIME.registryKey)] ??= new Map()
 
 export async function apply(ctx, config) {
@@ -185,10 +186,27 @@ export async function apply(ctx, config) {
    */
   let hostedNow
   const key = ctx.profileContext.home
-  const predecessor = registry.get(key)
+  let predecessor = registry.get(key)
+  let barrierFailed = false
+  let barrier = Promise.resolve()
+  const trackBarrier = (next) => {
+    barrierFailed = false
+    barrier = next
+    next.then(
+      () => { if (barrier === next) predecessor = undefined },
+      () => {
+        if (barrier === next) barrierFailed = true
+        if (!closed) set(PLUGIN.state.failed, PLUGIN.code.stop)
+      },
+    )
+    return next
+  }
   // Start teardown immediately, before the new module can queue startup.
-  const barrier = predecessor ? predecessor.shutdown() : Promise.resolve()
-  barrier.catch(() => { if (!closed) set(PLUGIN.state.failed, PLUGIN.code.stop) })
+  if (predecessor) trackBarrier(predecessor.shutdown())
+  const awaitBarrier = ({ retry = false } = {}) => {
+    if (retry && barrierFailed && predecessor) return trackBarrier(predecessor.shutdown())
+    return barrier
+  }
   // Opened after the predecessor row is gone, whatever its shutdown's outcome: its record writes
   // have drained by then (shutdown awaits them), so its last write never lands on top of this row's
   // (R-FIX-INSTANCE F05). Each row keeps its own copy of the record.
@@ -310,7 +328,7 @@ export async function apply(ctx, config) {
     const current = (async () => {
       set(PLUGIN.state.starting)
       try {
-        await barrier
+        await awaitBarrier()
         if (closed) return status()
         await bounded(owner.start(), owner.limits.startupTimeoutMs)
         if (!closed && state === PLUGIN.state.starting) {
@@ -345,7 +363,7 @@ export async function apply(ctx, config) {
     stops++
     set(PLUGIN.state.stopping)
     try {
-      await barrier
+      await awaitBarrier({ retry: true })
       await owner.shutdown()
       return set(idleState())
     } catch { return set(PLUGIN.state.failed, PLUGIN.code.stop) }
@@ -382,52 +400,62 @@ export async function apply(ctx, config) {
   function requestRestart() {
     return follow(() => (enabled ? restart() : { ...status(), refused: REFUSAL.disabled }))
   }
+  let stopped = false
+  let hostedDrained
   function shutdown() {
+    if (stopped) return Promise.resolve()
     if (disposal) return disposal
-    closed = true
-    cancelReady()
-    unsubscribeCredential()
-    credentialClient?.close()
-    unsubscribeChildModel()
-    unsubscribeChildModelClose()
-    unsubscribeChildModelClose = () => {}
-    childModelClient?.close()
-    childModelClient = undefined
-    // Its steps still running end here (the credential channel just closed, so none waits long);
-    // the successor opens the record only after this disposal (below).
-    const hostedDrained = hostedNow?.close()
-    changeListeners.clear()
-    unsubscribeProviderSync()
-    providerSync?.close()
-    set(PLUGIN.state.stopping)
+    if (!closed) {
+      closed = true
+      cancelReady()
+      unsubscribeCredential()
+      credentialClient?.close()
+      unsubscribeChildModel()
+      unsubscribeChildModelClose()
+      unsubscribeChildModelClose = () => {}
+      childModelClient?.close()
+      childModelClient = undefined
+      // Its steps still running end here (the credential channel just closed, so none waits long);
+      // the successor opens the record only after this disposal (below).
+      hostedDrained = hostedNow?.close()
+      changeListeners.clear()
+      unsubscribeProviderSync()
+      providerSync?.close()
+      set(PLUGIN.state.stopping)
+    }
     // Do not swallow here: HMR successor awaits confirmed teardown, not a UI status.
-    disposal = (async () => {
+    const current = (async () => {
       try {
-        await barrier
+        await awaitBarrier({ retry: true })
         if (owner) await owner.shutdown()
+        stopped = true
+        if (registry.get(key) === entry) registry.delete(key)
         set(enabled ? PLUGIN.state.stopped : PLUGIN.state.disabled)
-        process.off('exit', onProcessExit)
       } catch {
         set(PLUGIN.state.failed, PLUGIN.code.stop)
         throw unavailable(PLUGIN.code.stop)
       } finally {
+        process.off('exit', onProcessExit)
         // Whatever the child's stop did: the record's open (a new record writes at once) and the
         // hosted steps still running finish before a successor opens its copy (F05). Neither rejects.
         // Not bounded: a step may be inside the connector's own createHosted or retire, in-process
         // calls with no wait of their own, and giving up on one would reopen F05's lost write.
         await hostedReady
         await hostedDrained
+        if (!stopped && disposal === current) disposal = undefined
       }
     })()
-    disposal.catch(() => {})
-    return disposal
+    disposal = current
+    current.catch(() => {})
+    return current
   }
   // rc.3 already owns SIGTERM/SIGINT and appExit, and awaits fiber disposal.
   // Do not install competing signal handlers. Explicit process.exit only allows
   // synchronous EOF; the pre-CLI child preload performs graceful bounded exit.
   const onProcessExit = () => owner?.parentExit()
   process.on('exit', onProcessExit)
-  registry.set(key, { shutdown })
+  const entry = { shutdown }
+  registry.set(key, entry)
   ctx.effect(() => shutdown, PLUGIN.cleanup)
   const service = Object.freeze({
     status, start, stop, restart, retry,
