@@ -136,8 +136,8 @@ window.__ModuleLoader__.load({
       heroViewBox: '1.6 4.6 17.8 17.8',
       body: 'M7.4 16.6 L7.4 9.9 L11.3 5.6 L18.4 5.6 L18.4 12.7 L14.1 16.6 Z M7.4 16.6 L2.6 21.4 L7.4 21.4 Z',
       eye: 'M14.6 7.4 h2 v2 h-2 Z',
-      smileEye: 'M13.7 9.1 L15.3 7.5 L16.9 9.1',
-      smileStrokeWidth: 0.95,
+      // Sharp 45°/90° geometric `^` chevron with flat horizontal feet matching the fish body's crisp corners.
+      smileEye: 'M15.0 7.0 L17.2 9.2 L16.0 9.2 L15.0 8.2 L14.0 9.2 L12.8 9.2 Z',
       accent: '#EC0A6E',
     })
 
@@ -430,16 +430,7 @@ window.__ModuleLoader__.load({
     function FishMark({ size, smiling = false }) {
       return h('svg', { width: size, height: size, viewBox: smiling ? FISH_MARK.heroViewBox : FISH_MARK.viewBox, 'aria-hidden': true },
         h('path', { d: FISH_MARK.body, fill: 'currentColor' }),
-        smiling
-          ? h('path', {
-            d: FISH_MARK.smileEye,
-            fill: 'none',
-            stroke: FISH_MARK.accent,
-            strokeWidth: FISH_MARK.smileStrokeWidth,
-            strokeLinecap: 'round',
-            strokeLinejoin: 'round',
-          })
-          : h('path', { d: FISH_MARK.eye, fill: FISH_MARK.accent }))
+        h('path', { d: smiling ? FISH_MARK.smileEye : FISH_MARK.eye, fill: FISH_MARK.accent }))
     }
 
     /** Shared portal header drawn for both the preparing screen and the active wizard. */
