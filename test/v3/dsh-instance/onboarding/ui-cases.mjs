@@ -4,7 +4,9 @@
  */
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
+import { textOf } from '../../../support/rp-recommend.mjs'
 import {
+  BILLION_CONTEXT,
   FIXTURE,
   INSTANCE_ROUTES,
   LANGS,
@@ -14,6 +16,7 @@ import {
   TERMINAL_INSTANCE_STATES,
   UI_ATTR,
   UI_STEP,
+  WATCHDOG_NS,
   WATCHDOG_STATE,
 } from './constants.mjs'
 import { openOnboardingPage } from './subject.mjs'
@@ -162,7 +165,7 @@ export function registerUiOnboardingCases(sdk) {
       })
     })
 
-    describe('Step 2: Watchdog model configuration (DT across ready / missing / unsupported)', () => {
+    describe('Step 2: Watchdog model configuration & status detection (DT + EP + BVA + ST)', () => {
       test('DT-1 (ready): renders watchdog select, picks model via scope.set, shows saved badge, and unsets on empty selection', async (t) => {
         const page = await openOnboardingPage(t, sdk, { watchdogMode: WATCHDOG_STATE.ready })
         await page.mountGate()
@@ -198,8 +201,12 @@ export function registerUiOnboardingCases(sdk) {
         assert.deepEqual(page.world.errors, [])
       })
 
-      test('DT-2 (missing): watchdog plugin not served shows missing state and allows advancing', async (t) => {
-        const page = await openOnboardingPage(t, sdk, { watchdogMode: WATCHDOG_STATE.missing })
+      test('DT-2a (missing): neither bundle nor plugin exists -> missing state and allows advancing', async (t) => {
+        const page = await openOnboardingPage(t, sdk, {
+          watchdogMode: WATCHDOG_STATE.missing,
+          mainBundles: [],
+          mainPlugins: [],
+        })
         await page.mountGate()
         await advanceToStep(page, UI_STEP.watchdog)
 
@@ -207,6 +214,20 @@ export function registerUiOnboardingCases(sdk) {
         assert.equal(page.byAttr(UI_ATTR.watchdogSelect).length, 0)
         await page.press(page.byAttr(UI_ATTR.next)[0])
         await waitForStep(page, UI_STEP.memory)
+        assert.deepEqual(page.world.errors, [])
+      })
+
+      test('DT-2b (missing): bundle exists with installed=false and no error -> missing state', async (t) => {
+        const page = await openOnboardingPage(t, sdk, {
+          watchdogMode: WATCHDOG_STATE.missing,
+          mainBundles: [{ name: WATCHDOG_NS, installed: false, enabled: false }],
+          mainPlugins: [],
+        })
+        await page.mountGate()
+        await advanceToStep(page, UI_STEP.watchdog)
+
+        assert.ok(await page.until(() => page.byAttr(UI_ATTR.watchdogState, WATCHDOG_STATE.missing).length === 1), 'uninstalled bundle without error must show missing')
+        assert.equal(page.byAttr(UI_ATTR.watchdogSelect).length, 0)
         assert.deepEqual(page.world.errors, [])
       })
 
@@ -221,40 +242,236 @@ export function registerUiOnboardingCases(sdk) {
         await waitForStep(page, UI_STEP.memory)
         assert.deepEqual(page.world.errors, [])
       })
+
+      test('DT-4a (disabled via bundle): installed=true, enabled=false, no error -> disabled state with distinct copy from missing (en & zh)', async (t) => {
+        for (const lang of LANGS) {
+          const missingPage = await openOnboardingPage(t, sdk, {
+            lang,
+            watchdogMode: WATCHDOG_STATE.missing,
+            mainBundles: [],
+            mainPlugins: [],
+          })
+          await missingPage.mountGate()
+          await advanceToStep(missingPage, UI_STEP.watchdog)
+          assert.ok(await missingPage.until(() => missingPage.byAttr(UI_ATTR.watchdogState, WATCHDOG_STATE.missing).length === 1))
+          const missingText = missingPage.text()
+
+          const disabledPage = await openOnboardingPage(t, sdk, {
+            lang,
+            watchdogMode: WATCHDOG_STATE.missing,
+            mainBundles: [{ name: WATCHDOG_NS, installed: true, enabled: false }],
+            mainPlugins: [],
+          })
+          await disabledPage.mountGate()
+          await advanceToStep(disabledPage, UI_STEP.watchdog)
+          assert.ok(await disabledPage.until(() => disabledPage.byAttr(UI_ATTR.watchdogState, WATCHDOG_STATE.disabled).length === 1), `expected disabled state in ${lang}`)
+          assert.equal(disabledPage.byAttr(UI_ATTR.watchdogSelect).length, 0)
+          const disabledText = disabledPage.text()
+          assert.notEqual(disabledText, missingText, `disabled message must differ from missing message in ${lang}`)
+
+          // User can still advance cleanly
+          await disabledPage.press(disabledPage.byAttr(UI_ATTR.next)[0])
+          await waitForStep(disabledPage, UI_STEP.memory)
+          assert.deepEqual(disabledPage.world.errors, [])
+        }
+      })
+
+      test('DT-4b (disabled via plugin entry): plugin entry enabled=false, no error -> disabled state', async (t) => {
+        const page = await openOnboardingPage(t, sdk, {
+          watchdogMode: WATCHDOG_STATE.missing,
+          mainBundles: [],
+          mainPlugins: [{ entryId: WATCHDOG_NS, moduleName: WATCHDOG_NS, enabled: false, fiberPhase: null }],
+        })
+        await page.mountGate()
+        await advanceToStep(page, UI_STEP.watchdog)
+
+        assert.ok(await page.until(() => page.byAttr(UI_ATTR.watchdogState, WATCHDOG_STATE.disabled).length === 1))
+        assert.deepEqual(page.world.errors, [])
+      })
+
+      test('DT-5a (error via failed plugin): fiberPhase="failed" shows error state and displays plugin.diagnostic', async (t) => {
+        const diagnostic = 'Watchdog boot crash XYZ-42'
+        const page = await openOnboardingPage(t, sdk, {
+          watchdogMode: WATCHDOG_STATE.missing,
+          mainBundles: [{ name: WATCHDOG_NS, installed: true, enabled: true }],
+          mainPlugins: [{ entryId: WATCHDOG_NS, moduleName: WATCHDOG_NS, enabled: true, fiberPhase: 'failed', diagnostic }],
+        })
+        await page.mountGate()
+        await advanceToStep(page, UI_STEP.watchdog)
+
+        assert.ok(await page.until(() => page.byAttr(UI_ATTR.watchdogState, WATCHDOG_STATE.error).length === 1), 'expected error state for fiberPhase="failed"')
+        assert.ok(page.text().includes(diagnostic), `expected diagnostic "${diagnostic}" in: ${page.text()}`)
+        assert.equal(page.byAttr(UI_ATTR.watchdogSelect).length, 0)
+        assert.deepEqual(page.world.errors, [])
+      })
+
+      test('DT-5b (error via bundle.error): displays bundle.error.diagnostic, or falls back to bundle.error.code', async (t) => {
+        // With diagnostic
+        const p1 = await openOnboardingPage(t, sdk, {
+          watchdogMode: WATCHDOG_STATE.missing,
+          mainBundles: [{ name: WATCHDOG_NS, installed: true, enabled: true, error: { code: 'LOAD_FAILED', diagnostic: 'Manifest broken ABC' } }],
+          mainPlugins: [],
+        })
+        await p1.mountGate()
+        await advanceToStep(p1, UI_STEP.watchdog)
+        assert.ok(await p1.until(() => p1.byAttr(UI_ATTR.watchdogState, WATCHDOG_STATE.error).length === 1))
+        assert.ok(p1.text().includes('Manifest broken ABC'), `expected bundle.error.diagnostic in: ${p1.text()}`)
+
+        // Without diagnostic -> displays code
+        const p2 = await openOnboardingPage(t, sdk, {
+          watchdogMode: WATCHDOG_STATE.missing,
+          mainBundles: [{ name: WATCHDOG_NS, installed: true, enabled: true, error: { code: 'ERR_WATCHDOG_BROKEN' } }],
+          mainPlugins: [],
+        })
+        await p2.mountGate()
+        await advanceToStep(p2, UI_STEP.watchdog)
+        assert.ok(await p2.until(() => p2.byAttr(UI_ATTR.watchdogState, WATCHDOG_STATE.error).length === 1))
+        assert.ok(p2.text().includes('ERR_WATCHDOG_BROKEN'), `expected bundle.error.code in: ${p2.text()}`)
+        assert.deepEqual(p1.world.errors, [])
+        assert.deepEqual(p2.world.errors, [])
+      })
+
+      test('DT-5c (error via enabled-but-no-form): installed & enabled, availability!="missing", fiberPhase active, form absent -> error state', async (t) => {
+        const page = await openOnboardingPage(t, sdk, {
+          watchdogMode: WATCHDOG_STATE.missing,
+          mainBundles: [{ name: WATCHDOG_NS, installed: true, enabled: true, availability: 'profile' }],
+          mainPlugins: [{ entryId: WATCHDOG_NS, moduleName: WATCHDOG_NS, enabled: true, fiberPhase: 'active' }],
+        })
+        await page.mountGate()
+        await advanceToStep(page, UI_STEP.watchdog)
+
+        assert.ok(await page.until(() => page.byAttr(UI_ATTR.watchdogState, WATCHDOG_STATE.error).length === 1), 'enabled active watchdog with missing form must report error')
+        assert.deepEqual(page.world.errors, [])
+      })
+
+      test('BVA (pending/loading guard on DT-5c): enabled watchdog with fiberPhase="pending" or "loading" does not falsely report error', async (t) => {
+        for (const phase of ['pending', 'loading']) {
+          const page = await openOnboardingPage(t, sdk, {
+            watchdogMode: WATCHDOG_STATE.missing,
+            mainBundles: [{ name: WATCHDOG_NS, installed: true, enabled: true, availability: 'profile' }],
+            mainPlugins: [{ entryId: WATCHDOG_NS, moduleName: WATCHDOG_NS, enabled: true, fiberPhase: phase }],
+          })
+          await page.mountGate()
+          await advanceToStep(page, UI_STEP.watchdog)
+          await page.settle()
+          assert.equal(page.byAttr(UI_ATTR.watchdogState, WATCHDOG_STATE.error).length, 0, `fiberPhase="${phase}" must not falsely report error`)
+          assert.deepEqual(page.world.errors, [])
+        }
+      })
+
+      test('EP fallback compatibility: missing or incomplete remote.pluginManager falls back gracefully to missing with zero errors', async (t) => {
+        for (const pluginManagerMode of ['absent', 'no-list']) {
+          const page = await openOnboardingPage(t, sdk, {
+            watchdogMode: WATCHDOG_STATE.missing,
+            pluginManagerMode,
+          })
+          await page.mountGate()
+          await advanceToStep(page, UI_STEP.watchdog)
+
+          assert.ok(await page.until(() => page.byAttr(UI_ATTR.watchdogState, WATCHDOG_STATE.missing).length === 1), `mode "${pluginManagerMode}" must fall back to missing`)
+          assert.deepEqual(page.world.errors, [])
+        }
+      })
+
+      test('ST live transitions: disabled -> ready and error -> ready update Step 2 UI live on plugin-manager/changed & config-forms/changed', async (t) => {
+        // Transition 1: disabled -> ready
+        const p1 = await openOnboardingPage(t, sdk, {
+          watchdogMode: WATCHDOG_STATE.missing,
+          mainBundles: [{ name: WATCHDOG_NS, installed: true, enabled: false }],
+          mainPlugins: [{ entryId: WATCHDOG_NS, moduleName: WATCHDOG_NS, enabled: false, fiberPhase: null }],
+        })
+        await p1.mountGate()
+        await advanceToStep(p1, UI_STEP.watchdog)
+        assert.ok(await p1.until(() => p1.byAttr(UI_ATTR.watchdogState, WATCHDOG_STATE.disabled).length === 1))
+
+        await p1.updateWatchdog({
+          mode: WATCHDOG_STATE.ready,
+          mainBundles: [{ name: WATCHDOG_NS, installed: true, enabled: true }],
+          mainPlugins: [{ entryId: WATCHDOG_NS, moduleName: WATCHDOG_NS, enabled: true, fiberPhase: 'active' }],
+        })
+        assert.ok(await p1.until(() => p1.byAttr(UI_ATTR.watchdogState, WATCHDOG_STATE.ready).length === 1), 'disabled -> ready live update')
+        assert.ok(await p1.until(() => p1.byAttr(UI_ATTR.watchdogSelect).length === 1))
+
+        // Transition 2: error -> ready
+        const p2 = await openOnboardingPage(t, sdk, {
+          watchdogMode: WATCHDOG_STATE.missing,
+          mainBundles: [{ name: WATCHDOG_NS, installed: true, enabled: true }],
+          mainPlugins: [{ entryId: WATCHDOG_NS, moduleName: WATCHDOG_NS, enabled: true, fiberPhase: 'failed', diagnostic: 'Temporary failure' }],
+        })
+        await p2.mountGate()
+        await advanceToStep(p2, UI_STEP.watchdog)
+        assert.ok(await p2.until(() => p2.byAttr(UI_ATTR.watchdogState, WATCHDOG_STATE.error).length === 1))
+
+        await p2.updateWatchdog({
+          mode: WATCHDOG_STATE.ready,
+          mainBundles: [{ name: WATCHDOG_NS, installed: true, enabled: true }],
+          mainPlugins: [{ entryId: WATCHDOG_NS, moduleName: WATCHDOG_NS, enabled: true, fiberPhase: 'active' }],
+        })
+        assert.ok(await p2.until(() => p2.byAttr(UI_ATTR.watchdogState, WATCHDOG_STATE.ready).length === 1), 'error -> ready live update')
+        assert.ok(await p2.until(() => p2.byAttr(UI_ATTR.watchdogSelect).length === 1))
+        assert.deepEqual(p1.world.errors, [])
+        assert.deepEqual(p2.world.errors, [])
+      })
     })
 
-    describe('Step 3: Recommended memory plugins (EP + ST)', () => {
-      test('EP/ST: lists all 3 memory plugins, distinguishes installed vs uninstalled, and triggers install dialog', async (t) => {
+    describe('Step 3: 4 Recommended plugins (EP + ST + en/zh descriptions)', () => {
+      test('EP/ST: lists all 4 recommended plugins (including billion-context) with distinct concise descriptions in en & zh and no generic meow-memory note', async (t) => {
+        for (const lang of LANGS) {
+          const page = await openOnboardingPage(t, sdk, { lang })
+          await page.mountGate()
+          await advanceToStep(page, UI_STEP.memory)
+
+          const cardTexts = new Map()
+          for (const pkg of MEMORY_PLUGINS) {
+            const found = await page.until(() => page.byAttr(UI_ATTR.memoryItem, pkg).length === 1)
+            assert.ok(found, `expected [data-onboarding-memory-item="${pkg}"] in ${lang}`)
+
+            const card = page.byAttr(UI_ATTR.memoryItem, pkg)[0]
+            const cardText = textOf(card).replace(/\s+/g, ' ').trim()
+            assert.ok(cardText.length > 0, `empty card text for ${pkg} in ${lang}`)
+            cardTexts.set(pkg, cardText)
+          }
+
+          // Every plugin must have a distinct description (strip pkg name so we compare description/copy)
+          const stripped = [...cardTexts.entries()].map(([pkg, txt]) => txt.replaceAll(pkg, '').trim())
+          assert.equal(new Set(stripped).size, MEMORY_PLUGINS.length, `all 4 plugins must have distinct descriptions in ${lang}: ${JSON.stringify(stripped)}`)
+
+          // No longer shows generic "Fishball has no built-in memory" note on meow-memory
+          assert.equal(/Fishball has no built-in memory/i.test(cardTexts.get('meow-memory')), false, 'meow-memory must not show old generic note')
+          assert.deepEqual(page.world.errors, [])
+        }
+      })
+
+      test('ST: installing billion-context triggers child plugin install dialog, marks installed when in inventory, and advances to Step 4', async (t) => {
         const installedPkg = MEMORY_PLUGINS[0]
-        const uninstalledPkg = MEMORY_PLUGINS[1]
         const page = await openOnboardingPage(t, sdk, {
           installedFishballBundles: [{ name: installedPkg, version: '1.0.0', enabled: true }],
         })
         await page.mountGate()
         await advanceToStep(page, UI_STEP.memory)
 
-        // All 3 memory recommended plugins listed
-        for (const pkg of MEMORY_PLUGINS) {
-          assert.ok(
-            await page.until(() => page.byAttr(UI_ATTR.memoryItem, pkg).length === 1),
-            `expected [data-onboarding-memory-item="${pkg}"]`,
-          )
-        }
+        // Installed plugin has no install button; billion-context has install button
+        assert.equal(page.byAttr(UI_ATTR.memoryInstall, installedPkg).length, 0, 'installed plugin shows Installed badge instead of install button')
+        const [installBillion] = page.byAttr(UI_ATTR.memoryInstall, BILLION_CONTEXT)
+        assert.ok(installBillion, `uninstalled ${BILLION_CONTEXT} must show [data-onboarding-memory-install="${BILLION_CONTEXT}"]`)
 
-        // Installed plugin has no install button; uninstalled plugins have [data-onboarding-memory-install="<pkg>"]
-        assert.equal(page.byAttr(UI_ATTR.memoryInstall, installedPkg).length, 0, 'installed memory plugin should show Installed badge instead of install button')
-        const [installBtn] = page.byAttr(UI_ATTR.memoryInstall, uninstalledPkg)
-        assert.ok(installBtn, `uninstalled memory plugin ${uninstalledPkg} must show install button`)
+        // Triggering install opens shared Fishball install dialog inspecting billion-context
+        await page.press(installBillion)
+        const inspected = await page.until(() => page.requestsOf('POST', INSTANCE_ROUTES.pluginsInspect).some((r) => r.body?.spec === BILLION_CONTEXT))
+        assert.ok(inspected, `expected install dialog to inspect "${BILLION_CONTEXT}"`)
 
-        // Triggering install button opens the shared Fishball install dialog (inspecting the spec)
-        await page.press(installBtn)
-        const inspected = await page.until(() => page.requestsOf('POST', INSTANCE_ROUTES.pluginsInspect).some((r) => r.body?.spec === uninstalledPkg))
-        assert.ok(inspected, `expected install dialog to inspect "${uninstalledPkg}"`)
+        // When billion-context is present in child inventory, it shows as installed and Continue advances to Step 4
+        const pageWithBillion = await openOnboardingPage(t, sdk, {
+          installedFishballBundles: [{ name: BILLION_CONTEXT, version: '1.0.0', enabled: true }],
+        })
+        await pageWithBillion.mountGate()
+        await advanceToStep(pageWithBillion, UI_STEP.memory)
+        assert.equal(pageWithBillion.byAttr(UI_ATTR.memoryInstall, BILLION_CONTEXT).length, 0, `${BILLION_CONTEXT} should be marked installed when in child inventory`)
 
-        // User can advance to Step 4 regardless
-        await page.press(page.byAttr(UI_ATTR.next)[0])
-        await waitForStep(page, UI_STEP.welcome)
+        await pageWithBillion.press(pageWithBillion.byAttr(UI_ATTR.next)[0])
+        await waitForStep(pageWithBillion, UI_STEP.welcome)
         assert.deepEqual(page.world.errors, [])
+        assert.deepEqual(pageWithBillion.world.errors, [])
       })
     })
 

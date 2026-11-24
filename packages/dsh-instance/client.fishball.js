@@ -2,10 +2,10 @@
  * Plugins for the embedded Fishball, managed from the main DSH (design §28, 2026-11-20). A chunk of
  * the instance's client.js. Only the main DSH runs pnpm on the child profile, through the
  * instance's routes (src/host/child-plugin-routes.js). It contributes to DSH's own Plugins page:
- * - a **Fishball** tab (`plugins.tab`): the child's plugins, each with Uninstall (confirmed first),
- *   Restart (the settings page's, shared) and an "Install for Fishball" button at the top, and
- *   the Recommended list (moved here from fishball-ui's Recommended tab, DESIGN §10f; data in
- *   RECOMMENDED below);
+ * - a **Fishball** tab (`plugins.tab`): styled after DSH's own Plugins page (`PluginManagerPage`),
+ *   listing the child's plugins as DSH plugin cards with an icon, version badge, description,
+ *   enable/disable `Switch`, and delete/uninstall button (confirmed first), alongside Restart and
+ *   "Install for Fishball" at the top;
  * - an "Install for Fishball" item in DSH's Add plugin menu (`plugins.add.actions`);
  * - on each main-DSH bundle page (`plugins.detail.actions`): Uninstall from Fishball, Use in
  *   Fishball (an official bundle the installation ships) or Install to Fishball (its source spec);
@@ -20,7 +20,10 @@ window.__ModuleLoader__.load({
   factory(require) {
     const module = { exports: {} }
     const React = require('react')
-    const { Button, Input, MenuItemButton, Modal, StateDot, Tag, IconDownloadOutlineRegular, IconPlusOutlineRegular } = require('@deepseek-ai/dsh-client-ui-primitives')
+    const {
+      Button, Input, MenuItemButton, Modal, StateDot, Switch, Tag,
+      IconDownloadOutlineRegular, IconPluginPinwheelOutlineRegular, IconPlusOutlineRegular, IconTrashOutlineRegular,
+    } = require('@deepseek-ai/dsh-client-ui-primitives')
     const h = React.createElement
 
     /** The chunk's identity: its locale namespace and its slot registrations. */
@@ -37,6 +40,7 @@ window.__ModuleLoader__.load({
       inspect: 'api/dsh-instance/plugins/inspect',
       install: 'api/dsh-instance/plugins/install',
       cancel: 'api/dsh-instance/plugins/cancel',
+      toggle: 'api/dsh-instance/plugins/toggle',
       uninstall: 'api/dsh-instance/plugins/uninstall',
       use: 'api/dsh-instance/plugins/use',
       read: Object.freeze({ method: 'GET', cache: 'no-store', credentials: 'same-origin' }),
@@ -46,7 +50,7 @@ window.__ModuleLoader__.load({
     /** DSH's Host events: install progress (forwarded by dsh-api-remotes) and inventory changes. */
     const HOST_EVENT = Object.freeze({ state: 'plugin-manager/install-state', log: 'plugin-manager/install-log', changed: 'plugin-manager/changed', reset: 'connection/reset' })
     /** BundleInfo facts the per-plugin button reads (dsh-plugin-manager types). */
-    const BUNDLE = Object.freeze({ shipped: 'installation', missing: 'missing' })
+    const BUNDLE = Object.freeze({ shipped: 'installation' })
     /** The install dialog's screens, and DSH's vocabulary it reads. */
     const STEP = Object.freeze({ edit: 'edit', checking: 'checking', confirm: 'confirm', installing: 'installing', done: 'done', failed: 'failed' })
     const INSPECT = Object.freeze({ accepted: 'accepted', registry: 'registry' })
@@ -63,32 +67,9 @@ window.__ModuleLoader__.load({
       'invalid-spec', 'already-installed', 'not-bundle', 'ambiguous-install', 'incompatible-version', 'cancelled', 'build-blocked', 'request-failed'])
     const KNOWN_PROBLEMS = Object.freeze(['invalid-spec', 'already-installed', 'not-found', 'not-a-package', 'not-a-bundle', 'network', 'unknown'])
     const STATE_DOT = Object.freeze({ ongoing: 'ongoing', done: 'done', error: 'error' })
-    const TONE = Object.freeze({ on: 'info', off: 'neutral', highlight: 'info' })
-    const ICON_PX = 14
+    const TONE = Object.freeze({ version: 'neutral' })
+    const ICON_PX = Object.freeze({ button: 14, trash: 16, card: 22, spinner: 12 })
     const LINK = Object.freeze({ target: '_blank', rel: 'noopener noreferrer' })
-
-    /**
-     * Fishball's recommended plugins (DESIGN §10f, revision 12): a copy of fishball-core's
-     * `ui/src/recommended.js` (dsh-fishball repo, packages/core/ui/src/recommended.js), which a
-     * standalone Fishball still shows; change both together. Each entry was installed and ran for
-     * Fishball alone on 2026-11-02; the left-out plugins and why are in §10f. Pet lists none.
-     */
-    const NPM_PAGE = 'https://www.npmjs.com/package/'
-    const CATEGORY = Object.freeze({ context: 'context', memory: 'memory', channel: 'channel', pet: 'pet' })
-    const HIGHLIGHTED = Object.freeze([CATEGORY.context, CATEGORY.memory])
-    const npm = (category, packageName, noteKey) => Object.freeze({ category, packageName, spec: packageName, source: NPM_PAGE + packageName, ...(noteKey === undefined ? {} : { noteKey }) })
-    const RECOMMENDED = Object.freeze([
-      npm(CATEGORY.context, 'dsh-idle-compact'),
-      npm(CATEGORY.context, 'dsh-plugin-save-token'),
-      npm(CATEGORY.context, 'smart-compaction'),
-      npm(CATEGORY.memory, 'meow-memory', 'note.meowMemory'),
-      npm(CATEGORY.memory, '@a9i5k4/dsh-auto-memory'),
-      npm(CATEGORY.memory, '@zilliz/memsearch-dsh'),
-      npm(CATEGORY.channel, '@michengai/dsh-im-connect'),
-      npm(CATEGORY.channel, 'dsh-telegram-notify'),
-      npm(CATEGORY.channel, 'dsh-plugin-discord'),
-      npm(CATEGORY.channel, 'dsh-dingtalk-channel'),
-    ])
 
     const en = {
       tab: 'Fishball',
@@ -98,7 +79,7 @@ window.__ModuleLoader__.load({
       installed: 'Installed in Fishball',
       none: 'No plugins are installed for Fishball yet.',
       loading: 'Loading…',
-      on: 'On', off: 'Off',
+      togglePlugin: 'Enable {name} in Fishball',
       uninstall: 'Uninstall',
       uninstalling: 'Uninstalling…',
       uninstallFromFishball: 'Uninstall from Fishball',
@@ -161,14 +142,6 @@ window.__ModuleLoader__.load({
       'dialog.pendingScripts': 'Scripts waiting for permission:',
       'dialog.allowScripts': 'Allow these scripts and retry',
       'dialog.retry': 'Retry',
-      recommended: 'Recommended',
-      'category.context': 'Context management', 'category.memory': 'Memory', 'category.channel': 'Channel', 'category.pet': 'Pet',
-      highlight: 'Recommended first',
-      highlightNote: 'These significantly improve how Fishball works.',
-      empty: 'Pets draw only in DSH\'s own interface, and a plugin that runs only for Fishball has no browser part, so none can be listed here.',
-      'note.meowMemory': 'Fishball has no built-in memory. An external memory plugin is optional, but recommended.',
-      install: 'Install',
-      source: 'Source',
     }
     const zh = {
       tab: 'Fishball',
@@ -178,7 +151,7 @@ window.__ModuleLoader__.load({
       installed: 'Fishball 中已安装',
       none: '还没有为 Fishball 安装插件。',
       loading: '正在加载…',
-      on: '开', off: '关',
+      togglePlugin: '在 Fishball 中启用 {name}',
       uninstall: '卸载',
       uninstalling: '正在卸载…',
       uninstallFromFishball: '从 Fishball 卸载',
@@ -241,31 +214,84 @@ window.__ModuleLoader__.load({
       'dialog.pendingScripts': '等待许可的脚本：',
       'dialog.allowScripts': '允许这些脚本并重试',
       'dialog.retry': '重试',
-      recommended: '推荐',
-      'category.context': '上下文管理', 'category.memory': '记忆', 'category.channel': '消息渠道', 'category.pet': '宠物',
-      highlight: '优先推荐',
-      highlightNote: '这些插件能显著改善 Fishball 的使用体验。',
-      empty: '宠物只在 DSH 自己的界面中绘制，而只为 Fishball 运行的插件没有浏览器部分，所以这里无法列出。',
-      'note.meowMemory': 'Fishball 没有内置记忆。外部记忆插件是可选的，但推荐安装。',
-      install: '安装',
-      source: '来源',
     }
 
-    /** The chunk's own classes; the card, hint and row rules are the status line's (client.status.js layout). */
-    const OWN_CLS = Object.freeze({ tab: 'fb-instance-fb-tab', head: 'fb-instance-fb-head', list: 'fb-instance-fb-list', row: 'fb-instance-fb-row', main: 'fb-instance-fb-main', name: 'fb-instance-fb-name', actions: 'fb-instance-fb-actions', log: 'fb-instance-fb-log', dialog: 'fb-instance-fb-dialog', error: 'fb-instance-fb-error', link: 'fb-instance-fb-link' })
+    /**
+     * DSH Plugins page visual classes (matching `@deepseek-ai/dsh-client-ui-plugin-manager`
+     * `PluginManagerPage.module.css`: `.tabPanel`, `.group`, `.groupHead`, `.cards`, `.card`,
+     * `.cardHead`, `.cardIcon`, `.cardMain`, `.titleRow`, `.cardTitle`, `.cardDesc`, `.cardEnd`,
+     * `.bundleToggle`, `.deleteButton`).
+     */
+    const OWN_CLS = Object.freeze({
+      tab: 'fb-instance-fb-tab',
+      head: 'fb-instance-fb-head',
+      intro: 'fb-instance-fb-intro',
+      toolbar: 'fb-instance-fb-toolbar',
+      group: 'fb-instance-fb-group',
+      groupHead: 'fb-instance-fb-group-head',
+      groupTitle: 'fb-instance-fb-group-title',
+      cards: 'fb-instance-fb-cards',
+      card: 'fb-instance-fb-card',
+      cardHead: 'fb-instance-fb-card-head',
+      cardIcon: 'fb-instance-fb-card-icon',
+      cardMain: 'fb-instance-fb-card-main',
+      titleRow: 'fb-instance-fb-title-row',
+      cardTitle: 'fb-instance-fb-card-title',
+      cardDesc: 'fb-instance-fb-card-desc',
+      cardEnd: 'fb-instance-fb-card-end',
+      bundleToggle: 'fb-instance-fb-bundle-toggle',
+      deleteButton: 'fb-instance-fb-delete-btn',
+      cardNote: 'fb-instance-fb-card-note',
+      cardNoteError: 'fb-instance-fb-card-note-error',
+      empty: 'fb-instance-fb-empty',
+      main: 'fb-instance-fb-main',
+      name: 'fb-instance-fb-name',
+      log: 'fb-instance-fb-log',
+      dialog: 'fb-instance-fb-dialog',
+      error: 'fb-instance-fb-error',
+    })
+    const DSH_PLUGIN_TOKENS = Object.freeze({
+      tabGap: '24px',
+      groupGap: '8px',
+      cardGap: '2px',
+      cardHeadGap: '14px',
+      cardPad: '8px',
+      cardInsetX: '-8px',
+      iconBoxPx: '48px',
+      deleteBtnPx: '28px',
+      cardNoteIndent: '70px',
+    })
     const ownCss = (STYLE) => [
-      `.${OWN_CLS.tab}{display:grid;gap:${STYLE.sectionGap};min-width:0;color:var(--dsw-alias-label-primary);font:var(--dsw-font-xs-13);line-height:${STYLE.lineHeight}}`,
-      `.${OWN_CLS.head}{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:${STYLE.blockGap}}`,
-      `.${OWN_CLS.list}{display:grid;gap:${STYLE.blockGap};margin:0}`,
-      `.${OWN_CLS.list} h3{margin:0;display:flex;align-items:center;gap:${STYLE.stackGap};font:var(--dsw-font-s-strong-14)}`,
-      `.${OWN_CLS.row}{display:flex;align-items:center;gap:${STYLE.blockGap}}`,
+      `.${OWN_CLS.tab}{display:flex;flex-direction:column;gap:${DSH_PLUGIN_TOKENS.tabGap};min-width:0;color:var(--dsw-alias-label-primary);font:var(--dsw-font-xs-13);line-height:${STYLE.lineHeight}}`,
+      `.${OWN_CLS.head}{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px 16px}`,
+      `.${OWN_CLS.intro}{margin:0;flex:1 1 280px;min-width:0;color:var(--dsw-alias-label-secondary);font-size:13px;line-height:20px}`,
+      `.${OWN_CLS.toolbar}{display:flex;align-items:center;flex-wrap:wrap;gap:8px;flex:none}`,
+      `.${OWN_CLS.group}{display:flex;flex-direction:column;gap:${DSH_PLUGIN_TOKENS.groupGap}}`,
+      `.${OWN_CLS.groupHead}{display:flex;align-items:center;gap:8px}`,
+      `.${OWN_CLS.groupTitle}{flex:1;margin:0;font-size:14px;font-weight:500;line-height:22px;color:var(--dsw-alias-label-primary)}`,
+      `.${OWN_CLS.cards}{display:flex;flex-direction:column;gap:${DSH_PLUGIN_TOKENS.cardGap};margin:0;padding:0;list-style:none}`,
+      `.${OWN_CLS.card}{border-radius:var(--dsw-radius-xl,12px);min-width:0;margin:0 ${DSH_PLUGIN_TOKENS.cardInsetX};transition:background .15s}`,
+      `@media (hover:hover){.${OWN_CLS.card}:hover{background:var(--dsw-alias-interactive-bg-hover,var(--dsw-alias-bg-module-platform))}}`,
+      `.${OWN_CLS.cardHead}{display:flex;align-items:center;gap:${DSH_PLUGIN_TOKENS.cardHeadGap};padding:${DSH_PLUGIN_TOKENS.cardPad}}`,
+      `.${OWN_CLS.cardIcon}{width:${DSH_PLUGIN_TOKENS.iconBoxPx};height:${DSH_PLUGIN_TOKENS.iconBoxPx};border:.5px solid var(--dsw-alias-border-l3);border-radius:var(--dsw-radius-lg,10px);color:var(--dsw-alias-label-secondary);background:var(--dsw-alias-bg-base);flex:none;display:inline-flex;align-items:center;justify-content:center}`,
+      `.${OWN_CLS.cardMain}{display:flex;flex-direction:column;flex:1;gap:4px;min-width:0}`,
+      `.${OWN_CLS.titleRow}{display:flex;flex-wrap:wrap;align-items:center;gap:8px;min-width:0}`,
+      `.${OWN_CLS.cardTitle}{font-size:14px;font-weight:500;line-height:20px;color:var(--dsw-alias-label-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}`,
+      `.${OWN_CLS.cardDesc}{margin:0;color:var(--dsw-alias-label-tertiary);font-size:13px;line-height:18px;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}`,
+      `.${OWN_CLS.cardEnd}{position:relative;z-index:1;flex:none;display:inline-flex;align-items:center;gap:8px}`,
+      `.${OWN_CLS.bundleToggle}{display:inline-flex;align-items:center;gap:8px}`,
+      `.${OWN_CLS.deleteButton}{width:${DSH_PLUGIN_TOKENS.deleteBtnPx};height:${DSH_PLUGIN_TOKENS.deleteBtnPx};border:0;border-radius:var(--dsw-radius-sm,6px);background:transparent;color:var(--dsw-alias-state-error-primary);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:0;transition:background .15s}`,
+      `@media (hover:hover){.${OWN_CLS.deleteButton}:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover-danger,color-mix(in srgb, var(--dsw-alias-state-error-primary) 10%, transparent))}}`,
+      `.${OWN_CLS.deleteButton}:disabled{opacity:.5;cursor:default}`,
+      `.${OWN_CLS.deleteButton}:focus-visible{outline:var(--dsw-focus-ring-width,2px) solid var(--dsw-focus-ring-color,var(--dsw-alias-state-business-primary));outline-offset:1px}`,
+      `.${OWN_CLS.cardNote}{margin-block:0 8px;margin-inline-start:${DSH_PLUGIN_TOKENS.cardNoteIndent};font-size:${STYLE.hintSize};line-height:${STYLE.lineHeight}}`,
+      `.${OWN_CLS.cardNoteError}{color:var(--dsw-alias-state-error-primary)}`,
+      `.${OWN_CLS.empty}{margin:0;color:var(--dsw-alias-label-tertiary);font-size:13px;line-height:20px}`,
       `.${OWN_CLS.main}{flex:1;min-width:0;display:grid;gap:2px}`,
       `.${OWN_CLS.name}{font-family:var(--dsw-font-markdown-code-font-family);overflow-wrap:anywhere}`,
-      `.${OWN_CLS.actions}{display:flex;align-items:center;gap:${STYLE.stackGap};flex-shrink:0}`,
       `.${OWN_CLS.log}{margin:0;max-height:240px;overflow:auto;padding:8px;border-radius:var(--dsw-radius-sm);background:var(--dsw-alias-bg-layer-1);font-family:var(--dsw-font-markdown-code-font-family);font-size:${STYLE.hintSize};white-space:pre-wrap;overflow-wrap:anywhere}`,
       `.${OWN_CLS.dialog}{display:grid;gap:${STYLE.blockGap};font:var(--dsw-font-xs-13);line-height:${STYLE.lineHeight}}`,
       `.${OWN_CLS.error}{margin:0;color:var(--dsw-alias-state-error-primary);font-size:${STYLE.hintSize}}`,
-      `.${OWN_CLS.link}{color:var(--dsw-alias-link);font-size:${STYLE.hintSize};text-decoration:none;justify-self:start}`,
     ].join('')
 
     /** A plain external store read through React.useSyncExternalStore. */
@@ -301,6 +327,9 @@ window.__ModuleLoader__.load({
       // `protected`: the bundles the instance owns (the Host's CHILD_OWN_BUNDLES), which get no button.
       const child = createStore({ status: STATE_DOT.ongoing, bundles: [], protected: [], code: null })
       const main = createStore([])
+      // Shared count of in-flight child plugin mutations (toggle / uninstall / use), mirroring the
+      // Host's single exclusive lock so sibling cards disable while any mutation runs.
+      const activeOps = createStore(0)
       const readChild = async () => {
         const answer = await call(FISHBALL_API.list)
         child.set(answer.ok ? { status: STATE_DOT.done, bundles: answer.bundles, protected: answer.protected ?? [], code: null } : { ...child.get(), status: STATE_DOT.error, code: answer.code })
@@ -312,10 +341,10 @@ window.__ModuleLoader__.load({
         } catch { /* the page buttons then offer only what the child list tells */ }
       }
       const refresh = () => Promise.all([readChild(), readMain()])
-      return { child, main, refresh }
+      return { child, main, activeOps, refresh }
     }
 
-    /** The install dialog's request: null, or `{id, spec?}` (a spec runs the check at once, as §10f's Install does). */
+    /** The install dialog's request: null, or `{id, spec?}` (a spec runs the check at once). */
     const dialogRequest = createStore(null)
     let dialogs = 0
     const openDialog = (spec) => dialogRequest.set({ id: ++dialogs, ...(spec === undefined ? {} : { spec }) })
@@ -323,8 +352,8 @@ window.__ModuleLoader__.load({
 
     /**
      * One shared child-plugin inventory per loaded page, so the Plugins → Fishball tab and the
-     * first-run onboarding wizard stay in sync when a memory plugin is installed through the
-     * shared install dialog. The underlying `remote` reference updates on reload/HMR.
+     * first-run onboarding wizard stay in sync when a plugin is installed through the shared dialog.
+     * The underlying `remote` reference updates on reload/HMR.
      */
     let sharedInventory
     let currentRemote
@@ -337,83 +366,119 @@ window.__ModuleLoader__.load({
     function makeComponents({ t, statusT, shared, CLS, inventory, listen }) {
       const useChild = () => useStore(inventory.child)
       const useMain = () => useStore(inventory.main)
+      const useTabBusy = () => useStore(inventory.activeOps) > 0
       /** The child's bundle named `name`, or undefined. */
       const childBundle = (child, name) => child.bundles.find((bundle) => bundle.name === name)
 
-      /** One Uninstall/Use action with its busy state and outcome line, refreshing the lists after it. */
+      /** One plugin mutation (Uninstall, Use, or Toggle) with its busy state and outcome line. */
       function useAction() {
         const [view, setView] = React.useState({ busy: false })
-        const run = async (path, name) => {
-          setView({ busy: true })
-          const answer = await call(path, { name })
-          const done = answer.applied === APPLIED_NEXT_START ? 'changedNextStart' : 'changed'
-          setView({ busy: false, message: answer.ok ? t(done, { name }) : codeText(t, answer.code), error: !answer.ok })
+        const mounted = React.useRef(true)
+        React.useEffect(() => {
+          mounted.current = true
+          return () => { mounted.current = false }
+        }, [])
+        const run = async (path, payload, labelName) => {
+          inventory.activeOps.set(inventory.activeOps.get() + 1)
+          if (mounted.current) setView({ busy: true })
+          let answer
+          try {
+            answer = await call(path, payload)
+          } finally {
+            inventory.activeOps.set(Math.max(0, inventory.activeOps.get() - 1))
+          }
+          if (mounted.current) {
+            const done = answer.applied === APPLIED_NEXT_START ? 'changedNextStart' : 'changed'
+            setView({ busy: false, message: answer.ok ? t(done, { name: labelName }) : codeText(t, answer.code), error: !answer.ok })
+          }
           void inventory.refresh()
         }
-        const message = view.message ? h('span', { className: view.error ? CLS.error : CLS.hint, role: view.error ? 'alert' : 'status' }, view.message) : null
-        return { busy: view.busy, run, message }
+        const message = view.message ? h('span', { className: view.error ? OWN_CLS.error : CLS.hint, role: view.error ? 'alert' : 'status' }, view.message) : null
+        return { busy: view.busy, run, message, rawMessage: view.message, isError: Boolean(view.error) }
       }
 
       /** Uninstall from Fishball, confirmed first in DSH's dialog, as DSH's own Uninstall is. */
-      function UninstallButton({ name, label }) {
+      function UninstallButton({ name, label, iconOnly = false, disabled = false, onFeedback }) {
         const [confirming, setConfirming] = React.useState(false)
         const action = useAction()
+        React.useEffect(() => {
+          if (onFeedback && action.rawMessage) onFeedback({ text: action.rawMessage, error: action.isError })
+        }, [action.rawMessage, action.isError, onFeedback])
+        const off = disabled || action.busy
         return h(React.Fragment, null,
-          action.message,
-          h(Button, { type: 'button', size: 'sm', variant: 'outline', disabled: action.busy, 'aria-busy': action.busy, 'data-fishball-uninstall': name, onClick: () => setConfirming(true) },
-            action.busy ? t('uninstalling') : label),
+          onFeedback ? null : action.message,
+          iconOnly
+            ? h('button', {
+              type: 'button',
+              className: OWN_CLS.deleteButton,
+              disabled: off,
+              'aria-busy': action.busy,
+              'aria-label': action.busy ? t('uninstalling') : label,
+              title: label,
+              'data-fishball-uninstall': name,
+              onClick: () => setConfirming(true),
+            }, action.busy ? h(StateDot, { state: STATE_DOT.ongoing, size: ICON_PX.spinner }) : h(IconTrashOutlineRegular, { size: ICON_PX.trash }))
+            : h(Button, { type: 'button', size: 'sm', variant: 'outline', disabled: off, 'aria-busy': action.busy, 'data-fishball-uninstall': name, onClick: () => setConfirming(true) },
+              action.busy ? t('uninstalling') : label),
           h(Modal, {
             open: confirming, onClose: () => setConfirming(false), title: t('confirmUninstallTitle', { name }), closeLabel: t('close'),
             description: t('confirmUninstallDescription'),
             footer: h(React.Fragment, null,
               h(Button, { type: 'button', variant: 'outline', onClick: () => setConfirming(false) }, t('cancel')),
-              h(Button, { type: 'button', variant: 'primary', onClick: () => { setConfirming(false); void action.run(FISHBALL_API.uninstall, name) } }, t('uninstall'))),
+              h(Button, { type: 'button', variant: 'primary', onClick: () => { setConfirming(false); void action.run(FISHBALL_API.uninstall, { name }, name) } }, t('uninstall'))),
           }))
       }
 
       function InstallButton() {
-        return h(Button, { type: 'button', size: 'sm', variant: 'primary', icon: h(IconPlusOutlineRegular, { size: ICON_PX }), 'data-fishball-install-open': true, onClick: () => openDialog() }, t('installForFishball'))
+        return h(Button, { type: 'button', size: 'sm', variant: 'primary', icon: h(IconPlusOutlineRegular, { size: ICON_PX.button }), 'data-fishball-install-open': true, onClick: () => openDialog() }, t('installForFishball'))
+      }
+
+      /** One DSH-style plugin card in the Fishball tab: icon, title + version, description, Switch, Uninstall. */
+      function PluginCard({ bundle }) {
+        const toggleAction = useAction()
+        const tabBusy = useTabBusy()
+        const [uninstallNote, setUninstallNote] = React.useState(null)
+        const handleToggle = (nextEnabled) => {
+          if (tabBusy) return
+          setUninstallNote(null)
+          void toggleAction.run(FISHBALL_API.toggle, { name: bundle.name, enabled: nextEnabled }, bundle.name)
+        }
+        const note = uninstallNote ?? (toggleAction.rawMessage ? { text: toggleAction.rawMessage, error: toggleAction.isError } : null)
+        return h('li', { className: OWN_CLS.card, 'data-fishball-plugin': bundle.name },
+          h('div', { className: OWN_CLS.cardHead },
+            h('span', { className: OWN_CLS.cardIcon, 'aria-hidden': true }, h(IconPluginPinwheelOutlineRegular, { size: ICON_PX.card })),
+            h('div', { className: OWN_CLS.cardMain },
+              h('div', { className: OWN_CLS.titleRow },
+                h('span', { className: OWN_CLS.cardTitle }, bundle.name),
+                bundle.version ? h(Tag, { tone: TONE.version }, bundle.version) : null),
+              bundle.description ? h('p', { className: OWN_CLS.cardDesc }, bundle.description) : null),
+            h('div', { className: OWN_CLS.cardEnd },
+              // Wrapper carries the data attribute for DSH's Switch (which does not spread rest props),
+              // while Switch also receives `data-fishball-toggle` for direct control hooks.
+              h('span', { className: OWN_CLS.bundleToggle, 'data-fishball-toggle-wrap': bundle.name },
+                toggleAction.busy ? h(StateDot, { state: STATE_DOT.ongoing, size: ICON_PX.spinner }) : null,
+                h(Switch, {
+                  checked: Boolean(bundle.enabled),
+                  disabled: tabBusy || toggleAction.busy,
+                  label: t('togglePlugin', { name: bundle.name }),
+                  'data-fishball-toggle': bundle.name,
+                  onChange: handleToggle,
+                })),
+              h(UninstallButton, {
+                name: bundle.name,
+                label: t('uninstall'),
+                iconOnly: true,
+                disabled: tabBusy || toggleAction.busy,
+                onFeedback: setUninstallNote,
+              }))),
+          note ? h('p', { className: [OWN_CLS.cardNote, note.error ? OWN_CLS.cardNoteError : CLS.hint].join(' '), role: note.error ? 'alert' : 'status' }, note.text) : null)
       }
 
       function ChildList({ child }) {
-        if (child.status === STATE_DOT.ongoing) return h('p', { className: CLS.hint, role: 'status' }, t('loading'))
-        if (child.status === STATE_DOT.error && child.bundles.length === 0) return h('p', { className: CLS.error, role: 'alert' }, codeText(t, child.code))
-        if (child.bundles.length === 0) return h('p', { className: CLS.hint }, t('none'))
-        return h('div', { className: CLS.card }, child.bundles.map((bundle) => h('div', { key: bundle.name, className: OWN_CLS.row, 'data-fishball-plugin': bundle.name },
-          h('div', { className: OWN_CLS.main },
-            h('span', { className: CLS.statusRow },
-              h('strong', { className: OWN_CLS.name }, bundle.name),
-              bundle.version ? h('span', { className: CLS.hint }, bundle.version) : null,
-              h(Tag, { tone: bundle.enabled ? TONE.on : TONE.off }, t(bundle.enabled ? 'on' : 'off'))),
-            bundle.description ? h('span', { className: CLS.hint }, bundle.description) : null),
-          h('div', { className: OWN_CLS.actions }, h(UninstallButton, { name: bundle.name, label: t('uninstall') })))))
-      }
-
-      function RecommendedRow({ item, child }) {
-        const present = childBundle(child, item.packageName) !== undefined
-        return h('div', { className: OWN_CLS.row, 'data-recommended-package': item.packageName },
-          h('div', { className: OWN_CLS.main },
-            h('span', { className: OWN_CLS.name }, item.packageName),
-            h('a', { href: item.source, target: LINK.target, rel: LINK.rel, className: OWN_CLS.link }, t('source')),
-            item.noteKey ? h('span', { className: CLS.hint }, t(item.noteKey)) : null),
-          h('div', { className: OWN_CLS.actions },
-            child.status !== STATE_DOT.done ? null
-              : present ? h('span', { className: CLS.statusRow }, h(StateDot, { state: STATE_DOT.done }), t('installed'))
-                : h(Button, { type: 'button', size: 'sm', variant: 'outline', onClick: () => openDialog(item.spec) }, t('install'))))
-      }
-
-      function Recommended({ child }) {
-        return h('section', { className: OWN_CLS.list },
-          h('h3', null, t('recommended')),
-          Object.values(CATEGORY).map((category) => {
-            const items = RECOMMENDED.filter((item) => item.category === category)
-            const highlighted = HIGHLIGHTED.includes(category)
-            return h('section', { key: category, className: OWN_CLS.list, 'data-recommended-category': category },
-              h('h3', null, t('category.' + category), highlighted ? h(Tag, { tone: TONE.highlight }, t('highlight')) : null),
-              highlighted ? h('p', { className: CLS.hint }, t('highlightNote')) : null,
-              items.length === 0 ? h('p', { className: CLS.hint }, t('empty'))
-                : h('div', { className: CLS.card }, items.map((item) => h(RecommendedRow, { key: item.packageName, item, child }))))
-          }))
+        if (child.status === STATE_DOT.ongoing) return h('p', { className: OWN_CLS.empty, role: 'status' }, t('loading'))
+        if (child.status === STATE_DOT.error && child.bundles.length === 0) return h('p', { className: OWN_CLS.error, role: 'alert' }, codeText(t, child.code))
+        if (child.bundles.length === 0) return h('p', { className: OWN_CLS.empty }, t('none'))
+        return h('ul', { className: OWN_CLS.cards }, child.bundles.map((bundle) => h(PluginCard, { key: bundle.name, bundle })))
       }
 
       /**
@@ -427,19 +492,22 @@ window.__ModuleLoader__.load({
         return h(shared.RestartAction, { t: statusT, status, setStatus })
       }
 
-      /** The Fishball tab (`plugins.tab`). DSH hides its own Add button on a contributed tab, so the tab draws its own at its top. */
+      /** The Fishball tab (`plugins.tab`). Matches DSH's Plugins page layout and card style. */
       function FishballTab() {
         const child = useChild()
         React.useEffect(() => { void inventory.refresh() }, [])
         return h('div', { className: OWN_CLS.tab, 'data-fishball-tab': true },
-          h('div', { className: OWN_CLS.head }, h('p', { className: CLS.hint }, t('intro')), h('div', { className: CLS.statusRow }, h(RestartButton), h(InstallButton))),
-          h('section', { className: OWN_CLS.list }, h('h3', null, t('installed')), h(ChildList, { child })),
-          h(Recommended, { child }))
+          h('div', { className: OWN_CLS.head },
+            h('p', { className: OWN_CLS.intro }, t('intro')),
+            h('div', { className: OWN_CLS.toolbar }, h(RestartButton), h(InstallButton))),
+          h('section', { className: OWN_CLS.group },
+            h('div', { className: OWN_CLS.groupHead }, h('h3', { className: OWN_CLS.groupTitle }, t('installed'))),
+            h(ChildList, { child })))
       }
 
       /** "Install for Fishball" in DSH's Add plugin menu, laid out like DSH's own items. */
       function AddMenuItem({ onDismiss }) {
-        return h(MenuItemButton, { icon: h(IconDownloadOutlineRegular, { size: ICON_PX }), onSelect: () => { onDismiss?.(); openDialog() } },
+        return h(MenuItemButton, { icon: h(IconDownloadOutlineRegular, { size: ICON_PX.button }), onSelect: () => { onDismiss?.(); openDialog() } },
           h('span', { className: OWN_CLS.main }, h('span', null, t('installForFishball')), h('span', { className: CLS.hint }, t('installForFishballDescription'))))
       }
 
@@ -456,7 +524,7 @@ window.__ModuleLoader__.load({
         if (bundle === undefined) return null
         if ((bundle.official || bundle.optional) && bundle.availability === BUNDLE.shipped) {
           return h(React.Fragment, null, action.message,
-            h(Button, { type: 'button', size: 'sm', variant: 'outline', disabled: action.busy, 'aria-busy': action.busy, 'data-fishball-use': name, onClick: () => void action.run(FISHBALL_API.use, name) },
+            h(Button, { type: 'button', size: 'sm', variant: 'outline', disabled: action.busy, 'aria-busy': action.busy, 'data-fishball-use': name, onClick: () => void action.run(FISHBALL_API.use, { name }, name) },
               action.busy ? t('working') : t('useInFishball')))
         }
         // BundleInfo.source is always absolute for a local copy: DSH's dependencySpec resolves a
@@ -554,7 +622,7 @@ window.__ModuleLoader__.load({
           }),
           [STEP.confirm]: () => ({
             body: [
-              h('p', { key: 'name', className: CLS.statusRow }, h('strong', { className: OWN_CLS.name }, inspection.name ?? spec.trim()), inspection.version ? h(Tag, { tone: TONE.off }, inspection.version) : null),
+              h('p', { key: 'name', className: CLS.statusRow }, h('strong', { className: OWN_CLS.name }, inspection.name ?? spec.trim()), inspection.version ? h(Tag, { tone: TONE.version }, inspection.version) : null),
               inspection.description ? h('p', { key: 'description' }, inspection.description) : null,
               h('p', { key: 'source', className: CLS.hint }, t('dialog.source', { source: sourceOf(inspection, spec.trim()) })),
               h('p', { key: 'trust', className: CLS.hint }, t('dialog.trust')),
@@ -641,15 +709,12 @@ window.__ModuleLoader__.load({
         ctx.effect(() => ctx.slots.inject(S.overlay, () => ctx.slots.register({ name: S.overlay, id: FEATURE.id.dialog, locale: FEATURE.ns }, parts.InstallDialog)), FEATURE.name + ': install dialog')
       },
     })
-    /** Shared helpers for `client.onboarding.js`: avoids duplicating the curated plugin list, inventory and install dialog. */
+    /** Shared helpers for `client.onboarding.js`: avoids duplicating the inventory and install dialog. */
     module.exports.fishballKit = Object.freeze({
-      recommended: RECOMMENDED,
-      category: CATEGORY,
       openDialog,
       getInventory,
       useStore,
       link: LINK,
-      locale: FEATURE.ns,
     })
     return module.exports
   },

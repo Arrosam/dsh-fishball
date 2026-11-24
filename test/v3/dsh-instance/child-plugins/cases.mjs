@@ -62,6 +62,7 @@ import { runtimeOf } from '../../fishball-core/package/constants.mjs'
 import { APPLIED, BUDGET, CANCEL_OUTCOMES, CHILD, CODE, FIXTURE, HTTP, INTEGRATION, MAIN, PAGE, PROTECTED, ROUTE, STATE } from './constants.mjs'
 import { detailEntry, openPage, settingsEntry, wordsOf } from './page.mjs'
 import { registerTabRestartCases } from './tab-restart-cases.mjs'
+import { registerToggleAndTabCases } from './toggle-and-tab-cases.mjs'
 
 const show = (v) => JSON.stringify(v)
 const T = { timeout: BUDGET.testMs }
@@ -511,6 +512,7 @@ export function registerChildPluginPageCases(sdk) {
 
   registerDetailCases(sdk)
   registerTabRestartCases(sdk)
+  registerToggleAndTabCases(sdk)
 }
 
 /**
