@@ -52,7 +52,7 @@ const TALK = MESSAGE_TOOL.send
 const DSH_TOOL = Object.freeze({ askQuestion: 'ask_user_question' })
 const ASK_QUESTION = DSH_TOOL.askQuestion
 
-export const PTC_GUIDE = `**Batching tools.** Use ${MANAGER_PTC.transport} to batch independent calls; use Promise.all for independent reads. Await and check results before dependent calls, and return or log what you need to see. Ask with ${ASK_QUESTION} in its own program with time for a reply; the program deadline also ends the wait. A timeout is not an answer or permission. Check earlier effects before retrying. Never request a wider program sandbox.`
+export const PTC_GUIDE = `**Batching tools.** Older direct tool calls are history; use ${MANAGER_PTC.transport} for new calls. Batch independent calls, using Promise.all for independent reads. Await and check results before dependent calls, and return or log what you need to see. Ask with ${ASK_QUESTION} in its own program with time for a reply; the program deadline also ends the wait. A timeout is not an answer or permission. Check earlier effects before retrying. Never request a wider program sandbox.`
 
 /**
  * Embed-UI's notify tool by its base name (`embed-ui__notify`): the façade's own name for it

@@ -346,3 +346,6 @@ mounts the executor on the Agent identified by its manager record, keeping the p
 and other sessions unchanged. The child profile's `fishball-core.config.ptc` can select native
 execution at the next process start; placement does not own that setting. On the Fishball page,
 `message_user` keeps its visible message bubble for both native calls and nested PTC dispatches.
+On resume DSH restores the same journal and compaction surface, and assembles the current executor’s
+tool list for new work. Fishball does not rewrite tool-call history, force compaction, or fork the
+session as part of this change.

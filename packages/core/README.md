@@ -90,7 +90,9 @@ To opt out, set `ptc: false` in the `fishball-core` row of the Fishball profile'
 ```
 
 Restart the Fishball host process after changing the setting; an open Agent does not switch
-executors mid-turn. No new session is needed. On PTC, ask blocking user questions in a separate
+executors mid-turn. Keep the existing session and profile: DSH replays old direct calls and results
+as history, and the new executor governs only future calls. Previously compacted context stays
+compacted; no migration or extra compaction is needed. On PTC, ask blocking user questions in a separate
 program with time for a reply; the Node deadline defaults to two minutes and caps at ten.
 
 ## Model tools

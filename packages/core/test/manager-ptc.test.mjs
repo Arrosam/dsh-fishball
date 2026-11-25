@@ -59,7 +59,7 @@ async function withWorld(t, scenario) {
     try {
       const preexisting = await beforeMount?.(ctx)
       const manager = await reload()
-      return await run({ ctx, manager, preexisting, reload })
+      return await run({ ctx, manager, preexisting, reload, sdk })
     } finally {
       disposeSetup?.()
       await close()
@@ -77,12 +77,16 @@ async function withWorld(t, scenario) {
     const result = results[0].result
     return { id, error: result.isError, text: result.content.map((block) => block.text).join('\n') }
   }
-  const registerProbe = (ctx) => ctx.tools.register(defineTool({
+  const registerProbe = (ctx, observe = () => {}) => ctx.tools.register(defineTool({
     name: FIXTURE.probe,
     description: FIXTURE.programDescription,
     parameters: { [FIXTURE.parameter]: { type: 'string', required: true } },
     output: { schema: { type: 'string' }, render: (_args, text) => [{ type: 'text', text }] },
-    execute: (args) => markerOf(args[FIXTURE.parameter]),
+    execute: (args) => {
+      const sample = args[FIXTURE.parameter]
+      observe(sample)
+      return markerOf(sample)
+    },
   }))
   await scenario({ home, save, boot, inspect, call, registerProbe })
 }
@@ -296,5 +300,104 @@ test('reapplying the core row keeps the live executor; a newly opened agent read
     assert.notEqual(reopened, live.agent)
     assert.equal(reopened.id, id)
     expectNative(await world.inspect(reopened))
+  }, { scriptedRuntime })
+}))
+
+const REPLAY = Object.freeze({
+  route: Object.freeze({ provider: 'history-fixture', model: 'scripted' }),
+  oldCall: Object.freeze({ id: 'native-shadowed-call', sample: 'shadowed-native-read' }),
+  retainedCall: Object.freeze({ id: 'native-retained-call', sample: 'retained-native-read' }),
+  batchId: 'fresh-ptc-batch',
+  firstPrompt: 'Describe this native fixture result for a future compacted conversation. ',
+  firstPromptRepeats: 24,
+  retainedPrompt: 'Run a second native fixture read that should remain in history.',
+  resumePrompt: 'Run two fresh fixture reads in one program.',
+  summary: 'Compaction checkpoint: one native fixture read already finished.',
+  reply: 'Fixture turn completed.',
+})
+
+/** Only provider responses are scripted. DSH prepares every captured request and persists its events. */
+async function mountReplayModel({ ctx, sdk }, script) {
+  const { LlmAdapter, createUserMessage } = await sdk.host('dsh-llm')
+  const model = { provider: REPLAY.route.provider, id: REPLAY.route.model, name: REPLAY.route.model, inputModalities: ['text'] }
+  const inputs = []
+  const replies = [...script]
+  ctx.llm.registerAdapter([REPLAY.route.provider], new (class extends LlmAdapter {
+    providerInfo(id) { return { id, name: id } }
+    async listModels() { return [model] }
+    async resolveModel() { return model }
+    async prepareCall() { return { model, stream: (options) => this.stream(options) } }
+    async *stream(options) {
+      const isSummary = options.purpose === 'compaction'
+      if (!isSummary) inputs.push({ sessionId: options.sessionId, tools: options.tools.map(({ name }) => name), messages: options.messages })
+      const reply = isSummary ? { type: 'text', text: REPLAY.summary } : replies.shift()
+      assert.ok(reply, 'unexpected model request')
+      yield { type: 'block-start', index: 0, blockType: reply.type }
+      yield { type: 'block-end', index: 0, block: reply }
+      yield { type: 'finish', reason: { kind: reply.type === 'tool-call' ? 'tool-calls' : 'stop' } }
+    }
+  })())
+  const { default: DefaultModel } = await sdk.host('dsh-agent-default-model')
+  await ctx.plugin(DefaultModel, REPLAY.route).await()
+  const turn = async (agent, prompt) => {
+    agent.steer(createUserMessage({ source: { kind: 'user' }, content: [{ type: 'text', text: prompt }] }))
+    await agent.whenIdle()
+  }
+  return { inputs, turn }
+}
+
+const replyBlock = () => ({ type: 'text', text: REPLAY.reply })
+const toolBlock = (id, name, args) => ({ type: 'tool-call', id, name, arguments: JSON.stringify(args) })
+const nativeBlock = ({ id, sample }) => toolBlock(id, FIXTURE.probe, probeArgs(sample))
+const textOf = (message) => message.content.filter(({ type }) => type === 'text').map(({ text }) => text).join(' ')
+
+function expectHistoricResult({ messages }, { id, sample }) {
+  const assistant = messages.findIndex((msg) => msg.role === 'assistant' && msg.content.some((block) => block.type === 'tool-call' && block.id === id && block.name === FIXTURE.probe))
+  const result = messages.findIndex((msg) => msg.role === 'tool' && msg.toolCallId === id)
+  assert.ok(assistant >= 0 && result > assistant, 'the assistant call and its matching result should survive in order')
+  assert.equal(messages[result].isError, false)
+  assert.equal(textOf(messages[result]), markerOf(sample))
+}
+
+test('native-to-PTC restart gives the model the same session, compacted history, and a working fresh batch', OPTIONS, (t) => withWorld(t, async (world) => {
+  await world.save({ ptc: false })
+  const nativeReads = []
+  const id = await world.boot(async (host) => {
+    const model = await mountReplayModel(host, [nativeBlock(REPLAY.oldCall), replyBlock(), nativeBlock(REPLAY.retainedCall), replyBlock()])
+    const { default: TokenMeter } = await host.sdk.host('dsh-token-meter')
+    const { default: BasicCompaction } = await host.sdk.host('dsh-compaction-basic')
+    await host.ctx.plugin(TokenMeter).await()
+    await host.ctx.plugin(BasicCompaction, { auto: false }).await()
+    world.registerProbe(host.ctx, (sample) => nativeReads.push(sample))
+    const agent = await managerAgent(host)
+    await model.turn(agent, REPLAY.firstPrompt.repeat(REPLAY.firstPromptRepeats))
+    assert.ok(model.inputs[0].tools.includes(FIXTURE.probe), 'the native turn should advertise the direct fixture tool')
+    expectHistoricResult(model.inputs[1], REPLAY.oldCall)
+    const compacted = await host.ctx.compaction.compactNow(agent, AbortSignal.timeout(FIXTURE.timeoutMs))
+    assert.ok(compacted, 'DSH should compact the first turn through its real compaction service')
+    await model.turn(agent, REPLAY.retainedPrompt)
+    expectHistoricResult(model.inputs.at(-1), REPLAY.retainedCall)
+    return agent.id
+  })
+  assert.deepEqual(nativeReads, [REPLAY.oldCall.sample, REPLAY.retainedCall.sample])
+
+  await world.save({})
+  await world.boot(async (host) => {
+    const executions = []
+    const model = await mountReplayModel(host, [toolBlock(REPLAY.batchId, FIXTURE.program, programArgs), replyBlock()])
+    world.registerProbe(host.ctx, (sample) => executions.push(sample))
+    const agent = await managerAgent(host)
+    assert.equal(agent.id, id)
+    await model.turn(agent, REPLAY.resumePrompt)
+    const [first, second] = model.inputs
+    assert.equal(first.sessionId, id)
+    assert.deepEqual(first.tools, [FIXTURE.program])
+    assert.ok(first.messages.some((msg) => msg.source?.kind === 'compact-checkpoint' && textOf(msg).includes(REPLAY.summary)), 'the durable compaction summary should reach the model')
+    assert.ok(!JSON.stringify(first.messages).includes(REPLAY.oldCall.id), 'the checkpoint should replace the shadowed native tool exchange')
+    expectHistoricResult(first, REPLAY.retainedCall)
+    assert.deepEqual(executions, FIXTURE.samples, 'only the two fresh calls execute after reopening')
+    const result = second.messages.find((msg) => msg.role === 'tool' && msg.toolCallId === REPLAY.batchId)
+    assert.ok(result, 'the model should receive the fresh batch result')
+    expectDispatches(agent, { id: REPLAY.batchId, error: result.isError, text: textOf(result) }, FIXTURE.samples)
   }, { scriptedRuntime })
 }))
