@@ -59,10 +59,10 @@ export const ASKS = Object.freeze({
    * a reject is sent as high.
    */
   riskOf: Object.freeze({ [DECISION.allow]: RISK.low, [DECISION.reject]: RISK.high }),
-  /**
-   * The reason sent when the user gave none (the broker requires a non-empty one for both; the
-   * user's choice, 2026-11-16). Model- and audit-facing English, like every K1 reason (Q7).
-   */
+  /** Correlated connector notice and the user-facing text for its action notification. */
+  permissionEscalated: 'permission-escalated',
+  automaticNotice: 'A permission request needs your decision in Fishball.',
+  /** The connector requires a reason, even when the user leaves it blank. */
   defaultReason: 'The user answered on Fishball\'s card.',
   /** Connector answers that mean the ask is no longer open there: the card closes. */
   closingCodes: Object.freeze([REFUSAL.alreadySettled, REFUSAL.expired]),
@@ -79,7 +79,7 @@ export const ASK_CODE = Object.freeze({ unknownOffer: 'unknown-offer' })
 
 /** The filing tool's model-facing texts (English only, Q7). PROPOSED wording. */
 export const ASK_TEXT = Object.freeze({
-  description: 'Show a permission request (a `permission` event) you cannot decide to the user as a card in your own conversation. '
+  description: 'Legacy fallback: show a permission request in this chat only if its offer does not enable automatic permission cards. If automatic cards are enabled, escalate instead; do not call this tool for the same request. '
     + 'Give the event\'s offer id. The user answers Allow once or Reject, with an optional reason; their answer is sent for you, '
     + 'and the request\'s settlement event tells you the outcome. Do not answer the request yourself after filing it.',
   offerArgument: 'The `offer.offerId` of the permission event to show.',
@@ -129,6 +129,8 @@ export const ASK_HTTP = Object.freeze({
 export const ASK_LOG = Object.freeze({
   malformed: 'offer event %s ignored: malformed payload',
   commitFailed: 'ask card %s: the answer could not be sent (%s)',
+  handoffFailed: 'permission handoff failed (%s)',
+  noticeFailed: 'permission action notice failed (%s)',
   writeFailed: 'ask card store write failed (%s)',
   reconciled: 'ask card reconciliation: %d ended unfiled ask(s) deleted, %d kept',
   reconcileFailed: 'ask card reconciliation: a session\'s asks were kept (%s)',

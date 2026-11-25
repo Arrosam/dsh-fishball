@@ -48,7 +48,7 @@
  *   core (it reads no log) and so delivered once more (EVT-ST-02 row 11e).
  */
 import { freezeMessage } from '@deepseek-ai/dsh-llm'
-import { MESSAGE, PRESENT_RETRY, REASON, STATE, TEXT, WAKE } from '../../contracts/constants.js'
+import { MCP, MESSAGE, PRESENT_RETRY, REASON, STATE, TEXT, WAKE } from '../../contracts/constants.js'
 import { HOST, LOG } from './constants.js'
 import { codeOf } from './diagnostics.js'
 import { createHandover } from './handover.js'
@@ -381,9 +381,32 @@ export function createDelivery({ ledger, fishball, logger, delay = realDelay, li
    * the header). DSH's checkpoint before a model request (`session/flush`) waits for the admission
    * writes.
    */
+  // Only offers admitted to this manager turn get a fallback, not queued or intercepted offers.
+  const permissionRefs = new WeakMap()
   const handover = createHandover({
     isMine: (messageId) => keysOf(messageId) !== undefined,
-    admitted: (messageId) => settle(messageId, STATE.admitted, (key) => (givenUp.delete(key) ? REASON.presentGivenUp : REASON.handled)),
+    admitted(messageId, agent) {
+      if (fishball.onTurnEnd !== undefined) {
+        const refs = permissionRefs.get(agent) ?? []
+        for (const key of (keysOf(messageId) ?? []).filter(isTracked)) {
+          const { event } = ledger.get(key)
+          if (event.type === MCP.eventTypes.permission && event.payload?.autoEscalatePermissions === true && !givenUp.has(key)) {
+            refs.push({ source: event.source, eventId: event.eventId })
+          }
+        }
+        if (refs.length > 0) permissionRefs.set(agent, refs)
+      }
+      return settle(messageId, STATE.admitted, (key) => (givenUp.delete(key) ? REASON.presentGivenUp : REASON.handled))
+    },
+    turnEnded(agent, disposed) {
+      const refs = permissionRefs.get(agent)
+      permissionRefs.delete(agent)
+      if (refs !== undefined && !disposed) {
+        // Don't block session publication on a remote call.
+        void Promise.resolve().then(() => closed ? undefined : fishball.onTurnEnd(refs))
+          .catch((error) => logger?.warn(LOG.handoffFailed, codeOf(error)))
+      }
+    },
     dropped: (messageId, reason) => settle(messageId, STATE.discarded, (key) => { givenUp.delete(key); return reason }),
     redeliver,
     idle: () => { void drain() },

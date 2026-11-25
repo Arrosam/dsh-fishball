@@ -102,6 +102,15 @@ characters), so two DSHs' `sessions_list` never collide. Each target has its own
 names its target. A renamed target's tools are renamed together; an old name is never reused for
 another target. Reminder and private Skill tools are unprefixed and exist once.
 
+### Automatic permission cards
+
+When a current connector enables automatic permission cards, Fishball files the existing
+**Allow once / Reject** card on escalation and sends an action notice through Connector UI
+if available. If the model leaves an opted-in permission undecided in the turn that received
+it, Fishball escalates it automatically. The first answer wins, including from the requesting
+session's approval prompt. Manual ask_user remains a fallback for older or opted-out targets.
+Questions and plan reviews still use their own session's cards.
+
 ## Without the other plugins
 
 Core runs normally without `fishball-ui` (no page, no strip) and reports nothing about it. Core's

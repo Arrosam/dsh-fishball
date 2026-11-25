@@ -189,7 +189,7 @@ The fixes for the fishball-ui review (`.runtime/reports/review-x-fishball-ui.md`
 
 The user removes `question_ask` and `question_answer_own`, including their exclusive own-card schemas and behaviour. The historical dotted `question.ask` / `question.answerOwn` architecture is superseded, not a compatibility requirement; the historical documents remain unchanged.
 
-`question_answer` still answers forwarded managed-session DSH questions and plan reviews. Shared question/answer validators, generic settlement `answers`, and `QUESTION_ANSWER` / `CARD_CLOSED` semantics for forwarded questions remain. Fishball's local `ask_user` files existing permission/legacy-ask offers only. For its own clarifications, Fishball's manager uses the native DSH `ask_user_question` tool from its guarded preset; this does not add a connector MCP tool or change where managed-session questions are answered.
+`question_answer` still answers forwarded managed-session DSH questions and plan reviews. Shared question/answer validators, generic settlement `answers`, and `QUESTION_ANSWER` / `CARD_CLOSED` semantics for forwarded questions remain. Fishball automatically files permission cards on opted-in connectors’ handoff notices. On manager turn end, core escalates the remaining opted-in permission offers admitted to that turn; the connector validates the offer and remains the authority on its outcome. Fishball’s local `ask_user` remains a fallback for older and opted-out targets. For its own clarifications, Fishball's manager uses the native DSH `ask_user_question` tool from its guarded preset; this does not add a connector MCP tool or change where managed-session questions are answered.
 
 ## 27. Hosted Frame Readiness v1
 

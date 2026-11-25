@@ -127,17 +127,17 @@ export async function apply(ctx, config) {
       return info?.inputModalities === undefined || info.inputModalities.includes(MAIN.imageModality)
     },
   })
+  const asks = createAsks({ targets: ports, table: cards, logger })
+  ctx.effect(() => () => asks.close())
   const events = createEvents({
     table: ledger,
     link: ports,
-    fishball: { activate: () => session.activate(), present: (event) => presentOf(event) },
+    fishball: { activate: () => session.activate(), present: (event) => presentOf(event), onTurnEnd: asks.escalatePending },
     logger: ctx.logger(EVENTS_LOG.name),
     // Read at each event (volatile fields), so a save applies to the next one (WAKE).
     batching: () => Object.fromEntries(Object.entries(MAIN.setting.wake).map(([key, path]) => [key, valueAt(config, path)])),
   })
   ctx.effect(() => () => events.close())
-  const asks = createAsks({ targets: ports, table: cards, logger })
-  ctx.effect(() => () => asks.close())
   // The page's one live connection (SEAM_PAGE_STREAM), before the targets: their running sessions
   // poll only while a page watches it (targets/sessions.js).
   const page = createPageStream(ctx, logger)

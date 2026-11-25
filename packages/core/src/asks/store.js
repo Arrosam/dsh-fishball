@@ -142,6 +142,7 @@ export function recordOf(event, source) {
     askedAt: descriptor.at,
     state: CARD_STATE.open,
     filed: false,
+    autoEscalatePermissions: descriptor.autoEscalatePermissions === true,
   }
 }
 
@@ -217,7 +218,12 @@ export function createCardStore(table, onChange) {
       changed(replaced)
     },
 
-    file: (key, offerId) => move(key, (current) => isOffer(offerId)(current) && isOpen(current) && !current.filed, { filed: true }),
+    file(key, offerId, automatic = false) {
+      // Manual filing can race the automatic handoff. The latter still owes its one action notice.
+      return move(key, (current) => isOffer(offerId)(current) && isOpen(current)
+        && (automatic ? !current.automaticallyFiled : !current.filed),
+      automatic ? { filed: true, automaticallyFiled: true } : { filed: true })
+    },
 
     /** The committed answer on `offerId` wins over any close that arrived while it was in flight. */
     answered: (key, offerId) => move(key, (current) => isOffer(offerId)(current) && current.state !== CARD_STATE.answered, { state: CARD_STATE.answered }),

@@ -3,11 +3,10 @@
  * `asks`; R-FB-11, R-UI-12, R-CON-05, R-CON-06, R-CON-08; PLAT-UC-07; Q3 = A).
  *
  * A permission request (a `permission` offer; the user, 2026-11-17, after `ask_agent` was removed)
- * is Fishball's to answer. When its model cannot decide, it may file the request as a card with the
- * `ask_user` tool (or escalate it to the session's own prompt); the user answers Allow or Reject, with an optional
- * reason, in Fishball's own conversation (fishball-ui's client.asks.js), and core commits that
- * answer through its link as Fishball's `approval_answer` on the card's `offerId`. The main DSH shows nothing (Q-U2):
- * nothing here is registered outside the Fishball DSH.
+ * is Fishball's to answer. On an opted-in connector's handoff notice, core files the card. If its
+ * deciding turn ended without an answer, core asks the connector to escalate the still-live offer.
+ * The user answers Allow or Reject, with an optional reason, in Fishball's own conversation.
+ * Core commits that answer as Fishball's `approval_answer` on the card's `offerId`.
  *
  * - `createAsks({targets, table, logger})`: takes each target's polls (`take`; every offer of `ASKS.eventTypes`,
  *   `settlement` and `retirement`; a page is read whoever the event was dispatched to, so an interceptor or Fishball
@@ -41,13 +40,16 @@
  * Removing a target or retiring its epoch voids its open cards (`voidWhere`), sending nothing.
  */
 import { SEAM_TARGETS } from 'fishball-shared/ui-seam'
-import { LINK, MCP, TARGETS } from '../../contracts/constants.js'
+import { APPROVAL, LINK, MCP, TARGETS } from '../../contracts/constants.js'
+import { FACADE } from '../bridge/constants.js'
 import { tupleOfHandle } from '../targets/keys.js'
 import { emitIsolated, subscribe } from '../link/listeners.js'
 import { codeOf } from '../events/diagnostics.js'
 import { renderJson } from '../tool-output.js'
 import { ASKS, ASK_CODE, ASK_LOG, ASK_MISUSE, ASK_TOOL_DEFINITION, ASK_TEXT, CARD_STATE } from './constants.js'
 import { cardKeyOf, cardOf, createCardStore, recordOf } from './store.js'
+
+const isHandoff = (event) => event?.type === MCP.eventTypes.notice && event.payload?.code === ASKS.permissionEscalated
 
 // Core's own copy of the connector's MCP surface (K3a; F-OWN-SCHEMA), under the names this module reads.
 const REFUSAL = MCP.refusal
@@ -105,12 +107,28 @@ export function createAsks({ targets, table, logger }) {
   const list = () => Object.freeze(store.cards().map(cardOf))
   const store = createCardStore(table, () => emitIsolated(listeners, list()))
   const serial = keyedSerial()
+  const pendingHandoffs = new Map()
+  const failedIntake = new Map()
+  const epochKey = ({ targetId, endpointEpoch }) => JSON.stringify([targetId, endpointEpoch])
   let intake = Promise.resolve()
   let closed = false
 
-  /** One polled event of `source`; anything but a card-able offer (`ASKS.eventTypes`), its settlement or its retirement is not the store's. */
+  async function notify(source) {
+    try {
+      await targets.callTool(source, FACADE.notifyTool, { message: ASKS.automaticNotice, important: true })
+    } catch (error) { logger?.warn(ASK_LOG.noticeFailed, codeOf(error)) }
+  }
+
+  /** Apply a card-able offer or one of its lifecycle events. */
   async function takeOne(event, source) {
-    if (ASKS.eventTypes.includes(event?.type)) {
+    if (isHandoff(event)) {
+      const record = store.byOffer(source, event.correlationId)
+      if (record?.autoEscalatePermissions === true && record.state === CARD_STATE.open && targets.live(source)) {
+        const filed = await store.file(record.key, record.offerId, true)
+        // The same atomic filing transition serves ask_user. Replays never send another notice.
+        if (filed !== undefined) void notify(filed.source)
+      }
+    } else if (ASKS.eventTypes.includes(event?.type)) {
       const record = recordOf(event, source)
       if (record === undefined) { logger?.warn(ASK_LOG.malformed, String(event.eventId)); return }
       await store.add(record)
@@ -122,8 +140,8 @@ export function createAsks({ targets, table, logger }) {
     }
   }
 
-  // Pages are taken in order, one event at a time, so an ask and its settlement in one page (or in
-  // two) are applied in the order the connector committed them. The listener returns the page's
+  // Pages are taken in order. Ordinary events in the same page are applied in commit order, before
+  // handoff notices, so we don't show a new card for a request already settled in that page. Returns the page's
   // promise, so a caller that owns the poll pipeline (core's main row) can store the cards before it
   // lets the same events be acked (F-WIRE: "store the card before the ack"); the link ignores it.
   // The promise resolves to the ids of the events whose write failed: those stay unacked at the
@@ -136,13 +154,23 @@ export function createAsks({ targets, table, logger }) {
     // card, because an acked page is never polled again.
     const page = intake.then(async () => {
       const failed = []
-      for (const event of events) {
+      const epoch = epochKey(source)
+      const blocked = failedIntake.get(epoch) ?? new Set()
+      // Apply closures first. A lifecycle write failure leaves a dependent handoff unacked too.
+      for (const event of [...events.filter((event) => !isHandoff(event)), ...events.filter(isHandoff)]) {
         if (closed) break
-        try { await takeOne(event, source) } catch (error) {
+        if (isHandoff(event) && blocked.size > 0) { failed.push(event.eventId); continue }
+        try {
+          await takeOne(event, source)
+          blocked.delete(event?.eventId)
+        } catch (error) {
           logger?.warn(ASK_LOG.writeFailed, codeOf(error))
           failed.push(event?.eventId)
+          if (!isHandoff(event)) blocked.add(event?.eventId)
         }
       }
+      if (blocked.size === 0) failedIntake.delete(epoch)
+      else failedIntake.set(epoch, blocked)
       return Object.freeze(failed)
     })
     intake = page.then(() => undefined)
@@ -284,19 +312,47 @@ export function createAsks({ targets, table, logger }) {
     },
   })
 
-  /**
-   * Fishball's own `approval_answer` through the target's façade was accepted (`ok`): the request
-   * is settled, and the connector sends no `settlement` for an answer its managing agent gave (its
-   * tool result is the outcome), so the request's record would stay open for ever. The open record
-   * still unfiled on that very offer is closed, and so deleted (store.js header), on the intake chain
-   * as every unfiled close. A filed card is the user's and keeps its own answer path (`commit`).
-   * Never rejects: a failed delete is logged, and the next start's reconciliation finds the record.
-   */
+  /** Hand undecided permissions admitted to the ending manager turn back to the connector. */
+  async function escalatePending(refs) {
+    await intake
+    for (const { source, eventId } of refs) {
+      if (closed || !targets.live(source)) continue
+      const key = store.keyOfEvent(source, eventId)
+      if (key === undefined) continue
+      await serial(key, async () => {
+        const record = store.get(key)
+        pendingHandoffs.delete(key)
+        if (closed || record?.eventId !== eventId || !record.autoEscalatePermissions
+          || record.state !== CARD_STATE.open || record.automaticallyFiled) return
+        // Only the connector can say it is still live. Its correlated notice files the card.
+        try {
+          const result = await targets.callTool(source, TOOL.approvalAnswer, {
+            sessionId: record.sessionId, approvalId: record.approvalId, offerId: record.offerId,
+            answer: { decision: APPROVAL.decision.escalate },
+          })
+          if (result?.code === LINK.disconnected) pendingHandoffs.set(key, { source, eventId })
+        } catch (error) {
+          pendingHandoffs.set(key, { source, eventId })
+          logger?.warn(ASK_LOG.handoffFailed, codeOf(error))
+        }
+      })
+    }
+  }
+
+  function retryHandoffs(source) {
+    const epoch = epochKey(source)
+    return escalatePending([...pendingHandoffs.values()].filter((ref) => epochKey(ref.source) === epoch))
+  }
+
+  /** Final manager answers don't emit a settlement. Retire their pending or automatically filed card. */
   function answered(source, args) {
     const approvalId = args?.[ASKS.answerArguments.approvalId]
     const offerId = args?.[ASKS.answerArguments.offerId]
     if (typeof approvalId !== 'string' || typeof offerId !== 'string') return intake
-    const run = intake.then(() => store.dropUnfiled(cardKeyOf(source, approvalId), offerId))
+    const key = cardKeyOf(source, approvalId)
+    const run = intake.then(() => store.get(key)?.autoEscalatePermissions === true
+      ? store.closeOffer(key, offerId)
+      : store.dropUnfiled(key, offerId))
     intake = run.catch((error) => logger?.warn(ASK_LOG.writeFailed, codeOf(error)))
     return intake
   }
@@ -307,6 +363,7 @@ export function createAsks({ targets, table, logger }) {
    * cannot re-open one. Sends nothing remote.
    */
   function voidWhere(retired) {
+    for (const [key, ref] of pendingHandoffs) if (retired(ref.source)) pendingHandoffs.delete(key)
     const run = intake.then(() => store.voidWhere(retired))
     intake = run.catch(() => {})
     return run
@@ -318,6 +375,8 @@ export function createAsks({ targets, table, logger }) {
     toolFor,
     reconcile,
     answered,
+    escalatePending,
+    retryHandoffs,
     voidWhere,
     /** Resolves once every page taken so far is stored. */
     drained: () => intake,
