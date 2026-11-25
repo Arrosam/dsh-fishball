@@ -171,7 +171,7 @@ window.__ModuleLoader__.load({
       tool: 'message_user', argument: 'message',
       kind: 'fishball-message', target: 'chat', groupTree: 'turn', visibility: 'visible',
       event: 'tool/call', role: 'start', slot: 'conversation.chat.node', locale: 'chat',
-      bubble: 'data-fishball-message',
+      bubble: 'data-fishball-message', textInteractionSource: 'data-text-interaction-source',
       // After the call's own tool row: on a reloaded page that row also anchors at the `tool/call` seq
       // (no streamed delta is left), and a tie leaves the order to the engine. DSH places its own
       // synthetic rows the same way (ui-chat CHAT_SYNTHETIC_SEQ_OFFSETS, at most ±0.9).
@@ -646,7 +646,9 @@ window.__ModuleLoader__.load({
         const L = MESSAGE.labels
         return { code: { copyLabel: t(L.copy), copiedLabel: t(L.copied), toolbarLabels: { codeLabel: t(L.code), wrapLabel: t(L.wrap), unwrapLabel: t(L.unwrap) } }, footnotes: t(L.footnotes) }
       }, [t])
-      return h('div', { [MESSAGE.bubble]: '' }, h(MarkdownText, { text: node.data.text, labels }))
+      // Opt this custom bubble into DSH's text interactions. DSH owns the quote pill,
+      // composer insertion and Markdown serialization, just as for its native bubbles.
+      return h('div', { [MESSAGE.bubble]: '', [MESSAGE.textInteractionSource]: '' }, h(MarkdownText, { text: node.data.text, labels }))
     }
 
     /** Fold one reply seat (REPLY_FOLD): DSH's own `hidden`, with the page's mark saying it set it. */
