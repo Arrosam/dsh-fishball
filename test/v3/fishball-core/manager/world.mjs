@@ -30,6 +30,8 @@ const { model } = await import(pathToFileURL(FAKE_LLM_MODULE).href)
 
 const profileDir = path.join(home, 'profiles', WORLD.profile)
 const manifestFile = path.join(profileDir, 'package.json')
+const profilePatch = path.join(profileDir, WORLD.patchFile)
+const readText = (file) => (fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : null)
 const cwd = path.join(home, WORLD.workDir)
 fs.mkdirSync(cwd, { recursive: true })
 
@@ -61,11 +63,19 @@ if (firstStart) {
   install(WORLD.shared, false)
   install(WORLD.core, true)
   extension?.install?.(install)
+  // These scripted calls use native tools; keep the opt-out in the writable settings layer.
+  const { isMap, isSeq, parseDocument } = await host('yaml/dist/index.js')
+  const patch = parseDocument(readText(profilePatch) ?? '[]')
+  if (patch.errors.length) throw patch.errors[0]
+  if (!isSeq(patch.contents)) throw new Error('Expected a profile patch sequence')
+  const index = patch.contents.items.findLastIndex((row) => isMap(row) && row.get('id') === WORLD.core && !row.has('insert'))
+  if (index < 0) patch.add({ id: WORLD.core, config: { ptc: false } })
+  else patch.setIn([index, 'config', 'ptc'], false)
+  fs.writeFileSync(profilePatch, String(patch))
 }
 
 /** The files a settings save could write, read before DSH (and core) start. */
-const patchFiles = [path.join(profileDir, WORLD.patchFile), path.join(home, WORLD.patchFile)]
-const readText = (file) => (fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : null)
+const patchFiles = [profilePatch, path.join(home, WORLD.patchFile)]
 const patchesBefore = Object.fromEntries(patchFiles.map((f) => [f, readText(f)]))
 
 const overlay = path.join(home, WORLD.overlay)
