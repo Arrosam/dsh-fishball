@@ -13,6 +13,12 @@
  *   fiber, as core's X2 scope is; live = {id, session, inject(message)} where session is a real
  *   Session of the root's SessionStore and inject records;
  * - appReady (optional): onReady(fn) → dispose, fired by the case.
+ * The manager's agent context is not a fake: it is a dsh-scope scope (createScope, keyed by the live
+ * agent) minted from a host plugin that injects the SDK's real SystemPrompt service, as
+ * test/private-skills/support/harness.mjs mints it, so agentCtx.systemPrompt.section() lands in the
+ * manager's own layer and dies with the setup fiber. resume() is core's resume: the generation's
+ * scope is disposed, a new live agent (same session) gets a new scope, and every registered setup
+ * runs again on it.
  * Everything observed is public: the routes' Responses, the tools' values, the fakes' calls and the
  * log records.
  */
@@ -84,7 +90,7 @@ export async function worldFor(t, sdk, { core = true, apiVersion = INSTANCE.apiV
   const tmp = await realpath(os.tmpdir())
   const root = await mkdtemp(path.join(tmp, FIXTURE.tempPrefix))
   const mod = await rowModule(sdk)
-  const parts = Object.fromEntries(await Promise.all([DSH.cordis, DSH.loader, DSH.session, DSH.storage, DSH.storageJson, DSH.storageDomain].map(async (n) => [n, await importSdk(sdk, n)])))
+  const parts = Object.fromEntries(await Promise.all([DSH.cordis, DSH.loader, DSH.session, DSH.storage, DSH.storageJson, DSH.storageDomain, DSH.systemPrompt, DSH.scope].map(async (n) => [n, await importSdk(sdk, n)])))
   const world = { sdk, root, mod, logs: [], notifyMode: NOTIFY.queued, notices: [], injects: [], setups: [], noManager: false }
   let host
   t.after(async () => {
@@ -102,16 +108,41 @@ export async function worldFor(t, sdk, { core = true, apiVersion = INSTANCE.apiV
     await ctx.plugin(parts[DSH.storage].default)
     await ctx.plugin(parts[DSH.storageJson], { root: path.join(root, FIXTURE.domainDir) })
     await ctx.plugin(parts[DSH.storageDomain], { backend: DSH.jsonBackend, routes: {} })
+    await ctx.plugin(parts[DSH.systemPrompt].SystemPrompt, {})
+    // A scope inherits the dependency API of the plugin that mints it (dsh-scope createScope).
+    let agentHost
+    await ctx.plugin({ name: FIXTURE.agentHost, inject: [DSH.services.systemPrompt], apply: (c) => { agentHost = c } })
     const fetch = fetchRegistry()
     ctx.provide(DSH.services.connection, { fetch })
     const ready = { listeners: new Set() }
     if (appReady) ctx.provide(DSH.services.appReady, { onReady(fn) { ready.listeners.add(fn); return () => { ready.listeners.delete(fn) } } })
 
     const session = ctx.sessions.create()
-    const live = { id: session.id, session, inject(message) { world.injects.push({ liveId: live.id, message: structuredClone(message) }) } }
+    /** One manager generation: a live agent object of the one session and its agent scope. */
+    const mint = () => {
+      const live = { id: session.id, session, inject(message) { world.injects.push({ liveId: live.id, message: structuredClone(message) }) } }
+      return { live, scope: parts[DSH.scope].createScope(agentHost, live) }
+    }
+    let generation = mint()
     const scopeTools = new Map()
-    const agentCtx = ctx.extend()
     const fibers = new Set()
+    const registrations = new Set()
+    /** X2: the registration's fn runs as its own fiber on the current generation's agent context. */
+    function applySetup(registration) {
+      const { live, scope: agentScope } = generation
+      const fiber = agentScope.ctx.plugin({
+        apply: (scope) => registration.fn(scope.extend({ tools: {
+          register(definition) {
+            return scope.effect(() => {
+              scopeTools.set(definition.name, definition)
+              return () => { if (scopeTools.get(definition.name) === definition) scopeTools.delete(definition.name) }
+            })
+          },
+        } }), live),
+      })
+      registration.fibers.add(fiber)
+      fibers.add(fiber)
+    }
     const instance = {
       apiVersion,
       manager: {
@@ -119,18 +150,15 @@ export async function worldFor(t, sdk, { core = true, apiVersion = INSTANCE.apiV
         /** X2: fn runs as its own fiber on the manager's agent context; dispose removes it. */
         registerSetup(pluginId, fn) {
           world.setups.push(pluginId)
-          const fiber = agentCtx.plugin({
-            apply: (scope) => fn(scope.extend({ tools: {
-              register(definition) {
-                return scope.effect(() => {
-                  scopeTools.set(definition.name, definition)
-                  return () => { if (scopeTools.get(definition.name) === definition) scopeTools.delete(definition.name) }
-                })
-              },
-            } }), live),
-          })
-          fibers.add(fiber)
-          return () => { fibers.delete(fiber); return fiber.dispose() }
+          const registration = { fn, fibers: new Set() }
+          registrations.add(registration)
+          applySetup(registration)
+          return () => {
+            registrations.delete(registration)
+            const owned = [...registration.fibers]
+            for (const fiber of owned) fibers.delete(fiber)
+            return Promise.all(owned.map((fiber) => fiber.dispose()))
+          }
         },
         async notify(input) {
           world.notices.push(structuredClone(input))
@@ -146,7 +174,23 @@ export async function worldFor(t, sdk, { core = true, apiVersion = INSTANCE.apiV
     let callSeq = 0
     const agent = { id: session.id, session }
     host = {
-      ctx, fetch, session, live, agent, scopeTools,
+      ctx, fetch, session, agent, scopeTools,
+      get live() { return generation.live },
+      /** Core's resume: the old generation's scope (and its setup fibers) goes, every setup runs on a new one. */
+      async resume() {
+        const previous = generation
+        await previous.scope.dispose()
+        for (const registration of registrations) { for (const fiber of registration.fibers) fibers.delete(fiber); registration.fibers.clear() }
+        generation = mint()
+        for (const registration of registrations) applySetup(registration)
+        await world.settle()
+        return previous.live
+      },
+      /** The sections the real SystemPrompt assembles for a scope key (null: the global view). */
+      async promptSections(key) {
+        const assembly = await ctx.get(DSH.services.systemPrompt).assemble(key === null ? {} : { scope: key })
+        return assembly.sections
+      },
       async addCore() { coreFiber = ctx.plugin({ apply: (c) => { c.provide(DSH.services.instance, instance) } }); await coreFiber; await world.settle() },
       async removeCore() { await coreFiber?.dispose(); coreFiber = undefined; await world.settle() },
       async loadRow() { rowId = await loader.create({ name: DSH.builtinPrefix + SUBJECT.name }); await loader.await().catch(() => {}); await world.settle() },
@@ -177,6 +221,12 @@ export async function worldFor(t, sdk, { core = true, apiVersion = INSTANCE.apiV
     active: () => host.active(),
     fireReady: () => host.fireReady(),
     settle: () => host.settle(),
+    /** Core's resume of the manager session; returns the previous generation's live agent. */
+    resume: () => host.resume(),
+    /** The assembled sections of the manager's current scope, of another scope key, or (null) the global view. */
+    promptSections: (key = host.live) => host.promptSections(key),
+    /** Registers a section in the global layer for the rest of the DSH's life. */
+    globalSection: (section) => { host.ctx.get(DSH.services.systemPrompt).section(section) },
     /** One tool call by the manager's agent. */
     call: (name, args) => host.call(name, args, host.agent),
     /** One tool call by `as` (another agent, or undefined for a call with no agent). */

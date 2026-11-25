@@ -20,7 +20,7 @@ import test from 'node:test'
 import { caseName } from '../contract/package-boundaries/cases.mjs'
 import { SKILL_SDK } from '../../private-skills/support/constants.mjs'
 import {
-  BOARD_KEYS, CODE, CREATED_KEYS, DSH, DSH_ARGS_ERROR, FIELD, FIXTURE, ID, INSTANCE, LIMIT, LOG, MEMO_KEYS, NOT_A_STATUS, NOTICE, NOTIFY, PENDING,
+  BOARD_KEYS, CODE, CREATED_KEYS, DSH, DSH_ARGS_ERROR, DSH_SECTION, FIELD, FIXTURE, GUIDE, ID, INSTANCE, LIMIT, LOG, MEMO_KEYS, NOT_A_STATUS, NOTICE, NOTIFY, PENDING,
   POST_MEMO_KEYS, POST_TASK_KEYS, READ_KEYS, REMINDER, REVISION, ROUTE, STATUS, STATUSES, SUBJECT, TASK_DEFAULT, TASK_KEYS, TOOL,
   UNFINISHED, UNKNOWN_KEY, WAIT,
 } from './constants.mjs'
@@ -116,6 +116,19 @@ function assertReminder(w, count, n) {
 }
 let compactions = 0
 const compactionEnd = (error) => ({ type: DSH.compactionEnd, data: { compactionId: FIXTURE.compactionId + ++compactions, turn: null, ...(error === undefined ? {} : { error }) } })
+
+/** DOC §3a: the assembled sections named like the guide. */
+const guides = (sections) => sections.filter((s) => s.name === GUIDE.name)
+/** Exactly one guide section, with DOC §3a's text, among sections. */
+function assertGuide(sections, what) {
+  const found = guides(sections)
+  assert.equal(found.length, 1, what + ': exactly one ' + GUIDE.name + ' section: ' + json(found))
+  assert.equal(found[0].text, GUIDE.text, what + ': the DOC §3a text')
+}
+async function assertNoGuide(w, what) {
+  assert.deepEqual(guides(await w.promptSections()), [], what + ': not in the manager scope')
+  assert.deepEqual(guides(await w.promptSections(null)), [], what + ': not global')
+}
 
 /** A world with core, three unfinished tasks (goal + 2 subtasks) and one memo. */
 async function seeded(t, sdk, options) {
@@ -403,6 +416,48 @@ export function registerTaskboardCases(sdk) {
       assert.equal((await w.fetch(ROUTE.get, ROUTE.board)).status, ROUTE.status.ok)
     })
   }
+  // TB-PG-01: the prompt guide by core partition (DOC §3a, §7): only a compatible core gives a section.
+  for (const [part, label, options, compatible] of coreRows) {
+    row(sdk, 'TB-PG-01', part, label + ': ' + (compatible ? 'one ' + GUIDE.name + ' section in the manager scope with the DOC §3a text' : 'no ' + GUIDE.name + ' section anywhere'), async (t) => {
+      const w = await worldFor(t, sdk, options)
+      if (compatible) assertGuide(await w.promptSections(), label)
+      else await assertNoGuide(w, label)
+    })
+  }
+  // TB-PG-02: the scope partitions (DOC §3a: manager-scope only, no global section).
+  row(sdk, 'TB-PG-02', 1, 'the guide is the manager scope\'s: absent from the global view and from another agent\'s scope', async (t) => {
+    const w = await worldFor(t, sdk)
+    assertGuide(await w.promptSections(), 'manager scope')
+    assert.deepEqual(guides(await w.promptSections(null)), [], 'global view')
+    assert.deepEqual(guides(await w.promptSections(FIXTURE.workerKey)), [], 'a worker scope')
+  })
+  row(sdk, 'TB-PG-02', 2, 'a global section of the same name: the manager scope sees the guide (scoped shadow), the global view the global text', async (t) => {
+    const w = await worldFor(t, sdk, { core: false })
+    w.globalSection({ name: GUIDE.name, order: GUIDE.order, text: FIXTURE.globalGuideText })
+    await w.addCore()
+    assertGuide(await w.promptSections(), 'manager scope')
+    assert.deepEqual(guides(await w.promptSections(null)).map((s) => s.text), [FIXTURE.globalGuideText], 'global view')
+  })
+  // TB-PG-03: the order, BVA around DEPLOYMENT_PERSONA_PREFIX + 2 (DSH sorts by order, then by name).
+  row(sdk, 'TB-PG-03', 1, 'order is persona prefix + 2: after probes at +1 and at +2 named before it, before probes at +2 named after it and at +3', async (t) => {
+    const w = await worldFor(t, sdk, { core: false })
+    const probes = [
+      { name: FIXTURE.probe.below, order: GUIDE.order - FIXTURE.probe.step },
+      { name: FIXTURE.probe.sameBefore, order: GUIDE.order },
+      { name: FIXTURE.probe.sameAfter, order: GUIDE.order },
+      { name: FIXTURE.probe.above, order: GUIDE.order + FIXTURE.probe.step },
+    ]
+    for (const probe of probes) w.globalSection({ ...probe, text: probe.name })
+    await w.addCore()
+    const expected = [DSH_SECTION.personaPrefix, FIXTURE.probe.below, FIXTURE.probe.sameBefore, GUIDE.name, FIXTURE.probe.sameAfter, FIXTURE.probe.above]
+    const names = (await w.promptSections()).map((s) => s.name)
+    assert.deepEqual(names.filter((name) => expected.includes(name)), expected, 'order ' + GUIDE.order + ': ' + json(names))
+  })
+  row(sdk, 'TB-PG-03', 2, 'DSH\'s DEPLOYMENT_PERSONA_PREFIX order is the anchor DOC §3a assumes', async (t) => {
+    const w = await worldFor(t, sdk, { core: false })
+    assert.equal(w.ctx.get(DSH.services.systemPrompt).getSectionOrder(GUIDE.orderAnchor), GUIDE.orderAnchorValue)
+  })
+
   row(sdk, 'TB-EP-08', 4, 'no fishballInstance with appReady: no line at load, exactly one at app ready', async (t) => {
     const w = await worldFor(t, sdk, { core: false, appReady: true })
     assert.equal(w.linesWith(LOG.coreMissing).length, 0, 'not at load')
@@ -904,6 +959,37 @@ export function registerTaskboardCases(sdk) {
     const count = w.injects.length
     await w.emitSessionEvent(w.session, compactionEnd())
     assert.deepEqual(remindersSince(w, count), [])
+  })
+
+  // TB-ST-06: the prompt guide's life follows the X2 setup fiber (DOC §3a, §7).
+  row(sdk, 'TB-ST-06', 1, 'prompt guide: core absent, none; core arrives, one; core leaves, withdrawn with the tools; core again, one', async (t) => {
+    const w = await worldFor(t, sdk, { core: false })
+    await assertNoGuide(w, 'core absent')
+    await w.addCore()
+    assertGuide(await w.promptSections(), 'core arrived')
+    await w.removeCore()
+    assert.deepEqual(w.toolNames(), [], 'tools withdrawn')
+    await assertNoGuide(w, 'core left')
+    await w.addCore()
+    assertGuide(await w.promptSections(), 'core arrived again')
+  })
+  row(sdk, 'TB-ST-06', 2, 'prompt guide: the row is removed, the section is withdrawn with the tools', async (t) => {
+    const w = await worldFor(t, sdk)
+    assertGuide(await w.promptSections(), 'loaded')
+    await w.removeRow()
+    assert.deepEqual(w.toolNames(), [])
+    await assertNoGuide(w, 'row removed')
+  })
+  row(sdk, 'TB-ST-06', 3, 'prompt guide across two resumes: the new scope has exactly one section, the old scope none, the tools still work', async (t) => {
+    const w = await worldFor(t, sdk)
+    for (let resume = 1; resume <= FIXTURE.resumes; resume += 1) {
+      const previous = await w.resume()
+      assert.notEqual(w.live, previous, 'a new live agent')
+      assertGuide(await w.promptSections(), 'after resume ' + resume)
+      assert.deepEqual(guides(await w.promptSections(previous)), [], 'the old generation\'s scope is gone (resume ' + resume + ')')
+      assert.deepEqual(w.toolNames(), Object.values(TOOL).sort())
+      await add(w, [{ title: FIXTURE.title(resume) }])
+    }
   })
 
   // TB-ST-05: the SSE stream (DOC §4): one frame at once, then one per committed change.
