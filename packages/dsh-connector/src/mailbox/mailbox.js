@@ -22,7 +22,7 @@
  */
 import { createHash, randomUUID } from 'node:crypto'
 import {
-  CONTRIBUTED_TYPE_PREFIX, EVENT_TYPE, MAILBOX, QUEUE, REFUSAL, RESOURCE, RESYNC_REASON, RETIREMENT_REASON,
+  CONTRIBUTED_TYPE_PREFIX, EVENT_TYPE, MAILBOX, NOTICE, QUEUE, REFUSAL, RESOURCE, RESYNC_REASON, RETIREMENT_REASON,
 } from '../../mcp-schema/index.js'
 import { EMIT_REFUSAL } from '../../tools/index.js'
 import { canonical } from '../digest.js'
@@ -34,7 +34,11 @@ import { assertDraft, contributorOf, isNonEmptyString } from './draft.js'
 const hash = (text) => createHash(HASH.algorithm).update(text).digest(HASH.encoding)
 
 /** K1 QUEUE: past `maxQueuedInputs`, only these are refused `queue-full`; every other type always commits. */
-const refusedWhenFull = (type) => QUEUE.refusedTypes.includes(type) || (QUEUE.contributedRefused && type.startsWith(CONTRIBUTED_TYPE_PREFIX))
+function refusedWhenFull({ type, payload }) {
+  // A permission handoff is part of the offer lifecycle, not an informational notice.
+  if (type === EVENT_TYPE.notice && payload.code === NOTICE.codes.permissionEscalated) return false
+  return QUEUE.refusedTypes.includes(type) || (QUEUE.contributedRefused && type.startsWith(CONTRIBUTED_TYPE_PREFIX))
+}
 
 function assertPrincipal(principalKey) {
   if (typeof principalKey !== 'string' || principalKey.length === 0) throw new TypeError(MISUSE.principalKey)
@@ -426,7 +430,7 @@ export function createMailbox({ tables, hints, now = Date.now, newId = randomUUI
         const { boxKey } = await boxOf(recipient)
         // K2 EMIT_CHECK_ORDER: a duplicate is answered before queue-full.
         if (duplicateOf(boxKey, draft)) return { ok: false, code: EMIT_REFUSAL.duplicate }
-        if (refusedWhenFull(draft.type) && entryOf(boxKey).pending.size >= queueBound()) return { ok: false, code: REFUSAL.queueFull }
+        if (refusedWhenFull(draft) && entryOf(boxKey).pending.size >= queueBound()) return { ok: false, code: REFUSAL.queueFull }
         return { ok: true, eventId: await append(recipient, boxKey, draft) }
       })
     },

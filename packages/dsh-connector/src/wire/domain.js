@@ -54,7 +54,7 @@ const START_INPUT = TOOLS.find((definition) => definition.name === TOOL.sessionS
  * @param deps.logger - the row's logger
  * @returns `{sessions, interactions, attachments, models, workspaces, provide(ctx), close}`: `provide` serves `dshConnectorSessions`
  */
-export async function createSessionDomain(ctx, { storageDomain, readLimits, routing, stoppedByManager, logger }) {
+export async function createSessionDomain(ctx, { storageDomain, readLimits, autoEscalatePermissions, routing, stoppedByManager, logger }) {
   const now = Date.now
   const warn = (error) => logger.warn(LOG.format, LOG.grantWriteFailed, diagnosticOf(error))
   const managerOf = (sessionId) => routing.managed.managerOf(sessionId)
@@ -85,7 +85,7 @@ export async function createSessionDomain(ctx, { storageDomain, readLimits, rout
     const gate = createPromptGate(ctx, now)
     const delegates = createDelegates({ logger })
     closers.push(() => delegates.close())
-    const permissions = createPermissions(ctx, { routing, managerOf, grants, delegates, gate, wording, titleOf: titleOfSession, readLimits, now, logger })
+    const permissions = createPermissions(ctx, { routing, managerOf, grants, delegates, gate, wording, titleOf: titleOfSession, readLimits, autoEscalatePermissions, now, logger })
     closers.push(() => permissions.close())
     // An ended question's late answer reaches its session as the connector's own message (questions.js).
     const deliver = (sessionId, message) => port.message({ sessionId, message })

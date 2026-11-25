@@ -36,7 +36,7 @@
  * restart (V2 contract §5.1, design §10). Closing the connector (unload, remount) hands every
  * waiting call to the user's stock prompt, as V2's broker did on unload (`close`).
  */
-import { ANSWER_DECISIONS, APPROVAL_DECISION, ARGUMENTS_STATUS, APPROVAL_KIND, EVENT_TYPE, OFFER_ID, REFUSAL, RISK, SETTLED_BY, SETTLEMENT_OUTCOME, formatOfferId } from '../../mcp-schema/index.js'
+import { ANSWER_DECISIONS, APPROVAL_DECISION, ARGUMENTS_STATUS, APPROVAL_KIND, EVENT_TYPE, NOTICE, OFFER_ID, REFUSAL, RISK, SETTLED_BY, SETTLEMENT_OUTCOME, formatOfferId } from '../../mcp-schema/index.js'
 import { RefusalError, diagnosticOf } from '../errors.js'
 import { rootSessionOf } from '../session-info.js'
 import { argumentsOf } from './call-log.js'
@@ -84,7 +84,7 @@ export function decisionRuleBroken(decision, risk, reason, argumentsStatus) {
  * @param {() => number} deps.now - epoch ms
  * @param deps.logger - `{warn}`
  */
-export function createPermissions(ctx, { routing, managerOf, grants, delegates, gate, wording, titleOf, readLimits, now, logger }) {
+export function createPermissions(ctx, { routing, managerOf, grants, delegates, gate, wording, titleOf, readLimits, autoEscalatePermissions = () => false, now, logger }) {
   const warn = (line) => (error) => logger.warn(LOG.format, line, diagnosticOf(error))
   /** approvalId → the live request: its call and how to end it. Memory only (module comment). */
   const live = new Map()
@@ -99,6 +99,7 @@ export function createPermissions(ctx, { routing, managerOf, grants, delegates, 
     choices: [...ANSWER_DECISIONS], title, at: request.at, toolName: request.toolName, callId: request.callId ?? null,
     reason: request.reason, quotes: [], arguments: request.args.text, argumentsStatus: request.args.status,
     ...(request.delegated === undefined ? {} : { delegate: request.delegated }),
+    ...(request.autoEscalatePermissions ? { autoEscalatePermissions: true } : {}),
   })
 
   /** Settles a live offer with `answer` once; @returns whether it was still live. */
@@ -154,6 +155,7 @@ export function createPermissions(ctx, { routing, managerOf, grants, delegates, 
     const request = { ...call, id, offerId: formatOfferId(id, OFFER_ID.firstRevision), at: now(), reason: typeof req.reason === 'string' ? req.reason : '', resolve, escalated: false, principalAnswered: false }
     const delegated = await delegate(request, req.signal)
     if (delegated !== undefined) return delegated
+    request.autoEscalatePermissions = autoEscalatePermissions()
     live.set(id, request)
     const onAbort = () => {
       if (end(id, { cancelled: true })) void routing.withdraw(request.offerId).catch(warn(LOG.withdrawFailed))
@@ -257,6 +259,10 @@ export function createPermissions(ctx, { routing, managerOf, grants, delegates, 
         // Resolved, not ended: the request stays live while the prompt shows (route).
         request.escalated = true
         request.resolve({ escalated: true })
+        if (request.autoEscalatePermissions) {
+          // The stock prompt remains the arbiter. A failed handoff notice never undoes escalation.
+          await routing.notice(request.sessionId, request.offerId, NOTICE.codes.permissionEscalated, trimmed(reason)).catch(warn(LOG.handoffFailed))
+        }
         return Object.freeze({ ok: true })
       }
       const broken = decisionRuleBroken(decision, risk, reason, request.args.status)

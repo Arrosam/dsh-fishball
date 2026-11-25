@@ -71,7 +71,7 @@ const DEFINITIONS = [
   tool(TOOL.approvalsList, 'List the live permission requests, questions and plan reviews of a session you manage.',
     object({ sessionId: string() }),
     success({ approvals: array(descriptor()) })),
-  tool(TOOL.approvalAnswer, 'Answer a permission request by its current offer id.',
+  tool(TOOL.approvalAnswer, 'Answer a permission request by its current offer id. When automatic permission cards are enabled, escalate puts an Allow once / Reject card and an action notice in Fishball automatically; do not also call ask_user or send a duplicate notice.',
     object({ sessionId: string(), approvalId: string(), offerId: string(), answer: approvalAnswer() }),
     success({ accepted: constant(true) }, { grantId: string(), expiresAt: time() })),
   tool(TOOL.questionAnswer, 'Answer a question or plan review by its current offer id; questionId is its approvalId.',

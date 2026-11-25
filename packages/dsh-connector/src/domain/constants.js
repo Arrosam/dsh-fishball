@@ -199,6 +199,7 @@ export const ANSWER_RULE = Object.freeze({
 export const LOG = Object.freeze({
   format: '%s (%s)',
   offerFailed: 'domain: a request could not be offered; it goes to the user',
+  handoffFailed: 'domain: a permission handoff notice could not be committed',
   settleFailed: 'domain: a settlement could not be committed',
   withdrawFailed: 'domain: a withdrawn offer could not be retired',
   grantWriteFailed: 'domain: a grant could not be written',

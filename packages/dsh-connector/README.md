@@ -128,6 +128,15 @@ re-pairing. Pair-only clients retain their existing restricted surface.
 The settings page and the server preserve nonblank names verbatim, including leading/trailing
 spaces. A whitespace-only setting counts as unset.
 
+### Automatic permission cards in Fishball
+
+On by default. Set `requests.autoEscalatePermissions` to `false` to turn it off for new
+requests. Fishball gets one turn to decide an uncovered managed permission. If it escalates, or
+finishes that turn without deciding, the system shows an **Allow once / Reject** card in Fishball
+and sends an action notice when the target has Connector UI. The session's own approval prompt
+also works; the first answer wins. Standing grants and delegate decisions still apply first.
+Turning this off preserves the previous session-only escalation and manual `ask_user` behavior.
+
 ### Limits
 
 Each limit is a whole number of at least 1, with no maximum.
@@ -209,8 +218,9 @@ routing.
   you answer first, the agent receives your answer as the outcome.
 - **A permission request waits for the agent.** Your own prompt shows when the agent escalates the
   request, or when the session leaves the agent's management.
-- **An escalated request belongs to you.** It leaves the agent's lists, and the agent can no longer
-  answer it. Your answer settles it, and the agent receives that outcome.
+- **Escalation does not decide the request.** The first valid answer on either card (or a valid
+  answer from its manager) settles it. The connector sends the outcome of a session-card answer
+  to the manager.
 - A session's management ends with `session_release` (the agent's own), **Take back** (yours), or
   when its token is switched off or deleted. Requests still waiting then go to you.
 - Inside a managed session, the model has the tool `message_agent` for writing to its agent.

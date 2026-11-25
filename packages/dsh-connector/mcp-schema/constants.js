@@ -950,6 +950,7 @@ export const NOTICE = Object.freeze({
     // a message (the user, 2026-11-21: "Keep it open, send the answer later"). Correlation id: the
     // question's current offer id.
     questionCallEnded: 'question-call-ended',
+    permissionEscalated: 'permission-escalated',
   }),
 })
 

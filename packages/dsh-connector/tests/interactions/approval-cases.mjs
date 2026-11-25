@@ -18,7 +18,7 @@ import {
 
 const SET = RELAYED.setting
 /** The descriptor's required keys and its optional ones (K1 shapes.js `descriptor`), for a permission request. */
-const DESCRIPTOR_KEYS = ['approvalId', 'arguments', 'argumentsStatus', 'at', 'callId', 'choices', 'kind', 'offerId', 'prompt', 'quotes', 'reason', 'title', 'toolName']
+const DESCRIPTOR_KEYS = ['approvalId', 'arguments', 'argumentsStatus', 'at', 'autoEscalatePermissions', 'callId', 'choices', 'kind', 'offerId', 'prompt', 'quotes', 'reason', 'title', 'toolName']
 
 /** A refused answer: the code, still listed, the call still waiting (no outcome). */
 async function assertRefusedAnswer(w, p, r, a, code) {

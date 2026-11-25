@@ -34,7 +34,7 @@ import { APPROVAL_LISTENER } from '../../mcp-schema/index.js'
 import { diagnosticOf } from '../errors.js'
 import { serialChain } from '../serial.js'
 import { SYNC_REASON } from '../tokens/index.js'
-import { HMR_TRANSACTION_FIELD, LOG, MISUSE, PATH_OP, SETTING, SETTINGS_SERVICE } from './constants.js'
+import { AUTO_ESCALATE_PERMISSIONS_DEFAULT, HMR_TRANSACTION_FIELD, LOG, MISUSE, PATH_OP, SETTING, SETTINGS_SERVICE } from './constants.js'
 
 export { SETTING } from './constants.js'
 export { SETTINGS_SCHEMA } from './schema.js'
@@ -70,6 +70,7 @@ export function createSettings({ ctx, config, namespace, limits, volatileEvent, 
     maxMessageBytes: limits().maxMessageBytes,
     approvalPort: liveAt(config, SETTING.approvalPort) ?? APPROVAL_LISTENER.defaultPort,
     dshName: liveAt(config, SETTING.dshName),
+    autoEscalatePermissions: liveAt(config, SETTING.autoEscalatePermissions) ?? AUTO_ESCALATE_PERMISSIONS_DEFAULT,
   })
 
   function fire() {

@@ -46,6 +46,7 @@ export const descriptor = () => object(
   {
     arguments: string(), argumentsStatus: oneOfStrings(Object.values(ARGUMENTS_STATUS)), questions: array(questionItem()),
     delegate: object({ name: string(), outcome: oneOfStrings(Object.values(DELEGATE_OUTCOME)) }, { reason: string() }),
+    autoEscalatePermissions: boolean(),
   },
 )
 

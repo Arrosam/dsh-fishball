@@ -7,8 +7,8 @@
  *   K2's shared code list where K2 has it (`conflict`, `forbidden`);
  * - NOTICE.codes stays an empty frozen object (no notice code is frozen; C-ROUTE produces none);
  *   NOTICE.codeGrammar is unchanged. Superseded for NOTICE.codes by the managed-request lifecycle fix
- *   (requirement R9, relayed by the lead 2026-11-21): codes is a frozen object with exactly one key,
- *   questionCallEnded = 'question-call-ended', matching codeGrammar; index.d.ts types it literally;
+ *   (requirement R9, relayed by the lead 2026-11-21) and automatic permission handoff: codes is
+ *   frozen, each code matches codeGrammar, and index.d.ts types each code literally;
  * - index.d.ts declares, among the internal interfaces, ManagedState (five members), ManagedRecord,
  *   ManageResult, ReleaseResult, and `export declare const MANAGED_REFUSAL` with literal types;
  * - README: the "Managed state" section, ManagedState in "Internal module interfaces", the user
@@ -35,12 +35,12 @@ export const REFUSAL_KEY_OF = Object.freeze({
 /** K2's shared code list (dsh-agent-connector/tools `SHARED_CODES`) and the MANAGED_REFUSAL keys whose value it has. */
 export const K2_SHARED = Object.freeze({ exportName: 'SHARED_CODES', keys: Object.freeze(['alreadyManaged', 'otherManager']) })
 
-/** Spec item 2 as R9 amends it: NOTICE's fields; `codes` holds exactly the one frozen code. */
+/** Spec item 2 as amended: NOTICE's fields and exact code vocabulary. */
 export const NOTICE_SHAPE = Object.freeze({
   name: 'NOTICE',
   fields: Object.freeze(['codeGrammar', 'codes']),
-  codes: Object.freeze({ questionCallEnded: 'question-call-ended' }),
-  /** index.d.ts types the code map as an object of readonly string literals: `{ readonly questionCallEnded: "question-call-ended" }`. */
+  codes: Object.freeze({ questionCallEnded: 'question-call-ended', permissionEscalated: 'permission-escalated' }),
+  /** index.d.ts types the code map as an object of readonly string literals. */
   codesType: (codes) => new RegExp('^\\{\\s*' + Object.entries(codes).map(([k, v]) => 'readonly\\s+' + k + '\\s*:\\s*["\']' + v + '["\']').join('\\s*[;,]?\\s*') + '\\s*[;,]?\\s*\\}$'),
 })
 

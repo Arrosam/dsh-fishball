@@ -106,11 +106,10 @@ export function registerK1cCases(sdk) {
   }
 
   // ======================================================================================
-  // Spec 2: NOTICE.codes — superseded by R9 (the managed-request lifecycle fix, 2026-11-21):
-  // exactly one frozen code, questionCallEnded (was: 0 keys).
+  // Spec 2: NOTICE.codes — exact, frozen notice vocabulary.
   // ======================================================================================
   const codeCount = Object.keys(NOTICE_SHAPE.codes).length
-  caseTest(sdk, 'K1c-BVA-01', 1, `${NOTICE_SHAPE.name}.codes is a frozen plain object with exactly ${codeCount} key (${Object.keys(NOTICE_SHAPE.codes)}), each a string matching codeGrammar (R9 supersedes 0 keys)`, (mod) => {
+  caseTest(sdk, 'K1c-BVA-01', 1, `${NOTICE_SHAPE.name}.codes is a frozen plain object with exactly ${codeCount} keys (${Object.keys(NOTICE_SHAPE.codes)}), each a string matching codeGrammar`, (mod) => {
     const notice = exported(mod, NOTICE_SHAPE.name)
     const codes = notice.codes
     assert.ok(isObject(codes) && !Array.isArray(codes), 'codes is not a plain object')
@@ -119,7 +118,7 @@ export function registerK1cCases(sdk) {
     assert.deepEqual({ ...codes }, NOTICE_SHAPE.codes)
     for (const value of Object.values(codes)) assert.match(value, notice.codeGrammar)
   })
-  caseTest(sdk, 'K1c-EP-02', 1, `${NOTICE_SHAPE.name} keeps exactly {${NOTICE_SHAPE.fields}}, codeGrammar a RegExp; index.d.ts types codes as exactly its literal (R9 supersedes the empty record)`, (mod) => {
+  caseTest(sdk, 'K1c-EP-02', 1, `${NOTICE_SHAPE.name} keeps exactly {${NOTICE_SHAPE.fields}}, codeGrammar a RegExp; index.d.ts types codes as exactly those literals`, (mod) => {
     const notice = exported(mod, NOTICE_SHAPE.name)
     assert.deepEqual(sorted(Object.keys(notice)), sorted(NOTICE_SHAPE.fields))
     assert.ok(notice.codeGrammar instanceof RegExp, 'codeGrammar is not a RegExp')
