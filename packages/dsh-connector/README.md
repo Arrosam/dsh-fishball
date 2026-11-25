@@ -132,8 +132,8 @@ spaces. A whitespace-only setting counts as unset.
 
 On by default. For a managed session, the connector rejects a new permission request before asking
 anyone if its arguments are truncated or unavailable and no standing grant already covers the call.
-The requesting session gets a reason and retry guidance in the tool result, or at its next step
-if no logged call can be matched. The connector logs the rejection at info level
+The requesting session gets a reason and retry guidance in the tool result when possible.
+Otherwise, the connector queues best-effort feedback for the session's next step without waking it. The connector logs the rejection at info level
 without including the arguments. There is no approval prompt, Fishball card, or action notification.
 Set `requests.autoRejectIncompleteArguments` to `false` to restore the previous approval path;
 this does not change an already pending request.

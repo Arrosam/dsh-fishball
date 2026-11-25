@@ -52,6 +52,7 @@ export const PLUGIN_STOP = Object.freeze({
 /** DSH's approval service (dsh-user-approval, both SDKs): the answerer waterfall and its outcomes. */
 export const APPROVAL = Object.freeze({
   waterfall: 'approval/request',
+  rejectedErrorCode: 'APPROVAL_REJECTED',
   outcome: Object.freeze({ allowedOnce: 'allowed-once', rejected: 'rejected', cancelled: 'cancelled', unavailable: 'unavailable' }),
 })
 
@@ -162,6 +163,7 @@ export const WORDING = Object.freeze({
   rejected: (reason) => `The managing agent rejected this call: ${reason}`,
   incomplete: 'The connector rejected this call because its arguments were incomplete. Resend with complete arguments and a short justification. For shell commands, split the work into shorter commands, each well under about 2,000 characters.',
   keySeparator: '|',
+  incompleteContext: (tool, callId) => `Permission request for ${JSON.stringify(tool)}${callId === undefined ? '' : ` (call ${JSON.stringify(callId)})`}.`,
   incompleteNote: Object.freeze({
     source: Object.freeze({ kind: 'dsh-connector-note', form: 'notice' }),
     summary: 'dsh-connector: incomplete permission arguments',
