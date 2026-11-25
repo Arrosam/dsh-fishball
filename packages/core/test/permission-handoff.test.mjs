@@ -20,7 +20,8 @@ const HANDOFF = Object.freeze({
 })
 const { EVENT_TYPE: EVENT, TOOL, APPROVAL_DECISION: DECISION, RISK } = K1
 const testOptions = { timeout: C.budget.boot + C.budget.call }
-const standalone = multiWorld(HANDOFF.sdk)
+// The scripted model calls native tools directly; PTC exposes them through run_code instead.
+const standalone = multiWorld(HANDOFF.sdk, { coreConfig: { ptc: false } })
 const notifyTool = {
   name: HANDOFF.notify, description: 'Show a notice to the user.',
   inputSchema: {

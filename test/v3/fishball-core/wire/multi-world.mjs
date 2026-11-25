@@ -13,7 +13,7 @@ import { boot, request } from './subject.mjs'
 import { credentialNamesOf } from './targets-oracle.mjs'
 
 /** One booted Fishball DSH per call, stopped after the file; fakes stopped with it. */
-export function multiWorld(sdk, { members = ['fishball-core'], child, liveChild = false } = {}) {
+export function multiWorld(sdk, { members = ['fishball-core'], child, liveChild = false, coreConfig } = {}) {
   const live = []
   after(async () => { for (const stop of live.splice(0).reverse()) await stop().catch(() => {}) })
   /**
@@ -22,7 +22,7 @@ export function multiWorld(sdk, { members = ['fishball-core'], child, liveChild 
    * to DSH_AGENT_TOKEN when its row starts (the instance's handoff at a child start).
    */
   return async function open({ home, expect, child: childNow = child, handoff } = {}) {
-    const h = await boot(sdk, members, home, {}, { ...(childNow === undefined ? {} : { child: childNow }), ...(handoff === undefined ? {} : { handoff }), liveChild })
+    const h = await boot(sdk, members, home, {}, { ...(childNow === undefined ? {} : { child: childNow }), ...(handoff === undefined ? {} : { handoff }), liveChild, coreConfig })
     live.push(() => h.stop())
     // A restart: the stored records are read after boot; wait (harness only) until `expect` targets are listed.
     if (expect !== undefined) await until(async () => ((await h.call('targets'))?.targets.length ?? 0) >= expect, MULTI.budget.connectMs, MULTI.budget.pollMs)
