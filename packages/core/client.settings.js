@@ -153,11 +153,8 @@ window.__ModuleLoader__.load({
       connectPrimary: Object.freeze([SHARED.connectState.needsAuthorization, SHARED.connectState.failed]),
       button: Object.freeze({ primary: 'primary', outline: 'outline' }),
       icon: 14,
-      /**
-       * The model control: one native select whose option values are the catalog's (provider, model,
-       * effort) triples as JSON, plus the empty "DSH's default" option that clears the field.
-       */
-      model: Object.freeze({ unset: '', effortless: null, catalog: Object.freeze({ loading: 'loading', ready: 'ready', failed: 'failed' }) }),
+      /** The model select's empty option clears the setting, leaving DSH's default in use. */
+      model: Object.freeze({ unset: '', catalog: Object.freeze({ loading: 'loading', ready: 'ready', failed: 'failed' }) }),
       /**
        * DSH's remote session face (`remote.session`, dsh-api-session-controller, both SDKs), looked
        * up with `ctx.get`, never as `ctx.remote.session`: the page does not inject it, and Cordis
@@ -226,7 +223,9 @@ window.__ModuleLoader__.load({
       modelTitle: 'Fishball\'s model',
       modelHint: 'The model Fishball\'s session uses. Until you pick one it uses this DSH\'s default model.',
       modelDefault: 'This DSH\'s default model',
-      modelEffort: '{model} · {effort}',
+      modelEffort: 'Reasoning effort',
+      modelEffortUnset: 'Not set',
+      modelEffortUnavailable: 'Saved reasoning effort is unavailable: {effort}',
       modelLoading: 'Loading the models…',
       modelNone: 'No model is configured in this DSH yet.',
       modelFailed: 'The models could not be read.',
@@ -318,7 +317,9 @@ window.__ModuleLoader__.load({
       modelTitle: 'Fishball 的模型',
       modelHint: 'Fishball 会话使用的模型。选择之前使用此 DSH 的默认模型。',
       modelDefault: '此 DSH 的默认模型',
-      modelEffort: '{model} · {effort}',
+      modelEffort: '推理强度',
+      modelEffortUnset: '未设置',
+      modelEffortUnavailable: '已保存的推理强度不可用：{effort}',
       modelLoading: '正在读取模型…',
       modelNone: '此 DSH 还没有配置模型。',
       modelFailed: '无法读取模型。',
@@ -729,33 +730,33 @@ window.__ModuleLoader__.load({
         alert === null ? null : h('p', { className: PAGE.css.error, role: 'alert' }, alert))
     }
 
-    /**
-     * The model choices of DSH's catalog (`ModelCatalog`, dsh-api-session-controller, both SDKs):
-     * one per model, and one per advertised reasoning effort, each `{value, label, selection}`.
-     * fishball-ui's model dialog restates this list (a chunk imports no module, and fishball-ui
-     * imports nothing of core, Q-G2); keep the two in step.
-     */
-    function modelChoices(catalog, t) {
-      return (catalog?.groups ?? []).flatMap((group) => group.models.flatMap((model) => {
-        const base = { provider: group.id, model: model.id }
-        const label = group.name + ' / ' + model.name
-        const efforts = model.reasoning?.efforts ?? []
-        const of = (selection, text) => ({ value: JSON.stringify([selection.provider, selection.model, selection.reasoningEffort ?? PAGE.model.effortless]), label: text, selection })
-        return efforts.length === 0 ? [of(base, label)] : efforts.map((effort) => of({ ...base, reasoningEffort: effort.id }, t('modelEffort', { model: label, effort: effort.name })))
+    const modelValue = (selection) => selection?.provider === undefined ? PAGE.model.unset : JSON.stringify([selection.provider, selection.model])
+
+    /** DSH's ModelCatalog (remote.session.modelCatalog) advertises efforts under model.reasoning. */
+    function modelChoices(catalog) {
+      return (catalog?.groups ?? []).flatMap((group) => group.models.map((model) => {
+        const selection = { provider: group.id, model: model.id }
+        return { value: modelValue(selection), label: group.name + ' / ' + model.name, selection, reasoning: model.reasoning }
       }))
     }
-    const choiceValue = (selection) => (selection?.provider === undefined ? PAGE.model.unset
-      : JSON.stringify([selection.provider, selection.model, selection.reasoningEffort ?? PAGE.model.effortless]))
+
+    function modelSelection(choice, currentEffort) {
+      const efforts = choice.reasoning?.efforts ?? []
+      const reasoningEffort = efforts.find((effort) => effort.id === currentEffort)?.id
+        ?? efforts.find((effort) => effort.id === choice.reasoning?.defaultEffort)?.id
+        ?? efforts[0]?.id
+      return reasoningEffort === undefined ? choice.selection : { ...choice.selection, reasoningEffort }
+    }
 
     /**
-     * Fishball's model (F-WIRE): a native select over DSH's catalog, written at once to core's
-     * `model` field through DSH's own form (`configForms`), or cleared for DSH's default. It reads
-     * the namespace's live value, so the model dialog's choice (fishball-ui) shows here too.
+     * Fishball's model (F-WIRE): both native selects write the same model field through DSH's
+     * configForms, or clear it for DSH's default. The live form snapshot is the source of truth.
      */
     function ModelControl({ ctx, form, t }) {
       const snapshot = React.useSyncExternalStore((listener) => form.subscribe(listener), () => form.getSnapshot())
       const [catalog, setCatalog] = React.useState({ status: PAGE.model.catalog.loading })
       const [saveFailed, setSaveFailed] = React.useState(false)
+      const [saving, setSaving] = React.useState(false)
       React.useEffect(() => {
         let live = true
         // Read on use, never injected: a DSH whose remote session face is missing shows the page
@@ -767,23 +768,53 @@ window.__ModuleLoader__.load({
         return () => { live = false }
       }, [])
       const id = React.useId()
-      const choices = catalog.status === PAGE.model.catalog.ready ? modelChoices(catalog.value, t) : []
-      const current = choiceValue(snapshot.value?.[SHARED.model])
-      const pick = async (value) => {
-        const choice = choices.find((entry) => entry.value === value)
+      const effortId = React.useId()
+      const choices = catalog.status === PAGE.model.catalog.ready ? modelChoices(catalog.value) : []
+      const stored = snapshot.value?.[SHARED.model]
+      const current = modelValue(stored)
+      const selected = choices.find((entry) => entry.value === current)
+      const efforts = selected?.reasoning?.efforts ?? []
+      const currentEffort = stored?.reasoningEffort
+      const effortSupported = efforts.some((effort) => effort.id === currentEffort)
+      const pick = async (selection) => {
+        // Both controls write the whole selection. Wait for the committed snapshot before
+        // accepting another change, without disabling the focused native select.
+        if (saving) return
+        setSaving(true)
         let ok = false
-        try { ok = await (choice === undefined ? form.unset(SHARED.model) : form.set(SHARED.model, choice.selection)) } catch { ok = false }
+        try { ok = await (selection === undefined ? form.unset(SHARED.model) : form.set(SHARED.model, selection)) } catch { ok = false }
         setSaveFailed(!ok)
+        setSaving(false)
+      }
+      const pickModel = (value) => {
+        const choice = choices.find((entry) => entry.value === value)
+        if (choice) void pick(modelSelection(choice, currentEffort))
+        else if (value === PAGE.model.unset) void pick(undefined)
       }
       const note = catalog.status === PAGE.model.catalog.loading ? t('modelLoading') : catalog.status === PAGE.model.catalog.failed ? t('modelFailed') : choices.length === 0 ? t('modelNone') : null
       return h('section', { className: PAGE.css.card, 'data-fishball-model': true, 'aria-label': t('modelTitle') },
         h('div', { className: PAGE.css.head }, h('label', { className: PAGE.css.title, htmlFor: id }, t('modelTitle'))),
         h('div', { className: PAGE.css.row },
-          h('select', { id, className: PAGE.css.select, value: current, disabled: !snapshot.writable, onChange: (event) => void pick(event.target.value), 'data-fishball-model-select': true },
+          h('select', { id, className: PAGE.css.select, value: current, disabled: !snapshot.writable, 'aria-disabled': saving, onChange: (event) => pickModel(event.target.value), 'data-fishball-model-select': true },
             h('option', { value: PAGE.model.unset }, t('modelDefault')),
-            // A saved choice the catalog no longer lists stays shown, so the select never pretends it is unset.
-            current !== PAGE.model.unset && !choices.some((entry) => entry.value === current) ? h('option', { value: current }, current) : null,
+            // Keep an unlisted saved choice visible without offering it as a new choice.
+            current !== PAGE.model.unset && !selected ? h('option', { value: current, disabled: true }, JSON.stringify([stored.provider, stored.model, stored.reasoningEffort ?? null])) : null,
             choices.map((entry) => h('option', { key: entry.value, value: entry.value }, entry.label)))),
+        efforts.length === 0 ? null : h('div', { className: PAGE.css.group },
+          h('label', { className: PAGE.css.title, htmlFor: effortId }, t('modelEffort')),
+          h('select', {
+            id: effortId, className: PAGE.css.select, value: effortSupported ? currentEffort : PAGE.model.unset, disabled: !snapshot.writable, 'aria-disabled': saving,
+            onChange: (event) => {
+              const reasoningEffort = event.target.value
+              if (efforts.some((effort) => effort.id === reasoningEffort)) void pick({ ...selected.selection, reasoningEffort })
+            },
+            'data-fishball-effort-select': true,
+          },
+          // A missing or stale stored effort is not a supported choice. Do not silently present a
+          // fallback as saved; fallback applies when the user changes models.
+          effortSupported ? null : h('option', { value: PAGE.model.unset, hidden: true, disabled: true }, t('modelEffortUnset')),
+          efforts.map((effort) => h('option', { key: effort.id, value: effort.id }, effort.name)))),
+        selected && currentEffort && !effortSupported ? h('p', { className: PAGE.css.hint }, t('modelEffortUnavailable', { effort: currentEffort })) : null,
         h('p', { className: PAGE.css.hint }, note ?? t('modelHint')),
         saveFailed ? h('p', { className: PAGE.css.error, role: 'alert' }, t('modelSaveFailed')) : null)
     }
