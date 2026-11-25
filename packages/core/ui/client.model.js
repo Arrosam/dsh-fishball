@@ -103,10 +103,8 @@ window.__ModuleLoader__.load({
      * One choice per model, and one per advertised reasoning effort (DSH `ModelCatalog`, both SDKs),
      * grouped by the catalog's provider groups (a group without a model is left out). `label` is the
      * choice's full name (`<group> / <model>`, with ` · <effort>`), its accessible name; `name` and
-     * `effort` are what the row shows under its group's heading. Core's settings page builds the same
-     * list for its picker (core client.settings.js `modelChoices`): restated, not shared, because a
-     * browser chunk imports no module and the two are separate packages (no client library chunk
-     * exists in the set; client.js says the same).
+     * `effort` are what the row shows under its group's heading. This first-run dialog uses a
+     * list of buttons; core's settings page has separate model and effort selects.
      */
     function groupsOf(catalog, t) {
       return (catalog?.groups ?? []).map((group) => ({ id: group.id, name: group.name, choices: group.models.flatMap((model) => {
