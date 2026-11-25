@@ -32,6 +32,7 @@ window.__ModuleLoader__.load({
       ns: 'dshInstanceFishball',
       slot: Object.freeze({ tab: 'plugins.tab', addActions: 'plugins.add.actions', detailActions: 'plugins.detail.actions', overlay: 'shell.overlay' }),
       id: Object.freeze({ tab: 'dsh-instance-fishball', addAction: 'dsh-instance-fishball-install', detailAction: 'dsh-instance-fishball-detail', dialog: 'dsh-instance-fishball-install' }),
+      remotePluginManager: 'remote.pluginManager',
       bundleSubject: 'bundle',
     })
     /** The instance's routes (src/host/child-plugin-routes.js CHILD_PLUGIN_ROUTE), page-relative. */
@@ -320,8 +321,9 @@ window.__ModuleLoader__.load({
     const codeText = (t, code) => (KNOWN_CODES.includes(code) ? t('code.' + code) : t('refused', { code }))
 
     /**
-     * The child's plugins (GET plugins) and the main DSH's bundles (DSH's own listBundles), read
-     * again after a change. One owner for both, shared by the tab, the menu item and the page buttons.
+     * The child's plugins (GET plugins) and the main DSH's bundles (DSH's own listBundles, resolved
+     * via `remote.getPluginManager()` or `remote.pluginManager`), read again after a change. One
+     * owner for both, shared by the tab, the menu item, the page buttons, and onboarding.
      */
     function createInventory(remote) {
       // `protected`: the bundles the instance owns (the Host's CHILD_OWN_BUNDLES), which get no button.
@@ -336,7 +338,9 @@ window.__ModuleLoader__.load({
       }
       const readMain = async () => {
         try {
-          const answer = await remote.pluginManager.listBundles()
+          const pm = typeof remote?.getPluginManager === 'function' ? remote.getPluginManager() : remote?.pluginManager
+          if (typeof pm?.listBundles !== 'function') return
+          const answer = await pm.listBundles()
           if (answer?.ok) main.set(answer.value)
         } catch { /* the page buttons then offer only what the child list tells */ }
       }
@@ -351,15 +355,39 @@ window.__ModuleLoader__.load({
     const closeDialog = () => dialogRequest.set(null)
 
     /**
+     * Reads `remote.pluginManager` via unchecked `ctx.get('remote.pluginManager')` so Cordis's
+     * strict context proxy does not throw `cannot get property "remote.pluginManager" without inject`.
+     */
+    function resolvePluginManager(ctx, fallbackRemote) {
+      const viaGet = typeof ctx?.get === 'function' ? ctx.get(FEATURE.remotePluginManager) : undefined
+      if (viaGet !== undefined) return viaGet
+      try { return fallbackRemote?.pluginManager } catch { return undefined }
+    }
+
+    /**
      * One shared child-plugin inventory per loaded page, so the Plugins → Fishball tab and the
      * first-run onboarding wizard stay in sync when a plugin is installed through the shared dialog.
-     * The underlying `remote` reference updates on reload/HMR.
+     * The underlying `remote` / `pluginManager` resolvers update on reload/HMR, preferring the
+     * primary `fishballPlugin` resolver over the secondary onboarding caller's resolver so
+     * disposing onboarding never decouples `fishballPlugin`.
      */
     let sharedInventory
     let currentRemote
-    function getInventory(remote) {
+    let primaryGetPluginManager
+    let secondaryGetPluginManager
+    function getInventory(remote, getPluginManager, isPrimary = false) {
       currentRemote = remote
-      sharedInventory ??= createInventory({ pluginManager: { listBundles: () => currentRemote.pluginManager.listBundles() } })
+      if (typeof getPluginManager === 'function') {
+        if (isPrimary) primaryGetPluginManager = getPluginManager
+        else secondaryGetPluginManager = getPluginManager
+      }
+      sharedInventory ??= createInventory({
+        getPluginManager: () => {
+          const resolved = primaryGetPluginManager?.() ?? secondaryGetPluginManager?.()
+          if (resolved !== undefined) return resolved
+          try { return currentRemote?.pluginManager } catch { return undefined }
+        },
+      })
       return sharedInventory
     }
 
@@ -694,7 +722,7 @@ window.__ModuleLoader__.load({
         ctx.effect(() => shared.mountStyle(FEATURE.name, ownCss(layout.style)), FEATURE.name + ': styles')
         const CLS = layout.classes
         const listen = (name, listener) => ctx.remote.$on(name, listener)
-        const inventory = getInventory(ctx.remote)
+        const inventory = getInventory(ctx.remote, () => resolvePluginManager(ctx, ctx.remote), true)
         // DSH's Plugins page reads its list again on these; so do the Fishball lists.
         ctx.effect(() => {
           const offs = [listen(HOST_EVENT.changed, () => void inventory.refresh()), ctx.on(HOST_EVENT.reset, () => void inventory.refresh())]
@@ -713,6 +741,7 @@ window.__ModuleLoader__.load({
     module.exports.fishballKit = Object.freeze({
       openDialog,
       getInventory,
+      resolvePluginManager,
       useStore,
       link: LINK,
     })

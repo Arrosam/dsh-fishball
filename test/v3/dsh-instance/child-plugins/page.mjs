@@ -88,7 +88,7 @@ function primitives(React) {
  *   answer for one request, sent as JSON (a promise that never settles holds the request); undefined
  *   falls through to the default answers below.
  */
-export async function openPage(t, sdk, { lang = 'en', status = { state: 'ready', code: null }, mainBundles = [], fishball = [], respond = () => undefined } = {}) {
+export async function openPage(t, sdk, { lang = 'en', status = { state: 'ready', code: null }, mainBundles = [], fishball = [], strictRemoteProxy = false, provideRemotePluginManager = false, respond = () => undefined } = {}) {
   const world = { status: { detail: null, notice: null, busy: false, ...status }, mainBundles, fishball, requests: [], errors: [] }
   const answer = (method, pathname, body) => {
     const scripted = respond(method, pathname, body)
@@ -131,13 +131,19 @@ export async function openPage(t, sdk, { lang = 'en', status = { state: 'ready',
   const snapshot = Object.freeze({ status: 'ready', value: { enabled: true }, base: { enabled: true }, user: {}, revision: 1, writable: true })
   const form = { getSnapshot: () => snapshot, subscribe: () => () => {}, mutate: async () => true }
   const configForms = { get: () => form, whileServed(_ns, register) { const dispose = register(); return () => { if (typeof dispose === 'function') dispose() } } }
+  const pluginManagerService = {
+    listBundles: async () => ({ ok: true, value: structuredClone(world.mainBundles) }),
+  }
   const remote = new Proxy({}, {
     get(_t, ns) {
       if (typeof ns !== 'string' || ns === 'then') return undefined
       if (ns === '$on') return () => () => {}
+      if (strictRemoteProxy && ns === 'pluginManager') {
+        throw new Error('cannot get property "remote.pluginManager" without inject')
+      }
       return new Proxy({}, { get(_t2, name) {
         if (typeof name !== 'string' || name === 'then') return undefined
-        if (name === 'listBundles') return async () => ({ ok: true, value: structuredClone(world.mainBundles) })
+        if (name === 'listBundles') return pluginManagerService.listBundles
         return async () => ({ ok: false, error: { message: 'not scripted' } })
       } })
     },
@@ -148,6 +154,7 @@ export async function openPage(t, sdk, { lang = 'en', status = { state: 'ready',
   root.provide('locale', services.locale)
   root.provide('configForms', configForms)
   root.provide('remote', remote)
+  if (provideRemotePluginManager) root.provide('remote.pluginManager', pluginManagerService)
   const plugins = applyPlugins(root, graph, table, world.errors)
   const settleAll = async () => { await settle(); while (loads.size > 0) { await Promise.allSettled([...loads]); await settle() } }
   await settleAll()

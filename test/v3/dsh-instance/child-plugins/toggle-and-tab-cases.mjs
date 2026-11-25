@@ -16,8 +16,8 @@ import { pathToFileURL } from 'node:url'
 import { importInstance } from '../../../private-skills/support/sdk.mjs'
 import { BOOT, runtimeOf } from '../../fishball-core/package/constants.mjs'
 import { routeContext } from '../host/fakes.mjs'
-import { APPLIED, CHILD, CODE, HTTP, PAGE, PROTECTED, ROUTE } from './constants.mjs'
-import { openPage, tabEntries, wordsOf } from './page.mjs'
+import { APPLIED, CHILD, CODE, FIXTURE, HTTP, PAGE, PROTECTED, ROUTE } from './constants.mjs'
+import { detailEntry, openPage, tabEntries, wordsOf } from './page.mjs'
 
 const TOGGLE = Object.freeze({
   route: '/api/dsh-instance/plugins/toggle',
@@ -606,6 +606,71 @@ export function registerToggleAndTabCases(sdk) {
       assert.deepEqual(JSON.parse(page.world.requests.find((r) => r.path === ROUTE.uninstall).body), { name: TOGGLE.pluginA })
       assert.ok(await page.until(() => page.byAttr(tabKey, TOGGLE.attr.uninstall).length === 0), 'uninstalled plugin removed after refresh')
       assert.deepEqual(page.world.errors, [])
+    })
+
+    describe('Strict Cordis proxy regression: client.fishball.js DetailAction & inventory (ctx.remote.pluginManager throws)', () => {
+      test('EP: DetailAction reads main bundles via ctx.get("remote.pluginManager") and renders [data-fishball-use] for official shipped bundle', async (t) => {
+        const name = FIXTURE.shippedOfficial
+        const info = {
+          name, version: '1.0.0', official: true, availability: 'installation',
+          installed: false, enabled: true, optional: true, removable: false, rows: [], overrides: [],
+        }
+        const page = await openPage(t, sdk, {
+          strictRemoteProxy: true,
+          provideRemotePluginManager: true,
+          mainBundles: [info],
+          fishball: [],
+        })
+        const subject = { kind: 'bundle', pkg: { name, version: '1.0.0', installed: false, availability: 'installation', official: true, enabled: true, rows: [] } }
+        await page.mount('detail', detailEntry(page).Component, { subject })
+
+        const useReady = await page.until(() => page.byAttr('detail', 'data-fishball-use').length === 1)
+        assert.ok(useReady, 'expected [data-fishball-use] rendered via ctx.get("remote.pluginManager")')
+        const [useBtn] = page.byAttr('detail', 'data-fishball-use')
+        assert.equal(wordsOf(useBtn), PAGE.button.use)
+        await page.press(useBtn)
+        assert.ok(await page.until(() => page.world.requests.some((r) => r.method === 'POST' && r.path === ROUTE.use)))
+        assert.deepEqual(JSON.parse(page.world.requests.find((r) => r.path === ROUTE.use).body), { name })
+        assert.deepEqual(page.world.errors, [])
+      })
+
+      test('EP: DetailAction reads main bundles via ctx.get("remote.pluginManager") and renders [data-fishball-install-to] for third-party bundle with source', async (t) => {
+        const name = 'fbtest-strict-proxy-pkg'
+        const info = {
+          name, version: '1.0.0', official: false, availability: 'profile',
+          installed: true, enabled: true, optional: false, removable: true,
+          source: '/fbtest/source/strict-proxy-pkg.tgz', rows: [], overrides: [],
+        }
+        const page = await openPage(t, sdk, {
+          strictRemoteProxy: true,
+          provideRemotePluginManager: true,
+          mainBundles: [info],
+          fishball: [],
+        })
+        const subject = { kind: 'bundle', pkg: { name, version: '1.0.0', installed: true, availability: 'profile', official: false, enabled: true, rows: [] } }
+        await page.mount('detail', detailEntry(page).Component, { subject })
+
+        const installReady = await page.until(() => page.byAttr('detail', 'data-fishball-install-to').length === 1)
+        assert.ok(installReady, 'expected [data-fishball-install-to] rendered via ctx.get("remote.pluginManager")')
+        assert.equal(wordsOf(page.byAttr('detail', 'data-fishball-install-to')[0]), PAGE.button.install)
+        assert.deepEqual(page.world.errors, [])
+      })
+
+      test('BVA: throwing ctx.remote.pluginManager with ctx.get("remote.pluginManager") === undefined activates and renders cleanly without crashing', async (t) => {
+        const name = 'fbtest-strict-proxy-absent'
+        const page = await openPage(t, sdk, {
+          strictRemoteProxy: true,
+          provideRemotePluginManager: false,
+          mainBundles: [],
+          fishball: [{ name: TOGGLE.pluginA, version: '1.0.0', enabled: true }],
+        })
+        const subject = { kind: 'bundle', pkg: { name, version: '1.0.0', installed: true, availability: 'profile', official: false, enabled: true, rows: [] } }
+        await page.mount('detail', detailEntry(page).Component, { subject })
+        await page.settle()
+        assert.equal(page.byAttr('detail', 'data-fishball-use').length, 0)
+        assert.equal(page.byAttr('detail', 'data-fishball-install-to').length, 0)
+        assert.deepEqual(page.world.errors, [])
+      })
     })
   })
 }

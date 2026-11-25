@@ -275,6 +275,7 @@ export async function openOnboardingPage(t, sdk, {
   mainBundles = [],
   mainPlugins = [],
   pluginManagerMode = 'full',
+  strictRemoteProxy = false,
   hostCatalog = FIXTURE.catalog,
   installedFishballBundles = [],
   missingProviders = FIXTURE.missingProviders,
@@ -594,7 +595,6 @@ export async function openOnboardingPage(t, sdk, {
       remoteListeners.get(event).add(fn)
       return () => remoteListeners.get(event)?.delete(fn)
     },
-    ...(pluginManagerFace !== undefined ? { pluginManager: pluginManagerFace } : {}),
     session: {
       modelCatalog: async () => ({
         ok: true,
@@ -606,6 +606,17 @@ export async function openOnboardingPage(t, sdk, {
         },
       }),
     },
+  }
+  if (strictRemoteProxy) {
+    Object.defineProperty(remote, 'pluginManager', {
+      configurable: true,
+      enumerable: true,
+      get() {
+        throw new Error('cannot get property "remote.pluginManager" without inject')
+      },
+    })
+  } else if (pluginManagerFace !== undefined) {
+    remote.pluginManager = pluginManagerFace
   }
 
   // Provide `dshConnectorUiPortal` to capture the registered OnboardingGate

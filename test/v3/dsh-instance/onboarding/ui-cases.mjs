@@ -412,6 +412,68 @@ export function registerUiOnboardingCases(sdk) {
         assert.deepEqual(p1.world.errors, [])
         assert.deepEqual(p2.world.errors, [])
       })
+
+      test('DT strict Cordis proxy: throwing ctx.remote.pluginManager uses ctx.get("remote.pluginManager") without crash across disabled / error / missing', async (t) => {
+        const cases = [
+          {
+            label: 'disabled',
+            expected: WATCHDOG_STATE.disabled,
+            mainBundles: [{ name: WATCHDOG_NS, installed: true, enabled: false }],
+            mainPlugins: [],
+          },
+          {
+            label: 'error',
+            expected: WATCHDOG_STATE.error,
+            mainBundles: [{ name: WATCHDOG_NS, installed: true, enabled: true }],
+            mainPlugins: [{ entryId: WATCHDOG_NS, moduleName: WATCHDOG_NS, enabled: true, fiberPhase: 'failed', diagnostic: 'Strict proxy boot error' }],
+            expectText: 'Strict proxy boot error',
+          },
+          {
+            label: 'missing',
+            expected: WATCHDOG_STATE.missing,
+            mainBundles: [],
+            mainPlugins: [],
+          },
+        ]
+
+        for (const row of cases) {
+          const page = await openOnboardingPage(t, sdk, {
+            watchdogMode: WATCHDOG_STATE.missing,
+            strictRemoteProxy: true,
+            pluginManagerMode: 'full',
+            mainBundles: row.mainBundles,
+            mainPlugins: row.mainPlugins,
+          })
+          await page.mountGate()
+          await waitForStep(page, UI_STEP.fishballModel)
+          await page.press(page.byAttr(UI_ATTR.next)[0])
+          await waitForStep(page, UI_STEP.watchdog)
+
+          assert.ok(
+            await page.until(() => page.byAttr(UI_ATTR.watchdogState, row.expected).length === 1),
+            `strict proxy (${row.label}) must classify as ${row.expected}`,
+          )
+          if (row.expectText) {
+            assert.ok(page.text().includes(row.expectText), `expected "${row.expectText}" in: ${page.text()}`)
+          }
+          assert.deepEqual(page.world.errors, [], `unexpected errors for strict proxy (${row.label})`)
+        }
+      })
+
+      test('EP strict Cordis proxy: throwing ctx.remote.pluginManager with ctx.get("remote.pluginManager") === undefined falls back to missing without crash', async (t) => {
+        const page = await openOnboardingPage(t, sdk, {
+          watchdogMode: WATCHDOG_STATE.missing,
+          strictRemoteProxy: true,
+          pluginManagerMode: 'absent',
+        })
+        await page.mountGate()
+        await waitForStep(page, UI_STEP.fishballModel)
+        await page.press(page.byAttr(UI_ATTR.next)[0])
+        await waitForStep(page, UI_STEP.watchdog)
+
+        assert.ok(await page.until(() => page.byAttr(UI_ATTR.watchdogState, WATCHDOG_STATE.missing).length === 1), 'must fall back cleanly to missing')
+        assert.deepEqual(page.world.errors, [])
+      })
     })
 
     describe('Step 3: 4 Recommended plugins (EP + ST + en/zh descriptions)', () => {

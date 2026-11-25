@@ -584,7 +584,7 @@ window.__ModuleLoader__.load({
     }
 
     /** Subscribes to Watchdog's served status, plugin-manager health & live `model` selection. */
-    function useWatchdogModel(ctx, active) {
+    function useWatchdogModel(ctx, active, resolvePm) {
       const describe = React.useMemo(
         () => (typeof ctx.configForms?.describe === 'function' ? ctx.configForms.describe() : null),
         [ctx.configForms],
@@ -601,14 +601,14 @@ window.__ModuleLoader__.load({
         if (!active) return undefined
         let live = true
         let seq = 0
-        const pm = ctx.remote?.pluginManager
-        const hasPm = typeof pm?.listBundles === 'function' || typeof pm?.listPlugins === 'function'
-        if (!hasPm) {
-          setPmInfo({ loaded: true, bundles: [], plugins: [] })
-          return undefined
-        }
         const read = () => {
           const ticket = ++seq
+          const pm = resolvePm(ctx, ctx.remote)
+          const hasPm = typeof pm?.listBundles === 'function' || typeof pm?.listPlugins === 'function'
+          if (!hasPm) {
+            setPmInfo({ loaded: true, bundles: [], plugins: [] })
+            return
+          }
           const readBundles = typeof pm?.listBundles === 'function'
             ? Promise.resolve().then(() => pm.listBundles()).then((res) => (res?.ok && Array.isArray(res.value) ? res.value : []), () => [])
             : Promise.resolve([])
@@ -620,10 +620,11 @@ window.__ModuleLoader__.load({
           })
         }
         read()
+        // Keep listeners attached even if `remote.pluginManager` mounts asynchronously after activation.
         const offChanged = typeof ctx.remote?.$on === 'function' ? ctx.remote.$on(WATCHDOG_PLUGIN.changedEvent, read) : undefined
         const offReset = typeof ctx.on === 'function' ? ctx.on(WATCHDOG_PLUGIN.resetEvent, read) : undefined
         return () => { live = false; offChanged?.(); offReset?.() }
-      }, [ctx, active])
+      }, [ctx, active, resolvePm])
 
       const describeLoading = describe !== null && mirrored?.view === undefined && snapshot?.status !== MODEL.configReady
       const served = Array.isArray(mirrored?.view?.namespaces)
@@ -651,7 +652,8 @@ window.__ModuleLoader__.load({
     }
 
     function makeOnboardingGate({ ctx, t, statusT, shared, syncKit, fishballKit }) {
-      const inventory = fishballKit.getInventory(ctx.remote)
+      const resolvePm = fishballKit.resolvePluginManager
+      const inventory = fishballKit.getInventory(ctx.remote, () => resolvePm(ctx, ctx.remote))
       // Once this browser session knows onboarding is finished, subsequent portal opens yield to
       // the frame synchronously with zero loading flash and zero background polling.
       let completedLocally = false
@@ -962,7 +964,7 @@ window.__ModuleLoader__.load({
         useExternalStore(ctx.locale)
         const [instanceStatus] = shared.useInstanceStatus()
         const [gate, setGate] = React.useState({ status: GATE.loading, model: null, catalog: null, childReady: false })
-        const watchdog = useWatchdogModel(ctx, gate.status === GATE.active)
+        const watchdog = useWatchdogModel(ctx, gate.status === GATE.active, resolvePm)
         const childPlugins = fishballKit.useStore(inventory.child)
         const activeRef = React.useRef(false)
         const mountedRef = React.useRef(true)
