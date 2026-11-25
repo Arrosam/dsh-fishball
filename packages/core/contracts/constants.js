@@ -463,9 +463,8 @@ export const CONNECT = Object.freeze({
 /**
  * Fishball's own model choice (the user, 2026-11-16: "同步只是同步model list，至于fishball用什么还要在
  * fishball内设置"; "所有版本：先用DSH的默认模型"): a field of core's own row settings, `{provider, model,
- * reasoningEffort?}`; absent means this DSH's default model, and nothing ever blocks on it. Only
- * core's settings page and fishball-ui's model dialog write it (no DSH-side package reads it, the
- * user's cancellation of U-MODEL, 2026-11-16). `settingsNamespace` is core's main row id, the
+ * reasoningEffort?}`; absent means this DSH's default model, and nothing ever blocks on it. Written
+ * by core's settings page (and `dsh-instance`'s onboarding wizard). `settingsNamespace` is core's main row id, the
  * namespace DSH's `settings.mutate` addresses; `path` is the field inside it.
  */
 export const FISHBALL_MODEL = Object.freeze({

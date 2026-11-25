@@ -69,8 +69,8 @@ Core's own page on DSH's Plugins page (`client.js` with `client.settings.js`, in
   http; any other target must be https. From a browser on another machine, Fishball's page must be
   served over https (callback `/api/fishball/connect/callback`), else `web-callback-insecure`.
 - **Fishball's model** (`model`: provider, model, reasoning effort): the model the manager session
-  uses. Unset means this DSH's default model; nothing blocks. Only this page and fishball-ui's model
-  dialog write it. The instance's model sync copies providers and model lists only and never sets it.
+  uses. Unset means this DSH's default model; nothing blocks. Written from this page or from
+  `dsh-instance`'s first-run onboarding wizard. The instance's model sync copies providers and model lists only and never sets it.
 
 ## Programmatic tool calling
 

@@ -1,9 +1,10 @@
 /**
  * The main row's settings (F-WIRE; F-SETTINGS `SETTINGS`, K3a `CONNECT.setting`, `FISHBALL_MODEL`).
  * PTC is selected at manager composition, not hot-switched. The other settings are volatile:
- * DSH's loader commits a volatile-only change into the running
- * fiber's references and emits `loader/volatile-update` (cordis-plugin-loader, both SDKs), and the
- * row reads each value live through `valueAt`. The nested shape is the one every design text uses
+ * saves from core's settings page or instance onboarding take effect without a restart. DSH's
+ * loader commits a volatile-only change into the running fiber's references and emits
+ * `loader/volatile-update` (cordis-plugin-loader, both SDKs), and the row reads each value live
+ * through `valueAt`. The nested shape is the one every design text uses
  * (`connect.clientMetadataUrl`, `identity.id`, `identity.name`, `model`). MULTI-1 removed
  * `target.url`: the targets are core's own records (src/targets/), added on the settings page.
  *

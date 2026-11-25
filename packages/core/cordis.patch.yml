@@ -97,7 +97,7 @@
 - { id: ui-sidebar-files, disabled: *with-ui }
 # ui-model-selection: the composer's model seat and the /model popup (dsh-web-app, both SDKs). Only
 # core's settings choose Fishball's model (the user, 2026-11-16: "Hide it. Only core's settings
-# choose the model"); fishball-ui's model dialog and core's settings page write it. No other row
+# choose the model"); core's settings page (and dsh-instance's onboarding) write it. No other row
 # injects its `modelDirectories` service (checked in 0.2.1-rc.5 and 0.2.2-rc.1).
 - { id: ui-model-selection, disabled: *with-ui }
 
@@ -150,8 +150,8 @@
     # The Fishball page's manager-session route (src/session/route.js).
     - { id: fishball-core-session, name: fishball-core/session-route }
     # Fishball UI component (sub-package under ./ui/): Fishball page, Recommended tab (standalone
-    # only), the instance-run child's Plugins page changes, sidebar targets, ask cards, brand row and
-    # model dialog. Toggleable independently as a component row.
+    # only), the instance-run child's Plugins page changes, sidebar targets, ask cards and brand
+    # row. Toggleable independently as a component row.
     - { id: fishball-ui, name: ./ui/index.js }
     - { id: fishball-page, name: ./ui/fishball-page/index.js }
     # Instance-run or standalone (DESIGN §28): the child is instance-run exactly while the instance's

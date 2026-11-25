@@ -37,7 +37,7 @@ This repository holds the **Fishball-side** packages (installed in a Fishball DS
 
 | Package | What it does |
 | --- | --- |
-| [`fishball-core`](packages/core) | One plugin with 2 components: **`fishball-core`** (manager session, preset, persona, reminders, private Skills, MCP link, Connect, interception, status, ask cards, guard rows, bundle settings page) and **`fishball-ui`** (`./ui/`, Fishball page, Recommended tab (standalone only), the instance-run child's Plugins page notice, sidebar targets & pairing views, ask cards, brand row, model dialog). |
+| [`fishball-core`](packages/core) | One plugin with 2 components: **`fishball-core`** (manager session, preset, persona, reminders, private Skills, MCP link, Connect, interception, status, ask cards, guard rows, bundle settings page) and **`fishball-ui`** (`./ui/`, Fishball page, Recommended tab (standalone only), the instance-run child's Plugins page notice, sidebar targets & pairing views, ask cards, brand row). |
 | [`fishball-board`](packages/fishball-board) | Optional amenity: Fishball's session-linked work board. Its own bundle. |
 | [`fishball-heartbeat`](packages/fishball-heartbeat) | Optional amenity: keeps Fishball's prompt cache warm with useful heartbeat turns while it is idle. Its own bundle. |
 | [`fishball-taskboard`](packages/fishball-taskboard) | Optional amenity: Fishball's task board and memo pad, with the right sidebar's **Task board** tab. Its own bundle. |
@@ -198,9 +198,9 @@ clone, pack, and install the hosted Fishball setup into your DSH `web` profile:
   the child lacks, and **Add selected** adds what you tick. OAuth/login providers, providers with
   custom headers and non-https endpoints are not offered; log in to those inside Fishball. Keys
   never reach the page, the logs or the chat. Providers Fishball already has are kept.
-- **The choice:** sync only copies the list. The model Fishball uses is chosen in **fishball-core's
-  settings** (Fishball's model) or in the **model dialog** fishball-ui shows when you open the
-  Fishball page with no model set. Until one is chosen, Fishball uses that DSH's default model.
+- **The choice:** sync only copies the list. The model Fishball uses is chosen during
+  `dsh-instance`'s first-run onboarding wizard or in **fishball-core's settings** (Fishball's
+  model). Until one is chosen, Fishball uses that DSH's default model.
 
 ## Use a connector from another DSH
 

@@ -1,90 +1,73 @@
 import assert from 'node:assert/strict'
 import { test, after } from 'node:test'
-import { textOf } from '../../../support/rp-recommend.mjs'
 import { until } from '../../../support/util.mjs'
 import { boot, request } from '../../fishball-core/wire/subject.mjs'
 import { C, MULTI } from '../../fishball-core/wire/constants.mjs'
 import { page, firstFrame, routeStatus } from './subject.mjs'
 import { U } from './constants.mjs'
-import { registerModelPolishCases } from './polish-cases.mjs'
 import { registerStripCases } from './strip-cases.mjs'
-import { registerCatalogCases } from './catalog-cases.mjs'
 import { registerTargetsCases } from './targets-cases.mjs'
 import { registerSessionsCases } from './sessions-cases.mjs'
 import { FRAME, SEAM_TARGETS, WITHDRAWN } from './targets-constants.mjs'
 import { withdrawnRow } from './withdrawn.mjs'
 
 const STATES = Object.freeze(Object.values(SEAM_TARGETS.state))
-/** Press the dialog's dismiss control, then let a window focus pass (a reopen trigger it must ignore). */
-async function dismiss(p) {
-  await p.press(p.buttons().find((n) => U.dismiss.test(textOf(n))))
-  p.world.dispatchWindow('focus'); await new Promise((resolve) => setImmediate(resolve))
-}
-// The user, 2026-11-16: "fishball打开的时候可以看到自己选没选模型，然后会提示用户选择配置的模型"
-// (when Fishball opens, show whether a model is chosen and prompt to choose a configured one).
-// "When the Fishball page opens" is fishball-page's public root mark `<html data-fishball-page>`
-// (code review, F-WIRE): the dialog shows only while the mark is present; a dismissal lasts while
-// the page stays open and is forgotten when the mark goes away, so it shows again when it returns.
+
+// Re-baselined (2026-11-25): the legacy in-page "Choose Fishball's model" modal (`client.model.js` /
+// `fishball-ui.model-dialog`) was removed and superseded by `dsh-instance`'s multi-step onboarding
+// wizard. Opening the Fishball page with `fishball-core.model` unset must render no model-picker modal.
 export function registerModelDialogCases(sdk) {
-  // UI-POLISH-F §4 (grouped choices, aria-labels) and §2 (the drawn status card).
-  registerModelPolishCases(sdk)
   registerStripCases(sdk)
-  // R-FIX-FUI F4: the catalog is read on every opening.
-  registerCatalogCases(sdk)
   // MULTI-3: the per-target frame, the sidebar target list, the ask card's source and handle.
   registerTargetsCases(sdk)
   // The running managed sessions under each target's row.
   registerSessionsCases(sdk)
+
   for (const lang of U.lang) {
-    test(`${sdk} MODEL-EP-01 ${lang} unset model prompts with all catalog models`, async (t) => {
-      const p = await page(t, sdk, { lang })
-      assert.deepEqual(p.world.errors, []); assert.deepEqual(p.world.failedFibers, [])
-      assert.ok(p.dialogs().length, 'No model dialog on Fishball page open')
-      for (const name of U.modelNames) assert.ok(p.text().includes(name), name)
-    })
-    test(`${sdk} MODEL-ST-01 ${lang} choose writes core model path`, async (t) => {
-      const p = await page(t, sdk, { lang })
-      await p.choose(U.modelNames[U.one])
-      const write = p.world.mutations.find((m) => m.ns === U.core && m.ops.some((o) => JSON.stringify(o.path) === JSON.stringify(C.modelSeam.path)))
-      assert.ok(write, 'No core model mutation')
-      const op = write.ops.find((o) => JSON.stringify(o.path) === JSON.stringify(C.modelSeam.path))
-      assert.equal(op.op, 'set'); assert.equal(op.value.provider, C.selection.provider); assert.equal(op.value.model, C.selection.model)
-      assert.deepEqual(Object.keys(op.value).filter((k) => !['provider', 'model', 'reasoningEffort'].includes(k)), [])
-    })
-    test(`${sdk} MODEL-ST-02 ${lang} dismiss stays dismissed in page; fresh page prompts`, async (t) => {
-      const p = await page(t, sdk, { lang }); assert.ok(p.dialogs().length)
-      await dismiss(p)
-      assert.equal(p.dialogs().length, U.first); assert.deepEqual(p.world.mutations, [])
-      assert.ok((await page(t, sdk, { lang })).dialogs().length)
-    })
-    test(`${sdk} MODEL-ST-04 ${lang} page not open (no data-fishball-page) with unset model: no dialog`, async (t) => {
-      const p = await page(t, sdk, { lang, open: false })
-      assert.deepEqual(p.world.errors, []); assert.deepEqual(p.world.failedFibers, [])
-      assert.equal(p.dialogs().length, U.first, 'Model dialog shown while the Fishball page is not open')
+    test(`${sdk} MODEL-REMOVED-01 ${lang} unset fishball-core.model renders no model-picker modal and never registers fishball-ui.model-dialog`, async (t) => {
+      let catalogReads = 0
+      const p = await page(t, sdk, {
+        lang,
+        model: undefined,
+        modelCatalog: async () => {
+          catalogReads += 1
+          return { ok: true, value: structuredClone(U.catalog) }
+        },
+      })
+      assert.deepEqual(p.world.errors, [])
+      assert.deepEqual(p.world.failedFibers, [])
+      for (const slot of U.slots) {
+        const match = p.world.entries(slot).filter((e) => e.options?.id === U.removedDialog.entryId)
+        assert.deepEqual(match, [], `removed entry ${U.removedDialog.entryId} must not be registered in ${slot}`)
+      }
+      assert.equal(p.dialogs().length, U.first, 'no dialog should render when fishball-core.model is unset')
+      assert.equal(
+        p.nodes().filter((n) => n.props?.[U.removedDialog.attr] !== undefined).length,
+        U.first,
+        `[${U.removedDialog.attr}] must not render when fishball-core.model is unset`,
+      )
+      assert.equal(catalogReads, U.first, 'unset model on Fishball page must not trigger a legacy model-dialog catalog read')
       assert.deepEqual(p.world.mutations, [])
-    })
-    test(`${sdk} MODEL-ST-05 ${lang} closed → data-fishball-page set: dialog shows`, async (t) => {
-      const p = await page(t, sdk, { lang, open: false }); assert.equal(p.dialogs().length, U.first)
+
+      // Closing and reopening the Fishball page also renders no model-picker modal
+      await p.closePage()
       await p.openPage()
-      assert.ok(p.dialogs().length, 'No model dialog when the Fishball page opens')
-      for (const name of U.modelNames) assert.ok(p.text().includes(name), name)
-    })
-    test(`${sdk} MODEL-ST-06 ${lang} dismiss → page closed → page opened again: dialog shows again`, async (t) => {
-      const p = await page(t, sdk, { lang }); assert.ok(p.dialogs().length)
-      await dismiss(p); assert.equal(p.dialogs().length, U.first)
-      await p.closePage(); assert.equal(p.dialogs().length, U.first, 'Model dialog shown after the Fishball page closed')
-      await p.openPage(); assert.ok(p.dialogs().length, 'Dismissal outlived the Fishball page close')
+      assert.equal(p.dialogs().length, U.first, 'no dialog after Fishball page reopen')
+      assert.equal(
+        p.nodes().filter((n) => n.props?.[U.removedDialog.attr] !== undefined).length,
+        U.first,
+      )
+      assert.equal(catalogReads, U.first)
       assert.deepEqual(p.world.mutations, [])
     })
-    test(`${sdk} MODEL-EP-02 ${lang} configured core model does not prompt`, async (t) => {
-      const p = await page(t, sdk, { lang, model: C.selection })
-      assert.equal(p.dialogs().length, U.first); assert.deepEqual(p.world.mutations, [])
-    })
-    test(`${sdk} MODEL-BVA-01 ${lang} zero catalog models explains and opens DSH Settings`, async (t) => {
-      const p = await page(t, sdk, { lang, catalog: { ...U.catalog, groups: [], routableProviders: [] } })
-      assert.ok(p.dialogs().length); assert.match(p.text(), U.empty)
-      await p.press(p.buttons().find((n) => U.settings.test(textOf(n))))
-      assert.ok(p.world.launcherPresses > U.first, 'Settings launcher was not pressed')
+
+    test(`${sdk} MODEL-REMOVED-02 ${lang} unset fishball-core.model with zero catalog models renders no modal`, async (t) => {
+      const p = await page(t, sdk, { lang, model: undefined, catalog: { ...U.catalog, groups: [], routableProviders: [] } })
+      assert.deepEqual(p.world.errors, [])
+      assert.deepEqual(p.world.failedFibers, [])
+      assert.equal(p.dialogs().length, U.first, 'no modal should render even with empty catalog')
+      assert.equal(p.nodes().filter((n) => n.props?.[U.removedDialog.attr] !== undefined).length, U.first)
+      assert.equal(p.world.launcherPresses, U.first)
       assert.deepEqual(p.world.mutations, [])
     })
   }
@@ -135,5 +118,4 @@ export function registerModelDialogCases(sdk) {
     const connect = await request(h, SEAM_TARGETS.route.connect, { [SEAM_TARGETS.route.targetIdField]: 't-fbtestunknownaaaa' })
     assert.ok([C.status.missing, SEAM_TARGETS.http.unavailable].includes(connect.status), `${connect.status} ${connect.text}`)
   })
-  test(`${sdk} MODEL browser page reload and real settings navigation`, { todo: U.todo }, () => {})
 }

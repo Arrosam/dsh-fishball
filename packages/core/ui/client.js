@@ -14,8 +14,7 @@
  * - client.asks.js: the ask cards in Fishball's own conversation, over core's routes;
  * - client.strip.js: Fishball's DSH targets in the sidebar, each with its details, Connect / Cancel,
  *   Retry and pairing choices (MULTI-3; first the status strip, F-WIRE, and the pairing card, R-FIX-FUI);
- * - client.brand.js: Fishball's logo, wordmark and state in DSH's sidebar brand row (LOGO-BUTTON);
- * - client.model.js: the dialog that asks for Fishball's model while it is unset (F-WIRE).
+ * - client.brand.js: Fishball's logo, wordmark and state in DSH's sidebar brand row (LOGO-BUTTON).
  *
  * A chunk that fails to load loses only its part, logged once; a chunk that arrives after this row
  * stopped is not started (the same rule as core's client.js and dsh-connector-ui's parts, whose
@@ -35,7 +34,6 @@ window.__ModuleLoader__.load({
         Object.freeze({ chunk: './client.asks.js', factory: 'asksPart' }),
         Object.freeze({ chunk: './client.strip.js', factory: 'stripPart' }),
         Object.freeze({ chunk: './client.brand.js', factory: 'brandPart' }),
-        Object.freeze({ chunk: './client.model.js', factory: 'modelPart' }),
       ]),
       unavailable: 'fishball-ui: part unavailable',
       base: 'fishball-ui-base-style',

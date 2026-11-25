@@ -25,10 +25,11 @@ export const UI_PACKAGE = Object.freeze({
   /** DSH host packages are the only other names its manifest may carry (relayed: peers on `@deepseek-ai/*`). */
   hostScope: '@deepseek-ai/',
   /** The browser files it ships (interface item 8). */
-  // Re-baselined (F-WIRE): client.js loads four parts; the strip and the model dialog are shipped too.
-  // Re-baselined (R-FIX-FUI F1): the pairing card's chunk client.pairing.js is shipped too.
+  // Re-baselined (F-WIRE): client.js loads parts beside it.
   // Re-baselined (MULTI-3 requirement D): the pairing dock card's chunk client.pairing.js is removed.
-  clientFiles: Object.freeze(['client.js', 'client.entries.js', 'client.asks.js', 'client.strip.js', 'client.brand.js', 'client.model.js']),
+  // Re-baselined (2026-11-25): the legacy in-page model dialog client.model.js is removed (superseded by dsh-instance onboarding).
+  clientFiles: Object.freeze(['client.js', 'client.entries.js', 'client.asks.js', 'client.strip.js', 'client.brand.js']),
+  removedClientFiles: Object.freeze(['client.model.js']),
 })
 
 /**
@@ -124,18 +125,17 @@ export const CLIENT = Object.freeze({
   parts: Object.freeze({
     entries: Object.freeze({ file: 'client.entries.js', export: 'entriesPart', plugin: 'fishball-ui: entries', style: 'fishball-ui-entries-style' }),
     asks: Object.freeze({ file: 'client.asks.js', export: 'asksPart', plugin: 'fishball-ui: asks', style: 'fishball-asks-style' }),
-    // Re-baselined (F-WIRE lead, 2026-11-17): "client.js now loads FOUR parts: client.entries.js,
-    // client.asks.js, client.strip.js (the status strip, stripPart) and client.model.js (the model
-    // dialog, modelPart)". Their plugin names and style ids are not specified: `plugin: null` means
-    // UI-UC-05 checks only that the plugin has a non-empty name.
+    // Re-baselined (F-WIRE / LOGO-BUTTON / 2026-11-25): client.js loads FOUR parts:
+    // client.entries.js, client.asks.js, client.strip.js (stripPart) and client.brand.js (brandPart).
+    // The legacy in-page model dialog (client.model.js / modelPart) is removed.
     strip: Object.freeze({ file: 'client.strip.js', export: 'stripPart', plugin: null, style: null }),
-    // LOGO-BUTTON: the sidebar brand row's occupant, between the strip and the model dialog.
     brand: Object.freeze({ file: 'client.brand.js', export: 'brandPart', plugin: null, style: null }),
-    model: Object.freeze({ file: 'client.model.js', export: 'modelPart', plugin: null, style: null }),
     // Re-baselined (MULTI-3 requirement D): R-FIX-FUI F1's pairing card part (client.pairing.js) is removed.
   }),
-  /** R-FIX-FUI F1 / LOGO-BUTTON: the order client.js loads its parts in (the brand part after the strip, before the model dialog). */
-  partOrder: Object.freeze(['client.entries.js', 'client.asks.js', 'client.strip.js', 'client.brand.js', 'client.model.js']),
+  /** Order client.js loads its parts in (entries, asks, strip, brand; client.model.js is removed). */
+  partOrder: Object.freeze(['client.entries.js', 'client.asks.js', 'client.strip.js', 'client.brand.js']),
+  /** Removed parts that client.js must never request or ship. */
+  removedParts: Object.freeze(['client.model.js']),
   /** The kit member a part gets (`mountStyle(id, cssText) → dispose`). */
   kitStyle: 'mountStyle',
   /** Platform modules a chunk may require (the DSH page's served set). */

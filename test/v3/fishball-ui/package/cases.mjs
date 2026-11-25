@@ -415,14 +415,16 @@ export function registerUiCases(sdk) {
     const { failed } = await applyIn(c, client.exports)
     return { ...client, started, kits, failed, styles }
   }
-  // Re-baselined (F-WIRE lead, 2026-11-17): "client.js now loads FOUR parts: client.entries.js, client.asks.js,
-  // client.strip.js (the status strip, stripPart) and client.model.js (the model dialog, modelPart)".
-  // Re-baselined (R-FIX-FUI F1): five parts, client.pairing.js (pairingPart) after the strip and before the model dialog.
-  // Re-baselined (MULTI-3 requirement D): four parts again; the pairing dock card's chunk is removed.
-  t('UI-UC-04', 'main 2', `its plugin loads ${CLIENT.partOrder.map((f) => './' + f).join(', ')} in that order and starts each part`, async (c) => {
+  // Re-baselined (2026-11-25): client.js loads four parts (entries, asks, strip, brand); client.model.js is removed.
+  t('UI-UC-04', 'main 2', `its plugin loads ${CLIENT.partOrder.map((f) => './' + f).join(', ')} in that order and starts each part (and never loads ${CLIENT.removedParts.join(', ')})`, async (c) => {
     needUi()
     const r = await startClient(c, {})
     assert.deepEqual([...r.loads], CLIENT.partOrder.map((f) => './' + f))
+    for (const removed of CLIENT.removedParts) {
+      assert.equal(r.loads.includes('./' + removed), false, `client.js must not load removed chunk ./${removed}`)
+      assert.equal(fs.existsSync(path.join(UI_PACKAGE.dir, removed)), false, `removed chunk ${removed} still exists on disk`)
+      assert.equal((uiManifest().files ?? []).includes(removed), false, `removed chunk ${removed} still listed in package.json files`)
+    }
     assert.deepEqual([...r.started].sort(), Object.values(CLIENT.parts).map((p) => p.file).sort())
     assert.deepEqual(r.failed, [])
   })
