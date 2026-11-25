@@ -18,7 +18,13 @@ import { BUDGET, EVENT_TYPE, FIXTURE, IX, K1, RELAYED, SURFACE, TOOL, WORLD } fr
 export { call, connect, fresh, managedOf, okCall, refusedCall, saveTokens, tokensOf }
 
 /** One booted DSH with the extension; `env` adds worker environment (e.g. PTC mode). */
-export const world = (sdk, label = WORLD.scenario.main, env = {}) => scenario(sdk, label, { env: { [WORLD.envKey]: WORLD.extension, ...env } })
+export const world = (sdk, label = WORLD.scenario.main, env = {}, rowConfig) => scenario(sdk, label, { env: { [WORLD.envKey]: WORLD.extension, ...env }, rowConfig })
+
+/** Isolate rows that need DSH to relay incomplete arguments for a manager decision. */
+export function permissionOptionOff(sdk, field) {
+  return world(sdk, 'ix-' + field + '-off', {}, () => ({ approval: { port: 0 }, [SURFACE.settings.requests]: { [field]: false } }))
+}
+export const legacyIncompleteWorld = (sdk) => permissionOptionOff(sdk, SURFACE.settings.autoRejectIncompleteArguments)
 
 export const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 export const quiet = () => sleep(BUDGET.quietMs)

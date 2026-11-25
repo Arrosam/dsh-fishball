@@ -216,12 +216,12 @@ function staticRows(sdk) {
     assert.ok(entry.inject !== undefined, 'no inject')
   })
   // Re-baselined by C-WIRE-2 (q5: no routing object; item 8: approval.dshName optional, unset; item 9: the removed fields).
-  row(sdk, 'C-WIRE-R2', 'schema', 'Config resolves {} to exactly tokens [], approval {port: APPROVAL_LISTENER.defaultPort, dshName: undefined}, requests {autoEscalatePermissions: true}, and the kept limits at their defaults; no routing, no removed field', async () => {
+  row(sdk, 'C-WIRE-R2', 'schema', 'Config resolves {} to exactly tokens [], approval {port: APPROVAL_LISTENER.defaultPort, dshName: undefined}, requests {autoEscalatePermissions: true, autoRejectIncompleteArguments: true}, and the kept limits at their defaults; no routing, no removed field', async () => {
     const value = await resolveConfig(sdk, {})
     assert.deepEqual(value[S.tokens], [])
     // Unset optional dshName resolves to a present key with value undefined (Schemastery; relayed 2026-11-17).
     assert.deepEqual(value[S.approval], { [S.port]: APPROVAL_LISTENER.defaultPort, [S.dshName]: undefined })
-    assert.deepEqual(value[S.requests], { [S.autoEscalatePermissions]: true })
+    assert.deepEqual(value[S.requests], { [S.autoEscalatePermissions]: true, [S.autoRejectIncompleteArguments]: true })
     for (const [k, d] of Object.entries(S.limits)) assert.equal(value[k], d, 'default of ' + k)
     assert.deepEqual(Object.keys(value).sort(), [S.tokens, S.approval, S.requests, ...Object.keys(S.limits)].sort())
   })

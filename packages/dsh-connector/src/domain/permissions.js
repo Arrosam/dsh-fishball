@@ -7,6 +7,7 @@
  *   manages → the user's stock prompt, unchanged DSH ("An unmanaged session's tools go to the user
  *   as normal DSH", the user, 2026-11-17);
  * - a standing grant covers the call → `allowed-once`, no offer (grants.js);
+ * - when enabled, incomplete arguments → rejected by the connector before any offer or event;
  * - a delegate claims the session (delegates/, `dshConnectorSessions`) and answers allow or reject
  *   → that one call is decided, no offer; the manager gets `settlement {by: delegate}`. A pass, or
  *   any failure of the delegate, goes on to the next step, whose offer carries `delegate {name,
@@ -54,6 +55,8 @@ const FINAL = Object.freeze({
 /** The user's DSH outcome on the stock prompt as a settlement (only a real answer has one). */
 const USER_OUTCOME = Object.freeze({ [APPROVAL.outcome.allowedOnce]: SETTLEMENT_OUTCOME.allowed, [APPROVAL.outcome.rejected]: SETTLEMENT_OUTCOME.rejected })
 
+const argumentsIncomplete = (status) => status !== ARGUMENTS_STATUS.complete
+
 /**
  * The §7a.3 decision rules of a final answer, shared by `approval_answer` (allow, grant, reject)
  * and `prompt_answer` (allow, reject), so the two paths cannot drift (review F08):
@@ -67,7 +70,7 @@ export function decisionRuleBroken(decision, risk, reason, argumentsStatus) {
   if (trimmed(reason).length === 0) return REFUSAL.reasonRequired
   if (decision === APPROVAL_DECISION.reject) return undefined
   if (risk !== RISK.low) return REFUSAL.allowNeedsLowRisk
-  if (argumentsStatus !== ARGUMENTS_STATUS.complete) return REFUSAL.argumentsIncomplete
+  if (argumentsIncomplete(argumentsStatus)) return REFUSAL.argumentsIncomplete
   return undefined
 }
 
@@ -81,10 +84,11 @@ export function decisionRuleBroken(decision, risk, reason, argumentsStatus) {
  * @param deps.wording - wording.js
  * @param deps.titleOf - `(sessionId) => Promise<string>`: the descriptor's `title`
  * @param deps.readLimits - the connector's live limits (`argumentExcerptBytes`)
+ * @param deps.readSettings - the connector's live request settings
  * @param {() => number} deps.now - epoch ms
- * @param deps.logger - `{warn}`
+ * @param deps.logger - `{info, warn}`
  */
-export function createPermissions(ctx, { routing, managerOf, grants, delegates, gate, wording, titleOf, readLimits, autoEscalatePermissions = () => false, now, logger }) {
+export function createPermissions(ctx, { routing, managerOf, grants, delegates, gate, wording, titleOf, readLimits, readSettings, now, logger }) {
   const warn = (line) => (error) => logger.warn(LOG.format, line, diagnosticOf(error))
   /** approvalId → the live request: its call and how to end it. Memory only (module comment). */
   const live = new Map()
@@ -147,6 +151,13 @@ export function createPermissions(ctx, { routing, managerOf, grants, delegates, 
     const call = { sessionId, toolName: req.toolName, callId: req.callId, args }
     if (managerOf(sessionId) === undefined) return gate.show(via, { ...call, escalated: false })
     if (grants.cover(sessionId, req.toolName, args.value) !== undefined) return APPROVAL.outcome.allowedOnce
+    if (argumentsIncomplete(args.status) && readSettings().autoRejectIncompleteArguments) {
+      if (req.signal?.aborted) return APPROVAL.outcome.cancelled
+      // Decide before delegating or publishing an offer, so neither a manager nor the user races it.
+      wording.rejectIncomplete(req.agent, call)
+      logger.info(LOG.autoRejectedIncomplete, args.status)
+      return APPROVAL.outcome.rejected
+    }
     const id = mintId(REQUEST_ID.permission)
     let resolve
     const answered = new Promise((settle) => { resolve = settle })
@@ -155,7 +166,7 @@ export function createPermissions(ctx, { routing, managerOf, grants, delegates, 
     const request = { ...call, id, offerId: formatOfferId(id, OFFER_ID.firstRevision), at: now(), reason: typeof req.reason === 'string' ? req.reason : '', resolve, escalated: false, principalAnswered: false }
     const delegated = await delegate(request, req.signal)
     if (delegated !== undefined) return delegated
-    request.autoEscalatePermissions = autoEscalatePermissions()
+    request.autoEscalatePermissions = readSettings().autoEscalatePermissions
     live.set(id, request)
     const onAbort = () => {
       if (end(id, { cancelled: true })) void routing.withdraw(request.offerId).catch(warn(LOG.withdrawFailed))

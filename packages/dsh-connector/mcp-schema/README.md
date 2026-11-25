@@ -60,6 +60,11 @@ tool (R-EXT-12).
 - **Payloads are V2's** (contract 1.2 §4; bounds `PAYLOAD_LIMITS`), timer-free, with these V3 changes: no
   `notifyWhenFinished` / `watchId` / `watchError`; `question_answer` names the `offerId` it answers,
   like `approval_answer` (S3: authority is the live offer id and the pair, design §3.4).
+- **Incomplete permission arguments.** With `requests.autoRejectIncompleteArguments` enabled
+  (the default), a new managed request with `truncated` or `unavailable` arguments that is not
+  already covered by a standing grant is rejected before an offer is created. No mailbox event is
+  emitted for the rejection itself. Turning it off restores manual review, where `allow` and
+  `grant` still refuse such arguments with `arguments-incomplete`.
 - **Automatic permission handoff.** A permission offer may carry `autoEscalatePermissions: true`
   when the target enables automatic cards. If a manager completes its deciding turn without a
   final answer, Fishball can escalate using the same offer id. On successful escalation the

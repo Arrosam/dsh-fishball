@@ -70,6 +70,7 @@ export const SURFACE = Object.freeze({
     dshName: 'dshName',
     requests: 'requests',
     autoEscalatePermissions: 'autoEscalatePermissions',
+    autoRejectIncompleteArguments: 'autoRejectIncompleteArguments',
     maxQueuedInputs: 'maxQueuedInputs',
     maxMessageBytes: 'maxMessageBytes',
     /**

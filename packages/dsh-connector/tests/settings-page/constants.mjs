@@ -145,6 +145,7 @@ export const POLISH = Object.freeze({
   input: 'Input',
   switch: 'Switch',
   autoHandoffPath: Object.freeze(['requests', 'autoEscalatePermissions']),
+  autoRejectPath: Object.freeze(['requests', 'autoRejectIncompleteArguments']),
   iconPrefix: 'Icon',
   /** The icon names' words the requirements give (a plus on New token; Copy swaps to a check). */
   icon: Object.freeze({ plus: /Plus/, copy: /Copy/, check: /Check/, warning: /Warning/ }),

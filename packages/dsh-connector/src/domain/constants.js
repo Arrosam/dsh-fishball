@@ -157,10 +157,17 @@ export const MESSAGE_AGENT = Object.freeze({
   noResponse: 0,
 })
 
-/** What a session's agent reads when its managing agent rejected its call (DSH's outcome carries no text). */
+/** What a session's agent reads when its call is rejected (DSH's outcome carries no text). */
 export const WORDING = Object.freeze({
   rejected: (reason) => `The managing agent rejected this call: ${reason}`,
+  incomplete: 'The connector rejected this call because its arguments were incomplete. Resend with complete arguments and a short justification. For shell commands, split the work into shorter commands, each well under about 2,000 characters.',
   keySeparator: '|',
+  incompleteNote: Object.freeze({
+    source: Object.freeze({ kind: 'dsh-connector-note', form: 'notice' }),
+    summary: 'dsh-connector: incomplete permission arguments',
+    target: 'next-step',
+    wake: false,
+  }),
 })
 
 /**
@@ -198,6 +205,8 @@ export const ANSWER_RULE = Object.freeze({
 /** Log lines: `logger.warn(LOG.format, line, code)`; never an argument, a reason or a session's text. */
 export const LOG = Object.freeze({
   format: '%s (%s)',
+  incompleteFeedbackFailed: 'domain: could not deliver incomplete permission feedback',
+  autoRejectedIncomplete: 'domain: automatically rejected a managed permission request with incomplete arguments (%s)',
   offerFailed: 'domain: a request could not be offered; it goes to the user',
   handoffFailed: 'domain: a permission handoff notice could not be committed',
   settleFailed: 'domain: a settlement could not be committed',

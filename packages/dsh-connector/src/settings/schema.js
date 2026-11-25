@@ -9,7 +9,7 @@ import Schema from '@deepseek-ai/schemastery'
 import { APPROVAL_LISTENER } from '../../mcp-schema/constants.js'
 // The approval listener's own port bounds: the setting accepts exactly what it can bind.
 import { PORT_RANGE } from '../mcp/oauth-web/constants.js'
-import { AUTO_ESCALATE_PERMISSIONS_DEFAULT, SETTING, SETTING_TEXT } from './constants.js'
+import { AUTO_ESCALATE_PERMISSIONS_DEFAULT, AUTO_REJECT_INCOMPLETE_ARGUMENTS_DEFAULT, SETTING, SETTING_TEXT } from './constants.js'
 
 /** One `{label, enabled, key}` item (K1d TokenSettingsItem). */
 const tokenItem = Schema.object({
@@ -31,5 +31,7 @@ export const SETTINGS_SCHEMA = Object.freeze({
   [SETTING.autoEscalatePermissions[0]]: Schema.object({
     [SETTING.autoEscalatePermissions[1]]: Schema.boolean().default(AUTO_ESCALATE_PERMISSIONS_DEFAULT)
       .description(SETTING_TEXT.autoEscalatePermissions).volatile(),
+    [SETTING.autoRejectIncompleteArguments[1]]: Schema.boolean().default(AUTO_REJECT_INCOMPLETE_ARGUMENTS_DEFAULT)
+      .description(SETTING_TEXT.autoRejectIncompleteArguments).volatile(),
   }),
 })

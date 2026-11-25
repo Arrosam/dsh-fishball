@@ -11,7 +11,7 @@ import {
 } from './constants.mjs'
 import { row, withdrawn } from './rows.mjs'
 import {
-  A, answer, asked, bytes, call, cid, decided, eventually, free, handOver, isListed, listed, managed, ofType, okCall, pending, permissionsFor, principal,
+  A, answer, asked, bytes, call, cid, decided, eventually, free, handOver, isListed, legacyIncompleteWorld, listed, managed, ofType, okCall, pending, permissionsFor, principal,
   quiet, reconnect, refusedCall, resultOf, retirement, session, setEnabled, setLimit, settlement, settlementsOf, step, stockFor, takeBack, tok, turn,
   titleOf, untilStock, userClicks, world,
 } from './subject.mjs'
@@ -127,7 +127,7 @@ export function registerApprovalCases(sdk) {
     assert.deepEqual(await answer(p, r, A.allow(FIXTURE.astral.repeat(PAYLOAD_LIMITS.reasonChars))), { ok: true, accepted: true })
   })
   row(sdk, 'APR-05', 'DT (allow on truncated arguments)', `argumentExcerptBytes small → argumentsStatus truncated; allow → ${REFUSAL.argumentsIncomplete}; still listed; reject then answers`, async (t) => {
-    const w = await w0()
+    const w = await legacyIncompleteWorld(sdk)
     const p = await principal(t, w)
     const sid = await managed(w, p)
     await setLimit(t, w, SET.argumentExcerptBytes, FIXTURE.shortExcerpt)
@@ -329,7 +329,7 @@ export function registerApprovalCases(sdk) {
   // ------------------------------------------------------------------------- argument excerpts (BVA, live)
   for (const [label, delta] of [['= L', 0], ['L + 1', 1], ['L − 1', -1], ['L − 8 (inside a 2-byte character run)', -8]]) {
     row(sdk, 'APR-13', `BVA (argumentExcerptBytes ${label})`, delta >= 0 ? 'complete, the whole JSON' : 'truncated: a prefix of the JSON within the limit, no broken character', async (t) => {
-      const w = await w0()
+      const w = await (delta < 0 ? legacyIncompleteWorld(sdk) : w0())
       const p = await principal(t, w)
       const sid = await managed(w, p)
       const text = tok('a13')
@@ -359,7 +359,7 @@ export function registerApprovalCases(sdk) {
     ['a call to another tool', { as: IX.fixture.otherTool }, false, true],
   ]) {
     row(sdk, 'APR-14', `EP (${label})`, `argumentsStatus unavailable; callId ${nullId ? 'null' : 'kept'}; allow → ${REFUSAL.argumentsIncomplete}; still offered`, async (t) => {
-      const w = await w0()
+      const w = await legacyIncompleteWorld(sdk)
       const p = await principal(t, w)
       const sid = await managed(w, p)
       const r = await asked(w, p, sid, { extra })

@@ -11,8 +11,8 @@ import assert from 'node:assert/strict'
 import { APPROVAL_DECISION, DECISION_TEXT, FIXTURE, GRANT_KIND, IX, PAYLOAD_LIMITS, REFUSAL, RELAYED, RISK, SURFACE, TOOL, WORLD } from './constants.mjs'
 import { row } from './rows.mjs'
 import {
-  A, answer, asked, assertCovered, assertOffered, call, decided, exactGrant, free, handOver, isListed, managed, okCall, prefixGrant,
-  principal, refusedCall, sleep, takeBack, tok, world,
+  A, answer, asked, assertCovered, assertOffered, call, decided, exactGrant, free, handOver, isListed, legacyIncompleteWorld, managed, okCall, prefixGrant,
+  principal, refusedCall, setLimit, sleep, takeBack, tok, world,
 } from './subject.mjs'
 
 const SHELL = 'bash'
@@ -30,7 +30,7 @@ async function granted(w, p, sid, tool, command, grant, extra = {}) {
 
 export function registerGrantCases(sdk) {
   const w0 = () => world(sdk, WORLD.scenario.grants)
-  const start = async (t) => { const w = await w0(); const p = await principal(t, w); const sid = await managed(w, p); return { w, p, sid } }
+  const start = async (t, opened = w0()) => { const w = await opened; const p = await principal(t, w); const sid = await managed(w, p); return { w, p, sid } }
 
   row(sdk, 'GRT-01 / GRT-02', 'UC → ST (a prefix grant, then covered runs)', '{accepted, grantId grt_…, expiresAt}; the creating call runs; two later covered runs need no offer; grants_list shows uses 2 and lastUsedAt; paused false', async (t) => {
     const { w, p, sid } = await start(t)
@@ -151,10 +151,8 @@ export function registerGrantCases(sdk) {
     })
   }
   row(sdk, 'GRT-10', 'DT (allow on truncated arguments)', `a grant on a truncated call → ${REFUSAL.argumentsIncomplete}`, async (t) => {
-    const { w, p, sid } = await start(t)
-    const was = (await w.settings()).value[RELAYED.setting.argumentExcerptBytes]
-    t.after(() => w.call('settingsUpdate', { patch: { [RELAYED.setting.argumentExcerptBytes]: was } }))
-    await w.call('settingsUpdate', { patch: { [RELAYED.setting.argumentExcerptBytes]: FIXTURE.shortExcerpt } })
+    const { w, p, sid } = await start(t, legacyIncompleteWorld(sdk))
+    await setLimit(t, w, RELAYED.setting.argumentExcerptBytes, FIXTURE.shortExcerpt)
     const base = tok('g10t')
     const r = await asked(w, p, sid, { tool: SHELL, text: base, extra: { pad: FIXTURE.padUnit.repeat(FIXTURE.wideBytesPad) } })
     const reply = await answer(p, r, valid(base))
