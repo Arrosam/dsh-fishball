@@ -184,10 +184,13 @@ window.__ModuleLoader__.load({
      * Fishball's ordinary text replies, folded by default (the user: "collapse all other assistant
      * output, expandable on click"). The expansion is DSH's own whole-Turn control (TurnProcessNodeView,
      * `button[data-turn-process="<turn>"]`, both SDKs), not a new disclosure: a Turn's reply seats
-     * (`data-chat-turn`) show while its control is open (`data-open`) or disabled. DSH disables it
-     * when it has nothing to fold or keeps the Turn open (stopped, failed, verbose details): there is
-     * no click that could reveal the replies then, so they are not hidden. A running Turn has no
-     * control yet, so its replies stay folded. Reasoning and tool rows keep DSH's own folding.
+     * (`data-chat-turn`) normally show while its control is open (`data-open`) or disabled. DSH
+     * forces the whole Turn open for interleaved input and disables its control without
+     * `aria-expanded` (ChatNodeSeat / TurnProcessNodeView). That is not a reveal: if the Turn already
+     * has a Fishball message, keep its replies hidden. Preserve the fallback when no message was
+     * sent, and the open/disabled controls that still declare expandable process content (e.g. a
+     * stopped Turn with tool calls). A running Turn has no control yet, so its replies stay folded.
+     * Reasoning and tool rows keep DSH's own folding.
      * `reply` is the response half of an assistant step (ChatNodeSeat `data-chat-group-part`).
      *
      * A folded seat gets the `hidden` attribute, as DSH folds its own process rows (ui-chat
@@ -205,7 +208,7 @@ window.__ModuleLoader__.load({
       flowKind: 'data-chat-flow-kind', groupPart: 'data-chat-group-part',
       assistant: 'assistant-step', response: 'response',
       turnOf: 'data-chat-turn',
-      control: 'button[data-turn-process]', controlTurn: 'data-turn-process', open: 'data-open', disabled: 'disabled',
+      control: 'button[data-turn-process]', controlTurn: 'data-turn-process', open: 'data-open', disabled: 'disabled', expandable: 'aria-expanded',
       hidden: 'hidden', hiddenValue: '', dshHidden: 'data-turn-process-hidden', dshHiddenValue: 'until-found',
       folded: 'data-fishball-folded',
     })
@@ -213,7 +216,7 @@ window.__ModuleLoader__.load({
     const REPLY_SEAT = `[${REPLY_FOLD.flowKind}="${REPLY_FOLD.assistant}"][${REPLY_FOLD.groupPart}="${REPLY_FOLD.response}"]`
     const FOLD_RELEVANT = `[${REPLY_FOLD.flowKind}],${REPLY_FOLD.control}`
     /** The attributes whose change can change the fold: the control's state, a seat's turn and part, and `hidden`. */
-    const FOLD_WATCHED = Object.freeze([REPLY_FOLD.open, REPLY_FOLD.disabled, REPLY_FOLD.turnOf, REPLY_FOLD.groupPart, REPLY_FOLD.hidden])
+    const FOLD_WATCHED = Object.freeze([REPLY_FOLD.open, REPLY_FOLD.disabled, REPLY_FOLD.expandable, REPLY_FOLD.turnOf, REPLY_FOLD.groupPart, REPLY_FOLD.hidden])
     /**
      * The reply's avatar follows the sidebar logo's theme (core's `brandStyle`, LOGO-BUTTON; the user,
      * 2026-11-21): the Fishball theme draws Fishball's fish, V1's FISH_MARK (tag v0.1.0
@@ -666,8 +669,7 @@ window.__ModuleLoader__.load({
     }
 
     /**
-     * Fold Fishball's ordinary replies (REPLY_FOLD): each reply seat whose Turn's control is neither
-     * open nor disabled is folded. Synchronous in the observer, which runs before the next paint, so
+     * Apply the per-Turn reply fold (REPLY_FOLD). Synchronous in the observer, before the next paint, so
      * a new reply never flashes. The observer watches the body, not the conversation element, because
      * DSH replaces that element when the main view changes; only changes to seats and Turn controls
      * (FOLD_RELEVANT, FOLD_WATCHED) run it. Its own writes are a no-op the second time: a seat that
@@ -680,8 +682,11 @@ window.__ModuleLoader__.load({
         const shown = new Set()
         const next = new Set()
         if (scope !== null) {
+          const messaged = new Set([...scope.querySelectorAll(MESSAGE_ROW)].map(seat => seat.getAttribute(REPLY_FOLD.turnOf)))
           for (const control of scope.querySelectorAll(REPLY_FOLD.control)) {
-            if (control.hasAttribute(REPLY_FOLD.open) || control.disabled) shown.add(control.getAttribute(REPLY_FOLD.controlTurn))
+            const turn = control.getAttribute(REPLY_FOLD.controlTurn)
+            if (control.disabled && !control.hasAttribute(REPLY_FOLD.expandable) && messaged.has(turn)) continue
+            if (control.hasAttribute(REPLY_FOLD.open) || control.disabled) shown.add(turn)
           }
           for (const reply of scope.querySelectorAll(REPLY_SEAT)) {
             if (!shown.has(reply.getAttribute(REPLY_FOLD.turnOf))) next.add(reply)
