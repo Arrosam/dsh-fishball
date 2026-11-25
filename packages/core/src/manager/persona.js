@@ -9,7 +9,7 @@
  * the same setup runs on create and resume, so a resumed session receives the current text.
  */
 import { PERSONA_PREFIX_SECTION, PERSONA_SUFFIX_SECTION } from '@deepseek-ai/dsh-system-prompt'
-import { HIDDEN_PROMPT_ENTRIES, PERSONA_ROW } from '../persona.js'
+import { HIDDEN_PROMPT_ENTRIES, PERSONA_ROW, PTC_GUIDE } from '../persona.js'
 
 /** The text a hidden entry is shadowed with: empty, so it contributes nothing. */
 const HIDDEN_TEXT = ''
@@ -26,13 +26,14 @@ const SECTION_ORDER = Object.freeze({
  * context shadows the global one of the same name, and empty text contributes nothing
  * (dsh-system-prompt, both SDKs).
  * @param systemPrompt - the agent-scoped systemPrompt service.
+ * @param programmatic - whether Fishball mounted DSH's PTC executor.
  */
-export function applyPersona(systemPrompt) {
+export function applyPersona(systemPrompt, programmatic) {
   const { prefix, suffix, includeRuntimeContext } = PERSONA_ROW.config
   systemPrompt.section({
     name: PERSONA_PREFIX_SECTION,
     order: systemPrompt.getSectionOrder(SECTION_ORDER.prefix),
-    text: prefix,
+    text: programmatic ? [prefix, PTC_GUIDE].join('\n\n') : prefix,
   })
   systemPrompt.section({
     name: PERSONA_SUFFIX_SECTION,

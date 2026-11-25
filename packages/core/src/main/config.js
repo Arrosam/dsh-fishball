@@ -1,7 +1,7 @@
 /**
  * The main row's settings (F-WIRE; F-SETTINGS `SETTINGS`, K3a `CONNECT.setting`, `FISHBALL_MODEL`).
- * Every field is volatile, so a save in core's settings page (or the model dialog) reaches the
- * running row without a restart: DSH's loader commits a volatile-only change into the running
+ * PTC is selected at manager composition, not hot-switched. The other settings are volatile:
+ * DSH's loader commits a volatile-only change into the running
  * fiber's references and emits `loader/volatile-update` (cordis-plugin-loader, both SDKs), and the
  * row reads each value live through `valueAt`. The nested shape is the one every design text uses
  * (`connect.clientMetadataUrl`, `identity.id`, `identity.name`, `model`). MULTI-1 removed
@@ -25,12 +25,14 @@
 import Schema from '@deepseek-ai/schemastery'
 import { SEAM_BRAND } from 'fishball-shared/ui-seam'
 import { WAKE } from '../../contracts/constants.js'
+import { MANAGER_PTC } from '../manager/ptc.js'
 
 const text = () => Schema.string().volatile()
 /** A whole number of at least `min`; an absent or invalid stored value reads as `fallback` (`loose`). */
 const wholeAtLeast = (min, fallback) => Schema.natural().min(min).default(fallback).loose().volatile()
 
 export const Config = Schema.object({
+  [MANAGER_PTC.setting]: Schema.boolean().default(MANAGER_PTC.default),
   connect: Schema.object({ clientMetadataUrl: text() }),
   identity: Schema.object({ id: text(), name: text() }),
   model: Schema.object({ provider: Schema.string(), model: Schema.string(), reasoningEffort: Schema.string() }).volatile(),

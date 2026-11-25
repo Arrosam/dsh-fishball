@@ -192,7 +192,7 @@ const OUTPUT = Object.freeze({
 /** Model-facing copy, taken from the schedule tool so the persona's habits keep working. */
 const TEXT = Object.freeze({
   create: 'Create a reminder in the current session that delivers prompt when it becomes due. Supply exactly one timing parameter: after_seconds, at, every_seconds, daily, weekly, or cron. Local times that do not exist in the zone are skipped; repeated local times fire once, at the earlier instant. After downtime, a recurring reminder delivers only its latest missed occurrence. Delivery can repeat after a crash.',
-  list: 'List the reminders in the current session, active first.',
+  list: 'List the reminders in the current session, active first. This lookup can be batched with independent calls; check the returned ids before updating or deleting.',
   update: 'Change a reminder in place, keeping its id. Supply a new title, prompt, or at most one timing parameter; omitted fields keep their stored values. To change a relative delay, create a new reminder.',
   delete: 'Delete a reminder in the current session, active or inactive. Deletion does not retract a reminder message that is already queued.',
   title: `Concise task name in the user's language, at most ${TITLE_MAX_CHARS} characters. Name only the core action and subject; keep essential target identifiers such as PR numbers and branch names. Do not include execution frequency (e.g. daily, hourly), scheduled dates/times, time zones, task status, or configuration and execution details (e.g. read-only mode, profile-tag filters), even when embedded in the requested or existing title. Do not append parenthetical notes. Put scheduling information in the timing parameters and execution instructions in prompt.`,

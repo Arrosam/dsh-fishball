@@ -19,7 +19,7 @@ import { MESSAGE_TOOL } from './message-tools.js'
  */
 const MESSAGE = Object.freeze({
   argument: 'message',
-  description: 'Send a message to the user. This is the only way the user sees what you say: your ordinary replies, reasoning and other tool calls are hidden from them. The message is shown in this chat as your message, rendered as Markdown. Put everything the user needs in it, in their language.',
+  description: 'Send a message to the user. This is the only way the user sees what you say: your ordinary replies, reasoning and other tool calls are hidden from them. The message is shown in this chat as your message, rendered as Markdown. Put everything the user needs in it, in their language. In a program, await this tool after checking the results you are reporting; printing them does not notify the user.',
   argumentDescription: 'The whole message for the user, as Markdown. It must not be blank.',
   emptyCode: 'message-empty',
 })

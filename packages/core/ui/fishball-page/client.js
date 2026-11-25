@@ -170,7 +170,8 @@ window.__ModuleLoader__.load({
     const MESSAGE = Object.freeze({
       tool: 'message_user', argument: 'message',
       kind: 'fishball-message', target: 'chat', groupTree: 'turn', visibility: 'visible',
-      event: 'tool/call', role: 'start', slot: 'conversation.chat.node', locale: 'chat',
+      event: Object.freeze({ direct: 'tool/call', program: 'tool/ptc-dispatch-start' }),
+      role: 'start', slot: 'conversation.chat.node', locale: 'chat',
       bubble: 'data-fishball-message', textInteractionSource: 'data-text-interaction-source',
       // After the call's own tool row: on a reloaded page that row also anchors at the `tool/call` seq
       // (no streamed delta is left), and a tie leaves the order to the engine. DSH places its own
@@ -605,24 +606,28 @@ window.__ModuleLoader__.load({
       }
     }
 
-    /** The message of one `message_user` call's raw argument JSON, as sent; null when it is blank after trimming or unreadable. */
-    function messageOf(rawArguments) {
-      let args
-      try { args = JSON.parse(rawArguments) } catch { return null }
+    /** Direct calls record JSON text; a PTC dispatch records already normalized arguments. */
+    function messageOf(args) {
+      if (typeof args === 'string') {
+        try { args = JSON.parse(args) } catch { return null }
+      }
       const text = args?.[MESSAGE.argument]
       return typeof text === 'string' && text.trim() !== '' ? text : null
     }
 
     /**
      * The Conversation Definition that turns each `message_user` call into a message Node (MESSAGE).
-     * It matches only `tool/call`, beside DSH's own tool Definition (no exclusive claim), so the
-     * call's ordinary tool row is unchanged. A Node is rebuilt only when its text or Location changes.
+     * Match the start of a direct or nested call, not settlement, so each message appears once.
+     * This matches beside DSH's own tool Definition (no exclusive claim).
      */
     function messageDefinition() {
+      const match = (event) => event.data?.name === MESSAGE.tool
+        ? { id: String(event.data.subCallId ?? event.data.callId), role: MESSAGE.role }
+        : null
       return {
         kind: MESSAGE.kind,
         target: MESSAGE.target,
-        match: { [MESSAGE.event]: (event) => event.data?.name === MESSAGE.tool ? { id: String(event.data.callId), role: MESSAGE.role } : null },
+        match: { [MESSAGE.event.direct]: match, [MESSAGE.event.program]: match },
         start: (_context, match) => messageOf(match.event.data.arguments),
         update: (context) => context.state,
         buildViewNode(context) {

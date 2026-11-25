@@ -38,6 +38,7 @@ import { ASK_TOOL } from './asks/constants.js'
 import { FACADE } from './bridge/constants.js'
 import { modelNameOf } from './bridge/names.js'
 import { MESSAGE_TOOL } from './manager/message-tools.js'
+import { MANAGER_PTC } from './manager/ptc.js'
 import { TOOL as REMINDER_TOOL } from './manager/reminder-tools.js'
 
 const T = MCP.tools
@@ -50,6 +51,8 @@ const TALK = MESSAGE_TOOL.send
  */
 const DSH_TOOL = Object.freeze({ askQuestion: 'ask_user_question' })
 const ASK_QUESTION = DSH_TOOL.askQuestion
+
+export const PTC_GUIDE = `**Batching tools.** Use ${MANAGER_PTC.transport} to batch independent calls; use Promise.all for independent reads. Await and check results before dependent calls, and return or log what you need to see. Ask with ${ASK_QUESTION} in its own program with time for a reply; the program deadline also ends the wait. A timeout is not an answer or permission. Check earlier effects before retrying. Never request a wider program sandbox.`
 
 /**
  * Embed-UI's notify tool by its base name (`embed-ui__notify`): the façade's own name for it

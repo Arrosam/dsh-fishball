@@ -100,7 +100,9 @@ export async function apply(ctx, config) {
 
   // 2. The manager service and its one session (before the façades: their image gate reads the model).
   const service = createManagerService(ctx)
-  const session = createManagerSession(ctx, { setup: service.setup, published: service.published, model: () => setting('model') })
+  const session = createManagerSession(ctx, {
+    setup: service.setup, published: service.published, model: () => setting('model'), ptc: () => setting('ptc'),
+  })
   service.bind(session)
   await service.start()
   await session.start()

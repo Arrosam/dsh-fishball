@@ -72,6 +72,27 @@ Core's own page on DSH's Plugins page (`client.js` with `client.settings.js`, in
   uses. Unset means this DSH's default model; nothing blocks. Only this page and fishball-ui's model
   dialog write it. The instance's model sync copies providers and model lists only and never sets it.
 
+## Programmatic tool calling
+
+On DSH 0.2.2, Fishball uses the built-in PTC executor by default. Only its manager session
+changes: it keeps the restricted Fishball preset and calls its existing tools from `run_code`.
+Other sessions keep their own executor. Fishball rejects requests to widen the program's sandbox.
+DSH 0.2.1 keeps its existing tool mode.
+
+To opt out, set `ptc: false` in the `fishball-core` row of the Fishball profile's
+`cordis.patch.yml`, preserving any other `config` keys on that row. In a hosted child this is
+`~/.dsh/fishball/runtime/dsh-home/profiles/fishball/cordis.patch.yml` with the default DSH home:
+
+```yaml
+- id: fishball-core
+  config:
+    ptc: false
+```
+
+Restart the Fishball host process after changing the setting; an open Agent does not switch
+executors mid-turn. No new session is needed. On PTC, ask blocking user questions in a separate
+program with time for a reply; the Node deadline defaults to two minutes and caps at ten.
+
 ## Model tools
 
 Every tool of a target is offered to the manager as `mcp__<target>__<tool>_<id>` (at most 64

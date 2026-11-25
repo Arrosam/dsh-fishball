@@ -6,6 +6,7 @@
 import { SEAM_BRAND, UI_INSTANCE } from 'fishball-shared/ui-seam'
 import { FISHBALL_MODEL, WAKE } from '../../contracts/constants.js'
 import { SETTINGS } from '../settings/constants.js'
+import { MANAGER_PTC } from '../manager/ptc.js'
 
 export const MAIN = Object.freeze({
   /** The row id and Cordis plugin name: also its settings namespace (SETTINGS.namespace, FISHBALL_MODEL). */
@@ -38,6 +39,7 @@ export const MAIN = Object.freeze({
     id: Object.freeze(['identity', 'id']),
     name: Object.freeze(['identity', 'name']),
     model: FISHBALL_MODEL.path,
+    ptc: Object.freeze([MANAGER_PTC.setting]),
     /** LOGO-BUTTON: the sidebar logo's theme (`SEAM_BRAND.setting`, a top-level scalar field). */
     brandStyle: Object.freeze([SEAM_BRAND.setting]),
     /** WAKE: the batching settings, as nested paths (`WAKE.setting`'s dotted names). */
