@@ -25,6 +25,7 @@ import { pageModule } from './subject.mjs'
 
 const T = { timeout: WAIT.testMs }
 const ID = POLISH.id
+const AUTO_HANDOFF = POLISH.autoHandoffPath.join('.')
 const row = (sdk, id, part, title, fn) => test(caseName(sdk, id, part, title), T, fn)
 
 /** The rendered nodes below `nodes` (each element once). */
@@ -85,7 +86,7 @@ export const entryRow = (item, over) => ({ key: item.key, label: item.label, ena
 export function registerPolishSettingsCases(sdk) {
   // ---------------------------------------------------------------- sections (EP over the language)
   for (const lang of POLISH.langs) {
-    row(sdk, ID.sections, lang, `three h3 sections in order: ${POLISH.headings[lang].join(', ')}; tokens in the first, the port and DSH name in the second, the limits in the third`, async (t) => {
+    row(sdk, ID.sections, lang, `three h3 sections in order: ${POLISH.headings[lang].join(', ')}; tokens in the first, the port, DSH name and permission handoff switch in the second, the limits in the third`, async (t) => {
       const { view } = await openPolished(t, sdk, { labels: [FIXTURE.labelA], lang })
       const tree = view.tree()
       assert.deepEqual(headingsOf(tree).map(text), [...POLISH.headings[lang]])
@@ -93,7 +94,7 @@ export function registerPolishSettingsCases(sdk) {
       assert.ok(tokens && approval && limits, 'a heading outside a section')
       for (const node of [view.one(CLIENT.attr.newLabel), view.one(CLIENT.attr.newToken), ...rowsOf(view)]) assert.equal(sectionOf(tree, node), tokens, 'a token part outside the Tokens section')
       const settings = findAll(tree, (n) => n.props[POLISH.attr.setting] !== undefined)
-      assert.deepEqual(settings.filter((n) => sectionOf(tree, n) === approval).map((n) => n.props[POLISH.attr.setting]), ['approval.port', 'approval.dshName'])
+      assert.deepEqual(settings.filter((n) => sectionOf(tree, n) === approval).map((n) => n.props[POLISH.attr.setting]), ['approval.port', 'approval.dshName', AUTO_HANDOFF])
       assert.equal(settings.filter((n) => sectionOf(tree, n) === limits).length, 5, 'limit rows')
       assert.ok(limits.props['data-dsh-connector-limits'] !== undefined, 'the limits hook is not on the Safety limits section')
     })
@@ -210,7 +211,7 @@ export function registerPolishSettingsCases(sdk) {
   }
 
   // ---------------------------------------------------------------- primitives and glyphs
-  row(sdk, ID.primitives, 'inputs', 'the new-label field, each row label and each setting field are DSH\'s Input, carrying their aria-label / placeholder / data hooks; New token has a plus icon', async (t) => {
+  row(sdk, ID.primitives, 'inputs', 'the new-label field, each row label and each text setting field are DSH\'s Input, carrying their aria-label / placeholder / data hooks; New token has a plus icon', async (t) => {
     const { view } = await openPolished(t, sdk, { labels: [FIXTURE.labelA] })
     const newLabel = view.one(CLIENT.attr.newLabel)
     assert.ok(isPrimitive(newLabel, POLISH.input), 'the new-label field is not Input')
@@ -219,9 +220,26 @@ export function registerPolishSettingsCases(sdk) {
     assert.equal(labelField?.props.value, FIXTURE.labelA)
     for (const setting of findAll(view.tree(), (n) => n.props[POLISH.attr.setting] !== undefined)) {
       assert.equal(setting.tag, 'label', 'a setting row is not a <label>')
-      assert.equal(findAll([setting], (n) => isPrimitive(n, POLISH.input)).length, 1, setting.props[POLISH.attr.setting] + ': inputs')
+      const name = setting.props[POLISH.attr.setting]
+      const primitive = name === AUTO_HANDOFF ? POLISH.switch : POLISH.input
+      assert.equal(findAll([setting], (n) => isPrimitive(n, primitive)).length, 1, name + ': ' + primitive)
     }
     assert.match(view.one(CLIENT.attr.newToken).props.icon?.type?.displayName ?? '', POLISH.icon.plus)
+  })
+  row(sdk, ID.primitives, 'permission handoff switch', 'the switch defaults on; turning it off saves only the permission handoff setting and reopening shows it off', async (t) => {
+    const { page, view } = await openPolished(t, sdk)
+    const switchIn = (current) => {
+      const setting = current.one(POLISH.attr.setting, AUTO_HANDOFF)
+      return findAll([setting], (n) => isPrimitive(n, POLISH.switch))[0]
+    }
+    assert.equal(switchIn(view).props.checked, true)
+    const revision = page.revision()
+    switchIn(view).props.onChange(false)
+    const [group, field] = POLISH.autoHandoffPath
+    assert.ok(await page.until(() => page.value()[group]?.[field] === false), 'the opt-out was not saved')
+    assert.deepEqual(page.mutations, [{ ops: [{ op: CLIENT.setOp, path: POLISH.autoHandoffPath, value: false }], expected: revision, liveRevision: revision }])
+    view.close()
+    assert.equal(switchIn(await page.open()).props.checked, false)
   })
   row(sdk, ID.primitives, 'copy', 'Reveal: Copy keeps the word "Copy" and its copy icon; after a copy its icon is a check and the status says "Copied"', async (t) => {
     const { page, view } = await openPolished(t, sdk)
