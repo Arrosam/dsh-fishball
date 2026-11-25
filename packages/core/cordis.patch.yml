@@ -92,6 +92,9 @@
 - { id: entry-customization, disabled: *with-ui }
 - { id: ui-open-in-app, disabled: *with-ui }
 - { id: ui-sidebar-terminal, disabled: *with-ui }
+# The files plugin owns the Start card, the files tab and its shortcut/palette command.
+# Turn off the contribution at the source; individual document previews are a separate row.
+- { id: ui-sidebar-files, disabled: *with-ui }
 # ui-model-selection: the composer's model seat and the /model popup (dsh-web-app, both SDKs). Only
 # core's settings choose Fishball's model (the user, 2026-11-16: "Hide it. Only core's settings
 # choose the model"); fishball-ui's model dialog and core's settings page write it. No other row
