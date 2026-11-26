@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"><title>更新记录 · Fishball 任务板</title><link rel="stylesheet" href="preview.css">
+</head>
+<body><a class="skip" href="#main">跳到内容</a>
+<aside class="preview" aria-label="静态方案预览"><b>设计预览</b>
+<nav aria-label="预览场景"><a href="index.html" >任务板</a><a href="settings.html" >自动更新设置</a><a href="disabled.html" >未选择模型</a><a href="notice.html" >Fishball 通知</a><a href="history.html" aria-current="page">更新记录</a><a href="review.html" >待复核</a><a href="undo.html" >撤销结果</a><a href="failure.html" >未写入</a>
+</nav>
+</aside>
+<header class="mast"><a class="brand" href="index.html"><svg aria-hidden="true" class="mark" viewBox="0 0 24 24"><rect width="24" height="24" rx="5" fill="#101010"/><path fill="#f2f2ee" d="M7.4 16.6V9.9l3.9-4.3h7.1v7.1l-4.3 3.9z M7.4 16.6l-4.8 4.8h4.8z"/><path fill="#ec0a6e" d="M14.6 7.4h2v2h-2z"/></svg>Fishball</a><span class="slash">/</span><span class="crumb">任务板　/　自动更新</span><span class="spacer"></span><a class="btn" href="index.html"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5l1.5 1.5L7 3.5 M9 5h8 M3 12l1.5 1.5L7 10.5 M9 12h8"/></svg> 任务板</a>
+</header>
+<main id="main" class="workspace">
+<div class="sheet">
+<div class="eyebrow">Task board / audit trail
+</div>
+<div class="intro">
+<div>
+<h1>更新记录</h1>
+<p class="desc">14:32 的会话返回改了两个任务。下面是实际写入的字段；父任务的进度没有变化。</p>
+</div><span class="tag pink"><i></i>批次 018</span>
+</div>
+<div class="columns">
+<div class="stack">
+<section class="box ">
+<h2>补写离线安装步骤</h2>
+<p class="small">父任务：发布安装指南 · 45%</p>
+<div class="diffrow"><span>进度</span><strong><span class="before">30%</span>　→　<span class="after">70%</span></strong>
+</div>
+<div class="fielddiff"><span class="small">原备注 · 保留</span>
+<p class="copy">保留原来的在线安装说明。</p>
+</div>
+<div class="fielddiff"><span class="small">追加备注</span>
+<p class="copy add">已补齐包清单和解包步骤；还缺离线升级示例。</p>
+</div>
+</section>
+<section class="box ">
+<h2>验证离线安装命令</h2>
+<p class="small">父任务：发布安装指南 · 45%</p>
+<div class="diffrow"><span>状态</span><strong><span class="before">待办</span>　→　<span class="after">进行中</span></strong>
+</div>
+<div class="diffrow"><span>进度</span><strong><span class="before">0%</span>　→　<span class="after">40%</span></strong>
+</div>
+</section>
+</div>
+<div class="stack">
+<section class="box ">
+<h2 class="cap"><span class="doticon"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9a7 7 0 1 1 1.4 5 M3 4v5h5 M10 6v5l3 2"/></svg></span>批次来源</h2>
+<dl class="kv">
+<div>
+<dt>会话</dt>
+<dd><span class="mono">ses_docs_7f2a</span></dd>
+</div>
+<div>
+<dt>更新模型</dt>
+<dd>GPT-4.1 mini</dd>
+</div>
+<div>
+<dt>任务板版本</dt>
+<dd>v17 → v18</dd>
+</div>
+<div>
+<dt>提交时间</dt>
+<dd>14:32</dd>
+</div>
+<div>
+<dt>Fishball 通知</dt>
+<dd>1 条，已入 Fishball 队列（非已读）</dd>
+</div>
+</dl>
+</section>
+<section class="box ">
+<h2>批次操作</h2>
+<p class="small">撤销将一并恢复这两项任务。若任务板版本不再是 v18，则拒绝撤销。</p>
+<div class="actions"><a class="btn" href="undo.html"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4L3 9l5 5 M3 9h8a5 5 0 0 1 5 5"/></svg> 撤销此批次</a><a class="btn" href="notice.html">通知详情</a>
+</div>
+<div class="footlink"><a class="link" href="review.html">查看 1 项待复核建议 →</a>
+</div>
+</section>
+</div>
+</div>
+</div>
+</main>
+</body>
+</html>

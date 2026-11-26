@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"><title>未选择模型 · Fishball 任务板</title><link rel="stylesheet" href="preview.css">
+</head>
+<body><a class="skip" href="#main">跳到内容</a>
+<aside class="preview" aria-label="静态方案预览"><b>设计预览</b>
+<nav aria-label="预览场景"><a href="index.html" >任务板</a><a href="settings.html" >自动更新设置</a><a href="disabled.html" aria-current="page">未选择模型</a><a href="notice.html" >Fishball 通知</a><a href="history.html" >更新记录</a><a href="review.html" >待复核</a><a href="undo.html" >撤销结果</a><a href="failure.html" >未写入</a>
+</nav>
+</aside>
+<header class="mast"><a class="brand" href="index.html"><svg aria-hidden="true" class="mark" viewBox="0 0 24 24"><rect width="24" height="24" rx="5" fill="#101010"/><path fill="#f2f2ee" d="M7.4 16.6V9.9l3.9-4.3h7.1v7.1l-4.3 3.9z M7.4 16.6l-4.8 4.8h4.8z"/><path fill="#ec0a6e" d="M14.6 7.4h2v2h-2z"/></svg>Fishball</a><span class="slash">/</span><span class="crumb">插件　/　fishball-taskboard</span><span class="spacer"></span><a class="btn" href="index.html"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5l1.5 1.5L7 3.5 M9 5h8 M3 12l1.5 1.5L7 10.5 M9 12h8"/></svg> 任务板</a>
+</header>
+<main id="main" class="workspace">
+<div class="sheet">
+<div class="eyebrow">Task board / configuration
+</div>
+<div class="intro">
+<div>
+<h1>自动更新已关闭</h1>
+<p class="desc">未设置更新模型。受管会话仍会正常返回，但不会触发模型调用、任务写入或自动通知。</p>
+</div><span class="tag "><i></i>未启用</span>
+</div>
+<div class="columns">
+<div class="stack">
+<section class="box ">
+<h2 class="cap"><span class="doticon"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h12 M4 14h12 M7 3v6 M13 11v6"/></svg></span>模型与开关</h2>
+<div class="fieldline">
+<div><strong>自动更新任务板</strong>
+<p class="small">选择模型后才会启用。</p>
+</div><a class="toggle off" href="settings.html" aria-label="选择模型并启用"></a>
+</div><hr class="divider">
+<div class="copy"><strong>启用前确认 · OpenAI / GPT-4.1 mini（示例）</strong>
+<p class="small">当前不发送数据。选择模型后，所选服务商将收到本轮最终回复及匹配任务所需的板上字段：任务 ID、父子关系、标题、状态、进度和备注。不发送备忘、历史对话或凭据。</p>
+</div><hr class="divider">
+<div class="fieldline">
+<h3>更新模型</h3><span class="small">本机可用目录 · 示例</span>
+</div>
+<div class="picker muted">未选择模型
+</div>
+<div class="actions"><a class="btn strong" href="settings.html">选择可用模型</a>
+</div>
+</section>
+<section class="box ">
+<h2 class="cap"><span class="doticon"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5l1.5 1.5L7 3.5 M9 5h8 M3 12l1.5 1.5L7 10.5 M9 12h8"/></svg></span>现有任务不受影响</h2>
+<p>你和 Fishball 仍可照常编辑任务。已保存的自动更新记录可在任务板中查看。</p>
+<div class="actions"><a class="btn" href="history.html">查看更新记录</a>
+</div>
+</section>
+</div>
+<div class="stack">
+<section class="box ">
+<h2 class="cap"><span class="doticon"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 9h10v8H5z M7 9V6a3 3 0 1 1 6 0v3"/></svg></span>关闭时的处理</h2>
+<dl class="kv">
+<div>
+<dt>所选模型</dt>
+<dd>无</dd>
+</div>
+<div>
+<dt>默认模型回退</dt>
+<dd>无</dd>
+</div>
+<div>
+<dt>待处理更新</dt>
+<dd>取消</dd>
+</div>
+<div>
+<dt>自动调用</dt>
+<dd>0 次</dd>
+</div>
+</dl>
+</section>
+</div>
+</div>
+</div>
+</main>
+</body>
+</html>

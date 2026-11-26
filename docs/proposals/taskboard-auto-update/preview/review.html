@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"><title>待复核 · Fishball 任务板</title><link rel="stylesheet" href="preview.css">
+</head>
+<body><a class="skip" href="#main">跳到内容</a>
+<aside class="preview" aria-label="静态方案预览"><b>设计预览</b>
+<nav aria-label="预览场景"><a href="index.html" >任务板</a><a href="settings.html" >自动更新设置</a><a href="disabled.html" >未选择模型</a><a href="notice.html" >Fishball 通知</a><a href="history.html" >更新记录</a><a href="review.html" aria-current="page">待复核</a><a href="undo.html" >撤销结果</a><a href="failure.html" >未写入</a>
+</nav>
+</aside>
+<header class="mast"><a class="brand" href="index.html"><svg aria-hidden="true" class="mark" viewBox="0 0 24 24"><rect width="24" height="24" rx="5" fill="#101010"/><path fill="#f2f2ee" d="M7.4 16.6V9.9l3.9-4.3h7.1v7.1l-4.3 3.9z M7.4 16.6l-4.8 4.8h4.8z"/><path fill="#ec0a6e" d="M14.6 7.4h2v2h-2z"/></svg>Fishball</a><span class="slash">/</span><span class="crumb">任务板　/　自动更新</span><span class="spacer"></span><a class="btn" href="index.html"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5l1.5 1.5L7 3.5 M9 5h8 M3 12l1.5 1.5L7 10.5 M9 12h8"/></svg> 任务板</a>
+</header>
+<main id="main" class="workspace">
+<div class="sheet">
+<div class="eyebrow">Task board / completion review
+</div>
+<div class="intro">
+<div>
+<h1>待 Fishball 复核</h1>
+<p class="desc">会话报告了完成，但任务还没有被标为完成。这里展示的是待核验建议，不是第三项更新。</p>
+</div><span class="tag amber"><i></i>待复核　1</span>
+</div>
+<div class="columns">
+<div class="stack">
+<section class="box ">
+<h2 class="cap"><span class="doticon"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17V3 M4 4c4-3 7 3 12 0v7c-5 3-8-3-12 0"/></svg></span>核对安装包校验值</h2>
+<p class="small">直属父任务：发布安装指南 · 45%</p><hr class="divider">
+<dl class="kv">
+<div>
+<dt>任务板当前值</dt>
+<dd>进行中 · 90%</dd>
+</div>
+<div>
+<dt>模型建议</dt>
+<dd>已完成 · 100%</dd>
+</div>
+</dl>
+<div class="fielddiff"><span class="small">会话中的依据</span>
+<blockquote class="copy">“清单里的安装包都比过了，校验值一致。”</blockquote>
+</div>
+<div class="flag">会话结束不能证明验收通过。请 Fishball 对照发布清单核实，再确认或拒绝建议。
+</div>
+</section>
+</div>
+<div class="stack">
+<section class="box ">
+<h2 class="cap"><span class="doticon"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9a7 7 0 1 1 1.4 5 M3 4v5h5 M10 6v5l3 2"/></svg></span>建议来源</h2>
+<dl class="kv">
+<div>
+<dt>会话</dt>
+<dd><span class="mono">ses_docs_7f2a</span></dd>
+</div>
+<div>
+<dt>来源批次</dt>
+<dd>批次 018</dd>
+</div>
+<div>
+<dt>写入任务</dt>
+<dd>否</dd>
+</div>
+<div>
+<dt>额外通知</dt>
+<dd>0 条</dd>
+</div>
+</dl>
+</section>
+<section class="box ">
+<h2>用户视角</h2>
+<p class="small">此处只读。仅有完成建议、没有其他改动时，记录待复核项，不唤醒 Fishball。</p>
+<div class="actions"><a class="btn" href="index.html">返回任务板</a>
+</div>
+</section>
+</div>
+</div>
+</div>
+</main>
+</body>
+</html>
