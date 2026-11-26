@@ -122,7 +122,13 @@ export interface InterceptControl {
  */
 export type InterceptHandler = (event: InterceptedEvent, ctl: InterceptControl) => Promise<void>
 
+export type TurnFinishedObservation = InterceptedEvent & { readonly type: 'turn-finished' }
+
 export interface FishballInstanceEvents {
+  /** Observe live, trusted ingress without accepting, intercepting or delaying delivery. No replay guarantee. */
+  observeTurnFinished(onEvent: (event: TurnFinishedObservation) => void | Promise<void>): () => void
+  /** Recheck the observation's target epoch, remote work assignment and latest settled turn; no history is read. */
+  isCurrentWorkTurn(event: TurnFinishedObservation, options?: { readonly signal?: AbortSignal }): Promise<boolean>
   /**
    * Registers an interception and returns its disposer.
    * - `priority` is optional, default 0. Dispatch order: the highest `priority` first, then the

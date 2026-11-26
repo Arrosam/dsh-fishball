@@ -31,6 +31,7 @@ import { registerRfixEventCases } from './rfix.mjs'
 import { registerMultiEventCases } from './multi.mjs'
 import { registerRetiredRecoveryCases } from './retired.mjs'
 import { registerBatchEventCases } from './batch.mjs'
+import { registerTurnObserverCases } from './turn-observer.mjs'
 
 const T = { timeout: WAIT.testMs }
 const ID = Object.freeze({
@@ -146,6 +147,7 @@ export function registerInterceptCases(sdk) {
   registerRetiredRecoveryCases(sdk)
   // WAKE-BATCH: batch.mjs (README-style index in USE-CASES.md).
   registerBatchEventCases(sdk)
+  registerTurnObserverCases(sdk)
   // ===================================================================== EVT-UC-02 (Use Case)
   row(sdk, ID.uc02, 'main', 'a contributed:demo.ping is accepted by X, acked after accept, no Fishball turn, not in context, logged', async (t) => {
     const world = await worldFor(t, sdk)

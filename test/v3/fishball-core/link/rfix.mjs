@@ -34,6 +34,15 @@ const RFIX = Object.freeze({
   jsonRpcInternal: -32603,
 })
 const POLL = K1.TOOL.inboxPoll
+const PROBE = Object.freeze({
+  testId: 'LINK-PROBE', name: K1.TOOL.sessionRead, capability: 'forTurnEventId', missing: 'notAdvertised',
+  args: Object.freeze({ sessionId: 'fbtest-session', forTurnEventId: 'fbtest-turn', maxMessages: 1, maxBytes: 1024 }),
+  reply: Object.freeze({ messages: Object.freeze([]), truncated: false, ok: true }),
+})
+const probeTools = () => K1.TOOLS.map((tool) => (tool.name === PROBE.name ? {
+  ...tool, inputSchema: { ...tool.inputSchema, properties: { ...tool.inputSchema.properties, [PROBE.capability]: { type: 'string' } } },
+} : tool))
+const probe = (raw, options = {}) => raw.link.probeTool(PROBE.name, PROBE.args, { capability: PROBE.capability, ...options })
 
 /** A fake connector with the R-FIX-CORE hooks; `hooks(f)` may read the started fake. */
 async function fake(t, hooks = () => ({})) {
@@ -49,12 +58,12 @@ async function fake(t, hooks = () => ({})) {
  * continuation on real timers; `'fake'` holds them (`raw.pending()`, F-FIX-3's driver).
  * `refused` counts the credential's refused() hook.
  */
-async function rawLink(t, sdk, f, { gate, timers = 'real' } = {}) {
+async function rawLink(t, sdk, f, { gate, timers = 'real', customizeClient = (client) => client } = {}) {
   const url = mcpUrl(K1.HOSTS.loopbackScheme, TARGET.anyLoopback, f.port)
   const counts = { refused: 0 }
   const credentials = async () => ({ clientId: PRINCIPAL.clientId, secret: PRINCIPAL.secret, ref: RFIX.ref, refused: () => { counts.refused += 1 }, accepted: () => {} })
   const real = timers === 'real' ? { setTimer: (fn, ms) => setTimeout(fn, ms), clearTimer: (h) => clearTimeout(h) } : {}
-  const raw = await openRawLink(t, sdk, { target: () => url, credentials, sdk: await mcpClient(sdk), ...(gate === undefined ? {} : { gate }), ...real })
+  const raw = await openRawLink(t, sdk, { target: () => url, credentials, sdk: customizeClient(await mcpClient(sdk)), ...(gate === undefined ? {} : { gate }), ...real })
   const polls = []
   raw.link.onPoll((page) => polls.push(page))
   return { ...raw, counts, polls }
@@ -306,6 +315,74 @@ export function registerRfixLinkCases(sdk) {
     await assert.rejects(call(raw))
     await assertRefusedAtRuntime(raw, LINK.code.revoked)
   })
+  caseTest(sdk, PROBE.testId, 'capability', 'only a capability advertised by the named tool permits the optional call', async (t) => {
+    const f = await fake(t, () => ({ tools: probeTools, onTool: (name) => (name === PROBE.name ? PROBE.reply : undefined) }))
+    const raw = await connectedRaw(t, sdk, f)
+    for (const capability of [PROBE.missing, 'toString']) {
+      const result = await probe(raw, { capability })
+      assert.equal(result?.ok, false)
+    }
+    assert.deepEqual(f.callsOf(PROBE.name), [], 'missing capabilities must not send a request')
+    assert.equal((await probe(raw, { signal: AbortSignal.abort() }))?.ok, false)
+    assert.deepEqual(f.callsOf(PROBE.name), [], 'an already aborted probe must not send a request')
+    assert.deepEqual(await probe(raw), PROBE.reply)
+    assert.deepEqual(f.callsOf(PROBE.name), [{ name: PROBE.name, args: PROBE.args }])
+  })
+
+  caseTest(sdk, PROBE.testId, 'isolation', 'a probe refused by the target does not invalidate the shared link or credential', async (t) => {
+    let refusals = 0
+    const f = await fake(t, (box) => {
+      box.forbid = true
+      const denied = forbidding(box).onRpc
+      return {
+        tools: probeTools,
+        onRpc: (m) => {
+          if (m.params?.name !== PROBE.name) return undefined
+          const reply = denied(m)
+          if (reply !== undefined) refusals += 1
+          return reply
+        },
+      }
+    })
+    const raw = await connectedRaw(t, sdk, f, { timers: 'fake' })
+    const status = []
+    raw.link.onStatus((next) => status.push(next))
+    const before = f.tokenRequests().length
+    const result = await probe(raw)
+    assert.equal(result?.ok, false)
+    assert.ok(refusals > 0, 'the probe must reach the target and be refused')
+    assert.deepEqual(await call(raw), { ok: true, accepted: true }, 'ordinary tools still use the open link')
+    assert.equal(raw.link.status().state, STATE.connected)
+    assert.deepEqual(status, [], 'no shared status transition')
+    assert.equal(raw.counts.refused, 0, 'the credential must not be marked refused')
+    assert.equal(raw.pending().length, 0, 'no reconnect work was queued')
+    assert.equal(f.tokenRequests().length, before, 'the refused probe did not require a new shared access token')
+  })
+
+  caseTest(sdk, PROBE.testId, 'reconnect', 'a successful reply that returns after reconnect is unusable', async (t) => {
+    const f = await fake(t, () => ({ tools: probeTools, onTool: (name) => (name === PROBE.name ? PROBE.reply : undefined) }))
+    const held = holdOnce()
+    defer(t, held.open)
+    const raw = await connectedRaw(t, sdk, f, {
+      customizeClient: (mcp) => ({ ...mcp, Client: class extends mcp.Client {
+        async callTool(call, options) {
+          const reply = await super.callTool(call, options)
+          // Hold the successful result above the transport: closing the old HTTP connection
+          // cannot mask a missing generation check by making the pending request reject.
+          if (call.name === PROBE.name) await held.wait()
+          return reply
+        }
+      } }),
+    })
+    const oldReply = probe(raw)
+    await Promise.race([held.reached, oldReply.then((reply) => assert.fail('probe completed before holding the response: ' + JSON.stringify(reply)))])
+    raw.link.reconnect()
+    await untilState(raw.link, STATE.connected)
+    assert.deepEqual(await probe(raw), PROBE.reply, 'the current generation can return its own result')
+    held.open()
+    assert.equal((await oldReply)?.ok, false, 'discard the old successful result')
+  })
+
   const OTHER_FAILURES = [
     ['5 (HTTP 500)', (m) => (m.method === RPC.toolsCall ? { status: RFIX.serverError, body: {} } : undefined), undefined],
     ['6 (JSON-RPC error)', (m) => (m.method === RPC.toolsCall ? { status: K1.HTTP_STATUS.ok, body: { jsonrpc: RPC.jsonrpc, id: m.id, error: { code: RFIX.jsonRpcInternal, message: 'fbtest internal error' } } } : undefined), undefined],

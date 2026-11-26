@@ -302,6 +302,7 @@ export const MCP = Object.freeze({
     pair: 'pair',
     setName: 'set_name',
   }),
+  workTurn: Object.freeze({ version: 1, purpose: 'work', checkField: 'checkTurn', noHistory: 0 }),
   eventTypes: Object.freeze({
     permission: 'permission',
     question: 'question',

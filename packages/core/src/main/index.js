@@ -117,6 +117,7 @@ export async function apply(ctx, config) {
   const ports = Object.freeze({
     live: (source) => targets?.live(source) === true,
     ack: (receipts, source) => targets.ack(receipts, source),
+    isCurrentWorkTurn: (...args) => targets?.isCurrentWorkTurn(...args),
     callTool: (source, toolName, args) => targets.callTool(source, toolName, args),
   })
   const bridgeOptions = Object.freeze({
