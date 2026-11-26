@@ -31,7 +31,7 @@ const unwrapped = (result) => result.structuredContent
  * @param {ReturnType<import('./offers.js').createOfferDesk>} offers
  * @returns {Readonly<Record<string, (args: object, call: {caller: object}) => Promise<object>>>}
  */
-export function createHandlers({ pairs, mailbox, managed, domain, now, logger }, access, offers) {
+export function createHandlers({ pairs, mailbox, managed, manageWork, checkCurrentTurn, domain, now, logger }, access, offers) {
   const { sessions, interactions, attachments, models, workspaces } = domain
 
   /**
@@ -89,7 +89,10 @@ export function createHandlers({ pairs, mailbox, managed, domain, now, logger },
     [TOOL.workspacesList]: async () => ok({ workspaces: await workspaces.list() }),
     [TOOL.modelsList]: async () => ok(await models.list()),
     // The start and its manage are start.js's, shared with dshConnectorSessions.start.
-    [TOOL.sessionStart]: (args, { caller }) => startManaged({ sessions, managed, logger }, args, caller.principalKey),
+    [TOOL.sessionStart]: (args, { caller }) => startManaged(
+      { sessions, managed, logger, manage: manageWork === undefined ? undefined : (sessionId) => manageWork(sessionId, caller) },
+      args, caller.principalKey,
+    ),
     [TOOL.sessionMessage]: delivery((input) => sessions.message(input)),
     [TOOL.sessionRedirect]: delivery((input) => sessions.redirect(input)),
     [TOOL.sessionStop]: managing(async (args, caller, root, admit) => {
@@ -97,6 +100,11 @@ export function createHandlers({ pairs, mailbox, managed, domain, now, logger },
       return ok({ stopped: true })
     }),
     [TOOL.sessionRead]: reading(async (args, caller, root, admit) => {
+      if (args.checkTurn !== undefined) {
+        const current = args.sessionId === root && await checkCurrentTurn?.(root, caller, args.checkTurn) === true
+        admit()
+        return ok({ current })
+      }
       const read = await sessions.read({ sessionId: args.sessionId, maxMessages: args.maxMessages, maxBytes: args.maxBytes })
       admit()
       return ok({ messages: read.messages, truncated: read.truncated })

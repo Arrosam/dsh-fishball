@@ -813,6 +813,7 @@ export declare const DERIVED_AGENT_ID: { readonly prefix: "cid-"; readonly chars
 export declare const ENDPOINT_LIMITS: { readonly bodyBytes: number; readonly maxToolInputElements: number; readonly inFlightPerPrincipal: number; readonly listenStreamsPerPrincipal: number; readonly requestsPerMinute: number; readonly requestBurst: number; readonly jsonRpcCode: number; readonly jsonRpcVersion: "2.0" }
 export declare const ENTRY_STATUS: { readonly ok: "ok" }
 export declare const TURN_OUTCOME: { readonly completed: "completed"; readonly stopped: "stopped" }
+export declare const TURN_PROVENANCE: { readonly version: 1; readonly workPurpose: 'work' }
 export declare const TURN_FINISHED: { readonly finalMessageBytes: 4096; readonly truncationMarker: "…[truncated]" }
 export declare const EVENT_TYPE: { readonly permission: "permission"; readonly question: "question"; readonly planReview: "plan-review"; readonly settlement: "settlement"; readonly retirement: "retirement"; readonly turnFinished: "turn-finished"; readonly state: "state"; readonly message: "message"; readonly ask: "ask"; readonly handover: "handover"; readonly takeback: "takeback"; readonly notice: "notice" }
 export declare const FAILURE_LIMIT: { readonly windowMs: number; readonly keyParts: readonly ["remoteAddress", "clientId"]; readonly perKeyPerWindow: number; readonly perAddressPerWindow: number }

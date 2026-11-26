@@ -7,7 +7,7 @@
  * session controller), so no session rule is written twice.
  */
 import { createUserMessage, boundContextSummary } from '@deepseek-ai/dsh-llm'
-import { TURN_FINISHED, TURN_OUTCOME } from '../../mcp-schema/index.js'
+import { TURN_FINISHED, TURN_OUTCOME, TURN_PROVENANCE } from '../../mcp-schema/index.js'
 import { isSessionGone, rootSessionOf, storedRootOf, textOfEvent } from '../session-info.js'
 import { RUNNING_AGENT } from '../domain/session-port.js'
 import { byteLength, cutToBytes } from '../text.js'
@@ -65,6 +65,10 @@ export function createSessionSource(ctx) {
   const pending = new Map()
   /** Roots whose next turn end the manager caused (`stoppedByManager`). */
   const managerStops = new Set()
+  // Only live starts can bind a management generation; retained journal text alone cannot prove it.
+  const starts = new Map()
+  const settled = new Map()
+  let assignmentOf = () => undefined
   /**
    * runId → root id of each subagent run between `subagent/start` and `subagent/end`. A run counts
    * as moving until its end even while its agent reads idle: DSH queues the child's result into
@@ -93,6 +97,37 @@ export function createSessionSource(ctx) {
     return undefined
   }
 
+  /** Read the final assistant message, not an earlier step or another turn's message. */
+  function turnFinalOf(session, event) {
+    const { seq, data } = event
+    if (!TURN_END_REASON.completedKinds.includes(data?.reason?.kind) || !Number.isSafeInteger(seq) || !Number.isSafeInteger(data.turn)) return undefined
+    const events = session.snapshotEvents()
+    let final
+    for (let index = events.length - 1; index >= 0; index--) {
+      const item = events[index]
+      if (!Number.isSafeInteger(item.seq) || item.seq >= seq) continue
+      if (item.type === SESSION_EVENT.turnEnd) return undefined
+      if (item.type === SESSION_EVENT.turnStart) {
+        if (item.data?.turn !== data.turn) return undefined
+        const text = final === undefined ? '' : textOfEvent(final)
+        return { version: TURN_PROVENANCE.version, turnId: String(data.turn), sequence: seq, reason: data.reason.kind,
+          ...(text.trim() === '' || final.data?.interrupted === true ? {} : { messageSeq: final.seq, message: boundedFinalMessage(text) }) }
+      }
+      if (item.type === SESSION_EVENT.assistantMessage && final === undefined) {
+        if (item.data?.turn !== data.turn) return undefined
+        final = item
+      }
+    }
+    return undefined
+  }
+
+  const boundaryOf = (session) => session?.snapshotEvents().findLast(({ type }) =>
+    type === SESSION_EVENT.turnStart || type === SESSION_EVENT.turnEnd)
+  const stillLatest = (root, seq) => {
+    const boundary = boundaryOf(ctx.sessions.get(root))
+    return boundary?.type === SESSION_EVENT.turnEnd && boundary.seq === seq
+  }
+
   function factsOf(root, reason) {
     if (TURN_END_REASON.completedKinds.includes(reason?.kind)) {
       const text = finalTextOf(root)
@@ -110,6 +145,11 @@ export function createSessionSource(ctx) {
       pending.delete(root)
       if (end.byManager) continue
       const facts = factsOf(root, end.reason)
+      if (end.turnFinal !== undefined) facts.turnFinal = end.turnFinal
+      if (end.assignment !== undefined && assignmentOf(root)?.id === end.assignment.id && stillLatest(root, end.sequence)) {
+        facts.assignment = end.assignment
+        settled.set(root, { sequence: end.sequence, assignmentId: end.assignment.id })
+      }
       for (const listener of [...listeners]) listener(root, facts)
     }
   }
@@ -122,14 +162,31 @@ export function createSessionSource(ctx) {
     // Only the root's own turn decides the outcome; a subagent's turn end is a quiet edge only.
     if (session.id === root) {
       const byManager = managerStops.delete(root)
-      pending.set(root, { reason: event.data?.reason, byManager })
+      const start = starts.get(root)
+      starts.delete(root)
+      settled.delete(root)
+      const turnFinal = turnFinalOf(session, event)
+      const assignment = start?.turn === event.data?.turn && start?.seq < event.seq &&
+        session.snapshotEvents().findLast((item) => item.seq < event.seq &&
+          (item.type === SESSION_EVENT.turnStart || item.type === SESSION_EVENT.turnEnd))?.seq === start.seq ? start.assignment : undefined
+      pending.set(root, { reason: event.data?.reason, byManager, turnFinal, assignment, sequence: event.seq })
     }
     later([root])
   }
 
   const disposers = []
   function subscribe() {
-    disposers.push(ctx.on(SESSION_EVENT.sessionEvent, (session, event) => { if (event.type === SESSION_EVENT.turnEnd) onTurnEnd(session, event) }))
+    disposers.push(ctx.on(SESSION_EVENT.sessionEvent, (session, event) => {
+      if (event.type === SESSION_EVENT.turnEnd) onTurnEnd(session, event)
+      if (event.type !== SESSION_EVENT.turnStart || rootOf(session.id) !== session.id) return
+      settled.delete(session.id)
+      const held = pending.get(session.id)
+      if (held !== undefined) held.assignment = undefined
+      const assignment = assignmentOf(session.id)
+      if (assignment !== undefined && Number.isSafeInteger(event.seq) && Number.isSafeInteger(event.data?.turn)) {
+        starts.set(session.id, { seq: event.seq, turn: event.data.turn, assignment })
+      } else starts.delete(session.id)
+    }))
     disposers.push(ctx.on(SESSION_EVENT.agentStatus, ({ agent }) => { if (agent !== undefined) later([rootOf(agent.id)]) }))
     const runRootOf = (info) => rootOf(info.parentSessionId ?? info.id)
     disposers.push(ctx.on(SESSION_EVENT.subagentStart, (info) => {
@@ -144,6 +201,15 @@ export function createSessionSource(ctx) {
 
   return Object.freeze({
     exists,
+    setWorkAssignmentSource(source) {
+      assignmentOf = source
+      return () => { assignmentOf = () => undefined; starts.clear(); settled.clear() }
+    },
+    isLatestSettled(sessionId, sequence, assignmentId) {
+      const proof = settled.get(sessionId)
+      return proof?.sequence === sequence && proof.assignmentId === assignmentId &&
+        assignmentOf(sessionId)?.id === assignmentId && stillLatest(sessionId, sequence) && standsStill(sessionId)
+    },
     rootOf: (sessionId) => storedRootOf(ctx, sessionId),
     onTurnFinished(listener) {
       if (disposers.length === 0) subscribe()

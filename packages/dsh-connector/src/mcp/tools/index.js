@@ -9,6 +9,8 @@
  * - `pairs`: K1 `PairStore` (C-PAIR): `pair`, `setName`, `byPrincipal`;
  * - `mailbox`: K1 `Mailbox` (C-MAILBOX): `poll`, `ack`;
  * - `managed`: K1c `ManagedState` (C-ROUTE): `managerOf`, `managed`, `manage`, `release`;
+ * - `manageWork` and `checkCurrentTurn`: optional internal routing ports for certified MCP starts
+ *   and the read-only root turn recheck; absent ports do not produce work proof.
  * - `domain`: the session and interaction domain, never a DSH service and never reachable over
  *   MCP or HTTP. Every answer is in K1's shapes (shapes.js); a refusal is `{ok: false, code}` or a
  *   thrown `RefusalError` (src/errors.js):
@@ -53,9 +55,9 @@ import { createOfferDesk } from './offers.js'
 import { createSessionAccess } from './sessions.js'
 
 /** @returns {(server: import('@modelcontextprotocol/server').McpServer, caller: import('../../../mcp-schema/index.js').Caller) => void} */
-export function createCoreTools({ pairs, mailbox, managed, domain, contributions, now, logger }) {
+export function createCoreTools({ pairs, mailbox, managed, manageWork, checkCurrentTurn, domain, contributions, now, logger }) {
   const access = createSessionAccess({ managed, sessions: domain.sessions })
   const offers = createOfferDesk({ interactions: domain.interactions })
-  const handlers = createHandlers({ pairs, mailbox, managed, domain, now, logger }, access, offers)
+  const handlers = createHandlers({ pairs, mailbox, managed, manageWork, checkCurrentTurn, domain, now, logger }, access, offers)
   return createDispatch({ handlers, contributions, pairs, now, logger })
 }

@@ -132,7 +132,14 @@ const RULES = Object.freeze({
   [TOOL.sessionMessage]: delivery,
   [TOOL.sessionRedirect]: delivery,
   [TOOL.sessionStop]: (args) => nonEmpty(args.sessionId),
-  [TOOL.sessionRead]: (args) => { nonEmpty(args.sessionId); if (args.maxMessages < 0 || args.maxBytes < 0) fail() },
+  [TOOL.sessionRead]: ({ sessionId, maxMessages, maxBytes, checkTurn }) => {
+    nonEmpty(sessionId)
+    if (maxMessages < 0 || maxBytes < 0) fail()
+    if (checkTurn !== undefined) {
+      nonEmpty(checkTurn.assignmentId)
+      if (maxMessages !== 0 || maxBytes !== 0 || !Number.isSafeInteger(checkTurn.turnSeq) || checkTurn.turnSeq < 0) fail()
+    }
+  },
   [TOOL.sessionRelease]: (args) => { nonEmpty(args.sessionId); requiredReason(args.reason) },
   [TOOL.approvalsList]: (args) => nonEmpty(args.sessionId),
   [TOOL.approvalAnswer]: approvalAnswer,

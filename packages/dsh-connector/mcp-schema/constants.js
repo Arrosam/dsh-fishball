@@ -692,6 +692,7 @@ export const EVENT_TYPE = Object.freeze({
  */
 export const TURN_OUTCOME = Object.freeze({ completed: 'completed', stopped: 'stopped' })
 export const TURN_FINISHED = Object.freeze({ finalMessageBytes: 4096, truncationMarker: '…[truncated]' })
+export const TURN_PROVENANCE = Object.freeze({ version: 1, workPurpose: 'work' })
 
 /** `contributed:<namespace>.<event>`; the prefix has one owner, K2. */
 export const CONTRIBUTED_TYPE_PREFIX = CONTRIBUTED_EVENT.typePrefix

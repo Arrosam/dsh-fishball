@@ -120,7 +120,15 @@ export async function openRouting(ctx, storageDomain, { mailbox, pairs, tokens, 
     if (offers.length > 0) left.fire(offers)
     return offers
   }
-  managed = createManagedState({ table: tables.managed, logger, leave })
+  const authorityEpochOf = (principalKey) => {
+    if (principalKey === undefined) return undefined
+    const pair = pairs.byPrincipal(principalKey)
+    const entry = pair === undefined ? undefined : tokens.get(pair.entryKey)
+    return entry?.enabled === true ? entry.generation : undefined
+  }
+  managed = createManagedState({ table: tables.managed, logger, leave, authorityEpochOf })
+  const disposeAssignmentSource = sessions.setWorkAssignmentSource?.(managed.workAssignmentOf)
+  if (disposeAssignmentSource !== undefined) disposers.push(disposeAssignmentSource)
 
   // K3 onChange: managed set, names, connection and entry state (handover.d.ts).
   const changes = listenerSet(logger, LOG.format, LOG.listenerFailed)
@@ -144,8 +152,11 @@ export async function openRouting(ctx, storageDomain, { mailbox, pairs, tokens, 
   // Watch = manage (R-WATCH-01/02): produced for managed sessions only; the router drops the rest.
   // WAKE-REDUCE (the user, 2026-11-21): no `state` event any more. "Running" is the session tools'
   // own `running` result, "idle" is this `turn-finished`, and a pending interaction is its offer.
-  disposers.push(sessions.onTurnFinished((sessionId, facts) => {
-    produce({ type: EVENT_TYPE.turnFinished, sessionId }, { sourceSessionId: sessionId, correlationId: null, payload: { sessionId, ...facts } }).catch(warn(LOG.watchFailed))
+  disposers.push(sessions.onTurnFinished((sessionId, { assignment: observed, ...facts }) => {
+    // Keep the existing recipient and report semantics even when the assignment cannot be proved.
+    const assignment = managed.workAssignmentOf(sessionId)
+    const payload = { sessionId, ...facts, ...(assignment !== undefined && observed?.id === assignment.id ? { assignment } : {}) }
+    produce({ type: EVENT_TYPE.turnFinished, sessionId }, { sourceSessionId: sessionId, correlationId: null, payload }).catch(warn(LOG.watchFailed))
   }))
 
   /** An answerable draft's fields for `descriptor` (its offer id is the offer and the correlation id). */
@@ -208,6 +219,14 @@ export async function openRouting(ctx, storageDomain, { mailbox, pairs, tokens, 
   return {
     router,
     managed: managed.state,
+    // An MCP-only start path. The generic host start and handover cannot classify new roots.
+    manageWork: (sessionId, { principalKey, generation }) => managed.assign(sessionId, principalKey, { workEpoch: generation }),
+    checkCurrentTurn(sessionId, { principalKey, generation }, { assignmentId, turnSeq }) {
+      return managed.withState(() => managed.state.managerOf(sessionId) === principalKey
+        && generation === authorityEpochOf(principalKey)
+        && managed.workAssignmentOf(sessionId)?.id === assignmentId
+        && sessions.isLatestSettled?.(sessionId, turnSeq, assignmentId) === true)
+    },
     /** `onLeft(fn(offers))` → dispose: see `leave` above; `offers` is `[{offerId, sessionId, type}]`. */
     onLeft: left.add,
     /** `onSucceeded(fn(from, to) → Promise<{undo}>)` → dispose: see `succeeding` above (R-HOST-09). */

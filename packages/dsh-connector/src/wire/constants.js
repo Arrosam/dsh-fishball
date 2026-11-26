@@ -16,6 +16,7 @@ export const SESSION_EVENT = Object.freeze({
   /** Every appended session event (`(session, event)`). */
   sessionEvent: 'session/event',
   /** A turn of a session ended. */
+  turnStart: 'turn/start',
   turnEnd: 'turn/end',
   /** An agent's status changed (`{agent, status}`). */
   agentStatus: 'agent/status',
