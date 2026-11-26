@@ -568,9 +568,10 @@ connector sends only what no tool result already said. Fishball core batches wha
 | `settlement` `by: principal` | after the managing agent's own `approval_answer` / `question_answer` | **not produced** | the tool's result (`accepted`, `grantId`) is that outcome; `by: user` and `by: delegate` settlements are unchanged |
 | `turn-finished` | after every `turn/end`, `{sessionId, running, queued}` | once per standstill, `{sessionId, outcome, finalMessage?, stop?}` | it is the end signal and the report in one, so no `session_read` follows it; `running`/`queued` are always false at a standstill |
 
-- **Standstill:** the root session's agent, every subagent of its tree and every background job
-  (`ctx.jobs`, `running` / `stopping`) of the tree are idle, with nothing queued. A turn that ends
-  while anything still moves reports nothing; the next quiet edge checks again.
+- **Standstill:** the root session's agent and every subagent of its tree are idle, with no queued
+  input or live subagent run. A turn that ends before then reports nothing; the next quiet edge
+  checks again. Running or stopping background jobs do not delay this report (2026-11-27): a turn
+  can finish with a deliverable that depends on a job staying live, such as a preview server.
 - **`outcome: completed`** (last root turn `completed` or `max-tokens`): `finalMessage` is the root's
   last assistant text, at most `TURN_FINISHED.finalMessageBytes` (4096) UTF-8 bytes including the
   `TURN_FINISHED.truncationMarker` when cut (`truncated: true`).

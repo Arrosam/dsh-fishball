@@ -115,12 +115,13 @@ function routingDriver(routing) {
 
 /**
  * One C-ROUTE world for `t`: real storage and mailbox, fake ports, the routing module opened.
+ * Supply `sessions` to use a real session source over a fake DSH host instead of injecting reports.
  * `hints` defaults to a recording HintSink; `port` builds the mailbox port C-ROUTE is given over
  * the real mailbox (default fakes.mjs mailboxPort; gatedMailboxPort for a slow commit). `prepare(ctx)`
  * runs on each storage context before any table opens (R-FIX-CONNECTOR review rows: a write seam, and
  * the DSH services the session domain needs). Cleaned up by `t`.
  */
-export async function routeWorld(t, sdk, { hints = recordingHints(), port = mailboxPort, prepare = () => {} } = {}) {
+export async function routeWorld(t, sdk, { hints = recordingHints(), port = mailboxPort, prepare = () => {}, sessions = new FakeSessions() } = {}) {
   const [route, mail] = await Promise.all([
     moduleOf(sdk, SUBJECT.entry, [SUBJECT.open], 'C-ROUTE "Owns" packages/dsh-connector/src/routing/'),
     moduleOf(sdk, SUBJECT.mailboxEntry, [SUBJECT.mailboxOpen, SUBJECT.mailboxCreate], 'C-MAILBOX, merged in W2'),
@@ -128,7 +129,7 @@ export async function routeWorld(t, sdk, { hints = recordingHints(), port = mail
   const root = await mkdtemp(path.join(fs.realpathSync(os.tmpdir()), FIXTURE.tempPrefix))
   const ports = {
     pairs: new FakePairs(), tokens: new FakeTokens(), presence: new FakePresence(), settings: new FakeSettings(),
-    sessions: new FakeSessions(), logger: recordingLogger(), clock: fakeClock(),
+    sessions, logger: recordingLogger(), clock: fakeClock(),
   }
   let open
   const start = async () => {

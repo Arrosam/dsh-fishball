@@ -684,7 +684,8 @@ export const EVENT_TYPE = Object.freeze({
 })
 /**
  * `turn-finished` (WAKE-REDUCE, the user's decision 2026-11-21): emitted once a managed session's
- * tree stands still (no running agent, subagent or background job, nothing queued).
+ * tree's agents stand still (no running agent or subagent, nothing queued). Background jobs can
+ * keep running without delaying the report.
  * - `completed`: its last turn completed; `finalMessage` is the last assistant text, cut to
  *   `finalMessageBytes` UTF-8 bytes including `truncationMarker` ("a few KB", the user);
  * - `stopped`: it stopped for any reason but its manager's own stop; `stop` says why.

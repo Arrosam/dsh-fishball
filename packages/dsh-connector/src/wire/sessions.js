@@ -11,7 +11,7 @@ import { TURN_FINISHED, TURN_OUTCOME } from '../../mcp-schema/index.js'
 import { isSessionGone, rootSessionOf, storedRootOf, textOfEvent } from '../session-info.js'
 import { RUNNING_AGENT } from '../domain/session-port.js'
 import { byteLength, cutToBytes } from '../text.js'
-import { SESSION_EVENT, STANDSTILL, STOP_TEXT, SYSTEM_NOTE } from './constants.js'
+import { SESSION_EVENT, STOP_TEXT, SYSTEM_NOTE, TURN_END_REASON } from './constants.js'
 
 /**
  * Whether a session of this DSH has that id (TQ-14): a DSH not-found read is the only "no". A
@@ -32,8 +32,8 @@ export function boundedFinalMessage(text) {
 
 /** `stop.message` for a turn that ended with `reason` (a DSH TurnEndReason), not completed. */
 function stopMessageOf(reason) {
-  if (reason?.kind === STANDSTILL.error) return STOP_TEXT.error(reason.error)
-  if (reason?.kind === STANDSTILL.aborted) return STOP_TEXT.aborted(reason.reason)
+  if (reason?.kind === TURN_END_REASON.error) return STOP_TEXT.error(reason.error)
+  if (reason?.kind === TURN_END_REASON.aborted) return STOP_TEXT.aborted(reason.reason)
   return typeof STOP_TEXT[reason?.kind] === 'string' ? STOP_TEXT[reason.kind] : STOP_TEXT.other(String(reason?.kind))
 }
 
@@ -41,19 +41,18 @@ function stopMessageOf(reason) {
  * Routing's `sessions` source. A subagent's turn counts as its root's (K1c keys are root ids).
  * - `rootOf(id)`: the root Hand over and Take back act on, stopped sessions included
  *   (session-info.js `storedRootOf`; review UI-01), or undefined for no such session;
- * - `onTurnFinished(fn(rootId, facts))` (WAKE-REDUCE, the user's decisions of 2026-11-21): once per
- *   **standstill** of a root's tree, after the root's turn ended. A standstill is: no agent of the
- *   tree (the root and every attached session whose root it is) running or holding queued input,
- *   and no background job of the tree running or stopping. A turn end while anything still moves
- *   emits nothing; the next quiet edge (an idle status, a job settling, a subagent ending, another
- *   turn end) checks again. `facts` is `{outcome, finalMessage?}` for a completed last turn
- *   (`boundedFinalMessage` of its last assistant text) or `{outcome: stopped, stop: {kind,
- *   message}}` for any other end;
+ * - `onTurnFinished(fn(rootId, facts))`: once per **standstill** of a root's agents, after the root's
+ *   turn ended. No agent of the tree may be running or holding queued input, and no subagent run
+ *   may still be live. Background jobs do not block this report: a deliverable can depend on a
+ *   job staying live (for example, a preview server). A turn end before standstill emits nothing;
+ *   the next idle status, subagent end or turn end checks again. `facts` is `{outcome, finalMessage?}`
+ *   for a completed last turn (`boundedFinalMessage` of its last assistant text) or
+ *   `{outcome: stopped, stop: {kind, message}}` for any other end;
  * - `stoppedByManager(rootId)`: the managing agent is stopping the root's turn itself
  *   (session_stop, the cancel of session_redirect): the turn end that follows reports nothing,
  *   because the manager asked for it and already has its own tool result. Since the manager's
  *   stop stops the whole tree (domain/tree-stop.js, the user's decision of 2026-11-21), it also
- *   covers a root turn end already held behind running subagents or jobs: the standstill the stop
+ *   covers a root turn end already held behind running subagents: the standstill the stop
  *   brings about is the manager's, not a report. The tree stop marks again each notice-only turn
  *   of the stopped work it swallows on the root, so those report nothing either.
  * DESIGN: the pending standstill per root is in memory only. A row reload or a restart loses an
@@ -81,15 +80,7 @@ export function createSessionSource(ctx) {
   const rootOf = (sessionId) => rootSessionOf(ctx, sessionId)
   const treeOf = (root) => ctx.agents.list().filter((agent) => agent.id === root || rootOf(agent.id) === root)
   const moving = (agent) => agent.status === RUNNING_AGENT || agent.inbox?.hasPending === true
-  function jobsMoving(members) {
-    const jobs = ctx.get(STANDSTILL.jobsService)
-    if (typeof jobs?.list !== 'function') return false
-    return members.some((agent) => jobs.list(agent.id).some((job) => job.owner === agent.id && STANDSTILL.movingJob.includes(job.status)))
-  }
-  const standsStill = (root) => {
-    const members = treeOf(root)
-    return runsOf(root) === 0 && !members.some(moving) && !jobsMoving(members)
-  }
+  const standsStill = (root) => runsOf(root) === 0 && !treeOf(root).some(moving)
 
   /** The root's last assistant text, or undefined; read from the live session. */
   function finalTextOf(root) {
@@ -103,7 +94,7 @@ export function createSessionSource(ctx) {
   }
 
   function factsOf(root, reason) {
-    if (STANDSTILL.completedKinds.includes(reason?.kind)) {
+    if (TURN_END_REASON.completedKinds.includes(reason?.kind)) {
       const text = finalTextOf(root)
       return text === undefined ? { outcome: TURN_OUTCOME.completed } : { outcome: TURN_OUTCOME.completed, finalMessage: boundedFinalMessage(text) }
     }
@@ -149,12 +140,6 @@ export function createSessionSource(ctx) {
       liveRuns.delete(info?.runId)
       later(root === undefined ? undefined : [root])
     }))
-    const jobs = ctx.get(STANDSTILL.jobsService)
-    if (typeof jobs?.events?.subscribe === 'function') {
-      disposers.push(jobs.events.subscribe(STANDSTILL.jobsFilter, (jobEvent) => {
-        if (jobEvent.type === STANDSTILL.jobSettled && jobEvent.job?.owner !== undefined) later([rootOf(jobEvent.job.owner)])
-      }))
-    }
   }
 
   return Object.freeze({

@@ -29,16 +29,10 @@ export const SESSION_EVENT = Object.freeze({
 })
 
 /**
- * What a standstill (WAKE-REDUCE: turn-finished) waits for and how it reads a turn's end. DSH's
- * `turn/end` reason kinds (dsh-session TurnEndReasonMap): `completed` and `max-tokens` end a
- * turn that produced its output; every other kind is a stop. The background-job registry is the
- * optional `jobs` service (dsh-jobs): a job `running` or `stopping` is still moving.
+ * DSH's `turn/end` reason kinds (dsh-session TurnEndReasonMap): `completed` and `max-tokens`
+ * end a turn that produced its output; every other kind is a stop.
  */
-export const STANDSTILL = Object.freeze({
-  jobsService: 'jobs',
-  jobsFilter: Object.freeze({ owners: 'all' }),
-  movingJob: Object.freeze(['running', 'stopping']),
-  jobSettled: 'settled',
+export const TURN_END_REASON = Object.freeze({
   completedKinds: Object.freeze(['completed', 'max-tokens']),
   aborted: 'aborted',
   error: 'error',
