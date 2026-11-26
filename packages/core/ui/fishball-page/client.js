@@ -156,7 +156,7 @@ window.__ModuleLoader__.load({
     /**
      * Fishball's messages to the user (the user, 2026-11-21): on this page only what Fishball sends
      * with core's `message_user` tool is in view; its other output is folded (REPLY_FOLD).
-     * - Each dispatched call (`tool/call`, so never a half-streamed argument) becomes a chat Node of its
+     * - Each send starts from the recorded call, never a half-streamed argument, and becomes a chat Node of its
      *   own `kind`, drawn by this page's `conversation.chat.node` renderer as Fishball's bubble. The
      *   Node stands at the Turn's `groupTree` position `turn` (dsh-client-ui-chat group-tree.d.ts,
      *   both SDKs: "stays in its Turn outside the Turn's process disclosure"), so DSH's own fold never
@@ -169,9 +169,11 @@ window.__ModuleLoader__.load({
      */
     const MESSAGE = Object.freeze({
       tool: 'message_user', argument: 'message',
-      kind: 'fishball-message', target: 'chat', groupTree: 'turn', visibility: 'visible',
-      event: Object.freeze({ direct: 'tool/call', program: 'tool/ptc-dispatch-start' }),
-      role: 'start', slot: 'conversation.chat.node', locale: 'chat',
+      kind: 'fishball-message', target: 'chat', groupTree: 'turn',
+      visibility: Object.freeze({ visible: 'visible', hidden: 'hidden' }),
+      event: Object.freeze({ direct: 'tool/call', program: 'tool/ptc-dispatch-start', result: 'tool/result' }),
+      role: Object.freeze({ start: 'start', update: 'update' }),
+      unknownTool: 'UNKNOWN_TOOL', slot: 'conversation.chat.node', locale: 'chat',
       bubble: 'data-fishball-message', textInteractionSource: 'data-text-interaction-source',
       // After the call's own tool row: on a reloaded page that row also anchors at the `tool/call` seq
       // (no streamed delta is left), and a tie leaves the order to the engine. DSH places its own
@@ -617,28 +619,39 @@ window.__ModuleLoader__.load({
 
     /**
      * The Conversation Definition that turns each `message_user` call into a message Node (MESSAGE).
-     * Match the start of a direct or nested call, not settlement, so each message appears once.
+     * Keep start-based bubbles for interrupted sends. DSH also records direct attempts it rejects
+     * before dispatch, so retract those on the correlated UNKNOWN_TOOL result, not on generic errors.
      * This matches beside DSH's own tool Definition (no exclusive claim).
      */
     function messageDefinition() {
       const match = (event) => event.data?.name === MESSAGE.tool
-        ? { id: String(event.data.subCallId ?? event.data.callId), role: MESSAGE.role }
+        ? { id: String(event.data.subCallId ?? event.data.callId), role: MESSAGE.role.start }
         : null
       return {
         kind: MESSAGE.kind,
         target: MESSAGE.target,
-        match: { [MESSAGE.event.direct]: match, [MESSAGE.event.program]: match },
-        start: (_context, match) => messageOf(match.event.data.arguments),
-        update: (context) => context.state,
+        match: {
+          [MESSAGE.event.direct]: match,
+          [MESSAGE.event.program]: match,
+          [MESSAGE.event.result]: ({ data }) => data?.message?.isError === true
+            && data.error?.code === MESSAGE.unknownTool && typeof data.message.toolCallId === 'string'
+            ? { id: data.message.toolCallId, role: MESSAGE.role.update }
+            : null,
+        },
+        start: (_context, match) => ({ text: messageOf(match.event.data.arguments), visibility: MESSAGE.visibility.visible }),
+        update: (context, match) => match.event.type === MESSAGE.event.result
+          ? { ...context.state, visibility: MESSAGE.visibility.hidden }
+          : context.state,
         buildViewNode(context) {
-          const text = context.state
+          const { text, visibility } = context.state ?? {}
           if (text === null || text === undefined || context.start === undefined) return null
           const location = context.start.location
           const current = context.current.get(MESSAGE.target)
-          if (current?.data.text === text && current.location === location) return current
+          // DSH requires an existing node to keep its key and switch to hidden, not be withdrawn.
+          if (current?.data.text === text && current.location === location && current.visibility === visibility) return current
           return {
             key: context.key, kind: MESSAGE.kind, id: context.id, target: MESSAGE.target,
-            anchorSeq: context.start.event.seq + MESSAGE.anchorOffset, location, visibility: MESSAGE.visibility, groupTree: MESSAGE.groupTree,
+            anchorSeq: context.start.event.seq + MESSAGE.anchorOffset, location, visibility, groupTree: MESSAGE.groupTree,
             data: Object.freeze({ text }),
           }
         },

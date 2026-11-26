@@ -1,7 +1,10 @@
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
+import { createRequire } from 'node:module'
+import { join } from 'node:path'
 import { test } from 'node:test'
 import { runInNewContext } from 'node:vm'
+import { sdkRuntime } from '../../../test/v2-page-cases/lite-browser.mjs'
 
 const UI = Object.freeze({
   source: new URL('../ui/fishball-page/client.js', import.meta.url),
@@ -19,7 +22,22 @@ const UI = Object.freeze({
   blank: '  \t  ',
   origin: 'https://fishball.test/',
   noSession: 503,
+  bubbleAttr: 'data-fishball-message',
 })
+
+const HOST = Object.freeze({
+  sdk: '0.2.2-rc.3', conversation: '@deepseek-ai/dsh-client-ui-conversation',
+  runCode: 'run_code', result: 'tool/result', turn: 1, step: 1, retryStep: 2,
+  rejectedId: 'rejected-direct-message', secondNestedId: 'program-call:ptc:2',
+  rejection: Object.freeze({ name: 'ToolNotFoundError', code: 'UNKNOWN_TOOL' }),
+  rejectionText: 'Error: unknown tool "message_user": only `run_code` is callable directly — call `message_user` from inside a `run_code` program instead',
+  approvalRejection: Object.freeze({ name: 'ApprovalError', code: 'APPROVAL_REJECTED' }),
+  approvalRejectionText: 'Error: the user rejected tool "message_user"',
+  programDescription: 'Send the update to the user',
+  shown: JSON.stringify({ shown: true }),
+})
+const runtime = sdkRuntime(HOST.sdk)
+const sdkTest = { skip: !runtime && 'DSH ' + HOST.sdk + ' is not installed' }
 
 const noop = () => {}
 const subscribe = () => noop
@@ -72,10 +90,15 @@ function bubbleOf(page, event) {
   const state = definition.start({}, { ...match, ...start })
   const node = definition.buildViewNode({ state, start, current: new Map(), id: match.id })
   if (node === null) return null
+  return { id: node.id, text: renderBubble({ Bubble, MarkdownText }, node) }
+}
+
+function renderBubble({ Bubble, MarkdownText }, node) {
   const bubble = Bubble({ node, t: (key) => key })
+  assert.ok(Object.hasOwn(bubble.props, UI.bubbleAttr), 'the chat slot must render a Fishball message bubble')
   const [markdown] = bubble.children
   assert.equal(markdown.type, MarkdownText)
-  return { id: node.id, text: markdown.props.text }
+  return markdown.props.text
 }
 
 function event(type, data) { return { type, seq: 1, data: { name: UI.tool, ...data } } }
@@ -96,3 +119,114 @@ test('message_user projects one ordinary or nested dispatch bubble, with no dupl
   assert.equal(bubbleOf(page, direct(UI.directId, UI.blank)), null, 'blank direct call must have no bubble')
   assert.equal(bubbleOf(page, nested(UI.nested, UI.nestedId, UI.blank)), null, 'blank nested call must have no bubble')
 })
+
+// DSH owns matching, replay, and incremental updates. The view sink only exposes the visible
+// slot output; keeping hidden nodes in the assembler is not the same as rendering a bubble.
+async function openConversation(t) {
+  const file = join(runtime, HOST.conversation, 'lib', 'client.js')
+  const require = createRequire(file)
+  const modules = {
+    '@deepseek-ai/cordis': require('@deepseek-ai/cordis'),
+    '@deepseek-ai/dsh-client-store': { notifySubscribers: (listeners) => listeners.forEach(listener => listener()) },
+    react: { createContext: () => ({}), memo: (view) => view, forwardRef: (view) => view },
+    zod: require('zod'),
+  }
+  let sdk
+  runInNewContext(await readFile(file, UI.encoding), {
+    window: { __ModuleLoader__: { load: ({ factory }) => { sdk = factory((name) => modules[name] ?? {}) } } },
+  })
+  const page = await openPage(t)
+  const events = new sdk.ConversationEventRegistry({ effect: (mount) => mount() })
+  t.after(events.register(page.definition))
+  const target = page.definition.target
+  const nodeSnapshot = () => {
+    const nodes = new Map()
+    const collect = (items) => {
+      for (const node of items) nodes.set(node.key, node)
+      return [...nodes.values()]
+    }
+    return {
+      empty: [],
+      replace: ({ nodes: replacement }) => { nodes.clear(); return collect(replacement) },
+      apply: ({ upserts }) => collect(upserts),
+    }
+  }
+  const assembler = new sdk.ConversationNodeAssembler(events, { entries: () => [{ target, create: nodeSnapshot }] })
+  assembler.activateTarget(target)
+  return {
+    replay: (entries) => { assembler.replaceWindow(entries, false); assembler.flush() },
+    append: (entry) => { assembler.append(entry); assembler.flush() },
+    bubbles: () => Array.from(assembler.snapshot(target)).filter(node => node.visibility !== 'hidden')
+      .map(node => ({ id: node.id, text: renderBubble(page, node) })),
+  }
+}
+
+function sessionWindow() {
+  let seq = 0
+  const entry = (type, data, surface = {}) => ({ type: 'event', event: { type, seq: seq++, time: seq, data, ...surface } })
+  const call = (name, callId, args, step = HOST.step) => entry(UI.direct, {
+    turn: HOST.turn, step, name, callId, arguments: JSON.stringify(args),
+  })
+  const result = (started, text, error) => {
+    const { event: { seq, data: { callId, turn, step } } } = started
+    return entry(HOST.result, {
+      turn, step,
+      message: { id: callId + '-result', role: 'tool', source: { kind: 'tool', callId }, toolCallId: callId,
+        content: [{ type: 'text', text }], isError: error !== undefined },
+      ...(error ? { error } : {}),
+    }, { surfaceOp: 'append', sourceEventSeqs: [seq] })
+  }
+  const program = (ids, message, step = HOST.step) => {
+    const code = ids.map(() => 'await tools.' + UI.tool + '(' + JSON.stringify({ message }) + ')').join('; ')
+    const started = call(HOST.runCode, UI.parent, { code, description: HOST.programDescription }, step)
+    const dispatches = ids.flatMap((subCallId) => {
+      const payload = { rootCallId: UI.parent, parentCallId: UI.parent, subCallId, name: UI.tool, arguments: { message } }
+      return [entry(UI.nested, payload), entry(UI.settled, { ...payload, isError: false, content: [{ type: 'text', text: HOST.shown }] })]
+    })
+    return [started, ...dispatches, result(started, '')]
+  }
+  return { call, result, program }
+}
+
+function rejectedThenRetried() {
+  const { call, result, program } = sessionWindow()
+  const rejected = call(UI.tool, HOST.rejectedId, { message: UI.nestedText })
+  return [rejected, result(rejected, HOST.rejectionText, HOST.rejection), ...program([UI.nestedId], UI.nestedText, HOST.retryStep)]
+}
+
+for (const [mode, deliver] of [
+  ['live settlement', (page, entries) => entries.forEach(page.append)],
+  ['history replay', (page, entries) => page.replay(entries)],
+]) {
+  test('a PTC-rejected direct send followed by the same nested send shows one bubble on ' + mode, sdkTest, async (t) => {
+    const page = await openConversation(t)
+    deliver(page, rejectedThenRetried())
+    assert.deepEqual(page.bubbles(), [{ id: UI.nestedId, text: UI.nestedText }], 'only the nested send is visible')
+  })
+}
+
+function nativeTranscript({ call, result }, outcome, error) {
+  const started = call(UI.tool, UI.directId, { message: UI.directText })
+  return [started, result(started, outcome, error)]
+}
+
+const nativeBubble = [{ id: UI.directId, text: UI.directText }]
+const settledCases = [
+  ['one successful native call', (window) => nativeTranscript(window, HOST.shown), nativeBubble],
+  ['a dispatched native call refused by approval',
+    (window) => nativeTranscript(window, HOST.approvalRejectionText, HOST.approvalRejection), nativeBubble],
+  ['one successful nested call', ({ program }) => program([UI.nestedId], UI.nestedText),
+    [{ id: UI.nestedId, text: UI.nestedText }]],
+  ['two successful nested calls with identical text', ({ program }) => program([UI.nestedId, HOST.secondNestedId], UI.nestedText),
+    [UI.nestedId, HOST.secondNestedId].map(id => ({ id, text: UI.nestedText }))],
+]
+for (const [scenario, transcript, expected] of settledCases) {
+  test('renders the right number of message bubbles for ' + scenario, sdkTest, async (t) => {
+    const page = await openConversation(t)
+    const entries = transcript(sessionWindow())
+    for (const entry of entries) page.append(entry)
+    assert.deepEqual(page.bubbles(), expected, 'live transcript')
+    page.replay(entries)
+    assert.deepEqual(page.bubbles(), expected, 'replayed transcript')
+  })
+}
