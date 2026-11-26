@@ -1,7 +1,7 @@
 {
   "name": "fishball-amenities",
   "version": "1.0.0-alpha.1",
-  "description": "Installs the optional Fishball amenities together: fishball-board, fishball-heartbeat and fishball-taskboard, each its own package.",
+  "description": "Installs the optional Fishball amenities together: fishball-board, fishball-heartbeat, fishball-taskboard and fishball-consultant, each its own package.",
   "icon": "./assets/fishball-amenities-icon.svg",
   "license": "MIT",
   "repository": {
@@ -36,6 +36,7 @@
     "fishball-board": "1.0.0-alpha.1",
     "fishball-heartbeat": "1.0.0-alpha.1",
     "fishball-taskboard": "1.0.0-alpha.1",
+    "fishball-consultant": "1.0.0-alpha.1",
     "fishball-shared": "1.0.0-alpha.1"
   },
   "//bundleDependencies": "The members are bundled, as dsh-connector-amenities bundles its amenities, so the umbrella tarball carries them and an install (online or offline) fetches none of them from a registry. Each member is still its own package, released and installable on its own.",
@@ -43,9 +44,10 @@
     "fishball-board",
     "fishball-heartbeat",
     "fishball-taskboard",
+    "fishball-consultant",
     "fishball-shared"
   ],
-  "//dsh": "Only this umbrella and fishball-taskboard have browser code, so only they declare dsh.client: the umbrella's (client.js) is its settings-page hint and the settings page of each member row with settings (fishball-heartbeat), registered while DSH serves that row's settings (ctx.configForms, from dsh-client-ui-settings).",
+  "//dsh": "The collection client supplies its summary and the heartbeat settings. The consultant client registers its own page for both installation modes.",
   "dsh": {
     "bundle": {
       "patch": "./cordis.patch.yml"

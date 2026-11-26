@@ -1,31 +1,24 @@
 # fishball-amenities
 
-An umbrella that installs the optional Fishball amenities together. Each amenity is its own package
-and DSH bundle, installable on its own; this package depends on them and carries their settings
-pages.
+The collection installs the optional Fishball amenities together. Each member is its own package
+and DSH bundle and can be installed on its own instead.
 
 | Package | What it is |
 |---|---|
-| [`fishball-board`](../fishball-board/README.md) | Fishball's session-linked work board (shelved, not offered in 1.0.0-alpha.1). |
-| [`fishball-heartbeat`](../fishball-heartbeat/README.md) | Keeps Fishball's prompt cache warm while it is idle with useful heartbeat turns; off until both of its timer settings are set; when it stops, it compacts a long context once. |
-| [`fishball-taskboard`](../fishball-taskboard/README.md) | Fishball's own task board and memo pad, which the user views and edits in the right sidebar's **Task board** tab. |
+| [fishball-board](../fishball-board/README.md) | Fishball's session-linked work board (shelved, not offered in 1.0.0-alpha.1). |
+| [fishball-heartbeat](../fishball-heartbeat/README.md) | Keeps Fishball's prompt cache warm when idle; off until both timer settings are set. |
+| [fishball-taskboard](../fishball-taskboard/README.md) | Fishball's task board and memo pad in the right sidebar. |
+| [fishball-consultant](../fishball-consultant/README.md) | Advisory-only second opinions. Configuration and threads are available; no consultation is sent without a proven protected connector capability. |
 
-Installing `fishball-amenities` installs all three and loads them: its dependencies bring the
-packages, and its own patch inserts their rows (DSH makes only a profile's direct dependencies
-bundles, so an umbrella carries its members' rows, as DSH's own `dsh-cua-bundle` does). Install an
-amenity on its own instead and its own patch is used. Do not install the umbrella together with an
-amenity as a direct dependency: both would insert the same rows.
+The collection's dependencies supply its members and its patch inserts their rows. A member
+installed alone uses its own patch. Use one installation source per member: do not install a
+standalone member alongside the collection that provides its row.
 
-Installed through the umbrella, the amenities show as its components on its plugin page. Open
-`fishball-heartbeat` there (the arrow beside its name) to set its two settings. A saved change
-applies at once: the heartbeat re-applies itself with the new values, without a DSH restart, and
-the values are kept in the profile's `cordis.patch.yml`. `fishball-board` and
-`fishball-taskboard` have no settings page: the taskboard has no settings, and the board's settings
-(`inject`, `contextCards`, `doneWindowHours`) are read by nothing yet, so they are not offered.
+Under the collection's components, configure the Heartbeat or Consultant row. Consultant also
+supplies its own settings when installed alone. Heartbeat installed alone can be configured in its
+profile row's `cordis.patch.yml`. Board and Taskboard do not have settings pages.
 
-Known limit: the pages are this umbrella's (`client.js`); the amenities have no browser code.
-Installed alone, without the umbrella, `fishball-heartbeat` has no settings page: edit its row's
-`config` in the profile's `cordis.patch.yml` instead.
-
-Only this umbrella (`client.js`: the settings-page hint and the heartbeat's settings page) and
-`fishball-taskboard` (its Task board tab) have browser code, so only they declare `dsh.client`.
+To remove Consultant while keeping the collection, **disable its row**. Its bundled code is still
+installed. This Fishball build does not support physically removing a bundled member. A standalone
+Consultant package can be uninstalled through DSH; this does not erase history, installation source
+or caches. Archive live consultations first and verify the target's receipt before removal.

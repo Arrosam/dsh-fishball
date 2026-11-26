@@ -17,6 +17,8 @@ import { V3 } from '../../contract/package-boundaries/constants.mjs'
 /** The one release version every package carries. */
 export const VERSION = '1.0.0-alpha.1'
 
+export const CONSULTANT = Object.freeze({ name: 'fishball-consultant', key: 'consultant', folder: 'packages/fishball-consultant' })
+
 /**
  * The packages of the split. `browser`: the package has browser code (the lead's layout: the
  * umbrella's settings-page hint and taskboard's Task board tab), so it, and only it, carries dsh.client.

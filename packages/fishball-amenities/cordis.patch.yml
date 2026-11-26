@@ -1,9 +1,9 @@
 # The umbrella's own row (its settings-page hint, client.js), and the rows of the amenities it depends
-# on, each its own package (fishball-board, fishball-heartbeat, fishball-taskboard). DSH makes only a
+# on, each its own package (fishball-board, fishball-heartbeat, fishball-taskboard and fishball-consultant). DSH makes only a
 # profile's direct dependencies bundles, so an umbrella brings its members' rows in its own patch (as
 # DSH's own dsh-cua-bundle does); each member installed alone uses its own patch instead. Each row here
 # repeats its member's own cordis.patch.yml: change both together. Rows name packages, never ./paths,
-# so each member's browser half (only fishball-taskboard has one) resolves from its own package.
+# so a member's browser half resolves from its own package.
 - insert:
     - id: fishball-amenities
       name: 'fishball-amenities'
@@ -18,4 +18,7 @@
     # Fishball's own task board and memo pad (docs/plugins/fishball-taskboard.md).
     - id: fishball-taskboard
       name: 'fishball-taskboard'
+      config: {}
+    - id: fishball-consultant
+      name: 'fishball-consultant'
       config: {}

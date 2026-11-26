@@ -1,0 +1,5 @@
+# This standalone row is also inserted by the collection when installed through it.
+- insert:
+    - id: fishball-consultant
+      name: 'fishball-consultant'
+      config: {}

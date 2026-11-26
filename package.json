@@ -1,7 +1,7 @@
 {
   "name": "dsh-fishball",
   "private": true,
-  "description": "Fishball for DeepSeek Harness: fishball-core (core + UI components), the amenities fishball-board, fishball-heartbeat and fishball-taskboard (each its own package) with their fishball-amenities umbrella, and fishball-shared. The root is not a plugin package.",
+  "description": "Fishball for DeepSeek Harness: fishball-core (core + UI components), the amenities fishball-board, fishball-heartbeat, fishball-taskboard and fishball-consultant (each its own package) with their fishball-amenities umbrella, and fishball-shared. The root is not a plugin package.",
   "license": "MIT",
   "type": "module",
   "workspaces": [
@@ -9,6 +9,7 @@
     "packages/fishball-board",
     "packages/fishball-heartbeat",
     "packages/fishball-taskboard",
+    "packages/fishball-consultant",
     "packages/fishball-amenities",
     "packages/shared"
   ],

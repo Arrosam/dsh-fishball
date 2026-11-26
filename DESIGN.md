@@ -370,3 +370,7 @@ observer and a generation-fenced freshness probe; neither owns an ack or disable
 Taskboard automation owns the model selection and the same atomic envelope as the manual board.
 Completion is a manager review, not an automatic board mutation; notification ownership is claimed
 after any actual change is durable. See [Task board auto-update](docs/plugins/fishball-taskboard.md#8-auto-update).
+
+## Fishball Consultant
+
+The Consultant is an independently installable amenity. It owns its configuration, owner-only disclosure cards, topic ledger and advisory results. One approval covers only the exact question, evidence, replay history and destination. The current staging host has no protected connector port: only catalog reads are allowed and there is no worker fallback. Physical removal of a member supplied by the collection requires instance packaging changes; this build supports disabling its row. See the [amenity guide](packages/fishball-consultant/README.md) and [private port contract](packages/fishball-consultant/CONTRACT.md).

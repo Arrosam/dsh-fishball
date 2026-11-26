@@ -22,7 +22,7 @@ import { BUNDLED_FIELDS, DEP_FIELDS, SDK, WORKER } from '../../contract/package-
 import { observe, readManifest } from '../../contract/package-boundaries/packages.mjs'
 import { CORE, runtimeOf } from '../../fishball-core/package/constants.mjs'
 import { insertedRows } from '../../fishball-core/package/static.mjs'
-import { LIBRARY, MANIFEST, MEMBERS, PACKAGES, PATH_ROW, SOURCE, UMBRELLA, VERSION } from './constants.mjs'
+import { CONSULTANT, LIBRARY, MANIFEST, MEMBERS, PACKAGES, PATH_ROW, SOURCE, UMBRELLA, VERSION } from './constants.mjs'
 
 const ID = Object.freeze({
   ep01: 'AM-EP-01', ep02: 'AM-EP-02', ep03: 'AM-EP-03', ep04: 'AM-EP-04', ep05: 'AM-EP-05', ep06: 'AM-EP-06', ep07: 'AM-EP-07', ep08: 'AM-EP-08',
@@ -146,9 +146,10 @@ export function registerAmenityPackageCases(sdk) {
   }
 
   // ---- AM-EP-03: the umbrella's patch inserts its own row and every member's row, by package name ----
-  caseTest(sdk, ID.ep03, 'rows', `the umbrella's patch inserts exactly the rows ${[UMBRELLA, ...MEMBERS].map((p) => p.name).join(', ')}, each id equal to its package name`, async () => {
+  const collectionRows = [UMBRELLA, ...MEMBERS, CONSULTANT].map(({ name }) => ({ id: name, name }))
+  caseTest(sdk, ID.ep03, 'rows', `the umbrella's patch inserts exactly the rows ${collectionRows.map((r) => r.name).join(', ')}, each id equal to its package name`, async () => {
     const rows = (await patchRows(sdk, UMBRELLA)).map(idName)
-    assert.deepEqual(byId(rows), byId([UMBRELLA, ...MEMBERS].map((p) => ({ id: p.name, name: p.name }))))
+    assert.deepEqual(byId(rows), byId(collectionRows))
   })
   caseTest(sdk, ID.ep03, 'no path row', "the umbrella's patch names no row by a ./, ../, / or file: path", async () => {
     const rows = await patchRows(sdk, UMBRELLA)
