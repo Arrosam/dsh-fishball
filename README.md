@@ -82,6 +82,8 @@ DSH runs no plugin code on removal, so run the instance cleanup command before r
 
 What it removes: `<DSH_HOME>/fishball/runtime` (the child's profile, session, settings, logs, and placed plugins) while preserving `<DSH_HOME>/fishball/hosted.json`. If it refuses with exit code `1`, nothing was deleted (`CHILD_RUNNING`, `CHILD_STATE_UNKNOWN`, `UNSAFE_DIRECTORY`, `UNOWNED_RUNTIME`, `INVALID_MAIN_HOME`); stop DSH / verify no child process remains, and if the launch record is missing, delete `<DSH_HOME>/fishball/runtime` manually.
 
+For the opt-in `dsh-instance.remoteEmbedUrl` override and sidebar compatibility patch, see [Remote embedding](packages/dsh-instance/README.md#remote-embedding-opt-in).
+
 ## Local development & packing
 
 - In dev mode, `dsh-instance` resolves `fishball-core` and `fishball-amenities` (plus its bundled amenities) from `$FISHBALL_REPO/packages/` or a sibling `../dsh-fishball/packages/` checkout.

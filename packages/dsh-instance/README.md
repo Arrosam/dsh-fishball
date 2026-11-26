@@ -66,9 +66,27 @@ Fishball tab is `client.fishball.js`, below):
   stopped; disabled while it starts or stops and while a Fishball plugin change runs. Route
   `POST /api/dsh-instance/restart` (queued behind other starts and stops; refused with
   `instance-disabled` while the instance is off and `busy` while a Fishball plugin change runs);
-- **Reconnect** and **Open Fishball** (a new tab; open DSH at `127.0.0.1` or `localhost`);
+- **Reconnect** and **Open Fishball** (a new tab; use `127.0.0.1`, `localhost` or the configured HTTPS URL below);
 - `enabled` (saving it off stops the child at once, on starts it; private data is kept);
 - **Model for Fishball**: model sync.
+
+## Remote embedding (opt-in)
+
+Set `remoteEmbedUrl` on the host's `dsh-instance` row using an instance patch (profile `cordis.patch.yml` or the invocation's `--patch`). Use the same public **main DSH** root the browser opens, including any mount prefix. This is not the Fishball URL or the MCP target. For example:
+
+```yaml
+- id: dsh-instance
+  config:
+    enabled: true
+    remoteEmbedUrl: https://dsh.example.com/ui/
+```
+
+Preserve other values in the row if editing an existing override, then restart the main DSH. Without the field (or with an empty string), only the original local access is available.
+
+- For sidebar access, install a connector built with the [companion change](../../patches/dsh-connector-remote-embed.patch). Older connectors refuse non-loopback sidebar admission; the instance settings page's **Open Fishball** does not depend on that change.
+- Continue to configure the main DSH's `--trusted-host` and TLS as usual. If an outer reverse proxy terminates TLS, it must preserve `Host`, strip only the main DSH prefix (`/ui` in the example), and forward WebSocket upgrades at `/ui/fishball/api/remote.mux` to the **main** DSH. Do not publish the child's port. Use the native Node Web host with mount-aware frontend assets and the Connection owner APIs (0.2.2-rc.3 Web SDK contract).
+- HTTP requests and WebSocket handshakes require the existing main DSH browser-owner session. The relay exchanges a one-use ticket with the ready child, and keeps the resulting child credential server-side. Connector tokens are not used for webpage authentication.
+- **Trust boundary:** the proxied page and its frontend plugins share the main DSH's browser origin. A path prefix is not a JavaScript or browser-storage sandbox; enable this only for Fishball plugins you also trust with the main DSH web session. Child login endpoints, the experimental inspector and requests to register a child Service Worker are not relayed.
 
 ## Plugins for Fishball
 

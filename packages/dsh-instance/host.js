@@ -19,6 +19,7 @@ import { createChildModelClient } from './src/native-runtime/child-model.js'
 import { openHostedRecord } from './src/host/hosted-record.js'
 import { childTargetUrl, createHostedToken, usableTokens } from './src/host/hosted.js'
 import { createChildLocator } from './src/host/locator.js'
+import { parseRemoteEmbedUrl, registerRemoteEmbed, remoteEmbedAdmission } from './src/host/remote-embed.js'
 import { registerInstanceRoutes } from './src/host/routes.js'
 import { registerProviderSyncRoutes } from './src/host/provider-sync-routes.js'
 import { CHILD_PLUGINS, createChildPlugins } from './src/host/child-plugins.js'
@@ -50,6 +51,7 @@ const PLUGIN = Object.freeze({
     // V3 is a fresh install, so I-READY removed the migration).
   ],
   cleanup: 'fishball native host: stop owned child and retain private data',
+  remoteEmbedEffect: 'dsh-instance: authenticated remote Fishball relay',
   // The loader's event after a volatile-only config change (cordis-plugin-loader, both versions).
   volatileUpdate: 'loader/volatile-update',
   // Bound request/exit waits well inside rc.3's whole-app five-second grace.
@@ -89,10 +91,11 @@ export const inject = [...PLUGIN.dependencies]
  * form can write it (§0.7); model sync is the "Model for Fishball" button I6 adds, an action
  * rather than a field, and there is no `providerSync` switch (D26). There is no launch field: the
  * child is started as the main DSH is (D28, src/native-runtime/constants.js HOST_LAUNCH), and an
- * old stored `nodeExecutable` or `executableSearchPath` is ignored (the schema keeps unknown keys
- * as they are and nothing reads them).
+ * old stored `nodeExecutable` or `executableSearchPath` is ignored. `remoteEmbedUrl` is an
+ * ordinary instance-patch field, not part of the editable form or the child's launch config.
  */
 export const Config = Schema.object({
+  remoteEmbedUrl: Schema.string().description('Opt in to owner-only Fishball embedding through the main DSH public HTTPS URL.'),
   enabled: Schema.boolean().default(true).volatile().description('Start the private native child after main appReady. Turning it off stops the child at once and turning it on starts it, as the row switch does; private data is retained.'),
 })
 const unavailable = code => Object.assign(new Error(code), { code })
@@ -130,6 +133,7 @@ function bounded(promise, milliseconds) {
 const registry = globalThis[Symbol.for(LIFETIME.registryKey)] ??= new Map()
 
 export async function apply(ctx, config) {
+  const remoteEmbedUrl = parseRemoteEmbedUrl(config.remoteEmbedUrl)
   let enabled = fieldValue(config.enabled) !== false
   const logger = typeof ctx.logger === 'function' ? ctx.logger(PLUGIN.name) : undefined
   let state = enabled ? PLUGIN.state.waiting : PLUGIN.state.disabled
@@ -489,11 +493,19 @@ export async function apply(ctx, config) {
     },
   })
   ctx.provide(PLUGIN.service, service)
-  // The K3 locator (child.d.ts) for dsh-connector-ui, and the instance's own page routes.
+  // Both the relay and the existing loopback admission must track the currently ready child.
+  const onChange = (fn) => { changeListeners.add(fn); return () => changeListeners.delete(fn) }
+  const childOrigin = () => owner?.childOrigin()
+  const ticket = (claims) => owner.mintTicket(claims)
+  const admitRemote = remoteEmbedUrl && ((request, args) => remoteEmbedAdmission(remoteEmbedUrl, request, args))
+  if (remoteEmbedUrl) ctx.effect(() => registerRemoteEmbed(ctx, {
+    publicUrl: remoteEmbedUrl, childOrigin: () => !closed && state === CHILD_STATE.ready ? childOrigin() : undefined, onChange, ticket,
+  }), PLUGIN.remoteEmbedEffect)
   const locator = createChildLocator({
-    lifecycle: { status: locatorStatus, onChange: (fn) => { changeListeners.add(fn); return () => changeListeners.delete(fn) }, retry: () => retry() },
-    origin: () => owner?.childOrigin(),
-    ticket: (claims) => owner.mintTicket(claims),
+    lifecycle: { status: locatorStatus, onChange, retry: () => retry() },
+    origin: childOrigin,
+    ticket,
+    admitRemote,
     hosted: hostedProxy,
     providerSync: service.providerSync,
   })
@@ -513,8 +525,12 @@ export async function apply(ctx, config) {
     // that change's own restart goes straight to requestRestart, so it is never refused this way.
     restart: () => (childPlugins.busy() ? { ...status(), refused: CHILD_PLUGINS.code.busy } : requestRestart()),
     reconnect: () => locator.reconnect(),
-    open: async ({ hostname, lang }) => {
-      try { return { ok: true, url: (await locator.admit({ view: LOOPBACK.openView, lang, hostname })).url } } catch (error) { return { ok: false, code: error?.code ?? REFUSAL.failed } }
+    open: async ({ hostname, lang, request }) => {
+      try {
+        const args = { view: LOOPBACK.openView, lang }
+        const admitted = await locator.admitRemote?.(request, args) ?? await locator.admit({ ...args, hostname })
+        return { ok: true, url: admitted.url }
+      } catch (error) { return { ok: false, code: error?.code ?? REFUSAL.failed } }
     },
   })
   // The model-sync routes (models/check, models/add) sit beside the page's routes, on the same
