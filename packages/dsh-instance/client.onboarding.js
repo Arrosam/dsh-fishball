@@ -174,6 +174,12 @@ window.__ModuleLoader__.load({
       modelChoiceSelected: 'fb-onb-model-choice-selected',
       modelName: 'fb-onb-model-name',
       modelMeta: 'fb-onb-model-meta',
+      effortPanel: 'fb-onb-effort-panel',
+      effortHead: 'fb-onb-effort-head',
+      effortTitle: 'fb-onb-effort-title',
+      effortGrid: 'fb-onb-effort-grid',
+      effortChoice: 'fb-onb-effort-choice',
+      effortChoiceSelected: 'fb-onb-effort-choice-selected',
       selectWrap: 'fb-onb-select-wrap',
       select: 'fb-onb-select',
       selectIcon: 'fb-onb-select-icon',
@@ -204,7 +210,7 @@ window.__ModuleLoader__.load({
       headerStart: '20px',
       shellMaxWidth: '640px',
       cardPadding: '24px',
-      listMaxHeight: 'min(280px, 40vh)',
+      listMaxHeight: 'min(240px, 36vh)',
       selectHeight: '36px',
       selectLineHeight: '20px',
       selectPadY: '7px',
@@ -248,6 +254,12 @@ window.__ModuleLoader__.load({
       `.${CLS.modelChoiceSelected}{background:color-mix(in srgb, var(--fb-accent,${FISH_MARK.accent}) 10%, transparent);box-shadow:inset 0 0 0 .5px color-mix(in srgb, var(--fb-accent,${FISH_MARK.accent}) 45%, transparent)}`,
       `.${CLS.modelName}{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:start}`,
       `.${CLS.modelMeta}{display:inline-flex;align-items:center;gap:6px;margin-inline-start:auto;flex-shrink:0}`,
+      `.${CLS.effortPanel}{display:grid;gap:10px;padding:12px 14px;border-radius:var(--dsw-radius-md);background:var(--dsw-alias-settings-card-fill,var(--dsw-alias-bg-base));box-shadow:inset 0 0 0 .5px var(--dsw-alias-settings-card-stroke,var(--dsw-alias-border-l3))}`,
+      `.${CLS.effortHead}{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}`,
+      `.${CLS.effortTitle}{margin:0;font:var(--dsw-font-xs-strong-13,var(--dsw-font-s-strong-14));color:var(--dsw-alias-label-primary)}`,
+      `.${CLS.effortGrid}{display:flex;flex-wrap:wrap;gap:8px}`,
+      `.${CLS.effortChoice}{gap:6px}`,
+      `.${CLS.effortChoiceSelected}{background:color-mix(in srgb, var(--fb-accent,${FISH_MARK.accent}) 12%, transparent);box-shadow:inset 0 0 0 .5px color-mix(in srgb, var(--fb-accent,${FISH_MARK.accent}) 50%, var(--dsw-alias-border-l3))}`,
       `.${CLS.selectWrap}{position:relative;display:flex;align-items:center;width:100%}`,
       // Keep native `<select>` inline-block layout (avoid `display:block`, which lets Chromium's
       // shadow-DOM picker arrow wrap) and hide `::picker-icon` so only our custom chevron renders.
@@ -293,7 +305,7 @@ window.__ModuleLoader__.load({
       'step.memory': 'Memory & Context',
       'step.welcome': 'Welcome',
       'model.title': 'Set up Fishball\'s model',
-      'model.lead': 'Fishball runs in its own private DSH instance. Sync your model providers from this DSH to Fishball, then pick the model Fishball should use.',
+      'model.lead': 'Fishball runs in its own private DSH instance. Sync your model providers from this DSH to Fishball, then pick the model and reasoning effort Fishball should use.',
       'model.syncSection': '1. Sync providers to Fishball',
       'model.syncButton': 'Sync models from DSH',
       'model.syncing': 'Syncing models…',
@@ -307,6 +319,8 @@ window.__ModuleLoader__.load({
       'model.pickSection': '2. Choose Fishball\'s model',
       'model.refresh': 'Refresh models',
       'model.selected': 'Selected',
+      'model.effortSection': 'Choose reasoning effort',
+      'model.effortHint': 'Pick a reasoning effort for this model to save your selection.',
       'model.saved': 'Fishball model set to {model}.',
       'model.saveFailed': 'Could not save the selected model. Please try again.',
       'model.empty': 'No models are available in Fishball yet. Click "Sync models from DSH" above, or configure a model in DSH Settings first.',
@@ -366,7 +380,7 @@ window.__ModuleLoader__.load({
       'step.memory': '记忆与上下文',
       'step.welcome': '开始使用',
       'model.title': '配置 Fishball 模型',
-      'model.lead': 'Fishball 运行在独立的私有 DSH 子实例中。先一键把当前 DSH 的模型提供商同步过去，再选择 Fishball 要使用的模型。',
+      'model.lead': 'Fishball 运行在独立的私有 DSH 子实例中。先一键把当前 DSH 的模型提供商同步过去，再选择 Fishball 要使用的模型与思考强度。',
       'model.syncSection': '1. 同步模型到 Fishball',
       'model.syncButton': '从当前 DSH 同步模型',
       'model.syncing': '正在同步模型…',
@@ -380,6 +394,8 @@ window.__ModuleLoader__.load({
       'model.pickSection': '2. 选择 Fishball 模型',
       'model.refresh': '刷新模型列表',
       'model.selected': '已选择',
+      'model.effortSection': '选择思考强度',
+      'model.effortHint': '请为所选模型选择一个思考强度以保存配置。',
       'model.saved': '已将 Fishball 模型设为 {model}。',
       'model.saveFailed': '未能保存所选模型，请重试。',
       'model.empty': 'Fishball 中暂时还没有可用模型。请点击上方“从当前 DSH 同步模型”，或先在 DSH 设置中配置模型。',
@@ -492,18 +508,35 @@ window.__ModuleLoader__.load({
       return selection.reasoningEffort ? t('model.effort', { model: fallback, effort: selection.reasoningEffort }) : fallback
     }
 
-    function groupedChoices(catalog, t) {
+    const modelKey = (provider, model) => JSON.stringify([provider, model])
+
+    const sameModel = (a, b) => a !== null && b !== null && a.provider === b.provider && a.model === b.model
+
+    function groupedModels(catalog) {
       return (catalog?.groups ?? []).map((group) => ({
         id: group.id,
         name: group.name,
-        choices: (group.models ?? []).flatMap((entry) => {
-          const base = { provider: group.id, model: entry.id }
-          const full = group.name + MODEL.routeSeparator + entry.name
-          const efforts = entry.reasoning?.efforts ?? []
+        models: (group.models ?? []).map((entry) => ({
+          key: modelKey(group.id, entry.id),
+          provider: group.id,
+          model: entry.id,
+          name: entry.name,
+          full: group.name + MODEL.routeSeparator + entry.name,
+          efforts: entry.reasoning?.efforts ?? [],
+        })),
+      })).filter((group) => group.models.length > 0)
+    }
+
+    function groupedChoices(catalog, t) {
+      return groupedModels(catalog).map((group) => ({
+        id: group.id,
+        name: group.name,
+        choices: group.models.flatMap((entry) => {
+          const base = { provider: entry.provider, model: entry.model }
           const build = (selection, label, effort) => ({ key: selectionKey(selection), label, name: entry.name, effort, selection })
-          return efforts.length === 0
-            ? [build(base, full, null)]
-            : efforts.map((effort) => build({ ...base, reasoningEffort: effort.id }, t('model.effort', { model: full, effort: effort.name }), effort.name))
+          return entry.efforts.length === 0
+            ? [build(base, entry.full, null)]
+            : entry.efforts.map((effort) => build({ ...base, reasoningEffort: effort.id }, t('model.effort', { model: entry.full, effort: effort.name }), effort.name))
         }),
       })).filter((group) => group.choices.length > 0)
     }
@@ -658,13 +691,15 @@ window.__ModuleLoader__.load({
       // the frame synchronously with zero loading flash and zero background polling.
       let completedLocally = false
 
-      /** Page 1: Sync models from DSH + choose Fishball's model. */
+      /** Page 1: Sync models from DSH + choose Fishball's model and reasoning effort. */
       function FishballModelStep({ childReady, canRefresh, model, catalog, onRefreshState, onModelSaved }) {
         const [syncView, setSyncView] = React.useState({ phase: SYNC.idle })
+        const [selectedModelKey, setSelectedModelKey] = React.useState(null)
         const [savingKey, setSavingKey] = React.useState(null)
         const [saveState, setSaveState] = React.useState({ status: null, label: null })
         const [refreshing, setRefreshing] = React.useState(false)
         const mounted = React.useRef(true)
+        const savingRef = React.useRef(false)
         React.useEffect(() => {
           mounted.current = true
           return () => { mounted.current = false }
@@ -703,20 +738,46 @@ window.__ModuleLoader__.load({
           await onRefreshState()
         }
 
-        const handlePick = async (choice) => {
-          if (!childReady || savingKey !== null) return
-          setSavingKey(choice.key)
+        const saveSelection = async (selection, label) => {
+          if (!childReady || savingRef.current || savingKey !== null) return false
+          savingRef.current = true
+          setSavingKey(selectionKey(selection))
           setSaveState({ status: null, label: null })
-          const answer = await postOnboarding(API.model, choice.selection)
-          if (!mounted.current) return
+          let answer
+          try {
+            answer = await postOnboarding(API.model, selection)
+          } finally {
+            savingRef.current = false
+          }
+          if (!mounted.current) return false
           setSavingKey(null)
           if (answer.ok) {
-            const saved = normalizeSelection(answer.model) ?? choice.selection
+            const saved = normalizeSelection(answer.model) ?? selection
             onModelSaved(saved)
-            setSaveState({ status: STATE_DOT.done, label: choice.label })
-          } else {
-            setSaveState({ status: STATE_DOT.error, label: null })
+            setSaveState({ status: STATE_DOT.done, label })
+            return true
           }
+          setSaveState({ status: STATE_DOT.error, label: null })
+          return false
+        }
+
+        const handleSelectModel = (entry) => {
+          if (!childReady || savingRef.current || savingKey !== null) return
+          if (entry.efforts.length === 0) {
+            void saveSelection({ provider: entry.provider, model: entry.model }, entry.full).then((ok) => {
+              if (ok && mounted.current) setSelectedModelKey(null)
+            })
+          } else {
+            setSelectedModelKey(entry.key)
+            setSaveState({ status: null, label: null })
+          }
+        }
+
+        const handleSelectEffort = (entry, effort) => {
+          void saveSelection(
+            { provider: entry.provider, model: entry.model, reasoningEffort: effort.id },
+            t('model.effort', { model: entry.full, effort: effort.name }),
+          )
         }
 
         const handleRefresh = async () => {
@@ -726,7 +787,13 @@ window.__ModuleLoader__.load({
           if (mounted.current) setRefreshing(false)
         }
 
-        const groups = groupedChoices(catalog, t)
+        const groups = groupedModels(catalog)
+        const allModels = groups.flatMap((group) => group.models)
+        const selectedEntry = selectedModelKey !== null ? (allModels.find((entry) => entry.key === selectedModelKey) ?? null) : null
+        React.useEffect(() => {
+          if (selectedModelKey !== null && selectedEntry === null) setSelectedModelKey(null)
+        }, [selectedModelKey, selectedEntry])
+        const activeModel = selectedEntry ?? (model !== null ? (allModels.find((entry) => sameModel(entry, model)) ?? null) : null)
         const syncing = syncView.phase === SYNC.syncing
         const allFailed = syncView.phase === SYNC.done && syncView.addedCount === 0 && syncView.failedCount > 0
 
@@ -774,24 +841,53 @@ window.__ModuleLoader__.load({
                 groups.map((group) => h('div', { key: group.id, className: CLS.group },
                   h('p', { className: CLS.groupTitle }, group.name),
                   h('ul', { className: CLS.modelList },
-                    group.choices.map((choice) => {
-                      const selected = sameSelection(choice.selection, model)
-                      return h('li', { key: choice.key },
+                    group.models.map((entry) => {
+                      const isSaved = sameModel(entry, model)
+                      const isActive = activeModel !== null && activeModel.key === entry.key
+                      const highlighted = isActive || (activeModel === null && isSaved)
+                      const savedEffort = isSaved && model?.reasoningEffort
+                        ? (entry.efforts.find((item) => item.id === model.reasoningEffort)?.name ?? model.reasoningEffort)
+                        : null
+                      return h('li', { key: entry.key },
                         h(Button, {
                           type: 'button', variant: 'ghost',
-                          className: [CLS.modelChoice, selected ? CLS.modelChoiceSelected : ''].filter(Boolean).join(' '),
+                          className: [CLS.modelChoice, highlighted ? CLS.modelChoiceSelected : ''].filter(Boolean).join(' '),
                           disabled: !childReady || savingKey !== null,
-                          'aria-pressed': selected,
-                          'aria-label': choice.label,
-                          'data-onboarding-model-choice': choice.key,
-                          onClick: () => void handlePick(choice),
+                          'aria-pressed': highlighted,
+                          ...(entry.efforts.length > 0 ? { 'aria-expanded': isActive } : {}),
+                          'aria-label': entry.full,
+                          'data-onboarding-model-choice': entry.key,
+                          onClick: () => handleSelectModel(entry),
                         },
-                          h('span', { className: CLS.modelName }, choice.name),
-                          choice.effort ? h(Tag, { tone: TONE.outline }, choice.effort) : null,
+                          h('span', { className: CLS.modelName }, entry.name),
+                          savedEffort ? h(Tag, { tone: TONE.outline }, savedEffort) : null,
                           h('span', { className: CLS.modelMeta },
-                            selected ? h(React.Fragment, null, h(StateDot, { state: STATE_DOT.done, size: ICON_PX.dot }), h(Tag, { tone: TONE.info }, t('model.selected')))
+                            isSaved ? h(React.Fragment, null, h(StateDot, { state: STATE_DOT.done, size: ICON_PX.dot }), h(Tag, { tone: TONE.info }, t('model.selected')))
                               : h(IconChevronRightOutlineRegular, { size: ICON_PX.button }))))
                     }))))),
+            activeModel !== null && activeModel.efforts.length > 0
+              ? h('div', { className: CLS.effortPanel, 'data-onboarding-effort-picker': true, 'data-onboarding-effort-model': activeModel.key },
+                h('div', { className: CLS.effortHead },
+                  h('p', { className: CLS.effortTitle }, t('model.effortSection')),
+                  h('span', { className: CLS.hint }, activeModel.full)),
+                h('div', { className: CLS.effortGrid, role: 'group', 'aria-label': t('model.effortSection') },
+                  activeModel.efforts.map((effort) => {
+                    const effortSelection = { provider: activeModel.provider, model: activeModel.model, reasoningEffort: effort.id }
+                    const selected = sameSelection(effortSelection, model)
+                    return h(Button, {
+                      key: effort.id,
+                      type: 'button', size: 'sm', variant: 'outline',
+                      className: [CLS.effortChoice, selected ? CLS.effortChoiceSelected : ''].filter(Boolean).join(' '),
+                      disabled: !childReady || savingKey !== null,
+                      'aria-pressed': selected,
+                      'data-onboarding-effort-choice': effort.id,
+                      onClick: () => handleSelectEffort(activeModel, effort),
+                    },
+                      selected ? h(StateDot, { state: STATE_DOT.done, size: ICON_PX.dot }) : null,
+                      effort.name)
+                  })),
+                !sameModel(activeModel, model) || !model?.reasoningEffort ? h('p', { className: CLS.hint }, t('model.effortHint')) : null)
+              : null,
             saveState.status === STATE_DOT.done && saveState.label
               ? h('p', { className: CLS.status, role: 'status', 'data-onboarding-model-saved': true }, h(StateDot, { state: STATE_DOT.done, size: ICON_PX.dot }), t('model.saved', { model: saveState.label }))
               : null,

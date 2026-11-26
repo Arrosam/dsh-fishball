@@ -78,8 +78,12 @@ export const UI_ATTR = Object.freeze({
   root: 'data-fishball-onboarding',
   step: 'data-onboarding-step',
   syncButton: 'data-onboarding-sync-button',
+  modelPicker: 'data-onboarding-model-picker',
   modelChoice: 'data-onboarding-model-choice',
   modelSaved: 'data-onboarding-model-saved',
+  effortPicker: 'data-onboarding-effort-picker',
+  effortModel: 'data-onboarding-effort-model',
+  effortChoice: 'data-onboarding-effort-choice',
   next: 'data-onboarding-next',
   back: 'data-onboarding-back',
   skipAll: 'data-onboarding-skip-all',
@@ -92,6 +96,11 @@ export const UI_ATTR = Object.freeze({
   welcome: 'data-onboarding-welcome',
   start: 'data-onboarding-start',
   testFrame: 'data-fbtest-onboarding-frame',
+})
+
+export const MODEL_SELECTED_LABEL = Object.freeze({
+  en: 'Selected',
+  zh: '已选择',
 })
 
 export const UI_STEP = Object.freeze({
@@ -179,4 +188,36 @@ export const FIXTURE = Object.freeze({
     Object.freeze({ id: 'openai-main', name: 'OpenAI' }),
   ]),
   checkId: 'fbtest-check-1',
+})
+
+export const MODEL_FIXTURE = Object.freeze({
+  plain: Object.freeze({
+    provider: 'deepseek',
+    model: 'deepseek-chat',
+    ariaLabel: 'DeepSeek / DeepSeek Chat',
+  }),
+  reasoner: Object.freeze({
+    provider: 'deepseek',
+    model: 'deepseek-reasoner',
+    ariaLabel: 'DeepSeek / DeepSeek Reasoner',
+    efforts: Object.freeze({
+      medium: Object.freeze({ id: 'medium', name: 'Medium' }),
+      high: Object.freeze({ id: 'high', name: 'High' }),
+    }),
+  }),
+  gpt5: Object.freeze({
+    provider: 'openai',
+    model: 'gpt-5',
+    ariaLabel: 'OpenAI / GPT-5',
+    highSummaryLabel: 'OpenAI / GPT-5 · High',
+    customEffortId: 'ultra-custom',
+    efforts: Object.freeze({
+      low: Object.freeze({ id: 'low', name: 'Low' }),
+      high: Object.freeze({ id: 'high', name: 'High' }),
+    }),
+  }),
+  syncedName: 'Claude Sonnet 4',
+  deepseekOnlyCatalog: Object.freeze({
+    groups: Object.freeze([FIXTURE.catalog.groups[0]]),
+  }),
 })
