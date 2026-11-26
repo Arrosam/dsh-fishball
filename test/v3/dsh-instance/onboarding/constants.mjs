@@ -79,11 +79,11 @@ export const UI_ATTR = Object.freeze({
   step: 'data-onboarding-step',
   syncButton: 'data-onboarding-sync-button',
   modelPicker: 'data-onboarding-model-picker',
-  modelChoice: 'data-onboarding-model-choice',
+  modelSelect: 'data-onboarding-model-select',
   modelSaved: 'data-onboarding-model-saved',
-  effortPicker: 'data-onboarding-effort-picker',
+  effortSelect: 'data-onboarding-effort-select',
   effortModel: 'data-onboarding-effort-model',
-  effortChoice: 'data-onboarding-effort-choice',
+  effortHint: 'data-onboarding-effort-hint',
   next: 'data-onboarding-next',
   back: 'data-onboarding-back',
   skipAll: 'data-onboarding-skip-all',
@@ -98,9 +98,13 @@ export const UI_ATTR = Object.freeze({
   testFrame: 'data-fbtest-onboarding-frame',
 })
 
-export const MODEL_SELECTED_LABEL = Object.freeze({
-  en: 'Selected',
-  zh: '已选择',
+export const MODEL_PICKER_COPY = Object.freeze({
+  modelLabel: Object.freeze({ en: 'Model', zh: '模型' }),
+  modelPlaceholder: Object.freeze({ en: 'Select a model', zh: '请选择模型' }),
+  effortLabel: Object.freeze({ en: 'Reasoning effort', zh: '思考强度' }),
+  effortSelectModelFirst: Object.freeze({ en: 'Select a model first', zh: '请先选择模型' }),
+  effortNotApplicable: Object.freeze({ en: 'Not applicable', zh: '不支持调整' }),
+  effortPlaceholder: Object.freeze({ en: 'Select effort', zh: '请选择思考强度' }),
 })
 
 export const UI_STEP = Object.freeze({
@@ -191,15 +195,19 @@ export const FIXTURE = Object.freeze({
 })
 
 export const MODEL_FIXTURE = Object.freeze({
+  providers: Object.freeze({
+    deepseek: 'DeepSeek',
+    openai: 'OpenAI',
+  }),
   plain: Object.freeze({
     provider: 'deepseek',
     model: 'deepseek-chat',
-    ariaLabel: 'DeepSeek / DeepSeek Chat',
+    name: 'DeepSeek Chat',
   }),
   reasoner: Object.freeze({
     provider: 'deepseek',
     model: 'deepseek-reasoner',
-    ariaLabel: 'DeepSeek / DeepSeek Reasoner',
+    name: 'DeepSeek Reasoner',
     efforts: Object.freeze({
       medium: Object.freeze({ id: 'medium', name: 'Medium' }),
       high: Object.freeze({ id: 'high', name: 'High' }),
@@ -208,7 +216,7 @@ export const MODEL_FIXTURE = Object.freeze({
   gpt5: Object.freeze({
     provider: 'openai',
     model: 'gpt-5',
-    ariaLabel: 'OpenAI / GPT-5',
+    name: 'GPT-5',
     highSummaryLabel: 'OpenAI / GPT-5 · High',
     customEffortId: 'ultra-custom',
     efforts: Object.freeze({
@@ -216,6 +224,12 @@ export const MODEL_FIXTURE = Object.freeze({
       high: Object.freeze({ id: 'high', name: 'High' }),
     }),
   }),
+  unlisted: Object.freeze({
+    provider: 'legacy',
+    model: 'legacy-1',
+    fallbackLabel: 'legacy / legacy-1',
+  }),
+  invalidKeys: Object.freeze(['not-valid-json', '["unknown","missing"]']),
   syncedName: 'Claude Sonnet 4',
   deepseekOnlyCatalog: Object.freeze({
     groups: Object.freeze([FIXTURE.catalog.groups[0]]),

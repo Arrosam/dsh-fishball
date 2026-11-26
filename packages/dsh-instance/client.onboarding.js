@@ -29,7 +29,7 @@ window.__ModuleLoader__.load({
     const module = { exports: {} }
     const React = require('react')
     const {
-      Button, StateDot, Tag, IconChevronDownOutlineRegular, IconChevronRightOutlineRegular, IconRefreshOutlineRegular,
+      Button, StateDot, Tag, IconChevronDownOutlineRegular, IconRefreshOutlineRegular,
     } = require('@deepseek-ai/dsh-client-ui-primitives')
     const h = React.createElement
 
@@ -123,7 +123,7 @@ window.__ModuleLoader__.load({
     })
 
     const STATE_DOT = Object.freeze({ ongoing: 'ongoing', done: 'done', error: 'error', idle: 'idle' })
-    const TONE = Object.freeze({ info: 'info', outline: 'outline' })
+    const TONE = Object.freeze({ info: 'info' })
     const ICON_PX = Object.freeze({ header: 18, button: 14, welcome: 156, dot: 8, spinner: 18 })
 
     /** Stable singleton snapshot for `useSyncExternalStore` fallbacks (Object.is-identical across renders). */
@@ -166,20 +166,9 @@ window.__ModuleLoader__.load({
       error: 'fb-onb-error',
       callout: 'fb-onb-callout',
       calloutError: 'fb-onb-callout-error',
-      groups: 'fb-onb-groups',
-      group: 'fb-onb-group',
-      groupTitle: 'fb-onb-group-title',
-      modelList: 'fb-onb-model-list',
-      modelChoice: 'fb-onb-model-choice',
-      modelChoiceSelected: 'fb-onb-model-choice-selected',
-      modelName: 'fb-onb-model-name',
-      modelMeta: 'fb-onb-model-meta',
-      effortPanel: 'fb-onb-effort-panel',
-      effortHead: 'fb-onb-effort-head',
-      effortTitle: 'fb-onb-effort-title',
-      effortGrid: 'fb-onb-effort-grid',
-      effortChoice: 'fb-onb-effort-choice',
-      effortChoiceSelected: 'fb-onb-effort-choice-selected',
+      pickerRow: 'fb-onb-picker-row',
+      pickerField: 'fb-onb-picker-field',
+      pickerLabel: 'fb-onb-picker-label',
       selectWrap: 'fb-onb-select-wrap',
       select: 'fb-onb-select',
       selectIcon: 'fb-onb-select-icon',
@@ -210,7 +199,6 @@ window.__ModuleLoader__.load({
       headerStart: '20px',
       shellMaxWidth: '640px',
       cardPadding: '24px',
-      listMaxHeight: 'min(240px, 36vh)',
       selectHeight: '36px',
       selectLineHeight: '20px',
       selectPadY: '7px',
@@ -246,30 +234,21 @@ window.__ModuleLoader__.load({
       `.${CLS.callout}{display:grid;gap:8px;padding:12px 14px;border-radius:var(--dsw-radius-md);background:var(--dsw-alias-bg-module-platform);color:var(--dsw-alias-label-secondary);font-size:12px;line-height:1.6}`,
       `.${CLS.callout} .${CLS.hint}{overflow-wrap:anywhere}`,
       `.${CLS.calloutError}{background:color-mix(in srgb, var(--dsw-alias-state-error-primary) 8%, var(--dsw-alias-bg-module-platform));border:.5px solid color-mix(in srgb, var(--dsw-alias-state-error-primary) 28%, transparent)}`,
-      `.${CLS.groups}{display:grid;gap:12px;max-height:${CSS_TOKENS.listMaxHeight};overflow-y:auto;padding:2px}`,
-      `.${CLS.group}{display:grid;gap:4px}`,
-      `.${CLS.groupTitle}{margin:0;padding:0 4px;font:var(--dsw-font-xxs-strong-12);color:var(--dsw-alias-label-tertiary)}`,
-      `.${CLS.modelList}{display:grid;gap:2px;margin:0;padding:4px;list-style:none;border-radius:var(--dsw-radius-md);background:var(--dsw-alias-settings-card-fill,var(--dsw-alias-bg-base));box-shadow:inset 0 0 0 .5px var(--dsw-alias-settings-card-stroke,var(--dsw-alias-border-l3))}`,
-      `.${CLS.modelChoice}{width:100%;justify-content:flex-start;gap:8px;font:var(--dsw-font-xs-13)}`,
-      `.${CLS.modelChoiceSelected}{background:color-mix(in srgb, var(--fb-accent,${FISH_MARK.accent}) 10%, transparent);box-shadow:inset 0 0 0 .5px color-mix(in srgb, var(--fb-accent,${FISH_MARK.accent}) 45%, transparent)}`,
-      `.${CLS.modelName}{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:start}`,
-      `.${CLS.modelMeta}{display:inline-flex;align-items:center;gap:6px;margin-inline-start:auto;flex-shrink:0}`,
-      `.${CLS.effortPanel}{display:grid;gap:10px;padding:12px 14px;border-radius:var(--dsw-radius-md);background:var(--dsw-alias-settings-card-fill,var(--dsw-alias-bg-base));box-shadow:inset 0 0 0 .5px var(--dsw-alias-settings-card-stroke,var(--dsw-alias-border-l3))}`,
-      `.${CLS.effortHead}{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}`,
-      `.${CLS.effortTitle}{margin:0;font:var(--dsw-font-xs-strong-13,var(--dsw-font-s-strong-14));color:var(--dsw-alias-label-primary)}`,
-      `.${CLS.effortGrid}{display:flex;flex-wrap:wrap;gap:8px}`,
-      `.${CLS.effortChoice}{gap:6px}`,
-      `.${CLS.effortChoiceSelected}{background:color-mix(in srgb, var(--fb-accent,${FISH_MARK.accent}) 12%, transparent);box-shadow:inset 0 0 0 .5px color-mix(in srgb, var(--fb-accent,${FISH_MARK.accent}) 50%, var(--dsw-alias-border-l3))}`,
-      `.${CLS.selectWrap}{position:relative;display:flex;align-items:center;width:100%}`,
+      `.${CLS.pickerRow}{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:12px;align-items:end}`,
+      `@media (max-width:480px){.${CLS.pickerRow}{grid-template-columns:minmax(0,1fr)}}`,
+      `.${CLS.pickerField}{display:grid;gap:6px;min-width:0}`,
+      `.${CLS.pickerLabel}{margin:0;font-size:12px;line-height:18px;font-weight:500;color:var(--dsw-alias-label-secondary)}`,
+      `.${CLS.selectWrap}{position:relative;display:flex;align-items:center;width:100%;min-width:0}`,
       // Keep native `<select>` inline-block layout (avoid `display:block`, which lets Chromium's
       // shadow-DOM picker arrow wrap) and hide `::picker-icon` so only our custom chevron renders.
       // Symmetric vertical padding (`7px` + `20px` line-height + `7px` + `1px` border) centers text cleanly.
-      `.${CLS.select}{appearance:none;-webkit-appearance:none;box-sizing:border-box;width:100%;min-height:${CSS_TOKENS.selectHeight};line-height:${CSS_TOKENS.selectLineHeight};padding-block:${CSS_TOKENS.selectPadY};padding-inline:12px 36px;margin:0;border:.5px solid var(--dsw-alias-border-l4,var(--dsw-alias-border-l3));border-radius:var(--dsw-radius-md);background:var(--dsw-alias-bg-layer-3,var(--dsw-alias-bg-base));font-family:var(--dsw-font-family);font-size:13px;color:var(--dsw-alias-label-primary);cursor:pointer}`,
+      `.${CLS.select}{appearance:none;-webkit-appearance:none;box-sizing:border-box;width:100%;min-width:0;min-height:${CSS_TOKENS.selectHeight};line-height:${CSS_TOKENS.selectLineHeight};padding-block:${CSS_TOKENS.selectPadY};padding-inline:12px 36px;margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;border:.5px solid var(--dsw-alias-border-l4,var(--dsw-alias-border-l3));border-radius:var(--dsw-radius-md);background:var(--dsw-alias-bg-layer-3,var(--dsw-alias-bg-base));font-family:var(--dsw-font-family);font-size:13px;color:var(--dsw-alias-label-primary);cursor:pointer}`,
       `.${CLS.select}::picker-icon{display:none}`,
       `.${CLS.select}::-ms-expand{display:none}`,
       `.${CLS.select}:focus-visible{outline:var(--dsw-focus-ring-width,2px) solid var(--dsw-focus-ring-color,var(--dsw-alias-state-business-primary));outline-offset:1px}`,
       `.${CLS.select}:disabled{opacity:.55;cursor:not-allowed}`,
       `.${CLS.selectIcon}{position:absolute;inset-inline-end:12px;top:50%;transform:translateY(-50%);pointer-events:none;display:inline-flex;align-items:center;justify-content:center;color:var(--dsw-alias-label-tertiary)}`,
+      `.${CLS.select}:disabled+.${CLS.selectIcon}{opacity:.55}`,
       `.${CLS.pluginList}{display:grid;border:.5px solid var(--dsw-alias-border-l3);border-radius:var(--dsw-radius-md);background:var(--dsw-alias-bg-base);overflow:hidden}`,
       `.${CLS.pluginRow}{display:flex;align-items:center;gap:12px;padding:12px 14px}`,
       `.${CLS.pluginRow}+.${CLS.pluginRow}{border-top:.5px solid var(--dsw-alias-border-l2)}`,
@@ -318,8 +297,12 @@ window.__ModuleLoader__.load({
       'model.syncFailed': 'Could not sync models ({code}).',
       'model.pickSection': '2. Choose Fishball\'s model',
       'model.refresh': 'Refresh models',
-      'model.selected': 'Selected',
-      'model.effortSection': 'Choose reasoning effort',
+      'model.modelLabel': 'Model',
+      'model.modelPlaceholder': 'Select a model',
+      'model.effortLabel': 'Reasoning effort',
+      'model.effortPlaceholder': 'Select effort',
+      'model.effortSelectModelFirst': 'Select a model first',
+      'model.effortNotSupported': 'Not applicable',
       'model.effortHint': 'Pick a reasoning effort for this model to save your selection.',
       'model.saved': 'Fishball model set to {model}.',
       'model.saveFailed': 'Could not save the selected model. Please try again.',
@@ -393,8 +376,12 @@ window.__ModuleLoader__.load({
       'model.syncFailed': '同步模型失败（{code}）。',
       'model.pickSection': '2. 选择 Fishball 模型',
       'model.refresh': '刷新模型列表',
-      'model.selected': '已选择',
-      'model.effortSection': '选择思考强度',
+      'model.modelLabel': '模型',
+      'model.modelPlaceholder': '请选择模型',
+      'model.effortLabel': '思考强度',
+      'model.effortPlaceholder': '请选择思考强度',
+      'model.effortSelectModelFirst': '请先选择模型',
+      'model.effortNotSupported': '不支持调整',
       'model.effortHint': '请为所选模型选择一个思考强度以保存配置。',
       'model.saved': '已将 Fishball 模型设为 {model}。',
       'model.saveFailed': '未能保存所选模型，请重试。',
@@ -463,6 +450,21 @@ window.__ModuleLoader__.load({
               onClick: onSkip,
             }, skipLabel))
           : null)
+    }
+
+    /** Native select wrapped with the DSH chevron alignment styles used across onboarding steps. */
+    function StyledSelect({ id, value, disabled, onChange, children, ...rest }) {
+      return h('div', { className: CLS.selectWrap },
+        h('select', {
+          id,
+          className: CLS.select,
+          value,
+          disabled,
+          onChange: (event) => onChange(event.target.value),
+          ...rest,
+        }, children),
+        h('span', { className: CLS.selectIcon, 'aria-hidden': true },
+          h(IconChevronDownOutlineRegular, { size: ICON_PX.button })))
     }
 
     async function readJson(path, init, signal) {
@@ -691,13 +693,15 @@ window.__ModuleLoader__.load({
       // the frame synchronously with zero loading flash and zero background polling.
       let completedLocally = false
 
-      /** Page 1: Sync models from DSH + choose Fishball's model and reasoning effort. */
+      /** Page 1: Sync models from DSH + choose Fishball's model and reasoning effort via side-by-side dropdowns. */
       function FishballModelStep({ childReady, canRefresh, model, catalog, onRefreshState, onModelSaved }) {
         const [syncView, setSyncView] = React.useState({ phase: SYNC.idle })
         const [selectedModelKey, setSelectedModelKey] = React.useState(null)
         const [savingKey, setSavingKey] = React.useState(null)
         const [saveState, setSaveState] = React.useState({ status: null, label: null })
         const [refreshing, setRefreshing] = React.useState(false)
+        const modelSelectId = React.useId()
+        const effortSelectId = React.useId()
         const mounted = React.useRef(true)
         const savingRef = React.useRef(false)
         React.useEffect(() => {
@@ -753,31 +757,13 @@ window.__ModuleLoader__.load({
           setSavingKey(null)
           if (answer.ok) {
             const saved = normalizeSelection(answer.model) ?? selection
+            setSelectedModelKey(null)
             onModelSaved(saved)
             setSaveState({ status: STATE_DOT.done, label })
             return true
           }
           setSaveState({ status: STATE_DOT.error, label: null })
           return false
-        }
-
-        const handleSelectModel = (entry) => {
-          if (!childReady || savingRef.current || savingKey !== null) return
-          if (entry.efforts.length === 0) {
-            void saveSelection({ provider: entry.provider, model: entry.model }, entry.full).then((ok) => {
-              if (ok && mounted.current) setSelectedModelKey(null)
-            })
-          } else {
-            setSelectedModelKey(entry.key)
-            setSaveState({ status: null, label: null })
-          }
-        }
-
-        const handleSelectEffort = (entry, effort) => {
-          void saveSelection(
-            { provider: entry.provider, model: entry.model, reasoningEffort: effort.id },
-            t('model.effort', { model: entry.full, effort: effort.name }),
-          )
         }
 
         const handleRefresh = async () => {
@@ -790,10 +776,44 @@ window.__ModuleLoader__.load({
         const groups = groupedModels(catalog)
         const allModels = groups.flatMap((group) => group.models)
         const selectedEntry = selectedModelKey !== null ? (allModels.find((entry) => entry.key === selectedModelKey) ?? null) : null
+        const hasSelectedEntry = selectedEntry !== null
         React.useEffect(() => {
-          if (selectedModelKey !== null && selectedEntry === null) setSelectedModelKey(null)
-        }, [selectedModelKey, selectedEntry])
+          if (selectedModelKey !== null && !hasSelectedEntry) setSelectedModelKey(null)
+        }, [selectedModelKey, hasSelectedEntry])
         const activeModel = selectedEntry ?? (model !== null ? (allModels.find((entry) => sameModel(entry, model)) ?? null) : null)
+
+        const handleSelectModel = (nextKey) => {
+          if (!childReady || savingRef.current || savingKey !== null || nextKey === MODEL.unset) return
+          const entry = allModels.find((item) => item.key === nextKey)
+          if (entry === undefined) return
+          if (entry.efforts.length === 0) {
+            void saveSelection({ provider: entry.provider, model: entry.model }, entry.full)
+          } else {
+            setSelectedModelKey(entry.key)
+            setSaveState({ status: null, label: null })
+          }
+        }
+
+        const handleSelectEffort = (nextEffortId) => {
+          if (!childReady || savingRef.current || savingKey !== null || activeModel === null || nextEffortId === MODEL.unset) return
+          const effort = activeModel.efforts.find((item) => item.id === nextEffortId)
+          if (effort === undefined) return
+          void saveSelection(
+            { provider: activeModel.provider, model: activeModel.model, reasoningEffort: effort.id },
+            t('model.effort', { model: activeModel.full, effort: effort.name }),
+          )
+        }
+
+        const savedKey = model !== null ? modelKey(model.provider, model.model) : MODEL.unset
+        const modelSelectValue = activeModel !== null ? activeModel.key : savedKey
+        const hasUnlistedSavedModel = activeModel === null && model !== null
+        const hasEfforts = activeModel !== null && activeModel.efforts.length > 0
+        const isActiveSaved = activeModel !== null && sameModel(activeModel, model)
+        const savedEffortId = isActiveSaved && model?.reasoningEffort ? model.reasoningEffort : MODEL.unset
+        const effortValue = hasEfforts ? savedEffortId : MODEL.unset
+        const effortDisabled = !childReady || savingKey !== null || !hasEfforts
+        const hasUnlistedSavedEffort = hasEfforts && effortValue !== MODEL.unset && !activeModel.efforts.some((item) => item.id === effortValue)
+
         const syncing = syncView.phase === SYNC.syncing
         const allFailed = syncView.phase === SYNC.done && syncView.addedCount === 0 && syncView.failedCount > 0
 
@@ -837,56 +857,42 @@ window.__ModuleLoader__.load({
               }, t('model.refresh'))),
             groups.length === 0
               ? h('div', { className: CLS.callout, 'data-onboarding-model-empty': true }, h('p', { className: CLS.hint }, t('model.empty')))
-              : h('div', { className: CLS.groups },
-                groups.map((group) => h('div', { key: group.id, className: CLS.group },
-                  h('p', { className: CLS.groupTitle }, group.name),
-                  h('ul', { className: CLS.modelList },
-                    group.models.map((entry) => {
-                      const isSaved = sameModel(entry, model)
-                      const isActive = activeModel !== null && activeModel.key === entry.key
-                      const highlighted = isActive || (activeModel === null && isSaved)
-                      const savedEffort = isSaved && model?.reasoningEffort
-                        ? (entry.efforts.find((item) => item.id === model.reasoningEffort)?.name ?? model.reasoningEffort)
-                        : null
-                      return h('li', { key: entry.key },
-                        h(Button, {
-                          type: 'button', variant: 'ghost',
-                          className: [CLS.modelChoice, highlighted ? CLS.modelChoiceSelected : ''].filter(Boolean).join(' '),
-                          disabled: !childReady || savingKey !== null,
-                          'aria-pressed': highlighted,
-                          ...(entry.efforts.length > 0 ? { 'aria-expanded': isActive } : {}),
-                          'aria-label': entry.full,
-                          'data-onboarding-model-choice': entry.key,
-                          onClick: () => handleSelectModel(entry),
-                        },
-                          h('span', { className: CLS.modelName }, entry.name),
-                          savedEffort ? h(Tag, { tone: TONE.outline }, savedEffort) : null,
-                          h('span', { className: CLS.modelMeta },
-                            isSaved ? h(React.Fragment, null, h(StateDot, { state: STATE_DOT.done, size: ICON_PX.dot }), h(Tag, { tone: TONE.info }, t('model.selected')))
-                              : h(IconChevronRightOutlineRegular, { size: ICON_PX.button }))))
-                    }))))),
-            activeModel !== null && activeModel.efforts.length > 0
-              ? h('div', { className: CLS.effortPanel, 'data-onboarding-effort-picker': true, 'data-onboarding-effort-model': activeModel.key },
-                h('div', { className: CLS.effortHead },
-                  h('p', { className: CLS.effortTitle }, t('model.effortSection')),
-                  h('span', { className: CLS.hint }, activeModel.full)),
-                h('div', { className: CLS.effortGrid, role: 'group', 'aria-label': t('model.effortSection') },
-                  activeModel.efforts.map((effort) => {
-                    const effortSelection = { provider: activeModel.provider, model: activeModel.model, reasoningEffort: effort.id }
-                    const selected = sameSelection(effortSelection, model)
-                    return h(Button, {
-                      key: effort.id,
-                      type: 'button', size: 'sm', variant: 'outline',
-                      className: [CLS.effortChoice, selected ? CLS.effortChoiceSelected : ''].filter(Boolean).join(' '),
-                      disabled: !childReady || savingKey !== null,
-                      'aria-pressed': selected,
-                      'data-onboarding-effort-choice': effort.id,
-                      onClick: () => handleSelectEffort(activeModel, effort),
-                    },
-                      selected ? h(StateDot, { state: STATE_DOT.done, size: ICON_PX.dot }) : null,
-                      effort.name)
-                  })),
-                !sameModel(activeModel, model) || !model?.reasoningEffort ? h('p', { className: CLS.hint }, t('model.effortHint')) : null)
+              : h('div', { className: CLS.pickerRow },
+                h('div', { className: CLS.pickerField },
+                  h('label', { className: CLS.pickerLabel, htmlFor: modelSelectId }, t('model.modelLabel')),
+                  h(StyledSelect, {
+                    id: modelSelectId,
+                    value: modelSelectValue,
+                    disabled: !childReady || savingKey !== null,
+                    'data-onboarding-model-select': true,
+                    onChange: handleSelectModel,
+                  },
+                    h('option', { value: MODEL.unset, disabled: modelSelectValue !== MODEL.unset }, t('model.modelPlaceholder')),
+                    hasUnlistedSavedModel
+                      ? h('option', { value: savedKey }, model.provider + MODEL.routeSeparator + model.model)
+                      : null,
+                    groups.map((group) => h('optgroup', { key: group.id, label: group.name },
+                      group.models.map((entry) => h('option', { key: entry.key, value: entry.key }, entry.name)))))),
+                h('div', { className: CLS.pickerField },
+                  h('label', { className: CLS.pickerLabel, htmlFor: effortSelectId }, t('model.effortLabel')),
+                  h(StyledSelect, {
+                    id: effortSelectId,
+                    value: effortValue,
+                    disabled: effortDisabled,
+                    'data-onboarding-effort-select': true,
+                    'data-onboarding-effort-model': modelSelectValue,
+                    onChange: handleSelectEffort,
+                  },
+                    modelSelectValue === MODEL.unset
+                      ? h('option', { value: MODEL.unset }, t('model.effortSelectModelFirst'))
+                      : !hasEfforts
+                        ? h('option', { value: MODEL.unset }, t('model.effortNotSupported'))
+                        : h(React.Fragment, null,
+                          h('option', { value: MODEL.unset, disabled: effortValue !== MODEL.unset }, t('model.effortPlaceholder')),
+                          hasUnlistedSavedEffort ? h('option', { value: effortValue }, effortValue) : null,
+                          activeModel.efforts.map((effort) => h('option', { key: effort.id, value: effort.id }, effort.name)))))),
+            hasEfforts && (!isActiveSaved || !model?.reasoningEffort)
+              ? h('p', { className: CLS.hint, 'data-onboarding-effort-hint': true }, t('model.effortHint'))
               : null,
             saveState.status === STATE_DOT.done && saveState.label
               ? h('p', { className: CLS.status, role: 'status', 'data-onboarding-model-saved': true }, h(StateDot, { state: STATE_DOT.done, size: ICON_PX.dot }), t('model.saved', { model: saveState.label }))
@@ -962,21 +968,18 @@ window.__ModuleLoader__.load({
         } else {
           body = h('section', { className: CLS.section, 'data-onboarding-watchdog-state': WATCHDOG_STATE.ready },
             h('label', { className: CLS.sectionTitle, htmlFor: selectId }, t('watchdog.label')),
-            h('div', { className: CLS.selectWrap },
-              h('select', {
-                id: selectId,
-                className: CLS.select,
-                value: currentValue,
-                disabled: !watchdog.writable || busy,
-                'data-onboarding-watchdog-select': true,
-                onChange: (event) => void handlePick(event.target.value),
-              },
-                h('option', { value: MODEL.unset }, t('watchdog.disabled')),
-                watchdog.saved !== null && !choices.some((entry) => entry.key === currentValue)
-                  ? h('option', { value: currentValue }, formatSelectionLabel(watchdog.saved, mainCatalog.value, t))
-                  : null,
-                choices.map((choice) => h('option', { key: choice.key, value: choice.key }, choice.label))),
-              h('span', { className: CLS.selectIcon, 'aria-hidden': true }, h(IconChevronDownOutlineRegular, { size: ICON_PX.button }))),
+            h(StyledSelect, {
+              id: selectId,
+              value: currentValue,
+              disabled: !watchdog.writable || busy,
+              'data-onboarding-watchdog-select': true,
+              onChange: (value) => void handlePick(value),
+            },
+              h('option', { value: MODEL.unset }, t('watchdog.disabled')),
+              watchdog.saved !== null && !choices.some((entry) => entry.key === currentValue)
+                ? h('option', { value: currentValue }, formatSelectionLabel(watchdog.saved, mainCatalog.value, t))
+                : null,
+              choices.map((choice) => h('option', { key: choice.key, value: choice.key }, choice.label))),
             mainCatalog.status === MODEL.catalog.loading ? h('p', { className: CLS.hint, role: 'status' }, t('watchdog.loading'))
               : mainCatalog.status === MODEL.catalog.failed ? h('p', { className: CLS.error, role: 'alert' }, t('watchdog.failed'))
                 : choices.length === 0 ? h('p', { className: CLS.hint }, t('watchdog.none'))

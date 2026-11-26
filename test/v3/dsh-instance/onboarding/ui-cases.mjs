@@ -4,7 +4,7 @@
  */
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
-import { textOf } from '../../../support/rp-recommend.mjs'
+import { findAll, textOf } from '../../../support/rp-recommend.mjs'
 import {
   BILLION_CONTEXT,
   CHILD_MODEL_CONTRACT,
@@ -13,7 +13,7 @@ import {
   LANGS,
   MEMORY_PLUGINS,
   MODEL_FIXTURE,
-  MODEL_SELECTED_LABEL,
+  MODEL_PICKER_COPY,
   ONBOARDING_CONTRACT,
   ONBOARDING_ROUTES,
   TERMINAL_INSTANCE_STATES,
@@ -46,6 +46,13 @@ const modelKey = ({ provider, model }) => JSON.stringify([provider, model])
 const KEY_PLAIN = modelKey(MODEL_FIXTURE.plain)
 const KEY_REASONER = modelKey(MODEL_FIXTURE.reasoner)
 const KEY_GPT5 = modelKey(MODEL_FIXTURE.gpt5)
+const KEY_UNLISTED = modelKey(MODEL_FIXTURE.unlisted)
+
+const modelSelectOf = (page) => page.byAttr(UI_ATTR.modelSelect, 'true')[0]
+const effortSelectOf = (page) => page.byAttr(UI_ATTR.effortSelect, 'true')[0]
+const optionsOf = (selectNode) => findAll(selectNode.children, (n) => n.tag === 'option')
+const optgroupsOf = (selectNode) => findAll(selectNode.children, (n) => n.tag === 'optgroup')
+const labelFor = (page, id) => page.find((n) => n.tag === 'label' && (n.props.htmlFor === id || n.props.for === id))[0]
 
 export function registerUiOnboardingCases(sdk) {
   describe(`dsh-instance onboarding UI wizard (SDK ${sdk})`, () => {
@@ -96,7 +103,7 @@ export function registerUiOnboardingCases(sdk) {
       })
     })
 
-    describe('Step 1: Fishball model sync & two-step model/effort picker (EP + BVA + DT + ST)', () => {
+    describe('Step 1: Fishball model sync & two-dropdown model/effort picker (EP + BVA + DT + ST)', () => {
       const deferred = () => {
         let resolve
         const promise = new Promise((r) => { resolve = r })
@@ -145,89 +152,137 @@ export function registerUiOnboardingCases(sdk) {
         assert.deepEqual(page.world.errors, [])
       })
 
-      test('EP / BVA: model picker renders one button per model (not expanded by efforts) with JSON [provider,model] key & "provider / model" aria-label', async (t) => {
-        const page = await openOnboardingPage(t, sdk)
-        await page.mountGate()
-        await waitForStep(page, UI_STEP.fishballModel)
-
-        assert.equal(page.byAttr(UI_ATTR.modelPicker).length, 1, 'must render [data-onboarding-model-picker]')
-        const choices = page.byAttr(UI_ATTR.modelChoice)
-        // FIXTURE.catalog has 3 models (1 plain + 2 with 2 efforts each): must render 3 buttons, NOT 5
-        assert.equal(choices.length, 3, 'must render exactly one button per model, never expanded per reasoning effort')
-
-        assert.deepEqual(
-          choices.map((n) => n.props[UI_ATTR.modelChoice]),
-          [KEY_PLAIN, KEY_REASONER, KEY_GPT5],
-        )
-        assert.deepEqual(
-          choices.map((n) => n.props['aria-label']),
-          [MODEL_FIXTURE.plain.ariaLabel, MODEL_FIXTURE.reasoner.ariaLabel, MODEL_FIXTURE.gpt5.ariaLabel],
-        )
-        assert.equal(page.byAttr(UI_ATTR.effortPicker).length, 0, 'effort picker hidden before selecting a model with efforts')
-        assert.deepEqual(page.world.errors, [])
-      })
-
-      test('DT-1 (plain model, no reasoning.efforts): clicking posts {provider,model} immediately, keeps effort picker hidden, shows Selected (en & zh)', async (t) => {
+      test('EP / BVA (DOM hooks, labels, optgroup grouping & State A): renders side-by-side model & effort selects with localized labels, provider optgroups, and disabled effort select when no model is chosen (en & zh)', async (t) => {
         for (const lang of LANGS) {
           const page = await openOnboardingPage(t, sdk, { lang })
           await page.mountGate()
           await waitForStep(page, UI_STEP.fishballModel)
 
-          const [plainBtn] = page.byAttr(UI_ATTR.modelChoice, KEY_PLAIN)
-          assert.ok(plainBtn)
-          await page.press(plainBtn)
+          assert.equal(page.byAttr(UI_ATTR.modelPicker).length, 1, 'must render [data-onboarding-model-picker]')
+          const modelSel = modelSelectOf(page)
+          const effortSel = effortSelectOf(page)
+          assert.ok(modelSel && modelSel.tag === 'select', 'must render <select data-onboarding-model-select="true">')
+          assert.ok(effortSel && effortSel.tag === 'select', 'must render <select data-onboarding-effort-select="true">')
+
+          // Labels associated via htmlFor === select.id
+          assert.ok(modelSel.props.id, 'model select must have an id for its <label>')
+          assert.ok(effortSel.props.id, 'effort select must have an id for its <label>')
+          const modelLabel = labelFor(page, modelSel.props.id)
+          const effortLabel = labelFor(page, effortSel.props.id)
+          assert.ok(modelLabel, 'model select must have a matching <label>')
+          assert.ok(effortLabel, 'effort select must have a matching <label>')
+          assert.equal(textOf(modelLabel).trim(), MODEL_PICKER_COPY.modelLabel[lang])
+          assert.equal(textOf(effortLabel).trim(), MODEL_PICKER_COPY.effortLabel[lang])
+
+          // Left <select>: value === "", enabled placeholder, grouped by provider <optgroup>
+          assert.equal(String(modelSel.props.value ?? ''), '')
+          const modelOpts = optionsOf(modelSel)
+          assert.equal(String(modelOpts[0].props.value ?? ''), '')
+          assert.equal(Boolean(modelOpts[0].props.disabled), false, 'placeholder option must be enabled while value === ""')
+          assert.equal(textOf(modelOpts[0]).trim(), MODEL_PICKER_COPY.modelPlaceholder[lang])
+
+          const groups = optgroupsOf(modelSel)
+          assert.deepEqual(
+            groups.map((g) => g.props.label),
+            [MODEL_FIXTURE.providers.deepseek, MODEL_FIXTURE.providers.openai],
+          )
+          assert.deepEqual(
+            optionsOf(groups[0]).map((o) => [String(o.props.value), textOf(o).trim()]),
+            [
+              [KEY_PLAIN, MODEL_FIXTURE.plain.name],
+              [KEY_REASONER, MODEL_FIXTURE.reasoner.name],
+            ],
+          )
+          assert.deepEqual(
+            optionsOf(groups[1]).map((o) => [String(o.props.value), textOf(o).trim()]),
+            [[KEY_GPT5, MODEL_FIXTURE.gpt5.name]],
+          )
+          // 1 placeholder + 3 model options (never expanded per reasoning effort)
+          assert.equal(modelOpts.length, 4, 'left select must render placeholder + 3 model options, never expanded per effort')
+
+          // Right <select> State A (no active model): disabled, value "", option "Select a model first" / "请先选择模型", hint hidden
+          assert.equal(Boolean(effortSel.props.disabled), true, 'State A: effort select must be disabled with no active model')
+          assert.equal(String(effortSel.props.value ?? ''), '')
+          assert.equal(String(effortSel.props[UI_ATTR.effortModel] ?? ''), '')
+          const effortOpts = optionsOf(effortSel)
+          assert.equal(effortOpts.length, 1)
+          assert.equal(textOf(effortOpts[0]).trim(), MODEL_PICKER_COPY.effortSelectModelFirst[lang])
+          assert.equal(page.byAttr(UI_ATTR.effortHint).length, 0, 'State A: effort hint must be hidden')
+
+          assert.deepEqual(page.missingKeys, [], `missing locale keys in ${lang}: ${JSON.stringify(page.missingKeys)}`)
+          assert.deepEqual(page.world.errors, [])
+        }
+      })
+
+      test('DT-1 (plain model -> State B): selecting plain model immediately posts {provider,model}, disables effort select with Not applicable, disables model placeholder, and shows saved badge (en & zh)', async (t) => {
+        for (const lang of LANGS) {
+          const page = await openOnboardingPage(t, sdk, { lang })
+          await page.mountGate()
+          await waitForStep(page, UI_STEP.fishballModel)
+
+          await page.select(modelSelectOf(page), KEY_PLAIN)
 
           assert.ok(await page.until(() => page.requestsOf('POST', ONBOARDING_ROUTES.model).length === 1))
           const post = page.requestsOf('POST', ONBOARDING_ROUTES.model)[0]
           assert.deepEqual(post.body, { provider: MODEL_FIXTURE.plain.provider, model: MODEL_FIXTURE.plain.model })
           assert.equal('reasoningEffort' in post.body, false, 'plain model must omit reasoningEffort')
-
-          assert.equal(page.byAttr(UI_ATTR.effortPicker).length, 0, 'effort picker must not render for model without efforts')
           assert.ok(await page.until(() => page.byAttr(UI_ATTR.modelSaved).length >= 1), 'must show [data-onboarding-model-saved]')
 
-          const [updatedBtn] = page.byAttr(UI_ATTR.modelChoice, KEY_PLAIN)
-          assert.equal(String(updatedBtn.props['aria-pressed']), 'true')
-          assert.ok(textOf(updatedBtn).includes(MODEL_SELECTED_LABEL[lang]), `expected "${MODEL_SELECTED_LABEL[lang]}" in row: ${textOf(updatedBtn)}`)
+          const modelSel = modelSelectOf(page)
+          assert.equal(String(modelSel.props.value), KEY_PLAIN)
+          const placeholderOpt = optionsOf(modelSel).find((o) => String(o.props.value ?? '') === '')
+          assert.equal(Boolean(placeholderOpt?.props.disabled), true, 'placeholder option must be disabled once a model is chosen')
+
+          // Right <select> State B: disabled, value "", option "Not applicable" / "不支持调整", no hint
+          const effortSel = effortSelectOf(page)
+          assert.equal(Boolean(effortSel.props.disabled), true, 'State B: effort select must be disabled for plain model')
+          assert.equal(String(effortSel.props.value ?? ''), '')
+          const effortOpts = optionsOf(effortSel)
+          assert.equal(effortOpts.length, 1)
+          assert.equal(textOf(effortOpts[0]).trim(), MODEL_PICKER_COPY.effortNotApplicable[lang])
+          assert.equal(page.byAttr(UI_ATTR.effortHint).length, 0, 'State B: effort hint must not render for plain model')
+
           assert.deepEqual(page.missingKeys, [])
           assert.deepEqual(page.world.errors, [])
         }
       })
 
-      test('DT-2 (model with reasoning.efforts): clicking model reveals effort picker with hint, exposes aria-expanded, sends 0 POSTs; clicking effort posts {provider,model,reasoningEffort} and updates badges', async (t) => {
+      test('DT-2 (reasoning model -> State C -> State D): selecting reasoning model sends 0 POSTs, enables effort select with Select effort + hint; selecting effort posts {provider,model,reasoningEffort}, hides hint, shows saved badge (en & zh)', async (t) => {
         for (const lang of LANGS) {
           const page = await openOnboardingPage(t, sdk, { lang })
           await page.mountGate()
           await waitForStep(page, UI_STEP.fishballModel)
 
-          const [reasonerBtn] = page.byAttr(UI_ATTR.modelChoice, KEY_REASONER)
-          assert.notEqual(String(reasonerBtn.props['aria-expanded']), 'true', 'inactive effort-capable model must not be aria-expanded="true"')
-          await page.press(reasonerBtn)
+          // Select reasoning model -> State C (0 POSTs)
+          await page.select(modelSelectOf(page), KEY_REASONER)
+          assert.equal(page.requestsOf('POST', ONBOARDING_ROUTES.model).length, 0, 'selecting a model with efforts must NOT immediately POST')
 
-          // Must NOT post yet
-          await page.settle()
-          assert.equal(page.requestsOf('POST', ONBOARDING_ROUTES.model).length, 0, 'clicking a model with efforts must NOT immediately POST')
-          assert.equal(String(page.byAttr(UI_ATTR.modelChoice, KEY_REASONER)[0].props['aria-pressed']), 'true')
-          assert.equal(String(page.byAttr(UI_ATTR.modelChoice, KEY_REASONER)[0].props['aria-expanded']), 'true', 'active effort-capable model must expose aria-expanded="true"')
-          assert.notEqual(String(page.byAttr(UI_ATTR.modelChoice, KEY_GPT5)[0].props['aria-expanded']), 'true', 'other effort-capable model must not be aria-expanded="true"')
+          const modelSel = modelSelectOf(page)
+          assert.equal(String(modelSel.props.value), KEY_REASONER)
+          assert.equal(Boolean(optionsOf(modelSel)[0].props.disabled), true)
 
-          // Effort picker appears directly for that model with one button per effort
-          const [picker] = page.byAttr(UI_ATTR.effortPicker, 'true')
-          assert.ok(picker, 'must reveal [data-onboarding-effort-picker="true"]')
-          assert.equal(picker.props[UI_ATTR.effortModel], KEY_REASONER)
-          const effortBtns = page.byAttr(UI_ATTR.effortChoice)
+          const effortSelC = effortSelectOf(page)
+          assert.equal(Boolean(effortSelC.props.disabled), false, 'State C: effort select must be enabled')
+          assert.equal(String(effortSelC.props.value ?? ''), '')
+          assert.equal(effortSelC.props[UI_ATTR.effortModel], KEY_REASONER)
+          const effortOptsC = optionsOf(effortSelC)
           assert.deepEqual(
-            effortBtns.map((n) => n.props[UI_ATTR.effortChoice]),
-            [MODEL_FIXTURE.reasoner.efforts.medium.id, MODEL_FIXTURE.reasoner.efforts.high.id],
+            effortOptsC.map((o) => [String(o.props.value ?? ''), textOf(o).trim()]),
+            [
+              ['', MODEL_PICKER_COPY.effortPlaceholder[lang]],
+              [MODEL_FIXTURE.reasoner.efforts.medium.id, MODEL_FIXTURE.reasoner.efforts.medium.name],
+              [MODEL_FIXTURE.reasoner.efforts.high.id, MODEL_FIXTURE.reasoner.efforts.high.name],
+            ],
           )
-          for (const eb of effortBtns) assert.notEqual(String(eb.props['aria-pressed']), 'true')
+          assert.equal(Boolean(effortOptsC[0].props.disabled), false, 'State C: effort placeholder must be enabled while value === ""')
 
-          // Unsaved effort hint is visible while active model differs from saved model
-          const hintBeforeSave = textOf(picker)
-          assert.ok(hintBeforeSave.length > 0)
+          const hintsBefore = page.byAttr(UI_ATTR.effortHint, 'true')
+          assert.equal(hintsBefore.length, 1, 'State C: must render [data-onboarding-effort-hint="true"]')
+          assert.ok(textOf(hintsBefore[0]).trim().length > 0)
           assert.deepEqual(page.missingKeys, [], `missing locale keys in ${lang}: ${JSON.stringify(page.missingKeys)}`)
 
-          // Click 'high' effort -> posts { provider, model, reasoningEffort: 'high' }
-          await page.press(page.byAttr(UI_ATTR.effortChoice, MODEL_FIXTURE.reasoner.efforts.high.id)[0])
+          // Select 'high' effort -> State D (posts { provider, model, reasoningEffort })
+          await page.select(effortSelC, MODEL_FIXTURE.reasoner.efforts.high.id)
           assert.ok(await page.until(() => page.requestsOf('POST', ONBOARDING_ROUTES.model).length === 1))
           assert.deepEqual(page.requestsOf('POST', ONBOARDING_ROUTES.model)[0].body, {
             provider: MODEL_FIXTURE.reasoner.provider,
@@ -235,115 +290,124 @@ export function registerUiOnboardingCases(sdk) {
             reasoningEffort: MODEL_FIXTURE.reasoner.efforts.high.id,
           })
 
-          assert.ok(await page.until(() => page.byAttr(UI_ATTR.modelSaved).length >= 1))
-          assert.equal(String(page.byAttr(UI_ATTR.effortChoice, MODEL_FIXTURE.reasoner.efforts.high.id)[0].props['aria-pressed']), 'true')
-          assert.notEqual(String(page.byAttr(UI_ATTR.effortChoice, MODEL_FIXTURE.reasoner.efforts.medium.id)[0].props['aria-pressed']), 'true')
-
-          // Model row shows Selected + effort display name ("High")
-          const savedRowText = textOf(page.byAttr(UI_ATTR.modelChoice, KEY_REASONER)[0])
-          assert.ok(savedRowText.includes(MODEL_SELECTED_LABEL[lang]), `expected ${MODEL_SELECTED_LABEL[lang]} in: ${savedRowText}`)
-          assert.ok(savedRowText.includes(MODEL_FIXTURE.reasoner.efforts.high.name), `expected effort display name "${MODEL_FIXTURE.reasoner.efforts.high.name}" in: ${savedRowText}`)
-
-          // Unsaved effort hint hidden once saved (picker text shrinks without the unsaved hint)
-          const pickerTextAfterSave = textOf(page.byAttr(UI_ATTR.effortPicker, 'true')[0])
-          assert.ok(pickerTextAfterSave.length < hintBeforeSave.length, 'unsaved effort hint should hide once active model is saved')
+          assert.ok(await page.until(() => page.byAttr(UI_ATTR.modelSaved).length >= 1), 'must show [data-onboarding-model-saved]')
+          const effortSelD = effortSelectOf(page)
+          assert.equal(Boolean(effortSelD.props.disabled), false, 'State D: effort select stays enabled')
+          assert.equal(String(effortSelD.props.value), MODEL_FIXTURE.reasoner.efforts.high.id)
+          assert.equal(Boolean(optionsOf(effortSelD)[0].props.disabled), true, 'State D: effort placeholder must be disabled once effort is saved')
+          assert.equal(page.byAttr(UI_ATTR.effortHint).length, 0, 'State D: effort hint must hide once active model + effort is saved')
           assert.deepEqual(page.world.errors, [])
         }
       })
 
-      test('ST-3 (switching models & changing effort): Model A -> Model B does not overwrite saved Model A until effort clicked; re-picking effort updates saved effort; switching to plain hides effort picker', async (t) => {
+      test('ST-3 (switching, re-picking & boundary no-ops): Model A -> Model B resets effort select without overwriting Model A; re-picking effort posts new effort; placeholder & invalid values are no-ops; switching to plain disables effort select', async (t) => {
         const page = await openOnboardingPage(t, sdk)
         await page.mountGate()
         await waitForStep(page, UI_STEP.fishballModel)
 
         // Save Model A (deepseek-reasoner + high)
-        await page.press(page.byAttr(UI_ATTR.modelChoice, KEY_REASONER)[0])
-        await page.press(page.byAttr(UI_ATTR.effortChoice, MODEL_FIXTURE.reasoner.efforts.high.id)[0])
+        await page.select(modelSelectOf(page), KEY_REASONER)
+        await page.select(effortSelectOf(page), MODEL_FIXTURE.reasoner.efforts.high.id)
         assert.ok(await page.until(() => page.requestsOf('POST', ONBOARDING_ROUTES.model).length === 1))
 
-        // Switch to Model B (gpt-5, also has efforts) -> effort picker switches, NO POST yet, Model A stays saved
-        await page.press(page.byAttr(UI_ATTR.modelChoice, KEY_GPT5)[0])
-        await page.settle()
+        // Switch left <select> to Model B (gpt-5) -> State C, 0 additional POSTs, Model A remains saved on host
+        await page.select(modelSelectOf(page), KEY_GPT5)
         assert.equal(page.requestsOf('POST', ONBOARDING_ROUTES.model).length, 1, 'switching to Model B must not POST before effort is chosen')
-        assert.equal(page.byAttr(UI_ATTR.effortPicker, 'true')[0]?.props[UI_ATTR.effortModel], KEY_GPT5)
+        assert.equal(String(modelSelectOf(page).props.value), KEY_GPT5)
+        const effortB = effortSelectOf(page)
+        assert.equal(Boolean(effortB.props.disabled), false)
+        assert.equal(String(effortB.props.value ?? ''), '')
+        assert.equal(effortB.props[UI_ATTR.effortModel], KEY_GPT5)
         assert.deepEqual(
-          page.byAttr(UI_ATTR.effortChoice).map((n) => n.props[UI_ATTR.effortChoice]),
-          [MODEL_FIXTURE.gpt5.efforts.low.id, MODEL_FIXTURE.gpt5.efforts.high.id],
+          optionsOf(effortB).map((o) => String(o.props.value ?? '')),
+          ['', MODEL_FIXTURE.gpt5.efforts.low.id, MODEL_FIXTURE.gpt5.efforts.high.id],
         )
-        assert.equal(String(page.byAttr(UI_ATTR.modelChoice, KEY_GPT5)[0].props['aria-pressed']), 'true')
-        assert.notEqual(String(page.byAttr(UI_ATTR.modelChoice, KEY_REASONER)[0].props['aria-pressed']), 'true')
-        // Model A row STILL displays Selected + High
-        const rowAText = textOf(page.byAttr(UI_ATTR.modelChoice, KEY_REASONER)[0])
-        assert.ok(rowAText.includes(MODEL_SELECTED_LABEL.en) && rowAText.includes(MODEL_FIXTURE.reasoner.efforts.high.name), 'Model A must stay saved until Model B effort is chosen')
+        assert.equal(page.byAttr(UI_ATTR.effortHint, 'true').length, 1)
+        assert.deepEqual(page.world.state.model, {
+          provider: MODEL_FIXTURE.reasoner.provider,
+          model: MODEL_FIXTURE.reasoner.model,
+          reasoningEffort: MODEL_FIXTURE.reasoner.efforts.high.id,
+        })
 
-        // Click Model B effort 'low' -> saves Model B + low
-        await page.press(page.byAttr(UI_ATTR.effortChoice, MODEL_FIXTURE.gpt5.efforts.low.id)[0])
+        // Boundary no-op: selecting placeholder "" on effort select sends 0 POSTs
+        await page.select(effortSelectOf(page), '')
+        assert.equal(page.requestsOf('POST', ONBOARDING_ROUTES.model).length, 1)
+
+        // Pick Model B effort 'low' -> POST #2
+        await page.select(effortSelectOf(page), MODEL_FIXTURE.gpt5.efforts.low.id)
         assert.ok(await page.until(() => page.requestsOf('POST', ONBOARDING_ROUTES.model).length === 2))
         assert.deepEqual(page.requestsOf('POST', ONBOARDING_ROUTES.model)[1].body, {
           provider: MODEL_FIXTURE.gpt5.provider,
           model: MODEL_FIXTURE.gpt5.model,
           reasoningEffort: MODEL_FIXTURE.gpt5.efforts.low.id,
         })
-        assert.equal(String(page.byAttr(UI_ATTR.effortChoice, MODEL_FIXTURE.gpt5.efforts.low.id)[0].props['aria-pressed']), 'true')
-        assert.ok(textOf(page.byAttr(UI_ATTR.modelChoice, KEY_GPT5)[0]).includes(MODEL_FIXTURE.gpt5.efforts.low.name))
+        assert.equal(String(effortSelectOf(page).props.value), MODEL_FIXTURE.gpt5.efforts.low.id)
+        assert.equal(page.byAttr(UI_ATTR.effortHint).length, 0)
 
-        // Click different effort 'high' on already-saved Model B -> posts new effort
-        await page.press(page.byAttr(UI_ATTR.effortChoice, MODEL_FIXTURE.gpt5.efforts.high.id)[0])
+        // Re-pick different effort 'high' on already-saved Model B -> POST #3
+        await page.select(effortSelectOf(page), MODEL_FIXTURE.gpt5.efforts.high.id)
         assert.ok(await page.until(() => page.requestsOf('POST', ONBOARDING_ROUTES.model).length === 3))
         assert.deepEqual(page.requestsOf('POST', ONBOARDING_ROUTES.model)[2].body, {
           provider: MODEL_FIXTURE.gpt5.provider,
           model: MODEL_FIXTURE.gpt5.model,
           reasoningEffort: MODEL_FIXTURE.gpt5.efforts.high.id,
         })
-        assert.equal(String(page.byAttr(UI_ATTR.effortChoice, MODEL_FIXTURE.gpt5.efforts.high.id)[0].props['aria-pressed']), 'true')
-        assert.notEqual(String(page.byAttr(UI_ATTR.effortChoice, MODEL_FIXTURE.gpt5.efforts.low.id)[0].props['aria-pressed']), 'true')
-        assert.ok(textOf(page.byAttr(UI_ATTR.modelChoice, KEY_GPT5)[0]).includes(MODEL_FIXTURE.gpt5.efforts.high.name))
+        assert.equal(String(effortSelectOf(page).props.value), MODEL_FIXTURE.gpt5.efforts.high.id)
 
-        // Switch to plain model -> posts immediately and hides effort picker
-        await page.press(page.byAttr(UI_ATTR.modelChoice, KEY_PLAIN)[0])
+        // Boundary no-ops on left <select>: placeholder "" and invalid values do not POST or clobber selection
+        for (const invalidVal of ['', ...MODEL_FIXTURE.invalidKeys]) {
+          await page.select(modelSelectOf(page), invalidVal)
+        }
+        assert.equal(page.requestsOf('POST', ONBOARDING_ROUTES.model).length, 3, 'placeholder and invalid values on model select must be no-ops')
+        assert.equal(String(modelSelectOf(page).props.value), KEY_GPT5)
+        assert.equal(String(effortSelectOf(page).props.value), MODEL_FIXTURE.gpt5.efforts.high.id)
+
+        // Switch left <select> to plain model -> POST #4 immediately and effort select transitions to State B
+        await page.select(modelSelectOf(page), KEY_PLAIN)
         assert.ok(await page.until(() => page.requestsOf('POST', ONBOARDING_ROUTES.model).length === 4))
         assert.deepEqual(page.requestsOf('POST', ONBOARDING_ROUTES.model)[3].body, {
           provider: MODEL_FIXTURE.plain.provider,
           model: MODEL_FIXTURE.plain.model,
         })
-        assert.equal(page.byAttr(UI_ATTR.effortPicker).length, 0)
+        assert.equal(Boolean(effortSelectOf(page).props.disabled), true)
+        assert.equal(textOf(optionsOf(effortSelectOf(page))[0]).trim(), MODEL_PICKER_COPY.effortNotApplicable.en)
+        assert.equal(page.byAttr(UI_ATTR.effortHint).length, 0)
         assert.deepEqual(page.world.errors, [])
       })
 
-      test('ST-4 (initial mount & Back with pre-saved effort model + BVA raw effort fallback & missing effort hint): auto-displays effort picker with saved effort pressed', async (t) => {
-        // Initial mount with already-saved model + effort
+      test('ST-4 (initial mount, Back from Step 2, unlisted saved effort/model fallbacks & legacy unset reasoningEffort): populates both selects accurately across all saved-state boundaries', async (t) => {
+        // 1. Pre-saved effort model (openai/gpt-5 + high) -> State D + Back preservation
         const page = await openOnboardingPage(t, sdk, {
           onboardingState: {
             ok: true,
             completed: false,
             needed: true,
             childReady: true,
-            model: FIXTURE.modelB, // { provider: 'openai', model: 'gpt-5', reasoningEffort: 'high' }
+            model: FIXTURE.modelB,
             catalog: FIXTURE.catalog,
           },
         })
         await page.mountGate()
         await waitForStep(page, UI_STEP.fishballModel)
 
-        assert.equal(String(page.byAttr(UI_ATTR.modelChoice, KEY_GPT5)[0].props['aria-pressed']), 'true')
-        assert.equal(String(page.byAttr(UI_ATTR.modelChoice, KEY_GPT5)[0].props['aria-expanded']), 'true')
-        const [picker] = page.byAttr(UI_ATTR.effortPicker, 'true')
-        assert.ok(picker, 'effort picker must auto-open for pre-saved model with efforts')
-        assert.equal(picker.props[UI_ATTR.effortModel], KEY_GPT5)
-        assert.equal(String(page.byAttr(UI_ATTR.effortChoice, MODEL_FIXTURE.gpt5.efforts.high.id)[0].props['aria-pressed']), 'true')
-        assert.ok(textOf(page.byAttr(UI_ATTR.modelChoice, KEY_GPT5)[0]).includes(MODEL_SELECTED_LABEL.en))
-        assert.ok(textOf(page.byAttr(UI_ATTR.modelChoice, KEY_GPT5)[0]).includes(MODEL_FIXTURE.gpt5.efforts.high.name))
+        assert.equal(String(modelSelectOf(page).props.value), KEY_GPT5)
+        assert.equal(Boolean(optionsOf(modelSelectOf(page))[0].props.disabled), true)
+        assert.equal(Boolean(effortSelectOf(page).props.disabled), false)
+        assert.equal(effortSelectOf(page).props[UI_ATTR.effortModel], KEY_GPT5)
+        assert.equal(String(effortSelectOf(page).props.value), MODEL_FIXTURE.gpt5.efforts.high.id)
+        assert.equal(Boolean(optionsOf(effortSelectOf(page))[0].props.disabled), true)
+        assert.equal(page.byAttr(UI_ATTR.effortHint).length, 0)
 
-        // Navigate forward to Step 2 and back to Step 1 -> effort picker & pressed effort still shown
+        // Navigate forward to Step 2 and back to Step 1 -> both selects preserved
         await page.press(page.byAttr(UI_ATTR.next)[0])
         await waitForStep(page, UI_STEP.watchdog)
         await page.press(page.byAttr(UI_ATTR.back)[0])
         await waitForStep(page, UI_STEP.fishballModel)
-        assert.equal(page.byAttr(UI_ATTR.effortPicker, 'true')[0]?.props[UI_ATTR.effortModel], KEY_GPT5)
-        assert.equal(String(page.byAttr(UI_ATTR.effortChoice, MODEL_FIXTURE.gpt5.efforts.high.id)[0].props['aria-pressed']), 'true')
+        assert.equal(String(modelSelectOf(page).props.value), KEY_GPT5)
+        assert.equal(String(effortSelectOf(page).props.value), MODEL_FIXTURE.gpt5.efforts.high.id)
 
-        // BVA: unknown saved reasoningEffort id falls back to displaying the raw id
-        const pageRaw = await openOnboardingPage(t, sdk, {
+        // 2. BVA: unlisted saved reasoningEffort renders fallback <option value={id}>{id}</option>
+        const pageRawEffort = await openOnboardingPage(t, sdk, {
           onboardingState: {
             ok: true,
             completed: false,
@@ -353,14 +417,37 @@ export function registerUiOnboardingCases(sdk) {
             catalog: FIXTURE.catalog,
           },
         })
-        await pageRaw.mountGate()
-        await waitForStep(pageRaw, UI_STEP.fishballModel)
-        assert.ok(
-          textOf(pageRaw.byAttr(UI_ATTR.modelChoice, KEY_GPT5)[0]).includes(MODEL_FIXTURE.gpt5.customEffortId),
-          'unknown effort id must fall back to displaying raw model.reasoningEffort',
-        )
+        await pageRawEffort.mountGate()
+        await waitForStep(pageRawEffort, UI_STEP.fishballModel)
+        const rawEffortSel = effortSelectOf(pageRawEffort)
+        assert.equal(String(rawEffortSel.props.value), MODEL_FIXTURE.gpt5.customEffortId)
+        const fallbackEffortOpt = optionsOf(rawEffortSel).find((o) => String(o.props.value) === MODEL_FIXTURE.gpt5.customEffortId)
+        assert.ok(fallbackEffortOpt, 'unlisted saved effort must render a fallback <option>')
+        assert.equal(textOf(fallbackEffortOpt).trim(), MODEL_FIXTURE.gpt5.customEffortId)
+        assert.equal(pageRawEffort.byAttr(UI_ATTR.effortHint).length, 0)
 
-        // BVA: saved effort-capable model without reasoningEffort still shows effort hint until an effort is saved
+        // 3. BVA: unlisted saved model not in catalog.groups renders fallback <option value="[provider,model]">provider / model</option>
+        const pageUnlistedModel = await openOnboardingPage(t, sdk, {
+          onboardingState: {
+            ok: true,
+            completed: false,
+            needed: true,
+            childReady: true,
+            model: { provider: MODEL_FIXTURE.unlisted.provider, model: MODEL_FIXTURE.unlisted.model },
+            catalog: FIXTURE.catalog,
+          },
+        })
+        await pageUnlistedModel.mountGate()
+        await waitForStep(pageUnlistedModel, UI_STEP.fishballModel)
+        const unlistedModelSel = modelSelectOf(pageUnlistedModel)
+        assert.equal(String(unlistedModelSel.props.value), KEY_UNLISTED)
+        const fallbackModelOpt = optionsOf(unlistedModelSel).find((o) => String(o.props.value) === KEY_UNLISTED)
+        assert.ok(fallbackModelOpt, 'unlisted saved model must render a fallback <option>')
+        assert.equal(textOf(fallbackModelOpt).trim(), MODEL_FIXTURE.unlisted.fallbackLabel)
+        assert.equal(Boolean(effortSelectOf(pageUnlistedModel).props.disabled), true)
+        assert.equal(textOf(optionsOf(effortSelectOf(pageUnlistedModel))[0]).trim(), MODEL_PICKER_COPY.effortNotApplicable.en)
+
+        // 4. BVA: legacy saved effort-capable model lacking reasoningEffort -> State C (value "" + effort hint visible until effort saved)
         const pageNoEffort = await openOnboardingPage(t, sdk, {
           onboardingState: {
             ok: true,
@@ -373,22 +460,24 @@ export function registerUiOnboardingCases(sdk) {
         })
         await pageNoEffort.mountGate()
         await waitForStep(pageNoEffort, UI_STEP.fishballModel)
-        const pickerMissingEffortText = textOf(pageNoEffort.byAttr(UI_ATTR.effortPicker, 'true')[0])
-        await pageNoEffort.press(pageNoEffort.byAttr(UI_ATTR.effortChoice, MODEL_FIXTURE.gpt5.efforts.high.id)[0])
+        assert.equal(String(modelSelectOf(pageNoEffort).props.value), KEY_GPT5)
+        assert.equal(Boolean(effortSelectOf(pageNoEffort).props.disabled), false)
+        assert.equal(String(effortSelectOf(pageNoEffort).props.value ?? ''), '')
+        assert.equal(pageNoEffort.byAttr(UI_ATTR.effortHint, 'true').length, 1, 'effort hint must display when saved effort-capable model lacks reasoningEffort')
+
+        await pageNoEffort.select(effortSelectOf(pageNoEffort), MODEL_FIXTURE.gpt5.efforts.high.id)
         assert.ok(await pageNoEffort.until(() => pageNoEffort.requestsOf('POST', ONBOARDING_ROUTES.model).length === 1))
-        const pickerSavedEffortText = textOf(pageNoEffort.byAttr(UI_ATTR.effortPicker, 'true')[0])
-        assert.ok(
-          pickerSavedEffortText.length < pickerMissingEffortText.length,
-          'effort hint must display when saved effort-capable model lacks reasoningEffort and hide once an effort is saved',
-        )
+        assert.equal(String(effortSelectOf(pageNoEffort).props.value), MODEL_FIXTURE.gpt5.efforts.high.id)
+        assert.equal(pageNoEffort.byAttr(UI_ATTR.effortHint).length, 0, 'effort hint must hide once effort is saved')
 
         assert.deepEqual(page.world.errors, [])
-        assert.deepEqual(pageRaw.world.errors, [])
+        assert.deepEqual(pageRawEffort.world.errors, [])
+        assert.deepEqual(pageUnlistedModel.world.errors, [])
         assert.deepEqual(pageNoEffort.world.errors, [])
       })
 
-      test('ST-5 (catalog refresh drops active model): clears stale effort picker cleanly, or falls back to still-present saved effort model without resurrecting cleared selection', async (t) => {
-        // Sub-case A: no saved model, active effort model disappears -> effort picker clears
+      test('ST-5 (catalog refresh drops active model): clears stale selection to State A, or falls back to still-present saved effort model without resurrecting cleared selection', async (t) => {
+        // Sub-case A: no saved model, active effort model disappears -> resets to State A
         let replaceCatalog = false
         const page = await openOnboardingPage(t, sdk, {
           respond: (method, pathname) => {
@@ -397,7 +486,6 @@ export function registerUiOnboardingCases(sdk) {
               return { ok: true, result: { items: [{ id: 'anthropic-main', outcome: 'added' }] } }
             }
             if (pathname === ONBOARDING_ROUTES.state && method === 'GET' && replaceCatalog) {
-              // Refreshed catalog ONLY contains anthropic/claude-sonnet-4 (openai/gpt-5 disappeared)
               return {
                 ok: true,
                 completed: false,
@@ -413,14 +501,18 @@ export function registerUiOnboardingCases(sdk) {
         await page.mountGate()
         await waitForStep(page, UI_STEP.fishballModel)
 
-        // Open effort picker for openai/gpt-5
-        await page.press(page.byAttr(UI_ATTR.modelChoice, KEY_GPT5)[0])
-        assert.equal(page.byAttr(UI_ATTR.effortPicker, 'true')[0]?.props[UI_ATTR.effortModel], KEY_GPT5)
+        await page.select(modelSelectOf(page), KEY_GPT5)
+        assert.equal(effortSelectOf(page).props[UI_ATTR.effortModel], KEY_GPT5)
+        assert.equal(page.byAttr(UI_ATTR.effortHint, 'true').length, 1)
 
-        // Sync refreshes catalog without openai/gpt-5 -> stale effort picker must disappear
+        // Sync refreshes catalog without openai/gpt-5 -> resets cleanly to State A
         await page.press(page.byAttr(UI_ATTR.syncButton)[0])
-        assert.ok(await page.until(() => page.byAttr(UI_ATTR.modelChoice).length === 1 && page.text().includes(MODEL_FIXTURE.syncedName)))
-        assert.equal(page.byAttr(UI_ATTR.effortPicker).length, 0, 'stale effort picker must be cleared when active model leaves catalog')
+        assert.ok(await page.until(() => page.text().includes(MODEL_FIXTURE.syncedName)))
+        assert.equal(String(modelSelectOf(page).props.value ?? ''), '')
+        assert.equal(Boolean(effortSelectOf(page).props.disabled), true)
+        assert.equal(String(effortSelectOf(page).props[UI_ATTR.effortModel] ?? ''), '')
+        assert.equal(textOf(optionsOf(effortSelectOf(page))[0]).trim(), MODEL_PICKER_COPY.effortSelectModelFirst.en)
+        assert.equal(page.byAttr(UI_ATTR.effortHint).length, 0)
         assert.deepEqual(page.world.errors, [])
 
         // Sub-case B: saved effort model (deepseek-reasoner + high) + temporary active effort model (gpt-5) dropped on sync #1, then gpt-5 restored on sync #2
@@ -462,40 +554,92 @@ export function registerUiOnboardingCases(sdk) {
         await waitForStep(pageFallback, UI_STEP.fishballModel)
 
         // Initially showing saved deepseek-reasoner + high
-        assert.equal(pageFallback.byAttr(UI_ATTR.effortPicker, 'true')[0]?.props[UI_ATTR.effortModel], KEY_REASONER)
-        assert.equal(String(pageFallback.byAttr(UI_ATTR.effortChoice, MODEL_FIXTURE.reasoner.efforts.high.id)[0].props['aria-pressed']), 'true')
+        assert.equal(String(modelSelectOf(pageFallback).props.value), KEY_REASONER)
+        assert.equal(String(effortSelectOf(pageFallback).props.value), MODEL_FIXTURE.reasoner.efforts.high.id)
 
-        // Temporarily click openai/gpt-5 (unsaved selectedModelKey)
-        await pageFallback.press(pageFallback.byAttr(UI_ATTR.modelChoice, KEY_GPT5)[0])
-        assert.equal(pageFallback.byAttr(UI_ATTR.effortPicker, 'true')[0]?.props[UI_ATTR.effortModel], KEY_GPT5)
-        assert.equal(String(pageFallback.byAttr(UI_ATTR.modelChoice, KEY_GPT5)[0].props['aria-pressed']), 'true')
+        // Temporarily switch left <select> to openai/gpt-5 (unsaved selectedModelKey)
+        await pageFallback.select(modelSelectOf(pageFallback), KEY_GPT5)
+        assert.equal(String(modelSelectOf(pageFallback).props.value), KEY_GPT5)
+        assert.equal(effortSelectOf(pageFallback).props[UI_ATTR.effortModel], KEY_GPT5)
+        assert.equal(String(effortSelectOf(pageFallback).props.value ?? ''), '')
 
         // Sync #1: drops openai/gpt-5 -> must fall back cleanly to saved deepseek-reasoner + high
         await pageFallback.press(pageFallback.byAttr(UI_ATTR.syncButton)[0])
-        assert.ok(await pageFallback.until(() => pageFallback.byAttr(UI_ATTR.modelChoice, KEY_GPT5).length === 0))
-        assert.equal(
-          pageFallback.byAttr(UI_ATTR.effortPicker, 'true')[0]?.props[UI_ATTR.effortModel],
-          KEY_REASONER,
-          'dropping unsaved selectedModelKey must fall back to still-present saved effort model',
-        )
-        assert.equal(String(pageFallback.byAttr(UI_ATTR.modelChoice, KEY_REASONER)[0].props['aria-pressed']), 'true')
-        assert.equal(String(pageFallback.byAttr(UI_ATTR.effortChoice, MODEL_FIXTURE.reasoner.efforts.high.id)[0].props['aria-pressed']), 'true')
+        assert.ok(await pageFallback.until(() => !optionsOf(modelSelectOf(pageFallback)).some((o) => String(o.props.value) === KEY_GPT5)))
+        assert.equal(String(modelSelectOf(pageFallback).props.value), KEY_REASONER, 'must fall back to still-present saved model')
+        assert.equal(effortSelectOf(pageFallback).props[UI_ATTR.effortModel], KEY_REASONER)
+        assert.equal(String(effortSelectOf(pageFallback).props.value), MODEL_FIXTURE.reasoner.efforts.high.id)
+        assert.equal(pageFallback.byAttr(UI_ATTR.effortHint).length, 0)
 
         // Sync #2: restores openai/gpt-5 -> cleared selectedModelKey must NOT resurrect openai/gpt-5
         await pageFallback.press(pageFallback.byAttr(UI_ATTR.syncButton)[0])
-        assert.ok(await pageFallback.until(() => pageFallback.byAttr(UI_ATTR.modelChoice, KEY_GPT5).length === 1))
+        assert.ok(await pageFallback.until(() => optionsOf(modelSelectOf(pageFallback)).some((o) => String(o.props.value) === KEY_GPT5)))
         assert.equal(
-          pageFallback.byAttr(UI_ATTR.effortPicker, 'true')[0]?.props[UI_ATTR.effortModel],
+          String(modelSelectOf(pageFallback).props.value),
           KEY_REASONER,
           'cleared selectedModelKey must not resurrect when dropped model reappears in later catalog refresh',
         )
-        assert.equal(String(pageFallback.byAttr(UI_ATTR.modelChoice, KEY_REASONER)[0].props['aria-pressed']), 'true')
-        assert.notEqual(String(pageFallback.byAttr(UI_ATTR.modelChoice, KEY_GPT5)[0].props['aria-pressed']), 'true')
+        assert.equal(effortSelectOf(pageFallback).props[UI_ATTR.effortModel], KEY_REASONER)
+        assert.equal(String(effortSelectOf(pageFallback).props.value), MODEL_FIXTURE.reasoner.efforts.high.id)
         assert.deepEqual(pageFallback.world.errors, [])
+
+        // Sub-case C: after an effort save succeeds, Refresh returning a different external saved model updates both selects instead of being shadowed
+        const externalModel = {
+          provider: MODEL_FIXTURE.reasoner.provider,
+          model: MODEL_FIXTURE.reasoner.model,
+          reasoningEffort: MODEL_FIXTURE.reasoner.efforts.medium.id,
+        }
+        let externalUpdated = false
+        const pageExternal = await openOnboardingPage(t, sdk, {
+          respond: (method, pathname) => {
+            if (pathname === INSTANCE_ROUTES.modelsAdd && method === 'POST') {
+              externalUpdated = true
+              return { ok: true, result: { items: [{ id: 'openai-main', outcome: 'added' }] } }
+            }
+            if (pathname === ONBOARDING_ROUTES.state && method === 'GET' && externalUpdated) {
+              return {
+                ok: true,
+                completed: false,
+                needed: true,
+                childReady: true,
+                model: externalModel,
+                catalog: FIXTURE.catalog,
+              }
+            }
+            return undefined
+          },
+        })
+        await pageExternal.mountGate()
+        await waitForStep(pageExternal, UI_STEP.fishballModel)
+
+        // Save openai/gpt-5 + high via two-dropdown effort save
+        await pageExternal.select(modelSelectOf(pageExternal), KEY_GPT5)
+        await pageExternal.select(effortSelectOf(pageExternal), MODEL_FIXTURE.gpt5.efforts.high.id)
+        assert.ok(await pageExternal.until(() => pageExternal.byAttr(UI_ATTR.modelSaved).length >= 1))
+        assert.equal(String(modelSelectOf(pageExternal).props.value), KEY_GPT5)
+        assert.equal(String(effortSelectOf(pageExternal).props.value), MODEL_FIXTURE.gpt5.efforts.high.id)
+
+        // Trigger refresh returning an externally changed model -> both selects must reflect externalModel
+        const stateGetsBefore = pageExternal.requestsOf('GET', ONBOARDING_ROUTES.state).length
+        await pageExternal.press(pageExternal.byAttr(UI_ATTR.syncButton)[0])
+        assert.ok(await pageExternal.until(() => pageExternal.requestsOf('GET', ONBOARDING_ROUTES.state).length > stateGetsBefore))
+        assert.equal(
+          String(modelSelectOf(pageExternal).props.value),
+          KEY_REASONER,
+          'model select must reflect externally updated saved model after effort save + refresh',
+        )
+        assert.equal(effortSelectOf(pageExternal).props[UI_ATTR.effortModel], KEY_REASONER)
+        assert.equal(
+          String(effortSelectOf(pageExternal).props.value),
+          MODEL_FIXTURE.reasoner.efforts.medium.id,
+          'effort select must reflect externally updated saved reasoningEffort after effort save + refresh',
+        )
+        assert.equal(pageExternal.byAttr(UI_ATTR.effortHint).length, 0)
+        assert.deepEqual(pageExternal.world.errors, [])
       })
 
-      test('DT-3 (disabled states & concurrent click guard): model/effort buttons disabled while saving or !childReady, and synchronous rapid double-click sends only 1 POST', async (t) => {
-        // Case A: while saving (in-flight POST /onboarding/model) + synchronous rapid double-click guard
+      test('DT-3 (disabled states & concurrent change guard): both selects disabled while saving or !childReady, and rapid synchronous onChange sends only 1 POST', async (t) => {
+        // Case A: while saving (in-flight POST /onboarding/model) + synchronous rapid double-change guard
         let holdSave = null
         const page = await openOnboardingPage(t, sdk, {
           respond: (method, pathname, body, world) => {
@@ -511,27 +655,23 @@ export function registerUiOnboardingCases(sdk) {
         await page.mountGate()
         await waitForStep(page, UI_STEP.fishballModel)
 
-        // Reveal effort picker for gpt-5, then fire two synchronous rapid clicks before React re-renders
-        await page.press(page.byAttr(UI_ATTR.modelChoice, KEY_GPT5)[0])
+        // Select gpt-5 to enable effort select, then fire two synchronous rapid onChange events before React re-renders
+        await page.select(modelSelectOf(page), KEY_GPT5)
         holdSave = deferred()
-        const [highEffortBtn] = page.byAttr(UI_ATTR.effortChoice, MODEL_FIXTURE.gpt5.efforts.high.id)
-        highEffortBtn.props.onClick?.()
-        highEffortBtn.props.onClick?.()
+        const effortSel = effortSelectOf(page)
+        const target = { value: MODEL_FIXTURE.gpt5.efforts.high.id }
+        effortSel.props.onChange?.({ target, currentTarget: target, preventDefault() {} })
+        effortSel.props.onChange?.({ target, currentTarget: target, preventDefault() {} })
         await page.settle()
-        assert.equal(page.requestsOf('POST', ONBOARDING_ROUTES.model).length, 1, 'rapid concurrent clicks must be guarded synchronously and send only 1 POST')
+        assert.equal(page.requestsOf('POST', ONBOARDING_ROUTES.model).length, 1, 'rapid concurrent onChange must be guarded synchronously and send only 1 POST')
 
-        for (const btn of page.byAttr(UI_ATTR.modelChoice)) {
-          assert.equal(Boolean(btn.props.disabled), true, 'all model buttons must be disabled while saving')
-        }
-        for (const btn of page.byAttr(UI_ATTR.effortChoice)) {
-          assert.equal(Boolean(btn.props.disabled), true, 'all effort buttons must be disabled while saving')
-        }
+        assert.equal(Boolean(modelSelectOf(page).props.disabled), true, 'model select must be disabled while saving')
+        assert.equal(Boolean(effortSelectOf(page).props.disabled), true, 'effort select must be disabled while saving')
 
-        // Release save -> buttons re-enable
+        // Release save -> both selects re-enable
         holdSave.resolve()
         holdSave = null
-        assert.ok(await page.until(() => page.byAttr(UI_ATTR.modelChoice).every((b) => !b.props.disabled)))
-        assert.ok(page.byAttr(UI_ATTR.effortChoice).every((b) => !b.props.disabled))
+        assert.ok(await page.until(() => !modelSelectOf(page).props.disabled && !effortSelectOf(page).props.disabled))
 
         // Case B: !childReady (state has needed: true, childReady: false)
         const pageNotReady = await openOnboardingPage(t, sdk, {
@@ -546,17 +686,13 @@ export function registerUiOnboardingCases(sdk) {
         })
         await pageNotReady.mountGate()
         await waitForStep(pageNotReady, UI_STEP.fishballModel)
-        for (const btn of pageNotReady.byAttr(UI_ATTR.modelChoice)) {
-          assert.equal(Boolean(btn.props.disabled), true, 'all model buttons must be disabled when !childReady')
-        }
-        for (const btn of pageNotReady.byAttr(UI_ATTR.effortChoice)) {
-          assert.equal(Boolean(btn.props.disabled), true, 'all effort buttons must be disabled when !childReady')
-        }
+        assert.equal(Boolean(modelSelectOf(pageNotReady).props.disabled), true, 'model select must be disabled when !childReady')
+        assert.equal(Boolean(effortSelectOf(pageNotReady).props.disabled), true, 'effort select must be disabled when !childReady')
         assert.deepEqual(page.world.errors, [])
         assert.deepEqual(pageNotReady.world.errors, [])
       })
 
-      test('EP-SaveFailure: {ok: false} on plain model or effort save shows role="alert" without highlighting failed model or clobbering prior saved effort model', async (t) => {
+      test('EP-SaveFailure: {ok: false} on plain model or effort save shows role="alert" and preserves prior saved selects cleanly', async (t) => {
         const failModelSave = (method, pathname) => {
           if (pathname === ONBOARDING_ROUTES.model && method === 'POST') {
             return { ok: false, code: CHILD_MODEL_CONTRACT.code.writeFailed }
@@ -564,27 +700,27 @@ export function registerUiOnboardingCases(sdk) {
           return undefined
         }
 
-        // 1. No prior saved model: plain model failure & effort save failure
+        // 1. No prior saved model (model === null): plain model failure keeps left select at "" & right select in State A; effort failure keeps right select at ""
         const page = await openOnboardingPage(t, sdk, { respond: failModelSave })
         await page.mountGate()
         await waitForStep(page, UI_STEP.fishballModel)
 
-        await page.press(page.byAttr(UI_ATTR.modelChoice, KEY_PLAIN)[0])
+        await page.select(modelSelectOf(page), KEY_PLAIN)
         assert.ok(await page.until(() => page.find((n) => n.props.role === 'alert').length >= 1), 'expected role="alert" on plain model save failure')
         assert.equal(page.byAttr(UI_ATTR.modelSaved).length, 0, 'must not show saved badge on failure')
-        assert.notEqual(String(page.byAttr(UI_ATTR.modelChoice, KEY_PLAIN)[0].props['aria-pressed']), 'true', 'failed plain model must not be highlighted as aria-pressed="true"')
-        assert.equal(textOf(page.byAttr(UI_ATTR.modelChoice, KEY_PLAIN)[0]).includes(MODEL_SELECTED_LABEL.en), false)
+        assert.equal(String(modelSelectOf(page).props.value ?? ''), '', 'failed plain model save with model===null must keep left select at ""')
+        assert.equal(Boolean(effortSelectOf(page).props.disabled), true)
+        assert.equal(textOf(optionsOf(effortSelectOf(page))[0]).trim(), MODEL_PICKER_COPY.effortSelectModelFirst.en)
 
-        await page.press(page.byAttr(UI_ATTR.modelChoice, KEY_GPT5)[0])
-        await page.press(page.byAttr(UI_ATTR.effortChoice, MODEL_FIXTURE.gpt5.efforts.high.id)[0])
+        await page.select(modelSelectOf(page), KEY_GPT5)
+        await page.select(effortSelectOf(page), MODEL_FIXTURE.gpt5.efforts.high.id)
         assert.ok(await page.until(() => page.requestsOf('POST', ONBOARDING_ROUTES.model).length === 2))
         assert.ok(page.find((n) => n.props.role === 'alert').length >= 1, 'expected role="alert" on effort save failure')
         assert.equal(page.byAttr(UI_ATTR.modelSaved).length, 0, 'must not show saved badge on effort save failure')
-        assert.notEqual(String(page.byAttr(UI_ATTR.effortChoice, MODEL_FIXTURE.gpt5.efforts.high.id)[0].props['aria-pressed']), 'true')
-        assert.equal(textOf(page.byAttr(UI_ATTR.modelChoice, KEY_GPT5)[0]).includes(MODEL_SELECTED_LABEL.en), false)
+        assert.equal(String(effortSelectOf(page).props.value ?? ''), '', 'failed effort save must keep right select at ""')
         assert.deepEqual(page.world.errors, [])
 
-        // 2. Prior saved effort model (openai/gpt-5 + high) -> clicking failing plain model preserves saved model & effort picker cleanly
+        // 2. Prior saved effort model (openai/gpt-5 + high) -> switching to failing plain model preserves both saved selects cleanly
         const pageWithSaved = await openOnboardingPage(t, sdk, {
           onboardingState: {
             ok: true,
@@ -599,26 +735,25 @@ export function registerUiOnboardingCases(sdk) {
         await pageWithSaved.mountGate()
         await waitForStep(pageWithSaved, UI_STEP.fishballModel)
 
-        await pageWithSaved.press(pageWithSaved.byAttr(UI_ATTR.modelChoice, KEY_PLAIN)[0])
+        await pageWithSaved.select(modelSelectOf(pageWithSaved), KEY_PLAIN)
         assert.ok(await pageWithSaved.until(() => pageWithSaved.find((n) => n.props.role === 'alert').length >= 1), 'expected role="alert" when plain model switch fails')
-        assert.notEqual(
-          String(pageWithSaved.byAttr(UI_ATTR.modelChoice, KEY_PLAIN)[0].props['aria-pressed']),
-          'true',
-          'failed plain model must not get phantom aria-pressed="true"',
-        )
         assert.equal(
-          String(pageWithSaved.byAttr(UI_ATTR.modelChoice, KEY_GPT5)[0].props['aria-pressed']),
-          'true',
-          'prior saved effort model must stay highlighted after plain model save failure',
-        )
-        const gpt5RowText = textOf(pageWithSaved.byAttr(UI_ATTR.modelChoice, KEY_GPT5)[0])
-        assert.ok(gpt5RowText.includes(MODEL_SELECTED_LABEL.en) && gpt5RowText.includes(MODEL_FIXTURE.gpt5.efforts.high.name))
-        assert.equal(
-          pageWithSaved.byAttr(UI_ATTR.effortPicker, 'true')[0]?.props[UI_ATTR.effortModel],
+          String(modelSelectOf(pageWithSaved).props.value),
           KEY_GPT5,
-          'prior saved effort picker must stay intact after plain model save failure',
+          'prior saved model must stay selected in left select after plain model save failure',
         )
-        assert.equal(String(pageWithSaved.byAttr(UI_ATTR.effortChoice, MODEL_FIXTURE.gpt5.efforts.high.id)[0].props['aria-pressed']), 'true')
+        assert.equal(Boolean(effortSelectOf(pageWithSaved).props.disabled), false)
+        assert.equal(
+          effortSelectOf(pageWithSaved).props[UI_ATTR.effortModel],
+          KEY_GPT5,
+          'prior saved effort model must stay intact after plain model save failure',
+        )
+        assert.equal(
+          String(effortSelectOf(pageWithSaved).props.value),
+          MODEL_FIXTURE.gpt5.efforts.high.id,
+          'prior saved effort value must stay intact after plain model save failure',
+        )
+        assert.equal(pageWithSaved.byAttr(UI_ATTR.effortHint).length, 0)
         assert.deepEqual(pageWithSaved.world.errors, [])
       })
 
@@ -1010,14 +1145,14 @@ export function registerUiOnboardingCases(sdk) {
     })
 
     describe('Step 4, Back Navigation, Skip on Any Step, and Locales (ST + EP)', () => {
-      test('ST-1: full 4-step flow with two-step effort model -> welcome summary displays formatted label with effort -> clicking Start posts complete("completed") and renders frame', async (t) => {
+      test('ST-1: full 4-step flow with two-dropdown effort model -> welcome summary displays formatted label with effort -> clicking Start posts complete("completed") and renders frame', async (t) => {
         const page = await openOnboardingPage(t, sdk)
         await page.mountGate()
         await waitForStep(page, UI_STEP.fishballModel)
 
-        // Choose a two-step effort model (OpenAI / GPT-5 -> High) in Step 1
-        await page.press(page.byAttr(UI_ATTR.modelChoice, KEY_GPT5)[0])
-        await page.press(page.byAttr(UI_ATTR.effortChoice, MODEL_FIXTURE.gpt5.efforts.high.id)[0])
+        // Choose a reasoning model + effort (OpenAI / GPT-5 -> High) in Step 1 dropdowns
+        await page.select(modelSelectOf(page), KEY_GPT5)
+        await page.select(effortSelectOf(page), MODEL_FIXTURE.gpt5.efforts.high.id)
         assert.ok(await page.until(() => page.byAttr(UI_ATTR.modelSaved).length >= 1))
 
         // Navigate Steps 1 -> 2 -> 3 -> 4
@@ -1051,8 +1186,8 @@ export function registerUiOnboardingCases(sdk) {
         await waitForStep(page, UI_STEP.fishballModel)
 
         // Select a model in Step 1
-        await page.press(page.byAttr(UI_ATTR.modelChoice)[0])
-        assert.ok(await page.until(() => page.byAttr(UI_ATTR.modelChoice).some((n) => String(n.props['aria-pressed']) === 'true')))
+        await page.select(modelSelectOf(page), KEY_PLAIN)
+        assert.ok(await page.until(() => String(modelSelectOf(page).props.value) === KEY_PLAIN))
 
         // Forward to Step 4
         await page.press(page.byAttr(UI_ATTR.next)[0])
@@ -1071,8 +1206,9 @@ export function registerUiOnboardingCases(sdk) {
         await waitForStep(page, UI_STEP.fishballModel)
 
         // Step 1 selection state preserved
-        assert.ok(
-          page.byAttr(UI_ATTR.modelChoice).some((n) => String(n.props['aria-pressed']) === 'true'),
+        assert.equal(
+          String(modelSelectOf(page).props.value),
+          KEY_PLAIN,
           'Step 1 selected model must be preserved after navigating back',
         )
         assert.deepEqual(page.world.errors, [])
