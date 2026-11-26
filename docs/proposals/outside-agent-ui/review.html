@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src data:; base-uri 'none'; form-action 'none'"><title>Outside agent · DSH design review</title><style>:root{color-scheme:light;--bg:#fff;--panel:#fff;--sidebar:#f9fafb;--text:#0f1115;--muted:#61666b;--border:rgba(0,0,0,.10);--hover:rgba(38,49,72,.06);--accent:#4176e6;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Hiragino Sans GB','Microsoft YaHei','Helvetica Neue',Helvetica,Arial,sans-serif;color:var(--text)}*{box-sizing:border-box}body{margin:0}button,input,textarea,select{font:inherit;color:inherit}a{color:inherit}button:disabled{cursor:not-allowed}:focus-visible{outline:2px solid var(--accent);outline-offset:2px}#frame{position:relative;display:flex;width:100%;height:calc(100dvh - 34px);min-height:0;overflow:hidden}#reviewstrip{height:34px;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 14px;background:#eff3fa;border-top:1px solid #dce3ef;color:#41516c;font:12px/1.2 system-ui,sans-serif}#reviewstrip a{font-weight:600;text-decoration:none}#reviewstrip .meta{margin-right:auto}.steppers{display:flex;align-items:center;gap:12px}@media(max-width:700px){#reviewstrip .meta{display:none}}</style></head><body><div id="frame"></div><nav id="reviewstrip" aria-label="Design review controls" lang="zh-CN"></nav><script>
+const screens=[["wide-closed","宽栏 · 收起"],["wide-open","宽栏 · 展开"],["rail-closed","图标栏 · 收起"],["rail-open","图标栏 · 展开"],["empty","还没有会话"],["new","新建 · Codex"],["new-claude","新建 · Claude Code"],["backend","新建 · agy 不可用"],["idle","本地会话 · 空闲"],["models","CLI 专属模型目录"],["handoff","确认交给 Fishball"],["managed","交接后 · 旁观"],["takeback","确认收回控制"],["returned","收回后 · 仍在运行"],["fishball","Fishball 发起的会话"],["takeback-fish","收回 Fishball 发起的会话"],["returned-fish","收回后 · Audit checklist"],["approval","等待 CLI 原生审批"],["auth","需要外部登录"],["degraded","降级 · 禁止输入"],["error","投递未确认"],["disconnected","连接已断开"],["end","确认结束会话"],["ended","会话已结束"]];
+function icon(name,size=16){const paths={"terminal":"M4 5h16v14H4z M7 9l3 3-3 3 M13 15h4","chevron-down":"m6 9 6 6 6-6","chevron-right":"m9 6 6 6-6 6","folder":"M3 7V5h7l2 2h9v12H3z","plus":"M12 5v14M5 12h14","check":"m4 12 5 5 11-11","lock":"M5 10h14v11H5z M8 10V7a4 4 0 0 1 8 0v3","alert":"m12 3 10 17H2z M12 9v4m0 3v1","link":"M10 13a4 4 0 0 0 6 0l3-3a4 4 0 0 0-6-6l-2 2m3 5a4 4 0 0 0-6 0l-3 3a4 4 0 0 0 6 6l2-2","send":"M12 20V5m-7 7 7-7 7 7","stop":"M6 6h12v12H6z","settings":"M12 3l2 2 3-.1 1 3 2 2-1 3 .1 3-3 1-2 2-3-1-3 .1-1-3-2-2 1-3-.1-3 3-1z M15 11.5a3 3 0 1 1-6 0 3 3 0 1 1 6 0","message":"M4 4h16v13H9l-5 4z","panel":"M3 5h18v14H3z M9 5v14","user":"M15.5 7a3.5 3.5 0 1 1-7 0 3.5 3.5 0 1 1 7 0 M4 21v-2a8 8 0 0 1 16 0v2","bot":"M4 7h16v13H4z M12 7V3 M8 12v1m8-1v1","more":"M5 12h.1m6.9 0h.1m6.9 0h.1","arrow-right":"M3 12h17m-6-6 6 6-6 6","x":"M5 5l14 14m0-14L5 19","clock":"M21 12a9 9 0 1 1-18 0 9 9 0 1 1 18 0 M12 6v6l4 2","copy":"M8 8h12v13H8z M5 16H3V3h13v2","file":"M5 3h9l5 5v13H5z M14 3v6h5"};return '<svg aria-hidden="true" width="'+size+'" height="'+size+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="'+(paths[name]||paths.file)+'"/></svg>'}
+</script>
+<style>
+.oas{flex:none;width:280px;min-height:0;height:100%;box-sizing:border-box;display:flex;flex-direction:column;padding:6px 8px;background:var(--sidebar);color:var(--text);border-right:1px solid var(--border);font-size:14px;line-height:20px;position:relative}
+.oas *{box-sizing:border-box}
+.oas svg{flex:none;vertical-align:middle}
+.oas a{color:inherit;text-decoration:none}
+.oas a:focus-visible,.oas button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.oas .oas-hit:hover,.oas [aria-current=page],.oas .oas-focus{background:var(--hover)}
+.oas .oas-brand,.oas .oas-seat,.oas .oas-launch,.oas .oas-toolbar,.oas .oas-folder,.oas .oas-native,.oas .oas-disclose,.oas .oas-settings,.oas .oas-add,.oas .oas-session,.oas .oas-create{display:flex;align-items:center}
+.oas-brand{height:60px;flex:none;padding:8px 4px 8px 8px;gap:5px}
+.oas-brand-name{font-weight:570;font-size:17px;letter-spacing:-.035em}
+.oas-seat{margin-left:auto;justify-content:center;width:28px;height:28px;color:var(--muted);border-radius:8px}
+.oas-create{height:38px;border:1px solid var(--border);background:var(--panel);border-radius:12px;margin:0 4px;gap:6px;justify-content:center;font-weight:500}
+.oas .oas-body{min-height:0;flex:1;overflow:auto;scrollbar-width:thin}
+.oas-launchers{display:grid;gap:2px;margin:12px 3px 10px}
+.oas-launch,.oas-folder,.oas-native{height:32px;gap:6px;padding:0 9px;border-radius:12px}
+.oas-toolbar{height:36px;color:var(--muted);padding:0 7px 0 12px;gap:12px}
+.oas-toolbar span{margin-right:auto}
+.oas-folder,.oas-native{margin:0 3px}
+.oas-native{padding-left:31px}
+.oas-folder svg{color:var(--accent)}
+.oas-native svg{color:var(--muted)}
+.oas .oas-footer{position:relative;flex:none;border-top:1px solid var(--border);padding-top:4px}
+.oas-disclose,.oas-settings{height:38px;border-radius:12px;padding:0 9px;gap:6px;margin:0 3px}
+.oas .oas-disclose{width:calc(100% - 6px);font:inherit;text-align:left;color:inherit;border:none;background:transparent;cursor:pointer}
+.oas-disclose span{font-weight:530;flex:1}
+.oas-settings{height:42px;margin-block:4px}
+.oas-add{gap:6px;color:var(--accent)!important;border-radius:8px;margin:0 4px 3px;padding:5px 10px;font-size:13px;font-weight:500}
+.oas-rows{list-style:none;padding:0;margin:0;max-height:min(45vh,365px);overflow:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+.oas-session{min-height:47px;gap:9px;padding:4px 10px;margin:0 3px;border-radius:10px}
+.oas-session>svg{color:var(--muted)}
+.oas-session span{display:block;font-size:14px;line-height:19px}
+.oas-session small,.oas-empty{font-size:12px;line-height:17px;color:var(--muted)}
+.oas-session .oas-run{color:var(--accent)}
+.oas-empty{margin:6px 13px 12px}
+.oas-pop{position:absolute;left:calc(100% + 10px);bottom:54px;z-index:12;width:min(279px,calc(100vw - 70px));padding:8px;border-radius:16px;background:var(--panel);border:1px solid var(--border);box-shadow:0 8px 32px #0f111521}
+.oas-pop-title{font-size:14px;font-weight:600;margin:4px 10px 6px}
+.oas-rail{width:56px;padding:18px 10px 6px}
+.oas-rail .oas-brand,.oas-rail .oas-create,.oas-rail .oas-launch,.oas-rail .oas-settings,.oas-rail .oas-disclose{width:36px;height:36px;justify-content:center;padding:0;margin:0;gap:0}
+.oas-rail .oas-brand,.oas-rail .oas-create{margin-bottom:12px}
+.oas-rail .oas-create{background:none;border:none}
+.oas-rail .oas-launchers{gap:12px;margin:0}
+.oas-rail .oas-footer{border:none}
+.oas-rail .oas-settings{margin:8px 0 10px}
+.oas .oas-rail-work{margin-top:12px;display:grid;gap:12px}
+.oas-rail .oas-disclose[aria-expanded=true]{background:var(--hover)}
+
+</style>
+<script>
+function sidebar(id) {
+  const rail=id.startsWith('rail-'), open=!id.endsWith('-closed');
+  const native=['wide-open','wide-closed','rail-open','rail-closed','empty','new','new-claude','backend'].includes(id);
+  const releaseManaged=['managed','takeback'].includes(id), fishReturned=id==='returned-fish';
+  const release=releaseManaged?'managed':id==='returned'?'returned':id==='ended'?'ended':'idle';
+  const fish=fishReturned?'returned-fish':'fishball';
+  const releaseState={managed:'Running · Managed by Fishball',returned:'Running · You',ended:'Ended',idle:'Idle · You'};
+  const rows=[
+    [release,'Release notes',releaseState[release],releaseManaged?'bot':'message',['idle','models','handoff','managed','takeback','returned','end','ended'].includes(id)],
+    [fish,'Audit checklist',fishReturned?'Running · You':'Running · Managed by Fishball',fishReturned?'clock':'bot',['fishball','takeback-fish','returned-fish'].includes(id)],
+    ['approval','Publish draft','Waiting for you','alert'],['degraded','Migration notes','Unavailable · Read-only','lock'],['disconnected','Archive review','Disconnected','link'],['auth','Workspace sync','Sign-in required','user'],['error','Changelog proof','Delivery uncertain','alert']
+  ];
+  const glyph=(name,size=16)=>{
+    const art={search:'<circle cx="10" cy="10" r="6.5"/><path d="m15 15 5 5"/>',plugins:'<rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/>',options:'<path d="M3 7h10m4 0h4M3 17h4m4 0h10"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/>',compose:'<path d="M19 13v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h6m4 1 4 4m-9 6 1-4L18 4a2 2 0 0 1 3 3l-7 7Z"/>'};
+    return art[name]?`<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${art[name]}</svg>`:icon(name,size);
+  };
+  const label=(text)=>rail?'':`<span>${text}</span>`;
+  const nativeRow=(cls,name,text)=>`<div class="${cls}" title="${text}">${glyph(name,rail?18:16)}${label(text)}</div>`;
+  const mark='<svg width="24" height="24" viewBox="0 0 50 50" aria-hidden="true"><path fill="currentColor" d="M48.8354 10.0479C48.3232 9.79199 48.1025 10.2798 47.8032 10.5278C47.7007 10.6079 47.6143 10.7119 47.5273 10.8076C46.7793 11.624 45.9048 12.1597 44.7622 12.0957C43.0923 12 41.666 12.5356 40.4058 13.8398C40.1377 12.2319 39.2476 11.272 37.8926 10.6558C37.1836 10.3359 36.4668 10.0156 35.9702 9.31982C35.6235 8.82373 35.5293 8.27197 35.356 7.72754C35.2456 7.3999 35.1353 7.06396 34.7651 7.00781C34.3633 6.94385 34.2056 7.2876 34.0479 7.57568C33.418 8.75195 33.1733 10.0479 33.1973 11.3599C33.2524 14.312 34.4736 16.6641 36.8999 18.3359C37.1758 18.5278 37.2466 18.7197 37.1597 19C36.9946 19.5757 36.7974 20.1357 36.624 20.7119C36.5137 21.0801 36.3486 21.1597 35.9624 21C34.6309 20.4321 33.481 19.5918 32.4644 18.5757C30.7393 16.8721 29.1792 14.9917 27.2334 13.52C26.7764 13.1758 26.3193 12.856 25.8467 12.5518C23.8618 10.584 26.1069 8.96777 26.627 8.77588C27.1704 8.57568 26.8159 7.8877 25.0591 7.896C23.3022 7.90381 21.6953 8.50391 19.647 9.30371C19.3477 9.42383 19.0322 9.51172 18.7095 9.58398C16.8501 9.22363 14.9199 9.14355 12.9033 9.37598C9.10596 9.80762 6.07275 11.6396 3.84326 14.7681C1.16455 18.5278 0.53418 22.7998 1.30664 27.2559C2.11768 31.9521 4.46582 35.8398 8.07373 38.8799C11.8159 42.0322 16.1255 43.5762 21.041 43.2803C24.0269 43.104 27.3516 42.6963 31.1016 39.4561C32.0469 39.936 33.0396 40.1279 34.686 40.272C35.9546 40.3921 37.1758 40.208 38.1211 40.0078C39.6021 39.688 39.4995 38.2881 38.9639 38.0322C34.623 35.9678 35.5762 36.8081 34.71 36.1279C36.9155 33.4639 40.2402 30.6958 41.54 21.728C41.6426 21.0161 41.5557 20.5679 41.54 19.9917C41.5322 19.6396 41.6108 19.5039 42.0049 19.4639C43.0923 19.3359 44.1479 19.0317 45.1167 18.4878C47.9292 16.9199 49.064 14.3438 49.3315 11.2559C49.3711 10.7837 49.3237 10.2959 48.8354 10.0479ZM24.3262 37.8398C20.1196 34.4639 18.0791 33.3521 17.2358 33.3999C16.4482 33.4482 16.5898 34.3682 16.7632 34.9678C16.9443 35.5601 17.1812 35.9683 17.5117 36.4878C17.7402 36.832 17.8979 37.3442 17.2832 37.728C15.9282 38.584 13.5728 37.4399 13.4624 37.3838C10.7207 35.7358 8.42822 33.5601 6.81348 30.584C5.25342 27.7197 4.34766 24.6479 4.19775 21.3677C4.1582 20.5757 4.38672 20.2959 5.15869 20.1519C6.17529 19.96 7.22314 19.9199 8.23926 20.0718C12.5327 20.7119 16.1885 22.6719 19.2529 25.7759C21.002 27.5439 22.3252 29.6558 23.6885 31.7202C25.1377 33.9121 26.6978 36 28.6831 37.7119C29.3843 38.312 29.9434 38.7681 30.479 39.104C28.8643 39.2881 26.1699 39.3281 24.3262 37.8398ZM26.3433 24.6001C26.3433 24.248 26.6191 23.9678 26.9658 23.9678C27.0444 23.9678 27.1152 23.9839 27.1782 24.0078C27.2651 24.04 27.3438 24.0879 27.4067 24.1602C27.5171 24.272 27.5801 24.4321 27.5801 24.6001C27.5801 24.9521 27.3042 25.2319 26.9575 25.2319C26.6108 25.2319 26.3433 24.9521 26.3433 24.6001ZM32.6064 27.8799C32.2046 28.0479 31.8027 28.1919 31.4165 28.208C30.8179 28.2397 30.1641 27.9922 29.8096 27.688C29.2583 27.2158 28.8643 26.9521 28.6987 26.1279C28.6279 25.7759 28.6675 25.2319 28.7305 24.9199C28.8721 24.248 28.7144 23.8159 28.2495 23.4238C27.8716 23.104 27.3911 23.0161 26.8633 23.0161C26.666 23.0161 26.4849 22.9277 26.3511 22.856C26.1304 22.7441 25.9492 22.4639 26.1226 22.1201C26.1777 22.0078 26.4458 21.7358 26.5088 21.688C27.2256 21.272 28.0527 21.4077 28.8169 21.7197C29.5259 22.0161 30.0615 22.5601 30.834 23.3281C31.6216 24.2559 31.7632 24.5117 32.2124 25.208C32.5669 25.752 32.8901 26.312 33.1104 26.9521C33.2446 27.3521 33.0713 27.6802 32.6064 27.8799Z"/></svg>';
+  const widthRoute=rail?'wide':'rail';
+  const sizeControl=(content,cls)=>`<a class="${cls} oas-hit" href="#${widthRoute}-${open?'open':'closed'}" aria-label="${rail?'Expand':'Collapse'} sample sidebar">${content}</a>`;
+  const brand=rail?sizeControl(mark,'oas-brand'):`<div class="oas-brand">${mark}<span class="oas-brand-name">DeepSeek Harness</span>${sizeControl(glyph('panel'),'oas-seat')}</div>`;
+  const launcher= [['plugins','Plugins'],['clock','Automation tasks'],['more','More']].map(([g,t])=>nativeRow('oas-launch',g,t)).join('');
+  const wspace=rail?`<div class="oas-rail-work">${nativeRow('oas-launch','folder','Add workspace')}${nativeRow('oas-launch','search','Search sessions')}</div>`:`<div class="oas-toolbar"><span>Workspaces</span>${glyph('search',14)}${glyph('options',15)}${glyph('plus')}</div>${nativeRow('oas-folder','folder','atlas')}${nativeRow('oas-native'+(native?' oas-focus':''),'message','Workspace notes')}${nativeRow('oas-native','message','Version plan')}`;
+  const sessions=rows.map(([dest,title,status,g,selected])=>`<li><a class="oas-session oas-hit" href="#${dest}"${(selected||(selected===undefined&&dest===id))?' aria-current="page"':''}>${glyph(g)}<span>${title}<br><small>${status}</small></span></a></li>`).join('');
+  const newLink='<a class="oas-add oas-hit" href="#new">'+glyph('plus',14)+'New outside agent</a>';
+  const content=`<section id="oas-list" aria-label="Outside agent sessions"${open?'':' hidden'} class="${rail?'oas-pop':'oas-inline'}">${rail?'<div class="oas-pop-title">outside agent</div>':''}${newLink}${id==='empty'?'<p class="oas-empty">No outside sessions yet.</p>':`<ul class="oas-rows">${sessions}</ul>`}</section>`;
+  const heading=glyph('terminal',rail?18:16)+label('outside agent')+(rail?'':glyph(open?'chevron-down':'chevron-right',14));
+  const fixtureRoute=/^(wide|rail)-(open|closed)$/.test(id);
+  const headingAttrs=`class="oas-disclose oas-hit" aria-controls="oas-list" aria-expanded="${open}" aria-label="outside agent"`;
+  const disclosure=fixtureRoute?`<a ${headingAttrs} href="#${rail?'rail':'wide'}-${open?'closed':'open'}">${heading}</a>`:`<button type="button" ${headingAttrs} onclick="const list=this.nextElementSibling;list.hidden=!list.hidden;this.setAttribute('aria-expanded',String(!list.hidden));this.lastElementChild.style.transform=list.hidden?'rotate(-90deg)':''">${heading}</button>`;
+  return `<aside class="oas${rail?' oas-rail':''}" aria-label="Sidebar">${brand}${nativeRow('oas-create','compose','New Session')}<div class="oas-body"><div class="oas-launchers">${launcher}</div>${wspace}</div><div class="oas-footer">${disclosure}${content}${nativeRow('oas-settings','settings','Settings')}</div></aside>`;
+}
+</script>
+
+<style>
+.oa-chat{min-width:0;min-height:0;flex:1;align-self:stretch;display:flex;flex-direction:column;position:relative;overflow:hidden;background:var(--bg);color:var(--text);font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.oa-chat *{box-sizing:border-box}.oa-chat header{flex:none;border-bottom:1px solid var(--border);padding:10px 22px 0}.oa-chat .ch-title,.oa-chat .ch-meta,.oa-chat .ch-tools,.oa-chat .ch-who,.oa-chat .ch-state,.oa-chat .ch-action,.oa-chat .ch-tab,.oa-chat .ch-card-row,.oa-chat .ch-identity{display:flex;align-items:center;gap:8px}.oa-chat .ch-title{min-height:30px;gap:10px}.oa-chat .ch-crumb,.oa-chat .ch-identity,.oa-chat .ch-who,.oa-chat .ch-note,.oa-chat .ch-soft,.oa-chat .ch-days{color:var(--muted)}.oa-chat h1{font-size:15px;font-weight:600;line-height:20px;margin:0}.oa-chat .ch-tools{margin-left:auto;gap:6px}.oa-chat .ch-meta{margin-top:5px;min-height:30px;gap:14px;flex-wrap:wrap;font-size:12px}.oa-chat .ch-tab{border-bottom:2px solid var(--accent);padding:3px 2px 7px;font-weight:600}.oa-chat .ch-identity{padding-bottom:4px;gap:6px}.oa-chat .ch-identity + .ch-identity{padding-left:12px;border-left:1px solid var(--border)}.oa-chat button,.oa-chat a,.oa-chat textarea{font:inherit}.oa-chat button,.oa-chat a{text-decoration:none;color:inherit}.oa-chat .ch-action{padding:5px 10px;border:1px solid var(--border);border-radius:7px;font-size:12px;line-height:18px;background:var(--panel);width:max-content}.oa-chat a:hover,.oa-chat button:not(:disabled):hover{background:var(--hover)}.oa-chat :is(button,a,textarea):focus-visible{outline:2px solid var(--accent);outline-offset:2px}.oa-chat button:disabled,.oa-chat textarea:disabled{cursor:not-allowed}.oa-chat button:disabled{color:var(--muted);opacity:.7}.oa-chat .ch-scroll{flex:1;min-height:0;overflow:auto;padding:20px clamp(22px,4vw,54px) 14px}.oa-chat .ch-flow{max-width:748px;margin:auto;display:flex;flex-direction:column;gap:18px}.oa-chat .ch-days,.oa-chat .ch-bound{display:flex;align-items:center;gap:12px;font-size:11px;letter-spacing:.025em;margin:0}.oa-chat .ch-days:before,.oa-chat .ch-days:after,.oa-chat .ch-bound:before,.oa-chat .ch-bound:after{content:"";height:1px;flex:1;background:var(--border)}.oa-chat article{margin:0}.oa-chat .ch-who{font-size:12px;line-height:18px;gap:7px;margin-bottom:6px}.oa-chat .ch-who strong{font-weight:600;color:var(--text)}.oa-chat .ch-human{display:flex;align-items:flex-end;flex-direction:column}.oa-chat .ch-bubble{padding:10px 16px;border-radius:14px;background:var(--hover);max-width:min(525px,82%);line-height:22px}.oa-chat .ch-prose{line-height:1.65}.oa-chat .ch-prose p{margin:0 0 8px}.oa-chat .ch-prose ul{margin:6px 0;padding-left:22px}.oa-chat .ch-prose li{margin:4px 0}.oa-chat .ch-bound{color:var(--muted);font-size:12px;letter-spacing:0}.oa-chat .ch-compose{position:relative;width:min(764px,calc(100% - 44px));margin:8px auto 0;flex:none}.oa-chat .ch-state{margin:0 6px 8px;flex-wrap:wrap;gap:5px 9px;font-size:12px}.oa-chat .ch-status-name{display:inline-flex;align-items:center;gap:5px;font-weight:600}.oa-chat .ch-status-name svg{color:var(--accent)}.oa-chat .ch-card{position:relative;background:var(--panel);border:1px solid var(--border);border-radius:16px;box-shadow:0 3px 12px #1823370c;padding:10px 12px}.oa-chat .ch-card textarea{border:0;resize:none;padding:2px 4px;background:none;color:var(--text);font-size:14px;line-height:22px;display:block;width:100%;height:45px}.oa-chat .ch-card textarea::placeholder{color:var(--muted);opacity:1}.oa-chat .ch-card-row{min-height:30px;margin-top:6px;font-size:12px;color:var(--muted)}.oa-chat .ch-card-row .ch-action{background:transparent;border:0;padding:4px 6px;color:inherit}.oa-chat .ch-card-row .ch-submit{margin-left:auto;background:var(--text);color:var(--bg);border-radius:20px;padding:6px 13px}.oa-chat .ch-card-row .ch-submit:disabled{background:var(--hover);color:var(--muted);opacity:1}.oa-chat .ch-note{min-height:24px;padding:4px 0;text-align:center;font-size:11px}.oa-chat .ch-alert,.oa-chat .ch-empty{border:1px solid var(--border);border-radius:10px;padding:14px 16px;background:var(--panel)}.oa-chat .ch-alert{width:100%;margin:0 0 10px}.oa-chat .ch-alert strong,.oa-chat .ch-empty strong{display:flex;align-items:center;gap:8px;font-size:14px}.oa-chat .ch-alert p,.oa-chat .ch-empty p{margin:5px 0 0;font-size:13px;color:var(--muted)}.oa-chat .ch-alert .ch-tools{margin-top:10px}.oa-chat .ch-picker{position:absolute;bottom:calc(100% + 8px);left:0;z-index:2;width:min(340px,100%);padding:14px;background:var(--panel);border:1px solid var(--border);border-radius:12px;box-shadow:0 8px 30px #1018281a}.oa-chat .ch-picktitle,.oa-chat .ch-pickrow{display:flex;align-items:center;justify-content:space-between;gap:6px}.oa-chat .ch-picktitle{font-weight:600}.oa-chat .ch-picktitle a{display:grid;place-items:center;border-radius:5px;width:24px;height:24px}.oa-chat .ch-pickrow{padding:9px 7px;border-bottom:1px solid var(--border);font-size:13px}.oa-chat small{font-size:11px;color:var(--muted)}.oa-chat .ch-picker p{font-size:12px;color:var(--muted);margin:10px 0 0}.oa-chat .ch-empty{margin:30px 0;padding:24px}.oa-chat .ch-id{font-family:ui-monospace,monospace;font-size:12px}.oa-chat .ch-dots{color:var(--muted);display:flex;align-items:center;gap:8px;font-size:13px}.oa-chat .ch-dots i{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--accent)}
+@media(max-width:850px){.oa-chat header{padding-inline:12px}.oa-chat .ch-meta{gap:6px}.oa-chat .ch-identity + .ch-identity{padding-left:6px}.oa-chat .ch-title{flex-wrap:wrap}.oa-chat .ch-crumb{display:none}.oa-chat .ch-scroll{padding-inline:14px}.oa-chat .ch-compose{width:calc(100% - 24px)}}
+.ch-cli-tag{font:600 11px/18px ui-monospace,monospace;background:#edf1f7;color:#3d506a;padding:0 6px;border-radius:4px;white-space:nowrap}</style>
+<script>
+function chat(id){
+  const native=['wide-closed','wide-open','rail-closed','rail-open','empty','new','new-claude','backend'].includes(id);
+  const fish=['fishball','takeback-fish','returned-fish'].includes(id);
+  const returned=['returned','returned-fish'].includes(id), managed=['fishball','takeback-fish','managed','takeback'].includes(id), running=managed||returned;
+  const ended=id==='ended';
+  const principal='Fishball · fb-07', model=(!fish&&['idle','models','handoff','managed','takeback','returned','end','ended'].includes(id)&&overlay.model)||'codex-fixture-a';
+  const failures={approval:['Publish draft','Waiting for you','Permission prompt needs a human','Codex is waiting for a decision. The native prompt could not be verified, so neither DSH nor Fishball can answer it. Automation is paused. End the owned process before continuing outside DSH; never open a second writer.','Prepare a draft for publication.','Your draft is ready for review. Nothing has been published.'],auth:['Workspace sync','Sign-in required','Sign in outside DSH','Collection has stopped. Sign in through Codex outside DSH, then start a new session. Do not paste credentials here.','Summarize the workspace changes.','The workspace summary is ready.'],degraded:['Migration notes','Degraded · Input disabled','This Codex build is not supported','The message format changed. Only verified messages are shown. Use a supported build before starting another session.','List the steps for moving atlas.','Copy the workspace, verify the new path, and check the project references.'],disconnected:['Archive review','Disconnected','Exact resume is unavailable','Resume requires the exact provider session ID in atlas and proof that no other writer survives. Exclusive ownership could not be verified. Start a new session instead.','',''],error:['Changelog proof','Delivery uncertain','The last message may have reached Codex','No acknowledgment arrived. Do not resend. Check the existing session before taking further action. The unconfirmed message is not in this history.','Check the changelog headings.','The headings match the order of the release sections.']};
+  const failure=failures[id]; const title=native?'Workspace notes':fish?'Audit checklist':failure?failure[0]:'Release notes';
+  const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const act=(label,ico,to,reason='')=>to?`<a class="ch-action" href="#${to}">${icon(ico,14)}${label}</a>`:`<button type="button" class="ch-action" disabled title="${reason}">${icon(ico,14)}${label}</button>`;
+  const ident=(ico,text)=>`<span class="ch-identity">${icon(ico,14)}${text}</span>`;
+  const hand=act('Hand to Fishball','link',running||failure||ended?'':'handoff',running?'Wait for the turn to finish.':'The session is not ready for handoff.');
+  const headerActions=native?'':managed?act('Take back','user',fish?'takeback-fish':'takeback'):ended?act('New session','plus','new'):hand;
+  const endAct=!native&&!fish&&!ended&&!failure&&!managed?act('End','x','end'):'';
+  const owner=managed?'Managed by '+principal:ended||id==='disconnected'?'No active writer':'Controlled by you';
+  const hdr=`<header><div class="ch-title"><span class="ch-crumb">${icon('folder',15)} &nbsp;atlas &nbsp;/</span><h1>${title}</h1><div class="ch-tools">${headerActions}${endAct}</div></div><div class="ch-meta"><span class="ch-tab">${icon('message',14)}Chat</span>${native?'':ident('terminal','Codex')+ident('check',(failure||ended?'Last confirmed: ':'Confirmed: ')+model)+ident(managed?'link':'user',owner)}</div></header>`;
+  const user=(text,author='You',time='10:24')=>`<article class="ch-human"><div class="ch-who"><strong>${author}</strong><time>${time}</time></div><div class="ch-bubble">${esc(text)}</div></article>`;
+  const reply=(html,time='10:25')=>`<article><div class="ch-who">${icon('bot',16)}<strong>${native?'Assistant':'Codex'}</strong><time>${time}</time></div><div class="ch-prose">${html}</div></article>`;
+  const boundary=t=>`<p class="ch-bound">${t}</p>`;
+  const releasePrompt=(typeof overlay==='function'&&overlay.firstMessage)||'Draft release notes for atlas from the changes since the last tag.';
+  const release=user(releasePrompt)+reply('<p>Here’s a draft for the next atlas release:</p><ul><li><strong>Workspace search</strong> now includes archived notes.</li><li><strong>Export</strong> keeps your section order when saving to Markdown.</li><li><strong>Fix:</strong> reopening a workspace restores the last selected note.</li></ul>');
+  let messages=native?user('What should we keep in the atlas workspace notes?')+reply('<p>Keep a short entry for each decision. Record what changed, why it changed, and who will follow up.</p><p>A useful first entry is the release checklist. Link the draft notes and leave room for sign-off.</p>'):fish?boundary('Started by '+principal)+user('Build an audit checklist for the atlas release.',principal)+reply('<p>Check the version tag, match each change to a release note, and record who signed off.</p>')+user('Add the evidence to collect for each check.',principal,'10:28'):failure?id==='disconnected'?'<div class="ch-empty"><strong>Session metadata only</strong><p>The previous connection is gone. Its conversation was not retained.</p></div>':user(failure[4])+reply('<p>'+failure[5]+'</p>'):release;
+  if(!fish&&running) messages+=boundary('Shared with Fishball from 10:27 · earlier messages stay private')+user('List the items to verify before publishing.',principal,'10:28');
+  if(returned)messages+=boundary('You took back control · 10:29');
+  if(running)messages+='<div class="ch-dots"><i></i>Codex is working…</div>';
+  if(ended)messages+=boundary('Session ended');
+  const timeline=`<section class="ch-scroll" aria-label="Conversation messages"><div class="ch-flow"><p class="ch-days">Today</p>${messages}</div></section>`;
+  const status=ended?'Ended':failure?failure[1]:running?'Running':'Idle';
+  const explanation=returned?'You can stop this turn. Fishball’s pending input was discarded.':managed?'You are observing. Only Fishball can send or stop this turn.':failure?'Sending and model changes are disabled.':ended?'This session is no longer accepting messages.':'Ready for your next message.';
+  const strip=native?'':`<div class="ch-state" role="status"><span class="ch-cli-tag">CLI · Codex</span><span class="ch-status-name">${icon(failure?'alert':running?'clock':ended?'stop':'check',14)}${status}</span><span class="ch-soft">${explanation}</span></div>`;
+  const failureActions=id==='disconnected'?act('Resume exact session','lock','','Exclusive ownership not verified.')+act('New session','plus','new'):['degraded','auth'].includes(id)?act('New session','plus','new'):'';
+  const warning=!failure?'':`<aside class="ch-alert"><strong>${icon('alert',16)}${failure[2]}</strong><p>${failure[3]}</p>${id==='error'?'<p>Session ID: <span class="ch-id">oa-atlas-06</span></p>':''}${failureActions?`<div class="ch-tools">${failureActions}</div>`:''}</aside>`;
+  const picker=id!=='models'?'':`<section class="ch-picker" aria-label="Codex model catalog"><div class="ch-picktitle">Codex models<a href="#idle" aria-label="Close models">${icon('x',15)}</a></div><small>atlas · CLI-local fixture catalog · revision 04</small><div class="ch-pickrow"><span>${model}</span><span>${icon('check',13)} Current</span></div><div class="ch-pickrow"><span>${model==='codex-fixture-a'?'codex-fixture-b':'codex-fixture-a'}</span><small>Launch only</small></div><div class="ch-pickrow"><span>CLI default</span><small>New sessions only</small></div><p>Live switching is not verified. Start a new session to choose a launch model.</p><div style="margin-top:8px">${act('New session','plus','new')}</div></section>`;
+  const canType=!failure&&!running&&!ended, placeholder=managed?'Read-only while Fishball controls this session':returned?'Wait for the active turn to finish, or stop it':ended?'Session ended':failure?'Input unavailable · '+status:native?'Message the assistant…':'Message Codex…';
+  const choose=native?ident('folder','atlas'):canType&&!fish?`<a class="ch-action" href="#${id==='models'?'idle':'models'}" aria-expanded="${id==='models'}">${icon('terminal',14)}${model}${icon('chevron-down',13)}</a>`:act(model,'lock','','Model changes are unavailable in this state.');
+  const submit=returned?`<button type="button" class="ch-action ch-submit" onclick="this.closest('.ch-compose').querySelector('.ch-note').textContent='Preview: Stop interrupts only this turn. The session stays open.'">${icon('stop',14)}Stop turn</button>`:`<button class="ch-action ch-submit" disabled title="${canType?'Message sending is not connected in this mockup.':explanation}">${icon(managed?'stop':'send',14)}${managed?'Stop turn':'Send'}</button>`;
+  const bar=`<section class="ch-compose" aria-label="Message composer">${warning}${strip}<div class="ch-card">${picker}<textarea rows="2" aria-label="${placeholder}" placeholder="${placeholder}" ${canType?'':'disabled'}></textarea><div class="ch-card-row">${choose}${submit}</div></div><div class="ch-note">${native?'':fish?'Started by '+principal:'Started by you'}${!native?' &nbsp;·&nbsp; '+(ended?'Session closed':'Outside agent session'):''}</div></section>`;
+  return `<main class="oa-chat" aria-label="${title}">${hdr}${timeline}${bar}</main>`;
+}
+</script>
+
+<style>
+.oad-scrim{position:absolute;inset:0;z-index:30;display:grid;place-items:center;padding:20px;box-sizing:border-box;background:rgba(20,22,27,.34)}
+.oad-scrim *{box-sizing:border-box}
+.oad-card{width:min(100%,452px);max-height:100%;overflow:auto;overscroll-behavior:contain;background:var(--panel);color:var(--text);border:1px solid var(--border);border-radius:16px;box-shadow:0 12px 44px #0002;padding:24px;font-size:14px;line-height:1.5}
+.oad-create{width:min(100%,500px)}
+.oad-card h2{font:inherit;font-size:19px;line-height:26px;font-weight:600;letter-spacing:-.025em;margin:0}
+.oad-card h2:focus{outline:none}
+.oad-head,.oad-actions,.oad-box,.oad-option,.oad-flags,.oad-select,.oad-line,.oad-close,.oad-note{display:flex;align-items:center}
+.oad-head,.oad-flags{justify-content:space-between;gap:12px}
+.oad-card a{text-decoration:none;color:inherit}
+.oad-close{justify-content:center;color:var(--muted)!important;width:28px;height:28px;border-radius:6px}
+.oad-close:hover,.oad-btn:not(.oad-primary):hover{background:var(--hover)}
+.oad-desc{margin:6px 0 20px;color:var(--muted);font-size:13px}
+.oad-field{display:grid;gap:6px;margin:15px 0 0}
+.oad-label{font-size:13px;font-weight:550}
+.oad-small,.oad-tag{color:var(--muted);font-size:12px}
+.oad-tag{padding:1px 8px;border:1px solid var(--border);border-radius:20px;font-size:11px}
+.oad-choices{display:flex;gap:5px;flex-wrap:wrap}
+.oad-option,.oad-btn,.oad-card select,.oad-box,.oad-input{border:1px solid var(--border);border-radius:8px;background:var(--panel);color:var(--text);font:inherit;font-size:13px}
+.oad-option{gap:5px;padding:6px 9px}
+.oad-option[aria-current]{background:var(--text);color:var(--panel);border-color:var(--text)}
+.oad-option[disabled]{color:var(--muted);background:var(--sidebar)}
+.oad-box,.oad-input,.oad-card select{width:100%;padding:8px 11px}
+.oad-box{gap:8px}
+.oad-flags .oad-line{gap:8px}
+.oad-card select{appearance:auto}
+.oad-input{resize:none;line-height:21px;min-height:64px}
+.oad-note{background:var(--sidebar);border-radius:8px;align-items:flex-start;gap:9px;margin-top:16px;padding:11px 12px;font-size:13px}
+.oad-note svg{flex:none;margin-top:2px}
+.oad-note p{margin:2px 0 0;color:var(--muted)}
+.oad-principal{display:flex;align-items:center;gap:10px;padding:12px;border:1px solid var(--border);border-radius:9px}
+.oad-principal input{accent-color:var(--text);margin:0 2px 0 auto}
+.oad-actions{justify-content:flex-end;gap:8px;margin-top:23px}
+.oad-btn{padding:7px 13px;min-width:72px;text-align:center;font-weight:550}
+.oad-primary{background:var(--text);color:var(--panel)!important;border-color:var(--text)}
+.oad-primary:disabled{opacity:.38}
+.oad-danger{color:#a93232!important;border-color:#d6a2a2}
+.oad-card :is(a,select,input,textarea,button):focus-visible{outline:2px solid var(--accent);outline-offset:2px}@media(max-width:540px){.oad-scrim{padding:10px}
+.oad-card{padding:18px}
+.oad-choices{gap:4px}
+.oad-option{padding:5px 7px}}
+</style>
+<script>
+function overlay(id){
+  const fish=id==='takeback-fish', blocked=['backend','new-claude'].includes(id), cli=id==='backend'?'Antigravity':id==='new-claude'?'Claude Code':'Codex', create=blocked||id==='new';
+  if(!create&&!fish&&!['handoff','takeback','end'].includes(id))return '';
+  const session=fish?'Audit checklist':'Release notes';
+  const note=(symbol,title,copy)=>`<div class="oad-note">${icon(symbol)}<div><strong>${title}</strong><p>${copy}</p></div></div>`;
+  const field=(name,body)=>`<div class="oad-field"><span class="oad-label">${name}</span>${body}</div>`;
+  const action=(dest,copy,variant='')=>`<a class="oad-btn ${variant}" href="#${dest}">${copy}</a>`;
+  const choice=(dest,copy)=>`<a class="oad-option" href="#${dest}" ${dest===id?'aria-current="true"':''}>${dest===id?icon('check',14):''}${copy}</a>`;
+  let title,desc,body,cancel,confirm;
+  if(create){
+    title='New outside agent'; desc='Start a CLI conversation that you control.'; cancel='wide-open';
+    body=field('CLI',`<div class="oad-choices" role="group" aria-label="CLI">${choice('new','Codex')}${choice('new-claude','Claude Code')}${choice('backend','Antigravity CLI (agy)')}</div>`)
+      +field('Workspace',`<select aria-label="Authorized workspace folder"><option>atlas · Authorized folder</option></select>`)
+      +field(`${cli} model`,`<select aria-label="${cli} model" ${blocked?'disabled':''}><option>${blocked?'Catalog unavailable':'codex-fixture-a'}</option>${blocked?'':'<option>codex-fixture-b</option><option>CLI default</option>'}</select>`)
+      +(blocked?note('alert','No models available',`${cli} did not return a complete catalog for atlas. Choose another CLI. Nothing has been started or sent.`):'')
+      +field('First message','<textarea aria-label="First message" class="oad-input" required maxlength="2000">Draft release notes for atlas from the changes since the last tag.</textarea>');
+    confirm=blocked?'<button class="oad-btn oad-primary" disabled>Start session</button>':action('idle','Start session','oad-primary');
+  }else if(id==='handoff'){
+    title='Hand to Fishball?'; desc=`Choose who can send messages and stop turns in ${session}. You’ll still be able to read the conversation.`; cancel='idle';
+    body=field('Paired principal',`<label class="oad-principal">${icon('user',19)}<span><b>Fishball · fb-07</b><br><span class="oad-small">Stable principal ID: fb-07</span></span><input type="radio" name="oad-principal" value="fb-07" checked></label>`)
+      +note('lock','Share from handoff onward','Fishball can read new messages only. Earlier messages stay private, and you can take back control at any time.');
+    confirm=action('managed','Hand to Fishball','oad-primary');
+  }else if(id==='end'){
+    title='End session?'; desc=`This will terminate the Codex process for ${session} in atlas. You won’t be able to send another message to this session.`; cancel='idle';
+    body=note('stop','End is different from Stop','Stop interrupts a turn and keeps the session open. End closes the CLI itself.'); confirm=action('ended','End session','oad-danger');
+  }else{
+    title='Take back control?'; desc=`Fishball · fb-07 will immediately lose control of ${session}. Its pending inputs and approvals will be withdrawn.`; cancel=fish?'fishball':'managed';
+    body=note('clock','The current turn will keep running','You can stop it after taking back control. No pending message will be sent again.'); confirm=action(fish?'returned-fish':'returned','Take back control','oad-primary');
+  }
+  // Focus after the hash router has inserted this fragment into the shell.
+  queueMicrotask(()=>{const card=document.querySelector('.oad-card');if(!card)return;card.querySelector('h2').focus({preventScroll:true});
+    if(create){
+      const draft=card.querySelector('textarea'), start=card.querySelector('a.oad-primary');
+      draft.value=overlay.draft??draft.defaultValue;
+      draft.oninput=()=>{overlay.draft=draft.value;draft.setCustomValidity(draft.value.trim()?'':'Enter a first message.');};
+      if(start)start.onclick=e=>{if(!draft.reportValidity()||!draft.value.trim()){e.preventDefault();draft.focus();return;}overlay.model=card.querySelector('select[aria-label="Codex model"]').value==='codex-fixture-b'?'codex-fixture-b':'codex-fixture-a';overlay.firstMessage=draft.value.trim();delete overlay.draft;};
+      card.querySelectorAll('.oad-close,.oad-actions a:not(.oad-primary)').forEach(a=>a.onclick=()=>{delete overlay.draft;});
+    }
+    card.onkeydown=e=>{
+    if(e.key==='Escape'){e.preventDefault();e.stopPropagation();card.querySelector('.oad-close').click();return;}
+    if(e.key!=='Tab')return;
+    const items=[...card.querySelectorAll('a[href],button:not(:disabled),input:not(:disabled),select:not(:disabled),textarea:not(:disabled)')];
+    if(e.shiftKey&&[items[0],card.querySelector('h2')].includes(document.activeElement)){e.preventDefault();items.at(-1).focus();}
+    else if(!e.shiftKey&&document.activeElement===items.at(-1)){e.preventDefault();items[0].focus();}
+  };});
+  return `<div class="oad-scrim"><section class="oad-card${create?' oad-create':''}" role="dialog" aria-modal="true" aria-labelledby="oad-title" aria-describedby="oad-desc"><div class="oad-head"><h2 id="oad-title" tabindex="-1">${title}</h2><a class="oad-close" href="#${cancel}" aria-label="Cancel and close dialog">${icon('x',18)}</a></div><p id="oad-desc" class="oad-desc">${desc}</p>${body}<div class="oad-actions">${action(cancel,'Cancel')}${confirm}</div></section></div>`;
+}
+</script>
+
+<script>
+let previous='', opener=null;
+function render(){let i=screens.findIndex(r=>r[0]===location.hash.slice(1));if(i<0)i=0;const [id,label]=screens[i]; const dialog=overlay(id),frame=document.querySelector('#frame'), nav=document.querySelector('#reviewstrip');
+frame.innerHTML=sidebar(id)+chat(id)+dialog;document.body.dataset.screen=id;document.title=label+' · Outside agent';
+nav.innerHTML='<a href="index.html">← 评审索引</a><span class="meta">静态样稿 · 不连接 CLI</span><div class="steppers">'+(i?'<a aria-label="上一屏" href="#'+screens[i-1][0]+'">‹</a>':'')+'<span>'+String(i+1).padStart(2,'0')+' / '+screens.length+'　'+label+'</span>'+(i<screens.length-1?'<a aria-label="下一屏" href="#'+screens[i+1][0]+'">›</a>':'')+'</div>';
+if(dialog){frame.querySelector('aside')?.setAttribute('inert','');frame.querySelector('main')?.setAttribute('inert','')}else if(opener){const back=[...frame.querySelectorAll('a[href]')].find(a=>a.hash===opener);back?.focus({preventScroll:true});opener=null}if(/^(rail|wide)-(open|closed)$/.test(id)&&/^(rail|wide)-(open|closed)$/.test(previous)) frame.querySelector('.oas-disclose')?.focus({preventScroll:true});previous=id}
+document.addEventListener('click',e=>{const a=e.target.closest('a[href^="#"]');if(a&&!a.closest('[role=dialog]')&&['new','handoff','takeback','takeback-fish','end'].includes(a.hash.slice(1)))opener=a.hash});document.addEventListener('keydown',e=>{if(e.key==='Escape'&&document.body.dataset.screen==='rail-open'){e.preventDefault();location.hash='rail-closed'}});window.addEventListener('hashchange',render);render();</script></body></html>
