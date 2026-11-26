@@ -166,7 +166,7 @@ export function registerTaskboardCases(sdk) {
   // TB-UC-01: Fishball breaks a goal down and tracks it (REQ tools; DOC §3).
   row(sdk, 'TB-UC-01', 'main', 'Fishball creates a goal, breaks it into subtasks, updates status and progress, and reads the tree', async (t) => {
     const w = await worldFor(t, sdk)
-    assert.deepEqual(w.toolNames(), Object.values(TOOL).sort(), 'the four tools are in the manager scope')
+    assert.deepEqual(w.toolNames(), Object.values(TOOL).sort(), 'the board and review tools are in the manager scope')
     const empty = ok(await w.read(), TOOL.read)
     assert.deepEqual(sortedKeys(empty), READ_KEYS)
     assert.equal(empty.revision, REVISION.initial, 'a new board is revision 0')

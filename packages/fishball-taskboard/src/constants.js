@@ -49,6 +49,7 @@ export const CODE = Object.freeze({
 export const STORE = Object.freeze({
   domain: 'fishball_taskboard',
   version: 1,
+  envelopeVersion: 2,
   emptyRevision: 0,
 })
 
@@ -58,6 +59,7 @@ export const TOOL = Object.freeze({
   add: 'taskboard_add',
   update: 'taskboard_update',
   memo: 'taskboard_memo',
+  resolveReview: 'taskboard_resolve_review',
 })
 
 /**

@@ -7,6 +7,7 @@
  */
 import { CODE, STORE } from './constants.js'
 import { assertDocument, emptyBoard, refusal } from './board.js'
+import { assertStored, compactUndoNotes, snapshotOf } from './auto-state.js'
 
 /** zod's `safeParse` shape over a throwing parser: defineDomain probes a global schema with it. */
 const safeParseOf = (parse) => (value) => {
@@ -24,24 +25,59 @@ const safeParseOf = (parse) => (value) => {
 export async function openStore(ctx, { defineDomain }) {
   // No table: the whole board is the domain's one global value. `assertDocument` refuses `null`, as
   // defineDomain requires of a global schema (null is the medium's "never written" sentinel).
-  const domain = await ctx.storage.domain.open(defineDomain({
-    name: STORE.domain,
-    version: STORE.version,
-    global: { schema: { parse: assertDocument, safeParse: safeParseOf(assertDocument) }, initial: emptyBoard() },
-    tables: {},
-  }))
+  const legacy = { name: STORE.domain, version: STORE.version, tables: {},
+    global: { schema: { parse: assertDocument, safeParse: safeParseOf(assertDocument) }, initial: emptyBoard() } }
+  const envelope = defineDomain({ ...legacy, version: STORE.envelopeVersion, compatibleVersions: [STORE.version],
+    global: { schema: { parse: assertStored, safeParse: safeParseOf(assertStored) }, initial: emptyBoard() } })
+  let automation = envelope.compatibleVersions?.includes(STORE.version) === true
+  const open = (spec) => ctx.storage.domain.open(spec)
+  let domain
+  if (automation) {
+    try { domain = await open(envelope) }
+    catch (error) {
+      // Old backends may reject the declared compatibility. Opening as v1 still validates the
+      // version stamp and full board; corruption and unknown versions are never replaced.
+      if (error?.code !== 'version-mismatch') throw error
+      automation = false
+    }
+  }
+  if (!automation) domain = await open(defineDomain(legacy))
   const listeners = new Set()
+  const autoListeners = new Set()
   let tail = Promise.resolve()
-  const read = () => domain.global.get()
+  let writesUncertain = false
+  let auditVersion = 0
+  const auditFrame = () => ({ revision: read().revision, auditVersion })
+  const readAuto = () => snapshotOf(domain.global.get())
+  const read = () => readAuto().board
+  const emit = (subscribers, value) => {
+    for (const listener of subscribers) {
+      try { listener(value) } catch { /* a page listener never fails a commit */ }
+    }
+  }
+  const subscribe = (subscribers, fn) => { subscribers.add(fn); return () => subscribers.delete(fn) }
 
   function change(fn) {
     const result = tail.then(async () => {
-      const before = read()
-      const { board: after, ...rest } = fn(before)
-      if (after === before) return { before, after, result: rest }
-      try { await domain.global.set(after) } catch (error) { throw refusal(CODE.unavailable, undefined, error) }
-      for (const listener of listeners) {
-        try { listener(after) } catch { /* a listener (an SSE stream) never fails a commit */ }
+      if (writesUncertain) throw refusal(CODE.unavailable)
+      const { board: before, auto } = readAuto()
+      const { board: after, auto: proposed = auto, ...rest } = await fn(before, auto)
+      const next = after === before ? proposed : compactUndoNotes(proposed, after.revision)
+      if (after === before && next === auto) return { before, after, result: rest }
+      if (!automation && next !== auto) throw refusal(CODE.unavailable)
+      try { await domain.global.set(automation ? { board: after, auto: next } : after) }
+      catch (error) {
+        // A JSON backend may publish a rename and then fail fsync. Reload rather than
+        // writing another snapshot from an old in-memory receipt or board revision.
+        writesUncertain = true
+        auditVersion += 1
+        emit(autoListeners, { revision: before.revision, auditVersion })
+        throw refusal(CODE.unavailable, undefined, error)
+      }
+      if (after !== before) emit(listeners, after)
+      if (next !== auto) {
+        auditVersion += 1
+        emit(autoListeners, { revision: after.revision, auditVersion })
       }
       return { before, after, result: rest }
     })
@@ -50,9 +86,11 @@ export async function openStore(ctx, { defineDomain }) {
   }
 
   return Object.freeze({
-    read,
+    read, readAuto, auditFrame, automation,
+    canWrite: () => !writesUncertain,
     change,
-    onChange(fn) { listeners.add(fn); return () => listeners.delete(fn) },
+    onChange: (fn) => subscribe(listeners, fn),
+    onAutoChange: (fn) => subscribe(autoListeners, fn),
     close: () => domain.close(),
   })
 }

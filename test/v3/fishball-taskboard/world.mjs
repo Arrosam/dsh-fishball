@@ -49,16 +49,23 @@ export function frames(response, controller) {
     if (end < 0) return undefined
     const frame = buffer.slice(0, end)
     buffer = buffer.slice(end + ROUTE.frameEnd.length)
-    return frame.split(ROUTE.lineEnd).filter((l) => l.startsWith(ROUTE.framePrefix)).map((l) => l.slice(ROUTE.framePrefix.length)).join(ROUTE.lineEnd)
+    const lines = frame.split(ROUTE.lineEnd)
+    const eventPrefix = 'event:'
+    const event = lines.find((line) => line.startsWith(eventPrefix))?.slice(eventPrefix.length).trim() ?? ''
+    const data = lines.filter((line) => line.startsWith(ROUTE.framePrefix)).map((line) => line.slice(ROUTE.framePrefix.length)).join(ROUTE.lineEnd)
+    return { event, data }
   }
   let pending
   const read = () => (pending ??= reader.read().then((chunk) => { pending = undefined; return chunk }))
   /** The next frame's JSON, or undefined when none arrives within timeoutMs. */
-  async function next(timeoutMs = WAIT.frameMs) {
+  async function nextFrame(timeoutMs = WAIT.frameMs, event) {
     const deadline = Date.now() + timeoutMs
     for (;;) {
-      const data = take()
-      if (data !== undefined) { if (data !== '') return JSON.parse(data); continue }
+      const frame = take()
+      if (frame !== undefined) {
+        if (frame.data !== '' && (event === undefined || frame.event === event)) return { event: frame.event, body: JSON.parse(frame.data) }
+        continue
+      }
       const left = deadline - Date.now()
       if (left <= 0) return undefined
       const chunk = await Promise.race([read(), new Promise((resolve) => setTimeout(resolve, left, { timeout: true }))])
@@ -67,7 +74,11 @@ export function frames(response, controller) {
       buffer += decoder.decode(chunk.value, { stream: true })
     }
   }
-  return { next, close: () => { controller.abort(); return reader.cancel().catch(() => {}) } }
+  return {
+    next: async (timeoutMs) => (await nextFrame(timeoutMs, ''))?.body,
+    nextFrame,
+    close: () => { controller.abort(); return reader.cancel().catch(() => {}) },
+  }
 }
 
 /** A recording connection.fetch registry. */
@@ -84,12 +95,13 @@ function fetchRegistry() {
 
 /**
  * A world in a fresh canonical temp root, closed and removed by t's cleanup. Options:
- * core (provide the fake fishballInstance at once), apiVersion, appReady (provide the fake).
+ * core (provide the fake fishballInstance at once), apiVersion, appReady (provide the fake), and
+ * configureHost(ctx, instance) for cases that supply additional host capabilities or legacy data.
  */
-export async function worldFor(t, sdk, { core = true, apiVersion = INSTANCE.apiVersion, appReady = false } = {}) {
+export async function worldFor(t, sdk, { core = true, apiVersion = INSTANCE.apiVersion, appReady = false, configureHost, moduleFor = rowModule } = {}) {
   const tmp = await realpath(os.tmpdir())
   const root = await mkdtemp(path.join(tmp, FIXTURE.tempPrefix))
-  const mod = await rowModule(sdk)
+  const mod = await moduleFor(sdk)
   const parts = Object.fromEntries(await Promise.all([DSH.cordis, DSH.loader, DSH.session, DSH.storage, DSH.storageJson, DSH.storageDomain, DSH.systemPrompt, DSH.scope].map(async (n) => [n, await importSdk(sdk, n)])))
   const world = { sdk, root, mod, logs: [], notifyMode: NOTIFY.queued, notices: [], injects: [], setups: [], noManager: false }
   let host
@@ -167,6 +179,7 @@ export async function worldFor(t, sdk, { core = true, apiVersion = INSTANCE.apiV
         },
       },
     }
+    await configureHost?.(ctx, instance)
     let coreFiber
     const loader = ctx.loader
     loader.builtins[SUBJECT.name] = mod

@@ -75,7 +75,7 @@ export const RECEIPT = Object.freeze({ queued: 'queued', held: 'held' })
 export const NOTIFY = Object.freeze({ queued: 'queued', held: 'held', reject: 'reject' })
 
 /** DOC §3: the tools; DOC §3/§4: the refusal codes. */
-export const TOOL = Object.freeze({ read: 'taskboard_read', add: 'taskboard_add', update: 'taskboard_update', memo: 'taskboard_memo' })
+export const TOOL = Object.freeze({ read: 'taskboard_read', add: 'taskboard_add', update: 'taskboard_update', memo: 'taskboard_memo', resolveReview: 'taskboard_resolve_review' })
 export const CODE = Object.freeze({
   notManager: 'not-manager', invalidInput: 'invalid-input', notFound: 'not-found', limitReached: 'limit-reached',
   unavailable: 'board-unavailable', stale: 'stale',

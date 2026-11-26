@@ -361,3 +361,12 @@ session as part of this change.
 | Show the card | Only the Fishball owner can see and answer the card. It uses the existing ask-card layer and `asks` topic on the Fishball page stream (§34), in the same accordion as permission cards. The card shows the batch count and summary; expanding it reveals a separate fieldset for each question. |
 | Deliver the answer | Submission queues an ordinary user-role follow-up to the singleton containing `cardId` and an `answers` list (`{id, selected, custom?}`) in the original question order. An idle Fishball wakes; a busy Fishball finishes its current turn before handling the answer. The original tool result remains `{cardId}`. Core keeps a stable reply identity until DSH records the user message, and recovers replies that were queued but not admitted before restart. DSH does not distinguish teardown from removing an item from its native queue; removing a queued card reply does not revoke the stored card answer. |
 | Boundary | The cards and answers are local to Fishball; there is no new connector tool or protocol change. Forwarded managed-session questions and plan reviews still use their own session cards and the existing first-answer-wins broker (§21). |
+
+## Task board auto-update Task board auto-update (2026-11-27)
+
+The user approved opt-in automation of evidenced, nonterminal task fields. A connector-native work
+assignment and a proven root-turn boundary are prerequisites. Core exposes an independent read-only
+observer and a generation-fenced freshness probe; neither owns an ack or disables ordinary delivery.
+Taskboard automation owns the model selection and the same atomic envelope as the manual board.
+Completion is a manager review, not an automatic board mutation; notification ownership is claimed
+after any actual change is durable. See [Task board auto-update](docs/plugins/fishball-taskboard.md#8-auto-update).

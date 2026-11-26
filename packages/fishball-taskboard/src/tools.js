@@ -9,6 +9,8 @@ import { randomUUID } from 'node:crypto'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import { CODE, LIMITS, OPEN_STATUSES, STATUS, TOOL } from './constants.js'
 import { addTasks, changeMemo, refusal, refusalValue, updateTask, viewOf } from './board.js'
+import { pendingReview, publicReview } from './auto-state.js'
+import { resolveReview } from './auto-rules.js'
 
 const statuses = Object.values(STATUS).join(' | ')
 const TEXT = Object.freeze({
@@ -27,6 +29,11 @@ const TEXT = Object.freeze({
   memoId: 'The memo id (m_…); omit to add a memo.',
   memoText: 'The memo text.',
   memoDelete: 'true: delete the memo with this id.',
+  review: 'Resolve a pending completion review after independently verifying the evidence. Read the board again before resolving; a worker saying it finished is not enough.',
+  reviewId: 'The reviewId from taskboard_read.',
+  reviewVersion: 'The reviewVersion from taskboard_read.',
+  baseRevision: 'The current board revision from taskboard_read.',
+  decision: 'Either "reject", or {confirm: ["status", "progress", "noteAppend"]} listing only independently verified fields present in the suggestion.',
 })
 
 // defineTool rejects schema violations (a missing `required` property included) before execute with
@@ -59,12 +66,19 @@ export function createTools({ store, sessionId, now = Date.now }) {
   return [
     tool(TOOL.read, TEXT.read, {}, guarded(async (args) => {
       if (Object.keys(args).length) throw refusal(CODE.invalidInput, Object.keys(args)[0])
-      return { ok: true, ...viewOf(store.read()) }
+      const { board, auto } = store.readAuto()
+      const autoReviews = auto.reviews.filter(pendingReview).map(publicReview)
+      return { ok: true, ...viewOf(board), ...(autoReviews.length ? { autoReviews } : {}) }
     })),
     tool(TOOL.add, TEXT.add, { tasks: FIELD(TEXT.required + TEXT.tasks), parentId: FIELD(TEXT.parentId) }, changing(addTasks)),
     tool(TOOL.update, TEXT.update, {
       id: FIELD(TEXT.required + TEXT.id), title: FIELD(TEXT.title), note: FIELD(TEXT.note), status: FIELD(TEXT.status), progress: FIELD(TEXT.progress),
     }, changing(updateTask)),
     tool(TOOL.memo, TEXT.memo, { id: FIELD(TEXT.memoId), text: FIELD(TEXT.memoText), delete: FIELD(TEXT.memoDelete) }, changing(changeMemo)),
+    tool(TOOL.resolveReview, TEXT.review, { reviewId: FIELD(TEXT.reviewId), expectedReviewVersion: FIELD(TEXT.reviewVersion),
+      baseRevision: FIELD(TEXT.baseRevision), decision: FIELD(TEXT.decision) }, guarded(async (args) => {
+      const { after, result } = await store.change((board, auto) => resolveReview(board, auto, args, now()))
+      return { ok: true, revision: after.revision, ...result }
+    })),
   ]
 }

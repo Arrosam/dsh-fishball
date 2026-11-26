@@ -10,6 +10,7 @@ import { randomUUID } from 'node:crypto'
 import { CODE, HOST, LOG, NAMESPACE, ROUTE } from './constants.js'
 import { refusalValue, saveBoard, viewOf } from './board.js'
 import { describeUserEdit } from './message.js'
+import { AUTO_PATH } from './auto-constants.js'
 
 const STATUS_OF = Object.freeze({
   [CODE.invalidInput]: ROUTE.status.badRequest,
@@ -52,7 +53,7 @@ async function wakeFishball(ctx, before, after) {
  * @param now - epoch milliseconds.
  * @returns {() => void} withdraws the routes and closes every open stream.
  */
-export function registerRoutes(ctx, store, now = Date.now) {
+export function registerRoutes(ctx, store, now = Date.now, auto) {
   const streams = new Set()
 
   async function board(request) {
@@ -81,9 +82,14 @@ export function registerRoutes(ctx, store, now = Date.now) {
         // The first frame reads the store, which throws once the domain is quarantined or closed.
         const first = () => { try { return store.read() } catch { return undefined } }
         const off = store.onChange(push)
+        const pushAuto = (frame) => {
+          try { controller.enqueue(encoder.encode(`event: ${AUTO_PATH.event}\ndata: ${JSON.stringify(frame)}\n\n`)) } catch { close() }
+        }
+        const offAuto = auto && store.onAutoChange(pushAuto)
         close = () => {
           if (!streams.delete(close)) return
           off()
+          offAuto?.()
           request.signal?.removeEventListener(ROUTE.abort, close)
           try { controller.close() } catch { /* already closed by the reader */ }
         }
@@ -91,11 +97,24 @@ export function registerRoutes(ctx, store, now = Date.now) {
         request.signal?.addEventListener(ROUTE.abort, close)
         const current = first()
         if (current === undefined) close()
-        else push(current)
+        else {
+          push(current)
+          if (auto) pushAuto(store.auditFrame())
+        }
       },
       cancel: () => close(),
     })
     return new Response(body, { status: ROUTE.status.ok, headers: ROUTE.eventStream })
+  }
+
+  const autoRoute = (action) => async (request) => {
+    try {
+      let body
+      if (request.method === ROUTE.post) {
+        try { body = await request.json() } catch { throw Object.assign(new Error(CODE.invalidInput), { code: CODE.invalidInput }) }
+      }
+      return json(ROUTE.status.ok, await action(body))
+    } catch (error) { return refused(error, error?.code === CODE.stale ? { revision: store.read().revision } : {}) }
   }
 
   const disposers = []
@@ -107,6 +126,12 @@ export function registerRoutes(ctx, store, now = Date.now) {
     for (const route of [
       { path: ROUTE.board, methods: [ROUTE.get, ROUTE.post], fetch: board },
       { path: ROUTE.events, methods: [ROUTE.get], fetch: events },
+      ...(auto ? [
+        { path: AUTO_PATH.view, methods: [ROUTE.get], fetch: autoRoute(auto.view) },
+        { path: AUTO_PATH.settings, methods: [ROUTE.post], fetch: autoRoute(auto.settings) },
+        { path: AUTO_PATH.undo, methods: [ROUTE.post], fetch: autoRoute(auto.undo) },
+        { path: AUTO_PATH.archiveNotice, methods: [ROUTE.post], fetch: autoRoute(auto.archiveNotice) },
+      ] : []),
     ]) disposers.push(ctx.connection.fetch.register({ ...route, requestBody: ROUTE.requestBody }))
   } catch (error) {
     // A path another row claimed: withdraw what was registered, so no half-registered pair remains
