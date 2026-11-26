@@ -122,8 +122,8 @@ export async function openRouting(ctx, storageDomain, { mailbox, pairs, tokens, 
   }
   const authorityEpochOf = (principalKey) => {
     if (principalKey === undefined) return undefined
-    const pair = pairs.byPrincipal(principalKey)
-    const entry = pair === undefined ? undefined : tokens.get(pair.entryKey)
+    const pair = pairs.byPrincipal?.(principalKey)
+    const entry = pair === undefined ? undefined : tokens.get?.(pair.entryKey)
     return entry?.enabled === true ? entry.generation : undefined
   }
   managed = createManagedState({ table: tables.managed, logger, leave, authorityEpochOf })

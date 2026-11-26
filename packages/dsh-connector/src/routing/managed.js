@@ -66,7 +66,7 @@ export function createManagedState({ table, logger, leave, authorityEpochOf }) {
   }
 
   async function putManager(sessionId, principalKey, workEpoch) {
-    const authorityEpoch = authorityEpochOf(principalKey)
+    const authorityEpoch = workEpoch !== undefined || workRoots.has(sessionId) ? authorityEpochOf(principalKey) : undefined
     const startsWork = workEpoch !== undefined && workEpoch === authorityEpoch
     // Prepare proof before writing, then publish it together with the manager after the write.
     const assignment = authorityEpoch !== undefined && (startsWork || workRoots.has(sessionId))
