@@ -23,13 +23,13 @@ import { LOG } from './constants.js'
  * @returns `{ok: true, sessionId, managed, running, titleError?, workspaceError?}` or `{ok: false, code}`
  * @throws a domain RefusalError (the port's refusals) or any other failure, as the port throws them
  */
-export async function startManaged({ sessions, managed, logger, manage = managed.manage }, args, principalKey, afterManaged) {
+export async function startManaged({ sessions, managed, logger, manage }, args, principalKey, afterManaged) {
   // V2's rule (bridge.js): a title with no visible character is refused before anything is created.
   if (!hasVisibleCharacter(args.title)) return { ok: false, code: REFUSAL.limitExceeded }
   let managedNow = false
   const onCreated = async (sessionId) => {
     try {
-      managedNow = (await manage(sessionId, principalKey)).ok === true
+      managedNow = (await (manage === undefined ? managed.manage(sessionId, principalKey) : manage(sessionId, principalKey))).ok === true
     } catch (error) {
       // As V2's start: a session whose management could not be stored still starts, unmanaged.
       logger.warn(LOG.format, LOG.manageFailed, diagnosticOf(error))
