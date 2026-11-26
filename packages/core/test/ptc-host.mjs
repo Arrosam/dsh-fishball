@@ -1,4 +1,5 @@
 // Bind source imports to the selected installed DSH SDK without linking or installing dependencies.
+import { existsSync } from 'node:fs'
 import { registerHooks } from 'node:module'
 import { realpath } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
@@ -26,11 +27,20 @@ const HOST = Object.freeze({
   executor: Object.freeze({ native: 'dsh-tool-executor-native', ptc: 'dsh-tool-executor-ptc' }),
 })
 
-export const sdkMissing = !process.env[HOST.sdkEnv] && 'Set FBTEST_DSH_RUNTIME to the installed DSH 0.2.2-rc.3 node_modules directory'
+const modulesOf = (selected) => selected.endsWith('/' + HOST.modules) ? selected : join(selected, HOST.modules)
+const entryOf = (root, name) => join(root, HOST.scope, name, HOST.entry)
+const selectedSdk = process.env[HOST.sdkEnv]
+
+// The 0.2.1 SDK has a PTC runtime but not the executor this in-process fixture mounts.
+// Keep invalid paths loud: only skip an installed SDK that predates the scoped executor.
+export const sdkMissing = !selectedSdk
+  ? 'Set FBTEST_DSH_RUNTIME to an installed DSH 0.2.2 node_modules directory'
+  : existsSync(entryOf(modulesOf(resolve(selectedSdk)), HOST.defaults[0]))
+    && !existsSync(entryOf(modulesOf(resolve(selectedSdk)), HOST.executor.ptc))
+    && 'The installed DSH SDK does not provide the scoped PTC executor used by this fixture'
 
 export async function openSdk(t) {
-  const selected = await realpath(resolve(process.env[HOST.sdkEnv]))
-  const root = selected.endsWith('/' + HOST.modules) ? selected : join(selected, HOST.modules)
+  const root = modulesOf(await realpath(resolve(selectedSdk)))
   const runtimeParent = pathToFileURL(join(root, '..', HOST.manifest)).href
   const hook = registerHooks({
     resolve(specifier, context, nextResolve) {
@@ -46,13 +56,13 @@ export async function openSdk(t) {
     },
   })
   t.after(() => hook.deregister())
-  const host = (name) => import(pathToFileURL(join(root, HOST.scope, name, HOST.entry)).href)
+  const host = (name) => import(pathToFileURL(entryOf(root, name)).href)
   const { Context } = await host('cordis')
   return { host, Context }
 }
 
 /** Real executors, PTC process/runtime, prompt service, agent loop and JSONL sessions. No model or web server. */
-export async function openHost(sdk, home, { executor = 'native', scriptedRuntime } = {}) {
+export async function openHost(sdk, home, { executor = 'native', scriptedRuntime, registerFetch = () => () => {} } = {}) {
   const ctx = new sdk.Context()
   let disposal
   const close = () => disposal ??= ctx.fiber.dispose()
@@ -86,9 +96,9 @@ export async function openHost(sdk, home, { executor = 'native', scriptedRuntime
     await mount('dsh-workspace')
     await mount('dsh-tool-ask-user', {}, true)
     ctx.provide('profileContext', { home })
-    // There are no targets or HTTP requests: these required route/transport ports stay inert.
+    // Tests can drive registered Fetch handlers without binding a web listener.
     ctx.provide('settings', { describe: () => [] })
-    ctx.provide('connection', { fetch: { register: () => () => {} } })
+    ctx.provide('connection', { fetch: { register: registerFetch } })
     ctx.provide('authorization', {})
     ctx.provide('credentials', {})
     return { ctx, close }

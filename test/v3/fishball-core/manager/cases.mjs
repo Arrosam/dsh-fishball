@@ -291,6 +291,7 @@ export function registerManagerCases(sdk) {
   test(name('MGR-SET-EP-02', 'the manager\'s tools are exactly read, read_image, working_directory plus core\'s own'), async () => {
     const f = await read('managerTurn')
     const tools = f.managerTurn[0]?.tools ?? []
+    assert.ok(tools.includes(TOOLS.ask), 'the manager should offer its own nonblocking question tool')
     assert.deepEqual(tools.filter((t) => !isCoreTool(t)).sort(), [...TOOLS.base].sort())
   })
   test(name('MGR-SET-EP-03', 'the persona names session_message and approval_answer and none of the V2 names'), async () => {

@@ -32,6 +32,10 @@ base-only child); §3 (the bearer proxy); §9 (the settings page). Still current
 §0.6 (binding), §0.10 (release), §10 (model sync, started only from the main DSH). The superseded
 text stays as design history.
 
+**Historical for V3:** the child/pile flow below, including `question.ask` and
+`question.answerOwn`, is not used by [Fishball’s own question cards](<../DESIGN.md#fishball-question-cards>).
+V3 files and answers those cards locally without the connector.
+
 ## 0. Connector and instance (revision 2026-11-06)
 
 ### 0.1 The user's decisions

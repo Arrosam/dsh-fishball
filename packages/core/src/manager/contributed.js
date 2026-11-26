@@ -7,3 +7,6 @@
  * it without DSH's host packages.
  */
 export const CONTRIBUTED_TOOLS = Symbol('fishball-core: tools X2 contributions hold in a manager scope')
+
+// Unlike manager.sessionId(), this recognizes the recorded singleton before page/workspace attach.
+export const OWNS_MANAGER_SESSION = Symbol('fishball-core: owns the manager session')

@@ -30,6 +30,8 @@ import { defineDomain, domainTable } from '@deepseek-ai/dsh-storage-domain'
 import { SEAM_PAGE_STREAM, SEAM_TARGETS, UI_SEAM } from 'fishball-shared/ui-seam'
 import { GUARDS } from '../../contracts/constants.js'
 import { createAsks, openAskCards, registerAskRoutes } from '../asks/index.js'
+import { QUESTION_CARD } from '../asks/constants.js'
+import { cardFeed, createQuestionCards, openQuestionCards } from '../asks/questions.js'
 import { LOG as BRIDGE_LOG } from '../bridge/constants.js'
 // The Fishball branch's content of one event, the same for every target's.
 import { presentEvent as presentOf } from '../bridge/index.js'
@@ -40,7 +42,7 @@ import { acceptId, openRecords } from '../identity/index.js'
 import { createWebCallback } from '../link/web-callback.js'
 import { registerMessageTools } from '../manager/message-user.js'
 import { createReminders } from '../manager/reminders.js'
-import { CONTRIBUTED_TOOLS } from '../manager/contributed.js'
+import { CONTRIBUTED_TOOLS, OWNS_MANAGER_SESSION } from '../manager/contributed.js'
 import { createManagerService } from '../manager/service.js'
 import { createManagerSession } from '../manager/session.js'
 import { attachPrivateSkills } from '../manager/skills.js'
@@ -91,10 +93,10 @@ export async function apply(ctx, config) {
   const setting = (key) => valueAt(config, MAIN.setting[key])
 
   // 1. tables, and the generated id (identity.js)
-  let targets
-  const own = ownedHandles(ctx, () => targets?.close())
-  const [{ table: records }, { table: ledger }, { table: cards }, targetTables, generated] = await Promise.all([
-    own(openRecords), own(openLedger), own(openAskCards), own(openTargets), own(openGeneratedId),
+  let targets, questions
+  const own = ownedHandles(ctx, () => Promise.all([targets?.close(), questions?.close()]))
+  const [{ table: records }, { table: ledger }, { table: cards }, { table: questionTable }, targetTables, generated] = await Promise.all([
+    own(openRecords), own(openLedger), own(openAskCards), own(openQuestionCards), own(openTargets), own(openGeneratedId),
   ])
   const clientId = idInForce(() => setting('id'), generated.id, logger)
 
@@ -129,6 +131,12 @@ export async function apply(ctx, config) {
   })
   const asks = createAsks({ targets: ports, table: cards, logger })
   ctx.effect(() => () => asks.close())
+  questions = createQuestionCards({
+    table: questionTable, ownsSession: session.ownsSession,
+    resolveAgent: (id) => session.resolveAgent(id, () => undefined),
+    flush: (log) => ctx.get(QUESTION_CARD.services.sessions).flush(log),
+    watchSession: (fn) => ctx.on(QUESTION_CARD.event.session, fn), logger,
+  })
   const events = createEvents({
     table: ledger,
     link: ports,
@@ -167,6 +175,7 @@ export async function apply(ctx, config) {
   ctx.effect(() => service.manager.registerSetup(MAIN.setupId.reminders, (agentCtx) => { reminders.registerTools(agentCtx.tools) }))
   // message_user: the manager's one way to speak to the user on the Fishball page (manager/message-user.js).
   ctx.effect(() => service.manager.registerSetup(MAIN.setupId.message, (agentCtx) => { registerMessageTools(agentCtx.tools) }))
+  ctx.effect(() => service.manager.registerSetup(MAIN.setupId.questions, (agentCtx, live) => { agentCtx.tools.register(questions.toolFor(live.id)) }))
   ctx.effect(() => attachPrivateSkills(ctx, service.manager))
 
   // 6. routes. Without DSH's web listener there is no web callback; Connect then uses the loopback one.
@@ -174,25 +183,22 @@ export async function apply(ctx, config) {
   const webCallback = webServer === undefined ? undefined : createWebCallback({ webServer })
   if (webCallback !== undefined) ctx.effect(() => () => webCallback.dispose())
   ctx.effect(() => registerTargetRoutes(ctx, targets, { callbackFor: (request) => webCallback?.callbackFor(request) }))
-  ctx.effect(() => registerAskRoutes(ctx, {
-    service: asks.service, managerSessionId: () => session.sessionId(), onManagerChange: (fn) => session.onChange(() => fn()),
-  }))
-  // The ask cards are the page stream's first topic, the same frame as the ask route's; fishball-ui
-  // and the amenities add theirs through `page.register`.
-  ctx.effect(() => page.register(SEAM_PAGE_STREAM.topic.asks, {
-    frame: () => ({ managerSessionId: session.sessionId() ?? null, cards: asks.service.list() }),
-    onChange: (fn) => {
-      const offCards = asks.service.onChange(fn)
-      const offManager = session.onChange(() => fn())
-      return () => { offCards(); offManager() }
-    },
-  }))
+  const deck = cardFeed(asks.service, questions)
+  const frame = () => ({ managerSessionId: session.sessionId() ?? null, cards: deck.list() })
+  const onChange = (fn) => {
+    const offCards = deck.onChange(fn)
+    const offManager = session.onChange(() => fn())
+    return () => { offCards(); offManager() }
+  }
+  ctx.effect(() => registerAskRoutes(ctx, { service: deck, frame, onChange }))
+  ctx.effect(() => page.register(SEAM_PAGE_STREAM.topic.asks, { frame, onChange }))
 
   // The two services (K3 index.d.ts, MULTI-0 apiVersion 2; F-STATUS).
   ctx.provide(MAIN.service, Object.freeze({
     apiVersion: MAIN.apiVersion,
     // Core's own read for its guard row (manager/contributed.js); not part of the K3 contract.
     [CONTRIBUTED_TOOLS]: (agent) => service.contributedTools(agent),
+    [OWNS_MANAGER_SESSION]: session.ownsSession,
     manager: service.manager,
     events: events.service,
     bridge: targets.targetBound.bridge,
@@ -217,6 +223,7 @@ export async function apply(ctx, config) {
     // while its epoch is live, so recovery must not run before its runtime exists.
     void targets.settled().then(() => events.recover()).catch(warn(MAIN.text.recover)).finally(() => recovery.resolve())
     void service.resumePending().catch(warn(MAIN.text.resume))
+    void questions.recover((id) => ctx.get(QUESTION_CARD.services.agents)?.get(id)).catch(warn(MAIN.text.questionRecovery))
   }
   // Every DSH launcher provides appReady (both SDKs); a bare Cordis host has no ready moment, so it
   // recovers at once.

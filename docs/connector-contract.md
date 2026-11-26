@@ -410,6 +410,11 @@ non-empty (`reason-required`).
 
 ### 4.2 Approvals and questions (instance → connector)
 
+This table records the legacy bridge. In V3, `question_answer` still handles forwarded
+managed-session questions and plan reviews. The dotted own-card operations are historical:
+[Fishball’s question cards](<../DESIGN.md#fishball-question-cards>) are local to Fishball and add
+no connector operation.
+
 | Op | Scoped | Request | Response | Refusals |
 | --- | --- | --- | --- | --- |
 | `approval.list` | yes | `{sessionId}` | `{approvals:[descriptor]}` (§5.1), unique `approvalId` | managed session |

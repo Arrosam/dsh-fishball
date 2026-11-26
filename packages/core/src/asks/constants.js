@@ -26,6 +26,25 @@ export const CARD_STATE = Object.freeze({ open: 'open', answered: 'answered', cl
  */
 export const ASK_TOOL = Object.freeze({ fileCard: 'ask_user' })
 
+export const QUESTION_CARD = Object.freeze({
+  kind: 'question',
+  idPrefix: 'question-',
+  nativeTool: 'ask_user_question',
+  domain: 'fishball_core_questions',
+  table: 'questions',
+  version: 1,
+  replySource: Object.freeze({ kind: 'user' }),
+  event: Object.freeze({ session: 'session/event', admitted: 'user/message' }),
+  services: Object.freeze({ sessions: 'sessions', agents: 'agents' }),
+  running: 'running',
+  description: 'Show a question card in Fishball and return its cardId immediately. Do not wait or poll; the user’s reply arrives later as a normal user message carrying that cardId and the question ids.',
+  answerPrefix: 'Fishball question card answer: ',
+  answerUnavailable: 'Fishball question answer could not be durably queued',
+  invalidQuestions: 'Provide a nonempty list of questions with distinct IDs and valid options.',
+  fileUnavailable: 'Fishball question card could not be saved',
+  malformed: 'fishball-core: malformed local question card',
+})
+
 export const ASKS = Object.freeze({
   /** One DSH storage-domain table in the Fishball DSH: one record per ask `approvalId`. */
   domain: 'fishball_core_asks',
@@ -37,7 +56,7 @@ export const ASKS = Object.freeze({
    * after C-WIRE-2 removed `ask_agent` ("不给ask_agent工具"), which left no producer of `ask`: a
    * permission request Fishball cannot decide may become a card on the Fishball page (e2e R2-06),
    * answered Allow once / Reject as Fishball's `approval_answer`. `ask` stays: K1 keeps the type
-   * frozen. Questions and plan reviews never become cards (R-FB-11: the user answers them in the session).
+   * frozen. Managed-session questions and plan reviews are not cards in this layer yet.
    */
   eventTypes: Object.freeze([MCP.eventTypes.permission, MCP.eventTypes.ask]),
   /** The filing tool's one argument. */

@@ -109,9 +109,9 @@
 
 - insert:
     # Core's own agent preset for the manager: `read` and `read_image` (tool-fs with no write or
-    # edit); `working_directory` is DSH's global tool (dsh-base); `ask_user_question` is DSH's
-    # ask-user plugin, so Fishball asks with the same inline question card as any DSH session
-    # (the user, 2026-11-18). No persona row: core composes the manager's persona in code on
+    # edit); `working_directory` is DSH's global tool (dsh-base). Keep DSH's native ask tool in
+    # the preset for other sessions. Core masks it on the singleton manager's own tool scope.
+    # No persona row: core composes the manager's persona in code on
     # create and on every resume (src/manager/persona.js).
     - id: preset-fishball
       name: '@deepseek-ai/dsh-agent-preset'

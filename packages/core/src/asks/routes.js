@@ -14,7 +14,8 @@
  * - POST `ASK_ROUTE.answer` `{handle, choice, text?}` (MULTI-0: the card's opaque target-qualified
  *   `handle`, `SEAM_TARGETS.ask.handleField`, never a raw `approvalId`): `service.answer`; 200
  *   `{ok: true}`, 404 for `unknown-target`, 409 for another refusal, 400 for an unreadable body or
- *   `invalid-arguments`.
+ *   `invalid-arguments`. The same POST accepts `{cardId, answers}` for local questions without
+ *   calling a target. Both streams include local question cards alongside permission cards.
  */
 import { SEAM_TARGETS } from 'fishball-shared/ui-seam'
 import { MCP } from '../../contracts/constants.js'
@@ -37,12 +38,21 @@ const statusOf = (result) => {
  * @param {(fn: () => void) => () => void} [options.onManagerChange] calls `fn` after the manager
  *   session's id changes and returns its disposer (F-WIRE binds it to the chat row's manager); without
  *   it a frame follows card changes only
+ * @param {() => object} [options.frame] shared snapshot when served alongside the page stream
+ * @param {(fn: () => void) => () => void} [options.onChange] shared snapshot subscription
  * @returns {() => Promise<void>} withdraws the routes (DSH's disposers are async) and closes every
  *   open stream
  */
-export function registerAskRoutes(ctx, { service, managerSessionId, onManagerChange }) {
+export function registerAskRoutes(ctx, { service, managerSessionId, onManagerChange,
+  frame = () => ({ managerSessionId: managerSessionId() ?? null, cards: service.list() }),
+  onChange = (push) => {
+    const offCards = service.onChange(push)
+    const offManager = onManagerChange?.(push)
+    return () => { offCards(); offManager?.() }
+  },
+}) {
   const streams = new Set()
-  const snapshot = () => JSON.stringify({ managerSessionId: managerSessionId() ?? null, cards: service.list() })
+  const snapshot = () => JSON.stringify(frame())
 
   async function events(request) {
     const encoder = new TextEncoder()
@@ -51,12 +61,10 @@ export function registerAskRoutes(ctx, { service, managerSessionId, onManagerCha
       start(controller) {
         // A stream the browser already closed throws on enqueue; close it so it never breaks a listener.
         const push = () => { try { controller.enqueue(encoder.encode(ASK_HTTP.frame(snapshot()))) } catch { close() } }
-        const offCards = service.onChange(push)
-        const offManager = onManagerChange?.(push)
+        const unsubscribe = onChange(push)
         close = () => {
           if (!streams.delete(close)) return
-          offCards()
-          offManager?.()
+          unsubscribe()
           request.signal?.removeEventListener('abort', close)
           try { controller.close() } catch { /* already closed by the reader */ }
         }
@@ -73,8 +81,10 @@ export function registerAskRoutes(ctx, { service, managerSessionId, onManagerCha
     let body
     try { body = await request.json() } catch { return json(ASK_HTTP.badRequest, { ok: false, code: REFUSAL.invalidArguments }) }
     if (body === null || typeof body !== 'object') return json(ASK_HTTP.badRequest, { ok: false, code: REFUSAL.invalidArguments })
-    const { [SEAM_TARGETS.ask.handleField]: handle, choice, text } = body
-    const result = await service.answer(handle, text === undefined ? { choice } : { choice, text })
+    const { [SEAM_TARGETS.ask.handleField]: handle, choice, text, cardId, answers } = body
+    const result = Object.hasOwn(body, 'cardId') && service.answerQuestion !== undefined
+      ? await service.answerQuestion(cardId, answers)
+      : await service.answer(handle, text === undefined ? { choice } : { choice, text })
     return json(statusOf(result), result)
   }
 

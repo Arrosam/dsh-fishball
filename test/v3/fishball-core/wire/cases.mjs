@@ -87,7 +87,6 @@ export function registerWireCases(sdk) {
     test(`${prefix} manager tool scope and guards hold`, async () => {
       const h = await get(); await h.call('ensure'); const f = await h.call('tools')
       for (const name of C.coreTools) { assert.ok(f.local.includes(name), name); assert.equal(f.global.includes(name), false, name) }
-      assert.equal(f.local.includes(C.bareAsk), false, 'the bare ask_user is offered (MULTI-0: per target only)')
       assert.ok(f.local.some((n) => C.privateSkill.test(n)))
       assert.equal(f.global.some((n) => C.privateSkill.test(n)), false)
       const optional = members.includes(C.board) ? (n) => n.startsWith(C.boardToolPrefix) : () => false

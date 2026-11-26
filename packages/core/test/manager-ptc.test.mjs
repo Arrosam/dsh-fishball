@@ -21,7 +21,8 @@ const FIXTURE = Object.freeze({
   escalation: Object.freeze({ sandbox_permissions: 'workspace-write', justification: 'Exercise the fixture approval boundary' }),
   allowed: 'allowed-once',
   message: 'message_user',
-  question: 'ask_user_question',
+  question: 'ask_user',
+  legacyQuestion: 'ask_user_question',
   program: 'run_code',
   programDescription: 'Read a Fishball fixture value',
   guide: 'Keep the fixture taskboard current after each meaningful change.',
@@ -115,9 +116,11 @@ function expectPtc(prompt) {
   return prose
 }
 
-function expectNative({ tools }) {
+function expectNative({ tools }, question = FIXTURE.question) {
   assert.ok(!tools.includes(FIXTURE.program), 'The native session should not be offered run_code')
-  assert.ok(tools.includes(FIXTURE.question), 'The native question tool should remain available')
+  assert.ok(tools.includes(question), 'The session should be offered ' + question)
+  const absent = question === FIXTURE.question ? FIXTURE.legacyQuestion : FIXTURE.question
+  assert.ok(!tools.includes(absent), 'The session should not be offered ' + absent)
 }
 
 const probeArgs = (sample) => ({ [FIXTURE.parameter]: sample })
@@ -150,7 +153,7 @@ test('new Fishball manager uses real scoped PTC without changing a native sessio
     world.registerProbe(ctx)
     const { agent: other } = await ctx.agents.create({ meta: { cwd: world.home } })
     const before = await world.inspect(other)
-    expectNative(before)
+    expectNative(before, FIXTURE.legacyQuestion)
     const manager = await managerAgent(host)
     const prompt = await world.inspect(manager)
     const prose = expectPtc(prompt)
@@ -161,13 +164,8 @@ test('new Fishball manager uses real scoped PTC without changing a native sessio
     assert.equal(direct.error, false, direct.text)
     assert.equal(direct.text, markerOf(FIXTURE.samples[0]))
     assert.match(prose, /(?:check|inspect|review|verify).*results?.*(?:dependent|depend|next)/i)
-    const questionGuidance = prose.split('\n').find((line) => line.includes(FIXTURE.question) && /(?:deadline|direct|own program)/i.test(line))
-    assert.ok(questionGuidance, 'Fishball must tell the model how to ask blocking questions')
-    if (prompt.tools.includes(FIXTURE.question)) assert.match(questionGuidance, /direct|outside/i)
-    else {
-      assert.match(questionGuidance, /(?:own|separate) program/i)
-      assert.match(questionGuidance, /timeout|deadline/i)
-    }
+    assert.ok(!prose.includes(FIXTURE.legacyQuestion), 'Fishball should not teach the old blocking tool')
+    assert.ok(prose.includes(FIXTURE.question), 'Fishball should tell the model how to ask the user')
     assert.match(prose, /message_user[^\n]*(?:every reply|speak to the user)/i)
   })
 }))
@@ -250,7 +248,7 @@ test('the recorded Fishball session gets PTC on core resume, DSH resume and alre
     expectPtc(await world.inspect(agent))
   }, { beforeMount: async (ctx) => {
     const { agent } = await ctx.agents.resume({ resumeSessionId: id })
-    expectNative(await world.inspect(agent))
+    expectNative(await world.inspect(agent), FIXTURE.legacyQuestion)
     return agent
   } })
 }))

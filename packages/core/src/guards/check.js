@@ -8,7 +8,8 @@ import { scopeParentOf } from '@deepseek-ai/dsh-scope'
 import { UI_GUARDS } from 'fishball-shared/ui-seam'
 import { GUARDS } from '../../contracts/constants.js'
 import { bundlesOf, coreLast } from './reorder.js'
-import { CONTRIBUTED_TOOLS } from '../manager/contributed.js'
+import { QUESTION_CARD } from '../asks/constants.js'
+import { CONTRIBUTED_TOOLS, OWNS_MANAGER_SESSION } from '../manager/contributed.js'
 
 const { code, services } = GUARDS
 
@@ -93,12 +94,11 @@ const toolNames = (tools, scope) => new Set(tools.schemas(scope).map((schema) =>
  * round 2, which resumed a controller-made `fishball` session). `composedPreset` is public on both
  * SDKs; rc.5 has no `presetForSession`, so the live composition is the only per-session preset read.
  */
-function managerAgents(ctx, managerPreset) {
+function managerAgents(ctx, managerPreset, ownsSession) {
   const agents = ctx.get(services.agents)
   if (typeof agents?.list !== 'function') return []
   const presets = ctx.get(services.agentPresets)
-  const own = ctx.get(services.instance)?.manager?.sessionId?.()
-  return agents.list().filter((agent) => agent.id === own || presets?.composedPreset?.(agent.ctx) === managerPreset)
+  return agents.list().filter((agent) => ownsSession(agent.id) || presets?.composedPreset?.(agent.ctx) === managerPreset)
 }
 
 /**
@@ -120,13 +120,13 @@ function isCoreTool(name, core, contributed, inherited) {
 /** No live manager, or no tools service: nothing to check, nothing extra and nothing missing. */
 const NO_MANAGER_TOOLS = Object.freeze({ overridden: Object.freeze([]), extra: Object.freeze([]), missing: Object.freeze([]) })
 
-/** The names among `names` that `keep` says to report, sorted and unique. */
-const namesWhere = (names, keep) => Object.freeze([...new Set(names)].filter(keep).sort())
+/** The names to report, sorted and unique. */
+const uniqueNames = (names) => Object.freeze([...new Set(names)].sort())
 
 /**
  * `manager-tools` when a live manager session's model tools, core's own left out, are not exactly
- * `GUARDS.managerTools` (R-FB-13: checked by its tools, because 0.2.1-rc.5 cannot report a
- * session's preset). Any other tool counts, wherever it is registered: DSH also registers
+ * the singleton's defaults (`GUARDS.managerTools`). Other agents using the same preset still
+ * have the native ask tool. Additional tools count wherever registered: DSH also registers
  * session-creating tools in an agent's own scope (rc.5 `dsh-tool-subagent` standing mode). No live
  * manager: nothing to check.
  * `extra` is the names any live manager has beyond those defaults, for the status's informational
@@ -135,20 +135,24 @@ const namesWhere = (names, keep) => Object.freeze([...new Set(names)].filter(kee
  */
 async function managerToolsState(ctx, managerPreset) {
   const tools = ctx.get(services.tools)
-  const agents = managerAgents(ctx, managerPreset)
+  const instance = ctx.get(services.instance)
+  const ownsSession = instance?.[OWNS_MANAGER_SESSION] ?? ((id) => id === instance?.manager?.sessionId?.())
+  const agents = managerAgents(ctx, managerPreset, ownsSession)
   if (agents.length === 0 || typeof tools?.schemas !== 'function') return NO_MANAGER_TOOLS
   const core = await loadCoreToolNames()
-  const instance = ctx.get(services.instance)
   const contributedOf = instance?.[CONTRIBUTED_TOOLS]
   const modelTools = (agent) => {
     const inherited = toolNames(tools, scopeParentOf(agent))
     const contributed = new Set(typeof contributedOf === 'function' ? contributedOf.call(instance, agent) : [])
     return [...toolNames(tools, agent)].filter((name) => !isCoreTool(name, core, contributed, inherited))
   }
-  const models = agents.map(modelTools)
-  const extra = namesWhere(models.flat(), (name) => !GUARDS.managerTools.includes(name))
-  const missing = namesWhere(GUARDS.managerTools, (name) => models.some((model) => !model.includes(name)))
-  const exact = models.every((model) => sameSet(model, GUARDS.managerTools))
+  const models = agents.map((agent) => ({
+    actual: modelTools(agent),
+    expected: ownsSession(agent.id) ? GUARDS.managerTools : [...GUARDS.managerTools, QUESTION_CARD.nativeTool],
+  }))
+  const extra = uniqueNames(models.flatMap(({ actual, expected }) => actual.filter((name) => !expected.includes(name))))
+  const missing = uniqueNames(models.flatMap(({ actual, expected }) => expected.filter((name) => !actual.includes(name))))
+  const exact = models.every(({ actual, expected }) => sameSet(actual, expected))
   return Object.freeze({ overridden: Object.freeze(exact ? [] : [code.managerTools]), extra, missing })
 }
 

@@ -908,7 +908,7 @@ export function registerAskCases(sdk) {
     assert.deepEqual(Object.values(exported(mod, 'states')).sort(), Object.values(K3.state).sort())
   })
   // MULTI-0 (README "Tool names"): each target's local ask_user is registered as
-  // mcp__<readable>__ask_user_<digest12>, origin `local`; the bare `ask_user` is no longer model-facing.
+  // mcp__<readable>__ask_user_<digest12>, origin `local`; the bare manager question tool is separate.
   row(sdk, ID.ep01, 'definition (tool)', 'toolFor(source)\'s tool is named mcp__<readable>__ask_user_<digest> (origin local) and has description, parameters, output and execute', async (t) => {
     const w = await worldFor(t, sdk)
     assert.equal(w.tool.name, askToolNameOf(SOURCE.a, ASK_TOOL.name))

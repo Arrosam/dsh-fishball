@@ -20,6 +20,7 @@ import { mkdir, readFile, realpath, rename, writeFile } from 'node:fs/promises'
 import { installModelSelection } from '@deepseek-ai/dsh-agent'
 import { setApprovalPolicy } from '@deepseek-ai/dsh-user-approval'
 import { setSandboxMode } from '@deepseek-ai/dsh-sandbox-policy'
+import { QUESTION_CARD } from '../asks/constants.js'
 import { applyPersona } from './persona.js'
 import { installManagerPtc, MANAGER_PTC } from './ptc.js'
 import { emitIsolated, subscribe } from '../link/listeners.js'
@@ -161,6 +162,10 @@ function composePresentation(agentCtx, live, ptc) {
   let presentation = agentPresentations.get(live)
   if (presentation === undefined) {
     presentation = (async () => {
+      // The preset stays unchanged for other sessions. Both executors read this inherited-tool mask.
+      const tools = agentCtx.get(MANAGER_PTC.tools)
+      const nativeAsk = QUESTION_CARD.nativeTool
+      if (tools?.get?.(nativeAsk, live) !== undefined) tools.restrict({ deny: [nativeAsk] })
       const programmatic = await installManagerPtc(agentCtx, ptc())
       applyPersona(agentCtx.systemPrompt, programmatic)
     })()
@@ -722,6 +727,7 @@ export function createManagerSession(ctx, options) {
     activate,
     activateAttached,
     sessionId: managerId,
+    ownsSession: (id) => !closed && id !== undefined && id === sessionId,
     /** Calls `fn(sessionId)` after each change of sessionId(). Returns its disposer. A throwing listener affects no other. */
     onChange: (fn) => subscribe(listeners, fn),
     resolveAgent,

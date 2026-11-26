@@ -272,7 +272,7 @@ Each tool wraps today's connector domain function (`packages/connector/src/*`) a
 | `session_start`, `session_message`, `session_redirect`, `session_stop`, `session_release` | §4.1 | `unconfirmed` is never retried. `session_start` makes the caller the managing principal (R-ROUTE-01), which also makes it the session's only watcher (R-WATCH-01). No `notifyWhenFinished` argument; no watch tools exist (R-WATCH-03) |
 | `session_read` | `session.read` | bounded; `truncated` |
 | `approvals_list`, `approval_answer` | §4.2 | timer-free descriptor (no `expiresAt`); answer authority is checked against the live `offerId` and the pair (§3.4) |
-| `question_answer` | §4.2 | forwarded managed-session questions and plan reviews only; own-card tools removed by CONN-TOOLS (2026-11-18, DESIGN §26) |
+| `question_answer` | §4.2 | forwarded managed-session questions and plan reviews only; the old connector own-card tools were removed by CONN-TOOLS (DESIGN §26). [Fishball’s own `ask_user`](<../../DESIGN.md#fishball-question-cards>) is local, not an MCP tool. |
 | `prompts_list`, `prompt_answer`, `grants_list`, `grant_revoke` | §4.3 | |
 | `attachment_put`, `attachment_read` | §4.4 | chunked; `hostRef` single-use, 10 min |
 | `inbox_poll`, `inbox_ack` | new (replaces `inbox.push`) | §3.4 |

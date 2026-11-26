@@ -43,6 +43,8 @@ const UI = UI_COMPONENT
 const CORE_PATCH = CORE_PACKAGE.patchFile
 const INSTANCE = FIXTURE.instance
 const ALL_GUARD_ROWS = Object.freeze([...GUARDS.rows, ...GUARDS.shippedPresets])
+// These sessions are created by the DSH controller, not by Fishball, even on the same preset.
+const CONTROLLER_TOOLS = Object.freeze(['read', 'read_image', 'working_directory', 'ask_user_question'].sort())
 /** R-FB-12 names the instance in the report until the guard holds; K3 also offers `bundle-order`. Either names it. */
 const ORDER_NAMES = Object.freeze([REPORT.row(GUARDS.instanceRow), REPORT.bundleOrder])
 const namesOrder = (report) => report?.status === REPORT.overridden && report.overridden.some((g) => ORDER_NAMES.includes(g))
@@ -196,17 +198,17 @@ export function registerGuardCases(sdk) {
     assert.deepEqual([...f.presets1.ids].sort(), [...GUARDS.offeredPresets].sort())
     assert.equal(f.presets1.defaultId, GUARDS.policy.defaultAgentPreset)
   })
-  caseTest(sdk, 'PLAT-UC-04', 'main', 'a new session runs the default Fishball preset with exactly the manager tools, read-only', async () => {
+  caseTest(sdk, 'PLAT-UC-04', 'main', 'a new controller session on the Fishball preset retains the native question tool, read-only', async () => {
     const f = await native()
     assert.ok(f.manager.answered, 'the model was not called for the new session')
-    assert.deepEqual([...f.manager.tools].sort(), [...GUARDS.managerTools].sort())
+    assert.deepEqual([...f.manager.tools].sort(), CONTROLLER_TOOLS)
     assert.equal(f.manager.sandbox, GUARDS.policy.sandbox)
     assert.equal(f.manager.permission, GUARDS.policy.defaultPermissionPreset)
   })
-  caseTest(sdk, 'PLAT-UC-04', 'main', 'the manager session resumes in a new process with the same tools, read-only (R-FB-13); no manager-tools report', async () => {
+  caseTest(sdk, 'PLAT-UC-04', 'main', 'the controller session resumes in a new process with the same native tools, read-only; no manager-tools report', async () => {
     const f = await native()
     assert.ok(f.resumed.resumed, 'not resumed: ' + show(f.resumed))
-    assert.deepEqual([...f.resumed.tools].sort(), [...GUARDS.managerTools].sort())
+    assert.deepEqual([...f.resumed.tools].sort(), CONTROLLER_TOOLS)
     assert.equal(f.resumed.sandbox, GUARDS.policy.sandbox)
     assert.equal(f.report2?.overridden?.includes(REPORT.managerTools), false, show(f.report2))
   })

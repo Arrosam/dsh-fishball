@@ -187,9 +187,11 @@ The fixes for the fishball-ui review (`.runtime/reports/review-x-fishball-ui.md`
 
 ## 26. V3 CONN-TOOLS and ASK-NATIVE (2026-11-18)
 
-The user removes `question_ask` and `question_answer_own`, including their exclusive own-card schemas and behaviour. The historical dotted `question.ask` / `question.answerOwn` architecture is superseded, not a compatibility requirement; the historical documents remain unchanged.
+The user removes `question_ask` and `question_answer_own`, including their exclusive own-card schemas and behaviour. The historical dotted `question.ask` / `question.answerOwn` architecture is superseded, not a compatibility requirement; the historical documents are retained for reference.
 
-`question_answer` still answers forwarded managed-session DSH questions and plan reviews. Shared question/answer validators, generic settlement `answers`, and `QUESTION_ANSWER` / `CARD_CLOSED` semantics for forwarded questions remain. Fishball automatically files permission cards on opted-in connectors’ handoff notices. On manager turn end, core escalates the remaining opted-in permission offers admitted to that turn; the connector validates the offer and remains the authority on its outcome. Fishball’s local `ask_user` remains a fallback for older and opted-out targets. For its own clarifications, Fishball's manager uses the native DSH `ask_user_question` tool from its guarded preset; this does not add a connector MCP tool or change where managed-session questions are answered.
+`question_answer` still answers forwarded managed-session DSH questions and plan reviews. Shared question/answer validators, generic settlement `answers`, and `QUESTION_ANSWER` / `CARD_CLOSED` semantics for forwarded questions remain. Fishball automatically files permission cards on opted-in connectors’ handoff notices. On manager turn end, core escalates the remaining opted-in permission offers admitted to that turn; the connector validates the offer and remains the authority on its outcome. Each target’s namespaced `ask_user` remains a permission fallback for older and opted-out targets.
+
+**Historical ASK-NATIVE decision:** Fishball briefly used the native DSH `ask_user_question` tool for its own clarifications. That approach is superseded by [Fishball’s own question cards](#fishball-question-cards).
 
 ## 27. Hosted Frame Readiness v1
 
@@ -349,3 +351,13 @@ execution at the next process start; placement does not own that setting. On the
 On resume DSH restores the same journal and compaction surface, and assembles the current executor’s
 tool list for new work. Fishball does not rewrite tool-call history, force compaction, or fork the
 session as part of this change.
+
+## Fishball question cards
+
+| Point | Decision |
+|---|---|
+| Scope | Only the recorded Fishball singleton installs a `tools.restrict` deny for inherited `ask_user_question`. The tool is absent from both its native tool list and its PTC SDK. Other sessions, including ones using the `fishball` preset, keep the native tool; the preset is not the gate. |
+| File a question | Fishball calls unprefixed `ask_user({questions: [{id, question, header?, options?: [{label, description?}], multi_select?}]})`. Core persists one local card for the batch and returns `{cardId}` immediately. Neither native nor programmatic calls wait for a reply. This is separate from each target’s namespaced `ask_user({offer_id})` permission fallback. |
+| Show the card | Only the Fishball owner can see and answer the card. It uses the existing ask-card layer and `asks` topic on the Fishball page stream (§34), in the same accordion as permission cards. The card shows the batch count and summary; expanding it reveals a separate fieldset for each question. |
+| Deliver the answer | Submission queues an ordinary user-role follow-up to the singleton containing `cardId` and an `answers` list (`{id, selected, custom?}`) in the original question order. An idle Fishball wakes; a busy Fishball finishes its current turn before handling the answer. The original tool result remains `{cardId}`. Core keeps a stable reply identity until DSH records the user message, and recovers replies that were queued but not admitted before restart. DSH does not distinguish teardown from removing an item from its native queue; removing a queued card reply does not revoke the stored card answer. |
+| Boundary | The cards and answers are local to Fishball; there is no new connector tool or protocol change. Forwarded managed-session questions and plan reviews still use their own session cards and the existing first-answer-wins broker (§21). |

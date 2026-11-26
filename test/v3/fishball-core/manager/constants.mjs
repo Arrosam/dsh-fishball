@@ -73,9 +73,7 @@ export const HTTP = Object.freeze({ get: 'GET', post: 'POST', ok: 200, json: 'ap
 
 /** The manager's model-visible tools (R-FB-02 base set; interface "Manager scope tools"). */
 export const TOOLS = Object.freeze({
-  // `ask_user_question` is DSH's own ask tool in core's preset (the user, 2026-11-18:
-  // "用DSH自带的提问工具").
-  base: Object.freeze(['read', 'read_image', 'working_directory', 'ask_user_question']),
+  base: Object.freeze(['read', 'read_image', 'working_directory']),
   reminders: Object.freeze(['schedule_create', 'schedule_list', 'schedule_update', 'schedule_delete']),
   ask: 'ask_user',
   privateSkill: /^private_skill_/,

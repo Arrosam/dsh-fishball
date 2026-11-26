@@ -48,7 +48,7 @@ export const MAIN = Object.freeze({
   /** DSH events: a volatile config change of a row (cordis-plugin-loader) and a settings document change (dsh-settings). */
   event: Object.freeze({ volatileUpdate: 'loader/volatile-update', settingsUpdated: 'settings/document-updated' }),
   /** The plugin id core's own manager-scope contributions register under (X2). */
-  setupId: Object.freeze({ reminders: 'fishball-core-reminders', bridge: 'fishball-core-bridge', message: 'fishball-core-message-user' }),
+  setupId: Object.freeze({ reminders: 'fishball-core-reminders', bridge: 'fishball-core-bridge', message: 'fishball-core-message-user', questions: 'fishball-core-questions' }),
   /** The image input modality of a model (dsh-llm `inputModalities`, 0.2.2; absent = unknown, allowed, as the V2 image gate judged it). */
   imageModality: 'image',
   logger: 'fishball-core',
@@ -56,6 +56,7 @@ export const MAIN = Object.freeze({
     failed: '%s failed (%s)',
     recover: 'recovering the acceptance ledger',
     resume: 'resuming pending notices',
+    questionRecovery: 'recovering pending question replies',
     model: 'applying Fishball\'s model',
     id: 'applying Fishball\'s id setting',
   }),
