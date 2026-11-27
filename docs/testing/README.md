@@ -56,7 +56,14 @@ case reads or writes your real DSH or npm state.
 ## The behaviour inventory
 
 [`baseline-inventory.json`](baseline-inventory.json) records every behaviour the suites covered
-before this layout existed: package, case-id family, case name (without its SDK tag), statuses and
-SDKs. `node scripts/inventory-check.mjs <package> <names.jsonl> [--map map.json]` checks a run
-against it. A baseline behaviour that is neither run nor mapped (renamed or withdrawn, with a
-reason) fails the check.
+before this layout existed, including the staging cases brought in during the merge: package,
+case-id family, case name (without its SDK tag), statuses and SDKs.
+`node scripts/inventory-check.mjs <package>[,<package>...] <names.jsonl>[,<names.jsonl>...]` checks
+a run against it. The check automatically uses [the staging case map](staging-case-map.json)
+for changed case titles and accepts an optional `--map <file>` for additional mappings.
+A baseline behaviour that is neither run nor mapped (renamed or withdrawn, with a reason)
+fails the check.
+
+Use inventory package names (for example `dsh-connector,dsh-connector-ui`). Pass both the
+Watchdog package and connector–Watchdog integration names files when checking
+`dsh-connector-watchdog`, since its live cases moved to the integration package.

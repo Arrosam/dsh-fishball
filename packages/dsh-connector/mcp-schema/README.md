@@ -60,6 +60,18 @@ tool (R-EXT-12).
 - **Payloads are V2's** (contract 1.2 §4; bounds `PAYLOAD_LIMITS`), timer-free, with these V3 changes: no
   `notifyWhenFinished` / `watchId` / `watchError`; `question_answer` names the `offerId` it answers,
   like `approval_answer` (S3: authority is the live offer id and the pair, design §3.4).
+- **Incomplete permission arguments.** With `requests.autoRejectIncompleteArguments` enabled
+  (the default), a new managed request with `truncated` or `unavailable` arguments that is not
+  already covered by a standing grant is rejected before an offer is created. No mailbox event is
+  emitted for the rejection itself. Turning it off restores manual review, where `allow` and
+  `grant` still refuse such arguments with `arguments-incomplete`.
+- **Automatic permission handoff.** A permission offer may carry `autoEscalatePermissions: true`
+  when the target enables automatic cards. If a manager completes its deciding turn without a
+  final answer, Fishball can escalate using the same offer id. On successful escalation the
+  connector emits a `notice` with code `permission-escalated` and the current offer id as its
+  correlation id. This does not settle the request. Fishball files the existing permission card
+  and sends its action notice; do not call `ask_user` or send a duplicate notice. Question and
+  plan-review handoff is unchanged.
 - **An `ask` event** (`ask_agent`) is answered with `approval_answer` on its `offer.offerId`, as
   V2's asked request was. *Withdrawn by C-WIRE-2:* there is no `ask_agent` (the user, 2026-11-17:
   "不给ask_agent工具"), so nothing produces an `ask`; the type and the `ask` decision stay frozen
@@ -556,9 +568,10 @@ connector sends only what no tool result already said. Fishball core batches wha
 | `settlement` `by: principal` | after the managing agent's own `approval_answer` / `question_answer` | **not produced** | the tool's result (`accepted`, `grantId`) is that outcome; `by: user` and `by: delegate` settlements are unchanged |
 | `turn-finished` | after every `turn/end`, `{sessionId, running, queued}` | once per standstill, `{sessionId, outcome, finalMessage?, stop?}` | it is the end signal and the report in one, so no `session_read` follows it; `running`/`queued` are always false at a standstill |
 
-- **Standstill:** the root session's agent, every subagent of its tree and every background job
-  (`ctx.jobs`, `running` / `stopping`) of the tree are idle, with nothing queued. A turn that ends
-  while anything still moves reports nothing; the next quiet edge checks again.
+- **Standstill:** the root session's agent and every subagent of its tree are idle, with no queued
+  input or live subagent run. A turn that ends before then reports nothing; the next quiet edge
+  checks again. Running or stopping background jobs do not delay this report (2026-11-27): a turn
+  can finish with a deliverable that depends on a job staying live, such as a preview server.
 - **`outcome: completed`** (last root turn `completed` or `max-tokens`): `finalMessage` is the root's
   last assistant text, at most `TURN_FINISHED.finalMessageBytes` (4096) UTF-8 bytes including the
   `TURN_FINISHED.truncationMarker` when cut (`truncated: true`).

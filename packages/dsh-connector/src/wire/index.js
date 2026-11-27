@@ -229,9 +229,12 @@ export async function openV3(ctx, { config, storageDomain, limits, volatileEvent
 
     // Step 4: HTTP.
     const contributions = createContributions({ mailbox, router: routing.router, sessionExists: sessionExistsIn(ctx), onToolsChanged: () => endpoint?.toolsChanged(), logger })
-    const domain = await createSessionDomain(ctx, { storageDomain, readLimits: limits, routing, stoppedByManager: sessions.stoppedByManager, logger })
+    const domain = await createSessionDomain(ctx, { storageDomain, readLimits: limits, readSettings: settings.read, routing, stoppedByManager: sessions.stoppedByManager, logger })
     closers.push(() => domain.close())
-    const populate = createCoreTools({ pairs, mailbox, managed: routing.managed, domain, contributions, now: Date.now, logger })
+    const populate = createCoreTools({
+      pairs, mailbox, managed: routing.managed, manageWork: routing.manageWork, checkCurrentTurn: routing.checkCurrentTurn,
+      domain, contributions, now: Date.now, logger,
+    })
     endpoint = createMcpEndpoint({
       gate, verifier, failures, pairs, secure: facts.secure,
       readEvents: (principalKey) => readEventsResource(mailbox, principalKey),

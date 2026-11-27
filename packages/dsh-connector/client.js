@@ -89,7 +89,16 @@ window.__ModuleLoader__.load({
      * The other V3 settings, by their path in the row's config (src/settings/constants.js SETTING;
      * a browser chunk cannot import it, so the paths are written here once more: change both together).
      */
-    const SETTING_PATH = Object.freeze({ approvalPort: Object.freeze(['approval', 'port']), dshName: Object.freeze(['approval', 'dshName']) })
+    const SETTING_PATH = Object.freeze({
+      approvalPort: Object.freeze(['approval', 'port']),
+      dshName: Object.freeze(['approval', 'dshName']),
+      autoEscalatePermissions: Object.freeze(['requests', 'autoEscalatePermissions']),
+      autoRejectIncompleteArguments: Object.freeze(['requests', 'autoRejectIncompleteArguments']),
+    })
+    const REQUEST_SWITCHES = Object.freeze([
+      Object.freeze({ key: 'autoEscalatePermissions', hint: 'autoEscalatePermissionsHint', defaultValue: true }),
+      Object.freeze({ key: 'autoRejectIncompleteArguments', hint: 'autoRejectIncompleteArgumentsHint', defaultValue: true }),
+    ])
     /** The `approval.port` bounds (src/settings/constants.js PORT_RANGE). */
     const PORT_RANGE = Object.freeze({ min: 0, max: 65535 })
     /** The approval listener's healthy status (mcp/oauth-web LISTENER_STATUS.ok); any other is shown as its code. */
@@ -300,6 +309,10 @@ window.__ModuleLoader__.load({
       approvalStatus: 'Approval page: {status}',
       approvalOk: 'listening on port {port}',
       'approval.approval-port-in-use': 'the port is in use; it is tried again every 30 seconds. Choose another port or free this one.',
+      autoEscalatePermissions: 'Automatic permission cards in Fishball',
+      autoEscalatePermissionsHint: 'Show a card and an action notice when a managed permission request needs your decision.',
+      autoRejectIncompleteArguments: 'Reject incomplete permission requests automatically',
+      autoRejectIncompleteArgumentsHint: 'Reject requests from managed sessions when their arguments are truncated or unavailable, without asking anyone.',
       limits: 'Safety limits',
       invalid: 'Enter a whole number.',
       'field.maxQueuedInputs': 'Events queued for an agent and not yet taken',
@@ -358,6 +371,10 @@ window.__ModuleLoader__.load({
       approvalStatus: '授权页面：{status}',
       approvalOk: '正在监听端口 {port}',
       'approval.approval-port-in-use': '端口被占用；每 30 秒重试一次。请换一个端口或释放此端口。',
+      autoEscalatePermissions: '在 Fishball 中自动显示权限卡片',
+      autoEscalatePermissionsHint: '受管会话的权限请求需要您决定时，显示卡片和待处理通知。',
+      autoRejectIncompleteArguments: '自动拒绝参数不完整的权限请求',
+      autoRejectIncompleteArgumentsHint: '受管会话的权限请求参数被截断或无法读取时，直接拒绝，不询问用户或管理代理。',
       limits: '安全限制',
       invalid: '请输入整数。',
       'field.maxQueuedInputs': '为 agent 排队、尚未取走的事件',
@@ -790,6 +807,21 @@ window.__ModuleLoader__.load({
         h(NumberSetting, { t, form, snapshot, path: SETTING_PATH.approvalPort, label: t('approvalPort'), hint, min: PORT_RANGE.min, max: PORT_RANGE.max, disabled, data: SETTING_PATH.approvalPort.join('.') }))
     }
 
+    function RequestSwitch({ t, form, snapshot, disabled, field }) {
+      const path = SETTING_PATH[field.key]
+      const { busy, problem, save } = useFieldSave(form, snapshot)
+      const label = t(field.key)
+      return h(SettingRow, {
+        data: path.join('.'), title: label,
+        hint: h('p', { style: STYLE.hint }, t(field.hint)),
+        control: h(Switch, {
+          label, checked: valueAt(snapshot.value, path) ?? field.defaultValue, disabled: disabled || busy,
+          onChange: (value) => void save([{ op: OP_SET, path, value }]),
+        }),
+        errors: problem === null ? [] : [h('span', { key: 'failed', role: 'alert' }, t(problem.key, problem.values))],
+      })
+    }
+
     /**
      * The connector's limits (LIMIT_FIELDS; moved here from dsh-connector-ui, decided item 55), each
      * with its page label; the Host's schema still decides validity.
@@ -847,14 +879,18 @@ window.__ModuleLoader__.load({
      * refreshes `state`, so an accepted change, including the item `create` adds, re-renders it.
      * No form means DSH does not serve the row's settings to this client.
      */
+    const NOOP_SUBSCRIBE = () => () => {}
+    const NOOP_SNAPSHOT = () => undefined
+
     function makePage(t, configForm) {
+      // DSH's ConfigFormController methods read `this` (this.store, this.ctx), so bind them once
+      // here rather than passing unbound prototype methods to React.useSyncExternalStore.
+      const subscribe = configForm ? (listener) => configForm.subscribe(listener) : NOOP_SUBSCRIBE
+      const getSnapshot = configForm ? () => configForm.getSnapshot() : NOOP_SNAPSHOT
+      const mutate = configForm ? (ops, revision) => configForm.mutate(ops, revision) : undefined
       return function DshConnectorSettings(props) {
-        // DSH's form is a ConfigFormController: its methods read `this`, so they are called on it, never detached.
-        const liveSnapshot = React.useSyncExternalStore(
-          configForm ? (listener) => configForm.subscribe(listener) : () => () => {},
-          configForm ? () => configForm.getSnapshot() : () => undefined,
-        )
-        const form = props.form ?? (configForm ? { state: liveSnapshot, mutate: configForm.mutate.bind(configForm) } : undefined)
+        const liveSnapshot = React.useSyncExternalStore(subscribe, getSnapshot)
+        const form = props.form ?? (configForm ? { state: liveSnapshot, mutate } : undefined)
         const snapshot = form?.state
         const saved = listOf(snapshot?.value)
         // The staged list and the revision it was staged from, which fences its Save: a list
@@ -945,6 +981,7 @@ window.__ModuleLoader__.load({
             card([
               h(Approval, { key: 'port', t, form, snapshot, approval: state?.approval, disabled }),
               h(DshName, { key: 'name', t, form, snapshot, disabled }),
+              ...REQUEST_SWITCHES.map((field) => h(RequestSwitch, { key: field.key, t, form, snapshot, disabled, field })),
             ])),
           h(Limits, { t, form, snapshot, disabled }),
           revealed === null ? null : h(Reveal, { t, value: revealed, onClose: () => setRevealed(null) }))

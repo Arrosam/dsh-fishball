@@ -813,6 +813,7 @@ export declare const DERIVED_AGENT_ID: { readonly prefix: "cid-"; readonly chars
 export declare const ENDPOINT_LIMITS: { readonly bodyBytes: number; readonly maxToolInputElements: number; readonly inFlightPerPrincipal: number; readonly listenStreamsPerPrincipal: number; readonly requestsPerMinute: number; readonly requestBurst: number; readonly jsonRpcCode: number; readonly jsonRpcVersion: "2.0" }
 export declare const ENTRY_STATUS: { readonly ok: "ok" }
 export declare const TURN_OUTCOME: { readonly completed: "completed"; readonly stopped: "stopped" }
+export declare const TURN_PROVENANCE: { readonly version: 1; readonly workPurpose: 'work' }
 export declare const TURN_FINISHED: { readonly finalMessageBytes: 4096; readonly truncationMarker: "…[truncated]" }
 export declare const EVENT_TYPE: { readonly permission: "permission"; readonly question: "question"; readonly planReview: "plan-review"; readonly settlement: "settlement"; readonly retirement: "retirement"; readonly turnFinished: "turn-finished"; readonly state: "state"; readonly message: "message"; readonly ask: "ask"; readonly handover: "handover"; readonly takeback: "takeback"; readonly notice: "notice" }
 export declare const FAILURE_LIMIT: { readonly windowMs: number; readonly keyParts: readonly ["remoteAddress", "clientId"]; readonly perKeyPerWindow: number; readonly perAddressPerWindow: number }
@@ -846,7 +847,7 @@ export declare const LIFETIME: { readonly accessTokenMs: 3600000; readonly codeM
 export declare const MAILBOX: { readonly pageDefault: number; readonly pageMax: number; readonly disabledRetentionMs: 2592000000; readonly ackedReceiptMs: number }
 export declare const MANAGED_REFUSAL: { readonly alreadyManaged: "conflict"; readonly notManaged: "not-managed"; readonly otherManager: "forbidden" }
 export declare const NAME_RULES: { readonly minChars: 1; readonly maxChars: 64; readonly whitespaceRun: RegExp; readonly control: RegExp; readonly space: " "; readonly normalForm: "NFC"; readonly namelessPrefix: "ID: " }
-export declare const NOTICE: { readonly codeGrammar: RegExp; readonly codes: { readonly questionCallEnded: "question-call-ended" } }
+export declare const NOTICE: { readonly codeGrammar: RegExp; readonly codes: { readonly questionCallEnded: "question-call-ended"; readonly permissionEscalated: "permission-escalated" } }
 export declare const OAUTH_ERROR: { readonly invalidRequest: "invalid_request"; readonly invalidClient: "invalid_client"; readonly invalidGrant: "invalid_grant"; readonly unsupportedGrantType: "unsupported_grant_type"; readonly invalidTarget: "invalid_target"; readonly unsupportedResponseType: "unsupported_response_type"; readonly accessDenied: "access_denied"; readonly serverError: "server_error"; readonly temporarilyUnavailable: "temporarily_unavailable"; readonly invalidToken: "invalid_token"; readonly insufficientScope: "insufficient_scope" }
 export declare const OAUTH_ERROR_STATUS: { readonly invalid_request: 400; readonly invalid_client: 401; readonly invalid_grant: 400; readonly unsupported_grant_type: 400; readonly invalid_target: 400; readonly temporarily_unavailable: 429; readonly invalid_token: 401; readonly insufficient_scope: 403; readonly server_error: 500 }
 export declare const OFFER_ID: { readonly pattern: RegExp; readonly separator: ".r"; readonly firstRevision: 1 }

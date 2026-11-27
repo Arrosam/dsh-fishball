@@ -236,24 +236,27 @@ function headerRows(sdk) {
 
 /** Page-side: every setting row, measured (title, hint, input field, alerts, the row's content box). */
 const SETTING_ROWS = `(() => [...document.querySelectorAll('[${SETTINGS.setting}]')].map((label) => {
-  const input = label.querySelector('input')
+  const path = label.getAttribute('${SETTINGS.setting}')
+  // DSH's request settings render a switch rather than an input. Measure its layout column the same way.
+  const selector = ${JSON.stringify(SETTINGS.requestSwitchPaths)}.includes(path) ? '[role=${SETTINGS.switchRole}]' : 'input'
+  const control = label.querySelector(selector)
   const row = label.parentElement
-  const title = [...label.children].find((c) => !c.contains(input)) ?? null
-  // The input's field: the input and its wrappers up to the first one holding anything else.
-  let field = input
+  const title = control ? [...label.children].find((c) => !c.contains(control)) : null
+  // The control and its wrappers up to the first wrapper holding anything else.
+  let field = control
   while (field && field.parentElement !== label && field.parentElement.children.length === 1) field = field.parentElement
   const isAlert = (n) => Boolean(n.parentElement?.closest('[role=${SETTINGS.alert}]'))
   const runs = (root, keep) => { const out = []; const walk = document.createTreeWalker(root, NodeFilter.SHOW_TEXT); for (let n = walk.nextNode(); n; n = walk.nextNode()) { if (!n.textContent.trim() || !keep(n)) continue; const r = document.createRange(); r.selectNodeContents(n); for (const b of r.getClientRects()) if (b.width > 0 && b.height > 0) out.push(U.box({ getBoundingClientRect: () => b })) } return out }
-  const hintRuns = [...row.children].filter((c) => c !== label).flatMap((c) => runs(c, (n) => !isAlert(n) && !field.contains(n)))
+  const hintRuns = [...row.children].filter((c) => c !== label).flatMap((c) => runs(c, (n) => !isAlert(n) && !field?.contains(n)))
   return {
-    path: label.getAttribute('${SETTINGS.setting}'),
+    path,
     tag: label.tagName,
-    name: input ? U.nameOf(input) : null,
+    name: control ? U.nameOf(control) : null,
     titleText: title ? U.text(title) : null,
     titleRuns: title ? runs(title, () => true) : [],
     titleColumn: title ? U.column(title) : null,
     hintRuns,
-    field: input ? U.box(field) : null,
+    field: field ? U.box(field) : null,
     row: U.contentBox(row),
     alerts: [...row.querySelectorAll('[role=${SETTINGS.alert}]')].filter(U.shown).map((a) => ({ text: U.text(a), box: U.painted(a) })),
   }
@@ -262,7 +265,7 @@ const SETTING_ROWS = `(() => [...document.querySelectorAll('[${SETTINGS.setting}
 /** R2's invariants for one setting row (every width and theme). */
 function assertSettingRow(r, width) {
   const where = `${r.path} at ${width}px`
-  assert.ok(r.field, where + ': no input')
+  assert.ok(r.field, where + ': no setting control')
   assert.ok(r.titleText, where + ': no title')
   assert.equal(r.name, r.titleText, where + ': the input is not named by its title (getByLabel(title))')
   for (const run of [...r.titleRuns, ...r.hintRuns]) assert.ok(!overlaps(run, r.field), `${where}: words ${show(run)} overlap the input ${show(r.field)}`)
@@ -323,6 +326,7 @@ function settingsRows(sdk) {
           await at(tab, width)
           const rows = await measure(tab, SETTING_ROWS)
           assert.ok(rows.length >= SETTINGS.minRows, 'setting rows: ' + rows.length)
+          for (const path of SETTINGS.requestSwitchPaths) assert.ok(rows.some((r) => r.path === path), path + ': no setting row')
           for (const r of rows) {
             assert.equal(r.tag, 'LABEL', r.path + ': the setting hook is not on a <label>')
             assertSettingRow(r, width)

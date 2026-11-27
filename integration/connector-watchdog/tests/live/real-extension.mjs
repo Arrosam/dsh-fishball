@@ -1,36 +1,27 @@
 /**
- * The interactions worker extension plus two ops for the real-model judge run (real-model.test.mjs):
- * - `realJudge({provider, model, reasoningEffort, profile})`: adds the provider route to this test
- *   home's llm-pi-ai row through DSH's settings service (as the Models page does) and routes every
- *   new agent on the `watchdog` preset (Watchdog's side sessions) to that model; every other session
- *   keeps the scripted fake model;
- * - `assistantTexts({sessionId})`: the side session's assistant replies, to report the verdicts.
+ * The interactions worker extension for the manual real-model judge run (real-model.manual.mjs).
+ * `realJudge` adds the provider to llm-pi-ai and selects it in Watchdog's own settings. The global
+ * default stays scripted. `assistantTexts` and `failures` read the judge's side-session log.
  */
 import { bundles, overlayRows, ops as baseOps } from 'dsh-connector-test-helpers/connector-world/interactions-extension'
 
 export { bundles, overlayRows }
 const PI_AI_ROW = 'llm-pi-ai'
-const WATCHDOG_PRESET = 'watchdog'
+const WATCHDOG_ROW = 'dsh-connector-watchdog'
 
 export async function ops(deps) {
   const { ctx } = deps
   const base = await baseOps(deps)
-  const state = (globalThis.__wdRealJudge ??= { off: undefined, routed: [] })
   return {
     ...base,
     async realJudge({ provider, model, reasoningEffort, profile }) {
       const row = ctx.settings.describe().find((d) => d.ns === PI_AI_ROW)
       const providers = { ...(row?.value?.providers ?? {}), [provider]: profile }
       await ctx.settings.update(PI_AI_ROW, { providers }, row?.revision)
-      state.off?.()
-      state.off = ctx.on('agent/created', ({ agent }) => {
-        if (agent.session.header?.agentPreset !== WATCHDOG_PRESET) return
-        agent.model.select({ provider, model, reasoningEffort })
-        state.routed.push(agent.id)
-      })
+      const selection = { provider, model, ...(reasoningEffort === undefined ? {} : { reasoningEffort }) }
+      await ctx.settings.mutate(WATCHDOG_ROW, [{ op: 'set', path: ['model'], value: selection }])
       return true
     },
-    routed: () => state.routed,
     assistantTexts({ sessionId }) {
       const agent = ctx.agents.get(sessionId)
       if (!agent) return null

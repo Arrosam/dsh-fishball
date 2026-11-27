@@ -26,7 +26,9 @@ const strip = (name) => name.replace(/ ?\[SDK [^\]]+\]/, '').replace(/ — TODO 
 const [pkg, namesFile, ...rest] = process.argv.slice(2)
 if (!pkg || !namesFile) { console.error('usage: inventory-check.mjs <package> <names.jsonl> [--map file]'); process.exit(2) }
 const mapFile = rest[0] === '--map' ? rest[1] : undefined
-const map = mapFile ? JSON.parse(fs.readFileSync(mapFile, 'utf8')) : {}
+const STAGING_MAP = path.join(REPO, 'docs', 'testing', 'staging-case-map.json')
+const readMap = (file) => JSON.parse(fs.readFileSync(file, 'utf8'))
+const map = { ...readMap(STAGING_MAP), ...(mapFile ? readMap(mapFile) : {}) }
 
 const baseline = new Map()
 for (const line of fs.readFileSync(INVENTORY, 'utf8').split('\n').filter(Boolean)) {

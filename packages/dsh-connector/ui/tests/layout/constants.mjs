@@ -71,12 +71,9 @@ export const SETTINGS = Object.freeze({
   approval: 'data-dsh-connector-approval',
   limits: 'data-dsh-connector-limits',
   setting: 'data-dsh-connector-setting',
-  /**
-   * Setting rows (approval port, DSH name, each safety limit). Contract relayed 2026-11-18: the row's
-   * `<label data-dsh-connector-setting>` holds the title and a wrapper holding the input; the hint
-   * (with the approval status line) and the error alerts are its siblings in the row.
-   */
+  /** The row's label holds the title and wrapped control; hint and errors are its siblings. */
   limitPath: 'maxQueuedInputs',
+  requestSwitchPaths: Object.freeze(['requests.autoEscalatePermissions', 'requests.autoRejectIncompleteArguments']),
   minRows: 7,
   /** Side by side needs ≥ 240 px for the words and for the input, plus the gap. */
   columnPx: 240,

@@ -18,7 +18,12 @@ export const SETTING = Object.freeze({
   tokens: Object.freeze(['tokens']),
   approvalPort: Object.freeze(['approval', 'port']),
   dshName: Object.freeze(['approval', 'dshName']),
+  autoEscalatePermissions: Object.freeze(['requests', 'autoEscalatePermissions']),
+  autoRejectIncompleteArguments: Object.freeze(['requests', 'autoRejectIncompleteArguments']),
 })
+
+export const AUTO_ESCALATE_PERMISSIONS_DEFAULT = true
+export const AUTO_REJECT_INCOMPLETE_ARGUMENTS_DEFAULT = true
 
 /** DSH's settings-service path edits (dsh-settings SettingsPathOp). */
 export const PATH_OP = Object.freeze({ set: 'set', unset: 'unset' })
@@ -41,6 +46,8 @@ export const SETTING_TEXT = Object.freeze({
   tokenKey: 'The entry\'s key, written when it was created. Do not edit it.',
   approvalPort: 'The port of the approval page that browser agents sign in on. It binds the same host as DSH.',
   dshName: 'The DSH name shown on the approval page and advertised over MCP with -DSH appended. Empty: the OS device name.',
+  autoEscalatePermissions: 'Automatically show a card in Fishball when a managed permission request needs your decision.',
+  autoRejectIncompleteArguments: 'Reject managed permission requests whose arguments are truncated or unavailable, without asking the manager or the user.',
 })
 
 /** Programming errors (thrown, never shown to a user). */

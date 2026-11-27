@@ -5,10 +5,12 @@ import { registerWireCases } from './cases.mjs'
 import { registerMultiNameCases } from './multi-name-cases.mjs'
 import { registerMultiWireCases } from './multi-cases.mjs'
 import { registerDiscoveryWireCases } from './discovery-cases.mjs'
+import { registerTaskboardCheckTurnCases } from './taskboard-check-turn-cases.mjs'
 
 forEachVersion((version) => {
   registerWireCases(version)
   registerMultiNameCases(version)
   registerMultiWireCases(version)
   registerDiscoveryWireCases(version)
+  registerTaskboardCheckTurnCases(version)
 })

@@ -21,8 +21,7 @@ it. A saved change applies at once: the amenity re-applies itself with the new v
 DSH restart, and the value is kept in the profile's `cordis.patch.yml`. `preset-watchdog` is
 DSH's agent preset row and has no settings.
 
-- **dsh-connector-watchdog:** the patrol interval and the judgement's read and time bounds, each a
-  whole number within its range.
+- **dsh-connector-watchdog:** Watchdog's own model selector (unset by default, which disables Watchdog until a model is chosen; saved immediately on selection), plus the patrol interval and the judgement's read and time bounds, each a whole number within its range.
 - **dsh-connector-adapter:** the client metadata URL, and the connectors to sign in to: a list of
   a server name and its MCP URL (Add, Remove, then Save the list). The list is checked before it
   is saved: each server name once, and each URL https, or http on this computer only (`localhost`,

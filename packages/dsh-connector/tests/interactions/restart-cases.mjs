@@ -13,6 +13,8 @@ import {
 } from 'dsh-connector-test-helpers/connector-world/interactions'
 
 const SET = RELAYED.setting
+const REQUESTS = SURFACE.settings.requests
+const REQUEST_DEFAULTS = Object.freeze({ [SURFACE.settings.autoEscalatePermissions]: true, [SURFACE.settings.autoRejectIncompleteArguments]: true })
 const restartWorld = (sdk) => world(sdk, WORLD.scenario.restart)
 /** The settings value DSH describes for the connector row. */
 const value = async (w) => (await w.settings())?.value ?? {}
@@ -55,11 +57,20 @@ export function registerRestartCases(sdk) {
   })
 
   // ------------------------------------------------------------------------- settings (the user's decisions)
-  row(sdk, 'IX-SET-01', 'EP (the kept limits and their defaults)', `the row's settings hold exactly tokens, approval, ${Object.keys(RELAYED.kept).join(', ')}; the limits at their defaults`, async () => {
+  row(sdk, 'IX-SET-01', 'EP (settings schema and defaults)', `the settings hold exactly tokens, approval, ${REQUESTS}, ${Object.keys(RELAYED.kept).join(', ')}; limits retain their defaults; both permission options are booleans defaulting to true`, async () => {
     const w = await world(sdk)
-    const v = await value(w)
-    assert.deepEqual(Object.keys(v).sort(), [SET.tokens, SET.approval, ...Object.keys(RELAYED.kept)].sort())
+    const { value: v, schema } = await w.settings()
+    assert.deepEqual(Object.keys(v).sort(), [SET.tokens, SET.approval, REQUESTS, ...Object.keys(RELAYED.kept)].sort())
     for (const [k, d] of Object.entries(RELAYED.kept)) assert.equal(v[k], d, k)
+    assert.deepEqual(v[REQUESTS], REQUEST_DEFAULTS)
+
+    const group = schema.refs[schema.refs[schema.uid].dict[REQUESTS]]
+    assert.equal(group?.type, 'object', REQUESTS)
+    for (const [key, expected] of Object.entries(REQUEST_DEFAULTS)) {
+      const field = schema.refs[group.dict[key]]
+      assert.equal(field?.type, 'boolean', key)
+      assert.equal(field.meta?.default, expected, key)
+    }
   })
   row(sdk, 'IX-SET-02', 'EP (removed fields)', `none of ${RELAYED.removed.join(', ')} is a setting; no routing.agentToken (${DECISION_TEXT.q5})`, async () => {
     const w = await world(sdk)

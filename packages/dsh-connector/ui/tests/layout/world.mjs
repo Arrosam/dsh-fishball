@@ -115,15 +115,15 @@ export async function openSession(t, w, sessionId, ready) {
   return { tab, b }
 }
 
-/** Opens the connector's own settings page (Plugins → Fishball connector → its component). */
+/** Opens the connector's own settings page (Plugins → Fishball connector). */
 export async function openConnectorPage(t, w, scheme) {
   const { tab, b } = await openDsh(t, w.origin, w.dsh.cookie, { scheme })
-  // Plugins → the connector's card → its one component (the row whose page is the settings page).
+  // Plugins → the connector's card (its settings render directly in plugins.bundle.config,
+  // below the bundle's detail section, so scroll the settings block into the viewport).
   await tab.evaluate(clickText(NAV.plugins))
   await b.waitFor(tab, clickText(NAV.connectorCard), CHROME.loadMs, 'the connector on the Plugins page')
-  await b.waitFor(tab, `!!${NAV.findText(NAV.components)}`, CHROME.loadMs, 'the connector\'s components')
-  await tab.evaluate(clickText(NAV.connectorCard))
   await b.waitFor(tab, `!!document.querySelector('[${SETTINGS.tokens}]')`, CHROME.loadMs, 'the connector settings page')
+  await tab.evaluate(`document.querySelector('[${SETTINGS.tokens}]')?.scrollIntoView({ block: 'start' })`)
   return { tab, b }
 }
 

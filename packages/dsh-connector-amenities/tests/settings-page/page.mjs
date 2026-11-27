@@ -27,7 +27,7 @@ import { pageServices } from 'dsh-connector-test-helpers/page/services'
 import { importInstance } from 'dsh-connector-test-helpers/sdk'
 import { INSTANCE } from 'dsh-connector-test-helpers/legacy'
 import { primitivesModule } from './primitives.mjs'
-import { PAGE, UMBRELLA } from './constants.mjs'
+import { CATALOG, PAGE, UMBRELLA } from './constants.mjs'
 
 const settle = async () => { for (let i = 0; i < PAGE.settleRounds; i++) await new Promise((resolve) => setImmediate(resolve)) }
 const sdkUrl = (sdk, ...parts) => pathToFileURL(path.join(PAGE.versionsDir, sdk, 'node_modules', ...parts)).href
@@ -61,7 +61,14 @@ function applyOp(target, op) {
  * @param options.users - the starting user layer per namespace.
  * @param options.extend - per namespace, `(Schema, Config) => Config` replacing the served Config.
  */
-export async function openUmbrellaPage(t, { sdk, lang = PAGE.lang.en, served = UMBRELLA.rows.map((r) => r.id), users = {}, extend = {} } = {}) {
+export async function openUmbrellaPage(t, {
+  sdk,
+  lang = PAGE.lang.en,
+  served = UMBRELLA.rows.map((r) => r.id),
+  users = {},
+  extend = {},
+  remoteSession = { modelCatalog: async () => ({ ok: true, value: CATALOG.default }) },
+} = {}) {
   const Schema = (await import(sdkUrl(sdk, '@deepseek-ai', 'schemastery', 'lib', 'index.mjs'))).default
   const { Context } = await import(sdkUrl(sdk, '@deepseek-ai', 'cordis', 'lib', 'index.js'))
 
@@ -198,6 +205,7 @@ export async function openUmbrellaPage(t, { sdk, lang = PAGE.lang.en, served = U
   root.provide('locale', locale)
   root.provide('configForms', configForms)
   root.provide('settingsSchema', settingsSchema)
+  if (remoteSession) root.provide('remote.session', remoteSession)
   const fiber = root.plugin(plugin.default ?? plugin)
   await settle()
 
@@ -254,8 +262,17 @@ function viewOf(tree, close) {
     tree, close,
     text: () => textOf({ children: tree() }),
     find: (attr, value) => byAttr(tree(), attr, value),
-    /** The top-level controls in tree order: [{kind: 'setting'|'list', name}]. */
-    controls: () => all().flatMap((n) => (n.props[PAGE.attr.setting] !== undefined ? [{ kind: 'setting', name: n.props[PAGE.attr.setting] }] : n.props[PAGE.attr.list] !== undefined ? [{ kind: 'list', name: n.props[PAGE.attr.list] }] : [])),
+    /** The top-level controls in tree order: [{kind: 'model'|'setting'|'list', name}]. */
+    controls: () => all().flatMap((n) => (
+      n.props[PAGE.attr.model] !== undefined ? [{ kind: 'model', name: n.props[PAGE.attr.model] }]
+        : n.props[PAGE.attr.setting] !== undefined ? [{ kind: 'setting', name: n.props[PAGE.attr.setting] }]
+        : n.props[PAGE.attr.list] !== undefined ? [{ kind: 'list', name: n.props[PAGE.attr.list] }]
+        : []
+    )),
+    model: (name) => byAttr(tree(), PAGE.attr.model, name)[0],
+    select: (name) => byAttr(tree(), PAGE.attr.modelSelect, name)[0],
+    selects: (node) => findAll(node ? [node] : tree(), (n) => n.tag === 'select'),
+    options: (node) => findAll(node ? [node] : tree(), (n) => n.tag === 'option'),
     setting: (name) => byAttr(tree(), PAGE.attr.setting, name)[0],
     list: (name) => byAttr(tree(), PAGE.attr.list, name)[0],
     inputs: (node) => findAll(node ? [node] : tree(), (n) => n.tag === 'input'),

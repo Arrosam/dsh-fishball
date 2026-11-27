@@ -198,9 +198,20 @@ window.__ModuleLoader__.load({
      * part that never loads leaves the shell's fallback. One value per seat; the latest wins.
      * - mark: the sidebar mark component `({size})` the first Fishball row draws (the light is one per
      *   connector, so one fish carries it; the other rows draw the plain fish);
-     * - pageOpened: a function the window calls once each time it mounts.
+     * - pageOpened: a function the window calls once each time it mounts;
+     * - portalGate: an optional component `({title, renderFrame})` registered via `dshConnectorUiPortal`
+     *   by a child-instance plugin (such as `dsh-instance`) to wrap or precede the framed child view.
      */
-    const SEAT = Object.freeze({ mark: 'mark', pageOpened: 'pageOpened' })
+    const SEAT = Object.freeze({ mark: 'mark', pageOpened: 'pageOpened', portalGate: 'portalGate' })
+    /**
+     * Generic client-side portal gate service provided by the shell so a child-instance plugin can
+     * present first-run onboarding inside the Fishball portal without coupling `dsh-connector-ui`
+     * to onboarding logic or state.
+     */
+    const PORTAL_SERVICE = Object.freeze({
+      name: 'dshConnectorUiPortal',
+      apiVersion: 1,
+    })
     const SLOT = Object.freeze({
       overlay: 'shell.overlay',
       /**
@@ -611,17 +622,6 @@ window.__ModuleLoader__.load({
     }
 
     /**
-     * What the framing view does while mounted: the window's opening, and the language the frame
-     * opens in, followed live. The window frames only the hosted child's Fishball page
-     * (`FRAME_UI.page.chat`, Q-G3).
-     * @returns the frame's `lang`.
-     */
-    function useFrameLang(frameLang) {
-      useWindowOpened()
-      return React.useSyncExternalStore(frameLang.subscribe, frameLang.get)
-    }
-
-    /**
      * The window's chrome: DSH's session header with the title, then the body. Every view draws
      * it, so the header cannot drift between them. It has no settings button: Fishball settings
      * and DSH settings are fishball-ui's entries inside the framed page (the user, U-WIRE).
@@ -692,10 +692,9 @@ window.__ModuleLoader__.load({
      */
     function makeChildView(ctx, t, route, useTitle) {
       const frameLang = frameLangStore(ctx.locale)
-      return function FishballChildView() {
-        const title = useTitle()
+      function FishballChildFrame({ title }) {
         const page = FRAME_UI.page.chat
-        const lang = useFrameLang(frameLang)
+        const lang = React.useSyncExternalStore(frameLang.subscribe, frameLang.get)
         const [generation, setGeneration] = React.useState(0)
         const [statusGeneration, setStatusGeneration] = React.useState(0)
         const reopen = () => setGeneration((value) => value + 1)
@@ -731,6 +730,13 @@ window.__ModuleLoader__.load({
           onRefresh: refresh,
           body,
         })
+      }
+      return function FishballChildView() {
+        const title = useTitle()
+        useWindowOpened()
+        const Gate = seats.use(SEAT.portalGate)
+        const renderFrame = () => h(FishballChildFrame, { title })
+        return Gate === undefined ? renderFrame() : h(Gate, { title, renderFrame })
       }
     }
 
@@ -854,6 +860,15 @@ window.__ModuleLoader__.load({
       const t = ctx.locale.bind(NS)
       ctx.effect(() => ctx.locale.register(NS, { en, zh }), 'fishball: dictionaries')
       ctx.effect(mountStyles, 'fishball: styles')
+      // Expose a generic portal gate registration point for a child-instance plugin (such as
+      // dsh-instance's first-run onboarding) without adding any onboarding logic to this package.
+      ctx.provide(PORTAL_SERVICE.name, Object.freeze({
+        apiVersion: PORTAL_SERVICE.apiVersion,
+        registerGate(Gate) {
+          if (typeof Gate !== 'function') throw new TypeError('dshConnectorUiPortal: gate must be a function')
+          return seats.register(SEAT.portalGate, Gate)
+        },
+      }))
       // One Fishball view in DSH's main area and one sidebar row per agent with a window here
       // (followWindows), as Plugins and Tasks register theirs (§7). The window by availability
       // (UIM-EP-01): the hosted child's window, or the hint if this page loaded without a locator.

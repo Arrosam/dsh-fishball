@@ -15,16 +15,19 @@ import { mkdir } from 'node:fs/promises'
 import path from 'node:path'
 import { createUserMessage } from '@deepseek-ai/dsh-llm'
 import { JUDGE_FAILURE, SIDE, STORE, WATCHDOG } from './constants.js'
+import { applyAgentModel, validateModelSelection } from './model.js'
 import { judgeFailure, parseVerdict } from './verdict.js'
 
 const textOf = (event) => (event.data?.message?.content ?? []).filter((block) => block?.type === SIDE.textBlock).map((block) => block.text).join('')
 
 /**
- * @param ctx - the row's context (`sessionController`, `on`)
+ * @param ctx - the row's context (`sessionController`, `on`, `get`)
  * @param deps.home - the profile home
  * @param deps.store - store.js (the side session id is kept in the brief)
+ * @param deps.model - Watchdog's configured `{provider, model, reasoningEffort?}` selection
+ * @param deps.logger - `{warn}`
  */
-export function createJudge(ctx, { home, store }) {
+export function createJudge(ctx, { home, store, model, logger }) {
   const dir = path.join(home, STORE.directory, SIDE.directory)
   const chains = new Map()
 
@@ -59,7 +62,15 @@ export function createJudge(ctx, { home, store }) {
   }
 
   async function once(brief, prompt, signal) {
+    if (signal?.aborted) throw signal.reason
+    // Validate the configured model before touching the side session so an unavailable model
+    // never silently falls back to DSH's default model.
+    await validateModelSelection(ctx, model, logger)
+    if (signal?.aborted) throw signal.reason
     const agent = await sideAgent(store.get(brief.sessionId) ?? brief)
+    if (signal?.aborted) throw signal.reason
+    await applyAgentModel(agent, model)
+    if (signal?.aborted) throw signal.reason
     const sessionId = agent.session.id
     const before = agent.session.snapshotEvents().length
     const ended = turnEnded(sessionId, signal)

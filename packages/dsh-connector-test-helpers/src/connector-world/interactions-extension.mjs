@@ -159,6 +159,8 @@ export async function ops({ ctx, model, agentOf, eventSummary, errorInfo, plain,
     /** The GUI's Stop: the running turn ends aborted. */
     cancel({ sessionId }) { const a = ctx.agents.get(sessionId); if (a?.status === IX.dsh.running) a.cancel({ kind: IX.dsh.userSource }); return true },
     results: ({ sessionId }) => resultsOf(sessionId),
+    /** The messages in the model's latest request, including nested tool-result text. */
+    lastRequestMessages: ({ sessionId }) => model.requests.findLast((r) => r.sessionId === sessionId)?.last ?? [],
     /** The tools (name and parameters) of every model request of a session, in order. */
     requestTools: ({ sessionId }) => model.requests.filter((r) => r.sessionId === sessionId).map((r) => r.tools.map((t) => ({ name: t.name, parameters: t.parameters }))),
     calls: () => store.calls,
@@ -206,7 +208,13 @@ export async function ops({ ctx, model, agentOf, eventSummary, errorInfo, plain,
     /** Holds the next model request of a session until releaseHold (a turn in progress). */
     holdNext({ sessionId }) { model.holds ??= new Map(); model.holds.set(sessionId, null); return true },
     isHeld: ({ sessionId }) => typeof model.holds?.get(sessionId) === 'function',
-    releaseHold({ sessionId }) { const r = model.holds?.get(sessionId); model.holds?.delete(sessionId); if (typeof r === 'function') r(); return typeof r === 'function' },
+    releaseHold({ sessionId, holdFollowing = false }) {
+      const r = model.holds?.get(sessionId)
+      if (holdFollowing) model.holds.set(sessionId, null)
+      else model.holds?.delete(sessionId)
+      if (typeof r === 'function') r()
+      return typeof r === 'function'
+    },
     events: ({ sessionId }) => live(sessionId).session.snapshotEvents().map(eventSummary),
     /** Files under DSH's attachment store (X-SEC X-09: a refused put writes nothing). */
     attachmentFiles() {

@@ -16,6 +16,7 @@ import { runWithSettings } from 'dsh-connector-shared/live-settings'
 import { Config } from './src/config.js'
 import { createWatchdog } from './src/core.js'
 import { createJudge } from './src/judge.js'
+import { readModelSelection } from './src/model.js'
 import { openBriefStore } from './src/store.js'
 import { watchdogTools } from './src/tools.js'
 import { LOG, STORE, WATCHDOG } from './src/constants.js'
@@ -40,11 +41,18 @@ export async function apply(ctx, config) {
 
 async function applyWith(ctx, config) {
   const logger = ctx.logger(WATCHDOG.name)
+  // Watchdog is disabled while no model is configured: keep the row active so DSH still serves its
+  // settings page, but register no tools, no permission delegate and no patrol timers.
+  const model = readModelSelection(config.model)
+  if (model === undefined) {
+    logger.info(LOG.format, WATCHDOG.name, LOG.modelUnset, 'disabled')
+    return
+  }
   const home = ctx.get(PROFILE_CONTEXT)?.home ?? process.env.DSH_HOME
   const store = await openBriefStore({ dir: path.join(home, STORE.directory), logger })
   /** The connector's services while both are there: set by the sub-scope below. */
   let connector
-  const watchdog = createWatchdog({ store, services: () => connector, judge: createJudge(ctx, { home, store }), config, logger })
+  const watchdog = createWatchdog({ store, services: () => connector, judge: createJudge(ctx, { home, store, model, logger }), config, logger })
   ctx.effect(() => () => watchdog.close(), WATCHDOG.effect.close)
   watchdog.start()
 

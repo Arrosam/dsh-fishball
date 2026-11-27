@@ -25,6 +25,8 @@ import { pageModule } from './subject.mjs'
 
 const T = { timeout: WAIT.testMs }
 const ID = POLISH.id
+const APPROVAL_SWITCHES = Object.freeze([POLISH.autoHandoffPath, POLISH.autoRejectPath])
+const SWITCH_SETTINGS = APPROVAL_SWITCHES.map((path) => path.join('.'))
 const row = (sdk, id, part, title, fn) => test(caseName(sdk, id, part, title), T, fn)
 
 /** The rendered nodes below `nodes` (each element once). */
@@ -57,13 +59,13 @@ const firstElement = (node) => (node.children ?? []).find((c) => typeof c !== 's
  * with GET state answering `state(world)` when given; `settings` and `answerState` go to
  * openTokensPage (R-FIX-CUI). Returns `{world, page, view}`.
  */
-export async function openPolished(t, sdk, { labels = [], state, lang, tokens, settings, answerState, beforeSave } = {}) {
+export async function openPolished(t, sdk, { labels = [], state, lang, tokens, settings, answerState, beforeSave, ownerForm } = {}) {
   const world = await worldFor(t, sdk, tokens === undefined ? {} : { tokens })
   for (const label of labels) await world.registry.create(label)
   const mod = await pageModule(sdk)
   const routes = mod[SUBJECT.routes]({ tokens: world.registry, logger: world.logger, ...(state === undefined ? {} : { state: () => state(world) }) })
   const page = await openTokensPage(t, { sdk, world, routes, lang, settings, answerState, beforeSave })
-  const view = await page.open()
+  const view = await page.open(CLIENT.view.page, { ownerForm })
   return { world, page, view }
 }
 const rowsOf = (view) => view.find(CLIENT.attr.row)
@@ -85,7 +87,7 @@ export const entryRow = (item, over) => ({ key: item.key, label: item.label, ena
 export function registerPolishSettingsCases(sdk) {
   // ---------------------------------------------------------------- sections (EP over the language)
   for (const lang of POLISH.langs) {
-    row(sdk, ID.sections, lang, `three h3 sections in order: ${POLISH.headings[lang].join(', ')}; tokens in the first, the port and DSH name in the second, the limits in the third`, async (t) => {
+    row(sdk, ID.sections, lang, `three h3 sections in order: ${POLISH.headings[lang].join(', ')}; tokens in the first, the port, DSH name and both permission switches in the second, the limits in the third`, async (t) => {
       const { view } = await openPolished(t, sdk, { labels: [FIXTURE.labelA], lang })
       const tree = view.tree()
       assert.deepEqual(headingsOf(tree).map(text), [...POLISH.headings[lang]])
@@ -93,7 +95,7 @@ export function registerPolishSettingsCases(sdk) {
       assert.ok(tokens && approval && limits, 'a heading outside a section')
       for (const node of [view.one(CLIENT.attr.newLabel), view.one(CLIENT.attr.newToken), ...rowsOf(view)]) assert.equal(sectionOf(tree, node), tokens, 'a token part outside the Tokens section')
       const settings = findAll(tree, (n) => n.props[POLISH.attr.setting] !== undefined)
-      assert.deepEqual(settings.filter((n) => sectionOf(tree, n) === approval).map((n) => n.props[POLISH.attr.setting]), ['approval.port', 'approval.dshName'])
+      assert.deepEqual(settings.filter((n) => sectionOf(tree, n) === approval).map((n) => n.props[POLISH.attr.setting]), ['approval.port', 'approval.dshName', ...SWITCH_SETTINGS])
       assert.equal(settings.filter((n) => sectionOf(tree, n) === limits).length, 5, 'limit rows')
       assert.ok(limits.props['data-dsh-connector-limits'] !== undefined, 'the limits hook is not on the Safety limits section')
     })
@@ -210,7 +212,7 @@ export function registerPolishSettingsCases(sdk) {
   }
 
   // ---------------------------------------------------------------- primitives and glyphs
-  row(sdk, ID.primitives, 'inputs', 'the new-label field, each row label and each setting field are DSH\'s Input, carrying their aria-label / placeholder / data hooks; New token has a plus icon', async (t) => {
+  row(sdk, ID.primitives, 'inputs', 'the new-label field, each row label and each text setting field are DSH\'s Input, carrying their aria-label / placeholder / data hooks; New token has a plus icon', async (t) => {
     const { view } = await openPolished(t, sdk, { labels: [FIXTURE.labelA] })
     const newLabel = view.one(CLIENT.attr.newLabel)
     assert.ok(isPrimitive(newLabel, POLISH.input), 'the new-label field is not Input')
@@ -219,10 +221,32 @@ export function registerPolishSettingsCases(sdk) {
     assert.equal(labelField?.props.value, FIXTURE.labelA)
     for (const setting of findAll(view.tree(), (n) => n.props[POLISH.attr.setting] !== undefined)) {
       assert.equal(setting.tag, 'label', 'a setting row is not a <label>')
-      assert.equal(findAll([setting], (n) => isPrimitive(n, POLISH.input)).length, 1, setting.props[POLISH.attr.setting] + ': inputs')
+      const name = setting.props[POLISH.attr.setting]
+      const primitive = SWITCH_SETTINGS.includes(name) ? POLISH.switch : POLISH.input
+      assert.equal(findAll([setting], (n) => isPrimitive(n, primitive)).length, 1, name + ': ' + primitive)
     }
     assert.match(view.one(CLIENT.attr.newToken).props.icon?.type?.displayName ?? '', POLISH.icon.plus)
   })
+  for (const path of APPROVAL_SWITCHES) {
+    const name = path.join('.')
+    row(sdk, ID.primitives, name, 'the switch defaults on; its opt-out saves only its own setting and reopening leaves the other switch on', async (t) => {
+      // Exercise the Plugins page's own ConfigFormController, without an owner form prop.
+      const mount = { ownerForm: false }
+      const { page, view } = await openPolished(t, sdk, mount)
+      const switchIn = (current, setting = name) => findAll([current.one(POLISH.attr.setting, setting)], (n) => isPrimitive(n, POLISH.switch))[0]
+      assert.equal(switchIn(view).props.checked, true)
+      const revision = page.revision()
+      switchIn(view).props.onChange(false)
+      const [group, field] = path
+      assert.ok(await page.until(() => page.value()[group]?.[field] === false), 'the opt-out was not saved')
+      assert.deepEqual(page.mutations, [{ ops: [{ op: CLIENT.setOp, path, value: false }], expected: revision, liveRevision: revision }])
+      view.close()
+      const reopened = await page.open(CLIENT.view.page, mount)
+      assert.equal(switchIn(reopened).props.checked, false)
+      const other = SWITCH_SETTINGS.find((setting) => setting !== name)
+      assert.equal(switchIn(reopened, other).props.checked, true)
+    })
+  }
   row(sdk, ID.primitives, 'copy', 'Reveal: Copy keeps the word "Copy" and its copy icon; after a copy its icon is a check and the status says "Copied"', async (t) => {
     const { page, view } = await openPolished(t, sdk)
     input(view.one(CLIENT.attr.newLabel), FIXTURE.labelA)

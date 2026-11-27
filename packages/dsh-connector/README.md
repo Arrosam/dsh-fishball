@@ -128,13 +128,38 @@ re-pairing. Pair-only clients retain their existing restricted surface.
 The settings page and the server preserve nonblank names verbatim, including leading/trailing
 spaces. A whitespace-only setting counts as unset.
 
+### Automatic rejection of incomplete permission requests
+
+On by default. For a managed session, the connector rejects a new permission request before asking
+anyone if its arguments are truncated or unavailable and no standing grant already covers the call.
+The requesting session gets a reason and retry guidance in the tool result when possible.
+Otherwise, the connector queues best-effort feedback for the session's next step without waking it. The connector logs the rejection at info level
+without including the arguments. There is no approval prompt, Fishball card, or action notification.
+Set `requests.autoRejectIncompleteArguments` to `false` to restore the previous approval path;
+this does not change an already pending request.
+
+**Truncated** means the recorded argument text exceeds `argumentExcerptBytes` in UTF-8 bytes
+(default 8,192). **Unavailable** means the connector cannot match the approval to a logged call by
+both call ID and tool name. The advice to keep shell commands well under 2,000 characters is not a
+separate limit.
+
+### Automatic permission cards in Fishball
+
+On by default. Set `requests.autoEscalatePermissions` to `false` to turn it off for new
+requests. Fishball gets one turn to decide an uncovered managed permission. If it escalates, or
+finishes that turn without deciding, the system shows an **Allow once / Reject** card in Fishball
+and sends an action notice when the target has Connector UI. The session's own approval prompt
+also works; the first answer wins. Requests already covered by a standing grant, automatically
+rejected for incomplete arguments, or decided by a delegate do not reach Fishball.
+Turning this off preserves the previous session-only escalation and manual `ask_user` behavior.
+
 ### Limits
 
 Each limit is a whole number of at least 1, with no maximum.
 
 | Setting | Default | Meaning |
 | --- | --- | --- |
-| `maxQueuedInputs` | 200 | Events waiting for an agent that it has not taken yet (messages, finish notices, contributed events). Past it those events are refused with `queue-full`. Permission requests, questions and their outcomes are always delivered. |
+| `maxQueuedInputs` | 200 | Events waiting for an agent that it has not taken yet (messages, finish notices, contributed events). Past it those events are refused with `queue-full`. Permission offers, questions and their outcomes are exempt from this queue limit. |
 | `argumentExcerptBytes` | 8192 | How much of a requested tool call the managing agent sees, in bytes. |
 | `maxMessageBytes` | 65536 | The size of one message to or from a managed session, in bytes. |
 | `readSessionMessages` | 12 | The number of messages `session_read` returns. |
@@ -197,20 +222,24 @@ routing.
   with `session_start`, or one you handed to it with **Hand over** (see below).
   `sessions_list` omits every other session, and every session tool refuses one it does not manage.
 - **The agent hears only what its own tool calls did not tell it.** When a managed session comes to a
-  standstill (no running turn, subagent or background job, nothing queued), the agent gets one
-  `turn-finished` with the session's final reply (cut to 4 KB) or the reason it stopped. Nothing is
-  sent when the agent stopped the session itself, and no event repeats the agent's own answer or the
-  session's running state (the tools return it).
-- **A managed session's questions, plan reviews and permission requests go to its agent.** The agent
-  answers them with `question_answer` and `approval_answer`. They wait without a timer and without a
-  cap, whether or not the agent is connected. A standing grant (`grant` answer) allows matching
-  calls later without asking again.
+  standstill (no running turn or subagent, nothing queued), the agent gets one `turn-finished` with
+  the session's final reply (cut to 4 KB) or the reason it stopped. Background jobs can keep running.
+  Nothing is sent when the agent stopped the session itself, and no event repeats the agent's own
+  answer or the session's running state (the tools return it). For eligible turns, the event also
+  carries turn-scoped `turnFinal` and `assignment` provenance. Consumers can check whether that
+  proof is still current with `session_read` using `checkTurn: { assignmentId, turnSeq }` and
+  setting `maxMessages` and `maxBytes` to zero; this returns `{ current }` without session history.
+- **Offers from a managed session go to its agent.** The agent answers questions and plan reviews
+  with `question_answer`, and permission offers with `approval_answer`. Offers wait without a timer
+  or cap, whether or not the agent is connected. A standing grant (`grant` answer) allows matching
+  calls later without asking again. Incomplete permission requests are rejected before an offer by default.
 - **Questions and plan reviews also open your card in the session, and the first answer counts.** If
   you answer first, the agent receives your answer as the outcome.
 - **A permission request waits for the agent.** Your own prompt shows when the agent escalates the
   request, or when the session leaves the agent's management.
-- **An escalated request belongs to you.** It leaves the agent's lists, and the agent can no longer
-  answer it. Your answer settles it, and the agent receives that outcome.
+- **Escalation does not decide the request.** The first valid answer on either card (or a valid
+  answer from its manager) settles it. The connector sends the outcome of a session-card answer
+  to the manager.
 - A session's management ends with `session_release` (the agent's own), **Take back** (yours), or
   when its token is switched off or deleted. Requests still waiting then go to you.
 - Inside a managed session, the model has the tool `message_agent` for writing to its agent.
@@ -353,7 +382,7 @@ on the current DSH. Each folder has one `*.test.mjs` entry. See
 | `oauth` | Token store, failure limiter, bearer verifier, token endpoint, `client_credentials`, metadata documents. |
 | `oauth-web` | The approval listener and page, CIMD, PKCE, `authorization_code` and `refresh_token`, the page id. |
 | `pairs` | The pair store, `pair` and `set_name`, names and ids. |
-| `report` | `turn-finished` at a root session's standstill: outcome, final message, stop reason. |
+| `report` | `turn-finished` without waiting for background jobs, plus turn-scoped final text and its provenance. |
 | `revocation` | Routing's `endPrincipal` and `Mailbox.retire` misuse. |
 | `routing` | Managed state, the router, `message_agent`, the offer ledger, the hand-over service. |
 | `schema-value` | `validateValue(schema, value)` against DSH's own JSON Schema check. |

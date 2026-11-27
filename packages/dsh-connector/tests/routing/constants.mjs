@@ -247,6 +247,7 @@ export const REVIEW_X = Object.freeze({
   }),
   /** The session domain's live limits (only the argument excerpt is read on this path). */
   readLimits: Object.freeze({ argumentExcerptBytes: 8192, maxMessageBytes: 65536, readSessionMessages: 12, readSessionBytes: 12288 }),
+  requestSettings: Object.freeze({ autoEscalatePermissions: true, autoRejectIncompleteArguments: true }),
   /** Fixture data. */
   ids: Object.freeze({ a: 'agent-a', b: 'agent-b' }),
   sessions: Object.freeze({ s: 'fbtest-rx-s', t: 'fbtest-rx-t' }),

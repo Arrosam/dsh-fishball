@@ -19,6 +19,7 @@ import { EVENT_TYPE, IX, SETTLED_BY, SETTLEMENT_OUTCOME } from 'dsh-connector-te
 import { call, cid, free, managed, ofType, pending, principal, tok } from 'dsh-connector-test-helpers/connector-world/interactions'
 import { scenario } from 'dsh-connector-test-helpers/connector-world/world'
 import { ENV } from 'dsh-connector-test-helpers/connector-world/constants'
+import { findBriefs } from './briefs.mjs'
 import { WD } from './constants.mjs'
 
 const SDK = '0.2.2-rc.1'
@@ -89,6 +90,7 @@ test('WD-REAL: the judge on ' + ROUTE.provider + '/' + ROUTE.model + ' (' + ROUT
   const w = await scenario(SDK, 'wd-real', { env: { [ENV.extension]: path.join(import.meta.dirname, 'real-extension.mjs'), ...WD.env, [ROUTE.keyEnv]: key } })
   assert.equal(await w.call('realJudge', ROUTE), true)
   const p = await principal(t, w)
+  assert.ok(await until(async () => (await p.client.listTools()).tools.some((tool) => tool.name === WD.tool.brief), WAIT_MS, POLL_MS), 'Watchdog did not enable after model configuration')
   const report = []
   for (const r of ROWS) {
     const sid = await managed(w, p)
@@ -99,7 +101,7 @@ test('WD-REAL: the judge on ' + ROUTE.provider + '/' + ROUTE.model + ' (' + ROUT
     await request(w, sid, r)
     const o = await outcome(p, sid, r.command, seen)
     const seconds = Math.round((Date.now() - started) / 1000)
-    const side = (await w.call('routed')).at(-1)
+    const side = findBriefs(w.home).find((b) => b.sessionId === sid)?.sideSessionId
     const replies = side ? await w.call('assistantTexts', { sessionId: side }) : null
     // An offer is a judged pass (delegate.outcome passed) or a failed judgement (failed: its JUDGE_FAILURE code).
     const offered = o?.offer?.payload.delegate

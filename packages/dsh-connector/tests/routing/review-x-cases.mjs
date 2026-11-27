@@ -141,7 +141,9 @@ async function domainWorld(t, sdk) {
   const switches = { failSettlement: false, failStage: false }
   let seam
   const w = await routeWorld(t, sdk, { port: reviewPort(switches), prepare: (ctx) => { seam = storageSeam(ctx); stubServices(ctx) } })
-  const d = await mod[RX.domainFactory](w.ctx, { storageDomain: w.helpers, readLimits: () => RX.readLimits, routing: w.routing, logger: w.logger })
+  const d = await mod[RX.domainFactory](w.ctx, {
+    storageDomain: w.helpers, readLimits: () => RX.readLimits, readSettings: () => RX.requestSettings, routing: w.routing, logger: w.logger,
+  })
   w.beforeClose(() => d.close())
   // Registered after the domain, so it runs first: every call still waiting is aborted before the domain closes.
   const calls = []

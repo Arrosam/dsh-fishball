@@ -17,7 +17,8 @@
  *   as V2's managed notes did ("a refused note is logged, the change itself stands"). Its draft is
  *   checked before the change (handover/index.js), so only a storage failure can fail it.
  */
-import { MANAGED_REFUSAL, RETIREMENT_REASON } from '../../mcp-schema/index.js'
+import { randomUUID } from 'node:crypto'
+import { MANAGED_REFUSAL, RETIREMENT_REASON, TURN_PROVENANCE } from '../../mcp-schema/index.js'
 import { diagnosticOf } from '../errors.js'
 import { isNonEmptyString } from '../mailbox/draft.js'
 import { LOG, MISUSE } from './constants.js'
@@ -37,6 +38,7 @@ const assertPrincipal = (principalKey) => { if (!isNonEmptyString(principalKey))
 /**
  * @param {object} deps
  * @param deps.table - the routing domain's `managed` table (store.js)
+ * @param deps.authorityEpochOf - current enabled credential generation of a principal, or undefined
  * @param deps.logger - `{warn}`; a throwing change listener and a failed follow-up are logged there
  * @param {(sessionId: string, manager: string, reason: string, leaveOptions?: object) => Promise<unknown>} deps.leave -
  *   after a session stopped being managed (its live offers are retired with `reason`); it must not
@@ -45,12 +47,37 @@ const assertPrincipal = (principalKey) => { if (!isNonEmptyString(principalKey))
  * @returns `{state, assign, end, endAllOf, moveAllNow, withState, drain}`: `state` is the K1c `ManagedState`;
  *   the rest is for the hand-over service, revocation and the offer path, never handed to C-TOOLS.
  */
-export function createManagedState({ table, logger, leave }) {
+export function createManagedState({ table, logger, leave, authorityEpochOf }) {
   const serial = serialChain()
   const changes = listenerSet(logger, LOG.format, LOG.listenerFailed)
   /** Root session id → its manager's principal key; derived from the table, which stays the authority. */
   const managers = new Map()
   for (const [, record] of table.entries()) managers.set(record.sessionId, record.principalKey)
+
+  // Only the native MCP start classifies a new root as work. This evidence is scoped to this
+  // routing instance: a restored row or an arbitrary handover cannot establish its purpose.
+  const workRoots = new Set()
+  const workAssignments = new Map()
+
+  function workAssignmentOf(sessionId) {
+    const record = workAssignments.get(sessionId)
+    return record !== undefined && record.authorityEpoch === authorityEpochOf(managers.get(sessionId))
+      ? record.assignment : undefined
+  }
+
+  async function putManager(sessionId, principalKey, workEpoch) {
+    const authorityEpoch = workEpoch !== undefined || workRoots.has(sessionId) ? authorityEpochOf(principalKey) : undefined
+    const startsWork = workEpoch !== undefined && workEpoch === authorityEpoch
+    // Prepare proof before writing, then publish it together with the manager after the write.
+    const assignment = authorityEpoch !== undefined && (startsWork || workRoots.has(sessionId))
+      ? Object.freeze({ id: randomUUID(), purpose: TURN_PROVENANCE.workPurpose }) : undefined
+    await table.put(managedKeyOf(sessionId), { sessionId, principalKey })
+    managers.set(sessionId, principalKey)
+    if (startsWork) workRoots.add(sessionId)
+    // The previous id never comes back, even on same-principal handover or succession undo.
+    if (assignment === undefined) workAssignments.delete(sessionId)
+    else workAssignments.set(sessionId, { assignment, authorityEpoch })
+  }
 
   /** Runs a stored change's follow-up; a failure is logged, never undoes the change (module comment). */
   async function followUp(then, ...args) {
@@ -66,15 +93,14 @@ export function createManagedState({ table, logger, leave }) {
    * @param options.then - the follow-up, run once the change is stored (Hand over's event).
    * @throws TypeError for a bad session id, or a bad principal key without `admit` (a caller bug)
    */
-  function assign(sessionId, principalKey, { admit, then } = {}) {
+  function assign(sessionId, principalKey, { admit, then, workEpoch } = {}) {
     assertSession(sessionId)
     if (admit === undefined) assertPrincipal(principalKey)
     return serial(async () => {
       if (managers.has(sessionId)) return ALREADY_MANAGED
       const refused = admit?.()
       if (refused !== undefined) return refused
-      await table.put(managedKeyOf(sessionId), { sessionId, principalKey })
-      managers.set(sessionId, principalKey)
+      await putManager(sessionId, principalKey, workEpoch)
       changes.fire()
       await followUp(then)
       return OK
@@ -91,6 +117,7 @@ export function createManagedState({ table, logger, leave }) {
     if (by !== undefined && by !== manager) return OTHER_MANAGER
     await table.delete(managedKeyOf(sessionId))
     managers.delete(sessionId)
+    workAssignments.delete(sessionId)
     changes.fire()
     // `followUp` logs instead of throwing; the `finally` keeps "always retire" true if that ever
     // changes: the session is unmanaged now, so its offers must not stay with the old pair (K1c-2).
@@ -143,10 +170,7 @@ export function createManagedState({ table, logger, leave }) {
   /** Writes `sessions` as managed by `principalKey`, in order; one change event for the batch. */
   async function putManagers(sessions, principalKey) {
     try {
-      for (const sessionId of sessions) {
-        await table.put(managedKeyOf(sessionId), { sessionId, principalKey })
-        managers.set(sessionId, principalKey)
-      }
+      for (const sessionId of sessions) await putManager(sessionId, principalKey)
     } finally {
       if (sessions.length > 0) changes.fire()
     }
@@ -190,6 +214,7 @@ export function createManagedState({ table, logger, leave }) {
   return Object.freeze({
     state,
     assign,
+    workAssignmentOf,
     end,
     endAllOf,
     moveAllNow,

@@ -27,6 +27,9 @@ const FAIL = Object.freeze({ code: 'FBTEST_NO_RETRY', message: 'fbtest model fai
 /** The requirement's words for a cancelled turn's stop.message (sessions.d.ts, the user 2026-11-21). */
 const STOP = Object.freeze({ reason: 'fbtest plugin stop: off purpose', hook: (reason) => `the turn was cancelled (hook: ${reason})`, user: 'the turn was cancelled (user)' })
 
+// The native wire suite checks the additive provenance fields separately.
+const legacyReportPayload = ({ turnFinal: _turnFinal, assignment: _assignment, ...legacy }) => legacy
+
 const turnsOf = async (p, sid) => ofType(await pending(p.client), ET.turnFinished).filter((e) => e.sourceSessionId === sid)
 const statesOf = async (p, sid) => ofType(await pending(p.client), ET.state).filter((e) => e.sourceSessionId === sid || e.payload?.sessionId === sid)
 /** Waits for the `n`th turn-finished of `sid`, then a quiet period, and returns them all. */
@@ -68,7 +71,7 @@ export function registerReportSystemCases(sdk) {
     await w.call('waitIdle', { sessionId: s.sessionId })
     const [e, ...more] = await turnsAfter(p, s.sessionId, 1)
     assert.deepEqual(more, [], 'more than one turn-finished for one standstill')
-    assert.deepEqual(e.payload, { sessionId: s.sessionId, outcome: O.completed, finalMessage: { text: await lastAssistantText(w, s.sessionId), truncated: false } })
+    assert.deepEqual(legacyReportPayload(e.payload), { sessionId: s.sessionId, outcome: O.completed, finalMessage: { text: await lastAssistantText(w, s.sessionId), truncated: false } })
     assert.deepEqual(await statesOf(p, s.sessionId), [], 'a state event was produced (A1)')
   })
   row(sdk, 'CONN-REPORT-UC-01', 'ST (session_message to an idle session → its turn ends)', 'session_message on an idle managed session → {status, running: true} (its turn is running, held); released → one more turn-finished, completed; no state event', async (t) => {
@@ -184,7 +187,7 @@ export function registerReportSystemCases(sdk) {
     await w.call('idle', { sessionId: sid })
     const all = await turnsAfter(p, sid, before + 1)
     assert.equal(all.length, before + 1, 'not exactly one turn-finished across the cancel and the redirected turn')
-    assert.deepEqual(all.at(-1).payload, { sessionId: sid, outcome: O.completed, finalMessage: { text: await lastAssistantText(w, sid), truncated: false } })
+    assert.deepEqual(legacyReportPayload(all.at(-1).payload), { sessionId: sid, outcome: O.completed, finalMessage: { text: await lastAssistantText(w, sid), truncated: false } })
   })
   row(sdk, 'CONN-REPORT-ST-03', 'ST (session_redirect of an idle session)', 'session_redirect on an idle session → running boolean; its turn ends → exactly one turn-finished, completed', async (t) => {
     const w = await w0()

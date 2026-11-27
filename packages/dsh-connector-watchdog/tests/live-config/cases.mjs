@@ -12,13 +12,15 @@
  */
 import assert from 'node:assert/strict'
 import { assertField, fieldsOf, servedNamespace } from 'dsh-connector-test-helpers/dsh/settings-schema'
-import { FIELDS, FIXTURE, TIME, WATCHDOG } from './constants.mjs'
+import { ALL_FIELDS, FIELDS, FIXTURE, MODEL_FIELD, TIME, WATCHDOG } from './constants.mjs'
 import { caseTest, rowModule, storedBrief, watchdogWorld } from './world.mjs'
 
 const S = TIME.secondMs
 const EDGE = TIME.edgeMs
 const show = (v) => JSON.stringify(v)
-const interval = (seconds) => ({ minCheckIntervalSeconds: seconds })
+/** Active Watchdog config with a configured model (Watchdog is disabled without one). */
+const enabled = (extra = {}) => ({ model: FIXTURE.model.first, ...extra })
+const interval = (seconds) => enabled({ minCheckIntervalSeconds: seconds })
 
 /** Asserts exactly one patrol of `sessionId` arrives `ms` from now (none at ms - 1). */
 async function assertPatrolAfter(w, sessionId, ms, label) {
@@ -47,8 +49,14 @@ export function registerWatchdogLiveConfigCases(sdk) {
   // ============================================================================================
   // R2: the schema
 
-  caseTest(sdk, 'WD-LC-SC-01', 'order', 'Config has exactly the four user settings, in order', async () => {
-    assert.deepEqual(Object.keys(fieldsOf((await rowModule(sdk)).Config)), FIELDS.map((f) => f.name))
+  caseTest(sdk, 'WD-LC-SC-01', 'order', 'Config has model followed by the four numeric settings, in order', async () => {
+    assert.deepEqual(Object.keys(fieldsOf((await rowModule(sdk)).Config)), ALL_FIELDS)
+  })
+  caseTest(sdk, 'WD-LC-SC-01', MODEL_FIELD.name, 'model: volatile object with provider, model and reasoningEffort, description kept', async () => {
+    const node = fieldsOf((await rowModule(sdk)).Config)[MODEL_FIELD.name]
+    assertField(node, { ...MODEL_FIELD, volatile: true }, MODEL_FIELD.name)
+    assert.deepEqual(Object.keys(node.dict), MODEL_FIELD.subfields)
+    for (const sub of MODEL_FIELD.subfields) assert.equal(node.dict[sub].type, 'string', sub)
   })
   for (const field of FIELDS) {
     caseTest(sdk, 'WD-LC-SC-01', field.name, `${field.name}: volatile natural, default ${field.default}, ${field.min}..${field.max}, description kept`, async () => {
@@ -61,14 +69,15 @@ export function registerWatchdogLiveConfigCases(sdk) {
       assert.equal(Config({})[field.name].get(), field.default, 'unset → the default')
     })
   }
-  caseTest(sdk, 'WD-LC-SC-02', 1, 'DSH\'s settings service serves the dsh-connector-watchdog namespace with all four fields and their values', async () => {
+  caseTest(sdk, 'WD-LC-SC-02', 1, 'DSH\'s settings service serves the dsh-connector-watchdog namespace with model and all four limit fields', async () => {
     const { Config } = await rowModule(sdk)
-    const view = await servedNamespace(sdk, { id: WATCHDOG.name, Config, raw: interval(FIXTURE.interval.first) })
+    const raw = { minCheckIntervalSeconds: FIXTURE.interval.first }
+    const view = await servedNamespace(sdk, { id: WATCHDOG.name, Config, raw })
     assert.ok(view, 'the namespace is served')
-    assert.deepEqual(Object.keys(view.value).sort(), FIELDS.map((f) => f.name).sort())
+    assert.deepEqual(Object.keys(view.value).sort(), [...ALL_FIELDS].sort())
     assert.equal(view.value.minCheckIntervalSeconds, FIXTURE.interval.first)
     for (const f of FIELDS.slice(1)) assert.equal(view.value[f.name], f.default, f.name)
-    assert.deepEqual(view.user, interval(FIXTURE.interval.first), 'the user layer holds what the user set')
+    assert.deepEqual(view.user, raw, 'the user layer holds what the user set')
   })
 
   // ============================================================================================
@@ -111,8 +120,8 @@ export function registerWatchdogLiveConfigCases(sdk) {
     assert.equal(read.maxMessages, FIXTURE.reads.messages)
     assert.equal(read.maxBytes, FIXTURE.reads.bytes)
   })
-  caseTest(sdk, 'WD-LC-EP-01', 2, 'defaults: an unset config patrols at 1740 s and reads 8 messages / 8192 bytes', async (t) => {
-    const w = await briefed(t, sdk, {})
+  caseTest(sdk, 'WD-LC-EP-01', 2, 'defaults: with a model set and numeric fields unset, patrols at 1740 s and reads 8 messages / 8192 bytes', async (t) => {
+    const w = await briefed(t, sdk, enabled())
     const read = await assertPatrolAfter(w, FIXTURE.session, FIELDS[0].default * S, 'default interval')
     assert.equal(read.maxMessages, FIELDS[1].default)
     assert.equal(read.maxBytes, FIELDS[2].default)
@@ -159,5 +168,54 @@ export function registerWatchdogLiveConfigCases(sdk) {
     await w.configure(interval(FIXTURE.interval.short))
     await w.tick(FIXTURE.interval.first * S * 2)
     assert.deepEqual(w.reads, [])
+  })
+
+  // ============================================================================================
+  // Dedicated model & disabled-by-default gating
+
+  for (const [label, config] of [
+    ['empty config', {}],
+    ['empty model object', { model: {} }],
+    ['missing model id', { model: { provider: 'fbtest-cheap' } }],
+    ['missing provider', { model: { model: 'mini' } }],
+    ['whitespace model', { model: { provider: '  ', model: 'mini' } }],
+  ]) {
+    caseTest(sdk, 'WD-LC-MODEL-01', label, `${label}: Watchdog stays disabled (row active, no tools, no delegate, no patrol even with stored brief)`, async (t) => {
+      const w = await watchdogWorld(t, sdk, { config, briefs: [storedBrief(FIXTURE.session)] })
+      assert.ok(w.active(), 'the row stays active so its settings page remains open')
+      assert.deepEqual([...w.tools.keys()], [], 'no tools registered while disabled')
+      assert.equal(w.delegates.size, 0, 'no delegate registered while disabled')
+      await assertNoPatrol(w, FIXTURE.session, FIELDS[0].default * S * 2, 'no patrol while disabled')
+    })
+  }
+
+  caseTest(sdk, 'WD-LC-MODEL-02', 'toggle', 'live enable/disable via model: unset → set enables (tools, delegate, stored brief armed); set → unset disables cleanly on same fiber', async (t) => {
+    const w = await watchdogWorld(t, sdk, { config: { minCheckIntervalSeconds: FIXTURE.interval.short }, briefs: [storedBrief(FIXTURE.session)] })
+    const fiber = w.fiber()
+    assert.ok(w.active())
+    assert.deepEqual([...w.tools.keys()], [])
+    assert.equal(w.delegates.size, 0)
+
+    // Configure a model live → Watchdog enables immediately on the same row fiber.
+    await w.configure({ model: FIXTURE.model.first, minCheckIntervalSeconds: FIXTURE.interval.short })
+    assert.equal(w.fiber(), fiber, 'same row fiber after enable')
+    assert.ok(w.active())
+    assert.deepEqual([...w.tools.keys()].sort(), Object.values(WATCHDOG.tool).sort(), 'tools registered after model configured')
+    assert.equal(w.delegates.size, 1, 'delegate registered after model configured')
+    await assertPatrolAfter(w, FIXTURE.session, FIXTURE.interval.short * S, 'stored brief armed on enable')
+
+    // Switch model live → stays enabled on same row fiber.
+    await w.configure({ model: FIXTURE.model.second, minCheckIntervalSeconds: FIXTURE.interval.short })
+    assert.equal(w.fiber(), fiber, 'same row fiber after model switch')
+    assert.deepEqual([...w.tools.keys()].sort(), Object.values(WATCHDOG.tool).sort())
+    assert.equal(w.delegates.size, 1)
+
+    // Clear model live → Watchdog disables immediately: tools/delegate removed, patrol disarmed.
+    await w.configure({ minCheckIntervalSeconds: FIXTURE.interval.short })
+    assert.equal(w.fiber(), fiber, 'same row fiber after disable')
+    assert.ok(w.active(), 'row stays active so settings page remains open')
+    assert.deepEqual([...w.tools.keys()], [], 'tools unregistered after clearing model')
+    assert.equal(w.delegates.size, 0, 'delegate unregistered after clearing model')
+    await assertNoPatrol(w, FIXTURE.session, FIXTURE.interval.short * S * 2, 'no patrol after clearing model')
   })
 }

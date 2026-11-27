@@ -140,23 +140,28 @@ export async function openTokensPage(t, { sdk, world, routes, lang = FIXTURE.lan
   const dictionaries = []
   const locale = { ...services.locale, register(ns, dicts) { dictionaries.push({ ns, dicts }); return services.locale.register(ns, dicts) } }
   const served = []
-  /**
-   * `dshForms`: `configForms.get` answers a form object shaped as DSH's own ConfigFormController
-   * (dsh-client-ui-settings): class methods that read their own fields through `this`, so a page that
-   * calls them detached from the object fails as it does in a real DSH. Otherwise a plain object of
-   * closures.
-   */
-  class HostForm {
-    #listeners = new Set()
-    getSnapshot() { return formSnapshot() }
+  const formListeners = new Set()
+  // Mirrors DSH's ConfigFormController (a class whose prototype methods require `this`), so
+  // passing unbound `configForm.subscribe` / `configForm.getSnapshot` throws as in real DSH.
+  class FakeConfigForm {
+    #listeners
+    #read
+    #write
+    constructor(listeners, read, write) {
+      this.#listeners = listeners
+      this.#read = read
+      this.#write = write
+    }
+    getSnapshot() { return this.#read() }
     subscribe(listener) { this.#listeners.add(listener); return () => this.#listeners.delete(listener) }
-    mutate(ops, expected) { return mutate(ops, expected) }
-    set() { return Promise.resolve(false) }
+    mutate(ops, expected) { return this.#write(ops, expected) }
+    async set() { return false }
     dispose() {}
   }
+  const notifyForm = () => { for (const listener of [...formListeners]) listener() }
   const configForms = {
     whileServed(namespaces, register) { served.push([...namespaces]); const dispose = register(); return () => { if (typeof dispose === 'function') dispose() } },
-    get: () => (dshForms ? new HostForm() : { getSnapshot: formSnapshot, subscribe: () => () => {}, mutate, set: async () => false, dispose() {} }),
+    get: () => new FakeConfigForm(formListeners, formSnapshot, mutate),
   }
   const { Context } = await import(pathToFileURL(path.join(runtimeOf(sdk), BOOT.cordisEntry)).href)
   const root = new Context()
@@ -204,6 +209,7 @@ export async function openTokensPage(t, { sdk, world, routes, lang = FIXTURE.lan
     // Without a write reply the form keeps its previous snapshot until recovery reads the host.
     const acknowledged = !recovery && accepted
     if (recovery) { await recovery.reread; recovery = undefined }
+    notifyForm()
     shim.rerender()
     return acknowledged
   }
@@ -211,6 +217,7 @@ export async function openTokensPage(t, { sdk, world, routes, lang = FIXTURE.lan
   async function external(ops) {
     for (const op of ops) applyOther(op)
     revision += 1
+    notifyForm()
     shim.rerender()
     await settle()
   }

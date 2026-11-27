@@ -43,7 +43,7 @@ Configurable rows: `dsh-connector-adapter`, `dsh-connector-watchdog`; never: `pr
 | PG-DT-01 | DT | served namespaces (all / none / each one / excluded rows) × configure entries; one whileServed per row |
 | PG-ST-01 | ST | not served → served → withdrawn → served; plugin disposed → entries gone |
 | PG-EP-03 | EP | summary view: one non-empty line, no controls |
-| PG-EP-04 | EP | page view: one control per top-level served field: scalar fields in schema order, then list fields in schema order (the requirement owner's correction of R4, 2026-11-22: the form's one Save follows its scalar fields, a list has its own Save); also with an appended scalar field |
+| PG-EP-04 | EP | page view: one control per top-level served field: model selectors first, then scalar fields in schema order, then list fields in schema order; the form has one Save for its scalars and each list has its own Save; also with an appended scalar field |
 | PG-EP-05 | EP | labels from the dictionary (en, zh), hint = the schema description |
 | PG-EP-06 | EP | a field with no label renders under its name |
 | PG-UC-01/02/03/04 | UC | number set as a Number at the read revision; two fields in one Save; emptied → unset; a text field sets its string |
@@ -53,4 +53,8 @@ Configurable rows: `dsh-connector-adapter`, `dsh-connector-watchdog`; never: `pr
 | PG-LS-UC-01..04 | UC | Add (empty item) + fill + Save writes the whole list at the read revision; Remove; edit; empty list |
 | PG-LS-DT-01 | DT/BVA | refused items block Save (empty / bad / 33-character serverName, missing url, duplicate serverName and non-https / off-loopback / ftp / non-URL url marked aria-invalid); accepted: a 32-character name, http on 127.0.0.1, [::1], localhost |
 | PG-LS-ST-01 | ST | a refused save shows an error and keeps the draft, the retry lands; a stale revision is refused, the draft kept |
+| PG-MD-EP-01 | EP | model selector defaults to disabled (empty) and lists plain + per-effort catalog models in en and zh |
+| PG-MD-UC-01..03 | UC | picking a plain or reasoning-effort model writes `{provider, model, reasoningEffort?}` immediately; picking disabled unsets `model` |
+| PG-MD-DT-01 | DT | a saved model missing from the catalog stays shown with a readable fallback label and can still be cleared |
+| PG-MD-ST-01 | ST | missing / failed / empty catalog shows a status note without breaking other settings; a refused save shows an alert |
 | PG-MF-01/02 | EP | the umbrella's dsh.client.inject includes @deepseek-ai/dsh-client-ui-settings; dsh-connector-adapter, dsh-connector-watchdog and dsh-connector-amenities depend on and bundle dsh-connector-shared |

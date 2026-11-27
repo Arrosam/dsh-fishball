@@ -7,7 +7,7 @@
  */
 import {
   ANSWER_DECISIONS, APPROVAL_KIND, ARGUMENTS_STATUS, DECISION_KIND, DELEGATE_OUTCOME, DELIVERY, EVENT_TYPE, GRANT_KIND, IMAGE_TYPES, PLAN_REVIEW,
-  PROMPT_DECISIONS, READ_ROLE, RETIREMENT_REASON, RISK, SETTLED_BY, SETTLEMENT_OUTCOME, TURN_OUTCOME,
+  PROMPT_DECISIONS, READ_ROLE, RETIREMENT_REASON, RISK, SETTLED_BY, SETTLEMENT_OUTCOME, TURN_PROVENANCE, TURN_OUTCOME,
 } from './constants.js'
 import { anyValue, array, boolean, constant, integer, nullable, object, oneOfStrings, string } from './schema.js'
 
@@ -46,6 +46,7 @@ export const descriptor = () => object(
   {
     arguments: string(), argumentsStatus: oneOfStrings(Object.values(ARGUMENTS_STATUS)), questions: array(questionItem()),
     delegate: object({ name: string(), outcome: oneOfStrings(Object.values(DELEGATE_OUTCOME)) }, { reason: string() }),
+    autoEscalatePermissions: boolean(),
   },
 )
 
@@ -135,7 +136,7 @@ export const mailboxEvent = () => object(
  * Event payloads by type (R-EVS-02). Offers carry the descriptor the matching `approvals_list`
  * row has, so a client never needs a second read to decide. `turn-finished` (WAKE-REDUCE) is the
  * session's standstill and its report in one: `completed` with the last assistant text (bounded,
- * TURN_FINISHED), or `stopped` with why; a stop by the manager itself sends none. `state` keeps its
+ * TURN_PROVENANCE), or `stopped` with why; a stop by the manager itself sends none. `state` keeps its
  * frozen shape with no producer (folded into the session tools' `running`). A `settlement` carries
  * `answers` for an answered session question or plan review.
  */
@@ -151,7 +152,12 @@ export const EVENT_PAYLOAD_SHAPES = Object.freeze({
   [EVENT_TYPE.retirement]: () => object({ retiredEventId: string(), reason: oneOfStrings(Object.values(RETIREMENT_REASON)) }),
   [EVENT_TYPE.turnFinished]: () => object(
     { sessionId: sessionId(), outcome: oneOfStrings(Object.values(TURN_OUTCOME)) },
-    { finalMessage: object({ text: string(), truncated: boolean() }), stop: object({ kind: string(), message: string() }) },
+    {
+      finalMessage: object({ text: string(), truncated: boolean() }), stop: object({ kind: string(), message: string() }),
+      turnFinal: object({ version: { ...integer(), const: TURN_PROVENANCE.version }, turnId: string(), sequence: integer(), reason: string() },
+        { message: object({ text: string(), truncated: boolean() }), messageSeq: integer() }),
+      assignment: object({ id: string(), purpose: constant(TURN_PROVENANCE.workPurpose) }),
+    },
   ),
   [EVENT_TYPE.state]: () => object({ sessionId: sessionId(), running: boolean(), pendingInteraction: boolean() }),
   [EVENT_TYPE.message]: () => object({ text: string(), images: array(imageRef()) }),

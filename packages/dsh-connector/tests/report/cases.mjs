@@ -1,17 +1,16 @@
 /**
  * CONN-REPORT B black-box rows (the user's approved requirements, 2026-11-21): turn-finished is the
- * end signal and the report in one event, produced by the session source for a ROOT session at a
- * true standstill of its tree. Integration level: the real session source (src/wire/sessions.js
- * createSessionSource) over a fake DSH ctx (subject.mjs) that fires DSH's own edges; routing to the
- * manager is covered by the routing rows. Oracles are the requirement texts quoted per row.
+ * end signal and the report in one event, produced by the session source for a ROOT session when
+ * its agents and queues are idle. Integration rows run the real session source over fake DSH
+ * edges. The mailbox row also runs real routing and mailbox storage without a server.
  *
  * Techniques:
  * - DT  CONN-REPORT-DT-02: DSH turn-end reason → outcome / finalMessage / stop.
  * - BVA CONN-REPORT-BVA-02: final message bytes around TURN_FINISHED.finalMessageBytes, with 1-, 2-,
  *   3- and 4-byte characters at the cut, and the exact marker.
  * - EP  CONN-REPORT-EP-03: which text is the final message (last assistant, none, user only).
- * - ST  CONN-REPORT-ST-01: standstill (root running / inbox queued / subagent running or queued /
- *   job running or stopping → held; settled → exactly one; a new turn → a new one).
+ * - ST  CONN-REPORT-ST-01: root/subagent running or queued → held; agents and queues idle → exactly
+ *   one, regardless of running or stopping jobs; job settlement alone → no duplicate.
  * - ST  CONN-REPORT-ST-02: manager stop (marked stop → none; the next turn → one; a mark while idle
  *   does not swallow a later user Stop).
  * - DT  CONN-TREE-STOP-DT-01 (the user's decision of 2026-11-21: the manager's session_stop and the
@@ -22,8 +21,11 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { caseName } from 'dsh-connector-test-helpers/cases'
+import { expectNone, expectOne, manage } from '../routing/cases.mjs'
+import { EVENT_TYPE, FIXTURE as ROUTE } from '../routing/constants.mjs'
+import { routeWorld } from '../routing/subject.mjs'
 import { DSH, FIXTURE as F, TURN_FINISHED as L, TURN_OUTCOME as O, WAIT } from './constants.mjs'
-import { reportWorld, settle, treeStopModule } from './subject.mjs'
+import { FakeDsh, reportWorld, settle, sourceModule, treeStopModule } from './subject.mjs'
 
 const T = Object.freeze({ timeout: WAIT.testMs })
 const row = (sdk, id, part, title, fn, options) => test(caseName(sdk, id, part, title), T, async (t) => fn(await reportWorld(t, sdk, options), t))
@@ -186,8 +188,40 @@ export function registerReportCases(sdk) {
   }
 
   // ---------------------------------------------------------------------------- ST: standstill
-  // B2: "Only at a true standstill of the root's tree ... When a turn ends but something is still moving, nothing is
-  // emitted yet; once everything has settled ..., exactly ONE turn-finished is emitted, carrying the final output at that point."
+  test(caseName(sdk, 'CONN-REPORT-ST-01', 'mailbox with live jobs', 'the manager receives the root’s final output once before the jobs settle'), T, async (t) => {
+    const dsh = new FakeDsh()
+    const { createSessionSource } = await sourceModule(sdk)
+    const w = await routeWorld(t, sdk, { sessions: createSessionSource(dsh.ctx) })
+    const manager = w.principal(ROUTE.ids.p)
+    w.principal(ROUTE.ids.q)
+    dsh.add(F.root)
+    dsh.child(F.child, F.root)
+    await manage(w, F.root, manager)
+
+    const rootJob = F.job(6)
+    const childJob = F.job(7)
+    dsh.job(rootJob, F.root)
+    dsh.job(childJob, F.child, DSH.jobs.stopping)
+    await expectNone(w, () => {
+      dsh.queue(F.root, { nextTurn: [{ role: 'user', content: [] }] })
+      dsh.turn(F.root, F.text(47))
+    })
+
+    const text = F.text(48)
+    const { event } = await expectOne(w, () => {
+      dsh.queue(F.root)
+      dsh.turn(F.root, text)
+    }, manager, EVENT_TYPE.turnFinished)
+    assert.equal(event.sourceSessionId, F.root)
+    assert.deepEqual(event.payload, { sessionId: F.root, ...completed(text) })
+
+    await expectNone(w, () => {
+      dsh.jobSettles(rootJob)
+      dsh.jobSettles(childJob, DSH.jobs.killed)
+    })
+  })
+
+  // Report once the root and its subagents are idle with no queued input, even while jobs are in flight.
   row(sdk, 'CONN-REPORT-ST-01', '1 root still running', 'the turn ends while the root agent still runs → nothing; it goes idle → exactly one', async (w) => {
     w.dsh.add(F.root)
     w.dsh.start(F.root)
@@ -260,16 +294,19 @@ export function registerReportCases(sdk) {
     ['8 root job running', F.root, DSH.jobs.running],
     ['9 root job stopping', F.root, DSH.jobs.stopping],
     ['10 subagent job running', F.child, DSH.jobs.running],
+    ['18 subagent job stopping', F.child, DSH.jobs.stopping],
   ]) {
-    row(sdk, 'CONN-REPORT-ST-01', part, `a background job of the tree (${owner === F.root ? 'the root' : 'a subagent'}, ${status}) is in flight at the turn end → nothing; it settles → exactly one`, async (w) => {
+    row(sdk, 'CONN-REPORT-ST-01', part, `a background job of the tree (${owner === F.root ? 'the root' : 'a subagent'}, ${status}) stays in flight at turn end → exactly one report with final output; job settlement produces no duplicate`, async (w) => {
       w.dsh.add(F.root)
       w.dsh.child(F.child, F.root)
-      w.dsh.job(F.job(2), owner)
-      if (status === DSH.jobs.stopping) w.dsh.stopping(F.job(2))
-      w.dsh.turn(F.root, F.text(37))
-      await none(w, 'reported while a job is in flight')
-      w.dsh.jobSettles(F.job(2), status === DSH.jobs.stopping ? DSH.jobs.killed : DSH.jobs.completed)
-      await one(w, completed(F.text(37)))
+      const jobId = F.job(2)
+      w.dsh.job(jobId, owner)
+      if (status === DSH.jobs.stopping) w.dsh.stopping(jobId)
+      const text = F.text(37)
+      w.dsh.turn(F.root, text)
+      await one(w, completed(text))
+      w.dsh.jobSettles(jobId, status === DSH.jobs.stopping ? DSH.jobs.killed : DSH.jobs.completed)
+      await one(w, completed(text))
     })
   }
   row(sdk, 'CONN-REPORT-ST-01', '11 settled job', 'a job already settled at the turn end does not hold the report', async (w) => {
@@ -279,16 +316,15 @@ export function registerReportCases(sdk) {
     w.dsh.turn(F.root, F.text(38))
     await one(w, completed(F.text(38)))
   })
-  row(sdk, 'CONN-REPORT-ST-01', '12 two things moving', 'a subagent and a job both in flight → nothing after the first settles; exactly one after the second', async (w) => {
+  row(sdk, 'CONN-REPORT-ST-01', '12 subagent and job in flight', 'a subagent still runs → nothing; the subagent ends with a job still running → exactly one', async (w) => {
     w.dsh.add(F.root)
     w.dsh.child(F.child, F.root)
     w.dsh.start(F.child)
     w.dsh.job(F.job(4), F.root)
     w.dsh.turn(F.root, F.text(39))
+    await none(w, 'reported while a subagent still runs')
     w.dsh.end(F.child)
     w.dsh.subagentEnds(F.child, F.root)
-    await none(w, 'reported with a job still in flight')
-    w.dsh.jobSettles(F.job(4))
     await one(w, completed(F.text(39)))
   })
   row(sdk, 'CONN-REPORT-ST-01', '13 exactly one', 'after the report, more idle edges (status, a subagent end, a job) produce no second report', async (w) => {
