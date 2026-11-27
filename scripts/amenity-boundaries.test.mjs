@@ -117,10 +117,31 @@ for (const [owner, field, target, form = 'direct'] of MANIFEST_CASES) {
   });
 }
 
+test('board can import its own code but not heartbeat through a package import alias', async (t) => {
+  const { root, packages } = fixture(t);
+  const { directory, writeManifest, writeSource } = packages.board;
+  const alias = '#feature';
+  const setAlias = (target) => writeManifest({ imports: { [alias]: target } });
+  const restoreLocalAlias = () => setAlias(`./${FIXTURE.feature}`);
+
+  // Keep the source fixed so the manifest target alone changes the boundary result.
+  writeSource(FIXTURE.entry, staticImport(alias));
+  restoreLocalAlias();
+  await assertForbiddenEdge(root, directory,
+    () => setAlias(`${packages.heartbeat.name}/feature`),
+    restoreLocalAlias);
+});
+
 const SOURCE_CASES = [
   ['board', 'bare side-effect sibling import', (p) => staticImport(p.heartbeat.name)],
   ['consultant', 'namespace import of taskboard', (p) => `import * as taskboard from '${p.taskboard.name}';\n`],
   ['taskboard', 'bare sibling import', (p) => staticImport(p.board.name)],
+  ['taskboard', 'multiline static import of board',
+    (p) => `  import
+      * as board
+    from
+        '${p.board.name}';
+`],
   ['board', 'Fishball umbrella import', (p) => staticImport(p.fishballUmbrella.name)],
   ['board', 'Connector umbrella subpath import', (p) => staticImport(`${p.connectorUmbrella.name}/feature`)],
   ['board', 'sibling subpath re-export', (p) => `export * from '${p.heartbeat.name}/feature';\n`],
