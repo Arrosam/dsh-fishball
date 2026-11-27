@@ -1,0 +1,398 @@
+#!/opt/homebrew/bin/python3 -B
+"""Fixed-slot controller for the SSD1 Fishball test lab."""
+import argparse
+from contextlib import contextmanager
+import fcntl
+import http.client
+import json
+import os
+from pathlib import Path
+import shutil
+import signal
+import stat
+import subprocess
+import sys
+import tempfile
+import uuid
+
+import model
+import provision
+import retention
+import runtime as rt
+
+MOUNT = Path('/Volumes/SSD1')
+UUID = 'AFBBB294-F123-4031-BC7B-B5004284768E'
+ROOT = MOUNT / 'DSH-TestLab'
+STAGING = MOUNT / 'GitHub/dsh-fishball'
+PORTS = {'integration': (46100, 46101), 'dev-1': (46102, 46103), 'dev-2': (46104, 46105)}
+CONTROL = ROOT / 'control'
+SDK_ORIGINAL = Path('/Users/samuel/Library/Application Support/DSH/data/versions/0.2.2-rc.3')
+
+
+def directory(path):
+    info = path.lstat()
+    if path.resolve() != path or not stat.S_ISDIR(info.st_mode) or info.st_uid != os.getuid() or info.st_mode & 0o077:
+        raise ValueError('Lab directory must be owned, private and not a link: ' + str(path))
+    return path
+
+
+def lab_ready():
+    import plistlib
+    info = plistlib.loads(subprocess.check_output(['/usr/sbin/diskutil', 'info', '-plist', str(MOUNT)]))
+    if info.get('VolumeUUID') != UUID or info.get('MountPoint') != str(MOUNT):
+        raise ValueError('Approved SSD1 volume not mounted')
+    directory(ROOT)
+    for path in (CONTROL, ROOT / 'envs', ROOT / 'shared', ROOT / 'evidence'):
+        path.mkdir(exist_ok=True)
+        directory(path)
+
+
+@contextmanager
+def lock(name):
+    fd = os.open(CONTROL / (name + '.lock'), os.O_RDWR | os.O_CREAT | os.O_NOFOLLOW, 0o600)
+    with os.fdopen(fd, 'w') as handle:
+        fcntl.flock(handle, fcntl.LOCK_EX)
+        yield handle.fileno()
+
+
+def config(ident):
+    return CONTROL / (ident + '.json')
+
+
+def provider():
+    path = CONTROL / 'provider.json'
+    if not path.exists():
+        return 'agnes'
+    value = json.loads(path.read_text())
+    if not isinstance(value, dict) or set(value) != {'provider'} or value['provider'] not in model.PROVIDERS:
+        raise ValueError('Invalid model provider selection')
+    return value['provider']
+
+
+def remove(env, path):
+    if (not path.is_relative_to(env) or path.resolve() != path or env.parent != ROOT / 'envs'):
+        raise ValueError('Refusing deletion outside the selected test environment')
+    if path.exists():
+        shutil.rmtree(path)
+
+
+class Slot:
+    def __init__(self, ident):
+        self.id = ident
+        self.env = ROOT / 'envs' / ident
+        self.ports = PORTS[ident]
+        self.live = ident == 'integration'
+        self.state = json.loads(config(ident).read_text()) if config(ident).exists() else None
+        self.process = self.env / 'process.json'
+        self.launch = self.env / 'parent.patch.yml'
+        if self.state or self.env.exists() or self.env.is_symlink():
+            directory(self.env)
+            if not self.state or (self.env / '.slot').read_text() != self.state['token']:
+                raise ValueError('Unregistered environment directory; no changes made')
+
+    def save(self):
+        rt.json_write(config(self.id), self.state)
+
+    def source(self, override=None):
+        source = STAGING if self.live else override or (self.state or {}).get('source')
+        if source is None:
+            raise ValueError('Dev create requires --source /absolute/worktree')
+        return provision.plan_source(source, STAGING, self.live)
+
+    def install(self, plan, reset):
+        env = self.env
+        source = Path(plan['source'])
+        self.state['installed'] = False
+        self.save()
+        if not self.live:
+            if reset != 'wipe':
+                with tempfile.TemporaryDirectory(dir=env, prefix='install-') as tmp:
+                    staged = Path(tmp) / 'checkout'
+                    provision.snapshot(plan, staged, STAGING)
+                    remove(env, env / 'checkout')
+                    staged.rename(env / 'checkout')
+            source = env / 'checkout'
+        if reset == 'wipe':
+            for entry in env.iterdir():
+                if entry.name == '.slot' or entry == source:
+                    continue
+                if entry.is_symlink():
+                    raise ValueError('Unexpected symlink in environment root')
+                if entry.is_dir():
+                    remove(env, entry)
+                else:
+                    entry.unlink()
+        elif reset == 'reinstall':
+            remove(env, env / 'dsh-home/fishball')
+            remove(env, env / 'dsh-home/profiles/web/node_modules')
+        rt.isolated(env)
+        provision.provision(ROOT, env, source, self.live, self.ports[1], provider())
+        self.state.update(source=plan['source'], head=plan['head'], installed=True, provider=provider(), model_initialized=False)
+        self.save()
+
+    def create(self, override):
+        if self.state:
+            raise ValueError('Environment already registered')
+        plan = self.source(override)
+        rt.free(self.ports)
+        self.env.mkdir()
+        self.state = {'token': uuid.uuid4().hex, 'installed': False, 'generation': 0,
+                      'source': plan['source'], 'head': plan['head']}
+        (self.env / '.slot').write_text(self.state['token'])
+        self.save()
+        self.install(plan, 'create')
+        return self.summary('stopped')
+
+    def record(self):
+        if self.process.exists():
+            if self.process.is_symlink():
+                raise ValueError('Linked process record refused')
+            record = json.loads(self.process.read_text())
+            if record.get('anchor') != str(self.launch):
+                raise ValueError('Unexpected process ownership anchor')
+            if rt.owned(record):
+                return record
+        return None
+
+    def stop(self, *, allow_running=True):
+        record = self.record()
+        child = rt.child_record(self.env, record['pid'] if record else None)
+        if record:
+            if not allow_running:
+                raise ValueError('Stop the environment before destroying it')
+            if rt.owned(record):
+                os.kill(record['pid'], signal.SIGTERM)
+            if not rt.wait_for(lambda: not rt.owned(record) and (not child or not rt.owned(child)), rt.STOP_SECONDS):
+                raise ValueError('Owned parent or child did not stop; no data changed')
+        rt.child_record(self.env, None)  # Refuse any lingering, detached child.
+        rt.free(self.ports)
+        self.process.unlink(missing_ok=True)
+        (self.env / 'admission').unlink(missing_ok=True)
+        return self.summary('stopped')
+
+    def verify_source(self):
+        if self.live:
+            self.source()
+            origin = STAGING
+        else:
+            origin = self.env / 'checkout'
+        modules = self.env / 'dsh-home/profiles/web/node_modules'
+        for name, sub in provision.PLUGIN_PATHS.items():
+            link = modules / provision.PLUGIN_NAMES[name]
+            if not link.is_symlink() or link.resolve(strict=True) != origin / sub:
+                raise ValueError('Parent plugin link deviates from its registered source; reinstall or relink')
+        return origin
+
+    def start(self, lock_fd):
+        if not self.state['installed']:
+            raise ValueError('Installation incomplete; use reinstall')
+        source = self.verify_source()
+        record = self.record()
+        launched = record is None
+        if launched:
+            self.stop()
+            self.launch.write_text('[]\n')
+            self.state['generation'] += 1
+            self.save()
+            # Child DSH starts itself and owns its own teardown. The supervisor only drains
+            # stdout, keeps the login capability private, and writes a verified PID anchor.
+            cmd = [sys.executable, '-B', str(Path(__file__).resolve()), '_supervise', self.id, str(self.state['generation']), str(lock_fd)]
+            with (self.env / 'logs/launcher.log').open('w') as log:
+                helper = subprocess.Popen(cmd, stdin=subprocess.DEVNULL, stdout=log, stderr=log,
+                                          cwd=self.env, env={'PATH': '/usr/bin:/bin'}, start_new_session=True,
+                                          pass_fds=(lock_fd,))
+            if not rt.wait_for(lambda: self.process.exists() or helper.poll() is not None, 8):
+                helper.terminate()
+                helper.wait(timeout=rt.STOP_SECONDS + 5)
+                self.stop()
+                raise ValueError('DSH launch timed out')
+            record = self.record()
+            if not record:
+                raise ValueError('DSH parent did not start; see logs')
+        last = 'waiting-for-admission'
+
+        def check():
+            nonlocal last
+            if not rt.owned(record):
+                raise ValueError('DSH parent exited; see logs')
+            if not (self.env / 'admission').is_file():
+                return False
+            try:
+                last = rt.readiness(self.env, self.ports, record['pid'])
+            except (OSError, http.client.HTTPException):
+                return False
+            if last == 'failed':
+                raise ValueError('Fishball startup failed; see logs')
+            return last == 'ready'
+
+        if not rt.wait_for(check, rt.START_SECONDS):
+            raise ValueError(f'Did not reach Fishball Ready: {last}; see logs')
+        if not self.state.get('model_initialized'):
+            provider_id = self.state['provider']
+            model_id = model.PROVIDERS[provider_id][1]
+            self.state['model_initialized'] = bool(rt.wait_for(
+                lambda: rt.configure_model(self.env, self.ports, record['pid'], provider_id, model_id), 12))
+        if self.live and launched:
+            self.state['head'] = provision.git(source, 'rev-parse', 'HEAD').strip()
+        self.save()
+        return self.summary('ready')
+
+    def summary(self, state=None):
+        record = self.record()
+        if state is None:
+            state = 'stopped' if not record else 'starting'
+            if record and (self.env / 'admission').is_file():
+                state = rt.readiness(self.env, self.ports, record['pid'])
+        return {'env': self.id, 'status': state, 'url': f'http://{rt.HOST}:{self.ports[0]}',
+                'approval_port': self.ports[1], 'placement': 'live' if self.live else 'copy',
+                'generation': self.state['generation'], 'source': self.state['source'],
+                'head': self.state['head'], 'fishball_model_initialized': self.state.get('model_initialized', False),
+                'provider': self.state.get('provider'),
+                'model': model.PROVIDERS[self.state.get('provider', 'agnes')][1],
+                'bytes': retention.size(self.env)}
+
+    def serve(self, generation, lock_fd):
+        lock_path = CONTROL / (self.id + '.lock')
+        if (not os.path.samestat(os.fstat(lock_fd), lock_path.stat()) or
+                generation != self.state['generation'] or self.process.exists()):
+            raise ValueError('Unregistered launch generation; parent not started')
+        environment = rt.isolated(self.env)
+        if not self.live:
+            environment['FISHBALL_REPO'] = str(self.env / 'checkout')
+        cmd = [*rt.dsh(ROOT), '--profile', 'web', '--patch', str(self.launch), '--host', rt.HOST,
+               '--port', str(self.ports[0]), '--no-open']
+        rt.supervise(self.env, cmd, environment, self.ports[0], str(self.launch), lock_fd)
+
+    def open(self):
+        record = self.record()
+        if not record:
+            raise ValueError('Environment is stopped')
+        url = rt.private_url(self.env, self.ports, record['pid'])
+        subprocess.Popen([rt.CHROME, '--user-data-dir=' + str(self.env / 'browser'), '--no-first-run',
+                          '--disable-sync', '--disable-extensions', url],
+                         stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                         cwd=self.env, env=rt.isolated(self.env), start_new_session=True)
+        return self.summary()
+
+
+def parser():
+    cli = argparse.ArgumentParser(description=__doc__, allow_abbrev=False)
+    subs = cli.add_subparsers(dest='command', required=True)
+    for command in ('create', 'start', 'stop', 'restart', 'reinstall', 'wipe', 'status', 'logs', 'url',
+                    'destroy', 'relink', 'open'):
+        sub = subs.add_parser(command, allow_abbrev=False)
+        sub.add_argument('env', choices=PORTS)
+        if command in {'create', 'reinstall'}:
+            sub.add_argument('--source', type=Path)
+    subs.add_parser('cleanup', allow_abbrev=False)
+    subs.add_parser('probe-model', allow_abbrev=False)
+    subs.add_parser('install-cli', allow_abbrev=False)
+    subs.add_parser('plan', allow_abbrev=False).add_argument('source', type=Path)
+    return cli
+
+
+def dispatch(args):
+    command = args.command
+    if command == 'plan':
+        return provision.plan_source(args.source, STAGING)
+    if command == 'url':
+        for port in PORTS[args.env]:
+            print(f'http://{rt.HOST}:{port}')
+        return None
+    if command in {'create', 'reinstall'} and args.env == 'integration' and args.source:
+        raise ValueError('Integration always uses main staging; --source is not allowed')
+    if command == 'destroy' and args.env == 'integration':
+        raise ValueError('The persistent integration slot cannot be destroyed')
+    if command == 'relink' and args.env != 'integration':
+        raise ValueError('Dev uses reinstall --source /absolute/worktree, not relink')
+    lab_ready()
+    if command == 'install-cli':
+        with lock('installation'):
+            sdk = ROOT / 'shared/sdk'
+            if not sdk.exists():
+                target = ROOT / 'shared/sdk-copy'
+                shutil.copytree(SDK_ORIGINAL, target, symlinks=True)
+                target.rename(sdk)
+            rt.dsh(ROOT)
+            source = Path(__file__).resolve().parent
+            for name in ('model.py', 'provision.py', 'runtime.py', 'retention.py', 'fb-env'):
+                target = ROOT / name
+                temporary = target.with_name('.install-' + name)
+                with temporary.open('xb') as handle:
+                    handle.write((source / name).read_bytes())
+                temporary.chmod(0o700 if name == 'fb-env' else 0o600)
+                temporary.replace(target)
+        return {'cli': str(ROOT / 'fb-env')}
+    if command == 'cleanup':
+        with lock('evidence'):
+            return retention.cleanup(ROOT)
+    if command == 'probe-model':
+        with lock('provider'), tempfile.TemporaryDirectory(dir=ROOT, prefix='model-probe-') as path:
+            probe = Path(path)
+            selection = provider()
+            outcome = model.probe(ROOT, selection, rt.dsh(ROOT), probe / 'workspace', rt.isolated(probe))
+            if not outcome['ok'] and selection == 'agnes':
+                outcome['fallback'] = model.probe(ROOT, 'qwen', rt.dsh(ROOT), probe / 'workspace', rt.isolated(probe))
+                if outcome['fallback']['ok']:
+                    rt.json_write(CONTROL / 'provider.json', {'provider': 'qwen'})
+            return outcome
+    with lock(args.env) as lock_fd:
+        slot = Slot(args.env)
+        if command == 'create':
+            return slot.create(args.source)
+        if not slot.state:
+            raise ValueError('Environment not created')
+        if command == 'start':
+            return slot.start(lock_fd)
+        if command == 'stop':
+            return slot.stop()
+        if command == 'restart':
+            slot.stop()
+            return slot.start(lock_fd)
+        if command in {'reinstall', 'relink', 'wipe'}:
+            plan = slot.source(getattr(args, 'source', None)) if command != 'wipe' or slot.live else slot.state
+            slot.stop()
+            slot.install(plan, command)
+            return slot.start(lock_fd)
+        if command == 'destroy':
+            slot.stop(allow_running=False)
+            remove(slot.env, slot.env)
+            config(args.env).unlink()
+            return {'destroyed': args.env}
+        if command == 'status':
+            return slot.summary()
+        if command == 'logs':
+            logfile = slot.env / 'logs/host.log'
+            if logfile.is_file():
+                with logfile.open('rb') as handle:
+                    handle.seek(max(0, logfile.stat().st_size - 8192))
+                    print(handle.read().decode(errors='replace'), end='')
+            return None
+        if command == 'open':
+            return slot.open()
+    raise ValueError('Unknown lifecycle command')
+
+
+def main():
+    os.umask(0o077)
+    try:
+        if len(sys.argv) == 5 and sys.argv[1] == '_supervise' and sys.argv[2] in PORTS:
+            lab_ready()
+            Slot(sys.argv[2]).serve(int(sys.argv[3]), int(sys.argv[4]))
+            return 0
+        args = parser().parse_args()
+        result = dispatch(args)
+        if result is not None:
+            print(json.dumps(result, indent=2))
+        return int(args.command == 'probe-model' and not result['ok'] and not result.get('fallback', {}).get('ok'))
+    except subprocess.CalledProcessError:
+        print('fb-env: required subprocess failed', file=sys.stderr)
+    except subprocess.TimeoutExpired:
+        print('fb-env: subprocess timed out', file=sys.stderr)
+    except (OSError, ValueError, KeyError, http.client.HTTPException) as exc:
+        print('fb-env: ' + (str(exc) if isinstance(exc, (OSError, ValueError)) else type(exc).__name__), file=sys.stderr)
+    return 1
+
+
+if __name__ == '__main__':
+    raise SystemExit(main())

@@ -9,6 +9,7 @@
 ## Workspace and boundaries
 - The root is a private npm workspace, not a plugin. See the [root README](README.md) for the component map.
 - Fishball talks to the connector over its public MCP surface. Sharing a checkout adds no cross-side imports.
+- Use the [local test environments skill](.agents/skills/local-test-envs/SKILL.md) to open or refresh an isolated dev or staging Fishball instance. Never operate the real DSH for lab work.
 - Run only the package you changed day to day: `npm test --workspace <npm-name>` from the monorepo root. Integration suites and DSH-version matrices are release-only. Use isolated test homes, never a real DSH profile.
 
 ## Coding principles
