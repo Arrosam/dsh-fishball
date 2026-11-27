@@ -5,14 +5,16 @@ import fs from 'node:fs'
 import path from 'node:path'
 import test from 'node:test'
 
-const REPO = path.resolve(import.meta.dirname, '../../../..')
+const COMPONENT = path.resolve(import.meta.dirname, '../../../..')
+const MONOREPO = path.dirname(COMPONENT)
 const FIXTURE = Object.freeze({
   prefix: '.pack-manifest-test-',
+  component: 'dsh-connector',
   packageFolders: Object.freeze([
-    'dsh-connector', 'dsh-connector-shared', 'dsh-connector-adapter',
-    'dsh-connector-watchdog', 'dsh-connector-amenities',
+    'dsh-connector/packages/dsh-connector', 'dsh-connector/packages/dsh-connector-shared', 'dsh-connector/packages/dsh-connector-adapter',
+    'amenities/watchdog', 'amenities/connector-amenities',
   ]),
-  connectorFolder: 'dsh-connector',
+  connectorFolder: 'dsh-connector/packages/dsh-connector',
   prereleaseSequence: Object.freeze({ min: 1_000, maxExclusive: 10_000 }),
   manifest: 'package.json',
   scripts: 'scripts',
@@ -43,15 +45,15 @@ const readText = (file) => fs.readFileSync(file, FIXTURE.textEncoding)
 const tarballName = ({ name, version }) => `${name}-${version}.tgz`
 
 function releaseFixture(root) {
-  const scripts = path.join(root, FIXTURE.scripts)
+  const scripts = path.join(root, FIXTURE.component, FIXTURE.scripts)
   for (const name of [FIXTURE.entrypoint, FIXTURE.releaseModules]) {
-    fs.cpSync(path.join(REPO, FIXTURE.scripts, name), path.join(scripts, name), { recursive: true })
+    fs.cpSync(path.join(COMPONENT, FIXTURE.scripts, name), path.join(scripts, name), { recursive: true })
   }
 
   const manifests = new Map()
   for (const folder of FIXTURE.packageFolders) {
-    const relative = path.join('packages', folder, FIXTURE.manifest)
-    const manifest = JSON.parse(readText(path.join(REPO, relative)))
+    const relative = path.join(folder, FIXTURE.manifest)
+    const manifest = JSON.parse(readText(path.join(MONOREPO, relative)))
     // Change only the connector so this detects a hardcoded release version and a forced lockstep bump.
     if (folder === FIXTURE.connectorFolder) {
       const { min, maxExclusive } = FIXTURE.prereleaseSequence
@@ -71,7 +73,7 @@ function releaseFixture(root) {
 }
 
 test('pack derives the release version from the connector manifest and keeps each package version', (t) => {
-  const root = fs.mkdtempSync(path.join(REPO, FIXTURE.prefix))
+  const root = fs.mkdtempSync(path.join(COMPONENT, FIXTURE.prefix))
   t.after(() => fs.rmSync(root, { recursive: true, force: true }))
   const { manifests, env, script } = releaseFixture(root)
   const connector = manifests.get(FIXTURE.connectorFolder)
@@ -85,7 +87,7 @@ test('pack derives the release version from the connector manifest and keeps eac
   }
 
   const stdout = run()
-  const release = path.join(root, FIXTURE.releaseFolder, connector.version)
+  const release = path.join(root, FIXTURE.component, FIXTURE.releaseFolder, connector.version)
   const tarballs = [...manifests.values()].map(tarballName).sort()
   assert.deepEqual(fs.readdirSync(release).filter((name) => name.endsWith('.tgz')).sort(), tarballs)
 

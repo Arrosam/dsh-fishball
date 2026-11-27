@@ -1,5 +1,5 @@
 /**
- * The watchdog live-config world: the real row (packages/dsh-connector-watchdog/index.js, bound to
+ * The watchdog live-config world: the real row (amenities/watchdog/index.js, bound to
  * the SDK under test) mounted as one loader row on the SDK's real cordis + cordis-plugin-loader, so a
  * settings change is `loader.update(id, {config})` exactly as DSH's settings service commits it.
  * The root carries the services the implementer relayed as the row's surface: `sessionController`

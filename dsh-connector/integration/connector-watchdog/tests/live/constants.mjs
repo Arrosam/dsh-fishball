@@ -2,15 +2,12 @@
  * Fixture data of the Watchdog live suite (cases.mjs): not product values. The product's names are
  * relayed from its contract (watchdog/src/constants.js, the connector's K2 naming), never imported.
  */
-import { packageDir } from 'dsh-connector-test-helpers/repo'
+import { PRODUCT } from 'dsh-connector-test-helpers/static/constants'
 import { ENV } from 'dsh-connector-test-helpers/connector-world/constants'
-
-/** The real dsh-connector-watchdog package, linked on its own (it is its own bundle). */
-const BUNDLE = Object.freeze({ name: 'dsh-connector-watchdog', dir: packageDir('dsh-connector-watchdog') })
 
 export const WD = Object.freeze({
   /** The booted DSH links the real watchdog bundle (its preset-watchdog and dsh-connector-watchdog rows). */
-  env: Object.freeze({ [ENV.link]: JSON.stringify([BUNDLE]) }),
+  env: Object.freeze({ [ENV.link]: JSON.stringify([PRODUCT.watchdog]) }),
   scenario: Object.freeze({ main: 'wd-main', restart: 'wd-restart', defaultOff: 'wd-default-off', unroutable: 'wd-unroutable' }),
   model: Object.freeze({
     /** Distinct from DSH's default fake model (`fishball-test/test-model`) to prove dedicated routing. */

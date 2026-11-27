@@ -11,14 +11,12 @@ import path from 'node:path'
 import { caseName } from 'dsh-connector-test-helpers/cases'
 import { versionsDir } from 'dsh-connector-test-helpers/config'
 import { launch } from 'dsh-connector-test-helpers/page/chrome'
-import { packageDir } from 'dsh-connector-test-helpers/repo'
-import { NPM, V3 } from 'dsh-connector-test-helpers/static/constants'
+import { NPM, PRODUCT, V3 } from 'dsh-connector-test-helpers/static/constants'
 import { baseOf, glyphPaths, iconMismatch, parseXml, walk } from 'dsh-connector-test-helpers/static/icon-set'
 import { RENDER } from './constants.mjs'
 
-const pkg = (name, folder) => Object.freeze({ name, dir: packageDir(folder) })
 export const PACKAGES = Object.freeze({
-  subjects: Object.freeze([pkg('dsh-connector-amenities', 'dsh-connector-amenities'), V3.adapter, pkg('dsh-connector-watchdog', 'dsh-connector-watchdog')]),
+  subjects: Object.freeze([PRODUCT.amenities, V3.adapter, PRODUCT.watchdog]),
   reference: V3.connector,
   others: Object.freeze([Object.freeze({ ...V3.embed, asset: path.join(V3.embed.dir, 'assets', 'connector-ui-icon.svg') })]),
   libraries: Object.freeze([V3.dshShared]),

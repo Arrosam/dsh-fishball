@@ -13,7 +13,7 @@ import fs from 'node:fs'
 import { createRequire } from 'node:module'
 import path from 'node:path'
 import { versionsDir } from '../config.mjs'
-import { REPO } from '../repo.mjs'
+import { MONOREPO } from '../repo.mjs'
 import { PRODUCT } from './constants.mjs'
 
 /** The FishMark both the sidebar fish and every package icon draw (criteria 1 and 3). */
@@ -60,7 +60,7 @@ export const META = Object.freeze({
   maxBytes: 256 * 1024,
   appBoot: path.join('node_modules', '@deepseek-ai', 'dsh-app-boot', 'lib', 'index.js'),
   /** The resolution base DSH would use: the checkout's root (its node_modules links every workspace). */
-  parentURL: new URL('file://' + path.join(REPO, 'package.json')).href,
+  parentURL: new URL('file://' + path.join(MONOREPO, 'package.json')).href,
 })
 
 /** The product packages that draw a plugin icon and the icon each declares (criteria 2 and 4); `wrench` only for the connector. */

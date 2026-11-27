@@ -6,8 +6,8 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Arrosam/dsh-connector.git",
-    "directory": "packages/dsh-connector-shared"
+    "url": "git+https://github.com/Arrosam/dsh-fishball.git",
+    "directory": "dsh-connector/packages/dsh-connector-shared"
   },
   "publishConfig": {
     "tag": "alpha"

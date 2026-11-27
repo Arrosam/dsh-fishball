@@ -5,18 +5,18 @@
 import os from 'node:os'
 import path from 'node:path'
 import { ENV } from '../constants.mjs'
-import { packageDir } from '../repo.mjs'
+import { amenityDir, packageDir } from '../repo.mjs'
 
-const pkg = (name, ...folder) => Object.freeze({ name, dir: packageDir(...folder) })
+const pkg = (name, dir) => Object.freeze({ name, dir })
 
 /** Every product package of the repository (the libraries included). */
 export const PRODUCT = Object.freeze({
-  connector: pkg('dsh-agent-connector', 'dsh-connector'),
-  ui: pkg('dsh-connector-ui', 'dsh-connector', 'ui'),
-  adapter: pkg('dsh-connector-adapter', 'dsh-connector-adapter'),
-  watchdog: pkg('dsh-connector-watchdog', 'dsh-connector-watchdog'),
-  amenities: pkg('dsh-connector-amenities', 'dsh-connector-amenities'),
-  shared: pkg('dsh-connector-shared', 'dsh-connector-shared'),
+  connector: pkg('dsh-agent-connector', packageDir('dsh-connector')),
+  ui: pkg('dsh-connector-ui', packageDir('dsh-connector', 'ui')),
+  adapter: pkg('dsh-connector-adapter', packageDir('dsh-connector-adapter')),
+  watchdog: pkg('dsh-connector-watchdog', amenityDir('watchdog')),
+  amenities: pkg('dsh-connector-amenities', amenityDir('connector-amenities')),
+  shared: pkg('dsh-connector-shared', packageDir('dsh-connector-shared')),
 })
 export const PRODUCT_NAMES = Object.freeze(Object.values(PRODUCT).map((p) => p.name))
 /** The libraries: plain dependencies, bundled by their users, never bundles of their own. */

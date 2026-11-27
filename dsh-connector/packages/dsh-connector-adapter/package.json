@@ -14,8 +14,8 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Arrosam/dsh-connector.git",
-    "directory": "packages/dsh-connector-adapter"
+    "url": "git+https://github.com/Arrosam/dsh-fishball.git",
+    "directory": "dsh-connector/packages/dsh-connector-adapter"
   },
   "scripts": {
     "test": "node ../dsh-connector-test-helpers/src/runner/cli.mjs"

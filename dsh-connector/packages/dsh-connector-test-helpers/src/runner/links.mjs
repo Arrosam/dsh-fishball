@@ -6,9 +6,9 @@
  */
 import fs from 'node:fs'
 import path from 'node:path'
-import { REPO } from '../repo.mjs'
+import { MONOREPO, REPO } from '../repo.mjs'
 
-/** Every workspace folder of the root manifest; an entry ending in /* names each folder inside it. */
+/** Connector workspaces only, including its sibling amenities; /* expands the integration folders. */
 export function workspaceDirs() {
   const manifest = JSON.parse(fs.readFileSync(path.join(REPO, 'package.json'), 'utf8'))
   const expand = (w) => (w.endsWith('/*')
@@ -18,7 +18,8 @@ export function workspaceDirs() {
 }
 
 export function linkWorkspaces() {
-  const modules = path.join(REPO, 'node_modules')
+  // The connector and moved amenities need a common ancestor to resolve each other's links.
+  const modules = path.join(MONOREPO, 'node_modules')
   fs.mkdirSync(modules, { recursive: true })
   for (const dir of workspaceDirs()) {
     const { name } = JSON.parse(fs.readFileSync(path.join(dir, 'package.json'), 'utf8'))

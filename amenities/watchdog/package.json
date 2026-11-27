@@ -14,11 +14,11 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Arrosam/dsh-connector.git",
-    "directory": "packages/dsh-connector-watchdog"
+    "url": "git+https://github.com/Arrosam/dsh-fishball.git",
+    "directory": "amenities/watchdog"
   },
   "scripts": {
-    "test": "node ../dsh-connector-test-helpers/src/runner/cli.mjs"
+    "test": "node ../../dsh-connector/packages/dsh-connector-test-helpers/src/runner/cli.mjs"
   },
   "main": "./index.js",
   "exports": {

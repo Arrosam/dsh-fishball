@@ -10,11 +10,10 @@
  * index.js and src/config.js were not read.
  */
 import path from 'node:path'
-import { REPO } from 'dsh-connector-test-helpers/legacy'
 
 export const WATCHDOG = Object.freeze({
   name: 'dsh-connector-watchdog',
-  entry: path.join(REPO, 'packages', 'dsh-connector-watchdog', 'index.js'),
+  entry: path.resolve(import.meta.dirname, '../../index.js'),
   inject: 'sessionController',
   services: Object.freeze({ sessions: 'dshConnectorSessions', tools: 'dshConnectorTools', apiVersion: 1, profile: 'profileContext' }),
   tool: Object.freeze({ brief: 'watchdog_brief', refine: 'watchdog_refine', pause: 'watchdog_pause', resume: 'watchdog_resume' }),

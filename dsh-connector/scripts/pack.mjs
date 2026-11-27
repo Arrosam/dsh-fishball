@@ -26,7 +26,7 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { parseArgs } from 'node:util'
-import { CLI, COMMAND, DIST_TAG, HOSTED_SET, ISOLATION, LAYOUT, MANIFEST, PACKAGES, RELEASE_ROOT, REPO, SCRATCH, SET_CARRIER } from './release/constants.mjs'
+import { CLI, COMMAND, DIST_TAG, HOSTED_SET, ISOLATION, LAYOUT, MANIFEST, MONOREPO, PACKAGES, RELEASE_ROOT, SCRATCH, SET_CARRIER } from './release/constants.mjs'
 import { isolate, npm, pnpm } from './release/tools.mjs'
 import { bundleInto, bundledNames, stagePackage } from './release/stage.mjs'
 import { writeDocuments } from './release/documents.mjs'
@@ -39,7 +39,7 @@ const tar = (args) => execFileSync(LAYOUT.tar, args, { maxBuffer: ISOLATION.maxO
 /** Every package with its checkout manifest, keyed as PACKAGES. */
 function catalogue() {
   return Object.fromEntries(PACKAGES.map((entry) => {
-    const root = path.join(REPO, entry.folder)
+    const root = path.join(MONOREPO, entry.folder)
     const file = path.join(root, SCRATCH.manifest)
     const manifest = readJson(file)
     // Versions become path components before npm validates them as semver.

@@ -6,16 +6,16 @@
  */
 import { versionsDir } from 'dsh-connector-test-helpers/config'
 import path from 'node:path'
-import { REPO } from 'dsh-connector-test-helpers/legacy'
+import { PRODUCT } from 'dsh-connector-test-helpers/static/constants'
 
 export const UMBRELLA = Object.freeze({
   id: 'dsh-connector-amenities',
-  client: path.join(REPO, 'packages', 'dsh-connector-amenities', 'client.js'),
-  manifest: path.join(REPO, 'packages', 'dsh-connector-amenities', 'package.json'),
+  client: path.join(PRODUCT.amenities.dir, 'client.js'),
+  manifest: path.join(PRODUCT.amenities.dir, 'package.json'),
   /** The configurable member rows: key "<umbrella>#<row id>". */
   rows: Object.freeze([
-    Object.freeze({ id: 'dsh-connector-adapter', configModule: path.join(REPO, 'packages', 'dsh-connector-adapter', 'index.js') }),
-    Object.freeze({ id: 'dsh-connector-watchdog', configModule: path.join(REPO, 'packages', 'dsh-connector-watchdog', 'index.js') }),
+    Object.freeze({ id: 'dsh-connector-adapter', configModule: path.join(PRODUCT.adapter.dir, 'index.js') }),
+    Object.freeze({ id: 'dsh-connector-watchdog', configModule: path.join(PRODUCT.watchdog.dir, 'index.js') }),
   ]),
   /** Rows that must never get a configure entry, even when DSH serves a namespace of that id. */
   excluded: Object.freeze(['preset-watchdog', 'dsh-connector-amenities']),
@@ -145,7 +145,7 @@ export const CATALOG = Object.freeze({
 
 /** R5: the members and the umbrella bundle the DSH side's library. */
 export const MANIFESTS = Object.freeze([
-  Object.freeze({ dir: path.join(REPO, 'packages', 'dsh-connector-adapter'), depends: Object.freeze(['dsh-connector-shared']), bundles: Object.freeze(['dsh-connector-shared']) }),
-  Object.freeze({ dir: path.join(REPO, 'packages', 'dsh-connector-watchdog'), depends: Object.freeze(['dsh-connector-shared']), bundles: Object.freeze(['dsh-connector-shared']) }),
-  Object.freeze({ dir: path.join(REPO, 'packages', 'dsh-connector-amenities'), depends: Object.freeze(['dsh-connector-shared']), bundles: Object.freeze(['dsh-connector-shared']) }),
+  Object.freeze({ dir: PRODUCT.adapter.dir, depends: Object.freeze(['dsh-connector-shared']), bundles: Object.freeze(['dsh-connector-shared']) }),
+  Object.freeze({ dir: PRODUCT.watchdog.dir, depends: Object.freeze(['dsh-connector-shared']), bundles: Object.freeze(['dsh-connector-shared']) }),
+  Object.freeze({ dir: PRODUCT.amenities.dir, depends: Object.freeze(['dsh-connector-shared']), bundles: Object.freeze(['dsh-connector-shared']) }),
 ])

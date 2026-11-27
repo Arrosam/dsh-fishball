@@ -2,7 +2,7 @@
  * What each product package ships: its real `npm pack` listing, the specifiers its shipped JS
  * files name, and the package each one lands in. Only manifests, packed listings and import
  * specifiers are read; no product module is loaded. Everything runs on a throwaway copy of
- * `packages/`, so the checkout is never written.
+ * the connector product packages, so the checkout is never written.
  */
 import { execFile } from 'node:child_process'
 import { createHash } from 'node:crypto'
@@ -11,13 +11,13 @@ import { mkdtemp, rm } from 'node:fs/promises'
 import path from 'node:path'
 import { promisify } from 'node:util'
 import { Worker } from 'node:worker_threads'
-import { REPO } from '../repo.mjs'
+import { MONOREPO } from '../repo.mjs'
 import { JS_FILE, LIBRARY_NAMES, NPM, PRODUCT, PRODUCT_NAMES, WORKER } from './constants.mjs'
 
 const run = promisify(execFile)
 const MANIFEST = 'package.json'
 const NODE_MODULES = 'node_modules'
-const ROOT_FILES = Object.freeze([MANIFEST])
+const PRODUCT_DIRS = Object.freeze(Object.values(PRODUCT).map(({ dir }) => path.relative(MONOREPO, dir)))
 const JSON_START = /^\[/m
 const DIGEST = 'sha256'
 
@@ -41,16 +41,16 @@ const isPath = (specifier) => specifier.startsWith('./') || specifier.startsWith
 const posix = (p) => p.split(path.sep).join('/')
 
 /**
- * A throwaway copy of the repository's root manifest and `packages/` (tracked and untracked files,
+ * A throwaway copy of the root manifest and connector product packages (tracked and untracked files,
  * not ignored ones), with a root `node_modules/` of links standing in for the workspace install, so
  * a bare library name (`fishball-shared`, `dsh-connector-shared`) resolves from an importing file as
  * it would after `npm install`.
  */
 async function workspaceCopy() {
   const root = await mkdtemp(path.join(npmTempRoot(), NPM.tempPrefix))
-  const { stdout } = await run('git', ['ls-files', '-co', '--exclude-standard', '-z', '--', 'packages', ...ROOT_FILES], { cwd: REPO, maxBuffer: NPM.maxStdoutBytes })
+  const { stdout } = await run('git', ['ls-files', '-co', '--exclude-standard', '-z', '--', MANIFEST, ...PRODUCT_DIRS], { cwd: MONOREPO, maxBuffer: NPM.maxStdoutBytes })
   for (const rel of stdout.split('\0').filter(Boolean)) {
-    const from = path.join(REPO, rel)
+    const from = path.join(MONOREPO, rel)
     if (!fs.existsSync(from)) continue
     fs.mkdirSync(path.dirname(path.join(root, rel)), { recursive: true })
     fs.cpSync(from, path.join(root, rel), { verbatimSymlinks: true })
@@ -58,7 +58,7 @@ async function workspaceCopy() {
   const links = path.join(root, NODE_MODULES)
   fs.mkdirSync(links)
   for (const p of Object.values(PRODUCT)) {
-    const dir = path.join(root, path.relative(REPO, p.dir))
+    const dir = path.join(root, path.relative(MONOREPO, p.dir))
     if (!fs.existsSync(path.join(dir, MANIFEST))) continue
     fs.mkdirSync(path.dirname(path.join(links, p.name)), { recursive: true })
     fs.symlinkSync(dir, path.join(links, p.name))
@@ -133,7 +133,7 @@ export function observe() {
 async function observeOnce() {
   const root = await workspaceCopy()
   try {
-    const present = Object.values(PRODUCT).map((p) => ({ name: p.name, dir: path.join(root, path.relative(REPO, p.dir)) })).filter((p) => readManifest(p.dir) !== null)
+    const present = Object.values(PRODUCT).map((p) => ({ name: p.name, dir: path.join(root, path.relative(MONOREPO, p.dir)) })).filter((p) => readManifest(p.dir) !== null)
     const packed = {}
     for (const p of present) packed[p.name] = await packedFiles(root, p.dir)
     const units = new Map()

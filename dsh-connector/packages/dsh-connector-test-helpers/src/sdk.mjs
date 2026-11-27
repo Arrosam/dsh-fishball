@@ -12,9 +12,9 @@ import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { runVersions, sdkRoot, versionsDir } from './config.mjs'
 import { SDK_LAYOUT, VERSION_TAG } from './constants.mjs'
-import { REPO } from './repo.mjs'
+import { MONOREPO, REPO } from './repo.mjs'
 
-const REPO_URL = pathToFileURL(REPO + path.sep).href
+const REPO_URL = pathToFileURL(MONOREPO + path.sep).href
 const NODE_SCHEME = 'node:'
 /** Packages outside @deepseek-ai/ that DSH ships and a DSH profile resolves from DSH, not from the repo. */
 const RUNTIME_PACKAGES = Object.freeze(['zod', 'yaml'])

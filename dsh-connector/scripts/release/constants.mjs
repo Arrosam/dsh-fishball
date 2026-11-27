@@ -2,16 +2,17 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 export const REPO = fileURLToPath(new URL('../../', import.meta.url))
+export const MONOREPO = path.dirname(path.resolve(REPO))
 export const DIST_TAG = 'alpha'
 export const REGISTRY = 'https://registry.npmjs.org'
 export const RELEASE_ROOT = path.join(REPO, '.runtime', 'release')
 
 export const PACKAGES = Object.freeze([
-  Object.freeze({ key: 'dshShared', folder: 'packages/dsh-connector-shared', library: true }),
-  Object.freeze({ key: 'connector', folder: 'packages/dsh-connector' }),
-  Object.freeze({ key: 'adapter', folder: 'packages/dsh-connector-adapter' }),
-  Object.freeze({ key: 'watchdog', folder: 'packages/dsh-connector-watchdog' }),
-  Object.freeze({ key: 'amenities', folder: 'packages/dsh-connector-amenities' }),
+  Object.freeze({ key: 'dshShared', folder: 'dsh-connector/packages/dsh-connector-shared', library: true }),
+  Object.freeze({ key: 'connector', folder: 'dsh-connector/packages/dsh-connector' }),
+  Object.freeze({ key: 'adapter', folder: 'dsh-connector/packages/dsh-connector-adapter' }),
+  Object.freeze({ key: 'watchdog', folder: 'amenities/watchdog' }),
+  Object.freeze({ key: 'amenities', folder: 'amenities/connector-amenities' }),
 ])
 
 export const HOSTED_SET = Object.freeze([])
@@ -59,7 +60,7 @@ export const JUNK = Object.freeze({
 export const MANIFEST = Object.freeze({
   versionSegment: /^[0-9][0-9A-Za-z.+-]*$/,
   engines: Object.freeze({ node: '>=22.14', dsh: '>=0.2.1-rc.5' }),
-  repository: Object.freeze({ type: 'git', url: 'git+https://github.com/Arrosam/dsh-connector.git' }),
+  repository: Object.freeze({ type: 'git', url: 'git+https://github.com/Arrosam/dsh-fishball.git' }),
   license: 'MIT',
   bundled: 'bundleDependencies',
   peersOnly: Object.freeze({ zod: '*' }),
