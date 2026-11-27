@@ -19,7 +19,7 @@ Services are looked up at runtime (`ctx.get`); a trailing `?` in
 | --- | --- | --- |
 | `fishballInstance.events.intercept` with `ctl.accept()`, `ctl.commit(send)`, `ctl.release` | [events.d.ts](<events.d.ts>) | F-INTERCEPT |
 | The ask card's fields | [ask-card.d.ts](<ask-card.d.ts>) | F-ASKCARD |
-| Guard list, policy, manager tools and the `guards-overridden` report | [guards.d.ts](<guards.d.ts>) | F-GUARDS |
+| One-time guard bundle reorder outcome | [guards.d.ts](<guards.d.ts>) | F-GUARDS |
 | The runtime values of the above (and core's link backoff) | [constants.js](<constants.js>) | the constants migration (2026-11-14) |
 | K3a: the link status and the hosted import's published names | [link.d.ts](<link.d.ts>) | F-LINK-SAVE (core), I-HOST (instance, its own copy of the names) |
 | K3a: Connect and the Fishball-side OAuth client | [connect.d.ts](<connect.d.ts>) | `src/link/oauth-client.js`, F-LINK-SAVE |
@@ -45,7 +45,7 @@ issuer rules from `MCP`.
 | `TEXT.blockType` | `text` (the notice's content block) | DSH content-block type |
 | `TEXT.presentGivenUp` | "Fishball notice: event <id> (<type>) could not be shown to you and was given up." | DECIDED D6 |
 | `LINK_BACKOFF` | 1 s × 2^n, at most 60 s; a connected link resets n | DECIDED D4 |
-| `GUARDS` | the report, codes, triggers, presets, manager tools and reorder outcomes as `guards.d.ts` spells them, plus F-GUARDS's service name, record location and texts | spellings as `guards.d.ts`; owner DECIDED D7 |
+| `GUARDS` | bundle and row names, record location, outcomes and diagnostics for the one-time bundle reorder | spellings as `guards.d.ts`; owner DECIDED D7 |
 
 ## K3a (requirements 1.39–1.41)
 
@@ -88,17 +88,9 @@ Additions only; no frozen name or value changes meaning:
   means this DSH's default model, and nothing blocks on it (the user: "同步只是同步model list，至于
   fishball用什么还要在fishball内设置"; "所有版本：先用DSH的默认模型"). Only core's settings page and
   fishball-ui's model dialog write it; no DSH-side package reads it.
-- **`GUARDS.coreTools`**: the V2 session-tools table is gone with the slim child; the tables are now
-  `../manager/reminders.js` `TOOL`, `../manager/skills.js` `PRIVATE_SKILL_TOOL` and
-  `../asks/constants.js` `ASK_TOOL`. R-FB-13 also leaves out every tool an X2 contribution holds in
-  the manager's scope (the bridge façade's connector tools, a set member's): X2 is the one way into
-  that scope, so they are Fishball's own, not the preset's. Core reads them through a module symbol
-  on `fishballInstance` (`src/manager/contributed.js`), which is not a member of this contract.
 - **`ui.connect.begin()`** stays K3a's: no argument, the loopback callback (MULTI-0: now `ui.targets.begin(targetId)`, same rule). Core's own Connect route
   picks the web callback (Q-A3 B, `CONNECT.callback.webPath`) through a module-symbol member of the
   same object that no other plugin holds, so no plugin can choose a redirect URI.
-- **`ui.guards.report()`** is `null` while core's guard row is absent or not ready yet (its row is
-  separate from the main row and may start later).
 - **`fishballInstance`** is provided by core's main row `fishball-core` (`src/main/`), beside
   `fishballStatus` (F-STATUS), in a standalone DSH and a hosted child alike.
 
@@ -112,7 +104,7 @@ Source: [PLAN-MULTI](<../../../docs/planning/v3-multi-dsh.md>) §3–§7 (D01–
 | --- | --- |
 | Target record | `TargetRecord {id, kind, url, endpointEpoch, order, serverName, duplicateSuffix}`; storage `fishball_core_targets/targets` v1, tool bindings and their tombstones `fishball_core_targets/tool_bindings` v1 (domain and table names in DSH storage's `UNIT_NAME_RE` `^[a-z][a-z0-9_]*$`, both SDKs); no token value; no count cap (Q12) |
 | Ids | target `t-` + 16 base32 letters, epoch `e-` + 16; reserved parent id `parent`; a new epoch on every canonical-endpoint change |
-| List / status API | `fishballInstance.ui.targets` (`FishballTargets`): `list()` → `TargetsSnapshot {version: 1, targets: TargetView[]}`, `onChange`, `add`, `remove`, `setUrl`, `begin`, `cancel`, `retry`, `choose`, each by `targetId`. K3a's scalar `ui.link`, `ui.connect`, `ui.pairing` are withdrawn. Core's status snapshot carries `targets` beside the global `fishball`, `guards`, `set` |
+| List / status API | `fishballInstance.ui.targets` (`FishballTargets`): `list()` → `TargetsSnapshot {version: 1, targets: TargetView[]}`, `onChange`, `add`, `remove`, `setUrl`, `begin`, `cancel`, `retry`, `choose`, each by `targetId`. K3a's scalar `ui.link`, `ui.connect`, `ui.pairing` are withdrawn. Core's status snapshot carries `targets` beside the global `fishball` and `set` |
 | Per-target strip | `TargetView.line {kind, code}` = core's `stripLine(...).line` for that target (amendment from MULTI-3), with `control` and `contributedTools` |
 | Public state | `connected`, `connecting`, `failed`, `not-set` (rule in `SEAM_TARGETS`' comment); `name: null` shows the placeholder, never a URL (Q01) |
 | Routes | `SEAM_TARGETS.route`: GET `/api/fishball/targets` → 200 `TargetsSnapshot` (= `ui.targets.list()`; amendment from MULTI-1, so core's settings page needs no fishball-ui); POST `/api/fishball/targets/{connect,cancel,retry,pairing,add,remove,url}` with `{targetId, …}`; unknown id → 404 `unknown-target`; refusals `target-duplicate` (Q04), `target-reserved`, `confirmation-required` (Q07) |
@@ -125,7 +117,7 @@ Source: [PLAN-MULTI](<../../../docs/planning/v3-multi-dsh.md>) §3–§7 (D01–
 | Hosted reservation | hosted child: first target `parent`/`parent`, URL = `dsh-instance-child.targetUrl`, read-only, not removable; it alone owns `DSH_AGENT_TOKEN`, `fishball-core/hosted-agent` and core's internal pending-origin record `fishball-core/pending-token-origin` (`src/link/constants.js` `LINK_SAVE.pendingOrigin`; core-only, so not a contract value) |
 | Added credentials | reference `FISHBALL_TARGET_TOKEN_<id>__<epoch>` (`-` → `_`); records `fishball-core/token-<id>-<epoch>`, `fishball-core/connect-<id>-<epoch>` |
 | Identity push | subscribe `dsh-agent://events` and `dsh-agent://identity` on the one listen stream; on `notifications/resources/updated {uri: identity}` and after every listen acknowledgement, `client.discover()` at once (one in flight + dirty), read `_meta['io.modelcontextprotocol/serverInfo'].name`; no polling. Live only if `resources/list` lists the URI |
-| Status snapshot | `StatusSnapshot`: `{fishball: 'on', targets, guards, set, brand: {style: 'fishball' \| 'deepseek'}}` or exactly `{fishball: 'fishball-off'}` (no `targets`, no `brand`) |
+| Status snapshot | `StatusSnapshot`: `{fishball: 'on', targets, set, brand: {style: 'fishball' \| 'deepseek'}}` or exactly `{fishball: 'fishball-off'}` (no `targets`, no `brand`) |
 | Hosted signal | DSH settings lists the namespace `dsh-instance-child` (URL-independent); parent epoch generated, renewed on every canonical `targetUrl` change; parent grant `fishball-core/connect-parent-<epoch>`; user `target.url` and its fallback withdrawn |
 | HTTP | 200; 400 malformed / `invalid-arguments` / URL refusals; 404 `unknown-target`; 409 other refusals; 503 `TARGETS_UNAVAILABLE`; voided ask → 409 `expired` |
 | Version moves | `fishballInstance.apiVersion` 2; core's session route and every core reader of `fishballInstance` move to 2 (MULTI-1); `/api/fishball/connect{,/cancel}` withdrawn for `SEAM_TARGETS.route.connect` / `.cancel` |
@@ -236,18 +228,12 @@ same in standalone and hosted mode, and no plugin injects a section into it.
 - **Shipped presets:** `preset-standard`, `preset-ptc`, `preset-cordis` and `preset-minimal` are
   switched off, not deleted. They are the same on both SDKs.
 - **Offered preset:** `fishball`, the default and the only one.
-- **Policy:** sandbox `read-only`; `ctx.approval.config.policy` = `ask`, read directly; permission
+- **Policy:** sandbox `read-only`; approval `ask`; permission
   presets `[read-only]`, default `read-only`.
-- **Manager tools:** expected host tools `read`, `read_image` and `working_directory`, checked on
-  resume instead of the preset name (R-FB-13). The Fishball singleton installs a `tools.restrict`
+- **Manager tools:** expected host tools `read`, `read_image` and `working_directory`.
+  The Fishball singleton installs a `tools.restrict`
   deny for inherited `ask_user_question`, excluding it from both native tools and the PTC SDK.
   Other sessions retain it, including those on the same preset.
-- **Report (spelling PROPOSED):** `ok`, or `guards-overridden` with `row:<id>`, `policy:<key>`, `agent-presets`,
-  `bundle-order` or `manager-tools`, with `extraManagerTools` (the manager's tool names beyond the
-  defaults, which core's status announces once per new name, gently; the user, 2026-11-21) and
-  `missingManagerTools` (defaults a manager lacks, which keep `manager-tools` in the guards notice).
-  - Checks run at app ready, `settings/document-updated` and `plugin-manager/changed`, never
-    before app ready.
 - **Reorder:** `moved`, `unchanged` or `failed` (PROPOSED), once per DSH. Core never moves itself
   back.
 - **Leftover sessions** are archived (`workspaceController.archiveSession`). That is X-MIG's

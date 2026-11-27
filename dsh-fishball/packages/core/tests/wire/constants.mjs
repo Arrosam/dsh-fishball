@@ -21,8 +21,7 @@ export const C = Object.freeze({
   // The bare ask_user belongs to the manager; target asks still have target-qualified names.
   coreTools: ['schedule_create', 'schedule_list', 'schedule_update', 'schedule_delete', 'message_user', 'ask_user'],
   privateSkill: /^private_skill_/,
-  coreToolTables: [{ module: '../manager/reminders.js', table: 'TOOL' }, { module: '../manager/skills.js', table: 'PRIVATE_SKILL_TOOL' }, { module: '../asks/constants.js', table: 'ASK_TOOL' }, { module: '../manager/message-tools.js', table: 'MESSAGE_TOOL' }],
-  baseTools: ['read', 'read_image', 'working_directory'], boardToolPrefix: 'board_', guardsOk: 'ok',
+  baseTools: ['read', 'read_image', 'working_directory'], boardToolPrefix: 'board_',
   /**
    * SHELVE-BOARD: fishball-board is shelved, not in 1.0.0-alpha.1. The user, 2026-11-18:
    * "fishball-board先从这次release中移除，我要改的地方太多了。先封存，留到下一批再说。所以不要预留在子实例的Fishball内。"
@@ -68,11 +67,11 @@ export const FAKE_HOST = Object.freeze({ first: '127.0.0.1', other: 'localhost' 
 export const MULTI = Object.freeze({
   apiVersion: 2,
   /** `ui` members since MULTI-0 (ui.d.ts): the scalar link / connect / pairing are withdrawn. */
-  uiMembers: Object.freeze(['managerSessionId', 'targets', 'guards', 'asks']),
-  withdrawnUiMembers: Object.freeze(['link', 'connect', 'pairing']),
+  uiMembers: Object.freeze(['managerSessionId', 'targets', 'asks']),
+  withdrawnUiMembers: Object.freeze(['link', 'connect', 'pairing', 'guards']),
   targetsMembers: Object.freeze(['list', 'onChange', 'add', 'remove', 'setUrl', 'begin', 'cancel', 'retry', 'choose']),
-  statusMembers: Object.freeze(['fishball', 'guards', 'set', 'targets', 'brand']),
-  withdrawnStatusMembers: Object.freeze(['link', 'connect', 'line', 'control', 'contributedTools']),
+  statusMembers: Object.freeze(['fishball', 'set', 'targets', 'brand']),
+  withdrawnStatusMembers: Object.freeze(['link', 'connect', 'line', 'control', 'contributedTools', 'guards']),
   withdrawnRoutes: Object.freeze(['/api/fishball/connect', '/api/fishball/connect/cancel']),
   /** Server names (test data): two equal names, a later rename, and a literal that looks like an alias. */
   name: Object.freeze({

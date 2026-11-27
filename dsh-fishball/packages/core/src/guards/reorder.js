@@ -11,7 +11,7 @@
  *
  * "Once" (R-FB-12): a local record per profile marks the reorder done. With the record present core
  * never writes the manifest again, so an owner who later moves core earlier is not overruled
- * (R-FB-09, Q20); the check reports `bundle-order` instead.
+ * (R-FB-09, Q20).
  */
 import path from 'node:path'
 import { readFile } from 'node:fs/promises'
@@ -22,10 +22,10 @@ import { GUARDS } from '../../contracts/constants.js'
 const { reorder: OUTCOME, text: TEXT } = GUARDS
 
 /** `dsh.profile.bundles` of a profile manifest, in order (empty when it lists none). */
-export const bundlesOf = (manifest) => manifest.dsh?.profile?.bundles ?? []
+const bundlesOf = (manifest) => manifest.dsh?.profile?.bundles ?? []
 
 /** The bundle list with core moved to the end, or undefined when core is absent or already last. */
-export function coreLast(bundles) {
+function coreLast(bundles) {
   if (!bundles.includes(GUARDS.bundleName) || bundles.at(-1) === GUARDS.bundleName) return undefined
   return [...bundles.filter((name) => name !== GUARDS.bundleName), GUARDS.bundleName]
 }
@@ -47,7 +47,7 @@ async function recorded(file) {
 }
 
 /** A failure's cause for the log: its code, else its name, else the value itself. */
-export const reason = (error) => String(error?.code ?? error?.name ?? error)
+const reason = (error) => String(error?.code ?? error?.name ?? error)
 
 /**
  * Move core last under the plugin manager's lock.
@@ -81,7 +81,7 @@ async function moveCoreLast(profile) {
  * @param {{name: string, dir: string, home: string}} profile - DSH's `profileContext`.
  * @param {{warn(format: string, ...args: unknown[]): void}} logger - the row's logger.
  * @returns {Promise<'moved'|'unchanged'|'failed'>} the K3 `ReorderOutcome`. `failed` wrote nothing
- *   and left no record, so a later start tries again; the check keeps reporting `bundle-order`.
+ *   and left no record, so a later start tries again.
  */
 export async function reorderOnce(profile, logger) {
   let file

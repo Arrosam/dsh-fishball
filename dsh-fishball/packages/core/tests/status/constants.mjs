@@ -4,7 +4,7 @@
  * - K1 `dsh-agent-connector/mcp-schema` (vendored as fishball-test-helpers/connector-contract/mcp-schema): the link's TargetStatus words (TARGET_STATE, TARGET_CODE), the
  *   loopback names of F-LINK's target rule (HOSTS) and the OAuth error words;
  * - core's contracts (`packages/core/contracts/constants.js`): Connect's states and configuration
- *   codes (CONNECT, connect.d.ts), the guard report's words (GUARDS, guards.d.ts);
+ *   codes (CONNECT, connect.d.ts);
  * - the F-STATUS surface relayed by the dev session (2026-11-16): STATUS_MODEL's spellings and the
  *   strip's line kinds, written here once as the contract states them (case F-STATUS-00 checks the
  *   module's exported STATUS_MODEL against them);
@@ -13,7 +13,7 @@
  */
 import path from 'node:path'
 import { HOSTS, OAUTH_ERROR, TARGET_CODE, TARGET_STATE } from 'fishball-test-helpers/connector-contract/mcp-schema'
-import { CONNECT, GUARDS } from '../../contracts/constants.js'
+import { CONNECT } from '../../contracts/constants.js'
 
 /** fishball-core's folder (tests/status/ is two levels below it). */
 const PACKAGE_DIR = path.join(import.meta.dirname, '..', '..')
@@ -41,18 +41,11 @@ export const MODEL = Object.freeze({
   members: Object.freeze([]),
   control: Object.freeze({ connect: 'connect', cancel: 'cancel' }),
   serviceName: 'fishballStatus',
-  notice: Object.freeze({ pluginId: GUARDS.bundleName, guardsKeyPrefix: 'fishball-status:guards:' }),
 })
-/**
- * GENTLE-TOOLS: STATUS_MODEL.notice also has `toolsKeyPrefix`; its spelling was not relayed, so
- * F-STATUS-00 checks it is a non-empty string other than the guards prefix, and the members above exactly.
- */
-export const TOOLS_KEY_PREFIX = 'toolsKeyPrefix'
-
 /** The snapshot's members (relayed contract), and the words of its `line`. */
 /** MULTI-0 `StatusSnapshot`: the global parts, `targets`, and LOGO-BUTTON's normalized `brand`. */
-export const SNAPSHOT_KEYS = Object.freeze(['fishball', 'guards', 'set', 'targets', 'brand'])
-export const WITHDRAWN_KEYS = Object.freeze(['link', 'connect', 'line', 'control', 'contributedTools'])
+export const SNAPSHOT_KEYS = Object.freeze(['fishball', 'set', 'targets', 'brand'])
+export const WITHDRAWN_KEYS = Object.freeze(['link', 'connect', 'line', 'control', 'contributedTools', 'guards'])
 /** TargetsSnapshot fixtures (test data shaped as targets.d.ts; the status forwards them unchanged). */
 const view = (targetId, extra = {}) => Object.freeze({
   targetId, endpointEpoch: 'e-' + 'a'.repeat(16), serverName: null, name: null, kind: 'remote', url: 'https://fishball-target.example.test/mcp',
@@ -71,57 +64,6 @@ export const LINE = Object.freeze({
   connected: TARGET_STATE.connected,
   authorizing: CONNECT.state.authorizing,
   needsConfiguration: CONNECT.state.needsConfiguration,
-})
-
-/** A guarded row id (fixture data): the hosted instance's row, as in the old suite. */
-const GUARDED_ROW = 'dsh-instance'
-/** Guard report words (K3 guards.d.ts via core's GUARDS) and fixture lists of overridden guards. */
-// GENTLE-TOOLS (the user, 2026-11-21): K3 GuardReport gained `extraManagerTools` (sorted, unique; [] when
-// none, also with status ok), so every fixture report carries it; `overridden(list)` alone gives [].
-// Review fix (the user, 2026-11-21): it gained `missingManagerTools` too (the default manager tools some
-// live manager lacks; sorted, unique, [] when none, always [] when ok); every fixture carries it, [] unless given.
-export const GUARD = Object.freeze({
-  ok: Object.freeze({ status: GUARDS.status.ok, overridden: Object.freeze([]), extraManagerTools: Object.freeze([]), missingManagerTools: Object.freeze([]) }),
-  overridden: (list, extras = [], missing = []) => Object.freeze({
-    status: GUARDS.status.overridden, overridden: Object.freeze([...list]), extraManagerTools: Object.freeze([...extras]), missingManagerTools: Object.freeze([...missing]),
-  }),
-  first: Object.freeze([GUARDS.code.rowPrefix + GUARDED_ROW, GUARDS.code.bundleOrder]),
-  second: Object.freeze([GUARDS.code.managerTools]),
-  /** The notice's list separator (relayed: "overridden guards joined by ', '"). */
-  separator: ', ',
-})
-
-/**
- * GENTLE-TOOLS (the lead's relayed requirement, 2026-11-21): the once-only notice about the manager's
- * extra tools. Spellings are the requirement's: the record file, its one-line JSON, the list separator,
- * the manager-tools guard code (K3) and the words the gentle text must not use. Tool names are
- * fixture data (sorted as written: alpha < beta < gamma).
- */
-export const TOOLS = Object.freeze({
-  names: Object.freeze({ a: 'fbtest_tool_alpha', b: 'fbtest_tool_beta', c: 'fbtest_tool_gamma' }),
-  code: GUARDS.code.managerTools,
-  /** K3 `ManagerTool`, the defaults `missingManagerTools` names. */
-  defaults: GUARDS.managerTools,
-  /** A guard code beside manager-tools in a refresh that keeps the same extras (K3 `bundle-order`). */
-  other: GUARDS.code.bundleOrder,
-  /** `<profileContext.home>/fishball/manager-tools.json`: one JSON line {"announced": [sorted]} + "\n". */
-  record: Object.freeze({ dir: 'fishball', file: 'manager-tools.json', key: 'announced', eol: '\n' }),
-  separator: ', ',
-  /** The notice is informational: never "guards are overridden", never "guarantees weaker". */
-  harsh: Object.freeze([/overridden/i, /weaker/i, /guarantee/i]),
-  profileName: 'fbtest-profile',
-  homePrefix: 'fbtest-status-tools-',
-  /** Malformed record contents (EP): each counts as nothing announced. */
-  malformed: Object.freeze({
-    'not JSON': '{oops',
-    'empty file': '',
-    'announced not a list': '{"announced":"fbtest_tool_alpha"}\n',
-    'no announced member': '{}\n',
-    'a JSON list': '["fbtest_tool_alpha"]\n',
-    'JSON null': 'null\n',
-  }),
-  /** Harness wait for "nothing more happens" around file I/O (no product oracle). */
-  quietMs: 150,
 })
 
 /** Link statuses (K1 TargetStatus, REM-DT-01). */
@@ -178,8 +120,6 @@ export const HOST = Object.freeze({
   loader: 'loader',
   changed: 'plugin-manager/changed',
   settingsUpdated: 'settings/document-updated',
-  /** dsh-app-boot's profile-context service ({home, name}; types/profile-context.d.ts, both SDKs). */
-  profileContext: 'profileContext',
   /** PluginChange.reason and a settings namespace/revision (event arguments, fixture values). */
   changeReason: 'bundle',
   settingsNamespace: 'fishball-core',
@@ -232,7 +172,4 @@ export const FIXTURE = Object.freeze({
 })
 
 /** Harness timing (waiting only; none is a product oracle). */
-export const WAIT = Object.freeze({ untilMs: 2000, pollMs: 5, settleTicks: 10, quietMs: 50, netSettleMs: 500, probeMs: 30000 })
-
-/** The per-process key probe (key-probe.mjs): a plain Node process, not a DSH host or a hosted child. */
-export const PROBE = Object.freeze({ file: path.join(import.meta.dirname, 'key-probe.mjs'), keyLine: /^fbtest-key (.+)$/m, keyLabel: 'fbtest-key' })
+export const WAIT = Object.freeze({ untilMs: 2000, pollMs: 5, settleTicks: 10, quietMs: 50, netSettleMs: 500 })

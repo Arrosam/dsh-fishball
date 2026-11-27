@@ -70,7 +70,7 @@ export function registerPackageCases() {
   caseTest('UI-BVA-01', 'no UI patch', "fishball-ui has no cordis.patch.yml of its own (117cb2a2: its rows live in core's patch)", () => {
     assert.equal(fs.existsSync(path.join(UI_PACKAGE.dir, UI_PACKAGE.patchFile)), false)
   })
-  caseTest('EFIX3-UI-GUARD-01', 'gone', 'fishball-ui has no src/guards.js and no peer dependency on @deepseek-ai/dsh-app-boot (the guard reader is core\'s since R-FIX-FUI F2)', () => {
+  caseTest('EFIX3-UI-GUARD-01', 'gone', 'fishball-ui has no src/guards.js and no peer dependency on @deepseek-ai/dsh-app-boot', () => {
     for (const file of UI_PACKAGE.goneFiles) assert.equal(fs.existsSync(path.join(UI_PACKAGE.dir, file)), false, file)
     assert.equal(Object.hasOwn(manifestOf().peerDependencies ?? {}, UI_PACKAGE.gonePeer), false, show(manifestOf().peerDependencies))
   })

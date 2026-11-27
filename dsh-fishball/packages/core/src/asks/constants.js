@@ -19,11 +19,7 @@ const RISK = APPROVAL.risk
 /** `AskCard.state` (K3 PROPOSED, kept as proposed: v3-proposed-values.md row 52). */
 export const CARD_STATE = Object.freeze({ open: 'open', answered: 'answered', closed: 'closed', voided: SEAM_TARGETS.ask.voided })
 
-/**
- * The filing tool's name table. It is core's own model tool on the manager, so GUARDS.coreTools
- * must list `{module: '../asks/constants.js', table: 'ASK_TOOL'}` for the R-FB-13 check to leave it
- * out (contracts/constants.js is K3's; relayed to F-WIRE).
- */
+/** The manager’s filing tool name. */
 export const ASK_TOOL = Object.freeze({ fileCard: 'ask_user' })
 
 export const QUESTION_CARD = Object.freeze({

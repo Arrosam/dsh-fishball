@@ -5,7 +5,7 @@
  * compositions, SHELVE broken board), fishball-core/status PLAT-DT-02's integration row, and
  * SESSIONS-WATCH SYS S1–S4 (DESIGN §35: the strip topic on the page stream while a page watches).
  *
- * Techniques: UC (UI-UC-01 main 1–5, E1, A1, A2), EP (composition partitions: ui+core, board+ui+core,
+ * Techniques: UC (UI-UC-01 composition and E1), EP (composition partitions: ui+core, board+ui+core,
  * broken board), ST (core off by HMR → UI rows gone, picker restored; S1–S4 watch transitions), BVA (one
  * watch interval). Level: system. Observed through DSH's loader, settings and plugin manager, core's and
  * fishball-ui's published services, the owner routes, the page's boot graph, and the scripted model.
@@ -19,25 +19,18 @@ import { scenario } from 'fishball-test-helpers/dsh-world'
 import { startFakeDsh } from 'fishball-test-helpers/fake-connector'
 import { TOOL } from 'fishball-test-helpers/connector-contract/mcp-schema'
 import { until } from 'fishball-test-helpers/wait'
-import { GUARDS, TARGETS } from 'fishball-core/contracts'
+import { TARGETS } from 'fishball-core/contracts'
 import { SEAM_PAGE_STREAM, SEAM_TARGETS } from 'fishball-shared/ui-seam'
-import { NOTICE, ROWS, CORE_SPLIT } from '../patch/constants.mjs'
+import { NOTICE, ROWS } from '../patch/constants.mjs'
 import { NAMES } from '../support/names.mjs'
 import { EXTENSION, corePackages } from '../support/world.mjs'
 import { SYS } from './constants.mjs'
 
 const show = (v) => JSON.stringify(v)
-const rowGuard = (id) => GUARDS.code.rowPrefix + id
-const isOk = (r) => r?.status === GUARDS.status.ok && r.overridden.length === 0
 const BOARD_DIR = path.join(import.meta.dirname, '..', 'fixtures', 'fishball-board')
 // These rows assert directly offered tools, not the default PTC transport.
 const NATIVE_MANAGER = [{ id: NAMES.core, config: { ptc: false } }]
 
-async function waitReport(h, test, ms = SYS.recomposeMs) {
-  let last
-  await until(async () => { last = await h.call('report'); return test(last) }, ms, SYS.pollMs)
-  return last
-}
 const settledSet = async (h) => { let s; await until(async () => { s = await h.call('snapshot'); return s?.set != null }, SYS.callMs, SYS.pollMs); return s?.set }
 /** The SSE route read from Node until its first data line (or every message, with `all`). */
 async function readStream(h, route) {
@@ -91,26 +84,13 @@ export function registerSystemCases() {
     f.started = await h.call('startedBundles')
     f.rows = await h.call('activeRows', { ids: [...ROWS.guards, ...Object.keys(ROWS.component), ROWS.coreMissing, SYS.modelRow] })
     f.notice = await h.call('rowConfig', { id: NOTICE.row, field: NOTICE.field })
-    f.uiGuards = await h.call('service', { name: NAMES.uiGuards })
     f.graph = await graphIds(h)
     f.tab = (await h.request(SYS.recommendedRoute)).status
     f.logs = await h.call('logs')
-    f.report = await waitReport(h, (r) => r !== null, SYS.readyMs)
-    f.settled = await waitReport(h, isOk, SYS.readyMs)
     f.shape = await h.call('shape')
     f.snapshot = await h.call('snapshot')
     f.set = await settledSet(h)
     f.tools = await h.call('managerTools')
-    // UI-UC-01 A1/A2: the owner re-enables a UI row, then also a core row; then restores both.
-    const ui = ROWS.guards[0]
-    const core = CORE_SPLIT.guards[0]
-    await h.call('setRowEnabled', { id: ui, enabled: true })
-    f.oneSet = await waitReport(h, (r) => r?.overridden?.includes(rowGuard(ui)))
-    await h.call('setRowEnabled', { id: core, enabled: true })
-    f.twoSet = await waitReport(h, (r) => r?.overridden?.includes(rowGuard(core)))
-    await h.call('setRowEnabled', { id: ui, enabled: false })
-    await h.call('setRowEnabled', { id: core, enabled: false })
-    f.restored = await waitReport(h, (r) => !r?.overridden?.includes(rowGuard(ui)) && !r?.overridden?.includes(rowGuard(core)))
     // STRIP-SYS-01: the strip route's immediate first frame, per language.
     f.strip = {}
     for (const lang of SYS.langs) {
@@ -138,7 +118,6 @@ export function registerSystemCases() {
     f.set = await settledSet(h)
     f.shape = await h.call('shape')
     f.tools = await h.call('managerTools')
-    f.report = await waitReport(h, isOk, SYS.readyMs)
   }], { packages: corePackages([{ dir: BOARD_DIR, name: NAMES.board }]), extension: EXTENSION })
 
   const broken = scenario(SYS.home.broken, [async (boot, f) => {
@@ -210,16 +189,6 @@ export function registerSystemCases() {
     for (const id of Object.keys(ROWS.component)) assert.ok(s[id]?.present && !s[id].disabled && s[id].active, id + ': ' + show(s[id]))
     assert.equal(s[ROWS.coreMissing]?.present, false)
   })
-  t('UI-UC-01', 'main 3', `core + fishball-ui: ${NAMES.uiGuards} is provided, a frozen marker carrying no rows`, async () => {
-    const f = await readBoth('uiGuards')
-    assert.ok(f.uiGuards.present, 'no ' + NAMES.uiGuards)
-    assert.equal(f.uiGuards.keys.includes('rows'), false, show(f.uiGuards))
-    assert.equal(f.uiGuards.frozen, true)
-  })
-  t('UI-UC-01', 'main 4', 'core + fishball-ui on a default install: the guard report is ok', async () => {
-    const f = await readBoth('settled')
-    assert.ok(isOk(f.settled), show(f.settled))
-  })
   t('UI-UC-01', 'main 5', "core + fishball-ui: the page serves fishball-ui's client entry, the page and the tab; the tab's route answers", async () => {
     const f = await readBoth('graph', 'tab')
     for (const id of [NAMES.ui, ...Object.values(ROWS.subPackages)]) assert.ok(f.graph.includes(id), id + ' not in ' + show(f.graph))
@@ -228,22 +197,6 @@ export function registerSystemCases() {
   t('UI-UC-01', 'E1', 'core + fishball-ui: no fishball-core-missing line', async () => {
     const f = await readBoth('logs')
     assert.deepEqual(f.logs.filter((l) => l.text.includes(SYS.coreMissingLine)), [])
-  })
-  t('UI-UC-01', 'A1', 'the owner re-enables a UI row: guards-overridden naming row:<id> (R-FB-09); restoring it clears that guard', async () => {
-    const f = await readBoth('oneSet', 'restored')
-    assert.equal(f.oneSet?.status, GUARDS.status.overridden, show(f.oneSet))
-    assert.ok(f.oneSet.overridden.includes(rowGuard(ROWS.guards[0])), show(f.oneSet))
-    assert.equal(f.restored.overridden.includes(rowGuard(ROWS.guards[0])), false, show(f.restored))
-  })
-  t('UI-UC-01', 'A1 restore', 'after the restore the report is ok again', async () => {
-    const f = await readBoth('restored')
-    assert.ok(isOk(f.restored), show(f.restored))
-  })
-  t('UI-UC-01', 'A2', "a core row and a UI row on at once: both are named, core's row first (core's rows, then the UI's)", async () => {
-    const list = (await readBoth('twoSet')).twoSet?.overridden ?? []
-    const coreAt = list.indexOf(rowGuard(CORE_SPLIT.guards[0]))
-    const uiAt = list.indexOf(rowGuard(ROWS.guards[0]))
-    assert.ok(coreAt >= 0 && uiAt >= 0 && coreAt < uiAt, show(list))
   })
   t('EFIX3-UI-SYS-01', 'standalone', `core + fishball-ui in a real standalone DSH (no child row): ${NOTICE.row} is described with no ${NOTICE.field} (the notice behaves as before)`, async () => {
     const f = await readBoth('notice')
@@ -302,17 +255,13 @@ export function registerSystemCases() {
       if (withBoard) assert.deepEqual(f.rows.map((r) => [r.present, r.disabled]), [[true, false]], 'the stand-in board row is not loaded')
       assert.deepEqual(f.set, SYS.setOk)
     })
-    t('WIRE-SYS', label + ' tools', `${label}: the manager's model tools are exactly the preset's (${GUARDS.managerTools.join(', ')}) plus core's own`, async () => {
+    t('WIRE-SYS', label + ' tools', `${label}: the manager's model tools are exactly the preset's (${SYS.managerTools.join(', ')}) plus core's own`, async () => {
       const f = await read('tools')
       const own = (n) => SYS.coreTools.includes(n) || SYS.privateSkill.test(n)
       for (const name of SYS.coreTools) assert.ok(f.tools.includes(name), name)
-      assert.deepEqual(f.tools.filter((n) => !own(n)).sort(), [...GUARDS.managerTools].sort())
+      assert.deepEqual(f.tools.filter((n) => !own(n)).sort(), [...SYS.managerTools].sort())
     })
   }
-  t('WIRE-SYS', 'fishball-board+fishball-ui+fishball-core guards', 'board stand-in + ui + core on a default install: the guard report is ok', async () => {
-    const f = await reader(board)('report')
-    assert.ok(isOk(f.report), show(f.report))
-  })
   t('WIRE-SYS', 'SHELVE broken', 'a broken fishball-board (no DSH meets its engines.dsh) + ui + core: the set is ok, nothing missing', async () => {
     const f = await reader(broken)('set')
     assert.deepEqual(f.set, SYS.setOk)

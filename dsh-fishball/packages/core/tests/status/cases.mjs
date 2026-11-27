@@ -1,14 +1,14 @@
 /**
  * F-STATUS black-box cases (USE-CASES.md): core's status snapshot, the strip view, the set
  * completeness check (PLAT-DT-02, no member since SHELVE-BOARD 2026-11-18, so always ok; HOST-DT-03
- * rule 10), the guards notice (R-FB-09, design §5a.2), the contributed-tools count (R-EXT-14), `fishball-off` (R-FB-10) and the
+ * rule 10), the contributed-tools count (R-EXT-14), `fishball-off` (R-FB-10) and the
  * display of core's target status (REM-DT-01; R-FB-03, R-FB-04; design §6.3a Connect).
  *
  * Techniques, Use Cases first (UC-STATUS-01…06), then Decision Tables (REM-DT-01 display rules,
  * F-STATUS-DT-01 line/control rules 1–5 (amended 2026-11-16) and their order rows, PLAT-DT-02 rules 1–6, HOST-DT-03
  * rule 10), EP (F-STATUS-EP-01 target usability, F-STATUS-EP-02 bundles never reported), BVA
  * (contributed count 0/1/n, fiber ACTIVE/FAILED, the app-ready boundary) and State Transitions
- * (Connect, the set across `plugin-manager/changed`, the one notice per start, close).
+ * (Connect, the set across `plugin-manager/changed`, close).
  *
  * Level: unit with fakes, on a real Cordis Context of the current DSH (world.mjs): DSH's `appReady`,
  * `pluginManager` and `loader` are faked to their DSH types; core's ports to the relayed contract.
@@ -17,16 +17,14 @@
  * each went.
  */
 import assert from 'node:assert/strict'
-import { spawnSync } from 'node:child_process'
 import { caseTest } from 'fishball-test-helpers/cases'
 // The link area's process-wide network recorder (packages/core/tests/link/, port-core-link's).
 import { watchNetwork } from '../link/net-probe.mjs'
 import {
-  BOARD, CONNECT_STATUS, FIXTURE, GUARD, HOST, LINE, LINK_STATUS, MODEL, NEVER_REPORTED, PROBE, SECRET,
-  SNAPSHOT_KEYS, SUBJECT, TARGET, TARGETS_SNAPSHOT, TOOLS_KEY_PREFIX, WAIT, WITHDRAWN_KEYS,
+  BOARD, CONNECT_STATUS, FIXTURE, HOST, LINE, LINK_STATUS, MODEL, NEVER_REPORTED, SECRET,
+  SNAPSHOT_KEYS, SUBJECT, TARGET, TARGETS_SNAPSHOT, WAIT, WITHDRAWN_KEYS,
 } from './constants.mjs'
-import { registerToolsNoticeCases } from './tools-notice.mjs'
-import { NOTIFY, NO_FIBER, bundle, entry, initializingEntry, loadingEntry } from './fakes.mjs'
+import { NO_FIBER, bundle, entry, initializingEntry, loadingEntry } from './fakes.mjs'
 import { statusModule, statusOf } from './subject.mjs'
 import { ABSENT, settle, worldFor } from './world.mjs'
 
@@ -77,23 +75,16 @@ export function registerStatusCases() {
   const t = (id, row, title, fn) => caseTest(id, row, title, fn)
 
   // ---------------------------------------------------------------- the exported surface
-  t('F-STATUS-00', 'surface', 'STATUS_MODEL is frozen and spells the relayed words; guardsNotice names the list; stripLine is exported', async () => {
+  t('F-STATUS-00', 'surface', 'STATUS_MODEL is frozen and spells the relayed words; stripLine is exported', async () => {
     const mod = await statusModule()
     const model = mod[SUBJECT.model]
     assert.ok(Object.isFrozen(model), 'STATUS_MODEL is not frozen')
-    // GENTLE-TOOLS re-baseline (2026-11-21): STATUS_MODEL.notice gained toolsKeyPrefix (spelling not relayed),
-    // so notice is compared without it, and the prefix is checked on its own.
-    const { [TOOLS_KEY_PREFIX]: toolsPrefix, ...notice } = model.notice ?? {}
-    for (const [key, value] of Object.entries(MODEL)) assert.deepEqual(key === 'notice' ? notice : model[key], value, `STATUS_MODEL.${key}`)
-    assert.equal(typeof toolsPrefix, 'string', 'STATUS_MODEL.notice.toolsKeyPrefix is not a string')
-    assert.ok(toolsPrefix.length > 0 && toolsPrefix !== MODEL.notice.guardsKeyPrefix, `toolsKeyPrefix ${toolsPrefix}`)
-    const text = model.text.guardsNotice(GUARD.first.join(GUARD.separator))
-    for (const guard of GUARD.first) assert.ok(text.includes(guard), `guardsNotice does not name ${guard}: ${text}`)
+    for (const [key, value] of Object.entries(MODEL)) assert.deepEqual(model[key], value, `STATUS_MODEL.${key}`)
     assert.equal(typeof mod[SUBJECT.line], 'function', 'no stripLine export')
   })
 
   // ---------------------------------------------------------------- MULTI-STATUS: the snapshot shape (MULTI-0 StatusSnapshot)
-  t('F-STATUS-01', 'snapshot', 'the snapshot is frozen, has exactly {fishball, guards, set, targets, brand}, fishball on, brand {style} fishball for an absent stored value, no withdrawn scalar member, and null for absent guards / set before ready', async (c) => {
+  t('F-STATUS-01', 'snapshot', 'the snapshot is frozen, has exactly {fishball, set, targets, brand}, fishball on, brand {style} fishball for an absent stored value, no withdrawn scalar member, and null for set before ready', async (c) => {
     const w = await worldFor(c)
     const s = w.snapshot()
     assert.ok(Object.isFrozen(s), 'snapshot is not frozen')
@@ -101,7 +92,7 @@ export function registerStatusCases() {
     for (const key of WITHDRAWN_KEYS) assert.equal(Object.hasOwn(s, key), false, 'withdrawn member ' + key)
     assert.equal(s.fishball, MODEL.fishball.on)
     assert.deepEqual(s.targets, TARGETS_SNAPSHOT.empty)
-    assert.deepEqual({ guards: s.guards, set: s.set }, { guards: null, set: null })
+    assert.equal(s.set, null)
     // LOGO-BUTTON: the normalized logo theme is always present; an absent stored value is fishball.
     assert.deepEqual(s.brand, { style: 'fishball' })
     assert.ok(Object.isFrozen(s.brand), 'brand is not frozen')
@@ -123,20 +114,6 @@ export function registerStatusCases() {
     await settle()
     assert.equal(w.emitted.length, before + 1)
     assert.deepEqual(w.emitted.at(-1).targets, TARGETS_SNAPSHOT.two)
-  })
-
-  t('F-STATUS-02', 'snapshot', 'the snapshot carries the guard report when the port is there', async (c) => {
-    const report = GUARD.overridden(GUARD.first)
-    const w = await worldFor(c, { guards: report })
-    assert.deepEqual(w.snapshot().guards, report)
-  })
-
-  t('F-STATUS-03', 'snapshot', 'a guards port whose report is still undefined gives guards null', async (c) => {
-    const w = await worldFor(c, { guards: undefined })
-    assert.equal(w.snapshot().guards, null)
-    w.guards.set(GUARD.ok)
-    await settle()
-    assert.deepEqual(w.snapshot().guards, GUARD.ok, 'the first report appears')
   })
 
   // ---------------------------------------------------------------- REM-DT-01 / F-STATUS-DT-01: the per-target line (stripLine, first match wins)
@@ -237,14 +214,13 @@ export function registerStatusCases() {
   })
   t('UC-STATUS-01', 'postcondition', 'no token value or token field in the snapshot; reading sends and changes nothing', async (c) => {
     const net = await watchNetwork({ quietMs: WAIT.quietMs, settleMs: WAIT.netSettleMs })
-    const w = await worldFor(c, { targets: TARGETS_SNAPSHOT.two, guards: GUARD.ok, ready: true, bundles: [boardBundle()], entries: [boardEntry()] })
+    const w = await worldFor(c, { targets: TARGETS_SNAPSHOT.two, ready: true, bundles: [boardBundle()], entries: [boardEntry()] })
     const s = await w.until((x) => x.set !== null)
     assert.ok(!show(s).includes(SECRET), `a credential value appears: ${show(s)}`)
     assert.deepEqual(keysDeep(s).filter((k) => FIXTURE.forbiddenKey.test(k)), [], 'a token field')
     for (let i = 0; i < FIXTURE.tools.many; i++) w.snapshot()
     await settle()
     assert.deepEqual(w.pluginManager.mutations, [], 'the plugin manager changed')
-    assert.deepEqual(w.notice.calls, [], 'a notice without an overridden report')
     assert.deepEqual(net.all(), [], 'a network attempt')
   })
 
@@ -394,160 +370,32 @@ export function registerStatusCases() {
     assert.equal(w.snapshot().set, null)
   })
 
-  // ---------------------------------------------------------------- R-FB-09: the guards line and the one notice per start
-  t('F-STATUS-ST-03', 'once', 'the first overridden report sends one notice; later reports change only the strip', async (c) => {
-    const mod = await statusModule()
-    const w = await worldFor(c, { guards: undefined })
-    w.guards.set(GUARD.overridden(GUARD.first))
-    await settle()
-    assert.equal(w.notice.calls.length, 1, `notices: ${show(w.notice.calls)}`)
-    const [notice] = w.notice.calls
-    assert.equal(notice.pluginId, MODEL.notice.pluginId)
-    assert.ok(notice.dedupeKey.startsWith(MODEL.notice.guardsKeyPrefix) && notice.dedupeKey.length > MODEL.notice.guardsKeyPrefix.length, `dedupeKey ${notice.dedupeKey}`)
-    assert.equal(notice.text, mod[SUBJECT.model].text.guardsNotice(GUARD.first.join(GUARD.separator)))
-    for (const report of [GUARD.ok, GUARD.overridden(GUARD.second), GUARD.overridden(GUARD.first)]) {
-      w.guards.set(report)
-      await settle()
-      assert.deepEqual(w.snapshot().guards, report, 'the snapshot follows the report')
-    }
-    assert.equal(w.notice.calls.length, 1, `a second notice in one start: ${show(w.notice.calls)}`)
-  })
-
-  t('F-STATUS-ST-03', 'at start', 'a report already overridden at createStatus sends the one notice', async (c) => {
-    const w = await worldFor(c, { guards: GUARD.overridden(GUARD.second) })
-    await w.until(() => w.notice.calls.length > 0)
-    await settle()
-    assert.equal(w.notice.calls.length, 1)
-  })
-
-  // Dev session amendment 2026-11-16: one notice per DSH start = per process. An HMR recompose re-runs
-  // createStatus in the same process with the same dedupeKey; the manager answers 'duplicate' for a key
-  // it already accepted, so a second notify with that key is still one notice.
-  t('UC-STATUS-03', 'A2 recompose', 'a second createStatus in the same process notifies, if at all, with the same dedupe key', async (c) => {
-    const w = await worldFor(c, { guards: GUARD.overridden(GUARD.first) })
-    await w.until(() => w.notice.calls.length > 0)
-    const again = await w.recompose()
-    await settle()
-    assert.deepEqual(again.snapshot().guards, GUARD.overridden(GUARD.first), 'the recomposed status reads the report')
-    const keys = new Set(w.notice.calls.map((n) => n.dedupeKey))
-    assert.equal(keys.size, 1, `more than one key in one process: ${show([...keys])}`)
-    assert.ok(w.notice.calls.length <= 2, `more than one notify per createStatus: ${show(w.notice.calls)}`)
-  })
-
-  t('UC-STATUS-03', 'A2 new process', 'a new process (a new DSH start) notifies with another dedupe key; within one process both statuses share one key', () => {
-    const run = () => {
-      // The probe inherits FBTEST_DSH_VERSION, so it binds core to the same DSH as this process.
-      const out = spawnSync(process.execPath, [PROBE.file], { encoding: 'utf8', timeout: WAIT.probeMs, env: process.env })
-      assert.equal(out.status, 0, `key probe failed: ${out.stderr}`)
-      return [...out.stdout.matchAll(new RegExp(PROBE.keyLine.source, 'gm'))].map((m) => m[1])
-    }
-    const [first, second] = [run(), run()]
-    assert.ok(first.length > 0 && second.length > 0, `no notice in a probe: ${show({ first, second })}`)
-    assert.equal(new Set(first).size, 1, `one process used more than one key: ${show(first)}`)
-    assert.equal(new Set(second).size, 1, `one process used more than one key: ${show(second)}`)
-    assert.notEqual(first[0], second[0], 'two processes share a dedupe key')
-  })
-
-  t('UC-STATUS-03', 'ok', 'an ok report sends no notice; the snapshot carries the ok report', async (c) => {
-    const w = await worldFor(c, { guards: GUARD.ok })
-    await settle()
-    assert.deepEqual(w.notice.calls, [])
-    assert.deepEqual(w.snapshot().guards, GUARD.ok)
-  })
-
-  // Dev session amendment 2026-11-16: a rejected notify is logged and retried at the next refresh that
-  // still sees guards-overridden, with the same key; never retried after an accepted notify.
-  t('UC-STATUS-03', 'E1 retry', 'a rejected notice is logged and retried with the same key at the next overridden refresh; status keeps working', async (c) => {
-    const w = await worldFor(c, { guards: undefined, notify: { outcomes: [NOTIFY.reject] } })
-    w.guards.set(GUARD.overridden(GUARD.first))
-    await settle()
-    assert.equal(w.notice.calls.length, 1, 'first notify')
-    assert.ok(w.logs.some((l) => l.type === HOST.warn), `nothing logged: ${show(w.logs)}`)
-    w.guards.set(GUARD.overridden(GUARD.second))
-    await settle()
-    assert.equal(w.notice.calls.length, 2, `not retried at the next overridden refresh: ${show(w.notice.calls)}`)
-    assert.equal(w.notice.calls[1].dedupeKey, w.notice.calls[0].dedupeKey, 'the retry uses another key')
-    w.guards.set(GUARD.overridden(GUARD.first))
-    await settle()
-    assert.equal(w.notice.calls.length, 2, `notified again after an accepted notice: ${show(w.notice.calls)}`)
-    const before = w.emitted.length
-    w.targets.set(TARGETS_SNAPSHOT.one)
-    await settle()
-    assert.equal(w.emitted.length, before + 1, 'status stopped after the rejection')
-  })
-
-  t('UC-STATUS-03', 'E1 ok refresh', 'after a rejection, an ok refresh does not retry; the next overridden one does', async (c) => {
-    const w = await worldFor(c, { guards: undefined, notify: { outcomes: [NOTIFY.reject] } })
-    w.guards.set(GUARD.overridden(GUARD.first))
-    await settle()
-    w.guards.set(GUARD.ok)
-    await settle()
-    assert.equal(w.notice.calls.length, 1, `retried on an ok report: ${show(w.notice.calls)}`)
-    w.guards.set(GUARD.overridden(GUARD.first))
-    await settle()
-    assert.equal(w.notice.calls.length, 2, 'not retried at the next overridden refresh')
-  })
-
-  t('UC-STATUS-03', 'E1 always rejected', 'a notice that keeps being rejected is retried once per overridden refresh, never in a loop', async (c) => {
-    const w = await worldFor(c, { guards: undefined, notify: { then: NOTIFY.reject } })
-    w.guards.set(GUARD.overridden(GUARD.first))
-    await settle()
-    await settle()
-    assert.equal(w.notice.calls.length, 1, `retried without a refresh: ${show(w.notice.calls.length)}`)
-    w.guards.set(GUARD.overridden(GUARD.second))
-    await settle()
-    assert.equal(w.notice.calls.length, 2)
-    assert.equal(new Set(w.notice.calls.map((n) => n.dedupeKey)).size, 1, 'retries changed the key')
-  })
-
-  t('UC-STATUS-03', 'accepted', 'an accepted notice is never retried, whatever reports follow', async (c) => {
-    const w = await worldFor(c, { guards: undefined })
-    for (const report of [GUARD.overridden(GUARD.first), GUARD.ok, GUARD.overridden(GUARD.second), GUARD.overridden(GUARD.first)]) {
-      w.guards.set(report)
-      await settle()
-    }
-    w.targets.set(TARGETS_SNAPSHOT.one)
-    await settle()
-    assert.equal(w.notice.calls.length, 1, show(w.notice.calls))
-  })
-
-  t('UC-STATUS-03', 'no notify port', 'without notify an overridden report still shows in the snapshot', async (c) => {
-    const w = await worldFor(c, { guards: undefined, notify: ABSENT })
-    assert.doesNotThrow(() => w.guards.set(GUARD.overridden(GUARD.first)))
-    await settle()
-    assert.deepEqual(w.snapshot().guards, GUARD.overridden(GUARD.first))
-  })
-
   // ---------------------------------------------------------------- UC-STATUS-06: close
-  t('UC-STATUS-06', 'close', 'after close: no emission, no notice, no set recompute, and every port listener disposed', async (c) => {
-    const w = await worldFor(c, { guards: undefined, bundles: [boardBundle()], entries: [boardEntry()] })
+  t('UC-STATUS-06', 'close', 'after close: no emission, no set recompute, and every port listener disposed', async (c) => {
+    const w = await worldFor(c, { bundles: [boardBundle()], entries: [boardEntry()] })
     await settle()
     w.close()
     const before = w.emitted.length
     const lists = w.pluginManager.lists
     w.targets.set(TARGETS_SNAPSHOT.two)
-    w.guards.set(GUARD.overridden(GUARD.first))
     w.ready()
     w.changed()
     await settle()
     assert.equal(w.emitted.length, before, `emitted after close: ${show(w.emitted.slice(before))}`)
-    assert.deepEqual(w.notice.calls, [], 'a notice after close')
     assert.equal(w.pluginManager.lists, lists, 'the set was read after close')
-    assert.deepEqual([w.targets, w.guards].map((p) => p.listeners), [0, 0], 'port subscriptions left after close')
+    assert.equal(w.targets.listeners, 0, 'port subscriptions left after close')
   })
 
   // Dev session amendment 2026-11-16: createStatus ties close() to ctx.effect when ctx has one.
-  t('UC-STATUS-06', 'ctx disposed', 'created in a Cordis plugin: disposing its fiber stops emissions, notices and port subscriptions', async (c) => {
-    const w = await worldFor(c, { plugin: true, guards: undefined })
+  t('UC-STATUS-06', 'ctx disposed', 'created in a Cordis plugin: disposing its fiber stops emissions and port subscriptions', async (c) => {
+    const w = await worldFor(c, { plugin: true })
     await settle()
     await w.fiber.dispose()
     const before = w.emitted.length
     w.targets.set(TARGETS_SNAPSHOT.two)
-    w.guards.set(GUARD.overridden(GUARD.first))
     await settle()
     assert.equal(w.emitted.length, before, `emitted after the context was disposed: ${show(w.emitted.slice(before))}`)
-    assert.deepEqual(w.notice.calls, [], 'a notice after the context was disposed')
-    assert.deepEqual([w.targets, w.guards].map((p) => p.listeners), [0, 0], 'port subscriptions left')
+    assert.equal(w.targets.listeners, 0, 'port subscriptions left')
   })
 
   // ---------------------------------------------------------------- R-FB-10: fishball-off
@@ -565,7 +413,4 @@ export function registerStatusCases() {
     const w = await worldFor(c, { targets: TARGETS_SNAPSHOT.one })
     assert.deepEqual(await statusOf(w.status), w.snapshot())
   })
-
-  // ---------------------------------------------------------------- GENTLE-TOOLS: the once-only extra-tools notice
-  registerToolsNoticeCases(t)
 }

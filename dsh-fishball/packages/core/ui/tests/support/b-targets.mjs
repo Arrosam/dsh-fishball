@@ -42,7 +42,7 @@ export const FRAME = Object.freeze({
   keys: Object.freeze(['on', 'title', 'empty', 'notices', 'targets', 'words', 'brandStyle']),
   // `sessions`: the running managed sessions under the row (sessions rows), additive.
   targetKeys: Object.freeze(['targetId', 'kind', 'name', 'placeholder', 'state', 'badge', 'url', 'lines', 'control', 'retry', 'pairing', 'sessions']),
-  notice: Object.freeze({ off: SEAM_STATUS.fishball.off, guards: SEAM_STATUS.guards.overridden, set: SEAM_STATUS.set.incomplete }),
+  notice: Object.freeze({ off: SEAM_STATUS.fishball.off, set: SEAM_STATUS.set.incomplete }),
   /** Review amendment (b): no `url` line; the URL is the view's `url` field, drawn in `[data-fishball-target-url]`. */
   lineOrder: Object.freeze(['why', 'contributed-tools', 'identity']),
   /** Q01's placeholders, chosen by URL (review amendment (a)): no URL → unset, a URL → unnamed, whatever the state. */
@@ -199,8 +199,8 @@ export function targetView(i, overrides = {}) {
 }
 
 /** Core's status snapshot with the targets beside the global members (SEAM_TARGETS' comment). */
-export const snapshotOf = (targets, { fishball = SEAM_STATUS.fishball.on, guards = null, set = null, brand } = {}) => ({
-  fishball, guards, set, targets: { version: SEAM_TARGETS.snapshotVersion, targets }, ...(brand === undefined ? {} : { brand }),
+export const snapshotOf = (targets, { fishball = SEAM_STATUS.fishball.on, set = null, brand } = {}) => ({
+  fishball, set, targets: { version: SEAM_TARGETS.snapshotVersion, targets }, ...(brand === undefined ? {} : { brand }),
 })
 
 /** One frame from the real view: `targets` in `lang`, in the first fixture zone. */

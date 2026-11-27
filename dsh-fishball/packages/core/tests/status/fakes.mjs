@@ -1,5 +1,5 @@
 /**
- * Fakes of core's status ports (targets, guards, notify), each speaking only the relayed contract
+ * A fake of core's target port, speaking only the relayed contract
  * (subject.mjs), and of DSH's
  * host services, shaped as the current DSH's types declare them:
  * - `appReady` (dsh-app-boot): `onReady(fn)` → disposer; fn is called at once when already ready;
@@ -7,7 +7,7 @@
  *   manager's mutating operations exist and are recorded, so a case can say "nothing was changed";
  * - `loader` (cordis-plugin-loader config/tree.d.ts): `entries()` yields Entry-shaped objects
  *   (`id`, `disabled`, `_initTask?`, `fiber?` with `state` (cordis FiberState) and `await()`).
- * Every port fake records its calls and how many listeners it holds, so close() and "sends nothing"
+ * Every port fake records its calls and how many listeners it holds, so close() and snapshot emission
  * are observable.
  */
 import { HOST } from './constants.mjs'
@@ -35,34 +35,6 @@ export class FakeTargets extends ValuePort {
   onChange(fn) { return this.source.on(fn) }
 }
 
-/** The guard report (F-GUARDS `fishballGuards`): `{report(), onChange(fn)}`; report() may be undefined. */
-export class FakeGuards extends ValuePort {
-  report() { return this.copy() }
-  onChange(fn) { return this.source.on(fn) }
-}
-
-/** How one notify call settles. `hold` leaves it pending until the case settles it (`held`). */
-export const NOTIFY = Object.freeze({ accept: 'accept', reject: 'reject', hold: 'hold' })
-/**
- * Fishball's manager notice: records every call. `outcomes` says how each call in turn settles
- * (NOTIFY.accept resolves, NOTIFY.reject rejects, NOTIFY.hold stays pending); calls past the list
- * settle as `then`. `decide(notice, index)`, when given, picks each outcome instead (so a case can
- * hold or reject one kind of notice only). A held call is in `held` as {notice, accept(), reject()}.
- */
-export function fakeNotify({ outcomes = [], then = NOTIFY.accept, decide } = {}) {
-  const calls = []
-  const held = []
-  const notify = (notice) => {
-    const outcome = decide ? decide(notice, calls.length) : (outcomes[calls.length] ?? then)
-    calls.push(structuredClone(notice))
-    if (outcome === NOTIFY.hold) {
-      return new Promise((resolve, reject) => { held.push({ notice: calls.at(-1), accept: () => resolve(), reject: () => reject(new Error(NOTIFY_FAILED)) }) })
-    }
-    return outcome === NOTIFY.reject ? Promise.reject(new Error(NOTIFY_FAILED)) : Promise.resolve()
-  }
-  return { notify, calls, held }
-}
-const NOTIFY_FAILED = 'fbtest notify refused'
 const FIBER_FAILED = 'fbtest row failed to start'
 
 /** dsh-app-boot's readiness service. */

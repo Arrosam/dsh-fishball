@@ -11,7 +11,6 @@
 import type { LinkStatus } from './link.js'
 import type { UiPairingView } from './ui.js'
 import type { ConnectBegin, ConnectStatus } from './connect.js'
-import type { GuardReport } from './guards.js'
 
 /**
  * A stable opaque local target id (`TARGETS.id`): `parent` for a hosted child's reserved parent,
@@ -149,7 +148,7 @@ export interface TargetsSnapshot {
   readonly targets: readonly TargetView[]
 }
 
-/** `GuardReport` as `guards.d.ts` declares it, and the set check (`SEAM_STATUS.set`, `reason`). */
+/** The set check (`SEAM_STATUS.set`, `reason`). */
 export interface SetStatus {
   readonly status: 'ok' | 'plugin-set-incomplete'
   readonly missing: readonly { readonly name: string; readonly reason: 'skipped' | 'failed'; readonly code: string | null }[]
@@ -167,7 +166,6 @@ export type StatusSnapshot =
   | {
     readonly fishball: 'on'
     readonly targets: TargetsSnapshot
-    readonly guards: GuardReport | null
     readonly set: SetStatus | null
     readonly brand: BrandStatus
   }

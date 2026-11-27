@@ -1,12 +1,12 @@
 /**
  * The sidebar targets' view model (MULTI-3; PLAN-MULTI §6.1, D03, Q01, Q08, Q09, Q12; first F-STATUS's
  * strip view). Pure: it turns core's status snapshot (`UI_STATUS.service` `snapshot()`, carrying the
- * MULTI-0 `targets` beside the global `fishball`, `guards`, `set`) into what fishball-ui's sidebar
+ * MULTI-0 `targets` beside the global `fishball` and `set`) into what fishball-ui's sidebar
  * draws. It draws nothing and mounts nothing; it reads core's words from `fishball-shared/ui-seam`,
  * never from core.
  *
- * - `notices`: the once-per-process lines, not about one target: `guards-overridden` (R-FB-09) and
- *   `plugin-set-incomplete` (R-BND-05); with Fishball off (R-FB-10) the one `fishball-off` line;
+ * - `notices`: the global `plugin-set-incomplete` line (R-BND-05), or the `fishball-off` line
+ *   when Fishball is off (R-FB-10);
  * - `targets`: one row per target, in core's order (Q12: no cap). A row's `name` is the server's
  *   resolved name as plain text (D06), or `null` with `placeholder` (Q01: "Not set" / "Name
  *   unavailable", never a URL-derived name); its `state` is one of the four public states
@@ -24,7 +24,6 @@ export { STATUS_TEXT } from './text.js'
 
 /** The notice kinds (`SEAM_STATUS` words) and the details' line kinds of one target. */
 export const TARGET_LINE = Object.freeze({
-  guards: SEAM_STATUS.guards.overridden,
   set: SEAM_STATUS.set.incomplete,
   off: SEAM_STATUS.fishball.off,
   why: 'why',
@@ -102,7 +101,6 @@ export function targetsView(snapshot, lang = STATUS_DEFAULT_LANG, timeZone = und
   const on = snapshot?.fishball === SEAM_STATUS.fishball.on
   const notices = []
   if (!on) notices.push(entry(TARGET_LINE.off, text.line[TARGET_LINE.off]))
-  if (on && snapshot.guards?.status === SEAM_STATUS.guards.overridden) notices.push(entry(TARGET_LINE.guards, text.guards(snapshot.guards.overridden.join(text.separator))))
   if (on && snapshot.set?.status === SEAM_STATUS.set.incomplete) {
     notices.push(entry(TARGET_LINE.set, text.set(snapshot.set.missing.map((m) => text.member(m.name, text.reason[m.reason] ?? m.reason)).join(text.separator))))
   }

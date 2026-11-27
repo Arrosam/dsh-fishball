@@ -12,14 +12,12 @@ import { FISHBALL_MODEL } from '../../contracts/constants.js'
 /** fishball-core's own folder (this file is packages/<core>/tests/message-user/). */
 const CORE_DIR = path.join(import.meta.dirname, '..', '..')
 
-/** Spec items 1–3: the tool, its module and the guard table entry. */
+/** Spec items 1–3: the tool and its module. */
 export const TOOL = Object.freeze({
   name: 'message_user',
   module: path.join(CORE_DIR, 'src', 'manager', 'message-tools.js'),
   table: 'MESSAGE_TOOL',
   tableValue: Object.freeze({ send: 'message_user' }),
-  guardEntry: Object.freeze({ module: '../manager/message-tools.js', table: 'MESSAGE_TOOL' }),
-  contracts: path.join(CORE_DIR, 'contracts', 'constants.js'),
   /** "import-free": no static or dynamic import and no require in the module text. */
   importForms: Object.freeze([/^\s*import\s/m, /\bimport\s*\(/, /\brequire\s*\(/, /^\s*export\s[^;]*\sfrom\s/m]),
   parameter: 'message',

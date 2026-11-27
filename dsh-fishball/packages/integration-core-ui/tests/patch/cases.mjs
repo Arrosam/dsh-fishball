@@ -8,13 +8,12 @@
  * Techniques: EP (startedBundles lists; overlays), DT (EFIX3-UI-DT-01: child row / standalone / no
  * profileContext), BVA (empty lists), a drift check (the notice version in DSH's own welcome step; ui-seam
  * against core's contracts), composition (DSH's shipped layers, core's patch, the owner's layer).
- * Level: unit and integration (DSH's patch loader, composer and Loader evaluator; core's published
- * readIntendedGuards bound to the current DSH; core's client.js run in fishball-test-helpers' browser sandbox).
+ * Level: unit and integration (DSH's patch loader, composer and Loader evaluator; core's client.js
+ * run in fishball-test-helpers' browser sandbox).
  */
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
-import { importBound } from 'fishball-test-helpers/bind'
 import { createBrowserSandbox } from 'fishball-test-helpers/browser-sandbox'
 import { caseTest } from 'fishball-test-helpers/cases'
 import { dshPackageDir } from 'fishball-test-helpers/dsh'
@@ -35,7 +34,6 @@ const noticeOp = async () => {
   return ops[0]
 }
 const resolvedVersion = async (profileContext) => (await resolvedWith((await noticeOp()).config, profileContext))?.[NOTICE.field]
-const intended = async () => (await importBound(fileOf(NAME.core, CORE_SPLIT.intended.file)))[CORE_SPLIT.intended.name]()
 const hostedOverlays = OVERLAYS.find(([, , child]) => child)[1]
 
 /** Every shipped JS file of core's own folder (fishball-ui's ui/ and tests/ excluded: not core's code). */
@@ -159,27 +157,6 @@ export function registerPatchCases() {
     assert.equal((await resolvedWith(row.config, profileContextOf([NAME.core], hostedOverlays)))?.[NOTICE.field], NOTICE.ownerValue)
   })
 
-  // ---------------------------------------------------------------- core's guard reader over the UI rows
-  for (const id of ['EFIX3-UI-GUARD-01', 'NOCORE-GUARDS']) {
-    caseTest(id, 'uiRows', "core's readIntendedGuards(): uiRows is empty and rows holds the UI guard ids as plain rows (not the notice row)", async () => {
-      const read = await intended()
-      assert.deepEqual(Object.keys(read).sort(), [...CORE_SPLIT.intended.keys].sort())
-      assert.deepEqual([...read.uiRows], [])
-      for (const g of ROWS.guards) assert.ok(read.rows.includes(g), g + ' not in rows')
-      assert.equal(read.rows.includes(NOTICE.row), false)
-    })
-  }
-  caseTest('EFIX3-UI-GUARD-01', 'rows', `core's readIntendedGuards().rows equals the patch's bare {id, disabled: true} ops: the core guards, the shipped presets and the ${ROWS.guards.length} UI guard ids`, async () => {
-    const read = await intended()
-    const plain = rowOps(await corePatch()).filter((op) => Object.keys(op).length === 2 && op.disabled === true).map((op) => op.id)
-    assert.deepEqual([...read.rows], plain)
-    for (const g of [...CORE_SPLIT.guards, ...CORE_SPLIT.shippedPresets, ...ROWS.guards]) assert.ok(read.rows.includes(g), g)
-  })
-  caseTest('EFIX3-UI-GUARD-01', 'gone', `fishball-ui has no ${CORE_SPLIT.uiGone.join(', ')} and no peer dependency on ${CORE_SPLIT.appBootPeer} (core reads the guard rows)`, () => {
-    for (const f of CORE_SPLIT.uiGone) assert.equal(fs.existsSync(fileOf(NAME.ui, f)), false, f)
-    assert.equal(Object.hasOwn(manifestOf(NAME.ui).peerDependencies ?? {}, CORE_SPLIT.appBootPeer), false)
-  })
-
   // ---------------------------------------------------------------- UI-UC-08: core's patch after the split
   caseTest('UI-UC-08', 'main', `core's patch holds the ${ROWS.guards.length} UI guard rows as bare {id, disabled: true} ops, in order, and inserts the UI component rows`, async () => {
     const patch = await corePatch()
@@ -193,15 +170,14 @@ export function registerPatchCases() {
     const ops = rowOps(await corePatch())
     for (const id of [...CORE_SPLIT.guards, ...CORE_SPLIT.shippedPresets]) assert.equal(ops.find((r) => r.id === id)?.disabled, true, id)
   })
-  caseTest('UI-UC-08', 'main', `core's patch inserts ${CORE_SPLIT.ownPreset} and ${CORE_SPLIT.guardsRow.id} at ./${CORE_SPLIT.guardsRow.file}`, async () => {
+  caseTest('UI-UC-08', 'main', `core's patch inserts ${CORE_SPLIT.ownPreset} and ${CORE_SPLIT.reorderRow.id} at ./${CORE_SPLIT.reorderRow.file}`, async () => {
     const inserted = insertedOf(await corePatch())
     assert.ok(inserted.some((r) => r.id === CORE_SPLIT.ownPreset), CORE_SPLIT.ownPreset)
-    const row = inserted.find((r) => r.id === CORE_SPLIT.guardsRow.id)
-    assert.equal(rowFile(row?.name), fileOf(NAME.core, CORE_SPLIT.guardsRow.file), show(row))
+    const row = inserted.find((r) => r.id === CORE_SPLIT.reorderRow.id)
+    assert.equal(rowFile(row?.name), fileOf(NAME.core, CORE_SPLIT.reorderRow.file), show(row))
   })
   for (const gone of CORE_SPLIT.gone) caseTest('UI-UC-08', 'gone', `core has no ${gone} (it is fishball-ui's)`, () => assert.equal(fs.existsSync(fileOf(NAME.core, gone)), false))
-  caseTest('UI-UC-08', 'constants', `core's GUARDS.pluginName is ${CORE_SPLIT.pluginName}; core's contracts no longer export ${CORE_SPLIT.movedExport} (fishball-shared's)`, () => {
-    assert.equal(CONTRACTS.GUARDS?.pluginName, CORE_SPLIT.pluginName)
+  caseTest('UI-UC-08', 'constants', `core's contracts no longer export ${CORE_SPLIT.movedExport} (fishball-shared's)`, () => {
     assert.equal(Object.hasOwn(CONTRACTS, CORE_SPLIT.movedExport), false)
     assert.ok(SEAM[CORE_SPLIT.movedExport], 'fishball-shared exports no ' + CORE_SPLIT.movedExport)
   })

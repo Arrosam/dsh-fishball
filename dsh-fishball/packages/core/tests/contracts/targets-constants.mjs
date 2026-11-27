@@ -267,7 +267,7 @@ export const SEAM_DECL = Object.freeze({
 export const README_ROWS = Object.freeze({
   file: 'README.md',
   rows: Object.freeze([
-    Object.freeze({ row: 'Status snapshot', exactCell: "`StatusSnapshot`: `{fishball: 'on', targets, guards, set, brand: {style: 'fishball' \\| 'deepseek'}}` or exactly `{fishball: 'fishball-off'}` (no `targets`, no `brand`)" }),
+    Object.freeze({ row: 'Status snapshot', exactCell: "`StatusSnapshot`: `{fishball: 'on', targets, set, brand: {style: 'fishball' \\| 'deepseek'}}` or exactly `{fishball: 'fishball-off'}` (no `targets`, no `brand`)" }),
     Object.freeze({ row: 'Hosted signal', words: Object.freeze([/namespace `dsh-instance-child`/, /URL-independent/, /parent epoch generated, renewed on every canonical `targetUrl` change/, /`fishball-core\/connect-parent-<epoch>`/, /`target\.url` and its fallback withdrawn/]) }),
     Object.freeze({ row: 'HTTP', words: Object.freeze([/\b200\b/, /400 malformed/, /404 `unknown-target`/, /409 other refusals/, /503 `TARGETS_UNAVAILABLE`/, /voided ask → 409 `expired`/]) }),
   ]),

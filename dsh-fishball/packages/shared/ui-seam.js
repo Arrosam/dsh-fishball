@@ -9,15 +9,13 @@
  *   one line fishball-ui logs, and then changes nothing, without core (Q-G2 = A; R-FB-06's
  *   word). Core shows no hint of a missing fishball-ui (Q-G1), so there is no value for that.
  * - `UI_STATUS`: the name of core's status service the strip reads (F-WIRE).
- * - `UI_GUARDS`: the service fishball-ui's row provides so core's guard check also reports the UI
- *   guard rows of core's patch (R-FB-09), which hold only beside fishball-ui (R-FIX-FUI).
+ * - `UI_GUARDS`: legacy service name, kept for compatibility; no service is provided.
  * - `UI_INSTANCE`, `SEAM_PAIRING`: core's service and the pairing words fishball-ui's pairing card
  *   draws (R-FIX-FUI).
  * - `SEAM_STATUS`: the words of core's status snapshot that fishball-ui's strip view draws.
  *   `fishball`, `set`, `reason` and `control` are defined here, once; core's `STATUS_MODEL` takes
- *   them from here. `link`, `connect` and `guards` restate core's K3 `LINK.state`, `CONNECT.state`
- *   and `GUARDS.status`, because that file is data-only and imports nothing (the K3 freeze); the
- *   fishball-ui tests check that both copies are equal.
+ *   them from here. `link` and `connect` restate core's K3 `LINK.state` and `CONNECT.state`.
+ *   `guards` is retained for compatibility with readers of the old snapshot vocabulary.
  * - `SEAM_TARGETS` (MULTI-0, 2026-11-18): the multiple-target list fishball-ui draws in the
  *   sidebar and the owner-only routes it acts through (core's `contracts/targets.d.ts`).
  * - `SEAM_PAGE_STREAM`: the Fishball page's one live connection, which carries every topic
@@ -38,11 +36,7 @@ export const UI_STATUS = Object.freeze({
   service: 'fishballStatus',
 })
 
-/**
- * fishball-ui's presence (R-FIX-FUI): its row provides this service, and core's guard check reports
- * the UI guard rows of core's patch only while it is there. The rows themselves are core's patch's
- * `uiRows`; the service carries nothing.
- */
+/** @deprecated Legacy name; the UI no longer provides a guard reporting service. */
 export const UI_GUARDS = Object.freeze({
   service: 'fishballUiGuards',
 })
@@ -97,7 +91,7 @@ export const SEAM_STATUS = Object.freeze({
     authorized: 'authorized',
     failed: 'failed',
   }),
-  /** Core's `GUARDS.status` (K3, `GuardReport.status`). */
+  /** @deprecated Legacy snapshot words; guard status is no longer published. */
   guards: Object.freeze({ ok: 'ok', overridden: 'guards-overridden' }),
 })
 

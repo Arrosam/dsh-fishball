@@ -5,9 +5,9 @@
  * packages/core/src/status/index.js
  *   STATUS_MODEL                          frozen spellings (constants.mjs MODEL restates them)
  *   createStatus(ctx, ports) → {snapshot(), onChange(fn) → dispose, close()}
- *     ctx    a Cordis context: ctx.get('appReady' | 'pluginManager' | 'loader' | 'profileContext'),
+ *     ctx    a Cordis context: ctx.get('appReady' | 'pluginManager' | 'loader'),
  *            ctx.on(event, fn), ctx.logger(name)
- *     ports  {targets, guards?, notify?, brand?} (fakes.mjs)
+ *     ports  {targets, brand?} (fakes.mjs)
  *   statusOf(service) → service.snapshot(), or the frozen {fishball: 'fishball-off'}
  *   stripLine(link, url, connect) → {line, control}: the per-target rule (targets.d.ts TargetView.line)
  *

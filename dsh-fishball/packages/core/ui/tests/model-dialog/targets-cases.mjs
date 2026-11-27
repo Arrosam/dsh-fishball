@@ -24,6 +24,10 @@ const ST = SEAM_TARGETS.state
 const STATES = Object.freeze(Object.values(ST))
 const zone = FIXTURE.zones[0]
 const lineOf = (view, kind) => view.lines.filter((l) => l.kind === kind)
+const LEGACY_GUARD = Object.freeze({
+  report: Object.freeze({ status: 'guards-overridden', overridden: Object.freeze(['manager-tools']) }),
+  hook: 'data-fishball-targets-notice',
+})
 const enabled = (n) => n.props.disabled !== true && n.props['aria-disabled'] !== true && n.props['aria-disabled'] !== 'true'
 /** One target's frame from the real view, in `lang`. */
 const oneFrame = async (overrides, lang = EN) => (await viewModule()).targetsView(snapshotOf([targetView(0, overrides)]), lang, zone)
@@ -81,18 +85,15 @@ export function registerTargetsCases() {
       })
     }
   }
-  // Decision table: guards × set → notices (fishball on).
-  const guardsOver = { status: SEAM_STATUS.guards.overridden, overridden: ['row:fbtest'] }
+  // Decision table: set → notices (fishball on).
   const setIncomplete = { status: SEAM_STATUS.set.incomplete, missing: [{ name: 'fbtest-member', reason: SEAM_STATUS.reason.failed, code: null }] }
-  for (const [label, globals, kinds] of [
-    ['ok, ok', { guards: { status: SEAM_STATUS.guards.ok, overridden: [] }, set: { status: SEAM_STATUS.set.ok, missing: [] } }, []],
-    ['overridden, ok', { guards: guardsOver, set: null }, [FRAME.notice.guards]],
-    ['ok, incomplete', { guards: null, set: setIncomplete }, [FRAME.notice.set]],
-    ['overridden, incomplete', { guards: guardsOver, set: setIncomplete }, [FRAME.notice.guards, FRAME.notice.set]],
+  for (const [label, set, kinds] of [
+    ['ok', { status: SEAM_STATUS.set.ok, missing: [] }, []],
+    ['incomplete', setIncomplete, [FRAME.notice.set]],
   ]) {
-    t('TGT-VIEW-DT-02', label, `guards × set ${label} → notice kinds ${show(kinds)}, each with a non-empty text`, async () => {
+    t('TGT-VIEW-DT-02', label, `set ${label} → notice kinds ${show(kinds)}, each with a non-empty text`, async () => {
       const { targetsView } = await viewModule()
-      const v = plain(targetsView(snapshotOf([targetView(0)], globals), EN, zone))
+      const v = plain(targetsView(snapshotOf([targetView(0)], { set }), EN, zone))
       assert.deepEqual(v.notices.map((n) => n.kind).sort(), [...kinds].sort())
       for (const n of v.notices) assert.ok(Object.values(n).some((x) => typeof x === 'string' && x.length > 0 && x !== n.kind), show(n))
     })
@@ -333,6 +334,20 @@ export function registerTargetsCases() {
     assert.deepEqual(p.rows().map((r) => p.textOf(r)), [])
     const notice = frame.notices[0]
     assert.ok(Object.values(notice).filter((x) => typeof x === 'string' && x !== notice.kind).some((x) => p.text(p.sidebarNodes()).includes(x)), 'the off notice is not shown')
+  })
+  t('GUARD-SILENT', 'sidebar', 'ignoring a legacy manager-tools guard field leaves the Fishball sidebar running without a guard notice', async (c) => {
+    const p = await sidebarPage(c)
+    const { targetsView } = await viewModule()
+    const targets = [targetView(0)]
+    await p.deliver(targetsView(snapshotOf(targets), EN, zone))
+    const before = p.text(p.sidebarNodes())
+    assert.ok(p.row(targets[0].name), 'the default sidebar did not render')
+
+    const { report, hook } = LEGACY_GUARD
+    await p.deliver(targetsView({ ...snapshotOf(targets), guards: report }, EN, zone))
+    assert.ok(p.row(targets[0].name), 'the overridden sidebar did not render')
+    assert.deepEqual(p.byHook(hook, p.sidebarNodes()).map((node) => p.textOf(node)), [], 'the guard override rendered a notice')
+    assert.equal(p.text(p.sidebarNodes()), before, 'the guard override changed the visible sidebar text')
   })
   // State transition: closed → open → closed; inline, not modal; others stay; no request.
   t('TGT-SB-ST-02', 'expand/collapse', `row A: aria-expanded false → press → true with why, Address and the URL in [${SIDEBAR.urlHook}], tools and identity inline → press → false, the URL gone`, async (c) => {

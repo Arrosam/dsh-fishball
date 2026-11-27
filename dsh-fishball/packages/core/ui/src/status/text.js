@@ -1,5 +1,5 @@
 /**
- * The sidebar targets' copy (MULTI-3; first F-STATUS's strip copy: R-FB-03, R-FB-04, R-FB-09,
+ * The sidebar targets' copy (MULTI-3; first F-STATUS's strip copy: R-FB-03, R-FB-04,
  * R-FB-10, R-BND-05, R-EXT-14; design §6.3a). Data only: frozen strings and pure template formatters
  * that interpolate names, codes and numbers only.
  *
@@ -35,7 +35,6 @@ export const STATUS_TEXT = Object.freeze({
       [OFF]: 'Fishball is off in this DSH.',
     }),
     code: (text, code) => `${text} (${code})`,
-    guards: (list) => `Guards overridden: ${list}.`,
     set: (list) => `Plugins enabled but not loaded: ${list}.`,
     reason: Object.freeze({ [RS.skipped]: 'skipped', [RS.failed]: 'failed to start' }),
     member: (name, reason) => `${name} (${reason})`,
@@ -74,7 +73,6 @@ export const STATUS_TEXT = Object.freeze({
       [OFF]: '此 DSH 中的 Fishball 已关闭。',
     }),
     code: (text, code) => `${text}（${code}）`,
-    guards: (list) => `已被覆盖的防护：${list}。`,
     set: (list) => `已启用但未加载的插件：${list}。`,
     reason: Object.freeze({ [RS.skipped]: '已跳过', [RS.failed]: '启动失败' }),
     member: (name, reason) => `${name}（${reason}）`,

@@ -41,7 +41,6 @@ export function registerMessageUserCases() {
       f.spec = await h.call('toolSpec', { sessionId: id, name: TOOL.name })
       const { sessionId } = await h.call('create')
       f.ordinary = { sessionId, requests: await h.call('turn', { sessionId }) }
-      f.guards = await h.call('guards')
     },
   ], { packages: corePackages(), extension: CORE_EXTENSION, env: coreEnv({ profileConfig: NATIVE_MANAGER }) })
   const read = async (...keys) => {
@@ -52,19 +51,14 @@ export function registerMessageUserCases() {
   const name = (id, text) => ({ id, text })
   const test = (n, fn) => caseTest(n.id, '', n.text, SYS, fn)
 
-  // ------------------------------------------------------------------ items 1, 3: the tool table and the guard entry (unit)
+  // ------------------------------------------------------------------ item 1: the tool table (unit)
   test(name('MSG-TOOL-EP-01', 'message-tools.js is import-free and exports MESSAGE_TOOL = {send: "message_user"}'), async () => {
     const text = fs.readFileSync(TOOL.module, 'utf8')
     assert.deepEqual(TOOL.importForms.filter((re) => re.test(text)).map(String), [], 'the module imports something')
     const mod = await import(pathToFileURL(TOOL.module).href)
     assert.deepEqual({ ...mod[TOOL.table] }, TOOL.tableValue)
   })
-  test(name('MSG-TOOL-EP-02', 'GUARDS.coreTools lists {module: "../manager/message-tools.js", table: "MESSAGE_TOOL"}'), async () => {
-    const { GUARDS } = await import(pathToFileURL(TOOL.contracts).href)
-    assert.ok(GUARDS.coreTools.some((e) => e.module === TOOL.guardEntry.module && e.table === TOOL.guardEntry.table), show(GUARDS.coreTools))
-  })
-
-  // ------------------------------------------------------------------ items 1–3: scope and guard report (system)
+  // ------------------------------------------------------------------ items 1–3: tool scope (system)
   test(name('MSG-TOOL-EP-03', 'the manager is offered message_user: a required string parameter "message", described as Markdown'), async () => {
     const f = await read('results', 'spec')
     assert.ok(f.results.every((r) => r.offered), 'not offered in every manager turn: ' + show(f.results.map((r) => [r.row, r.offered])))
@@ -79,12 +73,6 @@ export function registerMessageUserCases() {
     const tools = f.ordinary.requests[0]?.tools
     assert.ok(tools, 'the ordinary session made no model request')
     assert.equal(tools.includes(TOOL.name), false, tools.join(', '))
-  })
-  test(name('MSG-TOOL-EP-05', 'R-FB-13: the guard report does not count message_user as an extra or overriding manager tool'), async () => {
-    const f = await read('guards')
-    assert.ok(f.guards, 'no guard report')
-    assert.equal((f.guards.extraManagerTools ?? []).includes(TOOL.name), false, show(f.guards))
-    assert.equal(show(f.guards.overridden ?? []).includes(TOOL.name), false, show(f.guards))
   })
   // ------------------------------------------------------------------ item 2: decision table of the model-facing result
   RESULT_ROWS.forEach((row, i) => {

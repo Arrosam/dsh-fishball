@@ -17,7 +17,7 @@ import { startFakeTarget } from 'fishball-test-helpers/fake-connector'
 import { sleep, until } from 'fishball-test-helpers/wait'
 import { CORE_EXTENSION, NATIVE_MANAGER, coreEnv, corePackages, post } from '../support/core-world.mjs'
 import {
-  BUDGET, CONNECT_INPUT, FISHBALL_MODEL, GUARD_OK, HTTP, IDENTITY, MCP, MODEL, OP, PERSONA, PERSONA_FIX, PRESET, REMINDER, ROLE,
+  BUDGET, CONNECT_INPUT, FISHBALL_MODEL, HTTP, IDENTITY, MCP, MODEL, OP, PERSONA, PERSONA_FIX, PRESET, REMINDER, ROLE,
   RETIRED, ROUTE, TOOLS, WORLD,
 } from './constants.mjs'
 import { registerRfixManagerCases } from './rfix.mjs'
@@ -134,7 +134,6 @@ export function registerManagerCases() {
       f.update = await callTool(h, id, TOOLS.reminders[2], { id: idOf(REMINDER.keep), title: REMINDER.renamed }, ++n)
       f.delete = await callTool(h, id, TOOLS.reminders[3], { id: idOf(REMINDER.deleted) }, ++n)
       f.list2 = await callTool(h, id, TOOLS.reminders[1], {}, ++n)
-      f.guardsA = await h.call('guards')
 
       // MGR-ID: the id Connect passes, with identity.id unset.
       target = await startFakeTarget()
@@ -198,7 +197,6 @@ export function registerManagerCases() {
       await mutate(h, [set(IDENTITY.path, IDENTITY.blank)])
       f.f09.blank = await waitAgentId(h, (v) => v !== IDENTITY.longestValid && v !== null)
       await mutate(h, [unset(IDENTITY.path)])
-      f.guardsB = await h.call('guards')
     },
   ], { packages: corePackages(), extension: CORE_EXTENSION, env: coreEnv({ profileConfig: NATIVE_MANAGER }) })
   /** The facts, failing the case with the scenario's own error when a step failed before them. */
@@ -268,11 +266,6 @@ export function registerManagerCases() {
     const f = await read('missedCreate', 'missedDelivered')
     assert.equal(f.missedDelivered, true)
   })
-  test(name('MGR-REM-EP-04', 'R-FB-13 ignores core\'s own tools: the guard report stays ok after the reminder tools ran, before and after restart'), async () => {
-    const f = await read('guardsA', 'guardsB')
-    for (const report of [f.guardsA, f.guardsB]) assert.deepEqual({ status: report?.status, overridden: report?.overridden }, { status: GUARD_OK, overridden: [] })
-  })
-
   // ------------------------------------------------------------------ MGR-SET: the manager singleton and setup
   test(name('MGR-SET-ST-01', 'POST /api/fishball/session twice at once and once more: 200 and one id; GET and the service then answer it'), async () => {
     const f = await read('posts', 'getA')

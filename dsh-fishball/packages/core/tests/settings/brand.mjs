@@ -7,7 +7,7 @@
  *   default Fishball. It reads core's top-level string `brandStyle`; an absent or unknown value is
  *   Fishball. Choosing an option writes that value through the config form
  *   (`form.set('brandStyle', value)`); a refused/rejected write is reported visibly.
- * - Core's public status snapshot carries `brand: {style}` beside fishball/guards/set/targets; the
+ * - Core's public status snapshot carries `brand: {style}` beside fishball/set/targets; the
  *   style is always `fishball` or `deepseek` and defaults to `fishball` for absent/unknown values.
  *   It follows the stored choice live (the status reads it on every snapshot).
  *
@@ -153,11 +153,11 @@ export function registerBrandSettingCases() {
     stored = 'fishball'
     assert.equal(brandOf((await w.recompose()).snapshot()), 'fishball')
   })
-  t('BRAND-STATUS-SHAPE-01', 'shape', 'every snapshot keeps exactly {fishball, guards, set, targets, brand} and brand.style one of fishball/deepseek', async (c) => {
+  t('BRAND-STATUS-SHAPE-01', 'shape', 'every snapshot keeps exactly {fishball, set, targets, brand} and brand.style one of fishball/deepseek', async (c) => {
     for (const brand of [() => undefined, () => 'fishball', () => 'deepseek', () => 'orca']) {
       const w = await worldFor(c, { brand })
       const s = w.snapshot()
-      assert.deepEqual(Object.keys(s).sort(), ['brand', 'fishball', 'guards', 'set', 'targets'])
+      assert.deepEqual(Object.keys(s).sort(), ['brand', 'fishball', 'set', 'targets'])
       assert.ok(BRAND.values.includes(s.brand.style), show(s.brand.style))
     }
   })

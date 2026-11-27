@@ -127,8 +127,6 @@ export const HOSTED = Object.freeze({
   guardedInstanceRow: NAMES.instance,
   /** The credential record's scope is the owning plugin's registered name (DSH credentials docs). */
   recordScope: NAMES.core,
-  /** The K3 guards contract names its guarded rows by this type (guards.d.ts, read as K3 does). */
-  guardedRowType: 'GuardedRow',
   /** A bare guard row of the patch file: `- { id: <row>, disabled: true }`. */
   guardRow: /^-\s*\{\s*id:\s*([^,\s}]+)\s*,\s*disabled:\s*true\s*\}\s*$/gm,
 })
@@ -187,14 +185,13 @@ export const UI = Object.freeze({
       retry: Object.freeze({ params: 1 }),
       choose: Object.freeze({ params: 3, optionalFrom: 2 }),
     }),
-    guards: Object.freeze({ report: Object.freeze({ params: 0 }), onChange: Object.freeze({ params: 1 }) }),
     asks: Object.freeze({ list: Object.freeze({ params: 0 }), onChange: Object.freeze({ params: 1 }), answer: Object.freeze({ params: 2 }) }),
   }),
   onChange: 'onChange',
   /** `FishballConnect` (connect.d.ts, still declared): the client's status, onChange, begin, cancel. */
   fishballConnect: Object.freeze(['status', 'onChange', 'begin', 'cancel']),
   /** MULTI-0: the withdrawn scalar members of `FishballUi`, and the target selector each `targets` action names first. */
-  withdrawn: Object.freeze(['link', 'connect', 'pairing']),
+  withdrawn: Object.freeze(['link', 'connect', 'pairing', 'guards']),
   targetsGroup: 'targets',
   targetIdParam: Object.freeze({ name: 'targetId', type: 'TargetId', methods: Object.freeze(['remove', 'setUrl', 'begin', 'cancel', 'retry', 'choose']) }),
   /** MULTI-0: `ui.asks.answer(handle, answer)`: the card's opaque handle, never a raw approvalId. */

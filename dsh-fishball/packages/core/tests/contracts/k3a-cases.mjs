@@ -342,17 +342,16 @@ export function registerK3aCases() {
     assert.equal(CONNECT.grantRecordScope, HOSTED.recordScope)
     assert.equal(lib.isCredentialKeySegment(CONNECT.grantRecordScope), true)
   })
-  caseTest('K3a-HOST', 'setting row', 'the target setting row is not one of core\'s guarded rows (cordis.patch.yml bare rows, K3 GuardedRow)', async () => {
+  caseTest('K3a-HOST', 'setting row', 'the target setting row is not one of core\'s guarded rows (cordis.patch.yml bare rows)', async () => {
     const { HOSTED_IMPORT } = await coreConstants()
-    const { patch, declared } = guardedRows()
+    const patch = guardedRows()
     assert.ok(patch.length > 0, 'no bare guard row read from cordis.patch.yml')
-    assert.deepEqual([...patch, ...declared].filter((row) => row === HOSTED_IMPORT.targetSetting.row), [])
+    assert.deepEqual(patch.filter((row) => row === HOSTED_IMPORT.targetSetting.row), [])
   })
   caseTest('K3a-HOST', 'setting row (boundary)', `${HOSTED.guardedInstanceRow} IS a guarded row, so the setting row must differ from it`, async () => {
     const { HOSTED_IMPORT } = await coreConstants()
-    const { patch, declared } = guardedRows()
+    const patch = guardedRows()
     assert.ok(patch.includes(HOSTED.guardedInstanceRow), 'cordis.patch.yml guards: ' + patch.join(', '))
-    assert.ok(declared.includes(HOSTED.guardedInstanceRow), 'GuardedRow: ' + declared.join(', '))
     assert.notEqual(HOSTED_IMPORT.targetSetting.row, HOSTED.guardedInstanceRow)
   })
 

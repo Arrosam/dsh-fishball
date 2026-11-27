@@ -28,7 +28,6 @@
  */
 import { defineDomain, domainTable } from '@deepseek-ai/dsh-storage-domain'
 import { SEAM_PAGE_STREAM, SEAM_TARGETS, UI_SEAM } from 'fishball-shared/ui-seam'
-import { GUARDS } from '../../contracts/constants.js'
 import { createAsks, openAskCards, registerAskRoutes } from '../asks/index.js'
 import { QUESTION_CARD } from '../asks/constants.js'
 import { cardFeed, createQuestionCards, openQuestionCards } from '../asks/questions.js'
@@ -42,7 +41,6 @@ import { acceptId, openRecords } from '../identity/index.js'
 import { createWebCallback } from '../link/web-callback.js'
 import { registerMessageTools } from '../manager/message-user.js'
 import { createReminders } from '../manager/reminders.js'
-import { CONTRIBUTED_TOOLS, OWNS_MANAGER_SESSION } from '../manager/contributed.js'
 import { createManagerService } from '../manager/service.js'
 import { createManagerSession } from '../manager/session.js'
 import { attachPrivateSkills } from '../manager/skills.js'
@@ -53,7 +51,6 @@ import { createTargets } from '../targets/index.js'
 import { registerTargetRoutes } from '../targets/routes.js'
 import { openTargets } from '../targets/store.js'
 import { Config, valueAt } from './config.js'
-import { followService } from './follow.js'
 import { openGeneratedId } from './identity.js'
 import { MAIN } from './constants.js'
 
@@ -161,10 +158,7 @@ export async function apply(ctx, config) {
   // credential only after app ready (dsh-instance child.js `attach` needs `childReadiness`), so the
   // probe never sees a parent record core is about to retire.
   await targets.settled()
-  // The guard row is its own row and may start after this one, be replaced or go away.
-  const guards = followService(ctx, GUARDS.serviceName, { report: (report) => report.report() ?? null, onChange: 'onChange' })
-  ctx.effect(() => () => guards.dispose())
-  const status = createStatus(ctx, { targets: targets.service, guards, notify: (input) => service.manager.notify(input), brand: () => setting('brandStyle') })
+  const status = createStatus(ctx, { targets: targets.service, brand: () => setting('brandStyle') })
 
   // 5. Contributions. Each is one X2 registration: only the manager's scope receives it.
   const reminders = createReminders(ctx, { resolveAgent: (id, next) => session.resolveAgent(id, next) })
@@ -197,9 +191,6 @@ export async function apply(ctx, config) {
   // The two services (K3 index.d.ts, MULTI-0 apiVersion 2; F-STATUS).
   ctx.provide(MAIN.service, Object.freeze({
     apiVersion: MAIN.apiVersion,
-    // Core's own read for its guard row (manager/contributed.js); not part of the K3 contract.
-    [CONTRIBUTED_TOOLS]: (agent) => service.contributedTools(agent),
-    [OWNS_MANAGER_SESSION]: session.ownsSession,
     manager: service.manager,
     events: events.service,
     bridge: targets.targetBound.bridge,
@@ -209,7 +200,6 @@ export async function apply(ctx, config) {
     [UI_SEAM.member]: Object.freeze({
       managerSessionId: () => session.sessionId(),
       [SEAM_TARGETS.member]: targets.service,
-      guards: Object.freeze({ report: () => guards.report(), onChange: (fn) => guards.onChange(fn) }),
       asks: asks.service,
     }),
   }))

@@ -599,7 +599,7 @@ export function registerMultiCases() {
     const signal = await w.h.call('attention', { pluginId: MULTI.bridgePlugin, input: { important: true }, target: { targetId: a.targetId } })
     assert.equal(signal?.code, R.unknownTarget)
   })
-  row('MULTI-SVC-EP-01', 'status snapshot', 'fishballStatus.snapshot() is {fishball, guards, set, targets: {version: 1, targets}, brand: {style}} with no scalar link/connect/line/control/contributedTools; targets equals ui.targets.list(); contributedTools counts zero; an absent stored logo theme is fishball', async () => {
+  row('MULTI-SVC-EP-01', 'status snapshot', 'fishballStatus.snapshot() is {fishball, set, targets: {version: 1, targets}, brand: {style}} with no scalar link/connect/line/control/contributedTools; targets equals ui.targets.list(); contributedTools counts zero; an absent stored logo theme is fishball', async () => {
     const w = await standalone()
     const fa = await w.fake({ name: MULTI.name.office })
     await w.connect(fa)

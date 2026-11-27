@@ -1,7 +1,5 @@
 # fishball-core's bundle patch (design §5a.2; R-FB-02; spike V3-S6 `86800d2` + round 2 `7c2230e`).
-# This file is the ONE definition of the guards: src/guards/intended.js reads the guarded rows, the
-# policy values and core's own presets back from it at runtime, so the check can never disagree
-# with what the patch sets (v3-tasks W1 rules: the guards are defined exactly once).
+# This patch is the source of Fishball's default guards, policy and preset.
 #
 # Rules this file relies on (cordis-plugin-include `applyEntryPatches`, both SDKs):
 # - a patch reaches only rows an EARLIER layer inserted, so core's bundle must be last
@@ -10,9 +8,8 @@
 # - a patch's `config` REPLACES the row's whole config, so a policy row restates every key DSH ships
 #   (the `!!js` workspace root included);
 # - the owner's profile patch, home patch and launch overlays apply after this file, so the owner can
-#   override any guard (Q20); core then reports `guards-overridden` and changes nothing back (R-FB-09).
+#   override any guard (Q20); core does not change it back (R-FB-09).
 #
-# A guard is a bare `{id, disabled: true}` row; intended.js reads exactly that shape as a guard.
 # fishball-ui's UI guard rows are here too, conditional on fishball-ui (below, R-FIX-FUI).
 
 # Session-creating service rows (V2 LITE). schedule: scheduled prompts run as new sessions;
@@ -65,7 +62,7 @@
 # `disabled: false` and the Preview Notice value `undefined`. So an earlier bundle's setting of one of
 # them is lost then. No DSH-shipped bundle patches them. The counterpart, also accepted: while HMR
 # is on, a fishball-ui that is selected but skipped, or whose row fails, counts as present, so these
-# rows are off and, with no `fishballUiGuards` service, not reported.
+# rows are off.
 # The test, `fishball-ui` as in its package name (YAML can neither share it with code nor reuse one
 # expression in another, so the Preview Notice row below spells its own):
 # - with HMR (the `hmr` service, a standalone DSH by default): fishball-ui is selected in the profile
@@ -75,9 +72,6 @@
 #   off in a running DSH switches these rows with it;
 # - without HMR (a hosted child: the instance switches HMR off), or when the manifest cannot be read:
 #   fishball-ui is among the bundles this process started with (`profileContext.startedBundles`).
-# A UI guard row is a bare `{id, disabled: !!js}` row; src/guards/intended.js reads exactly that shape
-# as a UI guard (`uiRows`). Core's check reports one only while fishball-ui's `fishballUiGuards`
-# service is there (src/guards/check.js).
 #
 # UI-only session-creating rows (V2 LITE; their service rows are the guards above). ui-subagent: header
 # lineage and catalogue tree items open other sessions; ui-schedule: scheduled prompts run as new
@@ -139,7 +133,7 @@
               - id: compaction-basic
                 name: '@deepseek-ai/dsh-compaction-basic'
                 config: { auto: false }
-    # Core's guard row: the check, the `guards-overridden` report and the standalone self-reorder (src/guards/).
+    # Core's one-time bundle self-reorder (src/guards/).
     - id: fishball-core-guards
       name: ./src/guards/row.js
     # Core's main row (src/main/, F-WIRE): the link, Connect, the interception service, the ask

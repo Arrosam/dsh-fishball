@@ -76,8 +76,8 @@ export function ops({ ctx, model, world }) {
     /** ensureSession twice: the id after each, and every live session id. */
     async ensure() { const a = await ensure(); const b = await ensure(); return { a, b, id: managerId(), ids: ctx.agents.list().map((x) => x.session.id) } },
     managerId,
+    managerNotify: (input) => instance().manager.notify(input),
     snapshot: () => ctx.get(N.services.status)?.snapshot() ?? null,
-    guards: () => instance()?.ui?.guards?.report() ?? null,
     managerTeamMode({ sessionId }) {
       if (!ctx.agentTeams) return null
       const agent = managerAgent(sessionId)

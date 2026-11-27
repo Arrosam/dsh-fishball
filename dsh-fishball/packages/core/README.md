@@ -23,8 +23,7 @@ row; in a standalone DSH you install it yourself, last (see the [Fishball instal
   (apiVersion 2) and `fishballStatus`.
 - `fishball-core-session` (`src/session/route.js`): `GET|POST /api/fishball/session`, the manager
   session the Fishball page opens.
-- `fishball-core-guards` (`src/guards/`): the guard check, the `guards-overridden` report and, in a
-  standalone DSH, the self-reorder to the end of `dsh.profile.bundles`.
+- `fishball-core-guards` (`src/guards/`): the one-time self-reorder to the end of `dsh.profile.bundles`.
 - `preset-fishball`: core's agent preset. It includes `read`, `read_image` and DSH's
   `ask_user_question`. Only the Fishball singleton denies the inherited question tool with
   `tools.restrict`: it is absent from both native tools and the PTC SDK. Other sessions, including
@@ -35,8 +34,7 @@ row; in a standalone DSH you install it yourself, last (see the [Fishball instal
   deleted), and the read-only sandbox, `ask` approval and read-only permission preset. fishball-ui's UI
   guard rows (`ui-*`, `entry-customization`) and the hosted child's Preview Notice acknowledgement are
   here too, but apply only while fishball-ui is in the profile; without fishball-ui core leaves DSH's own
-  UI as it is. The owner may override any guard; core then reports `guards-overridden` and changes
-  nothing back.
+  UI as it is. The owner may override any guard; core does not change it back.
 - fishball-ui's rows (`./ui/`): `fishball-ui`, `fishball-page`, and one of two rows by mode (DESIGN
   §28). The child is instance-run while the instance's launch overlay inserts its row
   `dsh-instance-child`; only the main DSH installs plugins into it then. Standalone:
@@ -48,6 +46,13 @@ row; in a standalone DSH you install it yourself, last (see the [Fishball instal
   control back.
 
 Core's rows are not `required`: a failure is that row's alone, and the DSH still boots.
+
+By user decision, Fishball no longer shows a guard override banner or sends notices about guard
+overrides or extra manager tools. The checker only reported effective state: it neither enforced
+policy nor drove the one-time bundle reorder. The report and its subscriptions were removed. Declarative guards, owner
+overrides, manager tool restrictions and the one-time bundle reorder are unchanged. Extensions should
+no longer read `fishballInstance.ui.guards` or `fishballStatus.snapshot().guards`; those report-only
+fields are no longer published.
 
 ### Settings page
 

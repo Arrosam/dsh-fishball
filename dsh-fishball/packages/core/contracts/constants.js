@@ -481,93 +481,10 @@ export const FISHBALL_MODEL = Object.freeze({
 
 // ------------------------------------------------------------------------- guards (guards.d.ts)
 
-/** dsh-app-boot's diagnostic prefix, also the prefix of core's own patch errors. */
-const GUARDS_DIAGNOSTIC = 'fishball-core'
-
-/**
- * The guard values core's code reads (design §5a.2; R-FB-02, R-FB-09, R-FB-12, R-FB-13). Every value `guards.d.ts` names has its K3 spelling there; the service name, record
- * location and diagnostic texts are F-GUARDS's own, kept here too so the whole guard vocabulary has
- * one owner (DECIDED D7).
- *
- * What is NOT here, on purpose: the guarded rows, the shipped preset rows and the intended policy
- * values. Their one definition is core's own `cordis.patch.yml`; `src/guards/intended.js` reads them
- * from it at runtime, so the patch and the check can never disagree.
- *
- * Module paths (`coreTools[].module`, `patchFile`) are relative to `src/guards/`, the folder whose
- * modules resolve them (`new URL(path, import.meta.url)`), not to this file.
- */
+/** Core's bundle and the one-time reorder that lets its patch reach earlier rows. */
 export const GUARDS = Object.freeze({
-  /** GuardReport.status. */
-  status: Object.freeze({ ok: 'ok', overridden: 'guards-overridden' }),
-  /** OverriddenGuard spellings: `row:<id>`, `policy:<key>` and the three single codes. */
-  code: Object.freeze({
-    rowPrefix: 'row:',
-    policyPrefix: 'policy:',
-    agentPresets: 'agent-presets',
-    bundleOrder: 'bundle-order',
-    managerTools: 'manager-tools',
-  }),
-  /** GuardCheckTrigger: the two events core re-checks on (app ready is `appReady.onReady`). */
-  triggers: Object.freeze(['settings/document-updated', 'plugin-manager/changed']),
-  /** The IntendedPolicy key whose value is the manager's agent preset (core's patch sets it). */
-  managerPresetKey: 'defaultAgentPreset',
-  /** ManagerTool: the singleton's base model tools, excluding Fishball's own contributions. */
-  managerTools: Object.freeze(['read', 'read_image', 'working_directory']),
-  /**
-   * Core's own model tools, by module (relative to `src/guards/`) and exported name table (user
-   * decision 2026-11-14: core's tools are not the preset's and are left out of the R-FB-13 check).
-   * Loaded lazily, because these modules import DSH host packages (`@deepseek-ai/*`) that resolve
-   * only inside DSH; a module that cannot load registers no tools, so its names cannot appear.
-   */
-  coreTools: Object.freeze([
-    Object.freeze({ module: '../manager/reminders.js', table: 'TOOL' }),
-    Object.freeze({ module: '../manager/skills.js', table: 'PRIVATE_SKILL_TOOL' }),
-    Object.freeze({ module: '../asks/constants.js', table: 'ASK_TOOL' }),
-    Object.freeze({ module: '../manager/message-tools.js', table: 'MESSAGE_TOOL' }),
-  ]),
-  /** ReorderOutcome. */
   reorder: Object.freeze({ moved: 'moved', unchanged: 'unchanged', failed: 'failed' }),
-  /**
-   * IntendedPolicy keys, in report order, each with the DSH row and config field core's patch sets
-   * and the public service member that reads the effective value back (S6 §3.5). `keys: true`
-   * compares the config object's keys (the permission preset table) instead of a value.
-   */
-  policy: Object.freeze([
-    Object.freeze({ key: 'sandbox', row: 'sandbox-policy', field: 'mode', service: 'sandboxPolicy', member: Object.freeze(['defaultMode']) }),
-    // Read directly (requirements 1.24 item 4): ApprovalService has no public getter for its default.
-    Object.freeze({ key: 'approval', row: 'approval', field: 'policy', service: 'approval', member: Object.freeze(['config', 'policy']) }),
-    Object.freeze({ key: 'permissionPresets', row: 'permission', field: 'presets', keys: true, service: 'permissionPresets', member: Object.freeze(['names']) }),
-    Object.freeze({ key: 'defaultPermissionPreset', row: 'permission', field: 'defaultPreset', service: 'permissionPresets', member: Object.freeze(['defaultPreset']) }),
-    Object.freeze({ key: 'defaultAgentPreset', row: 'agent-preset-registry', field: 'default', service: 'agentPresets', member: Object.freeze(['defaultId']) }),
-  ]),
-  /**
-   * The Cordis services the guards read, none injected (a missing one is "nothing to check"):
-   * `profileContext` and `appReady` are read once at the row's start, the rest at each check.
-   * `fishballInstance` is the service core's main row (`src/main/`) provides, restated here because
-   * this file imports nothing (the K3 freeze above).
-   */
-  services: Object.freeze({
-    loader: 'loader',
-    appReady: 'appReady',
-    profileContext: 'profileContext',
-    agentPresets: 'agentPresets',
-    tools: 'tools',
-    agents: 'agents',
-    instance: 'fishballInstance',
-  }),
-  /** DSH's agent-registry event after a session's setup (create or resume), both SDKs. */
-  agentCreated: 'agent/created',
-  /** DSH's prompt and session events that bracket an admitted model step. */
-  stepAdmission: Object.freeze({
-    assemble: 'system-prompt/assemble', sessionEvent: 'session/event', start: 'step/start', end: 'step/end', turnEnd: 'turn/end',
-  }),
-  /** Cordis's event for a service provided, replaced or withdrawn (both SDKs), with its name. */
-  serviceEvent: 'internal/service',
-  /**
-   * The service this row provides: `report()`, `reorder()`, `onChange(listener)`. Not in K3's types;
-   * the name is F-GUARDS's, kept as it was (owner DECIDED D7).
-   */
-  serviceName: 'fishballGuards',
+  services: Object.freeze({ profileContext: 'profileContext' }),
   /**
    * The guard row's id and Cordis plugin name (src/guards/row.js `name`). It was `fishball-ui`
    * until F-UI made fishball-ui a package of its own.
@@ -575,10 +492,8 @@ export const GUARDS = Object.freeze({
   pluginName: 'fishball-core-guards',
   /** Core's own bundle name in `dsh.profile.bundles`. */
   bundleName: 'fishball-core',
-  /** Core's patch, relative to `src/guards/`. */
-  patchFile: '../../cordis.patch.yml',
-  /** dsh-app-boot's diagnostic prefix for a malformed patch or manifest. */
-  diagnostic: GUARDS_DIAGNOSTIC,
+  /** dsh-app-boot's diagnostic prefix for a malformed profile manifest. */
+  diagnostic: 'fishball-core',
   /** The profile manifest the plugin manager locks for every bundle change (dsh-plugin-manager). */
   profileManifest: 'package.json',
   /**
@@ -591,12 +506,8 @@ export const GUARDS = Object.freeze({
   logger: 'fishball-guards',
   /** Log and error texts (the logger's printf format). */
   text: Object.freeze({
-    report: '%s: %s',
-    reportSeparator: ', ',
-    checkFailed: 'guard check failed (%s)',
-    reorderFailed: 'the bundle reorder failed (%s); bundle-order stays reported',
+    reorderFailed: 'the bundle reorder failed (%s)',
     recordFailed: 'the bundle was moved last, but its reorder record could not be written (%s)',
-    missingPolicy: (file, row, field) => `${GUARDS_DIAGNOSTIC}: ${file} sets no ${row}.${field}`,
   }),
   /** A missing record file (Node's fs error code). */
   notFound: 'ENOENT',

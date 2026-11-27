@@ -16,11 +16,10 @@
  *   a patch row in fishball-ui's patch would change a row even without core;
  * - no fishball-ui: core runs normally and reports nothing about it (Q-G1).
  *
- * Every member reads or acts on state core already owns (F-LINK, F-PAIR, F-GUARDS, F-ASKCARD,
+ * Every member reads or acts on state core already owns (F-LINK, F-PAIR, F-ASKCARD,
  * F-LINK-SAVE); the seam adds no behaviour. Each `onChange` returns its disposer and calls its
  * listener after each change of the matching read, never with a token value.
  */
-import type { GuardReport } from './guards.js'
 import type { AskCard, AskCardAnswer } from './ask-card.js'
 import type { FishballTargets } from './targets.js'
 
@@ -52,10 +51,6 @@ export interface FishballUi {
    * withdrawn: there is no "the" target any more (PLAN-MULTI D01, Q09).
    */
   readonly targets: FishballTargets
-
-  /** The `guards-overridden` line of the status strip (R-FB-09). */
-  /** `null` while core's guard row is absent or not ready yet (F-WIRE amendment, README). */
-  readonly guards: { report(): GuardReport | null; onChange(fn: (report: GuardReport | null) => void): Dispose }
 
   /**
    * The ask cards in Fishball's conversation (R-FB-11). `answer` commits once through the link of

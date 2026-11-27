@@ -84,7 +84,7 @@ export const DSH = Object.freeze({
   ...DSH_PAGE,
   service: Object.freeze({
     navigation: DSH_PAGE.navigation,
-    instance: GUARDS.services.instance,
+    instance: 'fishballInstance',
     /** Requirement 9: the withdrawn extension point. */
     removedSections: 'fishballSettingsSections',
   }),

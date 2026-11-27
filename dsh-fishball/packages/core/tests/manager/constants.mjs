@@ -161,7 +161,6 @@ export const isRuleLine = (line) => line.includes(PERSONA_BOLD.good) && line.inc
 /** DSH settings.mutate op words and the message role a reminder delivery has. */
 export const OP = Object.freeze({ set: 'set', unset: 'unset' })
 export const ROLE = Object.freeze({ user: 'user' })
-export const GUARD_OK = 'ok'
 
 /** R-ID-10: `fb-` and 16 lowercase base32 (RFC 4648 a–z, 2–7) characters. */
 export const IDENTITY = Object.freeze({

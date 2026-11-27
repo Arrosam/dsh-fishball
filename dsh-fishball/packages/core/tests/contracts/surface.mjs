@@ -51,11 +51,9 @@ export function credentialTypes() {
   return { texts, m: model(texts) }
 }
 
-/** Core's guarded rows: bare `{id, disabled: true}` rows of cordis.patch.yml, and the K3 `GuardedRow` union. */
+/** Core's declarative guard rows: bare `{id, disabled: true}` rows of cordis.patch.yml. */
 export function guardedRows() {
-  const patch = [...fs.readFileSync(FILE.corePatch, 'utf8').matchAll(HOSTED.guardRow)].map((m) => m[1])
-  const declared = core().m.leaves(HOSTED.guardedRowType).map((l) => l.literal).filter((v) => v !== undefined)
-  return { patch, declared }
+  return [...fs.readFileSync(FILE.corePatch, 'utf8').matchAll(HOSTED.guardRow)].map((m) => m[1])
 }
 
 /** A literal union's values, asserting that every leaf is a literal (a `typeof …` type hides drift). */

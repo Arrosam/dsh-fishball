@@ -7,7 +7,7 @@
 import { importDsh } from 'fishball-test-helpers/dsh'
 import { until } from 'fishball-test-helpers/wait'
 import { HOST, TARGETS_SNAPSHOT, WAIT } from './constants.mjs'
-import { FakeAppReady, FakeGuards, FakeLoader, FakePluginManager, FakeTargets, fakeNotify } from './fakes.mjs'
+import { FakeAppReady, FakeLoader, FakePluginManager, FakeTargets } from './fakes.mjs'
 import { makeStatus, openStatus, statusModule } from './subject.mjs'
 
 const CORDIS = 'cordis'
@@ -19,13 +19,11 @@ const cordis = () => (cordisModule ??= importDsh(CORDIS))
 export const ABSENT = Symbol('absent')
 
 /**
- * MULTI-1 (relayed seam 2026-11-18): `createStatus(ctx, {targets: {list, onChange}, guards, notify})`;
- * the snapshot is `{fishball, guards, set, targets}`. The scalar link / target / connect / bridge
+ * MULTI-1 (relayed seam 2026-11-18): `createStatus(ctx, {targets: {list, onChange}, brand})`;
+ * the snapshot is `{fishball, set, targets, brand}`. The scalar link / target / connect / bridge
  * ports are withdrawn: per-target words live in each TargetView (core's `stripLine`, pure).
  * @param {object} o
  *   targets     a TargetsSnapshot (default {version: 1, targets: []}), or ABSENT
- *   guards      a guard report, undefined (port present, no report yet) or ABSENT (default ABSENT)
- *   notify      fakeNotify options ({outcomes, then}), or ABSENT (default present, every call accepted)
  *   ready       app ready already (default false)
  *   bundles     BundleInfo[] for the plugin manager, or ABSENT (no pluginManager service)
  *   entries     loader entries, or ABSENT (no loader service)
@@ -33,8 +31,6 @@ export const ABSENT = Symbol('absent')
  *               row does (default false: on the root context); `w.fiber` is that plugin's fiber
  *   brand       LOGO-BUTTON: core's stored logo theme getter (`() => value`), or ABSENT to model a
  *               stored field that is absent (the status reads the default)
- *   profile     GENTLE-TOOLS: DSH's `profileContext` service value ({home, name}), or ABSENT (default:
- *               no profileContext service, so the tools notice is remembered in memory only)
  */
 export async function worldFor(t, o = {}) {
   const { Context } = await cordis()
@@ -48,16 +44,13 @@ export async function worldFor(t, o = {}) {
   ctx.provide(HOST.appReady, appReady)
   if (pluginManager) ctx.provide(HOST.pluginManager, pluginManager)
   if (loader) ctx.provide(HOST.loader, loader)
-  if ((o.profile ?? ABSENT) !== ABSENT) ctx.provide(HOST.profileContext, o.profile)
 
   const present = (value) => value !== ABSENT
   const targets = present(o.targets ?? null) ? new FakeTargets(o.targets ?? TARGETS_SNAPSHOT.empty) : undefined
-  const guards = present('guards' in o ? o.guards : ABSENT) ? new FakeGuards(o.guards) : undefined
-  const notice = present(o.notify ?? {}) ? fakeNotify(o.notify ?? {}) : undefined
   const brand = present('brand' in o ? o.brand : ABSENT) ? (typeof o.brand === 'function' ? o.brand : () => o.brand) : undefined
   const ports = {
-    ...(targets ? { targets } : {}), ...(guards ? { guards } : {}),
-    ...(notice ? { notify: notice.notify } : {}), ...(brand ? { brand } : {}),
+    ...(targets ? { targets } : {}),
+    ...(brand ? { brand } : {}),
   }
 
   let status
@@ -76,9 +69,9 @@ export async function worldFor(t, o = {}) {
   t.after(() => { close(); ctx.fiber.dispose() })
 
   return {
-    ctx, status, ports, targets, guards, notice, appReady, pluginManager, loader, logs, emitted, fiber,
+    ctx, status, ports, targets, appReady, pluginManager, loader, logs, emitted, fiber,
     close,
-    /** Another createStatus over the same ports in this process (an HMR recompose); closed after the test. */
+    /** Another status over the same ports models a recompose after the stored brand changes. */
     async recompose() {
       const again = await openStatus(ctx, ports)
       t.after(() => again.close())

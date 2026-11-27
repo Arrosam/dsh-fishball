@@ -53,14 +53,13 @@
     "@modelcontextprotocol/client",
     "fishball-shared"
   ],
-  "//peerDependencies": "Host packages are resolved from the running DSH installation, as for any plugin; '*' because engines.dsh is the real compatibility gate. dsh-atomic-write (the plugin manager's profile-manifest lock), dsh-scope (an agent's parent scope) and dsh-app-boot are read by src/guards (F-GUARDS); dsh-storage-domain and schemastery by the main row (its tables and its settings schema); the others by the manager session, its persona, reminders and private Skills. No DSH-side package is a peer (R-ARCH-10; the dsh-connector peer went with the V2 child path, REMOVE-V2 / F-WIRE).",
+  "//peerDependencies": "Host packages are resolved from the running DSH installation, as for any plugin; '*' because engines.dsh is the real compatibility gate. dsh-atomic-write (the plugin manager's profile-manifest lock) and dsh-app-boot are used by the one-time bundle reorder; dsh-storage-domain and schemastery by the main row (its tables and its settings schema); the others by the manager session, its persona, reminders and private Skills. No DSH-side package is a peer (R-ARCH-10; the dsh-connector peer went with the V2 child path, REMOVE-V2 / F-WIRE).",
   "peerDependencies": {
     "@deepseek-ai/dsh-agent": "*",
     "@deepseek-ai/dsh-app-boot": "*",
     "@deepseek-ai/dsh-atomic-write": "*",
     "@deepseek-ai/dsh-llm": "*",
     "@deepseek-ai/dsh-sandbox-policy": "*",
-    "@deepseek-ai/dsh-scope": "*",
     "@deepseek-ai/dsh-session": "*",
     "@deepseek-ai/dsh-skill": "*",
     "@deepseek-ai/dsh-skill-filesystem": "*",

@@ -22,16 +22,10 @@ export const CORE_SPLIT = Object.freeze({
   guards: Object.freeze(['schedule', 'open-in-app', 'terminal-controller', 'dsh-instance']),
   shippedPresets: Object.freeze(['preset-standard', 'preset-ptc', 'preset-cordis', 'preset-minimal']),
   ownPreset: 'preset-fishball',
-  guardsRow: Object.freeze({ id: 'fishball-core-guards', file: path.join('src', 'guards', 'row.js') }),
+  reorderRow: Object.freeze({ id: 'fishball-core-guards', file: path.join('src', 'guards', 'row.js') }),
   /** Files core no longer has (the UI lives in core's ui/ folder since 117cb2a2). */
   gone: Object.freeze(['client.asks.js', path.join('src', 'recommended.js')]),
-  pluginName: 'fishball-core-guards',
   movedExport: 'UI_SEAM',
-  /** fishball-ui's guard-row reader left with R-FIX-FUI F2. */
-  uiGone: Object.freeze([path.join('src', 'guards.js')]),
-  appBootPeer: '@deepseek-ai/dsh-app-boot',
-  /** core's guard reader (the requirement's public name, src/guards/intended.js readIntendedGuards). */
-  intended: Object.freeze({ file: path.join('src', 'guards', 'intended.js'), name: 'readIntendedGuards', keys: Object.freeze(['policy', 'rows', 'uiRows']) }),
 })
 /** EP over profileContext.startedBundles (R-FIX-FUI F2): the UI guard rows read the same for every list. */
 export const STARTED = Object.freeze([
@@ -60,6 +54,6 @@ export const OVERLAYS = Object.freeze([
   ['an overlay that patches (does not insert) a row with that id', Object.freeze([Object.freeze({ id: NOTICE.childRow, disabled: false })]), false],
 ])
 /** fishball-shared's ui-seam (UI-UC-07 E1): SEAM_STATUS key → [core contracts export, member]. */
-export const SEAM_DRIFT = Object.freeze({ link: Object.freeze(['LINK', 'state']), connect: Object.freeze(['CONNECT', 'state']), guards: Object.freeze(['GUARDS', 'status']) })
+export const SEAM_DRIFT = Object.freeze({ link: Object.freeze(['LINK', 'state']), connect: Object.freeze(['CONNECT', 'state']) })
 /** Core's browser entry and the one chunk it loads (UI-UC-08). */
 export const CORE_CLIENT = Object.freeze({ file: 'client.js', moduleId: 'fishball-core', chunks: Object.freeze(['./client.settings.js']), partName: (file) => 'fbtest stand-in part ' + file, base: 'http://fishball-core.test/' })

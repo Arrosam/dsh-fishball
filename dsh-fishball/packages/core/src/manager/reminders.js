@@ -169,8 +169,7 @@ const VIEW_FIELDS = Object.freeze(['id', 'title', 'prompt', 'kind', 'scheduledAt
 const RECEIPT_FIELDS = Object.freeze(['scheduledAt', 'deliveredAt'])
 
 /** The four tool names and parameters the DSH schedule tool publishes. */
-// The model tools' names live in reminder-tools.js (a module with no host import), so the persona
-// and the guard check can read them without loading DSH's packages.
+// The persona reads the names without loading DSH's host packages via reminder-tools.js.
 export { TOOL } from './reminder-tools.js'
 const TOOL_SELECTOR = Object.freeze({
   after: 'after_seconds',

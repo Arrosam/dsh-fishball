@@ -5,5 +5,6 @@
 import { registerWireCases } from './wire/cases.mjs'
 
 import './wire/permission-handoff.mjs'
+import './wire/guard-override-silence.mjs'
 
 registerWireCases()

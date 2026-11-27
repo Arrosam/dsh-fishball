@@ -279,7 +279,7 @@ export function registerK3aTargetCases() {
   for (const [label, before, after] of [
     ['albatross', "style: 'fishball'", "style: 'albatross'"],
     ['wrong', "'deepseek'}}", "'wrong'}}"],
-    ['unrelated suffix', "{fishball: 'on', targets, guards, set, brand: {style: 'fishball'", 'unrelated'],
+    ['unrelated suffix', "{fishball: 'on', targets, set, brand: {style: 'fishball'", 'unrelated'],
     ['unescaped pipe', "'fishball' \\| 'deepseek'", "'fishball' | 'deepseek'"],
   ]) {
     caseTest('K3a-MULTI-EP-08', `README mutant ${label}`, 'the status contract rejects an in-memory mutation of the documented cell', () => {
@@ -353,7 +353,7 @@ export function registerK3aTargetCases() {
     for (const group of NAMES.wordGroups) distinct(Object.values(s[group]), group)
     distinct(Object.values(s.route.fields), 'route fields')
   })
-  caseTest('K3a-MULTI-EP-05', 'refusals new', 'no target refusal word is already a K1 / K2 / K3a word (connector, tools, LINK, CONNECT, MCP, GUARDS, SEAM_STATUS)', async () => {
+  caseTest('K3a-MULTI-EP-05', 'refusals new', 'no target refusal word is already a K1 / K2 / K3a word (connector, tools, LINK, CONNECT, MCP, SEAM_STATUS)', async () => {
     const { c, pub } = await both()
     const shared = await uiSeam()
     const words = new Set()
@@ -361,7 +361,7 @@ export function registerK3aTargetCases() {
       if (typeof v === 'string') words.add(v)
       else if (v && typeof v === 'object' && !seen.has(v)) { seen.add(v); for (const [k, x] of Object.entries(v)) { words.add(k); walk(x, seen) } }
     }
-    walk([pub, c.LINK, c.CONNECT, c.MCP, c.GUARDS, c.HOSTED_IMPORT, shared.SEAM_STATUS, shared.UI_SEAM])
+    walk([pub, c.LINK, c.CONNECT, c.MCP, c.HOSTED_IMPORT, shared.SEAM_STATUS, shared.UI_SEAM])
     assert.deepEqual(Object.values((await seam()).refusal).filter((w) => words.has(w)), [])
   })
 

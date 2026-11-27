@@ -12,10 +12,11 @@ are in [core's patch](<../cordis.patch.yml>) (see [fishball-core](<../README.md>
 through core's published routes and services by the names in `fishball-shared/ui-seam`, never through
 an import, and depends on no DSH-side package.
 
+The guard override notice was removed by user decision. Other status and pairing notices remain.
+
 ## What it does
 
-- **Node row** `fishball-ui` (`index.js`): provides `fishballUiGuards`, fishball-ui's presence (core's
-  guard check reports the UI guard rows of core's patch only while it is there), serves the sidebar
+- **Node row** `fishball-ui` (`index.js`): serves the sidebar
   targets drawn from core's `fishballStatus` (`/api/fishball/strip`), and registers that view as the
   `strip` topic of core's one page stream (DESIGN §34).
 - **Browser half** (`client.js` and its flat chunks, each run as its own part; a chunk that fails to

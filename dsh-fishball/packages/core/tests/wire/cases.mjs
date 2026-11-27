@@ -57,10 +57,9 @@ export function registerWireCases() {
     assert.equal(rows.find((r) => r.id === C.core)?.name, C.main)
     for (const id of C.absentRows) assert.equal(rows.some((r) => r.id === id), false, id)
   })
-  caseTest('WIRE-EP-03', '', 'model seam and core tool tables', async () => {
+  caseTest('WIRE-EP-03', '', 'model selection seam', async () => {
     const values = await contracts()
     assert.deepEqual(values.FISHBALL_MODEL, C.modelSeam)
-    for (const table of C.coreToolTables) assert.ok(values.GUARDS.coreTools.some((entry) => entry.module === table.module && entry.table === table.table), table.table)
   })
 
   // WIRE-SYS on core alone (fishball-ui and the board stand-in beside core are integration rows).
@@ -99,13 +98,12 @@ export function registerWireCases() {
     // in the settings document". The user's layer stays without it (manager MGR-ID rows: the id itself).
     const config = await h.call('settings', { ns: C.core }); assert.equal(config.user?.identity?.id, undefined, JSON.stringify(config.user))
   })
-  sys('manager tool scope and guards hold', async () => {
+  sys('manager tool scope holds', async () => {
     const h = await get(); await h.call('ensure'); const f = await h.call('tools')
     for (const name of C.coreTools) { assert.ok(f.local.includes(name), name); assert.equal(f.global.includes(name), false, name) }
     assert.ok(f.local.some((n) => C.privateSkill.test(n)))
     assert.equal(f.global.some((n) => C.privateSkill.test(n)), false)
     assert.deepEqual(f.local.filter((n) => !C.coreTools.includes(n) && !C.privateSkill.test(n)).sort(), [...C.baseTools].sort())
-    const guards = await h.call('guards'); assert.equal(guards.status, C.guardsOk, JSON.stringify(guards)); assert.deepEqual(guards.overridden, [])
   })
   sys('persona has only V3 tool names', async () => {
     const h = await get(); await h.call('ensure'); const requests = await h.call('managerTurn')

@@ -7,7 +7,7 @@
  *   its X1–X19 members; `apiVersion` is 2 since MULTI-0 (below; design §1.2 had 1); K3 freezes only its `events` member.
  * - `fishballSettingsSections` is withdrawn (F-SETTINGS; requirements 1.34 item 4, R-HOST-11): core's
  *   settings are its own plugin settings page, with no settings-section extension point.
- * - the ask card's fields (`ask-card.d.ts`) and the guard vocabulary (`guards.d.ts`).
+ * - the ask card's fields (`ask-card.d.ts`) and the bundle reorder outcome (`guards.d.ts`).
  * - gate K3a (requirements 1.39–1.41): the link's status and the hosted import's published names
  *   (`link.d.ts`), Connect (`connect.d.ts`), the fishball-ui seam `fishballInstance.ui` (`ui.d.ts`),
  *   and core's own copy of the connector's MCP surface (`constants.js` `MCP`; values only).
@@ -20,10 +20,7 @@ export type {
   CommitSendResult, CommitResult,
 } from './events.js'
 export type { AskCard, AskCardAnswer } from './ask-card.js'
-export type {
-  GuardedRow, ShippedPresetRow, FishballAgentPreset, IntendedPolicy, ManagerTool, OverriddenGuard,
-  GuardCheckTrigger, GuardReport, ReorderOutcome,
-} from './guards.js'
+export type { ReorderOutcome } from './guards.js'
 export type { LinkState, LinkCode, LinkStatus, HostedImportNames } from './link.js'
 export type {
   ConnectState, ConnectConfigurationCode, ConnectStatus, ConnectBegin, OAuthClientOptions, OAuthClient, CreateOAuthClient,
