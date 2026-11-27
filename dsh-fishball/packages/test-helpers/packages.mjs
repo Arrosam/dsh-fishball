@@ -11,7 +11,8 @@ export const WORKSPACE_ROOT = path.dirname(REPO)
 const LAYOUT = Object.freeze({ manifest: 'package.json', tests: 'tests', testSuffix: '.test.mjs', wildcard: '*', integrationPrefix: 'integration-' })
 /**
  * fishball-ui is its own package (own manifest, own bundle) inside fishball-core's folder, and ships
- * inside fishball-core's tarball (core's `files` lists `ui/`); it is not a root workspace.
+ * inside fishball-core's tarball (core's `files` lists `ui/`). npm exposes it as a root
+ * workspace, while this catalogue tracks its nesting for boundary checks and test selection.
  */
 const NESTED = Object.freeze([Object.freeze({ dir: 'packages/core/ui', parent: 'packages/core' })])
 
