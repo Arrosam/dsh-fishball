@@ -9,4 +9,4 @@ their baseline results, and one sample title. **Where now** is filled in by the 
 
 | case id | behaviours | baseline | sample | where now |
 |---|---|---|---|---|
-| WIRE | 2 | todo 2 | WIRE browser callback completion and matching HTTPS redirect_uri |  |
+| WIRE | 2 | todo 2 | WIRE browser callback completion and matching HTTPS redirect_uri | retired: not a board row; the inventory filed fishball-core wire's two E2E-CORE todos (test/v3/fishball-core/wire/cases.mjs:185-186) under this suite; they belong to fishball-core's inventory |

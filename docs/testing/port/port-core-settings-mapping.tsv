@@ -1,0 +1,301 @@
+old suite	case id	where now
+test/persona-bold-render	PBR-01	packages/core/tests/persona.test.mjs
+test/persona-bold-render	PBR-02	packages/core/tests/persona.test.mjs
+test/persona-bold-render	PBR-03	packages/core/tests/persona.test.mjs
+test/persona-bold-render	PBR-04	packages/core/tests/persona.test.mjs
+test/persona-bold-render	PBR-05	packages/core/tests/persona.test.mjs
+test/persona-bold-render	PBR-06	packages/core/tests/persona.test.mjs
+test/private-skills/sk-bva	SK-BVA-12-01-N	packages/core/tests/skills.test.mjs
+test/private-skills/sk-bva	SK-BVA-12-02-N	packages/core/tests/skills.test.mjs
+test/private-skills/sk-bva	SK-BVA-12-03-N	packages/core/tests/skills.test.mjs
+test/private-skills/sk-bva	SK-BVA-12-04-N	packages/core/tests/skills.test.mjs
+test/private-skills/sk-bva	SK-BVA-12-05-N	packages/core/tests/skills.test.mjs
+test/private-skills/sk-bva	SK-BVA-12-06-N	packages/core/tests/skills.test.mjs
+test/private-skills/sk-bva	SK-BVA-12-07-N	packages/core/tests/skills.test.mjs
+test/private-skills/sk-bva	SK-BVA-12-08-N	packages/core/tests/skills.test.mjs
+test/private-skills/sk-bva	SK-BVA-12-09-N	packages/core/tests/skills.test.mjs
+test/private-skills/sk-bva	SK-BVA-12-10-N	packages/core/tests/skills.test.mjs
+test/private-skills/sk-bva	SK-BVA-12-11-N	packages/core/tests/skills.test.mjs
+test/private-skills/sk-bva	SK-BVA-12-12-N	packages/core/tests/skills.test.mjs
+test/private-skills/sk-bva	SK-BVA-12-13-N	packages/core/tests/skills.test.mjs
+test/private-skills/sk-bva	SK-BVA-12-14-N	packages/core/tests/skills.test.mjs
+test/private-skills/sk-bva	SK-BVA-12-15-N	packages/core/tests/skills.test.mjs
+test/private-skills/sk-bva	SK-BVA-12-16-N	packages/core/tests/skills.test.mjs
+test/private-skills/sk-ep	SK-EP-19-02-N	packages/core/tests/skills.test.mjs
+test/private-skills/sk-ep	SK-EP-21-01-N	packages/core/tests/skills.test.mjs
+test/private-skills/sk-ep	SK-EP-21-06-N	packages/core/tests/skills.test.mjs
+test/private-skills/sk-ep	SK-EP-21-07-N	packages/core/tests/skills.test.mjs
+test/private-skills/sk-ep	SK-EP-21-08-N	packages/core/tests/skills.test.mjs
+test/private-skills/sk-ep	SK-EP-21-09-N	packages/core/tests/skills.test.mjs
+test/private-skills/sk-ep	SK-EP-21-10-N	packages/core/tests/skills.test.mjs
+test/private-skills/sk-ep	SK-EP-21-11-N	packages/core/tests/skills.test.mjs
+test/private-skills/sk-ep	SK-EP-21-12-N	packages/core/tests/skills.test.mjs
+test/private-skills/sk-ep	SK-EP-21-13-N	packages/core/tests/skills.test.mjs
+test/private-skills/sk-ep	SK-EP-21-14-N	packages/core/tests/skills.test.mjs
+test/private-skills/sk-ep	SK-EP-21-16-N	packages/core/tests/skills.test.mjs
+test/private-skills/sk-st	SK-ST-09-T4-N	packages/core/tests/skills.test.mjs
+test/private-skills/sk-st	SK-ST-11-T2-N	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-BVA-12-01	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-BVA-12-02	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-BVA-12-03	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-BVA-12-04	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-BVA-12-05	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-BVA-12-06	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-BVA-12-07	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-BVA-12-08	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-BVA-12-09	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-BVA-12-10	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-BVA-12-11	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-BVA-12-12	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-BVA-12-13	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-BVA-12-14	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-BVA-12-15	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-BVA-12-16	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-BVA-B-01	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-BVA-B-02	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-BVA-B-03	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-BVA-C-01	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-BVA-C-02	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-BVA-C-03	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-BVA-D-01	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-BVA-D-02	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-BVA-D-03	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-BVA-D-04	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-DT-01-R1	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-DT-01-R2	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-DT-01-R3	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-DT-01-R4	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-DT-01-R5	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-DT-02-R1	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-DT-02-R10	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-DT-02-R11	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-DT-02-R12	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-DT-02-R2	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-DT-02-R3	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-DT-02-R4	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-DT-02-R5	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-DT-02-R6	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-DT-02-R7	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-DT-02-R8	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-DT-02-R9	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-DT-03-R1	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-DT-03-R2	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-DT-03-R3	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-DT-03-R4	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-DT-03-R5	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-DT-04-R1	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-DT-04-R2	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-DT-04-R3	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-DT-04-R4	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-DT-04-R5	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-DT-09-R1	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-DT-09-R2	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-DT-09-R3	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-DT-09-R4	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-DT-09-R5	retired: todo, needs a live manager→worker delivery (real model turn and a managed worker session); its observable halves run in SK-EP-19-06/07, SK-UC-25-A2, SK-UC-UI-M
+test/private-skills/support	SK-DT-09-R6	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-DT-09-R7	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-DT-09-R8	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-EP-19-01	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-EP-19-02	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-EP-19-03	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-EP-19-04	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-EP-19-05	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-EP-19-06	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-EP-19-07	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-EP-20-01	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-EP-20-02	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-EP-20-03	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-EP-20-04	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-EP-20-05	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-EP-20-06	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-EP-20-07	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-EP-20-08	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-EP-20-09	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-EP-20-10	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-EP-21-01	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-EP-21-02	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-EP-21-03	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-EP-21-04	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-EP-21-05	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-EP-21-06	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-EP-21-07	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-EP-21-08	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-EP-21-09	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-EP-21-10	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-EP-21-11	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-EP-21-12	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-EP-21-13	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-EP-21-14	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-EP-21-15	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-EP-21-16	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-EP-21-17	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-EP-22-01	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-EP-22-02	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-EP-22-03	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-EP-22-04	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-EP-22-05	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-EP-22-06	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-EP-22-07	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-ST-09-T1	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-ST-09-T2	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-ST-09-T3	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-ST-09-T4	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-ST-09-T5	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-ST-09-X1	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-ST-10-T1	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-ST-10-T2	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-ST-10-T3	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-ST-10-T4	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-ST-10-T5	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-ST-10-T6	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-ST-10-T7	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-ST-10-X1	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-ST-11-T1	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-ST-11-T2	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-ST-11-T3	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-ST-11-T4	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-ST-11-T5	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-ST-11-T6	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-ST-12-T1	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-ST-12-T2	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-ST-12-T3	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-ST-12-T4	packages/core/tests/skills.test.mjs (core's half: no worker, standing preset or global view gains the provider or tools); retired: the overlay half (dsh-instance launchOverlay leaves <child home>/skills out of the stock skill rows) — its subject moved to the dsh-fishball-instance repository (6b7c53bf)
+test/private-skills/support	SK-UC-25-A1	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-UC-25-A2	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-UC-25-E1	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-UC-25-E2	retired: todo, needs the live worker send gate (a dormant brief refusing a real send): manager message delivery, not the Skills modules
+test/private-skills/support	SK-UC-25-M	retired: todo, needs a live manager→worker delivery (real model turn and a managed worker session); observable halves in SK-EP-19-01, SK-DT-01-R1, SK-EP-19-07, SK-UC-UI-M
+test/private-skills/support	SK-UC-26-A1	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-UC-26-A2	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-UC-26-E1	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-UC-26-E2	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-UC-26-M	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-UC-27-A1	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-UC-27-A2	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-UC-27-A3	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-UC-27-E1	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-UC-27-E2	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-UC-27-M	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-UC-28-A1	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-UC-28-A2	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-UC-28-A3	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-UC-28-E1	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-UC-28-E2	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-UC-28-M	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-UC-LIFE-A1	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-UC-LIFE-M	packages/core/tests/skills.test.mjs
+test/private-skills/support	SK-UC-UI-M	packages/core/tests/skills.test.mjs
+test/v3/fishball-core/settings	BRAND-SET-E1	packages/core/tests/settings.test.mjs
+test/v3/fishball-core/settings	BRAND-SET-EP-01	packages/core/tests/settings.test.mjs
+test/v3/fishball-core/settings	BRAND-SET-EP-02	packages/core/tests/settings.test.mjs
+test/v3/fishball-core/settings	BRAND-SET-UC-01	packages/core/tests/settings.test.mjs
+test/v3/fishball-core/settings	BRAND-STATUS-EP-01	packages/core/tests/settings.test.mjs
+test/v3/fishball-core/settings	BRAND-STATUS-EP-02	packages/core/tests/settings.test.mjs
+test/v3/fishball-core/settings	BRAND-STATUS-SHAPE-01	packages/core/tests/settings.test.mjs
+test/v3/fishball-core/settings	BRAND-STATUS-ST-01	packages/core/tests/settings.test.mjs
+test/v3/fishball-core/settings	CONNECT-DT-01	packages/core/tests/settings.test.mjs
+test/v3/fishball-core/settings	CONNECT-ST-01	packages/core/tests/settings.test.mjs
+test/v3/fishball-core/settings	CONNECT-ST-02	packages/core/tests/settings.test.mjs
+test/v3/fishball-core/settings	CONNECT-ST-03	packages/core/tests/settings.test.mjs
+test/v3/fishball-core/settings	CONNECT-ST-04	packages/core/tests/settings.test.mjs
+test/v3/fishball-core/settings	EFIX3-SET-BVA-01	packages/core/tests/settings.test.mjs
+test/v3/fishball-core/settings	EFIX3-SET-DT-01	packages/core/tests/settings.test.mjs
+test/v3/fishball-core/settings	EFIX3-SET-MUT-01	packages/core/tests/settings.test.mjs
+test/v3/fishball-core/settings	EFIX3-SET-RULE-01	packages/core/tests/settings.test.mjs
+test/v3/fishball-core/settings	EFIX3-SET-UC-01	packages/core/tests/settings.test.mjs
+test/v3/fishball-core/settings	MULTI-SET-BVA-01	packages/core/tests/settings.test.mjs
+test/v3/fishball-core/settings	MULTI-SET-DT-01	packages/core/tests/settings.test.mjs
+test/v3/fishball-core/settings	MULTI-SET-EP-01	packages/core/tests/settings.test.mjs
+test/v3/fishball-core/settings	MULTI-SET-EP-02	packages/core/tests/settings.test.mjs
+test/v3/fishball-core/settings	MULTI-SET-EP-03	packages/core/tests/settings.test.mjs
+test/v3/fishball-core/settings	MULTI-SET-ST-01	packages/core/tests/settings.test.mjs
+test/v3/fishball-core/settings	MULTI-SET-ST-02	packages/core/tests/settings.test.mjs
+test/v3/fishball-core/settings	MULTI-SET-UC-01	packages/core/tests/settings.test.mjs
+test/v3/fishball-core/settings	MULTI-SET-UC-02	packages/core/tests/settings.test.mjs
+test/v3/fishball-core/settings	SET3-BVA-01	retired: withdrawn by MULTI-0 (targets.d.ts, ui.d.ts; contracts README 'Version moves'): the scalar target.url field, the one DSH_AGENT_TOKEN token field, GET/POST /api/fishball/connect and registerSettingsRoutes/effectiveTarget are gone; successors MULTI-SET-* (per-target cards over SEAM_TARGETS routes)
+test/v3/fishball-core/settings	SET3-BVA-02	retired: withdrawn by MULTI-0 (targets.d.ts, ui.d.ts; contracts README 'Version moves'): the scalar target.url field, the one DSH_AGENT_TOKEN token field, GET/POST /api/fishball/connect and registerSettingsRoutes/effectiveTarget are gone; successors MULTI-SET-* (per-target cards over SEAM_TARGETS routes)
+test/v3/fishball-core/settings	SET3-BVA-03	integration: needs fishball-ui's client beside core's (the Fishball-page header entries / view=settings continuation are fishball-ui's client.entries.js since F-UI) (entries); retired: withdrawn by MULTI-0 (targets.d.ts, ui.d.ts; contracts README 'Version moves'): the scalar target.url field, the one DSH_AGENT_TOKEN token field, GET/POST /api/fishball/connect and registerSettingsRoutes/effectiveTarget are gone; successors MULTI-SET-* (per-target cards over SEAM_TARGETS routes) (presses)
+test/v3/fishball-core/settings	SET3-BVA-04	retired: withdrawn by MULTI-0 (targets.d.ts, ui.d.ts; contracts README 'Version moves'): the scalar target.url field, the one DSH_AGENT_TOKEN token field, GET/POST /api/fishball/connect and registerSettingsRoutes/effectiveTarget are gone; successors MULTI-SET-* (per-target cards over SEAM_TARGETS routes)
+test/v3/fishball-core/settings	SET3-BVA-05	retired: withdrawn by MULTI-0 (targets.d.ts, ui.d.ts; contracts README 'Version moves'): the scalar target.url field, the one DSH_AGENT_TOKEN token field, GET/POST /api/fishball/connect and registerSettingsRoutes/effectiveTarget are gone; successors MULTI-SET-* (per-target cards over SEAM_TARGETS routes)
+test/v3/fishball-core/settings	SET3-DT-01	packages/core/tests/settings.test.mjs (rule 6); retired: withdrawn by MULTI-0 (targets.d.ts, ui.d.ts; contracts README 'Version moves'): the scalar target.url field, the one DSH_AGENT_TOKEN token field, GET/POST /api/fishball/connect and registerSettingsRoutes/effectiveTarget are gone; successors MULTI-SET-* (per-target cards over SEAM_TARGETS routes) (rules 1-5)
+test/v3/fishball-core/settings	SET3-DT-02	integration: needs fishball-ui's client beside core's (the Fishball-page header entries / view=settings continuation are fishball-ui's client.entries.js since F-UI)
+test/v3/fishball-core/settings	SET3-DT-03	integration: needs fishball-ui's client beside core's (the Fishball-page header entries / view=settings continuation are fishball-ui's client.entries.js since F-UI)
+test/v3/fishball-core/settings	SET3-DT-04	integration: needs fishball-ui's client beside core's (the Fishball-page header entries / view=settings continuation are fishball-ui's client.entries.js since F-UI)
+test/v3/fishball-core/settings	SET3-DT-05	retired: withdrawn by MULTI-0 (targets.d.ts, ui.d.ts; contracts README 'Version moves'): the scalar target.url field, the one DSH_AGENT_TOKEN token field, GET/POST /api/fishball/connect and registerSettingsRoutes/effectiveTarget are gone; successors MULTI-SET-* (per-target cards over SEAM_TARGETS routes)
+test/v3/fishball-core/settings	SET3-DT-06	retired: withdrawn by MULTI-0 (targets.d.ts, ui.d.ts; contracts README 'Version moves'): the scalar target.url field, the one DSH_AGENT_TOKEN token field, GET/POST /api/fishball/connect and registerSettingsRoutes/effectiveTarget are gone; successors MULTI-SET-* (per-target cards over SEAM_TARGETS routes)
+test/v3/fishball-core/settings	SET3-DT-07	retired: withdrawn by MULTI-0 (targets.d.ts, ui.d.ts; contracts README 'Version moves'): the scalar target.url field, the one DSH_AGENT_TOKEN token field, GET/POST /api/fishball/connect and registerSettingsRoutes/effectiveTarget are gone; successors MULTI-SET-* (per-target cards over SEAM_TARGETS routes)
+test/v3/fishball-core/settings	SET3-EP-01	packages/core/tests/settings.test.mjs (6 metadata, 7 identity); retired: withdrawn by MULTI-0 (targets.d.ts, ui.d.ts; contracts README 'Version moves'): the scalar target.url field, the one DSH_AGENT_TOKEN token field, GET/POST /api/fishball/connect and registerSettingsRoutes/effectiveTarget are gone; successors MULTI-SET-* (per-target cards over SEAM_TARGETS routes) (rows 1-5)
+test/v3/fishball-core/settings	SET3-EP-02	retired: withdrawn by MULTI-0 (targets.d.ts, ui.d.ts; contracts README 'Version moves'): the scalar target.url field, the one DSH_AGENT_TOKEN token field, GET/POST /api/fishball/connect and registerSettingsRoutes/effectiveTarget are gone; successors MULTI-SET-* (per-target cards over SEAM_TARGETS routes)
+test/v3/fishball-core/settings	SET3-EP-03	retired: withdrawn by MULTI-0 (targets.d.ts, ui.d.ts; contracts README 'Version moves'): the scalar target.url field, the one DSH_AGENT_TOKEN token field, GET/POST /api/fishball/connect and registerSettingsRoutes/effectiveTarget are gone; successors MULTI-SET-* (per-target cards over SEAM_TARGETS routes)
+test/v3/fishball-core/settings	SET3-EP-04	retired: withdrawn by MULTI-0 (targets.d.ts, ui.d.ts; contracts README 'Version moves'): the scalar target.url field, the one DSH_AGENT_TOKEN token field, GET/POST /api/fishball/connect and registerSettingsRoutes/effectiveTarget are gone; successors MULTI-SET-* (per-target cards over SEAM_TARGETS routes)
+test/v3/fishball-core/settings	SET3-EP-05	integration: needs fishball-ui's client beside core's (the Fishball-page header entries / view=settings continuation are fishball-ui's client.entries.js since F-UI)
+test/v3/fishball-core/settings	SET3-EP-06	retired: withdrawn by MULTI-0 (targets.d.ts, ui.d.ts; contracts README 'Version moves'): the scalar target.url field, the one DSH_AGENT_TOKEN token field, GET/POST /api/fishball/connect and registerSettingsRoutes/effectiveTarget are gone; successors MULTI-SET-* (per-target cards over SEAM_TARGETS routes)
+test/v3/fishball-core/settings	SET3-EP-07	retired: withdrawn by MULTI-0 (targets.d.ts, ui.d.ts; contracts README 'Version moves'): the scalar target.url field, the one DSH_AGENT_TOKEN token field, GET/POST /api/fishball/connect and registerSettingsRoutes/effectiveTarget are gone; successors MULTI-SET-* (per-target cards over SEAM_TARGETS routes)
+test/v3/fishball-core/settings	SET3-EP-08	retired: withdrawn by MULTI-0 (targets.d.ts, ui.d.ts; contracts README 'Version moves'): the scalar target.url field, the one DSH_AGENT_TOKEN token field, GET/POST /api/fishball/connect and registerSettingsRoutes/effectiveTarget are gone; successors MULTI-SET-* (per-target cards over SEAM_TARGETS routes)
+test/v3/fishball-core/settings	SET3-EP-09	retired: withdrawn by MULTI-0 (targets.d.ts, ui.d.ts; contracts README 'Version moves'): the scalar target.url field, the one DSH_AGENT_TOKEN token field, GET/POST /api/fishball/connect and registerSettingsRoutes/effectiveTarget are gone; successors MULTI-SET-* (per-target cards over SEAM_TARGETS routes)
+test/v3/fishball-core/settings	SET3-ST-01	packages/core/tests/settings.test.mjs (rows 1, 2); retired: withdrawn by MULTI-0 (targets.d.ts, ui.d.ts; contracts README 'Version moves'): the scalar target.url field, the one DSH_AGENT_TOKEN token field, GET/POST /api/fishball/connect and registerSettingsRoutes/effectiveTarget are gone; successors MULTI-SET-* (per-target cards over SEAM_TARGETS routes) (row 3)
+test/v3/fishball-core/settings	SET3-ST-02	retired: withdrawn by MULTI-0 (targets.d.ts, ui.d.ts; contracts README 'Version moves'): the scalar target.url field, the one DSH_AGENT_TOKEN token field, GET/POST /api/fishball/connect and registerSettingsRoutes/effectiveTarget are gone; successors MULTI-SET-* (per-target cards over SEAM_TARGETS routes)
+test/v3/fishball-core/settings	SET3-ST-03	retired: withdrawn by MULTI-0 (targets.d.ts, ui.d.ts; contracts README 'Version moves'): the scalar target.url field, the one DSH_AGENT_TOKEN token field, GET/POST /api/fishball/connect and registerSettingsRoutes/effectiveTarget are gone; successors MULTI-SET-* (per-target cards over SEAM_TARGETS routes)
+test/v3/fishball-core/settings	SET3-ST-04	integration: needs fishball-ui's client beside core's (the Fishball-page header entries / view=settings continuation are fishball-ui's client.entries.js since F-UI)
+test/v3/fishball-core/settings	SET3-ST-05	retired: withdrawn by MULTI-0 (targets.d.ts, ui.d.ts; contracts README 'Version moves'): the scalar target.url field, the one DSH_AGENT_TOKEN token field, GET/POST /api/fishball/connect and registerSettingsRoutes/effectiveTarget are gone; successors MULTI-SET-* (per-target cards over SEAM_TARGETS routes)
+test/v3/fishball-core/settings	SET3-ST-06	retired: withdrawn by MULTI-0 (targets.d.ts, ui.d.ts; contracts README 'Version moves'): the scalar target.url field, the one DSH_AGENT_TOKEN token field, GET/POST /api/fishball/connect and registerSettingsRoutes/effectiveTarget are gone; successors MULTI-SET-* (per-target cards over SEAM_TARGETS routes)
+test/v3/fishball-core/settings	SET3-UC-01	packages/core/tests/settings.test.mjs (main 1-2, A1, A3); retired: withdrawn by MULTI-0 (targets.d.ts, ui.d.ts; contracts README 'Version moves'): the scalar target.url field, the one DSH_AGENT_TOKEN token field, GET/POST /api/fishball/connect and registerSettingsRoutes/effectiveTarget are gone; successors MULTI-SET-* (per-target cards over SEAM_TARGETS routes) (main 3 x3, A4); retired: todo placeholder for a real-DSH browser flow (E2E-UI W6), not a planned row of this package (e2e)
+test/v3/fishball-core/settings	SET3-UC-02	packages/core/tests/settings.test.mjs (main 3, A1, E2); retired: withdrawn by MULTI-0 (targets.d.ts, ui.d.ts; contracts README 'Version moves'): the scalar target.url field, the one DSH_AGENT_TOKEN token field, GET/POST /api/fishball/connect and registerSettingsRoutes/effectiveTarget are gone; successors MULTI-SET-* (per-target cards over SEAM_TARGETS routes) (main 1 x2, main 2-3, A2, E1)
+test/v3/fishball-core/settings	SET3-UC-03	retired: withdrawn by MULTI-0 (targets.d.ts, ui.d.ts; contracts README 'Version moves'): the scalar target.url field, the one DSH_AGENT_TOKEN token field, GET/POST /api/fishball/connect and registerSettingsRoutes/effectiveTarget are gone; successors MULTI-SET-* (per-target cards over SEAM_TARGETS routes)
+test/v3/fishball-core/settings	SET3-UC-04	retired: withdrawn by MULTI-0 (targets.d.ts, ui.d.ts; contracts README 'Version moves'): the scalar target.url field, the one DSH_AGENT_TOKEN token field, GET/POST /api/fishball/connect and registerSettingsRoutes/effectiveTarget are gone; successors MULTI-SET-* (per-target cards over SEAM_TARGETS routes)
+test/v3/fishball-core/settings	SET3-UC-05	retired: withdrawn by MULTI-0 (targets.d.ts, ui.d.ts; contracts README 'Version moves'): the scalar target.url field, the one DSH_AGENT_TOKEN token field, GET/POST /api/fishball/connect and registerSettingsRoutes/effectiveTarget are gone; successors MULTI-SET-* (per-target cards over SEAM_TARGETS routes)
+test/v3/fishball-core/settings	SET3-UC-06	retired: withdrawn by MULTI-0 (targets.d.ts, ui.d.ts; contracts README 'Version moves'): the scalar target.url field, the one DSH_AGENT_TOKEN token field, GET/POST /api/fishball/connect and registerSettingsRoutes/effectiveTarget are gone; successors MULTI-SET-* (per-target cards over SEAM_TARGETS routes)
+test/v3/fishball-core/settings	SET3-UC-07	packages/core/tests/settings.test.mjs (F-UI core only); integration: needs fishball-ui's client beside core's (the Fishball-page header entries / view=settings continuation are fishball-ui's client.entries.js since F-UI) (main 1, F-UI ids); retired: todo placeholder for a real-DSH browser flow (E2E-UI W6), not a planned row of this package (e2e)
+test/v3/fishball-core/settings	SET3-UC-08	integration: needs fishball-ui's client beside core's (the Fishball-page header entries / view=settings continuation are fishball-ui's client.entries.js since F-UI)
+test/v3/fishball-core/settings	SET3-UC-09	packages/core/tests/settings.test.mjs (core's half: core alone registers no slim panel/section service)
+test/v3/fishball-core/settings	SET3-UC-10	packages/core/tests/settings.test.mjs (main 1, main 2, main 3 x2 [core's page only], A1 [core's page only]); integration: needs fishball-ui's client beside core's (the Fishball-page header entries / view=settings continuation are fishball-ui's client.entries.js since F-UI) (F-UI locale; the entries' halves of main 3 and A1)
+test/v3/fishball-core/settings	SET3-UC-11	retired: withdrawn by MULTI-0 (targets.d.ts, ui.d.ts; contracts README 'Version moves'): the scalar target.url field, the one DSH_AGENT_TOKEN token field, GET/POST /api/fishball/connect and registerSettingsRoutes/effectiveTarget are gone; successors MULTI-SET-* (per-target cards over SEAM_TARGETS routes)
+test/v3/fishball-core/settings	UIPF-CORE-DT-01	retired: withdrawn by MULTI-0 (targets.d.ts, ui.d.ts; contracts README 'Version moves'): the scalar target.url field, the one DSH_AGENT_TOKEN token field, GET/POST /api/fishball/connect and registerSettingsRoutes/effectiveTarget are gone; successors MULTI-SET-* (per-target cards over SEAM_TARGETS routes) (the single Connect section; UI-POLISH-F §7 Connect card)
+test/v3/fishball-core/settings	UIPF-CORE-EP-01	retired: withdrawn by MULTI-0 (targets.d.ts, ui.d.ts; contracts README 'Version moves'): the scalar target.url field, the one DSH_AGENT_TOKEN token field, GET/POST /api/fishball/connect and registerSettingsRoutes/effectiveTarget are gone; successors MULTI-SET-* (per-target cards over SEAM_TARGETS routes) (the single Connect section; UI-POLISH-F §7 Connect card)
+test/v3/fishball-core/settings	UIPF-ENTRY-EP-01	integration: needs fishball-ui's client beside core's (the Fishball-page header entries / view=settings continuation are fishball-ui's client.entries.js since F-UI)
+test/v3/fishball-core/settings	UIPF-ENTRY-ST-01	integration: needs fishball-ui's client beside core's (the Fishball-page header entries / view=settings continuation are fishball-ui's client.entries.js since F-UI)
+test/v3/fishball-core/settings	WAKE-SET-BVA-01	packages/core/tests/settings.test.mjs
+test/v3/fishball-core/settings	WAKE-SET-CFG-01	packages/core/tests/settings.test.mjs
+test/v3/fishball-core/settings	WAKE-SET-CFG-02	packages/core/tests/settings.test.mjs
+test/v3/fishball-core/settings	WAKE-SET-EP-01	packages/core/tests/settings.test.mjs
+test/v3/fishball-core/settings	WAKE-SET-EP-02	packages/core/tests/settings.test.mjs
+test/v3/fishball-core/status	F-STATUS-00	packages/core/tests/status.test.mjs
+test/v3/fishball-core/status	F-STATUS-01	packages/core/tests/status.test.mjs
+test/v3/fishball-core/status	F-STATUS-02	packages/core/tests/status.test.mjs
+test/v3/fishball-core/status	F-STATUS-03	packages/core/tests/status.test.mjs
+test/v3/fishball-core/status	F-STATUS-BVA-01	retired: withdrawn by MULTI-0: the status has no bridge port; contributedTools is a TargetView field (successor MULTI-STATUS-EP-01)
+test/v3/fishball-core/status	F-STATUS-BVA-02	packages/core/tests/status.test.mjs
+test/v3/fishball-core/status	F-STATUS-DT-01	packages/core/tests/status.test.mjs (21 rules); retired: withdrawn by MULTI-0: no target() port (rule 4 sends nothing; successor UC-STATUS-01 postcondition)
+test/v3/fishball-core/status	F-STATUS-EP-01	packages/core/tests/status.test.mjs
+test/v3/fishball-core/status	F-STATUS-EP-02	packages/core/tests/status.test.mjs
+test/v3/fishball-core/status	F-STATUS-ST-01	packages/core/tests/status.test.mjs
+test/v3/fishball-core/status	F-STATUS-ST-02	packages/core/tests/status.test.mjs
+test/v3/fishball-core/status	F-STATUS-ST-03	packages/core/tests/status.test.mjs
+test/v3/fishball-core/status	F-STATUS-ST-04	packages/core/tests/status.test.mjs
+test/v3/fishball-core/status	F-STATUS-STRIP	fishball-ui: the strip view (stripView/status card) is fishball-ui's src/status; core's rows were withdrawn by MULTI-0/MULTI-3 (old WITHDRAWN_ROW.strip)
+test/v3/fishball-core/status	HOST-DT-03	packages/core/tests/status.test.mjs
+test/v3/fishball-core/status	MULTI-STATUS-EP-01	packages/core/tests/status.test.mjs
+test/v3/fishball-core/status	MULTI-STATUS-ST-01	packages/core/tests/status.test.mjs
+test/v3/fishball-core/status	PLAT-DT-02	packages/core/tests/status.test.mjs (18 rows); integration: the status read through the fishballStatus service in a real standalone DSH (old todo for F-WIRE; port-core-wire's WIRE rows cover the booted service)
+test/v3/fishball-core/status	TOOLS-00	packages/core/tests/status.test.mjs
+test/v3/fishball-core/status	TOOLS-BVA-01	packages/core/tests/status.test.mjs
+test/v3/fishball-core/status	TOOLS-DT-01	packages/core/tests/status.test.mjs
+test/v3/fishball-core/status	TOOLS-EP-01	packages/core/tests/status.test.mjs
+test/v3/fishball-core/status	TOOLS-EP-02	packages/core/tests/status.test.mjs
+test/v3/fishball-core/status	TOOLS-EP-03	packages/core/tests/status.test.mjs
+test/v3/fishball-core/status	TOOLS-EP-04	packages/core/tests/status.test.mjs
+test/v3/fishball-core/status	TOOLS-ST-01	packages/core/tests/status.test.mjs
+test/v3/fishball-core/status	TOOLS-ST-02	packages/core/tests/status.test.mjs
+test/v3/fishball-core/status	TOOLS-ST-03	packages/core/tests/status.test.mjs
+test/v3/fishball-core/status	TOOLS-ST-04	packages/core/tests/status.test.mjs
+test/v3/fishball-core/status	TOOLS-ST-05	packages/core/tests/status.test.mjs
+test/v3/fishball-core/status	TOOLS-UC-01	packages/core/tests/status.test.mjs
+test/v3/fishball-core/status	UC-STATUS-01	packages/core/tests/status.test.mjs (E4, onChange dispose, postcondition); retired: withdrawn by MULTI-0, no target() port (A5, main 4; successor MULTI-STATUS-ST-01); retired: todo for the page's press (fishball-ui's strip control; F-UI/E2E) (A1 press); integration: core in a hosted child needs the dsh-fishball-instance repository's child (hosted) — moved out in 6b7c53bf, retired here
+test/v3/fishball-core/status	UC-STATUS-02	packages/core/tests/status.test.mjs
+test/v3/fishball-core/status	UC-STATUS-03	packages/core/tests/status.test.mjs
+test/v3/fishball-core/status	UC-STATUS-05	packages/core/tests/status.test.mjs
+test/v3/fishball-core/status	UC-STATUS-06	packages/core/tests/status.test.mjs
+test/v3/fishball-core/status	UIPF-CARD-BVA-01	fishball-ui: the strip view (stripView/status card) is fishball-ui's src/status; core's rows were withdrawn by MULTI-0/MULTI-3 (old WITHDRAWN_ROW.strip)
+test/v3/fishball-core/status	UIPF-CARD-DT-01	fishball-ui: the strip view (stripView/status card) is fishball-ui's src/status; core's rows were withdrawn by MULTI-0/MULTI-3 (old WITHDRAWN_ROW.strip)
+test/v3/fishball-core/status	UIPF-CARD-EP-01	fishball-ui: the strip view (stripView/status card) is fishball-ui's src/status; core's rows were withdrawn by MULTI-0/MULTI-3 (old WITHDRAWN_ROW.strip)

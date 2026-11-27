@@ -1,0 +1,66 @@
+test/v3/fishball-core/events	EVT-DT-02	packages/core/tests/events.test.mjs
+test/v3/fishball-core/events	EVT-DT-03	packages/core/tests/events.test.mjs
+test/v3/fishball-core/events	EVT-DT-04	packages/core/tests/events.test.mjs
+test/v3/fishball-core/events	EVT-EP-03	packages/core/tests/events.test.mjs (rows 1-5, 6 disabled; rows '6 (not ready)' and 7 were todo for F-WIRE / C-MAILBOX: retired, C-MAILBOX left with the connector in 6b7c53bf)
+test/v3/fishball-core/events	EVT-EP-05	packages/core/tests/events.test.mjs
+test/v3/fishball-core/events	EVT-ST-02	packages/core/tests/events.test.mjs (row '11 (queued)' skipped as withdrawn by WAKE-BATCH item 5: retired, replaced by WAKE-EVT-DT-02 'busy, user queued')
+test/v3/fishball-core/events	EVT-UC-02	packages/core/tests/events.test.mjs (E4 (inbox removal) was a todo for E2E-CORE browser flow: retired)
+test/v3/fishball-core/events	EVT-UC-03	packages/core/tests/events.test.mjs
+test/v3/fishball-core/events	MULTI-EVT-DT-01	packages/core/tests/events.test.mjs
+test/v3/fishball-core/events	MULTI-EVT-EP-01	packages/core/tests/events.test.mjs
+test/v3/fishball-core/events	MULTI-EVT-RETIRED-ST-01	packages/core/tests/events.test.mjs
+test/v3/fishball-core/events	MULTI-EVT-ST-01	packages/core/tests/events.test.mjs
+test/v3/fishball-core/events	RFIX-F11-ST-01	packages/core/tests/events.test.mjs
+test/v3/fishball-core/events	RFIX-F14-DT-01	packages/core/tests/events.test.mjs
+test/v3/fishball-core/events	WAKE-EVT-BVA-01	packages/core/tests/events.test.mjs
+test/v3/fishball-core/events	WAKE-EVT-BVA-02	packages/core/tests/events.test.mjs
+test/v3/fishball-core/events	WAKE-EVT-DT-01	packages/core/tests/events.test.mjs
+test/v3/fishball-core/events	WAKE-EVT-DT-02	packages/core/tests/events.test.mjs
+test/v3/fishball-core/events	WAKE-EVT-EP-00	packages/core/tests/events.test.mjs
+test/v3/fishball-core/events	WAKE-EVT-EP-01	packages/core/tests/events.test.mjs
+test/v3/fishball-core/events	WAKE-EVT-EP-02	packages/core/tests/events.test.mjs
+test/v3/fishball-core/events	WAKE-EVT-ST-01	packages/core/tests/events.test.mjs
+test/v3/fishball-core/events	WAKE-EVT-ST-02	packages/core/tests/events.test.mjs
+test/v3/fishball-core/events	WAKE-EVT-UC-01	packages/core/tests/events.test.mjs
+test/v3/fishball-core/bridge	EXT-UC-02	packages/core/tests/bridge.test.mjs
+test/v3/fishball-core/bridge	EXT-UC-04	packages/core/tests/bridge.test.mjs
+test/v3/fishball-core/bridge	F-FACADE	packages/core/tests/bridge.test.mjs ('BVA count in status' was a todo for F-STATUS: retired; status area's MULTI-STATUS-EP-01 checks contributedTools)
+test/v3/fishball-core/bridge	K2-AMEND-1	packages/core/tests/bridge.test.mjs
+test/v3/fishball-core/bridge	RFIX-F13-BVA-01	packages/core/tests/bridge.test.mjs
+test/v3/fishball-core/bridge	RFIX-F13-DT-01	packages/core/tests/bridge.test.mjs
+test/v3/fishball-core/bridge	RFIX-F13-EP-01	packages/core/tests/bridge.test.mjs
+test/v3/fishball-core/bridge	EXT-DT-03	packages/core/tests/bridge.test.mjs (E6, E8 Fishball side); E6/E8 (end to end) were todo for X-REMOTE with the real connector DSH: retired (connector moved out in 6b7c53bf)
+test/v3/fishball-core/bridge	MODEL	retired: not a bridge row (baseline AMBIG attribution of fishball-ui model-dialog's todo 'browser page reload and real settings navigation'); belongs to fishball-ui's inventory
+test/v3/fishball-core/asks	ASK-BVA-01	packages/core/tests/asks.test.mjs
+test/v3/fishball-core/asks	ASK-BVA-02	packages/core/tests/asks.test.mjs
+test/v3/fishball-core/asks	ASK-BVA-03	packages/core/tests/asks.test.mjs
+test/v3/fishball-core/asks	ASK-DT-01	packages/core/tests/asks.test.mjs
+test/v3/fishball-core/asks	ASK-DT-02	packages/core/tests/asks.test.mjs
+test/v3/fishball-core/asks	ASK-DT-03	packages/core/tests/asks.test.mjs
+test/v3/fishball-core/asks	ASK-DT-04	packages/core/tests/asks.test.mjs
+test/v3/fishball-core/asks	ASK-EP-01	packages/core/tests/asks.test.mjs
+test/v3/fishball-core/asks	ASK-EP-02	packages/core/tests/asks.test.mjs
+test/v3/fishball-core/asks	ASK-EP-03	packages/core/tests/asks.test.mjs
+test/v3/fishball-core/asks	ASK-EP-04	packages/core/tests/asks.test.mjs
+test/v3/fishball-core/asks	ASK-EP-05	packages/core/tests/asks.test.mjs
+test/v3/fishball-core/asks	ASK-EP-06	packages/core/tests/asks.test.mjs
+test/v3/fishball-core/asks	ASK-ST-01	packages/core/tests/asks.test.mjs
+test/v3/fishball-core/asks	ASK-ST-02	packages/core/tests/asks.test.mjs
+test/v3/fishball-core/asks	ASK-ST-03	packages/core/tests/asks.test.mjs
+test/v3/fishball-core/asks	ASK-UC-01	packages/core/tests/asks.test.mjs
+test/v3/fishball-core/asks	ASK-UC-02	packages/core/tests/asks.test.mjs
+test/v3/fishball-core/asks	ASK-UC-03	packages/core/tests/asks.test.mjs
+test/v3/fishball-core/asks	ASK-UC-05	packages/core/tests/asks.test.mjs
+test/v3/fishball-core/asks	ASK-UC-06	packages/core/tests/asks.test.mjs
+test/v3/fishball-core/asks	ASK-UC-07	packages/core/tests/asks.test.mjs
+test/v3/fishball-core/asks	ASK-UC-08	packages/core/tests/asks.test.mjs
+test/v3/fishball-core/asks	MULTI-ASK-DT-01	packages/core/tests/asks.test.mjs
+test/v3/fishball-core/asks	MULTI-ASK-EP-01	packages/core/tests/asks.test.mjs
+test/v3/fishball-core/asks	MULTI-ASK-ROUTE-01	packages/core/tests/asks.test.mjs
+test/v3/fishball-core/asks	MULTI-ASK-ST-01	packages/core/tests/asks.test.mjs
+test/v3/fishball-core/asks	PLAT-UC-07	packages/core/tests/asks.test.mjs
+test/v3/fishball-core/asks	RFIX-F12-DT-01	packages/core/tests/asks.test.mjs
+test/v3/fishball-core/asks	RFIX-F12-ST-01	packages/core/tests/asks.test.mjs
+test/v3/fishball-core/asks	ASK-EP-07	packages/core/tests/asks.test.mjs (7 rows; 'stored before F-FIX' was skipped as withdrawn by MULTI-0, PLAN-MULTI §3.3 D09: retired)
+test/v3/fishball-core/asks	ASK-UC-04	integration: main 1 and main 2 need fishball-ui present (its client.asks.js chunk and its package.json files); main 3: retired (swept packages/dsh-connector, dsh-connector-ui, dsh-instance, moved out in 6b7c53bf)
+test/v3/fishball-core/asks	ASK-UI-01	integration: fishball-ui's client.js + client.asks.js drawn in the scripted page (fishball-test-helpers/scripted-page) fed card frames on /api/fishball/page/events topic asks; 5 rows (complete, truncated, unavailable, markup is text, no detail)

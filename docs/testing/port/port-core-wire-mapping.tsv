@@ -1,0 +1,199 @@
+old suite	case id	where now
+test/v3/fishball-core/wire	BRAND-CONFIG-DT-01	packages/core/tests/wire/brand-config.mjs
+test/v3/fishball-core/wire	BRAND-CONFIG-ST-01	packages/core/tests/wire/brand-config.mjs
+test/v3/fishball-core/wire	CONN-DT-01	retired from this suite: mis-attributed in the baseline (AMBIG wire|fishball-ui/connections); the rows are fishball-ui connections' (test/v3/fishball-ui/connections/cases.mjs), ported by fishball-ui
+test/v3/fishball-core/wire	CONN-ST-01	retired from this suite: mis-attributed in the baseline (AMBIG wire|fishball-ui/connections); the rows are fishball-ui connections' (test/v3/fishball-ui/connections/cases.mjs), ported by fishball-ui
+test/v3/fishball-core/wire	CONN-ST-02	retired from this suite: mis-attributed in the baseline (AMBIG wire|fishball-ui/connections); the rows are fishball-ui connections' (test/v3/fishball-ui/connections/cases.mjs), ported by fishball-ui
+test/v3/fishball-core/wire	live	packages/core/tests/wire/retirement.mjs
+test/v3/fishball-core/wire	MULTI-1-FIX	packages/core/tests/wire/retirement.mjs
+test/v3/fishball-core/wire	MULTI-ASK-SYS-01	packages/core/tests/wire/multi.mjs
+test/v3/fishball-core/wire	MULTI-ASK-SYS-02	packages/core/tests/wire/multi.mjs
+test/v3/fishball-core/wire	MULTI-CONN-DT-01	packages/core/tests/wire/multi.mjs
+test/v3/fishball-core/wire	MULTI-CONN-ST-01	packages/core/tests/wire/multi.mjs
+test/v3/fishball-core/wire	MULTI-CONN-ST-02	retired: todo placeholder (E2E-CORE web callback needs an https Origin a default standalone DSH refuses); state routing is covered by MULTI-CONN-ST-01/DT-01
+test/v3/fishball-core/wire	MULTI-CRED-EP-01	packages/core/tests/wire/multi.mjs
+test/v3/fishball-core/wire	MULTI-CRED-EP-02	packages/core/tests/wire/multi.mjs
+test/v3/fishball-core/wire	MULTI-CRED-ST-01	packages/core/tests/wire/multi.mjs
+test/v3/fishball-core/wire	MULTI-EVT-SYS-01	packages/core/tests/wire/multi.mjs
+test/v3/fishball-core/wire	MULTI-HOST-EP-01	packages/core/tests/wire/multi.mjs
+test/v3/fishball-core/wire	MULTI-LIFE-CRED-DT-01	packages/core/tests/wire/lifecycle.mjs
+test/v3/fishball-core/wire	MULTI-LIFE-CRED-ST-02	packages/core/tests/wire/lifecycle.mjs
+test/v3/fishball-core/wire	MULTI-LIFE-DRAIN-ST-01	packages/core/tests/wire/lifecycle.mjs
+test/v3/fishball-core/wire	MULTI-LIFE-DRAIN-ST-02	packages/core/tests/wire/lifecycle.mjs
+test/v3/fishball-core/wire	MULTI-LIFE-DRAIN-ST-03	packages/core/tests/wire/lifecycle.mjs
+test/v3/fishball-core/wire	MULTI-LIFE-SAVE-ST-01	packages/core/tests/wire/lifecycle.mjs
+test/v3/fishball-core/wire	MULTI-NAME-DT-01	packages/core/tests/wire/multi.mjs
+test/v3/fishball-core/wire	MULTI-NAME-EP-01	packages/core/tests/wire/multi.mjs
+test/v3/fishball-core/wire	MULTI-NAME-EP-02	packages/core/tests/wire/multi.mjs
+test/v3/fishball-core/wire	MULTI-NAME-ST-01	packages/core/tests/wire/multi.mjs
+test/v3/fishball-core/wire	MULTI-NAME-ST-02	packages/core/tests/wire/multi.mjs
+test/v3/fishball-core/wire	MULTI-NAME-ST-03	packages/core/tests/wire/multi.mjs
+test/v3/fishball-core/wire	MULTI-NAME-ST-04	packages/core/tests/wire/multi.mjs
+test/v3/fishball-core/wire	MULTI-NAME-ST-05	packages/core/tests/wire/multi.mjs
+test/v3/fishball-core/wire	MULTI-SVC-DT-01	packages/core/tests/wire/multi.mjs
+test/v3/fishball-core/wire	MULTI-SVC-EP-01	packages/core/tests/wire/multi.mjs
+test/v3/fishball-core/wire	MULTI-SVC-ST-01	packages/core/tests/wire/multi.mjs
+test/v3/fishball-core/wire	MULTI-TGT-BVA-01	packages/core/tests/wire/multi.mjs
+test/v3/fishball-core/wire	MULTI-TGT-DT-01	packages/core/tests/wire/multi.mjs
+test/v3/fishball-core/wire	MULTI-TGT-EP-01	packages/core/tests/wire/multi.mjs
+test/v3/fishball-core/wire	MULTI-TGT-EP-02	packages/core/tests/wire/multi.mjs
+test/v3/fishball-core/wire	MULTI-TGT-EP-03	packages/core/tests/wire/multi.mjs
+test/v3/fishball-core/wire	MULTI-TGT-EP-04	packages/core/tests/wire/multi.mjs
+test/v3/fishball-core/wire	MULTI-TOOL-BVA-01	packages/core/tests/wire/multi.mjs
+test/v3/fishball-core/wire	MULTI-TOOL-EP-01	packages/core/tests/wire/multi.mjs
+test/v3/fishball-core/wire	MULTI-TOOL-EP-02	packages/core/tests/wire/multi.mjs
+test/v3/fishball-core/wire	MULTI-TOOL-ST-01	packages/core/tests/wire/multi.mjs
+test/v3/fishball-core/wire	MULTI-TOOL-ST-02	packages/core/tests/wire/multi.mjs
+test/v3/fishball-core/wire	replacement	packages/core/tests/wire/retirement.mjs
+test/v3/fishball-core/wire	SESSIONS	packages/core/tests/wire/running-sessions.mjs
+test/v3/fishball-core/wire	SESSIONS-WATCH	packages/core/tests/wire/running-sessions-watch.mjs (24 unit rows); integration: SYS S1–S4 needs fishball-ui (strip topic on the page stream) beside core
+test/v3/fishball-core/wire	WAKE-SYS-EP-01	packages/core/tests/wire/batch.mjs
+test/v3/fishball-core/wire	WAKE-SYS-EP-02	packages/core/tests/wire/batch.mjs
+test/v3/fishball-core/wire	WAKE-SYS-ST-01	packages/core/tests/wire/batch.mjs
+test/v3/fishball-core/wire	WAKE-SYS-TOOL-01	packages/core/tests/wire/batch.mjs
+test/v3/fishball-core/wire	WIRE-DT-01	packages/core/tests/wire/cases.mjs
+test/v3/fishball-core/wire	WIRE-EP-01	packages/core/tests/wire/cases.mjs
+test/v3/fishball-core/wire	WIRE-EP-02	packages/core/tests/wire/cases.mjs
+test/v3/fishball-core/wire	WIRE-EP-03	packages/core/tests/wire/cases.mjs
+test/v3/fishball-core/wire	WIRE-SYS	packages/core/tests/wire/cases.mjs (fishball-core composition, 10 rows; "manager tool scope and guards hold" is bug: CORE-WIRE-B1 on DSH ≥ 0.2.2-rc.3); integration: the fishball-ui+fishball-core and fishball-board(stand-in)+fishball-ui+fishball-core compositions and SHELVE broken board need fishball-ui and the board stand-in installed beside core
+test/v3/fishball-core/manager	MGR-ID-EP-01	packages/core/tests/manager/cases.mjs
+test/v3/fishball-core/manager	MGR-ID-EP-02	packages/core/tests/manager/cases.mjs
+test/v3/fishball-core/manager	MGR-ID-ST-01	packages/core/tests/manager/cases.mjs
+test/v3/fishball-core/manager	MGR-ID-ST-02	packages/core/tests/manager/cases.mjs
+test/v3/fishball-core/manager	MGR-ID-ST-03	packages/core/tests/manager/cases.mjs
+test/v3/fishball-core/manager	MGR-MOD-EP-01	retired: todo placeholder whose requirement names no observable outcome (F-WIRE/E2E-CORE ambiguity, still unspecified)
+test/v3/fishball-core/manager	MGR-MOD-ST-01	packages/core/tests/manager/cases.mjs
+test/v3/fishball-core/manager	MGR-MOD-ST-02	packages/core/tests/manager/cases.mjs
+test/v3/fishball-core/manager	MGR-MOD-ST-03	packages/core/tests/manager/cases.mjs
+test/v3/fishball-core/manager	MGR-MOD-ST-04	packages/core/tests/manager/cases.mjs
+test/v3/fishball-core/manager	MGR-MOD-ST-05	packages/core/tests/manager/cases.mjs
+test/v3/fishball-core/manager	MGR-MOD-ST-06	packages/core/tests/manager/cases.mjs
+test/v3/fishball-core/manager	MGR-MOD-ST-07	retired: todo placeholder whose requirement names no observable outcome (F-WIRE/E2E-CORE ambiguity, still unspecified)
+test/v3/fishball-core/manager	MGR-MOD-ST-08	retired: todo placeholder whose requirement names no observable outcome (F-WIRE/E2E-CORE ambiguity, still unspecified)
+test/v3/fishball-core/manager	MGR-REM-DT-01	packages/core/tests/manager/cases.mjs
+test/v3/fishball-core/manager	MGR-REM-EP-01	packages/core/tests/manager/cases.mjs
+test/v3/fishball-core/manager	MGR-REM-EP-02	packages/core/tests/manager/cases.mjs
+test/v3/fishball-core/manager	MGR-REM-EP-03	packages/core/tests/manager/cases.mjs
+test/v3/fishball-core/manager	MGR-REM-EP-04	packages/core/tests/manager/cases.mjs (bug: CORE-WIRE-B1 on DSH ≥ 0.2.2-rc.3)
+test/v3/fishball-core/manager	MGR-REM-ST-01	packages/core/tests/manager/cases.mjs
+test/v3/fishball-core/manager	MGR-REM-ST-02	packages/core/tests/manager/cases.mjs
+test/v3/fishball-core/manager	MGR-REM-ST-03	packages/core/tests/manager/cases.mjs
+test/v3/fishball-core/manager	MGR-REM-ST-04	packages/core/tests/manager/cases.mjs
+test/v3/fishball-core/manager	MGR-REM-ST-05	packages/core/tests/manager/cases.mjs
+test/v3/fishball-core/manager	MGR-SET-EP-01	packages/core/tests/manager/cases.mjs
+test/v3/fishball-core/manager	MGR-SET-EP-01b	packages/core/tests/manager/cases.mjs
+test/v3/fishball-core/manager	MGR-SET-EP-02	packages/core/tests/manager/cases.mjs
+test/v3/fishball-core/manager	MGR-SET-EP-03	packages/core/tests/manager/cases.mjs
+test/v3/fishball-core/manager	MGR-SET-EP-04	packages/core/tests/manager/cases.mjs
+test/v3/fishball-core/manager	MGR-SET-ST-01	packages/core/tests/manager/cases.mjs
+test/v3/fishball-core/manager	MGR-SET-ST-02	packages/core/tests/manager/cases.mjs
+test/v3/fishball-core/manager	MGR-SET-ST-03	retired: todo placeholder whose requirement names no observable outcome (F-WIRE/E2E-CORE ambiguity, still unspecified)
+test/v3/fishball-core/manager	RFIX-F05-DT-01	packages/core/tests/manager/rfix.mjs
+test/v3/fishball-core/manager	RFIX-F05-ST-01	packages/core/tests/manager/rfix.mjs
+test/v3/fishball-core/manager	RFIX-F06-ST-01	packages/core/tests/manager/rfix.mjs
+test/v3/fishball-core/manager	RFIX-F07-BVA-01	packages/core/tests/manager/rfix.mjs
+test/v3/fishball-core/manager	RFIX-F07-EP-01	packages/core/tests/manager/rfix.mjs
+test/v3/fishball-core/manager	RFIX-F07-EP-02	packages/core/tests/manager/rfix.mjs
+test/v3/fishball-core/manager	RFIX-F08-DT-01	packages/core/tests/manager/rfix.mjs
+test/v3/fishball-core/manager	RFIX-F08-ST-01	packages/core/tests/manager/rfix.mjs
+test/v3/fishball-core/manager	RFIX-F08-ST-02	packages/core/tests/manager/rfix.mjs
+test/v3/fishball-core/manager	RFIX-F09-BVA-01	packages/core/tests/manager/cases.mjs
+test/v3/fishball-core/manager	RFIX-F09-EP-01	packages/core/tests/manager/cases.mjs
+test/v3/fishball-core/manager	RFIX-F09-EP-02	packages/core/tests/manager/cases.mjs
+test/v3/fishball-core/manager	RFIX-F09-ST-01	packages/core/tests/manager/cases.mjs
+test/v3/fishball-core/manager	RFIX-F15-BVA-01	packages/core/tests/manager/rfix.mjs
+test/v3/fishball-core/manager	RFIX-F17-EP-01	packages/core/tests/manager/rfix.mjs
+test/v3/fishball-core/manager	RFIX-F18-EP-01	packages/core/tests/manager/rfix.mjs
+test/v3/fishball-core/manager	RFIX2-ABOVE-DT-01	packages/core/tests/manager/rfix2.mjs
+test/v3/fishball-core/manager	RFIX2-ABOVE-ST-01	packages/core/tests/manager/rfix2.mjs
+test/v3/fishball-core/manager	RFIX2-CREATE-BVA-01	packages/core/tests/manager/rfix2.mjs
+test/v3/fishball-core/manager	RFIX2-DELIVER-ST-01	packages/core/tests/manager/rfix2.mjs
+test/v3/fishball-core/manager	RFIX2-FULL-ST-01	packages/core/tests/manager/rfix2.mjs
+test/v3/fishball-core/manager	RFIX2-UPDATE-BVA-01	packages/core/tests/manager/rfix2.mjs
+test/v3/fishball-core/manager	WD-PERSONA-DT-01	packages/core/tests/manager/watchdog-persona.mjs
+test/v3/fishball-core/manager	WD-PERSONA-DT-02	packages/core/tests/manager/watchdog-persona.mjs
+test/v3/fishball-core/manager	WD-PERSONA-EP-01	packages/core/tests/manager/watchdog-persona.mjs
+test/v3/fishball-core/manager	WD-PERSONA-EP-01b	packages/core/tests/manager/watchdog-persona.mjs
+test/v3/fishball-core/manager	WD-PERSONA-EP-02	packages/core/tests/manager/watchdog-persona.mjs
+test/v3/fishball-core/manager	WD-PERSONA-EP-03	packages/core/tests/manager/watchdog-persona.mjs
+test/v3/fishball-core/manager	WD-PERSONA-EP-04	packages/core/tests/manager/watchdog-persona.mjs
+test/v3/fishball-core/manager	WD-PERSONA-EP-05	packages/core/tests/manager/watchdog-persona.mjs
+test/v3/fishball-core/manager	WD-PERSONA-EP-06	packages/core/tests/manager/watchdog-persona.mjs
+test/v3/fishball-core/manager	WD-PERSONA-EP-07	packages/core/tests/manager/watchdog-persona.mjs
+test/v3/fishball-core/manager	WD-PERSONA-EP-08	packages/core/tests/manager/watchdog-persona.mjs
+test/v3/fishball-core/manager	WD-PERSONA-EP-09	packages/core/tests/manager/watchdog-persona.mjs
+test/v3/fishball-core/manager	WD-PERSONA-ST-01	packages/core/tests/manager/watchdog-persona.mjs
+test/v3/fishball-core/manager	WD-PERSONA-SYS-01	packages/core/tests/manager/watchdog-persona.mjs
+test/v3/fishball-core/message-user	MSG-PAGE-DT-01	integration: draws fishball-ui's fishball-page in headless Chromium over a real DSH with core + fishball-ui
+test/v3/fishball-core/message-user	MSG-PAGE-DT-02	integration: draws fishball-ui's fishball-page in headless Chromium over a real DSH with core + fishball-ui
+test/v3/fishball-core/message-user	MSG-PAGE-DT-03	integration: draws fishball-ui's fishball-page in headless Chromium over a real DSH with core + fishball-ui
+test/v3/fishball-core/message-user	MSG-PAGE-EP-00	integration: draws fishball-ui's fishball-page in headless Chromium over a real DSH with core + fishball-ui
+test/v3/fishball-core/message-user	MSG-PAGE-EP-01	integration: draws fishball-ui's fishball-page in headless Chromium over a real DSH with core + fishball-ui
+test/v3/fishball-core/message-user	MSG-PAGE-EP-02	integration: draws fishball-ui's fishball-page in headless Chromium over a real DSH with core + fishball-ui
+test/v3/fishball-core/message-user	MSG-PAGE-EP-03	integration: draws fishball-ui's fishball-page in headless Chromium over a real DSH with core + fishball-ui
+test/v3/fishball-core/message-user	MSG-PAGE-EP-04	retired: todo placeholder (outside the Fishball page nothing changes) whose observation needs fishball-page; listed for the integration agent as a planned row
+test/v3/fishball-core/message-user	MSG-PAGE-ST-01	integration: draws fishball-ui's fishball-page in headless Chromium over a real DSH with core + fishball-ui
+test/v3/fishball-core/message-user	MSG-PAGE-ST-01b	integration: draws fishball-ui's fishball-page in headless Chromium over a real DSH with core + fishball-ui
+test/v3/fishball-core/message-user	MSG-PAGE-ST-02	integration: draws fishball-ui's fishball-page in headless Chromium over a real DSH with core + fishball-ui
+test/v3/fishball-core/message-user	MSG-PAGE-ST-03	integration: draws fishball-ui's fishball-page in headless Chromium over a real DSH with core + fishball-ui
+test/v3/fishball-core/message-user	MSG-PAGE-ST-04	integration: draws fishball-ui's fishball-page in headless Chromium over a real DSH with core + fishball-ui
+test/v3/fishball-core/message-user	MSG-PAGE-ST-05	integration: draws fishball-ui's fishball-page in headless Chromium over a real DSH with core + fishball-ui
+test/v3/fishball-core/message-user	MSG-PAGE-ST-06	integration: draws fishball-ui's fishball-page in headless Chromium over a real DSH with core + fishball-ui
+test/v3/fishball-core/message-user	MSG-PAGE-ST-07	integration: draws fishball-ui's fishball-page in headless Chromium over a real DSH with core + fishball-ui
+test/v3/fishball-core/message-user	MSG-PAGE-ST-08	integration: draws fishball-ui's fishball-page in headless Chromium over a real DSH with core + fishball-ui
+test/v3/fishball-core/message-user	MSG-PAGE-ST-09	integration: draws fishball-ui's fishball-page in headless Chromium over a real DSH with core + fishball-ui
+test/v3/fishball-core/message-user	MSG-PAGING-EP-00	integration: draws fishball-ui's fishball-page in headless Chromium over a real DSH with core + fishball-ui
+test/v3/fishball-core/message-user	MSG-PAGING-EP-01	integration: draws fishball-ui's fishball-page in headless Chromium over a real DSH with core + fishball-ui
+test/v3/fishball-core/message-user	MSG-PAGING-EP-02	integration: draws fishball-ui's fishball-page in headless Chromium over a real DSH with core + fishball-ui
+test/v3/fishball-core/message-user	MSG-PAGING-ST-01	integration: draws fishball-ui's fishball-page in headless Chromium over a real DSH with core + fishball-ui
+test/v3/fishball-core/message-user	MSG-PAGING-ST-02	integration: draws fishball-ui's fishball-page in headless Chromium over a real DSH with core + fishball-ui
+test/v3/fishball-core/message-user	MSG-PERSONA-EP-01	packages/core/tests/message-user/cases.mjs
+test/v3/fishball-core/message-user	MSG-PERSONA-EP-02	packages/core/tests/message-user/cases.mjs
+test/v3/fishball-core/message-user	MSG-PERSONA-EP-03	packages/core/tests/message-user/cases.mjs
+test/v3/fishball-core/message-user	MSG-PERSONA-EP-04	packages/core/tests/message-user/cases.mjs
+test/v3/fishball-core/message-user	MSG-PERSONA-EP-05	packages/core/tests/message-user/cases.mjs
+test/v3/fishball-core/message-user	MSG-PERSONA-EP-06	packages/core/tests/message-user/cases.mjs
+test/v3/fishball-core/message-user	MSG-PERSONA-EP-07	packages/core/tests/message-user/cases.mjs
+test/v3/fishball-core/message-user	MSG-STREAM-EP-01	integration: draws fishball-ui's fishball-page in headless Chromium over a real DSH with core + fishball-ui
+test/v3/fishball-core/message-user	MSG-STREAM-ST-01	integration: draws fishball-ui's fishball-page in headless Chromium over a real DSH with core + fishball-ui
+test/v3/fishball-core/message-user	MSG-STREAM-ST-02	integration: draws fishball-ui's fishball-page in headless Chromium over a real DSH with core + fishball-ui
+test/v3/fishball-core/message-user	MSG-TOOL-DT-01	packages/core/tests/message-user/cases.mjs
+test/v3/fishball-core/message-user	MSG-TOOL-EP-01	packages/core/tests/message-user/cases.mjs
+test/v3/fishball-core/message-user	MSG-TOOL-EP-02	packages/core/tests/message-user/cases.mjs
+test/v3/fishball-core/message-user	MSG-TOOL-EP-03	packages/core/tests/message-user/cases.mjs
+test/v3/fishball-core/message-user	MSG-TOOL-EP-04	packages/core/tests/message-user/cases.mjs
+test/v3/fishball-core/message-user	MSG-TOOL-EP-05	packages/core/tests/message-user/cases.mjs
+test/v3/fishball-core/package	HOST-EP-03	packages/core/tests/package/cases.mjs (row 1 core-side rows, row 4 core's settings page); retired: row 1 "no file in two packages" / "instance ships nothing of the moved code", rows 2 and 4 instance-side (subject moved to dsh-fishball-instance, 6b7c53bf); row 3 withdrawn (skip)
+test/v3/fishball-core/package	HOST-UC-08	retired: hosted child rows (main 2, A4) need dsh-instance (moved to dsh-fishball-instance, 6b7c53bf); A3 todo and e2e todo placeholders; E1 and main 2 panel rows withdrawn (skip); the A3 pass row is fishball-ui/guards' (test/v3/fishball-ui/guards/cases.mjs), mis-attributed
+test/v3/fishball-core/child-plugins	CP-R1-07	packages/core/tests/child-plugins/cases.mjs
+test/v3/fishball-core/child-plugins	CP-R1-08	packages/core/tests/child-plugins/cases.mjs
+test/v3/fishball-core/child-plugins	CP-R1-09	packages/core/tests/child-plugins/cases.mjs
+test/v3/fishball-core/child-plugins	CP-R2-01	integration: needs fishball-child-plugins' client (fishball-ui, packages/core/ui) in the scripted DSH page + Chromium
+test/v3/fishball-core/child-plugins	CP-R2-02	integration: needs fishball-child-plugins' client (fishball-ui, packages/core/ui) in the scripted DSH page + Chromium
+test/v3/fishball-core/child-plugins	CP-R2-03	integration: needs fishball-child-plugins' client (fishball-ui, packages/core/ui) in the scripted DSH page + Chromium
+test/v3/fishball-core/child-plugins	CP-R2-04	integration: needs fishball-child-plugins' client (fishball-ui, packages/core/ui) in the scripted DSH page + Chromium
+test/v3/fishball-core/child-plugins	CP-R2-05	integration: needs fishball-child-plugins' client (fishball-ui, packages/core/ui) in the scripted DSH page + Chromium
+test/v3/fishball-core/child-plugins	CP-R2-06	integration: needs fishball-child-plugins' client (fishball-ui, packages/core/ui) in the scripted DSH page + Chromium
+test/v3/fishball-core/child-plugins	CP-R2-07	integration: needs fishball-child-plugins' client (fishball-ui, packages/core/ui) in the scripted DSH page + Chromium
+test/v3/fishball-core/child-plugins	CP-R2-08	integration: needs fishball-child-plugins' client (fishball-ui, packages/core/ui) in the scripted DSH page + Chromium
+test/v3/fishball-core/child-plugins	CP-R2-09	integration: needs fishball-child-plugins' client (fishball-ui, packages/core/ui) in the scripted DSH page + Chromium (the aria-label todo partition is an accepted limit and is not ported)
+test/v3/fishball-core/child-plugins	CP-R3-01	integration: needs fishball-child-plugins' client (fishball-ui, packages/core/ui) in the scripted DSH page + Chromium
+test/v3/fishball-core/child-plugins	CP-R3-02	integration: needs fishball-child-plugins' client (fishball-ui, packages/core/ui) in the scripted DSH page + Chromium
+test/v3/fishball-core/child-plugins	CP-R3-08	integration: needs fishball-child-plugins' client (fishball-ui, packages/core/ui) in the scripted DSH page + Chromium
+test/v3/fishball-core/child-plugins	CP-R3-09	integration: needs fishball-child-plugins' client (fishball-ui, packages/core/ui) in the scripted DSH page + Chromium
+test/v3/fishball-core/child-plugins	CP-R3-10	integration: needs fishball-child-plugins' client (fishball-ui, packages/core/ui) in the scripted DSH page + Chromium
+test/v3/fishball-core/child-plugins	CP-R4-01	integration: needs fishball-child-plugins' client (fishball-ui, packages/core/ui) in the scripted DSH page + Chromium
+test/v3/fishball-core/child-plugins	CP-R4-02	integration: needs fishball-child-plugins' client (fishball-ui, packages/core/ui) in the scripted DSH page + Chromium
+test/v3/fishball-core/child-plugins	CP-R4-03	integration: needs fishball-child-plugins' client (fishball-ui, packages/core/ui) in the scripted DSH page + Chromium
+test/v3/fishball-core/child-plugins	CP-R4-04	integration: needs fishball-child-plugins' client (fishball-ui, packages/core/ui) in the scripted DSH page + Chromium
+test/v3/fishball-core/child-plugins	CP-R4-05	retired: todo placeholder (notice position not specified observably)
+test/v3/fishball-core/child-plugins	CP-R5-01	integration: needs fishball-child-plugins' client (fishball-ui, packages/core/ui) in the scripted DSH page + Chromium
+test/v3/fishball-core/child-plugins	CP-R5-02	integration: needs fishball-child-plugins' client (fishball-ui, packages/core/ui) in the scripted DSH page + Chromium
+test/v3/fishball-core/child-plugins	CP-R5-03	integration: needs fishball-child-plugins' client (fishball-ui, packages/core/ui) in the scripted DSH page + Chromium
+test/v3/fishball-core/child-plugins	CP-R5-04	integration: needs fishball-child-plugins' client (fishball-ui, packages/core/ui) in the scripted DSH page + Chromium
+test/v3/fishball-core/child-plugins	CP-R1-01	packages/core/tests/child-plugins/cases.mjs (baseline attributed it to contract/package-boundaries)
+test/v3/fishball-core/child-plugins	CP-R1-02	packages/core/tests/child-plugins/cases.mjs (baseline attributed it to contract/package-boundaries)
+test/v3/fishball-core/child-plugins	CP-R1-03	packages/core/tests/child-plugins/cases.mjs (baseline attributed it to contract/package-boundaries)
+test/v3/fishball-core/child-plugins	CP-R1-04	packages/core/tests/child-plugins/cases.mjs (baseline attributed it to contract/package-boundaries)
+test/v3/fishball-core/child-plugins	CP-R1-05	packages/core/tests/child-plugins/cases.mjs (baseline attributed it to contract/package-boundaries)
+test/v3/fishball-core/child-plugins	CP-R1-06	packages/core/tests/child-plugins/cases.mjs (baseline attributed it to contract/package-boundaries)

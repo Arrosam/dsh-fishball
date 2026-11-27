@@ -1,0 +1,72 @@
+old suite	case id	where now
+test/v3/fishball-amenities/packages	AM-BVA-01	packages/fishball-amenities/tests/packages.test.mjs
+test/v3/fishball-amenities/packages	AM-DT-01	packages/fishball-amenities/tests/packages.test.mjs
+test/v3/fishball-amenities/packages	AM-DT-02	packages/fishball-amenities/tests/packages.test.mjs
+test/v3/fishball-amenities/packages	AM-EP-01	packages/fishball-amenities/tests/packages.test.mjs
+test/v3/fishball-amenities/packages	AM-EP-02	packages/fishball-amenities/tests/packages.test.mjs
+test/v3/fishball-amenities/packages	AM-EP-03	packages/fishball-amenities/tests/packages.test.mjs
+test/v3/fishball-amenities/packages	AM-EP-04	packages/fishball-amenities/tests/packages.test.mjs
+test/v3/fishball-amenities/packages	AM-EP-05	packages/fishball-amenities/tests/packages.test.mjs
+test/v3/fishball-amenities/packages	AM-EP-06	packages/fishball-amenities/tests/packages.test.mjs
+test/v3/fishball-amenities/packages	AM-EP-08	packages/fishball-amenities/tests/packages.test.mjs
+test/v3/fishball-amenities/packages	AM-SC-01	packages/fishball-amenities/tests/packages.test.mjs
+test/v3/fishball-amenities/packages	AM-SC-02	packages/fishball-amenities/tests/packages.test.mjs
+test/v3/fishball-amenities/packages	AM-SC-03	packages/fishball-amenities/tests/packages.test.mjs
+test/v3/fishball-amenities/packages	AM-EP-07	integration: the repository root package.json workspaces must list packages/fishball-board, fishball-heartbeat, fishball-taskboard, fishball-amenities and fishball-shared's folder, each with a package.json (repository layout, not a package's)
+test/v3/fishball-amenities/icons	PI-BVA-01	packages/fishball-amenities/tests/icons.test.mjs
+test/v3/fishball-amenities/icons	PI-DT-01	packages/fishball-amenities/tests/icons.test.mjs
+test/v3/fishball-amenities/icons	PI-DT-02	packages/fishball-amenities/tests/icons.test.mjs
+test/v3/fishball-amenities/icons	PI-DT-03	packages/fishball-amenities/tests/icons.test.mjs
+test/v3/fishball-amenities/icons	PI-EP-01	packages/fishball-amenities/tests/icons.test.mjs (the four amenity rows); integration: the fishball-core (reference) row needs fishball-core's manifest and icon
+test/v3/fishball-amenities/icons	PI-EP-02	packages/fishball-amenities/tests/icons.test.mjs (the four amenity rows); integration: the fishball-core (reference) row needs fishball-core's manifest and icon
+test/v3/fishball-amenities/icons	PI-EP-03	packages/fishball-amenities/tests/icons.test.mjs (the four amenity rows); integration: the fishball-core (reference) row needs fishball-core's manifest and icon
+test/v3/fishball-amenities/icons	PI-EP-04	packages/fishball-amenities/tests/icons.test.mjs (the four amenity rows); integration: the fishball-core (reference) row needs fishball-core's manifest and icon
+test/v3/fishball-amenities/icons	PI-EP-05	packages/fishball-amenities/tests/icons.test.mjs (the four amenity rows); integration: the fishball-core (reference) row needs fishball-core's manifest and icon
+test/v3/fishball-amenities/icons	PI-RENDER-01	packages/fishball-amenities/tests/icons.test.mjs (the four amenity rows); integration: the fishball-core (reference) row needs fishball-core's manifest and icon
+test/v3/fishball-amenities/icons	PI-EP-06	packages/fishball-amenities/tests/icons.test.mjs (pairwise among the four amenities); integration: the same row over fishball-core's and fishball-ui's icons too (assets/fishball-ui-icon.svg) needs both packages
+test/v3/fishball-amenities/icons	PI-CONSIST	packages/fishball-amenities/tests/icons.test.mjs (ICON-SET base and badge, own glyph); integration: "base equals fishball-core's icon's base" needs fishball-core's icon
+test/v3/fishball-amenities/settings-page	PG-BVA-01	packages/fishball-amenities/tests/settings-page.test.mjs
+test/v3/fishball-amenities/settings-page	PG-DT-01	packages/fishball-amenities/tests/settings-page.test.mjs
+test/v3/fishball-amenities/settings-page	PG-EP-01	packages/fishball-amenities/tests/settings-page.test.mjs
+test/v3/fishball-amenities/settings-page	PG-EP-02	packages/fishball-amenities/tests/settings-page.test.mjs
+test/v3/fishball-amenities/settings-page	PG-EP-03	packages/fishball-amenities/tests/settings-page.test.mjs
+test/v3/fishball-amenities/settings-page	PG-EP-04	packages/fishball-amenities/tests/settings-page.test.mjs
+test/v3/fishball-amenities/settings-page	PG-EP-05	packages/fishball-amenities/tests/settings-page.test.mjs
+test/v3/fishball-amenities/settings-page	PG-EP-06	packages/fishball-amenities/tests/settings-page.test.mjs
+test/v3/fishball-amenities/settings-page	PG-MF-01	packages/fishball-amenities/tests/settings-page.test.mjs
+test/v3/fishball-amenities/settings-page	PG-MF-02	packages/fishball-amenities/tests/settings-page.test.mjs
+test/v3/fishball-amenities/settings-page	PG-ST-01	packages/fishball-amenities/tests/settings-page.test.mjs
+test/v3/fishball-amenities/settings-page	PG-ST-02	packages/fishball-amenities/tests/settings-page.test.mjs
+test/v3/fishball-amenities/settings-page	PG-ST-03	packages/fishball-amenities/tests/settings-page.test.mjs
+test/v3/fishball-amenities/settings-page	PG-UC-01	packages/fishball-amenities/tests/settings-page.test.mjs
+test/v3/fishball-amenities/settings-page	PG-UC-02	packages/fishball-amenities/tests/settings-page.test.mjs
+test/v3/fishball-amenities/settings-page	PG-UC-03	packages/fishball-amenities/tests/settings-page.test.mjs
+test/v3/fishball-taskboard-view	TBV-B1-BVA-01	packages/fishball-taskboard/tests/view.test.mjs
+test/v3/fishball-taskboard-view	TBV-E1-ST-01	packages/fishball-taskboard/tests/view.test.mjs
+test/v3/fishball-taskboard-view	TBV-E1-UC-01	packages/fishball-taskboard/tests/view.test.mjs
+test/v3/fishball-taskboard-view	TBV-E2-DT-01	packages/fishball-taskboard/tests/view.test.mjs
+test/v3/fishball-taskboard-view	TBV-E2-ST-01	packages/fishball-taskboard/tests/view.test.mjs
+test/v3/fishball-taskboard-view	TBV-E2-UC-01	packages/fishball-taskboard/tests/view.test.mjs
+test/v3/fishball-taskboard-view	TBV-FORM-DT-01	packages/fishball-taskboard/tests/view.test.mjs
+test/v3/fishball-taskboard-view	TBV-V1-BVA-01	packages/fishball-taskboard/tests/view.test.mjs
+test/v3/fishball-taskboard-view	TBV-V1-BVA-02	packages/fishball-taskboard/tests/view.test.mjs
+test/v3/fishball-taskboard-view	TBV-V1-EP-01	packages/fishball-taskboard/tests/view.test.mjs
+test/v3/fishball-taskboard-view	TBV-V10-DT-01	packages/fishball-taskboard/tests/view.test.mjs
+test/v3/fishball-taskboard-view	TBV-V11-EP-01	packages/fishball-taskboard/tests/view.test.mjs
+test/v3/fishball-taskboard-view	TBV-V12-BVA-01	packages/fishball-taskboard/tests/view.test.mjs
+test/v3/fishball-taskboard-view	TBV-V2-DT-01	packages/fishball-taskboard/tests/view.test.mjs
+test/v3/fishball-taskboard-view	TBV-V2-EP-01	packages/fishball-taskboard/tests/view.test.mjs
+test/v3/fishball-taskboard-view	TBV-V4-DT-01	packages/fishball-taskboard/tests/view.test.mjs
+test/v3/fishball-taskboard-view	TBV-V6-EP-01	packages/fishball-taskboard/tests/view.test.mjs
+test/v3/fishball-taskboard-view	TBV-V6-ST-01	packages/fishball-taskboard/tests/view.test.mjs
+test/v3/fishball-taskboard-view	TBV-V6-ST-02	packages/fishball-taskboard/tests/view.test.mjs
+test/v3/fishball-taskboard-view	TBV-V7-BVA-01	packages/fishball-taskboard/tests/view.test.mjs
+test/v3/fishball-taskboard-view	TBV-V7-ST-01	packages/fishball-taskboard/tests/view.test.mjs
+test/v3/fishball-taskboard-view	TBV-V8-EP-01	packages/fishball-taskboard/tests/view.test.mjs
+test/v3/fishball-taskboard-view	TBV-V8-ST-01	packages/fishball-taskboard/tests/view.test.mjs
+test/v3/fishball-taskboard-view	TBV-V8-ST-02	packages/fishball-taskboard/tests/view.test.mjs
+test/v3/fishball-taskboard-view	TBV-V9-BVA-01	packages/fishball-taskboard/tests/view.test.mjs
+test/v3/fishball-taskboard-view	TBV-V9-EP-02	packages/fishball-taskboard/tests/view.test.mjs
+test/v3/fishball-taskboard-view	TBV-V9-ST-01	packages/fishball-taskboard/tests/view.test.mjs
+test/v3/fishball-taskboard-view	TBV-V9-ST-02	packages/fishball-taskboard/tests/view.test.mjs
+test/v3/fishball-taskboard-view	0,	packages/fishball-taskboard/tests/view.test.mjs (not an id: the inventory's parser split "0, 1, 40, 99, 100"-style names; its 13 behaviours are TBV-B1-BVA-01 (10) and TBV-V1-EP-01 (3), both ported)

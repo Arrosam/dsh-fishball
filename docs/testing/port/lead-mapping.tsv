@@ -1,0 +1,27 @@
+suite	id	where now
+test/v3/fishball-core/events	EVT-DT-02	packages/core/tests/events.test.mjs
+test/v3/fishball-taskboard	TB-BVA-01	packages/fishball-taskboard/tests/taskboard.test.mjs
+test/v3/fishball-ui/contrast	RESHOOT-ASKBADGE-DT-01	packages/core/ui/tests/contrast.test.mjs
+test/v3/contract/package-boundaries	K3a-MULTI-SEC-ST	packages/core/tests/contracts.test.mjs (contracts/multi-security-cases.mjs; the inventory filed these rows under package-boundaries)
+test/v2-page-cases	PAGE	retired: todo catalogue of page.test.mjs (port-ui-a: placeholders with no planned subject)
+test/v3/contract/package-boundaries	CP-R3-03	integration: fishball-child-plugins' client (fishball-ui) with core's patch rows; the inventory filed them under package-boundaries (registered by test/v3/fishball-core/child-plugins)
+test/v3/contract/package-boundaries	CP-R3-04	integration: fishball-child-plugins' client (fishball-ui) with core's patch rows; the inventory filed them under package-boundaries (registered by test/v3/fishball-core/child-plugins)
+test/v3/contract/package-boundaries	CP-R3-05	integration: fishball-child-plugins' client (fishball-ui) with core's patch rows; the inventory filed them under package-boundaries (registered by test/v3/fishball-core/child-plugins)
+test/v3/contract/package-boundaries	CP-R3-06	integration: fishball-child-plugins' client (fishball-ui) with core's patch rows; the inventory filed them under package-boundaries (registered by test/v3/fishball-core/child-plugins)
+test/v3/contract/package-boundaries	CP-R3-07	integration: fishball-child-plugins' client (fishball-ui) with core's patch rows; the inventory filed them under package-boundaries (registered by test/v3/fishball-core/child-plugins)
+test/e1-card-titles	CT-BVA-01	retired: subject (dsh-connector and dsh-instance card titles and locale files) moved to their own repositories in 6b7c53bf
+test/e1-card-titles	CT-DT-01	retired: subject (dsh-connector and dsh-instance card titles and locale files) moved to their own repositories in 6b7c53bf
+test/e1-card-titles	CT-DT-02	retired: subject (dsh-connector and dsh-instance card titles and locale files) moved to their own repositories in 6b7c53bf
+test/e1-card-titles	CT-EP-01	retired: subject (dsh-connector and dsh-instance card titles and locale files) moved to their own repositories in 6b7c53bf
+test/e1-card-titles	CT-EP-02	retired: subject (dsh-connector and dsh-instance card titles and locale files) moved to their own repositories in 6b7c53bf
+test/e1-card-titles	CT-EP-03	retired: subject (dsh-connector and dsh-instance card titles and locale files) moved to their own repositories in 6b7c53bf
+test/e1-card-titles	CT-EP-04	retired: subject (dsh-connector and dsh-instance card titles and locale files) moved to their own repositories in 6b7c53bf
+test/e1-card-titles	CT-EP-05	retired: subject (dsh-connector and dsh-instance card titles and locale files) moved to their own repositories in 6b7c53bf
+test/e1-card-titles	CT-EP-06	retired: subject (dsh-connector and dsh-instance card titles and locale files) moved to their own repositories in 6b7c53bf
+test/e1-d2-invalid-main-home	D2-BVA-01	retired: subject (dsh-instance's INVALID_MAIN_HOME status and its card) moved to dsh-fishball-instance in 6b7c53bf
+test/e1-d2-invalid-main-home	D2-DT-01	retired: subject (dsh-instance's INVALID_MAIN_HOME status and its card) moved to dsh-fishball-instance in 6b7c53bf
+test/e1-d2-invalid-main-home	D2-EP-01/02	retired: subject (dsh-instance's INVALID_MAIN_HOME status and its card) moved to dsh-fishball-instance in 6b7c53bf
+test/provider-sync-official	PS-F01	retired: an SDK fixture of dsh-instance's provider sync (subject moved to dsh-fishball-instance in 6b7c53bf)
+test/provider-sync-official	PS-F02	retired: as PS-F01
+test/runtime-isolation-boundary	rc.3	retired: the native runtime isolation of dsh-instance's hosted child (moved to dsh-fishball-instance in 6b7c53bf; skipped in the baseline)
+test/runtime-isolation-transport	public	retired: as runtime-isolation-boundary

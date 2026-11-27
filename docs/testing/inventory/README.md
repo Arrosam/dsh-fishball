@@ -1,7 +1,8 @@
 # Old-test behaviour inventory
 
 Step 1 of the test restructure (2026-11-22): what the old `test/` tree covered, per package, before it
-was replaced by per-package tests. The port fills the **where now** column of every row.
+was replaced by per-package tests. Every row's **where now** column names the new entry file, or why it
+was retired, or the integration package that covers it.
 
 ## How it was taken
 
@@ -41,3 +42,18 @@ Of the 3995 behaviours, the baseline showed 3247 passing on both SDKs. The rest 
   port keeps a todo only when its subject is still in this repository.
 - **failing** (about 430, of which 148 are one private-skills fixture file failing to load): classified
   one by one in [../failures.md](<../failures.md>) as a real bug or an outdated test.
+## Coverage after the port
+
+All 1105 case ids have a destination (the agents' mappings; one row per id and old suite):
+
+| outcome | case ids |
+|---|---|
+| ported to the package's own tests | 871 |
+| ported, with some rows retired (withdrawn skips, placeholders) | 30 |
+| ported, with some rows needing a second package (those rows are integration) | 21 |
+| moved to another package's own tests (strip view → fishball-ui, ui-seam → fishball-shared) | 5 |
+| integration only (needs two or more packages of this repository) | 107 |
+| retired (withdrawn requirement, placeholder, or subject in another repository) | 110 |
+
+Ids filed by the old inventory under the wrong suite (it attributed cases by name) are noted in the
+row itself.

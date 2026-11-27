@@ -1,0 +1,155 @@
+test/v2-page-cases	PAGE	retired: todo placeholder naming a fixture/driver no task in this repository plans (V2 PAGE/PG-ORIGIN/READY lifecycle of the dsh-instance child, which left in 6b7c53bf; the ensure route itself is fishball-core's)
+test/v2-page-cases	PG-ORIGIN	retired: todo placeholder naming a fixture/driver no task in this repository plans (V2 PAGE/PG-ORIGIN/READY lifecycle of the dsh-instance child, which left in 6b7c53bf; the ensure route itself is fishball-core's)
+test/v2-page-cases	READY	retired: todo placeholder naming a fixture/driver no task in this repository plans (V2 PAGE/PG-ORIGIN/READY lifecycle of the dsh-instance child, which left in 6b7c53bf; the ensure route itself is fishball-core's)
+test/v2-page-cases/lite	LITE	packages/core/ui/tests/page.test.mjs (LITE-UC-03, LITE-EP-13 and LITE-EP-12's main-composition half retired: they composed dsh-instance's launch overlay, gone in 6b7c53bf; the residual todos and the withdrawn slim-settings skip retired)
+test/v2-page-cases/page	PAGE-EP-01	retired: todo placeholder naming a fixture/driver no task in this repository plans (V2 PAGE/PG-ORIGIN/READY lifecycle of the dsh-instance child, which left in 6b7c53bf; the ensure route itself is fishball-core's)
+test/v2-page-cases/page	PAGE-EP-02	retired: todo placeholder naming a fixture/driver no task in this repository plans (V2 PAGE/PG-ORIGIN/READY lifecycle of the dsh-instance child, which left in 6b7c53bf; the ensure route itself is fishball-core's)
+test/v2-page-cases/page	PAGE-EP-03	retired: todo placeholder naming a fixture/driver no task in this repository plans (V2 PAGE/PG-ORIGIN/READY lifecycle of the dsh-instance child, which left in 6b7c53bf; the ensure route itself is fishball-core's)
+test/v2-page-cases/page	PAGE-EP-04	retired: todo placeholder naming a fixture/driver no task in this repository plans (V2 PAGE/PG-ORIGIN/READY lifecycle of the dsh-instance child, which left in 6b7c53bf; the ensure route itself is fishball-core's)
+test/v2-page-cases/page	PAGE-EP-05	retired: todo placeholder naming a fixture/driver no task in this repository plans (V2 PAGE/PG-ORIGIN/READY lifecycle of the dsh-instance child, which left in 6b7c53bf; the ensure route itself is fishball-core's)
+test/v2-page-cases/page	PAGE-UC-01	retired: todo placeholder naming a fixture/driver no task in this repository plans (V2 PAGE/PG-ORIGIN/READY lifecycle of the dsh-instance child, which left in 6b7c53bf; the ensure route itself is fishball-core's)
+test/v2-recommendation	0	packages/core/ui/tests/recommended.test.mjs (a subtest of a T-RP case)
+test/v2-recommendation	1	packages/core/ui/tests/recommended.test.mjs (a subtest of a T-RP case)
+test/v2-recommendation	2	packages/core/ui/tests/recommended.test.mjs (a subtest of a T-RP case)
+test/v2-recommendation	application	packages/core/ui/tests/recommended.test.mjs (a subtest of a T-RP case)
+test/v2-recommendation	check	packages/core/ui/tests/recommended.test.mjs (a subtest of a T-RP case)
+test/v2-recommendation	en	packages/core/ui/tests/recommended.test.mjs (a subtest of a T-RP case)
+test/v2-recommendation	explicit	packages/core/ui/tests/recommended.test.mjs (a subtest of a T-RP case)
+test/v2-recommendation	inspection	packages/core/ui/tests/recommended.test.mjs (a subtest of a T-RP case)
+test/v2-recommendation	inventory	packages/core/ui/tests/recommended.test.mjs (a subtest of a T-RP case)
+test/v2-recommendation	list	packages/core/ui/tests/recommended.test.mjs (a subtest of a T-RP case)
+test/v2-recommendation	native	packages/core/ui/tests/recommended.test.mjs (a subtest of a T-RP case)
+test/v2-recommendation	package	packages/core/ui/tests/recommended.test.mjs (a subtest of a T-RP case)
+test/v2-recommendation	R1	retired: scanned packages/dsh-connector and dsh-connector-ui (main-side absence), which left this repository in 6b7c53bf
+test/v2-recommendation	R2	packages/core/ui/tests/recommended.test.mjs (a subtest of a T-RP case)
+test/v2-recommendation	R3	packages/core/ui/tests/recommended.test.mjs (a subtest of a T-RP case)
+test/v2-recommendation	reconnect	packages/core/ui/tests/recommended.test.mjs (a subtest of a T-RP case)
+test/v2-recommendation	T-RP	packages/core/ui/tests/recommended.test.mjs (TC-20…34 and RV-01…10; the 19 TC-01…19 post-merge-e2e todo rows retired: no planned task; TC-31/TC-32's dsh-instance and dsh-connector halves retired, gone in 6b7c53bf)
+test/v2-recommendation	inspect	packages/core/ui/tests/recommended.test.mjs (a subtest of a T-RP case)
+test/v2-recommendation	transport	packages/core/ui/tests/recommended.test.mjs (a subtest of a T-RP case)
+test/v2-recommendation	installed=false	packages/core/ui/tests/recommended.test.mjs (a subtest of a T-RP case)
+test/v2-recommendation	installed=true	packages/core/ui/tests/recommended.test.mjs (a subtest of a T-RP case)
+test/v2-recommendation	missing	packages/core/ui/tests/recommended.test.mjs (a subtest of a T-RP case)
+test/v2-recommendation	profile	packages/core/ui/tests/recommended.test.mjs (a subtest of a T-RP case)
+test/v2-recommendation	zh	packages/core/ui/tests/recommended.test.mjs (a subtest of a T-RP case)
+test/v2-recommendation	two	packages/core/ui/tests/recommended.test.mjs (a subtest of a T-RP case)
+test/v2-recommendation	unresolved	packages/core/ui/tests/recommended.test.mjs (a subtest of a T-RP case)
+test/v3/fishball-ui/brand	AVATAR-EP-01	packages/core/ui/tests/brand.test.mjs
+test/v3/fishball-ui/brand	AVATAR-EP-02	packages/core/ui/tests/brand.test.mjs
+test/v3/fishball-ui/brand	AVATAR-EP-03	packages/core/ui/tests/brand.test.mjs
+test/v3/fishball-ui/brand	AVATAR-EP-04	packages/core/ui/tests/brand.test.mjs
+test/v3/fishball-ui/brand	AVATAR-EP-05	packages/core/ui/tests/brand.test.mjs
+test/v3/fishball-ui/brand	AVATAR-ST-01	packages/core/ui/tests/brand.test.mjs
+test/v3/fishball-ui/brand	AVATAR-ST-02	packages/core/ui/tests/brand.test.mjs
+test/v3/fishball-ui/brand	AVATAR-ST-03	packages/core/ui/tests/brand.test.mjs
+test/v3/fishball-ui/brand	BRAND-BVA-01	packages/core/ui/tests/brand.test.mjs
+test/v3/fishball-ui/brand	BRAND-DT-01	packages/core/ui/tests/brand.test.mjs
+test/v3/fishball-ui/brand	BRAND-DT-02	packages/core/ui/tests/brand.test.mjs
+test/v3/fishball-ui/brand	BRAND-DT-03	packages/core/ui/tests/brand.test.mjs
+test/v3/fishball-ui/brand	BRAND-DT-04	packages/core/ui/tests/brand.test.mjs
+test/v3/fishball-ui/brand	BRAND-DT-05	packages/core/ui/tests/brand.test.mjs
+test/v3/fishball-ui/brand	BRAND-DT-06	packages/core/ui/tests/brand.test.mjs
+test/v3/fishball-ui/brand	BRAND-EP-01	packages/core/ui/tests/brand.test.mjs
+test/v3/fishball-ui/brand	BRAND-EP-02	packages/core/ui/tests/brand.test.mjs
+test/v3/fishball-ui/brand	BRAND-EP-03	packages/core/ui/tests/brand.test.mjs
+test/v3/fishball-ui/brand	BRAND-EP-04	packages/core/ui/tests/brand.test.mjs
+test/v3/fishball-ui/brand	BRAND-EP-05	packages/core/ui/tests/brand.test.mjs
+test/v3/fishball-ui/brand	BRAND-EP-06	packages/core/ui/tests/brand.test.mjs
+test/v3/fishball-ui/brand	BRAND-EP-07	packages/core/ui/tests/brand.test.mjs
+test/v3/fishball-ui/brand	BRAND-EP-08	packages/core/ui/tests/brand.test.mjs
+test/v3/fishball-ui/brand	BRAND-EP-09	packages/core/ui/tests/brand.test.mjs
+test/v3/fishball-ui/brand	BRAND-EP-10	packages/core/ui/tests/brand.test.mjs
+test/v3/fishball-ui/brand	BRAND-MOTION-01	packages/core/ui/tests/brand.test.mjs
+test/v3/fishball-ui/brand	BRAND-MOTION-02	packages/core/ui/tests/brand.test.mjs
+test/v3/fishball-ui/brand	BRAND-MOTION-03	packages/core/ui/tests/brand.test.mjs
+test/v3/fishball-ui/brand	BRAND-NS-01	packages/core/ui/tests/brand.test.mjs
+test/v3/fishball-ui/brand	BRAND-NS-02	packages/core/ui/tests/brand.test.mjs
+test/v3/fishball-ui/brand	BRAND-ST-01	packages/core/ui/tests/brand.test.mjs
+test/v3/fishball-ui/brand	BRAND-ST-02	packages/core/ui/tests/brand.test.mjs
+test/v3/fishball-ui/brand	BRAND-ST-03	packages/core/ui/tests/brand.test.mjs
+test/v3/fishball-ui/brand	BRAND-ST-04	packages/core/ui/tests/brand.test.mjs
+test/v3/fishball-ui/brand	BRAND-ST-05	packages/core/ui/tests/brand.test.mjs
+test/v3/fishball-ui/brand	BRAND-ST-06	packages/core/ui/tests/brand.test.mjs
+test/v3/fishball-ui/brand	BRAND-ST-07	packages/core/ui/tests/brand.test.mjs
+test/v3/fishball-ui/brand	BRAND-ST-08	packages/core/ui/tests/brand.test.mjs
+test/v3/fishball-ui/brand	BRAND-ST-09	packages/core/ui/tests/brand.test.mjs
+test/v3/fishball-ui/brand	BRAND-ST-10	packages/core/ui/tests/brand.test.mjs
+test/v3/fishball-ui/brand	BRAND-TEAR-01	packages/core/ui/tests/brand.test.mjs
+test/v3/fishball-ui/brand	BRAND-TEAR-02	packages/core/ui/tests/brand.test.mjs
+test/v3/fishball-ui/brand	LOGO-FIX	packages/core/ui/tests/brand.test.mjs
+test/v3/fishball-ui/connections	CONN-BVA-01	packages/core/ui/tests/connections.test.mjs
+test/v3/fishball-ui/connections	CONN-EP-01	packages/core/ui/tests/connections.test.mjs
+test/v3/fishball-ui/connections	CONN-EP-02	packages/core/ui/tests/connections.test.mjs
+test/v3/fishball-ui/connections	CONN-EP-03	packages/core/ui/tests/connections.test.mjs
+test/v3/fishball-ui/connections	CONN-EP-04	packages/core/ui/tests/connections.test.mjs
+test/v3/fishball-ui/connections	CONN-ST-03	packages/core/ui/tests/connections.test.mjs
+test/v3/fishball-ui/connections	CONN-ST-04	packages/core/ui/tests/connections.test.mjs
+test/v3/fishball-ui/connections	CONN-ST-05	packages/core/ui/tests/connections.test.mjs
+test/v3/fishball-ui/connections	CONN-ST-06	packages/core/ui/tests/connections.test.mjs
+test/v3/fishball-ui/connections	CONN-ST-07	packages/core/ui/tests/connections.test.mjs
+test/v3/fishball-ui/connections	CONN-ST-08	packages/core/ui/tests/connections.test.mjs
+test/v3/fishball-ui/connections	CONN-ST-09	packages/core/ui/tests/connections.test.mjs
+test/v3/fishball-ui/connections	CONN-SYS-DT-01	integration: a booted DSH with fishball-core, fishball-ui and fishball-taskboard installed (the carrier route from Node, DSH's real page in Chromium, sends with every panel)
+test/v3/fishball-ui/connections	CONN-SYS-EP-01	integration: a booted DSH with fishball-core, fishball-ui and fishball-taskboard installed (the carrier route from Node, DSH's real page in Chromium, sends with every panel)
+test/v3/fishball-ui/connections	CONN-SYS-EP-02	integration: a booted DSH with fishball-core, fishball-ui and fishball-taskboard installed (the carrier route from Node, DSH's real page in Chromium, sends with every panel)
+test/v3/fishball-ui/connections	CONN-SYS-EP-03	integration: a booted DSH with fishball-core, fishball-ui and fishball-taskboard installed (the carrier route from Node, DSH's real page in Chromium, sends with every panel)
+test/v3/fishball-ui/connections	CONN-SYS-EP-04	integration: a booted DSH with fishball-core, fishball-ui and fishball-taskboard installed (the carrier route from Node, DSH's real page in Chromium, sends with every panel)
+test/v3/fishball-ui/connections	CONN-SYS-EP-05	integration: a booted DSH with fishball-core, fishball-ui and fishball-taskboard installed (the carrier route from Node, DSH's real page in Chromium, sends with every panel)
+test/v3/fishball-ui/connections	CONN-SYS-EP-06	integration: a booted DSH with fishball-core, fishball-ui and fishball-taskboard installed (the carrier route from Node, DSH's real page in Chromium, sends with every panel)
+test/v3/fishball-ui/connections	CONN-SYS-EP-07	integration: a booted DSH with fishball-core, fishball-ui and fishball-taskboard installed (the carrier route from Node, DSH's real page in Chromium, sends with every panel)
+test/v3/fishball-ui/connections	CONN-SYS-EP-08	integration: a booted DSH with fishball-core, fishball-ui and fishball-taskboard installed (the carrier route from Node, DSH's real page in Chromium, sends with every panel)
+test/v3/fishball-ui/connections	CONN-SYS-ST-01	integration: a booted DSH with fishball-core, fishball-ui and fishball-taskboard installed (the carrier route from Node, DSH's real page in Chromium, sends with every panel)
+test/v3/fishball-ui/connections	CONN-SYS-ST-02	integration: a booted DSH with fishball-core, fishball-ui and fishball-taskboard installed (the carrier route from Node, DSH's real page in Chromium, sends with every panel)
+test/v3/fishball-ui/connections	CONN-SYS-ST-03	integration: a booted DSH with fishball-core, fishball-ui and fishball-taskboard installed (the carrier route from Node, DSH's real page in Chromium, sends with every panel)
+test/v3/fishball-ui/connections	CONN-SYS-ST-04	integration: a booted DSH with fishball-core, fishball-ui and fishball-taskboard installed (the carrier route from Node, DSH's real page in Chromium, sends with every panel)
+test/v3/fishball-ui/connections	CONN-SYS-ST-05	integration: a booted DSH with fishball-core, fishball-ui and fishball-taskboard installed (the carrier route from Node, DSH's real page in Chromium, sends with every panel)
+test/v3/fishball-ui/connections	CONN-SYS-UC-01	integration: a booted DSH with fishball-core, fishball-ui and fishball-taskboard installed (the carrier route from Node, DSH's real page in Chromium, sends with every panel)
+test/v3/fishball-ui/connections	CONN-SYS-UC-02	integration: a booted DSH with fishball-core, fishball-ui and fishball-taskboard installed (the carrier route from Node, DSH's real page in Chromium, sends with every panel)
+test/v3/fishball-ui/connections	CONN-SYS-UC-03	integration: a booted DSH with fishball-core, fishball-ui and fishball-taskboard installed (the carrier route from Node, DSH's real page in Chromium, sends with every panel)
+test/v3/fishball-ui/connections	CONN-TB-01	integration: fishball-taskboard's browser half beside fishball-ui on one scripted page (its tab rides fishball-ui's carrier / falls back to its own stream)
+test/v3/fishball-ui/connections	CONN-TB-02	integration: fishball-taskboard's browser half beside fishball-ui on one scripted page (its tab rides fishball-ui's carrier / falls back to its own stream)
+test/v3/fishball-ui/connections	CONN-TB-03	integration: fishball-taskboard's browser half beside fishball-ui on one scripted page (its tab rides fishball-ui's carrier / falls back to its own stream)
+test/v3/fishball-ui/connections	CONN-TB-04	integration: fishball-taskboard's browser half beside fishball-ui on one scripted page (its tab rides fishball-ui's carrier / falls back to its own stream)
+test/v3/fishball-ui/connections	CONN-TB-05	integration: fishball-taskboard's browser half beside fishball-ui on one scripted page (its tab rides fishball-ui's carrier / falls back to its own stream)
+test/v3/fishball-ui/pairing	PAIR-BVA-01	packages/core/ui/tests/pairing.test.mjs
+test/v3/fishball-ui/pairing	PAIR-BVA-02	packages/core/ui/tests/pairing.test.mjs
+test/v3/fishball-ui/pairing	PAIR-DT-01	packages/core/ui/tests/pairing.test.mjs
+test/v3/fishball-ui/pairing	PAIR-DT-02	packages/core/ui/tests/pairing.test.mjs
+test/v3/fishball-ui/pairing	PAIR-DT-03	retired: withdrawn by MULTI-3 requirement D (the pairing dock card and /api/fishball/pairing routes removed; pairing lives in the sidebar target details, TGT-SB-ST-05 / TGT-SB-DT-03); registered as skip
+test/v3/fishball-ui/pairing	PAIR-DT-04	retired: withdrawn by MULTI-3 requirement D (the pairing dock card and /api/fishball/pairing routes removed; pairing lives in the sidebar target details, TGT-SB-ST-05 / TGT-SB-DT-03); registered as skip
+test/v3/fishball-ui/pairing	PAIR-EP-01	packages/core/ui/tests/pairing.test.mjs
+test/v3/fishball-ui/pairing	PAIR-EP-02	packages/core/ui/tests/pairing.test.mjs
+test/v3/fishball-ui/pairing	PAIR-EP-03	packages/core/ui/tests/pairing.test.mjs
+test/v3/fishball-ui/pairing	PAIR-EP-04	packages/core/ui/tests/pairing.test.mjs
+test/v3/fishball-ui/pairing	PAIR-EP-05	packages/core/ui/tests/pairing.test.mjs
+test/v3/fishball-ui/pairing	PAIR-EP-06	retired: withdrawn by MULTI-3 requirement D (the pairing dock card and /api/fishball/pairing routes removed; pairing lives in the sidebar target details, TGT-SB-ST-05 / TGT-SB-DT-03); registered as skip
+test/v3/fishball-ui/pairing	PAIR-EP-07	retired: withdrawn by MULTI-3 requirement D (the pairing dock card and /api/fishball/pairing routes removed; pairing lives in the sidebar target details, TGT-SB-ST-05 / TGT-SB-DT-03); registered as skip
+test/v3/fishball-ui/pairing	PAIR-EP-08	retired: withdrawn by MULTI-3 requirement D (the pairing dock card and /api/fishball/pairing routes removed; pairing lives in the sidebar target details, TGT-SB-ST-05 / TGT-SB-DT-03); registered as skip
+test/v3/fishball-ui/pairing	PAIR-HEALTH-01	retired: withdrawn by MULTI-3 requirement D (the pairing dock card and /api/fishball/pairing routes removed; pairing lives in the sidebar target details, TGT-SB-ST-05 / TGT-SB-DT-03); registered as skip
+test/v3/fishball-ui/pairing	PAIR-HEALTH-02	retired: withdrawn by MULTI-3 requirement D (the pairing dock card and /api/fishball/pairing routes removed; pairing lives in the sidebar target details, TGT-SB-ST-05 / TGT-SB-DT-03); registered as skip
+test/v3/fishball-ui/pairing	PAIR-HEALTH-03	retired: withdrawn by MULTI-3 requirement D (the pairing dock card and /api/fishball/pairing routes removed; pairing lives in the sidebar target details, TGT-SB-ST-05 / TGT-SB-DT-03); registered as skip
+test/v3/fishball-ui/pairing	PAIR-INT-00	packages/core/ui/tests/pairing.test.mjs
+test/v3/fishball-ui/pairing	PAIR-INT-01	retired: withdrawn by MULTI-3 requirement D (the pairing dock card and /api/fishball/pairing routes removed; pairing lives in the sidebar target details, TGT-SB-ST-05 / TGT-SB-DT-03); registered as skip
+test/v3/fishball-ui/pairing	PAIR-INT-02	retired: withdrawn by MULTI-3 requirement D (the pairing dock card and /api/fishball/pairing routes removed; pairing lives in the sidebar target details, TGT-SB-ST-05 / TGT-SB-DT-03); registered as skip
+test/v3/fishball-ui/pairing	PAIR-ST-01	retired: withdrawn by MULTI-3 requirement D (the pairing dock card and /api/fishball/pairing routes removed; pairing lives in the sidebar target details, TGT-SB-ST-05 / TGT-SB-DT-03); registered as skip
+test/v3/fishball-ui/pairing	PAIR-ST-02	retired: withdrawn by MULTI-3 requirement D (the pairing dock card and /api/fishball/pairing routes removed; pairing lives in the sidebar target details, TGT-SB-ST-05 / TGT-SB-DT-03); registered as skip
+test/v3/fishball-ui/pairing	PAIR-ST-03	retired: withdrawn by MULTI-3 requirement D (the pairing dock card and /api/fishball/pairing routes removed; pairing lives in the sidebar target details, TGT-SB-ST-05 / TGT-SB-DT-03); registered as skip
+test/v3/fishball-ui/pairing	PAIR-ST-04	retired: withdrawn by MULTI-3 requirement D (the pairing dock card and /api/fishball/pairing routes removed; pairing lives in the sidebar target details, TGT-SB-ST-05 / TGT-SB-DT-03); registered as skip
+test/v3/fishball-ui/pairing	PAIR-ST-05	retired: withdrawn by MULTI-3 requirement D (the pairing dock card and /api/fishball/pairing routes removed; pairing lives in the sidebar target details, TGT-SB-ST-05 / TGT-SB-DT-03); registered as skip
+test/v3/fishball-ui/pairing	PAIR-UI-01	retired: withdrawn by MULTI-3 requirement D (the pairing dock card and /api/fishball/pairing routes removed; pairing lives in the sidebar target details, TGT-SB-ST-05 / TGT-SB-DT-03); registered as skip
+test/v3/fishball-ui/pairing	PAIR-UI-02	retired: withdrawn by MULTI-3 requirement D (the pairing dock card and /api/fishball/pairing routes removed; pairing lives in the sidebar target details, TGT-SB-ST-05 / TGT-SB-DT-03); registered as skip
+test/v3/fishball-ui/pairing	PAIR-UI-03	retired: withdrawn by MULTI-3 requirement D (the pairing dock card and /api/fishball/pairing routes removed; pairing lives in the sidebar target details, TGT-SB-ST-05 / TGT-SB-DT-03); registered as skip
+test/v3/fishball-ui/pairing	PAIR-UI-04	retired: withdrawn by MULTI-3 requirement D (the pairing dock card and /api/fishball/pairing routes removed; pairing lives in the sidebar target details, TGT-SB-ST-05 / TGT-SB-DT-03); registered as skip
+test/v3/fishball-ui/stream	HEALTH-DT-01	packages/core/ui/tests/stream.test.mjs (the 2 strip rows retired: withdrawn by MULTI-3 requirement D)
+test/v3/fishball-ui/stream	HEALTH-EP-01	packages/core/ui/tests/stream.test.mjs
+test/v3/fishball-ui/stream	HEALTH-ST-00	packages/core/ui/tests/stream.test.mjs
+test/v3/fishball-ui/stream	HEALTH-ST-01	retired: withdrawn by MULTI-3 requirement D (no strip card); registered as skip
+test/v3/fishball-ui/stream	HEALTH-ST-02	retired: withdrawn by MULTI-3 requirement D (no strip card); registered as skip
+test/v3/fishball-ui/stream	HEALTH-ST-03	retired: withdrawn by MULTI-3 requirement D (no strip card); registered as skip
+test/v3/fishball-ui/stream	HEALTH-ST-04	packages/core/ui/tests/stream.test.mjs
+test/v3/fishball-ui/stream	HEALTH-ST-05	packages/core/ui/tests/stream.test.mjs
+test/v3/fishball-ui/stream	HEALTH-ST-06	packages/core/ui/tests/stream.test.mjs
+test/v3/fishball-ui/stream	HEALTH-ST-07	packages/core/ui/tests/stream.test.mjs
+test/v3/fishball-ui/stream	HEALTH-ST-08	packages/core/ui/tests/stream.test.mjs
+test/v3/fishball-ui/stream	TIME-DT-01	packages/core/ui/tests/stream.test.mjs
+test/v2-pg-origin-frame-policy	PGO-FRAME-01…07	retired: its subject is dsh-connector-ui's client.shell.js iframe policy (packages/dsh-connector-ui), which left this repository in 6b7c53bf; it failed only because the file is gone

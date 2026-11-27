@@ -1,0 +1,142 @@
+test/v3/fishball-ui/contrast	RESHOOT-ASKBADGE-DT-01	packages/core/ui/tests/contrast.test.mjs
+test/v3/fishball-ui/contrast	RESHOOT-ASKBADGE-ST-01	retired: withdrawn (f24f814a: finished ask cards are no longer drawn in the dock)
+test/v3/fishball-ui/contrast	UIFF-ASK-DT-01	packages/core/ui/tests/contrast.test.mjs
+test/v3/fishball-ui/contrast	UIFF-ORACLE-BVA-01	retired: duplicate of fishball-test-helpers HLP-WCAG-BVA-01/EP-01..03 (the WCAG oracle moved to the helpers)
+test/v3/fishball-ui/contrast	UIFF-ORACLE-CTRL-01	packages/core/ui/tests/contrast.test.mjs (placeholder ×2, warning Tag light); "success tone light" retired: withdrawn with the status card (MULTI-3 D03)
+test/v3/fishball-ui/contrast	UIFF-STRIP-DT-01	retired: withdrawn (MULTI-3 D03: no status card)
+test/v3/fishball-ui/contrast	UIFF-TOKENS-EP-01	packages/core/ui/tests/contrast.test.mjs
+test/v3/fishball-ui/guards	PLAT-DT-04	integration: booted standalone DSH with fishball-core + its ./ui component (fishball-test-helpers/dsh-world) + stand-in bundles (probe row, dsh-instance stand-in, other, deselected); HMR on/off; core self-reorder and guard report — all 18 rows
+test/v3/fishball-ui/guards	PLAT-UC-04	integration: booted standalone DSH with fishball-core + its ./ui component (fishball-test-helpers/dsh-world) + stand-in bundles + scripted model (manager session, presets, overrides, report); 33 rows. Retired: 4 todo (F-WIRE, E2E-CORE ×2, REL-PACK/X-MATRIX) and the withdrawn skip "instance launch code" (dsh-instance moved out, 6b7c53bf)
+test/v3/fishball-ui/guards	UIM-DT-01	integration: booted standalone DSH with fishball-core + its ./ui component (fishball-test-helpers/dsh-world) + stand-in dsh-instance (rows 9, 10b, 14, all rows); retired: todo rows 9 "manual token" (F-LINK) and 10b "real dsh-instance" (other repository)
+test/v3/fishball-ui/model-dialog	CAT-BVA-01	packages/core/ui/tests/model-dialog.test.mjs
+test/v3/fishball-ui/model-dialog	CAT-EP-01	packages/core/ui/tests/model-dialog.test.mjs
+test/v3/fishball-ui/model-dialog	CAT-ST-01	packages/core/ui/tests/model-dialog.test.mjs
+test/v3/fishball-ui/model-dialog	CAT-ST-02	packages/core/ui/tests/model-dialog.test.mjs
+test/v3/fishball-ui/model-dialog	CAT-ST-03	packages/core/ui/tests/model-dialog.test.mjs
+test/v3/fishball-ui/model-dialog	CAT-ST-04	packages/core/ui/tests/model-dialog.test.mjs
+test/v3/fishball-ui/model-dialog	MODEL-BVA-01	packages/core/ui/tests/model-dialog.test.mjs
+test/v3/fishball-ui/model-dialog	MODEL-EP-01	packages/core/ui/tests/model-dialog.test.mjs
+test/v3/fishball-ui/model-dialog	MODEL-EP-02	packages/core/ui/tests/model-dialog.test.mjs
+test/v3/fishball-ui/model-dialog	MODEL-ST-01	packages/core/ui/tests/model-dialog.test.mjs
+test/v3/fishball-ui/model-dialog	MODEL-ST-02	packages/core/ui/tests/model-dialog.test.mjs
+test/v3/fishball-ui/model-dialog	MODEL-ST-03	integration: booted standalone DSH with fishball-core + its ./ui component (fishball-test-helpers/dsh-world) + HMR disable of fishball-core: UI rows go, picker restored, strip 404, Connect 404/503
+test/v3/fishball-ui/model-dialog	MODEL-ST-04	packages/core/ui/tests/model-dialog.test.mjs
+test/v3/fishball-ui/model-dialog	MODEL-ST-05	packages/core/ui/tests/model-dialog.test.mjs
+test/v3/fishball-ui/model-dialog	MODEL-ST-06	packages/core/ui/tests/model-dialog.test.mjs
+test/v3/fishball-ui/model-dialog	MODEL-SYS-01	integration: booted standalone DSH with fishball-core + its ./ui component (fishball-test-helpers/dsh-world): ui-model-selection row disabled
+test/v3/fishball-ui/model-dialog	SES-SB-DT-01	packages/core/ui/tests/model-dialog.test.mjs
+test/v3/fishball-ui/model-dialog	SES-SB-EP-01	packages/core/ui/tests/model-dialog.test.mjs
+test/v3/fishball-ui/model-dialog	SES-SB-EP-02	packages/core/ui/tests/model-dialog.test.mjs
+test/v3/fishball-ui/model-dialog	SES-SB-ST-01	packages/core/ui/tests/model-dialog.test.mjs
+test/v3/fishball-ui/model-dialog	SES-SB-ST-02	packages/core/ui/tests/model-dialog.test.mjs
+test/v3/fishball-ui/model-dialog	SES-SB-ST-03	packages/core/ui/tests/model-dialog.test.mjs
+test/v3/fishball-ui/model-dialog	SES-VIEW-BVA-01	packages/core/ui/tests/model-dialog.test.mjs
+test/v3/fishball-ui/model-dialog	SES-VIEW-EP-01	packages/core/ui/tests/model-dialog.test.mjs
+test/v3/fishball-ui/model-dialog	SES-VIEW-EP-02	packages/core/ui/tests/model-dialog.test.mjs
+test/v3/fishball-ui/model-dialog	SES-VIEW-EP-03	packages/core/ui/tests/model-dialog.test.mjs
+test/v3/fishball-ui/model-dialog	SES-VIEW-EP-04	packages/core/ui/tests/model-dialog.test.mjs
+test/v3/fishball-ui/model-dialog	STRIP-DT-01	retired: withdrawn (MULTI-0 review S6, 1249c517: K3a /api/fishball/connect routes removed)
+test/v3/fishball-ui/model-dialog	STRIP-DT-02	integration: fishball-core's /api/fishball/targets/connect in a booted DSH (old todo; core serves it since MULTI-1) — subject is core's route
+test/v3/fishball-ui/model-dialog	STRIP-SYS-01	integration: booted standalone DSH with fishball-core + its ./ui component (fishball-test-helpers/dsh-world): first SSE frame of /api/fishball/strip (now the page connection) with core status
+test/v3/fishball-ui/model-dialog	TGT-ASK-DT-01	packages/core/ui/tests/model-dialog.test.mjs
+test/v3/fishball-ui/model-dialog	TGT-ASK-EP-01	packages/core/ui/tests/model-dialog.test.mjs
+test/v3/fishball-ui/model-dialog	TGT-ASK-EP-02	packages/core/ui/tests/model-dialog.test.mjs
+test/v3/fishball-ui/model-dialog	TGT-ASK-EP-03	packages/core/ui/tests/model-dialog.test.mjs
+test/v3/fishball-ui/model-dialog	TGT-ASK-ST-01	packages/core/ui/tests/model-dialog.test.mjs
+test/v3/fishball-ui/model-dialog	TGT-DOCK-EP-01	packages/core/ui/tests/model-dialog.test.mjs
+test/v3/fishball-ui/model-dialog	TGT-SB-BVA-01	packages/core/ui/tests/model-dialog.test.mjs
+test/v3/fishball-ui/model-dialog	TGT-SB-DT-01	packages/core/ui/tests/model-dialog.test.mjs
+test/v3/fishball-ui/model-dialog	TGT-SB-DT-02	packages/core/ui/tests/model-dialog.test.mjs
+test/v3/fishball-ui/model-dialog	TGT-SB-DT-03	packages/core/ui/tests/model-dialog.test.mjs
+test/v3/fishball-ui/model-dialog	TGT-SB-DT-04	packages/core/ui/tests/model-dialog.test.mjs
+test/v3/fishball-ui/model-dialog	TGT-SB-EP-01	packages/core/ui/tests/model-dialog.test.mjs
+test/v3/fishball-ui/model-dialog	TGT-SB-EP-02	packages/core/ui/tests/model-dialog.test.mjs
+test/v3/fishball-ui/model-dialog	TGT-SB-EP-03	packages/core/ui/tests/model-dialog.test.mjs
+test/v3/fishball-ui/model-dialog	TGT-SB-EP-04	packages/core/ui/tests/model-dialog.test.mjs
+test/v3/fishball-ui/model-dialog	TGT-SB-EP-05	packages/core/ui/tests/model-dialog.test.mjs
+test/v3/fishball-ui/model-dialog	TGT-SB-EP-06	packages/core/ui/tests/model-dialog.test.mjs
+test/v3/fishball-ui/model-dialog	TGT-SB-ST-01	packages/core/ui/tests/model-dialog.test.mjs
+test/v3/fishball-ui/model-dialog	TGT-SB-ST-02	packages/core/ui/tests/model-dialog.test.mjs
+test/v3/fishball-ui/model-dialog	TGT-SB-ST-03	packages/core/ui/tests/model-dialog.test.mjs
+test/v3/fishball-ui/model-dialog	TGT-SB-ST-04	packages/core/ui/tests/model-dialog.test.mjs
+test/v3/fishball-ui/model-dialog	TGT-SB-ST-05	packages/core/ui/tests/model-dialog.test.mjs
+test/v3/fishball-ui/model-dialog	TGT-SB-ST-06	packages/core/ui/tests/model-dialog.test.mjs
+test/v3/fishball-ui/model-dialog	TGT-SB-ST-07	packages/core/ui/tests/model-dialog.test.mjs
+test/v3/fishball-ui/model-dialog	TGT-VIEW-BVA-01	packages/core/ui/tests/model-dialog.test.mjs
+test/v3/fishball-ui/model-dialog	TGT-VIEW-BVA-02	packages/core/ui/tests/model-dialog.test.mjs
+test/v3/fishball-ui/model-dialog	TGT-VIEW-DT-01	packages/core/ui/tests/model-dialog.test.mjs
+test/v3/fishball-ui/model-dialog	TGT-VIEW-DT-02	packages/core/ui/tests/model-dialog.test.mjs
+test/v3/fishball-ui/model-dialog	TGT-VIEW-DT-03	packages/core/ui/tests/model-dialog.test.mjs
+test/v3/fishball-ui/model-dialog	TGT-VIEW-DT-04	packages/core/ui/tests/model-dialog.test.mjs
+test/v3/fishball-ui/model-dialog	TGT-VIEW-EP-01	packages/core/ui/tests/model-dialog.test.mjs
+test/v3/fishball-ui/model-dialog	TGT-VIEW-EP-02	packages/core/ui/tests/model-dialog.test.mjs
+test/v3/fishball-ui/model-dialog	TGT-VIEW-EP-03	packages/core/ui/tests/model-dialog.test.mjs
+test/v3/fishball-ui/model-dialog	TGT-VIEW-EP-04	packages/core/ui/tests/model-dialog.test.mjs
+test/v3/fishball-ui/model-dialog	TGT-VIEW-EP-05	packages/core/ui/tests/model-dialog.test.mjs
+test/v3/fishball-ui/model-dialog	TGT-VIEW-EP-06	packages/core/ui/tests/model-dialog.test.mjs
+test/v3/fishball-ui/model-dialog	TGT-VIEW-EP-07	packages/core/ui/tests/model-dialog.test.mjs
+test/v3/fishball-ui/model-dialog	UIPF-MODEL-BVA-01	packages/core/ui/tests/model-dialog.test.mjs
+test/v3/fishball-ui/model-dialog	UIPF-MODEL-EP-01	packages/core/ui/tests/model-dialog.test.mjs
+test/v3/fishball-ui/model-dialog	UIPF-MODEL-EP-02	packages/core/ui/tests/model-dialog.test.mjs
+test/v3/fishball-ui/model-dialog	UIPF-MODEL-EP-03	packages/core/ui/tests/model-dialog.test.mjs
+test/v3/fishball-ui/model-dialog	UIPF-STRIP-DT-01	retired: withdrawn (MULTI-3 D03 / requirement D: no chat-top status card)
+test/v3/fishball-ui/model-dialog	UIPF-STRIP-DT-02	retired: withdrawn (MULTI-3 D03 / requirement D: no chat-top status card)
+test/v3/fishball-ui/model-dialog	UIPF-STRIP-EP-01	retired: withdrawn (MULTI-3 D03 / requirement D: no chat-top status card)
+test/v3/fishball-ui/model-dialog	UIPF-STRIP-ST-01	retired: withdrawn (MULTI-3 D03 / requirement D: no chat-top status card)
+test/v3/fishball-ui/package	EFIX3-UI-DT-01	integration: fishball-core's cordis.patch.yml composed/evaluated by DSH (fishball-core + fishball-ui) + DSH interpolate (notice row is core's)
+test/v3/fishball-ui/package	EFIX3-UI-EP-01	integration: fishball-core's cordis.patch.yml composed/evaluated by DSH (fishball-core + fishball-ui) + DSH interpolate
+test/v3/fishball-ui/package	EFIX3-UI-EP-02	integration: fishball-core's cordis.patch.yml composed/evaluated by DSH (fishball-core + fishball-ui) + DSH interpolate
+test/v3/fishball-ui/package	EFIX3-UI-GUARD-01	packages/core/ui/tests/package.test.mjs (gone); uiRows / rows → integration: fishball-core src/guards/intended.js readIntendedGuards() vs core's patch
+test/v3/fishball-ui/package	EFIX3-UI-OWNER-01	integration: fishball-core's cordis.patch.yml composed/evaluated by DSH (fishball-core + fishball-ui) + owner layer
+test/v3/fishball-ui/package	EFIX3-UI-SHAPE-01	integration: fishball-core's cordis.patch.yml composed/evaluated by DSH (fishball-core + fishball-ui) (row, composed) + DSH welcome-step version drift
+test/v3/fishball-ui/package	EFIX3-UI-SYS-01	integration: booted standalone DSH with fishball-core + its ./ui component (fishball-test-helpers/dsh-world) (standalone row); hosted todo retired (hosted child out of scope, covered by EFIX3-UI-DT-01 rule 1)
+test/v3/fishball-ui/package	first	packages/core/ui/tests/package.test.mjs (R3B-07 reload subtest "first visit")
+test/v3/fishball-ui/package	FRAME-READY	packages/core/ui/tests/package.test.mjs
+test/v3/fishball-ui/package	LOGO-FIX-3	packages/core/ui/tests/package.test.mjs
+test/v3/fishball-ui/package	MULTI-BAR-BVA-01	packages/core/ui/tests/package.test.mjs
+test/v3/fishball-ui/package	MULTI-BAR-BVA-02	packages/core/ui/tests/package.test.mjs
+test/v3/fishball-ui/package	MULTI-BAR-CTRL-01	packages/core/ui/tests/package.test.mjs
+test/v3/fishball-ui/package	MULTI-BAR-DT-01	packages/core/ui/tests/package.test.mjs
+test/v3/fishball-ui/package	MULTI-BAR-EP-01	packages/core/ui/tests/package.test.mjs
+test/v3/fishball-ui/package	MULTI-DRAWER-DT-01	packages/core/ui/tests/package.test.mjs
+test/v3/fishball-ui/package	MULTI-NAV-DT-01	packages/core/ui/tests/package.test.mjs
+test/v3/fishball-ui/package	MULTI-NAV-EP-01	packages/core/ui/tests/package.test.mjs
+test/v3/fishball-ui/package	MULTI-NAV-EP-02	packages/core/ui/tests/package.test.mjs
+test/v3/fishball-ui/package	MULTI-NAV-EP-03	packages/core/ui/tests/package.test.mjs
+test/v3/fishball-ui/package	MULTI-NAV-ST-01	packages/core/ui/tests/package.test.mjs
+test/v3/fishball-ui/package	MULTI-SHEET-EP-01	packages/core/ui/tests/package.test.mjs
+test/v3/fishball-ui/package	MULTI-SHEET-EP-02	packages/core/ui/tests/package.test.mjs
+test/v3/fishball-ui/package	MULTI-SHEET-ST-01	retired: todo owned by E2E-UI (needs DSH's live layout DOM)
+test/v3/fishball-ui/package	NARROW-KEY-01	packages/core/ui/tests/package.test.mjs
+test/v3/fishball-ui/package	NARROW-RESIZE-01	packages/core/ui/tests/package.test.mjs
+test/v3/fishball-ui/package	NARROW-TOGGLE-01	packages/core/ui/tests/package.test.mjs
+test/v3/fishball-ui/package	NOCORE-ARCH	packages/core/ui/tests/package.test.mjs (no UI patch, merged into UI-BVA-01); core composition → integration: fishball-core's cordis.patch.yml composed/evaluated by DSH (fishball-core + fishball-ui)
+test/v3/fishball-ui/package	NOCORE-GUARDS	integration: fishball-core src/guards/intended.js readIntendedGuards()
+test/v3/fishball-ui/package	NOCORE-NOTICE	integration: fishball-core's cordis.patch.yml composed/evaluated by DSH (fishball-core + fishball-ui) + DSH interpolate
+test/v3/fishball-ui/package	NOCORE-OLD	retired: todo of a withdrawn subject (117cb2a2: no DSH with fishball-ui but no core)
+test/v3/fishball-ui/package	R3B-07	packages/core/ui/tests/package.test.mjs
+test/v3/fishball-ui/package	reload	packages/core/ui/tests/package.test.mjs (R3B-07 reload subtest "reload")
+test/v3/fishball-ui/package	SHOT-TARGET-URL-EP-01	packages/core/ui/tests/package.test.mjs
+test/v3/fishball-ui/package	SHOT-TARGET-URL-EP-02	packages/core/ui/tests/package.test.mjs
+test/v3/fishball-ui/package	UI-BVA-01	packages/core/ui/tests/package.test.mjs (no UI patch); inserted → integration: fishball-core's cordis.patch.yml composed/evaluated by DSH (fishball-core + fishball-ui)
+test/v3/fishball-ui/package	UI-DT-01	integration: fishball-core's cordis.patch.yml composed/evaluated by DSH (fishball-core + fishball-ui)
+test/v3/fishball-ui/package	UI-EP-01	retired: todo of a withdrawn subject (117cb2a2: UI rows no longer gated by startedBundles)
+test/v3/fishball-ui/package	UI-EP-02	packages/core/ui/tests/package.test.mjs (exports, manifest ×2, imports ×2); reverse → integration: fishball-core's shipped files and manifest never name fishball-ui
+test/v3/fishball-ui/package	UI-EP-03	integration: fishball-core's cordis.patch.yml composed/evaluated by DSH (fishball-core + fishball-ui) (UI guard rows disabled for every startedBundles)
+test/v3/fishball-ui/package	UI-ST-01	retired: todo of a withdrawn subject (117cb2a2: no separate UI bundle)
+test/v3/fishball-ui/package	UI-ST-02	retired: todo of a withdrawn subject (117cb2a2: no separate UI bundle)
+test/v3/fishball-ui/package	UI-ST-03	packages/core/ui/tests/package.test.mjs
+test/v3/fishball-ui/package	UI-UC-01	integration: booted standalone DSH with fishball-core + its ./ui component (fishball-test-helpers/dsh-world) (9 rows: rows, fishballUiGuards, report, client graph, recommended route, override A1/A2, no core-missing line); hosted todo retired (I-HOST, hosted child out of this repo's tests)
+test/v3/fishball-ui/package	UI-UC-02	retired: todo of a withdrawn subject (117cb2a2: fishball-ui cannot run without core)
+test/v3/fishball-ui/package	UI-UC-03	retired: todo of a withdrawn subject (117cb2a2: core always carries its ./ui component)
+test/v3/fishball-ui/package	UI-UC-04	packages/core/ui/tests/package.test.mjs (main 1, main 2, E1 ×5, E2); e2e todo retired (E2E-UI, no subject here)
+test/v3/fishball-ui/package	UI-UC-05	packages/core/ui/tests/package.test.mjs
+test/v3/fishball-ui/package	UI-UC-06	packages/core/ui/tests/package.test.mjs (main 1, main 2, main 3 deps, rows ×2 nested packages, moved ×3); rows ×3 path rows → integration: fishball-core's cordis.patch.yml composed/evaluated by DSH (fishball-core + fishball-ui); todos retired (bundle inspection, npm pack, tarball → REL-PACK, core-missing row gone, window style never specified)
+test/v3/fishball-ui/package	UI-UC-07	fishball-shared's own tests (packages/shared/tests: UI_SEAM, UI_GUARDS, SEAM_STATUS, data only, ./ui-seam export); E1 drift ×3 → integration: fishball-shared ui-seam vs fishball-core contracts/constants.js
+test/v3/fishball-ui/package	UI-UC-08	integration: fishball-core's patch, client.js and contracts (core's own package facts; 7 rows)
+test/v3/fishball-ui/package	UIPF-NAV-BVA-01	packages/core/ui/tests/package.test.mjs
+test/v3/fishball-ui/package	UIPF-NAV-DT-01	packages/core/ui/tests/package.test.mjs
+test/v3/fishball-ui/package	UIPF-NAV-EP-01	packages/core/ui/tests/package.test.mjs (settings ×2, retry ×2, settings hooks, no status); order/fishball/plugins ×6 retired: withdrawn (MULTI-3 F: no tray)
+test/v3/fishball-ui/package	UIPF-NAV-ST-01	packages/core/ui/tests/package.test.mjs (settings ×2); fishball/plugins ×4 retired: withdrawn (MULTI-3 F: no tray)
+test/v3/fishball-ui/package	UIPF-NAV-ST-02	packages/core/ui/tests/package.test.mjs
+test/v3/fishball-ui/package	UIPF-NAV-UC-01	packages/core/ui/tests/package.test.mjs (settings, retry); fishball ×2 / plugins retired: withdrawn (MULTI-3 F: no tray)

@@ -1,0 +1,40 @@
+old suite	case id	where now
+test/v3/fishball-amenities/heartbeat	HB-BVA-01	packages/fishball-heartbeat/tests/heartbeat.test.mjs
+test/v3/fishball-amenities/heartbeat	HB-BVA-02	packages/fishball-heartbeat/tests/heartbeat.test.mjs
+test/v3/fishball-amenities/heartbeat	HB-BVA-03	packages/fishball-heartbeat/tests/heartbeat.test.mjs
+test/v3/fishball-amenities/heartbeat	HB-BVA-04	packages/fishball-heartbeat/tests/heartbeat.test.mjs
+test/v3/fishball-amenities/heartbeat	HB-BVA-05	packages/fishball-heartbeat/tests/heartbeat.test.mjs
+test/v3/fishball-amenities/heartbeat	HB-BVA-06	packages/fishball-heartbeat/tests/heartbeat.test.mjs
+test/v3/fishball-amenities/heartbeat	HB-BVA-07	packages/fishball-heartbeat/tests/heartbeat.test.mjs
+test/v3/fishball-amenities/heartbeat	HB-CAU-BVA	packages/fishball-heartbeat/tests/heartbeat.test.mjs
+test/v3/fishball-amenities/heartbeat	HB-CAU-DT	packages/fishball-heartbeat/tests/heartbeat.test.mjs
+test/v3/fishball-amenities/heartbeat	HB-CAU-INT	packages/fishball-heartbeat/tests/heartbeat.test.mjs
+test/v3/fishball-amenities/heartbeat	HB-CAU-ST	packages/fishball-heartbeat/tests/heartbeat.test.mjs
+test/v3/fishball-amenities/heartbeat	HB-CMP-BVA	packages/fishball-heartbeat/tests/heartbeat.test.mjs
+test/v3/fishball-amenities/heartbeat	HB-CMP-DT	packages/fishball-heartbeat/tests/heartbeat.test.mjs
+test/v3/fishball-amenities/heartbeat	HB-CMP-EP	packages/fishball-heartbeat/tests/heartbeat.test.mjs
+test/v3/fishball-amenities/heartbeat	HB-CMP-INT	packages/fishball-heartbeat/tests/heartbeat.test.mjs
+test/v3/fishball-amenities/heartbeat	HB-CMP-ST	packages/fishball-heartbeat/tests/heartbeat.test.mjs
+test/v3/fishball-amenities/heartbeat	HB-DT-01	packages/fishball-heartbeat/tests/heartbeat.test.mjs
+test/v3/fishball-amenities/heartbeat	HB-EP-01	packages/fishball-heartbeat/tests/heartbeat.test.mjs
+test/v3/fishball-amenities/heartbeat	HB-EP-02	packages/fishball-heartbeat/tests/heartbeat.test.mjs
+test/v3/fishball-amenities/heartbeat	HB-EP-03	packages/fishball-heartbeat/tests/heartbeat.test.mjs
+test/v3/fishball-amenities/heartbeat	HB-EP-04	packages/fishball-heartbeat/tests/heartbeat.test.mjs
+test/v3/fishball-amenities/heartbeat	HB-EP-05	packages/fishball-heartbeat/tests/heartbeat.test.mjs
+test/v3/fishball-amenities/heartbeat	HB-INT	packages/fishball-heartbeat/tests/heartbeat.test.mjs
+test/v3/fishball-amenities/heartbeat	HB-LC-BVA-01	packages/fishball-heartbeat/tests/heartbeat.test.mjs
+test/v3/fishball-amenities/heartbeat	HB-LC-DT-01	packages/fishball-heartbeat/tests/heartbeat.test.mjs
+test/v3/fishball-amenities/heartbeat	HB-LC-EP-01 (rows 1-2)	packages/fishball-heartbeat/tests/heartbeat.test.mjs
+test/v3/fishball-amenities/heartbeat	HB-LC-EP-01 row 3	integration: fishball-board's Config served through DSH's settings service (fishball-test-helpers/settings servedNamespace) must yield no fishball-board namespace
+test/v3/fishball-amenities/heartbeat	HB-LC-SC-01	packages/fishball-heartbeat/tests/heartbeat.test.mjs
+test/v3/fishball-amenities/heartbeat	HB-LC-SC-02	integration: fishball-board's Config (packages/fishball-board src/config.js) must be present: its fields inject, contextCards, doneWindowHours stay non-volatile
+test/v3/fishball-amenities/heartbeat	HB-LC-ST-01	packages/fishball-heartbeat/tests/heartbeat.test.mjs
+test/v3/fishball-amenities/heartbeat	HB-ST-01	packages/fishball-heartbeat/tests/heartbeat.test.mjs
+test/v3/fishball-amenities/heartbeat	HB-ST-02	packages/fishball-heartbeat/tests/heartbeat.test.mjs
+test/v3/fishball-amenities/heartbeat	HB-UC-01	packages/fishball-heartbeat/tests/heartbeat.test.mjs
+test/v3/fishball-amenities/live-settings	LS-BVA-01	packages/fishball-heartbeat/tests/live-settings.test.mjs
+test/v3/fishball-amenities/live-settings	LS-DT-01	packages/fishball-heartbeat/tests/live-settings.test.mjs
+test/v3/fishball-amenities/live-settings	LS-EP-01	packages/fishball-heartbeat/tests/live-settings.test.mjs
+test/v3/fishball-amenities/live-settings	LS-EP-02	packages/fishball-heartbeat/tests/live-settings.test.mjs
+test/v3/fishball-amenities/live-settings	LS-ST-01	packages/fishball-heartbeat/tests/live-settings.test.mjs
+test/v3/fishball-amenities/live-settings	LS-UC-01	packages/fishball-heartbeat/tests/live-settings.test.mjs
