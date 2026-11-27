@@ -3,10 +3,9 @@
  * and hosted.json already lists an entry the instance made, the new entry becomes that entry's
  * successor; once the new Fishball has paired the instance asks the connector (`retire`) to move the
  * old entry to it; until then it is retried at each start and whenever the connector's pairs change;
- * a Reconnect meanwhile makes its new entry the successor; a deleted or user-made entry is never
- * succeeded. "Retry never creates a token … Reconnect creates one new entry … it moves and deletes
- * nothing". hosted.js JSDoc: the successor is always the newest entry; operation-failed is retried
- * at the next start only; a reinstall is a new child runtime id; close() ends the subscription and
+ * a deleted or user-made entry is never succeeded. Explicit Reconnect keeps a live owned entry;
+ * it does not introduce a new successor. The successor is always the newest entry; operation-failed
+ * is retried at the next start; a reinstall is a new child runtime id; close() ends the subscription and
  * later steps run nothing; a failed record write is replayed before any retire. K3 tokens.d.ts:
  * RetireRefusalCode.)
  *
@@ -123,7 +122,7 @@ eachSdk((sdk) => {
   for (const [rule, title, outcome, keep, pairRetry] of [
     [1, 'ok → pending cleared; never retried (a connector change and a restart call nothing)', OUTCOME.ok, false, false],
     [2, "successor-unpaired → stays pending; retried when the connector's onChange fires", OUTCOME.unpaired, true, true],
-    [3, 'operation-failed → stays pending; a pair change does NOT retry it (S4: only the next start / Reconnect, row 3b)', OUTCOME.failed, true, false],
+    [3, 'operation-failed → stays pending; a pair change does NOT retry it (S4: the next start, row 3b)', OUTCOME.failed, true, false],
     [4, 'retire rejects → stays pending, like operation-failed: no retry on a pair change', OUTCOME.reject, true, false],
     [5, 'unknown-entry (the user deleted an entry) → pending dropped; never retried', OUTCOME.unknown, false, false],
     [6, 'not-hosted (a user-made entry) → pending dropped; never retried', OUTCOME.notHosted, false, false],
@@ -164,12 +163,17 @@ eachSdk((sdk) => {
     await w.pairChange()
     assert.deepEqual(w.retired(), [E12, E12, E12])
   })
-  caseTest(sdk, 'ISUCC-DT-02', '3c (Reconnect)', 'operation-failed → no retry on a pair change; the next Reconnect retries it, retargeted to its new entry: retire(E1, E3)', async (t) => {
+  caseTest(sdk, 'ISUCC-DT-02', '3c (Reconnect)', 'operation-failed → no retry on a pair change; Reconnect does not retarget the existing succession', async (t) => {
     const w = await reinstalled(t, sdk, [OUTCOME.failed])
     await w.pairChange()
     assert.deepEqual(w.retired(), [E12], 'a pair change retried operation-failed')
-    assert.deepEqual(await w.reconnect(), { ok: true })
-    assert.deepEqual(w.retired(), [E12, [ENTRY.e1, ENTRY.e3]])
+    assert.equal((await w.reconnect()).ok, false)
+    assert.equal(w.created(), 2)
+    assert.deepEqual(w.retired(), [E12], 'Reconnect retried a failed succession')
+    await w.start()
+    assert.ok(w.retired().length > 1, 'the succession was not retried')
+    assert.ok(w.retired().every(([old, successor]) => old === ENTRY.e1 && successor === ENTRY.e2))
+    await assertPending(w, undefined, 'after retry to the original successor')
   })
   caseTest(sdk, 'ISUCC-DT-02', '3d (then unpaired)', 'operation-failed, then at the next start successor-unpaired → a pair change retries again', async (t) => {
     const w = await reinstalled(t, sdk, [OUTCOME.failed, OUTCOME.unpaired])
@@ -193,24 +197,25 @@ eachSdk((sdk) => {
     assert.deepEqual(w.retired(), [E12, E12])
     await assertPending(w, undefined, 'after the retry succeeded')
   })
-  caseTest(sdk, 'ISUCC-ST-01', 'reconnect, none', 'nothing pending → Reconnect creates and imports one entry, moves nothing: retire never called, even after a connector change', async (t) => {
+  caseTest(sdk, 'ISUCC-ST-01', 'reconnect, none', 'nothing pending → legacy Reconnect preserves E1; retire never called, even after a connector change', async (t) => {
     const w = await successionWorld(t, sdk)
     await w.start()
-    assert.deepEqual(await w.reconnect(), { ok: true })
-    assert.equal(w.created(), 2)
-    assert.equal(w.imports().length, 2)
+    assert.equal((await w.reconnect()).ok, false)
+    assert.equal(w.created(), 1)
+    assert.deepEqual(await w.entriesOnDisk(), [ENTRY.e1])
     await w.pairChange()
     assert.deepEqual(w.retired(), [])
     await assertPending(w, undefined, 'after a Reconnect')
   })
-  caseTest(sdk, 'ISUCC-ST-01', 'reconnect, pending', 'pending(E1 → E2) → Reconnect creates E3 → the succession retargets to the newest: retire(E1, E3); no retire(E1, E2) after it (Q2)', async (t) => {
+  caseTest(sdk, 'ISUCC-ST-01', 'reconnect, pending', 'pending(E1 → E2) → Reconnect keeps E2; a pair change can still retry retire(E1, E2)', async (t) => {
     const w = await reinstalled(t, sdk, [OUTCOME.unpaired])
     w.tokens.answerAlways(OUTCOME.unpaired)
-    assert.deepEqual(await w.reconnect(), { ok: true })
+    assert.equal((await w.reconnect()).ok, false)
+    assert.deepEqual(await w.entriesOnDisk(), E12)
     await w.pairChange()
     const after = w.retired().slice(1)
-    assert.ok(after.length > 0, 'no retire after the Reconnect')
-    assert.deepEqual(after.filter(([o, s]) => !(o === ENTRY.e1 && s === ENTRY.e3)), [], 'a retire not aimed at (E1, E3): ' + JSON.stringify(w.retired()))
+    assert.ok(after.length > 0, 'no retire after the pair change')
+    assert.ok(after.every(([old, successor]) => old === ENTRY.e1 && successor === ENTRY.e2), 'retirement changed the successor')
     await assertPending(w, ENTRY.e1, 'the old entry stays the original')
   })
   caseTest(sdk, 'ISUCC-ST-01', 'second reinstall', 'pending(E1 → E2) → a second reinstall creates E3 → retire(E1, E3): the original old kept, the intermediate E2 left alone', async (t) => {
@@ -236,7 +241,7 @@ eachSdk((sdk) => {
     await w.start()
     w.tokens.setState(ENTRY.e1, K3.entry.deleted)
     await w.retry()
-    assert.deepEqual(await w.reconnect(), { ok: true })
+    assert.equal((await w.reconnect()).ok, true)
     await w.pairChange()
     assert.deepEqual(w.retired(), [])
     await assertPending(w, undefined, 'after Reconnect')
@@ -347,14 +352,14 @@ eachSdk((sdk) => {
     await w.reinstall()
     assert.equal(await w.runtimeOnDisk(), RUNTIME.r2, 'after a reinstall')
   })
-  caseTest(sdk, 'ISUCC-DT-03', '6 (Reconnect)', 'Reconnect under a new runtime id records it and starts no succession; a first start under that runtime then starts none either', async (t) => {
+  caseTest(sdk, 'ISUCC-DT-03', '6 (Reconnect)', 'Reconnect after an owner deletion creates a replacement under the current runtime without starting succession', async (t) => {
     const w = await successionWorld(t, sdk)
     await w.start()
+    w.tokens.setState(ENTRY.e1, K3.entry.deleted)
     w.setRuntime(RUNTIME.r2)
-    assert.deepEqual(await w.reconnect(), { ok: true })
+    assert.equal((await w.reconnect()).ok, true)
     assert.equal(await w.runtimeOnDisk(), RUNTIME.r2)
-    await w.sameRuntimeFirstStart()
-    assert.equal(w.created(), 3)
+    assert.equal(w.created(), 2)
     await w.pairChange()
     assert.deepEqual(w.retired(), [])
     await assertPending(w, undefined, 'Reconnect is never a succession')
@@ -407,18 +412,19 @@ eachSdk((sdk) => {
     assert.deepEqual(w.retired(), [E12])
     assert.deepEqual(seen[0], E12, 'hosted.json when retire was called')
   })
-  caseTest(sdk, 'ISUCC-ST-02', '3 (Reconnect)', 'writes recover → Reconnect replays E2 first, then records its own E3, in creation order; the succession keeps old E1 and targets the newest E3', async (t) => {
+  caseTest(sdk, 'ISUCC-ST-02', '3 (start with writes recovered)', 'writes recover → a subsequent start replays E2 and retires E1 into it without a separate replacement', async (t) => {
     const w = await unrecorded(t)
     w.mendWrites()
-    assert.deepEqual(await w.reconnect(), { ok: true })
-    assert.deepEqual(await w.entriesOnDisk(), [ENTRY.e1, ENTRY.e2, ENTRY.e3])
-    assert.deepEqual(w.retired().at(-1), [ENTRY.e1, ENTRY.e3], 'the last retire: ' + JSON.stringify(w.retired()))
+    await w.start()
+    assert.deepEqual(await w.entriesOnDisk(), E12)
+    assert.equal(w.created(), 2)
+    assert.deepEqual(w.retired().at(-1), E12, 'the last retire: ' + JSON.stringify(w.retired()))
     assert.deepEqual(w.retired().filter(([o]) => o !== ENTRY.e1), [], 'an old entry other than E1')
   })
-  caseTest(sdk, 'ISUCC-ST-02', '4 (queue)', "two unrecorded entries (the reinstall's E2, then a Reconnect's E3 while writes still fail) → once writes succeed both are written in creation order; pending old E1, successor E3", async (t) => {
+  caseTest(sdk, 'ISUCC-ST-02', '4 (queue)', "two reinstalls while record writes fail → once writes succeed both entries are written in creation order; pending old E1, successor E3", async (t) => {
     const w = await unrecorded(t)
-    await w.reconnect()
-    assert.equal(w.created(), 3, 'the Reconnect created no entry while the record was down')
+    await w.reinstall()
+    assert.equal(w.created(), 3, 'the second reinstall created no entry while the record was down')
     assert.deepEqual(w.retired(), [], 'retire while the successor is unrecorded')
     w.mendWrites()
     await w.start()
@@ -476,9 +482,10 @@ eachSdk((sdk) => {
     }],
     ['refused', 'the child answers its own refusal', (w) => { w.credentials.failSet = true }],
   ]) {
-    caseTest(sdk, 'RFI-F06', part, `F06 pending(E1 → E2), old credential present, Reconnect's import: ${title} → ${K3.unwritable}; E3 not recorded; no retire aimed at E3; the pending old entry kept`, async (t) => {
+    caseTest(sdk, 'RFI-F06', part, `F06 pending(E1 → E2), E2 deleted, replacement import: ${title} → ${K3.unwritable}; E3 not recorded; no retire aimed at E3; the pending old entry kept`, async (t) => {
       const w = await reinstalled(t, sdk, [OUTCOME.unpaired])
       w.tokens.answerAlways(OUTCOME.unpaired)
+      w.tokens.setState(ENTRY.e2, K3.entry.deleted)
       play(w)
       assert.deepEqual(await w.reconnect(), { ok: false, code: K3.unwritable })
       assert.deepEqual(await w.entriesOnDisk(), E12, 'hosted.json entries')

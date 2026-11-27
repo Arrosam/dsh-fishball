@@ -57,24 +57,24 @@ eachSdk((sdk) => {
   })
 
   // ============================================================ F01 under MULTI-2: the parent handoff, whatever a leftover field says
-  caseTest(sdk, 'RFI-F01', 'remote, cleared (MULTI-2)', 'a leftover remote targetUrl field at launch, then cleared live → parent launch, first import and Reconnect preserved', async (t) => {
+  caseTest(sdk, 'RFI-F01', 'remote, cleared (MULTI-2)', 'a leftover remote targetUrl field cleared live → parent launch, one first import, no unsafe legacy replacement', async (t) => {
     const { w } = await readyRow(t, { extraTarget: FIXTURE.remote })
     assert.deepEqual(w.ctl.launches.map((l) => l.child?.[ROW.extraTarget]), [PARENT])
     w.setField(ROW.extraTarget, FIXTURE.blank)
-    assert.deepEqual(await w.locator().reconnect(), { ok: true })
-    assert.equal(w.tokens.calls.created.length, 2)
-    assert.equal(w.ctl.credentials.calls.set.length, 2)
+    assert.equal((await w.locator().reconnect()).ok, false)
+    assert.equal(w.tokens.calls.created.length, 1)
+    assert.equal(w.locator().agentEntry(), entry(1))
     assert.deepEqual(w.locator().targetStatus(), TARGET.connected)
   })
-  caseTest(sdk, 'RFI-F01', 'local, set remote', 'launched for the parent, a leftover field set to remote live → no restart; Reconnect imports a parent token; targetStatus follows that entry', async (t) => {
+  caseTest(sdk, 'RFI-F01', 'local, set remote', 'a leftover remote field set live → no restart; legacy Reconnect does not replace the parent entry', async (t) => {
     const { w } = await readyRow(t)
     w.setField(ROW.extraTarget, FIXTURE.remote)
     assert.equal(w.ctl.calls.start, 1)
-    assert.deepEqual(await w.locator().reconnect(), { ok: true })
-    assert.equal(w.tokens.calls.created.length, 2)
-    assert.equal(w.ctl.credentials.calls.set.length, 2)
+    assert.equal((await w.locator().reconnect()).ok, false)
+    assert.equal(w.tokens.calls.created.length, 1)
+    assert.equal(w.locator().agentEntry(), entry(1))
     assert.deepEqual(w.locator().targetStatus(), TARGET.connected)
-    w.tokens.setState(entry(2), K3.entry.disabled)
+    w.tokens.setState(entry(1), K3.entry.disabled)
     assert.deepEqual(w.locator().targetStatus(), TARGET.revoked)
   })
   caseTest(sdk, 'RFI-F01', 'next start (MULTI-2)', 'off/on after a leftover remote field still launches and reconnects the actual parent', async (t) => {
@@ -86,8 +86,8 @@ eachSdk((sdk) => {
     await w.until(() => w.status().state === K3.state.ready && w.ctl.launches.length === 2)
     assert.equal(w.ctl.launches[1].child?.[ROW.extraTarget], PARENT)
     const created = w.tokens.calls.created.length
-    assert.deepEqual(await w.locator().reconnect(), { ok: true })
-    assert.equal(w.tokens.calls.created.length, created + 1)
+    assert.equal((await w.locator().reconnect()).ok, false)
+    assert.equal(w.tokens.calls.created.length, created)
     assert.deepEqual(w.locator().targetStatus(), TARGET.connected)
   })
   caseTest(sdk, 'RFI-F01', 'before launch (MULTI-2)', 'before appReady a leftover remote field never stands in for the absent parent entry: no start, target-unset', async (t) => {
@@ -124,6 +124,7 @@ eachSdk((sdk) => {
     const { w, home } = await readyRow(t)
     const a = w.current
     await w.until(() => fs.existsSync(path.join(home, RECORD.dir, RECORD.file)) && recordOnDisk(home).entries.length === 1)
+    w.tokens.setState(entry(1), K3.entry.deleted)
     const held = w.holdRecordWrite()
     const predecessor = w.locator(a).reconnect()
     await held

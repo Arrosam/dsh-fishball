@@ -20,11 +20,11 @@ import { load, scopeOf } from './worlds.mjs'
 const entry = (n) => FIXTURE.entryPrefix + n
 
 /** The real rules over a fake connector, a replaceable scripted client and an in-memory record. */
-async function tokenWorld(t, sdk, { client = scriptedClient(), record = memoryRecord() } = {}) {
+async function tokenWorld(t, sdk, { client = scriptedClient(), record = memoryRecord(), targetUrl } = {}) {
   const { createHostedToken } = await load(sdk, 'hosted')
   const tokens = fakeTokens({ fixture: FIXTURE, onChange: false })
   let current = client
-  const hosted = createHostedToken({ tokens: () => tokens, record, credentials: () => current, instanceId: () => FIXTURE.instanceId, runtimeId: () => FIXTURE.runtimeId, changed: () => {} })
+  const hosted = createHostedToken({ tokens: () => tokens, record, credentials: () => current, targetUrl, instanceId: () => FIXTURE.instanceId, runtimeId: () => FIXTURE.runtimeId, changed: () => {} })
   scopeOf(t).defer(() => hosted.close())
   return { hosted, tokens, record, setClient(next) { current = next } }
 }
@@ -45,7 +45,37 @@ function heldRecord() {
   return { record, done, reached: held.reached, open: held.open }
 }
 
+const REBIND = Object.freeze({ path: '/api/agent/mcp', outcome: 'rebound' })
+
 eachSdk((sdk) => {
+  caseTest(sdk, 'HOST-UC-02', 'owned rebind', 'a verified live owned entry binds to the current parent without creating, discarding, or retiring another entry', async (t) => {
+    const oldKey = entry(1)
+    const record = memoryRecord()
+    await record.add(oldKey, { runtime: FIXTURE.runtimeId })
+    const bindings = []
+    const targetUrl = new URL(REBIND.path, FIXTURE.hostOrigin).href
+    const client = Object.assign(scriptedClient([], { present: true }), {
+      async bindHosted(binding) { bindings.push(binding); return ANSWER.ok },
+      async recoverHosted() { return { ...ANSWER.ok, values: w.tokens.values() } },
+    })
+    const w = await tokenWorld(t, sdk, { client, record, targetUrl: () => targetUrl })
+    await w.tokens.createHosted(FIXTURE.instanceId)
+    w.tokens.calls.created.length = 0
+    const matches = (instanceId, entryKey) => instanceId === FIXTURE.instanceId && entryKey === oldKey
+    w.tokens.hostedState = (instanceId, entryKey) => ({ state: matches(instanceId, entryKey) ? K3.entry.enabled : K3.entry.deleted, paired: matches(instanceId, entryKey), online: bindings.length > 0 })
+    w.tokens.matchHosted = (instanceId, entryKey, value) => matches(instanceId, entryKey) && value === w.tokens.values()[0]
+    const discards = []
+    w.tokens.discardHosted = (...args) => { discards.push(args); return ANSWER.ok }
+
+    const result = await w.hosted.reconnect()
+    assert.deepEqual(w.tokens.calls.created, [], 'Reconnect created a replacement for the live owned entry')
+    assert.deepEqual(record.entries(), [oldKey])
+    assert.deepEqual([discards, w.tokens.calls.retired], [[], []])
+    assert.deepEqual(bindings.map(({ url, entryKey }) => ({ url, entryKey })), [{ url: targetUrl, entryKey: oldKey }])
+    assert.ok(bindings[0].value === w.tokens.values()[0], 'Reconnect used a credential not verified for the original entry')
+    assert.deepEqual(result, { ok: true, outcome: REBIND.outcome })
+  })
+
   for (const step of ['reconnect', 'firstStart']) {
     caseTest(sdk, 'RFI-F01', 'wire replaced, ' + step, `${step}: the credential client is replaced while createHosted is in flight → the value reaches neither client; nothing recorded${step === 'reconnect' ? '; not-ready' : ''}`, async (t) => {
       const first = scriptedClient()
@@ -103,7 +133,9 @@ eachSdk((sdk) => {
     caseTest(sdk, 'RFI-F06', part, `Reconnect: old credential ${present ? 'present' : 'absent'}, import ${answer === ANSWER.none ? 'unanswered' : JSON.stringify(answer)} → ${JSON.stringify(expected)}; one import, no retry; recorded ${JSON.stringify(recorded)}`, async (t) => {
       const client = scriptedClient([answer, ANSWER.ok], { present })
       const w = await tokenWorld(t, sdk, { client })
-      assert.deepEqual(await w.hosted.reconnect(), expected)
+      const result = await w.hosted.reconnect()
+      if (expected.ok) assert.equal(result.ok, true)
+      else assert.deepEqual(result, expected)
       assert.equal(client.calls.imports.length, 1)
       assert.deepEqual(w.record.added, recorded)
     })
@@ -111,7 +143,7 @@ eachSdk((sdk) => {
   caseTest(sdk, 'RFI-F06', 'notice kept', 'an unanswered Reconnect import keeps the hosted-entry-deleted notice and records nothing', async (t) => {
     const client = scriptedClient([ANSWER.ok, ANSWER.none, ANSWER.ok])
     const w = await tokenWorld(t, sdk, { client })
-    assert.deepEqual(await w.hosted.reconnect(), { ok: true })
+    assert.equal((await w.hosted.reconnect()).ok, true)
     w.tokens.setState(entry(1), K3.entry.deleted)
     w.hosted.retryNotice()
     assert.equal(w.hosted.notice(), NOTICE)

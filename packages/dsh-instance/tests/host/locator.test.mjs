@@ -155,10 +155,11 @@ eachSdk((sdk) => {
     await w.hosted.firstStart()
     assert.equal(w.locator.agentEntry(), entry(1))
   })
-  caseTest(sdk, 'AGENT-ENTRY', 2, 'a Reconnect records a second entry → agentEntry() is the newest, not the first', async (t) => {
+  caseTest(sdk, 'AGENT-ENTRY', 2, 'a Reconnect after deletion records a replacement → agentEntry() is the newest, not the deleted entry', async (t) => {
     const w = await hostedWorld(t, sdk)
     await w.hosted.firstStart()
-    assert.deepEqual(await w.locator.reconnect(), { ok: true })
+    w.tokens.setState(entry(1), K3.entry.deleted)
+    assert.equal((await w.locator.reconnect()).ok, true)
     assert.equal(w.locator.agentEntry(), entry(2))
   })
   caseTest(sdk, 'AGENT-ENTRY', 'seeded', 'a record from an earlier run [k-old, k-new] → agentEntry() is k-new, before and after a start that creates nothing', async (t) => {
@@ -167,18 +168,17 @@ eachSdk((sdk) => {
     await w.hosted.firstStart()
     assert.equal(w.locator.agentEntry(), 'fbtest-k-new')
   })
-  caseTest(sdk, 'AGENT-ENTRY', 'ST', 'null --first start--> e1 --reconnect--> e2 --reconnect--> e3; a refused Reconnect (credentials-unwritable) keeps e3', async (t) => {
+  caseTest(sdk, 'AGENT-ENTRY', 'ST', 'null --first start--> e1 --Reconnect--> e1; after deletion a refused replacement keeps the recorded e1', async (t) => {
     const w = await hostedWorld(t, sdk)
     assert.equal(w.locator.agentEntry(), null)
     await w.hosted.firstStart()
     assert.equal(w.locator.agentEntry(), entry(1))
-    await w.locator.reconnect()
-    assert.equal(w.locator.agentEntry(), entry(2))
-    await w.locator.reconnect()
-    assert.equal(w.locator.agentEntry(), entry(3))
+    assert.equal((await w.locator.reconnect()).ok, false)
+    assert.equal(w.locator.agentEntry(), entry(1))
+    w.tokens.setState(entry(1), K3.entry.deleted)
     w.credentials.failSet = true
     assert.deepEqual(await w.locator.reconnect(), { ok: false, code: K3.refusal.unwritable })
-    assert.equal(w.locator.agentEntry(), entry(3))
+    assert.equal(w.locator.agentEntry(), entry(1))
   })
   caseTest(sdk, 'AGENT-ENTRY', 'ST refused', 'a refused first start (the child cannot store the value) records nothing → null', async (t) => {
     const w = await hostedWorld(t, sdk, { credentials: { failSet: true } })
