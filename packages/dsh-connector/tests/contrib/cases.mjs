@@ -28,7 +28,7 @@
  */
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { caseName } from '../../../../test/v3/contract/package-boundaries/cases.mjs'
+import { caseName } from 'dsh-connector-test-helpers/cases'
 import { FIXTURE, K1, K2, LATER, SERVICE_MEMBERS, WAIT } from './constants.mjs'
 import { eventually, gate, mcpCore, ok, worldFor } from './world.mjs'
 

@@ -15,8 +15,8 @@
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
-import { INSTANCE } from '../../../../test/support/constants.mjs'
-import { importInstance } from '../../../../test/private-skills/support/sdk.mjs'
+import { INSTANCE } from 'dsh-connector-test-helpers/legacy'
+import { importInstance } from 'dsh-connector-test-helpers/sdk'
 import { resolveRuntimePackages } from '../pairs/subject.mjs'
 import { DSH, SUBJECT, WAIT } from './constants.mjs'
 

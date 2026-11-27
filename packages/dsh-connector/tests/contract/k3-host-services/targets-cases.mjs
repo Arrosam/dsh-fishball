@@ -11,7 +11,7 @@
  */
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
-import { caseTest } from '../../../../../test/v3/contract/package-boundaries/cases.mjs'
+import { caseTest } from 'dsh-connector-test-helpers/cases'
 import { FOLDER, SERVICE } from './constants.mjs'
 import { assertParams, contracts, elementType, member, needDeclarations, serviceMembers, vocabulary } from './contracts.mjs'
 import { blankComments, splitTop, syntaxErrors } from './declarations.mjs'

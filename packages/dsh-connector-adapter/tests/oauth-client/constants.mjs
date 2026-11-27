@@ -10,17 +10,17 @@
  * values (K1, `packages/dsh-connector/mcp-schema`: paths, scope, metadata builders). None comes from
  * the code under test. Fixture values (origins, ids, markers) are test data, not product values.
  */
-import os from 'node:os'
+import { versionsDir } from 'dsh-connector-test-helpers/config'
 import path from 'node:path'
-import { REPO } from '../../../../test/support/constants.mjs'
-import * as K1 from '../../../dsh-connector/mcp-schema/index.js'
+import { REPO } from 'dsh-connector-test-helpers/legacy'
+import * as K1 from 'dsh-agent-connector/mcp-schema'
 
 export { K1 }
 
 /** The two SDKs every case runs on (R-OA-21 rule 11, R-COMPAT-01). */
 export const SDK = Object.freeze({
   versions: Object.freeze(['0.2.1-rc.5', '0.2.2-rc.1']),
-  versionsDir: process.env.FBTEST_DSH_VERSIONS ?? path.join(os.homedir(), 'Library', 'Application Support', 'DSH', 'data', 'versions'),
+  versionsDir: versionsDir,
   nodeModules: 'node_modules',
   /** The MCP SDK the caller hands the library (2.2.0 on both hosts; brief "Library module"). */
   mcpClient: Object.freeze({ name: '@modelcontextprotocol/client', entry: path.join('dist', 'index.mjs') }),

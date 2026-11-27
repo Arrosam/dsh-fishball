@@ -20,7 +20,7 @@
  * injected clock. A flow that needs a later task is `todo` and names it (constants.mjs LATER).
  */
 import assert from 'node:assert/strict'
-import { caseTest } from '../../../../test/v3/contract/package-boundaries/cases.mjs'
+import { caseTest } from 'dsh-connector-test-helpers/cases'
 import {
   BEARER_CHALLENGE, CALLER_FIELDS, CLIENT_AUTH, ERROR_BODY_FIELDS, FAILURE_LIMIT, FIXTURE, GATE_SURFACE, GRANT, GRANT_CONTEXT,
   GRANT_DISPATCH, HOSTS, HTTP_METHOD, HTTP_STATUS, HTTP_WIRE, ID_CLASSES, ID_LENGTHS, ID_MAX, LATER, LIFETIME, OAUTH_ERROR, OAUTH_ERROR_STATUS,

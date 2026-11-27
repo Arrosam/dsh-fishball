@@ -14,7 +14,7 @@ import {
   HTTP_METHOD, HTTP_STATUS, ID_REFUSAL, LIFETIME, NAME_RULES, OAUTH_ERROR, PATHS, PKCE, REFUSAL, REQUEST_GATE, RESPONSE_TYPE, SCOPE, TIME_UNIT,
   DERIVED_AGENT_ID, ID_GRAMMAR, RATE_LIMITS, TOKEN_VALUE, checkName, isAgentId, nameKey, oauthUrls,
 } from '../../mcp-schema/index.js'
-import { REPO } from '../../../../test/support/constants.mjs'
+import { REPO } from 'dsh-connector-test-helpers/legacy'
 
 export {
   APPROVAL_LISTENER, AUTHORIZE_EXTENSION, CIMD_LIMITS, CLIENT_AUTH, CONNECTOR_STATUS, ENTRY_STATUS, FAILURE_LIMIT, GATE_SURFACE, GRANT, GRANT_DISPATCH, HOSTS,

@@ -10,7 +10,7 @@
  * manifests are read from Git at the task's base commit: they are the input R-EMBED moves.
  */
 import path from 'node:path'
-import { REPO } from '../../../../../../test/support/constants.mjs'
+import { REPO } from 'dsh-connector-test-helpers/legacy'
 
 /** R-EMBED (1)–(2): the new package and where the moved client lives. */
 export const EMBED = Object.freeze({

@@ -14,7 +14,7 @@
   },
   "type": "module",
   "scripts": {
-    "test": "node ../../test/run-package.mjs"
+    "test": "node ../dsh-connector-test-helpers/src/runner/cli.mjs"
   },
   "exports": {
     "./redact": "./redact.js",
@@ -28,5 +28,8 @@
   ],
   "engines": {
     "node": ">=22.14"
+  },
+  "devDependencies": {
+    "dsh-connector-test-helpers": "1.0.0-alpha.1"
   }
 }

@@ -7,7 +7,7 @@
  * is reused, never restated; only the marks' own values are added here.
  */
 export { ATTR, BACKEND, CODES, EXPECT, FIXTURE, MARKS, MARKUP_TAGS, SLOT, TAG, TEXT, TOOL, WAIT } from '../../ui/tests/draw/constants.mjs'
-export { FISH, WRENCH } from '../../../../test/v3/contract/package-boundaries/icon-set.mjs'
+export { FISH, WRENCH } from 'dsh-connector-test-helpers/static/icon-set'
 
 /** The SDKs every row runs on (the suite files' names). */
 export const SDKS = Object.freeze(['0.2.1-rc.5', '0.2.2-rc.1'])

@@ -11,7 +11,7 @@
  * implementation.
  */
 import path from 'node:path'
-import { REPO } from '../../../../../test/support/constants.mjs'
+import { REPO } from 'dsh-connector-test-helpers/legacy'
 
 /**
  * K3 "Owns": the two folders the freeze fills, both types only. FBTEST_K3_ROOT moves the package
@@ -20,11 +20,12 @@ import { REPO } from '../../../../../test/support/constants.mjs'
 const ROOT = process.env.FBTEST_K3_ROOT ?? path.join(REPO, 'packages')
 /**
  * fishball-core moved to the dsh-fishball repository (repo split 6b7c53bf), so this repository reads
- * its frozen K3 contracts from the copied fixture; FBTEST_K3_ROOT still names another checkout.
+ * its frozen K3 contracts from the fixture copied at the split (fixtures-fishball-core/, taken from
+ * 6b7c53bf^); FBTEST_K3_ROOT still names another checkout.
  */
 const CORE_CONTRACTS = process.env.FBTEST_K3_ROOT
   ? path.join(ROOT, 'core', 'contracts')
-  : path.join(REPO, 'test', 'fixtures', 'fishball-core', 'contracts')
+  : path.join(import.meta.dirname, 'fixtures-fishball-core', 'contracts')
 export const FOLDER = Object.freeze({
   /** Host-only services of a main / host DSH (connector-side folder). */
   hostServices: path.join(ROOT, 'dsh-connector', 'host-services'),

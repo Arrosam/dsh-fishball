@@ -9,7 +9,7 @@
  * from the brief. No embed-UI implementation was read.
  */
 import path from 'node:path'
-import { REPO } from '../../../../../test/support/constants.mjs'
+import { REPO } from 'dsh-connector-test-helpers/legacy'
 
 /** The host-only services embed-UI follows at runtime (K3 README, design §4.2). */
 export const SERVICE = Object.freeze({

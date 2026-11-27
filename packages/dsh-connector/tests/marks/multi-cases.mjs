@@ -25,7 +25,7 @@
  */
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { caseName } from '../../../../test/v3/contract/package-boundaries/cases.mjs'
+import { caseName } from 'dsh-connector-test-helpers/cases'
 import { alerts, bodiesOf, confirmNote, findRole, labelOf, labelText, manyButtons, mountHeader, mountOverlay, mountRowMark, mountRowMenu, one, openMenu, posted, world } from '../../ui/tests/draw/cases.mjs'
 import { lightOf, press, row, textIn, withAttr } from '../../ui/tests/draw/world.mjs'
 import { ATTR, FIXTURE, MULTI, TEXT, WAIT } from './constants.mjs'

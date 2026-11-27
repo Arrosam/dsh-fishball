@@ -11,7 +11,7 @@
  * No embed-UI implementation was read.
  */
 import path from 'node:path'
-import { REPO } from '../../../../../test/support/constants.mjs'
+import { REPO } from 'dsh-connector-test-helpers/legacy'
 import { K2, K3, SURFACE as BACKEND } from '../../../tests/ui/constants.mjs'
 import { CHILD as SHELL_CHILD, LOOPBACK, REFUSAL_TEXT, ROUTE as SHELL_ROUTE, ROUTE_REFUSAL as SHELL_REFUSAL } from '../shell/constants.mjs'
 

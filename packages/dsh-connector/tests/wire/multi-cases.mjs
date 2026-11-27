@@ -1,10 +1,10 @@
 /** MULTI-2 frozen identity resources, standard stream invalidation and local hostname sampler. */
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { caseName } from '../../../../test/v3/contract/package-boundaries/cases.mjs'
-import { BUDGET, K1, SURFACE } from './constants.mjs'
-import { MULTI as M } from './multi-constants.mjs'
-import { multiWorld as world, saveName, expectedInfo, observer, discovered, identity, bothResources, identityNotices, assertStandardIdentityHint, toolDefinitions, oauthSnapshot, quiet, eventually } from './multi-subject.mjs'
+import { caseName } from 'dsh-connector-test-helpers/cases'
+import { BUDGET, K1, SURFACE } from 'dsh-connector-test-helpers/connector-world/constants'
+import { MULTI as M } from 'dsh-connector-test-helpers/connector-world/multi-constants'
+import { multiWorld as world, saveName, expectedInfo, observer, discovered, identity, bothResources, identityNotices, assertStandardIdentityHint, toolDefinitions, oauthSnapshot, quiet, eventually } from 'dsh-connector-test-helpers/connector-world/multi'
 const row = (sdk, part, title, fn) => test(caseName(sdk, M.id, part, title), { timeout: BUDGET.testMs }, fn)
 export function registerMultiWireCases(sdk) {
   row(sdk, 'EP real identity resource', 'resources/list/read expose standard Implementation from same live getter as discovery', async (t) => {

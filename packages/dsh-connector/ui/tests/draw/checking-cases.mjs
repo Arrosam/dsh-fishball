@@ -1,7 +1,7 @@
 /** Main-pane state transitions. Each row mounts once; a header badge alone is not a connected pane. */
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { caseName } from '../../../../../test/v3/contract/package-boundaries/cases.mjs'
+import { caseName } from 'dsh-connector-test-helpers/cases'
 import { mountMain, world } from './cases.mjs'
 import { ADMIT, ATTR, CHILD, POLISH, ROUTE, TAG, WAIT } from './constants.mjs'
 import { byTag, press, textIn, withAttr } from './world.mjs'

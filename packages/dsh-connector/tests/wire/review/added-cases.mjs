@@ -16,12 +16,12 @@
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
 import test, { describe } from 'node:test'
-import { NODE } from '../../../../../test/support/constants.mjs'
-import { scenario } from '../world.mjs'
-import { ENV, PACKAGES } from '../constants.mjs'
-import { BUDGET, HTTP, K1, OP, SURFACE, V3_SERVICES } from './constants.mjs'
+import { NODE } from 'dsh-connector-test-helpers/legacy'
+import { scenario } from 'dsh-connector-test-helpers/connector-world/world'
+import { ENV, PACKAGES } from 'dsh-connector-test-helpers/connector-world/constants'
+import { BUDGET, HTTP, K1, OP, SURFACE, V3_SERVICES } from 'dsh-connector-test-helpers/connector-world/steps-constants'
 import { ADDED, CREATE_FIELDS, EXIT, LATER_ROWS, MOVED, REMOUNT_ERRORS, UI_AVAILABILITY } from './added-constants.mjs'
-import { assertMetadata, remount } from './steps.mjs'
+import { assertMetadata, remount } from 'dsh-connector-test-helpers/connector-world/steps'
 
 const T = Object.freeze({ timeout: BUDGET.testMs })
 const SERIAL = Object.freeze({ concurrency: false })

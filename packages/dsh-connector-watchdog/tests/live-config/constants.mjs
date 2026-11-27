@@ -10,7 +10,7 @@
  * index.js and src/config.js were not read.
  */
 import path from 'node:path'
-import { REPO } from '../../../../test/support/constants.mjs'
+import { REPO } from 'dsh-connector-test-helpers/legacy'
 
 export const WATCHDOG = Object.freeze({
   name: 'dsh-connector-watchdog',

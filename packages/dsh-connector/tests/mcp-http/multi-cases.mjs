@@ -1,9 +1,9 @@
 /** MULTI-2 lightweight HTTP integration: standard metadata and live OS getter, no product inspection. */
 import assert from 'node:assert/strict'
-import { caseTest } from '../../../../test/v3/contract/package-boundaries/cases.mjs'
+import { caseTest } from 'dsh-connector-test-helpers/cases'
 import { httpWorld } from './subject.mjs'
 import { FIXTURE, PROTOCOL } from './constants.mjs'
-import { MULTI as M } from '../wire/multi-constants.mjs'
+import { MULTI as M } from 'dsh-connector-test-helpers/connector-world/multi-constants'
 
 import { expected, mockHostname, implementation } from './multi-subject.mjs'
 

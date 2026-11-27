@@ -12,7 +12,7 @@
  * a name (the `agent_id` parameter, the derived-id parts) are found by meaning.
  */
 import path from 'node:path'
-import { REPO } from '../../../../../test/support/constants.mjs'
+import { REPO } from 'dsh-connector-test-helpers/legacy'
 
 /** Case ids: one per frozen item of the gate (the task's numbering, W4 briefs G3). */
 export const ID = Object.freeze({

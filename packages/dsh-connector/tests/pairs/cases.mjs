@@ -22,7 +22,7 @@
  * nothing leaked (the result is exactly the frozen K1 shape, so no field of another pair).
  */
 import assert from 'node:assert/strict'
-import { caseTest } from '../../../../test/v3/contract/package-boundaries/cases.mjs'
+import { caseTest } from 'dsh-connector-test-helpers/cases'
 import {
   FIXTURE, GENERATED, HOLDER, ID_CLASSES, ID_REFUSAL, INSUFFICIENT_SCOPE_REASON, LATER, NAME_CLASSES, NAME_RULES, NON_STRING_NAME, PAIR_ADVICE,
   PAIR_TIMING, REFUSAL, SCOPE, SUBJECT, TIME_UNIT, UNIQUENESS, checkName, nameKey, pairStoreMembers, principalLabel,

@@ -18,7 +18,7 @@ import {
   LIFETIME, OAUTH_ERROR, OAUTH_ERROR_STATUS, OAUTH_METADATA, PATHS, RATE_LIMITS, REQUEST_GATE, REVOCATION_KIND, SCOPE, TIME_UNIT, TOKEN_ENDPOINT_LIMITS, TOKEN_RESPONSE_HEADERS,
   TOKEN_VALUE, authorizationServerMetadata, isAgentId, oauthErrorBody, oauthUrls, protectedResourceMetadata, tokenResponse,
 } from '../../mcp-schema/index.js'
-import { REPO } from '../../../../test/support/constants.mjs'
+import { REPO } from 'dsh-connector-test-helpers/legacy'
 
 export {
   APPROVAL_LISTENER, BEARER_CHALLENGE, CLIENT_AUTH, ENTRY_STATUS, FAILURE_LIMIT, GATE_SURFACE, GRANT, GRANT_DISPATCH, HOSTS, HTTP_METHOD, HTTP_STATUS,

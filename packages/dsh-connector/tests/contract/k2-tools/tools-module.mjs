@@ -10,10 +10,10 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
-import { INSTANCE, REPO } from '../../../../../test/support/constants.mjs'
-import { linkContractForSourceRun } from '../../../../../test/support/contract-link.mjs'
-import { importInstance } from '../../../../../test/private-skills/support/sdk.mjs'
-import { SKILL_SDK } from '../../../../../test/private-skills/support/constants.mjs'
+import { INSTANCE, REPO } from 'dsh-connector-test-helpers/legacy'
+import { linkContractForSourceRun } from 'dsh-connector-test-helpers/runner/links'
+import { importInstance } from 'dsh-connector-test-helpers/sdk'
+import { SKILL_SDK } from 'dsh-connector-test-helpers/sdk'
 import { API, FIXTURE, MCP_CORE, REGISTER_CODE, TOOLS_MODULE, WALK_DEPTH } from './constants.mjs'
 
 const loaded = new Map()

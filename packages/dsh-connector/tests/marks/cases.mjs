@@ -32,7 +32,7 @@
  */
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { caseName } from '../../../../test/v3/contract/package-boundaries/cases.mjs'
+import { caseName } from 'dsh-connector-test-helpers/cases'
 import { confirmNote, handOverButtons, manyButtons, mountFish, mountHeader, mountOverlay, mountRowMark, mountRowMenu, one, online, routePathOf, world } from '../../ui/tests/draw/cases.mjs'
 import { attrOf, byTag, press, sessionProps, subtreeOf, textIn, withAttr } from '../../ui/tests/draw/world.mjs'
 import { ATTR, FISH, FIXTURE, MARKS, PRESENCE, SLOT, TAG, TEXT, WAIT, WRENCH } from './constants.mjs'

@@ -13,7 +13,7 @@
  */
 import path from 'node:path'
 import * as K2 from '../../tools/index.js'
-import { REPO } from '../../../../test/support/constants.mjs'
+import { REPO } from 'dsh-connector-test-helpers/legacy'
 import { handoverCodes } from '../routing/constants.mjs'
 
 export { K2 }

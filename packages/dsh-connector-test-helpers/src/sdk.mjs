@@ -71,6 +71,16 @@ export const importSdk = (version, pkg, entry = SDK_LAYOUT.entry) => import(path
 export const requireSdk = (version, pkg) => createRequire(path.join(sdkRoot(version), SDK_LAYOUT.packageFile))(pkg)
 
 export { sdkRoot, VERSION_TAG }
+// ------------------------------------------------------------------------------------------------
+// The names the suites used with the old root harness (test/private-skills/support), kept so the
+// moved suites read the same. `importInstance(version, relative)` resolves `relative` against
+// INSTANCE.dir (a fixed folder inside the repository), so path.relative(INSTANCE.dir, file) works.
 
-/** The layout of the DSH versions folder, for suites that build their own paths into it. */
-export const SDK_DIRS = Object.freeze({ versionsDir, nodeModules: SDK_LAYOUT.nodeModules, packageFile: SDK_LAYOUT.packageFile, entry: SDK_LAYOUT.entry })
+/** The folder relative module paths are resolved from (the old dsh-instance anchor). */
+export const INSTANCE = Object.freeze({ dir: path.join(REPO, 'packages', 'dsh-instance') })
+/** Import a repository module (relative to INSTANCE.dir) bound to DSH `version`. */
+export const importInstance = (version, relative) => importBound(version, path.join(INSTANCE.dir, relative))
+/** The DSH versions folder layout, under its old name. */
+export const SKILL_SDK = Object.freeze({ versionsDir, nodeModules: SDK_LAYOUT.nodeModules, packageFile: SDK_LAYOUT.packageFile, entry: SDK_LAYOUT.entry })
+/** The binding tag, under its old name. */
+export const HARNESS = Object.freeze({ versionTag: VERSION_TAG })

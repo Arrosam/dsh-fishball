@@ -8,12 +8,12 @@
  * `expires-at-required` has no row of its own.
  */
 import assert from 'node:assert/strict'
-import { APPROVAL_DECISION, DECISION_TEXT, FIXTURE, GRANT_KIND, IX, PAYLOAD_LIMITS, REFUSAL, RELAYED, RISK, SURFACE, TOOL, WORLD } from './constants.mjs'
-import { row } from './rows.mjs'
+import { APPROVAL_DECISION, DECISION_TEXT, FIXTURE, GRANT_KIND, IX, PAYLOAD_LIMITS, REFUSAL, RELAYED, RISK, SURFACE, TOOL, WORLD } from 'dsh-connector-test-helpers/connector-world/interactions-constants'
+import { row } from 'dsh-connector-test-helpers/connector-world/rows'
 import {
   A, answer, asked, assertCovered, assertOffered, call, decided, exactGrant, free, handOver, isListed, managed, okCall, prefixGrant,
   principal, refusedCall, sleep, takeBack, tok, world,
-} from './subject.mjs'
+} from 'dsh-connector-test-helpers/connector-world/interactions'
 
 const SHELL = 'bash'
 const accepted = (reply) => reply.ok === true && reply.accepted === true

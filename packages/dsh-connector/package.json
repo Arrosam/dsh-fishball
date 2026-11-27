@@ -16,7 +16,7 @@
   },
   "type": "module",
   "scripts": {
-    "test": "node ../../test/run-package.mjs"
+    "test": "node ../dsh-connector-test-helpers/src/runner/cli.mjs"
   },
   "main": "./index.js",
   "//exports": "./mcp-schema (tool and event schemas, limits, vocabularies) and ./tools (contribution types, apiVersion, defineTool) are V3's data-and-types modules (design §9.1), frozen by the V3-K tasks K1 and K2. ./client is the connector's own settings page (design §5.9). C-WIRE-2 removed ./contract (the V2 contract) with the V2 broker; ./records moved to dsh-connector-ui with the UI (R-EMBED).",
@@ -90,5 +90,8 @@
         "@deepseek-ai/dsh-client-ui-layout"
       ]
     }
+  },
+  "devDependencies": {
+    "dsh-connector-test-helpers": "1.0.0-alpha.1"
   }
 }

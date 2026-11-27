@@ -18,7 +18,7 @@ import {
 } from '../../mcp-schema/index.js'
 // K1 owns these vocabularies since C-WIRE-2 (the V2 ./contract export is gone).
 import { APPROVAL_DECISION as DECISION, RISK } from '../../mcp-schema/index.js'
-import { REPO } from '../../../../test/support/constants.mjs'
+import { REPO } from 'dsh-connector-test-helpers/legacy'
 
 export {
   DECISION, DECISION_KIND_OF, EVENT_TYPE, MAILBOX, NAME_RULES, OFFER_ID, OFFER_TYPES, QUEUE, REFUSAL, RESOURCE, RETIREMENT_REASON,

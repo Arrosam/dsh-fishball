@@ -24,7 +24,7 @@
  */
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { caseName } from '../../../../test/v3/contract/package-boundaries/cases.mjs'
+import { caseName } from 'dsh-connector-test-helpers/cases'
 import {
   alerts, assertBold, assertLight, assertSingle, bodiesOf, confirmNote, findRole, handOverButtons, labelOf, labelText, manyButtons, menuItems,
   mountHeader, mountOverlay, mountRowMark, mountRowMenu, one, online, openMenu, posted, routePathOf, world,

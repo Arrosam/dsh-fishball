@@ -7,7 +7,7 @@
  * The limiter is a fake that applies K1 FAILURE_LIMIT's rule (subject.mjs LimitingFailures).
  */
 import assert from 'node:assert/strict'
-import { caseTest } from '../../../../test/v3/contract/package-boundaries/cases.mjs'
+import { caseTest } from 'dsh-connector-test-helpers/cases'
 import { assert401, assertDiscovered, modernRpc, post, wireOf } from './cases.mjs'
 import { FAILURE_LIMIT, FIXTURE, HTTP_STATUS, RATE_LIMITS, RPC } from './constants.mjs'
 import { LimitingFailures, httpWorld } from './subject.mjs'

@@ -19,12 +19,12 @@
  * Observation points: the graph entries and their served sources, the plugins and their fiber
  * states, every slot registration with the graph entry that made it, and page console errors.
  */
-import { createBrowserSandbox } from '../../../../../../test/support/browser-sandbox.mjs'
-import { createReactShim } from '../../../../../../test/support/rp-recommend.mjs'
-import { fakePrimitives } from '../../../../../../test/support/set-panel.mjs'
-import { applyPlugins, moduleTable } from '../../../../../../test/v3/contract/package-boundaries/client-graph.mjs'
-import { BOOT, BUDGET, HTTP, ROUTE, runtimeOf } from '../../../../../../test/v3/fishball-core/package/constants.mjs'
-import { FIBER, pageServices, servedSource } from '../../../../../../test/v3/fishball-core/package/page.mjs'
+import { createBrowserSandbox } from 'dsh-connector-test-helpers/page/browser-sandbox'
+import { createReactShim } from 'dsh-connector-test-helpers/page/react-shim'
+import { fakePrimitives } from 'dsh-connector-test-helpers/page/primitives'
+import { applyPlugins, moduleTable } from 'dsh-connector-test-helpers/page/client-graph'
+import { BOOT, BUDGET, HTTP, ROUTE, runtimeOf } from 'dsh-connector-test-helpers/page/boot'
+import { FIBER, pageServices, servedSource } from 'dsh-connector-test-helpers/page/services'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { PAGE } from './constants.mjs'

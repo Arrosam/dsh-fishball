@@ -1,11 +1,11 @@
 /** MULTI-2 name/getter system cases, independent of the pending identity-resource seam. */
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { caseName } from '../../../../test/v3/contract/package-boundaries/cases.mjs'
-import { BUDGET, FIXTURE, HTTP, K1 } from './constants.mjs'
-import { sdkClient } from './world.mjs'
-import { MULTI as M } from './multi-constants.mjs'
-import { multiWorld as world, saveName, info, expectedInfo, observer, discovered, identity, clientInfo, freshClientId } from './multi-subject.mjs'
+import { caseName } from 'dsh-connector-test-helpers/cases'
+import { BUDGET, FIXTURE, HTTP, K1 } from 'dsh-connector-test-helpers/connector-world/constants'
+import { sdkClient } from 'dsh-connector-test-helpers/connector-world/world'
+import { MULTI as M } from 'dsh-connector-test-helpers/connector-world/multi-constants'
+import { multiWorld as world, saveName, info, expectedInfo, observer, discovered, identity, clientInfo, freshClientId } from 'dsh-connector-test-helpers/connector-world/multi'
 const row = (sdk, part, title, fn) => test(caseName(sdk, M.id, part, title), { timeout: BUDGET.testMs }, fn)
 
 export function registerMultiNameCases(sdk) {

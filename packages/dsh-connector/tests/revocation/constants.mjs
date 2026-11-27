@@ -8,7 +8,7 @@
  * rest is fixture data and harness values.
  */
 import path from 'node:path'
-import { REPO } from '../../../../test/support/constants.mjs'
+import { REPO } from 'dsh-connector-test-helpers/legacy'
 
 export {
   EVENT_TYPE, FIXTURE, MAILBOX, OFFER_TYPES, REFUSAL, RETIREMENT_REASON, RETIRE_OUTCOME, REVOCATION, SETTLED_BY, SETTLEMENT_OUTCOME, WAIT,

@@ -16,7 +16,7 @@
  * revoked → body done), Equivalence Partitioning (listen / discover; revoked / not).
  */
 import assert from 'node:assert/strict'
-import { caseTest } from '../../../../test/v3/contract/package-boundaries/cases.mjs'
+import { caseTest } from 'dsh-connector-test-helpers/cases'
 import { mcpHeaders, upload } from './amend-cases.mjs'
 import { assert401, assertDiscovered, modernRpc, wireOf } from './cases.mjs'
 import { FIXTURE, HEADER, REVIEW_X as RX, RESOURCE, REVOCATION, RPC, UPLOAD, WAIT } from './constants.mjs'

@@ -28,12 +28,12 @@
  * | IX-MULTI ST (default name freed) | ST | set_name "Fishball" by the 2nd → name-taken; the 1st disabled → still name-taken (a disabled pair keeps its name); the 1st deleted → ok; targets: the 2nd is "Fishball" |
  */
 import assert from 'node:assert/strict'
-import { HTTP } from '../wire/constants.mjs'
-import { createToken } from '../wire/review/steps.mjs'
-import { EVENT_TYPE, K1, MULTI_AGENT as M, SURFACE, TOOL } from './constants.mjs'
-import { row } from './rows.mjs'
-import { call, connect, eventually, fresh, ofType, okCall, pending, saveTokens, session, setEnabled, tokensOf, world } from './subject.mjs'
-import { stateOf } from '../wire/review/steps.mjs'
+import { HTTP } from 'dsh-connector-test-helpers/connector-world/constants'
+import { createToken } from 'dsh-connector-test-helpers/connector-world/steps'
+import { EVENT_TYPE, K1, MULTI_AGENT as M, SURFACE, TOOL } from 'dsh-connector-test-helpers/connector-world/interactions-constants'
+import { row } from 'dsh-connector-test-helpers/connector-world/rows'
+import { call, connect, eventually, fresh, ofType, okCall, pending, saveTokens, session, setEnabled, tokensOf, world } from 'dsh-connector-test-helpers/connector-world/interactions'
+import { stateOf } from 'dsh-connector-test-helpers/connector-world/steps'
 import { assertGeneratedName } from '../pairs/cases.mjs'
 
 const H = SURFACE.service.handover

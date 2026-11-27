@@ -11,7 +11,7 @@
  * clock (world.mjs); DSH's own dsh-settings for the served namespace (test/support/amenity-settings.mjs).
  */
 import assert from 'node:assert/strict'
-import { assertField, fieldsOf, servedNamespace } from '../../../../test/support/amenity-settings.mjs'
+import { assertField, fieldsOf, servedNamespace } from 'dsh-connector-test-helpers/dsh/settings-schema'
 import { FIELDS, FIXTURE, TIME, WATCHDOG } from './constants.mjs'
 import { caseTest, rowModule, storedBrief, watchdogWorld } from './world.mjs'
 

@@ -9,9 +9,9 @@
  */
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { scenario } from '../world.mjs'
-import { SURFACE } from '../constants.mjs'
-import { OP } from './constants.mjs'
+import { scenario } from 'dsh-connector-test-helpers/connector-world/world'
+import { SURFACE } from 'dsh-connector-test-helpers/connector-world/constants'
+import { OP } from 'dsh-connector-test-helpers/connector-world/steps-constants'
 import { ADDED, EXIT } from './added-constants.mjs'
 
 const sdk = process.env[EXIT.sdkEnv]

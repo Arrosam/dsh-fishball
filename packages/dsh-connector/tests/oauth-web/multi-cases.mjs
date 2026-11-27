@@ -1,10 +1,10 @@
 /** MULTI-2: approval displays the resolved bare base as escaped text, not MCP's suffixed identity. */
 import assert from 'node:assert/strict'
-import { caseTest } from '../../../../test/v3/contract/package-boundaries/cases.mjs'
+import { caseTest } from 'dsh-connector-test-helpers/cases'
 import { decode } from './browser.mjs'
 import { open } from './cases.mjs'
 import { webWorld } from './subject.mjs'
-import { MULTI as M } from '../wire/multi-constants.mjs'
+import { MULTI as M } from 'dsh-connector-test-helpers/connector-world/multi-constants'
 
 export function registerMultiApprovalCases(sdk) {
   for (const data of M.nameRows.filter((row) => row.value && !row.hostname)) {

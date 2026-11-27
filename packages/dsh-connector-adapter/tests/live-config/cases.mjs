@@ -11,7 +11,7 @@
  * (world.mjs), DSH's own dsh-settings for the served namespace.
  */
 import assert from 'node:assert/strict'
-import { assertField, fieldsOf, servedNamespace } from '../../../../test/support/amenity-settings.mjs'
+import { assertField, fieldsOf, servedNamespace } from 'dsh-connector-test-helpers/dsh/settings-schema'
 import { caseTest } from '../oauth-client/cases.mjs'
 import { adapterModule } from '../adapter/subject.mjs'
 import { ADAPTER_ROW, FIELDS, SERVERS } from './constants.mjs'

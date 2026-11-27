@@ -17,9 +17,9 @@ import { mkdtemp, realpath, rm } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import test from 'node:test'
-import { INSTANCE } from '../../../../test/support/constants.mjs'
-import { importInstance, importSdk } from '../../../../test/private-skills/support/sdk.mjs'
-import { caseName } from '../../../../test/v3/contract/package-boundaries/cases.mjs'
+import { INSTANCE } from 'dsh-connector-test-helpers/legacy'
+import { importInstance, importSdk } from 'dsh-connector-test-helpers/sdk'
+import { caseName } from 'dsh-connector-test-helpers/cases'
 import { FIXTURE, SDK, TIME, WAIT, WATCHDOG } from './constants.mjs'
 
 export const caseTest = (sdk, id, row, title, fn) => test(caseName(sdk, id, row, title), { timeout: WAIT.testMs }, fn)

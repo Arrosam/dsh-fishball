@@ -1,6 +1,0 @@
-// Requirements-only C-WIRE review rows; identical registration on both supported SDKs.
-import { registerReviewCases } from './cases.mjs'
-import { registerAddedReviewCases } from './added-cases.mjs'
-
-registerReviewCases('0.2.1-rc.5')
-registerAddedReviewCases('0.2.1-rc.5')

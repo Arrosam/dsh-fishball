@@ -4,8 +4,8 @@ import os from 'node:os'
 import fs from 'node:fs'
 import path from 'node:path'
 import { syncBuiltinESMExports } from 'node:module'
-import { REPO } from '../../../../test/support/constants.mjs'
-import { MULTI as M } from '../wire/multi-constants.mjs'
+import { REPO } from 'dsh-connector-test-helpers/legacy'
+import { MULTI as M } from 'dsh-connector-test-helpers/connector-world/multi-constants'
 
 const manifest = path.join(REPO, 'packages', 'dsh-connector', 'package.json')
 export const implementation = (client) => {

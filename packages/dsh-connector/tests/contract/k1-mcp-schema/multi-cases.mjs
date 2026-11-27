@@ -12,7 +12,7 @@
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
-import { REPO } from '../../../../../test/support/constants.mjs'
+import { REPO } from 'dsh-connector-test-helpers/legacy'
 import { caseTest } from './cases.mjs'
 import { declarations, declaredConstType, readme, section, unquote } from './k1c-cases.mjs'
 import { DECLARED_EXPORT } from './k1c-constants.mjs'

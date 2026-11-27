@@ -5,14 +5,14 @@
  */
 import assert from 'node:assert/strict'
 import test, { describe } from 'node:test'
-import { freePort, nonWebScenario, scenario } from '../world.mjs'
-import * as IXS from '../../interactions/subject.mjs'
-import { BUDGET, DATA, DECISION, DELIVERY, DESCRIPTION, EXPECT, FIXTURE, FUTURE, K1, OP, RISK, SCHEMA_TEXT, SURFACE, V3_SERVICES } from './constants.mjs'
+import { freePort, nonWebScenario, scenario } from 'dsh-connector-test-helpers/connector-world/world'
+import * as IXS from 'dsh-connector-test-helpers/connector-world/interactions'
+import { BUDGET, DATA, DECISION, DELIVERY, DESCRIPTION, EXPECT, FIXTURE, FUTURE, K1, OP, RISK, SCHEMA_TEXT, SURFACE, V3_SERVICES } from 'dsh-connector-test-helpers/connector-world/steps-constants'
 import {
   activityAfter, assertDuplicateRefused, assertMetadata, connect, createToken, duplicateOf, eventually,
   fresh, handOver, listedIds, managedOf, managedSession, noticeOf, okCall, ownerJson, paired, read,
   refusedCall, remount, saveTokens, stateOf, tokensOf, userSession,
-} from './steps.mjs'
+} from 'dsh-connector-test-helpers/connector-world/steps'
 
 const T = Object.freeze({ timeout: BUDGET.testMs })
 const SERIAL = Object.freeze({ concurrency: false })

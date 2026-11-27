@@ -1,7 +1,7 @@
 /** Host snapshot SSE lifecycle, observed only at the browser transport and rendered slot boundaries. */
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { caseName } from '../../../../../test/v3/contract/package-boundaries/cases.mjs'
+import { caseName } from 'dsh-connector-test-helpers/cases'
 import { handOverButtons, mountFish, mountHeader, mountOverlay, noticeNode, online, routePathOf, world } from './cases.mjs'
 import { ATTR, EXPECT, FIXTURE, TOOL } from './constants.mjs'
 import { textIn, withAttr } from './world.mjs'

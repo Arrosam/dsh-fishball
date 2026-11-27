@@ -19,8 +19,8 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { INSTANCE } from '../../../../test/support/constants.mjs'
-import { importInstance, importSdk } from '../../../../test/private-skills/support/sdk.mjs'
+import { INSTANCE } from 'dsh-connector-test-helpers/legacy'
+import { importInstance, importSdk } from 'dsh-connector-test-helpers/sdk'
 import { DSH, FIXTURE, LIBRARY, SDK } from './constants.mjs'
 
 /** Imports a repository module bound to `sdk` (its `@deepseek-ai/*` imports resolve to that SDK). */

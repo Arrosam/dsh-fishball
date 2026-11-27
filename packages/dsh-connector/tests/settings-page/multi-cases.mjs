@@ -1,12 +1,12 @@
 /** MULTI-2 settings boundary: nonblank DSH display names are text, never HTML or tool names. */
 import assert from 'node:assert/strict'
-import { caseTest } from '../../../../test/v3/contract/package-boundaries/cases.mjs'
-import { findAll } from '../../../../test/support/rp-recommend.mjs'
+import { caseTest } from 'dsh-connector-test-helpers/cases'
+import { findAll } from 'dsh-connector-test-helpers/page/react-shim'
 import { worldFor } from '../tokens/world.mjs'
 import { CLIENT, POLISH, SUBJECT } from './constants.mjs'
 import { input, openTokensPage } from './page.mjs'
 import { pageModule } from './subject.mjs'
-import { MULTI as M } from '../wire/multi-constants.mjs'
+import { MULTI as M } from 'dsh-connector-test-helpers/connector-world/multi-constants'
 
 export function registerMultiSettingsCases(sdk) {
   for (const data of M.nameRows.filter((row) => row.value && !row.hostname)) {

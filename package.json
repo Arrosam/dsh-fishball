@@ -18,9 +18,7 @@
     "dsh": ">=0.2.1-rc.5"
   },
   "scripts": {
-    "test": "node test/run-v3.mjs",
-    "test:v3": "node test/run-v3.mjs",
-    "test:package": "node test/run-package.mjs",
+    "test:release": "node scripts/test-release.mjs",
     "pack": "node scripts/pack.mjs",
     "pack:check": "node scripts/pack.mjs --check"
   }

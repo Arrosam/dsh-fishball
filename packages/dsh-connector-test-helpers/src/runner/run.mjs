@@ -77,6 +77,7 @@ export async function runPackage(dir, args = [], { stdio = 'inherit', label = pa
     // DSH_TEST_NAMES=<file>: also write one JSON line per finished case (names-reporter.mjs), the
     // record the behaviour inventory is checked against.
     const names = process.env[ENV.names]
+    if (names) fs.writeFileSync(path.resolve(names), '')
     const reporters = hasReporter ? [] : names
       ? ['--test-reporter=spec', '--test-reporter-destination=stdout', '--test-reporter=' + NAMES_REPORTER, '--test-reporter-destination=' + path.resolve(names)]
       : ['--test-reporter=spec']

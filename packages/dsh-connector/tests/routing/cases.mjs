@@ -31,7 +31,7 @@
  */
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { caseName } from '../../../../test/v3/contract/package-boundaries/cases.mjs'
+import { caseName } from 'dsh-connector-test-helpers/cases'
 import { listener } from '../mcp-http/cases.mjs'
 import { httpWorld } from '../mcp-http/subject.mjs'
 import {

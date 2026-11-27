@@ -8,7 +8,7 @@
  * entry files run the same module).
  */
 import assert from 'node:assert/strict'
-import { caseTest } from '../../../../test/v3/contract/package-boundaries/cases.mjs'
+import { caseTest } from 'dsh-connector-test-helpers/cases'
 import { performance } from 'node:perf_hooks'
 import { CONTINUED, PERF, REDACT_ROWS } from './constants.mjs'
 

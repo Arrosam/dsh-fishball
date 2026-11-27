@@ -7,7 +7,7 @@
  * slot-contract.d.ts, the same on both SDKs).
  */
 import path from 'node:path'
-import { REPO } from '../../../../test/support/constants.mjs'
+import { REPO } from 'dsh-connector-test-helpers/legacy'
 import { HOST_SLOTS } from '../../ui/tests/contract/embed/constants.mjs'
 
 export { HOSTED_LABEL, SETTINGS_REFUSAL, TOKEN_VALUE, VALUE_ANYWHERE, VALUE_PATTERN, WAIT } from '../tokens/constants.mjs'

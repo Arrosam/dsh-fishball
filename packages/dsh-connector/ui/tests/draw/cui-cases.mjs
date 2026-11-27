@@ -24,7 +24,7 @@
  */
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { caseName } from '../../../../../test/v3/contract/package-boundaries/cases.mjs'
+import { caseName } from 'dsh-connector-test-helpers/cases'
 import { mountMain, mountOverlay, noticeNode, online, routePathOf, world } from './cases.mjs'
 import { ATTR, CUI, EXPECT, FIXTURE, POLISH, SLOT, TOOL, WAIT } from './constants.mjs'
 import { placeOf, scriptFish } from './polish-cases.mjs'

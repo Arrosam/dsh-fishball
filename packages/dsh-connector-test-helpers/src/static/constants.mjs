@@ -40,3 +40,25 @@ export const WORKER = Object.freeze({
   tokens: path.join(import.meta.dirname, 'tokens-worker.mjs'),
   execArgv: Object.freeze(['--expose-internals', '--experimental-import-meta-resolve', '--no-warnings']),
 })
+/** The `dsh` field of a package manifest. */
+export const DSH_FIELD = 'dsh'
+
+/**
+ * Package names of the Fishball side and the instance, which live in other repositories: a DSH-side
+ * package of this repository must never name them (R-ARCH-10, R-BND-01).
+ */
+export const OTHER_SIDE = Object.freeze({ instance: 'dsh-instance', core: 'fishball-core', ui: 'fishball-ui', board: 'fishball-board', shared: 'fishball-shared' })
+export const SET_SIDE = Object.freeze([OTHER_SIDE.core, OTHER_SIDE.ui, OTHER_SIDE.board])
+
+/** The product packages under the names the moved suites use (embed = the connector's UI component). */
+export const V3 = Object.freeze({
+  connector: PRODUCT.connector,
+  embed: PRODUCT.ui,
+  adapter: PRODUCT.adapter,
+  dshShared: PRODUCT.shared,
+  /** Lives in the dsh-fishball-instance repository; this folder does not exist here. */
+  instance: Object.freeze({ name: OTHER_SIDE.instance, dir: packageDir(OTHER_SIDE.instance) }),
+})
+
+/** DSH's own bundle inspection, as the suites call it (dsh/inspect.mjs). */
+export const SDK = Object.freeze({ inspect: Object.freeze({ refused: 'refused', notABundle: 'not-a-bundle' }) })

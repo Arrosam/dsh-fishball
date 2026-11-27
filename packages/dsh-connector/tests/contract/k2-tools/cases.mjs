@@ -19,7 +19,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
 import test from 'node:test'
-import { REPO } from '../../../../../test/support/constants.mjs'
+import { REPO } from 'dsh-connector-test-helpers/legacy'
 import {
   API, CALL_CODE, DESCRIPTION_MAX_BYTES, EMIT_CODE, EURO, EVENT_LIMITS, EXTERNAL_NAME_AMEND, FIXTURE, GRAMMAR, LATER, LIMIT_KEYS,
   MCP_TOOL_NAME, MEANING, MESSAGE_MAX_CHARS, META_KEY, NON_HINT_ANNOTATION, PROTOCOL_VERSION, REGISTER_CODE, SERVICE, SHORT_NAMESPACE,

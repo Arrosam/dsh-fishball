@@ -4,9 +4,9 @@
  * implementer relayed the same day (dictionary keys, data attributes, roles). Member Configs are the members' real ones (index.js exports Config).
  * client.js was not read; it runs in a scripted page (page.mjs).
  */
-import os from 'node:os'
+import { versionsDir } from 'dsh-connector-test-helpers/config'
 import path from 'node:path'
-import { REPO } from '../../../../test/support/constants.mjs'
+import { REPO } from 'dsh-connector-test-helpers/legacy'
 
 export const UMBRELLA = Object.freeze({
   id: 'dsh-connector-amenities',
@@ -24,7 +24,7 @@ export const UMBRELLA = Object.freeze({
 })
 
 export const PAGE = Object.freeze({
-  versionsDir: process.env.FBTEST_DSH_VERSIONS ?? path.join(os.homedir(), 'Library', 'Application Support', 'DSH', 'data', 'versions'),
+  versionsDir: versionsDir,
   sdks: Object.freeze(['0.2.1-rc.5', '0.2.2-rc.1', '0.2.2-rc.3']),
   baseURI: 'http://127.0.0.1:4100/',
   lang: Object.freeze({ en: 'en', zh: 'zh' }),

@@ -9,7 +9,7 @@ import assert from 'node:assert/strict'
 import path from 'node:path'
 import { test } from 'node:test'
 import { pathToFileURL } from 'node:url'
-import { REPO } from '../../../../test/support/constants.mjs'
+import { REPO } from 'dsh-connector-test-helpers/legacy'
 
 const { createDelegates, VERDICT } = await import(pathToFileURL(path.join(REPO, 'packages', 'dsh-connector', 'src', 'delegates', 'index.js')).href)
 const { DELEGATE_OUTCOME } = await import(pathToFileURL(path.join(REPO, 'packages', 'dsh-connector', 'mcp-schema', 'index.js')).href)

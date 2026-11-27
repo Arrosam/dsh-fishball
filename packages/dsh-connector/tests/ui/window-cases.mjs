@@ -15,8 +15,8 @@
  */
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { until } from '../../../../test/support/util.mjs'
-import { caseName } from '../../../../test/v3/contract/package-boundaries/cases.mjs'
+import { until } from 'dsh-connector-test-helpers/wait'
+import { caseName } from 'dsh-connector-test-helpers/cases'
 import { FIXTURE as ROUTE_FIXTURE } from '../routing/constants.mjs'
 import { unit } from './cases.mjs'
 import { FIXTURE, SURFACE, WAIT } from './constants.mjs'

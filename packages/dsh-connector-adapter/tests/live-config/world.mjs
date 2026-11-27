@@ -4,7 +4,7 @@
  * createAdapterPlugin({now, timers, fetch}) (the adapter suite's fake clock and recording fetch)
  * registered as a loader builtin, so a settings change is loader.update(id, {config}).
  */
-import { importSdk } from '../../../../test/private-skills/support/sdk.mjs'
+import { importSdk } from 'dsh-connector-test-helpers/sdk'
 import { cleanups, openHost, tempRoot } from '../oauth-client/subject.mjs'
 import { adapterModule } from '../adapter/subject.mjs'
 import { fakeClock, otherServer, recordingFetch } from '../adapter/fakes.mjs'

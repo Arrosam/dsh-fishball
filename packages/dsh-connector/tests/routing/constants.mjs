@@ -21,7 +21,7 @@ import {
 import { EMIT_REFUSAL, NAMESPACE } from '../../tools/index.js'
 // K1 owns IMAGE_TYPES since C-WIRE-2 (the V2 ./contract export is gone).
 import { IMAGE_TYPES } from '../../mcp-schema/index.js'
-import { REPO } from '../../../../test/support/constants.mjs'
+import { REPO } from 'dsh-connector-test-helpers/legacy'
 
 export {
   CONNECTED, CONTRIBUTED_TYPE_PREFIX, DECISION_KIND_OF, ENTRY_STATUS, EVENT_TYPE, MAILBOX, MANAGED_REFUSAL, OFFER_ID, OFFER_TYPES, PATHS,

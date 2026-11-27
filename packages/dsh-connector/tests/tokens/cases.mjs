@@ -23,7 +23,7 @@ import { randomBytes } from 'node:crypto'
 import fs from 'node:fs'
 import path from 'node:path'
 import test from 'node:test'
-import { caseName } from '../../../../test/v3/contract/package-boundaries/cases.mjs'
+import { caseName } from 'dsh-connector-test-helpers/cases'
 import {
   ENTRY_STATUS, FIXTURE, HOSTED_LABEL, LATER, NO_SUCH_MEMBER, REQUIREMENT, REVOCATION_KIND, SECRET_FIELDS, SETTINGS_REFUSAL, STORE, SUBJECT,
   TOKEN_VALUE, VALUE_ANYWHERE, VALUE_PATTERN, WAIT,

@@ -7,7 +7,7 @@
  * src/wire/sessions.js (createSessionSource); no line of its body was read.
  */
 import path from 'node:path'
-import { REPO } from '../../../../test/support/constants.mjs'
+import { REPO } from 'dsh-connector-test-helpers/legacy'
 import { TURN_FINISHED, TURN_OUTCOME } from '../../mcp-schema/index.js'
 
 export { TURN_FINISHED, TURN_OUTCOME }

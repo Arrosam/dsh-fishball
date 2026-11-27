@@ -16,7 +16,7 @@
  */
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { caseName } from '../../../../../test/v3/contract/package-boundaries/cases.mjs'
+import { caseName } from 'dsh-connector-test-helpers/cases'
 import { assertHint, assertNotReady, mountMain, mountOverlay, noticeNode, openThenLoseInstance, world } from './cases.mjs'
 import { ATTR, CHILD, FIXTURE, POLISH, TAG, TEXT, TOOL, WAIT } from './constants.mjs'
 import { attrOf, byTag, subtreeOf, textIn, withAttr } from './world.mjs'

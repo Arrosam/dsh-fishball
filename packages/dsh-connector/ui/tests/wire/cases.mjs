@@ -3,7 +3,7 @@
  * → unmanaged moved to packages/dsh-connector/tests/marks (DESIGN.md §28). Real Cordis/C-EXT/UI backend, scripted page, K3 child fake, no child launch. */
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { caseName } from '../../../../../test/v3/contract/package-boundaries/cases.mjs'
+import { caseName } from 'dsh-connector-test-helpers/cases'
 import { ATTR, BACKEND, EMBED, EXPECT, FIXTURE, HTTP, MATRIX, ROUTE, SLOT, TAG, TEXT, TOOL, WAIT, WINDOW, WIRE } from './constants.mjs'
 import { hostWorld, openPage, byTag, withAttr, textIn, press, row, sessionProps } from './subject.mjs'
 const wire = (sdk, id, part, title, fn) => test(caseName(sdk, id, part, title), { timeout: WAIT.testMs }, fn)

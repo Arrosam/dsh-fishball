@@ -19,6 +19,18 @@ export function caseTest(version, id, row, title, fn, todo) {
   else test(name, fn)
 }
 
+/**
+ * A case that boots a host DSH, run only when `gate.env` is `gate.on` (an integration run);
+ * otherwise registered as skipped under the same name with `gate.skip`, so every run lists it.
+ */
+export function integrationCase(version, id, row, title, fn, gate) {
+  const name = caseName(version, id, row, title)
+  if (process.env[gate.env] === gate.on) test(name, fn)
+  else test(name, { skip: gate.skip }, () => {})
+}
+
+export { dshInspect } from './dsh/inspect.mjs'
+
 /** A row a later decision withdrew, kept visible as skipped with its reason. */
 export function withdrawnCase(version, id, row, title, reason) {
   test(caseName(version, id, row, title), { skip: reason }, () => {})

@@ -3,6 +3,8 @@
  * entries), `locale` (register, bind, snapshot, language switch) and `layout` (panel info,
  * selectPanel). Re-renders go through the React shim's `rerender`.
  */
+export { FIBER, servedSource } from './boot.mjs'
+
 /** @param shim - a createReactShim() instance; @param lang - the page language. */
 export function pageServices(shim, lang) {
   const entries = new Map()
@@ -59,11 +61,3 @@ export function pageServices(shim, lang) {
   }
   return { slots, locale, layout, entries, setLang }
 }
-
-/**
- * Load the child's Fishball client bundles into one scripted page and apply them.
- * @param t - node:test context (cleanup).
- * @param options.sdk - the SDK whose Cordis applies the plugins.
- * @param options.child - { origin, cookie } from admitChild.
- * @param options.lang - page language.
- * @param options.exclude - `(entry, source) => boolean`: graph entries this page does not load (the

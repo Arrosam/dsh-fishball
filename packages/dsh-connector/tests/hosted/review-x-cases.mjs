@@ -21,7 +21,7 @@
  */
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { caseName } from '../../../../test/v3/contract/package-boundaries/cases.mjs'
+import { caseName } from 'dsh-connector-test-helpers/cases'
 import { CALL, DOMAIN, FIXTURE, K3, PORT, REVIEW_X as RX, SUBJECT, WAIT } from './constants.mjs'
 import { afterCommit, callStep } from './fakes.mjs'
 import { succeedWorld } from './subject.mjs'

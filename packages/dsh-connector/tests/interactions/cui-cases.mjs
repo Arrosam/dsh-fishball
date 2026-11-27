@@ -10,9 +10,9 @@
  * over C→ Managed(P) of R –Take back C→ Unmanaged).
  */
 import assert from 'node:assert/strict'
-import { EVENT_TYPE, IX, REFUSAL, SURFACE, TOOL, WORLD } from './constants.mjs'
-import { row } from './rows.mjs'
-import { call, cid, eventually, free, managedOf, ofType, pending, permissionsFor, principal, reconnect, session, step, tok, turn, world } from './subject.mjs'
+import { EVENT_TYPE, IX, REFUSAL, SURFACE, TOOL, WORLD } from 'dsh-connector-test-helpers/connector-world/interactions-constants'
+import { row } from 'dsh-connector-test-helpers/connector-world/rows'
+import { call, cid, eventually, free, managedOf, ofType, pending, permissionsFor, principal, reconnect, session, step, tok, turn, world } from 'dsh-connector-test-helpers/connector-world/interactions'
 
 const ID = 'RFC-UI01'
 const H = SURFACE.service.handover

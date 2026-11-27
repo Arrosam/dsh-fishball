@@ -13,7 +13,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
 import test from 'node:test'
-import { caseName } from '../../../../../test/v3/contract/package-boundaries/cases.mjs'
+import { caseName } from 'dsh-connector-test-helpers/cases'
 import {
   ATTR, BACKEND, CHILD, CODES, DECIDED, DIAGNOSTIC, EMBED, EXPECT, FIXTURE, HTTP, MARKUP_TAGS, PAGE_HOST, REFUSAL, ROUTE, SERVICE,
   SLOT, TAG, TEXT, TOOL, UI_KEYS, WAIT, WINDOW,

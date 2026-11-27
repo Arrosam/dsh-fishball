@@ -21,7 +21,7 @@
  * tools; no change).
  */
 import assert from 'node:assert/strict'
-import { caseTest } from '../../../../test/v3/contract/package-boundaries/cases.mjs'
+import { caseTest } from 'dsh-connector-test-helpers/cases'
 import { assertRefusal, assertSuccess } from './cases.mjs'
 import { DECISION, FIXTURE, REFUSAL, REVIEW_X as RX, RISK, TOOL } from './constants.mjs'
 import { toolsWorld } from './subject.mjs'

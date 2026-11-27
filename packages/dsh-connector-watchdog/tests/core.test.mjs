@@ -13,7 +13,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { test } from 'node:test'
 import { pathToFileURL } from 'node:url'
-import { REPO } from '../../../test/support/constants.mjs'
+import { REPO } from 'dsh-connector-test-helpers/legacy'
 
 const SRC = path.join(REPO, 'packages', 'dsh-connector-watchdog', 'src')
 const load = (file) => import(pathToFileURL(path.join(SRC, file)).href)

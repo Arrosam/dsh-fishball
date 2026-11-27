@@ -7,9 +7,9 @@
  * call the service as a plugin would. Techniques: UC, EP, BVA, DT, ST.
  */
 import assert from 'node:assert/strict'
-import { IX, K1, PAYLOAD_LIMITS, REFUSAL, SURFACE, TOOL } from './constants.mjs'
-import { row } from './rows.mjs'
-import { call, eventually, okCall, principal, tok, world } from './subject.mjs'
+import { IX, K1, PAYLOAD_LIMITS, REFUSAL, SURFACE, TOOL } from 'dsh-connector-test-helpers/connector-world/interactions-constants'
+import { row } from 'dsh-connector-test-helpers/connector-world/rows'
+import { call, eventually, okCall, principal, tok, world } from 'dsh-connector-test-helpers/connector-world/interactions'
 
 const S = IX.start
 const startArgs = (folder, extra = {}) => ({ folder, title: 'IX start ' + tok('t'), message: tok('first'), attachments: [], ...extra })

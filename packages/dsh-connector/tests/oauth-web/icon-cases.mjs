@@ -21,7 +21,7 @@ import { createHash } from 'node:crypto'
 import { open, row } from './cases.mjs'
 import { attributes } from './browser.mjs'
 import { APPROVAL_LISTENER, FIXTURE, HTTP_STATUS, PARAM, POLISH } from './constants.mjs'
-import { ICON, PACKAGES, WRENCH, baseOf, glyphPaths, iconMismatch, parseXml, readIcon, walk } from '../../../../test/v3/contract/package-boundaries/icon-set.mjs'
+import { ICON, PACKAGES, WRENCH, baseOf, glyphPaths, iconMismatch, parseXml, readIcon, walk } from 'dsh-connector-test-helpers/static/icon-set'
 
 const ID = Object.freeze({ mark: 'ICON-WEB-EP-01', same: 'ICON-WEB-CONSIST', csp: 'ICON-WEB-DT-01' })
 const CONNECTOR = PACKAGES.find((p) => p.wrench)

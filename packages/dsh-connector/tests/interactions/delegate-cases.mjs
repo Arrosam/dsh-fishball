@@ -6,9 +6,9 @@
  * Techniques: UC, EP, DT.
  */
 import assert from 'node:assert/strict'
-import { EVENT_TYPE, IX, SETTLED_BY, SETTLEMENT_OUTCOME } from './constants.mjs'
-import { row } from './rows.mjs'
-import { argsFor, cid, decided, eventually, free, listed, managed, ofType, pending, principal, quiet, resultsOf, session, step, stockFor, tok, waitEvents, world } from './subject.mjs'
+import { EVENT_TYPE, IX, SETTLED_BY, SETTLEMENT_OUTCOME } from 'dsh-connector-test-helpers/connector-world/interactions-constants'
+import { row } from 'dsh-connector-test-helpers/connector-world/rows'
+import { argsFor, cid, decided, eventually, free, listed, managed, ofType, pending, principal, quiet, resultsOf, session, step, stockFor, tok, waitEvents, world } from 'dsh-connector-test-helpers/connector-world/interactions'
 
 const D = IX.delegate
 

@@ -3,7 +3,7 @@
  * parent relayed (C-WIRE brief items 1, 6, 7, 8) and fixture data. No product implementation is read.
  */
 import path from 'node:path'
-import { SURFACE } from '../constants.mjs'
+import { SURFACE } from 'dsh-connector-test-helpers/connector-world/constants'
 
 /** The create route's answer (brief item 1: "answers 200 with {ok, entryKey, label, value}"). */
 export const CREATE_FIELDS = Object.freeze(['entryKey', 'label', 'ok', 'value'])

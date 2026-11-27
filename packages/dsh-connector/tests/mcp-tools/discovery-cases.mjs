@@ -24,9 +24,9 @@
  */
 import assert from 'node:assert/strict'
 import path from 'node:path'
-import { caseTest } from '../../../../test/v3/contract/package-boundaries/cases.mjs'
-import { INSTANCE, REPO } from '../../../../test/support/constants.mjs'
-import { importInstance } from '../../../../test/private-skills/support/sdk.mjs'
+import { caseTest } from 'dsh-connector-test-helpers/cases'
+import { INSTANCE, REPO } from 'dsh-connector-test-helpers/legacy'
+import { importInstance } from 'dsh-connector-test-helpers/sdk'
 import { SCOPE_HINT } from '../contract/k1-mcp-schema/constants.mjs'
 import { sdkClient } from '../mcp-http/subject.mjs'
 import { assertRefusal, assertSuccess } from './cases.mjs'

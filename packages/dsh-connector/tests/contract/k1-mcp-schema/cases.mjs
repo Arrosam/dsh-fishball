@@ -27,7 +27,7 @@ import {
   NAME_MAX_CHARS, NO_NOTIFY, OAUTH_ERRORS, OFFER_ID, PAIR_RESULT, PATHS, PORT_RANGE, PROTOCOL_VERSION, RECORDED, REFUSAL, SCHEMA_MODULE, SCOPE,
   SCOPE_HINT, SECONDS_EPSILON, STOCK_TOKEN_REQUESTS_PER_FAILED_CALL, TOKEN_STORE, TOOL_CODES, UNITS, WELL_KNOWN, ENTRY_OK, WITHDRAWN_TOKEN_CODES,
 } from './constants.mjs'
-import { MCP_PINS } from '../../../../../test/v3/release/pack/mcp-pins.mjs'
+import { MCP_PINS } from 'dsh-connector-test-helpers/static/mcp-pins'
 import { model } from '../k3-host-services/declarations.mjs'
 import {
   allPropertyNames, allText, exportedRegExps, exportedStrings, exportedStringsAndKeys, folderTexts, hasListEqualTo, leaves, mcpClient, mcpCore, numbersAt,

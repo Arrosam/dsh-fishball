@@ -23,13 +23,15 @@
  */
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { caseName } from '../../../../../test/v3/contract/package-boundaries/cases.mjs'
-import { SURFACE } from '../../../tests/wire/constants.mjs'
-import { registerRenameRow } from './rename.mjs'
+import { caseName } from 'dsh-connector-test-helpers/cases'
+import { SURFACE } from 'dsh-connector-test-helpers/connector-world/constants'
+import { withdrawnRow } from 'dsh-connector-test-helpers/withdrawn'
 import { CHROME, FIXTURE, HEADER, NAV, PX, SETTINGS, WIDTH, WINDOW } from './constants.mjs'
 import { apart, gap, measure, near, overlaps, sameLine, show } from './geometry.mjs'
-import { at, connectorWorld, failedInstanceWorld, noBrowser, openConnectorPage, openSession, openWindow, sessionIn } from './world.mjs'
+import { at, connectorWorld, noBrowser, openConnectorPage, openSession, sessionIn } from './world.mjs'
 
+/** Why the hosted rename row is not run here (its world needs fishball-core, which lives in dsh-fishball since the repo split). */
+const RENAME_WITHDRAWN = 'moved out: needs a live fishball-core child (dsh-fishball repository); the connector half (the DSH name saved and the identity hint) runs in the connector suites (DSH-NAME, IX-MULTI)'
 const ID = Object.freeze({ header: 'UIFD-HEADER', settings: 'UIFD-SETTINGS', window: 'UIFD-WINDOW' })
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
@@ -337,6 +339,10 @@ function settingsRows(sdk) {
       for (const width of WIDTH.all) {
         await t.test(width + 'px', async () => {
           await at(tab, width)
+          // DSH 0.2.2-rc.3 shows the package README above the settings, so the token row can start
+          // below the viewport, where it has no painted box. Scroll it into view as a user would.
+          await tab.evaluate(`[...document.querySelectorAll('[${SETTINGS.row}]')].find((row) => [...row.querySelectorAll('input')].some((i) => i.value === ${JSON.stringify(SETTINGS.longLabel)}))?.scrollIntoView({ block: 'center' })`)
+          await at(tab, width)
           const { rows, newLabel, newToken } = await measure(tab, TOKEN_ROWS)
           assert.ok(!overlaps(newLabel, newToken), `the new-label field ${show(newLabel)} overlaps New token ${show(newToken)}`)
           const r = rows.find((x) => x.value === SETTINGS.longLabel)
@@ -388,54 +394,19 @@ function settingsRows(sdk) {
 
 // ============================================================================================ R3
 
-const WINDOW_STATE = `(() => {
-  const group = document.querySelector('[${WINDOW.embedCode}]')
-  const header = group?.closest('header')
-  if (!header) return null
-  const code = U.byText(group, ${JSON.stringify(WINDOW.code)})
-  const refresh = U.byText(header, ${JSON.stringify(WINDOW.refresh)})?.closest('button')
-  const title = U.byText(header, ${JSON.stringify(WINDOW.title)})
-  const body = header.parentElement
-  const detail = (t) => { const el = [...body.querySelectorAll('*')].filter((e) => !header.contains(e) && U.text(e) === t).at(-1); return el ? { shown: U.shown(el), overflows: U.overflows(el) } : null }
-  return {
-    viewport: document.documentElement.clientWidth,
-    groupCode: group.getAttribute('${WINDOW.embedCode}'),
-    code: U.info(code), refresh: refresh ? U.box(refresh) : null, title: U.painted(title),
-    stateLine: detail(${JSON.stringify(WINDOW.stateLine)}), codeLine: detail(${JSON.stringify(WINDOW.codeLine)}),
-  }
-})()`
+
+/** Why the failed-child window row is not run here: its host DSH must run the dsh-instance package (another repository). */
+const WINDOW_WITHDRAWN = 'moved out: needs the dsh-instance package (dsh-fishball-instance repository) as the host that reports failed / INVALID_MAIN_HOME; the window header drawing of a failed child runs in-process in the draw suite (WIN-DRAW, UDRAW-UC-01 A2)'
 
 function windowRows(sdk) {
-  row(sdk, ID.window, `failed child code (BVA width)`, `child failed / ${WINDOW.code}, at ${WIDTH.all.join(' / ')} px: the header's code is one line, its title the full code, never over Refresh or "Fishball"; ${WIDTH.narrow}px may end in an ellipsis; ${WIDTH.wide}px shows it whole; the body still reads "${WINDOW.stateLine}" and "${WINDOW.codeLine}"`, async (t) => {
-    const owned = await failedInstanceWorld(sdk)
-    const { tab } = await openWindow(t, owned)
-    for (const width of WIDTH.all) {
-      await t.test(width + 'px', async () => {
-        await at(tab, width)
-        const s = await measure(tab, WINDOW_STATE)
-        assert.ok(s?.code, 'no code in the window header')
-        assert.equal(s.groupCode, WINDOW.code)
-        assert.equal(s.code.text, WINDOW.code)
-        assert.equal(s.code.title, WINDOW.code, 'the code\'s title is not the full code')
-        assert.equal(s.code.lines, 1, 'the code breaks onto ' + s.code.lines + ' lines')
-        assert.ok(s.refresh && s.title, 'harness: no Refresh button or "Fishball" title in the header')
-        assert.ok(!overlaps(s.code.painted, s.refresh), `the code ${show(s.code.painted)} overlaps Refresh ${show(s.refresh)}`)
-        assert.ok(!overlaps(s.code.painted, s.title), `the code ${show(s.code.painted)} overlaps "Fishball" ${show(s.title)}`)
-        if (s.code.overflowing.length > 0) assert.ok(s.code.overflowing.some((o) => o.clips && o.textOverflow === 'ellipsis'), 'the code overflows without an ellipsis: ' + JSON.stringify(s.code.overflowing))
-        if (width === WIDTH.wide) assert.ok(s.code.scrollWidth <= s.code.clientWidth, `the code is truncated at ${width}px (scrollWidth ${s.code.scrollWidth} > clientWidth ${s.code.clientWidth})`)
-        for (const [line, words] of [[s.stateLine, WINDOW.stateLine], [s.codeLine, WINDOW.codeLine]]) {
-          assert.ok(line?.shown, `the body does not show "${words}"`)
-          assert.equal(line.overflows, false, `the body's "${words}" is cut`)
-        }
-      })
-    }
-  })
+  withdrawnRow(sdk, ID.window, 'failed child code (BVA width)', `child failed / ${WINDOW.code}, at ${WIDTH.all.join(' / ')} px: the header's code is one line, its title the full code, never over Refresh or "Fishball"; ${WIDTH.narrow}px may end in an ellipsis; ${WIDTH.wide}px shows it whole; the body still reads "${WINDOW.stateLine}" and "${WINDOW.codeLine}"`, WINDOW_WITHDRAWN)
 }
 
 export function registerLayoutCases(sdk) {
   headerRows(sdk)
   settingsRows(sdk)
-  registerRenameRow(sdk, row)
+  // RFC-DSHNAME R1B hosted needs a running fishball-core (the dsh-fishball repository) as the hosted
+  // child that reads the DSH name: it is a cross-repository row and cannot run in this repository.
+  withdrawnRow(sdk, 'RFC-DSHNAME', 'R1B hosted', 'empty → Enter then move focus → cleared on blur; persisted settings and live identity agree, duplicate resolved only in Fishball', RENAME_WITHDRAWN)
   windowRows(sdk)
 }
-

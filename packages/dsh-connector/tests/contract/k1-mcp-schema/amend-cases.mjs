@@ -13,7 +13,7 @@
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
-import { REPO } from '../../../../../test/support/constants.mjs'
+import { REPO } from 'dsh-connector-test-helpers/legacy'
 import { blankComments } from '../k3-host-services/declarations.mjs'
 import { caseTest, declarationText } from './cases.mjs'
 import { MOVED_LIMITS, SCHEMA_MODULE } from './constants.mjs'

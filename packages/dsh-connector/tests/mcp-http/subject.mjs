@@ -40,9 +40,9 @@ import fs from 'node:fs'
 import http from 'node:http'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { INSTANCE, REPO } from '../../../../test/support/constants.mjs'
-import { SKILL_SDK } from '../../../../test/private-skills/support/constants.mjs'
-import { importInstance } from '../../../../test/private-skills/support/sdk.mjs'
+import { INSTANCE, REPO } from 'dsh-connector-test-helpers/legacy'
+import { SKILL_SDK } from 'dsh-connector-test-helpers/sdk'
+import { importInstance } from 'dsh-connector-test-helpers/sdk'
 import {
   BEARER_CHALLENGE, FAILURE_LIMIT, FIXTURE, HEADER, HOSTS, OAUTH_ERROR, PATHS, REQUEST_GATE, RESOURCE, SCOPE, oauthUrls, SDK_CLIENT, SUBJECT, VERIFY, WAIT,
 } from './constants.mjs'

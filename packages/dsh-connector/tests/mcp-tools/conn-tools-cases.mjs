@@ -7,7 +7,7 @@
  * queued events and domain untouched; a retained call and generic settlement delivery still work.
  */
 import assert from 'node:assert/strict'
-import { caseTest } from '../../../../test/v3/contract/package-boundaries/cases.mjs'
+import { caseTest } from 'dsh-connector-test-helpers/cases'
 import { CONN_FIXTURE as F, CONN_TOOLS as C } from '../contract/k1-mcp-schema/conn-tools-constants.mjs'
 import { assertRefusal, assertSuccess } from './cases.mjs'
 import { assertGeneratedName } from '../pairs/cases.mjs'

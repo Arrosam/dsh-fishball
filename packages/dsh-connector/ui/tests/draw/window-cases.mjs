@@ -21,8 +21,8 @@
  */
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { caseName } from '../../../../../test/v3/contract/package-boundaries/cases.mjs'
-import { FISH } from '../../../../../test/v3/contract/package-boundaries/icon-set.mjs'
+import { caseName } from 'dsh-connector-test-helpers/cases'
+import { FISH } from 'dsh-connector-test-helpers/static/icon-set'
 import { fakeTimers } from '../../../tests/oauth-web/fakes.mjs'
 import { FakePairStore } from '../../../tests/ui/fakes.mjs'
 import { assertFramed, fishEntries, mainEntries, mountFish, mountMain, mountOverlay, noticeNode, routePathOf } from './cases.mjs'

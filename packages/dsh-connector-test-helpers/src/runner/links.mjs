@@ -32,3 +32,5 @@ export function linkWorkspaces() {
 function isDanglingLink(file) {
   try { return fs.lstatSync(file).isSymbolicLink() } catch { return false }
 }
+/** The old name of linkWorkspaces (test/support/contract-link.mjs), kept for the moved suites. */
+export const linkContractForSourceRun = linkWorkspaces

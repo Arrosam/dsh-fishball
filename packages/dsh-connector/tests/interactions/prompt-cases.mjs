@@ -6,12 +6,12 @@
  * "Agent不能回答不归自己管的会话，只能操作自己管的会话". Techniques: UC, EP, BVA, DT, ST.
  */
 import assert from 'node:assert/strict'
-import { APPROVAL_DECISION, ARGUMENTS_STATUS, DECISION_TEXT, FIXTURE, IX, PAYLOAD_LIMITS, REFUSAL, RELAYED, RISK, TOOL } from './constants.mjs'
-import { row, withdrawn } from './rows.mjs'
+import { APPROVAL_DECISION, ARGUMENTS_STATUS, DECISION_TEXT, FIXTURE, IX, PAYLOAD_LIMITS, REFUSAL, RELAYED, RISK, TOOL } from 'dsh-connector-test-helpers/connector-world/interactions-constants'
+import { row, withdrawn } from 'dsh-connector-test-helpers/connector-world/rows'
 import {
   A, answer, asked, call, cid, decided, free, handOver, managed, managedOf, okCall, permissionsFor, principal, quiet, refusedCall, resultOf, session,
   setLimit, step, titleOf, tok, untilStock, userClicks, world,
-} from './subject.mjs'
+} from 'dsh-connector-test-helpers/connector-world/interactions'
 
 const SET = RELAYED.setting
 /** A call in the user's session `sid` whose stock prompt is showing; `{text, id}`. */

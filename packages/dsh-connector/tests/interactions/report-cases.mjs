@@ -14,9 +14,9 @@
  * Techniques: UC (the cycle), EP (each way a turn ends), DT (stop reason), ST (held → settled; stopped → next turn).
  */
 import assert from 'node:assert/strict'
-import { A, answer, cid, eventually, free, managed, ofType, okCall, pending, principal, quiet, step, tok, waitEvents, world } from './subject.mjs'
-import { EVENT_TYPE, FIXTURE, IX, K1, TOOL } from './constants.mjs'
-import { row } from './rows.mjs'
+import { A, answer, cid, eventually, free, managed, ofType, okCall, pending, principal, quiet, step, tok, waitEvents, world } from 'dsh-connector-test-helpers/connector-world/interactions'
+import { EVENT_TYPE, FIXTURE, IX, K1, TOOL } from 'dsh-connector-test-helpers/connector-world/interactions-constants'
+import { row } from 'dsh-connector-test-helpers/connector-world/rows'
 
 const ET = EVENT_TYPE
 const { TURN_OUTCOME: O } = K1

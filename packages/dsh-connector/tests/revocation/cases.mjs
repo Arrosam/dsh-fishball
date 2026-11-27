@@ -52,7 +52,7 @@
  */
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { caseName } from '../../../../test/v3/contract/package-boundaries/cases.mjs'
+import { caseName } from 'dsh-connector-test-helpers/cases'
 import {
   ackOffer, counting, expectEntries, expectNone, managedByP, managedSet, manage, offerTo, pendingOf, quiet,
   refusedAtCall, settleRefused, settlementOf, settlesWithin, unwatched, until,

@@ -23,7 +23,7 @@
  * no body, a 401 no JSON-RPC body).
  */
 import assert from 'node:assert/strict'
-import { caseTest } from '../../../../test/v3/contract/package-boundaries/cases.mjs'
+import { caseTest } from 'dsh-connector-test-helpers/cases'
 import {
   APPROVAL_LISTENER, BEARER_CHALLENGE, BODY_CAP_BYTES, DIAGNOSTIC_LEVELS, ENDPOINT_LIMITS, FIXTURE, GATE_SURFACE, HEADER, HOSTS, HTTP_METHOD,
   HTTP_REFUSAL, HTTP_STATUS, LATER, OAUTH_ERROR, OAUTH_ERROR_STATUS, PATHS, PROTOCOL, RATE_LIMITS, REQUEST_GATE, RESOURCE,

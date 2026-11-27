@@ -18,12 +18,12 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { registerHooks } from 'node:module'
 import { pathToFileURL } from 'node:url'
-import { HARNESS, SKILL_SDK } from '../../../../test/private-skills/support/constants.mjs'
-import { INSTANCE } from '../../../../test/support/constants.mjs'
-import { linkContractForSourceRun } from '../../../../test/support/contract-link.mjs'
-import { importInstance } from '../../../../test/private-skills/support/sdk.mjs'
+import { HARNESS, SKILL_SDK } from 'dsh-connector-test-helpers/sdk'
+import { INSTANCE } from 'dsh-connector-test-helpers/legacy'
+import { linkContractForSourceRun } from 'dsh-connector-test-helpers/runner/links'
+import { importInstance } from 'dsh-connector-test-helpers/sdk'
 import { resolveRuntimePackages } from '../pairs/subject.mjs'
-import { FILES, PACKAGES } from './constants.mjs'
+import { FILES, PACKAGES } from 'dsh-connector-test-helpers/connector-world/constants'
 
 /**
  * The plugin entry imports DSH-shipped runtime peers outside `@deepseek-ai/` beyond the pairs

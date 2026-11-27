@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { caseTest } from '../../../../../test/v3/contract/package-boundaries/cases.mjs'
+import { caseTest } from 'dsh-connector-test-helpers/cases'
 import { mountMain } from './cases.mjs'
 import { byTag, hostWorld, openPage, press, textIn } from './world.mjs'
 

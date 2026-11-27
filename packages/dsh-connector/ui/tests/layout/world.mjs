@@ -1,13 +1,11 @@
 /**
  * The UI-FIX-D world: real DSH processes in real Chromium tabs, so every layout row measures real CSS.
  *
- * - Connector DSH (R1, R2): the C-WIRE worker (../../dsh-connector/wire/world.mjs `scenario`) with
+ * - Connector DSH (R1, R2): the connector world of dsh-connector-test-helpers (`scenario`) with
  *   dsh-agent-connector and dsh-connector-ui installed as bundles; principals are paired through the
- *   stock MCP client (wire/review/steps.mjs), sessions are real DSH sessions, hand-overs go through
+ *   stock MCP client (connector-world/steps.mjs), sessions are real DSH sessions, hand-overs go through
  *   the connector's own handover service. One boot per scenario per SDK file.
- * - Instance DSH (R3): the shared test worker (support/host.mjs) on a symlinked home, so the
- *   instance reports failed / INVALID_MAIN_HOME (the E1-D2 requirement) and no child starts; it
- *   links dsh-connector-ui too (FBTEST_LINK).
+ * - (R3, the failed-child window, needs the dsh-instance package of another repository: withdrawn here.)
  * - The browser: one headless Chromium per file (browser.mjs); each case opens its own tab, logged in
  *   with the boot's owner cookie, and closes it.
  *
@@ -18,12 +16,9 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
 import { after } from 'node:test'
-import { TEST_HOMES } from '../../../../../test/support/constants.mjs'
-import { bootHost } from '../../../../../test/support/host.mjs'
-import { runtimeOf } from '../../../../../test/v3/fishball-core/package/constants.mjs'
-import { K1, PACKAGES, SURFACE } from '../../../tests/wire/constants.mjs'
-import { connect, createToken, fresh, okCall, userSession } from '../../../tests/wire/review/steps.mjs'
-import { scenario } from '../../../tests/wire/world.mjs'
+import { K1, PACKAGES, SURFACE } from 'dsh-connector-test-helpers/connector-world/constants'
+import { connect, createToken, fresh, okCall, userSession } from 'dsh-connector-test-helpers/connector-world/steps'
+import { scenario } from 'dsh-connector-test-helpers/connector-world/world'
 import { launch } from './browser.mjs'
 import { CHROME, FIXTURE, NAV, SETTINGS, WIDTH, WINDOW } from './constants.mjs'
 
@@ -86,43 +81,6 @@ export async function sessionIn(w, principalKey) {
   return session.sessionId
 }
 
-const instanceHosts = new Map()
-/**
- * An instance DSH whose child is refused with INVALID_MAIN_HOME (a home reached through a symlink),
- * with dsh-connector-ui installed. One per SDK file.
- */
-export function failedInstanceWorld(sdk) {
-  if (!instanceHosts.has(sdk)) {
-    instanceHosts.set(sdk, (async () => {
-      fs.mkdirSync(TEST_HOMES, { recursive: true })
-      const root = fs.realpathSync(TEST_HOMES)
-      const real = fs.mkdtempSync(path.join(root, FIXTURE.realHome))
-      const link = path.join(root, FIXTURE.linkHome + process.pid + '-' + Date.now())
-      fs.symlinkSync(real, link)
-      const host = await bootHost(link, { env: { FBTEST_DSH_RUNTIME: runtimeOf(sdk), FBTEST_LINK: LINK_UI } })
-      const owned = { real, link, host }
-      let status
-      for (const end = Date.now() + CHROME.loadMs; Date.now() < end; await sleep(CHROME.pollMs)) {
-        status = (await host.get(WINDOW.statusRoute)).json
-        if (status?.state === WINDOW.failed) break
-      }
-      assert.equal(status?.code, WINDOW.code, 'harness: the symlinked home did not fail with ' + WINDOW.code + ': ' + JSON.stringify(status))
-      return owned
-    })())
-  }
-  return instanceHosts.get(sdk)
-}
-after(async () => {
-  for (const pending of instanceHosts.values()) {
-    const owned = await pending.catch(() => null)
-    if (!owned) continue
-    await owned.host.stop?.().catch(() => {})
-    // Guard the recursive delete: only the home this file made directly under the test-homes root.
-    if (path.dirname(owned.real) === fs.realpathSync(TEST_HOMES) && path.basename(owned.real).startsWith(FIXTURE.realHome)) fs.rmSync(owned.real, { recursive: true, force: true })
-    if (fs.existsSync(owned.link)) fs.unlinkSync(owned.link)
-  }
-})
-
 // ------------------------------------------------------------------------------------------ pages
 
 /** Page-side: click the last element whose collapsed text is exactly `text` (under `scope`). */
@@ -169,17 +127,8 @@ export async function openConnectorPage(t, w, scheme) {
   return { tab, b }
 }
 
-/** Opens the Fishball window from the sidebar entry and waits for its header's state group. */
-export async function openWindow(t, owned) {
-  const { tab, b } = await openDsh(t, owned.host.origin, owned.host.cookie)
-  await b.waitFor(tab, clickText(WINDOW.title), CHROME.loadMs, 'the Fishball sidebar entry')
-  await b.waitFor(tab, `!!document.querySelector('[${WINDOW.embedCode}]')`, CHROME.loadMs, 'the window header state group')
-  return { tab, b }
-}
-
 /** Sets the viewport width and lets layout settle (a harness wait). */
 export async function at(tab, width) {
   await tab.resize(width)
   await sleep(CHROME.settleMs)
 }
-

@@ -18,7 +18,7 @@
     "directory": "packages/dsh-connector-watchdog"
   },
   "scripts": {
-    "test": "node ../../test/run-package.mjs"
+    "test": "node ../dsh-connector-test-helpers/src/runner/cli.mjs"
   },
   "main": "./index.js",
   "exports": {
@@ -51,5 +51,8 @@
     "bundle": {
       "patch": "./cordis.patch.yml"
     }
+  },
+  "devDependencies": {
+    "dsh-connector-test-helpers": "1.0.0-alpha.1"
   }
 }

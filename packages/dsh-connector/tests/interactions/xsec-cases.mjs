@@ -15,12 +15,12 @@
  */
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
-import { FIXTURE, IX, REFUSAL, RELAYED, RETIREMENT_REASON, SURFACE, TOOL, XSEC } from './constants.mjs'
-import { row } from './rows.mjs'
+import { FIXTURE, IX, REFUSAL, RELAYED, RETIREMENT_REASON, SURFACE, TOOL, XSEC } from 'dsh-connector-test-helpers/connector-world/interactions-constants'
+import { row } from 'dsh-connector-test-helpers/connector-world/rows'
 import {
   A, answer, asked, assertCovered, assertOffered, call, cardOf, cid, connect, decided, eventually, free, fresh, handOver, managed, okCall, prefixGrant,
   principal, qAnswer, questioned, quiet, resultOf, retirement, sleep, step, stockFor, takeBack, tok, untilStock, userClicks, world,
-} from './subject.mjs'
+} from 'dsh-connector-test-helpers/connector-world/interactions'
 
 const SHELL = 'bash'
 const grantsOf = async (p, sid) => (await okCall(p.client, TOOL.grantsList, {})).grants.filter((g) => g.sessionId === sid)

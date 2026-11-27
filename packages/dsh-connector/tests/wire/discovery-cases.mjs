@@ -20,11 +20,11 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
 import test from 'node:test'
-import { caseName } from '../../../../test/v3/contract/package-boundaries/cases.mjs'
-import { BUDGET, ENV, K1 } from './constants.mjs'
+import { caseName } from 'dsh-connector-test-helpers/cases'
+import { BUDGET, ENV, K1 } from 'dsh-connector-test-helpers/connector-world/constants'
 import { DISCOVERY as D } from './discovery-constants.mjs'
-import { okCall, paired, refusedCall } from './review/steps.mjs'
-import { scenario } from './world.mjs'
+import { okCall, paired, refusedCall } from 'dsh-connector-test-helpers/connector-world/steps'
+import { scenario } from 'dsh-connector-test-helpers/connector-world/world'
 
 const { TOOL, REFUSAL } = K1
 let counter = 0

@@ -16,7 +16,7 @@
  * | GEN-NAME ST (backfill) | ST | pairs stored nameless before the decision → named at the next open, uniquely, durably; a page-bound pair awaiting its first request stays nameless |
  */
 import assert from 'node:assert/strict'
-import { caseTest } from '../../../../test/v3/contract/package-boundaries/cases.mjs'
+import { caseTest } from 'dsh-connector-test-helpers/cases'
 import { assertGeneratedName, assertNameRefused, assertPairedGenerated, assertUniqueNames, at, bind, bindNameless, refusal, row, setName } from './cases.mjs'
 import { FIXTURE, GENERATED, REFUSAL, SUBJECT, nameKey, principalLabel } from './constants.mjs'
 import { pairWorld, pairsModule } from './subject.mjs'

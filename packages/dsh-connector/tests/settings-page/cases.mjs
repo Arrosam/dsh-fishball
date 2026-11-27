@@ -13,8 +13,8 @@
  */
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { caseName } from '../../../../test/v3/contract/package-boundaries/cases.mjs'
-import { textOf } from '../../../../test/support/rp-recommend.mjs'
+import { caseName } from 'dsh-connector-test-helpers/cases'
+import { textOf } from 'dsh-connector-test-helpers/page/react-shim'
 import { eventually, leaksOf, worldFor } from '../tokens/world.mjs'
 import { CLIENT, FIXTURE, HTTP, LATER, ROUTE, SETTINGS_REFUSAL, SUBJECT, VALUE_ANYWHERE, VALUE_PATTERN, WAIT } from './constants.mjs'
 import { click, input, openTokensPage, treeText } from './page.mjs'

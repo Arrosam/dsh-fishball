@@ -26,8 +26,8 @@
  */
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { caseName } from '../../../../test/v3/contract/package-boundaries/cases.mjs'
-import { findAll, textOf } from '../../../../test/support/rp-recommend.mjs'
+import { caseName } from 'dsh-connector-test-helpers/cases'
+import { findAll, textOf } from 'dsh-connector-test-helpers/page/react-shim'
 import { CLIENT, CUI, DSH_NAME, FIXTURE, POLISH, WAIT } from './constants.mjs'
 import { click } from './page.mjs'
 import { entryRow, openPolished, parents, stateWith } from './polish-cases.mjs'

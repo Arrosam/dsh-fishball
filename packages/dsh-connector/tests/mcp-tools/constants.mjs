@@ -16,7 +16,7 @@ import {
   EVENT_TYPE, MAILBOX, MANAGED_REFUSAL, PAIR_ADVICE, PAIR_ONLY, PROTOCOL, REFUSAL, RESOURCE, SCOPE, TOOL, TOOL_NAMES, TOOLS, formatOfferId,
   oauthUrls, toolDefinition,
 } from '../../mcp-schema/index.js'
-import { REPO } from '../../../../test/support/constants.mjs'
+import { REPO } from 'dsh-connector-test-helpers/legacy'
 
 export {
   DECISION, EVENT_TYPE, MAILBOX, MANAGED_REFUSAL, PAIR_ADVICE, PAIR_ONLY, PROTOCOL, REFUSAL, RESOURCE, RISK, SCOPE, TOOL, TOOL_NAMES, TOOLS,

@@ -21,7 +21,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { validatorFor } from '../contract/k1-mcp-schema/schema-module.mjs'
-import { caseName } from '../../../../test/v3/contract/package-boundaries/cases.mjs'
+import { caseName } from 'dsh-connector-test-helpers/cases'
 import {
   CONTRIBUTED_TYPE_PREFIX, DECISION_KIND_OF, EVENT_TYPE, FIXTURE, LATER, MAILBOX, MAILBOX_EVENT_SCHEMA, MAILBOX_SUMMARY_SCHEMA,
   OFFER_ID, QUEUE, REFUSAL, RESOURCE, RESYNC_REASON, RETIRE_OUTCOME, RETIREMENT_REASON, SETTLED_BY, SETTLEMENT_OUTCOME, WAIT, WIRE, formatOfferId,

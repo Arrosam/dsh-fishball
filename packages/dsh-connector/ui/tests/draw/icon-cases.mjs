@@ -21,8 +21,8 @@
  */
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { caseName } from '../../../../../test/v3/contract/package-boundaries/cases.mjs'
-import { FISH, WRENCH } from '../../../../../test/v3/contract/package-boundaries/icon-set.mjs'
+import { caseName } from 'dsh-connector-test-helpers/cases'
+import { FISH, WRENCH } from 'dsh-connector-test-helpers/static/icon-set'
 import { mountFish, mountMain, mountOverlay, world } from './cases.mjs'
 import { ATTR, FIXTURE, SLOT, TAG, TOOL, WAIT } from './constants.mjs'
 import { attrOf, byTag, sessionProps, subtreeOf, withAttr } from './world.mjs'

@@ -15,7 +15,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
 import { blankComments, model, splitTop } from '../k3-host-services/declarations.mjs'
-import { REPO } from '../../../../../test/support/constants.mjs'
+import { REPO } from 'dsh-connector-test-helpers/legacy'
 import { caseTest, declarationText } from './cases.mjs'
 import { SCHEMA_MODULE } from './constants.mjs'
 import {

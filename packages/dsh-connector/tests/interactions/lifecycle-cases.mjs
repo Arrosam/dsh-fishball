@@ -18,13 +18,13 @@
 import assert from 'node:assert/strict'
 import {
   EVENT_TYPE, FIXTURE, IX, LIFECYCLE as L, RELAYED, REFUSAL, RETIREMENT_REASON, RISK, SETTLED_BY, SETTLEMENT_OUTCOME, TOOL, WORLD,
-} from './constants.mjs'
-import { row } from './rows.mjs'
+} from 'dsh-connector-test-helpers/connector-world/interactions-constants'
+import { row } from 'dsh-connector-test-helpers/connector-world/rows'
 import {
   A, answer, asked, batchOf, call, cardOf, decided, eventually, jsonOf, listed, managed, ofType, okCall, pending, planned, principal, qAnswer,
   questioned, quiet, reconnect, resultOf, resultsOf, retirement, retirementsOf, setEnabled, settlement, settlementsOf, step, stockFor, takeBack,
   tok, turn, untilStock, userClicks, waitEvents, world,
-} from './subject.mjs'
+} from 'dsh-connector-test-helpers/connector-world/interactions'
 
 const ASK = IX.preset.ask
 const accepted = { ok: true, accepted: true }

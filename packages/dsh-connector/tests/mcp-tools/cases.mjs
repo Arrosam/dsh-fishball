@@ -25,7 +25,7 @@
  * managed state, the domain never reached) and nothing leaked (no token, stack, path, or echoed id).
  */
 import assert from 'node:assert/strict'
-import { caseTest } from '../../../../test/v3/contract/package-boundaries/cases.mjs'
+import { caseTest } from 'dsh-connector-test-helpers/cases'
 import { validatorFor } from '../contract/k1-mcp-schema/schema-module.mjs'
 import {
   DECISION, EVENT_TYPE, FIXTURE, LATER, LEAK, MAILBOX, MCP_RESULT, PAIR_ADVICE, PAIR_ONLY, REFUSAL, REMOVED, RISK, XSEC,

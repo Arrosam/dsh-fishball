@@ -12,7 +12,7 @@
  */
 import path from 'node:path'
 import { ENTRY_STATUS, REVOCATION_KIND, SETTINGS_REFUSAL, TOKEN_VALUE } from '../../mcp-schema/index.js'
-import { REPO } from '../../../../test/support/constants.mjs'
+import { REPO } from 'dsh-connector-test-helpers/legacy'
 
 export { ENTRY_STATUS, REVOCATION_KIND, SETTINGS_REFUSAL, TOKEN_VALUE }
 

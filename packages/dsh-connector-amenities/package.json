@@ -14,7 +14,7 @@
   },
   "type": "module",
   "scripts": {
-    "test": "node ../../test/run-package.mjs"
+    "test": "node ../dsh-connector-test-helpers/src/runner/cli.mjs"
   },
   "main": "./index.js",
   "exports": {
@@ -67,5 +67,8 @@
     "dsh-connector-adapter",
     "dsh-connector-watchdog",
     "dsh-connector-shared"
-  ]
+  ],
+  "devDependencies": {
+    "dsh-connector-test-helpers": "1.0.0-alpha.1"
+  }
 }

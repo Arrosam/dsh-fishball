@@ -16,8 +16,8 @@
  */
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { caseName } from '../../../../test/v3/contract/package-boundaries/cases.mjs'
-import { findAll, textOf, walk } from '../../../../test/support/rp-recommend.mjs'
+import { caseName } from 'dsh-connector-test-helpers/cases'
+import { findAll, textOf, walk } from 'dsh-connector-test-helpers/page/react-shim'
 import { worldFor } from '../tokens/world.mjs'
 import { CLIENT, FIXTURE, POLISH, SUBJECT, WAIT } from './constants.mjs'
 import { click, input, openTokensPage } from './page.mjs'

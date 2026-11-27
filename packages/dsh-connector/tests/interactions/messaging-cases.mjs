@@ -5,12 +5,12 @@
  * "list_user_messages is deleted". Techniques: UC, EP, BVA, DT, ST (each row's part says which).
  */
 import assert from 'node:assert/strict'
-import { DECISION_TEXT, EVENT_TYPE, FIXTURE, IX, RELAYED, TOOL } from './constants.mjs'
-import { row, withdrawn } from './rows.mjs'
+import { DECISION_TEXT, EVENT_TYPE, FIXTURE, IX, RELAYED, TOOL } from 'dsh-connector-test-helpers/connector-world/interactions-constants'
+import { row, withdrawn } from 'dsh-connector-test-helpers/connector-world/rows'
 import {
   cid, eventually, free, handOver, managed, ofBytes, ofType, okCall, pending, principal, quiet, resultOf, session, setLimit, step, takeBack, tok,
   turn, waitEvents, world, jsonOf,
-} from './subject.mjs'
+} from 'dsh-connector-test-helpers/connector-world/interactions'
 
 const MSG = RELAYED.messageTool
 const CODE = RELAYED.messageCode

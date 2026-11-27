@@ -8,13 +8,13 @@ import assert from 'node:assert/strict'
 import {
   APPROVAL_DECISION, ARGUMENTS_STATUS, DECISION_KIND, DECISION_TEXT, EVENT_TYPE, FIXTURE, IX, OFFER_ID, PAYLOAD_LIMITS, REFUSAL, RELAYED,
   RETIREMENT_REASON, RISK, SETTLED_BY, SETTLEMENT_OUTCOME, TOOL, WORLD, formatOfferId,
-} from './constants.mjs'
-import { row, withdrawn } from './rows.mjs'
+} from 'dsh-connector-test-helpers/connector-world/interactions-constants'
+import { row, withdrawn } from 'dsh-connector-test-helpers/connector-world/rows'
 import {
   A, answer, asked, bytes, call, cid, decided, eventually, free, handOver, isListed, listed, managed, ofType, okCall, pending, permissionsFor, principal,
   quiet, reconnect, refusedCall, resultOf, retirement, session, setEnabled, setLimit, settlement, settlementsOf, step, stockFor, takeBack, tok, turn,
   titleOf, untilStock, userClicks, world,
-} from './subject.mjs'
+} from 'dsh-connector-test-helpers/connector-world/interactions'
 
 const SET = RELAYED.setting
 /** The descriptor's required keys and its optional ones (K1 shapes.js `descriptor`), for a permission request. */

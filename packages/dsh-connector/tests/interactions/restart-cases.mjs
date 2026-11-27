@@ -5,12 +5,12 @@
  * not disturb the other files' worlds. Techniques: EP, ST.
  */
 import assert from 'node:assert/strict'
-import { DECISION_TEXT, EVENT_TYPE, FIXTURE, IX, REFUSAL, RELAYED, SURFACE, TOOL, WORLD } from './constants.mjs'
-import { row } from './rows.mjs'
+import { DECISION_TEXT, EVENT_TYPE, FIXTURE, IX, REFUSAL, RELAYED, SURFACE, TOOL, WORLD } from 'dsh-connector-test-helpers/connector-world/interactions-constants'
+import { row } from 'dsh-connector-test-helpers/connector-world/rows'
 import {
   A, answer, asked, assertCovered, decided, managed, ofType, okCall, pending, prefixGrant, principal, qAnswer, questioned, quiet, reconnect, tok, turn,
   world,
-} from './subject.mjs'
+} from 'dsh-connector-test-helpers/connector-world/interactions'
 
 const SET = RELAYED.setting
 const restartWorld = (sdk) => world(sdk, WORLD.scenario.restart)

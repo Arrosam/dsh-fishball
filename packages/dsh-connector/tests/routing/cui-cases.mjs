@@ -20,7 +20,7 @@
  */
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { caseName } from '../../../../test/v3/contract/package-boundaries/cases.mjs'
+import { caseName } from 'dsh-connector-test-helpers/cases'
 import { expectNone, expectOne, managedSet } from './cases.mjs'
 import { CUI, EVENT_TYPE, HANDOVER, WAIT } from './constants.mjs'
 import { routeWorld } from './subject.mjs'

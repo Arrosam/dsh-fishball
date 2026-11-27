@@ -21,9 +21,9 @@
  * members by the names the requirement gives them.
  */
 import assert from 'node:assert/strict'
-import { withdrawnCase } from '../../../../../test/support/withdrawn.mjs'
-import { caseTest } from '../../../../../test/v3/contract/package-boundaries/cases.mjs'
-import { SET_SIDE, V3 } from '../../../../../test/v3/contract/package-boundaries/constants.mjs'
+import { withdrawnCase } from 'dsh-connector-test-helpers/withdrawn'
+import { caseTest } from 'dsh-connector-test-helpers/cases'
+import { SET_SIDE, V3 } from 'dsh-connector-test-helpers/static/constants'
 import {
   API_VERSION, ASK_CARD, CHILD, DATA_ONLY, DATA_ONLY_FORMATTER, DATA_ONLY_SAMPLES, FOLDER, HANDOVER, INTERCEPT,
   LATER, SERVICE, TOKENS,

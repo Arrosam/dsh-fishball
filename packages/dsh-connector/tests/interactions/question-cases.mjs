@@ -8,12 +8,12 @@ import assert from 'node:assert/strict'
 import {
   DECISION_KIND, DECISION_TEXT, EVENT_TYPE, FIXTURE, IX, OFFER_ID, PAYLOAD_LIMITS, PLAN_REVIEW, REFUSAL, RELAYED, RETIREMENT_REASON, SETTLED_BY,
   SETTLEMENT_OUTCOME, TOOL, formatOfferId,
-} from './constants.mjs'
-import { row, withdrawn } from './rows.mjs'
+} from 'dsh-connector-test-helpers/connector-world/interactions-constants'
+import { row, withdrawn } from 'dsh-connector-test-helpers/connector-world/rows'
 import {
   batchOf, cardOf, cid, eventually, free, listed, managed, ofType, okCall, pending, planned, principal, qAnswer, questioned, quiet, resultOf, retirement,
   session, settlement, settlementsOf, step, tok, turn, world,
-} from './subject.mjs'
+} from 'dsh-connector-test-helpers/connector-world/interactions'
 
 const ASK = IX.preset.ask
 const L = PAYLOAD_LIMITS

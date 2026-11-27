@@ -16,12 +16,12 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
 import test from 'node:test'
-import { caseName } from '../../../../test/v3/contract/package-boundaries/cases.mjs'
-import { BUDGET, FILES, FIXTURE, HTTP, K1, K2, LATER, MAX_ARGUMENT_ENTRIES, PACKAGES, SURFACE, UNKNOWN_TOOL_CODE } from './constants.mjs'
+import { caseName } from 'dsh-connector-test-helpers/cases'
+import { BUDGET, FILES, FIXTURE, HTTP, K1, K2, LATER, MAX_ARGUMENT_ENTRIES, PACKAGES, SURFACE, UNKNOWN_TOOL_CODE } from 'dsh-connector-test-helpers/connector-world/constants'
 import { pluginEntry, resolveConfig, revocationNoteText, settingsPageRoutes, uiRoutes } from './subject.mjs'
-import { freePort, holdPort, scenario, sdkClient } from './world.mjs'
-import { until } from '../../../../test/support/util.mjs'
-import { okCall as wireSuccess, refusedCall as wireRefusal } from './review/steps.mjs'
+import { freePort, holdPort, scenario, sdkClient } from 'dsh-connector-test-helpers/connector-world/world'
+import { until } from 'dsh-connector-test-helpers/wait'
+import { okCall as wireSuccess, refusedCall as wireRefusal } from 'dsh-connector-test-helpers/connector-world/steps'
 
 const T = { timeout: BUDGET.testMs }
 const { TOOL, REFUSAL, SCOPE, PATHS, RESOURCE, EVENT_TYPE, READ_ROLE, OAUTH_METADATA, GRANT, APPROVAL_LISTENER, CONNECTOR_STATUS, SETTINGS_REFUSAL, PAIR_ONLY, PROTOCOL, MAILBOX, OAUTH_ERROR } = K1

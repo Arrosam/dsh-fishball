@@ -9,7 +9,7 @@ import assert from 'node:assert/strict'
 import path from 'node:path'
 import test from 'node:test'
 import { pathToFileURL } from 'node:url'
-import { caseName } from '../../../../test/v3/contract/package-boundaries/cases.mjs'
+import { caseName } from 'dsh-connector-test-helpers/cases'
 import { ROW, SDK, SUBJECT, WAIT } from './constants.mjs'
 
 export const caseTest = (sdk, id, row, title, fn) => test(caseName(sdk, id, row, title), { timeout: WAIT.testMs }, fn)

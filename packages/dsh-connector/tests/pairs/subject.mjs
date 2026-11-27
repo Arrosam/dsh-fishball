@@ -19,9 +19,9 @@ import { registerHooks } from 'node:module'
 import os from 'node:os'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { INSTANCE } from '../../../../test/support/constants.mjs'
-import { HARNESS, SKILL_SDK } from '../../../../test/private-skills/support/constants.mjs'
-import { importInstance, importSdk } from '../../../../test/private-skills/support/sdk.mjs'
+import { INSTANCE } from 'dsh-connector-test-helpers/legacy'
+import { HARNESS, SKILL_SDK } from 'dsh-connector-test-helpers/sdk'
+import { importInstance, importSdk } from 'dsh-connector-test-helpers/sdk'
 import { DSH, FIXTURE, SUBJECT } from './constants.mjs'
 
 let hooked = false

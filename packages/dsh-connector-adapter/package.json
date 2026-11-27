@@ -18,7 +18,7 @@
     "directory": "packages/dsh-connector-adapter"
   },
   "scripts": {
-    "test": "node ../../test/run-package.mjs"
+    "test": "node ../dsh-connector-test-helpers/src/runner/cli.mjs"
   },
   "main": "./index.js",
   "exports": {
@@ -54,5 +54,10 @@
     "bundle": {
       "patch": "./cordis.patch.yml"
     }
+  },
+  "//devDependencies": "Test-only: the adapter's tests speak the connector's published MCP and OAuth contract (dsh-agent-connector/mcp-schema) to their fake connector, and use the shared test helpers. Neither ships.",
+  "devDependencies": {
+    "dsh-agent-connector": "1.0.0-alpha.1",
+    "dsh-connector-test-helpers": "1.0.0-alpha.1"
   }
 }

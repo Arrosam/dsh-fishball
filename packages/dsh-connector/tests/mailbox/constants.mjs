@@ -16,7 +16,7 @@ import {
   formatOfferId, payloadSchemaOf,
 } from '../../mcp-schema/index.js'
 import { NAMESPACE } from '../../tools/index.js'
-import { REPO } from '../../../../test/support/constants.mjs'
+import { REPO } from 'dsh-connector-test-helpers/legacy'
 
 export {
   ANSWERABLE_TYPES, CONTRIBUTED_TYPE_PREFIX, DECISION_KIND_OF, EVENT_PAYLOAD_SCHEMA, EVENT_TYPE, MAILBOX, MAILBOX_EVENT_SCHEMA,

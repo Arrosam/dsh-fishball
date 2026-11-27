@@ -15,7 +15,7 @@ import path from 'node:path'
 import {
   ID_REFUSAL, INSUFFICIENT_SCOPE_REASON, NAME_RULES, PAIR_ADVICE, PAIR_TIMING, REFUSAL, SCOPE, TIME_UNIT, checkName, nameKey, principalLabel,
 } from '../../mcp-schema/index.js'
-import { REPO } from '../../../../test/support/constants.mjs'
+import { REPO } from 'dsh-connector-test-helpers/legacy'
 
 export { ID_REFUSAL, INSUFFICIENT_SCOPE_REASON, NAME_RULES, PAIR_ADVICE, PAIR_TIMING, REFUSAL, SCOPE, TIME_UNIT, checkName, nameKey, principalLabel }
 

@@ -3,7 +3,7 @@
  * refusal codes) are K1's; the fake provider and its models are test/support's FAKE / FAKE_MODELS.
  */
 import path from 'node:path'
-import { FAKE, FAKE_MODELS } from '../../../../test/support/constants.mjs'
+import { FAKE, FAKE_MODELS } from 'dsh-connector-test-helpers/legacy'
 
 export const DISCOVERY = Object.freeze({
   id: 'DISCOVERY-SYS',

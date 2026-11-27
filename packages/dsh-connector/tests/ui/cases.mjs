@@ -19,8 +19,8 @@
  */
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { until } from '../../../../test/support/util.mjs'
-import { caseName } from '../../../../test/v3/contract/package-boundaries/cases.mjs'
+import { until } from 'dsh-connector-test-helpers/wait'
+import { caseName } from 'dsh-connector-test-helpers/cases'
 import { DECIDED, EXPECT, FIXTURE, K2, K3, SURFACE, WAIT } from './constants.mjs'
 import { FakeCtx, FakePairStore, captureRegister, requestOf, row as principalRow, sseReader, windowSource } from './fakes.mjs'
 import { unitBackend } from './subject.mjs'

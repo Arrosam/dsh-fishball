@@ -28,7 +28,7 @@
  * page render carries a fresh form nonce (masked before a byte comparison, browser.mjs `masked`).
  */
 import assert from 'node:assert/strict'
-import { caseTest } from '../../../../test/v3/contract/package-boundaries/cases.mjs'
+import { caseTest } from 'dsh-connector-test-helpers/cases'
 import { fields, forms, isRequired, masked, pageText } from './browser.mjs'
 import {
   APPROVAL_LISTENER, CIMD_LIMITS, CLIENT_AUTH, CONNECTOR_STATUS, DOC, FAILURE_LIMIT, FIXTURE, GATE_SURFACE, GRANT,
