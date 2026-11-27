@@ -1,0 +1,16 @@
+{
+  "name": "fishball-integration-page-stream",
+  "version": "1.0.0-alpha.1",
+  "private": true,
+  "type": "module",
+  "description": "Integration tests: fishball-core's one page stream with fishball-ui's strip topic and fishball-taskboard's board topic, in a booted DSH (the carrier read from Node, DSH's real page in Chromium). Never shipped.",
+  "dependencies": {
+    "fishball-core": "1.0.0-alpha.1",
+    "fishball-ui": "1.0.0-alpha.1",
+    "fishball-taskboard": "1.0.0-alpha.1",
+    "fishball-shared": "1.0.0-alpha.1"
+  },
+  "scripts": {
+    "test": "node ../../scripts/test.mjs fishball-integration-page-stream"
+  }
+}

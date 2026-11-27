@@ -1,0 +1,11 @@
+[
+  {
+    "insert": [
+      {
+        "id": "dsh-instance",
+        "name": "dsh-instance",
+        "config": {}
+      }
+    ]
+  }
+]

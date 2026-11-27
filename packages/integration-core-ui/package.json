@@ -1,0 +1,15 @@
+{
+  "name": "fishball-integration-core-ui",
+  "version": "1.0.0-alpha.1",
+  "private": true,
+  "type": "module",
+  "description": "Integration tests: fishball-core with fishball-ui (core's patch carries fishball-ui's rows, composed and evaluated by DSH; a booted DSH with both: guards, the model dialog's live core, the strip, the page stream). Never shipped.",
+  "dependencies": {
+    "fishball-core": "1.0.0-alpha.1",
+    "fishball-ui": "1.0.0-alpha.1",
+    "fishball-shared": "1.0.0-alpha.1"
+  },
+  "scripts": {
+    "test": "node ../../scripts/test.mjs fishball-integration-core-ui"
+  }
+}

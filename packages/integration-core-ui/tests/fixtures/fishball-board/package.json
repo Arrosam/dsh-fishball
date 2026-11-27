@@ -1,0 +1,20 @@
+{
+  "name": "fishball-board",
+  "version": "0.0.0-fbtest",
+  "private": true,
+  "//": "SHELVE-BOARD stand-in (copied from the old test/v3/fishball-core/wire fixture): a bundle only NAMED fishball-board, one trivial row, so 'the board present' needs no real fishball-board.",
+  "type": "module",
+  "main": "./index.js",
+  "exports": {
+    ".": "./index.js",
+    "./package.json": "./package.json"
+  },
+  "engines": {
+    "dsh": ">=0.2.1-rc.5"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  }
+}

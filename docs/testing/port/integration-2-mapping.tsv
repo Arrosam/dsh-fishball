@@ -1,0 +1,166 @@
+suite	id	where now
+test/v3/contract/k3a-core-seams	K3a-TARGET	retired: subject (dsh-instance child row) moved to dsh-fishball-instance in 6b7c53bf (as port-core-link mapped it)
+test/v3/contract/own-schema	OWN-ARCH	packages/integration-release/tests/boundaries.test.mjs (the import scan over every Fishball package: PLAT-EP-07 1/2/7c, REL-HELPERS)
+test/v3/contract/package-boundaries	CP-R3-03	not ported (integration-2 ran out of budget): fishball-ui's fishball-child-plugins client with core's mode rows, DSH's real locale runtime and Plugins dictionaries, in the scripted page and Chromium (old fishball-core/child-plugins subject.mjs)
+test/v3/contract/package-boundaries	CP-R3-04	not ported (integration-2 ran out of budget): fishball-ui's fishball-child-plugins client with core's mode rows, DSH's real locale runtime and Plugins dictionaries, in the scripted page and Chromium (old fishball-core/child-plugins subject.mjs)
+test/v3/contract/package-boundaries	CP-R3-05	not ported (integration-2 ran out of budget): fishball-ui's fishball-child-plugins client with core's mode rows, DSH's real locale runtime and Plugins dictionaries, in the scripted page and Chromium (old fishball-core/child-plugins subject.mjs)
+test/v3/contract/package-boundaries	CP-R3-06	not ported (integration-2 ran out of budget): fishball-ui's fishball-child-plugins client with core's mode rows, DSH's real locale runtime and Plugins dictionaries, in the scripted page and Chromium (old fishball-core/child-plugins subject.mjs)
+test/v3/contract/package-boundaries	CP-R3-07	not ported (integration-2 ran out of budget): fishball-ui's fishball-child-plugins client with core's mode rows, DSH's real locale runtime and Plugins dictionaries, in the scripted page and Chromium (old fishball-core/child-plugins subject.mjs)
+test/v3/fishball-amenities/heartbeat	HB-LC-EP-01 row 3	packages/integration-amenities/tests/settings.test.mjs
+test/v3/fishball-amenities/heartbeat	HB-LC-SC-02	packages/integration-amenities/tests/settings.test.mjs
+test/v3/fishball-amenities/icons	PI-CONSIST	packages/integration-amenities/tests/icons.test.mjs (base equals fishball-core's)
+test/v3/fishball-amenities/icons	PI-EP-01	packages/integration-amenities/tests/icons.test.mjs (the fishball-core reference rows)
+test/v3/fishball-amenities/icons	PI-EP-02	packages/integration-amenities/tests/icons.test.mjs (the fishball-core reference rows)
+test/v3/fishball-amenities/icons	PI-EP-03	packages/integration-amenities/tests/icons.test.mjs (the fishball-core reference rows)
+test/v3/fishball-amenities/icons	PI-EP-04	packages/integration-amenities/tests/icons.test.mjs (the fishball-core reference rows)
+test/v3/fishball-amenities/icons	PI-EP-05	packages/integration-amenities/tests/icons.test.mjs (the fishball-core reference rows)
+test/v3/fishball-amenities/icons	PI-EP-06	packages/integration-amenities/tests/icons.test.mjs (six icons, fishball-core and fishball-ui included)
+test/v3/fishball-amenities/icons	PI-RENDER-01	packages/integration-amenities/tests/icons.test.mjs (the fishball-core reference rows)
+test/v3/fishball-amenities/packages	AM-EP-07	packages/integration-amenities/tests/repository.test.mjs
+test/v3/fishball-board/peers	PEERS-EP-01	retired: row 3 was a todo needing core beside the board; not planned while the board binds apiVersion 1 against core's 2 (port-taskboard-board, DESIGN §33)
+test/v3/fishball-core/asks	ASK-UC-04	packages/integration-core-ui/tests/asks.test.mjs (main 1, main 2)
+test/v3/fishball-core/asks	ASK-UI-01	packages/integration-core-ui/tests/asks.test.mjs
+test/v3/fishball-core/child-plugins	CP-R2-01	not ported (integration-2 ran out of budget): fishball-ui's fishball-child-plugins client with core's mode rows, DSH's real locale runtime and Plugins dictionaries, in the scripted page and Chromium (old fishball-core/child-plugins subject.mjs)
+test/v3/fishball-core/child-plugins	CP-R2-02	not ported (integration-2 ran out of budget): fishball-ui's fishball-child-plugins client with core's mode rows, DSH's real locale runtime and Plugins dictionaries, in the scripted page and Chromium (old fishball-core/child-plugins subject.mjs)
+test/v3/fishball-core/child-plugins	CP-R2-03	not ported (integration-2 ran out of budget): fishball-ui's fishball-child-plugins client with core's mode rows, DSH's real locale runtime and Plugins dictionaries, in the scripted page and Chromium (old fishball-core/child-plugins subject.mjs)
+test/v3/fishball-core/child-plugins	CP-R2-04	not ported (integration-2 ran out of budget): fishball-ui's fishball-child-plugins client with core's mode rows, DSH's real locale runtime and Plugins dictionaries, in the scripted page and Chromium (old fishball-core/child-plugins subject.mjs)
+test/v3/fishball-core/child-plugins	CP-R2-05	not ported (integration-2 ran out of budget): fishball-ui's fishball-child-plugins client with core's mode rows, DSH's real locale runtime and Plugins dictionaries, in the scripted page and Chromium (old fishball-core/child-plugins subject.mjs)
+test/v3/fishball-core/child-plugins	CP-R2-06	not ported (integration-2 ran out of budget): fishball-ui's fishball-child-plugins client with core's mode rows, DSH's real locale runtime and Plugins dictionaries, in the scripted page and Chromium (old fishball-core/child-plugins subject.mjs)
+test/v3/fishball-core/child-plugins	CP-R2-07	not ported (integration-2 ran out of budget): fishball-ui's fishball-child-plugins client with core's mode rows, DSH's real locale runtime and Plugins dictionaries, in the scripted page and Chromium (old fishball-core/child-plugins subject.mjs)
+test/v3/fishball-core/child-plugins	CP-R2-08	not ported (integration-2 ran out of budget): fishball-ui's fishball-child-plugins client with core's mode rows, DSH's real locale runtime and Plugins dictionaries, in the scripted page and Chromium (old fishball-core/child-plugins subject.mjs)
+test/v3/fishball-core/child-plugins	CP-R2-09	not ported (integration-2 ran out of budget): fishball-ui's fishball-child-plugins client with core's mode rows, DSH's real locale runtime and Plugins dictionaries, in the scripted page and Chromium (old fishball-core/child-plugins subject.mjs)
+test/v3/fishball-core/child-plugins	CP-R3-01	not ported (integration-2 ran out of budget): fishball-ui's fishball-child-plugins client with core's mode rows, DSH's real locale runtime and Plugins dictionaries, in the scripted page and Chromium (old fishball-core/child-plugins subject.mjs)
+test/v3/fishball-core/child-plugins	CP-R3-02	not ported (integration-2 ran out of budget): fishball-ui's fishball-child-plugins client with core's mode rows, DSH's real locale runtime and Plugins dictionaries, in the scripted page and Chromium (old fishball-core/child-plugins subject.mjs)
+test/v3/fishball-core/child-plugins	CP-R3-08	not ported (integration-2 ran out of budget): fishball-ui's fishball-child-plugins client with core's mode rows, DSH's real locale runtime and Plugins dictionaries, in the scripted page and Chromium (old fishball-core/child-plugins subject.mjs)
+test/v3/fishball-core/child-plugins	CP-R3-09	not ported (integration-2 ran out of budget): fishball-ui's fishball-child-plugins client with core's mode rows, DSH's real locale runtime and Plugins dictionaries, in the scripted page and Chromium (old fishball-core/child-plugins subject.mjs)
+test/v3/fishball-core/child-plugins	CP-R3-10	not ported (integration-2 ran out of budget): fishball-ui's fishball-child-plugins client with core's mode rows, DSH's real locale runtime and Plugins dictionaries, in the scripted page and Chromium (old fishball-core/child-plugins subject.mjs)
+test/v3/fishball-core/child-plugins	CP-R4-01	not ported (integration-2 ran out of budget): fishball-ui's fishball-child-plugins client with core's mode rows, DSH's real locale runtime and Plugins dictionaries, in the scripted page and Chromium (old fishball-core/child-plugins subject.mjs)
+test/v3/fishball-core/child-plugins	CP-R4-02	not ported (integration-2 ran out of budget): fishball-ui's fishball-child-plugins client with core's mode rows, DSH's real locale runtime and Plugins dictionaries, in the scripted page and Chromium (old fishball-core/child-plugins subject.mjs)
+test/v3/fishball-core/child-plugins	CP-R4-03	not ported (integration-2 ran out of budget): fishball-ui's fishball-child-plugins client with core's mode rows, DSH's real locale runtime and Plugins dictionaries, in the scripted page and Chromium (old fishball-core/child-plugins subject.mjs)
+test/v3/fishball-core/child-plugins	CP-R4-04	not ported (integration-2 ran out of budget): fishball-ui's fishball-child-plugins client with core's mode rows, DSH's real locale runtime and Plugins dictionaries, in the scripted page and Chromium (old fishball-core/child-plugins subject.mjs)
+test/v3/fishball-core/child-plugins	CP-R5-01	not ported (integration-2 ran out of budget): fishball-ui's fishball-child-plugins client with core's mode rows, DSH's real locale runtime and Plugins dictionaries, in the scripted page and Chromium (old fishball-core/child-plugins subject.mjs)
+test/v3/fishball-core/child-plugins	CP-R5-02	not ported (integration-2 ran out of budget): fishball-ui's fishball-child-plugins client with core's mode rows, DSH's real locale runtime and Plugins dictionaries, in the scripted page and Chromium (old fishball-core/child-plugins subject.mjs)
+test/v3/fishball-core/child-plugins	CP-R5-03	not ported (integration-2 ran out of budget): fishball-ui's fishball-child-plugins client with core's mode rows, DSH's real locale runtime and Plugins dictionaries, in the scripted page and Chromium (old fishball-core/child-plugins subject.mjs)
+test/v3/fishball-core/child-plugins	CP-R5-04	not ported (integration-2 ran out of budget): fishball-ui's fishball-child-plugins client with core's mode rows, DSH's real locale runtime and Plugins dictionaries, in the scripted page and Chromium (old fishball-core/child-plugins subject.mjs)
+test/v3/fishball-core/message-user	MSG-PAGE-DT-01	not ported (integration-2 ran out of budget): fishball-ui's fishball-page drawing message_user rows in DSH's real page in Chromium over a booted core + ui DSH (old fishball-core/message-user page.mjs, paging.mjs)
+test/v3/fishball-core/message-user	MSG-PAGE-DT-02	not ported (integration-2 ran out of budget): fishball-ui's fishball-page drawing message_user rows in DSH's real page in Chromium over a booted core + ui DSH (old fishball-core/message-user page.mjs, paging.mjs)
+test/v3/fishball-core/message-user	MSG-PAGE-DT-03	not ported (integration-2 ran out of budget): fishball-ui's fishball-page drawing message_user rows in DSH's real page in Chromium over a booted core + ui DSH (old fishball-core/message-user page.mjs, paging.mjs)
+test/v3/fishball-core/message-user	MSG-PAGE-EP-00	not ported (integration-2 ran out of budget): fishball-ui's fishball-page drawing message_user rows in DSH's real page in Chromium over a booted core + ui DSH (old fishball-core/message-user page.mjs, paging.mjs)
+test/v3/fishball-core/message-user	MSG-PAGE-EP-01	not ported (integration-2 ran out of budget): fishball-ui's fishball-page drawing message_user rows in DSH's real page in Chromium over a booted core + ui DSH (old fishball-core/message-user page.mjs, paging.mjs)
+test/v3/fishball-core/message-user	MSG-PAGE-EP-02	not ported (integration-2 ran out of budget): fishball-ui's fishball-page drawing message_user rows in DSH's real page in Chromium over a booted core + ui DSH (old fishball-core/message-user page.mjs, paging.mjs)
+test/v3/fishball-core/message-user	MSG-PAGE-EP-03	not ported (integration-2 ran out of budget): fishball-ui's fishball-page drawing message_user rows in DSH's real page in Chromium over a booted core + ui DSH (old fishball-core/message-user page.mjs, paging.mjs)
+test/v3/fishball-core/message-user	MSG-PAGE-EP-04	not ported (integration-2 ran out of budget): a todo placeholder; observable only in DSH's real page beside a non-Fishball session
+test/v3/fishball-core/message-user	MSG-PAGE-ST-01	not ported (integration-2 ran out of budget): fishball-ui's fishball-page drawing message_user rows in DSH's real page in Chromium over a booted core + ui DSH (old fishball-core/message-user page.mjs, paging.mjs)
+test/v3/fishball-core/message-user	MSG-PAGE-ST-01b	not ported (integration-2 ran out of budget): fishball-ui's fishball-page drawing message_user rows in DSH's real page in Chromium over a booted core + ui DSH (old fishball-core/message-user page.mjs, paging.mjs)
+test/v3/fishball-core/message-user	MSG-PAGE-ST-02	not ported (integration-2 ran out of budget): fishball-ui's fishball-page drawing message_user rows in DSH's real page in Chromium over a booted core + ui DSH (old fishball-core/message-user page.mjs, paging.mjs)
+test/v3/fishball-core/message-user	MSG-PAGE-ST-03	not ported (integration-2 ran out of budget): fishball-ui's fishball-page drawing message_user rows in DSH's real page in Chromium over a booted core + ui DSH (old fishball-core/message-user page.mjs, paging.mjs)
+test/v3/fishball-core/message-user	MSG-PAGE-ST-04	not ported (integration-2 ran out of budget): fishball-ui's fishball-page drawing message_user rows in DSH's real page in Chromium over a booted core + ui DSH (old fishball-core/message-user page.mjs, paging.mjs)
+test/v3/fishball-core/message-user	MSG-PAGE-ST-05	not ported (integration-2 ran out of budget): fishball-ui's fishball-page drawing message_user rows in DSH's real page in Chromium over a booted core + ui DSH (old fishball-core/message-user page.mjs, paging.mjs)
+test/v3/fishball-core/message-user	MSG-PAGE-ST-06	not ported (integration-2 ran out of budget): fishball-ui's fishball-page drawing message_user rows in DSH's real page in Chromium over a booted core + ui DSH (old fishball-core/message-user page.mjs, paging.mjs)
+test/v3/fishball-core/message-user	MSG-PAGE-ST-07	not ported (integration-2 ran out of budget): fishball-ui's fishball-page drawing message_user rows in DSH's real page in Chromium over a booted core + ui DSH (old fishball-core/message-user page.mjs, paging.mjs)
+test/v3/fishball-core/message-user	MSG-PAGE-ST-08	not ported (integration-2 ran out of budget): fishball-ui's fishball-page drawing message_user rows in DSH's real page in Chromium over a booted core + ui DSH (old fishball-core/message-user page.mjs, paging.mjs)
+test/v3/fishball-core/message-user	MSG-PAGE-ST-09	not ported (integration-2 ran out of budget): fishball-ui's fishball-page drawing message_user rows in DSH's real page in Chromium over a booted core + ui DSH (old fishball-core/message-user page.mjs, paging.mjs)
+test/v3/fishball-core/message-user	MSG-PAGING-EP-00	not ported (integration-2 ran out of budget): fishball-ui's fishball-page drawing message_user rows in DSH's real page in Chromium over a booted core + ui DSH (old fishball-core/message-user page.mjs, paging.mjs)
+test/v3/fishball-core/message-user	MSG-PAGING-EP-01	not ported (integration-2 ran out of budget): fishball-ui's fishball-page drawing message_user rows in DSH's real page in Chromium over a booted core + ui DSH (old fishball-core/message-user page.mjs, paging.mjs)
+test/v3/fishball-core/message-user	MSG-PAGING-EP-02	not ported (integration-2 ran out of budget): fishball-ui's fishball-page drawing message_user rows in DSH's real page in Chromium over a booted core + ui DSH (old fishball-core/message-user page.mjs, paging.mjs)
+test/v3/fishball-core/message-user	MSG-PAGING-ST-01	not ported (integration-2 ran out of budget): fishball-ui's fishball-page drawing message_user rows in DSH's real page in Chromium over a booted core + ui DSH (old fishball-core/message-user page.mjs, paging.mjs)
+test/v3/fishball-core/message-user	MSG-PAGING-ST-02	not ported (integration-2 ran out of budget): fishball-ui's fishball-page drawing message_user rows in DSH's real page in Chromium over a booted core + ui DSH (old fishball-core/message-user page.mjs, paging.mjs)
+test/v3/fishball-core/message-user	MSG-STREAM-EP-01	not ported (integration-2 ran out of budget): fishball-ui's fishball-page drawing message_user rows in DSH's real page in Chromium over a booted core + ui DSH (old fishball-core/message-user page.mjs, paging.mjs)
+test/v3/fishball-core/message-user	MSG-STREAM-ST-01	not ported (integration-2 ran out of budget): fishball-ui's fishball-page drawing message_user rows in DSH's real page in Chromium over a booted core + ui DSH (old fishball-core/message-user page.mjs, paging.mjs)
+test/v3/fishball-core/message-user	MSG-STREAM-ST-02	not ported (integration-2 ran out of budget): fishball-ui's fishball-page drawing message_user rows in DSH's real page in Chromium over a booted core + ui DSH (old fishball-core/message-user page.mjs, paging.mjs)
+test/v3/fishball-core/settings	SET3-BVA-03	packages/integration-core-ui/tests/entries.test.mjs
+test/v3/fishball-core/settings	SET3-DT-02	packages/integration-core-ui/tests/entries.test.mjs
+test/v3/fishball-core/settings	SET3-DT-03	packages/integration-core-ui/tests/entries.test.mjs
+test/v3/fishball-core/settings	SET3-DT-04	packages/integration-core-ui/tests/entries.test.mjs
+test/v3/fishball-core/settings	SET3-EP-05	packages/integration-core-ui/tests/entries.test.mjs
+test/v3/fishball-core/settings	SET3-ST-04	packages/integration-core-ui/tests/entries.test.mjs
+test/v3/fishball-core/settings	SET3-UC-07	packages/integration-core-ui/tests/entries.test.mjs (main 1, F-UI ids, F-UI core only)
+test/v3/fishball-core/settings	SET3-UC-08	packages/integration-core-ui/tests/entries.test.mjs
+test/v3/fishball-core/settings	SET3-UC-10	packages/integration-core-ui/tests/entries.test.mjs (entries halves: main 3 locale, A1, F-UI locale)
+test/v3/fishball-core/settings	UIPF-ENTRY-EP-01	packages/integration-core-ui/tests/entries.test.mjs
+test/v3/fishball-core/settings	UIPF-ENTRY-ST-01	packages/integration-core-ui/tests/entries.test.mjs
+test/v3/fishball-core/status	PLAT-DT-02	packages/integration-core-ui/tests/system.test.mjs (integration row)
+test/v3/fishball-core/status	UC-STATUS-01	retired: the integration part needed the hosted child (dsh-fishball-instance, 6b7c53bf), as port-core-settings mapped it
+test/v3/fishball-core/wire	SESSIONS-WATCH	packages/integration-core-ui/tests/system.test.mjs (SYS S1–S4, 5 rows)
+test/v3/fishball-core/wire	WIRE-SYS	packages/integration-core-ui/tests/system.test.mjs (ui+core, board stand-in+ui+core, SHELVE broken; guards row = bug: CORE-WIRE-B1)
+test/v3/fishball-ui/connections	CONN-SYS-DT-01	packages/integration-page-stream/tests/stream.test.mjs
+test/v3/fishball-ui/connections	CONN-SYS-EP-01	packages/integration-page-stream/tests/stream.test.mjs
+test/v3/fishball-ui/connections	CONN-SYS-EP-02	packages/integration-page-stream/tests/stream.test.mjs
+test/v3/fishball-ui/connections	CONN-SYS-EP-03	packages/integration-page-stream/tests/stream.test.mjs
+test/v3/fishball-ui/connections	CONN-SYS-EP-04	packages/integration-page-stream/tests/stream.test.mjs
+test/v3/fishball-ui/connections	CONN-SYS-EP-05	packages/integration-page-stream/tests/stream.test.mjs
+test/v3/fishball-ui/connections	CONN-SYS-EP-06	packages/integration-page-stream/tests/stream.test.mjs
+test/v3/fishball-ui/connections	CONN-SYS-EP-07	packages/integration-page-stream/tests/stream.test.mjs
+test/v3/fishball-ui/connections	CONN-SYS-EP-08	packages/integration-page-stream/tests/stream.test.mjs
+test/v3/fishball-ui/connections	CONN-SYS-ST-01	packages/integration-page-stream/tests/stream.test.mjs
+test/v3/fishball-ui/connections	CONN-SYS-ST-02	packages/integration-page-stream/tests/stream.test.mjs
+test/v3/fishball-ui/connections	CONN-SYS-ST-03	packages/integration-page-stream/tests/stream.test.mjs
+test/v3/fishball-ui/connections	CONN-SYS-ST-04	packages/integration-page-stream/tests/stream.test.mjs
+test/v3/fishball-ui/connections	CONN-SYS-ST-05	packages/integration-page-stream/tests/stream.test.mjs
+test/v3/fishball-ui/connections	CONN-SYS-UC-01	packages/integration-page-stream/tests/stream.test.mjs
+test/v3/fishball-ui/connections	CONN-SYS-UC-02	packages/integration-page-stream/tests/stream.test.mjs
+test/v3/fishball-ui/connections	CONN-SYS-UC-03	packages/integration-page-stream/tests/stream.test.mjs
+test/v3/fishball-ui/connections	CONN-TB-01	packages/integration-page-stream/tests/board-tab.test.mjs
+test/v3/fishball-ui/connections	CONN-TB-02	packages/integration-page-stream/tests/board-tab.test.mjs
+test/v3/fishball-ui/connections	CONN-TB-03	packages/integration-page-stream/tests/board-tab.test.mjs
+test/v3/fishball-ui/connections	CONN-TB-04	packages/integration-page-stream/tests/board-tab.test.mjs
+test/v3/fishball-ui/connections	CONN-TB-05	packages/integration-page-stream/tests/board-tab.test.mjs
+test/v3/fishball-ui/guards	PLAT-DT-04	packages/integration-core-ui/tests/guards.test.mjs
+test/v3/fishball-ui/guards	PLAT-UC-04	packages/integration-core-ui/tests/guards.test.mjs (4 todo and the withdrawn skip retired: F-WIRE/E2E-CORE/REL-PACK todos, instance launch code moved out 6b7c53bf)
+test/v3/fishball-ui/guards	UIM-DT-01	packages/integration-core-ui/tests/guards.test.mjs (rows 9, 10b, 14, all rows; todo 9 manual token and 10b real dsh-instance retired)
+test/v3/fishball-ui/model-dialog	MODEL-ST-03	packages/integration-core-ui/tests/system.test.mjs
+test/v3/fishball-ui/model-dialog	MODEL-SYS-01	packages/integration-core-ui/tests/system.test.mjs
+test/v3/fishball-ui/model-dialog	STRIP-DT-02	packages/integration-core-ui/tests/system.test.mjs
+test/v3/fishball-ui/model-dialog	STRIP-SYS-01	packages/integration-core-ui/tests/system.test.mjs
+test/v3/fishball-ui/package	EFIX3-UI-DT-01	packages/integration-core-ui/tests/patch.test.mjs
+test/v3/fishball-ui/package	EFIX3-UI-EP-01	packages/integration-core-ui/tests/patch.test.mjs
+test/v3/fishball-ui/package	EFIX3-UI-EP-02	packages/integration-core-ui/tests/patch.test.mjs
+test/v3/fishball-ui/package	EFIX3-UI-GUARD-01	packages/integration-core-ui/tests/patch.test.mjs
+test/v3/fishball-ui/package	EFIX3-UI-OWNER-01	packages/integration-core-ui/tests/patch.test.mjs
+test/v3/fishball-ui/package	EFIX3-UI-SHAPE-01	packages/integration-core-ui/tests/patch.test.mjs
+test/v3/fishball-ui/package	EFIX3-UI-SYS-01	packages/integration-core-ui/tests/system.test.mjs (standalone; hosted todo retired)
+test/v3/fishball-ui/package	NOCORE-ARCH	packages/integration-core-ui/tests/patch.test.mjs
+test/v3/fishball-ui/package	NOCORE-GUARDS	packages/integration-core-ui/tests/patch.test.mjs
+test/v3/fishball-ui/package	NOCORE-NOTICE	packages/integration-core-ui/tests/patch.test.mjs
+test/v3/fishball-ui/package	UI-BVA-01	packages/integration-core-ui/tests/patch.test.mjs (inserted)
+test/v3/fishball-ui/package	UI-DT-01	packages/integration-core-ui/tests/patch.test.mjs
+test/v3/fishball-ui/package	UI-EP-02	packages/integration-core-ui/tests/patch.test.mjs (reverse)
+test/v3/fishball-ui/package	UI-EP-03	packages/integration-core-ui/tests/patch.test.mjs
+test/v3/fishball-ui/package	UI-UC-01	packages/integration-core-ui/tests/system.test.mjs (main 1–5, E1, A1, A2; hosted todo retired)
+test/v3/fishball-ui/package	UI-UC-06	packages/integration-core-ui/tests/patch.test.mjs (rows ×5)
+test/v3/fishball-ui/package	UI-UC-07	packages/integration-core-ui/tests/patch.test.mjs (E1 drift ×3)
+test/v3/fishball-ui/package	UI-UC-08	packages/integration-core-ui/tests/patch.test.mjs
+(new)	PS-TB-DT-01	packages/integration-page-stream/tests/stream.test.mjs (coverage gap: the taskboard's page-stream topic while bound; controlled world: not installed)
+(new)	PS-TB-ST-01	packages/integration-page-stream/tests/stream.test.mjs (controlled world: the taskboard's row off → no topic → on → topic)
+(new)	PS-TB-ST-02	packages/integration-page-stream/tests/stream.test.mjs (a committed board change is one more topic frame)
+(new)	REL-TESTS	packages/integration-release/tests/boundaries.test.mjs (no tests/ in any npm pack listing; controlled synthetic package) and packages/integration-release/tests/release.test.mjs (no tests/ in any tarball)
+(new)	REL-HELPERS	packages/integration-release/tests/boundaries.test.mjs (no package imports or names fishball-test-helpers; it is private)
+(new)	REL-EP-14	packages/integration-release/tests/release.test.mjs (PUBLISH.md: one --tag alpha publish line per tarball, library first)
+test/v3/contract/package-boundaries	PLAT-EP-07	packages/integration-release/tests/boundaries.test.mjs (rows 1, 2, 3/7b, 4, 5, 6, 6 rule, 7c over the Fishball packages; dsh-side partitions, row 4 "Plugins page" todo (X-MATRIX), rows 8/9 todos and 7c feature-peers todo retired: the DSH-side packages left in 6b7c53bf, todos not planned here); row 5 packed copies → packages/integration-release/tests/release.test.mjs REL-DT-03
+test/v3/contract/package-boundaries	HOST-EP-03	packages/integration-release/tests/boundaries.test.mjs (row 1 skills-store and moved modules; instance partitions retired 6b7c53bf; row 2 withdrawn skip retired: I-READY)
+test/v3/contract/package-boundaries	SHELVE-EP-01	packages/integration-release/tests/boundaries.test.mjs (code, data, manifest of core and fishball-ui; the rule still holds after 2e1dbfd4)
+test/v3/release/pack	REL-ORACLE	packages/integration-release/tests/release.test.mjs
+test/v3/release/pack	REL-EP-01	packages/integration-release/tests/release.test.mjs
+test/v3/release/pack	REL-EP-02	packages/integration-release/tests/release.test.mjs
+test/v3/release/pack	REL-EP-03	packages/integration-release/tests/release.test.mjs (exactly the 6 released tarballs)
+test/v3/release/pack	REL-EP-04	packages/integration-release/tests/release.test.mjs (nested-manifest row folded: no package carries nested manifests outside node_modules but core's ui/, which is private and not released)
+test/v3/release/pack	REL-DT-01	packages/integration-release/tests/release.test.mjs (BVA on the current DSH and 0.2.1-rc.4)
+test/v3/release/pack	REL-DT-02	packages/integration-release/tests/release.test.mjs (exact internal versions; the dsh-connector-ui peer rows retired: 6b7c53bf)
+test/v3/release/pack	REL-EP-05	packages/integration-release/tests/release.test.mjs
+test/v3/release/pack	REL-DT-03	packages/integration-release/tests/release.test.mjs
+test/v3/release/pack	REL-EP-06	packages/integration-release/tests/release.test.mjs
+test/v3/release/pack	REL-EP-07	retired: dsh-instance's bundled/ and client.status.js (6b7c53bf)
+test/v3/release/pack	REL-EP-08	packages/integration-release/tests/release.test.mjs
+test/v3/release/pack	REL-EP-09	packages/integration-release/tests/release.test.mjs
+test/v3/release/pack	REL-ST-01	packages/integration-release/tests/release.test.mjs (absent, valid, tamper ×3, layout, missing INSTALL/PUBLISH/SHA256SUMS/offline-store)
+test/v3/release/pack	REL-SYS-01	retired: the hosted set (connector, connector-ui, instance) left this repository in 6b7c53bf
+test/v3/release/pack	REL-SYS-02	packages/integration-release/tests/release.test.mjs (each INSTALL.md set: standalone, amenities, board, heartbeat, taskboard)
+test/v3/release/pack	REL-SYS-03	packages/integration-release/tests/release.test.mjs
+test/v3/release/pack	REL-DT-04	packages/integration-release/tests/release.test.mjs (bundled partition; the registry partition was the connector's, retired 6b7c53bf)
+test/v3/release/pack	REL-EP-10	packages/integration-release/tests/release.test.mjs (online add before one --offline block per set; only released packages named)
+test/v3/release/pack	REL-EP-11	retired: INSTALL.md's "remove earlier packages", missing-peer, keep-folder and token-path paragraphs were removed by 6b7c53bf (scripts/release/documents.mjs) with the hosted/managed sets; the requirement left with them
+test/v3/release/pack	REL-EP-12	retired: E-FIX-2 B3/B4 README text rows were not re-requested after 6b7c53bf rewrote the documents; no tarball README rule is stated for this repository now (ask the lead to restore if wanted)
+test/v3/release/pack	REL-EP-13	retired: as REL-EP-12 (description text rule)
+test/v3/release/pack	REL-DT-05	retired: the "used profile" row depended on the hosted/managed sets and dsh-connector-shared (6b7c53bf)
+test/v3/release/pack	REL-ST-02	packages/integration-release/tests/release.test.mjs (each set's offline block run as written twice, then a later --offline add from elsewhere; counting proxy)
+test/v3/release/pack	REL-SHELVE	retired: 2e1dbfd4 (the user, 2026-11-21) ships fishball-board in the release; its code half stays as SHELVE-EP-01

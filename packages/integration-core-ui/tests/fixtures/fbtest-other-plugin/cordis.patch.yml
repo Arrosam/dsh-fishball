@@ -1,0 +1,11 @@
+[
+  {
+    "insert": [
+      {
+        "id": "fbtest-other-plugin",
+        "name": "fbtest-other-plugin",
+        "config": {}
+      }
+    ]
+  }
+]

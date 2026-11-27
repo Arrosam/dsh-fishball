@@ -1,0 +1,26 @@
+[
+  {
+    "insert": [
+      {
+        "id": "fbtest-preset-extra",
+        "name": "@deepseek-ai/dsh-agent-preset",
+        "config": {
+          "id": "fbtest-extra",
+          "order": 90,
+          "plugins": [
+            {
+              "id": "tool-fs",
+              "name": "@deepseek-ai/dsh-tool-fs",
+              "config": {
+                "read": true,
+                "readImage": true,
+                "write": false,
+                "edit": false
+              }
+            }
+          ]
+        }
+      }
+    ]
+  }
+]

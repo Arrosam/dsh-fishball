@@ -1,0 +1,19 @@
+{
+  "name": "fishball-integration-release",
+  "version": "1.0.0-alpha.1",
+  "private": true,
+  "type": "module",
+  "description": "Integration tests: the package boundaries across every Fishball package (imports, manifests, the shared library, what each package ships) and the release folder scripts/pack-v3.mjs writes (tarballs, SHA256SUMS, its checker, INSTALL.md run as written, offline installs with DSH's CLI). Never shipped.",
+  "dependencies": {
+    "fishball-core": "1.0.0-alpha.1",
+    "fishball-ui": "1.0.0-alpha.1",
+    "fishball-shared": "1.0.0-alpha.1",
+    "fishball-board": "1.0.0-alpha.1",
+    "fishball-heartbeat": "1.0.0-alpha.1",
+    "fishball-taskboard": "1.0.0-alpha.1",
+    "fishball-amenities": "1.0.0-alpha.1"
+  },
+  "scripts": {
+    "test": "node ../../scripts/test.mjs fishball-integration-release"
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "name": "fishball-integration-amenities",
+  "version": "1.0.0-alpha.1",
+  "private": true,
+  "type": "module",
+  "description": "Integration tests: the Fishball amenities beside fishball-core, fishball-ui and the repository root (package icons as one family, fishball-board's Config through DSH's settings service, the root workspaces). Never shipped.",
+  "dependencies": {
+    "fishball-amenities": "1.0.0-alpha.1",
+    "fishball-board": "1.0.0-alpha.1",
+    "fishball-heartbeat": "1.0.0-alpha.1",
+    "fishball-taskboard": "1.0.0-alpha.1",
+    "fishball-core": "1.0.0-alpha.1",
+    "fishball-ui": "1.0.0-alpha.1",
+    "fishball-shared": "1.0.0-alpha.1"
+  },
+  "scripts": {
+    "test": "node ../../scripts/test.mjs fishball-integration-amenities"
+  }
+}

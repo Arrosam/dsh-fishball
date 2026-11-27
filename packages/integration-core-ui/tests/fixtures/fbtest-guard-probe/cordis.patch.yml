@@ -1,0 +1,11 @@
+[
+  {
+    "insert": [
+      {
+        "id": "fbtest-guard-probe",
+        "name": "fbtest-guard-probe",
+        "config": {}
+      }
+    ]
+  }
+]
