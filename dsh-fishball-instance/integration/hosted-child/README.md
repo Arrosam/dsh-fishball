@@ -69,3 +69,10 @@ zero-byte `.credentials.yaml.lock` (no holder PID); an incomplete lock cannot be
 the normal dead-PID rule. The test now reports a settled `failed` recovery instead of polling
 forever. It does not delete the lock, retry the recovery, or relax the requirement. The process
 that left the empty lock was not identified.
+
+The bounded rerun passed both restart cases on `0.2.1-rc.5`, but reproduced the same lock
+failure in `CP-R8 queued` on `0.2.2-rc.1`: both restart requests returned, then the child
+settled at `failed` / `NATIVE_CHILD_EXITED` with a zero-byte lock and a writer timeout.
+The case reached its deadline, and only that case’s dependent shared-world rows were skipped.
+The SDK must address how to recover an incomplete lock without taking it from a live writer;
+the fixture deliberately does not make that decision.
