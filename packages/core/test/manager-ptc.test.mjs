@@ -170,6 +170,21 @@ test('new Fishball manager uses real scoped PTC without changing a native sessio
   })
 }))
 
+test('Fishball limits each managed session to one task in its assembled prompt', OPTIONS, (t) => withWorld(t, async (world) => {
+  await world.save({})
+  await world.boot(async (host) => {
+    const { sections } = await world.inspect(await managerAgent(host))
+    const rules = [
+      /one task per (?:managed )?session|one (?:managed )?session per task|(?:each|one) (?:managed )?session[^.\n]*\bone task\b/i,
+      /(?=[^.\n]*\b(?:done|complete\w*|finish\w*)\b)(?=[^.\n]*\b(?:no rework|unless rework|rework (?:is not|isn’t|isn't) needed)\b)[^.\n]*\bsession_release\b/i,
+      /\b(?:session_release|released?)\b[^\n]*(?:do not|don['’]t|never|stop) (?:reuse|using|use|keep using|continue using)|(?:do not|don['’]t|never|stop) (?:reuse|using|use|keep using|continue using)[^.\n]*\breleased?\b/i,
+      /\b(?:start|open) (?:a )?(?:new|fresh|separate) session[^.\n]*\bnew task\b|\bnew task\b[^.\n]*(?:start|open) (?:a )?(?:new|fresh|separate) session/i,
+    ]
+    assert.ok(sections.some(({ name, text }) => !name.startsWith('tools:') && rules.every((rule) => rule.test(text))),
+      'Fishball must tell the model to use one session per task, call session_release once done with no rework needed, stop using released sessions, and start a new session for each new task')
+  })
+}))
+
 // Use the same fixed program and assertions with either the real Node carrier or a
 // deterministic carrier that interprets only this test case (never general JavaScript).
 const PROBE_PROGRAM = 'console.log(await Promise.all(' + JSON.stringify(FIXTURE.samples)
