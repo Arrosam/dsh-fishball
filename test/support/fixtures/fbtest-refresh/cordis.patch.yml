@@ -1,4 +1,0 @@
-- insert:
-    - id: fbtest-refresh
-      name: 'fbtest-refresh'
-      config: {}

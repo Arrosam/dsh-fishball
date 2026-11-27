@@ -1,4 +1,0 @@
-- insert:
-    - id: fbtest-leak
-      name: 'fbtest-leak'
-      config: {}

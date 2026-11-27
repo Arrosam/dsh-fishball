@@ -1,5 +1,0 @@
-# The stand-in's one row (the same id and name the real board's patch inserts).
-- insert:
-    - id: fishball-board
-      name: 'fishball-board'
-      config: {}

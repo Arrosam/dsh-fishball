@@ -1,4 +1,0 @@
-- insert:
-    - id: fbtest-waits
-      name: 'fbtest-waits'
-      config: {}

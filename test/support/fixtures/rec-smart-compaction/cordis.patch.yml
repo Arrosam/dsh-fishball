@@ -1,4 +1,0 @@
-- insert:
-    - id: smart-compaction
-      name: 'smart-compaction'
-      config: {}

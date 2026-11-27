@@ -1,6 +1,0 @@
-# Two rows without an id naming the same module: they map to the same row id.
-- insert:
-    - name: 'fbtest-dup'
-      config: {}
-    - name: 'fbtest-dup'
-      config: {}
