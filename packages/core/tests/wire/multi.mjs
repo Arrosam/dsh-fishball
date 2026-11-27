@@ -138,26 +138,6 @@ export function registerMultiCases() {
     assert.notEqual((await w.view(targetId)).endpointEpoch, before, 'a change of origin kept the endpoint epoch')
   })
 
-  row('MULTI-CRED-ST-01', 'standalone port edit', 'a manually added target on a different port is a new endpoint; retire the old credential and never present it to the new port', async () => {
-    const w = await standalone()
-    const first = await w.fake({ name: MULTI.name.office })
-    const second = await w.fake({ name: MULTI.name.office })
-    const a = await w.connect(first)
-    const oldNames = credentialNamesOf(a.view)
-    const keys = async () => (await w.h.call('credRecords')).map((r) => r.key)
-    assert.ok((await keys()).includes(oldNames.tokenRecord), 'precondition: the old endpoint saved its credential')
-    assert.notEqual(new URL(first.url()).port, new URL(second.url()).port)
-    ok(await w.act('setUrl', a.targetId, second.url(), { confirmed: true }))
-    const changed = await w.view(a.targetId)
-    assert.equal(changed.url, second.url())
-    assert.notEqual(changed.endpointEpoch, a.view.endpointEpoch)
-    await quiet()
-    assert.equal((await keys()).includes(oldNames.tokenRecord), false, 'the retired endpoint kept its saved credential')
-    assert.equal((await w.h.call('credDescribe', { ref: oldNames.tokenRef })).configured, false)
-    assert.equal(second.presented().some(({ secret }) => secret === a.entry.secret), false, 'the new port received the old endpoint’s credential')
-    assert.notEqual((await w.view(a.targetId)).state, S.connected)
-  })
-
   // ============================================================== MULTI-HOST: the reserved parent
   for (const [part, targetUrl] of [['set', 'https://parent.example/api/agent/mcp'], ['blank', '   ']]) {
     row('MULTI-HOST-EP-01', part, `hosted child, dsh-instance-child.targetUrl ${part}: first target id parent, kind parent, ${part === 'set' ? 'URL from the setting' : 'not-set'}; not removable, URL not editable; remove/setUrl → target-reserved`, async () => {

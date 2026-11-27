@@ -18,6 +18,7 @@ import { linkScope } from './retirement-link.mjs'
 
 const OLD = LIFE.placeholderUrl
 const NEXT = MULTI.url.remote
+const STANDALONE_PORTS = Object.freeze({ before: 'http://127.0.0.1:47001/api/agent/mcp', after: 'http://127.0.0.1:47002/api/agent/mcp' })
 const CONFIRMED = { confirmed: true }
 const CONTINUE = SEAM_PAIRING.choice.continue
 const DECISION_MS = 5000
@@ -143,6 +144,35 @@ export function registerRetirementCases() {
     assert.equal(old.starts.length, starts, 'the deferred choice restarted the old link')
     assert.equal(old.sends.length, sends, 'the old link dialled after retirement')
   })
+
+  row('standalone port edit retires the old epoch and its credential', async (t, links) => {
+    const w = await world(t)
+    const { ok, targetId } = await w.service.add(STANDALONE_PORTS.before)
+    assert.equal(ok, true)
+    const before = w.view(targetId), [old] = links
+    await old.done
+    const { tokenRef, tokenRecord } = credentialNamesOf(before)
+    w.refs.set(tokenRef, w.secret)
+    assert.equal((await w.service.retry(targetId)).ok, true)
+    await old.done
+    assert.ok(old.sends.some(({ href, secret }) => href === STANDALONE_PORTS.before && secret === w.secret), 'precondition: the old port received its token')
+    assert.ok(await w.credentials.readRecord(tokenRecord), 'precondition: the old epoch saved its token')
+    // The token exchange already cleared the reference. Re-enter the token on E1 to test
+    // that retirement also clears a writable reference for the old epoch.
+    w.refs.set(tokenRef, w.secret)
+
+    assert.equal((await w.service.setUrl(targetId, STANDALONE_PORTS.after, CONFIRMED)).ok, true)
+    const after = w.view(targetId), current = links.at(-1)
+    assert.equal(after.url, STANDALONE_PORTS.after)
+    assert.notEqual(after.endpointEpoch, before.endpointEpoch)
+    assert.notEqual(current, old)
+    await current.done
+    assert.ok(current.probes.includes(STANDALONE_PORTS.after), 'the replacement did not attempt credential selection')
+    assert.equal((await w.credentials.resolve(tokenRef)) === undefined, true, 'the retired epoch kept its writable reference')
+    assert.equal((await w.credentials.readRecord(tokenRecord)) === undefined, true, 'the retired epoch kept its saved credential')
+    const usedAtNewPort = (trace) => trace.some(({ href, secret }) => href === STANDALONE_PORTS.after && secret === w.secret)
+    assert.ok(!links.some(({ selections, sends }) => usedAtNewPort(selections) || usedAtNewPort(sends)), 'the new port used the old epoch’s token')
+  }, STANDALONE_PORTS.before)
 
   row('parent renewal with a still-effective ambient token', async (t, links) => {
     const { w, before, old, ambientRef } = await ambientParent(t, links)
