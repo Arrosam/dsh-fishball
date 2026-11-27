@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"><title>自动更新设置 · Fishball 任务板</title><link rel="stylesheet" href="preview.css">
+</head>
+<body><a class="skip" href="#main">跳到内容</a>
+<aside class="preview" aria-label="静态方案预览"><b>设计预览</b>
+<nav aria-label="预览场景"><a href="index.html" >任务板</a><a href="settings.html" aria-current="page">自动更新设置</a><a href="disabled.html" >未选择模型</a><a href="notice.html" >Fishball 通知</a><a href="history.html" >更新记录</a><a href="review.html" >待复核</a><a href="undo.html" >撤销结果</a><a href="failure.html" >未写入</a>
+</nav>
+</aside>
+<header class="mast"><a class="brand" href="index.html"><svg aria-hidden="true" class="mark" viewBox="0 0 24 24"><rect width="24" height="24" rx="5" fill="#101010"/><path fill="#f2f2ee" d="M7.4 16.6V9.9l3.9-4.3h7.1v7.1l-4.3 3.9z M7.4 16.6l-4.8 4.8h4.8z"/><path fill="#ec0a6e" d="M14.6 7.4h2v2h-2z"/></svg>Fishball</a><span class="slash">/</span><span class="crumb">插件　/　fishball-taskboard</span><span class="spacer"></span><a class="btn" href="index.html"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5l1.5 1.5L7 3.5 M9 5h8 M3 12l1.5 1.5L7 10.5 M9 12h8"/></svg> 任务板</a>
+</header>
+<main id="main" class="workspace">
+<div class="sheet">
+<div class="eyebrow">Task board / configuration
+</div>
+<div class="intro">
+<div>
+<h1>自动更新设置</h1>
+<p class="desc">受管会话结束一轮后，用所选模型读取最终回复和当前任务，再决定是否更新。</p>
+</div><span class="tag green"><i></i>已启用</span>
+</div>
+<div class="columns">
+<div class="stack">
+<section class="box ">
+<h2 class="cap"><span class="doticon"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h12 M4 14h12 M7 3v6 M13 11v6"/></svg></span>模型与开关</h2>
+<div class="fieldline">
+<div><strong>自动更新任务板</strong>
+<p class="small">关闭将清空所选模型，并取消待处理的更新。</p>
+</div><a class="toggle " href="disabled.html" aria-label="关闭自动更新"></a>
+</div><hr class="divider">
+<div class="copy"><strong>数据去向 · OpenAI / GPT-4.1 mini（示例）</strong>
+<p class="small">所选服务商仅收到本轮最终回复及匹配任务所需的板上字段：任务 ID、父子关系、标题、状态、进度和备注。不发送备忘、历史对话或凭据。</p>
+</div><hr class="divider">
+<div class="fieldline">
+<h3>更新模型</h3><span class="small">本机可用目录 · 示例</span>
+</div>
+<details open>
+<summary class="picker">GPT-4.1 mini　⌄</summary>
+<div class="choices" aria-label="模型目录示例">
+<div class="choice selected"><span>GPT-4.1 mini</span><svg aria-hidden="true" width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10l4 4L17 4"/></svg>
+</div>
+<div class="choice "><span>GPT-4.1 nano</span>
+</div><a class="choice" href="disabled.html">不选择模型（关闭）</a>
+</div>
+</details>
+</section>
+<section class="box ">
+<h2 class="cap"><span class="doticon"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 9h10v8H5z M7 9V6a3 3 0 1 1 6 0v3"/></svg></span>写入规则 · 只读</h2>
+<ol class="rulelist">
+<li>只更新已有且未结束的任务：状态、进度或备注。不能创建任务，也不改标题、父子关系和备忘。
+</li>
+<li>保留原备注，只追加有依据的短句。完成或 100% 的建议留待 Fishball 核验。
+</li>
+<li>提交前比对整板版本；有冲突即放弃整批。没有实质改动，不通知 Fishball。
+</li>
+</ol>
+</section>
+</div>
+<div class="stack">
+<section class="box ">
+<h2 class="cap"><span class="doticon"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2a8 8 0 1 0 .01 0 M10 5v5l3 2"/></svg></span>调用预算</h2>
+<dl class="kv">
+<div>
+<dt>每个任务板</dt>
+<dd>1 个并发</dd>
+</div>
+<div>
+<dt>滚动 1 小时</dt>
+<dd>最多 6 次</dd>
+</div>
+<div>
+<dt>单次超时</dt>
+<dd>30 秒</dd>
+</div>
+<div>
+<dt>输入（含提示）</dt>
+<dd>≤ 8,192 tokens</dd>
+</div>
+<div>
+<dt>输出上限</dt>
+<dd>1,024 tokens</dd>
+</div>
+<div>
+<dt>自动重试</dt>
+<dd>无</dd>
+</div>
+</dl>
+</section>
+<section class="box ">
+<h2 class="cap"><span class="doticon"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2a8 8 0 1 0 .01 0 M10 9v5 M10 6h.01"/></svg></span>调用前检查</h2>
+<p class="small">全树最多 20 个任务，含已结束任务。任务数或输入超限时整次跳过，不截取一部分。仅处理新的受管会话返回，不监听任务板自己的通知。</p>
+</section>
+</div>
+</div>
+</div>
+</main>
+</body>
+</html>

@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"><title>未写入 · Fishball 任务板</title><link rel="stylesheet" href="preview.css">
+</head>
+<body><a class="skip" href="#main">跳到内容</a>
+<aside class="preview" aria-label="静态方案预览"><b>设计预览</b>
+<nav aria-label="预览场景"><a href="index.html" >任务板</a><a href="settings.html" >自动更新设置</a><a href="disabled.html" >未选择模型</a><a href="notice.html" >Fishball 通知</a><a href="history.html" >更新记录</a><a href="review.html" >待复核</a><a href="undo.html" >撤销结果</a><a href="failure.html" aria-current="page">未写入</a>
+</nav>
+</aside>
+<header class="mast"><a class="brand" href="index.html"><svg aria-hidden="true" class="mark" viewBox="0 0 24 24"><rect width="24" height="24" rx="5" fill="#101010"/><path fill="#f2f2ee" d="M7.4 16.6V9.9l3.9-4.3h7.1v7.1l-4.3 3.9z M7.4 16.6l-4.8 4.8h4.8z"/><path fill="#ec0a6e" d="M14.6 7.4h2v2h-2z"/></svg>Fishball</a><span class="slash">/</span><span class="crumb">任务板　/　自动更新</span><span class="spacer"></span><a class="btn" href="index.html"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5l1.5 1.5L7 3.5 M9 5h8 M3 12l1.5 1.5L7 10.5 M9 12h8"/></svg> 任务板</a>
+</header>
+<main id="main" class="workspace">
+<div class="sheet">
+<div class="eyebrow">Task board / skipped update
+</div>
+<div class="intro">
+<div>
+<h1>未写入：任务板已有改动</h1>
+<p class="desc">独立冲突示例：模型读取 v17 后，你保存了修改。自动更新提交时发现版本已变。</p>
+</div><span class="tag amber"><i></i>整批跳过</span>
+</div>
+<div class="columns">
+<div class="stack">
+<section class="box ">
+<h2 class="cap"><span class="doticon"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 9h10v8H5z M7 9V6a3 3 0 1 1 6 0v3"/></svg></span>保留你的编辑</h2>
+<div class="flag">未使用基于 v17 的建议。当前任务板保留在你刚保存的 v18。
+</div>
+<dl class="kv">
+<div>
+<dt>读取版本</dt>
+<dd>v17</dd>
+</div>
+<div>
+<dt>当前版本</dt>
+<dd>v18</dd>
+</div>
+<div>
+<dt>来源会话</dt>
+<dd><span class="mono">ses_docs_7f2a</span></dd>
+</div>
+<div>
+<dt>写入任务</dt>
+<dd>0 项</dd>
+</div>
+<div>
+<dt>自动通知</dt>
+<dd>0 条</dd>
+</div>
+</dl>
+<div class="actions"><a class="btn" href="index.html">查看任务板</a><a class="btn" href="settings.html">检查更新设置</a>
+</div>
+</section>
+</div>
+<div class="stack">
+<section class="box ">
+<h2 class="cap"><span class="doticon"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2a8 8 0 1 0 .01 0 M10 9v5 M10 6h.01"/></svg></span>其他静默结果</h2>
+<div class="subline">
+<h3>没有匹配任务</h3>
+<p class="small">不按相似标题猜测，也不添加新任务。</p>
+</div>
+<div class="subline">
+<h3>任务数超过 20 或预算已用完</h3>
+<p class="small">在调用前跳过，不截断清单，不排队补跑。</p>
+</div>
+<div class="subline">
+<h3>模型超时或返回无效数据</h3>
+<p class="small">不写入部分结果；不换模型、不自动重试。</p>
+</div>
+</section>
+</div>
+</div>
+</div>
+</main>
+</body>
+</html>

@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"><title>任务板 · Fishball 任务板</title><link rel="stylesheet" href="preview.css">
+</head>
+<body><a class="skip" href="#main">跳到内容</a>
+<aside class="preview" aria-label="静态方案预览"><b>设计预览</b>
+<nav aria-label="预览场景"><a href="index.html" aria-current="page">任务板</a><a href="settings.html" >自动更新设置</a><a href="disabled.html" >未选择模型</a><a href="notice.html" >Fishball 通知</a><a href="history.html" >更新记录</a><a href="review.html" >待复核</a><a href="undo.html" >撤销结果</a><a href="failure.html" >未写入</a>
+</nav>
+</aside>
+<header class="mast"><a class="brand" href="index.html"><svg aria-hidden="true" class="mark" viewBox="0 0 24 24"><rect width="24" height="24" rx="5" fill="#101010"/><path fill="#f2f2ee" d="M7.4 16.6V9.9l3.9-4.3h7.1v7.1l-4.3 3.9z M7.4 16.6l-4.8 4.8h4.8z"/><path fill="#ec0a6e" d="M14.6 7.4h2v2h-2z"/></svg>Fishball</a><span class="slash">/</span><span class="crumb">工作区</span><span class="spacer"></span><a class="btn" href="settings.html"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h12 M4 14h12 M7 3v6 M13 11v6"/></svg> 自动更新设置</a>
+</header>
+<main id="main" class="shell">
+<section class="conversation" aria-label="Fishball 对话">
+<div class="appline"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h14v10H8l-5 4z"/></svg> <strong>Fishball 对话</strong>
+</div>
+<div class="chatwrap">
+<div class="date">今天
+</div>
+<div class="message user">
+<div class="by">你 <span class="time">14:18</span>
+</div>
+<p class="bubble">请继续完善安装指南的离线流程，文档和验证进度分开记录。</p>
+</div>
+<div class="message">
+<div class="by"><svg aria-hidden="true" class="mark" viewBox="0 0 24 24"><rect width="24" height="24" rx="5" fill="#101010"/><path fill="#f2f2ee" d="M7.4 16.6V9.9l3.9-4.3h7.1v7.1l-4.3 3.9z M7.4 16.6l-4.8 4.8h4.8z"/><path fill="#ec0a6e" d="M14.6 7.4h2v2h-2z"/></svg> Fishball <span class="time">14:19</span>
+</div>
+<p class="reply">我会让文档会话补写离线步骤，验证命令单独跟踪。安装包的校验值会按发布清单核对。</p>
+</div>
+<div class="chatend">
+<div class="chatinput"><span>给 Fishball 发消息…</span><span class="send"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 16V4 M5 9l5-5 5 5"/></svg></span>
+</div>
+</div>
+</div>
+</section>
+<section class="panel" aria-label="右侧任务板">
+<div class="appline"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5l1.5 1.5L7 3.5 M9 5h8 M3 12l1.5 1.5L7 10.5 M9 12h8"/></svg> <strong>任务板</strong><span class="spacer"></span><span class="time">v18</span>
+</div>
+<div class="pad">
+<div class="sectionhead">
+<h1 style="font-size:18px">任务板</h1><span class="small">编辑</span>
+</div>
+<div class="summary">
+<div class="chips"><span class="tag pink"><i></i>进行中　4</span><span class="tag green"><i></i>已完成　1</span>
+</div>
+<div class="meterline"><span class="meter" aria-hidden="true"><i style="--pct:20%"></i></span><span class="number">已完成 1/5</span>
+</div>
+</div>
+<div class="flex boardtools"><a class="btn" href="history.html"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9a7 7 0 1 1 1.4 5 M3 4v5h5 M10 6v5l3 2"/></svg> 2 项已更新</a><a class="btn" href="review.html"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17V3 M4 4c4-3 7 3 12 0v7c-5 3-8-3-12 0"/></svg> 1 项待复核</a><span class="spacer"></span><span class="time">14:32</span>
+</div>
+<div class="sectionhead">
+<h2>任务</h2><span class="number">4 项未完成</span>
+</div>
+<ul class="tree">
+<li>
+<div class="row">
+<div class="labelrow"><strong>⌄　发布安装指南</strong><span class="tag pink"><i></i>进行中</span>
+</div>
+<div class="meterline"><span class="meter" aria-hidden="true"><i style="--pct:45%"></i></span><span class="number">45%</span>
+</div>
+<p class="note">发布前确认文档和验证记录。</p>
+</div>
+<ul class="branches">
+<li>
+<div class="row">
+<div class="labelrow"><strong>补写离线安装步骤</strong><span class="tag pink"><i></i>进行中</span>
+</div>
+<div class="meterline"><span class="meter" aria-hidden="true"><i style="--pct:70%"></i></span><span class="number">70%</span>
+</div>
+<p class="note">保留原来的在线安装说明。<br>已补齐包清单和解包步骤；还缺离线升级示例。</p>
+<div class="autoline"><a class="stamp" href="history.html"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2l2.1 5.9L18 10l-5.9 2.1L10 18l-2.1-5.9L2 10l5.9-2.1z"/></svg> 自动更新</a>30% → 70% · 追加备注
+</div>
+</div>
+</li>
+<li>
+<div class="row">
+<div class="labelrow"><strong>验证离线安装命令</strong><span class="tag pink"><i></i>进行中</span>
+</div>
+<div class="meterline"><span class="meter" aria-hidden="true"><i style="--pct:40%"></i></span><span class="number">40%</span>
+</div>
+<p class="note">用干净环境验证安装过程。</p>
+<div class="autoline"><a class="stamp" href="history.html"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2l2.1 5.9L18 10l-5.9 2.1L10 18l-2.1-5.9L2 10l5.9-2.1z"/></svg> 自动更新</a>待办 → 进行中 · 0% → 40%
+</div>
+</div>
+</li>
+<li>
+<div class="row">
+<div class="labelrow"><strong>核对安装包校验值</strong><span class="tag pink"><i></i>进行中</span>
+</div>
+<div class="meterline"><span class="meter" aria-hidden="true"><i style="--pct:90%"></i></span><span class="number">90%</span>
+</div>
+<p class="note">需要逐项核对发布清单。</p>
+<div class="autoline"><a class="" href="review.html"><span class="tag amber"><i></i>待 Fishball 复核</span></a>尚未标为完成
+</div>
+</div>
+</li>
+</ul>
+</li>
+</ul>
+<details class="grouplabel">
+<summary>已结束（1）</summary>
+<div class="completed">✓　整理依赖清单　已完成
+</div>
+</details>
+<div class="sectionhead">
+<h2>备忘</h2>
+</div>
+<div class="memo">发布前请保留一份可离线使用的文档。
+</div>
+</div>
+</section>
+</main>
+</body>
+</html>
