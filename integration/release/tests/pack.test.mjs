@@ -8,9 +8,9 @@
  * split (a9c8832) this repo packs one tarball, dsh-instance; the connector and Fishball tarballs
  * are their repositories' releases. The instance carries fishball-amenities and fishball-core in bundled/.
  *
- * Techniques: EP per rule over the one tarball, BVA (sha line shape; the tampered byte at the
- * first/middle/last offset; engines.dsh just below its bound), State Transition under --check
- * (valid → tampered → restored; layout removed/added → restored).
+ * Techniques: EP per rule over the one tarball, BVA (sha line shape; engines.dsh just below its
+ * bound), State Transition under --check (layout removed/added → restored). Tarball checksum state
+ * transitions are covered without the SDK matrix in pack-checksum.test.mjs.
  *
  * Network: every child process runs with dead proxies, a dead registry and no user npm config; the
  * build is observed to work so (the pack stages with `npm pack` only). One release per file.
@@ -27,7 +27,7 @@ import { canonicalTmp, cleanups, tempRoot } from '@dsh-instance/test-helpers/scr
 import { runtimeOf } from '@dsh-instance/test-helpers/sdk'
 import { REPO } from '@dsh-instance/test-helpers/constants'
 import {
-  INSTANCE, NOT_STANDALONE, PACK, SET, VERSION, build, check, filesOf, fishballRelease, flipByte, isJunk, isolatedEnv, listing, memberOf, missingRelease, run, sha256, tail,
+  INSTANCE, NOT_STANDALONE, PACK, SET, VERSION, build, check, filesOf, fishballRelease, isJunk, isolatedEnv, listing, memberOf, missingRelease, run, sha256, tail,
 } from './support/release.mjs'
 
 const skip = missingRelease()
@@ -171,18 +171,6 @@ eachSdk((sdk) => {
   caseTest(sdk, 'REL-ST-01', 'absent', '--check --out <a folder that does not exist> exits non-zero', async (t) => {
     await expectCheck(t, path.join(tempRoot(cleanups(t)), 'no-such-release'), 'absent', false)
   })
-  caseTest(sdk, 'REL-ST-01', 'tamper', 'a copied release: valid (0) → the tarball byte flipped at the first/middle/last offset (non-zero) → restored (0), per offset (BVA)', async (t) => {
-    const copy = copyRelease(t)
-    const target = path.join(copy, INSTANCE.tarball)
-    const pristine = fs.readFileSync(target)
-    await expectCheck(t, copy, 'copied', true)
-    for (const [where, at] of Object.entries(PACK.offsets)) {
-      flipByte(target, at(pristine.length))
-      await expectCheck(t, copy, 'byte flipped at the ' + where + ' offset', false)
-      fs.writeFileSync(target, pristine)
-      await expectCheck(t, copy, 'restored after the ' + where + ' flip', true)
-    }
-  }, { skip, todo: 'BUG: pack.mjs --check reads the tarball listing and the layout only; it never compares a tarball with its SHA256SUMS line, so a flipped byte still passes (exit 0)' })
   caseTest(sdk, 'REL-ST-01', 'layout', `a copied release: ${INSTANCE.tarball} removed (non-zero) → restored (0) → a stray .tgz added (non-zero) → removed (0)`, async (t) => {
     const copy = copyRelease(t)
     const target = path.join(copy, INSTANCE.tarball)

@@ -8,7 +8,7 @@
  * Observed only through routes (the instance's status, reconnect and model sync; the connector's
  * settings-page state), the files the instance writes under the throwaway home (hosted.json, the
  * launch overlay, lifecycle.log, the child's own credential store and profile) and processes by pid.
- * One host per SDK; the rows run in order.
+ * The lifecycle rows share one home per SDK and run in order. Each HOST-UC-02 case uses its own home.
  */
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
@@ -26,10 +26,75 @@ const HOSTED_LABEL = 'Fishball (hosted)'
 /** Core's default local identity (dsh-fishball HOST-UC-01 main 4: id fb- + 16 lowercase base32, name "Fishball"). */
 const CORE_ID = /^fb-[a-z2-7]{16}$/
 const CORE_NAME = 'Fishball'
+/** The one-shot reference imported into the child (README "The hosted token"), as a DSH YAML key. */
+const IMPORTED_REF_KEY = /^ {2}DSH_AGENT_TOKEN:/m
+/** The child page's public view of the reserved parent (README "The hosted token"). */
+const PARENT = Object.freeze({
+  route: '/api/fishball/targets', id: 'parent', needId: 'need-id',
+  blockedLinkStates: Object.freeze(['target-unset', 'target-unreachable', 'token-refused']),
+})
 
 const lifecycleCodes = (home) => (readText(path.join(home, ...CHILD.runtime, LOG.file)) ?? '').split('\n').filter(Boolean).map((l) => JSON.parse(l).code)
 /** The top-level record names of a DSH credential store (YAML, two-space keys under records:). */
 const recordNames = (file) => (readText(file) ?? '').split('\n').filter((l) => /^  \S[^:]*:\s*$/.test(l)).map((l) => l.trim().slice(0, -1))
+
+const hostedKeys = (entries) => entries.filter((e) => e.label === HOSTED_LABEL).map((e) => e.key).sort()
+
+const childCredentialFile = (child) => path.join(child.dshHome, CHILD.credentials)
+const hasSavedParent = (child) => recordNames(childCredentialFile(child)).includes(CHILD.savedRecord)
+
+// Report only the endpoint, never any userinfo, query, or response body.
+function endpoint(url) {
+  const parsed = url && URL.parse(url)
+  return parsed ? parsed.origin + parsed.pathname : null
+}
+
+async function parentTarget({ origin, cookie }) {
+  const response = await fetch(origin + PARENT.route, { headers: { cookie }, redirect: 'manual' })
+  assert.equal(response.status, HTTP.ok, 'the child target list was not served')
+  // Parse outside the JSON error path so invalid responses cannot echo body snippets.
+  const body = await response.json().catch(() => null)
+  const parent = body?.targets?.find((target) => target.targetId === PARENT.id)
+  return parent && { url: endpoint(parent.url), link: parent.link?.state, code: parent.link?.code, pairing: parent.pairing?.state, connecting: parent.connecting }
+}
+
+const linkBlocked = (target) => target && target.connecting !== true && (target.pairing === PARENT.needId || PARENT.blockedLinkStates.includes(target.link))
+
+const observeRestart = (world, admission, key) => untilValue(async () => {
+  const parent = await parentTarget(admission)
+  const entries = await connectorEntries(world.host)
+  const entry = entries.find((item) => item.key === key)
+  // Either the original link is back or the child reports an idle failure; never wait for the
+  // original link alone, since BUG-3 still needs observations after its failure.
+  return (entry?.connected === true || linkBlocked(parent)) && { parent, entries, entry }
+})
+
+async function readyInWorld(world, sdk) {
+  const s = await world.start(sdk)
+  assert.equal(s?.state, STATE.ready, 'precondition: the hosted child is ready; status ' + show(s))
+  return world.child
+}
+
+/** The child has paired: its connector entry is paired and connected (the import is asynchronous after ready). */
+const pairedInWorld = (world) => untilValue(async () => {
+  const entries = (await connectorEntries(world.host)).filter((e) => e.label === HOSTED_LABEL)
+  const key = world.child.hosted()?.entries?.at(-1)
+  const entry = entries.find((e) => e.key === key)
+  return entry?.paired === true && entry.connected === true && { entry, entries }
+})
+
+async function admitOwner(world) {
+  const admission = await admitChild(world.host)
+  assert.equal(admission.status, HTTP.seeOther, 'the child did not admit its owner')
+  return admission
+}
+
+/** Observe a real host restart without requiring the MCP link to come back. */
+async function restartAndAdmit(world) {
+  const status = await world.restart()
+  assert.equal(status?.state, STATE.ready, show(status))
+  return admitOwner(world)
+}
 
 eachSdk((sdk) => {
   const w = hostedWorld('hc-token', { env: { [FIXTURE.providerKeyEnv]: FIXTURE.providerKey } })
@@ -44,18 +109,8 @@ eachSdk((sdk) => {
         }
       }
     }, options)
-    const ready = async () => {
-      const s = await w.start(sdk)
-      assert.equal(s?.state, STATE.ready, 'precondition: the hosted child is ready; status ' + show(s))
-      return w.child
-    }
-    /** The child has paired: its connector entry is paired and connected (the import is asynchronous after ready). */
-    const paired = () => untilValue(async () => {
-      const entries = (await connectorEntries(w.host)).filter((e) => e.label === HOSTED_LABEL)
-      const key = w.child.hosted()?.entries?.at(-1)
-      const entry = entries.find((e) => e.key === key)
-      return entry?.paired === true && entry.connected === true && { entry, entries }
-    })
+    const ready = () => readyInWorld(w, sdk)
+    const paired = () => pairedInWorld(w)
     const memo = {}
 
     // ============================================================== HOST-UC-01: the first start
@@ -125,32 +180,6 @@ eachSdk((sdk) => {
       assert.equal((await connectorEntries(w.host)).filter((e) => e.label === HOSTED_LABEL).length, 1)
     })
 
-    /** The parent target URL the child's core holds (its own storage), for the report of a link that did not come back. */
-    const coreParentUrl = () => readJson(path.join(w.child.dshHome, 'storages', 'fishball_core_targets.json'))?.tables?.targets?.parent?.url
-    row('HOST-UC-02', 'A1', 'a host DSH restart (a new wire, the credential present): the child links to the parent again with its paired entry', async () => {
-      // Bounded event, not a wait on the pairing (which would hang if it never comes): the host
-      // restart above has settled ready; an admission round trip into the child shows its page is
-      // served; then the connector's state is read once.
-      await ready()
-      await admitChild(w.host)
-      const entry = (await connectorEntries(w.host)).find((e) => e.key === memo.firstKey)
-      const target = w.child.overlays()[0] && insertedRow(w.child.overlays()[0], OVERLAY.childRow)?.config?.[OVERLAY.targetField]
-      assert.deepEqual({ paired: entry?.paired, connected: entry?.connected }, { paired: true, connected: true }, 'after the restart: ' + show({ entry, launchTarget: target, coreParentUrl: coreParentUrl() }))
-    }, { todo: 'BUG: after a host restart the child never links again (connected stays false; seen with the host on a new OS-assigned port each boot: the launch overlay names the new targetUrl, core keeps the first start\'s parent URL) — README "The hosted token": the parent\'s URL comes only from dsh-instance-child.targetUrl' })
-
-    row('HOST-UC-02', 'main', 'repeated host restarts (credential present each time) create nothing: no new hosted entry after a second and a third restart', async () => {
-      await ready()
-      const before = w.child.hosted().entries
-      const hostedKeys = async () => (await connectorEntries(w.host)).filter((e) => e.label === HOSTED_LABEL).map((e) => e.key)
-      const listed = await hostedKeys()
-      for (const n of [2, 3]) {
-        assert.equal((await w.restart())?.state, STATE.ready)
-        // Bounded event: the child's page is served (its wire is up, so the first-start rule has run).
-        await admitChild(w.host)
-        // The connector lists an entry the moment createHosted makes it; the record only once the child stored it.
-        assert.deepEqual({ record: w.child.hosted().entries, connector: await hostedKeys() }, { record: before, connector: listed }, 'restart ' + n + ' created an entry')
-      }
-    }, { todo: 'BUG: a later host restart creates new "Fishball (hosted)" entries although the child holds its credential (seen from the second restart after pairing, both SDKs, with the host on a new port each boot; the new entries never pair, some are never recorded) — README "The hosted token": "Only when it does not [hold a parent credential] … it calls createHosted once"' })
 
     // ============================================================== HOST-EP-02 rows 2, 4, 5 (where the hosted value may appear)
     row('HOST-EP-02', '2, 4, 5', 'child home files other than its credential store, child argv and environment, temp dirs and logs of a running child: the hosted value is absent', async () => {
@@ -269,24 +298,6 @@ eachSdk((sdk) => {
       await w.restart((home) => { removed = runUninstall(home); assert.equal(fs.existsSync(path.join(home, ...CHILD.runtime)), false) })
       assert.equal(removed.status, 0, removed.stdout + removed.stderr)
     })
-    row('HOST-UC-02', 'reconnect', 'Reconnect creates one new entry, imports it once, and the child pairs it (the old entry stays, unpaired by nothing)', async () => {
-      await ready()
-      // The runtime was just removed and started again (row 10): a fresh child pairs at its first start.
-      const fresh = await paired()
-      const before = w.child.hosted().entries
-      const res = await w.host.post(ROUTE.reconnect, {})
-      assert.deepEqual(res.json, { ok: true }, show(res.json))
-      const after = w.child.hosted().entries
-      assert.deepEqual(after.slice(0, -1), before, 'Reconnect moved or deleted a recorded entry')
-      assert.equal(after.length, before.length + 1, 'not exactly one new entry: ' + show(after))
-      // Bounded event: the child drops its link on the old entry (it now holds the new token); the
-      // new entry is read once after that.
-      await untilValue(async () => (await connectorEntries(w.host)).find((e) => e.key === fresh.entry.key)?.connected === false)
-      const entries = await connectorEntries(w.host)
-      const added = entries.find((e) => e.key === after.at(-1))
-      assert.ok(added, 'the new entry is not listed: ' + show(entries))
-      assert.equal(added.paired, true, 'the child did not pair the Reconnect entry: ' + show(entries))
-    }, { todo: 'BUG: after Reconnect the child drops its link on the old entry and never pairs the new one (stays unpaired, also across a restart) — README "The hosted token": "Reconnect creates one new entry and imports it once"; R-HOST-05: the import feeds core\'s ordinary token path and the child pairs' })
     row('HOST-UC-06', 'main', 'the child starts only after the host app ready; when the host exits, the child stops', async () => {
       await ready()
       // The host logs READY once it has seen the child's ready answer (right after the status turns ready).
@@ -300,4 +311,66 @@ eachSdk((sdk) => {
       assert.equal(lifecycleCodes(w.home).at(-1), LOG.stop)
     })
   })
+
+  // A fresh pairing per case makes the three observations independent and individually filterable.
+  const regression = (part, title, check, todo) => {
+    const world = hostedWorld('hc-token-' + part)
+    perSdk(sdk, 'hosted token ' + part, world, (row) => {
+      row('HOST-UC-02', part, title, async () => {
+        const child = await readyInWorld(world, sdk)
+        const initial = await pairedInWorld(world)
+        // Start from the durable credential, not a transient reference the core has not consumed yet.
+        await untilValue(() => hasSavedParent(child) && !IMPORTED_REF_KEY.test(readText(childCredentialFile(child)) ?? ''))
+        await check(world, initial)
+      }, { todo })
+    })
+  }
+
+  regression('A1', 'a host DSH restart (a new wire, the credential present): the child links to the parent again with its paired entry', async (world, initial) => {
+    const admission = await restartAndAdmit(world)
+    const { parent, entry } = await observeRestart(world, admission, initial.entry.key)
+    const launchTarget = endpoint(insertedRow(world.child.overlays()[0] ?? [], OVERLAY.childRow)?.config?.[OVERLAY.targetField])
+    assert.deepEqual({ paired: entry?.paired, connected: entry?.connected }, { paired: true, connected: true },
+      'after the restart: ' + show({ launchTarget, parent, savedParent: hasSavedParent(world.child) }))
+  }, 'BUG-2: Fishball does not preserve the parent link when the host origin changes')
+
+  regression('main', 'repeated host restarts (credential present each time) create nothing: no new hosted entry after a second and a third restart', async (world, initial) => {
+    const before = { record: world.child.hosted().entries, connector: hostedKeys(initial.entries) }
+    const lastRestart = 3
+    const observations = []
+    const diagnostics = []
+    for (let restart = 1; restart <= lastRestart; restart++) {
+      const admission = await restartAndAdmit(world)
+      const { parent, entries } = await observeRestart(world, admission, initial.entry.key)
+      // A new entry can show up in the connector even if the child did not save it in hosted.json.
+      observations.push({ restart, record: world.child.hosted().entries, connector: hostedKeys(entries) })
+      diagnostics.push({ restart, parent, savedParent: hasSavedParent(world.child) })
+    }
+    assert.deepEqual(observations, observations.map(({ restart }) => ({ restart, ...before })), 'a restart changed the hosted entries: ' + show(diagnostics))
+  }, 'BUG-3: later host restarts create new hosted entries after Fishball loses its saved parent credential')
+
+  regression('reconnect', 'Reconnect creates one new entry, imports it once, and the child pairs it without removing or unpairing the old entry', async (world, initial) => {
+    const before = world.child.hosted().entries
+    const res = await world.host.post(ROUTE.reconnect, {})
+    assert.deepEqual(res.json, { ok: true }, show(res.json))
+    const after = world.child.hosted().entries
+    assert.deepEqual(after.slice(0, -1), before, 'Reconnect moved or deleted a recorded entry')
+    assert.equal(after.length, before.length + 1, 'not exactly one new entry: ' + show(after))
+    const newKey = after.at(-1)
+    assert.ok(!before.includes(newKey), 'Reconnect recorded an existing key again: ' + show(after))
+    const admission = await admitOwner(world)
+    const oldKey = initial.entry.key
+    const { parent, entries, oldEntry, added } = await untilValue(async () => {
+      const parent = await parentTarget(admission)
+      const entries = await connectorEntries(world.host)
+      const oldEntry = entries.find((entry) => entry.key === oldKey)
+      const added = entries.find((entry) => entry.key === newKey)
+      // Besides pairing, an idle link failure or prompt for a new ID ends the observation.
+      const settled = added?.paired === true || linkBlocked(parent)
+      return oldEntry?.connected !== true && settled && { parent, entries, oldEntry, added }
+    })
+    assert.deepEqual(hostedKeys(entries), [...hostedKeys(initial.entries), newKey].sort(), 'Reconnect changed more than one connector entry')
+    assert.equal(oldEntry?.paired, true, 'Reconnect unpaired or removed the old entry')
+    assert.equal(added?.paired, true, 'the child did not pair the Reconnect entry: ' + show({ parent, savedParent: hasSavedParent(world.child) }))
+  }, 'BUG-4: Reconnect cannot pair a new entry while the old entry holds the same Fishball identity')
 })

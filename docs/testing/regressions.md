@@ -34,3 +34,19 @@ at `fab3837^` with `git archive` into a temp folder and runs the same file again
 
 The 5 cases per SDK that pass on both are the three "no exclusion" rules and the two SHIP-EP-02
 refusals, which the fix must not change.
+
+## BUG-1: `pack.mjs --check` verifies tarball bytes
+
+**Fix.** The checker previously validated tarball names, layout and archive links without
+comparing the tarballs with their SHA-256 digests in the release manifest.
+
+**Case.** [pack-checksum.test.mjs](<../../integration/release/tests/pack-checksum.test.mjs>) runs
+`REL-ST-01 tamper` offline without building a release or selecting an SDK. A gzip timestamp-byte
+change leaves the archive contents unchanged, so archive inspection alone cannot detect it.
+First, middle and last byte flips also require a checksum diagnostic. Restoring the original bytes
+makes `--check` succeed again.
+
+**Shown.** Run `node scripts/test-package.mjs integration/release tests/pack-checksum.test.mjs`
+with the file selector given as an absolute path (or relative to the package). With the test in
+place, the original checker reported the timestamp-altered archive intact; Node reported 0 pass,
+5 fail (four subtests plus their parent). After the fix: 5 pass, 0 fail.

@@ -38,7 +38,8 @@ None fails. Skipped and todo cases, per package:
 - integration/hosted-child: three real bugs (BUG-2, BUG-3, BUG-4, todo) and five cases not observable
   from outside a running DSH, kept as todo with the reason in the case: `CP-R8 stopped`,
   `CP-R3 cancel, connection open`, `IREADY-SYSTEM operations`, `IREADY-SYSTEM publish-dispose`,
-  `HOST-DT-01 row 7`. Three of them were todo in the old suite too. The bugs are in [bugs.md](<bugs.md>).
+  `HOST-DT-01 row 7`. Three of them were todo in the old suite too. For current status (including
+  the fixed checksum case), see [bugs.md](<bugs.md>).
 
 ## Not covered
 

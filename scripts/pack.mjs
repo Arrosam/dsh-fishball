@@ -84,6 +84,21 @@ function build(out, fishballRelease) {
   }
 }
 
+/** Read the digests the release was built with; never resolve paths from the manifest. */
+function readChecksums(file, problems) {
+  const checksums = new Map()
+  for (const line of fs.readFileSync(file, 'utf8').split('\n').filter(Boolean)) {
+    const match = LAYOUT.sumPattern.exec(line)
+    if (!match) problems.push('bad ' + LAYOUT.sums + ' line: ' + line)
+    else {
+      const [, digest, name] = match
+      if (checksums.has(name)) problems.push('duplicate ' + LAYOUT.sums + ' entry for ' + name)
+      checksums.set(name, digest)
+    }
+  }
+  return checksums
+}
+
 function check(out) {
   if (!fs.existsSync(out)) return ['no release at ' + out]
   const expected = [LAYOUT.tarball('dsh-instance', VERSION)]
@@ -93,9 +108,18 @@ function check(out) {
     ...present.filter((name) => !expected.includes(name)).map((name) => 'unexpected ' + name),
     ...[LAYOUT.sums, LAYOUT.install, LAYOUT.publish, LAYOUT.offlineStore, LAYOUT.store, LAYOUT.cache].filter((name) => !fs.existsSync(path.join(out, name))).map((name) => 'missing ' + name),
   ]
+  const sumFile = path.join(out, LAYOUT.sums)
+  const checksums = fs.existsSync(sumFile) ? readChecksums(sumFile, problems) : undefined
+  for (const name of checksums?.keys() ?? []) {
+    if (!present.includes(name)) problems.push(LAYOUT.sums + ' names a missing ' + name)
+  }
   for (const name of present) {
+    const file = path.join(out, name)
     let listing
-    try { listing = tar(['-tvzf', path.join(out, name)]).toString('utf8') } catch { problems.push('unreadable ' + name); continue }
+    try {
+      if (checksums && checksums.get(name) !== sha256(file)) problems.push('checksum mismatch ' + name)
+      listing = tar(['-tvzf', file]).toString('utf8')
+    } catch { problems.push('unreadable ' + name); continue }
     for (const line of listing.split('\n').filter((row) => LAYOUT.linkEntry.test(row))) problems.push('link in ' + name + ': ' + line)
   }
   return problems
