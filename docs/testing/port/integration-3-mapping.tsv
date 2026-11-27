@@ -1,0 +1,54 @@
+suite	id	where now
+test/v3/fishball-core/message-user	MSG-PAGE-DT-01	packages/integration-page-ui/tests/message-page/cases.mjs
+test/v3/fishball-core/message-user	MSG-PAGE-DT-02	packages/integration-page-ui/tests/message-page/cases.mjs
+test/v3/fishball-core/message-user	MSG-PAGE-DT-03	packages/integration-page-ui/tests/message-page/cases.mjs
+test/v3/fishball-core/message-user	MSG-PAGE-EP-00	packages/integration-page-ui/tests/message-page/cases.mjs
+test/v3/fishball-core/message-user	MSG-PAGE-EP-01	packages/integration-page-ui/tests/message-page/cases.mjs
+test/v3/fishball-core/message-user	MSG-PAGE-EP-02	packages/integration-page-ui/tests/message-page/cases.mjs
+test/v3/fishball-core/message-user	MSG-PAGE-EP-03	packages/integration-page-ui/tests/message-page/cases.mjs
+test/v3/fishball-core/message-user	MSG-PAGE-EP-04	retired: todo placeholder, not observable: fishball-page's guards keep a core + fishball-ui DSH's web UI on the manager session and no public route shows another session there (old USE-CASES.md tried /session/<id>, ?session=, #/session/, /s/); MSG-PAGE-ST-08 covers "fishball-page off leaves nothing"
+test/v3/fishball-core/message-user	MSG-PAGE-ST-01	packages/integration-page-ui/tests/message-page/cases.mjs
+test/v3/fishball-core/message-user	MSG-PAGE-ST-01b	packages/integration-page-ui/tests/message-page/cases.mjs
+test/v3/fishball-core/message-user	MSG-PAGE-ST-02	packages/integration-page-ui/tests/message-page/cases.mjs
+test/v3/fishball-core/message-user	MSG-PAGE-ST-03	packages/integration-page-ui/tests/message-page/cases.mjs
+test/v3/fishball-core/message-user	MSG-PAGE-ST-04	packages/integration-page-ui/tests/message-page/cases.mjs
+test/v3/fishball-core/message-user	MSG-PAGE-ST-05	packages/integration-page-ui/tests/message-page/cases.mjs
+test/v3/fishball-core/message-user	MSG-PAGE-ST-06	packages/integration-page-ui/tests/message-page/cases.mjs
+test/v3/fishball-core/message-user	MSG-PAGE-ST-07	packages/integration-page-ui/tests/message-page/cases.mjs
+test/v3/fishball-core/message-user	MSG-PAGE-ST-08	packages/integration-page-ui/tests/message-page/cases.mjs
+test/v3/fishball-core/message-user	MSG-PAGE-ST-09	packages/integration-page-ui/tests/message-page/cases.mjs
+test/v3/fishball-core/message-user	MSG-PAGING-EP-00	packages/integration-page-ui/tests/message-page/paging.mjs
+test/v3/fishball-core/message-user	MSG-PAGING-EP-01	packages/integration-page-ui/tests/message-page/paging.mjs
+test/v3/fishball-core/message-user	MSG-PAGING-EP-02	packages/integration-page-ui/tests/message-page/paging.mjs
+test/v3/fishball-core/message-user	MSG-PAGING-ST-01	packages/integration-page-ui/tests/message-page/paging.mjs
+test/v3/fishball-core/message-user	MSG-PAGING-ST-02	packages/integration-page-ui/tests/message-page/paging.mjs
+test/v3/fishball-core/message-user	MSG-STREAM-EP-01	packages/integration-page-ui/tests/message-page/paging.mjs
+test/v3/fishball-core/message-user	MSG-STREAM-ST-01	packages/integration-page-ui/tests/message-page/paging.mjs
+test/v3/fishball-core/message-user	MSG-STREAM-ST-02	packages/integration-page-ui/tests/message-page/paging.mjs
+test/v3/fishball-core/child-plugins	CP-R2-01	packages/integration-page-ui/tests/child-plugins/cases.mjs
+test/v3/fishball-core/child-plugins	CP-R2-02	packages/integration-page-ui/tests/child-plugins/cases.mjs
+test/v3/fishball-core/child-plugins	CP-R2-03	packages/integration-page-ui/tests/child-plugins/cases.mjs
+test/v3/fishball-core/child-plugins	CP-R2-04	packages/integration-page-ui/tests/child-plugins/cases.mjs
+test/v3/fishball-core/child-plugins	CP-R2-05	packages/integration-page-ui/tests/child-plugins/cases.mjs
+test/v3/fishball-core/child-plugins	CP-R2-06	packages/integration-page-ui/tests/child-plugins/cases.mjs
+test/v3/fishball-core/child-plugins	CP-R2-07	packages/integration-page-ui/tests/child-plugins/cases.mjs
+test/v3/fishball-core/child-plugins	CP-R2-08	packages/integration-page-ui/tests/child-plugins/cases.mjs
+test/v3/fishball-core/child-plugins	CP-R2-09	packages/integration-page-ui/tests/child-plugins/cases.mjs (row "text only"; the "aria-label" todo row is retired: an accepted limit, DESIGN §28 hiding by DSH's words, not a planned behaviour)
+test/v3/fishball-core/child-plugins	CP-R3-01	packages/integration-page-ui/tests/child-plugins/cases.mjs
+test/v3/fishball-core/child-plugins	CP-R3-02	packages/integration-page-ui/tests/child-plugins/cases.mjs
+test/v3/fishball-core/child-plugins	CP-R3-08	packages/integration-page-ui/tests/child-plugins/cases.mjs
+test/v3/fishball-core/child-plugins	CP-R3-09	packages/integration-page-ui/tests/child-plugins/cases.mjs
+test/v3/fishball-core/child-plugins	CP-R3-10	packages/integration-page-ui/tests/child-plugins/cases.mjs
+test/v3/contract/package-boundaries	CP-R3-03	packages/integration-page-ui/tests/child-plugins/cases.mjs (registered by test/v3/fishball-core/child-plugins; the baseline filed them under package-boundaries)
+test/v3/contract/package-boundaries	CP-R3-04	packages/integration-page-ui/tests/child-plugins/cases.mjs (registered by test/v3/fishball-core/child-plugins; the baseline filed them under package-boundaries)
+test/v3/contract/package-boundaries	CP-R3-05	packages/integration-page-ui/tests/child-plugins/cases.mjs (registered by test/v3/fishball-core/child-plugins; the baseline filed them under package-boundaries)
+test/v3/contract/package-boundaries	CP-R3-06	packages/integration-page-ui/tests/child-plugins/cases.mjs (registered by test/v3/fishball-core/child-plugins; the baseline filed them under package-boundaries)
+test/v3/contract/package-boundaries	CP-R3-07	packages/integration-page-ui/tests/child-plugins/cases.mjs (registered by test/v3/fishball-core/child-plugins; the baseline filed them under package-boundaries)
+test/v3/fishball-core/child-plugins	CP-R4-01	packages/integration-page-ui/tests/child-plugins/cases.mjs
+test/v3/fishball-core/child-plugins	CP-R4-02	packages/integration-page-ui/tests/child-plugins/cases.mjs
+test/v3/fishball-core/child-plugins	CP-R4-03	packages/integration-page-ui/tests/child-plugins/cases.mjs
+test/v3/fishball-core/child-plugins	CP-R4-04	packages/integration-page-ui/tests/child-plugins/cases.mjs
+test/v3/fishball-core/child-plugins	CP-R5-01	packages/integration-page-ui/tests/child-plugins/cases.mjs
+test/v3/fishball-core/child-plugins	CP-R5-02	packages/integration-page-ui/tests/child-plugins/cases.mjs
+test/v3/fishball-core/child-plugins	CP-R5-03	packages/integration-page-ui/tests/child-plugins/cases.mjs
+test/v3/fishball-core/child-plugins	CP-R5-04	packages/integration-page-ui/tests/child-plugins/cases.mjs

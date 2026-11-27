@@ -33,5 +33,5 @@ manager, credential and session services; core's published `fishballInstance` / 
 contracts; fishball-ui's `fishballUiGuards`; owner routes; the page's boot graph; the scripted model. This
 package's world ops are in `tests/support/world-ext.mjs`.
 
-Not yet ported (integration-2's report): the message_user page rows in Chromium (MSG-PAGE-*, MSG-PAGING-*,
-MSG-STREAM-*) and the child-plugins rows (CP-R2…R5).
+The message_user page rows in Chromium (MSG-PAGE-*, MSG-PAGING-*, MSG-STREAM-*) and the child-plugins rows
+(CP-R2…R5) are in [fishball-integration-page-ui](<../integration-page-ui/README.md>).

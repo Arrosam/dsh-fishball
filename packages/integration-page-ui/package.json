@@ -1,0 +1,14 @@
+{
+  "name": "fishball-integration-page-ui",
+  "version": "1.0.0-alpha.1",
+  "private": true,
+  "type": "module",
+  "description": "Integration tests: fishball-ui's page parts over fishball-core: fishball-page drawing message_user rows in DSH's real web UI (headless Chromium over a booted DSH with core + fishball-ui), and fishball-child-plugins' client on DSH's Plugins page with DSH's real locale runtime and dictionaries (scripted page + Chromium). Never shipped.",
+  "dependencies": {
+    "fishball-core": "1.0.0-alpha.1",
+    "fishball-ui": "1.0.0-alpha.1"
+  },
+  "scripts": {
+    "test": "node ../../scripts/test.mjs fishball-integration-page-ui"
+  }
+}
