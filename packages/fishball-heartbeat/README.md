@@ -1,8 +1,11 @@
 # fishball-heartbeat
 
-Keeps Fishball's prompt cache warm while it is idle, and gives each warming turn useful work.
+Keeps Fishball's prompt cache warm while it is idle, and gives each warming turn useful work. Version
+`1.0.0-alpha.1`, DSH `>=0.2.1-rc.5`; it has no browser code.
 
-- **Off until you set both timer settings** (Fishball cannot change any of its settings). Installed through the [`fishball-amenities`](../fishball-amenities/README.md) umbrella, set them on the heartbeat's component page there; a saved change applies at once. Installed alone it has no settings page: set them in its row's `config` in the profile's `cordis.patch.yml`.
+## What it does
+
+- **Off until you set both timer settings** (Fishball cannot change any of its settings). Installed through the [`fishball-amenities`](<../fishball-amenities/README.md>) umbrella, set them on the heartbeat's component page there; a saved change applies at once. Installed alone it has no settings page: set them in its row's `config` in the profile's `cordis.patch.yml`.
   - `intervalSeconds`: seconds with no Fishball turn before a heartbeat turn is sent. Set it below your model's cache lifetime (for example 240 for a 5-minute cache).
   - `maxConsecutive`: heartbeat turns allowed in a row with no other turn between them. After that no heartbeat is sent and the cache cools until a real turn.
   - `compactThresholdTokens` (default 256000, DSH's "256K"): see **Compaction on cooling**. It has a default, so it never turns heartbeats on or off.
@@ -16,4 +19,38 @@ Keeps Fishball's prompt cache warm while it is idle, and gives each warming turn
 
 Each heartbeat is a real model turn over Fishball's cached context: cache-read input plus whatever Fishball does in it. `maxConsecutive` bounds the heartbeats between two real turns. A connector event batch is a real turn, so a heartbeat that pokes a managed session whose reply wakes Fishball starts a fresh count.
 
-Install it on its own, or with the other amenities through the [`fishball-amenities`](../fishball-amenities/README.md) umbrella. It needs `fishball-core` in the same DSH; without it the row loads, logs `fishball-core-missing` once and stays idle. It has no browser code.
+Install it on its own, or with the other amenities through the [`fishball-amenities`](<../fishball-amenities/README.md>) umbrella. It needs `fishball-core` in the same DSH; without it the row loads, logs `fishball-core-missing` once and stays idle.
+
+## Structure
+
+| path | what |
+|---|---|
+| `package.json`, `cordis.patch.yml` | manifest (depends on and bundles `fishball-shared`) and the patch inserting row `fishball-heartbeat` |
+| `index.js` | the row: binds `fishballInstance` (`fishball-shared/instance-follower`), re-applies itself on a live settings change |
+| `src/config.js` | the `Config` (`intervalSeconds`, `maxConsecutive`, `compactThresholdTokens`) and the on/off rule |
+| `src/heartbeat.js` | the per-manager timer, the count and the heartbeat send |
+| `src/turns.js` | the pure fold of the session log into turn state (also used at restart) |
+| `src/compactor.js` | the one compaction on cooling |
+| `src/focus.js`, `src/tool.js` | the focus file and the `heartbeat_focus` tool |
+| `src/live-settings.js` | `settingsSnapshot` / `runWithSettings`: a volatile settings change re-runs the row without a remount |
+| `src/constants.js` | the row's values |
+| `assets/` | the plugin icon |
+| `tests/` | its own tests (not shipped) |
+
+## Testing
+
+```bash
+node scripts/test.mjs fishball-heartbeat                                   # everything, current DSH
+node scripts/test.mjs fishball-heartbeat --file=live-settings              # one entry file
+node scripts/test.mjs fishball-heartbeat --against=23e334c8 -- --test-name-pattern=HB-CAU   # the regression rows on the code before 2a375e82 (9 fail)
+```
+
+| entry | what it covers |
+|---|---|
+| `heartbeat.test.mjs` | the heartbeat row: timer, count, `heartbeat_focus`, restart, the core seam, live settings, compaction on cooling, what its own compaction causes (199 cases) |
+| `live-settings.test.mjs` | `src/live-settings.js` on a fixture row (25 cases) |
+
+Details and the case-id index: [tests/README.md](<tests/README.md>). Integration:
+[`integration-amenities`](<../integration-amenities/README.md>) (beside fishball-board's `Config`, the icon
+family), [`integration-release`](<../integration-release/>) (package boundaries, release folder). Rules and
+runner: [docs/testing/README.md](<../../docs/testing/README.md>).
