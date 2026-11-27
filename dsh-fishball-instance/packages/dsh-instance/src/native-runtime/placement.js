@@ -150,27 +150,42 @@ async function replaceSlot(parent, name, populate, stage = true) {
   }
 }
 
-/**
- * A set member's source in a checkout: its sibling workspace folder, as copyChildCode read core
- * before I-PLACE. The folder counts only when its manifest names the member: an installed instance
- * sits in a node_modules whose siblings are unrelated packages (npm has a `core` package).
- */
+/** Accept only the intended package: e.g. an installed instance can have an unrelated `core` sibling. */
+async function namedManifest(root, name) {
+  const file = path.join(root, PLACEMENT.manifest)
+  if (!(await exists(file))?.isFile()) return undefined
+  const manifest = await json(file)
+  if (manifest.name === name) return manifest
+}
+
+/** Strip an exact layout suffix, by path component rather than string prefix or substring. */
+function checkoutRootFor(directory, layoutPath) {
+  let root = directory
+  for (const segment of layoutPath.split(path.posix.sep).reverse()) {
+    if (path.basename(root) !== segment) return undefined
+    root = path.dirname(root)
+  }
+  return root
+}
+
+/** A set member's source from an explicitly selected or adjacent checkout. */
 async function memberSource(bundle) {
   // The siblings are the checkout's, so they are found from the instance's real folder: a profile
   // that links the checkout (`link:`) loads this module through the link's path, whose `..` is
   // the profile's node_modules, not the checkout's packages folder (seen 2026-11-20).
   const instanceRoot = await realpath(INSTANCE_ROOT)
+  const { checkout, parent } = PLACEMENT
+  const workspace = path.join(instanceRoot, checkout.workspaceRoot)
+  const override = process.env[checkout.overrideEnv]
   const candidates = [
-    ...(process.env.FISHBALL_REPO ? [path.join(process.env.FISHBALL_REPO, 'packages', bundle.directory)] : []),
-    path.join(instanceRoot, PLACEMENT.parent, bundle.directory),
-    path.join(instanceRoot, '..', '..', '..', 'dsh-fishball', 'packages', bundle.directory),
+    ...(override ? [path.join(override, checkout.packages, bundle.directory), path.join(override, bundle.monorepoDirectory)] : []),
+    path.join(instanceRoot, parent, bundle.directory),
+    path.join(workspace, checkout.fishballPackages, bundle.directory),
+    path.join(workspace, bundle.monorepoDirectory),
   ]
-  for (const root of candidates) {
-    const file = path.join(root, PLACEMENT.manifest)
-    if ((await exists(file))?.isFile()) {
-      const manifest = await json(file)
-      if (manifest.name === bundle.name) return { root, files: await shippedFiles(root, manifest), manifest }
-    }
+  for (const root of new Set(candidates)) {
+    const manifest = await namedManifest(root, bundle.name)
+    if (manifest) return { name: bundle.name, root, files: await shippedFiles(root, manifest), manifest, monorepoRoot: checkoutRootFor(root, bundle.monorepoDirectory) }
   }
   fail(PLACEMENT.code.missing, bundle.name)
 }
@@ -265,17 +280,23 @@ const packageRoot = (anchor, name) => path.dirname(createRequire(anchor).resolve
 
 /**
  * Locate a bundled workspace package for a checkout member: through Node resolution first, then
- * as a sibling folder beside `memberRoot` (for workspace members such as `fishball-board`,
- * `fishball-heartbeat`, and `fishball-taskboard` beside `packages/fishball-amenities` when not
- * hoisted into `node_modules`).
+ * as a sibling folder, then at the library's known monorepo path in the same checkout.
  */
-async function resolveBundledRoot(anchor, memberRoot, name) {
+async function resolveBundledRoot(anchor, member, name) {
   try { return packageRoot(anchor, name) } catch (error) {
     if (error?.code !== PLACEMENT.unresolved) throw error
   }
-  const sibling = path.join(path.dirname(memberRoot), name)
-  const file = path.join(sibling, PLACEMENT.manifest)
-  if ((await exists(file))?.isFile() && (await json(file)).name === name) return sibling
+  const sibling = path.join(path.dirname(member.root), name)
+  if (await namedManifest(sibling, name)) return sibling
+  // The renamed amenities and cross-component shared library need not be installed for a copy.
+  // Derive the fallback from the selected bundle, not from the instance or another candidate checkout.
+  if (member.monorepoRoot) {
+    const library = PLACEMENT.checkout.libraries.find((library) => library.name === name)
+    if (library) {
+      const root = path.join(member.monorepoRoot, library.monorepoDirectory)
+      if (await namedManifest(root, name)) return root
+    }
+  }
   fail(PLACEMENT.code.missing, name)
 }
 
@@ -285,7 +306,7 @@ async function resolveBundledRoot(anchor, memberRoot, name) {
  * fishball-amenities's bundled amenity packages and fishball-shared). They come
  * from the bundle's dependency graph, never the instance's, because the instance depends on no
  * Fishball-side package (requirements 1.40, design §1.0b row 5); they are copied as files only.
- * Resolution walks up past the bundle's folder (with sibling workspace fallback in a checkout), so
+ * Resolution walks up past the bundle's folder (with checkout-layout fallbacks), so
  * a copy found there must be the exact version the bundle pins; a missing or different one refuses
  * the start like a missing member.
  * Only the set's own libraries are copied: a bundled dependency pinned at the member's own version,
@@ -297,7 +318,7 @@ async function bundledLibraries(member) {
   const anchor = path.join(member.root, PLACEMENT.manifest)
   const own = (member.manifest[PLACEMENT.bundledField] ?? []).filter((name) => member.manifest.dependencies?.[name] === member.manifest.version)
   return Promise.all(own.map(async (name) => {
-    const library = await libraryPackage(name, await resolveBundledRoot(anchor, member.root, name))
+    const library = await libraryPackage(name, await resolveBundledRoot(anchor, member, name))
     if (library.manifest.version !== member.manifest.dependencies?.[name]) fail(PLACEMENT.code.missing, name)
     return library
   }))
@@ -342,13 +363,13 @@ async function copiedSources(paths, boot, installation, signal, set) {
     await installPackedSet(paths, boot, installation, set, signal)
     return librarySources()
   }
-  const members = await Promise.all(PLACEMENT.bundles.map(async (bundle) => ({ name: bundle.name, ...await memberSource(bundle) })))
+  const members = await Promise.all(PLACEMENT.bundles.map(memberSource))
   const libraries = [...(await Promise.all(members.map(bundledLibraries))).flat(), ...await librarySources()]
   return [...members, ...distinctLibraries(libraries)]
 }
 
 /** The only top-level profile slots live placement owns. */
-const livePackages = [...PLACEMENT.bundles, ...PLACEMENT.live.libraries]
+const livePackages = [...PLACEMENT.bundles, ...PLACEMENT.checkout.libraries]
 
 /** Exact managed link targets as declared by the previously validated profile manifest. */
 export async function declaredLiveLinks(profile) {
@@ -357,27 +378,36 @@ export async function declaredLiveLinks(profile) {
 }
 
 function liveDependencies(dependencies) {
-  const { protocol, packages } = PLACEMENT.live
+  const { live, checkout } = PLACEMENT
   const links = new Map()
-  for (const { name, directory } of livePackages) {
+  for (const { name, directory, monorepoDirectory } of livePackages) {
     const spec = dependencies?.[name]
-    if (typeof spec !== 'string' || !spec.startsWith(protocol)) continue
-    const target = spec.slice(protocol.length)
-    if (path.isAbsolute(target) && path.basename(target) === directory && path.basename(path.dirname(target)) === packages) links.set(name, path.normalize(target))
+    if (typeof spec !== 'string' || !spec.startsWith(live.protocol)) continue
+    const target = spec.slice(live.protocol.length)
+    const legacyDirectory = path.posix.join(checkout.packages, directory)
+    if (path.isAbsolute(target) && (checkoutRootFor(target, legacyDirectory) || checkoutRootFor(target, monorepoDirectory))) {
+      links.set(name, path.normalize(target))
+    }
   }
   return links
 }
 
 async function liveSources(repo) {
-  const { code, live } = PLACEMENT
+  const { checkout, code, live } = PLACEMENT
   if (typeof repo !== 'string' || !path.isAbsolute(repo)) fail(live.invalid, live.pathRequired)
   if (!(await exists(repo))?.isDirectory()) fail(live.invalid, live.unavailable(repo))
-  const packages = path.join(await realpath(repo), live.packages)
-  if (!(await exists(packages))?.isDirectory()) fail(live.invalid, live.unavailable(packages))
-  return Promise.all(livePackages.map(async ({ name, directory }) => {
-    const root = path.join(packages, directory)
-    const file = path.join(root, PLACEMENT.manifest)
-    if (!(await exists(root))?.isDirectory() || !(await exists(file))?.isFile() || (await json(file)).name !== name) {
+  const workspace = await realpath(repo)
+  const packages = path.join(workspace, checkout.packages)
+  // Choose one layout for the whole live set; a legacy checkout keeps its existing precedence.
+  const legacy = (await exists(packages))?.isDirectory()
+  if (!legacy && !(await exists(path.join(workspace, checkout.fishballComponent)))?.isDirectory()) {
+    fail(live.invalid, live.unavailable(packages))
+  }
+  return Promise.all(livePackages.map(async ({ name, directory, monorepoDirectory }) => {
+    const root = legacy ? path.join(packages, directory) : path.join(workspace, monorepoDirectory)
+    // Monorepo paths have intermediate components; reject symlinked ancestors rather than
+    // storing a noncanonical target that would not match preflight's exact live link.
+    if (!(await exists(root))?.isDirectory() || (!legacy && await realpath(root) !== root) || !await namedManifest(root, name)) {
       fail(code.missing, live.unavailable(root) + ' (' + name + ')')
     }
     return { name, root, dependency: live.protocol + root }

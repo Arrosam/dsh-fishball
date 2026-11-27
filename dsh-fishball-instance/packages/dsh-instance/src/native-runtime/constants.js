@@ -163,6 +163,11 @@ export const UNINSTALL = Object.freeze({
   }),
 })
 
+const CHECKOUT_PACKAGES = 'packages'
+const FISHBALL_COMPONENT = 'dsh-fishball'
+const FISHBALL_PACKAGES = `${FISHBALL_COMPONENT}/${CHECKOUT_PACKAGES}`
+const AMENITIES_COMPONENT = 'amenities'
+
 /**
  * Placement of the plugin set into the child profile (R-BND-01/02/03, R-HOST-01, design §8.1;
  * bundled-placement note `f71717e` P3 + 3a). The set's source is chosen at every child start:
@@ -175,22 +180,21 @@ export const UNINSTALL = Object.freeze({
  *   `<profile>/vendor/<name>` and `<profile>/node_modules/<name>` with
  *   `dependencies[name] = file:./vendor/<name>`, so DSH resolves it as a profile package and a later
  *   pnpm operation in the child keeps it (I-PLACE probe, both SDKs).
- * The libraries (`shared`) are copied in both cases. The host never resolves or loads the set: its
- * sources are data inside dsh-instance's own folder (R-BND-01).
+ * The host never imports the set: its source packages are read as files (R-BND-01).
  */
 export const PLACEMENT = Object.freeze({
   /**
    * The bundles, in the order they are appended to `dsh.profile.bundles` after every other bundle:
    * fishball-core last, so its guard patch reaches every row the others insert (R-FB-12).
-   * `directory` names a set member's sibling workspace folder `../<directory>` in a checkout; a
-   * packed instance ships it as `bundled/<tarball(name, version)>` instead (REL-PACK output, never
-   * committed; Q-22). The hosted set is `fishball-amenities` (umbrella bundling `fishball-board`,
+   * `directory` names the legacy workspace folder; `monorepoDirectory` is relative to the monorepo
+   * root. A packed instance ships the member as `bundled/<tarball(name, version)>` instead
+   * (REL-PACK output, never committed; Q-22). The hosted set is `fishball-amenities` (umbrella bundling `fishball-board`,
    * `fishball-heartbeat`, `fishball-taskboard`) and `fishball-core` (which includes `fishball-ui`),
    * installed together on child setup (the user, 2026-11-23).
    */
   bundles: Object.freeze([
-    Object.freeze({ name: 'fishball-amenities', directory: 'fishball-amenities' }),
-    Object.freeze({ name: 'fishball-core', directory: 'core' }),
+    Object.freeze({ name: 'fishball-amenities', directory: 'fishball-amenities', monorepoDirectory: `${AMENITIES_COMPONENT}/fishball-amenities` }),
+    Object.freeze({ name: 'fishball-core', directory: 'core', monorepoDirectory: `${FISHBALL_PACKAGES}/core` }),
   ]),
   /** The set's former UI bundle, still held by children an earlier instance set up (CHILD_OWN_BUNDLES). */
   retiredBundle: 'fishball-ui',
@@ -244,19 +248,26 @@ export const PLACEMENT = Object.freeze({
     succeeded: 0,
   }),
   parent: '..',
+  checkout: Object.freeze({
+    overrideEnv: 'FISHBALL_REPO',
+    packages: CHECKOUT_PACKAGES,
+    fishballComponent: FISHBALL_COMPONENT,
+    fishballPackages: FISHBALL_PACKAGES,
+    // The instance package sits at <root>/dsh-fishball-instance/packages/dsh-instance.
+    workspaceRoot: '../../..',
+    libraries: Object.freeze([
+      Object.freeze({ name: 'fishball-board', directory: 'fishball-board', monorepoDirectory: `${AMENITIES_COMPONENT}/board` }),
+      Object.freeze({ name: 'fishball-consultant', directory: 'fishball-consultant', monorepoDirectory: `${AMENITIES_COMPONENT}/consultant` }),
+      Object.freeze({ name: 'fishball-heartbeat', directory: 'fishball-heartbeat', monorepoDirectory: `${AMENITIES_COMPONENT}/heartbeat` }),
+      Object.freeze({ name: 'fishball-shared', directory: 'shared', monorepoDirectory: `${FISHBALL_PACKAGES}/shared` }),
+      Object.freeze({ name: 'fishball-taskboard', directory: 'fishball-taskboard', monorepoDirectory: `${AMENITIES_COMPONENT}/taskboard` }),
+    ]),
+  }),
   vendor: 'vendor',
   modules: 'node_modules',
   manifest: 'package.json',
   dependency: (name) => 'file:./vendor/' + name,
   live: Object.freeze({
-    packages: 'packages',
-    libraries: Object.freeze([
-      Object.freeze({ name: 'fishball-board', directory: 'fishball-board' }),
-      Object.freeze({ name: 'fishball-consultant', directory: 'fishball-consultant' }),
-      Object.freeze({ name: 'fishball-heartbeat', directory: 'fishball-heartbeat' }),
-      Object.freeze({ name: 'fishball-shared', directory: 'shared' }),
-      Object.freeze({ name: 'fishball-taskboard', directory: 'fishball-taskboard' }),
-    ]),
     protocol: 'link:',
     invalid: 'INVALID_FISHBALL_LIVE_REPO',
     pathRequired: 'fishballLiveRepo must be an absolute path to a Fishball checkout.',
