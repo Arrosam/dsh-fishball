@@ -10,7 +10,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import test from 'node:test'
 import { workspaceDirs } from '../src/runner/links.mjs'
-import { REPO } from '../src/repo.mjs'
+import { MONOREPO } from '../src/repo.mjs'
 
 const SPECIFIER = /(?:\bfrom\s*|\bimport\s*\(\s*|\bimport\s+)(['"])(\.{1,2}\/[^'"]+)\1/g
 const TEST_FILE = /\.(?:mjs|js)$/
@@ -41,7 +41,7 @@ for (const dir of workspaces) {
       for (const m of fs.readFileSync(file, 'utf8').matchAll(SPECIFIER)) {
         const target = path.resolve(path.dirname(file), m[2])
         const owner = ownerOf(target)
-        if (owner !== dir || !target.startsWith(REPO)) offending.push(`${path.relative(REPO, file)} → ${m[2]}`)
+        if (owner !== dir || !target.startsWith(MONOREPO + path.sep)) offending.push(`${path.relative(MONOREPO, file)} → ${m[2]}`)
       }
     }
     assert.deepEqual(offending, [])
