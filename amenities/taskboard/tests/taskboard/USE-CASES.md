@@ -3,7 +3,7 @@
 Written from the user's requirements (relayed by the lead, 2026-11-21), the design document
 [docs/plugins/fishball-taskboard.md](../../../../dsh-fishball/docs/plugins/fishball-taskboard.md) and the lead's answers Q1–Q24
 (folded into the document). Only the public surface was used: the row module's exports, its patch
-row and package manifest, the tools, the routes, the notify / inject calls and the log line. No
+row and package manifest, the tools, the routes, the notify calls and the log line. No
 file of `amenities/taskboard/` (`packages/fishball-amenities/taskboard/` before the amenities
 split, 2026-11-21) other than `package.json` and `cordis.patch.yml` was read.
 
@@ -12,8 +12,7 @@ row of the current DSH, over that DSH's real `dsh-storage` + `dsh-storage-json` 
 in a temp root and a real `SessionStore`. Fakes only for the host services: `connection.fetch` (a
 recording registry; routes are called with real `Request`s), `fishballInstance` (apiVersion 2, its own
 fiber so it can arrive and leave; X2 `registerSetup` runs each setup as a fiber on the manager's agent
-context with a fiber-tied `tools.register`; `notify` records and answers queued / held / rejects; the
-live agent's `inject` records) and `appReady`. The manager's agent context is a real `dsh-scope` scope with
+context with a fiber-tied `tools.register`; `notify` records and answers queued / held / rejects) and `appReady`. The manager's agent context is a real `dsh-scope` scope with
 the SDK's real `SystemPrompt` service, so the prompt guide is observed through `systemPrompt.assemble`;
 a resume disposes the generation's scope and runs every setup on a new one.
 A restart closes the whole DSH and opens a new one over the same root. Each case runs on the current
@@ -23,19 +22,17 @@ DSH (`fishball-test-helpers/dsh`); release repeats them over the DSH matrix (doc
 [constants.mjs](constants.mjs) (`STATUS`/`UNFINISHED`, `LIMIT`, the memo forms, the delete rows); a case that
 depends on one says "provisional: PENDING (…)" in its title.
 
-**Decisions taken during the run (the lead, 2026-11-21, now in the document).** The reminder
-pluralises ("1 unfinished task" / "n unfinished tasks", DOC §6). Arguments that are not a JSON object
+**Decisions taken during the run (the lead, 2026-11-21, now in the document).** Arguments that are not a JSON object
 are DOC §3's one exception to "the tools never throw": DSH's own registry rejects them
 (`ToolArgsError`) before the tool runs; Q23's first answer for those two rows was withdrawn.
 
-## Use Cases (TB-UC, 5)
+## Use Cases (TB-UC, 4)
 
 | Id | Flow | Oracle |
 |---|---|---|
 | TB-UC-01 main | Fishball adds a goal, breaks it into subtasks under `parentId`, updates status + progress, reads | tool values, ids `t_<uuid>`, defaults (§2), revision +1 per change, task keys name no session |
 | TB-UC-02 main | the user deletes a task with 2 subtasks, changes one, adds a subtask and a memo in one save | 200 `{changed:true, notified:true}`, the board, one notify with §5's exact text |
 | TB-UC-03 main | tools and a POST, then a restart | GET and `taskboard_read` equal before/after; the revision continues |
-| TB-UC-04 main | successful compaction with 3 unfinished | one inject on the manager live agent, user role, source, the line |
 | TB-UC-05 main | no core | no tools, one warn `fishball-core-missing`, routes serve, a save stands with `notified:false` |
 
 ## Equivalence Partitioning (TB-EP, 55, incl. 2 surface rows)
@@ -61,7 +58,7 @@ are DOC §3's one exception to "the tools never throw": DSH's own registry rejec
 | TB-PG-02 (2) | EP scope | manager scope has it, the global view and a worker scope do not; a global section of the same name is shadowed in the manager scope only |
 | TB-PG-03 (2) | BVA order | probes at order 1, 2 (name before), 2 (name after), 3 bracket the guide right after the persona prefix (order = `DEPLOYMENT_PERSONA_PREFIX` + 2); DSH's anchor value is 0 |
 
-## Boundary Value Analysis (TB-BVA, 46; limits provisional)
+## Boundary Value Analysis (TB-BVA, 44; limits provisional)
 
 | Id | Bound | Values |
 |---|---|---|
@@ -76,14 +73,9 @@ are DOC §3's one exception to "the tools never throw": DSH's own registry rejec
 | TB-BVA-09 (4) | 40 change lines | 39, 40, 41 (+"1 more change"), 42 (+"2 more changes") |
 | TB-BVA-10 (4) | deleted descendants | 0, 1 ("subtask"), 2 (a grandchild counts), 3 |
 | TB-BVA-11 (4) | `baseRevision` | current, current − 1, current + 1, −1 → 200 / 409 stale |
-| TB-BVA-12 (2) | reminder count wording | 1 ("task"), 2 ("tasks") |
 
-## Decision Tables (TB-DT, 42)
+## Decision Tables (TB-DT, 34)
 
-- **TB-DT-01 (8) compaction reminder.** Conditions: event `compaction/end` / `compaction/start`; `error`
-  absent / present; session the manager's / another; unfinished > 0 / 0 (all done or dropped) / empty board.
-  Action: exactly one reminder naming n, or none. Row 7: one task of each status (n = 3, provisional);
-  row 8: two compactions, the count at each.
 - **TB-DT-02 (8) save and wake.** Conditions: body equal / equal after trimming / changing; notify queued /
   held / rejects; core present / removed. Actions: `changed`, `notified`, the save stands, notify called.
   Plus: two saves give two unique dedupeKeys; client `createdAt`/`updatedAt` alone are no change.
@@ -101,14 +93,14 @@ are DOC §3's one exception to "the tools never throw": DSH's own registry rejec
 ## State Transitions (TB-ST, 9)
 
 - **TB-ST-01 (system)** one task across two restarts: todo → in_progress → blocked (Fishball) → restart →
-  done (user, notice) → todo again (Fishball) → a sibling dropped (user, notice) → restart → compaction →
-  reminder (2) → the goal deleted by the user (notice "and its 2 subtasks") → compaction → no reminder.
+  done (user, notice) → todo again (Fishball) → a sibling dropped (user, notice) → restart →
+  the goal deleted by the user (notice "and its 2 subtasks").
 - **TB-ST-02** revision: no-op updates (same status, progress, title + note, padded title) keep it, a
   refusal keeps it, a change adds 1.
 - **TB-ST-03** draft: at r, Fishball commits r+1, the draft's save is 409 stale with r+1 and unchanged;
   after a reload the save commits r+2.
-- **TB-ST-04** X2 binding: core absent → arrives (tools, reminders) → leaves (tools withdrawn, no
-  reminder) → arrives again; the row removed → no tools, no reminders.
+- **TB-ST-04** X2 binding: core absent → arrives (tools) → leaves (tools withdrawn) → arrives again;
+  the row removed → no tools.
 - **TB-ST-06 (3)** prompt guide: core absent (none) → arrives (one) → leaves (withdrawn with the tools)
   → arrives again (one); the row removed → withdrawn; two resumes → the new scope has exactly one, the
   old scope none, the tools still run.
@@ -117,5 +109,5 @@ are DOC §3's one exception to "the tools never throw": DSH's own registry rejec
 
 ## Totals
 
-164 cases: UC 5, EP 55 (2 of them the package-surface rows), PG 7, BVA 46, DT 42, ST 9.
+153 cases: UC 4, EP 55 (2 of them the package-surface rows), PG 7, BVA 44, DT 34, ST 9.
 The 10 prompt-guide rows are ported from 90807687.

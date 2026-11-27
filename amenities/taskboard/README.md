@@ -18,8 +18,9 @@ Version `1.0.0-alpha.1`, DSH `>=0.2.1-rc.5`.
   without fishball-ui it falls back to its own `/api/fishball-taskboard/events`.
 - **Wake**: a save that changes the board wakes Fishball once with what changed (`manager.notify({wake:
   true})`), outside core's event batching.
-- **Compaction reminder**: after each successful compaction of the manager's session, one short line is
-  injected if any task is unfinished.
+- **Compaction reminder**: the manager’s first model request after a successful compaction gets the
+  current memos, newest first, and an unfinished-task count. The block is capped at 4,000 characters
+  and reports any omitted memos. An empty memo pad adds no context.
 - The memo form, the statuses (todo, in_progress, blocked, done, dropped), who deletes (only the user)
   and the limits are provisional values, PENDING the user's answer.
 

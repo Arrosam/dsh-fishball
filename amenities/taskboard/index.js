@@ -14,7 +14,7 @@ import { openStore } from './src/store.js'
 import { viewOf } from './src/board.js'
 import { createTools } from './src/tools.js'
 import { registerRoutes } from './src/routes.js'
-import { createReminder } from './src/reminder.js'
+import { registerReminder } from './src/reminder.js'
 import { registerGuide } from './src/guide.js'
 import { createAutoModel } from './src/auto-model.js'
 import { createAutoUpdate } from './src/auto-update.js'
@@ -31,16 +31,13 @@ export async function apply(ctx) {
   ctx.effect(() => () => store.close())
   const auto = createAutoUpdate({ store, now, modelPort: createAutoModel(ctx) })
   ctx.effect(() => registerRoutes(ctx, store, now, auto))
-  const reminder = createReminder(ctx, store)
   const binding = followInstance(ctx, HOST, (instance) => {
     const sessionId = () => instance.manager.sessionId()
     const disposeAuto = auto.bind(instance)
     const disposeSetup = instance.manager.registerSetup(NAMESPACE, (agentCtx, live) => {
-      // X2 disposal removes the tools and the guide with the fiber; the reminder stops following
-      // this agent then too.
       for (const tool of createTools({ store, sessionId, now })) agentCtx.tools.register(tool)
       registerGuide(agentCtx, auto.isEnabled)
-      agentCtx.effect(() => reminder.watch(live))
+      registerReminder(agentCtx, live, store)
     })
     // The board on core's one page stream (fishball-shared SEAM_PAGE_STREAM): the same view as the
     // GET board route; a read that throws (a quarantined domain) skips that frame.

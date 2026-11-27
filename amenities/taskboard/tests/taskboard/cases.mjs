@@ -22,7 +22,7 @@ import { caseName } from 'fishball-test-helpers/cases'
 import { DSH_VERSION, VERSIONS_DIR } from 'fishball-test-helpers/dsh'
 import {
   BOARD_KEYS, CODE, CREATED_KEYS, DSH, DSH_ARGS_ERROR, DSH_SECTION, FIELD, FIXTURE, GUIDE, ID, INSTANCE, LIMIT, LOG, MEMO_KEYS, NOT_A_STATUS, NOTICE, NOTIFY, PENDING,
-  POST_MEMO_KEYS, POST_TASK_KEYS, READ_KEYS, REMINDER, REVISION, ROUTE, STATUS, STATUSES, SUBJECT, TASK_DEFAULT, TASK_KEYS, TOOL,
+  POST_MEMO_KEYS, POST_TASK_KEYS, READ_KEYS, REVISION, ROUTE, STATUS, STATUSES, SUBJECT, TASK_DEFAULT, TASK_KEYS, TOOL,
   UNFINISHED, UNKNOWN_KEY, WAIT,
 } from './constants.mjs'
 import { worldFor } from './world.mjs'
@@ -103,20 +103,6 @@ function assertNotice(w, count, revision, lines) {
   assert.equal(notice.text, NOTICE.text(revision, lines), 'the notice text')
   return notice
 }
-
-/** The messages injected into a live agent since count. */
-const remindersSince = (w, count) => w.injects.slice(count)
-function assertReminder(w, count, n) {
-  const got = remindersSince(w, count)
-  assert.equal(got.length, 1, 'exactly one inject: ' + json(got))
-  assert.equal(got[0].liveId, w.live.id, 'on the manager\'s live agent')
-  const message = got[0].message
-  assert.equal(message.role, REMINDER.role, 'user role')
-  assert.deepEqual(pick(message.source ?? {}, Object.keys(REMINDER.source)), REMINDER.source, 'source')
-  assert.equal((message.content ?? []).filter((b) => b.type === DSH.textBlock).map((b) => b.text).join(''), REMINDER.text(n), 'the reminder line')
-}
-let compactions = 0
-const compactionEnd = (error) => ({ type: DSH.compactionEnd, data: { compactionId: FIXTURE.compactionId + ++compactions, turn: null, ...(error === undefined ? {} : { error }) } })
 
 /** DOC §3a: the assembled sections named like the guide. */
 const guides = (sections) => sections.filter((s) => s.name === GUIDE.name)
@@ -231,14 +217,6 @@ export function registerTaskboardCases() {
     assert.deepEqual(pick(ok(await w.read(), TOOL.read), BOARD_KEYS), before, 'taskboard_read after the restart')
     const next = ok(await w.call(TOOL.update, { id: byTitle(before, FIXTURE.goal).id, status: STATUS.inProgress }), TOOL.update)
     assert.equal(next.revision, before.revision + REVISION.step, 'the revision continues after the restart')
-  })
-
-  // TB-UC-04: the compaction reminder (REQ; DOC §6).
-  row('TB-UC-04', 'main', 'after a successful compaction of the manager session with unfinished tasks, one reminder line naming the count is injected', async (t) => {
-    const w = await seeded(t)
-    const count = w.injects.length
-    await w.emitSessionEvent(w.session, compactionEnd())
-    assertReminder(w, count, 3)
   })
 
   // TB-UC-05: without core (DOC §7).
@@ -641,16 +619,6 @@ export function registerTaskboardCases() {
       assertNotice(w, count, response.revision, [NOTICE.deletedTask(FIXTURE.oldIdea, n)])
     })
   }
-  // The reminder's count (DOC §6, pluralised): 1 task / 2 tasks.
-  for (const [index, n] of [1, 2].entries()) {
-    row('TB-BVA-12', index + 1, 'a successful compaction with ' + n + ' unfinished task(s): the line reads ' + JSON.stringify(REMINDER.text(n)), async (t) => {
-      const w = await worldFor(t)
-      await add(w, Array.from({ length: n }, (_, i) => leaf(i)))
-      const count = w.injects.length
-      await w.emitSessionEvent(w.session, compactionEnd())
-      assertReminder(w, count, n)
-    })
-  }
   // baseRevision (DOC §4, Q21): any integer mismatch is stale.
   const baseRows = [['current', (r) => r, true], ['current - 1', (r) => r - 1, false], ['current + 1', (r) => r + 1, false], ['-1', () => -1, false]]
   baseRows.forEach(([what, baseOf, fresh], index) => {
@@ -672,39 +640,6 @@ export function registerTaskboardCases() {
 
   // ==============================================================================================
   // Decision Tables
-
-  // TB-DT-01: the compaction reminder (REQ; DOC §6). Conditions: event, error, session, unfinished.
-  const BOARD = Object.freeze({ seeded: 'seeded', finished: 'finished', empty: 'empty', mixed: 'mixed' })
-  const reminderRows = [
-    [1, 'compaction/end, no error, the manager session, 3 unfinished', BOARD.seeded, (w) => w.session, () => compactionEnd(), 3],
-    [2, 'compaction/end with an error', BOARD.seeded, (w) => w.session, () => compactionEnd(FIXTURE.compactionError), 0],
-    [3, 'compaction/end of another session', BOARD.seeded, (w) => w.otherSession(), () => compactionEnd(), 0],
-    [4, 'compaction/end, every task done or dropped', BOARD.finished, (w) => w.session, () => compactionEnd(), 0],
-    [5, 'compaction/end, an empty board', BOARD.empty, (w) => w.session, () => compactionEnd(), 0],
-    [6, 'compaction/start (not an end)', BOARD.seeded, (w) => w.session, () => ({ type: DSH.compactionStart, data: { compactionId: FIXTURE.compactionId } }), 0],
-    [7, 'compaction/end, one task of each status: 3 unfinished (' + PENDING.statuses + ')', BOARD.mixed, (w) => w.session, () => compactionEnd(), UNFINISHED.length],
-  ]
-  for (const [part, label, board, sessionOf, eventOf, n] of reminderRows) {
-    row('TB-DT-01', part, label + ': ' + (n > 0 ? 'one reminder naming ' + n : 'no inject'), async (t) => {
-      const w = board === BOARD.seeded ? await seeded(t) : await worldFor(t)
-      if (board === BOARD.finished) await add(w, [{ title: FIXTURE.title(1), status: STATUS.done }, { title: FIXTURE.title(2), status: STATUS.dropped }])
-      if (board === BOARD.mixed) await add(w, STATUSES.map((status, i) => ({ title: FIXTURE.title(i), status })))
-      const count = w.injects.length
-      await w.emitSessionEvent(sessionOf(w), eventOf())
-      if (n > 0) assertReminder(w, count, n)
-      else assert.deepEqual(remindersSince(w, count), [], 'no inject')
-    })
-  }
-  row('TB-DT-01', 8, 'two successful compactions: one reminder each, with the count at that moment', async (t) => {
-    const w = await seeded(t)
-    let count = w.injects.length
-    await w.emitSessionEvent(w.session, compactionEnd())
-    assertReminder(w, count, 3)
-    ok(await w.call(TOOL.update, { id: (await getBoard(w)).tasks[0].id, status: STATUS.done }), TOOL.update)
-    count = w.injects.length
-    await w.emitSessionEvent(w.session, compactionEnd())
-    assertReminder(w, count, 2)
-  })
 
   // TB-DT-02: a save and the wake (REQ; DOC §4/§5; Q7, Q24). Conditions: changed, core, notify answer.
   const KIND = Object.freeze({ equal: 'equal', trimmed: 'trimmed', change: 'change' })
@@ -863,7 +798,7 @@ export function registerTaskboardCases() {
   // State Transitions
 
   // TB-ST-01 (system): a task's life across restarts, by Fishball and the user.
-  row('TB-ST-01', 'system', 'todo, in_progress, blocked (Fishball); restart; done (user); reopened todo (Fishball); a sibling dropped (user); restart; reminder; goal deleted by the user; no reminder', async (t) => {
+  row('TB-ST-01', 'system', 'todo, in_progress, blocked (Fishball); restart; done (user); reopened todo (Fishball); a sibling dropped (user); restart; goal deleted by the user', async (t) => {
     const w = await worldFor(t)
     const [goal, flights, hotel] = (await add(w, [{ title: FIXTURE.goal, subtasks: [{ title: FIXTURE.flights }, { title: FIXTURE.hotel }] }])).map((c) => c.id)
     let revision = REVISION.initial + REVISION.step
@@ -894,14 +829,8 @@ export function registerTaskboardCases() {
     await user((b) => ({ ...b, tasks: edited(b.tasks, hotel, { status: STATUS.dropped }) }), [NOTICE.changedTask(FIXTURE.hotel, [NOTICE.part.status(STATUS.todo, STATUS.dropped)])])
     await w.restart()
     await expectState(STATUS.todo, 2)
-    let injects = w.injects.length
-    await w.emitSessionEvent(w.session, compactionEnd())
-    assertReminder(w, injects, 2)
     const gone = await user((b) => ({ ...b, tasks: b.tasks.filter((x) => x.id !== goal && x.parentId !== goal) }), [NOTICE.deletedTask(FIXTURE.goal, 2)])
     assert.deepEqual(gone.board, { revision, unfinished: 0, tasks: [], memos: [] })
-    injects = w.injects.length
-    await w.emitSessionEvent(w.session, compactionEnd())
-    assert.deepEqual(remindersSince(w, injects), [], 'no reminder for an empty board')
   })
 
   // TB-ST-02: the revision (DOC §2/§3): +1 per committed change, kept by a no-op or a refusal.
@@ -932,34 +861,22 @@ export function registerTaskboardCases() {
     assert.equal(response.revision, draftBase.revision + 2 * REVISION.step)
   })
 
-  // TB-ST-04: the X2 binding's life: core arrives, leaves, the row is removed (DOC §6/§7, SURFACE).
-  row('TB-ST-04', 1, 'core absent: no tools; core arrives: tools and reminders; core leaves: tools withdrawn, no reminder; core again: both back', async (t) => {
+  // TB-ST-04: the X2 binding's life: core arrives, leaves, the row is removed (DOC §7, SURFACE).
+  row('TB-ST-04', 1, 'core absent: no tools; core arrives: tools; core leaves: tools withdrawn; core again: tools back', async (t) => {
     const w = await worldFor(t, { core: false })
+    const tools = Object.values(TOOL).sort()
     assert.deepEqual(w.toolNames(), [])
     await w.addCore()
-    assert.deepEqual(w.toolNames(), Object.values(TOOL).sort(), 'followed through internal/service')
-    await add(w, [{ title: FIXTURE.goal }])
-    let count = w.injects.length
-    await w.emitSessionEvent(w.session, compactionEnd())
-    assertReminder(w, count, 1)
+    assert.deepEqual(w.toolNames(), tools, 'followed through internal/service')
     await w.removeCore()
     assert.deepEqual(w.toolNames(), [], 'tools withdrawn with the X2 registration')
-    count = w.injects.length
-    await w.emitSessionEvent(w.session, compactionEnd())
-    assert.deepEqual(remindersSince(w, count), [], 'no reminder after the registration is gone')
     await w.addCore()
-    assert.deepEqual(w.toolNames(), Object.values(TOOL).sort())
-    count = w.injects.length
-    await w.emitSessionEvent(w.session, compactionEnd())
-    assertReminder(w, count, 1)
+    assert.deepEqual(w.toolNames(), tools)
   })
-  row('TB-ST-04', 2, 'the row is removed: tools withdrawn, no more reminders', async (t) => {
+  row('TB-ST-04', 2, 'the row is removed: tools withdrawn', async (t) => {
     const w = await seeded(t)
     await w.removeRow()
     assert.deepEqual(w.toolNames(), [])
-    const count = w.injects.length
-    await w.emitSessionEvent(w.session, compactionEnd())
-    assert.deepEqual(remindersSince(w, count), [])
   })
 
   // TB-ST-06: the prompt guide's life follows the X2 setup fiber (DOC §3a, §7).

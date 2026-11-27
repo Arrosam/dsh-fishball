@@ -409,7 +409,7 @@ Decided by the user: off until the user sets an interval and a maximum of consec
 
 ## 31. `fishball-taskboard`: Fishball's own task board and memo pad (2026-11-21)
 
-The user's request: Fishball gets tools to create tasks, break goals into subtasks, update status and progress, and read the board; tasks are not linked to sessions; the user can view and edit the board in the UI at any time, and a save wakes Fishball with what the user changed; the data persists; after every compaction, if the board has unfinished tasks, one short reminder line is injected. The full contract is [docs/plugins/fishball-taskboard.md](<docs/plugins/fishball-taskboard.md>).
+The user's request: Fishball gets tools to create tasks, break goals into subtasks, update status and progress, and read the board; tasks are not linked to sessions; the user can view and edit the board in the UI at any time, and a save wakes Fishball with what the user changed; the data persists; after successful compaction, the next manager request gets the current memos and an unfinished-task count if the board has memos. The full contract is [docs/plugins/fishball-taskboard.md](<docs/plugins/fishball-taskboard.md>).
 
 | Point | Decision |
 |---|---|
@@ -418,7 +418,7 @@ The user's request: Fishball gets tools to create tasks, break goals into subtas
 | Tools | `taskboard_read`, `taskboard_add` (with nested `subtasks` and `parentId`), `taskboard_update`, `taskboard_memo`; manager-only through X2 and checked against X1. |
 | UI | A right-sidebar tab "Task board" (page type of `sidebarRightTabs`), opened from a conversation header action and the sidebar guide; a draft is saved as one POST of the whole board, refused `stale` if Fishball changed it meanwhile. |
 | Wake | A changing save calls `manager.notify({wake: true})`: X10 queues it as its own turn at once. It is not a link event, so §29's quiet window and batching never hold it. |
-| Reminder | On a successful `compaction/end` of the manager's session, one `agent.inject` line if any task is unfinished. |
+| Reminder | On a successful `compaction/end` of the manager's session, one runtime-context block in the next model request if any memos exist. It includes the newest memos within a 4,000-character budget and an unfinished-task count. |
 | PENDING | Memo form (list), statuses (todo, in_progress, blocked, done, dropped), who deletes (only the user), limits: provisional recommended values, asked 2026-11-21. |
 
 ## 32. Fishball speaks only through `message_user` (2026-11-21)

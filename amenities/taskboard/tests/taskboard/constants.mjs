@@ -3,7 +3,7 @@
  * - REQ: the user's requirements as the lead relayed them (2026-11-21): tools to create tasks, break
  *   goals into subtasks, update status/progress and read the board; tasks are not linked to sessions;
  *   the user edits the board in the UI and each changing save wakes Fishball with what changed; data
- *   persists across restarts; after every compaction with unfinished tasks one short reminder line;
+ *   persists across restarts;
  * - DOC §n: docs/plugins/fishball-taskboard.md, with the lead's answers Q1–Q24 (2026-11-21), which the
  *   lead folded into the document;
  * - SURFACE: the public surface the lead named (row module, the host fakes' shapes, the log line);
@@ -206,16 +206,6 @@ export const NOTICE = Object.freeze({
 })
 
 /**
- * DOC §6 (the lead's decision 2026-11-21: the count is pluralised; both forms are verbatim in the
- * document): the compaction reminder, injected one microtask after the event.
- */
-export const REMINDER = Object.freeze({
-  text: (n) => 'Reminder: your task board still has ' + n + ' unfinished ' + (n === 1 ? 'task' : 'tasks') + '; call taskboard_read to see them.',
-  source: Object.freeze({ kind: 'fishball-notice', form: 'plugin', pluginId: 'fishball-taskboard' }),
-  role: 'user',
-})
-
-/**
  * DOC §3a (the user, 2026-11-22): the one manager-scope prompt section the X2 setup registers. order is
  * DSH's getSectionOrder('DEPLOYMENT_PERSONA_PREFIX') + 2; DSH's value for that name is 0 (both SDKs).
  */
@@ -258,8 +248,6 @@ export const FIXTURE = Object.freeze({
   probe: Object.freeze({ step: 1, below: 'fbtest-probe-below', sameBefore: 'fbtest-probe-same', sameAfter: 'fishball-taskboard~fbtest', above: 'fbtest-probe-above' }),
   domainDir: 'domain',
   callIdPrefix: 'fbtest-tb-call-',
-  compactionId: 'fbtest-compaction-',
-  compactionError: 'fbtest: the summary model failed',
   /** DOC §5's example board. */
   goal: 'Plan trip',
   flights: 'Book flights',

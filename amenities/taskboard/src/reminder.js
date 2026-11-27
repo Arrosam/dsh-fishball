@@ -1,46 +1,64 @@
-/**
- * The compaction reminder (docs/plugins/fishball-taskboard.md §6): after each successful compaction
- * of Fishball's context, if the board has unfinished tasks, one short line is queued into Fishball's
- * context with `agent.inject`, which never wakes Fishball by itself: the line reaches the next model
- * step, so a compaction in the middle of a turn reminds that same turn, and an idle compaction (the
- * `/compact` command) reminds the next one. A compaction drops the earlier turns that held the board,
- * which is why the reminder comes after it and not on a timer.
- */
-import { createUserMessage } from '@deepseek-ai/dsh-llm'
-import { HOST } from './constants.js'
-import { unfinishedCount } from './board.js'
+import { HOST, LOG, MEMO_CONTEXT, NAMESPACE } from './constants.js'
+import { codePoints, unfinishedCount } from './board.js'
 
-const TEXT = Object.freeze({
-  reminder: (count) => `Reminder: your task board still has ${count} unfinished task${count === 1 ? '' : 's'}; call taskboard_read to see them.`,
-})
+function renderMemos(board, compactionSeq) {
+  if (board.memos.length === 0) return MEMO_CONTEXT.absent
+  const memos = board.memos.toReversed().sort((a, b) => b.createdAt - a.createdAt)
+  // DSH deduplicates identical snapshots. Include the compaction marker so a retained
+  // snapshot from an earlier compaction cannot suppress the current one.
+  let text = MEMO_CONTEXT.header(unfinishedCount(board), compactionSeq)
+  let size = codePoints(text)
+  let bounded = text + MEMO_CONTEXT.omitted(memos.length)
+  for (const [index, memo] of memos.entries()) {
+    const entry = MEMO_CONTEXT.entry(memo.text, codePoints(memo.text))
+    size += codePoints(entry)
+    if (size > MEMO_CONTEXT.maxChars) break
+    text += entry
+    const suffix = MEMO_CONTEXT.omitted(memos.length - index - 1)
+    if (size + codePoints(suffix) <= MEMO_CONTEXT.maxChars) bounded = text + suffix
+  }
+  return bounded
+}
 
-/**
- * @param ctx - the row's context; session events are emitted on it.
- * @param store - the row's store (store.js).
- * @returns {{watch(live): () => void}} `watch` follows one live manager agent (`{session, inject}`,
- *   X2's second argument) until its disposer runs.
- */
-export function createReminder(ctx, store) {
-  const agents = new Set()
-  ctx.effect(() => ctx.on(HOST.sessionEvent, (session, event) => {
-    // A failed compaction keeps the old context, so nothing was forgotten (`error`, dsh-compaction).
-    if (event?.type !== HOST.compactionEnd || event.data?.error !== undefined) return
-    for (const live of agents) {
-      if (live.session !== session) continue
-      // `inject` appends to this session, which is still publishing `compaction/end`: dsh-session
-      // refuses a reentrant append (and only logs it), so the injection waits for the microtask
-      // boundary, as core's held notices do (core manager/service.js `offTurn`).
-      queueMicrotask(() => {
-        if (!agents.has(live)) return
-        const count = unfinishedCount(store.read())
-        if (count > 0) live.inject(createUserMessage({ content: [{ type: HOST.textBlock, text: TEXT.reminder(count) }], source: HOST.noticeSource }))
-      })
-    }
-  }))
-  return Object.freeze({
-    watch(live) {
-      agents.add(live)
-      return () => agents.delete(live)
+const completed = (event) => event.type === HOST.compactionEnd && event.data?.error === undefined
+
+function pendingCompaction(session) {
+  // If setup is recreated between compaction and the next request, recover the trigger
+  // from the journal. A settled model attempt is the durable evidence of a dispatch.
+  const boundary = session.snapshotEvents().findLast(event => completed(event) || HOST.settledAttempt.includes(event.type))
+  return boundary && completed(boundary) ? boundary.seq : undefined
+}
+
+/** Restore the board once, on the manager's first model request after a successful compaction. */
+export function registerReminder(agentCtx, live, store) {
+  let pending = pendingCompaction(live.session)
+  let warned
+  agentCtx.on(HOST.sessionEvent, (session, event) => {
+    if (session === live.session && completed(event)) pending = event.seq
+  })
+  // Required context survives Fishball's optional-context suppression and is refreshed after
+  // automatic compaction. Only dispatch consumes it, not diagnostic or speculative assembly.
+  agentCtx.systemPrompt.context({
+    name: MEMO_CONTEXT.name,
+    order: MEMO_CONTEXT.order,
+    required: true,
+    interpolate: false,
+    text: ({ signal }) => {
+      if (pending === undefined || !signal || signal.aborted) return MEMO_CONTEXT.absent
+      let board
+      try { board = store.read() }
+      catch {
+        // Quarantined board storage must not prevent the manager's model request.
+        if (warned !== pending) {
+          warned = pending
+          agentCtx.logger(NAMESPACE).warn(LOG.reminderUnavailable)
+        }
+        return MEMO_CONTEXT.absent
+      }
+      return renderMemos(board, pending)
     },
+  })
+  agentCtx.on(HOST.assistantStream, ({ agent, frame }) => {
+    if (agent === live && frame.type === HOST.streamStart) pending = undefined
   })
 }

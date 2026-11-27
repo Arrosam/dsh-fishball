@@ -10,8 +10,7 @@
  *   manager.sessionId(), manager.registerSetup(pluginId, fn) and manager.notify(input).
  *   registerSetup runs fn as its own fiber on the manager's agent context (a child of the root, so
  *   root events reach it), with a scope whose tools.register(definition) → dispose is tied to that
- *   fiber, as core's X2 scope is; live = {id, session, inject(message)} where session is a real
- *   Session of the root's SessionStore and inject records;
+ *   fiber, as core's X2 scope is; live is scoped to a real Session of the root's SessionStore;
  * - appReady (optional): onReady(fn) → dispose, fired by the case.
  * The manager's agent context is not a fake: it is a dsh-scope scope (createScope, keyed by the live
  * agent) minted from a host plugin that injects the current DSH's real SystemPrompt service, so
@@ -98,14 +97,14 @@ function fetchRegistry() {
 /**
  * A world in a fresh canonical temp root, closed and removed by t's cleanup. Options:
  * core (provide the fake fishballInstance at once), apiVersion, appReady (provide the fake), and
- * configureHost(ctx, instance) for cases that supply additional host capabilities or legacy data.
+ * configureHost(ctx, instance) for extra host capabilities; createAgent(ctx) for model-facing cases.
  */
-export async function worldFor(t, { core = true, apiVersion = INSTANCE.apiVersion, appReady = false, configureHost, moduleFor = () => rowModule(SUBJECT.entry) } = {}) {
+export async function worldFor(t, { core = true, apiVersion = INSTANCE.apiVersion, appReady = false, configureHost, createAgent, moduleFor = () => rowModule(SUBJECT.entry) } = {}) {
   const tmp = await realpath(os.tmpdir())
   const root = await mkdtemp(path.join(tmp, FIXTURE.tempPrefix))
   const mod = await moduleFor()
   const parts = Object.fromEntries(await Promise.all([DSH.cordis, DSH.loader, DSH.session, DSH.storage, DSH.storageJson, DSH.storageDomain, DSH.systemPrompt, DSH.scope].map(async (n) => [n, await importDsh(n)])))
-  const world = { dsh: DSH_VERSION, root, mod, logs: [], notifyMode: NOTIFY.queued, notices: [], injects: [], setups: [], noManager: false }
+  const world = { dsh: DSH_VERSION, root, mod, logs: [], notifyMode: NOTIFY.queued, notices: [], setups: [], noManager: false }
   let host
   t.after(async () => {
     await host?.close()
@@ -131,13 +130,14 @@ export async function worldFor(t, { core = true, apiVersion = INSTANCE.apiVersio
     const ready = { listeners: new Set() }
     if (appReady) ctx.provide(DSH.services.appReady, { onReady(fn) { ready.listeners.add(fn); return () => { ready.listeners.delete(fn) } } })
 
-    const session = ctx.sessions.create()
+    const realAgent = await createAgent?.(ctx)
+    const session = realAgent?.session ?? ctx.sessions.create()
     /** One manager generation: a live agent object of the one session and its agent scope. */
     const mint = () => {
-      const live = { id: session.id, session, inject(message) { world.injects.push({ liveId: live.id, message: structuredClone(message) }) } }
+      const live = { id: session.id, session }
       return { live, scope: parts[DSH.scope].createScope(agentHost, live) }
     }
-    let generation = mint()
+    let generation = realAgent ? { live: realAgent, scope: { ctx: realAgent.ctx } } : mint()
     const scopeTools = new Map()
     const fibers = new Set()
     const registrations = new Set()
@@ -254,10 +254,8 @@ export async function worldFor(t, { core = true, apiVersion = INSTANCE.apiVersio
     linesWith: (needle) => world.logs.filter((l) => l.text.includes(needle)),
     /** Another real Session of the same store. */
     otherSession: () => host.ctx.sessions.create(),
-    /** Emits a session event on the root, as dsh-session publishes an appended event. */
-    emitSessionEvent: async (session, event) => { host.ctx.emit(DSH.sessionEvent, session, event); await turns() },
     /** Closes the whole DSH and opens a new one over the same root (a restart). */
-    async restart() { await host.close(); world.injects.length = 0; await open() },
+    async restart() { await host.close(); await open() },
     /** The route registered for path and method. */
     route(pathname, method) {
       const found = [...host.fetch.routes].filter((r) => r.path === pathname && (r.methods === undefined || r.methods.includes(method)))

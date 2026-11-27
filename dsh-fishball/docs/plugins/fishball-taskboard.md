@@ -15,8 +15,8 @@ that a component of the `fishball-amenities` bundle), installed alone or through
 - The user views and edits the board in the UI at any time. Each save that changes the board wakes
   Fishball with one message describing what the user changed.
 - The board lives in DSH's storage domain (`fishball_taskboard`), so it survives restarts.
-- After every successful compaction of Fishball's context, if the board has unfinished tasks, one
-  short reminder line is queued into Fishball's context.
+- After successful compaction, Fishball's next model request gets the current memo pad and an
+  unfinished-task count. An empty memo pad adds no context.
 
 ### Why a sibling of `fishball-board`, not built on it
 
@@ -198,19 +198,19 @@ answers `notified: false`; the tab then says Fishball was not told.
 
 ## 6. The compaction reminder
 
-The row's X2 setup listens to `session/event` of the manager's live session. On `compaction/end`
-without `error` (a successful compaction), if the board has unfinished tasks, it queues one message
-with `agent.inject` (context for the next model step; it never wakes Fishball by itself). The inject
-runs on the next microtask, with the count read then, because dsh-session refuses an append while
-it is still publishing `compaction/end`:
+The row's X2 setup watches successful `compaction/end` events for the manager's session only.
+DSH refreshes the scoped runtime-context contribution at model request admission, after automatic
+compaction can run. It reads the current board, and dispatch clears the pending trigger. It never
+wakes the manager or puts memos in the system prompt. DSH may keep the now-superseded snapshot in
+the conversation history, but it is not contributed again on ordinary requests. Setup can recover
+a pending compaction from the journal if there has not yet been a settled model attempt.
 
-```
-Reminder: your task board still has 1 unfinished task; call taskboard_read to see them.
-Reminder: your task board still has 3 unfinished tasks; call taskboard_read to see them.
-```
-
-User role, source `{kind: 'fishball-notice', form: 'plugin', pluginId: 'fishball-taskboard'}`.
-Nothing is queued for a failed compaction, for another session, or when no task is unfinished.
+**Task board memos (your own notes)** frames the entries as data and lists them by newest creation
+first. DSH escapes its reserved runtime-context closing delimiter in the model-facing envelope.
+The memo section’s 4,000 Unicode character budget includes its framing and the unfinished-task count
+(with a `taskboard_read` pointer). Only whole memos fit; the block reports how many were omitted.
+An empty memo pad contributes nothing, even with unfinished tasks. This is on by default and has no
+UI setting; the existing settings screen is specific to auto-update.
 
 ## 7. Without core
 

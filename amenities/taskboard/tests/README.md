@@ -3,12 +3,13 @@
 The package's own tests (docs/testing/README.md). Run them with
 
 ```bash
-node scripts/test.mjs fishball-taskboard
+npm test -w fishball-taskboard
 ```
 
 | entry | area | what it covers |
 |---|---|---|
-| `taskboard.test.mjs` | [taskboard/](<taskboard/USE-CASES.md>) | the row: tools, routes, wake notice, compaction reminder, persistence, the package surface |
+| `taskboard.test.mjs` | [taskboard/](<taskboard/USE-CASES.md>) | the row: tools, routes, wake notice, persistence, the package surface |
+| `compaction-memos.test.mjs` | manager model request | one-shot memo delivery, session isolation, bounded whole-memo formatting on DSH 0.2.2-rc.3 |
 | `auto-update.test.mjs` | [taskboard/auto-cases.mjs](<taskboard/auto-cases.mjs>) | opt-in auto-updates, reviews, undo, persistence and real model routing; runs on DSH 0.2.2-rc.3 |
 | `view.test.mjs` | [view/](<view/USE-CASES.md>) | the Task board tab (browser half): see the section **view** below |
 
@@ -21,7 +22,7 @@ oracle values, each with its source (REQ, DOC §n of
 [taskboard/constants.mjs](<taskboard/constants.mjs>).
 
 **Techniques.** Use Cases (TB-UC), Equivalence Partitioning (TB-EP), Boundary Value Analysis (TB-BVA),
-Decision Tables (TB-DT), State Transitions (TB-ST) and prompt-guide cases (TB-PG): 164 cases. A case that depends on one of the
+Decision Tables (TB-DT), State Transitions (TB-ST) and prompt-guide cases (TB-PG): 153 cases. A case that depends on one of the
 document's PENDING choices (statuses, memo, limits, delete) says "provisional" in its title; each such
 value is one constant.
 
@@ -31,7 +32,7 @@ bind to the current DSH) mounted as a loader row of the current DSH, over that D
 `dsh-storage` + `dsh-storage-json` + `dsh-storage-domain` in a temp root and a real `SessionStore`
 (`fishball-test-helpers/dsh` `importDsh`). Fakes stand only for the host services: `connection.fetch`
 (the routes are called with real `Request`s), `fishballInstance` (apiVersion 2: manager, X2
-`registerSetup`, `notify`, the live agent's `inject`) and `appReady`. A restart closes the whole DSH
+`registerSetup`, `notify`) and `appReady`. A restart closes the whole DSH
 and opens a new one over the same root. The guide is observed through the current DSH's real
 `SystemPrompt` service in a `dsh-scope` manager scope. What is asserted is public: tool values, route responses and
 SSE frames, the fakes' recorded calls, log lines by code, and the package's manifest and own
@@ -51,8 +52,15 @@ evidence was taken by running these tests in an extract of each commit (lead rep
 
 ### Case-id index
 
-TB-UC-01…05 · TB-EP-01…09, TB-EP-12 · TB-PG-01…03 · TB-BVA-01…12 · TB-DT-01…05 · TB-ST-01…06 (rows per id in
+TB-UC-01…03, TB-UC-05 · TB-EP-01…09, TB-EP-12 · TB-PG-01…03 · TB-BVA-01…11 · TB-DT-02…05 · TB-ST-01…06 (rows per id in
 [taskboard/USE-CASES.md](<taskboard/USE-CASES.md>)).
+
+## Compaction memos
+
+The row runs in the same isolated fixture with the real DSH agent loop, session events, and a recording
+model adapter. Manual and automatic compaction success are driven at the host session-event boundary;
+the summary backend itself is not under test. Cases check the first request at the adapter, then
+compare newly admitted messages so historical DSH context snapshots do not count as a fresh delivery.
 
 ## view
 
