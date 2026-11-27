@@ -13,10 +13,10 @@ import { registerHooks } from 'node:module'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { DSH_VERSION, VERSIONS_DIR } from './dsh.mjs'
-import { REPO } from './packages.mjs'
+import { WORKSPACE_ROOT } from './packages.mjs'
 
 const BIND = Object.freeze({ tag: 'fbsdk', nodeScheme: 'node:', dshScope: '@deepseek-ai/', manifest: 'package.json' })
-const REPO_URL = pathToFileURL(REPO + path.sep).href
+const REPO_URL = pathToFileURL(WORKSPACE_ROOT + path.sep).href
 let hooked = false
 
 const tagged = (url, version) => {
