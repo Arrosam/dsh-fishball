@@ -1,7 +1,7 @@
 /**
  * The K3 values these cases check, from the connector's frozen contract (host-services/child.d.ts,
- * K3 as amended by I-HOST, 2026-11-16, and contract C, 2026-11-21) and the instance README. Nothing
- * comes from an implementation.
+ * K3 as amended by I-HOST, contract C, and connector commit 283748d7) and the instance README.
+ * Nothing comes from an implementation.
  */
 import path from 'node:path'
 import { REPO } from '@dsh-instance/test-helpers/constants'
@@ -13,8 +13,17 @@ export const K3 = Object.freeze({
   members: Object.freeze(['apiVersion', 'status', 'onChange', 'origin', 'admit', 'retry', 'reconnect', 'targetStatus', 'agentEntry', 'providerSync']),
   /** Every member that is called (all but the two data members). */
   data: Object.freeze(['apiVersion', 'providerSync']),
-  reconnectCodes: Object.freeze(['not-ready', 'connector-missing', 'operation-failed', 'credentials-unwritable']),
   reconnectType: 'ReconnectRefusalCode',
+  reconnectCodes: Object.freeze([
+    'not-ready', 'connector-missing', 'operation-failed', 'credentials-unwritable',
+    'hosted-entry-disabled', 'hosted-binding-unavailable', 'rebind-not-confirmed',
+  ]),
+  // A credential can be stored successfully without proof of pairing; that is not a refusal.
+  reconnectVariants: Object.freeze([
+    "{ readonly ok: true; readonly outcome?: 'rebound' | 'paired' }",
+    "{ readonly ok: true; readonly outcome: 'stored'; readonly code: 'pairing-not-confirmed' }",
+    '{ readonly ok: false; readonly code: ReconnectRefusalCode }',
+  ]),
   /** R-HOST-07 / Q-G7 as the contract words it: sync copies the providers and their model lists, nothing else. */
   syncWording: Object.freeze([/model lists?/i, /nothing else/i]),
 })

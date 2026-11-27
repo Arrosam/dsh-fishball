@@ -11,25 +11,32 @@ import assert from 'node:assert/strict'
 import { caseTest, eachSdk } from '@dsh-instance/test-helpers/cases'
 import { importBound } from '@dsh-instance/test-helpers/sdk'
 import { missingSibling } from '@dsh-instance/test-helpers/siblings'
-import { aliasLiterals, CONNECTOR, declarationText, hostServicesDir, interfaceMembers } from './support/declarations.mjs'
+import { aliasLiterals, CONNECTOR, declarationText, hostServicesDir, interfaceMembers, promiseVariants } from './support/declarations.mjs'
 import { INSTANCE, K3 } from './support/constants.mjs'
 
 const skip = missingSibling('connector') || (hostServicesDir() ? false : 'the dsh-connector checkout has no packages/dsh-connector/host-services folder')
 const child = () => declarationText(CONNECTOR.child)
-const members = () => {
-  const found = interfaceMembers(child(), K3.service)
+const members = (text = child()) => {
+  const found = interfaceMembers(text, K3.service)
   assert.ok(found, 'child.d.ts declares no interface ' + K3.service)
   return found
 }
 
+// Compare the full variants without depending on indentation, spacing, or a trailing semicolon.
+const normalizeVariant = (variant) => variant.replace(/\s+/g, ' ').replace(/\s*([{}:;?|])\s*/g, '$1').replace(/;}$/, '}')
+
 eachSdk((sdk) => {
-  caseTest(sdk, 'HOST-ST-01', 'K', `the K3 locator declares ${K3.members.join(', ')}; reconnect() is asynchronous with the four refusal codes`, () => {
-    const declared = members()
+  caseTest(sdk, 'HOST-ST-01', 'K', `the K3 locator declares ${K3.members.join(', ')}; reconnect() returns the published Promise result variants and seven refusal codes`, () => {
+    const text = child()
+    const declared = members(text)
     assert.deepEqual(K3.members.filter((m) => !declared.has(m)), [], 'members missing from ' + K3.service)
     const reconnect = declared.get('reconnect')
     assert.ok(reconnect.method, 'reconnect is not a method')
-    assert.match(reconnect.returns, /^Promise\s*</, 'reconnect returns ' + reconnect.returns)
-    assert.deepEqual([...(aliasLiterals(child(), K3.reconnectType) ?? [])].sort(), [...K3.reconnectCodes].sort())
+    assert.deepEqual(reconnect.params, [], 'reconnect takes parameters')
+    const variants = promiseVariants(reconnect.returns)
+    assert.ok(variants, 'reconnect returns ' + reconnect.returns)
+    assert.deepEqual(variants.map(normalizeVariant).sort(), K3.reconnectVariants.map(normalizeVariant).sort())
+    assert.deepEqual(aliasLiterals(text, K3.reconnectType)?.sort(), [...K3.reconnectCodes].sort())
   }, { skip })
 
   caseTest(sdk, 'AGENT-ENTRY', 'K3', 'child.d.ts declares dshInstanceChild.agentEntry() with no parameters, returning string | null', () => {

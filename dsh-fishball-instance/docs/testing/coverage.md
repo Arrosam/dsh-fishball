@@ -59,7 +59,7 @@ A case is rewritten only when a later, recorded decision changed the requirement
 | host.185, 186, 188 PLACE Q1/Q2, placement.40 SHELVE compose, placement-install.1, 2, 4, 6, 12 | 8fdd0ef: fishball-ui merged into fishball-core and retired (`PLACEMENT.retiredBundle`) | the Fishball bundles are fishball-core alone, last; fishball-ui is never placed |
 | placement.36, 37 HOST-EP-03 row 7 | the same merge (dsh-fishball 117cb2a2) | core's patch inserts the page, Recommended and child-plugins rows itself |
 | succession.9 ISUCC-DT-01 row 6 | README: the instance has no remote-target override | extra target credentials in the child do not stop the parent's pending succession |
-| HOST-ST-01 K (K3 declaration) | MULTI-0 withdrew the `target-remote` refusal | four refusal codes, not five |
+| HOST-ST-01 K (K3 declaration) | MULTI-0 withdrew `target-remote`; connector `283748d7` (Accept verified hosted pair rebinds without changing ID ownership) then added `hosted-entry-disabled`, `hosted-binding-unavailable`, and `rebind-not-confirmed`. See also the [instance README’s Reconnect section](../../packages/dsh-instance/README.md#the-hosted-token). | Seven exact refusal codes. The `Promise` distinguishes `rebound` or `paired` success, `stored` success with `pairing-not-confirmed`, and refusal. |
 | PLAT-EP-07 row 5 | since the split (a9c8832) this repository packs one tarball | the instance bundles every dependency it lists; its bundled fishball-core carries fishball-shared |
 
 **Staging merge (`22912fb`).** Placement tests now expect `fishball-amenities` before
@@ -261,7 +261,7 @@ from `test/v3` into the package suite.
 | host.88 | HOST-ST-01 row 9 Stopped → Retry before host ready → Stopped (nothing restarts, nothing created) | packages/dsh-instance | HOST-ST-01 row 9 |  |
 | host.89 | HOST-ST-01 row 10 Running → uninstall → Removed | integration/hosted-child | HOST-ST-01 row 10 |  |
 | host.90 | HOST-ST-01 row 10 the export is offered first |  | — | retired: withdrawn by an earlier requirement (withdrawn: the board archive export no longer exists (board_export and the uninstall expor) |
-| host.91 | HOST-ST-01 K the K3 locator declares apiVersion, status, onChange, origin, admit, retry, reconnect, targetStatus, agentEntry, providerSync; reconnect() is asynchronous with the five refusal codes | packages/dsh-instance, integration/connector | HOST-ST-01 K | outdated: MULTI-0 withdrew target-remote (four refusal codes) |
+| host.91 | HOST-ST-01 K the K3 locator declares apiVersion, status, onChange, origin, admit, retry, reconnect, targetStatus, agentEntry, providerSync; reconnect() is asynchronous with the five refusal codes | packages/dsh-instance, integration/connector | HOST-ST-01 K | rewritten: MULTI-0 withdrew `target-remote`; connector `283748d7` expanded the contract to seven refusal codes and distinct asynchronous results |
 | host.92 | HOST-ST-01 K the real locator object is the K3 service: apiVersion 1 and every member | packages/dsh-instance, integration/connector | HOST-ST-01 K |  |
 | host.93 | UIM-EP-02 row 1 origin(127.0.0.1) is http://127.0.0.1:<child port> while ready | packages/dsh-instance | UIM-EP-02 row 1 |  |
 | host.94 | UIM-EP-02 row 1 admit under 127.0.0.1 resolves {url} = http://127.0.0.1:<port>/api/dsh-instance/admit?ticket=… and nothing else | packages/dsh-instance | UIM-EP-02 row 1 |  |
