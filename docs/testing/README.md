@@ -53,7 +53,8 @@ manifest; fishball-core's tests never run fishball-ui's and the reverse.
 node scripts/test.mjs fishball-taskboard          # one package, current DSH
 node scripts/test.mjs fishball-core --list        # its files, nothing run
 node scripts/test.mjs fishball-core -- --test-name-pattern=MULTI-NAME
-node scripts/test.mjs fishball-heartbeat --against=<git-ref>   # this package's tests on the package at <ref>
+node scripts/test.mjs fishball-core --file=link   # one entry file
+node scripts/test.mjs fishball-heartbeat --against=<git-ref>   # today's tests on this package's code at <ref>
 node scripts/test-release.mjs                     # release: everything, in parallel, every DSH of the matrix
 node scripts/test-release.mjs --dsh=current       # release run on the current DSH only
 ```
@@ -110,7 +111,11 @@ test.
   published contract, not from its implementation.
 - **A fix brings a regression case.** Write it before the fix, run
   `node scripts/test.mjs <package> --against=<ref before the fix>` to show it fails there, and say so
-  in the commit (the heartbeat fix: HB-CAU rows failed on 23e334c8 and passed on 2a375e82).
+  in the commit (the heartbeat fix: HB-CAU failed 9 of 36 on 23e334c8 and passes on 2a375e82).
+  `--against` swaps in only the package's own code at that ref (from `git archive` of its folder) and
+  keeps every other package, the helpers and the tests as they are now, so today's tests load; it
+  cannot reach a commit where the package had another folder (then export that commit's folder by hand,
+  as the ports of the taskboard's 1cd04063 and fishball-ui's contrast fixes did).
 - A withdrawn requirement removes its cases; nothing is registered as a skipped placeholder. A row
   that cannot run in the package's world (it needs a second package) belongs in an integration package.
 
