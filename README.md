@@ -10,9 +10,11 @@ Fishball is a set of plugins that turns another DSH into a single-session assist
 endpoint. The two sides never import each other; the connector's public MCP surface is the only
 link between them, and it serves any agent, not only Fishball.
 
-The design is in [docs/planning/v3-design.md](<docs/planning/v3-design.md>) (§1.0 first) and
-[docs/planning/v3-requirements.md](<docs/planning/v3-requirements.md>); the decision log is
-[DESIGN.md](DESIGN.md) §17–§20. The original brief is [SMART-PROMPT.md](SMART-PROMPT.md).
+Every document is linked from the [documentation index](<docs/README.md>): each package's README (what
+it does, its structure, how to test it), the design ([docs/planning/v3-design.md](<docs/planning/v3-design.md>),
+§1.0 first, and [docs/planning/v3-requirements.md](<docs/planning/v3-requirements.md>)), the decisions in
+force ([DESIGN.md](DESIGN.md)) and [testing](<docs/testing/README.md>). The original brief is
+[SMART-PROMPT.md](SMART-PROMPT.md).
 
 ## Status
 
@@ -238,6 +240,18 @@ Remove `fishball-core` and `fishball-ui` like any plugin.
 
 Install again as above. After the cleanup command, the instance starts with a fresh child and syncs
 the model list once more.
+
+## Testing
+
+Each package has its own tests, and day to day only the changed package's run, on the current DSH:
+
+```bash
+node scripts/test.mjs fishball-heartbeat      # or fishball-core, fishball-ui, fishball-taskboard, …
+```
+
+There is no whole-repository run. Before a release, `node scripts/test-release.mjs` runs every
+package's tests and the cross-package integration packages in parallel, one worker each, over every
+supported DSH version. See [docs/testing/README.md](<docs/testing/README.md>).
 
 ## Licence
 
