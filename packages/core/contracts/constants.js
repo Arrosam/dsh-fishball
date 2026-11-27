@@ -233,8 +233,8 @@ const ISSUER_PATH = '/api/agent/oauth'
  * and `src/link/schema.js` holds the pure rules derived from them (id, name, event type, issuer).
  * The names are those of design §1.0c (requirements 1.41 Q-G8 = B).
  *
- * Drift is caught by the contract tests `test/v3/contract/k3a-core-seams/` and
- * `test/v3/contract/own-schema/`, which compare every value here with what
+ * Drift is caught by core's contract tests `packages/core/tests/contracts/` (the k3a and own-schema
+ * cases), which compare every value here with what
  * the connector publishes (its `tools/list` definitions and its OAuth metadata documents). A value
  * changes here only after the connector's own K1 changed it; the test then names the difference.
  *
@@ -366,7 +366,7 @@ export const MCP = Object.freeze({
  * The approval words of the connector's published `approval_answer` input schema (its `answer`
  * object's `decision` and `risk` enums), an offer descriptor's `argumentsStatus` words, and the `approvals_list` refusal that says the asked
  * session is gone. Core's ask cards (F-ASKCARD) answer and reconcile with them. They sit beside
- * `MCP`, not in it, because `MCP.refusal` is K3a's frozen set; `test/v3/contract/own-schema/`
+ * `MCP`, not in it, because `MCP.refusal` is K3a's frozen set; `packages/core/tests/contracts/`
  * checks every value here against the connector, as for `MCP` (Fishball's decision, 2026-11-16,
  * after F-OWN-SCHEMA removed the vendored V2 contract they were read from). No `ask`: the
  * connector's `approval_answer` refuses it (the user, 2026-11-17: "Refuse it"; X-SEC X-02), so core

@@ -19,12 +19,8 @@
     "dsh": ">=0.2.1-rc.5"
   },
   "scripts": {
-    "test": "node test/run.mjs",
-    "test:v3": "node test/run-v3.mjs",
-    "test:affected": "node test/run-affected.mjs",
-    "test:all": "node test/run-affected.mjs --all",
-    "test:release-check": "node test/run-affected.mjs --suite=release.pack,dsh-instance.placement-install,dsh-instance.placement,contract.package-boundaries --release-check",
-    "test:map": "node test/run-affected.mjs --check",
+    "test": "node scripts/test.mjs",
+    "test:release": "node scripts/test-release.mjs",
     "pack:v3": "node scripts/pack-v3.mjs",
     "pack:v3:check": "node scripts/pack-v3.mjs --check"
   }

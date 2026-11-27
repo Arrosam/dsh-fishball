@@ -59,7 +59,7 @@ export const PROFILE = 'web'
 /** The two DSH runtimes this release supports (the user: "Must work on DSH 0.2.1-rc.5 and 0.2.2-rc.1"). */
 export const SDKS = Object.freeze(['0.2.1-rc.5', '0.2.2-rc.1'])
 
-/** Release folder layout (the black-box suite test/v3/release/pack pins the same names). */
+/** Release folder layout (packages/integration-release pins the same names). */
 export const LAYOUT = Object.freeze({
   sums: 'SHA256SUMS',
   install: 'INSTALL.md',
