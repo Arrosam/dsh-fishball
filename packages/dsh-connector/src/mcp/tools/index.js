@@ -38,7 +38,7 @@
  *     - `answerApproval({sessionId, approvalId, answer, principalKey})` (the answering holder), `answerQuestion({sessionId, questionId,
  *       answers?, approve?, feedback?, toUser?, note?, principalKey})` (the answering holder) → `{ok, code?, grantId?, expiresAt?}`;
  *     - `listPrompts() → PromptSummary[]` (every open prompt; the tools keep the caller's);
- *       `answerPrompt({promptId, decision, risk?, reason}) → {ok, code?, promptId, decision, managed}`;
+ *       `answerPrompt({promptId, decision, risk?, reason, principalKey}) → {ok, code?, promptId, decision, managed}`;
  *     - `listGrants() → GrantSummary[]`; `revokeGrant({grantId, reason, principalKey}) → {ok, code?}` (rejects when the revocation could not be stored);
  *   - `domain.attachments`: `put(args) → {hostRef, expiresAt}`, `read({sessionId, attachmentId})`;
  *   - `domain.workspaces`: `list() → Promise<WorkspaceSummary[]>` (every registered workspace);

@@ -34,7 +34,7 @@ import { APPROVAL_LISTENER } from '../../mcp-schema/index.js'
 import { diagnosticOf } from '../errors.js'
 import { serialChain } from '../serial.js'
 import { SYNC_REASON } from '../tokens/index.js'
-import { AUTO_ESCALATE_PERMISSIONS_DEFAULT, AUTO_REJECT_INCOMPLETE_ARGUMENTS_DEFAULT, HMR_TRANSACTION_FIELD, LOG, MISUSE, PATH_OP, SETTING, SETTINGS_SERVICE } from './constants.js'
+import { AUTO_ESCALATE_PERMISSIONS_DEFAULT, AUTO_REJECT_INCOMPLETE_ARGUMENTS_DEFAULT, HIGH_RISK, HMR_TRANSACTION_FIELD, LOG, MISUSE, PATH_OP, SETTING, SETTINGS_SERVICE } from './constants.js'
 
 export { SETTING } from './constants.js'
 export { SETTINGS_SCHEMA } from './schema.js'
@@ -46,6 +46,9 @@ function liveAt(config, path) {
 }
 
 const sameJson = (a, b) => JSON.stringify(a) === JSON.stringify(b)
+
+/** `requests.allowHighRisk` as read: a boolean as set, anything else (unset) the default. */
+const highRiskSetting = (value) => (typeof value === 'boolean' ? value : HIGH_RISK.allowedByDefault)
 
 /**
  * @param {object} deps
@@ -72,6 +75,7 @@ export function createSettings({ ctx, config, namespace, limits, volatileEvent, 
     dshName: liveAt(config, SETTING.dshName),
     autoEscalatePermissions: liveAt(config, SETTING.autoEscalatePermissions) ?? AUTO_ESCALATE_PERMISSIONS_DEFAULT,
     autoRejectIncompleteArguments: liveAt(config, SETTING.autoRejectIncompleteArguments) ?? AUTO_REJECT_INCOMPLETE_ARGUMENTS_DEFAULT,
+    allowHighRisk: highRiskSetting(liveAt(config, SETTING.allowHighRisk)),
   })
 
   function fire() {

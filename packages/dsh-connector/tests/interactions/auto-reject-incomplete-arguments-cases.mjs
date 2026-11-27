@@ -1,7 +1,7 @@
 /** Black-box coverage through DSH's permission waterfall, session log, and the manager's MCP client. */
 import assert from 'node:assert/strict'
 import { row as interactionRow } from 'dsh-connector-test-helpers/connector-world/rows'
-import { ARGUMENTS_STATUS, BUDGET, FIXTURE, IX, K1, REFUSAL, RELAYED, SURFACE } from 'dsh-connector-test-helpers/connector-world/interactions-constants'
+import { ARGUMENTS_STATUS, BUDGET, FIXTURE, IX, K1, REFUSAL, RELAYED, RISK, SURFACE } from 'dsh-connector-test-helpers/connector-world/interactions-constants'
 import {
   A, answer, argsFor, asked, assertCovered, bytes, cid, decided, eventually, free, isListed, legacyIncompleteWorld, listed,
   managed, pending, permissionOptionOff, prefixGrant, principal, quiet, resultOf, resultsOf, session, setLimit, step,
@@ -109,7 +109,10 @@ export function registerAutoRejectIncompleteArgumentCases(sdk) {
     const r = await asked(w, p, sid, { tool: SPEC.shell, text: wideCommand() })
     assert.equal(r.d.argumentsStatus, ARGUMENTS_STATUS.truncated)
     assert.equal(r.d[S.autoEscalatePermissions], true)
-    assert.equal((await answer(p, r, A.allow())).code, REFUSAL.argumentsIncomplete)
+    for (const risk of [RISK.low, RISK.high]) {
+      const refusal = await answer(p, r, { ...A.allow(), risk })
+      assert.deepEqual([refusal.ok, refusal.code], [false, REFUSAL.argumentsIncomplete], JSON.stringify(refusal))
+    }
     assert.equal(await isListed(p, r), true)
     assert.deepEqual(await resultsOf(w, sid, r.id), [])
     const before = await listed(p, sid)

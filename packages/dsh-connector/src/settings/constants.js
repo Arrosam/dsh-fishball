@@ -11,6 +11,8 @@
  * - `approval.port`: the approval listener's port (R-OA-20, Q-OA-7 A);
  * - `approval.dshName`: the raw base of the MCP server name and the approval page's DSH name;
  *   unset or whitespace-only uses `node:os.hostname()` (MULTI-2).
+ * - `requests.allowHighRisk`: whether a managing agent may allow a high-risk permission request
+ *   (HIGH-RISK-APPROVAL, the user, 2026-11-21); off restores the strict rule (`allow-needs-low-risk`).
  * C-WIRE-2 withdrew `routing.agentToken`, the designated agent (the user's answer q5, 2026-11-17:
  * "Remove agentToken entirely").
  */
@@ -20,10 +22,17 @@ export const SETTING = Object.freeze({
   dshName: Object.freeze(['approval', 'dshName']),
   autoEscalatePermissions: Object.freeze(['requests', 'autoEscalatePermissions']),
   autoRejectIncompleteArguments: Object.freeze(['requests', 'autoRejectIncompleteArguments']),
+  allowHighRisk: Object.freeze(['requests', 'allowHighRisk']),
 })
 
 export const AUTO_ESCALATE_PERMISSIONS_DEFAULT = true
 export const AUTO_REJECT_INCOMPLETE_ARGUMENTS_DEFAULT = true
+
+/**
+ * `requests.allowHighRisk`'s default: on (the user, 2026-11-21: "a manager must be able to approve
+ * high-risk requests too"; deciding when is the manager's responsibility).
+ */
+export const HIGH_RISK = Object.freeze({ allowedByDefault: true })
 
 /** DSH's settings-service path edits (dsh-settings SettingsPathOp). */
 export const PATH_OP = Object.freeze({ set: 'set', unset: 'unset' })
@@ -48,6 +57,7 @@ export const SETTING_TEXT = Object.freeze({
   dshName: 'The DSH name shown on the approval page and advertised over MCP with -DSH appended. Empty: the OS device name.',
   autoEscalatePermissions: 'Automatically show a card in Fishball when a managed permission request needs your decision.',
   autoRejectIncompleteArguments: 'Reject managed permission requests whose arguments are truncated or unavailable, without asking the manager or the user.',
+  allowHighRisk: 'On: a managing agent may allow a high-risk permission request, one call at a time and with a reason, which DSH\'s log records. Off: it can only escalate such a request to you. Standing grants are always low risk only.',
 })
 
 /** Programming errors (thrown, never shown to a user). */

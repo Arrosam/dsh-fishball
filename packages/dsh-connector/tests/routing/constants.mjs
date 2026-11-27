@@ -247,7 +247,8 @@ export const REVIEW_X = Object.freeze({
   }),
   /** The session domain's live limits (only the argument excerpt is read on this path). */
   readLimits: Object.freeze({ argumentExcerptBytes: 8192, maxMessageBytes: 65536, readSessionMessages: 12, readSessionBytes: 12288 }),
-  requestSettings: Object.freeze({ autoEscalatePermissions: true, autoRejectIncompleteArguments: true }),
+  /** Resolved request settings at the domain boundary; the config reader applies defaults upstream. */
+  requestSettings: Object.freeze({ autoEscalatePermissions: true, autoRejectIncompleteArguments: true, allowHighRisk: true }),
   /** Fixture data. */
   ids: Object.freeze({ a: 'agent-a', b: 'agent-b' }),
   sessions: Object.freeze({ s: 'fbtest-rx-s', t: 'fbtest-rx-t' }),
@@ -256,6 +257,14 @@ export const REVIEW_X = Object.freeze({
   command: (n) => `fbtest-rx-command-${n}`,
   reason: 'Do not run',
   allowReason: 'fbtest allow reason',
+  /** HIGH-RISK-APPROVAL rows: the manager's reason (sent with padding, recorded trimmed), the log line's fixed words, a secret shape. */
+  highRisk: Object.freeze({
+    reason: 'fbtest high risk: the task needs this deploy',
+    padding: '  \n',
+    logMarker: 'high-risk call allowed by its manager',
+    secret: 'abcdef0123456789abcdef0123456789abcdef0123456789',
+    secretReason: 'fbtest high risk: uses token=abcdef0123456789abcdef0123456789abcdef0123456789',
+  }),
   dshReason: 'fbtest rx permission',
   grantMs: 3600 * 1000,
   injected: 'fbtest rx injected storage failure',

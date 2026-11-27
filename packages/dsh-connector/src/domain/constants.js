@@ -204,7 +204,10 @@ export const ANSWER_RULE = Object.freeze({
   nothing: 'nothing',
 })
 
-/** Log lines: `logger.warn(LOG.format, line, code)`; never an argument, a reason or a session's text. */
+/**
+ * Log lines: `logger.warn(LOG.format, line, code)`; never an argument, a reason or a session's text,
+ * except `highRiskAllowed`, whose manager's reason is the record of a high-risk approval.
+ */
 export const LOG = Object.freeze({
   format: '%s (%s)',
   incompleteFeedbackFailed: 'domain: could not deliver incomplete permission feedback',
@@ -223,4 +226,6 @@ export const LOG = Object.freeze({
   toolsRemovalFailed: 'domain: a managed session\'s tool could not be removed',
   closeFailed: 'domain: a part did not close cleanly',
   pluginStartFailed: 'domain: a plugin\'s session start failed unexpectedly; answered operation-failed',
+  /** `logger.info(highRiskAllowed, sessionId, toolName, requestId, principalKey, reason)` (permissions.js `auditHighRisk`). */
+  highRiskAllowed: 'domain: high-risk call allowed by its manager: session %s, tool %s, request %s, manager %s, reason: %s',
 })

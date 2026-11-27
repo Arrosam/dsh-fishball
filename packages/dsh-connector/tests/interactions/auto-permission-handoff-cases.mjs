@@ -1,11 +1,11 @@
 /** Connector-owned MCP contract for the manager's automatic permission card. */
 import assert from 'node:assert/strict'
 import { row as interactionRow } from 'dsh-connector-test-helpers/connector-world/rows'
-import { EVENT_TYPE, FIXTURE, IX, REFUSAL, RELAYED } from 'dsh-connector-test-helpers/connector-world/interactions-constants'
+import { EVENT_TYPE, FIXTURE, IX, REFUSAL, RELAYED, RISK } from 'dsh-connector-test-helpers/connector-world/interactions-constants'
 import {
   A, answer, asked, assertCovered, batchOf, cardOf, exactGrant, eventually, free, isListed,
   managed, pending, permissionOptionOff, planned, principal, qAnswer, questioned, quiet, resultOf, retirement,
-  stockFor, untilStock, userClicks, world,
+  setHighRisk, stockFor, untilStock, userClicks, world,
 } from 'dsh-connector-test-helpers/connector-world/interactions'
 
 // Assert the published wire names, independent of any production constants for the new feature.
@@ -56,6 +56,27 @@ export function registerPermissionHandoffCases(sdk) {
     const result = await resultOf(w, r.sid, r.id)
     assert.equal(result.isError, true)
     assert.ok(result.text.includes(RELAYED.rejected(FIXTURE.otherReason)), result.text)
+    await assertLateEscalationRefused(p, r)
+    await quiet()
+    assert.deepEqual(handoffs(await pending(p.client)).map((e) => [e.sourceSessionId, e.correlationId]), [[r.sid, r.offer.offerId]])
+    assert.ok(await eventually(async () => (await stockFor(w, r.text)).every((prompt) => prompt.closed)), 'the losing stock prompt remained open')
+  })
+
+  row('high-risk allow after escalation', 'the handoff notice survives a high-risk refusal; re-enabling high-risk allows settles the same escalated offer and closes the prompt', async (t) => {
+    const w = await world(sdk)
+    const { p, r } = await start(t, w)
+    const allow = { ...A.allow(), risk: RISK.high }
+    await setHighRisk(t, w, false)
+    assert.deepEqual(await answer(p, r, A.escalate()), ACCEPTED)
+    await untilStock(w, r.text)
+    assert.ok(await eventually(async () => handoffs(await pending(p.client)).length > 0, HANDOFF.noticeWaitMs), 'accepted escalation did not publish a permission-escalated notice')
+    const refusal = await answer(p, r, allow)
+    assert.deepEqual([refusal.ok, refusal.code], [false, REFUSAL.allowNeedsLowRisk], JSON.stringify(refusal))
+    assert.equal(await isListed(p, r), true)
+    assert.ok((await stockFor(w, r.text)).some((prompt) => !prompt.closed), 'refusal closed the stock prompt')
+    await setHighRisk(t, w, true)
+    assert.deepEqual(await answer(p, r, allow), ACCEPTED)
+    assert.equal((await resultOf(w, r.sid, r.id)).text, IX.fixture.outcomeText(IX.outcome.allowed))
     await assertLateEscalationRefused(p, r)
     await quiet()
     assert.deepEqual(handoffs(await pending(p.client)).map((e) => [e.sourceSessionId, e.correlationId]), [[r.sid, r.offer.offerId]])

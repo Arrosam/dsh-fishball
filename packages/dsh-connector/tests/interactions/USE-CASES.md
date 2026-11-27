@@ -136,8 +136,12 @@ the code, the offer still listed, the call still waiting.
 | MSG-10 | ST | managed at the tool list, taken back before the call lands | `not-managed` |
 | APR-01 | UC | first request, P not connected | one event, offer `.r1`/1/approval, the descriptor keys, choices, title, callId, reason, quotes [], arguments, complete, no expiresAt; no stock prompt |
 | APR-02 | EP | approvals_list by P / Q / unmanaged | listed / `forbidden` / `not-managed` |
-| APR-04 | DT | allow + low + reason + complete | accepted, allowed once, settlement allowed/principal |
-| APR-05 ×9 | DT, BVA | high; no risk; reason missing, '', whitespace; 500; 501; truncated arguments | each code; then a valid answer is accepted |
+| APR-04 | DT | allow + low + reason + complete | accepted, allowed once, no settlement event (A3) |
+| APR-05 | DT, BVA | high without a reason or with a blank reason; no risk; reason missing, '', whitespace; 500; 501; truncated arguments | each refusal code (`reason-required` for the missing/blank high-risk rows); then a valid answer is accepted |
+| APR-HR-01 | DT | allow + high + reason, default setting | accepted, allowed once, the tool's own output, no stock prompt, no settlement event (A3) |
+| APR-HR-02 | ST | `requests.allowHighRisk` off → allow + high → on | `allow-needs-low-risk`, still listed and waiting / then accepted live |
+| Permission handoff | ST | escalate with high-risk allows off → allow + high → on | one `permission-escalated` notice; refused while off without closing the offer or prompt; accepted live after enabling; prompt closes |
+| Auto-reject incomplete arguments | DT | auto-reject off; allow + low/high on a truncated offer | `arguments-incomplete` for both risk values; offer remains listed and call does not run |
 | APR-05r ×5 | DT | reject + risk + reason; reject + reason, no risk; reject with '' reason; reject with no reason; reject with whitespace reason | accepted with the rejection wording / accepted with the rejection wording / `reason-required` ×3 |
 | APR-05q | EP | `ask` (q1) | `invalid-decision`, offer stays |
 | APR-06 ×4 | EP | unknown approvalId, unknown offerId, already answered, Q | expired, expired, already-settled, forbidden |
@@ -180,7 +184,7 @@ the code, the offer still listed, the call still waiting.
 | GRT-07 ×3 | DT | exact grant: same, other key order, changed | covered, covered, offered |
 | GRT-08 ×3, 08s | EP | prefix on pwsh, terminal_send; trailing `*` | accepted and covers; `*` dropped |
 | GRT-09 ×2, 09x | EP | prefix on fbtest_ask, terminal_open; exact on terminal_open | prefix-not-shell-tool / covers |
-| GRT-10 ×18 | DT | refusals (grant-invalid ×3, expires-at-past ×2, expires-at-invalid ×2, prefix-empty ×3, prefix-not-in-call, allow rules ×5, schema ×3) | each code, nothing granted, still listed |
+| GRT-10 ×18 | DT | refusals (grant-invalid ×3, expires-at-past ×2, expires-at-invalid ×2, prefix-empty ×3, prefix-not-in-call, allow rules ×5 (risk high → `grant-needs-low-risk`), schema ×3) | each code, nothing granted, still listed |
 | GRT-10b ×4 | BVA | prefix 512 / 513; reason 500 / 501 | accepted / limit-exceeded |
 | GRT-11 | BVA | a year out; three at once | accepted; all listed |
 | END-01 | ST | at expiresAt | unlisted; next call offered |
@@ -190,7 +194,8 @@ the code, the offer still listed, the call still waiting.
 | FRZ-01 | EP | nothing showing | prompts_list [] |
 | FRZ-02 | UC | prompt showing at Hand over | one entry, exact keys, managed true; Q does not see it; no event |
 | APRP-01 / 02 | DT | prompt_answer allow / reject | `{promptId, decision, managed: true}`; outcome; reason reaches A; still managed |
-| APRP-05 ×8 | DT, BVA | no reason; ''; whitespace; no risk; high; 501; truncated; Q | invalid-arguments / reason-required ×2 / risk-required / allow-needs-low-risk / limit-exceeded / arguments-incomplete / forbidden |
+| APRP-05 ×8 | DT, BVA | no reason; ''; whitespace; no risk; high with whitespace reason; 501; truncated; Q | invalid-arguments / reason-required ×2 / risk-required / reason-required / limit-exceeded / arguments-incomplete / forbidden |
+| APRP-HR-01 / 02 | DT | prompt_answer allow + high + reason, setting on / off | `{promptId, decision: allow, managed: true}`, allowed / `allow-needs-low-risk`, still showing |
 | APRP-06 / 07 / FRZ-05 | ST | answered twice; user clicked first; turn stopped | expired; unlisted |
 | FRZ-q7 | EP | P escalated its offer | not in prompts_list |
 | RST / DUR-06 / END-08 | ST | connector restart | managed tools again, offers again; old question id expired, not re-offered; grant keeps uses and covers |
@@ -206,6 +211,13 @@ Re-baselined by R-FIX-CONNECTOR (review F08, 2026-11-18): APR-05r "reject with n
 `risk-required`, but DESIGN.md §7a.3 (reject: "A non-empty reason") and docs/connector-contract.md
 ("reject needs a reason") ask only for a reason. It is now accepted with the rejection wording and
 settlement `rejected`; a reject with a missing, empty or whitespace reason stays `reason-required`.
+
+Re-baselined by HIGH-RISK-APPROVAL (the user, 2026-11-21: "a manager must be able to approve
+high-risk requests too"): allow + `risk: high` + a reason is accepted while `requests.allowHighRisk`
+is on (the default), and refused `allow-needs-low-risk` when the owner switched it off; a grant with
+`risk: high` is `grant-needs-low-risk` either way. A high-risk allow with no reason stays
+`reason-required`. The domain-level rows (settlement `risk`/`reason`, the log record, escalate then
+high-risk allow, grants) are HR-01…08 in tests/routing/review-x-cases.mjs.
 
 ## R-FIX-CUI (cui-cases.mjs)
 

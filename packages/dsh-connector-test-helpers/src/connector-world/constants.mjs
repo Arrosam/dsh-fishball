@@ -71,6 +71,7 @@ export const SURFACE = Object.freeze({
     requests: 'requests',
     autoEscalatePermissions: 'autoEscalatePermissions',
     autoRejectIncompleteArguments: 'autoRejectIncompleteArguments',
+    allowHighRisk: 'allowHighRisk',
     maxQueuedInputs: 'maxQueuedInputs',
     maxMessageBytes: 'maxMessageBytes',
     /**

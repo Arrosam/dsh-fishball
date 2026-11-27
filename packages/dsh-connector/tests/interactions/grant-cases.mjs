@@ -129,7 +129,8 @@ export function registerGrantCases(sdk) {
     ['prefix \'\'', REFUSAL.prefixEmpty, (a) => { a.grant.prefix = '' }],
     ['prefix whitespace', REFUSAL.prefixEmpty, (a) => { a.grant.prefix = '   ' }],
     ['a prefix not at the start of the call\'s command', REFUSAL.prefixNotInCall, (a) => { a.grant.prefix = 'x' + a.grant.prefix }],
-    ['risk high', REFUSAL.allowNeedsLowRisk, (a) => { a.risk = RISK.high }],
+    // Re-baselined by HIGH-RISK-APPROVAL (the user, 2026-11-21): a high-risk allow is accepted, a high-risk grant never.
+    ['risk high', REFUSAL.grantNeedsLowRisk, (a) => { a.risk = RISK.high }],
     ['no risk', REFUSAL.riskRequired, (a) => { delete a.risk }],
     ['reason \'\'', REFUSAL.reasonRequired, (a) => { a.reason = '' }],
     ['no reason', REFUSAL.reasonRequired, (a) => { delete a.reason }],

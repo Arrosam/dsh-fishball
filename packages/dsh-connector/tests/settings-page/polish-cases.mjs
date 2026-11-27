@@ -25,7 +25,7 @@ import { pageModule } from './subject.mjs'
 
 const T = { timeout: WAIT.testMs }
 const ID = POLISH.id
-const APPROVAL_SWITCHES = Object.freeze([POLISH.autoHandoffPath, POLISH.autoRejectPath])
+const APPROVAL_SWITCHES = Object.freeze([POLISH.highRisk.path, POLISH.autoHandoffPath, POLISH.autoRejectPath])
 const SWITCH_SETTINGS = APPROVAL_SWITCHES.map((path) => path.join('.'))
 const row = (sdk, id, part, title, fn) => test(caseName(sdk, id, part, title), T, fn)
 
@@ -84,10 +84,33 @@ export const stateWith = (entries, approval = { status: 'ok', port: POLISH.appro
 /** A state route row of entry `item` (C-WIRE state shape). */
 export const entryRow = (item, over) => ({ key: item.key, label: item.label, enabled: item.enabled, paired: false, id: null, name: null, connected: false, lastSeenAt: null, ...over })
 
+/** The high-risk switch (HIGH-RISK-APPROVAL): the Switch inside the requests.allowHighRisk row. */
+const highRiskSetting = POLISH.highRisk.path.join('.')
+const switchIn = (view, setting) => findAll([view.one(POLISH.attr.setting, setting)], (n) => isPrimitive(n, POLISH.switch))[0]
+
 export function registerPolishSettingsCases(sdk) {
+  // ---------------------------------------------------------------- HIGH-RISK-APPROVAL: the owner's switch
+  const [group, field] = POLISH.highRisk.path
+  for (const [label, settings, shown] of [['unset (the default)', undefined, true], ['saved off', false, false], ['saved on', true, true]]) {
+    row(sdk, POLISH.highRisk.id, `EP (${label})`, `the switch shows ${shown ? 'on' : 'off'}`, async (t) => {
+      const { view } = await openPolished(t, sdk, settings === undefined ? {} : { settings: { [group]: { [field]: settings } } })
+      assert.equal(switchIn(view, highRiskSetting).props.checked, shown)
+    })
+  }
+  row(sdk, POLISH.highRisk.id, 'ST (on → off → on)', 'each toggle saves exactly set requests.allowHighRisk to the new value, at the live revision; the switch follows', async (t) => {
+    const { page, view } = await openPolished(t, sdk)
+    for (const next of [false, true]) {
+      const revision = page.revision()
+      switchIn(view, highRiskSetting).props.onChange(next)
+      assert.ok(await page.until(() => page.value()[group]?.[field] === next), 'the switch value was not saved')
+      assert.equal(switchIn(view, highRiskSetting).props.checked, next)
+      assert.deepEqual(page.mutations.at(-1), { ops: [{ op: CLIENT.setOp, path: POLISH.highRisk.path, value: next }], expected: revision, liveRevision: revision })
+    }
+  })
+
   // ---------------------------------------------------------------- sections (EP over the language)
   for (const lang of POLISH.langs) {
-    row(sdk, ID.sections, lang, `three h3 sections in order: ${POLISH.headings[lang].join(', ')}; tokens in the first, the port, DSH name and both permission switches in the second, the limits in the third`, async (t) => {
+    row(sdk, ID.sections, lang, `three h3 sections in order: ${POLISH.headings[lang].join(', ')}; tokens in the first, the port, DSH name and all three permission switches in the second, the limits in the third`, async (t) => {
       const { view } = await openPolished(t, sdk, { labels: [FIXTURE.labelA], lang })
       const tree = view.tree()
       assert.deepEqual(headingsOf(tree).map(text), [...POLISH.headings[lang]])
@@ -229,22 +252,20 @@ export function registerPolishSettingsCases(sdk) {
   })
   for (const path of APPROVAL_SWITCHES) {
     const name = path.join('.')
-    row(sdk, ID.primitives, name, 'the switch defaults on; its opt-out saves only its own setting and reopening leaves the other switch on', async (t) => {
+    row(sdk, ID.primitives, name, 'the switch defaults on; its opt-out saves only its own setting and reopening leaves the other switches on', async (t) => {
       // Exercise the Plugins page's own ConfigFormController, without an owner form prop.
       const mount = { ownerForm: false }
       const { page, view } = await openPolished(t, sdk, mount)
-      const switchIn = (current, setting = name) => findAll([current.one(POLISH.attr.setting, setting)], (n) => isPrimitive(n, POLISH.switch))[0]
-      assert.equal(switchIn(view).props.checked, true)
+      assert.equal(switchIn(view, name).props.checked, true)
       const revision = page.revision()
-      switchIn(view).props.onChange(false)
+      switchIn(view, name).props.onChange(false)
       const [group, field] = path
       assert.ok(await page.until(() => page.value()[group]?.[field] === false), 'the opt-out was not saved')
       assert.deepEqual(page.mutations, [{ ops: [{ op: CLIENT.setOp, path, value: false }], expected: revision, liveRevision: revision }])
       view.close()
       const reopened = await page.open(CLIENT.view.page, mount)
-      assert.equal(switchIn(reopened).props.checked, false)
-      const other = SWITCH_SETTINGS.find((setting) => setting !== name)
-      assert.equal(switchIn(reopened, other).props.checked, true)
+      assert.equal(switchIn(reopened, name).props.checked, false)
+      for (const other of SWITCH_SETTINGS.filter((setting) => setting !== name)) assert.equal(switchIn(reopened, other).props.checked, true, other)
     })
   }
   row(sdk, ID.primitives, 'copy', 'Reveal: Copy keeps the word "Copy" and its copy icon; after a copy its icon is a check and the status says "Copied"', async (t) => {

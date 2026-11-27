@@ -132,6 +132,8 @@ export const POLISH = Object.freeze({
     en: Object.freeze(['Tokens', 'Approval page', 'Safety limits']),
     zh: Object.freeze(['Token', '授权页面', '安全限制']),
   }),
+  /** HIGH-RISK-APPROVAL: the switch row's id and config path. */
+  highRisk: Object.freeze({ id: 'UIPD-SET-HIGH-RISK', path: Object.freeze(['requests', 'allowHighRisk']) }),
   buttons: Object.freeze({
     en: Object.freeze({ up: 'Move up', down: 'Move down', remove: 'Delete' }),
     zh: Object.freeze({ up: '上移', down: '下移', remove: '删除' }),

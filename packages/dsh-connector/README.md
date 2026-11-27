@@ -237,6 +237,16 @@ routing.
   you answer first, the agent receives your answer as the outcome.
 - **A permission request waits for the agent.** Your own prompt shows when the agent escalates the
   request, or when the session leaves the agent's management.
+- **An agent may allow a high-risk request.** Deciding when that is right is the agent's
+  responsibility. Each `allow`, `grant` and `reject` names a non-empty `reason`, and `allow` and
+  `grant` also name a `risk` (`low` or `high`). A high-risk allow covers that one call only, and
+  DSH's log gets one line for it with the session, the tool, the request, the agent and its reason
+  (a secret-looking value in the reason is masked there). A standing grant is always low risk
+  (`grant-needs-low-risk`): it covers later calls nobody has seen, and a prefix grant covers longer
+  commands too. **Agents may allow high-risk requests** (`requests.allowHighRisk`, on by default) on
+  the connector's settings page switches this off: a high-risk allow is then refused
+  (`allow-needs-low-risk`). The manager can still reject or escalate an open offer. High-risk
+  allows via `prompt_answer` follow the same setting.
 - **Escalation does not decide the request.** The first valid answer on either card (or a valid
   answer from its manager) settles it. The connector sends the outcome of a session-card answer
   to the manager.

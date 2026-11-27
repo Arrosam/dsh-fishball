@@ -23,8 +23,9 @@
  *
  * C-WIRE mounts it (the package's `dsh.client`) and adds, on the same page, the read-only pair state
  * of each entry (R-ID-12), the approval port with the approval listener's status (R-OA-20), the
- * DSH name the approval page shows (C-WIRE-2; the user, 2026-11-17), and the connector's limits, which moved here
- * from dsh-connector-ui's card (decided item 55). Every edit is a save of the row's settings
+ * DSH name the approval page shows (C-WIRE-2; the user, 2026-11-17), the connector's limits, which moved here
+ * from dsh-connector-ui's card (decided item 55), and whether agents may allow high-risk requests
+ * (HIGH-RISK-APPROVAL, the user, 2026-11-21). Every edit is a save of the row's settings
  * through DSH's form, as the token list's. The strings are this file's dictionaries: DSH's client loads no JSON, and the package's
  * locale/*.json hold only the Plugins page's `meta` text.
  */
@@ -92,10 +93,12 @@ window.__ModuleLoader__.load({
     const SETTING_PATH = Object.freeze({
       approvalPort: Object.freeze(['approval', 'port']),
       dshName: Object.freeze(['approval', 'dshName']),
+      allowHighRisk: Object.freeze(['requests', 'allowHighRisk']),
       autoEscalatePermissions: Object.freeze(['requests', 'autoEscalatePermissions']),
       autoRejectIncompleteArguments: Object.freeze(['requests', 'autoRejectIncompleteArguments']),
     })
     const REQUEST_SWITCHES = Object.freeze([
+      Object.freeze({ key: 'allowHighRisk', hint: 'allowHighRiskHint', defaultValue: true }),
       Object.freeze({ key: 'autoEscalatePermissions', hint: 'autoEscalatePermissionsHint', defaultValue: true }),
       Object.freeze({ key: 'autoRejectIncompleteArguments', hint: 'autoRejectIncompleteArgumentsHint', defaultValue: true }),
     ])
@@ -313,6 +316,8 @@ window.__ModuleLoader__.load({
       autoEscalatePermissionsHint: 'Show a card and an action notice when a managed permission request needs your decision.',
       autoRejectIncompleteArguments: 'Reject incomplete permission requests automatically',
       autoRejectIncompleteArgumentsHint: 'Reject requests from managed sessions when their arguments are truncated or unavailable, without asking anyone.',
+      allowHighRisk: 'Agents may allow high-risk requests',
+      allowHighRiskHint: 'On: a managing agent may allow a high-risk permission request, one call at a time and with a reason, which DSH\'s log records. Off: it can only escalate such a request to you. Standing grants are always low risk only.',
       limits: 'Safety limits',
       invalid: 'Enter a whole number.',
       'field.maxQueuedInputs': 'Events queued for an agent and not yet taken',
@@ -375,6 +380,8 @@ window.__ModuleLoader__.load({
       autoEscalatePermissionsHint: '受管会话的权限请求需要您决定时，显示卡片和待处理通知。',
       autoRejectIncompleteArguments: '自动拒绝参数不完整的权限请求',
       autoRejectIncompleteArgumentsHint: '受管会话的权限请求参数被截断或无法读取时，直接拒绝，不询问用户或管理代理。',
+      allowHighRisk: 'Agent 可批准高风险请求',
+      allowHighRiskHint: '开启：管理 agent 可批准高风险权限请求，每次只批准一个调用并须给出理由，理由记录在 DSH 日志中。关闭：此类请求只能升级给你。长期授权始终只限低风险。',
       limits: '安全限制',
       invalid: '请输入整数。',
       'field.maxQueuedInputs': '为 agent 排队、尚未取走的事件',
@@ -953,7 +960,7 @@ window.__ModuleLoader__.load({
         }
         // No page heading: the Plugins page draws the row's title above its configuration. The page
         // is DSH's section rhythm: Tokens (the list and New token in one card, Save under it), the
-        // approval page (its port and the DSH name it shows) and the limits.
+        // approval page (its port and DSH name, plus permission switches), and the limits.
         const newLabelEmpty = newLabel.trim() === ''
         return h('div', { style: STYLE.page, [DATA.root]: true },
           h(StateFailure, { t, state: runtime.state, retry: readState }),

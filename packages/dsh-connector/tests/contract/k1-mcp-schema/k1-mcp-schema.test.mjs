@@ -6,6 +6,7 @@ import { registerK1Cases } from './cases.mjs'
 import { registerConnToolsContractCases } from './conn-tools-cases.mjs'
 import { registerDiscoveryContractCases } from './discovery-cases.mjs'
 import { registerReportContractCases } from './report-cases.mjs'
+import { registerHighRiskContractCases } from './high-risk-cases.mjs'
 import { registerDelegateOutcomeContractCases } from './delegate-outcome-cases.mjs'
 import { registerK1bCases } from './k1b-cases.mjs'
 import { registerK1cCases } from './k1c-cases.mjs'
@@ -21,4 +22,5 @@ forEachVersion((version) => {
   registerDiscoveryContractCases(version)
   registerReportContractCases(version)
   registerDelegateOutcomeContractCases(version)
+  registerHighRiskContractCases(version)
 })

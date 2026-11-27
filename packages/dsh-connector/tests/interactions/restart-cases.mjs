@@ -14,7 +14,7 @@ import {
 
 const SET = RELAYED.setting
 const REQUESTS = SURFACE.settings.requests
-const REQUEST_DEFAULTS = Object.freeze({ [SURFACE.settings.autoEscalatePermissions]: true, [SURFACE.settings.autoRejectIncompleteArguments]: true })
+const REQUEST_DEFAULTS = Object.freeze({ [SURFACE.settings.autoEscalatePermissions]: true, [SURFACE.settings.autoRejectIncompleteArguments]: true, [SURFACE.settings.allowHighRisk]: true })
 const restartWorld = (sdk) => world(sdk, WORLD.scenario.restart)
 /** The settings value DSH describes for the connector row. */
 const value = async (w) => (await w.settings())?.value ?? {}
@@ -57,7 +57,7 @@ export function registerRestartCases(sdk) {
   })
 
   // ------------------------------------------------------------------------- settings (the user's decisions)
-  row(sdk, 'IX-SET-01', 'EP (settings schema and defaults)', `the settings hold exactly tokens, approval, ${REQUESTS}, ${Object.keys(RELAYED.kept).join(', ')}; limits retain their defaults; both permission options are booleans defaulting to true`, async () => {
+  row(sdk, 'IX-SET-01', 'EP (settings schema and defaults)', `the settings hold exactly tokens, approval, ${REQUESTS}, ${Object.keys(RELAYED.kept).join(', ')}; limits retain their defaults; all three permission options are booleans defaulting to true`, async () => {
     const w = await world(sdk)
     const { value: v, schema } = await w.settings()
     assert.deepEqual(Object.keys(v).sort(), [SET.tokens, SET.approval, REQUESTS, ...Object.keys(RELAYED.kept)].sort())

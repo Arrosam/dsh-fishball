@@ -73,7 +73,11 @@ export const SETTINGS = Object.freeze({
   setting: 'data-dsh-connector-setting',
   /** The row's label holds the title and wrapped control; hint and errors are its siblings. */
   limitPath: 'maxQueuedInputs',
-  requestSwitchPaths: Object.freeze(['requests.autoEscalatePermissions', 'requests.autoRejectIncompleteArguments']),
+  requestSwitchPaths: Object.freeze([
+    'requests.allowHighRisk',
+    'requests.autoEscalatePermissions',
+    'requests.autoRejectIncompleteArguments',
+  ]),
   minRows: 7,
   /** Side by side needs ≥ 240 px for the words and for the input, plus the gap. */
   columnPx: 240,

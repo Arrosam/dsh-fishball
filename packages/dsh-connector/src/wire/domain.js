@@ -92,7 +92,7 @@ export async function createSessionDomain(ctx, { storageDomain, readLimits, read
     const deliver = (sessionId, message) => port.message({ sessionId, message })
     const questions = createQuestions(ctx, { routing, managerOf, deliver, titleOf: titleOfSession, now, logger })
     closers.push(() => questions.close())
-    const prompts = createPrompts({ gate, wording, titleOf: titleOfSession })
+    const prompts = createPrompts({ gate, wording, titleOf: titleOfSession, highRiskAllowed: () => readSettings().allowHighRisk, logger })
     const tools = createSessionTools(ctx, { routing, managed: routing.managed, readLimits, logger })
     closers.push(() => tools.close())
 
