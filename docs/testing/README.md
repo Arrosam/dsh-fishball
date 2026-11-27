@@ -42,7 +42,11 @@ Package folders and their test folders:
 | fishball-amenities | `packages/fishball-amenities` | `packages/fishball-amenities/tests` |
 | fishball-shared | `packages/shared` | `packages/shared/tests` |
 | fishball-test-helpers | `packages/test-helpers` | `packages/test-helpers/tests` |
-| integration packages | `packages/integration-*` | `packages/integration-*/tests` |
+| fishball-integration-core-ui | `packages/integration-core-ui` | fishball-core with fishball-ui: core's patch as DSH composes it, the drawn ask cards, the Fishball-page header entries, the guards, a booted DSH with both |
+| fishball-integration-page-ui | `packages/integration-page-ui` | fishball-page in Chromium over a booted DSH: message_user rows and paging; fishball-child-plugins in an instance-run child (§28) |
+| fishball-integration-page-stream | `packages/integration-page-stream` | core's one page stream (§34) with fishball-ui and fishball-taskboard: the carrier, the board's topic, the Task board tab on the carrier |
+| fishball-integration-amenities | `packages/integration-amenities` | the amenities with core, fishball-ui and the repository: the icon family, settings namespaces, the root workspaces |
+| fishball-integration-release | `packages/integration-release` | every package: the package boundaries, the release pack (tarballs, checksums, no tests/ shipped; its artifact rows need `node scripts/pack-v3.mjs` first, `FBTEST_RELEASE_REQUIRED=1` makes a missing release fail) |
 
 fishball-ui sits inside fishball-core's folder (`packages/core/ui`) but is its own package with its own
 manifest; fishball-core's tests never run fishball-ui's and the reverse.

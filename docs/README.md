@@ -14,7 +14,11 @@ Each package's README says what it does, how it is built and how to test it.
 | fishball-amenities | `packages/fishball-amenities` | [README](<../packages/fishball-amenities/README.md>) | [tests](<../packages/fishball-amenities/tests/README.md>) |
 | fishball-shared | `packages/shared` | [README](<../packages/shared/README.md>) | [tests](<../packages/shared/tests/README.md>) |
 | fishball-test-helpers | `packages/test-helpers` | [README](<../packages/test-helpers/README.md>) | its own `tests/` |
-| integration packages | `packages/integration-*` | see [testing](<testing/README.md#layout>) | each has its README |
+| fishball-integration-core-ui | `packages/integration-core-ui` | [README](<../packages/integration-core-ui/README.md>) | its own `tests/` (release only) |
+| fishball-integration-page-ui | `packages/integration-page-ui` | [README](<../packages/integration-page-ui/README.md>) | its own `tests/` (release only) |
+| fishball-integration-page-stream | `packages/integration-page-stream` | [README](<../packages/integration-page-stream/README.md>) | its own `tests/` (release only) |
+| fishball-integration-amenities | `packages/integration-amenities` | [README](<../packages/integration-amenities/README.md>) | its own `tests/` (release only) |
+| fishball-integration-release | `packages/integration-release` | [README](<../packages/integration-release/README.md>) | its own `tests/` (release only) |
 
 ## Design and requirements
 
