@@ -3,8 +3,8 @@
  *
  * - `composeChild(sdk, scope)`: the instance's public `composedProfile` (its manifest export
  *   './native-runtime') on a fresh canonical main home: the same layout, placement, profile load
- *   and launch overlay a start runs, with no child process. The instance finds fishball-core
- *   through FISHBALL_REPO (README "Placement": the sibling workspace folders of a source checkout).
+ *   and launch overlay a start runs, with no child process. Sources default to this worktree
+ *   unless the integration run specifies FISHBALL_REPO.
  * - `effective(sdk, composed, {profileLayer})`: the effective rows, composed with the SDK's own
  *   dsh-app-boot in the order a start applies them (design §5a.2): the bundle layers and the
  *   profile's own patch (composedProfile's `entries`), then the launch overlay. `profileLayer` is
@@ -17,7 +17,7 @@ import { pathToFileURL } from 'node:url'
 import { REPO } from '@dsh-instance/test-helpers/constants'
 import { importBound, importSdk, runtimeOf } from '@dsh-instance/test-helpers/sdk'
 import { tempRoot } from '@dsh-instance/test-helpers/scratch'
-import { SIBLING, siblingPackage, siblingRepo } from '@dsh-instance/test-helpers/siblings'
+import { fishballSourceEnv, siblingPackage } from '@dsh-instance/test-helpers/siblings'
 
 export const INSTANCE_DIR = path.join(REPO, 'packages', 'dsh-instance')
 export const CORE = Object.freeze({ folder: 'core', name: 'fishball-core', manifest: 'package.json' })
@@ -39,7 +39,7 @@ async function nativeRuntime(sdk) {
 
 /** composedProfile on a fresh main home under `scope`'s temp root: {mainHome, profile, paths, entries, overlay, record}. */
 export async function composeChild(sdk, scope, { mainHome } = {}) {
-  process.env[SIBLING.fishball.env] = siblingRepo('fishball')
+  Object.assign(process.env, fishballSourceEnv())
   const home = mainHome ?? fs.realpathSync(tempRoot(scope))
   const profile = path.join(home, ...CHILD_PROFILE)
   const mod = await nativeRuntime(sdk)

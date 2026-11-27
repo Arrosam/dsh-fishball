@@ -97,8 +97,11 @@ eachSdk((sdk) => {
     assert.equal(m.engines?.node, repo.engines.node)
     assert.equal(m.license, 'MIT')
     assert.ok(typeof m.description === 'string' && m.description.trim() !== '')
-    assert.equal(m.repository?.directory, INSTANCE.folder)
-    assert.match(m.repository?.url ?? '', /github\.com\/Arrosam\/dsh-fishball-instance/)
+    assert.deepEqual(m.repository, {
+      type: 'git',
+      url: 'git+https://github.com/Arrosam/dsh-fishball.git',
+      directory: 'dsh-fishball-instance/packages/dsh-instance',
+    })
     assert.equal(m.publishConfig?.tag, 'alpha')
     assert.notEqual(m.private, true)
     for (const [name, range] of Object.entries(m.peerDependencies ?? {})) if (name.startsWith(SDK.scope)) assert.equal(range, '*', name)

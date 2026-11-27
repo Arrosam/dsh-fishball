@@ -6,8 +6,8 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Arrosam/dsh-fishball-instance.git",
-    "directory": "packages/dsh-instance"
+    "url": "git+https://github.com/Arrosam/dsh-fishball.git",
+    "directory": "dsh-fishball-instance/packages/dsh-instance"
   },
   "publishConfig": {
     "tag": "alpha"

@@ -5,7 +5,9 @@ export const REPO = fileURLToPath(new URL('../../', import.meta.url))
 export const VERSION = '1.0.0-alpha.1'
 export const DIST_TAG = 'alpha'
 export const REGISTRY = 'https://registry.npmjs.org'
-export const RELEASE_DIR = path.join(REPO, '.runtime', 'release', VERSION)
+const releaseDir = (component) => path.join(component, '.runtime', 'release', VERSION)
+export const RELEASE_DIR = releaseDir(REPO)
+export const FISHBALL_RELEASE_DIR = releaseDir(path.resolve(REPO, '..', 'dsh-fishball'))
 
 export const PACKAGES = Object.freeze([
   Object.freeze({ key: 'instance', folder: 'packages/dsh-instance' }),
@@ -51,7 +53,7 @@ export const JUNK = Object.freeze({
 
 export const MANIFEST = Object.freeze({
   engines: Object.freeze({ node: '>=22.14', dsh: '>=0.2.1-rc.5' }),
-  repository: Object.freeze({ type: 'git', url: 'git+https://github.com/Arrosam/dsh-fishball-instance.git' }),
+  repository: Object.freeze({ type: 'git', url: 'git+https://github.com/Arrosam/dsh-fishball.git', directory: 'dsh-fishball-instance/packages/dsh-instance' }),
   license: 'MIT',
   bundled: 'bundleDependencies',
   peersOnly: Object.freeze({ zod: '*' }),

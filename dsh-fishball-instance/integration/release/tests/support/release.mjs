@@ -1,6 +1,6 @@
 /**
  * The packed release, built by this package's own tests: `node scripts/pack.mjs --out <scratch>
- * --fishball-release <dir>` with the Fishball release folder of the sibling dsh-fishball checkout
+ * --fishball-release <dir>` with the Fishball component's release folder
  * (.runtime/release/<version>, read only). One build per test file (the cases of a file run in
  * order). A tarball is read with the system tar, never with a product module.
  *
@@ -12,13 +12,13 @@ import { createHash } from 'node:crypto'
 import fs from 'node:fs'
 import path from 'node:path'
 import { REPO } from '@dsh-instance/test-helpers/constants'
-import { siblingRepo } from '@dsh-instance/test-helpers/siblings'
+import { fishballComponent } from '@dsh-instance/test-helpers/siblings'
 
 const INSTANCE_MANIFEST = JSON.parse(fs.readFileSync(path.join(REPO, 'packages', 'dsh-instance', 'package.json'), 'utf8'))
 export const VERSION = INSTANCE_MANIFEST.version
 export const INSTANCE = Object.freeze({ name: INSTANCE_MANIFEST.name, tarball: INSTANCE_MANIFEST.name + '-' + VERSION + '.tgz', folder: 'packages/dsh-instance' })
 const SHARED = 'fishball-shared'
-const AMENITY_PACKAGES = Object.freeze(['fishball-board', 'fishball-heartbeat', 'fishball-taskboard'])
+const AMENITY_PACKAGES = Object.freeze(['fishball-board', 'fishball-consultant', 'fishball-heartbeat', 'fishball-taskboard'])
 const setMember = (name, libraries) => Object.freeze({ name, tarball: name + '-' + VERSION + '.tgz', libraries: Object.freeze(libraries) })
 const AMENITIES = setMember('fishball-amenities', [...AMENITY_PACKAGES, SHARED])
 export const CORE = setMember('fishball-core', [SHARED, '@modelcontextprotocol/client'])
@@ -49,16 +49,22 @@ export const PACK = Object.freeze({
 export const DEAD = 'http://127.0.0.1:9'
 export const PROXIES = Object.freeze(['HTTPS_PROXY', 'HTTP_PROXY', 'https_proxy', 'http_proxy', 'npm_config_https_proxy', 'npm_config_proxy'])
 
-/** The sibling's Fishball release folder for this version, or undefined. */
+/** Fishball release inputs, read only. A release built elsewhere can be selected explicitly. */
+function fishballReleaseDir() {
+  if (process.env.FISHBALL_RELEASE_DIR) return path.resolve(process.env.FISHBALL_RELEASE_DIR)
+  const component = fishballComponent()
+  return component && path.join(component, '.runtime', 'release', VERSION)
+}
+
 export function fishballRelease() {
-  const repo = siblingRepo('fishball')
-  const dir = repo && path.join(repo, '.runtime', 'release', VERSION)
+  const dir = fishballReleaseDir()
   return dir && SET.every((p) => fs.existsSync(path.join(dir, p.tarball))) ? dir : undefined
 }
 /** A node:test skip reason when the Fishball release folder is missing, else false. */
 export function missingRelease() {
-  if (!siblingRepo('fishball')) return 'the dsh-fishball checkout is absent (set FISHBALL_REPO)'
-  return fishballRelease() ? false : `the Fishball release folder dsh-fishball/.runtime/release/${VERSION} with ${SET.map((p) => p.tarball).join(', ')} is absent (pack dsh-fishball first)`
+  const dir = fishballReleaseDir()
+  if (!dir) return 'the dsh-fishball component is absent (set FISHBALL_REPO or FISHBALL_RELEASE_DIR)'
+  return fishballRelease() ? false : `the Fishball release folder ${dir} with ${SET.map((p) => p.tarball).join(', ')} is absent (pack dsh-fishball first)`
 }
 
 /** An environment from scratch under `scratch`: no user npm config, scratch HOME and cache, dead proxies. */

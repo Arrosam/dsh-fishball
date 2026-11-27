@@ -18,7 +18,7 @@ import path from 'node:path'
 import { eachSdk } from '@dsh-instance/test-helpers/cases'
 import { modeOf } from '@dsh-instance/test-helpers/scratch'
 import { importSdk, runtimeOf } from '@dsh-instance/test-helpers/sdk'
-import { siblingPackage, siblingRepo } from '@dsh-instance/test-helpers/siblings'
+import { siblingPackage } from '@dsh-instance/test-helpers/siblings'
 import {
   CHILD, HTTP, INCOMPATIBLE, OVERLAY, SET, STATE, admitChild, blockedBy, disabledIds, graphIds, hostedWorld, incompatibleCoreRepo, insertedIds, perSdk, readJson, show,
 } from '../support/hosted-child.mjs'
@@ -225,7 +225,7 @@ eachSdk((sdk) => {
     // ============================================================== PLAT-DT-01 rules 6-7, HOST-ST-01 row 3 (an incompatible member)
     /** One boot with an incompatible core source (after `prep`), then a boot from the real source with core switched back on; answers the first status. */
     const startIncompatible = async (prep) => {
-      const scratch = incompatibleCoreRepo(siblingRepo('fishball'))
+      const scratch = incompatibleCoreRepo()
       let status
       let bundlesThen
       let engineThen

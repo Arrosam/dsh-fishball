@@ -8,7 +8,7 @@
 import path from 'node:path'
 import { REPO } from './constants.mjs'
 import { bootHost, newHome, removeHome, untilValue } from './host-dsh.mjs'
-import { siblingPackage, siblingRepo, SIBLING } from './siblings.mjs'
+import { fishballSourceEnv, siblingPackage } from './siblings.mjs'
 
 export const HOSTED = Object.freeze({
   instance: Object.freeze({ name: 'dsh-instance', dir: path.join(REPO, 'packages', 'dsh-instance') }),
@@ -34,8 +34,8 @@ export function hostedLinks({ connector = true } = {}) {
   return links
 }
 
-/** The environment the instance needs to find fishball-core in the sibling checkout. */
-export const hostedEnv = () => ({ [SIBLING.fishball.env]: siblingRepo('fishball') })
+/** Propagate only a Fishball source override; the relocated checkout is the runtime default. */
+export const hostedEnv = fishballSourceEnv
 
 /** The instance's status route answer. */
 export const instanceStatus = async (host) => (await host.get(HOSTED.status)).json

@@ -16,7 +16,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { bootHost, newHome, removeHome, untilValue } from '@dsh-instance/test-helpers/host-dsh'
 import { HOSTED, hostedEnv, hostedLinks, instanceStatus } from '@dsh-instance/test-helpers/hosted'
-import { missingSibling } from '@dsh-instance/test-helpers/siblings'
+import { missingSibling, siblingPackage } from '@dsh-instance/test-helpers/siblings'
 
 export const show = (v) => JSON.stringify(v)
 
@@ -79,7 +79,7 @@ export const SET = Object.freeze({
   core: CORE_BUNDLE,
   amenities: AMENITIES_BUNDLE,
   placed: Object.freeze([AMENITIES_BUNDLE, CORE_BUNDLE]),
-  amenityPackages: Object.freeze(['fishball-board', 'fishball-heartbeat', 'fishball-taskboard']),
+  amenityPackages: Object.freeze(['fishball-board', 'fishball-consultant', 'fishball-heartbeat', 'fishball-taskboard']),
   library: 'fishball-shared',
   retired: 'fishball-ui',
   /** The child's base bundles (constants.js RUNTIME.profile.bundles). */
@@ -327,23 +327,24 @@ export async function connectorEntries(host) {
  * is linked in node_modules. Placement reads those links without modifying the real checkout.
  * Answers `{repo, remove}`.
  */
-export function incompatibleCoreRepo(siblingFishball) {
+export function incompatibleCoreRepo() {
   const base = fs.realpathSync(os.tmpdir())
   const repo = fs.mkdtempSync(path.join(base, 'dshi-test-incompatible-'))
   const packages = path.join(repo, 'packages')
-  const source = path.join(siblingFishball, 'packages')
+  const source = (folder) => siblingPackage('fishball', folder)
   const core = path.join(packages, 'core')
-  fs.cpSync(path.join(source, 'core'), core, { recursive: true, filter: (src) => path.basename(src) !== CHILD.nodeModules })
-  const amenities = readJson(path.join(source, SET.amenities, CHILD.manifest))
+  fs.cpSync(source('core'), core, { recursive: true, filter: (src) => path.basename(src) !== CHILD.nodeModules })
+  const amenities = readJson(path.join(source(SET.amenities), CHILD.manifest))
   const bundledWorkspace = (amenities.bundleDependencies ?? []).filter((name) =>
     name !== SET.library && amenities.dependencies?.[name] === amenities.version)
-  for (const name of [SET.amenities, ...bundledWorkspace]) fs.symlinkSync(path.join(source, name), path.join(packages, name), 'dir')
+  for (const name of [SET.amenities, ...bundledWorkspace]) fs.symlinkSync(source(name), path.join(packages, name), 'dir')
   const manifestFile = path.join(core, CHILD.manifest)
   const manifest = JSON.parse(fs.readFileSync(manifestFile, 'utf8'))
   manifest.engines = { ...manifest.engines, dsh: INCOMPATIBLE.impossibleEngine }
   fs.writeFileSync(manifestFile, JSON.stringify(manifest, null, 2))
-  fs.mkdirSync(path.join(repo, 'node_modules'), { recursive: true })
-  fs.symlinkSync(fs.realpathSync(path.join(siblingFishball, 'node_modules', SET.library)), path.join(repo, 'node_modules', SET.library))
+  const modules = path.join(repo, CHILD.nodeModules)
+  fs.mkdirSync(modules, { recursive: true })
+  fs.symlinkSync(source('shared'), path.join(modules, SET.library), 'dir')
   fs.writeFileSync(path.join(repo, CHILD.manifest), JSON.stringify({ name: 'dshi-test-incompatible', private: true }))
   return {
     repo,

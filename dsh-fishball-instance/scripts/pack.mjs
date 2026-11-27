@@ -5,7 +5,7 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { parseArgs } from 'node:util'
-import { CLI, COMMAND, DIST_TAG, HOSTED_SET, ISOLATION, LAYOUT, MANIFEST, PACKAGES, RELEASE_DIR, REPO, SCRATCH, SET_CARRIER, VERSION } from './release/constants.mjs'
+import { CLI, COMMAND, DIST_TAG, FISHBALL_RELEASE_DIR, HOSTED_SET, ISOLATION, LAYOUT, MANIFEST, PACKAGES, RELEASE_DIR, REPO, SCRATCH, SET_CARRIER, VERSION } from './release/constants.mjs'
 import { isolate, npm, pnpm } from './release/tools.mjs'
 import { bundleInto, bundledNames, stagePackage } from './release/stage.mjs'
 import { writeDocuments } from './release/documents.mjs'
@@ -26,7 +26,7 @@ function releaseManifest(entry) {
   if (manifest.private) problems.push('private')
   if (!manifest.description) problems.push('description')
   if (manifest.license !== MANIFEST.license) problems.push('license')
-  if (manifest.repository?.url !== MANIFEST.repository.url || manifest.repository?.directory !== entry.folder) problems.push('repository')
+  if (manifest.repository?.url !== MANIFEST.repository.url || manifest.repository?.directory !== MANIFEST.repository.directory) problems.push('repository')
   if (manifest.publishConfig?.tag !== DIST_TAG) problems.push('publishConfig.tag')
   if (manifest.engines?.node !== MANIFEST.engines.node) problems.push('engines.node')
   if (manifest.engines?.dsh !== MANIFEST.engines.dsh) problems.push('engines.dsh')
@@ -47,8 +47,7 @@ function replaceable(out) {
 function resolveFishballRelease(flagValue) {
   if (flagValue) return path.resolve(flagValue)
   if (process.env.FISHBALL_RELEASE_DIR) return path.resolve(process.env.FISHBALL_RELEASE_DIR)
-  const sibling = path.resolve(REPO, '..', 'dsh-fishball', '.runtime', 'release', VERSION)
-  return fs.existsSync(sibling) ? sibling : null
+  return fs.existsSync(FISHBALL_RELEASE_DIR) ? FISHBALL_RELEASE_DIR : null
 }
 
 function build(out, fishballRelease) {
