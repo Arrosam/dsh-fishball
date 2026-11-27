@@ -53,6 +53,11 @@ All 1105 case ids have a destination (the agents' mappings; one row per id and o
 | ported, with some rows needing a second package (those rows are integration) | 21 |
 | moved to another package's own tests (strip view → fishball-ui, ui-seam → fishball-shared) | 5 |
 | integration only (needs two or more packages of this repository) | 107 |
+
+The integration rows (the 107, and the integration parts of the 21) are ported to the five
+`packages/integration-*` packages: 154 rows ported, 11 retired (their subject left with the split, or a
+placeholder that cannot be observed), none left over ([port/integration-2-mapping.tsv](<../port/integration-2-mapping.tsv>),
+[port/integration-3-mapping.tsv](<../port/integration-3-mapping.tsv>)).
 | retired (withdrawn requirement, placeholder, or subject in another repository) | 110 |
 
 Ids filed by the old inventory under the wrong suite (it attributed cases by name) are noted in the
