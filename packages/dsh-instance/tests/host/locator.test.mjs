@@ -187,7 +187,10 @@ eachSdk((sdk) => {
   })
   for (const [part, title, before] of [
     ['announce first', 'the first recorded entry (first start) is announced (changed) and agentEntry() answers it', async () => {}],
-    ['announce reconnect', 'a newly recorded entry (Reconnect) is announced (changed) and agentEntry() answers the new key', async (w) => { await w.hosted.firstStart() }],
+    ['announce reconnect', 'Reconnect after deletion announces the replacement and agentEntry() answers the new key', async (w) => {
+      await w.hosted.firstStart()
+      w.tokens.setState(entry(1), K3.entry.deleted)
+    }],
   ]) {
     caseTest(sdk, 'AGENT-ENTRY', part, title, async (t) => {
       const w = await hostedWorld(t, sdk)

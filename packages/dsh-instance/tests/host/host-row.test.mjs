@@ -135,11 +135,11 @@ eachSdk((sdk) => {
     await disposed
     await predecessor
     await w.until(() => w.status(b).state === K3.state.ready)
-    // The successor's Reconnect, once its record is open (not-ready until then).
-    let last
-    await w.until(async () => { last = await w.locator(b).reconnect(); return last.ok === true })
+    await w.until(() => w.locator(b).agentEntry() === entry(2))
+    assert.equal((await w.locator(b).reconnect()).ok, false, 'a legacy connector cannot prove rebind')
     await drain()
-    assert.equal(recordOnDisk(home).entries.at(-1), entry(w.tokens.calls.created.length))
+    assert.equal(w.tokens.calls.created.length, 2, 'the successor replaced a live entry')
+    assert.equal(recordOnDisk(home).entries.at(-1), entry(2))
   })
 
   // ============================================================ F07: off/on during the appReady start

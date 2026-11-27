@@ -286,7 +286,8 @@ eachSdk((sdk) => {
     await w.restartHost()
     await w.reconnect()
     await w.pairChange()
-    assert.ok(w.tokens.values().length >= 3, 'fewer values than entries')
+    assert.deepEqual(await w.entriesOnDisk(), E12, 'legacy Reconnect must not replace a live entry')
+    assert.equal(w.tokens.values().length, E12.length, 'expected one generated credential for each entry')
     const places = { record: w.fileText(), warnings: JSON.stringify(w.warnings), retire: JSON.stringify(w.retired()), notice: JSON.stringify(w.hosted.notice()) }
     assert.deepEqual(leakHits(w.tokens.values(), { places }), [])
   })
