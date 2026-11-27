@@ -300,14 +300,20 @@ export function registerK3aCases() {
     const record = c.m.members(member(names, F.savedRecord, { method: false }).type)
     assert.deepEqual({
       [F.credentialRef]: literalMember(c, names, F.credentialRef),
-      [F.targetSetting]: { [F.row]: literalMember(c, setting, F.row), [F.field]: literalMember(c, setting, F.field) },
+      [F.targetSetting]: {
+        [F.row]: literalMember(c, setting, F.row),
+        [F.field]: literalMember(c, setting, F.field),
+        [F.hostedEntry]: literalMember(c, setting, F.hostedEntry),
+      },
+      [F.bindingRecord]: literalMember(c, names, F.bindingRecord),
       [F.savedRecord]: { [F.key]: literalMember(c, record, F.key), [F.kind]: literalMember(c, record, F.kind) },
     }, HOSTED_IMPORT)
   })
 
   // ================================================================ R-HOST-05 (Q-G6 = A): hosted import names
-  caseTest('K3a-HOST', 'names', 'HOSTED_IMPORT is DSH_AGENT_TOKEN, dsh-instance-child.targetUrl and the grant record fishball-core/hosted-agent (user decisions 2026-11-16)', async () => {
-    assert.deepEqual((await coreConstants()).HOSTED_IMPORT, { credentialRef: HOSTED.credentialRef, targetSetting: HOSTED.targetSetting, savedRecord: HOSTED.savedRecord })
+  caseTest('K3a-HOST', 'names', 'HOSTED_IMPORT publishes the token reference, hosted child settings, parent binding record and saved grant', async () => {
+    const { credentialRef, targetSetting, bindingRecord, savedRecord } = HOSTED
+    assert.deepEqual((await coreConstants()).HOSTED_IMPORT, { credentialRef, targetSetting, bindingRecord, savedRecord })
   })
   sdkCase('K3a-HOST', 'ref valid', 'the SDK\'s reference grammar accepts the published reference: isCredentialRefName true, credentialRef returns it', async (lib) => {
     const { HOSTED_IMPORT } = await coreConstants()

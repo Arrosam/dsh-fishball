@@ -115,13 +115,15 @@ export const GRAMMAR_SAMPLES = Object.freeze({
 
 /**
  * Hosted import (R-HOST-05 as amended by Q-G6 = A; the user's decisions 2026-11-16): the published
- * reference, child setting and saved record.
+ * reference, child settings and saved grant record. f29ec910 adds the hosted entry key
+ * and the parent binding record.
  */
 export const HOSTED = Object.freeze({
   credentialRef: 'DSH_AGENT_TOKEN',
   /** The user's original spelling, which DSH's reference grammar refuses on both SDKs (the reason for the above). */
   refusedSpelling: 'dsh-agent-token',
-  targetSetting: Object.freeze({ row: 'dsh-instance-child', field: 'targetUrl' }),
+  targetSetting: Object.freeze({ row: 'dsh-instance-child', field: 'targetUrl', hostedEntry: 'hostedEntryKey' }),
+  bindingRecord: 'dsh-instance/hosted-parent',
   savedRecord: Object.freeze({ key: 'fishball-core/hosted-agent', kind: 'grant' }),
   /** The row core's guard disables (design §5a.2; R-FB-12); the setting row must differ from it. */
   guardedInstanceRow: NAMES.instance,
@@ -208,8 +210,8 @@ export const UI = Object.freeze({
 
 /** The HostedImportNames member names (the relayed surface), and the SDK's record union. */
 export const HOSTED_FIELDS = Object.freeze({
-  credentialRef: 'credentialRef', targetSetting: 'targetSetting', savedRecord: 'savedRecord',
-  row: 'row', field: 'field', key: 'key', kind: 'kind',
+  credentialRef: 'credentialRef', targetSetting: 'targetSetting', bindingRecord: 'bindingRecord', savedRecord: 'savedRecord',
+  row: 'row', field: 'field', hostedEntry: 'hostedEntry', key: 'key', kind: 'kind',
   sdkRecordUnion: 'CredentialRecord',
 })
 
