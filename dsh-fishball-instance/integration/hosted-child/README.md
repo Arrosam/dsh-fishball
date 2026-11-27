@@ -10,6 +10,7 @@ into a child it launches. Run before a release (`npm run test:release`), never d
 | --- | --- |
 | `tests/placement.test.mjs` | Placement (README "Placement"): the set (fishball-amenities, then fishball-core), its record, on/off rules PLAT-DT-01 1–9, the incompatible-member block, board placed as an amenity dependency rather than as a standalone bundle, the launch overlay's shape and removal, what the child page serves (HOST-UC-08 A3), HOST-ST-01 rows 1–3, HOST-UC-01 E2. |
 | `tests/child-plugins.test.mjs` | The Fishball tab's routes (README "Plugins for Fishball", "Settings page" Restart): CP-R1…R10 — fences, list, install, use, protected bundles, uninstall, remove-failed, restart (ready, queued, failed), busy and cancel on a registry that never answers, switched off, not-ready. |
+| `tests/private-sdk-copy.test.mjs` | A compatible private SDK copy remains in place across child restarts (R4-EP-01, R4-ST-01). |
 | `tests/hosted-token.test.mjs` | The hosted token and lifecycle (README "The hosted token", "Ready", "Model sync", "Uninstall"): the first start's one entry and the child's pairing, restart and Reconnect, where the value may appear, model sync and its one automatic run, ready/stop/fatal start, reinstall succession, the uninstall command, the child stopping with its host. |
 
 Every case is registered once per supported SDK (`eachSdk`). One host per SDK per file; the cases
@@ -38,9 +39,12 @@ node scripts/test-package.mjs integration/hosted-child
 node scripts/test-package.mjs integration/hosted-child tests/placement.test.mjs   # one file
 ```
 
-Each run gets its own HOME, TMPDIR and test-homes folder (scripts/test-package.mjs); no time limit
-is set, so a condition that never comes shows as a hang. Each child start takes a few seconds, so a
-full run takes minutes.
+Each run gets its own HOME, TMPDIR and test-homes folder. Each case has 180 s, with a separate
+20 s cleanup budget for its SDK world. The held install spans two cases and has its own bound;
+the fixture closes its socket and cancels outstanding HTTP on cleanup. Deadline failures name the
+SDK, case and active stage without logging admissions or credentials. If a timed-out case needs
+its shared world torn down, the remaining cases in that world report the missing prerequisite.
+A full run takes minutes.
 
 ## Fixtures
 
@@ -52,5 +56,16 @@ minimal bundles that register nothing.
 
 - `CP-R8 stopped`, `CP-R3 cancel, connection open`, `IREADY-SYSTEM operations`,
   `IREADY-SYSTEM publish-dispose`, `HOST-DT-01 row 7`: not observable from outside (each case says why).
-- `HOST-UC-02 A1`, `HOST-UC-02 main` and `HOST-UC-02 reconnect`: real bugs BUG-2, BUG-3 and BUG-4
-  ([docs/testing/bugs.md](<../../docs/testing/bugs.md>)).
+- Hosted-entry restart and Reconnect regressions are tracked as BUG-2, BUG-3 and BUG-4
+  ([docs/testing/bugs.md](<../../docs/testing/bugs.md>)); their dedicated cases are active.
+
+## Open DSH SDK defect: ownerless credential lock
+
+`CP-R8 failed` requires the child to come back ready after the test restores its base service.
+In an isolated baseline on `0.2.1-rc.5`, both restart requests with the service disabled returned
+only after separate ~31 s writer-lock failures. Restoring the service let the next generation boot
+and listen, but it also exited on the same credential writer-lock timeout. The SDK had left a
+zero-byte `.credentials.yaml.lock` (no holder PID); an incomplete lock cannot be reclaimed via
+the normal dead-PID rule. The test now reports a settled `failed` recovery instead of polling
+forever. It does not delete the lock, retry the recovery, or relax the requirement. The process
+that left the empty lock was not identified.

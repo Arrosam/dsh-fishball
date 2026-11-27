@@ -8,13 +8,15 @@
  */
 import { spawnSync } from 'node:child_process'
 import { after, describe } from 'node:test'
-import { caseTest } from '@dsh-instance/test-helpers/cases'
+import { caseName, caseTest } from '@dsh-instance/test-helpers/cases'
 import fs from 'node:fs'
 import http from 'node:http'
 import net from 'node:net'
 import os from 'node:os'
 import path from 'node:path'
-import { bootHost, newHome, removeHome, untilValue } from '@dsh-instance/test-helpers/host-dsh'
+import { bootHost, newHome, removeHome } from '@dsh-instance/test-helpers/host-dsh'
+import { LIMIT, abortable, caseSignal, stage, testFetch, untilValue, withinDeadline } from './deadline.mjs'
+import { setTimeout as delay } from 'node:timers/promises'
 import { HOSTED, hostedEnv, hostedLinks, instanceStatus } from '@dsh-instance/test-helpers/hosted'
 import { missingSibling, siblingPackage } from '@dsh-instance/test-helpers/siblings'
 
@@ -196,8 +198,27 @@ export const psAvailable = () => spawnSync('/bin/ps', ['-p', String(process.pid)
 export function perSdk(sdk, topic, world, register) {
   const skip = missing()
   describe(`[SDK ${sdk}] ${topic}`, () => {
-    after(() => world.close())
-    const row = (id, part, title, fn, options = {}) => caseTest(sdk, id, part, title, fn, skip ? { ...options, skip } : options)
+    let lost
+    const evidence = () => world.evidence?.() ?? ''
+    const close = () => withinDeadline(`[SDK ${sdk}] ${topic}: cleanup`, LIMIT.cleanupMs, () => world.close(), evidence)
+    after(close)
+    const row = (id, part, title, fn, options = {}) => {
+      const label = caseName(sdk, id, part, title)
+      caseTest(sdk, id, part, title, async (t) => {
+        if (lost) { t.skip('shared world closed after ' + lost); return }
+        let signal
+        try {
+          return await withinDeadline(label, LIMIT.caseMs, () => { signal = caseSignal(); return fn(t) }, evidence)
+        } catch (error) {
+          if (signal?.aborted) {
+            // An interrupted stateful case cannot leave its world to the next case.
+            lost = label
+            try { await close() } catch (cleanupError) { throw new AggregateError([error, cleanupError], error.message) }
+          }
+          throw error
+        }
+      }, skip ? { ...options, skip } : options)
+    }
     register(row)
   })
 }
@@ -212,58 +233,155 @@ export function hostedWorld(label, { links = [], env = {}, settled = HOSTED.sett
   let home
   let host
   let sdk
-  const settle = (states = settled) => untilValue(async () => { const s = await instanceStatus(host).catch(() => undefined); return states.includes(s?.state) && s })
+  let worker
+  let workerExit
+  let stopping
+  let hostStop
+  let lastStatus
+  let lastStatusError
+  const status = async () => { lastStatus = await instanceStatus(host); return lastStatus }
+  const pollStatus = () => status().catch((error) => {
+    caseSignal().throwIfAborted()
+    lastStatusError = error.cause?.code ?? error.code ?? error.name
+    return undefined
+  })
+  const settle = (states = settled) => stage('settle child to ' + states.join('/'), () => untilValue(async () => {
+    const s = await pollStatus()
+    return states.includes(s?.state) && s
+  }))
   const boot = async (extra = {}) => {
-    host = await bootHost(home, { sdk, links: [...hostedLinks(), ...links], env: { ...hostedEnv(), ...env, ...extra } })
+    caseSignal().throwIfAborted()
+    if (worker) throw new Error('previous host worker has not drained')
+    const booted = await stage('host boot and login', () => bootHost(home, {
+      sdk, links: [...hostedLinks(), ...links], env: { ...hostedEnv(), ...env, ...extra }, signal: caseSignal(),
+      onSpawn(child) {
+        worker = child
+        stopping = undefined
+        hostStop = undefined
+        workerExit = new Promise((resolve) => {
+          child.once('exit', resolve)
+          child.once('error', () => { if (!child.pid) resolve() })
+        })
+      },
+    }))
+    hostStop = booted.stop
+    host = {
+      ...booted,
+      get output() { return booted.output },
+      get exited() { return booted.exited },
+      call: (op, args) => stage('host IPC ' + op, () => booted.call(op, args, { signal: caseSignal() })),
+      get: (route, options) => stage('GET ' + route, () => booted.get(route, { ...options, signal: caseSignal() })),
+      post: (route, body, options) => stage('POST ' + route, () => booted.post(route, body, { ...options, signal: caseSignal() })),
+      stop,
+    }
     return settle()
   }
+  const startHost = async (extra) => {
+    try { return await boot(extra) } catch (error) {
+      if (!caseSignal().aborted && !host) {
+        try { await stop() } catch (cleanupError) { throw new AggregateError([error, cleanupError], error.message) }
+      }
+      throw error
+    }
+  }
+  const stop = () => stage('host shutdown', () => {
+    if (!worker) return
+    // Deadline cleanup can join an already-running restart shutdown. It must not use the
+    // interrupted case's signal or act on a later worker.
+    const owned = worker
+    const exited = workerExit
+    const graceful = hostStop
+    return stopping ??= withinDeadline(`[SDK ${sdk}] ${label}: stop worker`, LIMIT.cleanupMs, async () => {
+      const pids = new Set(childFiles(home).pids())
+      let forced
+      try {
+        if (!graceful) throw new Error('host boot did not finish')
+        await abortable(AbortSignal.timeout(LIMIT.stopMs), graceful)
+      } catch (error) {
+        forced = error
+        for (const pid of childFiles(home).pids()) pids.add(pid)
+        if (owned.pid && owned.exitCode === null && owned.signalCode === null) owned.kill('SIGKILL')
+        await abortable(AbortSignal.timeout(LIMIT.forceMs), () => exited)
+        // A child spawned before pid.json was written still has the parent's death pipe.
+        await delay(LIMIT.parentWatchMs, undefined, { signal: caseSignal() })
+      } finally {
+        for (const pipe of [owned.stdin, owned.stdout, owned.stderr]) pipe?.destroy()
+      }
+      await stage('drain hosted child', () => untilValue(() => ![...pids].some(alive)))
+      worker = undefined
+      if (forced) throw new Error('host shutdown required forced cleanup', { cause: forced })
+    })
+  })
   const w = {
     get home() { return home },
     get host() { return host },
     get child() { return childFiles(home) },
     settle,
-    status: () => instanceStatus(host),
+    status,
+    evidence() {
+      if (!home) return ''
+      let lock = 'absent'
+      let writerTimeout = false
+      try {
+        const child = childFiles(home)
+        const bytes = fs.statSync(path.join(child.dshHome, CHILD.credentials + '.lock'), { throwIfNoEntry: false })?.size
+        if (bytes !== undefined) lock = bytes + ' bytes'
+        writerTimeout = (readText(path.join(child.runtime, 'child-stderr.log')) ?? '').includes('timed out waiting for the writer lock')
+      } catch { /* The child may remove these files during restart. */ }
+      return '; observed ' + show({ state: lastStatus?.state, code: lastStatus?.code, busy: lastStatus?.busy, lastStatusError, credentialLock: lock, writerTimeout })
+    },
     async start(version) {
-      if (host) return instanceStatus(host)
+      if (host) return status()
       sdk = version
-      home = newHome(label)
-      return boot()
+      home ??= newHome(label)
+      return startHost()
     },
     /** `env`: extra host environment for this boot only (FISHBALL_REPO pointing at a scratch copy, say). */
     async restart(whileDown = () => {}, { env: extra = {} } = {}) {
       await host.stop()
+      caseSignal().throwIfAborted()
       await whileDown(home)
-      return boot(extra)
+      host = undefined
+      return startHost(extra)
     },
     /** Wait until the child is ready on a launch other than `previous` (README: a restart is a new launch). */
-    async readyAgain(previous) {
-      return untilValue(async () => {
-        const s = await instanceStatus(host).catch(() => undefined)
+    readyAgain(previous, { failOnFailed = false } = {}) {
+      return stage('wait for fresh ready launch', () => untilValue(async () => {
+        const s = await pollStatus()
+        // busy may still cover a queued restart. A settled failed generation cannot become
+        // ready with no more restarts requested; report that result instead of polling it.
+        if (failOnFailed && s?.state === STATE.failed && s.busy !== true) {
+          throw new Error(`[SDK ${sdk}] wait for fresh ready launch: child failed` + w.evidence())
+        }
         const now = childFiles(home).launchDirs()
         return s?.state === STATE.ready && s.busy !== true && now.length > 0 && show(now) !== show(previous) && { status: s, launches: now }
-      })
+      }))
     },
     async close() {
-      await host?.stop().catch(() => {})
-      host = undefined
-      if (home) removeHome(home, label)
-      home = undefined
+      try { await stop() } finally {
+        host = undefined
+        if (!worker && home) {
+          removeHome(home, label)
+          home = undefined
+        }
+      }
     },
   }
   return w
 }
 
 /**
- * POST JSON as the host's same-origin page, through node:http with no time bound: Node's fetch gives
+ * POST JSON as the host's same-origin page, through node:http with a separate bound: Node's fetch gives
  * up on a response whose headers take over 300 s (undici's headersTimeout), and an install held on a
  * registry that never answers takes longer than that. Answers {status, json, text}.
  */
-export function longPost(host, pathname, body) {
+export function longPost(host, pathname, body, signal) {
   const url = new URL(pathname, host.origin)
   const payload = JSON.stringify(body)
   return new Promise((resolve, reject) => {
-    const req = http.request(url, { method: 'POST', headers: { cookie: host.cookie, origin: host.origin, 'sec-fetch-site': 'same-origin', 'content-type': 'application/json', 'content-length': Buffer.byteLength(payload) } }, (res) => {
+    const req = http.request(url, { method: 'POST', signal, agent: false, headers: { cookie: host.cookie, origin: host.origin, 'sec-fetch-site': 'same-origin', 'content-type': 'application/json', 'content-length': Buffer.byteLength(payload) } }, (res) => {
       let text = ''
+      res.on('error', reject)
       res.setEncoding('utf8').on('data', (d) => { text += d }).on('end', () => {
         let json
         try { json = JSON.parse(text) } catch { json = undefined }
@@ -277,7 +395,8 @@ export function longPost(host, pathname, body) {
 
 /** npm pack (offline) a fixture folder into `dir`; answers the tarball path. */
 export function packInto(source, dir) {
-  const pack = spawnSync('npm', ['pack', source, '--offline', '--silent', '--pack-destination', dir], { encoding: 'utf8' })
+  const pack = spawnSync('npm', ['pack', source, '--offline', '--silent', '--pack-destination', dir], { encoding: 'utf8', timeout: LIMIT.commandMs, killSignal: 'SIGKILL' })
+  if (pack.error) throw pack.error
   if (pack.status !== 0) throw new Error('npm pack failed: ' + pack.stderr)
   return path.join(dir, pack.stdout.trim().split('\n').at(-1))
 }
@@ -286,11 +405,26 @@ export function packInto(source, dir) {
 export async function hangingRegistry() {
   const sockets = new Set()
   const server = net.createServer((s) => { sockets.add(s); s.on('close', () => sockets.delete(s)) })
-  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve))
+  await stage('start held-install registry', () => new Promise((resolve, reject) => {
+    server.once('error', reject)
+    const signal = caseSignal()
+    const abort = () => server.close()
+    signal.addEventListener('abort', abort, { once: true })
+    server.listen(0, '127.0.0.1', () => { signal.removeEventListener('abort', abort); resolve() })
+  }))
+  let closed
   return {
     url: 'http://127.0.0.1:' + server.address().port + '/',
     connections: () => sockets.size,
-    close: () => { for (const s of sockets) s.destroy(); server.close() },
+    close() {
+      return closed ??= Promise.all([
+        new Promise((resolve) => server.close(resolve)),
+        ...[...sockets].map((socket) => new Promise((resolve) => {
+          socket.once('close', resolve)
+          socket.destroy()
+        })),
+      ])
+    },
   }
 }
 
@@ -302,7 +436,7 @@ const SDK_SCOPE = '@deepseek-ai/'
 export async function admitChild(host) {
   const open = await host.post(ROUTE.open, { lang: 'en' })
   if (open.json?.ok !== true || typeof open.json.url !== 'string') throw new Error('the host did not admit to the child: ' + show(open))
-  const admission = await fetch(open.json.url, { redirect: 'manual' })
+  const admission = await testFetch(open.json.url, { redirect: 'manual' })
   await admission.arrayBuffer()
   const cookie = (admission.headers.getSetCookie?.() ?? []).map((c) => c.split(';')[0]).join('; ')
   return { origin: new URL(open.json.url).origin, status: admission.status, cookie }
@@ -310,7 +444,7 @@ export async function admitChild(host) {
 
 /** The non-SDK client entry ids of a DSH page's boot graph (DSH's __DSH_BOOT__). */
 export async function graphIds(origin, cookie) {
-  const html = await (await fetch(origin + '/', { headers: { cookie } })).text()
+  const html = await (await testFetch(origin + '/', { headers: { cookie } })).text()
   const match = BOOT_GRAPH.exec(html)
   if (!match) throw new Error('the page carries no __DSH_BOOT__ graph')
   return JSON.parse(match[1]).entries.map((entry) => entry.id).filter((id) => !id.startsWith(SDK_SCOPE))
@@ -365,5 +499,7 @@ export function blockedBy(status) {
 /** Run the instance's uninstall command (README "Uninstall") against `home`, from the linked package. */
 export function runUninstall(home) {
   const script = path.join(home, 'profiles', 'dshi', 'node_modules', SET.instance, 'uninstall.js')
-  return spawnSync(process.execPath, [script, '--home', home], { encoding: 'utf8', env: { PATH: process.env.PATH ?? '/usr/bin:/bin', HOME: process.env.HOME ?? '' } })
+  const result = spawnSync(process.execPath, [script, '--home', home], { encoding: 'utf8', timeout: LIMIT.commandMs, killSignal: 'SIGKILL', env: { PATH: process.env.PATH ?? '/usr/bin:/bin', HOME: process.env.HOME ?? '' } })
+  if (result.error) throw result.error
+  return result
 }

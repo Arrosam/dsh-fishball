@@ -14,7 +14,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
 import { eachSdk } from '@dsh-instance/test-helpers/cases'
-import { untilValue } from '@dsh-instance/test-helpers/host-dsh'
+import { testFetch, untilValue } from '../support/deadline.mjs'
 import { filesUnder, leakHits } from '@dsh-instance/test-helpers/scratch'
 import {
   CHILD, FIXTURE, HTTP, OVERLAY, ROUTE, STATE, admitChild, alive, connectorEntries, psAvailable, hostedWorld, insertedRow, perSdk, readJson, readText, runUninstall, show,
@@ -50,7 +50,7 @@ function endpoint(url) {
 }
 
 async function parentTarget({ origin, cookie }) {
-  const response = await fetch(origin + PARENT.route, { headers: { cookie }, redirect: 'manual' })
+  const response = await testFetch(origin + PARENT.route, { headers: { cookie }, redirect: 'manual' })
   assert.equal(response.status, HTTP.ok, 'the child target list was not served')
   // Parse outside the JSON error path so invalid responses cannot echo body snippets.
   const body = await response.json().catch(() => null)

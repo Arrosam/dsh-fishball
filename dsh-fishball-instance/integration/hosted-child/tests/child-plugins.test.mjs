@@ -12,7 +12,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
 import { eachSdk } from '@dsh-instance/test-helpers/cases'
-import { untilValue } from '@dsh-instance/test-helpers/host-dsh'
+import { LIMIT, stage, testFetch, untilValue } from '../support/deadline.mjs'
 import {
   APPLIED, CANCEL_OUTCOMES, CHILD, CODE, FIXTURE, HTTP, PROTECTED, ROUTE, STATE, STATUS_KEYS, hangingRegistry, hostedWorld, longPost, packInto, perSdk, readText, show,
 } from '../support/hosted-child.mjs'
@@ -28,7 +28,14 @@ eachSdk((sdk) => {
   // fixture installs are file tarballs and never ask it.
   const env = {}
   const w = hostedWorld('hc-plugins', { env, links: [{ name: FIXTURE.mainOnly.name, dir: FIXTURE.mainOnly.dir, bundle: false }] })
-  const world = { close: async () => { await w.close(); registry?.close() } }
+  let held
+  const world = {
+    evidence: w.evidence,
+    async close() {
+      held?.controller.abort()
+      await Promise.all([w.close(), registry?.close()])
+    },
+  }
   perSdk(sdk, 'child plugins', world, (row) => {
     const requestId = (n) => 'fbtest-child-plugins-' + n + '-' + ++requestCount
     const child = () => w.child
@@ -73,7 +80,7 @@ eachSdk((sdk) => {
       })
     }
     r('CP-R9', 'no owner', 'GET list without the owner cookie → not answered 200', async () => {
-      const res = await fetch(w.host.origin + ROUTE.list)
+      const res = await testFetch(w.host.origin + ROUTE.list)
       await res.arrayBuffer()
       assert.notEqual(res.status, HTTP.ok)
     })
@@ -204,28 +211,30 @@ eachSdk((sdk) => {
       const original = fs.readFileSync(patch, 'utf8')
       fs.writeFileSync(patch, JSON.stringify([{ id: 'agent', disabled: true }]))
       try {
-        await post(ROUTE.restart, {})
+        await stage('restart with base service disabled', () => post(ROUTE.restart, {}))
         const failed = await w.settle([STATE.failed])
         assert.equal(failed?.state, STATE.failed, 'precondition: the start did not fail: ' + show(failed))
-        const res = await post(ROUTE.restart, {})
+        const res = await stage('retry while failed', () => post(ROUTE.restart, {}))
         assert.notEqual(res.json?.refused, CODE.instanceDisabled, show(res.json))
         assert.ok(hasStatusShape(res.json), show(res.json))
       } finally { fs.writeFileSync(patch, original) }
       const before = child().launchDirs()
-      await post(ROUTE.restart, {})
-      await w.readyAgain(before)
+      await stage('restart after restoring the base service', async () => {
+        await post(ROUTE.restart, {})
+        await w.readyAgain(before, { failOnFailed: true })
+      })
     })
     // Still not observable: "stopped" with the instance on is the idle state after a stop that no
     // public route or setting causes (switching off gives "disabled"; a restart starts again at once).
     row('CP-R8', 'stopped', 'restart while stopped (instance on) is allowed', () => {}, { todo: 'no public way to bring an enabled child to "stopped": switching it off reads "disabled", and every route that stops it starts it again' })
 
     // ------------------------------------------------------------------ R3 one operation at a time
-    let held
     r('CP-R3', 'busy', 'an install held on a registry that never answers; then install/use/uninstall → each busy', async () => {
       await w.readyAgain([])
       const id = requestId('r3')
-      held = { requestId: id, settled: false }
-      held.answer = longPost(w.host, ROUTE.install, { spec: FIXTURE.hangingSpec, requestId: id })
+      held = { requestId: id, settled: false, controller: new AbortController() }
+      const signal = AbortSignal.any([held.controller.signal, AbortSignal.timeout(LIMIT.heldInstallMs)])
+      held.answer = longPost(w.host, ROUTE.install, { spec: FIXTURE.hangingSpec, requestId: id }, signal)
       held.answer.then(() => { held.settled = true }, () => { held.settled = true })
       // The install runs: the status says busy (README "Settings page": Restart is disabled while a
       // Fishball plugin change runs). The registry it asks never answers, so it stays running.
@@ -240,16 +249,14 @@ eachSdk((sdk) => {
     })
     // DSH's own cancelInstall answers only when the stuck pnpm run ends, and that run ends only once
     // its registry connection goes away (measured 2026-11-20 on both SDKs, ~70 s after the drop). The
-    // registry here drops its connections as soon as the cancel is sent; no deadline is set on the
-    // answer.
+    // registry here drops its connections as soon as the cancel is sent; both responses are bounded.
     r('CP-R3', 'cancel', "cancel {requestId}, the registry drops its connection → answers with one of DSH's cancel outcomes; the held install ends refused; the next operation is not busy", async () => {
       assert.ok(held, 'precondition: no held install')
       const pending = post(ROUTE.cancel, { requestId: held.requestId })
-      registry.close()
-      const cancel = await pending
+      const [cancel] = await Promise.all([pending, registry.close()])
       assert.equal(cancel.json?.ok, true, show(cancel.json))
       assert.ok(CANCEL_OUTCOMES.includes(cancel.json.outcome), show(cancel.json))
-      const first = await held.answer
+      const first = await stage('wait for cancelled install response', () => held.answer)
       assert.equal(first.json?.ok, false, show(first.json))
       const next = (await post(ROUTE.use, { name: FIXTURE.unknownName })).json
       assert.notEqual(next?.code, CODE.busy, show(next))

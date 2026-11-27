@@ -12,6 +12,7 @@ import { spawn } from 'node:child_process'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
+import { setTimeout as delay } from 'node:timers/promises'
 import { runtimeOf } from './sdk.mjs'
 
 const HOST = Object.freeze({
@@ -53,8 +54,11 @@ export function removeHome(home, label) {
  * Boot one host DSH on `home` with the installed SDK `sdk`.
  * @param options.links - [{name, dir, bundle}] linked into the profile (bundle false: a library).
  * @param options.env - extra environment for the DSH process (FISHBALL_REPO, npm_config_registry …).
+ * @param options.signal - optional deadline for startup and login; caller must clean up on abort.
+ * @param options.onSpawn - optional callback to claim the spawned worker before startup settles.
  */
-export async function bootHost(home, { sdk, links = [], env = {} }) {
+export async function bootHost(home, { sdk, links = [], env = {}, signal, onSpawn }) {
+  signal?.throwIfAborted()
   const child = spawn(process.execPath, [HOST.worker], {
     env: {
       PATH: process.env.PATH ?? '/usr/bin:/bin', HOME: process.env.HOME ?? '', TMPDIR: process.env.TMPDIR ?? '',
@@ -67,6 +71,9 @@ export async function bootHost(home, { sdk, links = [], env = {} }) {
     // stdin is held open: the DSH launcher shuts down on stdin EOF.
     stdio: ['pipe', 'pipe', 'pipe', 'ipc'],
   })
+  let spawnError
+  child.on('error', (error) => { if (!child.pid) spawnError = error })
+  onSpawn?.(child)
   let output = ''
   let exited = null
   let ready = false
@@ -92,12 +99,17 @@ export async function bootHost(home, { sdk, links = [], env = {} }) {
     else p.reject(Object.assign(new Error('host op failed: ' + msg.error?.message), { info: msg.error }))
   })
   const tail = () => output.slice(-HOST.tailChars)
-  const line = await untilValue(() => exited || (ready && HOST.urlLine.exec(output)))
-  if (exited) throw new Error('the host DSH did not start (exit ' + JSON.stringify(exited) + '):\n' + tail())
+  let line
+  while (!(line = exited || (ready && HOST.urlLine.exec(output)))) {
+    if (spawnError) throw spawnError
+    await delay(HOST.pollMs, undefined, { signal })
+  }
+  if (exited) throw new Error('the host DSH did not start (exit ' + JSON.stringify(exited) + ')' + (signal ? '' : ':\n' + tail()))
   const url = new URL(line[1])
   const origin = url.origin
-  const login = await fetch(origin + '/?token=' + encodeURIComponent(url.searchParams.get('token')), { redirect: 'manual' })
+  const login = await fetch(origin + '/?token=' + encodeURIComponent(url.searchParams.get('token')), { redirect: 'manual', signal })
   const cookie = (login.headers.getSetCookie?.() ?? []).map((c) => c.split(';')[0]).join('; ')
+  if (signal) await login.arrayBuffer()
   if (!cookie) throw new Error('login returned no cookie (status ' + login.status + ')')
   const parse = async (res) => {
     const text = await res.text()
@@ -110,16 +122,28 @@ export async function bootHost(home, { sdk, links = [], env = {} }) {
     get output() { return output },
     get exited() { return exited },
     /** One host-worker operation (info, allBundles, settingsUpdate). */
-    call(op, args = {}) {
-      if (exited) return Promise.reject(new Error('host exited ' + JSON.stringify(exited) + '\n' + tail()))
+    call(op, args = {}, { signal } = {}) {
+      if (exited) return Promise.reject(new Error('host exited ' + JSON.stringify(exited) + (signal ? '' : '\n' + tail())))
       const id = ++nextId
-      return new Promise((resolve, reject) => { pending.set(id, { resolve, reject }); child.send({ type: 'call', id, op, args }) })
+      const reply = new Promise((resolve, reject) => {
+        signal?.throwIfAborted()
+        const abort = () => pending.get(id)?.reject(signal.reason)
+        signal?.addEventListener('abort', abort, { once: true })
+        const finish = (callback) => (value) => {
+          pending.delete(id)
+          signal?.removeEventListener('abort', abort)
+          callback(value)
+        }
+        pending.set(id, { resolve: finish(resolve), reject: finish(reject) })
+        child.send({ type: 'call', id, op, args }, (error) => { if (error) pending.get(id)?.reject(error) })
+      })
+      return reply
     },
     /** GET as the logged-in browser. */
-    get: async (pathname, { headers = {} } = {}) => parse(await fetch(origin + pathname, { headers: { cookie, ...headers } })),
+    get: async (pathname, { headers = {}, signal } = {}) => parse(await fetch(origin + pathname, { headers: { cookie, ...headers }, signal })),
     /** POST JSON (or a raw body) as a same-origin page of this DSH. */
-    async post(pathname, body, { raw = false, headers = {} } = {}) {
-      return parse(await fetch(origin + pathname, { method: 'POST', headers: { cookie, origin, 'sec-fetch-site': 'same-origin', 'content-type': 'application/json', ...headers }, body: raw ? body : JSON.stringify(body) }))
+    async post(pathname, body, { raw = false, headers = {}, signal } = {}) {
+      return parse(await fetch(origin + pathname, { method: 'POST', headers: { cookie, origin, 'sec-fetch-site': 'same-origin', 'content-type': 'application/json', ...headers }, body: raw ? body : JSON.stringify(body), signal }))
     },
     /** Shut DSH down as its own shutdown does, and wait for the process to exit. */
     async stop() {
