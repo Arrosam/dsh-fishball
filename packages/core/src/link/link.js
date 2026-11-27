@@ -359,7 +359,7 @@ export class McpLink {
       credentials = await this.#options.credentials(target)
       if (!this.#current(generation)) return
       if (!credentials?.secret && credentials?.authProvider === undefined) return this.#setStatus(STATUS.unset)
-      attempt = Object.freeze({ origin: target.origin, clientId: credentials.clientId, ref: credentials.ref, kind: credentials.kind })
+      attempt = Object.freeze({ origin: target.origin, clientId: credentials.clientId, ref: credentials.ref, kind: credentials.kind, ...(credentials.hosted === true ? { hosted: true } : {}) })
       const held = await this.#options.gate.hold(attempt)
       if (!this.#current(generation)) return
       if (held) return this.#setStatus(held)

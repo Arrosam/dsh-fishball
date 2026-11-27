@@ -418,7 +418,8 @@ export const APPROVAL = Object.freeze({
 const CORE_RECORD_SCOPE = 'fishball-core'
 export const HOSTED_IMPORT = Object.freeze({
   credentialRef: 'DSH_AGENT_TOKEN',
-  targetSetting: Object.freeze({ row: 'dsh-instance-child', field: 'targetUrl' }),
+  targetSetting: Object.freeze({ row: 'dsh-instance-child', field: 'targetUrl', hostedEntry: 'hostedEntryKey' }),
+  bindingRecord: 'dsh-instance/hosted-parent',
   savedRecord: Object.freeze({ key: CORE_RECORD_SCOPE + '/hosted-agent', kind: 'grant' }),
 })
 

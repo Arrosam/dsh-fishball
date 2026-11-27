@@ -117,14 +117,14 @@ export function credentialNames({ targetId, endpointEpoch }) {
  * can bind at the new epoch's first attempt. Local only: nothing is revoked at the connector.
  * The caller runs this after the epoch's credentials are disposed.
  */
-export async function forgetCredentials(credentials, names) {
+export async function forgetCredentials(credentials, names, { preserveParentMaterial = false } = {}) {
   await credentials.deleteRecord(names.grantKey())
   if (names.pending === undefined) {
     await credentials.unset(names.ref)
     await credentials.deleteRecord(names.tokenRecord)
     return
   }
-  await clearParentMaterial(credentials, names, (payload) => ofEpoch(payload, names))
+  if (!preserveParentMaterial) await clearParentMaterial(credentials, names, (payload) => ofEpoch(payload, names))
 }
 
 /** After a crash only the new epoch may be known. Never infer ownership of an unbound handoff. */
@@ -413,11 +413,13 @@ export function createLinkCredentials(ctx, { target, clientId, clientMetadataUrl
     // The binding this attempt captured: a save after the epoch or the id changed is not this attempt's.
     const bound = store.binding(origin)
     return Object.freeze({
-      kind: CREDENTIAL_KIND.token, clientId: bound.agentId, ref, secret: value,
+      kind: CREDENTIAL_KIND.token, clientId: bound.agentId, ref, secret: value, hosted: source.hosted === true,
       async accepted() {
         if (fenced()) return
         if (refusedSaved === ref) refusedSaved = undefined
-        if (source.fromReference) {
+        if (source.hosted) {
+          await store.saveToken(origin, value, undefined, bound).catch(warn(LINK_SAVE.text.save))
+        } else if (source.fromReference) {
           // A failed save keeps the reference, so the next connection saves again.
           try { await store.saveToken(origin, value, source.saved.grant, bound) } catch (error) { warn(LINK_SAVE.text.save)(error); return connect.refresh() }
           refusedSaved = undefined
@@ -457,6 +459,11 @@ export function createLinkCredentials(ctx, { target, clientId, clientMetadataUrl
     // Connect's status follows the target the link dials (R9: a new origin is a new first connection).
     connect.refresh()
     const [reference, saved] = await Promise.all([ctx.credentials.resolve(REF), store.read(origin)])
+    if (names.targetId === TARGETS.parentId) {
+      const { payload } = await ctx.credentials.readRecord(HOSTED_IMPORT.bindingRecord) ?? {}
+      if (payload?.url === serverUrl && typeof payload.entryKey === 'string' && payload.entryKey
+        && typeof payload.value === 'string' && payload.value) return tokenCredentials(origin, payload.value, { hosted: true, saved, serverUrl })
+    }
     const value = reference?.value
     if (value && !(store.hasSaved(saved, serverUrl) && tokenCredentialId(value) === refusedReference)
       && await isOwnReference(tokenCredentialId(value), origin)) {
@@ -486,7 +493,10 @@ export function createLinkCredentials(ctx, { target, clientId, clientMetadataUrl
   const offReference = ctx.on(LINK_SAVE.events.referenceUpdated, (ref) => {
     if (ref === REF) referenceChanged().catch(warn(LINK_SAVE.text.read))
   })
-  const offRecord = ctx.on(LINK_SAVE.events.recordUpdated, () => connect.refresh())
+  const offRecord = ctx.on(LINK_SAVE.events.recordUpdated, (key) => {
+    connect.refresh()
+    if (names.targetId === TARGETS.parentId && key === HOSTED_IMPORT.bindingRecord) emitIsolated(reconnects)
+  })
 
   return Object.freeze({
     credentials: (usable) => credentialsFor(usable),

@@ -89,7 +89,9 @@ const withRef = (credentials) => async (target) => {
 }
 
 /** Rule 1a: `already-paired` answered for a Connect grant whose page bound core's own id. */
-const ownPageBinding = (attempt, result) => attempt.kind === CREDENTIAL_KIND.grant && result?.bound?.idMatches === true
+// An authenticated host handoff names the exact connector token, not another entry
+// with the same agent ID. Its own pair can be recovered in a new routing epoch.
+const ownBinding = (attempt, result) => (attempt.kind === CREDENTIAL_KIND.grant || attempt.hosted === true) && result?.bound?.idMatches === true
 
 /**
  * @typedef {object} PairingView what the Fishball page shows (`pairing.state()`)
@@ -178,7 +180,7 @@ export function createPairing({ records, name, now = Date.now, isRetired = () =>
       await writePaired(attempt, record)
       return work(attempt, record)
     }
-    if (result?.code === MCP.refusal.alreadyPaired && ownPageBinding(attempt, result)) {
+    if (result?.code === MCP.refusal.alreadyPaired && ownBinding(attempt, result)) {
       const held = result.bound.name ?? null
       const base = newRecord(attempt, held)
       // A name the page set is the user's: recorded as asked-for, so the name sync leaves it.

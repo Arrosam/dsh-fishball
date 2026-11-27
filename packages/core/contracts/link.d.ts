@@ -91,7 +91,9 @@ export interface LinkStatus {
 export interface HostedImportNames {
   /** DSH's reference grammar `^[A-Za-z_][A-Za-z0-9_]*$` (both SDKs). */
   readonly credentialRef: 'DSH_AGENT_TOKEN'
-  readonly targetSetting: { readonly row: 'dsh-instance-child'; readonly field: 'targetUrl' }
+  readonly targetSetting: { readonly row: 'dsh-instance-child'; readonly field: 'targetUrl'; readonly hostedEntry: 'hostedEntryKey' }
+  /** The authenticated host handoff; payload {url, entryKey, value}, only for the reserved parent. */
+  readonly bindingRecord: 'dsh-instance/hosted-parent'
   /** A DSH credential record key `<scope>/<id>`, `kind: grant`; its payload is core's own format. */
   readonly savedRecord: { readonly key: 'fishball-core/hosted-agent'; readonly kind: 'grant' }
 }

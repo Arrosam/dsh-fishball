@@ -74,7 +74,7 @@ function canonical(url) {
  */
 function instanceOf(ctx) {
   const entry = ctx.settings.describe().find((candidate) => candidate.ns === HOSTED_IMPORT.targetSetting.row)
-  return Object.freeze({ hosted: entry !== undefined, url: entry?.value?.[HOSTED_IMPORT.targetSetting.field] })
+  return Object.freeze({ hosted: entry !== undefined, url: entry?.value?.[HOSTED_IMPORT.targetSetting.field], owned: Boolean(entry?.value?.[HOSTED_IMPORT.targetSetting.hostedEntry]) })
 }
 
 /**
@@ -198,11 +198,11 @@ export function createTargets(ctx, { tables, identityRecords, asks, events, reco
    * remote. Also for an epoch with no runtime (a parent epoch the instance moved while core was
    * down: a cold restart must not adopt its material, MULTI-0 security amendment).
    */
-  async function retire(old) {
+  async function retire(old, { preserveParentMaterial = false } = {}) {
     if (runtimes.get(old.targetId)?.endpointEpoch === old.endpointEpoch) await stopRuntime(old.targetId)
     events.retire(isEpoch(old))
     await asks.voidWhere(isEpoch(old)).catch(warn(TARGET_LOG.void))
-    await forgetCredentials(ctx.credentials, credentialNames(old)).catch(warn(TARGET_LOG.forget))
+    await forgetCredentials(ctx.credentials, credentialNames(old), { preserveParentMaterial }).catch(warn(TARGET_LOG.forget))
   }
 
   /**
@@ -225,23 +225,23 @@ export function createTargets(ctx, { tables, identityRecords, asks, events, reco
   // The parent is always first (order 0); an added target follows every other.
   const newRecord = (kind, url, id) => ({ id, kind, url, endpointEpoch: generateToken(TARGETS.epoch), order: kind === KIND.parent ? 0 : Math.max(nextOrder(), 1), serverName: null, duplicateSuffix: null })
 
-  async function startCurrent(record) {
+  async function startCurrent(record, { preserveParentMaterial = false } = {}) {
     if (closed) return
     // Fixed hosted names can outlive a crash between making a new epoch durable and retirement.
-    if (record.kind === KIND.parent) await clearStaleParentCredentials(ctx.credentials, record.endpointEpoch)
+    if (record.kind === KIND.parent && !preserveParentMaterial) await clearStaleParentCredentials(ctx.credentials, record.endpointEpoch)
     startRuntime(record)
   }
 
   /** Only a durable replacement retires an epoch. Restore its runtime if the write fails. */
-  async function renew(current, url) {
+  async function renew(current, url, options) {
     await stopRuntime(current.id)
     let next
     try { next = await save({ ...current, url, endpointEpoch: generateToken(TARGETS.epoch), serverName: null, duplicateSuffix: null }) } catch (error) {
-      await startCurrent(current)
+      await startCurrent(current, options)
       refresh()
       throw error
     }
-    await retire({ targetId: current.id, endpointEpoch: current.endpointEpoch })
+    await retire({ targetId: current.id, endpointEpoch: current.endpointEpoch }, options)
     return next
   }
 
@@ -274,8 +274,11 @@ export function createTargets(ctx, { tables, identityRecords, asks, events, reco
       }
       // If the very first save fails there is no prior epoch; settingsChanged retries this sync.
       if (stored === undefined) await save(newRecord(KIND.parent, url, TARGETS.parentId))
-      else if (stored.url !== url) await renew(stored, url)
-      if (!runtimes.has(TARGETS.parentId)) await startCurrent(records.get(TARGETS.parentId))
+      // Legacy values remain origin- and epoch-fenced. Keep them long enough for the
+      // host to recover only the value that authenticates to its recorded connector entry.
+      const options = { preserveParentMaterial: instance.owned }
+      if (stored !== undefined && stored.url !== url) await renew(stored, url, options)
+      if (!runtimes.has(TARGETS.parentId)) await startCurrent(records.get(TARGETS.parentId), options)
       // The instance owns the parent's URL, so core cannot refuse a value an added target already
       // has (Q04); both then dial one endpoint, each with its own credentials. Logged so it is seen.
       if (url !== '' && ordered().some((record) => record.id !== TARGETS.parentId && record.url === url)) logger?.warn(TARGET_LOG.parentDuplicate)
