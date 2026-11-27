@@ -1,0 +1,10 @@
+{
+  "name": "@dsh-instance/integration-hosted-child",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Integration tests of dsh-instance in a real host DSH with a real hosted child: placement of fishball-core, the Fishball tab's routes, the hosted token, lifecycle, model sync and uninstall. Needs the sibling dsh-connector and dsh-fishball checkouts (read only) and the installed DSH SDKs.",
+  "scripts": {
+    "test": "node ../../scripts/test-package.mjs"
+  }
+}
