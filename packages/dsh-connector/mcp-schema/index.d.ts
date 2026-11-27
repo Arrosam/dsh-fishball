@@ -228,7 +228,7 @@ export interface PairStore {
    * machine client `id` is its OAuth client id (R-ID-01); the MCP tool's input is unchanged (K1d).
    * Without a usable name the pair gets a generated name (README "Generated names", 2026-11-21).
    */
-  pair(entryKey: EntryKey, id: string, name: string | undefined, now: EpochMs): Promise<PairResult>
+  pair(entryKey: EntryKey, id: string, name: string | undefined, now: EpochMs, options?: { readonly hosted?: boolean }): Promise<PairResult>
   /**
    * The approval page's bind of an unpaired entry (R-OA-22; K1d): in one atomic step, with full
    * rights at once. `id` is the agent's AUTHORIZE_EXTENSION.agentIdParam, or the id DERIVED_AGENT_ID

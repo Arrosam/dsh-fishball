@@ -1179,6 +1179,8 @@ function uiRows(sdk) {
   })
 }
 
+const HTTP_UNAUTHORIZED = 401 // OAuth invalid_client for a failed HTTP Basic credential.
+
 // ============================================================ R14 dshConnectorTokens
 function tokensServiceRows(sdk) {
   row(sdk, 'C-WIRE-R14', 'createHosted', 'createHosted(instanceId) → {entryKey, label "Fishball (hosted)", value} once; the value authenticates; entryState enabled', async () => {
@@ -1190,6 +1192,41 @@ function tokensServiceRows(sdk) {
     assert.equal((await tokenRequest(w, { clientId: fresh(FIXTURE.id.c), secret: r.made.value })).status, HTTP.ok)
     assert.equal((await w.service(SURFACE.service.tokens, 'entryState', r.made.entryKey)).value, SURFACE.k3.entryState.enabled)
   })
+  // Same caller-chosen ID in every partition: only the authenticated entry changes.
+  const pairingView = async (w, id) => (await principalsOf(w)).filter((p) => p.id === id).map(({ key, paired }) => ({ key, paired }))
+  const withPair = (check) => async (t) => {
+    const w = await main(sdk)
+    const { made } = await w.call('createHosted', { instanceId: FIXTURE.instanceId })
+    const id = fresh(FIXTURE.id.a)
+    const { client } = await machineClient(t, w, { id, value: made.value })
+    assert.equal((await okCall(client, TOOL.pair, {})).id, id)
+    const before = await pairingView(w, id)
+    assert.equal(before.length, 1, 'fixture must have exactly one paired principal')
+    assert.equal(before[0].paired, true)
+    assert.deepEqual(await check(t, w, { id, made }), before, 'the ID no longer belongs to its original principal')
+  }
+  row(sdk, 'HOSTED-PAIR-DT', 'same entry', 'fresh authentication with the same hosted entry and ID: pair succeeds again without creating a pairing or changing its key', withPair(async (t, w, { id, made }) => {
+    const entries = (await stateOf(w)).entries.map(({ key }) => key)
+    const { client } = await machineClient(t, w, { id, value: made.value })
+    assert.equal((await okCall(client, TOOL.pair, {})).id, id)
+    assert.deepEqual((await stateOf(w)).entries.map(({ key }) => key), entries)
+    assert.equal((await entryOf(w, made.entryKey))?.id, id)
+    return pairingView(w, id)
+  }))
+  row(sdk, 'HOSTED-PAIR-DT', 'foreign entry', 'a valid foreign hosted credential for the same ID reaches pair but receives id-taken', withPair(async (t, w, { id }) => {
+    const { made } = await w.call('createHosted', { instanceId: fresh(FIXTURE.instanceId) })
+    const { client } = await machineClient(t, w, { id, value: made.value })
+    await refused(client, TOOL.pair, {}, REFUSAL.idTaken)
+    assert.equal((await entryOf(w, made.entryKey))?.paired, false)
+    return pairingView(w, id)
+  }))
+  row(sdk, 'HOSTED-PAIR-DT', 'invalid credential', 'the same ID with an unknown secret is rejected by authentication before pairing', withPair(async (_t, w, { id, made }) => {
+    const auth = await tokenRequest(w, { clientId: id, secret: fresh(K1.TOKEN_VALUE.generatedPrefix) })
+    assert.deepEqual([auth.status, auth.json?.error], [HTTP_UNAUTHORIZED, OAUTH_ERROR.invalidClient])
+    assert.equal(auth.json?.access_token === undefined, true, 'invalid authentication issued an access token')
+    assert.equal((await entryOf(w, made.entryKey))?.id, id)
+    return pairingView(w, id)
+  }))
   row(sdk, 'C-WIRE-R14', 'entryState (ST)', 'enabled --disable--> disabled --delete--> deleted; an unknown key → deleted', async () => {
     const w = await main(sdk)
     const { made } = await w.call('createHosted', { instanceId: FIXTURE.instanceId })

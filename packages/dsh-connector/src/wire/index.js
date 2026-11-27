@@ -215,7 +215,7 @@ export async function openV3(ctx, { config, storageDomain, limits, volatileEvent
 
     const hostedStore = await openHostedStore(ctx, storageDomain)
     closers.push(hostedStore.close)
-    const hosted = createHostedTokens({ table: hostedStore.table, tokens, pairs, routing, writer: settings.writer, notes, logger })
+    const hosted = createHostedTokens({ table: hostedStore.table, tokens, pairs, routing, writer: settings.writer, notes, presence, waitForRevocation: revocation.waitForEntry, logger })
     closers.push(() => hosted.close())
 
     // Step 3: the start sync, then what runs after it.

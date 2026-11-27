@@ -177,7 +177,7 @@ export function createHandlers({ pairs, mailbox, managed, manageWork, checkCurre
      * never issues such a token, so it is a wiring fault, answered `operation-failed` by
      * dispatch.js's one catch, with no id echoed and nothing changed.
      */
-    [TOOL.pair]: async (args, { caller }) => pairs.pair(caller.entryKey, caller.clientId, args.name, now()),
+    [TOOL.pair]: async (args, { caller }) => pairs.pair(caller.entryKey, caller.clientId, args.name, now(), { hosted: caller.hosted === true }),
     [TOOL.setName]: async (args, { caller }) => pairs.setName(caller.principalKey, args.name),
   })
 }

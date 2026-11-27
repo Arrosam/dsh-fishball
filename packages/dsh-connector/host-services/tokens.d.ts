@@ -84,6 +84,15 @@ export interface DshConnectorTokens {
    */
   entryState(entryKey: string): HostedEntryState
 
+  /** Exact owned entry and online state; undefined for foreign entries or incomplete deletion. */
+  hostedState?(instanceId: string, entryKey: string): { readonly state: HostedEntryState; readonly paired: boolean; readonly online: boolean } | undefined
+
+  /** Confirms that the presented credential authenticates as this instance's enabled entry. */
+  matchHosted?(instanceId: string, entryKey: string, value: string): boolean
+
+  /** Explicit lost-credential recovery only: ordinary deletion, no succession or ID transfer. */
+  discardHosted?(instanceId: string, entryKey: string): Promise<boolean>
+
   /**
    * Reinstall succession (Q24): in one storage transaction, makes the successor's principal take
    * over the old hosted entry's managed sessions (with their watch), the name,

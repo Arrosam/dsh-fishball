@@ -46,12 +46,14 @@ export function createBearerVerifier({ tokenStore, tokenRegistry, pairStore, log
     if (token === undefined) return INVALID
     // "Expired" is `now >= issuedAt + lifetime` (K1 LIFETIME); use never extends it (R-OA-07).
     if (now >= token.issuedAt + LIFETIME.accessTokenMs || token.audience !== audience) return INVALID
-    if (!entryStands(tokenRegistry.get(token.entryKey), token.generation)) return INVALID
+    const entry = tokenRegistry.get(token.entryKey)
+    if (!entryStands(entry, token.generation)) return INVALID
     const pair = pairStore.pairOf(token.entryKey)
     const { scope } = powerOf(pair, token.clientId)
     return Object.freeze({
       entryKey: token.entryKey,
       clientId: token.clientId,
+      ...(entry.hosted === true ? { hosted: true } : {}),
       ...(scope === SCOPE.full ? { principalKey: pair.principalKey } : {}),
       scope,
       audience: token.audience,

@@ -105,7 +105,7 @@ const labelOf = (pair) => {
  * @param ports.logger - `{warn}`
  * @returns `{service, resume, close}`; `service` is the frozen K3 `DshConnectorTokens`
  */
-export function createHostedTokens({ table, tokens, pairs, routing, writer, notes, timers = globalThis, logger }) {
+export function createHostedTokens({ table, tokens, pairs, routing, writer, notes, presence, waitForRevocation, timers = globalThis, logger }) {
   const warn = (line) => (error) => logger.warn(LOG.format, line, diagnosticOf(error))
   const retrier = createRetrier({ timers, logger, format: LOG.format, retryMs: HOSTED_TIMING.retryMs })
   /** Retries a step that failed once already, in the background (logged as `line`); `close` ends it. */
@@ -219,6 +219,13 @@ export function createHostedTokens({ table, tokens, pairs, routing, writer, note
     }
   }
 
+  const { enabled, disabled, deleted } = HOSTED_ENTRY_STATE
+  const stateOf = (hosted) => hosted === undefined ? deleted : hosted.entry.enabled ? enabled : disabled
+  const owned = (instanceId, key) => {
+    const hosted = hostedOf(key)
+    return hosted?.instanceId === instanceId ? hosted : undefined
+  }
+
   const service = Object.freeze({
     apiVersion: HOSTED_SERVICE.apiVersion,
 
@@ -249,11 +256,30 @@ export function createHostedTokens({ table, tokens, pairs, routing, writer, note
     },
 
     /** K3: read only; an unknown key, a user-made entry or one with no hosted record is `deleted`. */
-    entryState(entryKey) {
-      const hosted = hostedOf(entryKey)
-      if (hosted === undefined) return HOSTED_ENTRY_STATE.deleted
-      return hosted.entry.enabled ? HOSTED_ENTRY_STATE.enabled : HOSTED_ENTRY_STATE.disabled
+    entryState: (entryKey) => stateOf(hostedOf(entryKey)),
+
+    hostedState(instanceId, entryKey) {
+      const hosted = owned(instanceId, entryKey)
+      // Wait for deletion to release its ID. A foreign entry must not look deleted.
+      if (hosted === undefined && (tokens.get(entryKey) !== undefined || pairs.pairOf(entryKey) !== undefined)) return undefined
+      const pair = hosted && pairs.pairOf(entryKey)
+      return { state: stateOf(hosted), paired: pair !== undefined, online: pair !== undefined && presence?.isConnected(pair.principalKey) === true }
     },
+
+    matchHosted(instanceId, entryKey, value) {
+      return owned(instanceId, entryKey) !== undefined && tokens.match(value)?.entryKey === entryKey
+    },
+
+    // Use ordinary deletion and revocation before provisioning a replacement for a lost secret.
+    // The previous ID is not free until revocation has removed its pair.
+    discardHosted: (instanceId, entryKey) => serial(async () => {
+      if (typeof waitForRevocation !== 'function' || stateOf(owned(instanceId, entryKey)) !== enabled) return false
+      await writer.removeToken(entryKey)
+      await waitForRevocation(entryKey)
+      if (tokens.get(entryKey) !== undefined || pairs.pairOf(entryKey) !== undefined) return false
+      await table.delete(entryKey)
+      return true
+    }),
 
     /**
      * K3 reinstall succession (see the module comment).

@@ -153,7 +153,7 @@ export interface ProviderSync {
 }
 
 /** Why `reconnect` refuses (PROPOSED spellings, I-HOST). MULTI-0 withdrew `target-remote` with the remote override. */
-export type ReconnectRefusalCode = 'not-ready' | 'connector-missing' | 'operation-failed' | 'credentials-unwritable'
+export type ReconnectRefusalCode = 'not-ready' | 'connector-missing' | 'operation-failed' | 'credentials-unwritable' | 'hosted-entry-disabled' | 'hosted-binding-unavailable' | 'rebind-not-confirmed'
 
 export interface DshInstanceChild {
   readonly apiVersion: 1
@@ -197,17 +197,16 @@ export interface DshInstanceChild {
    * Resolves once the retry has run; read `status()` for its outcome.
    */
   retry(): Promise<void>
-
   /**
-   * Reconnect (R11; 1.33 Q-D1 = B, Q-B1 = B): one `createHosted`, its value imported into the
-   * child's credential reference once, the entry key recorded after the child stored it. Always
-   * available on the instance's own settings page, so a working token can be rotated in one click.
-   * Replacing moves nothing: the old entry keeps its name, role and sessions until the user deletes
-   * it. Refusals (data, never thrown): `not-ready`, `connector-missing` (no usable
-   * `dshConnectorTokens`), `operation-failed` (`createHosted` rejected), `credentials-unwritable`
-   * (the child could not store the value; the new entry stays for the user to delete, Q-B3 = B).
+   * Re-hand the held credential to the existing hosted child. Provision a new entry only
+   * after deletion or confirmed credential loss; no pairing or sessions are transferred.
+   * A storage acknowledgement is distinct from the connector confirming pairing and presence.
    */
-  reconnect(): Promise<{ readonly ok: true } | { readonly ok: false; readonly code: ReconnectRefusalCode }>
+  reconnect(): Promise<
+    | { readonly ok: true; readonly outcome?: 'rebound' | 'paired' }
+    | { readonly ok: true; readonly outcome: 'stored'; readonly code: 'pairing-not-confirmed' }
+    | { readonly ok: false; readonly code: ReconnectRefusalCode }
+  >
 
   targetStatus(): TargetStatus
 

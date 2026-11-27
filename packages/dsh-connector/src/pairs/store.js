@@ -246,15 +246,21 @@ function buildPairStore(table, { logger = SILENT_LOGGER, random } = {}) {
 
     /**
      * `pair` (R-ID-03/04/13, R-NAME-06). Precedence: a bound entry is `already-paired` (whatever
-     * the id), then a held id is `id-taken`; a name never fails it.
+     * the id), except a verified hosted caller repeating the same entry and ID: that is
+     * an idempotent success. Then a held id is `id-taken`; a name never fails it.
      * @throws TypeError when `id` is not a fishball id: the token endpoint never issues a token
      *   for one (R-ID-02), so such a call is a caller bug, not a client's refusal.
      */
-    async pair(entryKey, id, name, now) {
+    async pair(entryKey, id, name, now, { hosted = false } = {}) {
       if (!isAgentId(id)) throw new TypeError(MISUSE.invalidId)
       return change((registry) => {
         const stored = findByEntry(registry, entryKey)
-        if (stored !== undefined) return { result: alreadyPaired(visible(stored), id) }
+        if (stored !== undefined) {
+          // Only the authenticated credential selects entryKey. The ID alone cannot rebind
+          // another entry, and the ordinary token and approval-page paths are unchanged.
+          if (hosted && stored.id === id) return { result: Object.freeze({ ok: true, paired: true, id, name: stored.name }) }
+          return { result: alreadyPaired(visible(stored), id) }
+        }
         if (idHeldByOther(registry, id, entryKey)) return { result: refusal(REFUSAL.idTaken) }
         const outcome = pairNameOutcome(registry, entryKey, name, random)
         return {

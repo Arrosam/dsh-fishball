@@ -161,6 +161,8 @@ export function createRevocation({ tokens, routing, mailbox, pairs, closeEntry, 
       armSweep()
     },
 
+    /** Waits for the entry’s queued revocations, including release of its agent ID. */
+    async waitForEntry(entryKey) { await chains.get(entryKey)?.(async () => {}) },
     /** Stops: no new job, no sweep, every pending retry ends; resolves once running jobs stopped. */
     async close() {
       closed = true
