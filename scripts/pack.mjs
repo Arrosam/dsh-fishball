@@ -26,7 +26,7 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { parseArgs } from 'node:util'
-import { CLI, COMMAND, DIST_TAG, HOSTED_SET, ISOLATION, LAYOUT, MANIFEST, PACKAGES, RELEASE_DIR, REPO, SCRATCH, SET_CARRIER, VERSION } from './release/constants.mjs'
+import { CLI, COMMAND, DIST_TAG, HOSTED_SET, ISOLATION, LAYOUT, MANIFEST, PACKAGES, RELEASE_ROOT, REPO, SCRATCH, SET_CARRIER } from './release/constants.mjs'
 import { isolate, npm, pnpm } from './release/tools.mjs'
 import { bundleInto, bundledNames, stagePackage } from './release/stage.mjs'
 import { writeDocuments } from './release/documents.mjs'
@@ -38,7 +38,14 @@ const tar = (args) => execFileSync(LAYOUT.tar, args, { maxBuffer: ISOLATION.maxO
 
 /** Every package with its checkout manifest, keyed as PACKAGES. */
 function catalogue() {
-  return Object.fromEntries(PACKAGES.map((entry) => [entry.key, { ...entry, root: path.join(REPO, entry.folder), manifest: readJson(path.join(REPO, entry.folder, SCRATCH.manifest)) }]))
+  return Object.fromEntries(PACKAGES.map((entry) => {
+    const root = path.join(REPO, entry.folder)
+    const file = path.join(root, SCRATCH.manifest)
+    const manifest = readJson(file)
+    // Versions become path components before npm validates them as semver.
+    if (typeof manifest.version !== 'string' || !MANIFEST.versionSegment.test(manifest.version)) throw new Error(file + ' has an invalid version')
+    return [entry.key, { ...entry, root, manifest }]
+  }))
 }
 
 /**
@@ -46,10 +53,9 @@ function catalogue() {
  * release fields there (the user's 2026-11-17 list), so this refuses a manifest that drifted from
  * them rather than rewriting it silently.
  */
-function releaseManifest(entry, names) {
+function releaseManifest(entry, byName) {
   const manifest = entry.manifest
   const problems = []
-  if (manifest.version !== VERSION) problems.push('version ' + manifest.version)
   if (manifest.private) problems.push('private')
   if (!manifest.description) problems.push('description')
   if (manifest.license !== MANIFEST.license) problems.push('license')
@@ -59,7 +65,8 @@ function releaseManifest(entry, names) {
   if (!entry.library && manifest.engines?.dsh !== MANIFEST.engines.dsh) problems.push('engines.dsh')
   if (entry.library && manifest.engines?.dsh !== undefined) problems.push('engines.dsh on a library')
   for (const [dependency, range] of Object.entries(manifest.dependencies ?? {})) {
-    if (names.has(dependency) && range !== VERSION) problems.push('dependency ' + dependency + '@' + range)
+    const local = byName.get(dependency)
+    if (local && range !== local.manifest.version) problems.push('dependency ' + dependency + '@' + range)
     if (Object.hasOwn(MANIFEST.peersOnly, dependency)) problems.push(dependency + ' must be a peer')
   }
   for (const name of bundledNames(manifest)) if (!manifest.dependencies?.[name]) problems.push('bundles undeclared ' + name)
@@ -116,24 +123,23 @@ function replaceable(out) {
  * 4. pack the rest, write SHA256SUMS, warm the offline store with every declared dependency, and
  *    write the documents.
  */
-function build(out) {
+function build(out, packages) {
   const scratch = fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()), SCRATCH.prefix))
   try {
     const env = isolate(scratch)
-    const packages = catalogue()
-    const names = new Set(Object.values(packages).map((entry) => entry.manifest.name))
-    const byName = Object.fromEntries(Object.values(packages).map((entry) => [entry.manifest.name, entry]))
+    const byName = new Map(Object.values(packages).map((entry) => [entry.manifest.name, entry]))
     fs.rmSync(out, { recursive: true, force: true })
     fs.mkdirSync(out, { recursive: true })
     const shared = { store: path.join(out, LAYOUT.store), cache: path.join(out, LAYOUT.cache), env }
     const stages = {}
     for (const entry of Object.values(packages)) {
-      const manifest = releaseManifest(entry, names)
+      const manifest = releaseManifest(entry, byName)
       const stage = path.join(scratch, SCRATCH.stage, entry.key)
       stagePackage(entry.root, stage, manifest, env)
       const thirdParty = {}
       for (const name of bundledNames(manifest)) {
-        if (byName[name]) stagePackage(byName[name].root, path.join(stage, SCRATCH.modules, name), releaseManifest(byName[name], names), env)
+        const bundled = byName.get(name)
+        if (bundled) stagePackage(bundled.root, path.join(stage, SCRATCH.modules, name), releaseManifest(bundled, byName), env)
         else thirdParty[name] = manifest.dependencies[name]
       }
       // A bundled third-party package brings its closure, flattened beside it as npm reads it.
@@ -154,7 +160,7 @@ function build(out) {
     writeSums(out)
     // The store: every declared third-party dependency of every package, as a DSH profile resolves
     // them, so the documented offline add finds them (the user's answer Q5, 2026-11-17).
-    const declared = mergeDependencies(Object.values(packages).map((entry) => [entry.manifest.name, Object.fromEntries(Object.entries(entry.manifest.dependencies ?? {}).filter(([name]) => !names.has(name)))]))
+    const declared = mergeDependencies(Object.values(packages).map((entry) => [entry.manifest.name, Object.fromEntries(Object.entries(entry.manifest.dependencies ?? {}).filter(([name]) => !byName.has(name)))]))
     installThirdParty(path.join(scratch, SCRATCH.closure, SCRATCH.storeProject), declared, shared)
     writeDocuments(out, packages)
     return Object.values(tarballs).map((file) => path.basename(file)).sort()
@@ -177,10 +183,9 @@ function writeSums(out) {
  * local aid that is never published.
  * @returns {string[]} the problems found; empty when the release is intact.
  */
-function check(out) {
+function check(out, packages) {
   if (!fs.existsSync(out)) return ['no release at ' + out]
-  const nameOf = Object.fromEntries(PACKAGES.map((entry) => [entry.key, readJson(path.join(REPO, entry.folder, SCRATCH.manifest)).name]))
-  const tarball = (key) => LAYOUT.tarball(nameOf[key], VERSION)
+  const tarball = (key) => LAYOUT.tarball(packages[key].manifest)
   const expected = PACKAGES.map((entry) => tarball(entry.key)).sort()
   const present = tarballsIn(out)
   const problems = [
@@ -220,9 +225,11 @@ function main(argv) {
     process.stderr.write(CLI.usage)
     return CLI.exit.usage
   }
-  const out = path.resolve(values[CLI.out] ?? RELEASE_DIR)
+  const packages = catalogue()
+  // The connector labels the release; the other packages keep their own versions.
+  const out = path.resolve(values[CLI.out] ?? path.join(RELEASE_ROOT, packages.connector.manifest.version))
   if (values[CLI.check]) {
-    const problems = check(out)
+    const problems = check(out, packages)
     for (const problem of problems) process.stderr.write(problem + '\n')
     if (!problems.length) process.stdout.write('release ' + out + ' is intact\n')
     return problems.length ? CLI.exit.failed : CLI.exit.ok
@@ -231,8 +238,8 @@ function main(argv) {
     process.stderr.write(CLI.refuseOut(out))
     return CLI.exit.usage
   }
-  const files = build(out)
-  const problems = check(out)
+  const files = build(out, packages)
+  const problems = check(out, packages)
   for (const problem of problems) process.stderr.write(problem + '\n')
   process.stdout.write('packed ' + files.length + ' tarballs into ' + out + '\n' + files.map((name) => '  ' + name).join('\n') + '\n')
   return problems.length ? CLI.exit.failed : CLI.exit.ok

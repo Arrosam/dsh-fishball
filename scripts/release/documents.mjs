@@ -1,7 +1,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { COMMAND, DIST_TAG, INSTALL_SETS, LAYOUT, OFFLINE, PACKAGES, PROFILE, REGISTRY, SDKS, VERSION } from './constants.mjs'
+import { COMMAND, DIST_TAG, INSTALL_SETS, LAYOUT, OFFLINE, PACKAGES, PROFILE, REGISTRY, SDKS } from './constants.mjs'
 
 const fence = (lines) => ['```bash', ...lines, '```'].join('\n')
 const dsh = (...args) => ['dsh plugin --profile', PROFILE, ...args].join(' ')
@@ -13,44 +13,43 @@ function offlineAdd(tarballs) {
   return [store, add(tarballs.map(here), COMMAND.offline, '--store-dir="$' + OFFLINE.storeVariable + '"', '--cache-dir=' + here(LAYOUT.cache), COMMAND.registry)]
 }
 
-function installBlocks(set, name) {
-  const keys = INSTALL_SETS[set]
+function installBlocks(set, packages) {
+  const manifests = INSTALL_SETS[set].map((key) => packages[key].manifest)
   return [
-    fence([add(keys.map((key) => name(key) + '@' + VERSION))]),
+    fence([add(manifests.map(({ name, version }) => name + '@' + version))]),
     'Offline, from this folder:',
-    fence(offlineAdd(keys.map((key) => LAYOUT.tarball(name(key), VERSION)))),
+    fence(offlineAdd(manifests.map(LAYOUT.tarball))),
   ].join('\n\n')
 }
 
 function installMarkdown(packages) {
-  const name = (key) => packages[key].manifest.name
-  return `# DSH Connector ${VERSION}: install and uninstall
+  return `# DSH Connector ${packages.connector.manifest.version}: install and uninstall
 
 Supported: DeepSeek Harness (DSH) ${SDKS.join(' and ')}.
 
 ## Managed DSH (connector + connector UI components)
 
-${installBlocks('managed', name)}
+${installBlocks('managed', packages)}
 
 ## Amenities, all together (the dsh-connector-amenities umbrella: the adapter and the watchdog)
 
-${installBlocks('amenities', name)}
+${installBlocks('amenities', packages)}
 
 ## One amenity on its own
 
 dsh-connector-adapter:
 
-${installBlocks('adapter', name)}
+${installBlocks('adapter', packages)}
 
 dsh-connector-watchdog (needs the managed DSH's dsh-agent-connector):
 
-${installBlocks('watchdog', name)}
+${installBlocks('watchdog', packages)}
 `
 }
 
 function publishMarkdown(packages) {
-  const lines = PACKAGES.map((entry) => 'npm publish ' + LAYOUT.tarball(packages[entry.key].manifest.name, VERSION) + ' --tag ' + DIST_TAG + ' --access public --registry ' + REGISTRY)
-  return `# DSH Connector ${VERSION}: publish
+  const lines = PACKAGES.map((entry) => 'npm publish ' + LAYOUT.tarball(packages[entry.key].manifest) + ' --tag ' + DIST_TAG + ' --access public --registry ' + REGISTRY)
+  return `# DSH Connector ${packages.connector.manifest.version}: publish
 
 Run from this release folder:
 
