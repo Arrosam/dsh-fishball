@@ -25,6 +25,12 @@ The default base is the merge base of HEAD and local `staging`; an explicit base
 
 Shared changes are reported with affected packages, not silently fanned out. Root package sources/tests select only the bundle; shared runner scripts select its runner tests and list other affected workspaces. Root manifests/lock/config list affected packages for manual selection. Helper edits select the helper itself and list its declared consumers. Unmapped paths are reported. With `--list`, the Node entry prints selected npm names to stdout and impact diagnostics to stderr. Use `npm run --silent test:changed -- --list` to omit npm’s banner.
 
+## Agent browser and UI testing
+
+Use `browser-skill` with the verified lab profile and the plain parent URL from the [local test environments skill](.agents/skills/local-test-envs/SKILL.md). If that profile is unavailable or needs sign-in, stop and ask the user for help. Do not run `fb-env open`, Playwright, Chrome MCP/CDP, or any other separate-profile launcher for agent browser testing. Choose non-browser checks when verifying code without a connected lab browser; existing headless regression harnesses are not substitutes for BrowserSkill.
+
+For human-only sign-in outside BrowserSkill, the installed controller still accepts `fb-env open SLOT --manual`. That starts an isolated Chrome with extensions disabled and `--use-mock-keychain`; it does not connect a profile to BrowserSkill.
+
 ## Before a release only
 
 ```sh

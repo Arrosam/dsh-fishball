@@ -27,6 +27,9 @@ STAGING = MOUNT / 'GitHub/dsh-fishball'
 PORTS = {'integration': (46100, 46101), 'dev-1': (46102, 46103), 'dev-2': (46104, 46105)}
 CONTROL = ROOT / 'control'
 SDK_ORIGINAL = Path('/Users/samuel/Library/Application Support/DSH/data/versions/0.2.2-rc.3')
+MANUAL_OPEN_FLAG = '--manual'
+MANUAL_CHROME_FLAGS = ('--no-first-run', '--disable-sync', '--disable-extensions', '--use-mock-keychain')
+MANUAL_OPEN_ONLY = f'Use BrowserSkill for agent browser testing. {MANUAL_OPEN_FLAG} is for human sign-in only.'
 
 
 def directory(path):
@@ -268,8 +271,8 @@ class Slot:
         if not record:
             raise ValueError('Environment is stopped')
         url = rt.private_url(self.env, self.ports, record['pid'])
-        subprocess.Popen([rt.CHROME, '--user-data-dir=' + str(self.env / 'browser'), '--no-first-run',
-                          '--disable-sync', '--disable-extensions', url],
+        # This isolated human-only profile should never use the macOS login keychain.
+        subprocess.Popen([rt.CHROME, '--user-data-dir=' + str(self.env / 'browser'), *MANUAL_CHROME_FLAGS, url],
                          stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                          cwd=self.env, env=rt.isolated(self.env), start_new_session=True)
         return self.summary()
@@ -284,6 +287,8 @@ def parser():
         sub.add_argument('env', choices=PORTS)
         if command in {'create', 'reinstall'}:
             sub.add_argument('--source', type=Path)
+        if command == 'open':
+            sub.add_argument(MANUAL_OPEN_FLAG, action='store_true', help=MANUAL_OPEN_ONLY)
     subs.add_parser('cleanup', allow_abbrev=False)
     subs.add_parser('probe-model', allow_abbrev=False)
     subs.add_parser('install-cli', allow_abbrev=False)
@@ -293,6 +298,8 @@ def parser():
 
 def dispatch(args):
     command = args.command
+    if command == 'open' and not args.manual:
+        raise ValueError(MANUAL_OPEN_ONLY)
     if command == 'plan':
         return provision.plan_source(args.source, STAGING)
     if command == 'url':

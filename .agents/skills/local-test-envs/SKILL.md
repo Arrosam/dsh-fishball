@@ -15,7 +15,9 @@ Use the installed controller, not a worktree script: `/Volumes/SSD1/DSH-TestLab/
 | `dev-2` | A second independent copy, parallel branch, or comparison baseline | http://127.0.0.1:46104 | http://127.0.0.1:46105 |
 | `integration` | Test the already-merged local staging checkout; never point it at a feature branch | http://127.0.0.1:46100 | http://127.0.0.1:46101 |
 
-Run `/Volumes/SSD1/DSH-TestLab/fb-env open integration` (or change the slot) on the Mac to open a dedicated Chrome profile with the private DSH sign-in link. Click **Fishball** in the parent sidebar (or **Plugins → dsh-instance → Open Fishball**). Bookmark the plain parent URL after signing in. Do not capture the admission link or use your personal browser profile for evidence. The child uses a dynamic loopback port; do not bookmark it. The approval port is not the Web GUI.
+For browser/UI testing, load `browser-skill`. Use `fb-env url SLOT` or the plain parent URL above in a BrowserSkill session explicitly bound to the verified, already connected lab browser profile. If the intended profile is not verified, connected or signed in to the slot, ask the user to confirm the BrowserSkill instance ID, connect the extension, or sign in privately in that profile as needed. Never read or capture the private admission link. Do not fall back to `fb-env open`, Chrome MCP/CDP, Playwright, or a fresh browser profile.
+
+Once signed in, open **Fishball** in the parent sidebar (or **Plugins → dsh-instance → Open Fishball**). Bookmark only the plain parent URL; the child uses a dynamic loopback port, and the approval port is not the Web GUI. Do not use your personal browser profile for lab evidence.
 
 ## Commands
 
