@@ -1,5 +1,6 @@
 # Workspace and release layout
 
+- [Bundle](../README.md) is the publishable `dsh-fishball-bundle` package at the workspace root. `npm pack --dry-run` at the root lists only bundle files; the bundle uses published component versions, not local `file:` paths.
 - [Fishball](../dsh-fishball/README.md) owns the child-side core, UI, shared package and integration packages. Its `scripts/test.mjs` still runs one package at a time; `npm run pack:v3` builds to `dsh-fishball/.runtime/release/`.
 - [Connector](../dsh-connector/README.md) owns `dsh-agent-connector`, its adapter and shared package. The connector's pack command writes to `dsh-connector/.runtime/release/`.
 - [Instance](../dsh-fishball-instance/README.md) owns the hosted child and its integration fixtures; its pack command writes to `dsh-fishball-instance/.runtime/release/` and can use the Fishball packer's output for offline child installation.
