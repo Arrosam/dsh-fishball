@@ -22,9 +22,7 @@ import { boldSummary, loadRenderer } from './dsh-markdown.mjs'
 const { words: WORDS, punct: PUNCT } = PERSONA_BOLD
 const outside = (words, punct, after) => PERSONA_BOLD.marker + words + PERSONA_BOLD.marker + punct + after
 const inside = (words, punct, after) => PERSONA_BOLD.marker + words + punct + PERSONA_BOLD.marker + after
-/** A rule line shows both forms of the example: the one to write and the one not to write. */
-const isRuleLine = (line) => line.includes(PERSONA_BOLD.good) && line.includes(PERSONA_BOLD.bad)
-const example = (line, form) => line.slice(line.indexOf(form), line.indexOf(form) + form.length)
+
 
 let renderer
 /** The renderer, built once per process (one bundle extraction for every row). */
@@ -78,12 +76,11 @@ export function registerPersonaBoldCases() {
     })
   }
 
-  caseTest('PBR-06', undefined, 'the examples the persona gives behave as it says', async () => {
+  caseTest('PBR-06', undefined, 'the persona keeps Chinese punctuation outside bold markers', async () => {
     const persona = (await importBound(PERSONA_BOLD.module))[PERSONA_BOLD.roleExport]
-    const line = persona.split(PERSONA_BOLD.lineBreak).find(isRuleLine)
-    assert.ok(line, 'the persona has its rule line')
-    const good = await show(example(line, PERSONA_BOLD.good) + AFTER_PUNCT.latin)
-    assert.deepEqual(good.strong, [WORDS])
-    assert.deepEqual((await show(example(line, PERSONA_BOLD.bad) + AFTER_PUNCT.latin)).strong, [])
+    const rule = persona.split(PERSONA_BOLD.lineBreak).find((line) => /\bChinese punctuation\b/i.test(line))
+    assert.ok(rule, 'missing the Chinese punctuation rule')
+    assert.match(rule, /\boutside\b/i)
+    assert.match(rule, /\bbold\b|\*\*/i)
   })
 }

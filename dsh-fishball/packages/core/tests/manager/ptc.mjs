@@ -29,6 +29,8 @@ const FIXTURE = Object.freeze({
   programDescription: 'Read a Fishball fixture value',
   guide: 'Keep the fixture taskboard current after each meaningful change.',
   section: 'fishball-test-taskboard',
+  webSurface: Object.freeze({ name: 'app:web-surface', text: 'Fixture host web surface instructions', order: 1 }),
+  runtimeContext: Object.freeze({ name: 'app:runtime-context', text: 'Fixture host runtime context', order: 1 }),
   nestedSandboxDenial: 'sandbox-exec: sandbox_apply: Operation not permitted',
   events: Object.freeze({ start: 'tool/ptc-dispatch-start', result: 'tool/ptc-dispatch' }),
 })
@@ -153,12 +155,17 @@ caseTest(id, '', 'new Fishball manager uses real scoped PTC without changing a n
   await world.boot(async (host) => {
     const { ctx } = host
     world.registerProbe(ctx)
+    for (const section of [FIXTURE.webSurface, FIXTURE.runtimeContext]) ctx.systemPrompt.section(section)
     const { agent: other } = await ctx.agents.create({ meta: { cwd: world.home } })
     const before = await world.inspect(other)
     expectNative(before, FIXTURE.legacyQuestion)
+    assert.ok(before.system.includes(FIXTURE.webSurface.text), 'ordinary session should retain the host web surface')
+    assert.ok(before.system.includes(FIXTURE.runtimeContext.text), 'ordinary session should have the host runtime context')
     const manager = await managerAgent(host)
     const prompt = await world.inspect(manager)
     const prose = expectPtc(prompt)
+    assert.ok(!prompt.system.includes(FIXTURE.webSurface.text), 'host web surface text reached the manager')
+    assert.ok(prompt.system.includes(FIXTURE.runtimeContext.text), 'the manager should retain the host runtime context')
     const refused = await world.call(manager, FIXTURE.probe, probeArgs(FIXTURE.samples[0]))
     assert.equal(refused.error, true, 'rc.3 PTC must not dispatch a program-only tool directly')
     assert.deepEqual(await world.inspect(other), before)
@@ -168,7 +175,7 @@ caseTest(id, '', 'new Fishball manager uses real scoped PTC without changing a n
     assert.match(prose, /(?:check|inspect|review|verify).*results?.*(?:dependent|depend|next)/i)
     assert.ok(!prose.includes(FIXTURE.legacyQuestion), 'Fishball should not teach the old blocking tool')
     assert.ok(prose.includes(FIXTURE.question), 'Fishball should tell the model how to ask the user')
-    assert.match(prose, /message_user[^\n]*(?:every reply|speak to the user)/i)
+    assert.match(prose, /\bonly\b[^.\n]*\bmessage_user\b|\bmessage_user\b[^.\n]*\bonly\b/i)
   })
 }))
 
@@ -176,14 +183,19 @@ caseTest(id, 'one task per session', 'Fishball limits each managed session to on
   await world.save({})
   await world.boot(async (host) => {
     const { sections } = await world.inspect(await managerAgent(host))
-    const rules = [
-      /one task per (?:managed )?session|one (?:managed )?session per task|(?:each|one) (?:managed )?session[^.\n]*\bone task\b/i,
-      /(?=[^.\n]*\b(?:done|complete\w*|finish\w*)\b)(?=[^.\n]*\b(?:no rework|unless rework|rework (?:is not|isn’t|isn't) needed)\b)[^.\n]*\bsession_release\b/i,
-      /\b(?:session_release|released?)\b[^\n]*(?:do not|don['’]t|never|stop) (?:reuse|using|use|keep using|continue using)|(?:do not|don['’]t|never|stop) (?:reuse|using|use|keep using|continue using)[^.\n]*\breleased?\b/i,
-      /\b(?:start|open) (?:a )?(?:new|fresh|separate) session[^.\n]*\bnew task\b|\bnew task\b[^.\n]*(?:start|open) (?:a )?(?:new|fresh|separate) session/i,
-    ]
-    assert.ok(sections.some(({ name, text }) => !name.startsWith('tools:') && rules.every((rule) => rule.test(text))),
-      'Fishball must tell the model to use one session per task, call session_release once done with no rework needed, stop using released sessions, and start a new session for each new task')
+    const role = sections.find(({ name, text }) => !name.startsWith('tools:') && text.includes('One session does one task'))
+    assert.ok(role, 'missing the exact one-task regression anchor')
+    const lifecycle = role.text.split(/\n\s*\n/).find((part) => part.includes('One session does one task'))
+    const release = lifecycle.split(/(?<=[.!?])\s+|\n+/).find((part) => /\bsession_release\b/.test(part))
+    assert.ok(release, 'missing session_release in the lifecycle rule')
+    assert.match(release, /\b(?:done|complet\w*|finish\w*)\b/i)
+    assert.match(release, /\b(?:no rework|unless rework|rework (?:is not|isn’t|isn't) needed)\b/i)
+    assert.ok(/\bstop using\b/i.test(release) || /\b(?:do not|don['’]t|never) (?:reuse|use) released sessions?\b/i.test(lifecycle), 'released sessions must not be reused')
+    assert.match(lifecycle, /\bnew task\b[^.\n]*\b(?:new|fresh|separate) session\b|\b(?:new|fresh|separate) session\b[^.\n]*\bnew task\b/i)
+    // The positive assertion lives in the skills suite, which mounts the optional provider.
+    assert.doesNotMatch(role.text, /\bprivate_skill_\w+\b/i, 'private skill tool instructions do not belong in the role')
+    assert.ok(!role.text.includes(FIXTURE.guide), 'taskboard upkeep does not belong in the role')
+    assert.ok(sections.some(({ name, text }) => name === FIXTURE.section && text.includes(FIXTURE.guide)), 'taskboard upkeep belongs in its own prompt portion')
   })
 }))
 

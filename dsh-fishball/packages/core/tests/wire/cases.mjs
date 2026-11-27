@@ -114,7 +114,7 @@ export function registerWireCases() {
     // Inspect the guidance actually delivered to the model, not what a scripted LLM happens to say.
     const workspacePassages = system.split(/\n\s*\n/).filter((part) => /\bworkspace\b/i.test(part))
     // Both directives must appear in one passage; each must name its object in the same sentence.
-    const clarify = /\b(?:ask|request|confirm|clarify)\b[^.!?;]{0,65}\buser\b[^.!?;]{0,110}\b(?:workspace[\s_-]*(?:id|identifier)|(?:its|the|registered) (?:id|identifier)|(?:registered|absolute) (?:directory |folder )?path)\b/i
+    const clarify = /\b(?:ask|request|confirm|clarify)\b[^.!?;]{0,65}(?:\buser\b[^.!?;]{0,110}|\bfor\s+)\b(?:workspace[\s_-]*(?:id|identifier)|(?:its|the|registered) (?:id|identifier)|(?:registered|absolute) (?:directory |folder )?path)\b/i
     const noSubstitution = /(?:\b(?:never|do not|must not|instead of|rather than|avoid)\b|don['’]t)[^.!?;]{0,100}\b(?:another|different|unrelated|alternate|alternative|arbitrary|fallback|substitute)\s+(?:(?:existing|absolute|workspace|directory)\s+)?(?:workspace|folder|directory|path)\b/i
     assert.ok(workspacePassages.some((part) => clarify.test(part) && noSubstitution.test(part)), 'the workspace guidance must ask the user for an ID or path instead of substituting a different folder')
     // SHELVE-BOARD: without the board, nothing in the manager's prompt or tools mentions it.

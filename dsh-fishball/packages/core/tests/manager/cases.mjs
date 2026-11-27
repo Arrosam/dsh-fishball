@@ -18,7 +18,7 @@ import { sleep, until } from 'fishball-test-helpers/wait'
 import { CORE_EXTENSION, NATIVE_MANAGER, coreEnv, corePackages, post } from '../support/core-world.mjs'
 import {
   BUDGET, CONNECT_INPUT, FISHBALL_MODEL, HTTP, IDENTITY, MCP, MODEL, OP, PERSONA, PERSONA_FIX, PRESET, REMINDER, ROLE,
-  RETIRED, ROUTE, TOOLS, WORLD,
+  RETIRED, ROUTE, TOOLS, WORLD, personaLines,
 } from './constants.mjs'
 import { registerRfixManagerCases } from './rfix.mjs'
 import { registerRfix2ManagerCases } from './rfix2.mjs'
@@ -328,16 +328,49 @@ export function registerManagerCases() {
     const text = await persona()
     assert.deepEqual(PERSONA_FIX.askDecision.map((re) => text.match(re)?.[0]).filter(Boolean), [])
   })
-  test(name('MGR-SET-EP-04 3', `the persona still names the decisions ${PERSONA_FIX.decisions.join(', ')}`), async () => {
+  // Group neighbouring wording by rule, without requiring an exact sentence or order of examples.
+  const matchingRules = (text, pattern) => personaLines(text).filter((line) => pattern.test(line)).join('\n')
+  const topic = (text, pattern) => text.split(/\n\s*\n/).find((part) => pattern.test(part)) ?? ''
+  const expectWords = (text, patterns) => assert.deepEqual(patterns.filter((pattern) => !pattern.test(text)).map(String), [])
+  test(name('MGR-SET-EP-04 3', 'approval_answer names its four decisions and escalation gives a one-sentence reason'), async () => {
     const text = await persona()
-    assert.deepEqual(PERSONA_FIX.decisions.filter((d) => !new RegExp(`\\b${d}\\b`, 'i').test(text)), [])
+    const approval = topic(text, /\bapproval_answer\b/)
+    expectWords(approval, PERSONA_FIX.decisions.map((d) => new RegExp('\\b' + d + '\\b', 'i')))
+    const escalation = matchingRules(text, /\bescalat\w*\b/i)
+    assert.match(escalation, /\b(?:one|a single|1)[ -]sentence\b/i)
+    assert.match(escalation, /\b(?:reason|why|explain|explanation)\b/i)
   })
-  test(name('MGR-SET-EP-04 4', `the persona tells Fishball to file permission requests with ${PERSONA_FIX.askTool}, answered Allow once / Reject`), async () => {
+  test(name('MGR-SET-EP-04 4', 'permission escalation uses a card, including automatic escalation, with Allow once or Reject'), async () => {
     const text = await persona()
-    assert.ok(text.includes(PERSONA_FIX.askTool), PERSONA_FIX.askTool + ' missing')
-    assert.ok(PERSONA_FIX.permission.test(text), 'no mention of permission requests')
-    assert.ok(PERSONA_FIX.allowOnce.test(text), 'no "Allow once"')
-    assert.ok(PERSONA_FIX.reject.test(text), 'no "Reject"')
+    const permissions = matchingRules(text, PERSONA_FIX.permission)
+    const automatic = matchingRules(text, /\bautoEscalatePermissions\b/)
+    expectWords(permissions, [/\bcard\w*\b/i, PERSONA_FIX.allowOnce, PERSONA_FIX.reject])
+    assert.match(automatic, /\bcard\w*\b/i)
+  })
+  test(name('MGR-SET-EP-04 6', 'permission allowance checks the exact request and distinguishes low- and high-risk examples'), async () => {
+    const text = await persona()
+    expectWords(matchingRules(text, /\b(?:allow\w*|approv\w*|grant|authoriz\w*)\b/i), PERSONA_FIX.exactPermission)
+    expectWords(matchingRules(text, /\blow[ -]risk\b/i), PERSONA_FIX.lowRisk)
+    expectWords(matchingRules(text, /\bhigh[ -]risk\b/i), PERSONA_FIX.highRisk)
+  })
+  test(name('MGR-SET-EP-04 7', 'answer session questions and plan reviews only from the user’s words; otherwise send the session’s own card to the user'), async () => {
+    const text = await persona()
+    const questions = topic(text, /\bquestion_answer\b/)
+    assert.ok(questions.includes('question_answer'), 'missing session question/plan review tool')
+    expectWords(questions, [/\bquestions?\b/i, /\bplan(?:[ -]reviews?|s? for review)\b/i, /\bonly\b/i,
+      /\buser(?:['’]s)?\s+(?:own )?(?:words|instructions|answer|explicit wording)\b/i,
+      /\b(?:otherwise|else|if not|when (?:they|it) (?:don['’]t|doesn['’]t))\b/i, /\btoUser\b/, /\b(?:own|same|original|existing)\b[^.]*\b(?:question )?card\b/i])
+    const own = text.split(/\n\s*\n/).find((part) => part.includes(PERSONA_FIX.askTool) && /\b(?:unprefixed|own)\b/i.test(part) && /\b(?:clarifications?|question card)\b/i.test(part)) ?? ''
+    assert.match(own, /\b(?:non[ -]?blocking|never block(?:ing)?|returns? (?:\w+ )?immediately|never a blocking tool|without waiting)\b/i, 'manager’s own questions must use non-blocking ask_user')
+  })
+  test(name('MGR-SET-EP-04 8', 'Fishball coordinates without changing files and only starts or hands off managed work'), async () => {
+    const text = await persona()
+    expectWords(matchingRules(text, /\bcoordinat\w*\b|\bfiles?\b/i), [ /\bcoordinat\w*\b/i,
+      /\b(?:no|not|never|don['’]t|without)\b[^.\n]*\b(?:edit\w*|chang\w*|modif\w*|writ\w*)\b[^.\n]*\bfiles?\b/i ])
+    assert.match(text, /\buntrusted\b/i)
+    const managed = topic(text, /\bsession_release\b/)
+    expectWords(managed, [/\bmanag\w*\b/i, /\bonly\b/i, /\bstart\w*\b/i, /\bsession_message\b/, /\bhand[ -]?(?:off|over)\b|\bhand\w* (?:it |the task )?(?:off|over)\b/i])
+    assert.match(text, /\bsession_start\b/)
   })
   test(name('MGR-SET-EP-04 5', 'the persona no longer speaks of "an ask event" as the card source'), async () => {
     assert.equal((await persona()).match(PERSONA_FIX.askEvent)?.[0] ?? null, null)

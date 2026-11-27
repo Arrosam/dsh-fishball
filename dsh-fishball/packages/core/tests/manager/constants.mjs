@@ -85,9 +85,12 @@ export const PERSONA_FIX = Object.freeze({
   askDecision: Object.freeze([/[`'"]ask[`'"]/, /decision\W{0,4}ask\b/i, /\bask the session\b/i, /\bask\b\s*(?:,|\/|or)\s*(?:escalate|reject|grant|allow)\b/i, /\b(?:escalate|reject|grant|allow)\s*(?:,|\/|or)\s*ask\b/i]),
   decisions: Object.freeze(['allow', 'grant', 'reject', 'escalate']),
   askTool: 'ask_user',
-  permission: /permission/i,
+  permission: /\bpermissions?\b/i,
   allowOnce: /allow once/i,
   reject: /\breject\b/i,
+  exactPermission: Object.freeze([/\b(?:exact|specific|precise)\b/i, /\b(?:action|request|operation|command|call)\b/i, /\b(?:allowance|authoriz\w*)\b/i]),
+  lowRisk: Object.freeze([/\bread\b/i, /\bsearch\b/i, /\blist\b/i, /\breversible\b/i, /\bworkspace\b/i, /\bbuild\w*/i, /\btest\w*/i, /\bformat\w*/i, /\bdeclared (?:dep\w*|packages)\b/i, /\bedit\w*/i, /\b(?:local commits?|commit(?:ting|s)? locally)\b/i, /\bworkspace-write\b/i]),
+  highRisk: Object.freeze([/\bdelet\w*/i, /\boverwrit\w*/i, /\b(?:outside|external)\b/i, /\b(?:existing|pre-existing|preexisting|not created)\b/i, /\bcredentials?\b/i, /\b(?:outbound|external sends?|push|publish)\b/i, /\bsystem\b/i, /\baccounts?\b/i, /\bdanger-full-access\b/i, /\birreversible\b/i, /\bopaque\b/i, /\buser[ -]reserved\b|\breserved\b[^.]*\buser\b/i]),
   /** The retired wording of the ask card's source (an `ask` event filed as a card). */
   askEvent: /\ban [`'"]?ask[`'"]? event\b/i,
 })
@@ -95,8 +98,8 @@ export const PERSONA_FIX = Object.freeze({
 /**
  * WD-PERSONA rows (the user's decision, 2026-11-22): when a DSH offers Watchdog (the
  * dsh-connector-watchdog amenity's tools), a session Fishball wants supervised is started with
- * Watchdog's watchdog_session_start instead of the connector's session_start; it takes the same
- * arguments plus the session's purpose and approvable scope, and Watchdog supervises the session
+ * Watchdog's watchdog_session_start instead of the connector's session_start, with purpose and
+ * approvable scope; Watchdog supervises the session
  * from its first request; watchdog_brief only covers what a running session asks after the brief.
  * The words come from that decision; the patterns only find them in prose.
  */
@@ -106,33 +109,20 @@ export const PERSONA_WATCHDOG = Object.freeze({
   watchdog: /\bWatchdog\b/,
   /** "when/if/where a DSH offers (has, provides, lists) Watchdog", or "Watchdog is offered/available". */
   conditional: /\b(?:when|if|where|whenever)\b[^.:;]{0,80}\b(?:offers?|has|provides?|lists?|exposes?)\b[^.:;]{0,40}\bWatchdog\b|\bWatchdog\b[^.:;]{0,40}\bis (?:offered|available|present|listed)\b/i,
-  insteadOf: /\binstead of\b|\brather than\b|\bnot\b/i,
-  sameArguments: /\bsame arguments\b/i,
+  insteadOf: /\binstead of\b|\brather than\b|\bin place of\b|\bnot\b/i,
+
   purpose: /\bpurpose\b/i,
   approvableScope: /\bapprovable scope\b|\bscope\b[^.]{0,40}\bapprov/i,
   supervises: /\bsupervis/i,
-  firstRequest: /\bfirst request\b/i,
+  firstRequest: /\bfirst (?:permission )?request\b/i,
   only: /\bonly\b/i,
-  afterBrief: /\bafter (?:the|its|being) brief(?:ed)?\b/i,
+  afterBrief: /\bafter\b|\b(?:subsequent|later|future)\b/i,
   running: /\brunning\b/i,
-  /**
-   * "Unchanged" is read against the persona just before the change: the parent of the first
-   * commit that brought WATCHDOG into persona.js (a clone without that history skips the row).
-   */
-  baseline: Object.freeze({
-    /** All three baselines predate the monorepo move; this is core's path in their trees. */
-    historicalCore: 'packages/core',
-    /** persona.js inside core's folder; the historical archive and the working copy share this layout. */
+  tempCopy: Object.freeze({
     file: path.join('src', 'persona.js'),
-    marker: 'WATCHDOG',
-    /** The common merge base already had Watchdog; staging adds authorized persona amendments. */
-    preStaging: '0377153f',
-    staging: '7fd1d0930e8cc634267882b6579e706bf5d38539',
     copied: Object.freeze(['src', 'contracts', 'package.json']),
-    /** The bare import persona.js reaches through its imports: linked to the current fishball-shared (by name). */
     sharedPackage: 'fishball-shared',
-    tmpPrefix: 'fbtest-wd-persona-baseline-',
-    tar: 'baseline.tar',
+    tmpPrefix: 'fbtest-wd-persona-',
     nodeModules: 'node_modules',
   }),
   /** The contract file a copy's WATCHDOG names are swapped in (EP-06), and stand-in names that are no real tool's. */
@@ -142,22 +132,17 @@ export const PERSONA_WATCHDOG = Object.freeze({
   connectorStart: 'session_start',
   /** A sentence that would forbid session_start outright, or make Watchdog's start unconditional. */
   forbidsStart: (start, watchdogStart) => new RegExp(`\\b(?:never|do not|don't|must not)\\b[^.]{0,40}\\b(?:use|call)\\b[^.]{0,20}\\b${start}\\b|\\balways\\b[^.]{0,40}\\b${watchdogStart}\\b`, 'i'),
-  skipNoBaseline: 'WD-PERSONA: the commit that brought WATCHDOG into persona.js is not in this clone, so the persona before the change cannot be read',
+
 })
 
 export const PRESET = Object.freeze({ fishball: 'fishball' })
 
-/**
- * The persona style rule (R-B1/R-B2, test/support PERSONA_BOLD and CHINESE_PUNCT, restated): lines,
- * the bold marker, and the rule line's two examples (the form to write and the one not to write).
- */
+/** Markdown markers for the Watchdog line's style check. */
 export const PERSONA_BOLD = Object.freeze({
   lineBreak: '\n', carriageReturn: '\r', marker: '**',
-  good: '**还在进行中**：', bad: '**还在进行中：**',
   chinesePunct: Object.freeze(['，', '。', '！', '？', '；', '：', '、', '）', '」', '”', '…', '—', '（', '【', '》']),
 })
 export const personaLines = (persona) => persona.split(PERSONA_BOLD.lineBreak)
-export const isRuleLine = (line) => line.includes(PERSONA_BOLD.good) && line.includes(PERSONA_BOLD.bad)
 /** DSH settings.mutate op words and the message role a reminder delivery has. */
 export const OP = Object.freeze({ set: 'set', unset: 'unset' })
 export const ROLE = Object.freeze({ user: 'user' })

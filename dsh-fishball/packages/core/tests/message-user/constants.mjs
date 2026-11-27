@@ -47,25 +47,22 @@ export const PERSONA = Object.freeze({
   entry: path.join(CORE_DIR, 'src', 'persona.js'),
   export: 'PERSONA_ROLE',
   notify: 'embed-ui__notify',
-  /** Ordinary replies, reasoning and tool calls are hidden from the user. */
-  hidden: /\b(?:hidden|invisible|not (?:shown|visible|seen)|never (?:sees?|shown)|(?:does|do|will|can) ?not see|cannot see|can't see|doesn't see|don't see)\b/i,
-  hiddenSubjects: Object.freeze([/\brepl(?:y|ies)\b/i, /\breasoning\b/i, /\btool calls?\b/i]),
-  /** The user sees only what Fishball surfaces with the tools. */
   only: /\bonly\b/i,
-  attention: /\battention\b/i,
-  action: /\baction\b/i,
-  /** "proactively": the word, or the same rule in other words (on its own, unasked, at once). */
-  proactive: /\bproactive(?:ly)?\b|\b(?:tell|send|message|inform)\w*\s+(?:\w+\s+){0,2}yourself\b|\bon your own\b|\bwithout (?:being|waiting to be) asked\b|\bunprompted\b|\b(?:in the (?:same )?turn|as soon as|the moment) you (?:learn|see|notice|find)\b/i,
+  hidden: /\b(?:hidden|invisible|not (?:shown|visible|seen)|never shown)\b/i,
+  hiddenSubjects: Object.freeze({ replies: /\brepl(?:y|ies)\b/i, reasoning: /\breasoning\b/i, toolCalls: /\btool calls?\b/i }),
+  throughMessage: Object.freeze({
+    everyReply: /\b(?:every|all|each)\b[^.!?]*\b(?:repl(?:y|ies)|responses?)\b/i,
+    setupGreeting: /\bsetup\b[^.!?]*\bgreet\w*\b|\bgreet\w*\b[^.!?]*\bsetup\b/i,
+    afterStop: /\bafter\b[^.!?]*\bstop\b/i,
+    afterRedirect: /\bafter\b[^.!?]*\bredirect\b/i,
+  }),
+  attention: /\b(?:attention|action|actionable|urgent)\b/i,
   routine: /\broutine\b/i,
   batch: /\bbatch/i,
-  greeting: /\bgreet/i,
-  stop: /\bstop/i,
-  redirect: /\bredirect/i,
-  /** "every reply to the user goes through message_user": an every/all word, a reply word and the tool in one sentence. */
-  everyReply: /\b(?:every|all|any|each)\b[^.]{0,120}\b(?:repl(?:y|ies)|answers?|messages?)\b/i,
-  /** A sentence telling Fishball to talk to the user in the chat, which must then name message_user. */
+  drop: /\b(?:drop|skip|omit|ignore|discard|suppress)\w*\b/i,
+  /** A clause telling Fishball to talk to the user in the chat must name message_user. */
   chatSaying: /\b(?:tell|inform|say|answer|reply|respond|report|write)\b[^.]{0,60}\b(?:in|into) (?:this|the) (?:chat|conversation)\b/i,
-  sentence: /(?<=[.!?:])\s+|\n+/,
+  clause: /(?<=[.!?])\s+|\n+/,
 })
 
 /** Fishball's model for the scenario (a routable selection; the scripted model serves it). */

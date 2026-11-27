@@ -59,13 +59,15 @@ export function registerWakeSystemCases() {
   })
 
   // Item 7: the persona no longer sends Fishball to session_read for a finished turn, and says events come batched.
-  row('WAKE-SYS-EP-02', 'persona turn-finished', 'no persona sentence about a turn-finished event tells Fishball to use session_read (the event carries the final message)', async () => {
-    const offending = (await personaSentences()).filter((s) => /turn-finished|finishes a turn|finished turn/i.test(s) && s.includes(MCP.tools.sessionRead))
-    assert.deepEqual(offending, [])
+  row('WAKE-SYS-EP-02', 'persona turn-finished', 'the turn-finished event supplies finalMessage rather than requiring session_read', async () => {
+    const finished = (await personaSentences()).filter((s) => /turn-finished|finishes a turn|finished turn/i.test(s))
+    assert.ok(finished.some((s) => /\bfinalMessage\b/.test(s)), 'no turn-finished rule identifies finalMessage')
+    const readInstruction = new RegExp('\\b(?:use|call)\\b[^.]*\\b' + MCP.tools.sessionRead + '\\b', 'i')
+    const extraContext = /\bonly\b[^.;]*\b(?:more|additional|extra) context\b/i
+    assert.deepEqual(finished.filter((s) => readInstruction.test(s) && !extraContext.test(s.split(';').find((part) => readInstruction.test(part)) ?? '') && !/\b(?:no|not|never|without|don['’]t)\b/i.test(s)), [])
   })
-  row('WAKE-SYS-EP-02', 'persona batched', 'the persona says events arrive batched (one sentence naming events and a batch / together)', async () => {
-    const said = (await personaSentences()).filter((s) => /\bevents?\b/i.test(s) && /\bbatch(?:ed|es)?\b|\btogether\b|\bat once\b/i.test(s))
-    assert.ok(said.length > 0, 'no persona sentence says events arrive batched')
+  row('WAKE-SYS-EP-02', 'persona batched', 'the persona says events arrive batched', async () => {
+    assert.ok((await personaSentences()).some((s) => /\bevents?\b/i.test(s) && /\bbatch\w*\b|\btogether\b|\bat once\b/i.test(s)), 'no statement says events arrive batched')
   })
 
   row('WAKE-SYS-ST-01', 'one turn', `the window set live to ${WAKE.windowSeconds} s through core's settings; three messages committed together → ONE delivery to the manager holding all three, admitted no earlier than the window`, async () => {

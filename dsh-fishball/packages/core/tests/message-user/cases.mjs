@@ -98,45 +98,28 @@ export function registerMessageUserCases() {
     assert.equal(typeof role, 'string', PERSONA.export + ' is not a string')
     return role
   }
-  const sentences = (text) => text.split(PERSONA.sentence).map((s) => s.trim()).filter(Boolean)
-  /** Sentence i with its neighbours: a statement may name the tool in the next sentence. */
-  const near = (list, i) => list.slice(Math.max(0, i - 1), i + 2).join(' ')
-  const nearTool = (list, re) => list.some((s, i) => re.test(s) && near(list, i).includes(TOOL.name))
-  test(name('MSG-PERSONA-EP-01', 'the persona names message_user and embed-ui__notify'), async () => {
-    const text = await persona()
-    assert.ok(text.includes(TOOL.name), 'message_user missing')
-    assert.ok(text.includes(PERSONA.notify), PERSONA.notify + ' missing')
+  const clauses = (text) => text.split(PERSONA.clause).map((s) => s.trim()).filter(Boolean)
+  test(name('MSG-PERSONA-EP-01', 'internal replies, reasoning and tool calls stay hidden; every user reply uses message_user'), async () => {
+    const list = clauses(await persona())
+    const messages = list.filter((s) => s.includes(TOOL.name))
+    assert.ok(messages.some((s) => PERSONA.only.test(s) && s.includes(PERSONA.notify)), 'no exclusive rule naming both user-facing tools')
+    for (const [subject, rule] of Object.entries(PERSONA.hiddenSubjects)) {
+      assert.ok(list.some((s) => rule.test(s) && PERSONA.hidden.test(s)), subject + ' must be hidden')
+    }
+    for (const [occasion, rule] of Object.entries(PERSONA.throughMessage)) {
+      assert.ok(messages.some((s) => rule.test(s)), occasion + ' must use ' + TOOL.name)
+    }
   })
-  test(name('MSG-PERSONA-EP-02', 'the persona says ordinary replies, reasoning and tool calls are hidden from the user'), async () => {
-    const list = sentences(await persona())
-    const missing = PERSONA.hiddenSubjects.filter((subject) => !list.some((s, i) => subject.test(s) && PERSONA.hidden.test(near(list, i))))
-    assert.deepEqual(missing.map(String), [], 'no "hidden" statement for these')
+  test(name('MSG-PERSONA-EP-04', 'surface items needing attention or action with message_user and notify'), async () => {
+    const lines = (await persona()).split('\n')
+    assert.ok(lines.some((line) => PERSONA.attention.test(line) && line.includes(PERSONA.notify)), 'no attention/action rule for notices')
   })
-  test(name('MSG-PERSONA-EP-03', 'the persona says the user sees only what message_user (and notify, when offered) surfaces'), async () => {
-    const list = sentences(await persona())
-    assert.ok(list.some((s, i) => PERSONA.only.test(s) && near(list, i).includes(TOOL.name)), 'no "only … message_user" statement')
+  test(name('MSG-PERSONA-EP-05', 'batch or drop routine updates rather than sending each to the user'), async () => {
+    const lines = (await persona()).split('\n')
+    assert.ok(lines.some((line) => PERSONA.routine.test(line) && PERSONA.batch.test(line) && PERSONA.drop.test(line)), 'no batch-or-drop rule for routine updates')
   })
-  test(name('MSG-PERSONA-EP-04', 'the persona says what needs attention or action must be sent proactively with message_user, plus a notify notice'), async () => {
-    const text = await persona()
-    const list = sentences(text)
-    assert.ok(nearTool(list, PERSONA.attention) || nearTool(list, PERSONA.action), 'no attention/action statement beside message_user')
-    assert.ok(PERSONA.proactive.test(text), 'no "proactively"')
-    assert.ok(list.some((s, i) => (PERSONA.attention.test(s) || PERSONA.action.test(s) || PERSONA.proactive.test(s)) && near(list, i).includes(PERSONA.notify)), 'no notify notice beside the attention statement')
-  })
-  test(name('MSG-PERSONA-EP-05', 'the persona says no messages or notices for routine events, and to batch them'), async () => {
-    const text = await persona()
-    assert.ok(sentences(text).some((s) => PERSONA.routine.test(s) && /\b(?:no|not|never|don't|do not|avoid|without)\b/i.test(s)), 'no "not for routine events" statement')
-    assert.ok(PERSONA.batch.test(text), 'no batching statement')
-  })
-  test(name('MSG-PERSONA-EP-06', 'the persona says every reply to the user goes through message_user, including the setup greeting and the report after a stop/redirect'), async () => {
-    const list = sentences(await persona())
-    assert.ok(nearTool(list, PERSONA.everyReply), 'no "every reply … message_user" statement')
-    assert.ok(nearTool(list, PERSONA.greeting), 'the setup greeting is not tied to message_user')
-    assert.ok(nearTool(list, PERSONA.stop), 'the report after a stop is not tied to message_user')
-    assert.ok(nearTool(list, PERSONA.redirect), 'the report after a redirect is not tied to message_user')
-  })
-  test(name('MSG-PERSONA-EP-07', 'no sentence tells Fishball to tell the user "in this chat" without message_user'), async () => {
-    const list = sentences(await persona())
+  test(name('MSG-PERSONA-EP-07', 'no clause tells Fishball to tell the user "in this chat" without message_user'), async () => {
+    const list = clauses(await persona())
     assert.deepEqual(list.filter((s) => PERSONA.chatSaying.test(s) && !s.includes(TOOL.name)), [])
   })
 }

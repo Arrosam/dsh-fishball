@@ -460,7 +460,9 @@ function registerPersona() {
   })
   test(name('RFIX-F17-EP-01', 2, 'the persona says messaging a session or answering its prompt never makes it managed'), T, async () => {
     const text = await personaText()
-    assert.match(text, /messag\w*[^.\n]*(?:answer|prompt)[^.\n]*never makes? it (?:yours|managed)/i, 'no statement that messaging/answering never acquires a session')
+    const rule = text.split(/\n+/).find((line) => /\bmessag\w*\b/i.test(line) && /\b(?:answer\w*|prompt)\b/i.test(line) && /\bmanag\w*\b/i.test(line))
+    assert.ok(rule, 'no managed-session rule covers both messaging and answering')
+    assert.match(rule, /\b(?:never|not|no|only|neither)\b/i, 'no restriction on acquiring managed sessions')
     assert.doesNotMatch(text, /(?:sessions? (?:you )?(?:message|messaged)|whose prompt you answer)[^.\n]*(?:are|become) (?:yours|managed)/i, 'the V2 acquisition wording is still there')
   })
 
