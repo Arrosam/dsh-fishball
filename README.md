@@ -44,7 +44,7 @@ is installed; the runner links the workspace packages into `node_modules/`.
 | [docs/testing/inventory.md](<docs/testing/inventory.md>) | Every behaviour the old `test/v3` suites covered, how it fared on the old code, and where it is tested now. |
 | [docs/testing/coverage.md](<docs/testing/coverage.md>) | The check of the new tests against that inventory, and every expectation that was rewritten. |
 | [docs/testing/regressions.md](<docs/testing/regressions.md>) | Each fix's regression cases and how they were shown to fail before the fix. |
-| [docs/testing/bugs.md](<docs/testing/bugs.md>) | Real bugs the tests found, open until fixed. |
+| [docs/testing/bugs.md](<docs/testing/bugs.md>) | Real bugs the tests found (four, none fixed on this branch), open until fixed. |
 
 ## Install and uninstall
 

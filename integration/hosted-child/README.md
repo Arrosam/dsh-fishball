@@ -40,8 +40,8 @@ node scripts/test-package.mjs integration/hosted-child tests/placement.test.mjs 
 ```
 
 Each run gets its own HOME, TMPDIR and test-homes folder (scripts/test-package.mjs); no time limit
-is set, so a condition that never comes shows as a hang. A full run takes about 6–10 minutes on an
-idle machine (each child start is a few seconds; much longer under load).
+is set, so a condition that never comes shows as a hang. Each child start takes a few seconds, so a
+full run takes minutes.
 
 ## Fixtures
 
@@ -53,5 +53,5 @@ minimal bundles that register nothing.
 
 - `CP-R8 stopped`, `CP-R3 cancel, connection open`, `IREADY-SYSTEM operations`,
   `IREADY-SYSTEM publish-dispose`, `HOST-DT-01 row 7`: not observable from outside (each case says why).
-- `HOST-UC-02 A1` and `HOST-UC-02 reconnect`: real bugs (the child does not link again after a host
-  restart, and does not pair a Reconnect's new entry).
+- `HOST-UC-02 A1`, `HOST-UC-02 main` and `HOST-UC-02 reconnect`: real bugs BUG-2, BUG-3 and BUG-4
+  ([docs/testing/bugs.md](<../../docs/testing/bugs.md>)).
