@@ -1,10 +1,11 @@
 # C-WIRE-2 — interactions of managed sessions (use cases and derived cases)
 
 Suite `dsh-connector.interactions` (`packages/dsh-connector/tests/interactions/`). It runs on a real booted
-DSH (the C-WIRE world, `wire/world.mjs`, extended by `extension.mjs`) on DSH 0.2.1-rc.5 and
-0.2.2-rc.1. The principal is a stock MCP SDK client of the SDK under test, paired through
+DSH (the C-WIRE world, `dsh-connector-test-helpers/connector-world/world.mjs`, extended by
+`connector-world/interactions-extension.mjs`) on the current DSH day to day and on every DSH of the
+release matrix before a release. The principal is a stock MCP SDK client of the SDK under test, paired through
 `client_credentials`. The session agent is DSH's own agent with the scripted fake model
-(`test/support/fixtures/fake-llm.mjs`). The user is played by two stand-ins appended as root
+(`dsh-connector-test-helpers/dsh/fake-llm.mjs`). The user is played by two stand-ins appended as root
 listeners after boot: a stock prompt (`approval/request`) and the session's own question card
 (`user-questions/request`). The connector's listeners are prepended at row apply, so the stand-ins
 are reached only when the connector passes a request on. No connector module is read or imported.

@@ -23,3 +23,38 @@ Design: [watchdog-project-notes.md](../../docs/watchdog-project-notes.md). It ne
 - **Judging** runs in a side session on Watchdog's own read-only agent preset `watchdog`, one side session per supervised session.
 - **Persistence:** briefs are kept in `<DSH home>/dsh-connector-watchdog/briefs.json` and survive a restart.
 - **Settings:** `minCheckIntervalSeconds` (60–86400, default 1740), `readMaxMessages` (1–100, default 8), `readMaxBytes` (1024–1048576, default 8192), `checkTimeoutSeconds` (30–900, default 120). Installed through the `dsh-connector-amenities` umbrella, edit them on its component page; a saved change re-applies Watchdog at once and re-arms every unpaused brief's patrol with the new interval. Installed alone it has no settings page (it has no browser code): edit its row's `config` in the profile's `cordis.patch.yml`.
+
+## Structure
+
+```
+packages/dsh-connector-watchdog/
+  index.js          the row: wires core.js to the connector's services, the judge and the store
+  src/core.js       the behaviour over injected ports: briefs, permission decisions, patrol, drift
+  src/judge.js      the judge: one side session per supervised session on the `watchdog` preset
+  src/verdict.js    reads the judge's `{verdict, reason}` answer and its failures
+  src/tools.js      the contributed tools (`watchdog_brief`, `_refine`, `_pause`, `_resume`, `watchdog_session_start`)
+  src/store.js      briefs persisted in `<DSH home>/dsh-connector-watchdog/briefs.json`
+  src/config.js     the settings
+  src/constants.js  names, the brief record, tool wording and codes, the judge's instructions
+  cordis.patch.yml  inserts the `preset-watchdog` and `dsh-connector-watchdog` rows
+  assets/           the icon
+  tests/            the package's suites
+```
+
+## Testing
+
+```bash
+npm test --workspace dsh-connector-watchdog
+```
+
+| `tests/` | What it checks |
+| --- | --- |
+| `core.test.mjs` | `src/core.js` and `src/store.js` over fake connector services, a fake judge and fake timers: briefs, decisions, patrol timing, drift, persistence. No DSH is booted. |
+| `live-config/` | Its settings are live: the four fields and their bounds, a change re-arms every unpaused brief's patrol ([use cases](<tests/live-config/USE-CASES.md>)). |
+
+Watchdog running beside the connector in one real DSH (WD-L01…13: the delegate path, Stop,
+`watchdog_session_start`, the settlements the manager sees) is the integration package
+[`integration/connector-watchdog`](<../../integration/connector-watchdog/README.md>). Its icon is
+checked in [`integration/package-icons`](<../../integration/package-icons/README.md>). Both run
+before a release. See [the testing guide](<../../docs/testing/README.md>).
+

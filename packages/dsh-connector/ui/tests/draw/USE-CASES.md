@@ -14,7 +14,7 @@ row by file URL (so C-EXT traces the namespace to its package); embed-UI's brows
 suite's `FakeHandover`), K3 `dshInstanceChild`, `appReady`, DSH's `connection.fetch` (an in-process
 route table the page's `fetch` and `EventSource` are answered from), and the client services
 `slots`, `locale`, `configForms`, `pluginNavigation`, `layout`. React is the hook shim of
-test/support/rp-recommend.mjs (no React is installed). No child DSH, no DSH home, no network.
+dsh-connector-test-helpers/page/react-shim.mjs (no React is installed). No child DSH, no DSH home, no network.
 
 **Actors.** The *owner* (the user at the main DSH page); an *agent* (any principal calling the
 contributed tools through C-EXT); *embed-UI* (`dsh-connector-ui`, host half and browser half); the

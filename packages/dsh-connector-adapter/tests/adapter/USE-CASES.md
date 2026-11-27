@@ -16,13 +16,13 @@ values (`packages/dsh-connector/mcp-schema`) give the paths and the scope.
 
 ## World
 
-- **N** is an in-process cordis `Context` of the SDK under test (0.2.1-rc.5 and 0.2.2-rc.1). It runs:
+- **N** is an in-process cordis `Context` of the SDK under test (the current DSH day to day, each release-matrix DSH at release). It runs:
   - the real `dsh-credentials-local` (a temp dir, `.credentials.yaml` mode 0600);
   - `dsh-authorization`, `dsh-system-prompt` and `dsh-tools`;
   - the adapter, from `createAdapterPlugin({now, timers, fetch})`. A fake clock drives `now` and
     `timers`. `fetch` records every request and is the only route to other hosts.
 - A restart of N disposes the context and builds a new one on the same credentials file.
-- **C** is a fake DSH connector on 127.0.0.1 ([fakes.mjs](../../dsh-connector-adapter/oauth-client/fakes.mjs)):
+- **C** is a fake DSH connector on 127.0.0.1 ([fakes.mjs](<../oauth-client/fakes.mjs>)):
   - it serves PRM, AS metadata, an approval listener on its own port, the token endpoint with
     rotation and reuse detection, and an MCP 2026-07-28 endpoint;
   - it can restart (access tokens lost, refresh tokens kept), drop access tokens early, and disable

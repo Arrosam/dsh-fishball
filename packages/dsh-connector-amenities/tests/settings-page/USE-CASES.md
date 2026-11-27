@@ -10,17 +10,17 @@ implementer relayed the same day (dictionary keys `hint`, `summary.<row>`, `fiel
 
 ## World ([page.mjs](<page.mjs>))
 
-- client.js runs as a classic script in a node:vm page (support/browser-sandbox.mjs); its plugin is
-  applied by the SDK's real cordis Context with `slots` and `locale` (fishball-core's `pageServices`),
+- client.js runs as a classic script in a node:vm page (`dsh-connector-test-helpers/page/browser-sandbox`); its plugin is
+  applied by the SDK's real cordis Context with `slots` and `locale` (`pageServices`, `dsh-connector-test-helpers/page/services`),
   a scripted `configForms` and `settingsSchema` (rehydrate = `new Schema(json)` of the SDK's
   schemastery, validate) built from DSH's dsh-client-ui-settings contracts; `whileServed` is DSH's own
   algorithm over the scripted mirror.
-- React is the repo's hook shim (support/rp-recommend.mjs). The primitives are DSH's own
+- React is the repo's hook shim (`dsh-connector-test-helpers/page/react-shim`). The primitives are DSH's own
   SettingsForm, SettingsValueField, settingsNumberField, settingsTextField and SettingsFormModel,
   read from the installed 0.2.2-rc.3 web frontend's source map ([primitives.mjs](<primitives.mjs>));
   Button and Input are pass-through fakes.
 - The Host model: per namespace, the view DSH's own dsh-settings serves for the member's real Config
-  (test/support/amenity-settings.mjs); `mutate(ops, rev)` is refused on a stale revision, when not
+  (`servedNamespace`, `dsh-connector-test-helpers/dsh/settings-schema`); `mutate(ops, rev)` is refused on a stale revision, when not
   writable, when told to refuse, or when the result fails the Config; otherwise it stores the user
   layer, bumps the revision and re-serves.
 

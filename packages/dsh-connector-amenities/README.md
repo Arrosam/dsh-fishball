@@ -38,3 +38,29 @@ Known limits:
 
 Only this umbrella has browser code (`client.js`: the settings-page hint and its amenities'
 settings pages); the amenities have none.
+
+## Structure
+
+```
+packages/dsh-connector-amenities/
+  index.js          the umbrella's own row (no behaviour)
+  client.js         the settings-page hint and the members' settings pages
+  cordis.patch.yml  inserts the umbrella's row and its members' rows
+  assets/           the icon
+  tests/            the package's suites
+```
+
+## Testing
+
+```bash
+npm test --workspace dsh-connector-amenities
+```
+
+| `tests/` folder | What it checks |
+| --- | --- |
+| `settings-page` | The members' settings pages (`client.js`) in a scripted Plugins page served by DSH's own settings service: entries, fields and bounds, the adapter's list rules, Save, read-only and unavailable states, the manifests ([use cases](<tests/settings-page/USE-CASES.md>)). |
+
+Its icon is checked with the others in
+[`integration/package-icons`](<../../integration/package-icons/README.md>), before a release. See
+[the testing guide](<../../docs/testing/README.md>).
+

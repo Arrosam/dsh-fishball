@@ -6,7 +6,7 @@ These rows are derived from the direct review brief (B1, B2, S1, S5, S12), root 
 V3 design §3.1 / §3.2 / §5.5a, and frozen K1 W4b-2 / tools / SettingsWriter / SETTINGS_REFUSAL.
 No connector implementation was inspected. Existing wire TEST fixtures establish API conventions.
 Product values come from those contracts or the existing requirement-owned wire constants; other
-values are named test fixtures. Both SDK entry files register the same rows.
+values are named test fixtures. The suite's one entry (`review.test.mjs`) registers the rows once per DSH version of the run.
 
 | ID | Actor / flow | Observable expected result |
 | --- | --- | --- |

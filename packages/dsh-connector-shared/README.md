@@ -26,6 +26,30 @@ There is nothing to install or remove yourself. The library arrives inside the p
 it (`dsh plugin --profile <name> add dsh-agent-connector`, and likewise `dsh-connector-ui` or
 `dsh-instance`) and leaves with them (`dsh plugin --profile <name> remove <npm name>`).
 
+## Structure
+
+```
+packages/dsh-connector-shared/
+  redact.js         ./redact
+  request-host.js   ./request-host
+  live-settings.js  ./live-settings
+  tests/            the package's suites
+```
+
+## Testing
+
+```bash
+npm test --workspace dsh-connector-shared
+```
+
+| `tests/` folder | What it checks |
+| --- | --- |
+| `live-settings` | `settingsSnapshot` and `runWithSettings` on a real Cordis loader: first run, re-run on a live change, dispose ([use cases](<tests/live-settings/USE-CASES.md>)). |
+| `redact` | `redact(text)` and `redactContinued`: exact output, no planted secret left, idempotence, statelessness ([cases](<tests/redact/cases.md>)). |
+
+No integration package covers it; the packages that bundle it test their own use of it. See
+[the testing guide](<../../docs/testing/README.md>).
+
 ## Licence
 
 MIT. See `LICENSE`.

@@ -284,6 +284,89 @@ names are `<namespace>.<tool>`, and they are listed after the connector's own to
 are the maintainers' contract notes, with the history of each decision; this README is the
 user-facing description.
 
+## Structure
+
+```
+packages/dsh-connector/
+  index.js           the dsh-connector row; composes src/wire/
+  client.js          browser half: the settings page, loads client.marks.js, exports `ui`
+  client.marks.js    Hand over / Take back, "Managed by", the managed row mark
+  cordis.patch.yml   inserts the dsh-connector and dsh-connector-ui rows
+  src/               host code (table below)
+  mcp-schema/        ./mcp-schema: the K1 contract (schemas, events, codes, limits)
+  tools/             ./tools: the K2 contribution contract and defineTool
+  host-services/     the K3 host-only service types (*.d.ts)
+  ui/                the dsh-connector-ui component (see its README)
+  assets/  locale/   the icon; the Plugins page titles
+  tests/             the package's suites
+```
+
+| `src/` folder | What it holds |
+| --- | --- |
+| `wire/` | The row's composition: domain, mailbox and session source wired together. |
+| `mcp/http/` | The MCP endpoint, the request gate, the listen streams. |
+| `mcp/oauth/` | The authorization server: token store, token endpoint, client credentials, bearer verifier, failure limiter. |
+| `mcp/oauth-web/` | The approval listener and page, CIMD, PKCE, the `authorization_code` and `refresh_token` grants. |
+| `mcp/tools/` | The core MCP tools and their dispatch. |
+| `domain/` | What the session tools do: approvals, questions, prompts, grants, attachments, tree stop. |
+| `tokens/` | The token entries. |
+| `pairs/` | The pair store: agent ids and names. |
+| `mailbox/` | Each agent's mailbox. |
+| `routing/` | Managed state, the router, the offer ledger. |
+| `handover/` | The `dshConnectorHandover` service. |
+| `hosted/` | The `dshConnectorTokens` service: hosted tokens and succession. |
+| `revocation/` | What switching off or deleting a token entry does. |
+| `delegates/` | Permission delegates of managed sessions (`dshConnectorSessions.delegates`). |
+| `contrib/` | The contribution service `dshConnectorTools`. |
+| `ui/` | The UI backend `dshConnectorUi` that `client.marks.js` and `dsh-connector-ui` draw from. |
+| `settings/`, `settings-page/` | The settings schema; the host half of the settings page. |
+| `schema-value/` | The one JSON Schema value check. |
+
+Files directly in `src/` are shared helpers: config, constants, errors, the model catalog and
+selection, session facts, the serial chain, text helpers.
+
+## Testing
+
+```bash
+npm test --workspace dsh-agent-connector
+```
+
+This runs the suites below and the suites of the UI component in [`ui/tests/`](<ui/README.md#testing>),
+on the current DSH. Each folder has one `*.test.mjs` entry. See
+[the testing guide](<../../docs/testing/README.md>) for options and the release run.
+
+| `tests/` folder | What it checks |
+| --- | --- |
+| `contract/k1-mcp-schema` | K1: the frozen values of `./mcp-schema` (tool names and schemas, result envelope, refusal codes, event types, OAuth metadata, limits) and its K1b/K1c amendments. |
+| `contract/k1d-amendments` | K1d: the amendments to K1 and `host-services/tokens.d.ts` (token reveal, page id, `Mailbox.transfer`, `SettingsWriter`, `SessionNotes`). |
+| `contract/k2-tools` | K2: the frozen values of `./tools` (apiVersion, signatures, codes, `defineTool`). |
+| `contract/k3-host-services` | K3: the host-only service contracts, cross-checked against a copy of fishball-core's contracts (`fixtures-fishball-core/`). |
+| `contrib` | The contribution service: registration, namespaces, limits, `emit`, calls. |
+| `delegates` | Permission delegates: the step before a managed session's request goes to its manager. |
+| `hosted` | `dshConnectorTokens` (`createHosted`, `entryState`, `retire`), succession, `Mailbox.transfer`. |
+| `instance-ext` | The W0 MCP use cases, registered as `todo` rows ([use cases](<../../docs/test-design/instance-ext-w0-mcp-use-cases.md>)). |
+| `interactions` | Managed sessions on a real booted DSH: approvals, questions, prompts, grants, messaging, restart, delegates, `session_start`. |
+| `mailbox` | The mailbox module over real DSH storage. |
+| `marks` | Hand over / Take back, "Managed by" and the managed row mark (`client.marks.js`). |
+| `mcp-http` | The MCP route: check order, Host and Origin, bearer 401s, body and in-flight limits, listen streams. |
+| `mcp-tools` | The core MCP tools: result envelope, closed inputs, refusals for sessions another agent manages. |
+| `oauth` | Token store, failure limiter, bearer verifier, token endpoint, `client_credentials`, metadata documents. |
+| `oauth-web` | The approval listener and page, CIMD, PKCE, `authorization_code` and `refresh_token`, the page id. |
+| `pairs` | The pair store, `pair` and `set_name`, names and ids. |
+| `report` | `turn-finished` at a root session's standstill: outcome, final message, stop reason. |
+| `revocation` | Routing's `endPrincipal` and `Mailbox.retire` misuse. |
+| `routing` | Managed state, the router, `message_agent`, the offer ledger, the hand-over service. |
+| `schema-value` | `validateValue(schema, value)` against DSH's own JSON Schema check. |
+| `settings-page` | The settings page (`client.js`) and its routes: create a token and show it once. |
+| `tokens` | The token registry: create, reveal, match, list saves. |
+| `ui` | The UI backend: marks, Hand over targets and lights, attention latch, notify, owner-only routes, event stream, contributed tools. |
+| `wire` | The row wired in a real DSH web profile: discovery, identity and the DSH name ([MULTI-2](<tests/wire/README-MULTI-2.md>)); `wire/review` holds the review regressions. |
+
+Behaviour across packages is tested in the integration packages:
+[`connector-watchdog`](<../../integration/connector-watchdog/README.md>) (Watchdog beside the
+connector in one DSH) and [`package-icons`](<../../integration/package-icons/README.md>) (the
+connector's icon is the reference the other icons are checked against). They run before a release.
+
 ## Licence
 
 MIT. See `LICENSE` and `THIRD_PARTY_NOTICES.md`.

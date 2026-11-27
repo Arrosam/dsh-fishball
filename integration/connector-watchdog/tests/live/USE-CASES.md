@@ -2,7 +2,7 @@
 
 The real dsh-connector-watchdog bundle is linked beside `dsh-agent-connector` in a booted DSH (the C-WIRE worker with
 the interactions extension). Fishball is a stock MCP client; the supervised session and the judge's side
-session answer from the scripted fake model. Source: [watchdog-project-notes.md](../../../../../docs/watchdog-project-notes.md)
+session answer from the scripted fake model. Source: [watchdog-project-notes.md](../../../../docs/watchdog-project-notes.md)
 §2–§3 and the user's decisions of 2026-11-20.
 
 | Row | Technique | What it proves |
@@ -21,6 +21,6 @@ session answer from the scripted fake model. Source: [watchdog-project-notes.md]
 | WD-L12 | ST | Contrast, the known window: `session_start`, its first request reaches the manager as a plain offer (no `delegate`), and only then `watchdog_brief` (the order is made deterministic by briefing after the offer arrived): the brief succeeds, the waiting request stays with the manager, the judge is not asked. |
 | WD-L13 | DT | Refusals over MCP: empty purpose → `empty-purpose`; a start refusal keeps a declared or K2 shared code (`invalid-decision`, `forbidden`, `unknown-session`, `limit-exceeded`) with message `session_start refused: <code>`; `invalid-arguments` (a K2 call code) → `operation-failed`, the K1 code in the message; nothing created. |
 
-`watchdog_session_start`'s own logic (args without purpose/scope, the brief inside `afterManaged`, `managed: false` → `supervised: false`, no `start` → `forbidden`) is in `../core.test.mjs` over a scripted `start`; the connector's `dshConnectorSessions.start` is SRV-START-01…06 in `dsh-connector/tests/interactions/start-cases.mjs`.
+`watchdog_session_start`'s own logic (args without purpose/scope, the brief inside `afterManaged`, `managed: false` → `supervised: false`, no `start` → `forbidden`) is in `packages/dsh-connector-watchdog/tests/core.test.mjs` over a scripted `start`; the connector's `dshConnectorSessions.start` is SRV-START-01…06 in `packages/dsh-connector/tests/interactions/start-cases.mjs`.
 
-Not here: patrol timing (minimum 60 s) is covered over fake timers in `../core.test.mjs`; a real model's judgement is not tested.
+Not here: patrol timing (minimum 60 s) is covered over fake timers in `packages/dsh-connector-watchdog/tests/core.test.mjs`; a real model's judgement is not tested.

@@ -126,7 +126,8 @@ helpers and the adapter's OAuth client), never on `fishball-shared`. The earlier
   supervision claims, health state and config. Interception and health do not fit the new role
   (main DSH, no failure design); the config's `minCheckIntervalSeconds` row and the supervision
   claim logic may be reused.
-- `test/v3/wd-route/**`: about 1,080 lines; black-box cases for the old routing.
+- `test/v3/wd-route/**` (in dsh-fishball's history; this repository has no root `test/` folder):
+  about 1,080 lines; black-box cases for the old routing.
 - The Watchdog test design: `docs/test-design/v3/05-watchdog.md` (WD-UC/EP/BVA/DT/ST cases) and
   the Watchdog rows of 04, 06, 08, 09, 10, 11.
 - V2 history: `docs/v2-watchdog-plan` @ `8c883be`, the T0 reconciliation @ `bdeb28a`.

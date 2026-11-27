@@ -8,7 +8,8 @@ session relayed (2026-11-16). The user's words: "不允许改token值，一旦�
 
 Registry rows live in `packages/dsh-connector/tests/tokens/` (suite `dsh-connector.tokens`); route, route
 registration and page rows in `packages/dsh-connector/tests/settings-page/` (suite
-`dsh-connector.settings-page`). Both run on DSH 0.2.1-rc.5 and 0.2.2-rc.1.
+`dsh-connector.settings-page`). Both run on the current DSH day to day and on every DSH of the
+release matrix before a release (`npm test --workspace dsh-agent-connector`; `npm run test:release`).
 
 ## Use cases
 

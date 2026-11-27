@@ -7,7 +7,7 @@ R-OA-21 rules 3 and 5, R-OA-13, R-OA-14, R-OA-16, R-TOK-04, R-SEC-02, spike S7c 
 holds no adapter code and makes no DSH-connector check, so no row here expects one.
 
 The cases run on the real `dsh-credentials-local` (in a temp dir) and the real `dsh-authorization`
-of each SDK (0.2.1-rc.5 and 0.2.2-rc.1). The MCP SDK `@modelcontextprotocol/client` 2.2.0 is
+of each SDK the run covers (the current DSH day to day, each release-matrix DSH at release). The MCP SDK `@modelcontextprotocol/client` 2.2.0 is
 handed to the library from the SDK under test. The fake DSH connector is in [fakes.mjs](fakes.mjs).
 Every test title is `[SDK <v>] <case id> <row> …`.
 

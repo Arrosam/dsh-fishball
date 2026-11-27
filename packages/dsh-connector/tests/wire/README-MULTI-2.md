@@ -1,6 +1,6 @@
 # MULTI-2 independent black-box test design
 
-Derived only from PLAN-MULTI §§3.3, 4.1, 4.3 and §8 MULTI-2, the direct test brief, frozen public contracts when available, and preexisting harnesses. No product implementation was inspected. Tests use public HTTP/MCP, native settings, published host modules and rendered page output; product code is never changed by these tests. Both existing SDK entries register the cases (no parallel test matrix).
+Derived only from PLAN-MULTI §§3.3, 4.1, 4.3 and §8 MULTI-2, the direct test brief, frozen public contracts when available, and preexisting harnesses. No product implementation was inspected. Tests use public HTTP/MCP, native settings, published host modules and rendered page output; product code is never changed by these tests. The suite's one entry (`wire.test.mjs`) registers the cases with `forEachVersion`: the current DSH day to day, every release-matrix DSH at release.
 
 **Decision amendment from Fishball, 2026-11-18:** the original portable-OS-watcher limitation is superseded. While `approval.dshName` is empty/whitespace, one local 30,000ms hostname comparison observes OS changes and pushes the standard identity invalidation. Nonblank configuration and disposal stop it; clearing restarts it. This is local OS sampling, not network metadata polling. No assertion assumes a platform-specific watcher or spontaneous delivery before the sampling boundary.
 

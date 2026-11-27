@@ -1,42 +1,65 @@
 # DSH Connector
 
-Generic MCP connector plugins for DeepSeek Harness (DSH). Exposes a DSH's sessions over MCP + OAuth so any managing agent (such as [dsh-fishball](https://github.com/Arrosam/dsh-fishball)) can read, coordinate, and handle approvals/questions across sessions.
-
-Split from `dsh-fishball@84078e5f`.
+Generic MCP connector plugins for DeepSeek Harness (DSH). The connector exposes a DSH's sessions
+over MCP with OAuth, so a managing agent (such as [dsh-fishball](https://github.com/Arrosam/dsh-fishball))
+can start, read and message sessions and answer their permission requests and questions. The
+other packages are optional amenities around it, a shared library, and the test tooling. The
+repository was split from `dsh-fishball@84078e5f`.
 
 ## Packages
 
-| Folder | npm Package | Components & Role |
-| --- | --- | --- |
-| `packages/dsh-connector` | `dsh-agent-connector` | One plugin with 2 components: **`dsh-connector`** (MCP `/api/agent/mcp`, OAuth `/api/agent/oauth`, tokens, pairs, mailbox, routing, bundle settings page, Hand over / Take back marks) and **`dsh-connector-ui`** (`./ui/`, sidebar indicator, agent window, notify prompt, `notify` & `attention.*` tools). |
-| `packages/dsh-connector-adapter` | `dsh-connector-adapter` | Optional amenity: lets any DSH connect to another DSH's connector via `dsh-mcp-client`. Its own bundle. |
-| `packages/dsh-connector-watchdog` | `dsh-connector-watchdog` | Optional amenity: supervises managed sessions against their purpose and approves in-scope permission requests for their manager (see [watchdog-project-notes.md](docs/watchdog-project-notes.md)). Its own bundle. |
-| `packages/dsh-connector-amenities` | `dsh-connector-amenities` | Umbrella: depends on the two amenities so one install brings both; carries only its settings-page hint. |
-| `packages/dsh-connector-shared` | `dsh-connector-shared` | Internal library bundled into DSH-side tarballs (`redact`, `request-host`). Not a plugin. |
+| Folder | npm name | Role | README |
+| --- | --- | --- | --- |
+| `packages/dsh-connector` | `dsh-agent-connector` | The connector plugin: MCP `/api/agent/mcp`, OAuth `/api/agent/oauth`, tokens, pairs, mailbox, routing, its settings page, Hand over / Take back. Ships the `dsh-connector-ui` component. | [README](<packages/dsh-connector/README.md>) |
+| `packages/dsh-connector/ui` | `dsh-connector-ui` (component, not a workspace) | Inside the connector tarball: the Fishball sidebar entries, the agent window, the light and notify prompt, the `notify` and `attention.*` tools. | [README](<packages/dsh-connector/ui/README.md>) |
+| `packages/dsh-connector-adapter` | `dsh-connector-adapter` | Optional amenity: lets a DSH sign in to another DSH's connector through `dsh-mcp-client`. Its own bundle. | [README](<packages/dsh-connector-adapter/README.md>) |
+| `packages/dsh-connector-watchdog` | `dsh-connector-watchdog` | Optional amenity: supervises managed sessions against their purpose and approves in-scope permission requests for their manager. Its own bundle. | [README](<packages/dsh-connector-watchdog/README.md>) |
+| `packages/dsh-connector-amenities` | `dsh-connector-amenities` | Umbrella: depends on the two amenities so one install brings both; carries their settings pages. | [README](<packages/dsh-connector-amenities/README.md>) |
+| `packages/dsh-connector-shared` | `dsh-connector-shared` | Internal library bundled into the DSH-side tarballs (`redact`, `request-host`, `live-settings`). Not a plugin. | [README](<packages/dsh-connector-shared/README.md>) |
+| `packages/dsh-connector-test-helpers` | `dsh-connector-test-helpers` (private) | Shared test tooling: the runner, DSH version binding, case naming, scripted pages, the real-DSH worlds. Never packed. | [README](<packages/dsh-connector-test-helpers/README.md>) |
+| `integration/connector-watchdog` | `dsh-connector-integration-watchdog` (private) | Release-only: Watchdog beside the connector in one real DSH. | [README](<integration/connector-watchdog/README.md>) |
+| `integration/package-icons` | `dsh-connector-integration-package-icons` (private) | Release-only: every plugin package's icon checked together. | [README](<integration/package-icons/README.md>) |
 
-## Related repositories
+## Testing
 
-- `dsh-fishball` — Fishball agent plugins (`fishball-core`, `fishball-ui`, `fishball-shared`, shelved `fishball-board`).
-- `dsh-fishball-instance` — Bridge plugin (`dsh-instance`) that runs a hosted Fishball child inside a DSH with `dsh-agent-connector`.
+Each package has its own suites in its own `tests/` folder. Day to day, run the package you
+changed, on the current DSH:
+
+```bash
+npm test --workspace <npm name>     # or: npm test, inside the package folder
+```
+
+The UI component's suites run with the connector (`npm test --workspace dsh-agent-connector`).
+Behaviour that needs more than one package is in the [integration packages](<integration/README.md>).
+
+Before a release, run every package and integration package in parallel on the release matrix
+(DSH 0.2.1-rc.5, 0.2.2-rc.1, 0.2.2-rc.3); logs go to `.runtime/test-release/<run>/`:
+
+```bash
+npm run test:release
+```
+
+The rules, options and environment variables are in [the testing guide](<docs/testing/README.md>).
+
+## Releasing
+
+- `npm run pack` builds the release tarballs, `SHA256SUMS`, `INSTALL.md`, `PUBLISH.md` and an
+  offline pnpm store into `.runtime/release/<version>/` (`scripts/pack.mjs`).
+- `npm run pack:check` re-verifies an existing release, offline.
 
 ## Design documents
 
-- [`docs/watchdog-project-notes.md`](docs/watchdog-project-notes.md) — Handoff notes for the separate DSH-side Watchdog plugin (`dsh-fishball-watchdog`), moved from `dsh-fishball`.
-- [`docs/test-design/instance-ext-w0-mcp-use-cases.md`](docs/test-design/instance-ext-w0-mcp-use-cases.md) — W0 MCP use cases behind `packages/dsh-connector/tests/instance-ext/`.
+- [`docs/watchdog-project-notes.md`](<docs/watchdog-project-notes.md>): handoff notes for the
+  DSH-side Watchdog plugin, moved from `dsh-fishball`.
+- [`docs/test-design/instance-ext-w0-mcp-use-cases.md`](<docs/test-design/instance-ext-w0-mcp-use-cases.md>):
+  the W0 MCP use cases behind `packages/dsh-connector/tests/instance-ext/`.
 
-Other design documents the code cites (`DESIGN.md`, `docs/planning/v3-*.md`, `docs/test-design/v3/*`) stay in `dsh-fishball`.
+Other design documents the code cites (`DESIGN.md`, `docs/planning/v3-*.md`, `docs/test-design/v3/*`)
+stay in `dsh-fishball`.
 
-## Scripts
+## Related repositories
 
-- `npm run test:v3` — Run all V3 suites for this repository: the cross-package suites under `test/v3/` and every package's own.
-- `npm test --workspace <package>` (or `npm test` inside a package folder) — Run one package's own suites. Each package keeps them in its own `tests/` folder, configured by `tests/test.config.mjs`:
-  - `packages/dsh-connector/tests/` — `dsh-agent-connector`, including its K1/K1d/K2/K3 contract suites;
-  - `packages/dsh-connector/ui/tests/` — `dsh-connector-ui`, including the R-EMBED suite (run with `node test/run-package.mjs packages/dsh-connector/ui`; it is not a workspace);
-  - `packages/dsh-connector-adapter/tests/` — `adapter/` and `oauth-client/`;
-  - `packages/dsh-connector-watchdog/tests/` — the core cases and `live/` (WD-L01…09);
-  - `packages/dsh-connector-amenities/tests/` — the umbrella's install cases;
-  - `packages/dsh-connector-shared/tests/` — `dsh-connector-shared`.
-
-  Shared harness code (`test/support/`, `test/private-skills/`) stays at the root; cross-package suites (`contract/own-schema`, `contract/package-boundaries`, `release/pack`, `fishball-core`, `dsh-instance`) stay under `test/v3/`.
-- `npm run pack` — Build release tarballs into `.runtime/release/<version>/`.
-- `npm run pack:check` — Verify an existing release offline.
+- `dsh-fishball`: the Fishball agent plugins (`fishball-core`, `fishball-ui`, `fishball-shared`,
+  shelved `fishball-board`).
+- `dsh-fishball-instance`: the bridge plugin (`dsh-instance`) that runs a hosted Fishball child
+  inside a DSH with `dsh-agent-connector`.
