@@ -16,3 +16,7 @@ repositories), and the old requirements-only test designs that the per-package t
 | [plugins/](<plugins/>) | the V2 instance extension points and the connector MCP option |
 | [spikes/](<spikes/>) | V2 spikes (body-soul, instance-ext) |
 | [test-design/](<test-design/>) | the requirements-only test designs of V2 and early V3 (the T-SK, T-RP, LITE and V3 case catalogues); the cases they designed now live in the packages' tests |
+
+| [hand-checks/](<hand-checks/>) | manual check reports of the V1 revisions (rev11a–i, messenger, pile, recommended plugins) |
+| [test-catalogue-p2-p12.md](<test-catalogue-p2-p12.md>) | the V1/V2 black-box test catalogue (old test/CASES.md) |
+| [native-production-acceptance.md](<native-production-acceptance.md>) | the acceptance matrix of the attached production child (dsh-instance, now in dsh-fishball-instance) |
