@@ -17,6 +17,10 @@ const HOST = Object.freeze({
   carrierDescription: 'Open a question card without waiting', namespace: 'tools',
   model: { provider: 'question-card-fixture', model: 'scripted' }, reply: 'Answer received.',
 })
+const LONG = Object.freeze({
+  notes: { ...FORM.free, id: 'notes' },
+  skipped: { id: 'release-date', question: 'When should the release start?', options: [{ label: 'Today' }] },
+})
 const options = { skip: sdkMissing, timeout: HOST.timeout }
 const textOf = ({ content }) => content.filter(({ type }) => type === 'text').map(({ text }) => text).join('\n')
 
@@ -271,6 +275,25 @@ caseTest(id, '', 'native cards survive reload and restart, and settle once throu
     expectPending(await snapshot(), sessionId, [])
     expectUserAnswer(userMessages(manager).at(-2), { cardId: free.cardId, answers: freeAnswers })
     expectUserAnswer(userMessages(manager).at(-1), { cardId: multi.cardId, answers: batchAnswers })
+  })
+}))
+
+caseTest(id, '', 'a four-question batch returns before submission and delivers one user message including the skipped id', options, (t) => withWorld(t, async ({ boot }) => {
+  await boot(async ({ manager, snapshot, answer }) => {
+    const questions = [...batch, LONG.notes, LONG.skipped]
+    const cardId = cardIdOf(await call(manager, FORM.ask, { questions }))
+    expectPending(await snapshot(), manager.id, [{ cardId, questions }])
+    assert.deepEqual(userMessages(manager), [], 'filing the card does not fabricate user input')
+
+    const answers = [...batchAnswers, { id: LONG.notes.id, selected: [], custom: FORM.text }, { id: LONG.skipped.id, selected: [] }]
+    const response = await answer(cardId, answers)
+    assert.ok(response.ok, 'the complete reply should accept an empty selection for the skipped id')
+    await manager.whenIdle()
+    expectPending(await snapshot(), manager.id, [])
+    assert.equal(userMessages(manager).length, 1, 'the batch must emit one ordinary user message')
+    expectUserAnswer(userMessages(manager)[0], { cardId, answers })
+    assert.equal((await answer(cardId, answers)).ok, false, 'the settled batch refuses replay')
+    assert.equal(userMessages(manager).length, 1, 'replay must not emit a second user message')
   })
 }))
 

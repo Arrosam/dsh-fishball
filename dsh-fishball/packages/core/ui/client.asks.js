@@ -35,6 +35,8 @@ window.__ModuleLoader__.load({
       order: -10,
       // Match the native question panel’s viewport cap so cards leave the composer usable.
       maxHeight: 'min(60vh, 520px)',
+      // Retain a few visible lines when chrome wraps at very short viewport heights.
+      minQuestionListHeight: 'min(3lh, 20vh)',
       // Core's published answer route and card states, restated because fishball-ui imports nothing
       // of core (Q-G2): core's src/asks/constants.js ASK_ROUTE path without its leading `/`
       // (page-relative), and CARD_STATE. The cards arrive on the page stream's `asks` topic.
@@ -52,7 +54,8 @@ window.__ModuleLoader__.load({
         id: 'fishball-asks-style', root: 'fb-asks', card: 'fb-ask-card', meta: 'fb-ask-meta', preview: 'fb-ask-preview', chevron: 'fb-ask-chevron',
         source: 'fb-ask-source', hidden: 'fb-ask-visually-hidden', from: 'fb-ask-from', time: 'fb-ask-time', body: 'fb-ask-body', badge: 'fb-ask-badge',
         question: 'fb-ask-question', detail: 'fb-ask-detail', label: 'fb-ask-label', args: 'fb-ask-args', row: 'fb-ask-row', reason: 'fb-ask-reason', error: 'fb-ask-error',
-        fields: 'fb-ask-fields', option: 'fb-ask-option',
+        fields: 'fb-ask-fields', option: 'fb-ask-option', questionCard: 'fb-ask-question-card',
+        questionList: 'fb-ask-question-list', progress: 'fb-ask-progress',
       }),
       // K1's ARGUMENTS_STATUS word for whole arguments (core's AskCard.argumentsStatus, ask-card.d.ts).
       argumentsComplete: 'complete',
@@ -104,6 +107,8 @@ window.__ModuleLoader__.load({
       'question.custom': 'Type your answer',
       'question.skip': 'Skip',
       'question.submit': 'Submit',
+      'question.list': 'Questions',
+      'question.progress': '{done} of {total} answered or skipped',
     }
     const zh = {
       waiting: 'Fishball 正在等你回答',
@@ -121,13 +126,15 @@ window.__ModuleLoader__.load({
       'question.custom': '输入你的答案',
       'question.skip': '跳过',
       'question.submit': '提交',
+      'question.list': '问题列表',
+      'question.progress': '已回答或跳过 {done}/{total} 题',
     }
 
     // Keep the approval card's warning band and surface for both kinds of open card.
     const focusRing = 'outline:var(--dsw-focus-ring-width) solid var(--dsw-focus-ring-color, var(--dsw-alias-state-business-primary));outline-offset:-2px'
     const css = [
       // The warn stroke is an overlay above the children, so the opaque band cannot paint over it.
-      `.${ASKS_UI.css.root}{max-height:${ASKS_UI.maxHeight};overflow:auto;overscroll-behavior:contain}`,
+      `.${ASKS_UI.css.root}{max-height:${ASKS_UI.maxHeight};overflow:auto;overscroll-behavior:contain;grid-auto-rows:max-content}`,
       `.${ASKS_UI.css.card}{position:relative}`,
       `.${ASKS_UI.css.card}::after{content:"";position:absolute;inset:0;border-radius:inherit;box-shadow:inset 0 0 0 1px var(--dsw-alias-state-warn-secondary);pointer-events:none}`,
       `.${ASKS_UI.css.meta}{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;align-items:center;gap:8px;width:100%;border:0;padding:8px 16px;background:var(--dsw-alias-state-warn-tertiary);color:var(--dsw-alias-label-primary);font:var(--dsw-font-xxs-12);text-align:start;cursor:pointer}`,
@@ -143,7 +150,18 @@ window.__ModuleLoader__.load({
       `.${ASKS_UI.css.source}{min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;unicode-bidi:plaintext;font:var(--dsw-font-xxs-strong-12);color:var(--dsw-alias-label-primary)}`,
       `.${ASKS_UI.css.time}{margin-left:auto;white-space:nowrap}`,
       `.${ASKS_UI.css.body}{display:grid;gap:8px;padding:12px 16px 14px}`,
-      `.${ASKS_UI.css.body}[hidden]{display:none}`,
+      // Reserve space for the accordion header and Submit before allocating space to questions.
+      // Scrolling the outer dock alone cannot reveal controls clipped by the card surface.
+      `.${ASKS_UI.css.questionCard}{display:flex;flex-direction:column;max-height:${ASKS_UI.maxHeight};overflow-y:auto}`,
+      `.${ASKS_UI.css.questionCard}>.${ASKS_UI.css.meta}{flex:none;grid-template-columns:minmax(0,max-content) minmax(0,1fr) auto auto}`,
+      `.${ASKS_UI.css.questionCard} .${ASKS_UI.css.meta}>strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}`,
+      `.${ASKS_UI.css.questionCard}>.${ASKS_UI.css.body}{display:flex;flex-direction:column;min-height:0}`,
+      `.${ASKS_UI.css.questionCard}>.${ASKS_UI.css.body}>:not(.${ASKS_UI.css.questionList}){flex:none}`,
+      // If wrapped chrome leaves too little room, the card itself can scroll instead of clipping.
+      `.${ASKS_UI.css.questionList}{display:grid;align-content:start;gap:12px;min-height:${ASKS_UI.minQuestionListHeight};overflow-y:auto}`,
+      `.${ASKS_UI.css.questionList}:focus-visible{${focusRing}}`,
+      `.${ASKS_UI.css.progress}{margin-inline-end:auto;color:var(--dsw-alias-label-secondary)}`,
+      `.${ASKS_UI.css.card}>.${ASKS_UI.css.body}[hidden]{display:none}`,
       `.${ASKS_UI.css.question}{margin:0;white-space:pre-wrap;overflow-wrap:anywhere;font:var(--dsw-font-s-strong-14);color:var(--dsw-alias-label-primary)}`,
       `.${ASKS_UI.css.fields}{display:grid;gap:8px;min-width:0;margin:0;padding:0;border:0}`,
       `.${ASKS_UI.css.fields} legend{margin-bottom:8px;padding:0}`,
@@ -237,10 +255,11 @@ window.__ModuleLoader__.load({
     function QuestionBody({ card, expanded, locked, send, t }) {
       const [drafts, setDrafts] = React.useState(() => new Map())
       if (!expanded) return null
-      const canSubmit = card.questions.every(({ id }) => {
+      const done = card.questions.filter(({ id }) => {
         const draft = drafts.get(id)
         return draft && (draft.skipped || draft.selected.length > 0 || draft.custom.trim() !== '')
-      })
+      }).length
+      const total = card.questions.length
       const submit = () => {
         const answers = card.questions.map(({ id }) => {
           const { selected, custom } = drafts.get(id)
@@ -251,12 +270,15 @@ window.__ModuleLoader__.load({
         send({ cardId: card.cardId, answers })
       }
       return h(React.Fragment, null,
-        card.questions.map((question) => h(QuestionFields, {
-          key: question.id, question, draft: drafts.get(question.id) ?? emptyDraft, locked, t,
-          update: (draft) => setDrafts((current) => new Map(current).set(question.id, draft)),
-        })),
+        h('div', { className: ASKS_UI.css.questionList, role: 'region', 'aria-label': t('question.list'), tabIndex: 0 },
+          card.questions.map((question) => h(QuestionFields, {
+            key: question.id, question, draft: drafts.get(question.id) ?? emptyDraft, locked, t,
+            update: (draft) => setDrafts((current) => new Map(current).set(question.id, draft)),
+          }))),
         h('div', { className: ASKS_UI.css.row },
-          h(AskAction, { variant: 'primary', disabled: locked || !canSubmit, onClick: submit }, t('question.submit'))))
+          h('span', { className: ASKS_UI.css.progress, role: 'status' },
+            t('question.progress', { done, total })),
+          h(AskAction, { variant: 'primary', disabled: locked || done !== total, onClick: submit }, t('question.submit'))))
     }
 
     const isQuestion = (card) => card.kind === ASKS_UI.kind.question
@@ -281,14 +303,15 @@ window.__ModuleLoader__.load({
         const count = question ? card.questions.length : ASKS_UI.permissionCount
         const source = card.source?.name ?? t('dsh.unnamed')
         return h('div', {
-          className: [kit.css.card, ASKS_UI.css.card].join(' '), 'data-fishball-ask': card.handle,
+          className: [kit.css.card, ASKS_UI.css.card, question ? ASKS_UI.css.questionCard : ''].join(' '),
+          'data-fishball-ask': card.handle,
           'data-fishball-ask-state': card.state, 'data-fishball-ask-kind': kind,
         },
         h('button', {
           className: ASKS_UI.css.meta, type: 'button', 'aria-expanded': expanded, 'aria-controls': panelId,
           onClick: toggle,
         },
-        h('strong', null, header),
+        h('strong', { title: question ? header : undefined }, header),
         h('span', { className: ASKS_UI.css.preview, title: preview }, preview),
         h(Tag, { tone: ASKS_UI.badgeTone, className: ASKS_UI.css.badge }, count),
         h('span', { className: ASKS_UI.css.chevron, 'aria-hidden': true })),
