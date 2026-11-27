@@ -26,8 +26,12 @@ const AMENITY_DIRS = new Map([
 const hasManifest = (dir) => fs.existsSync(path.join(dir, MANIFEST))
 const hasComponent = (dir, { anchor }) => hasManifest(path.join(dir, PACKAGES, anchor))
 const fishballComponentAt = (root) => path.join(root, SIBLING.fishball.folder)
-const isMonorepo = (root) => hasComponent(fishballComponentAt(root), SIBLING.fishball)
-  && hasManifest(path.join(root, AMENITIES, AMENITY_DIRS.get('fishball-amenities')))
+const FISHBALL_WORKSPACE = 'dsh-fishball/packages/core'
+function isMonorepo(root) {
+  if (!hasManifest(root)) return false
+  const { workspaces } = JSON.parse(fs.readFileSync(path.join(root, MANIFEST), 'utf8'))
+  return Array.isArray(workspaces) && workspaces.includes(FISHBALL_WORKSPACE)
+}
 
 /** The folder holding this repository's main checkout. */
 export function checkoutsDir() {
@@ -39,14 +43,14 @@ export function checkoutsDir() {
 export function siblingRepo(which) {
   const spec = SIBLING[which]
   const override = process.env[spec.env]
-  const local = path.join(ROOT, spec.folder)
   const fishball = which === 'fishball'
-  if (!override && fishball && isMonorepo(ROOT)) return ROOT
-  const dir = override ? path.resolve(override) : hasComponent(local, spec) ? local : path.join(checkoutsDir(), spec.folder)
-  // A relocated component folder alone does not contain the amenity sources.
+  // Do not fall back to another checkout if the root workspace describes a missing component.
+  const dir = override ? path.resolve(override) : isMonorepo(ROOT) ? (fishball ? ROOT : path.join(ROOT, spec.folder)) : path.join(checkoutsDir(), spec.folder)
   const parent = path.dirname(dir)
+  // A relocated component folder alone does not contain the amenity sources.
   if (fishball && dir === fishballComponentAt(parent) && isMonorepo(parent)) return undefined
-  return (fishball && isMonorepo(dir)) || hasComponent(dir, spec) ? dir : undefined
+  const component = fishball && isMonorepo(dir) ? fishballComponentAt(dir) : dir
+  return hasComponent(component, spec) ? dir : undefined
 }
 
 /** The component carries the Fishball release output even when sources span the monorepo. */
