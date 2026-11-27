@@ -34,6 +34,7 @@ export const name = HOSTED.childRow
  */
 export const Config = Schema.object({
   [HOSTED.targetField]: Schema.string().default('').volatile(),
+  [HOSTED.entryField]: Schema.string().default('').volatile(),
 })
 // The provider-sync target's inject list is the one core's row had (no `sessionController`), so
 // moving it changed nothing it does; the row gates on no session service. `pluginManager` left
@@ -119,7 +120,7 @@ const PART = Object.freeze({
   failed: '%s failed (%s)',
 })
 
-export function apply(ctx) {
+export function apply(ctx, config) {
   const logger = ctx.logger(HOSTED.childRow)
   /**
    * Mounts one part without letting it take the others down: the token import and the admission
@@ -135,7 +136,7 @@ export function apply(ctx) {
     return () => { ended = true; dispose?.() }
   }, label)
   part(PART.credential, () => {
-    const receiver = createCredentialReceiver({ credentials: ctx.credentials })
+    const receiver = createCredentialReceiver({ credentials: ctx.credentials, targetUrl: () => ctx.settings.describe().find((row) => row.ns === HOSTED.childRow)?.value?.[HOSTED.targetField] ?? config?.[HOSTED.targetField] })
     const off = ctx.nativeRuntime.onCredentialTransport((transport) => receiver.attach(transport))
     return () => { off(); receiver.close() }
   })

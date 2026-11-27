@@ -59,23 +59,27 @@ The actual parent DSH is the hosted child's reserved first target (`id: parent`,
 Its URL comes only from `dsh-instance-child.targetUrl`; Fishball keeps it read-only and non-removable.
 The instance has no remote-target override. Add other targets inside Fishball instead.
 
-At each start the instance asks whether the child already holds a **parent** credential. Only when
-it does not, with a usable parent connector, it calls `createHosted` once and imports the value into
-`DSH_AGENT_TOKEN`; the value never stays on the host. That reference, `fishball-core/hosted-agent`
-and `pending-token-origin` belong only to the reserved parent. Additional targets have separate
-credentials and cannot satisfy the hosted probe or suppress parent provisioning. The child-row
-configuration and credential handoff wire are unchanged. The entry keys it created, and its stable instance id, are kept in
-`<DSH_HOME>/fishball/hosted.json`, outside the runtime tree, so an uninstall or reinstall keeps
-them. Retry never creates a token; after you delete the hosted entry it leaves the notice
-`hosted-entry-deleted`. **Reconnect** creates one new entry and imports it once; it moves and
-deletes nothing, so delete the old entry yourself on the connector's settings page.
+The instance keeps the hosted entry key in `<DSH_HOME>/fishball/hosted.json` and the secret in
+DSH’s credential store, not in the launch overlay, command line, or settings page. On every start
+it sends the current URL, entry key, and held secret over the authenticated child lifecycle wire.
+Fishball only uses that handoff for the reserved parent and for the URL it names. A port change
+starts a new routing epoch but reuses the same connector entry, agent ID, and managed sessions.
+Manually added targets still lose their old credentials when retargeted to another port.
+
+**Reconnect** hands off the same credential again while the owned entry exists and the secret is
+available. A disabled entry must be re-enabled. If the entry was deleted, or neither the host nor
+child still has its credential, Reconnect can create a replacement after the connector has released
+the old pairing. It does not move the old pairing or managed sessions. The page distinguishes
+“re-bound,” “new token stored and paired,” and “token stored, pairing not confirmed.” Storing a
+token is not proof that Fishball paired or came online. Retry never creates a token; after you
+delete the hosted entry it leaves the notice `hosted-entry-deleted`.
 
 **Reinstall.** When the child has lost its credential (its home was removed, or the instance was
 reinstalled) and `hosted.json` already lists an entry the instance made, the new entry becomes that
 entry's successor: once the new Fishball has paired, the instance asks the connector (`retire`) to
 move the old entry's managed sessions, name, live offers and pending events to it and to delete the
 old entry. Until that has happened it is retried at each start and whenever the connector's pairs
-change; a Reconnect meanwhile makes its new entry the successor. A deleted or user-made entry is
+change. A deleted or user-made entry is
 never succeeded.
 
 ## Settings page

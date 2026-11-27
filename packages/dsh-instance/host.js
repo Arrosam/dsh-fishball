@@ -191,6 +191,7 @@ export async function apply(ctx, config) {
    * The hosted-token rules once the record is read (src/host/hosted.js). `hostedNow` is set when
    * that resolves; before it, Reconnect answers not-ready and the target status reads target-unset.
    */
+  const parentTargetUrl = () => childTargetUrl({ hostOrigin: hostOrigin(), connectorUsable: usableTokens(connectorTokens()) !== undefined })
   let hostedNow
   let hostedFailed = false
   const key = ctx.profileContext.home
@@ -225,6 +226,8 @@ export async function apply(ctx, config) {
       tokens: connectorTokens,
       record,
       credentials: () => credentialClient,
+      credentialStore: ctx.credentials,
+      targetUrl: parentTargetUrl,
       instanceId: () => record.instanceId,
       // The child runtime folder's id (its owner marker, read at each start): new after a reinstall.
       runtimeId: () => owner?.hostId,
@@ -284,7 +287,7 @@ export async function apply(ctx, config) {
       limits: LIFECYCLE_LIMITS,
       // MULTI-2: only the actual parent is handed off here. Core reserves it first/read-only;
       // additional targets are configured inside Fishball and never affect parent credentials.
-      child: () => ({ [HOSTED.targetField]: childTargetUrl({ hostOrigin: hostOrigin(), connectorUsable: usableTokens(connectorTokens()) !== undefined }) }),
+      child: () => ({ [HOSTED.targetField]: parentTargetUrl(), [HOSTED.entryField]: hostedNow?.agentEntry() ?? '' }),
       onExit() { if (state === PLUGIN.state.ready || state === PLUGIN.state.starting) set(PLUGIN.state.failed, PLUGIN.code.exited) },
     })
     // No V2 connector binding, admin relay or settings relay (I-HOST, I-READY; user decision
@@ -306,7 +309,7 @@ export async function apply(ctx, config) {
       credentialClient?.close()
       credentialClient = createCredentialClient(transport, { timeoutMs: LIFECYCLE_LIMITS.requestTimeoutMs, importTimeoutMs: LIFECYCLE_LIMITS.requestTimeoutMs + HOSTED.credentialLockWaitMs })
       changed()
-      void hostedReady.then((hosted) => hosted?.firstStart()).catch(() => {})
+      void hostedReady.then((hosted) => hosted?.firstStart()).catch((error) => logger?.warn(HOSTED.bindFailed, error?.code ?? error?.name ?? REFUSAL.failed))
     })
     unsubscribeChildModel = owner.onChildModelTransport((transport) => {
       if (closed) return

@@ -346,8 +346,18 @@ export const HOSTED = Object.freeze({
   savedRecord: 'fishball-core/hosted-agent',
   childRow: 'dsh-instance-child',
   targetField: 'targetUrl',
+  entryField: 'hostedEntryKey',
+  bindingRecord: 'dsh-instance/hosted-parent',
+  bindingKind: 'grant',
+  hostTokenRecordPrefix: 'dsh-instance/hosted-',
+  reconnect: Object.freeze({
+    rebound: 'rebound', paired: 'paired', stored: 'stored',
+    unconfirmed: 'pairing-not-confirmed', rebindUnconfirmed: 'rebind-not-confirmed',
+    entryDisabled: 'hosted-entry-disabled', unavailable: 'hosted-binding-unavailable',
+    settleMs: 5000, pollMs: 100,
+  }),
   channel: 'mcp-credential',
-  op: Object.freeze({ probe: 'probe', import: 'import' }),
+  op: Object.freeze({ probe: 'probe', import: 'import', bind: 'bind-hosted', recover: 'recover-hosted' }),
   code: Object.freeze({
     unavailable: 'CREDENTIAL_CHANNEL_UNAVAILABLE',
     record: 'INVALID_HOSTED_RECORD',
@@ -360,6 +370,7 @@ export const HOSTED = Object.freeze({
     recordUnreadable: 'hosted-record-unreadable',
   }),
   /** Logged (code only, never a value) when the record could not keep a key the child stored. */
+  bindFailed: 'hosted binding not applied (%s)',
   recordWriteFailed: 'hosted record not written (%s); the child holds the token',
   /** The host's own connector endpoint the child links to (K1 `PATHS.mcp`, restated: the instance does not import the connector). */
   mcpPath: '/api/agent/mcp',

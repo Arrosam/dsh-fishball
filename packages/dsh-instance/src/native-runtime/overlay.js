@@ -81,7 +81,7 @@ export function launchOverlay(paths, record, childModule, limits, control, entri
       // admission route is up (child.js childReadiness), so a row that cannot load fails the
       // child's boot at once. A part of it that fails later is logged by the row and leaves the
       // child `starting`, which the host reports as a failed start at its startup bound.
-      { id: ROW.child, name: path.join(path.dirname(childModule), RUNTIME.snapshot.childRow), required: true, config: { [HOSTED.targetField]: child[HOSTED.targetField] } },
+      { id: ROW.child, name: path.join(path.dirname(childModule), RUNTIME.snapshot.childRow), required: true, config: child },
     ] },
   ]
 }

@@ -9,7 +9,7 @@
  *   the restart was refused (`instance-disabled` while the instance is off, `busy` while a Fishball
  *   plugin change or the restart it queued runs) — the settings page's Restart button (the user,
  *   2026-11-20);
- * - POST reconnect → `{ok: true}` or `{ok: false, code}` (K3 `reconnect`);
+ * - POST reconnect → `{ok: true, outcome, code?}` or `{ok: false, code}` (K3 `reconnect`);
  * - POST open `{lang}` → `{ok: true, url}`: one admission into the child's Fishball page (view
  *   `chat`), on the configured main DSH HTTPS relay if enabled and matched, otherwise under the
  *   page's own loopback hostname (Q-G3; the user's answer Q7 = A: a new tab).

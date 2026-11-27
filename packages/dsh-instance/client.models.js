@@ -128,8 +128,14 @@ window.__ModuleLoader__.load({
       actions: 'Fishball',
       reconnect: 'Reconnect',
       reconnecting: 'Reconnecting…',
-      reconnected: 'A new hosted token was imported into Fishball. The old hosted entry stays in the connector until you delete it.',
-      reconnectHint: 'Creates a new hosted token in this DSH\'s connector and gives it to Fishball once.',
+      'reconnected.rebound': 'Fishball re-bound to its existing hosted entry.',
+      'reconnected.paired': 'Fishball stored the new hosted token and paired.',
+      'reconnected.stored': 'Fishball stored the token, but pairing was not confirmed: {reason}',
+      reconnectHint: 'Reuses the existing hosted entry when its credential is available.',
+      'reconnectReason.pairing-not-confirmed': 'the connector has not reported Fishball online and paired yet.',
+      'reconnectRefused.rebind-not-confirmed': 'The existing credential was handed to Fishball, but the connector has not confirmed the connection.',
+      'reconnectRefused.hosted-entry-disabled': 'The hosted entry is disabled. Enable it in the connector and try again.',
+      'reconnectRefused.hosted-binding-unavailable': 'The existing hosted binding could not be verified. No replacement was created.',
       'reconnectRefused.not-ready': 'Fishball is not running.',
       'reconnectRefused.connector-missing': 'There is no connector in this DSH.',
       'reconnectRefused.operation-failed': 'The connector could not create a token.',
@@ -191,8 +197,14 @@ window.__ModuleLoader__.load({
       actions: 'Fishball',
       reconnect: '重新连接',
       reconnecting: '正在重新连接…',
-      reconnected: '已向 Fishball 导入一个新的托管 token。旧的托管条目会保留在连接器中，直到你删除它。',
-      reconnectHint: '在本 DSH 的连接器中创建一个新的托管 token，并交给 Fishball 一次。',
+      'reconnected.rebound': 'Fishball 已重新绑定现有的托管条目。',
+      'reconnected.paired': 'Fishball 已保存新的托管 token 并完成配对。',
+      'reconnected.stored': 'Fishball 已保存 token，但尚未确认配对：{reason}',
+      reconnectHint: '凭据可用时，重新使用现有的托管条目。',
+      'reconnectReason.pairing-not-confirmed': '连接器尚未报告 Fishball 已在线并完成配对。',
+      'reconnectRefused.rebind-not-confirmed': '现有凭据已交给 Fishball，但连接器尚未确认连接。',
+      'reconnectRefused.hosted-entry-disabled': '托管条目已停用。请在连接器中启用后重试。',
+      'reconnectRefused.hosted-binding-unavailable': '无法验证现有的托管绑定，未创建替代条目。',
       'reconnectRefused.not-ready': 'Fishball 未在运行。',
       'reconnectRefused.connector-missing': '本 DSH 中没有连接器。',
       'reconnectRefused.operation-failed': '连接器无法创建 token。',
@@ -321,7 +333,11 @@ window.__ModuleLoader__.load({
       const reconnect = async () => {
         setView({ busy: true })
         const answer = await actionRequest(ACTION.reconnectPath)
-        setView({ busy: false, message: answer.ok ? t('reconnected') : refusalText(t, 'reconnectRefused.', answer.code), error: !answer.ok })
+        const outcome = 'reconnected.' + answer.outcome
+        const message = !answer.ok ? refusalText(t, 'reconnectRefused.', answer.code)
+          : Object.hasOwn(en, outcome) && answer.outcome !== 'stored' ? t(outcome)
+            : t('reconnected.stored', { reason: refusalText(t, 'reconnectReason.', answer.code ?? 'pairing-not-confirmed') })
+        setView({ busy: false, message, error: !answer.ok })
       }
       const open = async () => {
         const answer = await actionRequest(ACTION.openPath, { lang: ACTION.langs.includes(lang) ? lang : ACTION.fallbackLang })

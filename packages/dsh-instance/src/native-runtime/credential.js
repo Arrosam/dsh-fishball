@@ -37,6 +37,15 @@ export function createCredentialClient(transport, { timeoutMs, importTimeoutMs =
       const reply = await rpc.request({ op: OP.import, value }, importTimeoutMs)
       return reply.ok === true ? { ok: true } : { ok: false, code: typeof reply.code === 'string' ? reply.code : REFUSAL.unwritable }
     },
+    async bindHosted(binding) {
+      const reply = await rpc.request({ op: OP.bind, ...binding }, importTimeoutMs)
+      return reply.ok === true ? { ok: true } : { ok: false, code: reply.code === REFUSAL.invalid ? REFUSAL.invalid : REFUSAL.unwritable }
+    },
+    async recoverHosted() {
+      const reply = await rpc.request({ op: OP.recover }, timeoutMs)
+      if (reply.ok !== true || !Array.isArray(reply.values) || !reply.values.every(isValue)) throw unavailable()
+      return reply
+    },
     close: () => rpc.close(),
   })
 }
@@ -47,15 +56,34 @@ export function createCredentialClient(transport, { timeoutMs, importTimeoutMs =
  * @param {{credentials: object}} deps - the child DSH's `credentials` service
  * @returns {{attach(transport): void, close(): void}}
  */
-export function createCredentialReceiver({ credentials }) {
+const isValue = (value) => typeof value === 'string' && value !== ''
+
+export function createCredentialReceiver({ credentials, targetUrl }) {
   async function answer(request) {
     if (request.op === OP.probe) {
       const [reference, record] = await Promise.all([credentials.describe(HOSTED.credentialRef), credentials.describeRecord(HOSTED.savedRecord)])
       return { ok: true, present: reference?.configured === true || record?.configured === true }
     }
+    if (targetUrl && request.op === OP.bind) {
+      const { url, entryKey, value } = request
+      const launchedUrl = typeof targetUrl === 'function' ? targetUrl() : targetUrl
+      if (url !== launchedUrl || !isValue(entryKey) || !isValue(value)) return { ok: false, code: REFUSAL.invalid }
+      await credentials.modifyRecord(HOSTED.bindingRecord, async (current) => {
+        const prior = current?.payload
+        if (prior?.url === url && prior.entryKey === entryKey && prior.value === value) return undefined
+        return { kind: HOSTED.bindingKind, payload: { url, entryKey, value } }
+      })
+      return { ok: true }
+    }
+    if (targetUrl && request.op === OP.recover) {
+      const [binding, saved, reference] = await Promise.all([
+        credentials.readRecord(HOSTED.bindingRecord), credentials.readRecord(HOSTED.savedRecord), credentials.resolve(HOSTED.credentialRef),
+      ])
+      return { ok: true, values: [...new Set([binding?.payload?.value, saved?.payload?.token, reference?.value].filter(isValue))] }
+    }
     if (request.op !== OP.import || typeof request.value !== 'string' || request.value === '') return { ok: false, code: REFUSAL.invalid }
     try { await credentials.set(HOSTED.credentialRef, request.value) } catch { return { ok: false, code: REFUSAL.unwritable } }
     return { ok: true }
   }
-  return createChannelReceiver(answer, (request) => ({ ok: false, code: request.op === OP.import ? REFUSAL.unwritable : REFUSAL.invalid }))
+  return createChannelReceiver(answer, (request) => ({ ok: false, code: (request.op === OP.import || request.op === OP.bind) ? REFUSAL.unwritable : REFUSAL.invalid }))
 }

@@ -1,24 +1,21 @@
 /**
  * The hosted token's rules on the host (I-HOST; design §5.4; requirements 1.28 R1, 1.29 R6 = B,
  * 1.32 R11, 1.33 Q-B1/Q-B3, 1.39; R-HOST-05, R-HOST-09, R-HOST-10; HOST-DT-01, HOST-DT-02). It decides when the
- * instance asks the connector for a hosted entry and imports its value into the child:
- * - first start (the child holds no credential, the target is this DSH's connector): one
- *   `createHosted`, its value imported once over `mcp-credential`; the entry key is recorded only
- *   after the child stored it. A restart, a reconnect of the link or a present credential creates
- *   nothing; additional targets never affect the parent's reserved credential;
- * - Reconnect (the instance's settings page): the same, on demand, whatever the old entry's state;
- *   replacing moves nothing and deletes nothing (Q-B1 = B, Q-B3 = B);
+ * instance provisions and stores the hosted credential and hands it to the child over the
+ * authenticated lifecycle wire. Restarts and Reconnect re-hand the current URL and credential.
+ * Explicit recovery provisions only after deletion or verified loss of the old credential.
+ * Additional targets never affect the parent's reserved credential;
  * - Retry after the user deleted the entry: no token, only the notice (R6 = B);
  * - reinstall succession (R-HOST-09, I-SUCCEED): a first start's new entry under a new child
  *   runtime, when the record already lists one, makes that earlier entry's succession pending; it is finished by K3 `retire` (see
- *   `attempt` below). A Reconnect never starts one (it only retargets a pending one), nor does Retry.
- * Every probe, create and import runs in one serial chain, so a first start, a Reconnect and a
- * quick restart never create two entries for one need (R1: exactly once). The value is held only
- * for the import and never stored, logged or returned.
+ *   `attempt` below). Neither Reconnect nor Retry starts a succession.
+ * Handoffs and provisioning are serialized; no secret is logged or returned to the page.
  */
+import { createHash } from 'node:crypto'
+import { setTimeout as delay } from 'node:timers/promises'
 import { HOSTED, REFUSAL } from '../native-runtime/constants.js'
 
-const { entryState: ENTRY, target: STATUS } = HOSTED
+const { entryState: ENTRY, target: STATUS, reconnect: RECONNECT } = HOSTED
 
 /** The connector's hosted-token service if it is usable (K3 `DshConnectorTokens`, apiVersion 1), else undefined. */
 export function usableTokens(service) {
@@ -46,7 +43,7 @@ export function childTargetUrl({ hostOrigin, connectorUsable }) {
  * @param deps.changed - called after the target status or the notice changed
  * @param [deps.warn] - `(format, code) => void`, the row's logger (a code only, never a value)
  */
-export function createHostedToken({ tokens, record, credentials, instanceId, runtimeId = () => undefined, changed, warn = () => {} }) {
+export function createHostedToken({ tokens, record, credentials, credentialStore, targetUrl = () => '', instanceId, runtimeId = () => undefined, changed, warn = () => {} }) {
   let notice = null
   let chain = Promise.resolve()
   /** Runs `step` after every earlier one; a failure there never breaks the chain. */
@@ -121,22 +118,45 @@ export function createHostedToken({ tokens, record, credentials, instanceId, run
     try { return await client.importToken(value) } catch { return { ok: false, code: REFUSAL.unwritable } }
   }
 
+  const heldRecord = (key) => HOSTED.hostTokenRecordPrefix + createHash('sha256').update(key).digest('hex')
+  const failure = (code) => ({ ok: false, code })
+  const currentKey = () => unrecorded.at(-1)?.key ?? record.entries().at(-1)
+  const ownedBinding = (service) => typeof service.hostedState === 'function'
+  const onWire = (client) => credentials() === client && refusal(client) === undefined
+
+  async function hold(key, value) {
+    if (!credentialStore) return
+    await credentialStore.modifyRecord(heldRecord(key), async (current) => current?.payload?.value === value
+      ? undefined : { kind: HOSTED.bindingKind, payload: { value } })
+  }
+
+  async function handoff(client, key, value) {
+    if (!onWire(client)) return failure(REFUSAL.notReady)
+    try { return await client.bindHosted({ url: targetUrl(), entryKey: key, value }) } catch { return failure(REFUSAL.unwritable) }
+  }
+
   /**
    * One `createHosted` and its one import. The key is recorded once the child stored the value. The
    * value goes only to the wire it was created for: a wire that was replaced meanwhile, or a row
    * that closed, gets nothing (R-FIX-INSTANCE F01, F05), and the new entry stays for the user to
    * delete, as after a refusal.
    */
-  async function createAndImport(client, reinstall) {
+  async function createAndImport(client, reinstall, owned = false) {
     let entry
     try { entry = await connector().createHosted(instanceId()) } catch { return { ok: false, code: REFUSAL.failed } }
     // Asked again after the wait: the call may have outlived this wire, its child's target or the row.
     const blocked = credentials() === client ? refusal(client) : REFUSAL.notReady
     if (blocked !== undefined) return { ok: false, code: blocked }
-    const stored = await importAnswer(client, entry.value)
+    if (owned) {
+      try { await hold(entry.entryKey, entry.value) } catch { return failure(REFUSAL.unwritable) }
+      // Anchor the held secret before the wire request: a crash or a lost reply must not
+      // turn an existing connector entry into another provisioning attempt on restart.
+      await recordAdd(entry.entryKey, { runtime: runtimeId(), succession: reinstall && isReinstall() })
+    }
+    const stored = owned ? await handoff(client, entry.entryKey, entry.value) : await importAnswer(client, entry.value)
     // A definite refusal: the new entry stays for the user to delete (Q-B3 = B).
     if (stored.ok !== true) return { ok: false, code: stored.code ?? REFUSAL.unwritable }
-    await recordAdd(entry.entryKey, { runtime: runtimeId(), succession: reinstall && isReinstall() })
+    if (!owned) await recordAdd(entry.entryKey, { runtime: runtimeId(), succession: reinstall && isReinstall() })
     notice = null
     changed()
     return { ok: true }
@@ -220,6 +240,59 @@ export function createHostedToken({ tokens, record, credentials, instanceId, run
     warn(HOSTED.retire.pendingLog, outcome.code)
   }
 
+  async function confirm(service, client, key, outcome) {
+    const until = Date.now() + RECONNECT.settleMs
+    do {
+      if (!onWire(client)) break
+      const status = service.hostedState(instanceId(), key)
+      if (status?.paired && status.online) return { ok: true, outcome }
+      if (status?.state !== ENTRY.enabled) break
+      await delay(RECONNECT.pollMs)
+    } while (Date.now() < until)
+    return outcome === RECONNECT.rebound ? failure(RECONNECT.rebindUnconfirmed)
+      : { ok: true, outcome: RECONNECT.stored, code: RECONNECT.unconfirmed }
+  }
+
+  async function bindOwned(service, client, { explicit }) {
+    const key = currentKey()
+    if (!targetUrl()) return failure(REFUSAL.notReady)
+    if (key !== undefined) {
+      let status = service.hostedState(instanceId(), key)
+      // Token deletion is visible before asynchronous revocation releases the old agent ID.
+      if (explicit && status === undefined && service.entryState(key) === ENTRY.deleted) {
+        const until = Date.now() + RECONNECT.settleMs
+        while (status === undefined && onWire(client) && Date.now() < until) {
+          await delay(RECONNECT.pollMs)
+          status = service.hostedState(instanceId(), key)
+        }
+      }
+      if (status === undefined) return failure(RECONNECT.unavailable)
+      const reinstall = !explicit && isReinstall()
+      if (status.state === ENTRY.disabled && !reinstall) return failure(RECONNECT.entryDisabled)
+      if (status.state === ENTRY.enabled && !reinstall) {
+        let value
+        try {
+          value = (await credentialStore?.readRecord(heldRecord(key)))?.payload?.value
+          if (value === undefined) {
+            const { values } = await client.recoverHosted()
+            value = values.find((candidate) => service.matchHosted(instanceId(), key, candidate))
+            if (value !== undefined) await hold(key, value)
+          }
+        } catch { return failure(RECONNECT.unavailable) }
+        if (value !== undefined) {
+          if (!service.matchHosted(instanceId(), key, value)) return failure(RECONNECT.unavailable)
+          const stored = await handoff(client, key, value)
+          return stored.ok && explicit ? confirm(service, client, key, RECONNECT.rebound) : stored
+        }
+        if (!explicit || !onWire(client) || !(await service.discardHosted(instanceId(), key))) return failure(RECONNECT.unavailable)
+      } else if (!explicit && !reinstall) return failure(RECONNECT.unavailable)
+      if (status.state === ENTRY.deleted || explicit) await credentialStore?.deleteRecord(heldRecord(key))
+    }
+    if (!onWire(client)) return failure(REFUSAL.notReady)
+    const stored = await createAndImport(client, !explicit, true)
+    return stored.ok && explicit ? confirm(service, client, currentKey(), RECONNECT.paired) : stored
+  }
+
   return Object.freeze({
     /**
      * After each start's authenticated wire: imports only when the child holds no credential (a
@@ -231,19 +304,27 @@ export function createHostedToken({ tokens, record, credentials, instanceId, run
       // Probed inside the chain, so an import that ran just before is seen: nothing twice. An
       // unanswered probe is not "absent": nothing is created then. A newer wire that replaced this
       // one meanwhile runs its own first start, which decides.
-      if ((await present(client)) === false && credentials() === client) await createAndImport(client, true)
+      const service = connector()
+      if (ownedBinding(service)) {
+        const result = await bindOwned(service, client, { explicit: false })
+        if (!result.ok) warn(HOSTED.bindFailed, result.code)
+      }
+      else if ((await present(client)) === false && credentials() === client) await createAndImport(client, true)
       return attempt()
     }),
     /**
-     * Reconnect (R11): one new entry, imported once. It starts no succession (Q-B1 B: replacing
-     * moves nothing); a pending one is retargeted to the new entry (Q2) and tried at once.
+     * Re-hand the credential, or provision after confirmed loss. Storage and connector
+     * confirmation are distinct; this path never starts a succession.
      */
     reconnect: () => serial(async () => {
       const client = credentials()
       const code = refusal(client)
-      const result = code === undefined ? await createAndImport(client, false) : { ok: false, code }
-      await attempt()
-      return result
+      if (code !== undefined) return failure(code)
+      const service = connector()
+      if (ownedBinding(service)) return bindOwned(service, client, { explicit: true })
+      if (currentKey() !== undefined && entryState() !== ENTRY.deleted) return failure(RECONNECT.unavailable)
+      const result = await createAndImport(client, false)
+      return result.ok ? { ok: true, outcome: RECONNECT.stored, code: RECONNECT.unconfirmed } : result
     }),
     /**
      * Ends the pair-change subscription for good (the host row closed); later steps run nothing.
@@ -262,7 +343,7 @@ export function createHostedToken({ tokens, record, credentials, instanceId, run
      * The entry the child holds now: the newest recorded one (a key is recorded only after the
      * child stored its value), or null before the first. Non-secret (K3 `agentEntry`).
      */
-    agentEntry: () => record.entries().at(-1) ?? null,
+    agentEntry: () => currentKey() ?? null,
     /** Retry's token rule: a deleted entry gets the notice and no token (R6 = B). */
     retryNotice() {
       if (entryState() !== ENTRY.deleted) return false
