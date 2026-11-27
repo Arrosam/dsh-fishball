@@ -1,0 +1,14 @@
+{
+  "name": "@dsh-instance/test-helpers",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Shared test tools for this repository's packages and integration packages: per-SDK module binding, case naming, scratch folders, a scripted DSH page and the test runner. Never shipped.",
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    "./*": "./src/*.mjs"
+  },
+  "scripts": {
+    "test": "node ../../scripts/test-package.mjs"
+  }
+}
