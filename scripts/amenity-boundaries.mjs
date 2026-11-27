@@ -16,6 +16,11 @@ const POLICY = Object.freeze({
   source: /\.[cm]?[jt]sx?$/,
 })
 
+function* importTargets(target) {
+  if (typeof target === 'string') yield target
+  else if (target && typeof target === 'object') for (const entry of Object.values(target)) yield* importTargets(entry)
+}
+
 function* sourceFiles(directory) {
   for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
     if (entry.name === POLICY.installed || entry.name.startsWith('.')) continue
@@ -50,6 +55,8 @@ export function checkAmenity(root, directory) {
     // A checked-in symlink is still a package crossing when its real destination is outside.
     return fs.existsSync(target) && leaves(fs.realpathSync(directory), fs.realpathSync(target))
   }
+  const forbidden = (from, specifier) => specifier.startsWith('.') || path.isAbsolute(specifier) || specifier.startsWith('file:')
+    ? checkPath(from, specifier) : checkName(bareName(specifier))
   const report = (file, line, text) => problems.push({ file: path.relative(root, file), line, text, why: manifest.name + ' may only use its own environment, not other amenities or their bundles' })
   for (const field of POLICY.dependencies) {
     for (const [name, value] of Object.entries(manifest[field] ?? {})) {
@@ -62,12 +69,14 @@ export function checkAmenity(root, directory) {
     if (!Array.isArray(manifest[field])) continue
     for (const name of manifest[field]) if (checkName(name)) report(manifestFile, 1, field + ': ' + name)
   }
+  for (const [alias, target] of Object.entries(manifest.imports ?? {})) {
+    for (const specifier of importTargets(target)) if (forbidden(directory, specifier)) report(manifestFile, 1, 'imports: ' + alias + ' = ' + specifier)
+  }
   for (const file of sourceFiles(directory)) {
     const code = stripComments(fs.readFileSync(file, 'utf8'))
     for (const match of specifiers(code, { commonJS: true })) {
       const specifier = match[2]
-      const local = specifier.startsWith('.') || path.isAbsolute(specifier) || specifier.startsWith('file:')
-      if (local ? checkPath(path.dirname(file), specifier) : checkName(bareName(specifier))) report(file, code.slice(0, match.index).split('\n').length, specifier)
+      if (forbidden(path.dirname(file), specifier)) report(file, code.slice(0, match.index).split('\n').length, specifier)
     }
   }
   return problems

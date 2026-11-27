@@ -58,6 +58,7 @@
     }
   },
   "scripts": {
+    "pretest": "node ../../dsh-fishball/scripts/test.mjs fishball-consultant --list",
     "test": "node --test tests/*.test.mjs"
   }
 }

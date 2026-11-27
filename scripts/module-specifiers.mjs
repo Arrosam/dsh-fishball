@@ -19,7 +19,14 @@ function blankLiterals(code) {
     const c = code[i]
     const regex = c === '/' && code[i + 1] !== '/' && code[i + 1] !== '*' && REGEX_BEFORE.test(before(i))
     if (!QUOTES.includes(c) && !regex) { i++; continue }
-    const keep = !regex && c !== '`' && SPECIFIER_BEFORE.test(before(i))
+    // Specifiers may be split across lines or padded with arbitrary indentation.
+    let end = i
+    while (end > 0 && /\s/.test(code[end - 1])) end--
+    if (code[end - 1] === '(') {
+      end--
+      while (end > 0 && /\s/.test(code[end - 1])) end--
+    }
+    const keep = !regex && c !== '`' && SPECIFIER_BEFORE.test(code.slice(Math.max(0, end - LOOKBEHIND), end))
     let j = i + 1
     let inClass = false
     while (j < code.length) {
@@ -38,7 +45,7 @@ function blankLiterals(code) {
 const QUOTES = Object.freeze(["'", '"', '`'])
 /** Characters looked back over to decide a literal's position. */
 const LOOKBEHIND = 12
-const SPECIFIER_BEFORE = /(?:\bfrom|\bimport|(?:\bimport|\brequire)\s*\()\s*$/
+const SPECIFIER_BEFORE = /(?:\bfrom|\bimport|\brequire)$/
 const REGEX_BEFORE = /(?:^|[=(,:;!&|?{}[+\-*%<>~^]|\breturn|\btypeof|\bcase|\bdo|\belse|\bin|\bof)\s*$/
 
 export const stripComments = (raw) => raw.replace(RULE.blockComment, (m) => m.replace(/[^\n]/g, ' ')).replace(RULE.lineComment, (m) => ' '.repeat(m.length))
