@@ -151,8 +151,8 @@ export const MODEL_SELECT = Object.freeze({
   option: 'option',
   /** The base commit the mutating-test check loads the chunk from (the commit before E-FIX-3). */
   baseRef: 'c4845000',
-  /** The chunk at that commit, relative to the package folder (git show <ref>:./<file>, run there). */
-  baseChunk: './client.settings.js',
+  /** The chunk's Git-tree path before core moved into dsh-fishball/. */
+  baseChunk: 'packages/core/client.settings.js',
   tempPrefix: 'fbtest-efix3-base-',
 })
 const model = (id, name, efforts) => Object.freeze({ id, name, ...(efforts ? { reasoning: Object.freeze({ efforts: Object.freeze(efforts.map(([eid, ename]) => Object.freeze({ id: eid, name: ename }))) }) } : {}) })

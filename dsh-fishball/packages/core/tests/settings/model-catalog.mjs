@@ -21,6 +21,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { caseTest } from 'fishball-test-helpers/cases'
 import { importDsh } from 'fishball-test-helpers/dsh'
+import { WORKSPACE_ROOT } from 'fishball-test-helpers/packages'
 import { cordisRemote, createWorld } from 'fishball-test-helpers/scripted-page'
 import { textOf } from 'fishball-test-helpers/react-shim'
 import { until } from 'fishball-test-helpers/wait'
@@ -156,8 +157,8 @@ function assertPageRendered(page) {
 }
 
 /**
- * client.settings.js at the base commit, in a scratch folder under the run's temp directory (git show,
- * run in this package's folder so the path is the package's own), removed after the test.
+ * client.settings.js at the base commit, read from the historical Git tree into a scratch folder
+ * removed after the test.
  */
 function baseChunk(t) {
   const root = fs.realpathSync(os.tmpdir())
@@ -167,7 +168,7 @@ function baseChunk(t) {
     fs.rmSync(dir, { recursive: true, force: true })
   })
   const file = path.join(dir, SUBJECT.chunkName)
-  fs.writeFileSync(file, execFileSync('git', ['show', `${MODEL_SELECT.baseRef}:${MODEL_SELECT.baseChunk}`], { cwd: SUBJECT.packageDir, encoding: 'utf8' }))
+  fs.writeFileSync(file, execFileSync('git', ['show', `${MODEL_SELECT.baseRef}:${MODEL_SELECT.baseChunk}`], { cwd: WORKSPACE_ROOT, encoding: 'utf8' }))
   return file
 }
 

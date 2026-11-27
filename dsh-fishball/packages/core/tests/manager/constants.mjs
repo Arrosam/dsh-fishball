@@ -120,7 +120,9 @@ export const PERSONA_WATCHDOG = Object.freeze({
    * commit that brought WATCHDOG into persona.js (a clone without that history skips the row).
    */
   baseline: Object.freeze({
-    /** persona.js inside core's folder, and core's own folders a copy needs (core is the git pathspec root). */
+    /** All three baselines predate the monorepo move; this is core's path in their trees. */
+    historicalCore: 'packages/core',
+    /** persona.js inside core's folder; the historical archive and the working copy share this layout. */
     file: path.join('src', 'persona.js'),
     marker: 'WATCHDOG',
     /** The common merge base already had Watchdog; staging adds authorized persona amendments. */

@@ -11,7 +11,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { createBrowserSandbox } from 'fishball-test-helpers/browser-sandbox'
 import { importDsh } from 'fishball-test-helpers/dsh'
-import { REPO } from 'fishball-test-helpers/packages'
+import { WORKSPACE_ROOT } from 'fishball-test-helpers/packages'
 import { createReactShim, fakePrimitives, jsxRuntime, reactDomModules } from 'fishball-test-helpers/react-shim'
 import { settle } from 'fishball-test-helpers/wait'
 import { CLIENT, CORDIS, FIXTURE, MOVED, UI_PACKAGE } from './constants.mjs'
@@ -59,7 +59,7 @@ export function baseFile(t, ref, relative) {
   const dir = fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()), MOVED.tempPrefix))
   t.after(() => fs.rmSync(dir, { recursive: true, force: true }))
   const file = path.join(dir, path.basename(relative))
-  fs.writeFileSync(file, execFileSync('git', ['show', `${ref}:${relative}`], { cwd: REPO, encoding: MOVED.encoding }))
+  fs.writeFileSync(file, execFileSync('git', ['show', `${ref}:${relative}`], { cwd: WORKSPACE_ROOT, encoding: MOVED.encoding }))
   return file
 }
 

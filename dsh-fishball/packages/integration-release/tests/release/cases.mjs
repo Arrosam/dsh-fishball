@@ -24,7 +24,7 @@ import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { caseName, caseTest } from 'fishball-test-helpers/cases'
 import { DSH_VERSION } from 'fishball-test-helpers/dsh'
-import { packageByName } from 'fishball-test-helpers/packages'
+import { WORKSPACE_ROOT, packageByName } from 'fishball-test-helpers/packages'
 import { BUDGET, CASE, CONSULTANT_RELEASE, CORE_CLOSURE, DSH, FIELDS, FISHBALL, INSTALL_DOC, ISOLATION, JUNK, LIBRARIES, MANIFEST, PACK, PACK_SCRIPT, RELEASE, RELEASED, SETS, STAGED, TESTS_RULE, VERSION, tarballName } from '../constants.mjs'
 import { packedFiles } from '../support/scan.mjs'
 import {
@@ -37,6 +37,8 @@ const relCase = (id, row, title, fn, timeout) => releaseTest(caseName(id, row, t
 const isLibrary = (name) => LIBRARIES.includes(name)
 const lines = (text) => text.split(RELEASE.lineBreak).filter((l) => l !== '')
 const readDoc = (doc, dir = releaseDir()) => docLines(doc, dir).join(RELEASE.lineBreak)
+/** Published package locations are Git-root-relative, not Fishball-component-relative. */
+const repositoryDir = (name) => path.relative(WORKSPACE_ROOT, packageByName(name).abs).split(path.sep).join('/')
 
 /** Requirement 1 on a top-level manifest. */
 function manifestProblems(name, m) {
@@ -49,7 +51,8 @@ function manifestProblems(name, m) {
   expect(typeof m.description === 'string' && m.description.trim() !== '', 'description is empty')
   expect(typeof m.repository?.url === 'string' && m.repository.url.includes(MANIFEST.repositoryUrlPart), `repository.url ${show(m.repository?.url)}`)
   // The folder every manifest names is the package's repository folder (the catalogue's, by name).
-  expect(m.repository?.directory === packageByName(name).dir, `repository.directory ${show(m.repository?.directory)} is not ${show(packageByName(name).dir)}`)
+  const dir = repositoryDir(name)
+  expect(m.repository?.directory === dir, `repository.directory ${show(m.repository?.directory)} is not ${show(dir)}`)
   expect(m.publishConfig?.tag === MANIFEST.publishTag, `publishConfig.tag ${show(m.publishConfig?.tag)}`)
   expect(m.private !== true, 'private: true')
   for (const f of MANIFEST.zodForbiddenFields) expect(!Object.hasOwn(m[f] ?? {}, MANIFEST.zod), `${MANIFEST.zod} in ${f}`)
@@ -127,7 +130,7 @@ export function registerReleaseCases() {
     const atMember = PACKAGES.findIndex((pkg) => pkg.key === member)
     const atCollection = PACKAGES.findIndex((pkg) => pkg.key === collection)
     assert.ok(atMember !== -1 && atMember < atCollection, 'consultant must precede amenities in publish order')
-    assert.equal(PACKAGES[atMember].folder, packageByName(FISHBALL.consultant).dir)
+    assert.equal(PACKAGES[atMember].folder, repositoryDir(FISHBALL.consultant))
     assert.deepEqual(INSTALL_SETS[member], [member])
     assert.deepEqual(INSTALL_SETS[collection], [collection])
   })

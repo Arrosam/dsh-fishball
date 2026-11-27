@@ -31,7 +31,7 @@
  },
  {
   "row": 6,
-  "spec": "import x from '../../../core/src/main/index.js'",
+  "spec": "import x from '../../../../dsh-fishball/packages/core/src/main/index.js'",
   "ok": false,
   "why": "another package's internals"
  },
@@ -55,19 +55,19 @@
  },
  {
   "row": 10,
-  "spec": "const p = 'packages/fishball-taskboard/client.js'",
+  "spec": "const p = 'amenities/taskboard/client.js'",
   "ok": true,
   "why": "its own folder named"
  },
  {
   "row": 11,
-  "spec": "// import x from '../../../core/src/main/index.js'",
+  "spec": "// import x from '../../../../dsh-fishball/packages/core/src/main/index.js'",
   "ok": true,
   "why": "a comment"
  },
  {
   "row": 12,
-  "spec": "import x from '../../../ui/client.js'",
+  "spec": "import x from '../../ui/client.js'",
   "ok": false,
   "why": "a nested package's files",
   "pkg": "fishball-core"
@@ -86,7 +86,7 @@
  },
  {
   "row": 15,
-  "spec": "export { x } from '../../../core/src/main/index.js'",
+  "spec": "export { x } from '../../../../dsh-fishball/packages/core/src/main/index.js'",
   "ok": false,
   "why": "a re-export from another package's internals"
  }

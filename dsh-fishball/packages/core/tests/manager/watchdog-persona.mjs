@@ -18,6 +18,7 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
+import { WORKSPACE_ROOT } from 'fishball-test-helpers/packages'
 import { SHARED_DIR } from '../support/core-world.mjs'
 import { CORE_DIR, MCP, PERSONA_BOLD, PERSONA_FIX, PERSONA_WATCHDOG as WD, WATCHDOG, isRuleLine, personaLines } from './constants.mjs'
 
@@ -45,21 +46,20 @@ function coreCopy(fill) {
   fs.symlinkSync(SHARED_DIR, path.join(dir, B.nodeModules, B.sharedPackage), 'dir')
   return path.join(dir, B.file)
 }
-/** git inside core's folder: pathspecs are relative to it. */
-const git = (args) => execFileSync('git', args, { cwd: CORE_DIR, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim()
+const git = (args) => execFileSync('git', args, { cwd: WORKSPACE_ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim()
 
 /** The commit before WATCHDOG first appeared in persona.js, or null when the clone lacks it. */
 function baselineRef() {
   try {
-    const first = git(['log', '--reverse', '--format=%H', '-S', B.marker, '--', B.file]).split('\n')[0]
+    const first = git(['log', '--reverse', '--format=%H', '-S', B.marker, B.preStaging, '--', path.posix.join(B.historicalCore, B.file)]).split('\n')[0]
     return first ? git(['rev-parse', '--verify', '--quiet', first + '^']) : null
   } catch { return null }
 }
 async function baselinePersona(ref) {
   return loadPersona(coreCopy((dir) => {
     const tar = path.join(dir, B.tar)
-    // git archive in core's folder: the pathspecs are core-relative, and so are the archived paths.
-    execFileSync('git', ['archive', '--output', tar, ref, ...B.copied], { cwd: CORE_DIR })
+    // Archive the historical core tree itself so the extracted paths stay package-relative.
+    execFileSync('git', ['archive', '--output', tar, `${ref}:${B.historicalCore}`, ...B.copied], { cwd: WORKSPACE_ROOT })
     execFileSync('tar', ['-x', '-f', tar, '-C', dir])
   }))
 }
