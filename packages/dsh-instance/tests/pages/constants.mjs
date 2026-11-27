@@ -75,6 +75,13 @@ export const HOOK = Object.freeze({
 export const HEADINGS = Object.freeze({ en: Object.freeze(['Fishball', 'Model for Fishball', 'Launch']), zh: Object.freeze(['Fishball', 'Fishball 的模型', '启动']) })
 export const WORDS = Object.freeze({ open: Object.freeze({ en: 'Open Fishball', zh: '打开 Fishball' }), retry: Object.freeze({ en: 'Retry', zh: '重试' }), targetLabel: Object.freeze({ en: 'Remote target', zh: '远程目标' }) })
 
+/** Stored-only Reconnect acknowledges storage without promising successful pairing. */
+export const RECONNECT_COPY = Object.freeze({
+  storedAnswer: Object.freeze({ ok: true, outcome: 'stored', code: 'pairing-not-confirmed' }),
+  en: Object.freeze({ stored: /(?:stored|saved)/i, pairingBoundary: /(?:not|doesn['’]t|unconfirmed).*pair|pair.*(?:not|unconfirmed|pending)/i }),
+  zh: Object.freeze({ stored: /(?:保存|存储)/, pairingBoundary: /(?:不|未).*配对|配对.*(?:不|未|待)/ }),
+})
+
 /** The model sync Check answer: three providers Fishball lacks. */
 export const CHECK = Object.freeze({
   checkId: 'fbtest-pages-check',

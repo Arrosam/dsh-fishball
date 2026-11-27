@@ -37,6 +37,9 @@ export const ROUTE = Object.freeze({
   mainDetailFile: '/api/plugin-manager/detail-file',
   /** The connector's settings page state (dsh-connector, its settings page): its entries and pair states. */
   connectorState: '/api/dsh-connector/settings/state',
+  // The connector's owner UI: hand over an ordinary session, then observe its managing principal.
+  handOver: '/api/dsh-connector/ui/handover',
+  management: '/api/dsh-connector/ui/state',
 })
 
 /** README "Ready": the child's states; the status route answers {state, code, detail, notice} (+ busy). */

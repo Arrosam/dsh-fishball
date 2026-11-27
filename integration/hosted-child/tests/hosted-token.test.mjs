@@ -20,6 +20,7 @@ import {
   CHILD, FIXTURE, HTTP, OVERLAY, ROUTE, STATE, admitChild, alive, connectorEntries, psAvailable, hostedWorld, insertedRow, perSdk, readJson, readText, runUninstall, show,
 } from '../support/hosted-child.mjs'
 
+const REBIND = Object.freeze({ restartCount: 3, settleMs: 15_000, pollMs: 100, connectorNs: 'dsh-connector' })
 const LOG = Object.freeze({ file: 'lifecycle.log', ready: 'READY', stop: 'STOP', start: 'START', childFailed: 'CHILD_FAILED' })
 /** The connector's entry label for an instance-made entry (README "The hosted token": "Fishball (hosted)"). */
 const HOSTED_LABEL = 'Fishball (hosted)'
@@ -30,8 +31,7 @@ const CORE_NAME = 'Fishball'
 const IMPORTED_REF_KEY = /^ {2}DSH_AGENT_TOKEN:/m
 /** The child page's public view of the reserved parent (README "The hosted token"). */
 const PARENT = Object.freeze({
-  route: '/api/fishball/targets', id: 'parent', needId: 'need-id',
-  blockedLinkStates: Object.freeze(['target-unset', 'target-unreachable', 'token-refused']),
+  route: '/api/fishball/targets', id: 'parent',
 })
 
 const lifecycleCodes = (home) => (readText(path.join(home, ...CHILD.runtime, LOG.file)) ?? '').split('\n').filter(Boolean).map((l) => JSON.parse(l).code)
@@ -58,16 +58,48 @@ async function parentTarget({ origin, cookie }) {
   return parent && { url: endpoint(parent.url), link: parent.link?.state, code: parent.link?.code, pairing: parent.pairing?.state, connecting: parent.connecting }
 }
 
-const linkBlocked = (target) => target && target.connecting !== true && (target.pairing === PARENT.needId || PARENT.blockedLinkStates.includes(target.link))
+async function observeLink(world, admission, chooseEntry) {
+  // Preserve the last public observation on timeout so failures show the link state, not just a hang.
+  const deadline = Date.now() + REBIND.settleMs
+  return untilValue(async () => {
+    const parent = await parentTarget(admission)
+    const entries = await connectorEntries(world.host)
+    const entry = chooseEntry(entries)
+    const settled = entry?.connected === true
+    return ((settled && parent?.url === expectedTarget(world)) || Date.now() >= deadline) && { parent, entries, entry }
+  }, REBIND.pollMs)
+}
 
-const observeRestart = (world, admission, key) => untilValue(async () => {
-  const parent = await parentTarget(admission)
-  const entries = await connectorEntries(world.host)
-  const entry = entries.find((item) => item.key === key)
-  // Either the original link is back or the child reports an idle failure; never wait for the
-  // original link alone, since BUG-3 still needs observations after its failure.
-  return (entry?.connected === true || linkBlocked(parent)) && { parent, entries, entry }
-})
+function expectedTarget(world) {
+  const url = new URL(OVERLAY.mcpPath, world.host.origin)
+  url.hostname = '127.0.0.1'
+  return url.href
+}
+
+const pairingOf = (entry) => ({ key: entry?.key, id: entry?.id, paired: entry?.paired, connected: entry?.connected })
+const managementState = async (world) => {
+  const response = await world.host.get(ROUTE.management)
+  assert.equal(response.status, HTTP.ok)
+  return response.json.state
+}
+const managementOf = async (world, sessionId) => (await managementState(world)).marks.find((mark) => mark.sessionId === sessionId)?.principal
+
+async function handOverSession(world, entry) {
+  const sessionId = await world.host.call('createSession')
+  const target = (await managementState(world)).targets.find(({ id }) => id === entry.id)
+  assert.ok(target, 'the paired Fishball was not offered as a session manager')
+  const result = await world.host.post(ROUTE.handOver, { sessionId, principalKey: target.key })
+  assert.equal(result.json?.ok, true, 'precondition: hand over an ordinary session to Fishball: ' + show(result.json))
+  assert.equal(result.json.principal.id, entry.id)
+  return sessionId
+}
+
+async function reconnect(world) {
+  const response = await world.host.post(ROUTE.reconnect, {})
+  assert.equal(response.status, HTTP.ok)
+  assert.equal(response.json?.ok, true, show(response.json))
+  return response.json
+}
 
 async function readyInWorld(world, sdk) {
   const s = await world.start(sdk)
@@ -91,8 +123,10 @@ async function admitOwner(world) {
 
 /** Observe a real host restart without requiring the MCP link to come back. */
 async function restartAndAdmit(world) {
+  const oldPort = new URL(world.host.origin).port
   const status = await world.restart()
   assert.equal(status?.state, STATE.ready, show(status))
+  assert.notEqual(new URL(world.host.origin).port, oldPort, 'fixture must exercise a changed host port')
   return admitOwner(world)
 }
 
@@ -312,65 +346,69 @@ eachSdk((sdk) => {
     })
   })
 
-  // A fresh pairing per case makes the three observations independent and individually filterable.
-  const regression = (part, title, check, todo) => {
+  // A fresh pairing per case makes the observations independent and individually filterable.
+  const regression = (part, title, check) => {
     const world = hostedWorld('hc-token-' + part)
     perSdk(sdk, 'hosted token ' + part, world, (row) => {
       row('HOST-UC-02', part, title, async () => {
         const child = await readyInWorld(world, sdk)
         const initial = await pairedInWorld(world)
+        assert.deepEqual(hostedKeys(initial.entries), [initial.entry.key], 'precondition: one owned entry')
         // Start from the durable credential, not a transient reference the core has not consumed yet.
         await untilValue(() => hasSavedParent(child) && !IMPORTED_REF_KEY.test(readText(childCredentialFile(child)) ?? ''))
-        await check(world, initial)
-      }, { todo })
+        await check(world, initial.entry)
+      })
     })
   }
 
-  regression('A1', 'a host DSH restart (a new wire, the credential present): the child links to the parent again with its paired entry', async (world, initial) => {
-    const admission = await restartAndAdmit(world)
-    const { parent, entry } = await observeRestart(world, admission, initial.entry.key)
-    const launchTarget = endpoint(insertedRow(world.child.overlays()[0] ?? [], OVERLAY.childRow)?.config?.[OVERLAY.targetField])
-    assert.deepEqual({ paired: entry?.paired, connected: entry?.connected }, { paired: true, connected: true },
-      'after the restart: ' + show({ launchTarget, parent, savedParent: hasSavedParent(world.child) }))
-  }, 'BUG-2: Fishball does not preserve the parent link when the host origin changes')
+  const observeOwned = (world, admission, owned) => observeLink(world, admission, (entries) => entries.find((entry) => entry.key === owned.key))
+  const linkEvidence = (world, parent) => show({ expectedTarget: expectedTarget(world), parent, savedParent: hasSavedParent(world.child) })
 
-  regression('main', 'repeated host restarts (credential present each time) create nothing: no new hosted entry after a second and a third restart', async (world, initial) => {
-    const before = { record: world.child.hosted().entries, connector: hostedKeys(initial.entries) }
-    const lastRestart = 3
+  regression('A1', 'BUG-2: a changed host port preserves the original paired agent and its managed session', async (world, owned) => {
+    const sessionId = await handOverSession(world, owned)
+    const admission = await restartAndAdmit(world)
+    const { parent, entry } = await observeOwned(world, admission, owned)
+    assert.equal(parent?.url, expectedTarget(world), linkEvidence(world, parent))
+    assert.deepEqual(pairingOf(entry), pairingOf(owned), linkEvidence(world, parent))
+    assert.equal((await managementOf(world, sessionId))?.id, owned.id, 'existing session lost its manager')
+    await handOverSession(world, entry)
+  })
+
+  regression('main', 'BUG-3: repeated host port changes leave one recorded hosted entry and the original agent ID', async (world, owned) => {
     const observations = []
     const diagnostics = []
-    for (let restart = 1; restart <= lastRestart; restart++) {
+    for (let restart = 1; restart <= REBIND.restartCount; restart++) {
       const admission = await restartAndAdmit(world)
-      const { parent, entries } = await observeRestart(world, admission, initial.entry.key)
-      // A new entry can show up in the connector even if the child did not save it in hosted.json.
-      observations.push({ restart, record: world.child.hosted().entries, connector: hostedKeys(entries) })
+      const { parent, entries, entry } = await observeOwned(world, admission, owned)
+      // A duplicate can show up in the connector even if the child did not save it in hosted.json.
+      observations.push({ restart, record: world.child.hosted().entries, connector: hostedKeys(entries), id: entry?.id })
       diagnostics.push({ restart, parent, savedParent: hasSavedParent(world.child) })
     }
-    assert.deepEqual(observations, observations.map(({ restart }) => ({ restart, ...before })), 'a restart changed the hosted entries: ' + show(diagnostics))
-  }, 'BUG-3: later host restarts create new hosted entries after Fishball loses its saved parent credential')
+    const expected = { record: [owned.key], connector: [owned.key], id: owned.id }
+    assert.deepEqual(observations, observations.map(({ restart }) => ({ restart, ...expected })), 'a restart changed the hosted entries: ' + show(diagnostics))
+  })
 
-  regression('reconnect', 'Reconnect creates one new entry, imports it once, and the child pairs it without removing or unpairing the old entry', async (world, initial) => {
-    const before = world.child.hosted().entries
-    const res = await world.host.post(ROUTE.reconnect, {})
-    assert.deepEqual(res.json, { ok: true }, show(res.json))
-    const after = world.child.hosted().entries
-    assert.deepEqual(after.slice(0, -1), before, 'Reconnect moved or deleted a recorded entry')
-    assert.equal(after.length, before.length + 1, 'not exactly one new entry: ' + show(after))
-    const newKey = after.at(-1)
-    assert.ok(!before.includes(newKey), 'Reconnect recorded an existing key again: ' + show(after))
+  regression('reconnect', 'BUG-4: explicit Reconnect after a host port change leaves only the original paired agent', async (world, owned) => {
+    const admission = await restartAndAdmit(world)
+    await reconnect(world)
+    const { parent, entries, entry } = await observeOwned(world, admission, owned)
+    assert.deepEqual({ record: world.child.hosted().entries, connector: hostedKeys(entries), pairing: pairingOf(entry) }, {
+      record: [owned.key], connector: [owned.key], pairing: pairingOf(owned),
+    }, linkEvidence(world, parent))
+  })
+
+  regression('reconnect deleted', 'BUG-4: Reconnect can replace a deleted entry and pair it without transferring its managed session', async (world, owned) => {
+    const sessionId = await handOverSession(world, owned)
+    // This fresh connector has only the owned token: clearing its native list is the owner's Delete + Save.
+    const result = await world.host.call('settingsUpdate', { ns: REBIND.connectorNs, patch: { tokens: [] } })
+    assert.equal(result.ok, true, 'owner deletion failed: ' + show(result))
+    await untilValue(async () => (await connectorEntries(world.host)).length === 0)
+    await reconnect(world)
     const admission = await admitOwner(world)
-    const oldKey = initial.entry.key
-    const { parent, entries, oldEntry, added } = await untilValue(async () => {
-      const parent = await parentTarget(admission)
-      const entries = await connectorEntries(world.host)
-      const oldEntry = entries.find((entry) => entry.key === oldKey)
-      const added = entries.find((entry) => entry.key === newKey)
-      // Besides pairing, an idle link failure or prompt for a new ID ends the observation.
-      const settled = added?.paired === true || linkBlocked(parent)
-      return oldEntry?.connected !== true && settled && { parent, entries, oldEntry, added }
-    })
-    assert.deepEqual(hostedKeys(entries), [...hostedKeys(initial.entries), newKey].sort(), 'Reconnect changed more than one connector entry')
-    assert.equal(oldEntry?.paired, true, 'Reconnect unpaired or removed the old entry')
-    assert.equal(added?.paired, true, 'the child did not pair the Reconnect entry: ' + show({ parent, savedParent: hasSavedParent(world.child) }))
-  }, 'BUG-4: Reconnect cannot pair a new entry while the old entry holds the same Fishball identity')
+    const { parent, entries, entry } = await observeLink(world, admission, (list) => list.find((item) => item.label === HOSTED_LABEL && item.key !== owned.key))
+    assert.ok(entry?.paired && entry.connected, 'replacement never paired: ' + linkEvidence(world, parent))
+    assert.deepEqual(hostedKeys(entries), [entry.key], 'Reconnect created more than one replacement')
+    assert.equal(world.child.hosted().entries.at(-1), entry.key, 'replacement was not recorded')
+    assert.equal(await managementOf(world, sessionId), undefined, 'deleted entry’s session was transferred')
+  })
 })

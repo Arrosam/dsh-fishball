@@ -69,6 +69,11 @@ const ops = {
     const revision = ctx.settings.describe().find((x) => x.ns === ns)?.revision
     try { await ctx.settings.update(ns, patch, revision); return { ok: true } } catch (e) { return { ok: false, error: errorInfo(e) } }
   },
+  /** Create an ordinary session using the host SDK, without running a model turn. */
+  async createSession() {
+    const { sessionId } = await ctx.sessionController.create({ cwd: home })
+    return sessionId
+  },
   async shutdown() { await shutdown.shutdown(0); return true },
 }
 

@@ -22,7 +22,7 @@ import { show } from '@dsh-instance/test-helpers/json'
 import { wordsOf } from '@dsh-instance/test-helpers/page'
 import { findAll } from '@dsh-instance/test-helpers/react-shim'
 import { packageFile } from '../support/instance.mjs'
-import { CHECK, CREDENTIAL_REF, HEADINGS, HOOK, PAGE_UI, ROUTE, SLOT, STAND, STATE, WORDS } from './constants.mjs'
+import { CHECK, CREDENTIAL_REF, HEADINGS, HOOK, PAGE_UI, RECONNECT_COPY, ROUTE, SLOT, STAND, STATE, WORDS } from './constants.mjs'
 import { requestsTo, scriptedInstance, statusOf } from './fakes.mjs'
 import { openSettings } from './open.mjs'
 import { openInstancePage } from './page.mjs'
@@ -115,6 +115,23 @@ eachSdk((sdk) => {
       assert.ok(order.indexOf(heading) < order.indexOf(open) && order.indexOf(open) < order.indexOf(reconnect), 'Open / Reconnect are not under the Fishball heading in that order')
       assert.ok(wordsOf(open).includes(WORDS.open[lang]), 'Open says ' + show(wordsOf(open)))
       assert.ok(findAll([open], (n) => n !== open && primitive(n).startsWith('Icon')).length > 0, 'Open Fishball has no icon')
+    })
+  }
+
+  for (const lang of PAGE_UI.langs) {
+    caseTest(sdk, 'HOST-UC-02', 'reconnect copy ' + lang, 'Reconnect ok acknowledges storage, not pairing', async (t) => {
+      const world = scriptedInstance({ handlers: { ['POST ' + ROUTE.reconnect]: () => RECONNECT_COPY.storedAnswer } })
+      const { page, tree } = await openSettings(t, sdk, { lang, world })
+      const button = () => byHook(tree, HOOK.reconnect)[0]
+      await page.until(() => button() && !button().props.disabled)
+      const messages = () => findAll(tree(), (node) => node.props.role === 'status').map(wordsOf)
+      const before = messages()
+      await page.press(button())
+      await page.until(() => requestsTo(page, 'POST', ROUTE.reconnect).length === 1 && !button().props.disabled)
+      const acknowledgement = messages().filter((message) => !before.includes(message)).join(' ')
+      const copy = RECONNECT_COPY[lang]
+      assert.match(acknowledgement, copy.stored)
+      assert.match(acknowledgement, copy.pairingBoundary)
     })
   }
 
