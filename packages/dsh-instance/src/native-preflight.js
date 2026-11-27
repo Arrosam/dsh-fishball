@@ -1,4 +1,4 @@
-import { lstat, realpath, readdir, readFile } from 'node:fs/promises'
+import { lstat, realpath, readlink, readdir, readFile } from 'node:fs/promises'
 import path from 'node:path'
 
 export const PREFLIGHT = Object.freeze({
@@ -57,7 +57,7 @@ async function inspectAncestors(start, privateRoot, installRoot, scanRoots) {
 }
 
 /** Pure filesystem/package metadata inspection; never imports profile plugins or follows their code. */
-export async function preflight({ mainHome, runtimeRoot, workspace, mainWorkspaces = [], installRoot, profileDir, resolution }) {
+export async function preflight({ mainHome, runtimeRoot, workspace, mainWorkspaces = [], installRoot, profileDir, resolution, liveLinks = new Map(), replacingLinks = new Map() }) {
   const main = await canonical(mainHome)
   const root = await canonical(runtimeRoot)
   const install = await canonical(installRoot)
@@ -73,6 +73,10 @@ export async function preflight({ mainHome, runtimeRoot, workspace, mainWorkspac
     if (within(opened, root) || within(root, opened)) warnings.push({ code: 'NESTED_WORKSPACE_VISIBLE', path: opened, message: 'This workspace exposes the attached runtime to filename discovery and explicit file access; it is not a security boundary.' })
   }
   const scanRoots = new Set()
+  const profileModules = path.join(profileDir, PREFLIGHT.nodeModules)
+  // Only the exact, top-level Fishball links created from the explicit dev setting are allowed.
+  // Do not open the checkout or its dependency tree as part of the child's private-tree scan.
+  const allowedSlot = (file, target) => path.dirname(file) === profileModules && liveLinks.get(path.basename(file)) === target
   await inspectAncestors(workspace, root, install, scanRoots)
   await inspectAncestors(profileDir, root, install, scanRoots)
   /*
@@ -93,11 +97,11 @@ export async function preflight({ mainHome, runtimeRoot, workspace, mainWorkspac
     const target = await canonical(entry.packageDir)
     if (entry.scope === 'installation') {
       if (!within(install, target)) fail('PREFLIGHT_RESOLUTION', 'Installation entry escapes its selected installation: ' + entry.name)
-    } else if (!within(root, target) && !within(install, target)) fail('PREFLIGHT_RESOLUTION', 'Profile dependency resolves outside attached home or installation: ' + entry.name)
+    } else if (!within(root, target) && !within(install, target) && liveLinks.get(entry.name) !== target) fail('PREFLIGHT_RESOLUTION', 'Profile dependency resolves outside attached home or installation: ' + entry.name)
   }
   for (const link of resolution?.linkedRoots ?? []) {
     const target = await canonical(link.realPath)
-    if (!within(root, target) && !within(install, target)) fail('PREFLIGHT_LINK', 'Linked plugin has an external ancestor chain: ' + link.name)
+    if (!within(root, target) && !within(install, target) && liveLinks.get(link.name) !== target) fail('PREFLIGHT_LINK', 'Linked plugin has an external ancestor chain: ' + link.name)
     if (within(root, target)) {
       scanRoots.add(target)
       await inspectAncestors(target, root, install, scanRoots)
@@ -119,7 +123,13 @@ export async function preflight({ mainHome, runtimeRoot, workspace, mainWorkspac
       const file = path.join(directory, entry.name)
       if (entry.name === PREFLIGHT.manifest && entry.isSymbolicLink()) fail('PREFLIGHT_MANIFEST', 'Symlinked package identity is not supported: ' + file)
       if (entry.isDirectory() || entry.isSymbolicLink()) {
+        // A previously declared live link may be dangling if its checkout moved. Placement
+        // replaces or removes it before boot, without following the target.
+        if (entry.isSymbolicLink() && directory === profileModules && replacingLinks.has(entry.name)
+          && (await stat(file))?.uid === process.getuid()
+          && path.resolve(directory, await readlink(file)) === replacingLinks.get(entry.name)) continue
         const real = await realpath(file)
+        if (entry.isSymbolicLink() && allowedSlot(file, real)) continue
         if (!within(root, real) && !within(install, real)) fail('PREFLIGHT_LINK', 'External dependency link: ' + file)
         const info = await stat(real)
         if (info?.isDirectory()) await inspectTree(file)

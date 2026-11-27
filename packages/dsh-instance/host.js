@@ -93,8 +93,10 @@ export const inject = [...PLUGIN.dependencies]
  * child is started as the main DSH is (D28, src/native-runtime/constants.js HOST_LAUNCH), and an
  * old stored `nodeExecutable` or `executableSearchPath` is ignored. `remoteEmbedUrl` is an
  * ordinary instance-patch field, not part of the editable form or the child's launch config.
+ * `fishballLiveRepo` is also patch-only: a trusted development checkout, resolved at child start.
  */
 export const Config = Schema.object({
+  fishballLiveRepo: Schema.string().description('Opt in to live Fishball development from an absolute path to a trusted Fishball checkout.'),
   remoteEmbedUrl: Schema.string().description('Opt in to owner-only Fishball embedding through the main DSH public HTTPS URL.'),
   enabled: Schema.boolean().default(true).volatile().description('Start the private native child after main appReady. Turning it off stops the child at once and turning it on starts it, as the row switch does; private data is retained.'),
 })
@@ -280,7 +282,7 @@ export async function apply(ctx, config) {
       warn: (format, value) => logger?.warn(format, value),
     })
     owner = createNativeRuntime({
-      mainHome: key, installAnchor: ctx.profileContext.installAnchor,
+      mainHome: key, installAnchor: ctx.profileContext.installAnchor, fishballLiveRepo: config.fishballLiveRepo,
       // A packaged DSH supplies its own pnpm; the packed set's install runs it (placement.js installPackedSet).
       packageManager: ctx.profileContext.packageManager,
       get mainWorkspaces() { return ctx.workspaceRegistry.list().map(workspace => workspace.path) },

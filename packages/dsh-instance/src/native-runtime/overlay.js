@@ -16,7 +16,7 @@ const WEB_CONFIG = Object.freeze({ host: RUNTIME.host, port: 0, tls: undefined }
 const WEB_RUNTIME_CONFIG = Object.freeze({ openBrowser: false, printUrl: false, publicUrl: undefined })
 /**
  * What the launch overlay carries (R-HOST-04; design §6.2; Q-5 and the isolation patches decided
- * 2026-11-15): HMR off, the child's own origin and port, the two instance runtime rows (the
+ * 2026-11-15): HMR off by default, checkout package roots watched in opt-in dev mode, the child's own origin and port, the two instance runtime rows (the
  * lifecycle row and the child-side row `dsh-instance-child`, whose config is the target URL core
  * reads, from the instance's snapshot; I-READY removed V2's native-web adapter row, whose
  * launch-token probe the readiness gate no longer makes) and the isolation of the
@@ -30,7 +30,7 @@ const WEB_RUNTIME_CONFIG = Object.freeze({ openBrowser: false, printUrl: false, 
  * Whole-row replacement preserves standard native configuration and tool declarations.
  * @param child - `{targetUrl}` for the child-side row ('' when there is no target)
  */
-export function launchOverlay(paths, record, childModule, limits, control, entries, child = { [HOSTED.targetField]: '' }) {
+export function launchOverlay(paths, record, childModule, limits, control, entries, child = { [HOSTED.targetField]: '' }, hmrRoots = []) {
   const rows = new Map()
   function collect(entries) {
     for (const row of entries) {
@@ -70,7 +70,9 @@ export function launchOverlay(paths, record, childModule, limits, control, entri
   const config = { mainHome: paths.mainHome, hostId: record.hostId, instanceId: record.instanceId, limits, control }
   return [
     ...overlays,
-    { id: ROW.hmr, disabled: true },
+    hmrRoots.length
+      ? { id: ROW.hmr, disabled: false, config: { ...rows.get(ROW.hmr).config, root: hmrRoots } }
+      : { id: ROW.hmr, disabled: true },
     { id: ROW.webserver, disabled: false, config: { ...rows.get(ROW.webserver).config, ...WEB_CONFIG } },
     { id: ROW.webRuntime, disabled: false, config: { ...rows.get(ROW.webRuntime).config, ...WEB_RUNTIME_CONFIG } },
     { insert: [

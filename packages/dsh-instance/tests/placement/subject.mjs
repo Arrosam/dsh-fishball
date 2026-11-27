@@ -134,7 +134,7 @@ export function useFishballRepo(scope, repo) {
 
 /**
  * One composition world: a fresh temp root with a fake dsh-fishball and a canonical main home.
- * `compose()` runs the package's composedProfile on that home (as many times as a case needs).
+ * `compose(options)` runs the package's composedProfile on that home (as many times as a case needs).
  */
 export async function composeWorld(scope, sdk, fixture = {}) {
   const root = tempRoot(scope)
@@ -143,7 +143,7 @@ export async function composeWorld(scope, sdk, fixture = {}) {
   const mainHome = path.join(root, 'main')
   fs.mkdirSync(mainHome)
   const { composedProfile } = await importInstance(sdk, RUNTIME_MODULE)
-  return { root, ...fake, mainHome, compose: () => composedProfile({ mainHome, installAnchor: installAnchor(sdk) }) }
+  return { root, ...fake, mainHome, compose: (options = {}) => composedProfile({ mainHome, installAnchor: installAnchor(sdk), ...options }) }
 }
 
 /**

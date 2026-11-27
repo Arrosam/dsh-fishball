@@ -2,7 +2,7 @@
 # - dsh-instance: starts the isolated Fishball (its own private DSH profile) after the main DSH
 #   is ready, and stops it with DSH. Inserted here so a plain `dsh plugin add` needs no profile
 #   edit. The child runs on the same executable, exec arguments and runtime variables as the main
-#   DSH (src/native-runtime/constants.js HOST_LAUNCH); there is no launch setting.
+#   DSH (src/native-runtime/constants.js HOST_LAUNCH); fishballLiveRepo only selects live placement.
 # It edits no other row. The connector is a separate plugin (packages/dsh-connector), never installed by
 # this one (D25).
 - insert:

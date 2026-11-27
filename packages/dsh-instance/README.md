@@ -35,13 +35,13 @@ for packing and **24.9+** for DSH. After starting DSH, open Fishball from the si
   `workspace`, `os-home`, `agents-home`, `tmp`, `launches`, the owner marker, the lifecycle secret
   and logs. The DSH home must be a canonical real path, else `INVALID_MAIN_HOME`.
 - **How it starts:** with the main process's own executable and arguments (debugger flags
-  dropped), `127.0.0.1` with an OS port, HMR off. The launch overlay carries only that, the two
-  instance rows (the lifecycle row and the child-side row `dsh-instance-child`, whose config holds
+  dropped), `127.0.0.1` with an OS port, server HMR off unless live development is enabled. The launch overlay carries
+  that, the two instance rows (the lifecycle row and the child-side row `dsh-instance-child`, whose config holds
   the target URL) and the isolation of the child's instructions and skills from yours. No guard row
   and no token: the guards are fishball-core's own patch.
 - **Placement:** at every start, before the profile loads, `fishball-amenities` and `fishball-core`
   (which carries the Fishball UI) are copied into the child's profile and added to its bundles in
-  that order. The amenities bundle supplies board, heartbeat, and taskboard. A standalone
+  that order by default. The amenities bundle supplies board, consultant, heartbeat, and taskboard. A standalone
   `fishball-ui` from an earlier instance is still treated as the child's own. Sources: the bundled
   tarballs in a packed instance, else `$FISHBALL_REPO/packages/` or the sibling Fishball checkout.
   Only the files each manifest's `files` list ships are copied, read as npm pack reads them: an entry
@@ -52,6 +52,35 @@ for packing and **24.9+** for DSH. After starting DSH, open Fishball from the si
 - **Ready:** the child's base services are mounted, its `appReady` has fired and its web server
   listens with the admission route registered. States: `disabled`, `waiting`, `starting`, `ready`,
   `stopping`, `stopped`, `failed`.
+
+## Live Fishball development (opt-in)
+
+Set `fishballLiveRepo` on the `dsh-instance` row in the **parent** DSH's profile patch (for Web,
+`<DSH_HOME>/profiles/web/cordis.patch.yml`). Merge into the existing row override if there is one:
+
+```yaml
+- id: dsh-instance
+  config:
+    fishballLiveRepo: /absolute/path/to/dsh-fishball
+```
+
+Use a trusted checkout. Start Fishball after the parent loads this setting; an already-running
+child needs one restart to change placement. Its seven Fishball packages are then absolute `link:`
+dependencies, not vendor copies. Old vendor tarballs are not used in this mode. Bundle selections
+and data are kept. Remove the setting and start again to restore copy/packed placement.
+`FISHBALL_REPO` still selects only a source for copy placement.
+
+Set up the checkout's own `node_modules`: Fishball workspace dependencies (including
+`fishball-shared`) must resolve to that checkout's package directories, and the MCP client pinned
+by `packages/core/package.json` must resolve from core for connector features. DSH provides its own
+peers. Placement does not install or modify dependencies inside the checkout.
+
+With DSH 0.2.2-rc.3, live mode watches the linked roots for edits to loaded server modules. Web
+client HMR independently polls each mounted plugin's exported `./client` entry. If you change only
+a browser chunk, regenerate or touch its exported entry too so DSH issues a new revision. DSH does
+not compile source or generically reload loose assets or state already captured by a session.
+Verify prompt edits in a new session. Restart the hosted child for startup configuration or
+resolution changes DSH cannot apply in process.
 
 ## The hosted token
 

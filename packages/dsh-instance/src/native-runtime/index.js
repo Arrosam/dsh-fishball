@@ -302,11 +302,11 @@ class NativeRuntime {
     try {
       await privateDirectory(directory)
       await writePrivate(path.join(directory, RUNTIME.marker), record, true)
-      const profile = await initializeProfile(this.paths, this.installation, this.options.preflight ?? defaultPreflight, this.options.mainWorkspaces ?? [], signal)
+      const profile = await initializeProfile(this.paths, this.installation, this.options.preflight ?? defaultPreflight, this.options.mainWorkspaces ?? [], signal, this.options.fishballLiveRepo)
       this.warnings = profile.warnings
       const childModule = await copyChildCode(this.paths, record)
       const overlay = path.join(directory, 'launch.patch.yml')
-      await writePrivate(overlay, launchOverlay(this.paths, record, childModule, this.limits, this.options.control ?? {}, profile.entries, this.options.child?.() ?? undefined), true)
+      await writePrivate(overlay, launchOverlay(this.paths, record, childModule, this.limits, this.options.control ?? {}, profile.entries, this.options.child?.() ?? undefined, profile.hmrRoots), true)
       const preload = pathToFileURL(path.join(path.dirname(childModule), 'src/native-runtime/parent-watch.js')).href
       const args = [...childExecArgv(this.host.execArgv), '--import', preload, this.installation.bin, '--profile', RUNTIME.profileName, '--patch', overlay, '--host', RUNTIME.host, '--port', '0', '--no-open']
       if (signal?.aborted) fail('START_INTERRUPTED')

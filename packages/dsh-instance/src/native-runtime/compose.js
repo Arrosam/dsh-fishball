@@ -21,18 +21,19 @@ export const COMPOSE_RECORD = Object.freeze({
  * bundles, the placement record and the profile manifest) and nothing after it: no launch
  * directory, no snapshot, no overlay file, no child process. In a packed instance that includes
  * the set's install, which runs pnpm and may use the registry (placement.js installPackedSet).
- * @param {{mainHome: string, installAnchor: string}} options - a canonical main DSH home, and the
- *   installed DSH package.json whose installation the child would run.
+ * @param {{mainHome: string, installAnchor: string, fishballLiveRepo?: string}} options - a canonical main DSH home, and the
+ *   installed DSH package.json whose installation the child would run. Set fishballLiveRepo to an
+ *   absolute Fishball checkout path to compose live links in place of release/copy placement.
  * @returns {Promise<{paths: object, entries: object[], overlay: object[], record: object}>} the
  *   runtime layout, the composed profile rows (bundle layers, the profile patch, the home patch),
  *   the launch overlay's operations for `record`, and that record.
  */
-export async function composedProfile({ mainHome, installAnchor }) {
+export async function composedProfile({ mainHome, installAnchor, fishballLiveRepo }) {
   const { paths, marker } = await prepareLayout(mainHome)
   const installation = await resolveInstallation(installAnchor)
-  const { entries } = await initializeProfile(paths, installation, defaultPreflight, [])
+  const { entries, hmrRoots } = await initializeProfile(paths, installation, defaultPreflight, [], undefined, fishballLiveRepo)
   const record = Object.freeze({ format: RUNTIME.format, hostId: marker.hostId, ...COMPOSE_RECORD, installAnchor: installation.installAnchor, installRoot: installation.installRoot, version: installation.version })
   const childModule = path.join(snapshotPath(paths, record.instanceId), RUNTIME.snapshot.lifecycle)
-  const overlay = launchOverlay(paths, record, childModule, runtimeLimits(), {}, entries)
+  const overlay = launchOverlay(paths, record, childModule, runtimeLimits(), {}, entries, undefined, hmrRoots)
   return { paths, entries, overlay, record }
 }

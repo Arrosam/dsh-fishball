@@ -5,7 +5,7 @@ import path from 'node:path'
 import { RUNTIME, PLACEMENT, HOST_LAUNCH, fail, NativeRuntimeError } from './constants.js'
 import { privateDirectory, writePrivate, exists, snapshotPath, writeProfileBundles, sameBundles } from './files.js'
 import { inside } from '../lib/files.js'
-import { placeBundles, snapshotLifecycle } from './placement.js'
+import { declaredLiveLinks, placeBundles, snapshotLifecycle } from './placement.js'
 
 export async function resolveInstallation(installAnchor) {
   if (typeof installAnchor !== 'string' || !path.isAbsolute(installAnchor)) fail('INVALID_INSTALLATION')
@@ -133,11 +133,12 @@ async function nativeProfileBundles(boot, profileDir) {
   await writeProfileBundles(boot, profileDir, manifest, bundles)
 }
 
-export async function initializeProfile(paths, installation, preflight, mainWorkspaces, signal) {
+export async function initializeProfile(paths, installation, preflight, mainWorkspaces, signal, fishballLiveRepo) {
   const args = { mainHome: paths.mainHome, runtimeRoot: paths.root, workspace: paths.workspace, mainWorkspaces, installRoot: installation.installRoot, profileDir: paths.profile }
-  // First reject ambient ancestry before importing even the installation's metadata API.
-  await preflight(args)
+  // The layout is already privately owned. Validate the startup manifest before reading its
+  // exact prior live-link declarations, then reject ambient ancestry before importing DSH.
   await validateStartupFiles(paths)
+  await preflight({ ...args, replacingLinks: await declaredLiveLinks(paths.profile) })
   const boot = await import(pathToFileURL(installation.bootPath).href)
   if (boot.resolveProfileDir(RUNTIME.profileName, paths.home) !== paths.profile) fail('PROFILE_PATH_MISMATCH')
   const fresh = !await exists(path.join(paths.profile, 'package.json'))
@@ -145,7 +146,7 @@ export async function initializeProfile(paths, installation, preflight, mainWork
   if (fresh) await privateTree(paths.profile)
   await nativeProfileBundles(boot, paths.profile)
   // The plugin set, placed before the profile loads (design §8.1).
-  await placeBundles(paths, boot, installation, signal)
+  const liveLinks = await placeBundles(paths, boot, installation, signal, fishballLiveRepo)
   await validateStartupFiles(paths)
   const profile = boot.loadProfileDirectory('fishball', paths.profile, installation.installAnchor)
   // Every enabled bundle DSH skipped blocks the start, named with DSH's reason (R-BND-03); the
@@ -156,10 +157,10 @@ export async function initializeProfile(paths, installation, preflight, mainWork
     throw Object.assign(new NativeRuntimeError(PLACEMENT.code.incompatible, PLACEMENT.incompatible(profile.skippedBundles)), { [PLACEMENT.pluginField]: profile.skippedBundles[0].packageName })
   }
   const resolution = await boot.createRuntimeResolution({ installAnchor: installation.installAnchor, profile, home: paths.home })
-  const result = await preflight({ ...args, resolution })
+  const result = await preflight({ ...args, resolution, liveLinks })
   const homePatches = boot.loadOptionalPatches('fishball', path.join(paths.home, boot.PROFILE_PATCH_FILENAME)) ?? []
   const entries = boot.composeEntries([...profile.layers.map(layer => layer.patches), profile.patches, homePatches])
-  return { warnings: result.warnings ?? [], entries }
+  return { warnings: result.warnings ?? [], entries, hmrRoots: [...liveLinks.values()] }
 }
 
 /**

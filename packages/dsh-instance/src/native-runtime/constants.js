@@ -166,7 +166,8 @@ export const UNINSTALL = Object.freeze({
 /**
  * Placement of the plugin set into the child profile (R-BND-01/02/03, R-HOST-01, design §8.1;
  * bundled-placement note `f71717e` P3 + 3a). The set's source is chosen at every child start:
- * - a packed instance (REL-PACK: `bundled/<name>-<version>.tgz` for every set member, at this
+ * - opt-in live development links the profile directly to the explicitly selected checkout;
+ * - otherwise a packed instance (REL-PACK: `bundled/<name>-<version>.tgz` for every set member, at this
  *   instance's own version) installs the set with DSH's own plugin manager, by exact npm spec first
  *   and offline from those tarballs when the registry fails, and only when the profile lacks that
  *   exact version (the user's answers to REL-PACK Q2-Q4, 2026-11-17; placement.js installPackedSet);
@@ -247,6 +248,20 @@ export const PLACEMENT = Object.freeze({
   modules: 'node_modules',
   manifest: 'package.json',
   dependency: (name) => 'file:./vendor/' + name,
+  live: Object.freeze({
+    packages: 'packages',
+    libraries: Object.freeze([
+      Object.freeze({ name: 'fishball-board', directory: 'fishball-board' }),
+      Object.freeze({ name: 'fishball-consultant', directory: 'fishball-consultant' }),
+      Object.freeze({ name: 'fishball-heartbeat', directory: 'fishball-heartbeat' }),
+      Object.freeze({ name: 'fishball-shared', directory: 'shared' }),
+      Object.freeze({ name: 'fishball-taskboard', directory: 'fishball-taskboard' }),
+    ]),
+    protocol: 'link:',
+    invalid: 'INVALID_FISHBALL_LIVE_REPO',
+    pathRequired: 'fishballLiveRepo must be an absolute path to a Fishball checkout.',
+    unavailable: (directory) => 'fishballLiveRepo does not provide the expected checkout directory: ' + directory,
+  }),
   // The record of the names placed so far (3a): a name is switched on only at its first placement.
   // It lives in the child profile, so a profile deleted by hand starts over with the set on.
   record: 'fishball-placement.json',

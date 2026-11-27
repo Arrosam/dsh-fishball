@@ -1,4 +1,4 @@
-import { mkdir, lstat, readdir, readFile, realpath, rename, rm } from 'node:fs/promises'
+import { mkdir, lstat, readdir, readFile, realpath, readlink, rename, rm, symlink } from 'node:fs/promises'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { createRequire } from 'node:module'
 import path from 'node:path'
@@ -8,7 +8,7 @@ import { RUNTIME, PLACEMENT, fail } from './constants.js'
 import { exists, jsonPrivate, writePrivate, writeProfileBundles, sameBundles } from './files.js'
 
 /**
- * The child's copies of the plugin set and its libraries (I-PLACE;
+ * The child's placement of the plugin set and its libraries (I-PLACE;
  * constants.js PLACEMENT says where they go and why). Everything here reads source packages as
  * files: no module of the set is ever imported by the host (R-BND-01).
  */
@@ -128,22 +128,22 @@ async function removeLeftovers(parent, name) {
 
 /**
  * Replace `<parent>/<name>` with a fresh copy, built beside it and swapped in by rename: the slot
- * holds the old copy or the new one, and is empty only between the two renames. A previous slot may
+ * holds the old entry or the new one, and is empty only between the two renames. A previous slot may
  * be a real directory or a pnpm link; the link itself is moved aside and removed, never what it
  * points to.
  */
-async function replaceSlot(parent, name, populate) {
+async function replaceSlot(parent, name, populate, stage = true) {
   await ownedDirectory(parent)
   await removeLeftovers(parent, name)
   const target = path.join(parent, name)
   const temporary = target + PLACEMENT.temporaryInfix + randomUUID()
   const retired = target + PLACEMENT.retiredInfix + randomUUID()
   try {
-    await populate(temporary)
+    if (stage) await populate(temporary)
     const previous = await exists(target)
     if (previous && previous.uid !== process.getuid()) fail(PLACEMENT.code.unsafeDirectory)
     if (previous) await rename(target, retired)
-    try { await rename(temporary, target) } catch (error) { if (previous) await rename(retired, target); throw error }
+    try { if (stage) await rename(temporary, target); else await populate(target) } catch (error) { if (previous) await rename(retired, target); throw error }
     if (previous) await rm(retired, { recursive: true })
   } finally {
     await rm(temporary, { recursive: true, force: true })
@@ -209,9 +209,10 @@ export const hostModule = (installation, specifier) => import(pathToFileURL(crea
  * @param installation - resolveInstallation's result, with the host's `packageManager` when DSH
  *   supplies one (the plugin manager's own rule: that invocation, else `pnpmCommand`).
  */
-async function installPackedSet(paths, installation, set, signal) {
+async function installPackedSet(paths, boot, installation, set, signal) {
   const install = PLACEMENT.install
-  const present = await Promise.all(install.order.map((name) => installedAt(paths.profile, name, set.version)))
+  const { dependencies } = boot.readProfileManifest(RUNTIME.profileName, paths.profile)
+  const present = await Promise.all(install.order.map((name) => Object.hasOwn(dependencies ?? {}, name) && installedAt(paths.profile, name, set.version)))
   if (present.every(Boolean)) return
   const [{ runPluginCommand }, { PluginManager }] = await Promise.all([hostModule(installation, install.operations), hostModule(installation, install.manager)])
   const config = PluginManager.Config({})
@@ -336,15 +337,77 @@ async function readRecord(file) {
  * instance only the instance's own library, after installPackedSet put the set in (each tarball
  * carries its own libraries in its node_modules).
  */
-async function copiedSources(paths, installation, signal) {
-  const set = await packedSet()
+async function copiedSources(paths, boot, installation, signal, set) {
   if (set) {
-    await installPackedSet(paths, installation, set, signal)
+    await installPackedSet(paths, boot, installation, set, signal)
     return librarySources()
   }
   const members = await Promise.all(PLACEMENT.bundles.map(async (bundle) => ({ name: bundle.name, ...await memberSource(bundle) })))
   const libraries = [...(await Promise.all(members.map(bundledLibraries))).flat(), ...await librarySources()]
   return [...members, ...distinctLibraries(libraries)]
+}
+
+/** The only top-level profile slots live placement owns. */
+const livePackages = [...PLACEMENT.bundles, ...PLACEMENT.live.libraries]
+
+/** Exact managed link targets as declared by the previously validated profile manifest. */
+export async function declaredLiveLinks(profile) {
+  const file = path.join(profile, PLACEMENT.manifest)
+  return (await exists(file)) ? liveDependencies((await json(file)).dependencies) : new Map()
+}
+
+function liveDependencies(dependencies) {
+  const { protocol, packages } = PLACEMENT.live
+  const links = new Map()
+  for (const { name, directory } of livePackages) {
+    const spec = dependencies?.[name]
+    if (typeof spec !== 'string' || !spec.startsWith(protocol)) continue
+    const target = spec.slice(protocol.length)
+    if (path.isAbsolute(target) && path.basename(target) === directory && path.basename(path.dirname(target)) === packages) links.set(name, path.normalize(target))
+  }
+  return links
+}
+
+async function liveSources(repo) {
+  const { code, live } = PLACEMENT
+  if (typeof repo !== 'string' || !path.isAbsolute(repo)) fail(live.invalid, live.pathRequired)
+  if (!(await exists(repo))?.isDirectory()) fail(live.invalid, live.unavailable(repo))
+  const packages = path.join(await realpath(repo), live.packages)
+  if (!(await exists(packages))?.isDirectory()) fail(live.invalid, live.unavailable(packages))
+  return Promise.all(livePackages.map(async ({ name, directory }) => {
+    const root = path.join(packages, directory)
+    const file = path.join(root, PLACEMENT.manifest)
+    if (!(await exists(root))?.isDirectory() || !(await exists(file))?.isFile() || (await json(file)).name !== name) {
+      fail(code.missing, live.unavailable(root) + ' (' + name + ')')
+    }
+    return { name, root, dependency: live.protocol + root }
+  }))
+}
+
+async function linkSources(profile, sources) {
+  const modules = path.join(profile, PLACEMENT.modules)
+  await ownedDirectory(modules)
+  for (const { name, root } of sources) {
+    const slot = path.join(modules, name)
+    if ((await exists(slot))?.isSymbolicLink() && path.resolve(modules, await readlink(slot)) === root) continue
+    // The manifest already names the final slot. Don't stage an external link under a
+    // temporary name that preflight wouldn't recognize if this process were interrupted.
+    await replaceSlot(modules, name, (target) => symlink(root, target), false)
+  }
+}
+
+// Unlink an old live slot before changing its declaration, so an interrupted start never
+// leaves an external link without its matching manifest entry. Unrelated slots are not touched.
+async function retireLiveLinks(profile, previous, next) {
+  if (!previous.size) return
+  const modules = path.join(profile, PLACEMENT.modules)
+  await ownedDirectory(modules)
+  for (const [name, target] of previous) {
+    if (next.get(name) === target) continue
+    const slot = path.join(modules, name)
+    const info = await exists(slot)
+    if (info?.isSymbolicLink() && info.uid === process.getuid() && path.resolve(modules, await readlink(slot)) === target) await rm(slot)
+  }
 }
 
 /**
@@ -357,35 +420,57 @@ async function copiedSources(paths, installation, signal) {
  *   while off returns off (R-BND-02). The manifest is read before the install, because the install
  *   itself declares the members;
  * - every other bundle keeps its place, and the placed ones follow in PLACEMENT.bundles order:
- *   fishball-ui, then fishball-core last (R-FB-12; fishball-ui's patch only inserts its own rows,
- *   so it holds in any order; core's patch, with every guard row, needs it last). fishball-ui and core both bundle fishball-shared; it is placed once.
- * Installs and copies come first and the manifest and record after, so a failed copy or install
- * changes no selection.
+ *   fishball-amenities, then fishball-core last so its guards apply to the preceding rows (R-FB-12).
+ * Copy/packed placement completes before the final bundle selection is written.
+ * Live placement declares the links first so a partial link swap is recoverable.
  * @param paths - the runtime layout (files.js pathsFor).
  * @param boot - the installation's dsh-app-boot module (readProfileManifest, writeProfileBundles).
  * @param installation - the running DSH installation (installation.js resolveInstallation).
  * @param [signal] - the start's abort signal; it cancels a packed install still running.
+ * @param [fishballLiveRepo] - the trusted checkout's absolute root, or undefined for copies/releases.
+ * @returns a map of live package names to canonical roots (empty for copies/releases).
  */
-export async function placeBundles(paths, boot, installation, signal) {
-  const before = boot.readProfileManifest(RUNTIME.profileName, paths.profile).dependencies ?? {}
-  const sources = await copiedSources(paths, installation, signal)
-  for (const source of sources) {
-    for (const parent of [PLACEMENT.vendor, PLACEMENT.modules]) {
-      await replaceSlot(path.join(paths.profile, parent), source.name, (target) => writePackage(source.root, source.files, source.manifest, target))
-    }
-  }
+export async function placeBundles(paths, boot, installation, signal, fishballLiveRepo) {
+  const before = boot.readProfileManifest(RUNTIME.profileName, paths.profile)
   const recordFile = path.join(paths.profile, PLACEMENT.record)
   const placed = await readRecord(recordFile)
+  const linked = fishballLiveRepo !== undefined
+  const live = linked ? await liveSources(fishballLiveRepo) : []
+  const liveLinks = new Map(live.map(({ name, root }) => [name, root]))
+  const previous = liveDependencies(before.dependencies)
+  await retireLiveLinks(paths.profile, previous, liveLinks)
+  const set = linked ? undefined : await packedSet()
+  // pnpm must not consume live specs or mistake a same-version link for a packed release.
+  if (set && previous.size) {
+    const dependencies = { ...before.dependencies }
+    for (const name of previous.keys()) delete dependencies[name]
+    await writeProfileBundles(boot, paths.profile, { ...before, dependencies }, before.dsh?.profile?.bundles ?? [])
+  }
+  const sources = linked ? live : await copiedSources(paths, boot, installation, signal, set)
+  if (!linked) {
+    for (const source of sources) {
+      for (const parent of [PLACEMENT.vendor, PLACEMENT.modules]) {
+        await replaceSlot(path.join(paths.profile, parent), source.name, (target) => writePackage(source.root, source.files, source.manifest, target))
+      }
+    }
+  }
   const manifest = boot.readProfileManifest(RUNTIME.profileName, paths.profile)
   const declared = manifest.dependencies ?? {}
   const current = manifest.dsh?.profile?.bundles ?? []
   const names = PLACEMENT.bundles.map((bundle) => bundle.name)
-  const enabled = names.filter((name) => current.includes(name) || !(placed.has(name) || Object.hasOwn(before, name)))
+  const enabled = names.filter((name) => current.includes(name) || !(placed.has(name) || Object.hasOwn(before.dependencies ?? {}, name)))
   const bundles = [...current.filter((name) => !names.includes(name)), ...enabled]
-  const dependencies = { ...declared, ...Object.fromEntries(sources.map((source) => [source.name, PLACEMENT.dependency(source.name)])) }
-  const unchanged = sameBundles(current, bundles) && sources.every((source) => declared[source.name] === dependencies[source.name])
+  const dependencies = { ...declared }
+  if (!linked && !set) for (const name of previous.keys()) delete dependencies[name]
+  for (const source of sources) dependencies[source.name] = source.dependency ?? PLACEMENT.dependency(source.name)
+  const unchanged = sameBundles(current, bundles) && Object.keys(declared).length === Object.keys(dependencies).length
+    && Object.entries(dependencies).every(([name, spec]) => declared[name] === spec)
+  // Commit the live specs before creating external links. A missing slot can be retried;
+  // an undeclared external link cannot pass preflight. Old vendor artifacts remain inert.
   if (!unchanged) await writeProfileBundles(boot, paths.profile, { ...manifest, dependencies }, bundles)
+  if (linked) await linkSources(paths.profile, live)
   if (names.some((name) => !placed.has(name))) await writePrivate(recordFile, { format: PLACEMENT.recordFormat, placed: names })
+  return liveLinks
 }
 
 /**
