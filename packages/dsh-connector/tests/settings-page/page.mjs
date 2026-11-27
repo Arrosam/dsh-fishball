@@ -4,7 +4,7 @@
  * - support/browser-sandbox.mjs: the classic script runs in a node:vm page with
  *   `window.__ModuleLoader__`; `document.createElement`, `head`/`body` appends and
  *   `adoptedStyleSheets` are watched here, so a global style is observable;
- * - support/rp-recommend.mjs: the React shim (hooks, effects, re-render) and tree queries;
+ * - dsh-connector-test-helpers/page/react-shim: the React shim (hooks, effects, re-render) and tree queries;
  * - fishball-core/package/page.mjs `pageServices`: the `slots` and `locale` page services;
  * - the SDK's own cordis `Context` applies the client plugin with its declared `inject`.
  * Scripted here: `configForms` (whileServed records its namespaces), the primitives (Button,

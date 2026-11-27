@@ -2,7 +2,7 @@
  * A scripted Plugins page for an umbrella's settings pages (R4). No browser, no React: the repo's
  * harness parts are reused, as the connector's own settings-page suite does:
  * - support/browser-sandbox.mjs runs the classic client.js (`window.__ModuleLoader__.load`);
- * - support/rp-recommend.mjs is the React shim (hooks, effects, re-render) and tree queries;
+ * - dsh-connector-test-helpers/page/react-shim is the React shim (hooks, effects, re-render) and tree queries;
  * - fishball-core/package/page.mjs `pageServices` gives the `slots` and `locale` page services;
  * - primitives.mjs gives DSH's own SettingsForm, SettingsValueField, settingsNumberField,
  *   settingsTextField and SettingsFormModel (Button and Input are pass-through fakes);

@@ -5,7 +5,7 @@
  * request is exactly the one written below. The API key is read from the user's DSH credentials
  * file and passed to the test DSH's environment; it is never printed.
  *
- * Run: node --test packages/dsh-connector-watchdog/tests/live/real-model.manual.mjs
+ * Run: node --test integration/connector-watchdog/tests/live/real-model.manual.mjs
  * Each row records what the judge decided and why; it asserts only that the judge answered and the
  * connector acted on that answer (a real model's choice is reported, not fixed).
  */
