@@ -1237,7 +1237,10 @@ Extra tools on the manager (`manager-tools` with names beyond the defaults, the 
 `extraManagerTools`) are not announced as an override (the user, 2026-11-21): the manager gets one
 gentle notice that it now has tools beyond its defaults, naming them, and each name is announced
 once, ever (recorded in `<DSH home>/fishball/manager-tools.json`); a later added tool gets one new
-notice. A missing default tool stays in the guards notice.
+notice. A missing default tool stays in the guards notice. The tool check uses the current model
+step's admitted set and refreshes at step boundaries. Without a model step, the guard counts only
+unconditional tools; a registration alone does not make a conditional tool model-reachable
+([CORE-WIRE-B1](<../testing/failures.md>)).
 
 **Spike V3-S6 (`86800d2` + round 2 `7c2230e`, PASS on both SDKs):** preflight and plugin manager
 accept a bundle patch that disables another bundle's rows; the public API for the override report

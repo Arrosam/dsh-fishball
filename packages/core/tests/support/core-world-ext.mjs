@@ -55,6 +55,7 @@ export function ops({ ctx, model, world }) {
   const instance = () => ctx.get(N.services.instance)
   const managerId = () => instance()?.manager?.sessionId() ?? null
   async function ensure() { await instance().manager.ensureSession(); return managerId() }
+  const managerAgent = (sessionId) => ctx.agents.get(sessionId)
   /** One manager turn; answers the raw request digests of that turn (tools with descriptions). */
   async function managerRequests(scripts = []) {
     const id = await ensure()
@@ -77,6 +78,24 @@ export function ops({ ctx, model, world }) {
     managerId,
     snapshot: () => ctx.get(N.services.status)?.snapshot() ?? null,
     guards: () => instance()?.ui?.guards?.report() ?? null,
+    managerTeamMode({ sessionId }) {
+      if (!ctx.agentTeams) return null
+      const agent = managerAgent(sessionId)
+      return { enabled: ctx.agentTeams.isEnabled(agent), registered: ctx.tools.schemas(agent).map((t) => t.name) }
+    },
+    async setManagerTeamMode({ sessionId, enabled }) {
+      const agent = managerAgent(sessionId)
+      await ctx.agentTeams.setEnabled(agent, enabled)
+      return ctx.agentTeams.isEnabled(agent)
+    },
+    async registerGuardProbe({ sessionId, name, description }) {
+      const { defineTool } = await importRuntime(N.tools)
+      managerAgent(sessionId).ctx.tools.register(defineTool({
+        name, description, parameters: {},
+        output: { schema: { type: 'string' }, render: (_args, text) => [{ type: 'text', text }] },
+        execute: () => description,
+      }))
+    },
     /** The manager's tools as its model sees them in one turn, and DSH's global view (no scope key). */
     async tools() { const [first] = await managerRequests(); return { local: first?.tools.map((t) => t.name) ?? [], global: ctx.tools.schemas().map((t) => t.name) } },
     async managerTools() { const [first] = await managerRequests(); return first?.tools.map((t) => ({ name: t.name, description: t.description })) ?? [] },

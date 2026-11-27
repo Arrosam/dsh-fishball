@@ -53,7 +53,7 @@ export type ManagerTool = 'read' | 'read_image' | 'working_directory'
  * - `policy:<key>`: one `IntendedPolicy` value differs;
  * - `agent-presets`: `agentPresets.list()` offers a preset other than `fishball`;
  * - `bundle-order`: core is not last in `dsh.profile.bundles`, so its patch may miss rows (R-FB-12);
- * - `manager-tools`: the resumed manager session's tools are not exactly `ManagerTool`.
+ * - `manager-tools`: a live manager session's reachable tools (excluding Fishball's own) differ from its defaults.
  */
 export type OverriddenGuard =
   | `row:${GuardedRow | ShippedPresetRow}`
@@ -68,9 +68,9 @@ export type GuardCheckTrigger = 'app-ready' | 'settings/document-updated' | 'plu
 /**
  * Core's guard status. `overridden` is empty exactly when `status` is `ok`. A later check that
  * finds every guard held clears it. Core keeps running and changes nothing back (R-FB-09).
- * The user, 2026-11-21: `extraManagerTools` is the tool names a live manager session has beyond
- * `ManagerTool`, Fishball's own left out; `missingManagerTools` the `ManagerTool` names some live
- * manager lacks. Both sorted and unique, `[]` when none, non-empty only beside `manager-tools`, and
+ * `extraManagerTools` and `missingManagerTools` compare the manager's reachable tools with its defaults,
+ * leaving out Fishball's own. Conditional tools count only when admitted to a live model step.
+ * Both sorted and unique, `[]` when none, non-empty only beside `manager-tools`, and
  * both can be set at once. Core's status announces each new extra name once (persisted), gently;
  * `manager-tools` stays in the guards notice only while a default is missing.
  */

@@ -85,8 +85,17 @@ function loadCoreToolNames() {
   return coreToolNames
 }
 
-/** Tool names one scope sees (dsh-tools `schemas(scope)`, both SDKs; the agent is its own scope key). */
-const toolNames = (tools, scope) => new Set(tools.schemas(scope).map((schema) => schema.name))
+/** Tool names one scope sees; the agent is its own scope key. */
+const toolNames = (tools, scope, admission) => new Set(tools.schemas(scope, admission).map((schema) => schema.name))
+
+function reachableToolNames(tools, agent, admission) {
+  const names = toolNames(tools, agent, admission)
+  // Outside a step, DSH's executable lookup excludes conditional registrations without running them.
+  // Older hosts without this API don't support conditional registrations.
+  return admission !== undefined || typeof tools.executable !== 'function'
+    ? [...names]
+    : [...names].filter((name) => tools.executable(name, agent) !== undefined)
+}
 
 /**
  * The live manager sessions: core's own manager (by id), and every live agent composed on the
@@ -126,14 +135,13 @@ const uniqueNames = (names) => Object.freeze([...new Set(names)].sort())
 /**
  * `manager-tools` when a live manager session's model tools, core's own left out, are not exactly
  * the singleton's defaults (`GUARDS.managerTools`). Other agents using the same preset still
- * have the native ask tool. Additional tools count wherever registered: DSH also registers
- * session-creating tools in an agent's own scope (rc.5 `dsh-tool-subagent` standing mode). No live
- * manager: nothing to check.
+ * have the native ask tool. Reachable tools count wherever registered, including in the agent's
+ * own scope (e.g. DSH's session-creating tools). No live manager: nothing to check.
  * `extra` is the names any live manager has beyond those defaults, for the status's informational
  * notice (the user, 2026-11-21); `missing` is the defaults some live manager lacks, which stay a
  * real override in the guards notice. Both sorted and unique; either can be set beside the other.
  */
-async function managerToolsState(ctx, managerPreset) {
+async function managerToolsState(ctx, managerPreset, admissionOf) {
   const tools = ctx.get(services.tools)
   const instance = ctx.get(services.instance)
   const ownsSession = instance?.[OWNS_MANAGER_SESSION] ?? ((id) => id === instance?.manager?.sessionId?.())
@@ -144,7 +152,7 @@ async function managerToolsState(ctx, managerPreset) {
   const modelTools = (agent) => {
     const inherited = toolNames(tools, scopeParentOf(agent))
     const contributed = new Set(typeof contributedOf === 'function' ? contributedOf.call(instance, agent) : [])
-    return [...toolNames(tools, agent)].filter((name) => !isCoreTool(name, core, contributed, inherited))
+    return reachableToolNames(tools, agent, admissionOf(agent)).filter((name) => !isCoreTool(name, core, contributed, inherited))
   }
   const models = agents.map((agent) => ({
     actual: modelTools(agent),
@@ -160,11 +168,12 @@ async function managerToolsState(ctx, managerPreset) {
  * One check over the effective state.
  * @param {object} ctx - the row's Cordis context (`ctx.get` lookups only).
  * @param {{rows: readonly string[], uiRows: readonly string[], policy: readonly {key: string, value: unknown}[]}} intended - readIntendedGuards().
+ * @param {(agent: object) => object|undefined} admissionOf - the live model step's tool set, if any.
  * @returns {Promise<import('../../contracts/guards.js').GuardReport>}
  */
-export async function checkGuards(ctx, intended) {
+export async function checkGuards(ctx, intended, admissionOf) {
   const managerPreset = intendedValue(intended, GUARDS.managerPresetKey)
-  const managerTools = await managerToolsState(ctx, managerPreset)
+  const managerTools = await managerToolsState(ctx, managerPreset, admissionOf)
   const overridden = Object.freeze([
     ...overriddenRows(ctx, guardedRows(ctx, intended)),
     ...overriddenPolicy(ctx, intended),

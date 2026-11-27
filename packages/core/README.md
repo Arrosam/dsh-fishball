@@ -157,9 +157,6 @@ through the [`fishball-amenities`](<../fishball-amenities/README.md>) umbrella a
   delivery. Roughly 10k+ tiny recurring reminders (their delivery receipts), or thousands falling due at
   once, can still use up that reserve; the failed delivery is then logged, and the reminder stays due
   and is retried until space frees up.
-- On DSH 0.2.2-rc.3 and later a default install reports guards `guards-overridden` with
-  `extraManagerTools` `team_task_*` (DSH's conditionally offered Agent Teams tools are counted); open,
-  see [failures.md](<../../docs/testing/failures.md>) CORE-WIRE-B1.
 
 ## Structure
 

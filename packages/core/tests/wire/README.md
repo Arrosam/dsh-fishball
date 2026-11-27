@@ -63,6 +63,11 @@ WIRE-SYS fishball-ui+fishball-core, fishball-board+fishball-ui+fishball-core and
 fishball-ui's strip topic on the page stream).
 ## Regression rows
 
+CORE-WIRE-B1: the admission transition checks that registered Team tools do not override idle or
+Team-off guards, then holds a Team-on model step and checks that its admitted tools do count. A
+reachable unconditional extra remains an override with or without a step. On DSH 0.2.2-rc.3, the
+regression failed against `80fdc2e7` at the startup assertion and passed with the fix.
+
 MULTI-1-FIX (fixes ae05cc96 and 9dd1bcec, base 8421cfee): `node scripts/test.mjs fishball-core
 --against=8421cfee -- --test-name-pattern=MULTI-1-FIX` fails "parent renewal clears the last writable
 token…" and "parent renewal saves a fresh writable token…" with their sub-cases ("renewal: the replacement

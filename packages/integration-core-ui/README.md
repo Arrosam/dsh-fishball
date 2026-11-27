@@ -24,9 +24,8 @@ node scripts/test.mjs fishball-integration-core-ui --file=patch       # one entr
 | `system.test.mjs` ([system/](<tests/system/cases.mjs>)) | system (booted DSH) | UI-UC-01, EFIX3-UI-SYS-01, MODEL-SYS-01, STRIP-SYS-01, STRIP-DT-02, MODEL-ST-03, PLAT-DT-02 (integration), WIRE-SYS (ui+core, board stand-in+ui+core, broken board), SESSIONS-WATCH SYS S1–S4 | core + its UI component in a real standalone DSH: rows, `fishballUiGuards`, boot graph, the Recommended route, owner overrides A1/A2, the composer picker off, the strip's first SSE frame, per-target Connect, core switched off live, the status service, the manager's tools and the set check with a board stand-in, the §35 watch against a fake target (no read without a page; read at once on open; a self-started session in ui.targets and the strip topic; gone; reads stop) |
 | `guards.test.mjs` ([guards/](<tests/guards/cases.mjs>)) | system (booted DSH, stand-in bundles in [fixtures/](<tests/fixtures/README.md>)) | PLAT-DT-04 rules 1–6, PLAT-UC-04 main/A1/A2/E1/post, UIM-DT-01 9/10b/14/all rows | core's guards: rows and presets off, the intended policy, core's preset alone, the manager's tools; the standalone self-reorder (HMR on / off), owner moves and late installs; every owner override class sets and clears the report; nothing before app ready; core off live and at the next start |
 
-**CORE-WIRE-B1** (docs/testing/failures.md): on DSH ≥ 0.2.2-rc.3 a default install reports
-`guards-overridden` / `manager-tools` with `extraManagerTools: team_task_*`. The rows that assert an ok
-report on a default install are kept and **fail** on such a DSH, naming the bug in their title. Not masked.
+The default-install rows also cover [CORE-WIRE-B1](<../../docs/testing/failures.md>): with Team mode off,
+DSH's registered `team_task_*` tools are not model-reachable and must not trigger a guard override.
 
 Techniques: EP, BVA, DT, ST, UC as each file's header states. Observation: DSH's own loader, settings, plugin
 manager, credential and session services; core's published `fishballInstance` / `fishballStatus` and

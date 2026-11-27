@@ -12,7 +12,7 @@ export const CORE_WORLD = Object.freeze({
   services: Object.freeze({ instance: 'fishballInstance', status: 'fishballStatus' }),
   env: Object.freeze({ homePatch: 'FBTEST_CORE_HOME_PATCH', profileConfig: 'FBTEST_CORE_PROFILE_CONFIG', handoff: 'FBTEST_HANDOFF_TOKEN' }),
   /** DSH's names: the launcher (dsh-app-boot's profile functions take it), its home patch file. */
-  dshName: 'dsh', appBoot: 'dsh-app-boot', patchFile: 'cordis.patch.yml', yaml: 'yaml/dist/index.js', encoding: 'utf8',
+  dshName: 'dsh', appBoot: 'dsh-app-boot', tools: 'dsh-tools', patchFile: 'cordis.patch.yml', yaml: 'yaml/dist/index.js', encoding: 'utf8',
   toolRole: 'tool', eventSource: 'fishball-event', userMessage: 'user/message', functionWord: 'function', shapeDepth: 3,
   budget: Object.freeze({ readyMs: 60000, pollMs: 100 }),
 })

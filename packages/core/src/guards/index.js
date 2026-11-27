@@ -1,9 +1,9 @@
 /**
  * Core's guard report (design §5a.2; R-FB-09, R-FB-12, R-FB-13; spike V3-S6 §3.5, §7.1): the
  * standalone self-reorder at the row's start, then a check at app ready and on every
- * `settings/document-updated` and `plugin-manager/changed`, published as the `fishballGuards`
- * service. Nothing is published before app ready, because those events fire during boot with
- * partial state (S6 §3.5). Core keeps running and changes nothing back (R-FB-09).
+ * `settings/document-updated`, `plugin-manager/changed` and model step boundaries, published as
+ * the `fishballGuards` service. Nothing is published before app ready, because events fire during
+ * boot with partial state (S6 §3.5). Core keeps running and changes nothing back (R-FB-09).
  *
  * The status strip line and the notice to Fishball's manager (design §5a.2) are F-STATUS's: they
  * read this service.
@@ -28,6 +28,11 @@ const differ = (left, right) => left.length !== right.length || left.some((name,
 export function createGuards(ctx) {
   const intended = readIntendedGuards()
   const listeners = new Set()
+  const steps = new WeakMap()
+  const admissionOf = (agent) => {
+    const step = steps.get(agent.session)
+    return step?.started ? step.toolSet : undefined
+  }
   const logger = ctx.logger(GUARDS.logger)
   let ready = false
   let disposed = false
@@ -58,8 +63,9 @@ export function createGuards(ctx) {
       do {
         again = false
         try {
-          const report = await checkGuards(ctx, intended)
-          if (!disposed) publish(report)
+          const report = await checkGuards(ctx, intended, admissionOf)
+          // A newer trigger may have ended the step this report sampled. Publish only the latest pass.
+          if (!disposed && !again) publish(report)
         } catch (error) {
           logger.warn(GUARDS.text.checkFailed, reason(error))
         }
@@ -88,6 +94,24 @@ export function createGuards(ctx) {
   // fishball-ui's guard rows join the check when its service arrives or leaves (check.js
   // guardedRows): its row may start after this one, or be switched on or off later.
   ctx.on(GUARDS.serviceEvent, (name) => { if (name === UI_GUARDS.service) void check() })
+  // DSH resolves conditions for a proposed step before assembly. Only use that admission once
+  // the step actually starts; the turn may end without taking the proposal.
+  const { stepAdmission } = GUARDS
+  ctx.on(stepAdmission.assemble, (_assembly, { agent, toolSet }, next) => {
+    if (agent !== undefined && toolSet !== undefined) steps.set(agent.session, { toolSet, started: false })
+    return next()
+  })
+  ctx.on(stepAdmission.sessionEvent, (session, event) => {
+    const step = steps.get(session)
+    if (step === undefined) return
+    if (event.type === stepAdmission.start) {
+      step.started = true
+      void check()
+    } else if (event.type === stepAdmission.end || event.type === stepAdmission.turnEnd) {
+      steps.delete(session)
+      if (step.started) void check()
+    }
+  })
   // A manager is checked by its tools on create and on resume (R-FB-13): `agent/created` fires
   // after setup with source `startup` or `resume`, so the tool list is final then. Every agent
   // triggers it; the check itself picks the manager sessions (check.js managerAgents).

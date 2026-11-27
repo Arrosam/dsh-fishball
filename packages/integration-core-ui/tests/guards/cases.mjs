@@ -4,10 +4,6 @@
  * A real standalone DSH (fishball-test-helpers/dsh-world) with core (and its ./ui/ component) and stand-in
  * bundles (tests/fixtures), booted once or more on one home per scenario.
  *
- * Known real bug CORE-WIRE-B1 (docs/testing/failures.md): on DSH >= 0.2.2-rc.3 a default install reports
- * guards-overridden (manager-tools, extraManagerTools team_task_*). Rows asserting an ok report on a
- * default install fail on such a DSH; they are not masked and say so.
- *
  * Techniques: UC (PLAT-UC-04 main, A1, A2, E1), DT (PLAT-DT-04 rules 1–6; UIM-DT-01; the override table A1 ×
  * guard class), ST (the report: none → report at app ready, set and cleared by each owner change), EP (the
  * classes of OverriddenGuard; the offered presets), BVA (the app-ready boundary).
@@ -26,7 +22,6 @@ import { FIXTURE, G, GUARDS, OWNER, REPORT } from './constants.mjs'
 
 const show = (v) => JSON.stringify(v)
 const CORE = NAMES.core
-const BUG = ' (CORE-WIRE-B1 on DSH >= 0.2.2-rc.3; docs/testing/failures.md)'
 const ALL_GUARD_ROWS = Object.freeze([...GUARDS.rows, ...GUARDS.shippedPresets])
 // These sessions are created by the DSH controller, not by Fishball, even on the same preset.
 const CONTROLLER_TOOLS = Object.freeze(['read', 'read_image', 'working_directory', 'ask_user_question'].sort())
@@ -172,9 +167,9 @@ export function registerGuardCases() {
     const firstOk = reports.findIndex(isOk)
     assert.ok(reports.slice(0, firstOk < 0 ? reports.length : firstOk).some(namesOrder), 'never named the order: ' + show(reports))
   })
-  t('PLAT-DT-04', '3a ok', 'report: ok after the recompose' + BUG, async () => {
+  t('PLAT-DT-04', '3a ok', 'report: ok after the recompose', async () => {
     const f = await native()
-    assert.ok(isOk(f.settled1), show(f.settled1) + BUG)
+    assert.ok(isOk(f.settled1), show(f.settled1))
   })
   t('PLAT-DT-04', '3c', 'a later start that finds core last writes nothing (manifest unchanged); dsh-instance never starts', async () => {
     const f = await native()
@@ -182,9 +177,9 @@ export function registerGuardCases() {
     assert.equal(f.manifest2.mtimeMs, f.manifest1.mtimeMs)
     assert.deepEqual(f.starts2.filter((s) => s.row === FIXTURE.instance), [])
   })
-  t('PLAT-DT-04', '3c ok', 'the later start: the report is ok at app ready' + BUG, async () => {
+  t('PLAT-DT-04', '3c ok', 'the later start: the report is ok at app ready', async () => {
     const f = await native()
-    assert.ok(isOk(f.report2), show(f.report2) + BUG)
+    assert.ok(isOk(f.report2), show(f.report2))
   })
   t('PLAT-DT-04', 4, 'the owner moves core first again: core does not move it back (live and at the next start); the report names the order', async () => {
     const f = await native()
@@ -289,9 +284,9 @@ export function registerGuardCases() {
     assert.deepEqual(f.starts2.filter((s) => s.row === FIXTURE.instance), [])
     assert.equal(f.manifest2.text, f.manifest1.text)
   })
-  t('PLAT-DT-04', '3b ok', 'from the next start the report is ok' + BUG, async () => {
+  t('PLAT-DT-04', '3b ok', 'from the next start the report is ok', async () => {
     const f = await nohmr()
-    assert.ok(isOk(f.report2), show(f.report2) + BUG)
+    assert.ok(isOk(f.report2), show(f.report2))
   })
   t('UIM-DT-01', '10b', 'F + I: after one restart dsh-instance is off and core is last; the instance never ran in the restarted DSH', async () => {
     const f = await nohmr()
@@ -334,10 +329,10 @@ export function registerGuardCases() {
     needReports(f.history1)
     assert.deepEqual(f.bundles1, f.bundles0)
   })
-  t('PLAT-DT-04', 2, 'report ok from app ready, never guards-overridden in that start' + BUG, async () => {
+  t('PLAT-DT-04', 2, 'report ok from app ready, never guards-overridden in that start', async () => {
     const f = await last()
-    assert.ok(isOk(f.report1), show(f.report1) + BUG)
-    assert.deepEqual(f.history1.map((h) => h.report).filter((r) => r && !isOk(r)), [], BUG)
+    assert.ok(isOk(f.report1), show(f.report1))
+    assert.deepEqual(f.history1.map((h) => h.report).filter((r) => r && !isOk(r)), [])
   })
   t('PLAT-DT-04', 5, "a guarded bundle installed after core's first start: core is not moved; the report names that bundle's guarded rows", async () => {
     const f = await last()
@@ -360,9 +355,9 @@ export function registerGuardCases() {
     assert.ok(extra.every((n) => f.report3.extraManagerTools.includes(n)), show({ extra, report: f.report3 }))
     assert.deepEqual(f.report3.missingManagerTools, CONTROLLER_TOOLS.filter((n) => !f.resumed3.tools.includes(n)))
   })
-  t('PLAT-UC-04', 'main extras', 'an ok report on a default install carries extraManagerTools [] and missingManagerTools []' + BUG, async () => {
+  t('PLAT-UC-04', 'main extras', 'an ok report on a default install carries extraManagerTools [] and missingManagerTools []', async () => {
     const f = await last()
-    assert.ok(isOk(f.report1), show(f.report1) + BUG)
+    assert.ok(isOk(f.report1), show(f.report1))
     assert.deepEqual(f.report1.extraManagerTools, [])
     assert.deepEqual(f.report1.missingManagerTools, [])
   })
@@ -382,9 +377,9 @@ export function registerGuardCases() {
     assert.deepEqual(f.starts.filter((s) => s.row === FIXTURE.instance), [])
     assert.equal(f.bundles.at(-1), CORE)
   })
-  t('PLAT-DT-04', '1 ok', 'core last, HMR off: report ok at app ready' + BUG, async () => {
+  t('PLAT-DT-04', '1 ok', 'core last, HMR off: report ok at app ready', async () => {
     const f = await shaped()
-    assert.ok(isOk(f.report), show(f.report) + BUG)
+    assert.ok(isOk(f.report), show(f.report))
   })
 
   // ================================================================ PRESET (PLAT-UC-04 A1, EP over the offered presets)
@@ -401,8 +396,8 @@ export function registerGuardCases() {
     assert.ok(f.report?.overridden?.includes(REPORT.agentPresets), show(f.report))
     assert.equal(f.presets.defaultId, GUARDS.policy.defaultAgentPreset)
   })
-  t('PLAT-UC-04', 'A1 only', "one more agent preset offered: agent-presets is the only guard named" + BUG, async () => {
+  t('PLAT-UC-04', 'A1 only', "one more agent preset offered: agent-presets is the only guard named", async () => {
     const f = await preset()
-    assert.deepEqual([...f.report.overridden], [REPORT.agentPresets], show(f.report) + BUG)
+    assert.deepEqual([...f.report.overridden], [REPORT.agentPresets], show(f.report))
   })
 }

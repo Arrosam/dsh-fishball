@@ -5,11 +5,6 @@
  * compositions, SHELVE broken board), fishball-core/status PLAT-DT-02's integration row, and
  * SESSIONS-WATCH SYS S1–S4 (DESIGN §35: the strip topic on the page stream while a page watches).
  *
- * Known real bug CORE-WIRE-B1 (docs/testing/failures.md): on DSH >= 0.2.2-rc.3 core's guard report reads
- * guards-overridden on a default install because dsh-tool-agent-team's conditional team_task_* tools are
- * counted. The rows that assert a default install's report is ok (UI-UC-01 main 4, A1 restore, WIRE-SYS
- * "guards hold") are NOT masked: they fail on such a DSH, citing it.
- *
  * Techniques: UC (UI-UC-01 main 1–5, E1, A1, A2), EP (composition partitions: ui+core, board+ui+core,
  * broken board), ST (core off by HMR → UI rows gone, picker restored; S1–S4 watch transitions), BVA (one
  * watch interval). Level: system. Observed through DSH's loader, settings and plugin manager, core's and
@@ -34,7 +29,6 @@ import { SYS } from './constants.mjs'
 const show = (v) => JSON.stringify(v)
 const rowGuard = (id) => GUARDS.code.rowPrefix + id
 const isOk = (r) => r?.status === GUARDS.status.ok && r.overridden.length === 0
-const BUG = ' (CORE-WIRE-B1 on DSH >= 0.2.2-rc.3: dsh-tool-agent-team\'s conditional team_task_* tools are counted; docs/testing/failures.md)'
 const BOARD_DIR = path.join(import.meta.dirname, '..', 'fixtures', 'fishball-board')
 // These rows assert directly offered tools, not the default PTC transport.
 const NATIVE_MANAGER = [{ id: NAMES.core, config: { ptc: false } }]
@@ -222,9 +216,9 @@ export function registerSystemCases() {
     assert.equal(f.uiGuards.keys.includes('rows'), false, show(f.uiGuards))
     assert.equal(f.uiGuards.frozen, true)
   })
-  t('UI-UC-01', 'main 4', 'core + fishball-ui on a default install: the guard report is ok' + BUG, async () => {
+  t('UI-UC-01', 'main 4', 'core + fishball-ui on a default install: the guard report is ok', async () => {
     const f = await readBoth('settled')
-    assert.ok(isOk(f.settled), show(f.settled) + BUG)
+    assert.ok(isOk(f.settled), show(f.settled))
   })
   t('UI-UC-01', 'main 5', "core + fishball-ui: the page serves fishball-ui's client entry, the page and the tab; the tab's route answers", async () => {
     const f = await readBoth('graph', 'tab')
@@ -241,9 +235,9 @@ export function registerSystemCases() {
     assert.ok(f.oneSet.overridden.includes(rowGuard(ROWS.guards[0])), show(f.oneSet))
     assert.equal(f.restored.overridden.includes(rowGuard(ROWS.guards[0])), false, show(f.restored))
   })
-  t('UI-UC-01', 'A1 restore', 'after the restore the report is ok again' + BUG, async () => {
+  t('UI-UC-01', 'A1 restore', 'after the restore the report is ok again', async () => {
     const f = await readBoth('restored')
-    assert.ok(isOk(f.restored), show(f.restored) + BUG)
+    assert.ok(isOk(f.restored), show(f.restored))
   })
   t('UI-UC-01', 'A2', "a core row and a UI row on at once: both are named, core's row first (core's rows, then the UI's)", async () => {
     const list = (await readBoth('twoSet')).twoSet?.overridden ?? []
@@ -315,9 +309,9 @@ export function registerSystemCases() {
       assert.deepEqual(f.tools.filter((n) => !own(n)).sort(), [...GUARDS.managerTools].sort())
     })
   }
-  t('WIRE-SYS', 'fishball-board+fishball-ui+fishball-core guards', 'board stand-in + ui + core on a default install: the guard report is ok' + BUG, async () => {
+  t('WIRE-SYS', 'fishball-board+fishball-ui+fishball-core guards', 'board stand-in + ui + core on a default install: the guard report is ok', async () => {
     const f = await reader(board)('report')
-    assert.ok(isOk(f.report), show(f.report) + BUG)
+    assert.ok(isOk(f.report), show(f.report))
   })
   t('WIRE-SYS', 'SHELVE broken', 'a broken fishball-board (no DSH meets its engines.dsh) + ui + core: the set is ok, nothing missing', async () => {
     const f = await reader(broken)('set')

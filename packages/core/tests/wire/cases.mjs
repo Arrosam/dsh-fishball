@@ -14,6 +14,7 @@ import { NATIVE_MANAGER, requestAs } from '../support/core-world.mjs'
 import { SEAM_TARGETS } from '../support/targets-oracle.mjs'
 import { registerBrandConfigCases } from './brand-config.mjs'
 import { registerWakeSystemCases } from './batch.mjs'
+import { registerGuardAdmissionCases } from './guard-admission.mjs'
 import { C, MULTI } from './constants.mjs'
 import { registerLifecycleCases } from './lifecycle.mjs'
 import { registerMultiCases } from './multi.mjs'
@@ -41,6 +42,7 @@ export function registerWireCases() {
   registerRunningSessionsWatchCases()
   registerBrandConfigCases()
   registerWakeSystemCases()
+  registerGuardAdmissionCases()
 
   caseTest('WIRE-EP-01', '', 'manifest exports and dependency boundary', () => {
     const pkg = manifest()

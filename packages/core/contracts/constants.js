@@ -556,6 +556,10 @@ export const GUARDS = Object.freeze({
   }),
   /** DSH's agent-registry event after a session's setup (create or resume), both SDKs. */
   agentCreated: 'agent/created',
+  /** DSH's prompt and session events that bracket an admitted model step. */
+  stepAdmission: Object.freeze({
+    assemble: 'system-prompt/assemble', sessionEvent: 'session/event', start: 'step/start', end: 'step/end', turnEnd: 'turn/end',
+  }),
   /** Cordis's event for a service provided, replaced or withdrawn (both SDKs), with its name. */
   serviceEvent: 'internal/service',
   /**

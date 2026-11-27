@@ -38,13 +38,6 @@ Counts are the pre-merge baseline for entries present before the staging port. S
 | `status.test.mjs` | [status/](<status/README.md>) | the status snapshot, strip line, set check, guards notice, gentle tools notice | UC-STATUS-*, F-STATUS-*, MULTI-STATUS-*, TOOLS-*, PLAT-*, HOST-DT, REM-DT | 138 |
 | `wire.test.mjs` | [wire/](<wire/README.md>) | the main row in a booted standalone DSH, multiple targets, hosted lifecycle, retirement, running sessions, brand config, wake from the manager | WIRE-*, MULTI-TGT/HOST/CRED/NAME/TOOL/CONN/SVC/EVT-SYS/ASK-SYS-*, MULTI-LIFE-*, MULTI-1-FIX, SESSIONS(-WATCH), BRAND-CONFIG-*, WAKE-SYS-* | 137 |
 
-## Known failures on the current DSH
-
-Two cases fail on DSH 0.2.2-rc.3 (and rc.5), both the open bug CORE-WIRE-B1 in
-[failures.md](<../../../docs/testing/failures.md>): `WIRE-SYS fishball-core … manager tool scope and
-guards hold` and `MGR-REM-EP-04` (the guard report counts DSH's conditionally offered `team_task_*`
-tools).
-
 ## Regression rows
 
 Each fix's rows fail on the code before it and pass now; the commands and results are in the area
