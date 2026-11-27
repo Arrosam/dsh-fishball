@@ -14,10 +14,9 @@ import { execFileSync } from 'node:child_process'
 import fs from 'node:fs'
 import path from 'node:path'
 import { caseTest, eachSdk } from '@dsh-instance/test-helpers/cases'
-import { show } from '@dsh-instance/test-helpers/json'
 import { importInstance, PACKAGE_DIR, packageFile } from '../support/instance.mjs'
 import {
-  ABSENT, CHILD_ROW, CONNECTOR_SIDE, DEPENDENCY_FIELDS, FISHBALL_SIDE, GONE, INSTANCE, MANIFEST, NPM_PACK, PACK_OUTPUT, PAGE, PRESENT, SCAN, SECRET_LIKE,
+  ABSENT, CHILD_ROW, CONNECTOR_SIDE, DEPENDENCY_FIELDS, FISHBALL_SIDE, GONE, INSTANCE, MANIFEST, NPM_PACK, PACK_OUTPUT, PAGE, PRESENT, SCAN,
   PACKAGE_NAME, SESSION_ROUTE, SPECIFIERS, SYNC_TARGET,
 } from './constants.mjs'
 
@@ -66,14 +65,13 @@ eachSdk((sdk) => {
     const module = await importInstance(sdk, SYNC_TARGET.file)
     assert.deepEqual(SYNC_TARGET.exports.filter((name) => module[name] === undefined), [], 'missing exports')
   })
-  caseTest(sdk, 'MOVED', 'child-row', `child-row.js (export ${CHILD_ROW.export}) is row ${CHILD_ROW.name}, with config ${CHILD_ROW.field} and no secret-like field`, async () => {
+  caseTest(sdk, 'MOVED', 'child-row', `child-row.js (export ${CHILD_ROW.export}) is row ${CHILD_ROW.name}, with only ${CHILD_ROW.fields.join(' and ')} in config and no secret field`, async () => {
     assert.equal(manifest().exports?.[CHILD_ROW.export], './' + CHILD_ROW.file)
     const row = await importInstance(sdk, CHILD_ROW.file)
     assert.equal(row.name, CHILD_ROW.name)
     assert.equal(typeof row.apply, 'function', 'the row has no apply')
     const fields = Object.keys(row.Config?.dict ?? {})
-    assert.ok(fields.includes(CHILD_ROW.field), 'no ' + CHILD_ROW.field + ': ' + show(fields))
-    assert.deepEqual(fields.filter((key) => SECRET_LIKE.test(key)), [], 'a secret-like child config field')
+    assert.deepEqual(new Set(fields), new Set(CHILD_ROW.fields), 'child config must expose only the parent URL and entry identifier, not a credential field')
   })
 
   // ============================================================== BOUNDARY R-ARCH-10

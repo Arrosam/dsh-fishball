@@ -37,10 +37,13 @@ export const SYNC_TARGET = Object.freeze({
   file: path.join('src', 'child', 'provider-sync-target.js'),
   exports: Object.freeze(['createProviderSyncTarget', 'createProviderSyncTargetEndpoint', 'PROVIDER_SYNC_TARGET', 'ProviderSyncTargetError', 'createProviderSyncCodec', 'providerSyncIdentity']),
 })
-/** The child-side row (K3a HOSTED_IMPORT targetSetting: row dsh-instance-child, field targetUrl). */
-export const CHILD_ROW = Object.freeze({ file: 'child-row.js', export: './child-row', name: 'dsh-instance-child', field: 'targetUrl' })
-/** R-HOST-05 / R1: no token or credential-reference setting in the instance's config. */
-export const SECRET_LIKE = /token|credential|secret|key/i
+/** Hosted token (README, eb15acd): the entry key identifies the connector entry; the secret travels on the authenticated lifecycle wire, not in config. */
+export const CHILD_ROW = Object.freeze({
+  file: 'child-row.js',
+  export: './child-row',
+  name: 'dsh-instance-child',
+  fields: Object.freeze(['targetUrl', 'hostedEntryKey']),
+})
 
 /** The settings page (QD1 = B) and its chunks, which a packed instance ships. */
 export const PAGE = Object.freeze({ entry: 'client.js', chunks: Object.freeze(['client.status.js', 'client.models.js', 'client.fishball.js', 'client.onboarding.js']) })
