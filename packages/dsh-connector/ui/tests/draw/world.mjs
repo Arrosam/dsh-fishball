@@ -8,7 +8,7 @@
  * instance row providing a fake `dshInstanceChild` (K3); and embed-UI's own host entry
  * (`packages/dsh-connector-ui/index.js`) loaded as a loader row BY FILE URL, so its loader entry is
  * its package and C-EXT traces the contributed namespace to `dsh-connector-ui` (R-EXT-03). The
- * URL carries the SDK tag of test/private-skills/support/sdk.mjs, so its `@deepseek-ai/*` imports
+ * URL carries the SDK tag of dsh-connector-test-helpers/sdk, so its `@deepseek-ai/*` imports
  * bind to the SDK under test.
  *
  * Fake on the host: DSH's `connection` service (a route table: `fetch.register({path, methods,
@@ -16,9 +16,9 @@
  * service of the legacy fallback (dev correction 2026-11-16).
  *
  * Browser half (real code, scripted page): every file of `src/client/` runs unread in a node:vm
- * page (test/support/browser-sandbox.mjs) through the module table DSH's loader gives a client
+ * page (dsh-connector-test-helpers/page/browser-sandbox) through the module table DSH's loader gives a client
  * (../../contract/package-boundaries/client-graph.mjs), and the SDK's Cordis applies the plugin
- * over the five client services it uses. React is the hook shim of test/support/rp-recommend.mjs
+ * over the five client services it uses. React is the hook shim of dsh-connector-test-helpers/page/react-shim
  * (no React is installed in this checkout). The page's `fetch` and `EventSource` are answered by
  * the host's route table, so the page talks to the real UI backend exactly through the routes.
  *

@@ -1,6 +1,6 @@
 /**
  * DISCOVERY-TOOLS system rows (discovery-cases.mjs): fixture data only. Product words (tool names,
- * refusal codes) are K1's; the fake provider and its models are test/support's FAKE / FAKE_MODELS.
+ * refusal codes) are K1's; the fake provider and its models are dsh-connector-test-helpers' FAKE / FAKE_MODELS (dsh/fake-llm-constants.mjs).
  */
 import path from 'node:path'
 import { FAKE, FAKE_MODELS } from 'dsh-connector-test-helpers/legacy'

@@ -6,7 +6,7 @@
  * documentElement attributes, head/body appends, element creation, empty queries), `window`
  * (location, the module loader, listeners), the browser `fetch` the caller supplies, and timers.
  * Timers the page schedules are tracked so `clearTimers()` stops a status poll when a case ends.
- * Used by test/v3/fishball-core/package/page.mjs (V3 R-CORE) and packages/dsh-connector/ui/tests/contract/embed/page.mjs (V3 R-EMBED).
+ * Used by the scripted pages of the connector's settings page, its UI component and the amenities' settings pages.
  */
 import vm from 'node:vm'
 

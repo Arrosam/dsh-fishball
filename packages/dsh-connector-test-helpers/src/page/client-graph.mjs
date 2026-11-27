@@ -3,9 +3,9 @@
  * bundles see it (dsh-client-modules' `require`, `require.async` for package-local chunks,
  * `require.asset`), and the Cordis apply of every graph entry with its declared `inject` list.
  *
- * Shared by the R-CORE settings page (test/v3/fishball-core/package/page.mjs, a hosted child's page) and the R-EMBED
- * main page (packages/dsh-connector/ui/tests/contract/embed/page.mjs, the host DSH's page). Both run the scripts unread in
- * support/browser-sandbox.mjs; only what the page offers (`platform`, the root services) differs.
+ * Shared by every scripted page (for example the UI component's main page in
+ * packages/dsh-connector/ui/tests/contract/embed/page.mjs). The scripts run unread in
+ * browser-sandbox.mjs; only what the page offers (`platform`, the root services) differs.
  */
 
 /**

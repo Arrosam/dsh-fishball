@@ -11,7 +11,7 @@
  * workspaceId (null for an unregistered directory), its title and a boolean running.
  *
  * Oracles: DSH's own catalog and registry, read by a test-only worker extension
- * (discovery-extension.mjs), and the fake provider's models (test/support FAKE). Techniques: Use
+ * (discovery-extension.mjs), and the fake provider's models (dsh-connector-test-helpers FAKE). Techniques: Use
  * Case (discover then start), Equivalence Partitioning (listed vs unlisted effort; registered vs
  * unregistered folder; existing vs removed directory). Rows are few: each boots no extra DSH beyond
  * this file's one scenario per SDK.

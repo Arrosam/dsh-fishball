@@ -3,7 +3,7 @@
  * in. Shared with the adapter suite, which builds on `openHost`, `tempRoot` and the leak sweep.
  *
  * - `libraryModule(sdk)`: `packages/dsh-connector-adapter/src/oauth-client.js` (C-WIRE-2, R-ARCH-08 strict), bound to `sdk` (the
- *   `?fbsdk=` tag of test/private-skills/support/sdk.mjs), with the relayed exports required. A missing
+ *   `?dshsdk=` tag of dsh-connector-test-helpers/sdk), with the relayed exports required. A missing
  *   module fails the case with a message that names the owning task.
  * - `mcpSdk(sdk)`: the MCP SDK `@modelcontextprotocol/client` 2.2.0 installed with that SDK. The caller
  *   hands it to the library, so the library takes no package edge.

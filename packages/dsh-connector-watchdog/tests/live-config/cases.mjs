@@ -8,7 +8,7 @@
  * → re-armed), plus the schema rows (WD-LC-SC-*) and DSH's settings service serving the namespace.
  *
  * Level: integration. The real row on a real Loader of each SDK, fake connector services and a fake
- * clock (world.mjs); DSH's own dsh-settings for the served namespace (test/support/amenity-settings.mjs).
+ * clock (world.mjs); DSH's own dsh-settings for the served namespace (dsh-connector-test-helpers/dsh/settings-schema).
  */
 import assert from 'node:assert/strict'
 import { assertField, fieldsOf, servedNamespace } from 'dsh-connector-test-helpers/dsh/settings-schema'
