@@ -21,4 +21,8 @@ inventory; suites without baseline IDs are identified by entry and behavior.
 | `test/v3/fishball-amenities/packages/` | `packages/fishball-amenities/tests/`, `packages/integration-amenities/tests/` and `packages/integration-release/tests/` | `AM-COLLECTION` (2), `AM-EP-07` (workspace), `REL-CONSULTANT` (release order/install set); SDK loader assertions now run on the selected SDK. |
 | `packages/fishball-consultant/tests/{consultant,host}.test.js` | `packages/fishball-consultant/tests/{consultant,host}.test.mjs` | Capability and model preflight, disclosure, replay/reconciliation, quotas, lifecycle; registration, routes, discovery, storage and production fail-closed behavior. |
 
+## Follow-up from staging `7fd1d093`
+
+The one-task-per-managed-session assembled-prompt regression from `packages/core/test/manager-ptc.test.mjs` now runs in `packages/core/tests/manager.test.mjs`. It checks release after completion with no rework, no reuse after release, and a new session for each new task.
+
 The existing `packages/integration-page-stream/tests/` suite also accounts for the Taskboard audit topic on the same connection. The existing `TGT-ASK-EP-03`, `HEALTH-DT-01` and `RESHOOT-ASKBADGE-DT-01` cases now check the permission cards via the accordion and keep the contrast checks on its count badge.

@@ -125,7 +125,7 @@ export const PERSONA_WATCHDOG = Object.freeze({
     marker: 'WATCHDOG',
     /** The common merge base already had Watchdog; staging adds authorized persona amendments. */
     preStaging: '0377153f',
-    staging: 'f8bcb158',
+    staging: '7fd1d0930e8cc634267882b6579e706bf5d38539',
     copied: Object.freeze(['src', 'contracts', 'package.json']),
     /** The bare import persona.js reaches through its imports: linked to the current fishball-shared (by name). */
     sharedPackage: 'fishball-shared',

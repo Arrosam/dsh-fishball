@@ -167,7 +167,7 @@ export function registerWatchdogPersonaCases({ read, name, test }) {
       model: new RegExp(`model string from ${MCP.tools.modelsList} as its model`),
       verifiedId: /verified ID or its registered absolute directory path/,
       workspaceError: /workspaceError/,
-      handOver: new RegExp(`Hand it over with ${MCP.tools.sessionMessage} or ${MCP.tools.sessionStart}`),
+      handOver: new RegExp(`\\bstart (?:it|the task) with ${MCP.tools.sessionStart}\\b[^.]*\\bfollow up\\b[^.]*\\bwith ${MCP.tools.sessionMessage}\\b`, 'i'),
     }
     assert.deepEqual(Object.entries(want).filter(([, re]) => !has(re)).map(([k]) => k), [])
   })
