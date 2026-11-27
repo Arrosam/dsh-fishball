@@ -9,9 +9,9 @@
  * sees and need no CSS evaluator.
  */
 import assert from 'node:assert/strict'
-import { findAll } from 'fishball-test-helpers/react-shim'
+import { byAttr, textOf, walk } from 'fishball-test-helpers/react-shim'
 import { STAND_IN } from 'fishball-test-helpers/dsh-primitives'
-import { askCard, askFrame } from '../support/ask-card.mjs'
+import { ASK, askCard, askFrame } from '../support/ask-card.mjs'
 import { sidebarPage } from '../support/b-sidebar.mjs'
 import { FIXTURE, SEAM_TARGETS, frameOf, targetView } from '../support/b-targets.mjs'
 import { PROBE, dshSheetCount, measure, themedDocument } from '../support/contrast.mjs'
@@ -21,13 +21,12 @@ import { ASK_BADGE, CARD_VARIANT, HOOK, NOT_LITERAL } from './constants.mjs'
 
 const DOCK = Object.freeze({ slot: 'conversation.input.dock', key: 'fbtest-ask-dock-' })
 const json = (v) => JSON.stringify(v)
-export const isTag = (n) => n.props?.[STAND_IN.primitive] === HOOK.tagPrimitive
 
 /** One open card of `variant` in Fishball's conversation dock, drawn in `lang`: its tree and live sheets. */
-export async function askDocument(t, variant, lang, state) {
+export async function askDocument(t, variant, lang) {
   const p = await uiPage(t, { lang })
   await p.mountAll(DOCK.key, DOCK.slot, { sessionId: FIXTURE.managerSession })
-  await p.deliver(PAGE_STREAM.topic.asks, askFrame([askCard({ ...CARD_VARIANT[variant], ...(state ? { state } : {}) })], FIXTURE.managerSession))
+  await p.deliver(PAGE_STREAM.topic.asks, askFrame([askCard(CARD_VARIANT[variant])], FIXTURE.managerSession))
   return { tree: p.world.shim.tree(), sheets: p.world.page.styleTexts() }
 }
 
@@ -48,24 +47,25 @@ export async function sidebarDocument(t, lang) {
 /** A copy of `nodes` with `attr` added to every element `pick` accepts (the written HTML's handle). */
 const marked = (nodes, pick, attr) => nodes.map((n) => (typeof n === 'string' ? n
   : { ...n, props: pick(n) ? { ...n.props, [attr]: '' } : n.props, children: marked(n.children ?? [], pick, attr) }))
-/** DSH Tags of `tones` drawn straight in the page body, outside every card: DSH's own Tag look. */
-const referenceTags = (tones) => tones.map((tone) => ({ tag: 'span', props: { [STAND_IN.primitive]: HOOK.tagPrimitive, 'data-tone': tone, [ASK_BADGE.reference]: tone }, children: [ASK_BADGE.referenceText] }))
-export const BADGE_TARGET = `${HOOK.askCard} [${ASK_BADGE.marker}]`
-export const referenceTarget = (tone) => `[${ASK_BADGE.reference}="${tone}"]`
+export const BADGE_TARGET = `[${ASK_BADGE.marker}]`
+export const WARNING_CONTROL_TARGET = `[${ASK_BADGE.reference}]`
 
-/**
- * One card of `variant` in `state`, drawn in `lang`, its count badge marked (the first DSH Tag inside
- * the card root: DSH's Tag forwards no hook of its own), with reference warning and neutral Tags
- * beside the card. Returns the drawn document and the badge's rendered node.
- */
-export async function badgeDocument(t, variant, lang, state) {
-  const { tree, sheets } = await askDocument(t, variant, lang, state)
-  const card = findAll(tree, (n) => n.props?.[ASK_BADGE.cardAttr] !== undefined)[0]
+/** DSH's own warning Tag, drawn on the page background as the historical contrast control. */
+export function warningControl({ sheets }) {
+  const props = { [STAND_IN.primitive]: HOOK.tagPrimitive, 'data-tone': ASK_BADGE.openTone, [ASK_BADGE.reference]: '' }
+  return { tree: [{ tag: 'span', props, children: [ASK_BADGE.referenceText] }], sheets }
+}
+
+/** Mark the shared count, rather than a request-row count or a particular component primitive. */
+export async function badgeDocument(t, variant, lang) {
+  const { tree, sheets } = await askDocument(t, variant, lang)
+  const [card] = byAttr(tree, ASK.card)
   assert.ok(card, 'precondition: the dock draws an ask card')
-  const badge = findAll([card], isTag)[0]
-  assert.ok(badge, 'precondition: the ask card draws a DSH Tag (its count badge)')
-  const tags = referenceTags([ASK_BADGE.openTone, ASK_BADGE.settledTone])
-  return { drawn: { tree: [...marked(tree, (n) => n === badge, ASK_BADGE.marker), ...tags], sheets }, badge }
+  const rowNodes = new Set([...walk([card])].map(({ node }) => node))
+  const [badge] = [...walk(tree)].map(({ node }) => node).reverse().filter((node) =>
+    !rowNodes.has(node) && textOf(node).trim() === ASK_BADGE.singleRequestCount)
+  assert.ok(badge, 'precondition: the dock draws the total count outside the row')
+  return { tree: marked(tree, (n) => n === badge, ASK_BADGE.marker), sheets }
 }
 
 /** Write the document for `theme` and probe `arg` in Chromium. */

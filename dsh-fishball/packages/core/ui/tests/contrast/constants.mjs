@@ -13,12 +13,10 @@
 export const PLACEHOLDER = Object.freeze({ en: 'Reason', zh: '理由' })
 
 /** DSH's own default placeholder colour (the frontend's `::placeholder` rule): the 1.26:1 before UI-FIX-F. */
-export const DSH_TOKEN = Object.freeze({ defaultPlaceholder: '--dsw-alias-label-dimmed', warn: '--dsw-alias-state-warn-primary' })
+export const DSH_TOKEN = Object.freeze({ defaultPlaceholder: '--dsw-alias-label-dimmed' })
 
 /** The drawn cards' public hooks. */
 export const HOOK = Object.freeze({
-  /** The DSH Tag holding a badge: the badge itself or its closest ancestor with a tone. */
-  tag: '[data-tone]',
   askCard: '[data-fishball-ask]',
   reason: 'textarea',
   /** The sidebar list's measured element: the expanded row's button (only the open row carries aria-expanded in the written HTML: a false prop is dropped). */
@@ -28,26 +26,14 @@ export const HOOK = Object.freeze({
   tagPrimitive: 'Tag',
 })
 
-/**
- * RESHOOT fix 1 (the user, 2026-11-18): the badge's contrast and DSH warning Tag styling. The
- * question-card accordion (bdcccc66) replaces the visible waiting words with a count. The existing
- * permission/ask fixtures each represent a single request. Light: at least 4.5:1 against the
- * badge's own fill (previously ≈1.8:1); dark: DSH's warning Tag look unchanged.
- */
+/** The shared pile replaces per-card warning Tags; its total must still meet text contrast in both themes. */
 export const ASK_BADGE = Object.freeze({
   singleRequestCount: '1',
   openTone: 'warning',
-  settledTone: 'neutral',
-  cardAttr: 'data-fishball-ask',
-  /** Test-owned handles the rows add to the written HTML: the measured badge, and DSH Tags drawn outside the card. */
+  /** Test-owned handles for the shared badge and the DSH warning Tag control. */
   marker: 'data-fbtest-ask-badge',
   reference: 'data-fbtest-reference-tag',
   referenceText: 'FBTEST reference Tag',
-  /**
-   * Two computed colours are the same when every channel and alpha (0–1) differ by less than half
-   * of one 8-bit step: Chromium writes one colour as rgb() (0–255) or color(srgb …) (0–1 floats).
-   */
-  sameColourTolerance: 0.5 / 255,
 })
 
 /**

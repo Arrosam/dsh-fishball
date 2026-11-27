@@ -4,7 +4,8 @@ import { caseTest } from 'fishball-test-helpers/cases'
 import { FORM, batch, batchAnswers, freeBatch, freeAnswers } from 'fishball-test-helpers/manager-question-cards'
 import { byAttr, edit, findAll, textOf, walk } from 'fishball-test-helpers/react-shim'
 import { settle } from 'fishball-test-helpers/scripted-page'
-import { ASK, askFrame } from './support/ask-card.mjs'
+import { ASK, askCard, askCards, askFrame } from './support/ask-card.mjs'
+import { ASK_SOURCE } from './support/b-targets.mjs'
 import { PAGE_STREAM } from './support/page-stream.mjs'
 import { uiPage } from './support/ui-page.mjs'
 
@@ -12,6 +13,8 @@ const UI = Object.freeze({
   manager: 'manager-dock', other: 'other-dock',
   when: Date.UTC(2026, 0, 1), post: 'POST', ok: 200,
   submit: /^(?:submit|send|answer)\b/i, skip: /^skip$/i, next: /^next\b/i,
+  pileTitle: 'Waiting for you', send: 'Send answer', allow: 'Allow once', reject: 'Reject',
+  countLimit: 99,
 })
 const card = (cardId, questions) => ({
   kind: FORM.kind, cardId, handle: cardId, sessionId: FORM.sessionId, state: FORM.open, askedAt: UI.when, questions,
@@ -47,7 +50,7 @@ async function openPage(t) {
       assert.ok(p.carriers().length > 0, 'page did not connect to its SSE stream')
       await p.deliver(PAGE_STREAM.topic.asks, askFrame(cards, FORM.sessionId))
     },
-    answers: () => world.fetches.filter(({ path, method }) => path === FORM.answer && method === UI.post).map((call) => call.json()),
+    answers: (route = FORM.answer) => world.fetches.filter(({ path, method }) => path === route && method === UI.post).map((call) => call.json()),
   }
 }
 
@@ -168,7 +171,7 @@ const minHeight = (style) => style['min-height'] ?? style['min-block-size']
 const flexShrinks = (style) => style.flex !== 'none' &&
   (style['flex-shrink'] ?? style.flex?.split(/\s+/)[1]) !== '0'
 
-function dockReachability(tree, css) {
+function dockLayout(tree, css) {
   const parents = new Map([...walk(tree)].map(({ node, parent }) => [node, parent]))
   const rules = [...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)]
   const styles = new Map([...parents.keys()].map((node) => {
@@ -178,6 +181,9 @@ function dockReachability(tree, css) {
     return [node, Object.fromEntries([...declarations, ...inline])]
   }))
   const styleOf = (node) => styles.get(node) ?? {}
+  const ancestry = function* (node) {
+    for (let at = node; at; at = parents.get(at)) yield at
+  }
   const children = (node) => node.children.filter((child) => styles.has(child))
   const column = (node) => ['flex', 'inline-flex'].includes(styleOf(node).display) && styleOf(node)['flex-direction'] === 'column'
   const takesRemainingHeight = (node) => flexShrinks(styleOf(node)) &&
@@ -187,10 +193,10 @@ function dockReachability(tree, css) {
   const scrollRegions = (node) => scrollsY(styleOf(node)) ? [node] : column(node)
     ? children(node).filter(takesRemainingHeight).flatMap(scrollRegions) : []
 
-  return (control) => {
+  function reachable(control) {
     const path = new Set()
     let hasScrollPath = false
-    for (let node = control; node; node = parents.get(node)) {
+    for (const node of ancestry(control)) {
       path.add(node)
       const style = styleOf(node)
       const parent = styleOf(parents.get(node))
@@ -212,23 +218,33 @@ function dockReachability(tree, css) {
     }
     return hasScrollPath
   }
+  return { ancestry, reachable, styleOf }
 }
 
-caseTest('ASK-QUESTIONS-ST-03', 'long-card reachability', 'a four-question ask uses bounded scrolling or pagination without stranding its fields or Submit', async (t) => {
+caseTest('ASK-QUESTIONS-ST-03', 'long-card reachability', 'a four-question ask has a bounded scroller and keeps the send footer outside the prompt scroll', async (t) => {
   const page = await openPage(t)
   await page.show([long])
   toggleOf(page, long.cardId, true)
   const tree = page.card(long.cardId)
-  if (action(tree, UI.next)) return // The interaction case follows pagination through submission.
   const fields = findAll(tree, (node) => node.tag === 'fieldset')
   assert.equal(fields.length, long.questions.length, 'all prompts must have reachable question controls')
   const submitButton = action(tree, UI.submit)
   assert.ok(submitButton, 'the long card must render Submit')
-  const reachable = dockReachability(page.dock(), page.styles())
+  const { ancestry, reachable, styleOf } = dockLayout(page.dock(), page.styles())
   for (const [index, field] of fields.entries()) {
     assert.ok(reachable(field), 'bounded scrolling must reach: ' + long.questions[index].question)
   }
-  assert.ok(reachable(submitButton), 'the bounded card must not clip Submit')
+  assert.ok(reachable(submitButton), 'the bounded card must not clip the send footer')
+  const [firstField] = fields
+  const promptScroller = [...ancestry(firstField)].find((node) => scrollsY(styleOf(node)))
+  assert.ok(promptScroller, 'the prompts need a vertically scrollable region')
+  const footerPath = [...ancestry(submitButton)]
+  const scrollsWithPrompts = footerPath.includes(promptScroller)
+  const anchored = scrollsWithPrompts && footerPath.slice(0, footerPath.indexOf(promptScroller)).some((node) => {
+    const style = styleOf(node)
+    return ['sticky', 'fixed'].includes(style.position) && (style.bottom || style['inset-block-end'])
+  })
+  assert.ok(!scrollsWithPrompts || anchored, 'the send footer must stay in place while the prompts scroll')
 })
 
 function fieldFor(tree, question) {
@@ -275,4 +291,83 @@ caseTest('ASK-QUESTIONS-ST-04', 'long-card answer', 'choices, custom text and an
     cardId: long.cardId,
     answers: [...batchAnswers, { id: LONG.notes.id, selected: [], custom: FORM.text }, { id: LONG.skip.id, selected: [] }],
   }])
+})
+
+const ownsText = (node, text) => node.children.some((child) => typeof child === 'string' && child.includes(text))
+const pileHeading = (tree) => findAll(tree, (node) => ownsText(node, UI.pileTitle))
+const visibleButton = (tree, label) => findAll(tree, (node) => node.tag === 'button' && textOf(node).trim() === label)[0]
+
+function expectPile(page, count) {
+  const tree = page.dock()
+  const [heading, ...duplicates] = pileHeading(tree)
+  assert.ok(heading, 'dock must have a visible Waiting for you heading')
+  assert.equal(duplicates.length, 0, 'approval and question rows must not repeat the pile heading')
+  const parents = new Map([...walk(tree)].map(({ node, parent }) => [node, parent]))
+  let header = heading
+  while (parents.has(header) && !byAttr([parents.get(header)], ASK.card).length) header = parents.get(header)
+  const expected = count > UI.countLimit ? UI.countLimit + '+' : String(count)
+  const headerText = textOf(header).replace(UI.pileTitle, '').replace(/[\s()]/g, '')
+  assert.equal(headerText, expected, 'the single heading must carry the total open-card count (not the prompt count)')
+  const pile = parents.get(header)
+  assert.ok(pile, 'the heading must belong to the same surface as the request rows')
+  assert.equal(byAttr([pile], ASK.card).length, count, 'all open request rows must live in the one shared pile')
+  return pile
+}
+
+caseTest('ASK-PILE-BVA-01', '0, 1, 2, 99 and 100', 'one shared Waiting for you heading counts mixed open cards and caps only the badge at 99+', async (t) => {
+  const page = await openPage(t)
+  assert.deepEqual(pileHeading(page.dock()), [], 'no empty heading')
+  const approvals = askCards(UI.countLimit)
+  const history = askCard({ state: ASK.state.answered })
+  for (const count of [1, 2, UI.countLimit, UI.countLimit + 1]) {
+    await page.show([multi, ...approvals.slice(0, count - 1), history])
+    const pile = expectPile(page, count)
+    if (count === 2) {
+      const { styleOf } = dockLayout(page.dock(), page.styles())
+      const surface = styleOf(pile)
+      assert.match(surface['background-color'] ?? surface.background ?? '', /var\(--dsw-[\w-]*layer-1\b/,
+        'the pile should sit on one neutral layer-1 surface')
+    }
+    toggleOf(page, multi.cardId, count === 1)
+  }
+  const other = { ...multi, state: ASK.state.voided }
+  await page.show([other, history])
+  assert.deepEqual(pileHeading(page.dock()), [], 'finished cards do not leave a pile behind')
+})
+
+caseTest('ASK-PILE-ST-01', 'mixed accordion', 'mixed rows disclose exclusively, with radio and checkbox choices, visible actions, and optional approval reason', async (t) => {
+  const page = await openPage(t)
+  const approval = askCard()
+  await page.show([multi, approval])
+  const questionSummary = toggleOf(page, multi.cardId, false)
+  const approvalSummary = toggleOf(page, approval.handle, false)
+  assert.ok(textOf(questionSummary).includes(FORM.first.header), 'question summary uses the supplied header')
+  assert.ok(textOf(approvalSummary).includes(approval.question), 'approval summary identifies the request')
+  assert.equal(visibleButton(page.card(multi.cardId), UI.send), undefined)
+  assert.equal(visibleButton(page.card(approval.handle), UI.allow), undefined)
+
+  await press(questionSummary)
+  toggleOf(page, approval.handle, false)
+  const question = page.card(multi.cardId)
+  for (const [prompt, type] of [[FORM.first, 'radio'], [FORM.second, 'checkbox']]) {
+    const fieldset = fieldFor(question, prompt)
+    assert.ok(fieldset, 'missing choice group for ' + prompt.question)
+    assert.equal(findAll([fieldset], (node) => node.props.type === type || node.props.role === type).length, prompt.options.length)
+  }
+  assert.ok(visibleButton(question, UI.send), 'the answer action must visibly say Send answer')
+
+  await press(toggleOf(page, approval.handle, false))
+  toggleOf(page, multi.cardId, false)
+  const [reason] = findAll(page.card(approval.handle), (node) => node.tag === 'textarea' || node.tag === 'input')
+  assert.ok(reason && !reason.props.required, 'approval provides an optional reason field')
+  for (const [label, choice] of [[UI.allow, ASK.choices.allow], [UI.reject, ASK.choices.reject]]) {
+    const button = visibleButton(page.card(approval.handle), label)
+    assert.ok(button, 'the approval action must visibly say ' + label)
+    assert.equal(button.props[ASK.choice], choice, 'approval actions must remain distinct')
+  }
+  assert.deepEqual(page.answers(), [], 'disclosure does not send a question or approval reply')
+  edit(reason, FORM.text)
+  await settle()
+  await press(visibleButton(page.card(approval.handle), UI.allow))
+  assert.deepEqual(page.answers(ASK_SOURCE.answerPath), [{ handle: approval.handle, choice: ASK.choices.allow, text: FORM.text }])
 })

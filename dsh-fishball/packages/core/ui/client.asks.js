@@ -33,8 +33,14 @@ window.__ModuleLoader__.load({
       // Before DSH's own docks in this slot (todo 0, goal 10, queue 20, both SDKs), so an open card
       // is the first thing above the composer.
       order: -10,
-      // Match the native question panel’s viewport cap so cards leave the composer usable.
-      maxHeight: 'min(60vh, 520px)',
+      // V1 capped the entire pile at 45vh to leave the composer and transcript usable.
+      pileHeight: '45vh',
+      pileHeadingSpace: '38px',
+      minQuestionCardHeight: '160px',
+      ownSessionLabel: 'Fishball',
+      pileFill: '--dsw-alias-bg-layer-1',
+      badgeMax: 99,
+      summarySeparator: ' · ',
       // Retain a few visible lines when chrome wraps at very short viewport heights.
       minQuestionListHeight: 'min(3lh, 20vh)',
       // Core's published answer route and card states, restated because fishball-ui imports nothing
@@ -48,9 +54,10 @@ window.__ModuleLoader__.load({
        * answered each through its own target (PLAN-MULTI §5).
        */
       handleField: 'handle',
+      allowChoice: 'allow',
       kind: Object.freeze({ permission: 'permission', question: 'question' }),
-      permissionCount: 1,
       css: Object.freeze({
+        pileHead: 'fb-ask-pile-head', summary: 'fb-ask-summary', request: 'fb-ask-request', kind: 'fb-ask-kind',
         id: 'fishball-asks-style', root: 'fb-asks', card: 'fb-ask-card', meta: 'fb-ask-meta', preview: 'fb-ask-preview', chevron: 'fb-ask-chevron',
         source: 'fb-ask-source', hidden: 'fb-ask-visually-hidden', from: 'fb-ask-from', time: 'fb-ask-time', body: 'fb-ask-body', badge: 'fb-ask-badge',
         question: 'fb-ask-question', detail: 'fb-ask-detail', label: 'fb-ask-label', args: 'fb-ask-args', row: 'fb-ask-row', reason: 'fb-ask-reason', error: 'fb-ask-error',
@@ -59,8 +66,6 @@ window.__ModuleLoader__.load({
       }),
       // K1's ARGUMENTS_STATUS word for whole arguments (core's AskCard.argumentsStatus, ask-card.d.ts).
       argumentsComplete: 'complete',
-      // DSH's warning Tag inside the approval card's warn band.
-      badgeTone: 'warning',
       reasonRows: 2,
       /**
        * UI-FIX-F: the reason box's placeholder ink. DSH's own input placeholder token
@@ -72,19 +77,6 @@ window.__ModuleLoader__.load({
        */
       placeholderInk: '--dsw-alias-label-secondary',
       /**
-       * RESHOOT: the count badge ink in the light theme only. DSH's warning Tag draws
-       * `--dsw-alias-state-warn-primary` (#f59e0b) on its #fdeacc tint there: 1.8:1. DSH's own warn
-       * text token (`--dsw-alias-state-warn-label`, #dd8629) half mixed with the primary label is
-       * #764c1f, 6.3:1 on the badge (WCAG AA 4.5:1), and stays in the warn hue. The dark theme
-       * already reads 5.8-7.3:1 and mixing with its near-white label would change it, so the rule is
-       * scoped to the light theme by the body attribute DSH sets for dark (dsh-client-ui-layout's
-       * ThemePresenter; dsh-client-ui-theme's token sheets key on the same attribute).
-       */
-      badgeInk: Object.freeze({
-        lightScope: 'body:not([data-ds-dark-theme])',
-        ink: 'color-mix(in srgb,var(--dsw-alias-state-warn-label) 50%,var(--dsw-alias-label-primary))',
-      }),
-      /**
        * R-FIX-FUI: the Intl locale a card's time is written in, per page language (kit `useLang`), as
        * DSH's own schedule copy names one per language; the browser's time zone is kept.
        */
@@ -92,7 +84,7 @@ window.__ModuleLoader__.load({
     })
 
     const en = {
-      waiting: 'Fishball is waiting for your answer',
+      waiting: 'Waiting for you',
       from: 'From',
       dsh: 'DSH:',
       'dsh.unnamed': 'Name unavailable',
@@ -104,14 +96,14 @@ window.__ModuleLoader__.load({
       'detail.incomplete': 'The arguments are incomplete, so this request can only be rejected.',
       'header.permission': 'Permission',
       'header.question': 'Question',
-      'question.custom': 'Type your answer',
+      'question.custom': 'Your own answer (optional)',
       'question.skip': 'Skip',
-      'question.submit': 'Submit',
+      'question.submit': 'Send answer',
       'question.list': 'Questions',
       'question.progress': '{done} of {total} answered or skipped',
     }
     const zh = {
-      waiting: 'Fishball 正在等你回答',
+      waiting: '等你处理',
       from: '来自',
       dsh: 'DSH：',
       'dsh.unnamed': '名字未知',
@@ -123,44 +115,44 @@ window.__ModuleLoader__.load({
       'detail.incomplete': '参数不完整，因此只能拒绝此请求。',
       'header.permission': '权限',
       'header.question': '问题',
-      'question.custom': '输入你的答案',
+      'question.custom': '你自己的回答（可选）',
       'question.skip': '跳过',
-      'question.submit': '提交',
+      'question.submit': '发送回答',
       'question.list': '问题列表',
       'question.progress': '已回答或跳过 {done}/{total} 题',
     }
 
-    // Keep the approval card's warning band and surface for both kinds of open card.
     const focusRing = 'outline:var(--dsw-focus-ring-width) solid var(--dsw-focus-ring-color, var(--dsw-alias-state-business-primary));outline-offset:-2px'
     const css = [
-      // The warn stroke is an overlay above the children, so the opaque band cannot paint over it.
-      `.${ASKS_UI.css.root}{max-height:${ASKS_UI.maxHeight};overflow:auto;overscroll-behavior:contain;grid-auto-rows:max-content}`,
-      `.${ASKS_UI.css.card}{position:relative}`,
-      `.${ASKS_UI.css.card}::after{content:"";position:absolute;inset:0;border-radius:inherit;box-shadow:inset 0 0 0 1px var(--dsw-alias-state-warn-secondary);pointer-events:none}`,
-      `.${ASKS_UI.css.meta}{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;align-items:center;gap:8px;width:100%;border:0;padding:8px 16px;background:var(--dsw-alias-state-warn-tertiary);color:var(--dsw-alias-label-primary);font:var(--dsw-font-xxs-12);text-align:start;cursor:pointer}`,
+      // V1 had one neutral, capped surface with a sticky heading and hairline separators.
+      `.${ASKS_UI.css.root}{max-height:${ASKS_UI.pileHeight};display:block;overflow:auto;overscroll-behavior:contain;border:.5px solid var(--dsw-alias-border-l2);border-radius:var(--dsw-radius-lg);background:var(${ASKS_UI.pileFill});color:var(--dsw-alias-label-secondary);font-size:13px;line-height:1.5;scroll-padding-top:${ASKS_UI.pileHeadingSpace}}`,
+      `.${ASKS_UI.css.pileHead}{position:sticky;top:0;z-index:1;display:flex;align-items:center;gap:8px;margin:0;padding:8px 12px;border-bottom:.5px solid var(--dsw-alias-border-l2);background:var(${ASKS_UI.pileFill});color:var(--dsw-alias-label-primary);font:inherit;font-weight:600}`,
+      `.${ASKS_UI.css.badge}{padding:0 6px;border-radius:var(--dsw-radius-sm);background:var(--dsw-alias-bg-layer-3);color:var(--dsw-alias-label-primary)}`,
+      `.${ASKS_UI.css.card}+.${ASKS_UI.css.card}{border-top:.5px solid var(--dsw-alias-border-l2)}`,
+      `.${ASKS_UI.css.meta}{display:flex;flex:none;align-items:center;gap:8px;width:100%;border:0;padding:8px 12px;background:none;color:inherit;font:inherit;text-align:start;cursor:pointer}`,
+      `.${ASKS_UI.css.meta}:hover{background:var(--dsw-alias-interactive-bg-hover)}`,
       `.${ASKS_UI.css.meta}:focus-visible{${focusRing}}`,
-      `.${ASKS_UI.css.preview}{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-secondary)}`,
-      `.${ASKS_UI.css.chevron}{width:6px;height:6px;border:solid currentColor;border-width:0 1px 1px 0;transform:translateY(-2px) rotate(45deg)}`,
+      `.${ASKS_UI.css.summary}{display:grid;flex:1;min-width:0}`,
+      `.${ASKS_UI.css.request},.${ASKS_UI.css.preview}{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}`,
+      `.${ASKS_UI.css.request}{color:var(--dsw-alias-label-primary)}`,
+      `.${ASKS_UI.css.chevron}{flex:none;width:6px;height:6px;margin-inline:4px;border:solid currentColor;border-width:0 1px 1px 0;transform:translateY(-2px) rotate(45deg)}`,
       `.${ASKS_UI.css.meta}[aria-expanded="true"] .${ASKS_UI.css.chevron}{transform:translateY(2px) rotate(225deg)}`,
-      `${ASKS_UI.badgeInk.lightScope} .${ASKS_UI.css.card} .${ASKS_UI.css.badge}{color:${ASKS_UI.badgeInk.ink}}`,
       `.${ASKS_UI.css.from}{display:flex;align-items:center;flex-wrap:wrap;gap:8px;font:var(--dsw-font-xxs-12);color:var(--dsw-alias-label-secondary)}`,
       // A label read by assistive technology only ("DSH:" before the source name).
       `.${ASKS_UI.css.hidden}{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}`,
       // Which DSH asks (MULTI-3): its name as text, cut visually with the full name as the title.
       `.${ASKS_UI.css.source}{min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;unicode-bidi:plaintext;font:var(--dsw-font-xxs-strong-12);color:var(--dsw-alias-label-primary)}`,
       `.${ASKS_UI.css.time}{margin-left:auto;white-space:nowrap}`,
-      `.${ASKS_UI.css.body}{display:grid;gap:8px;padding:12px 16px 14px}`,
+      `.${ASKS_UI.css.body}{display:grid;gap:6px;padding:0 12px 10px}`,
       // Reserve space for the accordion header and Submit before allocating space to questions.
       // Scrolling the outer dock alone cannot reveal controls clipped by the card surface.
-      `.${ASKS_UI.css.questionCard}{display:flex;flex-direction:column;max-height:${ASKS_UI.maxHeight};overflow-y:auto}`,
-      `.${ASKS_UI.css.questionCard}>.${ASKS_UI.css.meta}{flex:none;grid-template-columns:minmax(0,max-content) minmax(0,1fr) auto auto}`,
-      `.${ASKS_UI.css.questionCard} .${ASKS_UI.css.meta}>strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}`,
+      `.${ASKS_UI.css.questionCard}{display:flex;flex-direction:column;max-height:min(${ASKS_UI.pileHeight}, max(${ASKS_UI.minQuestionCardHeight}, calc(${ASKS_UI.pileHeight} - ${ASKS_UI.pileHeadingSpace})));overflow-y:auto}`,
       `.${ASKS_UI.css.questionCard}>.${ASKS_UI.css.body}{display:flex;flex-direction:column;min-height:0}`,
       `.${ASKS_UI.css.questionCard}>.${ASKS_UI.css.body}>:not(.${ASKS_UI.css.questionList}){flex:none}`,
       // If wrapped chrome leaves too little room, the card itself can scroll instead of clipping.
       `.${ASKS_UI.css.questionList}{display:grid;align-content:start;gap:12px;min-height:${ASKS_UI.minQuestionListHeight};overflow-y:auto}`,
       `.${ASKS_UI.css.questionList}:focus-visible{${focusRing}}`,
-      `.${ASKS_UI.css.progress}{margin-inline-end:auto;color:var(--dsw-alias-label-secondary)}`,
+      `.${ASKS_UI.css.progress}{order:1;color:var(--dsw-alias-label-secondary)}`,
       `.${ASKS_UI.css.card}>.${ASKS_UI.css.body}[hidden]{display:none}`,
       `.${ASKS_UI.css.question}{margin:0;white-space:pre-wrap;overflow-wrap:anywhere;font:var(--dsw-font-s-strong-14);color:var(--dsw-alias-label-primary)}`,
       `.${ASKS_UI.css.fields}{display:grid;gap:8px;min-width:0;margin:0;padding:0;border:0}`,
@@ -171,7 +163,7 @@ window.__ModuleLoader__.load({
       // The arguments wrap at spaces first and split a token only when it is longer than the line
       // (`overflow-wrap:anywhere`, UI-FIX-F): `word-break:break-all` cut `--runInBand` mid-word at 390px.
       `.${ASKS_UI.css.args}{margin:0;max-height:12em;overflow:auto;padding:8px 10px;border-radius:var(--dsw-radius-sm);background:var(--dsw-alias-bg-module-platform);font:var(--dsw-font-xxs-12);font-family:var(--ds-font-family-code, monospace);color:var(--dsw-alias-label-secondary);white-space:pre-wrap;overflow-wrap:anywhere}`,
-      `.${ASKS_UI.css.row}{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:8px}`,
+      `.${ASKS_UI.css.row}{display:flex;align-items:center;flex-wrap:wrap;gap:8px}`,
       // The input look of DSH's settings fields (SettingsValueField, both SDKs).
       `.${ASKS_UI.css.reason}{width:100%;box-sizing:border-box;resize:vertical;padding:6px 10px;border:.5px solid var(--dsw-alias-border-l4);border-radius:var(--dsw-radius-md);background:var(--dsw-alias-bg-layer-3);color:var(--dsw-alias-label-primary);font:var(--dsw-font-xs-13)}`,
       `.${ASKS_UI.css.reason}::placeholder{color:var(${ASKS_UI.placeholderInk});opacity:1}`,
@@ -214,8 +206,8 @@ window.__ModuleLoader__.load({
         card.argumentsStatus != null && card.argumentsStatus !== ASKS_UI.argumentsComplete
           ? h('p', { className: ASKS_UI.css.detail, 'data-fishball-ask-incomplete': true }, t('detail.incomplete')) : null,
         h(AnswerText, { label: t('reason'), value: reason, locked, onChange: setReason }),
-        h('div', { className: ASKS_UI.css.row }, card.choices.map((choice, index) => h(AskAction, {
-          key: choice, variant: index === 0 ? 'primary' : 'outline', disabled: locked,
+        h('div', { className: ASKS_UI.css.row }, card.choices.map((choice) => h(AskAction, {
+          key: choice, variant: choice === ASKS_UI.allowChoice ? 'primary' : 'secondary', disabled: locked,
           'data-fishball-ask-choice': choice, onClick: () => send({ [ASKS_UI.handleField]: card.handle, choice, text: reason }),
         }, t('choice.' + choice)))))
     }
@@ -300,10 +292,11 @@ window.__ModuleLoader__.load({
         const first = question ? card.questions[0] : card
         const preview = first?.question
         const header = (question && first?.header?.trim()) || t('header.' + kind)
-        const count = question ? card.questions.length : ASKS_UI.permissionCount
+        const session = card.sessionTitle ?? (question ? ASKS_UI.ownSessionLabel : card.sessionId)
+        const request = session + ASKS_UI.summarySeparator + header
         const source = card.source?.name ?? t('dsh.unnamed')
         return h('div', {
-          className: [kit.css.card, ASKS_UI.css.card, question ? ASKS_UI.css.questionCard : ''].join(' '),
+          className: question ? ASKS_UI.css.card + ' ' + ASKS_UI.css.questionCard : ASKS_UI.css.card,
           'data-fishball-ask': card.handle,
           'data-fishball-ask-state': card.state, 'data-fishball-ask-kind': kind,
         },
@@ -311,16 +304,17 @@ window.__ModuleLoader__.load({
           className: ASKS_UI.css.meta, type: 'button', 'aria-expanded': expanded, 'aria-controls': panelId,
           onClick: toggle,
         },
-        h('strong', { title: question ? header : undefined }, header),
-        h('span', { className: ASKS_UI.css.preview, title: preview }, preview),
-        h(Tag, { tone: ASKS_UI.badgeTone, className: ASKS_UI.css.badge }, count),
+        h('span', { className: ASKS_UI.css.summary },
+          h('span', { className: ASKS_UI.css.request, title: request }, request),
+          h('span', { className: ASKS_UI.css.preview, title: preview }, preview)),
+        question && h(Tag, { tone: 'neutral' }, card.questions.length),
         h('span', { className: ASKS_UI.css.chevron, 'aria-hidden': true })),
         h('div', { className: ASKS_UI.css.body, id: panelId, hidden: !expanded },
           expanded && h('div', { className: ASKS_UI.css.from },
-            h('span', { className: ASKS_UI.css.hidden }, t('waiting')),
+            h(Tag, { tone: 'neutral', className: ASKS_UI.css.kind }, t('header.' + kind)),
             !question && h('span', { className: ASKS_UI.css.source, title: source, 'data-fishball-ask-source': card.source?.targetId },
               h('span', { className: ASKS_UI.css.hidden }, t('dsh')), source),
-            h('span', null, t('from') + ': ' + (card.sessionTitle ?? card.sessionId)),
+            h('span', null, t('from') + ': ' + session),
             h('span', { className: ASKS_UI.css.time }, new Date(card.askedAt).toLocaleString(ASKS_UI.timeLocale[lang]))),
           // Keep the draft owner mounted while removing collapsed controls from the tab order.
           h(question ? QuestionBody : PermissionBody, { card, expanded, locked, send, t }),
@@ -336,8 +330,11 @@ window.__ModuleLoader__.load({
         const expanded = !enteringMulti && stillOpen ? accordion.expanded : null
         if (multiple !== accordion.multiple || expanded !== accordion.expanded) setAccordion({ multiple, expanded })
         const stale = health !== kit.HEALTH.live
-        return h('div', { className: [kit.css.dock, ASKS_UI.css.root].join(' '), 'data-fishball-asks': true, 'data-fishball-asks-stale': stale ? health : undefined },
-          stale ? h('div', { className: kit.css.card }, h(kit.StreamNotice, { health, lang })) : null,
+        return h('section', { className: [kit.css.dock, ASKS_UI.css.root].join(' '), 'aria-label': t('waiting'), 'data-fishball-asks': true, 'data-fishball-asks-stale': stale ? health : undefined },
+          h('h2', { className: ASKS_UI.css.pileHead }, t('waiting'),
+            h('span', { className: ASKS_UI.css.badge, 'data-fishball-asks-count': cards.length },
+              cards.length > ASKS_UI.badgeMax ? ASKS_UI.badgeMax + '+' : cards.length)),
+          stale ? h(kit.StreamNotice, { health, lang }) : null,
           cards.map((card) => h(AskCard, {
             key: card.handle, card, t, stale, lang, expanded: expanded === card.handle,
             toggle: () => setAccordion({ multiple, expanded: expanded === card.handle ? null : card.handle }),
