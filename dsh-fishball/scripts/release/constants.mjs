@@ -5,8 +5,9 @@
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-/** The repository root (this file is scripts/release/constants.mjs). */
+/** The component owns release output; published source paths are relative to the whole repo. */
 export const REPO = fileURLToPath(new URL('../../', import.meta.url))
+export const WORKSPACE_ROOT = path.dirname(REPO)
 
 /** The one release version every package carries (requirements Q-G10; the user, REL-PACK item 1). */
 export const VERSION = '1.0.0-alpha.1'
@@ -30,14 +31,14 @@ export const RELEASE_DIR = path.join(REPO, '.runtime', 'release', VERSION)
  * name fishball-board nowhere (SHELVE-BOARD).
  */
 export const PACKAGES = Object.freeze([
-  Object.freeze({ key: 'fishballShared', folder: 'packages/shared', library: true }),
-  Object.freeze({ key: 'core', folder: 'packages/core' }),
+  Object.freeze({ key: 'fishballShared', folder: 'dsh-fishball/packages/shared', library: true }),
+  Object.freeze({ key: 'core', folder: 'dsh-fishball/packages/core' }),
   // The amenities, each its own package (the user, 2026-11-21), before the umbrella that bundles them.
-  Object.freeze({ key: 'board', folder: 'packages/fishball-board' }),
-  Object.freeze({ key: 'heartbeat', folder: 'packages/fishball-heartbeat' }),
-  Object.freeze({ key: 'taskboard', folder: 'packages/fishball-taskboard' }),
-  Object.freeze({ key: 'consultant', folder: 'packages/fishball-consultant' }),
-  Object.freeze({ key: 'amenities', folder: 'packages/fishball-amenities' }),
+  Object.freeze({ key: 'board', folder: 'amenities/board' }),
+  Object.freeze({ key: 'heartbeat', folder: 'amenities/heartbeat' }),
+  Object.freeze({ key: 'taskboard', folder: 'amenities/taskboard' }),
+  Object.freeze({ key: 'consultant', folder: 'amenities/consultant' }),
+  Object.freeze({ key: 'amenities', folder: 'amenities/fishball-amenities' }),
 ])
 
 export const HOSTED_SET = Object.freeze([])

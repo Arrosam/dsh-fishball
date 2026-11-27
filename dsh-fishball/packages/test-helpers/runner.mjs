@@ -12,7 +12,7 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { DSH_ENV, VERSIONS_DIR, runtimeOf } from './dsh.mjs'
-import { REPO, packages } from './packages.mjs'
+import { REPO, WORKSPACE_ROOT, packages } from './packages.mjs'
 
 export const RUN = Object.freeze({
   prefix: 'fbtest-run-', defaultConcurrency: 3, cancelExit: 130, signals: Object.freeze(['SIGINT', 'SIGTERM']),
@@ -28,7 +28,7 @@ export const RUN = Object.freeze({
  * is installed or fetched; an existing entry (an npm install's own link) is left as it is.
  */
 export function linkWorkspaces() {
-  const root = path.join(REPO, RUN.modules)
+  const root = path.join(WORKSPACE_ROOT, RUN.modules)
   for (const pkg of packages().values()) {
     const target = path.join(root, pkg.name)
     if (fs.existsSync(target)) continue

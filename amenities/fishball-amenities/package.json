@@ -1,5 +1,8 @@
 {
   "name": "fishball-amenities",
+  "scripts": {
+    "test": "node ../../dsh-fishball/scripts/test.mjs fishball-amenities"
+  },
   "version": "1.0.0-alpha.1",
   "description": "Installs the optional Fishball amenities together: fishball-board, fishball-heartbeat, fishball-taskboard and fishball-consultant, each its own package.",
   "icon": "./assets/fishball-amenities-icon.svg",
@@ -7,7 +10,7 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Arrosam/dsh-fishball.git",
-    "directory": "packages/fishball-amenities"
+    "directory": "amenities/fishball-amenities"
   },
   "publishConfig": {
     "tag": "alpha"

@@ -6,6 +6,8 @@ import fs from 'node:fs'
 import path from 'node:path'
 
 export const REPO = path.resolve(import.meta.dirname, '..', '..')
+// Moved amenities are siblings of this component, so their workspace imports resolve at this common root.
+export const WORKSPACE_ROOT = path.dirname(REPO)
 const LAYOUT = Object.freeze({ manifest: 'package.json', tests: 'tests', testSuffix: '.test.mjs', wildcard: '*', integrationPrefix: 'integration-' })
 /**
  * fishball-ui is its own package (own manifest, own bundle) inside fishball-core's folder, and ships

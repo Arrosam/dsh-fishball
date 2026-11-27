@@ -1,28 +1,41 @@
 {
   "name": "dsh-fishball",
   "private": true,
-  "description": "Fishball for DeepSeek Harness: fishball-core (core + UI components), the amenities fishball-board, fishball-heartbeat, fishball-taskboard and fishball-consultant (each its own package) with their fishball-amenities umbrella, and fishball-shared. The root is not a plugin package.",
+  "description": "Fishball, DSH Connector and hosted Fishball in one repository. The root is not a plugin package.",
   "license": "MIT",
   "type": "module",
   "workspaces": [
-    "packages/core",
-    "packages/fishball-board",
-    "packages/fishball-heartbeat",
-    "packages/fishball-taskboard",
-    "packages/fishball-consultant",
-    "packages/fishball-amenities",
-    "packages/shared",
-    "packages/test-helpers",
-    "packages/integration-*"
+    "dsh-fishball/packages/core",
+    "amenities/board",
+    "amenities/heartbeat",
+    "amenities/taskboard",
+    "amenities/consultant",
+    "amenities/fishball-amenities",
+    "dsh-fishball/packages/shared",
+    "dsh-fishball/packages/test-helpers",
+    "dsh-fishball/packages/integration-*",
+    "dsh-fishball/packages/core/ui",
+    "dsh-fishball/packages/core/ui/fishball-child-plugins",
+    "dsh-fishball/packages/core/ui/fishball-page",
+    "dsh-fishball/packages/core/ui/fishball-recommend-plugins",
+    "dsh-connector/packages/dsh-connector",
+    "dsh-connector/packages/dsh-connector-adapter",
+    "dsh-connector/packages/dsh-connector-shared",
+    "dsh-connector/packages/dsh-connector-test-helpers",
+    "dsh-connector/integration/*",
+    "amenities/connector-amenities",
+    "amenities/watchdog",
+    "dsh-fishball-instance/packages/*",
+    "dsh-fishball-instance/integration/*"
   ],
   "engines": {
     "node": ">=22.14",
     "dsh": ">=0.2.1-rc.5"
   },
   "scripts": {
-    "test": "node scripts/test.mjs",
+    "test": "node dsh-fishball/scripts/test.mjs",
     "test:release": "node scripts/test-release.mjs",
-    "pack:v3": "node scripts/pack-v3.mjs",
-    "pack:v3:check": "node scripts/pack-v3.mjs --check"
+    "pack:v3": "node dsh-fishball/scripts/pack-v3.mjs",
+    "pack:v3:check": "node dsh-fishball/scripts/pack-v3.mjs --check"
   }
 }

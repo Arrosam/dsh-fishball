@@ -15,59 +15,21 @@
  */
 import fs from 'node:fs'
 import path from 'node:path'
-import { REPO, packageOf, packages } from './packages.mjs'
+import { REPO, WORKSPACE_ROOT, packageOf, packages } from './packages.mjs'
+import { bareName, specifiers, stripComments } from '../../../scripts/module-specifiers.mjs'
+import { checkAmenity } from '../../../scripts/amenity-boundaries.mjs'
 
 const RULE = Object.freeze({
   helpers: 'fishball-test-helpers',
   nodeScheme: 'node:',
   source: /\.(m?js|cjs)$/,
-  blockComment: /\/\*[\s\S]*?\*\//g,
-  lineComment: /^\s*\/\/.*$/gm,
-  specifier: /(?:\bfrom\s*|\bimport\s*\(\s*|\bimport\s+)(['"])([^'"\n]+)\1/g,
   literal: /(['"`])((?:(?!\1)[^\\\n]|\\.)*)\1/g,
-  packagesPath: /(?:^|[^\w.-])packages\/([\w.-]+)(?:\/([\w.-]+))?/g,
+  packagesPath: /(?:^|[^\w.-])((?:packages|amenities)\/[\w.-]+)(?:\/([\w.-]+))?/g,
   packagesWord: 'packages',
 })
 
-/**
- * `code` with the body of every string, template and regex literal blanked to spaces (same length,
- * so line numbers hold), except a quoted string in specifier position (directly after `from`,
- * `import` or `import(`). A small scanner, not a parser: a `/` starts a regex where an expression may
- * begin (after an operator, a bracket, a keyword or the start of the text), otherwise it is division.
- */
-function blankLiterals(code) {
-  const out = code.split('')
-  const before = (i) => code.slice(Math.max(0, i - LOOKBEHIND), i)
-  let i = 0
-  while (i < code.length) {
-    const c = code[i]
-    const regex = c === '/' && code[i + 1] !== '/' && code[i + 1] !== '*' && REGEX_BEFORE.test(before(i))
-    if (!QUOTES.includes(c) && !regex) { i++; continue }
-    const keep = !regex && c !== '`' && SPECIFIER_BEFORE.test(before(i))
-    let j = i + 1
-    let inClass = false
-    while (j < code.length) {
-      if (code[j] === '\\') { j += 2; continue }
-      if (regex && code[j] === '[') inClass = true
-      else if (regex && code[j] === ']') inClass = false
-      else if (code[j] === c && !inClass) break
-      else if (code[j] === '\n' && c !== '`') break
-      j++
-    }
-    if (!keep) for (let k = i + 1; k < Math.min(j, code.length); k++) if (out[k] !== '\n') out[k] = ' '
-    i = j + 1
-  }
-  return out.join('')
-}
-const QUOTES = Object.freeze(["'", '"', '`'])
-/** Characters looked back over to decide a literal's position. */
-const LOOKBEHIND = 12
-const SPECIFIER_BEFORE = /(?:\bfrom|\bimport|\bimport\s*\()\s*$/
-const REGEX_BEFORE = /(?:^|[=(,:;!&|?{}[+\-*%<>~^]|\breturn|\btypeof|\bcase|\bdo|\belse|\bin|\bof)\s*$/
-
-const bareName = (specifier) => (specifier.startsWith('@') ? specifier.split('/').slice(0, 2).join('/') : specifier.split('/')[0])
 const insideOwn = (pkg, abs) => (abs === pkg.abs || abs.startsWith(pkg.abs + path.sep)) && !pkg.excludes.some((x) => abs === x || abs.startsWith(x + path.sep))
-const folderOf = (rel) => [...packages().values()].find((p) => p.dir === rel)
+const folderOf = (rel) => [...packages().values()].find((p) => p.dir === rel || path.relative(WORKSPACE_ROOT, p.abs) === rel)
 
 function sourceFiles(dir) {
   if (!fs.existsSync(dir)) return []
@@ -77,14 +39,15 @@ function sourceFiles(dir) {
 /** Every violation in one file of `pkg`: `{file, line, text, why}`. */
 export function checkFile(pkg, file) {
   const problems = []
+  // This checker itself imports the shared monorepo policy, not another package under test.
+  if (file === import.meta.filename) return []
   const raw = fs.readFileSync(file, 'utf8')
-  const code = raw.replace(RULE.blockComment, (m) => m.replace(/[^\n]/g, ' ')).replace(RULE.lineComment, '')
+  const code = stripComments(raw)
   const lineAt = (index) => code.slice(0, index).split('\n').length
   // Import positions are read with literal bodies blanked, so an import-shaped string or regex is no import.
-  const statements = blankLiterals(code)
   const report = (index, text, why) => problems.push({ file: path.relative(REPO, file), line: lineAt(index), text, why })
   const allowed = new Set([RULE.helpers, ...pkg.uses, pkg.name])
-  for (const m of statements.matchAll(RULE.specifier)) {
+  for (const m of specifiers(code)) {
     const spec = m[2]
     if (spec.startsWith(RULE.nodeScheme)) continue
     if (spec.startsWith('.') || spec.startsWith('/')) {
@@ -100,7 +63,7 @@ export function checkFile(pkg, file) {
     const text = m[2]
     if (text === RULE.packagesWord) { report(m.index, text, "builds a path into packages/: locate your own package with import.meta.dirname, another one only by name"); continue }
     for (const p of text.matchAll(RULE.packagesPath)) {
-      const target = folderOf(path.posix.join(RULE.packagesWord, p[1], p[2] ?? '')) ?? folderOf(path.posix.join(RULE.packagesWord, p[1]))
+      const target = folderOf(path.posix.join(p[1], p[2] ?? '')) ?? folderOf(p[1])
       if (target && target.name !== pkg.name) report(m.index, text, 'names ' + target.name + "'s folder")
     }
   }
@@ -110,7 +73,7 @@ export function checkFile(pkg, file) {
 /** Every violation in a package's tests (and, for fishball-test-helpers, in all of its files). */
 export function checkPackage(pkg) {
   const files = pkg.name === RULE.helpers ? sourceFiles(pkg.abs) : sourceFiles(pkg.tests)
-  return files.flatMap((f) => (packageOf(f)?.name === pkg.name ? checkFile(pkg, f) : []))
+  return [...checkAmenity(WORKSPACE_ROOT, pkg.abs), ...files.flatMap((f) => (packageOf(f)?.name === pkg.name ? checkFile(pkg, f) : []))]
 }
 
 export const formatProblems = (problems) => problems.map((p) => `  ${p.file}:${p.line}  ${JSON.stringify(p.text)}  (${p.why})`).join('\n')

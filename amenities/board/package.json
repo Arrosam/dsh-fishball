@@ -1,5 +1,8 @@
 {
   "name": "fishball-board",
+  "scripts": {
+    "test": "node ../../dsh-fishball/scripts/test.mjs fishball-board"
+  },
   "version": "1.0.0-alpha.1",
   "description": "Fishball's session-linked work board, one of the Fishball amenities. Needs fishball-core in the same DSH; without it the row loads and stays idle.",
   "icon": "./assets/fishball-board-icon.svg",
@@ -7,7 +10,7 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Arrosam/dsh-fishball.git",
-    "directory": "packages/fishball-board"
+    "directory": "amenities/board"
   },
   "publishConfig": {
     "tag": "alpha"

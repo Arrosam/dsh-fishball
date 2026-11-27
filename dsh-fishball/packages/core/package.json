@@ -1,5 +1,8 @@
 {
   "name": "fishball-core",
+  "scripts": {
+    "test": "node ../../scripts/test.mjs fishball-core"
+  },
   "version": "1.0.0-alpha.1",
   "description": "Fishball's core plugin, the backend: the Fishball manager session and its preset, persona, reminders and private Skills tools, the link, Connect, the interception service, status, the ask-card store, pairing, the guard rows (fishball-ui's UI guard rows only beside fishball-ui) and its own plugin settings page. Every other UI change inside Fishball is the fishball-ui plugin's.",
   "icon": "./assets/fishball-core-icon.svg",
@@ -7,7 +10,7 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Arrosam/dsh-fishball.git",
-    "directory": "packages/core"
+    "directory": "dsh-fishball/packages/core"
   },
   "publishConfig": {
     "tag": "alpha"

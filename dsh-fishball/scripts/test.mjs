@@ -22,10 +22,10 @@ import path from 'node:path'
 import { parseArgs } from 'node:util'
 import { checkPackage, formatProblems } from '../packages/test-helpers/boundaries.mjs'
 import { DSH_VERSION } from '../packages/test-helpers/dsh.mjs'
-import { REPO, packageByName, packageOf, packages, testFiles } from '../packages/test-helpers/packages.mjs'
+import { REPO, WORKSPACE_ROOT, packageByName, packageOf, packages, testFiles } from '../packages/test-helpers/packages.mjs'
 import { linkWorkspaces, runFiles } from '../packages/test-helpers/runner.mjs'
 
-const CLI = Object.freeze({ testSuffix: '.test.mjs', copied: Object.freeze(['package.json', 'packages', 'scripts']), separator: '--', worktreePrefix: 'fbtest-against-', helpers: 'packages/test-helpers', tests: 'tests', modules: 'node_modules' })
+const CLI = Object.freeze({ testSuffix: '.test.mjs', separator: '--', worktreePrefix: 'fbtest-against-', tests: 'tests', modules: 'node_modules' })
 
 function parse(argv) {
   const end = argv.indexOf(CLI.separator)
@@ -59,20 +59,35 @@ function pickFiles(files, wanted) {
  */
 function againstCheckout(ref, pkg) {
   const dir = fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()), CLI.worktreePrefix))
-  const root = path.join(dir, 'repo')
-  fs.mkdirSync(root)
-  for (const entry of CLI.copied) fs.cpSync(path.join(REPO, entry), path.join(root, entry), { recursive: true, filter: (src) => !src.includes(path.sep + CLI.modules) })
+  const workspace = path.join(dir, 'repo')
+  const root = path.join(workspace, path.basename(REPO))
+  const entries = [...packages().values()]
+  const nested = new Set(entries.flatMap((pkg) => pkg.excludes))
+  for (const current of entries) {
+    if (nested.has(current.abs)) continue
+    fs.cpSync(current.abs, path.join(root, current.dir), { recursive: true, filter: (src) => path.basename(src) !== CLI.modules })
+  }
+  for (const entry of ['package.json', 'scripts']) fs.cpSync(path.join(REPO, entry), path.join(root, entry), { recursive: true })
+  fs.cpSync(path.join(WORKSPACE_ROOT, 'scripts'), path.join(workspace, 'scripts'), { recursive: true })
   const own = path.join(root, pkg.dir)
   const keep = new Set([CLI.tests, ...pkg.excludes.map((x) => path.relative(pkg.abs, x).split(path.sep)[0])])
   for (const entry of fs.readdirSync(own)) if (!keep.has(entry)) fs.rmSync(path.join(own, entry), { recursive: true, force: true })
   const archive = path.join(dir, 'old.tar')
+  // Pre-move Fishball refs still use the original package directories.
+  const current = path.relative(WORKSPACE_ROOT, pkg.abs)
+  const former = pkg.dir.startsWith('../') ? path.join('packages', pkg.name) : pkg.dir
+  const gitOptions = { cwd: WORKSPACE_ROOT, stdio: ['ignore', 'ignore', 'pipe'] }
+  let archived = current
   try {
-    execFileSync('git', ['archive', '--format=tar', '-o', archive, ref, '--', pkg.dir], { cwd: REPO, stdio: ['ignore', 'ignore', 'pipe'] })
+    execFileSync('git', ['cat-file', '-e', ref + ':' + current + '/package.json'], gitOptions)
+  } catch { archived = former }
+  try {
+    execFileSync('git', ['archive', '--format=tar', '-o', archive, ref, '--', archived], gitOptions)
   } catch (error) { throw new Error(`${pkg.dir} does not exist at ${ref} (${String(error.stderr ?? error.message).trim()})`) }
   const old = path.join(dir, 'old')
   fs.mkdirSync(old)
   execFileSync('tar', ['-xf', archive, '-C', old])
-  const oldPkg = path.join(old, pkg.dir)
+  const oldPkg = path.join(old, archived)
   for (const entry of fs.readdirSync(oldPkg)) if (!keep.has(entry)) fs.cpSync(path.join(oldPkg, entry), path.join(own, entry), { recursive: true })
   linkCheckoutModules(root)
   return { dir, root }
@@ -83,7 +98,7 @@ function againstCheckout(ref, pkg) {
  * every third-party entry shared from this checkout's node_modules (nothing is installed).
  */
 function linkCheckoutModules(root) {
-  const own = path.join(root, CLI.modules)
+  const own = path.join(path.dirname(root), CLI.modules)
   fs.mkdirSync(own, { recursive: true })
   const names = new Set(packages().keys())
   for (const pkg of packages().values()) {
@@ -91,7 +106,7 @@ function linkCheckoutModules(root) {
     fs.mkdirSync(path.dirname(target), { recursive: true })
     fs.symlinkSync(path.join(root, pkg.dir), target)
   }
-  const shared = path.join(REPO, CLI.modules)
+  const shared = path.join(WORKSPACE_ROOT, CLI.modules)
   if (!fs.existsSync(shared)) return
   for (const entry of fs.readdirSync(shared)) {
     const scoped = entry.startsWith('@') ? fs.readdirSync(path.join(shared, entry)).map((inner) => entry + '/' + inner) : [entry]

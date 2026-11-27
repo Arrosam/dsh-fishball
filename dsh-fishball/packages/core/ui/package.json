@@ -1,5 +1,8 @@
 {
   "name": "fishball-ui",
+  "scripts": {
+    "test": "node ../../../scripts/test.mjs fishball-ui"
+  },
   "version": "1.0.0-alpha.1",
   "private": true,
   "type": "module",
