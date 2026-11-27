@@ -11,7 +11,7 @@ Version `1.0.0-alpha.1`. Uninstall instructions and the instance index are in th
 
 ## Installation options
 
-Use [`dsh-fishball-bundle`](https://github.com/Arrosam/dsh-fishball-bundle) for an all-in-one
+Use [`dsh-fishball-bundle`](https://github.com/Arrosam/dsh-fishball/tree/main) for an all-in-one
 install; do not install it alongside `dsh-instance`. To install the components manually, quit DSH,
 then install `dsh-agent-connector@1.0.0-alpha.2` and `dsh-instance@1.0.0-alpha.1` in the same
 profile through the Plugins page, or run (replace `web` with your profile name):

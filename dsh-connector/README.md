@@ -1,7 +1,7 @@
 # DSH Connector
 
 > **Looking to install Fishball or connect an agent via MCP?**
-> See the [Fishball bundle and MCP integration guide](https://github.com/Arrosam/dsh-fishball-bundle).
+> See the [Fishball bundle and MCP integration guide](https://github.com/Arrosam/dsh-fishball/tree/main).
 
 Generic MCP connector plugins for DeepSeek Harness (DSH). The connector exposes a DSH's sessions
 over MCP with OAuth, so a managing agent (such as [Fishball](../dsh-fishball/docs/README.md))
@@ -65,6 +65,6 @@ and [historical V3 test designs](../dsh-fishball/docs/history/test-design/v3/) f
 
 ## Related projects
 
-- [`dsh-fishball-bundle`](https://github.com/Arrosam/dsh-fishball-bundle) — All-in-one Fishball embedded bundle & main user-facing project page.
+- [`dsh-fishball-bundle`](https://github.com/Arrosam/dsh-fishball/tree/main) — All-in-one Fishball embedded bundle & main user-facing project page.
 - [Fishball](../dsh-fishball/docs/README.md) — The Fishball agent plugins, including its optional amenities.
 - [Hosted instance](../dsh-fishball-instance/README.md) — The bridge plugin that runs a hosted Fishball child.

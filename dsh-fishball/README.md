@@ -1,7 +1,7 @@
 # Fishball
 
 > **Looking to install Fishball or connect an agent via MCP?**
-> This component documents the Fishball-side packages (`fishball-core`, `fishball-amenities`, etc.) for **advanced users and developers**. For the one-click embedded bundle (`dsh-fishball-bundle`), standalone setup, and MCP integration guide, see **[`dsh-fishball-bundle`](https://github.com/Arrosam/dsh-fishball-bundle)**.
+> This component documents the Fishball-side packages (`fishball-core`, `fishball-amenities`, etc.) for **advanced users and developers**. For the one-click embedded bundle (`dsh-fishball-bundle`), standalone setup, and MCP integration guide, see **[`dsh-fishball-bundle`](https://github.com/Arrosam/dsh-fishball/tree/main)**.
 
 Fishball is an always-on personal assistant for DeepSeek Harness (DSH). It keeps one long-lived
 session that gathers information from your other sessions, from plugins and from you. It reads,
@@ -50,9 +50,9 @@ These are the **Fishball-side** packages (installed in a Fishball DSH: either a 
 
 ### Related projects
 
-The DSH-side connector and hosted runner are in this [monorepo](../README.md); the user-facing bundle is external.
+The DSH-side connector and hosted runner are in this [monorepo](../README.md); the user-facing bundle is at the monorepo root.
 
-- **[`dsh-fishball-bundle`](https://github.com/Arrosam/dsh-fishball-bundle)** — All-in-one embedded Fishball bundle (`dsh-fishball-bundle`) and main user-facing project page.
+- **[`dsh-fishball-bundle`](https://github.com/Arrosam/dsh-fishball/tree/main)** — All-in-one embedded Fishball bundle (`dsh-fishball-bundle`) and main user-facing project page.
 - **[`dsh-connector`](../dsh-connector/README.md)** — Generic DSH MCP connector plugins (`dsh-agent-connector`, which ships `dsh-connector` and `dsh-connector-ui`, plus optional `dsh-connector-amenities` / `dsh-connector-adapter` / `dsh-connector-watchdog` and `dsh-connector-shared`).
 - **[`dsh-fishball-instance`](../dsh-fishball-instance/README.md)** — Hosted Fishball bridge plugin (`dsh-instance`) that installs and runs a Fishball child (`fishball-core` and `fishball-amenities`) inside a main DSH with `dsh-agent-connector`.
 
@@ -80,7 +80,7 @@ This is the usual set-up. The commands use the profile `web`; use your own profi
    `dsh-connector-ui` packages), and delete `<DSH_HOME>/fishball/` if an earlier release left it.
    Nothing is migrated.
 
-2. **Install `dsh-agent-connector` and `dsh-instance` into your main DSH profile** (or for one-click setup including `dsh-connector-adapter` and `dsh-connector-watchdog`, install [`dsh-fishball-bundle`](https://github.com/Arrosam/dsh-fishball-bundle) instead). You do not install `fishball-core` or `fishball-amenities` separately: `dsh-agent-connector` includes its UI component (`dsh-connector-ui`), and `dsh-instance` automatically installs both `fishball-core` (including `fishball-ui`) and `fishball-amenities` (`fishball-board`, `fishball-heartbeat`, `fishball-taskboard`, `fishball-consultant`) into its private child DSH.
+2. **Install `dsh-agent-connector` and `dsh-instance` into your main DSH profile** (or for one-click setup including `dsh-connector-adapter` and `dsh-connector-watchdog`, install [`dsh-fishball-bundle`](https://github.com/Arrosam/dsh-fishball/tree/main) instead). You do not install `fishball-core` or `fishball-amenities` separately: `dsh-agent-connector` includes its UI component (`dsh-connector-ui`), and `dsh-instance` automatically installs both `fishball-core` (including `fishball-ui`) and `fishball-amenities` (`fishball-board`, `fishball-heartbeat`, `fishball-taskboard`, `fishball-consultant`) into its private child DSH.
 
    - **Option A — Standard DSH install (from npm under `alpha`, via DSH Plugins page or CLI):**
 

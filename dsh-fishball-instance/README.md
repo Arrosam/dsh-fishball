@@ -1,7 +1,7 @@
 # DSH Fishball Instance
 
 > **Looking to install Fishball or connect an agent via MCP?**
-> This component holds the underlying `dsh-instance` package for **advanced users and developers**. For the one-click embedded bundle (`dsh-fishball-bundle`), standalone setup, and MCP integration guide, see **[`dsh-fishball-bundle`](https://github.com/Arrosam/dsh-fishball-bundle)**.
+> This component holds the underlying `dsh-instance` package for **advanced users and developers**. For the one-click embedded bundle (`dsh-fishball-bundle`), standalone setup, and MCP integration guide, see **[`dsh-fishball-bundle`](https://github.com/Arrosam/dsh-fishball/tree/main)**.
 
 Bridge plugin (`dsh-instance`) that installs and runs a hosted Fishball child DSH inside your main
 DeepSeek Harness (DSH), connecting it to `dsh-agent-connector`. Split from `dsh-fishball@84078e5f`.
@@ -53,7 +53,7 @@ is installed; the runner links the workspace packages into `node_modules/`.
 
 ## Install and uninstall
 
-For the one-click setup use [`dsh-fishball-bundle`](https://github.com/Arrosam/dsh-fishball-bundle)
+For the one-click setup use [`dsh-fishball-bundle`](https://github.com/Arrosam/dsh-fishball/tree/main)
 instead; do not install the bundle alongside `dsh-instance`. For a manual install, see the
 [installation options](<packages/dsh-instance/README.md#installation-options>). The hosted token
 comes from `dsh-agent-connector`; without it the child still starts, with no parent target.
@@ -93,6 +93,6 @@ For the opt-in `remoteEmbedUrl` override and companion sidebar patch, see
 
 ## Related projects
 
-- [`dsh-fishball-bundle`](https://github.com/Arrosam/dsh-fishball-bundle): the all-in-one embedded bundle and user-facing setup guide.
+- [`dsh-fishball-bundle`](https://github.com/Arrosam/dsh-fishball/tree/main): the all-in-one embedded bundle and user-facing setup guide.
 - [Connector](../dsh-connector/README.md): the generic DSH MCP connector.
 - [Fishball](../dsh-fishball/docs/README.md): Fishball packages and amenities.
